@@ -15,6 +15,13 @@
 #ifndef __LINUX_MTD_BBM_H
 #define __LINUX_MTD_BBM_H
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+/* The maximum number of NAND chips in an array */
+#ifndef CONFIG_SYS_NAND_MAX_CHIPS
+#define CONFIG_SYS_NAND_MAX_CHIPS       1
+#endif
+#endif
+
 /**
  * struct nand_bbt_descr - bad block table descriptor
  * @options:	options for this descriptor

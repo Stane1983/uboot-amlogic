@@ -54,6 +54,10 @@ struct cmd_tbl {
 #endif
 };
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+typedef struct cmd_tbl	cmd_tbl_t;
+#endif
+
 #if defined(CONFIG_CMD_RUN)
 int do_run(struct cmd_tbl *cmdtp, int flag, int argc,
 	   char *const argv[]);

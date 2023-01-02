@@ -67,6 +67,11 @@ struct andr_img_hdr {
     u64 dtb_addr; /* physical load address for DTB image */
 } __attribute__((packed));
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+typedef struct andr_img_hdr boot_img_hdr_t;
+typedef struct andr_img_hdr *p_boot_img_hdr_t;
+#endif
+
 /* When a boot header is of version 0, the structure of boot image is as
  * follows:
  *

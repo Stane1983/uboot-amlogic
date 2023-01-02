@@ -25,6 +25,9 @@
 #include <cpu_func.h>
 #include <irq_func.h>
 #include <linux/delay.h>
+#ifdef CONFIG_AMLOGIC_MODIFY
+#include <asm/amlogic/arch/cpu_reset.h>
+#endif
 
 __weak void reset_misc(void)
 {

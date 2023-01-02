@@ -150,6 +150,8 @@ source "drivers/watchdog/Kconfig"
 
 source "drivers/xen/Kconfig"
 
+source "drivers/amlogic/Kconfig"
+
 config PHYS_TO_BUS
 	bool "Custom physical to bus address mapping"
 	help

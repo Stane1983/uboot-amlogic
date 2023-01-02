@@ -67,6 +67,10 @@ struct bd_info {
 	} bi_dram[CONFIG_NR_DRAM_BANKS];
 };
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+typedef struct bd_info bd_t;
+#endif
+
 #endif /* __ASSEMBLY__ */
 
 #endif	/* __ASM_GENERIC_U_BOOT_H__ */

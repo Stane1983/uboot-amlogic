@@ -676,6 +676,7 @@ config GZIP_COMPRESSED
 
 config BZIP2
 	bool "Enable bzip2 decompression support"
+	default y
 	help
 	  This enables support for BZIP2 compression algorithm.
 

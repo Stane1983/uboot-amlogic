@@ -273,6 +273,13 @@ static inline __attribute_const__ ofnode dev_ofnode(const struct udevice *dev)
 #define dev_get_dma_offset(_dev)		0
 #endif
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+static inline void dev_set_of_offset(struct udevice *dev, int of_offset)
+{
+        dev->node_ = offset_to_ofnode(of_offset);
+}
+#endif
+
 static inline __attribute_const__ int dev_of_offset(const struct udevice *dev)
 {
 #if CONFIG_IS_ENABLED(OF_REAL)

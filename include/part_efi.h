@@ -19,6 +19,10 @@
 
 #include <efi.h>
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+#include <blk.h>
+#endif
+
 #define MSDOS_MBR_SIGNATURE 0xAA55
 #define MSDOS_MBR_BOOT_CODE_SIZE 440
 #define EFI_PMBR_OSTYPE_EFI 0xEF
@@ -123,5 +127,11 @@ typedef struct _legacy_mbr {
 	struct partition partition_record[4];
 	__le16 signature;
 } __packed legacy_mbr;
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+int is_gpt_valid(struct blk_desc *dev_desc, u64 lba,
+                gpt_header *pgpt_head, gpt_entry **pgpt_pte);
+int is_pte_valid(gpt_entry * pte);
+#endif
 
 #endif	/* _DISK_PART_EFI_H */

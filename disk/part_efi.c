@@ -27,6 +27,9 @@
 #include <linux/compiler.h>
 #include <linux/ctype.h>
 #include <u-boot/crc.h>
+#ifdef CONFIG_AMLOGIC_MODIFY
+#include <amlogic/emmc_partitions.h>
+#endif
 
 /* GUID for basic data partitons */
 #if CONFIG_IS_ENABLED(EFI_PARTITION)
@@ -51,11 +54,20 @@ static inline u32 efi_crc32(const void *buf, u32 len)
 
 static int pmbr_part_valid(struct partition *part);
 static int is_pmbr_valid(legacy_mbr * mbr);
+#ifdef CONFIG_AMLOGIC_MODIFY
+int is_gpt_valid(struct blk_desc *dev_desc, u64 lba,
+				gpt_header *pgpt_head, gpt_entry **pgpt_pte);
+#else
 static int is_gpt_valid(struct blk_desc *dev_desc, u64 lba,
 				gpt_header *pgpt_head, gpt_entry **pgpt_pte);
+#endif
 static gpt_entry *alloc_read_gpt_entries(struct blk_desc *dev_desc,
 					 gpt_header *pgpt_head);
+#ifdef CONFIG_AMLOGIC_MODIFY
+int is_pte_valid(gpt_entry * pte);
+#else
 static int is_pte_valid(gpt_entry * pte);
+#endif
 static int find_valid_gpt(struct blk_desc *dev_desc, gpt_header *gpt_head,
 			  gpt_entry **pgpt_pte);
 
@@ -883,6 +895,72 @@ int is_valid_gpt_buf(struct blk_desc *dev_desc, void *buf)
 	return 0;
 }
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+int erase_gpt_part_table(struct blk_desc *dev_desc)
+{
+	gpt_header *gpt_h;
+	int size;
+	lbaint_t lba;
+	int cnt;
+
+	printf("come to erase_gpt_part_table \n");
+
+	size = PAD_TO_BLOCKSIZE(sizeof(gpt_header), dev_desc);
+	gpt_h = malloc_cache_aligned(size);
+	if (gpt_h == NULL) {
+		printf("%s: calloc failed!\n", __func__);
+		return -1;
+	}
+	memset(gpt_h, 0, size);
+
+	/* Setup the Protective MBR */
+	ALLOC_CACHE_ALIGN_BUFFER_PAD(legacy_mbr, p_mbr, 1, dev_desc->blksz);
+	if (p_mbr == NULL) {
+		printf("%s: calloc failed!\n", __func__);
+		free(gpt_h);
+		return -1;
+	}
+
+	/* Clear all data in MBR except of backed up boot code */
+	memset((char *)p_mbr + MSDOS_MBR_BOOT_CODE_SIZE, 0, sizeof(*p_mbr) -
+			MSDOS_MBR_BOOT_CODE_SIZE);
+
+	/* Write MBR sector to the MMC device */
+	if (blk_dwrite(dev_desc, 0, 1, p_mbr) != 1) {
+		printf("** Can't write to device %d **\n",
+			dev_desc->devnum);
+		free(gpt_h);
+		return -1;
+	}
+
+	/* write Primary GPT */
+	lba = GPT_PRIMARY_PARTITION_TABLE_LBA;
+	cnt = 1;	/* GPT Header (1 block) */
+	printf("%s: erase '%s' (%d blks at 0x" LBAF ")\n",
+		       __func__, "Primary GPT Header", cnt, lba);
+	if (blk_dwrite(dev_desc, lba, cnt, gpt_h) != cnt) {
+		printf("%s: failed erase '%s' (%d blks at 0x" LBAF ")\n",
+		       __func__, "Primary GPT Header", cnt, lba);
+		free(gpt_h);
+		return 1;
+	}
+
+	lba = cpu_to_le64(dev_desc->lba - 1);
+	cnt = 1;	/* GPT Header (1 block) */
+	printf("%s: erase '%s' (%d blks at 0x" LBAF ")\n",
+		       __func__, "Backup GPT Header", cnt, lba);
+	if (blk_dwrite(dev_desc, lba, cnt, gpt_h) != cnt) {
+		printf("%s: failed erase '%s' (%d blks at 0x" LBAF ")\n",
+		       __func__, "Backup GPT Header", cnt, lba);
+		free(gpt_h);
+		return 1;
+	}
+	gpt_partition = false;
+	free(gpt_h);
+	return 0;
+}
+#endif
+
 int write_mbr_and_gpt_partitions(struct blk_desc *dev_desc, void *buf)
 {
 	gpt_header *gpt_h;
@@ -1008,8 +1086,13 @@ static int is_pmbr_valid(legacy_mbr * mbr)
  * Description: returns 1 if valid,  0 on error, 2 if ignored header
  * If valid, returns pointers to PTEs.
  */
+#ifdef CONFIG_AMLOGIC_MODIFY
+int is_gpt_valid(struct blk_desc *dev_desc, u64 lba,
+			gpt_header *pgpt_head, gpt_entry **pgpt_pte)
+#else
 static int is_gpt_valid(struct blk_desc *dev_desc, u64 lba,
 			gpt_header *pgpt_head, gpt_entry **pgpt_pte)
+#endif
 {
 	/* Confirm valid arguments prior to allocation. */
 	if (!dev_desc || !pgpt_head) {
@@ -1156,7 +1239,11 @@ static gpt_entry *alloc_read_gpt_entries(struct blk_desc *dev_desc,
  *
  * Description: returns 1 if valid,  0 on error.
  */
+#ifdef CONFIG_AMLOGIC_MODIFY
+int is_pte_valid(gpt_entry * pte)
+#else
 static int is_pte_valid(gpt_entry * pte)
+#endif
 {
 	efi_guid_t unused_guid;
 

@@ -10,6 +10,9 @@
 #include <errno.h>
 #include <linux/mtd/concat.h>
 #include <linux/mtd/rawnand.h>
+#ifdef CONFIG_AMLOGIC_MODIFY
+#include <asm/amlogic/arch/cpu.h>
+#endif
 
 #ifndef CONFIG_SYS_NAND_BASE_LIST
 #define CONFIG_SYS_NAND_BASE_LIST { CONFIG_SYS_NAND_BASE }

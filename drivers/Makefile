@@ -124,3 +124,5 @@ obj-$(CONFIG_DM_RNG) += rng/
 endif
 
 obj-y += soc/
+
+obj-$(CONFIG_AML_DRIVER) += amlogic/

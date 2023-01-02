@@ -358,6 +358,18 @@ int pinctrl_get_gpio_mux(struct udevice *dev, int banknum, int index)
 	return ops->get_gpio_mux(dev, banknum, index);
 }
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+int pinctrl_set_gpio_mux(struct udevice *dev, int banknum, int index)
+{
+	struct pinctrl_ops *ops = pinctrl_get_ops(dev);
+
+	if (!ops->set_gpio_mux)
+		return -ENOSYS;
+
+	return ops->set_gpio_mux(dev, index);
+}
+#endif
+
 int pinctrl_get_pins_count(struct udevice *dev)
 {
 	struct pinctrl_ops *ops = pinctrl_get_ops(dev);

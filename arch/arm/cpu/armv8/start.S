@@ -31,6 +31,14 @@ _start:
 	b	reset
 #endif
 
+#ifdef	CONFIG_AMLOGIC_MODIFY
+	.globl __scs_bl33_devkey
+__scs_bl33_devkey:
+	.space	2048
+	.globl __scs_krnl_devkey
+__scs_krnl_devkey:
+	.space	2048
+#endif
 	.align 3
 
 .globl	_TEXT_BASE

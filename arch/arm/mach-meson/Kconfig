@@ -51,7 +51,17 @@ config MESON_G12A
 	help
 	  Select this if your SoC is an S905X/D2
 
+config MESON_S4
+	bool "S4"
+	select ARM64
+	select DM
+	select DM_SERIAL
+	help
+		Support Amlogic Meson S4
+
 endchoice
+
+source "board/amlogic/Kconfig"
 
 config SYS_SOC
 	default "meson"
@@ -74,6 +84,7 @@ config SYS_BOARD
 	default "q200" if MESON_GXM
 	default "s400" if MESON_AXG
 	default "u200" if MESON_G12A
+	default "ap222" if MESON_S4
 	default ""
 	help
 	  This option contains information about board name.

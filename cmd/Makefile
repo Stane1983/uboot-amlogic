@@ -209,6 +209,11 @@ obj-$(CONFIG_CMD_ETHSW) += ethsw.o
 obj-$(CONFIG_CMD_AXI) += axi.o
 obj-$(CONFIG_CMD_PVBLOCK) += pvblock.o
 
+obj-$(CONFIG_AML_DRIVER) += amlogic/
+
+obj-$(CONFIG_AML_TSENSOR) += amlogic/cmd_tsensor.o
+obj-$(CONFIG_AML_OSCRING) += amlogic/cmd_ringmsr.o
+
 # Power
 obj-$(CONFIG_CMD_PMIC) += pmic.o
 obj-$(CONFIG_CMD_REGULATOR) += regulator.o

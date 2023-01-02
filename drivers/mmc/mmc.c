@@ -25,6 +25,10 @@
 #include <linux/list.h>
 #include <div64.h>
 #include "mmc_private.h"
+#ifdef CONFIG_AMLOGIC_MODIFY
+#include <amlogic/emmc_partitions.h>
+#include <amlogic/partition_table.h>
+#endif
 
 #define DEFAULT_CMD6_TIMEOUT_MS  500
 
@@ -856,6 +860,13 @@ static int __mmc_switch(struct mmc *mmc, u8 set, u8 index, u8 value,
 	return -ETIMEDOUT;
 }
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+int mmc_get_ext_csd(struct mmc *mmc, u8 *ext_csd)
+{
+	return mmc_send_ext_csd(mmc, ext_csd);
+}
+#endif
+
 int mmc_switch(struct mmc *mmc, u8 set, u8 index, u8 value)
 {
 	return __mmc_switch(mmc, set, index, value, true);
@@ -892,6 +903,28 @@ int mmc_boot_wp_single_partition(struct mmc *mmc, int partition)
 
 	return ret;
 }
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+u8 ext_csd_w[] = {191, 187, 185, 183, 179, 178, 177, 175,
+			173, 171, 169, 167, 165, 164, 163, 162,
+			161, 156, 155, 143, 140, 136, 134, 133,
+			132, 131, 62, 59, 56, 52, 37, 34,
+			33, 32, 31, 30, 29, 22, 17, 16, 15};
+
+int mmc_set_ext_csd(struct mmc *mmc, u8 index, u8 value)
+{
+	int ret = -21, i;
+
+	for (i = 0; i < sizeof(ext_csd_w); i++) {
+		if (ext_csd_w[i] == index)
+		break;
+	}
+	if (i != sizeof(ext_csd_w))
+		ret = mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL, index, value);
+
+	return ret;
+}
+#endif
 
 #if !CONFIG_IS_ENABLED(MMC_TINY)
 static int mmc_set_card_speed(struct mmc *mmc, enum bus_mode mode,
@@ -3168,3 +3201,117 @@ __weak int mmc_get_env_dev(void)
 	return 0;
 #endif
 }
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+int mmc_key_erase(void)
+{
+	ulong start, start_blk, blkcnt, ret;
+	struct partitions * part = NULL;
+	struct virtual_partition *vpart = NULL;
+	struct mmc *mmc;
+	vpart = aml_get_virtual_partition_by_name(MMC_KEY_NAME);
+	part = aml_get_partition_by_name(MMC_RESERVED_NAME);
+	int dev = EMMC_DTB_DEV;
+
+	mmc = find_mmc_device(dev);
+	start = part->offset + vpart->offset;
+	start_blk = (start / MMC_BLOCK_SIZE);
+#ifdef KEY_BACKUP
+	blkcnt = (vpart->size / MMC_BLOCK_SIZE) * 2 + 2;//key and backup key
+#else
+	blkcnt = (vpart->size / MMC_BLOCK_SIZE) * 2;//key and backup key
+#endif
+	info_disprotect |= DISPROTECT_KEY;
+	ret = blk_derase(mmc_get_blk_desc(mmc), start_blk, blkcnt);
+	info_disprotect &= ~DISPROTECT_KEY;
+	if (ret) {
+		pr_err("[%s] %d mmc_berase error\n",
+				__func__, __LINE__);
+		return 1;
+	}
+	return 0;
+}
+
+int mmc_key_write(unsigned char *buf, unsigned int size, uint32_t *actual_length)
+{
+	ulong blkcnt, ret;
+	unsigned char * temp_buf = buf;
+#ifndef KEY_BACKUP
+	int dev = EMMC_DTB_DEV;
+	int i = 2;
+	struct mmc *mmc;
+	ulong start = 0, start_blk;
+	struct virtual_partition *vpart = NULL;
+	vpart = aml_get_virtual_partition_by_name(MMC_KEY_NAME);
+	struct partitions * part = NULL;
+	part = aml_get_partition_by_name(MMC_RESERVED_NAME);
+
+	mmc = find_mmc_device(dev);
+	start_blk = (start / MMC_BLOCK_SIZE);
+	start = part->offset + vpart->offset;
+#endif
+	blkcnt = (size / MMC_BLOCK_SIZE);
+	info_disprotect |= DISPROTECT_KEY;
+#ifdef KEY_BACKUP
+	ret = mmc_key_write_backup(MMC_KEY_NAME, temp_buf, blkcnt);
+	if (ret != 0) {
+		pr_err("[%s] %d, mmc_bwrite error\n",
+			__func__, __LINE__);
+		return 1;
+	}
+#else
+	do {
+		ret = blk_dwrite(mmc_get_blk_desc(mmc), start_blk, blkcnt, temp_buf);
+		if (ret != blkcnt) {
+			pr_err("[%s] %d, mmc_bwrite error\n",
+				__func__, __LINE__);
+			return 1;
+		}
+		start_blk += vpart->size / MMC_BLOCK_SIZE;
+	} while (--i);
+#endif
+	info_disprotect &= ~DISPROTECT_KEY;
+	return 0;
+}
+
+int mmc_key_read(unsigned char *buf, unsigned int size, uint32_t *actual_length)
+{
+	ulong blkcnt, ret;
+	unsigned char *temp_buf = buf;
+#ifndef KEY_BACKUP
+	struct mmc *mmc;
+	int dev = EMMC_DTB_DEV;
+	ulong start, start_blk;
+	struct partitions * part = NULL;
+	struct virtual_partition *vpart = NULL;
+	vpart = aml_get_virtual_partition_by_name(MMC_KEY_NAME);
+	part = aml_get_partition_by_name(MMC_RESERVED_NAME);
+
+	mmc = find_mmc_device(dev);
+	start = part->offset + vpart->offset;
+	start_blk = (start / MMC_BLOCK_SIZE);
+#endif
+
+	*actual_length =  0x40000;/*key size is 256KB*/
+	blkcnt = (size / MMC_BLOCK_SIZE);
+	info_disprotect |= DISPROTECT_KEY;
+#ifdef KEY_BACKUP
+	ret = mmc_key_read_backup(MMC_KEY_NAME, temp_buf, blkcnt);
+	if (ret != 0) {
+		pr_err("[%s] %d, mmc_bread error\n",
+			__func__, __LINE__);
+		return 1;
+	}
+#else
+	ret = blk_dread(mmc_get_blk_desc(mmc), start_blk, blkcnt, temp_buf);
+	if (ret != blkcnt) {
+		pr_err("[%s] %d, mmc_bread error\n",
+			__func__, __LINE__);
+		return 1;
+	}
+#endif
+	info_disprotect &= ~DISPROTECT_KEY;
+	return 0;
+}
+#endif
+

@@ -11,6 +11,15 @@ obj-y += exports.o
 obj-$(CONFIG_HUSH_PARSER) += cli_hush.o
 obj-$(CONFIG_AUTOBOOT) += autoboot.o
 
+obj-$(CONFIG_AML_STORAGE) += amlogic/partitions.o
+obj-$(CONFIG_AML_STORAGE) += amlogic/aml_dt.o
+
+ifneq ($(call ifdef_any_of,CONFIG_MDUMP_COMPRESS CONFIG_SUPPORT_BL33Z),)
+obj-y += amlogic/ramdump.o
+endif
+
+obj-y += amlogic/blxx2bl33_param.o
+
 # # boards
 obj-y += board_f.o
 obj-y += board_r.o

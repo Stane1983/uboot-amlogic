@@ -26,6 +26,17 @@
 #include <vsprintf.h>
 #endif	/* __ASSEMBLY__ */
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+#include <linux/delay.h>
+#include <linux/bug.h>
+
+/* lib/rand.c */
+#define RAND_MAX -1U
+void srand(unsigned int seed);
+unsigned int rand(void);
+unsigned int rand_r(unsigned int *seedp);
+#endif
+
 /* Pull in stuff for the build system */
 #ifdef DO_DEPS_ONLY
 # include <env_internal.h>

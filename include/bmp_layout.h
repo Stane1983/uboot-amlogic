@@ -48,6 +48,10 @@ struct bmp_image {
 	struct bmp_color_table_entry color_table[0];
 };
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+typedef struct bmp_image bmp_image_t;
+#endif
+
 /* Data in the bmp_image is aligned to this length */
 #define BMP_DATA_ALIGN	4
 

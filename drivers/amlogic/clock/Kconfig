@@ -1,0 +1,7 @@
+config CLK_MESON_S4
+	bool "Enable clock support for Amlogic S4"
+	depends on CLK && ARCH_MESON
+	default MESON_S4
+	help
+	  Enable clock support for the Amlogic S4 SoC family, such as
+	  the S905Y4

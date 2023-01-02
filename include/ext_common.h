@@ -22,6 +22,10 @@
 
 #include <compiler.h>
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+#include <blk.h>
+#endif
+
 struct cmd_tbl;
 
 #define SECTOR_SIZE		0x200

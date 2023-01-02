@@ -23,12 +23,20 @@ static inline void sync(void)
 /* Generic virtual read/write. */
 #define __arch_getb(a)			(*(volatile unsigned char *)(a))
 #define __arch_getw(a)			(*(volatile unsigned short *)(a))
+#ifdef CONFIG_AMLOGIC_MODIFY
+#define __arch_getl(a)			(*(volatile unsigned int *)(long)(a))
+#else
 #define __arch_getl(a)			(*(volatile unsigned int *)(a))
+#endif
 #define __arch_getq(a)			(*(volatile unsigned long long *)(a))
 
 #define __arch_putb(v,a)		(*(volatile unsigned char *)(a) = (v))
 #define __arch_putw(v,a)		(*(volatile unsigned short *)(a) = (v))
+#ifdef CONFIG_AMLOGIC_MODIFY
+#define __arch_putl(v,a)		(*(volatile unsigned int *)(long)(a) = (v))
+#else
 #define __arch_putl(v,a)		(*(volatile unsigned int *)(a) = (v))
+#endif
 #define __arch_putq(v,a)		(*(volatile unsigned long long *)(a) = (v))
 
 static inline void __raw_writesb(unsigned long addr, const void *data,

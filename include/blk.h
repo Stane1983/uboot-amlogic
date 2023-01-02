@@ -20,6 +20,27 @@ typedef ulong lbaint_t;
 #define LBAF "%" LBAFlength "x"
 #define LBAFU "%" LBAFlength "u"
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+/* Interface types: */
+enum if_type {
+	IF_TYPE_UNKNOWN = 0,
+	IF_TYPE_IDE,
+	IF_TYPE_SCSI,
+	IF_TYPE_ATAPI,
+	IF_TYPE_USB,
+	IF_TYPE_DOC,
+	IF_TYPE_MMC,
+	IF_TYPE_SD,
+	IF_TYPE_SATA,
+	IF_TYPE_HOST,
+	IF_TYPE_NVME,
+	IF_TYPE_EFI,
+	IF_TYPE_VIRTIO,
+
+	IF_TYPE_COUNT,			/* Number of interface types */
+};
+#endif
+
 struct udevice;
 
 static inline bool blk_enabled(void)

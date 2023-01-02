@@ -21,3 +21,10 @@ config CLK_MESON_G12A
 	help
 	  Enable clock support for the Amlogic G12A SoC family, such as
 	  the S905X/D2
+
+config CLK_MESON_S4
+        bool "Support S4 Clock"
+        depends on CLK
+        help
+                This option is used to enable the meson s4 clock
+                driver

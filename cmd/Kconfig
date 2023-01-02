@@ -1323,6 +1323,11 @@ config CMD_NAND
 	help
 	  NAND support.
 
+config AML_STORAGE
+        bool "aml storage support"
+        help
+          storage cmd support
+
 if CMD_NAND
 config CMD_NAND_TRIMFFS
 	bool "nand write.trimffs"
@@ -2687,6 +2692,8 @@ config CMD_STACKPROTECTOR_TEST
 
 endmenu
 
+source "cmd/amlogic/Kconfig"
+
 config CMD_UBI
 	tristate "Enable UBI - Unsorted block images commands"
 	select MTD_UBI
@@ -2726,4 +2733,12 @@ config MMC_SPEED_MODE_SET
 	  and is indicated using the index from enum bus_mode in
 	  include/mmc.h. A speed mode can be set only if it has already
 	  been enabled in the device tree.
+
+config CMD_INI
+        bool "support ini command"
+        depends on UNIFY_KEY_MANAGE && SECURE_STORAGE
+        default n
+        help
+          support ini command
+
 endmenu

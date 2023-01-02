@@ -52,6 +52,7 @@ struct meson_serial_plat {
 #define AML_UART_REG5_USE_NEW_BAUD	BIT(23) /* default 1 (use new baud rate register) */
 #define AML_UART_REG5_BAUD_MASK		0x7fffff
 
+#ifndef CONFIG_AMLOGIC_MODIFY
 static u32 meson_calc_baud_divisor(ulong src_rate, u32 baud)
 {
 	/*
@@ -73,6 +74,7 @@ static void meson_serial_set_baud(struct meson_uart *uart, ulong src_rate, u32 b
 		(divisor & AML_UART_REG5_BAUD_MASK);
 	writel(val, &uart->reg5);
 }
+#endif
 
 static void meson_serial_init(struct meson_uart *uart)
 {
@@ -96,9 +98,11 @@ static int meson_serial_probe(struct udevice *dev)
 
 	if (ret)
 		return ret;
+#ifndef CONFIG_AMLOGIC_MODIFY
 	ulong rate = clk_get_rate(&per_clk);
 
 	meson_serial_set_baud(uart, rate, CONFIG_BAUDRATE);
+#endif
 	meson_serial_init(uart);
 
 	return 0;
@@ -157,6 +161,9 @@ static int meson_serial_setbrg(struct udevice *dev, const int baud)
 	 * counter with an 8 MHz clock input) and the actual baud
 	 * rate is within 2% of the requested value (2% is arbitrary).
 	 */
+#ifdef CONFIG_AMLOGIC_MODIFY
+	return 0;
+#else
 	if (baud < 1 || baud > 8000000)
 		return -EINVAL;
 
@@ -178,6 +185,7 @@ static int meson_serial_setbrg(struct udevice *dev, const int baud)
 	meson_serial_set_baud(uart, rate, baud);
 
 	return 0;
+#endif
 }
 
 static int meson_serial_pending(struct udevice *dev, bool input)

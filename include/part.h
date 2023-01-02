@@ -80,6 +80,10 @@ struct disk_partition {
 #endif
 };
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+typedef struct disk_partition disk_partition_t;
+#endif
+
 struct disk_part {
 	int partnum;
 	struct disk_partition gpt_part_info;
@@ -470,6 +474,15 @@ int gpt_restore(struct blk_desc *dev_desc, char *str_disk_guid,
  * Return: - '0' on success, otherwise error
  */
 int is_valid_gpt_buf(struct blk_desc *dev_desc, void *buf);
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+/**
+ * erase_gpt_part_table() - erase Primary GPT and Backup GPT
+ *
+ * @return - '0' on success, otherwise error
+ */
+int erase_gpt_part_table(struct blk_desc *dev_desc);
+#endif
 
 /**
  * write_mbr_and_gpt_partitions() - write MBR, Primary GPT and Backup GPT

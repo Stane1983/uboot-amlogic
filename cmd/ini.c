@@ -89,7 +89,11 @@ static char *memgets(char *str, int num, char **mem, size_t *memsize)
 		end = *mem + *memsize;
 		newline = 0;
 	}
+#ifdef CONFIG_AMLOGIC_MODIFY
+	len = min((int)(end - *mem) + newline, num);
+#else
 	len = min((end - *mem) + newline, num);
+#endif
 	memcpy(str, *mem, len);
 	if (len < num)
 		str[len] = '\0';

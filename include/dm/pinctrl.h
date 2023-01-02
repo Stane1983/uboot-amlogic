@@ -6,6 +6,10 @@
 #ifndef __PINCTRL_H
 #define __PINCTRL_H
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+#include <dm/device.h>
+#endif
+
 #define PINNAME_SIZE	10
 #define PINMUX_SIZE	80
 
@@ -305,7 +309,20 @@ struct pinctrl_ops {
 	 *	Mux value (SoC-specific, e.g. 0 for input, 1 for output)
 	 */
 	int (*get_gpio_mux)(struct udevice *dev, int banknum, int index);
-
+#ifdef CONFIG_AMLOGIC_MODIFY
+	/* set_gpio_mux() - set the mux value for a particular GPIO
+	 *
+	 * This is useful for setting the mux value before a pin used as GPIO.
+	 * such as with the 'gpio' command. This function is internal to the GPIO
+	 * subsystem and should not be used by generic code. Typically it is used
+	 * by a GPIO driver with knowledge of the SoC pinctrl setup.
+	 *
+	 * @dev:	Pinctrl device to use
+	 * @banknum:	GPIO bank number
+	 * @index:	GPIO index within the bank
+	 */
+	int (*set_gpio_mux)(struct udevice *dev, int index);
+#endif
 	/**
 	 * @get_pin_muxing: Show pin muxing
 	 *
@@ -567,6 +584,22 @@ int pinctrl_get_periph_id(struct udevice *dev, struct udevice *periph);
  * Return: Mux value (SoC-specific, e.g. 0 for input, 1 for output)
 */
 int pinctrl_get_gpio_mux(struct udevice *dev, int banknum, int index);
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+/**
+ * pinctrl_set_gpio_mux() - set the mux value for a particular GPIO
+ *
+ * This is useful for setting the mux value before a pin used as GPIO.
+ * such as with the 'gpio' command. This function is internal to the GPIO
+ * subsystem and should not be used by generic code. Typically it is used
+ * by a GPIO driver with knowledge of the SoC pinctrl setup.
+ *
+ * @dev:        Pinctrl device to use
+ * @banknum:    GPIO bank number
+ * @index:      GPIO index within the bank
+ */
+int pinctrl_set_gpio_mux(struct udevice *dev, int banknum, int index);
+#endif
 
 /**
  * pinctrl_get_pin_muxing() - Returns the muxing description

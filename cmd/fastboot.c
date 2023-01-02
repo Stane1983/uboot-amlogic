@@ -15,6 +15,9 @@
 #include <usb.h>
 #include <watchdog.h>
 #include <linux/stringify.h>
+#ifdef CONFIG_AMLOGIC_MODIFY
+#include <linux/usb/gadget.h>
+#endif
 
 static int do_fastboot_udp(int argc, char *const argv[],
 			   uintptr_t buf_addr, size_t buf_size)
