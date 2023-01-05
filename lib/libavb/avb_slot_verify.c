@@ -588,6 +588,7 @@ static AvbSlotVerifyResult load_and_verify_vbmeta(
 	bool is_main_vbmeta;
 	bool look_for_vbmeta_footer;
 	AvbVBMetaData* vbmeta_image_data = NULL;
+	bool is_device_unlocked;
 
 	ret = AVB_SLOT_VERIFY_RESULT_OK;
 
@@ -664,7 +665,8 @@ static AvbSlotVerifyResult load_and_verify_vbmeta(
 			ret = AVB_SLOT_VERIFY_RESULT_ERROR_IO;
 			goto out;
 		}
-	avb_assert(footer_num_read == AVB_FOOTER_SIZE);
+	//remove this, because we customized to 512
+	//avb_assert(footer_num_read == AVB_FOOTER_SIZE);
 
 		if (!avb_footer_validate_and_byteswap((const AvbFooter*)footer_buf,
 																					&footer)) {
@@ -1002,16 +1004,19 @@ static AvbSlotVerifyResult load_and_verify_vbmeta(
 		switch (desc.tag) {
 			case AVB_DESCRIPTOR_TAG_HASH: {
 				AvbSlotVerifyResult sub_ret;
-				sub_ret = load_and_verify_hash_partition(ops,
-																								 requested_partitions,
-																								 ab_suffix,
-																								 allow_verification_error,
-																								 descriptors[n],
-																								 slot_data);
-				if (sub_ret != AVB_SLOT_VERIFY_RESULT_OK) {
-					ret = sub_ret;
-					if (!allow_verification_error || !result_should_continue(ret)) {
-						goto out;
+				//Amlogic modify for unlock device get boot patchlevel
+				if ((ops->read_is_device_unlocked(ops, &is_device_unlocked) == AVB_IO_RESULT_OK &&
+							!is_device_unlocked)) {
+					sub_ret = load_and_verify_hash_partition(ops,
+										 requested_partitions,
+										 ab_suffix,
+										 allow_verification_error,
+										 descriptors[n],
+										 slot_data);
+					if (sub_ret != AVB_SLOT_VERIFY_RESULT_OK) {
+						ret = sub_ret;
+						if (!allow_verification_error || !result_should_continue(ret))
+							goto out;
 					}
 				}
 			} break;

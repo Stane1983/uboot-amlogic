@@ -21,10 +21,16 @@
 #include <linux/err.h>
 #include <u-boot/zlib.h>
 #include <mapmem.h>
+#include <amlogic/libavb/libavb.h>
+#include <amlogic/partition_table.h>
+#if CONFIG_IS_ENABLED(AML_ANTIROLLBACK) || CONFIG_IS_ENABLED(AML_AVB2_ANTIROLLBACK)
+#include <amlogic/anti-rollback.h>
+#endif
 #include <amlogic/aml_efuse.h>
 #include <version.h>
 #include <amlogic/image_check.h>
 #include <asm/amlogic/arch/bl31_apis.h>
+#include <amlogic/aml_rollback.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -118,6 +124,145 @@ static int do_bootm_subcommand(struct cmd_tbl *cmdtp, int flag, int argc,
 	return ret ? CMD_RET_FAILURE : 0;
 }
 
+#if CONFIG_IS_ENABLED(CMD_BOOTCTOL_AVB)
+#if CONFIG_IS_ENABLED(AML_ANTIROLLBACK) || CONFIG_IS_ENABLED(AML_AVB2_ANTIROLLBACK)
+static void bootm_avb_bootctl_anti_rollback(int rc, AvbSlotVerifyData *out_data)
+{
+	if (rc == AVB_SLOT_VERIFY_RESULT_OK && is_avb_arb_available() &&
+	    !set_successful_boot() &&
+		out_data) {
+		u32 i = 0;
+		u32 version = 0;
+
+		for (i = 0; i < AVB_MAX_NUMBER_OF_ROLLBACK_INDEX_LOCATIONS; i++) {
+			u64 rb_idx = out_data->rollback_indexes[i];
+
+			if (get_avb_antirollback(i, &version) &&
+			    version < (u32)rb_idx &&
+			    !set_avb_antirollback(i, (u32)rb_idx)) {
+				printf("rollback(%d) = %u failed\n",
+				       i, (u32)rb_idx);
+			}
+		}
+	}
+
+	if (is_avb_arb_available() &&
+	    rc == AVB_SLOT_VERIFY_RESULT_ERROR_ROLLBACK_INDEX &&
+	    has_boot_slot == 1) {
+		printf("ab mode\n");
+		update_rollback();
+		env_set("write_boot", "0");
+		run_command("saveenv", 0);
+		run_command("reset", 0);
+	}
+}
+#endif
+
+static int bootm_avb_bootctl(void)
+{
+	int rc = 0;
+	char *avb_s = NULL;
+	char *newbootargs = NULL;
+	AvbSlotVerifyData *out_data = NULL;
+
+	run_command("get_avb_mode;", 0);
+	avb_s = env_get("avb2");
+	printf("avb2: %s\n", avb_s);
+	if (strcmp(avb_s, "1") == 0) {
+		char *bootargs = NULL;
+		char *avb_cmdline = "\0";
+		const char *bootstate_o = "androidboot.verifiedbootstate=orange";
+		const char *bootstate_g = "androidboot.verifiedbootstate=green";
+		const char *bootstate = "\0";
+		u8 vbmeta_digest[AVB_SHA256_DIGEST_SIZE];
+		const int is_dev_unlocked = is_device_unlocked();
+
+		rc = avb_verify(&out_data);
+		if (is_dev_unlocked) {
+			printf("unlock state, ignore the avb check\n");
+			bootstate = bootstate_o;
+			/* return ok due to ignore error */
+			rc = AVB_SLOT_VERIFY_RESULT_OK;
+		} else {
+			printf("lock state, need avb check\n");
+			printf("avb verification: locked = %d, result = %d\n",
+			       !is_dev_unlocked, rc);
+#if CONFIG_IS_ENABLED(AML_ANTIROLLBACK) || CONFIG_IS_ENABLED(AML_AVB2_ANTIROLLBACK)
+			bootm_avb_bootctl_anti_rollback(rc, out_data);
+#endif
+			if (rc != AVB_SLOT_VERIFY_RESULT_OK)
+				goto out;
+			else
+				bootstate = bootstate_g;
+		}
+
+		if (out_data) {
+			/* Trying to set boot params */
+			keymaster_boot_params boot_params;
+			AvbVBMetaImageHeader toplevel_vbmeta;
+
+			avb_vbmeta_image_header_to_host_byte_order
+				((const AvbVBMetaImageHeader *)
+				 out_data->vbmeta_images[0].vbmeta_data,
+				 &toplevel_vbmeta);
+
+			boot_params.boot_patchlevel =
+				avb_get_boot_patchlevel_from_vbmeta(out_data);
+
+			create_csrs();
+
+			boot_params.device_locked = is_dev_unlocked ? 0 : 1;
+			if (is_dev_unlocked ||
+			    (toplevel_vbmeta.flags &
+			     AVB_VBMETA_IMAGE_FLAGS_VERIFICATION_DISABLED) ||
+			    (toplevel_vbmeta.flags &
+			     AVB_VBMETA_IMAGE_FLAGS_HASHTREE_DISABLED)) {
+				bootstate = bootstate_o;
+				boot_params.verified_boot_state = 2;
+			} else {
+				bootstate = bootstate_g;
+				boot_params.verified_boot_state = 0;
+			}
+
+			memcpy(boot_params.verified_boot_key, boot_key_hash,
+			       sizeof(boot_params.verified_boot_key));
+
+			avb_slot_verify_data_calculate_vbmeta_digest(out_data,
+								     AVB_DIGEST_TYPE_SHA256,
+								     vbmeta_digest);
+			memcpy(boot_params.verified_boot_hash, vbmeta_digest,
+			       sizeof(boot_params.verified_boot_hash));
+
+			if (set_boot_params(&boot_params) < 0)
+				printf("failed to set boot params.\n");
+		}
+
+		/* complete env string */
+		bootargs = env_get("bootconfig");
+		if (!bootargs)
+			bootargs = "\0";
+
+		if (out_data && out_data->cmdline)
+			avb_cmdline = out_data->cmdline;
+
+		newbootargs = malloc(strlen(bootargs) + strlen(avb_cmdline)
+				+ strlen(bootstate) + 1 + 1 + 1); // spaces and EOL
+		if (!newbootargs) {
+			printf("failed to allocate buffer for bootarg\n");
+			goto out;
+		}
+		sprintf(newbootargs, "%s %s %s", bootargs,
+			avb_cmdline, bootstate);
+		env_set("bootconfig", newbootargs);
+		free(newbootargs);
+	}
+out:
+	if (out_data)
+		avb_slot_verify_data_free(out_data);
+	return rc;
+}
+#endif
+
 /*******************************************************************/
 /* bootm - boot application image from image in memory */
 /*******************************************************************/
@@ -176,8 +321,8 @@ int do_bootm(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 	if (IS_FEAT_BOOT_VERIFY()) {
 		int ret = 0;
 
-		ret = secure_image_check((uint8_t *)(unsigned long)loadaddr,
-			GXB_IMG_SIZE, GXB_IMG_DEC_ALL);
+		ret = secure_image_check((u8 *)(unsigned long)loadaddr,
+					 GXB_IMG_SIZE, GXB_IMG_DEC_ALL);
 		if (ret) {
 			printf("\naml log : Sig Check %d\n", ret);
 			return ret;
@@ -195,7 +340,13 @@ int do_bootm(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 		argv = (char **)&argv_new;
 	}
 #endif
-
+#if CONFIG_IS_ENABLED(CMD_BOOTCTOL_AVB)
+	ret = bootm_avb_bootctl();
+	if (ret) {
+		printf("bootm_avb_bootctl failed(%d)\n", ret);
+		return CMD_RET_FAILURE;
+	}
+#endif
 	states = BOOTM_STATE_START | BOOTM_STATE_FINDOS | BOOTM_STATE_PRE_LOAD |
 		BOOTM_STATE_FINDOTHER | BOOTM_STATE_LOADOS |
 		BOOTM_STATE_OS_PREP | BOOTM_STATE_OS_FAKE_GO |

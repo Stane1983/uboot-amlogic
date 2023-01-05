@@ -17,6 +17,16 @@
 #define VERITY_TABLE_OPT_LOGGING	"ignore_corruption"
 #define ALLOWED_BUF_ALIGN		8
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+#ifndef CONFIG_AVB_BUF_SIZE
+#define CONFIG_AVB_BUF_SIZE		CONFIG_FASTBOOT_BUF_SIZE
+#endif
+
+#ifndef CONFIG_AVB_BUF_ADDR
+#define  CONFIG_AVB_BUF_ADDR		CONFIG_FASTBOOT_BUF_ADDR
+#endif
+#endif
+
 enum avb_boot_state {
 	AVB_GREEN,
 	AVB_YELLOW,

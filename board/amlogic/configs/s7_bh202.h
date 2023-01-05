@@ -49,6 +49,12 @@
 #define AML_ADC_POWER_KEY_CHAN   2  /*channel range: 0-7*/
 #define AML_ADC_POWER_KEY_VAL    0  /*sample value range: 0-1023*/
 
+/* AVB */
+#define CONFIG_AML_AVB2_ANTIROLLBACK 1
+#define CONFIG_AVB_VERIFY 1
+#define CONFIG_SUPPORT_EMMC_RPMB 1
+#define CONFIG_AML_DEV_ID 1
+
 /* Bootloader Control Block function
    That is used for recovery and the bootloader to talk to each other
 */
@@ -81,7 +87,6 @@
 	"fb_addr=0x00300000\0"\
 	"fb_width=1920\0"\
 	"fb_height=1080\0"\
-	"lock=10100000\0"\
 	"dolby_status=0\0"\
 	"dolby_vision_on=0\0"\
 	"boot_part=boot\0"\

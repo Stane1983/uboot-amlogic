@@ -15,6 +15,7 @@
 #include <asm/amlogic/arch/efuse.h>
 #include <android_image.h>
 #include <amlogic/android_vab.h>
+#include <amlogic/aml_rollback.h>
 
 #if defined(CONFIG_EFUSE_OBJ_API) && defined(CONFIG_CMD_EFUSE)
 extern efuse_obj_field_t efuse_field;
