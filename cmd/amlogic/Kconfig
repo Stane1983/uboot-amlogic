@@ -108,6 +108,13 @@ config CMD_RMA
 	help
 	  Support rma cmd
 
+config CMD_CLKMSR
+	bool "clkmsr - Show clock measurement for different clock index"
+	default n
+	help
+	  Show clock measurement for different clock index
+	  use for debug
+
 #prduct mode start---->
 config NO_FASTBOOT_FLASHING
 	depends on FASTBOOT
