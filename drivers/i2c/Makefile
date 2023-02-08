@@ -27,7 +27,8 @@ obj-$(CONFIG_SYS_I2C_IMX_LPI2C) += imx_lpi2c.o
 obj-$(CONFIG_SYS_I2C_IPROC) += iproc_i2c.o
 obj-$(CONFIG_SYS_I2C_KONA) += kona_i2c.o
 obj-$(CONFIG_SYS_I2C_LPC32XX) += lpc32xx_i2c.o
-obj-$(CONFIG_SYS_I2C_MESON) += meson_i2c.o
+#on driver/amlogic/i2c
+# obj-$(CONFIG_SYS_I2C_MESON) += meson_i2c.o
 obj-$(CONFIG_SYS_I2C_MICROCHIP) += i2c-microchip.o
 obj-$(CONFIG_SYS_I2C_MV) += mv_i2c.o
 obj-$(CONFIG_SYS_I2C_MVTWSI) += mvtwsi.o

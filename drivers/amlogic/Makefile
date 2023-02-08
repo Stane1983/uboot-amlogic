@@ -2,7 +2,7 @@
 
 obj-y += clock/
 obj-y += pinctrl/
-
+obj-y += i2c/
 obj-$(CONFIG_UNIFY_KEY_MANAGE) += keymanage/
 
 obj-$(CONFIG_SECURE_STORAGE) += storagekey/
