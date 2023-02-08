@@ -16,7 +16,8 @@ obj-$(CONFIG_PWM_CADENCE_TTC)	+= pwm-cadence-ttc.o
 obj-$(CONFIG_PWM_CROS_EC)	+= cros_ec_pwm.o
 obj-$(CONFIG_PWM_EXYNOS)	+= exynos_pwm.o
 obj-$(CONFIG_PWM_IMX)		+= pwm-imx.o
-obj-$(CONFIG_PWM_MESON)		+= pwm-meson.o
+#on driver/amlogic/pwm
+# obj-$(CONFIG_PWM_MESON)		+= pwm-meson.o
 obj-$(CONFIG_PWM_MTK)		+= pwm-mtk.o
 obj-$(CONFIG_PWM_ROCKCHIP)	+= rk_pwm.o
 obj-$(CONFIG_PWM_SANDBOX)	+= sandbox_pwm.o
