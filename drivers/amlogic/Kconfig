@@ -27,4 +27,8 @@ source "drivers/amlogic/mmc/Kconfig"
 
 source "drivers/amlogic/efuse/Kconfig"
 
+source "drivers/amlogic/pinctrl/Kconfig"
+
+source "drivers/amlogic/spi/Kconfig"
+
 endmenu
