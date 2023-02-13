@@ -83,9 +83,15 @@ const char *meson_pinmux_get_function_name(struct udevice *dev,
 	return priv->data->funcs[selector].name;
 }
 
+#if defined(CONFIG_AMLOGIC_MODIFY)
+static int meson_pinconf_calc_reg_and_bit(struct udevice *dev, unsigned int offset,
+					  enum meson_reg_type reg_type,
+					  unsigned int *reg, unsigned int *bit)
+#else
 static int meson_gpio_calc_reg_and_bit(struct udevice *dev, unsigned int offset,
 				       enum meson_reg_type reg_type,
 				       unsigned int *reg, unsigned int *bit)
+#endif
 {
 	struct meson_pinctrl *priv = dev_get_priv(dev);
 	struct meson_bank *bank = NULL;
@@ -113,14 +119,33 @@ static int meson_gpio_calc_reg_and_bit(struct udevice *dev, unsigned int offset,
 	return 0;
 }
 
+#if defined(CONFIG_AMLOGIC_MODIFY)
+static int meson_gpio_calc_reg_and_bit(struct udevice *dev, unsigned int offset,
+				       enum meson_reg_type reg_type,
+				       unsigned int *reg, unsigned int *bit)
+{
+	struct meson_bank *bank = dev_get_priv(dev);
+	struct meson_reg_desc *desc = &bank->regs[reg_type];
+
+	*reg = desc->reg << 2;
+	*bit = desc->bit + offset;
+
+	return 0;
+}
+#endif
+
 int meson_gpio_get(struct udevice *dev, unsigned int offset)
 {
 	struct meson_pinctrl *priv = dev_get_priv(dev->parent);
 	unsigned int reg, bit;
 	int ret;
 
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	ret = meson_gpio_calc_reg_and_bit(dev, offset, REG_IN, &reg, &bit);
+#else
 	ret = meson_gpio_calc_reg_and_bit(dev->parent, offset, REG_IN, &reg,
 					  &bit);
+#endif
 	if (ret)
 		return ret;
 
@@ -133,8 +158,12 @@ int meson_gpio_set(struct udevice *dev, unsigned int offset, int value)
 	unsigned int reg, bit;
 	int ret;
 
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	ret = meson_gpio_calc_reg_and_bit(dev, offset, REG_OUT, &reg, &bit);
+#else
 	ret = meson_gpio_calc_reg_and_bit(dev->parent, offset, REG_OUT, &reg,
 					  &bit);
+#endif
 	if (ret)
 		return ret;
 
@@ -149,8 +178,12 @@ int meson_gpio_get_direction(struct udevice *dev, unsigned int offset)
 	unsigned int reg, bit, val;
 	int ret;
 
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	ret = meson_gpio_calc_reg_and_bit(dev, offset, REG_DIR, &reg, &bit);
+#else
 	ret = meson_gpio_calc_reg_and_bit(dev->parent, offset, REG_DIR, &reg,
 					  &bit);
+#endif
 	if (ret)
 		return ret;
 
@@ -165,8 +198,12 @@ int meson_gpio_direction_input(struct udevice *dev, unsigned int offset)
 	unsigned int reg, bit;
 	int ret;
 
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	ret = meson_gpio_calc_reg_and_bit(dev, offset, REG_DIR, &reg, &bit);
+#else
 	ret = meson_gpio_calc_reg_and_bit(dev->parent, offset, REG_DIR, &reg,
 					  &bit);
+#endif
 	if (ret)
 		return ret;
 
@@ -182,15 +219,23 @@ int meson_gpio_direction_output(struct udevice *dev,
 	unsigned int reg, bit;
 	int ret;
 
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	ret = meson_gpio_calc_reg_and_bit(dev, offset, REG_DIR, &reg, &bit);
+#else
 	ret = meson_gpio_calc_reg_and_bit(dev->parent, offset, REG_DIR, &reg,
 					  &bit);
+#endif
 	if (ret)
 		return ret;
 
 	clrbits_le32(priv->reg_gpio + reg, BIT(bit));
 
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	ret = meson_gpio_calc_reg_and_bit(dev, offset, REG_OUT, &reg, &bit);
+#else
 	ret = meson_gpio_calc_reg_and_bit(dev->parent, offset, REG_OUT, &reg,
 					  &bit);
+#endif
 	if (ret)
 		return ret;
 
@@ -207,7 +252,11 @@ static int meson_pinconf_bias_set(struct udevice *dev, unsigned int pin,
 	unsigned int reg, bit;
 	int ret;
 
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	ret = meson_pinconf_calc_reg_and_bit(dev, offset, REG_PULLEN, &reg, &bit);
+#else
 	ret = meson_gpio_calc_reg_and_bit(dev, offset, REG_PULLEN, &reg, &bit);
+#endif
 	if (ret)
 		return ret;
 
@@ -218,7 +267,11 @@ static int meson_pinconf_bias_set(struct udevice *dev, unsigned int pin,
 
 	/* othewise, enable the bias and select level */
 	clrsetbits_le32(priv->reg_pullen + reg, BIT(bit), BIT(bit));
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	ret = meson_pinconf_calc_reg_and_bit(dev, offset, REG_PULL, &reg, &bit);
+#else
 	ret = meson_gpio_calc_reg_and_bit(dev, offset, REG_PULL, &reg, &bit);
+#endif
 	if (ret)
 		return ret;
 
@@ -243,11 +296,21 @@ static int meson_pinconf_drive_strength_set(struct udevice *dev,
 		return -ENOTSUPP;
 	}
 
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	ret = meson_pinconf_calc_reg_and_bit(dev, offset, REG_DS, &reg, &bit);
+#else
 	ret = meson_gpio_calc_reg_and_bit(dev, offset, REG_DS, &reg, &bit);
+#endif
 	if (ret)
 		return ret;
 
 	bit = bit << 1;
+
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	/* Consider cases with bits greater than 32 */
+	reg += (bit >> 5) << 2;
+	bit &= 0x1f;
+#endif
 
 	if (drive_strength_ua <= 500) {
 		ds_val = MESON_PINCONF_DRV_500UA;
@@ -308,50 +371,25 @@ int meson_pinconf_group_set(struct udevice *dev,
 	return 0;
 }
 
-#if defined(CONFIG_AMLOGIC_MODIFY)
-int meson_gpio_find_offset_by_name(struct udevice *dev,
-				   const char *name, ulong *offset)
-{
-	struct meson_pinctrl *priv = dev_get_priv(dev->parent);
-	int bank_index;
-	int gpio_index;
-	int bank_item;
-	char buffer[20];
-
-	/* Search for every single pin */
-	for (bank_index = 0; bank_index < priv->data->num_banks; bank_index++) {
-		if (!priv->data->banks[bank_index].name)
-			continue;
-
-		gpio_index = priv->data->banks[bank_index].first;
-		bank_item = 0;
-		while (gpio_index <= priv->data->banks[bank_index].last) {
-			if (priv->data->banks[bank_index].name) {
-				snprintf(buffer, 14, "GPIO%s_%d",
-					 priv->data->banks[bank_index].name, bank_item);
-				if (!strncasecmp(buffer, name, sizeof(buffer))) {
-					*offset = gpio_index;
-					return 0;
-				}
-			}
-			gpio_index++;
-			bank_item++;
-		}
-	}
-
-	return -EINVAL;
-}
-#endif
-
 int meson_gpio_probe(struct udevice *dev)
 {
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	struct meson_bank *bank = dev_get_priv(dev);
+	char *name = calloc(1, 16);
+#else
 	struct meson_pinctrl *priv = dev_get_priv(dev->parent);
+#endif
 	struct gpio_dev_priv *uc_priv;
 
 	uc_priv = dev_get_uclass_priv(dev);
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	sprintf(name, "GPIO%s_", bank->name);
+	uc_priv->bank_name = name;
+	uc_priv->gpio_count = bank->last - bank->first + 1;
+#else
 	uc_priv->bank_name = priv->data->name;
 	uc_priv->gpio_count = priv->data->num_pins;
-
+#endif
 	return 0;
 }
 
@@ -382,6 +420,10 @@ int meson_pinctrl_probe(struct udevice *dev)
 	int node, gpio = -1, len;
 	int na, ns;
 	char *name;
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	int index;
+	int ret;
+#endif
 
 	/* FIXME: Should use livetree */
 	na = fdt_address_cells(gd->fdt_blob, dev_of_offset(dev->parent));
@@ -445,6 +487,12 @@ int meson_pinctrl_probe(struct udevice *dev)
 
 	priv->data = (struct meson_pinctrl_data *)dev_get_driver_data(dev);
 
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	/* Additional Configuration */
+	if (priv->data->parse_dt)
+		priv->data->parse_dt(priv);
+#endif
+
 	/* Lookup GPIO driver */
 	drv = lists_uclass_lookup(UCLASS_GPIO);
 	if (!drv) {
@@ -455,9 +503,23 @@ int meson_pinctrl_probe(struct udevice *dev)
 	name = calloc(1, 32);
 	sprintf(name, "meson-gpio");
 
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	/* Search for every single pin */
+	for (index = 0; index < priv->data->num_banks; index++) {
+		if (!priv->data->banks[index].name)
+			continue;
+
+		/* Create child device UCLASS_GPIO and bind it */
+		ret = device_bind(dev, priv->data->gpio_driver, name, NULL,
+					offset_to_ofnode(gpio), &gpio_dev);
+
+		if (ret == 0)
+			dev_set_priv(gpio_dev, &priv->data->banks[index]);
+	}
+#else
 	/* Create child device UCLASS_GPIO and bind it */
 	device_bind(dev, priv->data->gpio_driver, name, NULL,
 		    offset_to_ofnode(gpio), &gpio_dev);
-
+#endif
 	return 0;
 }

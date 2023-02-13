@@ -166,6 +166,10 @@ static int meson_axg_gpio_request(struct udevice *dev,
 				  unsigned int offset, const char *label)
 {
 	struct meson_pinctrl *priv = dev_get_priv(dev->parent);
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	struct meson_bank *bank = dev_get_priv(dev);
+	offset += bank->first;
+#endif
 
 	return meson_axg_pmx_update_function(dev->parent,
 					     offset + priv->data->pin_base, 0);

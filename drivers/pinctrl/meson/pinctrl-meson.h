@@ -8,6 +8,10 @@
 
 #include <linux/types.h>
 
+#if defined(CONFIG_AMLOGIC_MODIFY)
+struct meson_pinctrl;
+#endif
+
 struct meson_pmx_group {
 	const char *name;
 	const unsigned int *pins;
@@ -33,6 +37,9 @@ struct meson_pinctrl_data {
 	unsigned int num_banks;
 	const struct driver *gpio_driver;
 	void *pmx_data;
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	int (*parse_dt)(struct meson_pinctrl *pc);
+#endif
 };
 
 struct meson_pinctrl {

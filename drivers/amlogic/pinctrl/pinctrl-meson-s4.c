@@ -1023,7 +1023,7 @@ static struct meson_pmx_func meson_s4_periphs_functions[] = {
 };
 
 static struct meson_bank meson_s4_periphs_banks[] = {
-	/*      name  first        last    irq  pullen  pull  dir  out  in */
+	/*      name  first       last    pullen  pull  dir  out   in   ds */
 	BANK_DS("B", GPIOB_0,    GPIOB_13,
 		0x63,  0,  0x64,  0,  0x62, 0,  0x61, 0,  0x60, 0, 0x67, 0),
 	BANK_DS("C", GPIOC_0,    GPIOC_7,
@@ -1043,7 +1043,7 @@ static struct meson_bank meson_s4_periphs_banks[] = {
 };
 
 static struct meson_pmx_bank meson_s4_periphs_pmx_banks[] = {
-	/*name	            first	 lask        reg offset*/
+	/*      name         first        lask       reg offset */
 	BANK_PMX("B",      GPIOB_0,     GPIOB_13,    0x00, 0),
 	BANK_PMX("C",      GPIOC_0,     GPIOC_7,     0x9,  0),
 	BANK_PMX("E",      GPIOE_0,     GPIOE_1,     0x12, 0),
@@ -1059,6 +1059,13 @@ static struct meson_axg_pmx_data meson_s4_periphs_pmx_banks_data = {
 	.num_pmx_banks	= ARRAY_SIZE(meson_s4_periphs_pmx_banks),
 };
 
+static int meson_s4_parse_dt_extra(struct meson_pinctrl *pc)
+{
+	pc->reg_ds = pc->reg_gpio;
+
+	return 0;
+}
+
 static struct meson_pinctrl_data meson_s4_periphs_pinctrl_data = {
 	.name		= "periphs-banks",
 	.pin_base	= 0,
@@ -1071,6 +1078,7 @@ static struct meson_pinctrl_data meson_s4_periphs_pinctrl_data = {
 	.num_banks	= ARRAY_SIZE(meson_s4_periphs_banks),
 	.gpio_driver	= &meson_axg_gpio_driver,
 	.pmx_data	= &meson_s4_periphs_pmx_banks_data,
+	.parse_dt	= meson_s4_parse_dt_extra,
 };
 
 static const struct udevice_id meson_s4_pinctrl_match[] = {
