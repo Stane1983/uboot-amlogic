@@ -1,10 +1,5 @@
 if ARCH_MESON
 
-config PINCTRL_MESON
-	select PINCTRL_GENERIC
-	select PINCONF
-	bool
-
 config PINCTRL_MESON_S4
 	bool "Amlogic Meson S4 SoC pinctrl driver"
 	select PINCTRL_MESON_AXG_PMX

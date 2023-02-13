@@ -308,6 +308,41 @@ int meson_pinconf_group_set(struct udevice *dev,
 	return 0;
 }
 
+#if defined(CONFIG_AMLOGIC_MODIFY)
+int meson_gpio_find_offset_by_name(struct udevice *dev,
+				   const char *name, ulong *offset)
+{
+	struct meson_pinctrl *priv = dev_get_priv(dev->parent);
+	int bank_index;
+	int gpio_index;
+	int bank_item;
+	char buffer[20];
+
+	/* Search for every single pin */
+	for (bank_index = 0; bank_index < priv->data->num_banks; bank_index++) {
+		if (!priv->data->banks[bank_index].name)
+			continue;
+
+		gpio_index = priv->data->banks[bank_index].first;
+		bank_item = 0;
+		while (gpio_index <= priv->data->banks[bank_index].last) {
+			if (priv->data->banks[bank_index].name) {
+				snprintf(buffer, 14, "GPIO%s_%d",
+					 priv->data->banks[bank_index].name, bank_item);
+				if (!strncasecmp(buffer, name, sizeof(buffer))) {
+					*offset = gpio_index;
+					return 0;
+				}
+			}
+			gpio_index++;
+			bank_item++;
+		}
+	}
+
+	return -EINVAL;
+}
+#endif
+
 int meson_gpio_probe(struct udevice *dev)
 {
 	struct meson_pinctrl *priv = dev_get_priv(dev->parent);

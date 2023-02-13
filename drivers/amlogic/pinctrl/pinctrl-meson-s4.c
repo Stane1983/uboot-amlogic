@@ -4,11 +4,11 @@
  */
 
 #include <common.h>
-//#include <dm.h>
+#include <dm.h>
 #include <dm/pinctrl.h>
 #include <dt-bindings/amlogic/gpio/meson-s4-gpio.h>
-#include <amlogic/pinctrl-meson.h>
-#include <amlogic/pinctrl-meson-axg-pmx.h>
+
+#include <../../pinctrl/meson/pinctrl-meson-axg.h>
 
 /* BANK E func1 */
 static const unsigned int i2c0_sda_pins[]		= { GPIOE_0 };
@@ -308,95 +308,95 @@ static const unsigned int gen_clk_z9_pins[]		= { GPIOZ_9 };
 static const unsigned int gen_clk_z12_pins[]		= { GPIOZ_12 };
 
 static struct meson_pmx_group meson_s4_periphs_groups[] = {
-	GPIO_GROUP(GPIOE_0),
-	GPIO_GROUP(GPIOE_1),
+	GPIO_GROUP(GPIOE_0, 0),
+	GPIO_GROUP(GPIOE_1, 0),
 
-	GPIO_GROUP(GPIOB_0),
-	GPIO_GROUP(GPIOB_1),
-	GPIO_GROUP(GPIOB_2),
-	GPIO_GROUP(GPIOB_3),
-	GPIO_GROUP(GPIOB_4),
-	GPIO_GROUP(GPIOB_5),
-	GPIO_GROUP(GPIOB_6),
-	GPIO_GROUP(GPIOB_7),
-	GPIO_GROUP(GPIOB_8),
-	GPIO_GROUP(GPIOB_9),
-	GPIO_GROUP(GPIOB_10),
-	GPIO_GROUP(GPIOB_11),
-	GPIO_GROUP(GPIOB_12),
-	GPIO_GROUP(GPIOB_13),
+	GPIO_GROUP(GPIOB_0, 0),
+	GPIO_GROUP(GPIOB_1, 0),
+	GPIO_GROUP(GPIOB_2, 0),
+	GPIO_GROUP(GPIOB_3, 0),
+	GPIO_GROUP(GPIOB_4, 0),
+	GPIO_GROUP(GPIOB_5, 0),
+	GPIO_GROUP(GPIOB_6, 0),
+	GPIO_GROUP(GPIOB_7, 0),
+	GPIO_GROUP(GPIOB_8, 0),
+	GPIO_GROUP(GPIOB_9, 0),
+	GPIO_GROUP(GPIOB_10, 0),
+	GPIO_GROUP(GPIOB_11, 0),
+	GPIO_GROUP(GPIOB_12, 0),
+	GPIO_GROUP(GPIOB_13, 0),
 
-	GPIO_GROUP(GPIOC_0),
-	GPIO_GROUP(GPIOC_1),
-	GPIO_GROUP(GPIOC_2),
-	GPIO_GROUP(GPIOC_3),
-	GPIO_GROUP(GPIOC_4),
-	GPIO_GROUP(GPIOC_5),
-	GPIO_GROUP(GPIOC_6),
-	GPIO_GROUP(GPIOC_7),
+	GPIO_GROUP(GPIOC_0, 0),
+	GPIO_GROUP(GPIOC_1, 0),
+	GPIO_GROUP(GPIOC_2, 0),
+	GPIO_GROUP(GPIOC_3, 0),
+	GPIO_GROUP(GPIOC_4, 0),
+	GPIO_GROUP(GPIOC_5, 0),
+	GPIO_GROUP(GPIOC_6, 0),
+	GPIO_GROUP(GPIOC_7, 0),
 
-	GPIO_GROUP(GPIOD_0),
-	GPIO_GROUP(GPIOD_1),
-	GPIO_GROUP(GPIOD_2),
-	GPIO_GROUP(GPIOD_3),
-	GPIO_GROUP(GPIOD_4),
-	GPIO_GROUP(GPIOD_5),
-	GPIO_GROUP(GPIOD_6),
-	GPIO_GROUP(GPIOD_7),
-	GPIO_GROUP(GPIOD_8),
-	GPIO_GROUP(GPIOD_9),
-	GPIO_GROUP(GPIOD_10),
-	GPIO_GROUP(GPIOD_11),
+	GPIO_GROUP(GPIOD_0, 0),
+	GPIO_GROUP(GPIOD_1, 0),
+	GPIO_GROUP(GPIOD_2, 0),
+	GPIO_GROUP(GPIOD_3, 0),
+	GPIO_GROUP(GPIOD_4, 0),
+	GPIO_GROUP(GPIOD_5, 0),
+	GPIO_GROUP(GPIOD_6, 0),
+	GPIO_GROUP(GPIOD_7, 0),
+	GPIO_GROUP(GPIOD_8, 0),
+	GPIO_GROUP(GPIOD_9, 0),
+	GPIO_GROUP(GPIOD_10, 0),
+	GPIO_GROUP(GPIOD_11, 0),
 
-	GPIO_GROUP(GPIOH_0),
-	GPIO_GROUP(GPIOH_1),
-	GPIO_GROUP(GPIOH_2),
-	GPIO_GROUP(GPIOH_3),
-	GPIO_GROUP(GPIOH_4),
-	GPIO_GROUP(GPIOH_5),
-	GPIO_GROUP(GPIOH_6),
-	GPIO_GROUP(GPIOH_7),
-	GPIO_GROUP(GPIOH_8),
-	GPIO_GROUP(GPIOH_9),
-	GPIO_GROUP(GPIOH_10),
-	GPIO_GROUP(GPIOH_11),
+	GPIO_GROUP(GPIOH_0, 0),
+	GPIO_GROUP(GPIOH_1, 0),
+	GPIO_GROUP(GPIOH_2, 0),
+	GPIO_GROUP(GPIOH_3, 0),
+	GPIO_GROUP(GPIOH_4, 0),
+	GPIO_GROUP(GPIOH_5, 0),
+	GPIO_GROUP(GPIOH_6, 0),
+	GPIO_GROUP(GPIOH_7, 0),
+	GPIO_GROUP(GPIOH_8, 0),
+	GPIO_GROUP(GPIOH_9, 0),
+	GPIO_GROUP(GPIOH_10, 0),
+	GPIO_GROUP(GPIOH_11, 0),
 
-	GPIO_GROUP(GPIOX_0),
-	GPIO_GROUP(GPIOX_1),
-	GPIO_GROUP(GPIOX_2),
-	GPIO_GROUP(GPIOX_3),
-	GPIO_GROUP(GPIOX_4),
-	GPIO_GROUP(GPIOX_5),
-	GPIO_GROUP(GPIOX_6),
-	GPIO_GROUP(GPIOX_7),
-	GPIO_GROUP(GPIOX_8),
-	GPIO_GROUP(GPIOX_9),
-	GPIO_GROUP(GPIOX_10),
-	GPIO_GROUP(GPIOX_11),
-	GPIO_GROUP(GPIOX_12),
-	GPIO_GROUP(GPIOX_13),
-	GPIO_GROUP(GPIOX_14),
-	GPIO_GROUP(GPIOX_15),
-	GPIO_GROUP(GPIOX_16),
-	GPIO_GROUP(GPIOX_17),
-	GPIO_GROUP(GPIOX_18),
-	GPIO_GROUP(GPIOX_19),
+	GPIO_GROUP(GPIOX_0, 0),
+	GPIO_GROUP(GPIOX_1, 0),
+	GPIO_GROUP(GPIOX_2, 0),
+	GPIO_GROUP(GPIOX_3, 0),
+	GPIO_GROUP(GPIOX_4, 0),
+	GPIO_GROUP(GPIOX_5, 0),
+	GPIO_GROUP(GPIOX_6, 0),
+	GPIO_GROUP(GPIOX_7, 0),
+	GPIO_GROUP(GPIOX_8, 0),
+	GPIO_GROUP(GPIOX_9, 0),
+	GPIO_GROUP(GPIOX_10, 0),
+	GPIO_GROUP(GPIOX_11, 0),
+	GPIO_GROUP(GPIOX_12, 0),
+	GPIO_GROUP(GPIOX_13, 0),
+	GPIO_GROUP(GPIOX_14, 0),
+	GPIO_GROUP(GPIOX_15, 0),
+	GPIO_GROUP(GPIOX_16, 0),
+	GPIO_GROUP(GPIOX_17, 0),
+	GPIO_GROUP(GPIOX_18, 0),
+	GPIO_GROUP(GPIOX_19, 0),
 
-	GPIO_GROUP(GPIOZ_0),
-	GPIO_GROUP(GPIOZ_1),
-	GPIO_GROUP(GPIOZ_2),
-	GPIO_GROUP(GPIOZ_3),
-	GPIO_GROUP(GPIOZ_4),
-	GPIO_GROUP(GPIOZ_5),
-	GPIO_GROUP(GPIOZ_6),
-	GPIO_GROUP(GPIOZ_7),
-	GPIO_GROUP(GPIOZ_8),
-	GPIO_GROUP(GPIOZ_9),
-	GPIO_GROUP(GPIOZ_10),
-	GPIO_GROUP(GPIOZ_11),
-	GPIO_GROUP(GPIOZ_12),
+	GPIO_GROUP(GPIOZ_0, 0),
+	GPIO_GROUP(GPIOZ_1, 0),
+	GPIO_GROUP(GPIOZ_2, 0),
+	GPIO_GROUP(GPIOZ_3, 0),
+	GPIO_GROUP(GPIOZ_4, 0),
+	GPIO_GROUP(GPIOZ_5, 0),
+	GPIO_GROUP(GPIOZ_6, 0),
+	GPIO_GROUP(GPIOZ_7, 0),
+	GPIO_GROUP(GPIOZ_8, 0),
+	GPIO_GROUP(GPIOZ_9, 0),
+	GPIO_GROUP(GPIOZ_10, 0),
+	GPIO_GROUP(GPIOZ_11, 0),
+	GPIO_GROUP(GPIOZ_12, 0),
 
-	GPIO_GROUP(GPIO_TEST_N),
+	GPIO_GROUP(GPIO_TEST_N, 0),
 
 	/* BANK E func1 */
 	GROUP(i2c0_sda,			1),
@@ -1023,23 +1023,23 @@ static struct meson_pmx_func meson_s4_periphs_functions[] = {
 };
 
 static struct meson_bank meson_s4_periphs_banks[] = {
-	/* name  first  last  irq  pullen  pull  dir  out  in */
-	BANK("GPIOB_", GPIOB_0,    GPIOB_13,
-		0x63,  0,  0x64,  0,  0x62, 0,  0x61, 0,  0x60, 0),
-	BANK("GPIOC_", GPIOC_0,    GPIOC_7,
-		0x53,  0,  0x54,  0,  0x52, 0,  0x51, 0,  0x50, 0),
-	BANK("GPIOE_", GPIOE_0,    GPIOE_1,
-		0x43,  0,  0x44,  0,  0x42, 0,  0x41, 0,  0x40, 0),
-	BANK("GPIOD_", GPIOD_0,    GPIOD_11,
-		0x33,  0,  0x34,  0,  0x32, 0,  0x31, 0,  0x30, 0),
-	BANK("GPIOH_", GPIOH_0,    GPIOH_11,
-		0x23,  0,  0x24,  0,  0x22, 0,  0x21, 0,  0x20, 0),
-	BANK("GPIOX_", GPIOX_0,    GPIOX_19,
-		0x13,  0,  0x14,  0,  0x12, 0,  0x11, 0,  0x10, 0),
-	BANK("GPIOZ_", GPIOZ_0,    GPIOZ_12,
-		0x03,  0,  0x04,  0,  0x02, 0,  0x01, 0,  0x00, 0),
-	BANK("GPIO_TEST_N_", GPIO_TEST_N,    GPIO_TEST_N,
-		0x83,  0,  0x84,  0,  0x82, 0,  0x81,  0, 0x80, 0)
+	/*      name  first        last    irq  pullen  pull  dir  out  in */
+	BANK_DS("B", GPIOB_0,    GPIOB_13,
+		0x63,  0,  0x64,  0,  0x62, 0,  0x61, 0,  0x60, 0, 0x67, 0),
+	BANK_DS("C", GPIOC_0,    GPIOC_7,
+		0x53,  0,  0x54,  0,  0x52, 0,  0x51, 0,  0x50, 0, 0x57, 0),
+	BANK_DS("E", GPIOE_0,    GPIOE_1,
+		0x43,  0,  0x44,  0,  0x42, 0,  0x41, 0,  0x40, 0, 0x47, 0),
+	BANK_DS("D", GPIOD_0,    GPIOD_11,
+		0x33,  0,  0x34,  0,  0x32, 0,  0x31, 0,  0x30, 0, 0x37, 0),
+	BANK_DS("H", GPIOH_0,    GPIOH_11,
+		0x23,  0,  0x24,  0,  0x22, 0,  0x21, 0,  0x20, 0, 0x27, 0),
+	BANK_DS("X", GPIOX_0,    GPIOX_19,
+		0x13,  0,  0x14,  0,  0x12, 0,  0x11, 0,  0x10, 0, 0x17, 0),
+	BANK_DS("Z", GPIOZ_0,    GPIOZ_12,
+		0x03,  0,  0x04,  0,  0x02, 0,  0x01, 0,  0x00, 0, 0x07, 0),
+	BANK_DS("_TEST_N", GPIO_TEST_N,    GPIO_TEST_N,
+		0x83,  0,  0x84,  0,  0x82, 0,  0x81,  0, 0x80, 0, 0x87, 0),
 };
 
 static struct meson_pmx_bank meson_s4_periphs_pmx_banks[] = {
@@ -1054,30 +1054,14 @@ static struct meson_pmx_bank meson_s4_periphs_pmx_banks[] = {
 	BANK_PMX("TEST_N", GPIO_TEST_N, GPIO_TEST_N, 0xf,  0)
 };
 
-static struct meson_drive_bank meson_s4_periphs_drive_banks[] = {
-	/*  name	    first         lask        reg  offset*/
-	BANK_DRIVE("B",     GPIOB_0,     GPIOB_13,    0x67,  0),
-	BANK_DRIVE("C",     GPIOC_0,     GPIOC_7,     0x57, 0),
-	BANK_DRIVE("E",     GPIOE_0,     GPIOE_1,     0x47, 0),
-	BANK_DRIVE("D",     GPIOD_0,     GPIOD_11,    0x37, 0),
-	BANK_DRIVE("H",     GPIOH_0,     GPIOH_11,    0x27, 0),
-	BANK_DRIVE("X",     GPIOX_0,     GPIOX_19,    0x17, 0),
-	BANK_DRIVE("Z",     GPIOZ_0,     GPIOZ_12,    0x07, 0),
-	BANK_DRIVE("TESTN", GPIO_TEST_N, GPIO_TEST_N, 0x87, 0)
-};
-
 static struct meson_axg_pmx_data meson_s4_periphs_pmx_banks_data = {
 	.pmx_banks	= meson_s4_periphs_pmx_banks,
 	.num_pmx_banks	= ARRAY_SIZE(meson_s4_periphs_pmx_banks),
 };
 
-static struct meson_drive_data meson_s4_periphs_drive_data = {
-	.drive_banks	= meson_s4_periphs_drive_banks,
-	.num_drive_banks = ARRAY_SIZE(meson_s4_periphs_drive_banks),
-};
-
 static struct meson_pinctrl_data meson_s4_periphs_pinctrl_data = {
 	.name		= "periphs-banks",
+	.pin_base	= 0,
 	.groups		= meson_s4_periphs_groups,
 	.funcs		= meson_s4_periphs_functions,
 	.banks		= meson_s4_periphs_banks,
@@ -1085,8 +1069,8 @@ static struct meson_pinctrl_data meson_s4_periphs_pinctrl_data = {
 	.num_groups	= ARRAY_SIZE(meson_s4_periphs_groups),
 	.num_funcs	= ARRAY_SIZE(meson_s4_periphs_functions),
 	.num_banks	= ARRAY_SIZE(meson_s4_periphs_banks),
+	.gpio_driver	= &meson_axg_gpio_driver,
 	.pmx_data	= &meson_s4_periphs_pmx_banks_data,
-	.drv_data	= &meson_s4_periphs_drive_data,
 };
 
 static const struct udevice_id meson_s4_pinctrl_match[] = {

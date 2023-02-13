@@ -27,6 +27,10 @@
 #include <linux/delay.h>
 
 DECLARE_GLOBAL_DATA_PTR;
+#if defined(CONFIG_AMLOGIC_MODIFY)
+extern int meson_gpio_find_offset_by_name(struct udevice *,
+					  const char *, ulong *);
+#endif
 
 /**
  * gpio_desc_init() - Initialize the GPIO descriptor
@@ -103,7 +107,7 @@ static int dm_gpio_lookup_label(const char *name,
 	}
 	return -ENOENT;
 }
-#else
+#elif !defined(CONFIG_AMLOGIC_MODIFY)
 static int
 dm_gpio_lookup_label(const char *name, struct gpio_dev_priv *uc_priv,
 		     ulong *offset)
@@ -123,8 +127,9 @@ int dm_gpio_lookup_name(const char *name, struct gpio_desc *desc)
 	for (uclass_first_device(UCLASS_GPIO, &dev);
 	     dev;
 	     uclass_next_device(&dev)) {
+#if !defined(CONFIG_AMLOGIC_MODIFY)
 		int len;
-
+#endif
 		uc_priv = dev_get_uclass_priv(dev);
 		if (numeric != -1) {
 			offset = numeric - uc_priv->gpio_base;
@@ -133,12 +138,12 @@ int dm_gpio_lookup_name(const char *name, struct gpio_desc *desc)
 				break;
 		}
 
+#if !defined(CONFIG_AMLOGIC_MODIFY)
 		len = uc_priv->bank_name ? strlen(uc_priv->bank_name) : 0;
 
 		if (!strncasecmp(name, uc_priv->bank_name, len)) {
 			if (!strict_strtoul(name + len, 10, &offset))
-				if (offset < uc_priv->gpio_count)
-					break;
+				break;
 		}
 
 		/*
@@ -147,6 +152,10 @@ int dm_gpio_lookup_name(const char *name, struct gpio_desc *desc)
 		 */
 		if (!dm_gpio_lookup_label(name, uc_priv, &offset))
 			break;
+#else
+		if (!meson_gpio_find_offset_by_name(dev, name, &offset))
+			break;
+#endif
 	}
 
 	if (!dev)
