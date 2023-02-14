@@ -158,6 +158,11 @@ config AML_PRODUCT_MODE
 	imply AML_DISABLE_DEV_CMDS
 	help
 		recommend enable when product is ready for producing
+
+config CMD_IR
+        bool "ir"
+        help
+          Support IR in polling mode.
 #prduct mode end<----
 
 endmenu

@@ -5,7 +5,7 @@
 
 #include <dm.h>
 #include <errno.h>
-#include <dt-bindings/input/meson_rc.h>
+#include <dt-bindings/amlogic/input/meson_rc.h>
 #include "ir.h"
 
 struct meson_ir_reg_map {
