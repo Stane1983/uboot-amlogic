@@ -497,6 +497,15 @@ int generic_shutdown_phy(struct phy *phy)
 	return ret;
 }
 
+#ifdef CONFIG_AMLOGIC_USB
+int generic_phy_getinfo(struct phy *phy)
+{
+	struct phy_ops const *ops = phy_dev_ops(phy->dev);
+
+	return ops->getinfo ? ops->getinfo(phy) : 0;
+}
+#endif
+
 UCLASS_DRIVER(phy) = {
 	.id		= UCLASS_PHY,
 	.name		= "phy",

@@ -25,3 +25,8 @@ obj-$(CONFIG_DM_MMC) += mmc/
 obj-$(CONFIG_EFUSE) += efuse/
 
 obj-$(CONFIG_DM_SPI)+= spi/
+
+obj-$(CONFIG_AMLOGIC_USB) += usb/host/
+
+obj-$(CONFIG_AMLOGIC_USB) += usb/phy/
+

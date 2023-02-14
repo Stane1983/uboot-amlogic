@@ -31,4 +31,6 @@ source "drivers/amlogic/pinctrl/Kconfig"
 
 source "drivers/amlogic/spi/Kconfig"
 
+source "drivers/amlogic/usb/Kconfig"
+
 endmenu

@@ -136,6 +136,9 @@ struct phy_ops {
 	* Return: 0 if OK, or a negative error code
 	*/
 	int	(*configure)(struct phy *phy, void *params);
+#ifdef CONFIG_AMLOGIC_USB
+    int (*getinfo)(struct phy *phy);
+#endif
 };
 
 /**
@@ -361,7 +364,9 @@ int generic_setup_phy(struct udevice *dev, struct phy *phy, int index);
  * Return: 0 if OK, or negative error code.
  */
 int generic_shutdown_phy(struct phy *phy);
-
+#ifdef CONFIG_AMLOGIC_USB
+int generic_phy_getinfo(struct phy *phy);
+#endif
 #else /* CONFIG_PHY */
 
 static inline int generic_phy_init(struct phy *phy)

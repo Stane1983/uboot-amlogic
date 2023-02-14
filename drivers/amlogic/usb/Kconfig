@@ -1,0 +1,32 @@
+menu "AMLOGIC USB Drivers"
+
+config AMLOGIC_USB
+	bool "the CONFIG_AMLOGIC_USB is used to mark our own modifications"
+	depends on USB
+	---help---
+	  Say Y here if you want to use Amlogic usb.
+
+if AMLOGIC_USB
+
+config USB_XHCI_CRG
+        bool "Corgine USB3 DRD Core Support"
+		depends on USB_XHCI_HCD
+        help
+          Say Y or if your system has a Dual Role SuperSpeed
+          USB controller based on the Corgine USB3 IP Core.
+
+config AMLOGIC_USB2_PHY
+	bool "amlogic PHY2 support"
+	depends on PHY
+	help
+	  This select a amlogic PHY2 driver.
+
+config AMLOGIC_USB3_PHY
+	bool "amlogic PHY3 support"
+	depends on PHY
+	help
+	  This select a amlogic PHY3 driver.
+
+endif
+
+endmenu
