@@ -332,6 +332,46 @@ static int meson_pinconf_drive_strength_set(struct udevice *dev,
 	return 0;
 }
 
+#if defined(CONFIG_AMLOGIC_MODIFY)
+static int meson_pinconf_input_enable(struct udevice *dev, unsigned int pin,
+				      unsigned int param)
+{
+	struct meson_pinctrl *priv = dev_get_priv(dev);
+	unsigned int offset = pin - priv->data->pin_base;
+	unsigned int reg, bit;
+	int ret;
+
+	debug("pin %u: %s input\n", offset, param ? "enable" : "disable");
+
+	ret = meson_pinconf_calc_reg_and_bit(dev, offset, REG_DIR, &reg, &bit);
+	if (ret)
+		return ret;
+
+	clrsetbits_le32(priv->reg_gpio + reg, 0x1 << bit, param << bit);
+
+	return 0;
+}
+
+static int meson_pinconf_output_set(struct udevice *dev, unsigned int pin,
+				    unsigned int param)
+{
+	struct meson_pinctrl *priv = dev_get_priv(dev);
+	unsigned int offset = pin - priv->data->pin_base;
+	unsigned int reg, bit;
+	int ret;
+
+	debug("pin %u: output %s\n", offset, param ? "high" : "low");
+
+	ret = meson_pinconf_calc_reg_and_bit(dev, offset, REG_OUT, &reg, &bit);
+	if (ret)
+		return ret;
+
+	clrsetbits_le32(priv->reg_gpio + reg, 0x1 << bit, param << bit);
+
+	return meson_pinconf_input_enable(dev, pin, 0);
+}
+#endif
+
 int meson_pinconf_set(struct udevice *dev, unsigned int pin,
 		      unsigned int param, unsigned int arg)
 {
@@ -343,6 +383,14 @@ int meson_pinconf_set(struct udevice *dev, unsigned int pin,
 	case PIN_CONFIG_BIAS_PULL_DOWN:
 		ret = meson_pinconf_bias_set(dev, pin, param);
 		break;
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	case PIN_CONFIG_INPUT_ENABLE:
+		ret = meson_pinconf_input_enable(dev, pin, arg);
+		break;
+	case PIN_CONFIG_OUTPUT:
+		ret = meson_pinconf_output_set(dev, pin, arg);
+		break;
+#endif
 	case PIN_CONFIG_DRIVE_STRENGTH_UA:
 		ret = meson_pinconf_drive_strength_set(dev, pin, arg);
 		break;
