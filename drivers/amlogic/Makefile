@@ -3,6 +3,7 @@
 obj-y += clock/
 obj-y += pinctrl/
 obj-y += i2c/
+obj-y += watchdog/
 
 obj-$(CONFIG_UNIFY_KEY_MANAGE) += keymanage/
 

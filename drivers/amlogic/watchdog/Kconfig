@@ -1,0 +1,6 @@
+config WDT_MESON
+	bool "Amlogic Meson watchdog timer support"
+	depends on WDT
+	help
+	   Select this to enable Amlogic Meson watchdog timer, which can be
+	   found on some Amlogic Meson chips.

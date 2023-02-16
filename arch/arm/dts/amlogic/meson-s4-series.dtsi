@@ -434,8 +434,8 @@
 			#size-cells = <2>;
 			ranges = <0x0 0x0 0x0 0xfe000000 0x0 0x1000000>;
 
-			watchdog@2100 {
-				compatible = "amlogic,meson-gxbb-wdt";
+			watchdog {
+				compatible = "amlogic,meson-sc2-wdt";
 				reg = <0x0 0x2100 0x0 0x10>;
 				clocks = <&xtal>;
 				clock-names = "wdt-clk";
