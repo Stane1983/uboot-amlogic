@@ -69,9 +69,9 @@ int get_usbphy_baseinfo(struct phy *usb_phys)
 				       i, bus->name);
 				return ret;
 			}
-			//ret = generic_phy_getinfo(&usb_phys[i]);
-			//if (ret)
-			//	return ret;
+			ret = generic_phy_getinfo(&usb_phys[i]);
+			if (ret)
+				return ret;
 		}
 	}
 	return 0;

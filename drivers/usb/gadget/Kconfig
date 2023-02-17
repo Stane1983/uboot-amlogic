@@ -51,6 +51,7 @@ config USB_GADGET_VENDOR_NUM
 	hex "Vendor ID of the USB device"
 	default 0x1f3a if ARCH_SUNXI
 	default 0x2207 if ARCH_ROCKCHIP
+	default 0x18d1 if AMLOGIC_USB
 	default 0x0
 	help
 	  Vendor ID of the USB device emulated, reported to the host device.
@@ -66,6 +67,7 @@ config USB_GADGET_PRODUCT_NUM
 	default 0x320a if ROCKCHIP_RK3229 || ROCKCHIP_RK3288
 	default 0x330a if ROCKCHIP_RK3328
 	default 0x330c if ROCKCHIP_RK3399
+	default 0x0d02 if AMLOGIC_USB
 	default 0x0
 	help
 	  Product ID of the USB device emulated, reported to the host device.
@@ -131,7 +133,7 @@ config USB_GADGET_MAX3420
 config USB_GADGET_VBUS_DRAW
 	int "Maximum VBUS Power usage (2-500 mA)"
 	range 2 500
-	default 2
+	default 500
 	help
 	   Some devices need to draw power from USB when they are
 	   configured, perhaps to operate circuitry or to recharge

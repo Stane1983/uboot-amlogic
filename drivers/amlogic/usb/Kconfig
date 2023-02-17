@@ -27,6 +27,17 @@ config AMLOGIC_USB3_PHY
 	help
 	  This select a amlogic PHY3 driver.
 
+if USB_GADGET
+config USB_DEVICE_V2
+	bool
+
+config FASTBOOT_DWC_PCD
+	bool "fastboot usb driver support"
+	select USB_DEVICE_V2
+	select USB_GADGET_DUALSPEED
+
+endif
+
 endif
 
 endmenu

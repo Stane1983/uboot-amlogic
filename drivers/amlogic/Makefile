@@ -31,3 +31,5 @@ obj-$(CONFIG_AMLOGIC_USB) += usb/host/
 
 obj-$(CONFIG_AMLOGIC_USB) += usb/phy/
 
+obj-$(CONFIG_AMLOGIC_USB) += usb/device/
+
