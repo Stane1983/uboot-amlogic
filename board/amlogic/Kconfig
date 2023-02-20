@@ -158,6 +158,11 @@ config AMLOGIC_ETH
         help
                 Support Amlogic to modify for ethernet
 
+config SECURE_POWER_CONTROL
+	bool "Amlogic device MEM_PD control"
+	help
+		Support Amlogic secure power control
+
 choice
 	prompt "BL2E size"
 	default BL2E_64K
