@@ -53,3 +53,4 @@ obj-$(CONFIG_CMD_PMU) += cmd_pmic.o
 obj-$(CONFIG_CMD_RMA) += cmd_rma.o
 obj-$(CONFIG_CMD_CLKMSR)+= cmd_clkmsr.o
 obj-$(CONFIG_CMD_IR) += cmd_irkey.o
+obj-$(CONFIG_AML_VPU) += cmd_vpu.o

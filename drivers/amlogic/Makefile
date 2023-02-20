@@ -5,6 +5,8 @@ obj-y += pinctrl/
 obj-y += i2c/
 obj-y += watchdog/
 
+obj-$(CONFIG_AML_MEDIA) += media/
+
 obj-$(CONFIG_UNIFY_KEY_MANAGE) += keymanage/
 
 obj-$(CONFIG_SECURE_STORAGE) += storagekey/

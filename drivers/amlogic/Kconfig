@@ -5,6 +5,8 @@ config AML_DRIVER
 	help
 	  Enable support for the Amlogic drivers.
 
+source "drivers/amlogic/media/Kconfig"
+
 source "drivers/amlogic/keymanage/Kconfig"
 
 source "drivers/amlogic/storagekey/Kconfig"

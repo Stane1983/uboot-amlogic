@@ -1,0 +1,6 @@
+config AML_VPU
+	bool "AML VPU drivers Support"
+	help
+	  Enable support for the Amlogic VPU drivers.
+
+source "drivers/amlogic/media/common/vpu/Kconfig"
