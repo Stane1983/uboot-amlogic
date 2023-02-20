@@ -121,7 +121,12 @@
 #endif
 #include <net/tcp.h>
 #include <net/wget.h>
-
+#if defined(CONFIG_AMLOGIC_ETH)
+#define ETHLOOP_LEN		256
+static void EthLoopStart(void);
+static void EthLoopHandler (uchar * pkt, unsigned dest, struct in_addr sip, unsigned src, unsigned len);
+u8 EtherPacket[ETHLOOP_LEN];	/* buffer for loopback test frame */
+#endif
 /** BOOTP EXTENTIONS **/
 
 /* Our subnet mask (0=unknown) */
@@ -505,6 +510,11 @@ restart:
 			net_ip.s_addr = 0;
 			dhcp_request();		/* Basically same as BOOTP */
 			break;
+#if defined(CONFIG_AMLOGIC_ETH)
+		case ETHLOOP:
+			EthLoopStart();
+			break;
+#endif
 #endif
 #if defined(CONFIG_CMD_BOOTP)
 		case BOOTP:
@@ -1257,6 +1267,11 @@ void net_process_received_packet(uchar *in_packet, int len)
 	}
 
 	switch (eth_proto) {
+#if defined(CONFIG_AMLOGIC_ETH)
+	case PROT_TEST:
+		EthLoopHandler((uchar *)net_rx_packet, 0, net_ip, 0, net_rx_packet_len);
+		break;
+#endif
 	case PROT_ARP:
 		arp_receive(et, ip, len);
 		break;
@@ -1507,6 +1522,9 @@ common:
 #ifdef CONFIG_PHY_NCSI
 	case NCSI:
 #endif
+#if defined(CONFIG_AMLOGIC_ETH)
+	case ETHLOOP:
+#endif
 	case BOOTP:
 	case CDP:
 	case DHCP:
@@ -1598,7 +1616,48 @@ int net_update_ether(struct ethernet_hdr *et, uchar *addr, uint prot)
 		return E802_HDR_SIZE;
 	}
 }
+#if defined(CONFIG_AMLOGIC_ETH)
+int EthLoopSend(void)
+{
+	int i;
+	uchar *pkt;
 
+	for (i=0 ; i<ETHLOOP_LEN ; i++) {
+		EtherPacket[i] = i;
+	}
+	pkt = (uchar *)EtherPacket;
+	pkt += net_set_ether(pkt, net_ethaddr, PROT_TEST); /* set our MAC address as destination address */
+	(void) eth_send(EtherPacket, ETHLOOP_LEN);
+
+	return 1;	/* waiting */
+}
+
+static void EthLoopTimeout (void)
+{
+	eth_halt();
+	net_set_state(NETLOOP_FAIL);	/* we did not get the reply */
+}
+
+static void EthLoopHandler (uchar * pkt, unsigned dest, struct in_addr sip, unsigned src, unsigned len)
+{
+	int i;
+
+	net_set_state(NETLOOP_SUCCESS);
+	len -= 4;
+	for (i=0 ; i<len ; i++) {
+		if (EtherPacket[i] != pkt[i]) {
+			net_set_state(NETLOOP_FAIL);
+			break;
+		}
+	}
+}
+
+static void EthLoopStart(void)
+{
+	net_set_timeout_handler(10000UL, EthLoopTimeout);
+	EthLoopSend();
+}
+#endif
 void net_set_ip_header(uchar *pkt, struct in_addr dest, struct in_addr source,
 		       u16 pkt_len, u8 proto)
 {
