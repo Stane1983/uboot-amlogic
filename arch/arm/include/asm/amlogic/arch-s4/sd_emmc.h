@@ -18,17 +18,17 @@
 #define MESON_SD_EMMC_CLOCK		0x00
 #define CLK_MAX_DIV   GENMASK(5, 0)
 #define CLK_MAX_SRC   GENMASK(7, 6)
-#define	Cfg_div 	0
-#define Cfg_src		6
-#define Cfg_co_phase	8
-#define	Cfg_tx_phase	10
-#define	Cfg_rx_phase	12
-#define	Cfg_sram_pd		14
-#define	Cfg_tx_delay	16
-#define	Cfg_rx_delay	22
-#define	Cfg_always_on	28
-#define	Cfg_irq_sdio_sleep   29
-#define Cfg_irq_sdio_sleep_ds		30
+#define CFG_DIV		0
+#define CFG_SRC		6
+#define CFG_CO_PHASE	8
+#define	CFG_TX_PHASE	10
+#define	CFG_RX_PHASE	12
+#define	CFG_SRAM_PD		14
+#define	CFG_TX_DELAY	16
+#define	CFG_RX_DELAY	22
+#define	CFG_ALWAYS_ON	28
+#define	CFG_IRQ_SDIO_SLEEP   29
+#define CFG_IRQ_SDIO_SLEEP_DS		30
 
 #define MESON_SD_EMMC_DELAY1	0x4
 #define DLY_D0_MASK	GENMASK(5, 0)
@@ -36,11 +36,11 @@
 #define DLY_D2_MASK	GENMASK(17, 12)
 #define DLY_D3_MASK	GENMASK(23, 18)
 #define DLY_D4_MASK	GENMASK(31, 24)
-#define Dly_d0	0
-#define Dly_d1	6
-#define Dly_d2	12
-#define Dly_d3	18
-#define Dly_d4	24
+#define DLY_D0	0
+#define DLY_D1	6
+#define DLY_D2	12
+#define DLY_D3	18
+#define DLY_D4	24
 
 #define MESON_SD_EMMC_DELAY2	0x8
 #define DLY_D5_MASK	GENMASK(5, 0)
@@ -48,23 +48,23 @@
 #define DLY_D7_MASK	GENMASK(17, 12)
 #define DLY_D8_MASK	GENMASK(23, 18)
 #define DLY_D9_MASK	GENMASK(31, 24)
-#define Dly_d5	0
-#define Dly_d6	6
-#define Dly_d7	12
-#define Dly_d8	18
-#define Dly_d9	24
+#define DLY_d5	0
+#define DLY_d6	6
+#define DLY_d7	12
+#define DLY_d8	18
+#define DLY_d9	24
 
 #define MESON_SD_EMMC_ADJUST	0xC
 #define CALI_SEL_MASK	GENMASK(11, 8)
 #define ADJ_DLY_MASK	GENMASK(21, 16)
-#define Cfg_cali_sel	8
-#define Cfg_cali_en		12
-#define Cfg_adj_en		13
-#define Cfg_cali_rise	14
-#define Cfg_ds_en		15
-#define Cfg_adj_dly		16
-#define Cfg_adj_auto	22
-#define Cfg_adj_init	23
+#define CFG_CALI_SEL	8
+#define CFG_CALI_EN		12
+#define CFG_ADJ_EN		13
+#define CFG_CALI_RISE	14
+#define CFG_DS_EN		15
+#define CFG_ADJ_DLY		16
+#define CFG_ADJ_AUTO	22
+#define CFG_ADJ_INIT	23
 
 #define MESON_SD_EMMC_START		0x40
 #define   CFG_DESC_INIT			BIT(0)

@@ -169,6 +169,12 @@ config SECURE_POWER_CONTROL
 	help
 		Support Amlogic secure power control
 
+config AMLOGIC_EMMC
+	bool "Amlogic emmc/sdcard modify flag"
+	help
+		Support Amlogic to modify for
+		emmc/sdcard
+
 choice
 	prompt "BL2E size"
 	default BL2E_64K
