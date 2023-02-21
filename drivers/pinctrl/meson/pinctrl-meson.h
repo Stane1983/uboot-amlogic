@@ -9,6 +9,7 @@
 #include <linux/types.h>
 
 #if defined(CONFIG_AMLOGIC_MODIFY)
+#include <asm/gpio.h>
 struct meson_pinctrl;
 #endif
 
@@ -164,5 +165,9 @@ int meson_pinconf_set(struct udevice *dev, unsigned int pin,
 int meson_pinconf_group_set(struct udevice *dev,
 			    unsigned int group_selector,
 			    unsigned int param, unsigned int arg);
+#if defined(CONFIG_AMLOGIC_MODIFY)
+int meson_gpio_get_xlate(struct udevice *dev, struct gpio_desc *desc,
+			 struct ofnode_phandle_args *args);
+#endif
 
 #endif /* __PINCTRL_MESON_H__ */

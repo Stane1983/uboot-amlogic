@@ -441,6 +441,61 @@ int meson_gpio_probe(struct udevice *dev)
 	return 0;
 }
 
+#if defined(CONFIG_AMLOGIC_MODIFY)
+static int meson_gpio_reset_gpio_desc(unsigned int offset, struct gpio_desc *desc)
+{
+	struct gpio_dev_priv *uc_priv;
+	struct udevice *dev;
+
+	for (uclass_first_device(UCLASS_GPIO, &dev);
+	     dev;
+	     uclass_next_device(&dev)) {
+		uc_priv = dev_get_uclass_priv(dev);
+		if (offset >= uc_priv->gpio_base &&
+		    offset < uc_priv->gpio_base + uc_priv->gpio_count) {
+			desc->dev = dev;
+			desc->offset = offset - uc_priv->gpio_base;
+			desc->flags = 0;
+			return 0;
+		}
+	}
+
+	/* No such GPIO */
+	return -ENOENT;
+}
+
+int meson_gpio_get_xlate(struct udevice *dev, struct gpio_desc *desc,
+			 struct ofnode_phandle_args *args) {
+	struct gpio_dev_priv *uc_priv;
+	int ret;
+
+	if (args->args_count < 1)
+		return -EINVAL;
+
+	/*
+	 * Since the device_bind() binding used in 'pinctr-meson.c'
+	 * was passed the same ofnode,  the gpio_request_by_name()
+	 * always finds the first device, so we have to reset here.
+	 */
+	ret = meson_gpio_reset_gpio_desc(args->args[0], desc);
+	if (ret)
+		return ret;
+
+	dev = desc->dev;
+	uc_priv = dev_get_uclass_priv(dev);
+
+	if (desc->offset >= uc_priv->gpio_count)
+		return -EINVAL;
+
+	if (args->args_count < 2)
+		return 0;
+
+	desc->flags = gpio_flags_xlate(args->args[1]);
+
+	return 0;
+}
+#endif
+
 static fdt_addr_t parse_address(int offset, const char *name, int na, int ns)
 {
 	int index, len = 0;

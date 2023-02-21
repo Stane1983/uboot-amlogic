@@ -1023,13 +1023,14 @@ static struct meson_pmx_func meson_s4_periphs_functions[] = {
 };
 
 static struct meson_bank meson_s4_periphs_banks[] = {
+	/* NOTE: Make sure that the order is consistent with meson-xx-gpio.h */
 	/*      name  first       last    pullen  pull  dir  out   in   ds */
+	BANK_DS("E", GPIOE_0,    GPIOE_1,
+		0x43,  0,  0x44,  0,  0x42, 0,  0x41, 0,  0x40, 0, 0x47, 0),
 	BANK_DS("B", GPIOB_0,    GPIOB_13,
 		0x63,  0,  0x64,  0,  0x62, 0,  0x61, 0,  0x60, 0, 0x67, 0),
 	BANK_DS("C", GPIOC_0,    GPIOC_7,
 		0x53,  0,  0x54,  0,  0x52, 0,  0x51, 0,  0x50, 0, 0x57, 0),
-	BANK_DS("E", GPIOE_0,    GPIOE_1,
-		0x43,  0,  0x44,  0,  0x42, 0,  0x41, 0,  0x40, 0, 0x47, 0),
 	BANK_DS("D", GPIOD_0,    GPIOD_11,
 		0x33,  0,  0x34,  0,  0x32, 0,  0x31, 0,  0x30, 0, 0x37, 0),
 	BANK_DS("H", GPIOH_0,    GPIOH_11,
@@ -1043,10 +1044,11 @@ static struct meson_bank meson_s4_periphs_banks[] = {
 };
 
 static struct meson_pmx_bank meson_s4_periphs_pmx_banks[] = {
+	/* NOTE: Make sure that the order is consistent with meson-xx-gpio.h */
 	/*      name         first        lask       reg offset */
+	BANK_PMX("E",      GPIOE_0,     GPIOE_1,     0x12, 0),
 	BANK_PMX("B",      GPIOB_0,     GPIOB_13,    0x00, 0),
 	BANK_PMX("C",      GPIOC_0,     GPIOC_7,     0x9,  0),
-	BANK_PMX("E",      GPIOE_0,     GPIOE_1,     0x12, 0),
 	BANK_PMX("D",      GPIOD_0,     GPIOD_11,    0x10, 0),
 	BANK_PMX("H",      GPIOH_0,     GPIOH_11,    0xb,  0),
 	BANK_PMX("X",      GPIOX_0,     GPIOX_19,    0x3,  0),

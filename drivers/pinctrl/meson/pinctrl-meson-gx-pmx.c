@@ -141,6 +141,9 @@ static const struct dm_gpio_ops meson_gx_gpio_ops = {
 	.set_value = meson_gpio_set,
 	.get_value = meson_gpio_get,
 	.get_function = meson_gpio_get_direction,
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	.xlate = meson_gpio_get_xlate,
+#endif
 	.direction_input = meson_gpio_direction_input,
 	.direction_output = meson_gpio_direction_output,
 };
