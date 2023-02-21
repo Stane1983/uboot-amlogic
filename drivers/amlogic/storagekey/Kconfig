@@ -1,2 +1,3 @@
+# function list, maybe not recognize if line1 has config
 config SECURE_STORAGE
     bool "Amlogic bl31 storage key"

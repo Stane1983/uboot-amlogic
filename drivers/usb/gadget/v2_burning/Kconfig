@@ -1,0 +1,28 @@
+#
+# USB burning
+#
+
+menuconfig AML_V2_FACTORY_BURN
+	bool "Amlogic V2 burning Support"
+	---help---
+	  Say Y here if you want to support amlogic factory burning
+
+if AML_V2_FACTORY_BURN
+
+config AML_FACTORY_BURN_LOCAL_UPGRADE
+	bool "AML factory burning support local sdcard and usb disk"
+	---help---
+	  Say Y here if you want to support upgrade from sdcard and usb disk
+
+config SUPPORT_SDC_KEYBURN
+    bool "burn keys in sdc_burn or usb_burn"
+    default y
+    depends on AML_FACTORY_BURN_LOCAL_UPGRADE
+
+config SD_BURNING_SUPPORT_UI
+	depends on CMD_BMP
+	bool "AML factory sdcard and usb disk with UI progress info"
+	---help---
+	  Say Y here if you want to support sdcard and usb disk with UI progress info
+
+endif # AML_V2_FACTORY_BURN

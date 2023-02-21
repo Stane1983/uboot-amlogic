@@ -2,6 +2,7 @@
 /*
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
+#include <asm-generic/u-boot.h>
 
 //is the uboot loaded from usb otg
 int is_tpl_loaded_from_usb(void);
