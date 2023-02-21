@@ -73,12 +73,7 @@ enum lcd_mode_e {
 };
 
 enum lcd_chip_e {
-	LCD_CHIP_G12A = 0,
-	LCD_CHIP_G12B, 	/* 1 */
-	LCD_CHIP_TL1,
-	LCD_CHIP_SM1,
-	LCD_CHIP_TM2,
-	LCD_CHIP_T5,
+	LCD_CHIP_T5 = 0,
 	LCD_CHIP_T5D,
 	LCD_CHIP_T7,
 	LCD_CHIP_T3,
@@ -581,10 +576,10 @@ struct aml_lcd_drv_s {
 	void (*tcon_spi_print)(void);
 	int (*tcon_spi_data_load)(void);
 	unsigned int (*tcon_reg_read)(unsigned int addr, unsigned int flag);
-	void (*tcon_reg_write)(unsigned int addr, unsigned int val,
-			       unsigned int flag);
+	void (*tcon_reg_write)(unsigned int addr, unsigned int val, unsigned int flag);
 	unsigned int (*tcon_table_read)(unsigned int addr);
 	unsigned int (*tcon_table_write)(unsigned int addr, unsigned int val);
+	int (*tcon_mem_tee_protect)(int mem_flag, int protect_en);
 #endif
 	void *debug_info_reg;
 	void *debug_info_if;
@@ -594,7 +589,7 @@ struct aml_lcd_drv_s {
 	struct lcd_power_step_s *factory_lcd_power_on_step;
 };
 
-extern void lcd_config_bsp_init(void);
+void lcd_config_bsp_init(void);
 
 struct aml_lcd_data_s *aml_lcd_get_data(void);
 struct aml_lcd_drv_s *aml_lcd_get_driver(int index);

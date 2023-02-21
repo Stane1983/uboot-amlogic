@@ -1,0 +1,1 @@
+source "drivers/amlogic/media/vout/lcd/Kconfig"
