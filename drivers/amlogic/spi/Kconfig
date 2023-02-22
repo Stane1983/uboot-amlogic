@@ -1,5 +1,10 @@
 if DM_SPI
 
+config AML_SPICC
+        bool "Amlogic SPICC Driver"
+        help
+          Enable support for SPICC on all meson SoCs.
+
 config AML_SPIFC
         bool "Amlogic SPIFC Driver"
         help
