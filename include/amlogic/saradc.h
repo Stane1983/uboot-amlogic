@@ -57,7 +57,7 @@ struct meson_saradc_diff_ops {
 				int ch);
 	int (*get_fifo_channel)(int val);
 	int (*get_fifo_data)(struct meson_saradc *priv,
-			     struct adc_uclass_platdata *uc_pdata, int val);
+			     struct adc_uclass_plat *uc_pdata, int val);
 };
 
 /*
@@ -104,7 +104,7 @@ struct meson_saradc {
 extern const struct adc_ops meson_saradc_ops;
 int meson_saradc_probe(struct udevice *dev);
 int meson_saradc_remove(struct udevice *dev);
-int meson_saradc_ofdata_to_platdata(struct udevice *dev);
+int meson_saradc_of_to_plat(struct udevice *dev);
 
 #define SARADC_CH_SELF_TEST	MESON_SARADC_CH7
 

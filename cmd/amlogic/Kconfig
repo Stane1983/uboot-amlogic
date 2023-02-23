@@ -159,6 +159,11 @@ config AML_PRODUCT_MODE
 	help
 		recommend enable when product is ready for producing
 
+config CMD_SARADC
+	bool "saradc"
+	help
+	  SARADC support.
+
 config CMD_IR
         bool "ir"
         help

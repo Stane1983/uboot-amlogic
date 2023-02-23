@@ -4,6 +4,7 @@ obj-y += clock/
 obj-y += pinctrl/
 obj-y += i2c/
 obj-y += watchdog/
+obj-y += adc/
 
 obj-$(CONFIG_AML_MEDIA) += media/
 

@@ -1,0 +1,23 @@
+config SARADC_AMLOGIC
+	bool
+	imply REGMAP
+
+config SARADC_MESON_G12A
+	bool "Enable Amlogic Meson-G12A SARADC driver"
+	select SARADC_AMLOGIC
+	help
+	  This enables driver for Amlogic Meson-G12A SARADC.
+	  It provides:
+	  - 8 analog input channels
+	  - 1O or 12 bits resolution
+	  - Up to 1MSPS of sample rate
+
+config SARADC_MESON_C2
+	bool "Enable Amlogic Meson-C2 SARADC driver"
+	select SARADC_AMLOGIC
+	help
+	  This enables driver for Amlogic Meson-C2 SARADC.
+	  It provides:
+	  - 8 analog input channels
+	  - 1O or 12 bits resolution
+	  - Up to 1MSPS of sample rate

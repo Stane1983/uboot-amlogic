@@ -37,4 +37,6 @@ source "drivers/amlogic/usb/Kconfig"
 
 source "drivers/amlogic/watchdog/Kconfig"
 
+source "drivers/amlogic/adc/Kconfig"
+
 endmenu

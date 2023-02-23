@@ -413,8 +413,8 @@
 			status = "disabled";
 		};
 
-		saradc: adc@fe026000 {
-			compatible = "amlogic,meson-saradc";
+		saradc: adc {
+			compatible = "amlogic,meson-g12a-saradc";
 			reg = <0x0 0xfe026000 0x0 0x48>;
 			status = "disabled";
 		};
