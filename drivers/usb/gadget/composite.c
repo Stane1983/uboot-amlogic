@@ -1287,9 +1287,11 @@ unknown:
 			break;
 		}
 
-		if (f && f->setup)
+		if (f && f->setup) {
 			value = f->setup(f, ctrl);
-		else {
+			if (IS_ENABLED(CONFIG_AMLOGIC_USB))
+				break;
+		} else {
 			c = cdev->config;
 			if (c->setup)
 				value = c->setup(c, ctrl);
