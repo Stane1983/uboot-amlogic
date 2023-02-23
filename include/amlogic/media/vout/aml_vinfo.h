@@ -36,7 +36,7 @@ struct vinfo_s {
 /* ** BITMAP DISPLAY SUPPORT						*/
 /************************************************************************/
 #if defined(CONFIG_CMD_BMP) || defined(CONFIG_SPLASH_SCREEN)
-# include <amlogic/bmp_layout.h>
+# include <bmp_layout.h>
 # include <asm/byteorder.h>
 #endif
 

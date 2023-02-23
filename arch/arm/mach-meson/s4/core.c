@@ -5,7 +5,9 @@
 
 #include <asm/arch/secure_apb.h>
 #include <asm/types.h>
-#include <asm/arch/cpu.h>
+#ifdef CONFIG_AMLOGIC_MODIFY
+#include <asm/amlogic/arch/cpu.h>
+#endif
 #include <common.h>
 
 const unsigned int core_map[] = {

@@ -61,3 +61,6 @@ obj-$(CONFIG_CMD_CLKMSR)+= cmd_clkmsr.o
 obj-$(CONFIG_CMD_SARADC) += cmd_saradc.o
 obj-$(CONFIG_CMD_IR) += cmd_irkey.o
 obj-$(CONFIG_AML_VPU) += cmd_vpu.o
+obj-$(CONFIG_AML_HDMITX20) += cmd_hdmitx20.o
+obj-$(CONFIG_AML_HDMITX21) += cmd_hdmitx21.o
+obj-$(CONFIG_AML_VOUT) += cmd_vout.o

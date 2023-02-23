@@ -7,9 +7,10 @@ config AML_VOUT
 	bool "Driver support for video output"
 	help
 	  Enable support for amlogic video output
-	  lcd,cvbs...
+	  lcd,cvbs,hdmitx
 
 source "drivers/amlogic/media/common/Kconfig"
 
 source "drivers/amlogic/media/vout/Kconfig"
+
 
