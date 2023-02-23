@@ -66,6 +66,9 @@
 #include <asm-generic/gpio.h>
 #include <efi_loader.h>
 #include <relocate.h>
+#ifdef CONFIG_AML_STORAGE
+#include <amlogic/storage.h>
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -317,6 +320,13 @@ static int initr_binman(void)
 	return ret;
 }
 
+#ifdef CONFIG_AML_STORAGE
+static int initr_storage(void)
+{
+	store_init(0);
+	return 0;
+}
+#else
 #if defined(CONFIG_MTD_NOR_FLASH)
 __weak int is_flash_available(void)
 {
@@ -406,6 +416,7 @@ static int initr_mmc(void)
 	return 0;
 }
 #endif
+#endif //end of CONFIG_AML_STORAGE
 
 #ifdef CONFIG_PVBLOCK
 static int initr_pvblock(void)
@@ -697,6 +708,9 @@ static init_fnc_t init_sequence_r[] = {
 #ifdef CONFIG_EFI_LOADER
 	efi_init_early,
 #endif
+#ifdef CONFIG_AML_STORAGE
+	initr_storage,
+#else
 #ifdef CONFIG_CMD_NAND
 	initr_nand,
 #endif
@@ -706,6 +720,7 @@ static init_fnc_t init_sequence_r[] = {
 #ifdef CONFIG_MMC
 	initr_mmc,
 #endif
+#endif //end of CONFIG_AML_STORAGE
 #ifdef CONFIG_XEN
 	xen_init,
 #endif
