@@ -68,6 +68,7 @@
 #include <relocate.h>
 #ifdef CONFIG_AML_STORAGE
 #include <amlogic/storage.h>
+#include <amlogic/emmc_partitions.h>
 #endif
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -326,6 +327,13 @@ static int initr_storage(void)
 	store_init(0);
 	return 0;
 }
+
+static int initr_partition(void)
+{
+	mmc_partition_init();
+	return 0;
+}
+
 #else
 #if defined(CONFIG_MTD_NOR_FLASH)
 __weak int is_flash_available(void)
@@ -710,6 +718,7 @@ static init_fnc_t init_sequence_r[] = {
 #endif
 #ifdef CONFIG_AML_STORAGE
 	initr_storage,
+	initr_partition,
 #else
 #ifdef CONFIG_CMD_NAND
 	initr_nand,

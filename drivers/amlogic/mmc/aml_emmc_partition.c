@@ -1541,6 +1541,36 @@ _out:
 	return ret;
 }
 
+int mmc_partition_init(void)
+{
+	struct mmc *mmc = find_mmc_device(1);
+	int ret;
+
+	if (!mmc) {
+		printf("emmc is not exist\n");
+		return -1;
+	}
+
+	if (!p_iptbl_ept) {
+		ret = _zalloc_iptbl(&p_iptbl_ept);
+		if (ret)
+			return ret;
+	} else {
+		p_iptbl_ept->count = 0;
+		memset(p_iptbl_ept->partitions, 0,
+		       sizeof(struct partitions) * MAX_PART_COUNT);
+	}
+
+	ret = get_ept_from_gpt(mmc);
+	if (!ret) {
+		part_init(mmc_get_blk_desc(mmc));
+		return ret;
+	}
+
+	printf("gpt is not exist, partition registe failed\n");
+	return ret;
+}
+
 struct partitions *find_mmc_partition_by_name (char const *name)
 {
 	struct partitions *partition = NULL;
