@@ -23,8 +23,8 @@
 extern "C" {
 #endif
 
-#include "avb_crypto.h"
-#include "avb_sysdeps.h"
+#include <amlogic/libavb/avb_crypto.h>
+#include <amlogic/libavb/avb_sysdeps.h>
 
 /* Using the key given by |key|, verify a RSA signature |sig| of
  * length |sig_num_bytes| against an expected |hash| of length
@@ -39,13 +39,13 @@ extern "C" {
  * Returns false if verification fails, true otherwise.
  */
 bool avb_rsa_verify(const uint8_t* key,
-                    size_t key_num_bytes,
-                    const uint8_t* sig,
-                    size_t sig_num_bytes,
-                    const uint8_t* hash,
-                    size_t hash_num_bytes,
-                    const uint8_t* padding,
-                    size_t padding_num_bytes) AVB_ATTR_WARN_UNUSED_RESULT;
+					size_t key_num_bytes,
+					const uint8_t* sig,
+					size_t sig_num_bytes,
+					const uint8_t* hash,
+					size_t hash_num_bytes,
+					const uint8_t* padding,
+					size_t padding_num_bytes) AVB_ATTR_WARN_UNUSED_RESULT;
 
 #ifdef __cplusplus
 }

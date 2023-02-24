@@ -38,8 +38,8 @@ extern "C" {
  * verification will be disabled and descriptors will not be parsed.
  */
 typedef enum {
-  AVB_VBMETA_IMAGE_FLAGS_HASHTREE_DISABLED = (1 << 0),
-  AVB_VBMETA_IMAGE_FLAGS_VERIFICATION_DISABLED = (1 << 1)
+	AVB_VBMETA_IMAGE_FLAGS_HASHTREE_DISABLED = (1 << 0),
+	AVB_VBMETA_IMAGE_FLAGS_VERIFICATION_DISABLED = (1 << 1)
 } AvbVBMetaImageFlags;
 
 /* Binary format for header of the vbmeta image.
@@ -104,75 +104,77 @@ typedef enum {
  * a known good public key.
  */
 typedef struct AvbVBMetaImageHeader {
-  /*   0: Four bytes equal to "AVB0" (AVB_MAGIC). */
-  uint8_t magic[AVB_MAGIC_LEN];
+	/*   0: Four bytes equal to "AVB0" (AVB_MAGIC). */
+	uint8_t magic[AVB_MAGIC_LEN];
 
-  /*   4: The major version of libavb required for this header. */
-  uint32_t required_libavb_version_major;
-  /*   8: The minor version of libavb required for this header. */
-  uint32_t required_libavb_version_minor;
+	/*   4: The major version of libavb required for this header. */
+	uint32_t required_libavb_version_major;
+	/*   8: The minor version of libavb required for this header. */
+	uint32_t required_libavb_version_minor;
 
-  /*  12: The size of the signature block. */
-  uint64_t authentication_data_block_size;
-  /*  20: The size of the auxiliary data block. */
-  uint64_t auxiliary_data_block_size;
+	/*  12: The size of the signature block. */
+	uint64_t authentication_data_block_size;
+	/*  20: The size of the auxiliary data block. */
+	uint64_t auxiliary_data_block_size;
 
-  /*  28: The verification algorithm used, see |AvbAlgorithmType| enum. */
-  uint32_t algorithm_type;
+	/*  28: The verification algorithm used, see |AvbAlgorithmType| enum. */
+	uint32_t algorithm_type;
 
-  /*  32: Offset into the "Authentication data" block of hash data. */
-  uint64_t hash_offset;
-  /*  40: Length of the hash data. */
-  uint64_t hash_size;
+	/*  32: Offset into the "Authentication data" block of hash data. */
+	uint64_t hash_offset;
+	/*  40: Length of the hash data. */
+	uint64_t hash_size;
 
-  /*  48: Offset into the "Authentication data" block of signature data. */
-  uint64_t signature_offset;
-  /*  56: Length of the signature data. */
-  uint64_t signature_size;
+	/*  48: Offset into the "Authentication data" block of signature data. */
+	uint64_t signature_offset;
+	/*  56: Length of the signature data. */
+	uint64_t signature_size;
 
-  /*  64: Offset into the "Auxiliary data" block of public key data. */
-  uint64_t public_key_offset;
-  /*  72: Length of the public key data. */
-  uint64_t public_key_size;
+	/*  64: Offset into the "Auxiliary data" block of public key data. */
+	uint64_t public_key_offset;
+	/*  72: Length of the public key data. */
+	uint64_t public_key_size;
 
-  /*  80: Offset into the "Auxiliary data" block of public key metadata. */
-  uint64_t public_key_metadata_offset;
-  /*  88: Length of the public key metadata. Must be set to zero if there
-   *  is no public key metadata.
-   */
-  uint64_t public_key_metadata_size;
+	/*  80: Offset into the "Auxiliary data" block of public key metadata. */
+	uint64_t public_key_metadata_offset;
+	/*  88: Length of the public key metadata. Must be set to zero if there
+	 *  is no public key metadata.
+	 */
+	uint64_t public_key_metadata_size;
 
-  /*  96: Offset into the "Auxiliary data" block of descriptor data. */
-  uint64_t descriptors_offset;
-  /* 104: Length of descriptor data. */
-  uint64_t descriptors_size;
+	/*  96: Offset into the "Auxiliary data" block of descriptor data. */
+	uint64_t descriptors_offset;
+	/* 104: Length of descriptor data. */
+	uint64_t descriptors_size;
 
-  /* 112: The rollback index which can be used to prevent rollback to
-   *  older versions.
-   */
-  uint64_t rollback_index;
+	/* 112: The rollback index which can be used to prevent rollback to
+	 *  older versions.
+	 */
+	uint64_t rollback_index;
 
-  /* 120: Flags from the AvbVBMetaImageFlags enumeration. This must be
-   * set to zero if the vbmeta image is not a top-level image.
-   */
-  uint32_t flags;
+	/* 120: Flags from the AvbVBMetaImageFlags enumeration. This must be
+	 * set to zero if the vbmeta image is not a top-level image.
+	 */
+	uint32_t flags;
 
-  /* 124: Reserved to ensure |release_string| start on a 16-byte
-   * boundary. Must be set to zeroes.
-   */
-  uint8_t reserved0[4];
+	/* 124: The location of the rollback index defined in this header.
+	 * Only valid for the main vbmeta. For chained partitions, the rollback
+	 * index location must be specified in the AvbChainPartitionDescriptor
+	 * and this value must be set to 0.
+	 */
+	uint32_t rollback_index_location;
 
-  /* 128: The release string from avbtool, e.g. "avbtool 1.0.0" or
-   * "avbtool 1.0.0 xyz_board Git-234abde89". Is guaranteed to be NUL
-   * terminated. Applications must not make assumptions about how this
-   * string is formatted.
-   */
-  uint8_t release_string[AVB_RELEASE_STRING_SIZE];
+	/* 128: The release string from avbtool, e.g. "avbtool 1.0.0" or
+	 * "avbtool 1.0.0 xyz_board Git-234abde89". Is guaranteed to be NUL
+	 * terminated. Applications must not make assumptions about how this
+	 * string is formatted.
+	 */
+	uint8_t release_string[AVB_RELEASE_STRING_SIZE];
 
-  /* 176: Padding to ensure struct is size AVB_VBMETA_IMAGE_HEADER_SIZE
-   * bytes. This must be set to zeroes.
-   */
-  uint8_t reserved[80];
+	/* 176: Padding to ensure struct is size AVB_VBMETA_IMAGE_HEADER_SIZE
+	 * bytes. This must be set to zeroes.
+	 */
+	uint8_t reserved[80];
 } AVB_ATTR_PACKED AvbVBMetaImageHeader;
 
 /* Copies |src| to |dest|, byte-swapping fields in the process.
@@ -181,7 +183,7 @@ typedef struct AvbVBMetaImageHeader {
  * before accessing the data and/or using this function.
  */
 void avb_vbmeta_image_header_to_host_byte_order(const AvbVBMetaImageHeader* src,
-                                                AvbVBMetaImageHeader* dest);
+												AvbVBMetaImageHeader* dest);
 
 /* Return codes used in avb_vbmeta_image_verify().
  *
@@ -211,12 +213,12 @@ void avb_vbmeta_image_header_to_host_byte_order(const AvbVBMetaImageHeader* src,
  * doesn't match the public key stored in the vbmeta image.
  */
 typedef enum {
-  AVB_VBMETA_VERIFY_RESULT_OK,
-  AVB_VBMETA_VERIFY_RESULT_OK_NOT_SIGNED,
-  AVB_VBMETA_VERIFY_RESULT_INVALID_VBMETA_HEADER,
-  AVB_VBMETA_VERIFY_RESULT_UNSUPPORTED_VERSION,
-  AVB_VBMETA_VERIFY_RESULT_HASH_MISMATCH,
-  AVB_VBMETA_VERIFY_RESULT_SIGNATURE_MISMATCH,
+	AVB_VBMETA_VERIFY_RESULT_OK,
+	AVB_VBMETA_VERIFY_RESULT_OK_NOT_SIGNED,
+	AVB_VBMETA_VERIFY_RESULT_INVALID_VBMETA_HEADER,
+	AVB_VBMETA_VERIFY_RESULT_UNSUPPORTED_VERSION,
+	AVB_VBMETA_VERIFY_RESULT_HASH_MISMATCH,
+	AVB_VBMETA_VERIFY_RESULT_SIGNATURE_MISMATCH,
 } AvbVBMetaVerifyResult;
 
 /* Get a textual representation of |result|. */
@@ -263,10 +265,10 @@ const char* avb_vbmeta_verify_result_to_string(AvbVBMetaVerifyResult result);
  * integrity data for a whole set of partitions.
  */
 AvbVBMetaVerifyResult avb_vbmeta_image_verify(
-    const uint8_t* data,
-    size_t length,
-    const uint8_t** out_public_key_data,
-    size_t* out_public_key_length) AVB_ATTR_WARN_UNUSED_RESULT;
+	const uint8_t* data,
+	size_t length,
+	const uint8_t** out_public_key_data,
+	size_t* out_public_key_length) AVB_ATTR_WARN_UNUSED_RESULT;
 
 #ifdef __cplusplus
 }

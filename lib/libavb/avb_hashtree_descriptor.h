@@ -21,9 +21,12 @@ extern "C" {
  * AVB_HASHTREE_DESCRIPTOR_FLAGS_DO_NOT_USE_AB: Do not apply the default A/B
  *   partition logic to this partition. This is intentionally a negative boolean
  *   because A/B should be both the default and most used in practice.
+ * AVB_HASHTREE_DESCRIPTOR_FLAGS_CHECK_AT_MOST_ONCE: supports to validate hashes
+ *   at most once in DM-Verity.
  */
 typedef enum {
-  AVB_HASHTREE_DESCRIPTOR_FLAGS_DO_NOT_USE_AB = (1 << 0),
+	AVB_HASHTREE_DESCRIPTOR_FLAGS_DO_NOT_USE_AB = (1 << 0),
+	AVB_HASHTREE_DESCRIPTOR_FLAGS_CHECK_AT_MOST_ONCE = (1 << 1),
 } AvbHashtreeDescriptorFlags;
 
 /* A descriptor containing information about a dm-verity hashtree.
@@ -45,22 +48,22 @@ typedef enum {
  *   - digest_len may be zero, which indicates the use of a persistent digest
  */
 typedef struct AvbHashtreeDescriptor {
-  AvbDescriptor parent_descriptor;
-  uint32_t dm_verity_version;
-  uint64_t image_size;
-  uint64_t tree_offset;
-  uint64_t tree_size;
-  uint32_t data_block_size;
-  uint32_t hash_block_size;
-  uint32_t fec_num_roots;
-  uint64_t fec_offset;
-  uint64_t fec_size;
-  uint8_t hash_algorithm[32];
-  uint32_t partition_name_len;
-  uint32_t salt_len;
-  uint32_t root_digest_len;
-  uint32_t flags;
-  uint8_t reserved[60];
+	AvbDescriptor parent_descriptor;
+	uint32_t dm_verity_version;
+	uint64_t image_size;
+	uint64_t tree_offset;
+	uint64_t tree_size;
+	uint32_t data_block_size;
+	uint32_t hash_block_size;
+	uint32_t fec_num_roots;
+	uint64_t fec_offset;
+	uint64_t fec_size;
+	uint8_t hash_algorithm[32];
+	uint32_t partition_name_len;
+	uint32_t salt_len;
+	uint32_t root_digest_len;
+	uint32_t flags;
+	uint8_t reserved[60];
 } AVB_ATTR_PACKED AvbHashtreeDescriptor;
 
 /* Copies |src| to |dest| and validates, byte-swapping fields in the
@@ -69,8 +72,8 @@ typedef struct AvbHashtreeDescriptor {
  * Data following the struct is not validated nor copied.
  */
 bool avb_hashtree_descriptor_validate_and_byteswap(
-    const AvbHashtreeDescriptor* src,
-    AvbHashtreeDescriptor* dest) AVB_ATTR_WARN_UNUSED_RESULT;
+		const AvbHashtreeDescriptor* src,
+		AvbHashtreeDescriptor* dest) AVB_ATTR_WARN_UNUSED_RESULT;
 
 #ifdef __cplusplus
 }

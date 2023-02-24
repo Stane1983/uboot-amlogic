@@ -27,8 +27,8 @@ extern "C" {
  * (cf. AVB_VBMETA_IMAGE_FLAGS_HASHTREE_DISABLED).
  */
 typedef enum {
-  AVB_KERNEL_CMDLINE_FLAGS_USE_ONLY_IF_HASHTREE_NOT_DISABLED = (1 << 0),
-  AVB_KERNEL_CMDLINE_FLAGS_USE_ONLY_IF_HASHTREE_DISABLED = (1 << 1)
+	AVB_KERNEL_CMDLINE_FLAGS_USE_ONLY_IF_HASHTREE_NOT_DISABLED = (1 << 0),
+	AVB_KERNEL_CMDLINE_FLAGS_USE_ONLY_IF_HASHTREE_DISABLED = (1 << 1)
 } AvbKernelCmdlineFlags;
 
 /* A descriptor containing information to be appended to the kernel
@@ -41,9 +41,9 @@ typedef enum {
  * kernel command-line (UTF-8 encoded).
  */
 typedef struct AvbKernelCmdlineDescriptor {
-  AvbDescriptor parent_descriptor;
-  uint32_t flags;
-  uint32_t kernel_cmdline_length;
+	AvbDescriptor parent_descriptor;
+	uint32_t flags;
+	uint32_t kernel_cmdline_length;
 } AVB_ATTR_PACKED AvbKernelCmdlineDescriptor;
 
 /* Copies |src| to |dest| and validates, byte-swapping fields in the
@@ -52,8 +52,8 @@ typedef struct AvbKernelCmdlineDescriptor {
  * Data following the struct is not validated nor copied.
  */
 bool avb_kernel_cmdline_descriptor_validate_and_byteswap(
-    const AvbKernelCmdlineDescriptor* src,
-    AvbKernelCmdlineDescriptor* dest) AVB_ATTR_WARN_UNUSED_RESULT;
+		const AvbKernelCmdlineDescriptor* src,
+		AvbKernelCmdlineDescriptor* dest) AVB_ATTR_WARN_UNUSED_RESULT;
 
 #ifdef __cplusplus
 }

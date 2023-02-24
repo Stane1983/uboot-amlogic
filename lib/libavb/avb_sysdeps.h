@@ -42,8 +42,8 @@ extern "C" {
  * first |n| bytes of |src1| is found, respectively, to be less than,
  * to match, or be greater than the first |n| bytes of |src2|. */
 int avb_memcmp(const void* src1,
-               const void* src2,
-               size_t n) AVB_ATTR_WARN_UNUSED_RESULT;
+        const void* src2,
+        size_t n) AVB_ATTR_WARN_UNUSED_RESULT;
 
 /* Compare two strings.
  *
@@ -94,7 +94,7 @@ void* avb_malloc_(size_t size) AVB_ATTR_WARN_UNUSED_RESULT;
 /* Frees memory previously allocated with avb_malloc(). */
 void avb_free(void* ptr);
 
-/* Returns the lenght of |str|, excluding the terminating NUL-byte. */
+/* Returns the length of |str|, excluding the terminating NUL-byte. */
 size_t avb_strlen(const char* str) AVB_ATTR_WARN_UNUSED_RESULT;
 
 /* Divide the |dividend| by 10 and saves back to the pointer. Return the

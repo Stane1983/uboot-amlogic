@@ -24,15 +24,15 @@ extern "C" {
  * representation usable for error/debug output.
  */
 typedef enum {
-  AVB_SLOT_VERIFY_RESULT_OK,
-  AVB_SLOT_VERIFY_RESULT_ERROR_OOM,
-  AVB_SLOT_VERIFY_RESULT_ERROR_IO,
-  AVB_SLOT_VERIFY_RESULT_ERROR_VERIFICATION,
-  AVB_SLOT_VERIFY_RESULT_ERROR_ROLLBACK_INDEX,
-  AVB_SLOT_VERIFY_RESULT_ERROR_PUBLIC_KEY_REJECTED,
-  AVB_SLOT_VERIFY_RESULT_ERROR_INVALID_METADATA,
-  AVB_SLOT_VERIFY_RESULT_ERROR_UNSUPPORTED_VERSION,
-  AVB_SLOT_VERIFY_RESULT_ERROR_INVALID_ARGUMENT
+	AVB_SLOT_VERIFY_RESULT_OK = 0,
+	AVB_SLOT_VERIFY_RESULT_ERROR_OOM,
+	AVB_SLOT_VERIFY_RESULT_ERROR_IO,
+	AVB_SLOT_VERIFY_RESULT_ERROR_VERIFICATION,
+	AVB_SLOT_VERIFY_RESULT_ERROR_ROLLBACK_INDEX,
+	AVB_SLOT_VERIFY_RESULT_ERROR_PUBLIC_KEY_REJECTED,
+	AVB_SLOT_VERIFY_RESULT_ERROR_INVALID_METADATA,
+	AVB_SLOT_VERIFY_RESULT_ERROR_UNSUPPORTED_VERSION,
+	AVB_SLOT_VERIFY_RESULT_ERROR_INVALID_ARGUMENT
 } AvbSlotVerifyResult;
 
 /* Various error handling modes for when verification fails using a
@@ -65,11 +65,12 @@ typedef enum {
  * value used is "avb.managed_verity_mode" and 32 bytes of storage is needed.
  */
 typedef enum {
-  AVB_HASHTREE_ERROR_MODE_RESTART_AND_INVALIDATE,
-  AVB_HASHTREE_ERROR_MODE_RESTART,
-  AVB_HASHTREE_ERROR_MODE_EIO,
-  AVB_HASHTREE_ERROR_MODE_LOGGING,
-  AVB_HASHTREE_ERROR_MODE_MANAGED_RESTART_AND_EIO
+	AVB_HASHTREE_ERROR_MODE_RESTART_AND_INVALIDATE,
+	AVB_HASHTREE_ERROR_MODE_RESTART,
+	AVB_HASHTREE_ERROR_MODE_EIO,
+	AVB_HASHTREE_ERROR_MODE_LOGGING,
+	AVB_HASHTREE_ERROR_MODE_MANAGED_RESTART_AND_EIO,
+	AVB_HASHTREE_ERROR_MODE_PANIC
 } AvbHashtreeErrorMode;
 
 /* Flags that influence how avb_slot_verify() works.
@@ -109,10 +110,10 @@ typedef enum {
  * more information.
  */
 typedef enum {
-  AVB_SLOT_VERIFY_FLAGS_NONE = 0,
-  AVB_SLOT_VERIFY_FLAGS_ALLOW_VERIFICATION_ERROR = (1 << 0),
-  AVB_SLOT_VERIFY_FLAGS_RESTART_CAUSED_BY_HASHTREE_CORRUPTION = (1 << 1),
-  AVB_SLOT_VERIFY_FLAGS_NO_VBMETA_PARTITION = (1 << 2),
+	AVB_SLOT_VERIFY_FLAGS_NONE = 0,
+	AVB_SLOT_VERIFY_FLAGS_ALLOW_VERIFICATION_ERROR = (1 << 0),
+	AVB_SLOT_VERIFY_FLAGS_RESTART_CAUSED_BY_HASHTREE_CORRUPTION = (1 << 1),
+	AVB_SLOT_VERIFY_FLAGS_NO_VBMETA_PARTITION = (1 << 2),
 } AvbSlotVerifyFlags;
 
 /* Get a textual representation of |result|. */
@@ -134,10 +135,11 @@ const char* avb_slot_verify_result_to_string(AvbSlotVerifyResult result);
  * metadata.
  */
 typedef struct {
-  char* partition_name;
-  uint8_t* data;
-  size_t data_size;
-  bool preloaded;
+	char *partition_name;
+	uint8_t *data;
+	size_t data_size;
+	bool preloaded;
+	AvbSlotVerifyResult verify_result;
 } AvbPartitionData;
 
 /* AvbVBMetaData contains a vbmeta struct loaded from a partition when
@@ -154,10 +156,10 @@ typedef struct {
  * avb_vbmeta_image_header_to_host_byte_order() with this data.
  */
 typedef struct {
-  char* partition_name;
-  uint8_t* vbmeta_data;
-  size_t vbmeta_size;
-  AvbVBMetaVerifyResult verify_result;
+	char* partition_name;
+	uint8_t* vbmeta_data;
+	size_t vbmeta_size;
+	AvbVBMetaVerifyResult verify_result;
 } AvbVBMetaData;
 
 /* AvbSlotVerifyData contains data needed to boot a particular slot
@@ -209,44 +211,44 @@ typedef struct {
  * command-line options set (unless verification is disabled, see
  * below):
  *
- *   androidboot.veritymode: This is set to 'disabled' if the
- *   AVB_VBMETA_IMAGE_FLAGS_HASHTREE_DISABLED flag is set in top-level
- *   vbmeta struct. Otherwise it is set to 'enforcing' if the
- *   passed-in hashtree error mode is AVB_HASHTREE_ERROR_MODE_RESTART
- *   or AVB_HASHTREE_ERROR_MODE_RESTART_AND_INVALIDATE, 'eio' if it's
- *   set to AVB_HASHTREE_ERROR_MODE_EIO, and 'logging' if it's set to
- *   AVB_HASHTREE_ERROR_MODE_LOGGING.
+ *     androidboot.veritymode: This is set to 'disabled' if the
+ *     AVB_VBMETA_IMAGE_FLAGS_HASHTREE_DISABLED flag is set in top-level
+ *     vbmeta struct. Otherwise it is set to 'enforcing' if the
+ *     passed-in hashtree error mode is AVB_HASHTREE_ERROR_MODE_RESTART
+ *     or AVB_HASHTREE_ERROR_MODE_RESTART_AND_INVALIDATE, 'eio' if it's
+ *     set to AVB_HASHTREE_ERROR_MODE_EIO, and 'logging' if it's set to
+ *     AVB_HASHTREE_ERROR_MODE_LOGGING.
  *
- *   androidboot.veritymode.managed: This is set to 'yes' only
- *   if hashtree validation isn't disabled and the passed-in hashtree
- *   error mode is AVB_HASHTREE_ERROR_MODE_MANAGED_RESTART_AND_EIO.
+ *     androidboot.veritymode.managed: This is set to 'yes' only
+ *     if hashtree validation isn't disabled and the passed-in hashtree
+ *     error mode is AVB_HASHTREE_ERROR_MODE_MANAGED_RESTART_AND_EIO.
  *
- *   androidboot.vbmeta.invalidate_on_error: This is set to 'yes' only
- *   if hashtree validation isn't disabled and the passed-in hashtree
- *   error mode is AVB_HASHTREE_ERROR_MODE_RESTART_AND_INVALIDATE.
+ *     androidboot.vbmeta.invalidate_on_error: This is set to 'yes' only
+ *     if hashtree validation isn't disabled and the passed-in hashtree
+ *     error mode is AVB_HASHTREE_ERROR_MODE_RESTART_AND_INVALIDATE.
  *
- *   androidboot.vbmeta.device_state: set to "locked" or "unlocked"
- *   depending on the result of the result of AvbOps's
- *   read_is_unlocked() function.
+ *     androidboot.vbmeta.device_state: set to "locked" or "unlocked"
+ *     depending on the result of the result of AvbOps's
+ *     read_is_unlocked() function.
  *
- *   androidboot.vbmeta.{hash_alg, size, digest}: Will be set to
- *   the digest of all images in |vbmeta_images|.
+ *     androidboot.vbmeta.{hash_alg, size, digest}: Will be set to
+ *     the digest of all images in |vbmeta_images|.
  *
- *   androidboot.vbmeta.device: This is set to the value
- *   PARTUUID=$(ANDROID_VBMETA_PARTUUID) before substitution so it
- *   will end up pointing to the vbmeta partition for the verified
- *   slot. If there is no vbmeta partition it will point to the boot
- *   partition of the verified slot. If the flag
- *   AVB_SLOT_VERIFY_FLAGS_NO_VBMETA_PARTITION is used, this is not
- *   set.
+ *     androidboot.vbmeta.device: This is set to the value
+ *     PARTUUID=$(ANDROID_VBMETA_PARTUUID) before substitution so it
+ *     will end up pointing to the vbmeta partition for the verified
+ *     slot. If there is no vbmeta partition it will point to the boot
+ *     partition of the verified slot. If the flag
+ *     AVB_SLOT_VERIFY_FLAGS_NO_VBMETA_PARTITION is used, this is not
+ *     set.
  *
- *   androidboot.vbmeta.avb_version: This is set to the decimal value
- *   of AVB_VERSION_MAJOR followed by a dot followed by the decimal
- *   value of AVB_VERSION_MINOR, for example "1.0" or "1.4". This
- *   version number represents the vbmeta file format version
- *   supported by libavb copy used in the boot loader. This is not
- *   necessarily the same version number of the on-disk metadata for
- *   the slot that was verified.
+ *     androidboot.vbmeta.avb_version: This is set to the decimal value
+ *     of AVB_VERSION_MAJOR followed by a dot followed by the decimal
+ *     value of AVB_VERSION_MINOR, for example "1.0" or "1.4". This
+ *     version number represents the vbmeta file format version
+ *     supported by libavb copy used in the boot loader. This is not
+ *     necessarily the same version number of the on-disk metadata for
+ *     the slot that was verified.
  *
  * Note that androidboot.slot_suffix is not set in the |cmdline| field
  * in |AvbSlotVerifyData| - you will have to set this yourself.
@@ -268,7 +270,7 @@ typedef struct {
  * the value AVB_HASHTREE_ERROR_MODE_MANAGED_RESTART_AND_EIO. If this value was
  * passed in, then the restart/eio state machine is used resulting in
  * |resolved_hashtree_error_mode| being set to either
- * AVB_HASHTREE_ERROR_MODE_RESTART or AVB_HASHTREE_ERROR_MODE_EIO.  If set to
+ * AVB_HASHTREE_ERROR_MODE_RESTART or AVB_HASHTREE_ERROR_MODE_EIO.    If set to
  * AVB_HASHTREE_ERROR_MODE_EIO the boot loader should present a RED warning
  * screen for the user to click through before continuing to boot.
  *
@@ -276,24 +278,26 @@ typedef struct {
  * ABI break.
  */
 typedef struct {
-  char* ab_suffix;
-  AvbVBMetaData* vbmeta_images;
-  size_t num_vbmeta_images;
-  AvbPartitionData* loaded_partitions;
-  size_t num_loaded_partitions;
-  char* cmdline;
-  uint64_t rollback_indexes[AVB_MAX_NUMBER_OF_ROLLBACK_INDEX_LOCATIONS];
-  AvbHashtreeErrorMode resolved_hashtree_error_mode;
+	char* ab_suffix;
+	AvbVBMetaData* vbmeta_images;
+	size_t num_vbmeta_images;
+	AvbPartitionData* loaded_partitions;
+	size_t num_loaded_partitions;
+	char* cmdline;
+	uint64_t rollback_indexes[AVB_MAX_NUMBER_OF_ROLLBACK_INDEX_LOCATIONS];
+	AvbHashtreeErrorMode resolved_hashtree_error_mode;
 } AvbSlotVerifyData;
+
+extern uint8_t boot_key_hash[AVB_SHA256_DIGEST_SIZE];
 
 /* Calculates a digest of all vbmeta images in |data| using
  * the digest indicated by |digest_type|. Stores the result
  * in |out_digest| which must be large enough to hold a digest
  * of the requested type.
  */
-void avb_slot_verify_data_calculate_vbmeta_digest(AvbSlotVerifyData* data,
-                                                  AvbDigestType digest_type,
-                                                  uint8_t* out_digest);
+void avb_slot_verify_data_calculate_vbmeta_digest(const AvbSlotVerifyData *data,
+		AvbDigestType digest_type,
+		uint8_t* out_digest);
 
 /* Frees a |AvbSlotVerifyData| including all data it points to. */
 void avb_slot_verify_data_free(AvbSlotVerifyData* data);
@@ -368,11 +372,11 @@ void avb_slot_verify_data_free(AvbSlotVerifyData* data);
  * AVB_SLOT_VERIFY_FLAGS_ALLOW_VERIFICATION_ERROR.
  */
 AvbSlotVerifyResult avb_slot_verify(AvbOps* ops,
-                                    const char* const* requested_partitions,
-                                    const char* ab_suffix,
-                                    AvbSlotVerifyFlags flags,
-                                    AvbHashtreeErrorMode hashtree_error_mode,
-                                    AvbSlotVerifyData** out_data);
+		const char* const* requested_partitions,
+		const char* ab_suffix,
+		AvbSlotVerifyFlags flags,
+		AvbHashtreeErrorMode hashtree_error_mode,
+		AvbSlotVerifyData** out_data);
 
 #ifdef __cplusplus
 }

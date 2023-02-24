@@ -24,9 +24,9 @@ extern "C" {
  * size a multiple of 8.
  */
 typedef struct AvbPropertyDescriptor {
-  AvbDescriptor parent_descriptor;
-  uint64_t key_num_bytes;
-  uint64_t value_num_bytes;
+	AvbDescriptor parent_descriptor;
+	uint64_t key_num_bytes;
+	uint64_t value_num_bytes;
 } AVB_ATTR_PACKED AvbPropertyDescriptor;
 
 /* Copies |src| to |dest| and validates, byte-swapping fields in the
@@ -35,8 +35,8 @@ typedef struct AvbPropertyDescriptor {
  * Data following the struct is not validated nor copied.
  */
 bool avb_property_descriptor_validate_and_byteswap(
-    const AvbPropertyDescriptor* src,
-    AvbPropertyDescriptor* dest) AVB_ATTR_WARN_UNUSED_RESULT;
+		const AvbPropertyDescriptor* src,
+		AvbPropertyDescriptor* dest) AVB_ATTR_WARN_UNUSED_RESULT;
 
 /* Convenience function for looking up the value for a property with
  * name |key| in a vbmeta image. If |key_size| is 0, |key| must be
@@ -62,24 +62,24 @@ bool avb_property_descriptor_validate_and_byteswap(
  * known good public key.
  */
 const char* avb_property_lookup(const uint8_t* image_data,
-                                size_t image_size,
-                                const char* key,
-                                size_t key_size,
-                                size_t* out_value_size)
-    AVB_ATTR_WARN_UNUSED_RESULT;
+		size_t image_size,
+		const char* key,
+		size_t key_size,
+		size_t* out_value_size)
+	AVB_ATTR_WARN_UNUSED_RESULT;
 
-/* Like avb_property_lookup() but parses the intial portions of the
+/* Like avb_property_lookup() but parses the initial portions of the
  * value as an unsigned 64-bit integer. Both decimal and hexadecimal
  * representations (e.g. "0x2a") are supported. Returns false on
  * failure and true on success. On success, the parsed value is
  * returned in |out_value|.
  */
 bool avb_property_lookup_uint64(const uint8_t* image_data,
-                                size_t image_size,
-                                const char* key,
-                                size_t key_size,
-                                uint64_t* out_value)
-    AVB_ATTR_WARN_UNUSED_RESULT;
+		size_t image_size,
+		const char* key,
+		size_t key_size,
+		uint64_t* out_value)
+	AVB_ATTR_WARN_UNUSED_RESULT;
 
 #ifdef __cplusplus
 }

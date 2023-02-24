@@ -25,11 +25,11 @@ extern "C" {
  * AVB_DESCRIPTOR_TAG_CHAIN_PARTITION: see |AvbChainPartitionDescriptor| struct.
  */
 typedef enum {
-  AVB_DESCRIPTOR_TAG_PROPERTY,
-  AVB_DESCRIPTOR_TAG_HASHTREE,
-  AVB_DESCRIPTOR_TAG_HASH,
-  AVB_DESCRIPTOR_TAG_KERNEL_CMDLINE,
-  AVB_DESCRIPTOR_TAG_CHAIN_PARTITION,
+	AVB_DESCRIPTOR_TAG_PROPERTY,
+	AVB_DESCRIPTOR_TAG_HASHTREE,
+	AVB_DESCRIPTOR_TAG_HASH,
+	AVB_DESCRIPTOR_TAG_KERNEL_CMDLINE,
+	AVB_DESCRIPTOR_TAG_CHAIN_PARTITION,
 } AvbDescriptorTag;
 
 /* The header for a serialized descriptor.
@@ -41,8 +41,8 @@ typedef enum {
  * For padding, |num_bytes_following| is always a multiple of 8.
  */
 typedef struct AvbDescriptor {
-  uint64_t tag;
-  uint64_t num_bytes_following;
+	uint64_t tag;
+	uint64_t num_bytes_following;
 } AVB_ATTR_PACKED AvbDescriptor;
 
 /* Copies |src| to |dest| and validates, byte-swapping fields in the
@@ -51,7 +51,7 @@ typedef struct AvbDescriptor {
  * Data following the struct is not validated nor copied.
  */
 bool avb_descriptor_validate_and_byteswap(
-    const AvbDescriptor* src, AvbDescriptor* dest) AVB_ATTR_WARN_UNUSED_RESULT;
+		const AvbDescriptor* src, AvbDescriptor* dest) AVB_ATTR_WARN_UNUSED_RESULT;
 
 /* Signature for callback function used in avb_descriptor_foreach().
  * The passed in descriptor is given by |descriptor| and the
@@ -63,7 +63,7 @@ bool avb_descriptor_validate_and_byteswap(
  * avb_descriptor_foreach() - all fields need to be byteswapped!
  */
 typedef bool AvbDescriptorForeachFunc(const AvbDescriptor* descriptor,
-                                      void* user_data);
+	void* user_data);
 
 /* Convenience function to iterate over all descriptors in an vbmeta
  * image.
@@ -82,9 +82,9 @@ typedef bool AvbDescriptorForeachFunc(const AvbDescriptor* descriptor,
  * good public key. Additionally, |image_data| must be word-aligned.
  */
 bool avb_descriptor_foreach(const uint8_t* image_data,
-                            size_t image_size,
-                            AvbDescriptorForeachFunc foreach_func,
-                            void* user_data);
+	size_t image_size,
+	AvbDescriptorForeachFunc foreach_func,
+	void* user_data);
 
 /* Gets all descriptors in a vbmeta image.
  *
@@ -101,9 +101,9 @@ bool avb_descriptor_foreach(const uint8_t* image_data,
  * good public key. Additionally, |image_data| must be word-aligned.
  */
 const AvbDescriptor** avb_descriptor_get_all(const uint8_t* image_data,
-                                             size_t image_size,
-                                             size_t* out_num_descriptors)
-    AVB_ATTR_WARN_UNUSED_RESULT;
+		size_t image_size,
+		size_t* out_num_descriptors)
+	AVB_ATTR_WARN_UNUSED_RESULT;
 
 #ifdef __cplusplus
 }

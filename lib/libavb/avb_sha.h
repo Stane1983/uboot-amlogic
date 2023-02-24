@@ -18,8 +18,8 @@
 extern "C" {
 #endif
 
-#include "avb_crypto.h"
-#include "avb_sysdeps.h"
+#include <amlogic/libavb/avb_crypto.h>
+#include <amlogic/libavb/avb_sysdeps.h>
 
 /* Block size in bytes of a SHA-256 digest. */
 #define AVB_SHA256_BLOCK_SIZE 64
@@ -30,20 +30,20 @@ extern "C" {
 
 /* Data structure used for SHA-256. */
 typedef struct {
-  uint32_t h[8];
-  uint64_t tot_len;
-  size_t len;
-  uint8_t block[2 * AVB_SHA256_BLOCK_SIZE];
-  uint8_t buf[AVB_SHA256_DIGEST_SIZE]; /* Used for storing the final digest. */
+	uint32_t h[8];
+	uint64_t tot_len;
+	size_t len;
+	uint8_t block[2 * AVB_SHA256_BLOCK_SIZE];
+	uint8_t buf[AVB_SHA256_DIGEST_SIZE]; /* Used for storing the final digest. */
 } AvbSHA256Ctx;
 
 /* Data structure used for SHA-512. */
 typedef struct {
-  uint64_t h[8];
-  uint64_t tot_len;
-  size_t len;
-  uint8_t block[2 * AVB_SHA512_BLOCK_SIZE];
-  uint8_t buf[AVB_SHA512_DIGEST_SIZE]; /* Used for storing the final digest. */
+	uint64_t h[8];
+	uint64_t tot_len;
+	size_t len;
+	uint8_t block[2 * AVB_SHA512_BLOCK_SIZE];
+	uint8_t buf[AVB_SHA512_DIGEST_SIZE]; /* Used for storing the final digest. */
 } AvbSHA512Ctx;
 
 /* Initializes the SHA-256 context. */

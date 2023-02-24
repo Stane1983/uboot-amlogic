@@ -14,8 +14,8 @@
 #ifndef AVB_CMDLINE_H_
 #define AVB_CMDLINE_H_
 
-#include "avb_ops.h"
-#include "avb_slot_verify.h"
+#include <amlogic/libavb/avb_ops.h>
+#include <amlogic/libavb/avb_slot_verify.h>
 
 /* Maximum allow length (in bytes) of a partition name, including
  * ab_suffix.
@@ -26,9 +26,9 @@
 
 /* Holds information about command-line substitutions. */
 typedef struct AvbCmdlineSubstList {
-  size_t size;
-  char* tokens[AVB_MAX_NUM_CMDLINE_SUBST];
-  char* values[AVB_MAX_NUM_CMDLINE_SUBST];
+	size_t size;
+	char* tokens[AVB_MAX_NUM_CMDLINE_SUBST];
+	char* values[AVB_MAX_NUM_CMDLINE_SUBST];
 } AvbCmdlineSubstList;
 
 /* Substitutes all variables (e.g. $(ANDROID_SYSTEM_PARTUUID)) with
@@ -36,19 +36,19 @@ typedef struct AvbCmdlineSubstList {
  * replaced.
  */
 char* avb_sub_cmdline(AvbOps* ops,
-                      const char* cmdline,
-                      const char* ab_suffix,
-                      bool using_boot_for_vbmeta,
-                      const AvbCmdlineSubstList* additional_substitutions);
+		const char* cmdline,
+		const char* ab_suffix,
+		bool using_boot_for_vbmeta,
+		const AvbCmdlineSubstList* additional_substitutions);
 
 AvbSlotVerifyResult avb_append_options(
-    AvbOps* ops,
-    AvbSlotVerifyFlags flags,
-    AvbSlotVerifyData* slot_data,
-    AvbVBMetaImageHeader* toplevel_vbmeta,
-    AvbAlgorithmType algorithm_type,
-    AvbHashtreeErrorMode hashtree_error_mode,
-    AvbHashtreeErrorMode resolved_hashtree_error_mode);
+	AvbOps* ops,
+	AvbSlotVerifyFlags flags,
+	AvbSlotVerifyData* slot_data,
+	AvbVBMetaImageHeader* toplevel_vbmeta,
+	AvbAlgorithmType algorithm_type,
+	AvbHashtreeErrorMode hashtree_error_mode,
+	AvbHashtreeErrorMode resolved_hashtree_error_mode);
 
 /* Allocates and initializes a new command line substitution list. Free with
  * |avb_free_cmdline_subst_list|.
@@ -65,9 +65,9 @@ void avb_free_cmdline_subst_list(AvbCmdlineSubstList* cmdline_subst);
  * |out_cmdline_subst|. Returns AVB_SLOT_VERIFY_RESULT_OK on success.
  */
 AvbSlotVerifyResult avb_add_root_digest_substitution(
-    const char* part_name,
-    const uint8_t* digest,
-    size_t digest_size,
-    AvbCmdlineSubstList* out_cmdline_subst);
+	const char* part_name,
+	const uint8_t* digest,
+	size_t digest_size,
+	AvbCmdlineSubstList* out_cmdline_subst);
 
 #endif

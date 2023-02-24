@@ -30,11 +30,11 @@ extern "C" {
  * bytes.
  */
 typedef struct AvbChainPartitionDescriptor {
-  AvbDescriptor parent_descriptor;
-  uint32_t rollback_index_location;
-  uint32_t partition_name_len;
-  uint32_t public_key_len;
-  uint8_t reserved[64];
+	AvbDescriptor parent_descriptor;
+	uint32_t rollback_index_location;
+	uint32_t partition_name_len;
+	uint32_t public_key_len;
+	uint8_t reserved[64];
 } AVB_ATTR_PACKED AvbChainPartitionDescriptor;
 
 /* Copies |src| to |dest| and validates, byte-swapping fields in the
@@ -43,8 +43,8 @@ typedef struct AvbChainPartitionDescriptor {
  * Data following the struct is not validated nor copied.
  */
 bool avb_chain_partition_descriptor_validate_and_byteswap(
-    const AvbChainPartitionDescriptor* src,
-    AvbChainPartitionDescriptor* dest) AVB_ATTR_WARN_UNUSED_RESULT;
+	const AvbChainPartitionDescriptor* src,
+	AvbChainPartitionDescriptor* dest) AVB_ATTR_WARN_UNUSED_RESULT;
 
 #ifdef __cplusplus
 }

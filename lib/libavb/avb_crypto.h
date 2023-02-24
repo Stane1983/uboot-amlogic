@@ -36,8 +36,8 @@ extern "C" {
 
 /* Possible digest types supported by libavb routines. */
 typedef enum {
-  AVB_DIGEST_TYPE_SHA256,
-  AVB_DIGEST_TYPE_SHA512,
+	AVB_DIGEST_TYPE_SHA256,
+	AVB_DIGEST_TYPE_SHA512,
 } AvbDigestType;
 
 /* Algorithms that can be used in the vbmeta image for
@@ -83,28 +83,28 @@ typedef enum {
  * a 8192-bit RSA key and |signature_size| set to 1024.
  */
 typedef enum {
-  AVB_ALGORITHM_TYPE_NONE,
-  AVB_ALGORITHM_TYPE_SHA256_RSA2048,
-  AVB_ALGORITHM_TYPE_SHA256_RSA4096,
-  AVB_ALGORITHM_TYPE_SHA256_RSA8192,
-  AVB_ALGORITHM_TYPE_SHA512_RSA2048,
-  AVB_ALGORITHM_TYPE_SHA512_RSA4096,
-  AVB_ALGORITHM_TYPE_SHA512_RSA8192,
-  _AVB_ALGORITHM_NUM_TYPES
+	AVB_ALGORITHM_TYPE_NONE,
+	AVB_ALGORITHM_TYPE_SHA256_RSA2048,
+	AVB_ALGORITHM_TYPE_SHA256_RSA4096,
+	AVB_ALGORITHM_TYPE_SHA256_RSA8192,
+	AVB_ALGORITHM_TYPE_SHA512_RSA2048,
+	AVB_ALGORITHM_TYPE_SHA512_RSA4096,
+	AVB_ALGORITHM_TYPE_SHA512_RSA8192,
+	_AVB_ALGORITHM_NUM_TYPES
 } AvbAlgorithmType;
 
 /* Holds algorithm-specific data. The |padding| is needed by avb_rsa_verify. */
 typedef struct {
-  const uint8_t* padding;
-  size_t padding_len;
-  size_t hash_len;
+	const uint8_t* padding;
+	size_t padding_len;
+	size_t hash_len;
 } AvbAlgorithmData;
 
 /* Provides algorithm-specific data for a given |algorithm|. Returns NULL if
  * |algorithm| is invalid.
  */
 const AvbAlgorithmData* avb_get_algorithm_data(AvbAlgorithmType algorithm)
-    AVB_ATTR_WARN_UNUSED_RESULT;
+		AVB_ATTR_WARN_UNUSED_RESULT;
 
 /* The header for a serialized RSA public key.
  *
@@ -137,16 +137,16 @@ const AvbAlgorithmData* avb_get_algorithm_data(AvbAlgorithmType algorithm)
  * serialized RSA public key.
  */
 typedef struct AvbRSAPublicKeyHeader {
-  uint32_t key_num_bits;
-  uint32_t n0inv;
+	uint32_t key_num_bits;
+	uint32_t n0inv;
 } AVB_ATTR_PACKED AvbRSAPublicKeyHeader;
 
 /* Copies |src| to |dest| and validates, byte-swapping fields in the
  * process if needed. Returns true if valid, false if invalid.
  */
 bool avb_rsa_public_key_header_validate_and_byteswap(
-    const AvbRSAPublicKeyHeader* src,
-    AvbRSAPublicKeyHeader* dest) AVB_ATTR_WARN_UNUSED_RESULT;
+	const AvbRSAPublicKeyHeader* src,
+	AvbRSAPublicKeyHeader* dest) AVB_ATTR_WARN_UNUSED_RESULT;
 
 #ifdef __cplusplus
 }
