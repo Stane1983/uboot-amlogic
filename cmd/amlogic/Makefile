@@ -20,6 +20,14 @@ obj-$(CONFIG_AML_RPMB) += cmd_rpmb.o
 obj-$(CONFIG_CMD_BOOTCTOL_AVB) += cmd_avb.o
 obj-$(CONFIG_CMD_DDR_D2PLL) += cmd_d2pll.o
 
+ifdef CONFIG_BOOTLOADER_CONTROL_BLOCK
+obj-y += cmd_bcb.o
+obj-y += get_bcb_boot_part.o
+obj-y += cmd_dynamic.o
+obj-y += cmd_bootctl_utils.o
+obj-y += cmd_bootctl_vab.o
+endif
+
 obj-$(CONFIG_AML_LCD) += cmd_lcd.o
 ifdef CONFIG_CMD_INI
 obj-y += ini/model.o ini/model_data_check.o ini/ini_proxy.o ini/UnifyKey.o ini/ini_platform.o
