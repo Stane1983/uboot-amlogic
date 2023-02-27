@@ -222,7 +222,7 @@ config PANEL_HX8238D
 	  It can drive a maximum 960x240 dot graphics on a-TFT panel
 	  displays in 16M colors with dithering.
 
-source "drivers/video/fonts/Kconfig"
+#source "drivers/video/fonts/Kconfig"
 
 config VIDCONSOLE_AS_LCD
 	bool "Use 'vidconsole' when CONFIG_VIDCONSOLE_AS_NAME string is seen in stdout"
