@@ -1914,17 +1914,21 @@ endif
 
 menu "Misc commands"
 
-config CMD_BMP
-	bool "Enable 'bmp' command"
-	depends on VIDEO
-	help
-	  This provides a way to obtain information about a BMP-format image
-	  and to display it. BMP (which presumably stands for BitMaP) is a
-	  file format defined by Microsoft which supports images of various
-	  depths, formats and compression methods. Headers on the file
-	  determine the formats used. This command can be used by first loading
-	  the image into RAM, then using this command to look at it or display
-	  it.
+#ifndef CONFIG_AMLOGIC_MODIFY
+
+#config CMD_BMP
+#	bool "Enable 'bmp' command"
+#	depends on VIDEO
+#	help
+#	  This provides a way to obtain information about a BMP-format image
+#	  and to display it. BMP (which presumably stands for BitMaP) is a
+#	  file format defined by Microsoft which supports images of various
+#	  depths, formats and compression methods. Headers on the file
+#	  determine the formats used. This command can be used by first loading
+#	  the image into RAM, then using this command to look at it or display
+#	  it.
+
+#endif
 
 config CMD_BOOTCOUNT
 	bool "bootcount"

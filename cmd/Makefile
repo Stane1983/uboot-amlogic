@@ -29,7 +29,9 @@ obj-$(CONFIG_CMD_BIND) += bind.o
 obj-$(CONFIG_CMD_BINOP) += binop.o
 obj-$(CONFIG_CMD_BLOBLIST) += bloblist.o
 obj-$(CONFIG_CMD_BLOCK_CACHE) += blkcache.o
-obj-$(CONFIG_CMD_BMP) += bmp.o
+#ifndef CONFIG_AMLOGIC_MODIFY
+#obj-$(CONFIG_CMD_BMP) += bmp.o
+#endif
 obj-$(CONFIG_CMD_BOOTCOUNT) += bootcount.o
 obj-$(CONFIG_CMD_BOOTEFI) += bootefi.o
 obj-$(CONFIG_CMD_BOOTMENU) += bootmenu.o

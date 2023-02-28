@@ -108,6 +108,12 @@ config CMD_RMA
 	help
 	  Support rma cmd
 
+config CMD_BMP
+	bool "support bmp command"
+	default n
+	help
+	  Support bmp cmd
+
 config CMD_CLKMSR
 	bool "clkmsr - Show clock measurement for different clock index"
 	default n

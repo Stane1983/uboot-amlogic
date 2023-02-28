@@ -87,9 +87,6 @@ config AML_SECURE_UBOOT
 	help
 		"Support Amlogic SecureBoot function"
 
-config AML_VPU
-	bool "AML VPU drivers Support"
-
 config SECURE_POWER_CONTROL
 	bool "Amlogic device MEM_PD control"
 

@@ -59,5 +59,7 @@ typedef struct bmp_image bmp_image_t;
 #define BMP_BI_RGB	0
 #define BMP_BI_RLE8	1
 #define BMP_BI_RLE4	2
-
+#ifdef CONFIG_AMLOGIC_MODIFY
+#define BI_BITFIELDS	3
+#endif
 #endif							/* _BMP_H_ */
