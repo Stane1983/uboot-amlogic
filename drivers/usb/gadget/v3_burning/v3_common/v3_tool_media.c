@@ -10,6 +10,8 @@
 #include <u-boot/sha256.h>
 #include <amlogic/nocs_seb.h>
 #include <asm/global_data.h>
+#include <amlogic/emmc_partitions.h>
+
 #define DWN_ERR FB_ERR
 #define BOOTLOADER_MAX_SZ   (0x2 << 20)
 #define DTB_MAX_SZ          (256 << 10)
@@ -602,23 +604,21 @@ int v3tool_storage_init(const int eraseFlash, unsigned int dtbImgSz, unsigned in
 		/*store_exit();*/
 	}
 
-	if (dtbImgSz && !gptImgSz) {
-		ret = get_partition_from_dts(dtbLoadedAddr);
-		if (ret)
-			FB_WRN("Failed at check dts\n");
-	} else if (gptImgSz) {
-		if (get_partition_from_dts(gptLoadedAddr))
-			FBS_EXIT(_ACK, "Fail at check gpt\n");
-		else
-			FB_MSG("Parse partition table from GPT\n");
-	}
-
 	if (sheader_need())
 		sheader_load((void *)V3_PAYLOAD_LOAD_ADDR);
 
 	ret = store_init(1);
 	if (ret <= 0)
 		FBS_EXIT(_ACK, "Fail in store init %d, ret %d\n", 1, ret);
+
+	if (gptImgSz) {
+		if (get_partition_from_gpt(gptLoadedAddr))
+			FBS_EXIT(_ACK, "Fail at check gpt\n");
+		else
+			FB_MSG("Parse partition table from GPT\n");
+	}
+
+	mmc_partition_init();
 
 #ifdef CONFIG_BACKUP_PART_NORMAL_ERASE
 	u32 backupPartSz = 0;

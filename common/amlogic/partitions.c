@@ -191,8 +191,38 @@ int parse_gpt(struct blk_desc *dev_desc, void *buf)
 	is_partition_checked = false;
 	return 0;
 }
+
+int get_partition_from_gpt(unsigned char *buffer)
+{
+	int ret = -1;
+	struct blk_desc *dev_desc;
+	struct mmc *mmc;
+
+	if (!buffer)
+		return ret;
+
+	mmc = find_mmc_device(STORAGE_EMMC);
+	if (!mmc)
+		return 1;
+
+	dev_desc = mmc_get_blk_desc(mmc);
+	if (!dev_desc)
+		return ret;
+
+	check_gpt_part(dev_desc, buffer);
+	if (!is_valid_gpt_buf(dev_desc, buffer)) {
+		if (!parse_gpt(dev_desc, buffer)) {
+			gpt_partition = true;
+			mmc_partition_init();
+			return 0;
+		}
+	}
+
+	return ret;
+}
 #endif
 
+/*uboot 2023 abandon this function*/
 int get_partition_from_dts(unsigned char *buffer)
 {
 	char *dt_addr;

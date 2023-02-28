@@ -19,7 +19,7 @@
 #include <part_efi.h>
 #include <amlogic/partition_table.h>
 #include <linux/compat.h>
-
+#include <u-boot/crc.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 /* using mbr*/
@@ -246,14 +246,20 @@ static ulong _mmc_rsv_write(struct mmc *mmc, ulong offset, ulong size, void * bu
 }
 #endif
 
-int fill_ept_by_gpt(struct mmc *mmc, struct _iptbl *p_iptbl_ept)
+int fill_ept_by_gpt(struct mmc *mmc)
 {
 	struct blk_desc *dev_desc = mmc_get_blk_desc(mmc);
 	gpt_entry *gpt_pte = NULL;
 	int i, k;
 	size_t efiname_len, dosname_len;
-	struct _iptbl *ept = p_iptbl_ept;
-	struct partitions *partitions = ept->partitions;
+	struct _iptbl *ept = NULL;
+	struct partitions *partitions = NULL;
+
+	if (!p_iptbl_ept)
+		return 1;
+
+	ept = p_iptbl_ept;
+	partitions = ept->partitions;
 
 	if (!dev_desc) {
 		printf("%s: Invalid Argument(s)\n", __func__);
@@ -327,21 +333,26 @@ int fill_ept_by_gpt(struct mmc *mmc, struct _iptbl *p_iptbl_ept)
  */
 int get_ept_from_gpt(struct mmc *mmc)
 {
-	struct partitions *ptbl = p_iptbl_ept->partitions;
+	struct partitions *ptbl;
 
-	if (!fill_ept_by_gpt(mmc, p_iptbl_ept)) {
-		printf("get ept from gpt success\n");
-		gpt_partition = true;
-		return 0;
-	} else if (part_table && part_table[0].offset != 0) {
+	if (!p_iptbl_ept)
+		return -1;
+
+	ptbl = p_iptbl_ept->partitions;
+
+	if (part_table && part_table[0].offset != 0) {
 		memcpy(ptbl, part_table, sizeof(struct partitions) * parts_total_num);
 		p_iptbl_ept->count = parts_total_num;
 		printf("get ept from part_table success\n");
 		gpt_partition = true;
 		return 0;
+	} else if (!fill_ept_by_gpt(mmc)) {
+		printf("get ept from gpt success\n");
+		gpt_partition = true;
+		return 0;
 	}
 
-	return 1;
+	return -1;
 }
 
 static struct partitions * get_ptbl_from_dtb(struct mmc *mmc)
@@ -1790,4 +1801,104 @@ __weak struct partitions *get_partition_info_by_num(const int num)
 
 _out:
 	return partition;
+}
+
+int check_gpt_part(struct blk_desc *dev_desc, void *buf)
+{
+	gpt_entry *gpt_pte = NULL;
+	gpt_header *gpt_h;
+	gpt_entry *gpt_e;
+	u32 calc_crc32;
+	int i;
+	u32 entries_num;
+#if (ADD_LAST_PARTITION)
+	ulong gap = GPT_GAP;
+#endif
+	u64 offset_old, size_old;
+	u64 offset_new, size_new;
+	int ret = 0;
+	bool alternate_flag = false;
+
+	/* determine start of GPT Header in the buffer */
+	gpt_h = buf + (GPT_PRIMARY_PARTITION_TABLE_LBA *
+			dev_desc->blksz);
+
+	/* determine start of GPT Entries in the buffer */
+	gpt_e = buf + (le64_to_cpu(gpt_h->partition_entry_lba) *
+			dev_desc->blksz);
+	entries_num = le32_to_cpu(gpt_h->num_partition_entries);
+
+	if (le64_to_cpu(gpt_h->alternate_lba) > dev_desc->lba ||
+		le64_to_cpu(gpt_h->alternate_lba) == 0) {
+		printf("GPT: alternate_lba: %llX, " LBAF ", reset it\n",
+		       le64_to_cpu(gpt_h->alternate_lba), dev_desc->lba);
+		gpt_h->alternate_lba = cpu_to_le64(dev_desc->lba - 1);
+		alternate_flag = true;
+	}
+
+	if (le64_to_cpu(gpt_h->last_usable_lba) > dev_desc->lba) {
+		printf("GPT: last_usable_lba incorrect: %llX > " LBAF ", reset it\n",
+		       le64_to_cpu(gpt_h->last_usable_lba), dev_desc->lba);
+		if (alternate_flag)
+			gpt_h->last_usable_lba = cpu_to_le64(dev_desc->lba - 34);
+		else
+			gpt_h->last_usable_lba = cpu_to_le64(dev_desc->lba - 1);
+	}
+
+	for (i = 0; i < entries_num; i++) {
+#if (ADD_LAST_PARTITION)
+		if (i == entries_num - 1) {
+			gpt_e[i - 1].ending_lba -= gpt_e[i].ending_lba + le64_to_cpu(gap) + 1;
+			gpt_e[i].starting_lba = gpt_e[i - 1].ending_lba + le64_to_cpu(gap) + 1;
+			gpt_e[i].ending_lba = gpt_h->last_usable_lba;
+		}
+
+#endif
+		if (le64_to_cpu(gpt_e[i].ending_lba) > gpt_h->last_usable_lba) {
+			printf("gpt_e[%d].ending_lba: %llX > %llX, reset it\n",
+			i, le64_to_cpu(gpt_e[i].ending_lba), le64_to_cpu(gpt_h->last_usable_lba));
+			if (alternate_flag)
+				gpt_e[i].ending_lba = ((gpt_h->last_usable_lba >> 12) << 12) - 1;
+			else
+				gpt_e[i].ending_lba = gpt_h->last_usable_lba;
+			printf("gpt_e[%d].ending_lba: %llX\n", i, gpt_e[i].ending_lba);
+		}
+	}
+
+	calc_crc32 = crc32(0, (const unsigned char *)gpt_e,
+			entries_num * le32_to_cpu(gpt_h->sizeof_partition_entry));
+	gpt_h->partition_entry_array_crc32 = calc_crc32;
+	gpt_h->header_crc32 = 0;
+	calc_crc32 = crc32(0, (const unsigned char *)gpt_h,
+	le32_to_cpu(gpt_h->header_size));
+	gpt_h->header_crc32 = calc_crc32;
+
+	for (i = 0; i < le32_to_cpu(gpt_h->num_partition_entries); i++) {
+		if (!is_pte_valid(&gpt_pte[i]))
+			break;
+
+		offset_old = le64_to_cpu(gpt_pte[i].starting_lba << 9ULL);
+		size_old = ((le64_to_cpu(gpt_pte[i].ending_lba) + 1) -
+			le64_to_cpu(gpt_pte[i].starting_lba)) << 9ULL;
+
+		offset_new = le64_to_cpu(gpt_e[i].starting_lba << 9ULL);
+		size_new = ((le64_to_cpu(gpt_e[i].ending_lba) + 1) -
+			le64_to_cpu(gpt_e[i].starting_lba)) << 9ULL;
+
+		if (offset_old != offset_new || size_old != size_new) {
+			printf("old %02d %10ls %016llx %016llx\n",
+				i, gpt_pte[i].partition_name,
+				offset_old, size_old);
+			printf("new %02d %10ls %016llx %016llx\n",
+				i, gpt_e[i].partition_name,
+				offset_new, size_new);
+			ret = 1;
+			printf("partition changes, erase\n");
+			goto _out;
+		}
+	}
+
+_out:
+	free(gpt_pte);
+	return ret;
 }

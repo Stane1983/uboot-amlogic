@@ -25,7 +25,6 @@
 
 #define GXB_START_BLK   0
 #define GXL_START_BLK   1
-#define STORAGE_EMMC 1
 /* max 2MB for emmc in blks */
 #define UBOOT_SIZE  (0x1000)
 #define BLOCK_SIZE 512
@@ -220,8 +219,8 @@ static int storage_byte_erase(struct mmc *mmc,loff_t off, size_t  size) {
 	pr_debug("blk:%lld   cnt:%lld\n", blk, cnt);
 	if (cnt)
 		n = blk_derase(mmc_get_blk_desc(mmc), blk, cnt);
-	printf("%lld blocks erased: %s\n", cnt, (n == 0) ? "OK" : "ERROR");
-	return (n == 0) ? 0 : 1;
+	printf("%lld blocks erased: %s\n", cnt, (n == cnt) ? "OK" : "ERROR");
+	return (n == cnt) ? 0 : 1;
 }
 
 static int storage_erase_in_part(char const *part_name, loff_t off, size_t size)
@@ -305,6 +304,8 @@ static int storage_mmc_erase_user(struct mmc *mmc) {
 			ret = blk_derase(mmc_get_blk_desc(mmc),
 					part_info->offset / BLOCK_SIZE,
 					part_info->size / BLOCK_SIZE);
+			if (ret == part_info->size / BLOCK_SIZE)
+				ret = 0;
 			printf("Erased: %s %s\n",
 					part_info->name,
 					(ret == 0)? "OK" : "ERR");
@@ -326,12 +327,12 @@ static int storage_mmc_erase(int flag, struct mmc *mmc) {
 			return -1;
 		}
 
-		ret = blk_select_hwpart_devnum(IF_TYPE_MMC, STORAGE_EMMC, BOOT0_PARTITION);
+		ret = blk_select_hwpart_devnum(UCLASS_MMC, STORAGE_EMMC, BOOT0_PARTITION);
 		if (ret) goto R_SWITCH_BACK;
 		ret = storage_erase_in_part("bootloader", off, size);
 		printf("boot0 partition erased: %s\n", (ret == 0) ? "OK" : "ERROR");
 
-		ret = blk_select_hwpart_devnum(IF_TYPE_MMC, STORAGE_EMMC, BOOT1_PARTITION);
+		ret = blk_select_hwpart_devnum(UCLASS_MMC, STORAGE_EMMC, BOOT1_PARTITION);
 
 		if (ret) goto R_SWITCH_BACK;
 #ifdef CONFIG_EMMC_BOOT1_TOUCH_REGION
@@ -340,7 +341,7 @@ static int storage_mmc_erase(int flag, struct mmc *mmc) {
 		ret = storage_erase_in_part("bootloader", off, size);
 		printf("boot1 partition erased: %s\n", (ret == 0) ? "OK" : "ERROR");
 R_SWITCH_BACK:
-		ret = blk_select_hwpart_devnum(IF_TYPE_MMC, STORAGE_EMMC, USER_PARTITION);
+		ret = blk_select_hwpart_devnum(UCLASS_MMC, STORAGE_EMMC, USER_PARTITION);
 
 	} else if (flag == ERASE_RESERVED) {//erase reserved
 
@@ -583,7 +584,7 @@ int mmc_boot_read(const char *part_name, uint8_t cpy, size_t size, void *dest) {
 		cpy = 7;
 	for (i=0;i<3;i++) {//cpy:
 		if (cpy & 1) {
-			ret = blk_select_hwpart_devnum(IF_TYPE_MMC, STORAGE_EMMC, i);
+			ret = blk_select_hwpart_devnum(UCLASS_MMC, STORAGE_EMMC, i);
 			if (ret) goto R_SWITCH_BACK;
 
 			if (mmc != NULL && i == 0 && aml_gpt_valid(mmc) == 0)
@@ -601,7 +602,7 @@ int mmc_boot_read(const char *part_name, uint8_t cpy, size_t size, void *dest) {
 
 
 R_SWITCH_BACK:
-	ret = blk_select_hwpart_devnum(IF_TYPE_MMC, STORAGE_EMMC, USER_PARTITION);
+	ret = blk_select_hwpart_devnum(UCLASS_MMC, STORAGE_EMMC, USER_PARTITION);
 	if (ret != 0) {
 		printf("switch part  failed \n");
 		return -1;
@@ -631,7 +632,7 @@ int mmc_boot_write(const char *part_name, uint8_t cpy, size_t size, void *source
 	for (i=0;i<3;i++) {//cpy:bin 100 is oprate boot1,bin 010 is oprate boot0,bin 001 is oprate user bootloader.bin 111 is operate all boot.
 
 		if (cpy & 1) {
-			ret = blk_select_hwpart_devnum(IF_TYPE_MMC, STORAGE_EMMC, i);
+			ret = blk_select_hwpart_devnum(UCLASS_MMC, STORAGE_EMMC, i);
 			if (ret) goto W_SWITCH_BACK;
 #ifdef CONFIG_EMMC_BOOT1_TOUCH_REGION
 			if (i == 2) {
@@ -656,7 +657,7 @@ int mmc_boot_write(const char *part_name, uint8_t cpy, size_t size, void *source
 
 
 W_SWITCH_BACK:
-	ret = blk_select_hwpart_devnum(IF_TYPE_MMC, STORAGE_EMMC, USER_PARTITION);
+	ret = blk_select_hwpart_devnum(UCLASS_MMC, STORAGE_EMMC, USER_PARTITION);
 	if (ret != 0) {
 		printf("switch part failed \n");
 		return -1;
@@ -686,7 +687,7 @@ int mmc_boot_erase(const char *part_name, uint8_t cpy) {
 	for (i=0;i<3;i++) {//cpy:
 
 		if (cpy & 1) {
-			ret = blk_select_hwpart_devnum(IF_TYPE_MMC, STORAGE_EMMC, i);
+			ret = blk_select_hwpart_devnum(UCLASS_MMC, STORAGE_EMMC, i);
 			if (ret) goto E_SWITCH_BACK;
 #ifdef CONFIG_EMMC_BOOT1_TOUCH_REGION
 			if (i == 2) {
@@ -709,7 +710,7 @@ int mmc_boot_erase(const char *part_name, uint8_t cpy) {
 
 
 E_SWITCH_BACK:
-	ret = blk_select_hwpart_devnum(IF_TYPE_MMC, STORAGE_EMMC, USER_PARTITION);
+	ret = blk_select_hwpart_devnum(UCLASS_MMC, STORAGE_EMMC, USER_PARTITION);
 	if (ret != 0) {
 		printf("switch part faild \n");
 		return -1;
@@ -754,13 +755,9 @@ int mmc_gpt_write(void *source)
 		return 1;
 
 	dev_desc = mmc_get_blk_desc(mmc);
-	if (is_valid_gpt_buf(dev_desc, (u_char *)source)) {
-		printf("%s: invalid GPT - refusing to write to flash\n", __func__);
-		return -1;
-	}
-
+	check_gpt_part(dev_desc, source);
 	if (write_mbr_and_gpt_partitions(dev_desc, (u_char *)source)) {
-		printf("%s: writing GPT partitions failed\n", __func__);
+		printf("%s: ~writing GPT partitions failed\n", __func__);
 		return -1;
 	}
 
@@ -1050,6 +1047,8 @@ int emmc_probe(uint32_t init_flag)
 		goto exit_error;
 	}
 	printf("emmc probe success\n");
+
+	mmc_partition_init();
 
 exit_error:
 	return ret;

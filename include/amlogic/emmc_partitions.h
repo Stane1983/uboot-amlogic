@@ -178,6 +178,8 @@ struct aml_pattern {
 
 #define DOS_PARTITION_COUNT 32
 
+#define STORAGE_EMMC 1
+
 typedef struct dos_partition {
 	unsigned char boot_ind;		/* 0x80 - active			*/
 	unsigned char head;		/* starting head			*/
@@ -286,6 +288,8 @@ bool aml_is_emmc_tsd (struct mmc *mmc);
 int mmc_device_init (struct mmc *mmc);
 int get_ept_from_gpt(struct mmc *mmc);
 int mmc_partition_init(void);
+int check_gpt_part(struct blk_desc *dev_desc, void *buf);
+int get_partition_from_gpt(unsigned char *buffer);
 
 #define PARTITION_ELEMENT(na, sz, flags) {.name = na, .size = sz, .mask_flags = flags,}
 
