@@ -2020,6 +2020,32 @@ endef
 $(version_h): include/config/uboot.release include/config/acs.release FORCE
 	$(call filechk,version.h)
 
+ifeq ("$(AVBMODE)", "avb2")
+	echo "#define CONFIG_AVB2" \"$(AVBMODE)\" >> $(version_h)
+	echo "#define CONFIG_SKIP_KERNEL_DTB_SECBOOT_CHECK" \"1\" >> $(version_h)
+endif
+ifeq ("$(BOOTCTRLMODE)", "1")
+	echo "#define CONFIG_CMD_BOOTCTOL_VAB" \"$(BOOTCTRLMODE)\" >> $(version_h)
+endif
+ifeq ("$(FASTBOOTMODE)", "1")
+	echo "#define CONFIG_FASTBOOT_WRITING_CMD" \"$(FASTBOOTMODE)\" >> $(version_h)
+endif
+ifeq ("$(AVB2RECOVERY)", "1")
+	echo "#define CONFIG_AVB2_RECOVERY" \"$(AVB2RECOVERY)\" >> $(version_h)
+endif
+
+ifeq ("$(CHIPMODE)", "1")
+	echo "#define CONFIG_CHIP_NOCS" $(CHIPMODE) >> $(version_h)
+endif
+
+ifeq ("$(CONFIG_MDUMP_COMPRESS)", "1")
+	echo "#define CONFIG_MDUMP_COMPRESS" $(CONFIG_MDUMP_COMPRESS) >> $(version_h)
+endif
+
+ifeq ("$(CONFIG_SUPPORT_BL33Z)", "1")
+	echo "#define CONFIG_SUPPORT_BL33Z" $(CONFIG_SUPPORT_BL33Z) >> $(version_h)
+endif
+
 $(timestamp_h): $(srctree)/Makefile FORCE
 	$(call filechk,timestamp.h)
 

@@ -15,7 +15,6 @@
 #endif//#ifdef CONFIG_DTB_BIND_KERNEL	//load dtb from kernel, such as boot partition
 
 /* args/envs */
-//#define CONFIG_SYS_MAXARGS  64
 #define CONFIG_EXTRA_ENV_SETTINGS_BASE \
 	"firstboot=1\0"\
 	"upgrade_step=0\0"\
@@ -222,7 +221,7 @@
 			"setenv reboot_mode_android ""normal"";"\
 			"run storeargs;"\
 			"hdmitx hpd;hdmitx get_preferred_mode;hdmitx get_parse_edid;"\
-			"dv process;watermark_init;osd open;osd clear;run load_bmp_logo;"\
+			"dovi process;watermark_init;osd open;osd clear;run load_bmp_logo;"\
 			"bmp scale;vout output ${outputmode};dovi set;dovi pkg;vpp hdrpkt;"\
 		"fi;fi;"\
 		"\0"\

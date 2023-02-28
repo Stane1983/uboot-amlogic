@@ -43,6 +43,8 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#ifdef	CONFIG_AMLOGIC_MODIFY
+
 #if	defined(CONFIG_ENV_IS_IN_EEPROM)	|| \
 	defined(CONFIG_ENV_IS_IN_FLASH)		|| \
 	defined(CONFIG_ENV_IS_IN_MMC)		|| \
@@ -54,9 +56,31 @@ DECLARE_GLOBAL_DATA_PTR;
 	defined(CONFIG_ENV_IS_IN_SATA)		|| \
 	defined(CONFIG_ENV_IS_IN_SPI_FLASH)	|| \
 	defined(CONFIG_ENV_IS_IN_REMOTE)	|| \
+	defined(CONFIG_ENV_IS_IN_UBI)		|| \
+	defined(CONFIG_ENV_IS_IN_STORAGE)
+
+#define ENV_IS_IN_DEVICE
+
+#endif
+
+#else
+
+#if	defined(CONFIG_ENV_IS_IN_EEPROM)        || \
+	defined(CONFIG_ENV_IS_IN_FLASH)         || \
+	defined(CONFIG_ENV_IS_IN_MMC)           || \
+	defined(CONFIG_ENV_IS_IN_FAT)           || \
+	defined(CONFIG_ENV_IS_IN_EXT4)          || \
+	defined(CONFIG_ENV_IS_IN_NAND)          || \
+	defined(CONFIG_ENV_IS_IN_NVRAM)         || \
+	defined(CONFIG_ENV_IS_IN_ONENAND)       || \
+	defined(CONFIG_ENV_IS_IN_SATA)          || \
+	defined(CONFIG_ENV_IS_IN_SPI_FLASH)     || \
+	defined(CONFIG_ENV_IS_IN_REMOTE)        || \
 	defined(CONFIG_ENV_IS_IN_UBI)
 
 #define ENV_IS_IN_DEVICE
+
+#endif
 
 #endif
 

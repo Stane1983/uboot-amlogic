@@ -486,6 +486,18 @@ int boot_get_fdt(int flag, int argc, char *const argv[], uint8_t arch,
 
 	if (argc > 2)
 		select = argv[2];
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+	if (!select) {
+		if (env_get("dtb_mem_addr")) {
+			select = env_get("dtb_mem_addr");
+			printf("env select addr: 0x%s\n", select);
+		} else {
+			select = "0x01000000";
+		}
+	}
+#endif
+
 	if (select || genimg_has_config(images)) {
 		int ret;
 
@@ -527,6 +539,7 @@ int boot_get_fdt(int flag, int argc, char *const argv[], uint8_t arch,
 			debug("## No Flattened Device Tree\n");
 			goto no_fdt;
 		}
+#ifndef CONFIG_AMLOGIC_MODIFY
 #ifdef CONFIG_ANDROID_BOOT_IMAGE
 	} else if (genimg_get_format(buf) == IMAGE_FORMAT_ANDROID) {
 		struct andr_img_hdr *hdr = buf;
@@ -560,6 +573,7 @@ int boot_get_fdt(int flag, int argc, char *const argv[], uint8_t arch,
 
 			debug("## Using FDT at ${fdtaddr}=Ox%lx\n", fdt_addr);
 		}
+#endif
 #endif
 	} else {
 		debug("## No Flattened Device Tree\n");

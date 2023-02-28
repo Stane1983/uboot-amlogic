@@ -16,7 +16,12 @@ endif
 
 obj-y += image.o image-board.o
 obj-$(CONFIG_ANDROID_AB) += android_ab.o
+
+ifdef CONFIG_AMLOGIC_MODIFY
+obj-$(CONFIG_ANDROID_BOOT_IMAGE) += amlimage-android.o image-android-dt.o
+else
 obj-$(CONFIG_ANDROID_BOOT_IMAGE) += image-android.o image-android-dt.o
+endif
 
 obj-$(CONFIG_$(SPL_TPL_)BOOTSTD) += bootdev-uclass.o
 obj-$(CONFIG_$(SPL_TPL_)BOOTSTD) += bootflow.o

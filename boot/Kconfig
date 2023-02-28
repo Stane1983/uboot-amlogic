@@ -1434,7 +1434,7 @@ config USE_BOOTARGS
 
 config BOOTARGS
 	string "Boot arguments"
-	depends on USE_BOOTARGS && !USE_DEFAULT_ENV_FILE
+	depends on USE_BOOTARGS
 	help
 	  This can be used to pass arguments to the bootm command. The value of
 	  CONFIG_BOOTARGS goes into the environment value "bootargs". Note that
@@ -1489,10 +1489,7 @@ config USE_PREBOOT
 	  "preboot" when a user holds down a certain combination of keys.
 
 config PREBOOT
-	string "preboot default value"
 	depends on USE_PREBOOT && !USE_DEFAULT_ENV_FILE
-	default "usb start" if USB_KEYBOARD
-	default ""
 	help
 	  This is the default of "preboot" environment variable.
 

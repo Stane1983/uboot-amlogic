@@ -331,6 +331,10 @@ struct legacy_img_hdr {
 	uint8_t		ih_name[IH_NMLEN];	/* Image Name		*/
 };
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+typedef struct legacy_img_hdr image_header_t;
+#endif
+
 struct image_info {
 	ulong		start, end;		/* start/end of blob */
 	ulong		image_start, image_len; /* start of image within blob, len of image */
@@ -1739,6 +1743,16 @@ ulong android_image_get_kload(const struct andr_img_hdr *hdr);
 ulong android_image_get_kcomp(const struct andr_img_hdr *hdr);
 void android_print_contents(const struct andr_img_hdr *hdr);
 bool android_image_print_dtb_contents(ulong hdr_addr);
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+#include <android_image.h>
+bool copy_bootconfig_to_cmdline(void);
+ulong android_image_get_comp(const boot_img_hdr_t *hdr);
+int android_image_need_move(ulong *img_addr,const boot_img_hdr_t *hdr);
+int is_android_r_image(void *img_addr);
+int android_image_get_ramdisk_v3(const boot_img_hdr_v3_t *hdr, ulong *rd_data, ulong *rd_len);
+int vendor_boot_image_check_header(const vendor_boot_img_hdr_t * hdr);
+#endif
 
 /**
  * board_fit_config_name_match() - Check for a matching board name

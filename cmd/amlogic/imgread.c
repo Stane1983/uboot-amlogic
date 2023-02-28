@@ -11,15 +11,16 @@
 #if defined(CONFIG_ZIRCON_BOOT_IMAGE)
 #include <zircon/image.h>
 #endif
-#include <asm/arch/bl31_apis.h>
-#include <asm/arch/secure_apb.h>
+#include <asm/amlogic/arch/bl31_apis.h>
+#include <asm/amlogic/arch/secure_apb.h>
 #include <amlogic/store_wrapper.h>
 #include <amlogic/aml_efuse.h>
 #include <malloc.h>
-#include <emmc_partitions.h>
+#include <amlogic/emmc_partitions.h>
 #include <version.h>
 #include <amlogic/image_check.h>
 #include <fs.h>
+#include <gzip.h>
 
 #ifndef IS_FEAT_BOOT_VERIFY
 //#define IS_FEAT_BOOT_VERIFY() 0 //always undefined as IS_FEAT_BOOT_VERIFY is function not marco

@@ -135,6 +135,12 @@ static int bootm_find_os(struct cmd_tbl *cmdtp, int flag, int argc,
 		images.os.end = image_get_image_end(os_hdr);
 		images.os.load = image_get_load(os_hdr);
 		images.os.arch = image_get_arch(os_hdr);
+#ifdef CONFIG_AMLOGIC_MODIFY
+		if (images.os.arch == IH_ARCH_ARM) {
+			env_set("initrd_high", "0A000000");
+			env_set("fdt_high", "0A000000");
+		}
+#endif
 		break;
 #endif
 #if CONFIG_IS_ENABLED(FIT)
@@ -181,6 +187,40 @@ static int bootm_find_os(struct cmd_tbl *cmdtp, int flag, int argc,
 #endif
 #ifdef CONFIG_ANDROID_BOOT_IMAGE
 	case IMAGE_FORMAT_ANDROID:
+#ifdef CONFIG_AMLOGIC_MODIFY
+		if (image_get_magic((image_header_t *)images.os.image_start) == IH_MAGIC) {
+			#ifdef CONFIG_INITRD_HIGH_ADDR
+			env_set("initrd_high", CONFIG_INITRD_HIGH_ADDR);
+			#else
+			env_set("initrd_high", "0D000000");
+			#endif
+
+			#ifdef CONFIG_FDT_HIGH_ADDR
+			env_set("fdt_high", CONFIG_FDT_HIGH_ADDR);
+			#else
+			env_set("fdt_high", "0D000000");
+			#endif
+
+			images.os.arch = ((image_header_t *)(images.os.image_start))->ih_arch;
+			images.os.image_start += sizeof(image_header_t);
+		}
+		images.os.type = IH_TYPE_KERNEL;
+
+		if (images.os.arch == IH_ARCH_ARM)
+			images.os.comp = image_get_comp(os_hdr + 0x800);
+		else
+			images.os.comp =  android_image_get_comp(os_hdr);
+
+		//images.os.comp =  android_image_get_comp(os_hdr);
+		images.os.os = IH_OS_LINUX;
+
+		images.os.end = android_image_get_end(os_hdr);
+		images.os.load = android_image_get_kload(os_hdr);
+		if (images.os.load == 0x10008000)
+			images.os.load = 0x1080000;
+		images.ep = images.os.load;
+		ep_found = true;
+#else
 		images.os.type = IH_TYPE_KERNEL;
 		images.os.comp = android_image_get_kcomp(os_hdr);
 		images.os.os = IH_OS_LINUX;
@@ -189,6 +229,7 @@ static int bootm_find_os(struct cmd_tbl *cmdtp, int flag, int argc,
 		images.os.load = android_image_get_kload(os_hdr);
 		images.ep = images.os.load;
 		ep_found = true;
+#endif
 		break;
 #endif
 	default:
@@ -437,7 +478,7 @@ static int bootm_load_os(struct bootm_headers *images, int boot_progress)
 		      blob_start, blob_end);
 		debug("images.os.load = 0x%lx, load_end = 0x%lx\n", load,
 		      load_end);
-
+#ifndef CONFIG_ANDROID_BOOT_IMAGE
 		/* Check what type of image this is. */
 		if (images->legacy_hdr_valid) {
 			if (image_get_type(&images->legacy_hdr_os_copy)
@@ -449,6 +490,7 @@ static int bootm_load_os(struct bootm_headers *images, int boot_progress)
 			bootstage_error(BOOTSTAGE_ID_OVERWRITTEN);
 			return BOOTM_ERR_RESET;
 		}
+#endif
 	}
 
 	lmb_reserve(&images->lmb, images->os.load, (load_end -
@@ -892,6 +934,17 @@ static const void *boot_get_kernel(struct cmd_tbl *cmdtp, int flag, int argc,
 	int		os_noffset;
 #endif
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+	char *avb_s;
+	avb_s = env_get("avb2");
+	printf("avb2: %s\n", avb_s);
+	if (strcmp(avb_s, "1") != 0) {
+#ifdef CONFIG_AML_ANTIROLLBACK
+		boot_img_hdr_t **tmp_img_hdr = (boot_img_hdr_t **)&buf;
+#endif
+	}
+#endif
+
 	img_addr = genimg_get_kernel_addr_fit(argc < 1 ? NULL : argv[0],
 					      &fit_uname_config,
 					      &fit_uname_kernel);
@@ -968,9 +1021,29 @@ static const void *boot_get_kernel(struct cmd_tbl *cmdtp, int flag, int argc,
 #ifdef CONFIG_ANDROID_BOOT_IMAGE
 	case IMAGE_FORMAT_ANDROID:
 		printf("## Booting Android Image at 0x%08lx ...\n", img_addr);
+
+#ifndef CONFIG_AMLOGIC_MODIFY
 		if (android_image_get_kernel(buf, images->verify,
 					     os_data, os_len))
 			return NULL;
+#else
+		if (!android_image_need_move(&img_addr, buf))
+			buf = map_sysmem(img_addr, 0);
+		else
+			return NULL;
+		if (android_image_get_kernel(buf, images->verify,
+					     os_data, os_len))
+			return NULL;
+
+		if (strcmp(avb_s, "1") != 0) {
+#ifdef CONFIG_AML_ANTIROLLBACK
+			if (!check_antirollback((*tmp_img_hdr)->kernel_version)) {
+				*os_len = 0;
+				return NULL;
+			}
+#endif
+		}
+#endif
 		break;
 #endif
 	default:

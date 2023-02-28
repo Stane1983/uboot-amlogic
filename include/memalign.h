@@ -14,6 +14,10 @@
 #include <asm/cache.h>
 #include <malloc.h>
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+#include <linux/kernel.h>
+#endif
+
 /*
  * The ALLOC_CACHE_ALIGN_BUFFER macro is used to allocate a buffer on the
  * stack that meets the minimum architecture alignment requirements for DMA.

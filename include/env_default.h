@@ -35,8 +35,14 @@ const char default_environment[] = {
 #ifdef	CONFIG_ENV_FLAGS_LIST_DEFAULT
 	ENV_FLAGS_VAR "=" CONFIG_ENV_FLAGS_LIST_DEFAULT "\0"
 #endif
-#ifdef	CONFIG_USE_BOOTARGS
+#ifdef CONFIG_AMLOGIC_MODIFY
+#ifdef	CONFIG_BOOTARGS
 	"bootargs="	CONFIG_BOOTARGS			"\0"
+#endif
+#else
+#ifdef  CONFIG_USE_BOOTARGS
+	"bootargs="     CONFIG_BOOTARGS                 "\0"
+#endif
 #endif
 #ifdef	CONFIG_BOOTCOMMAND
 	"bootcmd="	CONFIG_BOOTCOMMAND		"\0"

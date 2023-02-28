@@ -26,8 +26,6 @@ extern efuse_obj_field_t efuse_field;
 int __attribute__((weak)) store_logic_read(const char *name, loff_t off, size_t size, void *buf)
 { return store_read(name, off, size, buf);}
 
-typedef boot_img_hdr_t boot_img_hdr;
-
 #define debugP(fmt...) //printf("[DbgBootSta]L%d:", __LINE__),printf(fmt)
 #define errorP(fmt...) printf("ErrBootSta(L%d):", __LINE__),printf(fmt)
 #define wrnP(fmt...)   printf("wrn:"fmt)

@@ -38,6 +38,10 @@ ifdef CONFIG_SPL_BUILD
 obj-$(CONFIG_SPL_RECOVER_DATA_SECTION) += spl_data.o
 endif
 
+ifdef CONFIG_AMLOGIC_MODIFY
+obj-y   += a32_kernel_pre_entry.o
+endif
+
 obj-$(CONFIG_FSL_LAYERSCAPE) += fsl-layerscape/
 obj-$(CONFIG_S32V234) += s32v234/
 obj-$(CONFIG_TARGET_HIKEY) += hisilicon/

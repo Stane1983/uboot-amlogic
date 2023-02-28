@@ -38,6 +38,11 @@
 #endif
 #include <asm/setup.h>
 
+#if defined(CONFIG_KEY_PRESERVE)
+#include <asm/arch/cpu.h>
+#include <asm/arch/register.h>
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 static struct tag *params;
@@ -184,12 +189,14 @@ static void setup_end_tag(struct bd_info *bd)
 
 __weak void setup_board_tags(struct tag **in_params) {}
 
+#ifndef CONFIG_AMLOGIC_MODIFY
 #ifdef CONFIG_ARM64
 static void do_nonsec_virt_switch(void)
 {
 	smp_kick_all_cpus();
 	dcache_disable();	/* flush cache before swtiching to EL2 */
 }
+#endif
 #endif
 
 __weak void board_prep_linux(struct bootm_headers *images) { }
@@ -288,12 +295,23 @@ static void switch_to_el1(void)
 #endif
 
 /* Subcommand: GO */
+#ifdef CONFIG_AMLOGIC_MODIFY
+extern void jump_to_a32_kernel(unsigned long, unsigned long, unsigned long);
+#endif
 static void boot_jump_linux(struct bootm_headers *images, int flag)
 {
+#ifdef  CONFIG_KEY_PRESERVE
+	(*((volatile unsigned int *)(STARTUP_KEY_PRESERVE))) |= 0x1;
+#endif
+
 #ifdef CONFIG_ARM64
 	void (*kernel_entry)(void *fdt_addr, void *res0, void *res1,
 			void *res2);
 	int fake = (flag & BOOTM_STATE_OS_FAKE_GO);
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+	unsigned long machid = 0xf81;
+#endif
 
 	kernel_entry = (void (*)(void *fdt_addr, void *res0, void *res1,
 				void *res2))images->ep;
@@ -302,9 +320,54 @@ static void boot_jump_linux(struct bootm_headers *images, int flag)
 		(ulong) kernel_entry);
 	bootstage_mark(BOOTSTAGE_ID_RUN_OS);
 
+#ifdef CONFIG_AML_KASLR_SEED
+	int node, ret, len;
+	char *prop, *bootargs;
+	uint64_t seed;
+
+	node = fdt_path_offset(images->ft_addr, "/chosen");
+	if (node < 0)
+		printf("Can't find /chosen node from DTB\n");
+
+	bootargs = (char *)fdt_getprop(images->ft_addr, node, "bootargs", &len);
+	if (!bootargs)
+		printf("Can't find bootargs property in chosen\n");
+
+	char *env = env_get("ramdump_enable");
+
+	if ((bootargs && strstr(bootargs, "ramoops_io_en=1")) || (env && (env[0] == '1'))) {
+		ret = fdt_appendprop_string(images->ft_addr, node, "bootargs", " nokaslr");
+		if (!ret)
+			printf("Not enable kaslr for debug purpose\n");
+		else
+			printf("Fail to set nokaslr %s\n", fdt_strerror(ret));
+	} else {
+		prop = (char *)fdt_getprop(images->ft_addr, node, "kaslr-seed", NULL);
+		if (!prop) {
+			printf("Can't find kaslr-seed property in chosen\n");
+		} else {
+			srand(timer_get_us());
+			/*
+			 * random() function use hardware RNG, not software, ignore
+			 * coverity weak cryptor report.
+			 */
+			/* coverity[dont_call] */
+			seed = (uint64_t)rand();
+			//printf("--leo-- seed 0x%llx\n", seed);
+
+			ret = fdt_setprop(images->ft_addr, node, "kaslr-seed", &seed, sizeof(seed));
+			if (!ret)
+				printf("Enable kaslr\n");
+			else
+				printf("Can't set kaslr-seed value in chosen\n");
+		}
+	}
+#endif
+
 	announce_and_cleanup(fake);
 
 	if (!fake) {
+#ifndef CONFIG_AMLOGIC_MODIFY
 #ifdef CONFIG_ARMV8_PSCI
 		armv8_setup_psci();
 #endif
@@ -327,7 +390,20 @@ static void boot_jump_linux(struct bootm_headers *images, int flag)
 					    images->ep,
 					    ES_TO_AARCH64);
 #endif
+#else
+		extern uint32_t get_time(void);
+		printf("uboot time: %u us\n", get_time());
+		if (images->os.arch == IH_ARCH_ARM) {
+			printf("boot 32bit kernel\n");
+			jump_to_a32_kernel(images->ep, machid, (unsigned long)images->ft_addr);
+		}
+		else {
+			printf("boot 64bit kernel\n");
+			kernel_entry(images->ft_addr, NULL, NULL, NULL);
+		}
+#endif
 	}
+
 #else
 	unsigned long machid = gd->bd->bi_arch_number;
 	char *s;

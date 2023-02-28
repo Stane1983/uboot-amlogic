@@ -30,4 +30,6 @@ obj-$(CONFIG_$(SPL_TPL_)ENV_IS_IN_NAND) += nand.o
 obj-$(CONFIG_$(SPL_TPL_)ENV_IS_IN_SPI_FLASH) += sf.o
 obj-$(CONFIG_$(SPL_TPL_)ENV_IS_IN_FLASH) += flash.o
 
+obj-$(CONFIG_ENV_IS_IN_STORAGE) += storage.o
+
 CFLAGS_embedded.o := -Wa,--no-warn -DENV_CRC=$(shell tools/envcrc 2>/dev/null)

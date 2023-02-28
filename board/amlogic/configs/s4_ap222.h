@@ -92,7 +92,7 @@
         "video_reverse=0\0"\
         "board=oppen\0"\
         "initargs="\
-            "init=/init ""console=ttyS0,921600 no_console_suspend earlycon=aml-uart,0xfe07a000 "\
+            "init=/init ""console=ttyS0,921600 no_console_suspend earlycon=aml_uart,0xfe07a000 "\
             "ramoops.pstore_en=1 ramoops.record_size=0x8000 ramoops.console_size=0x4000 loop.max_part=4 "\
             "\0"\
         "upgrade_check="\
@@ -368,7 +368,7 @@
 
 #define BL32_SHARE_MEM_SIZE  0x800000
 
-#define CONFIG_SYS_INIT_SP_ADDR 0x00200000
+#define CONFIG_SYS_INIT_SP_ADDR 0x00300000
 
 #endif
 
