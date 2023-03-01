@@ -14,6 +14,7 @@
 #include <amlogic/libavb/libavb.h>
 
 #include <amlogic/media/dv/dolby_vision_func.h>
+#include <command.h>
 
 #define DV_FIRMWARE_ADDR 0x30000000
 #define DV_FW_ADDR 0xa00000
