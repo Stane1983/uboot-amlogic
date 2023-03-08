@@ -650,6 +650,12 @@ enum gd_flags {
 	 * @GD_FLG_FDT_CHANGED: Device tree change has been detected by tests
 	 */
 	GD_FLG_FDT_CHANGED = 0x100000,
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+	/* Cache enabled                   */
+	GD_FLG_CACHE_EN = 0x200000,
+#endif
+
 };
 
 #endif /* __ASSEMBLY__ */
