@@ -886,9 +886,9 @@ static int do_get_parse_edid(cmd_tbl_t * cmdtp, int flag, int argc,
 	if (!store_checkvalue)
 		store_checkvalue = def_cksum;
 
-	printf("read hdmichecksum: %s, user hdmimode: %s, colorattribute: %s, dv_type: %d\n",
+	printf("read hdmichecksum: %s, user hdmimode: %s, colorattribute: %s\n",
 	       store_checkvalue, hdmimode ? hdmimode : "null",
-	       colorattribute ? colorattribute : "null", user_dv_mode);
+	       colorattribute ? colorattribute : "null");
 
 	for (i = 0; i < 4; i++) {
 		if (('0' <= store_checkvalue[i * 2 + 2]) && (store_checkvalue[i * 2 + 2] <= '9'))
