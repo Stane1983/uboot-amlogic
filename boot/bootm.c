@@ -786,6 +786,17 @@ int do_bootm_states(struct cmd_tbl *cmdtp, int flag, int argc,
 	}
 #endif
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+	/* Check reserved memory region */
+#ifdef CONFIG_CMD_RSVMEM
+	ret = run_command("rsvmem check", 0);
+	if (ret) {
+		puts("rsvmem check failed\n");
+		return ret;
+	}
+#endif
+#endif
+
 	/* From now on, we need the OS boot function */
 	if (ret)
 		return ret;
