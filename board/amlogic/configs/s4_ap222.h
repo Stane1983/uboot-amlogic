@@ -368,7 +368,5 @@
 
 #define BL32_SHARE_MEM_SIZE  0x800000
 
-#define CONFIG_SYS_INIT_SP_ADDR 0x00300000
-
 #endif
 

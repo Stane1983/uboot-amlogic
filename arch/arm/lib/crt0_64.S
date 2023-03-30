@@ -83,7 +83,11 @@ ENTRY(_main)
 	add	x0, x0, #CONFIG_SYS_INIT_SP_BSS_OFFSET
 #else
 #ifdef CONFIG_AMLOGIC_MODIFY
-	ldr	x0, =(CONFIG_SYS_INIT_SP_ADDR)
+	ldr	x0,	=(CONFIG_TEXT_BASE)
+	ldr	x1,	_bss_end_ofs
+	add	x0,	x0,	x1
+	add	x0,	x0,	#GD_SIZE
+	add	x0,	x0,	#0x100000
 #else
 	ldr	x0, =(SYS_INIT_SP_ADDR)
 #endif

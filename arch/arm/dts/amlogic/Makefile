@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0+
 
-dtb-$(CONFIG_ARCH_MESON) += \
+dtb-$(CONFIG_TARGET_S4_AP222) += \
 	meson-s4-ap222.dtb \
 
 include $(srctree)/scripts/Makefile.dts
