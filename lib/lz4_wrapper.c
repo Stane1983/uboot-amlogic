@@ -107,3 +107,24 @@ int ulz4fn(const void *src, size_t srcn, void *dst, size_t *dstn)
 	*dstn = out - dst;
 	return ret;
 }
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+// move from lz4.c to here to avoid compile error
+int LZ4_decompress_safe(const char *source, char *dest,
+	int compressedSize, int maxDecompressedSize)
+{
+	return LZ4_decompress_generic(source, dest,
+				      compressedSize, maxDecompressedSize,
+				      endOnInputSize, decode_full_block,
+				      noDict, (BYTE *)dest, NULL, 0);
+}
+
+int LZ4_decompress_safe_partial(const char *src, char *dst,
+	int compressedSize, int targetOutputSize, int dstCapacity)
+{
+	dstCapacity = min(targetOutputSize, dstCapacity);
+	return LZ4_decompress_generic(src, dst, compressedSize, dstCapacity,
+				      endOnInputSize, partial_decode,
+				      noDict, (BYTE *)dst, NULL, 0);
+}
+#endif

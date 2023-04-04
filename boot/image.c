@@ -69,6 +69,10 @@ DECLARE_GLOBAL_DATA_PTR;
 #include <u-boot/crc.h>
 #include <u-boot/lz4.h>
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+#include <amlogic/unlz4_android.h>
+#endif
+
 static const table_entry_t uimage_arch[] = {
 	{	IH_ARCH_INVALID,	"invalid",	"Invalid ARCH",	},
 	{	IH_ARCH_ALPHA,		"alpha",	"Alpha",	},
@@ -190,6 +194,7 @@ static const table_entry_t uimage_comp[] = {
 	{	IH_COMP_LZMA,	"lzma",		"lzma compressed",	},
 	{	IH_COMP_LZO,	"lzo",		"lzo compressed",	},
 	{	IH_COMP_LZ4,	"lz4",		"lz4 compressed",	},
+	{	IH_COMP_LZ4_ANDROID, "lz4",	"lz4 compressed android",},
 	{	IH_COMP_ZSTD,	"zstd",		"zstd compressed",	},
 	{	-1,		"",		"",			},
 };
@@ -510,6 +515,16 @@ int image_decomp(int comp, ulong load, ulong image_start, int type,
 			image_len = size;
 		}
 		break;
+#ifdef CONFIG_AMLOGIC_MODIFY
+	case IH_COMP_LZ4_ANDROID:
+		if (!tools_build() && CONFIG_IS_ENABLED(LZ4)) {
+			size_t size = unc_len;
+
+			ret = unlz4(image_buf, image_len, load_buf, &size);
+			image_len = size;
+		}
+		break;
+#endif
 	case IH_COMP_ZSTD:
 		if (!tools_build() && CONFIG_IS_ENABLED(ZSTD)) {
 			struct abuf in, out;

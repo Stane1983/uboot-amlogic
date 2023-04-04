@@ -516,6 +516,7 @@ _output_error:
 	return (int) (-(((const char *)ip) - src)) - 1;
 }
 
+#ifndef CONFIG_AMLOGIC_MODIFY
 int LZ4_decompress_safe(const char *source, char *dest,
 	int compressedSize, int maxDecompressedSize)
 {
@@ -533,3 +534,4 @@ int LZ4_decompress_safe_partial(const char *src, char *dst,
 				      endOnInputSize, partial_decode,
 				      noDict, (BYTE *)dst, NULL, 0);
 }
+#endif
