@@ -5,10 +5,10 @@
 
 #include <config.h>
 #include <common.h>
-#include <asm/arch/io.h>
-#include <asm/arch/secure_apb.h>
-#include <asm/arch/clock.h>
-#include <asm/arch/oscring.h>
+#include <asm/amlogic/arch/io.h>
+#include <asm/amlogic/arch/secure_apb.h>
+#include <asm/amlogic/arch/clock.h>
+#include <asm/amlogic/arch/oscring.h>
 
 void ring_powerinit(void)
 {

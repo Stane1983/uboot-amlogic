@@ -6,11 +6,11 @@
 #ifndef __POWER_MGR_HEADER_
 #define __POWER_MGR_HEADER_
 
-#include <asm/arch/io.h>
+#include <asm/amlogic/arch/io.h>
 #include <common.h>
 //#include <asm/arch-gxb/io.h>
 /* #include <asm/arch-gxb/register.h> */
-#include <asm/arch/secure_apb.h>
+#include <asm/amlogic/arch/secure_apb.h>
 /* clock gate control */
 
 #define DEBUG_MASK 0

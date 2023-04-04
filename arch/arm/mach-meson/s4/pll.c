@@ -7,10 +7,10 @@
 #include <command.h>
 #include <malloc.h>
 #include <asm/io.h>
-#include <asm/arch/clock.h>
-#include <asm/arch/secure_apb.h>
-#include <asm/arch/timer.h>
-#include <asm/arch/pll.h>
+#include <asm/amlogic/arch/clock.h>
+#include <asm/amlogic/arch/secure_apb.h>
+#include <asm/amlogic/arch/timer.h>
+#include <asm/amlogic/arch/pll.h>
 #include <linux/arm-smccc.h>
 
 #define STR_PLL_TEST_ALL	"all"

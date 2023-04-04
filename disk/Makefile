@@ -18,3 +18,5 @@ obj-$(CONFIG_$(SPL_TPL_)ISO_PARTITION)   += part_iso.o
 obj-$(CONFIG_$(SPL_TPL_)AMIGA_PARTITION) += part_amiga.o
 obj-$(CONFIG_$(SPL_TPL_)EFI_PARTITION)   += part_efi.o
 endif
+
+obj-$(CONFIG_AML_PARTITION) += part_aml.o

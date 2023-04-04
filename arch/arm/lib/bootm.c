@@ -39,8 +39,8 @@
 #include <asm/setup.h>
 
 #if defined(CONFIG_KEY_PRESERVE)
-#include <asm/arch/cpu.h>
-#include <asm/arch/register.h>
+#include <asm/amlogic/arch/cpu.h>
+#include <asm/amlogic/arch/register.h>
 #endif
 
 DECLARE_GLOBAL_DATA_PTR;

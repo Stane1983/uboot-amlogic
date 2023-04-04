@@ -582,6 +582,12 @@ int layout_mbr_partitions(struct disk_partition *p, int count,
 
 #endif
 
+
+#if CONFIG_IS_ENABLED(AML_PARTITION)
+int get_partition_info_aml_by_name(struct blk_desc *dev_desc,
+         const char *name, disk_partition_t *info);
+#endif
+
 #if CONFIG_IS_ENABLED(PARTITIONS)
 /**
  * part_driver_get_count() - get partition driver count

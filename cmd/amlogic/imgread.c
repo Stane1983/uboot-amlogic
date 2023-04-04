@@ -9,7 +9,7 @@
 #include <linux/libfdt.h>
 #include <android_image.h>
 #if defined(CONFIG_ZIRCON_BOOT_IMAGE)
-#include <zircon/image.h>
+#include <amlogic/zircon/image.h>
 #endif
 #include <asm/amlogic/arch/bl31_apis.h>
 #include <asm/amlogic/arch/secure_apb.h>

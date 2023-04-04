@@ -3,7 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
-#include <asm/arch/secure_apb.h>
+#include <asm/amlogic/arch/secure_apb.h>
 #include <asm/types.h>
 #ifdef CONFIG_AMLOGIC_MODIFY
 #include <asm/amlogic/arch/cpu.h>

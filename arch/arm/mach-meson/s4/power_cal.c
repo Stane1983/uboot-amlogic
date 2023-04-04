@@ -4,10 +4,10 @@
  */
 
 #include <common.h>
-#include <asm/arch/secure_apb.h>
-#include <asm/arch/io.h>
+#include <asm/amlogic/arch/secure_apb.h>
+#include <asm/amlogic/arch/io.h>
 #include <amlogic/saradc.h>
-#include <asm/arch/mailbox.h>
+#include <asm/amlogic/arch/mailbox.h>
 
 #define P_EE_TIMER_E		(*((volatile unsigned *)(0xffd00000 + (0x3c62 << 2))))
 #define vcck_adc_channel	0x4

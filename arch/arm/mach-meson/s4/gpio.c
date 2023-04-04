@@ -7,7 +7,7 @@
 #include <dm.h>
 #include <linux/compiler.h>
 #include <amlogic/aml_gpio.h>
-#include <asm/arch/gpio.h>
+#include <asm/amlogic/arch/gpio.h>
 
 struct pin_mux_desc {
 	unsigned char domain;
