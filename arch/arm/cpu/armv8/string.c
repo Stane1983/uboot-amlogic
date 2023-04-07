@@ -11,6 +11,37 @@ DECLARE_GLOBAL_DATA_PTR;
 
 #ifndef	CONFIG_AML_UASAN
 #ifdef __HAVE_ARCH_MEMSET
+/*memset_non_cache
+ *function: for non-cache memory space
+ */
+void *memset_non_cache(void *s, int c, size_t count)
+{
+	unsigned long *sl = (unsigned long *)s;
+	char *s8;
+
+#if !CONFIG_IS_ENABLED(TINY_MEMSET)
+	unsigned long cl = 0;
+	int i;
+
+	/* do it one word at a time (32 bits or 64 bits) while possible */
+	if (((ulong)s & (sizeof(*sl) - 1)) == 0) {
+		for (i = 0; i < sizeof(*sl); i++) {
+			cl <<= 8;
+			cl |= c & 0xff;
+		}
+		while (count >= sizeof(*sl)) {
+			*sl++ = cl;
+			count -= sizeof(*sl);
+		}
+	}
+#endif	/* fill 8 bits at a time */
+	s8 = (char *)sl;
+	while (count--)
+		*s8++ = c;
+
+	return s;
+}
+
 void *memset(void *s, int c, size_t count)
 {
 	unsigned long *sl = (unsigned long *) s;
