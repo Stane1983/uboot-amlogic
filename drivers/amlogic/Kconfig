@@ -39,4 +39,6 @@ source "drivers/amlogic/watchdog/Kconfig"
 
 source "drivers/amlogic/adc/Kconfig"
 
+source "drivers/amlogic/clock/Kconfig"
+
 endmenu
