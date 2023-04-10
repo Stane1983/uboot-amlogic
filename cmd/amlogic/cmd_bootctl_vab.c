@@ -18,7 +18,7 @@
 #include <u-boot/sha1.h>
 #include <asm/amlogic/arch/efuse.h>
 #include <amlogic/emmc_partitions.h>
-#ifdef CONFIG_UNIFY_BOOTLOADER
+#if (IS_ENABLED(CONFIG_UNIFY_BOOTLOADER))
 #include "cmd_bootctl_wrapper.h"
 #endif
 #include "cmd_bootctl_utils.h"
@@ -442,11 +442,22 @@ static bool boot_info_save(bootloader_control *info, char *miscbuf)
 
 	memcpy(miscbuf + AB_METADATA_MISC_PARTITION_OFFSET, info, sizeof(bootloader_control));
 	dump_boot_info(info);
-	ret = store_erase((const char *)partition, 0, MISCBUF_SIZE, 0);
-	if (ret) {
-		printf("store erase failed at %s\n", partition);
-		return false;
+
+#ifdef CONFIG_AML_MTD
+	enum boot_type_e device_boot_flag = store_get_type();
+
+	if (device_boot_flag == BOOT_NAND_NFTL || device_boot_flag == BOOT_NAND_MTD ||
+	device_boot_flag == BOOT_SNAND) {
+		int ret = 0;
+
+		ret = run_command("store erase misc 0 0x4000", 0);
+		if (ret != 0) {
+			printf("erase partition misc failed!\n");
+			return false;
+		}
 	}
+#endif
+
 	ret = store_logic_write((const char *)partition, 0, MISCBUF_SIZE, (unsigned char *)miscbuf);
 	if (ret) {
 		printf("store logic write failed at %s\n", partition);
@@ -828,6 +839,7 @@ static int do_SetUpdateTries(
 	int slot;
 	int ret = -1;
 	bool nocs_mode = false;
+	int update_flag = 0;
 
 	if (has_boot_slot == 0) {
 		printf("device is not ab mode\n");
@@ -849,19 +861,24 @@ static int do_SetUpdateTries(
 
 	if (slot == 0) {
 		if (bootable_a) {
-			if (boot_ctrl.slot_info[0].successful_boot == 0)
+			if (boot_ctrl.slot_info[0].successful_boot == 0) {
 				boot_ctrl.slot_info[0].tries_remaining -= 1;
+				update_flag = 1;
+			}
 		}
 	}
 
 	if (slot == 1) {
 		if (bootable_b) {
-			if (boot_ctrl.slot_info[1].successful_boot == 0)
+			if (boot_ctrl.slot_info[1].successful_boot == 0) {
 				boot_ctrl.slot_info[1].tries_remaining -= 1;
+				update_flag = 1;
+			}
 		}
 	}
 
-	boot_info_save(&boot_ctrl, miscbuf);
+	if (update_flag == 1)
+		boot_info_save(&boot_ctrl, miscbuf);
 
 	printf("do_SetUpdateTries boot_ctrl.roll_flag = %d\n", boot_ctrl.roll_flag);
 	if (boot_ctrl.roll_flag == 1) {
@@ -969,7 +986,7 @@ static int do_GetAvbMode(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv
 	return 0;
 }
 
-int do_UpdateDt(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int do_UpdateDt(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	char *update_dt = env_get("update_dt");
 	char *part_changed = env_get("part_changed");
@@ -1005,6 +1022,7 @@ bootctl_func_handles *get_bootctl_cmd_func_vab(void)
 	vab_cmd_bootctrl_handles.do_SetUpdateTries_func = do_SetUpdateTries;
 	vab_cmd_bootctrl_handles.do_GetSystemMode_func = do_GetSystemMode;
 	vab_cmd_bootctrl_handles.do_GetAvbMode_func = do_GetAvbMode;
+	vab_cmd_bootctrl_handles.do_UpdateDt_func = do_UpdateDt;
 
 	return &vab_cmd_bootctrl_handles;
 }

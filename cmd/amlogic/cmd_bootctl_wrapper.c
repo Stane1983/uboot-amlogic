@@ -5,18 +5,18 @@
 
 #include <common.h>
 #include <command.h>
-#include <environment.h>
+#include <env.h>
 #include <malloc.h>
 #include <asm/byteorder.h>
 #include <config.h>
-#include <asm/arch/io.h>
-#include <partition_table.h>
-#include <libavb.h>
+#include <asm/amlogic/arch/io.h>
+#include <amlogic/partition_table.h>
+#include <amlogic/libavb/libavb.h>
 #include <version.h>
 #include <amlogic/storage.h>
 #include <fastboot.h>
 #include <u-boot/sha1.h>
-#include <asm/arch/efuse.h>
+#include <asm/amlogic/arch/efuse.h>
 #include <stdlib.h>
 #include "cmd_bootctl_wrapper.h"
 #include "cmd_bootctl_utils.h"
@@ -108,6 +108,19 @@ static int do_SetUpdateTries(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
 	return ret;
 }
 
+static int do_UpdateDt(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int ret = 0;
+	bootctl_func_handles *func_handles = NULL;
+
+	func_handles = select_bootctl_cmd_func();
+
+	if (func_handles && func_handles->do_UpdateDt_func)
+		ret = func_handles->do_UpdateDt_func(cmdtp, flag, argc, argv);
+
+	return ret;
+}
+
 int do_GetSystemMode(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	int ret = 0;
@@ -164,6 +177,12 @@ U_BOOT_CMD(get_system_as_root_mode, 1, 0, do_GetSystemMode,
 	"get_system_as_root_mode",
 	"\nThis command will get system_as_root_mode\n"
 	"So you can execute command: get_system_as_root_mode");
+
+U_BOOT_CMD
+(update_dt, 1, 0, do_UpdateDt,
+"update_dt",
+"\nThis command will update dt\n"
+"So you can execute command: update_dt");
 
 U_BOOT_CMD(get_avb_mode, 1, 0, do_GetAvbMode,
 	"get_avb_mode",

@@ -1580,3 +1580,9 @@ S:	Maintained
 F:	arch/arm/dts/ls1021a-twr-u-boot.dtsi
 F:	drivers/crypto/fsl/
 F:	include/fsl_sec.h
+
+BOOTCTL
+M:	Xindong Xu <xindong.xu@amlogic.com>
+S:	Maintained
+F:	cmd/amlogic/cmd_bootctl.c
+F:	cmd/amlogic/cmd_bootctl_avb.c
