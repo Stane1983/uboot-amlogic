@@ -67,6 +67,14 @@ config MESON_A4
 	help
 		Support Amlogic Meson A4
 
+config MESON_S1A
+	bool "S1A"
+	select ARM64
+	select DM
+	select DM_SERIAL
+	help
+		Support Amlogic Meson S1A
+
 endchoice
 
 source "board/amlogic/Kconfig"

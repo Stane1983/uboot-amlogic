@@ -36,6 +36,13 @@ config PXP_SCS
 		fast PXP bring up. This config should be closed if SCS feature
 		is ready.
 
+config BYPASS_AOCPU
+    bool "Amlogic bypass aocpu flag"
+    help
+        Support bypass aocpu environment
+        If this option is open, aocpu is bypass. This config should
+		be closed when aopuc is ready.
+
 config BUILD_UNSIGN
 	bool "Amlogic pxp unsign flag"
 	help
@@ -353,6 +360,47 @@ config TARGET_A4_BA409
 
 endif
 
+if MESON_S1A
+
+config SYS_SOC
+	default "s1a"
+
+config DDRFW_TYPE
+	string "S1A DDR FW Type"
+	default "ddr4"
+
+config CHIPSET_NAME
+        string "S1A CHIPSET NAME"
+        default ""
+
+config CHIPSET_VARIANT
+        string "S1A CHIPSET VARIANT"
+        default ""
+
+config AMLOGIC_KEY_TYPE
+        string "S1A AMLOGIC KEY TYPE"
+        default "dev-keys"
+
+config BL30_SELECT
+	string "S1A BL30 board config"
+	default "s1a_skt"
+
+choice
+	prompt "S1A Board"
+
+config S1A_SKT
+	bool "S1A_SKT"
+	select TARGET_S1A_SKT
+	help
+		Select S1A SKT(XXXX) config
+
+endchoice
+
+config TARGET_S1A_SKT
+	bool "S1A SKT board"
+	depends on S1A_SKT
+
+endif
 
 # Amlogic boards
 
@@ -366,6 +414,5 @@ source "board/amlogic/a4_ba400_zircon/Kconfig"
 
 source "board/amlogic/a4_ba409/Kconfig"
 
-
-
+source "board/amlogic/s1a_skt/Kconfig"
 
