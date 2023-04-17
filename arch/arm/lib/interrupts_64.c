@@ -13,6 +13,10 @@
 #include <efi_loader.h>
 #include <semihosting.h>
 
+#if (IS_ENABLED(CONFIG_KALLSYMS))
+#include "stacktrace_64.h"
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 int interrupt_init(void)
@@ -61,6 +65,11 @@ void show_regs(struct pt_regs *regs)
 	for (i = 0; i < 29; i += 2)
 		printf("x%-2d: %016lx x%-2d: %016lx\n",
 		       i, regs->regs[i], i+1, regs->regs[i+1]);
+#if (IS_ENABLED(CONFIG_KALLSYMS))
+	dump_backtrace(regs);
+#else
+	printf("\n\n !!! enable CONFIG_KALLSYMS to show call trace !!!\n");
+#endif
 	printf("\n");
 	dump_instr(regs);
 }
@@ -166,6 +175,10 @@ void do_sync(struct pt_regs *pt_regs)
 		return;
 	efi_restore_gd();
 	printf("\"Synchronous Abort\" handler, esr 0x%08lx\n", pt_regs->esr);
+#if (IS_ENABLED(CONFIG_KALLSYMS))
+	extern unsigned long get_far(void);
+	printf("Fault address:0x%lx\n", get_far());
+#endif
 	show_regs(pt_regs);
 	show_efi_loaded_images(pt_regs);
 	panic("Resetting CPU ...\n");

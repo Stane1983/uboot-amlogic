@@ -1770,8 +1770,7 @@ quiet_cmd_u-boot__ ?= LTO     $@
 			$(u-boot-keep-syms-lto)					\
 			$(PLATFORM_LIBS)					\
 		-Wl,--no-whole-archive						\
-		-Wl,-Map,u-boot.map;						\
-		$(if $(ARCH_POSTLINK), $(MAKE) -f $(ARCH_POSTLINK) $@, true)
+		-Wl,-Map,u-boot.map
 else
 quiet_cmd_u-boot__ ?= LD      $@
       cmd_u-boot__ ?= $(LD) $(KBUILD_LDFLAGS) $(LDFLAGS_u-boot) -o $@		\
@@ -1779,8 +1778,7 @@ quiet_cmd_u-boot__ ?= LD      $@
 		--whole-archive							\
 			$(u-boot-main)						\
 		--no-whole-archive						\
-		$(PLATFORM_LIBS) -Map u-boot.map;				\
-		$(if $(ARCH_POSTLINK), $(MAKE) -f $(ARCH_POSTLINK) $@, true)
+		$(PLATFORM_LIBS) -Map u-boot.map
 endif
 
 quiet_cmd_smap = GEN     common/system_map.o

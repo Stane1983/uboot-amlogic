@@ -163,3 +163,21 @@ _restore_regs:
 	bl	_exception_entry
 	bl	do_error
 	b	exception_exit
+
+#ifdef	CONFIG_KALLSYMS
+	/* get far */
+	.global get_far
+get_far:
+	switch_el	 x11,	3f,	2f,	1f
+3:
+	mrs	x0,	far_el3
+	b	0f
+2:
+	mrs	x0,	far_el2
+	b	0f
+1:
+	mrs	x0,	far_el1
+0:
+	ret
+#endif
+

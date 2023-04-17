@@ -100,6 +100,14 @@ struct pt_regs {
 	unsigned long regs[31];
 };
 
+#ifdef CONFIG_KALLSYMS
+struct stackframe {
+	unsigned long fp;
+	unsigned long sp;
+	unsigned long pc;
+};
+#endif
+
 #endif	/* __ASSEMBLY__ */
 
 #else	/* CONFIG_ARM64 */

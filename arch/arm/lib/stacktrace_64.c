@@ -1,0 +1,102 @@
+#include <common.h>
+#include <linux/compiler.h>
+#include <asm/proc-armv/ptrace.h>
+#include <asm/global_data.h>
+
+DECLARE_GLOBAL_DATA_PTR;
+
+void print_symbol(unsigned long addr, unsigned long offset)
+{
+	const char *sym;
+	unsigned long base;
+	unsigned long end;
+	unsigned long size;
+	unsigned long faddr = addr - offset;
+
+	extern const char *symbol_lookup(unsigned long addr, unsigned long *caddr,
+				unsigned long *naddr);
+	sym = symbol_lookup(faddr, &base, &end);
+	if (sym) {
+		size = end - base;
+		printf("[<%016lx>] %s+0x%lx/0x%lx\n", addr, sym,
+			addr - (base + offset), size);
+	} else {
+		printf("[<%016lx>] %s\n", addr, "N/A");
+	}
+}
+
+static int unwind_frame(struct stackframe *frame)
+{
+	unsigned long fp = frame->fp;
+	unsigned long stack_high;
+	unsigned long stack_low;
+
+	stack_low = frame->sp;
+	stack_high = gd->start_addr_sp;
+	frame->fp = *(unsigned long *)(fp);
+
+	if (frame->fp < stack_low || fp > stack_high - 0x10)
+		return -1;
+
+	frame->sp = fp + 0x10;
+	/*
+	 * -4 here because we care about the PC not
+	 * where the return will go
+	 */
+	frame->pc = *(unsigned long *)(fp + 8) - 4;
+
+	return 0;
+}
+
+int dump_backtrace(struct pt_regs *regs)
+{
+	struct stackframe frame;
+	unsigned long offset;
+	/*
+	 * this current_sp use asm ("sp") it is register vary, it has value,
+	 * don't be init again, ignor coverity report
+	 * coverity[var_decl][missing_initializer_on_const][caretline
+	 */
+	/* coverity[missing_initializer_on_const]*/
+	const register unsigned long current_sp asm ("sp");
+	int ret;
+
+	offset = gd->reloc_off;
+	memset(&frame, 0x00, sizeof(frame));
+	if (regs) {
+		frame.fp = regs->regs[29];
+		frame.sp = regs->regs[30];
+		frame.pc = regs->elr;
+	} else {
+		frame.fp = (unsigned long)__builtin_frame_address(0);
+		/*
+		 * +0x10 to reach the real bottom of
+		 * the curent frame
+		 */
+		/*
+		 * this current_sp use asm ("sp") it is register vary, it has value,
+		 * don't be init again, ignor coverity report
+		 * coverity[var_decl][missing_initializer_on_const][caretline]
+		 */
+		/* coverity[uninit_use] */
+		frame.sp = current_sp + 0x10;
+		frame.pc = (unsigned long)dump_backtrace;
+	}
+	printf("\nCall trace: \n");
+	while (1) {
+		unsigned long where = frame.pc;
+
+		print_symbol(where, offset);
+
+		ret = unwind_frame(&frame);
+		if (ret < 0)
+			break;
+	}
+
+	return 0;
+}
+
+void stack_dump(void)
+{
+	dump_backtrace(NULL);
+}

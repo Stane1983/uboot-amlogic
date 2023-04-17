@@ -97,6 +97,12 @@ SECTIONS
 #endif
 
 	. = ALIGN(8);
+#ifdef CONFIG_KALLSYMS
+	.__rodata_start :
+	{
+		*(.__rodata_start)
+	}
+#endif
 	.rodata : { *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*))) }
 
 	. = ALIGN(8);

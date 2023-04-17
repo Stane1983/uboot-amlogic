@@ -62,6 +62,13 @@ config PXP_AOCPU
 		Support PXP aocpu bring up
 		if this option is enable, then BL30 will be executed on AOCPU
 
+config KALLSYMS
+	bool "Support call stack dump when crash"
+	default y
+	help
+		This config can help to print call stack like linux kernel panic
+		when crash. It's very useful for debug crash issues.
+
 config AML_BL33_COMPRESS_ENABLE
 	bool "Amlogic U-boot compress"
 	help
