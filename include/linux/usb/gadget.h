@@ -533,6 +533,10 @@ struct usb_gadget {
 	/* readonly to gadget driver */
 	const struct usb_gadget_ops	*ops;
 	struct usb_ep			*ep0;
+#ifdef CONFIG_AMLOGIC_USB
+	struct usb_ep			*epin;
+	struct usb_ep			*epout;
+#endif
 	struct list_head		ep_list;	/* of usb_ep */
 	enum usb_device_speed		speed;
 	enum usb_device_speed		max_speed;
