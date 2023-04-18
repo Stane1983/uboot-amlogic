@@ -113,10 +113,6 @@ int board_init(void)
 {
 	printf("board init\n");
 
-	/* The non-secure watchdog is enabled in BL2 TEE, disable it */
-	run_command("watchdog off", 0);
-	printf("watchdog disable\n");
-
 #if 0
 	run_command("startdsp 0 0x300a0000 0", 0);
 	printf("dsp start!\n");
