@@ -228,6 +228,16 @@
 	assigned-clock-rates = <0>, <500000000>;
 };
 
+&pinctrl_aobus {
+	remote_input_ao_pins:remote_input_ao_pins {
+		mux {
+			groups = "remote_ao_input_ao1";
+			function = "remote_in_ao";
+			bias-disable;
+		};
+	};
+};
+
 &pinctrl_periphs {
 	i2c0_pins1:i2c0_pins1 {
 		mux {
