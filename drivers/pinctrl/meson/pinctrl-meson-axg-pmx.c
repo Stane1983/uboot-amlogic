@@ -173,7 +173,9 @@ static int meson_axg_gpio_request(struct udevice *dev,
 	struct meson_pinctrl *priv = dev_get_priv(dev->parent);
 #if defined(CONFIG_AMLOGIC_MODIFY)
 	struct meson_bank *bank = dev_get_priv(dev);
-	offset += bank->first;
+	debug("%s bank:%s offset:%d\n", __func__, bank->name, offset);
+	offset += bank->first - priv->data->pin_base;
+	debug("%s banks:%s number:%d\n", __func__, priv->data->name, offset);
 #endif
 
 	return meson_axg_pmx_update_function(dev->parent,

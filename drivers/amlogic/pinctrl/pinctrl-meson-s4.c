@@ -1023,7 +1023,6 @@ static struct meson_pmx_func meson_s4_periphs_functions[] = {
 };
 
 static struct meson_bank meson_s4_periphs_banks[] = {
-	/* NOTE: Make sure that the order is consistent with meson-xx-gpio.h */
 	/*      name  first       last    pullen  pull  dir  out   in   ds */
 	BANK_DS("E", GPIOE_0,    GPIOE_1,
 		0x43,  0,  0x44,  0,  0x42, 0,  0x41, 0,  0x40, 0, 0x47, 0),
@@ -1044,7 +1043,6 @@ static struct meson_bank meson_s4_periphs_banks[] = {
 };
 
 static struct meson_pmx_bank meson_s4_periphs_pmx_banks[] = {
-	/* NOTE: Make sure that the order is consistent with meson-xx-gpio.h */
 	/*      name         first        lask       reg offset */
 	BANK_PMX("E",      GPIOE_0,     GPIOE_1,     0x12, 0),
 	BANK_PMX("B",      GPIOB_0,     GPIOB_13,    0x00, 0),
@@ -1070,7 +1068,6 @@ static int meson_s4_parse_dt_extra(struct meson_pinctrl *pc)
 
 static struct meson_pinctrl_data meson_s4_periphs_pinctrl_data = {
 	.name		= "periphs-banks",
-	.pin_base	= 0,
 	.groups		= meson_s4_periphs_groups,
 	.funcs		= meson_s4_periphs_functions,
 	.banks		= meson_s4_periphs_banks,

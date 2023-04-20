@@ -6,6 +6,17 @@
 #ifndef _DT_BINDINGS_MESON_A4_GPIO_H
 #define _DT_BINDINGS_MESON_A4_GPIO_H
 
+/* GPIOAO */
+#define GPIOAO_0			0
+#define GPIOAO_1			1
+#define GPIOAO_2			2
+#define GPIOAO_3			3
+#define GPIOAO_4			4
+#define GPIOAO_5			5
+#define GPIOAO_6			6
+
+#define GPIO_TEST_N			7
+
 /* GPIOE */
 #define GPIOE_0				0
 #define GPIOE_1				1
@@ -88,17 +99,5 @@
 #define GPIOT_20			70
 #define GPIOT_21			71
 #define GPIOT_22			72
-
-/* GPIOAO */
-#define GPIOAO_0			73
-#define GPIOAO_1			74
-#define GPIOAO_2			75
-#define GPIOAO_3			76
-#define GPIOAO_4			77
-#define GPIOAO_5			78
-#define GPIOAO_6			79
-
-/* TEST_N */
-#define	GPIO_TEST_N			80
 
 #endif

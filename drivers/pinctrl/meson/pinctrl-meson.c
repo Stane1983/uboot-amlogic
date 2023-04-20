@@ -434,6 +434,8 @@ int meson_gpio_probe(struct udevice *dev)
 	sprintf(name, "GPIO%s_", bank->name);
 	uc_priv->bank_name = name;
 	uc_priv->gpio_count = bank->last - bank->first + 1;
+	debug("%s bank:%8s, first:%2d, last:%2d, count:%3d\n", __func__,
+	      name, bank->first, bank->last, uc_priv->gpio_count);
 #else
 	uc_priv->bank_name = priv->data->name;
 	uc_priv->gpio_count = priv->data->num_pins;
@@ -442,20 +444,37 @@ int meson_gpio_probe(struct udevice *dev)
 }
 
 #if defined(CONFIG_AMLOGIC_MODIFY)
-static int meson_gpio_reset_gpio_desc(unsigned int offset, struct gpio_desc *desc)
+static int meson_gpio_reset_gpio_desc(struct meson_pinctrl_data *data,
+				      unsigned int offset, struct gpio_desc *desc)
 {
-	struct gpio_dev_priv *uc_priv;
 	struct udevice *dev;
+	struct meson_bank *bank = NULL;
+	unsigned int pin;
+	int i;
 
+	/* Find the corresponding bank based on the offset */
+	pin = data->pin_base + offset;
+	for (i = 0; i < data->num_banks; i++) {
+		if (pin >= data->banks[i].first &&
+		    pin <= data->banks[i].last) {
+			bank = &data->banks[i];
+			break;
+		}
+	}
+
+	if (!bank)
+		return -EINVAL;
+
+	/* Find the corresponding device based on the bank */
 	for (uclass_first_device(UCLASS_GPIO, &dev);
 	     dev;
 	     uclass_next_device(&dev)) {
-		uc_priv = dev_get_uclass_priv(dev);
-		if (offset >= uc_priv->gpio_base &&
-		    offset < uc_priv->gpio_base + uc_priv->gpio_count) {
+		if (dev_get_priv(dev) == bank) {
 			desc->dev = dev;
-			desc->offset = offset - uc_priv->gpio_base;
+			desc->offset = pin - bank->first;
 			desc->flags = 0;
+			debug("%s redirect bank:%s offset:%u\n", __func__,
+			      bank->name, desc->offset);
 			return 0;
 		}
 	}
@@ -467,17 +486,22 @@ static int meson_gpio_reset_gpio_desc(unsigned int offset, struct gpio_desc *des
 int meson_gpio_get_xlate(struct udevice *dev, struct gpio_desc *desc,
 			 struct ofnode_phandle_args *args) {
 	struct gpio_dev_priv *uc_priv;
+	struct meson_bank *priv = dev_get_priv(dev);
+	struct meson_pinctrl *ppriv = dev_get_priv(dev->parent);
 	int ret;
 
 	if (args->args_count < 1)
 		return -EINVAL;
+
+	debug("%s self priv: %s, parent priv: %s\n", __func__,
+	      priv->name, ppriv->data->name);
 
 	/*
 	 * Since the device_bind() binding used in 'pinctr-meson.c'
 	 * was passed the same ofnode,  the gpio_request_by_name()
 	 * always finds the first device, so we have to reset here.
 	 */
-	ret = meson_gpio_reset_gpio_desc(args->args[0], desc);
+	ret = meson_gpio_reset_gpio_desc(ppriv->data, args->args[0], desc);
 	if (ret)
 		return ret;
 

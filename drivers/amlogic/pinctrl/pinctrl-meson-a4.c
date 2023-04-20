@@ -966,8 +966,7 @@ static struct meson_pmx_func meson_a4_periphs_functions[] = {
 };
 
 static struct meson_bank meson_a4_periphs_banks[] = {
-	/* NOTE: Make sure that the order is consistent with meson-xx-gpio.h */
-	/* name  first  last  irq  pullen  pull  dir  out  in */
+	/*      name  first      last      irq  pullen  pull  dir  out  in */
 	BANK_DS("E",  GPIOE_0,  GPIOE_1,
 		0x43,  0, 0x44,  0, 0x42,  0, 0x41,  0, 0x40,  0,  0x47,  0),
 	BANK_DS("D",  GPIOD_0, GPIOD_15,
@@ -981,27 +980,26 @@ static struct meson_bank meson_a4_periphs_banks[] = {
 };
 
 static struct meson_bank meson_a4_aobus_banks[] = {
-	/* NOTE: Make sure that the order is consistent with meson-xx-gpio.h */
+	/*      name  first      last      irq  pullen  pull  dir  out  in */
 	BANK_DS("AO", GPIOAO_0, GPIOAO_6,
-		0x3,   0,  0x4,  0,   0x2,  0,  0x1,  0,  0x0,  0,   0x7,  0),
+		0x3,   0, 0x04,  0, 0x02,  0,  0x01, 0, 0x00,  0,  0x07,  0),
 	BANK_DS("_TEST_N", GPIO_TEST_N,    GPIO_TEST_N,
-		0x13,  0,  0x14,  0,  0x12, 0,  0x11,  0, 0x10, 0,  0x17,  0),
+		0x13,  0, 0x14,  0, 0x12,  0,  0x11, 0, 0x10,  0,  0x17,  0),
 };
 
 static struct meson_pmx_bank meson_a4_periphs_pmx_banks[] = {
-	/* NOTE: Make sure that the order is consistent with meson-xx-gpio.h */
-	/* name  first  lask  reg  offset */
-	BANK_PMX("E",  GPIOE_0,  GPIOE_1, 0x12,  0),
-	BANK_PMX("D",  GPIOD_0, GPIOD_15, 0x10,  0),
-	BANK_PMX("B",  GPIOB_0, GPIOB_13, 0x00,  0),
-	BANK_PMX("X",  GPIOX_0, GPIOX_17, 0x03,  0),
-	BANK_PMX("T",  GPIOT_0, GPIOT_22, 0x0b,  0),
+	/*       name      first        lask         reg   offset */
+	BANK_PMX("E",      GPIOE_0,     GPIOE_1,     0x12,     0),
+	BANK_PMX("D",      GPIOD_0,     GPIOD_15,    0x10,     0),
+	BANK_PMX("B",      GPIOB_0,     GPIOB_13,    0x00,     0),
+	BANK_PMX("X",      GPIOX_0,     GPIOX_17,    0x03,     0),
+	BANK_PMX("T",      GPIOT_0,     GPIOT_22,    0x0b,     0),
 };
 
 static struct meson_pmx_bank meson_a4_aobus_pmx_banks[] = {
-	/* NOTE: Make sure that the order is consistent with meson-xx-gpio.h */
-	BANK_PMX("AO", GPIOAO_0, GPIOAO_6, 0x00,  0),
-	BANK_PMX("TEST_N", GPIO_TEST_N, GPIO_TEST_N, 0x0,  28),
+	/*       name      first        lask         reg   offset */
+	BANK_PMX("AO",     GPIOAO_0,    GPIOAO_6,    0x00,     0),
+	BANK_PMX("TEST_N", GPIO_TEST_N, GPIO_TEST_N, 0x00,    28),
 };
 
 static struct meson_axg_pmx_data meson_a4_periphs_pmx_banks_data = {
@@ -1023,7 +1021,6 @@ static int meson_a4_parse_dt_extra(struct meson_pinctrl *pc)
 
 static struct meson_pinctrl_data meson_a4_periphs_pinctrl_data = {
 	.name		= "periphs-banks",
-	.pin_base	= 0,
 	.groups		= meson_a4_periphs_groups,
 	.funcs		= meson_a4_periphs_functions,
 	.banks		= meson_a4_periphs_banks,
@@ -1038,7 +1035,6 @@ static struct meson_pinctrl_data meson_a4_periphs_pinctrl_data = {
 
 static struct meson_pinctrl_data meson_a4_aobus_pinctrl_data = {
 	.name		= "aobus-banks",
-	.pin_base	= 0,
 	.groups		= meson_a4_aobus_groups,
 	.funcs		= meson_a4_aobus_functions,
 	.banks		= meson_a4_aobus_banks,
