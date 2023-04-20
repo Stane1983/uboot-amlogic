@@ -54,7 +54,7 @@ int serial_set_pin_port(unsigned long port_base)
 
 int dram_init(void)
 {
-	gd->ram_size = PHYS_SDRAM_1_SIZE;
+	gd->ram_size = (readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4;
 	return 0;
 }
 
@@ -235,13 +235,13 @@ static struct mm_region bd_mem_map[] = {
 	{
 		.virt = 0x00000000UL,
 		.phys = 0x00000000UL,
-		.size = 0x80000000UL,
+		.size = 0x10000000UL,
 		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
 			 PTE_BLOCK_INNER_SHARE
 	}, {
-		.virt = 0xe0000000UL,
-		.phys = 0xe0000000UL,
-		.size = 0x20000000UL,
+		.virt = 0xf1000000UL,
+		.phys = 0xf1000000UL,
+		.size = 0x0f000000UL,
 		.attrs = PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
 			 PTE_BLOCK_NON_SHARE |
 			 PTE_BLOCK_PXN | PTE_BLOCK_UXN
