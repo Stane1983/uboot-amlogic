@@ -60,6 +60,15 @@ void lcd_clk_config_chip_init_t7(struct aml_lcd_drv_s *pdrv, struct lcd_clk_conf
 void lcd_clk_config_chip_init_t3(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
 void lcd_clk_config_chip_init_t5w(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
 void lcd_clk_config_chip_init_c3(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
+void lcd_clk_config_chip_init_a4(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
 void lcd_clk_config_chip_init(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
 
+/* ****************************************************
+ * lcd clk prbs func
+ * ****************************************************
+ */
+extern unsigned long lcd_encl_clk_check_std;
+extern unsigned long lcd_fifo_clk_check_std;
+extern unsigned int lcd_prbs_flag, lcd_prbs_performed, lcd_prbs_err;
+unsigned long lcd_abs(long a, long b);
 #endif

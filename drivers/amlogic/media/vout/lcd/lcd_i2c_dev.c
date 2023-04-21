@@ -8,6 +8,7 @@
 #include <asm/gpio.h>
 #include <fdtdec.h>
 #include <i2c.h>
+#include <dm.h>
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include <amlogic/media/vout/lcd/lcd_i2c_dev.h>
 #include "lcd_common.h"

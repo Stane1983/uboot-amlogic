@@ -103,6 +103,18 @@ static struct aml_lcd_data_s lcd_data_t5m = {
 	.offset_venc_data = {0x0},
 	.dft_conf = {NULL, NULL, NULL},
 };
+
+static __maybe_unused struct aml_lcd_data_s lcd_data_a4 = {
+	.chip_type = LCD_CHIP_A4,
+	.chip_name = "a4",
+	.rev_type = 0,
+	.drv_max = 1,
+	.offset_venc = {0},
+	.offset_venc_if = {0},
+	.offset_venc_data = {0},
+	.dft_conf = {NULL, NULL, NULL},
+};
+
 static void lcd_chip_detect(void)
 {
 #if 1
@@ -132,6 +144,9 @@ static void lcd_chip_detect(void)
 		break;
 	case MESON_CPU_MAJOR_ID_T5M:
 		lcd_data = &lcd_data_t5m;
+		break;
+	case MESON_CPU_MAJOR_ID_A4:
+		lcd_data = &lcd_data_a4;
 		break;
 	default:
 		lcd_data = NULL;
@@ -645,7 +660,7 @@ static int lcd_config_probe(void)
 #ifdef CONFIG_DTB_MEM_ADDR
 	dt_addr = (char *)CONFIG_DTB_MEM_ADDR;
 #else
-	dt_addr = (char *)0x01000000;
+	dt_addr = (char *)0x01f00000;
 #endif
 #ifdef CONFIG_OF_LIBFDT
 	if (fdt_check_header(dt_addr) < 0) {
