@@ -206,7 +206,7 @@ static int g_dnl_bind(struct usb_composite_dev *cdev)
 
 	s = get_usid_string();
 	if (s)
-		strlcpy(g_dnl_serial, s, strnlen(s, MAX_STRING_SERIAL));
+		strlcpy(g_dnl_serial, s, strnlen(s, MAX_STRING_SERIAL - 1) + 1);
 	else
 		printf("Fail in get chipid\n");
 

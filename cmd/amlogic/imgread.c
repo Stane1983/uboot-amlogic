@@ -373,9 +373,11 @@ static int do_image_read_dtb_from_rsv(unsigned char* loadaddr)
 static int do_image_read_dtb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
     int iRet = 0;
-    const char* const partName = argv[1];
+    const char partName[64] = {0};
     unsigned char* loadaddr = 0;
     uint64_t lflashReadOff = 0;
+
+    strlcpy((char *)partName, argv[1], 64);
     if (2 < argc) {
         loadaddr = (unsigned char*)simple_strtoul(argv[2], NULL, 16);
     } else{

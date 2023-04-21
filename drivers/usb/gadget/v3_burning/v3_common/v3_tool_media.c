@@ -40,7 +40,9 @@ static int _assert_logic_partition_cap(const char *thePartName, const uint64_t n
 			continue;
 
 		FB_DBG("cfg partSzInBytes %llx for part(%s)\n", partSzInBytes, thePartName);
-		if (partSzInBytes == NAND_PART_SIZE_FULL)
+		if (NAND_PART_SIZE_FULL == partSzInBytes)
+			return 0;
+		if ((partSzInBytes >> 32) == 0xffffffffUL) //GPT mode last part
 			return 0;
 		if (partSzInBytes > nandPartCap) {
 			FB_EXIT("partSz of logic part(%s): sz dts %llx > Sz flash %llx\n",
@@ -308,7 +310,9 @@ static int _discrete_bootloader_write(u8 *dataBuf, unsigned int off, unsigned in
 int bootloader_write(u8 *dataBuf, unsigned off, unsigned binsz)
 {
 	bool discreteMode = false;
+	//p_payload_info_t pInfo = _bl2x_mode_detect(dataBuf);
 
+	//_bl2x_mode_check_header(pInfo);
 	if (is_bootloader_discrte(&discreteMode))
 		return -__LINE__;
 	if (!discreteMode) {

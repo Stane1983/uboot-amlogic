@@ -20,9 +20,6 @@
 extern efuse_obj_field_t efuse_field;
 #endif//#ifdef CONFIG_EFUSE_OBJ_API
 
-#ifndef IS_FEAT_BOOT_VERIFY
-#define IS_FEAT_BOOT_VERIFY() 0
-#endif// #ifndef IS_FEAT_BOOT_VERIFY
 int __attribute__((weak)) store_logic_read(const char *name, loff_t off, size_t size, void *buf)
 { return store_read(name, off, size, buf);}
 
@@ -124,7 +121,14 @@ static int do_get_bootloader_status(cmd_tbl_t *cmdtp, int flag, int argc, char *
 			" forUpgrade_robustOta forUpgrade_flashType forUpgrade_bootloaderCopies "
 			" forUpgrade_bootloaderIndex forUpgrade_1stBootIndex", 0);
 
-	if (saveenv) run_command("saveenv", 0);
+	if (saveenv) {
+		if (CONFIG_IS_ENABLED(AML_UPDATE_ENV))
+			run_command("update_env_part -p forUpgrade_robustOta "\
+					"forUpgrade_bootloaderIndex", 0);
+		else
+			run_command("saveenv", 0);
+	}
+
 
 	return CMD_RET_SUCCESS;
 }
@@ -350,7 +354,7 @@ void update_rollback(void)
 static int write_boot0(void)
 {
 	unsigned char *buffer = NULL;
-	int capacity_boot = 0;
+	int capacity_boot = 0x2000 * 512;
 	int iRet = 0;
 	char partname[32] = {0};
 	char *slot_name = NULL;
@@ -382,14 +386,18 @@ static int write_boot0(void)
 	if (iRet) {
 		errorP("Fail to read 0x%xB from part[%s] at offset 0\n",
 					BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET, partname);
+		free(buffer);
 		return -1;
 	}
 
 	iRet = store_boot_write("bootloader", 0, BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET, buffer);
 	if (iRet) {
 		printf("Failed to write boot0\n");
+		free(buffer);
 		return -1;
 	}
+
+	free(buffer);
 	return 0;
 }
 
