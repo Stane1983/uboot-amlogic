@@ -12,5 +12,4 @@ char* domain_name[] =
 	"PM_GE2D",
 	"PM_ETH",
 	"PM_DEMOD",
-	"PM_AUDIO",
 };

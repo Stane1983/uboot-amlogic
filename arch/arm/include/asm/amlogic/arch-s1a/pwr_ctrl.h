@@ -16,9 +16,8 @@
 #define PM_GE2D			4
 #define PM_ETH			5
 #define PM_DEMOD		6
-#define PM_AUDIO		7
 
-#define PM_MAX			8
+#define PM_MAX			7
 //static int pm_max = 8;
 /*
 char* domain_name[] =
