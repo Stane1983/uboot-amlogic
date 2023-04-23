@@ -1,5 +1,10 @@
 menu "Device Drivers"
 
+config EFUSE
+        bool "AML EFUSE Support"
+        help
+          Enable support for the Amlogic EFUSE controller.
+
 source "drivers/core/Kconfig"
 
 # types of drivers sorted in alphabetical order

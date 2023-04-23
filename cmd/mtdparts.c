@@ -110,6 +110,11 @@ DECLARE_GLOBAL_DATA_PTR;
  * field for read-only partitions */
 #define MTD_WRITEABLE_CMD		1
 
+#ifdef CONFIG_AML_MTDPART
+extern struct list_head aml_device;
+extern int mtdparts_init(void);
+#endif
+
 /* default values for mtdids and mtdparts variables */
 #if !defined(MTDIDS_DEFAULT)
 #ifdef CONFIG_MTDIDS_DEFAULT
@@ -128,22 +133,30 @@ DECLARE_GLOBAL_DATA_PTR;
 #if defined(CONFIG_SYS_MTDPARTS_RUNTIME)
 extern void board_mtdparts_default(const char **mtdids, const char **mtdparts);
 #endif
+#ifndef CONFIG_AML_MTDPART
 static const char *mtdids_default = MTDIDS_DEFAULT;
 static const char *mtdparts_default = MTDPARTS_DEFAULT;
+#endif
 
 /* copies of last seen 'mtdids', 'mtdparts' and 'partition' env variables */
 #define MTDIDS_MAXLEN		128
 #define MTDPARTS_MAXLEN		512
 #define PARTITION_MAXLEN	16
+
+#ifndef CONFIG_AML_MTDPART
 static char last_ids[MTDIDS_MAXLEN + 1];
 static char last_parts[MTDPARTS_MAXLEN + 1];
+#endif
+
 static char last_partition[PARTITION_MAXLEN + 1];
 
 /* low level jffs2 cache cleaning routine */
 extern void jffs2_free_cache(struct part_info *part);
 
+#ifndef CONFIG_AML_MTDPART
 /* mtdids mapping list, filled by parse_ids() */
 static struct list_head mtdids;
+#endif
 
 /* device/partition list, parse_cmdline() parses into here */
 static struct list_head devices;
@@ -156,10 +169,13 @@ u8 use_defaults;
 
 static struct part_info* mtd_part_info(struct mtd_device *dev, unsigned int part_num);
 
+#ifndef CONFIG_AML_MTDPART
 /* command line only routines */
 static struct mtdids* id_find_by_mtd_id(const char *mtd_id, unsigned int mtd_id_len);
 static int device_del(struct mtd_device *dev);
+#endif
 
+#ifndef CONFIG_AML_MTDPART
 /**
  * Parses a string into a number.  The number stored at ptr is
  * potentially suffixed with K (for kilobytes, or 1024 bytes),
@@ -223,6 +239,7 @@ static void memsize_format(char *buf, u64 size)
 	else
 		sprintf(buf, "%llu", size);
 }
+#endif
 
 /**
  * This routine does global indexing of all partitions. Resulting index for
@@ -295,7 +312,7 @@ static void current_save(void)
 	index_partitions();
 }
 
-
+#ifndef CONFIG_AML_MTDPART
 /**
  * Produce a mtd_info given a type and num.
  *
@@ -710,6 +727,7 @@ static int part_parse(const char *const partdef, const char **ret, struct part_i
 	*retpart = part;
 	return 0;
 }
+#endif
 
 /**
  * Check device number to be within valid range for given device type.
@@ -719,6 +737,7 @@ static int part_parse(const char *const partdef, const char **ret, struct part_i
  * @param size a pointer to the size of the mtd device (output)
  * Return: 0 if device is valid, 1 otherwise
  */
+#ifndef CONFIG_AML_MTDPART
 static int mtd_device_validate(u8 type, u8 num, u64 *size)
 {
 	struct mtd_info *mtd = NULL;
@@ -753,6 +772,7 @@ static int device_delall(struct list_head *head)
 
 	return 0;
 }
+#endif
 
 /**
  * If provided device exists it's partitions are deleted, device is removed
@@ -761,6 +781,7 @@ static int device_delall(struct list_head *head)
  * @param dev device to be deleted
  * Return: 0 on success, 1 otherwise
  */
+#ifndef CONFIG_AML_MTDPART
 static int device_del(struct mtd_device *dev)
 {
 	part_delall(&dev->parts);
@@ -784,7 +805,7 @@ static int device_del(struct mtd_device *dev)
 	index_partitions();
 	return 0;
 }
-
+#endif
 /**
  * Search global device list and return pointer to the device of type and num
  * specified.
@@ -808,6 +829,7 @@ struct mtd_device *device_find(u8 type, u8 num)
 	return NULL;
 }
 
+#ifndef CONFIG_AML_MTDPART
 /**
  * Add specified device to the global device list.
  *
@@ -1031,6 +1053,7 @@ static struct mtdids* id_find_by_mtd_id(const char *mtd_id, unsigned int mtd_id_
 
 	return NULL;
 }
+#endif
 
 /**
  * Parse device id string <dev-id> := 'nand'|'nor'|'onenand'|'spi-nand'<dev-num>,
@@ -1075,7 +1098,7 @@ int mtd_id_parse(const char *id, const char **ret_id, u8 *dev_type,
 		*ret_id = p;
 	return 0;
 }
-
+#ifndef CONFIG_AML_MTDPART
 /**
  * Process all devices and generate corresponding mtdparts string describing
  * all partitions on all devices.
@@ -1222,7 +1245,7 @@ static int generate_mtdparts_save(char *buf, u32 buflen)
 
 	return ret;
 }
-
+#endif
 #if defined(CONFIG_CMD_MTDPARTS_SHOW_NET_SIZES)
 /**
  * Get the net size (w/o bad blocks) of the given partition.
@@ -1246,7 +1269,7 @@ static uint64_t net_part_size(struct mtd_info *mtd, struct part_info *part)
 	return net_size;
 }
 #endif
-
+#ifndef CONFIG_AML_MTDPART
 static void print_partition_table(void)
 {
 	struct list_head *dentry, *pentry;
@@ -1299,7 +1322,8 @@ static void print_partition_table(void)
 	if (list_empty(&devices))
 		printf("no partitions defined\n");
 }
-
+#endif
+#ifndef CONFIG_AML_MTDPART
 /**
  * Format and print out a partition list for each device from global device
  * list.
@@ -1336,6 +1360,7 @@ static void list_partitions(void)
 	puts(mtdparts_default ? mtdparts_default : "none");
 	puts("\n");
 }
+#endif
 
 /**
  * Given partition identifier in form of <dev_type><dev_num>,<part_num> find
@@ -1347,6 +1372,7 @@ static void list_partitions(void)
  * @param part pointer to requested partition (output)
  * Return: 0 on success, 1 otherwise
  */
+#ifndef CONFIG_AML_MTDPART
 int find_dev_and_part(const char *id, struct mtd_device **dev,
 		u8 *part_num, struct part_info **part)
 {
@@ -1401,6 +1427,37 @@ int find_dev_and_part(const char *id, struct mtd_device **dev,
 	return 0;
 }
 
+#else
+int find_dev_and_part(const char *id, struct mtd_device **dev,
+u8 *part_num, struct part_info **part)
+{
+	struct list_head *dentry, *pentry;
+
+	*part_num = 0;
+	debug("--- find_dev_and_part ---\nid = %s\n", id);
+	if (list_empty(&aml_device)) {
+		pr_err("%s() %d: no valid part\n", __func__, __LINE__);
+		return -1;
+	}
+
+	list_for_each(dentry, &aml_device) {
+		*part_num = 0;
+		*dev = list_entry(dentry, struct mtd_device, link);
+		list_for_each(pentry, &(*dev)->parts) {
+		*part = list_entry(pentry, struct part_info, link);
+		if (strcmp((*part)->name, id) == 0)
+			return 0;
+		(*part_num)++;
+		}
+	}
+
+	*dev = NULL;
+	*part = NULL;
+	*part_num = 0;
+	return 1;
+}
+#endif
+#ifndef CONFIG_AML_MTDPART
 /**
  * Find and delete partition. For partition id format see find_dev_and_part().
  *
@@ -1432,7 +1489,7 @@ static int delete_partition(const char *id)
 	printf("partition %s not found\n", id);
 	return 1;
 }
-
+#endif
 #if defined(CONFIG_CMD_MTDPARTS_SPREAD)
 /**
  * Increase the size of the given partition so that it's net size is at least
@@ -1536,6 +1593,7 @@ static int spread_partitions(void)
  * @param buf temporary buffer pointer MTDPARTS_MAXLEN long
  * Return: mtdparts variable string, NULL if not found
  */
+#ifndef CONFIG_AML_MTDPART
 static const char *env_get_mtdparts(char *buf)
 {
 	if (gd->flags & GD_FLG_ENV_READY)
@@ -1601,6 +1659,7 @@ static int parse_mtdparts(const char *const mtdparts)
 
 	return err;
 }
+#endif
 
 /**
  * Parse provided string describing mtdids mapping (see file header for mtdids
@@ -1610,6 +1669,7 @@ static int parse_mtdparts(const char *const mtdparts)
  * @param ids mapping string
  * Return: 0 on success, 1 otherwise
  */
+#ifndef CONFIG_AML_MTDPART
 static int parse_mtdids(const char *const ids)
 {
 	const char *p = ids;
@@ -1712,7 +1772,7 @@ static int parse_mtdids(const char *const ids)
 
 	return 0;
 }
-
+#endif
 
 /**
  * Parse and initialize global mtdids mapping and create global
@@ -1720,6 +1780,7 @@ static int parse_mtdids(const char *const ids)
  *
  * Return: 0 on success, 1 otherwise
  */
+#ifndef CONFIG_AML_MTDPART
 int mtdparts_init(void)
 {
 	static int initialized = 0;
@@ -1861,7 +1922,7 @@ int mtdparts_init(void)
 
 	return 0;
 }
-
+#endif
 /**
  * Return pointer to the partition of a requested number from a requested
  * device.
@@ -1959,6 +2020,11 @@ static int do_chpart(struct cmd_tbl *cmdtp, int flag, int argc,
 static int do_mtdparts(struct cmd_tbl *cmdtp, int flag, int argc,
 		       char *const argv[])
 {
+#ifdef CONFIG_AML_MTDPART
+	if (argc > 1)
+		printf("we are not support cmd mtdparts operates\n");
+	return 0;
+#else
 	if (argc == 2) {
 		if (strcmp(argv[1], "default") == 0) {
 			env_set("mtdids", NULL);
@@ -2070,7 +2136,7 @@ static int do_mtdparts(struct cmd_tbl *cmdtp, int flag, int argc,
 	if ((argc == 2) && (strcmp(argv[1], "spread") == 0))
 		return spread_partitions();
 #endif /* CONFIG_CMD_MTDPARTS_SPREAD */
-
+#endif
 	return CMD_RET_USAGE;
 }
 

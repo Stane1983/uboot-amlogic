@@ -366,7 +366,11 @@ static int spi_nor_erase(struct mtd_info *mtd, struct erase_info *instr)
 	return -ENOTSUPP;
 }
 
+#if defined(CONFIG_AML_STORAGE)
+const struct flash_info *spi_nor_read_id(struct spi_nor *nor)
+#else
 static const struct flash_info *spi_nor_read_id(struct spi_nor *nor)
+#endif
 {
 	int			tmp;
 	u8			id[SPI_NOR_MAX_ID_LEN];

@@ -28,7 +28,11 @@ obj-$(CONFIG_DM_MMC) += mmc/
 
 obj-$(CONFIG_EFUSE) += efuse/
 
-obj-$(CONFIG_DM_SPI)+= spi/
+obj-$(CONFIG_DM_SPI) += spi/
+
+obj-$(CONFIG_MTD) += mtd/
+
+obj-$(CONFIG_SPI_FLASH_MTD) += mtd/spi/
 
 obj-$(CONFIG_AMLOGIC_USB) += usb/host/
 

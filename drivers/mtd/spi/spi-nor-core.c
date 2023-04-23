@@ -1357,7 +1357,11 @@ static int stm_is_unlocked(struct spi_nor *nor, loff_t ofs, uint64_t len)
 }
 #endif /* CONFIG_SPI_FLASH_STMICRO */
 
+#if defined(CONFIG_AML_STORAGE)
+const struct flash_info *spi_nor_read_id(struct spi_nor *nor)
+#else
 static const struct flash_info *spi_nor_read_id(struct spi_nor *nor)
+#endif
 {
 	int			tmp;
 	u8			id[SPI_NOR_MAX_ID_LEN];

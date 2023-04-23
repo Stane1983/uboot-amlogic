@@ -95,6 +95,10 @@ struct mtd_write_req {
 #define MTD_NO_ERASE		0x1000	/* No erase necessary */
 #define MTD_POWERUP_LOCK	0x2000	/* Always locked after reset */
 
+#if CONFIG_IS_ENABLED(AML_STORAGE)
+#define MESON_IGNORE_ERASE_CHIP 0x80000000 /* meson ignore store erase chip */
+#endif
+
 /* Some common devices / combinations of capabilities */
 #define MTD_CAP_ROM		0
 #define MTD_CAP_RAM		(MTD_WRITEABLE | MTD_BIT_WRITEABLE | MTD_NO_ERASE)

@@ -19,6 +19,10 @@
 
 #include "sf_internal.h"
 
+#ifdef CONFIG_AML_STORAGE
+extern int spi_flash_fit_storage(struct spi_flash *flash);
+#endif
+
 static int spi_nor_create_read_dirmap(struct spi_nor *nor)
 {
 	struct spi_mem_dirmap_info info = {
@@ -101,6 +105,14 @@ static int spi_flash_probe_slave(struct spi_flash *flash)
 	if (ret)
 		goto err_read_id;
 
+#ifdef CONFIG_SPI_FLASH_MTD
+	/* for advanced support */
+	//ret = spi_flash_mtd_register(flash);
+#ifdef CONFIG_AML_STORAGE
+	if (!ret)
+		ret = spi_flash_fit_storage(flash);
+#endif /* CONFIG_AML_STORAGE */
+#endif /* CONFIG_SPI_FLASH_MTD */
 	if (CONFIG_IS_ENABLED(SPI_DIRMAP)) {
 		ret = spi_nor_create_read_dirmap(flash);
 		if (ret)
