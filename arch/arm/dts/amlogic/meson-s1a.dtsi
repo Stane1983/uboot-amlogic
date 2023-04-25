@@ -75,7 +75,7 @@
 	};
 
 	pinctrl_periphs: pinctrl@fe004000 {
-		compatible = "amlogic,meson-s4-periphs-pinctrl";
+		compatible = "amlogic,meson-s1a-periphs-pinctrl";
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges;
@@ -87,7 +87,7 @@
 				    "gpio";
 			gpio-controller;
 			#gpio-cells = <2>;
-			gpio-ranges = <&pinctrl_periphs 0 0 82>;
+			gpio-ranges = <&pinctrl_periphs 0 0 40>;
 		};
 	};
 
@@ -256,8 +256,8 @@
 &pinctrl_periphs {
 	remote_input_ao_pins:remote_input_ao_pins {
 		mux {
-			groups = "remote_in";
-			function = "remote_in";
+			groups = "ir_remote_input_d2";
+			function = "ir_remote_input";
 			bias-disable;
 		};
 	};

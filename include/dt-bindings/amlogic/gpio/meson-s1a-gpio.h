@@ -3,95 +3,56 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
-#ifndef _DT_BINDINGS_MESON_S4_GPIO_H
-#define _DT_BINDINGS_MESON_S4_GPIO_H
-#define	GPIOE_0		0
-#define	GPIOE_1		1
+#ifndef _DT_BINDINGS_MESON_S1A_GPIO_H
+#define _DT_BINDINGS_MESON_S1A_GPIO_H
 
-#define	GPIOB_0		2
-#define	GPIOB_1		3
-#define	GPIOB_2		4
-#define	GPIOB_3		5
-#define	GPIOB_4		6
-#define	GPIOB_5		7
-#define	GPIOB_6		8
-#define	GPIOB_7		9
-#define	GPIOB_8		10
-#define	GPIOB_9		11
-#define	GPIOB_10	12
-#define	GPIOB_11	13
-#define	GPIOB_12	14
-#define	GPIOB_13	15
+/* GPIOB */
+#define GPIOB_0				0
+#define GPIOB_1				1
+#define GPIOB_2				2
+#define GPIOB_3				3
+#define GPIOB_4				4
+#define GPIOB_5				5
 
-#define	GPIOC_0		16
-#define	GPIOC_1		17
-#define	GPIOC_2		18
-#define	GPIOC_3		19
-#define	GPIOC_4		20
-#define	GPIOC_5		21
-#define	GPIOC_6		22
-#define	GPIOC_7		23
+/* GPIOD */
+#define GPIOD_0				6
+#define GPIOD_1				7
+#define GPIOD_2				8
+#define GPIOD_3				9
+#define GPIOD_4				10
+#define GPIOD_5				11
+#define GPIOD_6				12
+#define GPIOD_7				13
+#define GPIOD_8				14
+#define GPIOD_9				15
+#define GPIOD_10			16
+#define GPIOD_11			17
 
-#define	GPIOD_0		24
-#define	GPIOD_1		25
-#define	GPIOD_2		26
-#define	GPIOD_3		27
-#define	GPIOD_4		28
-#define	GPIOD_5		29
-#define	GPIOD_6		30
-#define	GPIOD_7		31
-#define	GPIOD_8		32
-#define	GPIOD_9		33
-#define	GPIOD_10	34
-#define	GPIOD_11	35
+/* GPIOH */
+#define GPIOH_0				18
+#define GPIOH_1				19
+#define GPIOH_2				20
+#define GPIOH_3				21
+#define GPIOH_4				22
+#define GPIOH_5				23
+#define GPIOH_6				24
+#define GPIOH_7				25
+#define GPIOH_8				26
+#define GPIOH_9				27
+#define GPIOH_10			28
 
-#define	GPIOH_0		36
-#define	GPIOH_1		37
-#define	GPIOH_2		38
-#define	GPIOH_3		39
-#define	GPIOH_4		40
-#define	GPIOH_5		41
-#define	GPIOH_6		42
-#define	GPIOH_7		43
-#define	GPIOH_8 	44
-#define	GPIOH_9 	45
-#define	GPIOH_10	46
-#define	GPIOH_11	47
+/* GPIOZ */
+#define GPIOZ_0				29
+#define GPIOZ_1				30
+#define GPIOZ_2				31
+#define GPIOZ_3				32
+#define GPIOZ_4				33
+#define GPIOZ_5				34
+#define GPIOZ_6				35
+#define GPIOZ_7				36
+#define GPIOZ_8				37
+#define GPIOZ_9				38
 
-#define	GPIOX_0		48
-#define	GPIOX_1		49
-#define	GPIOX_2		50
-#define	GPIOX_3		51
-#define	GPIOX_4		52
-#define	GPIOX_5		53
-#define	GPIOX_6		54
-#define	GPIOX_7		55
-#define	GPIOX_8		56
-#define	GPIOX_9		57
-#define	GPIOX_10	58
-#define	GPIOX_11	59
-#define	GPIOX_12	60
-#define	GPIOX_13	61
-#define	GPIOX_14	62
-#define	GPIOX_15	63
-#define	GPIOX_16	64
-#define	GPIOX_17	65
-#define	GPIOX_18	66
-#define	GPIOX_19	67
+#define	GPIO_TEST_N			39
 
-#define	GPIOZ_0		68
-#define	GPIOZ_1		69
-#define	GPIOZ_2		70
-#define	GPIOZ_3		71
-#define	GPIOZ_4		72
-#define	GPIOZ_5		73
-#define	GPIOZ_6		74
-#define	GPIOZ_7		75
-#define	GPIOZ_8		76
-#define	GPIOZ_9		77
-#define	GPIOZ_10	78
-#define	GPIOZ_11	79
-#define	GPIOZ_12	80
-
-#define	GPIO_TEST_N	81
-#endif /* _DT_BINDINGS_MESON_S4_GPIO_H */
+#endif
