@@ -57,11 +57,13 @@
 
 /* args/envs */
 //#define CONFIG_SYS_MAXARGS  64
+
+//text based env guide: v2023/ doc/usage/environment.rst
+//for common env, pls maintain it in board/amlogic/env/android.env
 #define CONFIG_EXTRA_ENV_SETTINGS \
-	CONFIG_EXTRA_ENV_SETTINGS_BASE \
-	"silent=0\0"\
-        "dv_fw_addr=0xa00000\0"\
-        "otg_device=1\0" \
+	"uart_base=0xfe07a000\0"\
+	"usb_burning=" CONFIG_USB_TOOL_ENTRY "\0"\
+	"board=oppen\0"\
         "panel_type=lcd_1\0" \
         "outputmode=1080p60hz\0" \
         "hdmimode=1080p60hz\0" \
@@ -75,91 +77,16 @@
         "display_layer=osd0\0" \
         "display_color_fg=0xffff\0" \
         "display_color_bg=0\0" \
-        "dtb_mem_addr=0x01000000\0" \
         "fb_width=1920\0" \
         "fb_height=1080\0" \
         "hdmichecksum=0x00000000\0" \
         "frac_rate_policy=1\0" \
         "hdr_policy=0\0" \
-        "fdt_high=0x20000000\0"\
-        "sdcburncfg=aml_sdc_burn.ini\0"\
-        "EnableSelinux=enforcing\0" \
-        "recovery_part=recovery\0"\
-        "loglevel=8\0" \
-	"lock=10101000\0"\
         "cvbs_drv=0\0"\
         "osd_reverse=0\0"\
         "video_reverse=0\0"\
         "board=oppen\0"\
-        "initargs="\
-            "init=/init ""console=ttyS0,921600 no_console_suspend earlycon=aml_uart,0xfe07a000 "\
-            "ramoops.pstore_en=1 ramoops.record_size=0x8000 ramoops.console_size=0x4000 loop.max_part=4 "\
-            "\0"\
-        "upgrade_check="\
-			"run upgrade_check_base;"\
-			"\0"\
-		"storeargs="\
-			"get_bootloaderversion;" \
-			"run storeargs_base;"\
-			"setenv bootargs ${bootargs} ${emmc_quirks};"\
-            "run cmdline_keys;"\
-			"\0"\
-		"switch_bootmode="\
-			"get_rebootmode;"\
-			"if test ${reboot_mode} = factory_reset; then "\
-				"run recovery_from_flash;"\
-			"else if test ${reboot_mode} = update; then "\
-				"run update;"\
-			"else if test ${reboot_mode} = quiescent; then "\
-				"setenv bootconfig ${bootconfig} androidboot.quiescent=1;"\
-			"else if test ${reboot_mode} = recovery_quiescent; then "\
-				"setenv bootconfig ${bootconfig} androidboot.quiescent=1;"\
-				"run recovery_from_flash;"\
-			"else if test ${reboot_mode} = cold_boot; then "\
-			"else if test ${reboot_mode} = fastboot; then "\
-				"fastboot 0;"\
-			"fi;fi;fi;fi;fi;fi;"\
-			"\0"\
-		"storeboot="\
-			"run storeboot_base;"\
-			"\0"\
-		"update="\
-			"run update_base;"\
-			"\0"\
-		"enter_fastboot="\
-			"fastboot 0;"\
-			"\0"\
-		"recovery_from_fat_dev="\
-			"run recovery_from_fat_dev_base;"\
-			"\0"\
-		"recovery_from_udisk="\
-			"run recovery_from_udisk_base;"\
-			"\0"\
-		"recovery_from_sdcard="\
-			"run recovery_from_sdcard_base;"\
-			"\0"\
-		"recovery_from_flash="\
-			"store param;"\
-			"setenv bootargs ${bootargs} ${mtdbootparts}; "\
-			"run recovery_from_flash_base;"\
-			"\0"\
-		"bcb_cmd="\
-			"run bcb_cmd_base;"\
-			"\0"\
-		"load_bmp_logo="\
-			"run load_bmp_logo_base;"\
-			"\0"\
-		"init_display="\
-			"run init_display_base;"\
-			"\0"\
-		"storage_param="\
-			"setenv bootargs ${bootargs} ${emmc_quirks}; "\
-			"run storage_param_base;"\
-			"\0"\
-        "cmdline_keys="\
-			"setenv usid ap222${cpu_id};"\
-			"run cmdline_keys_base;"\
-            "\0"\
+	"scramble_reg=0xfe02e030\0"\
         "upgrade_key="\
 		"if gpio input GPIOD_2; then "\
 			"echo detect upgrade key;"\

@@ -140,9 +140,9 @@ config USB_TOOL_ENTRY
 	default "adnl 1200" if !AML_PRODUCT_MODE
 
 config KNL_LOG_LEVEL
-	string "restrict kernel log level"
-	default " loglevel=1 " if AML_PRODUCT_MODE
-	default " " if !AML_PRODUCT_MODE
+	int "restrict kernel log level"
+	default 1 if AML_PRODUCT_MODE
+	default 8 if !AML_PRODUCT_MODE
 
 config AML_DISABLE_DEV_CMDS
 	bool "disable unsafe developing commands"

@@ -12,7 +12,7 @@
 #include <errno.h>
 #include <malloc.h>
 #include <linux/stddef.h>
-#include <linux/crc32.h>
+#include <u-boot/crc.h>
 #include <asm/byteorder.h>
 #include <amlogic/store_wrapper.h>
 
@@ -215,7 +215,7 @@ static int do_update_env_part(cmd_tbl_t *cmdtp, int flag, int argc, char * const
 		errorP("env_storage: must init before load\n");
 		ret = CMD_RET_FAILURE; goto _update_env_part_err;
 	}
-	if (store_rsv_read(RSV_ENV, BUF_SZ, env_part_buf)) {
+	if (store_rsv_read(RSV_ENV, CONFIG_ENV_SIZE, env_part_buf)) {
 		errorP("fail read env from storage\n");
 		ret = CMD_RET_FAILURE; goto _update_env_part_err;
 	} else {
