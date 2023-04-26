@@ -530,7 +530,7 @@ int edp_div_check(struct lcd_clk_config_s *cconf, unsigned long long bit_rate)
 
 void lcd_pll_frac_generate_dft(struct aml_lcd_drv_s *pdrv)
 {
-	struct lcd_clk_config_s *cconf;
+	struct lcd_clk_config_s *cconf, *phyconf = NULL, *pixconf = NULL;
 	struct lcd_config_s *pconf = &pdrv->config;
 	unsigned long long pll_fout, pll_fvco, clk_div_in;
 	unsigned int enc_clk, clk_div_out, clk_div_sel;
