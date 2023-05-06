@@ -5,6 +5,10 @@ PATCHLEVEL = 01
 SUBLEVEL =
 EXTRAVERSION =
 NAME =
+MAJOR_VERSION 	=	3
+MINOR_VERSION 	=	5
+PATCH_VERSION 	=	0
+RELEASE_VERSION	=	bl-${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}
 
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
@@ -1656,7 +1660,7 @@ prepare: prepare0
 # ---------------------------------------------------------------------------
 
 define filechk_version.h
-	(echo \#define PLAIN_VERSION \"$(UBOOTRELEASE)\"; \
+	(echo \#define PLAIN_VERSION \"$(UBOOTRELEASE)\" \" $(RELEASE_VERSION)\" ; \
 	echo \#define ACS_VERSION \"$(ACSRELEASE)\"; \
 	echo \#define U_BOOT_VERSION \"U-Boot \" PLAIN_VERSION; \
 	echo \#define CC_VERSION_STRING \"$$(LC_ALL=C $(CC) --version | head -n 1)\"; \
