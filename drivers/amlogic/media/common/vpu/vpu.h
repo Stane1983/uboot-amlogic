@@ -31,7 +31,8 @@ enum vpu_chip_e {
 	VPU_CHIP_T5W,  /* 14 */
 	VPU_CHIP_T5M,  /* 15 */
 	VPU_CHIP_A4,   /* 16 */
-	VPU_CHIP_MAX,
+	VPU_CHIP_S1A,  /* 17 */
+	VPU_CHIP_MAX,  /* 18 */
 };
 
 #define VPU_PWR_ON             1
