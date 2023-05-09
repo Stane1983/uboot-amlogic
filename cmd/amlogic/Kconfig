@@ -130,7 +130,6 @@ config NO_FASTBOOT_FLASHING
 config DISABLE_AML_SERIAL
 	bool "disable debug serial tx/rx"
 	depends on MESON_SERIAL
-	select SILENT_CONSOLE
 	select DISABLE_CONSOLE
 	default n
 

@@ -217,6 +217,7 @@ menu "Boot commands"
 config CMD_BOOTD
 	bool "bootd"
 	default y
+	depends on !AML_DISABLE_DEV_CMDS
 	help
 	  Run the command stored in the environment "bootcmd", i.e.
 	  "bootd" does the same thing as "run bootcmd".
@@ -285,12 +286,14 @@ config BOOTM_EFI
 
 config CMD_BOOTZ
 	bool "bootz"
+	depends on !AML_DISABLE_DEV_CMDS
 	help
 	  Boot the Linux zImage
 
 config CMD_BOOTI
 	bool "booti"
 	depends on ARM64 || RISCV
+	depends on !AML_DISABLE_DEV_CMDS
 	default y
 	help
 	  Boot an AArch64 Linux Kernel image from memory.
@@ -449,7 +452,8 @@ config CMD_EXTENSION
 
 config CMD_GO
 	bool "go"
-	default y
+	default n
+	depends on !AML_DISABLE_DEV_CMDS
 	help
 	  Start an application at a given address.
 
@@ -780,6 +784,7 @@ config CMD_MEMINFO
 config CMD_MEMORY
 	bool "md, mm, nm, mw, cp, cmp, base, loop"
 	default y
+	depends on !AML_DISABLE_DEV_CMDS
 	help
 	  Memory commands.
 	    md - memory display
@@ -1589,7 +1594,8 @@ config CMD_ITEST
 
 config CMD_SOURCE
 	bool "source"
-	default y
+	default n
+	depends on !AML_DISABLE_DEV_CMDS
 	help
 	  Run script from memory
 

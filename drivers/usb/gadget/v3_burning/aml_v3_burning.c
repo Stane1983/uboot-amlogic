@@ -90,6 +90,9 @@ static int is_bl1_usb_protocol_DNL(void)
 
 int aml_v3_factory_usb_burning(int flag, bd_t *bis)
 {
+	if (IS_ENABLED(CONFIG_DISABLE_AML_SERIAL))
+		gd->flags |= GD_FLG_DISABLE_CONSOLE | GD_FLG_SILENT | GD_FLG_SERIAL_READY;
+
 	if (!is_boot_device_usb())
 		return 1;
 	if (!is_bl1_usb_protocol_DNL())

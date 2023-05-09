@@ -191,6 +191,7 @@ config VPL_DM_SERIAL
 
 config DEBUG_UART
 	bool "Enable an early debug UART for debugging"
+	depends on !DISABLE_AML_SERIAL
 	help
 	  The debug UART is intended for use very early in U-Boot to debug
 	  problems when an ICE or other debug mechanism is not available.

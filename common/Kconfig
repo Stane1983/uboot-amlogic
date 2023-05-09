@@ -103,6 +103,7 @@ config VPL_LOGLEVEL
 
 config SILENT_CONSOLE
 	bool "Support a silent console"
+	depends on !DISABLE_AML_SERIAL
 	help
 	  This option allows the console to be silenced, meaning that no
 	  output will appear on the console devices. This is controlled by
