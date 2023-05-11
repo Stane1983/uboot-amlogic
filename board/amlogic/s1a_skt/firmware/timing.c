@@ -2193,12 +2193,12 @@ bl2_reg_t __bl2_reg[] __attribute__ ((section(".generic_param"))) = {
 /* gpio/pinmux/pwm init */
 register_ops_t __bl2_ops_reg[MAX_REG_OPS_ENTRIES]
 __attribute__ ((section(".misc_param"))) = {
-	{PWMCD_PWM_B, VCCK_VAL_REG, 0xffffffff,	0, 0, 0},
-	{PWMCD_MISC_REG_AB, (0x1 << 1), (0x1 << 1), 0, 0, 0},
-	/* set pwm d clock rate to 24M, enable them */
-	{ CLKCTRL_PWM_CLK_CD_CTRL, (1 << 24),	  0xffffffff, 0, 0, 0 },
-	/* set GPIOD4 mux to pwm_d */
-	{ PADCTRL_PIN_MUX_REGG,	   (0x2 << 16),	  (0xf << 16), 0, 0, 0 },
+	{PWMAB_PWM_A, VCCK_VAL_REG, 0xffffffff,	0, 0, 0},
+	{PWMAB_MISC_REG_AB, (0x1 << 0), (0x1 << 0), 0, 0, 0},
+	/* set pwm a clock rate to 24M, enable them */
+	{ CLKCTRL_PWM_CLK_AB_CTRL, (1 << 8),	  0xffffffff, 0, 0, 0 },
+	/* set GPIOD6 mux to pwm_a */
+	{ PADCTRL_PIN_MUX_REGG,	   (0x2 << 24),	  (0xf << 16), 0, 0, 0 },
 };
 
 #define DEV_FIP_SIZE 0x300000
