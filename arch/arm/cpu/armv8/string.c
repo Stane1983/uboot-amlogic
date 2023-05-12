@@ -9,6 +9,7 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#ifndef	CONFIG_AML_UASAN
 #ifdef __HAVE_ARCH_MEMSET
 void *memset(void *s, int c, size_t count)
 {
@@ -40,6 +41,7 @@ void *memset(void *s, int c, size_t count)
 
 	return s;
 }
+#endif
 #endif
 
 #ifdef __HAVE_ARCH_MEMCMP
@@ -108,6 +110,7 @@ int strcmp(const char *cs, const char *ct)
 }
 #endif
 
+#ifndef CONFIG_AML_UASAN
 #ifdef __HAVE_ARCH_MEMCPY
 /**
  * memcpy - Copy one area of memory to another
@@ -175,4 +178,5 @@ void *memmove(void *dest, const void *src, size_t count)
 
 	return dest;
 }
+#endif
 #endif

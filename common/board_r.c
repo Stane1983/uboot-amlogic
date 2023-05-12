@@ -220,6 +220,10 @@ static int initr_malloc(void)
 	 * reserve_noncached().
 	 */
 	malloc_start = gd->relocaddr - TOTAL_MALLOC_LEN;
+#ifdef CONFIG_AML_UASAN
+	/* skip red zone size */
+	malloc_start -= MEM_SECTION_RED_ZONE_SIZE;
+#endif
 	mem_malloc_init((ulong)map_sysmem(malloc_start, TOTAL_MALLOC_LEN),
 			TOTAL_MALLOC_LEN);
 	return 0;

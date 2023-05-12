@@ -28,6 +28,10 @@
 #include <linux/build_bug.h>
 #include <asm-offsets.h>
 
+#ifdef CONFIG_AML_UASAN
+#include <amlogic/uasan.h>
+#endif
+
 struct acpi_ctx;
 struct driver_rt;
 
@@ -489,6 +493,17 @@ struct global_data {
 	 * @dmtag_list: List of DM tags
 	 */
 	struct list_head dmtag_list;
+#ifdef CONFIG_AML_UASAN
+	int	      uasan_enabled;
+	int	      in_asan_report;
+	unsigned long use_mem_end;
+	unsigned long use_mem_size;
+	unsigned long phy_mem_low;
+	unsigned long phy_mem_high;
+	unsigned long shadow_addr;
+	unsigned long shadow_size;
+	unsigned long section_red_zones[SECTION_RED_ZONE_NUM];
+#endif
 };
 #ifndef DO_DEPS_ONLY
 static_assert(sizeof(struct global_data) == GD_SIZE);

@@ -21,6 +21,11 @@
 const char hex_asc[] = "0123456789abcdef";
 const char hex_asc_upper[] = "0123456789ABCDEF";
 
+#ifdef CONFIG_AML_UASAN
+/* select HEXDUMP if UASAN enabled */
+#define CONFIG_HEXDUMP	1
+#endif
+
 #if CONFIG_IS_ENABLED(HEXDUMP)
 int hex_dump_to_buffer(const void *buf, size_t len, int rowsize, int groupsize,
 		       char *linebuf, size_t linebuflen, bool ascii)

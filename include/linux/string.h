@@ -129,6 +129,24 @@ extern void * memchr(const void *,int,__kernel_size_t);
 void *memchr_inv(const void *, int, size_t);
 #endif
 
+#if defined(CONFIG_AML_UASAN) && !defined(__SANITIZE_ADDRESS__)
+/*
+ * For files that are not instrumented (e.g. mm/slub.c) we
+ * should use not instrumented version of mem* functions.
+ */
+void *__memset(void *, int, __kernel_size_t);
+void *__memcpy(void *, const void *,  __kernel_size_t);
+void *__memmove(void *, const void *, __kernel_size_t);
+
+extern void * memset(void *,int,__kernel_size_t);
+extern void * memcpy(void *,const void *,__kernel_size_t);
+extern void * memmove(void *,const void *,__kernel_size_t);
+
+#define memcpy(dst, src, len) __memcpy(dst, src, len)
+#define memmove(dst, src, len) __memmove(dst, src, len)
+#define memset(s, c, n) __memset(s, c, n)
+#endif
+
 /**
  * memdup() - allocate a buffer and copy in the contents
  *

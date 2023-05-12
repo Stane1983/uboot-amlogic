@@ -512,6 +512,8 @@ char *strswab(const char *s)
 }
 #endif
 
+#ifndef CONFIG_AML_UASAN
+/* bypass these 3 functions, implemented in uasan */
 #ifndef __HAVE_ARCH_MEMSET
 /**
  * memset - Fill a region of memory with the given value
@@ -583,6 +585,7 @@ __used void * memcpy(void *dest, const void *src, size_t count)
 
 	return dest;
 }
+#endif
 #endif
 
 #ifndef __HAVE_ARCH_MEMMOVE

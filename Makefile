@@ -278,7 +278,12 @@ ifeq ($(HOSTARCH),$(ARCH))
 CROSS_COMPILE ?=
 endif
 
+ifdef CONFIG_AML_UASAN
+#use gcc version above 9.0 to support asan-instrument-allocas option
+CROSS_COMPILE ?=/opt/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
+else
 CROSS_COMPILE ?=/opt/gcc-arm-11.2-2022.02-x86_64-aarch64-none-elf/bin/aarch64-none-elf-
+endif
 export CROSS_COMPILE
 
 KCONFIG_CONFIG	?= .config
@@ -441,6 +446,29 @@ KBUILD_CFLAGS   := -Wall -Wstrict-prototypes -Werror \
 KBUILD_CFLAGS	+= -fshort-wchar -fno-strict-aliasing
 KBUILD_AFLAGS   := -D__ASSEMBLY__
 KBUILD_LDFLAGS  :=
+
+ifeq ("$(CONFIG_AML_UASAN)", "1")
+KBUILD_CFLAGS += -DCONFIG_AML_UASAN
+KBUILD_AFLAGS += -DCONFIG_AML_UASAN
+endif
+ifdef CONFIG_AML_UASAN
+cc-param = $(call cc-option, -mllvm -$(1), $(call cc-option, --param $(1)))
+
+# UASAN_SHADOW_OFFSET = (UASAN_DDR_SIZE * 7 / 8 - 256) <<  20
+# use 256 MB space for uboot and malloc/stack
+UASAN_SHADOW_OFFSET=$(shell printf "0x%08x\n" $$(( (((($(UASAN_DDR_SIZE) * 7) >> 3) - 256) << 20) )) )
+CFLAGS_UASAN := -fsanitize=kernel-address \
+				-fsanitize-address-use-after-scope
+CFLAGS_UASAN += $(call cc-param,asan-globals=1)
+CFLAGS_UASAN += $(call cc-param,asan-stack=1)
+CFLAGS_UASAN += $(call cc-param,asan-use-after-scope=1)
+CFLAGS_UASAN += $(call cc-param,asan-instrument-allocas=1)
+CFLAGS_UASAN += -fasan-shadow-offset=${UASAN_SHADOW_OFFSET}
+CFLAGS_UASAN += -DCONFIG_UASAN_SHADOW_OFFSET=${UASAN_SHADOW_OFFSET}
+
+export CFLAGS_UASAN
+
+endif
 
 ifeq ($(cc-name),clang)
 ifneq ($(CROSS_COMPILE),)
@@ -886,7 +914,11 @@ libs-y += $(if $(BOARDDIR),board/$(BOARDDIR)/)
 
 libs-y := $(sort $(libs-y))
 
+ifdef CONFIG_AML_UASAN
+u-boot-dirs	:= $(patsubst %/,%,$(filter %/, $(libs-y))) tools
+else
 u-boot-dirs	:= $(patsubst %/,%,$(filter %/, $(libs-y))) tools examples
+endif
 
 u-boot-alldirs	:= $(sort $(u-boot-dirs) $(patsubst %/,%,$(filter %/, $(libs-))))
 
@@ -1928,6 +1960,10 @@ ifneq ($(KBUILD_SRC),)
 		echo >&2 "  in the '$(srctree)' directory.";\
 		/bin/false; \
 	fi;
+endif
+
+ifdef CONFIG_AML_UASAN
+	echo "#define CONFIG_AML_UASAN 1"  >> $(config_h)
 endif
 
 # prepare2 creates a makefile if using a separate output directory

@@ -161,5 +161,14 @@ __weak int arm_reserve_mmu(void)
 #endif
 #endif
 
+#ifdef CONFIG_AML_UASAN
+	extern void record_section_red_zone(unsigned long addr);
+	/* insert red zone */
+	printf("\n[UASAN] reserve [%08lx - %08lx] for mmu\n",
+		gd->relocaddr, gd->relocaddr + gd->arch.tlb_size);
+	gd->relocaddr -= MEM_SECTION_RED_ZONE_SIZE;
+	record_section_red_zone(gd->relocaddr);
+#endif
+
 	return 0;
 }

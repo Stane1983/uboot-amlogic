@@ -42,4 +42,8 @@ unsigned int rand_r(unsigned int *seedp);
 # include <env_internal.h>
 #endif
 
+#ifdef CONFIG_AML_UASAN
+#include <amlogic/uasan.h>
+#endif
+
 #endif	/* __COMMON_H_ */

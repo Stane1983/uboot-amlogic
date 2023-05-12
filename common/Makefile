@@ -20,6 +20,9 @@ endif
 
 obj-y += amlogic/blxx2bl33_param.o
 
+UASAN_SANITIZE_board_f.o := n
+UASAN_SANITIZE_dlmalloc.o := n
+
 # # boards
 obj-y += board_f.o
 obj-y += board_r.o

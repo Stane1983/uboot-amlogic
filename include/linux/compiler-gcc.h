@@ -88,6 +88,8 @@
  */
 #define barrier_before_unreachable() asm volatile("")
 
+#define _RET_IP_		(unsigned long)__builtin_return_address(0)
+
 /*
  * Mark a position in code as unreachable.  This can be used to
  * suppress control flow warnings after asm blocks that transfer
