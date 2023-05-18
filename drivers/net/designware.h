@@ -11,6 +11,11 @@
 #include <asm-generic/gpio.h>
 #endif
 
+#ifdef CONFIG_DM_ETH
+#include <amlogic/pm.h>
+#include <linux/io.h>
+#endif
+
 #define CONFIG_TX_DESCR_NUM	16
 #define CONFIG_RX_DESCR_NUM	16
 #define CONFIG_ETH_BUFSIZE	2048
