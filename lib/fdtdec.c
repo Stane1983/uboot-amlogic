@@ -1652,6 +1652,7 @@ int fdtdec_setup(void)
 		gd->fdt_src = FDTSRC_BOARD;
 	}
 
+#ifndef CONFIG_AMLOGIC_MODIFY
 	/* Allow the early environment to override the fdt address */
 	if (!IS_ENABLED(CONFIG_SPL_BUILD)) {
 		ulong addr;
@@ -1662,6 +1663,7 @@ int fdtdec_setup(void)
 			gd->fdt_src = FDTSRC_ENV;
 		}
 	}
+#endif
 
 	if (CONFIG_IS_ENABLED(MULTI_DTB_FIT))
 		setup_multi_dtb_fit();
