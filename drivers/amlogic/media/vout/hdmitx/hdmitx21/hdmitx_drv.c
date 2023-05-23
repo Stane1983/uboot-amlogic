@@ -749,7 +749,7 @@ static void construct_audio_packet(struct hdmitx_dev *hdev)
 	hdmi_audio_infoframe_init(info);
 
 	info->coding_type = HDMI_AUDIO_CODING_TYPE_STREAM;
-	info->channels = CC_2CH;
+	info->channels = CC_2CH + 1;
 	hdmi_audio_infoframe_set(info);
 }
 
@@ -1069,10 +1069,8 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 	hdmitx_set_clkdiv(hdev);
 	hdmitx_mux_vid_pll_clk(hdev);
 	hdmi_hwp_init();
-	if (!hdev->pxp_mode) {
+	if (!hdev->pxp_mode)
 		aml_audio_init();  /* Init audio hw firstly */
-		hdmitx_set_audmode(hdev);
-	}
 	if (hdev->enc_idx == 2) {
 		set_hdmitx_enc_idx(2);
 		hd21_set_reg_bits(VPU_DISP_VIU2_CTRL, 1, 29, 1);
@@ -1227,7 +1225,6 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 	/* else */
 		/* hdmitx21_venc_en(1, 1); */
 	construct_avi_packet(hdev);
-
 	videocode = para->timing.vic;
 	if (videocode == HDMI_95_3840x2160p30_16x9 ||
 		videocode == HDMI_94_3840x2160p25_16x9 ||
@@ -1436,7 +1433,6 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 	}
 	if (hdev->pxp_mode)
 		return; /* skip in pxp */
-
 	/* null char needed to terminate the string
 	 * otherwise garbage in checksum logopara
 	 */
@@ -1593,8 +1589,88 @@ bool is_hdmi_mode(char *mode)
 
 static int hdmitx_set_audmode(struct hdmitx_dev *hdev)
 {
+	u32 data32;
+	struct hdmi_format_para *para = hdev->para;
+	u32 aud_n = 6144; // ACR N
+
+	const static u32 frl_aud_n[] = {0, 5760, 6048, 6048, 6048, 5184, 4752};
+	// 0=I2S 2-channel; 1=I2S 4 x 2-channel; 2=channel 0/1, 4/5 valid.
+	// 2=audio sample packet; 7=one bit audio; 8=DST audio packet; 9=HBR audio packet.
+	u8 audio_packet_type = 2;
+	u8 vic = 16; // Video format identification code
+
+	hdmitx21_set_reg_bits(AIP_RST_IVCTX, 1, 0, 1);
 	hdmitx21_set_audioclk(1);
+
+	hdmitx21_set_reg_bits(SPDIF_SSMPL2_IVCTX, 0, 5, 1);
+	hdmitx21_set_reg_bits(HDMITX_TOP_CLK_CNTL, 1, 13, 1);//for spdif
+
+	vic = para->timing.vic;
+	if (vic)
+		audio_packet_type = 2;
+	else
+		audio_packet_type = 9;
+	//some common register config,why config this value ?? TODO
+	hdmitx21_wr_reg(AIP_HDMI2MHL_IVCTX, 0x00); //AIP
+	hdmitx21_wr_reg(PKT_FILTER_0_IVCTX, 0x02); //PKT FILTER
+	hdmitx21_wr_reg(ASRC_IVCTX, 0x00); //ASRC
+	hdmitx21_wr_reg(VP_INPUT_SYNC_ADJUST_CONFIG_IVCTX, 0x01); //vp__
+
+	data32 = 0;
+	//AUDP_TXCTRL : [1] layout; [7] aud_mute_en
+	hdmitx21_wr_reg(AUDP_TXCTRL_IVCTX, data32 & 0xff);
+	//ACR_CTRL  bit[3]:reg_no_mclk_ctsgen_sel_pclk. bit[0]: make hw_cts_hw_sw_sel = 0
+	hdmitx21_wr_reg(ACR_CTRL_IVCTX, 0x02);
+	hdmitx21_set_reg_bits(ACR_CTS_CLK_DIV_IVCTX, hdev->frl_rate ? 1 : 0, 4, 1);
+	/* in uboot, the audio is fixed as 48k, 2ch, PCM */
+	if (hdev->frl_rate && hdev->frl_rate < FRL_RATE_MAX)
+		aud_n = frl_aud_n[hdev->frl_rate];
+	hdmitx21_wr_reg(N_SVAL1_IVCTX, (aud_n >> 0) & 0xff); //N_SVAL1
+	hdmitx21_wr_reg(N_SVAL2_IVCTX, (aud_n >> 8) & 0xff); //N_SVAL2
+	hdmitx21_wr_reg(N_SVAL3_IVCTX, (aud_n >> 16) & 0xff); //N_SVAL3
+
+	//FREQ 00:mclk=128*Fs;01:mclk=256*Fs;10:mclk=384*Fs;11:mclk=512*Fs;...
+	hdmitx21_wr_reg(FREQ_SVAL_IVCTX, 0);
+
+	// [7:6] reg_tpi_spdif_sample_size: 0=Refer to stream header; 1=16-bit; 2=20-bit; 3=24-bit
+	// [  4] reg_tpi_aud_mute
+	data32 = 0;
+	data32 |= (3 << 6);
+	data32 |= (0 << 4);
+	hdmitx21_wr_reg(TPI_AUD_CONFIG_IVCTX,    data32);
+
+	if (0) { /* i2s_spdif */
+		hdmitx21_wr_reg(I2S_IN_MAP_IVCTX, 0xE4); //I2S_IN_MAP
+		hdmitx21_wr_reg(I2S_IN_CTRL_IVCTX, 0x20); //I2S_IN_CTRL [5] reg_cbit_order TODO
+		hdmitx21_wr_reg(I2S_IN_SIZE_IVCTX, 0x0b); //I2S_IN_SIZE
+		hdmitx21_wr_reg(I2S_CHST0_IVCTX, 0x15); //I2S_CHST0
+		hdmitx21_wr_reg(I2S_CHST1_IVCTX, 0x55); //I2S_CHST1
+		hdmitx21_wr_reg(I2S_CHST2_IVCTX, 0xfa); //I2S_CHST2
+		hdmitx21_wr_reg(I2S_CHST3_IVCTX, 0x32); //I2S_CHST3
+		hdmitx21_wr_reg(I2S_CHST4_IVCTX, 0x2b); //I2S_CHST4
+	}
+
+	data32 = 0;
+	data32 |= (0 << 6); //[  6] i2s2dsd_en
+	data32 |= (0 << 0); //[5:0] aud_err_thresh
+	hdmitx21_wr_reg(SPDIF_ERTH_IVCTX, data32);
+	//[7:4] I2S_EN SD0~SD3
+	//[  3] DSD_EN
+	//[  2] HBRA_EN
+	//[  1] SPID_EN  Enable later in test.c, otherwise initial junk data will be sent
+	//[ 0] PKT_EN
+	data32 = 0;
+	data32 |= (0 << 4);
+	data32 |= (0 << 3);
+	data32 |= ((audio_packet_type == HDMI_AUDIO_PACKET_HBR) << 2);
+	data32 |= (0 << 1);
+	data32 |= (0 << 0);
+	hdmitx21_wr_reg(AUD_MODE_IVCTX, 0x2);  //AUD_MODE
+
+	hdmitx21_wr_reg(AUD_EN_IVCTX, 0x03);           //AUD_EN
+
 	construct_audio_packet(hdev);
+	hdmitx21_set_reg_bits(AIP_RST_IVCTX, 0, 0, 1);
 
 	return 0;
 }
@@ -1732,24 +1808,13 @@ static void config_hdmi21_tx(struct hdmitx_dev *hdev)
 	// Pixel format: 0=RGB444; 1=YCbCr422; 2=YCbCr444; 3=YCbCr420.
 	// Pixel format: 0=RGB444; 1=YCbCr422; 2=YCbCr444; 3=YCbCr420.
 	u8 output_color_format = HDMI_COLORSPACE_YUV444;
-	u8 vic = 16; // Video format identification code
 	u32 active_pixels = 1920; // Number of active pixels per line
 	u32 active_lines = 1080; // Number of active lines per field
 	u8 scrambler_en = 0;
-	u32 aud_n = 6144; // ACR N
-	const static u32 frl_aud_n[] = {0, 5760, 6048, 6048, 6048, 5184, 4752};
-	// 0=I2S 2-channel; 1=I2S 4 x 2-channel; 2=channel 0/1, 4/5 valid.
-	// 2=audio sample packet; 7=one bit audio; 8=DST audio packet; 9=HBR audio packet.
-	u8 audio_packet_type = 2;
 	u32 data32;
 	u8 data8;
 	u8 dp_color_depth = 0;
 
-	vic = para->timing.vic;
-	if (vic)
-		audio_packet_type = 2;
-	else
-		audio_packet_type = 9;
 	if (para->tmds_clk > 340000) {
 		para->scrambler_en = 1;
 		para->tmds_clk_div40 = 1;
@@ -1905,62 +1970,10 @@ static void config_hdmi21_tx(struct hdmitx_dev *hdev)
 	}
 
 	//---------------
-	// config I2S
+	// config audio
 	//---------------
-	//some common register config,why config this value ?? TODO
-	hdmitx21_wr_reg(AIP_HDMI2MHL_IVCTX, 0x00); //AIP
-	hdmitx21_wr_reg(PKT_FILTER_0_IVCTX, 0x02); //PKT FILTER
-	hdmitx21_wr_reg(ASRC_IVCTX, 0x00); //ASRC
-	hdmitx21_wr_reg(VP_INPUT_SYNC_ADJUST_CONFIG_IVCTX, 0x01); //vp__
-
-	data32 = 0;
-	//AUDP_TXCTRL : [1] layout; [7] aud_mute_en
-	hdmitx21_wr_reg(AUDP_TXCTRL_IVCTX, data32 & 0xff);
-	//ACR_CTRL  bit[3]:reg_no_mclk_ctsgen_sel_pclk. bit[0]: make hw_cts_hw_sw_sel = 0
-	hdmitx21_wr_reg(ACR_CTRL_IVCTX, 0x02);
-	hdmitx21_set_reg_bits(ACR_CTS_CLK_DIV_IVCTX, hdev->frl_rate ? 1 : 0, 4, 1);
-	/* in uboot, the audio is fixed as 48k, 2ch, PCM */
-	if (hdev->frl_rate && hdev->frl_rate < FRL_RATE_MAX)
-		aud_n = frl_aud_n[hdev->frl_rate];
-	hdmitx21_wr_reg(N_SVAL1_IVCTX, (aud_n >> 0) & 0xff); //N_SVAL1
-	hdmitx21_wr_reg(N_SVAL2_IVCTX, (aud_n >> 8) & 0xff); //N_SVAL2
-	hdmitx21_wr_reg(N_SVAL3_IVCTX, (aud_n >> 16) & 0xff); //N_SVAL3
-
-	//FREQ 00:mclk=128*Fs;01:mclk=256*Fs;10:mclk=384*Fs;11:mclk=512*Fs;...
-	hdmitx21_wr_reg(FREQ_SVAL_IVCTX, 0);
-
-	// [7:6] reg_tpi_spdif_sample_size: 0=Refer to stream header; 1=16-bit; 2=20-bit; 3=24-bit
-	// [  4] reg_tpi_aud_mute
-	data32 = 0;
-	data32 |= (3 << 6);
-	data32 |= (0 << 4);
-	hdmitx21_wr_reg(TPI_AUD_CONFIG_IVCTX,    data32);
-
-	if (0) { /* i2s_spdif */
-		hdmitx21_wr_reg(I2S_IN_MAP_IVCTX, 0xE4); //I2S_IN_MAP
-		hdmitx21_wr_reg(I2S_IN_CTRL_IVCTX, 0x20); //I2S_IN_CTRL [5] reg_cbit_order TODO
-		hdmitx21_wr_reg(I2S_IN_SIZE_IVCTX, 0x0b); //I2S_IN_SIZE
-		hdmitx21_wr_reg(I2S_CHST0_IVCTX, 0x15); //I2S_CHST0
-		hdmitx21_wr_reg(I2S_CHST1_IVCTX, 0x55); //I2S_CHST1
-		hdmitx21_wr_reg(I2S_CHST2_IVCTX, 0xfa); //I2S_CHST2
-		hdmitx21_wr_reg(I2S_CHST3_IVCTX, 0x32); //I2S_CHST3
-		hdmitx21_wr_reg(I2S_CHST4_IVCTX, 0x2b); //I2S_CHST4
-	}
-
-	//[7:4] I2S_EN SD0~SD3
-	//[  3] DSD_EN
-	//[  2] HBRA_EN
-	//[  1] SPID_EN  Enable later in test.c, otherwise initial junk data will be sent
-	//[ 0] PKT_EN
-	data32 = 0;
-	data32 |= (0 << 4);
-	data32 |= (0 << 3);
-	data32 |= ((audio_packet_type == HDMI_AUDIO_PACKET_HBR) << 2);
-	data32 |= (0 << 1);
-	data32 |= (0 << 0);
-	hdmitx21_wr_reg(AUD_MODE_IVCTX, 0x2);  //AUD_MODE
-
-	hdmitx21_wr_reg(AUD_EN_IVCTX, 0x03);           //AUD_EN
+	if (!hdev->pxp_mode)
+		hdmitx_set_audmode(hdev);
 
 	//---------------
 	// config Packet
