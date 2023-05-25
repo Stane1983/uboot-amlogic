@@ -39,6 +39,7 @@ struct hdmitx_dev {
 	struct hdmi_format_para *para;
 	enum hdmi_vic vic;
 	enum frl_rate_enum frl_rate;
+	bool flt_train_st; /* 0 means FLT train failed */
 	u32 dsc_en;
 	unsigned int frac_rate_policy;
 	unsigned int mode420;
@@ -71,7 +72,6 @@ struct hdmi_format_para *hdmitx21_get_fmt_paras(enum hdmi_vic vic);
 const struct hdmi_timing *hdmitx21_get_timing_para0(void);
 int hdmitx21_timing_size(void);
 void hdmitx21_set_clk(struct hdmitx_dev *hdev);
-void hdmitx_set_clkdiv(struct hdmitx_dev *hdev);
 const struct hdmi_timing *hdmitx21_gettiming_from_vic(enum hdmi_vic vic);
 struct hdmi_format_para *hdmitx21_get_fmtpara(const char *mode,
 	const char *attr);
@@ -144,6 +144,8 @@ bool is_hdmi_mode(char *mode);
 bool is_hdmitx_limited_1080p(void);
 bool is_vic_over_limited_1080p(enum hdmi_vic vic);
 const struct hdmi_timing *hdmitx21_match_dtd_timing(struct dtd *t);
+bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
+	struct hdmi_format_para *para);
 #undef printk
 #define printk printf
 #undef pr_info

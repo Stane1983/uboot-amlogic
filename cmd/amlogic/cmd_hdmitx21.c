@@ -10,10 +10,15 @@
 #include <asm/byteorder.h>
 #include <amlogic/clk_measure.h>
 #include <amlogic/media/vout/hdmitx21/hdmitx.h>
+#include <linux/delay.h>
 #include <amlogic/media/dv/dolby_vision.h>
 #include <linux/libfdt_env.h>
 
 static unsigned char edid_raw_buf[512] = {0};
+/* there may be outputmode/2/3 when in multi-display case,
+ * sel_hdmimode is used to save the selected hdmi mode
+ */
+static char sel_hdmimode[MODE_LEN] = {0};
 
 static void dump_full_edid(const unsigned char *buf)
 {
@@ -25,6 +30,13 @@ static void dump_full_edid(const unsigned char *buf)
 	blk_no = buf[126] + 1;
 	if (blk_no > 4)
 		blk_no = 4;
+
+	if (blk_no == 2)
+		if (buf[128 + 4] == 0xe2 && buf[128 + 5] == 0x78)
+			blk_no = buf[128 + 6] + 1;
+	if (blk_no > EDID_BLK_NO)
+		blk_no = EDID_BLK_NO;
+
 	printf("dump EDID rawdata\n");
 	printf("  ");
 	for (i = 0; i < blk_no * EDID_BLK_SIZE; i++)
@@ -126,13 +138,25 @@ static int do_rx_det(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	return st;
 }
 
+static void save_default_720p(void)
+{
+	memcpy(sel_hdmimode, DEFAULT_HDMI_MODE, sizeof(DEFAULT_HDMI_MODE));
+	if (is_hdmi_mode(env_get("outputmode")))
+		env_set("outputmode", DEFAULT_HDMI_MODE);
+	else if (is_hdmi_mode(env_get("outputmode2")))
+		env_set("outputmode2",	DEFAULT_HDMI_MODE);
+	else if (is_hdmi_mode(env_get("outputmode3")))
+		env_set("outputmode3", DEFAULT_HDMI_MODE);
+	env_set("colorattribute", DEFAULT_COLOR_FORMAT);
+}
+
 static void hdmitx_mask_rx_info(struct hdmitx_dev *hdev)
 {
-	if (env_get("colorattribute"))
-		hdmitx21_get_fmtpara(env_get("hdmimode"), env_get("colorattribute"));
-
 	if (!hdev || !hdev->para)
 		return;
+
+	if (env_get("colorattribute"))
+		hdmitx21_get_fmtpara(sel_hdmimode, env_get("colorattribute"));
 
 	/* when current output color depth is 8bit, mask hdr capability */
 	/* refer to SWPL-44445 for more detail */
@@ -145,6 +169,7 @@ static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	const struct hdmi_timing *timing = NULL;
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
+	hdmitx21_pxp_init(1);
 	if (argc < 1)
 		return cmd_usage(cmdtp);
 
@@ -179,17 +204,30 @@ static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 			div40 = 1;
 		hdev->hwop.set_div40(div40);
 	} else { /* "output" */
-		if (0) { // TODO if (!edid_parsing_ok(hdev)) {
-			/* SWPL-34712: if EDID parsing error case, not save env,
-			 * only forcely output default mode(480p,RGB,8bit).
-			 */
-			printf("edid parsing ng, forcely output 480p, rgb,8bit\n");
-			hdev->vic = HDMI_3_720x480p60_16x9;
-			hdev->para = hdmitx21_get_fmtpara("480p60hz", "rgb,8bit");
-			hdev->para->cs = HDMI_COLORSPACE_RGB;
-			hdev->para->cd = COLORDEPTH_24B;
-			hdmitx21_set(hdev);
-			return CMD_RET_SUCCESS;
+		if (!hdev->pxp_mode) {
+			if (!edid_parsing_ok(hdev)) {
+				/* in SWPL-34712: if EDID parsing error in kernel,
+				 * only forcely output default mode(480p,RGB,8bit)
+				 * in sysctl, not save the default mode to env.
+				 * if uboot follow this rule, will cause issue OTT-19333:
+				 * uboot read edid error and then output default mode,
+				 * without save it mode env. if then kernel edid normal,
+				 * sysctrl/kernel get mode from env, the actual output
+				 * mode differs with outputmode env,it will
+				 * cause display abnormal(such as stretch). so don't
+				 * follow this rule in uboot, that's to say the actual
+				 * output mode needs to stays with the outputmode env.
+				 */
+				printf("edid parsing ng, forcely output 720p, rgb,8bit\n");
+				save_default_720p();
+				hdev->vic = HDMI_4_1280x720p60_16x9;
+				hdev->para =
+					hdmitx21_get_fmtpara("720p60hz", "rgb,8bit");
+				hdev->para->cs = HDMI_COLORSPACE_RGB;
+				hdev->para->cd = COLORDEPTH_24B;
+				hdmitx21_set(hdev);
+				return CMD_RET_SUCCESS;
+			}
 		}
 		if (!env_get("colorattribute"))
 			env_set("colorattribute", "444,8bit");
@@ -250,6 +288,13 @@ static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 		 * mode setting again when vout init in kernel
 		 */
 		hdmitx21_set(hdev);
+		if (hdev->frl_rate && !hdev->flt_train_st) {
+			/* FLT training failed, need go to tmds mode */
+			printf("hdmitx frl training failed, set tmds mode\n");
+			run_command("setenv hdmimode 1080p60hz", 0);
+			run_command("setenv colorattribute 422,12bit", 0);
+			run_command("run init_display_base", 0);
+		}
 	}
 	return CMD_RET_SUCCESS;
 }
@@ -697,7 +742,7 @@ void scene_process(struct hdmitx_dev *hdev,
 
 	/* 2. dolby vision scene process */
 	/* only for tv support dv and box enable dv */
-	if (is_dolby_enabled() && is_tv_support_dv(hdev)) {
+	if (is_dv_preference(hdev)) {
 		dolbyvision_scene_process(&hdmidata, scene_output_info);
 	} else if (is_dolby_enabled()) {
 		/* for enable dolby vision core when
@@ -713,10 +758,21 @@ void scene_process(struct hdmitx_dev *hdev,
 	}
 	/* 3.sdr scene process */
 	/* decide final display mode and deepcolor */
-	if (is_dolby_enabled() && is_tv_support_dv(hdev))
-		; /* do nothing */
-	else
+	if (is_dv_preference(hdev)) {
+		/* do nothing
+		 * already done above, just sync with sysctrl
+		 */
+	} else if (is_hdr_preference(hdev)) {
+		hdr_scene_process(&hdmidata, scene_output_info);
+	} else {
 		sdr_scene_process(&hdmidata, scene_output_info);
+	}
+	/* not find outputmode and use default mode */
+	if (strlen(scene_output_info->final_displaymode) == 0)
+		strcpy(scene_output_info->final_displaymode, DEFAULT_HDMI_MODE);
+	/* not find color space and use default mode */
+	if (!strstr(scene_output_info->final_deepcolor, "bit"))
+		strcpy(scene_output_info->final_deepcolor, DEFAULT_COLOR_FORMAT);
 }
 
 static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
@@ -736,6 +792,14 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 	char *colorattribute;
 	char dv_type[2] = {0};
 	struct scene_output_info scene_output_info;
+	struct hdmi_format_para *para = NULL;
+	bool mode_support = false;
+	/* hdmi_mode / colorattribute may be null or "none".
+	 * if either is null or "none", it means user not
+	 * selected manually, and need to select the best
+	 * mode or colorattribute by policy
+	 */
+	bool no_manual_output = false;
 
 	if (!hdev->hwop.get_hpd_state()) {
 		printf("HDMI HPD low, no need parse EDID\n");
@@ -747,13 +811,15 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 
 	/* check if the tv has changed or anything wrong */
 	store_checkvalue = (unsigned char *)env_get("hdmichecksum");
-	colorattribute = env_get("colorattribute");
+	/* get user selected output mode/color */
+	colorattribute = env_get("user_colorattribute");
 	hdmimode = env_get("hdmimode");
 	if (!store_checkvalue)
 		store_checkvalue = def_cksum;
 
-	printf("read hdmichecksum: %s, hdmimode: %s, colorattribute: %s\n",
-	       store_checkvalue, hdmimode, colorattribute);
+	printf("read hdmichecksum: %s, user hdmimode: %s, colorattribute: %s\n",
+	       store_checkvalue, hdmimode ? hdmimode : "null",
+	       colorattribute ? colorattribute : "null");
 
 	for (i = 0; i < 4; i++) {
 		if (('0' <= store_checkvalue[i * 2 + 2]) && (store_checkvalue[i * 2 + 2] <= '9'))
@@ -779,16 +845,38 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 			xtochar(0x80 * i + 0x7f, &checksum[2 * i + 2]);
 		checksum[10] = '\0';
 		memcpy(hdev->RXCap.checksum, checksum, 10);
-		printf("TV has changed, initial mode: %s  attr: %s now crc: %s\n",
-			env_get("hdmimode"), env_get("colorattribute"), checksum);
+		printf("TV has changed, now crc: %s\n", checksum);
 	} else {
 		memcpy(hdev->RXCap.checksum, store_checkvalue, 10);
-		printf("TV is same, initial mode is: %s attr: %s, checksum: %s\n",
-			env_get("hdmimode"), env_get("colorattribute"),
-			hdev->RXCap.checksum);
+		printf("TV is same, checksum: %s\n", hdev->RXCap.checksum);
 	}
 
-	if (hdev->RXCap.edid_changed) {
+	/* check user have selected both mode/color or not */
+	if (!hdmimode || !strcmp(hdmimode, "none") ||
+		!colorattribute || !strcmp(colorattribute, "none"))
+		no_manual_output = true;
+	else
+		no_manual_output = false;
+
+	if (!no_manual_output) {
+		/* check current user selected mode + color support or not */
+		para = hdmitx21_get_fmtpara(hdmimode, colorattribute);
+		if (hdmitx_edid_check_valid_mode(hdev, para))
+			mode_support = true;
+		else
+			mode_support = false;
+	}
+	/* three cases need to decide output by uboot mode select policy:
+	 * 1.TV changed
+	 * 2.either hdmimode or colorattribute is NULL or "none",
+	 * which means that user have not selected mode or colorattribute,
+	 * and need to select the auto best mode or best colorattribute.
+	 * 3.user selected mode not supportted by uboot (probably
+	 * means mode select policy or edid parse between sysctrl and
+	 * uboot have some gap), then need to find proper output mode
+	 * with uboot policy.
+	 */
+	if (hdev->RXCap.edid_changed || no_manual_output || !mode_support) {
 		/* find proper mode if EDID changed */
 		scene_process(hdev, &scene_output_info);
 		env_set("hdmichecksum", hdev->RXCap.checksum);
@@ -798,7 +886,8 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 			 * EDID read OK, systemcontrol will recover the hdmi
 			 * mode from env, to avoid keep the default hdmi output
 			 */
-			env_set("hdmimode", scene_output_info.final_displaymode);
+			memcpy(sel_hdmimode, scene_output_info.final_displaymode,
+				sizeof(scene_output_info.final_displaymode));
 			if (is_hdmi_mode(env_get("outputmode"))) {
 				env_set("outputmode",
 					scene_output_info.final_displaymode);
@@ -827,12 +916,24 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 				printf("update dv_type: %d\n",
 				       scene_output_info.final_dv_type);
 			}
+		} else {
+			save_default_720p();
 		}
-		printf("update hdmimode: %s\n", env_get("hdmimode"));
+		printf("update outputmode: %s\n", sel_hdmimode);
 		printf("update colorattribute: %s\n", env_get("colorattribute"));
 		printf("update hdmichecksum: %s\n", env_get("hdmichecksum"));
+	} else {
+		memset(sel_hdmimode, 0, sizeof(sel_hdmimode));
+		memcpy(sel_hdmimode, hdmimode, strlen(hdmimode));
+		if (is_hdmi_mode(env_get("outputmode")))
+			env_set("outputmode", hdmimode);
+		else if (is_hdmi_mode(env_get("outputmode2")))
+			env_set("outputmode2", hdmimode);
+		else if (is_hdmi_mode(env_get("outputmode3")))
+			env_set("outputmode3", hdmimode);
+		env_set("colorattribute", colorattribute);
 	}
-	hdev->para = hdmitx21_get_fmtpara(env_get("hdmimode"), env_get("colorattribute"));
+	hdev->para = hdmitx21_get_fmtpara(sel_hdmimode, env_get("colorattribute"));
 	hdev->vic = hdev->para->timing.vic;
 	hdmitx_mask_rx_info(hdev);
 	return 0;

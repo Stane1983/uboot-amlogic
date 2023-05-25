@@ -15,6 +15,7 @@ int hdmitx_likely_frac_rate_mode(char *m);
 enum amhdmitx_chip_e {
 	MESON_CPU_ID_SC2,
 	MESON_CPU_ID_T7,
+	MESON_CPU_ID_S1A,
 	MESON_CPU_ID_S5,
 };
 

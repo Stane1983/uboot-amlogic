@@ -364,6 +364,7 @@ static void set_hdmitx_fe_clk(void)
 	u32 vid_clk_cntl2;
 	u32 vid_clk_div;
 	u32 hdmi_clk_cntl;
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
 	vid_clk_cntl2 = CLKCTRL_VID_CLK0_CTRL2;
 	vid_clk_div = CLKCTRL_VID_CLK0_DIV;
@@ -372,14 +373,21 @@ static void set_hdmitx_fe_clk(void)
 	hd21_set_reg_bits(vid_clk_cntl2, 1, 9, 1);
 
 	tmp = (hd21_read_reg(vid_clk_div) >> 24) & 0xf;
+	if (hdev->chip_type == MESON_CPU_ID_S1A)
+		tmp = 0;
 	hd21_set_reg_bits(hdmi_clk_cntl, tmp, 20, 4);
 }
 
 static void _hdmitx21_set_clk(void)
 {
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
+
 	set_vid_clk_div(1);
 	set_hdmi_tx_pixel_div(1);
-	set_encp_div(1);
+	if (hdev->chip_type == MESON_CPU_ID_S1A)
+		set_encp_div(0);
+	else
+		set_encp_div(1);
 	hdmitx_enable_encp_clk();
 	set_hdmitx_fe_clk();
 }
@@ -594,6 +602,35 @@ static void set_hdmitx_enc_idx(unsigned int val)
 	arm_smccc_smc(HDCPTX_IOOPR, CONF_ENC_IDX, 1, !!val, 0, 0, 0, 0, &res);
 }
 
+//new future for s1a
+static void vpu_hdmi_set_matrix_ycbcr2rgb(void)
+{
+	//regVPP_MATRIX_COEF00_01 =VPU_HDMI_MATRIX_COEF00_01;
+	//regVPP_MATRIX_COEF02_10 =VPU_HDMI_MATRIX_COEF02_10;
+	//regVPP_MATRIX_COEF11_12 =VPU_HDMI_MATRIX_COEF11_12;
+	//regVPP_MATRIX_COEF20_21 =VPU_HDMI_MATRIX_COEF20_21;
+	//regVPP_MATRIX_COEF22 =VPU_HDMI_MATRIX_COEF22;
+	//regVPP_MATRIX_PRE_OFFSET0_1 = VPU_HDMI_MATRIX_PRE_OFFSET0_1;
+	//regVPP_MATRIX_PRE_OFFSET2 = VPU_HDMI_MATRIX_PRE_OFFSET2;
+	//regVPP_MATRIX_OFFSET0_1 =VPU_HDMI_MATRIX_OFFSET0_1;
+	//regVPP_MATRIX_OFFSET2 =VPU_HDMI_MATRIX_OFFSET2;
+	//regVPP_MATRIX_EN_CTRL = VPU_HDMI_MATRIX_EN_CTRL;
+	pr_info("ycbcr2rgb matrix\n");
+	hd21_write_reg(VPU_HDMI_MATRIX_PRE_OFFSET0_1,  ((0xfc0) << 16) | (0xe00)); //0xfc00e00);
+	hd21_write_reg(VPU_HDMI_MATRIX_PRE_OFFSET2, (0xe00)); //0x0e00);
+
+	//1.164     0       1.596
+	//1.164   -0.392    -0.813
+	//1.164   2.017     0
+	hd21_write_reg(VPU_HDMI_MATRIX_COEF00_01, (0x4a8 << 16) | 0);
+	hd21_write_reg(VPU_HDMI_MATRIX_COEF02_10, (0x662 << 16) | 0x4a8);
+	hd21_write_reg(VPU_HDMI_MATRIX_COEF11_12, (0x1e6f << 16) | 0x1cbf);
+	hd21_write_reg(VPU_HDMI_MATRIX_COEF20_21, (0x4a8 << 16) | 0x811);
+	hd21_write_reg(VPU_HDMI_MATRIX_COEF22, 0x0);
+	hd21_write_reg(VPU_HDMI_MATRIX_OFFSET0_1, 0x0);
+	hd21_write_reg(VPU_HDMI_MATRIX_OFFSET2, 0x0);
+}
+
 void hdmitx21_set(struct hdmitx_dev *hdev)
 {
 	struct hdmi_format_para *para = hdev->para;
@@ -613,7 +650,6 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 	hdmitx21_set_clk(hdev);
 	hdmitx_phy_pre_init(hdev);
 	_hdmitx21_set_clk();
-	hdmitx_set_clkdiv(hdev);
 	hdmi_hwp_init();
 	if (!hdev->pxp_mode) {
 		aml_audio_init();  /* Init audio hw firstly */
@@ -686,19 +722,38 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 	// [23:22] chroma_dnsmp_v. 0=use line 0; 1=use line 1; 2=use average.
 	// [27:24] pix_repeat
 	data32 = 0;
-	data32 = (((para->cs == HDMI_COLORSPACE_YUV420) ? 2 :
-		  (para->cs == HDMI_COLORSPACE_YUV422) ? 1 : 0) << 0) |
-		  (2 << 2) |
-		  (0 << 4) |
-		  (0 << 5) |
-		  (0 << 6) |
-		  (((para->cd == COLORDEPTH_24B) ? 1 : 0) << 10) |
-		  (0 << 11) |
-		  (0 << 12) |
-		  (2 << 22) |
-		  (0 << 24);
-	if (hdev->frl_rate && para->cs == HDMI_COLORSPACE_YUV420)
-		data32 |= 3 << 0; // 3:420 dual port
+	switch (hdev->chip_type) {
+	case MESON_CPU_ID_S1A:
+		//bit[1,0] = 3 enable ycbcr2rgb
+		data32 = (((para->cs == HDMI_COLORSPACE_RGB) ? 3 : 0) << 0) |
+			  (2 << 2) |
+			  (0 << 4) |
+			  (0 << 5) |
+			  (0 << 6) |
+			  (((para->cd == COLORDEPTH_24B) ? 1 : 0) << 10) |
+			  (0 << 11) |
+			  (0 << 12) |
+			  (2 << 22) |
+			  (0 << 24);
+		break;
+	case MESON_CPU_ID_T7:
+	case MESON_CPU_ID_S5:
+	default:
+		data32 = (((para->cs == HDMI_COLORSPACE_YUV420) ? 2 :
+			  (para->cs == HDMI_COLORSPACE_YUV422) ? 1 : 0) << 0) |
+			  (2 << 2) |
+			  (0 << 4) |
+			  (0 << 5) |
+			  (0 << 6) |
+			  (((para->cd == COLORDEPTH_24B) ? 1 : 0) << 10) |
+			  (0 << 11) |
+			  (0 << 12) |
+			  (2 << 22) |
+			  (0 << 24);
+		if (hdev->frl_rate && para->cs == HDMI_COLORSPACE_YUV420)
+			data32 |= 3 << 0; // 3:420 dual port
+		break;
+	}
 	hd21_write_reg(VPU_HDMI_FMT_CTRL, data32);
 
 	// [    2] inv_hsync_b
@@ -801,6 +856,16 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 		else
 			data32 |= (((para->cs == HDMI_COLORSPACE_YUV420) ? 1 : 0) << 8);
 		break;
+	case MESON_CPU_ID_S1A:
+		data32 |=  2;
+		data32 |= (para->timing.h_pol << 2);
+		data32 |= (para->timing.v_pol << 3);
+		//data32 |= (((para->cs == HDMI_COLORSPACE_YUV420) ? 4 : 0) << 5);
+		data32 |= (((para->cs == HDMI_COLORSPACE_RGB) ? 1 : 0) << 5);
+		//data32 |= ((TX_INPUT_COLOR_FORMAT ==
+		//			HDMI_COLORSPACE_RGB ? 0 : 3) << 16);
+		//data32 |= (((para->cs == HDMI_COLORSPACE_YUV420) ? 1 : 0) << 20);
+		break;
 	case MESON_CPU_ID_T7:
 	default:
 		data32 |= ((hdev->enc_idx == 0) ? 1 : 2);
@@ -814,6 +879,9 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 	}
 
 	hd21_write_reg(VPU_HDMI_SETTING, data32);
+	if (hdev->chip_type == MESON_CPU_ID_S1A)
+		if (para->cs == HDMI_COLORSPACE_RGB)
+			vpu_hdmi_set_matrix_ycbcr2rgb();
 
 #ifdef CONFIG_AML_VOUT
 	info->cur_enc_ppc = 1;
@@ -824,10 +892,14 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 #endif
 
 	hdmitx_set_phy(hdev);
-	if (!hdev->frl_rate)
-		hdmitx_dfm_cfg(0, 0);
-	else
-		hdmitx_dfm_cfg(1, 0);
+
+	if (hdev->chip_type != MESON_CPU_ID_S1A) {
+		if (!hdev->frl_rate)
+			hdmitx_dfm_cfg(0, 0);
+		else
+			hdmitx_dfm_cfg(1, 0);
+	}
+
 	if (hdev->chip_type >= MESON_CPU_ID_S5) {
 		if (hdev->RXCap.max_frl_rate)
 			hdmitx_frl_training_main(hdev->frl_rate);
@@ -1031,8 +1103,11 @@ static void hdmitx_set_div40(bool div40)
 	hdmitx_set_scdc_div40(div40);
 	if (hdev->chip_type == MESON_CPU_ID_S5)
 		set_s5_top_div40(div40, hdev->frl_rate);
-	else
+	else if (hdev->chip_type == MESON_CPU_ID_T7)
 		set_t7_top_div40(div40);
+	else
+		pr_info("The chip don't support over 3G\n");
+	hdmitx21_set_reg_bits(HDMITX_TOP_BIST_CNTL, 1, 12, 1);
 	hdmitx21_wr_reg(SCRCTL_IVCTX, (1 << 5) | !!div40);
 }
 
@@ -1698,6 +1773,7 @@ void hdmitx21_pxp_init(bool pxp_mode)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
+	printf("%s[%d]\n", __func__, __LINE__);
 	hdev->pxp_mode = pxp_mode;
 }
 

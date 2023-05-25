@@ -37,6 +37,9 @@
 #ifdef CONFIG_AML_HDMITX20
 #include <amlogic/media/vout/hdmitx/hdmitx_module.h>
 #endif
+#ifdef CONFIG_AML_HDMITX21
+#include <amlogic/media/vout/hdmitx21/hdmitx_module.h>
+#endif
 #ifdef CONFIG_AML_CVBS
 #include <amlogic/media/vout/aml_cvbs.h>
 #endif
@@ -109,6 +112,11 @@ void board_init_mem(void) {
 int board_init(void)
 {
 	printf("board init\n");
+#ifdef CONFIG_AML_HDMITX21
+		hdmitx21_init();
+		hdmitx21_chip_type_init(MESON_CPU_ID_S1A);
+#endif
+
 #ifdef CONFIG_PXP_EMULATOR
 	return 0;
 #else
@@ -125,9 +133,6 @@ int board_init(void)
 	active_clk();
 	#endif
 	run_command("gpio set GPIOH_7", 0);
-#ifdef CONFIG_AML_HDMITX20
-	hdmitx_init();
-#endif
 #endif// #if !defined(CONFIG_PXP_DDR) //bypass below operations for pxp
 	pinctrl_devices_active(PIN_CONTROLLER_NUM);
 	return 0;
