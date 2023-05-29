@@ -1,6 +1,9 @@
 #ifndef EXTRA_REGISTER_H
 #define EXTRA_REGISTER_H
 
+/* rsa */
+#define RSA_BASE                                   ((0x0000  << 2) + 0xfe448000)
+
 /* otp */
 #define OTP_TEE_RDY                                ((0x0000  << 2) + 0xfe440000)
 #define OTP_TEE_DEBUG                              ((0x0001  << 2) + 0xfe440000)
