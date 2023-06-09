@@ -17,6 +17,10 @@
 #include <asm/global_data.h>
 #include <asm/sections.h>
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+#include <asm/amlogic/arch/register.h>
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 #define LMB_ALLOC_ANYWHERE	0
@@ -193,6 +197,25 @@ static void lmb_reserve_common(struct lmb *lmb, void *fdt_blob)
 
 	if (CONFIG_IS_ENABLED(OF_LIBFDT) && fdt_blob)
 		boot_fdt_add_mem_rsv_regions(lmb, fdt_blob);
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+	/* add bl31/bl32 reserve memory */
+	uint32_t rsv_addr;
+	uint32_t reg_size;
+#if defined(P_AO_SEC_GP_CFG3)
+	rsv_addr = *((volatile uint32_t *)((uintptr_t)(P_AO_SEC_GP_CFG5)));
+	reg_size = *((volatile uint32_t *)((uintptr_t)(P_AO_SEC_GP_CFG3)));
+#elif defined(SYSCTRL_SEC_STATUS_REG15)
+	rsv_addr = *((volatile uint32_t *)((uintptr_t)(SYSCTRL_SEC_STATUS_REG17)));
+	reg_size = *((volatile uint32_t *)((uintptr_t)(SYSCTRL_SEC_STATUS_REG15)));
+#endif
+	if ((reg_size >> 16) & 0xff)
+		lmb_reserve(lmb, rsv_addr, (((reg_size & 0xffff0000) >> 16) << 16) +
+			((reg_size & 0x0000ffff) << 16));
+	else
+		lmb_reserve(lmb, rsv_addr, (((reg_size & 0xffff0000) >> 16) << 10) +
+			((reg_size & 0x0000ffff) << 10));
+#endif
 
 	if (CONFIG_IS_ENABLED(EFI_LOADER))
 		efi_lmb_reserve(lmb);
