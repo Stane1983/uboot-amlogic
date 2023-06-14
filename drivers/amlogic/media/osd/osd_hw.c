@@ -3424,7 +3424,12 @@ static void osd_update_color_mode(u32 index)
 		data32 |= osd_hw.fb_gem[index].canvas_idx << 16;
 		if (!osd_hw.rotate[index].on_off)
 			data32 |= OSD_DATA_LITTLE_ENDIAN << 15;
-		data32 |= osd_hw.color_info[index]->hw_colormat << 2;
+		/*after t3x VIU_OSD1_BLK0_CFG_W0 format bit(bit2-bit5) has been changed*/
+		if (osd_get_chip_type() >= MESON_CPU_MAJOR_ID_S1A &&
+			osd_hw.color_info[index]->color_index == 16)
+			data32 |= 2 << 2;
+		else
+			data32 |= osd_hw.color_info[index]->hw_colormat << 2;
 		if (osd_get_chip_type() < MESON_CPU_MAJOR_ID_GXTVBB) {
 			if (osd_hw.color_info[index]->color_index
 				< COLOR_INDEX_YUV_422)
@@ -5043,6 +5048,8 @@ void osd_init_hw(void)
 		osd_reg_write(hw_osd_reg_array[1].osd_fifo_ctrl_stat, data2);
 		osd_reg_set_mask(VPP_MISC, VPP_POSTBLEND_EN);
 		osd_reg_clr_mask(VPP_MISC, VPP_PREBLEND_EN);
+		if (osd_get_chip_type() == MESON_CPU_MAJOR_ID_S1A)
+			osd_reg_clr_mask(VPP_MISC, VPP_VD1_POSTBLEND);
 		if (osd_hw.osd_ver <= OSD_NORMAL)
 			osd_reg_clr_mask(VPP_MISC,
 				VPP_OSD1_POSTBLEND | VPP_OSD2_POSTBLEND | VPP_VD1_POSTBLEND);

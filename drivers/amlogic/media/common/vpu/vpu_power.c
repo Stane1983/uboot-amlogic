@@ -65,9 +65,15 @@ void vpu_module_init_config(void)
 	}
 	if (vpu_conf.data->chip_type == VPU_CHIP_T5M)
 		vpu_vcbus_write(VPU_RDARB_MODE_L2C1, 0x400000);
-	else
+	else if (vpu_conf.data->chip_type == VPU_CHIP_S1A) {
+		/*S1A ONLY VPU0 READ*/
+		vpu_vcbus_write(VPU_RDARB_MODE_L2C1, 0x0);
+#ifdef VPP_RDARB_MODE
+		vpu_vcbus_write(VPP_RDARB_MODE, 0x0);
+#endif
+	} else {
 		vpu_vcbus_write(VPU_RDARB_MODE_L2C1, 0x900000);
-
+	}
 	vpu_vcbus_write(VPU_WRARB_MODE_L2C1, 0x20000);
 #ifdef CONFIG_AMLOGIC_TEE
 	if (vpu_conf.data->chip_type == VPU_CHIP_T3 ||
