@@ -165,6 +165,7 @@ int board_late_init(void)
 	char outputModeCur[30] = {};
 
 	printf("board late init\n");
+	run_command("aml_update_env", 0);
 
 	get_stick_reboot_flag();
 
@@ -172,14 +173,6 @@ int board_late_init(void)
 	 * 1.setup bootup resource
 	 * ****************************************************
 	 */
-	//default uboot env need before anyone use it
-	if (env_get("default_env")) {
-		printf("factory reset, need default all uboot env.\n");
-		run_command("defenv_reserv; setenv upgrade_step 2; saveenv;", 0);
-	}
-
-	run_command("echo upgrade_step $upgrade_step; if itest ${upgrade_step} == 1; then "\
-			"defenv_reserv; setenv upgrade_step 2; saveenv; fi;", 0);
 	board_init_mem();
 	run_command("run bcb_cmd", 0);
 
