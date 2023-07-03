@@ -445,6 +445,48 @@ config TARGET_S1A_BG209_S805C1ENG
 
 endif
 
+if MESON_S7
+
+config SYS_SOC
+	default "s7"
+
+config DDRFW_TYPE
+	string "s7 DDR FW Type"
+	default "ddr4"
+
+config CHIPSET_NAME
+	string "s7 CHIPSET NAME"
+	default ""
+
+config CHIPSET_VARIANT
+	string "s7 CHIPSET VARIANT"
+	default ""
+
+config AMLOGIC_KEY_TYPE
+	string "s7 AMLOGIC KEY TYPE"
+	default "dev-keys"
+
+config BL30_SELECT
+	string "s7 BL30 board config"
+		default "s7_pxp"
+
+choice
+	prompt "s7 Board"
+
+config S7_SKT
+	bool "S7_SKT"
+	select TARGET_S7_SKT
+	help
+		Select S7 SKT(XXXX) config
+
+endchoice
+
+config TARGET_S7_SKT
+	bool "S7 SKT board"
+	depends on S7_SKT
+
+endif
+
 # Amlogic boards
 
 source "board/amlogic/s4_ap222/Kconfig"
@@ -458,6 +500,8 @@ source "board/amlogic/a4_ba400_zircon/Kconfig"
 source "board/amlogic/a4_ba409/Kconfig"
 
 source "board/amlogic/s1a_skt/Kconfig"
+
+source "board/amlogic/s7_skt/Kconfig"
 
 source "board/amlogic/s1a_bg201/Kconfig"
 
