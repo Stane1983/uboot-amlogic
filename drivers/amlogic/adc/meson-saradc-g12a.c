@@ -20,7 +20,7 @@
 	#define SARADC_REG11_VREF_SEL			BIT(0)
 	#define SARADC_REG11_EOC			BIT(1)
 	#define SARADC_REG11_VREF_EN			BIT(5)
-	#define SARADC_REG11_CMV_SEL			BIT(6)
+	#define SARADC_REG11_VCM_SEL			BIT(6)
 	#define SARADC_REG11_BANDGAP_EN			BIT(13)
 	#define SARADC_REG11_TEMP_SEL			BIT(21)
 
@@ -30,12 +30,12 @@
 static void meson_g12a_extra_init(struct meson_saradc *priv)
 {
 	clrsetbits_le32(priv->base + SARADC_REG11,
-			SARADC_REG11_CMV_SEL |
+			SARADC_REG11_VCM_SEL |
 			SARADC_REG11_VREF_EN |
 			SARADC_REG11_EOC |
 			SARADC_REG11_BANDGAP_EN,
-			(priv->data->reg11_cmv_sel ?
-				SARADC_REG11_CMV_SEL : 0) |
+			(priv->data->reg11_vcm_sel ?
+				SARADC_REG11_VCM_SEL : 0) |
 			(priv->data->reg11_vref_en ?
 				SARADC_REG11_VREF_EN : 0) |
 			(priv->data->reg11_eoc ?
@@ -111,7 +111,7 @@ static struct meson_saradc_diff_ops meson_g12a_diff_ops = {
 struct meson_saradc_data meson_saradc_g12a_data = {
 	.reg3_ring_counter_disable = BIT_HIGH,
 	.reg11_vref_en		   = BIT_LOW,
-	.reg11_cmv_sel		   = BIT_LOW,
+	.reg11_vcm_sel		   = BIT_LOW,
 	.reg11_eoc		   = BIT_HIGH,
 	.has_bl30_integration	   = true,
 	.self_test_channel	   = SARADC_CH_SELF_TEST,
