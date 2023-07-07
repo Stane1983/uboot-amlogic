@@ -508,6 +508,10 @@ void dcache_enable(void)
 		setup_all_pgtables();
 
 	set_sctlr(get_sctlr() | CR_C);
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+	gd->flags |= GD_FLG_CACHE_EN;
+#endif
 }
 
 void dcache_disable(void)
@@ -519,6 +523,10 @@ void dcache_disable(void)
 	/* if cache isn't enabled no need to disable */
 	if (!(sctlr & CR_C))
 		return;
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+	gd->flags &= ~GD_FLG_CACHE_EN;
+#endif
 
 	set_sctlr(sctlr & ~(CR_C|CR_M));
 

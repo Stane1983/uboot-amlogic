@@ -116,9 +116,6 @@ static int initr_caches(void)
 {
 	/* Enable caches */
 	enable_caches();
-#ifdef CONFIG_AMLOGIC_MODIFY
-	gd->flags |= GD_FLG_CACHE_EN;
-#endif
 	return 0;
 }
 #endif
