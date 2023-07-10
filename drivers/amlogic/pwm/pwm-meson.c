@@ -19,7 +19,7 @@ struct meson_pwm_priv {
 	struct meson_pwm_reg *regs;
 	struct meson_pwm_state *pwm_state;
 	struct meson_pwm_data *pwm_data;
-	u32 extern_clk_addr;
+	fdt_addr_t extern_clk_addr;
 };
 
 static u64 meson_pwm_clock_get_rate(void)
@@ -243,8 +243,8 @@ static int meson_pwm_set_config(struct udevice *dev, uint channel, uint period_n
 	struct meson_pwm_priv *priv = dev_get_priv(dev);
 	struct meson_pwm_state *pwm_state = priv->pwm_state;
 
-	if (duty_ns < 0 || period_ns <= 0) {
-		pr_err("Not available duty_ns period_ns error\n");
+	if (period_ns == 0) {
+		pr_err("period_ns can not be zero\n");
 		return -1;
 	}
 
