@@ -26,5 +26,5 @@ config CLK_MESON_S7
 	depends on CLK && ARCH_MESON
 	default MESON_S7
 	help
-	  Enable clock support for the Amlogic A4 SoC family, such as
-	  the skt
+	  Enable clock support for the Amlogic S7 SoC family, such as
+	  the SKT
