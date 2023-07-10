@@ -86,7 +86,7 @@ static int phy_aml_usb3_getinfo(struct phy *phy)
 	priv->usb3_port_num = u3portnum;
 
 	priv->base_addr = dev_read_addr(phy->dev);
-	if (priv->base_addr == FDT_ADDR_T_NONE) {
+	if (priv->base_addr == (-1U)) {
 		pr_err("Coun't get usb3 base addr\n");
 		return -1;
 	}
@@ -112,7 +112,8 @@ static int phy_aml_usb3_init(struct phy *phy)
 	priv->usb3_port_num = u3portnum;
 
 	priv->base_addr = dev_read_addr(phy->dev);
-	if (priv->base_addr == FDT_ADDR_T_NONE) {
+	/* avoid using 64bit address FDT_ADDR_T_NONE for coverity. */
+	if (priv->base_addr == (-1U)) {
 		pr_err("Coun't get usb3 base addr\n");
 		return -1;
 	}

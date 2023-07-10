@@ -259,6 +259,10 @@ static void pcd_setup(pcd_struct_t *_pcd)
 		}
 		break;
 	case USB_REQ_SET_INTERFACE:
+/*
+ * This is intended.
+ */
+/* coverity[dont_call] */
 	case USB_REQ_SET_CONFIGURATION:
 		/* Configuration changed */
 		req_flag->request_config = 1;

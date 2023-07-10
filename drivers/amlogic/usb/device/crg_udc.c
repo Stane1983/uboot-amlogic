@@ -1730,7 +1730,7 @@ crg_udc_ep_queue(struct usb_ep *_ep, struct usb_request *_req, gfp_t gfp_flags)
 	struct crg_udc_ep *udc_ep_ptr;
 	struct crg_gadget_dev *crg_udc;
 	int status;
-	int dma_data_dir;
+	int dma_data_dir = DMA_BIDIRECTIONAL;
 
 	xdebug("%s\n", __func__);
 

@@ -25,7 +25,7 @@ static int usb_get_priv_data (struct phy *phy){
 	int ret, i;
 
 	priv->reset_addr = dev_read_addr_index(phy->dev, 1);
-	if (priv->reset_addr == FDT_ADDR_T_NONE) {
+	if (priv->reset_addr == (-1U)) {
 		pr_err("Coun't get usb_phy2_pll_base_addr[1]: reset addr\n");
 		return -1;
 	}
@@ -42,7 +42,7 @@ static int usb_get_priv_data (struct phy *phy){
 
 	for (i = 2; i < (u2portnum + 2); i++) {
 		priv->usb_phy2_pll_base_addr[i-2] = dev_read_addr_index(phy->dev, i);
-		if (priv->usb_phy2_pll_base_addr[i-2] == FDT_ADDR_T_NONE) {
+		if (priv->usb_phy2_pll_base_addr[i - 2] == (-1U)) {
 			pr_err("Coun't get usb_phy2_pll_base_addr[%d]\n", i-2);
 			return -1;
 		}
