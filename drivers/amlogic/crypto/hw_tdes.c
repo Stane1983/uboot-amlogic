@@ -126,6 +126,8 @@ int32_t des_tdes_cbc_dec_keytbl(uint32_t keylen, const void *input,
 }
 
 #ifdef TDES_TEST_CASE
+#include <command.h>
+
 static uint8_t des_ecb_key[8] = {
 	0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef
 };

@@ -8,10 +8,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <dma.h>
-#include <asm/arch/regs.h>
-#include <asm/arch/secure_apb.h>
+#include <asm/amlogic/arch/regs.h>
+#include <asm/amlogic/arch/secure_apb.h>
 #include <amlogic/aml_crypto.h>
 #include <crypto_internal.h>
+#include <cpu_func.h>
 
 //#define CRYPTO_DEBUG
 
@@ -181,7 +182,7 @@ int32_t hw_update_internal(sha2_ctx *cur_ctx, const uint8_t *input,
 	unsigned char szTempSHA2[64];
 
 	if (!last_update && (ilen % 64)) {
-		serial_puts("Err:sha5\n");
+		printf("Err:sha5\n");
 		// sha2 usage problem
 		return CRYPTO_ERROR_BAD_PARAMETERS;
 	}
@@ -274,12 +275,12 @@ int32_t hw_update_internal(sha2_ctx *cur_ctx, const uint8_t *input,
 #endif
 
 	if (!last_update && (residues & (0x40 - 1))) {
-		serial_puts("Err:sha5\n");
+		printf("Err:sha5\n");
 		return CRYPTO_ERROR_BAD_PARAMETERS;
 	}
 
 	if (blocks > MAX_BLOCK_TRANSFER) {
-		serial_puts("Err:sha too large\n");
+		printf("Err:sha too large\n");
 		return CRYPTO_ERROR_BAD_PARAMETERS;
 	}
 
