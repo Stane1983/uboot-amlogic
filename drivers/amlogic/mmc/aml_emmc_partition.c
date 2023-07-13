@@ -1819,6 +1819,20 @@ int check_gpt_part(struct blk_desc *dev_desc, void *buf)
 	int ret = 0;
 	bool alternate_flag = false;
 
+	if (is_valid_gpt_buf(dev_desc, buf))
+		return -1;
+
+	ALLOC_CACHE_ALIGN_BUFFER_PAD(gpt_header, gpt_head, 1, dev_desc->blksz);
+
+	if (is_gpt_valid(dev_desc, GPT_PRIMARY_PARTITION_TABLE_LBA, gpt_head, &gpt_pte) != 1) {
+		if (is_gpt_valid(dev_desc, (dev_desc->lba - 1), gpt_head, &gpt_pte) != 1) {
+			printf("%s: there is no valid gpt before, erase\n", __func__);
+			ret = 1;
+			goto _out;
+		}
+		printf("%s: *** Using Backup GPT ***\n", __func__);
+	}
+
 	/* determine start of GPT Header in the buffer */
 	gpt_h = buf + (GPT_PRIMARY_PARTITION_TABLE_LBA *
 			dev_desc->blksz);
