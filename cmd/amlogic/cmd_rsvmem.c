@@ -103,7 +103,6 @@ static int do_rsvmem_check(cmd_tbl_t *cmdtp, int flag, int argc,
 	 * If arm64, alignment has 2 parameters
 	 * The second parameter need convert big-endian to little-endian
 	 */
-	alignment = 0x400000;
 	memset(cmdbuf, 0, sizeof(cmdbuf));
 	sprintf(cmdbuf, "fdt get value temp_alignment /reserved-memory/linux,secmon alignment;");
 	ret = run_command(cmdbuf, 0);
@@ -119,6 +118,8 @@ static int do_rsvmem_check(cmd_tbl_t *cmdtp, int flag, int argc,
 			alignment |= (alignment_temp & 0xff000000) >> 24;
 		}
 	}
+	if (alignment == 0)
+		alignment = 0x400000;
 
 	memset(cmdbuf, 0, sizeof(cmdbuf));
 	sprintf(cmdbuf, "fdt get value env_compatible /reserved-memory/linux,secmon compatible;");
