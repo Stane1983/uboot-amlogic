@@ -4,16 +4,16 @@
  */
 
 char *domain_name[] = {
-	"PM_AUDIO",
-	"PM_SDIOA",
-	"PM_EMMC",
-	"PM_USB_COMB",
-	"PM_ETH",
-	"PM_VOUT",
-	"PM_AUDIO_PDM",
-	"PM_DMC",
-	"PM_SYS_WRAP",
-	"PM_AO_I2C_S",
-	"PM_AO_UART",
-	"PM_AO_IR"
+	"PDID_DOS_HCODEC",
+	"PDID_DOS_HEVC",
+	"PDID_DOS_VDEC",
+	"PDID_VPU_HDMI",
+	"PDID_USB_COMB",
+	"PDID_SD_EMMC_C",
+	"PDID_GE2D",
+	"PDID_SD_EMMC_A",
+	"PDID_SD_EMMC_B",
+	"PDID_ETH",
+	"PDID_AUCPU",
+	"PDID_AUDIO"
 };

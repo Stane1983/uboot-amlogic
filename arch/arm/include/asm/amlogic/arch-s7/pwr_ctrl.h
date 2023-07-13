@@ -9,18 +9,18 @@
 #define PWR_ON    1
 #define PWR_OFF   0
 
-#define PM_AUDIO	0
-#define PM_SDIOA	1
-#define PM_EMMC  2
-#define PM_USB_COMB   3
-#define PM_ETH     4
-#define PM_VOUT          5
-#define PM_AUDIO_PDM          6
-#define PM_DMC    7
-#define PM_SYS_WRAP          8
-#define PM_AO_I2C_S     9
-#define PM_AO_UART         10
-#define PM_AO_IR     11
+#define PDID_DOS_HCODEC	0
+#define PDID_DOS_HEVC	1
+#define PDID_DOS_VDEC  2
+#define PDID_VPU_HDMI   3
+#define PDID_USB_COMB     4
+#define PDID_SD_EMMC_C          5
+#define PDID_GE2D          6
+#define PDID_SD_EMMC_A    7
+#define PDID_SD_EMMC_B          8
+#define PDID_ETH     9
+#define PDID_AUCPU         10
+#define PDID_AUDIO     11
 
 #define PM_MAX		12
 
