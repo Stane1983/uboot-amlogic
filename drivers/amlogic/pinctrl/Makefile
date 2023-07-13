@@ -3,3 +3,4 @@
 obj-$(CONFIG_PINCTRL_MESON_S4)		+= pinctrl-meson-s4.o
 obj-$(CONFIG_PINCTRL_MESON_A4)		+= pinctrl-meson-a4.o
 obj-$(CONFIG_PINCTRL_MESON_S1A)		+= pinctrl-meson-s1a.o
+obj-$(CONFIG_PINCTRL_MESON_S7)		+= pinctrl-meson-s7.o
