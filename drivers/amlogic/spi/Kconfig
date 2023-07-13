@@ -29,4 +29,12 @@ config AML_SPIFCV2
           It should be set when user want SPI NAND or SPI NOR on a1 meson SoCs.
           If SPI NAND/SPI FLASH is enabled, please open it in defconfig
 
+config AML_SPI_NFC
+	bool "Amlogic SPI NFC with Host ECC Driver"
+	default y
+	help
+	  Enable support for SPI Flash Controller with host ECC on meson SoCs.
+	  It should be set when user want SPI NAND or SPI NOR on meson SoCs.
+	  If SPI NAND/SPI FLASH is enabled, please open it in defconfig
+
 endif

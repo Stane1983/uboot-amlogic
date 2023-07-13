@@ -16,3 +16,5 @@ config AML_MTDPART
 	default y if AML_MTD
 	help
 		This option, if enabled, support for AML MTD partition
+
+source "drivers/amlogic/mtd/nand/spi/Kconfig"

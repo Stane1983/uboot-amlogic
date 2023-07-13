@@ -18,7 +18,7 @@
 //#define BOOT_BL2E_SIZE              (66672) //74864-8K
 //#define BOOT_EBL2E_SIZE             (BOOT_FILLER_SIZE + BOOT_RESERVED_SIZE + BOOT_BL2E_SIZE)
 //#define BOOT_BL2X_SIZE              (66672)
-#define MAX_BOOT_AREA_ENTRIES		(8)
+#define MAX_BOOT_AREA_ENTRIES		(6)
 /* bl2 core address base */
 #define BL2_CORE_BASE_OFFSET_EMMC	(0x200)
 /* boot area entry index */
@@ -32,8 +32,7 @@
 
 #define BOOTLOADER_MODE_EMMC		COMPACT_BOOTLOADER
 #define BOOTLOADER_MODE_NAND		ADVANCE_BOOTLOADER
-/* not support spinand */
-//#define BOOTLOADER_MODE_SNAND		ADVANCE_BOOTLOADER
+#define BOOTLOADER_MODE_SNAND		ADVANCE_BOOTLOADER
 #define BOOTLOADER_MODE_SNOR		ADVANCE_BOOTLOADER
 
 #ifdef ADVANCE_BOOTLOADER
@@ -42,7 +41,7 @@
 #define BOOTLOADER_MODE_ADVANCE_INIT		0
 #endif
 
-
+#define BOOTINFO_PROGRAMMER_SUPPORT		1
 /*
  * TODO: This is the attribute of nand, it will be moved to the
  * plat file of nand in the future.

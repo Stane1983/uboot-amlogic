@@ -148,7 +148,11 @@ int spi_set_speed(struct spi_slave *slave, uint hz)
 int spi_xfer(struct spi_slave *slave, unsigned int bitlen,
 	     const void *dout, void *din, unsigned long flags)
 {
+#ifdef CONFIG_AMLOGIC_MODIFY
+	return dm_spi_xfer(slave->dev, bitlen, dout, din, flags | slave->flags);
+#else
 	return dm_spi_xfer(slave->dev, bitlen, dout, din, flags);
+#endif
 }
 
 int spi_write_then_read(struct spi_slave *slave, const u8 *opcode,

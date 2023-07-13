@@ -21,6 +21,20 @@
 #include <spi.h>
 #include <spi-mem.h>
 #include <linux/mtd/nand.h>
+#ifdef CONFIG_AMLOGIC_MODIFY
+#include <amlogic/storage.h>
+#endif
+#endif
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+#define NAND_BLOCK_GOOD		0
+#define NAND_BLOCK_BAD		1
+#define NAND_FACTORY_BAD	2
+#define SPINAND_MESON_RSV	1
+#ifdef CONFIG_CMD_NAND
+extern int nand_curr_device;
+extern struct mtd_info *nand_info[CONFIG_SYS_MAX_NAND_DEVICE];
+#endif
 #endif
 
 /**
@@ -365,6 +379,16 @@ struct spinand_device {
 	u8 *scratchbuf;
 	const struct spinand_manufacturer *manufacturer;
 	void *priv;
+#ifdef CONFIG_AMLOGIC_MODIFY
+	const char *model;
+#if	SPINAND_MESON_RSV
+	/* add for aml rsv */
+	struct meson_rsv_handler_t *rsv;
+	/* aml bbt */
+	u8 *bbt;
+	u8 bbt_scan;
+#endif
+#endif
 };
 
 /**

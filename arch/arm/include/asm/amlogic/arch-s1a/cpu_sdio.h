@@ -8,7 +8,7 @@
 
 #define SD_EMMC_BASE_A 0xFFE03000
 #define SD_EMMC_BASE_B 0xFFE05000
-#define SD_EMMC_BASE_C 0xFFE07000
+#define SD_EMMC_BASE_C 0xfe08c000
 
 #define SDIO_PORT_A 0
 #define SDIO_PORT_B 1

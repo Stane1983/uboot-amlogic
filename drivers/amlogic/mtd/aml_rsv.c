@@ -11,6 +11,7 @@
 #include <amlogic/aml_rsv.h>
 #include <amlogic/aml_mtd.h>
 #include <amlogic/partition_table.h>
+#include <asm/amlogic/arch/cpu_config.h>
 #include <amlogic/storage.h>
 
 extern int info_disprotect;
@@ -88,12 +89,19 @@ int meson_rsv_erase_protect(struct meson_rsv_handler_t *handler,
 
 int meson_rsv_free(struct meson_rsv_info_t *rsv_info)
 {
-	struct mtd_info *mtd = rsv_info->mtd;
+	struct mtd_info *mtd;
 	struct free_node_t *tmp_node, *next_node = NULL;
 	int error = 0;
 	loff_t addr = 0;
 	struct erase_info erase_info;
 
+	if (!rsv_info) {
+		pr_info("%s %d rsv info has not inited yet!\n",
+			__func__, __LINE__);
+		return 1;
+	}
+
+	mtd = rsv_info->mtd;
 	pr_info("free %s\n", rsv_info->name);
 
 	if (rsv_info->valid) {
@@ -127,12 +135,19 @@ int meson_rsv_free(struct meson_rsv_info_t *rsv_info)
 
 int meson_rsv_save(struct meson_rsv_info_t *rsv_info, u_char *buf)
 {
-	struct mtd_info *mtd = rsv_info->mtd;
+	struct mtd_info *mtd;
 	struct free_node_t *free_node, *temp_node;
 	struct erase_info erase_info;
 	int ret = 0, i = 1, pages_per_blk;
 	loff_t offset = 0;
 
+	if (!rsv_info) {
+		pr_info("%s %d rsv info has not inited yet!\n",
+			__func__, __LINE__);
+		return 1;
+	}
+
+	mtd = rsv_info->mtd;
 	pages_per_blk = 1 << (mtd->erasesize_shift - mtd->writesize_shift);
 	if ((rsv_info->nvalid->status & POWER_ABNORMAL_FLAG) ||
 	    (rsv_info->nvalid->status & ECC_ABNORMAL_FLAG))
@@ -233,13 +248,20 @@ RE_SEARCH:
 
 int meson_rsv_write(struct meson_rsv_info_t *rsv_info, u_char *buf)
 {
-	struct mtd_info *mtd = rsv_info->mtd;
+	struct mtd_info *mtd;
 	struct oobinfo_t oobinfo;
 	struct mtd_oob_ops oob_ops;
 	size_t length = 0;
 	loff_t offset;
 	int ret = 0;
 
+	if (!rsv_info) {
+		pr_info("%s %d rsv info has not inited yet!\n",
+			__func__, __LINE__);
+		return 1;
+	}
+
+	mtd = rsv_info->mtd;
 	offset = rsv_info->nvalid->blk_addr;
 	offset *= mtd->erasesize;
 	offset += ((u64)rsv_info->nvalid->page_addr) * mtd->writesize;
@@ -271,13 +293,20 @@ int meson_rsv_write(struct meson_rsv_info_t *rsv_info, u_char *buf)
 
 int meson_rsv_read(struct meson_rsv_info_t *rsv_info, u_char *buf)
 {
-	struct mtd_info *mtd = rsv_info->mtd;
+	struct mtd_info *mtd;
 	struct oobinfo_t oobinfo;
 	struct mtd_oob_ops oob_ops;
 	size_t length = 0;
 	loff_t offset;
 	int ret = 0;
 
+	if (!rsv_info) {
+		pr_info("%s %d rsv info has not inited yet!\n",
+			__func__, __LINE__);
+		return 1;
+	}
+
+	mtd = rsv_info->mtd;
 READ_RSV_AGAIN:
 	offset = rsv_info->nvalid->blk_addr;
 	offset *= mtd->erasesize;
@@ -317,12 +346,18 @@ READ_RSV_AGAIN:
 
 int meson_rsv_erase(struct meson_rsv_info_t *rsv_info)
 {
-	struct mtd_info *mtd = rsv_info->mtd;
+	struct mtd_info *mtd;
 	struct free_node_t *free_node, *temp_node = NULL;
 	int ret = 0;
 	struct erase_info erase_info;
 
+	if (!rsv_info) {
+		pr_info("%s %d rsv info has not inited yet!\n",
+			__func__, __LINE__);
+		return 1;
+	}
 
+	mtd = rsv_info->mtd;
 	pr_info("%s %d rsv erasing %s\n",
 			__func__, __LINE__, rsv_info->name);
 
@@ -363,7 +398,7 @@ int meson_rsv_erase(struct meson_rsv_info_t *rsv_info)
 
 int meson_rsv_scan(struct meson_rsv_info_t *rsv_info)
 {
-	struct mtd_info *mtd = rsv_info->mtd;
+	struct mtd_info *mtd;
 	struct mtd_oob_ops oob_ops;
 	struct oobinfo_t oobinfo;
 	struct free_node_t *free_node, *temp_node;
@@ -375,6 +410,13 @@ int meson_rsv_scan(struct meson_rsv_info_t *rsv_info)
 	u8 good_addr[256] = {0};
 	u32 page_num, pages_per_blk;
 
+	if (!rsv_info) {
+		pr_info("%s %d rsv info has not inited yet!\n",
+			__func__, __LINE__);
+		return 1;
+	}
+
+	mtd = rsv_info->mtd;
 RE_RSV_INFO_EXT:
 	start = rsv_info->start;
 	end = rsv_info->end;
@@ -561,6 +603,12 @@ RE_RSV_INFO:
 int meson_rsv_check(struct meson_rsv_info_t *rsv_info)
 {
 	int ret = 0;
+
+	if (!rsv_info) {
+		pr_info("%s %d rsv info has not inited yet!\n",
+			__func__, __LINE__);
+		return 1;
+	}
 
 	ret = meson_rsv_scan(rsv_info);
 	if (ret)
@@ -1051,64 +1099,41 @@ int meson_rsv_key_write(u_char *source, size_t size)
 }
 
 #ifdef CONFIG_DDR_PARAMETER_SUPPORT
-#define DDR_PARAMETER_POS	256
-enum PAGE_INFO_ERR_TYPE {
-	PAGE_INFO_READ_ERR = -3,
-	PAGE_INFO_ERASE_ERR,
-	PAGE_INFO_WRITE_ERR,
-	PAGE_INFO_MAX_ERR,
-};
-
-int meson_modify_page_info_and_save(u_char *src, unsigned int ptr, size_t size)
+int meson_modify_page_info_and_save(struct mtd_info *mtd)
 {
-	struct mtd_info *mtd = rsv_handler->ddr_para->mtd;
-	struct erase_info ei;
-	u_char *block_buf;
-	loff_t offset = 0;
-	int err, i;
+	u64 bl2_mem, bl2_size = BL2_SIZE;
+	int ret, i;
+	u_char *bl2_buf;
+	char str[128];
 
-	/* don't try to write out the range of page info! */
-	if (ptr >= mtd->writesize)
-		return PAGE_INFO_MAX_ERR;
+	bl2_buf = malloc(bl2_size);
+	if (!bl2_buf)
+		return -ENOMEM;
 
-	block_buf = malloc(mtd->erasesize);
-	if (!block_buf)
-		return PAGE_INFO_MAX_ERR;
-
-	ei.mtd = mtd;
-	ei.callback = NULL;
+	bl2_mem = (u64)bl2_buf;
 	for (i = 0; i < 4; i++) {
-		/* Need to change to MTD0 for SLC NAND later, noisy */
-		err = mtd_read(mtd, offset + mtd->writesize,
-			       mtd->erasesize - mtd->writesize,
-			       NULL, block_buf);
-		if (err && !mtd_is_bitflip(err)) {
-			err = PAGE_INFO_READ_ERR;
+		sprintf(str, "store boot_read bl2 0x%llx %d 0x%llx", bl2_mem, i, bl2_size);
+		printf("command:    %s\n", str);
+		ret = run_command(str, 0);
+		if (ret)
 			goto _err_modify_page_info;
-		}
 
-		ei.addr = offset;
-		ei.len = mtd->erasesize;
-		err = mtd_erase(mtd, &ei);
-		if (err) {
-			err = PAGE_INFO_ERASE_ERR;
+		sprintf(str, "store boot_erase bl2 %d", i);
+		printf("command:    %s\n", str);
+		ret = run_command(str, 0);
+		if (ret)
 			goto _err_modify_page_info;
-		}
 
-		//memcpy(block_buf + ptr, src, size);
-		err = mtd_write(mtd, offset + mtd->writesize,
-				mtd->erasesize - mtd->writesize,
-				NULL, block_buf);
-		if (err) {
-			err = PAGE_INFO_WRITE_ERR;
+		sprintf(str, "store boot_write bl2 0x%llx %d 0x%llx", bl2_mem, i, bl2_size);
+		printf("command:    %s\n", str);
+		ret = run_command(str, 0);
+		if (ret)
 			goto _err_modify_page_info;
-		}
-		offset += (mtd->writesize << 8);
 	}
 
 _err_modify_page_info:
-	free(block_buf);
-	return err;
+	free(bl2_buf);
+	return ret;
 }
 #endif
 
@@ -1116,7 +1141,6 @@ int meson_rsv_ddr_para_write(u_char *source, size_t size)
 {
 #if defined(CONFIG_DDR_PARAMETER_SUPPORT) && defined(CONFIG_MTD_SPI_NAND)
 	struct mtd_info *mtd = rsv_handler->ddr_para->mtd;
-	unsigned int pages_shift, ddr_param_page;
 #endif
 	u_char *temp;
 	size_t len;
@@ -1147,19 +1171,7 @@ int meson_rsv_ddr_para_write(u_char *source, size_t size)
 		__func__, __LINE__, len > size ? size : len, ret);
 
 #if defined(CONFIG_DDR_PARAMETER_SUPPORT) && defined(CONFIG_MTD_SPI_NAND)
-extern void spinand_page_info_set_ddr_param(int value);
-
-	pages_shift = mtd->erasesize_shift - mtd->writesize_shift;
-	ddr_param_page = rsv_handler->ddr_para->nvalid->page_addr +
-		(rsv_handler->ddr_para->nvalid->blk_addr << pages_shift);
-	spinand_page_info_set_ddr_param(ddr_param_page);
-	ret = meson_modify_page_info_and_save((u_char *)&ddr_param_page,
-					      DDR_PARAMETER_POS,
-					      sizeof(unsigned int));
-	if (ret) {
-		pr_info("%s %d: error type %d\n", __func__, __LINE__, ret);
-		return -1;
-	}
+	ret = meson_modify_page_info_and_save(mtd);
 #endif
 	kfree(temp);
 	return ret;

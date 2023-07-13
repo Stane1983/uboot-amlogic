@@ -156,8 +156,17 @@ struct spi_slave {
 #define SPI_XFER_BEGIN		BIT(0)	/* Assert CS before transfer */
 #define SPI_XFER_END		BIT(1)	/* Deassert CS after transfer */
 #define SPI_XFER_ONCE		(SPI_XFER_BEGIN | SPI_XFER_END)
+#ifdef CONFIG_AMLOGIC_MODIFY
+/* spi nfc needed */
+#define SPI_XFER_OOB		BIT(4)
+#define SPI_XFER_RAW		BIT(5)
+#define SPI_XFER_AUTO_OOB	BIT(6)
+#define SPI_XFER_OOB_ONLY       BIT(7)
+#define SPI_XFER_NFC_MASK_FLAG			\
+	(SPI_XFER_OOB | SPI_XFER_RAW |		\
+	 SPI_XFER_AUTO_OOB | SPI_XFER_OOB_ONLY)
 };
-
+#endif
 /**
  * spi_do_alloc_slave - Allocate a new SPI slave (internal)
  *

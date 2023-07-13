@@ -69,6 +69,10 @@ struct flash_info {
 #define SPI_NOR_HAS_SST26LOCK	BIT(15)	/* Flash supports lock/unlock via BPR */
 #define SPI_NOR_OCTAL_READ	BIT(16)	/* Flash supports Octal Read */
 #define SPI_NOR_OCTAL_DTR_READ	BIT(17)	/* Flash supports Octal DTR Read */
+#ifdef CONFIG_AMLOGIC_MODIFY
+#define RD_OCTAL		BIT(18)	/* use Quad Read */
+#define WR_OPP			BIT(19)	/* use Quad Page Program */
+#endif
 };
 
 extern const struct flash_info spi_nor_ids[];

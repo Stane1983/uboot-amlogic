@@ -184,9 +184,6 @@ defined(CONFIG_STORE_COMPATIBLE)
 #define 	CONFIG_SYS_NO_FLASH  1
 #endif
 
-#if defined CONFIG_MESON_NFC || defined CONFIG_SPI_NAND || defined CONFIG_MTD_SPI_NAND
-	#define CONFIG_SYS_MAX_NAND_DEVICE  2
-#endif
 
 /* vpu */
 #define AML_VPU_CLK_LEVEL_DFT 4

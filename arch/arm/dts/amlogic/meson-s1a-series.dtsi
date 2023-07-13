@@ -361,31 +361,27 @@
 			status = "disabled";
 		};
 
-		spifc: spi@fe056000 {
-			compatible = "amlogic,spifc";
+		spi_nfc: spinfc@0xfe08d000 {
+			compatible = "amlogic,spi_nfc";
 			status = "disabled";
-			reg = <0x0 0xfe056000 0x0 0x80>;
-			/* clocks = <&clkc CLKID_CLK81>; */
-			/* clock-names = "core"; */
-			pinctrl-names = "default";
-			pinctrl-0 = <&spifc_pins>;
+			reg = <0x0 0xfe08d000 0x0 0x800>;
 			#address-cells = <1>;
 			#size-cells = <0>;
 			spi-flash@0 {
-				compatible = "jedec,spi-nor";
+				compatible = "spi-flash";
 				reg = <0>;
 				spi-max-frequency = <20000000>;
-				spi-tx-bus-width = <1>;
-				spi-rx-bus-width = <1>;
+				spi-tx-bus-width = <4>;
+				spi-rx-bus-width = <4>;
 				status = "disabled";
 			};
 			spi-nand@1 {
 				compatible = "spi-nand";
 				reg = <1>;
 				spi-max-frequency = <20000000>;
-				spi-tx-bus-width = <1>;
-				spi-rx-bus-width = <1>;
-				status = "disabled";
+				spi-tx-bus-width = <4>;
+				spi-rx-bus-width = <4>;
+				status = "okay";
 			};
 		};
 

@@ -180,7 +180,7 @@ static void storage_boot_layout_debug_info(
 	int i;
 
 	printf("boot area list: \n");
-	for (i = 0; i < MAX_BOOT_AREA_ENTRIES && boot_entry[i].size; i++) {
+	for (i = 0; i <= BOOT_AREA_DEVFIP; i++) {
 		printf("%10s    ", boot_entry[i].name);
 		printf("%10llx    ", boot_entry[i].offset);
 		printf("%10llx\n", boot_entry[i].size);
@@ -198,6 +198,7 @@ static int storage_boot_layout_rebuild(struct boot_layout *boot_layout,
 	struct storage_startup_parameter *ssp = &g_ssp;
 	boot_area_entry_t *boot_entry = boot_layout->boot_entry;
 	uint64_t align_size, reserved_size = 0, cal_copy = ssp->boot_backups;
+	cpu_id_t cpu_id = get_cpu_id();
 	uint8_t i;
 
 	align_size = ALIGN_SIZE;
@@ -209,11 +210,16 @@ static int storage_boot_layout_rebuild(struct boot_layout *boot_layout,
 	} else if (ssp->boot_device == BOOT_SNAND) {
 		reserved_size = ssp->sip.snasp.layout_reserve_size;
 		align_size = ((NAND_RSV_OFFSET / cal_copy) * ssp->sip.snasp.pagesize);
-	} else 	if (ssp->boot_device == BOOT_EMMC) {
+	} else if (ssp->boot_device == BOOT_EMMC) {
 		ssp->boot_entry[0].offset = boot_entry[0].offset +=
 			BL2_CORE_BASE_OFFSET_EMMC;
 		cal_copy = 1;
+	} else if (ssp->boot_device == BOOT_SNOR &&
+		cpu_id.family_id == MESON_CPU_MAJOR_ID_A4) {
+		ssp->boot_entry[0].offset = boot_entry[0].offset += 0x200;
+		cal_copy = 1;
 	}
+
 	STORAGE_ROUND_UP_IF_UNALIGN(boot_entry[0].size, align_size);
 	ssp->boot_entry[0].size = boot_entry[0].size;
 	printf("ssp->boot_entry[0] offset:0x%x, size:0x%x\n",
@@ -232,7 +238,7 @@ static int storage_boot_layout_rebuild(struct boot_layout *boot_layout,
 	boot_entry[BOOT_AREA_BL2E].size = bl2e_size;
 	boot_entry[BOOT_AREA_BL2X].size = bl2x_size;
 
-	for (i = 1; i < MAX_BOOT_AREA_ENTRIES && boot_entry[i - 1].size; i++) {
+	for (i = 1; i <= BOOT_AREA_DEVFIP; i++) {
 		STORAGE_ROUND_UP_IF_UNALIGN(boot_entry[i].size, align_size);
 		boot_entry[i].offset = boot_entry[i-1].offset +
 				boot_entry[i-1].size * cal_copy + reserved_size;
@@ -304,7 +310,7 @@ static int storage_boot_layout_general_setting(struct boot_layout *boot_layout,
 		}
 		/* normal boot */
 		for (nIndex = 0;
-		     nIndex < MAX_BOOT_AREA_ENTRIES && sbentry->size;
+		     nIndex <= BOOT_AREA_DEVFIP;
 		     nIndex++, sbentry++) {
 			boot_entry[nIndex].size = sbentry->size;
 			boot_entry[nIndex].offset = sbentry->offset;
@@ -380,7 +386,7 @@ static int storage_get_and_parse_ssp(int *need_build) // boot_device:
 			else if (IS_FEAT_DIS_NBL2_SNOR())
 				ssp->boot_backups = 1;
 			else
-				ssp->boot_backups = 2; /* Default 2 backup, consistent with rom */
+				ssp->boot_backups = 1; /* Default 2 backup, consistent with rom */
 			break;
 		case BOOT_SNAND:
 			if (IS_FEAT_EN_8BL2_SNAND())
@@ -457,6 +463,8 @@ int store_init(u32 init_flag)
 			record |= BIT(i);
 		}
 	}
+
+	pr_info("record = 0x%x\n", record);
 
 	if (!record) {
 		pr_info("No Valid storage device\n");

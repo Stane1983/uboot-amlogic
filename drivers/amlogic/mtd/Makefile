@@ -2,3 +2,4 @@
 
 obj-$(CONFIG_AML_MTD) += aml_rsv.o
 obj-$(CONFIG_AML_STORAGE) += aml_storage.o
+obj-$(CONFIG_MTD_SPI_NAND) += nand/spi/

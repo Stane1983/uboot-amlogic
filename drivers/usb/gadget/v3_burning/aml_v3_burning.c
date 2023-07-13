@@ -102,8 +102,8 @@ int aml_v3_factory_usb_burning(int flag, bd_t *bis)
 	if (!flag) {
 		serial_initialize();//init for write memory
 		if (IS_ENABLED(CONFIG_MMC)) {
-			FB_MSG("MMC init for dnl\n");
-			mmc_initialize(bis);
+			//FB_MSG("MMC init for dnl\n");
+			//mmc_initialize(bis);
 		}
 		env_set_default("USB boot", 0);
 		board_init_mem();

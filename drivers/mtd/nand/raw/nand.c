@@ -20,7 +20,11 @@
 
 int nand_curr_device = -1;
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+struct mtd_info *nand_info[CONFIG_SYS_MAX_NAND_DEVICE];
+#else
 static struct mtd_info *nand_info[CONFIG_SYS_MAX_NAND_DEVICE];
+#endif
 
 #if !CONFIG_IS_ENABLED(SYS_NAND_SELF_INIT)
 static struct nand_chip nand_chip[CONFIG_SYS_MAX_NAND_DEVICE];
