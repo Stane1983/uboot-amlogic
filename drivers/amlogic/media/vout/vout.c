@@ -866,6 +866,13 @@ static void vout_viu_mux_default(int index, unsigned int mux_sel)
 	unsigned int clk_bit = 0xff, clk_sel = 0;
 	unsigned int vout_viu_sel = 0xf;
 	unsigned int venc_sel = mux_sel;
+	char *projector_mux = env_get("vout_projector_mux");
+	int vout_projector_mux = 0;
+
+	if (projector_mux) {
+		if (strncmp(projector_mux, "en", 2) == 0)
+			vout_projector_mux = 1;
+	}
 
 	switch (index) {
 	case VOUT_VIU2_SEL:
