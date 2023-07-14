@@ -79,8 +79,10 @@ int meson_mux_set_parent_by_id(struct clk *clk, struct meson_mux *mux_arr,
 	mux = &mux_arr[index];
 	parents = mux->table;
 	for (i = 0; i < mux->table_size; i++) {
-		if (parent_clk->id == parents[i])
+		if (parent_clk->id == parents[i]) {
 			parent_index = i;
+			break;
+		}
 	}
 
 	val = readl(priv->addr + mux->reg);
@@ -103,9 +105,14 @@ int meson_clk_get_mux_parent(struct clk *clk, struct meson_mux *mux_arr,
 	unsigned int i, val, mux_parent_id;
 
 	for (i = 0; i < arr_size; i++) {
-		if (parent_id == mux_arr[i].index)
+		if (parent_id == mux_arr[i].index) {
 			mux = &mux_arr[i];
+			break;
+		}
 	}
+	if (!mux)
+		return -1;
+
 	val = (readl(priv->addr + mux->reg) >> mux->shift) & mux->mask;
 	p = mux->table;
 	mux_parent_id = p[val];
@@ -124,6 +131,7 @@ int meson_clk_get_div_parent(struct clk *clk, struct meson_div *div_arr,
 		if (clk->id == div_arr[i].index) {
 			div = &div_arr[i];
 			parent_index = div->parent_index;
+			break;
 		}
 	}
 

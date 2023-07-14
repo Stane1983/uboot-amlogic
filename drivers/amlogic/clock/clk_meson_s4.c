@@ -166,9 +166,13 @@ static ulong meson_clk_set_rate(struct clk *clk, ulong rate)
 	struct meson_div *div = NULL;
 
 	for (i = 0; i < ARRAY_SIZE(divs); i++) {
-		if (clk->id == divs[i].index)
+		if (clk->id == divs[i].index) {
 			div = &divs[i];
+			break;
+		}
 	}
+	if (!div)
+		return 0;
 	div_parent = div->parent_index;
 	mux_parent = meson_clk_get_mux_parent(clk, muxes,
 					ARRAY_SIZE(muxes), div_parent);
