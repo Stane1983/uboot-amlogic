@@ -57,7 +57,7 @@ int serial_set_pin_port(unsigned long port_base)
 
 int dram_init(void)
 {
-	gd->ram_size = (readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4;
+	gd->ram_size = (readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF80000) << 4;
 	return 0;
 }
 
@@ -101,8 +101,8 @@ void board_init_mem(void) {
 	char *env_tmp;
 	env_tmp = env_get("bootm_size");
 	if (!env_tmp) {
-		ram_size = ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) > 0xe0000000 ? 0xe0000000 :  \
-			((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4);
+		ram_size = ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF80000) << 4) > 0xe0000000 ? 0xe0000000 :  \
+			((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF80000) << 4);
 		env_set_hex("bootm_low", 0);
 		env_set_hex("bootm_size", ram_size);
 	}
@@ -227,11 +227,11 @@ phys_size_t get_effective_memsize(void)
 {
 	// >>16 -> MB, <<20 -> real size, so >>16<<20 = <<4
 #if defined(CONFIG_SYS_MEM_TOP_HIDE)
-	return ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) > 0xe0000000 ? 0xe0000000 : \
-			(((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) - CONFIG_SYS_MEM_TOP_HIDE);
+	return ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF80000) << 4) > 0xe0000000 ? 0xe0000000 : \
+			(((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF80000) << 4) - CONFIG_SYS_MEM_TOP_HIDE);
 #else
-	return ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) > 0xe0000000 ? 0xe0000000 : \
-			((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4);
+	return ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF80000) << 4) > 0xe0000000 ? 0xe0000000 : \
+			((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF80000) << 4);
 #endif /* CONFIG_SYS_MEM_TOP_HIDE */
 
 }
@@ -260,8 +260,8 @@ struct mm_region *mem_map = bd_mem_map;
 
 int mach_cpu_init(void) {
 	/* update mmu table from bl2 ddr auto detect size */
-	unsigned long nddrSize = ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) > 0xe0000000 ? 0xe0000000 :  \
-			((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4);
+	unsigned long nddrSize = ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF80000) << 4) > 0xe0000000 ? 0xe0000000 :  \
+			((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF80000) << 4);
 	bd_mem_map[0].size = nddrSize;
 
 	//printf("\nmach_cpu_init\n");
@@ -433,12 +433,22 @@ const struct mtd_partition *get_spinand_partition_table(int *partitions)
 int checkhw(char * name)
 {
 	char dtb_name[64] = {0};
-	cpu_id_t  cpu_id = get_cpu_id();
+	unsigned long ddr_size = (readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF80000) << 4;
 
-	if (0x3A == cpu_id.family_id)
-		strcpy(dtb_name, "s4d_s905y4_ap222\0");
-	else if (0x37 == cpu_id.family_id)
-		strcpy(dtb_name, "s4_s905y4_ap222\0");
+	switch (ddr_size) {
+	case 0x8000000:
+		strcpy(dtb_name, "s1a_bg209_128m\0");
+		break;
+	case 0x10000000:
+		strcpy(dtb_name, "s1a_bg209_256m\0");
+		break;
+	case 0x20000000:
+		strcpy(dtb_name, "s1a_bg209_512m\0");
+		break;
+	default:
+		strcpy(dtb_name, "s1a_bg209_unsupport\0");
+		break;
+	}
 
 	strcpy(name, dtb_name);
 	env_set("aml_dt", dtb_name);

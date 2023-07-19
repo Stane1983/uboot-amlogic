@@ -267,12 +267,7 @@
 #define CONFIG_LIBAVB		1
 
 /* define CONFIG_SYS_MEM_TOP_HIDE 8M space for free buffer */
-//#define CONFIG_SYS_MEM_TOP_HIDE		0x00800000
-
-/* define CONFIG_UPDATE_MMU_TABLE for need update mmu */
-//#define CONFIG_UPDATE_MMU_TABLE
-
-#define CONFIG_MULTI_DTB    1
+#define CONFIG_SYS_MEM_TOP_HIDE		0x00800000
 
 /* support secure boot */
 #define CONFIG_AML_SECURE_UBOOT   1
