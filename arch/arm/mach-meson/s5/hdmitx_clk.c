@@ -202,7 +202,7 @@ static void set_s5_htxpll_clk_4_5_6g(const u32 clk, const bool frl_en)
 	}
 	hd21_write_reg(ANACTRL_HDMIPLL_CTRL3,
 		0x000c0000 | (htxpll_m << 8) | (htxpll_ref_clk_od << 4));
-	hd21_write_reg(ANACTRL_HDMIPLL_CTRL4, 0x03400293 | (frl_en << 25));
+	hd21_write_reg(ANACTRL_HDMIPLL_CTRL4, 0x03400293);
 	hd21_write_reg(ANACTRL_HDMIPLL_CTRL5, 0x00000203);
 	hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x00000000);
 	hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL3, 1, 0, 1);
@@ -285,9 +285,8 @@ void set_frl_hpll_od(enum frl_rate_enum rate)
 	case FRL_8G4L:
 	case FRL_10G4L:
 	case FRL_12G4L:
-		hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL3, 0, 20, 2);
-		break;
 	default:
+		hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL3, 0, 20, 2);
 		break;
 	};
 }
@@ -371,7 +370,7 @@ void hdmitx_set_s5_gp2pll(u32 clk, u32 div)
 
 static void hdmitx_set_s5_tmds_clk_div(struct hdmitx_dev *hdev)
 {
-	if (!hdev && !hdev->para)
+	if (!hdev || !hdev->para)
 		return;
 
 	/* cts_htx_tmds_clk selects the htx_tmds20_clk or fll_tmds_clk */
@@ -791,7 +790,7 @@ static void hdmitx_set_fpll_without_dsc(struct hdmitx_dev *hdev)
 	u32 pixel_od = 0;
 	enum hdmi_vic vic = HDMI_0_UNKNOWN;
 
-	if (!hdev && !hdev->para)
+	if (!hdev || !hdev->para)
 		return;
 
 	vic = hdev->para->timing.vic;
@@ -870,7 +869,7 @@ static void hdmitx_set_fpll_with_dsc(struct hdmitx_dev *hdev)
 	u32 tmp_clk = 0;
 	u32 pixel_od = 0;
 
-	if (!hdev && !hdev->para)
+	if (!hdev || !hdev->para)
 		return;
 
 	if (fpll_pixel_clk) {
@@ -925,7 +924,7 @@ void hdmitx_set_gp2pll(struct hdmitx_dev *hdev)
 	u32 div = 1;
 	u32 enc0_clk = 0;
 
-	if (!hdev && !hdev->para)
+	if (!hdev || !hdev->para)
 		return;
 
 	if (gp2_pll_enc0_clk) {
@@ -956,7 +955,7 @@ void hdmitx_set_gp2pll(struct hdmitx_dev *hdev)
 			break;
 		div *= 2;
 		gp2pll_vco *= 2;
-	} while (div <= 16);
+	} while (div <= 8);
 
 	hdmitx_set_s5_gp2pll(gp2pll_vco, div);
 }
