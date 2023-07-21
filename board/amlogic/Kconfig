@@ -371,7 +371,7 @@ config DDRFW_TYPE
 
 config CHIPSET_NAME
         string "S1A CHIPSET NAME"
-        default "s805c1eng"
+        default "s805c1"
 
 config CHIPSET_VARIANT
         string "S1A CHIPSET VARIANT"
@@ -379,7 +379,7 @@ config CHIPSET_VARIANT
 
 config AMLOGIC_KEY_TYPE
         string "S1A AMLOGIC KEY TYPE"
-        default "test-keys"
+        default "dev-keys"
 
 config BL30_SELECT
 	string "S1A BL30 board config"
