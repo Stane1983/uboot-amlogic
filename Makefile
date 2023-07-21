@@ -282,7 +282,7 @@ ifdef CONFIG_AML_UASAN
 #use gcc version above 9.0 to support asan-instrument-allocas option
 CROSS_COMPILE ?=/opt/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
 else
-CROSS_COMPILE ?=/opt/gcc-arm-11.2-2022.02-x86_64-aarch64-none-elf/bin/aarch64-none-elf-
+CROSS_COMPILE ?=/opt/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
 endif
 export CROSS_COMPILE
 
@@ -1117,6 +1117,7 @@ cmd_lzma = lzma -c -z -k -9 $< > $@
 
 cfg: u-boot.cfg
 
+ifndef CONFIG_AMLOGIC_MODIFY
 quiet_cmd_cfgcheck = CFGCHK  $2
 cmd_cfgcheck = $(srctree)/scripts/check-config.sh $2 \
 		$(srctree)/scripts/config_whitelist.txt $(srctree)
@@ -1124,6 +1125,7 @@ cmd_cfgcheck = $(srctree)/scripts/check-config.sh $2 \
 quiet_cmd_ofcheck = OFCHK   $2
 cmd_ofcheck = $(srctree)/scripts/check-of.sh $2 \
 		$(srctree)/scripts/of_allowlist.txt
+endif
 
 # Concat the value of all the CONFIGs (result is 'y' or 'yy', etc. )
 got = $(foreach cfg,$(1),$($(cfg)))

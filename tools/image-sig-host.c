@@ -48,6 +48,7 @@ struct checksum_algo checksum_algos[] = {
 };
 
 struct crypto_algo crypto_algos[] = {
+#ifndef CONFIG_AMLOGIC_MODIFY
 	{
 		.name = "rsa2048",
 		.key_len = RSA2048_BYTES,
@@ -76,6 +77,7 @@ struct crypto_algo crypto_algos[] = {
 		.add_verify_data = ecdsa_add_verify_data,
 		.verify = ecdsa_verify,
 	},
+#endif
 };
 
 struct padding_algo padding_algos[] = {

@@ -85,19 +85,30 @@ FIT_CIPHER_OBJS-$(CONFIG_TOOLS_LIBCRYPTO) := boot/image-cipher.o
 LIBFDT_OBJS := $(addprefix libfdt/, fdt.o fdt_ro.o fdt_wip.o fdt_sw.o fdt_rw.o \
 		fdt_strerror.o fdt_empty_tree.o fdt_addresses.o fdt_overlay.o)
 
+ifdef CONFIG_AMLOGIC_MODIFY
+RSA_OBJS-$(CONFIG_TOOLS_LIBCRYPTO) := $(addprefix lib/rsa/, \
+					rsa-verify.o \
+					rsa-mod-exp.o)
+else
 RSA_OBJS-$(CONFIG_TOOLS_LIBCRYPTO) := $(addprefix lib/rsa/, \
 					rsa-sign.o rsa-verify.o \
 					rsa-mod-exp.o)
 
 ECDSA_OBJS-$(CONFIG_TOOLS_LIBCRYPTO) := $(addprefix lib/ecdsa/, ecdsa-libcrypto.o)
+endif
 
 AES_OBJS-$(CONFIG_TOOLS_LIBCRYPTO) := $(addprefix lib/aes/, \
 					aes-encrypt.o aes-decrypt.o)
 
 # Cryptographic helpers and image types that depend on openssl/libcrypto
+ifdef CONFIG_AMLOGIC_MODIFY
+LIBCRYPTO_OBJS-$(CONFIG_TOOLS_LIBCRYPTO) := \
+			lib/fdt-libcrypto.o
+else
 LIBCRYPTO_OBJS-$(CONFIG_TOOLS_LIBCRYPTO) := \
 			lib/fdt-libcrypto.o \
 			sunxi_toc0.o
+endif
 
 ROCKCHIP_OBS = lib/rc4.o rkcommon.o rkimage.o rksd.o rkspi.o
 
