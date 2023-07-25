@@ -302,7 +302,7 @@ static int storage_boot_layout_general_setting(struct boot_layout *boot_layout, 
 			return 0;
 		}
 		/* normal boot */
-		for (n_index = 0; n_index < MAX_BOOT_AREA_ENTRIES && sbentry->size; n_index++, sbentry++) {
+		for (n_index = 0; n_index <= BOOT_AREA_DEVFIP; n_index++, sbentry++) {
 			boot_entry[n_index].size = sbentry->size;
 			boot_entry[n_index].offset = sbentry->offset;
 		}
@@ -339,7 +339,6 @@ static int storage_get_emmc_boot_start(void)
 	return emmc_boot_seqs_tbl[_get_emmc_boot_seqs()][0];;
 }
 
-#define NAND_RSV_BLOCK_NUM 48
 #define NSP_PAGE0_DISABLE 1
 extern unsigned char *ubootdata;
 static int storage_get_and_parse_ssp(int *need_build) // boot_device:
@@ -380,12 +379,7 @@ static int storage_get_and_parse_ssp(int *need_build) // boot_device:
 				ssp->boot_backups = 1; /* Default 2 backup, consistent with rom */
 			break;
 		case BOOT_SNAND:
-			if (IS_FEAT_EN_8BL2_SNAND())
-				ssp->boot_backups = 8;
-			else if (IS_FEAT_DIS_NBL2_SNAND())
-				ssp->boot_backups = 1;
-			else
-				ssp->boot_backups = 4; /* Default 4 backup, consistent with rom */
+			ssp->boot_backups = CONFIG_BL2_COPY_NUM;
 			sip->snasp.pagesize = current->info.write_unit;
 			sip->snasp.pages_per_eraseblock =
 			current->info.erase_unit / current->info.write_unit;
@@ -395,21 +389,17 @@ static int storage_get_and_parse_ssp(int *need_build) // boot_device:
 			sip->snasp.luns_per_target = 1;
 			sip->snasp.ntargets = 1;
 			sip->snasp.layout_reserve_size =
-				NAND_RSV_BLOCK_NUM * current->info.erase_unit;
+				MTD_RSV_BLOCK_CNT * current->info.erase_unit;
 			break;
 		case BOOT_NAND_NFTL:
 		case BOOT_NAND_MTD:
-			ssp->boot_backups = 8;
-			if (IS_FEAT_DIS_8BL2_NAND())
-				ssp->boot_backups = 4;
-			if (IS_FEAT_DIS_NBL2_NAND())
-				ssp->boot_backups = 1;
+			ssp->boot_backups = CONFIG_BL2_COPY_NUM;
 			sip->nsp.page_size =  current->info.write_unit;
 			sip->nsp.block_size = current->info.erase_unit;
 			sip->nsp.pages_per_block =
 			current->info.erase_unit / current->info.write_unit;
 			sip->nsp.layout_reserve_size =
-				NAND_RSV_BLOCK_NUM * sip->nsp.block_size;
+				MTD_RSV_BLOCK_CNT * sip->nsp.block_size;
 			sip->nsp.page0_disable =  NSP_PAGE0_DISABLE;
 			break;
 		default:
@@ -1072,7 +1062,7 @@ static int name2index(struct boot_layout *boot_layout, const char *img)
 	int i;
 
 	boot_entry = boot_layout->boot_entry;
-	for (i = 1; i < MAX_BOOT_AREA_ENTRIES && boot_entry[i].size; i++) {
+	for (i = 1; i <= BOOT_AREA_DEVFIP; i++) {
 		if (!strncmp(img, boot_entry[i].name, strlen(boot_entry[i].name)))
 			return i;
 	}
@@ -1537,28 +1527,10 @@ static int do_store_rsv_ops(cmd_tbl_t *cmdtp,
 static int do_store_param_ops(cmd_tbl_t *cmdtp,
 			    int flag, int argc, char * const argv[])
 {
-	boot_area_entry_t *boot_entry = general_boot_layout.boot_entry;
-	char bufvir[128];
-	int lenvir, i, re;
-	char *p = bufvir;
+	struct storage_t *store = store_get_current();
 
-	if (store_get_device_bootloader_mode() != ADVANCE_BOOTLOADER)
-		return 0;
-
-	lenvir = snprintf(bufvir, sizeof(bufvir), "%s", "mtdbootparts=aml-nand:");
-	p += lenvir;
-	re = sizeof(bufvir) - lenvir;
-
-	for (i = BOOT_AREA_BL2E; i <= BOOT_AREA_DEVFIP; i++) {
-		lenvir = snprintf(p, re, "%dk(%s),",
-				 (int)(boot_entry[i].size / 1024),
-				 boot_entry[i].name);
-		re -= lenvir;
-		p += lenvir;
-	}
-	p = bufvir;
-	bufvir[strlen(p) - 1] = 0;	/* delete the last comma */
-	env_set("mtdbootparts", p);
+	if (store->param_ops)
+		return store->param_ops();
 
 	return 0;
 }

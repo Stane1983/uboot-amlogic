@@ -193,8 +193,6 @@ __attribute__ ((section(".misc_param"))) = {
 	{ PADCTRL_GPIOD_PULL_UP,   (0x1 << 2),	  (0x1 << 2), 0, 0, 0 },
 };
 
-#define DEV_FIP_SIZE 0x300000
-#define DDR_FIP_SIZE 0x40000
 #define __section(x)    __attribute__((__section__(x)))
 /* for all the storage parameter */
 #ifdef CONFIG_MTD_SPI_NAND
@@ -202,9 +200,10 @@ __attribute__ ((section(".misc_param"))) = {
 storage_parameter_t __store_para __section(".store_param") = {
 	.common				= {
 		.version = 0x01,
-		.device_fip_container_size = DEV_FIP_SIZE,
-		.device_fip_container_copies = 4,
-		.ddr_fip_container_size = DDR_FIP_SIZE,
+		.device_fip_container_size = CONFIG_TPL_SIZE_PER_COPY,
+		.device_fip_container_copies = ((CONFIG_BL2_COPY_NUM << 16)
+						  | (CONFIG_NAND_TPL_COPY_NUM)),
+		.ddr_fip_container_size = BOOTLOADER_DDR_FIP_SIZE,
 	},
 	.nand				= {
 		.version = 0x01,
@@ -213,7 +212,7 @@ storage_parameter_t __store_para __section(".store_param") = {
 		.discrete_mode = 1,
 		.setup_data.spi_nand_page_size = 2048,
 		.reserved.spi_nand_planes_per_lun = 1,
-		.reserved_area_blk_cnt = 48,
+		.reserved_area_blk_cnt = MTD_RSV_BLOCK_CNT,
 		.page_per_block = 64,
 		.use_param_page_list = 0,
 	},
@@ -222,9 +221,10 @@ storage_parameter_t __store_para __section(".store_param") = {
 storage_parameter_t __store_para __section(".store_param") = {
 	.common					= {
 		.version			= 0x01,
-		.device_fip_container_size	= DEV_FIP_SIZE,
-		.device_fip_container_copies	= 4,
-		.ddr_fip_container_size		= DDR_FIP_SIZE,
+		.device_fip_container_size	= CONFIG_TPL_SIZE_PER_COPY,
+		.device_fip_container_copies	= ((CONFIG_BL2_COPY_NUM << 16)
+						  | (CONFIG_NAND_TPL_COPY_NUM)),
+		.ddr_fip_container_size		= BOOTLOADER_DDR_FIP_SIZE,
 	},
 	.nand					= {
 		.version			= 0x01,
@@ -238,7 +238,7 @@ storage_parameter_t __store_para __section(".store_param") = {
 						  (0 << 13) |			  \
 						  (64 << 6) |			  \
 						  (8 << 0),
-		.reserved_area_blk_cnt		= 48,
+		.reserved_area_blk_cnt		= MTD_RSV_BLOCK_CNT,
 		.page_per_block			= 64,
 		.use_param_page_list		= 0,
 	},

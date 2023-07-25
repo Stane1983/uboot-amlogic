@@ -6,15 +6,6 @@
 #ifndef __MESON_RSV_H_
 #define __MESON_RSV_H_
 
-#define NAND_RSV_BLOCK_NUM 48
-
-#define NAND_GAP_BLOCK_NUM 4
-#define NAND_BBT_BLOCK_NUM 4
-#define NAND_ENV_BLOCK_NUM 8
-#define NAND_KEY_BLOCK_NUM 8
-#define NAND_DTB_BLOCK_NUM 4
-#define NAND_DDR_BLOCK_NUM 2
-
 #define BBT_NAND_MAGIC	"nbbt"
 #define ENV_NAND_MAGIC	"nenv"
 #define KEY_NAND_MAGIC	"nkey"
@@ -26,6 +17,21 @@
 #define POWER_ABNORMAL_FLAG	0x01
 #define ECC_ABNORMAL_FLAG	0x02
 #define DDR_PARA_SIZE 2048
+
+#define BBT_INFO_INDEX		0
+#define ENV_INFO_INDEX		1
+#define KEY_INFO_INDEX		2
+#define DTB_INFO_INDEX		3
+#define DDR_INFO_INDEX		4
+
+#define INFO_DATA(n, b, s)	{ .name = (n), .blocks = (b), .size = (s) }
+
+struct rsv_info {
+	char name[8];
+	struct meson_rsv_info_t *rsv_info;
+	unsigned int blocks;
+	unsigned int size;
+};
 
 struct meson_rsv_info_t {
 	struct mtd_info *mtd;
@@ -66,7 +72,7 @@ struct oobinfo_t {
 struct meson_rsv_handler_t {
 	struct mtd_info *mtd;
 	unsigned long long fn_bitmask;
-	struct free_node_t *free_node[NAND_RSV_BLOCK_NUM];
+	struct free_node_t *free_node[MTD_RSV_BLOCK_CNT];
 	struct meson_rsv_info_t *bbt;
 #ifndef CONFIG_ENV_IS_IN_NAND
 	struct meson_rsv_info_t *env;
@@ -77,6 +83,7 @@ struct meson_rsv_handler_t {
 	void *priv;
 };
 
+struct rsv_info *meson_rsv_get_info(int *size);
 int meson_rsv_bbt_read(u_char *dest, size_t size);
 int meson_rsv_key_read(u_char *dest, size_t size);
 int meson_rsv_env_read(u_char *dest, size_t size);

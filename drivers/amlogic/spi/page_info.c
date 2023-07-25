@@ -227,7 +227,7 @@ static void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 	if (page_info_ver == PAGE_INFO_V1) {
 		/* for compatible,  a1/c1/c2 ... need to know fip's start and size */
 		#ifdef	BOOT_TOTAL_PAGES
-		page_info->reserved[0] = BOOT_TOTAL_PAGES / 64 + NAND_RSV_BLOCK_NUM;
+		page_info->reserved[0] = BOOT_TOTAL_PAGES / 64 + MTD_RSV_BLOCK_CNT;
 		#endif
 		#ifdef	CONFIG_TPL_SIZE_PER_COPY
 		page_info->reserved[1] =

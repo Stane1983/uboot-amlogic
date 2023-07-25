@@ -17,6 +17,14 @@
 extern int info_disprotect;
 static struct meson_rsv_handler_t *rsv_handler;
 
+struct rsv_info rsv_board_info[] = {
+	INFO_DATA(BBT_NAND_MAGIC, MTD_RSV_BBT_BLOCK_CNT, 0),
+	INFO_DATA(ENV_NAND_MAGIC, MTD_RSV_ENV_BLOCK_CNT, CONFIG_ENV_SIZE),
+	INFO_DATA(KEY_NAND_MAGIC, MTD_RSV_KEY_BLOCK_CNT, MTD_RSV_KEY_SIZE),
+	INFO_DATA(DTB_NAND_MAGIC, MTD_RSV_DTB_BLOCK_CNT, MTD_RSV_DTB_SIZE),
+	INFO_DATA(DDR_NAND_MAGIC, MTD_RSV_DDR_BLOCK_CNT, MTD_RSV_DDR_SIZE),
+};
+
 static struct free_node_t *get_free_node(struct meson_rsv_info_t *rsv_info)
 {
 	struct meson_rsv_handler_t *handler = rsv_info->handler;
@@ -24,8 +32,8 @@ static struct free_node_t *get_free_node(struct meson_rsv_info_t *rsv_info)
 
 	index =
 		find_first_zero_bit((void *)&handler->fn_bitmask,
-				    NAND_RSV_BLOCK_NUM);
-	if (index >= NAND_RSV_BLOCK_NUM) {
+				    MTD_RSV_BLOCK_CNT);
+	if (index >= MTD_RSV_BLOCK_CNT) {
 		pr_info("%s %d index :%d is greater than max rsv block num\n",
 			__func__, __LINE__, index);
 		return NULL;
@@ -43,7 +51,7 @@ static void release_free_node(struct meson_rsv_info_t *rsv_info,
 
 	pr_info("%s %d: bitmask = 0x%llx\n",
 		__func__, __LINE__, handler->fn_bitmask);
-	if (index >= NAND_RSV_BLOCK_NUM) {
+	if (index >= MTD_RSV_BLOCK_CNT) {
 		pr_info("%s %d index :%d is greater than max rsv block num\n",
 			__func__, __LINE__, index);
 		return;
@@ -622,19 +630,64 @@ int meson_rsv_check(struct meson_rsv_info_t *rsv_info)
 	return ret;
 }
 
+static void aml_nand_rsv_info_ptr_fill(struct mtd_info *mtd,
+				       struct meson_rsv_handler_t *handler)
+{
+	if (rsv_board_info[BBT_INFO_INDEX].rsv_info)
+		handler->bbt = rsv_board_info[BBT_INFO_INDEX].rsv_info;
+	if (rsv_board_info[ENV_INFO_INDEX].rsv_info)
+		handler->env = rsv_board_info[ENV_INFO_INDEX].rsv_info;
+	if (rsv_board_info[KEY_INFO_INDEX].rsv_info)
+		handler->key = rsv_board_info[KEY_INFO_INDEX].rsv_info;
+	if (rsv_board_info[DTB_INFO_INDEX].rsv_info)
+		handler->dtb = rsv_board_info[DTB_INFO_INDEX].rsv_info;
+	if (rsv_board_info[DDR_INFO_INDEX].rsv_info)
+		handler->ddr_para = rsv_board_info[DDR_INFO_INDEX].rsv_info;
+}
+
+static int aml_nand_rsv_info_alloc_init(struct mtd_info *mtd,
+					u32 vernier,
+					char *name,
+					struct meson_rsv_info_t **rsv_info,
+					struct meson_rsv_handler_t *handler,
+					unsigned int blocks, unsigned int size)
+{
+	if (!blocks)
+		return 1;
+
+	*rsv_info = kzalloc(sizeof(struct meson_rsv_info_t), GFP_KERNEL);
+	if (!(*rsv_info))
+		return -ENOMEM;
+
+	(*rsv_info)->nvalid =
+		kzalloc(sizeof(struct valid_node_t), GFP_KERNEL);
+	if (!(*rsv_info)->nvalid)
+		return -ENOMEM;
+
+	(*rsv_info)->mtd = mtd;
+	(*rsv_info)->start = vernier;
+	(*rsv_info)->end = vernier + blocks;
+	(*rsv_info)->nvalid->blk_addr = -1;
+	(*rsv_info)->handler = handler;
+	if (!memcmp(name, BBT_NAND_MAGIC, 4))
+		(*rsv_info)->size = mtd->size >> mtd->erasesize_shift;
+	else
+		(*rsv_info)->size = size;
+
+	memcpy((*rsv_info)->name, name, 4);
+	return 0;
+}
+
 int meson_rsv_init(struct mtd_info *mtd,
 		   struct meson_rsv_handler_t *handler)
 {
 	int i, ret = 0;
-	u32 pages_per_blk_shift, start, vernier;
-	enum boot_type_e medium_type = store_get_type();
+	u32 start, vernier;
 
-	pages_per_blk_shift = mtd->erasesize_shift - mtd->writesize_shift;
-	start = BOOT_TOTAL_PAGES >> pages_per_blk_shift;
-	start += NAND_GAP_BLOCK_NUM;
+	start = MTD_RSV_START_BLOCK + MTD_RSV_GAP_BLOCK_CNT;
 	vernier = start;
 	handler->fn_bitmask = 0;
-	for (i = 0; i < NAND_RSV_BLOCK_NUM; i++) {
+	for (i = 0; i < MTD_RSV_BLOCK_CNT; i++) {
 		handler->free_node[i] =
 			kzalloc(sizeof(struct free_node_t), GFP_KERNEL);
 		if (!handler->free_node[i]) {
@@ -645,187 +698,51 @@ int meson_rsv_init(struct mtd_info *mtd,
 		handler->free_node[i]->index = i;
 	}
 
-	handler->bbt =
-		kzalloc(sizeof(*handler->bbt), GFP_KERNEL);
-	if (!handler->bbt) {
-		ret = -ENOMEM;
-		goto error0;
+	for (i = 0; i < ARRAY_SIZE(rsv_board_info); i++) {
+		ret = aml_nand_rsv_info_alloc_init(mtd, vernier, rsv_board_info[i].name,
+						   &rsv_board_info[i].rsv_info,
+						   handler,
+						   rsv_board_info[i].blocks,
+						   rsv_board_info[i].size);
+		if (ret < 0) {
+			pr_err("%s info alloc init failed\n", rsv_board_info[i].name);
+			ret = -ENOMEM;
+			goto error1;
+		} else if (ret == 1) {
+			pr_err("rsv no need to init %s\n", rsv_board_info[i].name);
+		} else {
+			pr_err("%s start 0x%x end 0x%x size 0x%x\n", rsv_board_info[i].name,
+			       rsv_board_info[i].rsv_info->start,
+			       rsv_board_info[i].rsv_info->end,
+			       rsv_board_info[i].rsv_info->size);
+		}
+		vernier += rsv_board_info[i].blocks;
 	}
-	handler->bbt->nvalid =
-		kzalloc(sizeof(*handler->bbt->nvalid), GFP_KERNEL);
-	if (!handler->bbt->nvalid) {
-		ret = -ENOMEM;
-		goto error1;
-	}
-	handler->bbt->mtd = mtd;
-	handler->bbt->start = vernier;
-	handler->bbt->end = vernier + NAND_BBT_BLOCK_NUM;
-	handler->bbt->nvalid->blk_addr = -1;
-	handler->bbt->size = mtd->size >> mtd->erasesize_shift;
-	handler->bbt->handler = handler;
-	memcpy(handler->bbt->name, BBT_NAND_MAGIC, 4);
-	vernier += NAND_BBT_BLOCK_NUM;
-#ifndef CONFIG_ENV_IS_IN_NAND
-	handler->env =
-		kzalloc(sizeof(*handler->env), GFP_KERNEL);
-	if (!handler->env) {
+
+	aml_nand_rsv_info_ptr_fill(mtd, handler);
+	if ((vernier - start) > MTD_RSV_BLOCK_CNT) {
+		pr_err("ERROR: total blk number is over the limit\n");
 		ret = -ENOMEM;
 		goto error2;
 	}
-	handler->env->nvalid =
-		kzalloc(sizeof(*handler->env->nvalid), GFP_KERNEL);
-	if (!handler->env->nvalid) {
-		ret = -ENOMEM;
-		goto error3;
-	}
-	handler->env->mtd = mtd;
-	handler->env->start = vernier;
-	handler->env->end = vernier + NAND_ENV_BLOCK_NUM;
-	handler->env->nvalid->blk_addr = -1;
-	handler->env->size = CONFIG_ENV_SIZE;
-	handler->env->handler = handler;
-	memcpy(handler->env->name, ENV_NAND_MAGIC, 4);
-	vernier += NAND_ENV_BLOCK_NUM;
-#endif
-	handler->key =
-		kzalloc(sizeof(*handler->key), GFP_KERNEL);
-	if (!handler->key) {
-		ret = -ENOMEM;
-		goto error4;
-	}
-	handler->key->nvalid =
-		kzalloc(sizeof(*handler->key->nvalid), GFP_KERNEL);
-	if (!handler->key->nvalid) {
-		ret = -ENOMEM;
-		goto error5;
-	}
-	handler->key->mtd = mtd;
-	handler->key->start = vernier;
-	handler->key->end = vernier + NAND_KEY_BLOCK_NUM;
-	handler->key->nvalid->blk_addr = -1;
-	handler->key->size = 0;
-	handler->key->handler = handler;
-	memcpy(handler->key->name, KEY_NAND_MAGIC, 4);
-	vernier += NAND_KEY_BLOCK_NUM;
-
-	handler->dtb =
-		kzalloc(sizeof(*handler->dtb), GFP_KERNEL);
-	if (!handler->dtb) {
-		ret = -ENOMEM;
-		goto error6;
-	}
-	handler->dtb->nvalid =
-		kzalloc(sizeof(*handler->dtb->nvalid), GFP_KERNEL);
-	if (!handler->dtb->nvalid) {
-		ret = -ENOMEM;
-		goto error7;
-	}
-	handler->dtb->mtd = mtd;
-	handler->dtb->start = vernier;
-	handler->dtb->end = vernier + NAND_DTB_BLOCK_NUM;
-	handler->dtb->nvalid->blk_addr = -1;
-	handler->dtb->size = 0;
-	handler->dtb->handler = handler;
-	memcpy(handler->dtb->name, DTB_NAND_MAGIC, 4);
-	vernier += NAND_DTB_BLOCK_NUM;
-
-	handler->ddr_para =
-		kzalloc(sizeof(*handler->ddr_para), GFP_KERNEL);
-	if (!handler->ddr_para) {
-		ret = -ENOMEM;
-		goto error8;
-	}
-	handler->ddr_para->nvalid =
-		kzalloc(sizeof(*handler->ddr_para->nvalid), GFP_KERNEL);
-	if (!handler->ddr_para->nvalid) {
-		ret = -ENOMEM;
-		goto error9;
-	}
-	handler->ddr_para->mtd = mtd;
-	handler->ddr_para->start = vernier;
-	handler->ddr_para->end = vernier + NAND_DDR_BLOCK_NUM;
-	handler->ddr_para->nvalid->blk_addr = -1;
-	handler->ddr_para->size = DDR_PARA_SIZE;
-	handler->ddr_para->handler = handler;
-	memcpy(handler->ddr_para->name, DDR_NAND_MAGIC, 4);
-	vernier += NAND_DDR_BLOCK_NUM;
-
-	if (mtd->erasesize < 0x40000) {
-		handler->key->size = mtd->erasesize >> 2;
-		/* reduce memory usage in sram */
-		handler->dtb->size = mtd->erasesize >> 1;
-	} else {
-		if (BOOT_SNAND == medium_type) {
-			/* Reduce space use, malloc may fail */
-			handler->key->size = mtd->erasesize >> 2;
-			handler->dtb->size = mtd->erasesize >> 2;
-		} else {
-			handler->key->size = 0x40000;
-			handler->dtb->size = 0x40000;
-		}
-	}
-#if AML_RSV_KEY_SIZE
-	if (mtd->erasesize >= AML_RSV_KEY_SIZE && !(AML_RSV_KEY_SIZE & 0x3ff))
-		handler->key->size = AML_RSV_KEY_SIZE;
-#endif//#if AML_RSV_KEY_SIZE
-#if AML_RSV_DTB_SIZE
-	if (mtd->erasesize >= AML_RSV_DTB_SIZE && !(AML_RSV_DTB_SIZE & 0x3ff))
-		handler->dtb->size = AML_RSV_DTB_SIZE;
-#endif// #if AML_RSV_DTB_SIZE
-
-	if ((vernier - start) > NAND_RSV_BLOCK_NUM) {
-		pr_info("ERROR: total blk number is over the limit\n");
-		ret = -ENOMEM;
-		goto error10;
-	}
 	rsv_handler = handler;
+	return 0;
 
-	pr_info("bbt_start=%d, size:0x%x\n", handler->bbt->start, handler->bbt->size);
-#ifndef CONFIG_ENV_IS_IN_NAND
-	pr_info("env_start=%d, size:0x%x\n", handler->env->start, handler->env->size);
-#endif
-	pr_info("key_start=%d, size:0x%x\n", handler->key->start, handler->key->size);
-	pr_info("dtb_start=%d, size:0x%x\n", handler->dtb->start, handler->dtb->size);
-	pr_info("ddr_start=%d, size:0x%x\n", handler->ddr_para->start,
-		handler->ddr_para->size);
-
-	return ret;
-
-error10:
-	kfree(handler->ddr_para->nvalid);
-	handler->ddr_para->nvalid = NULL;
-error9:
-	kfree(handler->ddr_para);
-	handler->ddr_para = NULL;
-error8:
-	kfree(handler->dtb->nvalid);
-	handler->dtb->nvalid = NULL;
-error7:
-	kfree(handler->dtb);
-	handler->dtb = NULL;
-error6:
-	kfree(handler->key->nvalid);
-	handler->key->nvalid = NULL;
-error5:
-	kfree(handler->key);
-	handler->key = NULL;
-#ifndef CONFIG_ENV_IS_IN_NAND
-error4:
-	kfree(handler->env->nvalid);
-	handler->env->nvalid = NULL;
-error3:
-	kfree(handler->env);
-	handler->env = NULL;
-#endif
 error2:
-	kfree(handler->bbt->nvalid);
-	handler->bbt->nvalid = NULL;
-error1:
-	kfree(handler->bbt);
+	handler->ddr_para = NULL;
+	handler->key = NULL;
+	handler->env = NULL;
 	handler->bbt = NULL;
-
+	handler->bbt = NULL;
+error1:
+	for (i = 0; i < ARRAY_SIZE(rsv_board_info); i++) {
+		kfree(rsv_board_info[i].rsv_info->nvalid);
+		rsv_board_info[i].rsv_info->nvalid = NULL;
+		kfree(rsv_board_info[i].rsv_info);
+		rsv_board_info[i].rsv_info = NULL;
+	}
 error0:
-	for (i = 0; i < NAND_RSV_BLOCK_NUM; i++) {
+	for (i = 0; i < MTD_RSV_BLOCK_CNT; i++) {
 		kfree(handler->free_node[i]);
 		handler->free_node[i] = NULL;
 	}
@@ -1370,4 +1287,10 @@ int meson_rsv_dtb_erase(void)
 	}
 	return 0;
 
+}
+
+struct rsv_info *meson_rsv_get_info(int *size)
+{
+	*size = ARRAY_SIZE(rsv_board_info);
+	return rsv_board_info;
 }

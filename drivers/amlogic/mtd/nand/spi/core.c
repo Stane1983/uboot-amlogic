@@ -1212,21 +1212,27 @@ static void spinand_cleanup(struct spinand_device *spinand)
 
 #ifdef CONFIG_AML_MTDPART
 /* The size of the partition must be block aligned */
+extern struct boot_layout general_boot_layout;
+extern struct storage_startup_parameter g_ssp;
 int spinand_add_partitions(struct mtd_info *mtd,
 				  const struct mtd_partition *parts,
 				  int nbparts)
 {
-	int part_num = 0, i = 0, ret = 1;
+	int part_num = 0, i = 0, ret = 1, j = 0;
 	struct mtd_partition *temp, *parts_nm;
+	boot_area_entry_t *boot_entry = general_boot_layout.boot_entry;
 	loff_t off;
 
-	if (store_get_device_bootloader_mode() == DISCRETE_BOOTLOADER)
+	if (store_get_device_bootloader_mode() == DISCRETE_BOOTLOADER) {
 		part_num = nbparts + 2;
-	else if (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER)
-		part_num = nbparts + 5;
-	else
+	} else if (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER) {
+		part_num = nbparts;
+		for (i = BOOT_AREA_BB1ST; i <= BOOT_AREA_DEVFIP; i++)
+			if (boot_entry[i].size)
+				part_num++;
+	} else {
 		part_num = nbparts + 1;
-
+	}
 	temp = kzalloc(sizeof(*temp) * part_num, GFP_KERNEL);
 	memset(temp, 0, sizeof(*temp) * part_num);
 	temp[0].name = BOOT_LOADER;
@@ -1234,7 +1240,7 @@ int spinand_add_partitions(struct mtd_info *mtd,
 	temp[0].size = BOOT_TOTAL_PAGES * mtd->writesize;
 	if (temp[0].size % mtd->erasesize)
 		WARN_ON(1);
-	off = temp[0].size + NAND_RSV_BLOCK_NUM * mtd->erasesize;
+	off = temp[0].size + MTD_RSV_BLOCK_CNT * mtd->erasesize;
 
 	if (store_get_device_bootloader_mode() == DISCRETE_BOOTLOADER) {
 		temp[1].name = BOOT_TPL;
@@ -1245,44 +1251,27 @@ int spinand_add_partitions(struct mtd_info *mtd,
 		parts_nm = &temp[2];
 		off += temp[1].size;
 	} else if (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER) {
-		extern struct storage_startup_parameter g_ssp;
-		temp[BOOT_AREA_BL2E].name = BOOT_BL2E;
-		temp[BOOT_AREA_BL2E].offset =
-			g_ssp.boot_entry[BOOT_AREA_BL2E].offset;
-		temp[BOOT_AREA_BL2E].size =
-			g_ssp.boot_entry[BOOT_AREA_BL2E].size * g_ssp.boot_backups;
-		if (temp[0].size % mtd->erasesize)
-			WARN_ON(1);
-
-		temp[BOOT_AREA_BL2X].name = BOOT_BL2X;
-		temp[BOOT_AREA_BL2X].offset =
-			g_ssp.boot_entry[BOOT_AREA_BL2X].offset;
-		temp[BOOT_AREA_BL2X].size =
-			g_ssp.boot_entry[BOOT_AREA_BL2X].size * g_ssp.boot_backups;
-		if (temp[0].size % mtd->erasesize)
-			WARN_ON(1);
-
-		temp[BOOT_AREA_DDRFIP].name = BOOT_DDRFIP;
-		temp[BOOT_AREA_DDRFIP].offset =
-			g_ssp.boot_entry[BOOT_AREA_DDRFIP].offset;
-		temp[BOOT_AREA_DDRFIP].size =
-			g_ssp.boot_entry[BOOT_AREA_DDRFIP].size * g_ssp.boot_backups;
-		if (temp[0].size % mtd->erasesize)
-			WARN_ON(1);
-
-		temp[BOOT_AREA_DEVFIP].name = BOOT_DEVFIP;
-		temp[BOOT_AREA_DEVFIP].offset =
-			g_ssp.boot_entry[BOOT_AREA_DEVFIP].offset;
-		temp[BOOT_AREA_DEVFIP].size =
-			g_ssp.boot_entry[BOOT_AREA_DEVFIP].size * CONFIG_NAND_TPL_COPY_NUM;
-		if (temp[0].size % mtd->erasesize)
-			WARN_ON(1);
-		off = temp[BOOT_AREA_DEVFIP].offset + temp[BOOT_AREA_DEVFIP].size;
-		parts_nm = &temp[5];
+		for (i = BOOT_AREA_BL2E, j = BOOT_AREA_BL2E; i <= BOOT_AREA_DEVFIP; i++) {
+			if (boot_entry[i].size) {
+				temp[j].name = boot_entry[i].name;
+				temp[j].offset = boot_entry[i].offset;
+				if (i == BOOT_AREA_DEVFIP)
+					temp[j].size = boot_entry[i].size
+					* CONFIG_NAND_TPL_COPY_NUM;
+				else
+					temp[j].size = boot_entry[i].size
+					* g_ssp.boot_backups;
+				if (temp[j++].size % mtd->erasesize)
+					WARN_ON(1);
+			}
+		}
+		off = boot_entry[BOOT_AREA_DEVFIP].offset + boot_entry[BOOT_AREA_DEVFIP].size
+			* g_ssp.boot_backups;
+		parts_nm = &temp[part_num - nbparts];
 	} else
 		parts_nm = &temp[1];
 
-	for (; i < nbparts; i++) {
+	for (i = 0; i < nbparts; i++) {
 		//printf("add_partitions ==== name = %s\n",parts[i].name);
 		if (!parts[i].name) {
 			pr_err("name can't be null! ");

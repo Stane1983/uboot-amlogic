@@ -566,7 +566,7 @@ static int mtd_store_read(const char *part_name,
 	if (!part_name) {/*normal area except tpl*/
 		offset = off;
 		offset += BOOT_TOTAL_PAGES * ((u64)mtd->writesize);
-		offset += NAND_RSV_BLOCK_NUM * ((u64)mtd->erasesize);
+		offset += MTD_RSV_BLOCK_CNT * ((u64)mtd->erasesize);
 
 		if ((store_get_device_bootloader_mode() == DISCRETE_BOOTLOADER) ||
 		    (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER))  {
@@ -610,16 +610,16 @@ static int mtd_store_write(const char *part_name,
 	if (!part_name) {/*normal area except tpl*/
 		offset = off;
 		offset += BOOT_TOTAL_PAGES * ((u64)mtd->writesize);
-		offset += NAND_RSV_BLOCK_NUM * ((u64)mtd->erasesize);
+		offset += MTD_RSV_BLOCK_CNT * ((u64)mtd->erasesize);
 		if ((store_get_device_bootloader_mode() == DISCRETE_BOOTLOADER) ||
 		    (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER)) {
 			if (BOOT_NAND_MTD == medium_type ||
 				BOOT_SNAND == medium_type)
-			offset += CONFIG_TPL_SIZE_PER_COPY *
-			CONFIG_NAND_TPL_COPY_NUM;
+				offset += CONFIG_TPL_SIZE_PER_COPY *
+					CONFIG_NAND_TPL_COPY_NUM;
 			else if (medium_type == BOOT_SNOR)
 				offset += CONFIG_TPL_SIZE_PER_COPY *
-			CONFIG_NOR_TPL_COPY_NUM;
+					CONFIG_NOR_TPL_COPY_NUM;
 		}
 	}
 	ret = mtd_store_write_skip_bad(mtd, offset, &size,
@@ -1147,7 +1147,7 @@ static int mtd_store_boot_erase(const char *part_name, u8 cpy)
 {
 	char **boot_entry = boot_entry_discrete;
 	u8 i = 0, boot_entry_cnt = 2;
-	int ret;
+	int ret = 0;
 	u8 backup_num = 0;
 	enum boot_type_e medium_type = store_get_type();
 
@@ -1178,9 +1178,11 @@ static int mtd_store_boot_erase(const char *part_name, u8 cpy)
 				return 1;
 			}
 			for (i = 0; i < boot_entry_cnt; i++, boot_entry++) {
-				ret = _mtd_store_boot_erase(*boot_entry, cpy);
-				if (ret)
-					pr_info("boot partition erase failed\n");
+				if (mtd_store_size(*boot_entry)) {
+					ret = _mtd_store_boot_erase(*boot_entry, cpy);
+					if (ret)
+						pr_info("boot partition erase failed\n");
+				}
 			}
 			return ret;
 		}
@@ -1404,6 +1406,102 @@ static int nor_rsv_protect(const char *name, bool ops)
 	return 0;
 }
 
+int mtd_store_param_rsv(void)
+{
+	struct mtd_info *mtd = mtd_store_get(0);
+	struct rsv_info *info;
+	int lenvir, i, re, base, cnt;
+	char buf[256];
+	char *p = buf;
+
+	info = meson_rsv_get_info(&cnt);
+	base = mtd->erasesize / 1024;
+	lenvir = snprintf(buf, sizeof(buf), "%s", "mtdrsvparts=aml-nand:");
+	p += lenvir;
+	re = sizeof(buf) - lenvir;
+	lenvir = snprintf(p, re, "%dk@%dk@0k(rsv),",
+			  MTD_RSV_START_BLOCK * base,
+			  (MTD_RSV_BLOCK_CNT + MTD_RSV_START_BLOCK) * base);
+	p += lenvir;
+	re -= lenvir;
+	lenvir = snprintf(p, re, "%dk@%dk@0k(gap),",
+			  MTD_RSV_START_BLOCK * base,
+			  (MTD_RSV_START_BLOCK + MTD_RSV_GAP_BLOCK_CNT) * base);
+	p += lenvir;
+	re -= lenvir;
+	for (i = 0; i < cnt; i++) {
+		if (info[i].rsv_info) {
+			lenvir = snprintf(p, re, "%dk@%dk@%dk(%s),",
+					  (int)info[i].rsv_info->start * base,
+					  (int)info[i].rsv_info->end * base,
+					  (int)info[i].rsv_info->size / 1024,
+					  info[i].name);
+			re -= lenvir;
+			p += lenvir;
+		} else {
+			lenvir = snprintf(p, re, "0k@0k@0k(%s),",
+					  info[i].name);
+			re -= lenvir;
+			p += lenvir;
+		}
+	}
+
+	p = buf;
+	env_set("mtdrsvparts", p);
+	memset(buf, 0, sizeof(buf));
+	sprintf(buf, "setenv bootargs ${bootargs} ${mtdrsvparts}");
+	printf("command: %s\n", buf);
+
+	return run_command(buf, 0);
+}
+
+extern struct part_info *get_aml_mtdpart_by_index(struct mtd_info *master, int idx);
+int mtd_store_param_partition(void)
+{
+	struct part_info *temp;
+	int lenvir, i, re, count;
+	char buf[512];
+	char *p = buf;
+
+	count = get_aml_mtdpart_count();
+	lenvir = snprintf(buf, sizeof(buf), "%s", "mtdparts=aml-nand:");
+	p += lenvir;
+	re = sizeof(buf) - lenvir;
+	for (i = 0; i < count; i++) {
+		temp = get_aml_mtdpart_by_index(NULL, i);
+		if (!temp)
+			return -EINVAL;
+		lenvir = snprintf(p, re, "%dk@%dk(%s),",
+				  (int)(temp->size / 1024),
+				  (int)(temp->offset / 1024),
+				  temp->name);
+		re -= lenvir;
+		p += lenvir;
+	}
+	p = buf;
+	buf[strlen(p) - 1] = 0;	/* delete the last comma */
+	env_set("mtdparts", p);
+	memset(buf, 0, sizeof(buf));
+	sprintf(buf, "setenv bootargs ${bootargs} ${mtdparts}");
+	printf("command: %s\n", buf);
+
+	return run_command(buf, 0);
+}
+
+int mtd_store_param_ops(void)
+{
+	static int init;
+
+	if (init)
+		return 0;
+
+	mtd_store_param_partition();
+	mtd_store_param_rsv();
+	init = 1;
+
+	return 0;
+}
+
 void mtd_store_mount_ops(struct storage_t *store)
 {
 	store->get_part_count = mtd_store_count;
@@ -1417,6 +1515,7 @@ void mtd_store_mount_ops(struct storage_t *store)
 	store->boot_erase = mtd_store_boot_erase;
 	store->get_copies = mtd_store_boot_copy_num;
 	store->get_copy_size = mtd_store_boot_copy_size;
+	store->param_ops = mtd_store_param_ops;
 	if (store->type == BOOT_SNOR) {
 		store->get_rsv_size = nor_rsv_size;
 		store->read_rsv = nor_rsv_read;
