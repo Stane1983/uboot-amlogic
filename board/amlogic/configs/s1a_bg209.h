@@ -86,6 +86,7 @@
         "board=oppen\0"\
 	"scramble_reg=0xfe02e030\0"\
         "upgrade_key="\
+		"gpio set GPIOZ_6;"\
 		"if gpio input GPIOD_2; then "\
 			"echo detect upgrade key;"\
 			"if test ${boot_flag} = 0; then "\

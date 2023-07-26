@@ -2199,6 +2199,9 @@ __attribute__ ((section(".misc_param"))) = {
 	{ CLKCTRL_PWM_CLK_AB_CTRL, (1 << 8),	  0xffffffff, 0, 0, 0 },
 	/* set GPIOD6 mux to pwm_a */
 	{ PADCTRL_PIN_MUX_REGG,	   (0x2 << 24),	  (0xf << 16), 0, 0, 0 },
+	/* disable vcc5v, set GPIOZ_6 to low */
+	{ PADCTRL_GPIOZ_O,	   (0 << 6),	  (0 << 6), 0, 0, 0 },
+	{ PADCTRL_GPIOZ_OEN,	   (0 << 6),	  (0 << 6), 0, 0, 0 },
 };
 
 #define DEV_FIP_SIZE 0x300000
