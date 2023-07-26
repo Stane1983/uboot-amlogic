@@ -59,7 +59,9 @@
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"uart_base=0xfe07a000\0"\
 	"usb_burning=" CONFIG_USB_TOOL_ENTRY "\0"\
-	"board=oppen\0"\
+	"board=s1a_bg209\0"\
+	"boot_part=boot\0"\
+	"recovery_part=recovery\0"\
         "panel_type=lcd_1\0" \
         "outputmode=1080p60hz\0" \
         "hdmimode=1080p60hz\0" \
@@ -106,9 +108,9 @@
 	"run switch_bootmode;"
 #else
 #define CONFIG_PREBOOT  "echo preboot"
+#define CONFIG_ENV_IS_NOWHERE  1
 #endif
 
-#define CONFIG_ENV_IS_NOWHERE  1
 
 //#define CONFIG_ENV_SIZE   (64*1024)
 #define CONFIG_FIT 1

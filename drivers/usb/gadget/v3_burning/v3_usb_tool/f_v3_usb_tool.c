@@ -1179,7 +1179,7 @@ static int _mread_cmd_parser(const int argc, char *argv[], char *ack)
 		mediaType = V3TOOL_MEDIA_TYPE_STORE + i;
 		break;
 	}
-	if (mediaType != -1) {
+	if (mediaType == -1) {
 		FBS_ERR(ack, "unsupported media %s", media);
 		return -__LINE__;
 	}
