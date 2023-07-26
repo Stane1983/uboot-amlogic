@@ -91,3 +91,4 @@ obj-$(CONFIG_AML_VOUT) += cmd_vout.o
 obj-$(CONFIG_AML_OSD) += cmd_osd.o
 obj-$(CONFIG_AML_VPP) += cmd_vpp.o
 obj-$(CONFIG_AML_DOLBY) += cmd_dolbyvision.o
+obj-$(CONFIG_CMD_JTAG) += jtag.o

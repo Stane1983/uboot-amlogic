@@ -40,3 +40,4 @@ obj-$(CONFIG_AMLOGIC_USB) += usb/phy/
 
 obj-$(CONFIG_AMLOGIC_USB) += usb/device/
 
+obj-$(CONFIG_$(SPL_TPL_)CMD_JTAG) += jtag/

@@ -173,6 +173,13 @@ config CMD_IR
         bool "ir"
         help
           Support IR in polling mode.
+
+config CMD_JTAG
+	bool "support amlogic jtag command"
+	depends on MISC
+	depends on !AML_DISABLE_DEV_CMDS
+	help
+	 CMD_JTAG support.
 #prduct mode end<----
 
 endmenu
