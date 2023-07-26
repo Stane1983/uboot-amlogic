@@ -468,4 +468,16 @@ struct eqos_eth_dev {
 	void *rx_pkt;
 };
 
+#ifdef CONFIG_DM_ETH
+struct aml_phy_dev {
+	void __iomem *phy_top;
+	void __iomem *phy_cfg;
+	struct dev_pm_ops *pm_ops;
+};
+
+int aml_phy_suspend(void *pm_ops);
+int aml_phy_resume(void *pm_ops);
+int aml_phy_poweroff(void *pm_ops);
+#endif
+
 #endif
