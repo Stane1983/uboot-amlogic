@@ -86,4 +86,7 @@ like the AES key not ready when secure boot enabled for the first time.
 
 #define SBOOT_KEYSLOT_BASE		32
 
+/*improve eth performance*/
+#define CONFIG_SYS_NONCACHED_MEMORY     (1 << 20)       /* 1 MiB */
+
 #endif /* _CPU_H */

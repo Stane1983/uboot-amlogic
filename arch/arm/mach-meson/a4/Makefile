@@ -10,6 +10,7 @@ obj-y	+= mailbox.o
 obj-$(CONFIG_CMD_PLLTEST)	+= pll.o
 obj-$(CONFIG_CMD_AML_MTEST) += core.o
 obj-y += usb.o
+obj-$(CONFIG_ETH_DESIGNWARE) += eth.o
 obj-$(CONFIG_AML_TSENSOR) += tsensor.o
 obj-$(CONFIG_AML_OSCRING) += oscring.o
 obj-$(CONFIG_AML_HDMITX20) += hdmitx_hw.o hdmitx_clk.o
