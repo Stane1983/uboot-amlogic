@@ -75,7 +75,8 @@
 #define USB_PHY2_RESET			0x20000000
 
 /* XHCI PHY register structure */
-#define PHY_REGISTER_SIZE	0x20
+#define PHY_REGISTER_SIZE	0x00
+#define CEG_UDC_1_BASE 0xfe310000
 
 struct phy_aml_usb2_priv {
 	unsigned int base_addr;
@@ -241,6 +242,6 @@ int usb2_phy_init (struct phy *phy);
 unsigned int usb_get_dwc_a_base_addr(void);
 unsigned int usb_get_device_mode_phy_base(void);
 void usb_phy_tuning_reset(void);
-void usb_device_mode_init(void);
+void usb_device_mode_init(int phy_num);
 
 #endif

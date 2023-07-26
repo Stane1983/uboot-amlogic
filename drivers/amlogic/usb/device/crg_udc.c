@@ -3419,6 +3419,9 @@ int usb_gadget_register_driver(struct usb_gadget_driver *drive)
 	/* set controller device role */
 	reg_write(crg_udc->reg_base + 0x20FC, (reg_read(crg_udc->reg_base + 0x20FC)  | 0x1));
 
+	reg_write((void *)((u64)crg_udc->reg_base + 0x2110),
+			(reg_read((void *)((u64)crg_udc->reg_base + 0x2110))   & (~0x1f)));
+
 	for (i = 0; i < CRG_RING_NUM; i++) {
 		crg_udc->uicr[i] = crg_udc->reg_base +
 				CRG_UICR_OFFSET + i * CRG_UICR_STRIDE;
