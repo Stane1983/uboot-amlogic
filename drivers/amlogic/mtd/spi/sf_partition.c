@@ -91,7 +91,8 @@ static int _spinor_add_partitions(struct mtd_info *mtd,
 		off = temp[BOOT_AREA_DEVFIP].offset + temp[BOOT_AREA_DEVFIP].size;
 		parts_nm = &temp[5];
 
-		if (cpu_id.family_id == MESON_CPU_MAJOR_ID_A4)
+		if ((cpu_id.family_id == MESON_CPU_MAJOR_ID_A4) ||
+			(cpu_id.family_id == MESON_CPU_MAJOR_ID_S1A))
 			off = DIV_ROUND_UP(off, 0x1000) << 12;
 	} else {
 		temp[0].name = BOOT_LOADER;

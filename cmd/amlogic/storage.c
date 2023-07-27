@@ -215,7 +215,8 @@ static int storage_boot_layout_rebuild(struct boot_layout *boot_layout,
 			BL2_CORE_BASE_OFFSET_EMMC;
 		cal_copy = 1;
 	} else if (ssp->boot_device == BOOT_SNOR &&
-		cpu_id.family_id == MESON_CPU_MAJOR_ID_A4) {
+		((cpu_id.family_id == MESON_CPU_MAJOR_ID_A4) ||
+		(cpu_id.family_id == MESON_CPU_MAJOR_ID_S1A))) {
 		ssp->boot_entry[0].offset = boot_entry[0].offset += 0x200;
 		cal_copy = 1;
 	}
