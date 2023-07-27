@@ -17,7 +17,7 @@
 #endif
 #include <linux/bitops.h>
 #include <linux/mtd/nand.h>
-#ifdef CONFIG_MTD_SPI_NAND
+#if defined(CONFIG_AMLOGIC_MODIFY) && defined(CONFIG_MTD_SPI_NAND)
 #include <linux/mtd/spinand.h>
 #include <amlogic/aml_rsv.h>
 #endif
@@ -30,7 +30,7 @@
  */
 bool nanddev_isbad(struct nand_device *nand, const struct nand_pos *pos)
 {
-#ifdef CONFIG_MTD_SPI_NAND
+#if defined(CONFIG_AMLOGIC_MODIFY) && defined(CONFIG_MTD_SPI_NAND)
 	struct spinand_device *spinand = nand_to_spinand(nand);
 	u8 bad_block;
 
@@ -105,7 +105,7 @@ int nanddev_markbad(struct nand_device *nand, const struct nand_pos *pos)
 	if (ret)
 		pr_warn("failed to write BBM to block @%llx (err = %d)\n",
 			nanddev_pos_to_offs(nand, pos), ret);
-#ifdef CONFIG_MTD_SPI_NAND
+#if defined(CONFIG_AMLOGIC_MODIFY) && defined(CONFIG_MTD_SPI_NAND)
 	extern int meson_rsv_bbt_write(u_char *source, size_t size);
 	struct spinand_device *spinand = nand_to_spinand(nand);
 	u8 bad_block;
@@ -167,7 +167,7 @@ bool nanddev_isreserved(struct nand_device *nand, const struct nand_pos *pos)
 	unsigned int entry;
 	int status;
 
-#ifdef CONFIG_MTD_SPI_NAND
+#if defined(CONFIG_AMLOGIC_MODIFY) && defined(CONFIG_MTD_SPI_NAND)
 	return false;
 #endif
 	if (!nanddev_bbt_is_initialized(nand))

@@ -397,31 +397,48 @@ int get_aml_partition_count(void)
 #if (defined(CONFIG_SPI_NAND) || defined(CONFIG_MTD_SPI_NAND))
 static const struct mtd_partition spinand_partitions[] = {
 	{
+	.name = "factory",
+	.offset = 0,
+	.size = 3 * SZ_1M,
+	/* MESON_IGNORE_ERASE_CHIP will ignore store erase.chip */
+	.mask_flags = MESON_IGNORE_ERASE_CHIP,
+	},
+	{
+		.name = "tee",
+		.offset = 0,
+		.size = 3 * SZ_1M,
+	},
+	{
 		.name = "logo",
 		.offset = 0,
-		.size = 2 * SZ_1M,
+		.size = 1 * SZ_256K,
 	},
 	{
 		.name = "recovery",
 		.offset = 0,
-		.size = 16 * SZ_1M,
+		.size = 18 * SZ_1M,
 	},
 	{
 		.name = "boot",
 		.offset = 0,
-		.size = 16 * SZ_1M,
+		.size = 12 * SZ_1M,
 	},
 	{
 		.name = "system",
 		.offset = 0,
-		.size = 64 * SZ_1M,
+		.size = 48 * SZ_1M,
+	},
+	{
+		.name = "vbmeta",
+		.offset = 0,
+		.size = 1 * SZ_256K,
 	},
 	/* last partition get the rest capacity */
 	{
 		.name = "data",
 		.offset = MTDPART_OFS_APPEND,
 		.size = MTDPART_SIZ_FULL,
-	}
+	},
 };
 const struct mtd_partition *get_spinand_partition_table(int *partitions)
 {
