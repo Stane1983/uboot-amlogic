@@ -74,7 +74,15 @@ endif
 obj-$(CONFIG_AML_STORAGE) += storage.o
 
 obj-$(CONFIG_CMD_OS_IDENT) += os_ident.o
-obj-$(CONFIG_AML_FACTORY_PROVISION) += cmd_factory_provision.o
+
+# factory provision
+obj-$(CONFIG_AML_FACTORY_PROVISION) += \
+			factory_provision/cmd_factory_provision.o \
+			factory_provision/factory_provision_utils.o \
+			factory_provision/emmc_factory_provision.o
+obj-$(CONFIG_NAND_FACTORY_PROVISION) += \
+			factory_provision/nand_factory_provision.o
+
 obj-$(CONFIG_AML_WATERMARK) += cmd_watermark.o
 obj-$(CONFIG_SECURE_POWER_CONTROL) += cmd_power.o
 obj-$(CONFIG_CMD_CEC) += cmd_cec.o
