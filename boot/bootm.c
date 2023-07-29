@@ -653,7 +653,8 @@ int bootm_process_cmdline(char *buf, int maxlen, int flags)
 	/* Check config first to enable compiler to eliminate code */
 	if (IS_ENABLED(CONFIG_SILENT_CONSOLE) &&
 	    !IS_ENABLED(CONFIG_SILENT_U_BOOT_ONLY) &&
-	    (flags & BOOTM_CL_SILENT)) {
+	    (flags & BOOTM_CL_SILENT) &&
+		!IS_ENABLED(CONFIG_AMLOGIC_MODIFY)) {
 		ret = fixup_silent_linux(buf, maxlen);
 		if (ret)
 			return log_msg_ret("silent", ret);
