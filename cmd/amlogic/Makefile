@@ -88,6 +88,7 @@ obj-$(CONFIG_AML_VPU) += cmd_vpu.o
 obj-$(CONFIG_AML_HDMITX20) += cmd_hdmitx20.o
 obj-$(CONFIG_AML_HDMITX21) += cmd_hdmitx21.o
 obj-$(CONFIG_AML_VOUT) += cmd_vout.o
+obj-$(CONFIG_AML_CVBS) += cmd_cvbs.o
 obj-$(CONFIG_AML_OSD) += cmd_osd.o
 obj-$(CONFIG_AML_VPP) += cmd_vpp.o
 obj-$(CONFIG_AML_DOLBY) += cmd_dolbyvision.o

@@ -49,6 +49,37 @@
 / {
 	compatible = "amlogic,s1a-bg201", "amlogic,s1a-txxx", "amlogic,meson-s1a";
 	model = "Amlogic Meson S1A BG201 Board";
+
+	cvbsout {
+		compatible = "amlogic, cvbsout-s1a";
+		status = "okay";
+		sva_std = <0>; /* if default sva test this value is 1*/
+
+		/* performance: reg_address, reg_value */
+		/* s1a */
+		/* pal default Matrx625 CTCC value */
+		performance_pal = <0xff006fc0  0x9 /* 0x1bf0 << 2 + 0xff000000 */
+		        0xff006c48  0x80c0 /* 0x1b12 */
+		        0xff006c14  0xf7 /* 0x1b05 */
+		        0xff006d58  0x333 /* 0x1b56 */
+		        0xff007164  0xf25c /* 0x1c59 */
+		        0xffff  0x0>; /* ending flag */
+		/* ccitt033 SVA value */
+		performance = <0xff006fc0  0x9 /* 0x1bf0 */
+		        0xff006c48  0x8040 /* 0x1b12 */
+		        0xff006c14  0xfd /* 0x1b05 */
+		        0xff006d58  0x333 /* 0x1b56 */
+		        0xff007164  0xf654 /* 0x1c59 */
+		        0xffff  0x0>; /* ending flag */
+		performance_ntsc = <0xff006fc0  0x9 /* 0x1bf0 << 2 + 0xff000000 */
+		        0xff006c48  0x8020 /* 0x1b12 */
+		        0xff006c0c  0x0 /* 0x1b03 */
+		        0xff006c10  0x0 /* 0x1b04 */
+		        0xff006c14  0x0 /* 0x1b05 */
+		        0xff006d58  0x333 /* 0x1b56 */
+		        0xff007164  0xf850 /* 0x1c59 */
+		        0xffff  0x0>; /* ending flag */
+        };
 };
 
 /* This UART is brought out to the DB9 connector */
