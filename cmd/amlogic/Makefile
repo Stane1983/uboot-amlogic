@@ -64,7 +64,11 @@ else
 ifdef CONFIG_MESON_T5M
 obj-y += cmd_ddr_test_t5m.o
 else
+ifdef CONFIG_MESON_S1A
+obj-y += cmd_ddr_test_s1a.o
+else
 obj-y += cmd_ddr_test_g12.o
+endif
 endif
 endif
 
