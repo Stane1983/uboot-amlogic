@@ -11,7 +11,8 @@
 #include "lcd_unifykey.h"
 
 /* 20230220: init version */
-#define LCD_DRV_VERSION    "20230220"
+/* 20230802: add t5m,t5w,t3x set phy lane amp*/
+#define LCD_DRV_VERSION    "20230802"
 
 extern unsigned long clk_util_clk_msr(unsigned long clk_mux);
 

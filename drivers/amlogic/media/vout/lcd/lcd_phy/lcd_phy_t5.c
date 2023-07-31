@@ -56,6 +56,7 @@ static void lcd_phy_cntl_set(struct phy_config_s *phy, int status, int bypass,
 			  (lcd_phy_ctrl->ctrl_bit_on << 0));
 		if (bypass)
 			tmp |= ((1 << 18) | (1 << 2));
+
 		if (mode) {
 			chreg |= lvds_vx1_p2p_phy_ch_tl1;
 			cntl15 = 0x00070000;
