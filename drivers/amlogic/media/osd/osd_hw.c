@@ -36,7 +36,9 @@
 static bool vsync_hit;
 static bool osd_vf_need_update;
 
-unsigned int osd_log_level;
+int osd_log_level;
+static int osd_log_level_backup;
+static int in_debug_mode;
 static unsigned int logo_loaded[OSD_MAX];
 
 #ifdef CONFIG_AM_VIDEO
@@ -713,13 +715,34 @@ int osd_get_chip_type(void)
 	return cpu_type;
 }
 
-static void osd_vpu_power_on(void)
+void osd_vpu_power_on(void)
 {
 }
 
 void osd_set_log_level(int level)
 {
 	osd_log_level = level;
+	if (osd_log_level > 0)
+		in_debug_mode = 1;
+	else
+		in_debug_mode = 0;
+}
+
+void stop_osd_log(void)
+{
+	if (in_debug_mode)
+		return;
+
+	osd_log_level_backup = osd_log_level;
+	osd_log_level = -1;
+}
+
+void start_osd_log(void)
+{
+	if (in_debug_mode)
+		return;
+
+	osd_log_level = osd_log_level_backup;
 }
 
 void osd_get_hw_para(struct hw_para_s **para)
@@ -1853,9 +1876,10 @@ void osd_setup_hw(u32 index,
 		} else {
 			fb_len = fb_gdev.fb_height *
 				CANVAS_ALIGNED(fb_gdev.fb_width * color->bpp >> 3);
-			set_fb_layout_info(index, fb_len);
-			osd_hw.fb_gem[index].addr += get_fb_offset(index);
-
+			if (!rma_test_addr) {
+				set_fb_layout_info(index, fb_len);
+				osd_hw.fb_gem[index].addr += get_fb_offset(index);
+			}
 			osd_logd("%s, set osd%d fb_addr:0x%x fb_len:%d\n",
 				 __func__, index,
 				 osd_hw.fb_gem[index].addr, fb_len);
@@ -1870,10 +1894,11 @@ void osd_setup_hw(u32 index,
 					      CANVAS_ADDR_NOWRAP, CANVAS_BLKMODE_LINEAR);
 #endif
 		}
-		snprintf(cmd, sizeof(cmd), "setenv fb_addr 0x%x",
-			 osd_hw.fb_gem[index].addr);
-		run_command(cmd, 0);
-
+		if (!rma_test_addr) {
+			snprintf(cmd, sizeof(cmd), "setenv fb_addr 0x%x",
+				 osd_hw.fb_gem[index].addr);
+			run_command(cmd, 0);
+		}
 		osd_logd("osd[%d] canvas.idx =0x%x\n",
 			 index, osd_hw.fb_gem[index].canvas_idx);
 		osd_logd("osd[%d] canvas.addr=0x%x\n",
@@ -1908,7 +1933,7 @@ void osd_setup_hw(u32 index,
 #ifdef AML_OSD_HIGH_VERSION
 	static int is_blend_set;
 
-	if (rma_test)
+	if (rma_test || rma_test_addr)
 		is_blend_set = 0;
 
 	if (osd_hw.osd_ver == OSD_HIGH_ONE && is_vpp0(index) && !is_blend_set) {
