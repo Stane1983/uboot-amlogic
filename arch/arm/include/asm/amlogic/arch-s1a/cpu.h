@@ -84,4 +84,6 @@ like the AES key not ready when secure boot enabled for the first time.
 
 #define CONFIG_SYS_NAND_BASE_LIST   {0}
 
+#define SBOOT_KEYSLOT_BASE		32
+
 #endif /* _CPU_H */

@@ -21,6 +21,10 @@
 #include <linux/err.h>
 #include <u-boot/zlib.h>
 #include <mapmem.h>
+#include <amlogic/aml_efuse.h>
+#include <version.h>
+#include <amlogic/image_check.h>
+#include <asm/amlogic/arch/bl31_apis.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -154,6 +158,41 @@ int do_bootm(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 		if ((*endp != 0) && (*endp != ':') && (*endp != '#'))
 			return do_bootm_subcommand(cmdtp, flag, argc, argv);
 	}
+
+#if !defined(CONFIG_SKIP_KERNEL_DTB_SECBOOT_CHECK) && defined(CONFIG_IMAGE_CHECK)
+	unsigned int loadaddr = GXB_IMG_LOAD_ADDR; //default load address
+
+	if (argc > 0)
+	{
+		char *endp;
+		loadaddr = simple_strtoul(argv[0], &endp, 16);
+		//printf("aml log : addr = 0x%x\n",loadaddr);
+	}
+
+	if (IS_FEAT_BOOT_VERIFY()) {
+		int ret = 0;
+
+		ret = secure_image_check((uint8_t *)(unsigned long)loadaddr,
+			GXB_IMG_SIZE, GXB_IMG_DEC_ALL);
+		if (ret) {
+			printf("\naml log : Sig Check %d\n", ret);
+			return ret;
+		}
+		/* Override load address argument to skip secure boot header.
+		 * Only skip if secure boot so normal boot can use plain boot.img+
+		 */
+		ulong img_addr, ncheckoffset;
+		char argv0_new[12] = {0};
+		char *argv_new = (char *)&argv0_new;
+
+		img_addr = genimg_get_kernel_addr(argc < 1 ? NULL : argv[0]);
+		ncheckoffset = android_image_check_offset();
+		img_addr += ncheckoffset;
+		snprintf(argv0_new, sizeof(argv0_new), "%lx", img_addr);
+		argc = 1;
+		argv = (char **)&argv_new;
+	}
+#endif
 
 	states = BOOTM_STATE_START | BOOTM_STATE_FINDOS | BOOTM_STATE_PRE_LOAD |
 		BOOTM_STATE_FINDOTHER | BOOTM_STATE_LOADOS |
