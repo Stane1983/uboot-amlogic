@@ -463,6 +463,12 @@ static int bootm_load_os(struct bootm_headers *images, int boot_progress)
 		bootstage_error(BOOTSTAGE_ID_DECOMP_IMAGE);
 		return err;
 	}
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+	if (load_end >= IOTRACE_LOAD_ADDR)
+		printf("[Warning] kernel overlap iotrace, please reset decompress addr\n");
+#endif
+
 	/* We need the decompressed image size in the next steps */
 	images->os.image_len = load_end - load;
 
