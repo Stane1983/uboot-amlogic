@@ -483,4 +483,6 @@ int store_gpt_read(void *buf);
 int store_gpt_write(void *buf);
 int store_gpt_erase(void);
 
+int check_valid_dts(unsigned char *buffer);
+
 #endif/* __STORAGE_H__ */

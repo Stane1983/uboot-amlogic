@@ -611,16 +611,17 @@ int v3tool_storage_init(const int eraseFlash, unsigned int dtbImgSz, unsigned in
 	if (sheader_need())
 		sheader_load((void *)V3_PAYLOAD_LOAD_ADDR);
 
+	if (dtbImgSz > 0) {
+		FB_MSG("to check dtb\n");
+		ret = check_valid_dts(dtbLoadedAddr);
+		if (ret < 0)
+			FBS_EXIT(_ACK, "Fail at check dtb\n");
+	}
+
 	ret = store_init(1);
 	if (ret <= 0)
 		FBS_EXIT(_ACK, "Fail in store init %d, ret %d\n", 1, ret);
 
-	if (gptImgSz) {
-		if (get_partition_from_gpt(gptLoadedAddr))
-			FBS_EXIT(_ACK, "Fail at check gpt\n");
-		else
-			FB_MSG("Parse partition table from GPT\n");
-	}
 
 	mmc_partition_init();
 
