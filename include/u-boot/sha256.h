@@ -12,6 +12,7 @@ extern const uint8_t sha256_der_prefix[];
 #define SHA224_DIGEST_SIZE	28
 #define SHA256_DIGEST_SIZE	32
 #define SHA256_BLOCK_SIZE	64
+#define SHA224_BLOCK_SIZE	64
 
 /* SHA2 context */
 typedef struct {
