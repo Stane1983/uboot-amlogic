@@ -131,14 +131,22 @@ static size_t drop_ffs(const struct mtd_info *mtd,
 #ifdef CONFIG_YAFFS2
 int meson_yaffs2_mount(char *mtpoint, char *part_name)
 {
-	struct mtd_info *mtd = mtd_store_get(1);
+	struct mtd_info *mtd;
 	struct mtd_device *dev;
 	struct part_info *part;
+	enum boot_type_e medium_type = store_get_type();
+	int mtd_index = 0, nand_index = 0, ret;
 	u8 pnum;
-	int ret;
 
 	if (!part_name || !mtpoint)
 		return -1;
+
+	if (medium_type == BOOT_NAND_MTD) {
+		mtd_index = 1;
+		nand_index = 1;
+	}
+
+	mtd = mtd_store_get(mtd_index);
 
 	ret = find_dev_and_part(part_name,
 				&dev,
@@ -150,8 +158,7 @@ int meson_yaffs2_mount(char *mtpoint, char *part_name)
 		return ret;
 	}
 
-	/* mtd_dev 1 is a normal partition */
-	cmd_yaffs_devconfig(mtpoint, 1, part->offset / mtd->erasesize,
+	cmd_yaffs_devconfig(mtpoint, nand_index, part->offset / mtd->erasesize,
 			(part->offset + part->size) / mtd->erasesize);
 	cmd_yaffs_mount(mtpoint);
 
