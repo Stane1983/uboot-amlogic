@@ -104,6 +104,14 @@
 		is_odpin = <1>;
 	};
 
+	fd650: fd650 {
+		compatible = "fd650";
+		status = "okay";
+		sda-gpios = <&gpio GPIOD_3 GPIO_ACTIVE_HIGH>;
+		scl-gpios =  <&gpio GPIOD_4 GPIO_ACTIVE_HIGH>;
+		fd650-gpio,delay-us = <1>;
+	};
+
 	pwm_ab: pwm@fe058000 {
 		compatible = "amlogic,meson-v2-pwm";
 		reg = <0x0 0xfe058000  0x0 0x20>,

@@ -3,6 +3,7 @@
 
 obj-$(CONFIG_CMD_MMC) += aml_mmc.o
 obj-$(CONFIG_CMD_PLLTEST) += cmd_plltest.o
+obj-$(CONFIG_CMD_LED_DISPLAY) += cmd_led_display.o
 
 obj-$(CONFIG_AML_STORE_WRAPPER) += store_wrapper.o
 obj-$(CONFIG_AML_IMG_READ) += imgread.o
