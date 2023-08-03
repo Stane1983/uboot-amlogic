@@ -112,8 +112,8 @@ int board_init(void)
 {
 	printf("board init\n");
 #ifdef CONFIG_AML_HDMITX21
-		hdmitx21_init();
 		hdmitx21_chip_type_init(MESON_CPU_ID_S1A);
+		hdmitx21_init();
 #endif
 
 #ifdef CONFIG_PXP_EMULATOR

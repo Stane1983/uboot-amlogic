@@ -67,8 +67,9 @@ void hdmitx21_venc_en(bool en, bool pi_mode);
 
 //  PAD_CTRL
 #define PADCTRL_PIN_MUX_REGN          PADCTRL_REG_ADDR(0x0017)
+#define PADCTRL_PIN_MUX_REGB          PADCTRL_REG_ADDR(0x000b)
 #define PADCTRL_GPIOW_I               PADCTRL_REG_ADDR(0x0090)
-#define PADCTRL_GPIOH_I               PADCTRL_REG_ADDR(0x00D0)
+#define PADCTRL_GPIOH_I               PADCTRL_REG_ADDR(0x0050)
 //  SYS_CTRL
 #define SYSCTRL_VPU_SECURE_REG0       SYSCTRL_REG_ADDR(0x0061)
 #define SYSCTRL_VPU_SECURE_REG1       SYSCTRL_REG_ADDR(0x0062)

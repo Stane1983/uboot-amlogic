@@ -169,7 +169,7 @@ static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	const struct hdmi_timing *timing = NULL;
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
-	hdmitx21_pxp_init(1);
+	//hdmitx21_pxp_init(1);
 	if (argc < 1)
 		return cmd_usage(cmdtp);
 

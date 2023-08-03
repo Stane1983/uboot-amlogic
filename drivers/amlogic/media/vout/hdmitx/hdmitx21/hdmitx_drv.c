@@ -725,7 +725,8 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 	switch (hdev->chip_type) {
 	case MESON_CPU_ID_S1A:
 		//bit[1,0] = 3 enable ycbcr2rgb
-		data32 = (((para->cs == HDMI_COLORSPACE_RGB) ? 3 : 0) << 0) |
+		data32 = (para->cs == HDMI_COLORSPACE_RGB) ?
+					3 : ((para->cs == HDMI_COLORSPACE_YUV422) ? 1 : 0) |
 			  (2 << 2) |
 			  (0 << 4) |
 			  (0 << 5) |
@@ -1707,42 +1708,18 @@ static void hdmitx_set_phy(struct hdmitx_dev *hdev)
 	if (!hdev)
 		return;
 
-	switch (hdev->vic) {
-	case HDMI_96_3840x2160p50_16x9:
-	case HDMI_97_3840x2160p60_16x9:
-	case HDMI_101_4096x2160p50_256x135:
-	case HDMI_102_4096x2160p60_256x135:
-		if (hdev->para->cs == HDMI_COLORSPACE_YUV420 && hdev->para->cd == COLORDEPTH_24B)
-			hdmitx_set_phypara(HDMI_PHYPARA_3G);
-		else
-			hdmitx_set_phypara(HDMI_PHYPARA_6G);
-		break;
-	case HDMI_93_3840x2160p24_16x9:
-	case HDMI_103_3840x2160p24_64x27:
-	case HDMI_94_3840x2160p25_16x9:
-	case HDMI_104_3840x2160p25_64x27:
-	case HDMI_95_3840x2160p30_16x9:
-	case HDMI_105_3840x2160p30_64x27:
-	case HDMI_98_4096x2160p24_256x135:
-	case HDMI_99_4096x2160p25_256x135:
-	case HDMI_100_4096x2160p30_256x135:
-		if (hdev->para->cs == HDMI_COLORSPACE_YUV422 || hdev->para->cd == COLORDEPTH_24B)
-			hdmitx_set_phypara(HDMI_PHYPARA_3G);
-		else
-			hdmitx_set_phypara(HDMI_PHYPARA_4p5G);
-		break;
-	case HDMI_16_1920x1080p60_16x9:
-	case HDMI_31_1920x1080p50_16x9:
-	case HDMI_40_1920x1080i100_16x9:
-	case HDMI_46_1920x1080i120_16x9:
-	case HDMI_41_1280x720p100_16x9:
-	case HDMI_47_1280x720p120_16x9:
+	if (hdev->para->tmds_clk > 450000)
+		hdmitx_set_phypara(HDMI_PHYPARA_6G);
+	else if (hdev->para->tmds_clk > 370000)
+		hdmitx_set_phypara(HDMI_PHYPARA_4p5G);
+	else if (hdev->para->tmds_clk > 290000)
+		hdmitx_set_phypara(HDMI_PHYPARA_3p7G);
+	else if (hdev->para->tmds_clk > 150000)
+		hdmitx_set_phypara(HDMI_PHYPARA_3G);
+	else if (hdev->para->tmds_clk > 40000)
+		hdmitx_set_phypara(HDMI_PHYPARA_LT3G);
+	else
 		hdmitx_set_phypara(HDMI_PHYPARA_DEF);
-		break;
-	default:
-		hdmitx_set_phypara(HDMI_PHYPARA_270M);
-		break;
-	}
 	debug("hdmitx phy setting done\n");
 }
 

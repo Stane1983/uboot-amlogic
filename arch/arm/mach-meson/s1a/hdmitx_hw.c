@@ -49,6 +49,7 @@ int hdmitx_get_hpd_state(void)
 	int st = 0;
 
 	st = !!(hd21_read_reg(PADCTRL_GPIOH_I) & (1 << 2));
+
 	return st;
 }
 
@@ -307,41 +308,17 @@ u32 hd_get_paddr(u32 addr)
 
 void hdmitx_set_phypara(enum hdmi_phy_para mode)
 {
-	hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x0);
-/* P_ANACTRL_HDMIPHY_CTRL1	bit[1]: enable clock	bit[0]: soft reset */
-#define RESET_HDMI_PHY() \
-do { \
-	hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL1, 0xf, 0, 4); \
-	mdelay(2); \
-	hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL1, 0xe, 0, 4); \
-	mdelay(2); \
-} while (0)
-
-	hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL1, 0x0390, 16, 16);
-	hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL1, 0x0, 0, 4);
-	RESET_HDMI_PHY();
-	RESET_HDMI_PHY();
-#undef RESET_HDMI_PHY
-
 	switch (mode) {
-	case HDMI_PHYPARA_6G: /* 5.94/4.5/3.7Gbps */
-	case HDMI_PHYPARA_4p5G:
-	case HDMI_PHYPARA_3p7G:
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x0000080b);
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x37eb65c4);
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x2ab0ff3b);
+	case HDMI_PHYPARA_270M: /* SD format, 480p/576p, 270Mbps*/
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x564);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x9fe36263);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x5af6fc1b);
 		break;
-	case HDMI_PHYPARA_3G: /* 2.97Gbps */
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x00000003);
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x33eb42a2);
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x2ab0ff3b);
-		break;
-	case HDMI_PHYPARA_270M: /* 1.485Gbps, and below */
-	case HDMI_PHYPARA_DEF:
+	case HDMI_PHYPARA_LT3G: /* 1.485Gbps */
 	default:
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x00000003);
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x33eb4252);
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x2ab0ff3b);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x564);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x9fe36284);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x5af6fc1b);
 		break;
 	}
 }
@@ -378,9 +355,8 @@ void hdmitx21_mux_ddc(void)
 {
 	u32 data32 = 0;
 
-	data32 |= (1 << 28);     // [31:28] GPIOW_15_SEL=1 for hdmitx_hpd
-	data32 |= (1 << 24);     // [27:24] GPIOW_14_SEL=1 for hdmitx_scl
-	data32 |= (1 << 20);     // [23:20] GPIOW_13_SEL=1 for hdmitx_sda
-	hd21_write_reg(PADCTRL_PIN_MUX_REGN, data32);
+	data32 |= (1 << 8);	   // hpd
+	data32 |= (1 << 4);	   // scl
+	data32 |= (1 << 0);	   // sda
+	hd21_write_reg(PADCTRL_PIN_MUX_REGB, data32);
 }
-
