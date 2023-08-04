@@ -1296,6 +1296,7 @@ int spinand_add_partitions(struct mtd_info *mtd,
 			goto _out;
 		}
 		parts_nm[i].name = parts[i].name;
+		parts_nm[i].mask_flags = parts[i].mask_flags;
 #ifndef CONFIG_NOT_SKIP_BAD_BLOCK
 		loff_t offset = off, end = off + parts[i].size;
 

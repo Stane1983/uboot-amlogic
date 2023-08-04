@@ -372,11 +372,11 @@ int get_aml_partition_count(void)
 #if (defined(CONFIG_SPI_NAND) || defined(CONFIG_MTD_SPI_NAND))
 static const struct mtd_partition spinand_partitions[] = {
 	{
-	.name = "factory",
-	.offset = 0,
-	.size = 3 * SZ_1M,
-	/* MESON_IGNORE_ERASE_CHIP will ignore store erase.chip */
-	.mask_flags = MESON_IGNORE_ERASE_CHIP,
+		.name = "factory",
+		.offset = 0,
+		.size = 3 * SZ_1M,
+		/* MESON_IGNORE_ERASE_CHIP will ignore store erase.chip */
+		.mask_flags = MESON_IGNORE_ERASE_CHIP,
 	},
 	{
 		.name = "tee",

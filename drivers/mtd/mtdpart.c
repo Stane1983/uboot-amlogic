@@ -585,6 +585,10 @@ static struct mtd_info *allocate_partition(struct mtd_info *master,
 	/* set up the MTD object for this partition */
 	slave->type = master->type;
 	slave->flags = master->flags & ~part->mask_flags;
+#ifdef CONFIG_AML_MTDPART
+	if (part->mask_flags & MESON_IGNORE_ERASE_CHIP)
+		slave->flags |= MESON_IGNORE_ERASE_CHIP;
+#endif
 	slave->size = part->size;
 	slave->writesize = master->writesize;
 	slave->writebufsize = master->writebufsize;
