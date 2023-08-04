@@ -15,7 +15,8 @@ static void config_tv_enc_calc(struct hdmitx_dev *hdev, enum hdmi_vic vic)
 {
 	const struct hdmi_timing *tp = NULL;
 	struct hdmi_timing timing = {0};
-	u32 hsync_st = 4; // hsync start pixel count
+	/* adjust to align upsample and video enable */
+	u32 hsync_st = 5; // hsync start pixel count
 	u32 vsync_st = 1; // vsync start line count
 	// Latency in pixel clock from ENCP_VFIFO2VD request to data ready to HDMI
 	const u32 vfifo2vd_to_hdmi_latency = 2;
@@ -33,10 +34,9 @@ static void config_tv_enc_calc(struct hdmitx_dev *hdev, enum hdmi_vic vic)
 		pr_info("not find hdmitx vic %d timing\n", vic);
 		return;
 	}
-
+	pr_info("find hdmitx vic %d timing\n", vic);
 	timing = *tp;
 	tp = &timing;
-
 	/* the FRL works at dual mode, so the horizon parameters will reduce to half */
 	if (hdev->frl_rate && y420_mode == 1)
 		hpara_div = 4;
@@ -45,8 +45,6 @@ static void config_tv_enc_calc(struct hdmitx_dev *hdev, enum hdmi_vic vic)
 	timing.h_total /= hpara_div;
 	timing.h_blank /= hpara_div;
 	timing.h_front /= hpara_div;
-	if (hdev->frl_rate)
-		timing.h_front |= 3; /* For ENCP, there needs OR 3 */
 	timing.h_sync /= hpara_div;
 	timing.h_back /= hpara_div;
 	timing.h_active /= hpara_div;
@@ -73,6 +71,7 @@ static void config_tv_enc_calc(struct hdmitx_dev *hdev, enum hdmi_vic vic)
 	hd21_write_reg(ENCP_DVI_VSO_BEGIN_EVN, hsync_st);
 	hd21_write_reg(ENCP_DVI_VSO_END_EVN, hsync_st);
 
+
 	// generate data valid
 	hd21_write_reg(ENCP_DE_H_BEGIN, de_h_begin);
 	hd21_write_reg(ENCP_DE_H_END, de_h_end);
@@ -86,11 +85,13 @@ static void config_tv_enc_calc(struct hdmitx_dev *hdev, enum hdmi_vic vic)
 	// hd21_write_reg(ENCP_VIDEO_YFP1_HTIME, 140);
 	// hd21_write_reg(ENCP_VIDEO_YFP2_HTIME, 2060);
 
+
 	// set active region
 	hd21_write_reg(ENCP_VIDEO_HAVON_BEGIN, de_h_begin - vfifo2vd_to_hdmi_latency);
 	hd21_write_reg(ENCP_VIDEO_HAVON_END, de_h_end - vfifo2vd_to_hdmi_latency - 1);
 	hd21_write_reg(ENCP_VIDEO_VAVON_BLINE, de_v_begin);
 	hd21_write_reg(ENCP_VIDEO_VAVON_ELINE, de_v_end - 1);
+
 
 	//set hsync
 	hd21_write_reg(ENCP_VIDEO_HSO_BEGIN, hsync_st - vfifo2vd_to_hdmi_latency);
@@ -102,9 +103,11 @@ static void config_tv_enc_calc(struct hdmitx_dev *hdev, enum hdmi_vic vic)
 	hd21_write_reg(ENCP_VIDEO_VSO_BLINE, vsync_st);
 	hd21_write_reg(ENCP_VIDEO_VSO_ELINE, vsync_st + tp->v_sync);
 
+
 	//set vtotal & htotal
 	hd21_write_reg(ENCP_VIDEO_MAX_PXCNT, tp->h_total - 1);
 	hd21_write_reg(ENCP_VIDEO_MAX_LNCNT, tp->v_total - 1);
+
 }
 
 static unsigned long modulo(unsigned long a, unsigned long b)
@@ -353,6 +356,7 @@ static void hdmi_tvenc1080i_set(enum hdmi_vic vic)
 void set_tv_encp_new(struct hdmitx_dev *hdev, u32 enc_index,
 	enum hdmi_vic vic, u32 enable)
 {
+	pr_info("sel encp vic = %d\n", vic);
 	switch (vic) {
 	case HDMI_5_1920x1080i60_16x9:
 	case HDMI_46_1920x1080i120_16x9:
@@ -401,8 +405,9 @@ static void config_tv_enci(enum hdmi_vic vic)
 		hd21_write_reg(ENCI_VFIFO2VD_LINE_BOT_END, 18 + 240);
 		hd21_write_reg(ENCI_VFIFO2VD_CTL, (0x4e << 8) | 1);     // enable vfifo2vd
 		hd21_write_reg(ENCI_DBG_FLDLN_RST, 0x0f05);
-		hd21_write_reg(ENCI_SYNC_VSO_EVNLN, 0x0508);
-		hd21_write_reg(ENCI_SYNC_VSO_ODDLN, 0x0508);
+		/* adjust timming for s5 480i */
+		hd21_write_reg(ENCI_SYNC_VSO_EVNLN, 0x0003);
+		hd21_write_reg(ENCI_SYNC_VSO_ODDLN, 0x0003);
 		hd21_write_reg(ENCI_SYNC_HSO_BEGIN, 11 - 2);
 		hd21_write_reg(ENCI_SYNC_HSO_END, 31 - 2);
 		hd21_write_reg(ENCI_DBG_FLDLN_RST, 0xcf05);
@@ -699,3 +704,142 @@ void hdmitx21_venc_en(bool en, bool pi_mode)
 		hd21_write_reg(ENCI_VIDEO_EN, 1);
 	}
 }
+
+//--------------------------
+// Pbist config
+//--------------------------
+void hdmitx21_pbist_config(struct hdmitx_dev *hdev, enum hdmi_vic vic, int reg_pbist_en)
+{
+	const struct hdmi_timing *tp = NULL;
+	struct hdmi_timing timing = {0};
+	u32 data32;
+	u8 data8;
+	u32 blank_pixels;
+	u32 active_pixels;
+	u32 hsync_pixels;
+	u32 front_porch;
+	u32 blank_lines;
+	u32 active_lines;
+	u32 vsync_lines;
+	u32 eof_lines;
+
+	//if (hdev->para && hdev->para->cs == HDMI_COLORSPACE_YUV420)
+	//	y420_mode = 1;
+	tp = hdmitx21_gettiming_from_vic(vic);
+	if (!tp) {
+		pr_info("not find hdmitx vic %d timing\n", vic);
+		return;
+	}
+	pr_info("find hdmitx vic %d timing\n", vic);
+	timing = *tp;
+	tp = &timing;
+
+	blank_pixels = tp->h_blank;
+	active_pixels = tp->h_active;
+	hsync_pixels = tp->h_sync;
+	front_porch = tp->h_front;
+	blank_lines =  tp->v_blank;
+	active_lines = tp->v_active;
+	vsync_lines = tp->v_sync;
+	eof_lines = tp->v_front;
+
+	data8 = 0;
+	data8 |= (0              << 5);
+	data8 |= (0              << 4);
+	data8 |= (reg_pbist_en   << 3);
+	data8 |= (0              << 1);
+	data8 |= (0              << 0);
+	hdmitx21_wr_reg(SYS_CTRL3_IVCTX,data8) ;
+
+	data8 = 0;
+	data8 |= (0       << 2); //[2] reg_out_sel 0:
+	data8 |= (0       << 1);
+	data8 |= (0       << 0);
+	hdmitx21_wr_reg(BIST_CTRL2_IVCTX,data8) ;
+
+	data8 = 0;//[1:0] 0:8bit; 1:10bit;2:12bit;
+	hdmitx21_wr_reg(REG_PXL_BIST_BIT_MODE_IVCTX,data8) ;
+
+	data8 = 0;
+	data8 |= (7       << 4); //[7:4] reg_stpg_sel : 0:red; 1: green; 2: blue; 3: black; 4: white; 5: ramps; 6: chess; 7: color bar; 8:simp92
+	data8 |= (0       << 3); //[3]   reg_bist_video_mode
+	data8 |= (0       << 0); //[2:0] ri_stpg_ramp_n
+	hdmitx21_wr_reg(BIST_VIDEO_MODE_IVCTX,data8) ;
+
+	//htotal
+	data32 = blank_pixels + active_pixels;
+	hdmitx21_wr_reg(PBIST_H_TOTAL_LOW_IVCTX, (data32 & 0xff)) ;
+	hdmitx21_wr_reg(PBIST_H_TOTAL_HIGH_IVCTX, (data32>>8) ) ;
+
+	//hwidth(hactive)
+	data32 = active_pixels;
+	hdmitx21_wr_reg(PBIST_H_WIDTH_LOW_IVCTX, (data32 & 0xff)) ;
+	hdmitx21_wr_reg(PBIST_H_WIDTH_HIGH_IVCTX, (data32>>8) ) ;
+
+	//hsync width
+	data32 = hsync_pixels;
+	hdmitx21_wr_reg(PBIST_HSYNC_WIDTH_LOW_IVCTX, (data32 & 0xff)) ;
+	hdmitx21_wr_reg(PBIST_HSYNC_WIDTH_HIGH_IVCTX, (data32>>8) ) ;
+
+	//h backporch
+	data32 = blank_pixels - hsync_pixels - front_porch;
+	hdmitx21_wr_reg(PBIST_HSYNC_BACK_PORCH_LOW_IVCTX, (data32 & 0xff)) ;
+	hdmitx21_wr_reg(PBIST_HSYNC_BACK_PORCH_HIGH_IVCTX, (data32>>8) ) ;
+
+	//h frontporch
+	data32 = front_porch;
+	hdmitx21_wr_reg(PBIST_HSYNC_FRONT_PORCH_LOW_IVCTX, (data32 & 0xff)) ;
+	hdmitx21_wr_reg(PBIST_HSYNC_FRONT_PORCH_HIGH_IVCTX, (data32>>8) ) ;
+
+	//v total
+	data32 = blank_lines + active_lines ;
+	hdmitx21_wr_reg(PBIST_V_TOTAL_LOW_IVCTX, (data32 & 0xff)) ;
+	hdmitx21_wr_reg(PBIST_V_TOTAL_HIGH_IVCTX, (data32>>8) ) ;
+
+	//v height(vactive)
+	data32 = active_lines ;
+	hdmitx21_wr_reg(PBIST_V_HEIGHT_LOW_IVCTX, (data32 & 0xff)) ;
+	hdmitx21_wr_reg(PBIST_V_HEIGHT_HIGH_IVCTX, (data32>>8) ) ;
+
+	//vsync width
+	data32 = vsync_lines;
+	hdmitx21_wr_reg(PBIST_VSYNC_WIDTH_LOW_IVCTX, (data32 & 0xff)) ;
+	hdmitx21_wr_reg(PBIST_VSYNC_WIDTH_HIGH_IVCTX, (data32>>8) ) ;
+
+	//v backporch
+	data32 = blank_lines - vsync_lines - eof_lines;
+	hdmitx21_wr_reg(PBIST_VSYNC_BACK_PORCH_LOW_IVCTX, (data32 & 0xff)) ;
+	hdmitx21_wr_reg(PBIST_VSYNC_BACK_PORCH_HIGH_IVCTX, (data32>>8) ) ;
+
+	//v frontporch
+	data32 = eof_lines;
+	hdmitx21_wr_reg(PBIST_VSYNC_FRONT_PORCH_LOW_IVCTX, (data32 & 0xff)) ;
+	hdmitx21_wr_reg(PBIST_VSYNC_FRONT_PORCH_HIGH_IVCTX, (data32>>8) ) ;
+
+	//BIST TIMING
+	data8 = 0;
+	data8 |= (5                 << 4); //[7:4] reg_time_mode  5: programmable resolution
+	data8 |= (0                 << 2); //[3:2] reg_refresh
+
+	hdmitx21_wr_reg(BIST_TIMING_CTRL_IVCTX,data8) ;
+
+	//TEST SEL
+	data8 = 0;
+	data8 |= (0                 << 5); //[6:5] reg_bist_test_select
+	data8 |= (5                 << 0); //[4:0] reg_bist_pattern_select, bit[0] must set 1 for TX!!!
+	hdmitx21_wr_reg(BIST_TEST_SEL_IVCTX,data8) ;
+
+	//BIST CTRL
+	data8 = 0;
+	data8 |= (0                 << 6); //[6] reg_ycc420_en
+	data8 |= (0			      << 5); //[5] ri_splt_evn_odd_frm
+	data8 |= (reg_pbist_en      << 4); //[4] reg_bist_start_wp
+	data8 |= (1                 << 3); //[3] reg_bist_cont_prog_durat
+	data8 |= (reg_pbist_en      << 2); //[2] reg_stpg_en
+	data8 |= (0                 << 1); //[1] reg_bist_reset
+	data8 |= (reg_pbist_en      << 0); //[0] reg_bist_enable
+
+	hdmitx21_wr_reg(BIST_CTRL_IVCTX, data8 ) ;
+
+} //pbist end
+

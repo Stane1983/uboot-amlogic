@@ -20,6 +20,7 @@ enum amhdmitx_chip_e {
 	MESON_CPU_ID_T7,
 	MESON_CPU_ID_S1A,
 	MESON_CPU_ID_S5,
+	MESON_CPU_ID_S7,
 };
 
 #endif

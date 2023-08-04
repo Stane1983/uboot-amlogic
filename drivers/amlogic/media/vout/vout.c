@@ -2,7 +2,6 @@
 /*
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
-
 #include <common.h>
 //#include <asm/arch/io.h>
 #include <asm/io.h>

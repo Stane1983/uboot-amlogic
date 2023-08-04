@@ -36,6 +36,9 @@
 #ifdef CONFIG_AML_HDMITX20
 #include <amlogic/media/vout/hdmitx/hdmitx_module.h>
 #endif
+#ifdef CONFIG_AML_HDMITX21
+#include <amlogic/media/vout/hdmitx21/hdmitx_module.h>
+#endif
 #ifdef CONFIG_AML_CVBS
 #include <amlogic/media/vout/aml_cvbs.h>
 #endif
@@ -113,6 +116,10 @@ void board_init_mem(void)
 int board_init(void)
 {
 	printf("board init\n");
+#ifdef CONFIG_AML_HDMITX21
+	hdmitx21_chip_type_init(MESON_CPU_ID_S7);
+	hdmitx21_init();
+#endif
 
 	/* The non-secure watchdog is enabled in BL2 TEE, disable it */
 	run_command("watchdog off", 0);

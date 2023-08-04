@@ -171,6 +171,9 @@ void hdmi_avi_infoframe_config(enum avi_component_conf conf, u8 val)
 	case CONF_AVI_YQ01:
 		info->ycc_quantization_range = val;
 		break;
+	case CONF_AVI_VIC:
+		info->video_code = val & 0xff;
+		break;
 	default:
 		break;
 	}
@@ -254,5 +257,19 @@ void hdmi_gcppkt_manual_set(bool en)
 		hdmitx21_infoframe_send(HDMI_PACKET_TYPE_GCP, body);
 	else
 		hdmitx21_infoframe_send(HDMI_PACKET_TYPE_GCP, NULL);
+}
+
+void hdmi_sbtm_infoframe_rawset(u8 *hb, u8 *pb)
+{
+	u8 body[31] = {0};
+
+	if (!hb || !pb) {
+		hdmitx21_infoframe_send(HDMI_INFOFRAME_TYPE_SBTM, NULL);
+		return;
+	}
+
+	memcpy(body, hb, 3);
+	memcpy(&body[3], pb, 28);
+	hdmitx21_infoframe_send(HDMI_INFOFRAME_TYPE_SBTM, body);
 }
 

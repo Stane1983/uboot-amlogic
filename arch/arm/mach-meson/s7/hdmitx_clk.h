@@ -25,44 +25,24 @@
 #define VID_PLL_DIV_15     13
 #define VID_PLL_DIV_2p5    14
 #define VID_PLL_DIV_3p25   15
+#define VID_PLL_DIV_10     16
 
-enum viu_type {
-	VIU_ENCL = 0,
-	VIU_ENCI,
-	VIU_ENCP,
-	VIU_ENCT,
-};
-
-typedef struct {
+struct hw_clk_conf {
 	enum hdmi_vic vic;
-	unsigned viu_path;
-	enum viu_type viu_type;
-	unsigned hpll_clk_out;
-	unsigned od1;
-	unsigned od2;
-	unsigned od3;
-	unsigned vid_pll_div;
-	unsigned vid_clk_div;
-	unsigned hdmi_tx_pixel_div;
-	unsigned encp_div;
-	unsigned enci_div;
-} hw_enc_clk_val_t;
-
-#define GROUP_MAX       10
-#define GROUP_END       -1
-struct hw_enc_clk_val_group {
-	enum hdmi_vic group[GROUP_MAX];
-	unsigned viu_path;
-	enum viu_type viu_type;
-	unsigned hpll_clk_out;
-	unsigned od1;
-	unsigned od2;
-	unsigned od3;
-	unsigned vid_pll_div;
-	unsigned vid_clk_div;
-	unsigned hdmi_tx_pixel_div;
-	unsigned encp_div;
-	unsigned enci_div;
+	u32 txpll_vco_clk; /* 3G~6G, Unit: kHz */
+	u8  txpll_3_od0; /* div 1, 2, 4, 8 */
+	u8  txpll_4_div9_en; /* tx_phy_clk1618 */
+	u8  txpll_3_od1; /* div 1, 2, 4, 8 */
+	u8  txpll_3_od2; /* div 1, 2, 4, 8, hdmi_clk_out2 */
+	u8  txpll_4_od; /* div 1, 2, 4, 8 */
+	u8  txpll_4_mux; /* a_phy_clock */
+	u8  hdmi_ctl2_div5_10; /* hdmi_clk_todig, hdmi_ch_clk */
+	u8  fpll_vco_clk; /* 1.6G ~ 3.2G, Unit: kHz */
+	u8  fpll_tmds_od1; /* div 1, 2, 4, 8 */
+	u8  fpll_tmds_od2; /* div 1, 2, 4, 8, then div2 to tmds_clk */
+	u8  fpll_pixel_od; /* div 1, 1.25, 1.5, 2, pixel_clk */
+	u8  vid_pll_clk_div; /* div 5, 6.25, 7.5, htx_tmds_clk */
+	u8  hdmi_pll_tmds_clk_div; /* div 5, 6.25, 7.5, vid_pll0_clk*/
 };
 
 #endif

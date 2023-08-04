@@ -99,6 +99,7 @@ void hdmitx_poll_reg(unsigned int addr, unsigned int val, unsigned long timeout)
 #define P_PADCTRL_PIN_MUX_REGB PERIPHS_REG_ADDR(PADCTRL_PIN_MUX_REGB)
 #define PADCTRL_GPIOH_I 0x50
 #define P_PADCTRL_GPIOH_I PERIPHS_REG_ADDR(PADCTRL_GPIOH_I)
+#define PADCTRL_PIN_MUX_REG8 PADCTRL_REG_ADDR(0x0008)
 
 /* REG_BASE:  REGISTER_BASE_ADDR = 0xfe008000 */
 #define ANACTRL_HDMIPLL_CTRL0 0x0070

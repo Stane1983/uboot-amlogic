@@ -169,7 +169,9 @@ static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	const struct hdmi_timing *timing = NULL;
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
-	//hdmitx21_pxp_init(1);
+#ifdef CONFIG_PXP_EMULATOR
+	hdmitx21_pxp_init(1);
+#endif
 	if (argc < 1)
 		return cmd_usage(cmdtp);
 
@@ -370,6 +372,53 @@ static int do_reg(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 		data = strtoul(argv[2], NULL, 16);
 		hdmitx21_wr_reg(addr, data);
 		printf("wr[0x%lx] 0x%x\n", addr, data);
+	}
+
+	return 1;
+}
+
+static int do_pbist(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+{
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
+
+	if (strcmp(argv[1], "1") == 0)
+		hdmitx21_pbist_config(hdev, hdev->vic, 1);
+	if (strcmp(argv[1], "0") == 0)
+		hdmitx21_pbist_config(hdev, hdev->vic, 0);
+	return 1;
+}
+
+static int do_debug(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+{
+	unsigned int enable_all = 0;
+	int pkt_op = 0;
+	unsigned int mov_val = 0;
+	unsigned char pb[28] = {0x46, 0xD0, 0x00, 0x00, 0x00, 0x00, 0x46, 0xD0,
+	0x00, 0x10, 0x21, 0xaa, 0x9b, 0x96, 0x19, 0xfc, 0x19, 0x75, 0xd5, 0x78,
+	0x10, 0x21, 0xaa, 0x9b, 0x96, 0x19, 0xfc, 0x19};
+	unsigned char hb[3] = {0x01, 0x02, 0x03};
+
+	if (argc < 1)
+		return cmd_usage(cmdtp);
+
+	if (strncmp(argv[1], "pkt", 3) == 0) {
+		enable_all = strtoul(argv[1] + 3, NULL, 16);
+		pkt_op = strtoul(argv[2], NULL, 16);
+		mov_val = strtoul(argv[3], NULL, 10);
+		pkt_send_position_change(enable_all, pkt_op, mov_val);
+	} else if (strncmp(argv[1], "w_dhdr", 6) == 0 ) {
+		hdmitx21_write_dhdr_sram();
+	} else if (strncmp(argv[1], "r_dhdr", 6) == 0 ) {
+		hdmitx21_read_dhdr_sram();
+	} else if (strncmp(argv[1], "t_avi", 4) == 0 ) {
+		printf("test send avi pkt\n");
+		hdmi_avi_infoframe_rawset(hb, pb);
+	} else if (strncmp(argv[1], "t_audio", 7) == 0 ) {
+		printf("test send audio pkt\n");
+		hdmi_audio_infoframe_rawset(hb, pb);
+	} else if (strncmp(argv[1], "t_sbtm", 6) == 0 ) {
+		printf("test send SBTM pkt\n");
+		hdmitx21_send_sbtm_pkt();
 	}
 
 	return 1;
@@ -790,6 +839,11 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 	unsigned char def_cksum[] = {'0', 'x', '0', '0', '0', '0', '0', '0', '0', '0', '\0'};
 	char *hdmimode;
 	char *colorattribute;
+	int user_dv_mode;
+	char *last_output_mode;
+	char *last_colorattribute;
+	int last_dv_status;
+	bool over_write = false;
 	char dv_type[2] = {0};
 	struct scene_output_info scene_output_info;
 	struct hdmi_format_para *para = NULL;
@@ -814,12 +868,17 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 	/* get user selected output mode/color */
 	colorattribute = env_get("user_colorattribute");
 	hdmimode = env_get("hdmimode");
+	user_dv_mode = get_ubootenv_dv_type();
+
+	last_output_mode = env_get("outputmode");
+	last_colorattribute = env_get("colorattribute");
+	last_dv_status = get_ubootenv_dv_status();
 	if (!store_checkvalue)
 		store_checkvalue = def_cksum;
 
-	printf("read hdmichecksum: %s, user hdmimode: %s, colorattribute: %s\n",
+	printf("read hdmichecksum: %s, user hdmimode: %s, colorattribute: %s, dv_type: %d\n",
 	       store_checkvalue, hdmimode ? hdmimode : "null",
-	       colorattribute ? colorattribute : "null");
+	       colorattribute ? colorattribute : "null", user_dv_mode);
 
 	for (i = 0; i < 4; i++) {
 		if (('0' <= store_checkvalue[i * 2 + 2]) && (store_checkvalue[i * 2 + 2] <= '9'))
@@ -861,10 +920,48 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 	if (!no_manual_output) {
 		/* check current user selected mode + color support or not */
 		para = hdmitx21_get_fmtpara(hdmimode, colorattribute);
-		if (hdmitx_edid_check_valid_mode(hdev, para))
+		if (hdmitx_edid_check_valid_mode(hdev, para)) {
 			mode_support = true;
-		else
+		} else {
+			printf("saved output mode not supported!\n");
 			mode_support = false;
+		}
+
+		/* if user selected mode/color/dv type which saved in ubootenv of
+		 * hdmimode/user_colorattribute/user_prefer_dv_type are different
+		 * with last actual output mode/color/dv type which saved in
+		 * ubootenv of outputmode/colorattribute/dolby_status, then it means
+		 * that the user selected format is over-writen by policy(for example:
+		 * firstly user has selected HDR priority to HDR, and select color
+		 * to rgb,12bit(now the "user_colorattribute" env will be "rgb,12bit"),
+		 * but then it selected HDR priority to DV, the actual output color
+		 * will be "444,8bit" or "422,12bit" according to dv type, and
+		 * the ubootenv "colorattribute" will be "444,8bit" or "422,12bit"),
+		 * then uboot should use the policy to select the output format,
+		 * otherwise, uboot use hdmimode/user_colorattribute/user_prefer_dv_type
+		 * env, while system use outputmode/colorattribute/dolby_status env,
+		 * there will be always a mode change during bootup
+		 */
+		if (mode_support) {
+			/* note that for T7 multi-display, it may store panel in
+			 * "outputmode" env, and will always run uboot policy
+			 */
+			if (!last_output_mode || strcmp(hdmimode, last_output_mode))
+				over_write = true;
+			else if (!last_colorattribute ||
+				strcmp(colorattribute, last_colorattribute))
+				over_write = true;
+			else if (user_dv_mode != last_dv_status)
+				over_write = true;
+			else
+				over_write = false;
+
+			if (over_write)
+				printf("last output_mode:%s, colorattribute:%s, dolby_status:%d\n",
+				last_output_mode ? last_output_mode : "null",
+				last_colorattribute ? last_colorattribute : "null",
+				last_dv_status);
+		}
 	}
 	/* three cases need to decide output by uboot mode select policy:
 	 * 1.TV changed
@@ -876,7 +973,7 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 	 * uboot have some gap), then need to find proper output mode
 	 * with uboot policy.
 	 */
-	if (hdev->RXCap.edid_changed || no_manual_output || !mode_support) {
+	if (hdev->RXCap.edid_changed || no_manual_output || !mode_support || over_write) {
 		/* find proper mode if EDID changed */
 		scene_process(hdev, &scene_output_info);
 		env_set("hdmichecksum", hdev->RXCap.checksum);
@@ -902,8 +999,11 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 			       scene_output_info.final_deepcolor);
 			/* if change from DV TV to HDR/SDR TV, don't change
 			 * DV status to disabled, as DV core need to be enabled.
+			 * that's to say connect DV TV & output DV-> power down box ->
+			 * connect HDR/SDR TV -> power on box, the dolby_status
+			 * will keep the same as that when connect DV TV under follow sink.
 			 */
-			if (scene_output_info.final_dv_type != get_ubootenv_dv_type() &&
+			if (scene_output_info.final_dv_type != get_ubootenv_dv_status() &&
 			    scene_output_info.final_dv_type != DOLBY_VISION_DISABLE) {
 				sprintf(dv_type, "%d", scene_output_info.final_dv_type);
 				env_set("dolby_status", dv_type);
@@ -913,7 +1013,7 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 				 * TV support, and need VPP/DV module to
 				 * update new DV output mode.
 				 */
-				printf("update dv_type: %d\n",
+				printf("update dolby_status: %d\n",
 				       scene_output_info.final_dv_type);
 			}
 		} else {
@@ -933,6 +1033,15 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 			env_set("outputmode3", hdmimode);
 		env_set("colorattribute", colorattribute);
 	}
+	env_set("save_outputmode", sel_hdmimode);
+	/* ubootenv dolby_status is used for is_dv_preference() decision,
+	 * system_control save current dv output status in it.
+	 * it will be used by dv module later to decide DV output later.
+	 * if currently adaptive hdr, then we should set dolby_status to
+	 * 0, so that DV module won't enable DV.
+	 */
+	if (get_hdr_policy() == 1)
+		env_set("dolby_status", 0);
 	hdev->para = hdmitx21_get_fmtpara(sel_hdmimode, env_get("colorattribute"));
 	hdev->vic = hdev->para->timing.vic;
 	hdmitx_mask_rx_info(hdev);
@@ -970,6 +1079,8 @@ static cmd_tbl_t cmd_hdmi_sub[] = {
 #ifdef CONFIG_EFUSE_OBJ_API
 	U_BOOT_CMD_MKENT(efuse, 1, 1, do_efuse_show, "", ""),
 #endif
+	U_BOOT_CMD_MKENT(pbist, 3, 1, do_pbist, "", ""),
+	U_BOOT_CMD_MKENT(debug, 3, 1, do_debug, "", ""),
 };
 
 static int do_hdmitx(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])

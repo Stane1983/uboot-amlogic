@@ -15,6 +15,12 @@
 
 #define HDMI_PACKET_TYPE_GCP 0x3
 #define HDMITX_VIC420_OFFSET    0x100
+#define HDMI_INFOFRAME_TYPE_SBTM 0xA //SBTM-EM PKT use GEN5
+
+#define VESA_MAX_TIMING 64
+/* refer to hdmi2.1 table 7-36, 32 VIC support y420 */
+#define Y420_VIC_MAX_NUM 32
+
 #define HDMITX_VESA_OFFSET 0x300
 /* Little-Endian format */
 enum scdc_addr {
@@ -225,7 +231,7 @@ enum frl_rate_enum {
 	FRL_8G4L = 4,
 	FRL_10G4L = 5,
 	FRL_12G4L = 6,
-	FRL_INVALID = 7,
+	FRL_RATE_MAX = 7,
 };
 
 /* CEA TIMING STRUCT DEFINITION */
@@ -377,11 +383,12 @@ struct dv_info {
 	u32 ieeeoui;
 	u8 ver; /* 0 or 1 or 2*/
 	u8 length;/*ver1: 15 or 12*/
-
-	u8 sup_yuv422_12bit:1;
 	/* if as 0, then support RGB tunnel mode */
-	u8 sup_2160p60hz:1;
+	u8 sup_yuv422_12bit:1;
 	/* if as 0, then support 2160p30hz */
+	u8 sup_2160p60hz:1;
+	/* if equals 0, then don't support 1080p100/120hz */
+	u8 sup_1080p120hz:1;
 	u8 sup_global_dimming:1;
 	u16 Rx;
 	u16 Ry;
@@ -403,6 +410,7 @@ struct dv_info {
 	u8 sup_backlight_control:1;/*only ver2*/
 	u8 backlt_min_luma;/*only ver2*/
 	u8 Interface;/*only ver2*/
+	u8 parity:1;/*only ver2*/
 	u8 sup_10b_12b_444;/*only ver2*/
 	u8 support_DV_RGB_444_8BIT;
 	u8 support_LL_YCbCr_422_12BIT;
@@ -453,6 +461,7 @@ struct rx_cap {
 	/*video*/
 	unsigned int VIC[VIC_MAX_NUM];
 	unsigned int SVD_VIC[SVD_VIC_MAX_NUM]; /* used to store SVD in VDB */
+	unsigned int y420_vic[Y420_VIC_MAX_NUM];
 	unsigned int VIC_count;
 	unsigned int SVD_VIC_count;
 	unsigned int native_VIC;
@@ -559,6 +568,7 @@ enum avi_component_conf {
 	CONF_AVI_BT2020,
 	CONF_AVI_Q01,
 	CONF_AVI_YQ01,
+	CONF_AVI_VIC,
 	CONF_AVI_RGBYCC_INDIC,
 };
 
@@ -590,7 +600,7 @@ struct parse_cr {
 	const char *name;
 };
 
-#define EDID_BLK_NO	4
+#define EDID_BLK_NO	8
 #define EDID_BLK_SIZE	128
 struct hdmi_format_para {
 	char *sname; /* link to timing.sname or name */
@@ -662,18 +672,22 @@ struct hdmi_support_mode {
 #define DOLBY_VISION_STD_ENABLE         1
 #define DOLBY_VISION_DISABLE            0
 #define DOLBY_VISION_ENABLE	1
+/* used to indicate that no ubootenv of user_prefer_dv_type,
+ * which means that user has not selected dv type on menu
+ */
+#define DV_NONE -1
 
 #define HDMI_IEEEOUI 0x000C03
 #define MODE_LEN	32
-#define VESA_MAX_TIMING 64
 
+/* below default ENV is not used, just for backup */
 #define DEFAULT_OUTPUTMODE_ENV		"1080p60hz"
 #define DEFAULT_HDMIMODE_ENV		"1080p60hz"
 #define DEFAULT_COLORATTRIBUTE_ENV	"444,8bit"
 
 #define DEFAULT_COLOR_FORMAT_4K         "420,8bit"
-#define DEFAULT_COLOR_FORMAT            "444,8bit"
-#define DEFAULT_HDMI_MODE               "480p60hz"
+#define DEFAULT_COLOR_FORMAT            "rgb,8bit"
+#define DEFAULT_HDMI_MODE               "720p60hz"
 
 typedef enum {
 	DOLBY_VISION_PRIORITY = 0,
@@ -726,6 +740,21 @@ enum hdcptx_oprcmd {
 	HDCP22_GET_TOPO,
 	CONF_ENC_IDX, /* 0: get idx; 1: set idx */
 	HDMITX_GET_RTERM, /* get the rterm value */
+};
+
+enum pkt_op {
+	AVI_PKT,
+	GAMUT_PKT,
+	AUDIO_PKT,
+	SPD_PKT,
+	MPEG_PKT,
+	VSIF_PKT,
+	GEN_PKT,
+	GEN2_PKT,
+	GEN3_PKT,
+	GEN4_PKT,
+	GEN5_PKT,
+	VTEM_PKT,
 };
 
 #endif

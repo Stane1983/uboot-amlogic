@@ -70,6 +70,9 @@ void hdmitx21_venc_en(bool en, bool pi_mode);
 #define PADCTRL_PIN_MUX_REGB          PADCTRL_REG_ADDR(0x000b)
 #define PADCTRL_GPIOW_I               PADCTRL_REG_ADDR(0x0090)
 #define PADCTRL_GPIOH_I               PADCTRL_REG_ADDR(0x0050)
+#define PADCTRL_PIN_MUX_REG8 			PADCTRL_REG_ADDR(0x0008)
+#define PADCTRL_PIN_MUX_REGB          PADCTRL_REG_ADDR(0x000b)
+
 //  SYS_CTRL
 #define SYSCTRL_VPU_SECURE_REG0       SYSCTRL_REG_ADDR(0x0061)
 #define SYSCTRL_VPU_SECURE_REG1       SYSCTRL_REG_ADDR(0x0062)
@@ -394,6 +397,17 @@ void hdmitx21_venc_en(bool en, bool pi_mode);
 #define VPU_HDMI_FMT_CTRL             VPUCTRL_REG_ADDR(0x2743)
 #define VPU_DISP_VIU2_CTRL            VPUCTRL_REG_ADDR(0x2788)
 #define VPU_HDMI_DITH_CNTL            VPUCTRL_REG_ADDR(0x27fc)
+#define VPU_HDMI_MATRIX_COEF00_01     VPUCTRL_REG_ADDR(0x273a)
+#define VPU_HDMI_MATRIX_COEF02_10     VPUCTRL_REG_ADDR(0x273b)
+#define VPU_HDMI_MATRIX_COEF11_12     VPUCTRL_REG_ADDR(0x273c)
+#define VPU_HDMI_MATRIX_COEF20_21     VPUCTRL_REG_ADDR(0x273d)
+#define VPU_HDMI_MATRIX_COEF22        VPUCTRL_REG_ADDR(0x273e)
+#define VPU_HDMI_MATRIX_COEF13_14     VPUCTRL_REG_ADDR(0x273f)
+#define VPU_HDMI_MATRIX_OFFSET0_1     VPUCTRL_REG_ADDR(0x278b)
+#define VPU_HDMI_MATRIX_OFFSET2       VPUCTRL_REG_ADDR(0x278c)
+#define VPU_HDMI_MATRIX_PRE_OFFSET0_1 VPUCTRL_REG_ADDR(0x278d)
+#define VPU_HDMI_MATRIX_PRE_OFFSET2   VPUCTRL_REG_ADDR(0x278e)
+
 
 //s1a add new reg for matrix ycbcr2rgb
 //Bit 0,   if true, force vencl clk enable, otherwise, it might auto turn off by mipi DSI
