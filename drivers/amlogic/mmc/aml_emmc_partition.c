@@ -1805,7 +1805,6 @@ _out:
 
 int check_gpt_part(struct blk_desc *dev_desc, void *buf)
 {
-	gpt_entry *gpt_pte = NULL;
 	gpt_header *gpt_h;
 	gpt_entry *gpt_e;
 	u32 calc_crc32;
@@ -1818,20 +1817,6 @@ int check_gpt_part(struct blk_desc *dev_desc, void *buf)
 	u64 offset_new, size_new;
 	int ret = 0;
 	bool alternate_flag = false;
-
-	if (is_valid_gpt_buf(dev_desc, buf))
-		return -1;
-
-	ALLOC_CACHE_ALIGN_BUFFER_PAD(gpt_header, gpt_head, 1, dev_desc->blksz);
-
-	if (is_gpt_valid(dev_desc, GPT_PRIMARY_PARTITION_TABLE_LBA, gpt_head, &gpt_pte) != 1) {
-		if (is_gpt_valid(dev_desc, (dev_desc->lba - 1), gpt_head, &gpt_pte) != 1) {
-			printf("%s: there is no valid gpt before, erase\n", __func__);
-			ret = 1;
-			goto _out;
-		}
-		printf("%s: *** Using Backup GPT ***\n", __func__);
-	}
 
 	/* determine start of GPT Header in the buffer */
 	gpt_h = buf + (GPT_PRIMARY_PARTITION_TABLE_LBA *
@@ -1888,12 +1873,12 @@ int check_gpt_part(struct blk_desc *dev_desc, void *buf)
 	gpt_h->header_crc32 = calc_crc32;
 
 	for (i = 0; i < le32_to_cpu(gpt_h->num_partition_entries); i++) {
-		if (!is_pte_valid(&gpt_pte[i]))
+		if (!is_pte_valid(&gpt_e[i]))
 			break;
 
-		offset_old = le64_to_cpu(gpt_pte[i].starting_lba << 9ULL);
-		size_old = ((le64_to_cpu(gpt_pte[i].ending_lba) + 1) -
-			le64_to_cpu(gpt_pte[i].starting_lba)) << 9ULL;
+		offset_old = le64_to_cpu(gpt_e[i].starting_lba << 9ULL);
+		size_old = ((le64_to_cpu(gpt_e[i].ending_lba) + 1) -
+			le64_to_cpu(gpt_e[i].starting_lba)) << 9ULL;
 
 		offset_new = le64_to_cpu(gpt_e[i].starting_lba << 9ULL);
 		size_new = ((le64_to_cpu(gpt_e[i].ending_lba) + 1) -
@@ -1901,7 +1886,7 @@ int check_gpt_part(struct blk_desc *dev_desc, void *buf)
 
 		if (offset_old != offset_new || size_old != size_new) {
 			printf("old %02d %10ls %016llx %016llx\n",
-				i, gpt_pte[i].partition_name,
+				i, gpt_e[i].partition_name,
 				offset_old, size_old);
 			printf("new %02d %10ls %016llx %016llx\n",
 				i, gpt_e[i].partition_name,
@@ -1913,6 +1898,5 @@ int check_gpt_part(struct blk_desc *dev_desc, void *buf)
 	}
 
 _out:
-	free(gpt_pte);
 	return ret;
 }
