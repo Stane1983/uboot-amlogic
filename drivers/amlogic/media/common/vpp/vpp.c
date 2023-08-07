@@ -1685,7 +1685,10 @@ static void vpp_ofifo_init(void)
 	unsigned int data32;
 
 	data32 = vpp_reg_read(VPP_OFIFO_SIZE);
-	data32 |= 0xfff;
+	if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S1A)
+		data32 |= 0x7ff;
+	else
+		data32 |= 0xfff;
 	vpp_reg_write(VPP_OFIFO_SIZE, data32);
 
 	data32 = 0x08080808;
