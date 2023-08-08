@@ -12,7 +12,7 @@
 #include <watchdog.h>
 #include <malloc.h>
 #include <asm/byteorder.h>
-#include <jffs2/jffs2.h>
+
 /* storage plat data */
 #include <asm/amlogic/arch/storage.h>
 

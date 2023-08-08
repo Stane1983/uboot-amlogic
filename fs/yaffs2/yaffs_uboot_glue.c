@@ -22,8 +22,10 @@
 #include <common.h>
 #include <div64.h>
 #include <malloc.h>
-
 #include <config.h>
+#ifdef CONFIG_AMLOGIC_MODIFY
+#include <amlogic/storage.h>
+#endif
 #include "nand.h"
 #include "yaffscfg.h"
 #include "yaffsfs.h"
@@ -167,7 +169,9 @@ void cmd_yaffs_devconfig(char *_mp, int flash_dev,
 	struct yaffs_dev *chk;
 	char *mp = NULL;
 	struct nand_chip *chip;
-
+#ifdef CONFIG_AMLOGIC_MODIFY
+	enum boot_type_e medium_type = store_get_type();
+#endif
 	mtd = get_nand_dev_by_index(flash_dev);
 	if (!mtd) {
 		pr_err("\nno NAND devices available\n");
@@ -230,8 +234,18 @@ void cmd_yaffs_devconfig(char *_mp, int flash_dev,
 	dev->param.is_yaffs2 = 1;
 	dev->param.use_nand_ecc = 1;
 	dev->param.n_reserved_blocks = 5;
+#ifdef CONFIG_AMLOGIC_MODIFY
+	if (medium_type == BOOT_SNAND) {
+		if (mtd->oobavail < sizeof(struct yaffs_packed_tags2))
+			dev->param.inband_tags = 1;
+	} else {
+		if (chip->ecc.layout->oobavail < sizeof(struct yaffs_packed_tags2))
+			dev->param.inband_tags = 1;
+	}
+#else
 	if (chip->ecc.layout->oobavail < sizeof(struct yaffs_packed_tags2))
 		dev->param.inband_tags = 1;
+#endif
 	dev->param.n_caches = 10;
 	dev->param.write_chunk_tags_fn = nandmtd2_write_chunk_tags;
 	dev->param.read_chunk_tags_fn = nandmtd2_read_chunk_tags;

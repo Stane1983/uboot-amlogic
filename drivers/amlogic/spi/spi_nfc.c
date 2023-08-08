@@ -159,7 +159,7 @@ static void spi_nfc_covert_buf_to_host(struct spi_nfc_priv *priv,
 static int spi_nfc_ooblayout_ecc(struct mtd_info *mtd, int section,
 			       struct mtd_oob_region *oobregion)
 {
-	if (section >= 8)
+	if (section >= (mtd->writesize >> 9))
 		return -ERANGE;
 
 	oobregion->offset =  2 + (section * (2 + 14));
@@ -171,7 +171,7 @@ static int spi_nfc_ooblayout_ecc(struct mtd_info *mtd, int section,
 static int spi_nfc_ooblayout_free(struct mtd_info *mtd, int section,
 				struct mtd_oob_region *oobregion)
 {
-	if (section >= 8)
+	if (section >= (mtd->writesize >> 9))
 		return -ERANGE;
 
 	oobregion->offset = section * (2 + 14);
@@ -206,6 +206,7 @@ static void spi_nfc_xfer_prepare(struct udevice *dev)
 			      page_info->dev_cfg0.page_size,
 			      page_info->dev_cfg1.block_size);
 		mtd_set_ooblayout(mtd, &spi_nfc_ecc_ooblayout);
+		mtd->oobavail = mtd_ooblayout_count_freebytes(mtd);
 	}
 }
 

@@ -18,6 +18,7 @@
 #include <amlogic/aml_pageinfo.h>
 #include <asm/amlogic/arch/cpu_config.h>
 #include <amlogic/partition_table.h>
+#include <jffs2/jffs2.h>
 #include <time.h>
 
 struct map_handler_t {
