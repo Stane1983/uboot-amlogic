@@ -255,32 +255,35 @@ static int storage_boot_layout_rebuild(struct boot_layout *boot_layout,
 #define STORAGE_ROUND_UP_IF_UNALIGN(x, y) ((x) = (((x) + (y) - 1) & (~(y - 1))))
 #define NAND_RSV_OFFSET	1024
 #define ALIGN_SIZE	(4096)
-static int storage_boot_layout_general_setting(struct boot_layout *boot_layout,
-					       int need_build)
+static int storage_boot_layout_general_setting(struct boot_layout *boot_layout, int need_build)
 {
 	struct storage_startup_parameter *ssp = &g_ssp;
 	boot_area_entry_t *boot_entry = boot_layout->boot_entry;
 	struct storage_boot_entry *sbentry = ssp->boot_entry;
-	p_payload_info_t pInfo = parse_uboot_sheader(ubootdata);;
-	p_payload_info_hdr_t hdr = &pInfo->hdr;
-	p_payload_info_item_t pItem = pInfo->arrItems;
-	int offPayload = 0, szPayload = 0;
+	p_payload_info_t p_info = parse_uboot_sheader(ubootdata);
+	p_payload_info_hdr_t hdr;
+	p_payload_info_item_t p_item;
+	int off_payload = 0, sz_payload = 0;
 	unsigned int bl2e_size = 0, bl2x_size = 0;
 	char name[8] = {0};
-	int nIndex = 0;
+	int n_index = 0;
 
 	if (need_build == BOOT_ID_USB) {
-		for (nIndex = 1, pItem += 1;
-		     nIndex < hdr->byItemNum; ++nIndex, ++pItem) {
-			memcpy(name, &pItem->nMagic, sizeof(unsigned int));
-			offPayload = pItem->nOffset;
-			if (nIndex == BOOT_AREA_BL2E)
-				bl2e_size = pItem->nPayLoadSize;
-			if (nIndex == BOOT_AREA_BL2X)
-				bl2x_size = pItem->nPayLoadSize;
-			szPayload = pItem->nPayLoadSize;
-			pr_info("Item[%d]%4s offset 0x%08x sz 0x%x\n",
-			       nIndex, name, offPayload, szPayload);
+		if (!p_info)
+			return -1;
+
+		hdr = &p_info->hdr;
+		p_item = p_info->arrItems;
+
+		for (n_index = 1, p_item += 1; n_index < hdr->byItemNum; ++n_index, ++p_item) {
+			memcpy(name, &p_item->nMagic, sizeof(unsigned int));
+			off_payload = p_item->nOffset;
+			if (n_index == BOOT_AREA_BL2E)
+				bl2e_size = p_item->nPayLoadSize;
+			if (n_index == BOOT_AREA_BL2X)
+				bl2x_size = p_item->nPayLoadSize;
+			sz_payload = p_item->nPayLoadSize;
+			pr_info("Item[%d]%4s offset 0x%08x sz 0x%x\n", n_index, name, off_payload, sz_payload);
 		}
 		boot_entry[BOOT_AREA_BB1ST].size = ssp->boot_entry[BOOT_AREA_BB1ST].size;
 		boot_entry[BOOT_AREA_DDRFIP].size = ssp->boot_entry[BOOT_AREA_DDRFIP].size;
@@ -291,24 +294,17 @@ static int storage_boot_layout_general_setting(struct boot_layout *boot_layout,
 		if (need_build == BOOT_ID_SDCARD) {
 			bl2e_size = sbentry[BOOT_AREA_BL2E].size;
 			bl2x_size = sbentry[BOOT_AREA_BL2X].size;
-			printf("bl2e_size=%x bl2x_size=%x current->type=%d\n",
-				bl2e_size, bl2x_size, current->type);
-			boot_entry[BOOT_AREA_BB1ST].size =
-				ssp->boot_entry[BOOT_AREA_BB1ST].size;
-			boot_entry[BOOT_AREA_DDRFIP].size =
-				ssp->boot_entry[BOOT_AREA_DDRFIP].size;
-			boot_entry[BOOT_AREA_DEVFIP].size =
-				ssp->boot_entry[BOOT_AREA_DEVFIP].size;
-			storage_boot_layout_rebuild(boot_layout,
-						    bl2e_size, bl2x_size);
+			printf("bl2e_size=%x bl2x_size=%x current->type=%d\n", bl2e_size, bl2x_size, current->type);
+			boot_entry[BOOT_AREA_BB1ST].size = ssp->boot_entry[BOOT_AREA_BB1ST].size;
+			boot_entry[BOOT_AREA_DDRFIP].size = ssp->boot_entry[BOOT_AREA_DDRFIP].size;
+			boot_entry[BOOT_AREA_DEVFIP].size = ssp->boot_entry[BOOT_AREA_DEVFIP].size;
+			storage_boot_layout_rebuild(boot_layout, bl2e_size, bl2x_size);
 			return 0;
 		}
 		/* normal boot */
-		for (nIndex = 0;
-		     nIndex <= BOOT_AREA_DEVFIP;
-		     nIndex++, sbentry++) {
-			boot_entry[nIndex].size = sbentry->size;
-			boot_entry[nIndex].offset = sbentry->offset;
+		for (n_index = 0; n_index < MAX_BOOT_AREA_ENTRIES && sbentry->size; n_index++, sbentry++) {
+			boot_entry[n_index].size = sbentry->size;
+			boot_entry[n_index].offset = sbentry->offset;
 		}
 	}
 
@@ -441,7 +437,11 @@ int storage_post_init(void)
 	ret = storage_get_and_parse_ssp(&need_build);
 	if (ret < 0)
 		return -1;
-	storage_boot_layout_general_setting(&general_boot_layout, need_build);
+
+	ret = storage_boot_layout_general_setting(&general_boot_layout, need_build);
+	if (ret < 0)
+		return ret;
+
 	storage_boot_layout_debug_info(&general_boot_layout);
 
 	return ret;
@@ -466,8 +466,11 @@ int store_init(u32 init_flag)
 		return record;
 	}
 
-	if (BOOTLOADER_MODE_ADVANCE_INIT)
-		storage_post_init();
+	if (BOOTLOADER_MODE_ADVANCE_INIT) {
+		ret = storage_post_init();
+		if (ret < 0)
+			return ret;
+	}
 
 	/*2. Enter the probe of the valid device*/
 	for (i = 0; i < ARRAY_SIZE(device_list); i++) {
