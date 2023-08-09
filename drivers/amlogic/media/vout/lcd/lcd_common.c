@@ -2411,19 +2411,6 @@ void lcd_p2p_config_set(struct aml_lcd_drv_s *pdrv)
 			band_width = lcd_do_div((band_width * 3 * lcd_bits * 9), 8);
 		}
 		break;
-	case P2P_CSPI:
-	case P2P_ISP:
-	case P2P_CMPI:
-		if (clk_mode == LCD_CLK_MODE_DEPENDENCE) {
-			if (pclk >= 600000)
-				bit_rate = pclk * 3 * lcd_bits / lane_num;
-			else  /* 8/9 coding */
-				bit_rate = (pclk * 3 * lcd_bits * 9 / 8) / lane_num;
-		} else {
-			/* 8/9 coding */
-			bit_rate = (pclk * 3 * lcd_bits * 9 / 8) / lane_num;
-		}
-		break;
 	default:
 		band_width = band_width * 3 * lcd_bits;
 		break;
