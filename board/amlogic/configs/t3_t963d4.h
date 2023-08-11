@@ -419,7 +419,19 @@
 /* osd */
 #define OSD_SCALE_ENABLE
 #define AML_OSD_HIGH_VERSION
+<<<<<<< HEAD:board/amlogic/configs/t3_t963d4.h
 #define AML_T7_DISPLAY
+=======
+#define AML_OSD_TXHD2_DISPLAY
+
+/* DISPLAY */
+//#define CONFIG_AML_VOUT 1
+#if 0
+#define CONFIG_AML_CANVAS 1
+#define CONFIG_AML_OSD 1
+#define CONFIG_OSD_SCALE_ENABLE 1
+#endif
+>>>>>>> 4f49cf6260f (osd: logo display on osd2 when keystone enable [1/1]):board/amlogic/configs/txhd2_skt.h
 
 /* USB
  * Enable CONFIG_MUSB_HCD for Host functionalities MSC, keyboard
