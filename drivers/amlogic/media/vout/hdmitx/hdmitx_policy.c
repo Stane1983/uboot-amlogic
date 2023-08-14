@@ -345,6 +345,11 @@ static inline bool is_meson_gxl_cpu(void)
 	return get_cpu_id().family_id == MESON_CPU_MAJOR_ID_GXL;
 }
 
+static inline bool is_meson_s1a_cpu(void)
+{
+	return get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S1A;
+}
+
 static inline bool is_meson_gxl_package_805X(void)
 {
 	return is_meson_gxl_cpu() && package_id_is(0x30);
@@ -353,6 +358,11 @@ static inline bool is_meson_gxl_package_805X(void)
 static inline bool is_meson_gxl_package_805Y(void)
 {
 	return is_meson_gxl_cpu() && package_id_is(0xb0);
+}
+
+static inline bool is_meson_s1a_package_805C1(void)
+{
+	return is_meson_s1a_cpu();
 }
 
 /* below items has feature limited, may need extra judgement */
@@ -367,6 +377,8 @@ bool is_hdmitx_limited_1080p(void)
 	if (is_meson_gxl_package_805X())
 		return true;
 	else if (is_meson_gxl_package_805Y())
+		return true;
+	else if (is_meson_s1a_package_805C1())
 		return true;
 	else if (hdev->limit_res_1080p == 1)
 		return true;
