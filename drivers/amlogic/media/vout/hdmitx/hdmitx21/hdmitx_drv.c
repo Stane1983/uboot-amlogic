@@ -358,6 +358,17 @@ static void hdmitx_enable_encp_clk(void)
 	hd21_set_reg_bits(CLKCTRL_HTX_CLK_CTRL1, 1, 24, 1);
 }
 
+static void hdmitx_enable_enci_clk(void)
+{
+	hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL2, 1, 0, 2);
+	hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL2, 1, 2, 1);
+	hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL2, 1, 3, 1); /* TODO */
+	hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL2, 1, 5, 1);
+	hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL2, 1, 9, 1);
+	hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL2, 1, 10, 1);
+	hd21_set_reg_bits(CLKCTRL_HTX_CLK_CTRL1, 1, 24, 1);
+}
+
 static void set_hdmitx_fe_clk(void)
 {
 	u32 tmp = 0;
@@ -388,7 +399,6 @@ static void _hdmitx21_set_clk(void)
 		set_encp_div(0);
 	else
 		set_encp_div(1);
-	hdmitx_enable_encp_clk();
 	set_hdmitx_fe_clk();
 }
 
@@ -658,7 +668,7 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 	if (hdev->enc_idx == 2) {
 		set_hdmitx_enc_idx(2);
 		hd21_set_reg_bits(VPU_DISP_VIU2_CTRL, 1, 29, 1);
-		hd21_set_reg_bits(VPU_VIU_VENC_MUX_CTRL, 2, 2, 2);
+		//hd21_set_reg_bits(VPU_VIU_VENC_MUX_CTRL, 2, 2, 2);
 	}
 	hdmitx21_venc_en(0, 0);
 	hd21_set_reg_bits(VPU_HDMI_SETTING, 0, (hdev->enc_idx == 0) ? 0 : 1, 1);
@@ -699,9 +709,11 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 	    (para->timing.v_active == 480 || para->timing.v_active == 576)) {
 		hd21_write_reg(VPU_VENC_CTRL, 0); // sel enci timming
 		set_tv_enci_new(hdev, enc_sel, vic, 1);
+		hdmitx_enable_enci_clk();
 	} else {
 		hd21_write_reg(VPU_VENC_CTRL, 1); // sel encp timming
 		set_tv_encp_new(hdev, enc_sel, vic, 1);
+		hdmitx_enable_encp_clk();
 	}
 
 	// --------------------------------------------------------
@@ -858,7 +870,9 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 			data32 |= (((para->cs == HDMI_COLORSPACE_YUV420) ? 1 : 0) << 8);
 		break;
 	case MESON_CPU_ID_S1A:
-		data32 |=  2;
+		data32 |= para->timing.pi_mode == 0 &&
+			(para->timing.v_active == 480 || para->timing.v_active == 576) ?
+				1 : 2;
 		data32 |= (para->timing.h_pol << 2);
 		data32 |= (para->timing.v_pol << 3);
 		//data32 |= (((para->cs == HDMI_COLORSPACE_YUV420) ? 4 : 0) << 5);
