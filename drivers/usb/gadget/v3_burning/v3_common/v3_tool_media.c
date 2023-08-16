@@ -622,8 +622,9 @@ int v3tool_storage_init(const int eraseFlash, unsigned int dtbImgSz, unsigned in
 	if (ret <= 0)
 		FBS_EXIT(_ACK, "Fail in store init %d, ret %d\n", 1, ret);
 
-
+#ifdef CONFIG_MMC
 	mmc_partition_init();
+#endif
 
 #ifdef CONFIG_BACKUP_PART_NORMAL_ERASE
 	u32 backupPartSz = 0;

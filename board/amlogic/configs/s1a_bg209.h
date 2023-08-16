@@ -61,7 +61,7 @@
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"uart_base=0xfe07a000\0"\
 	"usb_burning=" CONFIG_USB_TOOL_ENTRY "\0"\
-	"board=s1a_bg209\0"\
+	"board=bg209\0"\
 	"boot_part=boot\0"\
 	"recovery_part=recovery\0"\
 		"panel_type=lcd_1\0" \
@@ -85,7 +85,6 @@
 		"cvbs_drv=0\0"\
 		"osd_reverse=0\0"\
 		"video_reverse=0\0"\
-		"board=oppen\0"\
 	"scramble_reg=0xfe02e030\0"\
 		"upgrade_key="\
 		"gpio set GPIOZ_6;"\
@@ -116,7 +115,7 @@
 
 
 //#define CONFIG_ENV_SIZE   (64*1024)
-#define CONFIG_FIT 1
+//#define CONFIG_FIT 1
 #define CONFIG_OF_LIBFDT 1
 #define CONFIG_ANDROID_BOOT_IMAGE 1
 //#define CONFIG_SYS_BOOTM_LEN (64<<20) /* Increase max gunzip size*/
@@ -246,7 +245,7 @@
 
 /* net */
 /* #define CONFIG_CMD_NET   1 */
-#define CONFIG_ETH_DESIGNWARE
+//#define CONFIG_ETH_DESIGNWARE
 #if defined(CONFIG_CMD_NET)
 	//#define CONFIG_DESIGNWARE_ETH 1
 	#define CONFIG_PHYLIB	1
@@ -275,12 +274,12 @@
 /* #define CONFIG_CMD_PLLTEST 1 */
 
 /*file system*/
-#define CONFIG_DOS_PARTITION 1
-#define CONFIG_EFI_PARTITION 1
+//#define CONFIG_DOS_PARTITION 1
+//#define CONFIG_EFI_PARTITION 1
 /* #define CONFIG_MMC 1 */
-#define CONFIG_FS_FAT 1
-#define CONFIG_FS_EXT4 1
-#define CONFIG_LZO 1
+//#define CONFIG_FS_FAT 1
+//#define CONFIG_FS_EXT4 1
+//#define CONFIG_LZO 1
 
 #define CONFIG_FAT_WRITE 1
 
@@ -289,10 +288,7 @@
 /* #define CONFIG_SYS_ICACHE_OFF */
 
 /* other functions */
-#define CONFIG_LIBAVB		1
-
-/* define CONFIG_SYS_MEM_TOP_HIDE 8M space for free buffer */
-#define CONFIG_SYS_MEM_TOP_HIDE		0x00800000
+//#define CONFIG_LIBAVB		1
 
 /* support secure boot */
 #define CONFIG_AML_SECURE_UBOOT   1

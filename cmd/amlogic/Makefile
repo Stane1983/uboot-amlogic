@@ -79,8 +79,12 @@ obj-$(CONFIG_CMD_OS_IDENT) += os_ident.o
 # factory provision
 obj-$(CONFIG_AML_FACTORY_PROVISION) += \
 			factory_provision/cmd_factory_provision.o \
-			factory_provision/factory_provision_utils.o \
-			factory_provision/emmc_factory_provision.o
+			factory_provision/factory_provision_utils.o
+
+ifdef CONFIG_MMC
+obj-$(CONFIG_AML_FACTORY_PROVISION) +=	factory_provision/emmc_factory_provision.o
+endif
+
 obj-$(CONFIG_NAND_FACTORY_PROVISION) += \
 			factory_provision/nand_factory_provision.o
 

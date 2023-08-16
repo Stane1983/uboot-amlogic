@@ -956,8 +956,9 @@ static const void *boot_get_kernel(struct cmd_tbl *cmdtp, int flag, int argc,
 #ifdef CONFIG_AMLOGIC_MODIFY
 	char *avb_s;
 	avb_s = env_get("avb2");
-	printf("avb2: %s\n", avb_s);
-	if (strcmp(avb_s, "1") != 0) {
+	if (avb_s)
+		printf("avb2: %s\n", avb_s);
+	if (avb_s && strcmp(avb_s, "1") != 0) {
 #ifdef CONFIG_AML_ANTIROLLBACK
 		boot_img_hdr_t **tmp_img_hdr = (boot_img_hdr_t **)&buf;
 #endif
@@ -1054,7 +1055,7 @@ static const void *boot_get_kernel(struct cmd_tbl *cmdtp, int flag, int argc,
 					     os_data, os_len))
 			return NULL;
 
-		if (strcmp(avb_s, "1") != 0) {
+		if (avb_s && strcmp(avb_s, "1") != 0) {
 #ifdef CONFIG_AML_ANTIROLLBACK
 			if (!check_antirollback((*tmp_img_hdr)->kernel_version)) {
 				*os_len = 0;

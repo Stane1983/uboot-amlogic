@@ -35,7 +35,9 @@ int cmd_func(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		ret = nand_factory_provision(&params);
 #endif
 	} else {
+#ifdef CONFIG_MMC
 		ret = emmc_factory_provision(&params);
+#endif
 	}
 
 	return ret;

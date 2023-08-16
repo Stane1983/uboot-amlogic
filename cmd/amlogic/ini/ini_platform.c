@@ -103,6 +103,7 @@ static int splitFilePath(const char *file_path, char part_name[], char file_name
     return 0;
 }
 
+#ifdef CONFIG_MMC
 #define CS_BLOCK_DEV_INTERFACE    "mmc"
 #define CS_BLOCK_DEV_MARJOR_NUM   "1"
 
@@ -126,6 +127,7 @@ static int setBlockDevice(const char *part_name) {
 	return -1;
 }
 #endif
+#endif
 
 int iniIsFileExist(const char *file_path) {
 #if (defined CC_COMPILE_IN_PC || defined CC_COMPILE_IN_ANDROID)
@@ -144,9 +146,11 @@ int iniIsFileExist(const char *file_path) {
         return 0;
     }
 
+#ifdef CONFIG_MMC
     if (setBlockDevice(part_name) < 0) {
         return 0;
     }
+#endif
 
     return fs_exists(file_name);
 #endif
@@ -179,9 +183,11 @@ int iniGetFileSize(const char *file_path) {
         return -1;
     }
 
+#ifdef CONFIG_MMC
     if (setBlockDevice(part_name) < 0) {
         return -1;
     }
+#endif
 
     if (fs_size(file_name, &file_size)) {
         return -1;
@@ -229,9 +235,11 @@ int iniReadFileToBuffer(const char *file_path, int offset, int rd_size, unsigned
         return -1;
     }
 
+#ifdef CONFIG_MMC
     if (setBlockDevice(part_name) < 0) {
         return -1;
     }
+#endif
 
     tmp_ret = fs_read(file_name, (unsigned long)data_buf, 0, 0, &rd_cnt);
     if (tmp_ret < 0) {
