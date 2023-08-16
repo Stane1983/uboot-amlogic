@@ -1224,7 +1224,8 @@ void hdr_func(enum hdr_module_sel module_sel,
 	case VD1_HDR:
 	case VD2_HDR:
 		/* VD1 and VD2 need not init in uboot, just skip */
-		if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S5)
+		if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S5 ||
+			get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S1A)
 			return;
 		break;
 	default:

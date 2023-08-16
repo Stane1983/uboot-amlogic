@@ -1742,6 +1742,9 @@ void hdr_tx_pkt_cb(void)
 	if (!hdr_policy_env)
 		return;
 
+	if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S1A)
+		return;
+
 	hdr_policy = simple_strtoul(hdr_policy_env, NULL, 10);
 #ifdef CONFIG_AML_HDMITX
 	hdrinfo = hdmitx_get_rx_hdr_info();
