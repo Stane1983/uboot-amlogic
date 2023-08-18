@@ -71,7 +71,7 @@
 
 	fb {
 		status = "okay";
-		logo_addr = "0x7f800000";
+		logo_addr = "0x07c00000";
 	};
 
 	pinctrl_periphs: pinctrl@fe004000 {
