@@ -74,9 +74,12 @@ void vpu_module_init_config(void)
 #ifdef VPU_RDARB_UGT_L2C1
 		vpu_vcbus_write(VPU_RDARB_UGT_L2C1, 0xf);
 #endif
-	} else {
+	} else if (vpu_conf.data->chip_type == VPU_CHIP_S7) {
+		/*S7 ONLY VPU0 READ*/
+		vpu_vcbus_write(VPU_RDARB_MODE_L2C1, 0x00000);
+	} else
 		vpu_vcbus_write(VPU_RDARB_MODE_L2C1, 0x900000);
-	}
+
 	vpu_vcbus_write(VPU_WRARB_MODE_L2C1, 0x20000);
 #ifdef CONFIG_AMLOGIC_TEE
 	if (vpu_conf.data->chip_type == VPU_CHIP_T3 ||
