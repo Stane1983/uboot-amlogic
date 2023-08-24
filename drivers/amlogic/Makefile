@@ -44,3 +44,4 @@ obj-$(CONFIG_$(SPL_TPL_)CMD_JTAG) += jtag/
 
 obj-$(CONFIG_IMAGE_CHECK) += image_check/
 
+obj-$(CONFIG_AMLOGIC_AMFC) += amfc/

@@ -45,4 +45,6 @@ source "drivers/amlogic/clock/Kconfig"
 
 source "drivers/amlogic/image_check/Kconfig"
 
+source "drivers/amlogic/amfc/Kconfig"
+
 endmenu

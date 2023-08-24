@@ -1,0 +1,2 @@
+
+obj-y += amfc.o

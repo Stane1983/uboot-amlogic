@@ -68,6 +68,9 @@ DECLARE_GLOBAL_DATA_PTR;
 #include <lzma/LzmaTools.h>
 #include <u-boot/crc.h>
 #include <u-boot/lz4.h>
+#ifdef CONFIG_AMLOGIC_AMFC
+#include <amlogic/amfc.h>
+#endif
 
 #ifdef CONFIG_AMLOGIC_MODIFY
 #include <amlogic/unlz4_android.h>
@@ -348,6 +351,7 @@ static void image_print_type(const struct legacy_img_hdr *hdr)
 {
 	const char __maybe_unused *os, *arch, *type, *comp;
 
+	printf("%s, hdr:%p, comp:%x\n", __func__, hdr, hdr->ih_comp);
 	os = genimg_get_os_name(image_get_os(hdr));
 	arch = genimg_get_arch_name(image_get_arch(hdr));
 	type = genimg_get_type_name(image_get_type(hdr));
@@ -526,6 +530,16 @@ int image_decomp(int comp, ulong load, ulong image_start, int type,
 		break;
 #endif
 	case IH_COMP_ZSTD:
+	#ifdef CONFIG_AMLOGIC_AMFC
+		if (!tools_build()) {
+			ret = amfc_decompress(image_buf, load_buf,
+					      image_len, unc_len);
+			if (ret >= 0) {
+				image_len = ret;
+				ret = 0;
+			}
+		}
+	#else
 		if (!tools_build() && CONFIG_IS_ENABLED(ZSTD)) {
 			struct abuf in, out;
 
@@ -537,6 +551,7 @@ int image_decomp(int comp, ulong load, ulong image_start, int type,
 				ret = 0;
 			}
 		}
+	#endif
 		break;
 	}
 	if (ret == -ENOSYS) {

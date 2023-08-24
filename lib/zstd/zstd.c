@@ -20,7 +20,11 @@ int zstd_decompress(struct abuf *in, struct abuf *out)
 	size_t wsize;
 	int ret;
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+	wsize = ZSTD_DStreamWorkspaceBound(abuf_size(out));
+#else
 	wsize = ZSTD_DStreamWorkspaceBound(abuf_size(in));
+#endif
 	workspace = malloc(wsize);
 	if (!workspace) {
 		debug("%s: cannot allocate workspace of size %zu\n", __func__,
@@ -28,7 +32,11 @@ int zstd_decompress(struct abuf *in, struct abuf *out)
 		return -ENOMEM;
 	}
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+	dstream = ZSTD_initDStream(abuf_size(out), workspace, wsize);
+#else
 	dstream = ZSTD_initDStream(abuf_size(in), workspace, wsize);
+#endif
 	if (!dstream) {
 		log_err("%s: ZSTD_initDStream failed\n", __func__);
 		ret = -EPERM;

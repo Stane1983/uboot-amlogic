@@ -1,0 +1,7 @@
+config AMLOGIC_AMFC
+	tristate "Amlogic AMFC driver"
+	default n
+	help
+	  Amlogic AMFC driver
+
+	  Hardware compress/decompress module

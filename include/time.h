@@ -145,4 +145,8 @@ unsigned long timer_get_us(void);
  */
 uint64_t get_ticks(void);
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+uint32_t get_time(void);
+#endif
+
 #endif /* _TIME_H */
