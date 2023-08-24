@@ -71,6 +71,9 @@ void vpu_module_init_config(void)
 #ifdef VPP_RDARB_MODE
 		vpu_vcbus_write(VPP_RDARB_MODE, 0x0);
 #endif
+#ifdef VPU_RDARB_UGT_L2C1
+		vpu_vcbus_write(VPU_RDARB_UGT_L2C1, 0xf);
+#endif
 	} else {
 		vpu_vcbus_write(VPU_RDARB_MODE_L2C1, 0x900000);
 	}
