@@ -87,6 +87,15 @@
 #ifndef VPU_WRARB_MODE_L2C1
 #define VPU_WRARB_MODE_L2C1                        ((0x27a2  << 2) + 0xff000000)
 #endif
+#ifndef VPP_RDARB_REQEN_SLV
+#define VPP_RDARB_REQEN_SLV                        ((0x3979  << 2) + 0xff000000)
+#endif
+#ifndef VPU_RDARB_REQEN_SLV_L2C1
+#define VPU_RDARB_REQEN_SLV_L2C1                    ((0x279e  << 2) + 0xff000000)
+#endif
+#ifndef VPU_WRARB_REQEN_SLV_L2C1
+#define VPU_WRARB_REQEN_SLV_L2C1                    ((0x27a3  << 2) + 0xff000000)
+#endif
 #ifndef VPU_RDARB_UGT_L2C1
 #define VPU_RDARB_UGT_L2C1                         ((0x27c2  << 2) + 0xff800000)
 #endif

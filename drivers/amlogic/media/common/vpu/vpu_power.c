@@ -86,6 +86,8 @@ void vpu_module_init_config(void)
 		vpu_vcbus_write(VPU_WRARB_UGT_L2C1, 0x00f003c0); //default 0x00f00000
 
 		vpu_vcbus_write(DI_WRARB_UGT_L1C1, 0x1154);//di write urgent
+	} else if (vpu_conf.data->chip_type == VPU_CHIP_T7) {
+		init_arb_urgent_table();
 	} else {
 		vpu_vcbus_write(VPU_RDARB_MODE_L2C1, 0x900000);
 		vpu_vcbus_write(VPU_WRARB_MODE_L2C1, 0x20000);

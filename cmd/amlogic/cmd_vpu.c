@@ -44,9 +44,83 @@ static int do_vpu_clk(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	return ret;
 }
 
+static int do_vpu_arb_l1_bind_change(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int level1_module;
+	int level2_module;
+	int ret = 0;
+
+	if (argc < 3) {
+		printf("vpu arb_bind1 x(index) x(bind_port)\n");
+		return -1;
+	}
+	level1_module = (int)simple_strtoul(argv[1], NULL, 10);
+	level2_module = (int)simple_strtoul(argv[2], NULL, 10);
+	ret = vpu_rdarb_bind_l1(level1_module, level2_module);
+	if (ret != -1)
+		print_bind1_change_info(level1_module, level2_module);
+	return ret;
+}
+
+static int do_vpu_arb_l2_bind_change(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int level2_module;
+	int vpu_prot;
+	int ret = 0;
+
+	if (argc < 3) {
+		printf("vpu arb_bind2 x(index) x(bind_port)\n");
+		return -1;
+	}
+	level2_module = (int)simple_strtoul(argv[1], NULL, 10);
+	vpu_prot = (int)simple_strtoul(argv[2], NULL, 10);
+	ret = vpu_rdarb_bind_l2(level2_module, vpu_prot);
+	if (ret != -1)
+		print_bind2_change_info(level2_module, vpu_prot);
+	return ret;
+}
+
+static int do_vpu_urgent_change(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int module;
+	int urgent_val;
+	int ret = 0;
+
+	if (argc < 3) {
+		printf("vpu urgent_set x(index) x(value)\n");
+		return -1;
+	}
+	module = (int)simple_strtoul(argv[1], NULL, 10);
+	urgent_val = (int)simple_strtoul(argv[2], NULL, 10);
+	/*first parameter reserve*/
+	ret = vpu_urgent_set(module, urgent_val);
+	if (ret == -1)
+		return ret;
+	print_urgent_change_info(module, urgent_val);
+	return ret;
+}
+
 static int do_vpu_test(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	vcbus_test();
+	return 0;
+}
+
+static int do_vpu_arb_info(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	get_arb_module_info();
+	return 0;
+}
+
+static int do_vpu_rdarb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	dump_vpu_rdarb_table();
+	return 0;
+}
+
+static int do_vpu_urgent(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	dump_vpu_urgent_table();
 	return 0;
 }
 
@@ -73,6 +147,12 @@ static cmd_tbl_t cmd_vpu_sub[] = {
 	U_BOOT_CMD_MKENT(remove, 2, 0, do_vpu_disable, "", ""),
 	U_BOOT_CMD_MKENT(clk, 3, 0, do_vpu_clk, "", ""),
 	U_BOOT_CMD_MKENT(test, 2, 0, do_vpu_test, "", ""),
+	U_BOOT_CMD_MKENT(rdarb, 2, 0, do_vpu_rdarb, "", ""),
+	U_BOOT_CMD_MKENT(urgent, 2, 0, do_vpu_urgent, "", ""),
+	U_BOOT_CMD_MKENT(arb_bind1, 3, 0, do_vpu_arb_l1_bind_change, "", ""),
+	U_BOOT_CMD_MKENT(arb_bind2, 3, 0, do_vpu_arb_l2_bind_change, "", ""),
+	U_BOOT_CMD_MKENT(urgent_set, 3, 0, do_vpu_urgent_change, "", ""),
+	U_BOOT_CMD_MKENT(arb_module_info, 2, 0, do_vpu_arb_info, "", ""),
 	U_BOOT_CMD_MKENT(info, 2, 0, do_vpu_info, "", ""),
 	U_BOOT_CMD_MKENT(sec, 2, 0, do_vpu_secure, "", ""),
 };
@@ -98,7 +178,13 @@ static int do_vpu(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 U_BOOT_CMD(
 	vpu,	5,	0,	do_vpu,
 	"vpu sub-system",
-	"vpu probe        - enable vpu domain\n"
-	"vpu remove       - disable vpu domain\n"
-	"vpu test         - test vcbus access\n"
+	"vpu probe           - enable vpu domain\n"
+	"vpu remove          - disable vpu domain\n"
+	"vpu test            - test vcbus access\n"
+	"vpu rdarb           - get vpu rdarb info\n"
+	"vpu arb_module_info - get vpu arb module info\n"
+	"vpu urgent          - get vpu urgent info\n"
+	"vpu arb_bind1       - change level1 arb bind\n"
+	"vpu arb_bind2       - change level2 arb bind\n"
+	"vpu urgent_set      - change urgent value\n"
 );
