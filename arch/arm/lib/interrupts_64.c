@@ -55,6 +55,7 @@ static void dump_instr(struct pt_regs *regs)
 void show_regs(struct pt_regs *regs)
 {
 	int i;
+	gd->flags &= ~GD_FLG_SILENT;
 
 	if (gd->flags & GD_FLG_RELOC)
 		printf("elr: %016lx lr : %016lx (reloc)\n",
