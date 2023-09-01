@@ -107,3 +107,4 @@ obj-$(CONFIG_AML_VPP) += cmd_vpp.o
 obj-$(CONFIG_AML_DOLBY) += cmd_dolbyvision.o
 obj-$(CONFIG_CMD_JTAG) += jtag.o
 obj-$(CONFIG_CMD_EFUSE) += efuse.o
+obj-$(CONFIG_PARTITION_ENCRYPTION) += partition_encryption.o

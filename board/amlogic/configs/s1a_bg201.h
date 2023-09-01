@@ -267,10 +267,6 @@
 
 #define MAC_ADDR_NEW  1
 
-/* other devices */
-#define CONFIG_SHA1 1
-#define CONFIG_MD5 1
-
 /* commands */
 /* #define CONFIG_CMD_PLLTEST 1 */
 

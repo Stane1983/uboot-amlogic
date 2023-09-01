@@ -21,6 +21,9 @@
 #include <amlogic/image_check.h>
 #include <fs.h>
 #include <gzip.h>
+#if CONFIG_PARTITION_ENCRYPTION_LOCAL
+#include <amlogic/partition_encryption.h>
+#endif
 
 #ifndef IS_FEAT_BOOT_VERIFY
 //#define IS_FEAT_BOOT_VERIFY() 0 //always undefined as IS_FEAT_BOOT_VERIFY is function not marco
@@ -200,7 +203,9 @@ static int do_image_read_dtb_from_knl(const char *partname,
 		errorP("Fail to read 0x%xB from part[%s] at offset 0\n", nflashloadlen, partname);
 		return __LINE__;
 	}
-
+#if CONFIG_PARTITION_ENCRYPTION_LOCAL
+	part_dec(partname, (u8*)loadaddr, nflashloadlen, (u8*)loadaddr, nflashloadlen, lflashreadoff);
+#endif
 	if (genimg_get_format(hdr_addr) != IMAGE_FORMAT_ANDROID) {
 		errorP("Fmt unsupported! only support 0x%x\n", IMAGE_FORMAT_ANDROID);
 		return __LINE__;
@@ -229,7 +234,9 @@ static int do_image_read_dtb_from_knl(const char *partname,
 				nflashloadlen, partname);
 			return __LINE__;
 		}
-
+#if CONFIG_PARTITION_ENCRYPTION_LOCAL
+		part_dec(partname, (u8*)loadaddr, nflashloadlen, (u8*)loadaddr, nflashloadlen, lflashreadoff);
+#endif
 		p_vendor_boot_img_hdr_t pvendorimghdr = (p_vendor_boot_img_hdr_t)loadaddr;
 
 		rc_r = vendor_boot_image_check_header(pvendorimghdr);
@@ -303,6 +310,9 @@ static int do_image_read_dtb_from_knl(const char *partname,
 			(unsigned int)wrsz, partname, (unsigned int)wroff);
 		return __LINE__;
 	}
+#if CONFIG_PARTITION_ENCRYPTION_LOCAL
+	part_dec(partname, (u8*)wraddr, wrsz, (u8*)wraddr, wrsz, wroff);
+#endif
 #ifndef CONFIG_SKIP_KERNEL_DTB_SECBOOT_CHECK
 	if (IS_FEAT_BOOT_VERIFY()) {
 #ifndef CONFIG_IMAGE_CHECK
@@ -437,6 +447,41 @@ uint32_t get_rsv_mem_size(void)
 	return (rsv_start + rsv_size);
 }
 
+static int do_image_read_part(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	const char *name = NULL;
+	uint64_t addr = 0;
+	uint64_t offset = 0;
+	uint64_t sz = 0;
+	int rc = 0;
+
+	if (argc < 4 || argc > 5) {
+		return CMD_RET_USAGE;
+	}
+	name = argv[1];
+	addr = simple_strtoull(argv[2], NULL, 16);
+	offset = simple_strtoull(argv[3], NULL, 0);
+
+	if (argc == 5)
+		sz = simple_strtoull(argv[4], NULL, 0);
+	else
+		sz = store_logic_cap(name);
+
+	printf("read %s with %llu bytes at offset %llu to addr %#llx\n",
+			name, sz, offset, addr);
+
+	rc = store_logic_read(name, offset, sz, (void*)addr);
+	if (rc) {
+		printf("Failed to read %s with %llu bytes at offset %llu\n",
+				name, sz, offset);
+		goto out;
+	}
+#if CONFIG_PARTITION_ENCRYPTION_LOCAL
+	part_dec(name, (u8*)addr, sz, (u8*)addr, sz, offset);
+#endif
+out:
+	return rc;
+}
 static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
     unsigned    kernel_size;
@@ -500,6 +545,9 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 				IMG_PRELOAD_SZ, partname);
 			return __LINE__;
 		}
+#if CONFIG_PARTITION_ENCRYPTION_LOCAL
+		part_dec(partname, (u8*)loadaddr, IMG_PRELOAD_SZ, (u8*)loadaddr, IMG_PRELOAD_SZ, flashreadoff);
+#endif
 	}
 	flashreadoff += IMG_PRELOAD_SZ;
 
@@ -582,6 +630,10 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 					leftsz, partname, IMG_PRELOAD_SZ);
 				return __LINE__;
 			}
+#if CONFIG_PARTITION_ENCRYPTION_LOCAL
+			part_dec(partname, (u8*)(loadaddr + IMG_PRELOAD_SZ), leftsz,
+				(u8*)(loadaddr + IMG_PRELOAD_SZ), leftsz, flashreadoff);
+#endif
 		}
 		debugP("totalSz=0x%x\n", actualbootimgsz);
 
@@ -701,7 +753,10 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 						leftsz, partname, IMG_PRELOAD_SZ);
 					return __LINE__;
 				}
-
+#if CONFIG_PARTITION_ENCRYPTION_LOCAL
+				part_dec(partname, (u8*)(loadaddr + IMG_PRELOAD_SZ), leftsz,
+					(u8*)(loadaddr + IMG_PRELOAD_SZ), leftsz, flashreadoff);
+#endif
 				if (rc_init != -1) {
 					MsgP("read header from part: %s\n", partname_init);
 					unsigned int nflashloadlen_init = 0;
@@ -728,7 +783,10 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 						pbuffpreload_init = 0;
 						return __LINE__;
 					}
-
+#if CONFIG_PARTITION_ENCRYPTION_LOCAL
+					part_dec(partname_init, (u8*)pbuffpreload_init, nflashloadlen_init,
+						(u8*)pbuffpreload_init, nflashloadlen_init, 0);
+#endif
 					p_boot_img_hdr_v3_t pinitbootimghdr;
 
 					pinitbootimghdr = (p_boot_img_hdr_v3_t)pbuffpreload_init;
@@ -755,6 +813,14 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 							pbuffpreload_init = 0;
 							return __LINE__;
 						}
+#if CONFIG_PARTITION_ENCRYPTION_LOCAL
+						part_dec(partname_init, (u8*)(loadaddr + kernel_size + BOOT_IMG_V3_HDR_SIZE),
+							ramdisk_size,
+							(u8*)(loadaddr + kernel_size + BOOT_IMG_V3_HDR_SIZE),
+							ramdisk_size,
+							BOOT_IMG_V3_HDR_SIZE);
+#endif
+
 					}
 					free(pbuffpreload_init);
 					pbuffpreload_init = 0;
@@ -836,6 +902,11 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 				pbuffpreload = 0;
 				return __LINE__;
 			}
+#if CONFIG_PARTITION_ENCRYPTION_LOCAL
+			part_dec(partname_r, (u8*)pbuffpreload, nflashloadlen_r,
+				(u8*)pbuffpreload, nflashloadlen_r, lflashreadoff_r);
+#endif
+
 		}
 		p_vendor_boot_img_hdr_t pvendorimghdr = (p_vendor_boot_img_hdr_t)pbuffpreload;
 
@@ -934,6 +1005,10 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 						pbuffpreload = 0;
 						return __LINE__;
 					}
+#if CONFIG_PARTITION_ENCRYPTION_LOCAL
+					part_dec(partname_r, (u8*)pbuffpreload, nflashloadlen_r,
+						(u8*)pbuffpreload, nflashloadlen_r, lflashreadoff_r);
+#endif
 				}
 			}
 
@@ -1035,6 +1110,9 @@ static int do_image_read_res(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
         errorP("Fail to read 0x%xB from part[%s] at offset 0\n", IMG_PRELOAD_SZ, partName);
         return __LINE__;
     }
+#if CONFIG_PARTITION_ENCRYPTION_LOCAL
+    part_dec(partName, (u8*)loadaddr, IMG_PRELOAD_SZ, (u8*)loadaddr, IMG_PRELOAD_SZ, flashReadOff);
+#endif
     flashReadOff = IMG_PRELOAD_SZ;
 
     if (img_res_check_log_header(pResImgHead)) {
@@ -1053,6 +1131,10 @@ static int do_image_read_res(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
             errorP("Fail to read 0x%xB from part[%s] at offset 0x%x\n", leftSz, partName, IMG_PRELOAD_SZ);
             return __LINE__;
         }
+#if CONFIG_PARTITION_ENCRYPTION_LOCAL
+        part_dec(partName, (u8*)(loadaddr + (unsigned)flashReadOff), leftSz,
+                (u8*)(loadaddr + (unsigned)flashReadOff), leftSz, flashReadOff);
+#endif
     }
     debugP("totalSz=0x%x\n", totalSz);
 
@@ -1120,6 +1202,9 @@ static int do_image_read_pic(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
         errorP("Fail to read 0x%xB from part[%s] at offset 0\n", PreloadSz, partName);
         return __LINE__;
     }
+#if CONFIG_PARTITION_ENCRYPTION_LOCAL
+    part_dec(partName, (u8*)loadaddr, PreloadSz, (u8*)loadaddr, PreloadSz, flashReadOff);
+#endif
     flashReadOff = PreloadSz;
     debugP("end read pic sz %d\n", PreloadSz);
 
@@ -1168,6 +1253,10 @@ static int do_image_read_pic(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
                             errorP("Fail to read pic at offset 0x%x\n", pItem->start);
                             return __LINE__;
                         }
+#if CONFIG_PARTITION_ENCRYPTION_LOCAL
+                        part_dec(partName, (u8*)((picLoadAddr>>11)<<11), itemSz + (rdOff & 0x7ff),
+                                (u8*)((picLoadAddr>>11)<<11), itemSz + (rdOff & 0x7ff), rdOffAlign);
+#endif
                         debugP("pic sz 0x%x\n", itemSz);
                     }
 
@@ -1206,6 +1295,7 @@ static cmd_tbl_t cmd_imgread_sub[] = {
     U_BOOT_CMD_MKENT(dtb,    4, 0, do_image_read_dtb, "", ""),
     U_BOOT_CMD_MKENT(res,    3, 0, do_image_read_res, "", ""),
     U_BOOT_CMD_MKENT(pic,    4, 0, do_image_read_pic, "", ""),
+    U_BOOT_CMD_MKENT(part,   5, 0, do_image_read_part, "", ""),
 };
 
 static int do_image_read(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
@@ -1235,7 +1325,7 @@ static int do_image_read(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv
 
 U_BOOT_CMD(
    imgread,         //command name
-   5,               //maxargs
+   6,               //maxargs
    0,               //repeatable
    do_image_read,   //command function
    "Read the image from internal flash with actual size",           //description
@@ -1245,11 +1335,13 @@ U_BOOT_CMD(
    "imgread dtb     --- Read dtb in format IMAGE_FORMAT_ANDROID\n"
    "imgread res     --- Read image packed by 'Amlogic resource packer'\n"
    "imgread picture --- Read one picture from Amlogic logo"
+   "imgread part    --- Read partition"
    "    - e.g. \n"
    "        to read boot.img     from part boot     from flash: <imgread kernel boot loadaddr> \n"   //usage
    "        to read recovery.img from part recovery from flash: <imgread kernel recovery loadaddr $offset> \n"   //usage
    "        to read logo.img     from part logo     from flash: <imgread res    logo loadaddr> \n"   //usage
    "        to read one picture named 'bootup' from logo.img    from logo: <imgread pic logo bootup loadaddr> \n"   //usage
+   "        to read partition    from               from flash: <imgread part <part_name> <load_addr> <offset> <sz>> \n"   //usage
 );
 
 //[imgread pic] logo bootup $loadaddr_misc

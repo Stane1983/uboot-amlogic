@@ -9,11 +9,12 @@
 #include <string.h>
 #include <dma.h>
 #include <asm/io.h>
-#include <asm/arch/regs.h>
-#include <asm/arch/register.h>
-#include <asm/arch/secure_apb.h>
+
+#include <asm/amlogic/arch/regs.h>
+#include <asm/amlogic/arch/secure_apb.h>
 
 // #define MKL_DMA_TEST
+//#define DEBUG             (0)
 
 /* kl offset */
 #define KL_PENDING_OFFSET   (31)
@@ -106,12 +107,13 @@ int aml_mkl_run(struct amlkl_params *param)
 		return KL_STATUS_ERROR_BAD_PARAM;
 
 	pu = &param->usage;
+#if DEBUG
 	printf("kth:%d, levels:%d, kl_algo:%d, func_id:%d, mrk:%d\n",
 			param->kt_handle, param->levels, param->kl_algo, param->func_id,
 			param->mrk_cfg_index);
 	printf("kt usage, crypto:%d, algo:%d, uid:%d\n",
 			pu->crypto, pu->algo, pu->uid);
-
+#endif
 	if (pu->uid & ~KL_USERID_MASK ||
 		(pu->uid > AML_KT_USER_M2M_5 && pu->uid < AML_KT_USER_TSD) ||
 		(pu->uid > AML_KT_USER_TSE && pu->uid < KL_USERID_MASK) ||
@@ -171,33 +173,37 @@ int aml_mkl_run(struct amlkl_params *param)
 
 	/* 7. Get final status */
 	ret = (ret >> KL_STATUS_OFFSET) & KL_STATUS_MASK;
-
+	/* coverity[dead_error_condition:SUPPRESS] */
 	switch (ret) {
 	case 0:
 		break;
 	case 1:
 		printf("Permission Denied Error code: %d\n", ret);
 		return KL_STATUS_ERROR_BAD_STATE;
+	/* coverity[dead_error_condition:SUPPRESS] */
 	case 2:
+	/* coverity[dead_error_condition:SUPPRESS] */
 	case 3:
+	/* coverity[dead_error_begin:SUPPRESS] */
 	default:
 		printf("OTP or KL Error code: %d\n", ret);
 		return KL_STATUS_ERROR_BAD_STATE;
 	}
-
+#if DEBUG
 	printf("aml key ladder run success\n");
-
+#endif
 	return ret;
 }
 
 #ifdef MKL_DMA_TEST
+#include <command.h>
 #include <amlogic/aml_crypto.h>
 
 static int mkl_test_dvgk(void)
 {
 	int ret = 0;
 	struct amlkl_params kl_param;
-	uint32_t dvgk_test_key_slot = 77; //only test slot
+	uint32_t dvgk_test_key_slot = 31; //only test slot
 	uint8_t dst[16] = {0};
 
 	/* dvgk_func_0_bs_0_tsep_0.test.vector.txt */

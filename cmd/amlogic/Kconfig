@@ -187,6 +187,21 @@ config CMD_JTAG
 	depends on !AML_DISABLE_DEV_CMDS
 	help
 	 CMD_JTAG support.
+
+config PARTITION_ENCRYPTION
+	bool "support partition encryption"
+	depends on AML_MKL
+	default n
+	help
+	  support partition encryption
+
+config PARTITION_ENCRYPTION_LOCAL
+	bool "support partition local encryption"
+	depends on PARTITION_ENCRYPTION && AES && MD5
+	default n
+	help
+	  support partition local encryption
+
 #prduct mode end<----
 
 endmenu
