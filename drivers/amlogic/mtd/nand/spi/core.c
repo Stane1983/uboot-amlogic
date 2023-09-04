@@ -1266,7 +1266,7 @@ int spinand_add_partitions(struct mtd_info *mtd,
 			}
 		}
 		off = boot_entry[BOOT_AREA_DEVFIP].offset + boot_entry[BOOT_AREA_DEVFIP].size
-			* g_ssp.boot_backups;
+			* CONFIG_NAND_TPL_COPY_NUM;
 		parts_nm = &temp[part_num - nbparts];
 	} else
 		parts_nm = &temp[1];
