@@ -406,6 +406,12 @@ config S1A_BG209
 	help
 		Select S1A BG209 config
 
+config S1A_BG209_S805C1ENG
+	bool "S1A_BG209 S805C1ENG"
+	select TARGET_S1A_BG209_S805C1ENG
+	help
+		Select S1A BG209 S805C1ENG config
+
 endchoice
 
 config TARGET_S1A_SKT
@@ -419,6 +425,10 @@ config TARGET_S1A_BG201
 config TARGET_S1A_BG209
 	bool "S1A BG209 board"
 	depends on S1A_BG209
+
+config TARGET_S1A_BG209_S805C1ENG
+	bool "S1A BG209 S805C1ENG board"
+	depends on S1A_BG209_S805C1ENG
 
 endif
 
@@ -439,3 +449,5 @@ source "board/amlogic/s1a_skt/Kconfig"
 source "board/amlogic/s1a_bg201/Kconfig"
 
 source "board/amlogic/s1a_bg209/Kconfig"
+
+source "board/amlogic/s1a_bg209_s805c1eng/Kconfig"

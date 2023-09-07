@@ -1,0 +1,27 @@
+if TARGET_S1A_BG209_S805C1ENG
+
+config SYS_SOC
+	default "s1a"
+
+config SYS_BOARD
+	default "s1a_bg209_s805c1eng"
+
+config SYS_CONFIG_NAME
+	default "s1a_bg209_s805c1eng"
+
+config DTB_BIND_KERNEL
+    bool "load dtb from boot part but not flash rsv"
+    default n
+
+config CMD_PLLTEST
+	bool "support plltest command"
+	default n
+	help
+	  support plltest command
+
+config AML_REBOOT
+       bool "reboot cmd"
+       default y
+       help
+         support uboot reboot cmd
+endif
