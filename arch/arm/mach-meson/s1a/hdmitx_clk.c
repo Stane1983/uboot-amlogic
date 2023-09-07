@@ -91,6 +91,21 @@ static void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
 		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
+	case 5035000:
+		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x030004d1);
+		hd21_write_reg(ANACTRL_HDMIPLL_CTRL1, 0x00019555);
+		hd21_write_reg(ANACTRL_HDMIPLL_CTRL2, 0x01000000);
+		hd21_write_reg(ANACTRL_HDMIPLL_CTRL3, 0x40218000);
+		hd21_write_reg(ANACTRL_HDMIPLL_CTRL4, 0x05501000);
+		hd21_write_reg(ANACTRL_HDMIPLL_CTRL5, 0x00150500);
+		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50450000);
+		usleep_range(10, 20);
+		hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL0, 0x1, 28, 1);
+		usleep_range(10, 20);
+		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x330004d1);
+		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
+		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		break;
 	case 4870000:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x030004ca);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL1, 0x1d580);
@@ -202,6 +217,21 @@ static void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 		hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL0, 0x1, 28, 1);
 		usleep_range(10, 20);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x33000487);
+		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
+		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
+		break;
+	case 3021000:
+		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x0300047d);
+		hd21_write_reg(ANACTRL_HDMIPLL_CTRL1, 0x0001c000);
+		hd21_write_reg(ANACTRL_HDMIPLL_CTRL2, 0x01000000);
+		hd21_write_reg(ANACTRL_HDMIPLL_CTRL3, 0x40218000);
+		hd21_write_reg(ANACTRL_HDMIPLL_CTRL4, 0x05501000);
+		hd21_write_reg(ANACTRL_HDMIPLL_CTRL5, 0x00150500);
+		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50450000);
+		usleep_range(10, 20);
+		hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL0, 0x1, 28, 1);
+		usleep_range(10, 20);
+		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x3300047d);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, 0x50440000);
 		pr_info("HPLL: 0x%x\n", hd21_read_reg(ANACTRL_HDMIPLL_CTRL0));
 		break;
@@ -893,6 +923,9 @@ static struct hw_enc_clk_val_group setting_enc_clk_val_24[] = {
 	  HDMI_101_4096x2160p50_256x135,
 	  HDMI_VIC_END},
 		5940000, 1, 1, 2, VID_PLL_DIV_5, 1, 1, 1, -1},
+	{{HDMI_1_640x480p60_4x3,
+	  HDMI_VIC_END},
+		4028000, 4, 4, 2, VID_PLL_DIV_5, 1, 1, 1, 1, 1},
 };
 
 /* For colordepth 10bits */
@@ -943,6 +976,9 @@ static struct hw_enc_clk_val_group setting_enc_clk_val_30[] = {
 	  HDMI_101_4096x2160p50_256x135,
 	  HDMI_VIC_END},
 		3712500, 1, 1, 2, VID_PLL_DIV_6p25, 1, 1, 1, 1, 1},
+	{{HDMI_1_640x480p60_4x3,
+	  HDMI_VIC_END},
+		5035000, 4, 4, 2, VID_PLL_DIV_6p25, 1, 1, 1, 1, 1},
 };
 
 /* For colordepth 12bits */
@@ -993,6 +1029,9 @@ static struct hw_enc_clk_val_group setting_enc_clk_val_36[] = {
 	  HDMI_96_3840x2160p50_16x9,
 	  HDMI_VIC_END},
 		4455000, 1, 1, 2, VID_PLL_DIV_7p5, 1, 1, 1, 1, 1},
+	{{HDMI_1_640x480p60_4x3,
+	  HDMI_VIC_END},
+		3021000, 2, 4, 2, VID_PLL_DIV_7p5, 1, 1, 1, 1, 1},
 };
 
 static void s1a_reset_div_clk(struct hdmitx_dev *hdev)
