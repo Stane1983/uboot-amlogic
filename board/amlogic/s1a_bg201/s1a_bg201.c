@@ -190,7 +190,6 @@ int board_late_init(void)
 #endif
 	run_command("amlsecurecheck", 0);
 	run_command("update_tries", 0);
-	run_command("run storeargs", 0);
 	run_command("get_cpuid", 0);
 
 	emmc_quirks();
