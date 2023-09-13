@@ -293,25 +293,33 @@
 			status = "disabled";
 		};
 
-		i2c1: i2c@fe068000 {
+		i2c1: i2c@fe066400 {
 			compatible = "amlogic,meson-i2c";
-			reg = <0x0 0xfe068000 0x0 0x24>;
+			reg = <0x0 0xfe066400 0x0 0x24>;
 			#address-cells = <1>;
 			#size-cells = <0>;
 			status = "disabled";
 		};
 
-		i2c2: i2c@fe06a000 {
+		i2c2: i2c@fe066800 {
 			compatible = "amlogic,meson-i2c";
-			reg = <0x0 0xfe06a000 0x0 0x24>;
+			reg = <0x0 0xfe066800 0x0 0x24>;
 			#address-cells = <1>;
 			#size-cells = <0>;
 			status = "disabled";
 		};
 
-		i2c3: i2c@fe06c000 {
+		i2c3: i2c@fe066c00 {
 			compatible = "amlogic,meson-i2c";
-			reg = <0x0 0xfe06c000 0x0 0x24>;
+			reg = <0x0 0xfe066c00 0x0 0x24>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
+		i2c4: i2c@fe067000 {
+			compatible = "amlogic,meson-i2c";
+			reg = <0x0 0xfe067000 0x0 0x24>;
 			#address-cells = <1>;
 			#size-cells = <0>;
 			status = "disabled";
