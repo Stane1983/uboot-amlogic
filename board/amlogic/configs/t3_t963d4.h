@@ -73,52 +73,59 @@
 #define CONFIG_SYS_MAXARGS  64
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	CONFIG_EXTRA_ENV_SETTINGS_BASE \
-        "silent=1\0"\
-	"systemsuspend_switch=0\0"\
-	"ddr_resume=0\0"\
-        "otg_device=1\0" \
-        "panel_type=lvds_1\0" \
-        "lcd_ctrl=0x00000000\0" \
-        "lcd_debug=0x00000000\0" \
-        "outputmode=1080p60hz\0" \
-	"hdmimode=none\0" \
-        "cvbsmode=576cvbs\0" \
-        "vout_init=disable\0" \
-        "model_name=FHD2HDMI\0" \
-	"connector_type=LVDS-A\0" \
-        "display_width=1920\0" \
-        "display_height=1080\0" \
-        "display_bpp=16\0" \
-        "display_color_index=16\0" \
-        "display_layer=osd0\0" \
-        "display_color_fg=0xffff\0" \
-        "display_color_bg=0\0" \
-        "dtb_mem_addr=0x01000000\0" \
-        "fb_width=1920\0" \
-        "fb_height=1080\0" \
-        "frac_rate_policy=1\0" \
-        "usb_burning=" CONFIG_USB_TOOL_ENTRY "\0" \
-        "fdt_high=0x20000000\0"\
-        "sdcburncfg=aml_sdc_burn.ini\0"\
-        "EnableSelinux=enforcing\0" \
-        "recovery_part=recovery\0"\
-	"lock=10101000\0"\
-        "cvbs_drv=0\0"\
-        "osd_reverse=0\0"\
-        "video_reverse=0\0"\
-	"board=t963d4\0"\
-	"upgrade_key_flag=2\0"\
-	"suspend=off\0"\
-	"powermode=on\0"\
-	"ffv_wake=off\0"\
-	"ffv_freeze=off\0"\
-		"edid_14_dir=/odm/etc/tvconfig/hdmi/port1_14.bin\0" \
-		"edid_20_dir=/odm/etc/tvconfig/hdmi/port1_20.bin\0" \
-		"edid_select=0\0" \
-		"port_map=0x4321\0" \
-		"cec_fun=0x2F\0" \
-		"logic_addr=0x0\0" \
-		"cec_ac_wakeup=1\0" \
+		"silent=0\0"\
+		"systemsuspend_switch=1\0"\
+		"ddr_resume=0\0"\
+		"otg_device=1\0" \
+		"panel_type=lvds_1\0" \
+		"lcd_ctrl=0x00000000\0" \
+		"lcd_debug=0x00000000\0" \
+		"outputmode=1080p60hz\0" \
+		"hdmimode=none\0" \
+		"connector_type=LVDS-A\0" \
+		"cvbsmode=576cvbs\0" \
+		"vout_init=disable\0" \
+		"vout_projector_mux=disable\0" \
+		"model_name=FHD2HDMI\0" \
+		"gamma=0\0" \
+		"display_width=1920\0" \
+		"display_height=1080\0" \
+		"display_bpp=16\0" \
+		"display_color_index=16\0" \
+		"display_layer=osd0\0" \
+		"display_color_fg=0xffff\0" \
+		"display_color_bg=0\0" \
+		"dtb_mem_addr=0x01000000\0" \
+		"fb_width=1280\0" \
+		"fb_height=720\0" \
+		"frac_rate_policy=1\0" \
+		"usb_burning=" CONFIG_USB_TOOL_ENTRY "\0" \
+		"fdt_high=0x20000000\0"\
+		"sdcburncfg=aml_sdc_burn.ini\0"\
+		"EnableSelinux=enforcing\0" \
+		"recovery_part=recovery\0"\
+		"lock=10101000\0"\
+		"cvbs_drv=0\0"\
+		"osd_reverse=0\0"\
+		"reverse_ctrl=0\0"\
+		"video_reverse=0\0"\
+	"board=t950s\0"\
+		"suspend=off\0"\
+		"powermode=on\0"\
+		"ffv_wake=off\0"\
+		"ffv_freeze=off\0"\
+        "edid_14_dir=/odm/etc/tvconfig/hdmi/port_14.bin\0" \
+        "edid_20_dir=/odm/etc/tvconfig/hdmi/port_20.bin\0" \
+        "edid_14_dir_dynamic=/odm_ext/etc/tvconfig/hdmi/port_14.bin\0" \
+        "edid_20_dir_dynamic=/odm_ext/etc/tvconfig/hdmi/port_20.bin\0" \
+        "edid_select=0\0" \
+        "port_map=0x4321\0" \
+        "cec_fun=0x2F\0" \
+        "logic_addr=0x0\0" \
+        "cec_ac_wakeup=1\0" \
+        "Irq_check_en=0\0"\
+        "fs_type=""rootfstype=ramfs""\0"\
+	"disable_ir=0\0"\
 	"check_connector_type="\
 		"setenv bootconfig ${bootconfig} androidboot.connector_type=${connector_type};"\
 		"\0"\
@@ -419,9 +426,6 @@
 /* osd */
 #define OSD_SCALE_ENABLE
 #define AML_OSD_HIGH_VERSION
-<<<<<<< HEAD:board/amlogic/configs/t3_t963d4.h
-#define AML_T7_DISPLAY
-=======
 #define AML_OSD_TXHD2_DISPLAY
 
 /* DISPLAY */
@@ -431,7 +435,6 @@
 #define CONFIG_AML_OSD 1
 #define CONFIG_OSD_SCALE_ENABLE 1
 #endif
->>>>>>> 4f49cf6260f (osd: logo display on osd2 when keystone enable [1/1]):board/amlogic/configs/txhd2_skt.h
 
 /* USB
  * Enable CONFIG_MUSB_HCD for Host functionalities MSC, keyboard
