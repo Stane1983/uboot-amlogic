@@ -381,6 +381,12 @@ config AMLOGIC_KEY_TYPE
         string "S1A AMLOGIC KEY TYPE"
         default "dev-keys"
 
+config BOOT_DEVICE_DFU_ROOT_PUBKEY_INDEX
+        int "S1A BOOT DEVICE DFU ROOT PUBKEY INDEX"
+        default 3
+        help
+        BOOT DEVICE DFU ROOT PUBKEY INDEX only support 0~3.
+
 config BL30_SELECT
 	string "S1A BL30 board config"
 	default "s1a_skt"
