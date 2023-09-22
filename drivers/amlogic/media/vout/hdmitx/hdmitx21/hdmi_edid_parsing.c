@@ -612,7 +612,8 @@ static void hdmitx_edid_parse_hdmi14(struct rx_cap *prxcap,
 		prxcap->ColorDeepSupport);
 	if (count > 5)
 		set_vsdb_dc_cap(prxcap);
-	prxcap->Max_TMDS_Clock1 = count > 6 ? (unsigned long)blockbuf[offset + 6] : 0;
+	prxcap->Max_TMDS_Clock1 =
+		(count > 6) ? (unsigned long)blockbuf[offset + 6] : DEFAULT_MAX_TMDS_CLK;
 	if (count > 7) {
 		tmp = blockbuf[offset + 7];
 		idx = offset + 8;
@@ -802,7 +803,7 @@ static int hdmitx_edid_block_parse(struct rx_cap *prxcap,
 /* Just record VFPDB offset address, call edid_parsingvfpdb() after DTD
  * parsing, in case that
  * SVR >=129 and SVR <=144, Interpret as the Kth DTD in the EDID,
- * where K = SVR – 128 (for K=1 to 16)
+ * where K = SVR - 128 (for K=1 to 16)
  */
 					vfpdb_offset = &blockbuf[offset];
 					break;
@@ -894,7 +895,7 @@ static void check_dv_truly_support(struct rx_cap *prxcap, struct dv_info *dv)
 		} else {
 			/* Default min is 74.25 / 5 */
 			if (prxcap->Max_TMDS_Clock1 < 0xf)
-				prxcap->Max_TMDS_Clock1 = 0x1e;
+				prxcap->Max_TMDS_Clock1 = DEFAULT_MAX_TMDS_CLK;
 			max_tmds_clk = prxcap->Max_TMDS_Clock1 * 5;
 		}
 		if (dv->ver == 0)
@@ -1233,7 +1234,7 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 	} else {
 		/* Default min is 74.25 / 5 */
 		if (prxcap->Max_TMDS_Clock1 < 0xf)
-			prxcap->Max_TMDS_Clock1 = 0x1e;
+			prxcap->Max_TMDS_Clock1 = DEFAULT_MAX_TMDS_CLK;
 		rx_max_tmds_clk = prxcap->Max_TMDS_Clock1 * 5;
 	}
 
