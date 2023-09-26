@@ -111,6 +111,7 @@
 	CONFIG_EXTRA_ENV_SETTINGS_BASE \
 		"silent=1\0"\
 		"loadaddr_kernel=0x01080000\0"\
+		"car_mem_addr=0x80001100\0" \
 		"dv_fw_addr=0xa00000\0"\
 		"otg_device=1\0" \
 		"lcd_ctrl=0x00000000\0" \

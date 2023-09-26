@@ -42,6 +42,7 @@
 #include <amlogic/storage.h>
 #include <asm/arch/pwr_ctrl.h>
 #include <amlogic/board.h>
+#include <amlogic/rvc_interface.h>
 
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -176,6 +177,7 @@ int board_boot_freertos(void)
 	printf("freertos run addr:0x%08llx size=%d\n", loadaddr, imagesize);
 	store_read(partName, 0, imagesize + sizeof(imghd), (unsigned char *)loadaddr);
 	memmove((unsigned char *)loadaddr, (unsigned char *)(loadaddr + sizeof(imghd)), imagesize);
+	run_command("read_car_params ${car_mem_addr}", 0);
 
 	flush_cache(loadaddr, imagesize);
 	power_core_for_freetos(0x01, loadaddr);
@@ -265,7 +267,7 @@ void board_power_domain_on(void)
 	pwr_ctrl_psci_smc(PM_VPU_HDMI, PWR_ON);
 	pwr_ctrl_psci_smc(PM_HDMIRX, PWR_ON);
 	// spicc1
-+	pwr_ctrl_psci_smc(PM_SPICC1, PWR_ON);
+	//pwr_ctrl_psci_smc(PM_SPICC1, PWR_ON);
 }
 
 int board_late_init(void)
@@ -273,6 +275,10 @@ int board_late_init(void)
 	printf("board late init\n");
 	aml_board_late_init_front(NULL);
 
+	media_clock_init();
+
+	board_power_domain_on();
+	board_boot_freertos();
 #ifdef CONFIG_AML_VPU
 	vpu_probe();
 #endif
