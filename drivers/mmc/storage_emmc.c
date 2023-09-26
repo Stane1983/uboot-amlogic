@@ -64,12 +64,6 @@ static int storage_range_check(struct mmc *mmc,char const *part_name,loff_t offs
 			printf("error partition name!\n");
 			return 1;
 		}
-		if ((part_info->mask_flags & PART_PROTECT_FLAG) &&
-			!(info_disprotect & DISPROTECT_KEY)) {
-				printf("%s is protected, pls open it in Dts\n",
-				part_info->name);
-				return 1;
-		}
 
 		*off = part_info->offset+offset;
 		if (offset >= part_info->size) {
