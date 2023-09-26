@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2008, Freescale Semiconductor, Inc
  * Copyright 2020 NXP
@@ -2306,7 +2305,6 @@ static int mmc_startup_v4(struct mmc *mmc)
 		mmc->ext_csd = ext_csd;
 #else
 	ALLOC_CACHE_ALIGN_BUFFER(u8, ext_csd, MMC_MAX_BLOCK_LEN);
-
 	if (IS_SD(mmc) || (mmc->version < MMC_VERSION_4))
 		return 0;
 

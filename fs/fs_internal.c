@@ -63,7 +63,6 @@ int fs_devread(struct blk_desc *blk, struct disk_partition *partition,
 
 	if (block_len == 0) {
 		ALLOC_CACHE_ALIGN_BUFFER(u8, p, blk->blksz);
-
 		block_len = blk->blksz;
 		blk_dread(blk, partition->start + sector, 1,
 			  (void *)p);
