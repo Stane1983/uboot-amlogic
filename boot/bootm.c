@@ -32,6 +32,7 @@
 #include <command.h>
 #include <bootm.h>
 #include <image.h>
+#include <version.h>
 
 #define MAX_CMDLINE_SIZE	SZ_4K
 
@@ -762,6 +763,13 @@ int do_bootm_states(struct cmd_tbl *cmdtp, int flag, int argc,
 
 	if (!ret && (states & BOOTM_STATE_FINDOTHER))
 		ret = bootm_find_other(cmdtp, flag, argc, argv);
+
+#if defined(CONFIG_MDUMP_COMPRESS) || \
+	((defined CONFIG_SUPPORT_BL33Z) && \
+	(defined CONFIG_FULL_RAMDUMP))
+	extern void check_ramdump(void);
+	check_ramdump();
+#endif
 
 	/* Load the OS */
 	if (!ret && (states & BOOTM_STATE_LOADOS)) {

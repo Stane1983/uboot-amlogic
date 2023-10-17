@@ -134,6 +134,9 @@ struct mm_region {
 	u64 attrs;
 };
 
+#ifdef CONFIG_FULL_RAMDUMP
+void load_bl33z(void);
+#endif
 extern struct mm_region *mem_map;
 void setup_pgtables(void);
 u64 get_tcr(u64 *pips, u64 *pva_bits);

@@ -9,6 +9,7 @@
 #include <linux/linkage.h>
 #include <asm/macro.h>
 #include <asm/armv8/mmu.h>
+#include <version.h>
 
 /*************************************************************************
  *
@@ -62,6 +63,10 @@ _bss_end_ofs:
 
 reset:
 	/* Allow the board to save important registers */
+#if (defined CONFIG_SUPPORT_BL33Z) && (defined CONFIG_FULL_RAMDUMP)
+	/* jump to bl33z */
+	bl	load_bl33z
+#endif
 	b	save_boot_params
 .globl	save_boot_params_ret
 save_boot_params_ret:

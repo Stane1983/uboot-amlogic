@@ -14,7 +14,8 @@ obj-$(CONFIG_AUTOBOOT) += autoboot.o
 obj-$(CONFIG_AML_STORAGE) += amlogic/partitions.o
 obj-$(CONFIG_AML_STORAGE) += amlogic/aml_dt.o
 
-ifneq ($(call ifdef_any_of,CONFIG_MDUMP_COMPRESS CONFIG_SUPPORT_BL33Z),)
+ifdef_any_of = $(filter-out undefined,$(foreach v,$(1),$(origin $(v))))
+ifneq ($(call ifdef_any_of,CONFIG_MDUMP_COMPRESS CONFIG_FULL_RAMDUMP),)
 obj-y += amlogic/ramdump.o
 endif
 

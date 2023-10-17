@@ -15,6 +15,7 @@
 #include <asm/global_data.h>
 #include <asm/system.h>
 #include <asm/armv8/mmu.h>
+#include <asm/sections.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -805,3 +806,14 @@ void __weak enable_caches(void)
 	icache_enable();
 	dcache_enable();
 }
+
+#ifdef CONFIG_FULL_RAMDUMP
+void load_bl33z(void)
+{
+	unsigned long bl33z_entry = (unsigned long)_end;
+	typedef unsigned long (*__FUNC_TPL)(void);
+	__FUNC_TPL func_tpl = (__FUNC_TPL)bl33z_entry;
+
+	func_tpl();
+}
+#endif
