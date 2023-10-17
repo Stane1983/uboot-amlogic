@@ -309,5 +309,7 @@
 
 #define BL32_SHARE_MEM_SIZE  0x800000
 
+#define CONFIG_FULL_RAMDUMP
+
 #endif
 

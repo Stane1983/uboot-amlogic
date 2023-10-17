@@ -20,6 +20,12 @@ static const unsigned char lzop_magic[] = {
 static bool _read_in_bootconfig(struct vendor_boot_img_hdr *boot_info, uint32_t ramdisk_size);
 
 #define ANDROID_IMAGE_DEFAULT_KERNEL_ADDR	0x10008000
+#define KERNEL_TEXT_OFFSET_32M			0x02108000
+#define BIG_TO_LITTLE(val) \
+		((((val) >> 24) & 0x000000FF) | \
+		(((val)  >>  8) & 0x0000FF00) | \
+		(((val)  <<  8) & 0x00FF0000) | \
+		(((val)  << 24) & 0xFF000000))
 
 #if (defined CONFIG_SUPPORT_BL33Z) && (defined CONFIG_FULL_RAMDUMP)
 #define KNLIMG_DEC_ADDR	0x1880000
@@ -125,6 +131,23 @@ static ulong android_image_get_kernel_addr(const  boot_img_hdr_t *hdr)
 	 * Otherwise, we will return the actual value set by the user.
 	 */
 #if (defined CONFIG_SUPPORT_BL33Z) && (defined CONFIG_FULL_RAMDUMP)
+	image_header_t *legacy_hdr = NULL;
+	unsigned int load_addr, entry_addr;
+
+	legacy_hdr = (image_header_t *)((ulong)hdr + hdr->page_size);
+	if (legacy_hdr->ih_load) {
+		load_addr  = BIG_TO_LITTLE(legacy_hdr->ih_load);
+		entry_addr = BIG_TO_LITTLE(legacy_hdr->ih_ep);
+		pr_info("legacy_hdr uImage: load_addr=0x%08x, entry_addr=0x%08x\n",
+				load_addr, entry_addr);
+		if (legacy_hdr && load_addr == KERNEL_TEXT_OFFSET_32M) {
+			pr_info("set kernel addr with uImage hdr load_addr.\n");
+			return KERNEL_TEXT_OFFSET_32M;
+		}
+	} else {
+		pr_info("It is not legacy_hdr.\n");
+	}
+
 	return KNLIMG_DEC_ADDR;
 #else
 	if (hdr->kernel_addr == ANDROID_IMAGE_DEFAULT_KERNEL_ADDR)
