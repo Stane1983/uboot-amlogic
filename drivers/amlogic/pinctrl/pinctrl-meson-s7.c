@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 /*
- * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ * Copyright (c) 2023 Amlogic, Inc. All rights reserved.
  */
 
 #include <common.h>
@@ -265,96 +265,103 @@ static const unsigned int pwm_e_z_pins[]		= { GPIOZ_6 };
 static const unsigned int gen_clk_z9_pins[]		= { GPIOZ_9 };
 static const unsigned int gen_clk_z12_pins[]		= { GPIOZ_12 };
 
+/* Bank CC func1 */
+static const unsigned int i2cm_a_sda_pins[]		= { GPIO_CC1 };
+static const unsigned int i2cm_a_scl_pins[]		= { GPIO_CC2 };
+
 static struct meson_pmx_group meson_s7_periphs_groups[] = {
-	GPIO_GROUP(GPIOE_0, 0),
-	GPIO_GROUP(GPIOE_1, 0),
+	GPIO_GROUP(GPIOE_0,		0),
+	GPIO_GROUP(GPIOE_1,		0),
 
-	GPIO_GROUP(GPIOB_0, 0),
-	GPIO_GROUP(GPIOB_1, 0),
-	GPIO_GROUP(GPIOB_2, 0),
-	GPIO_GROUP(GPIOB_3, 0),
-	GPIO_GROUP(GPIOB_4, 0),
-	GPIO_GROUP(GPIOB_5, 0),
-	GPIO_GROUP(GPIOB_6, 0),
-	GPIO_GROUP(GPIOB_7, 0),
-	GPIO_GROUP(GPIOB_8, 0),
-	GPIO_GROUP(GPIOB_9, 0),
-	GPIO_GROUP(GPIOB_10, 0),
-	GPIO_GROUP(GPIOB_11, 0),
-	GPIO_GROUP(GPIOB_12, 0),
-	GPIO_GROUP(GPIOB_13, 0),
+	GPIO_GROUP(GPIOB_0,		0),
+	GPIO_GROUP(GPIOB_1,		0),
+	GPIO_GROUP(GPIOB_2,		0),
+	GPIO_GROUP(GPIOB_3,		0),
+	GPIO_GROUP(GPIOB_4,		0),
+	GPIO_GROUP(GPIOB_5,		0),
+	GPIO_GROUP(GPIOB_6,		0),
+	GPIO_GROUP(GPIOB_7,		0),
+	GPIO_GROUP(GPIOB_8,		0),
+	GPIO_GROUP(GPIOB_9,		0),
+	GPIO_GROUP(GPIOB_10,		0),
+	GPIO_GROUP(GPIOB_11,		0),
+	GPIO_GROUP(GPIOB_12,		0),
+	GPIO_GROUP(GPIOB_13,		0),
 
-	GPIO_GROUP(GPIOC_0, 0),
-	GPIO_GROUP(GPIOC_1, 0),
-	GPIO_GROUP(GPIOC_2, 0),
-	GPIO_GROUP(GPIOC_3, 0),
-	GPIO_GROUP(GPIOC_4, 0),
-	GPIO_GROUP(GPIOC_5, 0),
-	GPIO_GROUP(GPIOC_6, 0),
-	GPIO_GROUP(GPIOC_7, 0),
+	GPIO_GROUP(GPIOC_0,		0),
+	GPIO_GROUP(GPIOC_1,		0),
+	GPIO_GROUP(GPIOC_2,		0),
+	GPIO_GROUP(GPIOC_3,		0),
+	GPIO_GROUP(GPIOC_4,		0),
+	GPIO_GROUP(GPIOC_5,		0),
+	GPIO_GROUP(GPIOC_6,		0),
+	GPIO_GROUP(GPIOC_7,		0),
 
-	GPIO_GROUP(GPIOD_0, 0),
-	GPIO_GROUP(GPIOD_1, 0),
-	GPIO_GROUP(GPIOD_2, 0),
-	GPIO_GROUP(GPIOD_3, 0),
-	GPIO_GROUP(GPIOD_4, 0),
-	GPIO_GROUP(GPIOD_5, 0),
-	GPIO_GROUP(GPIOD_6, 0),
-	GPIO_GROUP(GPIOD_7, 0),
-	GPIO_GROUP(GPIOD_8, 0),
-	GPIO_GROUP(GPIOD_9, 0),
-	GPIO_GROUP(GPIOD_10, 0),
-	GPIO_GROUP(GPIOD_11, 0),
+	GPIO_GROUP(GPIOD_0,		0),
+	GPIO_GROUP(GPIOD_1,		0),
+	GPIO_GROUP(GPIOD_2,		0),
+	GPIO_GROUP(GPIOD_3,		0),
+	GPIO_GROUP(GPIOD_4,		0),
+	GPIO_GROUP(GPIOD_5,		0),
+	GPIO_GROUP(GPIOD_6,		0),
+	GPIO_GROUP(GPIOD_7,		0),
+	GPIO_GROUP(GPIOD_8,		0),
+	GPIO_GROUP(GPIOD_9,		0),
+	GPIO_GROUP(GPIOD_10,		0),
+	GPIO_GROUP(GPIOD_11,		0),
 
-	GPIO_GROUP(GPIOH_0, 0),
-	GPIO_GROUP(GPIOH_1, 0),
-	GPIO_GROUP(GPIOH_2, 0),
-	GPIO_GROUP(GPIOH_3, 0),
-	GPIO_GROUP(GPIOH_4, 0),
-	GPIO_GROUP(GPIOH_5, 0),
-	GPIO_GROUP(GPIOH_6, 0),
-	GPIO_GROUP(GPIOH_7, 0),
-	GPIO_GROUP(GPIOH_8, 0),
-	GPIO_GROUP(GPIOH_9, 0),
-	GPIO_GROUP(GPIOH_10, 0),
-	GPIO_GROUP(GPIOH_11, 0),
+	GPIO_GROUP(GPIOH_0,		0),
+	GPIO_GROUP(GPIOH_1,		0),
+	GPIO_GROUP(GPIOH_2,		0),
+	GPIO_GROUP(GPIOH_3,		0),
+	GPIO_GROUP(GPIOH_4,		0),
+	GPIO_GROUP(GPIOH_5,		0),
+	GPIO_GROUP(GPIOH_6,		0),
+	GPIO_GROUP(GPIOH_7,		0),
+	GPIO_GROUP(GPIOH_8,		0),
+	GPIO_GROUP(GPIOH_9,		0),
+	GPIO_GROUP(GPIOH_10,		0),
+	GPIO_GROUP(GPIOH_11,		0),
 
-	GPIO_GROUP(GPIOX_0, 0),
-	GPIO_GROUP(GPIOX_1, 0),
-	GPIO_GROUP(GPIOX_2, 0),
-	GPIO_GROUP(GPIOX_3, 0),
-	GPIO_GROUP(GPIOX_4, 0),
-	GPIO_GROUP(GPIOX_5, 0),
-	GPIO_GROUP(GPIOX_6, 0),
-	GPIO_GROUP(GPIOX_7, 0),
-	GPIO_GROUP(GPIOX_8, 0),
-	GPIO_GROUP(GPIOX_9, 0),
-	GPIO_GROUP(GPIOX_10, 0),
-	GPIO_GROUP(GPIOX_11, 0),
-	GPIO_GROUP(GPIOX_12, 0),
-	GPIO_GROUP(GPIOX_13, 0),
-	GPIO_GROUP(GPIOX_14, 0),
-	GPIO_GROUP(GPIOX_15, 0),
-	GPIO_GROUP(GPIOX_16, 0),
-	GPIO_GROUP(GPIOX_17, 0),
-	GPIO_GROUP(GPIOX_18, 0),
-	GPIO_GROUP(GPIOX_19, 0),
+	GPIO_GROUP(GPIOX_0,		0),
+	GPIO_GROUP(GPIOX_1,		0),
+	GPIO_GROUP(GPIOX_2,		0),
+	GPIO_GROUP(GPIOX_3,		0),
+	GPIO_GROUP(GPIOX_4,		0),
+	GPIO_GROUP(GPIOX_5,		0),
+	GPIO_GROUP(GPIOX_6,		0),
+	GPIO_GROUP(GPIOX_7,		0),
+	GPIO_GROUP(GPIOX_8,		0),
+	GPIO_GROUP(GPIOX_9,		0),
+	GPIO_GROUP(GPIOX_10,		0),
+	GPIO_GROUP(GPIOX_11,		0),
+	GPIO_GROUP(GPIOX_12,		0),
+	GPIO_GROUP(GPIOX_13,		0),
+	GPIO_GROUP(GPIOX_14,		0),
+	GPIO_GROUP(GPIOX_15,		0),
+	GPIO_GROUP(GPIOX_16,		0),
+	GPIO_GROUP(GPIOX_17,		0),
+	GPIO_GROUP(GPIOX_18,		0),
+	GPIO_GROUP(GPIOX_19,		0),
 
-	GPIO_GROUP(GPIOZ_0, 0),
-	GPIO_GROUP(GPIOZ_1, 0),
-	GPIO_GROUP(GPIOZ_2, 0),
-	GPIO_GROUP(GPIOZ_3, 0),
-	GPIO_GROUP(GPIOZ_4, 0),
-	GPIO_GROUP(GPIOZ_5, 0),
-	GPIO_GROUP(GPIOZ_6, 0),
-	GPIO_GROUP(GPIOZ_7, 0),
-	GPIO_GROUP(GPIOZ_8, 0),
-	GPIO_GROUP(GPIOZ_9, 0),
-	GPIO_GROUP(GPIOZ_10, 0),
-	GPIO_GROUP(GPIOZ_11, 0),
-	GPIO_GROUP(GPIOZ_12, 0),
+	GPIO_GROUP(GPIOZ_0,		0),
+	GPIO_GROUP(GPIOZ_1,		0),
+	GPIO_GROUP(GPIOZ_2,		0),
+	GPIO_GROUP(GPIOZ_3,		0),
+	GPIO_GROUP(GPIOZ_4,		0),
+	GPIO_GROUP(GPIOZ_5,		0),
+	GPIO_GROUP(GPIOZ_6,		0),
+	GPIO_GROUP(GPIOZ_7,		0),
+	GPIO_GROUP(GPIOZ_8,		0),
+	GPIO_GROUP(GPIOZ_9,		0),
+	GPIO_GROUP(GPIOZ_10,		0),
+	GPIO_GROUP(GPIOZ_11,		0),
+	GPIO_GROUP(GPIOZ_12,		0),
 
-	GPIO_GROUP(GPIO_TEST_N, 0),
+	GPIO_GROUP(GPIO_TEST_N,		0),
+
+	GPIO_GROUP(GPIO_CC1,		0),
+	GPIO_GROUP(GPIO_CC2,		0),
 
 	/* BANK E func1 */
 	GROUP(i2c0_sda,			1),
@@ -609,7 +616,11 @@ static struct meson_pmx_group meson_s7_periphs_groups[] = {
 
 	/* Bank Z func7 */
 	GROUP(gen_clk_z9,		7),
-	GROUP(gen_clk_z12,		7)
+	GROUP(gen_clk_z12,		7),
+
+	/* Bank CC func1 */
+	GROUP(i2cm_a_sda,		1),
+	GROUP(i2cm_a_scl,		1)
 };
 
 static const char * const gpio_periphs_groups[] = {
@@ -637,7 +648,9 @@ static const char * const gpio_periphs_groups[] = {
 	"GPIOZ_6", "GPIOZ_7", "GPIOZ_8", "GPIOZ_9", "GPIOZ_10",
 	"GPIOZ_11", "GPIOZ_12",
 
-	"GPIO_TEST_N"
+	"GPIO_TEST_N",
+
+	"GPIO_CC1", "GPIO_CC2"
 };
 
 static const char * const i2c0_groups[] = {
@@ -860,6 +873,10 @@ static const char * const tsin_a_groups[] = {
 	"tsin_a_clk", "tsin_a_sop", "tsin_a_valid", "tsin_a_din0"
 };
 
+static const char * const i2cm_a_groups[] = {
+	"i2cm_a_sda", "i2cm_a_scl"
+};
+
 static struct meson_pmx_func meson_s7_periphs_functions[] = {
 	FUNCTION(gpio_periphs),
 	FUNCTION(i2c0),
@@ -910,6 +927,7 @@ static struct meson_pmx_func meson_s7_periphs_functions[] = {
 	FUNCTION(sdio),
 	FUNCTION(i2c_slave),
 	FUNCTION(tsin_a),
+	FUNCTION(i2cm_a),
 };
 
 static struct meson_bank meson_s7_periphs_banks[] = {
@@ -930,18 +948,21 @@ static struct meson_bank meson_s7_periphs_banks[] = {
 		0x03,  0,  0x04,  0,  0x02, 0,  0x01, 0,  0x00, 0, 0x07, 0),
 	BANK_DS("_TEST_N", GPIO_TEST_N,    GPIO_TEST_N,
 		0x83,  0,  0x84,  0,  0x82, 0,  0x81,  0, 0x80, 0, 0x87, 0),
+	BANK_DS("CC", GPIO_CC1,  GPIO_CC2,
+		0x91,  2,  0x91,  4,  0x92, 0,  0x91, 0,  0x90, 0, 0x91, 6),
 };
 
 static struct meson_pmx_bank meson_s7_periphs_pmx_banks[] = {
-	/*      name        first        last        reg offset */
-	BANK_PMX("E",      GPIOE_0,     GPIOE_1,     0x12, 0),
-	BANK_PMX("B",      GPIOB_0,     GPIOB_13,    0x00, 0),
-	BANK_PMX("C",      GPIOC_0,     GPIOC_7,     0x9,  0),
-	BANK_PMX("D",      GPIOD_0,     GPIOD_11,    0x10, 0),
-	BANK_PMX("H",      GPIOH_0,     GPIOH_11,    0xb,  0),
-	BANK_PMX("X",      GPIOX_0,     GPIOX_19,    0x3,  0),
-	BANK_PMX("Z",      GPIOZ_0,     GPIOZ_12,    0x6,  0),
-	BANK_PMX("TEST_N", GPIO_TEST_N, GPIO_TEST_N, 0xf,  0)
+	/*     name	    first	 last        reg    offset */
+	BANK_PMX("E",      GPIOE_0,     GPIOE_1,     0x12,   0),
+	BANK_PMX("B",      GPIOB_0,     GPIOB_13,    0x00,   0),
+	BANK_PMX("C",      GPIOC_0,     GPIOC_7,     0x9,    0),
+	BANK_PMX("D",      GPIOD_0,     GPIOD_11,    0x10,   0),
+	BANK_PMX("H",      GPIOH_0,     GPIOH_11,    0xb,    0),
+	BANK_PMX("X",      GPIOX_0,     GPIOX_19,    0x3,    0),
+	BANK_PMX("Z",      GPIOZ_0,     GPIOZ_12,    0x6,    0),
+	BANK_PMX("TEST_N", GPIO_TEST_N, GPIO_TEST_N, 0xf,    0),
+	BANK_PMX("CC",     GPIO_CC1,    GPIO_CC2,    0x5,    24),
 };
 
 static struct meson_axg_pmx_data meson_s7_periphs_pmx_banks_data = {
@@ -961,7 +982,7 @@ static struct meson_pinctrl_data meson_s7_periphs_pinctrl_data = {
 	.groups		= meson_s7_periphs_groups,
 	.funcs		= meson_s7_periphs_functions,
 	.banks		= meson_s7_periphs_banks,
-	.num_pins	= 82,
+	.num_pins	= 84,
 	.num_groups	= ARRAY_SIZE(meson_s7_periphs_groups),
 	.num_funcs	= ARRAY_SIZE(meson_s7_periphs_functions),
 	.num_banks	= ARRAY_SIZE(meson_s7_periphs_banks),

@@ -44,11 +44,11 @@
 
 		gpio: bank@fe004000 {
 			reg = <0x0 0xfe004000 0x0 0x0064>,
-			      <0x0 0xfe0040c0 0x0 0x0220>;
+			      <0x0 0xfe0040c0 0x0 0x02cc>;
 			reg-names = "mux", "gpio";
 			gpio-controller;
 			#gpio-cells = <2>;
-			gpio-ranges = <&pinctrl_periphs 0 0 82>;
+			gpio-ranges = <&pinctrl_periphs 0 0 84>;
 		};
 	};
 
