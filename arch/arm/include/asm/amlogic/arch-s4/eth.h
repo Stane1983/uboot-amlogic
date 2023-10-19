@@ -31,6 +31,7 @@
 #if defined(CONFIG_AMLOGIC_ETH)
 #ifdef CONFIG_DM_ETH
 void __iomem *DM_network_interface_setup(struct udevice *dev);
+void DM_network_interface_setup_final(struct phy_device *phydev);
 #endif
 #endif
 

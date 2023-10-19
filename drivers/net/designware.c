@@ -1705,6 +1705,9 @@ int eqos_probe(struct udevice *dev)
 		return -ENODEV;
 	}
 
+#ifdef CONFIG_DM_ETH
+	DM_network_interface_setup_final(p_phydev);
+#endif
 	return 0;
 }
 

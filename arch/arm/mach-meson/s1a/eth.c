@@ -66,6 +66,7 @@ enum {
 };
 
 
+int internal_phy;
 unsigned int setup_amp;
 extern int soc_num;
 
@@ -182,6 +183,11 @@ static void setup_internal_phy(struct udevice *dev)
 		clrbits_le32(ANACTRL_PLL_GATE_DIS, (0x1 << 7));
 		clrbits_le32(ANACTRL_PLL_GATE_DIS, (0x1 << 19));
 	}
+	/*s1a analog amp*/
+	writel(0x00000023, eth_cfg.start + AML_ETH_PLL_CTL7);
+	writel(0x0000c001, eth_cfg.start + AML_ETH_PLL_CTL6);
+	writel(0x20220000, eth_cfg.start + AML_ETH_PLL_CTL5);
+	writel(0xaa820000, eth_cfg.start + AML_ETH_PLL_CTL3);
 }
 
 static void setup_external_phy(struct udevice *dev)
@@ -266,8 +272,6 @@ static void setup_external_phy(struct udevice *dev)
 
 void __iomem *DM_network_interface_setup(struct udevice *dev)
 {
-	int internal_phy = 0;
-
 	internal_phy = dev_read_u32_default(dev, "internal_phy", 1);
 	if (internal_phy < 0) {
 		debug("miss internal_phy item\n");
@@ -284,6 +288,49 @@ void __iomem *DM_network_interface_setup(struct udevice *dev)
 	printf("soc num %d\n", soc_num);
 	udelay(1000);
 	return 0;
+}
+
+static unsigned int return_write_val(struct phy_device *phy_dev, int rd_addr)
+{
+	int rd_data;
+	int rd_data_hi;
+
+	phy_write(phy_dev, MDIO_DEVAD_NONE, 20,
+			((1 << 15) | (1 << 10) | ((rd_addr & 0x1f) << 5)));
+	rd_data = phy_read(phy_dev, MDIO_DEVAD_NONE, 21);
+	rd_data_hi = phy_read(phy_dev, MDIO_DEVAD_NONE, 22);
+	rd_data = ((rd_data_hi & 0xffff) << 16) | rd_data;
+
+	return rd_data;
+}
+
+static unsigned int phy_tst_write(struct phy_device *phy_dev, unsigned int wr_addr,
+				unsigned int wr_data)
+{
+	phy_write(phy_dev, MDIO_DEVAD_NONE, 20, 0x0000);
+	phy_write(phy_dev, MDIO_DEVAD_NONE, 20, 0x0400);
+	phy_write(phy_dev, MDIO_DEVAD_NONE, 20, 0x0000);
+	phy_write(phy_dev, MDIO_DEVAD_NONE, 20, 0x0400);
+
+	if (wr_addr <= 31) {
+		phy_write(phy_dev, MDIO_DEVAD_NONE, 23, (wr_data & 0xffff));
+		phy_write(phy_dev, MDIO_DEVAD_NONE, 20,
+			((1 << 14) | (1 << 10) | ((wr_addr << 0) & 0x1f)));
+		pr_info("write phy tstcntl [reg_%d] 0x%x, 0x%x\n",
+			wr_addr, wr_data, return_write_val(phy_dev, wr_addr));
+	} else {
+		pr_info("Invalid parameter\n");
+	}
+	return 0;
+}
+
+void DM_network_interface_setup_final(struct phy_device *phydev)
+{
+	if (internal_phy) {
+		phy_tst_write(phydev, 0x18, 0x8);
+		phy_tst_write(phydev, 0x16, 0x8400);
+		phy_tst_write(phydev, 0x15, 0x4408);
+	}
 }
 
 #endif

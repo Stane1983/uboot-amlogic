@@ -270,6 +270,9 @@ void __iomem *DM_network_interface_setup(struct udevice *dev)
 	return 0;
 }
 
+void DM_network_interface_setup_final(struct phy_device *phydev)
+{
+}
 #endif
 #endif
 
