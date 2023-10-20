@@ -71,6 +71,7 @@
 	"storeargs_hdmitx="\
 		"setenv bootargs ${bootargs} powermode=${powermode} "\
 		"lcd_ctrl=${lcd_ctrl} lcd_debug=${lcd_debug} "\
+		"dptx0_ctrl=${dptx0_ctrl} dptx1_ctrl=${dptx1_ctrl} "\
 		"outputmode=${outputmode} hdmitx=${cecconfig},${colorattribute};"\
 		"\0"\
 	"init_display_hdmitx="\
@@ -86,6 +87,8 @@
 	"lcd_ctrl=0x00000000\0" \
 	"lcd1_ctrl=0x00000000\0" \
 	"lcd2_ctrl=0x00000000\0" \
+	"dptx0_ctrl=0x00000000\0" \
+	"dptx1_ctrl=0x00000000\0" \
 	"outputmode=panel\0" \
 	"outputmode2=panel1\0" \
 	"outputmode3=1080p60hz\0" \
@@ -100,6 +103,7 @@
 		"vout2=${outputmode2},enable panel1_type=${panel1_type} "\
 		"vout3=${outputmode3},enable " \
 		"lcd1_ctrl=${lcd1_ctrl} panel2_type=${panel2_type} lcd2_ctrl=${lcd2_ctrl} "\
+		"dptx0_ctrl=${dptx0_ctrl} dptx1_ctrl=${dptx1_ctrl} "\
 		"hdr_policy=${hdr_policy} hdr_priority=${hdr_priority};"\
 		"\0"\
 	"init_display_hdmitx="\

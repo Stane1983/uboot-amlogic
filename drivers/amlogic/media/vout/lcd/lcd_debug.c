@@ -276,26 +276,20 @@ static void lcd_info_print_edp(struct lcd_config_s *pconf)
 		"max_link_rate         %u\n"
 		"training_mode         %u\n"
 		"edid_en               %u\n"
-		"dpcd_caps_en          %u\n"
 		"sync_clk_mode         %u\n"
 		"lane_count            %u\n"
 		"link_rate             %u\n"
 		"bit_rate              %llu\n"
-		"training_settings     %u\n"
-		"main_stream_enable    %u\n"
 		"phy_vswing            0x%x\n"
 		"phy_preem             0x%x\n\n",
 		pconf->control.edp_cfg.max_lane_count,
 		pconf->control.edp_cfg.max_link_rate,
 		pconf->control.edp_cfg.training_mode,
 		pconf->control.edp_cfg.edid_en,
-		pconf->control.edp_cfg.dpcd_caps_en,
 		pconf->control.edp_cfg.sync_clk_mode,
 		pconf->control.edp_cfg.lane_count,
 		pconf->control.edp_cfg.link_rate,
 		pconf->timing.bit_rate,
-		pconf->control.edp_cfg.training_settings,
-		pconf->control.edp_cfg.main_stream_enable,
 		pconf->control.edp_cfg.phy_vswing_preset,
 		pconf->control.edp_cfg.phy_preem_preset);
 	lcd_pinmux_info_print(pconf);

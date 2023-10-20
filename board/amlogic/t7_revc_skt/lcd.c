@@ -135,7 +135,7 @@ struct ext_lcd_config_s ext_lcd0_config[LCD_NUM_MAX] = {
 	/* clk_attr */
 	1, 0, 1, Rsv_val, Rsv_val, Rsv_val, Rsv_val, Rsv_val, Rsv_val, Rsv_val,
 	/* edp_attr */
-	2, 1, 0, 0, 0, 0, 0, 0, 0x5, 0x1,
+	0, 0, 0, 1, 0, 0, 0, 0, 0x5, 0x1,
 	NULL, NULL,
 	/* power step */
 	lcd0_power_on_step, lcd0_power_off_step,
@@ -354,7 +354,7 @@ struct ext_lcd_config_s ext_lcd1_config[LCD_NUM_MAX] = {
 	/* clk_attr */
 	1, 0, 1, Rsv_val, Rsv_val, Rsv_val, Rsv_val, Rsv_val, Rsv_val, Rsv_val,
 	/* edp_attr */
-	2, 1, 0, 0, 0, 0, 0, 0, 0x5, 0x1,
+	0, 0, 0, 1, 0, 0, 0, 0, 0x5, 0x1,
 	NULL, NULL,
 	/* power step */
 	lcd1_power_on_step, lcd1_power_off_step,

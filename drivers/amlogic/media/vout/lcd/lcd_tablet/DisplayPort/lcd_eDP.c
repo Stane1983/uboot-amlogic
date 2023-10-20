@@ -19,9 +19,10 @@
 
 void edp_tx_init(struct aml_lcd_drv_s *pdrv)
 {
-	unsigned char auxdata;
-	unsigned int offset;
-	int i, ret;
+	uint8_t auxdata;
+	uint16_t i = 0;
+	uint32_t offset;
+	int ret;
 	struct edp_config_s *eDP_cfg = &pdrv->config.control.edp_cfg;
 	struct dptx_EDID_s edp_edid1;
 	struct dptx_detail_timing_s *tm;
@@ -40,19 +41,18 @@ void edp_tx_init(struct aml_lcd_drv_s *pdrv)
 	dptx_reset(pdrv);
 
 	dptx_wait_phy_ready(pdrv);
-	mdelay(2);
+	mdelay(1);
 
 	dptx_reg_write(pdrv->index, EDP_TX_TRANSMITTER_OUTPUT_ENABLE, 0x1);
 	dptx_reg_write(pdrv->index, EDP_TX_AUX_INTERRUPT_MASK, 0xf);	//turn off interrupt
 
-	i = 0;
 	while (i++ < EDP_HPD_TIMEOUT) {
 		eDP_cfg->HPD_level = dptx_reg_getb(pdrv->index, EDP_TX_AUX_STATE, 0, 1);
 		if (eDP_cfg->HPD_level)
 			break;
-		mdelay(2);
+		mdelay(1);
 	}
-	LCDPR("[%d]: eDP HPD state: %d, i=%d\n", pdrv->index, eDP_cfg->HPD_level, i);
+	LCDPR("[%d]: eDP HPD state: %d, %ums\n", pdrv->index, eDP_cfg->HPD_level, i);
 	if (eDP_cfg->HPD_level == 0)
 		return;
 
@@ -63,14 +63,11 @@ void edp_tx_init(struct aml_lcd_drv_s *pdrv)
 		LCDERR("[%d]: DP DPCD_capability_detect ERROR\n", pdrv->index);
 		return;
 	}
+	eDP_cfg->lane_count = eDP_cfg->max_lane_count;
+	eDP_cfg->link_rate = eDP_cfg->max_link_rate;
 
-	if (eDP_cfg->edid_en) {
+	if (eDP_cfg->edid_en)
 		dptx_EDID_probe(pdrv, &edp_edid1);
-		dptx_manage_timing(pdrv, &edp_edid1);
-		tm = dptx_get_optimum_timing(pdrv);
-		if (tm)
-			dptx_timing_update(pdrv, tm);
-	}
 
 	dptx_set_lane_config(pdrv);
 	dptx_set_phy_config(pdrv, 1);
@@ -88,7 +85,21 @@ void edp_tx_init(struct aml_lcd_drv_s *pdrv)
 
 	dptx_link_training(pdrv);
 
+	if (eDP_cfg->edid_en) {
+		dptx_manage_timing(pdrv, &edp_edid1);
+		tm = dptx_get_optimum_timing(pdrv);
+		if (tm) {
+			dptx_timing_update(pdrv, tm);
+			dptx_timing_apply(pdrv);
+		}
+	}
+	dptx_update_ctrl_bootargs(pdrv);
+
+	dptx_set_ContentProtection(pdrv);
+
 	dptx_set_msa(pdrv);
+
+	dptx_fast_link_training(pdrv);
 
 	lcd_vcbus_write(ENCL_VIDEO_EN + offset, 1);
 	dptx_reg_write(pdrv->index, EDP_TX_FORCE_SCRAMBLER_RESET, 0x1);

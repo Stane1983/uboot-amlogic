@@ -40,15 +40,14 @@ static int dptx_link_rate_config_reduce(struct aml_lcd_drv_s *pdrv)
 
 	link_rate = pdrv->config.control.edp_cfg.link_rate;
 	lane_cnt = pdrv->config.control.edp_cfg.lane_count;
-	switch (link_rate) {
-	case DP_LINK_RATE_HBR2:
+
+	if (link_rate > DP_LINK_RATE_HBR2) {
+		link_rate = DP_LINK_RATE_HBR2;
+	} else if (link_rate > DP_LINK_RATE_HBR) {
 		link_rate = DP_LINK_RATE_HBR;
-		break;
-	case DP_LINK_RATE_HBR:
+	} else if (link_rate > DP_LINK_RATE_RBR) {
 		link_rate = DP_LINK_RATE_RBR;
-		break;
-	case DP_LINK_RATE_RBR:
-	default:
+	} else {
 		LCDERR("%s: already lowest link rate\n", __func__);
 		return 1;
 	}
@@ -80,9 +79,15 @@ static int dptx_training_phy_adj_req_process(struct aml_lcd_drv_s *pdrv)
 {
 	struct edp_config_s *edp_cfg = &pdrv->config.control.edp_cfg;
 	unsigned char adj_req_lane[2], i;
+	int ret;
 
 	// dptx_dpcd_read(pdrv, adj_req_lane, DPCD_ADJUST_REQUEST_LANE0_1, 2);
-	dptx_aux_read(pdrv, DPCD_ADJUST_REQUEST_LANE0_1, 2, adj_req_lane);
+	ret = dptx_aux_read(pdrv, DPCD_ADJUST_REQUEST_LANE0_1, 2, adj_req_lane);
+	if (ret) {
+		LCDERR("[%d]: %s: aux read DPCD_ADJUST_REQUEST failed\n", pdrv->index, __func__);
+		edp_cfg->phy_update = 0;
+		return 0;
+	}
 	/* parse DPCD adjust request */
 	edp_cfg->adj_req_vswing[0] = (adj_req_lane[0] & 0x03);
 	edp_cfg->adj_req_vswing[1] = ((adj_req_lane[0] >> 4) & 0x03);
@@ -277,11 +282,12 @@ static int dptx_check_channel_equalization(struct aml_lcd_drv_s *pdrv)
 
 static int dptx_run_channel_equalization_loop(struct aml_lcd_drv_s *pdrv)
 {
-	int i = 0, ret = 0;
+	int i = 0, ret = -1;
+	struct edp_config_s *DP_cfg = &pdrv->config.control.edp_cfg;
 
-	if (pdrv->config.control.edp_cfg.TPS_support & BIT(1))
+	if (DP_cfg->TPS_support & BIT(1))
 		dptx_set_training_pattern(pdrv, DP_TPS4);
-	else if (pdrv->config.control.edp_cfg.TPS_support & BIT(0))
+	else if (DP_cfg->TPS_support & BIT(0))
 		dptx_set_training_pattern(pdrv, DP_TPS3);
 	else
 		dptx_set_training_pattern(pdrv, DP_TPS2);
@@ -290,12 +296,12 @@ static int dptx_run_channel_equalization_loop(struct aml_lcd_drv_s *pdrv)
 	while (i++ < DP_TRAINING_EQ_ATTEMPTS) {
 		dptx_training_phy_update_apply(pdrv);
 
-		mdelay(DP_CHAN_EQ_TIMEOUT); //wait for channel eq
+		udelay(DP_training_rd_interval[DP_cfg->train_aux_rd_interval]);
 		ret = dptx_check_channel_equalization(pdrv);
 		if (ret == 0) //success
 			break;
 		if (ret < 0) //aux error
-			break;
+			continue;
 
 		//if ((pdrv->config.control.edp_cfg.curr_vswing[0] & 0x03) != VAL_DP_std_LEVEL_3)
 		//!!!!! judged by 4 lane !!!!!!!
@@ -403,7 +409,7 @@ static int dptx_run_training_loop(struct aml_lcd_drv_s *pdrv, unsigned int retry
 		 * if clock recovery fails, the training loop exits.
 		 */
 			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-				LCDPR("[%d]: ----- CLOCK_REC @ %d -----", pdrv->index, retry_cnt);
+				LCDPR("[%d]: ---- CLOCK_REC @ %d ----\n", pdrv->index, retry_cnt);
 			ret = dptx_run_clk_recovery_loop(pdrv);
 			if (ret == 0) {
 				state = DP_TRAINING_CHANNEL_EQ;
@@ -424,7 +430,7 @@ static int dptx_run_training_loop(struct aml_lcd_drv_s *pdrv, unsigned int retry
 		 * if this state fails, then we can adjust the link rate.
 		 */
 			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-				LCDPR("[%d]: ----- CHANNEL_EQ @ %d -----", pdrv->index, retry_cnt);
+				LCDPR("[%d]: ---- CHANNEL_EQ @ %d ----\n", pdrv->index, retry_cnt);
 			ret = dptx_run_channel_equalization_loop(pdrv);
 			if (ret == 0) {
 				state = DP_TRAINING_SUCCESS;
@@ -452,7 +458,7 @@ static int dptx_run_training_loop(struct aml_lcd_drv_s *pdrv, unsigned int retry
 		 *   allowing a failure condition to report the proper state.
 		 */
 			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-				LCDPR("[%d]: ----- ADJ_SPD @ %d -----", pdrv->index, retry_cnt);
+				LCDPR("[%d]: ---- ADJ_SPD @ %d ----\n", pdrv->index, retry_cnt);
 			ret = dptx_link_rate_config_reduce(pdrv);
 			dptx_link_config_update(pdrv);
 			if (ret)
@@ -477,31 +483,6 @@ static int dptx_run_training_loop(struct aml_lcd_drv_s *pdrv, unsigned int retry
 	return -1;
 }
 
-static int dptx_check_link_status(struct aml_lcd_drv_s *pdrv)
-{
-	unsigned int status, link_ok = 0;
-	unsigned char aux_data[3];
-	int ret;
-
-	ret = dptx_aux_read(pdrv, DPCD_LANE0_1_STATUS, 3, aux_data);
-		//LANE status 01/23 & LANE_ALIGN_STATUS_UPDATED
-	if (ret) {
-		LCDERR("[%d]: %s: edp aux read failed.....\n", pdrv->index, __func__);
-		return -1;
-	}
-
-	status = (((aux_data[2] & 0x01) << 16) | (aux_data[1] << 8) | aux_data[0]);
-
-	/* 4lane: 0x17777; 2lane: 0x10077; 1lane: 0x10007 */
-	link_ok = 0x7777 >> (4 - pdrv->config.control.edp_cfg.lane_count) * 4 | 0x10000;
-
-	if ((status & link_ok) == link_ok)
-		return 0;
-
-	LCDPR("[%d]: %s: link training failed: 0x%x\n", pdrv->index, __func__, status);
-	return -1;
-}
-
 int dptx_full_link_training(struct aml_lcd_drv_s *pdrv)
 {
 	unsigned int training_done = 0, retry_cnt = 0;
@@ -517,13 +498,8 @@ int dptx_full_link_training(struct aml_lcd_drv_s *pdrv)
 		if (retry_cnt > DP_FULL_LINK_TRAINING_ATTEMPTS)
 			break;
 		ret = dptx_run_training_loop(pdrv, retry_cnt);
-		if (ret == 0) {
-			ret = dptx_check_link_status(pdrv);
-			if (ret == 0) {
-				training_done = 1;
-				break;
-			}
-		}
+		if (ret == 0)
+			training_done = 1;
 		retry_cnt++;
 	}
 
@@ -565,13 +541,11 @@ int dptx_fast_link_training(struct aml_lcd_drv_s *pdrv)
 	dptx_set_training_pattern(pdrv, DP_TPS_DISABLE);
 
 	ret = dptx_check_channel_equalization(pdrv);
-	ret += dptx_check_clk_recovery(pdrv);
 
 	return ret;
 }
 
 /* ******************* link training ********************* */
-
 int dptx_link_training(struct aml_lcd_drv_s *pdrv)
 {
 	int ret = -1;
@@ -581,6 +555,9 @@ int dptx_link_training(struct aml_lcd_drv_s *pdrv)
 		return -1;
 
 	train_mode = pdrv->config.control.edp_cfg.training_mode & 0x0f;
+
+	lcd_clk_generate_parameter(pdrv);
+	lcd_set_clk(pdrv);
 
 	switch (train_mode) {
 	case DP_FAST_LINK_TRAINING:
@@ -596,9 +573,6 @@ int dptx_link_training(struct aml_lcd_drv_s *pdrv)
 			ret = dptx_full_link_training(pdrv);
 		break;
 	}
-
-	if (lcd_debug_print_flag & LCD_DBG_PR_ADV)
-		dptx_DPCD_dump(pdrv);
 
 	return ret;
 }

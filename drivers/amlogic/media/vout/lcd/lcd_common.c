@@ -282,19 +282,13 @@ static void lcd_config_load_print(struct aml_lcd_drv_s *pdrv)
 		LCDPR("phy_switch = %d\n", pctrl->mipi_cfg.phy_switch);
 		LCDPR("extern_init = %d\n", pctrl->mipi_cfg.extern_init);
 	} else if (pconf->basic.lcd_type == LCD_EDP) {
-		LCDPR("max_lane_count      = %d\n", pctrl->edp_cfg.max_lane_count);
-		LCDPR("max_link_rate       = %d\n", pctrl->edp_cfg.max_link_rate);
-		LCDPR("edid_en             = %d\n", pctrl->edp_cfg.edid_en);
-		LCDPR("training_mode       = %d\n", pctrl->edp_cfg.training_mode);
-		LCDPR("dpcd_caps_en        = %d\n", pctrl->edp_cfg.dpcd_caps_en);
-		LCDPR("sync_clk_mode       = %d\n", pctrl->edp_cfg.sync_clk_mode);
-
-		LCDPR("lane_count          = %d\n", pctrl->edp_cfg.lane_count);
-		LCDPR("link_rate           = %d\n", pctrl->edp_cfg.link_rate);
-		// LCDPR("bit_rate            = %d\n", pctrl->edp_cfg.bit_rate);
-		LCDPR("training_settings   = %d\n", pctrl->edp_cfg.training_settings);
-		LCDPR("main_stream_enable  = %d\n", pctrl->edp_cfg.main_stream_enable);
-
+		LCDPR("max_lane_count = %d\n", pctrl->edp_cfg.max_lane_count);
+		LCDPR("max_link_rate  = %d\n", pctrl->edp_cfg.max_link_rate);
+		LCDPR("training_mode  = %d\n", pctrl->edp_cfg.training_mode);
+		LCDPR("edid_en        = %d\n", pctrl->edp_cfg.edid_en);
+		LCDPR("sync_clk_mode  = %d\n", pctrl->edp_cfg.sync_clk_mode);
+		LCDPR("lane_count     = %d\n", pctrl->edp_cfg.lane_count);
+		LCDPR("link_rate      = %d\n", pctrl->edp_cfg.link_rate);
 		LCDPR("phy_vswing = 0x%x\n", pctrl->edp_cfg.phy_vswing_preset);
 		LCDPR("phy_preem  = 0x%x\n", pctrl->edp_cfg.phy_preem_preset);
 	}
@@ -1442,23 +1436,12 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 			(unsigned char)be32_to_cpup((u32 *)propdata);
 		pctrl->edp_cfg.max_link_rate =
 			(unsigned char)be32_to_cpup((((u32 *)propdata) + 1));
+		pctrl->edp_cfg.max_link_rate =
+			pctrl->edp_cfg.max_link_rate < 0x6 ? 0 : pctrl->edp_cfg.max_link_rate;
 		pctrl->edp_cfg.training_mode =
 			(unsigned char)be32_to_cpup((((u32 *)propdata) + 2));
 		pctrl->edp_cfg.edid_en =
 			(unsigned char)be32_to_cpup((((u32 *)propdata) + 3));
-		pctrl->edp_cfg.dpcd_caps_en =
-			(unsigned char)be32_to_cpup((((u32 *)propdata) + 4));
-		pctrl->edp_cfg.sync_clk_mode =
-			(unsigned char)be32_to_cpup((((u32 *)propdata) + 5));
-		pctrl->edp_cfg.scramb_mode =
-			(unsigned char)be32_to_cpup((((u32 *)propdata) + 6));
-		pctrl->edp_cfg.enhanced_framing_en =
-			(unsigned char)be32_to_cpup((((u32 *)propdata) + 7));
-		pctrl->edp_cfg.pn_swap =
-			(unsigned char)be32_to_cpup((((u32 *)propdata) + 8));
-
-		pctrl->edp_cfg.lane_count = pctrl->edp_cfg.max_lane_count;
-		pctrl->edp_cfg.link_rate = pctrl->edp_cfg.max_link_rate;
 
 		propdata = (char *)fdt_getprop(dt_addr, child_offset, "phy_attr", NULL);
 		if (!propdata) {
@@ -2202,19 +2185,10 @@ static int lcd_config_load_from_bsp(struct aml_lcd_drv_s *pdrv)
 		break;
 	case LCD_EDP:
 		pctrl->edp_cfg.max_lane_count = ext_lcd->lcd_spc_val0;
-		pctrl->edp_cfg.max_link_rate = ext_lcd->lcd_spc_val1;
+		pctrl->edp_cfg.max_link_rate =
+			ext_lcd->lcd_spc_val1 < 0x6 ? 0 : ext_lcd->lcd_spc_val1;
 		pctrl->edp_cfg.training_mode = ext_lcd->lcd_spc_val2;
-		pctrl->edp_cfg.dpcd_caps_en = ext_lcd->lcd_spc_val3;
-		pctrl->edp_cfg.sync_clk_mode = ext_lcd->lcd_spc_val4;
-		pctrl->edp_cfg.scramb_mode = ext_lcd->lcd_spc_val5;
-		pctrl->edp_cfg.enhanced_framing_en = ext_lcd->lcd_spc_val6;
-		pctrl->edp_cfg.edid_en = ext_lcd->lcd_spc_val7;
-		pctrl->edp_cfg.pn_swap = 0;
-		pctrl->edp_cfg.phy_vswing_preset = ext_lcd->lcd_spc_val8;
-		pctrl->edp_cfg.phy_preem_preset  = ext_lcd->lcd_spc_val9;
-
-		pctrl->edp_cfg.lane_count = pctrl->edp_cfg.max_lane_count;
-		pctrl->edp_cfg.link_rate = pctrl->edp_cfg.max_link_rate;
+		pctrl->edp_cfg.edid_en = ext_lcd->lcd_spc_val3;
 
 		phy_cfg->lane_num = 4;
 		phy_cfg->vswing_level = pctrl->edp_cfg.phy_vswing_preset;

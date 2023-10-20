@@ -181,9 +181,6 @@ void mipi_dsi_link_off(struct aml_lcd_drv_s *pdrv);
 void mipi_dsi_tx_ctrl(struct aml_lcd_drv_s *pdrv, int flag);
 
 void dptx_DPCD_dump(struct aml_lcd_drv_s *pdrv);
-// void dptx_EDID_dump(struct aml_lcd_drv_s *pdrv);
-// void dptx_EDID_timing_probe(struct aml_lcd_drv_s *pdrv);
-// void dptx_EDID_timing_select(struct aml_lcd_drv_s *pdrv, int idx);
 int eDP_debug_test(struct aml_lcd_drv_s *pdrv, char *str, int num);
 void edp_tx_ctrl(struct aml_lcd_drv_s *pdrv, int flag);
 #endif
