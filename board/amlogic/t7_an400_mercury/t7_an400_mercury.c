@@ -16,6 +16,7 @@
 #include <linux/sizes.h>
 #include <asm-generic/gpio.h>
 #include <dm.h>
+#include <i2c.h>
 #include <asm/armv8/mmu.h>
 #include <amlogic/aml_v3_burning.h>
 #include <amlogic/aml_v2_burning.h>
@@ -44,6 +45,8 @@
 #include <amlogic/board.h>
 #include <amlogic/rvc_interface.h>
 
+// copied from cmd/amlogic/cmd_car_param.c. keep the same value;
+#define CAR_FREERTOS_SHARED_MEM_ADDR 0x80001100
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -121,6 +124,284 @@ void board_init_mem(void)
 	}
 }
 
+static int i2c_write_wrapper(struct udevice *udev, uint16_t reg, uint8_t val)
+{
+	const int max_retry_count = 3;
+	int ret = -1;
+	//int reg_val = 0;
+
+	for (int j = 0; j < max_retry_count; j++) {
+		ret = dm_i2c_reg_write(udev, reg, val);
+		if (!ret) {
+			//reg_val = dm_i2c_reg_read(udev, reg);
+			//printf("reg 0x%04x, w val 0x%02x, r val 0x%02x\n", reg, val, reg_val);
+			break;
+		}
+
+		printf("%s:line %d - i2c write addr 0x%04x val 0x%02x  fail\n",
+			__func__, __LINE__, reg, val);
+		udelay(3000);
+	}
+	return ret;
+}
+
+static int max96722_poweron(void)
+{
+	// empty. for an400 board. max96722 is a daughter board;
+	return 0;
+}
+
+static int max96722_init_part1(void)
+{
+	struct udevice *udev;
+	int ret = 0;
+
+	ret = i2c_get_chip_for_busnum(3, 0x29, 1, &udev);
+	if (ret) {
+		printf("%s:unable to get client 0x29 on bus 3, ret %d\n", __func__, ret);
+		return -1;
+	}
+
+	printf("%s:beg set max96722 setting\n", __func__);
+
+	i2c_write_wrapper(udev, 0x0013, 0x75);//# reset max96712
+	udelay(20 * 1000);
+
+	// here, udev is valid;
+	i2c_write_wrapper(udev, 0x0017, 0x14);//# REG_ENABLE=1
+	i2c_write_wrapper(udev, 0x0019, 0x94);//# REG_MNL=1
+
+	//#rlms
+	i2c_write_wrapper(udev, 0x1445, 0x00);
+	i2c_write_wrapper(udev, 0x1545, 0x00);
+	i2c_write_wrapper(udev, 0x1645, 0x00);
+	i2c_write_wrapper(udev, 0x1745, 0x00);
+	i2c_write_wrapper(udev, 0x14d1, 0x03);
+	i2c_write_wrapper(udev, 0x15d1, 0x03);
+	i2c_write_wrapper(udev, 0x16d1, 0x03);
+	i2c_write_wrapper(udev, 0x17d1, 0x03);
+	//#cmu
+	i2c_write_wrapper(udev, 0x06c2, 0x10);
+	//#coax
+	i2c_write_wrapper(udev, 0x0022, 0xff);
+	//#disable MIPI
+	i2c_write_wrapper(udev,  0x08a0, 0x04);
+	i2c_write_wrapper(udev,  0x040B, 0x40);
+
+	// disable all links
+	i2c_write_wrapper(udev,  0x0006, 0x00);
+
+	//# Turn on HIM on MAX96712
+	i2c_write_wrapper(udev, 0x0B06, 0xEF); //#Link A HIM
+	i2c_write_wrapper(udev, 0x0C06, 0xEF); //#Link B HIM
+	i2c_write_wrapper(udev, 0x0D06, 0xEF); //#Link C HIM
+	i2c_write_wrapper(udev, 0x0E06, 0xEF); //#Link D HIM
+
+	//# disable HS/VS processing
+	i2c_write_wrapper(udev, 0x0B0F, 0x01);
+	i2c_write_wrapper(udev, 0x0C0F, 0x01);
+	i2c_write_wrapper(udev, 0x0D0F, 0x01);
+	i2c_write_wrapper(udev, 0x0E0F, 0x01);
+
+	i2c_write_wrapper(udev, 0x0B07, 0x84); //#set link A hven and dbl high
+	i2c_write_wrapper(udev, 0x0C07, 0x84); //#set link B hven and dbl high
+	i2c_write_wrapper(udev, 0x0D07, 0x84); //#set link C hven and dbl high
+	i2c_write_wrapper(udev, 0x0E07, 0x84); //#set link D hven and dbl high
+
+	//# YUV MUX mode
+	i2c_write_wrapper(udev, 0x041A, 0xF0); //#Set linkA/B/C/D 8/10 bit Mux
+
+	// reset all links;
+	//i2c_write_wrapper(udev, 0x0018, 0x0F);
+	// caution: sleep 100ms, block the boot flow;
+	// usleep 100000 #0x00 0x64  #delay 100ms
+	//udelay(100 * 1000);
+
+	i2c_write_wrapper(udev, 0x00F4, 0x08);  // #enable pipe 3
+
+	//# MAX96712 MIPI settings
+	i2c_write_wrapper(udev, 0x08A0, 0x04); //  # mipi 2x4 mode
+	i2c_write_wrapper(udev, 0x08A2, 0xf4); //  #enable output phy
+	i2c_write_wrapper(udev, 0x08A3, 0xe4); //
+	i2c_write_wrapper(udev, 0x08A4, 0xe4); //
+
+	i2c_write_wrapper(udev, 0x090A, 0xc0); //  #phy0 lane no. change to 2bit VC follow AC refer
+	i2c_write_wrapper(udev, 0x094A, 0xc0); //  #phy1 lane no. change to 2bit VC follow AC refer
+	i2c_write_wrapper(udev, 0x098A, 0xc0); //  #phy2 lane no. change to 2bit VC follow AC refer
+	i2c_write_wrapper(udev, 0x09CA, 0xc0); //  #phy3 lane no. change to 2bit VC follow AC refer
+
+	i2c_write_wrapper(udev, 0x1d00, 0xf4);
+	i2c_write_wrapper(udev, 0x1e00, 0xf4);
+
+	i2c_write_wrapper(udev, 0x0415, 0xEF); //  #phy0 speed set at 2G/lane and override bpp
+	i2c_write_wrapper(udev, 0x0418, 0xEF); //  #phy1 speed set at 2G/lane and override bpp
+
+	i2c_write_wrapper(udev, 0x1d00, 0xf5);
+	i2c_write_wrapper(udev, 0x1e00, 0xf5);
+
+	//# software override
+	i2c_write_wrapper(udev, 0x040B, 0x40); // #BPP for pipe lane 0 set as 1E(YUV422)
+	i2c_write_wrapper(udev, 0x0411, 0x48); // #BPP for pipe lane 1/2
+	i2c_write_wrapper(udev, 0x0412, 0x20); // #BPP for pipe lane 2/3
+
+	i2c_write_wrapper(udev, 0x040C, 0x00); // #VC for pipe line 0/1 set as 0 and 1
+	i2c_write_wrapper(udev, 0x040d, 0x00); // #VC for pipe line 2/3 set as 2 and 3
+
+	i2c_write_wrapper(udev, 0x040E, 0x5E); // #dt for pipe line 0/1 set as YUV422
+	i2c_write_wrapper(udev, 0x040f, 0x7E); // #dt for pipe line 1/2 set as YUV422
+	i2c_write_wrapper(udev, 0x0410, 0x7a); // #dt for pipe line 1/2 set as YUV422
+
+	//#Set MIPI 3 mapping
+	// video pipe 0
+	//i2c_write_wrapper(udev, 0x090B, 0x07); //  #enable 3 mappings for pipeline 0
+	//i2c_write_wrapper(udev, 0x092D, 0x15); //  # map to destination controller 1
+	//i2c_write_wrapper(udev, 0x090D, 0x1E); //  #source data type (1E) and VC(0)
+	//i2c_write_wrapper(udev, 0x090E, 0x1E); //  #destination dt(1E) and vc(0)
+	//i2c_write_wrapper(udev, 0x090F, 0x00); //  #source dt(00 frame start) and vc(0)
+	//i2c_write_wrapper(udev, 0x0910, 0x00); //  #destination dt(00 frame start) and vc(0)
+	//i2c_write_wrapper(udev, 0x0911, 0x01); //  #source dt(01 frame end) and vc(0)
+	//i2c_write_wrapper(udev, 0x0912, 0x01); //  #destination dt(01 frame end) and vc(0)
+
+	// video pipe 1
+	//i2c_write_wrapper(udev, 0x094B, 0x07); //  #enable 3 mappings for pipeline 0
+	//i2c_write_wrapper(udev, 0x096D, 0x15); //  # map to destination controller 1
+	//i2c_write_wrapper(udev, 0x094D, 0x1E); //  #source data type (1E) and VC(0)
+	//i2c_write_wrapper(udev, 0x094E, 0x5E); //  #destination dt(1E) and vc(1)
+	//i2c_write_wrapper(udev, 0x094F, 0x00); //  #source dt(00 frame start) and vc(0)
+	//i2c_write_wrapper(udev, 0x0950, 0x40); //  #destination dt(00 frame start) and vc(1)
+	//i2c_write_wrapper(udev, 0x0951, 0x01); //  #source dt(01 frame end) and vc(0)
+	//i2c_write_wrapper(udev, 0x0952, 0x41); //  #destination dt(01 frame end) and vc(1)
+
+	// video pipe 2
+	//i2c_write_wrapper(udev, 0x098B, 0x07); //  #enable 3 mappings for pipeline 0
+	//i2c_write_wrapper(udev, 0x09aD, 0x15); //  # map to destination controller 1
+	//i2c_write_wrapper(udev, 0x098D, 0x1E); //  #source data type (1E) and VC(0)
+	//i2c_write_wrapper(udev, 0x098E, 0x9E); //  #destination dt(1E) and vc(2)
+	//i2c_write_wrapper(udev, 0x098F, 0x00); //  #source dt(00 frame start) and vc(0)
+	//i2c_write_wrapper(udev, 0x0990, 0x80); //  #destination dt(00 frame start) and vc(2)
+	//i2c_write_wrapper(udev, 0x0991, 0x01); //  #source dt(01 frame end) and vc(0)
+	//i2c_write_wrapper(udev, 0x0992, 0x81); //  #destination dt(01 frame end) and vc(2)
+
+	// video pipe 3
+	i2c_write_wrapper(udev, 0x09cB, 0x07); //  #enable 3 mappings for pipeline 0
+	i2c_write_wrapper(udev, 0x09eD, 0x15); //  # map to destination controller 1
+	i2c_write_wrapper(udev, 0x09cD, 0x1E); //  #source data type (1E) and VC(0)
+	i2c_write_wrapper(udev, 0x09cE, 0x1E); //  #destination dt(1E) and vc(3)
+	i2c_write_wrapper(udev, 0x09cF, 0x00); //  #source dt(00 frame start) and vc(0)
+	i2c_write_wrapper(udev, 0x09d0, 0x00); //  #destination dt(00 frame start) and vc(3)
+	i2c_write_wrapper(udev, 0x09d1, 0x01); //  #source dt(01 frame end) and vc(0)
+	i2c_write_wrapper(udev, 0x09d2, 0x01); //  #destination dt(01 frame end) and vc(3)
+
+	//#*******Frame sync***************************************
+	i2c_write_wrapper(udev, 0x04A0, 0x04); //   #0x04 # manual frame sync
+	i2c_write_wrapper(udev, 0x04A2, 0b01100000); // video 3 as master.
+
+	i2c_write_wrapper(udev, 0x04AA, 0x00);
+	i2c_write_wrapper(udev, 0x04AB, 0x00);
+
+	i2c_write_wrapper(udev, 0x04AF, 0x40);
+
+	i2c_write_wrapper(udev, 0x04A7, 0x0F); //
+	i2c_write_wrapper(udev, 0x04A6, 0x42); //
+	i2c_write_wrapper(udev, 0x04A5, 0x40); // #25fps
+
+	i2c_write_wrapper(udev, 0x0B08, 0x71); // #set link A GPI_0-to-GPO transmission
+	i2c_write_wrapper(udev, 0x0C08, 0x71); // #set link A GPI_0-to-GPO transmission
+	i2c_write_wrapper(udev, 0x0D08, 0x71); // #set link A GPI_0-to-GPO transmission
+	i2c_write_wrapper(udev, 0x0E08, 0x71); // #set link A GPI_0-to-GPO transmission
+
+	// ======== begin set link D for rear view camera ===============
+	i2c_write_wrapper(udev, 0x0006, 0x08);
+	i2c_write_wrapper(udev, 0x0018, 0x08);
+	// caution: sleep 100ms, block the boot flow;
+	// usleep 100000 #0x00 0x64  #delay 100ms
+	udelay(100 * 1000);
+	printf("%s:  enable link D\n", __func__);
+	return 0;
+}
+
+// return -1; not connected;
+// 0 - connected;
+static int max96722_connect_check(void)
+{
+	struct udevice *max96722_udev;
+	struct dm_i2c_chip *max96722_i2c_chip;
+
+	int ret = 0;
+	struct udevice *max96705_udev;
+
+	// serializer (max96705 addr 0x40) ===> deserializer (max96722)
+	// check if serializer is connected.
+	ret = i2c_get_chip_for_busnum(3, 0x29, 1, &max96722_udev);
+	if (ret) {
+		printf("%s:unable to get client 0x29 on bus 3, 1528 ret %d\n", __func__, ret);
+		return -1;
+	}
+
+	// set reg address length -  2 bytes;
+	max96722_i2c_chip = dev_get_parent_platdata(max96722_udev);
+	if (max96722_i2c_chip) {
+		max96722_i2c_chip->offset_len = 2;
+		printf("%s:set max96722 i2c chip reg length 2 bytes\n", __func__);
+	} else {
+		printf("%s:unable to get max96722 i2c chip\n", __func__);
+	}
+
+	max96722_init_part1();
+
+	ret = i2c_get_chip_for_busnum(3, 0x44, 1, &max96705_udev);
+	if (ret)
+		ret = i2c_get_chip_for_busnum(3, 0x40, 1, &max96705_udev);
+
+	if (ret) {
+		printf("%s:unable to get I2C client 0x40 &0x44. ret %d\n", __func__, ret);
+		return -1;
+	}
+
+	printf("%s: got serializer max96705 on bus 3\n", __func__);
+	return 0;
+}
+
+static int max96722_init_part2(void)
+{
+	int ret = 0x0;
+	struct udevice *max96722_udev;
+	struct udevice *max96705_udev;
+
+	ret = i2c_get_chip_for_busnum(3, 0x29, 1, &max96722_udev); // 7 bits 0x29
+	if (ret) {
+		printf("%s:unable to get I2C bus. ret %d\n", __func__, ret);
+		return -1;
+	}
+
+	ret = i2c_get_chip_for_busnum(3, 0x44, 1, &max96705_udev);
+	if (ret)
+		ret = i2c_get_chip_for_busnum(3, 0x40, 1, &max96705_udev);
+
+	if (ret) {
+		printf("%s:unable to get I2C client 0x40 &0x44. ret %d\n", __func__, ret);
+		return -1;
+	}
+
+	//#Set MAX96705 and sensor configure
+	i2c_write_wrapper(max96705_udev, 0x04, 0x87);
+	i2c_write_wrapper(max96705_udev, 0x07, 0x84);
+	i2c_write_wrapper(max96705_udev, 0x06, 0xa4);
+
+	// ======== end set link D for rear view camera ===============
+	// invert vs
+	i2c_write_wrapper(max96722_udev, 0x01d9, 0x59);
+	i2c_write_wrapper(max96722_udev, 0x01f9, 0x59);
+	i2c_write_wrapper(max96722_udev, 0x0219, 0x59);
+	i2c_write_wrapper(max96722_udev, 0x0239, 0x59);
+
+	//# enable mipi
+	i2c_write_wrapper(max96722_udev, 0x040b, 0x42); // # csi out en
+	i2c_write_wrapper(max96722_udev, 0x08A0, 0x84); //  # Force MIPI out
+
+	return 0;
+}
+
 int board_init(void)
 {
 	printf("board init\n");
@@ -141,6 +422,7 @@ int board_init(void)
 	pinctrl_devices_active(PIN_CONTROLLER_NUM);
 	/*set vcc5V*/
 	run_command("gpio set GPIOH_1", 0);
+	max96722_poweron();
 	return 0;
 }
 
@@ -152,6 +434,8 @@ int board_boot_freertos(void)
 	uint32_t imagesize;
 	char *slot_name;
 	char partName[20] = {0};
+	IRtosParam *car_param = NULL;
+	char *car_mem_addr = env_get("car_mem_addr");
 
 	slot_name = env_get("slot-suffixes");
 	if (strcmp(slot_name, "0") == 0)
@@ -178,6 +462,18 @@ int board_boot_freertos(void)
 	store_read(partName, 0, imagesize + sizeof(imghd), (unsigned char *)loadaddr);
 	memmove((unsigned char *)loadaddr, (unsigned char *)(loadaddr + sizeof(imghd)), imagesize);
 	run_command("read_car_params ${car_mem_addr}", 0);
+
+	if (car_mem_addr)
+		car_param = (IRtosParam *)CAR_FREERTOS_SHARED_MEM_ADDR;
+
+	if (max96722_connect_check() == 0) {
+		max96722_init_part2();
+		// set car_param cam num is CAM_96722 2
+		if (car_param)
+			car_param->cam_num = 2;
+	} else {
+		printf("error - 96722 not detect!");
+	}
 
 	flush_cache(loadaddr, imagesize);
 	power_core_for_freetos(0x01, loadaddr);
