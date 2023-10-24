@@ -62,20 +62,35 @@ void vpu_module_init_config(void)
 	if (vpu_conf.data->chip_type < VPU_CHIP_T3) {
 		vpu_vcbus_write(VPU_RDARB_MODE_L1C1, 0x0); //0x210000
 		vpu_vcbus_write(VPU_RDARB_MODE_L1C2, 0x10000);
+		vpu_vcbus_write(VPU_WRARB_MODE_L2C1, 0x20000);
 	}
-	if (vpu_conf.data->chip_type == VPU_CHIP_T5M)
+	if (vpu_conf.data->chip_type == VPU_CHIP_T5M) {
 		vpu_vcbus_write(VPU_RDARB_MODE_L2C1, 0x0);
-	else if (vpu_conf.data->chip_type == VPU_CHIP_TXHD2) {
+		vpu_vcbus_write(VPU_WRARB_MODE_L2C1, 0x20000);
+	} else if (vpu_conf.data->chip_type == VPU_CHIP_TXHD2) {
 		/*TXHD2 ONLY VPU0 READ*/
 		vpu_vcbus_write(VPU_RDARB_MODE_L2C1, 0x00000);
 #ifdef VPP_RDARB_MODE
 		vpu_vcbus_write(VPP_RDARB_MODE, 0x00000);
 #endif
+		vpu_vcbus_write(VPU_WRARB_MODE_L2C1, 0x20000);
+	} else if (vpu_conf.data->chip_type == VPU_CHIP_T3X) {
+		//bit[27:26]=0, bit[23:22]=2, tcon read p1 on arb2, p3 on arb0, default value
+		vpu_vcbus_write(VPU_RDARB_MODE_L2C1, 0x900000);
+		//bit[20]=0, bit[19]=1, tcon write p1 on arb2, p3 on arb0
+		vpu_vcbus_write(VPU_WRARB_MODE_L2C1, 0xa0000); //default 0x20000
+
+		//[15:14]=3, bit[13:12]=3, bit[11:10]=3, tcon p1/p2/p3 read urgent
+		vpu_vcbus_write(VPU_RDARB_UGT_L2C1, 0xfc00); //default 0x0
+		//[9:8]=3, bit[7:6]=3, tcon p1 & p3 write urgent
+		vpu_vcbus_write(VPU_WRARB_UGT_L2C1, 0x00f003c0); //default 0x00f00000
+
+		vpu_vcbus_write(DI_WRARB_UGT_L1C1, 0x1154);//di write urgent
 	} else {
 		vpu_vcbus_write(VPU_RDARB_MODE_L2C1, 0x900000);
+		vpu_vcbus_write(VPU_WRARB_MODE_L2C1, 0x20000);
 	}
 
-	vpu_vcbus_write(VPU_WRARB_MODE_L2C1, 0x20000);
 #ifdef CONFIG_AMLOGIC_TEE
 	if (vpu_conf.data->chip_type == VPU_CHIP_T3 ||
 	    vpu_conf.data->chip_type == VPU_CHIP_T5W ||

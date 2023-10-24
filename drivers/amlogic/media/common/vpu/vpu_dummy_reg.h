@@ -87,6 +87,15 @@
 #ifndef VPU_WRARB_MODE_L2C1
 #define VPU_WRARB_MODE_L2C1                        ((0x27a2  << 2) + 0xff000000)
 #endif
+#ifndef VPU_RDARB_UGT_L2C1
+#define VPU_RDARB_UGT_L2C1                         ((0x27c2  << 2) + 0xff800000)
+#endif
+#ifndef VPU_WRARB_UGT_L2C1
+#define VPU_WRARB_UGT_L2C1                         ((0x27c3  << 2) + 0xff800000)
+#endif
+#ifndef DI_WRARB_UGT_L1C1
+#define DI_WRARB_UGT_L1C1                          ((0x205d  << 2) + 0xff800000)
+#endif
 
 #ifndef HHI_VPU_CLK_CNTL
 #define HHI_VPU_CLK_CNTL                           (0xc883c000 + (0x6f << 2))
