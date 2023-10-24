@@ -458,8 +458,8 @@ int store_init(u32 init_flag)
 
 	if (BOOTLOADER_MODE_ADVANCE_INIT) {
 		ret = storage_post_init();
-		if (ret < 0)
-			return ret;
+		if (ret)
+			pr_info("storage_post_init failed\n");
 	}
 
 	/*2. Enter the probe of the valid device*/
