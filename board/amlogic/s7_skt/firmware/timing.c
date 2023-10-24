@@ -2309,22 +2309,24 @@ __attribute__ ((section(".misc_param"))) = {
 	/* config vddee and vcck pwm - pwm_e and pwm_f*/
 #if 0
 #ifdef CONFIG_PDVFS_ENABLE
-	{ PWMEF_PWM_A, VDDEE_SS_VALUE, 0xffffffff, 0, BL2_INIT_STAGE_VDDCORE_CONFIG_1, 0 },
-	{ PWMEF_PWM_A, VDDEE_TT_VALUE, 0xffffffff, 0, BL2_INIT_STAGE_VDDCORE_CONFIG_2, 0 },
-	{ PWMEF_PWM_A, VDDEE_FF_VALUE, 0xffffffff, 0, BL2_INIT_STAGE_VDDCORE_CONFIG_3, 0 },
+	{ PWM_PWM_H, VDDEE_SS_VALUE, 0xffffffff, 0, BL2_INIT_STAGE_VDDCORE_CONFIG_1, 0 },
+	{ PWM_PWM_H, VDDEE_TT_VALUE, 0xffffffff, 0, BL2_INIT_STAGE_VDDCORE_CONFIG_2, 0 },
+	{ PWM_PWM_H, VDDEE_FF_VALUE, 0xffffffff, 0, BL2_INIT_STAGE_VDDCORE_CONFIG_3, 0 },
 #else
-	{ PWMEF_PWM_A,		   VDDEE_VAL_REG, 0xffffffff, 0, 0, 0},
+	{ PWM_PWM_H,		   VDDEE_VAL_REG, 0xffffffff, 0, 0, 0},
 #endif
-	{ PWMEF_PWM_B,		   VCCK_VAL_REG,  0xffffffff, 0, 0, 0 },
-	{ PWMEF_MISC_REG_AB,	   (0x3 << 0),	  (0x3 << 0), 0, 0, 0 },
-#endif
-	/* set pwm e and pwm f clock rate to 24M, enable them */
-	{ CLKCTRL_PWM_CLK_EF_CTRL, ((0x1 << 8) | (0x1 << 24)), 0xffffffff, 0, 0, 0 },
+	{ PWM_PWM_J,		   VCCK_VAL_REG,  0xffffffff, 0, 0, 0 },
+	{ PWM_MISC_REG_H,	   (0x1 << 0),	  (0x1 << 0), 0, 0, 0 },
+	{ PWM_MISC_REG_J,	   (0x1 << 0),	  (0x1 << 0), 0, 0, 0 },
+	/* set pwm j and pwm h clock rate to 24M, enable them */
+	{ CLKCTRL_PWM_CLK_GH_CTRL, (0x1 << 24)), 0xffffffff, 0, 0, 0 },
+	{ CLKCTRL_PWM_CLK_IJ_CTRL, (0x1 << 24)), 0xffffffff, 0, 0, 0 },
 	/* set GPIOE_0 GPIOE_1 drive strength to 3 */
 	{ PADCTRL_GPIOE_DS,	   0xf,		  0xf,	      0, 0, 0 },
-	/* set GPIOE_0 GPIOE_1 mux to pwme pwmf */
-	{ PADCTRL_PIN_MUX_REGI,	   (0x1 << 0),	  (0xf << 0), 0, 0, 0 },
-	{ PADCTRL_PIN_MUX_REGI,	   (0x1 << 4),	  (0xf << 4), 0, 0, 0 },
+	/* set GPIOE_0 GPIOE_1 mux to pwmh pwmj */
+	{ PADCTRL_PIN_MUX_REGI,	   (0x3 << 0),	  (0xf << 0), 0, 0, 0 },
+	{ PADCTRL_PIN_MUX_REGI,	   (0x3 << 4),	  (0xf << 4), 0, 0, 0 },
+#endif
 	{ PADCTRL_GPIOD_PULL_UP,   (0x1 << 2),	  (0x1 << 2), 0, 0, 0 },
 };
 
