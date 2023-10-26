@@ -43,6 +43,12 @@
 #include <asm/amlogic/arch/register.h>
 #endif
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+#ifdef CONFIG_AMLOGIC_TIME_PROFILE
+#include <initcall.h>
+#endif
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 static struct tag *params;
@@ -81,6 +87,12 @@ static void announce_and_cleanup(int fake)
 
 	printf("\nStarting kernel ...%s\n\n", fake ?
 		"(fake run for tracing)" : "");
+#ifdef CONFIG_AMLOGIC_MODIFY
+	#ifdef CONFIG_AMLOGIC_TIME_PROFILE
+		if (gd->time_print_flag)
+			dump_initcall_time();
+	#endif
+#endif
 	/*
 	 * Call remove function of all devices with a removal flag set.
 	 * This may be useful for last-stage operations, like cancelling

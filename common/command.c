@@ -17,6 +17,10 @@
 #include <asm/global_data.h>
 #include <linux/ctype.h>
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+#include <asm/amlogic/arch/timer.h>
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 /*
@@ -588,6 +592,11 @@ enum command_ret_t cmd_process(int flag, int argc, char *const argv[],
 {
 	enum command_ret_t rc = CMD_RET_SUCCESS;
 	struct cmd_tbl *cmdtp;
+#ifdef CONFIG_AMLOGIC_MODIFY
+#ifdef CONFIG_AMLOGIC_TIME_PROFILE
+	unsigned int time;
+#endif
+#endif
 
 #if defined(CONFIG_SYS_XTRACE)
 	char *xtrace;
@@ -632,7 +641,29 @@ enum command_ret_t cmd_process(int flag, int argc, char *const argv[],
 
 		if (ticks)
 			*ticks = get_timer(0);
+#ifdef CONFIG_AMLOGIC_MODIFY
+	#ifdef CONFIG_AMLOGIC_TIME_PROFILE
+		time = get_time();
+	#endif
+#endif
 		rc = cmd_call(cmdtp, flag, argc, argv, &newrep);
+#ifdef CONFIG_AMLOGIC_MODIFY
+	#ifdef CONFIG_AMLOGIC_TIME_PROFILE
+		time = get_time() - time;
+		if (time > 1000 && gd->time_print_flag) {
+			const char *sym;
+			unsigned long base;
+			unsigned long size;
+			unsigned long faddr = (unsigned long)cmdtp->cmd - gd->reloc_off;
+
+			sym = symbol_lookup(faddr, &base, &size);
+			if (sym)
+				printf("\n ---long cmd function, t:%5d, fun:%s\n", time, sym);
+			else
+				printf("\n ---long cmd function, t:%5d, fun:%p\n", time, cmdtp->cmd);
+		}
+	#endif
+#endif
 		if (ticks)
 			*ticks = get_timer(*ticks);
 		*repeatable &= newrep;

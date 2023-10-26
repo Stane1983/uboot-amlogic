@@ -289,6 +289,11 @@ __weak int init_func_vid(void)
 
 static int setup_mon_len(void)
 {
+#ifdef CONFIG_AMLOGIC_MODIFY
+#ifdef CONFIG_AMLOGIC_TIME_PROFILE
+	printf("uboot start TE: %d us\n", get_time());
+#endif
+#endif
 #if defined(__ARM__) || defined(__MICROBLAZE__)
 	gd->mon_len = (ulong)&__bss_end - (ulong)_start;
 #elif defined(CONFIG_SANDBOX)

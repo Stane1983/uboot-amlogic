@@ -14,6 +14,14 @@ typedef int (*init_fnc_t)(void);
 #endif
 #include <asm/global_data.h>
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+#ifdef CONFIG_AMLOGIC_TIME_PROFILE
+void record_init_call_time(void *func, unsigned int time);
+void dump_initcall_time(void);
+unsigned int get_time(void);
+#endif
+#endif
+
 /*
  * To enable debugging. add #define DEBUG at the top of the including file.
  *
@@ -22,6 +30,11 @@ typedef int (*init_fnc_t)(void);
 static inline int initcall_run_list(const init_fnc_t init_sequence[])
 {
 	const init_fnc_t *init_fnc_ptr;
+#ifdef CONFIG_AMLOGIC_MODIFY
+#ifdef CONFIG_AMLOGIC_TIME_PROFILE
+	int time;
+#endif
+#endif
 
 	for (init_fnc_ptr = init_sequence; *init_fnc_ptr; ++init_fnc_ptr) {
 		unsigned long reloc_ofs = 0;
@@ -43,7 +56,18 @@ static inline int initcall_run_list(const init_fnc_t init_sequence[])
 		else
 			debug("initcall: %p\n", (char *)*init_fnc_ptr - reloc_ofs);
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+	#ifdef CONFIG_AMLOGIC_TIME_PROFILE
+		time = get_time();
+	#endif
+#endif
 		ret = (*init_fnc_ptr)();
+#ifdef CONFIG_AMLOGIC_MODIFY
+	#ifdef CONFIG_AMLOGIC_TIME_PROFILE
+		time = get_time() - time;
+		record_init_call_time((char *)*init_fnc_ptr - reloc_ofs, time);
+	#endif
+#endif
 		if (ret) {
 			printf("initcall sequence %p failed at call %p (err=%d)\n",
 			       init_sequence,

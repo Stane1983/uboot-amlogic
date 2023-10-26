@@ -46,4 +46,17 @@ unsigned int rand_r(unsigned int *seedp);
 #include <amlogic/uasan.h>
 #endif
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+#ifdef CONFIG_KALLSYMS
+extern const char *symbol_lookup(unsigned long addr, unsigned long *caddr, unsigned long *naddr);
+#else
+static inline const char *symbol_lookup(unsigned long addr,
+					unsigned long *caddr,
+					unsigned long *naddr)
+{
+	return NULL;
+}
+#endif
+#endif
+
 #endif	/* __COMMON_H_ */

@@ -32,6 +32,16 @@
 #include <amlogic/uasan.h>
 #endif
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+#ifdef CONFIG_AMLOGIC_TIME_PROFILE
+#define INITCALL_CNT		128
+struct init_call_time {
+	void *func;
+	unsigned int time;
+};
+#endif
+#endif
+
 struct acpi_ctx;
 struct driver_rt;
 
@@ -503,6 +513,12 @@ struct global_data {
 	unsigned long shadow_addr;
 	unsigned long shadow_size;
 	unsigned long section_red_zones[SECTION_RED_ZONE_NUM];
+#endif
+#ifdef CONFIG_AMLOGIC_MODIFY
+#ifdef CONFIG_AMLOGIC_TIME_PROFILE
+	struct init_call_time ict[INITCALL_CNT];
+	unsigned int time_print_flag;
+#endif
 #endif
 };
 #ifndef DO_DEPS_ONLY
