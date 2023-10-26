@@ -72,6 +72,13 @@ static void announce_and_cleanup(int fake)
 
 	board_quiesce_devices();
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+	if (IS_ENABLED(CONFIG_SILENT_CONSOLE)) {
+		/* disable silent */
+		gd->flags &= ~GD_FLG_SILENT;
+	}
+#endif
+
 	printf("\nStarting kernel ...%s\n\n", fake ?
 		"(fake run for tracing)" : "");
 	/*

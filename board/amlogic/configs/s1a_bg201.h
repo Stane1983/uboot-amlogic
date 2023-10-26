@@ -60,6 +60,7 @@
 //#define CONFIG_SYS_MAXARGS  64
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"uart_base=0xfe07a000\0"\
+	"silent=1\0"\
 	"usb_burning=" CONFIG_USB_TOOL_ENTRY "\0"\
 	"board=bg201\0"\
 	"boot_part=boot\0"\

@@ -163,8 +163,8 @@ int serial_init(void)
 {
 #if CONFIG_IS_ENABLED(SERIAL_PRESENT)
 	serial_find_console_or_panic();
-#ifndef CONFIG_AMLOGIC_MODIFY
 	gd->flags |= GD_FLG_SERIAL_READY;
+#ifndef CONFIG_AMLOGIC_MODIFY
 	serial_setbrg();
 #endif
 #endif

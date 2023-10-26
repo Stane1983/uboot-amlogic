@@ -80,10 +80,20 @@ static int on_silent(const char *name, const char *value, enum env_op op,
 		if ((flags & H_INTERACTIVE) == 0)
 			return 0;
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+	if (value != NULL)
+		if (value[0] == '1')
+			gd->flags |= GD_FLG_SILENT;
+		else
+			gd->flags &= ~GD_FLG_SILENT;
+	else
+		gd->flags &= ~GD_FLG_SILENT;
+#else
 	if (value != NULL)
 		gd->flags |= GD_FLG_SILENT;
 	else
 		gd->flags &= ~GD_FLG_SILENT;
+#endif
 
 	return 0;
 }
@@ -966,16 +976,28 @@ int console_assign(int file, const char *devname)
 static bool console_update_silent(void)
 {
 	unsigned long flags = gd->flags;
+#ifdef CONFIG_AMLOGIC_MODIFY
+	char *p;
+#endif
 
 	if (!IS_ENABLED(CONFIG_SILENT_CONSOLE))
 		return false;
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+	p = env_get("silent");
+	if ((p != NULL) && (p[0] == '1')) {
+		gd->flags |= GD_FLG_SILENT;
+		return false;
+	}
+	gd->flags &= ~GD_FLG_SILENT;
+#else
 	if (env_get("silent")) {
 		gd->flags |= GD_FLG_SILENT;
 		return false;
 	}
 
 	gd->flags &= ~GD_FLG_SILENT;
+#endif
 
 	return !!(flags & GD_FLG_SILENT);
 }
