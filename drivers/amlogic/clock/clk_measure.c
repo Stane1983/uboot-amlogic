@@ -8,6 +8,7 @@
 #include <asm/amlogic/arch/clk_measure_tab.h>
 #include <asm/amlogic/arch/io.h>
 #include <asm/amlogic/arch/secure_apb.h>
+#include <amlogic/clk_measure.h>
 
 unsigned long clk_util_clk_msr(unsigned long clk_mux)
 {
@@ -35,6 +36,7 @@ unsigned long clk_util_clk_msr(unsigned long clk_mux)
 	return (regval >> 6);
 }
 
+extern int clk_msr(int index);
 int clk_msr(int index)
 {
 	unsigned int index_total = sizeof(clk_msr_table) / sizeof(clk_msr_table[0]);

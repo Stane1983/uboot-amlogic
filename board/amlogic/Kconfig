@@ -573,6 +573,49 @@ config TARGET_T5M_AY301
 	depends on T5M_AY301
 endif
 
+
+if MESON_S7D
+
+config SYS_SOC
+	default "s7d"
+
+config DDRFW_TYPE
+	string "s7D DDR FW Type"
+	default "ddr4"
+
+config CHIPSET_NAME
+	string "s7d CHIPSET NAME"
+	default ""
+
+config CHIPSET_VARIANT
+	string "s7d CHIPSET VARIANT"
+	default ""
+
+config AMLOGIC_KEY_TYPE
+	string "s7d AMLOGIC KEY TYPE"
+	default "dev-keys"
+
+config BL30_SELECT
+	string "s7d BL30 board config"
+		default "s7d_pxp"
+
+choice
+	prompt "s7d Board"
+
+config S7D_SKT
+	bool "S7D_SKT"
+	select TARGET_S7D_SKT
+	help
+		Select S7D SKT(XXXX) config
+
+endchoice
+
+config TARGET_S7D_SKT
+	bool "S7D SKT board"
+	depends on S7D_SKT
+
+endif
+
 # Amlogic boards
 
 source "board/amlogic/s4_ap222/Kconfig"
@@ -606,3 +649,5 @@ source "board/amlogic/s1a_bg209/Kconfig"
 source "board/amlogic/s1a_bg209_s805c1eng/Kconfig"
 
 source "board/amlogic/t5m_ay301/Kconfig"
+
+source "board/amlogic/s7d_skt/Kconfig"

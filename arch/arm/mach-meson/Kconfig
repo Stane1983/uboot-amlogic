@@ -91,6 +91,14 @@ config MESON_T5M
 	help
 		Support Amlogic Meson T5M
 
+config MESON_S7D
+	bool "S7D"
+	select ARM64
+	select DM
+	select DM_SERIAL
+	help
+		Support Amlogic Meson S7D
+
 endchoice
 
 source "board/amlogic/Kconfig"

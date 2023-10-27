@@ -35,3 +35,11 @@ config CLK_MESON_T5M
 	default MESON_T5M
 	help
 	  Enable clock support for the Amlogic T5M SoC family
+
+config CLK_MESON_S7D
+	bool "Enable clock support for Amlogic S7D"
+	depends on CLK && ARCH_MESON
+	default MESON_S7D
+	help
+	  Enable clock support for the Amlogic S7D SoC family, such as
+	  the SKT
