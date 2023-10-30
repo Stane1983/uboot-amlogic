@@ -708,6 +708,12 @@ int v3tool_storage_init(const int eraseFlash, unsigned int dtbImgSz, unsigned in
 				ret = usb_burn_erase_data(1);
 			}
 		}
+		if (eraseFlash == 3) {
+			FB_MSG("Erase unifykey\n");
+			ret = store_rsv_erase("key");
+			if (ret)
+				FBS_EXIT(_ACK, "disk_initial 3, Fail in erase key\n");
+		}
 		if (ret)
 			FBS_EXIT(_ACK, "Fail in erase flash, ret[%d]\n", ret);
 #ifdef CONFIG_BACKUP_PART_NORMAL_ERASE
