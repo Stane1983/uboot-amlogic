@@ -621,8 +621,7 @@ bool is_hdr_preference(struct hdmitx_dev *hdev)
 
 	if ((hdr_priority == DOLBY_VISION_PRIORITY ||
 		hdr_priority == HDR10_PRIORITY) &&
-		is_tv_support_hdr(hdev) &&
-		is_hdr_resolution_priority())
+		is_tv_support_hdr(hdev))
 		return true;
 	else
 		return false;
@@ -663,7 +662,7 @@ int get_ubootenv_dv_status(void)
 }
 
 /* user_prefer_dv_type is used to save user select dolby vision
- * output mode. Note: if the user has not set it, it will be empty.
+ * output mode. Note: if the user has not set it, it will be empty or "none".
  * dv_type = 0 ->dolby vision disable
  * dv_type = 1 ->std mode(sink-led)
  * dv_type = 2 ->LL YUV(source-led)
@@ -679,7 +678,9 @@ int get_ubootenv_dv_type(void)
 		printf("no ubootenv user_prefer_dv_type\n");
 		return DV_NONE;
 	}
-	if (!strcmp(dv_type, DOLBY_VISION_SET_STD))
+	if (!strcmp(dv_type, "none"))
+		return DV_NONE;
+	else if (!strcmp(dv_type, DOLBY_VISION_SET_STD))
 		return DOLBY_VISION_STD_ENABLE;
 	else if (!strcmp(dv_type, DOLBY_VISION_SET_LL_YUV))
 		return DOLBY_VISION_LL_YUV;
@@ -832,7 +833,7 @@ static bool is_dv_support_mode(struct input_hdmi_data *hdmi_data, char *mode)
 	if (!strcmp(mode, MODE_1080P100HZ)) {
 		if (dv->sup_1080p120hz)
 			valid = true;
-	} else if (!strcmp(mode, MODE_1080P100HZ)) {
+	} else if (!strcmp(mode, MODE_1080P120HZ)) {
 		if (dv->sup_1080p120hz)
 			valid = true;
 	} else if ((resolve_resolution_value(mode, RESOLUTION_PRIORITY) <
@@ -957,8 +958,10 @@ static void get_highest_hdmimode(struct input_hdmi_data *hdmi_data, char *mode)
 
 	if (!hdmi_data || !mode)
 		return;
-
-	strcpy(value, DEFAULT_HDMI_MODE);
+	/* i timing need to output for spec edid during HDMI CTS,
+	 * use 480i60hz as base mode
+	 */
+	strcpy(value, "480i60hz");
 
 	for (i = 0; disp_mode_t[i]; i++) {
 		memset(mode_tmp, 0, sizeof(mode_tmp));

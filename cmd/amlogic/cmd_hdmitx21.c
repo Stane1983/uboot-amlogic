@@ -1096,7 +1096,7 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 				last_dv_status);
 		}
 	}
-	/* three cases need to decide output by uboot mode select policy:
+	/* 4 cases need to decide output by uboot mode select policy:
 	 * 1.TV changed
 	 * 2.either hdmimode or colorattribute is NULL or "none",
 	 * which means that user have not selected mode or colorattribute,
@@ -1105,6 +1105,7 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 	 * means mode select policy or edid parse between sysctrl and
 	 * uboot have some gap), then need to find proper output mode
 	 * with uboot policy.
+	 * 4.user selected mode is over writen by system policy
 	 */
 	if (hdev->RXCap.edid_changed || no_manual_output || !mode_support || over_write) {
 		/* find proper mode if EDID changed */

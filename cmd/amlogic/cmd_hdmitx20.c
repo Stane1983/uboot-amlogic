@@ -1119,7 +1119,7 @@ static int do_get_parse_edid(cmd_tbl_t * cmdtp, int flag, int argc,
 				last_dv_status);
 		}
 	}
-	/* three cases need to decide output by uboot mode select policy:
+	/* 4 cases need to decide output by uboot mode select policy:
 	 * 1.TV changed
 	 * 2.either hdmimode or colorattribute is NULL or "none",
 	 * which means that user have not selected mode or colorattribute,
@@ -1128,17 +1128,13 @@ static int do_get_parse_edid(cmd_tbl_t * cmdtp, int flag, int argc,
 	 * means mode select policy or edid parse between sysctrl and
 	 * uboot have some gap), then need to find proper output mode
 	 * with uboot policy.
+	 * 4.user selected mode is over writen by system policy
 	 */
 	if (hdev->RXCap.edid_changed || no_manual_output || !mode_support || over_write) {
 		/* find proper mode if EDID changed */
 		scene_process(hdev, &scene_output_info);
 		env_set("hdmichecksum", hdev->RXCap.checksum);
 		if (edid_parsing_ok(hdev)) {
-			/* SWPL-34712: if EDID parsing error case, not save env,
-			 * only output default mode(480p,RGB,8bit). after
-			 * EDID read OK, systemcontrol will recover the hdmi
-			 * mode from env, to avoid keep the default hdmi output
-			 */
 			env_set("outputmode",
 			       scene_output_info.final_displaymode);
 			env_set("colorattribute",
