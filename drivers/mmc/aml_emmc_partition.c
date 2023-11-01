@@ -1222,6 +1222,12 @@ int check_gpt_change(struct blk_desc *dev_desc, void *buf)
 	if (update_dts_gpt) {
 		printf("update_dts_gpt is %s\n", update_dts_gpt);
 		j = 1;
+		ret = 2;
+	}
+
+	if (parts_num != entries_num) {
+		printf("parts_num changes\n");
+		ret = 2;
 	}
 
 	node = malloc(sizeof(PartList));
@@ -1257,6 +1263,11 @@ int check_gpt_change(struct blk_desc *dev_desc, void *buf)
 			name[k] = (char)gpt_e[i].partition_name[k];
 
 		part_node = list_part;
+
+		if (strcmp(name, partitions[i].name) != 0) {
+			printf("Caution! GPT name [%s] had been changed\n", name);
+			ret = 2;
+		}
 
 		while (part_node) {
 			if (strcmp(part_node->name, name) == 0) {

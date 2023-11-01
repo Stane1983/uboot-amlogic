@@ -437,11 +437,20 @@ static int update_gpt(int flag)
 	}
 	memset(buffer, 0, capacity_boot);
 
-	iRet = store_boot_read("bootloader", 0, 0, buffer);
-	if (iRet) {
-		printf("Failed to read boot0\n");
-		ret = -1;
-		goto exit;
+	if (flag == 0) {
+		iRet = store_boot_read("bootloader", 1, 0, buffer);
+		if (iRet) {
+			printf("Failed to read boot0\n");
+			ret = -1;
+			goto exit;
+		}
+	} else if (flag == 1 || flag == 2) {
+		iRet = store_boot_read("bootloader", 0, 0, buffer);
+		if (iRet) {
+			printf("Failed to read bootloader\n");
+			ret = -1;
+			goto exit;
+		}
 	}
 
 	if (mmc) {
@@ -465,6 +474,10 @@ static int update_gpt(int flag)
 			if (erase_flag == 3) {
 				printf("Important partition changes, refused to upgrade\n");
 				ret = 1;
+				goto exit;
+			} else if (erase_flag == 0) {
+				printf("partition doesn't change, needn't update\n");
+				ret = -1;
 				goto exit;
 			}
 
@@ -724,12 +737,26 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 
 	update_dts_gpt = env_get("update_dts_gpt");
 
-	if (rc == 0 && update_dts_gpt && !strcmp(update_dts_gpt, "1")) {
-		printf("update from dts to gpt\n");
-		update_flag = update_gpt(1);
-		env_set("update_dts_gpt", "0");
-		env_set("dts_to_gpt", "1");
-		run_command("saveenv", 0);
+	if (has_boot_slot == 1) {
+		if (rc == 0 && update_dts_gpt && !strcmp(update_dts_gpt, "1")) {
+			printf("update from dts to gpt\n");
+			update_flag = update_gpt(1);
+			env_set("update_dts_gpt", "0");
+			env_set("dts_to_gpt", "1");
+			run_command("saveenv", 0);
+		} else {
+			printf("rebootstatus is %s\n", rebootstatus);
+			if (rc == 0 && !strcmp(rebootstatus, "reboot_next")) {
+				printf("update gpt\n");
+				update_flag = update_gpt(0);
+				env_set("update_gpt", "0");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+				run_command("update_env_part -p update_gpt;", 0);
+#else
+				run_command("saveenv", 0);
+#endif
+			}
+		}
 	}
 
 	if ((write_boot && !strcmp(write_boot, "1")) || (update_flag != -1)) {
