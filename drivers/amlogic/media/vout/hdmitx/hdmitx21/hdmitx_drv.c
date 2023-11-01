@@ -520,7 +520,7 @@ static void construct_avi_packet(struct hdmitx_dev *hdev)
 	hdmi_avi_infoframe_init(info);
 
 	info->colorspace = para->cs;
-	info->scan_mode = HDMI_SCAN_MODE_NONE;
+	info->scan_mode = HDMI_SCAN_MODE_UNDERSCAN;
 	info->colorimetry = HDMI_COLORIMETRY_ITU_709;
 	info->picture_aspect = HDMI_PICTURE_ASPECT_16_9;
 	info->active_aspect = HDMI_ACTIVE_ASPECT_PICTURE;
