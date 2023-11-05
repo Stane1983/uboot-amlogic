@@ -55,7 +55,7 @@ static int blmcu_hw_init_on(struct ldim_dev_driver_s *dev_drv)
 	ldim_gpio_set(dev_drv, dev_drv->en_gpio, dev_drv->en_gpio_on);
 
 	/* step 2: delay for internal logic stable */
-	mdelay(10);
+	mdelay(500);
 
 	/* step 3: Generate external VSYNC to VSYNC/PWM pin */
 	ldim_set_duty_pwm(&dev_drv->ldim_pwm_config);

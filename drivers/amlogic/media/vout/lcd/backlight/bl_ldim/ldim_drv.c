@@ -62,14 +62,22 @@ static int ldim_power_on(struct aml_ldim_driver_s *ldim_drv)
 {
 	struct ldim_dev_driver_s *dev_drv = ldim_drv->dev_drv;
 
-	if (dev_drv && dev_drv->power_on)
+	if (!dev_drv) {
+		LDIMERR("%s: dev_drv is null\n", __func__);
+		return -1;
+	}
+
+	if (dev_drv->power_on)
 		dev_drv->power_on(ldim_drv);
 	else
 		LDIMERR("%s: device power_on is null\n", __func__);
 	ldim_drv->ldim_on_flag = 1;
 
-	if (ldim_drv->brightness_level > 0)
-		ldim_set_level(ldim_drv, ldim_drv->brightness_level);
+	//mcu_dim bit31 = 1,means need set brightness_level after power on
+	if (dev_drv->mcu_dim & 0x80000000) {
+		if (ldim_drv->brightness_level > 0)
+			ldim_set_level(ldim_drv, ldim_drv->brightness_level);
+	}
 
 	return 0;
 }
