@@ -11,39 +11,45 @@
 
 static void lcd_lvds_lane_swap_set(struct aml_lcd_drv_s *pdrv)
 {
-	unsigned int port_swap, lane_reverse, dual_port, offset;
-	unsigned char ch_reg_idx = 0;
+	unsigned int offset;
+	unsigned char ch_reg = 0;
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("[%d]: %s\n", pdrv->index, __func__);
 
 	offset = pdrv->data->offset_venc_if[pdrv->index];
-	port_swap = (pdrv->config.control.lvds_cfg.port_swap) & 0x1;
-	lane_reverse = (pdrv->config.control.lvds_cfg.lane_reverse) & 0x1;
-	dual_port = (pdrv->config.control.lvds_cfg.dual_port) & 0x1;
 
+	// 12 channel:
+	// d0_a:0 d1_a:1 d2_a:2 clk_a:3 d3_a:4 d4_a:5 d0_b:6 d1_b:7 d2_b:8 clk_b:9 d3_b:a d4_b:b
+	// DIF_CH0:d0_a DIF_CH1:d1_a DIF_CH2:d2_a DIF_CH3:clk_a DIF_CH4:d3_a DIF_CH5:d4_a
+	// DIF_CH6:d0_b DIF_CH7:d1_b DIF_CH8:d2_b DIF_CH9:clk_b DIF_CH10:d3_b DIF_CH11:d4_b
+								// port_swap, lane_reverse
+	unsigned int ch_swap_reg_6lane_map0[8] = {0x456789ab, 0x0123,   // 1, 1
+						  0x10ba9876, 0x5432,   // 1, 0
+						  0xab012345, 0x6789,   // 0, 1
+						  0x76543210, 0xba98};  // 0, 0
 	// 10/12 channel:
-	// 0:d0_a 1:d1_a 2:d2_a 3:clk_a 4:d3_a 5:d4_a/invalid
-	// 6:d0_b 7:d1_b 8:d2_b 9:clk_b a:d3_b b:d4_b/invalid
-							//    port_swap, lane_reverse
-	unsigned int ch_swap_reg_6lane[8] = {0x456789ab, 0x0123,      // 1,       1
-					     0x10ba9876, 0x5432,      // 1,       0
-					     0xab012345, 0x6789,      // 0,       1
-					     0x76543210, 0xba98};     // 0,       0
-	unsigned int ch_swap_reg_5lane[8] = {0x345789ab, 0x0612,      // 1,       1
-					     0x210a9876, 0x5b43,      // 1,       0
-					     0x9ab12345, 0x6078,      // 0,       1
-					     0x87643210, 0xb5a9};     // 0,       0
+	// d0_a:0 d1_a:1 d2_a:2 clk_a:3 d3_a:4 d4_a:5 d0_b:6 d1_b:7 d2_b:8 clk_b:9 d3_b:a d4_b:b
+	// DIF_CH0:d0_a DIF_CH1:d1_a DIF_CH2:d2_a DIF_CH3:clk_a DIF_CH4:d3_a
+	// DIF_CH5:d0_b DIF_CH6:d1_b DIF_CH7:d2_b DIF_CH8:clk_b DIF_CH9:d3_b
+	// DIF_CH10:d4_a/invalid  DIF_CH11:d4_b/invalid
+	unsigned int ch_swap_reg_6lane_map1[8] = {0x345789ab, 0x0612,   // 1, 1
+						  0x210a9876, 0x5b43,   // 1, 0
+						  0x9ab12345, 0x6078,   // 0, 1
+						  0x87643210, 0xb5a9};  // 0, 0
 	// 16 channel:
-	// 0:d0_a 1:d1_a 2:d2_a 3:clk_a 4:d3_a 5:d4_a 6:invalid 7:invalid
-	// 8:d0_b 9:d1_b a:d2_b b:clk_b c:d3_b d:d4_b e:invalid f:invalid
-	unsigned int ch_swap_reg_8lane[8] = {0x89abcdef, 0x01234567,  // 1,       1
-					     0xfedcba98, 0x76543210,  // 1,       0
-					     0x01234567, 0x89abcdef,  // 0,       1
-					     0x76543210, 0xfedcba98}; // 0,       0
+	// d0_a:0 d1_a:1 d2_a:2 clk_a:3 d3_a:4 d4_a:5 d0_b:8 d1_b:9 d2_b:a clk_b:b d3_b:c d4_b:d
+	// DIF_CH0:d0_a DIF_CH1:d1_a DIF_CH2:d2_a DIF_CH3:clk_a DIF_CH4:d3_a DIF_CH5:d4_a
+	// DIF_CH6:invalid DIF_CH7:invalid
+	// DIF_CH8:d0_b DIF_CH9:d1_b DIF_CH10:d2_b DIF_CH11:clk_b DIF_CH12:d3_b DIF_CH13:d4_b
+	// DIF_CH14:invalid DIF_CH15:invalid
+	unsigned int ch_swap_reg_8lane[8] = {0x89abcdef, 0x01234567,    // 1, 1
+					     0xfedcba98, 0x76543210,    // 1, 0
+					     0x01234567, 0x89abcdef,    // 0, 1
+					     0x76543210, 0xfedcba98};   // 0, 0
 
-	ch_reg_idx  = port_swap ? 0 : 4;
-	ch_reg_idx += lane_reverse ? 0 : 2;
+	ch_reg  = pdrv->config.control.lvds_cfg.port_swap ? 0 : 4;
+	ch_reg += pdrv->config.control.lvds_cfg.lane_reverse ? 0 : 2;
 
 	/* lvds swap */
 	switch (pdrv->data->chip_type) {
@@ -52,20 +58,20 @@ static void lcd_lvds_lane_swap_set(struct aml_lcd_drv_s *pdrv)
 	case LCD_CHIP_T5W:
 	case LCD_CHIP_T5M:
 	case LCD_CHIP_T3:
-		lcd_vcbus_write(P2P_CH_SWAP0, ch_swap_reg_6lane[ch_reg_idx]);
-		lcd_vcbus_write(P2P_CH_SWAP1, ch_swap_reg_6lane[ch_reg_idx + 1]);
+		lcd_vcbus_write(P2P_CH_SWAP0, ch_swap_reg_6lane_map0[ch_reg]);
+		lcd_vcbus_write(P2P_CH_SWAP1, ch_swap_reg_6lane_map0[ch_reg + 1]);
 		break;
 	case LCD_CHIP_T5:
 	case LCD_CHIP_T5D:
 	case LCD_CHIP_TXHD2:
-		lcd_vcbus_write(P2P_CH_SWAP0, ch_swap_reg_5lane[ch_reg_idx]);
-		lcd_vcbus_write(P2P_CH_SWAP1, ch_swap_reg_5lane[ch_reg_idx + 1]);
+		lcd_vcbus_write(P2P_CH_SWAP0, ch_swap_reg_6lane_map1[ch_reg]);
+		lcd_vcbus_write(P2P_CH_SWAP1, ch_swap_reg_6lane_map1[ch_reg + 1]);
 		break;
 	case LCD_CHIP_T7:
 		//don't support port_swap and lane_reverse when single port
-		if (pdrv->index == 2 && dual_port) {
-			lcd_vcbus_write(P2P_CH_SWAP0 + offset, ch_swap_reg_5lane[ch_reg_idx]);
-			lcd_vcbus_write(P2P_CH_SWAP1 + offset, ch_swap_reg_5lane[ch_reg_idx + 1]);
+		if (pdrv->index == 2 && pdrv->config.control.lvds_cfg.dual_port) {
+			lcd_vcbus_write(P2P_CH_SWAP0 + offset, ch_swap_reg_6lane_map1[ch_reg]);
+			lcd_vcbus_write(P2P_CH_SWAP1 + offset, ch_swap_reg_6lane_map1[ch_reg + 1]);
 		} else if (pdrv->index == 1) {
 			lcd_vcbus_write(P2P_CH_SWAP0 + offset, 0xf43210ff);
 			lcd_vcbus_write(P2P_CH_SWAP1 + offset, 0xffff);
@@ -75,8 +81,8 @@ static void lcd_lvds_lane_swap_set(struct aml_lcd_drv_s *pdrv)
 		}
 		break;
 	case LCD_CHIP_T3X: // second path not support lvds
-		lcd_vcbus_write(P2P_CH_SWAP0, ch_swap_reg_8lane[ch_reg_idx]);
-		lcd_vcbus_write(P2P_CH_SWAP1, ch_swap_reg_8lane[ch_reg_idx + 1]);
+		lcd_vcbus_write(P2P_CH_SWAP0, ch_swap_reg_8lane[ch_reg]);
+		lcd_vcbus_write(P2P_CH_SWAP1, ch_swap_reg_8lane[ch_reg + 1]);
 		break;
 	default:
 		break;
@@ -100,9 +106,9 @@ void lcd_lvds_enable(struct aml_lcd_drv_s *pdrv)
 		LCDPR("[%d]: %s\n", pdrv->index, __func__);
 
 	offset = pdrv->data->offset_venc_if[pdrv->index];
-	lvds_repack = (pdrv->config.control.lvds_cfg.lvds_repack) & 0x3;
-	pn_swap   = (pdrv->config.control.lvds_cfg.pn_swap) & 0x1;
-	dual_port = (pdrv->config.control.lvds_cfg.dual_port) & 0x1;
+	lvds_repack = pdrv->config.control.lvds_cfg.lvds_repack & 0x3;
+	pn_swap   = pdrv->config.control.lvds_cfg.pn_swap;
+	dual_port = pdrv->config.control.lvds_cfg.dual_port;
 	fifo_mode = dual_port ? 0x3 : 0x1;
 
 	// H V:  L_POL_CNTL_ADDR LVDS_PACK_CNTL_ADDR

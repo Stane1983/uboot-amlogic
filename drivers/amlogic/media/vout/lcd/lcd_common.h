@@ -137,6 +137,7 @@ int aml_lcd_prbs_test(struct aml_lcd_drv_s *pdrv, unsigned int ms, unsigned int 
 /* lcd phy */
 void lcd_phy_tcon_chpi_bbc_init_tl1(struct lcd_config_s *pconf);
 unsigned int lcd_phy_vswing_level_to_value(struct aml_lcd_drv_s *pdrv, unsigned int level);
+unsigned int lcd_phy_amp_dft_value(struct aml_lcd_drv_s *pdrv);
 unsigned int lcd_phy_preem_level_to_value(struct aml_lcd_drv_s *pdrv, unsigned int level);
 void lcd_phy_set(struct aml_lcd_drv_s *pdrv, int status);
 int lcd_phy_probe(struct aml_lcd_drv_s *pdrv);

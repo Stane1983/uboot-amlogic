@@ -22,6 +22,17 @@ unsigned int lcd_phy_vswing_level_to_value(struct aml_lcd_drv_s *pdrv, unsigned 
 	return lcd_phy_ctrl->phy_vswing_level_to_val(pdrv, level);
 }
 
+unsigned int lcd_phy_amp_dft_value(struct aml_lcd_drv_s *pdrv)
+{
+	if (!lcd_phy_ctrl)
+		return 0;
+
+	if (!lcd_phy_ctrl->phy_amp_dft_val)
+		return 0;
+
+	return lcd_phy_ctrl->phy_amp_dft_val(pdrv);
+}
+
 unsigned int lcd_phy_preem_level_to_value(struct aml_lcd_drv_s *pdrv, unsigned int level)
 {
 	if (!lcd_phy_ctrl)

@@ -26,6 +26,7 @@ static struct lcd_phy_ctrl_s lcd_phy_ctrl_c3 = {
 	.lane_lock = 0,
 	.ctrl_bit_on = 1,
 	.phy_vswing_level_to_val = NULL,
+	.phy_amp_dft_val = NULL,
 	.phy_preem_level_to_val = NULL,
 	.phy_set_lvds = NULL,
 	.phy_set_vx1 = NULL,
