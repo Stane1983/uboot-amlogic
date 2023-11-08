@@ -530,6 +530,7 @@ ulong mmc_bread(struct blk_desc *block_dev, lbaint_t start, lbaint_t blkcnt,
 	int dev_num = block_dev->devnum;
 	int err;
 	lbaint_t cur, blocks_todo = blkcnt;
+	u32 desc_num = 1;
 
 	if (blkcnt == 0)
 		return 0;
@@ -561,9 +562,12 @@ ulong mmc_bread(struct blk_desc *block_dev, lbaint_t start, lbaint_t blkcnt,
 	if (!emmckey_is_access_range_legal(mmc, start, blkcnt))
 		return 0;
 
+	desc_num = dev_read_u32_default(mmc->dev, "desc-num", 1);
+
 	do {
-		cur = (blocks_todo > mmc->cfg->b_max) ?
-			mmc->cfg->b_max : blocks_todo;
+		cur = (blocks_todo > (desc_num * mmc->cfg->b_max)) ?
+			(desc_num * mmc->cfg->b_max) : blocks_todo;
+
 		if (mmc_read_blocks(mmc, dst, start, cur) != cur) {
 			pr_debug("%s: Failed to read blocks\n", __func__);
 			return 0;

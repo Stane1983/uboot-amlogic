@@ -228,7 +228,8 @@
 			<&clkc CLKID_SD_EMMC_C_GATE>,
 			<&clkc CLKID_GP0_PLL>,
 			<&clkc CLKID_XTAL>;
-			clock-names = "mux", "div", "gate", "clkin", "xtal";
+	clock-names = "mux", "div", "gate", "clkin", "xtal";
+	desc-num = <32>;
 };
 
 &nand {
