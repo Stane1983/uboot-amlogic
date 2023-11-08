@@ -251,6 +251,13 @@ int32_t hw_update_internal(sha2_ctx *cur_ctx, const uint8_t *input,
 		while (*P_DMA_STS0 == 0)
 			;
 
+		/* STS bit 1: error */
+		if (*P_DMA_STS0 & BIT(1)) {
+			printf("Crypto DMA encounters error\n");
+			mutex_unlock(&crypto_lock);
+			return CRYPTO_ERROR_BAD_PROCESS;
+		}
+
 		if (!dsc.dsc_cfg.b.block) {
 			mutex_unlock(&crypto_lock);
 			return CRYPTO_ERROR_NO_ERROR;
@@ -349,10 +356,13 @@ int32_t hw_update_internal(sha2_ctx *cur_ctx, const uint8_t *input,
 		memcpy(hash, hash_tmp, SHA256_DIGEST_SIZE);
 	cur_ctx->tot_len += ilen;
 
-	if (*P_DMA_STS0 & 0x1)
+	/* STS bit 1: error */
+	if (*P_DMA_STS0 & BIT(1)) {
+		printf("Crypto DMA encounters error\n");
 		ret = CRYPTO_ERROR_BAD_PROCESS;
-	else
+	} else {
 		ret = CRYPTO_ERROR_NO_ERROR;
+	}
 
 #ifdef CRYPTO_DEBUG
 	for (i = 0; i < sizeof(dsc) / sizeof(struct dma_dsc); i++) {
