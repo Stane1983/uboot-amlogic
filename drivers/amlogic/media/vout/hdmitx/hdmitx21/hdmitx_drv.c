@@ -626,19 +626,41 @@ static void vpu_hdmi_set_matrix_ycbcr2rgb(void)
 	//regVPP_MATRIX_OFFSET2 =VPU_HDMI_MATRIX_OFFSET2;
 	//regVPP_MATRIX_EN_CTRL = VPU_HDMI_MATRIX_EN_CTRL;
 	pr_info("ycbcr2rgb matrix\n");
-	hd21_write_reg(VPU_HDMI_MATRIX_PRE_OFFSET0_1,  ((0xfc0) << 16) | (0xe00)); //0xfc00e00);
+	//ycbcr not full range, 601 conversion
+	hd21_write_reg(VPU_HDMI_MATRIX_PRE_OFFSET0_1,  ((0x0) << 16) | (0xe00)); //0xfc00e00);
 	hd21_write_reg(VPU_HDMI_MATRIX_PRE_OFFSET2, (0xe00)); //0x0e00);
 
-	//1.164     0       1.596
-	//1.164   -0.392    -0.813
-	//1.164   2.017     0
-	hd21_write_reg(VPU_HDMI_MATRIX_COEF00_01, (0x4a8 << 16) | 0);
-	hd21_write_reg(VPU_HDMI_MATRIX_COEF02_10, (0x662 << 16) | 0x4a8);
-	hd21_write_reg(VPU_HDMI_MATRIX_COEF11_12, (0x1e6f << 16) | 0x1cbf);
-	hd21_write_reg(VPU_HDMI_MATRIX_COEF20_21, (0x4a8 << 16) | 0x811);
+	//1     0       1.402
+	//1   -0.34414  -0.71414
+	//1   1.772     0
+	hd21_write_reg(VPU_HDMI_MATRIX_COEF00_01, (0x400 << 16) | 0);
+	hd21_write_reg(VPU_HDMI_MATRIX_COEF02_10, (0x59c << 16) | 0x400);
+	hd21_write_reg(VPU_HDMI_MATRIX_COEF11_12, (0x1ea0 << 16) | 0x1d25);
+	hd21_write_reg(VPU_HDMI_MATRIX_COEF20_21, (0x400 << 16) | 0x717);
 	hd21_write_reg(VPU_HDMI_MATRIX_COEF22, 0x0);
 	hd21_write_reg(VPU_HDMI_MATRIX_OFFSET0_1, 0x0);
 	hd21_write_reg(VPU_HDMI_MATRIX_OFFSET2, 0x0);
+
+	//ycbcr full range, 601 conversion
+	if (0) {
+		hd21_write_reg(VPU_HDMI_MATRIX_PRE_OFFSET0_1,
+			((0xfc0) << 16) | (0xe00)); //0xfc00e00
+		hd21_write_reg(VPU_HDMI_MATRIX_PRE_OFFSET2, (0xe00)); //0x0e00);
+
+		//1.164     0       1.596
+		//1.164   -0.392    -0.813
+		//1.164   2.017     0
+		hd21_write_reg(VPU_HDMI_MATRIX_COEF00_01, (0x4a8 << 16) | 0);
+		hd21_write_reg(VPU_HDMI_MATRIX_COEF02_10, (0x662 << 16) | 0x4a8);
+		hd21_write_reg(VPU_HDMI_MATRIX_COEF11_12, (0x1e6f << 16) | 0x1cbf);
+		hd21_write_reg(VPU_HDMI_MATRIX_COEF20_21, (0x4a8 << 16) | 0x811);
+		hd21_write_reg(VPU_HDMI_MATRIX_COEF22, 0x0);
+		hd21_write_reg(VPU_HDMI_MATRIX_OFFSET0_1, 0x0);
+		hd21_write_reg(VPU_HDMI_MATRIX_OFFSET2, 0x0);
+	}
+
+	//enable matrix_ycbcr2rgb
+	hd21_set_reg_bits(VPU_HDMI_FMT_CTRL, 3, 0, 2);
 }
 
 void hdmitx21_set(struct hdmitx_dev *hdev)
