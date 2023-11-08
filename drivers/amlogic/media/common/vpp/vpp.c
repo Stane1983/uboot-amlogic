@@ -1973,12 +1973,14 @@ void vpp_viu2_matrix_update(int type)
 
 	switch (type) {
 	case VPP_CM_RGB:
-		/* default RGB */
-		#ifndef AML_T7_DISPLAY
-		set_viu2_osd_matrix_rgb2yuv(0);
-		#else
+		#if defined(AML_T7_DISPLAY)
 		/* vpp_top1: yuv2rgb */
 		vpp_top_post2_matrix_yuv2rgb(1);
+		#elif defined(AML_S5_DISPLAY)
+		/* vpp_top1: use vpp post csc to do yuv2rgb */
+		#else
+		/* default RGB */
+		set_viu2_osd_matrix_rgb2yuv(0);
 		#endif
 		break;
 	case VPP_CM_YUV:
