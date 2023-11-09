@@ -28,6 +28,7 @@
 #include <asm/arch/bl31_apis.h>
 #include <amlogic/cpu_id.h>
 #include <asm/arch/secure_apb.h>
+#include <asm/arch/cpu_config.h>
 
 static long sharemem_input_base;
 static long sharemem_output_base;
@@ -689,4 +690,28 @@ int32_t get_avbkey_from_fip(uint8_t *buf, uint32_t buflen)
 		memcpy(buf, (const void *)sharemem_output_base, retlen);
 
 	return ret;
+}
+
+int32_t aml_get_bootloader_version(uint8_t *outbuf)
+{
+	if (!outbuf) {
+		printf("BL33: get version storebuf is NULL\n");
+		return -1;
+	}
+	if (!sharemem_output_base)
+		sharemem_output_base =
+			get_sharemem_info(GET_SHARE_MEM_OUTPUT_BASE);
+	if (sharemem_output_base) {
+		register long x0 asm("x0") = GET_SHARE_MEM_INFORMATION;
+		register long x1 asm("x1") = GET_SHARE_VERSION_DATA;
+		asm volatile(\
+			__asmeq("%0", "x0")
+			__asmeq("%1", "x1")
+			"smc	#0\n"
+			: "+r" (x0)
+			: "r" (x1));
+		memcpy(outbuf, (void *)sharemem_output_base, sizeof(build_messages_t));
+		return 0;
+	}
+	return -1;
 }

@@ -76,10 +76,9 @@
 
 #define PARAM_MESSAGE       0x04
 #define VERSION_1       0x01
+#define VERSION_2       0x02
 
-#ifdef BL2E_VER_BUFF_BASE_ADDR
-#define CONFIG_BL2E_VER_BUFF
-#endif
+#define CONFIG_BUILD_MESSAGE
 /***************************************************************************
  * This structure provides version information and the size of the
  * structure, attributes for the structure it represents
@@ -92,20 +91,34 @@ typedef struct param_header {
 } param_header_t;
 
 /* build message structure for BL2x to BL33 */
+#define INDEX_SPL			1
+#define INDEX_CORE			2
+#define INDEX_REE			3
+#define INDEX_TEE			4
+#define INDEX_BL31_10		10
+#define INDEX_BL31_13		11
+#define INDEX_BL31_27		12
+#define INDEX_BL33_15		30
+#define INDEX_BL33_19		31
+#define INDEX_BL33_23		32
+struct messages_info {
+	char user[32];
+	char hash[32];
+	char time[64];
+	char ver_str[16];
+	unsigned int ver;
+	unsigned int init_flag;
+	char reserv[104];
+}; //sizeof = 0x100
 typedef struct build_messages {
 	param_header_t h;
-	uint64_t bl2_message_addr;
-	uint64_t bl2_message_size;
-	uint64_t bl2e_message_addr;
-	uint64_t bl2e_message_size;
-	uint64_t bl2x_message_addr;
-	uint64_t bl2x_message_size;
-	uint64_t bl30_message_addr;
-	uint64_t bl30_message_size;
-	uint64_t bl31_message_addr;
-	uint64_t bl31_message_size;
-	uint64_t bl32_message_addr;
-	uint64_t bl32_message_size;
+	struct messages_info bl2_message;
+	struct messages_info bl2e_message;
+	struct messages_info bl2x_message;
+	struct messages_info bl30_message;
+	struct messages_info bl31_message;
+	struct messages_info bl32_message;
+	struct messages_info bl33_message;
 } build_messages_t;
 
 //for signature test

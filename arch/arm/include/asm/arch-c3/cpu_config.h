@@ -53,6 +53,45 @@
 
 /* BL2 SPL size */
 #define BL2_SIZE			(166 * 1024)
+#define PARAM_MESSAGE       0x04
+#define VERSION_1       0x01
+#define VERSION_2       0x02
+#define CONFIG_BUILD_MESSAGE
+typedef struct param_header {
+	uint8_t type;		/* type of the structure */
+	uint8_t version;    /* version of this structure */
+	uint16_t size;      /* size of this structure in bytes */
+	uint32_t attr;      /* attributes: unused bits SBZ */
+} param_header_t;
+#define INDEX_SPL			1
+#define INDEX_CORE			2
+#define INDEX_REE			3
+#define INDEX_TEE			4
+#define INDEX_BL31_10		10
+#define INDEX_BL31_13		11
+#define INDEX_BL31_27		12
+#define INDEX_BL33_15		30
+#define INDEX_BL33_19		31
+#define INDEX_BL33_23		32
+struct messages_info {
+	char user[32];
+	char hash[32];
+	char time[64];
+	char ver_str[16];
+	unsigned int ver;
+	unsigned int init_flag;
+	char reserv[104];
+}; //sizeof = 0x100
+typedef struct build_messages {
+	param_header_t h;
+	struct messages_info bl2_message;
+	struct messages_info bl2e_message;
+	struct messages_info bl2x_message;
+	struct messages_info bl30_message;
+	struct messages_info bl31_message;
+	struct messages_info bl32_message;
+	struct messages_info bl33_message;
+} build_messages_t;
 
 //for signature test
 //#define CONFIG_AML_SIG_TEST_BUILD

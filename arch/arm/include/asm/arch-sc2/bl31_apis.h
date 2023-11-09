@@ -41,6 +41,9 @@
 /* SECUREOS DEFINITION*/
 /* SMC Identifiers for non-secure world functions */
 #define CALL_TRUSTZONE_HAL_API                  0x5
+#define GET_SHARE_MEM_INFORMATION		0x8200002a
+	#define GET_SHARE_VERSION_ADDR		 0x3	//for secure use
+	#define GET_SHARE_VERSION_DATA		 0x4	//for none secure use
 
 /* EFUSE */
 #define EFUSE_READ					0x82000030
@@ -180,4 +183,5 @@ void set_boot_first_timeout(uint64_t arg0);
 int bl31_get_cornerinfo(uint8_t *outbuf, int size);
 int32_t set_boot_params(const keymaster_boot_params*);
 int32_t get_avbkey_from_fip(uint8_t *buf, uint32_t buflen);
+int32_t aml_get_bootloader_version(uint8_t *outbuf);
 #endif
