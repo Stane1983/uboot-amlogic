@@ -224,10 +224,9 @@ void ini_list_section(INI_HANDLER_DATA *pHandlerData) {
 
 static INI_SECTION* getSection(const char* section, INI_HANDLER_DATA *pHandlerData) {
     INI_SECTION* pSec = NULL;
-    for (pSec = pHandlerData->mpFirstSection; pSec != NULL; pSec = pSec->pNext) {
-        if (strncmp(pSec->Name, section, strlen(section)) == 0) {
-            return pSec;
-        }
+	for (pSec = pHandlerData->mpFirstSection; pSec != NULL; pSec = pSec->pNext) {
+		if (strcmp(pSec->Name, section) == 0)
+			return pSec;
     }
 
     return NULL;
@@ -235,11 +234,10 @@ static INI_SECTION* getSection(const char* section, INI_HANDLER_DATA *pHandlerDa
 
 static INI_LINE* getKeyLineAtSec(INI_SECTION* pSec, const char* key) {
     INI_LINE* pLine = NULL;
-    for (pLine = pSec->pLine; pLine != NULL; pLine = pLine->pNext) {
-        if (strncmp(pLine->Name, key, strlen(key)) == 0) {
-            return pLine;
-        }
-    }
+	for (pLine = pSec->pLine; pLine != NULL; pLine = pLine->pNext) {
+		if (strcmp(pLine->Name, key) == 0)
+			return pLine;
+	}
     return NULL;
 }
 

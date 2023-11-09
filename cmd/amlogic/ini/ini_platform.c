@@ -92,7 +92,7 @@ static int splitFilePath(const char *file_path, char part_name[], char file_name
                 ALOGE("%s, the file path \"%s\" doesn't have ext name!!!\n", __FUNCTION__, file_path);
                 return -1;
             } else {
-                if (strncmp(tmp_end_ptr + 1, ext_name, 128)) {
+                if (strcmp(tmp_end_ptr + 1, ext_name)) {
                     ALOGE("%s, the ext name of file path \"%s\" not equal to the special ext name \"%s\"!!!\n", __FUNCTION__, file_path, ext_name);
                     return -1;
                 }
