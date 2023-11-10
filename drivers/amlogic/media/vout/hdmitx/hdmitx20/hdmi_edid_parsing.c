@@ -734,7 +734,7 @@ static void set_vsdb_dc_420_cap(struct rx_cap *prxcap,
 	prxcap->dc_48bit_420 = !!(edid_offset[6] & (1 << 2));
 }
 
-static bool y420vicright(unsigned int vic)
+static bool y420vicright(enum hdmi_vic vic)
 {
 	bool rtn_val;
 
@@ -872,6 +872,7 @@ static int edid_y420cmdb_postprocess(struct rx_cap *prxcap)
 {
 	unsigned int i = 0, j = 0, valid = 0;
 	unsigned char *p = NULL;
+	enum hdmi_vic vic;
 
 	if (prxcap->y420_all_vic == 1)
 		edid_y420cmdb_fill_all_vic(prxcap);
@@ -884,10 +885,10 @@ static int edid_y420cmdb_postprocess(struct rx_cap *prxcap)
 		p = &prxcap->y420cmdb_bitmap[i];
 		for (j = 0; j < 8; j++) {
 			valid = ((*p >> j) & 0x1);
-			if (valid != 0 &&
-			    y420vicright(prxcap->VIC[i * 8 + j])) {
+			vic = prxcap->SVD_VIC[i * 8 + j];
+			if (valid != 0 && y420vicright(vic)) {
 				prxcap->VIC[prxcap->VIC_count] =
-				HDMITX_VIC420_OFFSET + prxcap->VIC[i * 8 + j];
+				HDMITX_VIC420_OFFSET + vic;
 				prxcap->VIC_count++;
 			}
 		}
@@ -997,7 +998,9 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap,
 	 * in addition to RGB
 	 */
 	prxcap->pref_colorspace = blockbuf[3] & 0x30;
-
+	/* Initialize SVD_VIC used for SVD storage in the video data block */
+	prxcap->SVD_VIC_count = 0;
+	memset(prxcap->SVD_VIC, 0, sizeof(prxcap->SVD_VIC));
 	/* prxcap->native_VIC = 0xff; */
 	/* the descriptor offset of special EDID is 127
 	 * which is the offset of checksum byte
@@ -1033,8 +1036,12 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap,
 					VIC &= (~0x80);
 					prxcap->native_VIC = VIC;
 				}
-				prxcap->VIC[prxcap->VIC_count] = VIC;
-				prxcap->VIC_count++;
+				/* The SVD in the video data block is stored in SVD_VIC
+				 * and mapped with 420 CMDB
+				 */
+				prxcap->SVD_VIC[prxcap->SVD_VIC_count] = VIC;
+				prxcap->SVD_VIC_count++;
+				store_cea_idx(prxcap, VIC);
 			}
 			offset += count;
 			break;
@@ -1372,27 +1379,25 @@ const char *hdmitx_edid_vic_to_string(enum hdmi_vic vic)
 	return disp_str;
 }
 
-static bool is_rx_support_y420(struct hdmitx_dev *hdev)
+static bool is_rx_support_y420(struct hdmitx_dev *hdev, enum hdmi_vic vic)
 {
-	enum hdmi_vic vic = HDMI_unknown;
+	unsigned int i = 0;
+	struct rx_cap *prxcap = &hdev->RXCap;
+	bool ret = false;
 
-	vic = hdmitx_edid_get_VIC(hdev, "2160p60hz420", 0);
-	if (vic != HDMI_unknown)
-		return 1;
-
-	vic = hdmitx_edid_get_VIC(hdev, "2160p50hz420", 0);
-	if (vic != HDMI_unknown)
-		return 1;
-
-	vic = hdmitx_edid_get_VIC(hdev, "smpte60hz420", 0);
-	if (vic != HDMI_unknown)
-		return 1;
-
-	vic = hdmitx_edid_get_VIC(hdev, "smpte50hz420", 0);
-	if (vic != HDMI_unknown)
-		return 1;
-
-	return 0;
+	vic += HDMITX_VIC420_OFFSET;
+	for (i = 0; i < VIC_MAX_NUM; i++) {
+		if (prxcap->VIC[i]) {
+			if (prxcap->VIC[i] == vic) {
+				ret = true;
+				break;
+			}
+		} else {
+			ret = false;
+			break;
+		}
+	}
+	return ret;
 }
 
 static int is_4k_fmt(char *mode)
@@ -1647,7 +1652,7 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 		return valid;
 	}
 	if (para->cs == HDMI_COLOR_FORMAT_420) {
-		if (!is_rx_support_y420(hdev))
+		if (!is_rx_support_y420(hdev, para->vic))
 			return 0;
 		if (!prxcap->dc_30bit_420)
 			if (para->cd == HDMI_COLOR_DEPTH_30B)

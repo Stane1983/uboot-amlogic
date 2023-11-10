@@ -467,11 +467,14 @@ struct dv_vsif_para {
 
 #define Y420CMDB_MAX 32
 #define VIC_MAX_NUM  256
+#define SVD_VIC_MAX_NUM 128
 struct rx_cap {
 	unsigned int native_Mode;
 	/*video*/
 	unsigned int VIC[VIC_MAX_NUM];
+	unsigned int SVD_VIC[SVD_VIC_MAX_NUM]; /* used to store SVD in VDB */
 	unsigned int VIC_count;
+	unsigned int SVD_VIC_count;
 	unsigned int native_VIC;
 	/*vendor*/
 	unsigned int IEEEOUI;

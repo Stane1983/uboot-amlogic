@@ -827,9 +827,8 @@ static int edid_y420cmdb_postprocess(struct rx_cap *prxcap)
 		p = &prxcap->y420cmdb_bitmap[i];
 		for (j = 0; j < 8; j++) {
 			valid = ((*p >> j) & 0x1);
-			vic = prxcap->VIC[i * 8 + j];
+			vic = prxcap->SVD_VIC[i * 8 + j];
 			if (valid != 0 && _is_y420_vic(vic)) {
-				store_cea_idx(prxcap, vic);
 				store_y420_idx(prxcap, vic);
 			}
 		}
@@ -1067,7 +1066,9 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap,
 	 * in addition to RGB
 	 */
 	prxcap->pref_colorspace = blockbuf[3] & 0x30;
-
+	/* Initialize SVD_VIC used for SVD storage in the video data block */
+	prxcap->SVD_VIC_count = 0;
+	memset(prxcap->SVD_VIC, 0, sizeof(prxcap->SVD_VIC));
 	/* prxcap->native_VIC = 0xff; */
 	if (end > 127)
 		return 0;
@@ -1095,8 +1096,12 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap,
 					VIC &= (~0x80);
 					prxcap->native_VIC = VIC;
 				}
-				prxcap->VIC[prxcap->VIC_count] = VIC;
-				prxcap->VIC_count++;
+				/* The SVD in the video data block is stored in SVD_VIC
+				 * and mapped with 420 CMDB
+				 */
+				prxcap->SVD_VIC[prxcap->SVD_VIC_count] = VIC;
+				prxcap->SVD_VIC_count++;
+				store_cea_idx(prxcap, VIC);
 			}
 			offset += count;
 			break;
