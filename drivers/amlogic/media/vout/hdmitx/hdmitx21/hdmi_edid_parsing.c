@@ -1307,7 +1307,8 @@ unsigned int hdmi_edid_parsing(unsigned char *edid_buf, struct rx_cap *prxcap)
 
 	cta_block_count = edid_buf[0x7E];
 	/* HF-EEODB */
-	if (edid_buf[128 + 4] == 0xe2 && edid_buf[128 + 5] == 0x78)
+	if (cta_block_count && edid_buf[128 + 4] == 0xe2 &&
+		edid_buf[128 + 5] == 0x78)
 		cta_block_count = edid_buf[128 + 6];
 	/* limit cta_block_count to EDID_MAX_BLOCK - 1 */
 	if (cta_block_count > EDID_MAX_BLOCK - 1)
@@ -1837,9 +1838,9 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 		break;
 	}
 
-	/* DVI case, only 8bit */
+	/* DVI case, only rgb,8bit */
 	if (prxcap->IEEEOUI != HDMI_IEEEOUI) {
-		if (para->cd != COLORDEPTH_24B)
+		if (para->cd != COLORDEPTH_24B || para->cs != HDMI_COLORSPACE_RGB)
 			return 0;
 	}
 

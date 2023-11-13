@@ -1253,7 +1253,7 @@ unsigned int hdmi_edid_parsing(unsigned char *EDID_buf, struct rx_cap *prxcap)
 
 	cta_block_count = EDID_buf[0x7E];
 	/* HF-EEODB */
-	if (cta_block_count == 1 && EDID_buf[128 + 4] == 0xe2 &&
+	if (cta_block_count && EDID_buf[128 + 4] == 0xe2 &&
 		EDID_buf[128 + 5] == 0x78)
 		cta_block_count = EDID_buf[128 + 6];
 	/* limit cta_block_count to EDID_MAX_BLOCK - 1 */
@@ -1551,9 +1551,10 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 
 	prxcap = &hdev->RXCap;
 
-	/* DVI case, only 8bit */
+	/* DVI case, only rgb,8bit */
 	if (prxcap->IEEEOUI != HDMI_IEEEOUI) {
-		if (para->cd != HDMI_COLOR_DEPTH_24B)
+		if (para->cd != HDMI_COLOR_DEPTH_24B ||
+			para->cs != HDMI_COLOR_FORMAT_RGB)
 			return 0;
 	}
 
