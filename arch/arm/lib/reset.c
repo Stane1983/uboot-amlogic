@@ -41,7 +41,8 @@ int do_reset(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 
 	disable_interrupts();
 
-	reset_misc();
+	if (!IS_ENABLED(CONFIG_AMLOGIC_MODIFY))
+		reset_misc();
 	reset_cpu();
 
 	/*NOTREACHED*/
