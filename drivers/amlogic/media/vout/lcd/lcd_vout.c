@@ -1033,6 +1033,11 @@ unsigned int aml_lcd_driver_outputmode_check(char *mode, unsigned int frac)
 	unsigned int viu_mux = VIU_MUX_MAX;
 	int index, ret;
 
+	if (!mode) {
+		LCDERR("%s: mode is NULL\n", __func__);
+		return VIU_MUX_MAX;
+	}
+
 	for (index = 0; index < LCD_MAX_DRV; index++) {
 		pdrv = lcd_driver_check_valid(index);
 		if (!pdrv)
@@ -1054,6 +1059,11 @@ void aml_lcd_driver_prepare(int index, char *mode, unsigned int frac)
 {
 	struct aml_lcd_drv_s *pdrv;
 
+	if (!mode) {
+		LCDERR("%s: mode is NULL\n", __func__);
+		return;
+	}
+
 	pdrv = lcd_driver_check_valid(index);
 	if (!pdrv)
 		return;
@@ -1070,6 +1080,11 @@ void aml_lcd_driver_enable(int index, char *mode, unsigned int frac)
 {
 	struct aml_lcd_drv_s *pdrv;
 	char *ddr_resume = NULL;
+
+	if (!mode) {
+		LCDERR("%s: mode is NULL\n", __func__);
+		return;
+	}
 
 	pdrv = lcd_driver_check_valid(index);
 	if (!pdrv)
