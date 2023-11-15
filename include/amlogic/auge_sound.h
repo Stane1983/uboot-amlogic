@@ -10,4 +10,7 @@
 
 int aml_audio_init(void);
 
+/* earcrx */
+void earcrx_init(void);
+
 #endif

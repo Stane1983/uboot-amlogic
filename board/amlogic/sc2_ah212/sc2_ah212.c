@@ -36,6 +36,9 @@
 #include <amlogic/board.h>
 
 #include "avb2_kpub.c"
+#ifdef CONFIG_CMD_SND
+#include "amlogic/auge_sound.h"
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -148,6 +151,9 @@ int board_init(void)
 #ifdef CONFIG_AML_HDMITX20
 	hdmitx_set_hdmi_5v();
 	hdmitx_init();
+#endif
+#ifdef CONFIG_CMD_SND
+	earcrx_init();
 #endif
 
 	//wifi reset
