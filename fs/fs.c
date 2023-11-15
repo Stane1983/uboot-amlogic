@@ -30,6 +30,10 @@
 #include <squashfs.h>
 #include <erofs.h>
 
+#ifdef CONFIG_ZAPPER_IRDETO_BOOT
+#include <amlogic/zapper_boot.h>
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 static struct blk_desc *fs_dev_desc;
@@ -76,6 +80,12 @@ static int fs_ls_generic(const char *dirname)
 		} else {
 			printf(" %8lld   %s\n", dent->size, dent->name);
 			nfiles++;
+
+#ifdef CONFIG_ZAPPER_IRDETO_BOOT
+			if (Zapper_read_usb_file_name(dent->name, nfiles)) {
+				printf(" %8lld   %s is unrecognizable to zapper\n", dent->size, dent->name);
+			}
+#endif
 		}
 	}
 
