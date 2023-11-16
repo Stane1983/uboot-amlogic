@@ -3447,8 +3447,6 @@ static void save_hdmitx_format(enum hdmi_vic vic, int y420)
 	unsigned int data32;
 
 	data32 = vic & 0xff;
-	data32 |= (hdmitx_rd_reg(HDMITX_DWC_FC_VSDPAYLOAD1) & 0x7) << 8;
-	data32 |= (!!y420) << 11;
 	hd_write_reg(P_SYSCTRL_DEBUG_REG0, data32);
 }
 
