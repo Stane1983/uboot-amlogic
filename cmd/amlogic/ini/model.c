@@ -1858,7 +1858,7 @@ static int handle_bl_custome(struct bl_attr_s *p_attr)
 	ini_value = IniGetString("Backlight_Attr", "bl_custome_val_1", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, bl_custome_val_1 is (%s)\n", __func__, ini_value);
-	p_attr->custome.custome_val_1 = strtoul(ini_value, NULL, 0);
+	p_attr->custome.custome_val_1 = get_pwm_port_index(ini_value);
 
 	ini_value = IniGetString("Backlight_Attr", "bl_custome_val_2", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)

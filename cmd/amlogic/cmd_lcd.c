@@ -459,7 +459,7 @@ static int do_lcd_bl(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		}
 	} else if (strcmp(argv[1], "get") == 0) {
 		level = aml_lcd_driver_get_bl_level(0);
-		printf("lcd2 get_bl_level: %d\n", level);
+		printf("lcd get_bl_level: %d\n", level);
 	} else if (strcmp(argv[1], "info") == 0) {
 		aml_lcd_driver_bl_config_print(0);
 	} else {
@@ -742,7 +742,7 @@ static int do_lcd1_bl(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		}
 	} else if (strcmp(argv[1], "get") == 0) {
 		level = aml_lcd_driver_get_bl_level(1);
-		printf("lcd2 get_bl_level: %d\n", level);
+		printf("lcd1 get_bl_level: %d\n", level);
 	} else if (strcmp(argv[1], "info") == 0) {
 		aml_lcd_driver_bl_config_print(1);
 	} else {
