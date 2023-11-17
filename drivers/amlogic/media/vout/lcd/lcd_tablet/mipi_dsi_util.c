@@ -2147,29 +2147,37 @@ static void mipi_dsi_phy_reset(int index)
 	udelay(1);
 }
 
-static void mipi_dsi_power_init(int index)
+static void mipi_dsi_power_init(struct aml_lcd_drv_s *pdrv, int flag)
 {
 #ifdef CONFIG_SECURE_POWER_CONTROL
-//#define PM_MIPI_DSI1     50
-//#define PM_MIPI_DSI0     41
-	if (index)
-		pwr_ctrl_psci_smc(PM_MIPI_DSI1, 1);
-	else
-		pwr_ctrl_psci_smc(PM_MIPI_DSI0, 1);
-	LCDPR("[%d]: dsi power domain on\n", index);
+	unsigned char pd_id;
+
+	switch (pdrv->data->chip_type) {
+	case LCD_CHIP_T7:
+		//#define PM_MIPI_DSI1 50
+		//#define PM_MIPI_DSI0 41
+		pd_id = pdrv->index ? PM_MIPI_DSI1 : PM_MIPI_DSI0;
+		pwr_ctrl_psci_smc(pd_id, flag);
+		break;
+	default:
+		return;
+	}
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("dsi[%d] power domain[%u] %s\n", pdrv->index, pd_id, flag ? "on" : "off");
 #endif
 }
 
 void mipi_dsi_tx_ctrl(struct aml_lcd_drv_s *pdrv, int flag)
 {
 	if (flag) {
+		mipi_dsi_power_init(pdrv, flag);
 		if (pdrv->data->chip_type == LCD_CHIP_T7) {
-			mipi_dsi_power_init(pdrv->index);
 			mipi_dsi_phy_reset(pdrv->index);
 			mipi_dsi_host_reset(pdrv->index);
 		}
 		mipi_dsi_host_on(pdrv);
 	} else {
 		mipi_dsi_host_off(pdrv);
+		mipi_dsi_power_init(pdrv, flag);
 	}
 }

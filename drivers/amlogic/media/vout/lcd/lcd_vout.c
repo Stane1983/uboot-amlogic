@@ -7,6 +7,9 @@
 #include <malloc.h>
 #include <amlogic/cpu_id.h>
 #include <fdtdec.h>
+#ifdef CONFIG_SECURE_POWER_CONTROL
+#include <asm/arch/pwr_ctrl.h>
+#endif
 #include <amlogic/keyunify.h>
 #include <amlogic/media/vout/aml_vout.h>
 #include <amlogic/media/vout/lcd/aml_lcd.h>
@@ -932,6 +935,24 @@ static int lcd_config_probe(void)
 	return 0;
 }
 
+void lcd_power_domain_off(struct aml_lcd_data_s *lcd_data_p)
+{
+#ifdef CONFIG_SECURE_POWER_CONTROL
+	switch (lcd_data_p->chip_type) {
+	case LCD_CHIP_T7:
+		pwr_ctrl_psci_smc(PM_MIPI_DSI0, 0);
+		pwr_ctrl_psci_smc(PM_MIPI_DSI1, 0);
+		pwr_ctrl_psci_smc(PM_EDP0, 0);
+		pwr_ctrl_psci_smc(PM_EDP1, 0);
+		break;
+	default:
+		return;
+	}
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("lcd power domain off\n");
+#endif
+}
+
 int lcd_probe(void)
 {
 	int ret = 0;
@@ -965,6 +986,8 @@ int lcd_probe(void)
 	ret = lcd_config_probe();
 	if (ret)
 		return -1;
+
+	lcd_power_domain_off(lcd_data);
 
 	lcd_update_debug_bootargs();
 
