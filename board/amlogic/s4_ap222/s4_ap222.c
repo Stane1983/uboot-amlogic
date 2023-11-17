@@ -91,7 +91,6 @@ int active_clk(void)
 	return 0;
 }
 
-
 #ifdef CONFIG_AML_HDMITX20
 static void hdmitx_set_hdmi_5v(void)
 {

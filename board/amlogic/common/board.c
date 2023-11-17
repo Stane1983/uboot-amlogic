@@ -9,6 +9,8 @@
 #include <errno.h>
 #include <cli.h>
 #include <exports.h>
+#include <asm/amlogic/arch/secure_apb.h>
+#include <abuf.h>
 
 #ifdef CONFIG_MISC_INIT_R
 #define _AML_MISC_INTERRUPT_KEY 0x09
@@ -83,4 +85,54 @@ int misc_init_r(void)
 	return 0;
 }
 #endif // #ifdef CONFIG_MISC_INIT_R
+
+#ifdef CONFIG_BOARD_RNG_SEED
+unsigned int random(void)
+{
+	volatile unsigned int val;
+
+#ifdef CONFIG_HW_RNG_OLD
+	val = readl(RNG_USR_DATA);
+#else
+	do {} while (readl(RNG_REE_READY) & 0x1);
+	do {} while (readl(RNG_REE_CFG) & 0x1);
+	writel(readl(RNG_REE_CFG) | (1 << 31), RNG_REE_CFG);
+	do {} while (readl(RNG_REE_CFG) >> 31);
+
+	val = readl(RNG_REE_OUT0);
+	writel(0x1, RNG_REE_READY);
+#endif
+	return val;
+}
+
+void get_rng_hw(unsigned char *buf, unsigned int size)
+{
+	unsigned int *p = (unsigned int *)buf;
+	unsigned int cnt, ncnt;
+	unsigned int i;
+	unsigned int rng;
+
+	cnt = (size >> 2);
+	ncnt = size & 0x3;
+
+	for (i = 0; i < cnt; i++)
+		p[i] = random();
+
+	if (ncnt) {
+		rng = random();
+		for (i = 0; i < ncnt; i++)
+			buf[cnt * 4 + i] = ((rng >> (i * 8)) & 0xff);
+	}
+}
+
+int board_rng_seed(struct abuf *buf)
+{
+	abuf_init(buf);
+	abuf_realloc(buf, 128);
+	if (buf->data)
+		get_rng_hw(buf->data, buf->size);
+
+	return 0;
+}
+#endif
 
