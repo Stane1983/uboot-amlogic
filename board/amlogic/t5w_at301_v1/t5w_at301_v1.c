@@ -41,6 +41,7 @@
 #include <partition_table.h>
 
 #include <asm/armv8/mmu.h>
+#include <asm/arch/stick_mem.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -516,6 +517,7 @@ int board_late_init(void)
 	char outputModePre[30] = {0};
 	char outputModeCur[30] = {0};
 
+	get_stick_reboot_flag_mbx();
 	run_command("aml_update_env", 0);
 	run_command("get_rebootmode; echo reboot_mode=${reboot_mode};", 0);
 

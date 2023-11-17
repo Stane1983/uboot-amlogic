@@ -21,6 +21,7 @@
 #include <amlogic/aml_v2_burning.h>
 #include <linux/mtd/partitions.h>
 #include <asm/arch/bl31_apis.h>
+#include <asm/arch/stick_mem.h>
 #ifdef CONFIG_AML_VPU
 #include <amlogic/media/vpu/vpu.h>
 #endif
@@ -131,6 +132,7 @@ int board_late_init(void)
 {
 	printf("board late init\n");
 
+	get_stick_reboot_flag_mbx();
 	//default uboot env need before anyone use it
 	if (env_get("default_env")) {
 		printf("factory reset, need default all uboot env.\n");

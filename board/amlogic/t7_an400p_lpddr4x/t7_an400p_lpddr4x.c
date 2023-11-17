@@ -21,6 +21,7 @@
 #include <amlogic/aml_v2_burning.h>
 #include <linux/mtd/partitions.h>
 #include <asm/arch/bl31_apis.h>
+#include <asm/arch/stick_mem.h>
 #ifdef CONFIG_AML_VPU
 #include <amlogic/media/vpu/vpu.h>
 #endif
@@ -147,6 +148,7 @@ int board_late_init(void)
 	printf("board late init\n");
 	env_set("defenv_para", "-c -b0");
 	aml_board_late_init_front(NULL);
+	get_stick_reboot_flag_mbx();
 
 	//board_boot_freertos();
 #ifdef CONFIG_AML_VPU

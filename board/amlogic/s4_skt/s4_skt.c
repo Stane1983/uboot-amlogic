@@ -24,6 +24,7 @@
 #include <amlogic/aml_mtd.h>
 #include <amlogic/aml_mmc.h>
 #include <amlogic/board.h>
+#include <asm/arch/stick_mem.h>
 
 #ifdef CONFIG_AML_VPU
 #include <amlogic/media/vpu/vpu.h>
@@ -143,6 +144,7 @@ int board_late_init(void)
 	printf("board late init\n");
 	env_set("defenv_para", "-c");
 	aml_board_late_init_front(NULL);
+	get_stick_reboot_flag_mbx();
 
 #ifdef CONFIG_AML_VPU
 	vpu_probe();

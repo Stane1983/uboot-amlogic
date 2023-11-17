@@ -23,6 +23,7 @@
 #include <asm/arch/bl31_apis.h>
 #include <amlogic/aml_mtd.h>
 #include <amlogic/aml_mmc.h>
+#include <asm/arch/stick_mem.h>
 
 #ifdef CONFIG_AML_VPU
 #include <amlogic/media/vpu/vpu.h>
@@ -155,6 +156,7 @@ int board_late_init(void)
 #ifdef CONFIG_PXP_EMULATOR
 	return 0;
 #endif
+	get_stick_reboot_flag_mbx();
 	//default uboot env need before anyone use it
 	if (env_get("default_env")) {
 		printf("factory reset, need default all uboot env.\n");
