@@ -426,6 +426,30 @@ void set_hpll_clk_out(unsigned int clk)
 		WAIT_FOR_PLL_LOCKED(P_ANACTRL_HDMIPLL_CTRL0);
 		pr_info("HPLL: 0x%x\n", hd_read_reg(P_ANACTRL_HDMIPLL_CTRL0));
 		break;
+	case 4115866:
+		hd_write_reg(P_ANACTRL_HDMIPLL_CTRL0, 0x3b0004ab);
+		hd_write_reg(P_ANACTRL_HDMIPLL_CTRL1, 0x0000fd22);
+		hd_write_reg(P_ANACTRL_HDMIPLL_CTRL2, 0x00000000);
+		hd_write_reg(P_ANACTRL_HDMIPLL_CTRL3, 0x4a691c00);
+		hd_write_reg(P_ANACTRL_HDMIPLL_CTRL4, 0x33771290);
+		hd_write_reg(P_ANACTRL_HDMIPLL_CTRL5, 0x39270008);
+		hd_write_reg(P_ANACTRL_HDMIPLL_CTRL6, 0x50540000);
+		hd_set_reg_bits(P_ANACTRL_HDMIPLL_CTRL0, 0x0, 29, 1);
+		WAIT_FOR_PLL_LOCKED(P_ANACTRL_HDMIPLL_CTRL0);
+		pr_info("HPLL: 0x%x\n", hd_read_reg(P_ANACTRL_HDMIPLL_CTRL0));
+		break;
+	case 4028000:
+		hd_write_reg(P_ANACTRL_HDMIPLL_CTRL0, 0x3b0004a7);
+		hd_write_reg(P_ANACTRL_HDMIPLL_CTRL1, 0x0001aa80);
+		hd_write_reg(P_ANACTRL_HDMIPLL_CTRL2, 0x00000000);
+		hd_write_reg(P_ANACTRL_HDMIPLL_CTRL3, 0x4a691c00);
+		hd_write_reg(P_ANACTRL_HDMIPLL_CTRL4, 0x33771290);
+		hd_write_reg(P_ANACTRL_HDMIPLL_CTRL5, 0x39270008);
+		hd_write_reg(P_ANACTRL_HDMIPLL_CTRL6, 0x50540000);
+		hd_set_reg_bits(P_ANACTRL_HDMIPLL_CTRL0, 0x0, 29, 1);
+		WAIT_FOR_PLL_LOCKED(P_ANACTRL_HDMIPLL_CTRL0);
+		pr_info("HPLL: 0x%x\n", hd_read_reg(P_ANACTRL_HDMIPLL_CTRL0));
+		break;
 	default:
 		printf("error hpll clk: %d\n", clk);
 		break;
@@ -688,7 +712,7 @@ static struct hw_enc_clk_val_group setting_enc_clk_val_24[] = {
 		1, VIU_ENCP, 4838400, 4, 4, 1, VID_PLL_DIV_5, 2, 1, 1, -1},
 	{{HDMIV_1024x600p60hz,
 	  GROUP_END},
-		1, VIU_ENCP, 4032000, 4, 2, 1, VID_PLL_DIV_5, 2, 1, 1, -1},
+		1, VIU_ENCP, 4115866, 4, 2, 1, VID_PLL_DIV_5, 2, 1, 1, -1},
 	{{HDMIV_1024x768p60hz,
 	  GROUP_END},
 		1, VIU_ENCP, 5200000, 4, 2, 1, VID_PLL_DIV_5, 2, 1, 1, -1},

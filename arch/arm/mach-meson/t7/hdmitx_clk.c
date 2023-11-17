@@ -223,7 +223,7 @@ static void set21_t7_hpll_clk_out(u32 frac_rate, u32 clk)
 		break;
 	case 4032000:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x3b0004a8);
-		hd21_write_reg(ANACTRL_HDMIPLL_CTRL1, 0x0001aa80);
+		hd21_write_reg(ANACTRL_HDMIPLL_CTRL1, 0x00000000);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL2, 0x00000000);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL3, 0x4a691c00);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL4, 0x33771290);
@@ -235,7 +235,7 @@ static void set21_t7_hpll_clk_out(u32 frac_rate, u32 clk)
 		break;
 	case 4028000:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x3b0004a7);
-		hd21_write_reg(ANACTRL_HDMIPLL_CTRL1, 0x00000000);
+		hd21_write_reg(ANACTRL_HDMIPLL_CTRL1, 0x0001aa80);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL2, 0x00000000);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL3, 0x4a691c00);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL4, 0x33771290);
