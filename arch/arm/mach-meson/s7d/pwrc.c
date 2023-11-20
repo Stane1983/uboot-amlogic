@@ -15,5 +15,6 @@ char *domain_name[] = {
 	"PDID_SD_EMMC_B",
 	"PDID_ETH",
 	"PDID_AUCPU",
-	"PDID_AUDIO"
+	"PDID_AUDIO",
+	"PDID_AMFC"
 };
