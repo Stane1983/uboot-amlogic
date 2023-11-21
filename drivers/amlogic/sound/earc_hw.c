@@ -86,9 +86,10 @@ static void earcrx_cmdc_init(void)
 		   0x1 << 10,  /* earcrx_pll_n */
 		   EARCRX_PLL_CTRL0);
 
-	update_bits(EARC_RX_CMDC_VSM_CTRL3,
-			 0x3 << 0,
-			 0x2 << 0
+	/* eARC_RX_CONN_START Max time 200ms */
+	update_bits(EARC_RX_CMDC_VSM_CTRL1,
+			 0xfffff << 12,
+			 200 << 12
 			);
 	update_bits(EARC_RX_CMDC_VSM_CTRL0,
 			 0x1 << 19,
@@ -99,7 +100,7 @@ static void earcrx_cmdc_init(void)
 void earcrx_init(void)
 {
 	/* Bandgap for HDMITX */
-	writel(ANACTRL_HDMIPHY_CTRL0, 0x0b4242);
+	writel(0x0b4242, ANACTRL_HDMIPHY_CTRL0);
 	/* pinmux HDMITX_HPD_IN: GPIOH_2,  */
 	update_bits(PADCTRL_PIN_MUX_REGB, 0xf << 8, 0x1 << 8);
 	/* cmdc init */
