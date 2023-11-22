@@ -36,6 +36,12 @@ struct hdmitx_dev {
 	enum mode_type hdmi_current_tunnel_mode;
 	/* Add dongle_mode, clock, phy may be different from mbox */
 	unsigned int dongle_mode;
+	/* edid_check = 0 is default check
+	 * Bit 0     (0x01)  don't check block header
+	 * Bit 1     (0x02)  don't check edid checksum
+	 * Bit 0+1   (0x03)  don't check both block header and checksum
+	 */
+	unsigned int edid_check;
 	unsigned char limit_res_1080p;
 	bool config_csc_en;
 	bool hpd_state;

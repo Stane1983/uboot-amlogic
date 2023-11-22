@@ -323,6 +323,7 @@ void hdmitx21_init(void)
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	char *dongle_mode = env_get("dongle_mode");
 	char *dsc_policy = env_get("dsc_policy");
+	char *edid_check = env_get("edid_check");
 	static struct hdmi_format_para para;
 
 	if (dongle_mode && (dongle_mode[0] == '1'))
@@ -342,6 +343,16 @@ void hdmitx21_init(void)
 			hdev->dsc_policy = 4;
 		else
 			hdev->dsc_policy = 0;
+	}
+	if (edid_check && edid_check[0] != '\0') {
+		int tmp = edid_check[0] - '0';
+
+		if (tmp >= 0 && tmp <= 3)
+			hdev->edid_check = tmp;
+		else
+			hdev->edid_check = 0;
+	} else {
+		hdev->edid_check = 0;
 	}
 
 	hdev->hwop.get_hpd_state = hdmitx_get_hpd_state;
