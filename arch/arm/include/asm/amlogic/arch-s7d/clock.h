@@ -107,6 +107,7 @@
 #define S7D_ANACTRL_GP0PLL_CTRL1                        ((0x21 << 2) + 0x8000)
 #define S7D_ANACTRL_GP0PLL_CTRL2                        ((0x22 << 2) + 0x8000)
 #define S7D_ANACTRL_GP0PLL_CTRL3                        ((0x23 << 2) + 0x8000)
+#define S7D_ANACTRL_GP0PLL_CTRL4			((0x24 << 2) + 0x8000)
 #define S7D_ANACTRL_GP0PLL_STS                          ((0x27 << 2) + 0x8000)
 #define S7D_ANACTRL_GP1PLL_CTRL0                        ((0x30 << 2) + 0x8000)
 #define S7D_ANACTRL_GP1PLL_CTRL1                        ((0x31 << 2) + 0x8000)

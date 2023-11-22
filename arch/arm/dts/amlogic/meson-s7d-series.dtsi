@@ -8,7 +8,7 @@
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/amlogic/pwm/pwm.h>
 #include <dt-bindings/amlogic/pwm/meson.h>
-#include <dt-bindings/amlogic/clock/s7-clkc.h>
+#include <dt-bindings/amlogic/clock/s7d-clkc.h>
 #include <dt-bindings/amlogic/input/meson_rc.h>
 
 / {
@@ -278,7 +278,7 @@
 		};
 
 		clkc: clock-controller@0 {
-			compatible = "amlogic,s7-clkc";
+			compatible = "amlogic,s7d-clkc";
 			#clock-cells = <1>;
 			reg = <0x0 0xfe000000 0x0 0x8380>;
 			clocks = <&xtal>;

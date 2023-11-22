@@ -14,6 +14,7 @@
 
 /* change it later */
 #define SYS_CLK		166666666
+#define FIXED_PLL	2000000000ULL  /* fix_pll is fixed to 2G */
 
 /* clk81 gates, sys_clk */
 static struct meson_gate gates[] = {
@@ -50,22 +51,12 @@ static struct meson_div divs[] = {
 	{CLKID_SD_EMMC_C_DIV, S7D_CLKCTRL_NAND_CLK_CTRL, 0, 7, CLKID_SD_EMMC_C_MUX},
 };
 
-static struct parm meson_fixed_pll_parm[3] = {
-	{S7D_ANACTRL_FIXPLL_CTRL0, 0, 9}, /* pm */
-	{S7D_ANACTRL_FIXPLL_CTRL0, 11, 5}, /* pn */
-	{S7D_ANACTRL_FIXPLL_CTRL0, 9, 2}, /* pod */
-};
-
-static struct parm meson_sys0_pll_parm[3] = {
-	{S7D_ANACTRL_SYS0PLL_CTRL0, 0, 9}, /* pm */
-	{S7D_ANACTRL_SYS0PLL_CTRL0, 11, 5}, /* pn */
-	{S7D_ANACTRL_SYS0PLL_CTRL0, 9, 2}, /* pod */
-};
-
-static struct parm meson_gp0_pll_parm[3] = {
+static struct parm meson_gp0_pll_parm[5] = {
 	{S7D_ANACTRL_GP0PLL_CTRL0, 0, 9}, /* pm */
-	{S7D_ANACTRL_GP0PLL_CTRL0, 11, 5}, /* pn */
-	{S7D_ANACTRL_GP0PLL_CTRL0, 9, 2}, /* pod */
+	{S7D_ANACTRL_GP0PLL_CTRL0, 12, 3}, /* pn */
+	{S7D_ANACTRL_GP0PLL_CTRL0, 16, 3}, /* pod */
+	{S7D_ANACTRL_GP0PLL_CTRL1, 0, 19}, /* pfrac */
+	{S7D_ANACTRL_GP0PLL_CTRL4, 12, 1}, /* pen0p5 */
 };
 
 static int meson_clk_enable(struct clk *clk)
@@ -81,26 +72,20 @@ static int meson_clk_disable(struct clk *clk)
 static ulong meson_pll_get_rate(struct clk *clk, unsigned long id)
 {
 	struct meson_clk *priv = dev_get_priv(clk->dev);
-	struct parm *pm, *pn, *pod;
+	struct parm *pm, *pn, *pod, *pfrac, *pen0p5;
 	unsigned long parent_rate_mhz = clk_get_rate(&priv->clkin)/1000000;
-	u16 n, m, od;
+	unsigned long rate;
+	unsigned long frac_rate;
+	u16 n, m, od, frac = 0, en0p5 = 0;
 	u32 reg;
 
 	switch (id) {
-	case CLKID_FIXED_PLL:
-		pm = &meson_fixed_pll_parm[0];
-		pn = &meson_fixed_pll_parm[1];
-		pod = &meson_fixed_pll_parm[2];
-		break;
-	case CLKID_SYS_PLL:
-		pm = &meson_sys0_pll_parm[0];
-		pn = &meson_sys0_pll_parm[1];
-		pod = &meson_sys0_pll_parm[2];
-		break;
 	case CLKID_GP0_PLL:
 		pm = &meson_gp0_pll_parm[0];
 		pn = &meson_gp0_pll_parm[1];
 		pod = &meson_gp0_pll_parm[2];
+		pfrac = &meson_gp0_pll_parm[3];
+		pen0p5 = &meson_gp0_pll_parm[4];
 		break;
 	default:
 		return -ENOENT;
@@ -113,10 +98,30 @@ static ulong meson_pll_get_rate(struct clk *clk, unsigned long id)
 	m = PARM_GET(pm->width, pm->shift, reg);
 
 	/* there is OD in C1 */
-	 reg = readl(priv->addr + pod->reg_off);
+	reg = readl(priv->addr + pod->reg_off);
 	od = PARM_GET(pod->width, pod->shift, reg);
 
-	return ((parent_rate_mhz * m / n) >> od) * 1000000;
+	rate = parent_rate_mhz * m;
+	if (pfrac->width > 2) {
+		reg = readl(priv->addr + pfrac->reg_off);
+		frac = PARM_GET(pfrac->width, pfrac->shift, reg);
+		if (frac) {
+			frac_rate = parent_rate_mhz * frac;
+			if ((frac >> (pfrac->width - 1)) & 0x1)
+				rate -= frac_rate / (1 << (pfrac->width - 2));
+			else
+				rate += frac_rate / (1 << (pfrac->width - 2));
+		}
+	}
+
+	if (pen0p5->width) {
+		reg = readl(priv->addr + pen0p5->reg_off);
+		en0p5 = PARM_GET(pen0p5->width, pen0p5->shift, reg);
+		if (en0p5)
+			rate = rate >> 1;
+	}
+
+	return ((rate / n) >> od) * 1000000;
 }
 
 static ulong meson_clk_get_rate_by_id(struct clk *clk, ulong id)
@@ -128,30 +133,26 @@ static ulong meson_clk_get_rate_by_id(struct clk *clk, ulong id)
 	case CLKID_XTAL:
 		rate = clk_get_rate(&priv->clkin);
 		break;
-	case CLKID_FIXED_PLL:
-	case CLKID_SYS_PLL:
-		rate = meson_pll_get_rate(clk, id);
-		break;
 	case CLKID_GP0_PLL:
 		rate = meson_pll_get_rate(clk, id);
 		break;
 	case CLKID_FCLK_DIV2:
-		rate = meson_pll_get_rate(clk, CLKID_FIXED_PLL) / 2;
+		rate = FIXED_PLL / 2;
 		break;
 	case CLKID_FCLK_DIV3:
-		rate = meson_pll_get_rate(clk, CLKID_FIXED_PLL) / 3;
+		rate = FIXED_PLL / 3;
 		break;
 	case CLKID_FCLK_DIV4:
-		rate = meson_pll_get_rate(clk, CLKID_FIXED_PLL) / 4;
+		rate = FIXED_PLL / 4;
 		break;
 	case CLKID_FCLK_DIV5:
-		rate = meson_pll_get_rate(clk, CLKID_FIXED_PLL) / 5;
+		rate = FIXED_PLL / 5;
 		break;
 	case CLKID_FCLK_DIV7:
-		rate = meson_pll_get_rate(clk, CLKID_FIXED_PLL) / 7;
+		rate = FIXED_PLL / 7;
 		break;
 	case CLKID_FCLK_DIV2P5:
-		rate = (meson_pll_get_rate(clk, CLKID_FIXED_PLL) * 2) / 5;
+		rate = FIXED_PLL * 2 / 5;
 		break;
 	/* sys clk has realized in rom code*/
 	case CLKID_SYS_CLK:

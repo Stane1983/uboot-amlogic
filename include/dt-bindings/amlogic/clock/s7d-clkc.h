@@ -9,18 +9,16 @@
  * CLKID index values
  */
 #define CLKID_XTAL              0
-#define CLKID_FIXED_PLL         1
-#define CLKID_FCLK_DIV2         2
-#define CLKID_FCLK_DIV3         3
-#define CLKID_FCLK_DIV4         4
-#define CLKID_FCLK_DIV5         5
-#define CLKID_FCLK_DIV7         6
-#define CLKID_FCLK_DIV2P5       7
-#define CLKID_SYS_CLK		8
-#define CLKID_SYS_PLL		9
-#define CLKID_GP0_PLL		10
+#define CLKID_FCLK_DIV2         1
+#define CLKID_FCLK_DIV3         2
+#define CLKID_FCLK_DIV4         3
+#define CLKID_FCLK_DIV5         4
+#define CLKID_FCLK_DIV7         5
+#define CLKID_FCLK_DIV2P5       6
+#define CLKID_SYS_CLK		7
+#define CLKID_GP0_PLL		8
 
-#define CLKID_GATE_BASE		11
+#define CLKID_GATE_BASE		9
 #define CLKID_SARADC		(CLKID_GATE_BASE + 0)
 #define CLKID_SPICC_0		(CLKID_GATE_BASE + 1)
 #define CLKID_SPICC_1		(CLKID_GATE_BASE + 2)
