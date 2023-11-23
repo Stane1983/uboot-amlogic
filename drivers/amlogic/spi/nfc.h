@@ -42,6 +42,7 @@
 #define SPI_RX_IDX (P_NAND_BASE + 0x34)
 #define SPI_RX_DAT (P_NAND_BASE + 0x38)
 #define SPI_CFG    (P_NAND_BASE + 0x40)
+#define BUS_WIDTH_MASK GENMASK(1, 0)
 
 #define CEF (0xf << 10)
 #define CE0 (0xe << 10)

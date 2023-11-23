@@ -33,10 +33,6 @@ struct spi_nfc_priv {
 	u32 save_addr;
 	u32 save_addr_len;
 
-	u32 spi_cfg;
-	u32 nand_cfg;
-	u32 sd_emmc_clk;
-
 	u8 *data_buf;
 	u8 *info_buf;
 };
@@ -311,10 +307,6 @@ static int spi_nfc_xfer(struct udevice *dev,
 	u8 *buf = (u8 *)dout;
 	int ret = 0, i = 0;
 
-	writel(priv->spi_cfg, SPI_CFG);
-	writel(priv->nand_cfg, NAND_CFG);
-	writel(priv->sd_emmc_clk, SD_EMMC_CLK);
-
 	if (flags & SPI_XFER_BEGIN) {
 		priv->save_addr = 0;
 		priv->save_addr_len = len - 1;
@@ -351,6 +343,7 @@ static int spi_nfc_xfer(struct udevice *dev,
 			ret = NFC_SEND_CMD_ADDR_DATA_WR(priv->save_cmd,
 				(uint8_t *)&priv->save_addr,
 				priv->save_addr_len, buf, len);
+		nfc_set_data_bus_width(page_info_get_data_lanes_mode());
 		return ret;
 	}
 
@@ -367,18 +360,12 @@ static int spi_nfc_set_speed(struct udevice *bus, uint hz)
 
 static int spi_nfc_set_mode(struct udevice *bus, uint mode)
 {
-	struct spi_nfc_priv *priv = dev_get_priv(bus);
-
 	if (mode & SPI_RX_QUAD)
 		page_info->dev_cfg0.bus_width |= 2;
 	else if (mode & SPI_RX_DUAL)
 		page_info->dev_cfg0.bus_width |= 1;
 
 	nfc_set_clock_and_timing(NFC_STATUS_OFF, SPINAND_FLASH);
-
-	priv->spi_cfg = readl(SPI_CFG);
-	priv->nand_cfg = readl(NAND_CFG);
-	priv->sd_emmc_clk = readl(SD_EMMC_CLK);
 
 	return 0;
 }

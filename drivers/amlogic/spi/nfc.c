@@ -236,7 +236,10 @@ void nfc_set_data_bus_width(int bus_width)
 {
 	uint32_t spi_cfg = readl(SPI_CFG);
 
-	spi_cfg &= (~0x03);
+	if (bus_width == (spi_cfg & BUS_WIDTH_MASK))
+		return;
+
+	spi_cfg &= ~BUS_WIDTH_MASK;
 	spi_cfg |= bus_width;
 	writel(spi_cfg, SPI_CFG);
 	NFC_Print("SPI_CFG", readl(SPI_CFG));
