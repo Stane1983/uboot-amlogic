@@ -208,7 +208,7 @@ static int simg2img_fill_chunk_write(const char *partName, int fillLen,
 	const unsigned fillVal = *pFillVal;
 	int needFill = 1;
 
-	if (v3tool_is_flash_erased()) {
+	if (1/*v3tool_is_flash_erased()*/) {
 		switch (store_get_type()) {
 		case BOOT_EMMC:
 		case BOOT_SD:
