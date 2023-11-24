@@ -203,20 +203,22 @@ static int simg2img_fill_chunk_write(const char* partName, int fillLen, const un
     const unsigned fillVal = *pFillVal;
     int needFill = 1;
 
-    if (v3tool_is_flash_erased()) {
-        switch (store_get_type()) {
-            case BOOT_EMMC:
-            case BOOT_SD:
-                needFill = (fillVal != 0);
-                break;
-
-            case BOOT_NAND_NFTL:
-                needFill = (fillVal != 0XFFFFFFFFU);
-                break;
-
-            default: FBS_EXIT(_ACK, "unsupported boot dev %d\n", store_get_type());
-        }
-    } else {/* always need fill when flash NOT erased */}
+//will auto erased if not erase all for simg
+	if (1/*v3tool_is_flash_erased()*/) {
+		switch (store_get_type()) {
+		case BOOT_EMMC:
+		case BOOT_SD:
+			needFill = (fillVal != 0);
+			break;
+		case BOOT_NAND_NFTL:
+			needFill = (fillVal != 0XFFFFFFFFU);
+			break;
+		default:
+			FBS_EXIT(_ACK, "unsupported boot dev %d\n", store_get_type());
+		}
+	} else {
+		/* always need fill when flash NOT erased */
+	}
    //for, emmc, if fillVal is 0, then needFill = false if "disk_inital > 0"
     if (!needFill) return 0;
 
@@ -340,7 +342,8 @@ int v3tool_simg2img_write_img(const UsbDownInf* downInf, const ImgDownloadPara* 
                 return -__LINE__;
             }
             const unsigned* fillVal = (unsigned*)dataBuf;
-            FB_DBG("fill wr: off/sz 0x%08llx flashWrLen %x\n", _spPacketStates.nextFlashAddr, chunkFlashSpace);
+		FB_MSG("fill wr: off/sz/data 0x%08llx/%x/%x\n",
+			_spPacketStates.nextFlashAddr, chunkFlashSpace, *fillVal);
             if (simg2img_fill_chunk_write((char*)part, chunkFlashSpace, fillVal, flashAddr)) {
                 sperr("Fail in fill fill-chunk\n");
                 return -__LINE__;

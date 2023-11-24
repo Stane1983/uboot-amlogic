@@ -229,6 +229,13 @@ int v3tool_buffman_img_init(ImgTransPara* imgPara, const int isDownload)
             FB_ERR("Fail in simg init\n");
             return -__LINE__;
         }
+	if (!v3tool_is_flash_erased()) {
+		FB_MSG("erase part for simg\n");
+		if (store_erase(partName, 0, 0, 0)) {
+			FB_ERR("fail in erase part %s\n", partName);
+			return -__LINE__;
+		}
+	}
     }
     //Init _usbDownInf for raw image
     _rawImgFileOffset  = 0;
