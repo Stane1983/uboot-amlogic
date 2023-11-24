@@ -1198,6 +1198,12 @@ int check_gpt_change(struct blk_desc *dev_desc, void *buf)
 		}
 
 #endif
+		if (le64_to_cpu(gpt_e[i].starting_lba) > gpt_h->last_usable_lba) {
+			printf("gpt_e[%d].starting_lba: %llX > %llX, writing failed\n", i,
+			       le64_to_cpu(gpt_e[i].starting_lba),
+			       le64_to_cpu(gpt_h->last_usable_lba));
+			return 1;
+		}
 		if (le64_to_cpu(gpt_e[i].ending_lba) > gpt_h->last_usable_lba) {
 			printf("gpt_e[%d].ending_lba: %llX > %llX, reset it\n",
 			i, le64_to_cpu(gpt_e[i].ending_lba), le64_to_cpu(gpt_h->last_usable_lba));
