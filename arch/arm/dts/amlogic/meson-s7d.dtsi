@@ -414,18 +414,18 @@
 
 	sdcard_pins: sdcard {
 		mux {
-			groups = "sdcard_d0_c",
-				"sdcard_d1_c",
-				"sdcard_d2_c",
-				"sdcard_d3_c",
-				"sdcard_cmd_c";
+			groups = "sdcard_d0_c0",
+				"sdcard_d1_c1",
+				"sdcard_d2_c2",
+				"sdcard_d3_c3",
+				"sdcard_cmd_c5";
 			function = "sdcard";
 			bias-pull-up;
 			input-enable;
 			drive-strength = <4>;
 		};
 		mux1 {
-			groups ="sdcard_clk_c";
+			groups ="sdcard_clk_c4";
 			function = "sdcard";
 			bias-pull-up;
 			output-high;
@@ -435,7 +435,7 @@
 
 	sdcard_clk_gate_pins: sdcard_clk_gate {
 		mux {
-			groups = "sdcard_clk_c";
+			groups = "sdcard_clk_c4";
 			function = "sdcard";
 			bias-pull-down;
 		};
@@ -443,7 +443,7 @@
 
 	to_sduart_pins: to_sduart_pins{
 		mux {
-			groups = "uart_b_rx_c", "uart_b_tx_c";
+			groups = "uart_b_rx_c2", "uart_b_tx_c3";
 			function = "uart_b";
 			bias-pull-up;
 			input-enable;
