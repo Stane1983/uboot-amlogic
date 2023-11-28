@@ -661,6 +661,39 @@ static struct vpu_data_s vpu_data_s7 = {
 	.change_clk = change_vpu_clk,
 };
 
+static struct vpu_data_s vpu_data_s7d = {
+	.chip_type = VPU_CHIP_S7D,
+	.chip_name = "s7d",
+	.clk_level_dft = CLK_LEVEL_DFT_G12A,
+	.clk_level_max = CLK_LEVEL_MAX_G12A,
+	.gp_pll_valid = 0,
+
+	.vpu_clk_reg = CLKCTRL_VPU_CLK_CTRL,
+	.vpu_clkb_reg = VPU_REG_END,
+	.vapb_clk_reg = CLKCTRL_VAPBCLK_CTRL,
+	.vid_clk_reg = CLKCTRL_VID_CLK_CTRL2,
+
+	.pwrctrl_id_table = vpu_pwrctrl_id_table,
+
+	.fclk_div_table = fclk_div_table_g12a,
+	.vpu_clk_table = vpu_clk_table,
+	.test_reg = vcbus_test_reg,
+
+	.mem_pd_table = NULL,
+	.power_table = NULL,
+	.iso_table = NULL,
+	.reset_table = NULL,
+
+	.module_init_table_cnt = 0,
+	.module_init_table = NULL,
+
+	.power_on = vpu_power_on_new,
+	.power_off = vpu_power_off_new,
+	.mem_pd_init_off = vpu_mem_pd_init_off,
+	.module_init_config = vpu_module_init_config,
+	.change_clk = change_vpu_clk,
+};
+
 static void vpu_chip_detect(void)
 {
 	unsigned int cpu_type;
@@ -724,6 +757,9 @@ static void vpu_chip_detect(void)
 	case MESON_CPU_MAJOR_ID_S7:
 		vpu_conf.data = &vpu_data_s7;
 		break;
+	case MESON_CPU_MAJOR_ID_S7D:
+		vpu_conf.data = &vpu_data_s7d;
+		break;
 	default:
 		vpu_conf.data = NULL;
 		//vpu_conf.data = &vpu_data_t3;
@@ -781,6 +817,7 @@ static int vpu_check(void)
 	case VPU_CHIP_A4:
 	case VPU_CHIP_S1A:
 	case VPU_CHIP_S7:
+	case VPU_CHIP_S7D:
 		ret = 0;
 		break;
 	default:
