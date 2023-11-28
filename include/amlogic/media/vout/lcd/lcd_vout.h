@@ -30,6 +30,8 @@ extern unsigned int lcd_debug_print_flag;
 #define LCDPR(fmt, args...)     printf("lcd: "fmt"", ## args)
 #define LCDERR(fmt, args...)    printf("lcd: error: "fmt"", ## args)
 
+#define PR_BUF_MAX              (4 * 1024)
+
 #define LCD_MAX_DRV             3
 
 /* **********************************
@@ -109,6 +111,7 @@ struct lcd_basic_s {
 	char model_name[MOD_LEN_MAX];
 	enum lcd_type_e lcd_type;
 	unsigned char lcd_bits;
+	unsigned char config_check;
 
 	unsigned short h_active; /* Horizontal display area */
 	unsigned short v_active; /* Vertical display area */
@@ -163,9 +166,11 @@ struct lcd_timing_s {
 
 	unsigned short hsync_width;
 	unsigned short hsync_bp;
+	unsigned short hsync_fp;
 	unsigned short hsync_pol;
 	unsigned short vsync_width;
 	unsigned short vsync_bp;
+	unsigned short vsync_fp;
 	unsigned short vsync_pol;
 	/* unsigned int vsync_h_phase; // [31]sign, [15:0]value */
 	unsigned int h_offset;
@@ -185,6 +190,14 @@ struct lcd_timing_s {
 	unsigned short vs_he_addr;
 	unsigned short vs_vs_addr;
 	unsigned short vs_ve_addr;
+};
+
+struct lcd_disp_tmg_req_s {
+	unsigned int alert_level;//0:disable, 1:warning, 2:fatal err
+	unsigned int hswbp_vid;
+	unsigned int hfp_vid;
+	unsigned int vswbp_vid;
+	unsigned int vfp_vid;
 };
 
 struct rgb_config_s {
@@ -614,6 +627,8 @@ struct aml_lcd_drv_s {
 	unsigned int output_vmode;
 	unsigned int power_on_suspend;
 	unsigned char clk_conf_num;
+	unsigned char config_check_glb;
+	unsigned char config_check_en;
 
 	struct lcd_config_s config;
 	struct aml_lcd_data_s *data;
@@ -621,9 +636,10 @@ struct aml_lcd_drv_s {
 	struct lcd_duration_s *std_duration;
 	void *clk_conf;
 	struct aml_lcd_cma_mem cma_pool;
+	struct lcd_disp_tmg_req_s disp_req;
 
 	int  (*outputmode_check)(struct aml_lcd_drv_s *pdrv, char *mode, unsigned int frac);
-	int  (*config_check)(struct aml_lcd_drv_s *pdrv, char *mode, unsigned int frac);
+	int  (*config_valid)(struct aml_lcd_drv_s *pdrv, char *mode, unsigned int frac);
 	void (*driver_init_pre)(struct aml_lcd_drv_s *pdrv);
 	int  (*driver_init)(struct aml_lcd_drv_s *pdrv);
 	void (*driver_disable)(struct aml_lcd_drv_s *pdrv);
@@ -682,6 +698,7 @@ int aml_lcd_edp_debug(int index, char *str, int num);
 void aml_lcd_driver_test(int index, int num);
 int aml_lcd_driver_prbs(int index, unsigned int s, unsigned int mode_flag);
 void aml_lcd_driver_unifykey_dump(int index, unsigned int flag);
+void aml_lcd_config_check(int index);
 
 void aml_lcd_driver_ext_info(int index);
 void aml_lcd_driver_ext_power_on(int index);

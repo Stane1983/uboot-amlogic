@@ -55,7 +55,8 @@
 /* 20230918: support ultra refresh rate function*/
 /* 20231011: t3x dual display support */
 /* 20231012: optimize clk management*/
-#define LCD_DRV_VERSION    "20231012"
+/* 20231205: add lcd config check*/
+#define LCD_DRV_VERSION    "20231205"
 
 extern unsigned long clk_util_clk_msr(unsigned long clk_mux);
 
@@ -93,6 +94,7 @@ char *lcd_mode_mode_to_str(int mode);
 int lcd_base_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv);
 int lcd_base_config_load_from_bsp(struct aml_lcd_drv_s *pdrv);
 int lcd_get_config(char *dt_addr, int load_id, struct aml_lcd_drv_s *pdrv);
+int lcd_config_check(struct aml_lcd_drv_s *pdrv);
 void lcd_basic_timing_range_update(struct aml_lcd_drv_s *pdrv);
 void lcd_timing_init_config(struct lcd_config_s *pconf);
 int lcd_vmode_change(struct aml_lcd_drv_s *pdrv);
@@ -149,6 +151,7 @@ void lcd_vbyone_hw_filter(struct aml_lcd_drv_s *pdrv, int flag);
 void lcd_tcon_info_print(void);
 int lcd_tcon_enable(struct aml_lcd_drv_s *pdrv);
 void lcd_tcon_disable(struct aml_lcd_drv_s *pdrv);
+int lcd_tcon_check(struct aml_lcd_drv_s *pdrv, char *ferr_str, char *warn_str);
 int lcd_tcon_probe(char *dt_addr, struct aml_lcd_drv_s *pdrv, int load_id);
 #endif
 
@@ -158,6 +161,7 @@ int lcd_gpio_set(int gpio, int value);
 unsigned int lcd_gpio_input_get(int gpio);
 
 /* lcd debug */
+int lcd_debug_info_len(int num);
 void lcd_info_print(struct aml_lcd_drv_s *pdrv);
 void lcd_reg_print(struct aml_lcd_drv_s *pdrv);
 void lcd_vbyone_rst(struct aml_lcd_drv_s *pdrv);

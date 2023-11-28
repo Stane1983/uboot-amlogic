@@ -346,7 +346,7 @@ static int lcd_outputmode_check(struct aml_lcd_drv_s *pdrv, char *mode, unsigned
 	return ret;
 }
 
-static int lcd_config_check(struct aml_lcd_drv_s *pdrv, char *mode, unsigned int frac)
+static int lcd_config_valid(struct aml_lcd_drv_s *pdrv, char *mode, unsigned int frac)
 {
 	struct lcd_config_s *pconf = &pdrv->config;
 	struct lcd_vmode_info_s *info;
@@ -384,7 +384,7 @@ int lcd_mode_tv_init(struct aml_lcd_drv_s *pdrv)
 {
 	pdrv->list_support_mode = lcd_list_support_mode;
 	pdrv->outputmode_check = lcd_outputmode_check;
-	pdrv->config_check = lcd_config_check;
+	pdrv->config_valid = lcd_config_valid;
 	pdrv->driver_init_pre = lcd_tv_driver_init_pre;
 	pdrv->driver_init = lcd_tv_driver_init;
 	pdrv->driver_disable = lcd_tv_driver_disable;

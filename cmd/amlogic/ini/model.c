@@ -650,6 +650,7 @@ handle_tcon_path_pmu_spi_bin_multi:
 static int handle_lcd_basic(struct lcd_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
+	unsigned int lcd_if, lcd_chk;
 
 	ini_value = IniGetString("lcd_Attr", "model_name", "null");
 	if (model_debug_flag & DEBUG_LCD)
@@ -661,19 +662,28 @@ static int handle_lcd_basic(struct lcd_attr_s *p_attr)
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, interface is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "LCD_TTL") == 0)
-		p_attr->basic.lcd_type = LCD_TTL;
+		lcd_if = LCD_TTL;
 	else if (strcmp(ini_value, "LCD_LVDS") == 0)
-		p_attr->basic.lcd_type = LCD_LVDS;
+		lcd_if = LCD_LVDS;
 	else if (strcmp(ini_value, "LCD_VBYONE") == 0)
-		p_attr->basic.lcd_type = LCD_VBYONE;
+		lcd_if = LCD_VBYONE;
 	else if (strcmp(ini_value, "LCD_MIPI") == 0)
-		p_attr->basic.lcd_type = LCD_MIPI;
+		lcd_if = LCD_MIPI;
 	else if (strcmp(ini_value, "LCD_MLVDS") == 0)
-		p_attr->basic.lcd_type = LCD_MLVDS;
+		lcd_if = LCD_MLVDS;
 	else if (strcmp(ini_value, "LCD_P2P") == 0)
-		p_attr->basic.lcd_type = LCD_P2P;
+		lcd_if = LCD_P2P;
 	else
-		p_attr->basic.lcd_type = LCD_TYPE_MAX;
+		lcd_if = LCD_TYPE_MAX;
+
+	ini_value = IniGetString("lcd_Attr", "lcd_check", "none");
+	if (model_debug_flag & DEBUG_LCD)
+		ALOGD("%s, lcd_check is (%s)\n", __func__, ini_value);
+	if (strcmp(ini_value, "none") == 0)
+		lcd_chk = 0;
+	else
+		lcd_chk = strtoul(ini_value, NULL, 0) ? 0x3 : 0x2;
+	p_attr->basic.lcd_type = (lcd_if & 0x3f) | ((lcd_chk & 0x3) << 6);
 
 	ini_value = IniGetString("lcd_Attr", "lcd_bits", "10");
 	if (model_debug_flag & DEBUG_LCD)
@@ -1077,8 +1087,10 @@ static int handle_lcd_phy(struct lcd_v2_attr_s *p_attr)
 	reg_cnt = trans_buffer_data(ini_value, reg_buf + reg_cnt);
 	for (i = 0; i < reg_cnt; i++) {
 		p_attr->phy.phy_lane_ctrl[i] = reg_buf[i + j];
-		ALOGD("%s, phy_lane_ctrl[%d] is (0x%x)\n", __func__,
-		      i, p_attr->phy.phy_lane_ctrl[i]);
+		if (model_debug_flag & DEBUG_LCD) {
+			ALOGD("%s, phy_lane_ctrl[%d] is (0x%x)\n", __func__,
+				i, p_attr->phy.phy_lane_ctrl[i]);
+		}
 	}
 
 	ini_value = IniGetString("lcd_Attr", "phy_lane_swap", "0");
@@ -3261,10 +3273,10 @@ static int handle_tcon_bin(void)
 			return -1;
 		}
 		if (model_debug_flag & DEBUG_TCON)
-			ALOGD("%s: load tcon bin with header\n", __func__);
+			ALOGD("%s: load tcon bin with header, size:0x%x\n", __func__, size);
 	} else {
 		if (model_debug_flag & DEBUG_TCON)
-			ALOGD("%s: load tcon bin\n", __func__);
+			ALOGD("%s: load tcon bin, size:0x%x\n", __func__, size);
 	}
 
 	gLcdTconDataCnt = size;
@@ -3276,8 +3288,6 @@ static int handle_tcon_bin(void)
 		return -1;
 	}
 	memcpy(tcon_buf, tmp_buf, size);
-	if (model_debug_flag & DEBUG_TCON)
-		ALOGD("%s: bin_size=0x%x\n", __func__, size);
 
 	BinFileUninit();
 
@@ -3287,7 +3297,7 @@ static int handle_tcon_bin(void)
 	//ALOGD("%s, start check lcd_tcon param data (0x%x).\n", __func__, tmp_len);
 	if (check_param_valid(1, gLcdTconDataCnt, tcon_buf, tmp_len, tmp_buf) ==
 		CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM) {
-		ALOGD("%s, check tcon bin data error (0x%x), save tcon bin data.\n",
+		ALOGD("%s, check tcon bin data diff (0x%x), save tcon bin data.\n",
 			__func__, tmp_len);
 		SaveTconBinParam(gLcdTconDataCnt, tcon_buf);
 	}

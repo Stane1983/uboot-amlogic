@@ -275,7 +275,7 @@ static struct aml_lcd_drv_s *lcd_driver_check_valid(int index)
 	if (index >= LCD_MAX_DRV)
 		return NULL;
 
-	if (!lcd_driver[index] || !lcd_driver[index]->config_check) {
+	if (!lcd_driver[index] || !lcd_driver[index]->config_valid) {
 		LCDERR("invalid lcd%d config\n", index);
 		return NULL;
 	}
@@ -463,7 +463,7 @@ static void lcd_module_enable(struct aml_lcd_drv_s *pdrv, char *mode, unsigned i
 	int ret;
 
 	pconf = &pdrv->config;
-	ret = pdrv->config_check(pdrv, mode, frac);
+	ret = pdrv->config_valid(pdrv, mode, frac);
 	if (ret) {
 		LCDERR("[%d]: init exit\n", pdrv->index);
 		return;
@@ -520,7 +520,7 @@ static void lcd_module_prepare(struct aml_lcd_drv_s *pdrv,
 {
 	int ret;
 
-	ret = pdrv->config_check(pdrv, mode, frac);
+	ret = pdrv->config_valid(pdrv, mode, frac);
 	if (ret) {
 		LCDERR("[%d]: prepare exit\n", pdrv->index);
 		return;
@@ -564,7 +564,7 @@ static int lcd_mode_init(struct aml_lcd_drv_s *pdrv)
 	}
 
 	if (ret) {
-		pdrv->config_check = NULL;
+		pdrv->config_valid = NULL;
 		LCDERR("[%d]: %s: invalid config\n", pdrv->index, __func__);
 		return -1;
 	}
@@ -1254,6 +1254,31 @@ void aml_lcd_driver_reg_info(int index)
 		return;
 
 	lcd_reg_print(pdrv);
+}
+
+void aml_lcd_config_check(int index)
+{
+	struct aml_lcd_drv_s *pdrv;
+	int ret;
+
+	pdrv = lcd_driver_check_valid(index);
+	if (!pdrv)
+		return;
+
+	ret = lcd_config_check(pdrv);
+	if (ret == 0)
+		printf("lcd_config_check: PASS\n");
+	printf("disp_tmg_min_req:\n"
+		"  alert_lvl  %d\n"
+		"  hswbp  %d\n"
+		"  hfp    %d\n"
+		"  vswbp  %d\n"
+		"  vfp    %d\n\n",
+		pdrv->disp_req.alert_level,
+		pdrv->disp_req.hswbp_vid, pdrv->disp_req.hfp_vid,
+		pdrv->disp_req.vswbp_vid, pdrv->disp_req.vfp_vid);
+	printf("config_check_glb: %d, config_check: 0x%x, config_check_en: %d\n\n",
+		pdrv->config_check_glb, pdrv->config.basic.config_check, pdrv->config_check_en);
 }
 
 void aml_lcd_vbyone_rst(int index)

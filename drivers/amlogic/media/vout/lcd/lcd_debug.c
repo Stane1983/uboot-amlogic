@@ -13,11 +13,27 @@
 #endif
 #include "lcd_debug.h"
 
-static void lcd_timing_info_print(struct lcd_config_s * pconf)
+int lcd_debug_info_len(int num)
 {
+	int ret = 0;
+
+	if (num >= (PR_BUF_MAX - 1)) {
+		printf("%s: string length %d is out of support\n",
+			__func__, num);
+		return 0;
+	}
+
+	ret = PR_BUF_MAX - 1 - num;
+	return ret;
+}
+
+static void lcd_timing_info_print(struct aml_lcd_drv_s *pdrv)
+{
+	struct lcd_config_s *pconf = &pdrv->config;
 	unsigned int hs_width, hs_bp, hs_pol, h_period;
 	unsigned int vs_width, vs_bp, vs_pol, v_period;
 	unsigned int video_hstart, video_vstart;
+	int ret, herr, verr;
 
 	video_hstart = pconf->timing.hstart;
 	video_vstart = pconf->timing.vstart;
@@ -31,18 +47,31 @@ static void lcd_timing_info_print(struct lcd_config_s * pconf)
 	vs_bp = pconf->timing.vsync_bp;
 	vs_pol = pconf->timing.vsync_pol;
 
+	ret = lcd_config_check(pdrv);
+	herr = ret & 0xf;
+	verr = (ret >> 4) & 0xf;
+
 	printf("h_period          %d\n"
 		"v_period          %d\n"
 		"hs_width          %d\n"
-		"hs_backporch      %d\n"
+		"hs_backporch      %d%s\n"
+		"hs_frontporch     %d%s\n"
 		"hs_pol            %d\n"
 		"vs_width          %d\n"
-		"vs_backporch      %d\n"
+		"vs_backporch      %d%s\n"
+		"vs_frontporch     %d%s\n"
 		"vs_pol            %d\n"
 		"video_hstart      %d\n"
 		"video_vstart      %d\n\n",
-		h_period, v_period, hs_width, hs_bp, hs_pol,
-		vs_width, vs_bp, vs_pol, video_hstart, video_vstart);
+		h_period, v_period, hs_width, hs_bp,
+		((herr & 0x4) ? "(X)" : ((herr & 0x8) ? "(!)" : "")),
+		pconf->timing.hsync_fp,
+		((herr & 0x1) ? "(X)" : ((herr & 0x2) ? "(!)" : "")),
+		hs_pol, vs_width, vs_bp,
+		((verr & 0x4) ? "(X)" : ((verr & 0x8) ? "(!)" : "")),
+		pconf->timing.vsync_fp,
+		((verr & 0x1) ? "(X)" : ((verr & 0x2) ? "(!)" : "")),
+		vs_pol, video_hstart, video_vstart);
 
 	printf("h_period_min      %d\n"
 		"h_period_max      %d\n"
@@ -1106,6 +1135,8 @@ void lcd_info_print(struct aml_lcd_drv_s *pdrv)
 
 	pconf = &pdrv->config;
 	LCDPR("[%d]: lcd driver version: %s\n", pdrv->index, LCD_DRV_VERSION);
+	LCDPR("config_check_glb: %d, config_check_para: 0x%x, config_check_en: %d\n",
+		pdrv->config_check_glb, pconf->basic.config_check, pdrv->config_check_en);
 	LCDPR("key_valid: %d\n", pdrv->key_valid);
 	LCDPR("custom_pinmux: %d\n", pconf->custom_pinmux);
 	LCDPR("mode: %s, status: %d\n",
@@ -1132,7 +1163,7 @@ void lcd_info_print(struct aml_lcd_drv_s *pdrv)
 		pconf->timing.ss_freq, pconf->timing.ss_mode,
 		pconf->timing.fr_adjust_type);
 
-	lcd_timing_info_print(pconf);
+	lcd_timing_info_print(pdrv);
 
 	info_if = (struct lcd_debug_info_if_s *)pdrv->debug_info_if;
 	if (info_if) {

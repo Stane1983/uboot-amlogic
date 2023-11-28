@@ -990,6 +990,8 @@ static int bl_config_load_from_dts(char *dt_addr, struct aml_bl_drv_s *bdrv)
 	else
 		sprintf(sname, "/backlight%d", bdrv->index);
 
+	BLPR("[%d]: load config %s from dts\n", bdrv->index, sname);
+
 	bconf->method = BL_CTRL_MAX; /* default */
 	parent_offset = fdt_path_offset(dt_addr, sname);
 	if (parent_offset < 0) {
@@ -1390,7 +1392,8 @@ static int bl_config_load_from_unifykey(char *dt_addr, struct aml_bl_drv_s *bdrv
 	}
 
 	lcd_unifykey_header_check(para, &bl_header);
-	BLPR("unifykey version: 0x%04x\n", bl_header.version);
+	BLPR("[%d]: load config from unifykey, version: 0x%x\n",
+		bdrv->index, bl_header.version);
 	switch (bl_header.version) {
 	case 2:
 		len = 10 + 30 + 12 + 8 + 32 + 10;
@@ -2029,13 +2032,9 @@ static int bl_config_load(char *dt_addr, int load_id, struct aml_bl_drv_s *bdrv)
 	/* load bl config */
 	if (load_id & 0x1) { /* dts */
 		if (load_id & 0x10) { /* unifykey */
-			if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
-				BLPR("[%d]: load config from unifykey\n", bdrv->index);
 			ret = bl_config_load_from_unifykey(dt_addr, bdrv);
 		} else { /* dts */
 #ifdef CONFIG_OF_LIBFDT
-			if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
-				BLPR("[%d]: load config from dts\n", bdrv->index);
 			if (bdrv->config.index == 0xff) {
 				bdrv->config.method = BL_CTRL_MAX;
 				BLPR("[%d]: no backlight exist\n", bdrv->index);
@@ -2046,12 +2045,9 @@ static int bl_config_load(char *dt_addr, int load_id, struct aml_bl_drv_s *bdrv)
 		}
 	} else { /* bsp */
 		if (load_id & 0x10) { /* unifykey */
-			if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
-				BLPR("[%d]: load config from unifykey\n", bdrv->index);
 			ret = bl_config_load_from_unifykey(dt_addr, bdrv);
 		} else { /* bsp */
-			if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
-				BLPR("[%d]: load config from bsp\n", bdrv->index);
+			BLPR("[%d]: load config from bsp\n", bdrv->index);
 			ret = bl_config_load_from_bsp(bdrv);
 		}
 	}

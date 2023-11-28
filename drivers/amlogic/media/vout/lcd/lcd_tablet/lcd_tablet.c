@@ -145,7 +145,7 @@ static void lcd_set_connector(struct aml_lcd_drv_s *pdrv, char *opt_mode)
 	free(buf);
 }
 
-static int lcd_config_check(struct aml_lcd_drv_s *pdrv, char *mode, unsigned int frac)
+static int lcd_config_valid(struct aml_lcd_drv_s *pdrv, char *mode, unsigned int frac)
 {
 	int ret;
 
@@ -162,7 +162,7 @@ int lcd_mode_tablet_init(struct aml_lcd_drv_s *pdrv)
 {
 	pdrv->list_support_mode = lcd_list_support_mode;
 	pdrv->outputmode_check = check_lcd_output_mode;
-	pdrv->config_check = lcd_config_check;
+	pdrv->config_valid = lcd_config_valid;
 	pdrv->driver_init_pre = lcd_tablet_driver_init_pre;
 	pdrv->driver_init = lcd_tablet_driver_init;
 	pdrv->driver_disable = lcd_tablet_driver_disable;

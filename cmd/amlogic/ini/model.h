@@ -102,7 +102,7 @@ struct lcd_header_s {
 
 struct lcd_basic_s {
 	char model_name[CC_LCD_NAME_LEN_MAX];
-	unsigned char lcd_type;
+	unsigned char lcd_type; /*[5:0]type, [7:6]:lcd_check*/
 	unsigned char lcd_bits;
 	unsigned short screen_width;  /* screen physical width in "mm" unit */
 	unsigned short screen_height; /* screen physical height in "mm" unit */

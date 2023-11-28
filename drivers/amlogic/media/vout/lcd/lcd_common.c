@@ -181,7 +181,6 @@ static void lcd_config_load_print(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_config_s *pconf = &pdrv->config;
 	union lcd_ctrl_config_u *pctrl;
-	unsigned int count;
 
 	LCDPR("[%d]: %s, %s, %dbit, %dx%d\n",
 		pdrv->index,
@@ -189,15 +188,6 @@ static void lcd_config_load_print(struct aml_lcd_drv_s *pdrv)
 		lcd_type_type_to_str(pconf->basic.lcd_type),
 		pconf->basic.lcd_bits,
 		pconf->basic.h_active, pconf->basic.v_active);
-
-	count = pconf->basic.h_active + pconf->timing.hsync_width
-		+ pconf->timing.hsync_bp;
-	if (count > pconf->basic.h_period)
-		LCDERR("h_timing is invalid(%d)\n", pconf->basic.h_period);
-	count = pconf->basic.v_active + pconf->timing.vsync_width
-		+ pconf->timing.vsync_bp;
-	if (count > pconf->basic.v_period)
-		LCDERR("v_timing is invalid(%d)\n", pconf->basic.v_period);
 
 	if ((lcd_debug_print_flag & LCD_DBG_PR_NORMAL) == 0)
 		return;
@@ -292,6 +282,235 @@ static void lcd_config_load_print(struct aml_lcd_drv_s *pdrv)
 		LCDPR("phy_vswing = 0x%x\n", pctrl->edp_cfg.phy_vswing_preset);
 		LCDPR("phy_preem  = 0x%x\n", pctrl->edp_cfg.phy_preem_preset);
 	}
+}
+
+//ret: bit[0]:hfp: fatal error, block driver
+//     bit[1]:hfp: warning, only print warning message
+//     bit[2]:hswbp: fatal error, block driver
+//     bit[3]:hswbp: warning, only print warning message
+//     bit[4]:vfp: fatal error, block driver
+//     bit[5]:vfp: warning, only print warning message
+//     bit[6]:vswbp: fatal error, block driver
+//     bit[7]:vswbp: warning, only print warning message
+//     bit[8]:tcon: fatal error, block driver
+//     bit[9]:tcon: warning, only print warning message
+int lcd_config_check(struct aml_lcd_drv_s *pdrv)
+{
+	int htotal = pdrv->config.basic.h_period;
+	int hactive = pdrv->config.basic.h_active;
+	int hpw = pdrv->config.timing.hsync_width;
+	int hbp = pdrv->config.timing.hsync_bp;
+	int vtotal = pdrv->config.basic.v_period;
+	int vactive = pdrv->config.basic.v_active;
+	int vpw = pdrv->config.timing.vsync_width;
+	int vbp = pdrv->config.timing.vsync_bp;
+	int hfp, vfp, cmpr_tail, temp;
+	char *ferr_str = NULL, *warn_str = NULL;
+	int ferr_len = 0, warn_len = 0, ferr_left, warn_left;
+#ifdef CONFIG_AML_LCD_TCON
+	char *tcon_ferr_str = NULL, *tcon_warn_str = NULL;
+#endif
+	int tcon_valid = 0, ret = 0;
+
+	if (pdrv->config.basic.lcd_type == LCD_MLVDS ||
+	    pdrv->config.basic.lcd_type == LCD_P2P)
+		tcon_valid = 1;
+
+	ferr_str = malloc(PR_BUF_MAX);
+	if (!ferr_str) {
+		LCDERR("config_check fail for NOMEM\n");
+		return 0;
+	}
+	memset(ferr_str, 0, PR_BUF_MAX);
+	warn_str = malloc(PR_BUF_MAX);
+	if (!warn_str) {
+		LCDERR("config_check fail for NOMEM\n");
+		free(ferr_str);
+		return 0;
+	}
+	memset(warn_str, 0, PR_BUF_MAX);
+#ifdef CONFIG_AML_LCD_TCON
+	if (tcon_valid) {
+		tcon_ferr_str = malloc(PR_BUF_MAX);
+		if (!tcon_ferr_str) {
+			LCDERR("config_check fail for NOMEM\n");
+			free(ferr_str);
+			free(warn_str);
+			return 0;
+		}
+		memset(tcon_ferr_str, 0, PR_BUF_MAX);
+		tcon_warn_str = malloc(PR_BUF_MAX);
+		if (!tcon_warn_str) {
+			LCDERR("config_check fail for NOMEM\n");
+			free(ferr_str);
+			free(warn_str);
+			free(tcon_ferr_str);
+			return 0;
+		}
+		memset(tcon_warn_str, 0, PR_BUF_MAX);
+	}
+#endif
+
+	hfp = htotal - hactive - hpw - hbp;
+	vfp = vtotal - vactive - vpw - vbp;
+	pdrv->config.timing.hsync_fp = hfp;
+	pdrv->config.timing.vsync_fp = vfp;
+
+	if (hfp <= 0) {
+		ferr_left = lcd_debug_info_len(ferr_len);
+		ferr_len += snprintf(ferr_str + ferr_len, ferr_left,
+			"  hfp: %d, for panel, req: >0!!!\n", hfp);
+		ret |= (1 << 0);
+	}
+
+	if (tcon_valid) {
+		if (vfp <= 3) {
+			ferr_left = lcd_debug_info_len(ferr_len);
+			ferr_len += snprintf(ferr_str + ferr_len, ferr_left,
+				"  vfp: %d, for panel, req: >3!!!\n", vfp);
+			ret |= (1 << 4);
+		}
+		cmpr_tail = 3;
+	} else {
+		if (vfp <= 0) {
+			ferr_left = lcd_debug_info_len(ferr_len);
+			ferr_len += snprintf(ferr_str + ferr_len, ferr_left,
+				"  vfp: %d, for panel, req: >0!!!\n", vfp);
+			ret |= (1 << 4);
+		}
+		cmpr_tail = 0;
+	}
+
+	//display timing check
+	//hswbp
+	if (pdrv->disp_req.hswbp_vid == 0)
+		goto lcd_config_valid_check_vid_hfp;
+	temp = hpw + hbp;
+	if (temp < pdrv->disp_req.hswbp_vid) {
+		if (pdrv->disp_req.alert_level == 1) {
+			warn_left = lcd_debug_info_len(warn_len);
+			warn_len += snprintf(warn_str + warn_len, warn_left,
+				"  hpw + hbp: %d, for display path, req: >=%d!\n",
+				temp, pdrv->disp_req.hswbp_vid);
+			ret |= (1 << 3);
+		} else if (pdrv->disp_req.alert_level == 2) {
+			ferr_left = lcd_debug_info_len(ferr_len);
+			ferr_len += snprintf(ferr_str + ferr_len, ferr_left,
+				"  hpw + hbp: %d, for display path, req: >=%d!!!\n",
+				temp, pdrv->disp_req.hswbp_vid);
+			ret |= (1 << 2);
+		}
+	}
+
+lcd_config_valid_check_vid_hfp:
+	//hfp
+	if (pdrv->disp_req.hfp_vid == 0)
+		goto lcd_config_valid_check_vid_vswbp;
+	if (hfp < pdrv->disp_req.hfp_vid) {
+		if (pdrv->disp_req.alert_level == 1) {
+			warn_left = lcd_debug_info_len(warn_len);
+			warn_len += snprintf(warn_str + warn_len, warn_left,
+				"  hfp: %d, for display path, req: >=%d!\n",
+				hfp, pdrv->disp_req.hfp_vid);
+			ret |= (1 << 5);
+		} else if (pdrv->disp_req.alert_level == 2) {
+			ferr_left = lcd_debug_info_len(ferr_len);
+			ferr_len += snprintf(ferr_str + ferr_len, ferr_left,
+				"  hfp: %d, for display path, req: >=%d!!!\n",
+				hfp, pdrv->disp_req.hfp_vid);
+			ret |= (1 << 4);
+		}
+	}
+
+lcd_config_valid_check_vid_vswbp:
+	//vswbp
+	if (pdrv->disp_req.vswbp_vid == 0)
+		goto lcd_config_valid_check_vid_vfp;
+	temp = vpw + vbp;
+	if (temp < pdrv->disp_req.vswbp_vid) {
+		if (pdrv->disp_req.alert_level == 1) {
+			warn_left = lcd_debug_info_len(warn_len);
+			warn_len += snprintf(warn_str + warn_len, warn_left,
+				"  vpw + vbp: %d, for display path, req: >=%d!\n",
+				temp, pdrv->disp_req.vswbp_vid);
+			ret |= (1 << 7);
+		} else if (pdrv->disp_req.alert_level == 2) {
+			ferr_left = lcd_debug_info_len(ferr_len);
+			ferr_len += snprintf(ferr_str + ferr_len, ferr_left,
+				"  vpw + vbp: %d, for display path, req: >=%d!!!\n",
+				temp, pdrv->disp_req.vswbp_vid);
+			ret |= (1 << 6);
+		}
+	}
+
+lcd_config_valid_check_vid_vfp:
+	//vfp
+	if (pdrv->disp_req.vfp_vid == 0)
+		goto lcd_config_valid_check_next;
+	temp = pdrv->disp_req.vfp_vid + cmpr_tail;
+	if (vfp < temp) {
+		if (pdrv->disp_req.alert_level == 1) {
+			warn_left = lcd_debug_info_len(warn_len);
+			warn_len += snprintf(warn_str + warn_len, warn_left,
+				"  vfp: %d, for display path, req: >=%d!\n",
+				vfp, temp);
+			ret |= (1 << 5);
+		} else if (pdrv->disp_req.alert_level == 2) {
+			ferr_left = lcd_debug_info_len(ferr_len);
+			ferr_len += snprintf(ferr_str + ferr_len, ferr_left,
+				"  vfp: %d, for display path, req: >=%d!!!\n",
+				vfp, temp);
+			ret |= (1 << 4);
+		}
+	}
+
+lcd_config_valid_check_next:
+#ifdef CONFIG_AML_LCD_TCON
+	if (tcon_valid) {
+		temp = lcd_tcon_check(pdrv, tcon_ferr_str, tcon_warn_str);
+		ret |= ((temp & 0x3) << 8);
+	}
+#endif
+
+	if (ret) {
+		printf("**************** lcd config check ****************\n");
+		if (ret & 0x55) {
+			printf("lcd: FATAL ERROR:\n"
+				"%s\n", ferr_str);
+		}
+		if (ret & 0xaa) {
+			printf("lcd: WARNING:\n"
+				"%s\n", warn_str);
+		}
+
+#ifdef CONFIG_AML_LCD_TCON
+		if (tcon_valid) {
+			if (ret & 0x100) {
+				printf("lcd: tcon: FATAL ERROR:\n"
+					"%s\n", tcon_ferr_str);
+			}
+			if (ret & 0x200) {
+				printf("lcd: tcon: WARNING:\n"
+					"%s\n", tcon_warn_str);
+			}
+		}
+#endif
+		printf("************** lcd config check end ****************\n");
+	}
+	memset(ferr_str, 0, PR_BUF_MAX);
+	memset(warn_str, 0, PR_BUF_MAX);
+	free(ferr_str);
+	free(warn_str);
+#ifdef CONFIG_AML_LCD_TCON
+	if (tcon_valid) {
+		memset(tcon_ferr_str, 0, PR_BUF_MAX);
+		memset(tcon_warn_str, 0, PR_BUF_MAX);
+		free(tcon_ferr_str);
+		free(tcon_warn_str);
+	}
+#endif
+
+	return ret;
 }
 
 int lcd_base_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
@@ -389,6 +608,39 @@ int lcd_base_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 
 	for (; i < LCD_CPU_GPIO_NUM_MAX; i++)
 		strcpy(pconf->power.cpu_gpio[i], "invalid");
+
+	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "config_check_glb", NULL);
+	if (!propdata) {
+		pdrv->config_check_glb = 0;
+	} else {
+		pdrv->config_check_glb = be32_to_cpup((u32 *)propdata);
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+			LCDPR("[%d]: find config_check_glb: %d\n",
+				pdrv->index, pdrv->config_check_glb);
+		}
+	}
+
+	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "display_timing_req_min", NULL);
+	if (!propdata) {
+		pdrv->disp_req.alert_level = 0;
+		pdrv->disp_req.hswbp_vid = 0;
+		pdrv->disp_req.hfp_vid = 0;
+		pdrv->disp_req.vswbp_vid = 0;
+		pdrv->disp_req.vfp_vid = 0;
+	} else {
+		pdrv->disp_req.alert_level = be32_to_cpup((u32 *)propdata);
+		pdrv->disp_req.hswbp_vid   = be32_to_cpup((((u32 *)propdata) + 1));
+		pdrv->disp_req.hfp_vid     = be32_to_cpup((((u32 *)propdata) + 2));
+		pdrv->disp_req.vswbp_vid   = be32_to_cpup((((u32 *)propdata) + 3));
+		pdrv->disp_req.vfp_vid     = be32_to_cpup((((u32 *)propdata) + 4));
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+			LCDPR("[%d]: find display_timing_req_min: alert_level:%d\n"
+				"hswbp:%d, hfp:%d, vswbp:%d, vfp:%d\n",
+				pdrv->index, pdrv->disp_req.alert_level,
+				pdrv->disp_req.hswbp_vid, pdrv->disp_req.hfp_vid,
+				pdrv->disp_req.vswbp_vid, pdrv->disp_req.vfp_vid);
+		}
+	}
 
 #endif
 	return 0;
@@ -1038,6 +1290,16 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 	LCDPR("load dts config: %s, lcd_type: %s(%d)\n",
 		pconf->basic.model_name, propdata, pconf->basic.lcd_type);
 
+	propdata = (char *)fdt_getprop(dt_addr, child_offset, "config_check", NULL);
+	if (!propdata) {
+		pconf->basic.config_check = 0; //follow config_check_glb
+	} else {
+		temp = be32_to_cpup((u32 *)propdata);
+		pconf->basic.config_check = temp ? 0x3 : 0x2;
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDPR("[%d]: find config_check: %d\n", pdrv->index, temp);
+	}
+
 	propdata = (char *)fdt_getprop(dt_addr, child_offset, "basic_setting", NULL);
 	if (!propdata) {
 		LCDERR("[%d]: failed to get basic_setting\n", pdrv->index);
@@ -1499,9 +1761,8 @@ static int lcd_config_load_from_unifykey_v2(struct lcd_config_s *pconf,
 	int i, ret;
 
 	header = (struct lcd_unifykey_header_s *)p;
-	LCDPR("unifykey version: 0x%04x\n", header->version);
-	if (lcd_debug_print_flag) {
-		LCDPR("unifykey header:\n");
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+		LCDPR("unifykey v2 header:\n");
 		LCDPR("crc32             = 0x%08x\n", header->crc32);
 		LCDPR("data_len          = %d\n", header->data_len);
 		LCDPR("block_next_flag   = %d\n", header->block_next_flag);
@@ -1597,8 +1858,6 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv)
 	unsigned int temp;
 	int ret, i = 0;
 
-	LCDPR("config load from unifykey\n");
-
 	key_len = LCD_UKEY_LCD_SIZE;
 	para = (unsigned char *)malloc(sizeof(unsigned char) * key_len);
 	if (!para) {
@@ -1627,7 +1886,8 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv)
 	}
 
 	lcd_unifykey_header_check(para, &lcd_header);
-	LCDPR("[%d]: unifykey version: 0x%04x\n", pdrv->index, lcd_header.version);
+	LCDPR("[%d]: config load from unifykey, version: 0x%04x\n",
+		pdrv->index, lcd_header.version);
 	len = LCD_UKEY_DATA_LEN_V1; /*10+36+18+31+20*/
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 		LCDPR("unifykey header:\n");
@@ -1651,16 +1911,14 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv)
 	strncpy(pconf->basic.model_name, str,
 		sizeof(pconf->basic.model_name) - 1);
 	pconf->basic.model_name[sizeof(pconf->basic.model_name) - 1] = '\0';
-	pconf->basic.lcd_type = *(p + LCD_UKEY_INTERFACE);
+	temp = *(p + LCD_UKEY_INTERFACE);
+	pconf->basic.lcd_type = temp & 0x3f;
+	pconf->basic.config_check = (temp >> 6) & 0x3;
 	pconf->basic.lcd_bits = *(p + LCD_UKEY_LCD_BITS);
 	pconf->basic.screen_width = (*(p + LCD_UKEY_SCREEN_WIDTH) |
 		((*(p + LCD_UKEY_SCREEN_WIDTH + 1)) << 8));
 	pconf->basic.screen_height = (*(p + LCD_UKEY_SCREEN_HEIGHT) |
 		((*(p + LCD_UKEY_SCREEN_HEIGHT + 1)) << 8));
-	LCDPR("load ukey config: %s, lcd_type: %s(%d)\n",
-		pconf->basic.model_name,
-		lcd_type_type_to_str(pconf->basic.lcd_type),
-		pconf->basic.lcd_type);
 
 	/* timing: 18byte */
 	pconf->basic.h_active = (*(p + LCD_UKEY_H_ACTIVE) |
@@ -2250,7 +2508,7 @@ static int lcd_config_load_from_bsp(struct aml_lcd_drv_s *pdrv)
 
 int lcd_get_config(char *dt_addr, int load_id, struct aml_lcd_drv_s *pdrv)
 {
-	int ret;
+	int dbg_chk, ret;
 
 	if (load_id & 0x10)
 		ret = lcd_config_load_from_unifykey(pdrv);
@@ -2271,6 +2529,26 @@ int lcd_get_config(char *dt_addr, int load_id, struct aml_lcd_drv_s *pdrv)
 	lcd_tcon_probe(dt_addr, pdrv, load_id);
 #endif
 
+	dbg_chk = env_get_ulong("lcd_debug_check", 10, 0xff);
+	if (dbg_chk == 0xff) {
+		if (pdrv->config.basic.config_check & 0x2)
+			pdrv->config_check_en = pdrv->config.basic.config_check & 0x1;
+		else
+			pdrv->config_check_en = pdrv->config_check_glb;
+	} else {
+		LCDPR("lcd_debug_check: %d\n", dbg_chk);
+		pdrv->config_check_en = dbg_chk;
+	}
+	if (pdrv->config_check_en == 0) {
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDPR("[%d]: config_check disabled\n", pdrv->index);
+	} else {
+		ret = lcd_config_check(pdrv);
+		if (ret & 0x155) {
+			LCDERR("[%d]: %s: lcd config check fatal error!\n", pdrv->index, __func__);
+			return -1;
+		}
+	}
 	return 0;
 }
 
