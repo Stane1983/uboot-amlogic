@@ -299,7 +299,7 @@
 			"run load_bmp_logo_base;"\
 			"\0"\
 		"init_display="\
-			"run init_display_hdmitx;"\
+			"run init_display_base;"\
 			"\0"\
 		"check_display="\
 			"if test ${reboot_mode} = cold_boot; then "\
