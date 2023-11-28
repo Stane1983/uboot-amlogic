@@ -162,8 +162,8 @@ int board_init(void)
 #endif
 #endif
 	pinctrl_devices_active(PIN_CONTROLLER_NUM);
-	/*set vcc5V*/
-	run_command("gpio set GPIOH_1", 0);
+	/* set VCC_5V */
+	run_command("gpio input GPIOC_7", 0);
 	return 0;
 #endif
 }
@@ -175,8 +175,8 @@ int board_late_init(void)
 
 #ifdef CONFIG_AML_HDMITX21
 	printf("hdmitx21_init\n");
-	hdmitx21_init();
 	hdmitx21_chip_type_init(MESON_CPU_ID_S5);
+	hdmitx21_init();
 #endif
 
 #ifdef CONFIG_AML_VPU
