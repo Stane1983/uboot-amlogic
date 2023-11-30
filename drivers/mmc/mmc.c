@@ -2903,8 +2903,8 @@ static int mmc_complete_init(struct mmc *mmc)
 		mmc->has_init = 0;
 	else
 		mmc->has_init = 1;
-
-	enable_mmc_reset(mmc);
+	if (!IS_SD(mmc))
+		enable_mmc_reset(mmc);
 	return err;
 }
 
