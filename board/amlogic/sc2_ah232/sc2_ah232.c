@@ -153,6 +153,7 @@ int board_init(void)
 int board_late_init(void)
 {
 	printf("board late init\n");
+	env_set("defenv_para", "-c");
 	aml_board_late_init_front(NULL);
 
 	/* reset vout init state */
@@ -425,19 +426,6 @@ int checkhw(char * name)
 #endif
 }
 #endif
-
-const char * const _env_args_reserve_[] =
-{
-	"lock",
-	"upgrade_step",
-	"bootloader_version",
-	"dts_to_gpt",
-	"fastboot_step",
-	"reboot_status",
-	"expect_index",
-
-	NULL//Keep NULL be last to tell END
-};
 
 int __attribute__((weak)) mmc_initialize(bd_t *bis){ return 0;}
 

@@ -513,6 +513,7 @@ int board_late_init(void)
 #ifdef CONFIG_PXP_EMULATOR
         return 0;
 #endif
+	env_set("defenv_para", "-c -b0");
 	aml_board_late_init_front(NULL);
 
 #ifdef CONFIG_AML_VPU
@@ -633,20 +634,10 @@ int checkhw(char * name)
 }
 #endif
 
-const char * const _env_args_reserve_[] =
-{
-		"aml_dt",
-		"firstboot",
-		"lock",
-		"upgrade_step",
-		"model_name",
-		"memsize",
-		"dts_to_gpt",
-		"fastboot_step",
-		"reboot_status",
-		"expect_index",
-
-		NULL//Keep NULL be last to tell END
+const char * const _board_env_reserv_array0[] = {
+	"model_name",
+	"connector_type",
+	NULL//Keep NULL be last to tell END
 };
 
 int ft_board_setup(void *blob, bd_t *bd)

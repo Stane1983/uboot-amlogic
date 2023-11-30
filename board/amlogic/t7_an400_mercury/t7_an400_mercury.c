@@ -569,6 +569,7 @@ void board_power_domain_on(void)
 int board_late_init(void)
 {
 	printf("board late init\n");
+	env_set("defenv_para", "-c -b0");
 	aml_board_late_init_front(NULL);
 
 	media_clock_init();
@@ -892,15 +893,9 @@ int checkhw(char *name)
 	return 0;
 }
 
-const char * const _env_args_reserve_[] = {
-	"lock",
-	"upgrade_step",
-	"bootloader_version",
-	"dts_to_gpt",
-	"fastboot_step",
-	"reboot_status",
-	"expect_index",
-
+const char * const _board_env_reserv_array0[] = {
+	"model_name",
+	"connector_type",
 	NULL//Keep NULL be last to tell END
 };
 

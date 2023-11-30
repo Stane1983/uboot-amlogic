@@ -16,115 +16,221 @@
 
 static const char*  const temp_for_compile[] = {"__test1","__test2","__test3",NULL};
 extern const char * const _env_args_reserve_[0] __attribute__((weak, alias("temp_for_compile")));
+extern const char * const _aml_env_reserv_array[0] __attribute__((weak, alias("temp_for_compile")));
+extern const char * const _board_env_reserv_array0[0] __attribute__((weak, alias("temp_for_compile")));
+extern const char * const _board_env_reserv_array1[0] __attribute__((weak, alias("temp_for_compile")));
+extern const char * const _board_env_reserv_array2[0] __attribute__((weak, alias("temp_for_compile")));
 
 #define debugP(fmt...) //printf("dbg[ENV]" fmt)
 #define errorP(fmt...) do {printf("ERR[ENV]L%d:", __LINE__); printf(fmt); } while (0)
 #define wrnP(fmt...)   printf("WRN[ENV]" fmt)
 #define MsgP(fmt...)   printf("MSG[ENV]" fmt)
 
+enum DEF_ENV_RESERV_ARRAY {
+	BIT_ENV_RESERV_ARRAY_AML_COMMON,	//-c, common aml env array_aml_env_reserv_array
+	BIT_ENV_RESERV_ARRAY_USER_INPUT,	//input env1/env2/env3...
+	BIT_ENV_RESERV_ARRAY_BOARD_DEFINE0,	//-b0, board env array _board_env_reserv_array0
+	BIT_ENV_RESERV_ARRAY_BOARD_DEFINE1,	//-b1, board env array _board_env_reserv_array1
+	BIT_ENV_RESERV_ARRAY_BOARD_DEFINE2,	//-b2, board env array _board_env_reserv_array2
+
+	DEF_ENV_RESERV_ARRAY_COUNT,
+};
+
 static int _reserve_env_list_after_defenv(const int reservNum, const char* const reservNameList[])
 {
-        int ret = 0;
-        int index = 0;
-        unsigned sumOfEnvVal = 0;//sum of strlen(getenv(env_i))
-        const int MaxReservNum = CONFIG_SYS_MAXARGS - 1;
-        const char* valListBuf[MaxReservNum];//store at most 64 envs
-        char* tmpEnvBuf = NULL;
+	int ret = 0;
+	int index = 0;
+	unsigned sumOfEnvVal = 0;//sum of strlen(getenv(env_i))
+	const int MaxReservNum = CONFIG_SYS_MAXARGS - 1;
+	const char *valListBuf[MaxReservNum];//store at most 64 envs
+	char *tmpEnvBuf = NULL;
 
-        if (reservNum > MaxReservNum) {
-                errorP("max reserved env list num %d < wanted %d\n", MaxReservNum, reservNum);
-                return __LINE__;
-        }
-        //1, cal the total buf size needed to save the envs
-        for (index = 0; index < reservNum; ++index)
-        {
-                const char* cfgEnvKey = reservNameList[index];
-                const char* cfgEnvVal = env_get(cfgEnvKey);
+	if (reservNum > MaxReservNum) {
+		errorP("max reserved env list num %d < wanted %d\n", MaxReservNum, reservNum);
+		return __LINE__;
+	}
+	//1, cal the total buf size needed to save the envs
+	for (index = 0; index < reservNum; ++index) {
+		const char *cfgEnvKey = reservNameList[index];
+		const char *cfgEnvVal = env_get(cfgEnvKey);
 
-                if (cfgEnvVal) {
-                        sumOfEnvVal += strlen(cfgEnvVal) + 1;
-                }
-                valListBuf[index] = cfgEnvVal;
-        }
+		MsgP("to rsv %s=%s\n", cfgEnvKey, cfgEnvVal ? cfgEnvVal : "null");
+		if (cfgEnvVal)
+			sumOfEnvVal += strlen(cfgEnvVal) + 1;
+		valListBuf[index] = cfgEnvVal;
+	}
 
-        //2, transfer the env values to buffer
-        if (sumOfEnvVal)
-        {
-                tmpEnvBuf = (char*)malloc(sumOfEnvVal);
-                if (!tmpEnvBuf) {
-                        errorP("Fail in malloc(%d)\n", sumOfEnvVal);
-                        return __LINE__;
-                }
-                memset(tmpEnvBuf, 0, sumOfEnvVal);
+	//2, transfer the env values to buffer
+	if (sumOfEnvVal) {
+		tmpEnvBuf = (char *)malloc(sumOfEnvVal);
+		if (!tmpEnvBuf) {
+			errorP("Fail in malloc(%d)\n", sumOfEnvVal);
+			return __LINE__;
+		}
+		memset(tmpEnvBuf, 0, sumOfEnvVal);
 
-                char* tmpbuf    = tmpEnvBuf;
-                for (index = 0; index < reservNum; ++index )
-                {
-                        const char*    valBeforeDef     = valListBuf[index];
+		char *tmpbuf    = tmpEnvBuf;
 
-                        if (!valBeforeDef) continue;
+		for (index = 0; index < reservNum; ++index) {
+			const char *valBeforeDef     = valListBuf[index];
 
-                        const unsigned thisValLen       = strlen(valBeforeDef) + 1;
-                        memcpy(tmpbuf, valBeforeDef, thisValLen);
-                        valListBuf[index] = tmpbuf;
-                        tmpbuf += thisValLen ;
-                        debugP("tmpEnvBuf=%p, tmpbuf=%p, thisValLen=%d\n", tmpEnvBuf, tmpbuf, thisValLen);
-                        debugP("cp:k[%s]%s-->%s\n", reservNameList[index], valBeforeDef, tmpEnvBuf);
-                }
-        }
+			if (!valBeforeDef)
+				continue;
 
-        set_default_env("## defenv_reserve ##", 0);
+			const unsigned thisValLen       = strlen(valBeforeDef) + 1;
 
-        if (sumOfEnvVal)
-        {
-                for (index = 0; index < reservNum; ++index)
-                {
-                        const char* cfgEnvKey           = reservNameList[index];
-                        const char* valAftDef           = valListBuf[index];
+			memcpy(tmpbuf, valBeforeDef, thisValLen);
+			valListBuf[index] = tmpbuf;
+			tmpbuf += thisValLen;
+			debugP("tmpEnvBuf=%p, tmpbuf=%p, thisValLen=%d\n",
+					tmpEnvBuf, tmpbuf, thisValLen);
+			debugP("cp:k[%s]%s-->%s\n", reservNameList[index], valBeforeDef, tmpEnvBuf);
+		}
+	}
 
-                        if (valAftDef)
-                        {
-                                env_set(cfgEnvKey, valAftDef);
-                                debugP("set[%s=%s]\n", cfgEnvKey, valAftDef);
-                        }
-                }
-        }
+	set_default_env("## defenv_reserve ##", 0);
 
-        if (tmpEnvBuf) free(tmpEnvBuf) ;
-        return ret;
+	if (sumOfEnvVal) {
+		for (index = 0; index < reservNum; ++index) {
+			const char *cfgEnvKey           = reservNameList[index];
+			const char *valAftDef           = valListBuf[index];
+
+			if (valAftDef) {
+				env_set(cfgEnvKey, valAftDef);
+				debugP("set[%s=%s]\n", cfgEnvKey, valAftDef);
+			}
+		}
+	}
+
+	if (tmpEnvBuf)
+		free(tmpEnvBuf);
+	return ret;
 }
+
+static int _do_defenv_reserv(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int envListNum = argc - 1;
+	const char **envListArr = (const char **)(argv + 1);
+	unsigned int rsv_flags = 0;
+	const int MAX_RSV_NUM = CONFIG_SYS_MAXARGS - 1;
+	const char *rsv_env_list[MAX_RSV_NUM];//store at most 64 envs
+	int rsv_env_num = 0;
+	int ret = 0, i = 0, k = 0;
+	const char *tmp = NULL;
+
+	if (!envListNum) {
+		envListArr = (const char **)_env_args_reserve_;
+		const char **pArr = (const char **)envListArr;
+
+		while (*pArr++)
+			++envListNum;
+	} else if (*argv[1] == '-') {
+		char *arg = NULL;
+		const char * const*_aml_env_reserv_[DEF_ENV_RESERV_ARRAY_COUNT];
+
+		_aml_env_reserv_[BIT_ENV_RESERV_ARRAY_AML_COMMON] = _aml_env_reserv_array;
+		_aml_env_reserv_[BIT_ENV_RESERV_ARRAY_USER_INPUT] = temp_for_compile;
+		_aml_env_reserv_[BIT_ENV_RESERV_ARRAY_BOARD_DEFINE0] = _board_env_reserv_array0;
+		_aml_env_reserv_[BIT_ENV_RESERV_ARRAY_BOARD_DEFINE1] = _board_env_reserv_array1;
+		_aml_env_reserv_[BIT_ENV_RESERV_ARRAY_BOARD_DEFINE2] = _board_env_reserv_array2;
+		debugP("argc %d\n", argc);
+		while (argc > 1 && **(argv + 1) == '-') {
+			arg = *++argv;
+			--argc;
+			while (*++arg) {
+				switch (*arg) {
+				case 'b':{//board env
+					const int bd = *++arg - '0';
+
+					if (bd > 2 || bd < 0) {
+						errorP("Invalid option -%s\n", arg - 1);
+						return CMD_RET_USAGE;
+					}
+					debugP("board reserv _board_env_reserv_array%d\n", bd);
+					rsv_flags |= 1 << (BIT_ENV_RESERV_ARRAY_BOARD_DEFINE0 + bd);
+				} break;
+				case 'c'://common env
+					MsgP("common reserv _aml_env_reserv_array\n");
+					rsv_flags |= 1 << BIT_ENV_RESERV_ARRAY_AML_COMMON;
+					break;
+				default:
+					errorP("Invalid para -%s\n", arg);
+					return CMD_RET_USAGE;
+				}
+			}
+		}
+		MsgP("argc %d, rsv_flags 0x%x\n", argc, rsv_flags);
+		if (argc > 1) {
+			MsgP("rsv usr env: ");
+			for (i = 1; i < argc; ++i) {
+				printf("%s, ", argv[i]);
+				rsv_env_list[i - 1] = argv[i];
+			}
+			rsv_env_num = argc - 1;
+			printf("\n");
+		}
+		for (i = 0; i < DEF_ENV_RESERV_ARRAY_COUNT; ++i) {
+			if (!(rsv_flags & (1 << i)))
+				continue;
+			debugP("rsv %d\n", i);
+			envListArr = (const char **)_aml_env_reserv_[i];
+			for (k = 0, tmp = envListArr[k]; tmp && *tmp; tmp = envListArr[++k]) {
+				debugP("rsv[%d][%d] = %s\n", i, k, tmp);
+				if (rsv_env_num >= MAX_RSV_NUM) {
+					errorP("too long rsv num %d, max %d\n",
+							rsv_env_num, MAX_RSV_NUM - 1);
+					return CMD_RET_FAILURE;
+				}
+				rsv_env_list[rsv_env_num++] = tmp;
+			}
+		}
+		debugP("rsv_env_num %d\n", rsv_env_num);
+		rsv_env_list[rsv_env_num] = NULL;
+		envListNum = rsv_env_num;
+		envListArr = rsv_env_list;
+	}
+
+	ret = _reserve_env_list_after_defenv(envListNum, envListArr);
+
+	return ret ? CMD_RET_FAILURE : CMD_RET_SUCCESS;
+}
+
+U_BOOT_CMD(_aml_defenv_reserve,		//command name
+	CONFIG_SYS_MAXARGS,  //maxargs
+	0,                   //repeatable
+	_do_defenv_reserv,    //command function
+	"reserve some specified envs after defaulting env",           //description
+	"    see help defenv_reserve for usage\n"   //usage
+);
 
 static int do_defenv_reserv(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-        int envListNum = argc - 1;
-        const char** envListArr = (const char**)(argv + 1);
-
-        if (!envListNum)
-        {
-                envListArr = (const char**)_env_args_reserve_;
-
-                const char** pArr = (const char**)envListArr;
-                while (*pArr++) ++envListNum;
-        }
-
-        int ret = _reserve_env_list_after_defenv(envListNum, envListArr);
-
-        return ret ? CMD_RET_FAILURE : CMD_RET_SUCCESS;
+	if (argc > 1)
+		return _do_defenv_reserv(cmdtp, flag, argc, argv);
+	//no para
+	return run_command("echo defenv_para $defenv_para;"
+			   "_aml_defenv_reserve ${defenv_para}", flag);
 }
 
-U_BOOT_CMD_COMPLETE(
-	defenv_reserve,		//command name
-   CONFIG_SYS_MAXARGS,  //maxargs
-   0,                   //repeatable
-   do_defenv_reserv,    //command function
-   "reserve some specified envs after defaulting env",           //description
-   "    argv: defenv_reserve <reserv_en0 reserv_env1 ...> \n"   //usage
-   "    - e.g. \n"
-   "        defenv_reserve :\n"   //usage
-   "               NOT env list , reserv cfg array '_env_args_reserve_' in gxbb_p200.c\n"
-   "        defenv_reserve reserv_en0, reserv_env1, ...\n"   //usage
-   "               reserve specified envs after defaulting env\n",   //usage
-   var_complete
+U_BOOT_CMD_COMPLETE(defenv_reserve,		//command name
+	CONFIG_SYS_MAXARGS,  //maxargs
+	0,                   //repeatable
+	do_defenv_reserv,    //command function
+	"reserve some specified envs after defaulting env",           //description
+	"    argv: defenv_reserve <-c> <-b1> <-b2> <-b3> <env1 env2 env3 ...>\n"   //usage
+	"    - e.g. \n"
+	"        defenv_reserve :\n"   //usage
+	"               old mode, NO env list , reserv cfg array '_env_args_reserve_' in <board>.c\n"
+	"        defenv_reserve reserv_en0, reserv_env1, ...\n"   //usage
+	"               old mode, reserve user env list\n"   //usage
+	"        defenv_reserve <-c> <-b1> <-b2> <-b3> <env1 env2 env3 ...> ...\n"   //usage
+	"               new mode, default all env except \n"
+	"               	-c, amlogic Common env array _aml_env_reserv_array\n"
+	"               	-b0, <board>.c env array _board_env_reserv_array0\n"
+	"               	-b1, <board>.c env array _board_env_reserv_array1\n"
+	"               	-b2, <board>.c env array _board_env_reserv_array2\n"
+	"               	<env1 env2 env3 ...>\n",
+	var_complete
 );
 
 /*

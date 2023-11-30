@@ -159,6 +159,7 @@ int board_init(void)
 int board_late_init(void)
 {
 	printf("board late init\n");
+	env_set("defenv_para", "-c -b0");
 	aml_board_late_init_front(NULL);
 
 #ifdef CONFIG_AML_VPU
@@ -368,6 +369,11 @@ const struct mtd_partition *get_spinand_partition_table(int *partitions)
 }
 #endif /* CONFIG_SPI_NAND */
 
+const char * const _board_env_reserv_array0[] = {
+	"model_name",
+	"connector_type",
+	NULL//Keep NULL be last to tell END
+};
 int __attribute__((weak)) mmc_initialize(bd_t *bis){ return 0;}
 
 int __attribute__((weak)) do_bootm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]){ return 0;}

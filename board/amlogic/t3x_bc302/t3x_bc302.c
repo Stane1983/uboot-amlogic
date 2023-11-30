@@ -180,6 +180,7 @@ int board_init(void)
 int board_late_init(void)
 {
 	printf("board late init\n");
+	env_set("defenv_para", "-c -b0");
 	aml_board_late_init_front(NULL);
 
 #ifndef CONFIG_PXP_EMULATOR
@@ -457,18 +458,9 @@ int checkhw(char *name)
 }
 #endif
 
-const char * const _env_args_reserve_[] =
-{
-	"lock",
-	"upgrade_step",
-	"bootloader_version",
+const char * const _board_env_reserv_array0[] = {
 	"model_name",
-	"hdmimode",
-	"outputmode",
-	"dts_to_gpt",
-	"fastboot_step",
-	"reboot_status",
-	"expect_index",
+	"connector_type",
 	NULL//Keep NULL be last to tell END
 };
 
