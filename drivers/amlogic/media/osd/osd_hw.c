@@ -4781,11 +4781,6 @@ void osd_init_hw_viux(u32 index)
 			osd_reg_set_bits(VPP_OSD3_SCALE_CTRL, 0x7, 0, 3);
 		}
 
-		/* vpp1 osd order, premult, blend_en */
-		osd_reg_set_bits(VPP1_BLD_CTRL, bld_src2_sel, 4, 4);
-		osd_reg_set_bits(VPP1_BLD_CTRL, osd_premult, 17, 1);
-		osd_reg_set_bits(VPP1_BLD_CTRL, blend_en, 31, 1);
-
 #ifdef AML_T7_DISPLAY
 		/* vpp_top input mux */
 		osd_reg_set_bits(OSD_PATH_MISC_CTRL, OSD3 + VPP_OSD1,
@@ -4806,6 +4801,10 @@ void osd_init_hw_viux(u32 index)
 		/* 1:output to vpp slice1 0:output to venc1 directly */
 		osd_reg_set_bits(VPP1_BLD_CTRL, 0, 30, 1);
 #endif
+		/* vpp1 osd order, premult, blend_en */
+		osd_reg_set_bits(VPP1_BLD_CTRL, bld_src2_sel, 4, 4);
+		osd_reg_set_bits(VPP1_BLD_CTRL, osd_premult, 17, 1);
+		osd_reg_set_bits(VPP1_BLD_CTRL, blend_en, 31, 1);
 	}
 
 	if (is_vpp2(index)) {

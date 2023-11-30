@@ -14,6 +14,7 @@
 #define OSD_LOG_LEVEL_DEBUG 1
 #define OSD_LOG_LEVEL_DEBUG2 2
 #define OSD_LOG_LEVEL_DEBUG3 3
+#define OSD_LOG_LEVEL_DEBUG4 4
 
 extern int osd_log_level;
 

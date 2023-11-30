@@ -358,10 +358,17 @@ static inline u32 osd_reg_read(u32 reg)
 static inline void osd_reg_write(u32 reg,
 				 const u32 val)
 {
-	if (reg > 0x10000)
+	if (reg > 0x10000) {
 		*(volatile unsigned int *)REG_OSD_ADDR(reg) = (val);
-	else
+		if (osd_log_level == OSD_LOG_LEVEL_DEBUG4)
+			printf("reg:0x%08x 0x%08x-->0x%08x\n", reg,
+			       *(unsigned int *)REG_OSD_ADDR(reg), val);
+	} else {
 		*(volatile unsigned int *)REG_ADDR_VCBUS(reg) = (val);
+		if (osd_log_level == OSD_LOG_LEVEL_DEBUG4)
+			printf("reg:0x%x 0x%08x-->0x%08x\n", reg,
+			       *(unsigned int *)REG_ADDR_VCBUS(reg), val);
+	}
 }
 
 static inline void osd_reg_set_mask(u32 reg,
