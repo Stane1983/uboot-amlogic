@@ -16,19 +16,11 @@ extern const uint8_t sha256_der_prefix[];
 
 /* SHA2 context */
 typedef struct {
-	/* hardware SHA compile*/
-	uint32_t h[8];
-	uint32_t tot_len;
-	uint32_t len;
-	uint32_t digest_len;
-	uint8_t block[2 * SHA256_BLOCK_SIZE];
-	uint8_t buf[SHA256_DIGEST_SIZE];  /* Used to store the final digest. */
-	uint8_t tmp[12]; // temp sha bits counter saved here by hw.
 	/* software SHA compile*/
 	uint32_t total[2];
 	uint32_t state[8];
 	uint8_t buffer[64];
-}sha2_ctx,sha256_context;
+} sha256_context;
 
 void sha256_starts(sha256_context * ctx);
 void sha256_update(sha256_context *ctx, const uint8_t *input, uint32_t length);

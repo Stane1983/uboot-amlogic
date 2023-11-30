@@ -4,6 +4,7 @@
  */
 
 #include <common.h>
+#include <command.h>
 #include <crypto_internal.h>
 #include <amlogic/aml_crypto.h>
 #include <uboot_aes.h>
@@ -624,7 +625,7 @@ static int do_aes_test(uint32_t test_case)
 	}
 }
 
-static int do_hw_aes_test(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int do_hw_aes_test(struct cmd_tbl *cmdtp, int flag, int argc, char * const argv[])
 {
 	uint32_t test_case = 0;
 	char *endp = 0;

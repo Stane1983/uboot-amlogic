@@ -8,24 +8,47 @@
 
 #include <common.h>
 #include <u-boot/sha256.h>
+#include <amlogic/aml_crypto.h>
 
-//#define USE_SHA_OLD_CODE
-#define HASH_FLUSH_INPUT
+#define SHA3_TMP_SIZE (256)
+#define NO_BLOCK_BUFFERING_FOR_SHA3
 
 /* DMA operation mode */
 #define CIPHER_OP_MODE_ECB 0
 #define CIPHER_OP_MODE_CBC 1
 #define CIPHER_OP_MODE_CTR 2
 
-#define HASH_OP_MODE_SHA1     1
-#define HASH_OP_MODE_SHA256   2
-#define HASH_OP_MODE_SHA224   3
+#define SHA2_OP_MODE_SHA2       0
+#define SHA2_OP_MODE_HMAC_IPAD  1
+#define SHA2_OP_MODE_HMAC_OPAD  2
+
+#define SHA3_OP_MODE_SHA3_224   0
+#define SHA3_OP_MODE_SHA3_256   1
+#define SHA3_OP_MODE_SHA3_384   2
+#define SHA3_OP_MODE_SHA3_512   3
+
+#define SHA3_OP_MODE_SHAKE_128_ABSORB    0
+#define SHA3_OP_MODE_SHAKE_256_ABSORB    1
+#define SHA3_OP_MODE_SHAKE_128_SQUEEZE   2
+#define SHA3_OP_MODE_SHAKE_256_SQUEEZE   3
+
+#define CIPHER_ENC_SHA_ONLY_DECRYPT     0
+#define CIPHER_ENC_SHA_ONLY_ENCRYPT     1
+
+#define SHA2_ENC_SHA_ONLY_COPY_AND_SHA  0
+#define SHA2_ENC_SHA_ONLY_SHA           1
+
+#define SHA3_ENC_SHA_ONLY_SHA3  0
+#define SHA3_ENC_SHA_ONLY_SHAKE 1
+
+#define SHA3_END_SHAKE_SAVE_CTX 0
+#define SHA3_END_SHAKE_OUTPUT   1
 
 /* DMA mode */
 #define DMA_MODE_DMA     0x0
 #define DMA_MODE_KEY     0x1
 #define DMA_MODE_MEMSET  0x2
-/* 0x3  skipped */
+#define DMA_MODE_SHA3    0x3
 /* 0x4  skipped */
 #define DMA_MODE_SHA1    0x5
 #define DMA_MODE_SHA256  0x6
@@ -63,8 +86,13 @@ struct dma_dsc {
 		    unsigned owner:1;
 		} b;
 	} dsc_cfg;
+#ifdef DMA_64_BIT
+	uint64_t src_addr;
+	uint64_t tgt_addr;
+#else
 	uint32_t src_addr;
 	uint32_t tgt_addr;
+#endif
 };
 
 /*
@@ -105,15 +133,39 @@ int32_t des_tdes_cipher(void *key, uint32_t keylen, uint8_t iv[8],
 		   uint8_t op_mode, size_t size);
 
 /*
- * hw_update_internal - Internal logic for SHA update
+ * sha2_update_internal - Internal logic for SHA update
  *
- * @cur_ctx - SHA context
+ * @ctx - SHA context
  * @input - input pointer
  * @ilen - input length
  * @hash - hash buffer
  * @last_update - to finalize context
  * @return - on successful, 0 and negative value, otherwise.
  */
-int32_t hw_update_internal(sha2_ctx *cur_ctx, const uint8_t *input,
+int32_t sha2_update_internal(sha2_ctx *ctx, const uint8_t *input,
 		uint32_t ilen, uint8_t *hash, uint8_t last_update);
+
+/*
+ * sha3_update_internal - Internal logic for SHA3 update
+ *
+ * @ctx - SHA context
+ * @input - input pointer
+ * @ilen - input length
+ * @digest - hash buffer
+ * @digest_size - size of hash buffer
+ * @last_update - to finalize context
+ * @return - on successful, 0 and negative value, otherwise.
+ */
+int32_t sha3_update_internal(sha3_ctx *ctx, const uint8_t *input,
+		uint32_t ilen, uint8_t *digest, uint32_t digest_size, uint8_t last_update);
+
+/*
+ * sha3_shake_squeeze_internal - Internal logic for SHAKE squeeze
+ *
+ * @ctx - SHA context
+ * @hash - hash buffer
+ * @hash_len - size of hash buffer
+ * @return - on successful, 0 and negative value, otherwise.
+ */
+int32_t sha3_shake_squeeze_internal(sha3_ctx *ctx, uint8_t *hash, uint32_t hash_len);
 #endif
