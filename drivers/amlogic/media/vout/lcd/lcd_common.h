@@ -136,7 +136,21 @@ void lcd_phy_set(struct aml_lcd_drv_s *pdrv, int status);
 int lcd_phy_probe(struct aml_lcd_drv_s *pdrv);
 int lcd_phy_config_init(struct aml_lcd_data_s *pdata);
 
-/*lcd vbyone*/
+/* lcd dphy */
+void lcd_mipi_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off);
+void lcd_edp_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off);
+void lcd_lvds_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off);
+void lcd_vbyone_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off);
+#ifdef CONFIG_AML_LCD_TCON
+void lcd_mlvds_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off);
+void lcd_p2p_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off);
+#endif
+
+/* lcd lvds*/
+void lcd_lvds_enable(struct aml_lcd_drv_s *pdrv);
+void lcd_lvds_disable(struct aml_lcd_drv_s *pdrv);
+
+/* lcd vbyone*/
 void lcd_vbyone_enable(struct aml_lcd_drv_s *pdrv);
 void lcd_vbyone_disable(struct aml_lcd_drv_s *pdrv);
 void lcd_vbyone_sw_reset(struct aml_lcd_drv_s *pdrv);
