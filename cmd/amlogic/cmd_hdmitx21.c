@@ -48,6 +48,10 @@ static int do_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	unsigned char st = 0;
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
+	if (!hdev) {
+		printf("null hdmitx dev\n");
+		return CMD_RET_FAILURE;
+	}
 	memset(edid_raw_buf, 0, ARRAY_SIZE(edid_raw_buf));
 
 	st = hdev->hwop.read_edid(edid_raw_buf);
@@ -63,6 +67,10 @@ static int do_rx_det(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	unsigned char st = 0;
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
+	if (!hdev) {
+		printf("null hdmitx dev\n");
+		return CMD_RET_FAILURE;
+	}
 	memset(edid_raw_buf, 0, ARRAY_SIZE(edid_raw_buf));
 
 	// read edid raw data
@@ -216,6 +224,10 @@ static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 
 	if (argc < 1)
 		return cmd_usage(cmdtp);
+	if (!hdev) {
+		printf("null hdmitx dev\n");
+		return CMD_RET_FAILURE;
+	}
 
 	if (strcmp(argv[1], "list") == 0) {
 		hdev->hwop.list_support_modes();
@@ -236,6 +248,10 @@ static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 			mode = simple_strtoul(argv[2], NULL, 10);
 		hdev->hwop.test_bist(mode);
 	} else if (strcmp(argv[1], "prbs") == 0) {
+		if (!hdev->para) {
+			printf("null hdmitx para\n");
+			return CMD_RET_FAILURE;
+		}
 		hdev->para->cs = HDMI_COLORSPACE_RGB;
 		hdev->para->cd = COLORDEPTH_24B;
 		hdev->vic = HDMI_16_1920x1080p60_16x9;
@@ -274,11 +290,17 @@ static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 		if (!env_get("colorattribute"))
 			env_set("colorattribute", "444,8bit");
 		hdev->para = hdmitx21_get_fmtpara(argv[1], env_get("colorattribute"));
+		if (!hdev->para) {
+			printf("null hdmitx para\n");
+			return CMD_RET_FAILURE;
+		}
 		hdev->vic = hdev->para->timing.vic;
 		if (hdev->vic == HDMI_UNKNOWN) {
 			/* Not find VIC */
 			printf("Not find '%s' mapped VIC\n", argv[1]);
 			return CMD_RET_FAILURE;
+		} else {
+			printf("set hdmitx VIC = %d\n", hdev->vic);
 		}
 		if (strstr(argv[1], "hz420"))
 			hdev->para->cs = HDMI_COLORSPACE_YUV420;
@@ -411,6 +433,10 @@ static int do_off(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
+	if (!hdev) {
+		printf("null hdmitx dev\n");
+		return CMD_RET_FAILURE;
+	}
 	hdev->vic = HDMI_UNKNOWN;
 	if (hdev->chip_type == MESON_CPU_ID_S5)
 		hdmitx_module_disable();
@@ -422,6 +448,11 @@ static int do_off(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 static int do_dump(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
+
+	if (!hdev) {
+		printf("null hdmitx dev\n");
+		return CMD_RET_FAILURE;
+	}
 
 	hdev->hwop.dump_regs();
 	return 1;
@@ -765,6 +796,10 @@ static int xtochar(int num, char *checksum)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
+	if (!hdev) {
+		printf("null hdmitx dev\n");
+		return -1;
+	}
 	if (((hdev->rawedid[num] >> 4) & 0xf) <= 9)
 		checksum[0] = ((hdev->rawedid[num] >> 4) & 0xf) + '0';
 	else
@@ -1036,6 +1071,10 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 	 */
 	bool no_manual_output = false;
 
+	if (!hdev) {
+		printf("null hdmitx dev\n");
+		return CMD_RET_FAILURE;
+	}
 	if (!hdev->hpd_state) {
 		printf("HDMI HPD low, no need parse EDID\n");
 		return 1;

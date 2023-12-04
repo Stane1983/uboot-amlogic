@@ -1070,6 +1070,11 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap,
 	/* prxcap->native_VIC = 0xff; */
 	if (end > 127)
 		return 0;
+	if (blockbuf[1] <= 2) {
+		/* skip below for loop */
+		goto next;
+	}
+
 	for (offset = 4 ; offset < end ; ) {
 		tag = blockbuf[offset] >> 5;
 		count = blockbuf[offset] & 0x1f;
@@ -1185,7 +1190,7 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap,
 			break;
 		}
 	}
-
+next:
 	edid_y420cmdb_postprocess(prxcap);
 	idx = blockbuf[3] & 0xf;
 	for (i = 0; i < idx; i++)
