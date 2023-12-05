@@ -117,6 +117,9 @@ static bool tv_mode;
 struct vpp_post_info_t core3_slice_info;
 #endif
 
+static bool efuse_checked;
+static bool efuse_mode;
+
 #define MAX_PARAM   8
 
 #ifndef REG_BASE_VCBUS
@@ -140,6 +143,7 @@ struct vpp_post_info_t core3_slice_info;
 #define DOLBY_PATH_CTRL                        0x1a0c
 #endif
 
+#define CORE1_CONTROL_REG        0x3301
 static inline bool is_meson_gxm(void)
 {
 	if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_GXM)
@@ -332,6 +336,32 @@ static inline bool check_outputmode(void)
 }
 
 #ifdef CONFIG_AML_DOLBY
+bool check_amdolby_efuse(void)
+{
+	unsigned int reg_value;
+
+	if (efuse_checked)
+		return efuse_mode;
+
+	if ((get_cpu_id().family_id == MESON_CPU_MAJOR_ID_G12A) ||
+		(get_cpu_id().family_id == MESON_CPU_MAJOR_ID_G12B) ||
+		(get_cpu_id().family_id == MESON_CPU_MAJOR_ID_SM1) ||
+		(get_cpu_id().family_id == MESON_CPU_MAJOR_ID_TM2) ||
+		(get_cpu_id().family_id == MESON_CPU_MAJOR_ID_SC2) ||
+		(get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S4D) ||
+		(get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T7) ||
+		(get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S5)) {
+		reg_value = READ_VPP_REG(CORE1_CONTROL_REG);
+		printf("control reg_value %x\n", reg_value);
+		if (reg_value & 0x100)
+			efuse_mode = true;
+		else
+			efuse_mode = false;
+	}
+	efuse_checked = true;
+	return efuse_mode;
+}
+
 /*check dolby enable status,if status is disabled, not enable dolby
 */
 int is_dolby_enable(void)
@@ -360,7 +390,12 @@ int is_dolby_enable(void)
 
 	if (!dv_fw_valid || !check_outputmode_valid)
 		return 0;
+
 	if (dolby_status) {
+		/*check efuse*/
+		if (check_amdolby_efuse())
+			return 0;
+
 		if (hdr_policy) {
 			if ((!strcmp(dolby_status, DOLBY_VISION_SET_STD) ||
 				!strcmp(dolby_status, DOLBY_VISION_SET_LL_YUV) ||
