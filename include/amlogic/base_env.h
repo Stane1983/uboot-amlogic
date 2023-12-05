@@ -136,7 +136,7 @@
 			"setenv loadaddr ${loadaddr_kernel};"\
 			"if imgread kernel ${boot_part} ${loadaddr}; then bootm ${loadaddr}; fi;"\
 		"else echo wrong OS format ${os_type}; fi;fi;"\
-		"echo try upgrade as booting failure; run update;"\
+		"echo try upgrade as booting failure; check_ab; run update;"\
 		"\0" \
 	"update_base=" _AML_RUN_UPDATE_ENV \
 		"run recovery_from_flash;" \

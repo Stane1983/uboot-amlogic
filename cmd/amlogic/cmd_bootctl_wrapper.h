@@ -19,6 +19,7 @@ typedef struct _bootctl_func_handles {
 	bootctl_cmd_func do_SetUpdateTries_func;
 	bootctl_cmd_func do_GetSystemMode_func;
 	bootctl_cmd_func do_GetAvbMode_func;
+	bootctl_cmd_func do_CheckABState_func;
 } bootctl_func_handles;
 
 bootctl_func_handles *get_bootctl_cmd_func_vab(void);

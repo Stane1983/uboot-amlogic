@@ -121,6 +121,19 @@ int do_GetSystemMode(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	return ret;
 }
 
+int do_CheckABState(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int ret = 0;
+	bootctl_func_handles *func_handles = NULL;
+
+	func_handles = select_bootctl_cmd_func();
+
+	if (func_handles && func_handles->do_CheckABState_func)
+		ret = func_handles->do_CheckABState_func(cmdtp, flag, argc, argv);
+
+	return ret;
+}
+
 int do_GetAvbMode(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	int ret = 0;
@@ -159,6 +172,13 @@ U_BOOT_CMD(update_tries, 2, 0, do_SetUpdateTries,
 	"update_tries",
 	"\nThis command will change tries_remaining in misc\n"
 	"So you can execute command: update_tries");
+
+U_BOOT_CMD
+(check_ab, 2, 0, do_CheckABState,
+	"check_ab",
+	"\nThis command will check ab sate\n"
+	"So you can execute command: check_ab"
+);
 
 U_BOOT_CMD(get_system_as_root_mode, 1, 0, do_GetSystemMode,
 	"get_system_as_root_mode",

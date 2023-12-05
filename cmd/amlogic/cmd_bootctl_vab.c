@@ -1000,6 +1000,56 @@ static int do_SetUpdateTries(
 	return 0;
 }
 
+static int do_CheckABState(cmd_tbl_t *cmdtp,
+	int flag,
+	int argc,
+	char * const argv[])
+{
+	char miscbuf[MISCBUF_SIZE] = {0};
+	bootloader_control boot_ctrl;
+	bool bootable_a, bootable_b;
+	int slot;
+	int retry_times = 0;
+
+	if (has_boot_slot == 0) {
+		printf("device is not ab mode\n");
+		return -1;
+	}
+
+	boot_info_open_partition(miscbuf);
+	boot_info_load(&boot_ctrl, miscbuf);
+
+	if (!boot_info_validate(&boot_ctrl)) {
+		printf("boot-info is invalid. Resetting\n");
+		boot_info_reset(&boot_ctrl);
+		boot_info_save(&boot_ctrl, miscbuf);
+	}
+
+	slot = get_active_slot(&boot_ctrl);
+	bootable_a = slot_is_bootable(&boot_ctrl.slot_info[0]);
+	bootable_b = slot_is_bootable(&boot_ctrl.slot_info[1]);
+
+	if ((slot == 0 && bootable_a &&
+		boot_ctrl.slot_info[0].successful_boot == 1) ||
+		(slot == 1 && bootable_b &&
+		boot_ctrl.slot_info[1].successful_boot == 1) ||
+		(!bootable_a && !bootable_b))
+		return 0;
+
+	if (slot == 0 && bootable_a &&
+		boot_ctrl.slot_info[0].successful_boot == 0)
+		retry_times = boot_ctrl.slot_info[0].tries_remaining;
+
+	if (slot == 1 && bootable_b &&
+		boot_ctrl.slot_info[1].successful_boot == 0)
+		retry_times = boot_ctrl.slot_info[1].tries_remaining;
+
+	printf("ab update mode, try %d times again\n", retry_times + 1);
+	run_command("reset", 0);
+
+	return 0;
+}
+
 static int do_CopySlot(
 	cmd_tbl_t *cmdtp,
 	int flag,
@@ -1113,6 +1163,7 @@ bootctl_func_handles *get_bootctl_cmd_func_vab(void)
 	vab_cmd_bootctrl_handles.do_SetUpdateTries_func = do_SetUpdateTries;
 	vab_cmd_bootctrl_handles.do_GetSystemMode_func = do_GetSystemMode;
 	vab_cmd_bootctrl_handles.do_GetAvbMode_func = do_GetAvbMode;
+	vab_cmd_bootctrl_handles.do_CheckABState_func = do_CheckABState;
 
 	return &vab_cmd_bootctrl_handles;
 }
@@ -1146,6 +1197,13 @@ U_BOOT_CMD
 	"copy_slot_bootable",
 	"\nThis command will set active slot\n"
 	"So you can execute command: copy_slot_bootable 2 1"
+);
+
+U_BOOT_CMD
+(check_ab, 2, 0, do_CheckABState,
+	"check_ab",
+	"\nThis command will check ab sate\n"
+	"So you can execute command: check_ab"
 );
 
 U_BOOT_CMD(
