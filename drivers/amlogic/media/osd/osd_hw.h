@@ -111,10 +111,12 @@ void osd_update_blend_c3(void);
 #endif
 #ifdef AML_S5_DISPLAY
 void vpp_post_blend_set(u32 vpp_index, struct vpp_post_blend_s *vpp_blend);
-void vpp_post_slice_set(u32 vpp_index, struct vpp_post_s *vpp_post);
-void vpp_vd1_hwin_set(u32 vpp_index, struct vpp_post_s *vpp_post);
-void vpp_post_proc_set(u32 vpp_index, struct vpp_post_s *vpp_post);
-void vpp_post_padding_set(u32 vpp_index, struct vpp_post_s *vpp_post);
+void vpp1_post_blend_set(struct vpp1_post_blend_s *vpp_blend);
+void vpp_post_slice_set(u32 vpp_index, struct vpp0_post_s *vpp_post);
+void vpp_vd1_hwin_set(u32 vpp_index, struct vpp0_post_s *vpp_post);
+void vpp_post_proc_set(u32 vpp_index, struct vpp0_post_s *vpp_post);
+void vpp1_post_proc_set(struct vpp1_post_s *vpp_post);
+void vpp_post_padding_set(u32 vpp_index, struct vpp0_post_s *vpp_post);
 #endif
 void osd_init_hw_viux(u32 index);
 u32 osd_get_state(u32 index);

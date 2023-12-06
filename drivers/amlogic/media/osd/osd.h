@@ -491,7 +491,7 @@ struct vpp_post_input_s {
 	u32 vd1_size_after_padding;
 };
 
-struct vpp_post_s {
+struct vpp0_post_s {
 	u32 slice_num;
 	u32 overlap_hsize;
 	struct vd1_hwin_s vd1_hwin;
@@ -499,6 +499,53 @@ struct vpp_post_s {
 	struct vpp_post_pad_s vpp_post_pad;
 	struct vpp_post_hwin_s vpp_post_hwin;
 	struct vpp_post_proc_s vpp_post_proc;
+};
+
+struct vpp1_post_blend_s {
+	u32 bld_out_en;
+	u32 bld_out_w;
+	u32 bld_out_h;
+	//0: vpp1 walk slice1 to venc1; 1: vpp1 bypass slice1 to venc1
+	u32 vpp1_dpath_sel;
+	//0:select postblend 1:select vpp1 blend
+	u32 vd3_dpath_sel;
+	u32 bld_out_premult;
+	u32 bld_dummy_data;
+
+	//usually the bottom layer set 1, for example postbld_src1_sel = 1,set 0x1
+	u32 bld_din0_premult_en;
+	u32 bld_din1_premult_en;
+
+	//VD3
+	u32 bld_din0_h_start;
+	u32 bld_din0_h_end;
+	u32 bld_din0_v_start;
+	u32 bld_din0_v_end;
+	u32 bld_din0_alpha;
+
+	//OSD3
+	u32 bld_din1_h_start;
+	u32 bld_din1_h_end;
+	u32 bld_din1_v_start;
+	u32 bld_din1_v_end;
+	u32 bld_din1_alpha;
+
+	//1:din0(vd3)  2:din1(osd3) 3:din2 4:din3 5:din4 else :close
+	u32 bld_src1_sel;
+	u32 bld_src2_sel;
+};
+
+struct vpp1_post_s {
+	bool vpp1_en;
+	bool vpp1_bypass_slice1;
+	u32 slice_num;
+	u32 overlap_hsize;
+	struct vpp1_post_blend_s vpp1_post_blend;
+};
+
+struct vpp_post_s {
+	struct vpp0_post_s vpp0_post;
+	struct vpp1_post_s vpp1_post;
 };
 #endif
 

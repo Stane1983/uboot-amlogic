@@ -4314,8 +4314,38 @@ void vpp_post_blend_set(u32 vpp_index,
 		__func__, vpp_blend->bld_out_w | vpp_blend->bld_out_h << 16);
 }
 
+void vpp1_post_blend_set(struct vpp1_post_blend_s *vpp_blend)
+{
+	VSYNCOSD_WR_MPEG_REG(VPP1_BLEND_H_V_SIZE,
+			vpp_blend->bld_out_w | vpp_blend->bld_out_h << 16);
+	VSYNCOSD_WR_MPEG_REG(VPP1_BLEND_BLEND_DUMMY_DATA,
+			vpp_blend->bld_dummy_data);
+	VSYNCOSD_WR_MPEG_REG_BITS(VPP1_BLEND_DUMMY_ALPHA,
+				0x100 | 0x000 << 16, 0, 32);
+	VSYNCOSD_WR_MPEG_REG_BITS(VPP1_BLEND_DUMMY_ALPHA1,
+				0x000 | 0x000 << 16, 0, 32);
+	VSYNCOSD_WR_MPEG_REG(VPP1_BLD_CTRL,
+			vpp_blend->bld_out_en << 31 |
+			vpp_blend->vpp1_dpath_sel << 30 |
+			vpp_blend->vd3_dpath_sel << 29 |
+			vpp_blend->bld_din0_alpha << 20 |
+			vpp_blend->bld_din0_premult_en << 16 |
+			vpp_blend->bld_din1_premult_en << 17 |
+			vpp_blend->bld_src2_sel << 4 |
+			vpp_blend->bld_src1_sel);
+
+	osd_logd2("%s: vpp1_postblend_h_v_size=%x\n",
+		__func__, vpp_blend->bld_out_w | vpp_blend->bld_out_h << 16);
+	osd_logd2("%s: vpp1_postblend_vd1_h_start_end=%x\n",
+		__func__, vpp_blend->bld_din0_h_start << 16 |
+		vpp_blend->bld_din0_h_end);
+	osd_logd2("%s: vpp1_postblend_vd1_v_start_end=%x\n",
+		__func__, vpp_blend->bld_din0_v_start << 16 |
+		vpp_blend->bld_din0_v_end);
+}
+
 void vpp_post_slice_set(u32 vpp_index,
-	struct vpp_post_s *vpp_post)
+	struct vpp0_post_s *vpp_post)
 {
 	u32 slice_set;
 
@@ -4352,7 +4382,7 @@ void vpp_post_slice_set(u32 vpp_index,
 }
 
 void vpp_vd1_hwin_set(u32 vpp_index,
-	struct vpp_post_s *vpp_post)
+	struct vpp0_post_s *vpp_post)
 {
 	u32 vd1_win_in_hsize = 0;
 
@@ -4371,7 +4401,7 @@ void vpp_vd1_hwin_set(u32 vpp_index,
 }
 
 void vpp_post_proc_set(u32 vpp_index,
-	struct vpp_post_s *vpp_post)
+	struct vpp0_post_s *vpp_post)
 {
 	struct vpp_post_proc_s *vpp_post_proc = NULL;
 	struct vpp_post_proc_slice_s *vpp_post_proc_slice = NULL;
@@ -4408,8 +4438,32 @@ void vpp_post_proc_set(u32 vpp_index,
 	}
 }
 
+void vpp1_post_proc_set(struct vpp1_post_s *vpp_post)
+{
+	u32 vpp1_slice = 1;
+	u32 align_fifo_size[POST_SLICE_NUM] = {2048, 1536, 1024, 512};
+
+	/* slice mode */
+	VSYNCOSD_WR_MPEG_REG_BITS(VPP_OBUF_RAM_CTRL, 1, 0, 2);
+	if (!vpp_post->vpp1_bypass_slice1) {
+		/* slice1 vpp output need set */
+		VSYNCOSD_WR_MPEG_REG(VPP_SLICE1_OUT_H_V_SIZE,
+				vpp_post->vpp1_post_blend.bld_out_w << 16 |
+				vpp_post->vpp1_post_blend.bld_out_h);
+		VSYNCOSD_WR_MPEG_REG_BITS(VPP_SLICE1_OFIFO_SIZE,
+					0x800, 0, 14);
+		/* slice1 hwin disable */
+		VSYNCOSD_WR_MPEG_REG_BITS(VPP_SLICE1_SLC_DEAL_CTRL,
+					0, 3, 1);
+		VSYNCOSD_WR_MPEG_REG_BITS(VPP_SLICE1_ALIGN_FIFO_SIZE,
+					align_fifo_size[vpp1_slice],
+					0, 14);
+	}
+	vpp1_post_blend_set(&vpp_post->vpp1_post_blend);
+}
+
 void vpp_post_padding_set(u32 vpp_index,
-	struct vpp_post_s *vpp_post)
+	struct vpp0_post_s *vpp_post)
 {
 	if (vpp_post->vpp_post_pad.vpp_post_pad_en) {
 		/* reg_pad_hsize */
