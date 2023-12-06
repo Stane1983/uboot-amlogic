@@ -14,6 +14,8 @@
 #include <string.h>
 #include <io.h>
 #include <cache_v8.h>
+//#include "secure_apb.h"
+//#include "register.h"
 
 /* a must be order of 2 */
 #define __ALIGN(x, mask)		(((x) + (mask)) & ~(mask))
@@ -565,6 +567,60 @@ static void fix_up_ddr_size(struct ram_compress_full *rcf,
 	}
 }
 
+static int fix_up_bl32_size(struct ram_compress_full *rcf)
+{
+#ifdef REG_MDUMP_RSVMEM_SIZE
+	unsigned int data = 0;
+	unsigned int bl31_rsvmem_size = 0;
+	unsigned int bl32_rsvmem_size = 0;
+	unsigned int bl31_rsvmem_start = 0;
+	unsigned int bl32_rsvmem_start = 0;
+
+	data = readl(REG_MDUMP_RSVMEM_SIZE);
+	/* workaround for bl3x size */
+	if ((data >> 16) & 0xff) {
+		bl31_rsvmem_size =  ((data & 0xffff0000) >> 16) << 16;
+		bl32_rsvmem_size =  (data & 0x0000ffff) << 16;
+	} else {
+		bl31_rsvmem_size =  ((data & 0xffff0000) >> 16) << 10;
+		bl32_rsvmem_size =  (data & 0x0000ffff) << 10;
+	}
+	bl31_rsvmem_start = readl(REG_MDUMP_RSVMEM_BL31_START);
+	bl32_rsvmem_start = readl(REG_MDUMP_RSVMEM_BL32_START);
+
+	serial_puts("bl31 addr:0x");
+	serial_put_hex(bl31_rsvmem_start, 32);
+	serial_puts(", size:0x");
+	serial_put_hex(bl31_rsvmem_size, 32);
+	serial_puts("; bl32 addr:0x");
+	serial_put_hex(bl32_rsvmem_start, 32);
+	serial_puts(", size:0x");
+	serial_put_hex(bl32_rsvmem_size, 32);
+	serial_puts("+1MB\n");
+
+	rcf->sections[3].phy_addr = (void *)(unsigned long)bl31_rsvmem_start;
+	rcf->sections[4].phy_addr = (void *)(unsigned long)(bl32_rsvmem_start
+				+ bl32_rsvmem_size + 0x100000);
+	rcf->sections[3].section_size = (unsigned long)(rcf->sections[4].phy_addr)
+				- (unsigned long)(rcf->sections[3].phy_addr);
+	rcf->sections[4].section_size = (unsigned long)(rcf->sections[0].phy_addr)
+				- (unsigned long)(rcf->sections[4].phy_addr);
+
+	if (debug_enable) {
+		serial_puts("Fix up sections[3].phy_addr:0x");
+		serial_put_hex(bl31_rsvmem_start, 32);
+		serial_puts(", sections[4].phy_addr:0x:");
+		serial_put_hex(bl32_rsvmem_start + bl32_rsvmem_size + 0x100000, 32);
+		serial_puts(", sections[4].section_size:0x:");
+		serial_put_hex((unsigned int)rcf->sections[4].section_size, 32);
+		serial_puts("\n");
+	}
+#else
+	serial_puts("REG_RSVMEM_SIZE is not defined. skip.\n");
+#endif
+	return 0;
+}
+
 static void find_adj(struct ram_compress_full     *rcf,
 		     struct ram_compress_section **adj_seg,
 		     struct ram_compress_section **first_seg)
@@ -643,6 +699,8 @@ unsigned long ramdump_compress_all(struct ram_compress_full *rcf,
 		serial_puts("fix_up_ddr_size.\n");
 		fix_up_ddr_size(rcf, size);
 	}
+	/* update rcf with rsvmem bl31/bl32 */
+	fix_up_bl32_size(rcf);
 	/* these parameters are not configured by bl33 */
 	serial_puts("rcf->full_memsize: 0x");
 	serial_put_hex((unsigned long)(rcf->full_memsize), 64);
@@ -702,6 +760,9 @@ void aml_ramdump_compress(struct ram_compress_full *rcf,
 			serial_puts("rcf error! exit!\n");
 			return;
 		}
+
+		serial_puts("DDR compress in 3 seconds ...\n\n");
+		_udelay(3000000);
 
 		serial_puts("timer start.\n");
 		timer_start();

@@ -87,6 +87,12 @@ static int aml_misc_confirm_yesno(const int tm/*timeout in ms*/)
 int misc_init_r(void)
 {
 	printf("board common misc_init\n");
+#if defined(CONFIG_MDUMP_COMPRESS) || \
+	((defined CONFIG_SUPPORT_BL33Z) && \
+	(defined CONFIG_FULL_RAMDUMP))
+	extern void ramdump_init(void);
+	ramdump_init();
+#endif
 	if (!aml_misc_confirm_yesno(5000))
 		return 0;
 

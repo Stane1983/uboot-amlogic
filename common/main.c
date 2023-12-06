@@ -44,13 +44,6 @@ void main_loop(void)
 
 	bootstage_mark_name(BOOTSTAGE_ID_MAIN_LOOP, "main_loop");
 
-#if defined(CONFIG_MDUMP_COMPRESS) || \
-	((defined CONFIG_SUPPORT_BL33Z) && \
-	(defined CONFIG_FULL_RAMDUMP))
-	extern void ramdump_init(void);
-	ramdump_init();
-#endif
-
 	if (IS_ENABLED(CONFIG_VERSION_VARIABLE))
 		env_set("ver", version_string);  /* set version variable */
 

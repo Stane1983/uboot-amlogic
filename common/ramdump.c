@@ -174,11 +174,11 @@ static void wait_usb_dev(void)
 		run_command("usb reset", 1);
 		ret = usb_stor_scan(1);
 		if (ret) {
-			if (!(print_cnt & 0x3f)) {
+			if (!(print_cnt & 0x1f)) {
 				print_cnt++;
 				printf("ramdump: can't find usb device, please insert Udisk.\n\n");
 			}
-			mdelay(10000);
+			mdelay(15000);
 			continue;
 		} else {
 			run_command("usb dev", 1);
@@ -204,6 +204,10 @@ __weak int ramdump_save_compress_data(void)
 	char *env;
 	int ret = 0;
 
+	env = env_get("ramdump_enable");
+	if (!env || strcmp(env, "1") != 0)
+		return 0;
+
 	env = env_get("ramdump_location");
 	if (!env)
 		return 0;
@@ -217,20 +221,27 @@ __weak int ramdump_save_compress_data(void)
 #ifdef CONFIG_USB_STORAGE
 	wait_usb_dev();
 #endif
-	printf("Prepare to save crash file: base=0x%08lx, size=0x%08lx\n\n",
-			ramdump_base, ramdump_size);
+	printf("\nPrepare to save crash file: base=0x%08lx, size=0x%08lx (%ld MB)\n",
+			ramdump_base, ramdump_size, ramdump_size / 1024 / 1024);
 	sprintf(cmd, "fatwrite usb 0 %lx crashdump-1.bin %lx\n",
 		ramdump_base, ramdump_size);
 	printf("CMD:%s\n", cmd);
+#ifdef CONFIG_USB_STORAGE
+	printf("It may take about 3 minutes, please wait...\n");
 	ret = run_command(cmd, 0);
 	if (ret != 0) {
 		printf("run fatwrite usb ERROR!\n");
 		return -1;
 	}
 	printf("run fatwrite usb OK!\n");
+#else
+	printf("CONFIG_USB_STORAGE is not defined! Could it be in PRODUCT mode?\n");
+	printf("ERROR: The usb drv is not available!\n");
+#endif
+	printf("Rebooting in 5 seconds ...\n\n\n");
 	mdelay(5000);
-	//run_command("reset", 1);
-	return 0;
+	run_command("reboot", 1);
+	return ret;
 }
 
 static void ramdump_env_setup(unsigned long addr, unsigned long size)
@@ -242,7 +253,7 @@ static void ramdump_env_setup(unsigned long addr, unsigned long size)
 		0x938E9B90, 0x978D8D97,
 		0xC8009B8A, 0xB99CDB
 	};
-	char *line, *p1, *p2, *o;
+	char *line, *o;
 	unsigned char *p;
 	int i;
 
@@ -272,26 +283,16 @@ static void ramdump_env_setup(unsigned long addr, unsigned long size)
 		return;
 
 	memset(o, 0, i + 128);
-	memcpy(o, line, i);
-	line = o + i + 128;
-	p1 = strstr(o, (const char *)p);
-	if (p1) {
-		p2 = strchr(p1, ' ');
-		if (!p2)
-			p2 = p1;
-		memmove(p1, p2, line - p2);
-	}
-	i = strlen(o);
-	p1 = o + i;
-	p1[0] = ' ';
-	sprintf(p1 + 1, "%s=%s ramdump=%lx,%lx",
-		(char *)data, (char *)(data + 6), addr, size);
+	sprintf(o, "%s=%s ramdump=%lx,%lx  %s\n",
+			(char *)data, (char *)(data + 6), addr, size, line);
 	env_set("bootargs", o);
+	free(o);
+	line = NULL;
 
 #if DEBUG_RAMDUMP
 	run_command("printenv bootargs", 1);
+	printf("\n");
 #endif
-	free(o);
 }
 
 static int overwrite_bl33z_rsvmem_info(unsigned long addr, unsigned long size)
@@ -398,13 +399,8 @@ void check_ramdump(void)
 #ifdef CONFIG_DUMP_COMPRESS_HEAD
 					dump_info((unsigned int)ramdump_base, 0x80, "bl33 check COMPRESS DATA 2");
 #endif
-					//ramdump_save_compress_data();
 					env = env_get("ramdump_location");
-					if (!strncmp(env, "usb", 3)) {
-						printf("Crash saved Udisk already. reboot ...\n\n\n");
-						mdelay(3000);
-						run_command("reset", 1);
-					} else if (!strncmp(env, "data", 4)) {
+					if (!strncmp(env, "data", 4)) {
 						printf("Crash file will save to Android /data.\n");
 						reduce_dts_reserved_memory();
 						overwrite_bl33z_rsvmem_info(addr, size);

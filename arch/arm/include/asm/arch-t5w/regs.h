@@ -42,4 +42,20 @@
 #define REG_MDUMP_TIMEBASE_CNTL     (0xff800000 + (0x15 << 2))
 #define REG_MDUMP_UART_WFIFO        ((0x8c00  << 2) + 0xffd00000)
 
+/*
+ * proting from cmd/amlogic/cmd_rsvmem.c, do_rsvmem_dump.
+ * #if defined(P_AO_SEC_GP_CFG3) //secure_apb.h, only g12a/g12b/t5w/txhd2/...
+ *     #define REG_RSVMEM_SIZE        P_AO_SEC_GP_CFG3
+ *     #define REG_RSVMEM_BL32_START  P_AO_SEC_GP_CFG4
+ *     #define REG_RSVMEM_BL31_START  P_AO_SEC_GP_CFG5
+ * #elif defined(SYSCTRL_SEC_STATUS_REG15) //register.h
+ *     #define REG_RSVMEM_SIZE        SYSCTRL_SEC_STATUS_REG15
+ *     #define REG_RSVMEM_BL32_START  SYSCTRL_SEC_STATUS_REG16
+ *     #define REG_RSVMEM_BL31_START  SYSCTRL_SEC_STATUS_REG17
+ * #endif
+ */
+#define REG_MDUMP_RSVMEM_SIZE       (0xff800000 + (0x093 << 2))
+#define REG_MDUMP_RSVMEM_BL32_START (0xff800000 + (0x094 << 2))
+#define REG_MDUMP_RSVMEM_BL31_START (0xff800000 + (0x095 << 2))
+
 #endif
