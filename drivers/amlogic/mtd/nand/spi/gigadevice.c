@@ -157,6 +157,56 @@ static const struct mtd_ooblayout_ops gd5fxgqxxexxg_ooblayout = {
 	.rfree = gd5fxgqxxexxg_ooblayout_free,
 };
 
+static int f50l1g41lb_ooblayout_ecc(struct mtd_info *mtd, int section,
+				struct mtd_oob_region *region)
+{
+	/* Use flash internal ecc*/
+	return -ERANGE;
+}
+
+static int f50l1g41lb_ooblayout_free(struct mtd_info *mtd,
+				int section, struct mtd_oob_region *region)
+{
+	if (section > 3)
+		return -ERANGE;
+
+	/* Reserve 2 bytes for the BBM. */
+	region->offset = (16 * section) + 2;
+	region->length = 6;
+
+	return 0;
+}
+
+static int f50l1g41lb_ecc_get_status(struct spinand_device *spinand,
+									u8 status)
+{
+		switch (status & STATUS_ECC_MASK) {
+		case STATUS_ECC_NO_BITFLIPS:
+				return 0;
+
+		case STATUS_ECC_HAS_BITFLIPS:
+		/*
+		 * We have no way to know exactly how many bitflips have been
+		 * fixed, so let's return the maximum possible value so that
+		 * wear-leveling layers move the data immediately.
+		 */
+				return 1;
+
+		case STATUS_ECC_UNCOR_ERROR:
+				return -EBADMSG;
+
+		default:
+				break;
+		}
+
+		return -EINVAL;
+}
+
+static const struct mtd_ooblayout_ops f50l1g41lb_ooblayout = {
+	.ecc = f50l1g41lb_ooblayout_ecc,
+	.rfree = f50l1g41lb_ooblayout_free,
+};
+
 static const struct spinand_info gigadevice_spinand_table[] = {
 	SPINAND_INFO("GD5F1GQ4UExxG", 0xd1,
 		     NAND_MEMORG(1, 2048, 128, 64, 1024, 1, 1, 1),
@@ -185,6 +235,15 @@ static const struct spinand_info gigadevice_spinand_table[] = {
 		     SPINAND_HAS_QE_BIT,
 		     SPINAND_ECCINFO(&gd5fxgqxxexxg_ooblayout,
 				     gd5fxgq5xexxg_ecc_get_status)),
+	SPINAND_INFO("F50L1G41LB-104YG2M", 0x01,
+		     NAND_MEMORG(1, 2048, 64, 64, 1024, 1, 1, 1),
+		     NAND_ECCREQ(1, 512),
+		     SPINAND_INFO_OP_VARIANTS(&gd5f1gq5_read_cache_variants,
+					      &write_cache_variants,
+					      &update_cache_variants),
+		     SPINAND_HAS_QE_BIT,
+		     SPINAND_ECCINFO(&f50l1g41lb_ooblayout,
+				     f50l1g41lb_ecc_get_status)),
 };
 
 static int gigadevice_spinand_detect(struct spinand_device *spinand)
