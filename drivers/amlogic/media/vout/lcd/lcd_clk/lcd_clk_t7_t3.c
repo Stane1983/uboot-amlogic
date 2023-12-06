@@ -128,6 +128,7 @@ static void lcd_pll_frac_set(struct aml_lcd_drv_s *pdrv, unsigned int frac)
 		LCDPR("[%d]: %s: reg 0x%x: 0x%08x->0x%08x\n",
 			pdrv->index, __func__, reg, val, lcd_ana_read(reg));
 	}
+	LCDPR("[%d]: %s: pll_frac=0x%x\n", pdrv->index, __func__, frac);
 }
 
 static void lcd_set_pll_t7(struct aml_lcd_drv_s *pdrv)

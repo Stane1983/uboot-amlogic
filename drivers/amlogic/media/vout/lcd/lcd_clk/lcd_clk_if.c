@@ -218,26 +218,14 @@ lcd_set_ss_end:
 /* for frame rate change */
 void lcd_update_clk_frac(struct aml_lcd_drv_s *pdrv)
 {
-	struct lcd_clk_config_s *cconf, *phyconf, *pixconf;
+	struct lcd_clk_config_s *cconf;
 
 	cconf = get_lcd_clk_config(pdrv);
 	if (!cconf || !cconf->data)
 		return;
 
-	if (pdrv->config.timing.clk_mode == LCD_CLK_MODE_INDEPENDENCE) {
-		phyconf = &cconf[0];
-		pixconf = &cconf[1];
-		if (phyconf->data->pll_frac_set)
-			phyconf->data->pll_frac_set(pdrv, phyconf->pll_frac);
-		if (pixconf->data->pll_frac_set)
-			pixconf->data->pll_frac_set(pdrv, pixconf->pll_frac);
-		LCDPR("[%d]: %s: phy pll_frac=0x%x, pix pll_frac=0x%x\n",
-			pdrv->index, __func__, phyconf->pll_frac, pixconf->pll_frac);
-	} else {
-		if (cconf->data->pll_frac_set)
-			cconf->data->pll_frac_set(pdrv, cconf->pll_frac);
-		LCDPR("[%d]: %s: pll_frac=0x%x\n", pdrv->index, __func__, cconf->pll_frac);
-	}
+	if (cconf->data->pll_frac_set)
+		cconf->data->pll_frac_set(pdrv, cconf->pll_frac);
 }
 
 /* for timing init */
@@ -321,7 +309,7 @@ static int lcd_clk_config_chip_init(struct aml_lcd_drv_s *pdrv, struct lcd_clk_c
 	unsigned int i;
 
 	for (i = 0; i < pdrv->clk_conf_num; i++) {
-		cconf[i].pll_id = i;
+		cconf[i].pll_id = pdrv->index + i;
 		cconf[i].fin = FIN_FREQ;
 	}
 

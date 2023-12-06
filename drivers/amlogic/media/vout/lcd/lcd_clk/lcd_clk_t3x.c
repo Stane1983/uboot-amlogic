@@ -105,20 +105,42 @@ static void lcd_set_pll_ss_advance(struct aml_lcd_drv_s *pdrv)
 
 static void lcd_pll_frac_set(struct aml_lcd_drv_s *pdrv, unsigned int frac)
 {
-	struct lcd_clk_config_s *cconf;
-	unsigned int offset, reg, val;
+	struct lcd_clk_config_s *cconf, *phyconf, *pixconf;
+	unsigned int offset[2], val[2];
 
 	cconf = get_lcd_clk_config(pdrv);
 	if (!cconf)
 		return;
 
-	offset = cconf->pll_offset;
-	reg = ANACTRL_TCON_PLL0_CNTL1 + offset;
-	val = lcd_ana_read(reg);
-	lcd_ana_setb(reg, frac, 0, 17);
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-		LCDPR("[%d]: %s: reg 0x%x: 0x%08x->0x%08x\n",
-			pdrv->index, __func__, reg, val, lcd_ana_read(reg));
+	if (pdrv->config.timing.clk_mode == LCD_CLK_MODE_INDEPENDENCE) {
+		phyconf = &cconf[0];
+		pixconf = &cconf[1];
+		offset[0] = phyconf->pll_offset;
+		offset[1] = pixconf->pll_offset;
+		val[0] = lcd_ana_read(ANACTRL_TCON_PLL0_CNTL1 + offset[0]);
+		val[1] = lcd_ana_read(ANACTRL_TCON_PLL0_CNTL1 + offset[1]);
+		lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL1 + offset[0], phyconf->pll_frac, 0, 17);
+		lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL1 + offset[1], pixconf->pll_frac, 0, 17);
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+			LCDPR("[%d]: %s: phyconf reg 0x%x: 0x%08x->0x%08x\n",
+				pdrv->index, __func__, ANACTRL_TCON_PLL0_CNTL1 + offset[0],
+				val[0], lcd_ana_read(ANACTRL_TCON_PLL0_CNTL1 + offset[0]));
+			LCDPR("[%d]: %s: pixconf reg 0x%x: 0x%08x->0x%08x\n",
+				pdrv->index, __func__, ANACTRL_TCON_PLL0_CNTL1 + offset[1],
+				val[1], lcd_ana_read(ANACTRL_TCON_PLL0_CNTL1 + offset[1]));
+		}
+		LCDPR("[%d]: %s: phy pll_frac=0x%x, pix pll_frac=0x%x\n",
+			pdrv->index, __func__, phyconf->pll_frac, pixconf->pll_frac);
+	} else {
+		offset[0] = cconf->pll_offset;
+		val[0] = lcd_ana_read(ANACTRL_TCON_PLL0_CNTL1 + offset[0]);
+		lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL1 + offset[0], frac, 0, 17);
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+			LCDPR("[%d]: %s: reg 0x%x: 0x%08x->0x%08x\n",
+				pdrv->index, __func__, ANACTRL_TCON_PLL0_CNTL1 + offset[0],
+				val[0], lcd_ana_read(ANACTRL_TCON_PLL0_CNTL1 + offset[0]));
+		}
+		LCDPR("[%d]: %s: pll_frac=0x%x\n", pdrv->index, __func__, frac);
 	}
 }
 
@@ -480,14 +502,14 @@ static void lcd_clktree_set(struct aml_lcd_drv_s *pdrv)
 
 static void lcd_clk_disable(struct aml_lcd_drv_s *pdrv)
 {
-	struct lcd_clk_config_s *cconf;
-	unsigned int reg_vid_clk_ctrl2, reg_vid2_clk_ctrl, offset;
+	struct lcd_clk_config_s *cconf, *phyconf, *pixconf;
+	unsigned int reg_vid_clk_ctrl2, reg_vid2_clk_ctrl, offset[2];
 
 	cconf = get_lcd_clk_config(pdrv);
 	if (!cconf)
 		return;
 
-	switch (cconf->pll_id) {
+	switch (pdrv->index) {
 	case 1:
 		reg_vid_clk_ctrl2 = CLKCTRL_VID_CLK1_CTRL2;
 		reg_vid2_clk_ctrl = CLKCTRL_VIID_CLK1_CTRL;
@@ -498,7 +520,6 @@ static void lcd_clk_disable(struct aml_lcd_drv_s *pdrv)
 		reg_vid2_clk_ctrl = CLKCTRL_VIID_CLK0_CTRL;
 		break;
 	}
-	offset = cconf->pll_offset;
 
 	lcd_clk_setb(reg_vid_clk_ctrl2, 0, ENCL_GATE_VCLK, 1);
 
@@ -506,8 +527,20 @@ static void lcd_clk_disable(struct aml_lcd_drv_s *pdrv)
 	lcd_clk_setb(reg_vid2_clk_ctrl, 0, 0, 5);
 	lcd_clk_setb(reg_vid2_clk_ctrl, 0, VCLK2_EN, 1);
 
-	lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL0 + offset, 0, 28, 1); //disable
-	lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL0 + offset, 0, 29, 1); //reset
+	if (pdrv->config.timing.clk_mode == LCD_CLK_MODE_INDEPENDENCE) {
+		phyconf = &cconf[0];
+		pixconf = &cconf[1];
+		offset[0] = phyconf->pll_offset;
+		offset[1] = pixconf->pll_offset;
+		lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL0 + offset[0], 0, 28, 1); //pll0 disable
+		lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL0 + offset[0], 0, 29, 1); //pll0 reset
+		lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL0 + offset[1], 0, 28, 1); //pll1 disable
+		lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL0 + offset[1], 0, 29, 1); //pll1 reset
+	} else {
+		offset[0] = cconf->pll_offset;
+		lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL0 + offset[0], 0, 28, 1); //disable
+		lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL0 + offset[0], 0, 29, 1); //reset
+	}
 }
 
 static void lcd_prbs_set_pll_vx1_t3x(struct aml_lcd_drv_s *pdrv)

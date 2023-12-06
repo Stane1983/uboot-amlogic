@@ -50,6 +50,7 @@ static void lcd_pll_frac_set_gp0(struct aml_lcd_drv_s *pdrv, unsigned int frac)
 			__func__, HHI_GP0_PLL_CNTL1,
 			val, lcd_ana_read(HHI_GP0_PLL_CNTL1));
 	}
+	LCDPR("%s: pll_frac=0x%x\n", __func__, frac);
 }
 
 static void lcd_pll_frac_set_hpll(struct aml_lcd_drv_s *pdrv, unsigned int frac)
@@ -68,6 +69,7 @@ static void lcd_pll_frac_set_hpll(struct aml_lcd_drv_s *pdrv, unsigned int frac)
 			__func__, HHI_HDMI_PLL_CNTL1,
 			val, lcd_ana_read(HHI_HDMI_PLL_CNTL1));
 	}
+	LCDPR("%s: pll_frac=0x%x\n", __func__, frac);
 }
 
 #define PLL_WAIT_LOCK_CNT_G12A    1000

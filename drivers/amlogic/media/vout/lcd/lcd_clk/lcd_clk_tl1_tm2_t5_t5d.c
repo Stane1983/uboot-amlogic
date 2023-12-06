@@ -153,6 +153,7 @@ static void lcd_pll_frac_set(struct aml_lcd_drv_s *pdrv, unsigned int frac)
 			__func__, HHI_TCON_PLL_CNTL1,
 			val, lcd_ana_read(HHI_TCON_PLL_CNTL1));
 	}
+	LCDPR("[%d]: %s: pll_frac=0x%x\n", pdrv->index, __func__, frac);
 }
 
 static void lcd_set_pll(struct aml_lcd_drv_s *pdrv)
