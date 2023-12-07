@@ -676,9 +676,9 @@ static int handle_lcd_basic(struct lcd_attr_s *p_attr)
 	else
 		lcd_if = LCD_TYPE_MAX;
 
-	ini_value = IniGetString("lcd_Attr", "lcd_check", "none");
+	ini_value = IniGetString("lcd_Attr", "config_check", "none");
 	if (model_debug_flag & DEBUG_LCD)
-		ALOGD("%s, lcd_check is (%s)\n", __func__, ini_value);
+		ALOGD("%s, config_check is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "none") == 0)
 		lcd_chk = 0;
 	else
