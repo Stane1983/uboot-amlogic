@@ -313,7 +313,9 @@ static void process_fdt_options(const void *blob)
 const char *bootdelay_process(void)
 {
 	char *s;
+#ifndef CONFIG_DISABLE_AML_SERIAL
 	char *p;
+#endif
 	int bootdelay;
 
 	bootcount_inc();

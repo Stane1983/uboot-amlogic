@@ -14,9 +14,9 @@
 #define DEBUG_RAMDUMP	0
 #define AMLOGIC_KERNEL_PANIC		0x0c
 #define AMLOGIC_WATCHDOG_REBOOT		0x0d
-
+#ifdef CONFIG_USB_STORAGE
 static void wait_usb_dev(void);
-
+#endif
 #undef CONFIG_DUMP_COMPRESS_HEAD
 #ifdef CONFIG_DUMP_COMPRESS_HEAD
 static void dump_info(unsigned int addr, unsigned int size, const char *info)
@@ -163,6 +163,7 @@ void ramdump_init(void)
 	}
 }
 
+#ifdef CONFIG_USB_STORAGE
 static void wait_usb_dev(void)
 {
 	int print_cnt = 0, ret;
@@ -185,7 +186,7 @@ static void wait_usb_dev(void)
 		}
 	}
 }
-
+#endif
 /*
  * NOTE: this is a default implementation for writing compressed ramdump data
  * to /data/ partition for Android platform. You can read out dumpfile in
@@ -213,9 +214,9 @@ __weak int ramdump_save_compress_data(void)
 		printf("not supported location\n");
 		return 0;
 	}
-
+#ifdef CONFIG_USB_STORAGE
 	wait_usb_dev();
-
+#endif
 	printf("Prepare to save crash file: base=0x%08lx, size=0x%08lx\n\n",
 			ramdump_base, ramdump_size);
 	sprintf(cmd, "fatwrite usb 0 %lx crashdump-1.bin %lx\n",
