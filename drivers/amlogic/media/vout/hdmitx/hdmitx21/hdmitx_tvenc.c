@@ -714,3 +714,16 @@ void hdmitx21_venc_en(bool en, bool pi_mode)
 		hd21_write_reg(ENCI_VIDEO_EN, 1);
 	}
 }
+
+/* For the ENCP_VIDEO_MAX_LNCNT, it will always start as 0
+ * when set this register, here will minus 1
+ * and get the value, here will plus 1
+ */
+void hdmitx_vrr_set_maxlncnt(u32 max_lcnt)
+{
+	/* max_lcnt can't be 0 for VRR */
+	if (!max_lcnt)
+		return;
+
+	hd21_write_reg(ENCP_VIDEO_MAX_LNCNT, max_lcnt - 1);
+}

@@ -163,6 +163,52 @@ static void hdmitx_mask_rx_info(struct hdmitx_dev *hdev)
 		memset(&hdev->RXCap.hdr_info, 0, sizeof(struct hdr_info));
 }
 
+/* If environment qms_en is true, and RX supports QMS, and the
+ * output mode is BRR then enable TX QMS
+ */
+static void qms_scene_pre_process(struct hdmitx_dev *hdev)
+{
+	bool env_qms_en = 0;
+	bool rx_qms_cap = 0;
+	enum hdmi_vic qms_brr_vic = HDMI_UNKNOWN;
+	const struct hdmi_timing *t = NULL;
+	char *color = NULL;
+
+	/* check uboot environment */
+	if (env_get("qms_en") && (env_get_ulong("qms_en", 10, 0) == 1))
+		env_qms_en = 1;
+
+	rx_qms_cap = hdev->RXCap.qms;
+
+	qms_brr_vic = hdmitx_find_brr_vic(hdev->vic);
+
+	if (env_qms_en && rx_qms_cap && qms_brr_vic != HDMI_UNKNOWN)
+		hdev->qms_en = 1;
+	pr_info("QMS: env %d rx %d vic %d brr_vic %d\n", env_qms_en, rx_qms_cap,
+		hdev->vic, qms_brr_vic);
+	if (!hdev->qms_en)
+		return;
+	hdev->brr_vic = qms_brr_vic;
+	/* save brr_vic to vic without the environment */
+	hdev->vic = hdev->brr_vic;
+	/* reconfig the hdmi para */
+	t = hdmitx21_gettiming_from_vic(hdev->brr_vic);
+	if (!t) {
+		pr_info("not find brr_vic %d timing\n", hdev->brr_vic);
+		return;
+	}
+	color = env_get("user_colorattribute");
+	if (!color)
+		color = env_get("colorattribute");
+	hdev->para = hdmitx21_get_fmtpara(t->sname ? t->sname : t->name, color);
+}
+
+static void qms_scene_post_process(struct hdmitx_dev *hdev)
+{
+	// Init QMS parameter
+	vrr_init_qms_para(hdev);
+}
+
 static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {
 	const struct hdmi_timing *timing = NULL;
@@ -277,6 +323,7 @@ static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 		}
 		printf("set hdmitx VIC = %d CS = %d CD = %d\n",
 			hdev->vic, hdev->para->cs, hdev->para->cd);
+		qms_scene_pre_process(hdev);
 		/* currently, hdmi mode is always set, if
 		 * mode set abort/exit, need to add return
 		 * result of mode setting, so that vout
@@ -284,6 +331,7 @@ static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 		 * mode setting again when vout init in kernel
 		 */
 		hdmitx21_set(hdev);
+		qms_scene_post_process(hdev);
 		if (hdev->frl_rate && !hdev->flt_train_st) {
 			/* FLT training failed, need go to tmds mode */
 			printf("hdmitx frl training failed, set tmds mode\n");

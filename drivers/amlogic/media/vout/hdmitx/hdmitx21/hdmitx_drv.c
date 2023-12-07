@@ -1424,6 +1424,14 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 	memcpy(checksum, hdev->RXCap.checksum, 10);
 	checksum[10] = '\0';
 	env_set("hdmichecksum", (const char *)checksum);
+	if (hdev->qms_en) {
+		const struct hdmi_timing *t = NULL;
+
+		/* if current mode is BRR, then set the environment as BRR name */
+		t = hdmitx21_gettiming_from_vic(hdev->brr_vic);
+		if (t)
+			env_set("outputmode", t->sname ? t->sname : t->name);
+	}
 	printf("hdmi_tx_set: mode: %s, attr: %s, save hdmichecksum: %s\n",
 		env_get("outputmode"), env_get("colorattribute"), env_get("hdmichecksum"));
 	run_command("saveenv", 0);

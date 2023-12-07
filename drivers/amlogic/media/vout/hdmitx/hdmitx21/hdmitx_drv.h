@@ -29,5 +29,9 @@ bool scdc_tx_frl_cfg1_set(u8 cfg1);
 u8 scdc_tx_update_flags_get(void);
 bool scdc_tx_update_flags_set(u8 update_flags);
 void hdmitx_soft_reset(u32 bits);
+void hdmitx_vrr_set_maxlncnt(u32 max_lcnt);
+void hdmi_emp_frame_set_member(struct emp_packet_st *info,
+	enum emp_component_conf conf, u32 val);
+void hdmi_emp_infoframe_set(enum emp_type type, struct emp_packet_st *info);
 
 #endif

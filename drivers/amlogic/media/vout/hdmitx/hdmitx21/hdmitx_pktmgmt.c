@@ -7,7 +7,7 @@
 #include <amlogic/media/vout/hdmitx21/hdmitx.h>
 #include "hdmitx_drv.h"
 
-static void tpi_info_send(u8 sel, u8 *data)
+static void tpi_info_send(u8 sel, u8 *data, bool no_chksum_flag)
 {
 	u8 checksum = 0;
 	int i;
@@ -18,12 +18,14 @@ static void tpi_info_send(u8 sel, u8 *data)
 		return;
 	}
 
-	/* do checksum */
-	data[3] = 0;
-	for (i = 0; i < 31; i++)
-		checksum += data[i];
-	checksum = 0 - checksum;
-	data[3] = checksum;
+	if (!no_chksum_flag) {
+		/* do checksum */
+		data[3] = 0;
+		for (i = 0; i < 31; i++)
+			checksum += data[i];
+		checksum = 0 - checksum;
+		data[3] = checksum;
+	}
 
 	for (i = 0; i < 31; i++)
 		hdmitx21_wr_reg(TPI_INFO_B0_IVCTX + i, data[i]);
@@ -82,10 +84,17 @@ void dump_infoframe_packets(void)
 static int _tpi_infoframe_wrrd(u8 wr, u16 info_type, u8 *body)
 {
 	u8 sel;
+	bool no_chksum_flag = 0;
 
+	/* the bank index is fixed */
 	switch (info_type) {
 	case HDMI_INFOFRAME_TYPE_AVI:
 		sel = 0;
+		break;
+	case HDMI_INFOFRAME_EMP_VRR_GAME:
+	case HDMI_INFOFRAME_EMP_VRR_QMS:
+		sel = 1;
+		no_chksum_flag = 1;
 		break;
 	case HDMI_INFOFRAME_TYPE_AUDIO:
 		sel = 2;
@@ -113,11 +122,11 @@ static int _tpi_infoframe_wrrd(u8 wr, u16 info_type, u8 *body)
 
 	if (wr) {
 		if (!body) {
-			tpi_info_send(sel, NULL);
+			tpi_info_send(sel, NULL, no_chksum_flag);
 			return 0;
 		}
 		/* do checksum */
-		tpi_info_send(sel, body);
+		tpi_info_send(sel, body, no_chksum_flag);
 		return 0;
 	} else {
 		return tpi_info_get(sel, body);

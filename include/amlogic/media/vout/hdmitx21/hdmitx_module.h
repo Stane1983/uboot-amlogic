@@ -58,6 +58,8 @@ struct hdmitx_dev {
 	unsigned char limit_res_1080p;
 	unsigned char enc_idx;
 	int dv_en;
+	int qms_en; /* qms function enable */
+	enum hdmi_vic brr_vic; /* qms BRR vic */
 	unsigned char pxp_mode; /* for running at pxp only */
 	enum amhdmitx_chip_e chip_type;
 	bool hpd_state;
@@ -153,6 +155,8 @@ void hdmitx_set_drm_pkt(struct master_display_info_s *data);
 void hdmitx_set_vsif_pkt(enum eotf_type type, enum mode_type tunnel_mode,
 	struct dv_vsif_para *data);
 bool is_hdmi_mode(char *mode);
+void vrr_init_qms_para(struct hdmitx_dev *hdev);
+enum hdmi_vic hdmitx_find_brr_vic(enum hdmi_vic vic);
 
 /* the hdmitx output limits to 1080p */
 bool is_hdmitx_limited_1080p(void);
