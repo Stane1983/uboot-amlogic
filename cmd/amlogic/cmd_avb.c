@@ -548,11 +548,9 @@ int avb_verify(AvbSlotVerifyData** out_data)
 		partition_select = requested_partitions_ab;
 
 	AvbSlotVerifyFlags flags = AVB_SLOT_VERIFY_FLAGS_NONE;
-	char *upgradestep = NULL;
 
 	avb_init();
 
-	upgradestep = env_get("upgrade_step");
 	vendor_boot_status = env_get("vendor_boot_mode");
 	if (!strcmp(vendor_boot_status, "true")) {
 		for (i = 0; i < AVB_NUM_SLOT; i++) {
@@ -563,18 +561,12 @@ int avb_verify(AvbSlotVerifyData** out_data)
 		}
 	}
 
-	if (is_device_unlocked() || (upgradestep && (!strcmp(upgradestep, "3"))))
+	if (is_device_unlocked())
 		flags |= AVB_SLOT_VERIFY_FLAGS_ALLOW_VERIFICATION_ERROR;
 
 	result = avb_slot_verify(&avb_ops_, partition_select, ab_suffix,
 			flags,
 			AVB_HASHTREE_ERROR_MODE_RESTART_AND_INVALIDATE, out_data);
-
-	if (upgradestep && (!strcmp(upgradestep, "3"))) {
-		run_command("setenv bootconfig ${bootconfig} androidboot.vbmeta.avb_version=1.1;",
-			0);
-		result = AVB_SLOT_VERIFY_RESULT_OK;
-	}
 
 	return result;
 #undef RECOVERY
