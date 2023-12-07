@@ -21,12 +21,15 @@ extern int handle_model_sum(void);
 #pragma pack (1)
 
 enum lcd_type_e {
-	LCD_TTL = 0,
+	LCD_RGB = 0,
 	LCD_LVDS,
 	LCD_VBYONE,
 	LCD_MIPI,
 	LCD_MLVDS,
 	LCD_P2P,
+	LCD_EDP,
+	LCD_BT656,
+	LCD_BT1120,
 	LCD_TYPE_MAX,
 };
 
@@ -102,7 +105,7 @@ struct lcd_header_s {
 
 struct lcd_basic_s {
 	char model_name[CC_LCD_NAME_LEN_MAX];
-	unsigned char lcd_type; /*[5:0]type, [7:6]:lcd_check*/
+	unsigned char lcd_if_chk; /*[5:0]interface, [7:6]:config_check*/
 	unsigned char lcd_bits;
 	unsigned short screen_width;  /* screen physical width in "mm" unit */
 	unsigned short screen_height; /* screen physical height in "mm" unit */
