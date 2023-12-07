@@ -849,6 +849,12 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 		//bootloader index, expect == current, no need reboot next
 		if (match_flag == 0) {
 			wrnP("current index is expect, no need reboot next, run cache recovery\n");
+			env_set("reboot_status", "reboot_init");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+			run_command("update_env_part -p reboot_status;", 0);
+#else
+			run_command("saveenv", 0);
+#endif
 			if (has_boot_slot == 1) {
 				wrnP("ab mode\n");
 			} else {
