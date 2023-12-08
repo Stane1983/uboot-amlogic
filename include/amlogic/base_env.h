@@ -192,7 +192,6 @@
 			"setenv bootconfig ${bootconfig} "\
 			"androidboot.slot_suffix=${active_slot};"\
 			CINFIG_KNL_READ \
-			"bootm ${loadaddr}; fi;"\
 			"else "\
 				"if test ${vendor_boot_mode} = true; then "\
 				"setenv bootargs ${bootargs} ${fs_type} aml_dt=${aml_dt};"\
