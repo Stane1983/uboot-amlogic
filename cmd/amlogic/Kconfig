@@ -52,6 +52,13 @@ config BOOTLOADER_CONTROL_BLOCK
 	help
 	  used for recovery and the bootloader to talk to each other
 
+config CMD_BCB
+	bool "bcd cmd"
+	depends on !AML_PRODUCT_MODE
+	help
+	  Say Y here if you want to change bcb cmds
+	  by serial cmds.
+
 config CMD_BOOTCTOL_AVB
 	bool "avb cmd"
 	default n
