@@ -367,7 +367,6 @@
 /* dual logo, normal boot */
 #define CONFIG_DUAL_LOGO \
 	/* logo3 */ \
-	"setenv outputmode3 ${hdmimode};"\
 	"setenv display_layer viu3_osd0;"\
 	"setenv fb_width 1280;setenv fb_height 800;"\
 	"vout3 prepare ${outputmode3};"\
