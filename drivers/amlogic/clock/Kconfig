@@ -43,3 +43,11 @@ config CLK_MESON_S7D
 	help
 	  Enable clock support for the Amlogic S7D SoC family, such as
 	  the SKT
+
+config CLK_MESON_S6
+	bool "Enable clock support for Amlogic S6"
+	depends on CLK && ARCH_MESON
+	default MESON_S6
+	help
+	  Enable clock support for the Amlogic S6 SoC family, such as
+	  the SKT

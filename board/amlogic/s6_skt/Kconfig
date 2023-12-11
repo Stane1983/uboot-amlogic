@@ -1,0 +1,27 @@
+if TARGET_S6_SKT
+
+config SYS_SOC
+	default "s6"
+
+config SYS_BOARD
+	default "s6_skt"
+
+config SYS_CONFIG_NAME
+	default "s6_skt"
+
+config DTB_BIND_KERNEL
+    bool "load dtb from boot part but not flash rsv"
+    default n
+
+config CMD_PLLTEST
+        bool "support plltest command"
+        default n
+		help
+			support plltest command
+
+config AML_REBOOT
+		bool "reboot cmd"
+		default y
+		help
+			support uboot reboot cmd
+endif

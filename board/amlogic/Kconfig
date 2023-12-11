@@ -631,19 +631,11 @@ config S7D_BM209
 	select TARGET_S7D_BM209
 	help
 		Select S7D BM209 config
-
-
 endchoice
-
-config TARGET_S7_SKT
-	bool "S7 SKT board"
-	depends on S7_SKT
 
 config TARGET_S7D_SKT
 	bool "S7D SKT board"
 	depends on S7D_SKT
-
-endif
 
 config TARGET_S7D_BM201
 	bool "S7D BM201 board"
@@ -656,6 +648,50 @@ config TARGET_S7D_BM202
 config TARGET_S7D_BM209
 	bool "S7D BM209 board"
 	depends on S7D_BM209
+
+endif
+
+if MESON_S6
+
+config SYS_SOC
+	default "s6"
+
+config DDRFW_TYPE
+	string "s6 DDR FW Type"
+	default "ddr4"
+
+config CHIPSET_NAME
+	string "s6 CHIPSET NAME"
+	default ""
+
+config CHIPSET_VARIANT
+	string "s6 CHIPSET VARIANT"
+	default ""
+
+config AMLOGIC_KEY_TYPE
+	string "s6 AMLOGIC KEY TYPE"
+	default "dev-keys"
+
+config BL30_SELECT
+	string "s6 BL30 board config"
+		default "s7d_pxp"
+
+choice
+	prompt "s6 Board"
+
+config S6_SKT
+	bool "S6_SKT"
+	select TARGET_S6_SKT
+	help
+		Select S6 SKT(XXXX) config
+
+endchoice
+
+config TARGET_S6_SKT
+	bool "S6 SKT board"
+	depends on S6_SKT
+
+endif
 
 # Amlogic boards
 
@@ -700,3 +736,5 @@ source "board/amlogic/s7d_bm201/Kconfig"
 source "board/amlogic/s7d_bm202/Kconfig"
 
 source "board/amlogic/s7d_bm209/Kconfig"
+
+source "board/amlogic/s6_skt/Kconfig"

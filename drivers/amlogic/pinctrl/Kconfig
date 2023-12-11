@@ -24,4 +24,8 @@ config PINCTRL_MESON_S7D
 	bool "Amlogic Meson S7D SoC pinctrl driver"
 	select PINCTRL_MESON_AXG_PMX
 
+config PINCTRL_MESON_S6
+	bool "Amlogic Meson S6 SoC pinctrl driver"
+	select PINCTRL_MESON_AXG_PMX
+
 endif
