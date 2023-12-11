@@ -48,6 +48,8 @@
 // copied from cmd/amlogic/cmd_car_param.c. keep the same value;
 #define CAR_FREERTOS_SHARED_MEM_ADDR 0x80001100
 
+//#define MAX96722_REAR_CAMERA_ONLY 1
+
 DECLARE_GLOBAL_DATA_PTR;
 
 void sys_led_init(void)
@@ -203,6 +205,7 @@ static int max96722_init_part1(void)
 	i2c_write_wrapper(udev, 0x0D0F, 0x01);
 	i2c_write_wrapper(udev, 0x0E0F, 0x01);
 
+	// dbl hv en
 	i2c_write_wrapper(udev, 0x0B07, 0x84); //#set link A hven and dbl high
 	i2c_write_wrapper(udev, 0x0C07, 0x84); //#set link B hven and dbl high
 	i2c_write_wrapper(udev, 0x0D07, 0x84); //#set link C hven and dbl high
@@ -217,8 +220,11 @@ static int max96722_init_part1(void)
 	// usleep 100000 #0x00 0x64  #delay 100ms
 	//udelay(100 * 1000);
 
+#ifdef MAX96722_REAR_CAMERA_ONLY
 	i2c_write_wrapper(udev, 0x00F4, 0x08);  // #enable pipe 3
-
+#else
+	i2c_write_wrapper(udev, 0x00F4, 0x0f);  // #enable pipe 0 1 2 3
+#endif
 	//# MAX96712 MIPI settings
 	i2c_write_wrapper(udev, 0x08A0, 0x04); //  # mipi 2x4 mode
 	i2c_write_wrapper(udev, 0x08A2, 0xf4); //  #enable output phy
@@ -251,37 +257,7 @@ static int max96722_init_part1(void)
 	i2c_write_wrapper(udev, 0x040f, 0x7E); // #dt for pipe line 1/2 set as YUV422
 	i2c_write_wrapper(udev, 0x0410, 0x7a); // #dt for pipe line 1/2 set as YUV422
 
-	//#Set MIPI 3 mapping
-	// video pipe 0
-	//i2c_write_wrapper(udev, 0x090B, 0x07); //  #enable 3 mappings for pipeline 0
-	//i2c_write_wrapper(udev, 0x092D, 0x15); //  # map to destination controller 1
-	//i2c_write_wrapper(udev, 0x090D, 0x1E); //  #source data type (1E) and VC(0)
-	//i2c_write_wrapper(udev, 0x090E, 0x1E); //  #destination dt(1E) and vc(0)
-	//i2c_write_wrapper(udev, 0x090F, 0x00); //  #source dt(00 frame start) and vc(0)
-	//i2c_write_wrapper(udev, 0x0910, 0x00); //  #destination dt(00 frame start) and vc(0)
-	//i2c_write_wrapper(udev, 0x0911, 0x01); //  #source dt(01 frame end) and vc(0)
-	//i2c_write_wrapper(udev, 0x0912, 0x01); //  #destination dt(01 frame end) and vc(0)
-
-	// video pipe 1
-	//i2c_write_wrapper(udev, 0x094B, 0x07); //  #enable 3 mappings for pipeline 0
-	//i2c_write_wrapper(udev, 0x096D, 0x15); //  # map to destination controller 1
-	//i2c_write_wrapper(udev, 0x094D, 0x1E); //  #source data type (1E) and VC(0)
-	//i2c_write_wrapper(udev, 0x094E, 0x5E); //  #destination dt(1E) and vc(1)
-	//i2c_write_wrapper(udev, 0x094F, 0x00); //  #source dt(00 frame start) and vc(0)
-	//i2c_write_wrapper(udev, 0x0950, 0x40); //  #destination dt(00 frame start) and vc(1)
-	//i2c_write_wrapper(udev, 0x0951, 0x01); //  #source dt(01 frame end) and vc(0)
-	//i2c_write_wrapper(udev, 0x0952, 0x41); //  #destination dt(01 frame end) and vc(1)
-
-	// video pipe 2
-	//i2c_write_wrapper(udev, 0x098B, 0x07); //  #enable 3 mappings for pipeline 0
-	//i2c_write_wrapper(udev, 0x09aD, 0x15); //  # map to destination controller 1
-	//i2c_write_wrapper(udev, 0x098D, 0x1E); //  #source data type (1E) and VC(0)
-	//i2c_write_wrapper(udev, 0x098E, 0x9E); //  #destination dt(1E) and vc(2)
-	//i2c_write_wrapper(udev, 0x098F, 0x00); //  #source dt(00 frame start) and vc(0)
-	//i2c_write_wrapper(udev, 0x0990, 0x80); //  #destination dt(00 frame start) and vc(2)
-	//i2c_write_wrapper(udev, 0x0991, 0x01); //  #source dt(01 frame end) and vc(0)
-	//i2c_write_wrapper(udev, 0x0992, 0x81); //  #destination dt(01 frame end) and vc(2)
-
+#ifdef MAX96722_REAR_CAMERA_ONLY
 	// video pipe 3
 	i2c_write_wrapper(udev, 0x09cB, 0x07); //  #enable 3 mappings for pipeline 0
 	i2c_write_wrapper(udev, 0x09eD, 0x15); //  # map to destination controller 1
@@ -291,11 +267,15 @@ static int max96722_init_part1(void)
 	i2c_write_wrapper(udev, 0x09d0, 0x00); //  #destination dt(00 frame start) and vc(3)
 	i2c_write_wrapper(udev, 0x09d1, 0x01); //  #source dt(01 frame end) and vc(0)
 	i2c_write_wrapper(udev, 0x09d2, 0x01); //  #destination dt(01 frame end) and vc(3)
+#endif
 
 	//#*******Frame sync***************************************
 	i2c_write_wrapper(udev, 0x04A0, 0x04); //   #0x04 # manual frame sync
+#ifdef MAX96722_REAR_CAMERA_ONLY
 	i2c_write_wrapper(udev, 0x04A2, 0b01100000); // video 3 as master.
-
+#else
+	i2c_write_wrapper(udev, 0x04A2, 0x00); // video 0 as master.
+#endif
 	i2c_write_wrapper(udev, 0x04AA, 0x00);
 	i2c_write_wrapper(udev, 0x04AB, 0x00);
 
@@ -310,9 +290,17 @@ static int max96722_init_part1(void)
 	i2c_write_wrapper(udev, 0x0D08, 0x71); // #set link A GPI_0-to-GPO transmission
 	i2c_write_wrapper(udev, 0x0E08, 0x71); // #set link A GPI_0-to-GPO transmission
 
+#ifdef MAX96722_REAR_CAMERA_ONLY
 	// ======== begin set link D for rear view camera ===============
 	i2c_write_wrapper(udev, 0x0006, 0x08);
 	i2c_write_wrapper(udev, 0x0018, 0x08);
+#else
+	//max96712_aggregation_init; 0x0f for w*4h; 0x8f for 4w*h
+	i2c_write_wrapper(udev, 0x0971, 0x8f);
+	// ======== begin set link A ===============
+	i2c_write_wrapper(udev, 0x0006, 0x01);
+	i2c_write_wrapper(udev, 0x0018, 0x01);
+#endif
 	// caution: sleep 100ms, block the boot flow;
 	// usleep 100000 #0x00 0x64  #delay 100ms
 	udelay(100 * 1000);
@@ -349,12 +337,12 @@ static int max96722_connect_check(void)
 
 	max96722_init_part1();
 
-	ret = i2c_get_chip_for_busnum(3, 0x44, 1, &max96705_udev);
+	ret = i2c_get_chip_for_busnum(3, 0x40, 1, &max96705_udev);
 	if (ret)
-		ret = i2c_get_chip_for_busnum(3, 0x40, 1, &max96705_udev);
+		ret = i2c_get_chip_for_busnum(3, 0x44, 1, &max96705_udev);
 
 	if (ret) {
-		printf("%s:unable to get I2C client 0x40 &0x44. ret %d\n", __func__, ret);
+		printf("%s:unable to get I2C client 0x40 ret %d\n", __func__, ret);
 		return -1;
 	}
 
@@ -365,6 +353,12 @@ static int max96722_connect_check(void)
 static int max96722_init_part2(void)
 {
 	int ret = 0x0;
+	int link_idx = 0;
+#ifdef MAX96722_REAR_CAMERA_ONLY
+	const int link_begin_idx = 3;
+#else
+	const int link_begin_idx = 0;
+#endif
 	struct udevice *max96722_udev;
 	struct udevice *max96705_udev;
 
@@ -374,19 +368,33 @@ static int max96722_init_part2(void)
 		return -1;
 	}
 
-	ret = i2c_get_chip_for_busnum(3, 0x44, 1, &max96705_udev);
+	ret = i2c_get_chip_for_busnum(3, 0x40, 1, &max96705_udev);
 	if (ret)
-		ret = i2c_get_chip_for_busnum(3, 0x40, 1, &max96705_udev);
+		ret = i2c_get_chip_for_busnum(3, 0x44, 1, &max96705_udev);
 
 	if (ret) {
-		printf("%s:unable to get I2C client 0x40 &0x44. ret %d\n", __func__, ret);
+		printf("%s:unable to get I2C client 0x40 ret %d\n", __func__, ret);
 		return -1;
 	}
 
-	//#Set MAX96705 and sensor configure
-	i2c_write_wrapper(max96705_udev, 0x04, 0x87);
-	i2c_write_wrapper(max96705_udev, 0x07, 0x84);
-	i2c_write_wrapper(max96705_udev, 0x06, 0xa4);
+	for (link_idx = link_begin_idx; link_idx < 4; ++link_idx) {
+		int reg_val = 0x00;
+		const int reg_addr[] = {
+			0x0bcb, 0x0ccb, 0x0dcb, 0x0ecb
+		};
+		i2c_write_wrapper(max96722_udev, 0x0006, (0x01 << link_idx));
+		i2c_write_wrapper(max96722_udev, 0x0018, (0x01 << link_idx));
+		udelay(100 * 1000);
+		//#Set MAX96705 and sensor configure
+		i2c_write_wrapper(max96705_udev, 0x04, 0x87);
+		i2c_write_wrapper(max96705_udev, 0x07, 0x84);
+		i2c_write_wrapper(max96705_udev, 0x06, 0xa4);
+		reg_val = dm_i2c_reg_read(max96722_udev, reg_addr[link_idx]);
+		if (reg_val & 0x01)
+			printf("gmsl 1 video pipe %d locked\n", link_idx);
+		else
+			printf("gmsl 1 video pipe %d not locked\n", link_idx);
+	}
 
 	// ======== end set link D for rear view camera ===============
 	// invert vs
@@ -395,6 +403,12 @@ static int max96722_init_part2(void)
 	i2c_write_wrapper(max96722_udev, 0x0219, 0x59);
 	i2c_write_wrapper(max96722_udev, 0x0239, 0x59);
 
+#ifndef MAX96722_REAR_CAMERA_ONLY
+	// enable all links
+	i2c_write_wrapper(max96722_udev, 0x0006, 0x0f);
+	i2c_write_wrapper(max96722_udev, 0x0018, 0x0f);
+	udelay(100 * 1000);
+#endif
 	//# enable mipi
 	i2c_write_wrapper(max96722_udev, 0x040b, 0x42); // # csi out en
 	i2c_write_wrapper(max96722_udev, 0x08A0, 0x84); //  # Force MIPI out
