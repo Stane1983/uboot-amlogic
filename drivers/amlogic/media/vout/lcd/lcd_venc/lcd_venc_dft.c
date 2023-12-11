@@ -127,9 +127,9 @@ static void lcd_venc_set_tcon(struct aml_lcd_drv_s *pdrv)
 
 	switch (pconf->basic.lcd_type) {
 	case LCD_LVDS:
-		lcd_vcbus_setb(L_POL_CNTL_ADDR, 1, 0, 1);
+		lcd_vcbus_setb(L_POL_CNTL_ADDR, 1, 0, 3);
 		// refs to lcd_lvds.c@lcd_lvds_enable
-		if (pconf->timing.vsync_pol != pconf->timing.hsync_pol)
+		if (pconf->timing.vsync_pol == pconf->timing.hsync_pol)
 			lcd_vcbus_setb(L_POL_CNTL_ADDR, 1, 1, 1);
 		break;
 	case LCD_VBYONE:
