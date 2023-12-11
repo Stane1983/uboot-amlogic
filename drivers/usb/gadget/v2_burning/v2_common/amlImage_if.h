@@ -125,5 +125,9 @@ int get_subtype_nm_by_index(HIMAGE hImg, const char* main_type, const char** sub
 
 long do_fat_ftell(int fd);
 
+int optimus_img_secureboot_signed(HIMAGE hImg);
+
+int optimus_img_chk_soctype(HIMAGE hImg);
+
 #endif//ifndef __AMLIMAGE_IF_H__
 

@@ -668,6 +668,99 @@ int get_subtype_nm_by_index(HIMAGE hImg, const char* main_type, const char** sub
     return OPT_DOWN_FAIL;
 }
 
+int optimus_img_secureboot_signed(HIMAGE hImg)
+{
+	const int n_usb_bootloader = get_subtype_nr(hImg, "USB");
+
+	DWN_MSG("USB item num %d\n", n_usb_bootloader);
+	return n_usb_bootloader == 4;
+}
+
+#ifndef CONFIG_SYS_SOC
+int optimus_img_chk_soctype(HIMAGE hImg)
+{
+	DWN_WRN("cfg SYS_SOC undef\n");
+	return 0;
+}
+#else
+int optimus_img_chk_soctype(HIMAGE hImg)
+{
+	char *buf = NULL;
+	int ret = 0;
+	char *pbuf = NULL;
+	const char *socstr = "soctype:";
+	const char *socstr1 = "\"soctype\":";
+	char *cfgn = NULL;
+	char *tmp1, *tmp2 = NULL;
+	const char *SOC_NAME = CONFIG_SYS_SOC;
+	const int _BUFLEN = 4096;
+	const int BUFLEN = _BUFLEN + image_get_cluster_size(hImg);
+	int bufsz = BUFLEN - 1;
+	int json_fmt = 0;
+
+	buf = (char *)malloc(BUFLEN);
+	if (!buf) {
+		DWN_ERR("Fail in alloc buf sz 0x%x\n", BUFLEN);
+		return __LINE__;
+	}
+	ret = optimus_img_item2buf(hImg, "conf", "platform", buf, &bufsz);
+	if (ret) {
+		DWN_ERR("Pkg no platform.conf\n");
+		free(buf);
+		return __LINE__;
+	}
+	DWN_MSG("conf sz %d\n", bufsz);
+	buf[bufsz] = '\0';
+	for (tmp1 = buf, tmp2 = buf + _BUFLEN; *tmp1; ++tmp1, ++tmp2) {
+		while (*tmp1 == ' ')
+			++tmp1;
+		*tmp2 = *tmp1;
+	}
+	pbuf = buf + _BUFLEN;
+	DWN_DBG("%s\n", pbuf);
+	pbuf = strstr(pbuf, socstr);
+	if (!pbuf) {
+		pbuf = buf + _BUFLEN;
+		pbuf = strstr(pbuf, socstr1);
+		json_fmt = 1;
+	}
+	if (!pbuf) {
+		DWN_ERR("img not config soctype\n");
+		free(buf);
+		return __LINE__;
+	}
+	DWN_MSG("%s json fmt\n", json_fmt ? "is" : "not");
+	pbuf += strlen(json_fmt ? socstr1 : socstr);
+	cfgn  = pbuf;
+	if (!strsep(&pbuf, "\n")) {
+		DWN_ERR("err soctype cfg\n");
+		free(buf);
+		return -__LINE__;
+	}
+	DWN_MSG("%s%s\n", socstr, cfgn);
+	if (json_fmt)
+		*(pbuf - 3) = '\0';
+	ret = !json_fmt;
+	for (pbuf = cfgn; ret && strsep(&pbuf, ":"); cfgn = pbuf) {
+		ret = strcasecmp(SOC_NAME, cfgn);
+		DWN_MSG("soc[%s] %s match IMG cfg[%s]\n", SOC_NAME,
+			ret ? "NOT" : "DO", cfgn);
+	}
+
+	if (json_fmt) {
+		ret = 1;
+		SOC_NAME = "\"" CONFIG_SYS_SOC "\"";
+		for (pbuf = ++cfgn; ret && strsep(&pbuf, ","); cfgn = pbuf) {
+			ret = strcasecmp(SOC_NAME, cfgn);
+			DWN_MSG("soc %s %s match IMG cfg %s\n", SOC_NAME,
+				ret ? "NOT" : "DO", cfgn);
+		}
+	}
+
+	free(buf);
+	return ret;
+}
+#endif// #ifndef CONFIG_SYS_SOC
 
 #define MYDBG 0
 #if MYDBG

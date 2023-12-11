@@ -86,6 +86,10 @@ static int optimus_sysrec_burn_package_from_partition(const char* partName, cons
 		ret = __LINE__; goto _finish;
 	}
 	ret = optimus_burn_gpt(hImg);
+	if (!ret) {
+		DWN_MSG("gpt mem for renew part_table\n");
+		ret = optimus_sdc_burn_gpt_load(hImg);
+	}
 	if (ret && ret != ITEM_NOT_EXIST) {
 		DWN_MSG("Fail in update gpt\n");
 		ret = __LINE__; goto _finish;

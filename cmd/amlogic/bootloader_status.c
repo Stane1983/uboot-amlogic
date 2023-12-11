@@ -77,6 +77,12 @@ static int do_get_bootloader_status(cmd_tbl_t *cmdtp, int flag, int argc, char *
 		case 0x3A://s4d
 			supportRobustOta = true;
 			break;
+
+		case MESON_CPU_MAJOR_ID_T5W:
+		case MESON_CPU_MAJOR_ID_TXHD2:
+			supportRobustOta = false;
+			break;
+
 		default:
 		{
 			if (familyId > 0x3A) {
