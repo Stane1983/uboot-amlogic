@@ -537,7 +537,11 @@ static void flash(char *cmd_parameter, char *response)
 
 			if (erase_flag == 1) {
 				printf("partition changes, erase emmc\n");
-				run_command("store erase.chip 0;", 0);
+				//run_command("store erase.chip 0;", 0);
+				if (usb_burn_erase_data(0x3)) {
+					printf("partition erase failed!\n");
+					return;
+				}
 			}
 
 			if (write_mbr_and_gpt_partitions(dev_desc, fastboot_buf_addr + 0x3DFE00)) {
@@ -561,7 +565,11 @@ static void flash(char *cmd_parameter, char *response)
 
 			if (mem_addr && erase_flag == 1) {
 				printf("partition changes, erase emmc\n");
-				run_command("store erase.chip 0;", 0);
+				//run_command("store erase.chip 0;", 0);
+				if (usb_burn_erase_data(0x3)) {
+					printf("partition erase failed!\n");
+					return;
+				}
 				printf("write _aml_dtb\n");
 				addr = (void *)simple_strtoul(mem_addr, NULL, 16);
 				ret = dtb_write(addr);
