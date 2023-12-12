@@ -132,7 +132,7 @@ void nfc_raw_size_ext_convert(uint32_t size)
 }
 
 #define is_fixpll_locked()	(1)
-#define IS_FEAT_EN_83MHZ_SPI()	(0)
+#define IS_FEAT_EN_83MHZ_SPI()	(1)
 #define IS_FEAT_EN_41MHZ_SPI()	(1)
 #define IS_FEAT_EN_25MHZ_NAND()	(1)
 #define otp_get_nfc_rxadj(x)	((*(x)) = 0)
@@ -155,9 +155,10 @@ static struct nfc_clk_provider *nfc_get_clock_provider(int init_stage,
 	if (init_stage || frequency_idx == 0xFF) {
 		if (!is_fixpll_locked())
 			clk_info = &clk_provider[CLK_12MHZ];
-		else if (IS_FEAT_EN_83MHZ_SPI())
+		else if (IS_FEAT_EN_83MHZ_SPI()) {
 			clk_info = &clk_provider[CLK_83MHZ];
-		else if (IS_FEAT_EN_41MHZ_SPI())
+			clk_info->adj = 1;
+		} else if (IS_FEAT_EN_41MHZ_SPI())
 			clk_info = &clk_provider[CLK_41MHZ];
 		else
 			clk_info = &clk_provider[CLK_20MHZ];
