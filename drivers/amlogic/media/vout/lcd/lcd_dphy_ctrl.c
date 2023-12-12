@@ -161,6 +161,9 @@ void lcd_lvds_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off)
 			lcd_combo_dphy_write(reg_dphy_tx_ctrl1, (1 << 6) | (1 << 0));
 			/* decoupling fifo write enable after fifo enable */
 			lcd_combo_dphy_setb(reg_dphy_tx_ctrl1, 1, 7, 1);
+			/* t3x: pn swap */
+			if (pdrv->data->chip_type == LCD_CHIP_T3X)
+				lcd_combo_dphy_setb(reg_dphy_tx_ctrl0, 1, 2, 1);
 		} else {
 			/* disable fifo */
 			lcd_combo_dphy_setb(reg_dphy_tx_ctrl1, 0, 6, 2);
