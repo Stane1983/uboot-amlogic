@@ -919,7 +919,6 @@ static void hdmitx_parse_sink_capability(struct rx_cap *prxcap,
 	prxcap->allm = !!(blockbuf[offset + 7] & (1 << 1));
 	prxcap->fva = !!(blockbuf[offset + 7] & (1 << 2));
 	prxcap->neg_mvrr = !!(blockbuf[offset + 7] & (1 << 3));
-	prxcap->cinemavrr = !!(blockbuf[offset + 7] & (1 << 4));
 	prxcap->mdelta = !!(blockbuf[offset + 7] & (1 << 5));
 	prxcap->qms = !!(blockbuf[offset + 7] & (1 << 6));
 	prxcap->fapa_end_extended = !!(blockbuf[offset + 7] & (1 << 7));

@@ -519,7 +519,6 @@ struct rx_cap {
 	u32 allm:1;
 	u32 fapa_start_loc:1;
 	u32 fapa_end_extended:1;
-	u32 cinemavrr:1;
 	u32 vrr_max;
 	u32 vrr_min;
 	unsigned char edid_version;
