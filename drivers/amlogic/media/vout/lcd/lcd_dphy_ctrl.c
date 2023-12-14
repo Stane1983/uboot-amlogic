@@ -387,6 +387,7 @@ void lcd_mlvds_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off)
 
 	switch (pdrv->data->chip_type) {
 	case LCD_CHIP_T3:
+	case LCD_CHIP_T5M:
 		if (on_off) {
 			/* fifo_clk_sel[7:6]: 0=div6, 1=div 7, 2=div8, 3=div10 */
 			lcd_ana_write(ANACTRL_LVDS_TX_PHY_CNTL0, (div_sel << 6));
