@@ -823,6 +823,7 @@ static int lcd_prbs_test(struct aml_lcd_drv_s *pdrv, unsigned int ms, unsigned i
 	unsigned int val1, val2, s, timeout;
 	unsigned int cnt = 0;
 	unsigned int clk_err_cnt = 0;
+	unsigned long lcd_encl_clk_check_std, lcd_fifo_clk_check_std;
 	int i, j, ret;
 
 	cconf = get_lcd_clk_config(pdrv);
@@ -849,11 +850,11 @@ static int lcd_prbs_test(struct aml_lcd_drv_s *pdrv, unsigned int ms, unsigned i
 		lcd_prbs_mode = (1 << i);
 		LCDPR("lcd_prbs_mode: %d\n", lcd_prbs_mode);
 		if (lcd_prbs_mode == LCD_PRBS_MODE_LVDS) {
-			lcd_encl_clk_check_std = 136;
-			lcd_fifo_clk_check_std = 48;
+			lcd_encl_clk_check_std = 136000000;
+			lcd_fifo_clk_check_std = 48000000;
 		} else if (lcd_prbs_mode == LCD_PRBS_MODE_VX1) {
-			lcd_encl_clk_check_std = 594;
-			lcd_fifo_clk_check_std = 297;
+			lcd_encl_clk_check_std = 594000000;
+			lcd_fifo_clk_check_std = 297000000;
 		}
 		if (cconf->data->prbs_clk_config) {
 			cconf->data->prbs_clk_config(pdrv, lcd_prbs_mode);
@@ -955,6 +956,7 @@ static int lcd_clk_prbs_test_txhd2(struct aml_lcd_drv_s *pdrv,
 	unsigned int lcd_prbs_cnt;
 	unsigned int val1, val2, timeout;
 	unsigned int clk_err_cnt = 0;
+	unsigned long lcd_encl_clk_check_std, lcd_fifo_clk_check_std;
 	int j, ret;
 
 	if (!cconf)

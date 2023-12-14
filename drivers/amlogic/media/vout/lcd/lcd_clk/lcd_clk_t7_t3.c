@@ -1153,6 +1153,7 @@ static int lcd_prbs_test_t7(struct aml_lcd_drv_s *pdrv, unsigned int ms,
 	unsigned int val1, val2, timeout;
 	unsigned int cnt = 0;
 	unsigned int clk_err_cnt = 0;
+	unsigned long lcd_encl_clk_check_std, lcd_fifo_clk_check_std;
 	int i, j, ret;
 
 	cconf = get_lcd_clk_config(pdrv);
@@ -1200,11 +1201,11 @@ static int lcd_prbs_test_t7(struct aml_lcd_drv_s *pdrv, unsigned int ms,
 		lcd_prbs_mode = (1 << i);
 		LCDPR("[%d]: lcd_prbs_mode: %d\n", pdrv->index, lcd_prbs_mode);
 		if (lcd_prbs_mode == LCD_PRBS_MODE_LVDS) {
-			lcd_encl_clk_check_std = 136;
-			lcd_fifo_clk_check_std = 48;
+			lcd_encl_clk_check_std = 136000000;
+			lcd_fifo_clk_check_std = 48000000;
 		} else if (lcd_prbs_mode == LCD_PRBS_MODE_VX1) {
-			lcd_encl_clk_check_std = 594;
-			lcd_fifo_clk_check_std = 297;
+			lcd_encl_clk_check_std = 594000000;
+			lcd_fifo_clk_check_std = 297000000;
 		}
 		if (!cconf->data->prbs_clk_config) {
 			LCDERR("[%d]: %s: prbs_clk_config is null\n",
@@ -1250,8 +1251,7 @@ static int lcd_prbs_test_t7(struct aml_lcd_drv_s *pdrv, unsigned int ms,
 				goto lcd_prbs_test_t7_err;
 			}
 			if (lcd_prbs_clk_check(lcd_encl_clk_check_std, encl_msr_id,
-					       lcd_fifo_clk_check_std, fifo_msr_id,
-					       cnt))
+					       lcd_fifo_clk_check_std, fifo_msr_id, cnt))
 				clk_err_cnt++;
 			else
 				clk_err_cnt = 0;
@@ -1312,6 +1312,7 @@ static int lcd_prbs_test_t3(struct aml_lcd_drv_s *pdrv, unsigned int ms,
 	unsigned int val1, val2, timeout;
 	unsigned int cnt = 0;
 	unsigned int clk_err_cnt = 0;
+	unsigned long lcd_encl_clk_check_std, lcd_fifo_clk_check_std;
 	int i, j, ret;
 
 	cconf = get_lcd_clk_config(pdrv);
@@ -1349,11 +1350,11 @@ static int lcd_prbs_test_t3(struct aml_lcd_drv_s *pdrv, unsigned int ms,
 		lcd_prbs_mode = (1 << i);
 		LCDPR("[%d]: lcd_prbs_mode: %d\n", pdrv->index, lcd_prbs_mode);
 		if (lcd_prbs_mode == LCD_PRBS_MODE_LVDS) {
-			lcd_encl_clk_check_std = 136;
-			lcd_fifo_clk_check_std = 48;
+			lcd_encl_clk_check_std = 136000000;
+			lcd_fifo_clk_check_std = 48000000;
 		} else if (lcd_prbs_mode == LCD_PRBS_MODE_VX1) {
-			lcd_encl_clk_check_std = 594;
-			lcd_fifo_clk_check_std = 297;
+			lcd_encl_clk_check_std = 594000000;
+			lcd_fifo_clk_check_std = 297000000;
 		}
 		if (!cconf->data->prbs_clk_config) {
 			LCDERR("[%d]: %s: prbs_clk_config is null\n",
@@ -1399,8 +1400,7 @@ static int lcd_prbs_test_t3(struct aml_lcd_drv_s *pdrv, unsigned int ms,
 				goto lcd_prbs_test_t3_err;
 			}
 			if (lcd_prbs_clk_check(lcd_encl_clk_check_std, encl_msr_id,
-					       lcd_fifo_clk_check_std, fifo_msr_id,
-					       cnt))
+					       lcd_fifo_clk_check_std, fifo_msr_id, cnt))
 				clk_err_cnt++;
 			else
 				clk_err_cnt = 0;
@@ -1596,7 +1596,6 @@ void lcd_clk_config_chip_init_t7(struct aml_lcd_drv_s *pdrv, struct lcd_clk_conf
 		cconf->pll_offset = 0;
 		break;
 	}
-	cconf->data->enc_clk_msr_id = -1;
 }
 
 void lcd_clk_config_chip_init_t3(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf)
@@ -1614,6 +1613,5 @@ void lcd_clk_config_chip_init_t3(struct aml_lcd_drv_s *pdrv, struct lcd_clk_conf
 		cconf->pll_id = 0;
 		break;
 	}
-	cconf->data->enc_clk_msr_id = -1;
 }
 
