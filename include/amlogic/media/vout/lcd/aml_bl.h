@@ -98,6 +98,7 @@ struct bl_pwm_config_s {
 	unsigned int pinmux_flag;
 	unsigned int pinmux_set[LCD_PINMUX_NUM][2];
 	unsigned int pinmux_clr[LCD_PINMUX_NUM][2];
+	unsigned int pwm_phase;
 };
 
 #define BL_NAME_MAX    30

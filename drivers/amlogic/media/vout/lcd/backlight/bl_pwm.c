@@ -417,9 +417,10 @@ void bl_set_pwm(struct bl_pwm_config_s *bl_pwm)
 		bl_pwm->pwm_hi = (bl_pwm->pwm_hi * 10 / n + 5) / 10;
 		bl_pwm->pwm_hi = (bl_pwm->pwm_hi > 1) ? bl_pwm->pwm_hi : 1;
 		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
-			BLPR("n=%d, sw=%d, pwm_high=%d\n", n, sw, bl_pwm->pwm_hi);
+			BLPR("n=%d, sw=%d, pwm_high=%d, phase=%d\n",
+			n, sw, bl_pwm->pwm_hi, bl_pwm->pwm_phase);
 		for (i = 0; i < n; i++) {
-			vs[i] = 1 + (sw * i);
+			vs[i] = 1 + (sw * i) + bl_pwm->pwm_phase;
 			ve[i] = vs[i] + bl_pwm->pwm_hi - 1;
 			if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
 				BLPR("vs[%d]=%d, ve[%d]=%d\n", i, vs[i], i, ve[i]);
