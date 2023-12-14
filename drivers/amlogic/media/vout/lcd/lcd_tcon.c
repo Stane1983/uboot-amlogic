@@ -1801,7 +1801,7 @@ static void lcd_tcon_axi_rmem_update_t5d(unsigned int *table)
 
 static void lcd_tcon_axi_mem_config_txhd2(void)
 {
-	unsigned int size[2] = {0x00500000, 0x100000};
+	unsigned int size[2] = {0x00400000, 0x100000};
 	unsigned int reg[2] = {0x261, 0x19b};
 	unsigned int total_size = 0, temp_size = 0;
 	int i;
@@ -2532,8 +2532,8 @@ static struct lcd_tcon_config_s tcon_data_txhd2 = {
 
 	.axi_bank = LCD_TCON_AXI_BANK_TXHD2,
 
-	.rsv_mem_size    = 0x00602840,
-	.axi_size        = 0x00600000, /* 6M*/
+	.rsv_mem_size    = 0x00502840,
+	.axi_size        = 0x00500000, /* 5M*/
 	.bin_path_size   = 0x00002800, /* 10K */
 	.secure_cfg_size = 0x00000040, /* 64byte */
 	.vac_size        = 0,
