@@ -284,11 +284,10 @@ int do_bootm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 #ifdef CONFIG_CMD_BOOTCTOL_AVB
 	int rc = 0;
-	char *avb_s = env_get("avb2");
-	if (avb_s == NULL) {
-		run_command("get_avb_mode;", 0);
-		avb_s = env_get("avb2");
-	}
+	char *avb_s = NULL;
+
+	run_command("get_avb_mode;", 0);
+	avb_s = env_get("avb2");
 	printf("avb2: %s\n", avb_s);
 	if (strcmp(avb_s, "1") == 0) {
 		AvbSlotVerifyData *out_data = NULL;
@@ -310,22 +309,21 @@ int do_bootm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			printf("avb verification: locked = %d, result = %d\n",
 						!is_device_unlocked(), rc);
 #if defined(CONFIG_AML_ANTIROLLBACK) || defined(CONFIG_AML_AVB2_ANTIROLLBACK)
-			if (rc == AVB_SLOT_VERIFY_RESULT_OK && is_avb_arb_available()) {
+			if (rc == AVB_SLOT_VERIFY_RESULT_OK && is_avb_arb_available() &&
+					!set_successful_boot()) {
 				uint32_t i = 0;
 				uint32_t version = 0;
 
-                if(!set_successful_boot()) {
-    				for (i = 0; i < AVB_MAX_NUMBER_OF_ROLLBACK_INDEX_LOCATIONS; i++) {
-    					uint64_t rb_idx = out_data->rollback_indexes[i];
+				for (i = 0; i < AVB_MAX_NUMBER_OF_ROLLBACK_INDEX_LOCATIONS; i++) {
+					uint64_t rb_idx = out_data->rollback_indexes[i];
 
-    					if (get_avb_antirollback(i, &version) &&
-    						version != (uint32_t)rb_idx &&
-    						!set_avb_antirollback(i, (uint32_t)rb_idx)) {
-    						printf("rollback(%d) = %u failed\n",
-    								i, (uint32_t)rb_idx);
-    					}
-    				}
-                }
+					if (get_avb_antirollback(i, &version) &&
+						version > (uint32_t)rb_idx &&
+						!set_avb_antirollback(i, (uint32_t)rb_idx)) {
+						printf("rollback(%d) = %u failed\n",
+							i, (uint32_t)rb_idx);
+					}
+				}
 			}
 
 			if (is_avb_arb_available() &&

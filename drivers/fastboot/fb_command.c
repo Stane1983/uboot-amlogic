@@ -1267,11 +1267,9 @@ next:
 		if (info.unlock_ability == 1) {
 			if (info.lock_state == 1) {
 				char *avb_s;
+
+				run_command("get_avb_mode;", 0);
 				avb_s = env_get("avb2");
-				if (avb_s == NULL) {
-					run_command("get_avb_mode;", 0);
-					avb_s = env_get("avb2");
-				}
 				printf("avb2: %s\n", avb_s);
 				if (strcmp(avb_s, "1") == 0) {
 					try_unlock_dev(rc);
@@ -1288,11 +1286,9 @@ next:
 	} else if (!strcmp_l1("lock", cmd)) {
 		if (info.lock_state == 0) {
 			char *avb_s;
+
+			run_command("get_avb_mode;", 0);
 			avb_s = env_get("avb2");
-			if (avb_s == NULL) {
-				run_command("get_avb_mode;", 0);
-				avb_s = env_get("avb2");
-			}
 			printf("avb2: %s\n", avb_s);
 			if (strcmp(avb_s, "1") == 0) {
 				try_lock_dev(rc);

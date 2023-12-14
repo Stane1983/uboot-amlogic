@@ -33,6 +33,8 @@
 /* use max nand page size, 4K */
 #define NAND_PAGE_SIZE (0x1000)
 
+// The last slot is reserved for recovery partition
+#define RECOVERY_ARB_LOCATION (31)
 #define CONFIG_AVB2_KPUB_EMBEDDED
 
 #ifdef CONFIG_AVB2_KPUB_VENDOR
@@ -53,7 +55,9 @@ extern const int avb2_kpub_production_len;
 int compare_avbkey_with_fipkey(const uint8_t* public_key_data, size_t public_key_length);
 #endif
 
+void *memory_addr;
 AvbOps avb_ops_;
+int run_in_recovery;
 
 static AvbIOResult read_from_partition(AvbOps *ops, const char *partition, int64_t offset,
 		size_t num_bytes, void *buffer, size_t *out_num_read)
@@ -98,6 +102,17 @@ static AvbIOResult read_from_partition(AvbOps *ops, const char *partition, int64
 			result = AVB_IO_RESULT_OK;
 			goto out;
 		}
+	} else if (!strcmp(partition, "recovery-memory")) {
+		uint32_t filesize = simple_strtoul(env_get("filesize"), NULL, 16);
+
+		if (memory_addr) {
+			num_bytes = (filesize - offset >= num_bytes) ? num_bytes :
+				(filesize - offset);
+			memcpy(buffer, (uint8_t *)(memory_addr + offset), num_bytes);
+			*out_num_read = num_bytes;
+			return AVB_IO_RESULT_OK;
+		}
+		return AVB_IO_RESULT_ERROR_IO;
 	} else {
 		enum boot_type_e type = store_get_type();
 
@@ -305,6 +320,8 @@ static AvbIOResult get_size_of_partition(AvbOps *ops, const char *partition,
 	if (!strcmp(partition, "dt_a") || !strcmp(partition, "dt_b") ||
 			!strcmp(partition, "dt")) {
 		*out_size_num_bytes = DTB_PARTITION_SIZE;
+	} else if (!strcmp(partition, "recovery-memory")) {
+		*out_size_num_bytes = simple_strtoul(env_get("filesize"), NULL, 16);
 	} else {
 		/* There is only 1 recovery partition even in A/B */
 		if (!strcmp(partition, "recovery_a") ||
@@ -436,6 +453,40 @@ static AvbIOResult validate_vbmeta_public_key(AvbOps *ops, const uint8_t *public
 		free(keybuf);
 	if (ret != AVB_IO_RESULT_OK)
 		printf("AVB2 key in bootloader does not match with the key in vbmeta\n");
+	return ret;
+}
+
+static AvbIOResult validate_public_key_for_partition(AvbOps *ops,
+	const char *partition,
+	const uint8_t *public_key_data,
+	size_t public_key_length,
+	const uint8_t *public_key_metadata,
+	size_t public_key_metadata_length,
+	bool *out_is_trusted,
+	uint32_t *out_rollback_index_location
+)
+{
+	AvbIOResult ret = AVB_IO_RESULT_ERROR_IO;
+
+	if (!ops || !partition || !public_key_data || !out_is_trusted ||
+			!out_rollback_index_location)
+		return AVB_IO_RESULT_ERROR_INSUFFICIENT_SPACE;
+
+	*out_is_trusted = false;
+
+	if (!strcmp(partition, "recovery") ||
+			!strcmp(partition, "recovery-memory")) {
+		printf("checking for recovery partition\n");
+		ret = validate_vbmeta_public_key(ops, public_key_data,
+				public_key_length, public_key_metadata,
+				public_key_metadata_length,
+				out_is_trusted);
+		*out_rollback_index_location = RECOVERY_ARB_LOCATION;
+	} else {
+		*out_rollback_index_location = 0;
+		return AVB_IO_RESULT_ERROR_NO_SUCH_PARTITION;
+	}
+
 	return ret;
 }
 
@@ -929,6 +980,7 @@ static int avb_init(void)
 	avb_ops_.read_is_device_unlocked = read_is_device_unlocked;
 	avb_ops_.get_unique_guid_for_partition = get_unique_guid_for_partition;
 	avb_ops_.get_size_of_partition = get_size_of_partition;
+	avb_ops_.validate_public_key_for_partition = validate_public_key_for_partition;
 
 	if (type == BOOT_NAND_MTD || type == BOOT_SNAND || factory_part_num < 0) {
 		avb_ops_.read_persistent_value = NULL;
@@ -953,6 +1005,11 @@ int is_device_unlocked(void)
 		return 0;
 }
 
+/* CONFIG_AVB2_RECOVERY is for chaining recovery partition into vbmeta.
+ * This is mainly useful if AVB2 signing is controlled and signed by 3rd party.
+ * For non-AB devices, this should not be set because when update fails, vbmeta
+ * might be in a invalid state and bricks the device.
+ */
 int avb_verify(AvbSlotVerifyData** out_data)
 {
 #ifdef CONFIG_AVB2_RECOVERY
@@ -1017,6 +1074,17 @@ int avb_verify(AvbSlotVerifyData** out_data)
 
 	if (is_device_unlocked())
 		flags |= AVB_SLOT_VERIFY_FLAGS_ALLOW_VERIFICATION_ERROR;
+
+#ifndef CONFIG_AVB2_RECOVERY
+	if (!strcmp(ab_suffix, "")) {
+		printf("recovery: %d\n", run_in_recovery);
+		if (run_in_recovery) {
+			flags |= AVB_SLOT_VERIFY_FLAGS_NO_VBMETA_PARTITION;
+			memset(requested_partitions, 0, sizeof(requested_partitions));
+			requested_partitions[0] = "recovery";
+		}
+	}
+#endif
 
 	if (type == BOOT_NAND_MTD || type == BOOT_SNAND || factory_part_num < 0)
 		hashtree_error_mode =
@@ -1117,6 +1185,71 @@ static int do_avb_persist(cmd_tbl_t *cmdtp, int flag, int argc, char * const arg
 	return result;
 }
 
+static int do_avb_verify_memory(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	AvbSlotVerifyResult result = AVB_SLOT_VERIFY_RESULT_OK;
+	AvbSlotVerifyData *out_data = NULL;
+	const char *requested_partitions[2] = {NULL, NULL};
+	char *avb_s = NULL;
+
+	if (argc != 3)
+		return 0;
+
+	if (is_device_unlocked())
+		return CMD_RET_SUCCESS;
+
+	run_command("get_avb_mode;", 0);
+	avb_s = env_get("avb2");
+	if (!avb_s || !strcmp(avb_s, "0"))
+		return CMD_RET_SUCCESS;
+
+	if (!strcmp(argv[1], "recovery"))
+		requested_partitions[0] = "recovery-memory";
+	else
+		return CMD_RET_FAILURE;
+
+	memory_addr = (void *)simple_strtoul(argv[2], NULL, 16);
+
+	AvbSlotVerifyFlags flags = AVB_SLOT_VERIFY_FLAGS_NO_VBMETA_PARTITION;
+
+	avb_init();
+	result = avb_slot_verify(&avb_ops_, requested_partitions, "",
+			flags,
+			AVB_HASHTREE_ERROR_MODE_RESTART_AND_INVALIDATE, &out_data);
+
+	avb_slot_verify_data_free(out_data);
+
+	if (result == AVB_SLOT_VERIFY_RESULT_OK)
+		return CMD_RET_SUCCESS;
+	else
+		return CMD_RET_FAILURE;
+}
+
+static int do_avb_recovery(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	char *avb_s = NULL;
+
+	run_in_recovery = 0;
+
+	if (argc != 2)
+		return CMD_RET_FAILURE;
+
+	if (is_device_unlocked())
+		return CMD_RET_SUCCESS;
+
+	run_command("get_avb_mode;", 0);
+	avb_s = env_get("avb2");
+	if (!avb_s || !strcmp(avb_s, "0"))
+		return CMD_RET_SUCCESS;
+
+	if (!strcmp(argv[1], "1"))
+		run_in_recovery = 1;
+	else
+		run_in_recovery = 0;
+
+	return CMD_RET_SUCCESS;
+}
+
 uint32_t avb_get_boot_patchlevel_from_vbmeta(AvbSlotVerifyData *data)
 {
 		int i, j;
@@ -1182,12 +1315,14 @@ static cmd_tbl_t cmd_avb_sub[] = {
 	U_BOOT_CMD_MKENT(verify, 0, 0, do_avb_verify, "", ""),
 	U_BOOT_CMD_MKENT(persist, 2, 0, do_avb_persist, "avb persist test/wipe/dump",
 			"avb persist test/wipe/dump"),
+	U_BOOT_CMD_MKENT(memory, 4, 0, do_avb_verify_memory, "", ""),
+	U_BOOT_CMD_MKENT(recovery, 2, 0, do_avb_recovery, "", ""),
 };
 
 static int do_avb_ops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	cmd_tbl_t *c;
-	int ret = 0;
+	int ret = CMD_RET_SUCCESS;
 
 	/* Strip off leading 'avb' command argument */
 	argc--;
@@ -1199,7 +1334,7 @@ static int do_avb_ops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		ret = c->cmd(cmdtp, flag, argc, argv);
 	} else {
 		cmd_usage(cmdtp);
-		ret = 1;
+		ret = CMD_RET_FAILURE;
 	}
 
 	return ret;
@@ -1207,7 +1342,7 @@ static int do_avb_ops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 
 U_BOOT_CMD(
-		avb, 3, 0, do_avb_ops,
+		avb, 4, 0, do_avb_ops,
 		"avb",
 		"\nThis command will trigger related avb operations\n"
 		);

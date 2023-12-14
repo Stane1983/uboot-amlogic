@@ -144,12 +144,18 @@
 	"recovery_from_fat_dev_base="\
 		"setenv loadaddr ${loadaddr_kernel};"\
 		"if fatload ${fatload_dev} 0 ${loadaddr} aml_autoscript; then "\
-			"autoscr ${loadaddr}; fi;"\
+			"if avb memory recovery ${loadaddr}; then " \
+				"avb recovery 1;" \
+				"autoscr ${loadaddr}; fi;"\
+		"fi;" \
 		"if fatload ${fatload_dev} 0 ${loadaddr} recovery.img; then "\
-			"if fatload ${fatload_dev} 0 ${dtb_mem_addr} dtb.img; then "\
-				"echo ${fatload_dev} dtb.img loaded; fi;"\
-			"setenv bootargs ${bootargs} ${fs_type};"\
-		"bootm ${loadaddr};fi;"\
+			"if avb memory recovery ${loadaddr}; then " \
+				"avb recovery 1;" \
+				"if fatload ${fatload_dev} 0 ${dtb_mem_addr} dtb.img; then "\
+					"echo ${fatload_dev} dtb.img loaded; fi;"\
+				"setenv bootargs ${bootargs} ${fs_type};"\
+				"bootm ${loadaddr};fi;"\
+		"fi;" \
 		"\0"\
 	"recovery_from_udisk_base="\
 		"setenv fatload_dev usb;"\
@@ -166,6 +172,7 @@
 		"if test ${active_slot} = normal; then "\
 			"setenv bootargs ${bootargs} ${fs_type} aml_dt=${aml_dt} "\
 			"recovery_part=${recovery_part} recovery_offset=${recovery_offset};"\
+			"avb recovery 1;" \
 			"if test ${upgrade_step} = 3; then "\
 				"if ext4load mmc 1:2 ${dtb_mem_addr} /recovery/dtb.img; then "\
 					"echo cache dtb.img loaded; fi;"\

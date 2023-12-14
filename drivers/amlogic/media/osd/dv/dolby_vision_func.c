@@ -189,11 +189,10 @@ int check_dovi_sha256(unsigned char* dovi_body, int size) {
 
 #ifdef CONFIG_CMD_BOOTCTOL_AVB
 	/*step 1: check if avb enabled, if not enable, no check dv sha256 */
-	char *avb_s = env_get("avb2");
-	if (avb_s == NULL) {
-		run_command("get_avb_mode;", 0);
-		avb_s = env_get("avb2");
-	}
+	char *avb_s = NULL;
+
+	run_command("get_avb_mode;", 0);
+	avb_s = env_get("avb2");
 	printf("check_dovi_sha256, avb2: %s\n", avb_s);
 	if (avb_s == NULL || (avb_s && (strcmp(avb_s, "1") != 0))) {
 		return -1;
