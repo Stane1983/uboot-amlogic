@@ -11,6 +11,8 @@
 #include <amlogic/auge_sound.h>
 #include <linux/arm-smccc.h>
 #include "hdmitx_drv.h"
+#include <amlogic/aml_efuse.h>
+#include <asm/arch/efuse.h>
 
 #ifdef CONFIG_AML_VOUT
 #include <amlogic/media/vout/aml_vout.h>
@@ -23,6 +25,9 @@ static void hdmitx_set_phy(struct hdmitx_dev *hdev);
 static void hdmitx_set_div40(bool div40);
 static void hdmitx21_dither_config(struct hdmitx_dev *hdev);
 static enum frl_rate_enum get_current_frl_rate(void);
+#ifdef CONFIG_EFUSE_OBJ_API
+static void get_hdmi_efuse(struct hdmitx_dev *hdev);
+#endif
 
 struct hdmitx_dev *get_hdmitx21_device(void)
 {
@@ -351,6 +356,9 @@ void hdmitx21_init(void)
 	hdmitx_load_dts_config(hdev);
 	hdmi_hwp_init();
 	amhdmitx_infoframe_init(hdev);
+#ifdef CONFIG_EFUSE_OBJ_API
+	get_hdmi_efuse(hdev);
+#endif
 	hdev->para = &para;
 	hdev->dfm_type = -1;
 }
@@ -2414,3 +2422,58 @@ void hdmitx21_chip_type_init(enum amhdmitx_chip_e type)
 
 	hdev->chip_type = type;
 }
+
+#ifdef CONFIG_EFUSE_OBJ_API
+static char *efuse_name_table[] = {"FEAT_DISABLE_HDMI_60HZ",
+				   "FEAT_DISABLE_OUTPUT_4K",
+				   "FEAT_DISABLE_HDCP_TX_22",
+				   "FEAT_DISABLE_HDMI_TX_3D",
+				    NULL};
+void get_hdmi_efuse(struct hdmitx_dev *hdev)
+{
+	efuse_obj_field_t efuse_field;
+	u8 buff[32];
+	u32 bufflen = sizeof(buff);
+	char *efuse_field_name;
+	u32 rc = 0;
+	int i = 0;
+
+	memset(&buff[0], 0, sizeof(buff));
+	memset(&efuse_field, 0, sizeof(efuse_field));
+
+	for (; efuse_name_table[i]; i++) {
+		efuse_field_name = efuse_name_table[i];
+		rc = efuse_obj_read(EFUSE_OBJ_EFUSE_DATA, efuse_field_name, buff, &bufflen);
+		if (rc == EFUSE_OBJ_SUCCESS) {
+			strncpy(efuse_field.name, efuse_field_name, sizeof(efuse_field.name) - 1);
+			memcpy(efuse_field.data, buff, bufflen);
+			efuse_field.size = bufflen;
+
+			if (*efuse_field.data == 1) {
+				switch (i) {
+				case 0:
+					hdev->efuse_dis_hdmi_4k60 = 1;
+					pr_info("get efuse FEAT_DISABLE_HDMI_60HZ = 1\n");
+					break;
+				case 1:
+					hdev->efuse_dis_output_4k = 1;
+					pr_info("get efuse FEAT_DISABLE_OUTPUT_4K = 1\n");
+					break;
+				case 2:
+					hdev->efuse_dis_hdcp_tx22 = 1;
+					pr_info("get efuse FEAT_DISABLE_HDCP_TX_22 = 1\n");
+					break;
+				case 3:
+					hdev->efuse_dis_hdmi_tx3d = 1;
+					pr_info("get efuse FEAT_DISABLE_HDMI_TX_3D = 1\n");
+					break;
+				default:
+					break;
+				}
+			}
+		} else {
+			pr_err("Error getting %s: %d\n", efuse_field_name, rc);
+		}
+	}
+}
+#endif

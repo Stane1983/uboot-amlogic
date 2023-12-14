@@ -1530,6 +1530,15 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 			return 0;
 		}
 	}
+	/* add efuse ctrl */
+	if (hdev->efuse_dis_output_4k)
+		if (para->timing.v_active >= 2160)
+			return false;
+	if (hdev->efuse_dis_hdmi_4k60)
+		if (para->timing.v_active >= 2160 &&
+			para->timing.v_freq >= 5000)
+			return false;
+
 	if (!is_support_4k() && para->sname && is_4k_fmt(para->sname))
 		return false;
 	/* exclude such as: 2160p60hz YCbCr444 10bit */

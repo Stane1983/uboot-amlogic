@@ -63,6 +63,14 @@ struct hdmitx_dev {
 	unsigned char pxp_mode; /* for running at pxp only */
 	enum amhdmitx_chip_e chip_type;
 	bool hpd_state;
+	/* efuse ctrl state
+	 * 1 disable the function
+	 * 0 dont disable the function
+	 */
+	bool efuse_dis_hdmi_4k60;	/* 4k50,60hz */
+	bool efuse_dis_output_4k;	/* all 4k resolution */
+	bool efuse_dis_hdcp_tx22;	/* hdcptx22 */
+	bool efuse_dis_hdmi_tx3d;	/* 3d */
 };
 
 struct hdmitx_dev *get_hdmitx21_device(void);

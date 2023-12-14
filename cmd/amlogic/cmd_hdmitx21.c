@@ -1298,6 +1298,20 @@ static int do_manual_dfm_type(cmd_tbl_t *cmdtp, int flag, int argc, char *const 
 	return 0;
 }
 
+#ifdef CONFIG_EFUSE_OBJ_API
+static int do_efuse_show(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+{
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
+
+	pr_info("FEAT_DISABLE_HDMI_60HZ = %d\n", hdev->efuse_dis_hdmi_4k60);
+	pr_info("FEAT_DISABLE_OUTPUT_4K = %d\n", hdev->efuse_dis_output_4k);
+	pr_info("FEAT_DISABLE_HDCP_TX_22 = %d\n", hdev->efuse_dis_hdcp_tx22);
+	pr_info("FEAT_DISABLE_HDMI_TX_3D = %d\n", hdev->efuse_dis_hdmi_tx3d);
+
+	return 0;
+}
+#endif
+
 static cmd_tbl_t cmd_hdmi_sub[] = {
 	U_BOOT_CMD_MKENT(hpd, 1, 1, do_hpd_detect, "", ""),
 	U_BOOT_CMD_MKENT(edid, 3, 1, do_edid, "", ""),
@@ -1313,6 +1327,9 @@ static cmd_tbl_t cmd_hdmi_sub[] = {
 	U_BOOT_CMD_MKENT(dsc_policy, 1, 1, do_dsc_policy, "", ""),
 	U_BOOT_CMD_MKENT(frl_rate, 1, 1, do_manual_frl_rate, "", ""),
 	U_BOOT_CMD_MKENT(dfm_type, 1, 1, do_manual_dfm_type, "", ""),
+#ifdef CONFIG_EFUSE_OBJ_API
+	U_BOOT_CMD_MKENT(efuse, 1, 1, do_efuse_show, "", ""),
+#endif
 };
 
 static int do_hdmitx(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
