@@ -1124,6 +1124,7 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 	struct aml_nand_platform *plat = aml_chip->platform;
 	struct aml_nand_flash_dev *type = NULL;
 	int i, maf_idx;
+	u8 id_len;
 	u8 dev_id[MAX_ID_LEN]= {0};
 
 
@@ -1141,8 +1142,10 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 
 	/* Lookup the flash id */
 	for (i = 0; aml_nand_flash_ids[i].name != NULL; i++) {
-		if (!strncmp((char*) aml_nand_flash_ids[i].id,
-		   (char*)dev_id, strlen((char*) aml_nand_flash_ids[i].id))) {
+		for (id_len = MAX_ID_LEN - 1; id_len &&
+			aml_nand_flash_ids[i].id[id_len] == 0; id_len--)
+			;
+		if (!memcmp(dev_id, aml_nand_flash_ids[i].id, id_len + 1)) {
 			type = &aml_nand_flash_ids[i];
 			break;
 		}
