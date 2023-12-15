@@ -46,6 +46,15 @@ config BACKUP_PART_NORMAL_ERASE
         backup before erasing, and restore it after erasing
         There is probablity data lost if erasing failed or write failed
 
+config NAND_BL2_VALID_NUM
+	prompt "nand bl2/bl2e/bl2x/ddrfip valid num"
+	int
+	default -1
+
+config NAND_TPL_VALID_NUM
+	prompt "nand TPL/devfip valid num"
+	int
+	default -1
 
 
 endif #AML_V3_FACTORY_BURN
