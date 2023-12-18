@@ -268,22 +268,7 @@ void amlnand_clear_pinmux(struct amlnand_chip *aml_chip)
 	return;
 }
 
-#if 0
-void secure_storage_set_info(uint32_t info)
-{
-        register uint64_t x0 asm("x0")= SET_STORAGE_INFO;
-        register uint64_t x1 asm("x1") = info;
-        asm volatile(
-                __asmeq("%0", "x0")
-                __asmeq("%1", "x1")
-                "smc    #0\n"
-                : :"r" (x0), "r"(x1));
-
-}
-#endif
-
 extern int get_flash_type(struct amlnand_chip *aml_chip);
-
 
 int amlnf_phy_init(u8 flag, struct platform_device *pdev)
 {

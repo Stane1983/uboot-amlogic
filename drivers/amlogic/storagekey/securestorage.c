@@ -11,6 +11,8 @@
 #if CONFIG_AML_FLUSH_CACHE
 #include <../keymanage/key_manage_i.h>
 #endif
+#include <linux/arm-smccc.h>
+
 static uint64_t storage_share_in_base;
 static uint64_t storage_share_out_base;
 static uint64_t storage_share_block_base;
@@ -19,35 +21,27 @@ static int32_t storage_init_status;
 
 static uint64_t bl31_storage_ops(uint64_t function_id)
 {
-	asm volatile(
-		__asmeq("%0", "x0")
-		"smc    #0\n"
-		: "+r" (function_id));
+	struct arm_smccc_res res;
 
-	return function_id;
+	arm_smccc_smc(function_id, 0, 0, 0, 0, 0, 0, 0, &res);
+
+	return res.a0;
 }
 uint64_t bl31_storage_ops2(uint64_t function_id, uint64_t arg1)
 {
-	asm volatile(
-		__asmeq("%0", "x0")
-		__asmeq("%1", "x1")
-		"smc    #0\n"
-		: "+r" (function_id)
-		: "r"(arg1));
+	struct arm_smccc_res res;
 
-	return function_id;
+	arm_smccc_smc(function_id, arg1, 0, 0, 0, 0, 0, 0, &res);
+
+	return res.a0;
 }
 uint64_t bl31_storage_ops3(uint64_t function_id, uint64_t arg1, uint32_t arg2)
 {
-	asm volatile(
-		__asmeq("%0", "x0")
-		__asmeq("%1", "x1")
-		__asmeq("%2", "x2")
-		"smc    #0\n"
-		: "+r" (function_id)
-		: "r"(arg1), "r"(arg2));
+	struct arm_smccc_res res;
 
-	return function_id;
+	arm_smccc_smc(function_id, arg1, arg2, 0, 0, 0, 0, 0, &res);
+
+	return res.a0;
 }
 
 static uint64_t bl31_storage_write(uint8_t *keyname, uint8_t *keybuf,
@@ -413,14 +407,9 @@ int32_t secure_storage_remove(uint8_t *keyname)
 
 void secure_storage_set_info(uint32_t info)
 {
-	register uint64_t x0 asm("x0")= SET_STORAGE_INFO;
-	register uint64_t x1 asm("x1") = info;
-	asm volatile(
-		__asmeq("%0", "x0")
-		__asmeq("%1", "x1")
-		"smc    #0\n"
-		: :"r" (x0), "r"(x1));
+	struct arm_smccc_res res;
 
+	arm_smccc_smc(SET_STORAGE_INFO, info, 0, 0, 0, 0, 0, 0, &res);
 }
 
 int32_t secure_storage_set_enctype(uint32_t type)

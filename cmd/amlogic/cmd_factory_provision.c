@@ -36,8 +36,6 @@
 #define LOGE(fmt, ...)    printf("%sERROR: "fmt, CMD_LOG_TAG, ##__VA_ARGS__)
 #define LOGI(fmt, ...)    printf("%s"fmt, CMD_LOG_TAG, ##__VA_ARGS__)
 
-#define __asmeq(x, y) ".ifnc " x "," y " ; .err ; .endif\n\t"
-
 #ifndef getenv
 #define getenv env_get
 #endif
