@@ -31,6 +31,7 @@ struct lcd_clk_ctrl_s {
 	unsigned int len;
 };
 
+// reference to: https://confluence.amlogic.com/display/SW/LCD+CLK+porting+note
 struct lcd_clk_data_s {
 	/* clk path node parameters */
 	unsigned int pll_od_fb;
@@ -55,6 +56,10 @@ struct lcd_clk_data_s {
 	unsigned int have_pll_div;
 	//0:pll_clk_phase, 1:pll_clk2, 2:vid_pll_clk
 	unsigned int phy_clk_location;
+
+	unsigned int div_sel_max;
+	unsigned short xd_max;
+	unsigned short phy_div_max;
 
 	unsigned int ss_support;
 	unsigned int ss_level_max;
@@ -121,8 +126,7 @@ struct lcd_clk_config_s { /* unit: Hz */
 	unsigned int div_sel;
 	unsigned int xd;
 	unsigned int phy_div;
-	unsigned int div_sel_max;
-	unsigned int xd_max;
+
 	unsigned int err_fmin;
 	unsigned int done;
 

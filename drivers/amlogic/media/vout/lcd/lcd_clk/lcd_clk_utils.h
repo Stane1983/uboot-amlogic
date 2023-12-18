@@ -25,10 +25,6 @@ int lcd_pll_wait_lock(unsigned int reg, unsigned int lock_bit);
 #define PLL_FVCO_ERR_MAX    2000 /* Hz */
 unsigned long long clk_vid_pll_div_calc(unsigned long long clk, unsigned int div_sel, int dir);
 int lcd_pll_get_frac(struct lcd_clk_config_s *cconf, unsigned long long pll_fvco);
-int check_pll_3od(struct lcd_clk_config_s *cconf, unsigned long long pll_fout);
-int check_pll_1od(struct lcd_clk_config_s *cconf, unsigned long long pll_fout);
-int check_vco(struct lcd_clk_config_s *cconf, unsigned long long pll_fvco);
-int check_3od(struct lcd_clk_config_s *cconf, unsigned long long pll_fout);
 
 /* ****************************************************
  * lcd clk chip default func

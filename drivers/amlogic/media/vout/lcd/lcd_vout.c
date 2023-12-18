@@ -1326,6 +1326,46 @@ int aml_lcd_edp_debug(int index, char *str, int num)
 	return -1;
 }
 
+void aml_lcd_mipi_dsi_mode(int index, u8 mode)
+{
+#ifdef CONFIG_AML_LCD_TABLET
+	struct aml_lcd_drv_s *pdrv;
+
+	pdrv = lcd_driver_check_valid(index);
+	if (!pdrv)
+		return;
+
+	lcd_dsi_set_operation_mode(pdrv, mode);
+#endif
+}
+
+void aml_lcd_mipi_dsi_cmd(int index, u8 *payload)
+{
+#ifdef CONFIG_AML_LCD_TABLET
+	struct aml_lcd_drv_s *pdrv;
+
+	pdrv = lcd_driver_check_valid(index);
+	if (!pdrv)
+		return;
+
+	lcd_dsi_write_cmd(pdrv, payload);
+#endif
+}
+
+int aml_lcd_mipi_dsi_read(int index, u8 *payload, u8 *rd_data, u8 rd_byte_len)
+{
+#ifdef CONFIG_AML_LCD_TABLET
+	struct aml_lcd_drv_s *pdrv;
+
+	pdrv = lcd_driver_check_valid(index);
+	if (!pdrv)
+		return -1;
+
+	return lcd_dsi_read(pdrv, payload, rd_data, rd_byte_len);
+#endif
+	return -1;
+}
+
 void aml_lcd_driver_ext_info(int index)
 {
 	struct aml_lcd_drv_s *pdrv;

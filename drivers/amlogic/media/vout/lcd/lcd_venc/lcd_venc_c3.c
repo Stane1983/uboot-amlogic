@@ -244,6 +244,7 @@ int lcd_venc_op_init_c3(struct lcd_venc_op_s *venc_op)
 	venc_op->venc_set = lcd_venc_set;
 	venc_op->venc_enable = lcd_venc_enable_ctrl;
 	venc_op->mute_set = lcd_venc_mute_set;
+	venc_op->get_encl_line_cnt = NULL;
 
 	return 0;
 };

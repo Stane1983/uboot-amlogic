@@ -9,11 +9,11 @@
 #include "../../lcd_reg.h"
 #include "../../lcd_common.h"
 
-#define DPTX_AUX_REQ_TIMEOUT     1000
-#define DPTX_AUX_REQ_INTERVAL    10
-#define EDP_AUX_RETRY_CNT        3
-#define EDP_AUX_TIMEOUT          30
-#define EDP_AUX_INTERVAL         100
+//Source: Table 2-58: uPacket TX AUX CH State and Event Descriptions
+#define DPTX_AUX_REPLY_WAIT_TIMEOUT 5   //times
+#define DPTX_AUX_REPLY_WAIT_TIMER   400 //us
+#define DPTX_AUX_NO_REPLY_TIMEOUT   1   //ms
+#define DPTX_AUX_NO_REPLY_RETRY     5   //times
 //AUX operation
 
 #define DPTX_AUX_CMD_WRITE            0x8
@@ -41,11 +41,11 @@ static void dptx_aux_request(struct aml_lcd_drv_s *pdrv, struct dptx_aux_req_s *
 	int i = 0;
 
 	timeout = 0;
-	while (timeout++ < DPTX_AUX_REQ_TIMEOUT) {
+	while (timeout++ < DPTX_AUX_NO_REPLY_RETRY) {
 		state = dptx_reg_getb(pdrv->index, EDP_TX_AUX_STATE, 1, 1);
 		if (state == 0)
 			break;
-		udelay(DPTX_AUX_REQ_TIMEOUT);
+		mdelay(DPTX_AUX_NO_REPLY_TIMEOUT);
 	};
 
 	dptx_reg_write(pdrv->index, EDP_TX_AUX_ADDRESS, req->address);
@@ -82,8 +82,8 @@ dptx_aux_submit_cmd_retry:
 	dptx_aux_request(pdrv, req);
 
 	timeout = 0;
-	while (timeout++ < EDP_AUX_TIMEOUT) {
-		udelay(EDP_AUX_INTERVAL);
+	while (timeout++ < DPTX_AUX_REPLY_WAIT_TIMEOUT) {
+		udelay(DPTX_AUX_REPLY_WAIT_TIMER);
 		status = dptx_reg_read(pdrv->index, EDP_TX_AUX_TRANSFER_STATUS);
 		if (status & AUX_STATUS_REPLY_ERROR) {
 			LCDPR("[%d]: aux %s 0x%x reply status error!\n",
@@ -111,8 +111,8 @@ dptx_aux_submit_cmd_retry:
 		}
 	}
 
-	if (retry_cnt++ < EDP_AUX_RETRY_CNT) {
-		udelay(EDP_AUX_INTERVAL);
+	if (retry_cnt++ < DPTX_AUX_NO_REPLY_RETRY) {
+		mdelay(DPTX_AUX_NO_REPLY_TIMEOUT);
 		LCDPR("[%d]: aux %s addr 0x%x timeout, status 0x%x, reply 0x%x, retry %d\n",
 		      pdrv->index, str, req->address, status, reply, retry_cnt);
 		goto dptx_aux_submit_cmd_retry;

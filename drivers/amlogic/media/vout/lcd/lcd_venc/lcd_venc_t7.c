@@ -361,6 +361,19 @@ static void lcd_venc_mute_set(struct aml_lcd_drv_s *pdrv, unsigned char flag)
 	}
 }
 
+static unsigned int lcd_venc_get_encl_line_cnt(struct aml_lcd_drv_s *pdrv)
+{
+	unsigned int offset, cnt;
+
+	if (!pdrv)
+		return 0;
+
+	offset = pdrv->data->offset_venc[pdrv->index];
+
+	cnt = lcd_vcbus_getb(VPU_VENCP_STAT + offset, 16, 13);
+	return cnt;
+}
+
 int lcd_venc_op_init_t7(struct lcd_venc_op_s *venc_op)
 {
 	if (!venc_op)
@@ -373,6 +386,7 @@ int lcd_venc_op_init_t7(struct lcd_venc_op_s *venc_op)
 	venc_op->venc_set = lcd_venc_set;
 	venc_op->venc_enable = lcd_venc_enable_ctrl;
 	venc_op->mute_set = lcd_venc_mute_set;
+	venc_op->get_encl_line_cnt = lcd_venc_get_encl_line_cnt;
 
 	return 0;
 };

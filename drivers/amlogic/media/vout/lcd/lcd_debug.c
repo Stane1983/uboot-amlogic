@@ -8,9 +8,6 @@
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include "lcd_reg.h"
 #include "lcd_common.h"
-#ifdef CONFIG_AML_LCD_TABLET
-#include "lcd_tablet/mipi_dsi_util.h"
-#endif
 #include "lcd_debug.h"
 
 int lcd_debug_info_len(int num)
@@ -68,12 +65,12 @@ static void lcd_timing_info_print(struct aml_lcd_drv_s *pdrv)
 		pconf->timing.pre_de_v,
 		pconf->timing.hstart, pconf->timing.vstart);
 
-	printf("timing range:\n"
-		"h_period        %d ~ %d\n"
-		"v_period        %d ~ %d\n"
-		"frame_rate      %d ~ %d\n"
-		"pixel_clk       %d ~ %d\n"
-		"vrr_range       %d ~ %d\n\n",
+	printf("Timing range:\n"
+		"  h_period  : %4d ~ %4d\n"
+		"  v_period  : %4d ~ %4d\n"
+		"  frame_rate: %4d ~ %4d\n"
+		"  pixel_clk : %4d ~ %4d\n"
+		"  vrr_range : %4d ~ %4d\n\n",
 		pconf->timing.act_timing.h_period_min,
 		pconf->timing.act_timing.h_period_max,
 		pconf->timing.act_timing.v_period_min,
@@ -153,17 +150,17 @@ static void lcd_power_info_print(struct aml_lcd_drv_s *pdrv, int status)
 		case LCD_POWER_TYPE_PMU:
 		case LCD_POWER_TYPE_WAIT_GPIO:
 		case LCD_POWER_TYPE_CLK_SS:
-			printf("%d: type=%d, index=%d, value=%d, delay=%d\n",
+			printf("  %d: type=%d, index=%d, value=%d, delay=%d\n",
 				i, power_step->type, power_step->index,
 				power_step->value, power_step->delay);
 			break;
 		case LCD_POWER_TYPE_EXTERN:
-			printf("%d: type=%d, index=%d, delay=%d\n",
+			printf("  %d: type=%d, index=%d, delay=%d\n",
 				i, power_step->type, power_step->index,
 				power_step->delay);
 			break;
 		case LCD_POWER_TYPE_SIGNAL:
-			printf("%d: type=%d, delay=%d\n",
+			printf("  %d: type=%d, delay=%d\n",
 				i, power_step->type, power_step->delay);
 			break;
 		default:
@@ -294,7 +291,7 @@ static void lcd_info_print_bt(struct lcd_config_s *pconf)
 static void lcd_info_print_mipi(struct lcd_config_s *pconf)
 {
 #ifdef CONFIG_AML_LCD_TABLET
-	mipi_dsi_print_info(pconf);
+	lcd_dsi_info_print(pconf);
 #endif
 }
 
@@ -630,51 +627,36 @@ static void lcd_reg_print_tcon_t3(struct aml_lcd_drv_s *pdrv)
 static void lcd_reg_print_mipi(struct aml_lcd_drv_s *pdrv)
 {
 	unsigned int reg;
-	int index = pdrv->index;
 
 	printf("\nmipi_dsi registers:\n");
 	reg = MIPI_DSI_TOP_CNTL;
-	printf("MIPI_DSI_TOP_CNTL            [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_TOP_CNTL            [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_TOP_CLK_CNTL;
-	printf("MIPI_DSI_TOP_CLK_CNTL        [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_TOP_CLK_CNTL        [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_DWC_PWR_UP_OS;
-	printf("MIPI_DSI_DWC_PWR_UP_OS       [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_DWC_PWR_UP_OS       [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_DWC_PCKHDL_CFG_OS;
-	printf("MIPI_DSI_DWC_PCKHDL_CFG_OS   [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_DWC_PCKHDL_CFG_OS   [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_DWC_LPCLK_CTRL_OS;
-	printf("MIPI_DSI_DWC_LPCLK_CTRL_OS   [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_DWC_LPCLK_CTRL_OS   [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_DWC_CMD_MODE_CFG_OS;
-	printf("MIPI_DSI_DWC_CMD_MODE_CFG_OS [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_DWC_CMD_MODE_CFG_OS [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_DWC_VID_MODE_CFG_OS;
-	printf("MIPI_DSI_DWC_VID_MODE_CFG_OS [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_DWC_VID_MODE_CFG_OS [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_DWC_MODE_CFG_OS;
-	printf("MIPI_DSI_DWC_MODE_CFG_OS     [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_DWC_MODE_CFG_OS     [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_DWC_PHY_STATUS_OS;
-	printf("MIPI_DSI_DWC_PHY_STATUS_OS   [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_DWC_PHY_STATUS_OS   [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_DWC_INT_ST0_OS;
-	printf("MIPI_DSI_DWC_INT_ST0_OS      [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_DWC_INT_ST0_OS      [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_DWC_INT_ST1_OS;
-	printf("MIPI_DSI_DWC_INT_ST1_OS      [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_DWC_INT_ST1_OS      [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_TOP_STAT;
-	printf("MIPI_DSI_TOP_STAT            [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_TOP_STAT            [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_TOP_INTR_CNTL_STAT;
-	printf("MIPI_DSI_TOP_INTR_CNTL_STAT  [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_TOP_INTR_CNTL_STAT  [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_TOP_MEM_PD;
-	printf("MIPI_DSI_TOP_MEM_PD          [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_TOP_MEM_PD          [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 }
 
 static void lcd_reg_print_edp(struct aml_lcd_drv_s *pdrv)

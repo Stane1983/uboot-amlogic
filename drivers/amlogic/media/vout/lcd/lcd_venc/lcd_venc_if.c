@@ -35,6 +35,19 @@ void lcd_wait_vsync(struct aml_lcd_drv_s *pdrv)
 	lcd_venc_op.wait_vsync(pdrv);
 }
 
+unsigned int lcd_get_encl_line_cnt(struct aml_lcd_drv_s *pdrv)
+{
+	unsigned int lcnt;
+
+	if (!lcd_venc_op.get_encl_line_cnt)
+		return 0;
+	if (!pdrv)
+		return 0;
+
+	lcnt = lcd_venc_op.get_encl_line_cnt(pdrv);
+	return lcnt;
+}
+
 unsigned int lcd_get_max_line_cnt(struct aml_lcd_drv_s *pdrv)
 {
 	unsigned int lcnt;

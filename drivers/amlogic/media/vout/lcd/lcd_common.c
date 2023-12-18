@@ -259,26 +259,24 @@ static void lcd_config_load_print(struct aml_lcd_drv_s *pdrv)
 		LCDPR("phy_preem = 0x%x\n", pctrl->p2p_cfg.phy_preem);
 	} else if (pconf->basic.lcd_type == LCD_MIPI) {
 		if (pctrl->mipi_cfg.check_en) {
-			LCDPR("check_reg = 0x%02x\n",
-				pctrl->mipi_cfg.check_reg);
-			LCDPR("check_cnt = %d\n",
-				pctrl->mipi_cfg.check_cnt);
+			LCDPR("check_reg = 0x%02x\n", pctrl->mipi_cfg.check_reg);
+			LCDPR("check_cnt = %d\n", pctrl->mipi_cfg.check_cnt);
 		}
 		LCDPR("lane_num = %d\n", pctrl->mipi_cfg.lane_num);
 		LCDPR("bit_rate_max = %d\n", pctrl->mipi_cfg.bit_rate_max);
-		LCDPR("pclk_lanebyteclk_factor = %d\n", pctrl->mipi_cfg.factor_numerator);
+		// LCDPR("pclk_lanebyteclk_factor = %d\n", pctrl->mipi_cfg.factor_numerator);
 		LCDPR("operation_mode_init = %d\n", pctrl->mipi_cfg.operation_mode_init);
 		LCDPR("operation_mode_disp = %d\n", pctrl->mipi_cfg.operation_mode_display);
 		LCDPR("video_mode_type = %d\n", pctrl->mipi_cfg.video_mode_type);
 		LCDPR("clk_always_hs = %d\n", pctrl->mipi_cfg.clk_always_hs);
-		LCDPR("phy_switch = %d\n", pctrl->mipi_cfg.phy_switch);
+		// LCDPR("phy_switch = %d\n", pctrl->mipi_cfg.phy_switch);
 		LCDPR("extern_init = %d\n", pctrl->mipi_cfg.extern_init);
 	} else if (pconf->basic.lcd_type == LCD_EDP) {
 		LCDPR("max_lane_count = %d\n", pctrl->edp_cfg.max_lane_count);
 		LCDPR("max_link_rate  = %d\n", pctrl->edp_cfg.max_link_rate);
 		LCDPR("training_mode  = %d\n", pctrl->edp_cfg.training_mode);
 		LCDPR("edid_en        = %d\n", pctrl->edp_cfg.edid_en);
-		LCDPR("sync_clk_mode  = %d\n", pctrl->edp_cfg.sync_clk_mode);
+		// LCDPR("sync_clk_mode  = %d\n", pctrl->edp_cfg.sync_clk_mode);
 		LCDPR("lane_count     = %d\n", pctrl->edp_cfg.lane_count);
 		LCDPR("link_rate      = %d\n", pctrl->edp_cfg.link_rate);
 		LCDPR("phy_vswing = 0x%x\n", pctrl->edp_cfg.phy_vswing_preset);
@@ -1685,20 +1683,16 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 		}
 		pctrl->mipi_cfg.lane_num = be32_to_cpup((u32 *)propdata);
 		pctrl->mipi_cfg.bit_rate_max = be32_to_cpup((((u32 *)propdata) + 1));
-		pctrl->mipi_cfg.factor_numerator = be32_to_cpup((((u32 *)propdata) + 2));
-		pctrl->mipi_cfg.factor_denominator = 100;
 		pctrl->mipi_cfg.operation_mode_init = be32_to_cpup((((u32 *)propdata) + 3));
 		pctrl->mipi_cfg.operation_mode_display = be32_to_cpup((((u32 *)propdata) + 4));
 		pctrl->mipi_cfg.video_mode_type = be32_to_cpup((((u32 *)propdata) + 5));
 		pctrl->mipi_cfg.clk_always_hs = be32_to_cpup((((u32 *)propdata) + 6));
-		pctrl->mipi_cfg.phy_switch = be32_to_cpup((((u32 *)propdata) + 7));
 
 		pctrl->mipi_cfg.check_en = 0;
 		pctrl->mipi_cfg.check_reg = 0xff;
 		pctrl->mipi_cfg.check_cnt = 0;
 #ifdef CONFIG_AML_LCD_TABLET
-		lcd_mipi_dsi_init_table_detect(dt_addr, child_offset, &pctrl->mipi_cfg, 1);
-		lcd_mipi_dsi_init_table_detect(dt_addr, child_offset, &pctrl->mipi_cfg, 0);
+		lcd_dsi_init_table_load_dts(dt_addr, child_offset, &pctrl->mipi_cfg);
 #endif
 
 		propdata = (char *)fdt_getprop(dt_addr, child_offset, "extern_init", NULL);
@@ -1712,9 +1706,7 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 			lcd_extern_drv_index_add(pdrv->index, pctrl->mipi_cfg.extern_init);
 #endif
 		}
-#ifdef CONFIG_AML_LCD_TABLET
-		mipi_dsi_config_init(pconf);
-#endif
+
 		break;
 	case LCD_EDP:
 		propdata = (char *)fdt_getprop(dt_addr, child_offset, "edp_attr", NULL);
@@ -2462,13 +2454,10 @@ static int lcd_config_load_from_bsp(struct aml_lcd_drv_s *pdrv)
 	case LCD_MIPI:
 		pctrl->mipi_cfg.lane_num = ext_lcd->lcd_spc_val0;
 		pctrl->mipi_cfg.bit_rate_max   = ext_lcd->lcd_spc_val1;
-		pctrl->mipi_cfg.factor_numerator = ext_lcd->lcd_spc_val2;
 		pctrl->mipi_cfg.operation_mode_init = ext_lcd->lcd_spc_val3;
 		pctrl->mipi_cfg.operation_mode_display = ext_lcd->lcd_spc_val4;
 		pctrl->mipi_cfg.video_mode_type = ext_lcd->lcd_spc_val5;
 		pctrl->mipi_cfg.clk_always_hs = ext_lcd->lcd_spc_val6;
-		pctrl->mipi_cfg.phy_switch = ext_lcd->lcd_spc_val7;
-		pctrl->mipi_cfg.factor_denominator = 100;
 
 		pctrl->mipi_cfg.check_en = 0;
 		pctrl->mipi_cfg.check_reg = 0xff;
@@ -2476,8 +2465,7 @@ static int lcd_config_load_from_bsp(struct aml_lcd_drv_s *pdrv)
 #ifdef CONFIG_AML_LCD_TABLET
 		pctrl->mipi_cfg.dsi_init_on = ext_lcd->init_on;
 		pctrl->mipi_cfg.dsi_init_off = ext_lcd->init_off;
-		lcd_mipi_dsi_init_table_check_bsp(&pctrl->mipi_cfg, 1);
-		lcd_mipi_dsi_init_table_check_bsp(&pctrl->mipi_cfg, 0);
+		lcd_dsi_init_table_load_bsp(&pctrl->mipi_cfg);
 #endif
 
 		if (ext_lcd->lcd_spc_val9 == Rsv_val)
@@ -2490,9 +2478,6 @@ static int lcd_config_load_from_bsp(struct aml_lcd_drv_s *pdrv)
 		}
 #ifdef CONFIG_AML_LCD_EXTERN
 		lcd_extern_drv_index_add(pdrv->index, pctrl->mipi_cfg.extern_init);
-#endif
-#ifdef CONFIG_AML_LCD_TABLET
-		mipi_dsi_config_init(pconf);
 #endif
 		break;
 	case LCD_EDP:
@@ -2756,52 +2741,7 @@ void lcd_p2p_bit_rate_config(struct aml_lcd_drv_s *pdrv)
 
 void lcd_mipi_dsi_bit_rate_config(struct aml_lcd_drv_s *pdrv)
 {
-	struct lcd_config_s *pconf = &pdrv->config;
-	struct dsi_config_s *dconf = &pconf->control.mipi_cfg;
-	unsigned long long bit_rate, bit_rate_max, band_width;
-
-	dconf = &pconf->control.mipi_cfg;
-
-	/* unit in kHz for calculation */
-	band_width = pconf->timing.act_timing.pixel_clk;
-	if (dconf->operation_mode_display == OPERATION_VIDEO_MODE &&
-	    dconf->video_mode_type != BURST_MODE) {
-		band_width = band_width * 4 * dconf->data_bits;
-	} else {
-		band_width = band_width * 3 * dconf->data_bits;
-	}
-	bit_rate = lcd_do_div(band_width, dconf->lane_num);
-	dconf->local_bit_rate_min = bit_rate;
-
-	/* bit rate max */
-	if (dconf->bit_rate_max == 0) { /* auto calculate */
-		bit_rate_max = bit_rate + (pconf->timing.enc_clk / 2);
-		if (bit_rate_max > MIPI_BIT_RATE_MAX) {
-			LCDERR("[%d]: %s: invalid bit_rate_max %lldHz (max=%lldHz)\n",
-				pdrv->index, __func__, bit_rate_max, MIPI_BIT_RATE_MAX);
-			bit_rate_max = MIPI_BIT_RATE_MAX;
-		}
-	} else { /* user define */
-		bit_rate_max = dconf->bit_rate_max;
-		bit_rate_max *= 1000000;
-		if (bit_rate_max > MIPI_BIT_RATE_MAX) {
-			LCDPR("[%d]: %s: invalid bit_rate_max %lldHz (max=%lldHz)\n",
-			      pdrv->index, __func__, bit_rate_max, MIPI_BIT_RATE_MAX);
-		}
-		if (dconf->local_bit_rate_min > bit_rate_max) {
-			LCDPR("[%d]: %s: bit_rate_max %lld can't reach bw requirement %lld\n",
-				pdrv->index, __func__, bit_rate_max,
-				dconf->local_bit_rate_min);
-			//force bit_rate_max for special case
-			dconf->local_bit_rate_min = bit_rate_max - pconf->timing.enc_clk;
-		}
-	}
-	dconf->local_bit_rate_max = bit_rate_max;
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-		LCDPR("[%d]: %s: local_bit_rate_max=%lluHz, local_bit_rate_min=%lluHz\n",
-		      pdrv->index, __func__,
-		      dconf->local_bit_rate_max, dconf->local_bit_rate_min);
-	}
+	// none
 }
 
 void lcd_edp_bit_rate_config(struct aml_lcd_drv_s *pdrv)

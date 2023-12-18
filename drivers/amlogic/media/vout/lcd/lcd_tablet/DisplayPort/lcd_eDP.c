@@ -19,7 +19,7 @@
 
 void edp_tx_init(struct aml_lcd_drv_s *pdrv)
 {
-	uint8_t auxdata;
+	unsigned char auxdata;
 	uint16_t i = 0;
 	uint32_t offset;
 	int ret;

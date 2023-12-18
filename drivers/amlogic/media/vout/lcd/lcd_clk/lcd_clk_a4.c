@@ -26,7 +26,6 @@ static void lcd_set_fclk_div(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_clk_config_s *cconf;
 	unsigned int f_target;
-	unsigned int max_div = 256;
 	unsigned int i = 0, div = 0, min_err_sel_idx = 0, min_err_div = 1;
 	unsigned int min_err = 100000000, error;
 
@@ -44,8 +43,9 @@ static void lcd_set_fclk_div(struct aml_lcd_drv_s *pdrv)
 	}
 
 	while (fclk_div_table[i][0] != LCD_CLK_CTRL_END)	{
-		for (div = 1; div <= max_div; div++) {
-			error = lcd_abs((fclk_div_table[i][1]) / div, f_target);
+		for (div = 1; div <= cconf->data->xd_max; div++) {
+			error = div_around(fclk_div_table[i][1], div);
+			error = lcd_diff(error, f_target);
 			if (error < min_err) {
 				min_err_sel_idx = i;
 				min_err_div = div;
@@ -60,7 +60,7 @@ static void lcd_set_fclk_div(struct aml_lcd_drv_s *pdrv)
 
 	cconf->xd = min_err_div;
 	cconf->data->vclk_sel = fclk_div_table[min_err_sel_idx][0];
-	cconf->fout = fclk_div_table[min_err_sel_idx][1] / min_err_div;
+	cconf->fout = div_around(fclk_div_table[min_err_sel_idx][1], min_err_div);
 
 	LCDPR("[%d]: f_tar:%d, f_out:%d, fclk:%dHz, div:%d, error:%d\n", pdrv->index,
 		f_target, cconf->fout, fclk_div_table[min_err_sel_idx][1], min_err_div, min_err);
@@ -72,13 +72,13 @@ static void lcd_clk_set_a4(struct aml_lcd_drv_s *pdrv)
 	lcd_set_fclk_div(pdrv);
 }
 
-static void lcd_set_vclk_crt_a4(struct aml_lcd_drv_s *pdrv)  /* from c3 */
+static void lcd_set_vclk_crt_a4(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_clk_config_s *cconf;
 	unsigned int clk_phase;
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_ADV2)
-		LCDPR("lcd clk: set_vclk_crt_c3\n");
+		LCDPR("[%d]: %s\n", pdrv->index, __func__);
 	cconf = get_lcd_clk_config(pdrv);
 	if (!cconf)
 		return;
@@ -135,6 +135,10 @@ static struct lcd_clk_data_s lcd_clk_data_a4 = {
 	.have_tcon_div = 0,
 	.have_pll_div = 0,
 	.phy_clk_location = 1,
+
+	.div_sel_max = 0,
+	.xd_max = 255,
+	.phy_div_max = 1,
 
 	.vclk_sel = 0xff, //unassigned
 	.enc_clk_msr_id = -1,

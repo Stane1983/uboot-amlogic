@@ -503,6 +503,10 @@ static struct lcd_clk_data_s lcd_clk_data_t5w = {
 	.vclk_sel = 0,
 	.enc_clk_msr_id = 6,
 
+	.div_sel_max = CLK_DIV_SEL_MAX,
+	.xd_max = 256,
+	.phy_div_max = 256,
+
 	.ss_support = 1,
 	.ss_level_max = 60,
 	.ss_freq_max = 6,

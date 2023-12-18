@@ -11,7 +11,6 @@
 #include "../lcd_reg.h"
 #include "../lcd_common.h"
 #include "lcd_tablet.h"
-#include "mipi_dsi_util.h"
 
 #define CONNECTOR_NUM_MAX 10
 #define OUTPUTMODE_NUM_MAX 3
@@ -67,7 +66,7 @@ static void lcd_config_init(struct aml_lcd_drv_s *pdrv)
 	lcd_clk_generate_parameter(pdrv);
 }
 
-static int lcd_reserve_match_opt_mode_idx(struct aml_lcd_drv_s *pdrv)
+static int lcd_reverse_match_opt_mode_idx(struct aml_lcd_drv_s *pdrv)
 {
 	char panel_str[10];
 	char out_mode_str[12];
@@ -101,7 +100,7 @@ static void lcd_set_connector(struct aml_lcd_drv_s *pdrv, char *opt_mode)
 	int name_idx = 0, cnt_idx  = 0;
 	unsigned int cnt_used = 0;
 
-	cnt_idx = lcd_reserve_match_opt_mode_idx(pdrv);
+	cnt_idx = lcd_reverse_match_opt_mode_idx(pdrv);
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("%s: panel[%d] match outputmode[%d]\n", __func__, pdrv->index, cnt_idx);
 

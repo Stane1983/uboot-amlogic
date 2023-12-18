@@ -56,13 +56,6 @@
 #define LCD_PLL_LOCK_T7              31
 
 /* **********************************
- * C3
- * **********************************
- */
-#define CRT_VID_DIV_MAX_C3           128
-#define PHY_CLK_DIV_MAX_C3           128
-
-/* **********************************
  * Spread Spectrum
  * **********************************
  */
@@ -80,8 +73,6 @@
 
 /* ******** register bit ******** */
 /* divider */
-#define CRT_VID_DIV_MAX             255
-
 #define DIV_PRE_SEL_MAX             6
 #define EDP_DIV0_SEL_MAX            15
 #define EDP_DIV1_SEL_MAX            8
@@ -109,6 +100,6 @@ enum div_sel_e {
 	CLK_DIV_SEL_MAX,
 };
 
-extern unsigned int lcd_clk_div_table[][3];
+extern unsigned int lcd_clk_div_table[][5];
 
 #endif

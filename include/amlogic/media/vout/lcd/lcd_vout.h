@@ -259,34 +259,58 @@ struct vbyone_config_s {
 #define SYNC_EVENT               0x1
 #define BURST_MODE               0x2
 
-/* unit: Hz */
-#define MIPI_BIT_RATE_MAX        1500000000ULL
-
 /* command config */
 #define DSI_CMD_SIZE_INDEX       1  /* byte[1] */
 #define DSI_GPIO_INDEX           2  /* byte[2] */
 
-#define DSI_INIT_ON_MAX          2600
+#define DSI_INIT_ON_MAX          2800
 #define DSI_INIT_OFF_MAX         30
+struct dsi_dphy_s {
+	unsigned int lp_tesc;
+	unsigned int lp_lpx;
+	unsigned int lp_ta_sure;
+	unsigned int lp_ta_go;
+	unsigned int lp_ta_get;
+	unsigned int hs_exit;
+	unsigned int hs_trail;
+	unsigned int hs_zero;
+	unsigned int hs_prepare;
+	unsigned int clk_trail;
+	unsigned int clk_post;
+	unsigned int clk_zero;
+	unsigned int clk_prepare;
+	unsigned int clk_pre;
+	unsigned int init;
+	unsigned int wakeup;
+};
 
 struct dsi_config_s {
+	/* user config */
 	unsigned char lane_num;
 	unsigned int bit_rate_max; /* MHz */
-	unsigned int clk_factor; /* bit_rate/pclk */
-	unsigned int factor_numerator;
-	unsigned int factor_denominator; /* 100 */
 	unsigned char operation_mode_init; /* 0=video mode, 1=command mode */
 	unsigned char operation_mode_display; /* 0=video mode, 1=command mode */
 	unsigned char video_mode_type; /* 0=sync_pulse, 1=sync_event, 2=burst */
 	unsigned char clk_always_hs; /* 0=disable, 1=enable */
-	unsigned char phy_switch; /* 0=auto, 1=standard, 2=slow */
 
-	unsigned long long local_bit_rate_max; /* Hz */
-	unsigned long long local_bit_rate_min; /* Hz*/
+	unsigned int factor_numerator;
+	unsigned int factor_denominator;
 	unsigned int lane_byte_clk;
+
+	/* non_burst vid packet */
+	unsigned int vid_num_chunks;
+	unsigned int pixel_per_chunk; /* pkt_size */
+	unsigned int vid_null_size;
+	unsigned int byte_per_chunk; /* internal usage */
+	unsigned int multi_pkt_en;   /* internal usage */
+
+	/* vid timing */
+	unsigned int hline;
+	unsigned int hsa;
+	unsigned int hbp;
+
 	unsigned int venc_data_width;
 	unsigned int dpi_data_format;
-	unsigned int data_bits;
 
 	unsigned char *dsi_init_on;
 	unsigned char *dsi_init_off;
@@ -296,6 +320,11 @@ struct dsi_config_s {
 	unsigned char check_reg;
 	unsigned char check_cnt;
 	unsigned char check_state;
+
+	unsigned char current_mode;
+
+	unsigned char dsi_rd_n;
+	struct dsi_dphy_s dphy;
 };
 
 #define EDP_EDID_RETRY_MAX      3
@@ -680,6 +709,18 @@ void aml_lcd_vbyone_rst(int index);
 int aml_lcd_vbyone_cdr(int index);
 int aml_lcd_vbyone_lock(int index);
 int aml_lcd_edp_debug(int index, char *str, int num);
+
+// switch MIPI DSI mode: 0:display, 1:command
+void aml_lcd_mipi_dsi_mode(int index, unsigned char mode);
+// exec DSI command, payload:[0]:data_type, [1]:number of leftover cmd, [2+]: command
+void aml_lcd_mipi_dsi_cmd(int index, unsigned char *payload);
+// read DSI command
+// @payload format as above
+// @rd_data is space to store read back data
+// @rd_byte_len is max size of rd_data, data read over this size will not be stored
+// return actual read out size
+int aml_lcd_mipi_dsi_read(int index,
+		unsigned char *payload, unsigned char *rd_data, unsigned char rd_byte_len);
 void aml_lcd_driver_test(int index, int num);
 int aml_lcd_driver_prbs(int index, unsigned int s, unsigned int mode_flag);
 void aml_lcd_driver_unifykey_dump(int index, unsigned int flag);
@@ -692,7 +733,7 @@ void aml_lcd_driver_ext_power_off(int index);
 void aml_lcd_driver_bl_on(int index);
 void aml_lcd_driver_bl_off(int index);
 void aml_lcd_driver_set_bl_level(int index, int level);
-unsigned int  aml_lcd_driver_get_bl_level(int index);
+unsigned int aml_lcd_driver_get_bl_level(int index);
 void aml_lcd_driver_bl_config_print(int index);
 
 int aml_lcd_driver_suspend(void *pm_ops);

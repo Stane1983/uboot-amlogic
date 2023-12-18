@@ -413,12 +413,12 @@ static inline void lcd_pinmux_clr_mask(unsigned int n, unsigned int _mask)
 	lcd_periphs_write(reg, (lcd_periphs_read(reg) & (~(_mask))));
 }
 
-static inline unsigned int dsi_host_read(int index, unsigned int reg)
+static inline unsigned int dsi_host_read(struct aml_lcd_drv_s *pdrv, unsigned int reg)
 {
 	unsigned long paddr;
 	unsigned int val;
 
-	if (index)
+	if (pdrv->index)
 		paddr = (REG_ADDR_DSI_B_HOST(reg));
 	else
 		paddr = (REG_ADDR_DSI_HOST(reg));
@@ -429,11 +429,11 @@ static inline unsigned int dsi_host_read(int index, unsigned int reg)
 	return val;
 }
 
-static inline void dsi_host_write(int index, unsigned int reg, unsigned int val)
+static inline void dsi_host_write(struct aml_lcd_drv_s *pdrv, unsigned int reg, unsigned int val)
 {
 	unsigned long paddr;
 
-	if (index)
+	if (pdrv->index)
 		paddr = REG_ADDR_DSI_B_HOST(reg);
 	else
 		paddr = REG_ADDR_DSI_HOST(reg);
@@ -442,36 +442,38 @@ static inline void dsi_host_write(int index, unsigned int reg, unsigned int val)
 	*(volatile unsigned int *)paddr = (val);
 }
 
-static inline void dsi_host_setb(int index, unsigned int reg, unsigned int val,
+static inline void dsi_host_setb(struct aml_lcd_drv_s *pdrv, unsigned int reg, unsigned int val,
 		unsigned int start, unsigned int len)
 {
-	dsi_host_write(index, reg, ((dsi_host_read(index, reg) &
+	dsi_host_write(pdrv, reg, ((dsi_host_read(pdrv, reg) &
 			~(((1L << (len)) - 1) << (start))) |
 			(((val) & ((1L << (len)) - 1)) << (start))));
 }
 
-static inline unsigned int dsi_host_getb(int index, unsigned int reg,
+static inline unsigned int dsi_host_getb(struct aml_lcd_drv_s *pdrv, unsigned int reg,
 		unsigned int start, unsigned int len)
 {
-	return (dsi_host_read(index, reg) >> (start)) & ((1L << (len)) - 1);
+	return (dsi_host_read(pdrv, reg) >> (start)) & ((1L << (len)) - 1);
 }
 
-static inline void dsi_host_set_mask(int index, unsigned int reg, unsigned int _mask)
+static inline void dsi_host_set_mask(struct aml_lcd_drv_s *pdrv,
+		unsigned int reg, unsigned int _mask)
 {
-	dsi_host_write(index, reg, (dsi_host_read(index, reg) | (_mask)));
+	dsi_host_write(pdrv, reg, (dsi_host_read(pdrv, reg) | (_mask)));
 }
 
-static inline void dsi_host_clr_mask(int index, unsigned int reg, unsigned int _mask)
+static inline void dsi_host_clr_mask(struct aml_lcd_drv_s *pdrv,
+		unsigned int reg, unsigned int _mask)
 {
-	dsi_host_write(index, reg, (dsi_host_read(index, reg) & (~(_mask))));
+	dsi_host_write(pdrv, reg, (dsi_host_read(pdrv, reg) & (~(_mask))));
 }
 
-static inline unsigned int dsi_phy_read(int index, unsigned int reg)
+static inline unsigned int dsi_phy_read(struct aml_lcd_drv_s *pdrv, unsigned int reg)
 {
 	unsigned long paddr;
 	unsigned int val;
 
-	if (index)
+	if (pdrv->index)
 		paddr = (REG_ADDR_DSI_B_PHY(reg));
 	else
 		paddr = (REG_ADDR_DSI_PHY(reg));
@@ -482,11 +484,11 @@ static inline unsigned int dsi_phy_read(int index, unsigned int reg)
 	return val;
 };
 
-static inline void dsi_phy_write(int index, unsigned int reg, unsigned int val)
+static inline void dsi_phy_write(struct aml_lcd_drv_s *pdrv, unsigned int reg, unsigned int val)
 {
 	unsigned long paddr;
 
-	if (index)
+	if (pdrv->index)
 		paddr = REG_ADDR_DSI_B_PHY(reg);
 	else
 		paddr = REG_ADDR_DSI_PHY(reg);
@@ -495,28 +497,30 @@ static inline void dsi_phy_write(int index, unsigned int reg, unsigned int val)
 	*(volatile unsigned int *)paddr = (val);
 };
 
-static inline void dsi_phy_setb(int index, unsigned int reg, unsigned int val,
+static inline void dsi_phy_setb(struct aml_lcd_drv_s *pdrv, unsigned int reg, unsigned int val,
 		unsigned int start, unsigned int len)
 {
-	dsi_phy_write(index, reg, ((dsi_phy_read(index, reg) &
+	dsi_phy_write(pdrv, reg, ((dsi_phy_read(pdrv, reg) &
 			~(((1L << (len)) - 1) << (start))) |
 			(((val) & ((1L << (len)) - 1)) << (start))));
 }
 
-static inline unsigned int dsi_phy_getb(int index, unsigned int reg,
+static inline unsigned int dsi_phy_getb(struct aml_lcd_drv_s *pdrv, unsigned int reg,
 		unsigned int start, unsigned int len)
 {
-	return (dsi_phy_read(index, reg) >> (start)) & ((1L << (len)) - 1);
+	return (dsi_phy_read(pdrv, reg) >> (start)) & ((1L << (len)) - 1);
 }
 
-static inline void dsi_phy_set_mask(int index, unsigned int reg, unsigned int _mask)
+static inline void dsi_phy_set_mask(struct aml_lcd_drv_s *pdrv,
+		unsigned int reg, unsigned int _mask)
 {
-	dsi_phy_write(index, reg, (dsi_phy_read(index, reg) | (_mask)));
+	dsi_phy_write(pdrv, reg, (dsi_phy_read(pdrv, reg) | (_mask)));
 }
 
-static inline void dsi_phy_clr_mask(int index, unsigned int reg, unsigned int _mask)
+static inline void dsi_phy_clr_mask(struct aml_lcd_drv_s *pdrv,
+		unsigned int reg, unsigned int _mask)
 {
-	dsi_phy_write(index, reg, (dsi_phy_read(index, reg) & (~(_mask))));
+	dsi_phy_write(pdrv, reg, (dsi_phy_read(pdrv, reg) & (~(_mask))));
 }
 
 static inline unsigned int lcd_tcon_read(unsigned int reg)
