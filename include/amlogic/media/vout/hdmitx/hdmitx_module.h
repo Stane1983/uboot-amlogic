@@ -37,6 +37,14 @@ struct hdmitx_dev {
 	/* Add dongle_mode, clock, phy may be different from mbox */
 	unsigned int dongle_mode;
 	unsigned char limit_res_1080p;
+	/* efuse ctrl state
+	 * 1 disable the function
+	 * 0 dont disable the function
+	 */
+	bool efuse_dis_hdmi_4k60;	/* 4k50,60hz */
+	bool efuse_dis_output_4k;	/* all 4k resolution */
+	bool efuse_dis_hdcp_tx22;	/* hdcptx22 */
+	bool efuse_dis_hdmi_tx3d;	/* 3d */
 };
 
 struct hdmitx_dev *hdmitx_get_hdev(void);
