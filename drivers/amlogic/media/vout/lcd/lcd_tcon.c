@@ -783,8 +783,7 @@ static int lcd_tcon_data_multi_match_policy_check(struct aml_lcd_drv_s *pdrv,
 	struct bl_pwm_config_s *bl_pwm = NULL;
 #endif
 	unsigned int data_byte, data_cnt, data, min, max;
-	unsigned int sync_num, sync_den, temp;
-	unsigned int j, k;
+	unsigned int temp, j, k;
 
 	if (!ctrl_part)
 		return -1;
@@ -803,9 +802,7 @@ static int lcd_tcon_data_multi_match_policy_check(struct aml_lcd_drv_s *pdrv,
 	case LCD_TCON_DATA_CTRL_MULTI_VFREQ:
 		if (data_cnt != 2)
 			goto lcd_tcon_data_multi_match_check_err_data_cnt;
-		sync_num = pdrv->config.timing.sync_duration_num;
-		sync_den = pdrv->config.timing.sync_duration_den;
-		temp = sync_num / sync_den;
+		temp = pdrv->config.timing.act_timing.frame_rate;
 
 		for (j = 0; j < data_byte; j++)
 			min |= (p[k + j] << (j * 8));

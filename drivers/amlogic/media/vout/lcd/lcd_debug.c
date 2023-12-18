@@ -30,22 +30,7 @@ int lcd_debug_info_len(int num)
 static void lcd_timing_info_print(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_config_s *pconf = &pdrv->config;
-	unsigned int hs_width, hs_bp, hs_pol, h_period;
-	unsigned int vs_width, vs_bp, vs_pol, v_period;
-	unsigned int video_hstart, video_vstart;
 	int ret, herr, verr;
-
-	video_hstart = pconf->timing.hstart;
-	video_vstart = pconf->timing.vstart;
-	h_period = pconf->basic.h_period;
-	v_period = pconf->basic.v_period;
-
-	hs_width = pconf->timing.hsync_width;
-	hs_bp = pconf->timing.hsync_bp;
-	hs_pol = pconf->timing.hsync_pol;
-	vs_width = pconf->timing.vsync_width;
-	vs_bp = pconf->timing.vsync_bp;
-	vs_pol = pconf->timing.vsync_pol;
 
 	ret = lcd_config_check(pdrv);
 	herr = ret & 0xf;
@@ -65,40 +50,49 @@ static void lcd_timing_info_print(struct aml_lcd_drv_s *pdrv)
 		"pre_de_v          %d\n"
 		"video_hstart      %d\n"
 		"video_vstart      %d\n\n",
-		h_period, v_period, hs_width, hs_bp,
+		pconf->timing.act_timing.h_period,
+		pconf->timing.act_timing.v_period,
+		pconf->timing.act_timing.hsync_width,
+		pconf->timing.act_timing.hsync_bp,
 		((herr & 0x4) ? "(X)" : ((herr & 0x8) ? "(!)" : "")),
-		pconf->timing.hsync_fp,
+		pconf->timing.act_timing.hsync_fp,
 		((herr & 0x1) ? "(X)" : ((herr & 0x2) ? "(!)" : "")),
-		hs_pol, vs_width, vs_bp,
+		pconf->timing.act_timing.hsync_pol,
+		pconf->timing.act_timing.vsync_width,
+		pconf->timing.act_timing.vsync_bp,
 		((verr & 0x4) ? "(X)" : ((verr & 0x8) ? "(!)" : "")),
-		pconf->timing.vsync_fp,
+		pconf->timing.act_timing.vsync_fp,
 		((verr & 0x1) ? "(X)" : ((verr & 0x2) ? "(!)" : "")),
-		vs_pol,
+		pconf->timing.act_timing.vsync_pol,
 		pconf->timing.pre_de_h,
 		pconf->timing.pre_de_v,
-		video_hstart, video_vstart);
+		pconf->timing.hstart, pconf->timing.vstart);
 
-	printf("h_period_min      %d\n"
-		"h_period_max      %d\n"
-		"v_period_min      %d\n"
-		"v_period_max      %d\n"
-		"frame_rate_min    %d\n"
-		"frame_rate_max    %d\n"
-		"pclk_min          %d\n"
-		"pclk_max          %d\n\n",
-		pconf->basic.h_period_min, pconf->basic.h_period_max,
-		pconf->basic.v_period_min, pconf->basic.v_period_max,
-		pconf->basic.frame_rate_min, pconf->basic.frame_rate_max,
-		pconf->basic.lcd_clk_min, pconf->basic.lcd_clk_max);
+	printf("timing range:\n"
+		"h_period        %d ~ %d\n"
+		"v_period        %d ~ %d\n"
+		"frame_rate      %d ~ %d\n"
+		"pixel_clk       %d ~ %d\n"
+		"vrr_range       %d ~ %d\n\n",
+		pconf->timing.act_timing.h_period_min,
+		pconf->timing.act_timing.h_period_max,
+		pconf->timing.act_timing.v_period_min,
+		pconf->timing.act_timing.v_period_max,
+		pconf->timing.act_timing.frame_rate_min,
+		pconf->timing.act_timing.frame_rate_max,
+		pconf->timing.act_timing.pclk_min,
+		pconf->timing.act_timing.pclk_max,
+		pconf->timing.act_timing.vfreq_vrr_min,
+		pconf->timing.act_timing.vfreq_vrr_max);
 
 	printf("base_pixel_clk  %d\n"
 		"base_h_period   %d\n"
 		"base_v_period   %d\n"
 		"base_frame_rate %d\n\n",
-		pconf->timing.base_pixel_clk,
-		pconf->timing.base_h_period,
-		pconf->timing.base_v_period,
-		pconf->timing.base_frame_rate);
+		pconf->timing.base_timing.pixel_clk,
+		pconf->timing.base_timing.h_period,
+		pconf->timing.base_timing.v_period,
+		pconf->timing.base_timing.frame_rate);
 
 	printf("pll_ctrl       0x%08x\n"
 		"div_ctrl       0x%08x\n"
@@ -1147,8 +1141,8 @@ void lcd_info_print(struct aml_lcd_drv_s *pdrv)
 	LCDPR("mode: %s, status: %d\n",
 	      lcd_mode_mode_to_str(pdrv->mode), pdrv->status);
 
-	sync_duration = pconf->timing.sync_duration_num;
-	sync_duration = (sync_duration * 100 / pconf->timing.sync_duration_den);
+	sync_duration = pconf->timing.act_timing.sync_duration_num;
+	sync_duration = (sync_duration * 100 / pconf->timing.act_timing.sync_duration_den);
 	LCDPR("%s, %s %ubit, %dppc, %ux%u@%d.%02dHz\n"
 		"lcd_clk           %uHz\n"
 		"enc_clk           %uHz\n"
@@ -1160,13 +1154,13 @@ void lcd_info_print(struct aml_lcd_drv_s *pdrv)
 		pconf->basic.model_name,
 		lcd_type_type_to_str(pconf->basic.lcd_type),
 		pconf->basic.lcd_bits, pconf->timing.ppc,
-		pconf->basic.h_active, pconf->basic.v_active,
+		pconf->timing.act_timing.h_active, pconf->timing.act_timing.v_active,
 		(sync_duration / 100), (sync_duration % 100),
-		pconf->timing.lcd_clk, pconf->timing.enc_clk,
+		pconf->timing.act_timing.pixel_clk, pconf->timing.enc_clk,
 		(pconf->timing.clk_mode ? "independence" : "dependence"),
 		pconf->timing.clk_mode, pconf->timing.ss_level,
 		pconf->timing.ss_freq, pconf->timing.ss_mode,
-		pconf->timing.fr_adjust_type);
+		pconf->timing.act_timing.fr_adjust_type);
 
 	lcd_timing_info_print(pdrv);
 

@@ -469,12 +469,13 @@ static void lcd_module_enable(struct aml_lcd_drv_s *pdrv, char *mode, unsigned i
 		return;
 	}
 
-	sync_duration = pconf->timing.sync_duration_num;
-	sync_duration = (sync_duration * 100) / pconf->timing.sync_duration_den;
+	sync_duration = pconf->timing.act_timing.sync_duration_num;
+	sync_duration = (sync_duration * 100) / pconf->timing.act_timing.sync_duration_den;
 	LCDPR("[%d]: enable: %s, %s, %ux%u@%u.%02uHz\n",
 	      pdrv->index, pconf->basic.model_name,
 	      lcd_type_type_to_str(pconf->basic.lcd_type),
-	      pconf->basic.h_active, pconf->basic.v_active,
+	      pconf->timing.act_timing.h_active,
+	      pconf->timing.act_timing.v_active,
 	      (sync_duration / 100), (sync_duration % 100));
 
 	if ((pdrv->status & LCD_STATUS_ENCL_ON) == 0)
@@ -693,7 +694,7 @@ static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 	pdrv->boot_ctrl.lcd_type = pdrv->config.basic.lcd_type;
 	pdrv->boot_ctrl.lcd_bits = pdrv->config.basic.lcd_bits;
 	pdrv->boot_ctrl.clk_mode = pdrv->config.timing.clk_mode;
-	pdrv->boot_ctrl.base_frame_rate = pdrv->config.timing.base_frame_rate;
+	pdrv->boot_ctrl.base_frame_rate = pdrv->config.timing.base_timing.frame_rate;
 	switch (pdrv->config.timing.ppc) {
 	case 2:
 		pdrv->boot_ctrl.ppc = LCD_VENC_2PPC;
@@ -747,7 +748,7 @@ static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 			pdrv->index, __func__,
 			pdrv->config.timing.ppc,
 			pdrv->config.timing.clk_mode,
-			pdrv->config.timing.base_frame_rate, val);
+			pdrv->config.timing.base_timing.frame_rate, val);
 	}
 
 	sprintf(ctrl_str, "0x%08x", val);

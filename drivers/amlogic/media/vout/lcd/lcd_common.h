@@ -56,7 +56,8 @@
 /* 20231011: t3x dual display support */
 /* 20231012: optimize clk management*/
 /* 20231205: add lcd config check*/
-#define LCD_DRV_VERSION    "20231205"
+/* 20231218: update timing management*/
+#define LCD_DRV_VERSION    "20231218"
 
 extern unsigned long clk_util_clk_msr(unsigned long clk_mux);
 
@@ -91,13 +92,18 @@ char *lcd_type_type_to_str(int type);
 int lcd_mode_str_to_mode(const char *str);
 char *lcd_mode_mode_to_str(int mode);
 
+int lcd_config_check(struct aml_lcd_drv_s *pdrv);
 int lcd_base_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv);
 int lcd_base_config_load_from_bsp(struct aml_lcd_drv_s *pdrv);
 int lcd_get_config(char *dt_addr, int load_id, struct aml_lcd_drv_s *pdrv);
-int lcd_config_check(struct aml_lcd_drv_s *pdrv);
-void lcd_basic_timing_range_update(struct aml_lcd_drv_s *pdrv);
-void lcd_timing_init_config(struct lcd_config_s *pconf);
-int lcd_vmode_change(struct aml_lcd_drv_s *pdrv);
+void lcd_fr_range_update(struct lcd_detail_timing_s *ptiming);
+void lcd_clk_frame_rate_init(struct lcd_detail_timing_s *ptiming);
+void lcd_default_to_basic_timing_init_config(struct aml_lcd_drv_s *pdrv);
+void lcd_enc_timing_init_config(struct aml_lcd_drv_s *pdrv);
+
+int lcd_fr_is_frac(struct aml_lcd_drv_s *pdrv, unsigned int frame_rate);
+int lcd_vmode_frac_is_support(struct aml_lcd_drv_s *pdrv, unsigned int frame_rate);
+int lcd_frame_rate_change(struct aml_lcd_drv_s *pdrv);
 void lcd_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
 void lcd_vbyone_bit_rate_config(struct aml_lcd_drv_s *pdrv);
 void lcd_mlvds_bit_rate_config(struct aml_lcd_drv_s *pdrv);

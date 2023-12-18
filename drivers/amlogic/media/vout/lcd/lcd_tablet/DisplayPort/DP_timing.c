@@ -155,33 +155,26 @@ unsigned char DPtx_check_timing(struct aml_lcd_drv_s *pdrv, struct dptx_detail_t
 void dptx_timing_update(struct aml_lcd_drv_s *pdrv, struct dptx_detail_timing_s *timing)
 {
 	struct lcd_config_s *pconf = &pdrv->config;
-	unsigned int sync_duration;
 
-	pconf->basic.h_active = timing->h_a;
-	pconf->basic.v_active = timing->v_a;
-	pconf->basic.h_period = timing->h_a + timing->h_b;
-	pconf->basic.v_period = timing->v_a + timing->v_b;
+	pconf->timing.base_timing.h_active = timing->h_a;
+	pconf->timing.base_timing.v_active = timing->v_a;
+	pconf->timing.base_timing.h_period = timing->h_a + timing->h_b;
+	pconf->timing.base_timing.v_period = timing->v_a + timing->v_b;
+	pconf->timing.base_timing.pixel_clk = timing->pclk;
 
-	pconf->timing.lcd_clk = timing->pclk;
-	pconf->timing.enc_clk = pconf->timing.lcd_clk;
-	pconf->timing.base_pixel_clk = pconf->timing.lcd_clk;
-	sync_duration = timing->pclk / pconf->basic.h_period;
-	sync_duration = sync_duration * 100 / pconf->basic.v_period;
-	pconf->timing.base_frame_rate = sync_duration / 100;
-	pconf->timing.sync_duration_num = sync_duration;
-	pconf->timing.sync_duration_den = 100;
-
-	pconf->timing.hsync_width = timing->h_pw;
-	pconf->timing.hsync_bp = timing->h_b - timing->h_fp - timing->h_pw;
-	pconf->timing.hsync_pol = (timing->timing_ctrl >> 1) & 0x1;
-	pconf->timing.vsync_width = timing->v_pw;
-	pconf->timing.vsync_bp = timing->v_b - timing->v_fp - timing->v_pw;
-	pconf->timing.vsync_pol = (timing->timing_ctrl >> 2) & 0x1;
+	pconf->timing.base_timing.hsync_width = timing->h_pw;
+	pconf->timing.base_timing.hsync_bp = timing->h_b - timing->h_fp - timing->h_pw;
+	pconf->timing.base_timing.hsync_pol = (timing->timing_ctrl >> 1) & 0x1;
+	pconf->timing.base_timing.vsync_width = timing->v_pw;
+	pconf->timing.base_timing.vsync_bp = timing->v_b - timing->v_fp - timing->v_pw;
+	pconf->timing.base_timing.vsync_pol = (timing->timing_ctrl >> 2) & 0x1;
 
 	pconf->basic.screen_width = timing->h_size;
 	pconf->basic.screen_height = timing->v_size;
 
-	lcd_timing_init_config(pconf);
+	lcd_clk_frame_rate_init(&pconf->timing.base_timing);
+
+	lcd_enc_timing_init_config(pdrv);
 	lcd_clk_generate_parameter(pdrv);
 }
 

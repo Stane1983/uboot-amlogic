@@ -80,7 +80,7 @@ static int lcd_venc_debug_test(struct aml_lcd_drv_s *pdrv, unsigned int num)
 		return -1;
 
 	start = pdrv->config.timing.hstart;
-	width = pdrv->config.basic.h_active / 9;
+	width = pdrv->config.timing.act_timing.h_active / 9;
 
 	lcd_venc_wait_vsync(pdrv);
 	lcd_vcbus_write(ENCL_VIDEO_RGBIN_CTRL, lcd_enc_tst[num][6]);
@@ -129,13 +129,13 @@ static void lcd_venc_set_tcon(struct aml_lcd_drv_s *pdrv)
 	case LCD_LVDS:
 		lcd_vcbus_setb(L_POL_CNTL_ADDR, 1, 0, 3);
 		// refs to lcd_lvds.c@lcd_lvds_enable
-		if (pconf->timing.vsync_pol == pconf->timing.hsync_pol)
+		if (pconf->timing.act_timing.vsync_pol == pconf->timing.act_timing.hsync_pol)
 			lcd_vcbus_setb(L_POL_CNTL_ADDR, 1, 1, 1);
 		break;
 	case LCD_VBYONE:
-		if (pconf->timing.hsync_pol)
+		if (pconf->timing.act_timing.hsync_pol)
 			lcd_vcbus_setb(L_POL_CNTL_ADDR, 1, 0, 1);
-		if (pconf->timing.vsync_pol)
+		if (pconf->timing.act_timing.vsync_pol)
 			lcd_vcbus_setb(L_POL_CNTL_ADDR, 1, 1, 1);
 		break;
 	case LCD_MIPI:
@@ -186,8 +186,8 @@ static void lcd_venc_set_timing(struct aml_lcd_drv_s *pdrv)
 	vstart = pconf->timing.vstart;
 	vend = pconf->timing.vend;
 
-	lcd_vcbus_write(ENCL_VIDEO_MAX_PXCNT, pconf->basic.h_period - 1);
-	lcd_vcbus_write(ENCL_VIDEO_MAX_LNCNT, pconf->basic.v_period - 1);
+	lcd_vcbus_write(ENCL_VIDEO_MAX_PXCNT, pconf->timing.act_timing.h_period - 1);
+	lcd_vcbus_write(ENCL_VIDEO_MAX_LNCNT, pconf->timing.act_timing.v_period - 1);
 	lcd_vcbus_write(ENCL_VIDEO_HAVON_BEGIN, hstart);
 	lcd_vcbus_write(ENCL_VIDEO_HAVON_END,   hend);
 	lcd_vcbus_write(ENCL_VIDEO_VAVON_BLINE, vstart);
@@ -201,14 +201,14 @@ static void lcd_venc_set_timing(struct aml_lcd_drv_s *pdrv)
 			pre_de_vs = vstart - pre_vde;
 			pre_de_ve = pre_de_vs + 4;
 			pre_de_hs = hstart + PRE_DE_DELAY;
-			pre_de_he = pconf->basic.h_active - 1 + pre_de_hs;
+			pre_de_he = pconf->timing.act_timing.h_active - 1 + pre_de_hs;
 			break;
 		default:
 			pre_vde = pconf->timing.pre_de_v ? pconf->timing.pre_de_v : 8;
 			pre_de_vs = vstart - pre_vde;
-			pre_de_ve = pconf->basic.v_active + pre_de_vs;
+			pre_de_ve = pconf->timing.act_timing.v_active + pre_de_vs;
 			pre_de_hs = hstart + PRE_DE_DELAY;
-			pre_de_he = pconf->basic.h_active - 1 + pre_de_hs;
+			pre_de_he = pconf->timing.act_timing.h_active - 1 + pre_de_hs;
 			break;
 		}
 		lcd_vcbus_write(ENCL_VIDEO_V_PRE_DE_BLINE, pre_de_vs);
@@ -225,7 +225,7 @@ static void lcd_venc_set_timing(struct aml_lcd_drv_s *pdrv)
 	lcd_vcbus_write(ENCL_VIDEO_VSO_ELINE, pconf->timing.vs_ve_addr);
 
 	/*[15:14]: 2'b10 or 2'b01*/
-	lcd_vcbus_write(ENCL_INBUF_CNTL1, (2 << 14) | (pconf->basic.h_active - 1));
+	lcd_vcbus_write(ENCL_INBUF_CNTL1, (2 << 14) | (pconf->timing.act_timing.h_active - 1));
 	lcd_vcbus_write(ENCL_INBUF_CNTL0, 0x200);
 
 	lcd_venc_set_tcon(pdrv);

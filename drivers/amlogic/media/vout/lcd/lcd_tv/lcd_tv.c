@@ -147,7 +147,7 @@ static int lcd_output_vmode_init(struct aml_lcd_drv_s *pdrv)
 	if (!pdrv)
 		return -1;
 
-	switch (pdrv->config.timing.base_frame_rate) {
+	switch (pdrv->config.timing.base_timing.frame_rate) {
 	case 144:
 	case 288:
 		lcd_vmode_info[4].type = 2;
@@ -158,8 +158,8 @@ static int lcd_output_vmode_init(struct aml_lcd_drv_s *pdrv)
 		lcd_vmode_info[5].type = 1;
 		break;
 	case 120:
-		if (pdrv->config.basic.h_active == 3840 &&
-		    pdrv->config.basic.v_active == 2160) {
+		if (pdrv->config.timing.base_timing.h_active == 3840 &&
+		    pdrv->config.timing.base_timing.v_active == 2160) {
 			lcd_vmode_info[4].type = 1;
 			lcd_vmode_info[5].type = 1;
 		} else {
@@ -173,13 +173,13 @@ static int lcd_output_vmode_init(struct aml_lcd_drv_s *pdrv)
 	}
 
 	for (i = 0; i < count; i++) {
-		if (pdrv->config.basic.h_active == lcd_vmode_info[i].width &&
-		    pdrv->config.basic.v_active == lcd_vmode_info[i].height) {
-			if (pdrv->config.timing.base_frame_rate >= 120) {
+		if (pdrv->config.timing.base_timing.h_active == lcd_vmode_info[i].width &&
+		    pdrv->config.timing.base_timing.v_active == lcd_vmode_info[i].height) {
+			if (pdrv->config.timing.base_timing.frame_rate >= 120) {
 				if (lcd_vmode_info[i].type == 0)
 					continue;
 			}
-			lcd_vmode_info[i].base_fr = pdrv->config.timing.base_frame_rate;
+			lcd_vmode_info[i].base_fr = pdrv->config.timing.base_timing.frame_rate;
 			pdrv->output_vmode = i;
 			pdrv->std_duration = lcd_vmode_info[i].duration;
 			return 0;
@@ -190,7 +190,8 @@ static int lcd_output_vmode_init(struct aml_lcd_drv_s *pdrv)
 	pdrv->std_duration = lcd_std_fr;
 	LCDERR("[%d]: %s: unsupport resolution: %dx%d\n",
 	       pdrv->index, __func__,
-	       pdrv->config.basic.h_active, pdrv->config.basic.v_active);
+	       pdrv->config.timing.base_timing.h_active,
+	       pdrv->config.timing.base_timing.v_active);
 	return -1;
 }
 
@@ -236,13 +237,14 @@ static int lcd_outputmode_to_frame_rate(struct aml_lcd_drv_s *pdrv, const char *
 	frame_rate = (int)simple_strtoul(temp, NULL, 10);
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 		LCDPR("[%d]: outputmode=%s, frame_rate=%d, base_frame_rate=%d\n",
-			pdrv->index, mode, frame_rate, pdrv->config.timing.base_frame_rate);
+			pdrv->index, mode, frame_rate,
+			pdrv->config.timing.base_timing.frame_rate);
 	}
 
 	for (i = 0; i < LCD_STD_FRAME_RATE_MAX; i++) {
 		if (pdrv->std_duration[i].frame_rate == 0)
 			break;
-		if (pdrv->std_duration[i].frame_rate > pdrv->config.timing.base_frame_rate)
+		if (pdrv->std_duration[i].frame_rate > pdrv->config.timing.base_timing.frame_rate)
 			continue;
 		if (frame_rate == pdrv->std_duration[i].frame_rate)
 			return frame_rate;
@@ -258,7 +260,7 @@ static unsigned int lcd_std_frame_rate_index(struct aml_lcd_drv_s *pdrv,
 	for (i = 0; i < LCD_STD_FRAME_RATE_MAX; i++) {
 		if (info->duration[i].frame_rate == 0)
 			break;
-		if (info->duration[i].frame_rate > pdrv->config.timing.base_frame_rate)
+		if (info->duration[i].frame_rate > pdrv->config.timing.base_timing.frame_rate)
 			continue;
 		if (info->frame_rate == info->duration[i].frame_rate)
 			return i;
@@ -317,7 +319,7 @@ static void lcd_list_support_mode(struct aml_lcd_drv_s *pdrv)
 	for (i = 0; i < LCD_STD_FRAME_RATE_MAX; i++) {
 		if (pdrv->std_duration[i].frame_rate == 0)
 			break;
-		if (pdrv->std_duration[i].frame_rate > pdrv->config.timing.base_frame_rate)
+		if (pdrv->std_duration[i].frame_rate > pdrv->config.timing.base_timing.frame_rate)
 			continue;
 		printf("%s%dhz\n", info->name, pdrv->std_duration[i].frame_rate);
 	}
@@ -325,15 +327,7 @@ static void lcd_list_support_mode(struct aml_lcd_drv_s *pdrv)
 
 static void lcd_config_init(struct aml_lcd_drv_s *pdrv)
 {
-	if (pdrv->config.timing.lcd_clk == 0) {/* default 0 for 60hz */
-		pdrv->config.timing.lcd_clk = 60;
-	} else {
-		LCDPR("[%d]: custom clk: %d\n",
-		      pdrv->index, pdrv->config.timing.lcd_clk);
-	}
-
-	lcd_basic_timing_range_update(pdrv);
-	lcd_timing_init_config(&pdrv->config);
+	lcd_enc_timing_init_config(pdrv);
 	lcd_output_vmode_init(pdrv);
 }
 
@@ -370,11 +364,11 @@ static int lcd_config_valid(struct aml_lcd_drv_s *pdrv, char *mode, unsigned int
 		if (index < LCD_STD_FRAME_RATE_MAX)
 			index++;
 	}
-	pconf->timing.sync_duration_num = pdrv->std_duration[index].duration_num;
-	pconf->timing.sync_duration_den = pdrv->std_duration[index].duration_den;
+	pconf->timing.act_timing.sync_duration_num = pdrv->std_duration[index].duration_num;
+	pconf->timing.act_timing.sync_duration_den = pdrv->std_duration[index].duration_den;
 
 	/* update clk & timing config */
-	lcd_vmode_change(pdrv);
+	lcd_frame_rate_change(pdrv);
 	lcd_clk_generate_parameter(pdrv);
 
 	return 0;

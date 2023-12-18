@@ -62,8 +62,8 @@ static void lcd_list_support_mode(struct aml_lcd_drv_s *pdrv)
 
 static void lcd_config_init(struct aml_lcd_drv_s *pdrv)
 {
-	lcd_basic_timing_range_update(pdrv);
-	lcd_timing_init_config(&pdrv->config);
+	lcd_enc_timing_init_config(pdrv);
+
 	lcd_clk_generate_parameter(pdrv);
 }
 

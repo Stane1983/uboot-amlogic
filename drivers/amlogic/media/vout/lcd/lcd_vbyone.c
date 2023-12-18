@@ -157,8 +157,8 @@ void lcd_vbyone_enable(struct aml_lcd_drv_s *pdrv)
 
 	offset = pdrv->data->offset_venc_if[pdrv->index];
 
-	hsize = pdrv->config.basic.h_active;
-	vsize = pdrv->config.basic.v_active;
+	hsize = pdrv->config.timing.act_timing.h_active;
+	vsize = pdrv->config.timing.act_timing.v_active;
 	lane_count = pdrv->config.control.vbyone_cfg.lane_count; /* 8 */
 	region_num = pdrv->config.control.vbyone_cfg.region_num; /* 2 */
 	byte_mode = pdrv->config.control.vbyone_cfg.byte_mode; /* 4 */

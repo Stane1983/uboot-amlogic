@@ -915,10 +915,10 @@ void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 		return;
 
 	if (pdrv->config.timing.clk_mode != LCD_CLK_MODE_INDEPENDENCE) {
-		cconf->pll_mode = pconf->timing.clk_auto;
+		cconf->pll_mode = pconf->timing.pll_flag;
 		cconf->fout = pconf->timing.enc_clk;
 		if (cconf->fout > cconf->data->xd_out_fmax) {
-			LCDERR("%s: wrong lcd_clk value %uHz\n", __func__, cconf->fout);
+			LCDERR("%s: wrong enc_clk value %uHz\n", __func__, cconf->fout);
 			goto generate_clk_dft_done;
 		}
 	}
@@ -1137,14 +1137,14 @@ void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 			pixconf = &cconf[1];
 
 			pixconf->fout = pconf->timing.enc_clk;
-			pixconf->pll_mode = pconf->timing.clk_auto;
+			pixconf->pll_mode = pconf->timing.pll_flag;
 			if (pixconf->fout > pixconf->data->xd_out_fmax) {
-				LCDERR("%s: wrong lcd_clk value %uHz\n", __func__, pixconf->fout);
+				LCDERR("%s: wrong enc_clk value %uHz\n", __func__, pixconf->fout);
 				goto generate_clk_dft_done;
 			}
 
 			//handle phyconf
-			phyconf->pll_mode = pconf->timing.clk_auto;
+			phyconf->pll_mode = pconf->timing.pll_flag;
 			phyconf->phy_clk = pconf->timing.bit_rate;
 			phyconf->pll_fout = phyconf->phy_clk;
 			//fix phy pll_div for clkmsr phy_clk

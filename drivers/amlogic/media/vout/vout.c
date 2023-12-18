@@ -670,9 +670,9 @@ static void vout_vmode_init(void)
 		venc_index = (vset->viu_mux >> 4) & 0xf;
 		pdrv = aml_lcd_get_driver(venc_index);
 		if (pdrv) {
-			width = pdrv->config.basic.h_active;
-			height = pdrv->config.basic.v_active;
-			field_height = pdrv->config.basic.v_active;
+			width = pdrv->config.timing.act_timing.h_active;
+			height = pdrv->config.timing.act_timing.v_active;
+			field_height = pdrv->config.timing.act_timing.v_active;
 			vout_info.cur_enc_ppc = pdrv->config.timing.ppc;
 		} else {
 			width = vset->width;
