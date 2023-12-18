@@ -5,8 +5,7 @@
 
 #include <common.h>
 #include <stdlib.h>
-
-#define __asmeq(x, y) ".ifnc " x "," y " ; .err ; .endif\n\t"
+#include <linux/arm-smccc.h>
 
 #define OPTEE_SMC_CHECK_WM_STATUS        0xB200E003
 #define OPTEE_SMC_INIT_WM                0xB200E080
@@ -15,32 +14,20 @@
 
 static uint32_t check_wm_sts(void)
 {
-	register uint32_t x0 asm("x0") = OPTEE_SMC_CHECK_WM_STATUS;
+	struct arm_smccc_res res;
 
-	do {
-		asm volatile(__asmeq("%0", "x0")
-			__asmeq("%1", "x0")
-			"smc    #0\n"
-			: "=r"(x0)
-			: "r"(x0));
-	} while (0);
+	arm_smccc_smc(OPTEE_SMC_CHECK_WM_STATUS, 0, 0, 0, 0, 0, 0, 0, &res);
 
-	return x0;
+	return res.a0;
 }
 
 static uint32_t init_wm(void)
 {
-	register uint32_t x0 asm("x0") = OPTEE_SMC_INIT_WM;
+	struct arm_smccc_res res;
 
-	do {
-		asm volatile(__asmeq("%0", "x0")
-			__asmeq("%1", "x0")
-			"smc    #0\n"
-			: "=r"(x0)
-			: "r"(x0));
-	} while (0);
+	arm_smccc_smc(OPTEE_SMC_INIT_WM, 0, 0, 0, 0, 0, 0, 0, &res);
 
-	return x0;
+	return res.a0;
 }
 
 static int do_wm_init(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
