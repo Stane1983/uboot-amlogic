@@ -4,6 +4,7 @@
  */
 
 #include "../v2_sdc_burn/optimus_sdc_burn_i.h"
+static int image_check_last_verify_item(HIMAGE hImg);
 
 //FIMXE:
 COMPILE_TYPE_CHK(128 == sizeof(ItemInfo_V1), _op_a);
@@ -19,7 +20,10 @@ typedef struct _ImgSrcIf{
 
 	char            partName[28];       //partIndex <= 28 (+4 if partIndex not used)
 	unsigned int        partIndex;      //partIndex and part
-	unsigned char   resrv[512 - 32 - 24];
+	unsigned int	pkg_sz_part1;
+	unsigned int	pkg_sz_part2;
+	unsigned char   resrv[512 - 32 - 24 - 8];
+
 } ImgSrcIf_t;
 
 COMPILE_TYPE_CHK(512  == sizeof(ImgSrcIf_t), bb);
@@ -46,6 +50,7 @@ typedef struct _AmlFirmwareItem0_s {
 } ItemInfo;
 
 static int _hFile = -1;
+static int _is_part2_pkg;
 
 //open a Amlogic firmware image
 //return value is a handle
@@ -71,12 +76,18 @@ HIMAGE image_open(const char *interface, const char *device, const char *part, c
 		pImgSrcIf->devAlignSz = 4 *1024;//512;//OPTIMUS_DOWNLOAD_SLOT_SZ;
 		strncpy(pImgSrcIf->partName, part, strnlen(part, 28));
 	} else {
+		pImgSrcIf->pkg_sz_part1 = (unsigned int)do_fat_get_fileSz(imgPath);
+		env_set("usb_burn_part1_img", imgPath);
+		run_command("setenv usb_burn_part2_img ${usb_burn_part1_img}.part2", 0);
+		pImgSrcIf->pkg_sz_part2 = (unsigned int)do_fat_get_fileSz(env_get("usb_burn_part2_img"));
 		int pFile = do_fat_fopen(imgPath);
 		if (pFile < 0) {
 			DWN_ERR("Fail to open file %s\n", imgPath);
 			goto _err;
 		}
 		_hFile = pFile;
+		_is_part2_pkg = 0;
+
 
 		ret = do_fat_fread(pFile, (u8 *)&hImg->imgHead, HeadSz);
 		if (ret != HeadSz) {
@@ -85,6 +96,12 @@ HIMAGE image_open(const char *interface, const char *device, const char *part, c
 		}
 
 		pImgSrcIf->devAlignSz = do_fat_get_bytesperclust(pFile);
+		DWN_MSG("pkg_sz_part1/2 0x%x/0x%x\n",
+				pImgSrcIf->pkg_sz_part1, pImgSrcIf->pkg_sz_part2);
+		if (pImgSrcIf->pkg_sz_part1 + pImgSrcIf->pkg_sz_part2 > hImg->imgHead.imageSz) {
+			DWN_ERR("pkg_sz_part1/2 head sz 0x%llx\n", hImg->imgHead.imageSz);
+			goto _err;
+		}
 	}
 
 	if (IMAGE_MAGIC != hImg->imgHead.magic) {
@@ -100,6 +117,11 @@ HIMAGE image_open(const char *interface, const char *device, const char *part, c
 	if (MAX_ITEM_NUM < hImg->imgHead.itemNum) {
 		DWN_ERR("max itemNum(%d)<actual itemNum (%d)\n", MAX_ITEM_NUM, hImg->imgHead.itemNum);
 		goto _err;
+	}
+
+	if (image_check_last_verify_item(hImg)) {
+		DWN_ERR("Fail in check image integrity\n");
+		return NULL;
 	}
 
 	return hImg;
@@ -163,6 +185,47 @@ static const ItemInfo *image_item_get_item_info_byid(HIMAGE hImg, const int item
 	return &theItem;
 }
 
+static int _do_pkg_fseek(HIMAGE hImg, s64 pkg_offset, int wherehence)
+{
+	ImgInfo_t *imgInfo          = (ImgInfo_t *)hImg;
+	const u32 pkg_sz_part1 = imgInfo->imgSrcIf.pkg_sz_part1;
+	int i = 0;
+
+	if (wherehence) {
+		DWN_ERR("only start supported\n");
+		return -__LINE__;
+	}
+	DWN_DBG("pkg offset 0x%llx\n", pkg_offset);
+	if (_is_part2_pkg) {
+		if (pkg_offset < pkg_sz_part1) {
+			DWN_MSG("change to pkg part1\n");
+			do_fat_fclose(_hFile);
+			_hFile = do_fat_fopen(env_get("usb_burn_part1_img"));
+			_is_part2_pkg = 0;
+		}
+	} else {
+		if (pkg_offset >= pkg_sz_part1) {
+			DWN_MSG("to pkg part2 4 off 0x%llx\n", pkg_offset);
+			do_fat_fclose(_hFile);
+			_hFile = do_fat_fopen(env_get("usb_burn_part2_img"));
+			_is_part2_pkg = 1;
+		}
+	}
+	if (_hFile < 0) {
+		DWN_ERR("Err file index\n");
+		return -__LINE__;
+	}
+
+	pkg_offset -= _is_part2_pkg * (s64)pkg_sz_part1;
+	i = do_fat_fseek(_hFile, pkg_offset, wherehence);
+	if (i) {
+		DWN_ERR("fail to seek, offset is 0x%x\n", (u32)pkg_offset);
+		return -__LINE__;
+	}
+
+	return 0;
+}
+
 //open a item in the image
 //@hImage: image handle;
 //@mainType, @subType: main type and subtype to index the item, such as ["IMAGE", "SYSTEM"]
@@ -195,7 +258,7 @@ HIMAGEITEM image_item_open(HIMAGE hImg, const char *mainType, const char *subTyp
 
 	if (IMAGE_IF_TYPE_STORE != imgInfo->imgSrcIf.devIf) {
 		DWN_MSG("Item offset 0x%llx\n", pItem->offsetInImage);
-		i = do_fat_fseek(_hFile, pItem->offsetInImage, 0);
+		i = _do_pkg_fseek(hImg, pItem->offsetInImage, 0);
 		if (i) {
 			DWN_ERR("fail to seek, offset is 0x%x\n", (u32)pItem->offsetInImage);
 			return NULL;
@@ -255,6 +318,7 @@ int image_item_get_type(HIMAGEITEM hItem)
 int image_item_read(HIMAGE hImg, HIMAGEITEM hItem, void *pBuf, const __u32 wantSz)
 {
 	ImgInfo_t *imgInfo = (ImgInfo_t *)hImg;
+	ImgSrcIf_t *img_src = &imgInfo->imgSrcIf;
 	unsigned int readSz = 0;
 
 	if (IMAGE_IF_TYPE_STORE == imgInfo->imgSrcIf.devIf) {
@@ -303,9 +367,28 @@ int image_item_read(HIMAGE hImg, HIMAGEITEM hItem, void *pBuf, const __u32 wantS
 
 		imgInfo->imgSrcIf.itemCurSeekOffsetInImg += wantSz;
 	} else {
-		readSz = do_fat_fread(_hFile, pBuf, wantSz);
-		if (readSz != wantSz) {
-			DWN_ERR("want to read 0x%x, but 0x%x\n", wantSz, readSz);
+		long fpos = 0;
+		int part2_need = wantSz;
+		int part1_need = 0;
+		const unsigned pkg_sz_part1 = img_src->pkg_sz_part1;
+
+		fpos = do_fat_ftell(_hFile);
+		if (!_is_part2_pkg && fpos + wantSz > pkg_sz_part1) {
+			part2_need  = fpos + wantSz - pkg_sz_part1;
+			part1_need = wantSz - part2_need;
+			readSz = do_fat_fread(_hFile, pBuf, part1_need);
+			if (readSz != part1_need) {
+				DWN_ERR("want read 0x%x, but 0x%x\n", part1_need, readSz);
+				return __LINE__;
+			}
+			if (_do_pkg_fseek(hImg, pkg_sz_part1, 0)) {
+				DWN_ERR("Fail in pkg seek\n");
+				return __LINE__;
+			}
+		}
+		readSz = do_fat_fread(_hFile, pBuf + part1_need, part2_need);
+		if (readSz != part2_need) {
+			DWN_ERR("want to read 0x%x, but 0x%x\n", part2_need, readSz);
 			return __LINE__;
 		}
 	}
@@ -338,7 +421,7 @@ HIMAGEITEM get_item(HIMAGE hImg, int itemId)
 	DWN_MSG("get item [%s, %s] at %d\n", pItem->itemMainType, pItem->itemSubType, itemId);
 
 	if (IMAGE_IF_TYPE_STORE != imgInfo->imgSrcIf.devIf) {
-		ret = do_fat_fseek(_hFile, pItem->offsetInImage, 0);
+		ret = _do_pkg_fseek(hImg, pItem->offsetInImage, 0);
 		if (ret) {
 			DWN_ERR("fail to seek, offset is 0x%x, ret=%d\n", (u32)pItem->offsetInImage, ret);
 			return NULL;
@@ -388,6 +471,37 @@ __u64 image_get_item_size_by_index(HIMAGE hImg, const int itemId)
 	return pItem->itemSz;
 }
 
+static int image_check_last_verify_item(HIMAGE hImg)
+{
+	int i = 0;
+	int last_index = get_total_itemnr(hImg) - 1;
+	ItemInfo *cur_info = NULL;
+	const int rd_len = 32;
+	char rd_buf[rd_len];
+	char *Vry_head = "sha1sum ";
+
+	for (i = last_index; i >= 0; --i) {
+		cur_info = get_item(hImg, i);
+		if (!cur_info) {
+			DWN_ERR("Fail in get item by id\n");
+			return -__LINE__;
+		}
+		if (strcmp(cur_info->itemMainType, "VERIFY"))
+			continue;
+		break;//find last verify item
+	}
+	if (image_item_read(hImg, cur_info, rd_buf, rd_len)) {
+		DWN_ERR("Fail read last vry item\n");
+		return -__LINE__;
+	}
+	DWN_DBG("rd_buf %s\n", rd_buf);
+	if (strncmp(rd_buf, Vry_head, strlen(Vry_head))) {
+		DWN_ERR("verify item head error\n");
+		return -__LINE__;
+	}
+
+	return 0;
+}
 u64 optimus_img_decoder_get_data_parts_size(HIMAGE hImg, int *hasBootloader)
 {
 	int i = 0;
@@ -535,6 +649,99 @@ int get_subtype_nm_by_index(HIMAGE hImg, const char *main_type, const char **sub
 	return OPT_DOWN_FAIL;
 }
 
+int optimus_img_secureboot_signed(HIMAGE hImg)
+{
+	const int n_usb_bootloader = get_subtype_nr(hImg, "USB");
+
+	DWN_MSG("USB item num %d\n", n_usb_bootloader);
+	return n_usb_bootloader == 4;
+}
+
+#ifndef CONFIG_SYS_SOC
+int optimus_img_chk_soctype(HIMAGE hImg)
+{
+	DWN_WRN("cfg SYS_SOC undef\n");
+	return 0;
+}
+#else
+int optimus_img_chk_soctype(HIMAGE hImg)
+{
+	char *buf = NULL;
+	int ret = 0;
+	char *pbuf = NULL;
+	const char *socstr = "soctype:";
+	const char *socstr1 = "\"soctype\":";
+	char *cfgn = NULL;
+	char *tmp1, *tmp2 = NULL;
+	const char *SOC_NAME = CONFIG_SYS_SOC;
+	const int _BUFLEN = 4096;
+	const int BUFLEN = _BUFLEN + image_get_cluster_size(hImg);
+	int bufsz = BUFLEN - 1;
+	int json_fmt = 0;
+
+	buf = (char *)malloc(BUFLEN);
+	if (!buf) {
+		DWN_ERR("Fail in alloc buf sz 0x%x\n", BUFLEN);
+		return __LINE__;
+	}
+	ret = optimus_img_item2buf(hImg, "conf", "platform", buf, &bufsz);
+	if (ret) {
+		DWN_ERR("Pkg no platform.conf\n");
+		free(buf);
+		return __LINE__;
+	}
+	DWN_MSG("conf sz %d\n", bufsz);
+	buf[bufsz] = '\0';
+	for (tmp1 = buf, tmp2 = buf + _BUFLEN; *tmp1; ++tmp1, ++tmp2) {
+		while (*tmp1 == ' ')
+			++tmp1;
+		*tmp2 = *tmp1;
+	}
+	pbuf = buf + _BUFLEN;
+	DWN_DBG("%s\n", pbuf);
+	pbuf = strstr(pbuf, socstr);
+	if (!pbuf) {
+		pbuf = buf + _BUFLEN;
+		pbuf = strstr(pbuf, socstr1);
+		json_fmt = 1;
+	}
+	if (!pbuf) {
+		DWN_ERR("img not config soctype\n");
+		free(buf);
+		return __LINE__;
+	}
+	DWN_MSG("%s json fmt\n", json_fmt ? "is" : "not");
+	pbuf += strlen(json_fmt ? socstr1 : socstr);
+	cfgn  = pbuf;
+	if (!strsep(&pbuf, "\n")) {
+		DWN_ERR("err soctype cfg\n");
+		free(buf);
+		return -__LINE__;
+	}
+	DWN_MSG("%s%s\n", socstr, cfgn);
+	if (json_fmt)
+		*(pbuf - 3) = '\0';
+	ret = !json_fmt;
+	for (pbuf = cfgn; ret && strsep(&pbuf, ":"); cfgn = pbuf) {
+		ret = strcasecmp(SOC_NAME, cfgn);
+		DWN_MSG("soc[%s] %s match IMG cfg[%s]\n", SOC_NAME,
+			ret ? "NOT" : "DO", cfgn);
+	}
+
+	if (json_fmt) {
+		ret = 1;
+		SOC_NAME = "\"" CONFIG_SYS_SOC "\"";
+		for (pbuf = ++cfgn; ret && strsep(&pbuf, ","); cfgn = pbuf) {
+			ret = strcasecmp(SOC_NAME, cfgn);
+			DWN_MSG("soc %s %s match IMG cfg %s\n", SOC_NAME,
+				ret ? "NOT" : "DO", cfgn);
+		}
+	}
+
+	free(buf);
+	return ret;
+}
+#endif// #ifndef CONFIG_SYS_SOC
 
 #define MYDBG 0
 #if MYDBG

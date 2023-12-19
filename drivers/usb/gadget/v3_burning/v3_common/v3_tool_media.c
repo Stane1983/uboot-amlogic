@@ -108,6 +108,7 @@ static int _bootloader_write(u8 *dataBuf, unsigned int off, unsigned int binsz, 
 	int iCopy = 0, ret = 0;
 	const int bootCpyNum = store_boot_copy_num(bootName);
 	const int bootCpySz  = (int)store_boot_copy_size(bootName);
+	const enum boot_type_e medium_type = store_get_type();
 	unsigned char *flash_boot = NULL;
 
 	FB_MSG("[%s] CpyNum %d, bootCpySz 0x%x\n", bootName, bootCpyNum, bootCpySz);
@@ -129,12 +130,15 @@ static int _bootloader_write(u8 *dataBuf, unsigned int off, unsigned int binsz, 
 			break;
 
 		if (chip_type < LAST_NOCS_TYPE) {
-			flash_boot = (unsigned char  *)(V3_DOWNLOAD_VERIFY_INFO + 512);
-			const int boot_cpy = store_bootup_bootidx("bootloader");
+			flash_boot = (unsigned char *)(V3_DOWNLOAD_VERIFY_INFO + 512);
+			int boot_cpy = 1;
+			const int usb_boot =
+				(v3tool_work_mode_get() == V3TOOL_WORK_MODE_USB_PRODUCE);
 			nocs_boot_replace nocs_normal_areas;
 			int i = 0;
 			int ret = 0;
 
+			boot_cpy = usb_boot ? 1 : store_bootup_bootidx("bootloader");
 			FB_MSG("NOCS chip %d with SCS, cur cpy %d\n", chip_type, boot_cpy);
 			ret = store_boot_read(bootName, boot_cpy, 0, flash_boot);
 			if (ret) {
@@ -168,6 +172,11 @@ static int _bootloader_write(u8 *dataBuf, unsigned int off, unsigned int binsz, 
 	} while (0);
 
 	for (; iCopy < bootCpyNum; ++iCopy) {
+		if (medium_type == BOOT_EMMC)
+			if (!store_boot_copy_enable(iCopy)) {
+				FB_MSG("skip not EN cpy%d\n", iCopy);
+				continue;
+			}
 		ret = store_boot_write(bootName, iCopy, binsz, flash_boot ? flash_boot : dataBuf);
 		if (ret)
 			FBS_EXIT(_ACK, "FAil in program[%s] at copy[%d]\n", bootName, iCopy);
@@ -186,6 +195,7 @@ static int _bootloader_write(u8 *dataBuf, unsigned int off,
 	int iCopy = 0, ret = 0;
 	const int bootCpyNum = store_boot_copy_num(bootName);
 	const int bootCpySz  = (int)store_boot_copy_size(bootName);
+	const enum boot_type_e medium_type = store_get_type();
 
 	FB_MSG("[%s] CpyNum %d, bootCpySz 0x%x\n", bootName, bootCpyNum, bootCpySz);
 	if (binsz + off > bootCpySz)
@@ -198,6 +208,11 @@ static int _bootloader_write(u8 *dataBuf, unsigned int off,
 	}
 
 	for (; iCopy < bootCpyNum; ++iCopy) {
+		if (medium_type == BOOT_EMMC)
+			if (!store_boot_copy_enable(iCopy)) {
+				FB_MSG("skip not EN cpy%d\n", iCopy);
+				continue;
+			}
 		ret = store_boot_write(bootName, iCopy, binsz, dataBuf);
 		if (ret)
 			FBS_EXIT(_ACK, "FAil in program[%s] at copy[%d]\n", bootName, iCopy);
@@ -219,30 +234,35 @@ static p_payload_info_t _bl2x_mode_detect(u8 *dataBuf)
 }
 
 #ifdef CONFIG_SHA256
-static int _bl2x_mode_check_header(p_payload_info_t pInfo)
+static int _bl2x_mode_check_header(void *pInfo)
 {
-	p_payload_info_hdr_t hdr    = &pInfo->hdr;
+	p_payload_info_hdr_t hdr    = &((p_payload_info_t)pInfo)->hdr;
 	p_payload_info_hdr_v2 v2hdr    = (p_payload_info_hdr_v2)hdr;
 	uint8_t gensum[SHA256_SUM_LEN];
 	const int nItemNum = hdr->byItemNum;
-	const int nsz = sizeof(payload_info_hdr_t) + nItemNum  *sizeof(payload_info_item_t) -
-			SHA256_SUM_LEN;
-	int ret = 0;
+	char build_info[32];
 
+	memset(build_info, 0, ARRAY_SIZE(build_info));
+	if (hdr->byVersion == 1)
+		memcpy(build_info, hdr->szTimeStamp, sizeof(hdr->szTimeStamp));
+	else
+		memcpy(build_info, v2hdr->build_info, sizeof(v2hdr->build_info));
 	printf("\naml log : info parse...\n");
-	printf("\tsztimes : %s\n", (hdr->byVersion == 1) ? hdr->szTimeStamp : v2hdr->build_info);
+	printf("\tsztimes : %s\n", build_info);
 	printf("\tversion : %d\n", hdr->byVersion);
 	printf("\tItemNum : %d\n", nItemNum);
 	printf("\tSize    : %d(0x%x)\n",    hdr->nSize, hdr->nSize);
 	if (nItemNum > 8 || nItemNum < 3)
 		FBS_EXIT(_ACK, "illegal nitem num %d\n", nItemNum);
 
+	const int nsz = sizeof(payload_info_hdr_t) +
+			nItemNum * sizeof(payload_info_item_t) - SHA256_SUM_LEN;
 	FB_MSG("nsz 0x%x\n", nsz);
 	sha256_context ctx;
 	sha256_starts(&ctx);
-	sha256_update(&ctx, (u8 *)&hdr->nMagicL, nsz);
+	sha256_update(&ctx, pInfo + 32/*(u8*)&(hdr->nMagicL)*/, nsz);
 	sha256_finish(&ctx, gensum);
-	ret = memcmp(gensum, hdr->szSHA2, SHA256_SUM_LEN);
+	int ret = memcmp(gensum, hdr->szSHA2, SHA256_SUM_LEN);
 	if (ret)
 		FBS_EXIT(_ACK, "hdr info sha256sum not matched\n");
 	FB_MSG("hdr info sha256sum DO matched\n");
@@ -328,16 +348,20 @@ static int _bootloader_read(u8 *pBuf, unsigned off, unsigned binsz, const char *
 	int iCopy = 0;
 	const int bootCpyNum = store_boot_copy_num(bootName);
 	const int bootCpySz  = (int)store_boot_copy_size(bootName);
+	const enum boot_type_e medium_type = store_get_type();
 	int validCpyNum = bootCpyNum;//at least valid cpy num
 	int actVldCpyNum = 0;//actual valid copy num
+	int ret = 0;
 
 #if CONFIG_NAND_BL2_VALID_NUM
-	if (!strcmp("bl2", bootName))
-		validCpyNum = CONFIG_NAND_BL2_VALID_NUM;
+	if (strcmp("tpl", bootName) && strcmp("devfip", bootName))
+		if (CONFIG_NAND_BL2_VALID_NUM != -1)
+			validCpyNum = CONFIG_NAND_BL2_VALID_NUM;
 #endif // #if CONFIG_NAND_BL2_VALID_NUM
 #if CONFIG_NAND_TPL_VALID_NUM
-	if (!strcmp("tpl", bootName))
-		validCpyNum = CONFIG_NAND_TPL_VALID_NUM;
+	if (!strcmp("tpl", bootName) || !strcmp("devfip", bootName))
+		if (CONFIG_NAND_TPL_VALID_NUM != -1)
+			validCpyNum = CONFIG_NAND_TPL_VALID_NUM;
 #endif// #if CONFIG_NAND_TPL_VALID_NUM
 
 	if (binsz + off > bootCpySz) {
@@ -349,8 +373,14 @@ static int _bootloader_read(u8 *pBuf, unsigned off, unsigned binsz, const char *
 
 	for (iCopy = 0; iCopy < bootCpyNum; ++iCopy) {
 		void *dataBuf = iCopy ? pBuf + binsz : pBuf;
-		int ret = store_boot_read(bootName, iCopy, binsz, dataBuf);
 
+		if (medium_type == BOOT_EMMC)
+			if (!store_boot_copy_enable(iCopy)) {
+				FB_MSG("skip not EN cpy%d\n", iCopy);
+				--validCpyNum;
+				continue;
+			}
+		ret = store_boot_read(bootName, iCopy, binsz, dataBuf);
 		if (ret) {
 			FB_ERR("Fail to read boot[%s] at copy[%d]\n", bootName, iCopy);
 			continue;
@@ -700,7 +730,18 @@ int v3tool_storage_init(const int eraseFlash, unsigned int dtbImgSz, unsigned in
 			FB_MSG("remain bootloader as nocs scs chip\n");
 			ret = usb_burn_erase_data(1);
 		} else {
-			ret = store_erase(NULL, 0, 0, 0);
+			if (v3tool_work_mode_get() == V3TOOL_WORK_MODE_USB_PRODUCE) {
+				ret = store_erase(NULL, 0, 0, 0);
+			} else {
+				FB_MSG("remain bootloader as not usb boot\n");
+				ret = usb_burn_erase_data(1);
+			}
+		}
+		if (eraseFlash == 3) {
+			FB_MSG("Erase unifykey\n");
+			ret = store_rsv_erase("key");
+			if (ret)
+				FBS_EXIT(_ACK, "disk_initial 3, Fail in erase key\n");
 		}
 		if (ret)
 			FBS_EXIT(_ACK, "Fail in erase flash, ret[%d]\n", ret);

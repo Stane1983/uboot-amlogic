@@ -6,6 +6,7 @@
 #ifndef __STORE_WRAPPER_H__
 #define __STORE_WRAPPER_H__
 #include <amlogic/storage.h>
+int check_valid_dts(unsigned char *buffer);
 
 //logic write/read, if not MTD, same as store_write
 int store_logic_write(const char *name, loff_t off, size_t size, void *buf);
@@ -15,6 +16,8 @@ int store_logic_read(const char *name, loff_t off, size_t size, void *buf);
 u64 store_logic_cap(const char* partName);
 
 int store_gpt_ops(size_t sz, void *buf, int is_wr);
+
+int store_boot_copy_enable(int id);
 
 #define AML_MAGIC_HDR_L       (0x4c4d4140) //"@AML"
 #define AML_MAGIC_HDR_R       (0x544f4f42) //"BOOT"

@@ -1133,6 +1133,12 @@ long do_fat_fread(int fd, __u8 *buffer, unsigned long maxsize)
 	return actRead;
 }
 
+long do_fat_ftell(int fd)
+{
+	struct fopen_para *hFile = _hFile[fd];
+
+	return hFile->fileOffset;
+}
 s64 do_fat_get_fileSz(const char *imgItemPath)
 {
 	char cmdBuf[256] = "";

@@ -10,6 +10,7 @@
 #include <amlogic/aml_efuse.h>
 #include <amlogic/emmc_partitions.h>
 #include <linux/libfdt.h>
+static int optimus_sdc_burn_sheader_load(HIMAGE hImg, int cpy_index);
 
 static int is_bootloader_old(void)
 {
@@ -308,6 +309,60 @@ int optimus_burn_bootloader(HIMAGE hImg)
 	return rcode;
 }
 
+/*
+ * user/boot0/boot1 <--> 0/1/2, x is target copy
+ * if from 0, x is 0 (TODO:cmp if 1 same, upgrade it if not same)
+ * if from 1 and usr not valid, x is 1 (TODO:cmp if 2 same, upgrade 2 if not same)
+ * if from 1 and usr valid, x is 0
+ * if from 2, x is 1
+ * upgrade $target copy and reboot
+ */
+static int optimus_burn_1st_bootloader(HIMAGE hImg)
+{
+	int ret = 0, boot_cpy = 0;
+	const char *boot_name = "bootloader";
+	const int num_cpy = store_boot_copy_num(boot_name);
+	const enum boot_type_e medium_type = store_get_type();
+	int target_cpy = num_cpy;
+
+	boot_cpy = store_bootup_bootidx("bootloader");
+	DWN_MSG("boot dev %d, cpy id %d\n", medium_type, boot_cpy);
+	if (boot_cpy < 0 || boot_cpy >= num_cpy) {
+		DWN_ERR("err boot cpy %d\n", boot_cpy);
+		return -__LINE__;
+	}
+	if (medium_type != BOOT_EMMC) {
+		DWN_ERR("up all cpy\n");
+		return optimus_burn_bootloader(hImg);
+	}
+
+	switch (boot_cpy) {
+	case 0:
+	case 1: {
+		target_cpy = 1;
+		if (store_boot_copy_enable(0)) {
+			DWN_MSG("user valid\n");
+			target_cpy = 0;
+		}
+	} break;
+	case 2: {
+		target_cpy = 1;
+	} break;
+	default:
+		DWN_ERR("err boot_cpy %d\n", boot_cpy);
+		return -__LINE__;
+	}
+
+	DWN_MSG("target cpy %d\n", target_cpy);
+	ret = optimus_sdc_burn_sheader_load(hImg, target_cpy);
+	if (ret) {
+		DWN_ERR("Fail in burn boot at cpy %d\n", target_cpy);
+		return -__LINE__;
+	}
+	env_set_ulong("usbDiskBootCpy", target_cpy);
+	return 0;
+}
+
 //flag, 0 is burn completed, else burn failed
 int optimus_report_burn_complete_sta(int isFailed, int rebootAfterBurn)
 {
@@ -329,7 +384,7 @@ int optimus_report_burn_complete_sta(int isFailed, int rebootAfterBurn)
 	return 0;
 }
 
-static int optimus_sdc_burn_sheader_load(HIMAGE hImg)
+static int optimus_sdc_burn_sheader_load(HIMAGE hImg, int cpy_index)
 {
 	int rc = 0;
 	u64 partBaseOffset = V2_PAYLOAD_LOAD_ADDR;
@@ -342,6 +397,10 @@ static int optimus_sdc_burn_sheader_load(HIMAGE hImg)
 		return -__LINE__;
 	}
 
+	if (cpy_index >= 0) {
+		rc = store_boot_write("bootloader", cpy_index, bufsz, transferBuf);
+		return rc;
+	}
 	DWN_MSG("sheader loaded to 0x%p\n", transferBuf);
 	sheader_load(transferBuf);
 	return rc;
@@ -408,27 +467,11 @@ static int _optimus_sdc_burn_dtb_load(HIMAGE hImg, int is_gpt)
 		rc = (wrLen == itemSz) ? 0 : __LINE__;
 	}
 	if (!rc && !is_gpt) {
-		extern int check_valid_dts(unsigned char *buffer);
-		rc =  check_valid_dts(dtbTransferBuf);
-		DWN_MSG("check dts: rc %d\n", rc);
-		if (!rc) {
-#ifdef CONFIG_MULTI_DTB
-			extern unsigned int long get_multi_dt_entry(unsigned int long fdt_addr);
-			dtbTransferBuf = (unsigned char *)get_multi_dt_entry((unsigned int long)dtbTransferBuf);
-			if (!dtbTransferBuf) {
-				DWN_ERR("Fail in parse multi dtb\n");
-				return __LINE__;
-			}
-#endif
-			unsigned int fdtsz    = fdt_totalsize((char *)dtbTransferBuf);
-
-			DWN_MSG("local upgrade dts/sz 0x%p/0x%x\n", (char *)OPTIMUS_DTB_LOAD_ADDR, fdtsz);
-			if (fdtsz > 0x200000) {
-				DWN_ERR("Err fdtsz 0x%x\n", fdtsz);
-				return __LINE__;
-			}
-			memmove((char *)OPTIMUS_DTB_LOAD_ADDR, dtbTransferBuf, fdtsz);
+		if (itemSz > 0x200000) {
+			DWN_ERR("Err dt sz 0x%llx\n", itemSz);
+			return __LINE__;
 		}
+		memmove((char *)OPTIMUS_DTB_LOAD_ADDR, dtbTransferBuf, itemSz);
 	} else if (is_gpt) {
 		memmove((char *)V2_GPT_LOAD_ADDR, dtbTransferBuf, itemSz);
 	}
@@ -740,6 +783,8 @@ int optimus_burn_with_cfg_file(const char *cfgFile)
 	int erase_bootloader = sdc_cfg_para->custom.eraseBootloader;
 	const int usbDiskUpgrade = (OPTIMUS_WORK_MODE_UDISK_PRODUCE == optimus_work_mode_get());
 	int exist_gpt = 0;
+	int is_img_secure = 0;
+	const int is_soc_secure = IS_FEAT_BOOT_VERIFY();
 
 	optimus_buf_manager_init(16*1024);
 	hImg = image_open("mmc", "0", "1", cfgFile);
@@ -773,9 +818,22 @@ int optimus_burn_with_cfg_file(const char *cfgFile)
 		DWN_ERR("Fail to open image %s\n", pkgPath);
 		ret = __LINE__; goto _finish;
 	}
+
+	if (optimus_img_chk_soctype(hImg)) {
+		DWN_ERR("Fail in check soc type\n");
+		ret = __LINE__; goto _finish;
+	} else {
+		DWN_MSG("okay check soc type\n");
+		is_img_secure = optimus_img_secureboot_signed(hImg);
+		if (is_img_secure ^ is_soc_secure) {
+			DWN_ERR("img stat %d not match soc stat %d\n",
+				is_img_secure, is_soc_secure);
+			ret = __LINE__; goto _finish;
+		}
+	}
 	if (erase_bootloader && is_bootloader_old()) {
 		if (usbDiskUpgrade) {//upgrade new bootloader
-			if (optimus_burn_bootloader(hImg)) {
+			if (optimus_burn_1st_bootloader(hImg)) {
 				DWN_ERR("Fail in burn new bootloader from usb disk\n");
 				goto _finish;
 			}
@@ -816,6 +874,18 @@ int optimus_burn_with_cfg_file(const char *cfgFile)
 		optimus_led_show_in_process_of_burning();
 	}
 
+	if (usbDiskUpgrade && env_get("usbDiskBootCpy")) {
+		const int want_cpy = env_get_ulong("usbDiskBootCpy", 10, 0xff);
+		const int boot_cpy = store_bootup_bootidx("bootloader");
+
+		if (want_cpy != boot_cpy) {
+			DWN_ERR("Fail check boot index, want %d but %d\n", want_cpy, boot_cpy);
+			run_command("env default preboot; saveenv", 0);
+			return __LINE__;
+		}
+		DWN_MSG("okay check img bootloader\n");
+	}
+
 	//update dtb for burning drivers
 	ret = optimus_sdc_burn_dtb_load(hImg);
 	if (ITEM_NOT_EXIST != ret && ret) {
@@ -831,7 +901,7 @@ int optimus_burn_with_cfg_file(const char *cfgFile)
 	}
 
 	if (sheader_need()) {
-		ret = optimus_sdc_burn_sheader_load(hImg);
+		ret = optimus_sdc_burn_sheader_load(hImg, -1);
 		if (ret) {
 			DWN_ERR("Fail in load sheader for sdc_burn\n");
 			ret = __LINE__; goto _finish;
@@ -869,7 +939,7 @@ int optimus_burn_with_cfg_file(const char *cfgFile)
 		//erase after bootloader for usb disk
 #ifdef CONFIG_MMC
 		if (store_get_type() == BOOT_EMMC) {
-			ret = usb_burn_erase_data(1);
+			ret = usb_burn_erase_data(0x3);
 		} else {
 			ret = run_command("echo store erase.chip 0; store erase.chip 0", 0);
 		}
@@ -936,7 +1006,7 @@ int optimus_burn_with_cfg_file(const char *cfgFile)
 	}
 
 	if (hasBootloader) {//burn bootloader
-		if (usbDiskUpgrade && env_get_hex("usbDiskNewBoot", 0)) {//already upgrade bootloader from pkg
+		if (usbDiskUpgrade && env_get("usbDiskNewBoot") && !env_get("usbDiskBootCpy")) {
 			;
 		} else {
 			ret = optimus_burn_bootloader(hImg);

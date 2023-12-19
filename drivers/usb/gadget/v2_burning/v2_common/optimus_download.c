@@ -129,6 +129,8 @@ static int _assert_logic_partition_cap(const char *thePartName, const uint64_t n
 		DWN_DBG("cfg dtsPartSz %llx for part(%s)\n", dtsPartSz, thePartName);
 		if (NAND_PART_SIZE_FULL == dtsPartSz)
 			return 0;
+		if ((dtsPartSz >> 32) == 0xffffffffUL) //GPT mode last part
+			return 0;
 		if (dtsPartSz > nandPartCap) {
 			DWN_ERR("partSz of logic part(%s): sz dts %llx > Sz flash %llx\n",
 					thePartName, dtsPartSz, nandPartCap);
@@ -672,19 +674,20 @@ int optimus_storage_init(int toErase)
 
 	if (!_dtb_is_loaded) {
 		DWN_WRN("dtb is not loaded yet\n");
-	} else {
-#ifdef CONFIG_AML_MTD
-		if (BOOT_NAND_MTD == store_get_type()) {
-			extern int check_valid_dts(unsigned char *buffer);
-			ret =  check_valid_dts(dtbLoadedAddr);
-		} else
-#endif // #ifdef CONFIG_AML_MTD
-			ret = get_partition_from_dts(is_gpt ? gpt_load_addr : dtbLoadedAddr);
+	}
 
-		if (ret) {
-			DWN_ERR("Failed at check part table\n");
-			return __LINE__;
+	if (_dtb_is_loaded && is_gpt) {
+		DWN_MSG("to check dtb\n");
+		if (check_valid_dts(dtbLoadedAddr) < 0) {
+			DWN_ERR("Fail in check dtb valid\n");
+			return -__LINE__;
 		}
+	}
+
+	ret = get_partition_from_dts(is_gpt ? gpt_load_addr : dtbLoadedAddr);
+	if (ret) {
+		DWN_WRN("Failed at check part table\n");
+		//return __LINE__;
 	}
 
 	ret = store_init(1);
@@ -746,6 +749,10 @@ int optimus_storage_init(int toErase)
 #ifdef CONFIG_MULTI_DTB
 		fdtAddr = get_multi_dt_entry(fdtAddr);
 #endif// #ifdef CONFIG_MULTI_DTB
+	if (!fdtAddr) {
+		//0 address is invalid
+		return __LINE__;
+	}
 		ret = fdt_check_header((char *)fdtAddr);
 		unsigned int fdtsz    = fdt_totalsize((char *)fdtAddr);
 		if (ret || !fdtsz) {

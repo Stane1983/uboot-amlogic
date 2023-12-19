@@ -180,13 +180,14 @@ void optimus_clear_ovd_register(void)
 
 #ifdef CONFIG_CMD_MMC
 //erase only emmc user part and skip bootloader/env
+#define _MMC_ERASE_MASK_BOOTLOADER	(1 << 0)
+#define _MMC_ERASE_MASK_ENV       	(1 << 1)
+//bit1 protect env
 int usb_burn_erase_data(unsigned char init_flag)
 {
 	int ret = 0, i;
 	struct mmc *mmc;
 	struct partitions *part_info = NULL;
-
-	init_flag = init_flag;
 
 	mmc = find_mmc_device(1);
 	if (!mmc) {
@@ -207,9 +208,18 @@ int usb_burn_erase_data(unsigned char init_flag)
 		part_info = get_partition_info_by_num(i);
 		if (!part_info)
 			break;
-		if (!strcmp("reserved", part_info->name) ||
-				!strcmp("bootloader", part_info->name)) {
+		if (!strcmp("reserved", part_info->name)) {
 			printf("Part:%s is skiped\n", part_info->name);
+			continue;
+		}
+		if ((init_flag & _MMC_ERASE_MASK_BOOTLOADER) &&
+				!strcmp("bootloader", part_info->name)) {
+			printf("Part:%s not erased\n", part_info->name);
+			continue;
+		}
+		if ((init_flag & _MMC_ERASE_MASK_ENV) &&
+		    !strcmp("env", part_info->name)) {
+			printf("Part:%s not erased\n", part_info->name);
 			continue;
 		}
 		if (part_info->size == 0) {
@@ -230,4 +240,12 @@ int usb_burn_erase_data(unsigned char init_flag)
 	return 0;
 }
 #endif// #ifdef CONFIG_CMD_MMC
+
+static int _boot_cpy_en(int index)
+{
+	return index >= 0;
+}
+
+extern int store_boot_copy_enable(int id) __attribute__((weak, alias("_boot_cpy_en")));
+
 
