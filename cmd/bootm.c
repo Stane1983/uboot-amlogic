@@ -126,6 +126,10 @@ int do_bootm(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 {
 	int states;
 	int ret;
+#if !defined(CONFIG_SKIP_KERNEL_DTB_SECBOOT_CHECK) && defined(CONFIG_IMAGE_CHECK)
+	char argv0_new[12] = {0};
+	char *argv_new = (char *)&argv0_new;
+#endif
 
 #ifdef CONFIG_NEEDS_MANUAL_RELOC
 	static int relocated = 0;
@@ -182,8 +186,6 @@ int do_bootm(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 		 * Only skip if secure boot so normal boot can use plain boot.img+
 		 */
 		ulong img_addr, ncheckoffset;
-		char argv0_new[12] = {0};
-		char *argv_new = (char *)&argv0_new;
 
 		img_addr = genimg_get_kernel_addr(argc < 1 ? NULL : argv[0]);
 		ncheckoffset = android_image_check_offset();

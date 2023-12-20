@@ -282,7 +282,7 @@ ifdef CONFIG_AML_UASAN
 #use gcc version above 9.0 to support asan-instrument-allocas option
 CROSS_COMPILE ?=/opt/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
 else
-CROSS_COMPILE ?=/opt/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
+CROSS_COMPILE ?=/opt/arm-gnu-toolchain-13.2.Rel1-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
 endif
 export CROSS_COMPILE
 
