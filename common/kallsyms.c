@@ -30,7 +30,12 @@ const char *symbol_lookup(unsigned long addr, unsigned long *caddr, unsigned lon
 	char sym_addr_tmp[17] = {0};	/* 17 bytes to avoid overflow */
 	unsigned long text_start;
 	unsigned long text_end;
+	int cache_dis = 0;
 
+	if (gd->flags & GD_FLG_CACHE_EN) {
+		gd->flags &= ~GD_FLG_CACHE_EN;
+		cache_dis = 1;
+	}
 	sym = system_map;
 	csym = NULL;
 	*caddr = 0;
@@ -61,6 +66,9 @@ const char *symbol_lookup(unsigned long addr, unsigned long *caddr, unsigned lon
 	 */
 	if (*sym == 0x00)
 		*naddr = text_end;
+
+	if (cache_dis)
+		gd->flags |= GD_FLG_CACHE_EN;
 
 	return csym;
 }
