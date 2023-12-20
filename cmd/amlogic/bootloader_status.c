@@ -457,6 +457,16 @@ static int update_gpt(int flag)
 			ret = -1;
 			goto exit;
 		}
+	} else if (flag == 3) {
+		printf("null ab mode\n");
+		iRet = store_logic_read("bootloader_up", 0,
+			BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET, buffer);
+		if (iRet) {
+			printf("Fail to read 0x%xB from bootloader_up\n",
+				BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET);
+			ret = -1;
+			goto exit;
+		}
 	}
 
 	if (mmc) {
@@ -477,13 +487,17 @@ static int update_gpt(int flag)
 		} else {
 			erase_flag = check_gpt_change(dev_desc, buffer + 0x3DFE00);
 
-			if (erase_flag == 3) {
+			if (erase_flag == 4 && has_boot_slot == 0) {
+				printf("null ab critical partition change, refused to upgrade\n");
+				ret = -1;
+				goto exit;
+			} else if (has_boot_slot == 1 && (erase_flag == 3 || erase_flag == 4)) {
 				printf("Important partition changes, refused to upgrade\n");
 				ret = 1;
 				goto exit;
 			} else if (erase_flag == 0) {
 				printf("partition doesn't change, needn't update\n");
-				ret = -1;
+				ret = 0;
 				goto exit;
 			}
 
@@ -516,7 +530,7 @@ static int update_gpt(int flag)
 		}
 	}
 
-	if (flag == 1 || flag == 2) {
+	if (has_boot_slot == 1 && (flag == 1 || flag == 2)) {
 		printf("update from dts to gpt, backup old bootloader\n");
 		char *slot = NULL;
 
@@ -673,6 +687,73 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 		run_command("reset", 0);
 	}
 
+	char *recovery_check = env_get("recovery_check_part");
+	int update_flag = -1;
+	int rc = 0;
+
+	if (has_boot_slot == 0 && recovery_check &&
+		(!strcmp(recovery_check, "1") || !strcmp(recovery_check, "4"))) {
+		printf("non ab for kernel 5.15, check part table\n");
+		if (!strcmp(recovery_check, "1")) {
+			printf("try write boot1\n");
+			rc = write_bootloader(1);
+			if (rc) {
+				printf("write boot1 fail, OTA error\n");
+				env_set("recovery_check_part", "3");
+			} else {
+				printf("check & update part\n");
+				update_flag = update_gpt(3);
+			}
+		} else if (!strcmp(recovery_check, "4")) {
+			printf("check & update part\n");
+			update_flag = update_gpt(1);
+		}
+
+		run_command("defenv_reserv; saveenv;", 0);
+		run_command("run bcb_cmd", 0);
+
+		if (update_flag == 0) {
+			printf("check & update part ok......\n");
+			env_set("recovery_check_part", "2");
+			printf("boot from boot0\n");
+			env_set("reboot_status", "reboot_next");
+			env_set("expect_index", "1");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+			run_command("update_env_part -p reboot_status;", 0);
+			run_command("update_env_part -p expect_index;", 0);
+#endif
+		} else {
+			printf("check & update part error\n");
+			if (!strcmp(recovery_check, "1")) {
+				printf("write boot0 back\n");
+				write_bootloader_back("2", 1);
+			} else if (!strcmp(recovery_check, "4")) {
+				printf("write bootloader back\n");
+				write_bootloader_back("2", 1);
+				write_bootloader_back("2", 0);
+			}
+			env_set("recovery_check_part", "3");
+			env_set("upgrade_step", "4");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+			run_command("update_env_part -p upgrade_step;", 0);
+#endif
+		}
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+		run_command("update_env_part -p recovery_check_part;", 0);
+#else
+		run_command("saveenv", 0);
+#endif
+
+		run_command("reset", 0);
+	}
+
+	if (has_boot_slot == 0 && recovery_check &&
+		(!strcmp(recovery_check, "3"))) {
+		printf("check part error, run_recovery_from_flash\n");
+		run_recovery_from_flash();
+		return 0;
+	}
+
 	char *write_boot = env_get("write_boot");
 
 	if (has_boot_slot == 0 && write_boot && (!strcmp(write_boot, "1"))) {
@@ -725,8 +806,6 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 		return -1;
 	}
 
-	int rc = 0;
-	int update_flag = -1;
 	char *update_dts_gpt = NULL;
 
 	if (write_boot && !strcmp(write_boot, "1")) {
@@ -765,7 +844,7 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 		}
 	}
 
-	if ((write_boot && !strcmp(write_boot, "1")) || (update_flag != -1)) {
+	if ((write_boot && !strcmp(write_boot, "1")) || update_flag > 0) {
 		printf("reset......\n");
 		env_set("write_boot", "0");
 		env_set("reboot_status", "reboot_next");

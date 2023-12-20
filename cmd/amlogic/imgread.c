@@ -219,14 +219,44 @@ static int do_image_read_dtb_from_knl(const char *partname,
 	const int preloadsz = 4096 * 2;
 	int pagesz = 0;
 	boot_img_hdr_t *hdr_addr = (boot_img_hdr_t *)loadaddr;
+	char *upgrade_step_s = NULL;
+	bool cache_flag = false;
+	int rc = 0;
 
 	lflashreadoff = lflashreadinitoff;
 	nflashloadlen = preloadsz;//head info is one page size == 2k
 	debugP("sizeof preloadsz=%u\n", nflashloadlen);
-	ret = store_logic_read(partname, lflashreadoff, nflashloadlen, loadaddr);
-	if (ret) {
-		errorP("Fail to read 0x%xB from part[%s] at offset 0\n", nflashloadlen, partname);
-		return __LINE__;
+
+	upgrade_step_s = env_get("upgrade_step");
+	if (upgrade_step_s && (strcmp(upgrade_step_s, "3") == 0) &&
+		(strcmp(partname, "recovery") == 0)) {
+		loff_t len_read;
+
+		MsgP("read recovery.img from cache\n");
+		rc = fs_set_blk_dev("mmc", "1:2", FS_TYPE_EXT);
+		if (rc) {
+			errorP("Fail to set blk dev cache\n");
+			cache_flag = false;
+		} else {
+			fs_read("/recovery/recovery.img", (unsigned long)loadaddr,
+					lflashreadoff, IMG_PRELOAD_SZ, &len_read);
+			if (len_read != IMG_PRELOAD_SZ) {
+				errorP("Fail to read recovery.img from cache\n");
+				cache_flag = false;
+			} else {
+				cache_flag = true;
+			}
+		}
+	}
+
+	if (!cache_flag) {
+		MsgP("read from part: %s\n", partname);
+		ret = store_logic_read(partname, lflashreadoff, nflashloadlen, loadaddr);
+		if (ret) {
+			errorP("Fail to read 0x%xB from part[%s] at offset 0\n",
+				nflashloadlen, partname);
+			return __LINE__;
+		}
 	}
 
 	if (genimg_get_format(hdr_addr) != IMAGE_FORMAT_ANDROID) {
@@ -254,11 +284,34 @@ static int do_image_read_dtb_from_knl(const char *partname,
 		nflashloadlen = preloadsz_r;//head info is one page size == 4k
 		debugP("sizeof preloadSz=%u\n", nflashloadlen);
 
-		ret = store_logic_read(partname, lflashreadoff, nflashloadlen, loadaddr);
-		if (ret) {
-			errorP("Fail to read 0x%xB from part[%s] at offset 0\n",
-				nflashloadlen, partname);
-			return __LINE__;
+		if (upgrade_step_s && (strcmp(upgrade_step_s, "3") == 0)) {
+			loff_t len_read;
+
+			MsgP("read vendor_boot.img from cache\n");
+			rc = fs_set_blk_dev("mmc", "1:2", FS_TYPE_EXT);
+			if (rc) {
+				errorP("Fail to set blk dev cache\n");
+				cache_flag = false;
+			} else {
+				fs_read("/recovery/vendor_boot.img", (unsigned long)loadaddr,
+						lflashreadoff, nflashloadlen, &len_read);
+				if (nflashloadlen != len_read) {
+					errorP("Fail to read vendor_boot.img from cache\n");
+					cache_flag = false;
+				} else {
+					cache_flag = true;
+				}
+			}
+		}
+
+		if (!cache_flag) {
+			MsgP("read from part: %s\n", partname);
+			ret = store_logic_read(partname, lflashreadoff, nflashloadlen, loadaddr);
+			if (ret) {
+				errorP("Fail to read 0x%xB from part[%s] at offset 0\n",
+					nflashloadlen, partname);
+				return __LINE__;
+			}
 		}
 
 		p_vendor_boot_img_hdr_t pvendorimghdr = (p_vendor_boot_img_hdr_t)loadaddr;
@@ -328,11 +381,43 @@ static int do_image_read_dtb_from_knl(const char *partname,
 		secondaddr += notAlignSz;
 		MsgP("not align dtb off 0x%llx\n", wroff);
 	}
-	ret = store_logic_read(partname, wroff, wrsz, wraddr);
-	if (ret) {
-		errorP("Fail to read 0x%xB from part[%s] at offset 0x%x\n",
-			(unsigned int)wrsz, partname, (unsigned int)wroff);
-		return __LINE__;
+
+	if (!cache_flag) {
+		MsgP("read from part: %s\n", partname);
+		ret = store_logic_read(partname, wroff, wrsz, wraddr);
+		if (ret) {
+			errorP("Fail to read 0x%xB from part[%s] at offset 0x%x\n",
+				(unsigned int)wrsz, partname, (unsigned int)wroff);
+			return __LINE__;
+		}
+	} else {
+		loff_t len_read;
+
+		if (is_android_r_image((void *)hdr_addr)) {
+			MsgP("try read vendor_boot.img from cache\n");
+			rc = fs_set_blk_dev("mmc", "1:2", FS_TYPE_EXT);
+			if (!rc) {
+				MsgP("read vendor_boot.img from cache\n");
+				fs_read("/recovery/vendor_boot.img", (unsigned long)wraddr,
+							wroff, wrsz, &len_read);
+				if (wrsz != len_read) {
+					errorP("Fail to read vendor_boot.img from cache\n");
+					return __LINE__;
+				}
+			}
+		} else {
+			MsgP("try read recovery.img from cache\n");
+			rc = fs_set_blk_dev("mmc", "1:2", FS_TYPE_EXT);
+			if (!rc) {
+				MsgP("read recovery.img from cache\n");
+				fs_read("/recovery/recovery.img", (unsigned long)wraddr,
+							wroff, wrsz, &len_read);
+				if (wrsz != len_read) {
+					errorP("Fail to read recovery.img from cache\n");
+					return __LINE__;
+				}
+			}
+		}
 	}
 #ifndef CONFIG_SKIP_KERNEL_DTB_SECBOOT_CHECK
 	if (IS_FEAT_BOOT_VERIFY()) {
@@ -835,9 +920,9 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 		u64 vendorboot_part_sz = 0;
 		int rc_r = 0;
 
-		if (strcmp(slot_name, "0") == 0)
+		if (slot_name && (strcmp(slot_name, "0") == 0))
 			strcpy((char *)partname_r, "vendor_boot_a");
-		else if (strcmp(slot_name, "1") == 0)
+		else if (slot_name && (strcmp(slot_name, "1") == 0))
 			strcpy((char *)partname_r, "vendor_boot_b");
 		else
 			strcpy((char *)partname_r, "vendor_boot");

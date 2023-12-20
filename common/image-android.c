@@ -12,6 +12,7 @@
 #include <xbc.h>
 #include <emmc_partitions.h>
 #include <amlogic/store_wrapper.h>
+#include <fs.h>
 
 static const unsigned char lzop_magic[] = {
 	0x89, 0x4c, 0x5a, 0x4f, 0x00, 0x0d, 0x0a, 0x1a, 0x0a
@@ -691,6 +692,9 @@ static bool _read_in_bootconfig(struct vendor_boot_img_hdr *boot_info, uint32_t 
 	unsigned int offset = 0;
 	int bootconfig_size = 0;
 	int ret = 0;
+	char *upgrade_step_s = NULL;
+	bool cache_flag = false;
+	int rc = 0;
 
 	slot_name = env_get("slot-suffixes");
 	if (slot_name && (strcmp(slot_name, "0") == 0))
@@ -718,12 +722,38 @@ static bool _read_in_bootconfig(struct vendor_boot_img_hdr *boot_info, uint32_t 
 
 		printf("bootconfig offset 0x%x\n", offset);
 
-		ret = store_logic_read(partname, offset, boot_info->vendor_bootconfig_size,
-			(void *)(pRAMdisk + ramdisk_size));
-		if (ret) {
-			printf("Fail to read 0x%xB from part[%s] at offset 0x%x\n",
-				boot_info->vendor_bootconfig_size, partname, offset);
-			return false;
+		upgrade_step_s = env_get("upgrade_step");
+		if (upgrade_step_s && (strcmp(upgrade_step_s, "3") == 0)) {
+			loff_t len_read;
+
+			printf("read vendor_boot.img from cache\n");
+			rc = fs_set_blk_dev("mmc", "1:2", FS_TYPE_EXT);
+			if (rc) {
+				printf("Fail to set blk dev cache\n");
+				cache_flag = false;
+			} else {
+				fs_read("/recovery/vendor_boot.img",
+					(unsigned long)(pRAMdisk + ramdisk_size),
+					offset, boot_info->vendor_bootconfig_size,
+					&len_read);
+				if (boot_info->vendor_bootconfig_size != len_read) {
+					printf("Fail to read vendor_boot.img from cache\n");
+					cache_flag = false;
+				} else {
+					cache_flag = true;
+				}
+			}
+		}
+
+		if (!cache_flag) {
+			printf("read from part: %s\n", partname);
+			ret = store_logic_read(partname, offset, boot_info->vendor_bootconfig_size,
+				(void *)(pRAMdisk + ramdisk_size));
+			if (ret) {
+				printf("Fail to read 0x%xB from part[%s] at offset 0x%x\n",
+					boot_info->vendor_bootconfig_size, partname, offset);
+				return false;
+			}
 		}
 
 		bootconfig_size += boot_info->vendor_bootconfig_size;
