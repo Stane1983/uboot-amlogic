@@ -81,7 +81,7 @@ void noncached_init(void)
 	size = ALIGN(CONFIG_SYS_NONCACHED_MEMORY, MMU_SECTION_SIZE);
 	start = end - size;
 
-	debug("mapping memory %pa-%pa non-cached\n", &start, &end);
+	printf("mapping memory %pa-%pa non-cached\n", &start, &end);
 
 	noncached_start = start;
 	noncached_end = end;

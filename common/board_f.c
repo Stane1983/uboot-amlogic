@@ -44,6 +44,10 @@
 #include <dm/root.h>
 #include <linux/errno.h>
 
+#ifdef CONFIG_SYS_NONCACHED_MEMORY
+#include <linux/sizes.h>
+#endif
+
 /*
  * Pointer to initial global data area
  *
@@ -872,6 +876,13 @@ static int setup_reloc(void)
 #endif
 #endif
 	memcpy(gd->new_gd, (char *)gd, sizeof(gd_t));
+
+#ifdef CONFIG_SYS_NONCACHED_MEMORY
+	gd->start_addr_sp = ALIGN(gd->start_addr_sp, MMU_SECTION_SIZE);
+	gd->start_addr_sp -= MMU_SECTION_SIZE;
+	gd->start_addr_sp -= ALIGN(CONFIG_SYS_NONCACHED_MEMORY, MMU_SECTION_SIZE);
+	gd->start_addr_sp -= (SZ_2M);
+#endif
 
 	printf("Relocation Offset is: %08lx\n", gd->reloc_off);
 	printf("Relocating to %08lx, new gd at %08lx, sp at %08lx\n",
