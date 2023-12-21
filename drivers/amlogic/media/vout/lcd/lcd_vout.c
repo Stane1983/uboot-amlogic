@@ -492,15 +492,12 @@ static void lcd_module_enable(struct aml_lcd_drv_s *pdrv, char *mode, unsigned i
 			      pdrv->index, pdrv->boot_ctrl.init_level);
 		}
 	}
-	if (!lcd_debug_test_flag)
-		lcd_mute_set(pdrv, 0);
 }
 
 static void lcd_module_disable(struct aml_lcd_drv_s *pdrv)
 {
 	LCDPR("[%d]: disable: %s\n", pdrv->index, pdrv->config.basic.model_name);
 
-	lcd_mute_set(pdrv, 1);
 	if (pdrv->status & LCD_STATUS_IF_ON) {
 #ifdef CONFIG_AML_LCD_BACKLIGHT
 #ifndef CONFIG_AML_LCD_PXP
