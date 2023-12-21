@@ -64,6 +64,9 @@ static void independ_path_default_regs(void);
 static void fix_vpu_clk2_default_regs(void);
 
 static int pi_enable;
+#define BLEND_DOUT_DEF_HSIZE 3840
+#define BLEND_DOUT_DEF_VSIZE 2160
+
 struct fb_layout_s fb_layout[VPU_VPP_MAX];
 
 #ifdef AML_C3_DISPLAY
@@ -1530,9 +1533,16 @@ void osd_update_blend(struct pandata_s *disp_data)
 	u32 blend_width, blend_height;
 #endif
 	int vmode = -1;
+#ifdef AML_S5_DISPLAY
+	u32 blend_dout_hsize, blend_dout_vsize;
+	struct vinfo_s *vinfo = NULL;
+#endif
 
 #ifdef CONFIG_AML_VOUT
 	vmode = vout_get_current_vmode();
+#ifdef AML_S5_DISPLAY
+	vinfo = vout_get_current_vinfo();
+#endif
 #endif
 	switch (vmode) {
 	/* case VMODE_LCD: */
@@ -1566,18 +1576,41 @@ void osd_update_blend(struct pandata_s *disp_data)
 #ifdef AML_S5_DISPLAY
 	blend_width = osd_hw.free_dst_data[0].x_end - osd_hw.free_dst_data[0].x_start + 1;
 	blend_height = osd_hw.free_dst_data[0].y_end - osd_hw.free_dst_data[0].y_start + 1;
-	osd_reg_write(VIU_OSD_BLEND_DIN1_SCOPE_H, (blend_width - 1) << 16);
-	osd_reg_write(VIU_OSD_BLEND_DIN1_SCOPE_V, (blend_height - 1) << 16);
+	if (width > 3840 && height > 2160) {
+		blend_dout_hsize = BLEND_DOUT_DEF_HSIZE;
+		blend_dout_vsize = BLEND_DOUT_DEF_VSIZE;
+	} else {
+		blend_dout_hsize = ALIGN(blend_width, 4);
+		blend_dout_vsize = blend_height;
+	}
+
+	if (width > 3840 && height > 2160) {
+		osd_reg_write(VIU_OSD_BLEND_DIN1_SCOPE_H,
+			osd_hw.free_dst_data[0].x_end << 16 | osd_hw.free_dst_data[0].x_start);
+		osd_reg_write(VIU_OSD_BLEND_DIN1_SCOPE_V,
+			osd_hw.free_dst_data[0].y_end << 16 | osd_hw.free_dst_data[0].y_start);
+		osd_reg_write(VPP_OSD1_BLD_H_SCOPE, vinfo->width - 1);
+		osd_reg_write(VPP_OSD1_BLD_V_SCOPE, vinfo->height - 1);
+	} else {
+		osd_reg_write(VIU_OSD_BLEND_DIN1_SCOPE_H, (blend_width - 1) << 16);
+		osd_reg_write(VIU_OSD_BLEND_DIN1_SCOPE_V, (blend_height - 1) << 16);
+		osd_reg_write(VPP_OSD1_BLD_H_SCOPE,
+			disp_data->x_start << 16 | disp_data->x_end);
+		osd_reg_write(VPP_OSD1_BLD_V_SCOPE,
+			disp_data->y_start << 16 | disp_data->y_end);
+	}
+
 	osd_reg_write(VIU_OSD_BLEND_BLEND0_SIZE,
-			blend_height << 16 | ALIGN(blend_width, 4));
+			blend_dout_vsize << 16 | blend_dout_hsize);
 	osd_reg_write(OSD_BLEND_DOUT0_SIZE,
-			blend_height << 16 | ALIGN(blend_width, 4));
-#endif
+			blend_dout_vsize << 16 | blend_dout_hsize);
+#else
 	/* setting blend scope */
 	osd_reg_write(VPP_OSD1_BLD_H_SCOPE,
 		disp_data->x_start << 16 | disp_data->x_end);
 	osd_reg_write(VPP_OSD1_BLD_V_SCOPE,
 		disp_data->y_start << 16 | disp_data->y_end);
+#endif
 	osd_reg_write(VPP_OUT_H_V_SIZE,
 			width << 16 | height);
 
