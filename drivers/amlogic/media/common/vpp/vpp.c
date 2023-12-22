@@ -2177,6 +2177,30 @@ static bool is_vpp_supported(int chip_id)
 		return true;
 }
 
+static void vpp_wb_init_reg(void)
+{
+	int chip_id;
+
+	chip_id = vpp_get_chip_type();
+
+	if (chip_id != MESON_CPU_MAJOR_ID_T3X)
+		return;
+
+	vpp_reg_write(0x2550, 0x84000400);
+	vpp_reg_write(0x2650, 0x84000400);
+
+	/* vpp_reg_write(0x2550, 0xc4000400); */
+	/* vpp_reg_write(0x2650, 0xc4000400); */
+	vpp_reg_write(0x2551, 0x04000000);
+	vpp_reg_write(0x2651, 0x04000000);
+	vpp_reg_write(0x2552, 0x00000000);
+	vpp_reg_write(0x2652, 0x00000000);
+	vpp_reg_write(0x2553, 0x00000000);
+	vpp_reg_write(0x2653, 0x00000000);
+	vpp_reg_write(0x2554, 0x00000000);
+	vpp_reg_write(0x2654, 0x00000000);
+}
+
 void vpp_init(void)
 {
 	int chip_id;
@@ -2188,6 +2212,9 @@ void vpp_init(void)
 		return;
 	}
 	vpp_init_flag = 1;
+
+	if (chip_id == MESON_CPU_MAJOR_ID_T3X)
+		vpp_wb_init_reg();
 
 	/* init vpu fifo control register */
 	vpp_ofifo_init();
