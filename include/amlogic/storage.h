@@ -137,6 +137,7 @@ struct storage_t {
 	int (*gpt_read)(void *dest);
 	int (*gpt_write)(void *source);
 	int (*gpt_erase)(void);
+	int (*boot_copy_enable)(int index);
 	u32 (*get_rsv_size)(const char *rsv_name);
 	int (*read_rsv)(const char *rsv_name, size_t size, void *buf);
 	int (*write_rsv)(const char *rsv_name, size_t size, void *buf);
@@ -487,5 +488,6 @@ int store_gpt_write(void *buf);
 int store_gpt_erase(void);
 
 int check_valid_dts(unsigned char *buffer);
+int store_boot_copy_enable(int index);
 
 #endif/* __STORAGE_H__ */

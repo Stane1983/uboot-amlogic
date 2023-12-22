@@ -13,6 +13,11 @@
 #include <amlogic/aml_mmc.h>
 #include <linux/compat.h>
 #include <asm/global_data.h>
+#include <asm/amlogic/arch/efuse.h>
+
+#if (IS_ENABLED(CONFIG_EFUSE_OBJ_API) && IS_ENABLED(CONFIG_CMD_EFUSE))
+extern efuse_obj_field_t efuse_field;
+#endif//#ifdef CONFIG_EFUSE_OBJ_API
 
 #define USER_PARTITION 0
 #define BOOT0_PARTITION 1
@@ -462,9 +467,6 @@ uint8_t mmc_storage_get_copies(const char *part_name) {
 	if (!mmc)
 		return 1;
 
-	if (aml_gpt_valid(mmc) == 0)
-		return 2;
-
 	return 3;
 }
 
@@ -566,6 +568,24 @@ static int amlmmc_write_info_sector(struct mmc *mmc)
 	return ret;
 }
 
+/* return 0;not set efuse bit; */
+int mmc_check_uboot_backup_efuse_bit(int index)
+{
+	int ret = 0;
+#if (IS_ENABLED(CONFIG_EFUSE_OBJ_API) && IS_ENABLED(CONFIG_CMD_EFUSE))
+	if (index == 0)
+		run_command("efuse_obj get FEAT_DISABLE_EMMC_USER", 0);
+	else if (index == 1)
+		run_command("efuse_obj get FEAT_DISABLE_EMMC_BOOT_0", 0);
+	else if (index == 2)
+		run_command("efuse_obj get FEAT_DISABLE_EMMC_BOOT_1", 0);
+
+	if (*efuse_field.data == 1)
+		ret = 1;
+#endif
+	return ret;
+}
+
 int mmc_boot_read(const char *part_name, uint8_t cpy, size_t size, void *dest) {
 
 	char ret=1;
@@ -587,8 +607,11 @@ int mmc_boot_read(const char *part_name, uint8_t cpy, size_t size, void *dest) {
 			ret = blk_select_hwpart_devnum(UCLASS_MMC, STORAGE_EMMC, i);
 			if (ret) goto R_SWITCH_BACK;
 
-			if (mmc != NULL && i == 0 && aml_gpt_valid(mmc) == 0)
+			if (mmc && i == 0 && aml_gpt_valid(mmc) == 0) {
+				printf("gpt valid, skip user\n");
+				cpy = cpy >> 1;
 				continue;
+			}
 
 			ret = storage_read_in_part(part_name, 0, size, dest);
 
@@ -640,8 +663,11 @@ int mmc_boot_write(const char *part_name, uint8_t cpy, size_t size, void *source
 			}
 #endif
 
-			if (mmc != NULL && i == 0 && aml_gpt_valid(mmc) == 0)
+			if (mmc && i == 0 && aml_gpt_valid(mmc) == 0) {
+				printf("gpt valid, skip user\n");
+				cpy = cpy >> 1;
 				continue;
+			}
 
 			ret = storage_write_in_part(part_name, 0, size, source);
 
@@ -695,8 +721,11 @@ int mmc_boot_erase(const char *part_name, uint8_t cpy) {
 			}
 #endif
 
-			if (mmc != NULL && i == 0 && aml_gpt_valid(mmc) == 0)
+			if (mmc && i == 0 && aml_gpt_valid(mmc) == 0) {
+				printf("gpt valid, skip user\n");
+				cpy = cpy >> 1;
 				continue;
+			}
 
 			ret = storage_erase_in_part(part_name, 0, size);
 
@@ -767,6 +796,26 @@ int mmc_gpt_write(void *source)
 	part_init(dev_desc);
 	printf("update gpt and ept success\n");
 	return 0;
+}
+
+/*
+ * Check whether the current boot can be written
+ * ret: 0 disable; 1: enable
+ */
+int mmc_boot_copy_enable(int index)
+{
+	struct mmc *mmc;
+	int ret = 1;
+
+	mmc = find_mmc_device(STORAGE_EMMC);
+	if (!mmc)
+		return -1;
+
+	if (mmc_check_uboot_backup_efuse_bit(index) ||
+	    (index == 0 && aml_gpt_valid(mmc) == 0))
+		ret = 0;
+
+	return ret;
 }
 
 /*
@@ -990,6 +1039,8 @@ void config_storage_dev_func(struct storage_t *dev, struct mmc* mmc)
 	dev->gpt_read = mmc_gpt_read;
 	dev->gpt_write = mmc_gpt_write;
 	dev->gpt_erase = mmc_gpt_erase;
+
+	dev->boot_copy_enable = mmc_boot_copy_enable;
 
 	return;
 }
