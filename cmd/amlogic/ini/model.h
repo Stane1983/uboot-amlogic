@@ -106,7 +106,7 @@ struct lcd_header_s {
 struct lcd_basic_s {
 	char model_name[CC_LCD_NAME_LEN_MAX];
 	unsigned char lcd_if_chk; /*[5:0]interface, [7:6]:config_check*/
-	unsigned char lcd_bits;
+	unsigned char lcd_bits_cfmt;/*bit[5:0]lcd_bits, bit[7:6]input_cfmt*/
 	unsigned short screen_width;  /* screen physical width in "mm" unit */
 	unsigned short screen_height; /* screen physical height in "mm" unit */
 };
@@ -116,12 +116,12 @@ struct lcd_timming_s {
 	unsigned short v_active; /* Vertical display area */
 	unsigned short h_period; /* Horizontal total period time */
 	unsigned short v_period; /* Vertical total period time */
-	unsigned short hsync_width;
+	unsigned short hsync_width_pol;/*bit[11:0]hs_width, bit[15:12]hs_pol*/
 	unsigned short hsync_bp;
-	unsigned char hsync_pol;
-	unsigned short vsync_width;
+	unsigned char pre_de_h;
+	unsigned short vsync_width_pol;/*bit[11:0]vs_width, bit[15:12]vs_pol*/
 	unsigned short vsync_bp;
-	unsigned char vsync_pol;
+	unsigned char pre_de_v;
 };
 
 struct lcd_customer_s {

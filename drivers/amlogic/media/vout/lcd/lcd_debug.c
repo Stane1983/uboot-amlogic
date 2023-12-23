@@ -61,6 +61,8 @@ static void lcd_timing_info_print(struct aml_lcd_drv_s *pdrv)
 		"vs_backporch      %d%s\n"
 		"vs_frontporch     %d%s\n"
 		"vs_pol            %d\n"
+		"pre_de_h          %d\n"
+		"pre_de_v          %d\n"
 		"video_hstart      %d\n"
 		"video_vstart      %d\n\n",
 		h_period, v_period, hs_width, hs_bp,
@@ -71,7 +73,10 @@ static void lcd_timing_info_print(struct aml_lcd_drv_s *pdrv)
 		((verr & 0x4) ? "(X)" : ((verr & 0x8) ? "(!)" : "")),
 		pconf->timing.vsync_fp,
 		((verr & 0x1) ? "(X)" : ((verr & 0x2) ? "(!)" : "")),
-		vs_pol, video_hstart, video_vstart);
+		vs_pol,
+		pconf->timing.pre_de_h,
+		pconf->timing.pre_de_v,
+		video_hstart, video_vstart);
 
 	printf("h_period_min      %d\n"
 		"h_period_max      %d\n"

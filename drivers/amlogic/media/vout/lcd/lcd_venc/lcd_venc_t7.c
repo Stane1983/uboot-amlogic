@@ -209,7 +209,7 @@ static void lcd_venc_set_timing(struct aml_lcd_drv_s *pdrv)
 	struct lcd_config_s *pconf = &pdrv->config;
 	unsigned int hstart, hend, vstart, vend;
 	unsigned int offset;
-	unsigned int pre_de_vs, pre_de_ve, pre_de_hs, pre_de_he;
+	unsigned int pre_vde, pre_de_vs, pre_de_ve, pre_de_hs, pre_de_he;
 
 	hstart = pconf->timing.hstart;
 	hend = pconf->timing.hend;
@@ -225,7 +225,8 @@ static void lcd_venc_set_timing(struct aml_lcd_drv_s *pdrv)
 	lcd_vcbus_write(ENCL_VIDEO_VAVON_ELINE + offset, vend);
 	if (pconf->basic.lcd_type == LCD_P2P ||
 	    pconf->basic.lcd_type == LCD_MLVDS) {
-		pre_de_vs = vstart - 8;
+		pre_vde = pconf->timing.pre_de_v ? pconf->timing.pre_de_v : 8;
+		pre_de_vs = vstart - pre_vde;
 		pre_de_ve = pconf->basic.v_active + pre_de_vs;
 		pre_de_hs = hstart + PRE_DE_DELAY;
 		pre_de_he = pconf->basic.h_active - 1 + pre_de_hs;

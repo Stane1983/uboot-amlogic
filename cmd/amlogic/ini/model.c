@@ -651,6 +651,7 @@ static int handle_lcd_basic(struct lcd_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
 	unsigned int config_chk;
+	unsigned int bits, cfmt;
 
 	ini_value = IniGetString("lcd_Attr", "model_name", "null");
 	if (model_debug_flag & DEBUG_LCD)
@@ -694,7 +695,13 @@ static int handle_lcd_basic(struct lcd_attr_s *p_attr)
 	ini_value = IniGetString("lcd_Attr", "lcd_bits", "10");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, lcd_bits is (%s)\n", __func__, ini_value);
-	p_attr->basic.lcd_bits = strtoul(ini_value, NULL, 0);
+	bits = strtoul(ini_value, NULL, 0);
+
+	ini_value = IniGetString("lcd_Attr", "cmft_in", "0");
+	if (model_debug_flag & DEBUG_LCD)
+		ALOGD("%s, cmft_in is (%s)\n", __func__, ini_value);
+	cfmt = strtoul(ini_value, NULL, 0);
+	p_attr->basic.lcd_bits_cfmt = ((cfmt & 0x3) << 6) | (bits & 0x3f);
 
 	ini_value = IniGetString("lcd_Attr", "screen_width", "16");
 	if (model_debug_flag & DEBUG_LCD)
@@ -712,6 +719,7 @@ static int handle_lcd_basic(struct lcd_attr_s *p_attr)
 static int handle_lcd_timming(struct lcd_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
+	unsigned int width, pol;
 
 	ini_value = IniGetString("lcd_Attr", "h_active", "1920");
 	if (model_debug_flag & DEBUG_LCD)
@@ -736,7 +744,7 @@ static int handle_lcd_timming(struct lcd_attr_s *p_attr)
 	ini_value = IniGetString("lcd_Attr", "hsync_width", "44");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, hsync_width is (%s)\n", __func__, ini_value);
-	p_attr->timming.hsync_width = strtoul(ini_value, NULL, 0);
+	width = strtoul(ini_value, NULL, 0);
 
 	ini_value = IniGetString("lcd_Attr", "hsync_bp", "148");
 	if (model_debug_flag & DEBUG_LCD)
@@ -746,12 +754,13 @@ static int handle_lcd_timming(struct lcd_attr_s *p_attr)
 	ini_value = IniGetString("lcd_Attr", "hsync_pol", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, hsync_pol is (%s)\n", __func__, ini_value);
-	p_attr->timming.hsync_pol = strtoul(ini_value, NULL, 0);
+	pol = strtoul(ini_value, NULL, 0);
+	p_attr->timming.hsync_width_pol = ((pol & 0xf) << 12) | (width & 0xfff);
 
 	ini_value = IniGetString("lcd_Attr", "vsync_width", "5");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, vsync_width is (%s)\n", __func__, ini_value);
-	p_attr->timming.vsync_width = strtoul(ini_value, NULL, 0);
+	width = strtoul(ini_value, NULL, 0);
 
 	ini_value = IniGetString("lcd_Attr", "vsync_bp", "30");
 	if (model_debug_flag & DEBUG_LCD)
@@ -761,7 +770,18 @@ static int handle_lcd_timming(struct lcd_attr_s *p_attr)
 	ini_value = IniGetString("lcd_Attr", "vsync_pol", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, vsync_pol is (%s)\n", __func__, ini_value);
-	p_attr->timming.vsync_pol = strtoul(ini_value, NULL, 0);
+	pol = strtoul(ini_value, NULL, 0);
+	p_attr->timming.vsync_width_pol = ((pol & 0xf) << 12) | (width & 0xfff);
+
+	ini_value = IniGetString("lcd_Attr", "pre_de_h", "0");
+	if (model_debug_flag & DEBUG_LCD)
+		ALOGD("%s, pre_de_h is (%s)\n", __func__, ini_value);
+	p_attr->timming.pre_de_h = strtoul(ini_value, NULL, 0);
+
+	ini_value = IniGetString("lcd_Attr", "pre_de_v", "0");
+	if (model_debug_flag & DEBUG_LCD)
+		ALOGD("%s, pre_de_v is (%s)\n", __func__, ini_value);
+	p_attr->timming.pre_de_v = strtoul(ini_value, NULL, 0);
 
 	return 0;
 }

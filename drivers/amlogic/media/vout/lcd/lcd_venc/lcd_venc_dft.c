@@ -179,7 +179,7 @@ static void lcd_venc_set_timing(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_config_s *pconf = &pdrv->config;
 	unsigned int hstart, hend, vstart, vend;
-	unsigned int pre_de_vs, pre_de_ve, pre_de_hs, pre_de_he;
+	unsigned int pre_vde, pre_de_vs, pre_de_ve, pre_de_hs, pre_de_he;
 
 	hstart = pconf->timing.hstart;
 	hend = pconf->timing.hend;
@@ -197,13 +197,15 @@ static void lcd_venc_set_timing(struct aml_lcd_drv_s *pdrv)
 		switch (pdrv->data->chip_type) {
 		case LCD_CHIP_TL1:
 		case LCD_CHIP_TM2:
-			pre_de_vs = vstart - 1 - 4;
-			pre_de_ve = vstart - 1;
+			pre_vde = pconf->timing.pre_de_v ? pconf->timing.pre_de_v : 5;
+			pre_de_vs = vstart - pre_vde;
+			pre_de_ve = pre_de_vs + 4;
 			pre_de_hs = hstart + PRE_DE_DELAY;
 			pre_de_he = pconf->basic.h_active - 1 + pre_de_hs;
 			break;
 		default:
-			pre_de_vs = vstart - 8;
+			pre_vde = pconf->timing.pre_de_v ? pconf->timing.pre_de_v : 8;
+			pre_de_vs = vstart - pre_vde;
 			pre_de_ve = pconf->basic.v_active + pre_de_vs;
 			pre_de_hs = hstart + PRE_DE_DELAY;
 			pre_de_he = pconf->basic.h_active - 1 + pre_de_hs;
