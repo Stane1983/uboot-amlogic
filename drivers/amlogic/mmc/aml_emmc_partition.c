@@ -36,7 +36,7 @@ DECLARE_GLOBAL_DATA_PTR;
 #endif
 /* debug info*/
 #define CONFIG_MPT_DEBUG 	(0)
-#define GPT_PRIORITY             (1)
+#define GPT_SIZE		0x4400
 
 #define apt_err(fmt, ...) printf( "%s()-%d: " fmt , \
                   __func__, __LINE__, ##__VA_ARGS__)
@@ -1423,7 +1423,6 @@ int is_gpt_changed(struct mmc *mmc, struct _iptbl *p_iptbl_ept)
 			printf("%s: *** Using Backup GPT ***\n",
 					__func__);
 		}
-			//return 1;
 	}
 	for (i = 0; i < le32_to_cpu(gpt_head->num_partition_entries); i++) {
 		if (!is_pte_valid(&gpt_pte[i]))
@@ -1622,6 +1621,43 @@ void __attribute__((unused)) _update_part_tbl(struct partitions *p, int count)
 	}
 }
 
+int resize_gpt(struct mmc *mmc)
+{
+	gpt_header *gpt_h;
+	void *buf;
+	int ret;
+
+	struct blk_desc *dev_desc = mmc_get_blk_desc(mmc);
+
+	buf = malloc(GPT_SIZE);
+	if (!buf) {
+		printf("not enough space for gpt buffer\n");
+		return -1;
+	}
+
+	ret = mmc_gpt_read(buf);
+	if (ret == 0) {
+		/* determine start of GPT Header in the buffer */
+		gpt_h = buf + (GPT_PRIMARY_PARTITION_TABLE_LBA * dev_desc->blksz);
+		if (le64_to_cpu(gpt_h->last_usable_lba) > dev_desc->lba) {
+			check_gpt_part(dev_desc, buf);
+			ret = write_mbr_and_gpt_partitions(dev_desc, (u_char *)buf);
+			if (ret) {
+				printf("%s: writing GPT partitions failed\n", __func__);
+				free(buf);
+				return -1;
+			}
+			printf("resize gpt success\n");
+		}
+	} else if (ret == -1) {
+		printf("%s: read gpt failed\n", __func__);
+		free(buf);
+		return -1;
+	}
+	free(buf);
+	return 0;
+}
+
 /***************************************************
  *	init partition table for emmc device.
  *	returns 0 means ok.
@@ -1680,6 +1716,9 @@ int mmc_device_init (struct mmc *mmc)
 		memset(p_iptbl_ept->partitions, 0,
 				sizeof(struct partitions) * MAX_PART_COUNT);
 	}
+
+	if (resize_gpt(mmc))
+		goto _out;
 
 	/* calculate inherent offset */
 	iptbl_inh.count = get_emmc_partition_arraysize();
@@ -2076,6 +2115,7 @@ int check_gpt_part(struct blk_desc *dev_desc, void *buf)
 	u64 offset_new, size_new;
 	int ret = 0;
 	bool alternate_flag = false;
+	lbaint_t last_usable_lba, last_ending_lba;
 
 	/* determine start of GPT Header in the buffer */
 	gpt_h = buf + (GPT_PRIMARY_PARTITION_TABLE_LBA *
@@ -2086,21 +2126,25 @@ int check_gpt_part(struct blk_desc *dev_desc, void *buf)
 			dev_desc->blksz);
 	entries_num = le32_to_cpu(gpt_h->num_partition_entries);
 
-	if (le64_to_cpu(gpt_h->alternate_lba) > dev_desc->lba ||
-		le64_to_cpu(gpt_h->alternate_lba) == 0) {
+	if (le64_to_cpu(gpt_h->alternate_lba) != (dev_desc->lba - 1)) {
 		printf("GPT: alternate_lba: %llX, " LBAF ", reset it\n",
 		       le64_to_cpu(gpt_h->alternate_lba), dev_desc->lba);
 		gpt_h->alternate_lba = cpu_to_le64(dev_desc->lba - 1);
 		alternate_flag = true;
 	}
 
-	if (le64_to_cpu(gpt_h->last_usable_lba) > dev_desc->lba) {
-		printf("GPT: last_usable_lba incorrect: %llX > " LBAF ", reset it\n",
-		       le64_to_cpu(gpt_h->last_usable_lba), dev_desc->lba);
-		if (alternate_flag)
-			gpt_h->last_usable_lba = cpu_to_le64(dev_desc->lba - 34);
-		else
-			gpt_h->last_usable_lba = cpu_to_le64(dev_desc->lba - 1);
+	if (alternate_flag) {
+		last_usable_lba = cpu_to_le64(dev_desc->lba - 34);
+		last_ending_lba = ((last_usable_lba >> 12) << 12) - 1;
+	} else {
+		last_usable_lba = cpu_to_le64(dev_desc->lba - 1);
+		last_ending_lba = last_usable_lba;
+	}
+
+	if (le64_to_cpu(gpt_h->last_usable_lba) != last_usable_lba) {
+		printf("GPT: last_usable_lba incorrect: %llX != " LBAF ", reset it\n",
+		       le64_to_cpu(gpt_h->last_usable_lba), last_usable_lba);
+		gpt_h->last_usable_lba = last_usable_lba;
 	}
 
 	for (i = 0; i < entries_num; i++) {
@@ -2108,7 +2152,7 @@ int check_gpt_part(struct blk_desc *dev_desc, void *buf)
 		if (i == entries_num - 1) {
 			gpt_e[i - 1].ending_lba -= gpt_e[i].ending_lba + le64_to_cpu(gap) + 1;
 			gpt_e[i].starting_lba = gpt_e[i - 1].ending_lba + le64_to_cpu(gap) + 1;
-			gpt_e[i].ending_lba = gpt_h->last_usable_lba;
+			gpt_e[i].ending_lba = last_ending_lba;
 		}
 
 #endif
@@ -2118,13 +2162,12 @@ int check_gpt_part(struct blk_desc *dev_desc, void *buf)
 			       le64_to_cpu(gpt_h->last_usable_lba));
 			return 1;
 		}
-		if (le64_to_cpu(gpt_e[i].ending_lba) > gpt_h->last_usable_lba) {
-			printf("gpt_e[%d].ending_lba: %llX > %llX, reset it\n",
-			i, le64_to_cpu(gpt_e[i].ending_lba), le64_to_cpu(gpt_h->last_usable_lba));
-			if (alternate_flag)
-				gpt_e[i].ending_lba = ((gpt_h->last_usable_lba >> 12) << 12) - 1;
-			else
-				gpt_e[i].ending_lba = gpt_h->last_usable_lba;
+		if ((le64_to_cpu(gpt_e[i].ending_lba) > last_ending_lba) ||
+		    ((i == entries_num - 1) &&
+		    le64_to_cpu(gpt_e[i].ending_lba) != last_ending_lba)) {
+			printf("gpt_e[%d].ending_lba: %llX, last_ending_lba: %lX, reset it\n",
+			       i, le64_to_cpu(gpt_e[i].ending_lba), last_ending_lba);
+			gpt_e[i].ending_lba = last_ending_lba;
 			printf("gpt_e[%d].ending_lba: %llX\n", i, gpt_e[i].ending_lba);
 		}
 		if (le64_to_cpu(gpt_h->alternate_lba) > le64_to_cpu(gpt_e[i].starting_lba) &&
