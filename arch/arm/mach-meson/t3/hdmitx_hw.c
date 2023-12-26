@@ -5,6 +5,7 @@
 #include <amlogic/media/vout/hdmitx/mach_reg.h>
 #include <asm/arch/bl31_apis.h>
 #include "hdmitx_misc.h"
+#include <linux/arm-smccc.h>
 
 static struct reg_map reg_maps[] = {
 	[CBUS_REG_IDX] = { /* CBUS */
@@ -116,33 +117,19 @@ void hd_set_reg_bits(unsigned int addr, unsigned int value,
 static unsigned int hdmitx_rd_reg_normal(unsigned int addr)
 {
 	unsigned int data;
-	register long x0 asm("x0") = 0x82000018;
-	register long x1 asm("x1") = (unsigned long)addr;
+	struct arm_smccc_res res;
 
-	asm volatile(
-		__asmeq("%0", "x0")
-		__asmeq("%1", "x1")
-		"smc #0\n"
-		: "+r"(x0) : "r"(x1)
-	);
-	data = (unsigned int)(x0&0xffffffff);
+	arm_smccc_smc(0x82000018, (unsigned long)addr, 0, 0, 0, 0, 0, 0, &res);
+	data = (unsigned int)(res.a0 & 0xffffffff);
 
 	return data;
 }
 
 static void hdmitx_wr_reg_normal(unsigned int addr, unsigned int data)
 {
-	register long x0 asm("x0") = 0x82000019;
-	register long x1 asm("x1") = (unsigned long)addr;
-	register long x2 asm("x2") = data;
+	struct arm_smccc_res res;
 
-	asm volatile(
-		__asmeq("%0", "x0")
-		__asmeq("%1", "x1")
-		__asmeq("%2", "x2")
-		"smc #0\n"
-		: : "r"(x0), "r"(x1), "r"(x2)
-	);
+	arm_smccc_smc(0x82000019, (unsigned long)addr, data, 0, 0, 0, 0, 0, &res);
 }
 
 unsigned int hdmitx_rd_reg(unsigned int addr)
@@ -231,12 +218,9 @@ unsigned int hdmitx_rd_check_reg(unsigned int addr, unsigned int exp_data,
 
 void hdmitx_hdcp_init(void)
 {
-	register long x0 asm("x0") = 0x82000012;
-	asm volatile(
-		__asmeq("%0", "x0")
-		"smc #0\n"
-		: : "r"(x0)
-	);
+	struct arm_smccc_res res;
+
+	arm_smccc_smc(0x82000012, 0, 0, 0, 0, 0, 0, 0, &res);
 }
 
 void hdmitx_set_phypara(enum hdmi_phy_para mode)
