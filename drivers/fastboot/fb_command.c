@@ -698,6 +698,12 @@ static void flash(char *cmd_parameter, char *response)
 #endif// #if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
 	}
 
+	if (strcmp(name, "bootloader-boot0") == 0 ||
+		strcmp(name, "bootloader-boot1") == 0) {
+		printf("try to switch back to user\n");
+		run_command("mmc dev 1 0;", 0);
+	}
+
 #ifdef CONFIG_FASTBOOT_FLASH_MMC_DEV
 	if (mmc && aml_gpt_valid(mmc) == 0) {
 		if (vendor_boot_partition) {
@@ -781,6 +787,7 @@ static void erase(char *cmd_parameter, char *response)
 		if (fastboot_step && strcmp(fastboot_step, "0")) {
 			printf("fastboot_step: %s, run defenv_reserv\n", fastboot_step);
 			run_command("defenv_reserv; setenv upgrade_step 2; saveenv;", 0);
+			run_command("run bcb_cmd", 0);
 			fastboot_okay(NULL, response);
 			return;
 		}
