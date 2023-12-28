@@ -1,0 +1,31 @@
+if TARGET_S7_BH209
+
+config SYS_SOC
+	default "s7"
+
+config SYS_BOARD
+	default "s7_bh209"
+
+config SYS_CONFIG_NAME
+	default "s7_bh209"
+
+config DTB_BIND_KERNEL
+    bool "load dtb from boot part but not flash rsv"
+    default n
+
+config BL30_SELECT
+	string "s7 BL30 board config"
+		default "s7_bh209"
+
+config CMD_PLLTEST
+        bool "support plltest command"
+        default n
+		help
+			support plltest command
+
+config AML_REBOOT
+		bool "reboot cmd"
+		default y
+		help
+			support uboot reboot cmd
+endif

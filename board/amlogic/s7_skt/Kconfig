@@ -13,6 +13,10 @@ config DTB_BIND_KERNEL
     bool "load dtb from boot part but not flash rsv"
     default n
 
+config BL30_SELECT
+	string "s7 BL30 board config"
+		default "s7_pxp"
+
 config CMD_PLLTEST
         bool "support plltest command"
         default n
