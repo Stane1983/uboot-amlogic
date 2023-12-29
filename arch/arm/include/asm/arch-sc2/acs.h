@@ -33,11 +33,6 @@ typedef struct dev_param_hdr {
 	char				ddr_set_magic[6];
 	unsigned short		ddr_set_length;
 
-#ifdef CONFIG_MDUMP_COMPRESS
-	char			ramdump_set_magic[6];
-	unsigned short		ramdump_set_length;
-#endif
-
 	union {
 		unsigned int	RFU[4];
 		char		ddr_buildin_fw[8];
