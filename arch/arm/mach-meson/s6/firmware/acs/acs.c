@@ -11,6 +11,7 @@
 dev_param_hdr_t __param_hdr __attribute__ ((section(".dev_header"))) = {
 	.magic = DEV_PARAM_MAGIC,
 	.version = DEV_PARAM_VERSION,
+	.head_crc = ACS_HEAD_CRC,
 
 	.bl2_regs_magic = "bl2r_",
 	.bl2_regs_length = sizeof(__bl2_reg),

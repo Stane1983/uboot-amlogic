@@ -205,11 +205,17 @@
 #define FW_LOAD_STEP_DIAG2						4
 
 /* basic defines */
-#define AML_AC_PINMUX_G0_TOTAL						6
-#define AML_AC_PINMUX_G1_TOTAL						29
-#define AML_DFI_PINMUX_TOTAL					26
-#define AML_DQ_PINMUX_TOTAL						36
-#define AML_DQ_BYTES_TOTAL						4
+#define AML_AC_PINMUX_G0_TOTAL 6
+#define AML_AC_PINMUX_G1_TOTAL 29
+#define AML_DFI_PINMUX_TOTAL 26
+#define AML_DQ_PINMUX_TOTAL 36
+#define AML_DQ_BYTES_TOTAL 4
+#define DWC_AC_PINMUX_TOTAL						30
+#define DWC_DFI_PINMUX_TOTAL					10
+#define DWC_DQ_PINMUX_TOTAL						32
+#define DWC_TOTAL_CA_NUM_PER_CH  12
+#define DWC_TOTAL_DATA_NIBBLE_PER_PHY  4
+#define DWC_TOTAL_DATA_NIBBLE_PER_CH  2
 
 /* d2pll defines */
 #define D2PLL_ENABLE									1

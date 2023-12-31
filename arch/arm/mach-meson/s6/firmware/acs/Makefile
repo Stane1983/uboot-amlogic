@@ -178,12 +178,17 @@ VPATH_LIST:=$(VPATH_LIST:%=%/firmware/)
 
 vpath %.c $(VPATH_LIST)
 
+ACS_STRUCT_CRC := $(shell crc32 ${buildsrc}/arch/arm/include/asm/amlogic/arch-${SOC}/acs_struct.h)
+$(info  ACS_STRUCT_CRC:$(ACS_STRUCT_CRC))
+
 ASFLAGS			+= 	-nostdinc -ffreestanding -Wa,--fatal-warnings	\
 				-mgeneral-regs-only -D__ASSEMBLY__		\
 				${DEFINES} ${INCLUDES}
 CFLAGS			+= 	-nostdinc -pedantic -ffreestanding -Wall	\
 				-Werror -mgeneral-regs-only -std=c99 -c -Os	\
-				${DEFINES} ${INCLUDES} $(VPATH_LIST:%=-I%)
+				${DEFINES} ${INCLUDES} $(VPATH_LIST:%=-I%)	\
+				-DACS_HEAD_CRC=0x${ACS_STRUCT_CRC}
+
 CFLAGS			+=	-ffunction-sections -fdata-sections
 ASFLAGS			+= 	${FIRMWARE_CPPFLAGS}
 CFLAGS			+= 	${FIRMWARE_CPPFLAGS}
