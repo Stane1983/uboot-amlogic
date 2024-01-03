@@ -596,6 +596,8 @@ bool hdmitx_frl_training_main(enum frl_rate_enum frl_rate)
 	u8 data8;
 	char *ltp_en = NULL;
 	bool ret;
+	/* for the FRL training, the max T_FLT is 200ms */
+	unsigned long tmo = get_timer(0) + 200;
 
 	pr_info("hdmitx21: set rx frl_rate as %d\n", frl_rate);
 	ltp_en = env_get("ltp_en");
@@ -627,7 +629,7 @@ bool hdmitx_frl_training_main(enum frl_rate_enum frl_rate)
 		return 1;
 
 	hdmitx_soft_reset(BIT(0));
-	while (ltp0123 != 0) {
+	while (ltp0123 != 0 && time_after(tmo, get_timer(0))) {
 		pr_info("[FRL TRAINING] ************** TX_LTS_3_POLL_FLT_UPDATE************\n");
 		ret = TX_LTS_3_POLL_FLT_UPDATE();
 		if (!ret)
@@ -638,6 +640,8 @@ bool hdmitx_frl_training_main(enum frl_rate_enum frl_rate)
 		pr_info("[FRL TRAINING] ************** TX_FLT_UPDATE_CLEAR************\n");
 		TX_FLT_UPDATE_CLEAR();
 	}
+	if (time_before(tmo, get_timer(0)))
+		return 0;
 
 	pr_info("[FRL TRAINING] ************** TX_LTS_P_SEND_ONLY_GAP************\n");
 	TX_LTS_P_SEND_ONLY_GAP(frl_rate);
