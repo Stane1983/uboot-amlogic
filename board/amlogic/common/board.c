@@ -136,3 +136,19 @@ int board_rng_seed(struct abuf *buf)
 }
 #endif
 
+#ifdef CONFIG_AML_DEFENV
+const char * const _aml_env_reserv_array[] = {
+	"lock",
+	"upgrade_step",
+	"bootloader_version",
+	"hdmimode",
+	"outputmode",
+	"dts_to_gpt",
+	"fastboot_step",
+	"reboot_status",
+	"expect_index",
+	"defenv_para",	//set in board_late_init
+	NULL//Keep NULL be last to tell END
+};
+#endif//#ifdef CONFIG_AML_DEFENV
+

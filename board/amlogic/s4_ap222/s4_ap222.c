@@ -140,6 +140,7 @@ int board_init(void)
 int board_late_init(void)
 {
 	printf("board late init\n");
+	env_set("defenv_para", "-c");
 
 	//default uboot env need before anyone use it
 	if (env_get("default_env")) {
@@ -443,15 +444,6 @@ int checkhw(char * name)
 }
 #endif
 
-
-const char * const _env_args_reserve_[] =
-{
-	"lock",
-	"upgrade_step",
-	"bootloader_version",
-
-	NULL//Keep NULL be last to tell END
-};
 
 int __attribute__((weak)) mmc_initialize(bd_t *bis){ return 0;}
 
