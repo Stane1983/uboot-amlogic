@@ -750,28 +750,6 @@ static int do_SetRollFlag
 	return 0;
 }
 
-static int do_GetSystemMode(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
-{
-#ifdef CONFIG_SYSTEM_AS_ROOT
-	env_set("system_mode", "1");
-#else
-	env_set("system_mode", "0");
-#endif
-
-	return 0;
-}
-
-static int do_GetAvbMode(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
-{
-#ifdef CONFIG_AVB2
-	env_set("avb2", "1");
-#else
-	env_set("avb2", "0");
-#endif
-
-	return 0;
-}
-
 int do_UpdateDt(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	char *update_dt = env_get("update_dt");
@@ -798,6 +776,28 @@ int do_UpdateDt(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 #endif /* CONFIG_BOOTLOADER_CONTROL_BLOCK */
 
+static int do_GetSystemMode(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+#ifdef CONFIG_SYSTEM_AS_ROOT
+	env_set("system_mode", "1");
+#else
+	env_set("system_mode", "0");
+#endif
+
+	return 0;
+}
+
+static int do_GetAvbMode(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+#ifdef CONFIG_AVB2
+	env_set("avb2", "1");
+#else
+	env_set("avb2", "0");
+#endif
+
+	return 0;
+}
+
 #ifdef CONFIG_UNIFY_BOOTLOADER
 bootctl_func_handles *get_bootctl_cmd_func_avb(void)
 {
@@ -811,6 +811,7 @@ bootctl_func_handles *get_bootctl_cmd_func_avb(void)
 	return &avb_cmd_bootctrl_handles;
 }
 #else
+#ifdef CONFIG_BOOTLOADER_CONTROL_BLOCK
 U_BOOT_CMD(
 	get_valid_slot, 2, 0, do_GetValidSlot,
 	"get_valid_slot",
@@ -841,6 +842,14 @@ U_BOOT_CMD
 );
 
 U_BOOT_CMD
+(update_dt, 1,	0, do_UpdateDt,
+	"update_dt",
+	"\nThis command will update dt\n"
+	"So you can execute command: update_dt"
+);
+
+#endif
+U_BOOT_CMD
 (get_system_as_root_mode, 1,	0, do_GetSystemMode,
 	"get_system_as_root_mode",
 	"\nThis command will get system_as_root_mode\n"
@@ -853,14 +862,9 @@ U_BOOT_CMD(
 	"\nThis command will get avb mode\n"
 	"So you can execute command: get_avb_mode"
 );
-U_BOOT_CMD
-(update_dt, 1,	0, do_UpdateDt,
-	"update_dt",
-	"\nThis command will update dt\n"
-	"So you can execute command: update_dt"
-);
 #endif
 
+#if defined(CONFIG_MMC_MESON_GX)
 static int get_bootloader_message_block(char * miscbuf, int size, AvbABData *info) {
     const char *misc_device = "misc";
     printf("read misc for emmc device\n");
@@ -906,4 +910,5 @@ int set_successful_boot(void) {
 
     return -1;
 }
+#endif
 

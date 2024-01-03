@@ -292,12 +292,16 @@ static AvbIOResult get_unique_guid_for_partition(AvbOps *ops, const char *partit
 	}
 	//printf("active_slot is %s\n", s1);
 	if (!memcmp(partition, "system", strlen("system"))) {
+#if defined(CONFIG_MMC_MESON_GX)
 		if (s1 && (strcmp(s1, "_a") == 0))
 			ret = get_partition_num_by_name("system_a");
 		else if (s1 && (strcmp(s1, "_b") == 0))
 			ret = get_partition_num_by_name("system_b");
 		else
 			ret = get_partition_num_by_name("system");
+#else
+		ret = 0;
+#endif
 
 		if (ret >= 0) {
 			sprintf(part_name, "/dev/mmcblk0p%d", ret + 1);
@@ -577,6 +581,7 @@ static AvbIOResult read_is_device_unlocked(AvbOps* ops, bool* out_is_unlocked)
 	return result;
 }
 
+#if defined(CONFIG_MMC_MESON_GX)
 /* 4K bytes are allocated to store persistent value
  * The first 4B is the persistent store magic word "@AVB"
  * It is further divided into 132B slots
@@ -725,7 +730,9 @@ static AvbIOResult persistent_test(AvbOps *ops)
 
 	return ret;
 }
+#endif
 
+#if defined(CONFIG_MMC_MESON_GX)
 uint32_t create_csrs(void)
 {
 	int part_num = get_partition_num_by_name(PART_NAME_FTY);
@@ -756,7 +763,14 @@ uint32_t create_csrs(void)
 	}
 	return AVB_IO_RESULT_OK;
 }
+#else
+uint32_t create_csrs(void)
+{
+	return AVB_IO_RESULT_OK;
+}
+#endif
 
+#if defined(CONFIG_MMC_MESON_GX)
 static AvbIOResult write_persistent_to_factory(uint8_t *buf, uint32_t size)
 {
 	int part_num = get_partition_num_by_name(PART_NAME_FTY);
@@ -964,10 +978,15 @@ out:
 	free(buf);
 	return ret;
 }
+#endif
 
 static int avb_init(void)
 {
+#if defined(CONFIG_MMC_MESON_GX)
 	int factory_part_num = get_partition_num_by_name(PART_NAME_FTY);
+#else
+	int factory_part_num = -1;
+#endif
 	enum boot_type_e type = store_get_type();
 
 	memset(&avb_ops_, 0, sizeof(AvbOps));
@@ -986,8 +1005,13 @@ static int avb_init(void)
 		avb_ops_.read_persistent_value = NULL;
 		avb_ops_.write_persistent_value = NULL;
 	} else {
+#if defined(CONFIG_MMC_MESON_GX)
 		avb_ops_.read_persistent_value = read_persistent_value;
 		avb_ops_.write_persistent_value = write_persistent_value;
+#else
+		avb_ops_.read_persistent_value = NULL;
+		avb_ops_.write_persistent_value = NULL;
+#endif
 	}
 
 	return 0;
@@ -1035,7 +1059,11 @@ int avb_verify(AvbSlotVerifyData** out_data)
 	int i = 0;
 	AvbHashtreeErrorMode hashtree_error_mode =
 		AVB_HASHTREE_ERROR_MODE_RESTART_AND_INVALIDATE;
+#if defined(CONFIG_MMC_MESON_GX)
 	int factory_part_num = get_partition_num_by_name(PART_NAME_FTY);
+#else
+	int factory_part_num = -1;
+#endif
 	enum boot_type_e type = store_get_type();
 
 	s1 = env_get("active_slot");
@@ -1063,7 +1091,7 @@ int avb_verify(AvbSlotVerifyData** out_data)
 	avb_init();
 
 	vendor_boot_status = env_get("vendor_boot_mode");
-	if (!strcmp(vendor_boot_status, "true")) {
+	if (vendor_boot_status && !strcmp(vendor_boot_status, "true")) {
 		for (i = 0; i < AVB_NUM_SLOT; i++) {
 			if (!partition_select[i]) {
 				partition_select[i] = vendor_boot;
@@ -1145,6 +1173,7 @@ static int do_avb_verify(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv
 	return result;
 }
 
+#if defined(CONFIG_MMC_MESON_GX)
 static int do_avb_persist(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	int result = 0;
@@ -1184,6 +1213,7 @@ static int do_avb_persist(cmd_tbl_t *cmdtp, int flag, int argc, char * const arg
 	}
 	return result;
 }
+#endif
 
 static int do_avb_verify_memory(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
@@ -1313,8 +1343,10 @@ uint32_t avb_get_boot_patchlevel_from_vbmeta(AvbSlotVerifyData *data)
 
 static cmd_tbl_t cmd_avb_sub[] = {
 	U_BOOT_CMD_MKENT(verify, 0, 0, do_avb_verify, "", ""),
+#if defined(CONFIG_MMC_MESON_GX)
 	U_BOOT_CMD_MKENT(persist, 2, 0, do_avb_persist, "avb persist test/wipe/dump",
 			"avb persist test/wipe/dump"),
+#endif
 	U_BOOT_CMD_MKENT(memory, 4, 0, do_avb_verify_memory, "", ""),
 	U_BOOT_CMD_MKENT(recovery, 2, 0, do_avb_recovery, "", ""),
 };
