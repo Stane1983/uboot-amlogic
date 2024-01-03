@@ -16,6 +16,8 @@
 /* storage plat data */
 #include <asm/amlogic/arch/storage.h>
 
+extern struct storage_startup_parameter g_ssp;
+
 #define RSV_INVALID	140	/* rsv invalid error */
 
 #define DISPROTECT_KEY			BIT(0)

@@ -169,7 +169,7 @@
 #endif
 
 /* mtd device board config */
-#define CONFIG_BL2_COPY_NUM			4
+#define CONFIG_BL2_COPY_NUM				8
 #define CONFIG_NAND_TPL_COPY_NUM		4
 #define CONFIG_NOR_TPL_COPY_NUM			1
 #define CONFIG_TPL_SIZE_PER_COPY		0x300000

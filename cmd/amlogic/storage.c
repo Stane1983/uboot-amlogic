@@ -25,19 +25,9 @@ extern int spi_nor_pre(void);
 extern int spi_nor_probe(u32 init_flag);
 #endif
 
-#ifdef CONFIG_SPI_NAND
-extern int spi_nand_pre(void);
-extern int spi_nand_probe(u32 init_flag);
-#endif
-
 #ifdef CONFIG_MTD_SPI_NAND
 extern int spi_nand_pre(void);
 extern int spi_nand_probe(u32 init_flag);
-#endif
-
-#ifdef CONFIG_AML_NAND
-extern int amlnf_pre(void);
-extern int amlnf_probe(u32 init_flag);
 #endif
 
 #ifdef CONFIG_MESON_NFC
@@ -61,13 +51,6 @@ static struct storage_t *current;
 static struct device_node_t device_list[] = {
 #ifdef CONFIG_MESON_NFC
 	{BOOT_NAND_MTD, "mtd", nand_pre, nand_probe},
-#endif
-#ifdef CONFIG_AML_NAND
-	{BOOT_NAND_NFTL, "nftl", amlnf_pre, amlnf_probe},
-#endif
-#ifdef CONFIG_SPI_NAND
-	/* old drivers will be removed later */
-	{BOOT_SNAND, "spi-nand", spi_nand_pre, spi_nand_probe},
 #endif
 #ifdef CONFIG_MTD_SPI_NAND
 	{BOOT_SNAND, "spi-nand", spi_nand_pre, spi_nand_probe},

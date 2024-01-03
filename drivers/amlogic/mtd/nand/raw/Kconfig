@@ -1,0 +1,6 @@
+config MESON_NFC
+	bool "Support for NAND on Amlogic SoCs"
+	depends on ARCH_MESON && MTD
+    select SYS_NAND_SELF_INIT
+	help
+		This option, if enabled, support for MESON Nand flash controller.

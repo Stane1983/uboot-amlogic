@@ -8,13 +8,10 @@ config AML_RPMB
 	help
 	  Support RPMB set in bootargs.
 
-config AML_STORE_WRAPPER
-	depends on AML_STORAGE
-	bool "wrapper for store"
-	default y
+config AML_STORAGE
+	bool "aml storage support"
 	help
-	  based on AML_STORAGE
-	  read/write don't care bad blocks
+	  storage cmd support
 
 config AML_STORE_WRAPPER
 	depends on AML_STORAGE
