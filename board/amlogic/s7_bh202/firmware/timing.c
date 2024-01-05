@@ -8,16 +8,16 @@
 #include <asm/amlogic/arch/ddr_define.h>
 
 /* board clk defines */
-#define CPU_CLK                                 1200
+#define CPU_CLK                                 1704
 
 /* board vmin_value defines */
 #define VMIN_FF_VALUE                           770
 #define VMIN_TT_VALUE                           800
 #define VMIN_SS_VALUE                           810
 /* board vddee_value defines */
-#define VDDEE_FF_VALUE                          0x8000a
-#define VDDEE_TT_VALUE                          0x8000a
-#define VDDEE_SS_VALUE                          0x8000a
+#define VDDEE_FF_VALUE                          0x4000e
+#define VDDEE_TT_VALUE                          0x4000e
+#define VDDEE_SS_VALUE                          0x4000e
 
 //bit 6 adc_channel bit 0-5 adc value,chan 3 value 8 is layer 2
 #define DDR_ID_ACS_ADC   ((3 << 6) | (8))
@@ -2250,43 +2250,43 @@ __attribute__ ((section(".clk_param"))) = {
 #endif
 
 /* VDDEE_VAL_REG */
-#if    (VDDEE_VAL == 710)
+#if    (VDDEE_VAL == 700)
 #define VDDEE_VAL_REG   0x120000
-#elif (VDDEE_VAL == 720)
+#elif (VDDEE_VAL == 710)
 #define VDDEE_VAL_REG   0x110001
-#elif (VDDEE_VAL == 730)
+#elif (VDDEE_VAL == 720)
 #define VDDEE_VAL_REG   0x100002
-#elif (VDDEE_VAL == 740)
+#elif (VDDEE_VAL == 730)
 #define VDDEE_VAL_REG   0xf0003
-#elif (VDDEE_VAL == 750)
+#elif (VDDEE_VAL == 740)
 #define VDDEE_VAL_REG   0xe0004
-#elif (VDDEE_VAL == 760)
+#elif (VDDEE_VAL == 750)
 #define VDDEE_VAL_REG   0xd0005
-#elif (VDDEE_VAL == 770)
+#elif (VDDEE_VAL == 760)
 #define VDDEE_VAL_REG   0xc0006
-#elif (VDDEE_VAL == 780)
+#elif (VDDEE_VAL == 770)
 #define VDDEE_VAL_REG   0xb0007
-#elif (VDDEE_VAL == 790)
+#elif (VDDEE_VAL == 780)
 #define VDDEE_VAL_REG   0xa0008
-#elif (VDDEE_VAL == 800)
+#elif (VDDEE_VAL == 790)
 #define VDDEE_VAL_REG   0x90009
-#elif (VDDEE_VAL == 810)
+#elif (VDDEE_VAL == 800)
 #define VDDEE_VAL_REG   0x8000a
-#elif (VDDEE_VAL == 820)
+#elif (VDDEE_VAL == 810)
 #define VDDEE_VAL_REG   0x7000b
-#elif (VDDEE_VAL == 830)
+#elif (VDDEE_VAL == 820)
 #define VDDEE_VAL_REG   0x6000c
-#elif (VDDEE_VAL == 840)
+#elif (VDDEE_VAL == 830)
 #define VDDEE_VAL_REG   0x5000d
-#elif (VDDEE_VAL == 850)
+#elif (VDDEE_VAL == 840)
 #define VDDEE_VAL_REG   0x4000e
-#elif (VDDEE_VAL == 860)
+#elif (VDDEE_VAL == 850)
 #define VDDEE_VAL_REG   0x3000f
-#elif (VDDEE_VAL == 870)
+#elif (VDDEE_VAL == 860)
 #define VDDEE_VAL_REG   0x20010
-#elif (VDDEE_VAL == 880)
+#elif (VDDEE_VAL == 870)
 #define VDDEE_VAL_REG   0x10011
-#elif (VDDEE_VAL == 890)
+#elif (VDDEE_VAL == 880)
 #define VDDEE_VAL_REG   0x12
 #else
 #error "VDDEE val out of range\n"
