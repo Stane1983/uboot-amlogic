@@ -388,6 +388,20 @@ static int do_pbist(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	return 1;
 }
 
+static int do_s7_clk_config(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+{
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
+
+	if (strcmp(argv[1], "1") == 0) {
+		hdev->s7_clk_config = 1;
+		pr_info("s7_clk_config = %d\n",  hdev->s7_clk_config);
+	} if (strcmp(argv[1], "0") == 0) {
+		hdev->s7_clk_config = 0;
+		pr_info("s7_clk_config = %d\n",  hdev->s7_clk_config);
+	}
+	return 1;
+}
+
 static int do_debug(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {
 	unsigned int enable_all = 0;
@@ -1081,6 +1095,7 @@ static cmd_tbl_t cmd_hdmi_sub[] = {
 #endif
 	U_BOOT_CMD_MKENT(pbist, 3, 1, do_pbist, "", ""),
 	U_BOOT_CMD_MKENT(debug, 3, 1, do_debug, "", ""),
+	U_BOOT_CMD_MKENT(s7_clk_config, 3, 1, do_s7_clk_config, "", ""),
 };
 
 static int do_hdmitx(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])

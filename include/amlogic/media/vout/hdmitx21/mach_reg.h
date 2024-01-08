@@ -80,6 +80,7 @@ void hdmitx21_venc_en(bool en, bool pi_mode);
 //  CLK_CTRL
 #define CLKCTRL_OSCIN_CTRL            CLKCTRL_REG_ADDR(0x0001)
 #define CLKCTRL_SYS_CLK_EN0_REG2      CLKCTRL_REG_ADDR(0x0013)
+//bit[18:16]:sel clk source.3'h0:vid_pll_clk, 3'h3:vid_pix_clk
 #define CLKCTRL_VID_CLK0_CTRL         CLKCTRL_REG_ADDR(0x0030)
 #define CLKCTRL_VID_CLK0_CTRL2        CLKCTRL_REG_ADDR(0x0031)
 #define CLKCTRL_VID_CLK0_DIV          CLKCTRL_REG_ADDR(0x0032)
@@ -379,6 +380,7 @@ void hdmitx21_venc_en(bool en, bool pi_mode);
 #define ENCP_DE_V_END_EVEN            VPUCTRL_REG_ADDR(0x1c3d)
 #define ENCP_DE_V_BEGIN_ODD           VPUCTRL_REG_ADDR(0x1c3e)
 #define ENCP_DE_V_END_ODD             VPUCTRL_REG_ADDR(0x1c3f)
+#define ENCL_INBUF_FIX_PIX_NUM        VPUCTRL_REG_ADDR(0x1cd7)
 #define VPU_VENC_CTRL                 VPUCTRL_REG_ADDR(0x1cef)
 #define VPU_VENCL_DITH_LUT_12         VPUCTRL_REG_ADDR(0x1cfc)
 #define ENCP1_VFIFO2VD_CTL            VPUCTRL_REG_ADDR(0x2158)

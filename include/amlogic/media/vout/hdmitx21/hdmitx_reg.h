@@ -76,6 +76,21 @@
 #define HDMITX_TOP_DONT_TOUCH0        (TOP_SEC_OFFSET_MASK + (0x0FE << 2)) // 0x3F8
 #define HDMITX_TOP_DONT_TOUCH1        (TOP_SEC_OFFSET_MASK + (0x0FF << 2)) // 0x3FC
 
+//for s7
+/* bit[0] : reg_pbist_gate_en
+ * bit[1] : reg_fdet_gate_en
+ * bit[2] : reg_p2t_p0_gate_en
+ * bit[3] : reg_p2t_p1_gate_en
+ * bit[12] : reg_src_free_ck
+ * bit[13] : reg_aud_fifo_free_ck: reserved
+ * bit[14] : reg_regtx_free_ck
+ * bit[15] : reg_hdr_free_ck
+ * bit[16] : reg_hdcp2x_gate_en
+ * bit[17] : reg_hdcp1x_gate_en
+ * note : bit[3] default 1, other 0. bit[12:15] not need sw control
+ */
+#define HDMITX_TOP_CLK_GATE				(TOP_OFFSET_MASK + (0x030 << 2)) // 0x0C0
+
 //==================== AON_DDC_REG ====================
 
 #define INTR3_IVCTX 0x0000

@@ -42,6 +42,12 @@ struct hdmitx_dev {
 	u8 tx_max_frl_rate; /* configure in dts file */
 	bool flt_train_st; /* 0 means FLT train failed */
 	u32 dsc_en;
+	/* for s7, default 0
+	 * 1: new clk config, encp/pixel clk is directly configured by the pll simulation part.
+	 * through [ 49]hdmi_vx1_pix_clk to encp/pixel clk
+	 * CLKCTRL_VID_CLK0_CTRL clk source should select vid_pix_clk.
+	 */
+	u8 s7_clk_config;
 	unsigned int frac_rate_policy;
 	unsigned int mode420;
 	unsigned int dc30;
