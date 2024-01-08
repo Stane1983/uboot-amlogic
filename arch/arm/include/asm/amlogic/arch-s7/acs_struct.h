@@ -15,7 +15,6 @@ typedef struct bl2_reg {
 
 typedef struct board_clk_set {
 	unsigned short cpu_clk;
-	unsigned short dsu_clk;
 	unsigned short vddee;
 	unsigned short vcck;
 	unsigned short pxp;
