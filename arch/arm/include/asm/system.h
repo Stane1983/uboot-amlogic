@@ -329,7 +329,6 @@ void psci_arch_init(void);
  * will cause compilation to stop on mismatch.
  * (for details, see gcc PR 15089)
  */
-#define __asmeq(x, y)  ".ifnc " x "," y " ; .err ; .endif\n\t"
 
 #ifndef __ASSEMBLY__
 

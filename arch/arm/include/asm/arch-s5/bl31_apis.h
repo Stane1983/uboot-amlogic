@@ -163,8 +163,6 @@ struct sram_hal_api_arg {
 	#define GXB_IMG_DEC_DTB   (1<<2)
 	#define GXB_IMG_DEC_ALL   (GXB_IMG_DEC_KNL|GXB_IMG_DEC_RMD|GXB_IMG_DEC_DTB)
 
-#define __asmeq(x, y)  ".ifnc " x "," y " ; .err ; .endif\n\t"
-
 void aml_set_jtag_state(unsigned state, unsigned select);
 unsigned aml_get_reboot_reason(void);
 unsigned aml_reboot(uint64_t function_id, uint64_t arg0, uint64_t arg1, uint64_t arg2);
