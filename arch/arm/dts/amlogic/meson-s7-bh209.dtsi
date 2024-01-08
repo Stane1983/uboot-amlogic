@@ -218,7 +218,7 @@
 
 &usb21_phy_v2 {
 	status = "okay";
-	portnum = <2>;
+	portnum = <1>;
 };
 
 &usb31_phy_v2 {
