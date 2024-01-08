@@ -174,7 +174,7 @@
 
 /* eMMC */
 &sd_emmc_c {
-	status = "okay";
+	status = "disabled";
 	pinctrl-0 = <&emmc_pins>;
 	pinctrl-names = "default";
 
