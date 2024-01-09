@@ -493,6 +493,12 @@ config S7_BH209
 	help
 		Select S7 BH209 config
 
+config S7_T223
+	bool "S7_T223"
+	select TARGET_S7_T223
+	help
+		Select S7 T223 config
+
 endchoice
 
 config TARGET_S7_SKT
@@ -510,6 +516,10 @@ config TARGET_S7_BH202
 config TARGET_S7_BH209
 	bool "S7 BH209 board"
 	depends on S7_BH209
+
+config TARGET_S7_T223
+	bool "S7 T223 board"
+	depends on S7_T223
 
 endif
 
@@ -534,6 +544,8 @@ source "board/amlogic/s7_bh201/Kconfig"
 source "board/amlogic/s7_bh202/Kconfig"
 
 source "board/amlogic/s7_bh209/Kconfig"
+
+source "board/amlogic/s7_t223/Kconfig"
 
 source "board/amlogic/s1a_bg201/Kconfig"
 
