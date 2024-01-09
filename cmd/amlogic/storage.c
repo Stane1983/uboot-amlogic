@@ -1560,6 +1560,12 @@ static int do_store_param_ops(cmd_tbl_t *cmdtp,
 {
 	struct storage_t *store = store_get_current();
 
+	if (!store) {
+		pr_info("%s %d please init your storage device first!\n",
+			__func__, __LINE__);
+		return CMD_RET_FAILURE;
+	}
+
 	if (store->param_ops)
 		return store->param_ops();
 
