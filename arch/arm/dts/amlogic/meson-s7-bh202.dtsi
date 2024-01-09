@@ -224,8 +224,6 @@
 &usb31_phy_v2 {
 	status = "okay";
 	portnum = <0>;
-	gpio-vbus-power = "GPIOD_6";
-	gpios = <&gpio GPIOD_6 GPIO_ACTIVE_HIGH>;
 };
 
 &crg2 {
@@ -241,8 +239,6 @@
 &usb32_phy_v2 {
 	status = "okay";
 	portnum = <0>;
-	gpio-vbus-power = "GPIOD_10";
-	gpios = <&gpio GPIOD_10 GPIO_ACTIVE_HIGH>;
 };
 
 &pwm_ef {
