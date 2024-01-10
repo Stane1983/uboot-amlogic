@@ -37,6 +37,7 @@ enum MESON_SARADC_NUM_SAMPLES {
 
 enum MESON_SARADC_RESOLUTION {
 	SARADC_10BIT = 10,
+	SARADC_11BIT = 11,
 	SARADC_12BIT = 12,
 	SARADC_22BIT = 22,
 };
@@ -50,7 +51,7 @@ struct meson_saradc;
 
 struct meson_saradc_diff_ops {
 	void (*extra_init)(struct meson_saradc *priv);
-	void (*set_ch7_mux)(struct meson_saradc *priv, int ch, int mux);
+	void (*set_test_input_mux)(struct meson_saradc *priv, int ch, int mux);
 	void (*enable_decim_filter)(struct meson_saradc *priv,
 				    int ch, unsigned int mode);
 	void (*set_ref_voltage)(struct meson_saradc *priv, unsigned int mode,
@@ -76,6 +77,8 @@ struct meson_saradc_diff_ops {
  * @self_test_channel: channel of self-test
  * @resolution: gxl and later: 12bit; others(gxtvbb etc): 10bit
  * @clock_rate: saradc clock rate
+ * @auto_calibration: software automatic calibration
+ * @out_resolution: output resolution after automatic calibration
  */
 struct meson_saradc_data {
 	bool reg3_ring_counter_disable;
@@ -92,6 +95,8 @@ struct meson_saradc_data {
 	const struct meson_saradc_diff_ops *dops;
 	unsigned int capacity;
 	unsigned long clock_rate;
+	bool auto_calibration;
+	unsigned int out_resolution;
 };
 
 struct meson_saradc {
@@ -103,13 +108,13 @@ struct meson_saradc {
 	struct clk adc_div;
 	struct clk adc_gate;
 	struct meson_saradc_data *data;
+	int calibration_param[2];
+	bool param_valid;
 };
 
 extern const struct adc_ops meson_saradc_ops;
 int meson_saradc_probe(struct udevice *dev);
 int meson_saradc_remove(struct udevice *dev);
 int meson_saradc_of_to_plat(struct udevice *dev);
-
-#define SARADC_CH_SELF_TEST	MESON_SARADC_CH7
 
 #endif /*_MESON_SARADC_H_*/

@@ -104,7 +104,7 @@ static void meson_c2_set_ref_voltage(struct meson_saradc *priv,
 	}
 }
 
-static void meson_c2_set_ch7_mux(struct meson_saradc *priv, int ch, int mux)
+static void meson_c2_set_test_input_mux(struct meson_saradc *priv, int ch, int mux)
 {
 	clrsetbits_le32(priv->base + SARADC_C2_CH0_CTRL1 + ch * 12,
 			SARADC_C2_CH0_CTRL1_CHAN_MUX_SEL_MASK,
@@ -144,14 +144,14 @@ static struct meson_saradc_diff_ops meson_c2_diff_ops = {
 	.enable_decim_filter	= meson_c2_enable_decim_filter,
 	.set_ref_voltage	= meson_c2_set_ref_voltage,
 	.get_fifo_channel	= meson_c2_get_fifo_channel,
-	.set_ch7_mux		= meson_c2_set_ch7_mux,
+	.set_test_input_mux	= meson_c2_set_test_input_mux,
 	.get_fifo_data		= meson_c2_get_fifo_data,
 };
 
 struct meson_saradc_data meson_saradc_c2_data = {
 	.has_bl30_integration	= true,
 	.update_vref_conf	= 0,
-	.self_test_channel	= SARADC_CH_SELF_TEST,
+	.self_test_channel	= MESON_SARADC_CH7,
 	.num_channels		= MESON_SARADC_CH_MAX,
 	.resolution		= SARADC_12BIT,
 	.dops			= &meson_c2_diff_ops,
@@ -172,7 +172,7 @@ struct meson_saradc_data meson_saradc_c2_data = {
 struct meson_saradc_data meson_saradc_a5_data = {
 	.has_bl30_integration	= true,
 	.update_vref_conf	= 1,
-	.self_test_channel	= SARADC_CH_SELF_TEST,
+	.self_test_channel	= MESON_SARADC_CH7,
 	.num_channels		= MESON_SARADC_CH_MAX,
 	.resolution		= SARADC_12BIT,
 	.dops			= &meson_c2_diff_ops,

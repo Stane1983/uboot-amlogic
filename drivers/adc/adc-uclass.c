@@ -123,6 +123,16 @@ int adc_select_input_voltage(struct udevice *dev, int channel, int mux)
 
 	return ops->select_input_voltage(dev, channel, mux);
 }
+
+int adc_get_test_channel(struct udevice *dev)
+{
+	const struct adc_ops *ops = dev_get_driver_ops(dev);
+
+	if (!ops->get_test_channel)
+		return -ENOSYS;
+
+	return ops->get_test_channel(dev);
+}
 #endif
 
 int adc_stop(struct udevice *dev)

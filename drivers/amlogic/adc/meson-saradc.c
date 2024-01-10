@@ -148,11 +148,17 @@ static void meson_saradc_hw_init(struct meson_saradc *priv)
 	 * BIT[21]:    disable the ADC by default
 	 * BIT[23-25]: vdda*3/4 connect to channel-7 by default
 	 * BIT[26]:    select the sampling clock period: 0:3T, 1:5T
-	 * BIT[27]:    disable ring counter
 	 * BIT[31]:    use the clk domain to add delay to
 	 *             the start convert signal for hold times
 	 */
-	writel(0x8980000a, priv->base + SARADC_REG3);
+	writel(0x8180000a, priv->base + SARADC_REG3);
+
+	/* disable ring counter */
+	if (priv->data->reg3_ring_counter_disable) {
+		clrsetbits_le32(priv->base + SARADC_REG3,
+				SARADC_REG3_CTRL_CONT_RING_COUNTER_EN,
+				SARADC_REG3_CTRL_CONT_RING_COUNTER_EN);
+	}
 
 	/* disable continuous sampling mode */
 	clrsetbits_le32(priv->base + SARADC_REG0,
@@ -292,7 +298,8 @@ static int meson_saradc_set_mode(struct udevice *dev, int ch, unsigned int mode)
 			NO_AVERAGING << SARADC_AVG_CNTL_AVG_MODE_SHIFT(ch));
 	}
 
-	priv->data->dops->set_ref_voltage(priv, mode, ch);
+	if (priv->data->dops->set_ref_voltage)
+		priv->data->dops->set_ref_voltage(priv, mode, ch);
 
 	priv->current_mode = mode;
 
@@ -338,6 +345,27 @@ static int meson_saradc_stop(struct udevice *dev)
 	return 0;
 }
 
+static void meson_saradc_do_auto_calibration(struct meson_saradc *priv,
+					     unsigned int *data)
+{
+	int value = *data;
+	int param_b = priv->calibration_param[0];
+	int param_k = priv->calibration_param[1];
+	int max_val = (1 << priv->data->out_resolution) - 1;
+
+	/*
+	 * Calibration:
+	 *    When avdd18=1.8V, assuming single-ended input x=0~1.8V,
+	 *    the output y of adc is monotonically linear, consistent
+	 *    with y=kx+b. When x1=0V corresponds to y1, when x2=1.8V
+	 *    corresponds to y2, the values of k and b can be calculated.
+	 *    (k=858.33, b=251)
+	 */
+	value = (value < param_b ? 0 : value - param_b) * 1000 / param_k;
+	value = value > max_val ? max_val : value;
+	*data = value;
+}
+
 static int meson_saradc_channel_data(struct udevice *dev, int channel,
 				     unsigned int *data)
 {
@@ -366,6 +394,10 @@ static int meson_saradc_channel_data(struct udevice *dev, int channel,
 
 	*data = priv->data->dops->get_fifo_data(priv, uc_pdata, val);
 
+	/* Do auto calibration */
+	if (priv->data->auto_calibration && priv->param_valid)
+		meson_saradc_do_auto_calibration(priv, data);
+
 	priv->active_channel = -1;
 
 	meson_saradc_put_race_flag(priv);
@@ -384,9 +416,16 @@ static int meson_saradc_select_input_voltage(struct udevice *dev, int channel,
 		return -EINVAL;
 	}
 
-	priv->data->dops->set_ch7_mux(priv, channel, mux);
+	priv->data->dops->set_test_input_mux(priv, channel, mux);
 
 	return 0;
+}
+
+static int meson_saradc_get_test_channel(struct udevice *dev)
+{
+	struct meson_saradc *priv = dev_get_priv(dev);
+
+	return priv->data->self_test_channel;
 }
 
 const struct adc_ops meson_saradc_ops = {
@@ -395,7 +434,72 @@ const struct adc_ops meson_saradc_ops = {
 	.channel_data		= meson_saradc_channel_data,
 	.stop			= meson_saradc_stop,
 	.select_input_voltage	= meson_saradc_select_input_voltage,
+	.get_test_channel	= meson_saradc_get_test_channel,
 };
+
+static int meson_saradc_read_data(struct udevice *dev, int channel,
+				  unsigned int *data)
+{
+	int ret;
+	unsigned int timeout_us = 30000;
+
+	do {
+		ret = meson_saradc_channel_data(dev, channel, data);
+		if (!ret || ret != -EBUSY)
+			break;
+		udelay(1);
+	} while (timeout_us--);
+
+	return ret;
+}
+
+static int meson_saradc_auto_calibration_init(struct udevice *dev)
+{
+	struct meson_saradc *priv = dev_get_priv(dev);
+	int ret;
+	int channel = priv->data->self_test_channel;
+	unsigned int raw_0v, raw_1v8;
+	unsigned int max_val = (1 << priv->data->out_resolution) - 1;
+
+	priv->param_valid = false;
+
+	ret = meson_saradc_set_mode(dev, channel, ADC_CAPACITY_AVERAGE);
+	if (ret)
+		return ret;
+
+	/* Sample 0V */
+	ret = meson_saradc_select_input_voltage(dev, channel, 0);
+	if (ret)
+		return ret;
+	udelay(10);
+	ret = meson_saradc_start_channel(dev, channel);
+	if (ret)
+		return ret;
+	ret = meson_saradc_read_data(dev, channel, &raw_0v);
+	if (ret)
+		return ret;
+
+	/* Sample 1.8V */
+	ret = meson_saradc_select_input_voltage(dev, channel, 4);
+	if (ret)
+		return ret;
+	udelay(10);
+	ret = meson_saradc_start_channel(dev, channel);
+	if (ret)
+		return ret;
+	ret = meson_saradc_read_data(dev, channel, &raw_1v8);
+	if (ret)
+		return ret;
+
+	priv->calibration_param[0] = raw_0v;
+	priv->calibration_param[1] = (raw_1v8 - raw_0v) * 1000 / max_val;
+	/* Make sure the number being divided is not 0 */
+	if (priv->calibration_param[1] == 0)
+		return -1;
+	priv->param_valid = true;
+
+	return 0;
+}
 
 int meson_saradc_probe(struct udevice *dev)
 {
@@ -417,6 +521,15 @@ int meson_saradc_probe(struct udevice *dev)
 	meson_saradc_hw_init(priv);
 
 	meson_saradc_hw_enable(priv);
+
+	if (priv->data->auto_calibration) {
+		ret = meson_saradc_auto_calibration_init(dev);
+		if (ret) {
+			pr_err("%s: auto calibration initialization error\n", dev->name);
+			meson_saradc_hw_disable(priv);
+			return ret;
+		}
+	}
 
 	return 0;
 }

@@ -194,6 +194,14 @@ struct adc_ops {
 	 * @return:       0 if OK, -ve on error
 	 */
 	int (*select_input_voltage)(struct udevice *dev, int channel, int mux);
+
+	/**
+	 * get_test_channel() - get the channel number used for testing
+	 *
+	 * @dev:          ADC device
+	 * @return:       >= 0 channel number, -ve on error
+	 */
+	int (*get_test_channel)(struct udevice *dev);
 #endif
 };
 
@@ -364,6 +372,14 @@ int adc_set_mode(struct udevice *dev, int channel, unsigned int mode);
  * @return:       0 if OK, -ve on error
  */
 int adc_select_input_voltage(struct udevice *dev, int channel, int mux);
+
+/**
+ * adc_get_test_channel() - get the channel number used for testing
+ *
+ * @dev:          ADC device
+ * @return:       >= 0 channel number, -ve on error
+ */
+int adc_get_test_channel(struct udevice *dev);
 
 /**
  * adc_channel_single_shot_mode() - get output data of conversion based on

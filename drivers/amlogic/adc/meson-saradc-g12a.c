@@ -77,7 +77,7 @@ static int meson_g12a_get_fifo_channel(int val)
 	return (val >> SARADC_FIFO_RD_CHAN_ID_SHIFT) & 0x7;
 }
 
-static void meson_g12a_set_ch7_mux(struct meson_saradc *priv, int ch, int mux)
+static void meson_g12a_set_test_input_mux(struct meson_saradc *priv, int ch, int mux)
 {
 	clrsetbits_le32(priv->base + SARADC_REG3,
 			SARADC_REG3_CTRL_CHAN7_MUX_SEL_MASK,
@@ -102,7 +102,7 @@ static struct meson_saradc_diff_ops meson_g12a_diff_ops = {
 	.extra_init		= meson_g12a_extra_init,
 	.set_ref_voltage	= meson_g12a_set_ref_voltage,
 	.get_fifo_channel	= meson_g12a_get_fifo_channel,
-	.set_ch7_mux		= meson_g12a_set_ch7_mux,
+	.set_test_input_mux	= meson_g12a_set_test_input_mux,
 	.get_fifo_data		= meson_g12a_get_fifo_data,
 };
 
@@ -114,7 +114,7 @@ struct meson_saradc_data meson_saradc_g12a_data = {
 	.reg11_eoc		   = BIT_HIGH,
 	.reg13_calib_factor_mask   = GENMASK(13, 8),
 	.has_bl30_integration	   = true,
-	.self_test_channel	   = SARADC_CH_SELF_TEST,
+	.self_test_channel	   = MESON_SARADC_CH7,
 	.num_channels		   = MESON_SARADC_CH_MAX,
 	.resolution		   = SARADC_12BIT,
 	.dops			   = &meson_g12a_diff_ops,
@@ -131,13 +131,32 @@ struct meson_saradc_data meson_saradc_txhd2_data = {
 	.reg11_eoc		   = BIT_LOW,
 	.reg13_calib_factor_mask   = GENMASK(22, 16),
 	.has_bl30_integration	   = true,
-	.self_test_channel	   = SARADC_CH_SELF_TEST,
+	.self_test_channel	   = MESON_SARADC_CH7,
 	.num_channels		   = MESON_SARADC_CH_MAX,
 	.resolution		   = SARADC_12BIT,
 	.dops			   = &meson_g12a_diff_ops,
 	.capacity		   = ADC_CAPACITY_AVERAGE |
 				     ADC_CAPACITY_HIGH_PRECISION_VREF,
 	.clock_rate		   = 1200000,
+};
+
+static struct meson_saradc_diff_ops meson_s7_diff_ops = {
+	.get_fifo_channel	= meson_g12a_get_fifo_channel,
+	.set_test_input_mux	= meson_g12a_set_test_input_mux,
+	.get_fifo_data		= meson_g12a_get_fifo_data,
+};
+
+struct meson_saradc_data meson_saradc_s7_data = {
+	.reg3_ring_counter_disable = BIT_LOW,
+	.has_bl30_integration	   = true,
+	.self_test_channel	   = MESON_SARADC_CH4,
+	.num_channels		   = MESON_SARADC_CH_MAX,
+	.resolution		   = SARADC_11BIT,
+	.dops			   = &meson_s7_diff_ops,
+	.capacity		   = ADC_CAPACITY_AVERAGE,
+	.clock_rate		   = 1200000,
+	.auto_calibration	   = true,
+	.out_resolution		   = SARADC_10BIT,
 };
 
 static const struct udevice_id meson_g12a_saradc_ids[] = {
@@ -148,6 +167,10 @@ static const struct udevice_id meson_g12a_saradc_ids[] = {
 	{
 		.compatible = "amlogic,meson-txhd2-saradc",
 		.data = (ulong)&meson_saradc_txhd2_data,
+	},
+	{
+		.compatible = "amlogic,meson-s7-saradc",
+		.data = (ulong)&meson_saradc_s7_data,
 	},
 	{ }
 };
