@@ -5225,7 +5225,8 @@ void osd_init_hw(void)
 	    osd_get_chip_type() == MESON_CPU_MAJOR_ID_T3 ||
 	    osd_get_chip_type() == MESON_CPU_MAJOR_ID_S5 ||
 	    osd_get_chip_type() == MESON_CPU_MAJOR_ID_T5W ||
-	    osd_get_chip_type() == MESON_CPU_MAJOR_ID_T5M)
+	    osd_get_chip_type() == MESON_CPU_MAJOR_ID_T5M ||
+	    osd_get_chip_type() == MESON_CPU_MAJOR_ID_S7)
 		osd_hw.mif_linear = 1;
 
 	return;
