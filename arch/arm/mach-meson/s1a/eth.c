@@ -284,7 +284,7 @@ void __iomem *DM_network_interface_setup(struct udevice *dev)
 		printf("ex-phy\n");
 		setup_external_phy(dev);
 	}
-	soc_num = dev_read_u32_default(dev, "soc_num", 4);
+	soc_num = dev_read_u32_default(dev, "soc_num", 0);
 	printf("soc num %d\n", soc_num);
 	udelay(1000);
 	return 0;

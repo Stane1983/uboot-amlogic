@@ -22,6 +22,8 @@
 #define PDID_AUCPU         10
 #define PDID_AUDIO     11
 
+#define PM_ETH			PDID_ETH
+
 #define PM_MAX		12
 
 unsigned long viu_init_psci_smc(void);
