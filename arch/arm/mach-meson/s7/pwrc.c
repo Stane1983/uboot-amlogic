@@ -4,7 +4,6 @@
  */
 
 char *domain_name[] = {
-	"PDID_DOS_HCODEC",
 	"PDID_DOS_HEVC",
 	"PDID_DOS_VDEC",
 	"PDID_VPU_HDMI",
