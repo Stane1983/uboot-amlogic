@@ -81,6 +81,7 @@
 	"fb_addr=0x00300000\0"\
 	"fb_width=1920\0"\
 	"fb_height=1080\0"\
+	"lock=10100000\0"\
 	"dolby_status=0\0"\
 	"dolby_vision_on=0\0"\
 	"boot_part=boot\0"\
