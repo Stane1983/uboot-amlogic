@@ -674,7 +674,7 @@ config AMLOGIC_KEY_TYPE
 
 config BL30_SELECT
 	string "s6 BL30 board config"
-		default "s7d_pxp"
+		default "s6_pxp"
 
 choice
 	prompt "s6 Board"
