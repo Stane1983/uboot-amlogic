@@ -1812,7 +1812,8 @@ void vpp_init(void)
 		set_osd2_rgb2yuv(0);
 		if (chip_id != MESON_CPU_MAJOR_ID_TL1 &&
 		    chip_id != MESON_CPU_MAJOR_ID_S4  &&
-		    chip_id != MESON_CPU_MAJOR_ID_S1A)
+		    chip_id != MESON_CPU_MAJOR_ID_S1A &&
+		    chip_id != MESON_CPU_MAJOR_ID_S7)
 			set_osd3_rgb2yuv(0);
 
 		if (chip_id != MESON_CPU_MAJOR_ID_T7)
