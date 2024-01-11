@@ -241,8 +241,8 @@ int amlmmc_erase_bootloader(int dev, int map)
 			if (!blk_select_hwpart_devnum(UCLASS_MMC, 1, i)) {
 				lbaint_t start = 0, blkcnt;
 
-				blkcnt = mmc->capacity >> blk_shift;
 				if (0 == i) {
+					blkcnt = mmc->capacity >> blk_shift;
 					struct partitions *part_info;
 					/* get info by partition */
 					part_info = find_mmc_partition_by_name(MMC_BOOT_NAME);
@@ -258,6 +258,8 @@ int amlmmc_erase_bootloader(int dev, int map)
 							blkcnt -= GXL_START_BLK;
 						}
 					}
+				} else {
+					blkcnt = mmc->capacity_boot >> blk_shift;
 				}
 /* some customer may use boot1 higher 2M as private data. */
 #ifdef CONFIG_EMMC_BOOT1_TOUCH_REGION
@@ -272,10 +274,10 @@ int amlmmc_erase_bootloader(int dev, int map)
 				printf("Erasing blocks " LBAFU " to " LBAFU " @ %s\n",
 				   start, blkcnt, partname[i]);
 				n = blk_derase(mmc_get_blk_desc(mmc), start, blkcnt);
-				if (n != 0) {
+				if (n != blkcnt) {
 					printf("mmc erase %s failed\n", partname[i]);
 					ret = -3;
-					break;
+					goto _out;
 				}
 			} else
 				printf("%s() %d: switch dev %d to %s fail\n",
@@ -283,7 +285,7 @@ int amlmmc_erase_bootloader(int dev, int map)
 		}
 	}
 	/* try to switch back to user. */
-	blk_select_hwpart(mmc->dev, 0);
+	ret = blk_select_hwpart_devnum(UCLASS_MMC, 1, 0);
 
 _out:
 	return ret;
@@ -625,7 +627,7 @@ static int amlmmc_erase_single_part(int argc, char *const argv[])
 	cnt = part_info->size >> blk_shift;
 	n = blk_derase(mmc_get_blk_desc(mmc), blk, cnt);
 
-	return (n == 0) ? 0 : 1;
+	return (n == cnt) ? 0 : 1;
 }
 
 static int amlmmc_erase_whole(int argc, char *const argv[])
@@ -765,19 +767,9 @@ static int amlmmc_erase_allbootloader(int argc, char*const argv[])
 {
 	int map;
 	int rc;
-	char *name = NULL;
-	int dev;
 	map = AML_BL_ALL;
 
-	name = "bootloader";
-	dev = find_dev_num_by_partition_name(name);
-
-	if (dev < 0) {
-		printf("Cannot find dev.\n");
-		return 1;
-	}
-
-	rc = amlmmc_erase_bootloader(dev, map);
+	rc = amlmmc_erase_bootloader(STORAGE_EMMC, map);
 	return rc;
 }
 
