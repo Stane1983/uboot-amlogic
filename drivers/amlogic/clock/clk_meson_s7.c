@@ -28,7 +28,7 @@ static unsigned int saradc_parents[] = {CLKID_XTAL, CLKID_SYS_CLK};
 
 static unsigned int sd_emmc_parents[] = {CLKID_XTAL, CLKID_FCLK_DIV2,
 	CLKID_FCLK_DIV3, CLKID_UNREALIZED, CLKID_FCLK_DIV2P5,
-	CLKID_UNREALIZED, CLKID_GP0_PLL};
+	CLKID_UNREALIZED, CLKID_UNREALIZED, CLKID_GP0_PLL};
 
 static unsigned int spicc_parents[] = {CLKID_XTAL, CLKID_SYS_CLK,
 	CLKID_FCLK_DIV4, CLKID_FCLK_DIV3, CLKID_FCLK_DIV2,
@@ -62,10 +62,11 @@ static struct parm meson_sys0_pll_parm[3] = {
 	{S7_ANACTRL_SYS0PLL_CTRL0, 9, 2}, /* pod */
 };
 
-static struct parm meson_gp0_pll_parm[3] = {
+static struct parm meson_gp0_pll_parm[4] = {
 	{S7_ANACTRL_GP0PLL_CTRL0, 0, 9}, /* pm */
 	{S7_ANACTRL_GP0PLL_CTRL0, 11, 5}, /* pn */
 	{S7_ANACTRL_GP0PLL_CTRL0, 9, 2}, /* pod */
+	{S7_ANACTRL_GP0PLL_CTRL1, 27, 1}, /* pdiv0p5_en */
 };
 
 static int meson_clk_enable(struct clk *clk)
@@ -81,9 +82,9 @@ static int meson_clk_disable(struct clk *clk)
 static ulong meson_pll_get_rate(struct clk *clk, unsigned long id)
 {
 	struct meson_clk *priv = dev_get_priv(clk->dev);
-	struct parm *pm, *pn, *pod;
+	struct parm *pm, *pn, *pod, *pdiv0p5 = NULL;
 	unsigned long parent_rate_mhz = clk_get_rate(&priv->clkin)/1000000;
-	u16 n, m, od;
+	u16 n, m, od, div0p5 = 0;
 	u32 reg;
 
 	switch (id) {
@@ -101,6 +102,7 @@ static ulong meson_pll_get_rate(struct clk *clk, unsigned long id)
 		pm = &meson_gp0_pll_parm[0];
 		pn = &meson_gp0_pll_parm[1];
 		pod = &meson_gp0_pll_parm[2];
+		pdiv0p5 = &meson_gp0_pll_parm[3];
 		break;
 	default:
 		return -ENOENT;
@@ -111,6 +113,12 @@ static ulong meson_pll_get_rate(struct clk *clk, unsigned long id)
 
 	reg = readl(priv->addr + pm->reg_off);
 	m = PARM_GET(pm->width, pm->shift, reg);
+	if (pdiv0p5) {
+		reg = readl(priv->addr + pdiv0p5->reg_off);
+		div0p5 = PARM_GET(pdiv0p5->width, pdiv0p5->shift, reg);
+		if (div0p5 == 1)
+			parent_rate_mhz = parent_rate_mhz >> 1;
+	}
 
 	/* there is OD in C1 */
 	 reg = readl(priv->addr + pod->reg_off);
@@ -189,7 +197,6 @@ static ulong meson_clk_set_rate(struct clk *clk, ulong rate)
 	parent_rate = meson_clk_get_rate_by_id(clk, mux_parent);
 
 	div_val = DIV_ROUND_CLOSEST(parent_rate, rate) - 1;
-
 	priv->actual_rate = DIV_ROUND_CLOSEST(parent_rate, div_val + 1);
 	meson_clk_set_div(priv, div, div_val);
 
