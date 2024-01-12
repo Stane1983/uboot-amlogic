@@ -163,7 +163,7 @@ static struct nfc_clk_provider *nfc_get_clock_provider(int init_stage,
 		else
 			clk_info = &clk_provider[CLK_20MHZ];
 
-		otp_get_nfc_rxadj(&clk_info->adj);
+		//otp_get_nfc_rxadj(&clk_info->adj);
 	} else {
 		line_delay1 = page_info_get_line_delay1();
 		line_delay2 = page_info_get_line_delay2();
