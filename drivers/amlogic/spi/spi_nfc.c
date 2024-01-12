@@ -17,7 +17,7 @@
 #include <spi.h>
 #include <amlogic/aml_pageinfo.h>
 #include <asm/amlogic/arch/register.h>
-#include "page_info.h"
+#include <amlogic/page_info.h>
 
 //#define __SPI_NFC_DEBUG__
 

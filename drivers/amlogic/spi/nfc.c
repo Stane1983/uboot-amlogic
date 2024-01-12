@@ -2,9 +2,9 @@
 /*
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
-
-#include "nfc.h"
-#include "page_info.h"
+#include <asm/amlogic/arch/register.h>
+#include <amlogic/nfc.h>
+#include <amlogic/page_info.h>
 
 struct nfc_clk_provider clk_provider[MAX_CLK_PROVIDER] = {
 	{OSC_CLK_24MHZ, CLK_6MHZ,	1, 4, 0, 1},
@@ -132,7 +132,7 @@ void nfc_raw_size_ext_convert(uint32_t size)
 }
 
 #define is_fixpll_locked()	(1)
-#define IS_FEAT_EN_83MHZ_SPI()	(1)
+#define IS_FEAT_EN_83MHZ_SPI()	(0)
 #define IS_FEAT_EN_41MHZ_SPI()	(1)
 #define IS_FEAT_EN_25MHZ_NAND()	(1)
 #define otp_get_nfc_rxadj(x)	((*(x)) = 0)

@@ -11,7 +11,7 @@
 #define SD_EMMC_BASE_C 0xd0074000
 #endif
 
-#define P_NAND_BASE (SD_EMMC_BASE_C | (1 << 11))
+#define P_NAND_BASE (SD_EMMC_BASE_C | (1 << 12))
 #define P_CLK_CNTL	(volatile uint32_t *)(SD_EMMC_BASE_C)
 #define P_NAND_CMD  (volatile uint32_t *)(P_NAND_BASE + 0x00)
 #define P_NAND_CFG  (volatile uint32_t *)(P_NAND_BASE + 0x04)

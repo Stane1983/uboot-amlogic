@@ -3,7 +3,8 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
-#include "page_info.h"
+#include <amlogic/page_info.h>
+#include <amlogic/storage.h>
 
 struct boot_info *page_info;
 
@@ -195,36 +196,93 @@ static int page_info_version_init(void)
 	return page_info->version;
 }
 
-extern unsigned char disable_host_ecc;
-static void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
+#ifdef CONFIG_MESON_NFC
+void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 					    struct udevice *udev)
 {
-	struct nand_device *dev = mtd_to_nanddev(mtd);
-	struct dm_spi_slave_plat *plat;
 	unsigned char ecc_steps, *temp;
 	unsigned int checksum = 0, i;
 	enum PAGE_INFO_V page_info_ver;
-	#ifdef CONFIG_DDR_PARAMETER_SUPPORT
-	struct spinand_device *spinand = mtd_to_spinand(mtd);
-	unsigned int pages_shift, ddr_param_page;
-	#endif
 
 	page_info_ver = page_info_version_init();
 	memcpy(page_info->magic, BOOTINFO_MAGIC, strlen(BOOTINFO_MAGIC));
 	page_info->dev_cfg0.page_size = mtd->writesize;
-	page_info->dev_cfg0.planes_per_lun = dev->memorg.planes_per_lun;
-	if (page_info->dev_cfg0.planes_per_lun > 1) {
-		page_info->dev_cfg0.planes_per_lun |= 6 << 4;
-		page_info->dev_cfg0.bus_width =
-			(mtd->writesize_shift + 1) << 4;
+
+	if (page_info_ver == PAGE_INFO_V1) {
+		/* for compatible,  a1/c1/c2 ... need to know fip's start and size */
+		#ifdef	BOOT_TOTAL_PAGES
+		page_info->reserved[0] = BOOT_TOTAL_PAGES / 64 + MTD_RSV_BLOCK_CNT;
+		#endif
+		#ifdef	CONFIG_TPL_SIZE_PER_COPY
+		page_info->reserved[1] =
+			CONFIG_TPL_SIZE_PER_COPY / mtd->erasesize;
+		#endif
+		#ifdef	CONFIG_NAND_TPL_COPY_NUM
+		page_info->reserved[2] = CONFIG_NAND_TPL_COPY_NUM;
+		#endif
+		page_info->dev_cfg1.block_size = mtd->erasesize;
+	} else if (page_info_ver == PAGE_INFO_V2) {
+		i = mtd->erasesize_shift + mtd->writesize_shift;
+		page_info->reserved[2] = ((mtd->size >> i) ? (mtd->size >> i) : 1) & 0x3;
 	}
-	plat = dev_get_parent_plat(udev);
-	page_info->dev_cfg0.bus_width &= ~0x03;
-	if (plat->mode & SPI_RX_QUAD)
-		page_info->dev_cfg0.bus_width |= 2;
-	else if (plat->mode & SPI_RX_DUAL)
-		page_info->dev_cfg0.bus_width |= 1;
-	NFC_Print("bus_width", page_info->dev_cfg0.bus_width);
+
+	if (page_info_ver != PAGE_INFO_V3)
+		goto _cal_sum;
+
+	ecc_steps = mtd->writesize >> 9;
+	page_info->host_cfg.n2m_cmd = (DEFAULT_ECC_MODE & (~0x3F)) | ecc_steps;
+	page_info->dev_cfg1.block_size = mtd->erasesize;
+
+#ifdef BOOTINFO_PROGRAMMER_SUPPORT
+	page_info->dev_cfg1.is_gang_programer = 0;
+	page_info->dev_cfg1.xor_bbt_start_block |= (1 << 24);
+	page_info->dev_cfg1.block_num_in_chip = mtd->size / mtd->erasesize;
+#endif
+
+_cal_sum:
+	page_info->checksum = 0;
+	temp = (unsigned char *)page_info;
+	for (i = 0; i < sizeof(struct boot_info); i++)
+		checksum += temp[i];
+	page_info->checksum = checksum;
+	printf("page info updated checksum : 0x%x\n", checksum);
+}
+#else
+extern unsigned char disable_host_ecc;
+void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
+					    struct udevice *udev)
+{
+	struct nand_device *dev = mtd_to_nanddev(mtd);
+	unsigned char ecc_steps, *temp;
+	unsigned int checksum = 0, i;
+	enum PAGE_INFO_V page_info_ver;
+	enum boot_type_e medium_type = store_get_type();
+
+	if (medium_type == BOOT_SNAND) {
+		struct dm_spi_slave_plat *plat;
+		#ifdef CONFIG_DDR_PARAMETER_SUPPORT
+		struct spinand_device *spinand = mtd_to_spinand(mtd);
+		unsigned int pages_shift, ddr_param_page;
+		#endif
+		plat = dev_get_parent_plat(udev);
+		page_info->dev_cfg0.bus_width &= ~0x03;
+		if (plat->mode & SPI_RX_QUAD)
+			page_info->dev_cfg0.bus_width |= 2;
+		else if (plat->mode & SPI_RX_DUAL)
+			page_info->dev_cfg0.bus_width |= 1;
+		NFC_Print("bus_width", page_info->dev_cfg0.bus_width);
+		page_info->dev_cfg0.planes_per_lun = dev->memorg.planes_per_lun;
+		if (page_info->dev_cfg0.planes_per_lun > 1) {
+			page_info->dev_cfg0.planes_per_lun |= 6 << 4;
+			page_info->dev_cfg0.bus_width =
+				(mtd->writesize_shift + 1) << 4;
+		}
+	}
+
+	page_info_ver = page_info_version_init();
+	memcpy(page_info->magic, BOOTINFO_MAGIC, strlen(BOOTINFO_MAGIC));
+	page_info->dev_cfg0.page_size = mtd->writesize;
+
 	if (page_info_ver == PAGE_INFO_V1) {
 		/* for compatible,  a1/c1/c2 ... need to know fip's start and size */
 		#ifdef	BOOT_TOTAL_PAGES
@@ -261,12 +319,14 @@ static void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 
 	ecc_steps = mtd->writesize >> 9;
 	page_info->host_cfg.n2m_cmd = (DEFAULT_ECC_MODE & (~0x3F)) | ecc_steps;
-	if (disable_host_ecc)
-		page_info->host_cfg.n2m_cmd = N2M_RAW | mtd->writesize;
-	page_info->host_cfg.frequency_index = 0xFF;
-	page_info->dev_cfg1.ca_lanes = 0;
-	page_info->dev_cfg1.cs_deselect_time = 0xFF;
-	page_info->dev_cfg1.dummy_cycles = 0xFF;
+	if (medium_type == BOOT_SNAND) {
+		if (disable_host_ecc)
+			page_info->host_cfg.n2m_cmd = N2M_RAW | mtd->writesize;
+		page_info->host_cfg.frequency_index = 0xFF;
+		page_info->dev_cfg1.ca_lanes = 0;
+		page_info->dev_cfg1.cs_deselect_time = 0xFF;
+		page_info->dev_cfg1.dummy_cycles = 0xFF;
+	}
 	page_info->dev_cfg1.block_size = mtd->erasesize;
 
 #ifdef BOOTINFO_PROGRAMMER_SUPPORT
@@ -283,6 +343,7 @@ _cal_sum:
 	page_info->checksum = checksum;
 	printf("page info updated checksum : 0x%x\n", checksum);
 }
+#endif
 
 #ifdef __PXP_DEBUG__
 static void page_info_dump_info(void)

@@ -180,20 +180,20 @@ defined(CONFIG_STORE_COMPATIBLE)
 #endif
 
 /* mtd device board config */
-#define CONFIG_BL2_COPY_NUM			4
+#define CONFIG_BL2_COPY_NUM				8
 #define CONFIG_NAND_TPL_COPY_NUM		2
 #define CONFIG_NOR_TPL_COPY_NUM			1
-#define CONFIG_TPL_SIZE_PER_COPY		0x200000
+#define CONFIG_TPL_SIZE_PER_COPY		0x300000
 
 #define BOOTLOADER_MODE_NAND			ADVANCE_BOOTLOADER
 #define BOOTLOADER_MODE_SNAND			ADVANCE_BOOTLOADER
 #define BOOTLOADER_MODE_SNOR			ADVANCE_BOOTLOADER
 #define BOOTLOADER_MODE_ADVANCE_INIT		1
-#define BOOTLOADER_DDR_FIP_SIZE			0//0x40000
+#define BOOTLOADER_DDR_FIP_SIZE				0x40000
 
 /* mtd device rsv board config */
 #define MTD_RSV_START_BLOCK			16
-#define MTD_RSV_BLOCK_CNT			24
+#define MTD_RSV_BLOCK_CNT			48
 #define MTD_RSV_GAP_BLOCK_CNT			4
 #define MTD_RSV_BBT_BLOCK_CNT			4
 #define MTD_RSV_ENV_BLOCK_CNT			4
@@ -218,7 +218,7 @@ defined(CONFIG_STORE_COMPATIBLE)
 #define 	CONFIG_SYS_NO_FLASH  1
 #endif
 
-#if defined CONFIG_MESON_NFC || defined CONFIG_SPI_NAND || defined CONFIG_MTD_SPI_NAND
+#if defined CONFIG_MESON_NFC
 	#define CONFIG_SYS_MAX_NAND_DEVICE  2
 #endif
 
@@ -246,10 +246,10 @@ defined(CONFIG_STORE_COMPATIBLE)
 #define USB_G12x_PHY_PLL_SETTING_4	(0xe0004)
 #define USB_G12x_PHY_PLL_SETTING_5	(0xe000c)
 
-#define AML_TXLX_USB        1
-#define AML_USB_V2             1
-#define USB_GENERAL_BIT         3
-#define USB_PHY21_BIT           4
+#define AML_TXLX_USB       		 1
+#define AML_USB_V2          	 1
+#define USB_GENERAL_BIT          3
+#define USB_PHY21_BIT            4
 
 /* UBOOT fastboot config */
 

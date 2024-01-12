@@ -17,7 +17,7 @@
 #include <amlogic/blxx2bl33_param.h>
 #include <asm/amlogic/arch/cpu_config.h>
 #include <amlogic/cpu_id.h>
-#include "nfc.h"
+#include <amlogic/nfc.h>
 
 //#define __PXP_DEBUG__
 #define PAGEINFO_QUICK_INIT

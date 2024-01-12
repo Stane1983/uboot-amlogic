@@ -190,7 +190,7 @@ __attribute__ ((section(".misc_param"))) = {
 /* for all the storage parameter */
 #ifdef CONFIG_MTD_SPI_NAND
 /* for spinand storage parameter */
-storage_parameter_t __store_para __section(.store_param) = {
+storage_parameter_t __store_para __section(".store_param") = {
 	.common				= {
 		.version = 0x01,
 		.device_fip_container_size = CONFIG_TPL_SIZE_PER_COPY,

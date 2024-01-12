@@ -28,8 +28,8 @@
 #include <clk.h>
 #include <dm/pinctrl.h>
 #include <asm/amlogic/arch/register.h>
-
 #include <amlogic/meson_nand.h>
+#include <amlogic/aml_pageinfo.h>
 #include "version.h"
 #include <time.h>
 
@@ -807,21 +807,18 @@ static int m3_nand_probe(struct aml_nand_platform *plat, unsigned dev_num)
 		chip->write_page = m3_nand_boot_write_page;
 		oobfree = chip->ecc.layout->oobfree;
 		array_length = ARRAY_SIZE(chip->ecc.layout->oobfree);
-		printf("%s-%d %d\n", __func__, __LINE__, array_length);
 		if (chip->ecc.layout) {
 			oobfree[0].length =
 			(mtd->writesize / 512) * aml_chip->user_byte_mode;//这里变更了
 			chip->ecc.layout->oobavail = 0;
 			for (i = 0; oobfree[i].length && i < array_length; i++) {
-				printf("%s-%d %d %d\n", __func__, __LINE__, oobfree[i].length, chip->ecc.layout->eccbytes);
 				chip->ecc.layout->oobavail += oobfree[i].length;
 			}
 			mtd->oobavail = chip->ecc.layout->oobavail;
-			printf("%s-%d %d\n", __func__, __LINE__, mtd->oobavail);
 			mtd->ecclayout = chip->ecc.layout;
 		}
 	}
-	printf("%s-%d\n", __func__, __LINE__);
+
 	return 0;
 
 exit_error:
@@ -936,7 +933,6 @@ int meson_nfc_probe(struct udevice *dev)
 			printk("error for not platform data\n");
 			continue;
 		}
-		printf("%s-%d FENG\n", __func__, __LINE__);
 		ret = m3_nand_probe(plat, i);
 		if (pre_scan->pre_scan_flag && !i) {
 			free(controller);
@@ -945,6 +941,7 @@ int meson_nfc_probe(struct udevice *dev)
 		if (ret)
 			printk("nand init failed: %d\n", ret);
 	}
+	page_info_pre_init();
 	nand_curr_device = 1; //fixit
 	amlmtd_init = 1;
 	if (ret)
