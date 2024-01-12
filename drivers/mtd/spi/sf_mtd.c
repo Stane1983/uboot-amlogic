@@ -87,7 +87,8 @@ static int spi_flash_mtd_write(struct mtd_info *mtd, loff_t to, size_t len,
 		return -ENODEV;
 #ifdef CONFIG_AMLOGIC_MODIFY
 	if (to == 512 && ((cpu_id.family_id == MESON_CPU_MAJOR_ID_A4)
-		|| (cpu_id.family_id == MESON_CPU_MAJOR_ID_S1A))) {
+		|| (cpu_id.family_id == MESON_CPU_MAJOR_ID_S1A)
+		|| (cpu_id.family_id == MESON_CPU_MAJOR_ID_S7))) {
 		page_info = page_info_post_init(mtd, flash->dev);
 		err = spi_flash_write(flash, 0, 512, page_info);
 		if (err)
