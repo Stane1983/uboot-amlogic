@@ -1169,6 +1169,17 @@ static bool is_4k60_supported(struct rx_cap *prxcap)
 	return false;
 }
 
+bool is_support_y422(struct rx_cap *prxcap)
+{
+	if (!prxcap)
+		return false;
+
+	if (prxcap->native_Mode & (1 << 4))
+		return true;
+
+	return false;
+}
+
 static void check_dv_truly_support(struct rx_cap *prxcap, struct dv_info *dv)
 {
 	unsigned int max_tmds_clk = 0;

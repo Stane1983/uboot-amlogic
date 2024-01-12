@@ -132,6 +132,7 @@
         "fb_height=1080\0" \
         "frac_rate_policy=1\0" \
         "hdr_policy=0\0" \
+	"config_csc_en=1\0" \
         "usb_burning=" CONFIG_USB_TOOL_ENTRY "\0" \
         "fdt_high=0x20000000\0"\
         "sdcburncfg=aml_sdc_burn.ini\0"\
@@ -176,7 +177,7 @@
 			"get_bootloaderversion;" \
 			"run storeargs_base;"\
 			"setenv bootargs ${bootargs} kvm-arm.mode=none init_on_alloc=0 "\
-				"nn_adj_vol=${nn_adj_vol};"\
+				"nn_adj_vol=${nn_adj_vol} config_csc_en=${config_csc_en};"\
 			"run storeargs_hdmitx;"\
             "run cmdline_keys;"\
 			"run check_connector_type; " \
