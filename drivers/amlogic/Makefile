@@ -26,6 +26,8 @@ obj-$(CONFIG_AML_MKL) += mkl/
 
 obj-$(CONFIG_DM_MMC) += mmc/
 
+obj-$(CONFIG_AMLOGIC_ETH) += net/
+
 obj-$(CONFIG_EFUSE) += efuse/
 
 obj-$(CONFIG_DM_SPI) += spi/

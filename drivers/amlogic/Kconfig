@@ -27,6 +27,8 @@ source "drivers/amlogic/mkl/Kconfig"
 
 source "drivers/amlogic/mmc/Kconfig"
 
+source "drivers/amlogic/net/Kconfig"
+
 source "drivers/amlogic/pinctrl/Kconfig"
 
 source "drivers/amlogic/spi/Kconfig"
