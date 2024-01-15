@@ -398,6 +398,11 @@
 			input-enable;
 			bias-pull-down;
 		};
+		mux2 {
+			groups = "GPIOB_12",
+				"GPIOB_13";
+			function = "gpio_periphs";
+		};
 	};
 
 	emmc_clk_gate_pins: emmc_clk_gate {
