@@ -132,6 +132,18 @@ config CMD_CLKMSR
 	  Show clock measurement for different clock index
 	  use for debug
 
+config CMD_DSP_START
+	bool "support uboot bootup dsp"
+	default n
+	help
+	  Support uboot bootup dsp
+
+config CMD_DSP_REMAP
+	bool "support uboot dsp remap"
+	default n
+	help
+	  Support uboot dsp remap
+
 #prduct mode start---->
 config NO_FASTBOOT_FLASHING
 	depends on FASTBOOT

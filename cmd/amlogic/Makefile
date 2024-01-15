@@ -98,6 +98,9 @@ endif
 
 endif
 
+obj-$(CONFIG_CMD_DSP_START) += cmd_startdsp.o
+obj-$(CONFIG_CMD_DSP_REMAP) += cmd_remapset.o
+
 obj-$(CONFIG_AML_STORAGE) += storage.o
 
 obj-$(CONFIG_CMD_OS_IDENT) += os_ident.o
