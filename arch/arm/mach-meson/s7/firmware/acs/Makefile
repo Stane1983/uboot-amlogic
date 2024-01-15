@@ -193,7 +193,7 @@ ASFLAGS			+= 	${FIRMWARE_CPPFLAGS}
 CFLAGS			+= 	${FIRMWARE_CPPFLAGS}
 CFLAGS			+= 	-Wno-unused
 
-LDFLAGS			+=	--fatal-warnings -O1 --no-warn-rwx-segments
+LDFLAGS			+=	--fatal-warnings -O1
 LDFLAGS			+=	--gc-sections
 
 OCFLAGS		+= -j .dev_header -j .generic_param -j .clk_param \
