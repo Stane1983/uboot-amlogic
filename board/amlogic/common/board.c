@@ -380,6 +380,7 @@ const char * const _aml_env_reserv_array[] = {
 	"expect_index",
 	"recovery_check_part",
 	"defenv_para",	//set in board_late_init
+	"connector_type",
 	NULL//Keep NULL be last to tell END
 };
 #endif//#ifdef CONFIG_AML_DEFENV
