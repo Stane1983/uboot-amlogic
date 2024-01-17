@@ -1449,7 +1449,7 @@ static struct meson_bank meson_s6_periphs_banks[] = {
 
 static struct meson_pmx_bank meson_s6_periphs_pmx_banks[] = {
 	/*       name      first        last         reg   offset */
-	BANK_PMX("D",      GPIOD_0,     GPIOD_5,     0x000,   0),
+	BANK_PMX("D",      GPIOD_0,     GPIOD_5,     0x002,   0),
 	BANK_PMX("D1",     GPIOD_6,     GPIOD_6,     0x008,   0),
 	BANK_PMX("F",      GPIOF_0,     GPIOF_4,     0x008,   4),
 	BANK_PMX("E",      GPIOE_0,     GPIOE_2,     0x012,   0),
