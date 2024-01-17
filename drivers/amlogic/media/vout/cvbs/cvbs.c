@@ -104,6 +104,20 @@ static struct cvbs_data_s cvbs_data_s1a = {
 	.vdac_gsw = 0x0,
 };
 
+static struct cvbs_data_s cvbs_data_s7 = {
+	.chip_type = CVBS_CHIP_S7,
+
+	.reg_vid_pll_clk_div = CLKCTRL_VID_PLL_CLK_DIV,
+	.reg_vid_clk_div = CLKCTRL_VID_CLK_DIV,
+	.reg_vid_clk_ctrl = CLKCTRL_VID_CLK_CTRL,
+	.reg_vid2_clk_div = CLKCTRL_VIID_CLK_DIV,
+	.reg_vid2_clk_ctrl = CLKCTRL_VIID_CLK_CTRL,
+	.reg_vid_clk_ctrl2 = CLKCTRL_VID_CLK_CTRL2,
+
+	.vdac_vref_adj = 0x10,
+	.vdac_gsw = 0x5c,
+};
+
 struct cvbs_drv_s *get_cvbs_drv(void)
 {
 	return &cvbs_drv;
@@ -365,6 +379,100 @@ static void cvbs_config_hdmipll_s1a(void)
 	WAIT_FOR_PLL_LOCKED(ANACTRL_HDMIPLL_CTRL0);
 }
 
+/* sync from s7 hdmitx setting */
+/* htx pll VCO output: (3G, 6G), for tmds */
+static void cvbs_s7_htxpll_clk_vco(const u32 clk)
+{
+	u32 quotient;
+	u32 remainder;
+
+	if (clk < 3000000 || clk > 6000000) {
+		pr_err("%s[%d] clock should be 3~6G\n", __func__, __LINE__);
+		return;
+	}
+
+	quotient = clk / 24000;
+	remainder = clk - quotient * 24000;
+	/* remainder range: 0 ~ 23999, 0x5dbf, 15bits */
+	remainder *= 1 << 17;
+	remainder /= 24000;
+
+	cvbs_write_hiu(ANACTRL_HDMIPLL_CTRL0, 0x00801000 | (quotient << 0));
+	cvbs_write_hiu(ANACTRL_HDMIPLL_CTRL1, 0x2c6011c8);
+	cvbs_write_hiu(ANACTRL_HDMIPLL_CTRL2, 0x86801000);
+	cvbs_write_hiu(ANACTRL_HDMIPLL_CTRL3, 0x00000000 | remainder);
+	cvbs_set_hiu_bits(ANACTRL_HDMIPLL_CTRL0, 1, 28, 1);
+	udelay(10);
+	cvbs_set_hiu_bits(ANACTRL_HDMIPLL_CTRL2, 1, 29, 1);
+	udelay(10);
+	cvbs_set_hiu_bits(ANACTRL_HDMIPLL_CTRL0, 1, 29, 1);
+	cvbs_set_hiu_bits(ANACTRL_HDMIPLL_CTRL2, 0, 29, 1);
+	udelay(80);
+	cvbs_set_hiu_bits(ANACTRL_HDMIPLL_CTRL1, 1, 2, 1);
+	udelay(80);
+	WAIT_FOR_PLL_LOCKED(ANACTRL_HDMIPLL_CTRL0);
+}
+
+static void cvbs_s7_htxpll_clk_out(const u32 clk, u32 div)
+{
+	u32 pll_od1 = 0;
+	u32 pll_od10 = 0;
+	u32 pll_od11 = 0;
+	u32 pll_od21 = 0;
+
+	/* printf("%s[%d] htxpll vco %d div %d\n", __func__, __LINE__, clk, div); */
+
+	if (clk < 3000000 || clk > 6000000) {
+		pr_err("%s[%d] %d out of htxpll range(3~6G)\n", __func__, __LINE__, clk);
+		return;
+	}
+	cvbs_s7_htxpll_clk_vco(clk);
+
+	//pll_od10
+	if ((div % 8) == 0) {
+		pll_od10 = 3; //div8
+		div = div / 8;
+	} else if ((div % 4) == 0) {
+		pll_od10 = 2; //div4
+		div = div / 4;
+	} else if ((div % 2) == 0) {
+		pll_od10 = 1; //div2
+		div = div / 2;
+	}
+
+	//pll_od11
+	if ((div % 8) == 0) {
+		pll_od11 = 3;
+		div = div / 8;
+	} else if ((div % 4) == 0) {
+		pll_od11 = 2;
+		div = div / 4;
+	} else if ((div % 2) == 0) {
+		pll_od11 = 1;
+		div = div / 2;
+	}
+
+	//pll_od1
+	pll_od1 = (pll_od10 << 2) | pll_od11;
+
+	/* od2 for divider for hdmi_clk_out2 */
+	if ((div % 8) == 0) {
+		pll_od21 = 3;
+		div = div / 8;
+	} else if ((div % 4) == 0) {
+		pll_od21 = 2;
+		div = div / 4;
+	} else if ((div % 2) == 0) {
+		pll_od21 = 1;
+		div = div / 2;
+	}
+
+	cvbs_set_hiu_bits(ANACTRL_HDMIPLL_CTRL0, 1, 19, 1);
+	/* printf("pll_od1 = %d, pll_od21 = %d\n", pll_od1, pll_od21); */
+	cvbs_set_hiu_bits(ANACTRL_HDMIPLL_CTRL2, pll_od21, 15, 2);
+	cvbs_set_hiu_bits(ANACTRL_HDMIPLL_CTRL2, pll_od1, 19, 4);
+}
+
 static void cvbs_set_vid1_clk(unsigned int src_pll)
 {
 	int sel = 0;
@@ -490,6 +598,12 @@ static int cvbs_config_clock(void)
 		break;
 	case CVBS_CHIP_S1A:
 		cvbs_config_hdmipll_s1a();
+		cvbs_set_vid2_clk(0);
+		break;
+	case CVBS_CHIP_S7:
+		/* hdmi_clk_out2: 1485Mhz */
+		cvbs_s7_htxpll_clk_out(5940000, 4);
+		/* 1485Mhz / 55 = 27Mhz */
 		cvbs_set_vid2_clk(0);
 		break;
 	default:
@@ -876,6 +990,9 @@ void vdac_data_config(void)
 		break;
 	case MESON_CPU_MAJOR_ID_S1A:
 		cvbs_drv.data = &cvbs_data_s1a;
+		break;
+	case MESON_CPU_MAJOR_ID_S7:
+		cvbs_drv.data = &cvbs_data_s7;
 		break;
 	default:
 		cvbs_drv.data = &cvbs_data_s4d;

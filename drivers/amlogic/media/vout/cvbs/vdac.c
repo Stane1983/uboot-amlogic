@@ -119,7 +119,9 @@ static void vdac_enable_cvbs_out(bool on)
 			vdac_ctrl_config(1, reg_cntl0, 24);
 		}
 	} else {
-		if (vdac_data->cpu_id >= VDAC_CPU_S4) {
+		if (vdac_data->cpu_id >= VDAC_CPU_S1A) {
+			vdac_ctrl_config(0, reg_cntl1, 7);
+		} else if (vdac_data->cpu_id >= VDAC_CPU_S4) {
 			vdac_set_reg_bits(reg_cntl0, 0x0, 4, 1);
 			vdac_ctrl_config(0, reg_cntl1, 7);
 		} else {
@@ -217,9 +219,17 @@ static void vdac_gsw_init(void)
 		return;
 	}
 
+	/* printf("reg_cnt0: %x, reg_cnt1: %x\n", */
+	/* vdac_read_reg(vdac_data->reg_ctrl0), */
+	/* vdac_read_reg(vdac_data->reg_ctrl1)); */
+
 	ret = efuse_get_cali_cvbs();
 	if (ret == -1) {
 		printf("%s: no cali_cvbs data\n", __func__);
+		if (vdac_data->cpu_id == VDAC_CPU_S7) {
+			/* suggest default value */
+			vdac_set_reg_bits(vdac_data->reg_ctrl1, 0x40, 0, 7);
+		}
 		return;
 	}
 
@@ -278,6 +288,14 @@ static struct meson_vdac_ctrl_s vdac_ctrl_enable_s1a[] = {
 	{VDAC_REG_MAX, 0, 0, 0},
 };
 
+static struct meson_vdac_ctrl_s vdac_ctrl_enable_s7[] = {
+	/*gsw */
+	{ANACTRL_VDAC_CTRL1, 0, 0, 7},
+	/* cdac_pwd, 1: on, 0: off */
+	{ANACTRL_VDAC_CTRL1, 1, 7, 1},
+	{VDAC_REG_MAX, 0, 0, 0},
+};
+
 struct vdac_data_s vdac_data_g12ab = {
 	.cpu_id = VDAC_CPU_G12AB,
 	.reg_ctrl0 = HHI_VDAC_CNTL0,
@@ -314,6 +332,14 @@ struct vdac_data_s vdac_data_s1a = {
 	.cvbsout_cfg_cntl0 = 0x00418982, //vlsi suggestion value
 };
 
+struct vdac_data_s vdac_data_s7 = {
+	.cpu_id = VDAC_CPU_S7,
+	.reg_ctrl0 = ANACTRL_VDAC_CTRL0,
+	.reg_ctrl1 = ANACTRL_VDAC_CTRL1,
+	.vdac_ctrl = vdac_ctrl_enable_s7,
+	.cvbsout_cfg_cntl0 = 0x00419A82, //vlsi suggestion value
+};
+
 void vdac_ctrl_config_probe(void)
 {
 	pri_flag = 0;
@@ -334,6 +360,9 @@ void vdac_ctrl_config_probe(void)
 		break;
 	case MESON_CPU_MAJOR_ID_S1A:
 		vdac_data = &vdac_data_s1a;
+		break;
+	case MESON_CPU_MAJOR_ID_S7:
+		vdac_data = &vdac_data_s7;
 		break;
 	default:
 		vdac_data = &vdac_data_s4d;
