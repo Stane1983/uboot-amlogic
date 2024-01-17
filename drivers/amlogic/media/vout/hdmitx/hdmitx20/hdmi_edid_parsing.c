@@ -751,6 +751,11 @@ static bool y420vicright(enum hdmi_vic vic)
 	return rtn_val;
 }
 
+bool _is_y420_vic(enum hdmi_vic vic)
+{
+	return y420vicright(vic);
+}
+
 static int edid_parsingy420vdbblock(struct rx_cap *prxcap,
 	unsigned char *buf)
 {
