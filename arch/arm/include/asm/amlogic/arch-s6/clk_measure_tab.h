@@ -3,18 +3,19 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
-#ifndef _ARCH_MESON_S7D_MEASURE_H_
-#define _ARCH_MESON_S7D_MEASURE_H_
+#ifndef _ARCH_MESON_S6_MEASURE_H_
+#define _ARCH_MESON_S6_MEASURE_H_
 
 static const char* clk_msr_table[] = {
 	[0] = "cts_sys_clk",
 	[1] = "cts_axi_clk",
 	[2] = "cts_rtc_clk",
+	[3] = "cts_dspa_clk",
 	[4] = "cts_mali_stack_clk",
 	[5] = "cts_mali_clk",
 	[6] = "sys_cpu_clk_div16",
+	[7] = "cts_mali_ACLKM",
 	[8] = "cts_cecb_clk",
-	[9] = "cts_mali_ACLKM",
 	[10] = "fclk_div5",
 	[11] = "p21_usb2_ckout",
 	[12] = "p20_usb2_ckout",
@@ -28,8 +29,6 @@ static const char* clk_msr_table[] = {
 	[23] = "sys_pll_div16",
 	[24] = "ddr_dpll_pt_clk",
 	[25] = "mod_Tsin_A_CLK_IN",
-	[26] = "mod_Tsin_B_CLK_IN",
-	[31] = "earcrx_pll_clk_out",
 	[32] = "cts_eth_clk125Mhz",
 	[33] = "cts_eth_clk_rmii",
 	[34] = "co_clkin_to_mac",
@@ -56,9 +55,16 @@ static const char* clk_msr_table[] = {
 	[65] = "cts_vid_lock_clk",
 	[66] = "cts_vapbclk",
 	[67] = "cts_ge2d_clk",
+	[70] = "cts_dsi_meas_clk",
+	[71] = "cts_dsi_phy_clk",
+	[72] = "mipi_csi_phy0_clk",
+	[73] = "cts_csi2_adapt_clk",
+	[74] = "cts_csi2_data ",
+	[75] = "mipi_csi_phy0_clk_out",
 	[76] = "hdmitx_tmds_clk",
 	[77] = "cts_hdmitx_sys_clk",
 	[78] = "cts_hdmitx_fe_clk",
+	[79] = "cts_rama_clk",
 	[80] = "cts_hdmitx_prif_clk",
 	[81] = "cts_hdmitx_200m_clk",
 	[82] = "cts_hdmitx_aud_clk",
@@ -70,17 +76,15 @@ static const char* clk_msr_table[] = {
 	[93] = "cts_vdec_clk",
 	[99] = "cts_hevcf_clk",
 	[106] = "deskew_pll_clk_div32_out",
-	[110] = "cts_sc_clk(smartcard)",
+	[110] = "cts_sc_clk",
 	[111] = "cts_aux_adc_clk",
-	[113] = "cts_sd_emmc_C_clk(nand)",
-	[114] = "cts_sd_emmc_B_clk",
-	[115] = "cts_sd_emmc_A_clk",
+	[113] = "cts_sd_emmc_c_clk",
+	[114] = "cts_sd_emmc_b_clk",
+	[115] = "cts_sd_emmc_a_clk",
 	[116] = "gpio_msr_clk",
-	[117] = "aux_clk_o",
 	[118] = "cts_spicc_0_clk",
-	[121] = "cts_ts_clk(temp sensor)",
+	[121] = "cts_ts_clk",
 	[130] = "o_vad_clk",
-	[131] = "au_dac_clk_x128",
 	[132] = "audio_locker_in_clk",
 	[133] = "audio_locker_out_clk",
 	[134] = "audio_tdmout_c_sclk",
@@ -95,7 +99,6 @@ static const char* clk_msr_table[] = {
 	[143] = "audio_spdifout_b_mst_clk",
 	[144] = "audio_spdifout_mst_clk",
 	[145] = "audio_spdifin_mst_clk",
-	[146] = "mod_audio_pdm_dclk_o",
 	[147] = "audio_resampleb_clk",
 	[160] = "pwm_j_clk",
 	[161] = "pwm_i_clk",
@@ -110,20 +113,7 @@ static const char* clk_msr_table[] = {
 	[176] = "rng_ring_clk[0]",
 	[177] = "rng_ring_clk[1]",
 	[178] = "rng_ring_clk[2]",
-	[179] = "rng_ring_clk[3]",
-	[180] = "osc_ring_clk[0](a55 core0 14_slvt)",
-	[181] = "osc_ring_clk[1](a55 core1 14_slvt)",
-	[182] = "osc_ring_clk[2](a55 core1 14_slvt)",
-	[183] = "osc_ring_clk[3](a55 core1 14_slvt)",
-	[184] = "osc_ring_clk[4](a55_pwr[0] 16_slvt)",
-	[185] = "osc_ring_clk[5](a55_pwr[1] 14_lvt)",
-	[186] = "osc_ring_clk[6](a55_pwr[2] 14_rvt)",
-	[187] = "osc_ring_clk[7](mali[1] 14_lvt)",
-	[188] = "osc_ring_clk[8](mali[1] 14_rvt)",
-	[189] = "osc_ring_clk[9](dos[0] 16_lvt)",
-	[190] = "osc_ring_clk[10](dos[1] 14_rvt)",
-	[191] = "osc_ring_clk[11](ddr[0] 9t_14_lvt)",
-	[192] = "osc_ring_clk[12](top[0] 16_rvt)",
+	[179] = "rng_ring_clk[3]"
 };
 
-#endif
+#endif  /* _ARCH_MESON_S6_MEASURE_H_ */

@@ -4,12 +4,12 @@
  */
 
 #include <common.h>
-#include <asm/amlogic/arch-s7d/clock.h>
+#include <asm/amlogic/arch-s6/clock.h>
 #include <asm/io.h>
 #include <clk-uclass.h>
 #include <div64.h>
 #include <dm.h>
-#include <dt-bindings/amlogic/clock/s7d-clkc.h>
+#include <dt-bindings/amlogic/clock/s6-clkc.h>
 #include <amlogic/clk_meson.h>
 
 /* change it later */
@@ -18,45 +18,46 @@
 
 /* clk81 gates, sys_clk */
 static struct meson_gate gates[] = {
-	{CLKID_SPICC_0, S7D_CLKCTRL_SPICC_CLK_CTRL, 6},
-	{CLKID_SARADC, S7D_CLKCTRL_SAR_CLK_CTRL, 8},
-	{CLKID_SD_EMMC_A, S7D_CLKCTRL_SD_EMMC_CLK_CTRL, 7},
-	{CLKID_SD_EMMC_B, S7D_CLKCTRL_SD_EMMC_CLK_CTRL, 23},
-	{CLKID_SD_EMMC_C, S7D_CLKCTRL_NAND_CLK_CTRL, 7},
+	{CLKID_SPICC_0, S6_CLKCTRL_SPICC_CLK_CTRL, 6},
+	{CLKID_SARADC, S6_CLKCTRL_SAR_CLK_CTRL, 8},
+	{CLKID_SD_EMMC_A, S6_CLKCTRL_SD_EMMC_CLK_CTRL, 7},
+	{CLKID_SD_EMMC_B, S6_CLKCTRL_SD_EMMC_CLK_CTRL, 23},
+	{CLKID_SD_EMMC_C, S6_CLKCTRL_NAND_CLK_CTRL, 7},
 };
 
-static unsigned int saradc_parents[] = {CLKID_XTAL, CLKID_SYS_CLK};
+static unsigned int saradc_parents[] = {CLKID_XTAL, CLKID_SYS_CLK,
+					CLKID_FCLK_DIV4, CLKID_FCLK_DIV5};
 
 static unsigned int sd_emmc_parents[] = {CLKID_XTAL, CLKID_FCLK_DIV2,
 	CLKID_FCLK_DIV3, CLKID_UNREALIZED, CLKID_FCLK_DIV2P5,
-	CLKID_UNREALIZED, CLKID_GP0_PLL};
+	CLKID_UNREALIZED, CLKID_UNREALIZED, CLKID_GP0_PLL};
 
 static unsigned int spicc_parents[] = {CLKID_XTAL, CLKID_SYS_CLK,
 	CLKID_FCLK_DIV4, CLKID_FCLK_DIV3, CLKID_FCLK_DIV2,
 	CLKID_FCLK_DIV5, CLKID_FCLK_DIV7, CLKID_UNREALIZED};
 
 static struct meson_mux muxes[] = {
-	{CLKID_SPICC_0_MUX, S7D_CLKCTRL_SPICC_CLK_CTRL, 7,  0x7, spicc_parents, ARRAY_SIZE(spicc_parents)},
-	{CLKID_SARADC_MUX, S7D_CLKCTRL_SAR_CLK_CTRL, 9, 0x3, saradc_parents, ARRAY_SIZE(saradc_parents)},
-	{CLKID_SD_EMMC_A_MUX, S7D_CLKCTRL_SD_EMMC_CLK_CTRL, 9, 0x7, sd_emmc_parents, ARRAY_SIZE(sd_emmc_parents)},
-	{CLKID_SD_EMMC_B_MUX, S7D_CLKCTRL_SD_EMMC_CLK_CTRL, 25, 0x7, sd_emmc_parents, ARRAY_SIZE(sd_emmc_parents)},
-	{CLKID_SD_EMMC_C_MUX, S7D_CLKCTRL_NAND_CLK_CTRL, 9, 0x7, sd_emmc_parents, ARRAY_SIZE(sd_emmc_parents)},
+	{CLKID_SPICC_0_MUX, S6_CLKCTRL_SPICC_CLK_CTRL, 7,  0x7, spicc_parents, ARRAY_SIZE(spicc_parents)},
+	{CLKID_SARADC_MUX, S6_CLKCTRL_SAR_CLK_CTRL, 9, 0x3, saradc_parents, ARRAY_SIZE(saradc_parents)},
+	{CLKID_SD_EMMC_A_MUX, S6_CLKCTRL_SD_EMMC_CLK_CTRL, 9, 0x7, sd_emmc_parents, ARRAY_SIZE(sd_emmc_parents)},
+	{CLKID_SD_EMMC_B_MUX, S6_CLKCTRL_SD_EMMC_CLK_CTRL, 25, 0x7, sd_emmc_parents, ARRAY_SIZE(sd_emmc_parents)},
+	{CLKID_SD_EMMC_C_MUX, S6_CLKCTRL_NAND_CLK_CTRL, 9, 0x7, sd_emmc_parents, ARRAY_SIZE(sd_emmc_parents)},
 };
 
 static struct meson_div divs[] = {
-	{CLKID_SPICC_0_DIV, S7D_CLKCTRL_SPICC_CLK_CTRL, 0, 6, CLKID_SPICC_0_MUX},
-	{CLKID_SARADC_DIV, S7D_CLKCTRL_SAR_CLK_CTRL, 0, 8, CLKID_SARADC_MUX},
-	{CLKID_SD_EMMC_A_DIV, S7D_CLKCTRL_SD_EMMC_CLK_CTRL, 0, 7, CLKID_SD_EMMC_A_MUX},
-	{CLKID_SD_EMMC_B_DIV, S7D_CLKCTRL_SD_EMMC_CLK_CTRL, 16, 7, CLKID_SD_EMMC_B_MUX},
-	{CLKID_SD_EMMC_C_DIV, S7D_CLKCTRL_NAND_CLK_CTRL, 0, 7, CLKID_SD_EMMC_C_MUX},
+	{CLKID_SPICC_0_DIV, S6_CLKCTRL_SPICC_CLK_CTRL, 0, 6, CLKID_SPICC_0_MUX},
+	{CLKID_SARADC_DIV, S6_CLKCTRL_SAR_CLK_CTRL, 0, 8, CLKID_SARADC_MUX},
+	{CLKID_SD_EMMC_A_DIV, S6_CLKCTRL_SD_EMMC_CLK_CTRL, 0, 7, CLKID_SD_EMMC_A_MUX},
+	{CLKID_SD_EMMC_B_DIV, S6_CLKCTRL_SD_EMMC_CLK_CTRL, 16, 7, CLKID_SD_EMMC_B_MUX},
+	{CLKID_SD_EMMC_C_DIV, S6_CLKCTRL_NAND_CLK_CTRL, 0, 7, CLKID_SD_EMMC_C_MUX},
 };
 
 static struct parm meson_gp0_pll_parm[5] = {
-	{S7D_ANACTRL_GP0PLL_CTRL0, 0, 9}, /* pm */
-	{S7D_ANACTRL_GP0PLL_CTRL0, 12, 3}, /* pn */
-	{S7D_ANACTRL_GP0PLL_CTRL0, 16, 3}, /* pod */
-	{S7D_ANACTRL_GP0PLL_CTRL1, 0, 19}, /* pfrac */
-	{S7D_ANACTRL_GP0PLL_CTRL4, 12, 1}, /* pen0p5 */
+	{S6_ANACTRL_GP0PLL_CTRL0, 0, 9}, /* pm */
+	{S6_ANACTRL_GP0PLL_CTRL0, 12, 3}, /* pn */
+	{S6_ANACTRL_GP0PLL_CTRL0, 16, 3}, /* pod */
+	{S6_ANACTRL_GP0PLL_CTRL1, 0, 19}, /* pfrac */
+	{S6_ANACTRL_GP0PLL_CTRL4, 12, 1}, /* pen0p5 */
 };
 
 static int meson_clk_enable(struct clk *clk)

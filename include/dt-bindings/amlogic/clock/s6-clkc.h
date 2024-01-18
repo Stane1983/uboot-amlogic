@@ -3,8 +3,8 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
-#ifndef __DT_BINDINGS_CLOCK_S7D_H
-#define __DT_BINDINGS_CLOCK_S7D_H
+#ifndef __DT_BINDINGS_CLOCK_S6_H
+#define __DT_BINDINGS_CLOCK_S6_H
 /*
  * CLKID index values
  */
@@ -44,4 +44,4 @@
 
 #define CLKID_UNREALIZED	100
 
-#endif /* __S7D_CLKC_H */
+#endif /* __S6_CLKC_H */
