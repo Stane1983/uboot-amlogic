@@ -23,6 +23,10 @@
 #include <linux/compiler.h>
 #include <g_dnl.h>
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+#include <amlogic/partition_table.h>
+#endif
+
 #define FASTBOOT_INTERFACE_CLASS	0xff
 #define FASTBOOT_INTERFACE_SUB_CLASS	0x42
 #define FASTBOOT_INTERFACE_PROTOCOL	0x03
@@ -31,12 +35,25 @@
 #define RX_ENDPOINT_MAXIMUM_PACKET_SIZE_1_1  (0x0040)
 #define TX_ENDPOINT_MAXIMUM_PACKET_SIZE      (0x0040)
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+#define DEVICE_SERIAL	"1234567890"
+#define DEVICE_NAME "USB fastboot gadget"
+#endif
+
 #define EP_BUFFER_SIZE			4096
 /*
  * EP_BUFFER_SIZE must always be an integral multiple of maxpacket size
  * (64 or 512 or 1024), else we break on certain controllers like DWC3
  * that expect bulk OUT requests to be divisible by maxpacket size.
  */
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+#ifndef CONFIG_USB_GADGET_CRG
+extern void f_dwc_otg_pullup(int is_on);
+#else
+extern int crg_gadget_stop(struct usb_gadget *g);
+#endif
+#endif
 
 struct f_fastboot {
 	struct usb_function usb_function;
@@ -176,7 +193,11 @@ fb_ep_desc(struct usb_gadget *g, struct usb_endpoint_descriptor *fs,
 /*
  * static strings, in UTF-8
  */
+#ifdef CONFIG_AMLOGIC_MODIFY
+static const char fastboot_name[] = "fastboot";
+#else
 static const char fastboot_name[] = "Android Fastboot";
+#endif
 
 static struct usb_string fastboot_string_defs[] = {
 	[0].s = fastboot_name,
@@ -198,6 +219,16 @@ static void rx_handler_command(struct usb_ep *ep, struct usb_request *req);
 static void fastboot_complete(struct usb_ep *ep, struct usb_request *req)
 {
 	int status = req->status;
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+	if ( (busy_flag == 1) && fastboot_func) {
+		struct usb_ep* out_ep = fastboot_func->out_ep;
+		struct usb_request* out_req = fastboot_func->out_req;
+		rx_handler_command(out_ep, out_req);
+		return;
+	}
+#endif
+
 	if (!status)
 		return;
 	printf("status: %d ep '%s' trans: %d\n", status, ep->name, req->actual);
@@ -209,6 +240,9 @@ static int fastboot_bind(struct usb_configuration *c, struct usb_function *f)
 	struct usb_gadget *gadget = c->cdev->gadget;
 	struct f_fastboot *f_fb = func_to_fastboot(f);
 	const char *s;
+#ifdef CONFIG_AMLOGIC_MODIFY
+	const char *board_name;
+#endif
 
 	/* DYNAMIC interface numbers assignments */
 	id = usb_interface_id(c, f);
@@ -264,6 +298,16 @@ static int fastboot_bind(struct usb_configuration *c, struct usb_function *f)
 	s = env_get("serial#");
 	if (s)
 		g_dnl_set_serialnumber((char *)s);
+#ifdef CONFIG_AMLOGIC_MODIFY
+	else
+		g_dnl_set_serialnumber(DEVICE_SERIAL);
+
+	board_name = env_get("board");
+	if (board_name)
+		g_dnl_set_product((char *)board_name);
+	else
+		g_dnl_set_product(DEVICE_NAME);
+#endif
 
 	return 0;
 }
@@ -456,14 +500,62 @@ static int fastboot_tx_write_str(const char *buffer)
 
 static void compl_do_reset(struct usb_ep *ep, struct usb_request *req)
 {
+#ifdef CONFIG_AMLOGIC_MODIFY
+#ifndef CONFIG_USB_GADGET_CRG
+	f_dwc_otg_pullup(0);
+#else
+	crg_gadget_stop(NULL);
+#endif
+#endif
+
 	do_reset(NULL, 0, 0, NULL);
 }
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+static void compl_do_reboot_bootloader(struct usb_ep *ep, struct usb_request *req)
+{
+#ifndef CONFIG_USB_GADGET_CRG
+	f_dwc_otg_pullup(0);
+#else
+	crg_gadget_stop(NULL);
+#endif
+	if (dynamic_partition)
+		run_command("reboot bootloader", 0);
+	else
+		run_command("reboot fastboot", 0);
+}
+
+static void compl_do_reboot_fastboot(struct usb_ep *ep, struct usb_request *req)
+{
+#ifndef CONFIG_USB_GADGET_CRG
+	f_dwc_otg_pullup(0);
+#else
+	crg_gadget_stop(NULL);
+#endif
+
+	run_command("reboot fastboot", 0);
+}
+
+static void compl_do_reboot_recovery(struct usb_ep *ep, struct usb_request *req)
+{
+#ifndef CONFIG_USB_GADGET_CRG
+	f_dwc_otg_pullup(0);
+#else
+	crg_gadget_stop(NULL);
+#endif
+	run_command("reboot recovery", 0);
+}
+#endif
 
 static unsigned int rx_bytes_expected(struct usb_ep *ep)
 {
 	int rx_remain = fastboot_data_remaining();
 	unsigned int rem;
-	unsigned int maxpacket = usb_endpoint_maxp(ep->desc);
+#ifdef CONFIG_AMLOGIC_MODIFY
+	unsigned int maxpacket = ep->maxpacket;
+#else
+	unsigned int maxpacket = ep->maxpacket;
+#endif
 
 	if (rx_remain <= 0)
 		return 0;
@@ -519,6 +611,49 @@ static void rx_handler_dl_image(struct usb_ep *ep, struct usb_request *req)
 	usb_ep_queue(ep, req, 0);
 }
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+static void tx_handler_mread(struct usb_ep *inep, struct usb_request *inreq)
+{
+	const unsigned int transfer_size = inreq->actual;
+
+	if (inreq->status != 0) {
+		printf("in req Bad status: %d\n", inreq->status);
+		return;
+	}
+
+	if (fastboot_func->in_req != inreq) {
+		printf("exception, bogus req\n");
+		return;
+	}
+
+	fastboot_readInfo.transferredBytes += transfer_size;
+
+	/* Check if transfer is done */
+	if (fastboot_readInfo.transferredBytes >= fastboot_readInfo.totalBytes) {
+		printf("mread 0x%x bytes end\n", fastboot_readInfo.transferredBytes);
+		/*write ended and return to receive command*/
+		inreq->complete = fastboot_complete;
+		inreq->length = EP_BUFFER_SIZE;
+		if (fastboot_readInfo.priv)
+			inreq->buf = (char *)fastboot_readInfo.priv;
+		//should return to rx next command
+		fastboot_tx_write_str("OKAY");
+	} else {
+		const unsigned int leftLen = fastboot_readInfo.totalBytes
+			- fastboot_readInfo.transferredBytes;
+
+		if (leftLen > EP_BUFFER_SIZE)
+			inreq->length = EP_BUFFER_SIZE;
+		else
+			inreq->length = leftLen;
+		inreq->buf += transfer_size;//remove copy
+
+		inreq->actual = 0;
+		usb_ep_queue(inep, inreq, 0);
+	}
+}
+#endif
+
 static void do_exit_on_complete(struct usb_ep *ep, struct usb_request *req)
 {
 	g_dnl_trigger_detach();
@@ -544,9 +679,17 @@ static void do_acmd_complete(struct usb_ep *ep, struct usb_request *req)
 
 static void rx_handler_command(struct usb_ep *ep, struct usb_request *req)
 {
+#ifdef CONFIG_AMLOGIC_MODIFY
+	char cmdbuf[256];
+#else
 	char *cmdbuf = req->buf;
+#endif
 	char response[FASTBOOT_RESPONSE_LEN] = {0};
 	int cmd = -1;
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+	strncpy(cmdbuf, req->buf, 255);
+#endif
 
 	if (req->status != 0 || req->length == 0)
 		return;
@@ -560,9 +703,40 @@ static void rx_handler_command(struct usb_ep *ep, struct usb_request *req)
 	}
 
 	if (!strncmp("DATA", response, 4)) {
-		req->complete = rx_handler_dl_image;
-		req->length = rx_bytes_expected(ep);
+#ifdef CONFIG_AMLOGIC_MODIFY
+		if (cmd == 11) {
+			printf("come to fetch code\n");
+			struct usb_ep *inep = fastboot_func->in_ep;
+			struct usb_request *inreq = fastboot_func->in_req;
+			int ret;
+			const unsigned int leftLen = fastboot_readInfo.totalBytes
+				- fastboot_readInfo.transferredBytes;
+
+			if (!fastboot_readInfo.priv)
+				fastboot_readInfo.priv = inreq->buf;
+
+			inreq->buf = (void *)CONFIG_FASTBOOT_BUF_ADDR;//to remove copy
+			inreq->complete = tx_handler_mread;
+			if (leftLen > EP_BUFFER_SIZE)
+				inreq->length = EP_BUFFER_SIZE;
+			else
+				inreq->length = leftLen;
+
+			ret = usb_ep_queue(inep, inreq, 0);
+			if (ret)
+				printf("Error %d on queue\n", ret);
+		} else {
+#endif
+			req->complete = rx_handler_dl_image;
+			req->length = rx_bytes_expected(ep);
+#ifdef CONFIG_AMLOGIC_MODIFY
+		}
+#endif
 	}
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+	fastboot_tx_write_str(response);
+#endif
 
 	if (!strncmp("OKAY", response, 4)) {
 		switch (cmd) {
@@ -574,6 +748,20 @@ static void rx_handler_command(struct usb_ep *ep, struct usb_request *req)
 			fastboot_func->in_req->complete = do_exit_on_complete;
 			break;
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+		case FASTBOOT_COMMAND_REBOOT:
+			fastboot_func->in_req->complete = compl_do_reset;
+			break;
+		case FASTBOOT_COMMAND_REBOOT_BOOTLOADER:
+			fastboot_func->in_req->complete = compl_do_reboot_bootloader;
+			break;
+		case FASTBOOT_COMMAND_REBOOT_FASTBOOTD:
+			fastboot_func->in_req->complete = compl_do_reboot_fastboot;
+			break;
+		case FASTBOOT_COMMAND_REBOOT_RECOVERY:
+			fastboot_func->in_req->complete = compl_do_reboot_recovery;
+			break;
+#else
 		case FASTBOOT_COMMAND_REBOOT:
 		case FASTBOOT_COMMAND_REBOOT_BOOTLOADER:
 		case FASTBOOT_COMMAND_REBOOT_FASTBOOTD:
@@ -581,6 +769,7 @@ static void rx_handler_command(struct usb_ep *ep, struct usb_request *req)
 			fastboot_func->in_req->complete = compl_do_reset;
 			g_dnl_trigger_detach();
 			break;
+#endif
 #if CONFIG_IS_ENABLED(FASTBOOT_UUU_SUPPORT)
 		case FASTBOOT_COMMAND_ACMD:
 			fastboot_func->in_req->complete = do_acmd_complete;
@@ -589,9 +778,15 @@ static void rx_handler_command(struct usb_ep *ep, struct usb_request *req)
 		}
 	}
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+	if (busy_flag == 0) {
+#else
 	fastboot_tx_write_str(response);
-
-	*cmdbuf = '\0';
-	req->actual = 0;
-	usb_ep_queue(ep, req, 0);
+#endif
+		*cmdbuf = '\0';
+		req->actual = 0;
+		usb_ep_queue(ep, req, 0);
+#ifdef CONFIG_AMLOGIC_MODIFY
+	}
+#endif
 }

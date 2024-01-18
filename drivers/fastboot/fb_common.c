@@ -16,6 +16,17 @@
 #include <env.h>
 #include <fastboot.h>
 #include <net/fastboot.h>
+#ifdef CONFIG_AMLOGIC_MODIFY
+#include <amlogic/emmc_partitions.h>
+#include <amlogic/storage.h>
+
+#ifndef getenv
+#define getenv env_get
+#define setenv env_set
+#endif//#ifndef getenv
+
+#define CONFIG_FASTBOOT_MAX_DOWN_SIZE        0x8000000
+#endif
 
 /**
  * fastboot_buf_addr - base address of the fastboot download buffer
@@ -78,6 +89,51 @@ void fastboot_okay(const char *reason, char *response)
 	else
 		fastboot_response("OKAY", response, NULL);
 }
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+/**
+ * fastboot_busy() - Write a INFO response of the form "INFO$reason".
+ *
+ * @reason: Pointer to returned reason string
+ * @response: Pointer to fastboot response buffer
+ */
+void fastboot_busy(const char *reason, char *response)
+{
+	fastboot_response("INFO", response, "%s", reason);
+}
+
+/**
+ *check lock state
+ *return 1 if locked
+ *return 0 if unlocked
+ */
+int check_lock(void)
+{
+	char *lock_s;
+	LockData_t info = {0};
+
+	lock_s = env_get("lock");
+	if (!lock_s) {
+		printf("lock state is NULL\n");
+		lock_s = "10101000";
+		env_set("lock", "10101000");
+		run_command("defenv_reserv; saveenv;", 0);
+	}
+	printf("lock state: %s\n", lock_s);
+
+	info.version_major = (int)(lock_s[0] - '0');
+	info.version_minor = (int)(lock_s[1] - '0');
+	info.unlock_ability = (int)(lock_s[2] - '0');
+	info.lock_state = (int)(lock_s[4] - '0');
+	info.lock_critical_state = (int)(lock_s[5] - '0');
+	info.lock_bootloader = (int)(lock_s[6] - '0');
+
+	if (info.lock_state == 1 || info.lock_critical_state == 1)
+		return 1;
+	else
+		return 0;
+}
+#endif
 
 /**
  * fastboot_set_reboot_flag() - Set flag to indicate reboot-bootloader
@@ -181,5 +237,13 @@ void fastboot_init(void *buf_addr, u32 buf_size)
 	fastboot_buf_addr = buf_addr ? buf_addr :
 				       (void *)CONFIG_FASTBOOT_BUF_ADDR;
 	fastboot_buf_size = buf_size ? buf_size : CONFIG_FASTBOOT_BUF_SIZE;
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+#if defined CONFIG_FASTBOOT_MAX_DOWN_SIZE
+	if (fastboot_buf_size > CONFIG_FASTBOOT_MAX_DOWN_SIZE)
+		fastboot_buf_size = CONFIG_FASTBOOT_MAX_DOWN_SIZE;
+#endif
+#endif
+
 	fastboot_set_progress_callback(NULL);
 }

@@ -12,28 +12,47 @@
 #ifndef _FASTBOOT_H_
 #define _FASTBOOT_H_
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+#include <amlogic/android_vab.h>
+#include <version.h>
+#endif
+
 #define FASTBOOT_VERSION	"0.4"
 
 /* The 64 defined bytes plus \0 */
 #define FASTBOOT_COMMAND_LEN	(64 + 1)
 #define FASTBOOT_RESPONSE_LEN	(64 + 1)
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+extern int busy_flag;
+extern u32 kMaxFetchSizeDefault;
+#endif
+
 /**
  * All known commands to fastboot
  */
 enum {
 	FASTBOOT_COMMAND_GETVAR = 0,
+#ifdef CONFIG_FASTBOOT_WRITING_CMD
 	FASTBOOT_COMMAND_DOWNLOAD,
+#ifdef CONFIG_AMLOGIC_MODIFY
+#if !CONFIG_IS_ENABLED(NO_FASTBOOT_FLASHING)
+	FASTBOOT_COMMAND_FLASHING,
+#endif
+	FASTBOOT_COMMAND_FETCH,
+#endif
 #if CONFIG_IS_ENABLED(FASTBOOT_FLASH)
 	FASTBOOT_COMMAND_FLASH,
 	FASTBOOT_COMMAND_ERASE,
 #endif
+#endif
 	FASTBOOT_COMMAND_BOOT,
 	FASTBOOT_COMMAND_CONTINUE,
-	FASTBOOT_COMMAND_REBOOT,
 	FASTBOOT_COMMAND_REBOOT_BOOTLOADER,
 	FASTBOOT_COMMAND_REBOOT_FASTBOOTD,
 	FASTBOOT_COMMAND_REBOOT_RECOVERY,
+	FASTBOOT_COMMAND_REBOOT,
+#ifdef CONFIG_FASTBOOT_WRITING_CMD
 	FASTBOOT_COMMAND_SET_ACTIVE,
 #if CONFIG_IS_ENABLED(FASTBOOT_CMD_OEM_FORMAT)
 	FASTBOOT_COMMAND_OEM_FORMAT,
@@ -43,6 +62,7 @@ enum {
 #endif
 #if CONFIG_IS_ENABLED(FASTBOOT_CMD_OEM_BOOTBUS)
 	FASTBOOT_COMMAND_OEM_BOOTBUS,
+#endif
 #endif
 #if CONFIG_IS_ENABLED(FASTBOOT_UUU_SUPPORT)
 	FASTBOOT_COMMAND_ACMD,
@@ -61,6 +81,18 @@ enum fastboot_reboot_reason {
 	FASTBOOT_REBOOT_REASON_RECOVERY,
 	FASTBOOT_REBOOT_REASONS_COUNT
 };
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+struct fastboot_read {
+	unsigned int totalBytes;
+	unsigned int transferredBytes; //transferredBytes <= totalBytes
+	unsigned int dataCheckAlg;
+	void *priv;//now for backup req->buf
+	void *buf;
+};
+
+extern struct fastboot_read fastboot_readInfo;
+#endif
 
 /**
  * fastboot_response() - Writes a response of the form "$tag$reason".
@@ -88,6 +120,23 @@ void fastboot_fail(const char *reason, char *response);
  * @response: Pointer to fastboot response buffer
  */
 void fastboot_okay(const char *reason, char *response);
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+/**
+ * fastboot_busy() - Write a INFO response of the form "INFO$reason".
+ *
+ * @reason: Pointer to returned reason string
+ * @response: Pointer to fastboot response buffer
+ */
+void fastboot_busy(const char *reason, char *response);
+
+/**
+ *check lock state
+ *return 1 if locked
+ *return 0 if unlocked
+ */
+int check_lock(void);
+#endif
 
 /**
  * fastboot_set_reboot_flag() - Set flag to indicate reboot-bootloader

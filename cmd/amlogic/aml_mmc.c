@@ -348,7 +348,7 @@ int amlmmc_write_bootloader(int dev, int map, unsigned int size, const void *src
 				if (n != blkcnt) {
 					printf("mmc write %s failed\n", partname[i]);
 					ret = -3;
-					break;
+					goto _out;
 				}
 			} else
 				printf("%s() %d: switch dev %d to %s fail\n",
@@ -356,7 +356,7 @@ int amlmmc_write_bootloader(int dev, int map, unsigned int size, const void *src
 		}
 	}
 	/* try to switch back to user. */
-	blk_select_hwpart(mmc->dev, 0);
+	ret = blk_select_hwpart_devnum(UCLASS_MMC, 1, 0);
 
 _out:
 	return ret;

@@ -147,11 +147,14 @@ static int validate_gpt_header(gpt_header *gpt_h, lbaint_t lba,
 			  le64_to_cpu(gpt_h->first_usable_lba), lastlba);
 		return -1;
 	}
+
+#ifndef CONFIG_AMLOGIC_MODIFY
 	if (le64_to_cpu(gpt_h->last_usable_lba) > lastlba) {
 		log_debug("GPT: last_usable_lba incorrect: %llX > " LBAF "\n",
 			  le64_to_cpu(gpt_h->last_usable_lba), lastlba);
 		return -1;
 	}
+#endif
 
 	debug("GPT: first_usable_lba: %llX last_usable_lba: %llX last lba: "
 	      LBAF "\n", le64_to_cpu(gpt_h->first_usable_lba),
@@ -968,6 +971,16 @@ int write_mbr_and_gpt_partitions(struct blk_desc *dev_desc, void *buf)
 	int gpt_e_blk_cnt;
 	lbaint_t lba;
 	int cnt;
+#ifdef CONFIG_AMLOGIC_MODIFY
+	int i;
+	u32 calc_crc32;
+	u32 entries_num;
+	bool flag = false;
+	bool alternate_flag = false;
+#if (ADD_LAST_PARTITION)
+	ulong gap = GPT_GAP;
+#endif
+#endif
 
 	if (is_valid_gpt_buf(dev_desc, buf))
 		return -1;
@@ -982,6 +995,62 @@ int write_mbr_and_gpt_partitions(struct blk_desc *dev_desc, void *buf)
 	gpt_e_blk_cnt = BLOCK_CNT((le32_to_cpu(gpt_h->num_partition_entries) *
 				   le32_to_cpu(gpt_h->sizeof_partition_entry)),
 				  dev_desc);
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+	entries_num = le32_to_cpu(gpt_h->num_partition_entries);
+
+	if (le64_to_cpu(gpt_h->alternate_lba) > dev_desc->lba ||
+		le64_to_cpu(gpt_h->alternate_lba) == 0) {
+		printf("GPT: alternate_lba: %llX, " LBAF ", reset it\n",
+		       le64_to_cpu(gpt_h->last_usable_lba), dev_desc->lba);
+		gpt_h->alternate_lba = cpu_to_le64(dev_desc->lba - 1);
+		flag = true;
+		alternate_flag = true;
+	}
+
+	if (le64_to_cpu(gpt_h->last_usable_lba) > dev_desc->lba) {
+		printf("GPT: last_usable_lba incorrect: %llX > " LBAF ", reset it\n",
+		       le64_to_cpu(gpt_h->last_usable_lba), dev_desc->lba);
+		if (alternate_flag)
+			gpt_h->last_usable_lba = cpu_to_le64(dev_desc->lba - 34);
+		else
+			gpt_h->last_usable_lba = cpu_to_le64(dev_desc->lba - 1);
+		flag = true;
+	}
+
+	for (i = 0; i < entries_num; i++) {
+#if (ADD_LAST_PARTITION)
+		if (i == entries_num - 1) {
+			gpt_e[i - 1].ending_lba -= gpt_e[i].ending_lba + le64_to_cpu(gap) + 1;
+			gpt_e[i].starting_lba = gpt_e[i - 1].ending_lba + le64_to_cpu(gap) + 1;
+			gpt_e[i].ending_lba = gpt_h->last_usable_lba;
+		}
+
+#endif
+		if (le64_to_cpu(gpt_e[i].ending_lba) > gpt_h->last_usable_lba) {
+			printf("gpt_e[%d].ending_lba: %llX > %llX, reset it\n",
+			i, le64_to_cpu(gpt_e[i].ending_lba), le64_to_cpu(gpt_h->last_usable_lba));
+			if (alternate_flag)
+				gpt_e[i].ending_lba = ((gpt_h->last_usable_lba >> 12) << 12) - 1;
+			else
+				gpt_e[i].ending_lba = gpt_h->last_usable_lba;
+			printf("gpt_e[%d].ending_lba: %llX \n", i, gpt_e[i].ending_lba);
+			flag = true;
+		}
+	}
+
+	if (flag) {
+		calc_crc32 = efi_crc32((const unsigned char *)gpt_e,
+			entries_num * le32_to_cpu(gpt_h->sizeof_partition_entry));
+		gpt_h->partition_entry_array_crc32 = calc_crc32;
+
+		gpt_h->header_crc32 = 0;
+		calc_crc32 = efi_crc32((const unsigned char *)gpt_h,
+		le32_to_cpu(gpt_h->header_size));
+		gpt_h->header_crc32 = calc_crc32;
+		flag = false;
+	}
+#endif
 
 	/* write MBR */
 	lba = 0;	/* MBR is always at 0 */

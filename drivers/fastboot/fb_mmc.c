@@ -18,6 +18,10 @@
 #include <div64.h>
 #include <linux/compat.h>
 #include <android_image.h>
+#ifdef CONFIG_AMLOGIC_MODIFY
+#include <amlogic/aml_mmc.h>
+#include <amlogic/emmc_partitions.h>
+#endif
 
 #define FASTBOOT_MAX_BLK_WRITE 16384
 
@@ -494,6 +498,72 @@ static struct blk_desc *fastboot_mmc_get_dev(char *response)
 	return ret;
 }
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+/* erase or flash, when buffer is not NULL, it's write */
+static void fb_mmc_bootloader_ops(const char *cmd,
+				  struct blk_desc *dev_desc,
+				  void *buffer, unsigned int bytes,
+				  char *response)
+{
+	char *delim = "-";
+	char *hwpart;
+	int map = 0, ret = 0;
+	char *scmd = (char *) cmd;
+	char *ops[] = {"erase", "write"};
+
+	hwpart = strchr(scmd, (int)*delim);
+
+	if (!hwpart) {
+		map = AML_BL_USER;
+	} else if (!strcmp(hwpart, "-boot0")) {
+		map = AML_BL_BOOT0;
+	} else if (!strcmp(hwpart, "-boot1")) {
+		map = AML_BL_BOOT1;
+	}
+
+	if (map) {
+		if (buffer)
+			ret = amlmmc_write_bootloader(CONFIG_FASTBOOT_FLASH_MMC_DEV, map,
+						      bytes, buffer);
+		else
+			ret = amlmmc_erase_bootloader(CONFIG_FASTBOOT_FLASH_MMC_DEV, map);
+
+		if (ret) {
+			printf("failed %s %s from device %d", (buffer? ops[1]: ops[0]),
+				cmd, dev_desc->devnum);
+			fastboot_fail("failed bootloader operating to device", response);
+			return;
+		}
+		printf("........ %s  %s\n", (buffer? ops[1]: ops[0]), cmd);
+		fastboot_okay("", response);
+	} else
+		fastboot_fail("failed operating from device", response);
+	return;
+}
+
+/**
+ * write bootloader on user/boot0/boot1
+ * according to bootloader name.
+ */
+static void fb_mmc_write_bootloader(const char *cmd,
+				    struct blk_desc *dev_desc,
+				    void *buffer, unsigned int bytes,
+				    char *response)
+{
+	return fb_mmc_bootloader_ops(cmd, dev_desc, buffer, bytes, response);
+}
+
+/**
+ * erase bootloader on user/boot0/boot1
+ * according to bootloader name.
+ */
+static void fb_mmc_erase_bootloader(const char *cmd, struct blk_desc *dev_desc,
+				    char *response)
+{
+	return fb_mmc_bootloader_ops(cmd, dev_desc, NULL, 0, response);
+}
+#endif
+
 /**
  * fastboot_mmc_flash_write() - Write image to eMMC for fastboot
  *
@@ -600,36 +670,52 @@ void fastboot_mmc_flash_write(const char *cmd, void *download_buffer,
 	}
 #endif
 
-	if (!info.name[0] &&
-	    fastboot_mmc_get_part_info(cmd, &dev_desc, &info, response) < 0)
+#ifdef CONFIG_AMLOGIC_MODIFY
+	if (strcmp(cmd, "bootloader") == 0 ||
+		strcmp(cmd, "bootloader-boot0") == 0 ||
+		strcmp(cmd, "bootloader-boot1") == 0) {
+		dev_desc = fastboot_mmc_get_dev(response);
+		if (!dev_desc)
+			return;
+
+		fb_mmc_write_bootloader(cmd, dev_desc, download_buffer,
+					download_bytes, response);
 		return;
-
-	if (is_sparse_image(download_buffer)) {
-		struct fb_mmc_sparse sparse_priv;
-		struct sparse_storage sparse;
-		int err;
-
-		sparse_priv.dev_desc = dev_desc;
-
-		sparse.blksz = info.blksz;
-		sparse.start = info.start;
-		sparse.size = info.size;
-		sparse.write = fb_mmc_sparse_write;
-		sparse.reserve = fb_mmc_sparse_reserve;
-		sparse.mssg = fastboot_fail;
-
-		printf("Flashing sparse image at offset " LBAFU "\n",
-		       sparse.start);
-
-		sparse.priv = &sparse_priv;
-		err = write_sparse_image(&sparse, cmd, download_buffer,
-					 response);
-		if (!err)
-			fastboot_okay(NULL, response);
 	} else {
-		write_raw_image(dev_desc, &info, cmd, download_buffer,
-				download_bytes, response);
+#endif
+		if (!info.name[0] &&
+		    fastboot_mmc_get_part_info(cmd, &dev_desc, &info, response) < 0)
+			return;
+
+		if (is_sparse_image(download_buffer)) {
+			struct fb_mmc_sparse sparse_priv;
+			struct sparse_storage sparse;
+			int err;
+
+			sparse_priv.dev_desc = dev_desc;
+
+			sparse.blksz = info.blksz;
+			sparse.start = info.start;
+			sparse.size = info.size;
+			sparse.write = fb_mmc_sparse_write;
+			sparse.reserve = fb_mmc_sparse_reserve;
+			sparse.mssg = fastboot_fail;
+
+			printf("Flashing sparse image at offset " LBAFU "\n",
+			       sparse.start);
+
+			sparse.priv = &sparse_priv;
+			err = write_sparse_image(&sparse, cmd, download_buffer,
+						 response);
+			if (!err)
+				fastboot_okay(NULL, response);
+		} else {
+			write_raw_image(dev_desc, &info, cmd, download_buffer,
+					download_bytes, response);
+		}
+#ifdef CONFIG_AMLOGIC_MODIFY
 	}
+#endif
 }
 
 /**
@@ -677,30 +763,62 @@ void fastboot_mmc_erase(const char *cmd, char *response)
 	}
 #endif
 
-	if (fastboot_mmc_get_part_info(cmd, &dev_desc, &info, response) < 0)
+#ifdef CONFIG_AMLOGIC_MODIFY
+#if CONFIG_IS_ENABLED(EFI_PARTITION)
+		int ret;
+
+		if (strcmp(cmd, CONFIG_FASTBOOT_GPT_NAME) == 0) {
+			dev_desc = fastboot_mmc_get_dev(response);
+			if (!dev_desc)
+				return;
+
+			printf("%s: erase gpt, cmd:%s\n", __func__, cmd);
+			ret = erase_gpt_part_table(dev_desc);
+			if (ret) {
+				fastboot_fail("failed erase gpt", response);
+				return;
+			}
+			fastboot_okay("", response);
+			return;
+		}
+#endif
+
+	if (!strncmp(cmd, "bootloader", strlen("bootloader"))) {
+		dev_desc = fastboot_mmc_get_dev(response);
+		if (!dev_desc)
+			return;
+
+		fb_mmc_erase_bootloader(cmd, dev_desc, response);
 		return;
+	} else {
+#endif
+		if (fastboot_mmc_get_part_info(cmd, &dev_desc, &info, response) < 0)
+			return;
 
-	/* Align blocks to erase group size to avoid erasing other partitions */
-	grp_size = mmc->erase_grp_size;
-	blks_start = (info.start + grp_size - 1) & ~(grp_size - 1);
-	if (info.size >= grp_size)
-		blks_size = (info.size - (blks_start - info.start)) &
-				(~(grp_size - 1));
-	else
-		blks_size = 0;
+		/* Align blocks to erase group size to avoid erasing other partitions */
+		grp_size = mmc->erase_grp_size;
+		blks_start = (info.start + grp_size - 1) & ~(grp_size - 1);
+		if (info.size >= grp_size)
+			blks_size = (info.size - (blks_start - info.start)) &
+					(~(grp_size - 1));
+		else
+			blks_size = 0;
 
-	printf("Erasing blocks " LBAFU " to " LBAFU " due to alignment\n",
-	       blks_start, blks_start + blks_size);
+		printf("Erasing blocks " LBAFU " to " LBAFU " due to alignment\n",
+		       blks_start, blks_start + blks_size);
 
-	blks = fb_mmc_blk_write(dev_desc, blks_start, blks_size, NULL);
+		blks = fb_mmc_blk_write(dev_desc, blks_start, blks_size, NULL);
 
-	if (blks != blks_size) {
-		pr_err("failed erasing from device %d\n", dev_desc->devnum);
-		fastboot_fail("failed erasing from device", response);
-		return;
+		if (blks != blks_size) {
+			pr_err("failed erasing from device %d\n", dev_desc->devnum);
+			fastboot_fail("failed erasing from device", response);
+			return;
+		}
+
+		printf("........ erased " LBAFU " bytes from '%s'\n",
+		       blks_size * info.blksz, cmd);
+		fastboot_okay(NULL, response);
+#ifdef CONFIG_AMLOGIC_MODIFY
 	}
-
-	printf("........ erased " LBAFU " bytes from '%s'\n",
-	       blks_size * info.blksz, cmd);
-	fastboot_okay(NULL, response);
+#endif
 }
