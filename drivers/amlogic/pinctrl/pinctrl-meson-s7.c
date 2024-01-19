@@ -88,6 +88,11 @@ static const unsigned int tdm_d3_c_pins[]		= { GPIOC_1 };
 static const unsigned int tdm_fs1_c_pins[]		= { GPIOC_2 };
 static const unsigned int tdm_sclk1_c_pins[]		= { GPIOC_3 };
 static const unsigned int mclk_1_c_pins[]		= { GPIOC_4 };
+static const unsigned int tdm_d4_c_pins[]		= { GPIOC_5 };
+static const unsigned int tdm_d5_c_pins[]		= { GPIOC_6 };
+
+/* Bank C func6 */
+static const unsigned int gen_clk_c_pins[]		= { GPIOC_4 };
 
 /* Bank D func1 */
 static const unsigned int uart_b_tx_d_pins[]		= { GPIOD_0 };
@@ -142,6 +147,7 @@ static const unsigned int hdmitx_sda_pins[]		= { GPIOH_0 };
 static const unsigned int hdmitx_sck_pins[]		= { GPIOH_1 };
 static const unsigned int hdmitx_hpd_in_pins[]		= { GPIOH_2 };
 static const unsigned int spdif_out_h_pins[]		= { GPIOH_4 };
+static const unsigned int spdif_in_h_pins[]		= { GPIOH_5 };
 static const unsigned int i2c1_sda_h_pins[]		= { GPIOH_6 };
 static const unsigned int i2c1_scl_h_pins[]		= { GPIOH_7 };
 static const unsigned int i2c2_sda_h8_pins[]		= { GPIOH_8 };
@@ -165,13 +171,14 @@ static const unsigned int uart_e_rx_h_pins[]		= { GPIOH_11 };
 /* Bank H func3 */
 static const unsigned int pwm_d_h_pins[]		= { GPIOH_6 };
 static const unsigned int pwm_i_h_pins[]		= { GPIOH_7 };
+static const unsigned int spdif_in_h9_pins[]		= { GPIOH_9 };
 
 /* Bank H func4 */
-static const unsigned int mclk_1_h_pins[]		= { GPIOH_4 };
-static const unsigned int tdm_sclk1_h_pins[]		= { GPIOH_5 };
-static const unsigned int tdm_fs1_h_pins[]		= { GPIOH_6 };
+static const unsigned int mclk_2_h_pins[]		= { GPIOH_4 };
+static const unsigned int tdm_sclk2_h_pins[]		= { GPIOH_5 };
+static const unsigned int tdm_fs2_h_pins[]		= { GPIOH_6 };
 static const unsigned int tdm_d2_h_pins[]		= { GPIOH_7 };
-static const unsigned int tdm_d3_h_pins[]		= { GPIOH_8 };
+static const unsigned int tdm_d6_h_pins[]		= { GPIOH_8 };
 
 /* Bank H func5 */
 static const unsigned int spi_a_miso_h_pins[]		= { GPIOH_4 };
@@ -180,6 +187,11 @@ static const unsigned int spi_a_clk_h_pins[]		= { GPIOH_6 };
 static const unsigned int spi_a_ss0_h_pins[]		= { GPIOH_7 };
 
 /* Bank H func6 */
+static const unsigned int tst_loop1_in_pins[]		= { GPIOH_0 };
+static const unsigned int tst_loop1_out_pins[]		= { GPIOH_1 };
+static const unsigned int tst_clk_1m_pins[]		= { GPIOH_2 };
+static const unsigned int tst_clk_1m_h_pins[]		= { GPIOH_3 };
+static const unsigned int spdif_in_h7_pins[]		= { GPIOH_7 };
 static const unsigned int gen_clk_h_pins[]		= { GPIOH_11 };
 
 /* Bank X func1 */
@@ -263,6 +275,8 @@ static const unsigned int pwm_e_z_pins[]		= { GPIOZ_6 };
 
 /* Bank Z func7 */
 static const unsigned int gen_clk_z9_pins[]		= { GPIOZ_9 };
+static const unsigned int tst_loop2_in_pins[]		= { GPIOZ_10 };
+static const unsigned int tst_loop2_out_pins[]		= { GPIOZ_11 };
 static const unsigned int gen_clk_z12_pins[]		= { GPIOZ_12 };
 
 /* Bank CC func1 */
@@ -441,6 +455,11 @@ static struct meson_pmx_group meson_s7_periphs_groups[] = {
 	GROUP(tdm_fs1_c,		4),
 	GROUP(tdm_sclk1_c,		4),
 	GROUP(mclk_1_c,			4),
+	GROUP(tdm_d4_c,			4),
+	GROUP(tdm_d5_c,			4),
+
+	/* Bank C func6 */
+	GROUP(gen_clk_c,		6),
 
 	/* Bank D func1 */
 	GROUP(uart_b_tx_d,		1),
@@ -495,6 +514,7 @@ static struct meson_pmx_group meson_s7_periphs_groups[] = {
 	GROUP(hdmitx_sck,		1),
 	GROUP(hdmitx_hpd_in,		1),
 	GROUP(spdif_out_h,		1),
+	GROUP(spdif_in_h,		1),
 	GROUP(i2c1_sda_h,		1),
 	GROUP(i2c1_scl_h,		1),
 	GROUP(i2c2_sda_h8,		1),
@@ -518,13 +538,14 @@ static struct meson_pmx_group meson_s7_periphs_groups[] = {
 	/* Bank H func3 */
 	GROUP(pwm_d_h,			3),
 	GROUP(pwm_i_h,			3),
+	GROUP(spdif_in_h9,		3),
 
 	/* Bank H func4 */
-	GROUP(mclk_1_h,			4),
-	GROUP(tdm_sclk1_h,		4),
-	GROUP(tdm_fs1_h,		4),
+	GROUP(mclk_2_h,			4),
+	GROUP(tdm_sclk2_h,		4),
+	GROUP(tdm_fs2_h,		4),
 	GROUP(tdm_d2_h,			4),
-	GROUP(tdm_d3_h,			4),
+	GROUP(tdm_d6_h,			4),
 
 	/* Bank H func5 */
 	GROUP(spi_a_miso_h,		5),
@@ -533,6 +554,11 @@ static struct meson_pmx_group meson_s7_periphs_groups[] = {
 	GROUP(spi_a_ss0_h,		5),
 
 	/* Bank H func6 */
+	GROUP(tst_loop1_in,		6),
+	GROUP(tst_loop1_out,		6),
+	GROUP(tst_clk_1m,		6),
+	GROUP(tst_clk_1m_h,		6),
+	GROUP(spdif_in_h7,		6),
 	GROUP(gen_clk_h,		6),
 
 	/* Bank X func1 */
@@ -616,6 +642,8 @@ static struct meson_pmx_group meson_s7_periphs_groups[] = {
 
 	/* Bank Z func7 */
 	GROUP(gen_clk_z9,		7),
+	GROUP(tst_loop2_in,		7),
+	GROUP(tst_loop2_out,		7),
 	GROUP(gen_clk_z12,		7),
 
 	/* Bank CC func1 */
@@ -743,12 +771,13 @@ static const char * const iso7816_groups[] = {
 static const char * const tdm_groups[] = {
 	"tdm_d2_c", "tdm_d3_c", "tdm_fs1_c", "tdm_sclk1_c",
 	"tdm_d3_d", "tdm_d2_d", "tdm_fs1_d", "tdm_sclk1_d",
-	"tdm_d2_h", "tdm_d3_h", "tdm_fs1_h", "tdm_sclk1_h",
+	"tdm_d2_h", "tdm_d6_h", "tdm_fs2_h", "tdm_sclk2_h",
 	"tdm_d1", "tdm_d0", "tdm_fs0", "tdm_sclk0",
+	"tdm_d4_c", "tdm_d5_c",
 };
 
 static const char * const mclk_groups[] = {
-	"mclk_1_c", "mclk_1_d", "mclk_1_h",
+	"mclk_1_c", "mclk_1_d", "mclk_2_h",
 };
 
 static const char * const remote_out_groups[] = {
@@ -821,7 +850,7 @@ static const char * const pwm_i_groups[] = {
 };
 
 static const char * const pwm_j_groups[] = {
-	"pwm_j"
+	"pwm_j",
 };
 
 static const char * const hdmitx_groups[] = {
@@ -841,7 +870,7 @@ static const char * const spdif_out_groups[] = {
 };
 
 static const char * const spdif_in_groups[] = {
-	"spdif_in"
+	"spdif_in", "spdif_in_h", "spdif_in_h7", "spdif_in_h9",
 };
 
 static const char * const eth_groups[] = {
@@ -858,7 +887,7 @@ static const char * const spi_a_groups[] = {
 };
 
 static const char * const gen_clk_groups[] = {
-	"gen_clk_h", "gen_clk_z9", "gen_clk_z12"
+	"gen_clk_h", "gen_clk_z9", "gen_clk_z12", "gen_clk_c",
 };
 
 static const char * const sdio_groups[] = {
@@ -875,6 +904,11 @@ static const char * const tsin_a_groups[] = {
 
 static const char * const i2cm_a_groups[] = {
 	"i2cm_a_sda", "i2cm_a_scl"
+};
+
+static const char * const tst_groups[] = {
+	"tst_loop1_in", "tst_loop1_out", "tst_clk_1m", "tst_clk_1m_h",
+	"tst_loop2_in", "tst_loop2_out",
 };
 
 static struct meson_pmx_func meson_s7_periphs_functions[] = {
@@ -928,6 +962,7 @@ static struct meson_pmx_func meson_s7_periphs_functions[] = {
 	FUNCTION(i2c_slave),
 	FUNCTION(tsin_a),
 	FUNCTION(i2cm_a),
+	FUNCTION(tst),
 };
 
 static struct meson_bank meson_s7_periphs_banks[] = {
