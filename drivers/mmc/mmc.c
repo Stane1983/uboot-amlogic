@@ -3249,8 +3249,8 @@ int mmc_key_write(unsigned char *buf, unsigned int size, uint32_t *actual_length
 	part = aml_get_partition_by_name(MMC_RESERVED_NAME);
 
 	mmc = find_mmc_device(dev);
-	start_blk = (start / MMC_BLOCK_SIZE);
 	start = part->offset + vpart->offset;
+	start_blk = (start / MMC_BLOCK_SIZE);
 #endif
 	blkcnt = (size / MMC_BLOCK_SIZE);
 	info_disprotect |= DISPROTECT_KEY;

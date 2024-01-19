@@ -677,6 +677,9 @@ struct mmc {
 	uint scr[2];
 	uint csd[4];
 	uint cid[4];
+#ifdef CONFIG_AMLOGIC_MODIFY
+	char key_stamp;
+#endif
 	ushort rca;
 	u8 part_support;
 	u8 part_attr;

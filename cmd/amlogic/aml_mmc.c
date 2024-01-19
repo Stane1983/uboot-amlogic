@@ -46,7 +46,6 @@ struct aml_dtb_info {
 	u8 valid[2];
 };
 
-#define stamp_after(a,b)   ((int)(b) - (int)(a)  < 0)
 /* glb dtb infos */
 static struct aml_dtb_info dtb_infos = {{0, 0}, {0, 0}};
 

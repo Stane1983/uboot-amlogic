@@ -180,6 +180,8 @@ struct aml_pattern {
 
 #define STORAGE_EMMC 1
 
+#define KEY_BACKUP
+
 typedef struct dos_partition {
 	unsigned char boot_ind;		/* 0x80 - active			*/
 	unsigned char head;		/* starting head			*/
@@ -290,6 +292,10 @@ int get_ept_from_gpt(struct mmc *mmc);
 int mmc_partition_init(void);
 int check_gpt_part(struct blk_desc *dev_desc, void *buf);
 int get_partition_from_gpt(unsigned char *buffer);
+int mmc_key_write_backup(const char *name,
+			      unsigned char *addr, unsigned int size);
+int mmc_key_read_backup(const char *name,
+			      unsigned char *addr, unsigned int size);
 
 #define PARTITION_ELEMENT(na, sz, flags) {.name = na, .size = sz, .mask_flags = flags,}
 

@@ -59,10 +59,11 @@ struct storage_emmc_boot_info {
 	u32 checksum;
 };
 
+#define stamp_after(a,b)   ((int)(b) - (int)(a)  < 0)
+
 int amlmmc_write_bootloader(int dev, int map,
 		unsigned int size, const void *src);
 int amlmmc_erase_bootloader(int dev, int map);
-
 
 /* interface on reserved area. */
 void mmc_write_cali_mattern(void *addr);

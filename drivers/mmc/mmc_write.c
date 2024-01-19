@@ -110,7 +110,7 @@ ulong mmc_berase(struct blk_desc *block_dev, lbaint_t start, lbaint_t blkcnt)
 			blk_r = ((blkcnt - blk) > mmc->ssr.au) ?
 				mmc->ssr.au : (blkcnt - blk);
 		} else {
-			blk_r = ((blkcnt - blk) < mmc->erase_grp_size) ?
+			blk_r = ((blkcnt - blk) > mmc->erase_grp_size) ?
 				mmc->erase_grp_size : (blkcnt - blk);
 		}
 		err = mmc_erase_t(mmc, start + blk, blk_r);
