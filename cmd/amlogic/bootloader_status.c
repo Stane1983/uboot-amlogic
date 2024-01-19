@@ -16,6 +16,7 @@
 #include <amlogic/aml_rollback.h>
 #include <part.h>
 #include <cli.h>
+#include <emmc_partitions.h>
 
 #if defined(CONFIG_EFUSE_OBJ_API) && defined(CONFIG_CMD_EFUSE)
 extern efuse_obj_field_t efuse_field;
@@ -33,6 +34,7 @@ typedef boot_img_hdr_t boot_img_hdr;
 
 #define BOOTLOADER_OFFSET		512
 #define BOOTLOADER_MAX_SIZE		(4 * 1024 * 1024)
+#define MIB_SIZE                (1024 * 1024)
 
 //check SWPL-31296 for details
 static int do_get_bootloader_status(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
@@ -581,6 +583,70 @@ exit:
 	return ret;
 }
 
+int recovery_update(void)
+{
+#ifdef CONFIG_MMC_MESON_GX
+	char bufcmd[64];
+	unsigned long long psize = 0;
+	char *recovery_need_update = NULL;
+	struct partitions *partition = NULL;
+	//"ANDROID!"
+	const unsigned char imghead[] = { 0x41, 0x4e, 0x44, 0x52, 0x4f, 0x49, 0x44, 0x21 };
+
+	if (store_get_type() != BOOT_EMMC)
+		return 0;
+
+	//check recoverybak partition exist
+	partition = find_mmc_partition_by_name("recoverybak");
+	if (!partition) {
+		printf("can not find recoverybak, skip\n");
+		return 0;
+	}
+
+	//check if need update recovery from recoverybak
+	recovery_need_update = env_get("recovery_need_update");
+	if (!recovery_need_update || strcmp(recovery_need_update, "1"))
+		return 0;
+
+	//read recoverybak data
+	sprintf(bufcmd, "store read $loadaddr recoverybak 0 0x%llx", partition->size);
+	run_command(bufcmd, 0);
+
+	unsigned char *loadaddr = (unsigned char *)simple_strtoul(env_get("loadaddr"), NULL, 16);
+
+	//check recoverybak head is start "ANDROID!"
+	if (memcmp((void *)imghead, loadaddr, 8)) {
+		printf("not valid recovery image, skip update recovery\n");
+		return 0;
+	}
+
+	//write recoverybak data to recovery
+	while (psize < partition->size) {
+		unsigned long long write_size = 0;
+		unsigned long long left_size = partition->size - psize;
+
+		if (left_size > 10 * MIB_SIZE)
+			write_size = 10 * MIB_SIZE;
+		else
+			write_size = partition->size - psize;
+
+		sprintf(bufcmd, "store write $loadaddr recovery 0x%llx 0x%llx", psize, write_size);
+		psize += write_size;
+		run_command(bufcmd, 0);
+	}
+
+	//clean recovery_need_update to 0
+	env_set("recovery_need_update", "0");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+	run_command("update_env_part -p recovery_need_update;", 0);
+#else
+	run_command("saveenv", 0);
+#endif
+
+#endif
+	return 0;
+}
+
 static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]) {
 	int match_flag = 0;
 	char *rebootstatus = NULL;
@@ -602,6 +668,8 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 #endif
 	//unsupport update dt in boothal, update dt in uboot
 	run_command("update_dt;", 0);
+	recovery_update();
+
 
 	bootloader_wp();
 
