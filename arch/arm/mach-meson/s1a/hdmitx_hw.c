@@ -44,6 +44,19 @@ static const struct reg_map reg21_maps[] = {
 	},
 };
 
+inline bool cor_reg_addr_mask(u32 addr)
+{
+	addr = addr & 0xffff;
+	if ((addr >= 0x0330 && addr <= 0x03ff) ||
+	    (addr >= 0x0800 && addr <= 0x08ff) ||
+	    (addr >= 0x0940 && addr <= 0x09ff) ||
+	    (addr >= 0x0b00 && addr <= 0x0dff) ||
+	    (addr >= 0x0f00 && addr <= 0x0fff))
+		return 1;
+
+	return 0;
+}
+
 int hdmitx_get_hpd_state(void)
 {
 	int st = 0;
@@ -179,6 +192,9 @@ static u8 hdmitx_rd_cor(u32 addr)
 	u32 base_offset;
 	u8 data;
 
+	if (cor_reg_addr_mask(addr))
+		return 0;
+
 	base_offset = reg21_maps[HDMITX_COR_REG_IDX].phy_addr;
 	data = sec_rd8(base_offset + addr);
 	return data;
@@ -195,6 +211,9 @@ static void hdmitx_wr_top(u32 addr, u32 data)
 static void hdmitx_wr_cor(u32 addr, u8 data)
 {
 	u32 base_offset;
+
+	if (cor_reg_addr_mask(addr))
+		return;
 
 	base_offset = reg21_maps[HDMITX_COR_REG_IDX].phy_addr;
 	sec_wr8(base_offset + addr, data);
