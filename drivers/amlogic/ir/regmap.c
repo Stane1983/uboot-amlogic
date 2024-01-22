@@ -301,7 +301,8 @@ int meson_ir_register_default_config(struct meson_ir_chip *chip, int type)
 				    LEGACY_IR_ID);
 	} else {
 		/*disable legacy IR controller: REG_REG1[15]*/
-		writel(0x0, chip->ir_contr[LEGACY_IR_ID].base + REG_REG1);
+		if (chip->ir_contr[LEGACY_IR_ID].base)
+			writel(0x0, chip->ir_contr[LEGACY_IR_ID].base + REG_REG1);
 	}
 	/*initialize registers for Multi-format IR controller*/
 	meson_ir_contr_init(chip, MULTI_IR_TYPE_MASK(type), MULTI_IR_ID);
