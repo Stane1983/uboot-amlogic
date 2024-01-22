@@ -112,6 +112,9 @@ ulong mmc_berase(struct blk_desc *block_dev, lbaint_t start, lbaint_t blkcnt)
 		} else {
 			blk_r = ((blkcnt - blk) > mmc->erase_grp_size) ?
 				mmc->erase_grp_size : (blkcnt - blk);
+			if (IS_ENABLED(CONFIG_AMLOGIC_MODIFY)) {
+				blk_r = blkcnt;
+			}
 		}
 		err = mmc_erase_t(mmc, start + blk, blk_r);
 		if (err)
@@ -124,6 +127,10 @@ ulong mmc_berase(struct blk_desc *block_dev, lbaint_t start, lbaint_t blkcnt)
 			return 0;
 	}
 
+	if (IS_ENABLED(CONFIG_AMLOGIC_MODIFY)) {
+		if (!err)
+			return blkcnt;
+	}
 	return blk;
 }
 
