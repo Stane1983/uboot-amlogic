@@ -5,6 +5,7 @@
 
 #include "../include/v3_tool_def.h"
 #include <mmc.h>
+#include <emmc_partitions.h>
 
 int v3tool_simg2img_init(const ImgDownloadPara* downPara);
 int v3tool_simg2img_get_img(UsbDownInf* downInf);
@@ -229,7 +230,21 @@ int v3tool_buffman_img_init(ImgTransPara* imgPara, const int isDownload)
             FB_ERR("Fail in simg init\n");
             return -__LINE__;
         }
-	if (!v3tool_is_flash_erased()) {
+
+	ret = 0;
+#ifdef CONFIG_MMC_MESON_GX
+	if (store_get_type() == BOOT_EMMC) {
+		struct partitions *part_info = find_mmc_partition_by_name(partName);
+  
+		if (!part_info) {
+			FB_ERR("error partition name!\n");
+			return -__LINE__;
+		}
+		ret = part_info->mask_flags & PART_PROTECT_FLAG;
+		run_command("store rsv protect key off", 0);
+	}
+#endif//#ifdef CONFIG_MMC_MESON_GX
+	if (ret || !v3tool_is_flash_erased()) {
 		FB_MSG("erase part for simg\n");
 		if (store_erase(partName, 0, 0, 0)) {
 			FB_ERR("fail in erase part %s\n", partName);
