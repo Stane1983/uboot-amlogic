@@ -307,7 +307,8 @@ static void lcd_set_pll_ss_advance_txhd2(struct aml_lcd_drv_s *pdrv)
 static void lcd_set_pll_txhd2(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_clk_config_s *cconf;
-	unsigned int pll_ctrl, pll_ctrl1;
+	unsigned int pll_ctrl, pll_ctrl1, pll_ctrl5;
+	unsigned int tcon_div_sel;
 	int ret, cnt = 0;
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_ADV2)
@@ -316,15 +317,20 @@ static void lcd_set_pll_txhd2(struct aml_lcd_drv_s *pdrv)
 	if (!cconf)
 		return;
 
+	tcon_div_sel = cconf->pll_tcon_div_sel;
 	pll_ctrl =
 		(cconf->pll_n << 10) |
 		(cconf->pll_m << 0) |
 		(cconf->pll_od1_sel << 16) |
 		(cconf->pll_od2_sel << 18) |
 		(cconf->pll_od3_sel << 20) |
-		(3 << 24);
+		(tcon_div[tcon_div_sel][1] << 22) |
+		(tcon_div[tcon_div_sel][2] << 24) |
+		(1 << 25);
 
 	pll_ctrl1 = cconf->pll_frac;
+	pll_ctrl5 = 0x00150500 | (tcon_div[tcon_div_sel][0] << 0);
+
 	if (lcd_debug_print_flag & LCD_DBG_PR_ADV2) {
 		LCDPR("pll_m=0x%x, pll_n=0x%x, frac=0x%x, od1=%d, od2=%d, od3=%d\n",
 			cconf->pll_m, cconf->pll_n, cconf->pll_frac,
@@ -338,13 +344,13 @@ set_pll_retry_txhd2:
 	lcd_ana_write(HHI_TCON_PLL_CNTL2, 0x01000000);
 	lcd_ana_write(HHI_TCON_PLL_CNTL3, 0x00258000);
 	lcd_ana_write(HHI_TCON_PLL_CNTL4, 0x05501000);
-	lcd_ana_write(HHI_TCON_PLL_CNTL5, 0x00150500);
+	lcd_ana_write(HHI_TCON_PLL_CNTL5, pll_ctrl5);
 	lcd_ana_write(HHI_TCON_PLL_CNTL6, 0x50450000);
 	udelay(50);
 	lcd_ana_setb(HHI_TCON_PLL_CNTL0, 1, 28, 1);
 	udelay(50);
 	lcd_ana_setb(HHI_TCON_PLL_CNTL0, 1, 29, 1);
-	lcd_ana_setb(HHI_TCON_PLL_CNTL0, 0, 24, 2);
+	lcd_ana_setb(HHI_TCON_PLL_CNTL0, 0, 25, 1);
 	lcd_ana_setb(HHI_TCON_PLL_CNTL0, 1, 23, 1);
 	udelay(50);
 	lcd_ana_setb(HHI_TCON_PLL_CNTL0, 1, 15, 1);
