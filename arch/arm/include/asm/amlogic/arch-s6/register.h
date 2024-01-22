@@ -7,7 +7,7 @@
 //
 // Project name: s6
 //
-// Create time: Thu Dec 21 17:40:13 CST 2023 by chong.gu
+// Create time: Tue Jan 16 19:54:06 CST 2024 by chong.gu
 //
 // ./REG_LIST_RTL.h
 //
@@ -18,9 +18,8 @@
 #else
 #define REGISTER_H
 
-
 #if 0
-#if	ndef VERIFICATION
+#ifndef VERIFICATION
     #define Wr64(addr, data) *(volatile uint64_t *)(addr)=(data)
     #define Rd64(addr) *(volatile uint64_t *)(addr)
     #define Wr8(addr, data) *(volatile uint8_t *)(addr)=(data)
@@ -33,6 +32,7 @@
     #include "dpi.h"
 #endif
 #endif
+
 //
 // Reading file:  ./REG_LIST_RTL.h
 //
@@ -182,6 +182,29 @@
 #define TS_PLL_STAT7                               ((0x0017  << 2) + 0xfe020000)
 #define TS_PLL_STAT8                               ((0x0018  << 2) + 0xfe020000)
 #define TS_PLL_STAT9                               ((0x0019  << 2) + 0xfe020000)
+//========================================================================
+//  Temp sensor TOP
+//========================================================================
+// -----------------------------------------------
+// REG_BASE:  REGISTER_BASE_ADDR = 0xfe022000
+// -----------------------------------------------
+#define TS_CORE_CFG_REG1                           ((0x0001  << 2) + 0xfe022000)
+#define TS_CORE_CFG_REG2                           ((0x0002  << 2) + 0xfe022000)
+#define TS_CORE_CFG_REG3                           ((0x0003  << 2) + 0xfe022000)
+#define TS_CORE_CFG_REG4                           ((0x0004  << 2) + 0xfe022000)
+#define TS_CORE_CFG_REG5                           ((0x0005  << 2) + 0xfe022000)
+#define TS_CORE_CFG_REG6                           ((0x0006  << 2) + 0xfe022000)
+#define TS_CORE_CFG_REG7                           ((0x0007  << 2) + 0xfe022000)
+#define TS_CORE_STAT0                              ((0x0010  << 2) + 0xfe022000)
+#define TS_CORE_STAT1                              ((0x0011  << 2) + 0xfe022000)
+#define TS_CORE_STAT2                              ((0x0012  << 2) + 0xfe022000)
+#define TS_CORE_STAT3                              ((0x0013  << 2) + 0xfe022000)
+#define TS_CORE_STAT4                              ((0x0014  << 2) + 0xfe022000)
+#define TS_CORE_STAT5                              ((0x0015  << 2) + 0xfe022000)
+#define TS_CORE_STAT6                              ((0x0016  << 2) + 0xfe022000)
+#define TS_CORE_STAT7                              ((0x0017  << 2) + 0xfe022000)
+#define TS_CORE_STAT8                              ((0x0018  << 2) + 0xfe022000)
+#define TS_CORE_STAT9                              ((0x0019  << 2) + 0xfe022000)
 //========================================================================
 //  Temp sensor DDR
 //========================================================================
@@ -394,6 +417,14 @@
 #define PADCTRL_GPIOD_LOCK                         ((0x0065  << 2) + 0xfe004000)
 #define PADCTRL_GPIOD_PROT                         ((0x0066  << 2) + 0xfe004000)
 #define PADCTRL_GPIOD_DS                           ((0x0067  << 2) + 0xfe004000)
+#define PADCTRL_GPIOF_I                            ((0x0068  << 2) + 0xfe004000)
+#define PADCTRL_GPIOF_O                            ((0x0069  << 2) + 0xfe004000)
+#define PADCTRL_GPIOF_OEN                          ((0x006a  << 2) + 0xfe004000)
+#define PADCTRL_GPIOF_PULL_EN                      ((0x006b  << 2) + 0xfe004000)
+#define PADCTRL_GPIOF_PULL_UP                      ((0x006c  << 2) + 0xfe004000)
+#define PADCTRL_GPIOF_LOCK                         ((0x006d  << 2) + 0xfe004000)
+#define PADCTRL_GPIOF_PROT                         ((0x006e  << 2) + 0xfe004000)
+#define PADCTRL_GPIOF_DS                           ((0x006f  << 2) + 0xfe004000)
 #define PADCTRL_GPIOE_I                            ((0x0070  << 2) + 0xfe004000)
 #define PADCTRL_GPIOE_O                            ((0x0071  << 2) + 0xfe004000)
 #define PADCTRL_GPIOE_OEN                          ((0x0072  << 2) + 0xfe004000)
@@ -509,6 +540,7 @@
 #define SYSCTRL_AXI_PIPE_CTRL0                     ((0x0055  << 2) + 0xfe010000)
 #define SYSCTRL_AXI_PIPE_CTRL1                     ((0x0056  << 2) + 0xfe010000)
 #define SYSCTRL_AXI_PIPE_CTRL2                     ((0x005d  << 2) + 0xfe010000)
+#define SYSCTRL_AXI_PIPE_CTRL3                     ((0x005e  << 2) + 0xfe010000)
 #define SYSCTRL_TIMER90K                           ((0x0057  << 2) + 0xfe010000)
 #define SYSCTRL_SCR                                ((0x0058  << 2) + 0xfe010000)
 #define SYSCTRL_HPG_TIMER                          ((0x0059  << 2) + 0xfe010000)
@@ -593,7 +625,7 @@
 #define SYSCTRL_MALI_TEXFMTENABLE                  ((0x0100  << 2) + 0xfe010000)
 #define SYSCTRL_MALI_CONFIG                        ((0x0101  << 2) + 0xfe010000)
 #define SYSCTRL_CPU_RAM_EMA_CTRL                   ((0x0110  << 2) + 0xfe010000)
-#define SYSCTRL_DSP_BUS_CFG                        ((0x0111  << 2) + 0xfe010000)
+#define SYSCTRL_BUS_CFG                            ((0x0111  << 2) + 0xfe010000)
 //========================================================================
 //  CLK_CTRL
 //========================================================================
@@ -746,146 +778,148 @@
 #define PWRCTRL_DDRPHY_CTRL                        ((0x0025  << 2) + 0xfe00c000)
 #define PWRCTRL_ETHMAC_CTRL                        ((0x0026  << 2) + 0xfe00c000)
 #define PWRCTRL_SYSPWR_CTRL                        ((0x0027  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_AUTO_OFF_CTRL0                ((0x0040  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_AUTO_OFF_CTRL1                ((0x0041  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_AUTO_OFF_CTRL2                ((0x0042  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_AUTO_OFF_CTRL3                ((0x0043  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_AUTO_OFF_CTRL4                ((0x0044  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_TIMER_TH_01                   ((0x0048  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_TIMER_TH_23                   ((0x0049  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_TIMER_TH_45                   ((0x004a  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_TIMER_TH_67                   ((0x004b  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_TIMER_TH_89                   ((0x004c  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_IRQ_MASK0                     ((0x0050  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_IRQ_MASK1                     ((0x0051  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_IRQ_MASK2                     ((0x0052  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_IRQ_MASK3                     ((0x0053  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_IRQ_MASK4                     ((0x0054  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_IRQ_MASK5                     ((0x0055  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_IRQ_MASK6                     ((0x0056  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_IRQ_MASK7                     ((0x0057  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_IRQ_MASK8                     ((0x0058  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_IRQ_MASK9                     ((0x0059  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_IRQ_MASK10                    ((0x005a  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_IRQ_MASK11                    ((0x005b  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_MEMPD_INIT_SET                ((0x0060  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_MEMPD_OFF_SET                 ((0x0061  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_MEMPD_ON_A_SET                ((0x0062  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_MEMPD_ON_B_SET                ((0x0063  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_MEMPD_ON_C_SET                ((0x0064  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_MEMPD_ON_D_SET                ((0x0065  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_MEMPD_STS                     ((0x0066  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_FSM_STS0                      ((0x0067  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_FSM_STS1                      ((0x0068  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_FSM_STS2                      ((0x0069  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_FSM_START_OFF                 ((0x006d  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_FSM_START_ON                  ((0x006e  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU0_FSM_JUMP                      ((0x006f  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_AUTO_OFF_CTRL0                ((0x0070  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_AUTO_OFF_CTRL1                ((0x0071  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_AUTO_OFF_CTRL2                ((0x0072  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_AUTO_OFF_CTRL3                ((0x0073  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_AUTO_OFF_CTRL4                ((0x0074  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_TIMER_TH_01                   ((0x0078  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_TIMER_TH_23                   ((0x0079  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_TIMER_TH_45                   ((0x007a  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_TIMER_TH_67                   ((0x007b  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_TIMER_TH_89                   ((0x007c  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_IRQ_MASK0                     ((0x0080  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_IRQ_MASK1                     ((0x0081  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_IRQ_MASK2                     ((0x0082  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_IRQ_MASK3                     ((0x0083  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_IRQ_MASK4                     ((0x0084  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_IRQ_MASK5                     ((0x0085  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_IRQ_MASK6                     ((0x0086  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_IRQ_MASK7                     ((0x0087  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_IRQ_MASK8                     ((0x0088  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_IRQ_MASK9                     ((0x0089  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_IRQ_MASK10                    ((0x008a  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_IRQ_MASK11                    ((0x008b  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_MEMPD_INIT_SET                ((0x0090  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_MEMPD_OFF_SET                 ((0x0091  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_MEMPD_ON_A_SET                ((0x0092  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_MEMPD_ON_B_SET                ((0x0093  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_MEMPD_ON_C_SET                ((0x0094  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_MEMPD_ON_D_SET                ((0x0095  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_MEMPD_STS                     ((0x0096  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_FSM_STS0                      ((0x0097  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_FSM_STS1                      ((0x0098  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_FSM_STS2                      ((0x0099  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_FSM_START_OFF                 ((0x009d  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_FSM_START_ON                  ((0x009e  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU1_FSM_JUMP                      ((0x009f  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_AUTO_OFF_CTRL0                ((0x00a0  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_AUTO_OFF_CTRL1                ((0x00a1  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_AUTO_OFF_CTRL2                ((0x00a2  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_AUTO_OFF_CTRL3                ((0x00a3  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_AUTO_OFF_CTRL4                ((0x00a4  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_TIMER_TH_01                   ((0x00a8  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_TIMER_TH_23                   ((0x00a9  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_TIMER_TH_45                   ((0x00aa  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_TIMER_TH_67                   ((0x00ab  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_TIMER_TH_89                   ((0x00ac  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_IRQ_MASK0                     ((0x00b0  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_IRQ_MASK1                     ((0x00b1  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_IRQ_MASK2                     ((0x00b2  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_IRQ_MASK3                     ((0x00b3  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_IRQ_MASK4                     ((0x00b4  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_IRQ_MASK5                     ((0x00b5  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_IRQ_MASK6                     ((0x00b6  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_IRQ_MASK7                     ((0x00b7  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_IRQ_MASK8                     ((0x00b8  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_IRQ_MASK9                     ((0x00b9  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_IRQ_MASK10                    ((0x00ba  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_IRQ_MASK11                    ((0x00bb  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_MEMPD_INIT_SET                ((0x00c0  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_MEMPD_OFF_SET                 ((0x00c1  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_MEMPD_ON_A_SET                ((0x00c2  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_MEMPD_ON_B_SET                ((0x00c3  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_MEMPD_ON_C_SET                ((0x00c4  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_MEMPD_ON_D_SET                ((0x00c5  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_MEMPD_STS                     ((0x00c6  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_FSM_STS0                      ((0x00c7  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_FSM_STS1                      ((0x00c8  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_FSM_STS2                      ((0x00c9  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_FSM_START_OFF                 ((0x00cd  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_FSM_START_ON                  ((0x00ce  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU2_FSM_JUMP                      ((0x00cf  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_AUTO_OFF_CTRL0                ((0x00d0  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_AUTO_OFF_CTRL1                ((0x00d1  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_AUTO_OFF_CTRL2                ((0x00d2  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_AUTO_OFF_CTRL3                ((0x00d3  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_AUTO_OFF_CTRL4                ((0x00d4  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_TIMER_TH_01                   ((0x00d8  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_TIMER_TH_23                   ((0x00d9  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_TIMER_TH_45                   ((0x00da  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_TIMER_TH_67                   ((0x00db  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_TIMER_TH_89                   ((0x00dc  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_IRQ_MASK0                     ((0x00e0  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_IRQ_MASK1                     ((0x00e1  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_IRQ_MASK2                     ((0x00e2  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_IRQ_MASK3                     ((0x00e3  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_IRQ_MASK4                     ((0x00e4  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_IRQ_MASK5                     ((0x00e5  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_IRQ_MASK6                     ((0x00e6  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_IRQ_MASK7                     ((0x00e7  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_IRQ_MASK8                     ((0x00e8  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_IRQ_MASK9                     ((0x00e9  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_IRQ_MASK10                    ((0x00ea  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_IRQ_MASK11                    ((0x00eb  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_MEMPD_INIT_SET                ((0x00f0  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_MEMPD_OFF_SET                 ((0x00f1  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_MEMPD_ON_A_SET                ((0x00f2  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_MEMPD_ON_B_SET                ((0x00f3  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_MEMPD_ON_C_SET                ((0x00f4  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_MEMPD_ON_D_SET                ((0x00f5  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_MEMPD_STS                     ((0x00f6  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_FSM_STS0                      ((0x00f7  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_FSM_STS1                      ((0x00f8  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_FSM_STS2                      ((0x00f9  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_FSM_START_OFF                 ((0x00fd  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_FSM_START_ON                  ((0x00fe  << 2) + 0xfe00c000)
-#define PWRCTRL_CPU3_FSM_JUMP                      ((0x00ff  << 2) + 0xfe00c000)
+#define PWRCTRL_PPU_ACCESS_SEC                     ((0x0028  << 2) + 0xfe00c000)
+#define PWRCTRL_PWRCTRL_ACCESS_SEC                 ((0x0029  << 2) + 0xfe00c000)
+//`define PWRCTRL_CPU0_AUTO_OFF_CTRL0      10'h40
+//`define PWRCTRL_CPU0_AUTO_OFF_CTRL1      10'h41
+//`define PWRCTRL_CPU0_AUTO_OFF_CTRL2      10'h42
+//`define PWRCTRL_CPU0_AUTO_OFF_CTRL3      10'h43
+//`define PWRCTRL_CPU0_AUTO_OFF_CTRL4      10'h44
+//`define PWRCTRL_CPU0_TIMER_TH_01         10'h48
+//`define PWRCTRL_CPU0_TIMER_TH_23         10'h49
+//`define PWRCTRL_CPU0_TIMER_TH_45         10'h4A
+//`define PWRCTRL_CPU0_TIMER_TH_67         10'h4B
+//`define PWRCTRL_CPU0_TIMER_TH_89         10'h4C
+//`define PWRCTRL_CPU0_IRQ_MASK0           10'h50
+//`define PWRCTRL_CPU0_IRQ_MASK1           10'h51
+//`define PWRCTRL_CPU0_IRQ_MASK2           10'h52
+//`define PWRCTRL_CPU0_IRQ_MASK3           10'h53
+//`define PWRCTRL_CPU0_IRQ_MASK4           10'h54
+//`define PWRCTRL_CPU0_IRQ_MASK5           10'h55
+//`define PWRCTRL_CPU0_IRQ_MASK6           10'h56
+//`define PWRCTRL_CPU0_IRQ_MASK7           10'h57
+//`define PWRCTRL_CPU0_IRQ_MASK8           10'h58
+//`define PWRCTRL_CPU0_IRQ_MASK9           10'h59
+//`define PWRCTRL_CPU0_IRQ_MASK10          10'h5A
+//`define PWRCTRL_CPU0_IRQ_MASK11          10'h5B
+//`define PWRCTRL_CPU0_MEMPD_INIT_SET      10'h60
+//`define PWRCTRL_CPU0_MEMPD_OFF_SET       10'h61
+//`define PWRCTRL_CPU0_MEMPD_ON_A_SET      10'h62
+//`define PWRCTRL_CPU0_MEMPD_ON_B_SET      10'h63
+//`define PWRCTRL_CPU0_MEMPD_ON_C_SET      10'h64
+//`define PWRCTRL_CPU0_MEMPD_ON_D_SET      10'h65
+//`define PWRCTRL_CPU0_MEMPD_STS           10'h66
+//`define PWRCTRL_CPU0_FSM_STS0            10'h67
+//`define PWRCTRL_CPU0_FSM_STS1            10'h68
+//`define PWRCTRL_CPU0_FSM_STS2            10'h69
+//`define PWRCTRL_CPU0_FSM_START_OFF       10'h6D
+//`define PWRCTRL_CPU0_FSM_START_ON        10'h6E
+//`define PWRCTRL_CPU0_FSM_JUMP            10'h6F
+//`define PWRCTRL_CPU1_AUTO_OFF_CTRL0      10'h70
+//`define PWRCTRL_CPU1_AUTO_OFF_CTRL1      10'h71
+//`define PWRCTRL_CPU1_AUTO_OFF_CTRL2      10'h72
+//`define PWRCTRL_CPU1_AUTO_OFF_CTRL3      10'h73
+//`define PWRCTRL_CPU1_AUTO_OFF_CTRL4      10'h74
+//`define PWRCTRL_CPU1_TIMER_TH_01         10'h78
+//`define PWRCTRL_CPU1_TIMER_TH_23         10'h79
+//`define PWRCTRL_CPU1_TIMER_TH_45         10'h7A
+//`define PWRCTRL_CPU1_TIMER_TH_67         10'h7B
+//`define PWRCTRL_CPU1_TIMER_TH_89         10'h7C
+//`define PWRCTRL_CPU1_IRQ_MASK0           10'h80
+//`define PWRCTRL_CPU1_IRQ_MASK1           10'h81
+//`define PWRCTRL_CPU1_IRQ_MASK2           10'h82
+//`define PWRCTRL_CPU1_IRQ_MASK3           10'h83
+//`define PWRCTRL_CPU1_IRQ_MASK4           10'h84
+//`define PWRCTRL_CPU1_IRQ_MASK5           10'h85
+//`define PWRCTRL_CPU1_IRQ_MASK6           10'h86
+//`define PWRCTRL_CPU1_IRQ_MASK7           10'h87
+//`define PWRCTRL_CPU1_IRQ_MASK8           10'h88
+//`define PWRCTRL_CPU1_IRQ_MASK9           10'h89
+//`define PWRCTRL_CPU1_IRQ_MASK10          10'h8A
+//`define PWRCTRL_CPU1_IRQ_MASK11          10'h8B
+//`define PWRCTRL_CPU1_MEMPD_INIT_SET      10'h90
+//`define PWRCTRL_CPU1_MEMPD_OFF_SET       10'h91
+//`define PWRCTRL_CPU1_MEMPD_ON_A_SET      10'h92
+//`define PWRCTRL_CPU1_MEMPD_ON_B_SET      10'h93
+//`define PWRCTRL_CPU1_MEMPD_ON_C_SET      10'h94
+//`define PWRCTRL_CPU1_MEMPD_ON_D_SET      10'h95
+//`define PWRCTRL_CPU1_MEMPD_STS           10'h96
+//`define PWRCTRL_CPU1_FSM_STS0            10'h97
+//`define PWRCTRL_CPU1_FSM_STS1            10'h98
+//`define PWRCTRL_CPU1_FSM_STS2            10'h99
+//`define PWRCTRL_CPU1_FSM_START_OFF       10'h9D
+//`define PWRCTRL_CPU1_FSM_START_ON        10'h9E
+//`define PWRCTRL_CPU1_FSM_JUMP            10'h9F
+//`define PWRCTRL_CPU2_AUTO_OFF_CTRL0      10'hA0
+//`define PWRCTRL_CPU2_AUTO_OFF_CTRL1      10'hA1
+//`define PWRCTRL_CPU2_AUTO_OFF_CTRL2      10'hA2
+//`define PWRCTRL_CPU2_AUTO_OFF_CTRL3      10'hA3
+//`define PWRCTRL_CPU2_AUTO_OFF_CTRL4      10'hA4
+//`define PWRCTRL_CPU2_TIMER_TH_01         10'hA8
+//`define PWRCTRL_CPU2_TIMER_TH_23         10'hA9
+//`define PWRCTRL_CPU2_TIMER_TH_45         10'hAA
+//`define PWRCTRL_CPU2_TIMER_TH_67         10'hAB
+//`define PWRCTRL_CPU2_TIMER_TH_89         10'hAC
+//`define PWRCTRL_CPU2_IRQ_MASK0           10'hB0
+//`define PWRCTRL_CPU2_IRQ_MASK1           10'hB1
+//`define PWRCTRL_CPU2_IRQ_MASK2           10'hB2
+//`define PWRCTRL_CPU2_IRQ_MASK3           10'hB3
+//`define PWRCTRL_CPU2_IRQ_MASK4           10'hB4
+//`define PWRCTRL_CPU2_IRQ_MASK5           10'hB5
+//`define PWRCTRL_CPU2_IRQ_MASK6           10'hB6
+//`define PWRCTRL_CPU2_IRQ_MASK7           10'hB7
+//`define PWRCTRL_CPU2_IRQ_MASK8           10'hB8
+//`define PWRCTRL_CPU2_IRQ_MASK9           10'hB9
+//`define PWRCTRL_CPU2_IRQ_MASK10          10'hBA
+//`define PWRCTRL_CPU2_IRQ_MASK11          10'hBB
+//`define PWRCTRL_CPU2_MEMPD_INIT_SET      10'hC0
+//`define PWRCTRL_CPU2_MEMPD_OFF_SET       10'hC1
+//`define PWRCTRL_CPU2_MEMPD_ON_A_SET      10'hC2
+//`define PWRCTRL_CPU2_MEMPD_ON_B_SET      10'hC3
+//`define PWRCTRL_CPU2_MEMPD_ON_C_SET      10'hC4
+//`define PWRCTRL_CPU2_MEMPD_ON_D_SET      10'hC5
+//`define PWRCTRL_CPU2_MEMPD_STS           10'hC6
+//`define PWRCTRL_CPU2_FSM_STS0            10'hC7
+//`define PWRCTRL_CPU2_FSM_STS1            10'hC8
+//`define PWRCTRL_CPU2_FSM_STS2            10'hC9
+//`define PWRCTRL_CPU2_FSM_START_OFF       10'hCD
+//`define PWRCTRL_CPU2_FSM_START_ON        10'hCE
+//`define PWRCTRL_CPU2_FSM_JUMP            10'hCF
+//`define PWRCTRL_CPU3_AUTO_OFF_CTRL0      10'hD0
+//`define PWRCTRL_CPU3_AUTO_OFF_CTRL1      10'hD1
+//`define PWRCTRL_CPU3_AUTO_OFF_CTRL2      10'hD2
+//`define PWRCTRL_CPU3_AUTO_OFF_CTRL3      10'hD3
+//`define PWRCTRL_CPU3_AUTO_OFF_CTRL4      10'hD4
+//`define PWRCTRL_CPU3_TIMER_TH_01         10'hD8
+//`define PWRCTRL_CPU3_TIMER_TH_23         10'hD9
+//`define PWRCTRL_CPU3_TIMER_TH_45         10'hDA
+//`define PWRCTRL_CPU3_TIMER_TH_67         10'hDB
+//`define PWRCTRL_CPU3_TIMER_TH_89         10'hDC
+//`define PWRCTRL_CPU3_IRQ_MASK0           10'hE0
+//`define PWRCTRL_CPU3_IRQ_MASK1           10'hE1
+//`define PWRCTRL_CPU3_IRQ_MASK2           10'hE2
+//`define PWRCTRL_CPU3_IRQ_MASK3           10'hE3
+//`define PWRCTRL_CPU3_IRQ_MASK4           10'hE4
+//`define PWRCTRL_CPU3_IRQ_MASK5           10'hE5
+//`define PWRCTRL_CPU3_IRQ_MASK6           10'hE6
+//`define PWRCTRL_CPU3_IRQ_MASK7           10'hE7
+//`define PWRCTRL_CPU3_IRQ_MASK8           10'hE8
+//`define PWRCTRL_CPU3_IRQ_MASK9           10'hE9
+//`define PWRCTRL_CPU3_IRQ_MASK10          10'hEA
+//`define PWRCTRL_CPU3_IRQ_MASK11          10'hEB
+//`define PWRCTRL_CPU3_MEMPD_INIT_SET      10'hF0
+//`define PWRCTRL_CPU3_MEMPD_OFF_SET       10'hF1
+//`define PWRCTRL_CPU3_MEMPD_ON_A_SET      10'hF2
+//`define PWRCTRL_CPU3_MEMPD_ON_B_SET      10'hF3
+//`define PWRCTRL_CPU3_MEMPD_ON_C_SET      10'hF4
+//`define PWRCTRL_CPU3_MEMPD_ON_D_SET      10'hF5
+//`define PWRCTRL_CPU3_MEMPD_STS           10'hF6
+//`define PWRCTRL_CPU3_FSM_STS0            10'hF7
+//`define PWRCTRL_CPU3_FSM_STS1            10'hF8
+//`define PWRCTRL_CPU3_FSM_STS2            10'hF9
+//`define PWRCTRL_CPU3_FSM_START_OFF       10'hFD
+//`define PWRCTRL_CPU3_FSM_START_ON        10'hFE
+//`define PWRCTRL_CPU3_FSM_JUMP            10'hFF
 #define PWRCTRL_CPUTOP_AUTO_OFF_CTRL0              ((0x0100  << 2) + 0xfe00c000)
 #define PWRCTRL_CPUTOP_AUTO_OFF_CTRL1              ((0x0101  << 2) + 0xfe00c000)
 #define PWRCTRL_CPUTOP_AUTO_OFF_CTRL2              ((0x0102  << 2) + 0xfe00c000)
@@ -908,13 +942,15 @@
 #define PWRCTRL_CPUTOP_IRQ_MASK9                   ((0x0119  << 2) + 0xfe00c000)
 #define PWRCTRL_CPUTOP_IRQ_MASK10                  ((0x011a  << 2) + 0xfe00c000)
 #define PWRCTRL_CPUTOP_IRQ_MASK11                  ((0x011b  << 2) + 0xfe00c000)
-#define PWRCTRL_CPUTOP_MEMPD_INIT_SET              ((0x0120  << 2) + 0xfe00c000)
-#define PWRCTRL_CPUTOP_MEMPD_OFF_SET               ((0x0121  << 2) + 0xfe00c000)
-#define PWRCTRL_CPUTOP_MEMPD_ON_A_SET              ((0x0122  << 2) + 0xfe00c000)
-#define PWRCTRL_CPUTOP_MEMPD_ON_B_SET              ((0x0123  << 2) + 0xfe00c000)
-#define PWRCTRL_CPUTOP_MEMPD_ON_C_SET              ((0x0124  << 2) + 0xfe00c000)
-#define PWRCTRL_CPUTOP_MEMPD_ON_D_SET              ((0x0125  << 2) + 0xfe00c000)
-#define PWRCTRL_CPUTOP_MEMPD_STS                   ((0x0126  << 2) + 0xfe00c000)
+#define PWRCTRL_CPUTOP_MEMPD_SET0                  ((0x0120  << 2) + 0xfe00c000)
+#define PWRCTRL_CPUTOP_MEMPD_SET1                  ((0x0121  << 2) + 0xfe00c000)
+//`define PWRCTRL_CPUTOP_MEMPD_OFF_SET     10'h121
+//`define PWRCTRL_CPUTOP_MEMPD_ON_A_SET    10'h122
+//`define PWRCTRL_CPUTOP_MEMPD_ON_B_SET    10'h123
+//`define PWRCTRL_CPUTOP_MEMPD_ON_C_SET    10'h124
+//`define PWRCTRL_CPUTOP_MEMPD_ON_D_SET    10'h125
+#define PWRCTRL_CPUTOP_MEMPD_STS0                  ((0x0125  << 2) + 0xfe00c000)
+#define PWRCTRL_CPUTOP_MEMPD_STS1                  ((0x0126  << 2) + 0xfe00c000)
 #define PWRCTRL_CPUTOP_FSM_STS0                    ((0x0127  << 2) + 0xfe00c000)
 #define PWRCTRL_CPUTOP_FSM_STS1                    ((0x0128  << 2) + 0xfe00c000)
 #define PWRCTRL_CPUTOP_FSM_STS2                    ((0x0129  << 2) + 0xfe00c000)
@@ -962,11 +998,11 @@
 #define PWRCTRL_SYSPWR_TIMER_TH_45                 ((0x0163  << 2) + 0xfe00c000)
 #define PWRCTRL_SYSPWR_TIMER_TH_67                 ((0x0164  << 2) + 0xfe00c000)
 #define PWRCTRL_SYSPWR_TIMER_TH_89                 ((0x0165  << 2) + 0xfe00c000)
-#define PWRCTRL_SYSPWR_MEMPD_STS                   ((0x0166  << 2) + 0xfe00c000)
-#define PWRCTRL_SYSPWR_FSM_STS0                    ((0x0167  << 2) + 0xfe00c000)
-#define PWRCTRL_SYSPWR_FSM_STS1                    ((0x0168  << 2) + 0xfe00c000)
-#define PWRCTRL_SYSPWR_FSM_STS2                    ((0x0169  << 2) + 0xfe00c000)
-#define PWRCTRL_PPU_AXPORT_SEL                     ((0x016a  << 2) + 0xfe00c000)
+#define PWRCTRL_SYSPWR_MEMPD_INIT_SET              ((0x0166  << 2) + 0xfe00c000)
+#define PWRCTRL_SYSPWR_MEMPD_STS                   ((0x0167  << 2) + 0xfe00c000)
+#define PWRCTRL_SYSPWR_FSM_STS0                    ((0x0168  << 2) + 0xfe00c000)
+#define PWRCTRL_SYSPWR_FSM_STS1                    ((0x0169  << 2) + 0xfe00c000)
+#define PWRCTRL_SYSPWR_FSM_STS2                    ((0x0170  << 2) + 0xfe00c000)
 //`define PWRCTRL_DSPB_AUTO_OFF_CTRL0      10'h160
 //`define PWRCTRL_DSPB_AUTO_OFF_CTRL1      10'h161
 //`define PWRCTRL_DSPB_AUTO_OFF_CTRL2      10'h162
@@ -1318,6 +1354,8 @@
 //Bit 31:0 -       0   - demux status 0
 #define AUCPU_DEMUX_STS1                           ((0x0062  << 2) + 0xfe09e000)
 //Bit 31:0 -       0   - demux status 1
+#define AUCPU_DEMUX_STS2                           ((0x0063  << 2) + 0xfe09e000)
+//Bit 31:0 -       0   - demux status 2
 //========================================================================
 //  AXI_SRAM
 //========================================================================
@@ -1750,14 +1788,21 @@
 #define CPUCTRL_SYS_CPU_CFG11                      ((0x009d  << 2) + 0xfe00e000)
 #define CPUCTRL_SYS_CPU_CFG12                      ((0x009e  << 2) + 0xfe00e000)
 #define CPUCTRL_SYS_CPU_CFG13                      ((0x009f  << 2) + 0xfe00e000)
-#define CPUCTRL_SYS_CPU_STATUS0                    ((0x00a0  << 2) + 0xfe00e000)
-#define CPUCTRL_SYS_CPU_STATUS1                    ((0x00a1  << 2) + 0xfe00e000)
-#define CPUCTRL_SYS_CPU_STATUS2                    ((0x00a2  << 2) + 0xfe00e000)
-#define CPUCTRL_SYS_CPU_STATUS3                    ((0x00a3  << 2) + 0xfe00e000)
-#define CPUCTRL_SYS_CPU_STATUS4                    ((0x00a4  << 2) + 0xfe00e000)
-#define CPUCTRL_SYS_CPU_STATUS5                    ((0x00a5  << 2) + 0xfe00e000)
-#define CPUCTRL_SYS_CPU_STATUS6                    ((0x00a6  << 2) + 0xfe00e000)
-#define CPUCTRL_SYS_CPU_STATUS7                    ((0x00a7  << 2) + 0xfe00e000)
+#define CPUCTRL_SYS_CPU_CFG14                      ((0x00a0  << 2) + 0xfe00e000)
+#define CPUCTRL_SYS_CPU_CFG15                      ((0x00a1  << 2) + 0xfe00e000)
+#define CPUCTRL_SYS_CPU_STATUS0                    ((0x00a2  << 2) + 0xfe00e000)
+#define CPUCTRL_SYS_CPU_STATUS1                    ((0x00a3  << 2) + 0xfe00e000)
+#define CPUCTRL_SYS_CPU_STATUS2                    ((0x00a4  << 2) + 0xfe00e000)
+#define CPUCTRL_SYS_CPU_STATUS3                    ((0x00a5  << 2) + 0xfe00e000)
+#define CPUCTRL_SYS_CPU_STATUS4                    ((0x00a6  << 2) + 0xfe00e000)
+#define CPUCTRL_SYS_CPU_STATUS5                    ((0x00a7  << 2) + 0xfe00e000)
+#define CPUCTRL_SYS_CPU_STATUS6                    ((0x00a8  << 2) + 0xfe00e000)
+#define CPUCTRL_SYS_CPU_STATUS7                    ((0x00a9  << 2) + 0xfe00e000)
+#define CPUCTRL_SYS_CPU_STATUS8                    ((0x00aa  << 2) + 0xfe00e000)
+#define CPUCTRL_SYS_CPU_STATUS9                    ((0x00ab  << 2) + 0xfe00e000)
+#define CPUCTRL_SYS_CPU_STATUS10                   ((0x00ac  << 2) + 0xfe00e000)
+#define CPUCTRL_SYS_CPU_STATUS11                   ((0x00ad  << 2) + 0xfe00e000)
+#define CPUCTRL_SYS_GIC_CFG0                       ((0x00ae  << 2) + 0xfe00e000)
 //`define SYS_CPU_MISC                        8'ha8
 //========================================================================
 //  SAR_ADC
@@ -1897,7 +1942,7 @@
 #define ANACTRL_HDMIPLL_CTRL1                      ((0x0071  << 2) + 0xfe008000)
 #define ANACTRL_HDMIPLL_CTRL2                      ((0x0072  << 2) + 0xfe008000)
 #define ANACTRL_HDMIPLL_CTRL3                      ((0x0073  << 2) + 0xfe008000)
-#define ANACTRL_HDMIPLL_CTRL4                      ((0x0074  << 2) + 0xfe008000)
+//`define ANACTRL_HDMIPLL_CTRL4    8'h74
 //`define ANACTRL_HDMIPLL_CTRL5    8'h75
 //`define ANACTRL_HDMIPLL_CTRL6    8'h76
 #define ANACTRL_HDMIPLL_STS                        ((0x0077  << 2) + 0xfe008000)
@@ -1920,6 +1965,8 @@
 #define ANACTRL_CSIPLL_CTRL0                       ((0x0098  << 2) + 0xfe008000)
 #define ANACTRL_CSIPLL_CTRL1                       ((0x0099  << 2) + 0xfe008000)
 #define ANACTRL_CSIPLL_CTRL2                       ((0x009a  << 2) + 0xfe008000)
+#define ANACTRL_CSIPLL_CTRL3                       ((0x009b  << 2) + 0xfe008000)
+#define ANACTRL_CSIPLL_STS                         ((0x009c  << 2) + 0xfe008000)
 //`define ANACTRL_MIPIDSI_CTRL0    8'hA0
 //`define ANACTRL_MIPIDSI_CTRL1    8'hA1
 //`define ANACTRL_MIPIDSI_CTRL2    8'hA2
@@ -2204,24 +2251,27 @@
 //  I2C Master F
 //========================================================================
 // -----------------------------------------------
-// REG_BASE:  REGISTER_BASE_ADDR = 0xfe070000
+// REG_BASE:  REGISTER_BASE_ADDR = 0xfe067400
 // -----------------------------------------------
-#define I2C_M_F_CONTROL_REG                        ((0x0000  << 2) + 0xfe070000)
-#define I2C_M_F_SLAVE_ADDR                         ((0x0001  << 2) + 0xfe070000)
-#define I2C_M_F_TOKEN_LIST0                        ((0x0002  << 2) + 0xfe070000)
-#define I2C_M_F_TOKEN_LIST1                        ((0x0003  << 2) + 0xfe070000)
-#define I2C_M_F_WDATA_REG0                         ((0x0004  << 2) + 0xfe070000)
-#define I2C_M_F_WDATA_REG1                         ((0x0005  << 2) + 0xfe070000)
-#define I2C_M_F_RDATA_REG0                         ((0x0006  << 2) + 0xfe070000)
-#define I2C_M_F_RDATA_REG1                         ((0x0007  << 2) + 0xfe070000)
-#define I2C_M_F_TIMEOUT_TH                         ((0x0008  << 2) + 0xfe070000)
-#define I2C_M_F_CNTL_DELY1                         ((0x0009  << 2) + 0xfe070000)
-#define I2C_M_F_CNTL_DELY2                         ((0x000a  << 2) + 0xfe070000)
-#define I2C_M_F_LOW_DELY                           ((0x000b  << 2) + 0xfe070000)
-#define I2C_M_F_HIGH_DELY                          ((0x000c  << 2) + 0xfe070000)
-#define I2C_M_F_FIFO_CTRL_REG                      ((0x000d  << 2) + 0xfe070000)
-#define I2C_M_F_STATE_REG                          ((0x000e  << 2) + 0xfe070000)
-#define I2C_M_F_TEE_ONLY                           ((0x0012  << 2) + 0xfe070000)
+#define I2C_M_F_CONTROL_REG                        ((0x0000  << 2) + 0xfe067400)
+#define I2C_M_F_SLAVE_ADDR                         ((0x0001  << 2) + 0xfe067400)
+#define I2C_M_F_TOKEN_LIST0                        ((0x0002  << 2) + 0xfe067400)
+#define I2C_M_F_TOKEN_LIST1                        ((0x0003  << 2) + 0xfe067400)
+#define I2C_M_F_WDATA_REG0                         ((0x0004  << 2) + 0xfe067400)
+#define I2C_M_F_WDATA_REG1                         ((0x0005  << 2) + 0xfe067400)
+#define I2C_M_F_RDATA_REG0                         ((0x0006  << 2) + 0xfe067400)
+#define I2C_M_F_RDATA_REG1                         ((0x0007  << 2) + 0xfe067400)
+#define I2C_M_F_TIMEOUT_TH                         ((0x0008  << 2) + 0xfe067400)
+#define I2C_M_F_CNTL_DELY1                         ((0x0009  << 2) + 0xfe067400)
+#define I2C_M_F_CNTL_DELY2                         ((0x000a  << 2) + 0xfe067400)
+#define I2C_M_F_LOW_DELY                           ((0x000b  << 2) + 0xfe067400)
+#define I2C_M_F_HIGH_DELY                          ((0x000c  << 2) + 0xfe067400)
+#define I2C_M_F_FIFO_CTRL0                         ((0x000d  << 2) + 0xfe067400)
+#define I2C_M_F_FIFO_CTRL1                         ((0x000e  << 2) + 0xfe067400)
+#define I2C_M_F_FIFO_PENDING                       ((0x000f  << 2) + 0xfe067400)
+#define I2C_M_F_FIFO_PENDING_MASK                  ((0x0010  << 2) + 0xfe067400)
+#define I2C_M_F_FIFO_ST0                           ((0x0011  << 2) + 0xfe067400)
+#define I2C_M_F_TEE_ONLY                           ((0x0012  << 2) + 0xfe067400)
 //========================================================================
 //  APB0_UART_A - Registers
 //========================================================================
@@ -5325,1334 +5375,1654 @@
 // REG_BASE:  REGISTER_BASE_ADDR = 0xfe444000
 // -----------------------------------------------
 #define RCH_READY_CHANNEL_0                        ((0x0000  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_1                        ((0x0008  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_2                        ((0x0010  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_3                        ((0x0018  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_4                        ((0x0020  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_5                        ((0x0028  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_6                        ((0x0030  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_7                        ((0x0038  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_8                        ((0x0040  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_9                        ((0x0048  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_10                       ((0x0050  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_11                       ((0x0058  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_12                       ((0x0060  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_13                       ((0x0068  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_14                       ((0x0070  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_15                       ((0x0078  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_16                       ((0x0080  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_17                       ((0x0088  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_18                       ((0x0090  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_19                       ((0x0098  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_20                       ((0x00a0  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_21                       ((0x00a8  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_22                       ((0x00b0  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_23                       ((0x00b8  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_24                       ((0x00c0  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_25                       ((0x00c8  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_26                       ((0x00d0  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_27                       ((0x00d8  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_28                       ((0x00e0  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_29                       ((0x00e8  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_30                       ((0x00f0  << 2) + 0xfe444000)
-#define RCH_READY_CHANNEL_31                       ((0x00f8  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_1                        ((0x0010  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_2                        ((0x0020  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_3                        ((0x0030  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_4                        ((0x0040  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_5                        ((0x0050  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_6                        ((0x0060  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_7                        ((0x0070  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_8                        ((0x0080  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_9                        ((0x0090  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_10                       ((0x00a0  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_11                       ((0x00b0  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_12                       ((0x00c0  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_13                       ((0x00d0  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_14                       ((0x00e0  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_15                       ((0x00f0  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_16                       ((0x0100  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_17                       ((0x0110  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_18                       ((0x0120  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_19                       ((0x0130  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_20                       ((0x0140  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_21                       ((0x0150  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_22                       ((0x0160  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_23                       ((0x0170  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_24                       ((0x0180  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_25                       ((0x0190  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_26                       ((0x01a0  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_27                       ((0x01b0  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_28                       ((0x01c0  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_29                       ((0x01d0  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_30                       ((0x01e0  << 2) + 0xfe444000)
+#define RCH_READY_CHANNEL_31                       ((0x01f0  << 2) + 0xfe444000)
 #define RCH_STATUS_CHANNEL_0                       ((0x0001  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_1                       ((0x0009  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_2                       ((0x0011  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_3                       ((0x0019  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_4                       ((0x0021  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_5                       ((0x0029  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_6                       ((0x0031  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_7                       ((0x0039  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_8                       ((0x0041  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_9                       ((0x0049  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_10                      ((0x0051  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_11                      ((0x0059  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_12                      ((0x0061  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_13                      ((0x0069  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_14                      ((0x0071  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_15                      ((0x0079  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_16                      ((0x0081  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_17                      ((0x0089  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_18                      ((0x0091  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_19                      ((0x0099  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_20                      ((0x00a1  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_21                      ((0x00a9  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_22                      ((0x00b1  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_23                      ((0x00b9  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_24                      ((0x00c1  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_25                      ((0x00c9  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_26                      ((0x00d1  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_27                      ((0x00d9  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_28                      ((0x00e1  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_29                      ((0x00e9  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_30                      ((0x00f1  << 2) + 0xfe444000)
-#define RCH_STATUS_CHANNEL_31                      ((0x00f9  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_1                       ((0x0011  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_2                       ((0x0021  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_3                       ((0x0031  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_4                       ((0x0041  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_5                       ((0x0051  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_6                       ((0x0061  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_7                       ((0x0071  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_8                       ((0x0081  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_9                       ((0x0091  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_10                      ((0x00a1  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_11                      ((0x00b1  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_12                      ((0x00c1  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_13                      ((0x00d1  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_14                      ((0x00e1  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_15                      ((0x00f1  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_16                      ((0x0101  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_17                      ((0x0111  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_18                      ((0x0121  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_19                      ((0x0131  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_20                      ((0x0141  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_21                      ((0x0151  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_22                      ((0x0161  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_23                      ((0x0171  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_24                      ((0x0181  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_25                      ((0x0191  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_26                      ((0x01a1  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_27                      ((0x01b1  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_28                      ((0x01c1  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_29                      ((0x01d1  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_30                      ((0x01e1  << 2) + 0xfe444000)
+#define RCH_STATUS_CHANNEL_31                      ((0x01f1  << 2) + 0xfe444000)
 #define RCH_CFG_CHANNEL_0                          ((0x0002  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_1                          ((0x000a  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_2                          ((0x0012  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_3                          ((0x001a  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_4                          ((0x0022  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_5                          ((0x002a  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_6                          ((0x0032  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_7                          ((0x003a  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_8                          ((0x0042  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_9                          ((0x004a  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_10                         ((0x0052  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_11                         ((0x005a  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_12                         ((0x0062  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_13                         ((0x006a  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_14                         ((0x0072  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_15                         ((0x007a  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_16                         ((0x0082  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_17                         ((0x008a  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_18                         ((0x0092  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_19                         ((0x009a  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_20                         ((0x00a2  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_21                         ((0x00aa  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_22                         ((0x00b2  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_23                         ((0x00ba  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_24                         ((0x00c2  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_25                         ((0x00ca  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_26                         ((0x00d2  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_27                         ((0x00da  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_28                         ((0x00e2  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_29                         ((0x00ea  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_30                         ((0x00f2  << 2) + 0xfe444000)
-#define RCH_CFG_CHANNEL_31                         ((0x00fa  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_1                          ((0x0012  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_2                          ((0x0022  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_3                          ((0x0032  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_4                          ((0x0042  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_5                          ((0x0052  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_6                          ((0x0062  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_7                          ((0x0072  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_8                          ((0x0082  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_9                          ((0x0092  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_10                         ((0x00a2  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_11                         ((0x00b2  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_12                         ((0x00c2  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_13                         ((0x00d2  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_14                         ((0x00e2  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_15                         ((0x00f2  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_16                         ((0x0102  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_17                         ((0x0112  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_18                         ((0x0122  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_19                         ((0x0132  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_20                         ((0x0142  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_21                         ((0x0152  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_22                         ((0x0162  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_23                         ((0x0172  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_24                         ((0x0182  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_25                         ((0x0192  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_26                         ((0x01a2  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_27                         ((0x01b2  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_28                         ((0x01c2  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_29                         ((0x01d2  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_30                         ((0x01e2  << 2) + 0xfe444000)
+#define RCH_CFG_CHANNEL_31                         ((0x01f2  << 2) + 0xfe444000)
 #define RCH_ADDR_CHANNEL_0                         ((0x0003  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_1                         ((0x000b  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_2                         ((0x0013  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_3                         ((0x001b  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_4                         ((0x0023  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_5                         ((0x002b  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_6                         ((0x0033  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_7                         ((0x003b  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_8                         ((0x0043  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_9                         ((0x004b  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_10                        ((0x0053  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_11                        ((0x005b  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_12                        ((0x0063  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_13                        ((0x006b  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_14                        ((0x0073  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_15                        ((0x007b  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_16                        ((0x0083  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_17                        ((0x008b  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_18                        ((0x0093  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_19                        ((0x009b  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_20                        ((0x00a3  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_21                        ((0x00ab  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_22                        ((0x00b3  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_23                        ((0x00bb  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_24                        ((0x00c3  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_25                        ((0x00cb  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_26                        ((0x00d3  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_27                        ((0x00db  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_28                        ((0x00e3  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_29                        ((0x00eb  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_30                        ((0x00f3  << 2) + 0xfe444000)
-#define RCH_ADDR_CHANNEL_31                        ((0x00fb  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_1                         ((0x0013  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_2                         ((0x0023  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_3                         ((0x0033  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_4                         ((0x0043  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_5                         ((0x0053  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_6                         ((0x0063  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_7                         ((0x0073  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_8                         ((0x0083  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_9                         ((0x0093  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_10                        ((0x00a3  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_11                        ((0x00b3  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_12                        ((0x00c3  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_13                        ((0x00d3  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_14                        ((0x00e3  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_15                        ((0x00f3  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_16                        ((0x0103  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_17                        ((0x0113  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_18                        ((0x0123  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_19                        ((0x0133  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_20                        ((0x0143  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_21                        ((0x0153  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_22                        ((0x0163  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_23                        ((0x0173  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_24                        ((0x0183  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_25                        ((0x0193  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_26                        ((0x01a3  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_27                        ((0x01b3  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_28                        ((0x01c3  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_29                        ((0x01d3  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_30                        ((0x01e3  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_31                        ((0x01f3  << 2) + 0xfe444000)
 #define RCH_LEN_CHANNEL_0                          ((0x0004  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_1                          ((0x000c  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_2                          ((0x0014  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_3                          ((0x001c  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_4                          ((0x0024  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_5                          ((0x002c  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_6                          ((0x0034  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_7                          ((0x003c  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_8                          ((0x0044  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_9                          ((0x004c  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_10                         ((0x0054  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_11                         ((0x005c  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_12                         ((0x0064  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_13                         ((0x006c  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_14                         ((0x0074  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_15                         ((0x007c  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_16                         ((0x0084  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_17                         ((0x008c  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_18                         ((0x0094  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_19                         ((0x009c  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_20                         ((0x00a4  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_21                         ((0x00ac  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_22                         ((0x00b4  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_23                         ((0x00bc  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_24                         ((0x00c4  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_25                         ((0x00cc  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_26                         ((0x00d4  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_27                         ((0x00dc  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_28                         ((0x00e4  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_29                         ((0x00ec  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_30                         ((0x00f4  << 2) + 0xfe444000)
-#define RCH_LEN_CHANNEL_31                         ((0x00fc  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_1                          ((0x0014  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_2                          ((0x0024  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_3                          ((0x0034  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_4                          ((0x0044  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_5                          ((0x0054  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_6                          ((0x0064  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_7                          ((0x0074  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_8                          ((0x0084  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_9                          ((0x0094  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_10                         ((0x00a4  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_11                         ((0x00b4  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_12                         ((0x00c4  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_13                         ((0x00d4  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_14                         ((0x00e4  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_15                         ((0x00f4  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_16                         ((0x0104  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_17                         ((0x0114  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_18                         ((0x0124  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_19                         ((0x0134  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_20                         ((0x0144  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_21                         ((0x0154  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_22                         ((0x0164  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_23                         ((0x0174  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_24                         ((0x0184  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_25                         ((0x0194  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_26                         ((0x01a4  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_27                         ((0x01b4  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_28                         ((0x01c4  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_29                         ((0x01d4  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_30                         ((0x01e4  << 2) + 0xfe444000)
+#define RCH_LEN_CHANNEL_31                         ((0x01f4  << 2) + 0xfe444000)
 #define RCH_RD_LEN_CHANNEL_0                       ((0x0005  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_1                       ((0x000d  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_2                       ((0x0015  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_3                       ((0x001d  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_4                       ((0x0025  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_5                       ((0x002d  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_6                       ((0x0035  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_7                       ((0x003d  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_8                       ((0x0045  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_9                       ((0x004d  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_10                      ((0x0055  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_11                      ((0x005d  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_12                      ((0x0065  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_13                      ((0x006d  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_14                      ((0x0075  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_15                      ((0x007d  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_16                      ((0x0085  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_17                      ((0x008d  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_18                      ((0x0095  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_19                      ((0x009d  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_20                      ((0x00a5  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_21                      ((0x00ad  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_22                      ((0x00b5  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_23                      ((0x00bd  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_24                      ((0x00c5  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_25                      ((0x00cd  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_26                      ((0x00d5  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_27                      ((0x00dd  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_28                      ((0x00e5  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_29                      ((0x00ed  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_30                      ((0x00f5  << 2) + 0xfe444000)
-#define RCH_RD_LEN_CHANNEL_31                      ((0x00fd  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_1                       ((0x0015  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_2                       ((0x0025  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_3                       ((0x0035  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_4                       ((0x0045  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_5                       ((0x0055  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_6                       ((0x0065  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_7                       ((0x0075  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_8                       ((0x0085  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_9                       ((0x0095  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_10                      ((0x00a5  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_11                      ((0x00b5  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_12                      ((0x00c5  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_13                      ((0x00d5  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_14                      ((0x00e5  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_15                      ((0x00f5  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_16                      ((0x0105  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_17                      ((0x0115  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_18                      ((0x0125  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_19                      ((0x0135  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_20                      ((0x0145  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_21                      ((0x0155  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_22                      ((0x0165  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_23                      ((0x0175  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_24                      ((0x0185  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_25                      ((0x0195  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_26                      ((0x01a5  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_27                      ((0x01b5  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_28                      ((0x01c5  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_29                      ((0x01d5  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_30                      ((0x01e5  << 2) + 0xfe444000)
+#define RCH_RD_LEN_CHANNEL_31                      ((0x01f5  << 2) + 0xfe444000)
 #define RCH_PTR_CHANNEL_0                          ((0x0006  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_1                          ((0x000e  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_2                          ((0x0016  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_3                          ((0x001e  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_4                          ((0x0026  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_5                          ((0x002e  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_6                          ((0x0036  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_7                          ((0x003e  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_8                          ((0x0046  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_9                          ((0x004e  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_10                         ((0x0056  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_11                         ((0x005e  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_12                         ((0x0066  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_13                         ((0x006e  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_14                         ((0x0076  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_15                         ((0x007e  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_16                         ((0x0086  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_17                         ((0x008e  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_18                         ((0x0096  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_19                         ((0x009e  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_20                         ((0x00a6  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_21                         ((0x00ae  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_22                         ((0x00b6  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_23                         ((0x00be  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_24                         ((0x00c6  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_25                         ((0x00ce  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_26                         ((0x00d6  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_27                         ((0x00de  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_28                         ((0x00e6  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_29                         ((0x00ee  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_30                         ((0x00f6  << 2) + 0xfe444000)
-#define RCH_PTR_CHANNEL_31                         ((0x00fe  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_1                          ((0x0016  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_2                          ((0x0026  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_3                          ((0x0036  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_4                          ((0x0046  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_5                          ((0x0056  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_6                          ((0x0066  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_7                          ((0x0076  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_8                          ((0x0086  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_9                          ((0x0096  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_10                         ((0x00a6  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_11                         ((0x00b6  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_12                         ((0x00c6  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_13                         ((0x00d6  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_14                         ((0x00e6  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_15                         ((0x00f6  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_16                         ((0x0106  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_17                         ((0x0116  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_18                         ((0x0126  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_19                         ((0x0136  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_20                         ((0x0146  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_21                         ((0x0156  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_22                         ((0x0166  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_23                         ((0x0176  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_24                         ((0x0186  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_25                         ((0x0196  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_26                         ((0x01a6  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_27                         ((0x01b6  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_28                         ((0x01c6  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_29                         ((0x01d6  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_30                         ((0x01e6  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_31                         ((0x01f6  << 2) + 0xfe444000)
 #define RCH_PKT_SYNC_STATUS_CHANNEL_0              ((0x0007  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_1              ((0x000f  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_2              ((0x0017  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_3              ((0x001f  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_4              ((0x0027  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_5              ((0x002f  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_6              ((0x0037  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_7              ((0x003f  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_8              ((0x0047  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_9              ((0x004f  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_10             ((0x0057  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_11             ((0x005f  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_12             ((0x0067  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_13             ((0x006f  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_14             ((0x0077  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_15             ((0x007f  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_16             ((0x0087  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_17             ((0x008f  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_18             ((0x0097  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_19             ((0x009f  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_20             ((0x00a7  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_21             ((0x00af  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_22             ((0x00b7  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_23             ((0x00bf  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_24             ((0x00c7  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_25             ((0x00cf  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_26             ((0x00d7  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_27             ((0x00df  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_28             ((0x00e7  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_29             ((0x00ef  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_30             ((0x00f7  << 2) + 0xfe444000)
-#define RCH_PKT_SYNC_STATUS_CHANNEL_31             ((0x00ff  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_0                        ((0x0400  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_1                        ((0x0408  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_2                        ((0x0410  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_3                        ((0x0418  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_4                        ((0x0420  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_5                        ((0x0428  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_6                        ((0x0430  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_7                        ((0x0438  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_8                        ((0x0440  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_9                        ((0x0448  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_10                       ((0x0450  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_11                       ((0x0458  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_12                       ((0x0460  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_13                       ((0x0468  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_14                       ((0x0470  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_15                       ((0x0478  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_16                       ((0x0480  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_17                       ((0x0488  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_18                       ((0x0490  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_19                       ((0x0498  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_20                       ((0x04a0  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_21                       ((0x04a8  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_22                       ((0x04b0  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_23                       ((0x04b8  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_24                       ((0x04c0  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_25                       ((0x04c8  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_26                       ((0x04d0  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_27                       ((0x04d8  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_28                       ((0x04e0  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_29                       ((0x04e8  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_30                       ((0x04f0  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_31                       ((0x04f8  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_32                       ((0x0500  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_33                       ((0x0508  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_34                       ((0x0510  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_35                       ((0x0518  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_36                       ((0x0520  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_37                       ((0x0528  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_38                       ((0x0530  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_39                       ((0x0538  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_40                       ((0x0540  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_41                       ((0x0548  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_42                       ((0x0550  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_43                       ((0x0558  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_44                       ((0x0560  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_45                       ((0x0568  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_46                       ((0x0570  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_47                       ((0x0578  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_48                       ((0x0580  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_49                       ((0x0588  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_50                       ((0x0590  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_51                       ((0x0598  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_52                       ((0x05a0  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_53                       ((0x05a8  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_54                       ((0x05b0  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_55                       ((0x05b8  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_56                       ((0x05c0  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_57                       ((0x05c8  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_58                       ((0x05d0  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_59                       ((0x05d8  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_60                       ((0x05e0  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_61                       ((0x05e8  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_62                       ((0x05f0  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_63                       ((0x05f8  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_64                       ((0x0600  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_65                       ((0x0608  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_66                       ((0x0610  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_67                       ((0x0618  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_68                       ((0x0620  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_69                       ((0x0628  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_70                       ((0x0630  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_71                       ((0x0638  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_72                       ((0x0640  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_73                       ((0x0648  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_74                       ((0x0650  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_75                       ((0x0658  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_76                       ((0x0660  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_77                       ((0x0668  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_78                       ((0x0670  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_79                       ((0x0678  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_80                       ((0x0680  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_81                       ((0x0688  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_82                       ((0x0690  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_83                       ((0x0698  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_84                       ((0x06a0  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_85                       ((0x06a8  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_86                       ((0x06b0  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_87                       ((0x06b8  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_88                       ((0x06c0  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_89                       ((0x06c8  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_90                       ((0x06d0  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_91                       ((0x06d8  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_92                       ((0x06e0  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_93                       ((0x06e8  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_94                       ((0x06f0  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_95                       ((0x06f8  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_96                       ((0x0700  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_97                       ((0x0708  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_98                       ((0x0710  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_99                       ((0x0718  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_100                      ((0x0720  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_101                      ((0x0728  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_102                      ((0x0730  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_103                      ((0x0738  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_104                      ((0x0740  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_105                      ((0x0748  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_106                      ((0x0750  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_107                      ((0x0758  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_108                      ((0x0760  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_109                      ((0x0768  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_110                      ((0x0770  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_111                      ((0x0778  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_112                      ((0x0780  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_113                      ((0x0788  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_114                      ((0x0790  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_115                      ((0x0798  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_116                      ((0x07a0  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_117                      ((0x07a8  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_118                      ((0x07b0  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_119                      ((0x07b8  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_120                      ((0x07c0  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_121                      ((0x07c8  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_122                      ((0x07d0  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_123                      ((0x07d8  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_124                      ((0x07e0  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_125                      ((0x07e8  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_126                      ((0x07f0  << 2) + 0xfe444000)
-#define WCH_READY_CHANNEL_127                      ((0x07f8  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_0                        ((0x0401  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_1                        ((0x0409  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_2                        ((0x0411  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_3                        ((0x0419  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_4                        ((0x0421  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_5                        ((0x0429  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_6                        ((0x0431  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_7                        ((0x0439  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_8                        ((0x0441  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_9                        ((0x0449  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_10                       ((0x0451  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_11                       ((0x0459  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_12                       ((0x0461  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_13                       ((0x0469  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_14                       ((0x0471  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_15                       ((0x0479  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_16                       ((0x0481  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_17                       ((0x0489  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_18                       ((0x0491  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_19                       ((0x0499  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_20                       ((0x04a1  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_21                       ((0x04a9  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_22                       ((0x04b1  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_23                       ((0x04b9  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_24                       ((0x04c1  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_25                       ((0x04c9  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_26                       ((0x04d1  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_27                       ((0x04d9  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_28                       ((0x04e1  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_29                       ((0x04e9  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_30                       ((0x04f1  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_31                       ((0x04f9  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_32                       ((0x0501  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_33                       ((0x0509  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_34                       ((0x0511  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_35                       ((0x0519  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_36                       ((0x0521  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_37                       ((0x0529  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_38                       ((0x0531  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_39                       ((0x0539  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_40                       ((0x0541  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_41                       ((0x0549  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_42                       ((0x0551  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_43                       ((0x0559  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_44                       ((0x0561  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_45                       ((0x0569  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_46                       ((0x0571  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_47                       ((0x0579  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_48                       ((0x0581  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_49                       ((0x0589  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_50                       ((0x0591  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_51                       ((0x0599  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_52                       ((0x05a1  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_53                       ((0x05a9  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_54                       ((0x05b1  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_55                       ((0x05b9  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_56                       ((0x05c1  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_57                       ((0x05c9  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_58                       ((0x05d1  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_59                       ((0x05d9  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_60                       ((0x05e1  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_61                       ((0x05e9  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_62                       ((0x05f1  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_63                       ((0x05f9  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_64                       ((0x0601  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_65                       ((0x0609  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_66                       ((0x0611  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_67                       ((0x0619  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_68                       ((0x0621  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_69                       ((0x0629  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_70                       ((0x0631  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_71                       ((0x0639  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_72                       ((0x0641  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_73                       ((0x0649  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_74                       ((0x0651  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_75                       ((0x0659  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_76                       ((0x0661  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_77                       ((0x0669  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_78                       ((0x0671  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_79                       ((0x0679  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_80                       ((0x0681  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_81                       ((0x0689  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_82                       ((0x0691  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_83                       ((0x0699  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_84                       ((0x06a1  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_85                       ((0x06a9  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_86                       ((0x06b1  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_87                       ((0x06b9  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_88                       ((0x06c1  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_89                       ((0x06c9  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_90                       ((0x06d1  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_91                       ((0x06d9  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_92                       ((0x06e1  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_93                       ((0x06e9  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_94                       ((0x06f1  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_95                       ((0x06f9  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_96                       ((0x0701  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_97                       ((0x0709  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_98                       ((0x0711  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_99                       ((0x0719  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_100                      ((0x0721  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_101                      ((0x0729  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_102                      ((0x0731  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_103                      ((0x0739  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_104                      ((0x0741  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_105                      ((0x0749  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_106                      ((0x0751  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_107                      ((0x0759  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_108                      ((0x0761  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_109                      ((0x0769  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_110                      ((0x0771  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_111                      ((0x0779  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_112                      ((0x0781  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_113                      ((0x0789  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_114                      ((0x0791  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_115                      ((0x0799  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_116                      ((0x07a1  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_117                      ((0x07a9  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_118                      ((0x07b1  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_119                      ((0x07b9  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_120                      ((0x07c1  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_121                      ((0x07c9  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_122                      ((0x07d1  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_123                      ((0x07d9  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_124                      ((0x07e1  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_125                      ((0x07e9  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_126                      ((0x07f1  << 2) + 0xfe444000)
-#define WCH_DEBUG_CHANNEL_127                      ((0x07f9  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_0                          ((0x0402  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_1                          ((0x040a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_2                          ((0x0412  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_3                          ((0x041a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_4                          ((0x0422  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_5                          ((0x042a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_6                          ((0x0432  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_7                          ((0x043a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_8                          ((0x0442  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_9                          ((0x044a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_10                         ((0x0452  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_11                         ((0x045a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_12                         ((0x0462  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_13                         ((0x046a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_14                         ((0x0472  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_15                         ((0x047a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_16                         ((0x0482  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_17                         ((0x048a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_18                         ((0x0492  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_19                         ((0x049a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_20                         ((0x04a2  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_21                         ((0x04aa  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_22                         ((0x04b2  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_23                         ((0x04ba  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_24                         ((0x04c2  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_25                         ((0x04ca  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_26                         ((0x04d2  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_27                         ((0x04da  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_28                         ((0x04e2  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_29                         ((0x04ea  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_30                         ((0x04f2  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_31                         ((0x04fa  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_32                         ((0x0502  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_33                         ((0x050a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_34                         ((0x0512  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_35                         ((0x051a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_36                         ((0x0522  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_37                         ((0x052a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_38                         ((0x0532  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_39                         ((0x053a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_40                         ((0x0542  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_41                         ((0x054a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_42                         ((0x0552  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_43                         ((0x055a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_44                         ((0x0562  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_45                         ((0x056a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_46                         ((0x0572  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_47                         ((0x057a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_48                         ((0x0582  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_49                         ((0x058a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_50                         ((0x0592  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_51                         ((0x059a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_52                         ((0x05a2  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_53                         ((0x05aa  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_54                         ((0x05b2  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_55                         ((0x05ba  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_56                         ((0x05c2  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_57                         ((0x05ca  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_58                         ((0x05d2  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_59                         ((0x05da  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_60                         ((0x05e2  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_61                         ((0x05ea  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_62                         ((0x05f2  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_63                         ((0x05fa  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_64                         ((0x0602  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_65                         ((0x060a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_66                         ((0x0612  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_67                         ((0x061a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_68                         ((0x0622  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_69                         ((0x062a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_70                         ((0x0632  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_71                         ((0x063a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_72                         ((0x0642  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_73                         ((0x064a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_74                         ((0x0652  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_75                         ((0x065a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_76                         ((0x0662  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_77                         ((0x066a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_78                         ((0x0672  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_79                         ((0x067a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_80                         ((0x0682  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_81                         ((0x068a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_82                         ((0x0692  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_83                         ((0x069a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_84                         ((0x06a2  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_85                         ((0x06aa  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_86                         ((0x06b2  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_87                         ((0x06ba  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_88                         ((0x06c2  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_89                         ((0x06ca  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_90                         ((0x06d2  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_91                         ((0x06da  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_92                         ((0x06e2  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_93                         ((0x06ea  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_94                         ((0x06f2  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_95                         ((0x06fa  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_96                         ((0x0702  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_97                         ((0x070a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_98                         ((0x0712  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_99                         ((0x071a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_100                        ((0x0722  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_101                        ((0x072a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_102                        ((0x0732  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_103                        ((0x073a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_104                        ((0x0742  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_105                        ((0x074a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_106                        ((0x0752  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_107                        ((0x075a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_108                        ((0x0762  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_109                        ((0x076a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_110                        ((0x0772  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_111                        ((0x077a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_112                        ((0x0782  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_113                        ((0x078a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_114                        ((0x0792  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_115                        ((0x079a  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_116                        ((0x07a2  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_117                        ((0x07aa  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_118                        ((0x07b2  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_119                        ((0x07ba  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_120                        ((0x07c2  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_121                        ((0x07ca  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_122                        ((0x07d2  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_123                        ((0x07da  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_124                        ((0x07e2  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_125                        ((0x07ea  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_126                        ((0x07f2  << 2) + 0xfe444000)
-#define WCH_CFG_CHANNEL_127                        ((0x07fa  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_0                         ((0x0403  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_1                         ((0x040b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_2                         ((0x0413  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_3                         ((0x041b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_4                         ((0x0423  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_5                         ((0x042b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_6                         ((0x0433  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_7                         ((0x043b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_8                         ((0x0443  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_9                         ((0x044b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_10                        ((0x0453  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_11                        ((0x045b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_12                        ((0x0463  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_13                        ((0x046b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_14                        ((0x0473  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_15                        ((0x047b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_16                        ((0x0483  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_17                        ((0x048b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_18                        ((0x0493  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_19                        ((0x049b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_20                        ((0x04a3  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_21                        ((0x04ab  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_22                        ((0x04b3  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_23                        ((0x04bb  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_24                        ((0x04c3  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_25                        ((0x04cb  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_26                        ((0x04d3  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_27                        ((0x04db  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_28                        ((0x04e3  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_29                        ((0x04eb  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_30                        ((0x04f3  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_31                        ((0x04fb  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_32                        ((0x0503  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_33                        ((0x050b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_34                        ((0x0513  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_35                        ((0x051b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_36                        ((0x0523  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_37                        ((0x052b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_38                        ((0x0533  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_39                        ((0x053b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_40                        ((0x0543  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_41                        ((0x054b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_42                        ((0x0553  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_43                        ((0x055b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_44                        ((0x0563  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_45                        ((0x056b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_46                        ((0x0573  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_47                        ((0x057b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_48                        ((0x0583  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_49                        ((0x058b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_50                        ((0x0593  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_51                        ((0x059b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_52                        ((0x05a3  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_53                        ((0x05ab  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_54                        ((0x05b3  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_55                        ((0x05bb  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_56                        ((0x05c3  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_57                        ((0x05cb  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_58                        ((0x05d3  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_59                        ((0x05db  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_60                        ((0x05e3  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_61                        ((0x05eb  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_62                        ((0x05f3  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_63                        ((0x05fb  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_64                        ((0x0603  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_65                        ((0x060b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_66                        ((0x0613  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_67                        ((0x061b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_68                        ((0x0623  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_69                        ((0x062b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_70                        ((0x0633  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_71                        ((0x063b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_72                        ((0x0643  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_73                        ((0x064b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_74                        ((0x0653  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_75                        ((0x065b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_76                        ((0x0663  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_77                        ((0x066b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_78                        ((0x0673  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_79                        ((0x067b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_80                        ((0x0683  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_81                        ((0x068b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_82                        ((0x0693  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_83                        ((0x069b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_84                        ((0x06a3  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_85                        ((0x06ab  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_86                        ((0x06b3  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_87                        ((0x06bb  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_88                        ((0x06c3  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_89                        ((0x06cb  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_90                        ((0x06d3  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_91                        ((0x06db  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_92                        ((0x06e3  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_93                        ((0x06eb  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_94                        ((0x06f3  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_95                        ((0x06fb  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_96                        ((0x0703  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_97                        ((0x070b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_98                        ((0x0713  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_99                        ((0x071b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_100                       ((0x0723  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_101                       ((0x072b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_102                       ((0x0733  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_103                       ((0x073b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_104                       ((0x0743  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_105                       ((0x074b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_106                       ((0x0753  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_107                       ((0x075b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_108                       ((0x0763  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_109                       ((0x076b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_110                       ((0x0773  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_111                       ((0x077b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_112                       ((0x0783  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_113                       ((0x078b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_114                       ((0x0793  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_115                       ((0x079b  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_116                       ((0x07a3  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_117                       ((0x07ab  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_118                       ((0x07b3  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_119                       ((0x07bb  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_120                       ((0x07c3  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_121                       ((0x07cb  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_122                       ((0x07d3  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_123                       ((0x07db  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_124                       ((0x07e3  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_125                       ((0x07eb  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_126                       ((0x07f3  << 2) + 0xfe444000)
-#define WCH_ADDR_CHANNEL_127                       ((0x07fb  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_0                          ((0x0404  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_1                          ((0x040c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_2                          ((0x0414  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_3                          ((0x041c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_4                          ((0x0424  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_5                          ((0x042c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_6                          ((0x0434  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_7                          ((0x043c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_8                          ((0x0444  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_9                          ((0x044c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_10                         ((0x0454  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_11                         ((0x045c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_12                         ((0x0464  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_13                         ((0x046c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_14                         ((0x0474  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_15                         ((0x047c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_16                         ((0x0484  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_17                         ((0x048c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_18                         ((0x0494  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_19                         ((0x049c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_20                         ((0x04a4  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_21                         ((0x04ac  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_22                         ((0x04b4  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_23                         ((0x04bc  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_24                         ((0x04c4  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_25                         ((0x04cc  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_26                         ((0x04d4  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_27                         ((0x04dc  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_28                         ((0x04e4  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_29                         ((0x04ec  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_30                         ((0x04f4  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_31                         ((0x04fc  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_32                         ((0x0504  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_33                         ((0x050c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_34                         ((0x0514  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_35                         ((0x051c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_36                         ((0x0524  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_37                         ((0x052c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_38                         ((0x0534  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_39                         ((0x053c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_40                         ((0x0544  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_41                         ((0x054c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_42                         ((0x0554  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_43                         ((0x055c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_44                         ((0x0564  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_45                         ((0x056c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_46                         ((0x0574  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_47                         ((0x057c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_48                         ((0x0584  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_49                         ((0x058c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_50                         ((0x0594  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_51                         ((0x059c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_52                         ((0x05a4  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_53                         ((0x05ac  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_54                         ((0x05b4  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_55                         ((0x05bc  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_56                         ((0x05c4  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_57                         ((0x05cc  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_58                         ((0x05d4  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_59                         ((0x05dc  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_60                         ((0x05e4  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_61                         ((0x05ec  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_62                         ((0x05f4  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_63                         ((0x05fc  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_64                         ((0x0604  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_65                         ((0x060c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_66                         ((0x0614  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_67                         ((0x061c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_68                         ((0x0624  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_69                         ((0x062c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_70                         ((0x0634  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_71                         ((0x063c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_72                         ((0x0644  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_73                         ((0x064c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_74                         ((0x0654  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_75                         ((0x065c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_76                         ((0x0664  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_77                         ((0x066c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_78                         ((0x0674  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_79                         ((0x067c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_80                         ((0x0684  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_81                         ((0x068c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_82                         ((0x0694  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_83                         ((0x069c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_84                         ((0x06a4  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_85                         ((0x06ac  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_86                         ((0x06b4  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_87                         ((0x06bc  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_88                         ((0x06c4  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_89                         ((0x06cc  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_90                         ((0x06d4  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_91                         ((0x06dc  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_92                         ((0x06e4  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_93                         ((0x06ec  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_94                         ((0x06f4  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_95                         ((0x06fc  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_96                         ((0x0704  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_97                         ((0x070c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_98                         ((0x0714  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_99                         ((0x071c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_100                        ((0x0724  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_101                        ((0x072c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_102                        ((0x0734  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_103                        ((0x073c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_104                        ((0x0744  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_105                        ((0x074c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_106                        ((0x0754  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_107                        ((0x075c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_108                        ((0x0764  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_109                        ((0x076c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_110                        ((0x0774  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_111                        ((0x077c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_112                        ((0x0784  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_113                        ((0x078c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_114                        ((0x0794  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_115                        ((0x079c  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_116                        ((0x07a4  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_117                        ((0x07ac  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_118                        ((0x07b4  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_119                        ((0x07bc  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_120                        ((0x07c4  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_121                        ((0x07cc  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_122                        ((0x07d4  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_123                        ((0x07dc  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_124                        ((0x07e4  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_125                        ((0x07ec  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_126                        ((0x07f4  << 2) + 0xfe444000)
-#define WCH_LEN_CHANNEL_127                        ((0x07fc  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_0                       ((0x0405  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_1                       ((0x040d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_2                       ((0x0415  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_3                       ((0x041d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_4                       ((0x0425  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_5                       ((0x042d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_6                       ((0x0435  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_7                       ((0x043d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_8                       ((0x0445  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_9                       ((0x044d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_10                      ((0x0455  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_11                      ((0x045d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_12                      ((0x0465  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_13                      ((0x046d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_14                      ((0x0475  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_15                      ((0x047d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_16                      ((0x0485  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_17                      ((0x048d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_18                      ((0x0495  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_19                      ((0x049d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_20                      ((0x04a5  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_21                      ((0x04ad  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_22                      ((0x04b5  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_23                      ((0x04bd  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_24                      ((0x04c5  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_25                      ((0x04cd  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_26                      ((0x04d5  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_27                      ((0x04dd  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_28                      ((0x04e5  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_29                      ((0x04ed  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_30                      ((0x04f5  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_31                      ((0x04fd  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_32                      ((0x0505  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_33                      ((0x050d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_34                      ((0x0515  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_35                      ((0x051d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_36                      ((0x0525  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_37                      ((0x052d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_38                      ((0x0535  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_39                      ((0x053d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_40                      ((0x0545  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_41                      ((0x054d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_42                      ((0x0555  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_43                      ((0x055d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_44                      ((0x0565  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_45                      ((0x056d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_46                      ((0x0575  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_47                      ((0x057d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_48                      ((0x0585  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_49                      ((0x058d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_50                      ((0x0595  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_51                      ((0x059d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_52                      ((0x05a5  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_53                      ((0x05ad  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_54                      ((0x05b5  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_55                      ((0x05bd  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_56                      ((0x05c5  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_57                      ((0x05cd  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_58                      ((0x05d5  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_59                      ((0x05dd  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_60                      ((0x05e5  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_61                      ((0x05ed  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_62                      ((0x05f5  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_63                      ((0x05fd  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_64                      ((0x0605  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_65                      ((0x060d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_66                      ((0x0615  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_67                      ((0x061d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_68                      ((0x0625  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_69                      ((0x062d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_70                      ((0x0635  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_71                      ((0x063d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_72                      ((0x0645  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_73                      ((0x064d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_74                      ((0x0655  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_75                      ((0x065d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_76                      ((0x0665  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_77                      ((0x066d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_78                      ((0x0675  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_79                      ((0x067d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_80                      ((0x0685  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_81                      ((0x068d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_82                      ((0x0695  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_83                      ((0x069d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_84                      ((0x06a5  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_85                      ((0x06ad  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_86                      ((0x06b5  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_87                      ((0x06bd  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_88                      ((0x06c5  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_89                      ((0x06cd  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_90                      ((0x06d5  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_91                      ((0x06dd  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_92                      ((0x06e5  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_93                      ((0x06ed  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_94                      ((0x06f5  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_95                      ((0x06fd  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_96                      ((0x0705  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_97                      ((0x070d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_98                      ((0x0715  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_99                      ((0x071d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_100                     ((0x0725  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_101                     ((0x072d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_102                     ((0x0735  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_103                     ((0x073d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_104                     ((0x0745  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_105                     ((0x074d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_106                     ((0x0755  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_107                     ((0x075d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_108                     ((0x0765  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_109                     ((0x076d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_110                     ((0x0775  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_111                     ((0x077d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_112                     ((0x0785  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_113                     ((0x078d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_114                     ((0x0795  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_115                     ((0x079d  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_116                     ((0x07a5  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_117                     ((0x07ad  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_118                     ((0x07b5  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_119                     ((0x07bd  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_120                     ((0x07c5  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_121                     ((0x07cd  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_122                     ((0x07d5  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_123                     ((0x07dd  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_124                     ((0x07e5  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_125                     ((0x07ed  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_126                     ((0x07f5  << 2) + 0xfe444000)
-#define WCH_WR_LEN_CHANNEL_127                     ((0x07fd  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_0                          ((0x0406  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_1                          ((0x040e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_2                          ((0x0416  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_3                          ((0x041e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_4                          ((0x0426  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_5                          ((0x042e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_6                          ((0x0436  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_7                          ((0x043e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_8                          ((0x0446  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_9                          ((0x044e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_10                         ((0x0456  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_11                         ((0x045e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_12                         ((0x0466  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_13                         ((0x046e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_14                         ((0x0476  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_15                         ((0x047e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_16                         ((0x0486  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_17                         ((0x048e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_18                         ((0x0496  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_19                         ((0x049e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_20                         ((0x04a6  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_21                         ((0x04ae  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_22                         ((0x04b6  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_23                         ((0x04be  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_24                         ((0x04c6  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_25                         ((0x04ce  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_26                         ((0x04d6  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_27                         ((0x04de  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_28                         ((0x04e6  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_29                         ((0x04ee  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_30                         ((0x04f6  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_31                         ((0x04fe  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_32                         ((0x0506  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_33                         ((0x050e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_34                         ((0x0516  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_35                         ((0x051e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_36                         ((0x0526  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_37                         ((0x052e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_38                         ((0x0536  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_39                         ((0x053e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_40                         ((0x0546  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_41                         ((0x054e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_42                         ((0x0556  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_43                         ((0x055e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_44                         ((0x0566  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_45                         ((0x056e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_46                         ((0x0576  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_47                         ((0x057e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_48                         ((0x0586  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_49                         ((0x058e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_50                         ((0x0596  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_51                         ((0x059e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_52                         ((0x05a6  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_53                         ((0x05ae  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_54                         ((0x05b6  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_55                         ((0x05be  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_56                         ((0x05c6  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_57                         ((0x05ce  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_58                         ((0x05d6  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_59                         ((0x05de  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_60                         ((0x05e6  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_61                         ((0x05ee  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_62                         ((0x05f6  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_63                         ((0x05fe  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_64                         ((0x0606  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_65                         ((0x060e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_66                         ((0x0616  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_67                         ((0x061e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_68                         ((0x0626  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_69                         ((0x062e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_70                         ((0x0636  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_71                         ((0x063e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_72                         ((0x0646  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_73                         ((0x064e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_74                         ((0x0656  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_75                         ((0x065e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_76                         ((0x0666  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_77                         ((0x066e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_78                         ((0x0676  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_79                         ((0x067e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_80                         ((0x0686  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_81                         ((0x068e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_82                         ((0x0696  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_83                         ((0x069e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_84                         ((0x06a6  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_85                         ((0x06ae  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_86                         ((0x06b6  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_87                         ((0x06be  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_88                         ((0x06c6  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_89                         ((0x06ce  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_90                         ((0x06d6  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_91                         ((0x06de  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_92                         ((0x06e6  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_93                         ((0x06ee  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_94                         ((0x06f6  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_95                         ((0x06fe  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_96                         ((0x0706  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_97                         ((0x070e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_98                         ((0x0716  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_99                         ((0x071e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_100                        ((0x0726  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_101                        ((0x072e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_102                        ((0x0736  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_103                        ((0x073e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_104                        ((0x0746  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_105                        ((0x074e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_106                        ((0x0756  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_107                        ((0x075e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_108                        ((0x0766  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_109                        ((0x076e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_110                        ((0x0776  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_111                        ((0x077e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_112                        ((0x0786  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_113                        ((0x078e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_114                        ((0x0796  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_115                        ((0x079e  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_116                        ((0x07a6  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_117                        ((0x07ae  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_118                        ((0x07b6  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_119                        ((0x07be  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_120                        ((0x07c6  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_121                        ((0x07ce  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_122                        ((0x07d6  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_123                        ((0x07de  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_124                        ((0x07e6  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_125                        ((0x07ee  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_126                        ((0x07f6  << 2) + 0xfe444000)
-#define WCH_PTR_CHANNEL_127                        ((0x07fe  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_0                         ((0x0407  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_1                         ((0x040f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_2                         ((0x0417  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_3                         ((0x041f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_4                         ((0x0427  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_5                         ((0x042f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_6                         ((0x0437  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_7                         ((0x043f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_8                         ((0x0447  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_9                         ((0x044f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_10                        ((0x0457  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_11                        ((0x045f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_12                        ((0x0467  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_13                        ((0x046f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_14                        ((0x0477  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_15                        ((0x047f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_16                        ((0x0487  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_17                        ((0x048f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_18                        ((0x0497  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_19                        ((0x049f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_20                        ((0x04a7  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_21                        ((0x04af  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_22                        ((0x04b7  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_23                        ((0x04bf  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_24                        ((0x04c7  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_25                        ((0x04cf  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_26                        ((0x04d7  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_27                        ((0x04df  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_28                        ((0x04e7  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_29                        ((0x04ef  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_30                        ((0x04f7  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_31                        ((0x04ff  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_32                        ((0x0507  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_33                        ((0x050f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_34                        ((0x0517  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_35                        ((0x051f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_36                        ((0x0527  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_37                        ((0x052f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_38                        ((0x0537  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_39                        ((0x053f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_40                        ((0x0547  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_41                        ((0x054f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_42                        ((0x0557  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_43                        ((0x055f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_44                        ((0x0567  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_45                        ((0x056f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_46                        ((0x0577  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_47                        ((0x057f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_48                        ((0x0587  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_49                        ((0x058f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_50                        ((0x0597  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_51                        ((0x059f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_52                        ((0x05a7  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_53                        ((0x05af  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_54                        ((0x05b7  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_55                        ((0x05bf  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_56                        ((0x05c7  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_57                        ((0x05cf  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_58                        ((0x05d7  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_59                        ((0x05df  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_60                        ((0x05e7  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_61                        ((0x05ef  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_62                        ((0x05f7  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_63                        ((0x05ff  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_64                        ((0x0607  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_65                        ((0x060f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_66                        ((0x0617  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_67                        ((0x061f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_68                        ((0x0627  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_69                        ((0x062f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_70                        ((0x0637  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_71                        ((0x063f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_72                        ((0x0647  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_73                        ((0x064f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_74                        ((0x0657  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_75                        ((0x065f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_76                        ((0x0667  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_77                        ((0x066f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_78                        ((0x0677  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_79                        ((0x067f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_80                        ((0x0687  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_81                        ((0x068f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_82                        ((0x0697  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_83                        ((0x069f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_84                        ((0x06a7  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_85                        ((0x06af  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_86                        ((0x06b7  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_87                        ((0x06bf  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_88                        ((0x06c7  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_89                        ((0x06cf  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_90                        ((0x06d7  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_91                        ((0x06df  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_92                        ((0x06e7  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_93                        ((0x06ef  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_94                        ((0x06f7  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_95                        ((0x06ff  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_96                        ((0x0707  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_97                        ((0x070f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_98                        ((0x0717  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_99                        ((0x071f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_100                       ((0x0727  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_101                       ((0x072f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_102                       ((0x0737  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_103                       ((0x073f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_104                       ((0x0747  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_105                       ((0x074f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_106                       ((0x0757  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_107                       ((0x075f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_108                       ((0x0767  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_109                       ((0x076f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_110                       ((0x0777  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_111                       ((0x077f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_112                       ((0x0787  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_113                       ((0x078f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_114                       ((0x0797  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_115                       ((0x079f  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_116                       ((0x07a7  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_117                       ((0x07af  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_118                       ((0x07b7  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_119                       ((0x07bf  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_120                       ((0x07c7  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_121                       ((0x07cf  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_122                       ((0x07d7  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_123                       ((0x07df  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_124                       ((0x07e7  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_125                       ((0x07ef  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_126                       ((0x07f7  << 2) + 0xfe444000)
-#define WCMD_CNT_CHANNEL_127                       ((0x07ff  << 2) + 0xfe444000)
-#define DMX_RDMA_INT_MASK                          ((0x0800  << 2) + 0xfe444000)
-#define DMX_WDMA_INT_MASK_0                        ((0x0801  << 2) + 0xfe444000)
-#define DMX_WDMA_INT_MASK_1                        ((0x0802  << 2) + 0xfe444000)
-#define DMX_WDMA_INT_MASK_2                        ((0x0803  << 2) + 0xfe444000)
-#define DMX_WDMA_INT_MASK_3                        ((0x0804  << 2) + 0xfe444000)
-#define DMX_CLEAN_W_BATCH_0                        ((0x0805  << 2) + 0xfe444000)
-#define DMX_CLEAN_W_BATCH_1                        ((0x0806  << 2) + 0xfe444000)
-#define DMX_CLEAN_W_BATCH_2                        ((0x0807  << 2) + 0xfe444000)
-#define DMX_CLEAN_W_BATCH_3                        ((0x0808  << 2) + 0xfe444000)
-#define DMX_CLEAN_RDMA                             ((0x0809  << 2) + 0xfe444000)
-#define DMX_CLEAN_WDMA_0                           ((0x080a  << 2) + 0xfe444000)
-#define DMX_CLEAN_WDMA_1                           ((0x080b  << 2) + 0xfe444000)
-#define DMX_CLEAN_WDMA_2                           ((0x080c  << 2) + 0xfe444000)
-#define DMX_CLEAN_WDMA_3                           ((0x080d  << 2) + 0xfe444000)
-#define DMX_RDMA_ACTIVE                            ((0x080e  << 2) + 0xfe444000)
-#define DMX_WDMA_ACTIVE_0                          ((0x080f  << 2) + 0xfe444000)
-#define DMX_WDMA_ACTIVE_1                          ((0x0810  << 2) + 0xfe444000)
-#define DMX_WDMA_ACTIVE_2                          ((0x0811  << 2) + 0xfe444000)
-#define DMX_WDMA_ACTIVE_3                          ((0x0812  << 2) + 0xfe444000)
-#define DMX_DMA_RDONE                              ((0x0813  << 2) + 0xfe444000)
-#define DMX_DMA_WDONE_0                            ((0x0814  << 2) + 0xfe444000)
-#define DMX_DMA_WDONE_1                            ((0x0815  << 2) + 0xfe444000)
-#define DMX_DMA_WDONE_2                            ((0x0816  << 2) + 0xfe444000)
-#define DMX_DMA_WDONE_3                            ((0x0817  << 2) + 0xfe444000)
-#define DMX_RDES_ERR                               ((0x0818  << 2) + 0xfe444000)
-#define DMX_RDES_LEN_ERR                           ((0x0819  << 2) + 0xfe444000)
-#define DMX_WDES_ERR_0                             ((0x081a  << 2) + 0xfe444000)
-#define DMX_WDES_ERR_1                             ((0x081b  << 2) + 0xfe444000)
-#define DMX_WDES_ERR_2                             ((0x081c  << 2) + 0xfe444000)
-#define DMX_WDES_ERR_3                             ((0x081d  << 2) + 0xfe444000)
-#define DMX_DMA_BATCH_END_0                        ((0x081e  << 2) + 0xfe444000)
-#define DMX_DMA_BATCH_END_1                        ((0x081f  << 2) + 0xfe444000)
-#define DMX_DMA_BATCH_END_2                        ((0x0820  << 2) + 0xfe444000)
-#define DMX_DMA_BATCH_END_3                        ((0x0821  << 2) + 0xfe444000)
-#define DMX_WDES_EOC_DONE_0                        ((0x0822  << 2) + 0xfe444000)
-#define DMX_WDES_EOC_DONE_1                        ((0x0823  << 2) + 0xfe444000)
-#define DMX_WDES_EOC_DONE_2                        ((0x0824  << 2) + 0xfe444000)
-#define DMX_WDES_EOC_DONE_3                        ((0x0825  << 2) + 0xfe444000)
-#define DMX_WCH_RESP_ERR0                          ((0x0826  << 2) + 0xfe444000)
-#define DMX_WCH_RESP_ERR1                          ((0x0827  << 2) + 0xfe444000)
-#define DMX_WCH_RESP_ERR2                          ((0x0828  << 2) + 0xfe444000)
-#define DMX_WCH_RESP_ERR3                          ((0x0829  << 2) + 0xfe444000)
-#define DMX_UPDT_PKT_SYNC                          ((0x0830  << 2) + 0xfe444000)
-#define DMX_RCHN_CFG                               ((0x0831  << 2) + 0xfe444000)
-#define DMX_WCHN_CFG                               ((0x0832  << 2) + 0xfe444000)
-#define DMX_MEM_PD_CRTL                            ((0x0833  << 2) + 0xfe444000)
-#define DMX_DMA_BUS_CFG                            ((0x0834  << 2) + 0xfe444000)
-#define DMX_DMA_GMW_CFG                            ((0x0835  << 2) + 0xfe444000)
-#define DMX_DMA_GMR_CFG                            ((0x0836  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_1              ((0x0017  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_2              ((0x0027  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_3              ((0x0037  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_4              ((0x0047  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_5              ((0x0057  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_6              ((0x0067  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_7              ((0x0077  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_8              ((0x0087  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_9              ((0x0097  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_10             ((0x00a7  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_11             ((0x00b7  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_12             ((0x00c7  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_13             ((0x00d7  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_14             ((0x00e7  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_15             ((0x00f7  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_16             ((0x0107  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_17             ((0x0117  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_18             ((0x0127  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_19             ((0x0137  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_20             ((0x0147  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_21             ((0x0157  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_22             ((0x0167  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_23             ((0x0177  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_24             ((0x0187  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_25             ((0x0197  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_26             ((0x01a7  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_27             ((0x01b7  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_28             ((0x01c7  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_29             ((0x01d7  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_30             ((0x01e7  << 2) + 0xfe444000)
+#define RCH_PKT_SYNC_STATUS_CHANNEL_31             ((0x01f7  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_0                    ((0x0009  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_1                    ((0x0019  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_2                    ((0x0029  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_3                    ((0x0039  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_4                    ((0x0049  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_5                    ((0x0059  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_6                    ((0x0069  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_7                    ((0x0079  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_8                    ((0x0089  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_9                    ((0x0099  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_10                   ((0x00a9  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_11                   ((0x00b9  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_12                   ((0x00c9  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_13                   ((0x00d9  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_14                   ((0x00e9  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_15                   ((0x00f9  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_16                   ((0x0109  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_17                   ((0x0119  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_18                   ((0x0129  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_19                   ((0x0139  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_20                   ((0x0149  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_21                   ((0x0159  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_22                   ((0x0169  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_23                   ((0x0179  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_24                   ((0x0189  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_25                   ((0x0199  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_26                   ((0x01a9  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_27                   ((0x01b9  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_28                   ((0x01c9  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_29                   ((0x01d9  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_30                   ((0x01e9  << 2) + 0xfe444000)
+#define RCH_ADDR_CHANNEL_HIGH_31                   ((0x01f9  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_0                     ((0x000a  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_1                     ((0x001a  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_2                     ((0x002a  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_3                     ((0x003a  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_4                     ((0x004a  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_5                     ((0x005a  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_6                     ((0x006a  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_7                     ((0x007a  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_8                     ((0x008a  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_9                     ((0x009a  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_10                    ((0x00aa  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_11                    ((0x00ba  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_12                    ((0x00ca  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_13                    ((0x00da  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_14                    ((0x00ea  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_15                    ((0x00fa  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_16                    ((0x010a  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_17                    ((0x011a  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_18                    ((0x012a  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_19                    ((0x013a  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_20                    ((0x014a  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_21                    ((0x015a  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_22                    ((0x016a  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_23                    ((0x017a  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_24                    ((0x018a  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_25                    ((0x019a  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_26                    ((0x01aa  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_27                    ((0x01ba  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_28                    ((0x01ca  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_29                    ((0x01da  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_30                    ((0x01ea  << 2) + 0xfe444000)
+#define RCH_PTR_CHANNEL_HIGH_31                    ((0x01fa  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_0                        ((0x0800  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_1                        ((0x0810  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_2                        ((0x0820  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_3                        ((0x0830  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_4                        ((0x0840  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_5                        ((0x0850  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_6                        ((0x0860  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_7                        ((0x0870  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_8                        ((0x0880  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_9                        ((0x0890  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_10                       ((0x08a0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_11                       ((0x08b0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_12                       ((0x08c0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_13                       ((0x08d0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_14                       ((0x08e0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_15                       ((0x08f0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_16                       ((0x0900  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_17                       ((0x0910  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_18                       ((0x0920  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_19                       ((0x0930  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_20                       ((0x0940  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_21                       ((0x0950  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_22                       ((0x0960  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_23                       ((0x0970  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_24                       ((0x0980  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_25                       ((0x0990  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_26                       ((0x09a0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_27                       ((0x09b0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_28                       ((0x09c0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_29                       ((0x09d0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_30                       ((0x09e0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_31                       ((0x09f0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_32                       ((0x0a00  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_33                       ((0x0a10  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_34                       ((0x0a20  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_35                       ((0x0a30  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_36                       ((0x0a40  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_37                       ((0x0a50  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_38                       ((0x0a60  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_39                       ((0x0a70  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_40                       ((0x0a80  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_41                       ((0x0a90  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_42                       ((0x0aa0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_43                       ((0x0ab0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_44                       ((0x0ac0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_45                       ((0x0ad0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_46                       ((0x0ae0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_47                       ((0x0af0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_48                       ((0x0b00  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_49                       ((0x0b10  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_50                       ((0x0b20  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_51                       ((0x0b30  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_52                       ((0x0b40  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_53                       ((0x0b50  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_54                       ((0x0b60  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_55                       ((0x0b70  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_56                       ((0x0b80  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_57                       ((0x0b90  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_58                       ((0x0ba0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_59                       ((0x0bb0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_60                       ((0x0bc0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_61                       ((0x0bd0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_62                       ((0x0be0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_63                       ((0x0bf0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_64                       ((0x0c00  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_65                       ((0x0c10  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_66                       ((0x0c20  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_67                       ((0x0c30  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_68                       ((0x0c40  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_69                       ((0x0c50  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_70                       ((0x0c60  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_71                       ((0x0c70  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_72                       ((0x0c80  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_73                       ((0x0c90  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_74                       ((0x0ca0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_75                       ((0x0cb0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_76                       ((0x0cc0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_77                       ((0x0cd0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_78                       ((0x0ce0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_79                       ((0x0cf0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_80                       ((0x0d00  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_81                       ((0x0d10  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_82                       ((0x0d20  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_83                       ((0x0d30  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_84                       ((0x0d40  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_85                       ((0x0d50  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_86                       ((0x0d60  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_87                       ((0x0d70  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_88                       ((0x0d80  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_89                       ((0x0d90  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_90                       ((0x0da0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_91                       ((0x0db0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_92                       ((0x0dc0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_93                       ((0x0dd0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_94                       ((0x0de0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_95                       ((0x0df0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_96                       ((0x0e00  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_97                       ((0x0e10  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_98                       ((0x0e20  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_99                       ((0x0e30  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_100                      ((0x0e40  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_101                      ((0x0e50  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_102                      ((0x0e60  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_103                      ((0x0e70  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_104                      ((0x0e80  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_105                      ((0x0e90  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_106                      ((0x0ea0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_107                      ((0x0eb0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_108                      ((0x0ec0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_109                      ((0x0ed0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_110                      ((0x0ee0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_111                      ((0x0ef0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_112                      ((0x0f00  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_113                      ((0x0f10  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_114                      ((0x0f20  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_115                      ((0x0f30  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_116                      ((0x0f40  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_117                      ((0x0f50  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_118                      ((0x0f60  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_119                      ((0x0f70  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_120                      ((0x0f80  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_121                      ((0x0f90  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_122                      ((0x0fa0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_123                      ((0x0fb0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_124                      ((0x0fc0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_125                      ((0x0fd0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_126                      ((0x0fe0  << 2) + 0xfe444000)
+#define WCH_READY_CHANNEL_127                      ((0x0ff0  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_0                        ((0x0801  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_1                        ((0x0811  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_2                        ((0x0821  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_3                        ((0x0831  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_4                        ((0x0841  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_5                        ((0x0851  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_6                        ((0x0861  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_7                        ((0x0871  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_8                        ((0x0881  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_9                        ((0x0891  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_10                       ((0x08a1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_11                       ((0x08b1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_12                       ((0x08c1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_13                       ((0x08d1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_14                       ((0x08e1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_15                       ((0x08f1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_16                       ((0x0901  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_17                       ((0x0911  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_18                       ((0x0921  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_19                       ((0x0931  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_20                       ((0x0941  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_21                       ((0x0951  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_22                       ((0x0961  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_23                       ((0x0971  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_24                       ((0x0981  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_25                       ((0x0991  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_26                       ((0x09a1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_27                       ((0x09b1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_28                       ((0x09c1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_29                       ((0x09d1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_30                       ((0x09e1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_31                       ((0x09f1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_32                       ((0x0a01  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_33                       ((0x0a11  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_34                       ((0x0a21  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_35                       ((0x0a31  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_36                       ((0x0a41  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_37                       ((0x0a51  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_38                       ((0x0a61  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_39                       ((0x0a71  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_40                       ((0x0a81  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_41                       ((0x0a91  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_42                       ((0x0aa1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_43                       ((0x0ab1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_44                       ((0x0ac1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_45                       ((0x0ad1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_46                       ((0x0ae1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_47                       ((0x0af1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_48                       ((0x0b01  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_49                       ((0x0b11  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_50                       ((0x0b21  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_51                       ((0x0b31  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_52                       ((0x0b41  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_53                       ((0x0b51  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_54                       ((0x0b61  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_55                       ((0x0b71  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_56                       ((0x0b81  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_57                       ((0x0b91  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_58                       ((0x0ba1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_59                       ((0x0bb1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_60                       ((0x0bc1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_61                       ((0x0bd1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_62                       ((0x0be1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_63                       ((0x0bf1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_64                       ((0x0c01  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_65                       ((0x0c11  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_66                       ((0x0c21  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_67                       ((0x0c31  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_68                       ((0x0c41  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_69                       ((0x0c51  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_70                       ((0x0c61  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_71                       ((0x0c71  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_72                       ((0x0c81  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_73                       ((0x0c91  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_74                       ((0x0ca1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_75                       ((0x0cb1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_76                       ((0x0cc1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_77                       ((0x0cd1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_78                       ((0x0ce1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_79                       ((0x0cf1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_80                       ((0x0d01  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_81                       ((0x0d11  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_82                       ((0x0d21  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_83                       ((0x0d31  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_84                       ((0x0d41  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_85                       ((0x0d51  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_86                       ((0x0d61  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_87                       ((0x0d71  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_88                       ((0x0d81  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_89                       ((0x0d91  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_90                       ((0x0da1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_91                       ((0x0db1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_92                       ((0x0dc1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_93                       ((0x0dd1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_94                       ((0x0de1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_95                       ((0x0df1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_96                       ((0x0e01  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_97                       ((0x0e11  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_98                       ((0x0e21  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_99                       ((0x0e31  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_100                      ((0x0e41  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_101                      ((0x0e51  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_102                      ((0x0e61  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_103                      ((0x0e71  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_104                      ((0x0e81  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_105                      ((0x0e91  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_106                      ((0x0ea1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_107                      ((0x0eb1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_108                      ((0x0ec1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_109                      ((0x0ed1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_110                      ((0x0ee1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_111                      ((0x0ef1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_112                      ((0x0f01  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_113                      ((0x0f11  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_114                      ((0x0f21  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_115                      ((0x0f31  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_116                      ((0x0f41  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_117                      ((0x0f51  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_118                      ((0x0f61  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_119                      ((0x0f71  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_120                      ((0x0f81  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_121                      ((0x0f91  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_122                      ((0x0fa1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_123                      ((0x0fb1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_124                      ((0x0fc1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_125                      ((0x0fd1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_126                      ((0x0fe1  << 2) + 0xfe444000)
+#define WCH_DEBUG_CHANNEL_127                      ((0x0ff1  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_0                          ((0x0802  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_1                          ((0x0812  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_2                          ((0x0822  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_3                          ((0x0832  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_4                          ((0x0842  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_5                          ((0x0852  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_6                          ((0x0862  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_7                          ((0x0872  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_8                          ((0x0882  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_9                          ((0x0892  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_10                         ((0x08a2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_11                         ((0x08b2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_12                         ((0x08c2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_13                         ((0x08d2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_14                         ((0x08e2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_15                         ((0x08f2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_16                         ((0x0902  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_17                         ((0x0912  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_18                         ((0x0922  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_19                         ((0x0932  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_20                         ((0x0942  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_21                         ((0x0952  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_22                         ((0x0962  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_23                         ((0x0972  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_24                         ((0x0982  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_25                         ((0x0992  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_26                         ((0x09a2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_27                         ((0x09b2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_28                         ((0x09c2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_29                         ((0x09d2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_30                         ((0x09e2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_31                         ((0x09f2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_32                         ((0x0a02  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_33                         ((0x0a12  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_34                         ((0x0a22  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_35                         ((0x0a32  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_36                         ((0x0a42  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_37                         ((0x0a52  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_38                         ((0x0a62  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_39                         ((0x0a72  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_40                         ((0x0a82  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_41                         ((0x0a92  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_42                         ((0x0aa2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_43                         ((0x0ab2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_44                         ((0x0ac2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_45                         ((0x0ad2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_46                         ((0x0ae2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_47                         ((0x0af2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_48                         ((0x0b02  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_49                         ((0x0b12  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_50                         ((0x0b22  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_51                         ((0x0b32  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_52                         ((0x0b42  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_53                         ((0x0b52  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_54                         ((0x0b62  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_55                         ((0x0b72  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_56                         ((0x0b82  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_57                         ((0x0b92  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_58                         ((0x0ba2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_59                         ((0x0bb2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_60                         ((0x0bc2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_61                         ((0x0bd2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_62                         ((0x0be2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_63                         ((0x0bf2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_64                         ((0x0c02  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_65                         ((0x0c12  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_66                         ((0x0c22  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_67                         ((0x0c32  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_68                         ((0x0c42  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_69                         ((0x0c52  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_70                         ((0x0c62  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_71                         ((0x0c72  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_72                         ((0x0c82  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_73                         ((0x0c92  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_74                         ((0x0ca2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_75                         ((0x0cb2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_76                         ((0x0cc2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_77                         ((0x0cd2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_78                         ((0x0ce2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_79                         ((0x0cf2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_80                         ((0x0d02  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_81                         ((0x0d12  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_82                         ((0x0d22  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_83                         ((0x0d32  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_84                         ((0x0d42  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_85                         ((0x0d52  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_86                         ((0x0d62  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_87                         ((0x0d72  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_88                         ((0x0d82  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_89                         ((0x0d92  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_90                         ((0x0da2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_91                         ((0x0db2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_92                         ((0x0dc2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_93                         ((0x0dd2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_94                         ((0x0de2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_95                         ((0x0df2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_96                         ((0x0e02  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_97                         ((0x0e12  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_98                         ((0x0e22  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_99                         ((0x0e32  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_100                        ((0x0e42  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_101                        ((0x0e52  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_102                        ((0x0e62  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_103                        ((0x0e72  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_104                        ((0x0e82  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_105                        ((0x0e92  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_106                        ((0x0ea2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_107                        ((0x0eb2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_108                        ((0x0ec2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_109                        ((0x0ed2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_110                        ((0x0ee2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_111                        ((0x0ef2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_112                        ((0x0f02  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_113                        ((0x0f12  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_114                        ((0x0f22  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_115                        ((0x0f32  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_116                        ((0x0f42  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_117                        ((0x0f52  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_118                        ((0x0f62  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_119                        ((0x0f72  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_120                        ((0x0f82  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_121                        ((0x0f92  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_122                        ((0x0fa2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_123                        ((0x0fb2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_124                        ((0x0fc2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_125                        ((0x0fd2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_126                        ((0x0fe2  << 2) + 0xfe444000)
+#define WCH_CFG_CHANNEL_127                        ((0x0ff2  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_0                         ((0x0803  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_1                         ((0x0813  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_2                         ((0x0823  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_3                         ((0x0833  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_4                         ((0x0843  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_5                         ((0x0853  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_6                         ((0x0863  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_7                         ((0x0873  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_8                         ((0x0883  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_9                         ((0x0893  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_10                        ((0x08a3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_11                        ((0x08b3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_12                        ((0x08c3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_13                        ((0x08d3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_14                        ((0x08e3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_15                        ((0x08f3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_16                        ((0x0903  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_17                        ((0x0913  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_18                        ((0x0923  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_19                        ((0x0933  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_20                        ((0x0943  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_21                        ((0x0953  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_22                        ((0x0963  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_23                        ((0x0973  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_24                        ((0x0983  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_25                        ((0x0993  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_26                        ((0x09a3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_27                        ((0x09b3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_28                        ((0x09c3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_29                        ((0x09d3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_30                        ((0x09e3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_31                        ((0x09f3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_32                        ((0x0a03  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_33                        ((0x0a13  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_34                        ((0x0a23  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_35                        ((0x0a33  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_36                        ((0x0a43  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_37                        ((0x0a53  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_38                        ((0x0a63  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_39                        ((0x0a73  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_40                        ((0x0a83  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_41                        ((0x0a93  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_42                        ((0x0aa3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_43                        ((0x0ab3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_44                        ((0x0ac3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_45                        ((0x0ad3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_46                        ((0x0ae3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_47                        ((0x0af3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_48                        ((0x0b03  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_49                        ((0x0b13  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_50                        ((0x0b23  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_51                        ((0x0b33  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_52                        ((0x0b43  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_53                        ((0x0b53  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_54                        ((0x0b63  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_55                        ((0x0b73  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_56                        ((0x0b83  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_57                        ((0x0b93  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_58                        ((0x0ba3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_59                        ((0x0bb3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_60                        ((0x0bc3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_61                        ((0x0bd3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_62                        ((0x0be3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_63                        ((0x0bf3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_64                        ((0x0c03  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_65                        ((0x0c13  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_66                        ((0x0c23  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_67                        ((0x0c33  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_68                        ((0x0c43  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_69                        ((0x0c53  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_70                        ((0x0c63  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_71                        ((0x0c73  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_72                        ((0x0c83  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_73                        ((0x0c93  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_74                        ((0x0ca3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_75                        ((0x0cb3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_76                        ((0x0cc3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_77                        ((0x0cd3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_78                        ((0x0ce3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_79                        ((0x0cf3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_80                        ((0x0d03  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_81                        ((0x0d13  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_82                        ((0x0d23  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_83                        ((0x0d33  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_84                        ((0x0d43  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_85                        ((0x0d53  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_86                        ((0x0d63  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_87                        ((0x0d73  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_88                        ((0x0d83  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_89                        ((0x0d93  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_90                        ((0x0da3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_91                        ((0x0db3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_92                        ((0x0dc3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_93                        ((0x0dd3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_94                        ((0x0de3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_95                        ((0x0df3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_96                        ((0x0e03  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_97                        ((0x0e13  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_98                        ((0x0e23  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_99                        ((0x0e33  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_100                       ((0x0e43  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_101                       ((0x0e53  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_102                       ((0x0e63  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_103                       ((0x0e73  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_104                       ((0x0e83  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_105                       ((0x0e93  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_106                       ((0x0ea3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_107                       ((0x0eb3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_108                       ((0x0ec3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_109                       ((0x0ed3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_110                       ((0x0ee3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_111                       ((0x0ef3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_112                       ((0x0f03  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_113                       ((0x0f13  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_114                       ((0x0f23  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_115                       ((0x0f33  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_116                       ((0x0f43  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_117                       ((0x0f53  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_118                       ((0x0f63  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_119                       ((0x0f73  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_120                       ((0x0f83  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_121                       ((0x0f93  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_122                       ((0x0fa3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_123                       ((0x0fb3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_124                       ((0x0fc3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_125                       ((0x0fd3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_126                       ((0x0fe3  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_127                       ((0x0ff3  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_0                          ((0x0804  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_1                          ((0x0814  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_2                          ((0x0824  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_3                          ((0x0834  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_4                          ((0x0844  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_5                          ((0x0854  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_6                          ((0x0864  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_7                          ((0x0874  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_8                          ((0x0884  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_9                          ((0x0894  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_10                         ((0x08a4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_11                         ((0x08b4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_12                         ((0x08c4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_13                         ((0x08d4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_14                         ((0x08e4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_15                         ((0x08f4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_16                         ((0x0904  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_17                         ((0x0914  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_18                         ((0x0924  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_19                         ((0x0934  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_20                         ((0x0944  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_21                         ((0x0954  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_22                         ((0x0964  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_23                         ((0x0974  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_24                         ((0x0984  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_25                         ((0x0994  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_26                         ((0x09a4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_27                         ((0x09b4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_28                         ((0x09c4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_29                         ((0x09d4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_30                         ((0x09e4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_31                         ((0x09f4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_32                         ((0x0a04  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_33                         ((0x0a14  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_34                         ((0x0a24  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_35                         ((0x0a34  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_36                         ((0x0a44  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_37                         ((0x0a54  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_38                         ((0x0a64  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_39                         ((0x0a74  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_40                         ((0x0a84  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_41                         ((0x0a94  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_42                         ((0x0aa4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_43                         ((0x0ab4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_44                         ((0x0ac4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_45                         ((0x0ad4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_46                         ((0x0ae4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_47                         ((0x0af4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_48                         ((0x0b04  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_49                         ((0x0b14  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_50                         ((0x0b24  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_51                         ((0x0b34  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_52                         ((0x0b44  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_53                         ((0x0b54  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_54                         ((0x0b64  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_55                         ((0x0b74  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_56                         ((0x0b84  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_57                         ((0x0b94  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_58                         ((0x0ba4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_59                         ((0x0bb4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_60                         ((0x0bc4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_61                         ((0x0bd4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_62                         ((0x0be4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_63                         ((0x0bf4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_64                         ((0x0c04  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_65                         ((0x0c14  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_66                         ((0x0c24  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_67                         ((0x0c34  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_68                         ((0x0c44  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_69                         ((0x0c54  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_70                         ((0x0c64  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_71                         ((0x0c74  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_72                         ((0x0c84  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_73                         ((0x0c94  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_74                         ((0x0ca4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_75                         ((0x0cb4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_76                         ((0x0cc4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_77                         ((0x0cd4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_78                         ((0x0ce4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_79                         ((0x0cf4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_80                         ((0x0d04  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_81                         ((0x0d14  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_82                         ((0x0d24  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_83                         ((0x0d34  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_84                         ((0x0d44  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_85                         ((0x0d54  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_86                         ((0x0d64  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_87                         ((0x0d74  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_88                         ((0x0d84  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_89                         ((0x0d94  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_90                         ((0x0da4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_91                         ((0x0db4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_92                         ((0x0dc4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_93                         ((0x0dd4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_94                         ((0x0de4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_95                         ((0x0df4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_96                         ((0x0e04  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_97                         ((0x0e14  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_98                         ((0x0e24  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_99                         ((0x0e34  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_100                        ((0x0e44  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_101                        ((0x0e54  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_102                        ((0x0e64  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_103                        ((0x0e74  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_104                        ((0x0e84  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_105                        ((0x0e94  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_106                        ((0x0ea4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_107                        ((0x0eb4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_108                        ((0x0ec4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_109                        ((0x0ed4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_110                        ((0x0ee4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_111                        ((0x0ef4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_112                        ((0x0f04  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_113                        ((0x0f14  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_114                        ((0x0f24  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_115                        ((0x0f34  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_116                        ((0x0f44  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_117                        ((0x0f54  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_118                        ((0x0f64  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_119                        ((0x0f74  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_120                        ((0x0f84  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_121                        ((0x0f94  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_122                        ((0x0fa4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_123                        ((0x0fb4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_124                        ((0x0fc4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_125                        ((0x0fd4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_126                        ((0x0fe4  << 2) + 0xfe444000)
+#define WCH_LEN_CHANNEL_127                        ((0x0ff4  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_0                       ((0x0805  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_1                       ((0x0815  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_2                       ((0x0825  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_3                       ((0x0835  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_4                       ((0x0845  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_5                       ((0x0855  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_6                       ((0x0865  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_7                       ((0x0875  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_8                       ((0x0885  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_9                       ((0x0895  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_10                      ((0x08a5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_11                      ((0x08b5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_12                      ((0x08c5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_13                      ((0x08d5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_14                      ((0x08e5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_15                      ((0x08f5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_16                      ((0x0905  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_17                      ((0x0915  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_18                      ((0x0925  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_19                      ((0x0935  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_20                      ((0x0945  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_21                      ((0x0955  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_22                      ((0x0965  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_23                      ((0x0975  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_24                      ((0x0985  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_25                      ((0x0995  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_26                      ((0x09a5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_27                      ((0x09b5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_28                      ((0x09c5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_29                      ((0x09d5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_30                      ((0x09e5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_31                      ((0x09f5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_32                      ((0x0a05  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_33                      ((0x0a15  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_34                      ((0x0a25  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_35                      ((0x0a35  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_36                      ((0x0a45  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_37                      ((0x0a55  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_38                      ((0x0a65  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_39                      ((0x0a75  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_40                      ((0x0a85  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_41                      ((0x0a95  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_42                      ((0x0aa5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_43                      ((0x0ab5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_44                      ((0x0ac5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_45                      ((0x0ad5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_46                      ((0x0ae5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_47                      ((0x0af5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_48                      ((0x0b05  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_49                      ((0x0b15  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_50                      ((0x0b25  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_51                      ((0x0b35  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_52                      ((0x0b45  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_53                      ((0x0b55  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_54                      ((0x0b65  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_55                      ((0x0b75  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_56                      ((0x0b85  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_57                      ((0x0b95  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_58                      ((0x0ba5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_59                      ((0x0bb5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_60                      ((0x0bc5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_61                      ((0x0bd5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_62                      ((0x0be5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_63                      ((0x0bf5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_64                      ((0x0c05  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_65                      ((0x0c15  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_66                      ((0x0c25  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_67                      ((0x0c35  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_68                      ((0x0c45  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_69                      ((0x0c55  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_70                      ((0x0c65  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_71                      ((0x0c75  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_72                      ((0x0c85  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_73                      ((0x0c95  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_74                      ((0x0ca5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_75                      ((0x0cb5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_76                      ((0x0cc5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_77                      ((0x0cd5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_78                      ((0x0ce5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_79                      ((0x0cf5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_80                      ((0x0d05  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_81                      ((0x0d15  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_82                      ((0x0d25  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_83                      ((0x0d35  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_84                      ((0x0d45  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_85                      ((0x0d55  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_86                      ((0x0d65  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_87                      ((0x0d75  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_88                      ((0x0d85  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_89                      ((0x0d95  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_90                      ((0x0da5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_91                      ((0x0db5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_92                      ((0x0dc5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_93                      ((0x0dd5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_94                      ((0x0de5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_95                      ((0x0df5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_96                      ((0x0e05  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_97                      ((0x0e15  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_98                      ((0x0e25  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_99                      ((0x0e35  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_100                     ((0x0e45  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_101                     ((0x0e55  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_102                     ((0x0e65  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_103                     ((0x0e75  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_104                     ((0x0e85  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_105                     ((0x0e95  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_106                     ((0x0ea5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_107                     ((0x0eb5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_108                     ((0x0ec5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_109                     ((0x0ed5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_110                     ((0x0ee5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_111                     ((0x0ef5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_112                     ((0x0f05  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_113                     ((0x0f15  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_114                     ((0x0f25  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_115                     ((0x0f35  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_116                     ((0x0f45  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_117                     ((0x0f55  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_118                     ((0x0f65  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_119                     ((0x0f75  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_120                     ((0x0f85  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_121                     ((0x0f95  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_122                     ((0x0fa5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_123                     ((0x0fb5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_124                     ((0x0fc5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_125                     ((0x0fd5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_126                     ((0x0fe5  << 2) + 0xfe444000)
+#define WCH_WR_LEN_CHANNEL_127                     ((0x0ff5  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_0                          ((0x0806  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_1                          ((0x0816  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_2                          ((0x0826  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_3                          ((0x0836  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_4                          ((0x0846  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_5                          ((0x0856  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_6                          ((0x0866  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_7                          ((0x0876  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_8                          ((0x0886  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_9                          ((0x0896  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_10                         ((0x08a6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_11                         ((0x08b6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_12                         ((0x08c6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_13                         ((0x08d6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_14                         ((0x08e6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_15                         ((0x08f6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_16                         ((0x0906  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_17                         ((0x0916  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_18                         ((0x0926  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_19                         ((0x0936  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_20                         ((0x0946  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_21                         ((0x0956  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_22                         ((0x0966  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_23                         ((0x0976  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_24                         ((0x0986  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_25                         ((0x0996  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_26                         ((0x09a6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_27                         ((0x09b6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_28                         ((0x09c6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_29                         ((0x09d6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_30                         ((0x09e6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_31                         ((0x09f6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_32                         ((0x0a06  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_33                         ((0x0a16  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_34                         ((0x0a26  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_35                         ((0x0a36  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_36                         ((0x0a46  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_37                         ((0x0a56  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_38                         ((0x0a66  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_39                         ((0x0a76  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_40                         ((0x0a86  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_41                         ((0x0a96  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_42                         ((0x0aa6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_43                         ((0x0ab6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_44                         ((0x0ac6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_45                         ((0x0ad6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_46                         ((0x0ae6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_47                         ((0x0af6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_48                         ((0x0b06  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_49                         ((0x0b16  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_50                         ((0x0b26  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_51                         ((0x0b36  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_52                         ((0x0b46  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_53                         ((0x0b56  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_54                         ((0x0b66  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_55                         ((0x0b76  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_56                         ((0x0b86  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_57                         ((0x0b96  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_58                         ((0x0ba6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_59                         ((0x0bb6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_60                         ((0x0bc6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_61                         ((0x0bd6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_62                         ((0x0be6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_63                         ((0x0bf6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_64                         ((0x0c06  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_65                         ((0x0c16  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_66                         ((0x0c26  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_67                         ((0x0c36  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_68                         ((0x0c46  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_69                         ((0x0c56  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_70                         ((0x0c66  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_71                         ((0x0c76  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_72                         ((0x0c86  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_73                         ((0x0c96  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_74                         ((0x0ca6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_75                         ((0x0cb6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_76                         ((0x0cc6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_77                         ((0x0cd6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_78                         ((0x0ce6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_79                         ((0x0cf6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_80                         ((0x0d06  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_81                         ((0x0d16  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_82                         ((0x0d26  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_83                         ((0x0d36  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_84                         ((0x0d46  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_85                         ((0x0d56  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_86                         ((0x0d66  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_87                         ((0x0d76  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_88                         ((0x0d86  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_89                         ((0x0d96  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_90                         ((0x0da6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_91                         ((0x0db6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_92                         ((0x0dc6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_93                         ((0x0dd6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_94                         ((0x0de6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_95                         ((0x0df6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_96                         ((0x0e06  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_97                         ((0x0e16  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_98                         ((0x0e26  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_99                         ((0x0e36  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_100                        ((0x0e46  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_101                        ((0x0e56  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_102                        ((0x0e66  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_103                        ((0x0e76  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_104                        ((0x0e86  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_105                        ((0x0e96  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_106                        ((0x0ea6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_107                        ((0x0eb6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_108                        ((0x0ec6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_109                        ((0x0ed6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_110                        ((0x0ee6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_111                        ((0x0ef6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_112                        ((0x0f06  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_113                        ((0x0f16  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_114                        ((0x0f26  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_115                        ((0x0f36  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_116                        ((0x0f46  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_117                        ((0x0f56  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_118                        ((0x0f66  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_119                        ((0x0f76  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_120                        ((0x0f86  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_121                        ((0x0f96  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_122                        ((0x0fa6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_123                        ((0x0fb6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_124                        ((0x0fc6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_125                        ((0x0fd6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_126                        ((0x0fe6  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_127                        ((0x0ff6  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_0                         ((0x0807  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_1                         ((0x0817  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_2                         ((0x0827  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_3                         ((0x0837  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_4                         ((0x0847  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_5                         ((0x0857  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_6                         ((0x0867  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_7                         ((0x0877  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_8                         ((0x0887  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_9                         ((0x0897  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_10                        ((0x08a7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_11                        ((0x08b7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_12                        ((0x08c7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_13                        ((0x08d7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_14                        ((0x08e7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_15                        ((0x08f7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_16                        ((0x0907  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_17                        ((0x0917  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_18                        ((0x0927  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_19                        ((0x0937  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_20                        ((0x0947  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_21                        ((0x0957  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_22                        ((0x0967  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_23                        ((0x0977  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_24                        ((0x0987  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_25                        ((0x0997  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_26                        ((0x09a7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_27                        ((0x09b7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_28                        ((0x09c7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_29                        ((0x09d7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_30                        ((0x09e7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_31                        ((0x09f7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_32                        ((0x0a07  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_33                        ((0x0a17  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_34                        ((0x0a27  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_35                        ((0x0a37  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_36                        ((0x0a47  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_37                        ((0x0a57  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_38                        ((0x0a67  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_39                        ((0x0a77  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_40                        ((0x0a87  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_41                        ((0x0a97  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_42                        ((0x0aa7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_43                        ((0x0ab7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_44                        ((0x0ac7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_45                        ((0x0ad7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_46                        ((0x0ae7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_47                        ((0x0af7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_48                        ((0x0b07  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_49                        ((0x0b17  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_50                        ((0x0b27  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_51                        ((0x0b37  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_52                        ((0x0b47  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_53                        ((0x0b57  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_54                        ((0x0b67  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_55                        ((0x0b77  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_56                        ((0x0b87  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_57                        ((0x0b97  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_58                        ((0x0ba7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_59                        ((0x0bb7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_60                        ((0x0bc7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_61                        ((0x0bd7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_62                        ((0x0be7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_63                        ((0x0bf7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_64                        ((0x0c07  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_65                        ((0x0c17  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_66                        ((0x0c27  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_67                        ((0x0c37  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_68                        ((0x0c47  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_69                        ((0x0c57  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_70                        ((0x0c67  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_71                        ((0x0c77  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_72                        ((0x0c87  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_73                        ((0x0c97  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_74                        ((0x0ca7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_75                        ((0x0cb7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_76                        ((0x0cc7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_77                        ((0x0cd7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_78                        ((0x0ce7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_79                        ((0x0cf7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_80                        ((0x0d07  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_81                        ((0x0d17  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_82                        ((0x0d27  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_83                        ((0x0d37  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_84                        ((0x0d47  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_85                        ((0x0d57  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_86                        ((0x0d67  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_87                        ((0x0d77  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_88                        ((0x0d87  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_89                        ((0x0d97  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_90                        ((0x0da7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_91                        ((0x0db7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_92                        ((0x0dc7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_93                        ((0x0dd7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_94                        ((0x0de7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_95                        ((0x0df7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_96                        ((0x0e07  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_97                        ((0x0e17  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_98                        ((0x0e27  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_99                        ((0x0e37  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_100                       ((0x0e47  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_101                       ((0x0e57  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_102                       ((0x0e67  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_103                       ((0x0e77  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_104                       ((0x0e87  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_105                       ((0x0e97  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_106                       ((0x0ea7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_107                       ((0x0eb7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_108                       ((0x0ec7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_109                       ((0x0ed7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_110                       ((0x0ee7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_111                       ((0x0ef7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_112                       ((0x0f07  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_113                       ((0x0f17  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_114                       ((0x0f27  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_115                       ((0x0f37  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_116                       ((0x0f47  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_117                       ((0x0f57  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_118                       ((0x0f67  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_119                       ((0x0f77  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_120                       ((0x0f87  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_121                       ((0x0f97  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_122                       ((0x0fa7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_123                       ((0x0fb7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_124                       ((0x0fc7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_125                       ((0x0fd7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_126                       ((0x0fe7  << 2) + 0xfe444000)
+#define WCMD_CNT_CHANNEL_127                       ((0x0ff7  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_0                    ((0x0809  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_1                    ((0x0819  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_2                    ((0x0829  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_3                    ((0x0839  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_4                    ((0x0849  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_5                    ((0x0859  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_6                    ((0x0869  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_7                    ((0x0879  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_8                    ((0x0889  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_9                    ((0x0899  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_10                   ((0x08a9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_11                   ((0x08b9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_12                   ((0x08c9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_13                   ((0x08d9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_14                   ((0x08e9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_15                   ((0x08f9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_16                   ((0x0909  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_17                   ((0x0919  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_18                   ((0x0929  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_19                   ((0x0939  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_20                   ((0x0949  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_21                   ((0x0959  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_22                   ((0x0969  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_23                   ((0x0979  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_24                   ((0x0989  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_25                   ((0x0999  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_26                   ((0x09a9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_27                   ((0x09b9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_28                   ((0x09c9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_29                   ((0x09d9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_30                   ((0x09e9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_31                   ((0x09f9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_32                   ((0x0a09  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_33                   ((0x0a19  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_34                   ((0x0a29  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_35                   ((0x0a39  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_36                   ((0x0a49  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_37                   ((0x0a59  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_38                   ((0x0a69  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_39                   ((0x0a79  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_40                   ((0x0a89  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_41                   ((0x0a99  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_42                   ((0x0aa9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_43                   ((0x0ab9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_44                   ((0x0ac9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_45                   ((0x0ad9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_46                   ((0x0ae9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_47                   ((0x0af9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_48                   ((0x0b09  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_49                   ((0x0b19  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_50                   ((0x0b29  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_51                   ((0x0b39  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_52                   ((0x0b49  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_53                   ((0x0b59  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_54                   ((0x0b69  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_55                   ((0x0b79  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_56                   ((0x0b89  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_57                   ((0x0b99  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_58                   ((0x0ba9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_59                   ((0x0bb9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_60                   ((0x0bc9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_61                   ((0x0bd9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_62                   ((0x0be9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_63                   ((0x0bf9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_64                   ((0x0c09  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_65                   ((0x0c19  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_66                   ((0x0c29  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_67                   ((0x0c39  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_68                   ((0x0c49  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_69                   ((0x0c59  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_70                   ((0x0c69  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_71                   ((0x0c79  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_72                   ((0x0c89  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_73                   ((0x0c99  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_74                   ((0x0ca9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_75                   ((0x0cb9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_76                   ((0x0cc9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_77                   ((0x0cd9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_78                   ((0x0ce9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_79                   ((0x0cf9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_80                   ((0x0d09  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_81                   ((0x0d19  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_82                   ((0x0d29  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_83                   ((0x0d39  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_84                   ((0x0d49  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_85                   ((0x0d59  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_86                   ((0x0d69  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_87                   ((0x0d79  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_88                   ((0x0d89  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_89                   ((0x0d99  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_90                   ((0x0da9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_91                   ((0x0db9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_92                   ((0x0dc9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_93                   ((0x0dd9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_94                   ((0x0de9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_95                   ((0x0df9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_96                   ((0x0e09  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_97                   ((0x0e19  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_98                   ((0x0e29  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_99                   ((0x0e39  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_100                  ((0x0e49  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_101                  ((0x0e59  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_102                  ((0x0e69  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_103                  ((0x0e79  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_104                  ((0x0e89  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_105                  ((0x0e99  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_106                  ((0x0ea9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_107                  ((0x0eb9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_108                  ((0x0ec9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_109                  ((0x0ed9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_110                  ((0x0ee9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_111                  ((0x0ef9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_112                  ((0x0f09  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_113                  ((0x0f19  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_114                  ((0x0f29  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_115                  ((0x0f39  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_116                  ((0x0f49  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_117                  ((0x0f59  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_118                  ((0x0f69  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_119                  ((0x0f79  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_120                  ((0x0f89  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_121                  ((0x0f99  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_122                  ((0x0fa9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_123                  ((0x0fb9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_124                  ((0x0fc9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_125                  ((0x0fd9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_126                  ((0x0fe9  << 2) + 0xfe444000)
+#define WCH_ADDR_CHANNEL_HIGH_127                  ((0x0ff9  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_0                     ((0x080a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_1                     ((0x081a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_2                     ((0x082a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_3                     ((0x083a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_4                     ((0x084a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_5                     ((0x085a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_6                     ((0x086a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_7                     ((0x087a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_8                     ((0x088a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_9                     ((0x089a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_10                    ((0x08aa  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_11                    ((0x08ba  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_12                    ((0x08ca  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_13                    ((0x08da  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_14                    ((0x08ea  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_15                    ((0x08fa  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_16                    ((0x090a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_17                    ((0x091a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_18                    ((0x092a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_19                    ((0x093a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_20                    ((0x094a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_21                    ((0x095a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_22                    ((0x096a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_23                    ((0x097a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_24                    ((0x098a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_25                    ((0x099a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_26                    ((0x09aa  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_27                    ((0x09ba  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_28                    ((0x09ca  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_29                    ((0x09da  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_30                    ((0x09ea  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_31                    ((0x09fa  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_32                    ((0x0a0a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_33                    ((0x0a1a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_34                    ((0x0a2a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_35                    ((0x0a3a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_36                    ((0x0a4a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_37                    ((0x0a5a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_38                    ((0x0a6a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_39                    ((0x0a7a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_40                    ((0x0a8a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_41                    ((0x0a9a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_42                    ((0x0aaa  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_43                    ((0x0aba  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_44                    ((0x0aca  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_45                    ((0x0ada  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_46                    ((0x0aea  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_47                    ((0x0afa  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_48                    ((0x0b0a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_49                    ((0x0b1a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_50                    ((0x0b2a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_51                    ((0x0b3a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_52                    ((0x0b4a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_53                    ((0x0b5a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_54                    ((0x0b6a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_55                    ((0x0b7a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_56                    ((0x0b8a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_57                    ((0x0b9a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_58                    ((0x0baa  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_59                    ((0x0bba  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_60                    ((0x0bca  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_61                    ((0x0bda  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_62                    ((0x0bea  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_63                    ((0x0bfa  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_64                    ((0x0c0a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_65                    ((0x0c1a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_66                    ((0x0c2a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_67                    ((0x0c3a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_68                    ((0x0c4a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_69                    ((0x0c5a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_70                    ((0x0c6a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_71                    ((0x0c7a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_72                    ((0x0c8a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_73                    ((0x0c9a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_74                    ((0x0caa  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_75                    ((0x0cba  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_76                    ((0x0cca  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_77                    ((0x0cda  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_78                    ((0x0cea  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_79                    ((0x0cfa  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_80                    ((0x0d0a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_81                    ((0x0d1a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_82                    ((0x0d2a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_83                    ((0x0d3a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_84                    ((0x0d4a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_85                    ((0x0d5a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_86                    ((0x0d6a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_87                    ((0x0d7a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_88                    ((0x0d8a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_89                    ((0x0d9a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_90                    ((0x0daa  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_91                    ((0x0dba  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_92                    ((0x0dca  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_93                    ((0x0dda  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_94                    ((0x0dea  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_95                    ((0x0dfa  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_96                    ((0x0e0a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_97                    ((0x0e1a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_98                    ((0x0e2a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_99                    ((0x0e3a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_100                   ((0x0e4a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_101                   ((0x0e5a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_102                   ((0x0e6a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_103                   ((0x0e7a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_104                   ((0x0e8a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_105                   ((0x0e9a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_106                   ((0x0eaa  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_107                   ((0x0eba  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_108                   ((0x0eca  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_109                   ((0x0eda  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_110                   ((0x0eea  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_111                   ((0x0efa  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_112                   ((0x0f0a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_113                   ((0x0f1a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_114                   ((0x0f2a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_115                   ((0x0f3a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_116                   ((0x0f4a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_117                   ((0x0f5a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_118                   ((0x0f6a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_119                   ((0x0f7a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_120                   ((0x0f8a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_121                   ((0x0f9a  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_122                   ((0x0faa  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_123                   ((0x0fba  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_124                   ((0x0fca  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_125                   ((0x0fda  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_126                   ((0x0fea  << 2) + 0xfe444000)
+#define WCH_PTR_CHANNEL_HIGH_127                   ((0x0ffa  << 2) + 0xfe444000)
+#define DMX_RDMA_INT_MASK                          ((0x0400  << 2) + 0xfe444000)
+#define DMX_WDMA_INT_MASK_0                        ((0x0401  << 2) + 0xfe444000)
+#define DMX_WDMA_INT_MASK_1                        ((0x0402  << 2) + 0xfe444000)
+#define DMX_WDMA_INT_MASK_2                        ((0x0403  << 2) + 0xfe444000)
+#define DMX_WDMA_INT_MASK_3                        ((0x0404  << 2) + 0xfe444000)
+#define DMX_CLEAN_W_BATCH_0                        ((0x0405  << 2) + 0xfe444000)
+#define DMX_CLEAN_W_BATCH_1                        ((0x0406  << 2) + 0xfe444000)
+#define DMX_CLEAN_W_BATCH_2                        ((0x0407  << 2) + 0xfe444000)
+#define DMX_CLEAN_W_BATCH_3                        ((0x0408  << 2) + 0xfe444000)
+#define DMX_CLEAN_RDMA                             ((0x0409  << 2) + 0xfe444000)
+#define DMX_CLEAN_WDMA_0                           ((0x040a  << 2) + 0xfe444000)
+#define DMX_CLEAN_WDMA_1                           ((0x040b  << 2) + 0xfe444000)
+#define DMX_CLEAN_WDMA_2                           ((0x040c  << 2) + 0xfe444000)
+#define DMX_CLEAN_WDMA_3                           ((0x040d  << 2) + 0xfe444000)
+#define DMX_RDMA_ACTIVE                            ((0x040e  << 2) + 0xfe444000)
+#define DMX_WDMA_ACTIVE_0                          ((0x040f  << 2) + 0xfe444000)
+#define DMX_WDMA_ACTIVE_1                          ((0x0410  << 2) + 0xfe444000)
+#define DMX_WDMA_ACTIVE_2                          ((0x0411  << 2) + 0xfe444000)
+#define DMX_WDMA_ACTIVE_3                          ((0x0412  << 2) + 0xfe444000)
+#define DMX_DMA_RDONE                              ((0x0413  << 2) + 0xfe444000)
+#define DMX_DMA_WDONE_0                            ((0x0414  << 2) + 0xfe444000)
+#define DMX_DMA_WDONE_1                            ((0x0415  << 2) + 0xfe444000)
+#define DMX_DMA_WDONE_2                            ((0x0416  << 2) + 0xfe444000)
+#define DMX_DMA_WDONE_3                            ((0x0417  << 2) + 0xfe444000)
+#define DMX_RDES_ERR                               ((0x0418  << 2) + 0xfe444000)
+#define DMX_RDES_LEN_ERR                           ((0x0419  << 2) + 0xfe444000)
+#define DMX_WDES_ERR_0                             ((0x041a  << 2) + 0xfe444000)
+#define DMX_WDES_ERR_1                             ((0x041b  << 2) + 0xfe444000)
+#define DMX_WDES_ERR_2                             ((0x041c  << 2) + 0xfe444000)
+#define DMX_WDES_ERR_3                             ((0x041d  << 2) + 0xfe444000)
+#define DMX_DMA_BATCH_END_0                        ((0x041e  << 2) + 0xfe444000)
+#define DMX_DMA_BATCH_END_1                        ((0x041f  << 2) + 0xfe444000)
+#define DMX_DMA_BATCH_END_2                        ((0x0420  << 2) + 0xfe444000)
+#define DMX_DMA_BATCH_END_3                        ((0x0421  << 2) + 0xfe444000)
+#define DMX_WDES_EOC_DONE_0                        ((0x0422  << 2) + 0xfe444000)
+#define DMX_WDES_EOC_DONE_1                        ((0x0423  << 2) + 0xfe444000)
+#define DMX_WDES_EOC_DONE_2                        ((0x0424  << 2) + 0xfe444000)
+#define DMX_WDES_EOC_DONE_3                        ((0x0425  << 2) + 0xfe444000)
+#define DMX_WCH_RESP_ERR0                          ((0x0426  << 2) + 0xfe444000)
+#define DMX_WCH_RESP_ERR1                          ((0x0427  << 2) + 0xfe444000)
+#define DMX_WCH_RESP_ERR2                          ((0x0428  << 2) + 0xfe444000)
+#define DMX_WCH_RESP_ERR3                          ((0x0429  << 2) + 0xfe444000)
+#define DMX_UPDT_PKT_SYNC                          ((0x0430  << 2) + 0xfe444000)
+#define DMX_RCHN_CFG                               ((0x0431  << 2) + 0xfe444000)
+#define DMX_WCHN_CFG                               ((0x0432  << 2) + 0xfe444000)
+#define DMX_MEM_PD_CRTL                            ((0x0433  << 2) + 0xfe444000)
+#define DMX_DMA_BUS_CFG                            ((0x0434  << 2) + 0xfe444000)
+#define DMX_DMA_GMW_CFG                            ((0x0435  << 2) + 0xfe444000)
+#define DMX_DMA_GMR_CFG                            ((0x0436  << 2) + 0xfe444000)
 //========================================================================
 //  TS OUTPUT REG - Registers
 //========================================================================
@@ -8155,7 +8525,7 @@
 //Bit 5             reg_sec_ctrl            //unsigned, RW, default=0
 //Bit 4             reg_hs_sel              //unsigned, RW, default=0
 //Bit 3:2           reg_din_sel             //unsigned, RW, default=1, dos vidin select
-//Bit 1             reg_sec_ehance_mode     //unsigned, RW, default=0
+//Bit 1             reserved
 //Bit 0             reg_frm_sel             //unsigned, RW, default=0, must be set before pls_frm_rst
 #define ISP_DWAP_TOP_COEF_CTRL0                    ((0x0003  << 2) + 0xfe092000)
 //Bit 31:0          reg_coef_baddr          //unsigned, RW, default=0
@@ -8333,6 +8703,8 @@
 //Bit 31:0      reg_dwgm_lut_addr       //unsigned, RW, default = 0
 #define ISP_DWAP_GAMMA_LUT_DATA                    ((0x0065  << 2) + 0xfe092000)
 //Bit 31:0      reg_dwgm_lut_data       //unsigned, RW, default = 0
+#define ISP_DWAP_ENHANCE_SEC                       ((0x0066  << 2) + 0xfe092000)
+//Bit 31:0      reg_sec_ehance_mode     //unsigned, RW, default=0
 //
 // Reading file:  ./isp_dwap_mif_reg.h
 //
@@ -17481,7 +17853,7 @@
 //                                  00 : use auto fifo arugt generate the output arugt.
 //                                  01 : use the register bit control
 //                                  00 : use the input arugt
-//Bit   8,        argument_cfg       unsigned  , default = 0  register arugt control bit
+//Bit   8,        arugt_cfg         unsigned  , default = 0  register arugt control bit
 //Bit   7:4,      rd_hold_num       unsigned  , default = 4  hold the read command threshold
 //Bit   3:0,      rd_rel_num        unsigned  , default = 0  release the read command threshold
 #define VPU_ASYNC_RD_MODE1                         ((0x27a6  << 2) + 0xff000000)
@@ -17494,7 +17866,7 @@
 //                                  00 : use auto fifo arugt generate the output arugt.
 //                                  01 : use the register bit control
 //                                  00 : use the input arugt
-//Bit   8,        argument_cfg       unsigned  , default = 0  register arugt control bit
+//Bit   8,        arugt_cfg         unsigned  , default = 0  register arugt control bit
 //Bit   7:4,      rd_hold_num       unsigned  , default = 4  hold the read command threshold
 //Bit   3:0,      rd_rel_num        unsigned  , default = 0  release the read command threshold
 #define VPU_ASYNC_RD_MODE2                         ((0x27a7  << 2) + 0xff000000)
@@ -17507,7 +17879,7 @@
 //                                  00 : use auto fifo arugt generate the output arugt.
 //                                  01 : use the register bit control
 //                                  00 : use the input arugt
-//Bit   8,        argument_cfg       unsigned  , default = 0  register arugt control bit
+//Bit   8,        arugt_cfg         unsigned  , default = 0  register arugt control bit
 //Bit   7:4,      rd_hold_num       unsigned  , default = 4  hold the read command threshold
 //Bit   3:0,      rd_rel_num        unsigned  , default = 0  release the read command threshold
 #define VPU_ASYNC_RD_MODE3                         ((0x27a8  << 2) + 0xff000000)
@@ -17520,7 +17892,7 @@
 //                                  00 : use auto fifo arugt generate the output arugt.
 //                                  01 : use the register bit control
 //                                  00 : use the input arugt
-//Bit   8,        argument_cfg       unsigned  , default = 0  register arugt control bit
+//Bit   8,        arugt_cfg         unsigned  , default = 0  register arugt control bit
 //Bit   7:4,      rd_hold_num       unsigned  , default = 4  hold the read command threshold
 //Bit   3:0,      rd_rel_num        unsigned  , default = 0  release the read command threshold
 #define VPU_ASYNC_RD_MODE4                         ((0x27a9  << 2) + 0xff000000)
@@ -17533,7 +17905,7 @@
 //                                  00 : use auto fifo arugt generate the output arugt.
 //                                  01 : use the register bit control
 //                                  00 : use the input arugt
-//Bit   8,        argument_cfg       unsigned  , default = 0  register arugt control bit
+//Bit   8,        arugt_cfg         unsigned  , default = 0  register arugt control bit
 //Bit   7:4,      rd_hold_num       unsigned  , default = 4  hold the read command threshold
 //Bit   3:0,      rd_rel_num        unsigned  , default = 0  release the read command threshold
 #define VPU_ASYNC_WR_MODE0                         ((0x27aa  << 2) + 0xff000000)
@@ -17546,7 +17918,7 @@
 //                                  00 : use auto fifo arugt generate the output arugt.
 //                                  01 : use the register bit control
 //                                  00 : use the input arugt
-//Bit   8,        argument_cfg       unsigned  , default = 0  register arugt control bit
+//Bit   8,        arugt_cfg         unsigned  , default = 0  register arugt control bit
 //Bit   7:4,      wr_hold_num       unsigned  , default = 4  hold the read command threshold
 //Bit   3:0,      wr_rel_num        unsigned  , default = 0  release the write command threshold
 #define VPU_ASYNC_WR_MODE1                         ((0x27ab  << 2) + 0xff000000)
@@ -17559,7 +17931,7 @@
 //                                  00 : use auto fifo arugt generate the output arugt.
 //                                  01 : use the register bit control
 //                                  00 : use the input arugt
-//Bit   8,        argument_cfg       unsigned  , default = 0  register arugt control bit
+//Bit   8,        arugt_cfg         unsigned  , default = 0  register arugt control bit
 //Bit   7:4,      wr_hold_num       unsigned  , default = 4  hold the read command threshold
 //Bit   3:0,      wr_rel_num        unsigned  , default = 0  release the write command threshold
 #define VPU_ASYNC_WR_MODE2                         ((0x27ac  << 2) + 0xff000000)
@@ -17572,7 +17944,7 @@
 //                                  00 : use auto fifo arugt generate the output arugt.
 //                                  01 : use the register bit control
 //                                  00 : use the input arugt
-//Bit   8,        argument_cfg       unsigned  , default = 0  register arugt control bit
+//Bit   8,        arugt_cfg         unsigned  , default = 0  register arugt control bit
 //Bit   7:4,      wr_hold_num       unsigned  , default = 4  hold the read command threshold
 //Bit   3:0,      wr_rel_num        unsigned  , default = 0  release the write command threshold
 #define VPU_ASYNC_STAT                             ((0x27ad  << 2) + 0xff000000)
@@ -25418,7 +25790,7 @@
 //
 // Closing file:  ./afbcd_vd_regs.h
 //
-//`include "fgrain_regs.h"      //nouse
+//`include "fgrain_regs.h"
 // -----------------------------------------------
 // REG_BASE:  VPPC_VCBUS_BASE = 0x50
 // -----------------------------------------------
@@ -26650,113 +27022,185 @@
 //Bit 31: 0        ro_sr_grph_flt_cnt        // unsigned ,    RO, default = 0  flat count numbers for graphic
 #define SAFA_PPS_RO_SR_GRPH_DTL_CNT                ((0x5161  << 2) + 0xff000000)
 //Bit 31: 0        ro_sr_grph_dtl_cnt        // unsigned ,    RO, default = 0  detail count numbers for graphic
-#define SAFA_PPS_RMETER_WINDOW1                    ((0x5162  << 2) + 0xff000000)
+#define SAFA_PPS_RMETER_FITER0_0                   ((0x5162  << 2) + 0xff000000)
+//Bit 31:24        reg_rmeter_h_filter0_tap9_3 // signed ,    RW, default = -31  horizontal configurable 9tap filter2 in resolution meter
+//Bit 23:16        reg_rmeter_h_filter0_tap9_2 // signed ,    RW, default = 29  horizontal configurable 9tap filter2 in resolution meter
+//Bit 15: 8        reg_rmeter_h_filter0_tap9_1 // signed ,    RW, default = -36  horizontal configurable 9tap filter2 in resolution meter
+//Bit  7: 0        reg_rmeter_h_filter0_tap9_0 // signed ,    RW, default = 36  horizontal configurable 9tap filter2 in resolution meter
+#define SAFA_PPS_RMETER_FITER0_1                   ((0x5163  << 2) + 0xff000000)
+//Bit 31:10        reserved
+//Bit  9: 8        reg_rmeter_h_filter_norm_0 // unsigned ,    RW, default = 0  norm of horizontal configurable 9tap filter2 in resolution meter
+//Bit  7: 0        reg_rmeter_h_filter0_tap9_4 // signed ,    RW, default = 20  horizontal configurable 9tap filter2 in resolution meter
+#define SAFA_PPS_RMETER_FITER1_0                   ((0x5164  << 2) + 0xff000000)
+//Bit 31:24        reg_rmeter_h_filter1_tap9_3 // signed ,    RW, default = 32  horizontal configurable 9tap filter2 in resolution meter
+//Bit 23:16        reg_rmeter_h_filter1_tap9_2 // signed ,    RW, default = -16  horizontal configurable 9tap filter2 in resolution meter
+//Bit 15: 8        reg_rmeter_h_filter1_tap9_1 // signed ,    RW, default = -19  horizontal configurable 9tap filter2 in resolution meter
+//Bit  7: 0        reg_rmeter_h_filter1_tap9_0 // signed ,    RW, default = 38  horizontal configurable 9tap filter2 in resolution meter
+#define SAFA_PPS_RMETER_FITER1_1                   ((0x5165  << 2) + 0xff000000)
+//Bit 31:10        reserved
+//Bit  9: 8        reg_rmeter_h_filter_norm_1 // unsigned ,    RW, default = 0  norm of horizontal configurable 9tap filter2 in resolution meter
+//Bit  7: 0        reg_rmeter_h_filter1_tap9_4 // signed ,    RW, default = -16  horizontal configurable 9tap filter2 in resolution meter
+#define SAFA_PPS_RMETER_FITER2_0                   ((0x5166  << 2) + 0xff000000)
+//Bit 31:24        reg_rmeter_h_filter2_tap9_3 // signed ,    RW, default = -30  horizontal configurable 9tap filter2 in resolution meter
+//Bit 23:16        reg_rmeter_h_filter2_tap9_2 // signed ,    RW, default = -24  horizontal configurable 9tap filter2 in resolution meter
+//Bit 15: 8        reg_rmeter_h_filter2_tap9_1 // signed ,    RW, default = 25  horizontal configurable 9tap filter2 in resolution meter
+//Bit  7: 0        reg_rmeter_h_filter2_tap9_0 // signed ,    RW, default = 50  horizontal configurable 9tap filter2 in resolution meter
+#define SAFA_PPS_RMETER_FITER2_1                   ((0x5167  << 2) + 0xff000000)
+//Bit 31:10        reserved
+//Bit  9: 8        reg_rmeter_h_filter_norm_2 // unsigned ,    RW, default = 0  norm of horizontal configurable 9tap filter2 in resolution meter
+//Bit  7: 0        reg_rmeter_h_filter2_tap9_4 // signed ,    RW, default = 4  horizontal configurable 9tap filter2 in resolution meter
+#define SAFA_PPS_RMETER_FITER3_0                   ((0x5168  << 2) + 0xff000000)
+//Bit 31:24        reg_rmeter_h_filter3_tap9_3 // signed ,    RW, default = -31  horizontal configurable 9tap filter2 in resolution meter
+//Bit 23:16        reg_rmeter_h_filter3_tap9_2 // signed ,    RW, default = 29  horizontal configurable 9tap filter2 in resolution meter
+//Bit 15: 8        reg_rmeter_h_filter3_tap9_1 // signed ,    RW, default = -36  horizontal configurable 9tap filter2 in resolution meter
+//Bit  7: 0        reg_rmeter_h_filter3_tap9_0 // signed ,    RW, default = 36  horizontal configurable 9tap filter2 in resolution meter
+#define SAFA_PPS_RMETER_FITER3_1                   ((0x5169  << 2) + 0xff000000)
+//Bit 31:10        reserved
+//Bit  9: 8        reg_rmeter_h_filter_norm_3 // unsigned ,    RW, default = 0  norm of horizontal configurable 9tap filter2 in resolution meter
+//Bit  7: 0        reg_rmeter_h_filter3_tap9_4 // signed ,    RW, default = 20  horizontal configurable 9tap filter2 in resolution meter
+#define SAFA_PPS_RMETER_WINDOW1                    ((0x516a  << 2) + 0xff000000)
 //Bit 31:30        reserved
 //Bit 29:16        reg_rmeter_window_3       // unsigned ,    RW, default = 2160  window location: vend
 //Bit 15:14        reserved
 //Bit 13: 0        reg_rmeter_window_2       // unsigned ,    RW, default = 0  window location: vstart
-#define SAFA_PPS_RMETER_WINDOW0                    ((0x5163  << 2) + 0xff000000)
+#define SAFA_PPS_RMETER_WINDOW0                    ((0x516b  << 2) + 0xff000000)
 //Bit 31:30        reserved
 //Bit 29:16        reg_rmeter_window_1       // unsigned ,    RW, default = 3840  window location: hend
 //Bit 15:14        reserved
 //Bit 13: 0        reg_rmeter_window_0       // unsigned ,    RW, default = 0  window location: hstart
-#define SAFA_PPS_RMETER_CORING                     ((0x5164  << 2) + 0xff000000)
+#define SAFA_PPS_RMETER_CORING                     ((0x516c  << 2) + 0xff000000)
 //Bit 31: 8        reserved
 //Bit  7: 4        reg_rmeter_coring_h       // unsigned ,    RW, default = 0
 //Bit  3: 0        reg_rmeter_coring_v       // unsigned ,    RW, default = 0
-#define SAFA_PPS_RMETER_H_LOW_THD                  ((0x5165  << 2) + 0xff000000)
+#define SAFA_PPS_RMETER_H_LOW_THD                  ((0x516d  << 2) + 0xff000000)
 //Bit 31:24        reg_rmeter_h_low_thd_3    // unsigned ,    RW, default = 6
 //Bit 23:16        reg_rmeter_h_low_thd_2    // unsigned ,    RW, default = 8
 //Bit 15: 8        reg_rmeter_h_low_thd_1    // unsigned ,    RW, default = 10
 //Bit  7: 0        reg_rmeter_h_low_thd_0    // unsigned ,    RW, default = 15
-#define SAFA_PPS_RMETER_H_HIG_THD                  ((0x5166  << 2) + 0xff000000)
+#define SAFA_PPS_RMETER_H_HIG_THD                  ((0x516e  << 2) + 0xff000000)
 //Bit 31:24        reg_rmeter_h_hign_thd_3   // unsigned ,    RW, default = 255
 //Bit 23:16        reg_rmeter_h_hign_thd_2   // unsigned ,    RW, default = 255
 //Bit 15: 8        reg_rmeter_h_hign_thd_1   // unsigned ,    RW, default = 255
 //Bit  7: 0        reg_rmeter_h_hign_thd_0   // unsigned ,    RW, default = 255
-#define SAFA_PPS_RMETER_H_RATIO                    ((0x5167  << 2) + 0xff000000)
+#define SAFA_PPS_RMETER_H_RATIO                    ((0x516f  << 2) + 0xff000000)
 //Bit 31:16        reserved
 //Bit 15:12        reg_rmeter_h_ratio_3      // unsigned ,    RW, default = 12
 //Bit 11: 8        reg_rmeter_h_ratio_2      // unsigned ,    RW, default = 9
 //Bit  7: 4        reg_rmeter_h_ratio_1      // unsigned ,    RW, default = 7
 //Bit  3: 0        reg_rmeter_h_ratio_0      // unsigned ,    RW, default = 4
-#define SAFA_PPS_RMETER_V_LOW_THD                  ((0x5168  << 2) + 0xff000000)
+#define SAFA_PPS_RMETER_V_LOW_THD                  ((0x5170  << 2) + 0xff000000)
 //Bit 31:24        reg_rmeter_v_low_thd_3    // unsigned ,    RW, default = 6
 //Bit 23:16        reg_rmeter_v_low_thd_2    // unsigned ,    RW, default = 8
 //Bit 15: 8        reg_rmeter_v_low_thd_1    // unsigned ,    RW, default = 10
 //Bit  7: 0        reg_rmeter_v_low_thd_0    // unsigned ,    RW, default = 12
-#define SAFA_PPS_RMETER_V_HIG_THD                  ((0x5169  << 2) + 0xff000000)
+#define SAFA_PPS_RMETER_V_HIG_THD                  ((0x5171  << 2) + 0xff000000)
 //Bit 31:24        reg_rmeter_v_hign_thd_3   // unsigned ,    RW, default = 255
 //Bit 23:16        reg_rmeter_v_hign_thd_2   // unsigned ,    RW, default = 255
 //Bit 15: 8        reg_rmeter_v_hign_thd_1   // unsigned ,    RW, default = 255
 //Bit  7: 0        reg_rmeter_v_hign_thd_0   // unsigned ,    RW, default = 255
-#define SAFA_PPS_RMETER_V_RATIO                    ((0x516a  << 2) + 0xff000000)
+#define SAFA_PPS_RMETER_V_RATIO                    ((0x5172  << 2) + 0xff000000)
 //Bit 31:16        reserved
 //Bit 15:12        reg_rmeter_v_ratio_3      // unsigned ,    RW, default = 13
 //Bit 11: 8        reg_rmeter_v_ratio_2      // unsigned ,    RW, default = 10
 //Bit  7: 4        reg_rmeter_v_ratio_1      // unsigned ,    RW, default = 8
 //Bit  3: 0        reg_rmeter_v_ratio_0      // unsigned ,    RW, default = 3
-#define SAFA_PPS_RMETER_D_LOW_THD                  ((0x516b  << 2) + 0xff000000)
+#define SAFA_PPS_RMETER_D_LOW_THD                  ((0x5173  << 2) + 0xff000000)
 //Bit 31:24        reg_rmeter_d_low_thd_3    // unsigned ,    RW, default = 6
 //Bit 23:16        reg_rmeter_d_low_thd_2    // unsigned ,    RW, default = 8
 //Bit 15: 8        reg_rmeter_d_low_thd_1    // unsigned ,    RW, default = 10
 //Bit  7: 0        reg_rmeter_d_low_thd_0    // unsigned ,    RW, default = 12
-#define SAFA_PPS_RMETER_D_HIG_THD                  ((0x516c  << 2) + 0xff000000)
+#define SAFA_PPS_RMETER_D_HIG_THD                  ((0x5174  << 2) + 0xff000000)
 //Bit 31:24        reg_rmeter_d_hign_thd_3   // unsigned ,    RW, default = 255
 //Bit 23:16        reg_rmeter_d_hign_thd_2   // unsigned ,    RW, default = 255
 //Bit 15: 8        reg_rmeter_d_hign_thd_1   // unsigned ,    RW, default = 255
 //Bit  7: 0        reg_rmeter_d_hign_thd_0   // unsigned ,    RW, default = 255
-#define SAFA_PPS_RMETER_D_RATIO                    ((0x516d  << 2) + 0xff000000)
+#define SAFA_PPS_RMETER_D_RATIO                    ((0x5175  << 2) + 0xff000000)
 //Bit 31:16        reserved
 //Bit 15:12        reg_rmeter_d_ratio_3      // unsigned ,    RW, default = 11
 //Bit 11: 8        reg_rmeter_d_ratio_2      // unsigned ,    RW, default = 9
 //Bit  7: 4        reg_rmeter_d_ratio_1      // unsigned ,    RW, default = 8
 //Bit  3: 0        reg_rmeter_d_ratio_0      // unsigned ,    RW, default = 3
-#define SAFA_PPS_RO_RMETER_HCNT_0                  ((0x516e  << 2) + 0xff000000)
+#define SAFA_PPS_RO_RMETER_HCNT_0                  ((0x5176  << 2) + 0xff000000)
 //Bit 31: 0        ro_rmeter_hcnt_0          // unsigned ,    RO, default = 0  count for horizontal resolution meters
-#define SAFA_PPS_RO_RMETER_HCNT_1                  ((0x516f  << 2) + 0xff000000)
+#define SAFA_PPS_RO_RMETER_HCNT_1                  ((0x5177  << 2) + 0xff000000)
 //Bit 31: 0        ro_rmeter_hcnt_1          // unsigned ,    RO, default = 0  count for horizontal resolution meters
-#define SAFA_PPS_RO_RMETER_HCNT_2                  ((0x5170  << 2) + 0xff000000)
+#define SAFA_PPS_RO_RMETER_HCNT_2                  ((0x5178  << 2) + 0xff000000)
 //Bit 31: 0        ro_rmeter_hcnt_2          // unsigned ,    RO, default = 0  count for horizontal resolution meters
-#define SAFA_PPS_RO_RMETER_HCNT_3                  ((0x5171  << 2) + 0xff000000)
+#define SAFA_PPS_RO_RMETER_HCNT_3                  ((0x5179  << 2) + 0xff000000)
 //Bit 31: 0        ro_rmeter_hcnt_3          // unsigned ,    RO, default = 0  count for horizontal resolution meters
-#define SAFA_PPS_RO_RMETER_HCNT_4                  ((0x5172  << 2) + 0xff000000)
+#define SAFA_PPS_RO_RMETER_HCNT_4                  ((0x517a  << 2) + 0xff000000)
 //Bit 31: 0        ro_rmeter_hcnt_4          // unsigned ,    RO, default = 0  count for horizontal resolution meters
-#define SAFA_PPS_RO_RMETER_VCNT_0                  ((0x5173  << 2) + 0xff000000)
+#define SAFA_PPS_RO_RMETER_VCNT_0                  ((0x517b  << 2) + 0xff000000)
 //Bit 31: 0        ro_rmeter_vcnt_0          // unsigned ,    RO, default = 0  count for vertical resolution meters
-#define SAFA_PPS_RO_RMETER_VCNT_1                  ((0x5174  << 2) + 0xff000000)
+#define SAFA_PPS_RO_RMETER_VCNT_1                  ((0x517c  << 2) + 0xff000000)
 //Bit 31: 0        ro_rmeter_vcnt_1          // unsigned ,    RO, default = 0  count for vertical resolution meters
-#define SAFA_PPS_RO_RMETER_VCNT_2                  ((0x5175  << 2) + 0xff000000)
+#define SAFA_PPS_RO_RMETER_VCNT_2                  ((0x517d  << 2) + 0xff000000)
 //Bit 31: 0        ro_rmeter_vcnt_2          // unsigned ,    RO, default = 0  count for vertical resolution meters
-#define SAFA_PPS_RO_RMETER_VCNT_3                  ((0x5176  << 2) + 0xff000000)
+#define SAFA_PPS_RO_RMETER_VCNT_3                  ((0x517e  << 2) + 0xff000000)
 //Bit 31: 0        ro_rmeter_vcnt_3          // unsigned ,    RO, default = 0  count for vertical resolution meters
-#define SAFA_PPS_RO_RMETER_VCNT_4                  ((0x5177  << 2) + 0xff000000)
+#define SAFA_PPS_RO_RMETER_VCNT_4                  ((0x517f  << 2) + 0xff000000)
 //Bit 31: 0        ro_rmeter_vcnt_4          // unsigned ,    RO, default = 0  count for vertical resolution meters
-#define SAFA_PPS_RO_RMETER_PDCNT_0                 ((0x5178  << 2) + 0xff000000)
+#define SAFA_PPS_RO_RMETER_PDCNT_0                 ((0x5180  << 2) + 0xff000000)
 //Bit 31: 0        ro_rmeter_pdcnt_0         // unsigned ,    RO, default = 0  count for diag0 resolution meters
-#define SAFA_PPS_RO_RMETER_PDCNT_1                 ((0x5179  << 2) + 0xff000000)
+#define SAFA_PPS_RO_RMETER_PDCNT_1                 ((0x5181  << 2) + 0xff000000)
 //Bit 31: 0        ro_rmeter_pdcnt_1         // unsigned ,    RO, default = 0  count for diag0 resolution meters
-#define SAFA_PPS_RO_RMETER_PDCNT_2                 ((0x517a  << 2) + 0xff000000)
+#define SAFA_PPS_RO_RMETER_PDCNT_2                 ((0x5182  << 2) + 0xff000000)
 //Bit 31: 0        ro_rmeter_pdcnt_2         // unsigned ,    RO, default = 0  count for diag0 resolution meters
-#define SAFA_PPS_RO_RMETER_PDCNT_3                 ((0x517b  << 2) + 0xff000000)
+#define SAFA_PPS_RO_RMETER_PDCNT_3                 ((0x5183  << 2) + 0xff000000)
 //Bit 31: 0        ro_rmeter_pdcnt_3         // unsigned ,    RO, default = 0  count for diag0 resolution meters
-#define SAFA_PPS_RO_RMETER_PDCNT_4                 ((0x517c  << 2) + 0xff000000)
+#define SAFA_PPS_RO_RMETER_PDCNT_4                 ((0x5184  << 2) + 0xff000000)
 //Bit 31: 0        ro_rmeter_pdcnt_4         // unsigned ,    RO, default = 0  count for diag0 resolution meters
-#define SAFA_PPS_RO_RMETER_NDCNT_0                 ((0x517d  << 2) + 0xff000000)
+#define SAFA_PPS_RO_RMETER_NDCNT_0                 ((0x5185  << 2) + 0xff000000)
 //Bit 31: 0        ro_rmeter_ndcnt_0         // unsigned ,    RO, default = 0  count for diag1 resolution meters
-#define SAFA_PPS_RO_RMETER_NDCNT_1                 ((0x517e  << 2) + 0xff000000)
+#define SAFA_PPS_RO_RMETER_NDCNT_1                 ((0x5186  << 2) + 0xff000000)
 //Bit 31: 0        ro_rmeter_ndcnt_1         // unsigned ,    RO, default = 0  count for diag1 resolution meters
-#define SAFA_PPS_RO_RMETER_NDCNT_2                 ((0x517f  << 2) + 0xff000000)
+#define SAFA_PPS_RO_RMETER_NDCNT_2                 ((0x5187  << 2) + 0xff000000)
 //Bit 31: 0        ro_rmeter_ndcnt_2         // unsigned ,    RO, default = 0  count for diag1 resolution meters
-#define SAFA_PPS_RO_RMETER_NDCNT_3                 ((0x5180  << 2) + 0xff000000)
+#define SAFA_PPS_RO_RMETER_NDCNT_3                 ((0x5188  << 2) + 0xff000000)
 //Bit 31: 0        ro_rmeter_ndcnt_3         // unsigned ,    RO, default = 0  count for diag1 resolution meters
-#define SAFA_PPS_RO_RMETER_NDCNT_4                 ((0x5181  << 2) + 0xff000000)
+#define SAFA_PPS_RO_RMETER_NDCNT_4                 ((0x5189  << 2) + 0xff000000)
 //Bit 31: 0        ro_rmeter_ndcnt_4         // unsigned ,    RO, default = 0  count for diag1 resolution meters
-#define SAFA_PPS_HW_CTRL                           ((0x5190  << 2) + 0xff000000)
+#define SAFA_PPS_DEJAGGY_CTRL                      ((0x518a  << 2) + 0xff000000)
+//Bit 31           reg_dejaggy_en            // unsigned ,    RW, default = 0
+//Bit 30           reg_dejaggy_dps_en_0      // unsigned ,    RW, default = 0
+//Bit 29           reg_dejaggy_dps_en_1      // unsigned ,    RW, default = 0
+//Bit 28           reg_dejaggy_sameside_mode // unsigned ,    RW, default = 0
+//Bit 27:25        reserved
+//Bit 24           reg_dejaggy_sameside_prtct // unsigned ,    RW, default = 0
+//Bit 23:16        reserved
+//Bit 15:12        reg_dejaggy_procluma_alpha_1 // unsigned ,    RW, default = 15
+//Bit 11: 8        reg_dejaggy_procluma_alpha_0 // unsigned ,    RW, default = 15
+//Bit  7: 4        reg_dejaggy_procchrm_alpha_1 // unsigned ,    RW, default = 15
+//Bit  3: 0        reg_dejaggy_procchrm_alpha_0 // unsigned ,    RW, default = 15
+#define SAFA_PPS_CNTL_SCALE_COEF_IDX_LUMA          ((0x5190  << 2) + 0xff000000)
+//Bit 31:15        reserved
+//Bit 14           reg_index_inc_luma        // unsigned ,    RW, default = 0  ,index increment, if bit9 == 1  then (0: index increase 1, 1: index increase 2) else (index increase 2)
+//Bit 13           reg_rd_cbus_coef_en_luma  // unsigned ,    RW, default = 0  ,1: read coef through cbus enable, just for debug purpose in case when we wanna check the coef in ram in correct or not
+//Bit 12:10        reserved
+//Bit  9: 7        reg_type_index_luma       // unsigned ,    RW, default = 0  ,type of index, 00: vertical coef, 01: vertical chroma coef: 10: horizontal coef, 11: resevered
+//Bit  6: 0        reg_coef_index_luma       // unsigned ,    RW, default = 0  ,coef	index
+#define SAFA_PPS_CNTL_SCALE_COEF_LUMA              ((0x5191  << 2) + 0xff000000)
+//Bit 31:24        reg_coef0_luma            // signed ,      RW, default = 0  ,	coefficients for vertical filter and horizontal	filter
+//Bit 23:16        reg_coef1_luma            // signed ,      RW, default = 0  ,	coefficients for vertical filter and horizontal	filter
+//Bit 15: 8        reg_coef2_luma            // signed ,      RW, default = 0  ,	coefficients for vertical filter and horizontal	filter
+//Bit  7: 0        reg_coef3_luma            // signed ,      RW, default = 0  ,	coefficients for vertical filter and horizontal	filter
+#define SAFA_PPS_CNTL_SCALE_COEF_IDX_CHRO          ((0x5192  << 2) + 0xff000000)
+//Bit 31:15        reserved
+//Bit 14           reg_index_inc_chro        // unsigned ,    RW, default = 0  ,index increment, if bit9 == 1  then (0: index increase 1, 1: index increase 2) else (index increase 2)
+//Bit 13           reg_rd_cbus_coef_en_chro  // unsigned ,    RW, default = 0  ,1: read coef through cbus enable, just for debug purpose in case when we wanna check the coef in ram in correct or not
+//Bit 12:10        reserved
+//Bit  9: 7        reg_type_index_chro       // unsigned ,    RW, default = 0  ,type of index, 00: vertical coef, 01: vertical chroma coef: 10: horizontal coef, 11: resevered
+//Bit  6: 0        reg_coef_index_chro       // unsigned ,    RW, default = 0  ,coef	index
+#define SAFA_PPS_CNTL_SCALE_COEF_CHRO              ((0x5193  << 2) + 0xff000000)
+//Bit 31:24        reg_coef0_chro            // signed ,      RW, default = 0  ,	coefficients for vertical filter and horizontal	filter
+//Bit 23:16        reg_coef1_chro            // signed ,      RW, default = 0  ,	coefficients for vertical filter and horizontal	filter
+//Bit 15: 8        reg_coef2_chro            // signed ,      RW, default = 0  ,	coefficients for vertical filter and horizontal	filter
+//Bit  7: 0        reg_coef3_chro            // signed ,      RW, default = 0  ,	coefficients for vertical filter and horizontal	filter
+#define SAFA_PPS_HW_CTRL                           ((0x5194  << 2) + 0xff000000)
 //Bit 31:29        reserved
 //Bit 28           reg_field                 // unsigned ,    RW, default = 0
 //Bit 27:26        reg_frm2fld_en            // unsigned ,    RW, default = 0  ,0bit: 0:p 1:i 1bit: 0:field 1:reg_field
-//Bit 25:21        reg_vsc_bot_ini_integer   //   signed ,    RW, default = -1
+//Bit 25:21        reserved
 //Bit 20           reg_postvsc_rpt_en        // unsigned ,    RW, default = 1
 //Bit 19           reg_hvalp_rptbuf_en       // unsigned ,    RW, default = 1
 //Bit 18:11        reserved
@@ -26764,13 +27208,18 @@
 //Bit  8           reg_safa_pps_top_en       // unsigned ,    RW, default = 0  ,reg_safa_pps_top_en
 //Bit  7: 6        reg_444to422_mode         // unsigned ,    RW, default = 0
 //Bit  5           reg_padding_mode          // unsigned ,    RW, default = 0
-//Bit  4           reg_analy_en              // unsigned ,    RW, default = 1  ,reg_postsc_en
+//Bit  4           reg_analy_en              // unsigned ,    RW, default = 0  ,reg_postsc_en
 //Bit  3           reg_rdout_mode            // unsigned ,    RW, default = 0  ,post_vscaler_rd_mode
-//Bit  2           reg_postsc_en             // unsigned ,    RW, default = 1  ,reg_postsc_en
+//Bit  2           reg_postsc_en             // unsigned ,    RW, default = 0  ,reg_postsc_en
 //Bit  1           reg_size_mux              // unsigned ,    RW, default = 0  ,hsize sel
 //Bit  0           reg_prevsc_outside_en     // unsigned ,    RW, default = 1  ,video1 scale out enable
-#define SAFA_PPS_GATE_CTRL                         ((0x5191  << 2) + 0xff000000)
-//Bit 31:28        reserved
+#define SAFA_PPS_BOT_VSC_INIT                      ((0x5195  << 2) + 0xff000000)
+//Bit 31:21        reserved
+//Bit 20:16        reg_vsc_bot_ini_integer   // signed ,      RW, default = -1
+//Bit 15: 0        reg_vsc_bot_ini_phase     // unsigned ,    RW, default = 0
+#define SAFA_PPS_GATE_CTRL                         ((0x5196  << 2) + 0xff000000)
+//Bit 31:30        reserved
+//Bit 29:28        reg_dejag_gclk_ctrl       // unsigned ,    RW, default = 0
 //Bit 27:26        reg_upsap_gclk_ctrl       // unsigned ,    RW, default = 0
 //Bit 25:24        reg_analy_gclk_ctrl       // unsigned ,    RW, default = 0
 //Bit 23:22        reg_analy_post_gclk_ctrl  // unsigned ,    RW, default = 0
@@ -26785,54 +27234,35 @@
 //Bit  5: 4        reg_dir_gclk_ctrl         // unsigned ,    RW, default = 0
 //Bit  3: 2        reg_hvalp_gclk_ctrl       // unsigned ,    RW, default = 0
 //Bit  1: 0        reg_postsc_gclk_ctrl      // unsigned ,    RW, default = 0
-#define SAFA_PPS_UPSAP_BLANK_NUM                   ((0x5192  << 2) + 0xff000000)
-//Bit 31:16        reg_vsc_bot_ini_phase     // unsigned ,    RW, default = 0
+#define SAFA_PPS_UPSAP_BLANK_NUM                   ((0x5197  << 2) + 0xff000000)
+//Bit 31:16        reserved
 //Bit 15: 8        reg_upsap_hblank_num      // unsigned ,    RW, default = 3
 //Bit  7: 0        reg_upsap_vblank_num      // unsigned ,    RW, default = 5
-#define SAFA_PPS_BLANK_NUM                         ((0x5193  << 2) + 0xff000000)
+#define SAFA_PPS_BLANK_NUM                         ((0x5198  << 2) + 0xff000000)
 //Bit 31:24        reg_luma_hsc_hblank_num   // unsigned ,    RW, default = 12
 //Bit 23:16        reg_luma_hsc_vblank_num   // unsigned ,    RW, default = 21
 //Bit 15: 8        reg_chrm_hsc_hblank_num   // unsigned ,    RW, default = 12
 //Bit  7: 0        reg_chrm_hsc_vblank_num   // unsigned ,    RW, default = 21
-#define SAFA_PPS_ANALY_PRE_BLANK_NUM               ((0x5194  << 2) + 0xff000000)
+#define SAFA_PPS_ANALY_PRE_BLANK_NUM               ((0x5199  << 2) + 0xff000000)
 //Bit 31:24        reg_aly_pre_hblank_num    // unsigned ,    RW, default = 6
 //Bit 23:16        reg_aly_pre_vblank_num    // unsigned ,    RW, default = 34
 //Bit 15: 8        reg_hvp_pre_hblank_num    // unsigned ,    RW, default = 4
 //Bit  7: 0        reg_hvp_pre_vblank_num    // unsigned ,    RW, default = 14
-#define SAFA_PPS_ANALY_POST_BLANK_NUM              ((0x5195  << 2) + 0xff000000)
+#define SAFA_PPS_ANALY_POST_BLANK_NUM              ((0x519a  << 2) + 0xff000000)
 //Bit 31:24        reg_aly_po0_hblank_num    // unsigned ,    RW, default = 4
 //Bit 23:16        reg_aly_po0_vblank_num    // unsigned ,    RW, default = 28
 //Bit 15: 8        reg_aly_po1_hblank_num    // unsigned ,    RW, default = 3
 //Bit  7: 0        reg_aly_po1_vblank_num    // unsigned ,    RW, default = 7
-#define SAFA_PPS_HVALP_POST_BLANK_NUM              ((0x5196  << 2) + 0xff000000)
+#define SAFA_PPS_HVALP_POST_BLANK_NUM              ((0x519b  << 2) + 0xff000000)
 //Bit 31:24        reg_hvp_v_hblank_num      // unsigned ,    RW, default = 3
 //Bit 23:16        reg_hvp_v_vblank_num      // unsigned ,    RW, default = 4
 //Bit 15: 8        reg_hvp_h_hblank_num      // unsigned ,    RW, default = 3
 //Bit  7: 0        reg_hvp_h_vblank_num      // unsigned ,    RW, default = 2
-#define SAFA_PPS_CNTL_SCALE_COEF_IDX_LUMA          ((0x5197  << 2) + 0xff000000)
-//Bit 31:15        reserved
-//Bit 14           reg_index_inc_luma        // unsigned ,    RW, default = 0  ,index increment, if bit9 == 1  then (0: index increase 1, 1: index increase 2) else (index increase 2)
-//Bit 13           reg_rd_cbus_coef_en_luma  // unsigned ,    RW, default = 0  ,1: read coef through cbus enable, just for debug purpose in case when we wanna check the coef in ram in correct or not
-//Bit 12:10        reserved
-//Bit  9: 7        reg_type_index_luma       // unsigned ,    RW, default = 0  ,type of index, 00: vertical coef, 01: vertical chroma coef: 10: horizontal coef, 11: resevered
-//Bit  6: 0        reg_coef_index_luma       // unsigned ,    RW, default = 0  ,coef	index
-#define SAFA_PPS_CNTL_SCALE_COEF_LUMA              ((0x5198  << 2) + 0xff000000)
-//Bit 31:24        reg_coef0_luma            // signed ,      RW, default = 0  ,	coefficients for vertical filter and horizontal	filter
-//Bit 23:16        reg_coef1_luma            // signed ,      RW, default = 0  ,	coefficients for vertical filter and horizontal	filter
-//Bit 15: 8        reg_coef2_luma            // signed ,      RW, default = 0  ,	coefficients for vertical filter and horizontal	filter
-//Bit  7: 0        reg_coef3_luma            // signed ,      RW, default = 0  ,	coefficients for vertical filter and horizontal	filter
-#define SAFA_PPS_CNTL_SCALE_COEF_IDX_CHRO          ((0x5199  << 2) + 0xff000000)
-//Bit 31:15        reserved
-//Bit 14           reg_index_inc_chro        // unsigned ,    RW, default = 0  ,index increment, if bit9 == 1  then (0: index increase 1, 1: index increase 2) else (index increase 2)
-//Bit 13           reg_rd_cbus_coef_en_chro  // unsigned ,    RW, default = 0  ,1: read coef through cbus enable, just for debug purpose in case when we wanna check the coef in ram in correct or not
-//Bit 12:10        reserved
-//Bit  9: 7        reg_type_index_chro       // unsigned ,    RW, default = 0  ,type of index, 00: vertical coef, 01: vertical chroma coef: 10: horizontal coef, 11: resevered
-//Bit  6: 0        reg_coef_index_chro       // unsigned ,    RW, default = 0  ,coef	index
-#define SAFA_PPS_CNTL_SCALE_COEF_CHRO              ((0x519a  << 2) + 0xff000000)
-//Bit 31:24        reg_coef0_chro            // signed ,      RW, default = 0  ,	coefficients for vertical filter and horizontal	filter
-//Bit 23:16        reg_coef1_chro            // signed ,      RW, default = 0  ,	coefficients for vertical filter and horizontal	filter
-//Bit 15: 8        reg_coef2_chro            // signed ,      RW, default = 0  ,	coefficients for vertical filter and horizontal	filter
-//Bit  7: 0        reg_coef3_chro            // signed ,      RW, default = 0  ,	coefficients for vertical filter and horizontal	filter
+#define SAFA_PPS_DEJAG_BLANK_NUM                   ((0x519c  << 2) + 0xff000000)
+//Bit 31:24        reg_luma_dejag_hblank_num // unsigned ,    RW, default = 5
+//Bit 23:16        reg_luma_dejag_vblank_num // unsigned ,    RW, default = 5
+//Bit 15: 8        reg_chrm_dejag_hblank_num // unsigned ,    RW, default = 5
+//Bit  7: 0        reg_chrm_dejag_vblank_num // unsigned ,    RW, default = 5
 // synopsys translate_off
 // synopsys translate_on
 //
@@ -28401,12 +28831,12 @@
 //Bit  7: 5        reserved
 //Bit  4           reg_contest_debug_demo_en // unsigned ,    RW, default = 0
 //Bit  3: 1        reserved
-//Bit  0           reg_CONTRST_debug_demo_inverse // unsigned ,    RW, default = 0
+//Bit  0           reg_contest_debug_demo_inverse // unsigned ,    RW, default = 0
 #define VPP_CONTRST_DEBUG_DEMO_WND_COEF_1          ((0x5301  << 2) + 0xff000000)
 //Bit 31:28        reserved
 //Bit 27:16        reg_debug_demo_wnd_3      // unsigned ,    RW, default = 1620  control debug window row size
 //Bit 15:12        reserved
-//Bit 11: 0        reg_debug_demo_wnd_2      // unsigned ,    RW, default = 2880  ontrol debug window col size
+//Bit 11: 0        reg_debug_demo_wnd_2      // unsigned ,    RW, default = 2880  control debug window col size
 #define VPP_CONTRST_DEBUG_DEMO_WND_COEF_0          ((0x5302  << 2) + 0xff000000)
 //Bit 31:28        reserved
 //Bit 27:16        reg_debug_demo_wnd_1      // unsigned ,    RW, default = 540  control debug window row size
@@ -28884,8 +29314,8 @@
 #define VPP_LC_MAP_RAM_ADDR                        ((0x5381  << 2) + 0xff000000)
 //Bit 31           reg_lc_ram_pre_read       //unsigned , WO, default = 0,  for RAM read, write 1 for pre-read from RAM with address: {reg_lc_ram_vidx,reg_lc_ram_hidx}
 //Bit 30:7         reserved
-//Bit 6:4          reg_lc_ram_vidx           //unsigned , RW, default = 0,  RAM index for vert
-//Bit 3:0          reg_lc_ram_hidx           //unsigned , RW, default = 0,  RAM index for horz
+//Bit 6:4          reg_lc_ram_vidx           //unsigned , RW, default = 0,  RAM index for vertical
+//Bit 3:0          reg_lc_ram_hidx           //unsigned , RW, default = 0,  RAM index for horizontal
 #define VPP_LC_MAP_RAM_DATA                        ((0x5382  << 2) + 0xff000000)
 //Bit 31:30        reserved
 //Bit 29:0         reg_lc_ram_data           //unsigned , RW, default = 0,  RAM data for write and read
@@ -29160,9 +29590,9 @@
 //Bit  11:0        reg_rdmif_lbuf_depth  // unsigned, RW, default = 512
 #define AFBCDM_VDTOP_CTRL1                         ((0x5439  << 2) + 0xff000000)
 //Bit  31:30       reserved                //
-//bit  29:16       reg_fgrain_ppconv_vsize // unsigned, RW, default = 2160
+//Bit  29:16       reg_fgrain_ppconv_vsize // unsigned, RW, default = 2160
 //Bit  15:14       reserved                //
-//bit  13: 0       reg_fgrain_ppconv_hsize // unsigned, RW, default = 3840
+//Bit  13: 0       reg_fgrain_ppconv_hsize // unsigned, RW, default = 3840
 //==========================================================================
 // AFBC_DEC
 //==========================================================================
@@ -29460,8 +29890,32 @@
 #define AFBCDM_FGRAIN_GCLK_CTRL_2                  ((0x5477  << 2) + 0xff000000)
 //Bit 31:0      reg_fgrain_gclk_ctrl2  .unsigned , default = 0
 #define AFBCDM_FGRAIN_PARAM_ADDR                   ((0x5478  << 2) + 0xff000000)
+//Bit 31:8       reserved
+//Bit  7:0       c_fgrain_param_addr    //unsigned ,RO, default = 0
 #define AFBCDM_FGRAIN_PARAM_DATA                   ((0x5479  << 2) + 0xff000000)
+//Bit 31:0       ro_fgrain_param_data   //unsigned ,RO, default = 0
 #define AFBCDM_FGRAIN_SLICE_WIN_H                  ((0x547a  << 2) + 0xff000000)
+//Bit 31:16      reg_slice_win_end_h    //unsigned ,RW, default = 3812
+//Bit 15:0       reg_slice_win_bgn_h    //unsigned ,RW, default = 0
+#define AFBCDM_FGRAIN_ALONE_MODE_CTRL              ((0x547c  << 2) + 0xff000000)
+//Bit 31:26      reserved
+//Bit 25         reg_debug_demo_inverse   //unsigned ,RW, default = 0
+//Bit 24         reg_debug_demo_en        //unsigned ,RW, default = 0
+//Bit 23:16      reg_fg_final_gain_1      //unsigned ,RW, default = 16,chroma fg final gian,
+//Bit 15:8       reg_fg_final_gain_0      //unsigned ,RW, default = 16,luma   fg final gian,
+//Bit 7:2        reserved
+//Bit 1          reg_fg_lut_up_mode       //unsigned ,RW, default = 1
+//Bit 0          reg_alone_mode           //unsigned ,RW, default = 0
+#define AFBCDM_FGRAIN_DEBUG_DEMO_WND_COEF_0        ((0x547d  << 2) + 0xff000000)
+//Bit 31:28      reserved
+//Bit 27:16      reg_debug_demo_wnd_1     //unsigned ,RW, default = 540 ,control debug window row size,
+//Bit 15:12      reserved
+//Bit 11:0       reg_debug_demo_wnd_0     //unsigned ,RW, default = 960 ,control debug window col size,
+#define AFBCDM_FGRAIN_DEBUG_DEMO_WND_COEF_1        ((0x547e  << 2) + 0xff000000)
+//Bit 31:28      reserved
+//Bit 27:16      reg_debug_demo_wnd_3     //unsigned ,RW, default = 1620,control debug window row size,
+//Bit 15:12      reserved
+//Bit 11:0       reg_debug_demo_wnd_2     //unsigned ,RW, default = 2880,control debug window col size,
 // synopsys translate_off
 // synopsys translate_on
 //
@@ -31257,38 +31711,56 @@
 // REG_BASE:  VPP_FG_POST_VCBUS_BASE = 0x62
 // -----------------------------------------------
 //
-// Reading file:  ./fgrain_post_regs.h
+// Reading file:  ./vd1_fgrain_post_regs.h
 //
 // synopsys translate_off
+//`ifdef FGRAIN_POST_REGS_H
+//`else
+//`define FGRAIN_POST_REGS_H
 // synopsys translate_on
 #define VD1_FGRAIN_POST_CTRL                       ((0x6200  << 2) + 0xff000000)
-//Bit 31:30      reserved
-//Bit 29:16      reg_hsize                  //unsigned ,RW, default = 4096, frm hsize
-//Bit 15:14      reserved
-//Bit 13:10      reg_post_gclk_ctrl         //unsigned ,RW, default = 0  bit[13:12]: reg_gclk  bit[11:10]: fg_post wclk
-//Bit  9: 7      reg_sync_ctrl              //unsigned ,RW, default = 0, bit0: control reg_post_en  bit1: control reg_inp_422  bit2: control hsize
-//Bit  6,        reg_use_inp_mode           //unsigned ,RW, default = 0, 1: use input mode set  0: use regs
+//Bit 31:29      reserved
+//Bit 28:16      reg_hsize                  //unsigned ,RW, default = 4096, frm hsize
+//Bit 15:12      reserved
+//Bit 11: 8      reg_post_gclk_ctrl         //unsigned ,RW, default = 0  bit[11:10]: reg_gclk  bit[ 9: 8]: fg_post wclk
+//Bit  7         reg_sync_ctrl              //unsigned ,RW, default = 0, bit0: control reg_post_en
+//Bit  6,        reg_use_inp_mode           //unsigned ,RW, default = 1, 1: use input mode set  0: use regs
 //Bit  5: 4      reg_422to444_mode          //unsigned ,RW, default = 0,
 //Bit  3: 2      reg_444to422_mode          //unsigned ,RW, default = 0,
 //Bit  1,        reg_inp_422                //unsigned ,RW, default = 0, 1: input yuv422
-//Bit  0,        reg_post_en                //unsigned ,RW, default = 1, 1: fgrain_post enable
-#define VD2_FGRAIN_POST_CTRL                       ((0x6201  << 2) + 0xff000000)
-//Bit 31:30      reserved
-//Bit 29:16      reg_hsize                  //unsigned ,RW, default = 4096, frm hsize
-//Bit 15:14      reserved
-//Bit 13:10      reg_post_gclk_ctrl         //unsigned ,RW, default = 0  bit[13:12]: reg_gclk  bit[11:10]: fg_post wclk
-//Bit  9: 7      reg_sync_ctrl              //unsigned ,RW, default = 0, bit0: control reg_post_en  bit1: control reg_inp_422  bit2: control hsize
-//Bit  6,        reg_use_inp_mode           //unsigned ,RW, default = 0, 1: use input mode set  0: use regs
-//Bit  5: 4      reg_422to444_mode          //unsigned ,RW, default = 0,
-//Bit  3: 2      reg_444to422_mode          //unsigned ,RW, default = 0,
-//Bit  1,        reg_inp_422                //unsigned ,RW, default = 0, 1: input yuv422
-//Bit  0,        reg_post_en                //unsigned ,RW, default = 1, 1: fgrain_post enable
+//Bit  0,        reg_post_en                //unsigned ,RW, default = 0, 1: fgrain_post enabl
 //------------------------------------------------------
 // synopsys translate_off
+//`endif  // CBUS_REGS_FGRAIN_POST_H
 // synopsys translate_on
 //
-// Closing file:  ./fgrain_post_regs.h
+// Closing file:  ./vd1_fgrain_post_regs.h
 //
+//
+// Reading file:  ./vd2_fgrain_post_regs.h
+//
+// synopsys translate_off
+//`ifdef FGRAIN_POST_REGS_H
+//`else
+//`define FGRAIN_POST_REGS_H
+// synopsys translate_on
+#define VD2_FGRAIN_POST_CTRL                       ((0x6201  << 2) + 0xff000000)
+//Bit 31:29      reserved
+//Bit 28:16      reg_hsize                  //unsigned ,RW, default = 4096, frm hsize
+//Bit 15:12      reserved
+//Bit 11: 8      reg_post_gclk_ctrl         //unsigned ,RW, default = 0  bit[11:10]: reg_gclk  bit[ 9: 8]: fg_post wclk
+//Bit  7         reg_sync_ctrl              //unsigned ,RW, default = 0, bit0: control reg_post_en
+//Bit  6,        reg_use_inp_mode           //unsigned ,RW, default = 1, 1: use input mode set  0: use regs
+//Bit  5: 4      reg_422to444_mode          //unsigned ,RW, default = 0,
+//Bit  3: 2      reg_444to422_mode          //unsigned ,RW, default = 0,
+//Bit  1,        reg_inp_422                //unsigned ,RW, default = 0, 1: input yuv422
+//Bit  0,        reg_post_en                //unsigned ,RW, default = 0, 1: fgrain_post enable
+//------------------------------------------------------
+// synopsys translate_off
+//`endif  // CBUS_REGS_FGRAIN_POST_H
+// synopsys translate_on
+//
+// Closing file:  ./vd2_fgrain_post_regs.h
 //
 // synopsys translate_off
 // synopsys translate_on
@@ -31512,14 +31984,18 @@
 //Bit 16        reg_vid_cmpr_start_mode    // unsigned ,    RW, default = 0 ,reg_vid_cmpr_start_mode
 //Bit 15:1      reserved
 //Bit 0         reg_vid_cmpr_enable        // unsigned ,    RW, default = 0 ,vid_cmpr enable  singal,active high
-#define VID_CMPR_START_RESET                       ((0x0101  << 2) + 0xfe094000)
+#define VID_CMPR_RESET                             ((0x0101  << 2) + 0xfe094000)
 //Bit 31:1      reserved
 //Bit 0         pls_vid_cmpr_reset         // unsigned ,    WO, default = 0 ,reg_sw_resets
+#define VID_CMPR_START                             ((0x0102  << 2) + 0xfe094000)
+//Bit 31:1      reserved
+//Bit 0         pls_vid_cmpr_start         // unsigned ,    WO, default = 0 ,vid_cmpr trigger singal,active high
 #define VID_CMPR_AUTO_START_MODE                   ((0x0103  << 2) + 0xfe094000)
 //Bit 31:1      reserved
 //Bit 0         reg_auto_start_mode        // unsigned ,    WO, default = 0 ,0:start after cmpr done 1:start after dma done
 #define VID_CMPR_AFLG_CLR                          ((0x0104  << 2) + 0xfe094000)
-//Bit 31:2      reserved
+//Bit 31:3      reserved
+//Bit 2         pls_cbus_cfg_err_clr       // unsigned ,    WO, default = 0 ,pls_cbus_cfg_err_clr
 //Bit 1 :0      pls_done_flg_clr           // unsigned ,    WO, default = 0 ,pls_done_flg_clr
 #define VID_CMPR_INT_CTRL                          ((0x0105  << 2) + 0xfe094000)
 //Bit 31:13     reserved
@@ -31535,7 +32011,7 @@
 //Bit 0         reg_field_flag             // unsigned ,    RW, default = 0,0:top 1:bottom
 #define VID_CMPR_FGRAIN_LUT_DATA                   ((0x010d  << 2) + 0xfe094000)
 //Bit 31:0      reg_fgrain_lut_data        // unsigned ,    RW, default = 0 ,reg_fgrain_lut_data
-#define VID_CMPR_FGRAIN_PATH_CTRL                  ((0x010f  << 2) + 0xfe094000)
+#define VID_CMPR_FGRAIN_PATH_CTRL                  ((0x010e  << 2) + 0xfe094000)
 //Bit 31:1      reserved
 //Bit 0         reg_fgrain_post_en         // unsigned ,    RW, default = 0 ,reg_fgrain_post_enable
 #define VID_CMPR_DUMMY_DATA                        ((0x0114  << 2) + 0xfe094000)
@@ -31601,42 +32077,56 @@
 #define VID_CMPR_SECURE_DAT                        ((0x0137  << 2) + 0xfe094000)
 //Bit 31:30     reserved
 //Bit 29:0      reg_secure_dat              // unsigned ,    RW, default = 4'hf,reg_secure_dat
+#define VID_CMPR_RAXI_CRASH_ADDRESS                ((0x013a  << 2) + 0xfe094000)
+//Bit 31:0  reg_raxi_crash_address          // unsigned ,    RW, default = 0   ,reg_axi_rd_crash_address
+#define VID_CMPR_WAXI_CRASH_ADDRESS                ((0x013b  << 2) + 0xfe094000)
+//Bit 31:0  reg_waxi_crash_address          // unsigned ,    RW, default = 0   ,reg_axi_wr_crash_address
+#define VID_CMPR_AXI_CRASH_ID                      ((0x013c  << 2) + 0xfe094000)
+//Bit 31:8  reserved
+//Bit 7 :4  ro_axi_wr_crash_id              // unsigned ,RO, default = 0
+//Bit 3 :0  ro_axi_rd_crash_id              // unsigned ,RO, default = 0
 #define VID_CMPR_RAXI_PROT_CTRL                    ((0x0140  << 2) + 0xfe094000)
 //Bit 31:25 reserved
-//Bit 24    reg_raxi_prot_int_mode       // unsigned ,RW, default = 1,reg_raxi_prot_int_mode 1:give interupt after clean crash 0:give interupt after crash
+//Bit 24    reg_raxi_prot_int_mode          // unsigned ,RW, default = 1,reg_raxi_prot_int_mode 1:give interupt after clean crash 0:give interupt after crash
 //Bit 23:22 reserved
-//Bit 21:0  reg_raxi_prot_ctrl           // unsigned,RW, default = 22'h200802,{reg_prot_phs_en,reg_hold_num[18:0],reg_prot_en,sw_rst}
+//Bit 21:0  reg_raxi_prot_ctrl              // unsigned,RW, default = 22'h200802,{reg_prot_phs_en,reg_hold_num[18:0],reg_prot_en,sw_rst}
 #define VID_CMPR_WAXI_PROT_CTRL                    ((0x0141  << 2) + 0xfe094000)
 //Bit 31:25 reserved
-//Bit 24    reg_waxi_prot_int_mode       // unsigned ,RW, default = 1 ,reg_waxi_prot_int_mode 1:give interupt after clean crash 0:give interupt after crash
+//Bit 24    reg_waxi_prot_int_mode          // unsigned ,RW, default = 1 ,reg_waxi_prot_int_mode 1:give interupt after clean crash 0:give interupt after crash
 //Bit 23:22 reserved
-//Bit 21:0  reg_waxi_prot_ctrl           // unsigned ,RW, default = 22'h200802,{reg_prot_phs_en,reg_hold_num[18:0],reg_prot_en,sw_rst}
+//Bit 21:0  reg_waxi_prot_ctrl              // unsigned ,RW, default = 22'h200802,{reg_prot_phs_en,reg_hold_num[18:0],reg_prot_en,sw_rst}
 #define VID_CMPR_RAXI_PROT_STAT                    ((0x0145  << 2) + 0xfe094000)
 //Bit 31:16 reserved
-//Bit 15:12 ro_raxi_crash_id             // unsigned ,RO, default = 0
+//Bit 15:12 ro_raxi_crash_id                // unsigned ,RO, default = 0
 //Bit 11:10 reserved
-//Bit 9 :0  ro_raxi_crash_num            // unsigned ,RO, default = 0
+//Bit 9 :0  ro_raxi_crash_num               // unsigned ,RO, default = 0
 #define VID_CMPR_WAXI_PROT_STAT                    ((0x0146  << 2) + 0xfe094000)
 //Bit 31:16 reserved
-//Bit 15:12 ro_waxi_crash_id             // unsigned ,RO, default = 0
+//Bit 15:12 ro_waxi_crash_id                // unsigned ,RO, default = 0
 //Bit 11:8  reserved
-//Bit 7 :0  ro_waxi_crash_num            // unsigned ,RO, default = 0
+//Bit 7 :0  ro_waxi_crash_num               // unsigned ,RO, default = 0
 #define VID_CMPR_CRC_CTRL                          ((0x0150  << 2) + 0xfe094000)
 //Bit 31:10 reserved
-//Bit 9 :8  reg_crc_sec_sel              // unsigned ,RW, default = 0
+//Bit 9 :8  reg_crc_sec_sel                 // unsigned ,RW, default = 0
 //Bit 7 :6  reserved
-//Bit 5 :4  pls_crc_start                // unsigned ,WO, default = 0
+//Bit 5 :4  pls_crc_start                   // unsigned ,WO, default = 0
 //Bit 3 :2  reserved
-//Bit 1 :0  reg_crc_chk_en               // unsigned ,RW, default = 0
+//Bit 1 :0  reg_crc_chk_en                  // unsigned ,RW, default = 0
 #define VID_CMPR_CRC0_OUT                          ((0x0152  << 2) + 0xfe094000)
-//Bit 31:0  ro_dout_crc0                 // unsigned ,RO, default = 0 ,
+//Bit 31:0  ro_dout_crc0                    // unsigned ,RO, default = 0 ,
 #define VID_CMPR_CRC1_0_OUT                        ((0x0153  << 2) + 0xfe094000)
-//Bit 31:0  ro_dout_crc1_0               // unsigned ,RO, default = 0 ,
+//Bit 31:0  ro_dout_crc1_0                  // unsigned ,RO, default = 0 ,
 #define VID_CMPR_CRC1_1_OUT                        ((0x0154  << 2) + 0xfe094000)
-//Bit 31:0  ro_dout_crc1_1               // unsigned ,RO, default = 0 ,
+//Bit 31:0  ro_dout_crc1_1                  // unsigned ,RO, default = 0 ,
 #define VID_CMPR_SEC_MODE_STATUS                   ((0x0160  << 2) + 0xfe094000)
-//Bit 31:1  reserved
-//Bit    0  ro_enhance_sec_mode          // unsigned ,RW, default = 0,ro_enhance_sec_mode
+//Bit 31:13 reserved
+//Bit    12 ro_cbus_cfg_error               // unsigned ,RO, default = 0,ro_cbus_cfg_error
+//Bit 11 :9 reserved
+//Bit     8 ro_vid_cmpr_proc                // unsigned ,RO, default = 0,ro_vid_cmpr_proc
+//Bit 7 :5  reserved
+//Bit    4  ro_vid_cmpr_idle                // unsigned ,RO, default = 0,ro_vid_cmpr_idle
+//Bit 3 :1  reserved
+//Bit    0  ro_enhance_sec_mode             // unsigned ,RO, default = 0,ro_enhance_sec_mode
 // synopsys translate_off
 // synopsys translate_on
 //
@@ -31647,9 +32137,6 @@
 //
 // synopsys translate_off
 // synopsys translate_on
-#define VID_CMPR_START                             ((0x0102  << 2) + 0xfe094000)
-//Bit 31:1      reserved
-//Bit 0         pls_vid_cmpr_start         // unsigned ,    WO, default = 0 ,vid_cmpr trigle singal,active high
 #define VID_CMPR_SEC_CTRL                          ((0x0106  << 2) + 0xfe094000)
 //Bit 31:3      reserved
 //Bit 2         reg_vid_cmpr_dma_sec       // unsigned ,    RW, default = 0 ,reg_vid_cmpr_dma_sec,cmpr    dma   read security
@@ -31673,13 +32160,36 @@
 //Bit 5 :4      reg_wrmif_fix_disable      // unsigned ,    RW, default = 0 ,reg_wrmif_fix_disable
 //Bit 3 :2      reserved
 //Bit 1 :0      reg_wr_path_sel            // unsigned ,    RW, default = 0 ,reg_wr_path_sel
-#define VID_CMPR_SEC_MODE_CTRL                     ((0x0180  << 2) + 0xfe094000)
-//Bit 31:4      reserved
-//Bit 3 :0      reg_enhance_sec_mode         // unsigned ,RW, default = 5,reg_enhance_sec_mode
+#define VID_CMPR_ENH_RESET                         ((0x0171  << 2) + 0xfe094000)
+//Bit 31:1      reserved
+//Bit 0         pls_vid_cmpr_enh_reset     // unsigned ,    WO, default = 0 ,reg_sw_resets
+#define VID_CMPR_ENH_START                         ((0x0172  << 2) + 0xfe094000)
+//Bit 31:1      reserved
+//Bit 0         pls_vid_cmpr_enh_start     // unsigned ,    WO, default = 0 ,vid_cmpr trigle singal,active high
 // synopsys translate_off
 // synopsys translate_on
 //
 // Closing file:  ./vid_cmpr_inc/vid_cmpr_top_enh_regs.h
+//
+//
+// Reading file:  ./vid_cmpr_inc/vid_cmpr_top_sec_regs.h
+//
+// synopsys translate_off
+// synopsys translate_on
+#define VID_CMPR_SEC_MODE_CTRL                     ((0x0180  << 2) + 0xfe094000)
+//Bit 31:9      reserved
+//Bit    8      reg_enhance_start_mode       // unsigned ,RW, default = 0,1:direct change 0:wait vid_cmpr idle
+//Bit 7 :5      reserved
+//Bit    4      reg_enhance_swth_mode        // unsigned ,RW, default = 0,1:direct change 0:wait vid_cmpr idle
+//Bit 3 :0      reg_enhance_sec_mode         // unsigned ,RW, default = 5,reg_enhance_sec_mode
+#define VID_CMPR_SEC_OPT_CTRL                      ((0x0181  << 2) + 0xfe094000)
+//Bit 31        reg_sec_latch_en             // unsigned ,RW, default = 1,reg_sec_latch_en
+//Bit 30:10     reserved
+//Bit 9 :0      reg_vid_cmpr_sec             // unsigned ,RW, default = 0,reg_vid_cmpr_sec
+// synopsys translate_off
+// synopsys translate_on
+//
+// Closing file:  ./vid_cmpr_inc/vid_cmpr_top_sec_regs.h
 //
 #define VID_CMPR_AXIRD_ARBX4_BADDR                 ((0x01b0  << 2) + 0xfe094000)
 #define VID_CMPR_AXIWR_ARBX4_BADDR                 ((0x01c0  << 2) + 0xfe094000)
@@ -32816,7 +33326,9 @@
 // synopsys translate_off
 // synopsys translate_on
 #define VID_CMPR_HDR2_CTRL                         ((0x0300  << 2) + 0xfe094000)
-//Bit 31:21        reserved
+//Bit 31:25        reserved
+//Bit 24           reg_ergb_sel_mode         // unsigned , RW, default = 0, hist input source select, 0: input rgb 1: output rgb
+//Bit 23:21        reserved
 //Bit 20:18        reg_din_swap              // unsigned , RW, default = 0
 //Bit 17           reg_out_fmt               // unsigned , RW, default = 0
 //Bit 16           reg_only_mat              // unsigned , RW, default = 0
@@ -32974,24 +33486,27 @@
 //Bit 15:12        reserved
 //Bit 11: 0        c_gain_lim_coef0          // unsigned , RW, default = 12'd920
 #define VID_CMPR_HDR2_CGAIN_COEF1                  ((0x0325  << 2) + 0xfe094000)
-//Bit 31           reg_sel_opt               // ubsigned , RW, default = 1
-//Bit 30:29        reserved
-//Bit 28:16        reg_maxrgb                // unsigned , RW, default = 13'h400
+//Bit 31           reg_sel_opt                // unsigned , RW, default = 1
+//Bit 30:28        reserved
+//Bit 27:16        reg_maxrgb                 // unsigned , RW, default = 12'h3ff
 //Bit 15:12        reserved
-//Bit 11: 0        c_gain_lim_coef2          // unsigned , RW, default = 12'd208
+//Bit 11: 0        c_gain_lim_coef2           // unsigned , RW, default = 12'd208
 #define VID_CMPR_HDR2_OGAIN_LUT_ADDR_PORT          ((0x0326  << 2) + 0xfe094000)
 #define VID_CMPR_HDR2_OGAIN_LUT_DATA_PORT          ((0x0327  << 2) + 0xfe094000)
 #define VID_CMPR_HDR2_ADPS_CTRL                    ((0x0328  << 2) + 0xfe094000)
-//Bit 31:17        reserved
-//Bit 16           reg_adpscl_sel_opt        // unsigned , RW, default = 1
+//Bit 31:24        reserved
+//Bit 23:20        reg_adpscl1_sft            // unsigned , RW, default = 5
+//Bit 19:18        reserved
+//Bit 17           reg_ogain_blend            // unsigned , RW, default = 0
+//Bit 16           reg_adpscl_sel_opt         // unsigned , RW, default = 1
 //Bit 15:14        reserved
-//Bit 13: 8        reg_adpscl_max            // unsigned , RW, default = 6'd24
-//Bit  7           reg_adpscl_clip_en        // unsigned , RW, default = 0
-//Bit  6           reg_adpscl_enable2        // unsigned , RW, default = 1
-//Bit  5           reg_adpscl_enable1        // unsigned , RW, default = 1
-//Bit  4           reg_adpscl_enable0        // unsigned , RW, default = 1
-//Bit  3: 2        reserved
-//Bit  1: 0        reg_adpscl_mode           // unsigned , RW, default = 1
+//Bit 13:8         reg_adpscl_max             // unsigned , RW, default = 6'd24
+//Bit  7           reg_adpscl_clip_en         // unsigned , RW, default = 0
+//Bit  6           reg_adpscl_bypass2         // unsigned , RW, default = 1
+//Bit  5           reg_adpscl_bypass1         // unsigned , RW, default = 1
+//Bit  4           reg_adpscl_bypass0         // unsigned , RW, default = 1
+//Bit  3: 2        reg_adpscl1_mode           // unsigned , RW, default = 1
+//Bit  1: 0        reg_adpscl_mode            // unsigned , RW, default = 1
 #define VID_CMPR_HDR2_ADPS_ALPHA0                  ((0x0329  << 2) + 0xfe094000)
 //Bit 31:30        reserved
 //Bit 29:16        reg_adpscl_alpha1         // unsigned , RW, default = 14'h1000
@@ -33039,33 +33554,61 @@
 //Bit 15: 0        reg_gmut_coef20           // unsigned , RW, default = 16'd34
 #define VID_CMPR_HDR2_GMUT_COEF4                   ((0x0335  << 2) + 0xfe094000)
 //Bit 31:16        reserved
-//Bit 15: 0        reg_gmut_coef22           // unsigned , RW, default = 16'd1834
+//Bit 15: 0        reg_gmut_coef22            // unsigned , RW, default = 16'd1834
 #define VID_CMPR_HDR2_PIPE_CTRL1                   ((0x0336  << 2) + 0xfe094000)
-//Bit 31:0        reg_pipe_ctrl1          // unsigned , RW, default = 32'h04040a0a
+//Bit 31:24        reg_vblank_num_oetf        // unsigned , RW, default = 8'h04
+//Bit 23:16        reg_hblank_num_oetf        // unsigned , RW, default = 8'h04
+//Bit 15:8         reg_vblank_num_eotf        // unsigned , RW, default = 8'h0a
+//Bit 7 :0         reg_hblank_num_eotf        // unsigned , RW, default = 8'h0a
 #define VID_CMPR_HDR2_PIPE_CTRL2                   ((0x0337  << 2) + 0xfe094000)
-//Bit 31:0        reg_pipe_ctrl2          // unsigned , RW, default = 32'h0c0c0b0b
+//Bit 31:24        reg_vblank_num_cgain       // unsigned , RW, default = 8'h0c
+//Bit 23:16        reg_hblank_num_cgain       // unsigned , RW, default = 8'h0c
+//Bit 15 :8        reg_vblank_num_gmut        // unsigned , RW, default = 8'h0b
+//Bit 7 :0         reg_hblank_num_gmut        // unsigned , RW, default = 8'h0b
 #define VID_CMPR_HDR2_PIPE_CTRL3                   ((0x0338  << 2) + 0xfe094000)
-//Bit 31:0        reg_pipe_ctrl3          // unsigned , RW, default = 32'h16160404
+//Bit 31:24        reg_vblank_num_adps        // unsigned , RW, default = 8'h16
+//Bit 23:16        reg_hblank_num_adps        // unsigned , RW, default = 8'h16
+//Bit 15:8         reg_vblank_num_uv          // unsigned , RW, default = 8'h04
+//Bit 7 :0         reg_hblank_num_uv          // unsigned , RW, default = 8'h04
 #define VID_CMPR_HDR2_PROC_WIN1                    ((0x0339  << 2) + 0xfe094000)
-//Bit 31:0        reg_proc_win1           // unsigned , RW, default = 0
+//Bit 31          reg_proc_win_gmut_en        // unsigned , RW, default = 0
+//Bit 30          reg_proc_win_adps_en        // unsigned , RW, default = 0
+//Bit 29          reg_proc_win_cgain_en       // unsigned , RW, default = 0
+//Bit 28:16       reg_proc_x_ed               // unsigned , RW, default = 719
+//Bit 15:13       reserved
+//bit 12:0        reg_proc_x_st               // unsigned , RW, default = 0
 #define VID_CMPR_HDR2_PROC_WIN2                    ((0x033a  << 2) + 0xfe094000)
-//Bit 31:0        reg_proc_win2           // unsigned , RW, default = 0
+//Bit 31:30       reserved
+//Bit 29          reg_proc_win_aicr_en        // unsigned , RW, default = 1
+//Bit 28:16       reg_proc_y_ed               // unsigned , RW, default = 479
+//Bit 15:13       reserved
+//Bit 12:0        reg_proc_y_st               // unsigned , RW, default = 0
 #define VID_CMPR_HDR2_MATRIXI_EN_CTRL              ((0x033b  << 2) + 0xfe094000)
 //Bit 31:8        reserved
 //Bit 7:0         reg_matrixi_en_ctrl     // unsigned , RW, default = 0
 #define VID_CMPR_HDR2_MATRIXO_EN_CTRL              ((0x033c  << 2) + 0xfe094000)
 //Bit 31:8        reserved
-//Bit 7:0         reg_mattrixo_en_ctrl    // unsigned , RW, default = 0
+//Bit 7:0         reg_matrixo_en_ctrl    // unsigned , RW, default = 0
 #define VID_CMPR_HDR2_HIST_CTRL                    ((0x033d  << 2) + 0xfe094000)
-//Bit 31:25       reserved
-//Bit 24:17       reg_vcbus_rd_idx        // unsigned , WO, default = 0
-//Bit 16:0        reg_hist_ctrl           // unsigned , RW, default = 17'h01400
+//Bit 31:25        reserved
+//Bit 24:17        reg_vcbus_rd_idx           // unsigned , RW, default = 0, hw
+//Bit 16           reg_hist_enable            // unsigned , RW, default = 0
+//Bit 15 :8        reg_gclk_ctrl0             // unsigned , RW, default = 8'h14
+//Bit 7  :6        reserved
+//Bit 5            reg_piecewise_mode         // unsigned , RW, default = 0
+//Bit 4            reg_hist_win_mode          // unsigned , RW, default = 1
+//Bit 3            reg_maxrgb_rshift          // unsigned , RW, default = 0
+//Bit 2  :0        reg_maxrgb_sel             // unsigned , RW, default = 0
 #define VID_CMPR_HDR2_HIST_H_START_END             ((0x033e  << 2) + 0xfe094000)
-//Bit 31:29       reserved
-//Bit 28:0        reg_hist_h_start_end    // unsigned , RW, default = 0
+//Bit 31:29        reserved
+//Bit 28:16        reg_hist_proc_x_st         // unsigned , RW, default = 0
+//Bit 15:13        reserved
+//Bit 12: 0        reg_hist_proc_x_ed         // unsigned , RW, default = 719
 #define VID_CMPR_HDR2_HIST_V_START_END             ((0x033f  << 2) + 0xfe094000)
-//Bit 31:29       reserved
-//Bit 28:0        reg_hist_v_start_end    // unsigned , RW, default = 0
+//Bit 31:29        reserved
+//Bit 28:16        reg_hist_proc_y_st         // unsigned , RW, default = 0
+//Bit 15:13        reserved
+//Bit 12: 0        reg_hist_proc_y_ed         // unsigned , RW, default = 479
 #define VID_CMPR_HDR2_OGAIN_LUT1_ADDR_PORT         ((0x0340  << 2) + 0xfe094000)
 #define VID_CMPR_HDR2_OGAIN_LUT1_DATA_PORT         ((0x0341  << 2) + 0xfe094000)
 // synopsys translate_off
@@ -33237,9 +33780,9 @@
 //Bit  9: 0        reg_prevsc_coef_0         // signed ,    RW, default = 256  default	=	0x40	,	coefficient3	pre vertical	filter
 #define VID_CMPR_PRE_SCALE_CTRL                    ((0x038c  << 2) + 0xfe094000)
 //Bit 31:29        reserved
-//Bit 28:25        reg_preh_hb_num           // unsigned ,    RW, default = 8  defalut = 8, prehsc rtl h blank number
-//Bit 24:21        reg_preh_vb_num           // unsigned ,    RW, default = 8  defalut = 8, prehsc rtl v blank number
-//Bit 20           reg_sc_coef_s11_mode      // unsigned ,    RW, default = 0  defalut = 0, sc coef bit-width 0:s9, 1:s11
+//Bit 28:25        reg_preh_hb_num           // unsigned ,    RW, default = 8  default = 8, prehsc rtl h blank number
+//Bit 24:21        reg_preh_vb_num           // unsigned ,    RW, default = 8  default = 8, prehsc rtl v blank number
+//Bit 20           reg_sc_coef_s11_mode      // unsigned ,    RW, default = 0  default = 0, sc coef bit-width 0:s9, 1:s11
 //Bit 19:16        reg_vsc_nor_rs_bits       // unsigned ,    RW, default = 7  default = 7, normalize right shift bits of vsc
 //Bit 15:12        reg_hsc_nor_rs_bits       // unsigned ,    RW, default = 7  default = 7, normalize right shift bits of hsc
 //Bit 11: 8        reg_prehsc_flt_num        // unsigned ,    RW, default = 2  default = 2, prehsc filter tap num
@@ -33262,12 +33805,12 @@
 // synopsys translate_off
 // synopsys translate_on
 #define VID_CMPR_FGRAIN_POST_CTRL                  ((0x03a0  << 2) + 0xfe094000)
-//Bit 31:30      reserved
-//Bit 29:16      reg_hsize                  //unsigned ,RW, default = 4096, frm hsize
-//Bit 15:14      reserved
-//Bit 13:10      reg_post_gclk_ctrl         //unsigned ,RW, default = 0  bit[13:12]: reg_gclk  bit[11:10]: fg_post wclk
-//Bit  9: 7      reg_sync_ctrl              //unsigned ,RW, default = 0, bit0: control reg_post_en  bit1: control reg_inp_422  bit2: control hsize
-//Bit  6         reg_use_inp_mode           //unsigned ,RW, default = 0, 1: use input mode set  0: use regs
+//Bit 31:29      reserved
+//Bit 28:16      reg_hsize                  //unsigned ,RW, default = 4096, frm hsize
+//Bit 15:12      reserved
+//Bit 11: 8      reg_post_gclk_ctrl         //unsigned ,RW, default = 0  bit[11:10]: reg_gclk  bit[ 9: 8]: fg_post wclk
+//Bit  7         reg_sync_ctrl              //unsigned ,RW, default = 0, bit0: control reg_post_en
+//Bit  6         reg_use_inp_mode           //unsigned ,RW, default = 1, 1: use input mode set  0: use regs
 //Bit  5: 4      reg_422to444_mode          //unsigned ,RW, default = 0,
 //Bit  3: 2      reg_444to422_mode          //unsigned ,RW, default = 0,
 //Bit  1         reg_inp_422                //unsigned ,RW, default = 0, 1: input yuv422
