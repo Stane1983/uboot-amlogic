@@ -4,6 +4,7 @@
  */
 
 #include <common.h>
+#include <command.h>
 #include <stdlib.h>
 #include <linux/arm-smccc.h>
 
