@@ -2307,7 +2307,6 @@ __attribute__ ((section(".misc_param"))) = {
 	{ 0, VMIN_TT_VALUE, 0xffffffff, 0, BL2_INIT_STAGE_VMIN_FLAG_2, 0 },
 	{ 0, VMIN_FF_VALUE, 0xffffffff, 0, BL2_INIT_STAGE_VMIN_FLAG_3, 0 },
 	/* config vddee and vcck pwm - pwm_e and pwm_f*/
-#if 0
 #ifdef CONFIG_PDVFS_ENABLE
 	{ PWM_PWM_H, VDDEE_SS_VALUE, 0xffffffff, 0, BL2_INIT_STAGE_VDDCORE_CONFIG_1, 0 },
 	{ PWM_PWM_H, VDDEE_TT_VALUE, 0xffffffff, 0, BL2_INIT_STAGE_VDDCORE_CONFIG_2, 0 },
@@ -2319,15 +2318,15 @@ __attribute__ ((section(".misc_param"))) = {
 	{ PWM_MISC_REG_H,	   (0x1 << 0),	  (0x1 << 0), 0, 0, 0 },
 	{ PWM_MISC_REG_J,	   (0x1 << 0),	  (0x1 << 0), 0, 0, 0 },
 	/* set pwm j and pwm h clock rate to 24M, enable them */
-	{ CLKCTRL_PWM_CLK_GH_CTRL, (0x1 << 24)), 0xffffffff, 0, 0, 0 },
-	{ CLKCTRL_PWM_CLK_IJ_CTRL, (0x1 << 24)), 0xffffffff, 0, 0, 0 },
+	{ CLKCTRL_PWM_CLK_GH_CTRL, (0x1 << 24), 0xffffffff, 0, 0, 0 },
+	{ CLKCTRL_PWM_CLK_IJ_CTRL, (0x1 << 24), 0xffffffff, 0, 0, 0 },
 	/* set GPIOE_0 GPIOE_1 drive strength to 3 */
 	{ PADCTRL_GPIOE_DS,	   0xf,		  0xf,	      0, 0, 0 },
 	/* set GPIOE_0 GPIOE_1 mux to pwmh pwmj */
 	{ PADCTRL_PIN_MUX_REGI,	   (0x3 << 0),	  (0xf << 0), 0, 0, 0 },
 	{ PADCTRL_PIN_MUX_REGI,	   (0x3 << 4),	  (0xf << 4), 0, 0, 0 },
-#endif
 	{ PADCTRL_GPIOD_PULL_UP,   (0x1 << 2),	  (0x1 << 2), 0, 0, 0 },
+	{ PWM_TEE_ONLY_J,          (0x1 << 0),	  (0xffffffff << 0), 0, 0, 0 },
 };
 
 #define DEV_FIP_SIZE 0x300000
