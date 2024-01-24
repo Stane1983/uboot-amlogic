@@ -21,4 +21,3 @@ void bl_level_to_pwm_level(struct bl_pwm_config_s *bl_pwm);
 void bl_pwm_reg_print(struct bl_pwm_config_s *bl_pwm);
 
 #endif
-

@@ -135,7 +135,7 @@ static void dsi_dphy_cfg_print(struct lcd_config_s *pconf)
 		(UI800 * dphy_cfg->wakeup / 100));
 }
 
-static void dsi_table_print(u8 *dsi_table, u16 n_max)
+void dsi_table_print(u8 *dsi_table, u16 n_max)
 {
 	u16 i = 0, n = 0, j;
 

@@ -20,8 +20,6 @@
 #include "lcd_common.h"
 #include <amlogic/pm.h>
 
-#define PANEL_NAME	"panel"
-
 //DECLARE_GLOBAL_DATA_PTR;
 
 unsigned int lcd_debug_print_flag;
@@ -29,7 +27,7 @@ static unsigned int lcd_debug_test_flag;
 struct aml_lcd_data_s *lcd_data;
 static struct aml_lcd_drv_s *lcd_driver[LCD_MAX_DRV];
 static struct lcd_debug_ctrl_s debug_ctrl;
-static char *g_dt_addr;
+static char *g_dt_addr = (char *)0x01000000;
 //static int lcd_poweron_suspend = 1;
 char *lcd_pm_name[LCD_MAX_DRV] = {"lcd_drv0_pm", "lcd_drv1_pm", "lcd_drv2_pm"};
 
@@ -428,7 +426,7 @@ static void lcd_power_ctrl(struct aml_lcd_drv_s *pdrv, int status)
 		LCDPR("[%d]: %s: %d\n", pdrv->index, __func__, status);
 }
 
-static void lcd_encl_on(struct aml_lcd_drv_s *pdrv)
+void lcd_encl_on(struct aml_lcd_drv_s *pdrv)
 {
 	int ret;
 
@@ -499,6 +497,11 @@ static void lcd_module_enable(struct aml_lcd_drv_s *pdrv, char *mode, unsigned i
 		return;
 	}
 	if ((pdrv->status & LCD_STATUS_IF_ON) == 0) {
+#ifdef CONFIG_AML_LCD_TABLET
+		if (unlikely(pdrv->mode == LCD_MODE_TABLET &&
+			     pdrv->config.control.mipi_cfg.panel_det_attr & 0x01))
+			lcd_power_ctrl(pdrv, 1);
+#endif
 		if (pdrv->boot_ctrl.init_level == LCD_INIT_LEVEL_NORMAL) {
 			lcd_interface_on(pdrv);
 #ifdef CONFIG_AML_LCD_BACKLIGHT
@@ -553,17 +556,12 @@ static int lcd_mode_init(struct aml_lcd_drv_s *pdrv)
 {
 	int ret = -1;
 
-	switch (debug_ctrl.debug_lcd_mode) {
-	case 1:
+	if (debug_ctrl.debug_lcd_mode == 1) {
 		LCDPR("[%d]: lcd_debug_mode: 1,tv\n", pdrv->index);
 		pdrv->mode = LCD_MODE_TV;
-		break;
-	case 2:
+	} else if (debug_ctrl.debug_lcd_mode == 2) {
 		LCDPR("[%d]: lcd_debug_mode: 2,tablet\n", pdrv->index);
 		pdrv->mode = LCD_MODE_TABLET;
-		break;
-	default:
-		break;
 	}
 
 	switch (pdrv->mode) {
@@ -815,6 +813,15 @@ static void lcd_update_debug_bootargs(void)
 	env_set("lcd_debug", ctrl_str);
 }
 
+void lcd_panel_config_load_to_drv(struct aml_lcd_drv_s *pdrv)
+{
+	lcd_clk_config_probe(pdrv);
+	lcd_phy_probe(pdrv);
+	lcd_debug_probe(pdrv);
+	lcd_mode_init(pdrv);
+	lcd_update_ctrl_bootargs(pdrv);
+}
+
 char *lcd_get_dt_addr(void)
 {
 	return g_dt_addr;
@@ -823,31 +830,25 @@ char *lcd_get_dt_addr(void)
 static int lcd_config_probe(void)
 {
 	int load_id = 0, load_id_lcd, load_id_temp;
-	char *dt_addr = NULL;
 	struct aml_lcd_drv_s *pdrv;
 	unsigned int drv_cnt_flag;
 	int i, ret;
 
 #ifdef CONFIG_DTB_MEM_ADDR
-	dt_addr = (char *)CONFIG_DTB_MEM_ADDR;
-#else
-	dt_addr = (char *)0x01000000;
+	g_dt_addr = (char *)CONFIG_DTB_MEM_ADDR;
 #endif
-
 #ifdef CONFIG_AML_LCD_PXP
-	dt_addr = (char *)0x06000000;
+	g_dt_addr = (char *)0x06000000;
 #endif
 
-	g_dt_addr = dt_addr;
 #ifdef CONFIG_OF_LIBFDT
-	if (fdt_check_header(dt_addr) < 0) {
+	if (fdt_check_header(g_dt_addr) < 0) {
 		LCDERR("check dts: %s, load default lcd parameters\n",
-		       fdt_strerror(fdt_check_header(dt_addr)));
+			fdt_strerror(fdt_check_header(g_dt_addr)));
 	} else {
 		load_id = 0x1;
 	}
 #endif
-
 	/*load_id: bit[8]:debug_force, bit[4]:key, bit[0]:dts*/
 	switch (debug_ctrl.debug_para_source) {
 	case 1:
@@ -868,87 +869,52 @@ static int lcd_config_probe(void)
 	load_id_lcd = load_id;
 
 	if (load_id_lcd & 0x1) {
-		drv_cnt_flag = lcd_get_drv_cnt_flag_from_dts(dt_addr);
+		drv_cnt_flag = lcd_get_drv_cnt_flag_from_dts(g_dt_addr);
 		if (drv_cnt_flag == 0) {
 			LCDPR("not find /lcd node\n");
 			drv_cnt_flag = lcd_get_drv_cnt_flag_from_bsp();
-			load_id_lcd &= ~(1 <<0);
+			load_id_lcd &= ~(1 << 0);
 		}
 	} else {
 		drv_cnt_flag = lcd_get_drv_cnt_flag_from_bsp();
 	}
 
-	if (load_id_lcd & 0x1) {
-		for (i = 0; i < lcd_data->drv_max; i++) {
-			if ((drv_cnt_flag & (1 << i)) == 0)
-				continue;
-			pdrv = lcd_driver_add(i);
-			if (!pdrv)
-				continue;
+	for (i = 0; i < lcd_data->drv_max; i++) {
+		if ((drv_cnt_flag & (1 << i)) == 0)
+			continue;
+		pdrv = lcd_driver_add(i);
+		if (!pdrv)
+			continue;
 
-			ret = lcd_base_config_load_from_dts(dt_addr, pdrv);
-			if (ret) {
-				lcd_driver_remove(i);
-				continue;
-			}
-			load_id_temp = load_id_lcd & 0xff;
-			if ((load_id_lcd & (1 << 8)) == 0) {
-				if (pdrv->key_valid)
-					load_id_temp |= (1 << 4);
-				else
-					load_id_temp &= ~(1 << 4);
-			}
-
-			ret = lcd_get_config(dt_addr, load_id_temp, pdrv);
-			if (ret) {
-				lcd_driver_remove(i);
-				continue;
-			}
-			lcd_clk_config_probe(pdrv);
-			lcd_phy_probe(pdrv);
-			lcd_debug_probe(pdrv);
-			lcd_mode_init(pdrv);
-			lcd_update_ctrl_bootargs(pdrv);
-		}
-	} else {
-		for (i = 0; i < lcd_data->drv_max; i++) {
-			if ((drv_cnt_flag & (1 << i)) == 0)
-				continue;
-			pdrv = lcd_driver_add(i);
-			if (!pdrv)
-				continue;
-
+		if (load_id_lcd & 0x1)
+			ret = lcd_base_config_load_from_dts(g_dt_addr, pdrv);
+		else
 			ret = lcd_base_config_load_from_bsp(pdrv);
-			if (ret) {
-				lcd_driver_remove(i);
-				continue;
-			}
-			load_id_temp = load_id_lcd & 0xff;
-			if ((load_id_lcd & (1 << 8)) == 0) {
-				if (pdrv->key_valid)
-					load_id_temp |= (1 << 4);
-				else
-					load_id_temp &= ~(1 << 4);
-			}
 
-			ret = lcd_get_config(dt_addr, load_id_temp, pdrv);
-			if (ret) {
-				lcd_driver_remove(i);
-				continue;
-			}
-			lcd_clk_config_probe(pdrv);
-			lcd_phy_probe(pdrv);
-			lcd_debug_probe(pdrv);
-			lcd_mode_init(pdrv);
-			lcd_update_ctrl_bootargs(pdrv);
+		if (ret) {
+			lcd_driver_remove(i);
+			continue;
 		}
+		load_id_temp = load_id_lcd & 0xff;
+		if ((load_id_lcd & (1 << 8)) == 0) {
+			if (pdrv->key_valid)
+				load_id_temp |= (1 << 4);
+			else
+				load_id_temp &= ~(1 << 4);
+		}
+
+		if (lcd_get_panel_config(g_dt_addr, load_id_temp, pdrv)) {
+			lcd_driver_remove(pdrv->index);
+			continue;
+		}
+		lcd_panel_config_load_to_drv(pdrv);
+#ifdef CONFIG_AML_LCD_BACKLIGHT
+		aml_bl_probe_single(i, load_id_temp);
+#endif
 	}
 
 #ifdef CONFIG_AML_LCD_EXTERN
-	lcd_extern_probe(dt_addr, load_id);
-#endif
-#ifdef CONFIG_AML_LCD_BACKLIGHT
-	aml_bl_probe(dt_addr, load_id);
+	lcd_extern_probe(g_dt_addr, load_id);
 #endif
 
 	return 0;
@@ -986,6 +952,12 @@ int lcd_probe(void)
 	debug_ctrl.debug_para_source = env_get_ulong("lcd_debug_para", 10, 0);
 	debug_ctrl.debug_lcd_mode = env_get_ulong("lcd_debug_mode", 10, 0);
 
+	lcd_chip_detect();
+	if (!lcd_data) {
+		LCDERR("%s: invalid lcd data\n", __func__);
+		return -1;
+	}
+
 #ifdef CONFIG_AML_LCD_EXTERN
 	lcd_extern_init();
 #endif
@@ -993,11 +965,6 @@ int lcd_probe(void)
 	aml_bl_init();
 #endif
 
-	lcd_chip_detect();
-	if (!lcd_data) {
-		LCDERR("%s: invalid lcd data\n", __func__);
-		return -1;
-	}
 	lcd_config_bsp_init();
 
 	lcd_phy_config_init(lcd_data);
@@ -1020,7 +987,7 @@ int lcd_remove(void)
 	if (!lcd_data)
 		return 0;
 
-	aml_bl_remove();
+	aml_bl_remove_all();
 #ifdef CONFIG_AML_LCD_EXTERN
 	lcd_extern_remove();
 #endif

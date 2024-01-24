@@ -195,9 +195,14 @@ static inline u32 DPHY_TIME_HS_ZERO(u32 ui)
 /* >1ms */
 #define DPHY_TIME_WAKEUP(ui)      (1020 * 1000 * 100)
 
+void dsi_table_print(u8 *dsi_table, u16 n_max);
 void dsi_init_table_print(struct dsi_config_s *dconf);
 int dsi_run_oneline_cmd(struct aml_lcd_drv_s *pdrv, u8 *payload, u8 *rd_back, u32 rd_back_len);
+u16 dsi_table_load_dts(char *propdata, u8 *table, u16 max_len);
 int dsi_read(struct aml_lcd_drv_s *pdrv, u8 *payload, u8 *rd_data, u8 rd_byte_len);
+int dsi_exec_init_table(struct aml_lcd_drv_s *pdrv,
+			u8 *payload, u32 pld_limit, u8 *rd_back, u32 rd_back_max);
+void dsi_panel_detect(struct aml_lcd_drv_s *pdrv);
 
 /* DSI setting */
 // DSI escape mode commman ack control field

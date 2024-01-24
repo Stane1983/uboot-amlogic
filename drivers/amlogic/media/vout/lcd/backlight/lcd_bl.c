@@ -2220,87 +2220,68 @@ static int lcd_bl_init_load_from_bsp(struct aml_bl_drv_s *bdrv)
 	return 0;
 }
 
-int aml_bl_probe(char *dtaddr, int load_id)
+static struct aml_bl_drv_s *bl_driver_add_single(unsigned char index)
 {
-	struct aml_lcd_data_s *pdata = aml_lcd_get_data();
-	struct aml_bl_drv_s *bdrv;
-	int load_id_bl, load_id_temp;
-	int i, ret;
+	struct aml_bl_drv_s *bdrv = bl_driver[index];
 
-	if (!pdata) {
-		BLERR("%s: pdata is NULL\n", __func__);
-		return -1;
+	if (bl_index_lut[index] >= BL_INDEX_INVALID)
+		return NULL;
+
+	if (!bdrv) {
+		bdrv = (struct aml_bl_drv_s *)malloc(sizeof(struct aml_bl_drv_s));
+		if (!bdrv) {
+			BLERR("%s: Not enough memory\n", __func__);
+			return NULL;
+		}
 	}
+	bl_driver[index] = bdrv;
+	memset(bdrv, 0, sizeof(struct aml_bl_drv_s));
+	bdrv->index = index;
+	bdrv->data = aml_lcd_get_data();
 
-	aml_bl_pwm_reg_config_init(pdata);
+	/* default config */
+	bdrv->config.index = bl_index_lut[index];
+	bdrv->config.method = BL_CTRL_MAX;
+	bdrv->config.en_gpio = 0xff;
+	bdrv->config.extern_index = 0xff;
+	bdrv->factory_bl_on_delay = -1;
 
-	load_id_bl = load_id;
-	for (i = 0; i < LCD_MAX_DRV; i++) {
-		if (bl_index_lut[i] >= BL_INDEX_INVALID)
-			continue;
-
-		if (!bl_driver[i]) {
-			bl_driver[i] = (struct aml_bl_drv_s *)
-				malloc(sizeof(struct aml_bl_drv_s));
-			if (!bl_driver[i]) {
-				BLERR("%s: Not enough memory\n", __func__);
-				return -1;
-			}
-		}
-		bdrv = bl_driver[i];
-		memset(bdrv, 0, sizeof(struct aml_bl_drv_s));
-		bdrv->index = i;
-		bdrv->data = pdata;
-
-		/* default config */
-		bdrv->config.index = bl_index_lut[i];
-		bdrv->config.method = BL_CTRL_MAX;
-		bdrv->config.en_gpio = 0xff;
-		bdrv->config.extern_index = 0xff;
-		bdrv->factory_bl_on_delay = -1;
-
-		if (load_id_bl & 0x1) {
-			ret = lcd_bl_init_load_from_dts(dtaddr, bdrv);
-			if (ret) {
-				free(bl_driver[i]);
-				bl_driver[i] = NULL;
-				return -1;
-			}
-		} else {
-			ret = lcd_bl_init_load_from_bsp(bdrv);
-			if (ret) {
-				free(bl_driver[i]);
-				bl_driver[i] = NULL;
-				return -1;
-			}
-		}
-		load_id_temp = load_id_bl & 0xff;
-		if ((load_id_bl & (1 << 8)) == 0) {
-			if (bdrv->key_valid)
-				load_id_temp |= (1 << 4);
-			else
-				load_id_temp &= ~(1 << 4);
-		}
-
-		/* load bl config */
-		bl_config_load(dtaddr, load_id_temp, bdrv);
-		bl_power_init_off(bdrv);
-	}
-
-	return 0;
+	return bdrv;
 }
 
-int aml_bl_remove(void)
+static void bl_driver_remove_single(unsigned char index)
 {
-	int i = 0;
+	free(bl_driver[index]);
+	bl_driver[index] = NULL;
+}
 
-	for (i = 0; i < LCD_MAX_DRV; i++) {
-		if (bl_driver[i])
-			free(bl_driver[i]);
-		bl_driver[i] = NULL;
+void aml_bl_probe_single(unsigned char index, int load_id)
+{
+	struct aml_bl_drv_s *bdrv = bl_driver_add_single(index);
+	int ret;
+
+	if (!bdrv)
+		return;
+
+	if (load_id & 0x1)
+		ret = lcd_bl_init_load_from_dts(lcd_get_dt_addr(), bdrv);
+	else
+		ret = lcd_bl_init_load_from_bsp(bdrv);
+	if (ret) {
+		bl_driver_remove_single(index);
+		return;
 	}
+	/* load bl config */
+	bl_config_load(lcd_get_dt_addr(), load_id, bdrv);
+	bl_power_init_off(bdrv);
+}
 
-	return 0;
+void aml_bl_remove_all(void)
+{
+	int i;
+
+	for (i = 0; i < LCD_MAX_DRV; i++)
+		bl_driver_remove_single(i);
 }
 
 int aml_bl_index_add(int drv_index, int conf_index)
@@ -2335,11 +2316,12 @@ int aml_bl_index_remove(int drv_index)
 int aml_bl_init(void)
 {
 	int i;
+	struct aml_lcd_data_s *lcd_data = aml_lcd_get_data();
+
+	aml_bl_pwm_reg_config_init(lcd_data);
 
 	for (i = 0; i < LCD_MAX_DRV; i++) {
-		if (bl_driver[i])
-			free(bl_driver[i]);
-		bl_driver[i] = NULL;
+		bl_driver_remove_single(i);
 		bl_index_lut[i] = BL_INDEX_INVALID;
 	}
 

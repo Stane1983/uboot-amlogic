@@ -16,7 +16,7 @@
 #include "dsi_common.h"
 #include "dsi_ctrl/dsi_ctrl.h"
 
-static u16 dsi_table_load_dts(char *propdata, u8 *table, u16 max_len)
+u16 dsi_table_load_dts(char *propdata, u8 *table, u16 max_len)
 {
 	u8 cmd_size, type;
 	u16 i = 0, j;
@@ -307,7 +307,7 @@ int dsi_run_oneline_cmd(struct aml_lcd_drv_s *pdrv, u8 *payload, u8 *rd_back, u3
 		return -1;
 	}
 
-	if (ret || is_rd || lcd_debug_print_flag & LCD_DBG_PR_ADV)
+	if (ret || lcd_debug_print_flag & LCD_DBG_PR_ADV)
 		dsi_req_print(ret, &dsi_cmd_req);
 
 	if (!ret && is_rd && rd_back_len && rd_back) {
@@ -322,8 +322,8 @@ int dsi_run_oneline_cmd(struct aml_lcd_drv_s *pdrv, u8 *payload, u8 *rd_back, u3
 	return ret;
 }
 
-static int dsi_exec_init_table(struct aml_lcd_drv_s *pdrv,
-		u8 *payload, u32 pld_limit, u8 *rd_back, u32 rd_back_max)
+int dsi_exec_init_table(struct aml_lcd_drv_s *pdrv,
+			u8 *payload, u32 pld_limit, u8 *rd_back, u32 rd_back_max)
 {
 	u16 i = 0, j = 0, step = 0;
 	u8 cmd_size;
@@ -505,6 +505,11 @@ void lcd_dsi_tx_ctrl(struct aml_lcd_drv_s *pdrv, u8 en)
 	if (en) {
 		lcd_dsi_if_bind(pdrv);
 		dsi_tx_ready(pdrv);
+		if (pdrv->config.control.mipi_cfg.panel_det_attr & 0x01) {
+			dsi_panel_detect(pdrv);
+			dsi_tx_close(pdrv);
+			return;
+		}
 		dsi_panel_init(pdrv);
 		dsi_disp_on(pdrv);
 	} else {

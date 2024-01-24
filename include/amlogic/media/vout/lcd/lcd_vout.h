@@ -285,6 +285,13 @@ struct dsi_dphy_s {
 	unsigned int wakeup;
 };
 
+struct dsi_panel_det_attr_s {
+	unsigned char *det_init_table[8];
+	unsigned char *det_match_seq[8];
+	char *det_type[8];
+	char *fallback_type;
+};
+
 struct dsi_config_s {
 	/* user config */
 	unsigned char lane_num;
@@ -317,15 +324,19 @@ struct dsi_config_s {
 	unsigned char *dsi_init_off;
 	unsigned char extern_init;
 
+	unsigned char dsi_rd_n;
+	struct dsi_dphy_s dphy;
+
+	//dsi_panel_check.c
 	unsigned char check_en;
 	unsigned char check_reg;
 	unsigned char check_cnt;
 	unsigned char check_state;
-
-	unsigned char current_mode;
-
-	unsigned char dsi_rd_n;
-	struct dsi_dphy_s dphy;
+	//dsi_panel_detect.c
+	char matched_panel[20];
+	char dsi_detect_dtb_path[30];
+	char *dt_addr;
+	unsigned char panel_det_attr; //[0]:det_en, [1]:store2env, [2]:0=bsp/1=dts [3]:on_matched
 };
 
 #define EDP_EDID_RETRY_MAX      3

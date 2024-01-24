@@ -64,6 +64,18 @@ static unsigned char mipi_init_off_table_dft[DSI_INIT_OFF_MAX] = {//table size <
 	0xff, 0,   //ending
 };
 
+unsigned char mipi1_init_table[] = {0x39, 4, 0xff, 0x98, 0x81, 0x01, 0x06, 1, 0x02, 0xff, 0};
+unsigned char mipi1_match_seq[] = {3, 0x98, 0x81, 0x5c};
+unsigned char mipi2_match_seq[] = {5, 0xff, 0xff, 0xff, 0xff, 0xff};
+
+static struct dsi_panel_det_attr_s lcd0_det_para = {
+	.det_init_table = {&mipi1_init_table[0], NULL, },
+	.det_match_seq = {&mipi1_match_seq[0], &mipi2_match_seq[0], NULL, },
+	.det_type = {"mipi_1", "mipi_2", NULL, },
+
+	.fallback_type = "mipi_0",
+};
+
 struct ext_lcd_config_s ext_lcd0_config[LCD_NUM_MAX] = {
 	{/* normal*/
 	"lvds_0", LCD_LVDS, 8,
@@ -174,6 +186,26 @@ struct ext_lcd_config_s ext_lcd0_config[LCD_NUM_MAX] = {
 	/* backlight */
 	100, 255, 10, 128, 128,
 	BL_CTRL_PWM, 0, 1, 0, 200, 200,
+	BL_PWM_NEGATIVE, BL_PWM_E, 180, 100, 25, 1, 1,
+	Rsv_val, Rsv_val, Rsv_val, Rsv_val, Rsv_val, Rsv_val, Rsv_val,
+	Rsv_val, Rsv_val, Rsv_val, Rsv_val,
+	10, 10, Rsv_val},
+
+	{/* DSI panel detect*/
+	"dsi_detect", LCD_MIPI, 8,
+	/* basic timing */
+	640, 480, 800, 525, 96, 40, 0, 2, 25, 0,
+	/* clk_attr */
+	0xff, 0, 1, 25175000, Rsv_val, Rsv_val, Rsv_val, Rsv_val, Rsv_val, Rsv_val,
+	/* lane_num bit_rate \ mode_init mode_disp video_mode clk_always_hs \ dsi_detect extern */
+	4, 200, 0, 1, 0, 2, 1, 0, 0x3, Rsv_val,
+	/* cmd init */
+	(unsigned char *)&lcd0_det_para, NULL,
+	/* power step */
+	lcd0_power_on_step_mipi, lcd0_power_off_step_mipi,
+	/* backlight */
+	100, 255, 10, 128, 128,
+	BL_CTRL_MAX, 0, 1, 0, 200, 200,
 	BL_PWM_NEGATIVE, BL_PWM_E, 180, 100, 25, 1, 1,
 	Rsv_val, Rsv_val, Rsv_val, Rsv_val, Rsv_val, Rsv_val, Rsv_val,
 	Rsv_val, Rsv_val, Rsv_val, Rsv_val,

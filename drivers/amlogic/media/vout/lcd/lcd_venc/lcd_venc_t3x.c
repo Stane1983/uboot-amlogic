@@ -362,13 +362,6 @@ static void lcd_venc_set(struct aml_lcd_drv_s *pdrv)
 						(0 << 29) |
 						(0 << 28));
 		break;
-	case LCD_MIPI:
-	case LCD_EDP:
-		lcd_vcbus_write(reg_disp_viu_ctrl, (0 << 31) |
-						(0 << 30) |
-						(0 << 29) |
-						(1 << 28));
-		break;
 	default:
 		break;
 	}
