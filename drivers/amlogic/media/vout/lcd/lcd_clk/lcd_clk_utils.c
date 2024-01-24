@@ -37,6 +37,7 @@ static char *lcd_clk_div_sel_table[] = {
 	"15",
 	"2.5",
 	"4.67",
+	"2.33",
 	"invalid",
 };
 
@@ -58,6 +59,7 @@ unsigned int lcd_clk_div_table[][5] = {//shifter:0=12, 1=14, 2=15
 	{CLK_DIV_SEL_15,   0x7f80,     2,         1,   15},
 	{CLK_DIV_SEL_2p5,  0x5294,     2,         2,   5 },
 	{CLK_DIV_SEL_4p67, 0x0ccc,     1,         3,   14},
+	{CLK_DIV_SEL_2p33, 0x1aaa,     1,         3,   7 },
 	{CLK_DIV_SEL_MAX,  0xffff,     0,         1,   1 },
 };
 
