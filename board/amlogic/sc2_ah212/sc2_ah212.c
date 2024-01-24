@@ -152,7 +152,11 @@ int board_init(void)
 	hdmitx_init();
 #endif
 #ifdef CONFIG_CMD_SND
-	earcrx_init();
+	/* Bandgap for HDMITX */
+	writel(0x0b4242, ANACTRL_HDMIPHY_CTRL0);
+	/* pinmux HDMITX_HPD_IN: GPIOH_2,  */
+	update_bits(PADCTRL_PIN_MUX_REGB, 0xf << 8, 0x1 << 8);
+	earcrx_init(EARC_RX_ANA_V1);
 #endif
 
 	//wifi reset

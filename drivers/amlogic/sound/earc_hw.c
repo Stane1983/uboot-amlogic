@@ -8,7 +8,7 @@
 #include <asm/io.h>
 #include <common.h>
 
-static void update_bits(unsigned int reg, unsigned int mask, unsigned int val)
+void update_bits(unsigned int reg, unsigned int mask, unsigned int val)
 {
 	unsigned int tmp, orig;
 
@@ -64,17 +64,30 @@ static void earcrx_cmdc_int_mask(void)
 		   EARCRX_CMDC_INT_MASK);
 }
 
-static void earcrx_cmdc_init(void)
+static void earcrx_cmdc_init(int version)
 {
-	writel(0x1  << 31 | /* earcrx_en_d2a */
-		   0x10 << 24 | /* earcrx_cmdcrx_reftrim */
-		   0x8  << 20 | /* earcrx_idr_trim */
-		   0x10 << 15 | /* earcrx_rterm_trim */
-		   0x4  << 12 | /* earcrx_cmdctx_ack_hystrim */
-		   0x10 << 7  | /* earcrx_cmdctx_ack_reftrim */
-		   0x1  << 4  | /* earcrx_cmdcrx_rcfilter_sel */
-		   0x4  << 0,   /* earcrx_cmdcrx_hystrim */
-		   EARCRX_ANA_CTRL0);
+	if (version == EARC_RX_ANA_V1) {
+		writel(0x1  << 31 | /* earcrx_en_d2a */
+			   0x10 << 24 | /* earcrx_cmdcrx_reftrim */
+			   0x8  << 20 | /* earcrx_idr_trim */
+			   0x10 << 15 | /* earcrx_rterm_trim */
+			   0x4  << 12 | /* earcrx_cmdctx_ack_hystrim */
+			   0x10 << 7  | /* earcrx_cmdctx_ack_reftrim */
+			   0x1  << 4  | /* earcrx_cmdcrx_rcfilter_sel */
+			   0x4  << 0,   /* earcrx_cmdcrx_hystrim */
+			   EARCRX_ANA_CTRL0);
+	} else {
+		writel(0x1  << 31 | /* earcrx_en_d2a */
+			   0x10 << 25 | /* earcrx_cmdcrx_reftrim */
+			   0x10  << 20 | /* earcrx_idr_trim */
+			   0x10 << 15 | /* earcrx_rterm_trim */
+			   0x4  << 12 | /* earcrx_cmdctx_ack_hystrim */
+			   0x10 << 7  | /* earcrx_cmdctx_ack_reftrim */
+			   0x1  << 4  | /* earcrx_cmdcrx_rcfilter_sel */
+			   0x4  << 0,   /* earcrx_cmdcrx_hystrim */
+			   EARCRX_ANA_CTRL0);
+		writel(0x1 << 11 | 0x1 << 10 | 0x8 << 4 | 0x8 << 0, EARCRX_ANA_CTRL1);
+	}
 
 	writel(0x2 << 20 | /* earcrx_pll_bias_adj */
 		   0x4 << 16 | /* earcrx_pll_rou */
@@ -97,16 +110,12 @@ static void earcrx_cmdc_init(void)
 			);
 }
 
-void earcrx_init(void)
+void earcrx_init(int version)
 {
-	/* Bandgap for HDMITX */
-	writel(0x0b4242, ANACTRL_HDMIPHY_CTRL0);
-	/* pinmux HDMITX_HPD_IN: GPIOH_2,  */
-	update_bits(PADCTRL_PIN_MUX_REGB, 0xf << 8, 0x1 << 8);
 	/* cmdc init */
 	earcrx_cmdc_set_clk();
 	earcrx_pll_refresh();
-	earcrx_cmdc_init();
+	earcrx_cmdc_init(version);
 	earcrx_cmdc_int_mask();
 
 	printf("%s done\n", __func__);

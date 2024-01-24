@@ -40,6 +40,9 @@
 #include <amlogic/aml_hdmirx.h>
 #endif
 #include <amlogic/storage.h>
+#ifdef CONFIG_CMD_SND
+#include "amlogic/auge_sound.h"
+#endif
 #include <amlogic/board.h>
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -262,6 +265,13 @@ int board_late_init(void)
 	hdmitx_set_hdmi_5v();
 	hdmitx21_chip_type_init(MESON_CPU_ID_T7);
 	hdmitx21_init();
+#endif
+#ifdef CONFIG_CMD_SND
+	/* Bandgap for HDMITX */
+	writel(0x0b4242, ANACTRL_HDMIPHY_CTRL0);
+	/* pinmux HDMITX_HPD_IN: GPIOW_15,  */
+	update_bits(PADCTRL_PIN_MUX_REGN, 0xf << 28, 0x1 << 28);
+	earcrx_init(EARC_RX_ANA_V2);
 #endif
 #ifdef CONFIG_AML_VPP
 	vpp_init();
