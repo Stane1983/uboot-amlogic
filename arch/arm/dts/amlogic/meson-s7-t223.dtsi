@@ -269,11 +269,6 @@
 &spicc0 {
 	status = "disabled";
 	pinctrl-names = "default";
-	pinctrl-0 = <&spicc0_pins_t>;
+	pinctrl-0 = <&spicc0_pins_x>;
 };
 
-&spicc1 {
-	status = "disabled";
-	pinctrl-names = "default";
-	pinctrl-0 = <&spicc1_pins_t>;
-};
