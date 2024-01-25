@@ -127,7 +127,6 @@
 		"display_width=1280\0" \
 		"display_height=800\0" \
 		"hdmichecksum=0x00000000\0" \
-		"dv_fw_dir=/reserved/firmware/dovi_fw.bin\0" \
 		"display_bpp=16\0" \
 		"display_color_index=16\0" \
 		"display_layer=osd0\0" \
