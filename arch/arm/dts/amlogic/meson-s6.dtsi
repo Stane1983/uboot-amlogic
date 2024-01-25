@@ -355,14 +355,14 @@
 
 	emmc_pins: emmc {
 		mux {
-			groups = "emmc_nand_d0",
-				"emmc_nand_d1",
-				"emmc_nand_d2",
-				"emmc_nand_d3",
-				"emmc_nand_d4",
-				"emmc_nand_d5",
-				"emmc_nand_d6",
-				"emmc_nand_d7",
+			groups = "emmc_d0",
+				"emmc_d1",
+				"emmc_d2",
+				"emmc_d3",
+				"emmc_d4",
+				"emmc_d5",
+				"emmc_d6",
+				"emmc_d7",
 				"emmc_clk",
 				"emmc_cmd";
 			function = "emmc";
@@ -370,7 +370,7 @@
 			input-enable;
 		};
 		mux1 {
-			groups = "emmc_nand_ds";
+			groups = "emmc_ds";
 			function = "emmc";
 			input-enable;
 			bias-pull-down;
@@ -414,18 +414,18 @@
 
 	sdcard_pins: sdcard {
 		mux {
-			groups = "sdcard_d0_c",
-				"sdcard_d1_c",
-				"sdcard_d2_c",
-				"sdcard_d3_c",
-				"sdcard_cmd_c";
+			groups = "sdcard_d0",
+				"sdcard_d1",
+				"sdcard_d2",
+				"sdcard_d3",
+				"sdcard_cmd";
 			function = "sdcard";
 			bias-pull-up;
 			input-enable;
 			drive-strength = <4>;
 		};
 		mux1 {
-			groups ="sdcard_clk_c";
+			groups ="sdcard_clk";
 			function = "sdcard";
 			bias-pull-up;
 			output-high;
@@ -435,7 +435,7 @@
 
 	sdcard_clk_gate_pins: sdcard_clk_gate {
 		mux {
-			groups = "sdcard_clk_c";
+			groups = "sdcard_clk";
 			function = "sdcard";
 			bias-pull-down;
 		};
