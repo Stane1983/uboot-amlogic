@@ -391,6 +391,7 @@ void hdmitx21_init(void)
 static void set_vid_clk_div(u32 div)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
+
 	hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL, 0, 16, 3);// select vid_pll_clk
 	hd21_set_reg_bits(CLKCTRL_VID_CLK0_DIV, div - 1, 0, 8);
 	hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL, 7, 0, 3);
@@ -408,8 +409,9 @@ static void set_hdmi_tx_pixel_div(u32 div)
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
 	hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL2, 1, 5, 1);//enable gate
-	//for s7 s7d
-	if (hdev->chip_type == MESON_CPU_ID_S7 || hdev->chip_type == MESON_CPU_ID_S7D) {
+	//for s7 s7d s6
+	if (hdev->chip_type == MESON_CPU_ID_S7 || hdev->chip_type == MESON_CPU_ID_S7D ||
+	    hdev->chip_type == MESON_CPU_ID_S6) {
 		if (hdev->para->cs == HDMI_COLORSPACE_YUV420) {
 			hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL, 1, 1, 1);
 			hd21_set_reg_bits(CLKCTRL_HDMI_CLK_CTRL, 1, 16, 1);
@@ -485,8 +487,8 @@ static void _hdmitx21_set_clk(void)
 	set_vid_clk_div(1);
 	set_hdmi_tx_pixel_div(1);
 
-	if ((hdev->chip_type == MESON_CPU_ID_S1A) || (hdev->chip_type == MESON_CPU_ID_S7)
-		|| (hdev->chip_type == MESON_CPU_ID_S7D))
+	if (hdev->chip_type == MESON_CPU_ID_S1A || hdev->chip_type == MESON_CPU_ID_S7 ||
+	    hdev->chip_type == MESON_CPU_ID_S7D || hdev->chip_type == MESON_CPU_ID_S6)
 		set_encp_div(0);
 	else
 		set_encp_div(1);
@@ -875,6 +877,14 @@ static void vpu_hdmi_set_matrix_ycbcr2rgb(void)
 	hd21_write_reg(VPU_HDMI_MATRIX_COEF02_10, (0x59c << 16) | 0x400);
 	hd21_write_reg(VPU_HDMI_MATRIX_COEF11_12, (0x1ea0 << 16) | 0x1d25);
 	hd21_write_reg(VPU_HDMI_MATRIX_COEF20_21, (0x400 << 16) | 0x717);
+	//S6 TODO
+	//1.164     0       1.596
+	//1.164   -0.392    -0.813
+	//1.164   2.017     0
+	//hd21_write_reg(VPU_HDMI_MATRIX_COEF00_01, (0x4a8 << 16) | 0);
+	//hd21_write_reg(VPU_HDMI_MATRIX_COEF02_10, (0x662 << 16) | 0x4a8);
+	//hd21_write_reg(VPU_HDMI_MATRIX_COEF11_12, (0x1e6f << 16) | 0x1cbf);
+	//hd21_write_reg(VPU_HDMI_MATRIX_COEF20_21, (0x4a8 << 16) | 0x811);
 	hd21_write_reg(VPU_HDMI_MATRIX_COEF22, 0x0);
 	hd21_write_reg(VPU_HDMI_MATRIX_OFFSET0_1, 0x0);
 	hd21_write_reg(VPU_HDMI_MATRIX_OFFSET2, 0x0);
@@ -1283,6 +1293,22 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 	// VPU_HDMI_FMT_CTRL in every chips need check
 	data32 = 0;
 	switch (hdev->chip_type) {
+	case MESON_CPU_ID_S6:
+		//bit[31] = 1 enable ycbcr2rgb or rgb2yuv
+		data32 = (((para->cs == HDMI_COLORSPACE_RGB) ? 3 :
+				(para->cs == HDMI_COLORSPACE_YUV420) ? 2 :
+			  (para->cs == HDMI_COLORSPACE_YUV422) ? 1 : 0) << 0) |
+			  (0 << 2) |
+			  (0 << 4) |
+			  (0 << 5) |
+			  (0 << 6) |
+			  (((para->cd == COLORDEPTH_24B) ? 1 : 0) << 10) |
+			  (0 << 11) |
+			  (0 << 12) |
+			  (2 << 22) |
+			  (0 << 24) |
+			  (((para->cs == HDMI_COLORSPACE_RGB) ? 1 : 0) << 31);
+		break;
 	case MESON_CPU_ID_S1A:
 		//bit[1,0] = 3 enable ycbcr2rgb
 		data32 = (para->cs == HDMI_COLORSPACE_RGB) ?
@@ -1497,6 +1523,7 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 		data32 |= (((para->cs == HDMI_COLORSPACE_YUV420) ? 1 : 0) << 20);
 		break;
 	case MESON_CPU_ID_S7D:
+	case MESON_CPU_ID_S6:
 		if (para->timing.pi_mode == 0 &&
 			(para->timing.v_active == 480 || para->timing.v_active == 576))
 			data32 |= 1;
@@ -1527,7 +1554,8 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 
 	/* for s7, ycbcr -> rgb */
 	if (hdev->chip_type == MESON_CPU_ID_S7 ||
-		hdev->chip_type == MESON_CPU_ID_S7D) {
+		hdev->chip_type == MESON_CPU_ID_S7D ||
+			hdev->chip_type == MESON_CPU_ID_S6) {
 		if (hdev->para->cs == HDMI_COLORSPACE_RGB)
 			vpu_hdmi_set_matrix_ycbcr2rgb();
 	}
@@ -2003,6 +2031,7 @@ static void hdmitx_set_div40(bool div40)
 		pr_info("The chip don't support over 3G\n");
 		hdmitx21_set_reg_bits(HDMITX_TOP_BIST_CNTL, 1, 12, 1);
 		break;
+	case MESON_CPU_ID_S6:
 	case MESON_CPU_ID_S7:
 	case MESON_CPU_ID_S7D:
 	case MESON_CPU_ID_T7:
@@ -2032,7 +2061,8 @@ static int hdmi_move_hdr_pkt(bool flag)
 	u8 move_val = 0;
 
 	/* Only S7 and later SOCs have this function */
-	if (hdev->chip_type == MESON_CPU_ID_S7 || hdev->chip_type == MESON_CPU_ID_S7D) {
+	if (hdev->chip_type == MESON_CPU_ID_S7 || hdev->chip_type == MESON_CPU_ID_S7D ||
+	    hdev->chip_type == MESON_CPU_ID_S6) {
 		if (flag) {
 			timing = hdmitx21_gettiming_from_vic(vic);
 			if (timing) {
@@ -2242,6 +2272,7 @@ static void config_hdmi21_tx(struct hdmitx_dev *hdev)
 	// config Packet
 	//---------------
 	hdmitx21_wr_reg(VTEM_CTRL_IVCTX, 0x04); //[2] reg_vtem_ctrl
+	hdmitx21_wr_reg(GEN5_CTRL_IVCTX, 0x04); //[7:2] reg_gen5_ctrl
 
 	//drm,emp pacekt
 	hdmitx21_wr_reg(HDMITX_TOP_HS_INTR_CNTL, 0x010); //set TX hs_int h_cnt

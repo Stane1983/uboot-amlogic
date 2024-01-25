@@ -116,7 +116,7 @@ int board_init(void)
 	printf("board init\n");
 
 #ifdef CONFIG_AML_HDMITX21
-	hdmitx21_chip_type_init(MESON_CPU_ID_S7D);
+	hdmitx21_chip_type_init(MESON_CPU_ID_S6);
 	hdmitx21_init();
 #endif
 

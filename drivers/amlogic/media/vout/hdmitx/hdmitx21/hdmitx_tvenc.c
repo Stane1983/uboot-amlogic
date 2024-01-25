@@ -741,7 +741,8 @@ void hdmitx21_pbist_config(struct hdmitx_dev *hdev, enum hdmi_vic vic, int reg_p
 	}
 	pr_info("find hdmitx vic %d timing\n", vic);
 	if (reg_pbist_en && (hdev->chip_type == MESON_CPU_ID_S7 ||
-		hdev->chip_type == MESON_CPU_ID_S7D))
+		hdev->chip_type == MESON_CPU_ID_S7D ||
+		hdev->chip_type == MESON_CPU_ID_S6))
 		hdmitx21_set_reg_bits(HDMITX_TOP_CLK_GATE, 1, 0, 1);//enable pbist gate
 	else
 		hdmitx21_set_reg_bits(HDMITX_TOP_CLK_GATE, 0, 0, 1);//disable pbist gate

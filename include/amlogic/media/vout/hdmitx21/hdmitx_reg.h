@@ -75,7 +75,7 @@
 #define HDMITX_TOP_SECURE_DATA        (TOP_SEC_OFFSET_MASK + (0x041 << 2)) // 0x104
 #define HDMITX_TOP_DONT_TOUCH0        (TOP_SEC_OFFSET_MASK + (0x0FE << 2)) // 0x3F8
 #define HDMITX_TOP_DONT_TOUCH1        (TOP_SEC_OFFSET_MASK + (0x0FF << 2)) // 0x3FC
-//for s7 s7d
+//for s7 s7d s6
 /* bit[0] : reg_pbist_gate_en
  * bit[1] : reg_fdet_gate_en
  * bit[2] : reg_p2t_p0_gate_en
@@ -1316,7 +1316,10 @@
 
 #define HDMI_PIPELINE_GP_3_IVCTX 0x06F5
 
-#define RSVD10_HW_TPI_IVCTX 0x06F7
+// Annie@AmLogic 2022Jan29: Dedicate GEN5 packet to
+// support single EMP transmit, such as SBTM EMP
+// Similar to reg VTEM_CTRL_IVCTX
+#define GEN5_CTRL_IVCTX 0x06F7
 
 #define TPI_DDC_MASTER_EN_IVCTX 0x06F8
 	#define BIT_TPI_DDC_MASTER_EN_HW_EN BIT(7)

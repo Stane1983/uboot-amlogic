@@ -342,19 +342,19 @@ do { \
 	case HDMI_PHYPARA_3p7G:
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x8003a8fb);
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x1555);
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x4ef001);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x704efc1b);
 		break;
 	case HDMI_PHYPARA_3G:	/* 2.97Gbps */
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x800380dd);
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x1555);
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x4ef001);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x704efc1b);
 		break;
 	case HDMI_PHYPARA_270M:	/* 1.485Gbps, and below */
 	case HDMI_PHYPARA_DEF:
 	default:
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x820380a0);
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x1555);
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x4ef001);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x704efc1b);
 		break;
 	}
 

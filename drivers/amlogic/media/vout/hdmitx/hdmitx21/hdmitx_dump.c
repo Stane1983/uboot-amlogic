@@ -57,7 +57,7 @@ void hdmitx21_dump_regs(void)
 	dump32(ENCI_VIDEO_MODE, ENCP_VRR_CTRL1);
 
 	if (hdev->chip_type == MESON_CPU_ID_S7 || hdev->chip_type == MESON_CPU_ID_S1A ||
-		hdev->chip_type == MESON_CPU_ID_S7D) {
+		hdev->chip_type == MESON_CPU_ID_S7D || hdev->chip_type == MESON_CPU_ID_S6) {
 		//((0x1c00 << 2) + 0xff000000) ~((0x1cd7 << 2) + 0xff000000))
 		dump32(ENCI_DVI_HSO_BEGIN, ENCL_INBUF_FIX_PIX_NUM);
 	} else {
@@ -99,7 +99,8 @@ void hdmitx21_dump_regs(void)
 	dumpcor(CP2TX_CTRL_0_IVCTX, CP2TX_IPT_CTR_39TO32_IVCTX);
 	// 0x000008a0 - 0x000008d0
 	if (hdev->chip_type == MESON_CPU_ID_S7 ||
-		hdev->chip_type == MESON_CPU_ID_S7D) {
+		hdev->chip_type == MESON_CPU_ID_S7D ||
+		hdev->chip_type == MESON_CPU_ID_S6) {
 		hdmitx21_set_reg_bits(HDMITX_TOP_CLK_GATE, 1, 16, 2);//enable hdcp2x gate
 		dumpcor(HDCP2X_DEBUG_CTRL0_IVCTX, HDCP2X_DEBUG_STAT16_IVCTX);
 		hdmitx21_set_reg_bits(HDMITX_TOP_CLK_GATE, 0, 16, 1);//disable hdcp2x gate
@@ -129,7 +130,8 @@ void hdmitx21_dump_regs(void)
 	dumpcor(D_HDR_GEN_CTL_IVCTX, D_HDR_FIFO_MEM_CTL_IVCTX);
 	// 0x00000f80 - 0x00000fa9
 	if (!(hdev->chip_type == MESON_CPU_ID_S7 ||
-		hdev->chip_type == MESON_CPU_ID_S7D)) {
+		hdev->chip_type == MESON_CPU_ID_S7D ||
+		hdev->chip_type == MESON_CPU_ID_S6)) {
 		dumpcor(DSC_PKT_GEN_CTL_IVCTX, DSC_PKT_SPARE_9_IVCTX);
 	}
 	dump_infoframe_packets();
@@ -165,7 +167,8 @@ static int dump_hdmivpfdet_show(void)
 
 	pr_info("\n--------vp fdet info--------\n");
 	if (hdev->chip_type == MESON_CPU_ID_S7 ||
-		hdev->chip_type == MESON_CPU_ID_S7D)
+		hdev->chip_type == MESON_CPU_ID_S7D ||
+		hdev->chip_type == MESON_CPU_ID_S6)
 		hdmitx21_set_reg_bits(HDMITX_TOP_CLK_GATE, 1, 1, 1);//enable fdet gate
 
 	hdmitx21_wr_reg(VP_FDET_CLEAR_IVCTX, 0);
@@ -440,7 +443,8 @@ static int dump_hdmivpfdet_show(void)
 		pr_info("\n");
 	}
 	if (hdev->chip_type == MESON_CPU_ID_S7 ||
-		hdev->chip_type == MESON_CPU_ID_S7D)
+		hdev->chip_type == MESON_CPU_ID_S7D ||
+		hdev->chip_type == MESON_CPU_ID_S6)
 		hdmitx21_set_reg_bits(HDMITX_TOP_CLK_GATE, 0, 1, 1);//disable fdet gate
 	return 0;
 }
