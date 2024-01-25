@@ -197,6 +197,10 @@
 	"cec_fun=0x2F\0" \
 	"logic_addr=0x0\0" \
 	"cec_ac_wakeup=1\0" \
+	"tftp_kernel_path=boot/Image \0" \
+	"tftp_dtb_path=boot/dtb/ \0" \
+	"tftp_initrd_path=boot/initrd.img \0" \
+	"nfsroot_path= \0" \
 	CONFIG_EXTRA_HDMI_ENV_SETTINGS \
 	"initargs="\
 		"init=data=writeback rw rootfstype=ext4" CONFIG_KNL_LOG_LEVEL " "\
@@ -206,6 +210,19 @@
 		"ramoops.console_size=0x4000 loop.max_part=4 scsi_mod.scan=async "\
 		"xhci_hcd.quirks=0x800000 loglevel=4 scramble_reg=0xfe02e030 "\
 		"gamma=0 "\
+		"\0"\
+	"nfs_boot="\
+		"dhcp;"\
+		"setenv nfs_para root=/dev/nfs rw "\
+			"nfsroot=${serverip}:${nfsroot_path} ip=:::::eth0:on;"\
+		"printenv nfs_para;"\
+		"setenv bootargs ${bootargs} ${nfs_para};"\
+		"tftp ${dtb_mem_addr} ${tftp_dtb_path}${fdtfile};"\
+		"tftp ${loadaddr_kernel} ${tftp_kernel_path};"\
+		"tftp ${ramdisk_addr_r} ${tftp_initrd_path};"\
+		"setenv ramdisk_size ${filesize};"\
+		"echo ramdisk_size=${ramdisk_size};"\
+		"booti ${loadaddr_kernel} ${ramdisk_addr_r}:${ramdisk_size} ${dtb_mem_addr};"\
 		"\0"\
 	"upgrade_check="\
 		"run upgrade_check_base;"\
