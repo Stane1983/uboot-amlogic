@@ -135,6 +135,8 @@ static u32 rpmb_process_request(struct optee_private *priv, void *req,
 	if (req_size < sizeof(*sreq))
 		return TEE_ERROR_BAD_PARAMETERS;
 
+	sreq->dev_id = 1;
+
 	switch (sreq->cmd) {
 	case RPMB_CMD_DATA_REQ:
 		mmc = get_mmc(priv, sreq->dev_id);
