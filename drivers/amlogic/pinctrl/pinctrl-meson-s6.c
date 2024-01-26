@@ -67,7 +67,7 @@ static const unsigned int pwm_c_f_pins[]			= { GPIOF_4 };
 static const unsigned int uart_c_tx_f_pins[]			= { GPIOF_0 };
 static const unsigned int uart_c_rx_f_pins[]			= { GPIOF_1 };
 static const unsigned int clk_32k_in_pins[]			= { GPIOF_2 };
-static const unsigned int pwm_c_hiz_pins[]			= { GPIOF_3 };
+static const unsigned int pwm_c_hiz_pins[]			= { GPIOF_4 };
 
 /* GPIOF func3 */
 static const unsigned int i2c_slave_scl_pins[]			= { GPIOF_0 };
@@ -77,10 +77,10 @@ static const unsigned int pwm_b_f_pins[]			= { GPIOF_3 };
 static const unsigned int gen_clk_f_pins[]			= { GPIOF_4 };
 
 /* GPIOF func4 */
-static const unsigned int spdif_in_f_pins[]			= { GPIOD_0 };
-static const unsigned int ir_remote_in_f1_pins[]		= { GPIOD_1 };
-static const unsigned int pwm_a_hiz_pins[]			= { GPIOD_2 };
-static const unsigned int pwm_b_hiz_pins[]			= { GPIOD_3 };
+static const unsigned int spdif_in_f_pins[]			= { GPIOF_0 };
+static const unsigned int ir_remote_in_f1_pins[]		= { GPIOF_1 };
+static const unsigned int pwm_a_hiz_pins[]			= { GPIOF_2 };
+static const unsigned int pwm_b_hiz_pins[]			= { GPIOF_3 };
 
 /* GPIOF func5 */
 static const unsigned int tdm_d4_f_pins[]			= { GPIOF_0 };
@@ -305,8 +305,8 @@ static const unsigned int hdmitx_sda_pins[]			= { GPIOH_0 };
 static const unsigned int hdmitx_scl_pins[]			= { GPIOH_1 };
 static const unsigned int hdmitx_hpd_in_pins[]			= { GPIOH_2 };
 static const unsigned int ao_cec_h_pins[]			= { GPIOH_3 };
-static const unsigned int spdif_in_h_pins[]			= { GPIOH_4 };
-static const unsigned int spdif_out_h_pins[]			= { GPIOH_5 };
+static const unsigned int spdif_out_h_pins[]			= { GPIOH_4 };
+static const unsigned int spdif_in_h_pins[]			= { GPIOH_5 };
 static const unsigned int iso7816_clk_h_pins[]			= { GPIOH_6 };
 static const unsigned int iso7816_data_h_pins[]			= { GPIOH_7 };
 
@@ -472,8 +472,8 @@ static const unsigned int spi_a_clk_a_pins[]			= { GPIOA_6 };
 static const unsigned int tdm_d10_a7_pins[]			= { GPIOA_7 };
 static const unsigned int tdm_d11_a8_pins[]			= { GPIOA_8 };
 static const unsigned int pdm_dclk_a9_pins[]			= { GPIOA_9 };
-static const unsigned int pdm_din2_a_pins[]			= { GPIOA_10 };
-static const unsigned int pdm_din3_a_pins[]			= { GPIOA_11 };
+static const unsigned int pdm_din3_a_pins[]			= { GPIOA_10 };
+static const unsigned int pdm_din2_a_pins[]			= { GPIOA_11 };
 static const unsigned int spdif_in_a12_pins[]			= { GPIOA_12 };
 static const unsigned int spdif_out_a_pins[]			= { GPIOA_13 };
 static const unsigned int i2c3_scl_a14_pins[]			= { GPIOA_14 };
@@ -1146,7 +1146,7 @@ static const char * const uart_a_groups[] = {
 
 static const char * const uart_b_groups[] = {
 	"uart_b_tx_d", "uart_b_rx_d", "uart_b_tx_e", "uart_b_rx_e",
-	"uart_b_tx_c", "uart_b_tx_h", "uart_b_rx_h"
+	"uart_b_tx_c", "uart_b_rx_c", "uart_b_tx_h", "uart_b_rx_h"
 };
 
 static const char * const uart_c_groups[] = {
@@ -1441,7 +1441,7 @@ static struct meson_bank meson_s6_periphs_banks[] = {
 		0x003,  0, 0x004,  0, 0x002,  0, 0x001,  0, 0x000,  0, 0x007,  0),
 	BANK_DS("A", GPIOA_0,  GPIOA_15,
 		0x073,  0, 0x074,  0, 0x072,  0, 0x071,  0, 0x070,  0, 0x077,  0),
-	BANK_DS("TEST_N", GPIO_TEST_N, GPIO_TEST_N,
+	BANK_DS("_TEST_N", GPIO_TEST_N, GPIO_TEST_N,
 		0x083,  0, 0x084,  0, 0x082,  0, 0x081,  0, 0x080,  0, 0x087,  0),
 	BANK_DS("CC", GPIO_CC1, GPIO_CC2,
 		0x091,  2, 0x091,  4, 0x092,  0, 0x091,  0, 0x090,  0, 0x091,  6),
