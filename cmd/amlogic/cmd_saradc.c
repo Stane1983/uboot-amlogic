@@ -94,152 +94,6 @@ static int do_saradc_close(cmd_tbl_t *cmdtp, int flag, int argc,
 	return 0;
 }
 
-#include <asm/io.h>
-#include <asm/amlogic/arch/timer.h>
-
-#define SAR_ADC_CLK                                0xfe00017c
-#define SAR_ADC_RST                                0xfe002008
-
-#define SAR_ADC_REG0                               0xfe026000
-#define SAR_ADC_CHAN_LIST                          0xfe026004
-#define SAR_ADC_AVG_CNTL                           0xfe026008
-#define SAR_ADC_REG3                               0xfe02600c
-#define SAR_ADC_DELAY                              0xfe026010
-#define SAR_ADC_LAST_RD                            0xfe026014
-#define SAR_ADC_FIFO_RD                            0xfe026018
-#define SAR_ADC_AUX_SW                             0xfe02601c
-#define SAR_ADC_CHAN_10_SW                         0xfe026020
-#define SAR_ADC_DETECT_IDLE_SW                     0xfe026024
-#define SAR_ADC_DELTA_10                           0xfe026028
-#define SAR_ADC_REG11                              0xfe02602c
-#define SAR_ADC_REG12                              0xfe026030
-#define SAR_ADC_REG13                              0xfe026034
-#define SAR_ADC_CHNL01                             0xfe026038
-#define SAR_ADC_CHNL23                             0xfe02603c
-#define SAR_ADC_CHNL45                             0xfe026040
-#define SAR_ADC_CHNL67                             0xfe026044
-#define SAR_ADC_RDY                                0xfe026080
-
-static int do_dump_reg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
-{
-	printf("[%08x] SAR_ADC_CLK            = %08x\n", SAR_ADC_CLK            , readl(SAR_ADC_CLK           ));
-	printf("[%08x] SAR_ADC_REG0           = %08x\n", SAR_ADC_REG0           , readl(SAR_ADC_REG0           ));
-	printf("[%08x] SAR_ADC_CHAN_LIST      = %08x\n", SAR_ADC_CHAN_LIST      , readl(SAR_ADC_CHAN_LIST      ));
-	printf("[%08x] SAR_ADC_AVG_CNTL       = %08x\n", SAR_ADC_AVG_CNTL       , readl(SAR_ADC_AVG_CNTL       ));
-	printf("[%08x] SAR_ADC_REG3           = %08x\n", SAR_ADC_REG3           , readl(SAR_ADC_REG3           ));
-	printf("[%08x] SAR_ADC_DELAY          = %08x\n", SAR_ADC_DELAY          , readl(SAR_ADC_DELAY          ));
-	printf("[%08x] SAR_ADC_LAST_RD        = %08x\n", SAR_ADC_LAST_RD        , readl(SAR_ADC_LAST_RD        ));
-	printf("[%08x] SAR_ADC_FIFO_RD        = %08x\n", SAR_ADC_FIFO_RD        , readl(SAR_ADC_FIFO_RD        ));
-	printf("[%08x] SAR_ADC_AUX_SW         = %08x\n", SAR_ADC_AUX_SW         , readl(SAR_ADC_AUX_SW         ));
-	printf("[%08x] SAR_ADC_CHAN_10_SW     = %08x\n", SAR_ADC_CHAN_10_SW     , readl(SAR_ADC_CHAN_10_SW     ));
-	printf("[%08x] SAR_ADC_DETECT_IDLE_SW = %08x\n", SAR_ADC_DETECT_IDLE_SW , readl(SAR_ADC_DETECT_IDLE_SW ));
-	printf("[%08x] SAR_ADC_DELTA_10       = %08x\n", SAR_ADC_DELTA_10       , readl(SAR_ADC_DELTA_10       ));
-	printf("[%08x] SAR_ADC_REG11          = %08x\n", SAR_ADC_REG11          , readl(SAR_ADC_REG11          ));
-	printf("[%08x] SAR_ADC_REG12          = %08x\n", SAR_ADC_REG12          , readl(SAR_ADC_REG12          ));
-	printf("[%08x] SAR_ADC_REG13          = %08x\n", SAR_ADC_REG13          , readl(SAR_ADC_REG13          ));
-	printf("[%08x] SAR_ADC_CHNL01         = %08x\n", SAR_ADC_CHNL01         , readl(SAR_ADC_CHNL01         ));
-	printf("[%08x] SAR_ADC_CHNL23         = %08x\n", SAR_ADC_CHNL23         , readl(SAR_ADC_CHNL23         ));
-	printf("[%08x] SAR_ADC_CHNL45         = %08x\n", SAR_ADC_CHNL45         , readl(SAR_ADC_CHNL45         ));
-	printf("[%08x] SAR_ADC_CHNL67         = %08x\n", SAR_ADC_CHNL67         , readl(SAR_ADC_CHNL67         ));
-	printf("[%08x] SAR_ADC_RDY            = %08x\n", SAR_ADC_RDY            , readl(SAR_ADC_RDY            ));
-	printf("\n");
-
-	return 0;
-}
-
-struct samples {
-	uint32_t cost_time;
-	u32 val;
-};
-
-static int do_read_fifo(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
-{
-	int count = 1, n, i;
-	int timeout = 1000;
-	int show_time = 0;
-	uint32_t last_time;
-	uint32_t cur_time;
-	uint32_t cost_time;
-	struct samples *buffer;
-
-	if (argc >= 2)
-		count = simple_strtoul(argv[1], NULL, 10);
-	if (argc >= 3)
-		show_time = simple_strtoul(argv[2], NULL, 10);
-	if (argc >= 4)
-		timeout = simple_strtoul(argv[3], NULL, 10);
-	printf("count = %d\n", count);
-	printf("timeout = %dms\n", timeout);
-	printf("show_time = %d(%s)\n", show_time, show_time ? "on" : "off");
-	printf("\n");
-	// ms to ns
-	timeout *= 1000;
-
-	buffer = (struct samples *)malloc(sizeof(struct samples) * count);
-	n = 0;
-	last_time = get_time(); // ns
-
-	do {
-		cur_time = get_time();
-		cost_time = cur_time - last_time;
-		// read fifo
-		if (readl(SAR_ADC_REG0) & GENMASK(25, 21)) {
-			buffer[n].val = readl(SAR_ADC_FIFO_RD) & 0xfff;
-			buffer[n].cost_time = cost_time;
-			last_time = cur_time;
-			n++;
-		}
-	} while (cost_time < timeout && n < count);
-
-	for (i = 0; i < n; i++) {
-		if (show_time)
-			printf("[+%8u ns] ", buffer[i].cost_time);
-		printf("%u\n", buffer[i].val);
-	}
-
-	if (cost_time >= timeout)
-		printf("\nA timeout occurred during the read process, and the specified amount of data was not read.");
-	printf("\nDone [%d/%d]\n", n, count);
-	printf("\n");
-
-	free(buffer);
-
-	return 0;
-}
-
-static int do_config_def(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
-{
-	// RST
-	// writel(0x00040000, SAR_ADC_RST);
-
-	// CLK
-	writel(0x00000119, SAR_ADC_CLK);
-
-	// Analog Reset
-	writel(0x00000000, SAR_ADC_REG3);
-
-	writel(0x00000004, SAR_ADC_CHAN_LIST);
-	writel(0x00000000, SAR_ADC_AVG_CNTL);
-	writel(0xd0284c0a, SAR_ADC_REG3);
-	writel(0x010a000a, SAR_ADC_DELAY);
-	writel(0x03eb1a0c, SAR_ADC_AUX_SW);
-	writel(0x03800380, SAR_ADC_CHAN_10_SW);
-	writel(0x03800380, SAR_ADC_DETECT_IDLE_SW);
-	writel(0x00000000, SAR_ADC_DELTA_10);
-	writel(0x00000000, SAR_ADC_REG11);
-	writel(0x00000000, SAR_ADC_REG12);
-	writel(0x00000000, SAR_ADC_REG13);
-
-	writel(0x04004040, SAR_ADC_REG0);
-	writel(0x04004041, SAR_ADC_REG0);
-	writel(0x04004045, SAR_ADC_REG0);
-
-	printf("Done\n");
-	printf("\n");
-
-	return 0;
-}
-
 static int do_saradc_getval(cmd_tbl_t *cmdtp, int flag, int argc,
 		char * const argv[])
 {
@@ -352,9 +206,6 @@ static cmd_tbl_t cmd_saradc_sub[] = {
 	U_BOOT_CMD_MKENT(getval, 1, 0, do_saradc_getval, "", ""),
 	U_BOOT_CMD_MKENT(test, 1, 0, do_saradc_test, "", ""),
 	U_BOOT_CMD_MKENT(get_in_range, 3, 0, do_saradc_get_in_range, "", ""),
-	U_BOOT_CMD_MKENT(dump_reg, 1, 0, do_dump_reg, "", ""),
-	U_BOOT_CMD_MKENT(read_fifo, 4, 0, do_read_fifo, "", ""),
-	U_BOOT_CMD_MKENT(config_def, 1, 0, do_config_def, "", ""),
 };
 
 static int do_saradc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
@@ -387,7 +238,4 @@ U_BOOT_CMD(
 	"saradc test   - test the SARADC by channel-7\n"
 	"saradc get_in_range <min> <max>\n"
 	"       - return 0 if current value in the range of current channel\n"
-	"saradc dump_reg\n"
-	"saradc read_fifo <count> <show_time> <timeout>\n"
-	"saradc config_def\n"
 );
