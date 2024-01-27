@@ -275,7 +275,7 @@ static struct aml_lcd_drv_s *lcd_driver_check_valid(int index)
 	if (index >= LCD_MAX_DRV)
 		return NULL;
 
-	if (!lcd_driver[index] || !lcd_driver[index]->config_valid) {
+	if (!lcd_driver[index] || !lcd_driver[index]->probe_done) {
 		LCDERR("invalid lcd%d config\n", index);
 		return NULL;
 	}
@@ -463,7 +463,7 @@ static void lcd_module_enable(struct aml_lcd_drv_s *pdrv, char *mode, unsigned i
 	int ret;
 
 	pconf = &pdrv->config;
-	ret = pdrv->config_valid(pdrv, mode, frac);
+	ret = pdrv->config_valid(pdrv, mode);
 	if (ret) {
 		LCDERR("[%d]: init exit\n", pdrv->index);
 		return;
@@ -518,7 +518,10 @@ static void lcd_module_prepare(struct aml_lcd_drv_s *pdrv,
 {
 	int ret;
 
-	ret = pdrv->config_valid(pdrv, mode, frac);
+	if (!mode)
+		return;
+
+	ret = pdrv->config_valid(pdrv, mode);
 	if (ret) {
 		LCDERR("[%d]: prepare exit\n", pdrv->index);
 		return;
@@ -562,7 +565,7 @@ static int lcd_mode_init(struct aml_lcd_drv_s *pdrv)
 	}
 
 	if (ret) {
-		pdrv->config_valid = NULL;
+		pdrv->probe_done = 0;
 		LCDERR("[%d]: %s: invalid config\n", pdrv->index, __func__);
 		return -1;
 	}
@@ -1065,7 +1068,7 @@ unsigned int aml_lcd_driver_outputmode_check(char *mode, unsigned int frac)
 			continue;
 
 		if (pdrv->outputmode_check) {
-			ret = pdrv->outputmode_check(pdrv, mode, frac);
+			ret = pdrv->outputmode_check(pdrv, mode);
 			if (ret == 0) {
 				viu_mux = ((pdrv->index << 4) | VIU_MUX_ENCL);
 				break;

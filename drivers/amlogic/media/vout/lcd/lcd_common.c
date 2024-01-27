@@ -1769,14 +1769,14 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 	return 0;
 }
 
-static int lcd_config_load_from_unifykey_v2(struct lcd_config_s *pconf,
+static int lcd_config_load_from_unifykey_v2(struct aml_lcd_drv_s *pdrv,
 					    unsigned char *p,
 					    unsigned int key_len,
 					    unsigned int offset)
 {
 	struct lcd_unifykey_header_s *header;
-	struct phy_config_s *phy_cfg = &pconf->phy_cfg;
-	struct cus_ctrl_config_s *cus_ctrl = &pconf->cus_ctrl;
+	struct phy_config_s *phy_cfg = &pdrv->config.phy_cfg;
+	struct cus_ctrl_config_s *cus_ctrl = &pdrv->config.cus_ctrl;
 	unsigned int len, temp;
 	int i, ret;
 
@@ -1857,6 +1857,32 @@ static int lcd_config_load_from_unifykey_v2(struct lcd_config_s *pconf,
 			LCDPR("%s: ufr_flag=%d\n",
 			      __func__, cus_ctrl->ufr_flag);
 		}
+
+		memcpy(&cus_ctrl->dft_timing, &pdrv->config.timing.dft_timing,
+			sizeof(struct lcd_detail_timing_s));
+		temp = *(unsigned short *)(p + LCD_UKEY_CUS_CTRL_ATTR_0_PARM0);
+		cus_ctrl->dft_timing.v_period_min = temp;
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+			LCDPR("%s: cus_ctrl attr_0_para0=%d\n",
+			      __func__, cus_ctrl->dft_timing.v_period_min);
+		}
+		temp = *(unsigned short *)(p + LCD_UKEY_CUS_CTRL_ATTR_0_PARM1);
+		cus_ctrl->dft_timing.v_period_max = temp;
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+			LCDPR("%s: cus_ctrl attr_0_para1=%d\n",
+			      __func__, cus_ctrl->dft_timing.v_period_max);
+		}
+
+		cus_ctrl->dft_timing.v_active /= 2;
+		cus_ctrl->dft_timing.v_period /= 2;
+		cus_ctrl->dft_timing.frame_rate *= 2;
+		temp = cus_ctrl->dft_timing.v_period - cus_ctrl->dft_timing.v_active -
+			cus_ctrl->dft_timing.vsync_width - cus_ctrl->dft_timing.vsync_bp;
+		cus_ctrl->dft_timing.vsync_fp = temp;
+		cus_ctrl->dft_timing.frame_rate_min = 0;
+		cus_ctrl->dft_timing.frame_rate_max = 0;
+
+		lcd_fr_range_update(&cus_ctrl->dft_timing);
 	}
 
 	return 0;
@@ -2204,7 +2230,7 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv)
 
 	if (lcd_header.version == 2) {
 		p = para + lcd_header.block_cur_size;
-		lcd_config_load_from_unifykey_v2(pconf, p, key_len, lcd_header.block_cur_size);
+		lcd_config_load_from_unifykey_v2(pdrv, p, key_len, lcd_header.block_cur_size);
 	}
 
 #ifdef CONFIG_AML_LCD_BACKLIGHT
@@ -2700,7 +2726,7 @@ void lcd_p2p_bit_rate_config(struct aml_lcd_drv_s *pdrv)
 	}
 	switch (p2p_type) {
 	case P2P_CEDS:
-	case P2P_EPI:
+	case P2P_EPI: /*24to28*/
 		if (clk_mode == LCD_CLK_MODE_DEPENDENCE)
 			band_width = band_width * 3 * lcd_bits;
 		else //independence & dependence_adapt
@@ -2711,7 +2737,7 @@ void lcd_p2p_bit_rate_config(struct aml_lcd_drv_s *pdrv)
 		break;
 	case P2P_CSPI:
 	case P2P_ISP:
-	case P2P_CMPI:
+	case P2P_CMPI: /*24to27*/
 		if (clk_mode == LCD_CLK_MODE_DEPENDENCE) {
 			band_width = band_width * 3 * lcd_bits;
 		} else { //independence & dependence_adapt
@@ -2719,7 +2745,7 @@ void lcd_p2p_bit_rate_config(struct aml_lcd_drv_s *pdrv)
 			band_width = lcd_do_div((band_width * 3 * lcd_bits * 9), 8);
 		}
 		break;
-	case P2P_USIT:
+	case P2P_USIT: /*9to10*/
 		if (clk_mode == LCD_CLK_MODE_DEPENDENCE)
 			band_width = band_width * 3 * lcd_bits;
 		else //independence & dependence_adapt

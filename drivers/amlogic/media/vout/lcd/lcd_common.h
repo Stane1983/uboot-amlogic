@@ -58,7 +58,8 @@
 /* 20231205: add lcd config check*/
 /* 20231218: update timing management*/
 /* 20240118: MIPI DSI arch adjust*/
-#define LCD_DRV_VERSION    "20240118"
+/* 20240129: update display mode management*/
+#define LCD_DRV_VERSION    "20240129"
 
 extern unsigned long clk_util_clk_msr(unsigned long clk_mux);
 

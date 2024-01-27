@@ -507,6 +507,7 @@ struct lcd_pinmux_ctrl_s {
 struct cus_ctrl_config_s {
 	unsigned int flag;
 	unsigned char ufr_flag;
+	struct lcd_detail_timing_s dft_timing;
 };
 
 #define LCD_ENABLE_RETRY_MAX    3
@@ -528,11 +529,35 @@ struct lcd_config_s {
 	unsigned int pinmux_clr[LCD_PINMUX_NUM][2];
 };
 
+#define LCD_DURATION_MAX    8
 struct lcd_duration_s {
 	unsigned int frame_rate;
 	unsigned int duration_num;
 	unsigned int duration_den;
 	unsigned int frac;
+};
+
+struct lcd_vmode_info_s {
+	char name[32];
+	unsigned int width;
+	unsigned int height;
+	unsigned int base_fr;
+	unsigned int duration_index;
+	unsigned int duration_cnt;
+	struct lcd_duration_s duration[LCD_DURATION_MAX];
+	struct lcd_detail_timing_s *dft_timing;
+};
+
+struct lcd_vmode_list_s {
+	struct lcd_vmode_info_s *info;
+	struct lcd_vmode_list_s *next;
+};
+
+struct lcd_vmode_mgr_s {
+	unsigned int vmode_cnt;
+	struct lcd_vmode_list_s *vmode_list_header;
+	struct lcd_vmode_info_s *cur_vmode_info;
+	struct lcd_vmode_info_s *next_vmode_info;
 };
 
 #define LCD_INIT_LEVEL_NORMAL         0
@@ -635,10 +660,10 @@ struct aml_lcd_drv_s {
 	unsigned int status;
 	unsigned char mode;
 	unsigned char key_valid;
+	unsigned char probe_done;
 	unsigned char clk_path; /* 0=hpll, 1=gp0_pll */
 	char init_mode[64];
 	int init_frac;
-	unsigned int output_vmode;
 	unsigned int power_on_suspend;
 	unsigned char clk_conf_num;
 	unsigned char config_check_glb;
@@ -648,12 +673,13 @@ struct aml_lcd_drv_s {
 	struct aml_lcd_data_s *data;
 	struct lcd_boot_ctrl_s boot_ctrl;
 	struct lcd_duration_s *std_duration;
+	struct lcd_vmode_mgr_s vmode_mgr;
 	void *clk_conf;
 	struct aml_lcd_cma_mem cma_pool;
 	struct lcd_disp_tmg_req_s disp_req;
 
-	int  (*outputmode_check)(struct aml_lcd_drv_s *pdrv, char *mode, unsigned int frac);
-	int  (*config_valid)(struct aml_lcd_drv_s *pdrv, char *mode, unsigned int frac);
+	int  (*outputmode_check)(struct aml_lcd_drv_s *pdrv, char *mode);
+	int  (*config_valid)(struct aml_lcd_drv_s *pdrv, char *mode);
 	void (*driver_init_pre)(struct aml_lcd_drv_s *pdrv);
 	int  (*driver_init)(struct aml_lcd_drv_s *pdrv);
 	void (*driver_disable)(struct aml_lcd_drv_s *pdrv);
