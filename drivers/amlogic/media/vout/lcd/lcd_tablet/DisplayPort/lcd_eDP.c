@@ -21,7 +21,6 @@ void edp_tx_init(struct aml_lcd_drv_s *pdrv)
 {
 	unsigned char auxdata;
 	uint16_t i = 0;
-	uint32_t offset;
 	int ret;
 	struct edp_config_s *eDP_cfg = &pdrv->config.control.edp_cfg;
 	struct dptx_EDID_s edp_edid1;
@@ -34,12 +33,9 @@ void edp_tx_init(struct aml_lcd_drv_s *pdrv)
 		return;
 	}
 
-	offset = pdrv->data->offset_venc_data[pdrv->index];
-
-	lcd_vcbus_write(ENCL_VIDEO_EN + offset, 0);
+	lcd_venc_enable(pdrv, 0);
 
 	dptx_reset(pdrv);
-
 	dptx_wait_phy_ready(pdrv);
 	mdelay(1);
 
@@ -101,7 +97,8 @@ void edp_tx_init(struct aml_lcd_drv_s *pdrv)
 
 	dptx_fast_link_training(pdrv);
 
-	lcd_vcbus_write(ENCL_VIDEO_EN + offset, 1);
+	lcd_venc_enable(pdrv, 1);
+
 	dptx_reg_write(pdrv->index, EDP_TX_FORCE_SCRAMBLER_RESET, 0x1);
 	dptx_reg_write(pdrv->index, EDP_TX_MAIN_STREAM_ENABLE, 0x1);
 
