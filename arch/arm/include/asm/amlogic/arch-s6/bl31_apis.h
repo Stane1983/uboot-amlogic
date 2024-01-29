@@ -177,7 +177,7 @@ void bl31_get_chipid(unsigned int *, unsigned int *,
 void set_viu_probe_enable(void);
 void wdt_send_cmd_to_bl31(uint64_t cmd, uint64_t value);
 void power_set_dsp(unsigned int id, unsigned int powerflag);
-void init_dsp(unsigned int id, unsigned int addr, unsigned int cfg0, unsigned int bus_cfg);
+void init_dsp(unsigned int id, unsigned int addr, unsigned int cfg0);
 void remap_set(unsigned int dspid, unsigned int addr_0, unsigned int addr_1, unsigned int reg_sel);
 void set_boot_first_timeout(uint64_t arg0);
 int bl31_get_cornerinfo(uint8_t *outbuf, int size);

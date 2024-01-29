@@ -146,7 +146,6 @@ static int do_startdsp(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 	uint32_t dspid;
 	uint32_t addr;
 	uint32_t freq_sel;
-	uint32_t bus_cfg;
 	uint32_t cfg0;
 	uint32_t StatVectorSel;
 	uint32_t strobe = 1;
@@ -181,19 +180,18 @@ static int do_startdsp(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 
 	udelay(100);
 
-	init_dsp(dspid, addr, cfg0, bus_cfg);
+	init_dsp(dspid, addr, cfg0);
 	printf("dsp init over!\n");
 
 	return 0;
 }
 
 U_BOOT_CMD(
-	startdsp, 5, 1, do_startdsp,
+	startdsp, 4, 1, do_startdsp,
 	"load dspboot.bin from address",
 	"\narg[0]: cmd\n"
 	"arg[1]: dspid\n"
 	"arg[2]: dspboot.bin load address!\n"
 	"arg[3]: dsp clk set\n 0:1G 1:800M 2:667M 3:24M 4:500M 5:400M 6:333M 7:250M 8:200M 9:100M 10:245.76M\n"
-	"arg[4]: bus select for dsp access one 4G of 16G ddr: 0x00: 0~4G 0x01: 4~8G 0x10: 8~12G 0x11: 12~16G\n"
 );
 

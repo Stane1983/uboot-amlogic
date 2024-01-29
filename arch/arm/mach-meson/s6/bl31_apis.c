@@ -309,11 +309,11 @@ void power_set_dsp(unsigned int id, unsigned int powerflag)
 	arm_smccc_smc(DSP_SEC_POWERSET, id, powerflag, 0, 0, 0, 0, 0, &res);
 }
 
-void init_dsp(unsigned int id, unsigned int addr, unsigned int cfg0, unsigned int bus_cfg)
+void init_dsp(unsigned int id, unsigned int addr, unsigned int cfg0)
 {
 	struct arm_smccc_res res;
 
-	arm_smccc_smc(DSP_START, id, addr, cfg0, bus_cfg, 0, 0, 0, &res);
+	arm_smccc_smc(DSP_START, id, addr, cfg0, 0, 0, 0, 0, &res);
 }
 
 void remap_set(unsigned int dspid, unsigned int addr_0, unsigned int addr_1, unsigned int reg_sel)
