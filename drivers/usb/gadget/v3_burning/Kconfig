@@ -56,6 +56,13 @@ config NAND_TPL_VALID_NUM
 	int
 	default -1
 
+config ADNL_FORCE_BL1_IF_SCS
+    depends on AML_V3_USB_TOOl
+    bool
+    default n
+	help
+	    uboot adnl will force enter rom/bl1 usb mode
+	    if connect to pc and secure boot
 
 endif #AML_V3_FACTORY_BURN
 

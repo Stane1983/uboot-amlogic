@@ -85,7 +85,7 @@ int v3tool_buffman_img_verify_sha1sum(unsigned char* vrySum)
         {
             case V3TOOL_PART_IMG_FMT_RAW:
                 {
-					unsigned long thisVryLen = 0;
+			int64_t thisVryLen = 0;
                     static unsigned long _lastReportTick = 0;
                     if (!vryLen) _lastReportTick = get_timer(0);
                     for (; vryLen < imgTotalLen; vryLen += thisVryLen)
@@ -241,7 +241,8 @@ int v3tool_buffman_img_init(ImgTransPara* imgPara, const int isDownload)
 			return -__LINE__;
 		}
 		ret = part_info->mask_flags & PART_PROTECT_FLAG;
-		run_command("store rsv protect key off", 0);
+		if (ret)
+			run_command("echo un-protect part; store rsv protect key off", 0);
 	}
 #endif//#ifdef CONFIG_MMC_MESON_GX
 	if (ret || !v3tool_is_flash_erased()) {

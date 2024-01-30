@@ -9,10 +9,12 @@
 #include <g_dnl.h>
 #include <asm/io.h>
 #include <asm/arch/register.h>
+#include <amlogic/aml_efuse.h>
 
 int optimus_erase_bootloader(const char* extBootDev);
 extern int aml_dnl_register(const char *name);
 extern void aml_dnl_unregister(void);
+extern int is_boot_device_usb(void);
 #define SOF_WAIT_TIME_MIN	500 //400ms for wait sof, need more than wcp
 
 extern unsigned int _sofintr_not_occur;
@@ -62,6 +64,14 @@ int aml_v3_usbburning(unsigned timeout, unsigned pcToolWaitTime)
 	while (1) {
 		if (ctrlc()) break;
 
+#if CONFIG_IS_ENABLED(ADNL_FORCE_BL1_IF_SCS)
+		if (IS_FEAT_BOOT_VERIFY() && !is_boot_device_usb() && !_sofintr_not_occur) {
+			printf("secure boot and sof, force to usb boot\n");
+			optimus_erase_bootloader("usb");//skip to bl1 usb rom driver
+			run_command("reboot", 0);
+			udelay(2 * 1000 * 1000);
+		}
+#endif //#if CONFIG_IS_ENABLED(ADNL_FORCE_BL1_IF_SCS)
 		if (adnl_enum_timeout) {
 			unsigned curTime	= get_timer(adnl_enum_timeout);
 			if (curTime > time_out_wait_sof && _sofintr_not_occur) {

@@ -37,6 +37,7 @@ int do_fat_fsload (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 }
 
 
+#ifndef CONFIG_AML_DISABLE_DEV_CMDS
 U_BOOT_CMD(
 	fatload,	7,	0,	do_fat_fsload,
 	"load binary file from a dos filesystem",
@@ -51,6 +52,7 @@ U_BOOT_CMD(
 	"      ARCH_DMA_MINALIGN then a misaligned buffer warning will\n"
 	"      be printed and performance will suffer for the load."
 );
+#endif //#ifndef CONFIG_AML_DISABLE_DEV_CMDS
 
 static int do_fat_ls(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
