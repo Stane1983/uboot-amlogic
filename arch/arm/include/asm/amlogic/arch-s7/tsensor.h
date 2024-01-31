@@ -25,11 +25,6 @@ struct tsensor_cali_data {
 #define T_CONTROL_DATA	0x62b
 #define T_TSCLK_DATA	0x130
 
-#define ts_a	8526
-#define ts_b	2757
-#define ts_m	396
-#define ts_n	296
-
 #ifdef CONFIG_AML_TSENSOR
 int temp_read_entry(void);
 int temp_trim_entry(int tempbase, int tempver);

@@ -14,6 +14,9 @@
 #include <linux/delay.h>
 #include <linux/arm-smccc.h>
 
+bool coeff_inited = false;
+int ts_a = 8526, ts_b = 2757, ts_m = 396, ts_n = 296;
+
 int tsensor_tz_calibration(unsigned int type, unsigned int data)
 {
 	struct arm_smccc_res res;
@@ -36,6 +39,13 @@ int thermal_cali_data_read(uint32_t type, uint32_t *outbuf, int32_t size)
 	arm_smccc_smc(TSENSOR_CALI_READ, type, 0, 0, 0, 0, 0, 0, &res);
 	flush_cache(sharemem_output_base, size);
 	memcpy((void *)outbuf, (void *)sharemem_output_base, size);
+	if (!coeff_inited) {
+		if (*outbuf & 0x70000000) {
+			ts_a = 8739;
+			ts_b = 2907;
+		}
+		coeff_inited = true;
+	}
 	return 0;
 }
 
