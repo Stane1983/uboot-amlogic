@@ -8,6 +8,7 @@
 #include <command.h>
 #include <image.h>
 #include <malloc.h>
+#include <linux/sizes.h>
 #include <asm/arch/io.h>
 #include <asm/arch/secure_apb.h>
 #include <partition_table.h>
@@ -48,6 +49,9 @@
 #define AML_MAX_DTB_NAME_SIZE   (128)
 #define AML_DTB_TOKEN_MAX_COUNT (AML_MAX_DTB_NAME_SIZE>>1)
 
+#define MAX_DTB_SIZE		SZ_1M
+#define MAX_DTB_COUNT		16
+
 typedef struct{
 	unsigned int nMagic;
 	unsigned int nVersion;
@@ -62,8 +66,8 @@ typedef struct{
 /*v1 multi-dtb*/
 typedef struct{
 	unsigned char     szToken[MULTI_DTB_TOKEN_MAX_COUNT][MULTI_DTB_TOKEN_UNIT_SIZE_V1];
-	int               nDTBOffset;
-	int               nDTBIMGSize;
+	unsigned int      nDTBOffset;
+	unsigned int      nDTBIMGSize;
 }st_dtb_token_v1_t,*p_st_dtb_token_v1_t;
 
 typedef struct{
@@ -75,8 +79,8 @@ typedef struct{
 /*v2 multi-dtb*/
 typedef struct{
 	unsigned char     szToken[MULTI_DTB_TOKEN_MAX_COUNT][MULTI_DTB_TOKEN_UNIT_SIZE_V2];
-	int               nDTBOffset;
-	int               nDTBIMGSize;
+	unsigned int      nDTBOffset;
+	unsigned int      nDTBIMGSize;
 }st_dtb_token_v2_t,*p_st_dtb_token_v2_t;
 
 typedef struct{
@@ -372,6 +376,21 @@ unsigned long __attribute__((unused))	get_multi_dt_entry(unsigned long fdt_addr)
 		case AML_MUL_DTB_VER_1:
 		{
 			p_st_dtb_v1_t pDTB_V1 = (p_st_dtb_v1_t)pInputFDT;
+
+			if (pDTB_V1->hdr.nDTBCount > MAX_DTB_COUNT) {
+				printf("Wrong dtb cnt1:%d\n", pDTB_V1->hdr.nDTBCount);
+				goto exit;
+			}
+
+			if ((pDTB_V1->dtb[dtb_match_num].nDTBIMGSize > MAX_DTB_SIZE) ||
+			    pDTB_V1->dtb[dtb_match_num].nDTBOffset >= MAX_DTB_SIZE * (pDTBHdr->nDTBCount)) {
+				printf("%s, ERRROR dtb size:%d or offset:%d\n",
+					__func__,
+					pDTB_V1->dtb[dtb_match_num].nDTBIMGSize,
+					pDTB_V1->dtb[dtb_match_num].nDTBOffset);
+				goto exit;
+			}
+
 			lReturn = pDTB_V1->dtb[dtb_match_num].nDTBOffset + pInputFDT;
 
 			//if (pInputFDT != fdt_addr)
@@ -384,6 +403,21 @@ unsigned long __attribute__((unused))	get_multi_dt_entry(unsigned long fdt_addr)
 		case AML_MUL_DTB_VER_2:
 		{
 			p_st_dtb_v2_t pDTB_V2 = (p_st_dtb_v2_t)pInputFDT;
+
+			if (pDTB_V2->hdr.nDTBCount > MAX_DTB_COUNT) {
+				printf("Wrong dtb cnt2:%d\n", pDTB_V2->hdr.nDTBCount);
+				goto exit;
+			}
+
+			if ((pDTB_V2->dtb[dtb_match_num].nDTBIMGSize > MAX_DTB_SIZE) ||
+			    pDTB_V2->dtb[dtb_match_num].nDTBOffset >= MAX_DTB_SIZE * (pDTBHdr->nDTBCount)) {
+				printf("%s v2, ERRROR dtb size:%d or offset:%d\n",
+					__func__,
+					pDTB_V2->dtb[dtb_match_num].nDTBIMGSize,
+					pDTB_V2->dtb[dtb_match_num].nDTBOffset);
+				goto exit;
+			}
+
 			lReturn = pDTB_V2->dtb[dtb_match_num].nDTBOffset + pInputFDT;
 
 			//if (pInputFDT != fdt_addr)

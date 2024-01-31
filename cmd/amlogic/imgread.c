@@ -7,6 +7,7 @@
 #include <common.h>
 #include <image.h>
 #include <linux/libfdt.h>
+#include <linux/compat.h>
 #include <android_image.h>
 #if defined(CONFIG_ZIRCON_BOOT_IMAGE)
 #include <zircon/image.h>
@@ -35,6 +36,10 @@ int __attribute__((weak)) store_logic_read(const char *name, loff_t off, size_t 
 #define IMG_PRELOAD_SZ  (1U<<20) //Total read 1M at first to read the image header
 #define PIC_PRELOAD_SZ  (8U<<10) //Total read 4k at first to read the image header
 #define RES_OLD_FMT_READ_SZ (8U<<20)
+
+#define MAX_RAMDISK_SIZE	SZ_64M
+#define MAX_KERNEL_SIZE		SZ_64M
+#define MAX_DTB_SIZE		SZ_16M
 
 typedef struct __aml_enc_blk{
         unsigned int  nOffset;
@@ -217,7 +222,7 @@ static int do_image_read_dtb_from_knl(const char *partname,
 	unsigned int nflashloadlen = 0;
 	u64 lflashreadoff = 0;
 	const int preloadsz = 4096 * 2;
-	int pagesz = 0;
+	unsigned int pagesz = 0;
 	boot_img_hdr_t *hdr_addr = (boot_img_hdr_t *)loadaddr;
 	char *upgrade_step_s = NULL;
 	bool cache_flag = false;
@@ -348,8 +353,16 @@ static int do_image_read_dtb_from_knl(const char *partname,
 
 	debugP("lflashreadoff=0x%llx, nflashloadlen=0x%x\n", lflashreadoff, nflashloadlen);
 	debugP("page sz %u\n", hdr_addr->page_size);
-	if (!nflashloadlen) {
-		errorP("NO second part in kernel image\n");
+	if (pagesz > PAGE_SIZE) {
+		errorP("Wrong pagesz:%d\n", pagesz);
+		return __LINE__;
+	}
+	if (!nflashloadlen || nflashloadlen > MAX_DTB_SIZE) {
+		errorP("Wrong nflashloadlen:%d\n", nflashloadlen);
+		return __LINE__;
+	}
+	if (lflashreadoff > (MAX_RAMDISK_SIZE + MAX_KERNEL_SIZE)) {
+		errorP("Wrong lflashreadoff:%lld\n", lflashreadoff);
 		return __LINE__;
 	}
 	unsigned char *secondaddr = (unsigned char *)loadaddr + lflashreadoff;
@@ -548,6 +561,11 @@ static int do_image_read_dtb(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
         return CMD_RET_FAILURE;
     }
     const unsigned fdtsz    = fdt_totalsize((char*)fdtAddr);
+
+    if (fdtsz >= SZ_1M) {
+        errorP("bad fdt size:%d\n", fdtsz);
+        return CMD_RET_FAILURE;
+    }
     memmove(loadaddr, (char*)fdtAddr, fdtsz);
 
     return iRet;
