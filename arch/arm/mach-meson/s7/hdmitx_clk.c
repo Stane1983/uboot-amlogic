@@ -497,10 +497,6 @@ static int likely_frac_rate_mode(char *m)
 		return 0;
 }
 
-void hdmitx_set_clkdiv(struct hdmitx_dev *hdev)
-{
-}
-
 static void hdmitx_check_frac_rate(struct hdmitx_dev *hdev)
 {
 	struct hdmi_format_para *para = hdev->para;

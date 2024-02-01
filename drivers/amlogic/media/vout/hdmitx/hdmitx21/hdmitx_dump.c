@@ -158,7 +158,6 @@ static int dump_hdmivpfdet_show(void)
 	u32 val;
 	u32 total, active, front, sync, back, blank;
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	//struct hdmitx_dev *hdev = get_hdmitx21_device();
 
 	pr_info("\n--------vp fdet info--------\n");
 	if (hdev->chip_type == MESON_CPU_ID_S7)

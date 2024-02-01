@@ -43,6 +43,8 @@ struct hdmitx_dev {
 	 */
 	unsigned int edid_check;
 	unsigned char limit_res_1080p;
+	bool config_csc_en;
+	bool hpd_state;
 	/* efuse ctrl state
 	 * 1 disable the function
 	 * 0 dont disable the function
@@ -85,6 +87,8 @@ bool is_support_4k(void);
 bool is_supported_mode_attr(hdmi_data_t *hdmi_data, char *mode_attr);
 bool hdmitx_chk_mode_attr_sup(hdmi_data_t *hdmi_data, char *mode, char *attr);
 int get_ubootenv_dv_type(void);
+int get_ubootenv_dv_status(void);
+int get_hdr_policy(void);
 int hdmi_tx_set(struct hdmitx_dev *hdev);
 /* Parsing RAW EDID data from edid to pRXCap */
 unsigned int hdmi_edid_parsing(unsigned char *edid, struct rx_cap *prxcap);

@@ -143,6 +143,11 @@
 		#pwm-cells = <3>;
 		status = "disabled";
 	};
+
+	amhdmitx {
+		compatible = "amlogic, amhdmitx-s4";
+		status = "okay";
+	};
 };
 
 &ethmac {

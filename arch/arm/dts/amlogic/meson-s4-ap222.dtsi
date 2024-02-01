@@ -85,6 +85,11 @@
 		compatible = "linaro,optee-tz";
 		method = "smc";
 	};
+
+	amhdmitx {
+		compatible = "amlogic, amhdmitx-s4";
+		status = "okay";
+	};
 };
 
 &vpu {

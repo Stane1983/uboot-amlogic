@@ -10,6 +10,7 @@
 
 #include "hdmi_common.h"
 #include "hdmitx_ext.h"
+#include <amlogic/media/vout/dsc.h>
 
 #define HZ 100000000 // TODO
 
@@ -38,16 +39,21 @@ struct hdmitx_dev {
 	struct rx_cap RXCap;
 	struct hdmi_format_para *para;
 	enum hdmi_vic vic;
-	enum frl_rate_enum frl_rate;
-	u8 tx_max_frl_rate; /* configure in dts file */
-	bool flt_train_st; /* 0 means FLT train failed */
-	u32 dsc_en;
 	/* for s7, default 0
 	 * 1: new clk config, encp/pixel clk is directly configured by the pll simulation part.
 	 * through [ 49]hdmi_vx1_pix_clk to encp/pixel clk
 	 * CLKCTRL_VID_CLK0_CTRL clk source should select vid_pix_clk.
 	 */
 	u8 s7_clk_config;
+	enum frl_rate_enum frl_rate; /* for mode setting */
+	enum frl_rate_enum manual_frl_rate; /* for manual setting */
+	u8 tx_max_frl_rate; /* configure in dts file */
+	bool flt_train_st; /* 0 means FLT train failed */
+	u32 dsc_en;
+	u8 dsc_policy;
+	u32 dfm_type;
+	/* pps data and clk info from dsc module */
+	struct dsc_offer_tx_data dsc_data;
 	unsigned int frac_rate_policy;
 	unsigned int mode420;
 	unsigned int dc30;
@@ -64,8 +70,11 @@ struct hdmitx_dev {
 	unsigned char limit_res_1080p;
 	unsigned char enc_idx;
 	int dv_en;
+	int qms_en; /* qms function enable */
+	enum hdmi_vic brr_vic; /* qms BRR vic */
 	unsigned char pxp_mode; /* for running at pxp only */
 	enum amhdmitx_chip_e chip_type;
+	bool hpd_state;
 	/* efuse ctrl state
 	 * 1 disable the function
 	 * 0 dont disable the function
@@ -102,6 +111,8 @@ struct hdmi_format_para *hdmitx21_tst_fmt_name(char const *name, char const *att
 struct hdmi_format_para *hdmitx21_match_dtd_paras(struct dtd *t);
 
 void hdmitx21_set(struct hdmitx_dev *hdev);
+void hdmitx21_select_frl(struct hdmitx_dev *hdev);
+void hdmitx_module_disable(void);
 void hdmitx21_dump_regs(void);
 void hdmitx21_infoframe_send(u16 info_type, u8 *body);
 int hdmitx21_infoframe_rawget(u8 info_type, u8 *body);
@@ -127,6 +138,7 @@ void hdmi_sbtm_infoframe_rawset(u8 *hb, u8 *pb);
 bool edid_parsing_ok(struct hdmitx_dev *hdev);
 /* Parsing RAW EDID data from edid to prxcap */
 unsigned int hdmi_edid_parsing(unsigned char *edid, struct rx_cap *prxcap);
+void dsc_cap_show(struct rx_cap *prxcap);
 void get_hdmi_data(struct hdmitx_dev *hdev, struct input_hdmi_data *data);
 bool is_dolby_enabled(void);
 bool is_tv_support_dv(struct hdmitx_dev *hdev);
@@ -169,6 +181,8 @@ void pkt_send_position_change(u32 enable_all, enum pkt_op pkt, u8 mov_val);
 void hdmitx21_write_dhdr_sram(void);
 void hdmitx21_read_dhdr_sram(void);
 void hdmitx21_send_sbtm_pkt(void);
+void vrr_init_qms_para(struct hdmitx_dev *hdev);
+enum hdmi_vic hdmitx_find_brr_vic(enum hdmi_vic vic);
 
 /* the hdmitx output limits to 1080p */
 bool is_hdmitx_limited_1080p(void);
@@ -176,6 +190,9 @@ bool is_vic_over_limited_1080p(enum hdmi_vic vic);
 const struct hdmi_timing *hdmitx21_match_dtd_timing(struct dtd *t);
 bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 	struct hdmi_format_para *para);
+void hdmitx_dsc_cvtem_pkt_send(struct dsc_pps_data_s *pps,
+			       struct hdmi_timing *timing);
+void hdmitx_dsc_cvtem_pkt_disable(void);
 #undef printk
 #define printk printf
 #undef pr_info

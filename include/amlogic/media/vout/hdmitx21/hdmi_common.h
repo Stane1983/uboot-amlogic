@@ -13,6 +13,20 @@
 	#define DDC_EDIDSEG_ADDR 0x30
 #define DDC_SCDC_ADDR 0xA8
 
+#define SCDC_UPDATE_0 0x10
+#define SCDC_CONFIG_1 0x31
+#define RSED_UPDATE             BIT(6)
+#define FLT_UPDATE              BIT(5)
+#define FRL_START               BIT(4)
+#define SOURCE_TEST_UPDATE      BIT(3)
+#define READ_REQUEST_TEST       BIT(2)
+#define CED_UPDATE              BIT(1)
+#define STATUS_UPDATE           BIT(0)
+#define HDMI21_UPDATE_FLAGS     \
+	(RSED_UPDATE | FLT_UPDATE | FRL_START | SOURCE_TEST_UPDATE)
+#define HDMI20_UPDATE_FLAGS     \
+	(SOURCE_TEST_UPDATE | READ_REQUEST_TEST | CED_UPDATE | STATUS_UPDATE)
+
 #define HDMI_PACKET_TYPE_GCP 0x3
 #define HDMITX_VIC420_OFFSET    0x100
 #define HDMI_INFOFRAME_TYPE_SBTM 0xA //SBTM-EM PKT use GEN5
@@ -221,6 +235,139 @@ enum hdmi_phy_para {
 	HDMI_PHYPARA_LT3G, /* 1080p60hz 444 12bit */
 	HDMI_PHYPARA_DEF = HDMI_PHYPARA_LT3G,
 	HDMI_PHYPARA_270M, /* 480p60hz 444 8bit */
+};
+
+#define HDMI_INFOFRAME_TYPE_EMP 0x7f
+#define HDMI_INFOFRAME_EMP_VRR_GAME ((HDMI_INFOFRAME_TYPE_EMP << 8) | (EMP_TYPE_VRR_GAME))
+#define HDMI_INFOFRAME_EMP_VRR_QMS ((HDMI_INFOFRAME_TYPE_EMP << 8) | (EMP_TYPE_VRR_QMS))
+#define HDMI_INFOFRAME_EMP_VRR_SBTM ((HDMI_INFOFRAME_TYPE_EMP << 8) | (EMP_TYPE_SBTM))
+#define HDMI_INFOFRAME_EMP_VRR_DSC ((HDMI_INFOFRAME_TYPE_EMP << 8) | (EMP_TYPE_DSC))
+#define HDMI_INFOFRAME_EMP_VRR_DHDR ((HDMI_INFOFRAME_TYPE_EMP << 8) | (EMP_TYPE_DHDR))
+
+enum vrr_type {
+	T_VRR_NONE,
+	T_VRR_GAME,
+	T_VRR_QMS,
+};
+
+enum emp_type {
+	EMP_TYPE_NONE,
+	EMP_TYPE_VRR_GAME = T_VRR_GAME,
+	EMP_TYPE_VRR_QMS = T_VRR_QMS,
+	EMP_TYPE_SBTM,
+	EMP_TYPE_DSC,
+	EMP_TYPE_DHDR,
+};
+
+/* refer to HDMI2.1A P447 */
+enum TARGET_FRAME_RATE {
+	TFR_QMSVRR_INACTIVE = 0,
+	TFR_23P97,
+	TFR_24,
+	TFR_25,
+	TFR_29P97,
+	TFR_30,
+	TFR_47P95,
+	TFR_48,
+	TFR_50,
+	TFR_59P94,
+	TFR_60,
+	TFR_100,
+	TFR_119P88,
+	TFR_120,
+	TFR_MAX,
+};
+
+struct emp_packet_header {
+	u8 header; /* hb0, fixed value 0x7f */
+	u8 last:1; /* hb1 */
+	u8 first:1;
+	u8 seq_idx; /* hb2 */
+};
+
+/* Class 0 video timing extended metedata structure for game/fva, 2.1A P445 */
+struct vtem_gamevrr_st {
+	u8 vrr_en:1; /* MD0 */
+	u8 fva_factor_m1:4;
+	u8 base_vfront; /* MD1 */
+	u16 brr_rate; /* MD2/3 */
+};
+
+/* Class 1 video timing extended metedata structure for qms, 2.1A P445 */
+struct vtem_qmsvrr_st {
+	u8 m_const:1; /* MD0 */
+	u8 qms_en:1;
+	u8 base_vfront; /* MD1 */
+	u16 brr_rate; /* MD2/3 */
+	enum TARGET_FRAME_RATE next_tfr:5;
+};
+
+struct emp_packet_0_body {
+	u8 sync:1; /* pb0 synchronous metadata */
+	u8 vfr:1; /* video format related, cs/cd/resolution */
+	u8 afr:1; /* audio format related */
+	/* 2b00: periodic pseudo-static MD
+	 * 2b01: periodic dynamic MD
+	 * 2b10: unique MD
+	 */
+	u8 ds_type:2;
+	u8 end:1;
+	u8 new:1;
+	/* pb2  0: vendor specific MD 1: defined by 2.1
+	 * 2: defined by CTA-861-G  3: defined by VESA
+	 */
+	u8 org_id;
+	u16 ds_tag; /* pb3/4 */
+	u16 ds_length; /* pb5/6 */
+	union {
+		struct vtem_gamevrr_st game_md;
+		struct vtem_qmsvrr_st qms_md;
+		/* struct vtem_sbtm_st sbtm_md; */
+		u8 md[21]; /* pb7~pb27, md0~md20 */
+	} md;
+};
+
+struct emp_packet_n_body {
+	u8 md[28]; /* md(x)~md(x+27) */
+};
+
+/* extended metadata packet, 2.1A P304, no checksum in the PB0 */
+struct emp_packet_st {
+	enum emp_type type;
+	struct emp_packet_header header;
+	union {
+		struct emp_packet_0_body emp0;
+		struct emp_packet_n_body empn;
+	} body;
+};
+
+enum emp_component_conf {
+	CONF_HEADER_INIT,
+	CONF_HEADER_LAST,
+	CONF_HEADER_FIRST,
+	CONF_HEADER_SEQ_INDEX,
+	CONF_SYNC,
+	CONF_VFR,
+	CONF_AFR,
+	CONF_DS_TYPE,
+	CONF_END,
+	CONF_NEW,
+	CONF_ORG_ID,
+	CONF_DATA_SET_TAG,
+	CONF_DATA_SET_LENGTH,
+	CONF_VRR_EN,
+	CONF_FACTOR_M1,
+	CONF_QMS_EN,
+	CONF_M_CONST,
+	CONF_BASE_VFRONT,
+	CONF_NEXT_TFR,
+	CONF_BASE_REFRESH_RATE,
+	CONF_SBTM_VER,
+	CONF_SBTM_MODE,
+	CONF_SBTM_TYPE,
+	CONF_SBTM_GRDM_MIN,
+	CONF_SBTM_GRDM_LUM,
+	CONF_SBTM_FRMPBLIMITINT,
 };
 
 enum frl_rate_enum {
@@ -485,7 +632,30 @@ struct rx_cap {
 	unsigned int dc_30bit_420:1;
 	unsigned int dc_36bit_420:1;
 	unsigned int dc_48bit_420:1;
+	/* for frl */
 	enum frl_rate_enum max_frl_rate;
+	/* for dsc */
+	u8 dsc_10bpc:1;
+	u8 dsc_12bpc:1;
+	u8 dsc_16bpc:1;
+	u8 dsc_all_bpp:1;
+	u8 dsc_native_420:1;
+	u8 dsc_1p2:1;
+	u8 dsc_max_slices:4;
+	u8 dsc_max_frl_rate:4;
+	u8 dsc_total_chunk_bytes:6;
+
+	u32 qms_tfr_max:1;
+	u32 qms:1;
+	u32 mdelta:1;
+	u32 qms_tfr_min:1;
+	u32 neg_mvrr:1;
+	u32 fva:1;
+	u32 allm:1;
+	u32 fapa_start_loc:1;
+	u32 fapa_end_extended:1;
+	u32 vrr_max;
+	u32 vrr_min;
 	unsigned char edid_version;
 	unsigned char edid_revision;
 	unsigned int ColorDeepSupport;
@@ -675,7 +845,7 @@ struct hdmi_support_mode {
 /* used to indicate that no ubootenv of user_prefer_dv_type,
  * which means that user has not selected dv type on menu
  */
-#define DV_NONE -1
+#define AMDV_NONE -1
 
 #define HDMI_IEEEOUI 0x000C03
 #define MODE_LEN	32
@@ -698,7 +868,23 @@ typedef enum {
 typedef enum {
 	HDR_POLICY_SINK   = 0,
 	HDR_POLICY_SOURCE = 1,
+	HDR_POLICY_FORCE = 4,
 } hdr_policy_e;
+
+#define DV_SINK_LED    0
+#define DV_SOURCE_LED  1
+#define FORCE_AMDV       2
+#define FORCE_HDR10    3
+#define FORCE_HLG      5
+
+enum hdr_force_mode_e {
+	MESON_HDR_FORCE_MODE_INVALID    = 0,
+	MESON_HDR_FORCE_MODE_SDR        = 1,
+	MESON_HDR_FORCE_MODE_DV         = 2,
+	MESON_HDR_FORCE_MODE_HDR10      = 3,
+	MESON_HDR_FORCE_MODE_HDR10PLUS  = 4,  //need to do
+	MESON_HDR_FORCE_MODE_HLG        = 5,
+};
 
 enum {
 	RESOLUTION_PRIORITY = 0,
@@ -713,6 +899,8 @@ typedef struct input_hdmi_data {
 	hdr_priority_e hdr_priority;
 	/* dynamic range policy,0 :follow sink, 1: match content */
 	hdr_policy_e hdr_policy;
+	/* save user force hdr mode 1 :force sdr, 2: force dv, 3: force hdr10, 5:force hlg */
+	enum hdr_force_mode_e hdr_force_mode;
 	struct rx_cap *prxcap;
 } hdmi_data_t;
 

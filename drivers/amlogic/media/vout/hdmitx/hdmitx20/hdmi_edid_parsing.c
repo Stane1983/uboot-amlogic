@@ -296,11 +296,9 @@ static void edid_set_fallback_mode(struct rx_cap *prxcap)
 /* add default VICs for all zeroes case */
 static void hdmitx_edid_set_default_vic(struct rx_cap *prxcap)
 {
-	prxcap->VIC_count = 0x4;
+	prxcap->VIC_count = 0x2;
 	prxcap->VIC[0] = HDMI_720x480p60_16x9;
 	prxcap->VIC[1] = HDMI_1280x720p60_16x9;
-	prxcap->VIC[2] = HDMI_1920x1080i60_16x9;
-	prxcap->VIC[3] = HDMI_1920x1080p60_16x9;
 	prxcap->native_VIC = HDMI_720x480p60_16x9;
 	/* hdmitx_device->vic_count = prxcap->VIC_count; */
 	printf("set default vic\n");
@@ -1515,7 +1513,6 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 	int svd_flag = 0;
 	/* Default max color depth is 24 bit */
 	enum hdmi_color_depth rx_y444_max_dc = HDMI_COLOR_DEPTH_24B;
-	enum hdmi_color_depth rx_y420_max_dc = HDMI_COLOR_DEPTH_24B;
 	enum hdmi_color_depth rx_rgb_max_dc = HDMI_COLOR_DEPTH_24B;
 
 	if (!hdev || !para)
@@ -1535,11 +1532,12 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 	/* add efuse ctrl */
 	if (hdev->efuse_dis_output_4k)
 		if (para->timing.v_active >= 2160)
-			return 0;
+			return false;
 	if (hdev->efuse_dis_hdmi_4k60)
 		if (para->timing.v_active >= 2160 &&
-		    para->timing.v_freq >= 5000)
-			return 0;
+			para->timing.v_freq >= 5000)
+			return false;
+
 	if (!is_support_4k() && para->sname && is_4k_fmt(para->sname))
 		return false;
 	/* exclude such as: 2160p60hz YCbCr444 10bit */
@@ -1563,7 +1561,8 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 
 	/* DVI case, only rgb,8bit */
 	if (prxcap->IEEEOUI != HDMI_IEEEOUI) {
-		if (para->cd != HDMI_COLOR_DEPTH_24B || para->cs != HDMI_COLOR_FORMAT_RGB)
+		if (para->cd != HDMI_COLOR_DEPTH_24B ||
+		    para->cs != HDMI_COLOR_FORMAT_RGB)
 			return 0;
 	}
 
@@ -1664,15 +1663,13 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 	if (para->cs == HDMI_COLOR_FORMAT_420) {
 		if (!is_rx_support_y420(hdev, para->vic))
 			return 0;
-		if (prxcap->dc_30bit_420)
-			rx_y420_max_dc = HDMI_COLOR_DEPTH_30B;
-		if (prxcap->dc_36bit_420)
-			rx_y420_max_dc = HDMI_COLOR_DEPTH_36B;
-		if (para->cd <= rx_y420_max_dc)
-			valid = 1;
-		else
-			valid = 0;
-		return valid;
+		if (!prxcap->dc_30bit_420)
+			if (para->cd == HDMI_COLOR_DEPTH_30B)
+				return 0;
+		if (!prxcap->dc_36bit_420)
+			if (para->cd == HDMI_COLOR_DEPTH_36B)
+				return 0;
+		valid = 1;
 	}
 
 	return valid;

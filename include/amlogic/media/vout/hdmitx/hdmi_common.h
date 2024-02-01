@@ -467,7 +467,7 @@ struct dv_vsif_para {
 
 #define Y420CMDB_MAX 32
 #define VIC_MAX_NUM  256
-#define SVD_VIC_MAX_NUM  128
+#define SVD_VIC_MAX_NUM 128
 struct rx_cap {
 	unsigned int native_Mode;
 	/*video*/
@@ -605,7 +605,7 @@ struct parse_cr {
 	const char *name;
 };
 
-#define EDID_BLK_NO	4
+#define EDID_BLK_NO	8
 #define EDID_BLK_SIZE	128
 struct hdmi_format_para {
 	enum hdmi_vic vic;
@@ -637,12 +637,13 @@ struct hdmi_support_mode {
 /* used to indicate that no ubootenv of user_prefer_dv_type,
  * which means that user has not selected dv type on menu
  */
-#define DV_NONE -1
+#define AMDV_NONE -1
 
 #define HDMI_IEEEOUI 0x000C03
 #define MODE_LEN	32
 #define VESA_MAX_TIMING 64
 
+/* below default ENV is not used, just for backup */
 #define DEFAULT_OUTPUTMODE_ENV		"1080p60hz"
 #define DEFAULT_HDMIMODE_ENV		"1080p60hz"
 #define DEFAULT_COLORATTRIBUTE_ENV	"444,8bit"
@@ -660,7 +661,23 @@ typedef enum {
 typedef enum {
 	HDR_POLICY_SINK   = 0,
 	HDR_POLICY_SOURCE = 1,
+	HDR_POLICY_FORCE = 4,
 } hdr_policy_e;
+
+#define DV_SINK_LED    0
+#define DV_SOURCE_LED  1
+#define FORCE_AMDV       2
+#define FORCE_HDR10    3
+#define FORCE_HLG      5
+
+enum hdr_force_mode_e {
+	MESON_HDR_FORCE_MODE_INVALID    = 0,
+	MESON_HDR_FORCE_MODE_SDR        = 1,
+	MESON_HDR_FORCE_MODE_DV         = 2,
+	MESON_HDR_FORCE_MODE_HDR10      = 3,
+	MESON_HDR_FORCE_MODE_HDR10PLUS  = 4,  //need to do
+	MESON_HDR_FORCE_MODE_HLG        = 5,
+};
 
 enum {
 	RESOLUTION_PRIORITY = 0,
@@ -675,6 +692,8 @@ typedef struct input_hdmi_data {
 	hdr_priority_e hdr_priority;
 	/* dynamic range policy,0 :follow sink, 1: match content */
 	hdr_policy_e hdr_policy;
+	/* save user force hdr mode 1 :force sdr, 2: force dv, 3: force hdr10, 5:force hlg */
+	enum hdr_force_mode_e hdr_force_mode;
 	#if 0
 	bool isbestpolicy;
 	bool isSupport4K30Hz;
