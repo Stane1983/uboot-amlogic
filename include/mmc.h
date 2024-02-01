@@ -466,6 +466,18 @@ struct dm_mmc_ops {
 	 */
 	int (*set_ios)(struct udevice *dev);
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+	/**
+	 * send_init_stream() - send the initialization stream: 74 clock cycles
+	 * This is used after power up before sending the first command
+	 *
+	 * @dev:    Device to update
+	 */
+	void (*send_init_stream)(struct udevice *dev);
+
+	void (*post_hs400_timming)(struct udevice *dev);
+#endif
+
 	/**
 	 * get_cd() - See whether a card is present
 	 *

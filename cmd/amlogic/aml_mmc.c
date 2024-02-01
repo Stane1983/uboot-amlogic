@@ -7,7 +7,8 @@
 #include <malloc.h>
 #include <command.h>
 #include <linux/ctype.h>
-#include <amlogic/mmc.h>
+#include <amlogic/aml_mmc.h>
+#include <mmc.h>
 #include "../drivers/mmc/mmc_private.h"
 #include <amlogic/partition_table.h>
 #include <amlogic/emmc_partitions.h>

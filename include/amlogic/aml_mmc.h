@@ -9,6 +9,60 @@
 #include <common.h>
 #include <mmc.h>
 
+/*mmc.h*/
+#define NO_CARD_ERR   -16
+#define UNUSABLE_ERR  -17
+#define COMM_ERR      -18
+#define TIMEOUT       -19
+#define IN_PROGRESS   -20
+#define SWITCH_ERR    -21
+
+#define MESON_SD_EMMC_ADJ_IDX_LOG 0x20
+#define MESON_SD_EMMC_CLKTEST_LOG 0x24
+#define MESON_SD_EMMC_CLKTEST_OUT 0x28
+#define MESON_SD_EMMC_EYETEST_LOG 0x2C
+#define MESON_SD_EMMC_EYETEST_OUT0 0x30
+#define MESON_SD_EMMC_EYETEST_OUT1 0x34
+#define MESON_SD_EMMC_INTF3   0x38
+#define MMC_CMD23
+
+#define MMC_CMD_SET_WRITE_PROTECT       28
+#define MMC_CMD_CLR_WRITE_PROT          29
+#define MMC_CMD_SEND_WRITE_PROT         30
+#define MMC_CMD_SEND_WRITE_PROT_TYPE    31
+#define MMC_SD_HS_TUNING		70
+
+#define MMC_KEY_SIZE            (256*1024)
+#define EMMC_KEY_DEV            (1)
+
+#define EXT_CSD_CLASS_6_CTRL        59  /*R/W/E_P*/
+#define EXT_CSD_DRIVER_STRENGTH 197	/* RO */
+#define EXT_CSD_DEV_LIFETIME_EST_TYP_A	268	/* RO */
+#define EXT_CSD_DEV_LIFETIME_EST_TYP_B	269	/* RO */
+#define EXT_CSD_SUPPORTED_MODES	493 /* RO */
+#define EXT_CSD_FW_VERSION	254 /* RO, 261:254 */
+#define EXT_CSD_FW_CFG	169 /* R/W */
+#define EXT_CSD_MODE_CFG	30 /* R/W */
+#define EXT_CSD_FFU_STATUS	26 /* RO */
+
+#define US_PWR_WP_DIS_BIT      1<<3
+#define US_PERM_WP_DIS_BIT     1<<4
+#define WP_CLEAR_TYPE          0
+#define WP_POWER_ON_TYPE       (1<<1)
+#define WP_TEMPORARY_TYPE      1
+#define WP_PERMANENT_TYPE      ((1<<0)|(1<<1))
+#define WP_TYPE_MASK           3
+#define WP_ENABLE_MASK         7
+#define WP_TEMPORARY_EN_BIT    0
+#define WP_POWER_ON_EN_BIT     (1<<0)
+#define WP_PERM_EN_BIT         (1<<2)
+#define WP_GRP_SIZE_MASK       31
+
+#ifndef CONFIG_SYS_MMC_MAX_BLK_COUNT
+#define CONFIG_SYS_MMC_MAX_BLK_COUNT 65535
+#endif
+/*mmc.h*/
+
 /* bootloader operation */
 #define AML_BL_USER		(0x1 << 0)
 #define AML_BL_BOOT0	(0x1 << 1)
