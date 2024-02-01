@@ -416,6 +416,12 @@ export CFLAGS_UASAN
 
 endif
 
+ifeq ("$(CONFIG_NOVERBOSE_BUILD)", "1")
+KBUILD_CFLAGS += -DCONFIG_NOVERBOSE_BUILD
+CFLAGS += -DCONFIG_NOVERBOSE_BUILD
+export CFLAGS
+endif
+
 # Don't generate position independent code
 KBUILD_CFLAGS	+= $(call cc-option,-fno-PIE)
 KBUILD_AFLAGS	+= $(call cc-option,-fno-PIE)

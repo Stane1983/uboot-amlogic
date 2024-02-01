@@ -79,12 +79,20 @@
 #define CONFIG_DTB_LOAD  "imgread dtb _aml_dtb ${dtb_mem_addr}"
 #endif//#ifdef CONFIG_DTB_BIND_KERNEL	//load dtb from kernel, such as boot partition
 
+#ifdef CONFIG_NOVERBOSE_BUILD
+#define SILENT		"silent=1\0"
+#define KERNL_LOGLEVEL	"loglevel=2 "
+#else
+#define SILENT		"silent=0\0"
+#define KERNL_LOGLEVEL	"loglevel=7 "
+#endif
+
 /* args/envs */
 #define CONFIG_SYS_MAXARGS  64
 #define CONFIG_EXTRA_ENV_SETTINGS \
        CONFIG_EXTRA_ENV_SETTINGS_BASE \
 		"firstboot=1\0"\
-		"silent=1\0"\
+		SILENT \
 		"upgrade_step=0\0"\
 		"jtag=disable\0"\
 		"loadaddr=0x00020000\0"\
@@ -151,10 +159,11 @@
 	"initargs="\
 		"init=/init " CONFIG_KNL_LOG_LEVEL "console=ttyS0,115200 "\
 		"no_console_suspend earlycon=aml-uart,0xfe07a000 "\
-	    "ramoops.pstore_en=1 ramoops.record_size=0x8000 "\
+		"ramoops.pstore_en=1 ramoops.record_size=0x8000 "\
 		"ramoops.console_size=0x4000 loop.max_part=4 "\
 		"scsi_mod.scan=async xhci_hcd.quirks=0x800000 scramble_reg=0xfe02e030 "\
-	    "\0"\
+		KERNL_LOGLEVEL "aml_isolcpus=2 isolcpus_speedup_boot=1"\
+		"\0"\
 	"upgrade_check="\
 			"run upgrade_check_base;"\
 			"\0"\
