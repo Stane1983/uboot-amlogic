@@ -274,7 +274,7 @@ static void hdmitx_load_dts_config(struct hdmitx_dev *hdev)
 		return;
 	}
 
-	node = fdt_path_offset(dt_blob, "/soc/amhdmitx");
+	node = fdt_path_offset(dt_blob, "/amhdmitx");
 	if (node < 0) {
 		printf("ERR: hdmitx: not find /amhdmitx node: %s\n", fdt_strerror(node));
 		return;

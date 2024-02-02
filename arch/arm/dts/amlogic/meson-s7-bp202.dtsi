@@ -79,6 +79,12 @@
 		compatible = "linaro,optee-tz";
 		method = "smc";
 	};
+
+	amhdmitx {
+		compatible = "amlogic, amhdmitx-s7";
+		status = "okay";
+		res_1080p = <1>;
+	};
 };
 
 &vpu {
