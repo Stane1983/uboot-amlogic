@@ -3,6 +3,8 @@
 
 obj-$(CONFIG_CMD_MMC) += aml_mmc.o
 obj-$(CONFIG_CMD_PLLTEST) += cmd_plltest.o
+obj-$(CONFIG_CMD_CC) += cmd_cc.o
+obj-$(CONFIG_CMD_BC) += cmd_bc.o
 obj-$(CONFIG_CMD_LED_DISPLAY) += cmd_led_display.o
 obj-$(CONFIG_MESON_LEDS_STATE_CONTROL) += cmd_leds_state.o
 
