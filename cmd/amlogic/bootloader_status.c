@@ -587,7 +587,7 @@ int recovery_update(void)
 {
 #ifdef CONFIG_MMC_MESON_GX
 	char bufcmd[64];
-	unsigned long long psize = 0;
+	unsigned long long size = 0;
 	char *recovery_need_update = NULL;
 	struct partitions *partition = NULL;
 	//"ANDROID!"
@@ -608,8 +608,8 @@ int recovery_update(void)
 	if (!recovery_need_update || strcmp(recovery_need_update, "1"))
 		return 0;
 
-	//read recoverybak data
-	sprintf(bufcmd, "store read $loadaddr recoverybak 0 0x%llx", partition->size);
+	//read recoverybak header data for check
+	sprintf(bufcmd, "store read $loadaddr recoverybak 0 0x%x", 16);
 	run_command(bufcmd, 0);
 
 	unsigned char *loadaddr = (unsigned char *)simple_strtoul(env_get("loadaddr"), NULL, 16);
@@ -621,18 +621,20 @@ int recovery_update(void)
 	}
 
 	//write recoverybak data to recovery
-	while (psize < partition->size) {
+	while (size < partition->size) {
 		unsigned long long write_size = 0;
-		unsigned long long left_size = partition->size - psize;
+		unsigned long long left_size = partition->size - size;
 
 		if (left_size > 10 * MIB_SIZE)
 			write_size = 10 * MIB_SIZE;
 		else
-			write_size = partition->size - psize;
+			write_size = partition->size - size;
 
-		sprintf(bufcmd, "store write $loadaddr recovery 0x%llx 0x%llx", psize, write_size);
-		psize += write_size;
+		sprintf(bufcmd, "store read $loadaddr recoverybak 0x%llx 0x%llx", size, write_size);
 		run_command(bufcmd, 0);
+		sprintf(bufcmd, "store write $loadaddr recovery 0x%llx 0x%llx", size, write_size);
+		run_command(bufcmd, 0);
+		size += write_size;
 	}
 
 	//clean recovery_need_update to 0
