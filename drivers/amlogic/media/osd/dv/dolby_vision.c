@@ -547,6 +547,12 @@ static int check_tv_support_dv(struct hdmitx_dev *hdmitx_device)
 	} else if (strstr(outputmode, "100hz") || strstr(outputmode, "120hz")) {
 		if (!dv_info->sup_1080p120hz)
 			return 0;
+	} else if (strstr(outputmode, "480p") || strstr(outputmode, "576p") ||
+		strstr(outputmode, "i") || strstr(outputmode, "smpte")) {
+		/* dv display effect of 480/576p is not good on some TVs. */
+		/* currently some TVs not support smpte. */
+		/* for interlace output */
+		return 0;
 	} else if (!check_outputmode()) {
 		/* currently all sink not support 4k100/120 and 8k dv */
 	    /*in the future, some new flag in vsvdb will be used to judge dv cap*/
