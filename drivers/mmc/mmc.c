@@ -26,6 +26,12 @@
 #include <asm/arch/secure_apb.h>
 #include <asm/arch/sd_emmc.h>
 #include <amlogic/cpu_id.h>
+#if defined(CONFIG_CMD_EFUSE)
+#include <asm/arch/efuse.h>
+#if defined(CONFIG_EFUSE_OBJ_API)
+extern efuse_obj_field_t efuse_field;
+#endif /* CONFIG_EFUSE_OBJ_API */
+#endif /* CONFIG_CMD_EFUSE */
 
 #define stamp_after(a, b) ((int)(b) - (int)(a) < 0)
 
@@ -3005,6 +3011,29 @@ int mmc_init(struct mmc *mmc)
 		}
 	}
 	info_disprotect &= ~DISPROTECT_KEY;
+
+#if defined(CONFIG_CMD_EFUSE) && \
+defined(CONFIG_EFUSE_OBJ_API) && \
+defined(CONFIG_USER_PARTITION_DISABLE)
+	if (err)
+		return err;
+
+	char *str;
+	// check and disable user partition
+	str = env_get("upgrade_step");
+	// only done when first upgrade
+	if (str && !strncmp(str, "0", 1)) {
+		if (aml_gpt_valid(mmc))
+			return err;
+
+		err = efuse_obj_get_data("FEAT_DISABLE_EMMC_USER");
+		if (err || *efuse_field.data)
+			return err;
+
+		err = efuse_obj_set_license("FEAT_DISABLE_EMMC_USER");
+		printf("Disable USER Partition %s\n", err ? "failed" : "success");
+	}
+#endif /* CONFIG_CMD_EFUSE && CONFIG_EFUSE_OBJ_API && CONFIG_USER_PARTITION_DISABLE */
 
 	return err;
 }
