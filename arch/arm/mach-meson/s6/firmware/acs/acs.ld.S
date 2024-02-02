@@ -28,31 +28,31 @@ SECTIONS
 		*(.dev_header*)
 	}
 
-	.generic_param 0x00000100:
+	.generic_param 0x0000050:
 	{
 		*(.generic_param*)
 	}
 
-	.clk_param 0x0000200:
+	.clk_param 0x00000D0:
 	{
 		*(.clk_param*)
 	}
 
-	.misc_param 0x00000300:
+	.misc_param 0x00000150:
 	{
 		*(.misc_param*)
 	}
 
-	.store_param 0x00000500:
+	.store_param 0x00000250:
 	{
 		*(.store_param*)
 	}
 
-	.ddr_param 0x00000600 - 0x40:
+	.ddr_param 0x00000400:
 	{
 		*(.ddr_param*)
 		*(.ddr_2acs_index*)
 		*(.ddr_2acs_data*)
 	}
-    ASSERT(. <= 0x00001000, "params image has exceeded its limit.")
+    ASSERT(. <= 0x00001c00, "params image has exceeded its limit.")
 }
