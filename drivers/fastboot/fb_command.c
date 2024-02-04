@@ -460,17 +460,20 @@ static void write_dts_reserve(void)
 	}
 }
 
-static void set_fastboot_flag(void)
+static void set_fastboot_flag(int flag)
 {
 	env_set("default_env", "1");
-	env_set("fastboot_step", "1");
+	if (flag == 1)
+		env_set("fastboot_step", "1");
 #if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
 	run_command("update_env_part -p default_env;", 0);
-	run_command("update_env_part -p fastboot_step;", 0);
+	if (flag == 1)
+		run_command("update_env_part -p fastboot_step;", 0);
 #else
 	run_command("defenv_reserve;", 0);
 	run_command("setenv default_env 1;", 0);
-	run_command("setenv fastboot_step 1;", 0);
+	if (flag == 1)
+		run_command("setenv fastboot_step 1;", 0);
 	run_command("saveenv;", 0);
 #endif//#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
 }
@@ -505,11 +508,22 @@ static void flash(char *cmd_parameter, char *response)
 		printf("try to read gpt data from bootloader.img\n");
 		struct blk_desc *dev_desc;
 		int erase_flag = 0;
+		char *bootloaderindex;
+		char *slot_name = NULL;
+		char partname[32] = {0};
 
-		rc = store_part_size("bootloader_a");
+		slot_name = env_get("active_slot");
+		if (slot_name && (strcmp(slot_name, "_a") == 0))
+			strcpy((char *)partname, "bootloader_a");
+		else if (slot_name && (strcmp(slot_name, "_b") == 0))
+			strcpy((char *)partname, "bootloader_b");
+		else
+			strcpy((char *)partname, "bootloader_up");
+
+		rc = store_part_size(partname);
 		if (rc != -1) {
-			fastboot_mmc_erase("bootloader_a", response);
-			fastboot_mmc_flash_write("bootloader_a", fastboot_buf_addr, image_size,
+			fastboot_mmc_erase(partname, response);
+			fastboot_mmc_flash_write(partname, fastboot_buf_addr, image_size,
 				response);
 		}
 
@@ -597,23 +611,44 @@ static void flash(char *cmd_parameter, char *response)
 		}
 #endif//#ifdef CONFIG_EFUSE_OBJ_API
 
+		bootloaderindex = env_get("forUpgrade_bootloaderIndex");
+
 		if (ret == 0) {
 			printf("gpt/nocs mode\n");
 #if CONFIG_IS_ENABLED(FASTBOOT_FLASH_MMC)
 			fastboot_mmc_flash_write("bootloader-boot1", fastboot_buf_addr, image_size,
 				 response);
-			run_command("mmc dev 1 0;", 0);
+			if (strcmp(bootloaderindex, "1") != 0) {
+				printf("boot from boot1, means boot0 is error, rewrite it\n");
+				fastboot_mmc_flash_write("bootloader-boot0",
+					fastboot_buf_addr, image_size, response);
+				run_command("mmc dev 1 0;", 0);
+				set_fastboot_flag(0);
+			} else {
+				printf("need to set fastboot_step\n");
+				run_command("mmc dev 1 0;", 0);
+				set_fastboot_flag(1);
+			}
 #endif
-			set_fastboot_flag();
 			return;
 		} else {
 			printf("normal mode\n");
 #if CONFIG_IS_ENABLED(FASTBOOT_FLASH_MMC)
 			fastboot_mmc_flash_write("bootloader-boot0", fastboot_buf_addr, image_size,
 				response);
-			run_command("mmc dev 1 0;", 0);
+			fastboot_mmc_flash_write("bootloader-boot1", fastboot_buf_addr, image_size,
+				 response);
+			if (strcmp(bootloaderindex, "0") != 0) {
+				printf("boot from boot0, rewrite user bootloader is error\n");
+				fastboot_mmc_flash_write("bootloader",
+					fastboot_buf_addr, image_size, response);
+				run_command("mmc dev 1 0;", 0);
+				set_fastboot_flag(0);
+			} else {
+				run_command("mmc dev 1 0;", 0);
+				set_fastboot_flag(1);
+			}
 #endif
-			set_fastboot_flag();
 			return;
 		}
 	}
