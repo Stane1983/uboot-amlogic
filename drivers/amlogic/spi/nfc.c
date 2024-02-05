@@ -132,7 +132,7 @@ void nfc_raw_size_ext_convert(uint32_t size)
 }
 
 #define is_fixpll_locked()	(1)
-#define IS_FEAT_EN_83MHZ_SPI()	(0)
+#define IS_FEAT_EN_83MHZ_SPI()	(1)
 #define IS_FEAT_EN_41MHZ_SPI()	(1)
 #define IS_FEAT_EN_25MHZ_NAND()	(1)
 #define otp_get_nfc_rxadj(x)	((*(x)) = 0)

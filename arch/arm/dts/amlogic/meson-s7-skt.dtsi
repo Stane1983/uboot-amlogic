@@ -11,7 +11,7 @@
 	aliases {
 		serial0 = &uart_a;
 		serial1 = &uart_b;
-		spi0 = &spifc;
+		spi0 = &spi_nfc;
 		spi1 = &spicc0;
 		i2c0 = &i2c0;
 		i2c1 = &i2c1;
@@ -262,9 +262,10 @@
 	uart-has-rtscts;
 };
 
-&spifc {
-	status = "okay";
-	cs-gpios = <&gpio GPIOB_13 GPIO_ACTIVE_HIGH>;
+&spi_nfc {
+	status = "disabled";
+	pinctrl-names = "default";
+	pinctrl-0 = <&spi_nfc_pins>;
 	spi-flash@0 {
 		status = "okay";
 	};
