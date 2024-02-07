@@ -1156,8 +1156,12 @@ int check_gpt_change(struct blk_desc *dev_desc, void *buf)
 	int parts_num = p_iptbl_ept->count;
 	uint64_t offset;
 	uint64_t size;
+	uint32_t mask_flags;
 	char name[PARTNAME_SZ];
 	char *update_dts_gpt = NULL;
+#if (ADD_LAST_PARTITION)
+	ulong gap = GPT_GAP;
+#endif
 
 	update_dts_gpt = env_get("update_dts_gpt");
 
@@ -1288,6 +1292,9 @@ int check_gpt_change(struct blk_desc *dev_desc, void *buf)
 		size = ((le64_to_cpu(gpt_e[i].ending_lba) + 1) -
 				le64_to_cpu(gpt_e[i].starting_lba)) << 9ULL;
 
+		mask_flags =
+			(uint32_t)le64_to_cpu(gpt_e[i].attributes.fields.type_guid_specific);
+
 		if (!strcmp(name, "recovery")) {
 			recovery_offset_new = offset;
 			//printf("recovery_offset_new = %d\n", recovery_offset_new);
@@ -1332,6 +1339,14 @@ int check_gpt_change(struct blk_desc *dev_desc, void *buf)
 					printf("size: %016llx --> %016llx\n",
 							partitions[j].size, size);
 					ret = 3;
+				}
+				if (partitions[j].mask_flags != mask_flags) {
+					printf("%s mask_flags had been changed\n",
+						name);
+					printf("%08x<->%08x\n", partitions[j].mask_flags,
+						mask_flags);
+					if (ret == 0)
+						ret = 2;
 				}
 			}
 		}
@@ -1694,6 +1709,11 @@ int _mmc_check_gpt(struct mmc *mmc, lbaint_t *alternate)
 	struct blk_desc *dev_desc = mmc_get_blk_desc(mmc);
 	gpt_entry *gpt_pte = NULL;
 	lbaint_t alternate_lba;
+	u32 entries_num;
+	int i, k;
+	size_t efiname_len;
+	int flag = 0;
+	char name[PARTNAME_SZ];
 
 	ALLOC_CACHE_ALIGN_BUFFER_PAD(gpt_header, gpt_head, 1, dev_desc->blksz);
 
@@ -1701,6 +1721,35 @@ int _mmc_check_gpt(struct mmc *mmc, lbaint_t *alternate)
 	if (is_gpt_valid(dev_desc, GPT_PRIMARY_PARTITION_TABLE_LBA,
 			gpt_head, &gpt_pte) == 1) {
 		alternate_lba = (lbaint_t)le64_to_cpu(gpt_head->alternate_lba);
+		entries_num = le32_to_cpu(gpt_head->num_partition_entries);
+
+		for (i = 0; i < entries_num; i++) {
+			/* partition name */
+			efiname_len = sizeof(gpt_pte[i].partition_name)
+				/ sizeof(efi_char16_t);
+
+			memset(name, 0, PARTNAME_SZ);
+			for (k = 0; k < efiname_len; k++)
+				name[k] = (char)gpt_pte[i].partition_name[k];
+
+			if (alternate_lba > le64_to_cpu(gpt_pte[i].starting_lba) &&
+				alternate_lba < le64_to_cpu(gpt_pte[i].ending_lba)) {
+				printf("GPT: alternate_lba: %lX during %s, invalid\n",
+			       alternate_lba, name);
+				flag = 1;
+			}
+		}
+
+		if (flag == 1) {
+			printf("GPT: alternate_lba: %llX invalid, reset it\n",
+			       le64_to_cpu(gpt_head->alternate_lba));
+			gpt_head->alternate_lba = gpt_pte[1].starting_lba - 1;
+			alternate_lba = (lbaint_t)le64_to_cpu(gpt_head->alternate_lba);
+			*alternate = alternate_lba;
+			free(gpt_pte);
+			return 1;
+		}
+
 		*alternate = alternate_lba;
 		free(gpt_pte);
 
@@ -1742,6 +1791,8 @@ int mmc_repair_gpt(struct mmc *mmc, lbaint_t alternate)
 	ALLOC_CACHE_ALIGN_BUFFER_PAD(gpt_header, gpt_head, 1, dev_desc->blksz);
 
 	if (is_gpt_valid(dev_desc, pri_lba, gpt_head, &gpt_pte) == 1) {
+		gpt_head->alternate_lba = alternate;
+
 		ret = write_gpt_table(dev_desc, gpt_head, gpt_pte);
 		free(gpt_pte);
 		ret |= write_gpt_alternate(alternate);

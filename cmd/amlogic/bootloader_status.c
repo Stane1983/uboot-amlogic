@@ -499,7 +499,7 @@ static int update_gpt(int flag)
 				goto exit;
 			} else if (erase_flag == 0) {
 				printf("partition doesn't change, needn't update\n");
-				ret = 0;
+				ret = -1;
 				goto exit;
 			}
 
@@ -564,12 +564,10 @@ exit:
 	if (buffer)
 		free(buffer);
 
+	if (mmc)
+		run_command("mmc dev 1 0;", 0);
+
 	if (mmc && ret > 0) {
-		dev_desc = blk_get_dev("mmc", 1);
-		if (dev_desc && dev_desc->type != DEV_TYPE_UNKNOWN) {
-			printf("valid mmc device, erase gpt\n");
-			erase_gpt_part_table(dev_desc);
-		}
 		if (ret == 1 || ret == 2 || ret == 3) {
 			printf("rollback\n");
 			update_rollback();
@@ -908,11 +906,17 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 				printf("update gpt\n");
 				update_flag = update_gpt(0);
 				env_set("update_gpt", "0");
+				strcpy(write_boot, "0");
+				env_set("write_boot", "0");
 #if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
 				run_command("update_env_part -p update_gpt;", 0);
+				run_command("update_env_part -p write_boot;", 0);
 #else
 				run_command("saveenv", 0);
 #endif
+
+				if (update_flag != -1)
+					run_command("reset", 0);
 			}
 		}
 	}

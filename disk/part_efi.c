@@ -987,6 +987,13 @@ int check_gpt_part(struct blk_desc *dev_desc, void *buf)
 				gpt_e[i].ending_lba = gpt_h->last_usable_lba;
 			printf("gpt_e[%d].ending_lba: %llX\n", i, gpt_e[i].ending_lba);
 		}
+
+		if (le64_to_cpu(gpt_h->alternate_lba) > le64_to_cpu(gpt_e[i].starting_lba) &&
+			le64_to_cpu(gpt_h->alternate_lba) < le64_to_cpu(gpt_e[i].ending_lba)) {
+			printf("%s: alternate_lba: %llX during part %d, invalid, reset it\n",
+				__func__, le64_to_cpu(gpt_h->alternate_lba), i);
+			gpt_h->alternate_lba = gpt_e[1].starting_lba - 1;
+		}
 	}
 
 	calc_crc32 = efi_crc32((const unsigned char *)gpt_e,
@@ -1061,7 +1068,7 @@ int write_mbr_and_gpt_partitions(struct blk_desc *dev_desc, void *buf)
 	if (le64_to_cpu(gpt_h->alternate_lba) > dev_desc->lba ||
 		le64_to_cpu(gpt_h->alternate_lba) == 0) {
 		printf("GPT: alternate_lba: %llX, " LBAF ", reset it\n",
-		       le64_to_cpu(gpt_h->last_usable_lba), dev_desc->lba);
+		       le64_to_cpu(gpt_h->alternate_lba), dev_desc->lba);
 		gpt_h->alternate_lba = cpu_to_le64(dev_desc->lba - 1);
 		flag = true;
 		alternate_flag = true;
@@ -1101,6 +1108,13 @@ int write_mbr_and_gpt_partitions(struct blk_desc *dev_desc, void *buf)
 				gpt_e[i].ending_lba = gpt_h->last_usable_lba;
 			printf("gpt_e[%d].ending_lba: %llX \n", i, gpt_e[i].ending_lba);
 			flag = true;
+		}
+
+		if (le64_to_cpu(gpt_h->alternate_lba) > le64_to_cpu(gpt_e[i].starting_lba) &&
+			le64_to_cpu(gpt_h->alternate_lba) < le64_to_cpu(gpt_e[i].ending_lba)) {
+			printf("%s: alternate_lba: %llX during part %d, invalid, reset it\n",
+				__func__, le64_to_cpu(gpt_h->alternate_lba), i);
+			gpt_h->alternate_lba = gpt_e[1].starting_lba - 1;
 		}
 	}
 
