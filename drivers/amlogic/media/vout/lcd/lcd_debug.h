@@ -21,7 +21,7 @@ struct lcd_debug_info_reg_s {
 };
 
 struct lcd_debug_info_if_s {
-	void (*interface_print)(struct lcd_config_s *pconf);
+	void (*interface_print)(struct aml_lcd_drv_s *pdrv);
 	void (*reg_dump_interface)(struct aml_lcd_drv_s *pdrv);
 	void (*reg_dump_phy)(struct aml_lcd_drv_s *pdrv);
 };

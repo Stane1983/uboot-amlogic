@@ -430,6 +430,20 @@ static void lcd_power_ctrl(struct aml_lcd_drv_s *pdrv, int status)
 
 static void lcd_encl_on(struct aml_lcd_drv_s *pdrv)
 {
+	int ret;
+
+	if (pdrv->config_check_en == 0) {
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDPR("[%d]: config_check disabled\n", pdrv->index);
+	} else {
+		ret = lcd_config_timing_check(pdrv, &pdrv->config.timing.act_timing);
+		if (ret & 0x55) {
+			LCDERR("[%d]: %s: config timing check fatal error!\n",
+				pdrv->index, __func__);
+			return;
+		}
+	}
+
 	pdrv->driver_init_pre(pdrv);
 	if (lcd_debug_test_flag)
 		lcd_debug_test(pdrv, lcd_debug_test_flag);
@@ -480,6 +494,10 @@ static void lcd_module_enable(struct aml_lcd_drv_s *pdrv, char *mode, unsigned i
 
 	if ((pdrv->status & LCD_STATUS_ENCL_ON) == 0)
 		lcd_encl_on(pdrv);
+	if ((pdrv->status & LCD_STATUS_ENCL_ON) == 0) {
+		LCDERR("[%d]: %s: encl_on failed!\n", pdrv->index, __func__);
+		return;
+	}
 	if ((pdrv->status & LCD_STATUS_IF_ON) == 0) {
 		if (pdrv->boot_ctrl.init_level == LCD_INIT_LEVEL_NORMAL) {
 			lcd_interface_on(pdrv);
@@ -1266,9 +1284,9 @@ void aml_lcd_config_check(int index)
 	if (!pdrv)
 		return;
 
-	ret = lcd_config_check(pdrv);
+	ret = lcd_config_timing_check(pdrv, &pdrv->config.timing.act_timing);
 	if (ret == 0)
-		printf("lcd_config_check: PASS\n");
+		printf("lcd config_timing_check: PASS\n");
 	printf("disp_tmg_min_req:\n"
 		"  alert_lvl  %d\n"
 		"  hswbp  %d\n"
@@ -1278,6 +1296,12 @@ void aml_lcd_config_check(int index)
 		pdrv->disp_req.alert_level,
 		pdrv->disp_req.hswbp_vid, pdrv->disp_req.hfp_vid,
 		pdrv->disp_req.vswbp_vid, pdrv->disp_req.vfp_vid);
+#ifdef CONFIG_AML_LCD_TCON
+	if (pdrv->config.basic.lcd_type == LCD_MLVDS ||
+	    pdrv->config.basic.lcd_type == LCD_P2P) {
+		lcd_tcon_dbg_check(pdrv, &pdrv->config.timing.act_timing);
+	}
+#endif
 	printf("config_check_glb: %d, config_check: 0x%x, config_check_en: %d\n\n",
 		pdrv->config_check_glb, pdrv->config.basic.config_check, pdrv->config_check_en);
 }

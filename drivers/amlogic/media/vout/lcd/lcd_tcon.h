@@ -45,7 +45,8 @@ struct lcd_tcon_config_s {
 	int (*tcon_enable)(struct aml_lcd_drv_s *pdrv);
 	int (*tcon_disable)(struct aml_lcd_drv_s *pdrv);
 	int (*tcon_forbidden_check)(void);
-	int (*tcon_check)(struct aml_lcd_drv_s *pdrv, char *ferr_str, char *warn_str);
+	int (*tcon_check)(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timing_s *ptiming,
+			unsigned char *core_reg_table, char *ferr_str, char *warn_str);
 	void (*lut_dma_data_init_trans)(struct aml_lcd_drv_s *pdrv);
 	void (*lut_dma_mif_set)(phys_addr_t paddr, unsigned int size);
 	void (*lut_dma_enable)(struct aml_lcd_drv_s *pdrv);
@@ -115,6 +116,7 @@ struct tcon_mem_map_table_s {
 #define MEM_FLAG_MAX
 struct lcd_tcon_local_cfg_s {
 	char bin_ver[TCON_BIN_VER_LEN];
+	unsigned char *cur_core_reg_table;
 };
 
 /* **********************************
@@ -217,8 +219,13 @@ int lcd_tcon_disable_t5(struct aml_lcd_drv_s *pdrv);
 int lcd_tcon_disable_t3(struct aml_lcd_drv_s *pdrv);
 int lcd_tcon_forbidden_check_t5(void);
 int lcd_tcon_forbidden_check_t5d(void);
-int lcd_tcon_setting_check_t5(struct aml_lcd_drv_s *pdrv, char *ferr_str, char *warn_str);
-int lcd_tcon_setting_check_t5d(struct aml_lcd_drv_s *pdrv, char *ferr_str, char *warn_str);
+
+int lcd_tcon_init_setting_check(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timing_s *ptiming,
+		unsigned char *core_reg_table);
+int lcd_tcon_setting_check_t5(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timing_s *ptiming,
+		unsigned char *core_reg_table, char *ferr_str, char *warn_str);
+int lcd_tcon_setting_check_t5d(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timing_s *ptiming,
+		unsigned char *core_reg_table, char *ferr_str, char *warn_str);
 
 #endif
 

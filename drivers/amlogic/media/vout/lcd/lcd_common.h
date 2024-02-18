@@ -59,7 +59,8 @@
 /* 20231218: update timing management*/
 /* 20240118: MIPI DSI arch adjust*/
 /* 20240129: update display mode management*/
-#define LCD_DRV_VERSION    "20240129"
+/* 20240218: optimize lcd config check sequence*/
+#define LCD_DRV_VERSION    "20240218"
 
 extern unsigned long clk_util_clk_msr(unsigned long clk_mux);
 
@@ -111,7 +112,7 @@ char *lcd_type_type_to_str(int type);
 int lcd_mode_str_to_mode(const char *str);
 char *lcd_mode_mode_to_str(int mode);
 
-int lcd_config_check(struct aml_lcd_drv_s *pdrv);
+int lcd_config_timing_check(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timing_s *ptiming);
 int lcd_base_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv);
 int lcd_base_config_load_from_bsp(struct aml_lcd_drv_s *pdrv);
 int lcd_get_config(char *dt_addr, int load_id, struct aml_lcd_drv_s *pdrv);
@@ -189,10 +190,10 @@ void lcd_vbyone_hw_filter(struct aml_lcd_drv_s *pdrv, int flag);
 
 /* lcd tcon */
 #ifdef CONFIG_AML_LCD_TCON
-void lcd_tcon_info_print(void);
+void lcd_tcon_info_print(struct aml_lcd_drv_s *pdrv);
 int lcd_tcon_enable(struct aml_lcd_drv_s *pdrv);
 void lcd_tcon_disable(struct aml_lcd_drv_s *pdrv);
-int lcd_tcon_check(struct aml_lcd_drv_s *pdrv, char *ferr_str, char *warn_str);
+void lcd_tcon_dbg_check(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timing_s *ptiming);
 int lcd_tcon_probe(char *dt_addr, struct aml_lcd_drv_s *pdrv, int load_id);
 #endif
 

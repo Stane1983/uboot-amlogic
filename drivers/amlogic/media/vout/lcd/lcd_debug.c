@@ -29,7 +29,7 @@ static void lcd_timing_info_print(struct aml_lcd_drv_s *pdrv)
 	struct lcd_config_s *pconf = &pdrv->config;
 	int ret, herr, verr;
 
-	ret = lcd_config_check(pdrv);
+	ret = lcd_config_timing_check(pdrv, &pconf->timing.act_timing);
 	herr = ret & 0xf;
 	verr = (ret >> 4) & 0xf;
 
@@ -197,7 +197,7 @@ static void lcd_pinmux_info_print(struct lcd_config_s *pconf)
 	printf("\n");
 }
 
-static void lcd_info_print_lvds(struct lcd_config_s *pconf)
+static void lcd_info_print_lvds(struct aml_lcd_drv_s *pdrv)
 {
 	printf("lvds_repack       %u\n"
 		"dual_port         %u\n"
@@ -206,16 +206,16 @@ static void lcd_info_print_lvds(struct lcd_config_s *pconf)
 		"lane_reverse      %u\n"
 		"phy_vswing        0x%x\n"
 		"phy_preem         0x%x\n\n",
-		pconf->control.lvds_cfg.lvds_repack,
-		pconf->control.lvds_cfg.dual_port,
-		pconf->control.lvds_cfg.pn_swap,
-		pconf->control.lvds_cfg.port_swap,
-		pconf->control.lvds_cfg.lane_reverse,
-		pconf->control.lvds_cfg.phy_vswing,
-		pconf->control.lvds_cfg.phy_preem);
+		pdrv->config.control.lvds_cfg.lvds_repack,
+		pdrv->config.control.lvds_cfg.dual_port,
+		pdrv->config.control.lvds_cfg.pn_swap,
+		pdrv->config.control.lvds_cfg.port_swap,
+		pdrv->config.control.lvds_cfg.lane_reverse,
+		pdrv->config.control.lvds_cfg.phy_vswing,
+		pdrv->config.control.lvds_cfg.phy_preem);
 }
 
-static void lcd_info_print_vbyone(struct lcd_config_s *pconf)
+static void lcd_info_print_vbyone(struct aml_lcd_drv_s *pdrv)
 {
 	printf("lane_count                 %u\n"
 		"region_num                 %u\n"
@@ -226,37 +226,37 @@ static void lcd_info_print_vbyone(struct lcd_config_s *pconf)
 		"hw_filter_time             0x%x\n"
 		"hw_filter_cnt              0x%x\n"
 		"ctrl_flag                  0x%x\n\n",
-		pconf->control.vbyone_cfg.lane_count,
-		pconf->control.vbyone_cfg.region_num,
-		pconf->control.vbyone_cfg.byte_mode,
-		pconf->timing.bit_rate,
-		pconf->control.vbyone_cfg.phy_vswing,
-		pconf->control.vbyone_cfg.phy_preem,
-		pconf->control.vbyone_cfg.hw_filter_time,
-		pconf->control.vbyone_cfg.hw_filter_cnt,
-		pconf->control.vbyone_cfg.ctrl_flag);
-	if (pconf->control.vbyone_cfg.ctrl_flag & 0x1) {
+		pdrv->config.control.vbyone_cfg.lane_count,
+		pdrv->config.control.vbyone_cfg.region_num,
+		pdrv->config.control.vbyone_cfg.byte_mode,
+		pdrv->config.timing.bit_rate,
+		pdrv->config.control.vbyone_cfg.phy_vswing,
+		pdrv->config.control.vbyone_cfg.phy_preem,
+		pdrv->config.control.vbyone_cfg.hw_filter_time,
+		pdrv->config.control.vbyone_cfg.hw_filter_cnt,
+		pdrv->config.control.vbyone_cfg.ctrl_flag);
+	if (pdrv->config.control.vbyone_cfg.ctrl_flag & 0x1) {
 		printf("power_on_reset_en          %u\n"
 			"power_on_reset_delay       %ums\n\n",
-			(pconf->control.vbyone_cfg.ctrl_flag & 0x1),
-			pconf->control.vbyone_cfg.power_on_reset_delay);
+			(pdrv->config.control.vbyone_cfg.ctrl_flag & 0x1),
+			pdrv->config.control.vbyone_cfg.power_on_reset_delay);
 	}
-	if (pconf->control.vbyone_cfg.ctrl_flag & 0x2) {
+	if (pdrv->config.control.vbyone_cfg.ctrl_flag & 0x2) {
 		printf("hpd_data_delay_en          %u\n"
 			"hpd_data_delay             %ums\n\n",
-			((pconf->control.vbyone_cfg.ctrl_flag >> 1) & 0x1),
-			pconf->control.vbyone_cfg.hpd_data_delay);
+			((pdrv->config.control.vbyone_cfg.ctrl_flag >> 1) & 0x1),
+			pdrv->config.control.vbyone_cfg.hpd_data_delay);
 	}
-	if (pconf->control.vbyone_cfg.ctrl_flag & 0x4) {
+	if (pdrv->config.control.vbyone_cfg.ctrl_flag & 0x4) {
 		printf("cdr_training_hold_en       %u\n"
 			"cdr_training_hold          %ums\n\n",
-			((pconf->control.vbyone_cfg.ctrl_flag >> 2) & 0x1),
-			pconf->control.vbyone_cfg.cdr_training_hold);
+			((pdrv->config.control.vbyone_cfg.ctrl_flag >> 2) & 0x1),
+			pdrv->config.control.vbyone_cfg.cdr_training_hold);
 	}
-	lcd_pinmux_info_print(pconf);
+	lcd_pinmux_info_print(&pdrv->config);
 }
 
-static void lcd_info_print_rgb(struct lcd_config_s *pconf)
+static void lcd_info_print_rgb(struct aml_lcd_drv_s *pdrv)
 {
 	printf("type              %u\n"
 		"clk_pol           %u\n"
@@ -264,38 +264,38 @@ static void lcd_info_print_rgb(struct lcd_config_s *pconf)
 		"sync_valid        %u\n"
 		"rb_swap           %u\n"
 		"bit_swap          %u\n\n",
-		pconf->control.rgb_cfg.type,
-		pconf->control.rgb_cfg.clk_pol,
-		pconf->control.rgb_cfg.de_valid,
-		pconf->control.rgb_cfg.sync_valid,
-		pconf->control.rgb_cfg.rb_swap,
-		pconf->control.rgb_cfg.bit_swap);
-	lcd_pinmux_info_print(pconf);
+		pdrv->config.control.rgb_cfg.type,
+		pdrv->config.control.rgb_cfg.clk_pol,
+		pdrv->config.control.rgb_cfg.de_valid,
+		pdrv->config.control.rgb_cfg.sync_valid,
+		pdrv->config.control.rgb_cfg.rb_swap,
+		pdrv->config.control.rgb_cfg.bit_swap);
+	lcd_pinmux_info_print(&pdrv->config);
 }
 
-static void lcd_info_print_bt(struct lcd_config_s *pconf)
+static void lcd_info_print_bt(struct aml_lcd_drv_s *pdrv)
 {
 	printf("clk_phase       %u\n"
 		"field_type      %u\n"
 		"mode_422        %u\n"
 		"yc_swap         %u\n"
 		"cbcr_swap       %u\n\n",
-		pconf->control.bt_cfg.clk_phase,
-		pconf->control.bt_cfg.field_type,
-		pconf->control.bt_cfg.mode_422,
-		pconf->control.bt_cfg.yc_swap,
-		pconf->control.bt_cfg.cbcr_swap);
-	lcd_pinmux_info_print(pconf);
+		pdrv->config.control.bt_cfg.clk_phase,
+		pdrv->config.control.bt_cfg.field_type,
+		pdrv->config.control.bt_cfg.mode_422,
+		pdrv->config.control.bt_cfg.yc_swap,
+		pdrv->config.control.bt_cfg.cbcr_swap);
+	lcd_pinmux_info_print(&pdrv->config);
 }
 
-static void lcd_info_print_mipi(struct lcd_config_s *pconf)
+static void lcd_info_print_mipi(struct aml_lcd_drv_s *pdrv)
 {
 #ifdef CONFIG_AML_LCD_TABLET
-	lcd_dsi_info_print(pconf);
+	lcd_dsi_info_print(&pdrv->config);
 #endif
 }
 
-static void lcd_info_print_edp(struct lcd_config_s *pconf)
+static void lcd_info_print_edp(struct aml_lcd_drv_s *pdrv)
 {
 	printf("max_lane_count        %u\n"
 		"max_link_rate         %u\n"
@@ -307,21 +307,21 @@ static void lcd_info_print_edp(struct lcd_config_s *pconf)
 		"bit_rate              %llu\n"
 		"phy_vswing            0x%x\n"
 		"phy_preem             0x%x\n\n",
-		pconf->control.edp_cfg.max_lane_count,
-		pconf->control.edp_cfg.max_link_rate,
-		pconf->control.edp_cfg.training_mode,
-		pconf->control.edp_cfg.edid_en,
-		pconf->control.edp_cfg.sync_clk_mode,
-		pconf->control.edp_cfg.lane_count,
-		pconf->control.edp_cfg.link_rate,
-		pconf->timing.bit_rate,
-		pconf->control.edp_cfg.phy_vswing_preset,
-		pconf->control.edp_cfg.phy_preem_preset);
-	lcd_pinmux_info_print(pconf);
+		pdrv->config.control.edp_cfg.max_lane_count,
+		pdrv->config.control.edp_cfg.max_link_rate,
+		pdrv->config.control.edp_cfg.training_mode,
+		pdrv->config.control.edp_cfg.edid_en,
+		pdrv->config.control.edp_cfg.sync_clk_mode,
+		pdrv->config.control.edp_cfg.lane_count,
+		pdrv->config.control.edp_cfg.link_rate,
+		pdrv->config.timing.bit_rate,
+		pdrv->config.control.edp_cfg.phy_vswing_preset,
+		pdrv->config.control.edp_cfg.phy_preem_preset);
+	lcd_pinmux_info_print(&pdrv->config);
 }
 
 #ifdef CONFIG_AML_LCD_TCON
-static void lcd_info_print_mlvds(struct lcd_config_s *pconf)
+static void lcd_info_print_mlvds(struct aml_lcd_drv_s *pdrv)
 {
 	printf("channel_num       %d\n"
 		"channel_sel0      0x%08x\n"
@@ -333,21 +333,21 @@ static void lcd_info_print_mlvds(struct lcd_config_s *pconf)
 		"phy_preem         0x%x\n"
 		"bit_rate          %lluHz\n"
 		"pi_clk_sel        0x%03x\n\n",
-		pconf->control.mlvds_cfg.channel_num,
-		pconf->control.mlvds_cfg.channel_sel0,
-		pconf->control.mlvds_cfg.channel_sel1,
-		pconf->control.mlvds_cfg.clk_phase,
-		pconf->control.mlvds_cfg.pn_swap,
-		pconf->control.mlvds_cfg.bit_swap,
-		pconf->control.mlvds_cfg.phy_vswing,
-		pconf->control.mlvds_cfg.phy_preem,
-		pconf->timing.bit_rate,
-		pconf->control.mlvds_cfg.pi_clk_sel);
-	lcd_tcon_info_print();
-	lcd_pinmux_info_print(pconf);
+		pdrv->config.control.mlvds_cfg.channel_num,
+		pdrv->config.control.mlvds_cfg.channel_sel0,
+		pdrv->config.control.mlvds_cfg.channel_sel1,
+		pdrv->config.control.mlvds_cfg.clk_phase,
+		pdrv->config.control.mlvds_cfg.pn_swap,
+		pdrv->config.control.mlvds_cfg.bit_swap,
+		pdrv->config.control.mlvds_cfg.phy_vswing,
+		pdrv->config.control.mlvds_cfg.phy_preem,
+		pdrv->config.timing.bit_rate,
+		pdrv->config.control.mlvds_cfg.pi_clk_sel);
+	lcd_tcon_info_print(pdrv);
+	lcd_pinmux_info_print(&pdrv->config);
 }
 
-static void lcd_info_print_p2p(struct lcd_config_s *pconf)
+static void lcd_info_print_p2p(struct aml_lcd_drv_s *pdrv)
 {
 	printf("p2p_type          0x%x\n"
 		"lane_num          %d\n"
@@ -358,17 +358,17 @@ static void lcd_info_print_p2p(struct lcd_config_s *pconf)
 		"bit_rate          %lluHz\n"
 		"phy_vswing        0x%x\n"
 		"phy_preem         0x%x\n\n",
-		pconf->control.p2p_cfg.p2p_type,
-		pconf->control.p2p_cfg.lane_num,
-		pconf->control.p2p_cfg.channel_sel0,
-		pconf->control.p2p_cfg.channel_sel1,
-		pconf->control.p2p_cfg.pn_swap,
-		pconf->control.p2p_cfg.bit_swap,
-		pconf->timing.bit_rate,
-		pconf->control.p2p_cfg.phy_vswing,
-		pconf->control.p2p_cfg.phy_preem);
-	lcd_tcon_info_print();
-	lcd_pinmux_info_print(pconf);
+		pdrv->config.control.p2p_cfg.p2p_type,
+		pdrv->config.control.p2p_cfg.lane_num,
+		pdrv->config.control.p2p_cfg.channel_sel0,
+		pdrv->config.control.p2p_cfg.channel_sel1,
+		pdrv->config.control.p2p_cfg.pn_swap,
+		pdrv->config.control.p2p_cfg.bit_swap,
+		pdrv->config.timing.bit_rate,
+		pdrv->config.control.p2p_cfg.phy_vswing,
+		pdrv->config.control.p2p_cfg.phy_preem);
+	lcd_tcon_info_print(pdrv);
+	lcd_pinmux_info_print(&pdrv->config);
 }
 #endif
 
@@ -1149,7 +1149,7 @@ void lcd_info_print(struct aml_lcd_drv_s *pdrv)
 	info_if = (struct lcd_debug_info_if_s *)pdrv->debug_info_if;
 	if (info_if) {
 		if (info_if->interface_print)
-			info_if->interface_print(pconf);
+			info_if->interface_print(pdrv);
 		else
 			LCDERR("%s: interface_print is null\n", __func__);
 	} else {
