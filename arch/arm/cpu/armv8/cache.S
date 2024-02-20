@@ -28,8 +28,16 @@ ENTRY(__asm_dcache_level)
 	isb				/* sync change of cssidr_el1 */
 	mrs	x6, ccsidr_el1		/* read the new cssidr_el1 */
 	ubfx	x2, x6,  #0,  #3	/* x2 <- log2(cache line size)-4 */
-	ubfx	x3, x6,  #3, #10	/* x3 <- number of cache ways - 1 */
-	ubfx	x4, x6, #13, #15	/* x4 <- number of cache sets - 1 */
+	mrs	x13, ID_AA64MMFR2_EL1
+	ubfx	x13, x13, #20, #4
+	cbz	x13, 1f
+	ubfx    x3, x6,  #3,  #21	/* x3 <- number of cache ways - 1 */
+	ubfx    x4, x6,  #32, #24	/* x4 <- number of cache sets - 1 */
+	b	2f
+1:
+	ubfx    x3, x6,  #3, #10        /* x3 <- number of cache ways - 1 */
+	ubfx    x4, x6,  #13, #15        /* x4 <- number of cache sets - 1 */
+2:
 	add	x2, x2, #4		/* x2 <- log2(cache line size) */
 	clz	w5, w3			/* bit position of #ways */
 	/* x12 <- cache level << 1 */
@@ -45,11 +53,11 @@ loop_way:
 	orr	x9, x12, x7		/* map way and level to cisw value */
 	lsl	x7, x4, x2
 	orr	x9, x9, x7		/* map set number to cisw value */
-	tbz	w1, #0, 1f
+	tbz	w1, #0, 3f
 	dc	isw, x9
-	b	2f
-1:	dc	cisw, x9		/* clean & invalidate by set/way */
-2:	subs	x6, x6, #1		/* decrement the way */
+	b	4f
+3:	dc	cisw, x9		/* clean & invalidate by set/way */
+4:	subs	x6, x6, #1		/* decrement the way */
 	b.ge	loop_way
 	subs	x4, x4, #1		/* decrement the set */
 	b.ge	loop_set
