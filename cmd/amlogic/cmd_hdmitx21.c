@@ -181,6 +181,20 @@ static void qms_scene_pre_process(struct hdmitx_dev *hdev)
 	enum hdmi_vic qms_brr_vic = HDMI_UNKNOWN;
 	const struct hdmi_timing *t = NULL;
 	char *color = NULL;
+	const char *i_modes[3] = {
+		"480i", "576i", "1080i",
+	};
+	char *mode;
+	int i;
+
+	/* if current mode is interlaced mode, then skip QMS */
+	mode = env_get("hdmi_mode");
+	if (!mode)
+		return;
+	for (i = 0; i < 3; i++) {
+		if (strstr(mode, i_modes[i]))
+			return;
+	}
 
 	/* check uboot environment */
 	if (env_get("qms_en") && (env_get_ulong("qms_en", 10, 0) == 1))
