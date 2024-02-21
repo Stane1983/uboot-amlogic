@@ -50,7 +50,7 @@ inline bool cor_reg_addr_mask(u32 addr)
 	if ((addr >= 0x0330 && addr <= 0x03ff) ||
 	    (addr >= 0x0800 && addr <= 0x08ff) ||
 	    (addr >= 0x0940 && addr <= 0x09ff) ||
-	    (addr >= 0x0b00 && addr <= 0x0dff) ||
+	//(addr >= 0x0b00 && addr <= 0x0dff) || for vpfdt, not filter
 	    (addr >= 0x0f00 && addr <= 0x0fff))
 		return 1;
 

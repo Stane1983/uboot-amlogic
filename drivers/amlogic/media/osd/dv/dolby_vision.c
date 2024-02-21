@@ -420,7 +420,7 @@ static int check_tv_support_hdr(struct hdmitx_dev *hdmitx_device)
 {
 	if (!hdmitx_device)
 		return 0;
-	if (hdmitx_device->RXCap.hdr_info.hdr_sup_eotf_smpte_st_2084)
+	if (hdmitx_device->RXCap.hdr_info.hdr_support & HDR_SUP_EOTF_SMPTE_ST_2084)
 		return 1;
 	return 0;
 }
@@ -662,11 +662,11 @@ static int dolby_vision_parse(struct hdmitx_dev *hdmitx_device)
 			dovi_setting.diagnostic_enable = 1;
 		}
 	} else if (dovi_setting.dst_format == FORMAT_HDR10) {
-		if (hdmitx_device->RXCap.hdr_info.hdr_lum_max) {
-			graphic_max = 50 * (2 ^ (hdmitx_device->RXCap.hdr_info.hdr_lum_max >> 5));
+		if (hdmitx_device->RXCap.hdr_info.lumi_max) {
+			graphic_max = 50 * (2 ^ (hdmitx_device->RXCap.hdr_info.lumi_max >> 5));
 			graphic_max = graphic_max * 10000
-				* hdmitx_device->RXCap.hdr_info.hdr_lum_min
-				* hdmitx_device->RXCap.hdr_info.hdr_lum_min
+				* hdmitx_device->RXCap.hdr_info.lumi_min
+				* hdmitx_device->RXCap.hdr_info.lumi_min
 				/ (255 * 255 * 100);
 		}
 	} else

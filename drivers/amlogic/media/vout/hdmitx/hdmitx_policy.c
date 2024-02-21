@@ -556,8 +556,8 @@ bool is_tv_support_hdr(struct hdmitx_dev *hdev)
 	if (!hdev)
 		return false;
 	hdr = &hdev->RXCap.hdr_info;
-	hdr10p = &hdev->RXCap.hdr10plus_info;
-	if (hdr->hdr_sup_eotf_smpte_st_2084 || hdr->hdr_sup_eotf_hlg)
+	hdr10p = &hdev->RXCap.hdr_info.hdr10plus_info;
+	if (hdr->hdr_support & HDR_SUP_EOTF_SMPTE_ST_2084 || hdr->hdr_support & HDR_SUP_EOTF_HLG)
 		return true;
 	if (hdr10p->ieeeoui == HDR10_PLUS_IEEE_OUI &&
 		hdr10p->application_version != 0xFF)
@@ -934,7 +934,7 @@ static void update_dv_displaymode(struct input_hdmi_data *hdmi_data,
  */
 static bool hdmi_sink_disp_mode_sup(struct input_hdmi_data *hdmi_data, char *disp_mode)
 {
-	enum hdmi_vic vic = HDMI_UNKNOWN;
+	enum hdmi_vic vic = HDMI_0_UNKNOWN;
 
 	if (!hdmi_data || !disp_mode)
 		return false;

@@ -15,6 +15,8 @@
 #include <amlogic/media/dv/dolby_vision.h>
 #include <linux/libfdt_env.h>
 #include <amlogic/media/vout/dsc.h>
+#include <amlogic/media/vout/aml_vinfo.h>
+#include <linux/arm-smccc.h>
 
 static unsigned char edid_raw_buf[512] = {0};
 /* there may be outputmode/2/3 when in multi-display case,
@@ -36,8 +38,8 @@ static void dump_full_edid(const unsigned char *buf)
 	if (blk_no == 2)
 		if (buf[128 + 4] == 0xe2 && buf[128 + 5] == 0x78)
 			blk_no = buf[128 + 6] + 1;
-	if (blk_no > EDID_BLK_NO)
-		blk_no = EDID_BLK_NO;
+	if (blk_no > EDID_MAX_BLOCK)
+		blk_no = EDID_MAX_BLOCK;
 
 	printf("dump EDID rawdata\n");
 	printf("  ");
@@ -255,7 +257,7 @@ static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 		hdev->hwop.set_div40(div40);
 	} else { /* "output" */
 		if (!hdev->pxp_mode) {
-			if (!edid_parsing_ok(hdev)) {
+			if (!hdmitx_edid_check_data_valid(0, hdev->rawedid)) {
 				/* in SWPL-34712: if EDID parsing error in kernel,
 				 * only forcely output default mode(480p,RGB,8bit)
 				 * in sysctl, not save the default mode to env.
@@ -283,7 +285,7 @@ static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 			env_set("colorattribute", "444,8bit");
 		hdev->para = hdmitx21_get_fmtpara(argv[1], env_get("colorattribute"));
 		hdev->vic = hdev->para->timing.vic;
-		if (hdev->vic == HDMI_UNKNOWN) {
+		if (hdev->vic == HDMI_0_UNKNOWN) {
 			/* Not find VIC */
 			printf("Not find '%s' mapped VIC\n", argv[1]);
 			return CMD_RET_FAILURE;
@@ -419,7 +421,7 @@ static int do_off(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
-	hdev->vic = HDMI_UNKNOWN;
+	hdev->vic = HDMI_0_UNKNOWN;
 	if (hdev->chip_type == MESON_CPU_ID_S5)
 		hdmitx_module_disable();
 	hdev->hwop.turn_off();
@@ -481,6 +483,17 @@ static int do_s7_clk_config(cmd_tbl_t *cmdtp, int flag, int argc, char *const ar
 		hdev->s7_clk_config = 0;
 		pr_info("s7_clk_config = %d\n",  hdev->s7_clk_config);
 	}
+	return 1;
+}
+
+static int get_rterm(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+{
+	struct arm_smccc_res res;
+	u8 rterm_efuse;
+
+	arm_smccc_smc(HDCPTX_IOOPR, HDMITX_GET_RTERM, 0, 0, 0, 0, 0, 0, &res);
+	rterm_efuse = (unsigned int)((res.a0) & 0xffffffff);
+	pr_info("rterm_efuse = %d\n", rterm_efuse);
 	return 1;
 }
 
@@ -554,6 +567,11 @@ static void disp_cap_show(struct hdmitx_dev *hdev)
 		if (timing && vic < HDMITX_VESA_OFFSET && !is_vic_over_limited_1080p(vic))
 			printf("  %s\n", timing->sname ? timing->sname : timing->name);
 	}
+	printf("420_cap\n");
+	for (i = 0; i < Y420_VIC_MAX_NUM; i++) {
+		vic = rxcap->y420_vic[i];
+		printf("420vic:%d\n", vic);
+	}
 }
 
 static void vesa_cap_show(struct hdmitx_dev *hdev)
@@ -626,7 +644,7 @@ static void hdr_cap_show(struct hdmitx_dev *hdev)
 {
 	int hdr10plugsupported = 0;
 	struct hdr_info *hdr = &hdev->RXCap.hdr_info;
-	const struct hdr10_plus_info *hdr10p = &hdev->RXCap.hdr10plus_info;
+	const struct hdr10_plus_info *hdr10p = &hdev->RXCap.hdr_info.hdr10plus_info;
 
 	printf("\nhdr_cap\n");
 	if (hdr10p->ieeeoui == HDR10_PLUS_IEEE_OUI &&
@@ -635,15 +653,15 @@ static void hdr_cap_show(struct hdmitx_dev *hdev)
 	printf("HDR10Plus Supported: %d\n", hdr10plugsupported);
 	printf("HDR Static Metadata:\n");
 	printf("    Supported EOTF:\n");
-	printf("        Traditional SDR: %d\n", !!hdr->hdr_sup_eotf_sdr);
-	printf("        Traditional HDR: %d\n", !!hdr->hdr_sup_eotf_hdr);
-	printf("        SMPTE ST 2084: %d\n", !!hdr->hdr_sup_eotf_smpte_st_2084);
-	printf("        Hybrid Log-Gamma: %d\n", !!hdr->hdr_sup_eotf_hlg);
-	printf("    Supported SMD type1: %d\n", hdr->hdr_sup_SMD_type1);
+	printf("        Traditional SDR: %d\n", !!(hdr->hdr_support & HDR_SUP_EOTF_SDR));
+	printf("        Traditional HDR: %d\n", !!(hdr->hdr_support & HDR_SUP_EOTF_HDR));
+	printf("        SMPTE ST 2084: %d\n", !!(hdr->hdr_support & HDR_SUP_EOTF_SMPTE_ST_2084));
+	printf("        Hybrid Log-Gamma: %d\n", !!(hdr->hdr_support & HDR_SUP_EOTF_HLG));
+	printf("    Supported SMD type1: %d\n", hdr->static_metadata_type1);
 	printf("    Luminance Data\n");
-	printf("        Max: %d\n", hdr->hdr_lum_max);
-	printf("        Avg: %d\n", hdr->hdr_lum_avg);
-	printf("        Min: %d\n\n", hdr->hdr_lum_min);
+	printf("        Max: %d\n", hdr->lumi_max);
+	printf("        Avg: %d\n", hdr->lumi_avg);
+	printf("        Min: %d\n\n", hdr->lumi_min);
 	printf("HDR Dynamic Metadata:");
 }
 
@@ -726,74 +744,154 @@ static void edid_cap_show(struct hdmitx_dev *hdev)
 	int i;
 	struct rx_cap *prxcap = &hdev->RXCap;
 
-	printf("EDID Version: %d.%d\n", prxcap->edid_version, prxcap->edid_revision);
+	printf("Rx EDID Parse:\n");
+	printf("Rx Manufacturer Name: %s\n", prxcap->IDManufacturerName);
+	printf("Rx Product Code: %02x%02x\n",
+		prxcap->IDProductCode[0], prxcap->IDProductCode[1]);
+	printf("Rx Serial Number: %02x%02x%02x%02x\n",
+		prxcap->IDSerialNumber[0],
+		prxcap->IDSerialNumber[1],
+		prxcap->IDSerialNumber[2],
+		prxcap->IDSerialNumber[3]);
+	printf("Rx Product Name: %s\n", prxcap->ReceiverProductName);
 
-	printf("EDID block number: 0x%x\n", hdev->rawedid[0x7e]);
-	printf("blk0 chksum: 0x%02x\n", prxcap->chksum);
+	printf("Manufacture Week: %d\n", prxcap->manufacture_week);
+	printf("Manufacture Year: %d\n", prxcap->manufacture_year + 1990);
 
+	printf("Physical size(mm): %d x %d\n",
+		prxcap->physical_width, prxcap->physical_height);
+
+	printf("EDID Version: %d.%d\n",
+		prxcap->edid_version, prxcap->edid_revision);
+
+/*	printf(
+ *		"EDID block number: 0x%x\n", tx_comm->EDID_buf[0x7e]);
+ *
+ *
+ *	printf(
+ *		"Source Physical Address[a.b.c.d]: %x.%x.%x.%x\n",
+ *		hdmitx_device->hdmi_info.vsdb_phy_addr.a,
+ *		hdmitx_device->hdmi_info.vsdb_phy_addr.b,
+ *		hdmitx_device->hdmi_info.vsdb_phy_addr.c,
+ *		hdmitx_device->hdmi_info.vsdb_phy_addr.d);
+ */
+
+	// TODO native_vic2
 	printf("native Mode %x, VIC (native %d):\n",
-		prxcap->native_Mode, prxcap->native_VIC);
+		prxcap->native_Mode, prxcap->native_vic);
 
 	printf("ColorDeepSupport %x\n", prxcap->ColorDeepSupport);
 
-	for (i = 0 ; i < prxcap->VIC_count ; i++)
+	for (i = 0; i < prxcap->VIC_count ; i++) {
 		printf("%d ", prxcap->VIC[i]);
+	}
 	printf("\n");
-	printf("Vendor: 0x%x ( %s device)\n",
-		prxcap->IEEEOUI, (prxcap->IEEEOUI) ? "HDMI" : "DVI");
+	printf("Audio {format, channel, freq, cce}\n");
+	for (i = 0; i < prxcap->AUD_count; i++) {
+		printf("{%d, %d, %x, %x}\n",
+			prxcap->RxAudioCap[i].audio_format_code,
+			prxcap->RxAudioCap[i].channel_num_max,
+			prxcap->RxAudioCap[i].freq_cc,
+			prxcap->RxAudioCap[i].cc3);
+	}
+	printf("Speaker Allocation: %x\n", prxcap->RxSpeakerAllocation);
+	printf("Vendor: 0x%x ( %s device)\n", prxcap->ieeeoui, (prxcap->ieeeoui) ? "HDMI" : "DVI");
 
 	printf("MaxTMDSClock1 %d MHz\n", prxcap->Max_TMDS_Clock1 * 5);
 
-	if (prxcap->HF_IEEEOUI) {
-		printf("Vendor2: 0x%x\n", prxcap->HF_IEEEOUI);
-		printf("MaxTMDSClock2 %d MHz\n", prxcap->Max_TMDS_Clock2 * 5);
+	if (prxcap->hf_ieeeoui) {
+		printf("Vendor2: 0x%x\n",
+			prxcap->hf_ieeeoui);
+		printf("MaxTMDSClock2 %d MHz\n",
+			prxcap->Max_TMDS_Clock2 * 5);
 	}
 
-	printf("Video_Latency: ");
-	if (prxcap->Video_Latency == 0)
-		printf(" Invalid/Unknown\n");
-	else if (prxcap->Video_Latency == 0xffff)
-		printf(" UnSupported\n");
-	else
-		printf(" %d\n", prxcap->Video_Latency);
+	printf("MaxFRLRate: %d\n", prxcap->max_frl_rate);
 
-	printf("Audio_Latency: ");
-	if (prxcap->Audio_Latency == 0)
-		printf(" Invalid/Unknown\n");
-	else if (prxcap->Audio_Latency == 0xffff)
-		printf(" UnSupported\n");
-	else
-		printf(" %d\n", prxcap->Audio_Latency);
+	if (prxcap->allm)
+		printf("ALLM: %x\n", prxcap->allm);
 
-	printf("Interlaced_Video_Latency: ");
-	if (prxcap->Interlaced_Video_Latency == 0)
-		printf(" Invalid/Unknown\n");
-	else if (prxcap->Interlaced_Video_Latency == 0xffff)
-		printf(" UnSupported\n");
-	else
-		printf(" %d\n", prxcap->Interlaced_Video_Latency);
+	if (prxcap->cnc3)
+		printf("Game/CNC3: %x\n", prxcap->cnc3);
 
-	printf("Interlaced_Audio_Latency: ");
-	if (prxcap->Interlaced_Audio_Latency == 0)
+	printf("vLatency: ");
+	if (prxcap->vLatency == LATENCY_INVALID_UNKNOWN)
 		printf(" Invalid/Unknown\n");
-	else if (prxcap->Interlaced_Audio_Latency == 0xffff)
+	else if (prxcap->vLatency == LATENCY_NOT_SUPPORT)
 		printf(" UnSupported\n");
 	else
-		printf(" %d\n", prxcap->Interlaced_Audio_Latency);
+		printf(" %d\n", prxcap->vLatency);
+
+	printf("aLatency: ");
+	if (prxcap->aLatency == LATENCY_INVALID_UNKNOWN)
+		printf(" Invalid/Unknown\n");
+	else if (prxcap->aLatency == LATENCY_NOT_SUPPORT)
+		printf(" UnSupported\n");
+	else
+		printf(" %d\n", prxcap->aLatency);
+
+	printf("i_vLatency: ");
+	if (prxcap->i_vLatency == LATENCY_INVALID_UNKNOWN)
+		printf(" Invalid/Unknown\n");
+	else if (prxcap->i_vLatency == LATENCY_NOT_SUPPORT)
+		printf(" UnSupported\n");
+	else
+		printf(" %d\n", prxcap->i_vLatency);
+
+	printf("i_aLatency: ");
+	if (prxcap->i_aLatency == LATENCY_INVALID_UNKNOWN)
+		printf(" Invalid/Unknown\n");
+	else if (prxcap->i_aLatency == LATENCY_NOT_SUPPORT)
+		printf(" UnSupported\n");
+	else
+		printf(" %d\n", prxcap->i_aLatency);
 
 	if (prxcap->colorimetry_data)
 		printf("ColorMetry: 0x%x\n", prxcap->colorimetry_data);
-	printf("SCDC: %x\n", prxcap->scdc_present);
-	printf("RR_Cap: %x\n", prxcap->scdc_rr_capable);
-	printf("LTE_340M_Scramble: %x\n", prxcap->lte_340mcsc_scramble);
 
-	if (prxcap->dv_info.ieeeoui == DV_IEEE_OUI)
+	printf("SCDC: %x\n", prxcap->scdc_present);
+
+	printf("RR_Cap: %x\n",
+		prxcap->scdc_rr_capable);
+	printf("LTE_340M_Scramble: %x\n",
+		prxcap->lte_340mcsc_scramble);
+	/* dsc capability */
+	printf("dsc_10bpc: %d\n",
+		 prxcap->dsc_10bpc);
+	printf("dsc_12bpc: %d\n",
+		 prxcap->dsc_12bpc);
+	printf("dsc_16bpc: %d\n",
+		 prxcap->dsc_16bpc);
+	printf("dsc_all_bpp: %d\n",
+		 prxcap->dsc_all_bpp);
+	printf("dsc_native_420: %d\n",
+		 prxcap->dsc_native_420);
+	printf("dsc_1p2: %d\n",
+		 prxcap->dsc_1p2);
+	printf("dsc_max_slices: 0x%x(%d slices)\n",
+		 prxcap->dsc_max_slices, dsc_max_slices_num[prxcap->dsc_max_slices]);
+	printf("dsc_max_frl_rate: 0x%x\n",
+		 prxcap->dsc_max_frl_rate);
+	printf("dsc_total_chunk_bytes: 0x%x\n",
+		 prxcap->dsc_total_chunk_bytes);
+	if (prxcap->dv_info.ieeeoui == DOVI_IEEEOUI)
 		printf("  DolbyVision%d", prxcap->dv_info.ver);
-	if (prxcap->hdr_info.hdr_sup_eotf_smpte_st_2084)
-		printf("  HDR/%d", prxcap->hdr_info.hdr_sup_eotf_smpte_st_2084);
+
+	if (prxcap->hdr_info2.hdr_support)
+		printf("  HDR/%d",
+			prxcap->hdr_info2.hdr_support);
+	if (prxcap->hdr_info.sbtm_info.sbtm_support)
+		printf("  SBTM");
 	if (prxcap->dc_y444 || prxcap->dc_30bit || prxcap->dc_30bit_420)
 		printf("  DeepColor");
 	printf("\n");
+	printf("additional_vsif_num: %d\n", prxcap->additional_vsif_num);
+	printf("ifdb_present: %d\n", prxcap->ifdb_present);
+	/* for checkvalue which maybe used by application to adjust
+	 * whether edid is changed
+	 */
+	printf("checkvalue: %s\n", prxcap->hdmichecksum);
+
 }
 
 static int do_info(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
@@ -824,7 +922,6 @@ static int do_info(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	dv_cap_show(hdev);
 	dc_cap_show(hdev);
 	edid_cap_show(hdev);
-	dsc_cap_show(&hdev->RXCap);
 	printf("dsc policy: %d, enable: %d\n", hdev->dsc_policy, hdev->dsc_en);
 	printf("frl_rate: %d\n", hdev->frl_rate);
 	return 1;
@@ -893,11 +990,11 @@ static void disable_hdr10_info(struct hdr_info *des)
 	if (!des)
 		return;
 
-	des->hdr_sup_eotf_smpte_st_2084 = 0;
-	des->hdr_sup_SMD_type1 = 0;
-	des->hdr_lum_max = 0;
-	des->hdr_lum_avg = 0;
-	des->hdr_lum_min = 0;
+	des->hdr_support = des->hdr_support & 0xB;
+	des->static_metadata_type1 = 0;
+	des->lumi_max = 0;
+	des->lumi_avg = 0;
+	des->lumi_min = 0;
 }
 
 /* hdr10plus */
@@ -927,7 +1024,7 @@ static void disable_hlg_info(struct hdr_info *des)
 	if (!des)
 		return;
 
-	des->hdr_sup_eotf_hlg = 0;
+	des->hdr_support = des->hdr_support & 0x7;
 }
 
 static void enable_all_hdr_info(struct rx_cap *prxcap)
@@ -951,7 +1048,7 @@ static void update_hdr_strategy1(struct rx_cap *prxcap, u32 strategy)
 	case 2:
 		disable_dv_info(&prxcap->dv_info);
 		disable_hdr10_info(&prxcap->hdr_info);
-		disable_hdr10p_info(&prxcap->hdr10plus_info);
+		disable_hdr10p_info(&prxcap->hdr_info.hdr10plus_info);
 		disable_hlg_info(&prxcap->hdr_info);
 		break;
 	default:
@@ -972,10 +1069,10 @@ static void update_hdr_strategy2(struct rx_cap *prxcap, u32 strategy)
 	/* bit5: 1 disable hdr10/hdr10+   0 enable hdr10/hdr10+ */
 	if (strategy & BIT(5)) {
 		disable_hdr10_info(&prxcap->hdr_info);
-		disable_hdr10p_info(&prxcap->hdr10plus_info);
+		disable_hdr10p_info(&prxcap->hdr_info.hdr10plus_info);
 	} else {
 		enable_hdr10_info(&prxcap->hdr_info, NULL);
-		enable_hdr10p_info(&prxcap->hdr10plus_info, NULL);
+		enable_hdr10p_info(&prxcap->hdr_info.hdr10plus_info, NULL);
 	}
 	/* bit6: 1 disable hlg   0 enable hlg */
 	if (strategy & BIT(6))
@@ -1020,7 +1117,7 @@ static void get_parse_edid_data(struct hdmitx_dev *hdev)
 	dump_full_edid(hdev->rawedid);
 
 	/* parse edid data */
-	hdmi_edid_parsing(hdev->rawedid, &hdev->RXCap);
+	hdmitx_edid_parse(&hdev->RXCap, hdev->rawedid);
 
 	if (hdr_priority == -1)
 		return;
@@ -1080,7 +1177,7 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 	unsigned char *edid = hdev->rawedid;
 	unsigned char *store_checkvalue;
 
-	memset(edid, 0, EDID_BLK_SIZE * EDID_BLK_NO);
+	memset(edid, 0, EDID_BLK_SIZE * EDID_MAX_BLOCK);
 	unsigned int i;
 	unsigned int checkvalue[4];
 	unsigned int checkvalue1;
@@ -1153,11 +1250,11 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 		for (i = 0; i < 4; i++)
 			xtochar(0x80 * i + 0x7f, &checksum[2 * i + 2]);
 		checksum[10] = '\0';
-		memcpy(hdev->RXCap.checksum, checksum, 10);
+		memcpy(hdev->RXCap.hdmichecksum, checksum, 10);
 		printf("TV has changed, now crc: %s\n", checksum);
 	} else {
-		memcpy(hdev->RXCap.checksum, store_checkvalue, 10);
-		printf("TV is same, checksum: %s\n", hdev->RXCap.checksum);
+		memcpy(hdev->RXCap.hdmichecksum, store_checkvalue, 10);
+		printf("TV is same, checksum: %s\n", hdev->RXCap.hdmichecksum);
 	}
 
 	/* check user have selected both mode/color or not */
@@ -1227,8 +1324,8 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 	if (hdev->RXCap.edid_changed || no_manual_output || !mode_support || over_write) {
 		/* find proper mode if EDID changed */
 		scene_process(hdev, &scene_output_info);
-		env_set("hdmichecksum", hdev->RXCap.checksum);
-		if (edid_parsing_ok(hdev)) {
+		env_set("hdmichecksum", hdev->RXCap.hdmichecksum);
+		if (hdmitx_edid_check_data_valid(0, hdev->rawedid)) {
 			/* SWPL-34712: if EDID parsing error case, not save env,
 			 * only output default mode(480p,RGB,8bit). after
 			 * EDID read OK, systemcontrol will recover the hdmi
@@ -1404,6 +1501,7 @@ static cmd_tbl_t cmd_hdmi_sub[] = {
 	U_BOOT_CMD_MKENT(pbist, 3, 1, do_pbist, "", ""),
 	U_BOOT_CMD_MKENT(debug, 3, 1, do_debug, "", ""),
 	U_BOOT_CMD_MKENT(s7_clk_config, 3, 1, do_s7_clk_config, "", ""),
+	U_BOOT_CMD_MKENT(get_rterm, 3, 1, get_rterm, "", ""),
 };
 
 static int do_hdmitx(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])

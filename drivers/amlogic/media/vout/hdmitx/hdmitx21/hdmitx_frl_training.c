@@ -194,6 +194,12 @@ bool frl_check_full_bw(enum hdmi_colorspace cs, enum hdmi_color_depth cd, u32 pi
 		return 0;
 }
 
+enum frl_rate_enum hdmitx_select_frl_rate(bool dsc_en, enum hdmi_vic vic,
+	enum hdmi_colorspace cs, enum hdmi_color_depth cd)
+{
+	return hdmitx21_select_frl_rate(dsc_en, vic, cs, cd);
+}
+
 /*
  * Config hdmitx Data Flow metering
  * bw_type: 1: Full BW

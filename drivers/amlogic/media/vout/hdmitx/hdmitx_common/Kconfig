@@ -1,0 +1,8 @@
+#
+# HDMITX Common
+#
+config AML_HDMITX_COMMON
+	bool "AML_HDMITX_COMMON drivers Support"
+	depends on AML_HDMITX
+	help
+		HDMITX_COMMON Output Enable

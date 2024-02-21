@@ -1749,7 +1749,7 @@ void hdr_tx_pkt_cb(void)
 #ifdef CONFIG_AML_HDMITX
 	hdrinfo = hdmitx_get_rx_hdr_info();
 
-	if ((hdrinfo && hdrinfo->hdr_sup_eotf_smpte_st_2084) &&
+	if ((hdrinfo && (hdrinfo->hdr_support & HDR_SUP_EOTF_SMPTE_ST_2084)) &&
 		hdr_policy == 0) {
 		if (is_hdmi_mode(env_get("outputmode"))) {
 			hdr_func(OSD1_HDR, SDR_HDR);
@@ -1769,7 +1769,7 @@ void hdr_tx_pkt_cb(void)
 #ifdef CONFIG_AML_HDMITX
 	if (hdrinfo)
 		VPP_PR("Rx hdr_info.hdr_sup_eotf_smpte_st_2084 = %d\n",
-		       hdrinfo->hdr_sup_eotf_smpte_st_2084);
+		       !!(hdrinfo->hdr_support & HDR_SUP_EOTF_SMPTE_ST_2084));
 #endif
 }
 

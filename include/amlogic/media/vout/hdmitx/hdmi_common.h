@@ -7,6 +7,7 @@
 #define __HDMI_COMMON_H__
 
 #include "../hdmitx_common.h"
+#include <amlogic/media/vout/aml_vinfo.h>
 
 /* Little-Endian format */
 enum scdc_addr {
@@ -38,6 +39,7 @@ enum scdc_addr {
 #define HDMITX_VIC420_OFFSET	0x100
 #define HDMITX_VESA_OFFSET	0x300
 #define HDMI_UNKNOWN	HDMI_unknown
+#define HDMI_0_UNKNOWN HDMI_UNKNOWN
 
 /* HDMI VIC definitions */
 enum hdmi_vic {
@@ -311,24 +313,6 @@ enum block_type {
 	#define YCC_RANGE_LIM           0
 	#define YCC_RANGE_FUL           1
 	#define YCC_RANGE_RSVD          2
-
-struct hdr_info {
-	unsigned int hdr_sup_eotf_sdr:1;
-	unsigned int hdr_sup_eotf_hdr:1;
-	unsigned int hdr_sup_eotf_smpte_st_2084:1;
-	unsigned int hdr_sup_eotf_hlg:1;
-	unsigned int hdr_sup_SMD_type1:1;
-	unsigned char hdr_lum_max;
-	unsigned char hdr_lum_avg;
-	unsigned char hdr_lum_min;
-	unsigned char rawdata[7];
-};
-
-struct hdr10_plus_info {
-	uint32_t ieeeoui;
-	uint8_t length;
-	uint8_t application_version;
-};
 
 enum hdmi_hdr_transfer {
 	T_UNKNOWN = 0,

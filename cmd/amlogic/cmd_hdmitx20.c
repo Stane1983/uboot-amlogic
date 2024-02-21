@@ -11,6 +11,7 @@
 #include <amlogic/media/vout/hdmitx/hdmitx.h>
 #include <amlogic/media/dv/dolby_vision.h>
 #include <linux/libfdt_env.h>
+#include <amlogic/media/vout/aml_vinfo.h>
 
 static unsigned char edid_raw_buf[256] = {0};
 static void dump_edid_raw_8bytes(unsigned char *buf)
@@ -526,15 +527,15 @@ static void hdr_cap_show(struct hdmitx_dev *hdev)
 	printf("HDR10Plus Supported: %d\n", hdr10plugsupported);
 	printf("HDR Static Metadata:\n");
 	printf("    Supported EOTF:\n");
-	printf("        Traditional SDR: %d\n", !!hdr->hdr_sup_eotf_sdr);
-	printf("        Traditional HDR: %d\n", !!hdr->hdr_sup_eotf_hdr);
-	printf("        SMPTE ST 2084: %d\n", !!hdr->hdr_sup_eotf_smpte_st_2084);
-	printf("        Hybrid Log-Gamma: %d\n", !!hdr->hdr_sup_eotf_hlg);
-	printf("    Supported SMD type1: %d\n", hdr->hdr_sup_SMD_type1);
+	printf("        Traditional SDR: %d\n", !!(hdr->hdr_support & HDR_SUP_EOTF_SDR));
+	printf("        Traditional HDR: %d\n", !!(hdr->hdr_support & HDR_SUP_EOTF_HDR));
+	printf("        SMPTE ST 2084: %d\n", !!(hdr->hdr_support & HDR_SUP_EOTF_SMPTE_ST_2084));
+	printf("        Hybrid Log-Gamma: %d\n", !!(hdr->hdr_support & HDR_SUP_EOTF_HLG));
+	printf("    Supported SMD type1: %d\n", hdr->static_metadata_type1);
 	printf("    Luminance Data\n");
-	printf("        Max: %d\n", hdr->hdr_lum_max);
-	printf("        Avg: %d\n", hdr->hdr_lum_avg);
-	printf("        Min: %d\n\n", hdr->hdr_lum_min);
+	printf("        Max: %d\n", hdr->lumi_max);
+	printf("        Avg: %d\n", hdr->lumi_avg);
+	printf("        Min: %d\n\n", hdr->lumi_min);
 	printf("HDR Dynamic Metadata:");
 }
 
@@ -680,8 +681,8 @@ static void edid_cap_show(struct hdmitx_dev *hdev)
 
 	if (prxcap->dv_info.ieeeoui == DV_IEEE_OUI)
 		printf("  DolbyVision%d", prxcap->dv_info.ver);
-	if (prxcap->hdr_info.hdr_sup_eotf_smpte_st_2084)
-		printf("  HDR/%d", prxcap->hdr_info.hdr_sup_eotf_smpte_st_2084);
+	if (prxcap->hdr_info.hdr_support & HDR_SUP_EOTF_SMPTE_ST_2084)
+		printf("  HDR/%d", !!(prxcap->hdr_info.hdr_support & HDR_SUP_EOTF_SMPTE_ST_2084));
 	if (prxcap->dc_y444 || prxcap->dc_30bit || prxcap->dc_30bit_420)
 		printf("  DeepColor");
 	printf("\n");
@@ -783,11 +784,11 @@ static void disable_hdr10_info(struct hdr_info *des)
 	if (!des)
 		return;
 
-	des->hdr_sup_eotf_smpte_st_2084 = 0;
-	des->hdr_sup_SMD_type1 = 0;
-	des->hdr_lum_max = 0;
-	des->hdr_lum_avg = 0;
-	des->hdr_lum_min = 0;
+	des->hdr_support = des->hdr_support & 0xB;
+	des->static_metadata_type1 = 0;
+	des->lumi_max = 0;
+	des->lumi_avg = 0;
+	des->lumi_min = 0;
 }
 
 /* hdr10plus */
@@ -817,7 +818,7 @@ static void disable_hlg_info(struct hdr_info *des)
 	if (!des)
 		return;
 
-	des->hdr_sup_eotf_hlg = 0;
+	des->hdr_support = des->hdr_support & 0x7;
 }
 
 static void enable_all_hdr_info(struct rx_cap *prxcap)

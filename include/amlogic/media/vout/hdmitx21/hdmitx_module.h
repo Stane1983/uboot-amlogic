@@ -11,10 +11,14 @@
 #include "hdmi_common.h"
 #include "hdmitx_ext.h"
 #include <amlogic/media/vout/dsc.h>
+#include <amlogic/media/vout/hdmi_tx_repeater.h>
+#include <amlogic/media/vout/hdmitx_common/hdmitx_edid.h>
+//#include <amlogic/media/vout/hdmitx_common/hdmitx_common.h>
 
 #define HZ 100000000 // TODO
 
 struct hdmitx_dev {
+	struct tx_cap txcap;
 	struct {
 		int (*get_hpd_state)(void);
 		int (*read_edid)(unsigned char *buf);
@@ -35,7 +39,7 @@ struct hdmitx_dev {
 		union hdmi_infoframe drm;
 	} infoframes;
 	u32 colormetry;
-	unsigned char rawedid[EDID_BLK_SIZE * EDID_BLK_NO];
+	unsigned char rawedid[EDID_BLK_SIZE * EDID_MAX_BLOCK];
 	struct rx_cap RXCap;
 	struct hdmi_format_para *para;
 	enum hdmi_vic vic;
@@ -89,6 +93,8 @@ u32 calc_tmds_bandwidth(u32 pixel_freq, enum hdmi_colorspace cs,
 	enum hdmi_color_depth cd);
 enum frl_rate_enum hdmitx21_select_frl_rate(bool dsc_en, enum hdmi_vic vic,
 	enum hdmi_colorspace cs, enum hdmi_color_depth cd);
+enum frl_rate_enum hdmitx_select_frl_rate(bool dsc_en, enum hdmi_vic vic,
+	enum hdmi_colorspace cs, enum hdmi_color_depth cd);
 bool hdmitx_frl_training_main(enum frl_rate_enum frl_rate);
 int hdmitx21_read_edid(u8 *_rx_edid);
 void scdc21_rd_sink(u8 adr, u8 *val);
@@ -97,7 +103,11 @@ struct hdmi_format_para *hdmitx21_get_fmt_paras(enum hdmi_vic vic);
 const struct hdmi_timing *hdmitx21_get_timing_para0(void);
 int hdmitx21_timing_size(void);
 void hdmitx21_set_clk(struct hdmitx_dev *hdev);
+const struct hdmi_timing *hdmitx_mode_vic_to_hdmi_timing(enum hdmi_vic vic);
 const struct hdmi_timing *hdmitx21_gettiming_from_vic(enum hdmi_vic vic);
+const struct hdmi_timing *hdmitx_mode_match_vesa_timing(struct vesa_standard_timing *t);
+const struct hdmi_timing *hdmitx_mode_match_dtd_timing(struct dtd *t);
+
 struct hdmi_format_para *hdmitx21_get_fmtpara(const char *mode,
 	const char *attr);
 struct hdmi_format_para *hdmitx21_get_fmt_name(char const *name, char const *attr);
@@ -145,8 +155,18 @@ void sdr_scene_process(hdmi_data_t *hdmi_data,
 void hdr_scene_process(struct input_hdmi_data *hdmi_data,
 	scene_output_info_t *output_info);
 bool _is_y420_vic(enum hdmi_vic vic);
+bool hdmitx_mode_validate_y420_vic(enum hdmi_vic vic);
 
 void get_hdmi_data(struct hdmitx_dev *hdev, hdmi_data_t *data);
+
+bool hdmitx_edid_check_y420_support(struct rx_cap *prxcap,
+	enum hdmi_vic vic);
+
+bool hdmitx_edid_validate_mode(struct rx_cap *rxcap, u32 vic);
+int hdmitx_edid_validate_format_para(struct tx_cap *hdmi_tx_cap,
+		struct rx_cap *prxcap, struct hdmi_format_para *para, u8 dsc_policy);
+bool hdmitx_edid_only_support_sd(struct rx_cap *prxcap);
+
 /* bool pre_process_str(char *name); */
 struct hdmi_format_para *hdmi_tst_fmt_name(char const *name, char const *attr);
 bool is_support_4k(void);
@@ -187,10 +207,17 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 void hdmitx_dsc_cvtem_pkt_send(struct dsc_pps_data_s *pps,
 			       struct hdmi_timing *timing);
 void hdmitx_dsc_cvtem_pkt_disable(void);
+
+#ifdef CONFIG_AML_DSC_ENC
+bool edid_check_dsc_support(struct tx_cap *hdmi_tx_cap,
+		struct rx_cap *rxcap, struct hdmi_format_para *para, u8 dsc_policy);
+#endif
 #undef printk
 #define printk printf
 #undef pr_info
 #define pr_info printf
+
+#define module_param_array(...);
 
 // TODO
 #define hdmitx_debug() printf("hdmitx21: %s[%d]\n", __func__, __LINE__)

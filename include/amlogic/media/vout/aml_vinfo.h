@@ -6,6 +6,15 @@
 #ifndef __AML_VINFO_H_
 #define __AML_VINFO_H_
 
+#define LATENCY_INVALID_UNKNOWN	0
+#define LATENCY_NOT_SUPPORT		0xffff
+struct rx_av_latency {
+	unsigned int vLatency;
+	unsigned int aLatency;
+	unsigned int i_vLatency;
+	unsigned int i_aLatency;
+};
+
 struct vinfo_s {
 	ushort width;  /* Number of columns (i.e. 160) */
 	ushort height; /* Number of rows (i.e. 100) */
@@ -33,6 +42,106 @@ struct vinfo_s {
 	u8 vpp_post_out_color_fmt;
 };
 
+/*
+ *hdr_dynamic_type
+ * 0x0001: type_1_hdr_metadata_version
+ * 0x0002: ts_103_433_spec_version
+ * 0x0003: itu_t_h265_spec_version
+ * 0x0004: type_4_hdr_metadata_version
+ */
+struct hdr_dynamic {
+	unsigned int type;
+	unsigned char support_flags;
+	unsigned int of_len;   /*optional_fields length*/
+	unsigned char optional_fields[28];
+};
+
+struct hdr10_plus_info {
+	u32 ieeeoui;
+	u8 length;
+	u8 application_version;
+};
+
+struct cuva_info {
+	u32 cuva_support;
+	u8 rawdata[15];
+	u8 length;
+	u32 ieeeoui;
+	u8 system_start_code;
+	u8 version_code;
+	u32 display_max_lum;
+	u16 display_min_lum;
+	u8 monitor_mode_sup;
+	u8 rx_mode_sup;
+};
+
+/* SBTM EDID capabilities */
+struct sbtm_info {
+	unsigned char sbtm_support: 1;
+	unsigned char max_sbtm_ver: 4;
+	unsigned char grdm_support: 2;
+	unsigned char drdm_ind: 1;
+	unsigned char hgig_cat_drdm_sel: 3;
+	unsigned char: 1;
+	unsigned char use_hgig_drdm: 1;
+	unsigned char maxrgb: 1;
+	unsigned char gamut: 2;
+	unsigned short red_x;
+	unsigned short red_y;
+	unsigned short green_x;
+	unsigned short green_y;
+	unsigned short blue_x;
+	unsigned short blue_y;
+	unsigned short white_x;
+	unsigned short white_y;
+	unsigned char min_bright_10;
+	unsigned char peak_bright_100;
+	unsigned char p0_exp: 2;
+	unsigned char p0_mant: 6;
+	unsigned char peak_bright_p0;
+	unsigned char p1_exp: 2;
+	unsigned char p1_mant: 6;
+	unsigned char peak_bright_p1;
+	unsigned char p2_exp: 2;
+	unsigned char p2_mant: 6;
+	unsigned char peak_bright_p2;
+	unsigned char p3_exp: 2;
+	unsigned char p3_mant: 6;
+	unsigned char peak_bright_p3;
+};
+
+#define HDR_SUP_EOTF_SDR			BIT(0)
+#define HDR_SUP_EOTF_HDR			BIT(1)
+#define HDR_SUP_EOTF_SMPTE_ST_2084	BIT(2)
+#define HDR_SUP_EOTF_HLG			BIT(3)
+
+struct hdr_info {
+/* RX EDID hdr support types */
+	/* hdr_support: bit0/SDR bit1/HDR bit2/SMPTE2084 bit3/HLG */
+	u32 hdr_support;
+	unsigned char static_metadata_type1;
+	unsigned char rawdata[7];
+/*
+ *dynamic_info[0] expresses type1's parameters certainly
+ *dynamic_info[1] expresses type2's parameters certainly
+ *dynamic_info[2] expresses type3's parameters certainly
+ *dynamic_info[3] expresses type4's parameters certainly
+ *if some types don't exist, the corresponding dynamic_info
+ *is zero instead of inexistence
+ */
+	struct hdr_dynamic dynamic_info[4];
+	struct hdr10_plus_info hdr10plus_info;
+/*bit7:BT2020RGB    bit6:BT2020YCC bit5:BT2020cYCC bit4:adobeRGB*/
+/*bit3:adobeYCC601 bit2:sYCC601     bit1:xvYCC709    bit0:xvYCC601*/
+	u8 colorimetry_support; /* RX EDID colorimetry support types */
+	u32 lumi_max; /* RX EDID Lumi Max value */
+	u32 lumi_avg; /* RX EDID Lumi Avg value */
+	u32 lumi_min; /* RX EDID Lumi Min value */
+	u32 lumi_peak; /* RX EDID Lumi Peak value */
+	u32 ldim_support; /* RX EDID Local Dimming Support */
+	struct cuva_info cuva_info;
+	struct sbtm_info sbtm_info; /* TV SBTM EDID capabilities */
+};
 
 /************************************************************************/
 /* ** BITMAP DISPLAY SUPPORT						*/
@@ -49,26 +158,6 @@ struct vinfo_s {
  */
 #define CONFIG_SYS_HIGH	0	/* Pins are active high			*/
 #define CONFIG_SYS_LOW		1	/* Pins are active low			*/
-
-#define LCD_COLOR2	2
-#define LCD_COLOR4	4
-#define LCD_COLOR8	8
-#define LCD_COLOR16	16
-#define LCD_COLOR24	24
-#define LCD_COLOR32	32
-
-
-/*----------------------------------------------------------------------*/
-#if defined(CONFIG_LCD_INFO_BELOW_LOGO)
-# define LCD_INFO_X		0
-# define LCD_INFO_Y		(BMP_LOGO_HEIGHT + VIDEO_FONT_HEIGHT)
-#elif defined(CONFIG_LCD_LOGO)
-# define LCD_INFO_X		(BMP_LOGO_WIDTH + 4 * VIDEO_FONT_WIDTH)
-# define LCD_INFO_Y		(VIDEO_FONT_HEIGHT)
-#else
-# define LCD_INFO_X		(VIDEO_FONT_WIDTH)
-# define LCD_INFO_Y		(VIDEO_FONT_HEIGHT)
-#endif
 
 /* Calculate nr. of bits per pixel  and nr. of colors */
 #define NBITS(bit_code)		(bit_code)

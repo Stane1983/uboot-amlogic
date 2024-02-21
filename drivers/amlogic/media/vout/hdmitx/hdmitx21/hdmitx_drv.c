@@ -1637,7 +1637,7 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 	/* null char needed to terminate the string
 	 * otherwise garbage in checksum logopara
 	 */
-	memcpy(checksum, hdev->RXCap.checksum, 10);
+	memcpy(checksum, hdev->RXCap.hdmichecksum, 10);
 	checksum[10] = '\0';
 	env_set("hdmichecksum", (const char *)checksum);
 	if (hdev->qms_en) {
@@ -2929,4 +2929,3 @@ void hdmitx21_send_sbtm_pkt(void)
 
 	hdmi_sbtm_infoframe_rawset(hb, pb);
 }
-

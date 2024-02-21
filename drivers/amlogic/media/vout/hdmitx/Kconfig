@@ -10,4 +10,6 @@ source "drivers/amlogic/media/vout/hdmitx/hdmitx20/Kconfig"
 
 source "drivers/amlogic/media/vout/hdmitx/hdmitx21/Kconfig"
 
+source "drivers/amlogic/media/vout/hdmitx/hdmitx_common/Kconfig"
+
 endmenu

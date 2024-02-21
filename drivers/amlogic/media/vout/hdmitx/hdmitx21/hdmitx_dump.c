@@ -55,7 +55,7 @@ void hdmitx21_dump_regs(void)
 	dump32(PWRCTRL_PWR_ACK0, PWRCTRL_A73TOP_FSM_JUMP);
 	//((0x1b00 << 2) + 0xff000000) ~ ((0x1bea << 2) + 0xff000000))
 	dump32(ENCI_VIDEO_MODE, ENCP_VRR_CTRL1);
-	if (hdev->chip_type == MESON_CPU_ID_S7) {
+	if (hdev->chip_type == MESON_CPU_ID_S7 || hdev->chip_type == MESON_CPU_ID_S1A) {
 		//((0x1c00 << 2) + 0xff000000) ~((0x1cd7 << 2) + 0xff000000))
 		dump32(ENCI_DVI_HSO_BEGIN, ENCL_INBUF_FIX_PIX_NUM);
 	} else {

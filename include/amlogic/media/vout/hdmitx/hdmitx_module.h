@@ -10,6 +10,7 @@
 
 #include "hdmi_common.h"
 #include "hdmitx_ext.h"
+#include <amlogic/media/vout/hdmi_tx_repeater.h>
 
 struct hdmitx_dev {
 	unsigned char rx_edid[512]; /* some RX may exceeds 256Bytes */
@@ -25,7 +26,7 @@ struct hdmitx_dev {
 		void (*set_div40)(bool div40);
 		void (*output_blank)(unsigned int blank);
 	} hwop;
-	unsigned char rawedid[EDID_BLK_SIZE * EDID_BLK_NO];
+	unsigned char rawedid[128 * EDID_BLK_NO];
 	struct rx_cap RXCap;
 	struct hdmi_format_para *para;
 	enum hdmi_vic vic;

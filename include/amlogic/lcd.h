@@ -167,8 +167,8 @@ void lcd_sync(void);
 #endif
 
 /* Calculate nr. of bits per pixel  and nr. of colors */
-#define NBITS(bit_code)		(1 << (bit_code))
-#define NCOLORS(bit_code)	(1 << NBITS(bit_code))
+//#define NBITS(bit_code)		(1 << (bit_code))
+//#define NCOLORS(bit_code)	(1 << NBITS(bit_code))
 
 #if LCD_BPP == LCD_COLOR8
 # define CONSOLE_COLOR_BLACK	0

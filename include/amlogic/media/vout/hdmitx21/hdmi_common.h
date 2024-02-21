@@ -222,8 +222,74 @@ enum hdmi_vic {
 	HDMI_217_10240x4320p120_64x27	= 217,
 	HDMI_218_4096x2160p100_256x135	= 218,
 	HDMI_219_4096x2160p120_256x135	= 219,
-	HDMI_VIC_END,
+
+	/*Vesa mode which dont have vic, we specify value for them also*/
+	HDMIV_0_640x480p60hz = HDMITX_VESA_OFFSET,
+	HDMIV_1_800x480p60hz,
+	HDMIV_2_800x600p60hz,
+	HDMIV_3_852x480p60hz,
+	HDMIV_4_854x480p60hz,
+	HDMIV_5_1024x600p60hz,
+	HDMIV_6_1024x768p60hz,
+	HDMIV_7_1152x864p75hz,
+	HDMIV_8_1280x768p60hz,
+	HDMIV_9_1280x800p60hz,
+	HDMIV_10_1280x960p60hz,
+	HDMIV_11_1280x1024p60hz,
+	HDMIV_12_1360x768p60hz,
+	HDMIV_13_1366x768p60hz,
+	HDMIV_14_1400x1050p60hz,
+	HDMIV_15_1440x900p60hz,
+	HDMIV_16_1440x2560p60hz,
+	HDMIV_17_1600x900p60hz,
+	HDMIV_18_1600x1200p60hz,
+	HDMIV_19_1680x1050p60hz,
+	HDMIV_20_1920x1200p60hz,
+	HDMIV_21_2048x1080p24hz,
+	HDMIV_22_2160x1200p90hz,
+	HDMIV_23_2560x1600p60hz,
+	HDMIV_24_3440x1440p60hz,
+	HDMIV_25_2400x1200p90hz,
+	HDMIV_26_3840x1080p60hz,
+	/*not supported in timing*/
+	HDMIV_2560x1080p60hz,
+	HDMIV_2560x1440p60hz,
+	HDMIV_1280x600p60hz,
+	HDMIV_2560x1600p60hz,
+	HDMIV_3440x1440p60hz,
+	HDMIV_2400x1200p90hz,
+
+	HDMI_VIC_END = 0xFFFF,
 };
+
+/* Compliance with old definitions */
+#define HDMIV_640x480p60hz		HDMIV_0_640x480p60hz
+#define HDMIV_800x480p60hz		HDMIV_1_800x480p60hz
+#define HDMIV_800x600p60hz		HDMIV_2_800x600p60hz
+#define HDMIV_852x480p60hz		HDMIV_3_852x480p60hz
+#define HDMIV_854x480p60hz		HDMIV_4_854x480p60hz
+#define HDMIV_1024x600p60hz		HDMIV_5_1024x600p60hz
+#define HDMIV_1024x768p60hz		HDMIV_6_1024x768p60hz
+#define HDMIV_1152x864p75hz		HDMIV_7_1152x864p75hz
+#define HDMIV_1280x768p60hz		HDMIV_8_1280x768p60hz
+#define HDMIV_1280x800p60hz		HDMIV_9_1280x800p60hz
+#define HDMIV_1280x960p60hz		HDMIV_10_1280x960p60hz
+#define HDMIV_1280x1024p60hz	HDMIV_11_1280x1024p60hz
+#define HDMIV_1360x768p60hz		HDMIV_12_1360x768p60hz
+#define HDMIV_1366x768p60hz		HDMIV_13_1366x768p60hz
+#define HDMIV_1400x1050p60hz	HDMIV_14_1400x1050p60hz
+#define HDMIV_1440x900p60hz		HDMIV_15_1440x900p60hz
+#define HDMIV_1440x2560p60hz	HDMIV_16_1440x2560p60hz
+#define HDMIV_1600x900p60hz		HDMIV_17_1600x900p60hz
+#define HDMIV_1600x1200p60hz	HDMIV_18_1600x1200p60hz
+#define HDMIV_1680x1050p60hz	HDMIV_19_1680x1050p60hz
+#define HDMIV_1920x1200p60hz	HDMIV_20_1920x1200p60hz
+#define HDMIV_2048x1080p24hz	HDMIV_21_2048x1080p24hz
+#define HDMIV_2160x1200p90hz	HDMIV_22_2160x1200p90hz
+#define HDMIV_2560x1600p60hz	HDMIV_23_2560x1600p60hz
+#define HDMIV_3440x1440p60hz	HDMIV_24_3440x1440p60hz
+#define HDMIV_2400x1200p90hz	HDMIV_25_2400x1200p90hz
+#define HDMIV_3840x1080p60hz	HDMIV_26_3840x1080p60hz
 
 #define HDMI_0_UNKNOWN HDMI_UNKNOWN
 
@@ -431,6 +497,16 @@ struct dtd {
 	enum hdmi_vic vic;
 };
 
+struct vesa_standard_timing {
+	unsigned short hactive;
+	unsigned short vactive;
+	unsigned short hblank;
+	unsigned short vblank;
+	unsigned short vsync;
+	unsigned short tmds_clk; /* Value = Pixel clock ?? 10,000 */
+	enum hdmi_vic vesa_timing;
+};
+
 /* Dolby Version support information from EDID*/
 /* Refer to DV Spec version2.9 page26 to page39*/
 enum block_type {
@@ -446,24 +522,6 @@ enum block_type {
 
 #define HDMI_PACKET_VEND        1
 #define HDMI_PACKET_DRM		0x86
-
-struct hdr_info {
-	unsigned int hdr_sup_eotf_sdr:1;
-	unsigned int hdr_sup_eotf_hdr:1;
-	unsigned int hdr_sup_eotf_smpte_st_2084:1;
-	unsigned int hdr_sup_eotf_hlg:1;
-	unsigned int hdr_sup_SMD_type1:1;
-	unsigned char hdr_lum_max;
-	unsigned char hdr_lum_avg;
-	unsigned char hdr_lum_min;
-	unsigned char rawdata[7];
-};
-
-struct hdr10_plus_info {
-	u32 ieeeoui;
-	u8 length;
-	u8 application_version;
-};
 
 enum hdmi_hdr_transfer {
 	T_UNKNOWN = 0,
@@ -498,6 +556,19 @@ enum hdmi_hdr_color {
 	C_SMPTE240M,
 	C_FILM,
 	C_BT2020,
+};
+
+enum hdmi_3d_type {
+	T3D_FRAME_PACKING = 0,
+	T3D_FIELD_ALTER = 1,
+	T3D_LINE_ALTER = 2,
+	T3D_SBS_FULL = 3,
+	T3D_L_DEPTH = 4,
+	T3D_L_DEPTH_GRAPHICS = 5,
+	T3D_TAB = 6, /* Top and Buttom */
+	T3D_RSVD = 7,
+	T3D_SBS_HALF = 8,
+	T3D_DISABLE,
 };
 
 /* master_display_info for display device */
@@ -550,9 +621,9 @@ struct dv_info {
 	u8 dm_major_ver;
 	u8 dm_minor_ver;
 	u8 dm_version;
-	u8 tmaxLUM;
+	u8 tmax_lum;
 	u8 colorimetry:1;/* ver1*/
-	u8 tminLUM;
+	u8 tmin_lum;
 	u8 low_latency;/* ver1_12 and 2*/
 	u8 sup_backlight_control:1;/*only ver2*/
 	u8 backlt_min_luma;/*only ver2*/
@@ -598,104 +669,6 @@ struct dv_vsif_para {
 			u8 auxiliary_debug0;
 		} ver2;
 	} vers;
-};
-
-#define Y420CMDB_MAX 32
-#define VIC_MAX_NUM  256
-#define SVD_VIC_MAX_NUM  128
-struct rx_cap {
-	unsigned int native_Mode;
-	/*video*/
-	unsigned int VIC[VIC_MAX_NUM];
-	unsigned int SVD_VIC[SVD_VIC_MAX_NUM]; /* used to store SVD in VDB */
-	unsigned int y420_vic[Y420_VIC_MAX_NUM];
-	unsigned int VIC_count;
-	unsigned int SVD_VIC_count;
-	unsigned int native_VIC;
-	/*vendor*/
-	unsigned int IEEEOUI;
-	unsigned int Max_TMDS_Clock1; /* HDMI1.4b TMDS_CLK */
-	unsigned int HF_IEEEOUI;	/* For HDMI Forum */
-	unsigned int Max_TMDS_Clock2; /* HDMI2.0 TMDS_CLK */
-	/* CEA861-F, Table 56, Colorimetry Data Block */
-	unsigned int colorimetry_data;
-	unsigned int scdc_present:1;
-	unsigned int scdc_rr_capable:1; /* SCDC read request */
-	unsigned int lte_340mcsc_scramble:1;
-	unsigned support_ycbcr444_flag:1;
-	unsigned support_ycbcr422_flag:1;
-	unsigned int dc_y444:1;
-	unsigned int dc_30bit:1;
-	unsigned int dc_36bit:1;
-	unsigned int dc_48bit:1;
-	unsigned int dc_y420:1;
-	unsigned int dc_30bit_420:1;
-	unsigned int dc_36bit_420:1;
-	unsigned int dc_48bit_420:1;
-	/* for frl */
-	enum frl_rate_enum max_frl_rate;
-	/* for dsc */
-	u8 dsc_10bpc:1;
-	u8 dsc_12bpc:1;
-	u8 dsc_16bpc:1;
-	u8 dsc_all_bpp:1;
-	u8 dsc_native_420:1;
-	u8 dsc_1p2:1;
-	u8 dsc_max_slices:4;
-	u8 dsc_max_frl_rate:4;
-	u8 dsc_total_chunk_bytes:6;
-
-	u32 qms_tfr_max:1;
-	u32 qms:1;
-	u32 mdelta:1;
-	u32 qms_tfr_min:1;
-	u32 neg_mvrr:1;
-	u32 fva:1;
-	u32 allm:1;
-	u32 fapa_start_loc:1;
-	u32 fapa_end_extended:1;
-	u32 vrr_max;
-	u32 vrr_min;
-	unsigned char edid_version;
-	unsigned char edid_revision;
-	unsigned int ColorDeepSupport;
-	unsigned int Video_Latency;
-	unsigned int Audio_Latency;
-	unsigned int Interlaced_Video_Latency;
-	unsigned int Interlaced_Audio_Latency;
-	unsigned int threeD_present;
-	unsigned int threeD_Multi_present;
-	unsigned int hdmi_vic_LEN;
-	enum hdmi_vic preferred_mode;
-	struct dtd dtd[16];
-	unsigned char dtd_idx;
-	unsigned char flag_vfpdb;
-	unsigned char number_of_dtd;
-	unsigned char pref_colorspace;
-	struct hdr_info hdr_info;
-	struct dv_info dv_info;
-	struct hdr10_plus_info hdr10plus_info;
-	/*blk0 check sum*/
-	unsigned char chksum;
-	/*blk0-3 check sum*/
-	char checksum[10];
-	unsigned char edid_changed;
-	/* for total = 32*8 = 256 VICs */
-	/* for Y420CMDB bitmap */
-	unsigned char bitmap_valid;
-	unsigned char bitmap_length;
-	unsigned char y420_all_vic;
-	unsigned char y420cmdb_bitmap[Y420CMDB_MAX];
-	/* for DV cts */
-	bool ifdb_present;
-	/* IFDB, currently only use below node */
-	u8 additional_vsif_num;
-	/* edid_check = 0 is default check
-	 * Bit 0     (0x01)  don't check block header
-	 * Bit 1     (0x02)  don't check edid checksum
-	 * Bit 0+1   (0x03)  don't check both block header and checksum
-	 */
-	u8 edid_check;
 };
 
 enum color_attr_type {
@@ -779,16 +752,24 @@ struct parse_cr {
 #define EDID_BLK_NO	8
 #define EDID_BLK_SIZE	128
 struct hdmi_format_para {
-	char *sname; /* link to timing.sname or name */
-	enum hdmi_color_depth cd; /* cd8, cd10 or cd12 */
-	enum hdmi_colorspace cs; /* rgb, y444, y422, y420 */
-	enum hdmi_color_range cr; /* limit, full */
-	unsigned int pixel_repetition_factor;
-	unsigned int progress_mode:1; /* 0: Interlace  1: Progressive */
-	unsigned int scrambler_en:1;
-	unsigned int tmds_clk_div40:1;
-	unsigned int tmds_clk; /* Unit: 1000 */
+	enum hdmi_vic vic;
+	unsigned char *name;
+	unsigned char *sname;
+
 	struct hdmi_timing timing;
+
+	enum hdmi_color_depth cd; /* cd8, cd10 or cd12 */
+	enum hdmi_colorspace cs; /* 0/1/2/3: rgb/422/444/420 */
+	enum hdmi_quantization_range cr; /* limit, full */
+	u32 frac_mode;
+
+	/*hw related information, set in calc_format_para() func*/
+	u32 scrambler_en:1;
+	u32 tmds_clk_div40:1;
+	u32 tmds_clk; /* Unit: 1000 */
+	u32 dsc_en;
+	enum frl_rate_enum frl_rate;
+	/*hw related information end*/
 };
 
 #define AUDIO_PARA_MAX_NUM       14
@@ -803,38 +784,6 @@ struct hdmi_audio_fs_ncts {
 		u32 cts_48bit;
 	} array[AUDIO_PARA_MAX_NUM];
 	u32 def_n;
-};
-
-/* Sampling Freq Fs:
- * 0 - Refer to Stream Header;
- * 1 - 32KHz;
- * 2 - 44.1KHz;
- * 3 - 48KHz;
- * 4 - 88.2KHz...
- */
-enum hdmi_audio_fs {
-	FS_REFER_TO_STREAM = 0,
-	FS_32K = 1,
-	FS_44K1 = 2,
-	FS_48K = 3,
-	FS_88K2 = 4,
-	FS_96K = 5,
-	FS_176K4 = 6,
-	FS_192K = 7,
-	FS_768K = 8,
-	FS_MAX,
-};
-
-enum hdmi_audio_chnnum {
-	CC_REFER_TO_STREAM = 0,
-	CC_2CH,
-	CC_3CH,
-	CC_4CH,
-	CC_5CH,
-	CC_6CH,
-	CC_7CH,
-	CC_8CH,
-	CC_MAX_CH
 };
 
 struct hdmi_support_mode {
@@ -950,5 +899,34 @@ enum pkt_op {
 	GEN5_PKT,
 	VTEM_PKT,
 };
+
+struct tx_cap {
+	/* configure in dts file */
+	u8 tx_max_frl_rate;
+	/* default 600Mhz, if res_1080p, then 225Mhz */
+	u32 tx_max_tmds_clk;
+	bool dsc_capable;
+};
+
+/* half for valid vic, half for vic with y420*/
+#define VIC_MAX_NUM 512
+#define SVD_VIC_MAX_NUM 128
+#define VESA_MAX_TIMING 64
+#define Y420_VIC_MAX_NUM 32 /* vic numbers for y420 */
+
+#define HDMITX_VESA_OFFSET	0x300
+
+/***********************************************************************
+ *                   hdmi debug printk
+ **********************************************************************/
+#define VID         "video: "
+#define AUD         "audio: "
+#define CEC         "cec: "
+#define EDID        "edid: "
+#define HDCP        "hdcp: "
+#define SYS         "system: "
+#define HPD         "hpd: "
+#define HW          "hw: "
+#define REG         "reg: "
 
 #endif
