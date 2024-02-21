@@ -20,7 +20,7 @@
 #ifdef CONFIG_AML_LCD
 int glcd_cus_ctrl_cnt;
 
-static unsigned short handle_lcd_cus_ctrl_ufr(unsigned char *p, unsigned char param_flag)
+static unsigned short handle_lcd_cus_ctrl_ufr(unsigned char *p, unsigned short *ctrl_attr)
 {
 	const char *ini_value = NULL;
 	unsigned short offset = 0, size;
@@ -86,7 +86,7 @@ static unsigned short handle_lcd_cus_ctrl_ufr(unsigned char *p, unsigned char pa
 	return size;
 }
 
-static unsigned short handle_lcd_cus_ctrl_dfr(unsigned char *p, unsigned char param_flag)
+static unsigned short handle_lcd_cus_ctrl_dfr(unsigned char *p, unsigned short *ctrl_attr)
 {
 	struct lcd_dfr_timing_s dfr_timing;
 	const char *ini_value = NULL;
@@ -216,17 +216,17 @@ static unsigned short handle_lcd_cus_ctrl_dfr(unsigned char *p, unsigned char pa
 	return offset;
 }
 
-static unsigned short handle_lcd_cus_ctrl_extend_tmg(unsigned char *p, unsigned char param_flag)
+static unsigned short handle_lcd_cus_ctrl_extend_tmg(unsigned char *p, unsigned short *ctrl_attr)
 {
 	struct lcd_cus_ctrl_extend_tmg_s extend_tmg;
 	const char *ini_value = NULL;
 	char str[30];
 	unsigned short offset = 0, tmg_size;
-	unsigned char tmg_group_cnt = param_flag;
+	unsigned int tmg_group_cnt = 0;
 	int spw, spol, i;
 
 	tmg_size = sizeof(struct lcd_cus_ctrl_extend_tmg_s);
-	for (i = 0; i < tmg_group_cnt; i++) {
+	for (i = 0; i < 15; i++) {
 		sprintf(str, "extend_tmg_%d_hactive", i);
 		ini_value = IniGetString("lcd_Attr", str, "none");
 		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
@@ -393,12 +393,15 @@ static unsigned short handle_lcd_cus_ctrl_extend_tmg(unsigned char *p, unsigned 
 
 		memcpy((p + offset), &extend_tmg, tmg_size);
 		offset += tmg_size;
+		tmg_group_cnt++;
 	}
+	*ctrl_attr &= (unsigned short)~0xf0;
+	*ctrl_attr |= ((unsigned short)tmg_group_cnt << 4);//bit[7:4]: tmg_group_cnt
 
 	return offset;
 }
 
-static unsigned short handle_lcd_cus_ctrl_clk_adv(unsigned char *p, unsigned char param_flag)
+static unsigned short handle_lcd_cus_ctrl_clk_adv(unsigned char *p, unsigned short *ctrl_attr)
 {
 	const char *ini_value = NULL;
 	unsigned short offset = 0;
@@ -418,14 +421,107 @@ static unsigned short handle_lcd_cus_ctrl_clk_adv(unsigned char *p, unsigned cha
 	return offset;
 }
 
+static unsigned short handle_lcd_cus_ctrl_swpdf(unsigned char *p, unsigned short *ctrl_attr)
+{
+	const char *ini_value = NULL;
+	char str[30];
+	unsigned short offset = 0, threshold_size, block_size, act_size;
+	unsigned short pattern_cnt = 0;
+	unsigned int num_cnt, num_buf[128];
+	int i, k, n, block_num, act_num;
+	unsigned short threshold[2];
+	struct lcd_cus_swpdf_block_s block[SWPDF_MAX_BLOCK];
+	struct lcd_cus_swpdf_act_s act[SWPDF_MAX_ACT];
+
+	threshold_size = sizeof(threshold);
+	block_size = sizeof(struct lcd_cus_swpdf_block_s);
+	act_size = sizeof(struct lcd_cus_swpdf_act_s);
+/*
+ * block_num
+ * act_num
+ * threshold
+ * block[0] block[1] ... block[block_num - 1]
+ * act[0] act[1] ... act[act_num - 1]
+ */
+	for (i = 0; i < 32; i++) {
+		sprintf(str, "pattern_%d_threshold", i);
+		ini_value = IniGetString("lcd_Attr", str, "none");
+		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
+			ALOGD("%s, %s is (%s)\n", __func__, str, ini_value);
+		if (strcmp(ini_value, "none") == 0)
+			continue;
+		num_cnt = trans_buffer_data(ini_value, num_buf);
+		if (num_cnt != 2)
+			continue;
+		threshold[0] = (unsigned short)num_buf[0];
+		threshold[1] = (unsigned short)num_buf[1];
+
+		sprintf(str, "pattern_%d_block", i);
+		ini_value = IniGetString("lcd_Attr", str, "none");
+		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
+			ALOGD("%s, %s is (%s)\n", __func__, str, ini_value);
+		if (strcmp(ini_value, "none") == 0)
+			continue;
+		num_cnt = trans_buffer_data(ini_value, num_buf);
+		block_num = num_cnt / 8;
+		if (num_cnt % 8 || block_num > SWPDF_MAX_BLOCK)
+			continue;
+		for (k = 0, n = 0; k < block_num; k++, n += 8) {
+			block[k].x = (unsigned short)num_buf[n + 0];
+			block[k].y = (unsigned short)num_buf[n + 1];
+			block[k].w = (unsigned char)num_buf[n + 2];
+			block[k].h = (unsigned char)num_buf[n + 3];
+			block[k].mat_val0 = num_buf[n + 4];
+			block[k].mat_val1 = num_buf[n + 5];
+			block[k].mat_val2 = num_buf[n + 6];
+			block[k].mat_val3 = num_buf[n + 7];
+		}
+
+		sprintf(str, "pattern_%d_act", i);
+		ini_value = IniGetString("lcd_Attr", str, "none");
+		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
+			ALOGD("%s, %s is (%s)\n", __func__, str, ini_value);
+		if (strcmp(ini_value, "none") == 0)
+			continue;
+		num_cnt = trans_buffer_data(ini_value, num_buf);
+		act_num = num_cnt / 4;
+		if (num_cnt % 4 || act_num > SWPDF_MAX_ACT)
+			continue;
+		for (k = 0, n = 0; k < act_num; k++, n += 4) {
+			act[k].reg = num_buf[n + 0];
+			act[k].mask = num_buf[n + 1];
+			act[k].val = num_buf[n + 2];
+			act[k].bus = num_buf[n + 3];
+		}
+
+		*(p + offset + 0) = (unsigned char)block_num;
+		*(p + offset + 1) = (unsigned char)act_num;
+		offset += 2;
+
+		memcpy((p + offset), threshold, threshold_size);
+		offset += threshold_size;
+
+		memcpy((p + offset), block, block_size * block_num);
+		offset += block_size * block_num;
+
+		memcpy((p + offset), act, act_size * act_num);
+		offset += act_size * act_num;
+		pattern_cnt++;
+	}
+
+	*ctrl_attr &= (unsigned short)~0xff;
+	*ctrl_attr |= pattern_cnt;//bit[7:0]: pattern_cnt
+
+	return offset;
+}
+
 int handle_lcd_cus_ctrl(struct lcd_v2_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
 	char str[30];
 	unsigned char *p;
 	unsigned short offset, param_size, ctrl_attr;
-	unsigned short *p_param_size;
-	unsigned char attr_type, param_flag;
+	unsigned int attr_type;
 	int i;
 
 	ini_value = IniGetString("lcd_Attr", "ctrl_attr_en", "none");
@@ -445,39 +541,39 @@ int handle_lcd_cus_ctrl(struct lcd_v2_attr_s *p_attr)
 				ALOGD("%s, %s is (%s)\n", __func__, str, ini_value);
 		}
 		ctrl_attr = strtoul(ini_value, NULL, 0);
-		*(unsigned short *)(p + offset) = ctrl_attr;
-		offset += 2;
-
-		p_param_size = (unsigned short *)(p + offset);
-		offset += 2;
 
 		attr_type = (ctrl_attr >> 8) & 0xff;
-		param_flag = (ctrl_attr >> 4) & 0xf;
 		switch (attr_type) {
 		case LCD_CUS_CTRL_TYPE_UFR:
-			param_size = handle_lcd_cus_ctrl_ufr((p + offset), param_flag);
+			param_size = handle_lcd_cus_ctrl_ufr((p + offset + 4), &ctrl_attr);
 			break;
 		case LCD_CUS_CTRL_TYPE_DFR:
-			param_size = handle_lcd_cus_ctrl_dfr((p + offset), param_flag);
+			param_size = handle_lcd_cus_ctrl_dfr((p + offset + 4), &ctrl_attr);
 			break;
 		case LCD_CUS_CTRL_TYPE_EXTEND_TMG:
-			param_size = handle_lcd_cus_ctrl_extend_tmg((p + offset), param_flag);
+			param_size = handle_lcd_cus_ctrl_extend_tmg((p + offset + 4), &ctrl_attr);
 			break;
 		case LCD_CUS_CTRL_TYPE_CLK_ADV:
-			param_size = handle_lcd_cus_ctrl_clk_adv((p + offset), param_flag);
+			param_size = handle_lcd_cus_ctrl_clk_adv((p + offset + 4), &ctrl_attr);
 			break;
 		case LCD_CUS_CTRL_TYPE_TCON_SW_POL:
 			param_size = 0;
 			break;
 		case LCD_CUS_CTRL_TYPE_TCON_SW_PDF:
-			param_size = 0;
+			param_size = handle_lcd_cus_ctrl_swpdf((p + offset + 4), &ctrl_attr);
 			break;
 		default:
 			param_size = 0;
 			break;
 		}
+
+		*(unsigned short *)(p + offset) = ctrl_attr;
+		offset += 2;
+
+		*(unsigned short *)(p + offset) = param_size;
+		offset += 2;
+
 		offset += param_size;
-		*p_param_size = param_size;
 	}
 	glcd_cus_ctrl_cnt = 4 + offset;
 	if (glcd_cus_ctrl_cnt > LCD_CUS_CTRL_MAX) {

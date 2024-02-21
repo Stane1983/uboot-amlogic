@@ -251,6 +251,26 @@ struct lcd_cus_ctrl_extend_tmg_s {
 	unsigned int pclk_max;
 };
 
+#define SWPDF_MAX_BLOCK 16
+#define SWPDF_MAX_ACT 16
+struct lcd_cus_swpdf_block_s {
+	unsigned short x;
+	unsigned short y;
+	unsigned char w;
+	unsigned char h;
+	unsigned int mat_val0;
+	unsigned int mat_val1;
+	unsigned int mat_val2;
+	unsigned int mat_val3;
+};
+
+struct lcd_cus_swpdf_act_s {
+	unsigned int reg;
+	unsigned int mask;
+	unsigned int val;
+	unsigned char bus;
+};
+
 #define LCD_CUS_CTRL_MAX        18244
 #define LCD_CUS_CTRL_DATA_MAX   18240
 struct lcd_cus_ctrl_s {
