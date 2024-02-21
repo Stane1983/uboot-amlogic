@@ -474,6 +474,12 @@ export CFLAGS_UASAN
 
 endif
 
+ifeq ("$(CONFIG_NOVERBOSE_BUILD)", "1")
+KBUILD_CFLAGS += -DCONFIG_NOVERBOSE_BUILD
+CFLAGS += -DCONFIG_NOVERBOSE_BUILD
+export CFLAGS
+endif
+
 ifeq ($(cc-name),clang)
 ifneq ($(CROSS_COMPILE),)
 CLANG_TARGET	:= --target=$(notdir $(CROSS_COMPILE:%-=%))

@@ -2159,6 +2159,12 @@ __attribute__ ((section(".misc_param"))) = {
 	/* disable vcc5v, set GPIOZ_6 to low */
 	{ PADCTRL_GPIOZ_O,	   (0 << 6),	  (0 << 6), 0, 0, 0 },
 	{ PADCTRL_GPIOZ_OEN,	   (0 << 6),	  (0 << 6), 0, 0, 0 },
+#ifdef CONFIG_NOVERBOSE_BUILD
+	/* use acs flag to disable uart print in each blx
+	 * reg must be UART_B_WFIFO, flags: 1 --> disable uart print, 0: enable
+	 */
+	{ UART_B_WFIFO, 0, 0xffffffff, 0, 1, 0 },
+#endif
 };
 
 #define __section(x)    __attribute__((__section__(x)))
