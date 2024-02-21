@@ -5668,7 +5668,7 @@ DDR_TEST_START:
 
 	printf("\rEnd ddr test.\n");
 
-	return 0;
+	return error_count;
 
 usage:
 	cmd_usage(cmdtp);
@@ -10154,6 +10154,189 @@ int do_ddr_auto_fastboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char *const
 	return 1;
 }
 
+#define AM_DDR_FREQ_CTRL                           ((0x000a  << 2) + 0xfe036c00)
+  //bit 31.  write trigger the DDR frequency change procedure.  read =0 the frequency change done.
+  //bit 30     currunt FREQ selection.  it can forced to change to select which frequency to select, or it can auto changed by FREQ change hardware.
+  //bit 29     next freq for frequency change.
+  //bit 12.    ddr_dpll_inv_sel in frequency1 for 4xclk inverter.
+  //bit 11:10. ddr_dpll_clk_en in frequency1 for 4xclk and clock output.
+  //bit 9:8. pll_reseve in frequency1. pll_reseve[5:4] used to tune 2 DMC channel clock phase.
+  //bit 6:4   OD1 number in frequency 1.
+  //bit 2:0.  OD  number in frequency 1.
+#define DMC_DRAM_ASR_CTRL                          ((0x018d  << 2) + 0xfe036000)
+#define DMC_DRAM1_ASR_CTRL                         ((0x028d  << 2) + 0xfe036000)
+int do_ddr_dfs_test(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+{
+	check_base_address();
+	int i = 0;
+	int count = 0;
+	char *endp;
+	unsigned int ddr_dfs_test_times = 0;
+	unsigned int init_freq = 0;
+
+	printf("\nargc== 0x%8x\n", argc);
+	for (i = 0; i < argc; i++)
+		printf("\nargv[%d]=%s\n", i, argv[i]);
+	if (argc == 1) {
+		printf("\nplease read help\n");
+	}
+	if (argc > 1) {
+		count = 0;
+		init_freq = simple_strtoull_ddr(argv[count + 1], &endp, 0);
+		if (*argv[count + 1] == 0 || *endp != 0)
+			init_freq = 0;
+	}
+	if (argc > 2) {
+		count = 1;
+		ddr_dfs_test_times = simple_strtoull_ddr(argv[count + 1], &endp, 0);
+		if (*argv[count + 1] == 0 || *endp != 0)
+			ddr_dfs_test_times = 0;
+	}
+
+	unsigned int dfs_address = AM_DDR_FREQ_CTRL;
+
+	unsigned int dfs_old_value = 0;
+	//unsigned int dfs_value_f0 = 0;
+	//unsigned int dfs_value_f1 = 0;
+	unsigned int dfs_cur_fre_sel = 0;
+	unsigned int dfs_new_value = 0;
+	unsigned int error_cur = 0;
+	unsigned int error_total = 0;
+	int argc2 = 0;
+	char *argv2[30];
+
+	dfs_old_value = rd_reg(dfs_address);
+	dfs_cur_fre_sel = (dfs_old_value >> 30) & 1;
+	if (dfs_cur_fre_sel == 0)
+		dfs_new_value = 0xa0000000 | (dfs_old_value & 0x0fffffff);
+	else //if (dfs_cur_fre_sel == 1)
+		dfs_new_value = 0xc0000000 | (dfs_old_value & 0x0fffffff);
+	if (init_freq != dfs_cur_fre_sel) {
+		wr_reg(dfs_address, dfs_new_value);
+	}
+	printf("\nddr dfs freq ");
+	printf("%d to %d,times %d,reg_value %x to %x,err_cur %d total %d\n",
+		dfs_cur_fre_sel, (init_freq) & 1,
+		ddr_dfs_test_times, dfs_old_value,
+		rd_reg(dfs_address), error_cur, error_total);
+	count = 0;
+	while (count < ddr_dfs_test_times) {
+		dfs_old_value = rd_reg(dfs_address);
+		dfs_cur_fre_sel = (dfs_old_value >> 30) & 1;
+		if (dfs_cur_fre_sel == 0)
+			dfs_new_value = 0xa0000000 | (dfs_old_value & 0x0fffffff);
+		else //if (dfs_cur_fre_sel == 1)
+			dfs_new_value = 0xc0000000 | (dfs_old_value & 0x0fffffff);
+		wr_reg(dfs_address, dfs_new_value);
+		//run_command("ddrtest 3", 0);
+		error_cur = do_ddr_test((cmd_tbl_t *)cmdtp, 1, (int)argc2, (argv2));
+		error_total = error_total + error_cur;
+		printf("\nddr dfs %d to %d,times %d,reg_val %x to %x,err_cur %d total %d\n",
+		dfs_cur_fre_sel, (~dfs_cur_fre_sel) & 1,
+		count, dfs_new_value,
+		rd_reg(dfs_address), error_cur, error_total);
+		count = count + 1;
+	}
+	return 1;
+}
+
+int do_ddr_asr_test(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+{
+	check_base_address();
+	int i = 0;
+	int count = 0;
+	char *endp;
+	unsigned int ddr_asr_test_times = 0;
+	unsigned int init_enable = 0;
+	unsigned int asr_override_value = 0;
+
+	printf("\nargc== 0x%8x\n", argc);
+	for (i = 0; i < argc; i++)
+		printf("\nargv[%d]=%s\n", i, argv[i]);
+	if (argc == 1) {
+		printf("\nplease read help\n");
+	}
+	if (argc > 1) {
+		count = 0;
+		init_enable = simple_strtoull_ddr(argv[count + 1], &endp, 0);
+		if (*argv[count + 1] == 0 || *endp != 0)
+			init_enable = 0;
+	}
+	if (argc > 2) {
+		count = 1;
+		ddr_asr_test_times = simple_strtoull_ddr(argv[count + 1], &endp, 0);
+		if (*argv[count + 1] == 0 || *endp != 0)
+			ddr_asr_test_times = 0;
+	}
+	if (argc > 3) {
+		count = 2;
+		asr_override_value = simple_strtoull_ddr(argv[count + 1], &endp, 0);
+		if (*argv[count + 1] == 0 || *endp != 0)
+			asr_override_value = 0;
+	}
+	unsigned int asr_address = DMC_DRAM_ASR_CTRL;
+	unsigned int asr_address1 = DMC_DRAM1_ASR_CTRL;
+	unsigned int asr_enable_value = 0xc0fd1000;//not too quickly
+
+	unsigned int asr_old_value = 0;
+	//unsigned int asr_value_f0 = 0;
+	//unsigned int asr_value_f1 = 0;
+	unsigned int asr_cur_fre_sel = 0;
+	unsigned int asr_new_value = 0;
+	unsigned int error_cur = 0;
+	unsigned int error_total = 0;
+	int argc2 = 0;
+	char *argv2[30];
+
+	if (asr_override_value)
+		asr_enable_value = asr_override_value;
+	asr_old_value = rd_reg(asr_address);
+	if (asr_old_value == 0)
+		asr_cur_fre_sel = 0;
+	else
+		asr_cur_fre_sel = 1;
+	if (asr_cur_fre_sel == 0)
+		asr_new_value = asr_enable_value;
+	else //if (asr_cur_fre_sel == 1)
+		asr_new_value = 0;
+	if (init_enable) {
+		wr_reg(asr_address, asr_enable_value);
+		wr_reg(asr_address1, asr_enable_value);
+	} else {
+	//if (init_enable != asr_cur_fre_sel) {
+		wr_reg(asr_address, 0);
+		wr_reg(asr_address1, 0);
+	}
+	printf("\nddr asr ");
+	printf("%d to %d,times %d,reg_value %x to %x,err_cur %d total %d\n",
+		asr_cur_fre_sel, (init_enable) & 1,
+		ddr_asr_test_times, asr_old_value,
+		rd_reg(asr_address), error_cur, error_total);
+	count = 0;
+	while (count < ddr_asr_test_times) {
+		asr_old_value = rd_reg(asr_address);
+		if (asr_old_value == 0)
+			asr_cur_fre_sel = 0;
+		else
+			asr_cur_fre_sel = 1;
+		if (asr_cur_fre_sel == 0)
+			asr_new_value = asr_enable_value;
+		else //if (asr_cur_fre_sel == 1)
+			asr_new_value = 0;
+		wr_reg(asr_address, asr_new_value);
+		wr_reg(asr_address1, asr_new_value);
+		//run_command("ddrtest 3", 0);
+		error_cur = do_ddr_test((cmd_tbl_t *)cmdtp, 1, (int)argc2, (argv2));
+		error_total = error_total + error_cur;
+		printf("\nddr asr %d to %d,times %d,reg_value %x  %x,err_cur %d total %d\n",
+		asr_cur_fre_sel, (~asr_cur_fre_sel) & 1,
+		count, asr_new_value,
+		rd_reg(asr_address), error_cur, error_total);
+		count = count + 1;
+	}
+	return 1;
+}
+
 #ifdef ENABLE_OLD_EXTRA_TEST_CMD
 U_BOOT_CMD(ddr_auto_scan_drv, 30, 1, do_ddr_auto_scan_drv,
 	   "ddr_test_cmd cmd arg1 arg2 arg3...",
@@ -10166,3 +10349,11 @@ U_BOOT_CMD(ddr_fast_boot, 30, 1, do_ddr_fastboot_config,
 U_BOOT_CMD(ddr_auto_fast_boot_check, 30, 1, do_ddr_auto_fastboot_check,
 	   "ddr_fastboot_config cmd arg1 arg2 arg3...",
 	   "ddr_fastboot_config cmd arg1 arg2 arg3...\n dcache off ?\n");
+
+U_BOOT_CMD(ddr_dfs_test, 30, 1, do_ddr_dfs_test,
+	   "ddr_dfs_test cmd arg1 arg2 arg3...",
+	   "ddr_dfs_test cmd arg1 arg2 arg3...\n dcache off ?\n");
+
+U_BOOT_CMD(ddr_asr_test, 30, 1, do_ddr_asr_test,
+	   "ddr_asr_test cmd arg1 arg2 arg3...",
+	   "ddr_asr_test cmd arg1 arg2 arg3...\n dcache off ?\n");
