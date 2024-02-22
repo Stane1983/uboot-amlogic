@@ -20,6 +20,15 @@ extern int handle_model_sum(void);
 
 #pragma pack (1)
 
+#define DEBUG_NORMAL        BIT(0)
+#define DEBUG_LCD           BIT(1)
+#define DEBUG_LCD_EXTERN    BIT(2)
+#define DEBUG_BACKLIGHT     BIT(3)
+#define DEBUG_MISC          BIT(4)
+#define DEBUG_TCON          BIT(5)
+#define DEBUG_LCD_CUS_CTRL  BIT(6)
+#define DEBUG_LCD_OPTICAL   BIT(7)
+
 enum lcd_type_e {
 	LCD_RGB = 0,
 	LCD_LVDS,
@@ -196,50 +205,63 @@ struct lcd_phy_s {
 	unsigned char  phy_lane_swap[64]; //64byte //channel_swap
 };
 
-struct lcd_ctrl_s {
-	unsigned int   ctrl_attr_flag;    //4byte   //each bit enable one attr behind
-	unsigned short ctrl_attr_0;       //2byte   //
-	unsigned short ctrl_attr_0_parm0;       //2byte   //
-	unsigned short ctrl_attr_0_parm1;       //2byte   //
-	unsigned short ctrl_attr_0_parm2;       //2byte   //
-	unsigned short ctrl_attr_0_parm3;       //2byte   //
-	unsigned short ctrl_attr_0_parm4;       //2byte   //
-	unsigned short ctrl_attr_0_parm5;       //2byte   //
-	unsigned short ctrl_attr_0_parm6;       //2byte   //
-	unsigned short ctrl_attr_0_parm7;       //2byte   //
-	unsigned short ctrl_attr_1;       //2byte   //
-	unsigned short ctrl_attr_1_parm0;       //2byte   //
-	unsigned short ctrl_attr_1_parm1;       //2byte   //
-	unsigned short ctrl_attr_1_parm2;       //2byte   //
-	unsigned short ctrl_attr_1_parm3;       //2byte   //
-	unsigned short ctrl_attr_1_parm4;       //2byte   //
-	unsigned short ctrl_attr_1_parm5;       //2byte   //
-	unsigned short ctrl_attr_1_parm6;       //2byte   //
-	unsigned short ctrl_attr_1_parm7;       //2byte   //
-	unsigned short ctrl_attr_2;       //2byte   //
-	unsigned short ctrl_attr_2_parm0;       //2byte   //
-	unsigned short ctrl_attr_2_parm1;       //2byte   //
-	unsigned short ctrl_attr_2_parm2;       //2byte   //
-	unsigned short ctrl_attr_2_parm3;       //2byte   //
-	unsigned short ctrl_attr_2_parm4;       //2byte   //
-	unsigned short ctrl_attr_2_parm5;       //2byte   //
-	unsigned short ctrl_attr_2_parm6;       //2byte   //
-	unsigned short ctrl_attr_2_parm7;       //2byte   //
-	unsigned short ctrl_attr_3;       //2byte   //
-	unsigned short ctrl_attr_3_parm0;       //2byte   //
-	unsigned short ctrl_attr_3_parm1;       //2byte   //
-	unsigned short ctrl_attr_3_parm2;       //2byte   //
-	unsigned short ctrl_attr_3_parm3;       //2byte   //
-	unsigned short ctrl_attr_3_parm4;       //2byte   //
-	unsigned short ctrl_attr_3_parm5;       //2byte   //
-	unsigned short ctrl_attr_3_parm6;       //2byte   //
-	unsigned short ctrl_attr_3_parm7;       //2byte   //
+#define LCD_CUS_CTRL_ATTR_CNT_MAX        32
+
+#define LCD_CUS_CTRL_TYPE_UFR            0x00
+#define LCD_CUS_CTRL_TYPE_DFR            0x01
+#define LCD_CUS_CTRL_TYPE_EXTEND_TMG     0x02
+#define LCD_CUS_CTRL_TYPE_CLK_ADV        0x03
+#define LCD_CUS_CTRL_TYPE_TCON_SW_POL    0x10
+#define LCD_CUS_CTRL_TYPE_TCON_SW_PDF    0x11
+#define LCD_CUS_CTRL_TYPE_MAX            0xff
+
+struct lcd_dfr_timing_s {
+	unsigned short htotal;
+	unsigned short vtotal;
+	unsigned short vtotal_min;
+	unsigned short vtotal_max;
+	unsigned short frame_rate_min;
+	unsigned short frame_rate_max;
+	unsigned short hpw;
+	unsigned short hbp;
+	unsigned short vpw;
+	unsigned short vbp;
+};
+
+struct lcd_cus_ctrl_extend_tmg_s {
+	unsigned short hactive;
+	unsigned short vactive;
+	unsigned short htotal;
+	unsigned short vtotal;
+
+	unsigned short hpw_pol;//[15:12]hs_pol, [11:0]hpw
+	unsigned short hbp;
+	unsigned short vpw_pol;//[15:12]vs_pol, [11:0]vpw
+	unsigned short vbp;
+	unsigned char fr_adjust_type;
+	unsigned int pixel_clk;
+
+	unsigned short htotal_min;
+	unsigned short htotal_max;
+	unsigned short vtotal_min;
+	unsigned short vtotal_max;
+	unsigned short frame_rate_min;
+	unsigned short frame_rate_max;
+	unsigned int pclk_min;
+	unsigned int pclk_max;
+};
+
+#define LCD_CUS_CTRL_MAX        18244
+#define LCD_CUS_CTRL_DATA_MAX   18240
+struct lcd_cus_ctrl_s {
+	unsigned int  ctrl_attr_en;    //4byte   //each bit enable one attr behind
+	unsigned char data[LCD_CUS_CTRL_DATA_MAX];
 };
 
 struct lcd_v2_attr_s {
 	struct lcd_header_s head;
 	struct lcd_phy_s phy;
-	struct lcd_ctrl_s ctrl;
+	struct lcd_cus_ctrl_s cus_ctrl;
 };
 
 #define CC_BL_NAME_LEN_MAX        (30)
@@ -563,6 +585,16 @@ struct all_info_header_s {
 
 #define CC_MAX_PANEL_ALL_ONE_SEC_TAG_SIZE        (16)
 #define CC_MAX_PANEL_ALL_ONE_SEC_TAG_CONTENT     "panel_all_data0"
+
+extern int model_debug_flag;
+
+int trans_buffer_data(const char *data_str, unsigned int data_buf[]);
+
+#ifdef CONFIG_AML_LCD
+extern int glcd_cus_ctrl_cnt;
+
+int handle_lcd_cus_ctrl(struct lcd_v2_attr_s *p_attr);
+#endif
 
 unsigned char model_data_checksum(unsigned char *buf, unsigned int len);
 unsigned char model_data_lrc(unsigned char *buf, unsigned int len);

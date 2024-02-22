@@ -11,6 +11,7 @@
 #include <dm.h>
 #include <asm/gpio.h>
 #include <amlogic/media/vout/lcd/lcd_timing.h>
+#include <amlogic/media/vout/lcd/lcd_cus_ctrl.h>
 #ifdef CONFIG_AML_LCD_TCON
 #include <amlogic/media/vout/lcd/lcd_tcon_data.h>
 #endif
@@ -505,9 +506,14 @@ struct lcd_pinmux_ctrl_s {
 };
 
 struct cus_ctrl_config_s {
-	unsigned int flag;
-	unsigned char ufr_flag;
-	struct lcd_detail_timing_s dft_timing;
+	unsigned int ctrl_en;
+	unsigned int ctrl_cnt;
+	unsigned int timing_cnt;
+	unsigned int active_timing_type;
+	unsigned char timing_switch_flag;
+	unsigned char timing_ctrl_valid;
+
+	struct lcd_cus_ctrl_attr_config_s *attr_config;
 };
 
 #define LCD_ENABLE_RETRY_MAX    3

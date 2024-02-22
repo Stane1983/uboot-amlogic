@@ -1158,14 +1158,7 @@ void lcd_info_print(struct aml_lcd_drv_s *pdrv)
 
 	lcd_phy_print(pconf);
 
-	/* cus_ctrl_attr */
-	if (pconf->cus_ctrl.flag) {
-		LCDPR("\nlcd cus_ctrl:\n"
-			"ctrl_flag:         0x%x\n"
-			"ufr_flag:          %u\n",
-			pconf->cus_ctrl.flag,
-			pconf->cus_ctrl.ufr_flag);
-	}
+	lcd_cus_ctrl_dump_info(pdrv);
 
 	lcd_power_info_print(pdrv, 1);
 	lcd_power_info_print(pdrv, 0);

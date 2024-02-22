@@ -400,19 +400,13 @@ struct lcd_tcon_spi_unifykey_header_s {
  * API
  * ********************************* */
 int lcd_unifykey_len_check(int key_len, int len);
-int lcd_unifykey_header_check(unsigned char *buf,
-			      struct lcd_unifykey_header_s *header);
 int lcd_unifykey_check_exist(const char *key_name);
 int lcd_unifykey_check(const char *key_name);
-int lcd_unifykey_get(const char *key_name, unsigned char *buf, int *len);
-int lcd_unifykey_get_tcon(const char *key_name, unsigned char *buf, int *len);
-int lcd_unifykey_check_no_header(const char *key_name);
-int lcd_unifykey_get_no_header(const char *key_name, unsigned char *buf,
-			       int *len);
+int lcd_unifykey_get_size(const char *key_name, int *len);
+int lcd_unifykey_get(const char *key_name, unsigned char *buf, int len);
+int lcd_unifykey_get_tcon(const char *key_name, unsigned char *buf, int len);
+int lcd_unifykey_get_no_header(const char *key_name, unsigned char *buf, int len);
 int lcd_unifykey_write(const char *key_name, unsigned char *buf, int len);
-
-void lcd_unifykey_test(void);
-void lcd_unifykey_tcon_test(int n);
 void lcd_unifykey_dump(int index, unsigned int flag);
 
 #endif

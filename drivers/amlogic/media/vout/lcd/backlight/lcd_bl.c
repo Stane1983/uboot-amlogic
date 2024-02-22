@@ -1383,14 +1383,20 @@ static int bl_config_load_from_unifykey(char *dt_addr, struct aml_bl_drv_s *bdrv
 	unsigned char *p;
 	const char *str;
 	char sname[20];
-	struct lcd_unifykey_header_s bl_header;
+	struct lcd_unifykey_header_s *bl_header;
 	struct bl_config_s *bconf = &bdrv->config;
 	struct bl_pwm_config_s *bl_pwm;
 	struct bl_pwm_config_s *pwm_combo0, *pwm_combo1;
 	int ret;
 	unsigned int temp;
 
-	key_len = LCD_UKEY_BL_SIZE;
+	if (bdrv->index == 0)
+		sprintf(sname, "backlight");
+	else
+		sprintf(sname, "backlight%d", bdrv->index);
+	ret = lcd_unifykey_get_size(sname, &key_len);
+	if (ret)
+		return -1;
 	para = (unsigned char *)malloc(sizeof(unsigned char) * key_len);
 	if (!para) {
 		BLERR("%s: Not enough memory\n", __func__);
@@ -1398,29 +1404,17 @@ static int bl_config_load_from_unifykey(char *dt_addr, struct aml_bl_drv_s *bdrv
 	}
 	memset(para, 0, (sizeof(unsigned char) * key_len));
 
-	if (bdrv->index == 0)
-		sprintf(sname, "backlight");
-	else
-		sprintf(sname, "backlight%d", bdrv->index);
-	ret = lcd_unifykey_get(sname, para, &key_len);
+	ret = lcd_unifykey_get(sname, para, key_len);
 	if (ret) {
 		free(para);
 		return -1;
 	}
 
 	/* step 1: check header */
-	len = LCD_UKEY_HEAD_SIZE;
-	ret = lcd_unifykey_len_check(key_len, len);
-	if (ret) {
-		BLERR("unifykey header length is incorrect\n");
-		free(para);
-		return -1;
-	}
-
-	lcd_unifykey_header_check(para, &bl_header);
+	bl_header = (struct lcd_unifykey_header_s *)para;
 	BLPR("[%d]: load config from unifykey, version: 0x%x\n",
-		bdrv->index, bl_header.version);
-	switch (bl_header.version) {
+		bdrv->index, bl_header->version);
+	switch (bl_header->version) {
 	case 2:
 		len = 10 + 30 + 12 + 8 + 32 + 10;
 		break;
@@ -1430,8 +1424,8 @@ static int bl_config_load_from_unifykey(char *dt_addr, struct aml_bl_drv_s *bdrv
 	}
 	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
 		BLPR("unifykey header:\n");
-		BLPR("crc32             = 0x%08x\n", bl_header.crc32);
-		BLPR("data_len          = %d\n", bl_header.data_len);
+		BLPR("crc32             = 0x%08x\n", bl_header->crc32);
+		BLPR("data_len          = %d\n", bl_header->data_len);
 	}
 
 	/* step 2: check backlight parameters */
@@ -1509,7 +1503,7 @@ static int bl_config_load_from_unifykey(char *dt_addr, struct aml_bl_drv_s *bdrv
 		bl_pwm->pwm_gpio = *(p + LCD_UKEY_BL_PWM_GPIO);
 		bl_pwm->pwm_gpio_off = *(p + LCD_UKEY_BL_PWM_GPIO_OFF);
 
-		if (bl_header.version == 2)
+		if (bl_header->version == 2)
 			bconf->en_sequence_reverse =
 				(*(p + LCD_UKEY_BL_CUST_VAL_0) |
 				((*(p + LCD_UKEY_BL_CUST_VAL_0 + 1)) << 8));
@@ -1589,7 +1583,7 @@ static int bl_config_load_from_unifykey(char *dt_addr, struct aml_bl_drv_s *bdrv
 		pwm_combo1->bl_level_min = (*(p + LCD_UKEY_BL_PWM2_LEVEL_MIN) |
 			((*(p + LCD_UKEY_BL_PWM2_LEVEL_MIN + 1)) << 8));
 
-		if (bl_header.version == 2)
+		if (bl_header->version == 2)
 			bconf->en_sequence_reverse = (*(p + LCD_UKEY_BL_CUST_VAL_0) |
 				((*(p + LCD_UKEY_BL_CUST_VAL_0 + 1)) << 8));
 		else
@@ -1606,11 +1600,11 @@ static int bl_config_load_from_unifykey(char *dt_addr, struct aml_bl_drv_s *bdrv
 			BLERR("no ldim driver\n");
 			break;
 		}
-		if (bl_header.version == 2) {
+		if (bl_header->version == 2) {
 			aml_ldim_probe(bdrv, dt_addr, 0, para, 2);
 		} else {
 			BLERR("not support ldim for unifykey version: %d\n",
-			      bl_header.version);
+			      bl_header->version);
 		}
 		break;
 #endif

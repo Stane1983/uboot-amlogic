@@ -60,7 +60,8 @@
 /* 20240118: MIPI DSI arch adjust*/
 /* 20240129: update display mode management*/
 /* 20240218: optimize lcd config check sequence*/
-#define LCD_DRV_VERSION    "20240218"
+/* 20240222: update custom control support*/
+#define LCD_DRV_VERSION    "20240222"
 
 extern unsigned long clk_util_clk_msr(unsigned long clk_mux);
 
@@ -130,6 +131,19 @@ void lcd_mlvds_bit_rate_config(struct aml_lcd_drv_s *pdrv);
 void lcd_p2p_bit_rate_config(struct aml_lcd_drv_s *pdrv);
 void lcd_mipi_dsi_bit_rate_config(struct aml_lcd_drv_s *pdrv);
 void lcd_edp_bit_rate_config(struct aml_lcd_drv_s *pdrv);
+
+/* lcd cus_ctrl */
+void lcd_cus_ctrl_dump_raw_data(struct aml_lcd_drv_s *pdrv);
+void lcd_cus_ctrl_dump_info(struct aml_lcd_drv_s *pdrv);
+int lcd_cus_ctrl_load_from_dts(struct aml_lcd_drv_s *pdrv, struct device_node *child);
+int lcd_cus_ctrl_load_from_unifykey(struct aml_lcd_drv_s *pdrv, unsigned char *buf,
+		unsigned int max_size);
+void lcd_cus_ctrl_config_remove(struct aml_lcd_drv_s *pdrv);
+int lcd_cus_ctrl_config_update(struct aml_lcd_drv_s *pdrv, void *param, unsigned int mask_sel);
+void lcd_cus_ctrl_state_clear(struct aml_lcd_drv_s *pdrv, unsigned int mask_sel);
+int lcd_cus_ctrl_timing_is_valid(struct aml_lcd_drv_s *pdrv);
+int lcd_cus_ctrl_timing_is_activated(struct aml_lcd_drv_s *pdrv);
+struct lcd_detail_timing_s **lcd_cus_ctrl_timing_match_get(struct aml_lcd_drv_s *pdrv);
 
 /* lcd venc */
 void lcd_wait_vsync(struct aml_lcd_drv_s *pdrv);

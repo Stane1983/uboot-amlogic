@@ -36,14 +36,7 @@
 #define CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM        (-1)
 #define CC_PARAM_CHECK_ERROR_NOT_NEED_UPDATE_PARAM    (-2)
 
-#define DEBUG_NORMAL        (1 << 0)
-#define DEBUG_LCD           (1 << 1)
-#define DEBUG_LCD_EXTERN    (1 << 2)
-#define DEBUG_BACKLIGHT     (1 << 3)
-#define DEBUG_MISC          (1 << 4)
-#define DEBUG_TCON          (1 << 5)
-#define DEBUG_LCD_OPTICAL   BIT(7)
-static int model_debug_flag;
+int model_debug_flag;
 
 #ifdef CONFIG_AML_LCD
 static int glcd_dcnt, glcd_ext_dcnt, gbl_dcnt, glcd_optical_dcnt;
@@ -66,8 +59,7 @@ static int handle_tcon_ext_pmu_data(int index, int flag, unsigned char *buf,
 #endif
 #endif
 
-#ifdef CONFIG_AML_LCD
-static int trans_buffer_data(const char *data_str, unsigned int data_buf[])
+int trans_buffer_data(const char *data_str, unsigned int data_buf[])
 {
 	int item_ind = 0;
 	char *token = NULL;
@@ -98,6 +90,7 @@ static int trans_buffer_data(const char *data_str, unsigned int data_buf[])
 	return item_ind;
 }
 
+#ifdef CONFIG_AML_LCD
 static int check_param_valid(int mode, int parse_len, unsigned char parse_buf[], int ori_len, unsigned char ori_buf[])
 {
 	unsigned int ori_cal_crc32 = 0, parse_cal_crc32 = 0;
@@ -1130,41 +1123,14 @@ static int handle_lcd_phy(struct lcd_v2_attr_s *p_attr)
 	return 0;
 }
 
-static int handle_lcd_ctrl(struct lcd_v2_attr_s *p_attr)
-{
-	const char *ini_value = NULL;
-
-	ini_value = IniGetString("lcd_Attr", "ctrl_attr_flag", "0");
-	if (model_debug_flag & DEBUG_LCD)
-		ALOGD("%s, ctrl_attr_flag is (%s)\n", __func__, ini_value);
-	p_attr->ctrl.ctrl_attr_flag = strtoul(ini_value, NULL, 0);
-
-	ini_value = IniGetString("lcd_Attr", "ctrl_attr_0", "0");
-	if (model_debug_flag & DEBUG_LCD)
-		ALOGD("%s, ctrl_attr_0 is (%s)\n", __func__, ini_value);
-	p_attr->ctrl.ctrl_attr_0 = strtoul(ini_value, NULL, 0);
-
-	ini_value = IniGetString("lcd_Attr", "ctrl_attr_0_parm0", "0");
-	if (model_debug_flag & DEBUG_LCD)
-		ALOGD("%s, ctrl_attr_0_parm0 is (%s)\n", __func__, ini_value);
-	p_attr->ctrl.ctrl_attr_0_parm0 = strtoul(ini_value, NULL, 0);
-
-	ini_value = IniGetString("lcd_Attr", "ctrl_attr_0_parm1", "0");
-	if (model_debug_flag & DEBUG_LCD)
-		ALOGD("%s, ctrl_attr_0_parm1 is (%s)\n", __func__, ini_value);
-	p_attr->ctrl.ctrl_attr_0_parm1 = strtoul(ini_value, NULL, 0);
-
-	return 0;
-}
-
 static int handle_lcd_v2_header(struct lcd_v2_attr_s *p_attr)
 {
 	unsigned int data_cnt;
 
 	data_cnt = 0;
 	data_cnt += sizeof(struct lcd_header_s);
-	data_cnt += sizeof(struct lcd_ctrl_s);
 	data_cnt += sizeof(struct lcd_phy_s);
+	data_cnt += glcd_cus_ctrl_cnt;
 
 	p_attr->head.crc32 = 0xffffffff;
 	p_attr->head.data_len = 0;
@@ -3092,7 +3058,7 @@ static int parse_panel_ini(const char *file_name, unsigned char *lcd_buf,
 	/* handle lcd_v2 attr*/
 	if (lcd_attr.head.version == 2) {
 		handle_lcd_phy(&lcd_v2_attr);
-		handle_lcd_ctrl(&lcd_v2_attr);
+		handle_lcd_cus_ctrl(&lcd_v2_attr);
 		handle_lcd_v2_header(&lcd_v2_attr);
 		lcd_size += lcd_v2_attr.head.block_cur_size;
 		memcpy((void *)(lcd_buf + lcd_attr.head.block_cur_size),
