@@ -526,6 +526,12 @@ struct rx_cap {
 	unsigned char bitmap_length;
 	unsigned char y420_all_vic;
 	unsigned char y420cmdb_bitmap[Y420CMDB_MAX];
+	/* edid_check = 0 is default check
+	 * Bit 0     (0x01)  don't check block header
+	 * Bit 1     (0x02)  don't check edid checksum
+	 * Bit 0+1   (0x03)  don't check both block header and checksum
+	 */
+	u8 edid_check;
 };
 
 enum color_attr_type {

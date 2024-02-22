@@ -352,14 +352,14 @@ void hdmitx21_init(void)
 			hdev->dsc_policy = 0;
 	}
 	if (edid_check && edid_check[0] != '\0') {
-		int tmp = edid_check[0] - '0';
+		u8 tmp = edid_check[0] - '0';
 
 		if (tmp >= 0 && tmp <= 3)
-			hdev->edid_check = tmp;
+			hdev->RXCap.edid_check = tmp;
 		else
-			hdev->edid_check = 0;
+			hdev->RXCap.edid_check = 0;
 	} else {
-		hdev->edid_check = 0;
+		hdev->RXCap.edid_check = 0;
 	}
 
 	hdev->hwop.get_hpd_state = hdmitx_get_hpd_state;

@@ -171,13 +171,12 @@ static int edid_check_valid(unsigned char *buf)
 }
 
 /* check the checksum for each sub block */
-static int _check_edid_blk_chksum(unsigned char *block)
+static int _check_edid_blk_chksum(u8 edid_check, unsigned char *block)
 {
 	unsigned int chksum = 0;
 	unsigned int i = 0;
-	struct hdmitx_dev *hdev = hdmitx_get_hdev();
 
-	if (!(hdev->edid_check & 0x02)) {
+	if (!(edid_check & 0x02)) {
 		for (chksum = 0, i = 0; i < 0x80; i++)
 			chksum += block[i];
 		if ((chksum & 0xff) != 0)
@@ -187,12 +186,11 @@ static int _check_edid_blk_chksum(unsigned char *block)
 }
 
 /* check the first edid block */
-static int _check_base_structure(unsigned char *buf)
+static int _check_base_structure(u8 edid_check, unsigned char *buf)
 {
 	unsigned int i = 0;
-	struct hdmitx_dev *hdev = hdmitx_get_hdev();
 
-	if (!(hdev->edid_check & 0x01)) {
+	if (!(edid_check & 0x01)) {
 		/* check block 0 first 8 bytes */
 		if (buf[0] != 0 || buf[7] != 0)
 			return 0;
@@ -202,7 +200,7 @@ static int _check_base_structure(unsigned char *buf)
 		}
 	}
 	/* check block 0 checksum */
-	if (_check_edid_blk_chksum(buf) == 0)
+	if (_check_edid_blk_chksum(edid_check, buf) == 0)
 		return 0;
 
 	return 1;
@@ -213,18 +211,17 @@ static int _check_base_structure(unsigned char *buf)
  * base structure: header, checksum
  * extension: the first non-zero byte, checksum
  */
-static int check_dvi_hdmi_edid_valid(unsigned char *buf)
+static int check_dvi_hdmi_edid_valid(u8 edid_check, unsigned char *buf)
 {
 	int i;
 	int blk_cnt = buf[0x7e] + 1;
-	struct hdmitx_dev *hdev = hdmitx_get_hdev();
 
 	/* limit blk_cnt to EDID_BLK_NO  */
 	if (blk_cnt > EDID_BLK_NO)
 		blk_cnt = EDID_BLK_NO;
 
 	/* check block 0 */
-	if (_check_base_structure(&buf[0]) == 0)
+	if (_check_base_structure(edid_check, &buf[0]) == 0)
 		return 0;
 
 	if (blk_cnt == 1)
@@ -232,11 +229,11 @@ static int check_dvi_hdmi_edid_valid(unsigned char *buf)
 
 	/* check extension block 1 and more */
 	for (i = 1; i < blk_cnt; i++) {
-		if (!(hdev->edid_check & 0x01)) {
+		if (!(edid_check & 0x01)) {
 			if (buf[i * 0x80] == 0)
 				return 0;
 		}
-		if (_check_edid_blk_chksum(&buf[i * 0x80]) == 0)
+		if (_check_edid_blk_chksum(edid_check, &buf[i * 0x80]) == 0)
 			return 0;
 	}
 
@@ -1235,18 +1232,20 @@ unsigned int hdmi_edid_parsing(unsigned char *EDID_buf, struct rx_cap *prxcap)
 	int idx[4];
 	struct dv_info *dv = &prxcap->dv_info;
 	unsigned char cta_block_count;
-	struct hdmitx_dev *hdev = hdmitx_get_hdev();
+	u8 edid_check = 0;
 
+	edid_check = prxcap->edid_check;
 	/* Clear all parsing data */
 	memset(prxcap, 0, sizeof(struct rx_cap));
 	prxcap->IEEEOUI = 0x00; /* Default is DVI device */
+	prxcap->edid_check = edid_check;
 
-	if (check_dvi_hdmi_edid_valid(EDID_buf) == 0) {
+	if (check_dvi_hdmi_edid_valid(edid_check, EDID_buf) == 0) {
 		edid_set_fallback_mode(prxcap);
 		printf("set fallback mode\n");
 		return 0;
 	}
-	if (_check_base_structure(EDID_buf))
+	if (_check_base_structure(edid_check, EDID_buf))
 		_edid_parse_base_structure(prxcap, EDID_buf);
 
 	cta_block_count = EDID_buf[0x7E];
@@ -1258,7 +1257,7 @@ unsigned int hdmi_edid_parsing(unsigned char *EDID_buf, struct rx_cap *prxcap)
 	if (cta_block_count > EDID_MAX_BLOCK - 1)
 		cta_block_count = EDID_MAX_BLOCK - 1;
 	for (i = 1; i <= cta_block_count; i++) {
-		if (EDID_buf[i * 0x80] == 0x02 || hdev->edid_check & 0x01)
+		if (EDID_buf[i * 0x80] == 0x02 || edid_check & 0x01)
 			hdmitx_edid_cta_block_parse(prxcap, &EDID_buf[i * 0x80]);
 	}
 /*
@@ -1771,11 +1770,11 @@ enum hdmi_vic hdmitx_edid_get_VIC(struct hdmitx_dev *hdev,
 	return vic;
 }
 
-static bool hdmitx_edid_notify_ng(unsigned char *buf)
+static bool hdmitx_edid_notify_ng(u8 edid_check, unsigned char *buf)
 {
 	if (!buf)
 		return true;
-	return check_dvi_hdmi_edid_valid(buf) == 0;
+	return check_dvi_hdmi_edid_valid(edid_check, buf) == 0;
 	/* notify EDID NG to systemcontrol */
 	/* if (hdmitx_check_edid_all_zeros(buf)) { */
 		/* printf("ERR: edid all zero\n"); */
@@ -1792,10 +1791,12 @@ static bool hdmitx_edid_notify_ng(unsigned char *buf)
 
 bool edid_parsing_ok(struct hdmitx_dev *hdev)
 {
+	u8 edid_check = 0;
 	if (!hdev)
 		return false;
 
-	if (hdmitx_edid_notify_ng(hdev->rawedid))
+	edid_check = hdev->RXCap.edid_check;
+	if (hdmitx_edid_notify_ng(edid_check, hdev->rawedid))
 		return false;
 	return true;
 }
