@@ -836,12 +836,9 @@ static bool is_dv_support_mode(struct input_hdmi_data *hdmi_data, char *mode)
 	} else if (!strcmp(mode, MODE_1080P120HZ)) {
 		if (dv->sup_1080p120hz)
 			valid = true;
-	} else if ((resolve_resolution_value(mode, RESOLUTION_PRIORITY) <
-		resolve_resolution_value(dv_displaymode, RESOLUTION_PRIORITY)) &&
-		(strcmp(mode, "480p") && strcmp(mode, "576p") &&
-		strcmp(mode, "smpte") && strcmp(mode, "4096") &&
-		!strstr(mode, "i"))) {
-		/* sync with system, don't support DV under some mode, refer to SWPL-83949 */
+	} else {
+		/* sync with system, hdmitx driver don't filt 480p/576p,smpte,4096 */
+		/* refer to SWPL-155916 */
 		valid = true;
 	}
 	return valid;

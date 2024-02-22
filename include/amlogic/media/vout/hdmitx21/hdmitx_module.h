@@ -181,6 +181,7 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 void hdmitx_dsc_cvtem_pkt_send(struct dsc_pps_data_s *pps,
 	struct hdmi_timing *timing);
 void hdmitx_dsc_cvtem_pkt_disable(void);
+enum hdmi_vic hdmitx21_get_prefer_vic(struct hdmitx_dev *hdev, enum hdmi_vic vic);
 #undef printk
 #define printk printf
 #undef pr_info
