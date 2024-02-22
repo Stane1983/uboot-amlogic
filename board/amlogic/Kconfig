@@ -194,6 +194,11 @@ config BL2E_1024K
 		BL2E size must be one of BL2E_64K/BL2E_128K/
 		BL2E_256K/BL2E_1024K
 
+config AB_SYSTEM
+	bool "ABSystem config"
+	help
+		Support ABSystem
+
 endchoice
 
 config BL2E_PAYLOAD_SIZE
