@@ -70,7 +70,7 @@
 		"osd_reverse=${osd_reverse} video_reverse=${video_reverse} "\
 		"irq_check_en=${Irq_check_en}  "\
 		"jtag=${jtag} disable_ir=${disable_ir};"\
-		"setenv bootconfig androidboot.selinux=${EnableSelinux} "\
+		"setenv bootconfig ${initconfig} androidboot.selinux=${EnableSelinux} "\
 		"androidboot.firstboot=${firstboot} "\
 		"androidboot.bootloader=${bootloader_version} "\
 		"androidboot.hardware=amlogic ;"\
@@ -214,18 +214,21 @@
 			"setenv reboot_mode_android ""quiescent"";"\
 			"setenv dolby_status 0;"\
 			"setenv dolby_vision_on 0;"\
+			"setenv initconfig androidboot.quiescent=1 "\
+			"androidboot.bootreason=${reboot_mode};"\
 			"run storeargs;"\
-			"setenv bootconfig ${bootconfig} androidboot.quiescent=1;"\
 			"osd open;osd clear;"\
 		"else if test ${reboot_mode} = recovery_quiescent; then "\
 			"setenv reboot_mode_android ""quiescent"";"\
 			"setenv dolby_status 0;"\
 			"setenv dolby_vision_on 0;"\
+			"setenv initconfig androidboot.quiescent=1 "\
+			"androidboot.bootreason=recovery,quiescent;"\
 			"run storeargs;"\
-			"setenv bootconfig ${bootconfig} androidboot.quiescent=1;"\
 			"osd open;osd clear;"\
 		"else "\
 			"setenv reboot_mode_android ""normal"";"\
+			"setenv initconfig androidboot.bootreason=${reboot_mode};"\
 			"run storeargs;"\
 			"hdmitx hpd;hdmitx get_parse_edid;"\
 			"dovi process;watermark_init;osd open;osd clear;run load_bmp_logo;"\
