@@ -448,10 +448,10 @@ static int do_update_env_part(cmd_tbl_t *cmdtp, int flag, int argc, char * const
 			if (!silent)
 				MsgP("append new env %s\n", usr_env);
 			cp_len = strlcpy(++new_end, usr_env, left_len);//cp key
-			new_end += cp_len, left_len -= cp_len;
+			new_end += cp_len - 1, left_len -= cp_len;
 			*new_end = '=', --left_len;//cpy '='
-			cp_len = strlcpy(++new_end, val, left_len) + 1;//cp val
-			new_end += cp_len, left_len -= cp_len;
+			cp_len = strlcpy(++new_end, val, left_len);//cp val
+			new_end += cp_len - 1, left_len -= cp_len;
 		}
 		if (left_len == CONFIG_ENV_SIZE - env_len) {
 			errorP("exception\n");
