@@ -331,6 +331,7 @@ int	dcache_status (void);
 void	dcache_enable (void);
 void	dcache_disable(void);
 void	mmu_disable(void);
+void mmu_update_text_attr(void);
 #if defined(CONFIG_ARM)
 void	relocate_code(ulong);
 #else
