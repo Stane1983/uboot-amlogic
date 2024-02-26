@@ -7,7 +7,8 @@
 #include <asm/amlogic/arch/timing.h>
 #include <asm/amlogic/arch/ddr_define.h>
 
-
+#define DDR_FUNC_CONFIG_ENABLE_PZQ_DET_DRAM_TYPE_RETURN                   (0 + (1 << 20))
+#define DDR_FUNC_CONFIG_AUTO_DET_DQ_PINMUX_FUNCTION                   (0 + (1 << 21))
 //bit 6 adc_channel bit 0-5 adc value,chan 3 value 8 is layer 2
 #define DDR_ID_ACS_ADC   ((3 << 6) | (8))
 
@@ -149,7 +150,8 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		.cfg_board_common_setting.fast_boot = {
 			0x0, 0, 0, 0
 		},
-		.cfg_board_common_setting.ddr_func = DDR_FUNC_CONFIG_DFE_FUNCTION,
+		.cfg_board_common_setting.ddr_func = DDR_FUNC_CONFIG_DFE_FUNCTION |
+		DDR_FUNC_CONFIG_ENABLE_PZQ_DET_DRAM_TYPE_RETURN,
 		.cfg_board_common_setting.board_id = CONFIG_BOARD_ID_MASK,
 		.cfg_board_common_setting.DramType = CONFIG_DDR_TYPE_LPDDR4,
 		.cfg_board_common_setting.enable_lpddr4x_mode = 0,
@@ -451,10 +453,11 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 
 		},
 		.cfg_board_common_setting.ddr_dq_remap = {
-			7,	6,	4,	3,	5,	0,	1,	2,	32,
-			9,	14,	15,	11,	33,	12,	13,	8,	10,
-			29,	25,	30,	27,	35,	26,	24,	31,	28,
-			22,	34,	16,	18,	21,	20,	23,	19,	17,
+			0, 0, 0,
+			//7,	6,	4,	3,	5,	0,	1,	2,	32,
+			//9,	14,	15,	11,	33,	12,	13,	8,	10,
+			//29,	25,	30,	27,	35,	26,	24,	31,	28,
+			//22,	34,	16,	18,	21,	20,	23,	19,	17,
 		},
 
 #endif
@@ -1218,7 +1221,8 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		.cfg_board_common_setting.fast_boot = {
 			0, 0, 0, 0
 		},
-		.cfg_board_common_setting.ddr_func = 0,
+		.cfg_board_common_setting.ddr_func = DDR_FUNC_CONFIG_DFE_FUNCTION |
+		DDR_FUNC_CONFIG_ENABLE_PZQ_DET_DRAM_TYPE_RETURN,
 		.cfg_board_common_setting.board_id = CONFIG_BOARD_ID_MASK,
 		.cfg_board_common_setting.DramType = CONFIG_DDR_TYPE_DDR4,
 		.cfg_board_common_setting.enable_lpddr4x_mode = 0,
@@ -1237,6 +1241,7 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 			(DRAM_SIZE_ID_256MBX0 << CONFIG_CS0_BYTE_23_SIZE_256_ID_OFFSET) +
 			(DRAM_SIZE_ID_256MBX0 << CONFIG_CS1_BYTE_01_SIZE_256_ID_OFFSET) +
 			(DRAM_SIZE_ID_256MBX0 << CONFIG_CS1_BYTE_23_SIZE_256_ID_OFFSET),
+		.cfg_board_common_setting.dram_ch0_size_MB = 0xffff,
 		.cfg_board_common_setting.DisabledDbyte[0] = 0xf0,
 		//bit 0 -3 ch0 cs0 ,bit 4-7 ch0 cs1,
 		.cfg_board_common_setting.DisabledDbyte[1] = 0xfc,
@@ -1602,10 +1607,11 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 			23,
 			16,
 #endif
-			12,	10,	15,	13,	9,	8,	11,	14,	33,
-			6,	4,	0,	2,	32,	1,	3,	5,	7,
-			25,	29,	26,	27,	35,	24,	28,	30,	31,
-			22,	34,	18,	19,	17,	21,	20,	23,	16,
+			0, 0, 0,
+			//12,	10,	15,	13,	9,	8,	11,	14,	33,
+			//6,	4,	0,	2,	32,	1,	3,	5,	7,
+			//25,	29,	26,	27,	35,	24,	28,	30,	31,
+			//22,	34,	18,	19,	17,	21,	20,	23,	16,
 
 		},
 #if ENABLE_RTL_DDR3_PINMUX
@@ -1742,7 +1748,7 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		.cfg_ddr_training_delay_ps.ac_trace_delay[12] = 128 + AC_OFFSET,      //odt0
 		.cfg_ddr_training_delay_ps.ac_trace_delay[19] = 128 + AC_OFFSET,      //odt1
 
-		.cfg_ddr_training_delay_ps.ac_trace_delay[7] = 128 + AC_OFFSET,       // cs
+		.cfg_ddr_training_delay_ps.ac_trace_delay[7] = 128 - 35 + AC_OFFSET, // cs
 		.cfg_ddr_training_delay_ps.ac_trace_delay[10] = 128 + AC_OFFSET,      // cs
 		.cfg_ddr_training_delay_ps.ac_trace_delay[28] = 128 + AC_OFFSET,    //ck
 		.cfg_ddr_training_delay_ps.ac_trace_delay[29] = 128 + AC_OFFSET,    //ck
@@ -2573,7 +2579,8 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		.cfg_board_common_setting.fast_boot = {
 			0, 0, 0, 0
 		},
-		.cfg_board_common_setting.ddr_func = 0,
+		.cfg_board_common_setting.ddr_func =
+		DDR_FUNC_CONFIG_ENABLE_PZQ_DET_DRAM_TYPE_RETURN,
 		.cfg_board_common_setting.board_id = CONFIG_BOARD_ID_MASK,
 		.cfg_board_common_setting.DramType = CONFIG_DDR_TYPE_DDR3,
 		.cfg_board_common_setting.enable_lpddr4x_mode = 0,
