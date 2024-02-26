@@ -41,7 +41,7 @@ struct lcd_tcon_config_s {
 
 	unsigned int *axi_reg;
 	void (*tcon_axi_mem_config)(void);
-	void (*tcon_axi_mem_update)(unsigned int *table);
+	void (*tcon_init_table_pre_proc)(unsigned char *table);
 	int (*tcon_enable)(struct aml_lcd_drv_s *pdrv);
 	int (*tcon_disable)(struct aml_lcd_drv_s *pdrv);
 	int (*tcon_forbidden_check)(void);
@@ -198,7 +198,6 @@ void lcd_tcon_lut_dma_mif_set_t5m(phys_addr_t paddr, unsigned int size);
 void lcd_tcon_lut_dma_enable_t5m(struct aml_lcd_drv_s *pdrv);
 void lcd_tcon_lut_dma_disable_t5m(struct aml_lcd_drv_s *pdrv);
 
-void lcd_tcon_od_pre_disable(unsigned char *table);
 void lcd_tcon_init_data_version_update(char *data_buf);
 int lcd_tcon_data_multi_match_find(struct aml_lcd_drv_s *pdrv, unsigned char *data_buf);
 int lcd_tcon_spi_data_probe(struct aml_lcd_drv_s *pdrv);
@@ -210,6 +209,7 @@ struct tcon_mem_map_table_s *get_lcd_tcon_mm_table(void);
 struct lcd_tcon_local_cfg_s *get_lcd_tcon_local_cfg(void);
 int lcd_tcon_mem_tee_protect(int protect_en);
 
+void lcd_tcon_init_table_pre_proc(unsigned char *table);
 int lcd_tcon_enable_tl1(struct aml_lcd_drv_s *pdrv);
 int lcd_tcon_disable_tl1(struct aml_lcd_drv_s *pdrv);
 int lcd_tcon_enable_t5(struct aml_lcd_drv_s *pdrv);

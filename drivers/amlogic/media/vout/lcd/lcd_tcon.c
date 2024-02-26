@@ -1293,9 +1293,8 @@ static int lcd_tcon_data_load(struct aml_lcd_drv_s *pdrv, unsigned char *data_bu
 		init_header = (struct lcd_tcon_init_block_header_s *)data_buf;
 		core_reg_table = data_buf + sizeof(struct lcd_tcon_data_block_header_s);
 
-		lcd_tcon_od_pre_disable(core_reg_table);
-		if (tcon_conf->tcon_axi_mem_update)
-			tcon_conf->tcon_axi_mem_update((unsigned int *)core_reg_table);
+		if (tcon_conf->tcon_init_table_pre_proc)
+			tcon_conf->tcon_init_table_pre_proc(core_reg_table);
 		lcd_tcon_data_block_regen_crc(data_buf);
 
 		match_timing.h_active = init_header->h_active;
@@ -1775,26 +1774,6 @@ static void lcd_tcon_axi_mem_config_t3x(void)
 	tcon_rmem.secure_axi_rmem.mem_size = size[0] + size[1];
 }
 
-static void lcd_tcon_axi_rmem_update_t5(unsigned int *table)
-{
-	unsigned int reg, paddr, i;
-
-	if (tcon_rmem.flag == 0 || !tcon_rmem.axi_rmem) {
-		LCDERR("%s: invalid axi_mem\n", __func__);
-		return;
-	}
-
-	for (i = 0; i < lcd_tcon_conf->axi_bank; i++) {
-		reg = lcd_tcon_conf->axi_reg[i];
-		paddr = tcon_rmem.axi_rmem[i].mem_paddr;
-		table[reg] = paddr;
-		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-			LCDPR("%s: axi[%d] reg: 0x%08x, paddr: 0x%08x\n",
-			      __func__, i, reg, paddr);
-		}
-	}
-}
-
 static void lcd_tcon_axi_mem_config_t5d(void)
 {
 	unsigned int size = 0x00500000;
@@ -1831,24 +1810,6 @@ static void lcd_tcon_axi_mem_config_t5d(void)
 	tcon_rmem.secure_axi_rmem.mem_vaddr = tcon_rmem.axi_rmem[0].mem_vaddr;
 	tcon_rmem.secure_axi_rmem.mem_size = size;
 
-}
-
-static void lcd_tcon_axi_rmem_update_t5d(unsigned int *table)
-{
-	unsigned int reg, paddr;
-
-	if (tcon_rmem.flag == 0 || !tcon_rmem.axi_rmem) {
-		LCDERR("%s: invalid axi_mem\n", __func__);
-		return;
-	}
-
-	reg = *lcd_tcon_conf->axi_reg;
-	paddr = tcon_rmem.axi_rmem->mem_paddr;
-	table[reg] = paddr;
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-		LCDPR("%s: axi reg: 0x%08x, paddr: 0x%08x\n",
-			__func__, reg, paddr);
-	}
 }
 
 static void lcd_tcon_axi_mem_config_txhd2(void)
@@ -2058,6 +2019,7 @@ static void lcd_tcon_reserved_memory_init_default(struct aml_lcd_drv_s *pdrv)
 
 static int lcd_tcon_load_init_data_from_unifykey(struct aml_lcd_drv_s *pdrv)
 {
+	struct lcd_tcon_config_s *tcon_conf = get_lcd_tcon_config();
 	int key_len, data_len, ret;
 
 	data_len = tcon_mm_table.core_reg_table_size;
@@ -2083,6 +2045,9 @@ static int lcd_tcon_load_init_data_from_unifykey(struct aml_lcd_drv_s *pdrv)
 		goto lcd_tcon_load_init_data_err;
 
 	memset(tcon_local_cfg.bin_ver, 0, TCON_BIN_VER_LEN);
+	if (tcon_conf && tcon_conf->tcon_init_table_pre_proc)
+		tcon_conf->tcon_init_table_pre_proc(tcon_mm_table.core_reg_table);
+
 	LCDPR("tcon: load init data len: %d\n", data_len);
 	return 0;
 
@@ -2160,9 +2125,8 @@ static int lcd_tcon_load_init_data_from_unifykey_new(struct aml_lcd_drv_s *pdrv)
 	}
 	p = buf + LCD_TCON_DATA_BLOCK_HEADER_SIZE;
 	memcpy(tcon_mm_table.core_reg_table, p, data_len);
-	lcd_tcon_od_pre_disable(tcon_mm_table.core_reg_table);
-	if (tcon_conf && tcon_conf->tcon_axi_mem_update && tcon_conf->reg_table_width == 32)
-		tcon_conf->tcon_axi_mem_update((unsigned int *)tcon_mm_table.core_reg_table);
+	if (tcon_conf && tcon_conf->tcon_init_table_pre_proc)
+		tcon_conf->tcon_init_table_pre_proc(tcon_mm_table.core_reg_table);
 	free(buf);
 
 	tcon_local_cfg.cur_core_reg_table = tcon_mm_table.core_reg_table;
@@ -2328,7 +2292,7 @@ static struct lcd_tcon_config_s tcon_data_tl1 = {
 
 	.axi_reg = NULL,
 	.tcon_axi_mem_config = lcd_tcon_axi_mem_config_tl1,
-	.tcon_axi_mem_update = NULL,
+	.tcon_init_table_pre_proc = NULL,
 	.tcon_enable = lcd_tcon_enable_tl1,
 	.tcon_disable = lcd_tcon_disable_tl1,
 	.tcon_forbidden_check = NULL,
@@ -2368,7 +2332,7 @@ static struct lcd_tcon_config_s tcon_data_t5 = {
 
 	.axi_reg = NULL,
 	.tcon_axi_mem_config = lcd_tcon_axi_mem_config_t5,
-	.tcon_axi_mem_update = lcd_tcon_axi_rmem_update_t5,
+	.tcon_init_table_pre_proc = lcd_tcon_init_table_pre_proc,
 	.tcon_enable = lcd_tcon_enable_t5,
 	.tcon_disable = lcd_tcon_disable_t5,
 	.tcon_forbidden_check = lcd_tcon_forbidden_check_t5,
@@ -2408,7 +2372,7 @@ static struct lcd_tcon_config_s tcon_data_t5d = {
 
 	.axi_reg = NULL,
 	.tcon_axi_mem_config = lcd_tcon_axi_mem_config_t5d,
-	.tcon_axi_mem_update = lcd_tcon_axi_rmem_update_t5d,
+	.tcon_init_table_pre_proc = lcd_tcon_init_table_pre_proc,
 	.tcon_enable = lcd_tcon_enable_t5,
 	.tcon_disable = lcd_tcon_disable_t5,
 	.tcon_forbidden_check = lcd_tcon_forbidden_check_t5d,
@@ -2448,7 +2412,7 @@ static struct lcd_tcon_config_s tcon_data_t3 = {
 
 	.axi_reg = NULL,
 	.tcon_axi_mem_config = lcd_tcon_axi_mem_config_t5,
-	.tcon_axi_mem_update = lcd_tcon_axi_rmem_update_t5,
+	.tcon_init_table_pre_proc = lcd_tcon_init_table_pre_proc,
 	.tcon_enable = lcd_tcon_enable_t3,
 	.tcon_disable = lcd_tcon_disable_t3,
 	.tcon_forbidden_check = lcd_tcon_forbidden_check_t5,
@@ -2488,7 +2452,7 @@ static struct lcd_tcon_config_s tcon_data_t5m = {
 
 	.axi_reg = NULL,
 	.tcon_axi_mem_config = lcd_tcon_axi_mem_config_t5,
-	.tcon_axi_mem_update = lcd_tcon_axi_rmem_update_t5,
+	.tcon_init_table_pre_proc = lcd_tcon_init_table_pre_proc,
 	.tcon_enable = lcd_tcon_enable_t3,
 	.tcon_disable = lcd_tcon_disable_t3,
 	.tcon_forbidden_check = lcd_tcon_forbidden_check_t5,
@@ -2530,7 +2494,7 @@ static struct lcd_tcon_config_s tcon_data_t5w = {
 
 	.axi_reg = NULL,
 	.tcon_axi_mem_config = lcd_tcon_axi_mem_config_t5,
-	.tcon_axi_mem_update = lcd_tcon_axi_rmem_update_t5,
+	.tcon_init_table_pre_proc = lcd_tcon_init_table_pre_proc,
 	.tcon_enable = lcd_tcon_enable_t3,
 	.tcon_disable = lcd_tcon_disable_t5,
 	.tcon_forbidden_check = lcd_tcon_forbidden_check_t5,
@@ -2570,7 +2534,7 @@ static struct lcd_tcon_config_s tcon_data_t3x = {
 
 	.axi_reg = NULL,
 	.tcon_axi_mem_config = lcd_tcon_axi_mem_config_t3x,
-	.tcon_axi_mem_update = lcd_tcon_axi_rmem_update_t5,
+	.tcon_init_table_pre_proc = lcd_tcon_init_table_pre_proc,
 	.tcon_enable = lcd_tcon_enable_t3,
 	.tcon_disable = lcd_tcon_disable_t3,
 	.tcon_forbidden_check = lcd_tcon_forbidden_check_t5,
@@ -2610,7 +2574,7 @@ static struct lcd_tcon_config_s tcon_data_txhd2 = {
 
 	.axi_reg = NULL,
 	.tcon_axi_mem_config = lcd_tcon_axi_mem_config_txhd2,
-	.tcon_axi_mem_update = lcd_tcon_axi_rmem_update_t5,
+	.tcon_init_table_pre_proc = lcd_tcon_init_table_pre_proc,
 	.tcon_enable = lcd_tcon_enable_txhd2,
 	.tcon_disable = lcd_tcon_disable_t5,
 	.tcon_forbidden_check = lcd_tcon_forbidden_check_t5d,
