@@ -356,7 +356,7 @@ static int write_boot0(void)
 {
 	unsigned char *buffer = NULL;
 	int capacity_boot = 0x2000 * 512;
-	int iRet = 0;
+	int iret = 0;
 	char partname[32] = {0};
 	char *slot_name = NULL;
 
@@ -383,16 +383,16 @@ static int write_boot0(void)
 	else if (slot_name && (strcmp(slot_name, "_b") == 0))
 		strcpy((char *)partname, "bootloader_b");
 
-	iRet = store_logic_read(partname, 0, BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET, buffer);
-	if (iRet) {
+	iret = store_logic_read(partname, 0, BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET, buffer);
+	if (iret) {
 		errorP("Fail to read 0x%xB from part[%s] at offset 0\n",
 					BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET, partname);
 		free(buffer);
 		return -1;
 	}
 
-	iRet = store_boot_write("bootloader", 0, BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET, buffer);
-	if (iRet) {
+	iret = store_boot_write("bootloader", 1, BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET, buffer);
+	if (iret) {
 		printf("Failed to write boot0\n");
 		free(buffer);
 		return -1;
