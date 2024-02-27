@@ -118,6 +118,12 @@ static int initr_caches(void)
 	enable_caches();
 	return 0;
 }
+
+static int initr_mmu_update_text_attr(void)
+{
+	mmu_update_text_attr();
+	return 0;
+}
 #endif
 
 __weak int fixup_cpu(void)
@@ -732,6 +738,9 @@ static init_fnc_t init_sequence_r[] = {
 #endif
 #ifdef CONFIG_EFI_LOADER
 	efi_init_early,
+#endif
+#ifdef CONFIG_ARM
+	initr_mmu_update_text_attr,
 #endif
 #ifdef CONFIG_AML_STORAGE
 	initr_storage,
