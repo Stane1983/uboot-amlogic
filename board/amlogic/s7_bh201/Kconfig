@@ -28,4 +28,12 @@ config AML_REBOOT
 		default y
 		help
 			support uboot reboot cmd
+
+config ENABLE_AML_GPIO_UPGRADE
+    bool "upgrade key check"
+    default n
+
+config AML_GPIO_UPGRADE_KEY
+    string "gpio key"
+    default ""
 endif
