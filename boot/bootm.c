@@ -34,6 +34,11 @@
 #include <image.h>
 #include <version.h>
 
+#if defined(CONFIG_OF_LIBFDT_OVERLAY) && defined(CONFIG_AMLOGIC_MODIFY)
+#include <dt_table.h>
+#include <image-android-dt.h>
+#endif
+
 #define MAX_CMDLINE_SIZE	SZ_4K
 
 #define IH_INITRD_ARCH IH_ARCH_DEFAULT
@@ -292,6 +297,147 @@ static int bootm_find_os(struct cmd_tbl *cmdtp, int flag, int argc,
 	return 0;
 }
 
+/*
+ * load dtb overlay partition to mem
+*/
+#if defined(CONFIG_OF_LIBFDT_OVERLAY) && defined(CONFIG_AMLOGIC_MODIFY)
+static int read_fdto_partition(void)
+{
+	char cmd[128];
+	void *dtbo_mem_addr = NULL;
+	char dtbo_partition[32] = {0};
+	char *s1;
+	struct	dt_table_header hdr;
+
+	//run_command("get_valid_slot;", 0);
+	s1 = env_get("active_slot");
+	if (s1 && (strcmp(s1, "normal") == 0))
+		strcpy(dtbo_partition, "dtbo");
+	else if (s1 && (strcmp(s1, "_a") == 0))
+		strcpy(dtbo_partition, "dtbo_a");
+	else if (s1 && (strcmp(s1, "_b") == 0))
+		strcpy(dtbo_partition, "dtbo_b");
+
+	/*
+	* Though it is really no need to parse the adtimg infos
+	* here, but wasting time to read the whole dtbo image
+	* partition is unacceptable
+	*/
+	pr_info("Start read %s partition datas!\n", dtbo_partition);
+	extern int store_read(const char *name, loff_t off, size_t size, void *buf);
+	if (store_read(dtbo_partition, 0,
+		sizeof(struct dt_table_header), &hdr) < 0) {
+		pr_err("Fail to read header of DTBO partition\n");
+		return -1;
+	}
+
+#ifdef CONFIG_CMD_ADTIMG
+	if (!android_dt_check_header((ulong)&hdr)) {
+		printf("DTBO partition header is incorrect\n");
+		return -1;
+	}
+#endif
+
+	dtbo_mem_addr = malloc(fdt32_to_cpu(hdr.total_size));
+	if (!dtbo_mem_addr) {
+		printf("out of memory\n");
+		return -1;
+	} else {
+		if (store_read(dtbo_partition, 0,
+			fdt32_to_cpu(hdr.total_size), dtbo_mem_addr) < 0) {
+			printf("Fail to read DTBO partition\n");
+			free(dtbo_mem_addr);
+			return -1;
+		}
+		else {
+			sprintf(cmd, "0x%p", dtbo_mem_addr);
+			env_set("dtbo_mem_addr",cmd);
+		}
+	}
+
+	return 0;
+}
+
+static int get_fdto_totalsize(u32 *tz)
+{
+#ifdef CONFIG_CMD_ADTIMG
+	unsigned long long dtbo_mem_addr = 0x0;
+#endif
+	int ret;
+
+	ret = read_fdto_partition();
+	if (ret != 0)
+		return ret;
+
+#ifdef CONFIG_CMD_ADTIMG
+	dtbo_mem_addr = simple_strtoul(env_get("dtbo_mem_addr"), NULL, 16);
+	*tz = android_dt_get_totalsize(dtbo_mem_addr);
+#endif
+	return 0;
+}
+
+static int do_fdt_overlay(void)
+{
+	unsigned long long dtbo_mem_addr = 0x0;
+	int dtbo_num = 0;
+	int i;
+	char cmd[128];
+	unsigned long long dtbo_start;
+	char *dtbo_idx = NULL;
+	char idx[32];
+
+	if (!env_get("dtbo_mem_addr")) {
+		pr_err("No valid dtbo image found\n");
+		return -1;
+	}
+
+	dtbo_mem_addr = simple_strtoul(env_get("dtbo_mem_addr"), NULL, 16);
+#ifdef CONFIG_CMD_ADTIMG
+	if (!android_dt_check_header(dtbo_mem_addr)) {
+		pr_err("Error: DTBO image header is incorrect\n");
+		return -1;
+	}
+#endif
+
+	/* android_dt_print_contents(dtbo_mem_addr); */
+	dtbo_num = fdt32_to_cpu((
+		(const struct dt_table_header *)dtbo_mem_addr)->dt_entry_count);
+	pr_info("find %d dtbos\n", dtbo_num);
+
+	dtbo_idx = env_get("androidboot.dtbo_idx");
+	if (!dtbo_idx) {
+		pr_info("No androidboot.dtbo_idx configured\n");
+		pr_info("And no dtbos will be applied\n");
+		return -1;
+	}
+	pr_info("dtbos to be applied: %s\n", dtbo_idx);
+
+	#ifndef CONFIG_CMD_ADTIMG
+	pr_info("Error: No adtimg support found\n");
+	return -1;
+	#endif
+
+	for (i = 0; i < dtbo_num; i++) {
+		memset(idx, 0x00, sizeof(idx));
+		sprintf(idx, "%d", i);
+		if (strstr(dtbo_idx, idx)) {
+			printf("Apply dtbo %d\n", i);
+			sprintf(cmd, "adtimg addr 0x%llx;adtimg get dt --index=%d  dtbo_start 0x%llx",
+				dtbo_mem_addr, i, dtbo_mem_addr);
+			run_command(cmd, 0);
+			dtbo_start = simple_strtoul(
+					env_get("dtbo_start"), NULL, 16);
+
+			sprintf(cmd, "fdt apply 0x%llx", dtbo_start);
+			run_command(cmd, 0);
+		}
+	}
+
+	free((void *)dtbo_mem_addr);
+	return 0;
+}
+#endif
+
 /**
  * bootm_find_images - wrapper to find and locate various images
  * @flag: Ignored Argument
@@ -314,6 +460,10 @@ int bootm_find_images(int flag, int argc, char *const argv[], ulong start,
 		      ulong size)
 {
 	int ret;
+
+#if defined(CONFIG_OF_LIBFDT_OVERLAY) && defined(CONFIG_AMLOGIC_MODIFY)
+	u32 fdto_totalsize = 0;
+#endif
 
 	/* find ramdisk */
 	ret = boot_get_ramdisk(argc, argv, &images, IH_INITRD_ARCH,
@@ -357,6 +507,14 @@ int bootm_find_images(int flag, int argc, char *const argv[], ulong start,
 
 	if (CONFIG_IS_ENABLED(CMD_FDT))
 		set_working_fdt_addr(map_to_sysmem(images.ft_addr));
+
+#if defined(CONFIG_OF_LIBFDT_OVERLAY) && defined(CONFIG_AMLOGIC_MODIFY)
+	if (get_fdto_totalsize(&fdto_totalsize) == 0)
+		fdt_set_totalsize(images.ft_addr, fdt_get_header(images.ft_addr,
+			totalsize) + fdto_totalsize);
+	images.ft_len = fdt_get_header(images.ft_addr, totalsize);
+	do_fdt_overlay();
+#endif
 #endif
 
 #if CONFIG_IS_ENABLED(FIT)

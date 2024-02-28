@@ -28,6 +28,20 @@ bool android_dt_check_header(ulong hdr_addr)
 	return magic == DT_TABLE_MAGIC;
 }
 
+#if defined(CONFIG_OF_LIBFDT_OVERLAY) && defined(CONFIG_AMLOGIC_MODIFY)
+u32 android_dt_get_totalsize(ulong hdr_addr)
+{
+	const struct dt_table_header *hdr;
+	u32 totalsize;
+
+	hdr = map_sysmem(hdr_addr, sizeof(*hdr));
+	totalsize = fdt32_to_cpu(hdr->total_size);
+	unmap_sysmem(hdr);
+
+	return totalsize;
+}
+#endif
+
 /**
  * Get the address of FDT (dtb or dtbo) in memory by its index in image.
  *
