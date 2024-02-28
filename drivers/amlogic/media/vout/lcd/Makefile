@@ -14,6 +14,7 @@ obj-$(CONFIG_AML_LCD) += lcd_venc/
 obj-$(CONFIG_AML_LCD) += lcd_clk/
 obj-$(CONFIG_AML_LCD) += lcd_phy/
 obj-$(CONFIG_AML_LCD) += lcd_dphy_ctrl.o
+obj-$(CONFIG_AML_LCD) += lcd_addons/
 
 obj-$(CONFIG_AML_LCD_TCON) += lcd_tcon.o lcd_tcon_hw.o lcd_tcon_spi.o lcd_tcon_debug.o
 

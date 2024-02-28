@@ -611,17 +611,11 @@ static char *cvbs_mode_str[CVBS_MODE_CNT] = {
 
 /***********************************************
  * parameters:  vmode_name, such as 576cvbs, 480cvbs...
- *              frac, cvbs alway 0. don't support.
  * return:      viu_mux
  ************************************************/
-unsigned int cvbs_outputmode_check(char *vmode_name, unsigned int frac)
+unsigned int cvbs_outputmode_check(char *vmode_name)
 {
 	unsigned int i;
-
-	if (frac) {
-		printf("cvbs: don't support frac\n");
-		return VIU_MUX_MAX;
-	}
 
 	for (i = 0; i < CVBS_MODE_CNT; i++) {
 		if (!strncmp(vmode_name, cvbs_mode_str[i], strlen(cvbs_mode_str[i])))

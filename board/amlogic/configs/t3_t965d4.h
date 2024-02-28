@@ -99,7 +99,7 @@
         "cvbsmode=576cvbs\0" \
         "vout_init=disable\0" \
         "model_name=FHD2HDMI\0" \
-	"connector_type=LVDS-A\0" \
+	"connector0_type=LVDS-A\0" \
         "display_width=1920\0" \
         "display_height=1080\0" \
         "display_bpp=16\0" \
@@ -134,9 +134,6 @@
 		"cec_fun=0x2F\0" \
 		"logic_addr=0x0\0" \
 		"cec_ac_wakeup=1\0" \
-	"check_connector_type="\
-		"setenv bootconfig ${bootconfig} androidboot.connector_type=${connector_type};"\
-		"\0"\
         "initargs="\
 		"init=/init " CONFIG_KNL_LOG_LEVEL "console=ttyS0,115200 "\
 			"no_console_suspend earlycon=aml-uart,0xfe07a000 scramble_reg=0xfe02e030 "\
@@ -151,8 +148,7 @@
 		"run storeargs_base;"\
 		"setenv bootargs ${bootargs} powermode=${powermode} "\
 		"lcd_ctrl=${lcd_ctrl} lcd_debug=${lcd_debug} "\
-		"outputmode=${outputmode};"\
-		"run check_connector_type; "\
+		"outputmode=${outputmode}; connector0_type=${connector0_type}"\
 		"run cmdline_keys;"\
 		"\0"\
 	"cec_init="\

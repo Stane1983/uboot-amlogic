@@ -132,6 +132,7 @@
 		"nn_adj_vol=${nn_adj_vol} "\
 		"panel1_type=${panel1_type} lcd1_ctrl=${lcd1_ctrl} "\
 		"panel2_type=${panel2_type} "\
+		"connector0_type=${connector0_type} connector1_type=${connector1_type} connector2_type=${connector2_type} "\
 		"lcd2_ctrl=${lcd2_ctrl} outputmode=${outputmode};"\
 		"run cmdline_keys;"\
 		"\0"\

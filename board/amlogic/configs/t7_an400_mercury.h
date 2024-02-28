@@ -89,10 +89,12 @@
 	"lcd2_ctrl=0x00000000\0" \
 	"dptx0_ctrl=0x00000000\0" \
 	"dptx1_ctrl=0x00000000\0" \
-	"outputmode=panel\0" \
-	"outputmode2=panel1\0" \
+	"outputmode=800x1280p53hz\0" \
+	"outputmode2=1280x800p60hz\0" \
 	"outputmode3=1080p60hz\0" \
-	"connector2_type=HDMI_A\0" \
+	"connector0_type=MIPI-A\0" \
+	"connector1_type=LVDS-B\0" \
+	"connector2_type=HDMI-A-C\0" \
 	"hdmitx_hpd_wait_cnt=0\0" \
 	"viu2_hold_line=4\0" \
 	"cvbsmode=576cvbs\0" \
@@ -160,15 +162,6 @@
 		"cec_fun=0x2F\0" \
 		"logic_addr=0x0\0" \
         "cec_ac_wakeup=1\0" \
-        "check_connector_type="\
-                "setenv bootconfig ${bootconfig} androidboot.connector_type=" \
-                "${connector_type};\0"\
-        "check_connector1_type="\
-                "setenv bootconfig ${bootconfig} androidboot.connector1_type=" \
-                "${connector1_type};\0"\
-        "check_connector2_type="\
-                "setenv bootconfig ${bootconfig} androidboot.connector2_type=" \
-                "${connector2_type};\0"\
 	CONFIG_EXTRA_HDMI_ENV_SETTINGS \
         "initargs="\
 		"init=/init" CONFIG_KNL_LOG_LEVEL "console=ttyS0,921600 no_console_suspend "\
@@ -185,12 +178,10 @@
 			"get_bootloaderversion;" \
 			"run storeargs_base;"\
 			"setenv bootargs ${bootargs} kvm-arm.mode=none init_on_alloc=0 "\
-				"nn_adj_vol=${nn_adj_vol};"\
+			"connector0_type=${connector0_type} connector1_type=${connector1_type} connector2_type=${connector2_type} "\
+			"nn_adj_vol=${nn_adj_vol};"\
 			"run storeargs_hdmitx;"\
             "run cmdline_keys;"\
-			"run check_connector_type; " \
-			"run check_connector1_type; " \
-			"run check_connector2_type; " \
             "\0"\
 	"cec_init="\
 		"echo cec_ac_wakeup=${cec_ac_wakeup}; "\
@@ -381,7 +372,6 @@
 	/* logo2 */ \
 	"setenv display_layer viu2_osd0;"\
 	"setenv fb_width 1280;setenv fb_height 800;"\
-	"setenv outputmode2 panel1;"\
 	"vout2 prepare ${outputmode2};osd open;osd clear;"\
 	"imgread pic logo bootup_land $loadaddr;"\
 	"bmp display $bootup_land_offset;"\

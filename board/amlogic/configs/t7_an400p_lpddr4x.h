@@ -135,8 +135,9 @@
 		"lcd_debug=${lcd_debug} "\
 		"panel1_type=${panel1_type} lcd1_ctrl=${lcd1_ctrl} "\
 		"panel2_type=${panel2_type} "\
-		"lcd2_ctrl=${lcd2_ctrl} outputmode=${outputmode};"\
 		"dptx0_ctrl=${dptx0_ctrl} dptx1_ctrl=${dptx1_ctrl} "\
+		"connector0_type=${connector0_type} connector1_type=${connector1_type} connector2_type=${connector2_type} "\
+		"lcd2_ctrl=${lcd2_ctrl} outputmode=${outputmode};"\
 		"run cmdline_keys;"\
 		"\0"\
         "switch_bootmode="\

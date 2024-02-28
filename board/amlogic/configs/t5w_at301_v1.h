@@ -83,55 +83,46 @@
 /* args/envs */
 #define CONFIG_SYS_MAXARGS  64
 #define CONFIG_EXTRA_ENV_SETTINGS \
-        "firstboot=1\0"\
-        "upgrade_step=0\0"\
-        "jtag=disable\0"\
-        "loadaddr=1080000\0"\
-        "model_name=FHD2HDMI\0" \
-        "panel_type=lvds_1\0" \
-		"panel_name=null\0" \
-        "lcd_ctrl=0x00000000\0" \
-        "outputmode=1080p60hz\0" \
-	"hdmimode=none\0" \
-        "cvbsmode=576cvbs\0" \
-	"vout_init=disable\0" \
-	"connector_type=LVDS-A\0" \
-        "display_width=1920\0" \
-        "display_height=1080\0" \
-        "display_bpp=16\0" \
-        "display_color_index=16\0" \
-        "display_layer=osd0\0" \
-        "display_color_fg=0xffff\0" \
-        "display_color_bg=0\0" \
-	"dtb_mem_addr=0x1000000\0" \
-        "fb_addr=0x1f800000\0" \
-        "fb_width=1920\0" \
-        "fb_height=1080\0" \
-        "frac_rate_policy=1\0" \
-        "usb_burning=adnl 2000\0" \
-        "otg_device=1\0"\
-        "fdt_high=0x20000000\0"\
-        "try_auto_burn=adnl 1000 1500;\0"\
-        "sdcburncfg=aml_sdc_burn.ini\0"\
-        "sdc_burning=sdc_burn ${sdcburncfg}\0"\
-        "wipe_data=successful\0"\
-        "wipe_cache=successful\0"\
-        "EnableSelinux=enforcing\0" \
-        "recovery_part=recovery\0"\
-        "recovery_offset=0\0"\
-        "cvbs_drv=0\0"\
-	"lock=10101000\0"\
-        "osd_reverse=0\0"\
-        "video_reverse=0\0"\
-        "active_slot=normal\0"\
-        "boot_part=boot\0"\
-	"rollback_flag=0\0"\
-	"boot_flag=0\0"\
-        "vendor_boot_part=vendor_boot\0"\
-        "suspend=off\0"\
-        "powermode=on\0"\
-        "ffv_wake=off\0"\
-        "ffv_freeze=off\0"\
+	CONFIG_EXTRA_ENV_SETTINGS_BASE \
+		"silent=1\0"\
+		"systemsuspend_switch=1\0"\
+		"ddr_resume=0\0"\
+		"otg_device=1\0" \
+		"panel_type=lvds_1\0" \
+		"lcd_ctrl=0x00000000\0" \
+		"lcd_debug=0x00000000\0" \
+		"outputmode=1080p60hz\0" \
+		"hdmimode=none\0" \
+		"connector0_type=LVDS-A\0" \
+		"cvbsmode=576cvbs\0" \
+		"vout_init=disable\0" \
+		"model_name=FHD2HDMI\0" \
+		"gamma=0\0" \
+		"display_width=1920\0" \
+		"display_height=1080\0" \
+		"display_bpp=16\0" \
+		"display_color_index=16\0" \
+		"display_layer=osd0\0" \
+		"display_color_fg=0xffff\0" \
+		"display_color_bg=0\0" \
+		"dtb_mem_addr=0x01000000\0" \
+		"fb_width=1920\0" \
+		"fb_height=1080\0" \
+		"frac_rate_policy=1\0" \
+		"usb_burning=" CONFIG_USB_TOOL_ENTRY "\0" \
+		"fdt_high=0x20000000\0"\
+		"sdcburncfg=aml_sdc_burn.ini\0"\
+		"EnableSelinux=enforcing\0" \
+		"recovery_part=recovery\0"\
+		"lock=10101000\0"\
+		"cvbs_drv=0\0"\
+		"osd_reverse=0\0"\
+		"video_reverse=0\0"\
+	"board=t962d4\0"\
+		"suspend=off\0"\
+		"powermode=on\0"\
+		"ffv_wake=off\0"\
+		"ffv_freeze=off\0"\
         "edid_14_dir=/odm/etc/tvconfig/hdmi/port_14.bin\0" \
         "edid_20_dir=/odm/etc/tvconfig/hdmi/port_20.bin\0" \
         "edid_14_dir_dynamic=/odm_ext/etc/tvconfig/hdmi/port_14.bin\0" \
@@ -144,27 +135,21 @@
         "Irq_check_en=0\0"\
         "fs_type=""rootfstype=ramfs""\0"\
 	"disable_ir=0\0"\
-	"check_connector_type="\
-		"setenv bootconfig ${bootconfig} androidboot.connector_type=${connector_type};"\
-		"\0"\
         "initargs="\
 			"init=/init console=ttyS0,115200 no_console_suspend earlycon=aml-uart,0xffd23000 "\
 			"printk.devkmsg=on ramoops.pstore_en=1 ramoops.record_size=0x8000 "\
 			"ramoops.console_size=0x4000 loop.max_part=4 scramble_reg=0xff6345c4 "\
             "\0"\
         "upgrade_check="\
-            "echo upgrade_step=${upgrade_step}; "\
-            "if itest ${upgrade_step} == 3; then "\
-                "run init_display; run storeargs; run update;"\
-            "else fi;"\
-            "\0"\
-        "storeargs="\
-            "get_bootloaderversion;" \
-			"setenv bootargs ${initargs} otg_device=${otg_device} logo=${display_layer},loaded,${fb_addr} powermode=${powermode} fb_width=${fb_width} fb_height=${fb_height} display_bpp=${display_bpp} outputmode=${outputmode} vout=${outputmode},${vout_init} panel_name=${panel_name} panel_type=${panel_type} lcd_ctrl=${lcd_ctrl} hdmimode=${hdmimode} cvbsmode=${cvbsmode} osd_reverse=${osd_reverse} video_reverse=${video_reverse} androidboot.selinux=${EnableSelinux} androidboot.firstboot=${firstboot} jtag=${jtag} mem_size=${mem_size} disable_ir=${disable_ir};"\
-	"setenv bootargs ${bootargs} androidboot.hardware=amlogic androidboot.bootloader=${bootloader_version} androidboot.build.expect.baseband=N/A;"\
-	"setenv bootargs ${bootargs} androidboot.memsize=${memsize};"\
-		"run check_connector_type; "\
-            "run cmdline_keys;"\
+			"run upgrade_check_base;"\
+			"\0"\
+	"storeargs="\
+		"get_bootloaderversion;" \
+		"run storeargs_base;"\
+		"setenv bootargs ${bootargs} powermode=${powermode} kvm-arm.mode=none init_on_alloc=0 "\
+		"lcd_ctrl=${lcd_ctrl} lcd_debug=${lcd_debug} "\
+		"outputmode=${outputmode} connector0_type=${connector0_type} gamma=${gamma};"\
+		"run cmdline_keys;"\
             "\0"\
         "cec_init="\
             "echo cec_ac_wakeup=${cec_ac_wakeup}; "\

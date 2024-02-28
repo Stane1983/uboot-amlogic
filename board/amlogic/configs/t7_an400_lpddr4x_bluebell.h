@@ -88,9 +88,12 @@
 	"lcd2_ctrl=0x00000000\0" \
 	"dptx0_ctrl=0x00000000\0" \
 	"dptx1_ctrl=0x00000000\0" \
-	"outputmode=panel1\0" \
+	"outputmode=1080p60hz\0" \
 	"outputmode2=1080p60hz\0" \
 	"cvbsmode=576cvbs\0" \
+	"connector0_type=VBYONE-B\0" \
+	"connector1_type=HDMI-A-A\0" \
+	"connector2_type=NULL\0" \
 	"storeargs_hdmitx="\
 		"setenv bootargs ${bootargs} powermode=${powermode} "\
 		"lcd_ctrl=${lcd_ctrl} lcd_debug=${lcd_debug} "\
@@ -154,15 +157,6 @@
         "cec_fun=0x2F\0" \
         "logic_addr=0x0\0" \
         "cec_ac_wakeup=1\0" \
-        "check_connector_type="\
-                "setenv bootconfig ${bootconfig} androidboot.connector_type=" \
-                "${connector_type};\0"\
-        "check_connector1_type="\
-                "setenv bootconfig ${bootconfig} androidboot.connector1_type=" \
-                "${connector1_type};\0"\
-        "check_connector2_type="\
-                "setenv bootconfig ${bootconfig} androidboot.connector2_type=" \
-                "${connector2_type};\0"\
 	CONFIG_EXTRA_HDMI_ENV_SETTINGS \
         "initargs="\
 		"init=/init" CONFIG_KNL_LOG_LEVEL "console=ttyS0,921600 no_console_suspend "\
@@ -179,10 +173,7 @@
 			"setenv bootargs ${bootargs} kvm-arm.mode=none init_on_alloc=0 "\
 				"nn_adj_vol=${nn_adj_vol} config_csc_en=${config_csc_en};"\
 			"run storeargs_hdmitx;"\
-            "run cmdline_keys;"\
-			"run check_connector_type; " \
-			"run check_connector1_type; " \
-			"run check_connector2_type; " \
+			"run cmdline_keys;"\
             "\0"\
 	"cec_init="\
 		"echo cec_ac_wakeup=${cec_ac_wakeup}; "\

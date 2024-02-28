@@ -230,7 +230,7 @@
 		"get_bootloaderversion;" \
 		"run storeargs_base;"\
 		"setenv bootargs ${bootargs} kvm-arm.mode=none init_on_alloc=0 "\
-			"nn_adj_vol=${nn_adj_vol} boot_source=${boot_source};"\
+		"nn_adj_vol=${nn_adj_vol} boot_source=${boot_source};"\
 		"run storeargs_hdmitx;"\
 		"run cmdline_keys;"\
 		"\0"\
