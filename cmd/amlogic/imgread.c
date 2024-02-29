@@ -276,6 +276,8 @@ static int do_image_read_dtb_from_knl(const char *partname,
 		const int preloadsz_r = preloadsz;
 		int rc_r = 0;
 		char *slot_name;
+		u64 rc_vendor_boot;
+		char *flag = env_get("normal_to_virtual");
 
 		slot_name = env_get("slot-suffixes");
 		if (strcmp(slot_name, "0") == 0)
@@ -284,6 +286,17 @@ static int do_image_read_dtb_from_knl(const char *partname,
 			strcpy((char *)partname, "vendor_boot_b");
 		else
 			strcpy((char *)partname, "vendor_boot");
+
+		rc_vendor_boot = store_part_size(partname);
+		if (flag && (strcmp(flag, "1") == 0) && rc_vendor_boot == -1) {
+			printf("update from Q to S, check part exist\n");
+			if (slot_name && (strcmp(slot_name, "0") == 0))
+				strcpy((char *)partname, "recovery_a");
+			else if (strcmp(slot_name, "1") == 0)
+				strcpy((char *)partname, "recovery_b");
+			else
+				strcpy((char *)partname, "recovery");
+		}
 
 		MsgP("partname = %s\n", partname);
 		nflashloadlen = preloadsz_r;//head info is one page size == 4k

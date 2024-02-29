@@ -641,6 +641,7 @@ static int do_GetValidSlot(
 			boot_info_save(&boot_ctrl, miscbuf);
 		} else {
 			printf("update from normal ab to virtual ab\n");
+			env_set("normal_to_virtual", "1");
 			AB_mode = 1;
 		}
 	}
@@ -1107,25 +1108,31 @@ static int do_CopySlot(
 
 int do_UpdateDt(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	char *update_dt = env_get("update_dt");
+	printf("write dtb from ${boot_part}\n");
+	run_command("imgread dtb ${boot_part} ${dtb_mem_addr}", 0);
+	run_command("emmc dtb_write ${dtb_mem_addr} 0", 0);
+
+	env_set("update_dt", "0");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+	run_command("update_env_part -p update_dt;", 0);
+#else
+	run_command("saveenv", 0);
+#endif
+
 	char *part_changed = env_get("part_changed");
 
-	printf("update_dt %s, part_changed: %s\n", update_dt, part_changed);
-	if (update_dt && (!strcmp(update_dt, "1"))) {
-		printf("write dtb\n");
-		run_command("imgread dtb ${boot_part} ${dtb_mem_addr}", 0);
-		run_command("emmc dtb_write ${dtb_mem_addr} 0", 0);
-
-		env_set("update_dt", "0");
+	if (part_changed && (!strcmp(part_changed, "1"))) {
+		env_set("part_changed", "0");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+		run_command("update_env_part -p part_changed;", 0);
+#else
 		run_command("saveenv", 0);
+#endif
 
-		if (part_changed && (!strcmp(part_changed, "1"))) {
-			env_set("part_changed", "0");
-			run_command("saveenv", 0);
-
-			run_command("reset", 0);
-		}
+		printf("part changes, reset\n");
+		run_command("reset", 0);
 	}
+
 	return 0;
 }
 
