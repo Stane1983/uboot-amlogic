@@ -451,11 +451,23 @@ const struct mtd_partition *get_spinand_partition_table(int *partitions)
 #ifdef CONFIG_MULTI_DTB
 int checkhw(char *name)
 {
-	char dtb_name[64] = { 0 };
-	cpu_id_t cpu_id = get_cpu_id();
+	char dtb_name[64] = {0};
+	unsigned long ddr_size = (readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4;
 
-	if (cpu_id.family_id == 0x46)
+	switch (ddr_size) {
+	case 0x40000000:
+		strcpy(dtb_name, "s7_s805x3_bp202_1g\0");
+		break;
+	case 0x60000000:
+		strcpy(dtb_name, "s7_s805x3_bp202_1.5g\0");
+		break;
+	case 0x80000000:
 		strcpy(dtb_name, "s7_s805x3_bp202\0");
+		break;
+	default:
+		strcpy(dtb_name, "s7_s805x3_unsupport\0");
+		break;
+	}
 
 	strcpy(name, dtb_name);
 	env_set("aml_dt", dtb_name);
