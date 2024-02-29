@@ -722,4 +722,78 @@ config IHS_VIDEO_OUT
 	  out On-screen Display (OSD) used on gdsys FPGAs to control dynamic
 	  textual overlays of the display outputs.
 
+config AML_SPI_LCD
+	bool "Support display logo on SPI panel in U-Boot"
+	depends on SPI && DM_SPI && AML_SPICC
+	default n
+	help
+	  This helps initialize the SPI panel in U-Boot and display the logo.
+	  It is applicable to drivers for ST7789V, ST7796S, and others.
+
+config AML_SPI_LCD_DC_GPIO
+	string "SPI DC GPIO"
+	depends on AML_SPI_LCD
+	default "GPIOT_13"
+	help
+	  This option specifies the GPIO pin used for the SPI DC (Data/Command)
+	  signal on the SPI panel.
+
+config AML_SPI_LCD_RESET_GPIO
+	string "SPI RESET GPIO"
+	depends on AML_SPI_LCD
+	default "GPIOT_9"
+	help
+	  This option specifies the GPIO pin used for the SPI RESET signal on
+	  the SPI panel.
+
+config AML_SPI_LCD_BACKLIGHT_GPIO
+	string "LCD BACKLIGHT GPIO"
+	depends on AML_SPI_LCD
+	default "GPIOD_7"
+	help
+	  This option specifies the GPIO pin used for controlling the backlight
+	  on the SPI panel.
+
+config AML_SPI_LCD_COL
+	int "LCD Column"
+	depends on AML_SPI_LCD
+	default 240
+	help
+	  This option sets the number of columns (width) of the SPI panel.
+
+config AML_SPI_LCD_ROW
+	int "LCD Row"
+	depends on AML_SPI_LCD
+	default 320
+	help
+	  This option sets the number of rows (height) of the SPI panel.
+
+config AML_SPI_LCD_MAX_CLOCK
+	int "SPI Max Clock"
+	depends on AML_SPI_LCD
+	default 96000000
+	help
+	  This option sets the maximum clock frequency for the SPI interface.
+
+config AML_SPI_LCD_LOGO_PART
+	string "Logo Partition"
+	depends on AML_SPI_LCD
+	default "data"
+	help
+	  This option specifies the partition where the logo data is stored.
+
+config AML_SPI_LCD_LOGO_PATH
+	string "Logo Path"
+	depends on AML_SPI_LCD
+	default "logo.bmp"
+	help
+	  This option specifies the file path for the logo.
+
+config AML_SPI_LCD_LOGO_LOAD_ADDR
+	hex "Logo Load Address"
+	depends on AML_SPI_LCD
+	default 0x20000
+	help
+	   This option sets the memory address where the logo data will be loaded.
+
 endmenu

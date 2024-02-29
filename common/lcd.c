@@ -68,6 +68,10 @@ void lcd_sync(void)
 		flush_dcache_range((ulong)lcd_base,
 			(ulong)(lcd_base + lcd_get_size(&line_length)));
 #endif
+#ifdef CONFIG_AML_SPI_LCD
+extern void fb_lcd_sync(void);
+	fb_lcd_sync();
+#endif
 }
 
 void lcd_set_flush_dcache(int flush)
