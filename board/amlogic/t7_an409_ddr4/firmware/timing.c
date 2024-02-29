@@ -152,8 +152,7 @@ ddr_set_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		.vref_receiver_permil = 0,
 		.vref_dram_permil = 0,
 		//.vref_reverse			= 0,
-		//.ac_trace_delay			={0x0,0x0},// {0x40,0x40,0x40,0x40,0x40,0x40,0x40,0x40,0x40,0x40},
-		.ac_trace_delay ={ 32 + 20,		     32 + 20, 32 + 20, 32 + 20, 32, 32 + 0, 32 + 20, 32 + 20, 32 + 20, 32 + 20},
+		.ac_trace_delay = { 32, 32, 32, 32, 32, 32, 32, 32, 32, 32},
 	#if 0
 		.ddr_dmc_remap =
 		{
