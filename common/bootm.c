@@ -920,6 +920,27 @@ void goto_suspend(void)
 	}
 }
 
+#ifdef CONFIG_AML_DEFENDKEY
+static void defendkey_process(void)
+{
+	char *reboot_mode_s = NULL;
+	char *upgrade_step_s = NULL;
+
+	reboot_mode_s = env_get("reboot_mode");
+	upgrade_step_s = env_get("upgrade_step");
+	if (!reboot_mode_s || !upgrade_step_s)
+		return;
+
+	if ((!strcmp(reboot_mode_s, "recovery")) || (!strcmp(reboot_mode_s, "update")) ||
+	(!strcmp(reboot_mode_s, "factory_reset")) || (!strcmp(upgrade_step_s, "3"))) {
+		run_command("fdt set /defendkey status okay", 0);
+	} else {
+		run_command("fdt set /defendkey status disabled", 0);
+		run_command("fdt rm /reserved-memory/linux,defendkey", 0);
+	}
+}
+#endif
+
 /**
  * Execute selected states of the bootm command.
  *
@@ -1033,6 +1054,10 @@ int do_bootm_states(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
 		return ret;
 	}
 #endif
+#endif
+
+#ifdef CONFIG_AML_DEFENDKEY
+	defendkey_process();
 #endif
 
 	/* From now on, we need the OS boot function */
