@@ -64,6 +64,7 @@
 #define CMD_TEST		0x6
 #define CMD_GET_STICK_REBOOT_FLAG	0x40
 #define CMD_LED_INFO            0xF7
+#define CMD_SET_BL30_PRINT      0x6A
 
 /*******************************************************************************
  * Mssage composition
