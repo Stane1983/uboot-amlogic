@@ -185,6 +185,8 @@ __attribute__ ((section(".misc_param"))) = {
 	{ PADCTRL_PIN_MUX_REGI,	   (0x3 << 4),	  (0xf << 4), 0, 0, 0 },
 	{ PADCTRL_GPIOD_PULL_UP,   (0x1 << 2),	  (0x1 << 2), 0, 0, 0 },
 	{ PWM_TEE_ONLY_J,          (0x1 << 0),	  (0xffffffff << 0), 0, 0, 0 },
+	/* GPIOH_3 has an external pull-up, so disable the default internal pull-up */
+	{ PADCTRL_GPIOH_PULL_EN,   (0x0 << 3),	  (0x1 << 3), 0, 0, 0 },
 };
 
 #define __section(x)    __attribute__((__section__(x)))

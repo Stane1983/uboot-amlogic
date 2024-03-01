@@ -191,6 +191,8 @@ __attribute__ ((section(".misc_param"))) = {
 	 */
 	{ UART_B_WFIFO, 0, 0xffffffff, 0, 1, 0 },
 #endif
+	/* GPIOH_3 has an external pull-up, so disable the default internal pull-up */
+	{ PADCTRL_GPIOH_PULL_EN,   (0x0 << 3),	  (0x1 << 3), 0, 0, 0 },
 };
 
 #define __section(x)    __attribute__((__section__(x)))
