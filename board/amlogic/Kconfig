@@ -533,6 +533,46 @@ config TARGET_S7_BP202
 
 endif
 
+if MESON_T5M
+
+config SYS_SOC
+	default "t5m"
+
+config DDRFW_TYPE
+	string "t5m DDR FW Type"
+	default "ddr4"
+
+config CHIPSET_NAME
+	string "T5M CHIPSET NAME"
+	default "t963d4"
+
+config CHIPSET_VARIANT
+	string "T5M CHIPSET VARIANT"
+	default ""
+
+config AMLOGIC_KEY_TYPE
+	string "T5M AMLOGIC KEY TYPE"
+	default "dev-keys"
+
+config BL30_SELECT
+	string "T5M BL30 board config"
+	default "t5m_skt"
+
+choice
+	prompt "T5M Board"
+
+config T5M_AY301
+	bool "T5M_AY301"
+	select TARGET_T5M_AY301
+	help
+		Select T5M AY301 config
+endchoice
+
+config TARGET_T5M_AY301
+	bool "T5M AY301 board"
+	depends on T5M_AY301
+endif
+
 # Amlogic boards
 
 source "board/amlogic/s4_ap222/Kconfig"
@@ -564,3 +604,5 @@ source "board/amlogic/s1a_bg201/Kconfig"
 source "board/amlogic/s1a_bg209/Kconfig"
 
 source "board/amlogic/s1a_bg209_s805c1eng/Kconfig"
+
+source "board/amlogic/t5m_ay301/Kconfig"

@@ -1,0 +1,24 @@
+if TARGET_T5M_AY301
+
+config SYS_SOC
+	default "t5m"
+
+config SYS_BOARD
+	default "t5m_ay301"
+
+config SYS_VENDOR
+	default "amlogic"
+
+config SYS_CONFIG_NAME
+	default "t5m_ay301"
+
+config DTB_BIND_KERNEL
+    bool "load dtb from boot part but not flash rsv"
+    default n
+
+config AML_REBOOT
+       bool "reboot cmd"
+       default y
+       help
+         support uboot reboot cmd
+endif

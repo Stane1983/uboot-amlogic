@@ -10,6 +10,7 @@
 #include <asm/cache.h>
 #include <asm/io.h>
 #include <asm/amlogic/arch/cpu_sdio.h>
+#include <asm/amlogic/arch/register.h>
 //#include <timer.h>
 
 #define SD_EMMC_CLK	(SD_EMMC_BASE_C)
@@ -19,8 +20,6 @@
 #define P_NAND_BASE (SD_EMMC_BASE_C | (1 << 12))
 
 #define PADCTRL_MISC_CTRL0 ((0x002a  << 2) + 0xfe004000)
-#define PADCTRL_GPIOB_PULL_EN ((0x0093  << 2) + 0xfe004000)
-#define PADCTRL_GPIOB_PULL_UP ((0x0094  << 2) + 0xfe004000)
 #define CLKCTRL_SYS_CLK_EN0_REG0 ((0x0011  << 2) + 0xfe000000)
 #define CLKCTRL_NAND_CLK_CTRL ((0x005a  << 2) + 0xfe000000)
 #define PADCTRL_PIN_MUX_REG0 ((0x0000  << 2) + 0xfe004000)

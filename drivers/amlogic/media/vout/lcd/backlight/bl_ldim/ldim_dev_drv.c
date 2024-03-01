@@ -16,6 +16,7 @@
 #include "../lcd_bl.h"
 #include "ldim_drv.h"
 #include "ldim_dev_drv.h"
+#include <env.h>
 
 void ldim_gpio_set(struct ldim_dev_driver_s *dev_drv, int index, int value)
 {

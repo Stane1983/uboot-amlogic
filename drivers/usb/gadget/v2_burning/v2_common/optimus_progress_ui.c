@@ -5,7 +5,7 @@
 
 #include "../v2_burning_i.h"
 #include <bmp_layout.h>
-#include <lcd.h>
+#include <amlogic/lcd.h>
 #include <video_font.h>
 
 typedef struct bmp_header bmp_header_t;

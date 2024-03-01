@@ -18,6 +18,9 @@
 #include <asm/cpu_id.h>
 #endif
 
+#include <command.h>
+#include <cpu_func.h>
+
 #define ENABLE_OLD_EXTRA_TEST_CMD  1
 #define ENABLE_G12_PHY_TEST_CMD  1
 

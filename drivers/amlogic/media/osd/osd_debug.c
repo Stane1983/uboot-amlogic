@@ -10,6 +10,7 @@
 #include <asm/amlogic/arch/io.h>
 #include <amlogic/cpu_id.h>
 #include <asm/amlogic/arch/cpu.h>
+#include <env.h>
 
 /* Local Headers */
 #ifdef CONFIG_AML_CANVAS

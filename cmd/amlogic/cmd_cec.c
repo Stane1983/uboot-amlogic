@@ -5,10 +5,10 @@
 
 #include <common.h>
 #include <command.h>
-#include <asm/arch/io.h>
-#include <asm/arch/clock.h>
+#include <asm/amlogic/arch/io.h>
+#include <asm/amlogic/arch/clock.h>
 #include <amlogic/aml_cec.h>
-#include <asm/arch/secure_apb.h>
+#include <asm/amlogic/arch/secure_apb.h>
 
 static void cec_init(int logic_addr, unsigned char fun_cfg)
 {
