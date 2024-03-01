@@ -707,6 +707,20 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
             debugP("kernel_size 0x%x, page_size 0x%x, totalSz 0x%x\n", hdr_addr->kernel_size, hdr_addr->page_size, kernel_size);
             debugP("ramdisk_size 0x%x, totalSz 0x%x\n", hdr_addr->ramdisk_size, ramdisk_size);
 			debugP("dtbSz 0x%x, Total actualbootimgsz 0x%x\n", dtbsz, actualbootimgsz);
+			if (kernel_size > MAX_KERNEL_SIZE) {
+				errorP("kernel size limit 0x%x,0x%x\n", kernel_size,
+						MAX_KERNEL_SIZE);
+				return __LINE__;
+			}
+			if (ramdisk_size > MAX_RAMDISK_SIZE) {
+				errorP("ramdisk size limit 0x%x,0x%x\n", ramdisk_size,
+						MAX_RAMDISK_SIZE);
+				return __LINE__;
+			}
+			if (dtbsz > MAX_DTB_SIZE) {
+				errorP("dtb size limit 0x%x,0x%x\n", dtbsz, MAX_DTB_SIZE);
+				return __LINE__;
+			}
         }
 
 #if defined(CONFIG_ZIRCON_BOOT_IMAGE)
@@ -806,6 +820,14 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 		MsgP("ramdisk_size 0x%x, totalSz 0x%x\n",
 			hdr_addr_v3->ramdisk_size, ramdisk_size);
 		MsgP("boot header_version = %d\n", hdr_addr_v3->header_version);
+		if (kernel_size > MAX_KERNEL_SIZE) {
+			errorP("kernel size limit 0x%x,0x%x\n", kernel_size, MAX_KERNEL_SIZE);
+			return __LINE__;
+		}
+		if (ramdisk_size > MAX_RAMDISK_SIZE) {
+			errorP("ramdisk size limit 0x%x,0x%x\n", ramdisk_size, MAX_RAMDISK_SIZE);
+			return __LINE__;
+		}
 		if (securekernelimgsz) {
 			actualbootimgsz = securekernelimgsz;
 			MsgP("securekernelimgsz=0x%x\n", actualbootimgsz);
