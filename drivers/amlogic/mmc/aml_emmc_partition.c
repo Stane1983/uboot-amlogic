@@ -1884,6 +1884,12 @@ int check_gpt_part(struct blk_desc *dev_desc, void *buf)
 				gpt_e[i].ending_lba = gpt_h->last_usable_lba;
 			printf("gpt_e[%d].ending_lba: %llX\n", i, gpt_e[i].ending_lba);
 		}
+		if (le64_to_cpu(gpt_h->alternate_lba) > le64_to_cpu(gpt_e[i].starting_lba) &&
+			le64_to_cpu(gpt_h->alternate_lba) < le64_to_cpu(gpt_e[i].ending_lba)) {
+			printf("%s: alternate_lba: %llX during part %d, invalid, reset it\n",
+				__func__, le64_to_cpu(gpt_h->alternate_lba), i);
+			gpt_h->alternate_lba = gpt_e[1].starting_lba - 1;
+		}
 	}
 
 	calc_crc32 = crc32(0, (const unsigned char *)gpt_e,
