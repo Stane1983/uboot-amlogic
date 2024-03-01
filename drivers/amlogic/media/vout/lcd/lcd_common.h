@@ -117,7 +117,6 @@ int lcd_config_timing_check(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timing
 int lcd_base_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv);
 int lcd_base_config_load_from_bsp(struct aml_lcd_drv_s *pdrv);
 int lcd_get_config(char *dt_addr, int load_id, struct aml_lcd_drv_s *pdrv);
-void lcd_fr_range_update(struct lcd_detail_timing_s *ptiming);
 void lcd_clk_frame_rate_init(struct lcd_detail_timing_s *ptiming);
 void lcd_default_to_basic_timing_init_config(struct aml_lcd_drv_s *pdrv);
 void lcd_enc_timing_init_config(struct aml_lcd_drv_s *pdrv);
