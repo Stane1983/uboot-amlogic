@@ -90,6 +90,9 @@ void vpu_module_init_config(void)
 	/* S5 new add registers */
 	if (vpu_conf.data->chip_type == VPU_CHIP_S5)
 		vpu_sysctrl_write(SYSCTRL_SYS_CLK_VPU_EN, 0xFFFFFFFF);
+
+	if (vpu_conf.data->chip_type >= VPU_CHIP_S7)
+		vpu_vcbus_write(VPU_INTF_CTRL, vpu_vcbus_read(VPU_INTF_CTRL) & 0xfffddddd);
 	VPUPR("%s\n", __func__);
 }
 

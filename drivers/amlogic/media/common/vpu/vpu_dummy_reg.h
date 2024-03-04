@@ -225,6 +225,10 @@
 #define VPU_RDARB_MODE_L1C2                        ((0x2799  << 2) + 0xff000000)
 #endif
 
+#ifndef VPU_INTF_CTRL
+#define VPU_INTF_CTRL                              ((0x270a  << 2) + 0xff000000)
+#endif
+
 #ifndef CLKCTRL_VPU_CLKB_CTRL
 #define CLKCTRL_VPU_CLKB_CTRL 0
 #endif
