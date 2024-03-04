@@ -1910,8 +1910,8 @@ int lcd_tcon_mem_tee_protect(int protect_en)
 		LCDERR("%s: tcon_conf is null\n", __func__);
 		return -1;
 	}
-	if (!tcon_rmem->axi_rmem) {
-		LCDERR("%s: axi_rmem is null\n", __func__);
+	if (tcon_rmem->flag == 0 || !tcon_rmem->axi_rmem) {
+		LCDERR("%s: no axi_rmem\n", __func__);
 		return -1;
 	}
 

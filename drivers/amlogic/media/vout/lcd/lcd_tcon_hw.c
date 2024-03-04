@@ -893,6 +893,7 @@ lcd_tcon_data_common_parse_set_err_size:
 static int lcd_tcon_data_set(struct aml_lcd_drv_s *pdrv,
 		struct tcon_mem_map_table_s *mm_table)
 {
+	struct tcon_rmem_s *tcon_rmem = get_lcd_tcon_rmem();
 	struct lcd_tcon_data_block_header_s *block_header;
 	unsigned char *data_buf;
 	unsigned int temp_crc32, index;
@@ -956,6 +957,24 @@ static int lcd_tcon_data_set(struct aml_lcd_drv_s *pdrv,
 		if (block_header->block_type == LCD_TCON_DATA_BLOCK_TYPE_PDF)
 			continue;
 
+		switch (block_header->block_type) {
+		case LCD_TCON_DATA_BLOCK_TYPE_OD_LUT:
+		case LCD_TCON_DATA_BLOCK_TYPE_DEMURA_LUT:
+		case LCD_TCON_DATA_BLOCK_TYPE_DEMURA_SET:
+			if (!tcon_rmem) {
+				LCDERR("%s: tcon_rmem is NULL, bypass block[%d]: type 0x%x\n",
+					__func__, index, block_header->block_type);
+				continue;
+			}
+			if (tcon_rmem->flag == 0 || !tcon_rmem->axi_rmem) {
+				LCDERR("%s: no axi_mem, bypass block[%d]: type 0x%x\n",
+					__func__, index, block_header->block_type);
+				continue;
+			}
+			break;
+		default:
+			break;
+		}
 		if (is_block_ctrl_multi(block_header->block_ctrl)) {
 			ret = lcd_tcon_data_multi_match_find(pdrv, data_buf);
 			if (ret == 0)
@@ -1203,7 +1222,7 @@ int lcd_tcon_enable_t5(struct aml_lcd_drv_s *pdrv)
 	if (mm_table->version)
 		lcd_tcon_data_set(pdrv, mm_table);
 
-	if (rmem)
+	if (rmem && rmem->flag && rmem->axi_rmem)
 		flush_cache(rmem->rsv_mem_paddr, rmem->rsv_mem_size);
 
 	/* step 4: tcon_top_output_set */
@@ -1248,7 +1267,7 @@ int lcd_tcon_enable_t3(struct aml_lcd_drv_s *pdrv)
 	if (mm_table->version)
 		lcd_tcon_data_set(pdrv, mm_table);
 
-	if (rmem)
+	if (rmem && rmem->flag && rmem->axi_rmem)
 		flush_cache(rmem->rsv_mem_paddr, rmem->rsv_mem_size);
 
 #ifdef CONFIG_AMLOGIC_TEE
@@ -1299,7 +1318,7 @@ int lcd_tcon_enable_txhd2(struct aml_lcd_drv_s *pdrv)
 	if (mm_table->version)
 		lcd_tcon_data_set(pdrv, mm_table);
 
-	if (rmem)
+	if (rmem && rmem->flag && rmem->axi_rmem)
 		flush_cache(rmem->rsv_mem_paddr, rmem->rsv_mem_size);
 
 #ifdef CONFIG_AMLOGIC_TEE
