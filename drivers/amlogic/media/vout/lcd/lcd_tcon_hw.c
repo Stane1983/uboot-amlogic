@@ -474,7 +474,7 @@ void lcd_tcon_axi_rmem_lut_load(unsigned int index, unsigned char *buf,
 	}
 	if (!tcon_conf)
 		return;
-	if (index > tcon_conf->axi_bank) {
+	if (index >= tcon_conf->axi_bank) {
 		LCDERR("axi_rmem index %d invalid\n", index);
 		return;
 	}
@@ -886,7 +886,6 @@ lcd_tcon_data_common_parse_set_err_size:
 static int lcd_tcon_data_set(struct aml_lcd_drv_s *pdrv,
 		struct tcon_mem_map_table_s *mm_table)
 {
-	struct tcon_rmem_s *tcon_rmem = get_lcd_tcon_rmem();
 	struct lcd_tcon_data_block_header_s *block_header;
 	unsigned char *data_buf;
 	unsigned int temp_crc32, index;
@@ -952,22 +951,28 @@ static int lcd_tcon_data_set(struct aml_lcd_drv_s *pdrv,
 
 		switch (block_header->block_type) {
 		case LCD_TCON_DATA_BLOCK_TYPE_OD_LUT:
-		case LCD_TCON_DATA_BLOCK_TYPE_DEMURA_LUT:
-		case LCD_TCON_DATA_BLOCK_TYPE_DEMURA_SET:
-			if (!tcon_rmem) {
-				LCDERR("%s: tcon_rmem is NULL, bypass block[%d]: type 0x%x\n",
-					__func__, index, block_header->block_type);
+			// skip od stage when memory is not ready
+			if (!lcd_tcon_mem_od_is_valid()) {
+				if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+					LCDERR("%s: bypass block[%d]: type 0x%x\n",
+						__func__, index, block_header->block_type);
 				continue;
 			}
-			if (tcon_rmem->flag == 0 || !tcon_rmem->axi_rmem) {
-				LCDERR("%s: no axi_mem, bypass block[%d]: type 0x%x\n",
-					__func__, index, block_header->block_type);
+			break;
+		case LCD_TCON_DATA_BLOCK_TYPE_DEMURA_LUT:
+		case LCD_TCON_DATA_BLOCK_TYPE_DEMURA_SET:
+			// skip demura stage when memory is not ready
+			if (!lcd_tcon_mem_demura_is_valid()) {
+				if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+					LCDERR("%s: bypass block[%d]: type 0x%x\n",
+						__func__, index, block_header->block_type);
 				continue;
 			}
 			break;
 		default:
 			break;
 		}
+
 		if (is_block_ctrl_multi(block_header->block_ctrl)) {
 			ret = lcd_tcon_data_multi_match_find(pdrv, data_buf);
 			if (ret == 0)
