@@ -187,8 +187,9 @@ static void qms_scene_pre_process(struct hdmitx_dev *hdev)
 	char *mode;
 	int i;
 
+	hdev->qms_en = 0; /* default as 0 */
 	/* if current mode is interlaced mode, then skip QMS */
-	mode = env_get("hdmi_mode");
+	mode = env_get("hdmimode");
 	if (!mode)
 		return;
 	for (i = 0; i < 3; i++) {
@@ -211,8 +212,6 @@ static void qms_scene_pre_process(struct hdmitx_dev *hdev)
 	if (!hdev->qms_en)
 		return;
 	hdev->brr_vic = qms_brr_vic;
-	/* save brr_vic to vic without the environment */
-	hdev->vic = hdev->brr_vic;
 	/* reconfig the hdmi para */
 	t = hdmitx21_gettiming_from_vic(hdev->brr_vic);
 	if (!t) {
@@ -222,13 +221,27 @@ static void qms_scene_pre_process(struct hdmitx_dev *hdev)
 	color = env_get("user_colorattribute");
 	if (!color)
 		color = env_get("colorattribute");
+	/* save brr_vic to vic without the environment */
+	hdev->vic = hdev->brr_vic;
 	hdev->para = hdmitx21_get_fmtpara(t->sname ? t->sname : t->name, color);
 }
 
 static void qms_scene_post_process(struct hdmitx_dev *hdev)
 {
+	const struct hdmi_timing *t = NULL;
+
 	// Init QMS parameter
 	vrr_init_qms_para(hdev);
+
+	/* set the BRR name as hdmimode and outputmode */
+	if (hdev->qms_en) {
+		t = hdmitx21_gettiming_from_vic(hdev->brr_vic);
+		if (t) {
+			env_set("hdmimode", t->sname ? t->sname : t->name);
+			env_set("outputmode", env_get("hdmimode")); /* reassing to outputmode */
+			pr_info("set outputmode as %s %d\n", env_get("outputmode"), hdev->brr_vic);
+		}
+	}
 }
 
 static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
