@@ -858,10 +858,11 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 	//get boot status
 	run_command("amlbootsta -p -s", 0);
 
-	//get forUpgrade_robustOta and check if support robustota
-	robustota = env_get("forUpgrade_robustOta");
-	if ((robustota == NULL) || !strcmp(robustota, "false")) {
-		return -1;
+	if (has_boot_slot == 0) {
+		//get forUpgrade_robustOta and check if support robustota
+		robustota = env_get("forUpgrade_robustOta");
+		if (!robustota || !strcmp(robustota, "false"))
+			return -1;
 	}
 
 	//get bootloader index
