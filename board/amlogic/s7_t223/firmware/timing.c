@@ -178,8 +178,8 @@ __attribute__ ((section(".misc_param"))) = {
 	/* set pwm j and pwm h clock rate to 24M, enable them */
 	{ CLKCTRL_PWM_CLK_GH_CTRL, (0x1 << 24), 0xffffffff, 0, 0, 0 },
 	{ CLKCTRL_PWM_CLK_IJ_CTRL, (0x1 << 24), 0xffffffff, 0, 0, 0 },
-	/* set GPIOE_0 GPIOE_1 drive strength to 3 */
-	{ PADCTRL_GPIOE_DS,	   0xf,		  0xf,	      0, 0, 0 },
+	/* set GPIOE_0 GPIOE_1 drive strength to 2 ,already set by gpio owner on bl2*/
+	// { PADCTRL_GPIOE_DS,	   0xa,		  0xf,	      0, 0, 0 },
 	/* set GPIOE_0 GPIOE_1 mux to pwmh pwmj */
 	{ PADCTRL_PIN_MUX_REGI,	   (0x3 << 0),	  (0xf << 0), 0, 0, 0 },
 	{ PADCTRL_PIN_MUX_REGI,	   (0x3 << 4),	  (0xf << 4), 0, 0, 0 },
