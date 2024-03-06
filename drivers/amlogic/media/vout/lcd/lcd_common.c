@@ -2899,14 +2899,13 @@ int lcd_frame_rate_change(struct aml_lcd_drv_s *pdrv)
 	char str[100];
 	int len = 0;
 
-	pconf->timing.clk_change = 0; /* clear clk flag */
 	switch (type) {
 	case 0: /* pixel clk adjust */
 		temp = duration_num;
 		temp = temp * h_period * v_period;
 		pclk = lcd_do_div(temp, duration_den);
 		if (pconf->timing.act_timing.pixel_clk != pclk)
-			pconf->timing.clk_change = LCD_CLK_PLL_CHANGE;
+			pconf->timing.clk_change |= LCD_CLK_PLL_CHANGE;
 		break;
 	case 1: /* htotal adjust */
 		temp = pclk;
@@ -2921,7 +2920,7 @@ int lcd_frame_rate_change(struct aml_lcd_drv_s *pdrv)
 			pclk = lcd_do_div(temp, duration_den);
 		}
 		if (pconf->timing.act_timing.pixel_clk != pclk)
-			pconf->timing.clk_change = LCD_CLK_FRAC_UPDATE;
+			pconf->timing.clk_change |= LCD_CLK_FRAC_UPDATE;
 		break;
 	case 2: /* vtotal adjust */
 		temp = pclk;
@@ -2936,7 +2935,7 @@ int lcd_frame_rate_change(struct aml_lcd_drv_s *pdrv)
 			pclk = lcd_do_div(temp, duration_den);
 		}
 		if (pconf->timing.act_timing.pixel_clk != pclk)
-			pconf->timing.clk_change = LCD_CLK_FRAC_UPDATE;
+			pconf->timing.clk_change |= LCD_CLK_FRAC_UPDATE;
 		break;
 	case 3: /* free adjust, use min/max range to calculate */
 		temp = pclk;
@@ -2960,7 +2959,7 @@ int lcd_frame_rate_change(struct aml_lcd_drv_s *pdrv)
 					return -1;
 				}
 				if (pconf->timing.act_timing.pixel_clk != pclk)
-					pconf->timing.clk_change = LCD_CLK_PLL_CHANGE;
+					pconf->timing.clk_change |= LCD_CLK_PLL_CHANGE;
 			}
 		} else if (v_period < pconf->timing.act_timing.v_period_min) {
 			v_period = pconf->timing.act_timing.v_period_min;
@@ -2978,7 +2977,7 @@ int lcd_frame_rate_change(struct aml_lcd_drv_s *pdrv)
 					return -1;
 				}
 				if (pconf->timing.act_timing.pixel_clk != pclk)
-					pconf->timing.clk_change = LCD_CLK_PLL_CHANGE;
+					pconf->timing.clk_change |= LCD_CLK_PLL_CHANGE;
 			}
 		}
 		/* check clk frac update */
@@ -2987,7 +2986,7 @@ int lcd_frame_rate_change(struct aml_lcd_drv_s *pdrv)
 			temp = temp * h_period * v_period;
 			pclk = lcd_do_div(temp, duration_den);
 			if (pconf->timing.act_timing.pixel_clk != pclk)
-				pconf->timing.clk_change = LCD_CLK_FRAC_UPDATE;
+				pconf->timing.clk_change |= LCD_CLK_FRAC_UPDATE;
 		}
 		break;
 	case 4: /* hdmi mode */
@@ -2998,7 +2997,7 @@ int lcd_frame_rate_change(struct aml_lcd_drv_s *pdrv)
 			temp = temp * h_period * v_period;
 			pclk = lcd_do_div(temp, duration_den);
 			if (pconf->timing.act_timing.pixel_clk != pclk)
-				pconf->timing.clk_change = LCD_CLK_PLL_CHANGE;
+				pconf->timing.clk_change |= LCD_CLK_PLL_CHANGE;
 		} else if ((duration_num / duration_den) == 47) {
 			/* htotal adjust */
 			temp = pclk;
@@ -3011,7 +3010,7 @@ int lcd_frame_rate_change(struct aml_lcd_drv_s *pdrv)
 				pclk = lcd_do_div(temp, duration_den);
 			}
 			if (pconf->timing.act_timing.pixel_clk != pclk)
-				pconf->timing.clk_change = LCD_CLK_PLL_CHANGE;
+				pconf->timing.clk_change |= LCD_CLK_PLL_CHANGE;
 		} else if ((duration_num / duration_den) == 95) {
 			/* htotal adjust */
 			temp = pclk;
@@ -3024,7 +3023,7 @@ int lcd_frame_rate_change(struct aml_lcd_drv_s *pdrv)
 				pclk = lcd_do_div(temp, duration_den);
 			}
 			if (pconf->timing.act_timing.pixel_clk != pclk)
-				pconf->timing.clk_change = LCD_CLK_PLL_CHANGE;
+				pconf->timing.clk_change |= LCD_CLK_PLL_CHANGE;
 		} else {
 			/* htotal adjust */
 			temp = pclk;
@@ -3039,7 +3038,7 @@ int lcd_frame_rate_change(struct aml_lcd_drv_s *pdrv)
 				pclk = lcd_do_div(temp, duration_den);
 			}
 			if (pconf->timing.act_timing.pixel_clk != pclk)
-				pconf->timing.clk_change = LCD_CLK_FRAC_UPDATE;
+				pconf->timing.clk_change |= LCD_CLK_FRAC_UPDATE;
 		}
 		break;
 	default:
@@ -3065,7 +3064,7 @@ int lcd_frame_rate_change(struct aml_lcd_drv_s *pdrv)
 	if (pconf->timing.act_timing.pixel_clk != pclk) {
 		if (len > 0)
 			len += sprintf(str + len, ", ");
-		len += sprintf(str + len, "pclk %uHz->%uHz, clk_change:%d",
+		len += sprintf(str + len, "pclk %uHz->%uHz, clk_change:0x%x",
 			pconf->timing.act_timing.pixel_clk, pclk,
 			pconf->timing.clk_change);
 		pconf->timing.act_timing.pixel_clk = pclk;
