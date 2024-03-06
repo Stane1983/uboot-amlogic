@@ -28,6 +28,7 @@ static int bmp_scale(ulong src_addr, ulong dst_addr, unsigned int new_width,
 		     unsigned new_height);
 #endif
 
+#define getenv env_get
 /*
  * Allocate and decompress a BMP image using gunzip().
  *
