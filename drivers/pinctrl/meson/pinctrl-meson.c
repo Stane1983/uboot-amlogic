@@ -21,6 +21,9 @@
 #include <asm/gpio.h>
 
 #include "pinctrl-meson.h"
+#if defined(CONFIG_AMLOGIC_MODIFY)
+#include "pinctrl-meson-axg.h"
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -57,13 +60,35 @@ const char *meson_pinctrl_get_pin_name(struct udevice *dev,
 				       unsigned int selector)
 {
 	struct meson_pinctrl *priv = dev_get_priv(dev);
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	int i;
+	struct meson_axg_pmx_data *pmx = priv->data->pmx_data;
+	struct meson_pmx_bank *bank;
+	unsigned int pin;
 
+	pin = selector + priv->data->pin_base;
+
+	for (i = 0; i < pmx->num_pmx_banks; i++) {
+		if (pin >= pmx->pmx_banks[i].first &&
+		    pin <= pmx->pmx_banks[i].last) {
+			bank = &pmx->pmx_banks[i];
+			break;
+		}
+	}
+
+	if (i == pmx->num_pmx_banks)
+		snprintf(pin_name, PINNAME_SIZE, "Error");
+	else
+		snprintf(pin_name, PINNAME_SIZE, "GPIO%s_%d",
+			 bank->name, pin - bank->first);
+#else
 	if (selector > priv->data->num_pins ||
 	    selector > priv->data->funcs[0].num_groups)
 		snprintf(pin_name, PINNAME_SIZE, "Error");
 	else
 		snprintf(pin_name, PINNAME_SIZE, "%s",
 			 priv->data->funcs[0].groups[selector]);
+#endif
 
 	return pin_name;
 }
