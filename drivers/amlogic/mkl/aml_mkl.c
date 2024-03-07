@@ -177,6 +177,7 @@ int aml_mkl_run(struct amlkl_params *param)
 	switch (ret) {
 	case 0:
 		break;
+	/* coverity[dead_error_condition:SUPPRESS] */
 	case 1:
 		printf("Permission Denied Error code: %d\n", ret);
 		return KL_STATUS_ERROR_BAD_STATE;
