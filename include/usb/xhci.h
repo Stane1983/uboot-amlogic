@@ -1195,6 +1195,17 @@ void xhci_hcd_stop(int index);
 /* true: Controller Not Ready to accept doorbell or op reg writes after reset */
 #define XHCI_STS_CNR		(1 << 11)
 
+#ifdef CONFIG_AMLOGIC_USB
+	struct descriptor {
+		struct usb_hub_descriptor hub;
+		struct usb_device_descriptor device;
+		struct usb_config_descriptor config;
+		struct usb_interface_descriptor interface;
+		struct usb_endpoint_descriptor endpoint;
+		struct usb_ss_ep_comp_descriptor ep_companion;
+	} __attribute__ ((packed));
+#endif
+
 struct xhci_ctrl {
 #if CONFIG_IS_ENABLED(DM_USB)
 	struct udevice *dev;
@@ -1218,6 +1229,9 @@ struct xhci_ctrl {
 	u16 hci_version;
 	u32 quirks;
 #define XHCI_MTK_HOST		BIT(0)
+#ifdef CONFIG_AMLOGIC_USB
+	struct descriptor descriptor;
+#endif
 };
 
 #if CONFIG_IS_ENABLED(DM_USB)

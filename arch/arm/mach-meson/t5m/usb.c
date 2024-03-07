@@ -21,10 +21,6 @@
 
 #include <linux/compat.h>
 #include <linux/ioport.h>
-#include <asm-generic/gpio.h>
-
-#define USB_POC7(poc)       ((poc) >> 7 & 1)
-#define POC_USB_CHANNEL_C(poc)  (!USB_POC7(poc))
 
 #define USB_NONE		0
 #define USB_NOVALID		1
@@ -94,14 +90,15 @@
 
 #define AMLOGIC_CTR_COUNT		(0x2)
 
-static int Rev_flag = 0;
-
 struct ctr_info {
 	struct phy usb_phys[4];
 	unsigned int phy_count;
 };
 
 static struct ctr_info ctr[AMLOGIC_CTR_COUNT];
+
+#if 0
+static int rev_flag;
 
 int get_usbphy_baseinfo(void)
 {
@@ -172,9 +169,13 @@ void usb_aml_detect_operation(int argc, char * const argv[])
 				printf("phy%d-addr= 0x%08x\n", j, usb2_priv->usb_phy2_pll_base_addr[j]);
 		}
 	}
-	printf("PHY version is 0x%02x\n", Rev_flag);
+	printf("PHY version is 0x%02x\n", rev_flag);
 }
+#endif
 
+/**************************************************************/
+/*           host mode config                               */
+/**************************************************************/
 static void usb_set_calibration_trim(uint32_t phy2_pll_base)
 {
 	uint32_t cali, value,i;
@@ -540,11 +541,26 @@ void set_usb_power_off(void)
 {
 	unsigned int val;
 
+	printf("%s", __func__);
 	val = readl(RESETCTRL_RESET0_LEVEL);
 	val &= ~((1 << 8) | (1 << 3) | (1 << 9));
 	writel(val, RESETCTRL_RESET0_LEVEL);
 
 	val = readl(RESETCTRL_RESET1_LEVEL);
 	val &= ~(1 << 13);
+	writel(val, RESETCTRL_RESET1_LEVEL);
+}
+
+void set_usb_power_on(void)
+{
+	unsigned int val;
+
+	printf("%s", __func__);
+	val = readl(RESETCTRL_RESET0_LEVEL);
+	val |= ((1 << 8) | (1 << 3) | (1 << 9));
+	writel(val, RESETCTRL_RESET0_LEVEL);
+
+	val = readl(RESETCTRL_RESET1_LEVEL);
+	val |= (1 << 13);
 	writel(val, RESETCTRL_RESET1_LEVEL);
 }

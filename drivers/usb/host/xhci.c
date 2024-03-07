@@ -37,6 +37,7 @@
 #include <linux/errno.h>
 #include <linux/iopoll.h>
 
+#ifndef CONFIG_AMLOGIC_USB
 static struct descriptor {
 	struct usb_hub_descriptor hub;
 	struct usb_device_descriptor device;
@@ -110,7 +111,64 @@ static struct descriptor {
 		cpu_to_le16(0x02),
 	},
 };
+#else
+static inline void xhci_init_descriptor(struct descriptor *descriptor)
+{
+	descriptor->hub.bLength = 0xc;
+	descriptor->hub.bDescriptorType = 0x2a;
+	descriptor->hub.bNbrPorts = 2;
+	descriptor->hub.wHubCharacteristics = cpu_to_le16(0x8);
+	descriptor->hub.bPwrOn2PwrGood = 10;
+	descriptor->hub.bHubContrCurrent = 0;
 
+	descriptor->device.bLength = 0x12;
+	descriptor->device.bDescriptorType = 1;
+	descriptor->device.bcdUSB = cpu_to_le16(0x0300);
+	descriptor->device.bDeviceClass = 9;
+	descriptor->device.bDeviceSubClass = 0;
+	descriptor->device.bDeviceProtocol = 3;
+	descriptor->device.bMaxPacketSize0 = 9;
+	descriptor->device.idVendor = 0x0000;
+	descriptor->device.idProduct = 0x0000;
+	descriptor->device.bcdDevice = cpu_to_le16(0x0100);
+	descriptor->device.iManufacturer = 1;
+	descriptor->device.iProduct = 2;
+	descriptor->device.iSerialNumber = 0;
+	descriptor->device.bNumConfigurations = 1;
+
+	descriptor->config.bLength = 0x9;
+	descriptor->config.bDescriptorType = 2;
+	descriptor->config.wTotalLength = cpu_to_le16(0x1f);
+	descriptor->config.bNumInterfaces = 1;
+	descriptor->config.bConfigurationValue = 1;
+	descriptor->config.iConfiguration = 0;
+	descriptor->config.bmAttributes = 0x40;
+	descriptor->config.bMaxPower = 0;
+
+	descriptor->interface.bLength = 0x9;
+	descriptor->interface.bDescriptorType = 4;
+	descriptor->interface.bInterfaceNumber = 0;
+	descriptor->interface.bAlternateSetting = 0;
+	descriptor->interface.bNumEndpoints = 1;
+	descriptor->interface.bInterfaceClass = 9;
+	descriptor->interface.bInterfaceSubClass = 0;
+	descriptor->interface.bInterfaceProtocol = 0;
+	descriptor->interface.iInterface = 0;
+
+	descriptor->endpoint.bLength = 0x7;
+	descriptor->endpoint.bDescriptorType = 5;
+	descriptor->endpoint.bEndpointAddress = 0x81;
+	descriptor->endpoint.bmAttributes = 3;
+	descriptor->endpoint.wMaxPacketSize = 8;
+	descriptor->endpoint.bInterval = 255;
+
+	descriptor->ep_companion.bLength = 0x6;
+	descriptor->ep_companion.bDescriptorType = 0x30;
+	descriptor->ep_companion.bMaxBurst = 0x00;
+	descriptor->ep_companion.bmAttributes = 0x00;
+	descriptor->ep_companion.wBytesPerInterval = cpu_to_le16(0x02);
+}
+#endif
 struct xhci_ctrl *xhci_get_ctrl(struct usb_device *udev)
 {
 	struct udevice *dev;
@@ -904,12 +962,20 @@ static int xhci_submit_root(struct usb_device *udev, unsigned long pipe,
 		switch (le16_to_cpu(req->value) >> 8) {
 		case USB_DT_DEVICE:
 			debug("USB_DT_DEVICE request\n");
+#ifndef CONFIG_AMLOGIC_USB
 			srcptr = &descriptor.device;
+#else
+			srcptr = &ctrl->descriptor.device;
+#endif
 			srclen = 0x12;
 			break;
 		case USB_DT_CONFIG:
 			debug("USB_DT_CONFIG config\n");
+#ifndef CONFIG_AMLOGIC_USB
 			srcptr = &descriptor.config;
+#else
+			srcptr = &ctrl->descriptor.config;
+#endif
 			srclen = 0x19;
 			break;
 		case USB_DT_STRING:
@@ -945,7 +1011,11 @@ static int xhci_submit_root(struct usb_device *udev, unsigned long pipe,
 		case USB_DT_HUB:
 		case USB_DT_SS_HUB:
 			debug("USB_DT_HUB config\n");
+#ifndef CONFIG_AMLOGIC_USB
 			srcptr = &descriptor.hub;
+#else
+			srcptr = &ctrl->descriptor.hub;
+#endif
 			srclen = 0x8;
 			break;
 		default:
@@ -1206,11 +1276,17 @@ static int xhci_lowlevel_init(struct xhci_ctrl *ctrl)
 		return -ENOMEM;
 
 	reg = xhci_readl(&hccr->cr_hcsparams1);
+#ifndef CONFIG_AMLOGIC_USB
 	descriptor.hub.bNbrPorts = HCS_MAX_PORTS(reg);
 	printf("Register %x NbrPorts %d\n", reg, descriptor.hub.bNbrPorts);
+#else
+	ctrl->descriptor.hub.bNbrPorts =  HCS_MAX_PORTS(reg);
+	printf("Register %x NbrPorts %d\n", reg, ctrl->descriptor.hub.bNbrPorts);
+#endif
 
 	/* Port Indicators */
 	reg = xhci_readl(&hccr->cr_hccparams);
+#ifndef CONFIG_AMLOGIC_USB
 	if (HCS_INDICATOR(reg))
 		put_unaligned(get_unaligned(&descriptor.hub.wHubCharacteristics)
 				| 0x80, &descriptor.hub.wHubCharacteristics);
@@ -1219,6 +1295,16 @@ static int xhci_lowlevel_init(struct xhci_ctrl *ctrl)
 	if (HCC_PPC(reg))
 		put_unaligned(get_unaligned(&descriptor.hub.wHubCharacteristics)
 				| 0x01, &descriptor.hub.wHubCharacteristics);
+#else
+	if (HCS_INDICATOR(reg))
+		put_unaligned(get_unaligned(&ctrl->descriptor.hub.wHubCharacteristics)
+				| 0x80, &ctrl->descriptor.hub.wHubCharacteristics);
+
+	/* Port Power Control */
+	if (HCC_PPC(reg))
+		put_unaligned(get_unaligned(&ctrl->descriptor.hub.wHubCharacteristics)
+				| 0x01, &ctrl->descriptor.hub.wHubCharacteristics);
+#endif
 
 	if (xhci_start(hcor)) {
 		xhci_reset(hcor);
@@ -1405,7 +1491,10 @@ int xhci_register(struct udevice *dev, struct xhci_hccr *hccr,
 	 * of that is done for XHCI unlike EHCI.
 	 */
 	priv->desc_before_addr = false;
-
+#ifdef CONFIG_AMLOGIC_USB
+	memset(&ctrl->descriptor, 0x00, sizeof(struct descriptor));
+	xhci_init_descriptor(&ctrl->descriptor);
+#endif
 	ret = xhci_reset(hcor);
 	if (ret)
 		goto err;
