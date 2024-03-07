@@ -268,6 +268,7 @@ extern unsigned long __RO_START__;
 void mmu_update_text_attr(void)
 {
 	struct mm_region mem_map;
+
 	dcache_disable();
 	mem_map.virt = _text_start;
 	mem_map.phys = _text_start;

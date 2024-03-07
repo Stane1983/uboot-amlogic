@@ -60,11 +60,13 @@ _bss_end_ofs:
 	.quad	__bss_end - _start
 
 reset:
+	branch_if_slave x0, skip_bl33z
 	/* Allow the board to save important registers */
 #if (defined CONFIG_SUPPORT_BL33Z) && (defined CONFIG_FULL_RAMDUMP)
 	/* jump to bl33z */
 	bl	load_bl33z
 #endif
+skip_bl33z:
 	b	save_boot_params
 .globl	save_boot_params_ret
 save_boot_params_ret:

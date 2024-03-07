@@ -156,3 +156,4 @@ obj-y += nocs_seb.o
 obj-$(CONFIG_ZIRCON_BOOT_IMAGE) += cmd_zircon_bootconfig.o
 obj-$(CONFIG_LIBABR) += zircon_abr.o
 obj-$(CONFIG_ZIRCON_ABR) += zircon_vboot.o
+obj-$(CONFIG_ARMV8_MULTIENTRY) += smp.o

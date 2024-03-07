@@ -129,12 +129,15 @@ lr	.req	x30
 #ifdef CONFIG_ARMV8_MULTIENTRY
 	/* NOTE: MPIDR handling will be erroneous on multi-cluster machines */
 	mrs	\xreg1, mpidr_el1
-	lsr	\xreg2, \xreg1, #32
-	lsl	\xreg2, \xreg2, #32
-	lsl	\xreg1, \xreg1, #40
-	lsr	\xreg1, \xreg1, #40
-	orr	\xreg1, \xreg1, \xreg2
-	cbz	\xreg1, \master_label
+	ubfx \xreg2, \xreg1, #24, #1
+	add \xreg2, \xreg2, #0xff
+	and \xreg2, \xreg2, #0xff
+	ldr \xreg1,  = 0xFFFF00
+	add	\xreg2, \xreg2, \xreg1
+	mrs	\xreg1, mpidr_el1
+	and	\xreg1, \xreg1, \xreg2
+	cmp \xreg1, #0
+	beq \master_label
 #else
 	b 	\master_label
 #endif
