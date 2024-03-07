@@ -24,6 +24,7 @@ SECTIONS
 	. = ALIGN(8);
 	.text :
 	{
+		__RO_START__ = .;
 		*(.__image_copy_start)
 		CPUDIR/start.o (.text*)
 	}
