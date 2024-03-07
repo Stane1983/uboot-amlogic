@@ -215,10 +215,6 @@ int temp_read_entry(void)
 	case 0x3:
 		printf("temp type no support\n");
 		return -1;
-		//break;
-	default:
-		printf("thermal version not support!!!Please check!\n");
-		return -1;
 	}
 	return 0;
 }
