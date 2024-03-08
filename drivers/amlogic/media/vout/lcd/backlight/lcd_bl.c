@@ -141,14 +141,13 @@ static void bl_pwm_pinmux_gpio_set(struct aml_bl_drv_s *bdrv, int pwm_index, int
 	if (bl_pwm->pinmux_flag > 0) {
 		i = 0;
 		while (i < LCD_PINMUX_NUM) {
-			if (bl_pwm->pinmux_set[i][0] == LCD_PINMUX_END)
+			if (bl_pwm->pinmux_clr[i][0] == LCD_PINMUX_END)
 				break;
-			lcd_pinmux_clr_mask(bl_pwm->pinmux_set[i][0],
-				bl_pwm->pinmux_set[i][1]);
+			lcd_pinmux_clr_mask(bl_pwm->pinmux_clr[i][0], bl_pwm->pinmux_clr[i][1]);
 			if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-			BLPR("%s: port=0x%x, pinmux_clr=%d,0x%08x\n",
-				__func__, bl_pwm->pwm_port,
-				bl_pwm->pinmux_set[i][0], bl_pwm->pinmux_set[i][1]);
+				BLPR("%s: port=0x%x, pinmux_clr=0x%x,0x%08x\n",
+					__func__, bl_pwm->pwm_port,
+					bl_pwm->pinmux_clr[i][0], bl_pwm->pinmux_clr[i][1]);
 			}
 			i++;
 		}
@@ -202,12 +201,23 @@ static void bl_pwm_pinmux_gpio_clr(struct aml_bl_drv_s *bdrv, unsigned int pwm_i
 	/* set pinmux */
 	i = 0;
 	while (i < LCD_PINMUX_NUM) {
+		if (bl_pwm->pinmux_clr[i][0] == LCD_PINMUX_END)
+			break;
+		lcd_pinmux_clr_mask(bl_pwm->pinmux_clr[i][0], bl_pwm->pinmux_clr[i][1]);
+		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
+			BLPR("%s: port=0x%x, pinmux_clr=0x%x,0x%08x\n",
+				__func__, bl_pwm->pwm_port,
+				bl_pwm->pinmux_clr[i][0], bl_pwm->pinmux_clr[i][1]);
+		}
+		i++;
+	}
+	i = 0;
+	while (i < LCD_PINMUX_NUM) {
 		if (bl_pwm->pinmux_set[i][0] == LCD_PINMUX_END)
 			break;
-		lcd_pinmux_set_mask(bl_pwm->pinmux_set[i][0],
-			bl_pwm->pinmux_set[i][1]);
+		lcd_pinmux_set_mask(bl_pwm->pinmux_set[i][0], bl_pwm->pinmux_set[i][1]);
 		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-			BLPR("%s: port=0x%x, pinmux_set=%d,0x%08x\n",
+			BLPR("%s: port=0x%x, pinmux_set=0x%x,0x%08x\n",
 				__func__, bl_pwm->pwm_port,
 				bl_pwm->pinmux_set[i][0], bl_pwm->pinmux_set[i][1]);
 		}
@@ -286,15 +296,15 @@ static void bl_pwm_pinmux_ctrl(struct aml_bl_drv_s *bdrv, int status)
 		case BL_CTRL_PWM:
 			i = 0;
 			while (i < LCD_PINMUX_NUM) {
-				if (bconf->bl_pwm->pinmux_set[i][0] == LCD_PINMUX_END)
+				if (bconf->bl_pwm->pinmux_clr[i][0] == LCD_PINMUX_END)
 					break;
-				lcd_pinmux_clr_mask(bconf->bl_pwm->pinmux_set[i][0],
-					bconf->bl_pwm->pinmux_set[i][1]);
+				lcd_pinmux_clr_mask(bconf->bl_pwm->pinmux_clr[i][0],
+					bconf->bl_pwm->pinmux_clr[i][1]);
 				if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-					BLPR("%s: port=0x%x, pinmux_clr=%d,0x%08x\n",
+					BLPR("%s: port=0x%x, pinmux_clr=0x%x,0x%08x\n",
 						__func__, bconf->bl_pwm->pwm_port,
-						bconf->bl_pwm->pinmux_set[i][0],
-						bconf->bl_pwm->pinmux_set[i][1]);
+						bconf->bl_pwm->pinmux_clr[i][0],
+						bconf->bl_pwm->pinmux_clr[i][1]);
 				}
 				i++;
 			}
@@ -312,29 +322,29 @@ static void bl_pwm_pinmux_ctrl(struct aml_bl_drv_s *bdrv, int status)
 		case BL_CTRL_PWM_COMBO:
 			i = 0;
 			while (i < LCD_PINMUX_NUM) {
-				if (bconf->bl_pwm_combo0->pinmux_set[i][0] == LCD_PINMUX_END)
+				if (bconf->bl_pwm_combo0->pinmux_clr[i][0] == LCD_PINMUX_END)
 					break;
-				lcd_pinmux_clr_mask(bconf->bl_pwm_combo0->pinmux_set[i][0],
-					bconf->bl_pwm_combo0->pinmux_set[i][1]);
+				lcd_pinmux_clr_mask(bconf->bl_pwm_combo0->pinmux_clr[i][0],
+					bconf->bl_pwm_combo0->pinmux_clr[i][1]);
 				if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-					BLPR("%s: port=0x%x, pinmux_clr=%d,0x%08x\n",
+					BLPR("%s: port=0x%x, pinmux_clr=0x%x,0x%08x\n",
 						__func__, bconf->bl_pwm_combo0->pwm_port,
-						bconf->bl_pwm_combo0->pinmux_set[i][0],
-						bconf->bl_pwm_combo0->pinmux_set[i][1]);
+						bconf->bl_pwm_combo0->pinmux_clr[i][0],
+						bconf->bl_pwm_combo0->pinmux_clr[i][1]);
 				}
 				i++;
 			}
 			i = 0;
 			while (i < LCD_PINMUX_NUM) {
-				if (bconf->bl_pwm_combo1->pinmux_set[i][0] == LCD_PINMUX_END)
+				if (bconf->bl_pwm_combo1->pinmux_clr[i][0] == LCD_PINMUX_END)
 					break;
-				lcd_pinmux_clr_mask(bconf->bl_pwm_combo1->pinmux_set[i][0],
-					bconf->bl_pwm_combo1->pinmux_set[i][1]);
+				lcd_pinmux_clr_mask(bconf->bl_pwm_combo1->pinmux_clr[i][0],
+					bconf->bl_pwm_combo1->pinmux_clr[i][1]);
 				if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-					BLPR("%s: port=0x%x, pinmux_clr=%d,0x%08x\n",
+					BLPR("%s: port=0x%x, pinmux_clr=0x%x,0x%08x\n",
 						__func__, bconf->bl_pwm_combo1->pwm_port,
-						bconf->bl_pwm_combo1->pinmux_set[i][0],
-						bconf->bl_pwm_combo1->pinmux_set[i][1]);
+						bconf->bl_pwm_combo1->pinmux_clr[i][0],
+						bconf->bl_pwm_combo1->pinmux_clr[i][1]);
 				}
 				i++;
 			}
