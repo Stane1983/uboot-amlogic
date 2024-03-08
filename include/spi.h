@@ -127,6 +127,22 @@ struct spi_slave {
 	 SPI_XFER_AUTO_OOB | SPI_XFER_OOB_ONLY)
 };
 
+#define CONFIG_SPI_DMA_TRIG
+#ifdef CONFIG_SPI_DMA_TRIG
+#define DMA_TRIG_NORMAL		0
+#define DMA_TRIG_VSYNC		1
+#define DMA_TRIG_LINE_N		2
+#define DMA_TRIG_START		3
+#define DMA_TRIG_STOP		4
+int dirspi_dma_trig(struct spi_slave *slave,
+			   dma_addr_t tx_dma,
+			   dma_addr_t rx_dma,
+			   int len,
+			   u8 src);
+int dirspi_dma_trig_start(struct spi_slave *slave);
+int dirspi_dma_trig_stop(struct spi_slave *slave);
+#endif
+
 /**
  * spi_do_alloc_slave - Allocate a new SPI slave (internal)
  *
