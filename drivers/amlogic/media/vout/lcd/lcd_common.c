@@ -2899,6 +2899,8 @@ int lcd_frame_rate_change(struct aml_lcd_drv_s *pdrv)
 	char str[100];
 	int len = 0;
 
+	/* clear clk flag */
+	pdrv->config.timing.clk_change &= ~(LCD_CLK_FRAC_UPDATE | LCD_CLK_PLL_CHANGE);
 	switch (type) {
 	case 0: /* pixel clk adjust */
 		temp = duration_num;

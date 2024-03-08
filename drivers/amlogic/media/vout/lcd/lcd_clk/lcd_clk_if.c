@@ -226,6 +226,12 @@ void lcd_update_clk_frac(struct aml_lcd_drv_s *pdrv)
 
 	if (cconf->data->pll_frac_set)
 		cconf->data->pll_frac_set(pdrv, cconf->pll_frac);
+
+	pdrv->config.timing.clk_change = 0; /* clear clk_change flag */
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+		LCDPR("[%d]: %s: clk_change=0x%x\n",
+			pdrv->index, __func__, pdrv->config.timing.clk_change);
+	}
 }
 
 /* for timing init */
@@ -261,8 +267,11 @@ lcd_set_clk_retry:
 	if (cconf->data->clktree_set)
 		cconf->data->clktree_set(pdrv);
 
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		LCDPR("[%d]: %s\n", pdrv->index, __func__);
+	pdrv->config.timing.clk_change = 0; /* clear clk_change flag */
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+		LCDPR("[%d]: %s: clk_change=0x%x\n",
+			pdrv->index, __func__, pdrv->config.timing.clk_change);
+	}
 }
 
 void lcd_disable_clk(struct aml_lcd_drv_s *pdrv)

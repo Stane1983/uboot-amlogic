@@ -147,6 +147,7 @@ static void lcd_config_init(struct aml_lcd_drv_s *pdrv)
 {
 	lcd_enc_timing_init_config(pdrv);
 	lcd_clk_generate_parameter(pdrv);
+	pdrv->config.timing.clk_change = 0; /* clear clk_change flag */
 }
 
 int lcd_mode_tablet_init(struct aml_lcd_drv_s *pdrv)
