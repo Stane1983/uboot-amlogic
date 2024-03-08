@@ -261,11 +261,23 @@ static int do_osd_dual_logo(cmd_tbl_t *cmdtp, int flag, int argc,
 		#endif
 		#endif
 		} else {
-		#if defined(CONFIG_DUAL_LOGO)
-			run_command(CONFIG_DUAL_LOGO, 0);
-		#else
-			printf("osd: dual logo cmd macro is not defined\n");
-		#endif
+			if (env_get("set_logo_on") && strchr(env_get("set_logo_on"), '3'))
+				env_set("logo3_on", "on");
+			else
+				env_set("logo3_on", "off");
+			if (env_get("set_logo_on") && strchr(env_get("set_logo_on"), '2'))
+				env_set("logo2_on", "on");
+			else
+				env_set("logo2_on", "off");
+			if (env_get("set_logo_on") && strchr(env_get("set_logo_on"), '1'))
+				env_set("logo1_on", "on");
+			else
+				env_set("logo1_on", "off");
+			#if defined(CONFIG_DUAL_LOGO)
+				run_command(CONFIG_DUAL_LOGO, 0);
+			#else
+				printf("osd: dual logo cmd macro is not defined\n");
+			#endif
 		}
 	} else {
 		/* hdmi plugout, single logo display */
