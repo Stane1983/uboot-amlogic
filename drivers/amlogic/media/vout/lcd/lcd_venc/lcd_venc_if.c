@@ -29,7 +29,7 @@ void lcd_wait_vsync(struct aml_lcd_drv_s *pdrv)
 #ifdef CONFIG_AML_LCD_PXP
 	return;
 #endif
-	if (!lcd_venc_op.wait_vsync)
+	if (!lcd_venc_op.wait_vsync || !pdrv)
 		return;
 
 	lcd_venc_op.wait_vsync(pdrv);
@@ -39,9 +39,7 @@ unsigned int lcd_get_encl_line_cnt(struct aml_lcd_drv_s *pdrv)
 {
 	unsigned int lcnt;
 
-	if (!lcd_venc_op.get_encl_line_cnt)
-		return 0;
-	if (!pdrv)
+	if (!lcd_venc_op.get_encl_line_cnt || !pdrv)
 		return 0;
 
 	lcnt = lcd_venc_op.get_encl_line_cnt(pdrv);
@@ -52,6 +50,8 @@ unsigned int lcd_get_max_line_cnt(struct aml_lcd_drv_s *pdrv)
 {
 	unsigned int lcnt;
 
+	if (!pdrv)
+		return 0;
 	if (!lcd_venc_op.get_max_lcnt) {
 		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 			LCDERR("[%d]: %s: invalid\n", pdrv->index, __func__);
@@ -66,6 +66,8 @@ void lcd_debug_test(struct aml_lcd_drv_s *pdrv, unsigned int num)
 {
 	int ret;
 
+	if (!pdrv)
+		return;
 	if (!lcd_venc_op.venc_debug_test) {
 		LCDERR("[%d]: %s: invalid\n", pdrv->index, __func__);
 		return;
@@ -88,6 +90,8 @@ static void lcd_gamma_init(struct aml_lcd_drv_s *pdrv)
 	return;
 #endif
 
+	if (!pdrv)
+		return;
 #ifdef CONFIG_AML_VPP
 	lcd_wait_vsync(pdrv);
 	vpp_disable_lcd_gamma_table(pdrv->index);
@@ -103,7 +107,7 @@ static void lcd_gamma_init(struct aml_lcd_drv_s *pdrv)
 
 void lcd_set_venc_timing(struct aml_lcd_drv_s *pdrv)
 {
-	if (!lcd_venc_op.venc_set_timing)
+	if (!lcd_venc_op.venc_set_timing || !pdrv)
 		return;
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
@@ -113,6 +117,8 @@ void lcd_set_venc_timing(struct aml_lcd_drv_s *pdrv)
 
 void lcd_set_venc(struct aml_lcd_drv_s *pdrv)
 {
+	if (!pdrv)
+		return;
 	if (!lcd_venc_op.venc_set) {
 		LCDERR("[%d]: %s: invalid\n", pdrv->index, __func__);
 		return;
@@ -128,6 +134,8 @@ void lcd_set_venc(struct aml_lcd_drv_s *pdrv)
 
 void lcd_venc_enable(struct aml_lcd_drv_s *pdrv, int flag)
 {
+	if (!pdrv)
+		return;
 	if (!lcd_venc_op.venc_enable) {
 		LCDERR("[%d]: %s: invalid\n", pdrv->index, __func__);
 		return;
@@ -140,6 +148,8 @@ void lcd_venc_enable(struct aml_lcd_drv_s *pdrv, int flag)
 
 void lcd_mute_set(struct aml_lcd_drv_s *pdrv,  unsigned char flag)
 {
+	if (!pdrv)
+		return;
 	if (!lcd_venc_op.mute_set) {
 		LCDERR("[%d]: %s: invalid\n", pdrv->index, __func__);
 		return;

@@ -320,9 +320,9 @@ static int lcd_cus_ctrl_attr_parse_dfr_ukey(struct aml_lcd_drv_s *pdrv,
 
 	if (attr_conf->param_size < offset) {
 		memset(dfr_attr->dfr_timing, 0, tmg_size);
-		free(dfr_attr->fr);
-		memset(dfr_attr->fr, 0, fr_size);
 		free(dfr_attr->dfr_timing);
+		memset(dfr_attr->fr, 0, fr_size);
+		free(dfr_attr->fr);
 		memset(dfr_attr, 0, sizeof(struct lcd_dfr_s));
 		free(dfr_attr);
 		LCDERR("[%d]: %s: param_size(%d) and offset(%d) are mismatch!\n",
@@ -348,9 +348,9 @@ static int lcd_cus_ctrl_attr_parse_dfr_ukey(struct aml_lcd_drv_s *pdrv,
 					pdrv->index, __func__, dfr_attr->fr[i].timing_index,
 					dfr_attr->tmg_group_cnt);
 				memset(dfr_attr->dfr_timing, 0, tmg_size);
-				free(dfr_attr->fr);
-				memset(dfr_attr->fr, 0, fr_size);
 				free(dfr_attr->dfr_timing);
+				memset(dfr_attr->fr, 0, fr_size);
+				free(dfr_attr->fr);
 				memset(dfr_attr, 0, sizeof(struct lcd_dfr_s));
 				free(dfr_attr);
 				return -1;

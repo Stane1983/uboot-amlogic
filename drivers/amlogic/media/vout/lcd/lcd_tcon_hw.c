@@ -1437,7 +1437,7 @@ int lcd_tcon_setting_check_t5(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timi
 
 	if (!ferr_str || !warn_str)
 		return 0;
-	if (core_reg_table)
+	if (!core_reg_table)
 		return 0;
 	table32 = (unsigned int *)core_reg_table;
 

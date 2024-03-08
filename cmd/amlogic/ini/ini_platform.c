@@ -183,9 +183,13 @@ int iniGetFileSize(const char *file_path) {
         return -1;
     }
 
-    if (fs_size(file_name, &file_size)) {
-        return -1;
-    }
+	if (fs_size(file_name, &file_size)) {
+		ALOGE("%s, file \"%s\" is not exist!\n", __func__, file_name);
+		return -1;
+	}
+
+	if (file_size == 0)
+		ALOGE("%s, file \"%s\" size error!\n", __func__, file_name);
 
     return file_size;
 #endif
