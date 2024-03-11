@@ -786,7 +786,7 @@ void hdmitx_init(void)
 	if (edid_check && edid_check[0] != '\0') {
 		u8 tmp = edid_check[0] - '0';
 
-		if (tmp >= 0 && tmp <= 3)
+		if (tmp <= 3)
 			hdev->RXCap.edid_check = tmp;
 		else
 			hdev->RXCap.edid_check = 0;

@@ -354,7 +354,7 @@ void hdmitx21_init(void)
 	if (edid_check && edid_check[0] != '\0') {
 		u8 tmp = edid_check[0] - '0';
 
-		if (tmp >= 0 && tmp <= 3)
+		if (tmp <= 3)
 			hdev->RXCap.edid_check = tmp;
 		else
 			hdev->RXCap.edid_check = 0;
@@ -1144,7 +1144,6 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 	struct vinfo_s *info = vout_get_current_vinfo();
 #endif
 	struct dsc_notifier_data_s dsc_notifier_data;
-	int ret;
 
 	hdmitx21_select_frl(hdev);
 	if (hdev->dsc_en && hdev->chip_type == MESON_CPU_ID_S5) {
@@ -1169,12 +1168,14 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 			dsc_notifier_data.bits_per_component = 8;
 		dsc_notifier_data.fps = hdev->para->timing.v_freq;
 #ifdef CONFIG_AML_DSC_ENC
+		int ret;
 		ret = aml_set_dsc_input_param(&dsc_notifier_data);
-#endif
 		if (ret < 0)
 			pr_info("[%s] set dsc input param error\n", __func__);
 		else
 			;
+#endif
+
 #ifdef CONFIG_AML_DSC_ENC
 			hdmitx_get_dsc_data(&hdev->dsc_data);
 #endif

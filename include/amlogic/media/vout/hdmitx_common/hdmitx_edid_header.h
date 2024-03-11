@@ -10,5 +10,4 @@
 #include <amlogic/media/vout/aml_vinfo.h>
 #include <amlogic/media/vout/hdmitx21/hdmitx_ext.h>
 #include <amlogic/media/vout/hdmitx21/hdmi_common.h>
-#include <amlogic/media/vout/hdmitx21/hdmitx_module.h>
 #endif
