@@ -211,25 +211,13 @@ void SetCurrentDtbFile(void)
 	switch (ddr_size) {
 	case CONFIG_T7_4G_SIZE:
 		if (cpu_id.chip_rev == 0xA || cpu_id.chip_rev == 0xb) {
-			#ifdef CONFIG_HDMITX_ONLY
 			strncpy(fdtfile_name,
-				"t7_a311d2_an400_drm_hdmitx_only_debian.dtb\0",
-				sizeof(fdtfile_name));
-			#else
-			strncpy(fdtfile_name,
-					"t7_a311d2_an400_debian.dtb\0",
+					"t7_a311d2_an400_linux.dtb\0",
 					sizeof(fdtfile_name));
-			#endif
 		} else if (cpu_id.chip_rev == 0xC) {
-			#ifdef CONFIG_HDMITX_ONLY
 			strncpy(fdtfile_name,
-				"t7c_a311d2_an400_linux_drm_hdmitx_only_debian.dtb\0",
-				sizeof(fdtfile_name));
-			#else
-			strncpy(fdtfile_name,
-					"t7c_a311d2_an400_debian.dtb\0",
+					"t7c_a311d2_an400_linux.dtb\0",
 					sizeof(fdtfile_name));
-			#endif
 		}
 		break;
 	default:
