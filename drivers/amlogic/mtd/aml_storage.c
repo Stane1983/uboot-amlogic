@@ -479,7 +479,7 @@ static int mtd_store_get_offset(const char *partname, loff_t *retoff, loff_t off
 		if (ret) {
 			pr_info("%s %d can not find part:%s\n",
 				__func__, __LINE__, tmp_part_name);
-			ret = -EINVAL;
+			return -EINVAL;
 		}
 		offset = part->offset + off;
 	}
@@ -490,8 +490,7 @@ static int mtd_store_get_offset(const char *partname, loff_t *retoff, loff_t off
 		offset = off;
 	}
 
-	if (!ret)
-		*retoff = offset;
+	*retoff = offset;
 
 	return ret;
 }
