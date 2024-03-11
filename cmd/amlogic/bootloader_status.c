@@ -426,6 +426,24 @@ int set_mergestatus_cancel(struct misc_virtual_ab_message *message)
         return 0;
 }
 
+// according to the value of the board,
+// reset the product to set the serial
+// to distinguish different products.
+void set_product(void)
+{
+	char *board = env_get("board");
+	char *str = NULL;
+	char *dup_str = NULL;
+
+	str = strstr(board, "_");
+	dup_str = strdup(str);
+	if (!(strstr(dup_str, "_")))
+		env_set("product", str + 1);
+	else
+		env_set("product", strtok(str, "_"));
+	free(dup_str);
+}
+
 static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]) {
 	int match_flag = 0;
 	char *rebootstatus = NULL;
@@ -437,6 +455,9 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 	char *rebootmode = NULL;
 	int gpt_flag = -1;
 	int ret = -1;
+
+// set product first to set serial.
+	set_product();
 
 #ifdef CONFIG_MMC_MESON_GX
 	struct mmc *mmc = NULL;
