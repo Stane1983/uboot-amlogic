@@ -157,6 +157,7 @@ int board_init(void)
 int board_late_init(void)
 {
 	printf("board late init\n");
+	env_set("defenv_para", "-c");
 #ifdef CONFIG_PXP_EMULATOR
 	return 0;
 #endif
@@ -440,14 +441,6 @@ int checkhw(char *name)
 	return 0;
 }
 #endif
-
-const char *const _env_args_reserve_[] = {
-	"lock",
-	"upgrade_step",
-	"bootloader_version",
-
-	NULL			//Keep NULL be last to tell END
-};
 
 int __attribute__((weak)) mmc_initialize(bd_t *bis)
 {

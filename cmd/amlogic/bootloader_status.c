@@ -16,6 +16,7 @@
 #include <android_image.h>
 #include <amlogic/android_vab.h>
 #include <amlogic/aml_rollback.h>
+#include <cli.h>
 
 #if defined(CONFIG_EFUSE_OBJ_API) && defined(CONFIG_CMD_EFUSE)
 extern efuse_obj_field_t efuse_field;
@@ -617,44 +618,38 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 		wrnP("can not get bootloader index, so skip secure check\n");
 		return -1;
 	}
-/*
+
 #ifdef CONFIG_MMC_MESON_GX
-	if (mmc) {
+	char *fastboot_step = env_get("fastboot_step");
+
+	if (mmc && fastboot_step && (strcmp(fastboot_step, "1") == 0)) {
+		printf("reboot to new bootloader burned by fastboot\n");
+		env_set("update_env", "1");
+		env_set("fastboot_step", "2");
+		run_command("saveenv", 0);
+		if (rebootmode && (strcmp(rebootmode, "fastboot") == 0))
+			run_command("reboot next,bootloader", 0);
+		else
+			run_command("reboot next", 0);
+	}
+	if (mmc && fastboot_step && (strcmp(fastboot_step, "2") == 0)) {
 		struct blk_desc *dev_desc = mmc_get_blk_desc(mmc);
 
-		if (dev_desc && !strcmp(bootloaderindex, "0")) {
-			unsigned char *buffer = NULL;
-			capacity_boot = mmc->capacity_boot;
+		if (dev_desc && ((ret == 0 && !strcmp(bootloaderindex, "1")) ||
+			(ret != 0 && !strcmp(bootloaderindex, "0")))) {
+			printf("new bootloader error, please fastboot to another one\n");
+			env_set("fastboot_step", "0");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+			run_command("update_env_part -p fastboot_step;", 0);
+#else
+			run_command("defenv_reserve;setenv fastboot_step 0;saveenv;", 0);
+#endif
 
-			printf("do_secureboot_check_capacity_boot: %x\n", capacity_boot);
-
-			buffer = (unsigned char *)malloc(capacity_boot);
-			if (buffer) {
-				memset(buffer, 0, capacity_boot);
-				ret = store_boot_read("bootloader", 0, 0, buffer);
-				if (ret == 0) {
-					wrnP("--read bootloader ok, check valib gpt---\n");
-					if (is_valid_gpt_buf(dev_desc, buffer + 0x3DFE00)) {
-						printf("no gpt partition table\n");
-					} else {
-						printf("find gpt partition table, update it\n"
-							"and write bootloader to boot0/boot1\n");
-						ret = write_mbr_and_gpt_partitions(dev_desc,
-								buffer + 0x3DFE00);
-						if (ret == 0) {
-							printf("write gpt ok, reset\n");
-							write_bootloader_back(bootloaderindex, 1);
-							write_bootloader_back(bootloaderindex, 2);
-							run_command("reboot bootloader", 0);
-						}
-					}
-				}
-				free(buffer);
-			}
+			cli_init();
+			cli_loop();
 		}
 	}
 #endif
-*/
 
 	//no secure check need
 	if (!strcmp(rebootstatus, "reboot_init")) {
