@@ -114,6 +114,7 @@ void board_init_mem(void)
 	}
 }
 
+extern void set_usb_power_off(void);
 int board_init(void)
 {
 	printf("board init\n");
@@ -151,6 +152,7 @@ int board_init(void)
 #endif
 #endif // #if !defined(CONFIG_PXP_DDR) //bypass below operations for pxp
 	pinctrl_devices_active(PIN_CONTROLLER_NUM);
+	set_usb_power_off();
 	return 0;
 }
 

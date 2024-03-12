@@ -233,17 +233,17 @@
 };
 
 &crg2 {
-	status = "okay";
+	status = "disabled";
 	dr_mode = "host";
 };
 
 &usb22_phy_v2 {
-	status = "okay";
+	status = "disabled";
 	portnum = <1>;
 };
 
 &usb32_phy_v2 {
-	status = "okay";
+	status = "disabled";
 	portnum = <0>;
 };
 
