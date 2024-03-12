@@ -50,6 +50,8 @@ static int do_saradc_open(cmd_tbl_t *cmdtp, int flag, int argc,
 
 	ret = uclass_get_device_by_name(UCLASS_ADC, "adc", &dev);
 	if (ret)
+		ret = uclass_first_device_err(UCLASS_ADC, &dev);
+	if (ret)
 		return ret;
 
 	channel = simple_strtoul(argv[1], NULL, 10);
@@ -131,6 +133,8 @@ static int do_saradc_test(cmd_tbl_t *cmdtp, int flag, int argc,
 	int channel;
 
 	ret = uclass_get_device_by_name(UCLASS_ADC, "adc", &dev);
+	if (ret)
+		ret = uclass_first_device_err(UCLASS_ADC, &dev);
 	if (ret)
 		return ret;
 

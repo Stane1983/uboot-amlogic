@@ -245,6 +245,8 @@ int adc_channel_single_shot_mode(const char *name, unsigned int mode,
 
 	ret = uclass_get_device_by_name(UCLASS_ADC, name, &dev);
 	if (ret)
+		ret = uclass_first_device_err(UCLASS_ADC, &dev);
+	if (ret)
 		return ret;
 
 	ret = adc_set_mode(dev, channel, mode);
