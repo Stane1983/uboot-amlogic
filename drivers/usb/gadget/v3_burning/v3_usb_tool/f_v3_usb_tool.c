@@ -661,7 +661,7 @@ static void rx_handler_command(struct usb_ep *ep, struct usb_request *req)
 	}
 
 	if (!func_cb) {
-		FB_MSG("unknown command: %s,%ld\n", cmdbuf, strlen(cmdbuf));
+		FB_MSG("unknown cmd: %s,%ld, %d\n", cmdbuf, strlen(cmdbuf), req->actual);
 		fastboot_tx_write_str("FAILunknown command");
 	} else {
 		if (req->actual < req->length) {
@@ -676,7 +676,7 @@ static void rx_handler_command(struct usb_ep *ep, struct usb_request *req)
 	}
 
 	if (req->status == 0 && !fastboot_is_busy()) {
-		*cmdbuf = '\0';
+		//*cmdbuf = '\0';//may destroy dma rx
 		req->actual = 0;
 		usb_ep_queue(ep, req, 0);
 	}
@@ -1257,11 +1257,13 @@ enum {
 //[fastboot mread boot.img.dump]
 void cb_aml_media_read(struct usb_ep *outep, struct usb_request *outreq)
 {
-	char *cmd = outreq->buf;
+	char cmdbuf[64];
 	int ret = -__LINE__;
 	int sta_mread = 0;
 	const char *field = NULL;
+	char *cmd = &cmdbuf[0];
 
+	strlcpy(cmdbuf, outreq->buf, sizeof(cmdbuf));
 	FB_DBG("cmd cb_mread[%s]\n", cmd);
 	strsep(&cmd, ":");
 	//default attributes for mwrite

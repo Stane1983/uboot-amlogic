@@ -101,7 +101,6 @@
 		"frac_rate_policy=1\0" \
 		"usb_burning=" CONFIG_USB_TOOL_ENTRY "\0" \
 		"cvbs_drv=0\0"\
-		"board=t963d4\0"\
 		"upgrade_key_flag=2\0"\
 		"suspend=off\0"\
 		"powermode=on\0"\
@@ -115,42 +114,6 @@
 		"logic_addr=0x0\0" \
 		"cec_ac_wakeup=1\0" \
 		"scramble_reg=0xfe02e030\0" \
-		"check_connector_type="\
-		"setenv bootconfig ${bootconfig} androidboot.connector_type=${connector_type};"\
-		"\0"\
-		"check_display="\
-		"echo check_display reboot_mode : ${reboot_mode} ,powermode : ${powermode};"\
-		"if test ${reboot_mode} = ffv_reboot; then "\
-			"if test ${ffv_wake} = on; then "\
-				"echo ffv reboot no display; "\
-			"else "\
-				"run init_display; "\
-			"fi; "\
-		"else if test ${reboot_mode} = cold_boot; then "\
-			"if test ${powermode} = standby; then "\
-				"setenv ddr_resume 1;"\
-			"else if test ${powermode} = last; then "\
-				"if test ${suspend} != off; then "\
-					"setenv ddr_resume 1;"\
-				"fi;"\
-			"fi;fi;"\
-			"if test ${powermode} = on; then "\
-				"echo powermode : ${powermode} ,need to init_display; "\
-				"run init_display; "\
-			"else if test ${powermode} = standby; then "\
-				"echo reboot: ${reboot_mode} suspend: ${suspend};"\
-				"run init_display; "\
-			"else if test ${powermode} = last; then "\
-				"if test ${suspend} = off; then "\
-					"echo suspend : ${suspend} ,need to init_display; "\
-					"run init_display; "\
-				"fi; "\
-			"fi;fi;fi; "\
-		"else "\
-			"echo reboot_mode is normal;"\
-			"run init_display; "\
-		"fi;fi; "\
-		"\0"\
 
 #define CONFIG_PREBOOT  \
 	"run upgrade_check;"\
