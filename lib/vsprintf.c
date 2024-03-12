@@ -22,6 +22,7 @@
 #include <linux/err.h>
 #include <linux/types.h>
 #include <linux/string.h>
+#include <asm/arch/cpu_config.h>
 
 #define noinline __attribute__((noinline))
 

@@ -17,7 +17,23 @@ const char __weak version_string[] = U_BOOT_VERSION_STRING;
 #include <linux/libfdt.h>
 #include <fdt_support.h>
 
+#ifdef CONFIG_BL30_VERSION_SAVE
+#include <asm/arch/mailbox.h>
+#include <asm/arch/secure_apb.h>
+#include <asm/arch/cpu.h>
+#define GET_BL30_VERSION_SIZE 0x30303000
+#define GET_BL30_VERSION_INFO 0x30303001
+#define GET_BL30_LEN_ONCE MAILBOX_USER_DATA_SIZE
+int bl30_version_flag, bl30_version_size;
+char bl30_version_str[GET_BL30_LEN_ONCE];
+#endif
+
+#ifdef CONFIG_BL30_VERSION_RTOSSDK
+#define BUFF_LENGTH		(512 + 400)
+#else
 #define BUFF_LENGTH		512
+#endif
+
 const char compile_user[] = COMPILE_USER;
 unsigned char *bootloader_build_message;
 char version_buffer[BUFF_LENGTH];
@@ -113,16 +129,38 @@ int get_bootloader_build_message(void)
 			putin_buf("\n");
 		}
 
+#ifdef CONFIG_BL30_VERSION_SAVE
+		bl30_version_flag = GET_BL30_VERSION_SIZE;
+		if (!scpi_send_data(AOCPU_REE_CHANNEL, CMD_GET_BL30_VERSION,
+		    &bl30_version_flag, 4, &bl30_version_size, 4))
+			build_info->bl30_message.init_flag = 1;
+		else
+			printf("bl30 version message get fail\n");
+#endif
 		if (build_info->bl30_message.init_flag) {
 			putin_buf("\tBL30: ");
 			//putin_buf(build_info->bl30_message.ver_str);
 			//putin_buf(",");
+#ifdef CONFIG_BL30_VERSION_SAVE
+			for (int i = 0; i < (bl30_version_size / GET_BL30_LEN_ONCE + 1); i++) {
+				bl30_version_flag = GET_BL30_VERSION_INFO;
+				if (!scpi_send_data(AOCPU_REE_CHANNEL, CMD_GET_BL30_VERSION,
+				    &bl30_version_flag, 4, &bl30_version_str, GET_BL30_LEN_ONCE)) {
+					putin_buf(bl30_version_str);
+					memset(bl30_version_str, 0, strlen(bl30_version_str));
+				} else {
+					printf("bl30 version message get fail\n");
+					break;
+				}
+			}
+#else
 			putin_buf(build_info->bl30_message.hash);
 			putin_buf(",");
 			putin_buf(build_info->bl30_message.time);
 			putin_buf(",");
 			putin_buf(build_info->bl30_message.user);
 			putin_buf("\n");
+#endif
 		}
 
 		if (build_info->bl31_message.init_flag) {

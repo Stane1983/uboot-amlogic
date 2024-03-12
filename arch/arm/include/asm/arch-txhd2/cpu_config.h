@@ -60,6 +60,12 @@
 #define VERSION_1       0x01
 #define VERSION_2       0x02
 #define CONFIG_BUILD_MESSAGE
+#ifdef CONFIG_BUILD_MESSAGE
+#define CONFIG_BL30_VERSION_SAVE
+#define CONFIG_BL30_VERSION_RTOSSDK
+#undef CONFIG_SYS_PBSIZE
+#define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16 + 400)
+#endif
 typedef struct param_header {
 	uint8_t type;		/* type of the structure */
 	uint8_t version;    /* version of this structure */
