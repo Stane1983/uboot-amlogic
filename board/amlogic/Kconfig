@@ -585,7 +585,7 @@ config DDRFW_TYPE
 
 config CHIPSET_NAME
 	string "s7d CHIPSET NAME"
-	default ""
+	default "s905x5m"
 
 config CHIPSET_VARIANT
 	string "s7d CHIPSET VARIANT"
@@ -594,10 +594,6 @@ config CHIPSET_VARIANT
 config AMLOGIC_KEY_TYPE
 	string "s7d AMLOGIC KEY TYPE"
 	default "dev-keys"
-
-config BL30_SELECT
-	string "s7d BL30 board config"
-		default "s7d_pxp"
 
 choice
 	prompt "s7d Board"
@@ -608,13 +604,48 @@ config S7D_SKT
 	help
 		Select S7D SKT(XXXX) config
 
+config S7D_BM201
+	bool "S7D_BM201"
+	select TARGET_S7D_BM201
+	help
+		Select S7D BM201 config
+
+config S7D_BM202
+	bool "S7D_BM202"
+	select TARGET_S7D_BM202
+	help
+		Select S7D BM202 config
+
+config S7D_BM209
+	bool "S7D_BM209"
+	select TARGET_S7D_BM209
+	help
+		Select S7D BM209 config
+
+
 endchoice
+
+config TARGET_S7_SKT
+	bool "S7 SKT board"
+	depends on S7_SKT
 
 config TARGET_S7D_SKT
 	bool "S7D SKT board"
 	depends on S7D_SKT
 
 endif
+
+config TARGET_S7D_BM201
+	bool "S7D BM201 board"
+	depends on S7D_BM201
+
+config TARGET_S7D_BM202
+	bool "S7D BM202 board"
+	depends on S7D_BM202
+
+config TARGET_S7D_BM209
+	bool "S7D BM209 board"
+	depends on S7D_BM209
 
 # Amlogic boards
 
@@ -651,3 +682,9 @@ source "board/amlogic/s1a_bg209_s805c1eng/Kconfig"
 source "board/amlogic/t5m_ay301/Kconfig"
 
 source "board/amlogic/s7d_skt/Kconfig"
+
+source "board/amlogic/s7d_bm201/Kconfig"
+
+source "board/amlogic/s7d_bm202/Kconfig"
+
+source "board/amlogic/s7d_bm209/Kconfig"
