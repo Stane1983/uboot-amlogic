@@ -320,6 +320,9 @@ u32 hd_get_paddr(u32 addr)
 
 void hdmitx_set_phypara(enum hdmi_phy_para mode)
 {
+	struct arm_smccc_res res;
+	u8 rterm = 0; /* this will get from ufuse */
+
 	hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x0);
 /* P_ANACTRL_HDMIPHY_CTRL1	bit[1]: enable clock	bit[0]: soft reset */
 #define RESET_HDMI_PHY() \
@@ -356,6 +359,17 @@ do { \
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x555);
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x004ef001);
 		break;
+	}
+
+	/* write Rterm */
+	arm_smccc_smc(HDCPTX_IOOPR, HDMITX_GET_RTERM, 0, 0, 0, 0, 0, 0, &res);
+	rterm = (unsigned int)((res.a0) & 0xffffffff);
+	/* default value when efuse invalid, oxff indicate efuse invalid */
+	if (rterm != 0xff) {
+		pr_info("%s[%d] rterm = %x\n", __func__, __LINE__, rterm);
+		hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL0, rterm, 28, 4);
+	} else {
+		pr_info("efuse invalid, use default value\n");
 	}
 
 	/* The bit with resetn is configured later than other bits. */
