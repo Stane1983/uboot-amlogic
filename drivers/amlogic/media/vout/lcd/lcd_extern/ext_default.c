@@ -5,6 +5,7 @@
 
 #include <common.h>
 #include <malloc.h>
+#include <asm/amlogic/arch/gpio.h>
 #include <fdtdec.h>
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include <amlogic/media/vout/lcd/lcd_extern.h>
@@ -287,11 +288,8 @@ static int lcd_extern_cmd_multi_id(struct lcd_extern_driver_s *edrv,
 	pdrv = aml_lcd_get_driver(edrv->index);
 	if (!pdrv)
 		return -1;
-	if (pdrv->config.cus_ctrl.dlg_flag == 0)
-		return -1;
 
-	frame_rate = pdrv->config.timing.sync_duration_num /
-		pdrv->config.timing.sync_duration_den;
+	frame_rate = pdrv->config.timing.act_timing.frame_rate;
 
 	temp_list = edev->multi_list_header;
 	while (temp_list) {
@@ -390,6 +388,8 @@ static int lcd_extern_power_cmd_dynamic_size(struct lcd_extern_driver_s *edrv,
 							i2c_addr,
 							&table[i + 2],
 							size);
+				if (ret)
+					goto power_cmd_dynamic_err;
 			} else if (type == LCD_EXT_CMD_TYPE_CMD_BIN2) {
 				i2c_addr = edev->config.i2c_addr;
 				lcd_extern_init_reg_check2(i2c_bus,
@@ -403,6 +403,8 @@ static int lcd_extern_power_cmd_dynamic_size(struct lcd_extern_driver_s *edrv,
 							i2c_addr,
 							&table[i + 2],
 							size);
+				if (ret)
+					goto power_cmd_dynamic_err;
 			} else if ((type == LCD_EXT_CMD_TYPE_CMD2) ||
 				   (type == LCD_EXT_CMD_TYPE_CMD2_BIN) ||
 				   (type == LCD_EXT_CMD_TYPE_CMD2_BIN_DATA)) {
@@ -418,6 +420,8 @@ static int lcd_extern_power_cmd_dynamic_size(struct lcd_extern_driver_s *edrv,
 							i2c_addr,
 							&table[i + 2],
 							size);
+				if (ret)
+					goto power_cmd_dynamic_err;
 			} else if (type == LCD_EXT_CMD_TYPE_CMD2_BIN2) {
 				i2c_addr = edev->config.i2c_addr2;
 				lcd_extern_init_reg_check2(i2c_bus,
@@ -431,6 +435,8 @@ static int lcd_extern_power_cmd_dynamic_size(struct lcd_extern_driver_s *edrv,
 							i2c_addr,
 							&table[i + 2],
 							size);
+				if (ret)
+					goto power_cmd_dynamic_err;
 			} else if ((type == LCD_EXT_CMD_TYPE_CMD3) ||
 				   (type == LCD_EXT_CMD_TYPE_CMD3_BIN) ||
 				   (type == LCD_EXT_CMD_TYPE_CMD3_BIN_DATA)) {
@@ -446,6 +452,8 @@ static int lcd_extern_power_cmd_dynamic_size(struct lcd_extern_driver_s *edrv,
 							i2c_addr,
 							&table[i + 2],
 							size);
+				if (ret)
+					goto power_cmd_dynamic_err;
 			} else if (type == LCD_EXT_CMD_TYPE_CMD3_BIN2) {
 				i2c_addr = edev->config.i2c_addr3;
 				lcd_extern_init_reg_check2(i2c_bus,
@@ -459,6 +467,8 @@ static int lcd_extern_power_cmd_dynamic_size(struct lcd_extern_driver_s *edrv,
 							i2c_addr,
 							&table[i + 2],
 							size);
+				if (ret)
+					goto power_cmd_dynamic_err;
 			} else if ((type == LCD_EXT_CMD_TYPE_CMD4) ||
 				   (type == LCD_EXT_CMD_TYPE_CMD4_BIN) ||
 				   (type == LCD_EXT_CMD_TYPE_CMD4_BIN_DATA)) {
@@ -474,6 +484,8 @@ static int lcd_extern_power_cmd_dynamic_size(struct lcd_extern_driver_s *edrv,
 							i2c_addr,
 							&table[i + 2],
 							size);
+				if (ret)
+					goto power_cmd_dynamic_err;
 			} else if (type == LCD_EXT_CMD_TYPE_CMD4_BIN2) {
 				i2c_addr = edev->config.i2c_addr4;
 				lcd_extern_init_reg_check2(i2c_bus,
@@ -487,6 +499,8 @@ static int lcd_extern_power_cmd_dynamic_size(struct lcd_extern_driver_s *edrv,
 							i2c_addr,
 							&table[i + 2],
 							size);
+				if (ret)
+					goto power_cmd_dynamic_err;
 			} else if (type == LCD_EXT_CMD_TYPE_MULTI_FR) {
 				/* do nothing here */
 			} else if (type == LCD_EXT_CMD_TYPE_CMD_MULTI) {
@@ -506,6 +520,8 @@ static int lcd_extern_power_cmd_dynamic_size(struct lcd_extern_driver_s *edrv,
 					goto power_cmd_dynamic_i2c_next;
 				ret = aml_lcd_i2c_write(i2c_bus, i2c_addr,
 					&table[i + 4], (size - 2));
+				if (ret)
+					goto power_cmd_dynamic_err;
 			} else if (type == LCD_EXT_CMD_TYPE_CMD2_MULTI) {
 				ret = lcd_extern_cmd_multi_id(edrv, edev, table[i + 2]);
 				if (ret)
@@ -523,6 +539,8 @@ static int lcd_extern_power_cmd_dynamic_size(struct lcd_extern_driver_s *edrv,
 					goto power_cmd_dynamic_i2c_next;
 				ret = aml_lcd_i2c_write(i2c_bus, i2c_addr,
 					&table[i + 4], (size - 2));
+				if (ret)
+					goto power_cmd_dynamic_err;
 			} else if (type == LCD_EXT_CMD_TYPE_CMD3_MULTI) {
 				ret = lcd_extern_cmd_multi_id(edrv, edev, table[i + 2]);
 				if (ret)
@@ -540,6 +558,8 @@ static int lcd_extern_power_cmd_dynamic_size(struct lcd_extern_driver_s *edrv,
 					goto power_cmd_dynamic_i2c_next;
 				ret = aml_lcd_i2c_write(i2c_bus, i2c_addr,
 					&table[i + 4], (size - 2));
+				if (ret)
+					goto power_cmd_dynamic_err;
 			} else if (type == LCD_EXT_CMD_TYPE_CMD4_MULTI) {
 				ret = lcd_extern_cmd_multi_id(edrv, edev, table[i + 2]);
 				if (ret)
@@ -557,28 +577,38 @@ static int lcd_extern_power_cmd_dynamic_size(struct lcd_extern_driver_s *edrv,
 					goto power_cmd_dynamic_i2c_next;
 				ret = aml_lcd_i2c_write(i2c_bus, i2c_addr,
 					&table[i + 4], (size - 2));
+				if (ret)
+					goto power_cmd_dynamic_err;
 			} else if (type == LCD_EXT_CMD_TYPE_CMD_DELAY) {
 				ret = aml_lcd_i2c_write(i2c_bus,
 					 edev->config.i2c_addr,
 					 &table[i + 2], (size - 1));
+				if (ret)
+					goto power_cmd_dynamic_err;
 				if (table[i + 1 + size] > 0)
 					mdelay(table[i + 1 + size]);
 			} else if (type == LCD_EXT_CMD_TYPE_CMD2_DELAY) {
 				ret = aml_lcd_i2c_write(i2c_bus,
 					 edev->config.i2c_addr2,
 					 &table[i + 2], (size - 1));
+				if (ret)
+					goto power_cmd_dynamic_err;
 				if (table[i + 1 + size] > 0)
 					mdelay(table[i + 1 + size]);
 			} else if (type == LCD_EXT_CMD_TYPE_CMD3_DELAY) {
 				ret = aml_lcd_i2c_write(i2c_bus,
 					 edev->config.i2c_addr3,
 					 &table[i + 2], (size - 1));
+				if (ret)
+					goto power_cmd_dynamic_err;
 				if (table[i + 1 + size] > 0)
 					mdelay(table[i + 1 + size]);
 			} else if (type == LCD_EXT_CMD_TYPE_CMD4_DELAY) {
 				ret = aml_lcd_i2c_write(i2c_bus,
 					 edev->config.i2c_addr4,
 					 &table[i + 2], (size - 1));
+				if (ret)
+					goto power_cmd_dynamic_err;
 				if (table[i + 1 + size] > 0)
 					mdelay(table[i + 1 + size]);
 			} else {
@@ -629,10 +659,14 @@ power_cmd_dynamic_i2c_next:
 				   (type == LCD_EXT_CMD_TYPE_CMD_BIN)) {
 				ret = lcd_extern_spi_write(edrv, edev,
 							   &table[i + 2], size);
+				if (ret)
+					goto power_cmd_dynamic_err;
 			} else if (type == LCD_EXT_CMD_TYPE_CMD_DELAY) {
 				ret = lcd_extern_spi_write(edrv, edev,
 							   &table[i + 2],
 							   (size - 1));
+				if (ret)
+					goto power_cmd_dynamic_err;
 				if (table[i + 1 + size] > 0)
 					mdelay(table[i + 1 + size]);
 			} else {
@@ -652,7 +686,10 @@ power_cmd_dynamic_spi_next:
 		break;
 	}
 
-	return ret;
+	return 0;
+
+power_cmd_dynamic_err:
+	return -1;
 }
 
 static int lcd_extern_power_cmd_fixed_size(struct lcd_extern_driver_s *edrv,
@@ -704,46 +741,62 @@ static int lcd_extern_power_cmd_fixed_size(struct lcd_extern_driver_s *edrv,
 				ret = aml_lcd_i2c_write(edrv->i2c_bus,
 					edev->config.i2c_addr,
 					&table[i+1], (cmd_size-1));
+				if (ret)
+					goto power_cmd_fixed_err;
 			} else if ((type == LCD_EXT_CMD_TYPE_CMD2) ||
 				   (type == LCD_EXT_CMD_TYPE_CMD2_BIN) ||
 				   (type == LCD_EXT_CMD_TYPE_CMD2_BIN_DATA)) {
 				ret = aml_lcd_i2c_write(edrv->i2c_bus,
 					edev->config.i2c_addr2,
 					&table[i + 1], (cmd_size - 1));
+				if (ret)
+					goto power_cmd_fixed_err;
 			} else if ((type == LCD_EXT_CMD_TYPE_CMD3) ||
 				   (type == LCD_EXT_CMD_TYPE_CMD3_BIN) ||
 				   (type == LCD_EXT_CMD_TYPE_CMD3_BIN_DATA)) {
 				ret = aml_lcd_i2c_write(edrv->i2c_bus,
 					edev->config.i2c_addr3,
 					&table[i + 1], (cmd_size - 1));
+				if (ret)
+					goto power_cmd_fixed_err;
 			} else if ((type == LCD_EXT_CMD_TYPE_CMD4) ||
 				   (type == LCD_EXT_CMD_TYPE_CMD4_BIN) ||
 				   (type == LCD_EXT_CMD_TYPE_CMD4_BIN_DATA)) {
 				ret = aml_lcd_i2c_write(edrv->i2c_bus,
 					edev->config.i2c_addr4,
 					&table[i+1], (cmd_size-1));
+				if (ret)
+					goto power_cmd_fixed_err;
 			} else if (type == LCD_EXT_CMD_TYPE_CMD_DELAY) {
 				ret = aml_lcd_i2c_write(edrv->i2c_bus,
 					edev->config.i2c_addr,
 					&table[i+1], (cmd_size-2));
+				if (ret)
+					goto power_cmd_fixed_err;
 				if (table[i+cmd_size-1] > 0)
 					mdelay(table[i+cmd_size-1]);
 			} else if (type == LCD_EXT_CMD_TYPE_CMD2_DELAY) {
 				ret = aml_lcd_i2c_write(edrv->i2c_bus,
 					edev->config.i2c_addr2,
 					&table[i + 1], (cmd_size - 2));
+				if (ret)
+					goto power_cmd_fixed_err;
 				if (table[i + cmd_size - 1] > 0)
 					mdelay(table[i + cmd_size - 1]);
 			} else if (type == LCD_EXT_CMD_TYPE_CMD3_DELAY) {
 				ret = aml_lcd_i2c_write(edrv->i2c_bus,
 					edev->config.i2c_addr3,
 					&table[i + 1], (cmd_size - 2));
+				if (ret)
+					goto power_cmd_fixed_err;
 				if (table[i + cmd_size - 1] > 0)
 					mdelay(table[i + cmd_size - 1]);
 			} else if (type == LCD_EXT_CMD_TYPE_CMD4_DELAY) {
 				ret = aml_lcd_i2c_write(edrv->i2c_bus,
 					edev->config.i2c_addr4,
 					&table[i + 1], (cmd_size - 2));
+				if (ret)
+					goto power_cmd_fixed_err;
 				if (table[i + cmd_size - 1] > 0)
 					mdelay(table[i + cmd_size - 1]);
 			} else {
@@ -782,9 +835,13 @@ static int lcd_extern_power_cmd_fixed_size(struct lcd_extern_driver_s *edrv,
 				   (type == LCD_EXT_CMD_TYPE_CMD_BIN)) {
 				ret = lcd_extern_spi_write(edrv, edev,
 							   &table[i+1], (cmd_size-1));
+				if (ret)
+					goto power_cmd_fixed_err;
 			} else if (type == LCD_EXT_CMD_TYPE_CMD_DELAY) {
 				ret = lcd_extern_spi_write(edrv, edev,
 							   &table[i+1], (cmd_size-2));
+				if (ret)
+					goto power_cmd_fixed_err;
 				if (table[i+cmd_size-1] > 0)
 					mdelay(table[i+cmd_size-1]);
 			} else {
@@ -803,7 +860,10 @@ static int lcd_extern_power_cmd_fixed_size(struct lcd_extern_driver_s *edrv,
 		break;
 	}
 
-	return ret;
+	return 0;
+
+power_cmd_fixed_err:
+	return -1;
 }
 
 static int lcd_extern_power_ctrl(struct lcd_extern_driver_s *edrv,

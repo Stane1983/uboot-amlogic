@@ -23,9 +23,9 @@ extern "C" {
 char* plat_strtok_r(char *str, const char *delim, char **saveptr);
 
 //File functions
-int iniIsFileExist(const char *file_path);
-int iniGetFileSize(const char *file_path);
-int iniReadFileToBuffer(const char *file_path, int offset, int rd_size, unsigned char data_buf[]);
+int ini_is_file_exist(const char *file_path);
+int ini_get_file_size(const char *file_path);
+int ini_read_file_to_buffer(const char *file_path, int offset, int rd_size, unsigned char data_buf[]);
 
 #ifdef __cplusplus
 }

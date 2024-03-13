@@ -27,7 +27,7 @@
 #elif (defined CC_COMPILE_IN_UBOOT)
     #include <common.h>
     #include <command.h>
-    #include <env.h>
+    //#include <environment.h>
     #include <linux/ctype.h>
     #include <linux/string.h>
     #include <malloc.h>

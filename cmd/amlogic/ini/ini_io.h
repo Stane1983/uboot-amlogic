@@ -45,26 +45,26 @@ int read_backlight_param(int index, unsigned char data_buf[]);
 int save_backlight_param(int index, int wr_size, unsigned char data_buf[]);
 int read_ldim_dev_param(unsigned char data_buf[]);
 int save_ldim_dev_param(int wr_size, unsigned char data_buf[]);
-int ReadTconSpiParam(unsigned char data_buf[]);
-int SaveTconSpiParam(int wr_size, unsigned char data_buf[]);
-int ReadLcdOpticalParam(int index, unsigned char data_buf[]);
-int SaveLcdOpticalParam(int index, int wr_size, unsigned char data_buf[]);
-int ReadTconBinParam(unsigned char data_buf[]);
-int SaveTconBinParam(int wr_size, unsigned char data_buf[]);
-int ReadPanelIniName(char data_buf[]);
-int SavePanelIniName(char data_buf[]);
-int ReadPanelPQPath(char data_buf[]);
-int SavePanelPQPath(char data_buf[]);
-int ReadPanelAllInfoData(unsigned char data_buf[]);
-int SavePanelAllInfoData(int wr_size, unsigned char data_buf[]);
-int ReadPanelAllData(int sec_no, unsigned char data_buf[]);
-int SavePanelAllData(int sec_no, int wr_size, unsigned char data_buf[]);
+int read_tcon_spi_param(unsigned char data_buf[]);
+int save_tcon_spi_param(int wr_size, unsigned char data_buf[]);
+int read_lcd_optical_param(int index, unsigned char data_buf[]);
+int save_lcd_optical_param(int index, int wr_size, unsigned char data_buf[]);
+int read_tcon_bin_param(unsigned char data_buf[]);
+int save_tcon_bin_param(int wr_size, unsigned char data_buf[]);
+int read_panel_ini_name(char data_buf[]);
+int save_panel_ini_name(char data_buf[]);
+int read_panel_PQ_path(char data_buf[]);
+int save_panel_PQ_path(char data_buf[]);
+int read_panel_all_info_data(unsigned char data_buf[]);
+int save_panel_all_info_data(int wr_size, unsigned char data_buf[]);
+int read_panel_all_data(int sec_no, unsigned char data_buf[]);
+int save_panel_all_data(int sec_no, int wr_size, unsigned char data_buf[]);
 
 int check_hex_data_no_header_valid(unsigned int* tmp_crc32, int max_len, int buf_len, unsigned char data_buf[]);
 int check_hex_data_have_header_valid(unsigned int* tmp_crc32, int max_len, int buf_len, unsigned char data_buf[]);
 int check_string_data_have_header_valid(unsigned int* tmp_crc32, char *data_str, int chksum_head_len, int ver_len);
 unsigned int CalCRC32(unsigned int crc, const unsigned char *ptr, int buf_len);
-void PrintDataBuf(int data_cnt, unsigned char data_buf[]);
+void print_data_buf(int data_cnt, unsigned char data_buf[]);
 
 #ifdef __cplusplus
 }

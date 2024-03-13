@@ -5,7 +5,8 @@
 
 #include <common.h>
 #include <errno.h>
-#include <asm/amlogic/arch/gpio.h>
+#include <dm.h>
+#include <asm/gpio.h>
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include "lcd_reg.h"
 #include "lcd_common.h"

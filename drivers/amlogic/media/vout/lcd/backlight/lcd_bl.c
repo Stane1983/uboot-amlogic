@@ -5,8 +5,9 @@
 
 #include <common.h>
 #include <malloc.h>
+#include <dm.h>
+#include <asm/gpio.h>
 #include <fdtdec.h>
-#include <env.h>
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #ifdef CONFIG_AML_LCD_BL_LDIM
 #include <amlogic/media/vout/lcd/bl_ldim.h>
@@ -18,6 +19,7 @@
 #include "../lcd_reg.h"
 #include "../lcd_common.h"
 #include "../lcd_unifykey.h"
+#include "env.h"
 
 static int bl_index_lut[LCD_MAX_DRV];
 static struct aml_bl_drv_s *bl_driver[LCD_MAX_DRV];
@@ -222,110 +224,39 @@ void bl_set_pwm_gpio_check(struct aml_bl_drv_s *bdrv, struct bl_pwm_config_s *bl
 	pwm_index = bl_pwm->index;
 
 	/* pwm duty 100% or 0% special control */
-	if (bl_pwm->pwm_duty_max > 255) {
-		if (bl_pwm->pwm_duty == 0 || bl_pwm->pwm_duty == 4095) {
-			switch (bl_pwm->pwm_method) {
-			case BL_PWM_POSITIVE:
-				if (bl_pwm->pwm_duty == 0)
-					gpio_level = 0;
-				else
-					gpio_level = 1;
-				break;
-			case BL_PWM_NEGATIVE:
-				if (bl_pwm->pwm_duty == 0)
-					gpio_level = 1;
-				else
-					gpio_level = 0;
-				break;
-			default:
-				BLERR("%s: port=0x%x: invalid pwm_method %d\n",
-				      __func__, bl_pwm->pwm_port,
-				      bl_pwm->pwm_method);
+	if (bl_pwm->pwm_duty == 0 || bl_pwm->pwm_duty == bl_pwm->pwm_duty_range) {
+		switch (bl_pwm->pwm_method) {
+		case BL_PWM_POSITIVE:
+			if (bl_pwm->pwm_duty == 0)
 				gpio_level = 0;
-				break;
-			}
-			if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-				BLPR("%s: pwm port=0x%x, duty=%d%%, switch to gpio %d\n",
-				     __func__, bl_pwm->pwm_port,
-				     bl_pwm->pwm_duty * 100 / 4095, gpio_level);
-			}
-			bl_pwm_pinmux_gpio_set(bdrv, pwm_index, gpio_level);
-		} else {
-			if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-				BLPR("%s: pwm_port=0x%x set as pwm\n",
-				      __func__, bl_pwm->pwm_port);
-			}
-			bl_pwm_pinmux_gpio_clr(bdrv, pwm_index);
-		}
-	} else if (bl_pwm->pwm_duty_max > 100) {
-		if (bl_pwm->pwm_duty == 0 || bl_pwm->pwm_duty == 255) {
-			switch (bl_pwm->pwm_method) {
-			case BL_PWM_POSITIVE:
-				if (bl_pwm->pwm_duty == 0)
-					gpio_level = 0;
-				else
-					gpio_level = 1;
-				break;
-			case BL_PWM_NEGATIVE:
-				if (bl_pwm->pwm_duty == 0)
-					gpio_level = 1;
-				else
-					gpio_level = 0;
-				break;
-			default:
-				BLERR("%s: port=0x%x: invalid pwm_method %d\n",
-				      __func__, bl_pwm->pwm_port,
-				      bl_pwm->pwm_method);
+			else
+				gpio_level = 1;
+			break;
+		case BL_PWM_NEGATIVE:
+			if (bl_pwm->pwm_duty == 0)
+				gpio_level = 1;
+			else
 				gpio_level = 0;
-				break;
-			}
-			if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-				BLPR("%s: pwm port=0x%x, duty=%d%%, switch to gpio %d\n",
-				     __func__, bl_pwm->pwm_port,
-				     bl_pwm->pwm_duty * 100 / 255, gpio_level);
-			}
-			bl_pwm_pinmux_gpio_set(bdrv, pwm_index, gpio_level);
-		} else {
-			if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-				BLPR("%s: pwm_port=0x%x set as pwm\n",
-				      __func__, bl_pwm->pwm_port);
-			}
-			bl_pwm_pinmux_gpio_clr(bdrv, pwm_index);
+			break;
+		default:
+			BLERR("%s: port=0x%x: invalid pwm_method %d\n",
+				__func__, bl_pwm->pwm_port,
+				bl_pwm->pwm_method);
+			gpio_level = 0;
+			break;
 		}
+		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
+			BLPR("%s: pwm port=0x%x, duty=%d, switch to gpio %d\n",
+				__func__, bl_pwm->pwm_port,
+				bl_pwm->pwm_duty, gpio_level);
+		}
+		bl_pwm_pinmux_gpio_set(bdrv, pwm_index, gpio_level);
 	} else {
-		if (bl_pwm->pwm_duty == 0 || bl_pwm->pwm_duty == 100) {
-			switch (bl_pwm->pwm_method) {
-			case BL_PWM_POSITIVE:
-				if (bl_pwm->pwm_duty == 0)
-					gpio_level = 0;
-				else
-					gpio_level = 1;
-				break;
-			case BL_PWM_NEGATIVE:
-				if (bl_pwm->pwm_duty == 0)
-					gpio_level = 1;
-				else
-					gpio_level = 0;
-				break;
-			default:
-				BLERR("%s: port=0x%x: invalid pwm_method %d\n",
-				       __func__, bl_pwm->pwm_port, bl_pwm->pwm_method);
-				gpio_level = 0;
-				break;
-			}
-			if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-				BLPR("%s: pwm port=0x%x, duty=%d%%, switch to gpio %d\n",
-				     __func__, bl_pwm->pwm_port, bl_pwm->pwm_duty,
-				     gpio_level);
-			}
-			bl_pwm_pinmux_gpio_set(bdrv, pwm_index, gpio_level);
-		} else {
-			if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-				BLPR("%s: pwm_port=0x%x set as pwm\n",
-				      __func__, bl_pwm->pwm_port);
-			}
-			bl_pwm_pinmux_gpio_clr(bdrv, pwm_index);
+		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
+			BLPR("%s: pwm_port=0x%x set as pwm\n",
+				__func__, bl_pwm->pwm_port);
 		}
+		bl_pwm_pinmux_gpio_clr(bdrv, pwm_index);
 	}
 }
 
@@ -471,6 +402,27 @@ static void bl_pwm_config_update(struct aml_bl_drv_s *bdrv)
 	}
 }
 
+static unsigned int bl_level_mapping(struct bl_config_s *bconf, unsigned int level)
+{
+	unsigned int mid = bconf->level_mid;
+	unsigned int mid_map = bconf->level_mid_mapping;
+	unsigned int max = bconf->level_max;
+	unsigned int min = bconf->level_min;
+
+	if (mid == mid_map)
+		return level;
+
+	level = level > max ? max : level;
+	if (level >= mid && level <= max)
+		level = (((level - mid) * (max - mid_map)) / (max - mid)) + mid_map;
+	else if (level >= min && level < mid)
+		level = (((level - min) * (mid_map - min)) / (mid - min)) + min;
+	else
+		level = min;
+
+	return level;
+}
+
 static void bl_set_level(struct aml_bl_drv_s *bdrv, unsigned int level)
 {
 	struct bl_config_s *bconf;
@@ -488,8 +440,7 @@ static void bl_set_level(struct aml_bl_drv_s *bdrv, unsigned int level)
 
 	BLPR("set level: %u, last level: %u\n", level, bdrv->level);
 	/* level range check */
-	level = (level > bconf->level_max ? bconf->level_max :
-			(level < bconf->level_min ? bconf->level_min : level));
+	level = bl_level_mapping(bconf, level);
 	bdrv->level = level;
 
 	switch (bconf->method) {
@@ -502,26 +453,26 @@ static void bl_set_level(struct aml_bl_drv_s *bdrv, unsigned int level)
 		pwm0 = bconf->bl_pwm_combo0;
 		pwm1 = bconf->bl_pwm_combo1;
 
-		if (level >= pwm0->level_max) {
-			bl_pwm_set_level(bdrv, pwm0, pwm0->level_max);
-		} else if ((level > pwm0->level_min) &&
-			(level < pwm0->level_max)) {
+		if (level >= pwm0->bl_level_max) {
+			bl_pwm_set_level(bdrv, pwm0, pwm0->bl_level_max);
+		} else if ((level > pwm0->bl_level_min) &&
+			(level < pwm0->bl_level_max)) {
 			if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
 				BLPR("pwm0 region, level=%u\n", level);
 			bl_pwm_set_level(bdrv, pwm0, level);
 		} else {
-			bl_pwm_set_level(bdrv, pwm0, pwm0->level_min);
+			bl_pwm_set_level(bdrv, pwm0, pwm0->bl_level_min);
 		}
 
-		if (level >= pwm1->level_max) {
-			bl_pwm_set_level(bdrv, pwm1, pwm1->level_max);
-		} else if ((level > pwm1->level_min) &&
-			(level < pwm1->level_max)) {
+		if (level >= pwm1->bl_level_max) {
+			bl_pwm_set_level(bdrv, pwm1, pwm1->bl_level_max);
+		} else if ((level > pwm1->bl_level_min) &&
+			(level < pwm1->bl_level_max)) {
 			if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
 				BLPR("pwm1 region, level=%u\n", level);
 			bl_pwm_set_level(bdrv, pwm1, level);
 		} else {
-			bl_pwm_set_level(bdrv, pwm1, pwm1->level_min);
+			bl_pwm_set_level(bdrv, pwm1, pwm1->bl_level_min);
 		}
 		break;
 #ifdef CONFIG_AML_LCD_BL_LDIM
@@ -867,6 +818,7 @@ static void bl_config_print(struct aml_bl_drv_s *bdrv)
 	BLPR("level_max         = %d\n", bconf->level_max);
 	BLPR("level_mid         = %d\n", bconf->level_mid);
 	BLPR("level_mid_mapping = %d\n", bconf->level_mid_mapping);
+	BLPR("level             = %d\n", bdrv->level);
 
 	BLPR("en_gpio           = %s(%d)\n",
 	     bconf->gpio_name[bconf->en_gpio], bconf->en_gpio);
@@ -886,17 +838,14 @@ static void bl_config_print(struct aml_bl_drv_s *bdrv)
 			BLPR("pwm_method    = %d\n", bl_pwm->pwm_method);
 			BLPR("pwm_port      = %s(0x%x)\n",
 			     bl_pwm_num_to_str(bl_pwm->pwm_port), bl_pwm->pwm_port);
+			BLPR("bl_level_max      = %d\n", bl_pwm->bl_level_max);
+			BLPR("bl_level_min      = %d\n", bl_pwm->bl_level_min);
+			BLPR("bl_level          = %d\n", bl_pwm->bl_level);
 			if (bl_pwm->pwm_port == BL_PWM_VS) {
 				BLPR("pwm_freq      = %d x vfreq\n", bl_pwm->pwm_freq);
+				BLPR("pwm_phase      = %d\n", bl_pwm->pwm_phase);
 				BLPR("pwm_cnt       = %u\n", bl_pwm->pwm_cnt);
-				if (bl_pwm->pwm_duty_max > 100) {
-					BLPR("pwm_duty  = %d%%(%d)\n",
-					     bl_pwm->pwm_duty * 100 / 255, bl_pwm->pwm_duty);
-				} else {
-					BLPR("pwm_duty  = %d%%(%d)\n",
-					     bl_pwm->pwm_duty, bl_pwm->pwm_duty);
-				}
-
+				BLPR("pwm_duty      = %d\n", bl_pwm->pwm_duty);
 				BLPR("pwm_reg0      = 0x%08x\n", lcd_vcbus_read(VPU_VPU_PWM_V0));
 				BLPR("pwm_reg1      = 0x%08x\n", lcd_vcbus_read(VPU_VPU_PWM_V1));
 				BLPR("pwm_reg2      = 0x%08x\n", lcd_vcbus_read(VPU_VPU_PWM_V2));
@@ -905,16 +854,10 @@ static void bl_config_print(struct aml_bl_drv_s *bdrv)
 				BLPR("pwm_freq      = %uHz\n", bl_pwm->pwm_freq);
 				BLPR("pwm_cnt       = %u\n", bl_pwm->pwm_cnt);
 				BLPR("pwm_pre_div   = %u\n", bl_pwm->pwm_pre_div);
-				if (bl_pwm->pwm_duty_max > 100) {
-					BLPR("pwm_duty      = %d%%(%d)\n",
-					     bl_pwm->pwm_duty * 100 / 255, bl_pwm->pwm_duty);
-				} else {
-					BLPR("pwm_duty      = %d%%(%d)\n",
-					     bl_pwm->pwm_duty, bl_pwm->pwm_duty);
-				}
-
+				BLPR("pwm_duty      = %d\n", bl_pwm->pwm_duty);
 				bl_pwm_reg_print(bl_pwm);
 			}
+			BLPR("pwm_duty_range= %d\n", bl_pwm->pwm_duty_range);
 			BLPR("pwm_duty_max  = %d\n", bl_pwm->pwm_duty_max);
 			BLPR("pwm_duty_min  = %d\n", bl_pwm->pwm_duty_min);
 			BLPR("pwm_gpio      = %s(%d)\n",
@@ -932,16 +875,14 @@ static void bl_config_print(struct aml_bl_drv_s *bdrv)
 			BLPR("pwm_combo0_method   = %d\n", bl_pwm->pwm_method);
 			BLPR("pwm_combo0_port     = %s(0x%x)\n",
 			     bl_pwm_num_to_str(bl_pwm->pwm_port), bl_pwm->pwm_port);
+			BLPR("combo0_bl_level_max = %d\n", bl_pwm->bl_level_max);
+			BLPR("combo0_bl_level_min = %d\n", bl_pwm->bl_level_min);
+			BLPR("combo0_bl_level     = %d\n", bl_pwm->bl_level);
 			if (bl_pwm->pwm_port == BL_PWM_VS) {
 				BLPR("pwm_combo0_freq     = %d x vfreq\n", bl_pwm->pwm_freq);
+				BLPR("pwm_combo0_phase      = %d\n", bl_pwm->pwm_phase);
 				BLPR("pwm_combo0_cnt      = %u\n", bl_pwm->pwm_cnt);
-				if (bl_pwm->pwm_duty_max > 100)
-					BLPR("pwm_combo0_duty = %d%%(%d)\n",
-					     bl_pwm->pwm_duty * 100 / 255, bl_pwm->pwm_duty);
-				else
-					BLPR("pwm_combo0_duty = %d%%(%d)\n",
-					     bl_pwm->pwm_duty, bl_pwm->pwm_duty);
-
+				BLPR("pwm_combo0_duty     = %d\n", bl_pwm->pwm_duty);
 				BLPR("pwm_combo0_reg0     = 0x%08x\n", lcd_vcbus_read(VPU_VPU_PWM_V0));
 				BLPR("pwm_combo0_reg1     = 0x%08x\n", lcd_vcbus_read(VPU_VPU_PWM_V1));
 				BLPR("pwm_combo0_reg2     = 0x%08x\n", lcd_vcbus_read(VPU_VPU_PWM_V2));
@@ -950,15 +891,10 @@ static void bl_config_print(struct aml_bl_drv_s *bdrv)
 				BLPR("pwm_combo0_freq     = %uHz\n", bl_pwm->pwm_freq);
 				BLPR("pwm_combo0_cnt      = %u\n", bl_pwm->pwm_cnt);
 				BLPR("pwm_combo0_pre_div  = %u\n", bl_pwm->pwm_pre_div);
-				if (bl_pwm->pwm_duty_max > 100)
-					BLPR("pwm_combo0_duty = %d%%(%d)\n",
-					     bl_pwm->pwm_duty * 100 / 255, bl_pwm->pwm_duty);
-				else
-					BLPR("pwm_combo0_duty = %d%%(%d)\n",
-					     bl_pwm->pwm_duty, bl_pwm->pwm_duty);
-
+				BLPR("pwm_combo0_duty     = %d\n", bl_pwm->pwm_duty);
 				bl_pwm_reg_print(bl_pwm);
 			}
+			BLPR("pwm_combo0_duty_range = %d\n", bl_pwm->pwm_duty_range);
 			BLPR("pwm_combo0_duty_max = %d\n", bl_pwm->pwm_duty_max);
 			BLPR("pwm_combo0_duty_min = %d\n", bl_pwm->pwm_duty_min);
 			BLPR("pwm_combo0_gpio     = %s(%d)\n",
@@ -971,17 +907,14 @@ static void bl_config_print(struct aml_bl_drv_s *bdrv)
 			BLPR("pwm_combo1_method   = %d\n", bl_pwm->pwm_method);
 			BLPR("pwm_combo1_port     = %s(0x%x)\n",
 			     bl_pwm_num_to_str(bl_pwm->pwm_port), bl_pwm->pwm_port);
+			BLPR("combo1_bl_level_max = %d\n", bl_pwm->bl_level_max);
+			BLPR("combo1_bl_level_min = %d\n", bl_pwm->bl_level_min);
+			BLPR("combo1_bl_level     = %d\n", bl_pwm->bl_level);
 			if (bl_pwm->pwm_port == BL_PWM_VS) {
 				BLPR("pwm_combo1_freq     = %d x vfreq\n", bl_pwm->pwm_freq);
+				BLPR("pwm_combo1_phase      = %d\n", bl_pwm->pwm_phase);
 				BLPR("pwm_combo1_cnt      = %u\n", bl_pwm->pwm_cnt);
-				if (bl_pwm->pwm_duty_max > 100) {
-					BLPR("bl:pwm_combo1_duty = %d%% %d\n",
-					      bl_pwm->pwm_duty * 100 / 255, bl_pwm->pwm_duty);
-				} else {
-					BLPR("bl:pwm_combo1_duty = %d%% %d\n",
-					      bl_pwm->pwm_duty, bl_pwm->pwm_duty);
-				}
-
+				BLPR("bl:pwm_combo1_duty  = %d\n", bl_pwm->pwm_duty);
 				BLPR("pwm_combo1_reg0     = 0x%08x\n",
 				      lcd_vcbus_read(VPU_VPU_PWM_V0));
 				BLPR("pwm_combo1_reg1     = 0x%08x\n",
@@ -997,16 +930,11 @@ static void bl_config_print(struct aml_bl_drv_s *bdrv)
 				      bl_pwm->pwm_cnt);
 				BLPR("pwm_combo1_pre_div  = %u\n",
 				      bl_pwm->pwm_pre_div);
-				if (bl_pwm->pwm_duty_max > 100) {
-					BLPR("pwm_combo1_duty = %d%%(%d)\n",
-					     bl_pwm->pwm_duty * 100 / 255, bl_pwm->pwm_duty);
-				} else {
-					BLPR("pwm_combo1_duty = %d%%(%d)\n",
-					     bl_pwm->pwm_duty, bl_pwm->pwm_duty);
-				}
+				BLPR("pwm_combo1_duty     = %d\n", bl_pwm->pwm_duty);
 
 				bl_pwm_reg_print(bl_pwm);
 			}
+			BLPR("pwm_combo1_duty_range = %d\n", bl_pwm->pwm_duty_range);
 			BLPR("pwm_combo1_duty_max = %d\n", bl_pwm->pwm_duty_max);
 			BLPR("pwm_combo1_duty_min = %d\n", bl_pwm->pwm_duty_min);
 			BLPR("pwm_combo1_gpio     = %s(%d)\n",
@@ -1060,11 +988,14 @@ static int bl_config_load_from_dts(char *dt_addr, struct aml_bl_drv_s *bdrv)
 	struct bl_config_s *bconf = &bdrv->config;
 	struct bl_pwm_config_s *bl_pwm;
 	struct bl_pwm_config_s *pwm_combo0, *pwm_combo1;
+	unsigned int temp;
 
 	if (bdrv->index == 0)
 		sprintf(sname, "/backlight");
 	else
 		sprintf(sname, "/backlight%d", bdrv->index);
+
+	BLPR("[%d]: load config %s from dts\n", bdrv->index, sname);
 
 	bconf->method = BL_CTRL_MAX; /* default */
 	parent_offset = fdt_path_offset(dt_addr, sname);
@@ -1161,9 +1092,10 @@ static int bl_config_load_from_dts(char *dt_addr, struct aml_bl_drv_s *bdrv)
 		bl_pwm = bconf->bl_pwm;
 		memset(bl_pwm, 0, sizeof(struct bl_pwm_config_s));
 		bl_pwm->index = 0;
+		bl_pwm->drv_index = bdrv->index;
 
-		bl_pwm->level_max = bconf->level_max;
-		bl_pwm->level_min = bconf->level_min;
+		bl_pwm->bl_level_max = bconf->level_max;
+		bl_pwm->bl_level_min = bconf->level_min;
 
 		propdata = (char *)fdt_getprop(dt_addr, child_offset,
 					       "bl_pwm_port", NULL);
@@ -1184,24 +1116,21 @@ static int bl_config_load_from_dts(char *dt_addr, struct aml_bl_drv_s *bdrv)
 				bl_pwm->pwm_freq = BL_FREQ_DEFAULT;
 			bl_pwm->pwm_duty_max = 80;
 			bl_pwm->pwm_duty_min = 20;
+			bl_pwm->pwm_phase = 0;
 		} else {
 			bl_pwm->pwm_method = be32_to_cpup((u32 *)propdata);
-			bl_pwm->pwm_freq =
-				be32_to_cpup((((u32 *)propdata) + 1));
+			temp = be32_to_cpup((((u32 *)propdata) + 1));
+			if (bl_pwm->pwm_port == BL_PWM_VS) {
+				bl_pwm->pwm_freq = temp & 0xff;
+				bl_pwm->pwm_phase = (temp >> 8) & 0xffffff;
+			} else {
+				bl_pwm->pwm_freq = temp;
+				bl_pwm->pwm_phase = 0;
+			}
 			bl_pwm->pwm_duty_max =
 				be32_to_cpup((((u32 *)propdata) + 2));
 			bl_pwm->pwm_duty_min =
 				be32_to_cpup((((u32 *)propdata) + 3));
-		}
-		if (bl_pwm->pwm_port == BL_PWM_VS) {
-			if (bl_pwm->pwm_freq > 4) {
-				BLERR("bl_pwm_vs wrong freq %d\n",
-				       bl_pwm->pwm_freq);
-				bl_pwm->pwm_freq = BL_FREQ_VS_DEFAULT;
-			}
-		} else {
-			if (bl_pwm->pwm_freq > XTAL_HALF_FREQ_HZ)
-				bl_pwm->pwm_freq = XTAL_HALF_FREQ_HZ;
 		}
 		propdata = (char *)fdt_getprop(dt_addr, child_offset,
 					       "bl_pwm_power", NULL);
@@ -1268,23 +1197,25 @@ static int bl_config_load_from_dts(char *dt_addr, struct aml_bl_drv_s *bdrv)
 		memset(pwm_combo1, 0, sizeof(struct bl_pwm_config_s));
 		pwm_combo0->index = 0;
 		pwm_combo1->index = 1;
+		pwm_combo0->drv_index = bdrv->index;
+		pwm_combo1->drv_index = bdrv->index;
 
 		propdata = (char *)fdt_getprop(dt_addr, child_offset,
 					       "bl_pwm_combo_level_mapping",
 					       NULL);
 		if (!propdata) {
 			BLERR("failed to get bl_pwm_combo_level_mapping\n");
-			pwm_combo0->level_max = BL_LEVEL_MAX;
-			pwm_combo0->level_min = BL_LEVEL_MID;
-			pwm_combo1->level_max = BL_LEVEL_MID;
-			pwm_combo1->level_min = BL_LEVEL_MIN;
+			pwm_combo0->bl_level_max = BL_LEVEL_MAX;
+			pwm_combo0->bl_level_min = BL_LEVEL_MID;
+			pwm_combo1->bl_level_max = BL_LEVEL_MID;
+			pwm_combo1->bl_level_min = BL_LEVEL_MIN;
 		} else {
-			pwm_combo0->level_max = be32_to_cpup((u32 *)propdata);
-			pwm_combo0->level_min =
+			pwm_combo0->bl_level_max = be32_to_cpup((u32 *)propdata);
+			pwm_combo0->bl_level_min =
 				be32_to_cpup((((u32 *)propdata) + 1));
-			pwm_combo1->level_max =
+			pwm_combo1->bl_level_max =
 				be32_to_cpup((((u32 *)propdata) + 2));
-			pwm_combo1->level_min =
+			pwm_combo1->bl_level_min =
 				be32_to_cpup((((u32 *)propdata) + 3));
 		}
 		propdata = (char *)fdt_getprop(dt_addr, child_offset,
@@ -1312,6 +1243,7 @@ static int bl_config_load_from_dts(char *dt_addr, struct aml_bl_drv_s *bdrv)
 				pwm_combo0->pwm_freq = BL_FREQ_DEFAULT;
 			pwm_combo0->pwm_duty_max = 80;
 			pwm_combo0->pwm_duty_min = 20;
+			pwm_combo0->pwm_phase = 0;
 			pwm_combo1->pwm_method = BL_PWM_POSITIVE;
 			if (pwm_combo1->pwm_port == BL_PWM_VS)
 				pwm_combo1->pwm_freq = BL_FREQ_VS_DEFAULT;
@@ -1319,42 +1251,35 @@ static int bl_config_load_from_dts(char *dt_addr, struct aml_bl_drv_s *bdrv)
 				pwm_combo1->pwm_freq = BL_FREQ_DEFAULT;
 			pwm_combo1->pwm_duty_max = 80;
 			pwm_combo1->pwm_duty_min = 20;
+			pwm_combo1->pwm_phase = 0;
 		} else {
 			pwm_combo0->pwm_method = be32_to_cpup((u32 *)propdata);
-			pwm_combo0->pwm_freq =
-				be32_to_cpup((((u32 *)propdata) + 1));
+			temp = be32_to_cpup((((u32 *)propdata) + 1));
+			if (pwm_combo0->pwm_port == BL_PWM_VS) {
+				pwm_combo0->pwm_freq = temp & 0xff;
+				pwm_combo0->pwm_phase = (temp >> 8) & 0xffffff;
+			} else {
+				pwm_combo0->pwm_freq = temp;
+				pwm_combo0->pwm_phase = 0;
+			}
 			pwm_combo0->pwm_duty_max =
 				be32_to_cpup((((u32 *)propdata) + 2));
 			pwm_combo0->pwm_duty_min =
 				be32_to_cpup((((u32 *)propdata) + 3));
 			pwm_combo1->pwm_method =
 				be32_to_cpup((((u32 *)propdata) + 4));
-			pwm_combo1->pwm_freq =
-				be32_to_cpup((((u32 *)propdata) + 5));
+			temp = be32_to_cpup((((u32 *)propdata) + 5));
+			if (pwm_combo1->pwm_port == BL_PWM_VS) {
+				pwm_combo1->pwm_freq = temp & 0xff;
+				pwm_combo1->pwm_phase = (temp >> 8) & 0xffffff;
+			} else {
+				pwm_combo1->pwm_freq = temp;
+				pwm_combo1->pwm_phase = 0;
+			}
 			pwm_combo1->pwm_duty_max =
 				be32_to_cpup((((u32 *)propdata) + 6));
 			pwm_combo1->pwm_duty_min =
 				be32_to_cpup((((u32 *)propdata) + 7));
-		}
-		if (pwm_combo0->pwm_port == BL_PWM_VS) {
-			if (pwm_combo0->pwm_freq > 4) {
-				BLERR("bl_pwm_vs wrong freq %d\n",
-				       pwm_combo0->pwm_freq);
-				pwm_combo0->pwm_freq = BL_FREQ_VS_DEFAULT;
-			}
-		} else {
-			if (pwm_combo0->pwm_freq > XTAL_HALF_FREQ_HZ)
-				pwm_combo0->pwm_freq = XTAL_HALF_FREQ_HZ;
-		}
-		if (pwm_combo1->pwm_port == BL_PWM_VS) {
-			if (pwm_combo1->pwm_freq > 4) {
-				BLERR("bl_pwm_vs wrong freq %d\n",
-				       pwm_combo1->pwm_freq);
-				pwm_combo1->pwm_freq = BL_FREQ_VS_DEFAULT;
-			}
-		} else {
-			if (pwm_combo1->pwm_freq > XTAL_HALF_FREQ_HZ)
-				pwm_combo1->pwm_freq = XTAL_HALF_FREQ_HZ;
 		}
 		propdata = (char *)fdt_getprop(dt_addr, child_offset,
 					       "bl_pwm_combo_power", NULL);
@@ -1419,7 +1344,7 @@ static int bl_config_load_from_dts(char *dt_addr, struct aml_bl_drv_s *bdrv)
 			BLPR("find en_sequence_reverse: %d\n", bconf->en_sequence_reverse);
 		}
 
-		aml_ldim_probe(dt_addr, child_offset, NULL, 0);
+		aml_ldim_probe(bdrv, dt_addr, child_offset, NULL, 0);
 		break;
 #endif
 #ifdef CONFIG_AML_LCD_BL_EXTERN
@@ -1459,13 +1384,20 @@ static int bl_config_load_from_unifykey(char *dt_addr, struct aml_bl_drv_s *bdrv
 	unsigned char *p;
 	const char *str;
 	char sname[20];
-	struct lcd_unifykey_header_s bl_header;
+	struct lcd_unifykey_header_s *bl_header;
 	struct bl_config_s *bconf = &bdrv->config;
 	struct bl_pwm_config_s *bl_pwm;
 	struct bl_pwm_config_s *pwm_combo0, *pwm_combo1;
 	int ret;
+	unsigned int temp;
 
-	key_len = LCD_UKEY_BL_SIZE;
+	if (bdrv->index == 0)
+		sprintf(sname, "backlight");
+	else
+		sprintf(sname, "backlight%d", bdrv->index);
+	ret = lcd_unifykey_get_size(sname, &key_len);
+	if (ret)
+		return -1;
 	para = (unsigned char *)malloc(sizeof(unsigned char) * key_len);
 	if (!para) {
 		BLERR("%s: Not enough memory\n", __func__);
@@ -1473,28 +1405,17 @@ static int bl_config_load_from_unifykey(char *dt_addr, struct aml_bl_drv_s *bdrv
 	}
 	memset(para, 0, (sizeof(unsigned char) * key_len));
 
-	if (bdrv->index == 0)
-		sprintf(sname, "backlight");
-	else
-		sprintf(sname, "backlight%d", bdrv->index);
-	ret = lcd_unifykey_get(sname, para, &key_len);
+	ret = lcd_unifykey_get(sname, para, key_len);
 	if (ret) {
 		free(para);
 		return -1;
 	}
 
 	/* step 1: check header */
-	len = LCD_UKEY_HEAD_SIZE;
-	ret = lcd_unifykey_len_check(key_len, len);
-	if (ret) {
-		BLERR("unifykey header length is incorrect\n");
-		free(para);
-		return -1;
-	}
-
-	lcd_unifykey_header_check(para, &bl_header);
-	BLPR("unifykey version: 0x%04x\n", bl_header.version);
-	switch (bl_header.version) {
+	bl_header = (struct lcd_unifykey_header_s *)para;
+	BLPR("[%d]: load config from unifykey, version: 0x%x\n",
+		bdrv->index, bl_header->version);
+	switch (bl_header->version) {
 	case 2:
 		len = 10 + 30 + 12 + 8 + 32 + 10;
 		break;
@@ -1504,8 +1425,8 @@ static int bl_config_load_from_unifykey(char *dt_addr, struct aml_bl_drv_s *bdrv
 	}
 	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
 		BLPR("unifykey header:\n");
-		BLPR("crc32             = 0x%08x\n", bl_header.crc32);
-		BLPR("data_len          = %d\n", bl_header.data_len);
+		BLPR("crc32             = 0x%08x\n", bl_header->crc32);
+		BLPR("data_len          = %d\n", bl_header->data_len);
 	}
 
 	/* step 2: check backlight parameters */
@@ -1556,9 +1477,10 @@ static int bl_config_load_from_unifykey(char *dt_addr, struct aml_bl_drv_s *bdrv
 		}
 		bl_pwm = bconf->bl_pwm;
 		bl_pwm->index = 0;
+		bl_pwm->drv_index = bdrv->index;
 
-		bl_pwm->level_max = bconf->level_max;
-		bl_pwm->level_min = bconf->level_min;
+		bl_pwm->bl_level_max = bconf->level_max;
+		bl_pwm->bl_level_min = bconf->level_min;
 
 		bconf->pwm_on_delay = (*(p + LCD_UKEY_BL_PWM_ON_DELAY) |
 			((*(p + LCD_UKEY_BL_PWM_ON_DELAY + 1)) << 8));
@@ -1566,25 +1488,23 @@ static int bl_config_load_from_unifykey(char *dt_addr, struct aml_bl_drv_s *bdrv
 			((*(p + LCD_UKEY_BL_PWM_OFF_DELAY + 1)) << 8));
 		bl_pwm->pwm_method =  *(p + LCD_UKEY_BL_PWM_METHOD);
 		bl_pwm->pwm_port = *(p + LCD_UKEY_BL_PWM_PORT);
-		bl_pwm->pwm_freq = (*(p + LCD_UKEY_BL_PWM_FREQ) |
+		temp = (*(p + LCD_UKEY_BL_PWM_FREQ) |
 			((*(p + LCD_UKEY_BL_PWM_FREQ + 1)) << 8) |
 			((*(p + LCD_UKEY_BL_PWM_FREQ + 2)) << 8) |
 			((*(p + LCD_UKEY_BL_PWM_FREQ + 3)) << 8));
 		if (bl_pwm->pwm_port == BL_PWM_VS) {
-			if (bl_pwm->pwm_freq > 4) {
-				BLERR("bl_pwm_vs wrong freq %d\n", bl_pwm->pwm_freq);
-				bl_pwm->pwm_freq = BL_FREQ_VS_DEFAULT;
-			}
+			bl_pwm->pwm_freq = temp & 0xff;
+			bl_pwm->pwm_phase = (temp >> 8) & 0xffffff;
 		} else {
-			if (bl_pwm->pwm_freq > XTAL_HALF_FREQ_HZ)
-				bl_pwm->pwm_freq = XTAL_HALF_FREQ_HZ;
+			bl_pwm->pwm_freq = temp;
+			bl_pwm->pwm_phase = 0;
 		}
 		bl_pwm->pwm_duty_max = *(p + LCD_UKEY_BL_PWM_DUTY_MAX);
 		bl_pwm->pwm_duty_min = *(p + LCD_UKEY_BL_PWM_DUTY_MIN);
 		bl_pwm->pwm_gpio = *(p + LCD_UKEY_BL_PWM_GPIO);
 		bl_pwm->pwm_gpio_off = *(p + LCD_UKEY_BL_PWM_GPIO_OFF);
 
-		if (bl_header.version == 2)
+		if (bl_header->version == 2)
 			bconf->en_sequence_reverse =
 				(*(p + LCD_UKEY_BL_CUST_VAL_0) |
 				((*(p + LCD_UKEY_BL_CUST_VAL_0 + 1)) << 8));
@@ -1613,6 +1533,8 @@ static int bl_config_load_from_unifykey(char *dt_addr, struct aml_bl_drv_s *bdrv
 		pwm_combo1 = bconf->bl_pwm_combo1;
 		pwm_combo0->index = 0;
 		pwm_combo1->index = 1;
+		pwm_combo0->drv_index = bdrv->index;
+		pwm_combo1->drv_index = bdrv->index;
 
 		bconf->pwm_on_delay = (*(p + LCD_UKEY_BL_PWM_ON_DELAY) |
 			((*(p + LCD_UKEY_BL_PWM_ON_DELAY + 1)) << 8));
@@ -1620,19 +1542,16 @@ static int bl_config_load_from_unifykey(char *dt_addr, struct aml_bl_drv_s *bdrv
 			((*(p + LCD_UKEY_BL_PWM_OFF_DELAY + 1)) << 8));
 		pwm_combo0->pwm_method = *(p + LCD_UKEY_BL_PWM_METHOD);
 		pwm_combo0->pwm_port = *(p + LCD_UKEY_BL_PWM_PORT);
-		pwm_combo0->pwm_freq = (*(p + LCD_UKEY_BL_PWM_FREQ) |
+		temp = (*(p + LCD_UKEY_BL_PWM_FREQ) |
 			((*(p + LCD_UKEY_BL_PWM_FREQ + 1)) << 8) |
 			((*(p + LCD_UKEY_BL_PWM_FREQ + 2)) << 8) |
 			((*(p + LCD_UKEY_BL_PWM_FREQ + 3)) << 8));
 		if (pwm_combo0->pwm_port == BL_PWM_VS) {
-			if (pwm_combo0->pwm_freq > 4) {
-				BLERR("bl_pwm_vs wrong freq %d\n",
-				       pwm_combo0->pwm_freq);
-				pwm_combo0->pwm_freq = BL_FREQ_VS_DEFAULT;
-			}
+			pwm_combo0->pwm_freq = temp & 0xff;
+			pwm_combo0->pwm_phase = (temp >> 8) & 0xffffff;
 		} else {
-			if (pwm_combo0->pwm_freq > XTAL_HALF_FREQ_HZ)
-				pwm_combo0->pwm_freq = XTAL_HALF_FREQ_HZ;
+			pwm_combo0->pwm_freq = temp;
+			pwm_combo0->pwm_phase = 0;
 		}
 		pwm_combo0->pwm_duty_max = *(p + LCD_UKEY_BL_PWM_DUTY_MAX);
 		pwm_combo0->pwm_duty_min = *(p + LCD_UKEY_BL_PWM_DUTY_MIN);
@@ -1640,35 +1559,32 @@ static int bl_config_load_from_unifykey(char *dt_addr, struct aml_bl_drv_s *bdrv
 		pwm_combo0->pwm_gpio_off = *(p + LCD_UKEY_BL_PWM_GPIO_OFF);
 		pwm_combo1->pwm_method = *(p + LCD_UKEY_BL_PWM2_METHOD);
 		pwm_combo1->pwm_port = *(p + LCD_UKEY_BL_PWM2_PORT);
-		pwm_combo1->pwm_freq = (*(p + LCD_UKEY_BL_PWM2_FREQ) |
+		temp = (*(p + LCD_UKEY_BL_PWM2_FREQ) |
 			((*(p + LCD_UKEY_BL_PWM2_FREQ + 1)) << 8) |
 			((*(p + LCD_UKEY_BL_PWM2_FREQ + 2)) << 8) |
 			((*(p + LCD_UKEY_BL_PWM2_FREQ + 3)) << 8));
 		if (pwm_combo1->pwm_port == BL_PWM_VS) {
-			if (pwm_combo1->pwm_freq > 4) {
-				BLERR("bl_pwm_vs wrong freq %d\n",
-				       pwm_combo1->pwm_freq);
-				pwm_combo1->pwm_freq = BL_FREQ_VS_DEFAULT;
-			}
+			pwm_combo1->pwm_freq = temp & 0xff;
+			pwm_combo1->pwm_phase = (temp >> 8) & 0xffffff;
 		} else {
-			if (pwm_combo1->pwm_freq > XTAL_HALF_FREQ_HZ)
-				pwm_combo1->pwm_freq = XTAL_HALF_FREQ_HZ;
+			pwm_combo1->pwm_freq = temp;
+			pwm_combo1->pwm_phase = 0;
 		}
 		pwm_combo1->pwm_duty_max = *(p + LCD_UKEY_BL_PWM2_DUTY_MAX);
 		pwm_combo1->pwm_duty_min = *(p + LCD_UKEY_BL_PWM2_DUTY_MIN);
 		pwm_combo1->pwm_gpio = *(p + LCD_UKEY_BL_PWM2_GPIO);
 		pwm_combo1->pwm_gpio_off = *(p + LCD_UKEY_BL_PWM2_GPIO_OFF);
 
-		pwm_combo0->level_max = (*(p + LCD_UKEY_BL_PWM_LEVEL_MAX) |
+		pwm_combo0->bl_level_max = (*(p + LCD_UKEY_BL_PWM_LEVEL_MAX) |
 			((*(p + LCD_UKEY_BL_PWM_LEVEL_MAX + 1)) << 8));
-		pwm_combo0->level_min = (*(p + LCD_UKEY_BL_PWM_LEVEL_MIN) |
+		pwm_combo0->bl_level_min = (*(p + LCD_UKEY_BL_PWM_LEVEL_MIN) |
 			((*(p + LCD_UKEY_BL_PWM_LEVEL_MIN + 1)) << 8));
-		pwm_combo1->level_max = (*(p + LCD_UKEY_BL_PWM2_LEVEL_MAX) |
+		pwm_combo1->bl_level_max = (*(p + LCD_UKEY_BL_PWM2_LEVEL_MAX) |
 			((*(p + LCD_UKEY_BL_PWM2_LEVEL_MAX + 1)) << 8));
-		pwm_combo1->level_min = (*(p + LCD_UKEY_BL_PWM2_LEVEL_MIN) |
+		pwm_combo1->bl_level_min = (*(p + LCD_UKEY_BL_PWM2_LEVEL_MIN) |
 			((*(p + LCD_UKEY_BL_PWM2_LEVEL_MIN + 1)) << 8));
 
-		if (bl_header.version == 2)
+		if (bl_header->version == 2)
 			bconf->en_sequence_reverse = (*(p + LCD_UKEY_BL_CUST_VAL_0) |
 				((*(p + LCD_UKEY_BL_CUST_VAL_0 + 1)) << 8));
 		else
@@ -1685,11 +1601,11 @@ static int bl_config_load_from_unifykey(char *dt_addr, struct aml_bl_drv_s *bdrv
 			BLERR("no ldim driver\n");
 			break;
 		}
-		if (bl_header.version == 2) {
-			aml_ldim_probe(dt_addr, 0, para, 2);
+		if (bl_header->version == 2) {
+			aml_ldim_probe(bdrv, dt_addr, 0, para, 2);
 		} else {
 			BLERR("not support ldim for unifykey version: %d\n",
-			      bl_header.version);
+			      bl_header->version);
 		}
 		break;
 #endif
@@ -1780,9 +1696,10 @@ static int bl_config_load_from_bsp(struct aml_bl_drv_s *bdrv)
 		}
 		bconf->bl_pwm = bl_pwm;
 		bl_pwm->index = 0;
+		bl_pwm->drv_index = bdrv->index;
 
-		bl_pwm->level_max     = bconf->level_max;
-		bl_pwm->level_min     = bconf->level_min;
+		bl_pwm->bl_level_max  = bconf->level_max;
+		bl_pwm->bl_level_min  = bconf->level_min;
 
 		bl_pwm->pwm_method    = ext_lcd->pwm_method;
 		bl_pwm->pwm_port      = ext_lcd->pwm_port;
@@ -1815,11 +1732,13 @@ static int bl_config_load_from_bsp(struct aml_bl_drv_s *bdrv)
 		pwm_combo1 = bconf->bl_pwm_combo1;
 		pwm_combo0->index = 0;
 		pwm_combo1->index = 1;
+		pwm_combo0->drv_index = bdrv->index;
+		pwm_combo1->drv_index = bdrv->index;
 
-		pwm_combo0->level_max     = ext_lcd->pwm_level_max;
-		pwm_combo0->level_min     = ext_lcd->pwm_level_min;
-		pwm_combo1->level_max     = ext_lcd->pwm2_level_max;
-		pwm_combo1->level_min     = ext_lcd->pwm2_level_min;
+		pwm_combo0->bl_level_max  = ext_lcd->pwm_level_max;
+		pwm_combo0->bl_level_min  = ext_lcd->pwm_level_min;
+		pwm_combo1->bl_level_max  = ext_lcd->pwm2_level_max;
+		pwm_combo1->bl_level_min  = ext_lcd->pwm2_level_min;
 
 		pwm_combo0->pwm_method    = ext_lcd->pwm_method;
 		pwm_combo0->pwm_port      = ext_lcd->pwm_port;
@@ -1859,7 +1778,7 @@ static int bl_config_load_from_bsp(struct aml_bl_drv_s *bdrv)
 			BLERR("no ldim driver\n");
 			break;
 		}
-		aml_ldim_probe(NULL, 0, NULL, 1);
+		aml_ldim_probe(bdrv, NULL, 0, NULL, 1);
 		break;
 #endif
 #ifdef CONFIG_AML_LCD_BL_EXTERN
@@ -2146,7 +2065,7 @@ static int bl_pinmux_load_from_bsp(struct aml_bl_drv_s *bdrv)
 
 static int bl_config_load(char *dt_addr, int load_id, struct aml_bl_drv_s *bdrv)
 {
-	char *bl_off_policy_str, str[30], *temp_str = NULL;
+	char *bl_off_policy_str, str[30];
 	unsigned int temp;
 	int ret;
 
@@ -2155,13 +2074,9 @@ static int bl_config_load(char *dt_addr, int load_id, struct aml_bl_drv_s *bdrv)
 	/* load bl config */
 	if (load_id & 0x1) { /* dts */
 		if (load_id & 0x10) { /* unifykey */
-			if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
-				BLPR("[%d]: load config from unifykey\n", bdrv->index);
 			ret = bl_config_load_from_unifykey(dt_addr, bdrv);
 		} else { /* dts */
 #ifdef CONFIG_OF_LIBFDT
-			if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
-				BLPR("[%d]: load config from dts\n", bdrv->index);
 			if (bdrv->config.index == 0xff) {
 				bdrv->config.method = BL_CTRL_MAX;
 				BLPR("[%d]: no backlight exist\n", bdrv->index);
@@ -2172,12 +2087,9 @@ static int bl_config_load(char *dt_addr, int load_id, struct aml_bl_drv_s *bdrv)
 		}
 	} else { /* bsp */
 		if (load_id & 0x10) { /* unifykey */
-			if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
-				BLPR("[%d]: load config from unifykey\n", bdrv->index);
 			ret = bl_config_load_from_unifykey(dt_addr, bdrv);
 		} else { /* bsp */
-			if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
-				BLPR("[%d]: load config from bsp\n", bdrv->index);
+			BLPR("[%d]: load config from bsp\n", bdrv->index);
 			ret = bl_config_load_from_bsp(bdrv);
 		}
 	}
@@ -2216,9 +2128,8 @@ static int bl_config_load(char *dt_addr, int load_id, struct aml_bl_drv_s *bdrv)
 		sprintf(str, "bl_level");
 	else
 		sprintf(str, "bl%d_level", bdrv->index);
-	temp_str = env_get(str);
-	if (temp_str) {
-		temp = (unsigned int)simple_strtoul(temp_str, NULL, 0);
+	temp = env_get_ulong(str, 10, 0xffff);
+	if (temp != 0xffff) {
 		bdrv->config.level_default = temp;
 		BLPR("[%d]: bl_level: %d\n", bdrv->index, bdrv->config.level_default);
 	}
@@ -2228,9 +2139,8 @@ static int bl_config_load(char *dt_addr, int load_id, struct aml_bl_drv_s *bdrv)
 		sprintf(str, "factory_bl_on_delay");
 	else
 		sprintf(str, "factory_bl%d_on_delay", bdrv->index);
-	temp_str = env_get(str);
-	if (temp_str) {
-		temp = (unsigned int)simple_strtoul(temp_str, NULL, 0);
+	temp = env_get_ulong(str, 10, 0xffff);
+	if (temp != 0xffff) {
 		bdrv->factory_bl_on_delay = temp;
 		BLPR("[%d]: factory_bl_on_delay: %d\n", bdrv->index, bdrv->factory_bl_on_delay);
 	}
@@ -2311,87 +2221,68 @@ static int lcd_bl_init_load_from_bsp(struct aml_bl_drv_s *bdrv)
 	return 0;
 }
 
-int aml_bl_probe(char *dtaddr, int load_id)
+static struct aml_bl_drv_s *bl_driver_add_single(unsigned char index)
 {
-	struct aml_lcd_data_s *pdata = aml_lcd_get_data();
-	struct aml_bl_drv_s *bdrv;
-	int load_id_bl, load_id_temp;
-	int i, ret;
+	struct aml_bl_drv_s *bdrv = bl_driver[index];
 
-	if (!pdata) {
-		BLERR("%s: pdata is NULL\n", __func__);
-		return -1;
+	if (bl_index_lut[index] >= BL_INDEX_INVALID)
+		return NULL;
+
+	if (!bdrv) {
+		bdrv = (struct aml_bl_drv_s *)malloc(sizeof(struct aml_bl_drv_s));
+		if (!bdrv) {
+			BLERR("%s: Not enough memory\n", __func__);
+			return NULL;
+		}
 	}
+	bl_driver[index] = bdrv;
+	memset(bdrv, 0, sizeof(struct aml_bl_drv_s));
+	bdrv->index = index;
+	bdrv->data = aml_lcd_get_data();
 
-	aml_bl_pwm_reg_config_init(pdata);
+	/* default config */
+	bdrv->config.index = bl_index_lut[index];
+	bdrv->config.method = BL_CTRL_MAX;
+	bdrv->config.en_gpio = 0xff;
+	bdrv->config.extern_index = 0xff;
+	bdrv->factory_bl_on_delay = -1;
 
-	load_id_bl = load_id;
-	for (i = 0; i < LCD_MAX_DRV; i++) {
-		if (bl_index_lut[i] >= BL_INDEX_INVALID)
-			continue;
-
-		if (!bl_driver[i]) {
-			bl_driver[i] = (struct aml_bl_drv_s *)
-				malloc(sizeof(struct aml_bl_drv_s));
-			if (!bl_driver[i]) {
-				BLERR("%s: Not enough memory\n", __func__);
-				return -1;
-			}
-		}
-		bdrv = bl_driver[i];
-		memset(bdrv, 0, sizeof(struct aml_bl_drv_s));
-		bdrv->index = i;
-		bdrv->data = pdata;
-
-		/* default config */
-		bdrv->config.index = bl_index_lut[i];
-		bdrv->config.method = BL_CTRL_MAX;
-		bdrv->config.en_gpio = 0xff;
-		bdrv->config.extern_index = 0xff;
-		bdrv->factory_bl_on_delay = -1;
-
-		if (load_id_bl & 0x1) {
-			ret = lcd_bl_init_load_from_dts(dtaddr, bdrv);
-			if (ret) {
-				free(bl_driver[i]);
-				bl_driver[i] = NULL;
-				return -1;
-			}
-		} else {
-			ret = lcd_bl_init_load_from_bsp(bdrv);
-			if (ret) {
-				free(bl_driver[i]);
-				bl_driver[i] = NULL;
-				return -1;
-			}
-		}
-		load_id_temp = load_id_bl & 0xff;
-		if ((load_id_bl & (1 << 8)) == 0) {
-			if (bdrv->key_valid)
-				load_id_temp |= (1 << 4);
-			else
-				load_id_temp &= ~(1 << 4);
-		}
-
-		/* load bl config */
-		bl_config_load(dtaddr, load_id_temp, bdrv);
-		bl_power_init_off(bdrv);
-	}
-
-	return 0;
+	return bdrv;
 }
 
-int aml_bl_remove(void)
+static void bl_driver_remove_single(unsigned char index)
 {
-	int i = 0;
+	free(bl_driver[index]);
+	bl_driver[index] = NULL;
+}
 
-	for (i = 0; i < LCD_MAX_DRV; i++) {
-		if (bl_driver[i])
-			free(bl_driver[i]);
-		bl_driver[i] = NULL;
+void aml_bl_probe_single(unsigned char index, int load_id)
+{
+	struct aml_bl_drv_s *bdrv = bl_driver_add_single(index);
+	int ret;
+
+	if (!bdrv)
+		return;
+
+	if (load_id & 0x1)
+		ret = lcd_bl_init_load_from_dts(lcd_get_dt_addr(), bdrv);
+	else
+		ret = lcd_bl_init_load_from_bsp(bdrv);
+	if (ret) {
+		bl_driver_remove_single(index);
+		return;
 	}
+	/* load bl config */
+	bl_config_load(lcd_get_dt_addr(), load_id, bdrv);
+	bl_power_init_off(bdrv);
+}
 
-	return 0;
+void aml_bl_remove_all(void)
+{
+	int i;
+
+	for (i = 0; i < LCD_MAX_DRV; i++)
+		bl_driver_remove_single(i);
 }
 
 int aml_bl_index_add(int drv_index, int conf_index)
@@ -2426,11 +2317,12 @@ int aml_bl_index_remove(int drv_index)
 int aml_bl_init(void)
 {
 	int i;
+	struct aml_lcd_data_s *lcd_data = aml_lcd_get_data();
+
+	aml_bl_pwm_reg_config_init(lcd_data);
 
 	for (i = 0; i < LCD_MAX_DRV; i++) {
-		if (bl_driver[i])
-			free(bl_driver[i]);
-		bl_driver[i] = NULL;
+		bl_driver_remove_single(i);
 		bl_index_lut[i] = BL_INDEX_INVALID;
 	}
 

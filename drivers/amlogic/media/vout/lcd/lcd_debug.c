@@ -8,54 +8,103 @@
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include "lcd_reg.h"
 #include "lcd_common.h"
-#ifdef CONFIG_AML_LCD_TABLET
-#include "lcd_tablet/mipi_dsi_util.h"
-#endif
 #include "lcd_debug.h"
 
-static void lcd_timing_info_print(struct lcd_config_s * pconf)
+int lcd_debug_info_len(int num)
 {
-	unsigned int hs_width, hs_bp, hs_pol, h_period;
-	unsigned int vs_width, vs_bp, vs_pol, v_period;
-	unsigned int video_hstart, video_vstart;
+	int ret = 0;
 
-	video_hstart = pconf->timing.hstart;
-	video_vstart = pconf->timing.vstart;
-	h_period = pconf->basic.h_period;
-	v_period = pconf->basic.v_period;
+	if (num >= (PR_BUF_MAX - 1)) {
+		printf("%s: string length %d is out of support\n",
+			__func__, num);
+		return 0;
+	}
 
-	hs_width = pconf->timing.hsync_width;
-	hs_bp = pconf->timing.hsync_bp;
-	hs_pol = pconf->timing.hsync_pol;
-	vs_width = pconf->timing.vsync_width;
-	vs_bp = pconf->timing.vsync_bp;
-	vs_pol = pconf->timing.vsync_pol;
+	ret = PR_BUF_MAX - 1 - num;
+	return ret;
+}
+
+static void lcd_timing_info_print(struct aml_lcd_drv_s *pdrv)
+{
+	struct lcd_config_s *pconf = &pdrv->config;
+	int ret, herr, verr;
+
+	ret = lcd_config_timing_check(pdrv, &pconf->timing.act_timing);
+	herr = ret & 0xf;
+	verr = (ret >> 4) & 0xf;
 
 	printf("h_period          %d\n"
 		"v_period          %d\n"
 		"hs_width          %d\n"
-		"hs_backporch      %d\n"
+		"hs_backporch      %d%s\n"
+		"hs_frontporch     %d%s\n"
 		"hs_pol            %d\n"
 		"vs_width          %d\n"
-		"vs_backporch      %d\n"
+		"vs_backporch      %d%s\n"
+		"vs_frontporch     %d%s\n"
 		"vs_pol            %d\n"
+		"pre_de_h          %d\n"
+		"pre_de_v          %d\n"
 		"video_hstart      %d\n"
 		"video_vstart      %d\n\n",
-		h_period, v_period, hs_width, hs_bp, hs_pol,
-		vs_width, vs_bp, vs_pol, video_hstart, video_vstart);
+		pconf->timing.act_timing.h_period,
+		pconf->timing.act_timing.v_period,
+		pconf->timing.act_timing.hsync_width,
+		pconf->timing.act_timing.hsync_bp,
+		((herr & 0x4) ? "(X)" : ((herr & 0x8) ? "(!)" : "")),
+		pconf->timing.act_timing.hsync_fp,
+		((herr & 0x1) ? "(X)" : ((herr & 0x2) ? "(!)" : "")),
+		pconf->timing.act_timing.hsync_pol,
+		pconf->timing.act_timing.vsync_width,
+		pconf->timing.act_timing.vsync_bp,
+		((verr & 0x4) ? "(X)" : ((verr & 0x8) ? "(!)" : "")),
+		pconf->timing.act_timing.vsync_fp,
+		((verr & 0x1) ? "(X)" : ((verr & 0x2) ? "(!)" : "")),
+		pconf->timing.act_timing.vsync_pol,
+		pconf->timing.pre_de_h,
+		pconf->timing.pre_de_v,
+		pconf->timing.hstart, pconf->timing.vstart);
 
-	printf("h_period_min      %d\n"
-		"h_period_max      %d\n"
-		"v_period_min      %d\n"
-		"v_period_max      %d\n"
-		"frame_rate_min    %d\n"
-		"frame_rate_max    %d\n"
-		"pclk_min          %d\n"
-		"pclk_max          %d\n\n",
-		pconf->basic.h_period_min, pconf->basic.h_period_max,
-		pconf->basic.v_period_min, pconf->basic.v_period_max,
-		pconf->basic.frame_rate_min, pconf->basic.frame_rate_max,
-		pconf->basic.lcd_clk_min, pconf->basic.lcd_clk_max);
+	printf("Timing range:\n"
+		"  h_period  : %4d ~ %4d\n"
+		"  v_period  : %4d ~ %4d\n"
+		"  frame_rate: %4d ~ %4d\n"
+		"  pixel_clk : %4d ~ %4d\n"
+		"  vrr_range : %4d ~ %4d\n\n",
+		pconf->timing.act_timing.h_period_min,
+		pconf->timing.act_timing.h_period_max,
+		pconf->timing.act_timing.v_period_min,
+		pconf->timing.act_timing.v_period_max,
+		pconf->timing.act_timing.frame_rate_min,
+		pconf->timing.act_timing.frame_rate_max,
+		pconf->timing.act_timing.pclk_min,
+		pconf->timing.act_timing.pclk_max,
+		pconf->timing.act_timing.vfreq_vrr_min,
+		pconf->timing.act_timing.vfreq_vrr_max);
+
+	printf("base_pixel_clk  %d\n"
+		"base_h_period   %d\n"
+		"base_v_period   %d\n"
+		"base_frame_rate %d\n\n",
+		pconf->timing.base_timing.pixel_clk,
+		pconf->timing.base_timing.h_period,
+		pconf->timing.base_timing.v_period,
+		pconf->timing.base_timing.frame_rate);
+
+	printf("pll_ctrl       0x%08x\n"
+		"div_ctrl       0x%08x\n"
+		"clk_ctrl       0x%08x\n",
+		pconf->timing.pll_ctrl, pconf->timing.div_ctrl,
+		pconf->timing.clk_ctrl);
+
+	if (pconf->timing.clk_mode == LCD_CLK_MODE_INDEPENDENCE) {
+		printf("pll_ctrl2      0x%08x\n"
+			"div_ctrl2      0x%08x\n"
+			"clk_ctrl2      0x%08x\n",
+			pconf->timing.pll_ctrl2, pconf->timing.div_ctrl2,
+			pconf->timing.clk_ctrl2);
+	}
+	printf("\n");
 }
 
 static void lcd_gpio_info_print(struct aml_lcd_drv_s *pdrv)
@@ -101,17 +150,17 @@ static void lcd_power_info_print(struct aml_lcd_drv_s *pdrv, int status)
 		case LCD_POWER_TYPE_PMU:
 		case LCD_POWER_TYPE_WAIT_GPIO:
 		case LCD_POWER_TYPE_CLK_SS:
-			printf("%d: type=%d, index=%d, value=%d, delay=%d\n",
+			printf("  %d: type=%d, index=%d, value=%d, delay=%d\n",
 				i, power_step->type, power_step->index,
 				power_step->value, power_step->delay);
 			break;
 		case LCD_POWER_TYPE_EXTERN:
-			printf("%d: type=%d, index=%d, delay=%d\n",
+			printf("  %d: type=%d, index=%d, delay=%d\n",
 				i, power_step->type, power_step->index,
 				power_step->delay);
 			break;
 		case LCD_POWER_TYPE_SIGNAL:
-			printf("%d: type=%d, delay=%d\n",
+			printf("  %d: type=%d, delay=%d\n",
 				i, power_step->type, power_step->delay);
 			break;
 		default:
@@ -148,7 +197,7 @@ static void lcd_pinmux_info_print(struct lcd_config_s *pconf)
 	printf("\n");
 }
 
-static void lcd_info_print_lvds(struct lcd_config_s *pconf)
+static void lcd_info_print_lvds(struct aml_lcd_drv_s *pdrv)
 {
 	printf("lvds_repack       %u\n"
 		"dual_port         %u\n"
@@ -157,57 +206,57 @@ static void lcd_info_print_lvds(struct lcd_config_s *pconf)
 		"lane_reverse      %u\n"
 		"phy_vswing        0x%x\n"
 		"phy_preem         0x%x\n\n",
-		pconf->control.lvds_cfg.lvds_repack,
-		pconf->control.lvds_cfg.dual_port,
-		pconf->control.lvds_cfg.pn_swap,
-		pconf->control.lvds_cfg.port_swap,
-		pconf->control.lvds_cfg.lane_reverse,
-		pconf->control.lvds_cfg.phy_vswing,
-		pconf->control.lvds_cfg.phy_preem);
+		pdrv->config.control.lvds_cfg.lvds_repack,
+		pdrv->config.control.lvds_cfg.dual_port,
+		pdrv->config.control.lvds_cfg.pn_swap,
+		pdrv->config.control.lvds_cfg.port_swap,
+		pdrv->config.control.lvds_cfg.lane_reverse,
+		pdrv->config.control.lvds_cfg.phy_vswing,
+		pdrv->config.control.lvds_cfg.phy_preem);
 }
 
-static void lcd_info_print_vbyone(struct lcd_config_s *pconf)
+static void lcd_info_print_vbyone(struct aml_lcd_drv_s *pdrv)
 {
 	printf("lane_count                 %u\n"
 		"region_num                 %u\n"
 		"byte_mode                  %u\n"
-		"bit_rate                   %uHz\n"
+		"bit_rate                   %lluHz\n"
 		"phy_vswing                 0x%x\n"
 		"phy_preemphasis            0x%x\n"
 		"hw_filter_time             0x%x\n"
 		"hw_filter_cnt              0x%x\n"
 		"ctrl_flag                  0x%x\n\n",
-		pconf->control.vbyone_cfg.lane_count,
-		pconf->control.vbyone_cfg.region_num,
-		pconf->control.vbyone_cfg.byte_mode,
-		pconf->timing.bit_rate,
-		pconf->control.vbyone_cfg.phy_vswing,
-		pconf->control.vbyone_cfg.phy_preem,
-		pconf->control.vbyone_cfg.hw_filter_time,
-		pconf->control.vbyone_cfg.hw_filter_cnt,
-		pconf->control.vbyone_cfg.ctrl_flag);
-	if (pconf->control.vbyone_cfg.ctrl_flag & 0x1) {
+		pdrv->config.control.vbyone_cfg.lane_count,
+		pdrv->config.control.vbyone_cfg.region_num,
+		pdrv->config.control.vbyone_cfg.byte_mode,
+		pdrv->config.timing.bit_rate,
+		pdrv->config.control.vbyone_cfg.phy_vswing,
+		pdrv->config.control.vbyone_cfg.phy_preem,
+		pdrv->config.control.vbyone_cfg.hw_filter_time,
+		pdrv->config.control.vbyone_cfg.hw_filter_cnt,
+		pdrv->config.control.vbyone_cfg.ctrl_flag);
+	if (pdrv->config.control.vbyone_cfg.ctrl_flag & 0x1) {
 		printf("power_on_reset_en          %u\n"
 			"power_on_reset_delay       %ums\n\n",
-			(pconf->control.vbyone_cfg.ctrl_flag & 0x1),
-			pconf->control.vbyone_cfg.power_on_reset_delay);
+			(pdrv->config.control.vbyone_cfg.ctrl_flag & 0x1),
+			pdrv->config.control.vbyone_cfg.power_on_reset_delay);
 	}
-	if (pconf->control.vbyone_cfg.ctrl_flag & 0x2) {
+	if (pdrv->config.control.vbyone_cfg.ctrl_flag & 0x2) {
 		printf("hpd_data_delay_en          %u\n"
 			"hpd_data_delay             %ums\n\n",
-			((pconf->control.vbyone_cfg.ctrl_flag >> 1) & 0x1),
-			pconf->control.vbyone_cfg.hpd_data_delay);
+			((pdrv->config.control.vbyone_cfg.ctrl_flag >> 1) & 0x1),
+			pdrv->config.control.vbyone_cfg.hpd_data_delay);
 	}
-	if (pconf->control.vbyone_cfg.ctrl_flag & 0x4) {
+	if (pdrv->config.control.vbyone_cfg.ctrl_flag & 0x4) {
 		printf("cdr_training_hold_en       %u\n"
 			"cdr_training_hold          %ums\n\n",
-			((pconf->control.vbyone_cfg.ctrl_flag >> 2) & 0x1),
-			pconf->control.vbyone_cfg.cdr_training_hold);
+			((pdrv->config.control.vbyone_cfg.ctrl_flag >> 2) & 0x1),
+			pdrv->config.control.vbyone_cfg.cdr_training_hold);
 	}
-	lcd_pinmux_info_print(pconf);
+	lcd_pinmux_info_print(&pdrv->config);
 }
 
-static void lcd_info_print_rgb(struct lcd_config_s *pconf)
+static void lcd_info_print_rgb(struct aml_lcd_drv_s *pdrv)
 {
 	printf("type              %u\n"
 		"clk_pol           %u\n"
@@ -215,74 +264,64 @@ static void lcd_info_print_rgb(struct lcd_config_s *pconf)
 		"sync_valid        %u\n"
 		"rb_swap           %u\n"
 		"bit_swap          %u\n\n",
-		pconf->control.rgb_cfg.type,
-		pconf->control.rgb_cfg.clk_pol,
-		pconf->control.rgb_cfg.de_valid,
-		pconf->control.rgb_cfg.sync_valid,
-		pconf->control.rgb_cfg.rb_swap,
-		pconf->control.rgb_cfg.bit_swap);
-	lcd_pinmux_info_print(pconf);
+		pdrv->config.control.rgb_cfg.type,
+		pdrv->config.control.rgb_cfg.clk_pol,
+		pdrv->config.control.rgb_cfg.de_valid,
+		pdrv->config.control.rgb_cfg.sync_valid,
+		pdrv->config.control.rgb_cfg.rb_swap,
+		pdrv->config.control.rgb_cfg.bit_swap);
+	lcd_pinmux_info_print(&pdrv->config);
 }
 
-static void lcd_info_print_bt(struct lcd_config_s *pconf)
+static void lcd_info_print_bt(struct aml_lcd_drv_s *pdrv)
 {
 	printf("clk_phase       %u\n"
 		"field_type      %u\n"
 		"mode_422        %u\n"
 		"yc_swap         %u\n"
 		"cbcr_swap       %u\n\n",
-		pconf->control.bt_cfg.clk_phase,
-		pconf->control.bt_cfg.field_type,
-		pconf->control.bt_cfg.mode_422,
-		pconf->control.bt_cfg.yc_swap,
-		pconf->control.bt_cfg.cbcr_swap);
-	lcd_pinmux_info_print(pconf);
+		pdrv->config.control.bt_cfg.clk_phase,
+		pdrv->config.control.bt_cfg.field_type,
+		pdrv->config.control.bt_cfg.mode_422,
+		pdrv->config.control.bt_cfg.yc_swap,
+		pdrv->config.control.bt_cfg.cbcr_swap);
+	lcd_pinmux_info_print(&pdrv->config);
 }
 
-static void lcd_info_print_mipi(struct lcd_config_s *pconf)
+static void lcd_info_print_mipi(struct aml_lcd_drv_s *pdrv)
 {
 #ifdef CONFIG_AML_LCD_TABLET
-	mipi_dsi_print_info(pconf);
+	lcd_dsi_info_print(&pdrv->config);
 #endif
 }
 
-static void lcd_info_print_edp(struct lcd_config_s *pconf)
+static void lcd_info_print_edp(struct aml_lcd_drv_s *pdrv)
 {
 	printf("max_lane_count        %u\n"
 		"max_link_rate         %u\n"
 		"training_mode         %u\n"
 		"edid_en               %u\n"
-		"dpcd_caps_en          %u\n"
 		"sync_clk_mode         %u\n"
 		"lane_count            %u\n"
 		"link_rate             %u\n"
-		"bit_rate              %u\n"
-		"training_settings     %u\n"
-		"main_stream_enable    %u\n"
+		"bit_rate              %llu\n"
 		"phy_vswing            0x%x\n"
 		"phy_preem             0x%x\n\n",
-		pconf->control.edp_cfg.max_lane_count,
-		pconf->control.edp_cfg.max_link_rate,
-		pconf->control.edp_cfg.training_mode,
-		pconf->control.edp_cfg.edid_en,
-		pconf->control.edp_cfg.dpcd_caps_en,
-		pconf->control.edp_cfg.sync_clk_mode,
-		pconf->control.edp_cfg.lane_count,
-		pconf->control.edp_cfg.link_rate,
-		pconf->timing.bit_rate,
-		pconf->control.edp_cfg.training_settings,
-		pconf->control.edp_cfg.main_stream_enable,
-		pconf->control.edp_cfg.phy_vswing,
-		pconf->control.edp_cfg.phy_preem);
-	printf("edid_state            0x%x\n"
-		"edid_retry_cnt        %u\n\n",
-		pconf->control.edp_cfg.edid_state,
-		pconf->control.edp_cfg.edid_retry_cnt);
-	lcd_pinmux_info_print(pconf);
+		pdrv->config.control.edp_cfg.max_lane_count,
+		pdrv->config.control.edp_cfg.max_link_rate,
+		pdrv->config.control.edp_cfg.training_mode,
+		pdrv->config.control.edp_cfg.edid_en,
+		pdrv->config.control.edp_cfg.sync_clk_mode,
+		pdrv->config.control.edp_cfg.lane_count,
+		pdrv->config.control.edp_cfg.link_rate,
+		pdrv->config.timing.bit_rate,
+		pdrv->config.control.edp_cfg.phy_vswing_preset,
+		pdrv->config.control.edp_cfg.phy_preem_preset);
+	lcd_pinmux_info_print(&pdrv->config);
 }
 
 #ifdef CONFIG_AML_LCD_TCON
-static void lcd_info_print_mlvds(struct lcd_config_s *pconf)
+static void lcd_info_print_mlvds(struct aml_lcd_drv_s *pdrv)
 {
 	printf("channel_num       %d\n"
 		"channel_sel0      0x%08x\n"
@@ -292,23 +331,23 @@ static void lcd_info_print_mlvds(struct lcd_config_s *pconf)
 		"bit_swap          %u\n"
 		"phy_vswing        0x%x\n"
 		"phy_preem         0x%x\n"
-		"bit_rate          %uHz\n"
+		"bit_rate          %lluHz\n"
 		"pi_clk_sel        0x%03x\n\n",
-		pconf->control.mlvds_cfg.channel_num,
-		pconf->control.mlvds_cfg.channel_sel0,
-		pconf->control.mlvds_cfg.channel_sel1,
-		pconf->control.mlvds_cfg.clk_phase,
-		pconf->control.mlvds_cfg.pn_swap,
-		pconf->control.mlvds_cfg.bit_swap,
-		pconf->control.mlvds_cfg.phy_vswing,
-		pconf->control.mlvds_cfg.phy_preem,
-		pconf->timing.bit_rate,
-		pconf->control.mlvds_cfg.pi_clk_sel);
-	lcd_tcon_info_print();
-	lcd_pinmux_info_print(pconf);
+		pdrv->config.control.mlvds_cfg.channel_num,
+		pdrv->config.control.mlvds_cfg.channel_sel0,
+		pdrv->config.control.mlvds_cfg.channel_sel1,
+		pdrv->config.control.mlvds_cfg.clk_phase,
+		pdrv->config.control.mlvds_cfg.pn_swap,
+		pdrv->config.control.mlvds_cfg.bit_swap,
+		pdrv->config.control.mlvds_cfg.phy_vswing,
+		pdrv->config.control.mlvds_cfg.phy_preem,
+		pdrv->config.timing.bit_rate,
+		pdrv->config.control.mlvds_cfg.pi_clk_sel);
+	lcd_tcon_info_print(pdrv);
+	lcd_pinmux_info_print(&pdrv->config);
 }
 
-static void lcd_info_print_p2p(struct lcd_config_s *pconf)
+static void lcd_info_print_p2p(struct aml_lcd_drv_s *pdrv)
 {
 	printf("p2p_type          0x%x\n"
 		"lane_num          %d\n"
@@ -316,20 +355,20 @@ static void lcd_info_print_p2p(struct lcd_config_s *pconf)
 		"channel_sel1      0x%08x\n"
 		"pn_swap           %u\n"
 		"bit_swap          %u\n"
-		"bit_rate          %uHz\n"
+		"bit_rate          %lluHz\n"
 		"phy_vswing        0x%x\n"
 		"phy_preem         0x%x\n\n",
-		pconf->control.p2p_cfg.p2p_type,
-		pconf->control.p2p_cfg.lane_num,
-		pconf->control.p2p_cfg.channel_sel0,
-		pconf->control.p2p_cfg.channel_sel1,
-		pconf->control.p2p_cfg.pn_swap,
-		pconf->control.p2p_cfg.bit_swap,
-		pconf->timing.bit_rate,
-		pconf->control.p2p_cfg.phy_vswing,
-		pconf->control.p2p_cfg.phy_preem);
-	lcd_tcon_info_print();
-	lcd_pinmux_info_print(pconf);
+		pdrv->config.control.p2p_cfg.p2p_type,
+		pdrv->config.control.p2p_cfg.lane_num,
+		pdrv->config.control.p2p_cfg.channel_sel0,
+		pdrv->config.control.p2p_cfg.channel_sel1,
+		pdrv->config.control.p2p_cfg.pn_swap,
+		pdrv->config.control.p2p_cfg.bit_swap,
+		pdrv->config.timing.bit_rate,
+		pdrv->config.control.p2p_cfg.phy_vswing,
+		pdrv->config.control.p2p_cfg.phy_preem);
+	lcd_tcon_info_print(pdrv);
+	lcd_pinmux_info_print(&pdrv->config);
 }
 #endif
 
@@ -454,10 +493,19 @@ static void lcd_reg_print_vbyone(struct aml_lcd_drv_s *pdrv)
 	reg = VBO_INSGN_CTRL + offset;
 	printf("VBO_INSGN_CTRL      [0x%04x] = 0x%08x\n",
 	       reg, lcd_vcbus_read(reg));
+	reg = LCD_PORT_SWAP + offset;
+	printf("LCD_PORT_SWAP        [0x%04x] = 0x%08x\n",
+	       reg, lcd_vcbus_read(reg));
+	reg = P2P_CH_SWAP0 + offset;
+	printf("P2P_CH_SWAP0        [0x%04x] = 0x%08x\n",
+	       reg, lcd_vcbus_read(reg));
+	reg = P2P_CH_SWAP1 + offset;
+	printf("P2P_CH_SWAP1        [0x%04x] = 0x%08x\n",
+	       reg, lcd_vcbus_read(reg));
 }
 
 #ifdef CONFIG_AML_LCD_TCON
-static void lcd_reg_print_tcon_t5(struct aml_lcd_drv_s *pdrv)
+static void lcd_reg_print_tcon_tl1(struct aml_lcd_drv_s *pdrv)
 {
 	unsigned int reg;
 
@@ -579,51 +627,36 @@ static void lcd_reg_print_tcon_t3(struct aml_lcd_drv_s *pdrv)
 static void lcd_reg_print_mipi(struct aml_lcd_drv_s *pdrv)
 {
 	unsigned int reg;
-	int index = pdrv->index;
 
 	printf("\nmipi_dsi registers:\n");
 	reg = MIPI_DSI_TOP_CNTL;
-	printf("MIPI_DSI_TOP_CNTL            [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_TOP_CNTL            [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_TOP_CLK_CNTL;
-	printf("MIPI_DSI_TOP_CLK_CNTL        [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_TOP_CLK_CNTL        [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_DWC_PWR_UP_OS;
-	printf("MIPI_DSI_DWC_PWR_UP_OS       [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_DWC_PWR_UP_OS       [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_DWC_PCKHDL_CFG_OS;
-	printf("MIPI_DSI_DWC_PCKHDL_CFG_OS   [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_DWC_PCKHDL_CFG_OS   [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_DWC_LPCLK_CTRL_OS;
-	printf("MIPI_DSI_DWC_LPCLK_CTRL_OS   [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_DWC_LPCLK_CTRL_OS   [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_DWC_CMD_MODE_CFG_OS;
-	printf("MIPI_DSI_DWC_CMD_MODE_CFG_OS [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_DWC_CMD_MODE_CFG_OS [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_DWC_VID_MODE_CFG_OS;
-	printf("MIPI_DSI_DWC_VID_MODE_CFG_OS [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_DWC_VID_MODE_CFG_OS [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_DWC_MODE_CFG_OS;
-	printf("MIPI_DSI_DWC_MODE_CFG_OS     [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_DWC_MODE_CFG_OS     [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_DWC_PHY_STATUS_OS;
-	printf("MIPI_DSI_DWC_PHY_STATUS_OS   [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_DWC_PHY_STATUS_OS   [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_DWC_INT_ST0_OS;
-	printf("MIPI_DSI_DWC_INT_ST0_OS      [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_DWC_INT_ST0_OS      [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_DWC_INT_ST1_OS;
-	printf("MIPI_DSI_DWC_INT_ST1_OS      [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_DWC_INT_ST1_OS      [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_TOP_STAT;
-	printf("MIPI_DSI_TOP_STAT            [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_TOP_STAT            [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_TOP_INTR_CNTL_STAT;
-	printf("MIPI_DSI_TOP_INTR_CNTL_STAT  [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_TOP_INTR_CNTL_STAT  [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 	reg = MIPI_DSI_TOP_MEM_PD;
-	printf("MIPI_DSI_TOP_MEM_PD          [0x%04x] = 0x%08x\n",
-	       reg, dsi_host_read(index, reg));
+	printf("MIPI_DSI_TOP_MEM_PD          [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
 }
 
 static void lcd_reg_print_edp(struct aml_lcd_drv_s *pdrv)
@@ -686,7 +719,7 @@ static void lcd_reg_print_edp(struct aml_lcd_drv_s *pdrv)
 	printf("EDP_TX_AUX_TRANSFER_STATUS       [0x%04x] = 0x%08x\n",
 	       reg, dptx_reg_read(index, reg));
 
-	dptx_dpcd_dump(pdrv);
+	dptx_DPCD_dump(pdrv);
 }
 
 static void lcd_reg_print_serializer(void)
@@ -699,6 +732,22 @@ static void lcd_reg_print_serializer(void)
 	reg = HHI_LVDS_TX_PHY_CNTL1;
 	printf("HHI_LVDS_TX_PHY_CNTL1     [0x%08x] = 0x%08x\n",
 	       reg, lcd_clk_read(reg));
+}
+
+static void lcd_reg_print_combo_dphy_serializer(void)
+{
+	unsigned int reg;
+
+	reg = COMBO_DPHY_CNTL0;
+	printf("COMBO_DPHY_CNTL0          [0x%08x] = 0x%08x\n",
+	       reg, lcd_clk_read(reg));
+	reg = COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0;
+	printf("COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0     [0x%08x] = 0x%08x\n",
+	       reg, lcd_clk_read(reg));
+	reg = COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL1;
+	printf("COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL1     [0x%08x] = 0x%08x\n",
+	       reg, lcd_clk_read(reg));
+
 }
 
 static void lcd_reg_print_phy_analog(struct aml_lcd_drv_s *pdrv)
@@ -719,7 +768,55 @@ static void lcd_reg_print_phy_analog(struct aml_lcd_drv_s *pdrv)
 	       reg, lcd_clk_read(reg));
 }
 
-static void lcd_reg_print_phy_analog_t5(struct aml_lcd_drv_s *pdrv)
+static void lcd_reg_print_phy_analog_txhd2(struct aml_lcd_drv_s *pdrv)
+{
+	unsigned int reg;
+
+	printf("\nphy analog registers:\n");
+	lcd_reg_print_combo_dphy_serializer();
+
+	reg = HHI_DIF_CSI_PHY_CNTL1;
+	printf("PHY_CNTL1           [0x%08x] = 0x%08x\n",
+	       reg, lcd_clk_read(reg));
+	reg = HHI_DIF_CSI_PHY_CNTL2;
+	printf("PHY_CNTL2           [0x%08x] = 0x%08x\n",
+	       reg, lcd_clk_read(reg));
+	reg = HHI_DIF_CSI_PHY_CNTL3;
+	printf("PHY_CNTL3           [0x%08x] = 0x%08x\n",
+	       reg, lcd_clk_read(reg));
+	reg = HHI_DIF_CSI_PHY_CNTL4;
+	printf("PHY_CNTL4           [0x%08x] = 0x%08x\n",
+	       reg, lcd_clk_read(reg));
+	reg = HHI_DIF_CSI_PHY_CNTL6;
+	printf("PHY_CNTL6           [0x%08x] = 0x%08x\n",
+	       reg, lcd_clk_read(reg));
+	reg = HHI_DIF_CSI_PHY_CNTL8;
+	printf("PHY_CNTL8           [0x%08x] = 0x%08x\n",
+	       reg, lcd_clk_read(reg));
+	reg = HHI_DIF_CSI_PHY_CNTL9;
+	printf("PHY_CNTL9           [0x%08x] = 0x%08x\n",
+	       reg, lcd_clk_read(reg));
+	reg = HHI_DIF_CSI_PHY_CNTL10;
+	printf("PHY_CNTL10          [0x%08x] = 0x%08x\n",
+	       reg, lcd_clk_read(reg));
+	reg = HHI_DIF_CSI_PHY_CNTL11;
+	printf("PHY_CNTL11          [0x%08x] = 0x%08x\n",
+	       reg, lcd_clk_read(reg));
+	reg = HHI_DIF_CSI_PHY_CNTL12;
+	printf("PHY_CNTL12          [0x%08x] = 0x%08x\n",
+	       reg, lcd_clk_read(reg));
+	reg = HHI_DIF_CSI_PHY_CNTL13;
+	printf("PHY_CNTL13          [0x%08x] = 0x%08x\n",
+	       reg, lcd_clk_read(reg));
+	reg = HHI_DIF_CSI_PHY_CNTL14;
+	printf("PHY_CNTL14          [0x%08x] = 0x%08x\n",
+	       reg, lcd_clk_read(reg));
+	reg = HHI_DIF_CSI_PHY_CNTL15;
+	printf("PHY_CNTL15          [0x%08x] = 0x%08x\n",
+	       reg, lcd_clk_read(reg));
+}
+
+static void lcd_reg_print_phy_analog_tl1(struct aml_lcd_drv_s *pdrv)
 {
 	unsigned int reg;
 
@@ -1013,40 +1110,46 @@ int lcd_prbs_test(struct aml_lcd_drv_s *pdrv, unsigned int ms,
 
 void lcd_info_print(struct aml_lcd_drv_s *pdrv)
 {
-	unsigned int lcd_clk;
 	unsigned int sync_duration;
 	struct lcd_config_s *pconf;
 	struct lcd_debug_info_if_s *info_if;
 
 	pconf = &pdrv->config;
 	LCDPR("[%d]: lcd driver version: %s\n", pdrv->index, LCD_DRV_VERSION);
+	LCDPR("config_check_glb: %d, config_check_para: 0x%x, config_check_en: %d\n",
+		pdrv->config_check_glb, pconf->basic.config_check, pdrv->config_check_en);
 	LCDPR("key_valid: %d\n", pdrv->key_valid);
 	LCDPR("custom_pinmux: %d\n", pconf->custom_pinmux);
 	LCDPR("mode: %s, status: %d\n",
 	      lcd_mode_mode_to_str(pdrv->mode), pdrv->status);
 
-	lcd_clk = (pconf->timing.lcd_clk / 1000);
-	sync_duration = pconf->timing.sync_duration_num;
-	sync_duration = (sync_duration * 100 / pconf->timing.sync_duration_den);
-	LCDPR("%s, %s %ubit, %ux%u@%u.%02uHz\n"
-		"fr_adj_type       %d\n"
-		"lcd_clk           %u.%03uMHz\n"
-		"ss_level          0x%x\n\n",
+	sync_duration = pconf->timing.act_timing.sync_duration_num;
+	sync_duration = (sync_duration * 100 / pconf->timing.act_timing.sync_duration_den);
+	LCDPR("%s, %s %ubit, %dppc, %ux%u@%d.%02dHz\n"
+		"lcd_clk           %uHz\n"
+		"enc_clk           %uHz\n"
+		"clk_mode          %s(%d)\n"
+		"ss_level          %d\n"
+		"ss_freq           %d\n"
+		"ss_mode           %d\n"
+		"fr_adj_type       %d\n\n",
 		pconf->basic.model_name,
 		lcd_type_type_to_str(pconf->basic.lcd_type),
-		pconf->basic.lcd_bits,
-		pconf->basic.h_active, pconf->basic.v_active,
+		pconf->basic.lcd_bits, pconf->timing.ppc,
+		pconf->timing.act_timing.h_active, pconf->timing.act_timing.v_active,
 		(sync_duration / 100), (sync_duration % 100),
-		pconf->timing.fr_adjust_type,
-		(lcd_clk / 1000), (lcd_clk % 1000),
-		pconf->timing.ss_level);
+		pconf->timing.act_timing.pixel_clk, pconf->timing.enc_clk,
+		(pconf->timing.clk_mode ? "independence" : "dependence"),
+		pconf->timing.clk_mode, pconf->timing.ss_level,
+		pconf->timing.ss_freq, pconf->timing.ss_mode,
+		pconf->timing.act_timing.fr_adjust_type);
 
-	lcd_timing_info_print(pconf);
+	lcd_timing_info_print(pdrv);
 
 	info_if = (struct lcd_debug_info_if_s *)pdrv->debug_info_if;
 	if (info_if) {
 		if (info_if->interface_print)
-			info_if->interface_print(pconf);
+			info_if->interface_print(pdrv);
 		else
 			LCDERR("%s: interface_print is null\n", __func__);
 	} else {
@@ -1055,19 +1158,15 @@ void lcd_info_print(struct aml_lcd_drv_s *pdrv)
 
 	lcd_phy_print(pconf);
 
-	/* cus_ctrl_attr */
-	if (pconf->cus_ctrl.flag) {
-		LCDPR("\nlcd cus_ctrl:\n"
-			"ctrl_flag:         0x%x\n"
-			"dlg_flag:          %u\n",
-			pconf->cus_ctrl.flag,
-			pconf->cus_ctrl.dlg_flag);
-	}
+	lcd_cus_ctrl_dump_info(pdrv);
 
 	lcd_power_info_print(pdrv, 1);
 	lcd_power_info_print(pdrv, 0);
 
 	lcd_gpio_info_print(pdrv);
+
+	printf("\n");
+	lcd_clk_config_print(pdrv);
 }
 
 void lcd_reg_print(struct aml_lcd_drv_s *pdrv)
@@ -1104,6 +1203,17 @@ void lcd_reg_print(struct aml_lcd_drv_s *pdrv)
 				break;
 			printf("clk     [0x%08x] = 0x%08x\n",
 				table[i], lcd_clk_read(table[i]));
+			i++;
+		}
+	}
+	if (info_reg->reg_clk_combo_dphy_table) {
+		table = info_reg->reg_clk_combo_dphy_table;
+		i = 0;
+		while (i < LCD_DEBUG_REG_CNT_MAX) {
+			if (table[i] == LCD_DEBUG_REG_END)
+				break;
+			printf("combo_dphy [0x%08x] = 0x%08x\n",
+				table[i], lcd_combo_dphy_read(table[i]));
 			i++;
 		}
 	}
@@ -1146,56 +1256,55 @@ lcd_reg_print_next:
 		info_if->reg_dump_phy(pdrv);
 }
 
-void lcd_vbyone_rst(struct aml_lcd_drv_s *pdrv)
-{
-	unsigned int offset;
-
-	offset = pdrv->data->offset_venc_if[pdrv->index];
-
-	/* realease PHY */
-	if (lcd_vcbus_read(VBO_INSGN_CTRL + offset) & 0x1) {
-		LCDPR("[%d]: clr force lockn input\n", pdrv->index);
-		lcd_vcbus_setb(VBO_INSGN_CTRL + offset, 0, 0, 1);
-	}
-	lcd_vbyone_sw_reset(pdrv);
-	LCDPR("[%d]: vbyone reset\n", pdrv->index);
-}
-
-void lcd_vbyone_cdr(struct aml_lcd_drv_s *pdrv)
-{
-	unsigned int offset;
-
-	offset = pdrv->data->offset_venc_if[pdrv->index];
-
-	/*[5:0]: vx1 fsm status*/
-	lcd_vcbus_setb(VBO_INSGN_CTRL + offset, 7, 0, 4);
-	mdelay(100);
-	LCDPR("[%d]: vbyone fsm status: 0x%08x\n",
-	      pdrv->index, lcd_vcbus_read(VBO_STATUS_L + offset));
-}
-
 /* **********************************
  * lcd debug match data
  * **********************************
  */
 /* chip_type data */
-static struct lcd_debug_info_reg_s lcd_debug_info_reg_t5 = {
+static struct lcd_debug_info_reg_s lcd_debug_info_reg_g12a_clk_path0 = {
 	.reg_pll_table = NULL,
-	.reg_clk_table = lcd_reg_dump_clk_t5,
-	.reg_encl_table = lcd_reg_dump_encl_t5,
-	.reg_pinmux_table = lcd_reg_dump_pinmux_t5,
+	.reg_clk_table = lcd_reg_dump_clk_hpll_g12a,
+	.reg_clk_combo_dphy_table = NULL,
+	.reg_encl_table = lcd_reg_dump_encl_dft,
+	.reg_pinmux_table = NULL,
+};
+
+static struct lcd_debug_info_reg_s lcd_debug_info_reg_g12a_clk_path1 = {
+	.reg_pll_table = NULL,
+	.reg_clk_table = lcd_reg_dump_clk_gp0_g12a,
+	.reg_clk_combo_dphy_table = NULL,
+	.reg_encl_table = lcd_reg_dump_encl_dft,
+	.reg_pinmux_table = NULL,
+};
+
+static struct lcd_debug_info_reg_s lcd_debug_info_reg_tl1 = {
+	.reg_pll_table = NULL,
+	.reg_clk_table = lcd_reg_dump_clk_tl1,
+	.reg_clk_combo_dphy_table = NULL,
+	.reg_encl_table = lcd_reg_dump_encl_tl1,
+	.reg_pinmux_table = lcd_reg_dump_pinmux_tl1,
 };
 
 static struct lcd_debug_info_reg_s lcd_debug_info_reg_t5w = {
 	.reg_pll_table = NULL,
-	.reg_clk_table = lcd_reg_dump_clk_t5,
+	.reg_clk_table = lcd_reg_dump_clk_tl1,
+	.reg_clk_combo_dphy_table = NULL,
 	.reg_encl_table = lcd_reg_dump_encl_t5w,
+	.reg_pinmux_table = lcd_reg_dump_pinmux_t5w,
+};
+
+static struct lcd_debug_info_reg_s lcd_debug_info_reg_txhd2 = {
+	.reg_pll_table = NULL,
+	.reg_clk_table = lcd_reg_dump_clk_txhd2,
+	.reg_clk_combo_dphy_table = lcd_reg_dump_clk_combo_dphy_txhd2,
+	.reg_encl_table = lcd_reg_dump_encl_tl1,
 	.reg_pinmux_table = lcd_reg_dump_pinmux_t5w,
 };
 
 static struct lcd_debug_info_reg_s lcd_debug_info_reg_t7_0 = {
 	.reg_pll_table = lcd_reg_dump_pll_t7_0,
 	.reg_clk_table = lcd_reg_dump_clk_t7_0,
+	.reg_clk_combo_dphy_table = lcd_reg_dump_clk_combo_dphy_t7_0,
 	.reg_encl_table = lcd_reg_dump_encl_t7_0,
 	.reg_pinmux_table = lcd_reg_dump_pinmux_t7,
 };
@@ -1203,6 +1312,7 @@ static struct lcd_debug_info_reg_s lcd_debug_info_reg_t7_0 = {
 static struct lcd_debug_info_reg_s lcd_debug_info_reg_t7_1 = {
 	.reg_pll_table = lcd_reg_dump_pll_t7_1,
 	.reg_clk_table = lcd_reg_dump_clk_t7_1,
+	.reg_clk_combo_dphy_table = lcd_reg_dump_clk_combo_dphy_t7_1,
 	.reg_encl_table = lcd_reg_dump_encl_t7_1,
 	.reg_pinmux_table = lcd_reg_dump_pinmux_t7,
 };
@@ -1210,6 +1320,7 @@ static struct lcd_debug_info_reg_s lcd_debug_info_reg_t7_1 = {
 static struct lcd_debug_info_reg_s lcd_debug_info_reg_t7_2 = {
 	.reg_pll_table = lcd_reg_dump_pll_t7_2,
 	.reg_clk_table = lcd_reg_dump_clk_t7_2,
+	.reg_clk_combo_dphy_table = lcd_reg_dump_clk_combo_dphy_t7_2,
 	.reg_encl_table = lcd_reg_dump_encl_t7_2,
 	.reg_pinmux_table = lcd_reg_dump_pinmux_t7,
 };
@@ -1217,6 +1328,7 @@ static struct lcd_debug_info_reg_s lcd_debug_info_reg_t7_2 = {
 static struct lcd_debug_info_reg_s lcd_debug_info_reg_t3_0 = {
 	.reg_pll_table = lcd_reg_dump_pll_t3,
 	.reg_clk_table = lcd_reg_dump_clk_t7_0,
+	.reg_clk_combo_dphy_table = NULL,
 	.reg_encl_table = lcd_reg_dump_encl_t7_0,
 	.reg_pinmux_table = lcd_reg_dump_pinmux_t3,
 };
@@ -1224,13 +1336,31 @@ static struct lcd_debug_info_reg_s lcd_debug_info_reg_t3_0 = {
 static struct lcd_debug_info_reg_s lcd_debug_info_reg_t3_1 = {
 	.reg_pll_table = lcd_reg_dump_pll_t3,
 	.reg_clk_table = lcd_reg_dump_clk_t7_1,
+	.reg_clk_combo_dphy_table = NULL,
 	.reg_encl_table = lcd_reg_dump_encl_t7_1,
+	.reg_pinmux_table = lcd_reg_dump_pinmux_t3,
+};
+
+static struct lcd_debug_info_reg_s lcd_debug_info_reg_t3x_0 = {
+	.reg_pll_table = lcd_reg_dump_pll_t7_0,
+	.reg_clk_table = lcd_reg_dump_clk_t7_0,
+	.reg_clk_combo_dphy_table = lcd_reg_dump_clk_combo_dphy_t7_0,
+	.reg_encl_table = lcd_reg_dump_encl_t3x_0,
+	.reg_pinmux_table = lcd_reg_dump_pinmux_t3,
+};
+
+static struct lcd_debug_info_reg_s lcd_debug_info_reg_t3x_1 = {
+	.reg_pll_table = lcd_reg_dump_pll_t7_1,
+	.reg_clk_table = lcd_reg_dump_clk_t7_1,
+	.reg_clk_combo_dphy_table = lcd_reg_dump_clk_combo_dphy_t7_1,
+	.reg_encl_table = lcd_reg_dump_encl_t3x_1,
 	.reg_pinmux_table = lcd_reg_dump_pinmux_t3,
 };
 
 static struct lcd_debug_info_reg_s lcd_debug_info_reg_c3 = {
 	.reg_pll_table = lcd_reg_dump_pll_c3,
 	.reg_clk_table = lcd_reg_dump_clk_c3,
+	.reg_clk_combo_dphy_table = NULL,
 	.reg_encl_table = lcd_reg_dump_encl_c3,
 	.reg_pinmux_table = lcd_reg_dump_pinmux_c3,
 };
@@ -1275,13 +1405,13 @@ static struct lcd_debug_info_if_s lcd_debug_info_if_edp = {
 #ifdef CONFIG_AML_LCD_TCON
 static struct lcd_debug_info_if_s lcd_debug_info_if_mlvds = {
 	.interface_print = lcd_info_print_mlvds,
-	.reg_dump_interface = lcd_reg_print_tcon_t5,
+	.reg_dump_interface = lcd_reg_print_tcon_tl1,
 	.reg_dump_phy = lcd_reg_print_phy_analog,
 };
 
 static struct lcd_debug_info_if_s lcd_debug_info_if_p2p = {
 	.interface_print = lcd_info_print_p2p,
-	.reg_dump_interface = lcd_reg_print_tcon_t5,
+	.reg_dump_interface = lcd_reg_print_tcon_tl1,
 	.reg_dump_phy = lcd_reg_print_phy_analog,
 };
 #endif
@@ -1305,9 +1435,12 @@ void lcd_debug_probe(struct aml_lcd_drv_s *pdrv)
 			lcd_debug_info_reg = &lcd_debug_info_reg_t7_0;
 			break;
 		}
-		lcd_debug_info_if_lvds.reg_dump_phy = lcd_reg_print_phy_analog_t7;
-		lcd_debug_info_if_vbyone.reg_dump_phy = lcd_reg_print_phy_analog_t7;
-		lcd_debug_info_if_mipi.reg_dump_phy = lcd_reg_print_phy_analog_t7;
+		lcd_debug_info_if_lvds.reg_dump_phy =
+			lcd_reg_print_phy_analog_t7;
+		lcd_debug_info_if_vbyone.reg_dump_phy =
+			lcd_reg_print_phy_analog_t7;
+		lcd_debug_info_if_mipi.reg_dump_phy =
+			lcd_reg_print_phy_analog_t7;
 		break;
 	case LCD_CHIP_T5M:
 	case LCD_CHIP_T3:
@@ -1319,37 +1452,106 @@ void lcd_debug_probe(struct aml_lcd_drv_s *pdrv)
 			lcd_debug_info_reg = &lcd_debug_info_reg_t3_0;
 			break;
 		}
-		lcd_debug_info_if_lvds.reg_dump_phy = lcd_reg_print_phy_analog_t3;
-		lcd_debug_info_if_vbyone.reg_dump_phy = lcd_reg_print_phy_analog_t3;
+		lcd_debug_info_if_lvds.reg_dump_phy =
+			lcd_reg_print_phy_analog_t3;
+		lcd_debug_info_if_vbyone.reg_dump_phy =
+			lcd_reg_print_phy_analog_t3;
 #ifdef CONFIG_AML_LCD_TCON
-		lcd_debug_info_if_mlvds.reg_dump_interface = lcd_reg_print_tcon_t3;
-		lcd_debug_info_if_mlvds.reg_dump_phy = lcd_reg_print_phy_analog_t3;
-		lcd_debug_info_if_p2p.reg_dump_interface = lcd_reg_print_tcon_t3;
-		lcd_debug_info_if_p2p.reg_dump_phy = lcd_reg_print_phy_analog_t3;
+		lcd_debug_info_if_mlvds.reg_dump_interface =
+			lcd_reg_print_tcon_t3;
+		lcd_debug_info_if_mlvds.reg_dump_phy =
+			lcd_reg_print_phy_analog_t3;
+		lcd_debug_info_if_p2p.reg_dump_interface =
+			lcd_reg_print_tcon_t3;
+		lcd_debug_info_if_p2p.reg_dump_phy =
+			lcd_reg_print_phy_analog_t3;
 #endif
 		break;
+	case LCD_CHIP_T3X:
+		switch (pdrv->index) {
+		case 1:
+			lcd_debug_info_reg = &lcd_debug_info_reg_t3x_1;
+			break;
+		default:
+			lcd_debug_info_reg = &lcd_debug_info_reg_t3x_0;
+			if (pdrv->config.timing.clk_mode == LCD_CLK_MODE_INDEPENDENCE) {
+				lcd_debug_info_reg->reg_pll_table =
+					lcd_reg_dump_pll_t3x_independence;
+				lcd_debug_info_reg->reg_clk_combo_dphy_table =
+					lcd_reg_dump_clk_combo_dphy_t3x_independence;
+			}
+			break;
+		}
+		lcd_debug_info_if_lvds.reg_dump_phy =
+			lcd_reg_print_phy_analog_t7;
+		lcd_debug_info_if_vbyone.reg_dump_phy =
+			lcd_reg_print_phy_analog_t7;
+#ifdef CONFIG_AML_LCD_TCON
+		lcd_debug_info_if_mlvds.reg_dump_interface =
+			lcd_reg_print_tcon_t3;
+		lcd_debug_info_if_mlvds.reg_dump_phy =
+			lcd_reg_print_phy_analog_t7;
+		lcd_debug_info_if_p2p.reg_dump_interface =
+			lcd_reg_print_tcon_t3;
+		lcd_debug_info_if_p2p.reg_dump_phy =
+			lcd_reg_print_phy_analog_t7;
+#endif
+		break;
+
 	case LCD_CHIP_T5W:
 		lcd_debug_info_reg = &lcd_debug_info_reg_t5w;
-		lcd_debug_info_if_lvds.reg_dump_phy = lcd_reg_print_phy_analog_t5;
-		lcd_debug_info_if_mipi.reg_dump_phy = lcd_reg_print_phy_analog_t5;
+		lcd_debug_info_if_lvds.reg_dump_phy =
+			lcd_reg_print_phy_analog_tl1;
+		lcd_debug_info_if_mipi.reg_dump_phy =
+			lcd_reg_print_phy_analog_tl1;
 #ifdef CONFIG_AML_LCD_TCON
-		lcd_debug_info_if_mlvds.reg_dump_phy = lcd_reg_print_phy_analog_t5;
-		lcd_debug_info_if_p2p.reg_dump_phy = lcd_reg_print_phy_analog_t5;
+		lcd_debug_info_if_mlvds.reg_dump_phy =
+			lcd_reg_print_phy_analog_tl1;
+		lcd_debug_info_if_p2p.reg_dump_phy =
+			lcd_reg_print_phy_analog_tl1;
 #endif
 		break;
+	case LCD_CHIP_TL1:
+	case LCD_CHIP_TM2:
 	case LCD_CHIP_T5:
 	case LCD_CHIP_T5D:
-		lcd_debug_info_reg = &lcd_debug_info_reg_t5;
-		lcd_debug_info_if_lvds.reg_dump_phy = lcd_reg_print_phy_analog_t5;
-		lcd_debug_info_if_mipi.reg_dump_phy = lcd_reg_print_phy_analog_t5;
+		lcd_debug_info_reg = &lcd_debug_info_reg_tl1;
+		lcd_debug_info_if_lvds.reg_dump_phy =
+			lcd_reg_print_phy_analog_tl1;
+		lcd_debug_info_if_mipi.reg_dump_phy =
+			lcd_reg_print_phy_analog_tl1;
 #ifdef CONFIG_AML_LCD_TCON
-		lcd_debug_info_if_mlvds.reg_dump_phy = lcd_reg_print_phy_analog_t5;
-		lcd_debug_info_if_p2p.reg_dump_phy = lcd_reg_print_phy_analog_t5;
+		lcd_debug_info_if_mlvds.reg_dump_phy =
+			lcd_reg_print_phy_analog_tl1;
+		lcd_debug_info_if_p2p.reg_dump_phy =
+			lcd_reg_print_phy_analog_tl1;
 #endif
+		break;
+	case LCD_CHIP_TXHD2:
+		lcd_debug_info_reg = &lcd_debug_info_reg_txhd2;
+		lcd_debug_info_if_lvds.reg_dump_phy =
+			lcd_reg_print_phy_analog_txhd2;
+		lcd_debug_info_if_mipi.reg_dump_phy =
+			lcd_reg_print_phy_analog_txhd2;
+#ifdef CONFIG_AML_LCD_TCON
+		lcd_debug_info_if_mlvds.reg_dump_phy =
+			lcd_reg_print_phy_analog_txhd2;
+		lcd_debug_info_if_p2p.reg_dump_phy =
+			lcd_reg_print_phy_analog_txhd2;
+#endif
+		break;
+	case LCD_CHIP_G12A:
+	case LCD_CHIP_G12B:
+	case LCD_CHIP_SM1:
+		if (pdrv->clk_path)
+			lcd_debug_info_reg = &lcd_debug_info_reg_g12a_clk_path1;
+		else
+			lcd_debug_info_reg = &lcd_debug_info_reg_g12a_clk_path0;
 		break;
 	case LCD_CHIP_C3:
 		lcd_debug_info_reg = &lcd_debug_info_reg_c3;
-		lcd_debug_info_if_mipi.reg_dump_phy = lcd_reg_print_mipi_phy_analog_c3;
+		lcd_debug_info_if_mipi.reg_dump_phy =
+			lcd_reg_print_mipi_phy_analog_c3;
 		break;
 	default:
 		lcd_debug_info_reg = NULL;

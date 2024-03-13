@@ -12,9 +12,9 @@
 extern "C" {
 #endif
 
-int readUKeyData_no_header(const char *key_name, unsigned char data_buf[], int rd_size);
-int readUKeyData(const char *key_name, unsigned char data_buf[], int rd_size);
-int writeUKeyData(const char *key_name, unsigned char data_buf[], int wr_size);
+int read_ukey_data_no_header(const char *key_name, unsigned char data_buf[], int rd_size);
+int read_ukey_data(const char *key_name, unsigned char data_buf[], int rd_size);
+int write_ukey_data(const char *key_name, unsigned char data_buf[], int wr_size);
 
 #if (defined CC_UBOOT_RW_SIMULATE)
 

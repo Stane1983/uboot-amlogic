@@ -10,22 +10,22 @@
 extern "C" {
 #endif
 
-void BinFileInit(void);
-void BinFileUninit(void);
-int ReadBinFile(const char* filename);
-int GetBinData(unsigned char* file_buf, unsigned int file_size);
+void bin_file_init(void);
+void bin_file_uninit(void);
+int read_bin_file(const char *filename);
+int get_bin_data(unsigned char *file_buf, unsigned int file_size);
 
-void IniParserInit(void);
-void IniParserUninit(void);
-int IniParseFile(const char* filename);
-int IniParseMem(unsigned char* file_buf);
-int IniSetSaveFileName(const char* filename);
-void IniParserFree(void);
-void IniPrintAll(void);
-void IniListSection(void);
-const char* IniGetString(const char* section, const char* key, const char* def_value);
-int IniSetString(const char *section, const char *key, const char *value);
-int IniSaveToFile(const char *filename);
+void ini_parser_init(void);
+void ini_parser_uninit(void);
+int ini_parse_file(const char *filename);
+int ini_parse_mem(unsigned char *file_buf);
+int ini_set_save_file_name(const char *filename);
+void ini_parser_free(void);
+void ini_print_all(void);
+void ini_list_section(void);
+const char *ini_get_string(const char *section, const char *key, const char *def_value);
+int ini_set_string(const char *section, const char *key, const char *value);
+int ini_save_to_file(const char *filename);
 
 #ifdef __cplusplus
 }

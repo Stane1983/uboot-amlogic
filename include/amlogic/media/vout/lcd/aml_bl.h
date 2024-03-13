@@ -75,14 +75,17 @@ enum bl_off_policy_e {
 
 struct bl_pwm_config_s {
 	unsigned int index;
+	unsigned int drv_index;
 	enum bl_pwm_method_e pwm_method;
 	enum bl_pwm_port_e pwm_port;
-	unsigned int level_max;
-	unsigned int level_min;
+	unsigned int bl_level_max;
+	unsigned int bl_level_min;
+	unsigned int bl_level;
 	unsigned int pwm_freq; /* pwm_vs: 1~4(vfreq), pwm: freq(unit: Hz) */
 	unsigned int pwm_duty; /* unit: % */
 	unsigned int pwm_duty_max; /* unit: % */
 	unsigned int pwm_duty_min; /* unit: % */
+	unsigned int pwm_duty_range; /* internal used for pwm control */
 	unsigned int pwm_cnt; /* internal used for pwm control */
 	unsigned int pwm_pre_div; /* internal used for pwm control */
 	unsigned int pwm_max; /* internal used for pwm control */
@@ -95,6 +98,7 @@ struct bl_pwm_config_s {
 	unsigned int pinmux_flag;
 	unsigned int pinmux_set[LCD_PINMUX_NUM][2];
 	unsigned int pinmux_clr[LCD_PINMUX_NUM][2];
+	unsigned int pwm_phase;
 };
 
 #define BL_NAME_MAX    30

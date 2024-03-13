@@ -31,17 +31,17 @@ typedef struct S_INI_HANDLER_DATA {
 extern "C" {
 #endif
 
-int bin_file_read(const char* filename, unsigned char *file_buf);
+int _bin_file_read(const char *filename, unsigned char *file_buf);
 
-int ini_file_parse(const char* filename, INI_HANDLER_DATA *pHandlerData);
-int ini_mem_parse(unsigned char* file_buf, INI_HANDLER_DATA *pHandlerData);
-int ini_set_save_file_name(const char* filename, INI_HANDLER_DATA *pHandlerData);
-void ini_free_mem(INI_HANDLER_DATA *pHandlerData);
-void ini_print_all(INI_HANDLER_DATA *pHandlerData);
-void ini_list_section(INI_HANDLER_DATA *pHandlerData);
-const char* ini_get_string(const char* section, const char* key, const char* def_value, INI_HANDLER_DATA *pHandlerData);
-int ini_set_string(const char *section, const char *key, const char *value, INI_HANDLER_DATA *pHandlerData);
-int ini_save_to_file(const char *filename, INI_HANDLER_DATA *pHandlerData);
+int _ini_file_parse(const char *filename, INI_HANDLER_DATA *pHandlerData);
+int ini_mem_parse(unsigned char *file_buf, INI_HANDLER_DATA *pHandlerData);
+int _ini_set_save_file_name(const char *filename, INI_HANDLER_DATA *pHandlerData);
+void _ini_free_mem(INI_HANDLER_DATA *pHandlerData);
+void _ini_print_all(INI_HANDLER_DATA *pHandlerData);
+void _ini_list_section(INI_HANDLER_DATA *pHandlerData);
+const char *_ini_get_string(const char *section, const char *key, const char *def_value, INI_HANDLER_DATA *pHandlerData);
+int _ini_set_string(const char *section, const char *key, const char *value, INI_HANDLER_DATA *pHandlerData);
+int _ini_save_to_file(const char *filename, INI_HANDLER_DATA *pHandlerData);
 
 #ifdef __cplusplus
 }

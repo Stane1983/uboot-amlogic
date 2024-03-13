@@ -6,6 +6,8 @@
 #include <common.h>
 #include <malloc.h>
 #include <spi.h>
+#include <asm/amlogic/arch/gpio.h>
+#include <fdtdec.h>
 #include <amlogic/media/vout/lcd/bl_ldim.h>
 #include "../../lcd_common.h"
 #include "ldim_drv.h"
@@ -137,8 +139,12 @@ int ldim_spi_driver_add(struct ldim_dev_driver_s *dev_drv)
 		"generic_%d:%d",
 		dev_drv->spi_info.bus_num,
 		dev_drv->spi_info.chip_select);
-	ret = spi_get_bus_and_cs(dev_drv->spi_info.bus_num,
+	ret = _spi_get_bus_and_cs(dev_drv->spi_info.bus_num,
 				dev_drv->spi_info.chip_select,
+				dev_drv->spi_info.max_speed_hz,
+				dev_drv->spi_info.mode,
+				"spi_generic_drv",
+				dev_drv->spi_info.spi_name,
 				&dev, &dev_drv->spi_info.spi);
 	if (ret) {
 		LDIMERR("%s: register spi driver failed\n", __func__);

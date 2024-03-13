@@ -5,7 +5,7 @@
 
 #include <common.h>
 #include <malloc.h>
-#include <asm/gpio.h>
+#include <asm/amlogic/arch/gpio.h>
 #include <fdtdec.h>
 #include <i2c.h>
 #include <dm.h>

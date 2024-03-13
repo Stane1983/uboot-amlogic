@@ -19,10 +19,16 @@
 
 #ifndef CONFIG_YOCTO
 #define DEFAULT_MODEL_SUM_PATH1 "/odm/etc/tvconfig/model/model_sum.ini"
+#define DEFAULT_MODEL1_SUM_PATH1 "/odm/etc/tvconfig/model/model1_sum.ini"
+#define DEFAULT_MODEL2_SUM_PATH1 "/odm/etc/tvconfig/model/model2_sum.ini"
 #else
 #define DEFAULT_MODEL_SUM_PATH1 "/vendor/etc/tvconfig/model/model_sum.ini"
+#define DEFAULT_MODEL1_SUM_PATH1 "/vendor/etc/tvconfig/model/model1_sum.ini"
+#define DEFAULT_MODEL2_SUM_PATH1 "/vendor/etc/tvconfig/model/model2_sum.ini"
 #endif
 #define DEFAULT_MODEL_SUM_PATH2 "/odm_ext/etc/tvconfig/model/model_sum.ini"
+#define DEFAULT_MODEL1_SUM_PATH2 "/odm_ext/etc/tvconfig/model/model1_sum.ini"
+#define DEFAULT_MODEL2_SUM_PATH2 "/odm_ext/etc/tvconfig/model/model2_sum.ini"
 #define AML_START		"amlogic_start"
 #define AML_END			"amlogic_end"
 
@@ -30,14 +36,7 @@
 #define CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM        (-1)
 #define CC_PARAM_CHECK_ERROR_NOT_NEED_UPDATE_PARAM    (-2)
 
-#define DEBUG_NORMAL        (1 << 0)
-#define DEBUG_LCD           (1 << 1)
-#define DEBUG_LCD_EXTERN    (1 << 2)
-#define DEBUG_BACKLIGHT     (1 << 3)
-#define DEBUG_MISC          (1 << 4)
-#define DEBUG_TCON          (1 << 5)
-#define DEBUG_LCD_OPTICAL   BIT(7)
-static int model_debug_flag;
+int model_debug_flag;
 
 #ifdef CONFIG_AML_LCD
 static int glcd_dcnt, glcd_ext_dcnt, gbl_dcnt, glcd_optical_dcnt;
@@ -48,7 +47,7 @@ static unsigned int g_ldim_dev_valid;
 #endif
 static int glcd_ext_init_on_cnt, glcd_ext_init_off_cnt, glcd_ext_cmd_size;
 static struct lcd_ext_attr_s *lcd_ext_attr;
-static unsigned int g_lcd_tcon_valid;
+static unsigned int g_lcd_if, g_lcd_tcon_valid;
 #ifdef CONFIG_AML_LCD_TCON
 static int gLcdTconDataCnt, gLcdTconSpi_cnt;
 static unsigned int g_lcd_tcon_bin_block_cnt;
@@ -60,8 +59,7 @@ static int handle_tcon_ext_pmu_data(int index, int flag, unsigned char *buf,
 #endif
 #endif
 
-#ifdef CONFIG_AML_LCD
-static int trans_buffer_data(const char *data_str, unsigned int data_buf[])
+int trans_buffer_data(const char *data_str, unsigned int data_buf[])
 {
 	int item_ind = 0;
 	char *token = NULL;
@@ -72,7 +70,7 @@ static int trans_buffer_data(const char *data_str, unsigned int data_buf[])
 		return 0;
 
 	tmp_buf = (char *) malloc(CC_MAX_TEMP_BUF_SIZE);
-	if (tmp_buf == NULL) {
+	if (!tmp_buf) {
 		ALOGE("%s, malloc buffer memory error!!!\n", __func__);
 		return -1;
 	}
@@ -92,6 +90,7 @@ static int trans_buffer_data(const char *data_str, unsigned int data_buf[])
 	return item_ind;
 }
 
+#ifdef CONFIG_AML_LCD
 static int check_param_valid(int mode, int parse_len, unsigned char parse_buf[], int ori_len, unsigned char ori_buf[])
 {
 	unsigned int ori_cal_crc32 = 0, parse_cal_crc32 = 0;
@@ -194,7 +193,7 @@ static int handle_integrity_flag(void)
 {
 	const char *ini_value = NULL;
 
-	ini_value = IniGetString("start", "start_tag", "null");
+	ini_value = ini_get_string("start", "start_tag", "null");
 	if (model_debug_flag & DEBUG_NORMAL)
 		ALOGD("%s, start_tag is (%s)\n", __func__, ini_value);
 	if (strncasecmp(ini_value, AML_START, strlen(AML_START))) {
@@ -202,7 +201,7 @@ static int handle_integrity_flag(void)
 		return -1;
 	}
 
-	ini_value = IniGetString("end", "end_tag", "null");
+	ini_value = ini_get_string("end", "end_tag", "null");
 	if (model_debug_flag & DEBUG_NORMAL)
 		ALOGD("%s, end_tag is (%s)\n", __func__, ini_value);
 	if (strncasecmp(ini_value, AML_END, strlen(AML_END))) {
@@ -316,7 +315,7 @@ static int handle_tcon_path_default(unsigned int version)
 	buf[11] = (version >> 24) & 0xff;
 
 	/* data_load_level */
-	ini_value = IniGetString("tcon_Path", "data_load_level", "0");
+	ini_value = ini_get_string("tcon_Path", "data_load_level", "0");
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s, data_load_level is (%s)\n", __func__, ini_value);
 	temp = strtoul(ini_value, NULL, 0);
@@ -325,7 +324,7 @@ static int handle_tcon_path_default(unsigned int version)
 	buf[14] = (temp >> 16) & 0xff;
 	buf[15] = (temp >> 24) & 0xff;
 
-	ini_value = IniGetString("tcon_Path", "init_load", "0");
+	ini_value = ini_get_string("tcon_Path", "init_load", "0");
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s, init_load is (%s)\n", __func__, ini_value);
 	temp = strtoul(ini_value, NULL, 0);
@@ -335,7 +334,7 @@ static int handle_tcon_path_default(unsigned int version)
 	n = 32;
 
 	if (version == 0) {/* tcon data bin: old data format */
-		ini_value = IniGetString("tcon_Path", "TCON_VAC_PATH", "null");
+		ini_value = ini_get_string("tcon_Path", "TCON_VAC_PATH", "null");
 		if (!strcmp(ini_value, "null")) {
 			if (model_debug_flag & DEBUG_TCON)
 				ALOGD("%s, no vac ini file\n", __func__);
@@ -344,7 +343,7 @@ static int handle_tcon_path_default(unsigned int version)
 		strncpy((char *)&buf[n + 4], ini_value, 256);
 		n += 256;
 
-		ini_value = IniGetString("tcon_Path", "TCON_DEMURA_SET_PATH", "null");
+		ini_value = ini_get_string("tcon_Path", "TCON_DEMURA_SET_PATH", "null");
 		if (!strcmp(ini_value, "null")) {
 			if (model_debug_flag & DEBUG_TCON)
 				ALOGD("%s, no demura_set file\n", __func__);
@@ -353,7 +352,7 @@ static int handle_tcon_path_default(unsigned int version)
 		strncpy((char *)&buf[n + 4], ini_value, 256);
 		n += 256;
 
-		ini_value = IniGetString("tcon_Path", "TCON_DEMURA_LUT_PATH", "null");
+		ini_value = ini_get_string("tcon_Path", "TCON_DEMURA_LUT_PATH", "null");
 		if (!strcmp(ini_value, "null")) {
 			if (model_debug_flag & DEBUG_TCON)
 				ALOGD("%s, no demura_lut file\n", __func__);
@@ -362,7 +361,7 @@ static int handle_tcon_path_default(unsigned int version)
 		strncpy((char *)&buf[n + 4], ini_value, 256);
 		n += 256;
 
-		ini_value = IniGetString("tcon_Path", "TCON_ACC_LUT_PATH", "null");
+		ini_value = ini_get_string("tcon_Path", "TCON_ACC_LUT_PATH", "null");
 		if (!strcmp(ini_value, "null")) {
 			if (model_debug_flag & DEBUG_TCON)
 				ALOGD("%s, no acc_lut file\n", __func__);
@@ -379,7 +378,7 @@ static int handle_tcon_path_default(unsigned int version)
 	} else {/* tcon data bin: new data format */
 		for (i = 0; i < 32; i++) {
 			snprintf(str, 30, "TCON_DATA_%d_BIN_PATH", i);
-			ini_value = IniGetString("tcon_Path", str, "null");
+			ini_value = ini_get_string("tcon_Path", str, "null");
 			if (strcmp(ini_value, "null") == 0)
 				break;
 
@@ -435,7 +434,7 @@ static int handle_tcon_path_resv_for_kernel(unsigned int version)
 	buf = g_lcd_tcon_bin_path_resv_mem;
 
 	/* detect tcon_path resv_for_kernel exist or not */
-	ini_value = IniGetString("tcon_Path", "TCON_BIN_PATH_K", "null");
+	ini_value = ini_get_string("tcon_Path", "TCON_BIN_PATH_K", "null");
 	if (!strcmp(ini_value, "null")) {
 		if (model_debug_flag & DEBUG_TCON)
 			ALOGD("%s, PATH_K not exist, use default path\n", __func__);
@@ -449,7 +448,7 @@ static int handle_tcon_path_resv_for_kernel(unsigned int version)
 	buf[11] = (version >> 24) & 0xff;
 
 	/* data_load_level */
-	ini_value = IniGetString("tcon_Path", "data_load_level", "0");
+	ini_value = ini_get_string("tcon_Path", "data_load_level", "0");
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s, data_load_level is (%s)\n", __func__, ini_value);
 	temp = strtoul(ini_value, NULL, 0);
@@ -458,7 +457,7 @@ static int handle_tcon_path_resv_for_kernel(unsigned int version)
 	buf[14] = (temp >> 16) & 0xff;
 	buf[15] = (temp >> 24) & 0xff;
 
-	ini_value = IniGetString("tcon_Path", "init_load", "0");
+	ini_value = ini_get_string("tcon_Path", "init_load", "0");
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s, init_load is (%s)\n", __func__, ini_value);
 	temp = strtoul(ini_value, NULL, 0);
@@ -468,7 +467,7 @@ static int handle_tcon_path_resv_for_kernel(unsigned int version)
 	n = 32;
 
 	if (version == 0) {/* tcon data bin: old data format */
-		ini_value = IniGetString("tcon_Path", "TCON_VAC_PATH_K", "null");
+		ini_value = ini_get_string("tcon_Path", "TCON_VAC_PATH_K", "null");
 		if (!strcmp(ini_value, "null")) {
 			if (model_debug_flag & DEBUG_TCON)
 				ALOGD("%s, no vac ini file\n", __func__);
@@ -476,7 +475,7 @@ static int handle_tcon_path_resv_for_kernel(unsigned int version)
 		strncpy((char *)&buf[n + 4], ini_value, 256);
 		n += 256;
 
-		ini_value = IniGetString("tcon_Path", "TCON_DEMURA_SET_PATH_K", "null");
+		ini_value = ini_get_string("tcon_Path", "TCON_DEMURA_SET_PATH_K", "null");
 		if (!strcmp(ini_value, "null")) {
 			if (model_debug_flag & DEBUG_TCON)
 				ALOGD("%s, no demura_set file\n", __func__);
@@ -484,7 +483,7 @@ static int handle_tcon_path_resv_for_kernel(unsigned int version)
 		strncpy((char *)&buf[n + 4], ini_value, 256);
 		n += 256;
 
-		ini_value = IniGetString("tcon_Path", "TCON_DEMURA_LUT_PATH_K", "null");
+		ini_value = ini_get_string("tcon_Path", "TCON_DEMURA_LUT_PATH_K", "null");
 		if (!strcmp(ini_value, "null")) {
 			if (model_debug_flag & DEBUG_TCON)
 				ALOGD("%s, no demura_lut file\n", __func__);
@@ -492,7 +491,7 @@ static int handle_tcon_path_resv_for_kernel(unsigned int version)
 		strncpy((char *)&buf[n + 4], ini_value, 256);
 		n += 256;
 
-		ini_value = IniGetString("tcon_Path", "TCON_ACC_LUT_PATH_K", "null");
+		ini_value = ini_get_string("tcon_Path", "TCON_ACC_LUT_PATH_K", "null");
 		if (!strcmp(ini_value, "null")) {
 			if (model_debug_flag & DEBUG_TCON)
 				ALOGD("%s, no acc_lut file\n", __func__);
@@ -508,7 +507,7 @@ static int handle_tcon_path_resv_for_kernel(unsigned int version)
 	} else {/* tcon data bin: new data format */
 		for (i = 0; i < 32; i++) {
 			snprintf(str, 30, "TCON_DATA_%d_BIN_PATH_K", i);
-			ini_value = IniGetString("tcon_Path", str, "null");
+			ini_value = ini_get_string("tcon_Path", str, "null");
 			if (strcmp(ini_value, "null") == 0)
 				break;
 
@@ -553,13 +552,13 @@ static int handle_tcon_path(void)
 	int i, j, ret;
 
 	/* version */
-	ini_value = IniGetString("tcon_Path", "version", "0");
+	ini_value = ini_get_string("tcon_Path", "version", "0");
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s, version is (%s)\n", __func__, ini_value);
 	version = strtoul(ini_value, NULL, 0);
 
 	/* tcon_bin_header */
-	ini_value = IniGetString("tcon_Path", "header", "0");
+	ini_value = ini_get_string("tcon_Path", "header", "0");
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s, header is (%s)\n", __func__, ini_value);
 	header = strtoul(ini_value, NULL, 0);
@@ -567,7 +566,7 @@ static int handle_tcon_path(void)
 	env_set("model_tcon_bin_header", str);
 
 	/* tcon regs bin */
-	ini_value = IniGetString("tcon_Path", "TCON_BIN_PATH", "null");
+	ini_value = ini_get_string("tcon_Path", "TCON_BIN_PATH", "null");
 	if (!strcmp(ini_value, "null")) {
 		if (model_debug_flag & DEBUG_TCON)
 			ALOGE("%s, tcon bin load file error!\n", __func__);
@@ -590,7 +589,7 @@ static int handle_tcon_path(void)
 	for (i = 0; i < 4; i++) {
 		snprintf(str, 50, "TCON_EXT_B%d_BIN_PATH", i);
 		snprintf(env_str, 50, "model_tcon_ext_b%d", i);
-		ini_value = IniGetString("tcon_Path", str, "null");
+		ini_value = ini_get_string("tcon_Path", str, "null");
 		if (!strcmp(ini_value, "null")) {
 			if (model_debug_flag & DEBUG_TCON)
 				ALOGD("%s, no %s file\n", __func__, str);
@@ -603,7 +602,7 @@ handle_tcon_path_pmu_bin_multi:
 	for (j = 0; j < 10; j++) {
 		snprintf(str, 50, "TCON_EXT_B%d_%d_BIN_PATH", i, j);
 		snprintf(env_str, 50, "model_tcon_ext_b%d_%d", i, j);
-		ini_value = IniGetString("tcon_Path", str, "null");
+		ini_value = ini_get_string("tcon_Path", str, "null");
 		if (!strcmp(ini_value, "null")) {
 			if (model_debug_flag & DEBUG_TCON)
 				ALOGD("%s, no %s file\n", __func__, str);
@@ -615,7 +614,7 @@ handle_tcon_path_pmu_bin_multi:
 	for (i = 0; i < 4; i++) {
 		snprintf(str, 50, "TCON_EXT_B%d_SPI_BIN_PATH", i);
 		snprintf(env_str, 50, "model_tcon_ext_b%d_spi", i);
-		ini_value = IniGetString("tcon_Path", str, "null");
+		ini_value = ini_get_string("tcon_Path", str, "null");
 		if (!strcmp(ini_value, "null")) {
 			if (model_debug_flag & DEBUG_TCON)
 				ALOGD("%s, no %s file\n", __func__, str);
@@ -628,7 +627,7 @@ handle_tcon_path_pmu_spi_bin_multi:
 	for (j = 0; j < 10; j++) {
 		snprintf(str, 50, "TCON_EXT_B%d_%d_SPI_BIN_PATH", i, j);
 			snprintf(env_str, 50, "model_tcon_ext_b%d_%d_spi", i, j);
-			ini_value = IniGetString("tcon_Path", str, "null");
+			ini_value = ini_get_string("tcon_Path", str, "null");
 			if (!strcmp(ini_value, "null")) {
 				if (model_debug_flag & DEBUG_TCON)
 					ALOGD("%s, no %s file\n", __func__, str);
@@ -644,42 +643,65 @@ handle_tcon_path_pmu_spi_bin_multi:
 static int handle_lcd_basic(struct lcd_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
+	unsigned int config_chk;
+	unsigned int bits, cfmt;
 
-	ini_value = IniGetString("lcd_Attr", "model_name", "null");
+	ini_value = ini_get_string("lcd_Attr", "model_name", "null");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, model_name is (%s)\n", __func__, ini_value);
 	strncpy(p_attr->basic.model_name, ini_value, CC_LCD_NAME_LEN_MAX - 1);
 	p_attr->basic.model_name[CC_LCD_NAME_LEN_MAX - 1] = '\0';
 
-	ini_value = IniGetString("lcd_Attr", "interface", "null");
+	ini_value = ini_get_string("lcd_Attr", "interface", "null");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, interface is (%s)\n", __func__, ini_value);
-	if (strcmp(ini_value, "LCD_TTL") == 0)
-		p_attr->basic.lcd_type = LCD_TTL;
+	if (strcmp(ini_value, "LCD_RGB") == 0)
+		g_lcd_if = LCD_RGB;
 	else if (strcmp(ini_value, "LCD_LVDS") == 0)
-		p_attr->basic.lcd_type = LCD_LVDS;
+		g_lcd_if = LCD_LVDS;
 	else if (strcmp(ini_value, "LCD_VBYONE") == 0)
-		p_attr->basic.lcd_type = LCD_VBYONE;
+		g_lcd_if = LCD_VBYONE;
 	else if (strcmp(ini_value, "LCD_MIPI") == 0)
-		p_attr->basic.lcd_type = LCD_MIPI;
+		g_lcd_if = LCD_MIPI;
 	else if (strcmp(ini_value, "LCD_MLVDS") == 0)
-		p_attr->basic.lcd_type = LCD_MLVDS;
+		g_lcd_if = LCD_MLVDS;
 	else if (strcmp(ini_value, "LCD_P2P") == 0)
-		p_attr->basic.lcd_type = LCD_P2P;
+		g_lcd_if = LCD_P2P;
+	else if (strcmp(ini_value, "LCD_EDP") == 0)
+		g_lcd_if = LCD_EDP;
+	else if (strcmp(ini_value, "LCD_BT656") == 0)
+		g_lcd_if = LCD_BT656;
+	else if (strcmp(ini_value, "LCD_BT1120") == 0)
+		g_lcd_if = LCD_BT1120;
 	else
-		p_attr->basic.lcd_type = LCD_TYPE_MAX;
+		g_lcd_if = LCD_TYPE_MAX;
 
-	ini_value = IniGetString("lcd_Attr", "lcd_bits", "10");
+	ini_value = ini_get_string("lcd_Attr", "config_check", "none");
+	if (model_debug_flag & DEBUG_LCD)
+		ALOGD("%s, config_check is (%s)\n", __func__, ini_value);
+	if (strcmp(ini_value, "none") == 0)
+		config_chk = 0;
+	else
+		config_chk = strtoul(ini_value, NULL, 0) ? 0x3 : 0x2;
+	p_attr->basic.lcd_if_chk = (g_lcd_if & 0x3f) | ((config_chk & 0x3) << 6);
+
+	ini_value = ini_get_string("lcd_Attr", "lcd_bits", "10");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, lcd_bits is (%s)\n", __func__, ini_value);
-	p_attr->basic.lcd_bits = strtoul(ini_value, NULL, 0);
+	bits = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "screen_width", "16");
+	ini_value = ini_get_string("lcd_Attr", "cmft_in", "0");
+	if (model_debug_flag & DEBUG_LCD)
+		ALOGD("%s, cmft_in is (%s)\n", __func__, ini_value);
+	cfmt = strtoul(ini_value, NULL, 0);
+	p_attr->basic.lcd_bits_cfmt = ((cfmt & 0x3) << 6) | (bits & 0x3f);
+
+	ini_value = ini_get_string("lcd_Attr", "screen_width", "16");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, screen_width is (%s)\n", __func__, ini_value);
 	p_attr->basic.screen_width = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "screen_height", "9");
+	ini_value = ini_get_string("lcd_Attr", "screen_height", "9");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, screen_height is (%s)\n", __func__, ini_value);
 	p_attr->basic.screen_height = strtoul(ini_value, NULL, 0);
@@ -690,56 +712,69 @@ static int handle_lcd_basic(struct lcd_attr_s *p_attr)
 static int handle_lcd_timming(struct lcd_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
+	unsigned int width, pol;
 
-	ini_value = IniGetString("lcd_Attr", "h_active", "1920");
+	ini_value = ini_get_string("lcd_Attr", "h_active", "1920");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, h_active is (%s)\n", __func__, ini_value);
 	p_attr->timming.h_active = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "v_active", "1080");
+	ini_value = ini_get_string("lcd_Attr", "v_active", "1080");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, v_active is (%s)\n", __func__, ini_value);
 	p_attr->timming.v_active = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "h_period", "2200");
+	ini_value = ini_get_string("lcd_Attr", "h_period", "2200");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, h_period is (%s)\n", __func__, ini_value);
 	p_attr->timming.h_period = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "v_period", "1125");
+	ini_value = ini_get_string("lcd_Attr", "v_period", "1125");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, v_period is (%s)\n", __func__, ini_value);
 	p_attr->timming.v_period = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "hsync_width", "44");
+	ini_value = ini_get_string("lcd_Attr", "hsync_width", "44");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, hsync_width is (%s)\n", __func__, ini_value);
-	p_attr->timming.hsync_width = strtoul(ini_value, NULL, 0);
+	width = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "hsync_bp", "148");
+	ini_value = ini_get_string("lcd_Attr", "hsync_bp", "148");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, hsync_bp is (%s)\n", __func__, ini_value);
 	p_attr->timming.hsync_bp = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "hsync_pol", "0");
+	ini_value = ini_get_string("lcd_Attr", "hsync_pol", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, hsync_pol is (%s)\n", __func__, ini_value);
-	p_attr->timming.hsync_pol = strtoul(ini_value, NULL, 0);
+	pol = strtoul(ini_value, NULL, 0);
+	p_attr->timming.hsync_width_pol = ((pol & 0xf) << 12) | (width & 0xfff);
 
-	ini_value = IniGetString("lcd_Attr", "vsync_width", "5");
+	ini_value = ini_get_string("lcd_Attr", "vsync_width", "5");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, vsync_width is (%s)\n", __func__, ini_value);
-	p_attr->timming.vsync_width = strtoul(ini_value, NULL, 0);
+	width = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "vsync_bp", "30");
+	ini_value = ini_get_string("lcd_Attr", "vsync_bp", "30");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, vsync_bp is (%s)\n", __func__, ini_value);
 	p_attr->timming.vsync_bp = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "vsync_pol", "0");
+	ini_value = ini_get_string("lcd_Attr", "vsync_pol", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, vsync_pol is (%s)\n", __func__, ini_value);
-	p_attr->timming.vsync_pol = strtoul(ini_value, NULL, 0);
+	pol = strtoul(ini_value, NULL, 0);
+	p_attr->timming.vsync_width_pol = ((pol & 0xf) << 12) | (width & 0xfff);
+
+	ini_value = ini_get_string("lcd_Attr", "pre_de_h", "0");
+	if (model_debug_flag & DEBUG_LCD)
+		ALOGD("%s, pre_de_h is (%s)\n", __func__, ini_value);
+	p_attr->timming.pre_de_h = strtoul(ini_value, NULL, 0);
+
+	ini_value = ini_get_string("lcd_Attr", "pre_de_v", "0");
+	if (model_debug_flag & DEBUG_LCD)
+		ALOGD("%s, pre_de_v is (%s)\n", __func__, ini_value);
+	p_attr->timming.pre_de_v = strtoul(ini_value, NULL, 0);
 
 	return 0;
 }
@@ -747,99 +782,112 @@ static int handle_lcd_timming(struct lcd_attr_s *p_attr)
 static int handle_lcd_customer(struct lcd_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
+	unsigned char clk_auto, clk_mode, ppc, custom_pinmux;
 
-	ini_value = IniGetString("lcd_Attr", "fr_adjust_type", "0");
+	ini_value = ini_get_string("lcd_Attr", "fr_adjust_type", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, fr_adjust_type is (%s)\n", __func__, ini_value);
 	p_attr->customer.fr_adjust_type = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "ss_level", "0");
+	ini_value = ini_get_string("lcd_Attr", "ss_level", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, ss_level is (%s)\n", __func__, ini_value);
 	p_attr->customer.ss_level = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "clk_auto_gen", "1");
+	ini_value = ini_get_string("lcd_Attr", "clk_auto_gen", "1");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, clk_auto_gen is (%s)\n", __func__, ini_value);
-	p_attr->customer.clk_auto_gen = strtoul(ini_value, NULL, 0);
+	clk_auto = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "pixel_clk", "0");
+	ini_value = ini_get_string("lcd_Attr", "clk_mode", "0");
+	if (model_debug_flag & DEBUG_LCD)
+		ALOGD("%s, clk_mode is (%s)\n", __func__, ini_value);
+	clk_mode = strtoul(ini_value, NULL, 0);
+	p_attr->customer.custom_val0 = ((clk_mode & 0xf) << 4) | (clk_auto & 0xf);
+
+	ini_value = ini_get_string("lcd_Attr", "pixel_clk", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, pixel_clk is (%s)\n", __func__, ini_value);
 	p_attr->customer.pixel_clk = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "h_period_min", "0");
+	ini_value = ini_get_string("lcd_Attr", "h_period_min", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, h_period_min is (%s)\n", __func__, ini_value);
 	p_attr->customer.h_period_min = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "h_period_max", "0");
+	ini_value = ini_get_string("lcd_Attr", "h_period_max", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, h_period_max is (%s)\n", __func__, ini_value);
 	p_attr->customer.h_period_max = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "v_period_min", "0");
+	ini_value = ini_get_string("lcd_Attr", "v_period_min", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, v_period_min is (%s)\n", __func__, ini_value);
 	p_attr->customer.v_period_min = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "v_period_max", "0");
+	ini_value = ini_get_string("lcd_Attr", "v_period_max", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, v_period_max is (%s)\n", __func__, ini_value);
 	p_attr->customer.v_period_max = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "pixel_clk_min", "0");
+	ini_value = ini_get_string("lcd_Attr", "pixel_clk_min", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, pixel_clk_min is (%s)\n", __func__, ini_value);
 	p_attr->customer.pixel_clk_min = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "pixel_clk_max", "0");
+	ini_value = ini_get_string("lcd_Attr", "pixel_clk_max", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, pixel_clk_max is (%s)\n", __func__, ini_value);
 	p_attr->customer.pixel_clk_max = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "vlock_val_0", "0");
+	ini_value = ini_get_string("lcd_Attr", "vlock_val_0", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, vlock_val_0 is (%s)\n", __func__, ini_value);
 	p_attr->customer.vlock_val_0 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "vlock_val_1", "0");
+	ini_value = ini_get_string("lcd_Attr", "vlock_val_1", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, vlock_val_1 is (%s)\n", __func__, ini_value);
 	p_attr->customer.vlock_val_1 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "vlock_val_2", "0");
+	ini_value = ini_get_string("lcd_Attr", "vlock_val_2", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, vlock_val_2 is (%s)\n", __func__, ini_value);
 	p_attr->customer.vlock_val_2 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "vlock_val_3", "0");
+	ini_value = ini_get_string("lcd_Attr", "vlock_val_3", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, vlock_val_3 is (%s)\n", __func__, ini_value);
 	p_attr->customer.vlock_val_3 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "custom_pinmux", "0");
+	ini_value = ini_get_string("lcd_Attr", "custom_pinmux", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, custom_pinmux is (%s)\n", __func__, ini_value);
-	p_attr->customer.custom_pinmux = strtoul(ini_value, NULL, 0);
-	if (p_attr->customer.custom_pinmux == 0) {
-		ini_value = IniGetString("lcd_Attr", "customer_value_9", "0");
+	custom_pinmux = strtoul(ini_value, NULL, 0);
+	if (custom_pinmux == 0) {
+		ini_value = ini_get_string("lcd_Attr", "customer_value_9", "0");
 		if (model_debug_flag & DEBUG_LCD)
 			ALOGD("%s, customer_value_9 is (%s)\n", __func__, ini_value);
-		p_attr->customer.custom_pinmux = strtoul(ini_value, NULL, 0);
+		custom_pinmux = strtoul(ini_value, NULL, 0);
 	}
 
-	ini_value = IniGetString("lcd_Attr", "fr_auto_disable", "0");
+	ini_value = ini_get_string("lcd_Attr", "ppc_mode", "1");
 	if (model_debug_flag & DEBUG_LCD)
-		ALOGD("%s, fr_auto_disable is (%s)\n", __func__, ini_value);
-	p_attr->customer.fr_auto_dis = strtoul(ini_value, NULL, 0);
+		ALOGD("%s, ppc_mode is (%s)\n", __func__, ini_value);
+	ppc = strtoul(ini_value, NULL, 0);
+	p_attr->customer.custom_val1 = ((ppc & 0xf) << 4) | (custom_pinmux & 0xf);
 
-	ini_value = IniGetString("lcd_Attr", "frame_rate_min", "0");
+	ini_value = ini_get_string("lcd_Attr", "fr_auto_custom", "0");
+	if (model_debug_flag & DEBUG_LCD)
+		ALOGD("%s, fr_auto_custom is (%s)\n", __func__, ini_value);
+	p_attr->customer.fr_auto_cus = strtoul(ini_value, NULL, 0);
+
+	ini_value = ini_get_string("lcd_Attr", "frame_rate_min", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, frame_rate_min is (%s)\n", __func__, ini_value);
 	p_attr->customer.frame_rate_min = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "frame_rate_max", "0");
+	ini_value = ini_get_string("lcd_Attr", "frame_rate_max", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, frame_rate_max is (%s)\n", __func__, ini_value);
 	p_attr->customer.frame_rate_max = strtoul(ini_value, NULL, 0);
@@ -851,52 +899,52 @@ static int handle_lcd_interface(struct lcd_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
 
-	ini_value = IniGetString("lcd_Attr", "if_attr_0", "0");
+	ini_value = ini_get_string("lcd_Attr", "if_attr_0", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, if_attr_0 is (%s)\n", __func__, ini_value);
 	p_attr->interface.if_attr_0 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "if_attr_1", "0");
+	ini_value = ini_get_string("lcd_Attr", "if_attr_1", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, if_attr_1 is (%s)\n", __func__, ini_value);
 	p_attr->interface.if_attr_1 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "if_attr_2", "0");
+	ini_value = ini_get_string("lcd_Attr", "if_attr_2", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, if_attr_2 is (%s)\n", __func__, ini_value);
 	p_attr->interface.if_attr_2 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "if_attr_3", "0");
+	ini_value = ini_get_string("lcd_Attr", "if_attr_3", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, if_attr_3 is (%s)\n", __func__, ini_value);
 	p_attr->interface.if_attr_3 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "if_attr_4", "0");
+	ini_value = ini_get_string("lcd_Attr", "if_attr_4", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, if_attr_4 is (%s)\n", __func__, ini_value);
 	p_attr->interface.if_attr_4 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "if_attr_5", "0");
+	ini_value = ini_get_string("lcd_Attr", "if_attr_5", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, if_attr_5 is (%s)\n", __func__, ini_value);
 	p_attr->interface.if_attr_5 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "if_attr_6", "0");
+	ini_value = ini_get_string("lcd_Attr", "if_attr_6", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, if_attr_6 is (%s)\n", __func__, ini_value);
 	p_attr->interface.if_attr_6 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "if_attr_7", "0");
+	ini_value = ini_get_string("lcd_Attr", "if_attr_7", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, if_attr_7 is (%s)\n", __func__, ini_value);
 	p_attr->interface.if_attr_7 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "if_attr_8", "0");
+	ini_value = ini_get_string("lcd_Attr", "if_attr_8", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, if_attr_8 is (%s)\n", __func__, ini_value);
 	p_attr->interface.if_attr_8 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "if_attr_9", "0");
+	ini_value = ini_get_string("lcd_Attr", "if_attr_9", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, if_attr_9 is (%s)\n", __func__, ini_value);
 	p_attr->interface.if_attr_9 = strtoul(ini_value, NULL, 0);
@@ -910,7 +958,7 @@ static int handle_lcd_pwr(struct lcd_attr_s *p_attr)
 	const char *ini_value = NULL;
 	unsigned int tmp_buf[1024];
 
-	ini_value = IniGetString("lcd_Attr", "power_on_step", "null");
+	ini_value = ini_get_string("lcd_Attr", "power_on_step", "null");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, power_on_step is (%s)\n", __func__, ini_value);
 	tmp_cnt = trans_buffer_data(ini_value, tmp_buf + 0);
@@ -923,7 +971,7 @@ static int handle_lcd_pwr(struct lcd_attr_s *p_attr)
 		p_attr->pwr[i].pwr_step_delay = tmp_buf[tmp_base_ind + 3];
 	}
 
-	ini_value = IniGetString("lcd_Attr", "power_off_step", "null");
+	ini_value = ini_get_string("lcd_Attr", "power_off_step", "null");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, power_off_step is (%s)\n", __func__, ini_value);
 	tmp_cnt = trans_buffer_data(ini_value, tmp_buf + tmp_cnt);
@@ -956,7 +1004,7 @@ static int handle_lcd_header(struct lcd_attr_s *p_attr)
 	p_attr->head.data_len = glcd_dcnt;
 	p_attr->head.block_cur_size = glcd_dcnt;
 
-	ini_value = IniGetString("lcd_Attr", "version", "null");
+	ini_value = ini_get_string("lcd_Attr", "version", "null");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, version is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "null") == 0)
@@ -978,72 +1026,72 @@ static int handle_lcd_phy(struct lcd_v2_attr_s *p_attr)
 	int reg_cnt = 0;
 	int i, j = 0;
 
-	ini_value = IniGetString("lcd_Attr", "phy_attr_flag", "0");
+	ini_value = ini_get_string("lcd_Attr", "phy_attr_flag", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_flag is (%s)\n", __func__, ini_value);
 	p_attr->phy.phy_attr_flag = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "phy_attr_0", "0");
+	ini_value = ini_get_string("lcd_Attr", "phy_attr_0", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_0 is (%s)\n", __func__, ini_value);
 	p_attr->phy.phy_attr_0 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "phy_attr_1", "0");
+	ini_value = ini_get_string("lcd_Attr", "phy_attr_1", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_1 is (%s)\n", __func__, ini_value);
 	p_attr->phy.phy_attr_1 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "phy_attr_2", "0");
+	ini_value = ini_get_string("lcd_Attr", "phy_attr_2", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_2 is (%s)\n", __func__, ini_value);
 	p_attr->phy.phy_attr_2 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "phy_attr_3", "0");
+	ini_value = ini_get_string("lcd_Attr", "phy_attr_3", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_3 is (%s)\n", __func__, ini_value);
 	p_attr->phy.phy_attr_3 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "phy_attr_4", "0");
+	ini_value = ini_get_string("lcd_Attr", "phy_attr_4", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_4 is (%s)\n", __func__, ini_value);
 	p_attr->phy.phy_attr_4 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "phy_attr_5", "0");
+	ini_value = ini_get_string("lcd_Attr", "phy_attr_5", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_5 is (%s)\n", __func__, ini_value);
 	p_attr->phy.phy_attr_5 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "phy_attr_6", "0");
+	ini_value = ini_get_string("lcd_Attr", "phy_attr_6", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_6 is (%s)\n", __func__, ini_value);
 	p_attr->phy.phy_attr_6 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "phy_attr_7", "0");
+	ini_value = ini_get_string("lcd_Attr", "phy_attr_7", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_7 is (%s)\n", __func__, ini_value);
 	p_attr->phy.phy_attr_7 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "phy_attr_8", "0");
+	ini_value = ini_get_string("lcd_Attr", "phy_attr_8", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_8 is (%s)\n", __func__, ini_value);
 	p_attr->phy.phy_attr_8 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "phy_attr_9", "0");
+	ini_value = ini_get_string("lcd_Attr", "phy_attr_9", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_9 is (%s)\n", __func__, ini_value);
 	p_attr->phy.phy_attr_9 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "phy_attr_10", "0");
+	ini_value = ini_get_string("lcd_Attr", "phy_attr_10", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_10 is (%s)\n", __func__, ini_value);
 	p_attr->phy.phy_attr_10 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "phy_attr_11", "0");
+	ini_value = ini_get_string("lcd_Attr", "phy_attr_11", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_11 is (%s)\n", __func__, ini_value);
 	p_attr->phy.phy_attr_11 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_Attr", "phy_lane_pn_swap", "0");
+	ini_value = ini_get_string("lcd_Attr", "phy_lane_pn_swap", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_lane_pn_swap is (%s)\n", __func__, ini_value);
 	j += reg_cnt;
@@ -1051,18 +1099,20 @@ static int handle_lcd_phy(struct lcd_v2_attr_s *p_attr)
 	for (i = 0; i < 4; i++)
 		p_attr->phy.phy_lane_pn_swap[i] = reg_buf[i];
 
-	ini_value = IniGetString("lcd_Attr", "phy_lane_ctrl", "0");
+	ini_value = ini_get_string("lcd_Attr", "phy_lane_ctrl", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_lane_ctrl is (%s)\n", __func__, ini_value);
 	j += reg_cnt;
 	reg_cnt = trans_buffer_data(ini_value, reg_buf + reg_cnt);
 	for (i = 0; i < reg_cnt; i++) {
 		p_attr->phy.phy_lane_ctrl[i] = reg_buf[i + j];
-		ALOGD("%s, phy_lane_ctrl[%d] is (0x%x)\n", __func__,
-		      i, p_attr->phy.phy_lane_ctrl[i]);
+		if (model_debug_flag & DEBUG_LCD) {
+			ALOGD("%s, phy_lane_ctrl[%d] is (0x%x)\n", __func__,
+				i, p_attr->phy.phy_lane_ctrl[i]);
+		}
 	}
 
-	ini_value = IniGetString("lcd_Attr", "phy_lane_swap", "0");
+	ini_value = ini_get_string("lcd_Attr", "phy_lane_swap", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_lane_swap is (%s)\n", __func__, ini_value);
 	j += reg_cnt;
@@ -1073,41 +1123,14 @@ static int handle_lcd_phy(struct lcd_v2_attr_s *p_attr)
 	return 0;
 }
 
-static int handle_lcd_ctrl(struct lcd_v2_attr_s *p_attr)
-{
-	const char *ini_value = NULL;
-
-	ini_value = IniGetString("lcd_Attr", "ctrl_attr_flag", "0");
-	if (model_debug_flag & DEBUG_LCD)
-		ALOGD("%s, ctrl_attr_flag is (%s)\n", __func__, ini_value);
-	p_attr->ctrl.ctrl_attr_flag = strtoul(ini_value, NULL, 0);
-
-	ini_value = IniGetString("lcd_Attr", "ctrl_attr_0", "0");
-	if (model_debug_flag & DEBUG_LCD)
-		ALOGD("%s, ctrl_attr_0 is (%s)\n", __func__, ini_value);
-	p_attr->ctrl.ctrl_attr_0 = strtoul(ini_value, NULL, 0);
-
-	ini_value = IniGetString("lcd_Attr", "ctrl_attr_0_parm0", "0");
-	if (model_debug_flag & DEBUG_LCD)
-		ALOGD("%s, ctrl_attr_0_parm0 is (%s)\n", __func__, ini_value);
-	p_attr->ctrl.ctrl_attr_0_parm0 = strtoul(ini_value, NULL, 0);
-
-	ini_value = IniGetString("lcd_Attr", "ctrl_attr_0_parm1", "0");
-	if (model_debug_flag & DEBUG_LCD)
-		ALOGD("%s, ctrl_attr_0_parm1 is (%s)\n", __func__, ini_value);
-	p_attr->ctrl.ctrl_attr_0_parm1 = strtoul(ini_value, NULL, 0);
-
-	return 0;
-}
-
 static int handle_lcd_v2_header(struct lcd_v2_attr_s *p_attr)
 {
 	unsigned int data_cnt;
 
 	data_cnt = 0;
 	data_cnt += sizeof(struct lcd_header_s);
-	data_cnt += sizeof(struct lcd_ctrl_s);
 	data_cnt += sizeof(struct lcd_phy_s);
+	data_cnt += glcd_cus_ctrl_cnt;
 
 	p_attr->head.crc32 = 0xffffffff;
 	p_attr->head.data_len = 0;
@@ -1122,18 +1145,18 @@ static int handle_lcd_ext_basic(struct lcd_ext_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
 
-	ini_value = IniGetString("lcd_ext_Attr", "ext_name", "null");
+	ini_value = ini_get_string("lcd_ext_Attr", "ext_name", "null");
 	if (model_debug_flag & DEBUG_LCD_EXTERN)
 		ALOGD("%s, ext_name is (%s)\n", __func__, ini_value);
 	strncpy(p_attr->basic.ext_name, ini_value, CC_LCD_EXT_NAME_LEN_MAX - 1);
 	p_attr->basic.ext_name[CC_LCD_EXT_NAME_LEN_MAX - 1] = '\0';
 
-	ini_value = IniGetString("lcd_ext_Attr", "ext_index", "0xff");
+	ini_value = ini_get_string("lcd_ext_Attr", "ext_index", "0xff");
 	if (model_debug_flag & DEBUG_LCD_EXTERN)
 		ALOGD("%s, ext_index is (%s)\n", __func__, ini_value);
 	p_attr->basic.ext_index = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_ext_Attr", "ext_type", "null");
+	ini_value = ini_get_string("lcd_ext_Attr", "ext_type", "null");
 	if (model_debug_flag & DEBUG_LCD_EXTERN)
 		ALOGD("%s, ext_type is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "LCD_EXTERN_I2C") == 0)
@@ -1145,7 +1168,7 @@ static int handle_lcd_ext_basic(struct lcd_ext_attr_s *p_attr)
 	else
 		p_attr->basic.ext_type = LCD_EXTERN_MAX;
 
-	ini_value = IniGetString("lcd_ext_Attr", "ext_status", "0");
+	ini_value = ini_get_string("lcd_ext_Attr", "ext_status", "0");
 	if (model_debug_flag & DEBUG_LCD_EXTERN)
 		ALOGD("%s, ext_status is (%s)\n", __func__, ini_value);
 	p_attr->basic.ext_status = strtoul(ini_value, NULL, 0);
@@ -1157,12 +1180,12 @@ static int handle_lcd_ext_type(struct lcd_ext_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
 
-	ini_value = IniGetString("lcd_ext_Attr", "value_0", "null");
+	ini_value = ini_get_string("lcd_ext_Attr", "value_0", "null");
 	if (model_debug_flag & DEBUG_LCD_EXTERN)
 		ALOGD("%s, value_0 is (%s)\n", __func__, ini_value);
 	p_attr->type.value_0 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_ext_Attr", "value_1", "null");
+	ini_value = ini_get_string("lcd_ext_Attr", "value_1", "null");
 	if (model_debug_flag & DEBUG_LCD_EXTERN)
 		ALOGD("%s, value_1 is (%s)\n", __func__, ini_value);
 	p_attr->type.value_1 = strtoul(ini_value, NULL, 0);
@@ -1170,43 +1193,43 @@ static int handle_lcd_ext_type(struct lcd_ext_attr_s *p_attr)
 	if (p_attr->basic.ext_type == LCD_EXTERN_I2C)
 		p_attr->type.value_2 = LCD_EXTERN_I2C_BUS_INVALID;
 	else {
-		ini_value = IniGetString("lcd_ext_Attr", "value_2", "null");
+		ini_value = ini_get_string("lcd_ext_Attr", "value_2", "null");
 		if (model_debug_flag & DEBUG_LCD_EXTERN)
 			ALOGD("%s, value_2 is (%s)\n", __func__, ini_value);
 		p_attr->type.value_2 = strtoul(ini_value, NULL, 0);
 	}
 
-	ini_value = IniGetString("lcd_ext_Attr", "value_3", "null");
+	ini_value = ini_get_string("lcd_ext_Attr", "value_3", "null");
 	if (model_debug_flag & DEBUG_LCD_EXTERN)
 		ALOGD("%s, value_3 is (%s)\n", __func__, ini_value);
 	p_attr->type.value_3 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_ext_Attr", "value_4", "null");
+	ini_value = ini_get_string("lcd_ext_Attr", "value_4", "null");
 	if (model_debug_flag & DEBUG_LCD_EXTERN)
 		ALOGD("%s, value_4 is (%s)\n", __func__, ini_value);
 	p_attr->type.value_4 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_ext_Attr", "value_5", "null");
+	ini_value = ini_get_string("lcd_ext_Attr", "value_5", "null");
 	if (model_debug_flag & DEBUG_LCD_EXTERN)
 		ALOGD("%s, value_5 is (%s)\n", __func__, ini_value);
 	p_attr->type.value_5 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_ext_Attr", "value_6", "null");
+	ini_value = ini_get_string("lcd_ext_Attr", "value_6", "null");
 	if (model_debug_flag & DEBUG_LCD_EXTERN)
 		ALOGD("%s, value_6 is (%s)\n", __func__, ini_value);
 	p_attr->type.value_6 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_ext_Attr", "value_7", "null");
+	ini_value = ini_get_string("lcd_ext_Attr", "value_7", "null");
 	if (model_debug_flag & DEBUG_LCD_EXTERN)
 		ALOGD("%s, value_7 is (%s)\n", __func__, ini_value);
 	p_attr->type.value_7 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_ext_Attr", "value_8", "null");
+	ini_value = ini_get_string("lcd_ext_Attr", "value_8", "null");
 	if (model_debug_flag & DEBUG_LCD_EXTERN)
 		ALOGD("%s, value_8 is (%s)\n", __func__, ini_value);
 	p_attr->type.value_8 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_ext_Attr", "value_9", "null");
+	ini_value = ini_get_string("lcd_ext_Attr", "value_9", "null");
 	if (model_debug_flag & DEBUG_LCD_EXTERN)
 		ALOGD("%s, value_9 is (%s)\n", __func__, ini_value);
 	p_attr->type.value_9 = strtoul(ini_value, NULL, 0);
@@ -1221,6 +1244,7 @@ static int handle_lcd_ext_type(struct lcd_ext_attr_s *p_attr)
 	return 0;
 }
 
+#ifdef CONFIG_AML_LCD_TCON
 static int handle_lcd_ext_cmd_type_flag(unsigned int type, unsigned int sub_type)
 {
 	int flag = 0;
@@ -1243,32 +1267,37 @@ static int handle_lcd_ext_cmd_type_flag(unsigned int type, unsigned int sub_type
 	}
 	return flag;
 }
+#endif
 
 static int handle_lcd_ext_cmd_data(struct lcd_ext_attr_s *p_attr)
 {
-	int i = 0, j = 0, tmp_cnt = 0, tmp_off = 0;
+	int i = 0, j = 0, k, tmp_cnt = 0, tmp_off = 0;
 	const char *ini_value = NULL;
 	unsigned int tmp_buf[2048];
-	unsigned char *data_buf = NULL, type, sub_type;
-	unsigned int flag = 0;
+	unsigned char raw_size, data_size;
 #ifdef CONFIG_AML_LCD_TCON
-	unsigned int data_size = 0;
-	unsigned int n, k, multi_id;
+	unsigned char type, sub_type;
+	unsigned char *data_buf = NULL;
+	unsigned int n, multi_id;
 	unsigned int offset = 0, data_len = 0;
+	unsigned int flag = 0;
 	int ret;
 #endif
 
 	/* original data in ini */
-	ini_value = IniGetString("lcd_ext_Attr", "init_on", "null");
+	ini_value = ini_get_string("lcd_ext_Attr", "init_on", "null");
 	if (model_debug_flag & DEBUG_LCD_EXTERN)
 		ALOGD("%s, init_on is (%s)\n", __func__, ini_value);
 	tmp_cnt = trans_buffer_data(ini_value, tmp_buf);
 
+#ifdef CONFIG_AML_LCD_TCON
 	data_buf = (unsigned char *)malloc(LCD_EXTERN_INIT_ON_MAX);
-	if (data_buf == NULL) {
+	if (!data_buf) {
 		ALOGE("%s, malloc buffer memory error!!!\n", __func__);
 		return -1;
 	}
+	memset(data_buf, 0, LCD_EXTERN_INIT_ON_MAX);
+#endif
 
 	/* init on */
 	if (tmp_cnt > LCD_EXTERN_INIT_ON_MAX) {
@@ -1284,27 +1313,25 @@ static int handle_lcd_ext_cmd_data(struct lcd_ext_attr_s *p_attr)
 		j = 0;
 		while (i < tmp_cnt) {
 			p_attr->cmd_data[j] = tmp_buf[i];
+			raw_size = tmp_buf[i + 1];
+			data_size = raw_size;
 			if (p_attr->cmd_data[j] == LCD_EXTERN_INIT_END) {
 				p_attr->cmd_data[j + 1] = 0;
 				j += 2;
 				break;
 			}
 
+#ifdef CONFIG_AML_LCD_TCON
 			type = tmp_buf[i] >> 4 & 0xf;
 			if (type == 0xe) {
 				sub_type = tmp_buf[i + 3] & 0xf;
-#ifdef CONFIG_AML_LCD_TCON
 				multi_id = tmp_buf[i + 2];
-#endif
 			} else {
 				sub_type = 0xff;
-#ifdef CONFIG_AML_LCD_TCON
 				multi_id = 0xff;
-#endif
 			}
 			flag = handle_lcd_ext_cmd_type_flag(type, sub_type);
 			if (flag) {
-#ifdef CONFIG_AML_LCD_TCON
 				if (flag == 1) {
 					data_len = tmp_buf[i + 1];
 					offset = tmp_buf[i + 2];
@@ -1340,21 +1367,20 @@ static int handle_lcd_ext_cmd_data(struct lcd_ext_attr_s *p_attr)
 				default:
 					break;
 				}
-#endif
 			}
-#ifdef CONFIG_AML_LCD_TCON
 handle_lcd_ext_cmd_data_original:
+#endif
 			/* original ini data */
-			data_size = tmp_buf[i + 1];
 			p_attr->cmd_data[j + 1] = data_size;
 			for (k = 0; k < data_size; k++) {
 				p_attr->cmd_data[j + 2 + k] =
 					(unsigned char)tmp_buf[i + 2 + k];
 			}
+#ifdef CONFIG_AML_LCD_TCON
 handle_lcd_ext_cmd_data_next:
-			j += data_size + 2;
-			i += tmp_buf[i + 1] + 2; /* raw data */
 #endif
+			j += data_size + 2;
+			i += raw_size + 2; /* raw data */
 		}
 		glcd_ext_init_on_cnt = j;
 	} else {
@@ -1366,7 +1392,7 @@ handle_lcd_ext_cmd_data_next:
 handle_lcd_ext_cmd_data_inif_off:
 	/* init off */
 	tmp_off = glcd_ext_init_on_cnt;
-	ini_value = IniGetString("lcd_ext_Attr", "init_off", "null");
+	ini_value = ini_get_string("lcd_ext_Attr", "init_off", "null");
 	if (model_debug_flag & DEBUG_LCD_EXTERN)
 		ALOGD("%s, init_off is (%s)\n", __func__, ini_value);
 	tmp_cnt = trans_buffer_data(ini_value, tmp_buf);
@@ -1391,8 +1417,11 @@ handle_lcd_ext_cmd_data_inif_off:
 			ALOGD("  [%d] = 0x%02x\n", i, p_attr->cmd_data[tmp_off+i]);
 	}
 
+#ifdef CONFIG_AML_LCD_TCON
+	memset(data_buf, 0, LCD_EXTERN_INIT_ON_MAX);
 	free(data_buf);
 	data_buf = NULL;
+#endif
 	return 0;
 }
 
@@ -1432,7 +1461,7 @@ static int handle_lcd_ext_header(struct lcd_ext_attr_s *p_attr)
 	unsigned char *tmp_buf = NULL;
 
 	tmp_buf = (unsigned char *) malloc(CC_MAX_TEMP_BUF_SIZE);
-	if (tmp_buf == NULL) {
+	if (!tmp_buf) {
 		ALOGE("%s, malloc buffer memory error!!!\n", __func__);
 		return -1;
 	}
@@ -1447,7 +1476,7 @@ static int handle_lcd_ext_header(struct lcd_ext_attr_s *p_attr)
 
 	p_attr->head.data_len = glcd_ext_dcnt;
 
-	ini_value = IniGetString("lcd_ext_Attr", "version", "null");
+	ini_value = ini_get_string("lcd_ext_Attr", "version", "null");
 	if (model_debug_flag & DEBUG_LCD_EXTERN)
 		ALOGD("%s, version is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "null") == 0)
@@ -1474,7 +1503,7 @@ static int handle_bl_basic(struct bl_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
 
-	ini_value = IniGetString("Backlight_Attr", "bl_name", "null");
+	ini_value = ini_get_string("Backlight_Attr", "bl_name", "null");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, bl_name is (%s)\n", __func__, ini_value);
 	strncpy(p_attr->basic.bl_name, ini_value, CC_BL_NAME_LEN_MAX - 1);
@@ -1487,32 +1516,32 @@ static int handle_bl_level(struct bl_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
 
-	ini_value = IniGetString("Backlight_Attr", "bl_level_uboot", "0");
+	ini_value = ini_get_string("Backlight_Attr", "bl_level_uboot", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, bl_level_uboot is (%s)\n", __func__, ini_value);
 	p_attr->level.bl_level_uboot = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "bl_level_kernel", "0");
+	ini_value = ini_get_string("Backlight_Attr", "bl_level_kernel", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, bl_level_kernel is (%s)\n", __func__, ini_value);
 	p_attr->level.bl_level_kernel = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "bl_level_max", "0");
+	ini_value = ini_get_string("Backlight_Attr", "bl_level_max", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, bl_level_max is (%s)\n", __func__, ini_value);
 	p_attr->level.bl_level_max = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "bl_level_min", "0");
+	ini_value = ini_get_string("Backlight_Attr", "bl_level_min", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, bl_level_min is (%s)\n", __func__, ini_value);
 	p_attr->level.bl_level_min = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "bl_level_mid", "0");
+	ini_value = ini_get_string("Backlight_Attr", "bl_level_mid", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, bl_level_mid is (%s)\n", __func__, ini_value);
 	p_attr->level.bl_level_mid = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "bl_level_mid_mapping", "0");
+	ini_value = ini_get_string("Backlight_Attr", "bl_level_mid_mapping", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, bl_level_mid_mapping is (%s)\n", __func__, ini_value);
 	p_attr->level.bl_level_mid_mapping = strtoul(ini_value, NULL, 0);
@@ -1524,7 +1553,7 @@ static int handle_bl_method(struct bl_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
 
-	ini_value = IniGetString("Backlight_Attr", "bl_method", "null");
+	ini_value = ini_get_string("Backlight_Attr", "bl_method", "null");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, bl_method is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "BL_CTRL_GPIO") == 0)
@@ -1542,27 +1571,27 @@ static int handle_bl_method(struct bl_attr_s *p_attr)
 	else
 		p_attr->method.bl_method = BL_CTRL_MAX;
 
-	ini_value = IniGetString("Backlight_Attr", "bl_en_gpio", "0xff");
+	ini_value = ini_get_string("Backlight_Attr", "bl_en_gpio", "0xff");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, bl_en_gpio is (%s)\n", __func__, ini_value);
 	p_attr->method.bl_en_gpio = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "bl_en_gpio_on", "0");
+	ini_value = ini_get_string("Backlight_Attr", "bl_en_gpio_on", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, bl_en_gpio_on is (%s)\n", __func__, ini_value);
 	p_attr->method.bl_en_gpio_on = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "bl_en_gpio_off", "0");
+	ini_value = ini_get_string("Backlight_Attr", "bl_en_gpio_off", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, bl_en_gpio_off is (%s)\n", __func__, ini_value);
 	p_attr->method.bl_en_gpio_off = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "bl_on_delay", "0");
+	ini_value = ini_get_string("Backlight_Attr", "bl_on_delay", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, bl_on_delay is (%s)\n", __func__, ini_value);
 	p_attr->method.bl_on_delay = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "bl_off_delay", "0");
+	ini_value = ini_get_string("Backlight_Attr", "bl_off_delay", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, bl_off_delay is (%s)\n", __func__, ini_value);
 	p_attr->method.bl_off_delay = strtoul(ini_value, NULL, 0);
@@ -1639,102 +1668,102 @@ static int handle_bl_pwm(struct bl_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
 
-	ini_value = IniGetString("Backlight_Attr", "pwm_method", "BL_PWM_POSITIVE");
+	ini_value = ini_get_string("Backlight_Attr", "pwm_method", "BL_PWM_POSITIVE");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_method is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_method = get_pwm_method(ini_value, BL_PWM_POSITIVE);
 
-	ini_value = IniGetString("Backlight_Attr", "pwm_port", "null");
+	ini_value = ini_get_string("Backlight_Attr", "pwm_port", "null");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_port is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_port = get_pwm_port_index(ini_value);
 
-	ini_value = IniGetString("Backlight_Attr", "pwm_freq", "0");
+	ini_value = ini_get_string("Backlight_Attr", "pwm_freq", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_freq is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_freq = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "pwm_duty_max", "0");
+	ini_value = ini_get_string("Backlight_Attr", "pwm_duty_max", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_duty_max is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_duty_max = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "pwm_duty_min", "0");
+	ini_value = ini_get_string("Backlight_Attr", "pwm_duty_min", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_duty_min is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_duty_min = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "pwm_gpio", "0");
+	ini_value = ini_get_string("Backlight_Attr", "pwm_gpio", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_gpio is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_gpio = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "pwm_gpio_off", "0");
+	ini_value = ini_get_string("Backlight_Attr", "pwm_gpio_off", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_gpio_off is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_gpio_off = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "pwm2_method", "BL_PWM_POSITIVE");
+	ini_value = ini_get_string("Backlight_Attr", "pwm2_method", "BL_PWM_POSITIVE");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm2_method is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm2_method = get_pwm_method(ini_value, BL_PWM_POSITIVE);
 
-	ini_value = IniGetString("Backlight_Attr", "pwm2_port", "null");
+	ini_value = ini_get_string("Backlight_Attr", "pwm2_port", "null");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm2_port is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm2_port = get_pwm_port_index(ini_value);
 
-	ini_value = IniGetString("Backlight_Attr", "pwm2_freq", "0");
+	ini_value = ini_get_string("Backlight_Attr", "pwm2_freq", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm2_freq is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm2_freq = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "pwm2_duty_max", "0");
+	ini_value = ini_get_string("Backlight_Attr", "pwm2_duty_max", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm2_duty_max is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm2_duty_max = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "pwm2_duty_min", "0");
+	ini_value = ini_get_string("Backlight_Attr", "pwm2_duty_min", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm2_duty_min is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm2_duty_min = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "pwm2_gpio", "0");
+	ini_value = ini_get_string("Backlight_Attr", "pwm2_gpio", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm2_gpio is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm2_gpio = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "pwm2_gpio_off", "0");
+	ini_value = ini_get_string("Backlight_Attr", "pwm2_gpio_off", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm2_gpio_off is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm2_gpio_off = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "pwm_on_delay", "0");
+	ini_value = ini_get_string("Backlight_Attr", "pwm_on_delay", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_on_delay is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_on_delay = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "pwm_off_delay", "0");
+	ini_value = ini_get_string("Backlight_Attr", "pwm_off_delay", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_off_delay is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_off_delay = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "pwm_level_max", "0");
+	ini_value = ini_get_string("Backlight_Attr", "pwm_level_max", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_level_max is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_level_max = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "pwm_level_min", "0");
+	ini_value = ini_get_string("Backlight_Attr", "pwm_level_min", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_level_min is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_level_min = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "pwm2_level_max", "0");
+	ini_value = ini_get_string("Backlight_Attr", "pwm2_level_max", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm2_level_max is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm2_level_max = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "pwm2_level_min", "0");
+	ini_value = ini_get_string("Backlight_Attr", "pwm2_level_min", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm2_level_min is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm2_level_min = strtoul(ini_value, NULL, 0);
@@ -1746,17 +1775,17 @@ static int handle_bl_ldim(struct bl_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
 
-	ini_value = IniGetString("Backlight_Attr", "bl_ldim_row", "1");
+	ini_value = ini_get_string("Backlight_Attr", "bl_ldim_row", "1");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, bl_ldim_row is (%s)\n", __func__, ini_value);
 	p_attr->ldim.ldim_row = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "bl_ldim_col", "1");
+	ini_value = ini_get_string("Backlight_Attr", "bl_ldim_col", "1");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, bl_ldim_col is (%s)\n", __func__, ini_value);
 	p_attr->ldim.ldim_col = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "bl_ldim_mode", "null");
+	ini_value = ini_get_string("Backlight_Attr", "bl_ldim_mode", "null");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, bl_ldim_mode is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "LDIM_LR_SIDE") == 0)
@@ -1768,7 +1797,7 @@ static int handle_bl_ldim(struct bl_attr_s *p_attr)
 	else
 		p_attr->ldim.ldim_mode = LDIM_MODE_TB_SIDE;
 
-	ini_value = IniGetString("Backlight_Attr", "bl_ldim_dev_index", "0xff");
+	ini_value = ini_get_string("Backlight_Attr", "bl_ldim_dev_index", "0xff");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, bl_ldim_dev_index is (%s)\n", __func__, ini_value);
 	p_attr->ldim.ldim_dev_index = strtoul(ini_value, NULL, 0);
@@ -1787,27 +1816,27 @@ static int handle_bl_custome(struct bl_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
 
-	ini_value = IniGetString("Backlight_Attr", "bl_custome_val_0", "0");
+	ini_value = ini_get_string("Backlight_Attr", "bl_custome_val_0", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, bl_custome_val_0 is (%s)\n", __func__, ini_value);
 	p_attr->custome.custome_val_0 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "bl_custome_val_1", "0");
+	ini_value = ini_get_string("Backlight_Attr", "bl_custome_val_1", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, bl_custome_val_1 is (%s)\n", __func__, ini_value);
-	p_attr->custome.custome_val_1 = strtoul(ini_value, NULL, 0);
+	p_attr->custome.custome_val_1 = get_pwm_port_index(ini_value);
 
-	ini_value = IniGetString("Backlight_Attr", "bl_custome_val_2", "0");
+	ini_value = ini_get_string("Backlight_Attr", "bl_custome_val_2", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, bl_custome_val_2 is (%s)\n", __func__, ini_value);
 	p_attr->custome.custome_val_2 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "bl_custome_val_3", "0");
+	ini_value = ini_get_string("Backlight_Attr", "bl_custome_val_3", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, bl_custome_val_3 is (%s)\n", __func__, ini_value);
 	p_attr->custome.custome_val_3 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "bl_custome_val_4", "0");
+	ini_value = ini_get_string("Backlight_Attr", "bl_custome_val_4", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, bl_custome_val_4 is (%s)\n", __func__, ini_value);
 	p_attr->custome.custome_val_4 = strtoul(ini_value, NULL, 0);
@@ -1819,7 +1848,7 @@ static int handle_bl_header(struct bl_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
 
-	ini_value = IniGetString("Backlight_Attr", "version", "null");
+	ini_value = ini_get_string("Backlight_Attr", "version", "null");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, version is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "null") == 0)
@@ -1850,7 +1879,7 @@ static int handle_ldim_dev_basic(struct ldim_dev_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
 
-	ini_value = IniGetString("Ldim_dev_Attr", "dev_name", "null");
+	ini_value = ini_get_string("Ldim_dev_Attr", "dev_name", "null");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, dev_name is (%s)\n", __func__, ini_value);
 	strncpy(p_attr->basic.dev_name, ini_value, CC_LDIM_DEV_NAME_LEN_MAX - 1);
@@ -1863,7 +1892,7 @@ static int handle_ldim_dev_if(struct ldim_dev_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
 
-	ini_value = IniGetString("Ldim_dev_Attr", "if_type", "null");
+	ini_value = ini_get_string("Ldim_dev_Attr", "if_type", "null");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, if_type is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "LDIM_DEV_I2C") == 0)
@@ -1873,57 +1902,57 @@ static int handle_ldim_dev_if(struct ldim_dev_attr_s *p_attr)
 	else
 		p_attr->interface.type = LCD_EXTERN_MAX;
 
-	ini_value = IniGetString("Ldim_dev_Attr", "if_freq", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "if_freq", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, if_freq is (%s)\n", __func__, ini_value);
 	p_attr->interface.freq = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "if_attr_0", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "if_attr_0", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, if_attr_0 is (%s)\n", __func__, ini_value);
 	p_attr->interface.if_attr_0 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "if_attr_1", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "if_attr_1", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, if_attr_1 is (%s)\n", __func__, ini_value);
 	p_attr->interface.if_attr_1 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "if_attr_2", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "if_attr_2", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, if_attr_2 is (%s)\n", __func__, ini_value);
 	p_attr->interface.if_attr_2 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "if_attr_3", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "if_attr_3", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, if_attr_3 is (%s)\n", __func__, ini_value);
 	p_attr->interface.if_attr_3 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "if_attr_4", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "if_attr_4", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, if_attr_4 is (%s)\n", __func__, ini_value);
 	p_attr->interface.if_attr_4 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "if_attr_5", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "if_attr_5", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, if_attr_5 is (%s)\n", __func__, ini_value);
 	p_attr->interface.if_attr_5 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "if_attr_6", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "if_attr_6", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, if_attr_6 is (%s)\n", __func__, ini_value);
 	p_attr->interface.if_attr_6 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "if_attr_7", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "if_attr_7", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, if_attr_7 is (%s)\n", __func__, ini_value);
 	p_attr->interface.if_attr_7 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "if_attr_8", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "if_attr_8", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, if_attr_8 is (%s)\n", __func__, ini_value);
 	p_attr->interface.if_attr_8 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "if_attr_9", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "if_attr_9", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, if_attr_9 is (%s)\n", __func__, ini_value);
 	p_attr->interface.if_attr_9 = strtoul(ini_value, NULL, 0);
@@ -1935,127 +1964,127 @@ static int handle_ldim_dev_pwm(struct ldim_dev_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
 
-	ini_value = IniGetString("Ldim_dev_Attr", "pwm_vs_port", "null");
+	ini_value = ini_get_string("Ldim_dev_Attr", "pwm_vs_port", "null");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_vs_port is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_vs_port = get_pwm_port_index(ini_value);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "pwm_vs_pol", "BL_PWM_POSITIVE");
+	ini_value = ini_get_string("Ldim_dev_Attr", "pwm_vs_pol", "BL_PWM_POSITIVE");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_vs_pol is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_vs_pol = get_pwm_method(ini_value, BL_PWM_POSITIVE);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "pwm_vs_freq", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "pwm_vs_freq", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_vs_freq is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_vs_freq = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "pwm_vs_duty", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "pwm_vs_duty", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_vs_duty is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_vs_duty = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "pwm_vs_attr_0", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "pwm_vs_attr_0", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_vs_attr_0 is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_vs_attr_0 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "pwm_vs_attr_1", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "pwm_vs_attr_1", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_vs_attr_1 is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_vs_attr_1 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "pwm_vs_attr_2", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "pwm_vs_attr_2", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_vs_attr_2 is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_vs_attr_2 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "pwm_vs_attr_3", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "pwm_vs_attr_3", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_vs_attr_3 is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_vs_attr_3 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "pwm_hs_port", "null");
+	ini_value = ini_get_string("Ldim_dev_Attr", "pwm_hs_port", "null");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_hs_port is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_hs_port = get_pwm_port_index(ini_value);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "pwm_hs_pol", "BL_PWM_POSITIVE");
+	ini_value = ini_get_string("Ldim_dev_Attr", "pwm_hs_pol", "BL_PWM_POSITIVE");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_hs_pol is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_hs_pol = get_pwm_method(ini_value, BL_PWM_POSITIVE);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "pwm_hs_freq", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "pwm_hs_freq", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_hs_freq is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_hs_freq = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "pwm_hs_duty", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "pwm_hs_duty", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_hs_duty is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_hs_duty = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "pwm_hs_attr_0", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "pwm_hs_attr_0", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_hs_attr_0 is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_hs_attr_0 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "pwm_hs_attr_1", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "pwm_hs_attr_1", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_hs_attr_1 is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_hs_attr_1 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "pwm_hs_attr_2", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "pwm_hs_attr_2", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_hs_attr_2 is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_hs_attr_2 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "pwm_hs_attr_3", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "pwm_hs_attr_3", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_hs_attr_3 is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_hs_attr_3 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "pwm_adj_port", "null");
+	ini_value = ini_get_string("Ldim_dev_Attr", "pwm_adj_port", "null");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_adj_port is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_adj_port = get_pwm_port_index(ini_value);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "pwm_adj_pol", "BL_PWM_POSITIVE");
+	ini_value = ini_get_string("Ldim_dev_Attr", "pwm_adj_pol", "BL_PWM_POSITIVE");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_adj_pol is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_adj_pol = get_pwm_method(ini_value, BL_PWM_POSITIVE);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "pwm_adj_freq", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "pwm_adj_freq", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_adj_freq is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_adj_freq = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "pwm_adj_duty", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "pwm_adj_duty", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_adj_duty is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_adj_duty = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "pwm_adj_attr_0", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "pwm_adj_attr_0", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_adj_attr_0 is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_adj_attr_0 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "pwm_adj_attr_1", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "pwm_adj_attr_1", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_adj_attr_1 is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_adj_attr_1 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "pwm_adj_attr_2", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "pwm_adj_attr_2", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_adj_attr_2 is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_adj_attr_2 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "pwm_adj_attr_3", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "pwm_adj_attr_3", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pwm_adj_attr_3 is (%s)\n", __func__, ini_value);
 	p_attr->pwm.pwm_adj_attr_3 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "pinmux_sel", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "pinmux_sel", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, pinmux_sel is (%s)\n", __func__, ini_value);
 	strncpy(p_attr->pwm.pinmux_sel, ini_value, 29);
@@ -2067,57 +2096,57 @@ static int handle_ldim_dev_ctrl(struct ldim_dev_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
 
-	ini_value = IniGetString("Ldim_dev_Attr", "en_gpio", "0xff");
+	ini_value = ini_get_string("Ldim_dev_Attr", "en_gpio", "0xff");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, en_gpio is (%s)\n", __func__, ini_value);
 	p_attr->ctrl.en_gpio = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "en_gpio_on", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "en_gpio_on", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, en_gpio_on is (%s)\n", __func__, ini_value);
 	p_attr->ctrl.en_gpio_on = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "en_gpio_off", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "en_gpio_off", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, en_gpio_off is (%s)\n", __func__, ini_value);
 	p_attr->ctrl.en_gpio_off = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "on_delay", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "on_delay", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, on_delay is (%s)\n", __func__, ini_value);
 	p_attr->ctrl.on_delay = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "off_delay", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "off_delay", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, off_delay is (%s)\n", __func__, ini_value);
 	p_attr->ctrl.off_delay = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "err_gpio", "0xff");
+	ini_value = ini_get_string("Ldim_dev_Attr", "err_gpio", "0xff");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, err_gpio is (%s)\n", __func__, ini_value);
 	p_attr->ctrl.err_gpio = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "write_check", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "write_check", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, write_check is (%s)\n", __func__, ini_value);
 	p_attr->ctrl.write_check = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "dim_max", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "dim_max", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, dim_max is (%s)\n", __func__, ini_value);
 	p_attr->ctrl.dim_max = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "dim_min", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "dim_min", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, dim_min is (%s)\n", __func__, ini_value);
 	p_attr->ctrl.dim_min = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "chip_count", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "chip_count", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, chip_count is (%s)\n", __func__, ini_value);
 	p_attr->ctrl.chip_cnt = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "zone_mapping_path", "null");
+	ini_value = ini_get_string("Ldim_dev_Attr", "zone_mapping_path", "null");
 	if (strcmp(ini_value, "null") != 0) {
 		env_set("bl_mapping_path", ini_value);
 		strncpy(p_attr->ctrl.zone_map_path, ini_value, 255); //if no path_k
@@ -2125,7 +2154,7 @@ static int handle_ldim_dev_ctrl(struct ldim_dev_attr_s *p_attr)
 			ALOGE("%s, zone_mapping_path is (%s)\n", __func__, ini_value);
 	}
 
-	ini_value = IniGetString("Ldim_dev_Attr", "zone_mapping_path_k", "null");
+	ini_value = ini_get_string("Ldim_dev_Attr", "zone_mapping_path_k", "null");
 	if (strcmp(ini_value, "null") != 0) {
 		if (model_debug_flag & DEBUG_BACKLIGHT)
 			ALOGD("%s, zone_mapping_path_k is (%s)\n", __func__, ini_value);
@@ -2142,52 +2171,52 @@ static int handle_ldim_dev_profile(struct ldim_dev_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
 
-	ini_value = IniGetString("Ldim_dev_Attr", "profile_mode", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "profile_mode", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, profile_mode is (%s)\n", __func__, ini_value);
 	p_attr->profile.profile_mode = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "profile_path", "null");
+	ini_value = ini_get_string("Ldim_dev_Attr", "profile_path", "null");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, profile_path is (%s)\n", __func__, ini_value);
 	strncpy(p_attr->profile.profile_path, ini_value, 255);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "profile_attr_0", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "profile_attr_0", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, profile_attr_0 is (%s)\n", __func__, ini_value);
 	p_attr->profile.profile_attr_0 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "profile_attr_1", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "profile_attr_1", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, profile_attr_1 is (%s)\n", __func__, ini_value);
 	p_attr->profile.profile_attr_1 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "profile_attr_2", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "profile_attr_2", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, profile_attr_2 is (%s)\n", __func__, ini_value);
 	p_attr->profile.profile_attr_2 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "profile_attr_3", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "profile_attr_3", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, profile_attr_3 is (%s)\n", __func__, ini_value);
 	p_attr->profile.profile_attr_3 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "profile_attr_4", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "profile_attr_4", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, profile_attr_4 is (%s)\n", __func__, ini_value);
 	p_attr->profile.profile_attr_4 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "profile_attr_5", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "profile_attr_5", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, profile_attr_5 is (%s)\n", __func__, ini_value);
 	p_attr->profile.profile_attr_5 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "profile_attr_6", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "profile_attr_6", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, profile_attr_6 is (%s)\n", __func__, ini_value);
 	p_attr->profile.profile_attr_6 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "profile_attr_7", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "profile_attr_7", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, profile_attr_7 is (%s)\n", __func__, ini_value);
 	p_attr->profile.profile_attr_7 = strtoul(ini_value, NULL, 0);
@@ -2201,57 +2230,57 @@ static int handle_ldim_dev_custom(struct ldim_dev_attr_s *p_attr)
 	unsigned int tmp_buf[32];
 	int i = 0, tmp_cnt = 0;
 
-	ini_value = IniGetString("Ldim_dev_Attr", "custome_attr_0", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "custome_attr_0", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, custome_attr_0 is (%s)\n", __func__, ini_value);
 	p_attr->custome.custome_attr_0 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "custome_attr_1", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "custome_attr_1", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, custome_attr_1 is (%s)\n", __func__, ini_value);
 	p_attr->custome.custome_attr_1 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "custome_attr_2", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "custome_attr_2", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, custome_attr_2 is (%s)\n", __func__, ini_value);
 	p_attr->custome.custome_attr_2 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "custome_attr_3", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "custome_attr_3", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, custome_attr_3 is (%s)\n", __func__, ini_value);
 	p_attr->custome.custome_attr_3 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "custome_attr_4", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "custome_attr_4", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, custome_attr_4 is (%s)\n", __func__, ini_value);
 	p_attr->custome.custome_attr_4 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "custome_attr_5", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "custome_attr_5", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, custome_attr_5 is (%s)\n", __func__, ini_value);
 	p_attr->custome.custome_attr_5 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "custome_attr_6", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "custome_attr_6", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, custome_attr_6 is (%s)\n", __func__, ini_value);
 	p_attr->custome.custome_attr_6 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "custome_attr_7", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "custome_attr_7", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, custome_attr_7 is (%s)\n", __func__, ini_value);
 	p_attr->custome.custome_attr_7 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "custome_attr_8", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "custome_attr_8", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, custome_attr_8 is (%s)\n", __func__, ini_value);
 	p_attr->custome.custome_attr_8 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "custome_attr_9", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "custome_attr_9", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, custome_attr_9 is (%s)\n", __func__, ini_value);
 	p_attr->custome.custome_attr_9 = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Ldim_dev_Attr", "param_data", "null");
+	ini_value = ini_get_string("Ldim_dev_Attr", "param_data", "null");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, param_data is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "null") == 0) {
@@ -2286,7 +2315,7 @@ static int handle_ldim_dev_init(struct ldim_dev_attr_s *p_attr)
 	unsigned int tmp_buf[2048];
 	unsigned int data_size = 0;
 
-	ini_value = IniGetString("Ldim_dev_Attr", "cmd_size", "0");
+	ini_value = ini_get_string("Ldim_dev_Attr", "cmd_size", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, cmd_size is (%s)\n", __func__, ini_value);
 	p_attr->init.cmd_size = strtoul(ini_value, NULL, 0);
@@ -2302,7 +2331,7 @@ static int handle_ldim_dev_init(struct ldim_dev_attr_s *p_attr)
 		return 0;
 	}
 
-	ini_value = IniGetString("Ldim_dev_Attr", "init_on", "null");
+	ini_value = ini_get_string("Ldim_dev_Attr", "init_on", "null");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, init_on is (%s)\n", __func__, ini_value);
 	tmp_cnt = trans_buffer_data(ini_value, tmp_buf);
@@ -2338,7 +2367,7 @@ static int handle_ldim_dev_init(struct ldim_dev_attr_s *p_attr)
 	}
 
 	tmp_off = g_ldim_dev_init_on_cnt;
-	ini_value = IniGetString("Ldim_dev_Attr", "init_off", "null");
+	ini_value = ini_get_string("Ldim_dev_Attr", "init_off", "null");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, init_off is (%s)\n", __func__, ini_value);
 	tmp_cnt = trans_buffer_data(ini_value, tmp_buf);
@@ -2370,7 +2399,7 @@ static int handle_ldim_dev_header(struct ldim_dev_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
 
-	ini_value = IniGetString("Ldim_dev_Attr", "version", "null");
+	ini_value = ini_get_string("Ldim_dev_Attr", "version", "null");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, version is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "null") == 0)
@@ -2401,9 +2430,11 @@ static int handle_panel_misc(struct panel_misc_s *p_misc)
 {
 	int tmp_val = 0;
 	const char *ini_value = NULL;
+	const char *display_layer = NULL;
+	char *rev_ctrl = NULL;
 	char buf[64] = {0};
 
-	ini_value = IniGetString("panel_misc", "panel_misc_version", "null");
+	ini_value = ini_get_string("panel_misc", "panel_misc_version", "null");
 	if (model_debug_flag & DEBUG_MISC)
 		ALOGD("%s, panel_misc_version is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "null") == 0) {
@@ -2416,11 +2447,11 @@ static int handle_panel_misc(struct panel_misc_s *p_misc)
 		sprintf(p_misc->version, "V%03d", tmp_val);
 	}
 
-	ini_value = IniGetString("panel_misc", "outputmode2", "null");
+	ini_value = ini_get_string("panel_misc", "outputmode2", "null");
 	if (model_debug_flag & DEBUG_MISC)
 		ALOGD("%s, outputmode2 is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "null") == 0) {
-		ini_value = IniGetString("panel_misc", "outputmode", "null");
+		ini_value = ini_get_string("panel_misc", "outputmode", "null");
 		if (model_debug_flag & DEBUG_MISC)
 			ALOGD("%s, outputmode is (%s)\n", __func__, ini_value);
 		if (strcmp(ini_value, "null")) {
@@ -2437,7 +2468,7 @@ static int handle_panel_misc(struct panel_misc_s *p_misc)
 		run_command(buf, 0);
 	}
 
-	ini_value = IniGetString("panel_misc", "connector_type", "null");
+	ini_value = ini_get_string("panel_misc", "connector_type", "null");
 	if (model_debug_flag & DEBUG_MISC)
 		ALOGD("%s, connector_type is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "null")) {
@@ -2450,46 +2481,90 @@ static int handle_panel_misc(struct panel_misc_s *p_misc)
 		run_command("setenv connector_type null", 0);
 	}
 
-	ini_value = IniGetString("panel_misc", "panel_reverse", "null");
-	if (model_debug_flag & DEBUG_MISC)
-		ALOGD("%s, panel_reverse is (%s)\n", __func__, ini_value);
-	if (strcmp(ini_value, "null") == 0 || strcmp(ini_value, "0") == 0 ||
-		strcmp(ini_value, "false") == 0 || strcmp(ini_value, "no_rev") == 0) {
-		p_misc->panel_reverse = 0;
-	} else if (strcmp(ini_value, "true") == 0 || strcmp(ini_value, "1") == 0 ||
-		strcmp(ini_value, "have_rev") == 0) {
-		p_misc->panel_reverse = 1;
-	} else if (strcmp(ini_value, "x_rev") == 0 || strcmp(ini_value, "2") == 0) {
-		p_misc->panel_reverse = 2;
-	} else if (strcmp(ini_value, "y_rev") == 0 || strcmp(ini_value, "3") == 0) {
-		p_misc->panel_reverse = 3;
-	} else {
-		p_misc->panel_reverse = 0;
+	rev_ctrl = env_get("reverse_ctrl");
+	if (!rev_ctrl || strcmp(rev_ctrl, "0") == 0) {
+		ini_value = ini_get_string("panel_misc", "panel_reverse", "null");
+		if (model_debug_flag & DEBUG_MISC)
+			ALOGD("%s, panel_reverse is (%s)\n", __func__, ini_value);
+		if (strcmp(ini_value, "null") == 0 || strcmp(ini_value, "0") == 0 ||
+			strcmp(ini_value, "false") == 0 || strcmp(ini_value, "no_rev") == 0) {
+			p_misc->panel_reverse = 0;
+		} else if (strcmp(ini_value, "true") == 0 || strcmp(ini_value, "1") == 0 ||
+			strcmp(ini_value, "have_rev") == 0) {
+			p_misc->panel_reverse = 1;
+		} else if (strcmp(ini_value, "x_rev") == 0 || strcmp(ini_value, "2") == 0) {
+			p_misc->panel_reverse = 2;
+		} else if (strcmp(ini_value, "y_rev") == 0 || strcmp(ini_value, "3") == 0) {
+			p_misc->panel_reverse = 3;
+		} else {
+			p_misc->panel_reverse = 0;
+		}
+		if (p_misc->panel_reverse) {
+			display_layer = ini_get_string("panel_misc", "display_layer", "null");
+			if (!display_layer)
+				p_misc->display_layer = 4;
+			else if (strcmp(display_layer, "osd0") == 0 ||
+					strcmp(display_layer, "0") == 0)
+				p_misc->display_layer = 0;
+			else if (strcmp(display_layer, "osd1") == 0 ||
+					strcmp(display_layer, "1") == 0)
+				p_misc->display_layer = 1;
+			else
+				p_misc->display_layer = 4;
+		}
+		switch (p_misc->panel_reverse) {
+		case 1:
+			run_command("setenv panel_reverse 1", 0);
+			switch (p_misc->display_layer) {
+			case 0:
+				run_command("setenv osd_reverse osd0,true", 0);
+				break;
+			case 1:
+				run_command("setenv osd_reverse osd1,true", 0);
+				break;
+			default:
+				run_command("setenv osd_reverse all,true", 0);
+				break;
+			}
+			run_command("setenv video_reverse 1", 0);
+			break;
+		case 2:
+			run_command("setenv panel_reverse 2", 0);
+			switch (p_misc->display_layer) {
+			case 0:
+				run_command("setenv osd_reverse osd0,x_rev", 0);
+				break;
+			case 1:
+				run_command("setenv osd_reverse osd1,x_rev", 0);
+				break;
+			default:
+				run_command("setenv osd_reverse all,x_rev", 0);
+				break;
+			}
+			run_command("setenv video_reverse 2", 0);
+			break;
+		case 3:
+			run_command("setenv panel_reverse 3", 0);
+			switch (p_misc->display_layer) {
+			case 0:
+				run_command("setenv osd_reverse osd0,y_rev", 0);
+				break;
+			case 1:
+				run_command("setenv osd_reverse osd1,y_rev", 0);
+				break;
+			default:
+				run_command("setenv osd_reverse all,y_rev", 0);
+				break;
+			}
+			run_command("setenv video_reverse 3", 0);
+			break;
+		default:
+			run_command("setenv panel_reverse 0", 0);
+			run_command("setenv osd_reverse n", 0);
+			run_command("setenv video_reverse 0", 0);
+			break;
+		}
 	}
-
-	switch (p_misc->panel_reverse) {
-	case 1:
-		run_command("setenv panel_reverse 1", 0);
-		run_command("setenv osd_reverse all,true", 0);
-		run_command("setenv video_reverse 1", 0);
-		break;
-	case 2:
-		run_command("setenv panel_reverse 2", 0);
-		run_command("setenv osd_reverse all,x_rev", 0);
-		run_command("setenv video_reverse 2", 0);
-		break;
-	case 3:
-		run_command("setenv panel_reverse 3", 0);
-		run_command("setenv osd_reverse all,y_rev", 0);
-		run_command("setenv video_reverse 3", 0);
-		break;
-	default:
-		run_command("setenv panel_reverse 0", 0);
-		run_command("setenv osd_reverse n", 0);
-		run_command("setenv video_reverse 0", 0);
-		break;
-	}
-
 	return 0;
 }
 
@@ -2511,7 +2586,7 @@ static int handle_tcon_spi_v0(unsigned char *buff)
 
 	/* block 0: demura_lut */
 	n = 16;
-	ini_value = IniGetString("tcon_spi_Attr", "demura_lut_offset", "null");
+	ini_value = ini_get_string("tcon_spi_Attr", "demura_lut_offset", "null");
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s, demura_lut_offset is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "null") == 0) {
@@ -2523,7 +2598,7 @@ static int handle_tcon_spi_v0(unsigned char *buff)
 		buff[n + i] = (temp >> (i * 8)) & 0xff;
 	n += 4;
 
-	ini_value = IniGetString("tcon_spi_Attr", "demura_lut_size", "null");
+	ini_value = ini_get_string("tcon_spi_Attr", "demura_lut_size", "null");
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s, demura_lut_size is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "null") == 0) {
@@ -2537,7 +2612,7 @@ static int handle_tcon_spi_v0(unsigned char *buff)
 
 	for (j = 0; j < 6; j++) {
 		sprintf(str, "block0_param_%d", j);
-		ini_value = IniGetString("tcon_spi_Attr", str, "0");
+		ini_value = ini_get_string("tcon_spi_Attr", str, "0");
 		if (model_debug_flag & DEBUG_TCON)
 			ALOGD("%s, %s is (%s)\n", __func__, str, ini_value);
 		temp = strtoul(ini_value, NULL, 0);
@@ -2548,7 +2623,7 @@ static int handle_tcon_spi_v0(unsigned char *buff)
 
 handle_tcon_spi_v0_block_1:
 	/* block 1: p_gamma */
-	ini_value = IniGetString("tcon_spi_Attr", "p_gamma_offset", "null");
+	ini_value = ini_get_string("tcon_spi_Attr", "p_gamma_offset", "null");
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s, p_gamma_offset is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "null") == 0) {
@@ -2560,7 +2635,7 @@ handle_tcon_spi_v0_block_1:
 		buff[n + i] = (temp >> (i * 8)) & 0xff;
 	n += 4;
 
-	ini_value = IniGetString("tcon_spi_Attr", "p_gamma_size", "null");
+	ini_value = ini_get_string("tcon_spi_Attr", "p_gamma_size", "null");
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s, p_gamma_size is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "null") == 0) {
@@ -2574,7 +2649,7 @@ handle_tcon_spi_v0_block_1:
 
 	for (j = 0; j < 6; j++) {
 		sprintf(str, "block1_param_%d", j);
-		ini_value = IniGetString("tcon_spi_Attr", str, "0");
+		ini_value = ini_get_string("tcon_spi_Attr", str, "0");
 		if (model_debug_flag & DEBUG_TCON)
 			ALOGD("%s, %s is (%s)\n", __func__, str, ini_value);
 		temp = strtoul(ini_value, NULL, 0);
@@ -2585,7 +2660,7 @@ handle_tcon_spi_v0_block_1:
 
 handle_tcon_spi_v0_block_2:
 	/* block 2: acc_lut */
-	ini_value = IniGetString("tcon_spi_Attr", "acc_lut_offset", "null");
+	ini_value = ini_get_string("tcon_spi_Attr", "acc_lut_offset", "null");
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s, acc_lut_offset is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "null") == 0) {
@@ -2597,7 +2672,7 @@ handle_tcon_spi_v0_block_2:
 		buff[n + i] = (temp >> (i * 8)) & 0xff;
 	n += 4;
 
-	ini_value = IniGetString("tcon_spi_Attr", "acc_lut_size", "null");
+	ini_value = ini_get_string("tcon_spi_Attr", "acc_lut_size", "null");
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s, acc_lut_size is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "null") == 0) {
@@ -2611,7 +2686,7 @@ handle_tcon_spi_v0_block_2:
 
 	for (j = 0; j < 6; j++) {
 		sprintf(str, "block2_param_%d", j);
-		ini_value = IniGetString("tcon_spi_Attr", str, "0");
+		ini_value = ini_get_string("tcon_spi_Attr", str, "0");
 		if (model_debug_flag & DEBUG_TCON)
 			ALOGD("%s, %s is (%s)\n", __func__, str, ini_value);
 		temp = strtoul(ini_value, NULL, 0);
@@ -2622,7 +2697,7 @@ handle_tcon_spi_v0_block_2:
 
 handle_tcon_spi_v0_block_3:
 	/* block 3: auto_flicker */
-	ini_value = IniGetString("tcon_spi_Attr", "auto_flicker_offset", "null");
+	ini_value = ini_get_string("tcon_spi_Attr", "auto_flicker_offset", "null");
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s, auto_flicker_offset is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "null") == 0) {
@@ -2634,7 +2709,7 @@ handle_tcon_spi_v0_block_3:
 		buff[n + i] = (temp >> (i * 8)) & 0xff;
 	n += 4;
 
-	ini_value = IniGetString("tcon_spi_Attr", "auto_flicker_size", "null");
+	ini_value = ini_get_string("tcon_spi_Attr", "auto_flicker_size", "null");
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s, auto_flicker_size is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "null") == 0) {
@@ -2648,7 +2723,7 @@ handle_tcon_spi_v0_block_3:
 
 	for (j = 0; j < 6; j++) {
 		sprintf(str, "block3_param_%d", j);
-		ini_value = IniGetString("tcon_spi_Attr", str, "0");
+		ini_value = ini_get_string("tcon_spi_Attr", str, "0");
 		if (model_debug_flag & DEBUG_TCON)
 			ALOGD("%s, %s is (%s)\n", __func__, str, ini_value);
 		temp = strtoul(ini_value, NULL, 0);
@@ -2698,7 +2773,7 @@ static int handle_tcon_spi(unsigned char *buff)
 
 	/* header */
 	/* version */
-	ini_value = IniGetString("tcon_spi_Attr", "version", "0");
+	ini_value = ini_get_string("tcon_spi_Attr", "version", "0");
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s, version is (%s)\n", __func__, ini_value);
 	temp = strtoul(ini_value, NULL, 0);
@@ -2713,7 +2788,7 @@ static int handle_tcon_spi(unsigned char *buff)
 	buff[9] = (temp >> 8) & 0xff;
 
 	/* block cnt */
-	ini_value = IniGetString("tcon_spi_Attr", "block_cnt", "0");
+	ini_value = ini_get_string("tcon_spi_Attr", "block_cnt", "0");
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s, block_cnt is (%s)\n", __func__, ini_value);
 	block_cnt = strtoul(ini_value, NULL, 0);
@@ -2724,7 +2799,7 @@ static int handle_tcon_spi(unsigned char *buff)
 	n = 0;
 	for (i = 0; i < block_cnt; i++) {
 		snprintf(str, 30, "block%d_data_type", i);
-		ini_value = IniGetString("tcon_spi_Attr", str, "0");
+		ini_value = ini_get_string("tcon_spi_Attr", str, "0");
 		if (model_debug_flag & DEBUG_TCON)
 			ALOGD("%s, %s is (%s)\n", __func__, str, ini_value);
 		temp = strtoul(ini_value, NULL, 0);
@@ -2732,7 +2807,7 @@ static int handle_tcon_spi(unsigned char *buff)
 		p[n + 1] = (temp >> 8) & 0xff;
 
 		snprintf(str, 30, "block%d_data_index", i);
-		ini_value = IniGetString("tcon_spi_Attr", str, "0xff");
+		ini_value = ini_get_string("tcon_spi_Attr", str, "0xff");
 		if (model_debug_flag & DEBUG_TCON)
 			ALOGD("%s, %s is (%s)\n", __func__, str, ini_value);
 		temp = strtoul(ini_value, NULL, 0);
@@ -2740,7 +2815,7 @@ static int handle_tcon_spi(unsigned char *buff)
 		p[n + 3] = (temp >> 8) & 0xff;
 
 		snprintf(str, 30, "block%d_data_flag", i);
-		ini_value = IniGetString("tcon_spi_Attr", str, "0xff");
+		ini_value = ini_get_string("tcon_spi_Attr", str, "0xff");
 		if (model_debug_flag & DEBUG_TCON)
 			ALOGD("%s, %s is (%s)\n", __func__, str, ini_value);
 		temp = strtoul(ini_value, NULL, 0);
@@ -2750,7 +2825,7 @@ static int handle_tcon_spi(unsigned char *buff)
 		p[n + 7] = (temp >> 24) & 0xff;
 
 		snprintf(str, 30, "block%d_spi_data_offset", i);
-		ini_value = IniGetString("tcon_spi_Attr", str, "0");
+		ini_value = ini_get_string("tcon_spi_Attr", str, "0");
 		if (model_debug_flag & DEBUG_TCON)
 			ALOGD("%s, %s is (%s)\n", __func__, str, ini_value);
 		temp = strtoul(ini_value, NULL, 0);
@@ -2760,7 +2835,7 @@ static int handle_tcon_spi(unsigned char *buff)
 		p[n + 11] = (temp >> 24) & 0xff;
 
 		snprintf(str, 30, "block%d_spi_data_size", i);
-		ini_value = IniGetString("tcon_spi_Attr", str, "0");
+		ini_value = ini_get_string("tcon_spi_Attr", str, "0");
 		if (model_debug_flag & DEBUG_TCON)
 			ALOGD("%s, %s is (%s)\n", __func__, str, ini_value);
 		temp = strtoul(ini_value, NULL, 0);
@@ -2770,7 +2845,7 @@ static int handle_tcon_spi(unsigned char *buff)
 		p[n + 15] = (temp >> 24) & 0xff;
 
 		snprintf(str, 30, "block%d_param_cnt", i);
-		ini_value = IniGetString("tcon_spi_Attr", str, "0");
+		ini_value = ini_get_string("tcon_spi_Attr", str, "0");
 		if (model_debug_flag & DEBUG_TCON)
 			ALOGD("%s, %s is (%s)\n", __func__, str, ini_value);
 		param_cnt = strtoul(ini_value, NULL, 0);
@@ -2783,7 +2858,7 @@ static int handle_tcon_spi(unsigned char *buff)
 		k = n + 20;
 		for (j = 0; j < param_cnt; j++) {
 			snprintf(str, 30, "block%d_param_%d", i, j);
-			ini_value = IniGetString("tcon_spi_Attr", str, "0");
+			ini_value = ini_get_string("tcon_spi_Attr", str, "0");
 			if (model_debug_flag & DEBUG_TCON)
 				ALOGD("%s, %s is (%s)\n", __func__, str, ini_value);
 			temp = strtoul(ini_value, NULL, 0);
@@ -2819,77 +2894,77 @@ static int handle_lcd_optical_attr(struct lcd_optical_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
 
-	ini_value = IniGetString("lcd_optical_Attr", "hdr_support", "0");
+	ini_value = ini_get_string("lcd_optical_Attr", "hdr_support", "0");
 	if (model_debug_flag & DEBUG_LCD_OPTICAL)
 		ALOGD("%s, hdr_support is (%s)\n", __func__, ini_value);
 	p_attr->hdr_support = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_optical_Attr", "features", "0");
+	ini_value = ini_get_string("lcd_optical_Attr", "features", "0");
 	if (model_debug_flag & DEBUG_LCD_OPTICAL)
 		ALOGD("%s, features is (%s)\n", __func__, ini_value);
 	p_attr->features = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_optical_Attr", "primaries_r_x", "0");
+	ini_value = ini_get_string("lcd_optical_Attr", "primaries_r_x", "0");
 	if (model_debug_flag & DEBUG_LCD_OPTICAL)
 		ALOGD("%s, primaries_r_x is (%s)\n", __func__, ini_value);
 	p_attr->primaries_r_x = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_optical_Attr", "primaries_r_y", "0");
+	ini_value = ini_get_string("lcd_optical_Attr", "primaries_r_y", "0");
 	if (model_debug_flag & DEBUG_LCD_OPTICAL)
 		ALOGD("%s, primaries_r_y is (%s)\n", __func__, ini_value);
 	p_attr->primaries_r_y = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_optical_Attr", "primaries_g_x", "0");
+	ini_value = ini_get_string("lcd_optical_Attr", "primaries_g_x", "0");
 	if (model_debug_flag & DEBUG_LCD_OPTICAL)
 		ALOGD("%s, primaries_g_x is (%s)\n", __func__, ini_value);
 	p_attr->primaries_g_x = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_optical_Attr", "primaries_g_y", "0");
+	ini_value = ini_get_string("lcd_optical_Attr", "primaries_g_y", "0");
 	if (model_debug_flag & DEBUG_LCD_OPTICAL)
 		ALOGD("%s, primaries_g_y is (%s)\n", __func__, ini_value);
 	p_attr->primaries_g_y = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_optical_Attr", "primaries_b_x", "0");
+	ini_value = ini_get_string("lcd_optical_Attr", "primaries_b_x", "0");
 	if (model_debug_flag & DEBUG_LCD_OPTICAL)
 		ALOGD("%s, primaries_b_x is (%s)\n", __func__, ini_value);
 	p_attr->primaries_b_x = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_optical_Attr", "primaries_b_y", "0");
+	ini_value = ini_get_string("lcd_optical_Attr", "primaries_b_y", "0");
 	if (model_debug_flag & DEBUG_LCD_OPTICAL)
 		ALOGD("%s, primaries_b_y is (%s)\n", __func__, ini_value);
 	p_attr->primaries_b_y = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_optical_Attr", "white_point_x", "0");
+	ini_value = ini_get_string("lcd_optical_Attr", "white_point_x", "0");
 	if (model_debug_flag & DEBUG_LCD_OPTICAL)
 		ALOGD("%s, white_point_x is (%s)\n", __func__, ini_value);
 	p_attr->white_point_x = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_optical_Attr", "white_point_y", "0");
+	ini_value = ini_get_string("lcd_optical_Attr", "white_point_y", "0");
 	if (model_debug_flag & DEBUG_LCD_OPTICAL)
 		ALOGD("%s, white_point_y is (%s)\n", __func__, ini_value);
 	p_attr->white_point_y = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_optical_Attr", "luma_max", "0");
+	ini_value = ini_get_string("lcd_optical_Attr", "luma_max", "0");
 	if (model_debug_flag & DEBUG_LCD_OPTICAL)
 		ALOGD("%s, luma_max is (%s)\n", __func__, ini_value);
 	p_attr->luma_max = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_optical_Attr", "luma_min", "0");
+	ini_value = ini_get_string("lcd_optical_Attr", "luma_min", "0");
 	if (model_debug_flag & DEBUG_LCD_OPTICAL)
 		ALOGD("%s, luma_min is (%s)\n", __func__, ini_value);
 	p_attr->luma_min = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_optical_Attr", "luma_avg", "0");
+	ini_value = ini_get_string("lcd_optical_Attr", "luma_avg", "0");
 	if (model_debug_flag & DEBUG_LCD_OPTICAL)
 		ALOGD("%s, luma_avg is (%s)\n", __func__, ini_value);
 	p_attr->luma_avg = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_optical_Attr", "ldim_support", "0");
+	ini_value = ini_get_string("lcd_optical_Attr", "ldim_support", "0");
 	if (model_debug_flag & DEBUG_LCD_OPTICAL)
 		ALOGD("%s, ldim_support is (%s)\n", __func__, ini_value);
 	p_attr->ldim_support = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("lcd_optical_Attr", "luma_peak", "0");
+	ini_value = ini_get_string("lcd_optical_Attr", "luma_peak", "0");
 	if (model_debug_flag & DEBUG_LCD_OPTICAL)
 		ALOGD("%s, luma_peak is (%s)\n", __func__, ini_value);
 	p_attr->luma_peak = strtoul(ini_value, NULL, 0);
@@ -2913,7 +2988,7 @@ static int handle_lcd_optical_header(struct lcd_optical_attr_s *p_attr)
 
 	p_attr->head.data_len = glcd_optical_dcnt;
 
-	ini_value = IniGetString("lcd_optical_Attr", "version", "null");
+	ini_value = ini_get_string("lcd_optical_Attr", "version", "null");
 	if (model_debug_flag & DEBUG_LCD_OPTICAL)
 		ALOGD("%s, version is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "null") == 0)
@@ -2944,50 +3019,58 @@ static int parse_panel_ini(const char *file_name, unsigned char *lcd_buf,
 			   unsigned char *tcon_spi_buf,
 			   struct lcd_optical_attr_s *optical_attr)
 {
-	struct lcd_attr_s lcd_attr;
-	struct lcd_v2_attr_s lcd_v2_attr;
+	struct lcd_attr_s *lcd_attr;
+	struct lcd_v2_attr_s *lcd_v2_attr;
 	unsigned short lcd_size = 0;
 	struct lcd_header_s *header;
 
-	memset((void *)&lcd_attr, 0, sizeof(struct lcd_attr_s));
-	memset((void *)&lcd_v2_attr, 0, sizeof(struct lcd_v2_attr_s));
-	memset((void *)bl_attr, 0, sizeof(struct bl_attr_s));
-	memset((void *)ldim_dev_attr, 0, sizeof(struct ldim_dev_attr_s));
-	memset((void *)optical_attr, 0, sizeof(struct lcd_optical_attr_s));
+	ini_parser_init();
 
-	IniParserInit();
-
-	if (IniParseFile(file_name) < 0) {
+	if (ini_parse_file(file_name) < 0) {
 		ALOGE("%s, ini load file error!\n", __func__);
-		IniParserUninit();
+		ini_parser_uninit();
 		return -1;
 	}
 
 	// handle integrity flag
 	if (handle_integrity_flag() < 0) {
 		ALOGE("%s, handle_integrity_flag error!\n", __func__);
-		IniParserUninit();
+		ini_parser_uninit();
 		return -1;
 	}
 
-	/* handle lcd attr */
-	handle_lcd_basic(&lcd_attr);
-	handle_lcd_timming(&lcd_attr);
-	handle_lcd_customer(&lcd_attr);
-	handle_lcd_interface(&lcd_attr);
-	handle_lcd_pwr(&lcd_attr);
-	handle_lcd_header(&lcd_attr);
+	lcd_attr = (struct lcd_attr_s *)malloc(sizeof(struct lcd_attr_s));
+	if (!lcd_attr) {
+		ini_parser_uninit();
+		return -1;
+	}
+	memset(lcd_attr, 0, sizeof(struct lcd_attr_s));
+	lcd_v2_attr = (struct lcd_v2_attr_s *)malloc(sizeof(struct lcd_v2_attr_s));
+	if (!lcd_v2_attr) {
+		free(lcd_attr);
+		ini_parser_uninit();
+		return -1;
+	}
+	memset(lcd_v2_attr, 0, sizeof(struct lcd_v2_attr_s));
 
-	lcd_size = lcd_attr.head.block_cur_size;
-	memcpy((void *)lcd_buf, (void *)&lcd_attr, lcd_attr.head.block_cur_size);
+	/* handle lcd attr */
+	handle_lcd_basic(lcd_attr);
+	handle_lcd_timming(lcd_attr);
+	handle_lcd_customer(lcd_attr);
+	handle_lcd_interface(lcd_attr);
+	handle_lcd_pwr(lcd_attr);
+	handle_lcd_header(lcd_attr);
+
+	lcd_size = lcd_attr->head.block_cur_size;
+	memcpy((void *)lcd_buf, (void *)lcd_attr, lcd_attr->head.block_cur_size);
 	/* handle lcd_v2 attr*/
-	if (lcd_attr.head.version == 2) {
-		handle_lcd_phy(&lcd_v2_attr);
-		handle_lcd_ctrl(&lcd_v2_attr);
-		handle_lcd_v2_header(&lcd_v2_attr);
-		lcd_size += lcd_v2_attr.head.block_cur_size;
-		memcpy((void *)(lcd_buf + lcd_attr.head.block_cur_size),
-			(void *)&lcd_v2_attr, lcd_v2_attr.head.block_cur_size);
+	if (lcd_attr->head.version == 2) {
+		handle_lcd_phy(lcd_v2_attr);
+		handle_lcd_cus_ctrl(lcd_v2_attr);
+		handle_lcd_v2_header(lcd_v2_attr);
+		lcd_size += lcd_v2_attr->head.block_cur_size;
+		memcpy((void *)(lcd_buf + lcd_attr->head.block_cur_size),
+			(void *)lcd_v2_attr, lcd_v2_attr->head.block_cur_size);
 	}
 
 	header = (struct lcd_header_s *)lcd_buf;
@@ -2997,12 +3080,12 @@ static int parse_panel_ini(const char *file_name, unsigned char *lcd_buf,
 	if (model_debug_flag & DEBUG_LCD) {
 		ALOGD("%s: data_len=%d, glcd_dcnt=%d, block1_size=%d, block2_size=%d\n",
 			__func__, header->data_len, glcd_dcnt,
-			lcd_attr.head.block_cur_size,
-			lcd_v2_attr.head.block_cur_size);
+			lcd_attr->head.block_cur_size,
+			lcd_v2_attr->head.block_cur_size);
 	}
 
-	if (lcd_attr.basic.lcd_type == LCD_MLVDS ||
-	    lcd_attr.basic.lcd_type == LCD_P2P)
+	if (g_lcd_if == LCD_MLVDS ||
+	    g_lcd_if == LCD_P2P)
 		g_lcd_tcon_valid = 1;
 	else
 		g_lcd_tcon_valid = 0;
@@ -3060,8 +3143,12 @@ static int parse_panel_ini(const char *file_name, unsigned char *lcd_buf,
 	handle_lcd_optical_attr(optical_attr);
 	handle_lcd_optical_header(optical_attr);
 
-	IniParserUninit();
+	ini_parser_uninit();
 
+	memset(lcd_v2_attr, 0, sizeof(struct lcd_v2_attr_s));
+	free(lcd_v2_attr);
+	memset(lcd_attr, 0, sizeof(struct lcd_attr_s));
+	free(lcd_attr);
 	return 0;
 }
 
@@ -3069,18 +3156,18 @@ int handle_read_bin_file(const char *file_name, unsigned long max_len)
 {
 	int size;
 
-	BinFileInit();
+	bin_file_init();
 
-	size = ReadBinFile(file_name);
+	size = read_bin_file(file_name);
 	if (size < 0) {
 		ALOGE("%s, load bin file error!\n", __func__);
-		BinFileUninit();
+		bin_file_uninit();
 		return 0;
 	}
 
 	if (size > max_len) {
 		ALOGE("%s, bin file size out of support!\n", __func__);
-		BinFileUninit();
+		bin_file_uninit();
 		return 0;
 	}
 
@@ -3093,26 +3180,26 @@ static int handle_read_bin_file_with_header(const char *file_name, unsigned long
 	unsigned char buf[16];
 	int bin_size, data_size = 0;
 
-	BinFileInit();
+	bin_file_init();
 
-	bin_size = ReadBinFile(file_name);
+	bin_size = read_bin_file(file_name);
 	if (bin_size < 64) {
 		ALOGE("%s, load bin file error!\n", __func__);
-		BinFileUninit();
+		bin_file_uninit();
 		return 0;
 	}
 
-	GetBinData(buf, 16);
+	get_bin_data(buf, 16);
 	data_size = (buf[8] | (buf[9] << 8) |
 		     (buf[10] << 16) | (buf[11] << 24));
 	if ((data_size > bin_size) || (data_size < 64)) {
 		ALOGE("%s, bin file size less than expectation!\n", __func__);
-		BinFileUninit();
+		bin_file_uninit();
 		return 0;
 	}
 	if (data_size > max_len) {
 		ALOGE("%s, bin file size out of support!\n", __func__);
-		BinFileUninit();
+		bin_file_uninit();
 		return 0;
 	}
 
@@ -3156,13 +3243,6 @@ static int handle_tcon_bin(void)
 	// start handle tcon bin name
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s: model_tcon: %s\n", __func__, file_name);
-	if (!iniIsFileExist(file_name)) {
-		ALOGE("%s, file name \"%s\" not exist.\n", __func__, file_name);
-		free(tmp_buf);
-		tmp_buf = NULL;
-		return -1;
-	}
-
 	if (header)
 		size = handle_read_bin_file_with_header(file_name, CC_MAX_TCON_BIN_SIZE);
 	else
@@ -3173,7 +3253,7 @@ static int handle_tcon_bin(void)
 		return -1;
 	}
 
-	GetBinData(tmp_buf, size);
+	get_bin_data(tmp_buf, size);
 	if (header) {
 		data_crc32 = tmp_buf[0] | (tmp_buf[1] << 8) |
 			(tmp_buf[2] << 16) | (tmp_buf[3] << 24);
@@ -3190,10 +3270,10 @@ static int handle_tcon_bin(void)
 			return -1;
 		}
 		if (model_debug_flag & DEBUG_TCON)
-			ALOGD("%s: load tcon bin with header\n", __func__);
+			ALOGD("%s: load tcon bin with header, size:0x%x\n", __func__, size);
 	} else {
 		if (model_debug_flag & DEBUG_TCON)
-			ALOGD("%s: load tcon bin\n", __func__);
+			ALOGD("%s: load tcon bin, size:0x%x\n", __func__, size);
 	}
 
 	gLcdTconDataCnt = size;
@@ -3205,20 +3285,18 @@ static int handle_tcon_bin(void)
 		return -1;
 	}
 	memcpy(tcon_buf, tmp_buf, size);
-	if (model_debug_flag & DEBUG_TCON)
-		ALOGD("%s: bin_size=0x%x\n", __func__, size);
 
-	BinFileUninit();
+	bin_file_uninit();
 
 	// start handle lcd_tcon param
 	memset((void *)tmp_buf, 0, CC_MAX_TCON_BIN_SIZE);
-	tmp_len = ReadTconBinParam(tmp_buf);
+	tmp_len = read_tcon_bin_param(tmp_buf);
 	//ALOGD("%s, start check lcd_tcon param data (0x%x).\n", __func__, tmp_len);
 	if (check_param_valid(1, gLcdTconDataCnt, tcon_buf, tmp_len, tmp_buf) ==
 		CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM) {
-		ALOGD("%s, check tcon bin data error (0x%x), save tcon bin data.\n",
+		ALOGD("%s, check tcon bin data diff (0x%x), save tcon bin data.\n",
 			__func__, tmp_len);
-		SaveTconBinParam(gLcdTconDataCnt, tcon_buf);
+		save_tcon_bin_param(gLcdTconDataCnt, tcon_buf);
 	}
 	// end handle lcd_tcon param
 
@@ -3264,7 +3342,7 @@ static int handle_tcon_ext_pmu_data(int index, int flag, unsigned char *buf,
 			if (model_debug_flag & DEBUG_NORMAL)
 				ALOGD("%s: no %s path\n", __func__, str[i]);
 		} else {
-			if (iniIsFileExist(file_name)) {
+			if (ini_is_file_exist(file_name)) {
 				if (model_debug_flag & DEBUG_NORMAL)
 					ALOGD("%s: %s: %s\n", __func__, str[i], file_name);
 				file_find = 1;
@@ -3295,13 +3373,13 @@ static int handle_tcon_ext_pmu_data(int index, int flag, unsigned char *buf,
 	case 1:
 	case 4:
 		buf[0] = data_size;
-		GetBinData(&buf[1], data_size);
+		get_bin_data(&buf[1], data_size);
 		break;
 	case 2: /* data with reg addr auto fill */
 	case 5:
 		buf[0] = (data_size + 1); /* data size include reg start */
 		buf[1] = 0x00;            /* reg start */
-		GetBinData(&buf[2], data_size);
+		get_bin_data(&buf[2], data_size);
 		break;
 	case 3:
 	case 6:
@@ -3319,7 +3397,7 @@ static int handle_tcon_ext_pmu_data(int index, int flag, unsigned char *buf,
 		}
 		buf[0] = data_len;
 		buf[1] = offset;
-		GetBinData(bin_buf, data_size);
+		get_bin_data(bin_buf, data_size);
 		memcpy(&buf[2], &bin_buf[offset], data_len - 1);
 		free(bin_buf);
 		break;
@@ -3337,7 +3415,7 @@ static int handle_tcon_ext_pmu_data(int index, int flag, unsigned char *buf,
 	if (model_debug_flag & DEBUG_NORMAL)
 		ALOGD("%s %s finish\n", __func__, str[i]);
 
-	BinFileUninit();
+	bin_file_uninit();
 
 	return 0;
 }
@@ -3361,21 +3439,16 @@ int handle_tcon_vac(unsigned char *vac_data, unsigned int vac_mem_size)
 
 	if (model_debug_flag & DEBUG_NORMAL)
 		ALOGD("%s: model_tcon_vac: %s\n", __func__, file_name);
-	if (!iniIsFileExist(file_name)) {
-		ALOGE("%s, file name \"%s\" not exist.\n", __func__, file_name);
-		return -1;
-	}
-
 	if ((vac_data == NULL) || (!vac_mem_size)) {
 		ALOGE("%s, buffer memory or data size error!!!\n", __func__);
 		return -1;
 	}
 
-	IniParserInit();
+	ini_parser_init();
 
-	if (IniParseFile(file_name) < 0) {
+	if (ini_parse_file(file_name) < 0) {
 		ALOGE("%s, ini load file error!\n", __func__);
-		IniParserUninit();
+		ini_parser_uninit();
 		free(vac_data);
 		vac_data = NULL;
 		return -1;
@@ -3386,7 +3459,7 @@ int handle_tcon_vac(unsigned char *vac_data, unsigned int vac_mem_size)
 	n = 8;
 	len = TCON_VAC_SET_PARAM_NUM;
 
-	ini_value = IniGetString("lcd_tcon_vac", "vac_set", "null");
+	ini_value = ini_get_string("lcd_tcon_vac", "vac_set", "null");
 	tmp_cnt = trans_buffer_data(ini_value, tmp_buf);
 	data_cnt = tmp_cnt;
 
@@ -3411,7 +3484,7 @@ int handle_tcon_vac(unsigned char *vac_data, unsigned int vac_mem_size)
 
 	len = TCON_VAC_LUT_PARAM_NUM;
 
-	ini_value = IniGetString("lcd_tcon_vac", "vac_ramt1", "null");
+	ini_value = ini_get_string("lcd_tcon_vac", "vac_ramt1", "null");
 		tmp_cnt = trans_buffer_data(ini_value, tmp_buf);
 	data_cnt += tmp_cnt;
 	if ((tmp_cnt > CC_MAX_TCON_VAC_SIZE) || (tmp_cnt < len)) {
@@ -3434,7 +3507,7 @@ int handle_tcon_vac(unsigned char *vac_data, unsigned int vac_mem_size)
 		}
 	}
 
-	ini_value = IniGetString("lcd_tcon_vac", "vac_ramt2", "null");
+	ini_value = ini_get_string("lcd_tcon_vac", "vac_ramt2", "null");
 		tmp_cnt = trans_buffer_data(ini_value, tmp_buf);
 	data_cnt += tmp_cnt;
 	if ((tmp_cnt > CC_MAX_TCON_VAC_SIZE) || (tmp_cnt < len)) {
@@ -3457,7 +3530,7 @@ int handle_tcon_vac(unsigned char *vac_data, unsigned int vac_mem_size)
 		}
 	}
 
-	ini_value = IniGetString("lcd_tcon_vac", "vac_ramt3_1", "null");
+	ini_value = ini_get_string("lcd_tcon_vac", "vac_ramt3_1", "null");
 	tmp_cnt = trans_buffer_data(ini_value, tmp_buf);
 	data_cnt += tmp_cnt;
 	if ((tmp_cnt > CC_MAX_TCON_VAC_SIZE) || (tmp_cnt < len)) {
@@ -3480,7 +3553,7 @@ int handle_tcon_vac(unsigned char *vac_data, unsigned int vac_mem_size)
 		}
 	}
 
-	ini_value = IniGetString("lcd_tcon_vac", "vac_ramt3_2", "null");
+	ini_value = ini_get_string("lcd_tcon_vac", "vac_ramt3_2", "null");
 	tmp_cnt = trans_buffer_data(ini_value, tmp_buf);
 	data_cnt += tmp_cnt;
 	if ((tmp_cnt > CC_MAX_TCON_VAC_SIZE) || (tmp_cnt < len)) {
@@ -3503,7 +3576,7 @@ int handle_tcon_vac(unsigned char *vac_data, unsigned int vac_mem_size)
 		}
 	}
 
-	ini_value = IniGetString("lcd_tcon_vac", "vac_ramt3_3", "null");
+	ini_value = ini_get_string("lcd_tcon_vac", "vac_ramt3_3", "null");
 	tmp_cnt = trans_buffer_data(ini_value, tmp_buf);
 	data_cnt += tmp_cnt;
 	if ((data_cnt > CC_MAX_TCON_VAC_SIZE) || (tmp_cnt < len)) {
@@ -3525,7 +3598,7 @@ int handle_tcon_vac(unsigned char *vac_data, unsigned int vac_mem_size)
 		}
 	}
 
-	ini_value = IniGetString("lcd_tcon_vac", "vac_ramt3_4", "null");
+	ini_value = ini_get_string("lcd_tcon_vac", "vac_ramt3_4", "null");
 	tmp_cnt = trans_buffer_data(ini_value, tmp_buf);
 	data_cnt += tmp_cnt;
 	if ((tmp_cnt > CC_MAX_TCON_VAC_SIZE) || (tmp_cnt < len)) {
@@ -3548,7 +3621,7 @@ int handle_tcon_vac(unsigned char *vac_data, unsigned int vac_mem_size)
 		}
 	}
 
-	ini_value = IniGetString("lcd_tcon_vac", "vac_ramt3_5", "null");
+	ini_value = ini_get_string("lcd_tcon_vac", "vac_ramt3_5", "null");
 	tmp_cnt = trans_buffer_data(ini_value, tmp_buf);
 	data_cnt += tmp_cnt;
 	if ((tmp_cnt > CC_MAX_TCON_VAC_SIZE) || (tmp_cnt < len)) {
@@ -3570,7 +3643,7 @@ int handle_tcon_vac(unsigned char *vac_data, unsigned int vac_mem_size)
 		}
 	}
 
-	ini_value = IniGetString("lcd_tcon_vac", "vac_ramt3_6", "null");
+	ini_value = ini_get_string("lcd_tcon_vac", "vac_ramt3_6", "null");
 	tmp_cnt = trans_buffer_data(ini_value, tmp_buf);
 	data_cnt += tmp_cnt;
 	if ((tmp_cnt > CC_MAX_TCON_VAC_SIZE) || (tmp_cnt < len)) {
@@ -3609,7 +3682,7 @@ int handle_tcon_vac(unsigned char *vac_data, unsigned int vac_mem_size)
 	if (model_debug_flag & DEBUG_NORMAL)
 		ALOGD("%s finish\n", __func__);
 
-	IniParserUninit();
+	ini_parser_uninit();
 	return 0;
 }
 
@@ -3634,11 +3707,6 @@ int handle_tcon_demura_set(unsigned char *demura_set_data,
 
 	if (model_debug_flag & DEBUG_NORMAL)
 		ALOGD("%s: model_tcon_demura_set: %s\n", __func__, file_name);
-	if (!iniIsFileExist(file_name)) {
-		ALOGE("%s, file name \"%s\" not exist.\n", __func__, file_name);
-		return -1;
-	}
-
 	bin_size = handle_read_bin_file(file_name, CC_MAX_TCON_DEMURA_SET_SIZE);
 	if (!bin_size || (bin_size > demura_set_size)) {
 		ALOGE("%s, bin_size 0x%lx error!(memory_size 0x%x)\n",
@@ -3647,7 +3715,7 @@ int handle_tcon_demura_set(unsigned char *demura_set_data,
 	}
 
 	n = 8;
-	GetBinData(&demura_set_data[n], bin_size);
+	get_bin_data(&demura_set_data[n], bin_size);
 
 	demura_set_data[0] = bin_size & 0xff;
 	demura_set_data[1] = (bin_size >> 8) & 0xff;
@@ -3662,7 +3730,7 @@ int handle_tcon_demura_set(unsigned char *demura_set_data,
 	if (model_debug_flag & DEBUG_NORMAL)
 		ALOGD("%s finish\n", __func__);
 
-	BinFileUninit();
+	bin_file_uninit();
 
 	return 0;
 }
@@ -3688,11 +3756,6 @@ int handle_tcon_demura_lut(unsigned char *demura_lut_data,
 
 	if (model_debug_flag & DEBUG_NORMAL)
 		ALOGD("%s: model_tcon_demura_lut: %s\n", __func__, file_name);
-	if (!iniIsFileExist(file_name)) {
-		ALOGE("%s, file name \"%s\" not exist.\n", __func__, file_name);
-		return -1;
-	}
-
 	bin_size = handle_read_bin_file(file_name, CC_MAX_TCON_DEMURA_LUT_SIZE);
 	if (!bin_size || (bin_size > demura_lut_size)) {
 		ALOGE("%s, bin_size 0x%lx error!(memory_size 0x%x)\n",
@@ -3701,7 +3764,7 @@ int handle_tcon_demura_lut(unsigned char *demura_lut_data,
 	}
 
 	n = 8;
-	GetBinData(&demura_lut_data[n], bin_size);
+	get_bin_data(&demura_lut_data[n], bin_size);
 
 	demura_lut_data[0] = bin_size & 0xff;
 	demura_lut_data[1] = (bin_size >> 8) & 0xff;
@@ -3716,7 +3779,7 @@ int handle_tcon_demura_lut(unsigned char *demura_lut_data,
 	if (model_debug_flag)
 		ALOGD("%s finish, bin_size = 0x%lx\n", __func__, bin_size);
 
-	BinFileUninit();
+	bin_file_uninit();
 
 	return 0;
 }
@@ -3739,14 +3802,8 @@ int handle_tcon_acc_lut(unsigned char *acc_lut_data, unsigned int acc_lut_size)
 		return -1;
 	}
 
-	if (!iniIsFileExist(file_name)) {
-		ALOGE("%s, model_tcon_acc_lut file name \"%s\" not exist.\n",
-			__func__, file_name);
-		return -1;
-	}
 	if (model_debug_flag & DEBUG_NORMAL)
 		ALOGD("%s: model_tcon_acc_lut: %s\n", __func__, file_name);
-
 	bin_size = handle_read_bin_file(file_name, CC_MAX_TCON_ACC_LUT_SIZE);
 	if (!bin_size || (bin_size > acc_lut_size)) {
 		ALOGE("%s, bin_size 0x%lx error!(memory_size 0x%x)\n",
@@ -3755,7 +3812,7 @@ int handle_tcon_acc_lut(unsigned char *acc_lut_data, unsigned int acc_lut_size)
 	}
 
 	n = 8;
-	GetBinData(&acc_lut_data[n], bin_size);
+	get_bin_data(&acc_lut_data[n], bin_size);
 
 	acc_lut_data[0] = bin_size & 0xff;
 	acc_lut_data[1] = (bin_size >> 8) & 0xff;
@@ -3770,7 +3827,7 @@ int handle_tcon_acc_lut(unsigned char *acc_lut_data, unsigned int acc_lut_size)
 	if (model_debug_flag)
 		ALOGD("%s finish, bin_size = 0x%lx\n", __func__, bin_size);
 
-	BinFileUninit();
+	bin_file_uninit();
 
 	return 0;
 }
@@ -3791,11 +3848,7 @@ int handle_tcon_data_load(unsigned char **buf, unsigned int index)
 	file_name = handle_tcon_path_file_name_get(index);
 	if (!file_name)
 		return -1;
-	if (!iniIsFileExist(file_name)) {
-		ALOGE("%s, tcon_data[%d] file name \"%s\" not exist.\n",
-			__func__, index, file_name);
-		return -1;
-	}
+
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s: tcon_data[%d] file name: %s\n", __func__, index, file_name);
 
@@ -3829,7 +3882,7 @@ int handle_tcon_data_load(unsigned char **buf, unsigned int index)
 	buf[index] = data_buf;
 
 handle_tcon_data_load_next:
-	GetBinData(data_buf, bin_size);
+	get_bin_data(data_buf, bin_size);
 	data_size = data_buf[8] |
 		(data_buf[9] << 8) |
 		(data_buf[10] << 16) |
@@ -3863,7 +3916,7 @@ handle_tcon_data_load_next:
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s %d finish, bin_size = 0x%lx\n", __func__, index, bin_size);
 
-	BinFileUninit();
+	bin_file_uninit();
 
 	return 0;
 }
@@ -3882,10 +3935,6 @@ int handle_ldim_dev_zone_mapping_get(unsigned char *buf, unsigned int size,
 		ALOGE("%s, buf is null\n", __func__);
 		return -1;
 	}
-	if (!iniIsFileExist(path)) {
-		ALOGE("%s, file name \"%s\" not exist.\n", __func__, path);
-		return -1;
-	}
 
 	bin_size = handle_read_bin_file(path, CC_MAX_LDIM_DEV_ZONE_MAP_SIZE);
 	if (bin_size == 0)
@@ -3896,7 +3945,7 @@ int handle_ldim_dev_zone_mapping_get(unsigned char *buf, unsigned int size,
 		return -1;
 	}
 
-	GetBinData(buf, size);
+	get_bin_data(buf, size);
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s: load ldim zone_mapping bin\n", __func__);
 
@@ -3909,8 +3958,8 @@ int handle_panel_ini(int index)
 	int tmp_len = 0;
 	unsigned char *tmp_buf = NULL;
 	unsigned char *lcd_buf = NULL;
-	struct bl_attr_s bl_attr;
-	struct ldim_dev_attr_s ldim_dev_attr;
+	struct bl_attr_s *bl_attr = NULL;
+	struct ldim_dev_attr_s *ldim_dev_attr = NULL;
 	struct panel_misc_s misc_attr;
 	unsigned char *tcon_spi = NULL;
 	struct lcd_optical_attr_s *optical_attr = NULL;
@@ -3940,46 +3989,58 @@ int handle_panel_ini(int index)
 		ALOGE("%s, malloc buffer memory error!!!\n", __func__);
 		return -1;
 	}
+	memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
+
 	lcd_buf = (unsigned char *)malloc(CC_MAX_DATA_SIZE);
 	if (!lcd_buf) {
 		ALOGE("%s, malloc buffer memory error!!!\n", __func__);
-		free(tmp_buf);
-		return -1;
+		goto handle_panel_ini_err0;
 	}
+	memset((void *)lcd_buf, 0, CC_MAX_DATA_SIZE);
 
 	if (!lcd_ext_attr) {
-		lcd_ext_attr = (struct lcd_ext_attr_s *) malloc(sizeof(struct lcd_ext_attr_s));
+		lcd_ext_attr = (struct lcd_ext_attr_s *)malloc(sizeof(struct lcd_ext_attr_s));
 		if (!lcd_ext_attr) {
 			ALOGE("%s, malloc buffer memory error!!!\n", __func__);
 			goto handle_panel_ini_err1;
 		}
 	}
+	memset((void *)lcd_ext_attr, 0, sizeof(struct lcd_ext_attr_s));
 
-#ifdef CONFIG_AML_LCD_TCON
-	tcon_spi = (unsigned char *) malloc(CC_MAX_TCON_SPI_SIZE);
-	if (!tcon_spi) {
+	bl_attr = (struct bl_attr_s *)malloc(sizeof(struct bl_attr_s));
+	if (!bl_attr) {
 		ALOGE("%s, malloc buffer memory error!!!\n", __func__);
 		goto handle_panel_ini_err1;
 	}
+	memset((void *)bl_attr, 0, sizeof(struct bl_attr_s));
+
+#ifdef CONFIG_AML_LCD_BL_LDIM
+	ldim_dev_attr = (struct ldim_dev_attr_s *)malloc(sizeof(struct ldim_dev_attr_s));
+	if (!ldim_dev_attr) {
+		ALOGE("%s, malloc buffer memory error!!!\n", __func__);
+		goto handle_panel_ini_err2;
+	}
+	memset((void *)ldim_dev_attr, 0, sizeof(struct ldim_dev_attr_s));
+#endif
+
+#ifdef CONFIG_AML_LCD_TCON
+	tcon_spi = (unsigned char *)malloc(CC_MAX_TCON_SPI_SIZE);
+	if (!tcon_spi) {
+		ALOGE("%s, malloc buffer memory error!!!\n", __func__);
+		goto handle_panel_ini_err3;
+	}
+	memset(tcon_spi, 0, CC_MAX_TCON_SPI_SIZE);
 #endif
 
 	optical_attr = (struct lcd_optical_attr_s *)malloc(sizeof(struct lcd_optical_attr_s));
 	if (!optical_attr) {
 		ALOGE("%s, malloc buffer memory error!!!\n", __func__);
-		goto handle_panel_ini_err2;
+		goto handle_panel_ini_err4;
 	}
-
-	memset((void *)lcd_buf, 0, CC_MAX_DATA_SIZE);
-	memset((void *)lcd_ext_attr, 0, sizeof(struct lcd_ext_attr_s));
-	memset((void *)&bl_attr, 0, sizeof(struct bl_attr_s));
-	memset((void *)&ldim_dev_attr, 0, sizeof(struct ldim_dev_attr_s));
-	memset((void *)&misc_attr, 0, sizeof(struct panel_misc_s));
 	memset((void *)optical_attr, 0, sizeof(struct lcd_optical_attr_s));
-#ifdef CONFIG_AML_LCD_TCON
-	memset(tcon_spi, 0, CC_MAX_TCON_SPI_SIZE);
-#endif
 
 	//init misc attr as default
+	memset((void *)&misc_attr, 0, sizeof(struct panel_misc_s));
 	strcpy(misc_attr.version, "V001");
 	strcpy(misc_attr.outputmode, "1080p60hz");
 	misc_attr.panel_reverse = 0;
@@ -3987,17 +4048,12 @@ int handle_panel_ini(int index)
 	// start handle panel ini name
 	if (model_debug_flag & DEBUG_NORMAL)
 		ALOGD("%s: %s: %s\n", __func__, str, file_name);
-	if (!iniIsFileExist(file_name)) {
-		ALOGE("%s, file name \"%s\" not exist.\n", __func__, file_name);
-		goto handle_panel_ini_err3;
-	}
-
 	if (parse_panel_ini(file_name, lcd_buf, lcd_ext_attr,
-		&bl_attr, &ldim_dev_attr, &misc_attr,
+		bl_attr, ldim_dev_attr, &misc_attr,
 		tcon_spi, optical_attr) < 0) {
 		ALOGE("%s, parse_panel_ini file name \"%s\" fail.\n",
 		      __func__, file_name);
-		goto handle_panel_ini_err3;
+		goto handle_panel_ini_err5;
 	}
 
 	// start handle lcd param
@@ -4028,11 +4084,11 @@ int handle_panel_ini(int index)
 	memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
 	tmp_len = read_backlight_param(index, tmp_buf);
 	//ALOGD("%s, start check backlight param data (0x%x).\n", __func__, tmp_len);
-	if (check_param_valid(0, gbl_dcnt, (unsigned char *)&bl_attr, tmp_len, tmp_buf) ==
+	if (check_param_valid(0, gbl_dcnt, (unsigned char *)bl_attr, tmp_len, tmp_buf) ==
 	    CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM) {
 		ALOGD("%s, check backlight param data diff (0x%x), save new param.\n",
 		      __func__, tmp_len);
-		save_backlight_param(index, gbl_dcnt, (unsigned char *)&bl_attr);
+		save_backlight_param(index, gbl_dcnt, (unsigned char *)bl_attr);
 	}
 	// end handle backlight param
 
@@ -4042,11 +4098,11 @@ int handle_panel_ini(int index)
 		memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
 		tmp_len = read_ldim_dev_param(tmp_buf);
 		//ALOGD("%s, start check ldim_dev param data (0x%x).\n", __func__, tmp_len);
-		if (check_param_valid(0, gldim_dev_dcnt, (unsigned char *)&ldim_dev_attr,
+		if (check_param_valid(0, gldim_dev_dcnt, (unsigned char *)ldim_dev_attr,
 			tmp_len, tmp_buf) == CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM) {
 			ALOGD("%s, check ldim_dev param data diff (0x%x), save new param.\n",
 			      __func__, tmp_len);
-			save_ldim_dev_param(gldim_dev_dcnt, (unsigned char *)&ldim_dev_attr);
+			save_ldim_dev_param(gldim_dev_dcnt, (unsigned char *)ldim_dev_attr);
 		}
 	}
 	// end handle ldim_dev param
@@ -4056,13 +4112,13 @@ int handle_panel_ini(int index)
 	// start handle lcd_tcon_spi param
 	if (gLcdTconSpi_cnt) {
 		memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
-		tmp_len = ReadTconSpiParam(tmp_buf);
+		tmp_len = read_tcon_spi_param(tmp_buf);
 		//ALOGD("%s, start check lcd_tcon_spi param data (0x%x).\n", __func__, tmp_len);
 		if (check_param_valid(0, gLcdTconSpi_cnt, tcon_spi, tmp_len, tmp_buf) ==
 		    CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM) {
 			ALOGD("%s, check lcd_tcon_spi param data diff (0x%x), save new param.\n",
 			      __func__, tmp_len);
-			SaveTconSpiParam(gLcdTconSpi_cnt, tcon_spi);
+			save_tcon_spi_param(gLcdTconSpi_cnt, tcon_spi);
 		}
 	}
 	// end handle lcd_tcon_spi param
@@ -4071,27 +4127,34 @@ int handle_panel_ini(int index)
 	// start handle lcd_optical param
 	if (glcd_optical_dcnt) {
 		memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
-		tmp_len = ReadLcdOpticalParam(index, tmp_buf);
+		tmp_len = read_lcd_optical_param(index, tmp_buf);
 		//ALOGD("%s, start check lcd_tcon_spi param data (0x%x).\n", __func__, tmp_len);
 		if (check_param_valid(0, glcd_optical_dcnt, (unsigned char *)optical_attr,
-				     tmp_len, tmp_buf) ==
-		    CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM) {
+			tmp_len, tmp_buf) == CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM) {
 			ALOGD("%s, check lcd_optical param data diff (0x%x), save new param.\n",
 			      __func__, tmp_len);
-			SaveLcdOpticalParam(index, glcd_optical_dcnt,
+			save_lcd_optical_param(index, glcd_optical_dcnt,
 				(unsigned char *)optical_attr);
 		}
 	}
 	// end handle lcd_optical param
 
+	memset((void *)optical_attr, 0, sizeof(struct lcd_optical_attr_s));
 	free(optical_attr);
-	optical_attr = NULL;
+#ifdef CONFIG_AML_LCD_TCON
+	memset(tcon_spi, 0, CC_MAX_TCON_SPI_SIZE);
 	free(tcon_spi);
-	tcon_spi = NULL;
-	free(tmp_buf);
-	tmp_buf = NULL;
+#endif
+#ifdef CONFIG_AML_LCD_BL_LDIM
+	memset((void *)ldim_dev_attr, 0, sizeof(struct ldim_dev_attr_s));
+	free(ldim_dev_attr);
+#endif
+	memset((void *)bl_attr, 0, sizeof(struct bl_attr_s));
+	free(bl_attr);
+	memset((void *)lcd_buf, 0, CC_MAX_DATA_SIZE);
 	free(lcd_buf);
-	lcd_buf = NULL;
+	memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
+	free(tmp_buf);
 
 #ifdef CONFIG_AML_LCD_TCON
 	if (g_lcd_tcon_valid)
@@ -4100,17 +4163,28 @@ int handle_panel_ini(int index)
 
 	return 0;
 
-handle_panel_ini_err3:
+handle_panel_ini_err5:
+	memset((void *)optical_attr, 0, sizeof(struct lcd_optical_attr_s));
 	free(optical_attr);
-	optical_attr = NULL;
-handle_panel_ini_err2:
+handle_panel_ini_err4:
+#ifdef CONFIG_AML_LCD_TCON
+	memset(tcon_spi, 0, CC_MAX_TCON_SPI_SIZE);
 	free(tcon_spi);
-	tcon_spi = NULL;
+handle_panel_ini_err3:
+#endif
+#ifdef CONFIG_AML_LCD_BL_LDIM
+	memset((void *)ldim_dev_attr, 0, sizeof(struct ldim_dev_attr_s));
+	free(ldim_dev_attr);
+handle_panel_ini_err2:
+#endif
+	memset((void *)bl_attr, 0, sizeof(struct bl_attr_s));
+	free(bl_attr);
 handle_panel_ini_err1:
-	free(tmp_buf);
-	tmp_buf = NULL;
+	memset((void *)lcd_buf, 0, CC_MAX_DATA_SIZE);
 	free(lcd_buf);
-	lcd_buf = NULL;
+handle_panel_ini_err0:
+	memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
+	free(tmp_buf);
 
 	return -1;
 }
@@ -4137,11 +4211,11 @@ int parse_model_sum(int index, const char *file_name, char *model_name)
 	char str[15];
 #endif
 
-	IniParserInit();
+	ini_parser_init();
 
-	if (IniParseFile(file_name) < 0) {
+	if (ini_parse_file(file_name) < 0) {
 		ALOGE("%s, ini load file error!\n", __func__);
-		IniParserUninit();
+		ini_parser_uninit();
 		return -1;
 	}
 
@@ -4151,28 +4225,28 @@ int parse_model_sum(int index, const char *file_name, char *model_name)
 	else
 		sprintf(str, "model%d_panel", index);
 
-	ini_value = IniGetString(model_name, "PANELINI_PATH", "null");
+	ini_value = ini_get_string(model_name, "PANELINI_PATH", "null");
 	if (strcmp(ini_value, "null") != 0)
 		env_set(str, ini_value);
 	else
 		ALOGE("%s, invalid PANELINI_PATH!!!\n", __func__);
 #endif
 
-	ini_value = IniGetString(model_name, "EDID_14_FILE_PATH", "null");
+	ini_value = ini_get_string(model_name, "EDID_14_FILE_PATH", "null");
 	if (strcmp(ini_value, "null") != 0)
 		env_set("model_edid", ini_value);
 	else
 		ALOGD("%s, invalid EDID_14_FILE_PATH!!!\n", __func__);
 	/*
-	ini_value = IniGetString(model_name, "PQINI_PATH", "null");
+	ini_value = ini_get_string(model_name, "PQINI_PATH", "null");
 	if (strcmp(ini_value, "null") != 0)
 		env_set("model_pq", ini_value);
 
-	ini_value = IniGetString(model_name, "AMLOGIC_AUDIO_EFFECT_INI_PATH", "null");
+	ini_value = ini_get_string(model_name, "AMLOGIC_AUDIO_EFFECT_INI_PATH", "null");
 	if (strcmp(ini_value, "null") != 0)
 		env_set("model_audio", ini_value);
 	*/
-	IniParserUninit();
+	ini_parser_uninit();
 
 	return 0;
 }
@@ -4189,9 +4263,19 @@ const char *get_model_sum_path(int index)
 	model_path = env_get(str);
 	if (model_path == NULL) {
 		if (dynamic_partition) {
-			return DEFAULT_MODEL_SUM_PATH2;
+			if (index == 2)
+				return DEFAULT_MODEL2_SUM_PATH2;
+			else if (index == 1)
+				return DEFAULT_MODEL1_SUM_PATH2;
+			else
+				return DEFAULT_MODEL_SUM_PATH2;
 		} else {
-			return DEFAULT_MODEL_SUM_PATH1;
+			if (index == 2)
+				return DEFAULT_MODEL2_SUM_PATH1;
+			else if (index == 1)
+				return DEFAULT_MODEL1_SUM_PATH1;
+			else
+				return DEFAULT_MODEL_SUM_PATH1;
 		}
 	}
 
@@ -4221,19 +4305,19 @@ int handle_model_list(void)
 		model_list_panel_path(i);
 #endif
 
-		IniParserInit();
+		ini_parser_init();
 
-		if (IniParseFile(get_model_sum_path(i)) < 0) {
+		if (ini_parse_file(get_model_sum_path(i)) < 0) {
 			ALOGE("%s, ini load file error!\n", __func__);
-			IniParserUninit();
+			ini_parser_uninit();
 			return -1;
 		}
 
 		printf("%s list:\n", str);
-		IniListSection();
+		ini_list_section();
 		printf("\n");
 
-		IniParserUninit();
+		ini_parser_uninit();
 	}
 
 	return 0;

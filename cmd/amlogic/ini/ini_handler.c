@@ -16,104 +16,95 @@
 
 static void trim(char *str, char ch);
 static void trim_all(char *str);
-static INI_SECTION* getSection(const char* section, INI_HANDLER_DATA *pHandlerData);
-static INI_LINE* getKeyLineAtSec(INI_SECTION* pSec, const char* key);
-static int setKeyValue(void* user, const char* section, const char* name, const char* value, int set_mode);
-static int handler(void* user, const char* section, const char* name, const char* value);
-static INI_LINE* newLine(const char* name, const char* value);
-static INI_SECTION* newSection(const char* section, INI_LINE* pLINE);
+static INI_SECTION *_get_section(const char *section, INI_HANDLER_DATA *pHandlerData);
+static INI_LINE *get_key_line_at_sec(INI_SECTION *pSec, const char *key);
+static int set_key_value(void *user, const char *section, const char *name,
+			 const char *value, int set_mode);
+static int handler(void *user, const char *section, const char *name, const char *value);
+static INI_LINE *new_line(const char *name, const char *value);
+static INI_SECTION *new_section(const char *section, INI_LINE *pLINE);
 
 #if CC_MEMORY_ALLOC_FREE_TRACE == 1
 static void alloc_mem(const char *fun_name, const char *var_name, void *ptr);
 static void free_mem(const char *fun_name, const char *var_name, void *ptr);
-static void printAllocMemND(const char *fun_name);
-static void printFreeMemND(const char *fun_name);
-static void clearMemND(void);
+static void print_alloc_mem_nd(const char *fun_name);
+static void print_free_mem_nd(const char *fun_name);
+static void clear_mem_nd(void);
 #endif
 
-int bin_file_read(const char* filename, unsigned char *file_buf) {
-    int tmp_ret = -1, rd_cnt = 0, file_size = 0;
-    unsigned char *tmp_buf = NULL;
+int _bin_file_read(const char *filename, unsigned char *file_buf)
+{
+	int tmp_ret = -1, rd_cnt = 0, file_size = 0;
+	unsigned char *tmp_buf = NULL;
 
-    if (!iniIsFileExist(filename)) {
-        ALOGE("%s, file \"%s\" is not exist!\n", __FUNCTION__, filename);
-        return -1;
-    }
+	file_size = ini_get_file_size(filename);
+	if (file_size <= 0)
+		return -1;
 
-    file_size = iniGetFileSize(filename);
-    if (file_size <= 0) {
-        ALOGE("%s, file \"%s\" size error!\n", __FUNCTION__, filename);
-        return -1;
-    }
+	tmp_buf = (unsigned char *)malloc(file_size * 2);
+	if (tmp_buf != NULL) {
+		rd_cnt = ini_read_file_to_buffer(filename, 0, file_size, tmp_buf);
+		if (rd_cnt > 0) {
+			if (file_size > CC_MAX_INI_FILE_SIZE) {
+				ALOGE("%s: file \"%s\" size out of support!\n", __func__, filename);
+				tmp_ret = -1;
+			} else {
+				memcpy(file_buf, tmp_buf, file_size);
+				tmp_ret = file_size;
+			}
+		}
 
-    tmp_buf = (unsigned char *) malloc(file_size * 2);
-    if (tmp_buf != NULL) {
-        rd_cnt = iniReadFileToBuffer(filename, 0, file_size, tmp_buf);
-        if (rd_cnt > 0) {
-            if (file_size > CC_MAX_INI_FILE_SIZE) {
-                ALOGE("%s: file \"%s\" size out of support!\n", __FUNCTION__, filename);
-                tmp_ret = -1;
-            } else {
-                memcpy(file_buf, tmp_buf, file_size);
-                tmp_ret = file_size;
-            }
-        }
+		free(tmp_buf);
+		tmp_buf = NULL;
+	}
 
-        free(tmp_buf);
-        tmp_buf = NULL;
-    }
-
-    return tmp_ret;
+	return tmp_ret;
 }
 
-int ini_file_parse(const char* filename, INI_HANDLER_DATA *pHandlerData) {
-    int tmp_ret = -1, rd_cnt = 0, file_size = 0;
-    unsigned char *tmp_buf = NULL;
+int _ini_file_parse(const char *filename, INI_HANDLER_DATA *pHandlerData)
+{
+	int tmp_ret = -1, rd_cnt = 0, file_size = 0;
+	unsigned char *tmp_buf = NULL;
 
-    if (!iniIsFileExist(filename)) {
-        ALOGE("%s, file \"%s\" is not exist!\n", __FUNCTION__, filename);
-        return -1;
-    }
+	file_size = ini_get_file_size(filename);
+	if (file_size <= 0)
+		return -1;
 
-    file_size = iniGetFileSize(filename);
-    if (file_size <= 0) {
-        ALOGE("%s, file \"%s\" size error!\n", __FUNCTION__, filename);
-        return -1;
-    }
+	tmp_buf = (unsigned char *)malloc(file_size * 2);
+	if (tmp_buf != NULL) {
+		strncpy(pHandlerData->mpFileName, filename, CC_MAX_INI_FILE_NAME_LEN - 1);
 
-    tmp_buf = (unsigned char *) malloc(file_size * 2);
-    if (tmp_buf != NULL) {
-        strncpy(pHandlerData->mpFileName, filename, CC_MAX_INI_FILE_NAME_LEN - 1);
+		memset((void *)tmp_buf, '\0', (file_size * 2) * sizeof(char));
+		rd_cnt = ini_read_file_to_buffer(filename, 0, file_size, tmp_buf);
+		if (rd_cnt > 0)
+			tmp_ret = ini_mem_parse(tmp_buf, pHandlerData);
 
-        memset((void *)tmp_buf, '\0', (file_size * 2) * sizeof(char));
-        rd_cnt = iniReadFileToBuffer(filename, 0, file_size, tmp_buf);
-        if (rd_cnt > 0) {
-            tmp_ret = ini_mem_parse(tmp_buf, pHandlerData);
-        }
+		free(tmp_buf);
+		tmp_buf = NULL;
+	}
 
-        free(tmp_buf);
-        tmp_buf = NULL;
-    }
-
-    return tmp_ret;
+	return tmp_ret;
 }
 
-int ini_mem_parse(unsigned char* file_buf, INI_HANDLER_DATA *pHandlerData) {
-    //ALOGD("%s, entering...\n", __FUNCTION__);
-    return ini_parse_mem((char *)file_buf, handler, (void *)pHandlerData);
+int ini_mem_parse(unsigned char *file_buf, INI_HANDLER_DATA *pHandlerData)
+{
+	// ALOGD("%s, entering...\n", __func__);
+	return ini_parse_mem((char *)file_buf, handler, (void *)pHandlerData);
 }
 
-int ini_set_save_file_name(const char* filename, INI_HANDLER_DATA *pHandlerData) {
-    //ALOGD("%s, entering...\n", __FUNCTION__);
+int _ini_set_save_file_name(const char *filename, INI_HANDLER_DATA *pHandlerData)
+{
+	// ALOGD("%s, entering...\n", __func__);
 
-    strncpy(pHandlerData->mpFileName, filename, CC_MAX_INI_FILE_NAME_LEN - 1);
-    return 0;
+	strncpy(pHandlerData->mpFileName, filename, CC_MAX_INI_FILE_NAME_LEN - 1);
+	return 0;
 }
 
-void ini_free_mem(INI_HANDLER_DATA *pHandlerData) {
-	//ALOGD("%s, entering...\n", __FUNCTION__);
+void _ini_free_mem(INI_HANDLER_DATA *pHandlerData)
+{
+	// ALOGD("%s, entering...\n", __func__);
 
-	if (pHandlerData == NULL)
+	if (!pHandlerData)
 		return;
 
 	INI_SECTION *pNextSec = NULL;
@@ -128,7 +119,7 @@ void ini_free_mem(INI_HANDLER_DATA *pHandlerData) {
 		while (pLine) {
 			pNextLine = pLine->pNext;
 #if CC_MEMORY_ALLOC_FREE_TRACE == 1
-			free_mem(__FUNCTION__, "pLine", pLine);
+			free_mem(__func__, "pLine", pLine);
 #endif
 
 			free(pLine);
@@ -136,7 +127,7 @@ void ini_free_mem(INI_HANDLER_DATA *pHandlerData) {
 		}
 
 #if CC_MEMORY_ALLOC_FREE_TRACE == 1
-		free_mem(__FUNCTION__, "pSec", pSec);
+		free_mem(__func__, "pSec", pSec);
 #endif
 
 		free(pSec);
@@ -147,279 +138,287 @@ void ini_free_mem(INI_HANDLER_DATA *pHandlerData) {
 	pHandlerData->mpCurSection = NULL;
 
 #if CC_MEMORY_ALLOC_FREE_TRACE == 1
-	printAllocMemND(__FUNCTION__);
-	printFreeMemND(__FUNCTION__);
-	clearMemND();
+	print_alloc_mem_nd(__func__);
+	print_free_mem_nd(__func__);
+	clear_mem_nd();
 #endif
 }
 
-static void trim(char *str, char ch) {
-    char* pStr;
+static void trim(char *str, char ch)
+{
+	char *pStr;
 
-    pStr = str;
-    while (*pStr != '\0') {
-        if (*pStr == ch) {
-            char* pTmp = pStr;
-            while (*pTmp != '\0') {
-                *pTmp = *(pTmp + 1);
-                pTmp++;
-            }
-        } else {
-            pStr++;
-        }
-    }
+	pStr = str;
+	while (*pStr != '\0') {
+		if (*pStr == ch) {
+			char *pTmp = pStr;
+			while (*pTmp != '\0') {
+				*pTmp = *(pTmp + 1);
+				pTmp++;
+			}
+		} else {
+			pStr++;
+		}
+	}
 }
 
-static void trim_all(char *str) {
-    char* pStr = NULL;
+static void trim_all(char *str)
+{
+	char *pStr = NULL;
 
-    pStr = strchr(str, '\n');
-    if (pStr != NULL) {
-        *pStr = 0;
-    }
+	pStr = strchr(str, '\n');
+	if (pStr != NULL)
+		*pStr = 0;
 
-    int Len = strlen(str);
-    if (Len > 0) {
-        if (str[Len - 1] == '\r') {
-            str[Len - 1] = '\0';
-        }
-    }
+	int Len = strlen(str);
+	if (Len > 0) {
+		if (str[Len - 1] == '\r')
+			str[Len - 1] = '\0';
+	}
 
-    pStr = strchr(str, '#');
-    if (pStr != NULL) {
-        *pStr = 0;
-    }
+	pStr = strchr(str, '#');
+	if (pStr != NULL)
+		*pStr = 0;
 
-    pStr = strchr(str, ';');
-    if (pStr != NULL) {
-        *pStr = 0;
-    }
+	pStr = strchr(str, ';');
+	if (pStr != NULL)
+		*pStr = 0;
 
-    trim(str, ' ');
-    trim(str, '{');
-    trim(str, '\\');
-    trim(str, '}');
-    trim(str, '\"');
-    return;
+	trim(str, ' ');
+	trim(str, '{');
+	trim(str, '\\');
+	trim(str, '}');
+	trim(str, '\"');
+	return;
 }
 
-void ini_print_all(INI_HANDLER_DATA *pHandlerData) {
-    INI_SECTION* pSec = NULL;
-    for (pSec = pHandlerData->mpFirstSection; pSec != NULL; pSec = pSec->pNext) {
-        ALOGD("[%s]\n", pSec->Name);
-        INI_LINE* pLine = NULL;
-        for (pLine = pSec->pLine; pLine != NULL; pLine = pLine->pNext) {
-            ALOGD("%s = %s\n", pLine->Name, pLine->Value);
-        }
-        ALOGD("\n\n\n");
-    }
+void _ini_print_all(INI_HANDLER_DATA *pHandlerData)
+{
+	INI_SECTION *pSec = NULL;
+
+	for (pSec = pHandlerData->mpFirstSection; pSec != NULL; pSec = pSec->pNext) {
+		ALOGD("[%s]\n", pSec->Name);
+		INI_LINE *pLine = NULL;
+		for (pLine = pSec->pLine; pLine != NULL; pLine = pLine->pNext)
+			ALOGD("%s = %s\n", pLine->Name, pLine->Value);
+		ALOGD("\n\n\n");
+	}
 }
 
-void ini_list_section(INI_HANDLER_DATA *pHandlerData) {
-    INI_SECTION* pSec = NULL;
-    for (pSec = pHandlerData->mpFirstSection; pSec != NULL; pSec = pSec->pNext) {
-        printf("  %s\n", pSec->Name);
-    }
+void _ini_list_section(INI_HANDLER_DATA *pHandlerData)
+{
+	INI_SECTION *pSec = NULL;
+
+	for (pSec = pHandlerData->mpFirstSection; pSec != NULL; pSec = pSec->pNext)
+		printf("  %s\n", pSec->Name);
 }
 
-static INI_SECTION* getSection(const char* section, INI_HANDLER_DATA *pHandlerData) {
-    INI_SECTION* pSec = NULL;
-    for (pSec = pHandlerData->mpFirstSection; pSec != NULL; pSec = pSec->pNext) {
-        if (strncmp(pSec->Name, section, strlen(section)) == 0) {
-            return pSec;
-        }
-    }
+static INI_SECTION *_get_section(const char *section, INI_HANDLER_DATA *pHandlerData)
+{
+	INI_SECTION *pSec = NULL;
 
-    return NULL;
+	for (pSec = pHandlerData->mpFirstSection; pSec != NULL; pSec = pSec->pNext) {
+		if (strcmp(pSec->Name, section) == 0)
+			return pSec;
+	}
+
+	return NULL;
 }
 
-static INI_LINE* getKeyLineAtSec(INI_SECTION* pSec, const char* key) {
-    INI_LINE* pLine = NULL;
-    for (pLine = pSec->pLine; pLine != NULL; pLine = pLine->pNext) {
-        if (strncmp(pLine->Name, key, strlen(key)) == 0) {
-            return pLine;
-        }
-    }
-    return NULL;
+static INI_LINE *get_key_line_at_sec(INI_SECTION *pSec, const char *key)
+{
+	INI_LINE *pLine = NULL;
+
+	for (pLine = pSec->pLine; pLine != NULL; pLine = pLine->pNext) {
+		if (strcmp(pLine->Name, key) == 0)
+			return pLine;
+	}
+	return NULL;
 }
 
-const char* ini_get_string(const char* section, const char* key,
-        const char* def_value, INI_HANDLER_DATA *pHandlerData) {
-    INI_SECTION* pSec = getSection(section, pHandlerData);
-    if (pSec == NULL) {
-        //ALOGD("%s, section %s is NULL\n", __FUNCTION__, section);
-        return def_value;
-    }
+const char *_ini_get_string(const char *section, const char *key,
+			    const char *def_value, INI_HANDLER_DATA *pHandlerData)
+{
+	INI_SECTION *pSec = _get_section(section, pHandlerData);
 
-    INI_LINE* pLine = getKeyLineAtSec(pSec, key);
-    if (pLine == NULL) {
-        //ALOGD("%s, key \"%s\" is NULL\n", __FUNCTION__, key);
-        return def_value;
-    }
+	if (!pSec) {
+		// ALOGD("%s, section %s is NULL\n", __func__, section);
+		return def_value;
+	}
 
-    return pLine->Value;
+	INI_LINE *pLine = get_key_line_at_sec(pSec, key);
+	if (pLine == NULL) {
+		// ALOGD("%s, key \"%s\" is NULL\n", __func__, key);
+		return def_value;
+	}
+
+	return pLine->Value;
 }
 
-int ini_set_string(const char *section, const char *key, const char *value, INI_HANDLER_DATA *pHandlerData) {
-    setKeyValue(pHandlerData, section, key, value, 1);
-    return 0;
+int _ini_set_string(const char *section, const char *key,
+		    const char *value, INI_HANDLER_DATA *pHandlerData)
+{
+	set_key_value(pHandlerData, section, key, value, 1);
+	return 0;
 }
 
-int ini_save_to_file(const char *filename, INI_HANDLER_DATA *pHandlerData) {
+int _ini_save_to_file(const char *filename, INI_HANDLER_DATA *pHandlerData)
+{
 #if (defined CC_COMPILE_IN_PC || defined CC_COMPILE_IN_ANDROID)
-    const char *fname = NULL;
-    FILE *fp = NULL;
+	const char *fname = NULL;
+	FILE *fp = NULL;
 
-    if (filename == NULL) {
-        if (strlen(pHandlerData->mpFileName) == 0) {
-            ALOGE("%s, save file name is NULL!!!\n", __FUNCTION__);
-            return -1;
-        } else {
-            fname = pHandlerData->mpFileName;
-        }
-    } else {
-        fname = filename;
-    }
+	if (filename == NULL) {
+		if (strlen(pHandlerData->mpFileName) == 0) {
+			ALOGE("%s, save file name is NULL!!!\n", __func__);
+			return -1;
 
-    if ((fp = fopen (fname, "wb")) == NULL) {
-        ALOGE("%s, Open file \"%s\" ERROR (%s)!!!\n", __FUNCTION__, fname, strerror(errno));
-        return -1;
-    }
+		fname = pHandlerData->mpFileName;
+	} else {
+		fname = filename;
+	}
 
-    INI_SECTION* pSec = NULL;
-    for (pSec = pHandlerData->mpFirstSection; pSec != NULL; pSec = pSec->pNext) {
-        fprintf(fp, "[%s]\r\n", pSec->Name);
-        INI_LINE* pLine = NULL;
-        for (pLine = pSec->pLine; pLine != NULL; pLine = pLine->pNext) {
-            fprintf(fp, "%s = %s\r\n", pLine->Name, pLine->Value);
-        }
-    }
+	fp = fopen(fname, "wb")
+	if (!fp) {
+		ALOGE("%s, Open file \"%s\" ERROR (%s)!!!\n", __func__, fname, strerror(errno));
+		return -1;
+	}
 
-    fflush(fp);
-    fsync(fileno(fp));
+	INI_SECTION *pSec = NULL;
+	for (pSec = pHandlerData->mpFirstSection; pSec != NULL; pSec = pSec->pNext) {
+		fprintf(fp, "[%s]\r\n", pSec->Name);
+		INI_LINE *pLine = NULL;
 
-    fclose(fp);
-    fp = NULL;
+		for (pLine = pSec->pLine; pLine != NULL; pLine = pLine->pNext)
+			fprintf(fp, "%s = %s\r\n", pLine->Name, pLine->Value);
+	}
 
-    return 0;
+	fflush(fp);
+	fsync(fileno(fp));
+
+	fclose(fp);
+	fp = NULL;
+
+	return 0;
 #elif (defined CC_COMPILE_IN_UBOOT)
-    return 0;
+	return 0;
 #endif
 }
 
-static INI_LINE* newLine(const char* name, const char* value) {
-    INI_LINE* pLine = NULL;
+static INI_LINE *new_line(const char *name, const char *value)
+{
+	INI_LINE *pLine = NULL;
 
-    pLine = (INI_LINE*) malloc(sizeof(INI_LINE));
-    if (pLine != NULL) {
-        pLine->pNext = NULL;
-	strncpy(pLine->Name, name, sizeof(pLine->Name) - 1);
-	pLine->Name[sizeof(pLine->Name) - 1] = '\0';
-	strncpy(pLine->Value, value, sizeof(pLine->Value) - 1);
-	pLine->Value[sizeof(pLine->Value) - 1] = '\0';
+	pLine = (INI_LINE *)malloc(sizeof(INI_LINE));
+	if (pLine != NULL) {
+		pLine->pNext = NULL;
+		strncpy(pLine->Name, name, sizeof(pLine->Name) - 1);
+		pLine->Name[sizeof(pLine->Name) - 1] = '\0';
+		strncpy(pLine->Value, value, sizeof(pLine->Value) - 1);
+		pLine->Value[sizeof(pLine->Value) - 1] = '\0';
 
 #if CC_MEMORY_ALLOC_FREE_TRACE == 1
-        alloc_mem(__FUNCTION__, "pLine", pLine);
+		alloc_mem(__func__, "pLine", pLine);
 #endif
-    }
+	}
 
-    return pLine;
+	return pLine;
 }
 
-static INI_SECTION* newSection(const char* section, INI_LINE* pLine) {
-    INI_SECTION* pSec = NULL;
+static INI_SECTION *new_section(const char *section, INI_LINE *pLine)
+{
+	INI_SECTION *pSec = NULL;
 
-    pSec = (INI_SECTION*) malloc(sizeof(INI_SECTION));
-    if (pSec != NULL) {
-        pSec->pLine = pLine;
-        pSec->pNext = NULL;
-	strncpy(pSec->Name, section, sizeof(pSec->Name) - 1);
-	pSec->Name[sizeof(pSec->Name) - 1] = '\0';
+	pSec = (INI_SECTION *)malloc(sizeof(INI_SECTION));
+	if (pSec != NULL) {
+		pSec->pLine = pLine;
+		pSec->pNext = NULL;
+		strncpy(pSec->Name, section, sizeof(pSec->Name) - 1);
+		pSec->Name[sizeof(pSec->Name) - 1] = '\0';
 
 #if CC_MEMORY_ALLOC_FREE_TRACE == 1
-        alloc_mem(__FUNCTION__, "pSec", pSec);
+		alloc_mem(__func__, "pSec", pSec);
 #endif
-    }
+	}
 
-    return pSec;
+	return pSec;
 }
 
-static int setKeyValue(void* user, const char* section, const char* key, const char* value, int set_mode) {
-    INI_LINE* pLine = NULL;
-    INI_SECTION *pSec = NULL;
-    INI_HANDLER_DATA *pHandlerData = (INI_HANDLER_DATA *) user;
+static int set_key_value(void *user, const char *section, const char *key,
+			 const char *value, int set_mode)
+{
+	INI_LINE *pLine = NULL;
+	INI_SECTION *pSec = NULL;
+	INI_HANDLER_DATA *pHandlerData = (INI_HANDLER_DATA *)user;
 
-    if (section == NULL || key == NULL || value == NULL) {
-        return 1;
-    }
+	if (section == NULL || key == NULL || value == NULL)
+		return 1;
 
-    trim_all((char *) value);
-    if (value[0] == '\0') {
-        return 1;
-    }
+	trim_all((char *)value);
+	if (value[0] == '\0')
+		return 1;
 
-    if (strlen(key) > CC_MAX_INI_LINE_NAME_LEN) {
-        ALOGE("key name is too long, limit %d.\n", CC_MAX_INI_LINE_NAME_LEN);
-        return 1;
-    }
-    if (strlen(value) > CC_MAX_INI_FILE_LINE_LEN) {
-        ALOGE("key name is too long, limit %d.\n", CC_MAX_INI_FILE_LINE_LEN);
-        return 1;
-    }
+	if (strlen(key) > CC_MAX_INI_LINE_NAME_LEN) {
+		ALOGE("key name is too long, limit %d.\n", CC_MAX_INI_LINE_NAME_LEN);
+		return 1;
+	}
+	if (strlen(value) > CC_MAX_INI_FILE_LINE_LEN) {
+		ALOGE("key name is too long, limit %d.\n", CC_MAX_INI_FILE_LINE_LEN);
+		return 1;
+	}
 
-    if (pHandlerData->mpFirstSection == NULL) {
-        pLine = newLine(key, value);
-        pSec = newSection(section, pLine);
+	if (pHandlerData->mpFirstSection == NULL) {
+		pLine = new_line(key, value);
+		pSec = new_section(section, pLine);
 
-        pHandlerData->mpFirstSection = pSec;
-        pHandlerData->mpCurSection = pSec;
-        pSec->pCurLine = pLine;
-    } else {
-        pSec = getSection(section, pHandlerData);
-        if (pSec == NULL) {
-            pLine = newLine(key, value);
-            pSec = newSection(section, pLine);
+		pHandlerData->mpFirstSection = pSec;
+		pHandlerData->mpCurSection = pSec;
+		pSec->pCurLine = pLine;
+	} else {
+		pSec = _get_section(section, pHandlerData);
+		if (!pSec) {
+			pLine = new_line(key, value);
+			pSec = new_section(section, pLine);
 
-            pHandlerData->mpCurSection->pNext = pSec;
-            pHandlerData->mpCurSection = pSec;
-            pSec->pCurLine = pLine;
+			pHandlerData->mpCurSection->pNext = pSec;
+			pHandlerData->mpCurSection = pSec;
+			pSec->pCurLine = pLine;
 
-            pSec->pCurLine = pLine;
-        } else {
-            pLine = getKeyLineAtSec(pSec, key);
-            if (pLine == NULL) {
-                pLine = newLine(key, value);
+			pSec->pCurLine = pLine;
+		} else {
+			pLine = get_key_line_at_sec(pSec, key);
+			if (pLine == NULL) {
+				pLine = new_line(key, value);
 
-                pSec->pCurLine->pNext = pLine;
-                pSec->pCurLine = pLine;
-            } else {
-                if (set_mode == 1) {
-                    strcpy(pLine->Value, value);
-                } else {
-                    strcat(pLine->Value, value);
-                }
-            }
-        }
-    }
+				pSec->pCurLine->pNext = pLine;
+				pSec->pCurLine = pLine;
+			} else {
+				if (set_mode == 1)
+					strcpy(pLine->Value, value);
+				else
+					strcat(pLine->Value, value);
+			}
+		}
+	}
 
-    return 0;
+	return 0;
 }
 
-static int handler(void* user, const char* section, const char* name,
-        const char* value) {
-    //ALOGD("%s, section = %s, name = %s, value = %s\n", __FUNCTION__, section, name, value);
-    setKeyValue(user, section, name, value, 0);
-    return 1;
+static int handler(void *user, const char *section, const char *name, const char *value)
+{
+	// ALOGD("%s, section = %s, name = %s, value = %s\n", __func__, section, name, value);
+	set_key_value(user, section, name, value, 0);
+	return 1;
 }
 
 #if CC_MEMORY_ALLOC_FREE_TRACE == 1
 
-#define CC_MEM_RECORD_CNT    (1024)
+#define CC_MEM_RECORD_CNT (1024)
 
 typedef struct tag_memnd {
-    char fun_name[50];
-    char var_name[50];
-    void *ptr;
+	char fun_name[50];
+	char var_name[50];
+	void *ptr;
 } memnd;
 
 static memnd gMemAllocItems[CC_MEM_RECORD_CNT];
@@ -428,59 +427,60 @@ static int gMemAllocInd = 0;
 static memnd gMemFreeItems[CC_MEM_RECORD_CNT];
 static int gMemFreeInd = 0;
 
-static void alloc_mem(const char *fun_name, const char *var_name, void *ptr) {
+static void alloc_mem(const char *fun_name, const char *var_name, void *ptr)
+{
 	strncpy(gMemAllocItems[gMemAllocInd].fun_name, fun_name,
 		sizeof(gMemAllocItems[gMemAllocInd].fun_name) - 1);
-	gMemAllocItems[gMemAllocInd].fun_name[sizeof(gMemAllocItems[gMemAllocInd].fun_name) - 1]
-		= '\0';
+	gMemAllocItems[gMemAllocInd].fun_name[sizeof(gMemAllocItems[gMemAllocInd].fun_name) - 1] = '\0';
 	strncpy(gMemAllocItems[gMemAllocInd].var_name, var_name,
-	       sizeof(gMemAllocItems[gMemAllocInd].var_name) - 1);
-	gMemAllocItems[gMemAllocInd].var_name[sizeof(gMemAllocItems[gMemAllocInd].var_name) - 1]
-		= '\0';
+		sizeof(gMemAllocItems[gMemAllocInd].var_name) - 1);
+	gMemAllocItems[gMemAllocInd].var_name[sizeof(gMemAllocItems[gMemAllocInd].var_name) - 1] = '\0';
 	gMemAllocItems[gMemAllocInd].ptr = ptr;
 
 	gMemAllocInd += 1;
 }
 
-static void free_mem(const char *fun_name, const char *var_name, void *ptr) {
+static void free_mem(const char *fun_name, const char *var_name, void *ptr)
+{
 	strncpy(gMemFreeItems[gMemFreeInd].fun_name, fun_name,
 		sizeof(gMemFreeItems[gMemFreeInd].fun_name) - 1);
-	gMemFreeItems[gMemFreeInd].fun_name[sizeof(gMemFreeItems[gMemFreeInd].fun_name) - 1]
-		= '\0';
+	gMemFreeItems[gMemFreeInd].fun_name[sizeof(gMemFreeItems[gMemFreeInd].fun_name) - 1] = '\0';
 	strncpy(gMemFreeItems[gMemFreeInd].var_name, var_name,
 		sizeof(gMemFreeItems[gMemFreeInd].var_name) - 1);
-	gMemFreeItems[gMemFreeInd].var_name[sizeof(gMemFreeItems[gMemFreeInd].var_name) - 1]
-		= '\0';
+	gMemFreeItems[gMemFreeInd].var_name[sizeof(gMemFreeItems[gMemFreeInd].var_name) - 1] = '\0';
 
 	gMemFreeItems[gMemFreeInd].ptr = ptr;
 
 	gMemFreeInd += 1;
 }
 
-static void printMemND(const char *fun_name, memnd *tmp_nd, int tmp_cnt) {
+static void printMemND(const char *fun_name, memnd *tmp_nd, int tmp_cnt)
+{
 #if CC_MEMORY_ALLOC_FREE_TRACE_PRINT_ALL == 1
-    int i = 0;
+	int i = 0;
 
-    ALOGD("fun_name = %s, total_cnt = %d\n", fun_name, tmp_cnt);
+	ALOGD("fun_name = %s, total_cnt = %d\n", fun_name, tmp_cnt);
 
-    for (i = 0; i < tmp_cnt; i++) {
-        ALOGD("fun_name = %s, var_name = %s, ptr = %p\n", tmp_nd[i].fun_name, tmp_nd[i].var_name, tmp_nd[i].ptr);
-    }
+	for (i = 0; i < tmp_cnt; i++)
+		ALOGD("fun_name = %s, var_name = %s, ptr = %p\n", tmp_nd[i].fun_name, tmp_nd[i].var_name, tmp_nd[i].ptr);
 #endif
 }
 
-static void printFreeMemND(const char *fun_name) {
-    printMemND(__FUNCTION__, gMemFreeItems, gMemFreeInd);
+static void print_free_mem_nd(const char *fun_name)
+{
+	printMemND(__func__, gMemFreeItems, gMemFreeInd);
 }
 
-static void printAllocMemND(const char *fun_name) {
-    printMemND(__FUNCTION__, gMemAllocItems, gMemAllocInd);
+static void print_alloc_mem_nd(const char *fun_name)
+{
+	printMemND(__func__, gMemAllocItems, gMemAllocInd);
 }
 
-static void clearMemND(void) {
-    gMemAllocInd = 0;
-    gMemFreeInd = 0;
-    memset((void *)gMemAllocItems, 0, sizeof(memnd) * CC_MEM_RECORD_CNT);
-    memset((void *)gMemFreeItems, 0, sizeof(memnd) * CC_MEM_RECORD_CNT);
+static void clear_mem_nd(void)
+{
+	gMemAllocInd = 0;
+	gMemFreeInd = 0;
+	memset((void *)gMemAllocItems, 0, sizeof(memnd) * CC_MEM_RECORD_CNT);
+	memset((void *)gMemFreeItems, 0, sizeof(memnd) * CC_MEM_RECORD_CNT);
 }
 #endif

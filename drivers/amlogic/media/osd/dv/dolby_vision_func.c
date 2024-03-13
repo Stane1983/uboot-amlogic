@@ -319,7 +319,7 @@ int load_dv_fw(char *fw_dir, void *cp_info)
 		return -1;
 	}
 
-	tmp_size = iniGetFileSize(fw_dir);
+	tmp_size = ini_get_file_size(fw_dir);
 
 	if (tmp_size <= HEADER_SIZE || tmp_size > DV_FW_MAX_SIZE) {
 		printf("%s, file \"%s\" size error!\n", __func__, fw_dir);
@@ -341,7 +341,7 @@ int load_dv_fw(char *fw_dir, void *cp_info)
 	}
 
 	if (tmp_buf) {
-		rd_cnt = iniReadFileToBuffer(fw_dir, 0, tmp_size, (unsigned char *)tmp_buf);
+		rd_cnt = ini_read_file_to_buffer(fw_dir, 0, tmp_size, (unsigned char *)tmp_buf);
 		if (rd_cnt <= 0) {
 			printf("%s, read %s fw_dir error\n", __func__, fw_dir);
 			free(tmp_buf);
@@ -413,11 +413,11 @@ int control_path(
 #if LOAD_FROM_ARRAY
     load_dv_func(&cp_info);// load dovi_func[] in dv_func.h and run
 #else
-	if (fw_dir_odm_ext && iniIsFileExist(fw_dir_odm_ext)) {
+	if (fw_dir_odm_ext && ini_is_file_exist(fw_dir_odm_ext)) {
 		ret = load_dv_fw(fw_dir_odm_ext, &cp_info);
-	} else if (fw_dir_vendor && iniIsFileExist(fw_dir_vendor)) {
+	} else if (fw_dir_vendor && ini_is_file_exist(fw_dir_vendor)) {
 		ret = load_dv_fw(fw_dir_vendor, &cp_info);
-	} else if (fw_dir && iniIsFileExist(fw_dir)) {
+	} else if (fw_dir && ini_is_file_exist(fw_dir)) {
 		ret = load_dv_fw(fw_dir, &cp_info);
 	} else {
 		printf("load dv fw fail\n");

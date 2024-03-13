@@ -42,7 +42,7 @@ struct lcd_unifykey_header_s {
 /* basic (36Byte) */
 #define LCD_UKEY_MODEL_NAME        (LCD_UKEY_HEAD_SIZE + 0)
 #define LCD_UKEY_INTERFACE         (LCD_UKEY_MODEL_NAME + 30)
-#define LCD_UKEY_LCD_BITS          (LCD_UKEY_MODEL_NAME + 31)
+#define LCD_UKEY_LCD_BITS_CFMT     (LCD_UKEY_MODEL_NAME + 31)
 #define LCD_UKEY_SCREEN_WIDTH      (LCD_UKEY_MODEL_NAME + 32)
 #define LCD_UKEY_SCREEN_HEIGHT     (LCD_UKEY_MODEL_NAME + 34)
 /* timing (18Byte) */
@@ -50,16 +50,16 @@ struct lcd_unifykey_header_s {
 #define LCD_UKEY_V_ACTIVE          (LCD_UKEY_MODEL_NAME + 38)
 #define LCD_UKEY_H_PERIOD          (LCD_UKEY_MODEL_NAME + 40)
 #define LCD_UKEY_V_PERIOD          (LCD_UKEY_MODEL_NAME + 42)
-#define LCD_UKEY_HS_WIDTH          (LCD_UKEY_MODEL_NAME + 44)
+#define LCD_UKEY_HS_WIDTH_POL      (LCD_UKEY_MODEL_NAME + 44)
 #define LCD_UKEY_HS_BP             (LCD_UKEY_MODEL_NAME + 46)
-#define LCD_UKEY_HS_POL            (LCD_UKEY_MODEL_NAME + 48)
-#define LCD_UKEY_VS_WIDTH          (LCD_UKEY_MODEL_NAME + 49)
+#define LCD_UKEY_PRE_DE_H          (LCD_UKEY_MODEL_NAME + 48)
+#define LCD_UKEY_VS_WIDTH_POL      (LCD_UKEY_MODEL_NAME + 49)
 #define LCD_UKEY_VS_BP             (LCD_UKEY_MODEL_NAME + 51)
-#define LCD_UKEY_VS_POL            (LCD_UKEY_MODEL_NAME + 53)
+#define LCD_UKEY_PRE_DE_V          (LCD_UKEY_MODEL_NAME + 53)
 /* customer (31Byte) */
 #define LCD_UKEY_FR_ADJ_TYPE       (LCD_UKEY_MODEL_NAME + 54)/* +36+18 byte */
 #define LCD_UKEY_SS_LEVEL          (LCD_UKEY_MODEL_NAME + 55)
-#define LCD_UKEY_CLK_AUTO_GEN      (LCD_UKEY_MODEL_NAME + 56)
+#define LCD_UKEY_CUST_VAL0         (LCD_UKEY_MODEL_NAME + 56)
 #define LCD_UKEY_PCLK              (LCD_UKEY_MODEL_NAME + 57)
 #define LCD_UKEY_H_PERIOD_MIN      (LCD_UKEY_MODEL_NAME + 61)
 #define LCD_UKEY_H_PERIOD_MAX      (LCD_UKEY_MODEL_NAME + 63)
@@ -71,8 +71,8 @@ struct lcd_unifykey_header_s {
 #define LCD_UKEY_VLOCK_VAL_1       (LCD_UKEY_MODEL_NAME + 78)
 #define LCD_UKEY_VLOCK_VAL_2       (LCD_UKEY_MODEL_NAME + 79)
 #define LCD_UKEY_VLOCK_VAL_3       (LCD_UKEY_MODEL_NAME + 80)
-#define LCD_UKEY_CUST_PINMUX       (LCD_UKEY_MODEL_NAME + 81)
-#define LCD_UKEY_FR_AUTO_DIS       (LCD_UKEY_MODEL_NAME + 82)
+#define LCD_UKEY_CUST_VAL1         (LCD_UKEY_MODEL_NAME + 81)
+#define LCD_UKEY_FR_AUTO_CUS       (LCD_UKEY_MODEL_NAME + 82)
 #define LCD_UKEY_FRAME_RATE_MIN    (LCD_UKEY_MODEL_NAME + 83)
 #define LCD_UKEY_FRAME_RATE_MAX    (LCD_UKEY_MODEL_NAME + 84)
 
@@ -126,6 +126,14 @@ struct lcd_unifykey_header_s {
 /* custom ctrl (68Byte) */
 #define LCD_UKEY_CUS_CTRL_ATTR_FLAG     (LCD_UKEY_HEAD_SIZE + 356)
 #define LCD_UKEY_CUS_CTRL_ATTR_0        (LCD_UKEY_HEAD_SIZE + 360)
+#define LCD_UKEY_CUS_CTRL_ATTR_0_PARM0  (LCD_UKEY_HEAD_SIZE + 362)
+#define LCD_UKEY_CUS_CTRL_ATTR_0_PARM1  (LCD_UKEY_HEAD_SIZE + 364)
+#define LCD_UKEY_CUS_CTRL_ATTR_0_PARM2  (LCD_UKEY_HEAD_SIZE + 366)
+#define LCD_UKEY_CUS_CTRL_ATTR_0_PARM3  (LCD_UKEY_HEAD_SIZE + 368)
+#define LCD_UKEY_CUS_CTRL_ATTR_0_PARM4  (LCD_UKEY_HEAD_SIZE + 370)
+#define LCD_UKEY_CUS_CTRL_ATTR_0_PARM5  (LCD_UKEY_HEAD_SIZE + 372)
+#define LCD_UKEY_CUS_CTRL_ATTR_0_PARM6  (LCD_UKEY_HEAD_SIZE + 374)
+#define LCD_UKEY_CUS_CTRL_ATTR_0_PARM7  (LCD_UKEY_HEAD_SIZE + 376)
 #define LCD_UKEY_CUS_CTRL_END           (LCD_UKEY_HEAD_SIZE + 424)
 
 /* ********************************
@@ -391,21 +399,14 @@ struct lcd_tcon_spi_unifykey_header_s {
 /* ********************************
  * API
  * ********************************* */
-unsigned int cal_crc32(unsigned int crc, const unsigned char *buf, int buf_len);
 int lcd_unifykey_len_check(int key_len, int len);
-int lcd_unifykey_header_check(unsigned char *buf,
-			      struct lcd_unifykey_header_s *header);
 int lcd_unifykey_check_exist(const char *key_name);
 int lcd_unifykey_check(const char *key_name);
-int lcd_unifykey_get(const char *key_name, unsigned char *buf, int *len);
-int lcd_unifykey_get_tcon(const char *key_name, unsigned char *buf, int *len);
-int lcd_unifykey_check_no_header(const char *key_name);
-int lcd_unifykey_get_no_header(const char *key_name, unsigned char *buf,
-			       int *len);
+int lcd_unifykey_get_size(const char *key_name, int *len);
+int lcd_unifykey_get(const char *key_name, unsigned char *buf, int len);
+int lcd_unifykey_get_tcon(const char *key_name, unsigned char *buf, int len);
+int lcd_unifykey_get_no_header(const char *key_name, unsigned char *buf, int len);
 int lcd_unifykey_write(const char *key_name, unsigned char *buf, int len);
-
-void lcd_unifykey_test(void);
-void lcd_unifykey_tcon_test(int n);
 void lcd_unifykey_dump(int index, unsigned int flag);
 
 #endif

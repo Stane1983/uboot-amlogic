@@ -6,6 +6,7 @@
 #include <common.h>
 #include <malloc.h>
 #include <spi.h>
+#include <asm/amlogic/arch/gpio.h>
 #include <fdtdec.h>
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include <amlogic/media/vout/lcd/bl_ldim.h>

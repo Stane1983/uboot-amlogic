@@ -13,121 +13,133 @@
 #include "ini_handler.h"
 #include "ini_proxy.h"
 
-INI_HANDLER_DATA *gHandlerData = NULL;
-static unsigned char *gBinData = NULL;
+INI_HANDLER_DATA *_g_handler_data;
+static unsigned char *_g_bin_data;
 
-void BinFileInit(void) {
-    if (gBinData == NULL) {
-        gBinData = malloc(CC_MAX_INI_FILE_SIZE);
-        if (gBinData != NULL)
-            memset(gBinData, 0, CC_MAX_INI_FILE_SIZE);
-    }
-}
-
-void BinFileUninit(void) {
-    if (gBinData != NULL) {
-        free(gBinData);
-        gBinData = NULL;
-    }
-}
-
-int ReadBinFile(const char* filename) {
-    if (gBinData == NULL) {
-        return -1;
-    }
-    return bin_file_read(filename, gBinData);
-}
-
-int GetBinData(unsigned char* file_buf, unsigned int file_size)
+void bin_file_init(void)
 {
-    if (gBinData == NULL) {
-        return -1;
-    }
-    if (file_buf == NULL) {
-        return -1;
-    }
-    memcpy(file_buf, gBinData, file_size);
-    return 0;
+	if (!_g_bin_data) {
+		_g_bin_data = malloc(CC_MAX_INI_FILE_SIZE);
+		if (_g_bin_data)
+			memset(_g_bin_data, 0, CC_MAX_INI_FILE_SIZE);
+	}
 }
 
-void IniParserInit(void) {
-    if (gHandlerData == NULL) {
-        gHandlerData = (INI_HANDLER_DATA *) malloc(sizeof(INI_HANDLER_DATA));
-        if (gHandlerData != NULL) {
-            memset((void *)gHandlerData, 0, sizeof(INI_HANDLER_DATA));
-        }
-    }
+void bin_file_uninit(void)
+{
+	if (_g_bin_data) {
+		free(_g_bin_data);
+		_g_bin_data = NULL;
+	}
 }
 
-void IniParserUninit(void) {
-    if (gHandlerData != NULL) {
-        IniParserFree();
-        free(gHandlerData);
-        gHandlerData = NULL;
-    }
+int read_bin_file(const char *filename)
+{
+	if (!_g_bin_data)
+		return -1;
+
+	return _bin_file_read(filename, _g_bin_data);
 }
 
-int IniParseFile(const char* filename) {
-    if (gHandlerData == NULL) {
-        return -1;
-    }
-    return ini_file_parse(filename, gHandlerData);
+int get_bin_data(unsigned char *file_buf, unsigned int file_size)
+{
+	if (!_g_bin_data)
+		return -1;
+
+	if (file_buf == NULL)
+		return -1;
+
+	memcpy(file_buf, _g_bin_data, file_size);
+	return 0;
 }
 
-int IniParseMem(unsigned char* file_buf) {
-    if (gHandlerData == NULL) {
-        return -1;
-    }
-    return ini_mem_parse(file_buf, gHandlerData);
+void ini_parser_init(void)
+{
+	if (!_g_handler_data) {
+		_g_handler_data = (INI_HANDLER_DATA *)malloc(sizeof(INI_HANDLER_DATA));
+		if (_g_handler_data)
+			memset((void *)_g_handler_data, 0, sizeof(INI_HANDLER_DATA));
+	}
 }
 
-int IniSetSaveFileName(const char* filename) {
-    if (gHandlerData == NULL) {
-        return -1;
-    }
-    return ini_set_save_file_name(filename, gHandlerData);
+void ini_parser_uninit(void)
+{
+	if (_g_handler_data) {
+		ini_parser_free();
+		free(_g_handler_data);
+		_g_handler_data = NULL;
+	}
 }
 
-void IniParserFree(void) {
-    if (gHandlerData == NULL) {
-        return;
-    }
-    return ini_free_mem(gHandlerData);
+int ini_parse_file(const char *filename)
+{
+	if (!_g_handler_data)
+		return -1;
+
+	return _ini_file_parse(filename, _g_handler_data);
 }
 
-void IniPrintAll(void) {
-    if (gHandlerData == NULL) {
-        return;
-    }
-    return ini_print_all(gHandlerData);
+int ini_parse_mem(unsigned char *file_buf)
+{
+	if (!_g_handler_data)
+		return -1;
+
+	return ini_mem_parse(file_buf, _g_handler_data);
 }
 
-void IniListSection(void) {
-    if (gHandlerData == NULL) {
-        ALOGE("%s, ini load file error!\n", __FUNCTION__);
-        return;
-    }
-    ini_list_section(gHandlerData);
+int ini_set_save_file_name(const char *filename)
+{
+	if (!_g_handler_data)
+		return -1;
+
+	return _ini_set_save_file_name(filename, _g_handler_data);
 }
 
-const char* IniGetString(const char* section, const char* key,
-        const char* def_value) {
-    if (gHandlerData == NULL) {
-        return def_value;
-    }
-    return ini_get_string(section, key, def_value, gHandlerData);
+void ini_parser_free(void)
+{
+	if (!_g_handler_data)
+		return;
+
+	return _ini_free_mem(_g_handler_data);
 }
 
-int IniSetString(const char *section, const char *key, const char *value) {
-    if (gHandlerData == NULL) {
-        return -1;
-    }
-    return ini_set_string(section, key, value, gHandlerData);
+void ini_print_all(void)
+{
+	if (!_g_handler_data)
+		return;
+
+	return _ini_print_all(_g_handler_data);
 }
 
-int IniSaveToFile(const char *filename) {
-    if (gHandlerData == NULL) {
-        return -1;
-    }
-    return ini_save_to_file(filename, gHandlerData);
+void ini_list_section(void)
+{
+	if (!_g_handler_data) {
+		ALOGE("%s, ini load file error!\n", __func__);
+		return;
+	}
+	_ini_list_section(_g_handler_data);
+}
+
+const char *ini_get_string(const char *section, const char *key, const char *def_value)
+{
+	if (!_g_handler_data)
+		return def_value;
+
+	return _ini_get_string(section, key, def_value, _g_handler_data);
+}
+
+int ini_set_string(const char *section, const char *key, const char *value)
+{
+	if (!_g_handler_data)
+		return -1;
+
+	return _ini_set_string(section, key, value, _g_handler_data);
+}
+
+int ini_save_to_file(const char *filename)
+{
+	if (!_g_handler_data)
+		return -1;
+
+	return _ini_save_to_file(filename, _g_handler_data);
 }

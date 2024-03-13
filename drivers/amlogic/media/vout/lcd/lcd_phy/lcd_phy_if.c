@@ -9,87 +9,39 @@
 #include "lcd_phy_config.h"
 #include "../lcd_common.h"
 
-static unsigned int p2p_low_common_phy_preem_tl1[] = {
-	0x07,
-	0x17,
-	0x37,
-	0x77,
-	0xf7,
-	0xff,
-};
-
-static unsigned int lvds_vx1_p2p_phy_preem_tl1[] = {
-	0x06,
-	0x26,
-	0x46,
-	0x66,
-	0x86,
-	0xa6,
-	0xf6,
-};
-
-struct lcd_phy_ctrl_s *lcd_phy_ctrl;
+static struct lcd_phy_ctrl_s *lcd_phy_ctrl;
 
 unsigned int lcd_phy_vswing_level_to_value(struct aml_lcd_drv_s *pdrv, unsigned int level)
 {
-	unsigned int vswing_value = 0;
+	if (!lcd_phy_ctrl)
+		return 0;
 
-	vswing_value = level;
+	if (!lcd_phy_ctrl->phy_vswing_level_to_val)
+		return level;
 
-	return vswing_value;
+	return lcd_phy_ctrl->phy_vswing_level_to_val(pdrv, level);
+}
+
+unsigned int lcd_phy_amp_dft_value(struct aml_lcd_drv_s *pdrv)
+{
+	if (!lcd_phy_ctrl)
+		return 0;
+
+	if (!lcd_phy_ctrl->phy_amp_dft_val)
+		return 0;
+
+	return lcd_phy_ctrl->phy_amp_dft_val(pdrv);
 }
 
 unsigned int lcd_phy_preem_level_to_value(struct aml_lcd_drv_s *pdrv, unsigned int level)
 {
-	unsigned int p2p_type, size, preem_value = 0;
+	if (!lcd_phy_ctrl)
+		return 0;
 
-	switch (pdrv->config.basic.lcd_type) {
-	case LCD_LVDS:
-	case LCD_VBYONE:
-	case LCD_MLVDS:
-		size = sizeof(lvds_vx1_p2p_phy_preem_tl1) / sizeof(unsigned int);
-		if (level >= size) {
-			LCDERR("[%d]: %s: level %d invalid\n",
-			       pdrv->index, __func__, level);
-		} else {
-			preem_value = lvds_vx1_p2p_phy_preem_tl1[level];
-		}
-		break;
-	case LCD_P2P:
-		p2p_type = pdrv->config.control.p2p_cfg.p2p_type & 0x1f;
-		switch (p2p_type) {
-		case P2P_CEDS:
-		case P2P_CMPI:
-		case P2P_ISP:
-		case P2P_EPI:
-			size = sizeof(lvds_vx1_p2p_phy_preem_tl1) / sizeof(unsigned int);
-			if (level >= size) {
-				LCDERR("[%d]: %s: level %d invalid\n",
-				pdrv->index, __func__, level);
-			} else {
-				preem_value = lvds_vx1_p2p_phy_preem_tl1[level];
-			}
-			break;
-		case P2P_CHPI: /* low common mode */
-		case P2P_CSPI:
-		case P2P_USIT:
-			size = sizeof(p2p_low_common_phy_preem_tl1) / sizeof(unsigned int);
-			if (level >= size) {
-				LCDERR("[%d]: %s: level %d invalid\n",
-				pdrv->index, __func__, level);
-			} else {
-				preem_value = p2p_low_common_phy_preem_tl1[level];
-			}
-			break;
-		default:
-			break;
-		}
-		break;
-	default:
-		break;
-	}
+	if (!lcd_phy_ctrl->phy_preem_level_to_val)
+		return level;
 
-	return preem_value;
+	return lcd_phy_ctrl->phy_preem_level_to_val(pdrv, level);
 }
 
 void lcd_phy_set(struct aml_lcd_drv_s *pdrv, int status)
@@ -113,7 +65,6 @@ int lcd_phy_probe(struct aml_lcd_drv_s *pdrv)
 	pdrv->phy_set = NULL;
 	return 0;
 #endif
-
 	if (!lcd_phy_ctrl)
 		return 0;
 
@@ -149,22 +100,35 @@ int lcd_phy_config_init(struct aml_lcd_data_s *pdata)
 	lcd_phy_ctrl = NULL;
 
 	switch (pdata->chip_type) {
+	case LCD_CHIP_G12A:
+	case LCD_CHIP_G12B:
+	case LCD_CHIP_SM1:
+		lcd_phy_ctrl = lcd_phy_config_init_g12a(pdata);
+		break;
+	case LCD_CHIP_TL1:
+	case LCD_CHIP_TM2:
+		lcd_phy_ctrl = lcd_phy_config_init_tl1(pdata);
+		break;
 	case LCD_CHIP_T5:
 	case LCD_CHIP_T5D:
-		lcd_phy_config_init_t5(pdata);
-		break;
 	case LCD_CHIP_T5W:
-		lcd_phy_config_init_t5w(pdata);
-		break;
-	case LCD_CHIP_T7:
-		lcd_phy_config_init_t7(pdata);
+		lcd_phy_ctrl = lcd_phy_config_init_t5(pdata);
 		break;
 	case LCD_CHIP_T3:
 	case LCD_CHIP_T5M:
-		lcd_phy_config_init_t3_t5m(pdata);
+		lcd_phy_ctrl = lcd_phy_config_init_t3_t5m(pdata);
+		break;
+	case LCD_CHIP_T7:
+		lcd_phy_ctrl = lcd_phy_config_init_t7(pdata);
 		break;
 	case LCD_CHIP_C3:
-		lcd_phy_config_init_c3(pdata);
+		lcd_phy_ctrl = lcd_phy_config_init_c3(pdata);
+		break;
+	case LCD_CHIP_T3X:
+		lcd_phy_ctrl = lcd_phy_config_init_t3x(pdata);
+		break;
+	case LCD_CHIP_TXHD2:
+		lcd_phy_ctrl = lcd_phy_config_init_txhd2(pdata);
 		break;
 	default:
 		break;

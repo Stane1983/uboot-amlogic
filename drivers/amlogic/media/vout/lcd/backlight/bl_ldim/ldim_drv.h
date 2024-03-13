@@ -5,7 +5,7 @@
 
 #ifndef __AML_LDIM_DRV_H__
 #define __AML_LDIM_DRV_H__
-#include <asm/amlogic/arch/io.h>
+// #include <asm/arch/io.h>
 #include <amlogic/media/vout/lcd/lcd_vout.h>
 #include <amlogic/media/vout/lcd/bl_ldim.h>
 

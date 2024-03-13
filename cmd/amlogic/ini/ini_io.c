@@ -12,237 +12,242 @@
 #include "ini_platform.h"
 #include "ini_io.h"
 
-#if (defined (CC_INI_IO_USE_UNIFY_KEY))
-    #if (!defined (CC_INI_IO_UKEY_USE_OTHER_MODULE))
-        #include "UnifyKey.h"
+#if (defined(CC_INI_IO_USE_UNIFY_KEY))
+#if (!defined(CC_INI_IO_UKEY_USE_OTHER_MODULE))
+#include "UnifyKey.h"
 
-	#define HandleReadData    readUKeyData
-        #define HandleWriteData   writeUKeyData
-    #else
-        #include <tvutils/tvutils.h>
+#define HandleReadData read_ukey_data
+#define HandleWriteData write_ukey_data
+#else
+#include <tvutils/tvutils.h>
 
-	#define HandleReadData    readUnifyKeyData
-        #define HandleWriteData   writeUnifyKeyData
-    #endif
+#define HandleReadData readUnifyKeyData
+#define HandleWriteData writeUnifyKeyData
+#endif
 #endif
 
-static int ReadBinData(const char *item_name, unsigned char data_buf[]) {
-    return readUKeyData_no_header(item_name, data_buf, CC_ONE_SECTION_SIZE);
+static int read_bin_data(const char *item_name, unsigned char data_buf[])
+{
+	return read_ukey_data_no_header(item_name, data_buf, CC_ONE_SECTION_SIZE);
 }
 
-static int WriteBinData(const char *item_name, int wr_size, unsigned char data_buf[]) {
-    return HandleWriteData(item_name, data_buf, wr_size);
+static int write_bin_data(const char *item_name, int wr_size, unsigned char data_buf[])
+{
+	return HandleWriteData(item_name, data_buf, wr_size);
 }
 
-static int ReadIniData(const char *item_name, unsigned char data_buf[]) {
+static int read_ini_data(const char *item_name, unsigned char data_buf[])
+{
 	return HandleReadData(item_name, data_buf, CC_ONE_SECTION_SIZE);
 }
 
-static int WriteIniData(const char *item_name, int wr_size, unsigned char data_buf[]) {
-    return HandleWriteData(item_name, data_buf, wr_size);
+static int write_ini_data(const char *item_name, int wr_size, unsigned char data_buf[])
+{
+	return HandleWriteData(item_name, data_buf, wr_size);
 }
 
-static int ReadStringData(const char *item_name, int mode, char data_buf[]) {
-    int rd_size = 0, skip_len = 0;
-    unsigned char *tmp_buf = NULL;
+static int read_string_data(const char *item_name, int mode, char data_buf[])
+{
+	int rd_size = 0, skip_len = 0;
+	unsigned char *tmp_buf = NULL;
 
-    if (data_buf == NULL) {
-        return -1;
-    }
+	if (!data_buf)
+		return -1;
 
-    tmp_buf = (unsigned char *) malloc(CC_MAX_DATA_SIZE);
-    if (tmp_buf == NULL) {
-        ALOGE("%s, malloc buffer memory error!!!\n", __FUNCTION__);
-        return -1;
-    }
+	tmp_buf = (unsigned char *)malloc(CC_MAX_DATA_SIZE);
+	if (!tmp_buf) {
+		ALOGE("%s, malloc buffer memory error!!!\n", __func__);
+		return -1;
+	}
 
-    memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
-    rd_size = ReadIniData(item_name, tmp_buf);
-    if (check_string_data_have_header_valid(NULL, (char *)tmp_buf, CC_HEAD_CHKSUM_LEN, CC_VERSION_LEN) < 0) {
-        data_buf[0] = '\0';
+	memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
+	rd_size = read_ini_data(item_name, tmp_buf);
 
-        free(tmp_buf);
-        tmp_buf = NULL;
-        return 0;
-    }
+	if (rd_size <= 0)
+		return -1;
 
-    if (mode == 0) {
-        skip_len = CC_HEAD_CHKSUM_LEN + CC_VERSION_LEN;
-    } else {
-        skip_len = 0;
-    }
+	if (check_string_data_have_header_valid(NULL, (char *)tmp_buf, CC_HEAD_CHKSUM_LEN, CC_VERSION_LEN) < 0) {
+		data_buf[0] = '\0';
+		free(tmp_buf);
+		tmp_buf = NULL;
+		return 0;
+	}
 
-    strncpy(data_buf, (char *)tmp_buf + skip_len, rd_size - skip_len);
+	if (mode == 0)
+		skip_len = CC_HEAD_CHKSUM_LEN + CC_VERSION_LEN;
+	else
+		skip_len = 0;
 
-    free(tmp_buf);
-    tmp_buf = NULL;
+	strncpy(data_buf, (char *)tmp_buf + skip_len, rd_size - skip_len);
 
-    return rd_size;
+	free(tmp_buf);
+	tmp_buf = NULL;
+
+	return rd_size;
 }
 
-static int SaveStringData(const char *item_name, int mode, char data_buf[]) {
-    int tmp_ret = 0, data_len = 0;
-    unsigned int tmp_crc32 = 0;
-    char *buf_ptr = NULL;
-    char *tmp_buf = NULL;
-    char *tmp_ch_buf = NULL;
+static int save_string_data(const char *item_name, int mode, char data_buf[])
+{
+	int tmp_ret = 0, data_len = 0;
+	unsigned int tmp_crc32 = 0;
+	char *buf_ptr = NULL;
+	char *tmp_buf = NULL;
+	char *tmp_ch_buf = NULL;
 
-    if (data_buf == NULL) {
-        return -1;
-    }
+	if (!data_buf)
+		return -1;
 
-    tmp_buf = (char *) malloc(CC_MAX_DATA_SIZE);
-    if (tmp_buf == NULL) {
-        ALOGE("%s, malloc buffer memory error!!!\n", __FUNCTION__);
-        return -1;
-    }
+	tmp_buf = (char *)malloc(CC_MAX_DATA_SIZE);
+	if (!tmp_buf) {
+		ALOGE("%s, malloc buffer memory error!!!\n", __func__);
+		return -1;
+	}
 
-    tmp_ch_buf = (char *) malloc(CC_MAX_DATA_SIZE);
-    if (tmp_ch_buf == NULL) {
-        free(tmp_buf);
-        tmp_buf = NULL;
+	tmp_ch_buf = (char *)malloc(CC_MAX_DATA_SIZE);
+	if (!tmp_ch_buf) {
+		free(tmp_buf);
+		tmp_buf = NULL;
 
-        ALOGE("%s, malloc buffer memory error!!!\n", __FUNCTION__);
-        return -1;
-    }
+		ALOGE("%s, malloc buffer memory error!!!\n", __func__);
+		return -1;
+	}
 
-    memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
+	memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
 
-    if (mode == 0) {
-        strcpy(tmp_ch_buf, "V001,");
-        strcat(tmp_ch_buf, data_buf);
+	if (mode == 0) {
+		strcpy(tmp_ch_buf, "V001,");
+		strcat(tmp_ch_buf, data_buf);
 
-        buf_ptr = tmp_ch_buf;
-    } else {
-        buf_ptr = data_buf;
-    }
+		buf_ptr = tmp_ch_buf;
+	} else {
+		buf_ptr = data_buf;
+	}
 
-    tmp_crc32 = CalCRC32(0, (unsigned char *)buf_ptr, strlen(buf_ptr));
-    sprintf(tmp_buf, "%08x,%s", tmp_crc32, buf_ptr);
+	tmp_crc32 = CalCRC32(0, (unsigned char *)buf_ptr, strlen(buf_ptr));
+	sprintf(tmp_buf, "%08x,%s", tmp_crc32, buf_ptr);
 
-    data_len = strlen(tmp_buf) + 1;
-    tmp_ret = WriteIniData(item_name, data_len, (unsigned char *)tmp_buf);
-    if (tmp_ret != data_len) {
-        ALOGE("%s, write data error (0x%08X, 0x%08X)\n", __FUNCTION__, tmp_ret, data_len);
+	data_len = strlen(tmp_buf) + 1;
+	tmp_ret = write_ini_data(item_name, data_len, (unsigned char *)tmp_buf);
+	if (tmp_ret != data_len) {
+		ALOGE("%s, write data error (0x%08X, 0x%08X)\n", __func__, tmp_ret, data_len);
 
-        free(tmp_ch_buf);
-        tmp_ch_buf = NULL;
+		free(tmp_ch_buf);
+		tmp_ch_buf = NULL;
 
-        free(tmp_buf);
-        tmp_buf = NULL;
+		free(tmp_buf);
+		tmp_buf = NULL;
 
-        return -1;
-    }
+		return -1;
+	}
 
-    free(tmp_ch_buf);
-    tmp_ch_buf = NULL;
+	free(tmp_ch_buf);
+	tmp_ch_buf = NULL;
 
-    free(tmp_buf);
-    tmp_buf = NULL;
+	free(tmp_buf);
+	tmp_buf = NULL;
 
-    return tmp_ret;
+	return tmp_ret;
 }
 
-int check_hex_data_no_header_valid(unsigned int* tmp_crc32, int max_len, int buf_len, unsigned char data_buf[]) {
-    unsigned int cal_crc32 = 0;
+int check_hex_data_no_header_valid(unsigned int *tmp_crc32, int max_len, int buf_len, unsigned char data_buf[])
+{
+	unsigned int cal_crc32 = 0;
 
-    if (tmp_crc32 != NULL) {
-        *tmp_crc32 = 0;
-    }
+	if (tmp_crc32)
+		*tmp_crc32 = 0;
 
-    if (buf_len >= max_len) {
-        ALOGE("%s, buf_len error (0x%x, 0x%x)\n", __FUNCTION__, max_len, buf_len);
-        return -1;
-    }
-    //ALOGD("%s, data len ok(0x%x, 0x%x)\n", __FUNCTION__, data_len, buf_len);
+	if (buf_len >= max_len) {
+		ALOGE("%s, buf_len error (0x%x, 0x%x)\n", __func__, max_len, buf_len);
+		return -1;
+	}
+	// ALOGD("%s, data len ok(0x%x, 0x%x)\n", __func__, data_len, buf_len);
 
-    cal_crc32 = CalCRC32(0, data_buf, buf_len);
+	cal_crc32 = CalCRC32(0, data_buf, buf_len);
 
-    if (tmp_crc32 != NULL) {
-        *tmp_crc32 = cal_crc32;
-    }
+	if (tmp_crc32)
+		*tmp_crc32 = cal_crc32;
 
-    return 0;
+	return 0;
 }
 
-int check_hex_data_have_header_valid(unsigned int* tmp_crc32, int max_len, int buf_len, unsigned char data_buf[]) {
-    unsigned int rd_crc32 = 0, cal_crc32 = 0;
-    unsigned short data_len = 0;
+int check_hex_data_have_header_valid(unsigned int *tmp_crc32, int max_len, int buf_len, unsigned char data_buf[])
+{
+	unsigned int rd_crc32 = 0, cal_crc32 = 0;
+	unsigned short data_len = 0;
 
-    if (tmp_crc32 != NULL) {
-        *tmp_crc32 = 0;
-    }
+	if (tmp_crc32)
+		*tmp_crc32 = 0;
 
-    memcpy((void *)&data_len, (void *)(data_buf + 4), 2);
-    if (data_len < 4 || data_len >= max_len || data_len != buf_len) {
-        ALOGE("%s, rd data len error (0x%x, 0x%x)\n", __FUNCTION__, data_len, buf_len);
-        return -1;
-    }
-    //ALOGD("%s, data len ok(0x%x, 0x%x)\n", __FUNCTION__, data_len, buf_len);
+	memcpy((void *)&data_len, (void *)(data_buf + 4), 2);
+	if (data_len < 4 || data_len >= max_len || data_len != buf_len) {
+		ALOGE("%s, rd data len error (0x%x, 0x%x)\n", __func__, data_len, buf_len);
+		return -1;
+	}
+	// ALOGD("%s, data len ok(0x%x, 0x%x)\n", __func__, data_len, buf_len);
 
-    memcpy((void *)&rd_crc32, (void *)data_buf, 4);
-    cal_crc32 = CalCRC32(0, (data_buf + 4), data_len - 4);
+	memcpy((void *)&rd_crc32, (void *)data_buf, 4);
+	cal_crc32 = CalCRC32(0, (data_buf + 4), data_len - 4);
 
-    if (rd_crc32 != cal_crc32) {
-        ALOGE("%s, data invalid (0x%08X, 0x%08X)\n", __FUNCTION__, rd_crc32, cal_crc32);
-        return -1;
-    }
+	if (rd_crc32 != cal_crc32) {
+		ALOGE("%s, data invalid (0x%08X, 0x%08X)\n", __func__, rd_crc32, cal_crc32);
+		return -1;
+	}
 
-    if (tmp_crc32 != NULL) {
-        *tmp_crc32 = cal_crc32;
-    }
+	if (tmp_crc32)
+		*tmp_crc32 = cal_crc32;
 
-    //ALOGD("%s, data check ok (0x%08X, 0x%08X)\n", __FUNCTION__, rd_crc32, cal_crc32);
-    return 0;
+	// ALOGD("%s, data check ok (0x%08X, 0x%08X)\n", __func__, rd_crc32, cal_crc32);
+	return 0;
 }
 
-int check_string_data_have_header_valid(unsigned int* tmp_crc32, char *data_str, int chksum_head_len, int ver_len) {
-    int tmp_len = 0, tmp_ver = 0;
-    char *endp = NULL;
-    unsigned long src_chksum = 0, cal_chksum = 0;
-    char tmp_buf[129] = { 0 };
+int check_string_data_have_header_valid(unsigned int *tmp_crc32, char *data_str, int chksum_head_len, int ver_len)
+{
+	int tmp_len = 0, tmp_ver = 0;
+	char *endp = NULL;
+	unsigned long src_chksum = 0, cal_chksum = 0;
+	char tmp_buf[129] = {0};
 
-    if (data_str != NULL) {
-        if (tmp_crc32 != NULL) {
-            *tmp_crc32 = 0;
-        }
+	if (data_str) {
+		if (tmp_crc32)
+			*tmp_crc32 = 0;
 
-        tmp_len = strlen(data_str);
-        if (tmp_len > chksum_head_len + ver_len) {
-            cal_chksum = CalCRC32(0, (unsigned char *)(data_str + chksum_head_len), tmp_len - chksum_head_len);
-            memcpy(tmp_buf, data_str, chksum_head_len);
-            tmp_buf[chksum_head_len] = 0;
-            src_chksum = strtoul(tmp_buf, &endp, 16);
-            if (cal_chksum == src_chksum) {
-                memcpy(tmp_buf, data_str + chksum_head_len, ver_len);
-                if ((tmp_buf[0] == 'v' || tmp_buf[0] == 'V') && isxdigit(tmp_buf[1]) && isxdigit(tmp_buf[2]) && isxdigit(tmp_buf[3])) {
-                    tmp_ver = strtoul(tmp_buf + 1, &endp, 16);
-                    if (tmp_ver <= 0) {
-                        ALOGE("%s, data version error!!!\n", __FUNCTION__);
-                        return -1;
-                    }
-                } else {
-                    ALOGD("%s, data version error!!!\n", __FUNCTION__);
-                    return -1;
-                }
+		tmp_len = strlen(data_str);
+		if (tmp_len > chksum_head_len + ver_len) {
+			cal_chksum = CalCRC32(0, (unsigned char *)(data_str + chksum_head_len), tmp_len - chksum_head_len);
+			memcpy(tmp_buf, data_str, chksum_head_len);
+			tmp_buf[chksum_head_len] = 0;
+			src_chksum = strtoul(tmp_buf, &endp, 16);
+			if (cal_chksum == src_chksum) {
+				memcpy(tmp_buf, data_str + chksum_head_len, ver_len);
+				if ((tmp_buf[0] == 'v' || tmp_buf[0] == 'V') &&
+				    isxdigit(tmp_buf[1]) && isxdigit(tmp_buf[2]) &&
+				    isxdigit(tmp_buf[3])) {
+					tmp_ver = strtoul(tmp_buf + 1, &endp, 16);
+					if (tmp_ver <= 0) {
+						ALOGE("%s, data version error!!!\n", __func__);
+						return -1;
+					}
+				} else {
+					ALOGD("%s, data version error!!!\n", __func__);
+					return -1;
+				}
 
-                if (tmp_crc32 != NULL) {
-                    *tmp_crc32 = cal_chksum;
-                }
-                //ALOGD("%s, data check ok\n", __FUNCTION__);
-                return tmp_ver;
-            } else {
-                ALOGD("%s, cal_chksum = %x\n", __FUNCTION__, (unsigned int)cal_chksum);
-                ALOGD("%s, src_chksum = %x\n", __FUNCTION__, (unsigned int)src_chksum);
-            }
-        }
+				if (tmp_crc32)
+					*tmp_crc32 = cal_chksum;
 
-        ALOGE("%s, data error!!!\n", __FUNCTION__);
-        return -1;
-    }
+				// ALOGD("%s, data check ok\n", __func__);
+				return tmp_ver;
+			}
+			ALOGD("%s, cal_chksum = %x\n", __func__, (unsigned int)cal_chksum);
+			ALOGD("%s, src_chksum = %x\n", __func__, (unsigned int)src_chksum);
+		}
 
-    ALOGE("%s, data is NULL!!!\n", __FUNCTION__);
-    return -1;
+		ALOGE("%s, data error!!!\n", __func__);
+		return -1;
+	}
+
+	ALOGE("%s, data is NULL!!!\n", __func__);
+	return -1;
 }
 
 int read_lcd_param(int index, unsigned char data_buf[])
@@ -253,11 +258,11 @@ int read_lcd_param(int index, unsigned char data_buf[])
 		return -1;
 
 	if (index == 1)
-		rd_size = ReadIniData(CS_LCD1_ITEM_NAME, data_buf);
+		rd_size = read_ini_data(CS_LCD1_ITEM_NAME, data_buf);
 	else if (index == 2)
-		rd_size = ReadIniData(CS_LCD2_ITEM_NAME, data_buf);
+		rd_size = read_ini_data(CS_LCD2_ITEM_NAME, data_buf);
 	else
-		rd_size = ReadIniData(CS_LCD_ITEM_NAME, data_buf);
+		rd_size = read_ini_data(CS_LCD_ITEM_NAME, data_buf);
 
 	return rd_size;
 }
@@ -270,11 +275,11 @@ int save_lcd_param(int index, int wr_size, unsigned char data_buf[])
 		return -1;
 
 	if (index == 1)
-		tmp_ret = WriteIniData(CS_LCD1_ITEM_NAME, wr_size, data_buf);
+		tmp_ret = write_ini_data(CS_LCD1_ITEM_NAME, wr_size, data_buf);
 	else if (index == 2)
-		tmp_ret = WriteIniData(CS_LCD2_ITEM_NAME, wr_size, data_buf);
+		tmp_ret = write_ini_data(CS_LCD2_ITEM_NAME, wr_size, data_buf);
 	else
-		tmp_ret = WriteIniData(CS_LCD_ITEM_NAME, wr_size, data_buf);
+		tmp_ret = write_ini_data(CS_LCD_ITEM_NAME, wr_size, data_buf);
 	if (tmp_ret != wr_size)
 		return -1;
 
@@ -289,11 +294,11 @@ int read_lcd_extern_param(int index, unsigned char data_buf[])
 		return -1;
 
 	if (index == 1)
-		rd_size = ReadIniData(CS_LCD1_EXT_ITEM_NAME, data_buf);
+		rd_size = read_ini_data(CS_LCD1_EXT_ITEM_NAME, data_buf);
 	else if (index == 2)
-		rd_size = ReadIniData(CS_LCD2_EXT_ITEM_NAME, data_buf);
+		rd_size = read_ini_data(CS_LCD2_EXT_ITEM_NAME, data_buf);
 	else
-		rd_size = ReadIniData(CS_LCD_EXT_ITEM_NAME, data_buf);
+		rd_size = read_ini_data(CS_LCD_EXT_ITEM_NAME, data_buf);
 
 	return rd_size;
 }
@@ -306,11 +311,11 @@ int save_lcd_extern_param(int index, int wr_size, unsigned char data_buf[])
 		return -1;
 
 	if (index == 1)
-		tmp_ret = WriteIniData(CS_LCD1_EXT_ITEM_NAME, wr_size, data_buf);
+		tmp_ret = write_ini_data(CS_LCD1_EXT_ITEM_NAME, wr_size, data_buf);
 	else if (index == 2)
-		tmp_ret = WriteIniData(CS_LCD2_EXT_ITEM_NAME, wr_size, data_buf);
+		tmp_ret = write_ini_data(CS_LCD2_EXT_ITEM_NAME, wr_size, data_buf);
 	else
-		tmp_ret = WriteIniData(CS_LCD_EXT_ITEM_NAME, wr_size, data_buf);
+		tmp_ret = write_ini_data(CS_LCD_EXT_ITEM_NAME, wr_size, data_buf);
 	if (tmp_ret != wr_size)
 		return -1;
 
@@ -325,11 +330,11 @@ int read_backlight_param(int index, unsigned char data_buf[])
 		return -1;
 
 	if (index == 1)
-		rd_size = ReadIniData(CS_BACKLIGHT1_ITEM_NAME, data_buf);
+		rd_size = read_ini_data(CS_BACKLIGHT1_ITEM_NAME, data_buf);
 	else if (index == 2)
-		rd_size = ReadIniData(CS_BACKLIGHT2_ITEM_NAME, data_buf);
+		rd_size = read_ini_data(CS_BACKLIGHT2_ITEM_NAME, data_buf);
 	else
-		rd_size = ReadIniData(CS_BACKLIGHT_ITEM_NAME, data_buf);
+		rd_size = read_ini_data(CS_BACKLIGHT_ITEM_NAME, data_buf);
 
 	return rd_size;
 }
@@ -342,11 +347,11 @@ int save_backlight_param(int index, int wr_size, unsigned char data_buf[])
 		return -1;
 
 	if (index == 1)
-		tmp_ret = WriteIniData(CS_BACKLIGHT1_ITEM_NAME, wr_size, data_buf);
+		tmp_ret = write_ini_data(CS_BACKLIGHT1_ITEM_NAME, wr_size, data_buf);
 	else if (index == 2)
-		tmp_ret = WriteIniData(CS_BACKLIGHT2_ITEM_NAME, wr_size, data_buf);
+		tmp_ret = write_ini_data(CS_BACKLIGHT2_ITEM_NAME, wr_size, data_buf);
 	else
-		tmp_ret = WriteIniData(CS_BACKLIGHT_ITEM_NAME, wr_size, data_buf);
+		tmp_ret = write_ini_data(CS_BACKLIGHT_ITEM_NAME, wr_size, data_buf);
 	if (tmp_ret != wr_size)
 		return -1;
 
@@ -360,7 +365,7 @@ int read_ldim_dev_param(unsigned char data_buf[])
 	if (!data_buf)
 		return -1;
 
-	rd_size = ReadIniData(CS_LDIM_DEV_ITEM_NAME, data_buf);
+	rd_size = read_ini_data(CS_LDIM_DEV_ITEM_NAME, data_buf);
 
 	return rd_size;
 }
@@ -372,41 +377,40 @@ int save_ldim_dev_param(int wr_size, unsigned char data_buf[])
 	if (!data_buf)
 		return -1;
 
-	tmp_ret = WriteIniData(CS_LDIM_DEV_ITEM_NAME, wr_size, data_buf);
+	tmp_ret = write_ini_data(CS_LDIM_DEV_ITEM_NAME, wr_size, data_buf);
 	if (tmp_ret != wr_size)
 		return -1;
 
 	return tmp_ret;
 }
 
-int ReadTconSpiParam(unsigned char data_buf[]) {
-    int rd_size = 0;
+int read_tcon_spi_param(unsigned char data_buf[])
+{
+	int rd_size = 0;
 
-    if (data_buf == NULL) {
-        return -1;
-    }
+	if (!data_buf)
+		return -1;
 
-    rd_size = ReadIniData(CS_LCD_TCON_SPI_ITEM_NAME, data_buf);
+	rd_size = read_ini_data(CS_LCD_TCON_SPI_ITEM_NAME, data_buf);
 
-    return rd_size;
+	return rd_size;
 }
 
-int SaveTconSpiParam(int wr_size, unsigned char data_buf[]) {
-    int tmp_ret = 0;
+int save_tcon_spi_param(int wr_size, unsigned char data_buf[])
+{
+	int tmp_ret = 0;
 
-    if (data_buf == NULL) {
-        return -1;
-    }
+	if (!data_buf)
+		return -1;
 
-    tmp_ret = WriteIniData(CS_LCD_TCON_SPI_ITEM_NAME, wr_size, data_buf);
-    if (tmp_ret != wr_size) {
-        return -1;
-    }
+	tmp_ret = write_ini_data(CS_LCD_TCON_SPI_ITEM_NAME, wr_size, data_buf);
+	if (tmp_ret != wr_size)
+		return -1;
 
-    return tmp_ret;
+	return tmp_ret;
 }
 
-int ReadLcdOpticalParam(int index, unsigned char data_buf[])
+int read_lcd_optical_param(int index, unsigned char data_buf[])
 {
 	int rd_size = 0;
 
@@ -415,20 +419,20 @@ int ReadLcdOpticalParam(int index, unsigned char data_buf[])
 
 	switch (index) {
 	case 1:
-		rd_size = ReadIniData(CS_LCD1_OPTICAL_ITEM_NAME, data_buf);
+		rd_size = read_ini_data(CS_LCD1_OPTICAL_ITEM_NAME, data_buf);
 		break;
 	case 2:
-		rd_size = ReadIniData(CS_LCD2_OPTICAL_ITEM_NAME, data_buf);
+		rd_size = read_ini_data(CS_LCD2_OPTICAL_ITEM_NAME, data_buf);
 		break;
 	default:
-		rd_size = ReadIniData(CS_LCD_OPTICAL_ITEM_NAME, data_buf);
+		rd_size = read_ini_data(CS_LCD_OPTICAL_ITEM_NAME, data_buf);
 		break;
 	}
 
 	return rd_size;
 }
 
-int SaveLcdOpticalParam(int index, int wr_size, unsigned char data_buf[])
+int save_lcd_optical_param(int index, int wr_size, unsigned char data_buf[])
 {
 	int tmp_ret = 0;
 
@@ -437,13 +441,13 @@ int SaveLcdOpticalParam(int index, int wr_size, unsigned char data_buf[])
 
 	switch (index) {
 	case 1:
-		tmp_ret = WriteIniData(CS_LCD1_OPTICAL_ITEM_NAME, wr_size, data_buf);
+		tmp_ret = write_ini_data(CS_LCD1_OPTICAL_ITEM_NAME, wr_size, data_buf);
 		break;
 	case 2:
-		tmp_ret = WriteIniData(CS_LCD2_OPTICAL_ITEM_NAME, wr_size, data_buf);
+		tmp_ret = write_ini_data(CS_LCD2_OPTICAL_ITEM_NAME, wr_size, data_buf);
 		break;
 	default:
-		tmp_ret = WriteIniData(CS_LCD_OPTICAL_ITEM_NAME, wr_size, data_buf);
+		tmp_ret = write_ini_data(CS_LCD_OPTICAL_ITEM_NAME, wr_size, data_buf);
 		break;
 	}
 	if (tmp_ret != wr_size)
@@ -452,141 +456,143 @@ int SaveLcdOpticalParam(int index, int wr_size, unsigned char data_buf[])
 	return tmp_ret;
 }
 
-int ReadTconBinParam(unsigned char data_buf[]) {
-    int rd_size = 0;
+int read_tcon_bin_param(unsigned char data_buf[])
+{
+	int rd_size = 0;
 
-    if (data_buf == NULL) {
-        return -1;
-    }
+	if (!data_buf)
+		return -1;
 
-    rd_size = ReadBinData(CS_LCD_TCON_ITEM_NAME, data_buf);
+	rd_size = read_bin_data(CS_LCD_TCON_ITEM_NAME, data_buf);
 
-    return rd_size;
+	return rd_size;
 }
 
-int SaveTconBinParam(int wr_size, unsigned char data_buf[]) {
-    int tmp_ret = 0;
+int save_tcon_bin_param(int wr_size, unsigned char data_buf[])
+{
+	int tmp_ret = 0;
 
-    if (data_buf == NULL) {
-        return -1;
-    }
+	if (!data_buf)
+		return -1;
 
-    tmp_ret = WriteBinData(CS_LCD_TCON_ITEM_NAME, wr_size, data_buf);
-    if (tmp_ret != wr_size) {
-        return -1;
-    }
+	tmp_ret = write_bin_data(CS_LCD_TCON_ITEM_NAME, wr_size, data_buf);
+	if (tmp_ret != wr_size)
+		return -1;
 
-    return tmp_ret;
+	return tmp_ret;
 }
 
-int ReadPanelIniName(char data_buf[]) {
-    return ReadStringData(CS_PANEL_INI_PATH_ITEM_NAME, 0, data_buf);
+int read_panel_ini_name(char data_buf[])
+{
+	return read_string_data(CS_PANEL_INI_PATH_ITEM_NAME, 0, data_buf);
 }
 
-int SavePanelIniName(char data_buf[]) {
-    return SaveStringData(CS_PANEL_INI_PATH_ITEM_NAME, 0, data_buf);
+int save_panel_ini_name(char data_buf[])
+{
+	return save_string_data(CS_PANEL_INI_PATH_ITEM_NAME, 0, data_buf);
 }
 
-int ReadPanelPQPath(char data_buf[]) {
-    return ReadStringData(CS_PANEL_PQ_PATH_ITEM_NAME, 0, data_buf);
+int read_panel_PQ_path(char data_buf[])
+{
+	return read_string_data(CS_PANEL_PQ_PATH_ITEM_NAME, 0, data_buf);
 }
 
-int SavePanelPQPath(char data_buf[]) {
-    return SaveStringData(CS_PANEL_PQ_PATH_ITEM_NAME, 0, data_buf);
+int save_panel_PQ_path(char data_buf[])
+{
+	return save_string_data(CS_PANEL_PQ_PATH_ITEM_NAME, 0, data_buf);
 }
 
-int ReadPanelAllInfoData(unsigned char data_buf[]) {
-    int rd_size = 0;
+int read_panel_all_info_data(unsigned char data_buf[])
+{
+	int rd_size = 0;
 
-    if (data_buf == NULL) {
-        return -1;
-    }
+	if (!data_buf)
+		return -1;
 
-    rd_size = ReadIniData(CS_PANEL_ALL_INFO_ITEM_NAME, data_buf);
+	rd_size = read_ini_data(CS_PANEL_ALL_INFO_ITEM_NAME, data_buf);
 
-    return rd_size;
+	return rd_size;
 }
 
-int SavePanelAllInfoData(int wr_size, unsigned char data_buf[]) {
-    int tmp_ret = 0;
+int save_panel_all_info_data(int wr_size, unsigned char data_buf[])
+{
+	int tmp_ret = 0;
 
-    if (data_buf == NULL) {
-        return -1;
-    }
+	if (!data_buf)
+		return -1;
 
-    tmp_ret = WriteIniData(CS_PANEL_ALL_INFO_ITEM_NAME, wr_size, data_buf);
-    if (tmp_ret != wr_size) {
-        return -1;
-    }
+	tmp_ret = write_ini_data(CS_PANEL_ALL_INFO_ITEM_NAME, wr_size, data_buf);
+	if (tmp_ret != wr_size)
+		return -1;
 
-    return tmp_ret;
+	return tmp_ret;
 }
 
-int ReadPanelAllData(int sec_no, unsigned char data_buf[]) {
-    int rd_size = 0;
-    char tmp_buf[128];
+int read_panel_all_data(int sec_no, unsigned char data_buf[])
+{
+	int rd_size = 0;
+	char tmp_buf[128];
 
-    if (data_buf == NULL) {
-        return -1;
-    }
+	if (!data_buf)
+		return -1;
 
-    sprintf(tmp_buf, "%s_d%d", CS_PANEL_ALL_DATA_ITEM_NAME, sec_no);
 
-    rd_size = ReadIniData(tmp_buf, data_buf);
+	sprintf(tmp_buf, "%s_d%d", CS_PANEL_ALL_DATA_ITEM_NAME, sec_no);
 
-    return rd_size;
+	rd_size = read_ini_data(tmp_buf, data_buf);
+
+	return rd_size;
 }
 
-int SavePanelAllData(int sec_no, int wr_size, unsigned char data_buf[]) {
-    int tmp_ret = 0;
-    char tmp_buf[128];
+int save_panel_all_data(int sec_no, int wr_size, unsigned char data_buf[])
+{
+	int tmp_ret = 0;
+	char tmp_buf[128];
 
-    if (data_buf == NULL) {
-        return -1;
-    }
+	if (!data_buf)
+		return -1;
 
-    sprintf(tmp_buf, "%s_d%d", CS_PANEL_ALL_DATA_ITEM_NAME, sec_no);
+	sprintf(tmp_buf, "%s_d%d", CS_PANEL_ALL_DATA_ITEM_NAME, sec_no);
 
-    tmp_ret = WriteIniData(tmp_buf, wr_size, data_buf);
-    if (tmp_ret != wr_size) {
-        return -1;
-    }
+	tmp_ret = write_ini_data(tmp_buf, wr_size, data_buf);
+	if (tmp_ret != wr_size)
+		return -1;
 
-    return tmp_ret;
+	return tmp_ret;
 }
 
-void PrintDataBuf(int data_cnt, unsigned char data_buf[]) {
-    int i = 0;
+void print_data_buf(int data_cnt, unsigned char data_buf[])
+{
+	int i = 0;
 
-    for (i = 0; i < data_cnt; i++) {
-        ALOGD("%s, data_buf[%d] = 0x%02x\n", __FUNCTION__, i, data_buf[i]);
-    }
+	for (i = 0; i < data_cnt; i++)
+		ALOGD("%s, data_buf[%d] = 0x%02x\n", __func__, i, data_buf[i]);
 
-    ALOGD("%s, \n\n\n\n", __FUNCTION__);
+	ALOGD("%s, \n\n\n\n", __func__);
 }
 
-unsigned int CalCRC32(unsigned int crc, const unsigned char *ptr, int buf_len) {
-    static const unsigned int s_crc32[16] = {
-        0, 0x1db71064, 0x3b6e20c8, 0x26d930ac, 0x76dc4190, 0x6b6b51f4, 0x4db26158, 0x5005713c,
-        0xedb88320, 0xf00f9344, 0xd6d6a3e8, 0xcb61b38c, 0x9b64c2b0, 0x86d3d2d4, 0xa00ae278, 0xbdbdf21c };
+unsigned int CalCRC32(unsigned int crc, const unsigned char *ptr, int buf_len)
+{
+	static const unsigned int s_crc32[16] = {
+	    0, 0x1db71064, 0x3b6e20c8, 0x26d930ac, 0x76dc4190, 0x6b6b51f4, 0x4db26158, 0x5005713c,
+	    0xedb88320, 0xf00f9344, 0xd6d6a3e8, 0xcb61b38c, 0x9b64c2b0, 0x86d3d2d4, 0xa00ae278,
+	    0xbdbdf21c};
 
-    unsigned int crcu32 = crc;
-    unsigned char b;
+	unsigned int crcu32 = crc;
+	unsigned char b;
 
-    if (buf_len <= 0) {
-        return 0;
-    }
+	if (buf_len <= 0)
+		return 0;
 
-    if (!ptr) {
-        return 0;
-    }
+	if (!ptr)
+		return 0;
 
-    crcu32 = ~crcu32;
-    while (buf_len--) {
-        b = *ptr++;
-        crcu32 = (crcu32 >> 4) ^ s_crc32[(crcu32 & 0xF) ^ (b & 0xF)];
-        crcu32 = (crcu32 >> 4) ^ s_crc32[(crcu32 & 0xF) ^ (b >> 4)];
-    }
+	crcu32 = ~crcu32;
+	while (buf_len--) {
+		b = *ptr++;
+		crcu32 = (crcu32 >> 4) ^ s_crc32[(crcu32 & 0xF) ^ (b & 0xF)];
+		crcu32 = (crcu32 >> 4) ^ s_crc32[(crcu32 & 0xF) ^ (b >> 4)];
+	}
 
-    return ~crcu32;
+	return ~crcu32;
 }

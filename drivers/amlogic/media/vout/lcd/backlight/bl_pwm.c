@@ -4,6 +4,8 @@
  */
 
 #include <common.h>
+#include <dm.h>
+#include <asm/gpio.h>
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include "lcd_bl.h"
 #include "../lcd_reg.h"
@@ -190,7 +192,20 @@ static unsigned int pwm_reg_t3[] = {
 	PWM_REG_MAX
 };
 
-static struct bl_pwm_ctrl_config_s bl_pwm_ctrl_conf_t5 = {
+static struct bl_pwm_ctrl_config_s bl_pwm_ctrl_conf_dft = {
+	.pwm_div_flag = 0,
+	.pwm_vs_flag = 0,
+	.pwm_clk = NULL,
+	.pwm_misc = pwm_misc_dft,
+	.pwm_reg = pwm_reg_dft,
+	.pwm_cnt = 6,
+	.pwm_ao_clk = NULL,
+	.pwm_ao_misc = pwm_ao_misc_dft,
+	.pwm_ao_reg = pwm_ao_reg_dft,
+	.pwm_ao_cnt = 2,
+};
+
+static struct bl_pwm_ctrl_config_s bl_pwm_ctrl_conf_tl1 = {
 	.pwm_div_flag = 0,
 	.pwm_vs_flag = 1,
 	.pwm_clk = NULL,
@@ -204,7 +219,7 @@ static struct bl_pwm_ctrl_config_s bl_pwm_ctrl_conf_t5 = {
 };
 
 static struct bl_pwm_ctrl_config_s bl_pwm_ctrl_conf_t7 = {
-	.pwm_div_flag = 0,
+	.pwm_div_flag = 1,
 	.pwm_vs_flag = 1,
 	.pwm_clk = pwm_clk_ctrl_t7,
 	.pwm_misc = pwm_misc_t7,
@@ -372,6 +387,10 @@ void bl_set_pwm(struct bl_pwm_config_s *bl_pwm)
 
 	if (!bl_pwm_ctrl_conf)
 		return;
+	if (bl_pwm->pwm_cnt == 0) {
+		BLERR("%s: pwm_cnt is 0\n", __func__);
+		return;
+	}
 
 	switch (bl_pwm->pwm_method) {
 	case BL_PWM_POSITIVE:
@@ -398,9 +417,10 @@ void bl_set_pwm(struct bl_pwm_config_s *bl_pwm)
 		bl_pwm->pwm_hi = (bl_pwm->pwm_hi * 10 / n + 5) / 10;
 		bl_pwm->pwm_hi = (bl_pwm->pwm_hi > 1) ? bl_pwm->pwm_hi : 1;
 		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
-			BLPR("n=%d, sw=%d, pwm_high=%d\n", n, sw, bl_pwm->pwm_hi);
+			BLPR("n=%d, sw=%d, pwm_high=%d, phase=%d\n",
+			n, sw, bl_pwm->pwm_hi, bl_pwm->pwm_phase);
 		for (i = 0; i < n; i++) {
-			vs[i] = 1 + (sw * i);
+			vs[i] = 1 + (sw * i) + bl_pwm->pwm_phase;
 			ve[i] = vs[i] + bl_pwm->pwm_hi - 1;
 			if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
 				BLPR("vs[%d]=%d, ve[%d]=%d\n", i, vs[i], i, ve[i]);
@@ -431,57 +451,65 @@ void bl_set_pwm(struct bl_pwm_config_s *bl_pwm)
 	}
 }
 
-static unsigned int bl_level_mapping(struct bl_config_s *bconf, unsigned int level)
+void bl_pwm_duty_to_pwm_level(struct bl_pwm_config_s *bl_pwm)
 {
-	unsigned int mid = bconf->level_mid;
-	unsigned int mid_map =bconf->level_mid_mapping;
-	unsigned int max = bconf->level_max;
-	unsigned int min = bconf->level_min;
+	unsigned int level_half;
+	unsigned long long temp;
 
-	if (mid == mid_map)
-		return level;
+	temp = bl_pwm->pwm_cnt;
+	level_half = bl_pwm->pwm_duty_range / 2;
+	bl_pwm->pwm_level =
+		lcd_do_div(((temp * bl_pwm->pwm_duty) + level_half), bl_pwm->pwm_duty_range);
+}
 
-	level = level > max ? max : level;
-	if ((level >= mid) && (level <= max))
-		level = (((level - mid) * (max - mid_map)) / (max - mid)) + mid_map;
-	else if ((level >= min) && (level < mid))
-		level = (((level - min) * (mid_map - min)) / (mid - min)) + min;
-	else
-		level = 0;
+void bl_level_to_pwm_level(struct bl_pwm_config_s *bl_pwm)
+{
+	unsigned int bl_level = bl_pwm->bl_level;
+	unsigned int bl_min = bl_pwm->bl_level_min;
+	unsigned int bl_max = bl_pwm->bl_level_max;
+	unsigned int pwm_max = bl_pwm->pwm_max;
+	unsigned int pwm_min = bl_pwm->pwm_min;
+	unsigned long long temp;
 
-	return level;
+	if (bl_level > bl_max) {
+		bl_pwm->pwm_level = pwm_max;
+	} else if (bl_max <= bl_min || bl_level < bl_min) {
+		bl_pwm->pwm_level = pwm_min;
+	} else {
+		temp = pwm_max - pwm_min;
+		bl_pwm->pwm_level =
+			lcd_do_div((temp * (bl_level - bl_min)), (bl_max - bl_min)) + pwm_min;
+	}
 }
 
 void bl_pwm_set_level(struct aml_bl_drv_s *bdrv,
 		     struct bl_pwm_config_s *bl_pwm, unsigned int level)
 {
-	unsigned int min = bl_pwm->level_min;
-	unsigned int max = bl_pwm->level_max;
+	unsigned int min = bl_pwm->bl_level_min;
+	unsigned int max = bl_pwm->bl_level_max;
 	unsigned int pwm_max = bl_pwm->pwm_max;
 	unsigned int pwm_min = bl_pwm->pwm_min;
+	unsigned long long temp;
+	unsigned int range;
 
-	level = bl_level_mapping(&bdrv->config, level);
-	max = bl_level_mapping(&bdrv->config, max);
-	min = bl_level_mapping(&bdrv->config, min);
-	if ((max <= min) || (level < min))
-		bl_pwm->pwm_level = pwm_min;
-	else
-		bl_pwm->pwm_level =
-		(pwm_max - pwm_min) * (level - min) / (max - min) + pwm_min;
+	if (bl_pwm->pwm_cnt == 0) {
+		BLERR("%s: pwm_cnt is 0\n", __func__);
+		return;
+	}
 
-	if (bl_pwm->pwm_duty_max > 255)
-		bl_pwm->pwm_duty = bl_pwm->pwm_level * 4095 / bl_pwm->pwm_cnt;
-	else if (bl_pwm->pwm_duty_max > 100)
-		bl_pwm->pwm_duty = bl_pwm->pwm_level * 255 / bl_pwm->pwm_cnt;
-	else
-		bl_pwm->pwm_duty =
-		((bl_pwm->pwm_level * 1000 / bl_pwm->pwm_cnt) + 5) / 10;
+	bl_pwm->bl_level = level;
+	bl_level_to_pwm_level(bl_pwm);
+
+	temp = bl_pwm->pwm_level;
+	range = bl_pwm->pwm_duty_range;
+	bl_pwm->pwm_duty = (lcd_do_div((temp * range * 10), bl_pwm->pwm_cnt) + 5) / 10;
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-		BLPR("pwm_port 0x%x: level=%d, level_max=%d, level_min=%d, pwm_max=%d, pwm_min=%d, pwm_level=%d, duty=%d%%\n",
-		     bl_pwm->pwm_port, level, max, min,
-		     pwm_max, pwm_min, bl_pwm->pwm_level,
-		     bl_pwm->pwm_duty);
+		BLPR("pwm_port 0x%x: level=%d, level_max=%d, level_min=%d\n",
+		     bl_pwm->pwm_port, level, max, min);
+		BLPR("pwm_port 0x%x: pwm_max=%d, pwm_min=%d, pwm_level=%d, duty=%d\n",
+		     bl_pwm->pwm_port, pwm_max, pwm_min,
+		     bl_pwm->pwm_level, bl_pwm->pwm_duty);
 	}
 
 	if (bdrv->state > 0)
@@ -567,7 +595,8 @@ void bl_pwm_en(struct bl_pwm_config_s *bl_pwm, int flag)
 
 void bl_pwm_config_init(struct bl_pwm_config_s *bl_pwm)
 {
-	unsigned int freq, pre_div, cnt;
+	struct aml_lcd_drv_s *pdrv;
+	unsigned int pre_div, cnt;
 	int i;
 
 	if (!bl_pwm) {
@@ -581,19 +610,24 @@ void bl_pwm_config_init(struct bl_pwm_config_s *bl_pwm)
 		BLPR("%s pwm_port 0x%x: freq = %u\n",
 		     __func__, bl_pwm->pwm_port, bl_pwm->pwm_freq);
 	}
-	freq = bl_pwm->pwm_freq;
+	pdrv = aml_lcd_get_driver(bl_pwm->drv_index);
 	switch (bl_pwm->pwm_port) {
 	case BL_PWM_VS:
-		cnt = lcd_vcbus_read(ENCL_VIDEO_MAX_LNCNT) + 1;
-		bl_pwm->pwm_cnt = cnt;
+		if (bl_pwm->pwm_freq > 4) {
+			BLERR("bl_pwm_vs wrong freq %d\n", bl_pwm->pwm_freq);
+			bl_pwm->pwm_freq = BL_FREQ_VS_DEFAULT;
+		}
+		bl_pwm->pwm_cnt = lcd_get_max_line_cnt(pdrv);
 		bl_pwm->pwm_pre_div = 0;
 		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
 			BLPR("pwm_cnt = %u\n", bl_pwm->pwm_cnt);
 		break;
 	default:
+		if (bl_pwm->pwm_freq > XTAL_HALF_FREQ_HZ)
+			bl_pwm->pwm_freq = XTAL_HALF_FREQ_HZ;
 		for (i = 0; i < 0x7f; i++) {
 			pre_div = i;
-			cnt = XTAL_FREQ_HZ / (freq * (pre_div + 1)) - 2;
+			cnt = XTAL_FREQ_HZ / (bl_pwm->pwm_freq * (pre_div + 1)) - 2;
 			if (cnt <= 0xffff) /* 16bit */
 				break;
 		}
@@ -604,19 +638,18 @@ void bl_pwm_config_init(struct bl_pwm_config_s *bl_pwm)
 		break;
 	}
 
-	if (bl_pwm->pwm_duty_max > 255) {
-		bl_pwm->pwm_max = (bl_pwm->pwm_cnt * bl_pwm->pwm_duty_max / 4095);
-		bl_pwm->pwm_min = (bl_pwm->pwm_cnt * bl_pwm->pwm_duty_min / 4095);
-	} else if (bl_pwm->pwm_duty_max > 100) {
-		bl_pwm->pwm_max = (bl_pwm->pwm_cnt * bl_pwm->pwm_duty_max / 255);
-		bl_pwm->pwm_min = (bl_pwm->pwm_cnt * bl_pwm->pwm_duty_min / 255);
-	} else {
-		bl_pwm->pwm_max = (bl_pwm->pwm_cnt * bl_pwm->pwm_duty_max / 100);
-		bl_pwm->pwm_min = (bl_pwm->pwm_cnt * bl_pwm->pwm_duty_min / 100);
-	}
+	if (bl_pwm->pwm_duty_max > 255)
+		bl_pwm->pwm_duty_range = 4095;
+	else if (bl_pwm->pwm_duty_max > 100)
+		bl_pwm->pwm_duty_range = 255;
+	else
+		bl_pwm->pwm_duty_range = 100;
+	bl_pwm->pwm_max = (bl_pwm->pwm_cnt * bl_pwm->pwm_duty_max / bl_pwm->pwm_duty_range);
+	bl_pwm->pwm_min = (bl_pwm->pwm_cnt * bl_pwm->pwm_duty_min / bl_pwm->pwm_duty_range);
+
 	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
-		BLPR("pwm_max = %u, pwm_min = %u\n",
-		      bl_pwm->pwm_max, bl_pwm->pwm_min);
+		BLPR("pwm_cnt = %u, pwm_max = %u, pwm_min = %u\n",
+		      bl_pwm->pwm_cnt, bl_pwm->pwm_max, bl_pwm->pwm_min);
 }
 
 void bl_pwm_reg_print(struct bl_pwm_config_s *bl_pwm)
@@ -670,16 +703,25 @@ void bl_pwm_reg_print(struct bl_pwm_config_s *bl_pwm)
 int aml_bl_pwm_reg_config_init(struct aml_lcd_data_s *pdata)
 {
 	switch (pdata->chip_type) {
+	case LCD_CHIP_G12A:
+	case LCD_CHIP_G12B:
+	case LCD_CHIP_SM1:
+		bl_pwm_ctrl_conf = &bl_pwm_ctrl_conf_dft;
+		break;
+	case LCD_CHIP_TL1:
+	case LCD_CHIP_TM2:
 	case LCD_CHIP_T5:
 	case LCD_CHIP_T5D:
-		bl_pwm_ctrl_conf = &bl_pwm_ctrl_conf_t5;
+	case LCD_CHIP_T5W:
+	case LCD_CHIP_TXHD2:
+		bl_pwm_ctrl_conf = &bl_pwm_ctrl_conf_tl1;
 		break;
 	case LCD_CHIP_T7:
 		bl_pwm_ctrl_conf = &bl_pwm_ctrl_conf_t7;
 		break;
 	case LCD_CHIP_T3:
-	case LCD_CHIP_T5W:
 	case LCD_CHIP_T5M:
+	case LCD_CHIP_T3X:
 		bl_pwm_ctrl_conf = &bl_pwm_ctrl_conf_t3;
 		break;
 	default:

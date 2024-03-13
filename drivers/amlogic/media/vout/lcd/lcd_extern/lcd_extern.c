@@ -5,6 +5,8 @@
 
 #include <common.h>
 #include <malloc.h>
+#include <dm.h>
+#include <asm/gpio.h>
 #include <fdtdec.h>
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include <amlogic/media/vout/lcd/lcd_extern.h>
@@ -934,6 +936,8 @@ static int lcd_extern_get_config_dts(char *dtaddr, char *snode,
 	const char *str;
 	int ret = 0;
 
+	EXTPR("[%d]: load dev config %d from dts\n", edrv->index, edev->dev_index);
+
 	extconf->table_init_loaded = 0;
 	nodeoffset = lcd_extern_get_dts_child(dtaddr, snode, edev->dev_index);
 	if (nodeoffset < 0)
@@ -1495,18 +1499,20 @@ static int lcd_extern_get_config_unifykey(struct lcd_extern_driver_s *edrv,
 	unsigned char *para, *p;
 	int key_len, len;
 	const char *str;
-	struct lcd_unifykey_header_s ext_header;
+	struct lcd_unifykey_header_s *ext_header;
 	int ret;
 
 	edev->config.table_init_loaded = 0;
-	para = (unsigned char *)malloc(sizeof(unsigned char) * LCD_UKEY_LCD_EXT_SIZE);
+	ret = lcd_unifykey_get_size(snode, &key_len);
+	if (ret)
+		return -1;
+	para = (unsigned char *)malloc(sizeof(unsigned char) * key_len);
 	if (!para) {
 		EXTERR("[%d]: %s: Not enough memory\n", edrv->index, __func__);
 		return -1;
 	}
-	key_len = LCD_UKEY_LCD_EXT_SIZE;
 	memset(para, 0, (sizeof(unsigned char) * key_len));
-	ret = lcd_unifykey_get(snode, para, &key_len);
+	ret = lcd_unifykey_get(snode, para, key_len);
 	if (ret) {
 		free(para);
 		return -1;
@@ -1522,12 +1528,13 @@ static int lcd_extern_get_config_unifykey(struct lcd_extern_driver_s *edrv,
 	}
 
 	/* header: 10byte */
-	lcd_unifykey_header_check(para, &ext_header);
+	ext_header = (struct lcd_unifykey_header_s *)para;
+	EXTPR("[%d]: load dev config %d from unifykey, version:0x%x\n",
+		edrv->index, edev->dev_index, ext_header->version);
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 		EXTPR("[%d]: unifykey header:\n", edrv->index);
-		EXTPR("crc32             = 0x%08x\n", ext_header.crc32);
-		EXTPR("data_len          = %d\n", ext_header.data_len);
-		EXTPR("version           = 0x%04x\n", ext_header.version);
+		EXTPR("crc32             = 0x%08x\n", ext_header->crc32);
+		EXTPR("data_len          = %d\n", ext_header->data_len);
 	}
 
 	/* basic: 33byte */
@@ -1801,9 +1808,6 @@ static int lcd_extern_add_dev(struct lcd_extern_driver_s *edrv,
 		return -1;
 	}
 
-	EXTPR("[%d]: %s: %s(%d) ok\n",
-	      edrv->index, __func__,
-	      edev->config.name, edev->dev_index);
 	return ret;
 }
 
@@ -1842,27 +1846,18 @@ static int lcd_extern_dev_probe(char *dtaddr, int load_id,
 		/* check unifykey config */
 		if (edrv->key_valid) {
 			ret = lcd_unifykey_check(skey);
-			if (ret == 0) {
-				EXTPR("[%d]: load config %d from unifykey\n",
-				      edrv->index, dev_index);
+			if (ret == 0)
 				ret = lcd_extern_get_config_unifykey(edrv, edev, skey);
-			}
 		} else {
-			EXTPR("[%d]: load config %d from dts\n",
-			      edrv->index, dev_index);
 			ret = lcd_extern_get_config_dts(dtaddr, snode, edrv, edev);
 		}
 	} else {
 		if (edrv->key_valid) {
 			ret = lcd_unifykey_check(skey);
-			if (ret == 0) {
-				EXTPR("[%d]: load config %d from unifykey\n",
-				      edrv->index, dev_index);
+			if (ret == 0)
 				ret = lcd_extern_get_config_unifykey(edrv, edev, skey);
-			}
 		} else {
-			EXTPR("[%d]: load config %d from bsp\n",
-			      edrv->index, dev_index);
+			EXTPR("[%d]: load dev config %d from bsp\n", edrv->index, dev_index);
 			dft_conf = edrv->data->dft_conf[edrv->index];
 			if (dev_index >= dft_conf->ext_common->ext_num) {
 				EXTERR("[%d]: %s: %d invalid\n",
