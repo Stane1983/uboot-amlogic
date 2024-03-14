@@ -411,6 +411,8 @@ void usb_device_mode_init(int phy_num)
 #define  CC_VBUS_FORCE_EN	BIT(4)
 #define USB_CC_INT_STATUS	0x18
 #define  CC_UFP_CURRENT_INT	BIT(0)
+#define  CC_UFP_PLUG_IN_INT	BIT(1)
+#define  CC_UFP_PLUG_OUT_INT	BIT(2)
 #define USB_CC_FSM_STATUS	0x1C
 #define USB_CC_UFP_STATUS	0x20
 #define USB_CC_DFP_STATUS	0x24
@@ -426,7 +428,7 @@ static void aml_cc_ufp_init(void)
 
 	/* reset cc */
 	val = readl(RESET_BASE + RESETCTRL0_OFFSET);
-	val |= CC_RESET_BIT;
+	val = CC_RESET_BIT;
 	writel(val, RESET_BASE + RESETCTRL0_OFFSET);
 
 	usb_udelay(800);
@@ -454,13 +456,17 @@ int aml_cc_get_ufp_status(u32 *val)
 		usb_udelay(20);
 		cnt++;
 
-		if (cnt > 10000) {
-			printf("cc_ufp_current_type detect timeout\n");
-			return -EINVAL;
-		}
-	} while (!(readl(CC_REG_BASE + USB_CC_INT_STATUS) & CC_UFP_CURRENT_INT));
+		if (cnt > 10000)
+			break;
+
+	} while (!(readl(CC_REG_BASE + USB_CC_INT_STATUS) &
+		 (CC_UFP_CURRENT_INT | CC_UFP_PLUG_IN_INT | CC_UFP_PLUG_OUT_INT)));
 
 	*val = readl(CC_REG_BASE + USB_CC_UFP_STATUS);
+
+	/* clear INT */
+	if ((readl(CC_REG_BASE + USB_CC_INT_STATUS)) & CC_UFP_PLUG_OUT_INT)
+		writel(CC_INT_CLEAN, CC_REG_BASE + USB_CC_INT_CLR);
 
 	return 0;
 }
@@ -475,11 +481,11 @@ void print_aml_cc_ufp_current_type(void)
 		usb_udelay(20);
 		cnt++;
 
-		if (cnt > 10000) {
-			printf("cc_ufp_current_type detect timeout\n");
-			return;
-		}
-	} while (!(readl(CC_REG_BASE + USB_CC_INT_STATUS) & CC_UFP_CURRENT_INT));
+		if (cnt > 10000)
+			break;
+
+	} while (!(readl(CC_REG_BASE + USB_CC_INT_STATUS) &
+		 (CC_UFP_CURRENT_INT | CC_UFP_PLUG_IN_INT | CC_UFP_PLUG_OUT_INT)));
 
 	status = readl(CC_REG_BASE + USB_CC_UFP_STATUS);
 	switch (status & GENMASK(5, 3)) {
@@ -487,15 +493,19 @@ void print_aml_cc_ufp_current_type(void)
 		printf("cc_ufp_current_type: detach\n");
 		break;
 	case 0x8:
-		printf("cc_ufp_current_type: supply default current\n");
+		printf("cc_ufp_current_type: supply <= 0.5 current\n");
 		break;
 	case 0x18:
-		printf("cc_ufp_current_type:  Rp=12K, supply 1.5 current\n");
+		printf("cc_ufp_current_type: Rp=12K, supply 1.5 current\n");
 		break;
 	case 0x38:
 		printf("cc_ufp_current_type: Rp=4.7K, supply 3.0 current\n");
 		break;
 	}
+
+	/* clear INT */
+	if ((readl(CC_REG_BASE + USB_CC_INT_STATUS)) & CC_UFP_PLUG_OUT_INT)
+		writel(CC_INT_CLEAN, CC_REG_BASE + USB_CC_INT_CLR);
 }
 
 /**************************************************************/
@@ -530,9 +540,9 @@ static void aml_bc_init(void)
 	val &= ~HOST_DEVICE;
 	writel(val, PHY_COMP_BASE + CFG_REG0);
 
-	/* reset cc */
+	/* reset bc */
 	val = readl(RESET_BASE + RESETCTRL0_OFFSET);
-	val |= BC_RESET_BIT;
+	val = BC_RESET_BIT;
 	writel(val, RESET_BASE + RESETCTRL0_OFFSET);
 
 	usb_udelay(200000);
