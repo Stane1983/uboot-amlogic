@@ -42,7 +42,7 @@
 /*if use wifi-wakeup,open it*/
 //#define CONFIG_WIFI_WAKEUP
 /* SMP Definitions */
-#define CPU_RELEASE_ADDR		secondary_boot_func
+// #define CPU_RELEASE_ADDR		secondary_boot_func
 
 /* config saradc*/
 //#define CONFIG_CMD_SARADC 1

@@ -34,7 +34,7 @@
 #define CONFIG_PDVFS_ENABLE
 
 /* SMP Definitions */
-#define CPU_RELEASE_ADDR		secondary_boot_func
+// #define CPU_RELEASE_ADDR		secondary_boot_func
 
 /* Bootloader Control Block function
    That is used for recovery and the bootloader to talk to each other

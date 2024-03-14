@@ -41,6 +41,11 @@ unsigned int cpu_online(unsigned int cpu)
 	return (__cpu_online_mask >> cpu) & 0x1;
 }
 
+unsigned int cpu_online_status(void)
+{
+	return __cpu_online_mask;
+}
+
 /*
  * Activate the first processor.
  */

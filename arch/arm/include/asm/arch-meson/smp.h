@@ -14,6 +14,7 @@ struct smp_boot_param {
 void cpu_smp_init_r(void);
 void secondary_bootup_r(void);
 void secondary_off(void);
+unsigned int cpu_online_status(void);
 int run_smp_function(unsigned int cpu, void (*func)(unsigned long arg),  unsigned long arg);
 
 #endif

@@ -46,6 +46,10 @@
 #include <initcall.h>
 #endif
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#include <asm/arch-meson/smp.h>
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 static struct tag *params;
@@ -558,6 +562,15 @@ static void boot_jump_linux(bootm_headers_t *images, int flag)
 		armv8_setup_psci();
 #endif
 		do_nonsec_virt_switch();
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		unsigned short cnt = 2000;
+
+		while (cpu_online_status() & 0xfffffffe && cnt--)
+			mdelay(1);
+		if (cpu_online_status() & 0xfffffffe || cnt < 2000)
+			printf("cpu online %hums: 0x%08x\n", 2000 - cnt, cpu_online_status());
+#endif
 
 		update_os_arch_secondary_cores(images->os.arch);
 

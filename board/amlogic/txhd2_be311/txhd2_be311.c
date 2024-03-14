@@ -16,21 +16,8 @@
 #include <asm/arch/secure_apb.h>
 #include <asm/arch/pinctrl_init.h>
 #include <dm.h>
-#ifdef CONFIG_AML_VPU
-#include <vpu.h>
-#endif
-#include <vpp.h>
 #include <amlogic/aml_v2_burning.h>
 #include <amlogic/aml_v3_burning.h>
-#ifdef CONFIG_AML_HDMITX20
-#include <amlogic/hdmi.h>
-#endif
-#ifdef CONFIG_RX_RTERM
-#include <amlogic/aml_hdmirx.h>
-#endif
-#ifdef CONFIG_AML_LCD
-#include <amlogic/media/vout/lcd/lcd_vout.h>
-#endif
 #include <asm/arch/eth_setup.h>
 #include <phy.h>
 #include <linux/mtd/partitions.h>
@@ -65,7 +52,7 @@ int dram_init(void)
 /* secondary_boot_func
  * this function should be write with asm, here, is is only for compiling pass
  * */
-void secondary_boot_func(void)
+__weak void secondary_boot_func(void)
 {
 }
 #ifdef  ETHERNET_INTERNAL_PHY
@@ -516,27 +503,8 @@ int board_late_init(void)
 	env_set("defenv_para", "-c -b0");
 	aml_board_late_init_front(NULL);
 
-#ifdef CONFIG_AML_VPU
-	vpu_probe();
-#endif
-#ifdef CONFIG_AML_VPP
-	vpp_init();
-#endif
+	aml_board_display_init(0x01);
 
-	run_command("ini_model", 0);
-#ifdef CONFIG_AML_HDMITX20
-	hdmi_tx_set_hdmi_5v();
-	hdmi_tx_init();
-#endif
-#ifdef CONFIG_RX_RTERM
-	rx_set_phy_rterm();
-#endif
-#ifdef CONFIG_AML_CVBS
-	run_command("cvbs init", 0);
-#endif
-#ifdef CONFIG_AML_LCD
-	lcd_probe();
-#endif
 	aml_board_late_init_tail(NULL);
 
 	return 0;

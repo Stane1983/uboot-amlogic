@@ -19,6 +19,19 @@
 #include <amlogic/board.h>
 #include <asm/arch/secure_apb.h>
 #include <asm/arch/romboot.h>
+#ifdef CONFIG_AML_VPU
+#include <vpu.h>
+#endif
+#include <vpp.h>
+#ifdef CONFIG_RX_RTERM
+#include <amlogic/aml_hdmirx.h>
+#endif
+#ifdef CONFIG_AML_LCD
+#include <amlogic/media/vout/lcd/lcd_vout.h>
+#endif
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#include <asm/arch-meson/smp.h>
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 #define UNUSED(x) (void)(x)
@@ -307,6 +320,62 @@ int aml_board_late_init_tail(void *arg)
 	return 0;
 }
 #endif//#ifdef CONFIG_BOARD_LATE_INIT
+
+#define MAX_VOUT_CNT 1
+
+//bit[0:7]:curr vout idx; [8]: smp_flag
+void aml_display_on_job(unsigned long param)
+{
+	// ! fill init_display logic here
+	// run_command("vout output ${outputmode};", 0);
+
+	printf("display[%lu] on%s done\n", param & 0xff, param ? " smp" : "");
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (param & 0x0100)
+		secondary_off();
+#endif
+}
+
+// each bit refers to vout index, eg. 0x5=(vout+vout3)
+void aml_board_display_init(unsigned char vout_bit)
+{
+#ifdef CONFIG_AML_VPU
+	vpu_probe();
+#endif
+#ifdef CONFIG_AML_VPP
+	vpp_init();
+#endif
+	run_command("ini_model", 0);
+
+#ifdef CONFIG_RX_RTERM
+	rx_set_phy_rterm();
+#endif
+#ifdef CONFIG_AML_CVBS
+	run_command("cvbs init", 0);
+#endif
+#ifdef CONFIG_AML_LCD
+	lcd_probe();
+#endif
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	unsigned char i;
+	int smp_ret;
+
+	if (!(unsigned char)env_get_ulong("display_on_smp", 10, 0))
+		return;
+
+	cpu_smp_init_r();
+
+	for (i = 0; i < MAX_VOUT_CNT; i++) {
+		if (vout_bit & BIT(i)) {
+			smp_ret = run_smp_function(i + 1, &aml_display_on_job, i | 0x0100);
+			if (smp_ret)
+				printf("display[%hu] smp failed\n", i);
+			continue;
+		}
+	}
+#endif
+}
 
 static int board_get_bootid(void)
 {
