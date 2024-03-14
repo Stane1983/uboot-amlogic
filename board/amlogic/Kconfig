@@ -685,12 +685,70 @@ config S6_SKT
 	help
 		Select S6 SKT(XXXX) config
 
+config S6_BL201
+	bool "S6_BL201"
+	select TARGET_S6_BL201
+	help
+		Select S6 BL201 config
+
+config S6_BL208
+	bool "S6_BL208"
+	select TARGET_S6_BL208
+	help
+		Select S6 BL208 config
+
+config S6_BL209
+	bool "S6_BL209"
+	select TARGET_S6_BL209
+	help
+		Select S6 BL209 config
+
+config S6_BQ201
+	bool "S6_BQ201"
+	select TARGET_S6_BQ201
+	help
+		Select S6 BQ201 config
+
+config S6_BQ208
+	bool "S6_BQ208"
+	select TARGET_S6_BQ208
+	help
+		Select S6 BQ208 config
+
+config S6_BQ209
+	bool "S6_BQ209"
+	select TARGET_S6_BQ209
+	help
+		Select S6 BQ209 config
 endchoice
 
 config TARGET_S6_SKT
 	bool "S6 SKT board"
 	depends on S6_SKT
 
+config TARGET_S6_BL201
+	bool "S6 BL201 board"
+	depends on S6_BL201
+
+config TARGET_S6_BL208
+	bool "S6 BL208 board"
+	depends on S6_BL208
+
+config TARGET_S6_BL209
+	bool "S6 BL209 board"
+	depends on S6_BL209
+
+config TARGET_S6_BQ201
+	bool "S6 BQ201 board"
+	depends on S6_BQ201
+
+config TARGET_S6_BQ208
+	bool "S6 BQ208 board"
+	depends on S6_BQ208
+
+config TARGET_S6_BQ209
+	bool "S6 BQ209 board"
+	depends on S6_BQ209
 endif
 
 # Amlogic boards
@@ -738,3 +796,15 @@ source "board/amlogic/s7d_bm202/Kconfig"
 source "board/amlogic/s7d_bm209/Kconfig"
 
 source "board/amlogic/s6_skt/Kconfig"
+
+source "board/amlogic/s6_bl201/Kconfig"
+
+source "board/amlogic/s6_bl208/Kconfig"
+
+source "board/amlogic/s6_bl209/Kconfig"
+
+source "board/amlogic/s6_bq201/Kconfig"
+
+source "board/amlogic/s6_bq208/Kconfig"
+
+source "board/amlogic/s6_bq209/Kconfig"
