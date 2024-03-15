@@ -39,16 +39,23 @@ static int do_saradc_open(cmd_tbl_t *cmdtp, int flag, int argc,
 {
 	struct udevice *dev;
 	int channel;
-	int mode;
+	int mode = ADC_MODE_AVERAGE;
 	int ret;
-	char *endp;
+	char *endp = NULL;
+
+	if (argc < 2) {
+		pr_err("Invalid parameter: channel number must be specified\n");
+		return -1;
+	}
 
 	ret = uclass_get_device_by_name(UCLASS_ADC, "adc", &dev);
 	if (ret)
 		return ret;
 
 	channel = simple_strtoul(argv[1], NULL, 10);
-	mode = simple_strtoul(argv[2], &endp, 10);
+
+	if (argc >= 3)
+		mode = simple_strtoul(argv[2], &endp, 10);
 
 	if ((channel < 0) || (channel >= MESON_SARADC_CH_MAX))
 	{
