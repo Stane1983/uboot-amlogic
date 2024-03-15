@@ -7,6 +7,9 @@
 #include <command.h>
 #include <env.h>
 #include <malloc.h>
+#ifdef CONFIG_AML_MTD
+#include <linux/mtd/mtd.h>
+#endif
 #include <asm/byteorder.h>
 #include <config.h>
 #include <asm/amlogic/arch/io.h>
@@ -23,6 +26,8 @@
 #endif
 #include "cmd_bootctl_utils.h"
 #include <amlogic/store_wrapper.h>
+
+#include <asm/amlogic/arch/secure_apb.h>
 
 #if defined(CONFIG_EFUSE_OBJ_API) && defined(CONFIG_CMD_EFUSE)
 extern efuse_obj_field_t efuse_field;
@@ -570,6 +575,26 @@ exit:
 	return ret;
 }
 
+static void set_ddr_size(void)
+{
+	char ddr_size_str[32];
+	unsigned int ddr_size = 0;
+
+	memset(ddr_size_str, 0, 32);
+	ddr_size = (readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4;
+
+	sprintf(ddr_size_str, "%u%c", ddr_size, 'B');
+	printf("ddr_size_str = %s\n", ddr_size_str);
+	env_set("ddr_size", ddr_size_str);
+}
+
+static void update_after_failed_rollback(void)
+{
+	run_command("run init_display; run storeargs; run update;", 0);
+}
+
+void rollback_failure_handler(void) __attribute__((weak, alias("update_after_failed_rollback")));
+
 static int do_GetValidSlot(
 	cmd_tbl_t *cmdtp,
 	int flag,
@@ -587,6 +612,8 @@ static int do_GetValidSlot(
 	if (argc != 1)
 		return cmd_usage(cmdtp);
 
+	set_ddr_size();
+
 	boot_info_open_partition(miscbuf);
 	boot_info_load(&boot_ctrl, miscbuf);
 
@@ -599,6 +626,7 @@ static int do_GetValidSlot(
 			boot_info_save(&boot_ctrl, miscbuf);
 		} else {
 			printf("update from normal ab to virtual ab\n");
+			env_set("normal_to_virtual", "1");
 			AB_mode = 1;
 		}
 	}
@@ -678,7 +706,7 @@ static int do_GetValidSlot(
 			run_command("saveenv", 0);
 			run_command("reset", 0);
 		} else {
-			run_command("run init_display; run storeargs; run update;", 0);
+			rollback_failure_handler();
 		}
 	}
 
@@ -721,7 +749,7 @@ static int do_GetValidSlot(
 			run_command("saveenv", 0);
 			run_command("reset", 0);
 		} else {
-			run_command("run init_display; run storeargs; run update;", 0);
+			rollback_failure_handler();
 		}
 	}
 
@@ -913,6 +941,56 @@ static int do_SetUpdateTries(
 	return 0;
 }
 
+static int do_CheckABState(cmd_tbl_t *cmdtp,
+	int flag,
+	int argc,
+	char * const argv[])
+{
+	char miscbuf[MISCBUF_SIZE] = {0};
+	bootloader_control boot_ctrl;
+	bool bootable_a, bootable_b;
+	int slot;
+	int retry_times = 0;
+
+	if (has_boot_slot == 0) {
+		printf("device is not ab mode\n");
+		return -1;
+	}
+
+	boot_info_open_partition(miscbuf);
+	boot_info_load(&boot_ctrl, miscbuf);
+
+	if (!boot_info_validate(&boot_ctrl)) {
+		printf("boot-info is invalid. Resetting\n");
+		boot_info_reset(&boot_ctrl);
+		boot_info_save(&boot_ctrl, miscbuf);
+	}
+
+	slot = get_active_slot(&boot_ctrl);
+	bootable_a = slot_is_bootable(&boot_ctrl.slot_info[0]);
+	bootable_b = slot_is_bootable(&boot_ctrl.slot_info[1]);
+
+	if ((slot == 0 && bootable_a &&
+		boot_ctrl.slot_info[0].successful_boot == 1) ||
+		(slot == 1 && bootable_b &&
+		boot_ctrl.slot_info[1].successful_boot == 1) ||
+		(!bootable_a && !bootable_b))
+		return 0;
+
+	if (slot == 0 && bootable_a &&
+		boot_ctrl.slot_info[0].successful_boot == 0)
+		retry_times = boot_ctrl.slot_info[0].tries_remaining;
+
+	if (slot == 1 && bootable_b &&
+		boot_ctrl.slot_info[1].successful_boot == 0)
+		retry_times = boot_ctrl.slot_info[1].tries_remaining;
+
+	printf("ab update mode, try %d times again\n", retry_times + 1);
+	run_command("reset", 0);
+
+	return 0;
+}
+
 static int do_CopySlot(
 	cmd_tbl_t *cmdtp,
 	int flag,
@@ -993,21 +1071,30 @@ static int do_GetAvbMode(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv
 static int do_UpdateDt(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	char *update_dt = env_get("update_dt");
-	char *part_changed = env_get("part_changed");
 
-	printf("update_dt %s, part_changed: %s\n", update_dt, part_changed);
+	printf("update_dt %s\n", update_dt);
 	if (update_dt && (!strcmp(update_dt, "1"))) {
-		printf("write dtb\n");
+		printf("write dtb from ${boot_part}\n");
 		run_command("imgread dtb ${boot_part} ${dtb_mem_addr}", 0);
 		run_command("emmc dtb_write ${dtb_mem_addr} 0", 0);
 
 		env_set("update_dt", "0");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+		run_command("update_env_part -p update_dt;", 0);
+#else
 		run_command("saveenv", 0);
+#endif
 
+		char *part_changed = env_get("part_changed");
 		if (part_changed && (!strcmp(part_changed, "1"))) {
 			env_set("part_changed", "0");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+			run_command("update_env_part -p part_changed;", 0);
+#else
 			run_command("saveenv", 0);
+#endif
 
+			printf("part changes, reset\n");
 			run_command("reset", 0);
 		}
 	}
@@ -1027,6 +1114,7 @@ bootctl_func_handles *get_bootctl_cmd_func_vab(void)
 	vab_cmd_bootctrl_handles.do_GetSystemMode_func = do_GetSystemMode;
 	vab_cmd_bootctrl_handles.do_GetAvbMode_func = do_GetAvbMode;
 	vab_cmd_bootctrl_handles.do_UpdateDt_func = do_UpdateDt;
+	vab_cmd_bootctrl_handles.do_CheckABState_func = do_CheckABState;
 
 	return &vab_cmd_bootctrl_handles;
 }
@@ -1060,6 +1148,13 @@ U_BOOT_CMD
 	"copy_slot_bootable",
 	"\nThis command will set active slot\n"
 	"So you can execute command: copy_slot_bootable 2 1"
+);
+
+U_BOOT_CMD
+(check_ab, 2, 0, do_CheckABState,
+	"check_ab",
+	"\nThis command will check ab sate\n"
+	"So you can execute command: check_ab"
 );
 
 U_BOOT_CMD(

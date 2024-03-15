@@ -454,6 +454,166 @@ void fastboot_step_check(char *rebootmode, int gpt_flag)
 	}
 }
 
+static int update_gpt(int flag)
+{
+	int ret = 0;
+#ifdef CONFIG_MMC_MESON_GX
+	unsigned char *buffer = NULL;
+	int capacity_boot = 0x2000 * 512;
+	int iRet = 0;
+	struct mmc *mmc = NULL;
+	struct blk_desc *dev_desc;
+
+	if (store_get_type() == BOOT_EMMC)
+		mmc = find_mmc_device(1);
+
+	if (mmc)
+		capacity_boot = mmc->capacity_boot;
+
+	printf("capacity_boot: 0x%x\n", capacity_boot);
+	buffer = (unsigned char *)malloc(capacity_boot);
+	if (!buffer) {
+		printf("ERROR! fail to allocate memory ...\n");
+		return -1;
+	}
+	memset(buffer, 0, capacity_boot);
+
+	if (flag == 0) {
+		iRet = store_boot_read("bootloader", 1, 0, buffer);
+		if (iRet) {
+			printf("Failed to read boot0\n");
+			ret = -1;
+			goto exit;
+		}
+	} else if (flag == 1 || flag == 2) {
+		iRet = store_boot_read("bootloader", 0, 0, buffer);
+		if (iRet) {
+			printf("Failed to read bootloader\n");
+			ret = -1;
+			goto exit;
+		}
+	} else if (flag == 3) {
+		printf("null ab mode\n");
+		iRet = store_logic_read("bootloader_up", 0,
+			BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET, buffer);
+		if (iRet) {
+			printf("Fail to read 0x%xB from bootloader_up\n",
+				BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET);
+			ret = -1;
+			goto exit;
+		}
+	}
+
+	if (mmc) {
+		printf("try to read gpt data from bootloader.img\n");
+		int erase_flag = 0;
+
+		dev_desc = blk_get_dev("mmc", 1);
+		if (!dev_desc || dev_desc->type == DEV_TYPE_UNKNOWN) {
+			printf("invalid mmc device\n");
+			ret = -1;
+			goto exit;
+		}
+
+		if (is_valid_gpt_buf(dev_desc, buffer + 0x3DFE00)) {
+			printf("printf normal bootloader.img, no gpt partition table\n");
+			ret = -1;
+			goto exit;
+		} else {
+			erase_flag = check_gpt_change(dev_desc, buffer + 0x3DFE00);
+
+			if (erase_flag == 4 && has_boot_slot == 0) {
+				printf("null ab critical partition change, refused to upgrade\n");
+				ret = -1;
+				goto exit;
+			} else if (has_boot_slot == 1 && (erase_flag == 3 || erase_flag == 4)) {
+				printf("Important partition changes, refused to upgrade\n");
+				ret = 1;
+				goto exit;
+			} else if (erase_flag == 0) {
+				printf("partition doesn't change, needn't update\n");
+				ret = -1;
+				goto exit;
+			}
+
+			if (flag == 1 || flag == 2) {
+				printf("update from dts to gpt, erase first\n");
+				erase_gpt_part_table(dev_desc);
+			}
+
+			if (flag == 2) {
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+				env_set("dts_to_gpt", "1");
+				run_command("update_env_part -p dts_to_gpt;", 0);
+#else
+				run_command("defenv_reserve;setenv dts_to_gpt 1;saveenv;", 0);
+#endif
+			}
+
+			if (write_mbr_and_gpt_partitions(dev_desc, buffer + 0x3DFE00)) {
+				printf("%s: writing GPT partitions failed\n", __func__);
+				ret = 1;
+				goto exit;
+			}
+
+			if (mmc_device_init(mmc) != 0) {
+				printf(" update gpt partition table fail\n");
+				ret = 2;
+				goto exit;
+			}
+			printf("%s: writing GPT partitions ok\n", __func__);
+		}
+	}
+
+	if (has_boot_slot == 1 && (flag == 1 || flag == 2)) {
+		printf("update from dts to gpt, backup old bootloader\n");
+		char *slot = NULL;
+
+		slot = env_get("slot-suffixes");
+		if (!slot) {
+			run_command("get_valid_slot", 0);
+			slot = env_get("slot-suffixes");
+		}
+		if (strcmp(slot, "0") == 0) {
+			printf("active is a, b is old, don't need backup\n");
+		} else if (strcmp(slot, "1") == 0) {
+			printf("active is b, a is old, backup boot0 to boot1\n");
+			iRet = write_bootloader_back("1", 2);
+			if (iRet != 0) {
+				printf("Failed to write boot1\n");
+				ret = 3;
+				goto exit;
+			}
+		}
+		iRet = store_boot_write("bootloader", 1, 0, buffer);
+		if (iRet) {
+			printf("Failed to write boot0\n");
+			ret = 4;
+			goto exit;
+		}
+	}
+
+exit:
+	if (buffer)
+		free(buffer);
+
+	if (mmc)
+		run_command("mmc dev 1 0;", 0);
+
+	if (mmc && ret > 0) {
+		if (ret == 1 || ret == 2 || ret == 3) {
+			printf("rollback\n");
+			update_rollback();
+		} else if (ret == 4) {
+			printf("write back boot0, rollback\n");
+			write_bootloader_back("2", 1);
+			update_rollback();
+		}
+	}
+#endif
+	return ret;
+}
+
 int recovery_update(void)
 {
 	if (IS_ENABLED(CONFIG_MMC_MESON_GX)) {
@@ -650,6 +810,7 @@ int ab_update_rollback(char *rebootmode, int gpt_flag)
 			printf("write boot0 fail, need to rollback!\n");
 			update_rollback();
 		} else {
+			update_gpt(0);
 			printf("write boot0 success, need to reset!\n");
 		}
 

@@ -455,6 +455,13 @@ exit:
 	return ret;
 }
 
+static void update_after_failed_rollback(void)
+{
+	run_command("run init_display; run storeargs; run update;", 0);
+}
+
+void rollback_failure_handler(void) __attribute__((weak, alias("update_after_failed_rollback")));
+
 static int do_GetValidSlot
 (cmd_tbl_t *cmdtp,
 	int flag,
@@ -542,7 +549,7 @@ static int do_GetValidSlot
 			run_command("saveenv", 0);
 			run_command("reset", 0);
 		} else {
-			run_command("run init_display; run storeargs; run update;", 0);
+			rollback_failure_handler();
 		}
 	}
 
@@ -571,7 +578,7 @@ static int do_GetValidSlot
 			run_command("saveenv", 0);
 			run_command("reset", 0);
 		} else {
-			run_command("run init_display; run storeargs; run update;", 0);
+			rollback_failure_handler();
 		}
 	}
 
@@ -755,20 +762,28 @@ static int do_GetAvbMode(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv
 static int do_UpdateDt(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	char *update_dt = env_get("update_dt");
-	char *part_changed = env_get("part_changed");
 
-	printf("update_dt %s, part_changed: %s\n", update_dt, part_changed);
 	if (update_dt && (!strcmp(update_dt, "1"))) {
-		printf("write dtb\n");
+		printf("write dtb from ${boot_part}\n");
 		run_command("imgread dtb ${boot_part} ${dtb_mem_addr}", 0);
 		run_command("emmc dtb_write ${dtb_mem_addr} 0", 0);
 
 		env_set("update_dt", "0");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+		run_command("update_env_part -p update_dt;", 0);
+#else
 		run_command("saveenv", 0);
+#endif
+
+		char *part_changed = env_get("part_changed");
 
 		if (part_changed && (!strcmp(part_changed, "1"))) {
 			env_set("part_changed", "0");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+			run_command("update_env_part -p part_changed;", 0);
+#else
 			run_command("saveenv", 0);
+#endif
 
 			run_command("reset", 0);
 		}
