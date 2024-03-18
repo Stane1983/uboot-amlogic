@@ -843,9 +843,7 @@ static void meson_nfc_init_dm(void)
 {
 	struct udevice *dev;
 
-	for (uclass_first_device(UCLASS_MTD, &dev);
-	     dev;
-	     uclass_next_device(&dev));
+	uclass_get_device_by_driver(UCLASS_MTD, DM_GET_DRIVER(meson_nfc), &dev);
 }
 
 void board_nand_init(void)
@@ -868,6 +866,19 @@ int meson_nfc_probe(struct udevice *dev)
 		if (ret) {
 			printf("select state %s failed\n", "default");
 			return ret;
+		}
+
+		node = fdtdec_next_compatible(blob, 0, COMPAT_MESON_NAND);
+		if (node < 0) {
+			printf("unable to find nfc node in device tree\n");
+			return 1;
+		}
+
+		spi_cfg = fdtdec_get_addr(blob, node, "spi_cfg");
+		if (spi_cfg != FDT_ADDR_T_NONE) {
+			printf("nfc select slc nand mode!\n");
+			controller->spi_cfg = (void *)spi_cfg;
+			AMLNF_WRITE_REG(controller->spi_cfg, 0);
 		}
 		nand_hw_init(&aml_nand_mid_device.aml_nand_platform[0]);
 		return 0;
