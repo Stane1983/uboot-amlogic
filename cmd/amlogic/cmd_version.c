@@ -132,10 +132,12 @@ int get_bootloader_build_message(void)
 #ifdef CONFIG_BL30_VERSION_SAVE
 		bl30_version_flag = GET_BL30_VERSION_SIZE;
 		if (!scpi_send_data(AOCPU_REE_CHANNEL, CMD_GET_BL30_VERSION,
-		    &bl30_version_flag, 4, &bl30_version_size, 4))
-			build_info->bl30_message.init_flag = 1;
-		else
+		    &bl30_version_flag, 4, &bl30_version_size, 4)) {
+			if (bl30_version_size > 0)
+				build_info->bl30_message.init_flag = 1;
+		} else {
 			printf("bl30 version message get fail\n");
+		}
 #endif
 		if (build_info->bl30_message.init_flag) {
 			putin_buf("\tBL30: ");
