@@ -16,6 +16,7 @@ struct vpu_arb_table_s *vpu_wrarb_vpu0_tables;
 struct vpu_urgent_table_s *vpu_urgent_table_rd_vpu0_2_level2_tables;
 struct vpu_urgent_table_s *vpu_urgent_table_wr_vpu0_tables;
 
+#ifndef AML_C3_DISPLAY
 static struct vpu_arb_table_s vpu_rdarb_vpu0_2_level1_t7[] = {
 		/* vpu module,        reg,             bit, len, bind_port,        name */
 	{VPU_ARB_OSD1,        VPP_RDARB_MODE,  20,  1,   VPU_ARB_VPP_ARB0,  "osd1",
@@ -104,6 +105,7 @@ static struct vpu_urgent_table_s vpu_urgent_table_wr_vpu0_t7[] = {
 	{VPU_ARB_VPU_DMA_WR,    VPU_WRARB_UGT_L2C1,  VPU_WRITE0,  0,   12,   2,    "vpu_dma_wr"},
 		{}
 };
+#endif
 
 int vpu_rdarb_bind_l1(enum vpu_arb_mod_e level1_module, enum vpu_arb_mod_e level2_module)
 {
@@ -651,11 +653,13 @@ void init_read0_2_write0_urgent(void)
 
 int init_arb_urgent_table(void)
 {
+#ifndef AML_C3_DISPLAY
 	vpu_rdarb_vpu0_2_level1_tables = vpu_rdarb_vpu0_2_level1_t7;
 	vpu_rdarb_vpu0_2_level2_tables = vpu_rdarb_vpu0_2_level2_t7;
 	vpu_wrarb_vpu0_tables = vpu_wrarb_vpu0_t7;
 	vpu_urgent_table_rd_vpu0_2_level2_tables = vpu_urgent_table_rd_vpu0_2_level2_t7;
 	vpu_urgent_table_wr_vpu0_tables = vpu_urgent_table_wr_vpu0_t7;
+#endif
 	init_read0_2_bind();
 	init_write0_bind();
 	init_read0_2_write0_urgent();

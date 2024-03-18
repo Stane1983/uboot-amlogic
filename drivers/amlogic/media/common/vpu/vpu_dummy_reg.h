@@ -80,30 +80,32 @@
 #ifndef VPU_VOUT_DTH_DATA_A4
 #define VPU_VOUT_DTH_DATA_A4                          ((0x0403  << 2) + 0xfe340000)
 #endif
-
+#ifndef VPP_RDARB_MODE
+#define VPP_RDARB_MODE                             (0x3978)
+#endif
 #ifndef VPU_RDARB_MODE_L2C1
-#define VPU_RDARB_MODE_L2C1                        ((0x279d  << 2) + 0xff000000)
+#define VPU_RDARB_MODE_L2C1                        (0x279d)
 #endif
 #ifndef VPU_WRARB_MODE_L2C1
-#define VPU_WRARB_MODE_L2C1                        ((0x27a2  << 2) + 0xff000000)
+#define VPU_WRARB_MODE_L2C1                        (0x27a2)
 #endif
 #ifndef VPP_RDARB_REQEN_SLV
-#define VPP_RDARB_REQEN_SLV                        ((0x3979  << 2) + 0xff000000)
+#define VPP_RDARB_REQEN_SLV                        (0x3979)
 #endif
 #ifndef VPU_RDARB_REQEN_SLV_L2C1
-#define VPU_RDARB_REQEN_SLV_L2C1                    ((0x279e  << 2) + 0xff000000)
+#define VPU_RDARB_REQEN_SLV_L2C1                    (0x279e)
 #endif
 #ifndef VPU_WRARB_REQEN_SLV_L2C1
-#define VPU_WRARB_REQEN_SLV_L2C1                    ((0x27a3  << 2) + 0xff000000)
+#define VPU_WRARB_REQEN_SLV_L2C1                    (0x27a3)
 #endif
 #ifndef VPU_RDARB_UGT_L2C1
-#define VPU_RDARB_UGT_L2C1                         ((0x27c2  << 2) + 0xff800000)
+#define VPU_RDARB_UGT_L2C1                         (0x27c2)
 #endif
 #ifndef VPU_WRARB_UGT_L2C1
-#define VPU_WRARB_UGT_L2C1                         ((0x27c3  << 2) + 0xff800000)
+#define VPU_WRARB_UGT_L2C1                         (0x27c3)
 #endif
 #ifndef DI_WRARB_UGT_L1C1
-#define DI_WRARB_UGT_L1C1                          ((0x205d  << 2) + 0xff800000)
+#define DI_WRARB_UGT_L1C1                          (0x205d)
 #endif
 
 #ifndef HHI_VPU_CLK_CNTL
