@@ -11,6 +11,7 @@
 #include "lcd_reg.h"
 #include "lcd_common.h"
 #include "env.h"
+#include <command.h>
 
 struct lcd_type_match_s {
 	char *name;
@@ -2500,6 +2501,83 @@ static void lcd_config_load_init(struct aml_lcd_drv_s *pdrv)
 		pdrv->config.timing.ppc = 1;
 }
 
+#define OUTPUTMODE_NUM_MAX 3
+static inline int lcd_get_opt_mode_idx(struct aml_lcd_drv_s *pdrv)
+{
+	char panel_str[8] = "panel\0\0\0";
+	char out_mode_str[12] = "outputmode\0\0";
+	char *out_mode_name;
+	unsigned char index = 0;
+
+	if (pdrv->index)
+		panel_str[5] = pdrv->index + '0';
+
+	for (index = 0; index < OUTPUTMODE_NUM_MAX; index++) {
+		if (index)
+			out_mode_str[10] = index + '1';
+
+		out_mode_name = env_get(out_mode_str);
+		if (!out_mode_name)
+			continue;
+
+		if (strcmp(out_mode_name, panel_str) == 0)
+			return index;
+	}
+	return -1;
+}
+
+static void lcd_set_connector(struct aml_lcd_drv_s *pdrv)
+{
+	char *buf;
+	char *connector_name_list[4] = {"LVDS", "VBYONE", "MIPI", "EDP"};
+	char con_name_str[10], con_type_str[20];
+	unsigned char name_idx, lcd_type = pdrv->config.basic.lcd_type;
+	int cnt_idx;
+
+	if (pdrv->mode == LCD_MODE_TABLET) {
+		cnt_idx = lcd_get_opt_mode_idx(pdrv);
+		if (cnt_idx < 0) {
+			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+				LCDPR("[%d]: %s: no outputmode to this panel",
+					pdrv->index, __func__);
+			}
+			return;
+		}
+	} else if (pdrv->mode == LCD_MODE_TV) {
+		cnt_idx = 0;
+	} else {
+		return;
+	}
+
+	if (lcd_type == LCD_LVDS || lcd_type == LCD_MLVDS)
+		name_idx = 0;
+	else if (lcd_type == LCD_VBYONE || lcd_type == LCD_P2P)
+		name_idx = 1;
+	else if (lcd_type == LCD_MIPI)
+		name_idx = 2;
+	else if (lcd_type == LCD_EDP)
+		name_idx = 3;
+	else
+		return;
+
+	buf = (char *)malloc(32 * sizeof(char));
+	if (!buf)
+		return;
+
+	snprintf(con_name_str, 10, "%s_%c", connector_name_list[name_idx], 'A' + pdrv->index);
+
+	if (cnt_idx == 0)
+		snprintf(con_type_str, 20, "connector_type");
+	else
+		snprintf(con_type_str, 20, "connector%d_type", cnt_idx);
+	snprintf(buf, 32, "setenv %s %s", con_type_str, con_name_str);
+
+	run_command(buf, 0);
+	LCDPR("[%d]: %s: %s: %s\n", pdrv->index, __func__, con_type_str, con_name_str);
+
+	free(buf);
+}
+
 int lcd_get_panel_config(char *dt_addr, int load_id, struct aml_lcd_drv_s *pdrv)
 {
 	int ret;
@@ -2513,6 +2591,7 @@ int lcd_get_panel_config(char *dt_addr, int load_id, struct aml_lcd_drv_s *pdrv)
 	if (ret)
 		return -1;
 
+	lcd_set_connector(pdrv);
 	lcd_cma_detect_dts(dt_addr, pdrv);
 	lcd_config_load_init(pdrv);
 	lcd_config_load_print(pdrv);
