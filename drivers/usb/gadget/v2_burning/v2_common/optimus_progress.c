@@ -233,6 +233,8 @@ int usb_burn_erase_data(unsigned char init_flag)
 		ret = blk_derase(mmc_get_blk_desc(mmc),
 				part_info->offset / BLOCK_SIZE,
 				part_info->size / BLOCK_SIZE);
+		if (ret == part_info->size / BLOCK_SIZE)
+			ret = 0;
 		printf("Erased: %s %s\n",
 				part_info->name,
 				(ret == 0) ? "OK" : "ERR");

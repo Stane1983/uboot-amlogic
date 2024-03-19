@@ -904,9 +904,14 @@ static void cb_oem_cmd(struct usb_ep *ep, struct usb_request *req)
 	ack[0] = '\0';//set err for which buf not setted
 	memcpy(cmd_buf, cmd, strnlen(cmd, RESPONSE_LEN) + 1);//+1 to terminate str
 	strsep(&cmd_buf, " ");
-	printf("OEM cmd[%s]\n", cmd_buf);
 	response_str[4] = 0;
 
+	if (!cmd_buf) {
+		fastboot_fail("oem no cmd");
+		FB_ERR("%s\n", response_str);
+		return;
+	}
+	printf("OEM cmd[%s]\n", cmd_buf);
 	argc = cli_simple_parse_line(cmd_buf, argv);
 	if (argc == 0) {
 		fastboot_fail("oem no command at all");

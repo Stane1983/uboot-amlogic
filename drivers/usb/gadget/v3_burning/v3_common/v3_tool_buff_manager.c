@@ -88,7 +88,7 @@ int v3tool_buffman_img_verify_sha1sum(unsigned char *vrySum)
 	} else {
 		switch (imgFmt) {
 		case V3TOOL_PART_IMG_FMT_RAW: {
-			int thisVryLen = 0;
+			int64_t thisVryLen = 0;
 			static unsigned long _lastReportTick;
 
 			if (!vryLen)

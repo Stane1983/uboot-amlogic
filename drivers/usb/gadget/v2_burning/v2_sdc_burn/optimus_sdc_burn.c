@@ -934,10 +934,18 @@ int optimus_burn_with_cfg_file(const char *cfgFile)
 			DWN_ERR("FAil in init flash for usb upgrade\n");
 			ret = __LINE__; goto _finish;
 		}
+		if (exist_gpt) {
+			ret = optimus_burn_gpt(hImg);
+			if (ret) {
+				DWN_MSG("Fail in update gpt\n");
+				ret = __LINE__; goto _finish;
+			}
+		}
 
 		DWN_MSG("store_get_type %d\n", store_get_type());
 		//erase after bootloader for usb disk
 #ifdef CONFIG_MMC
+
 		if (store_get_type() == BOOT_EMMC) {
 			ret = usb_burn_erase_data(0x3);
 		} else {
@@ -960,14 +968,6 @@ int optimus_burn_with_cfg_file(const char *cfgFile)
 		}
 	}
 #endif
-	if (exist_gpt) {
-		ret = optimus_burn_gpt(hImg);
-		if (ret) {
-			DWN_MSG("Fail in update gpt\n");
-			ret = __LINE__; goto _finish;
-		}
-	}
-
 
 	optimus_progress_ui_direct_update_progress(hUiProgress, UPGRADE_STEPS_AFTER_DISK_INIT_OK);
 

@@ -659,7 +659,6 @@ int optimus_storage_init(int toErase)
 	int ret = 0;
 	char *cmd = NULL;
 	unsigned char *dtbLoadedAddr = (unsigned char *)OPTIMUS_DTB_LOAD_ADDR;
-	unsigned char *gpt_load_addr = (unsigned char *)V2_GPT_LOAD_ADDR;
 	const int is_gpt = _gpt_is_loaded;
 
 	if (_disk_intialed_ok) {//To assert only actual disk intialed once
@@ -684,12 +683,6 @@ int optimus_storage_init(int toErase)
 		}
 	}
 
-	ret = get_partition_from_dts(is_gpt ? gpt_load_addr : dtbLoadedAddr);
-	if (ret) {
-		DWN_WRN("Failed at check part table\n");
-		//return __LINE__;
-	}
-
 	ret = store_init(1);
 	if (ret <= 0) {
 		DWN_MSG("Fail in init storage,ret %d\n", ret);
@@ -702,7 +695,7 @@ int optimus_storage_init(int toErase)
 	case 2:
 		break;
 	case 3: {//erase all(with key)
-		cmd = "store disprotect key";
+		cmd = "store rsv protect key off";
 		DWN_MSG("run cmd [%s]\n", cmd);
 		ret = run_command(cmd, 0);
 		if (ret) {
@@ -711,7 +704,7 @@ int optimus_storage_init(int toErase)
 		}
 	} break;
 	case 4: {//force erase all
-		cmd = "store disprotect key; store disprotect hynix";
+		cmd = "store rsv protect key off;";
 		DWN_MSG("run cmd [%s]\n", cmd);
 		ret = run_command(cmd, 0);
 		if (ret) {
