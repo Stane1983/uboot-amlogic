@@ -131,6 +131,13 @@ pie_fixup_done:
 	mrs	x0, hcr_el2
 	orr	x0, x0, #(1 << 27)
 	msr	hcr_el2, x0
+#ifdef CONFIG_USEMMU_BOARDF
+	/* for c3_aw402 fastboot, depend bl2e setup el2 mmu table */
+	mrs	x0, sctlr_el2
+	orr x0, x0, #(1 << 0)		/* SCTLR_M_BIT */
+	orr x0, x0, #(1 << 2)		/* SCTLR_C_BIT */
+	msr	sctlr_el2, x0
+#endif
 	b	0f
 1:	set_vbar	vbar_el1, x0
 	mov	x0, #3 << 20

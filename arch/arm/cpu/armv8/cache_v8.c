@@ -267,6 +267,7 @@ extern unsigned long __RO_START__;
 #define _text_start (unsigned long)(&__RO_START__)
 void mmu_update_text_attr(void)
 {
+#ifndef CONFIG_USEMMU_BOARDF
 	struct mm_region mem_map;
 
 	dcache_disable();
@@ -278,6 +279,7 @@ void mmu_update_text_attr(void)
 
 	add_map(&mem_map);
 	dcache_enable();
+#endif
 }
 
 enum pte_type {

@@ -20,7 +20,10 @@ int store_gpt_ops(size_t sz, void *buf, int is_wr);
 #ifdef CONFIG_CMD_MMC
 int usb_burn_erase_data(unsigned char init_flag);
 #else
-#define usb_burn_erase_data(...) -1
+static inline int usb_burn_erase_data(unsigned char init_flag)
+{
+	return -1;
+}
 #endif// #ifdef CONFIG_CMD_MMC
 
 #define AML_MAGIC_HDR_L       (0x4c4d4140) //"@AML"
