@@ -982,10 +982,11 @@ out:
 
 static int avb_init(void)
 {
-#if defined(CONFIG_MMC_MESON_GX)
-	int factory_part_num = get_partition_num_by_name(PART_NAME_FTY);
-#else
 	int factory_part_num = -1;
+#if defined(CONFIG_MMC_MESON_GX)
+	/* partition name is valid */
+	if (find_mmc_partition_by_name(PART_NAME_FTY))
+		factory_part_num = get_partition_num_by_name(PART_NAME_FTY);
 #endif
 	enum boot_type_e type = store_get_type();
 
@@ -1057,12 +1058,14 @@ int avb_verify(AvbSlotVerifyData** out_data)
 	char *vendor_boot_status = NULL;
 	const char **partition_select = requested_partitions;
 	int i = 0;
+	int factory_part_num = -1;
+
 	AvbHashtreeErrorMode hashtree_error_mode =
 		AVB_HASHTREE_ERROR_MODE_RESTART_AND_INVALIDATE;
 #if defined(CONFIG_MMC_MESON_GX)
-	int factory_part_num = get_partition_num_by_name(PART_NAME_FTY);
-#else
-	int factory_part_num = -1;
+	/* partition name is valid */
+	if (find_mmc_partition_by_name(PART_NAME_FTY))
+		factory_part_num = get_partition_num_by_name(PART_NAME_FTY);
 #endif
 	enum boot_type_e type = store_get_type();
 
