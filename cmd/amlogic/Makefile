@@ -105,6 +105,7 @@ obj-$(CONFIG_NAND_FACTORY_PROVISION) += \
 
 obj-$(CONFIG_AML_WATERMARK) += cmd_watermark.o
 obj-$(CONFIG_SECURE_POWER_CONTROL) += cmd_power.o
+obj-$(CONFIG_CMD_HDMIRX) += cmd_hdmirx.o
 obj-$(CONFIG_CMD_CEC) += cmd_cec.o
 obj-$(CONFIG_CMD_PMU) += cmd_pmic.o
 obj-$(CONFIG_CMD_RMA) += cmd_rma.o
