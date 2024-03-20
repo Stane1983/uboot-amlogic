@@ -5,16 +5,16 @@
 
 #include <linux/kernel.h>
 #include <common.h>
+#include <command.h>
+#include <env.h>
 #include "dv_func.h"
 #include "./../../../../../cmd/amlogic/ini/ini_platform.h"
 #include <malloc.h>
 #include <u-boot/md5.h>
 #include <u-boot/sha256.h>
-#include <env.h>
 #include <amlogic/libavb/libavb.h>
 
 #include <amlogic/media/dv/dolby_vision_func.h>
-#include <command.h>
 
 #define DV_FIRMWARE_ADDR 0x30000000
 #define DV_FW_ADDR 0xa00000

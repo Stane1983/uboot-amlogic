@@ -22,6 +22,8 @@
 #define DOLBY_VISION_SET_LL_YUV     "2"
 #define DOLBY_VISION_SET_LL_RGB     "3"
 
+#define DOLBY_VISION_FORCE_HDR        "3"
+
 enum vpp_matrix_sel_e {
 	VPP_MATRIX_0 = 0,	/* OSD convert matrix - new from GXL */
 	VPP_MATRIX_1,		/* vd1 matrix before post-blend */
@@ -67,7 +69,7 @@ struct dovi_mode_s {
 #define XVY_MTX_EN_MASK  (1 << XVY_MTX_EN)
 #define OSD1_MTX_EN_MASK (1 << OSD1_MTX_EN)
 
-extern bool dolby_vision_on;
+extern int dolby_vision_on;
 void dolby_vision_process(void);
 void send_hdmi_pkt(void);
 int apply_stb_core_settings(void);
