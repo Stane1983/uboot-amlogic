@@ -65,11 +65,19 @@ static void aml_set_audio_spdif_clk(void)
 		       | 1 << 9 /* frddra */
 		       | 1 << 0 /* ddr_arb */);
 
-	/*SPDIFOUT_CTRL clk:6m*/
-	audiobus_write(EE_AUDIO_CLK_SPDIFOUT_CTRL,
-		       1 << 31   /* enable */
-		       | 0 << 24 /* mpll0 */
-		       | 0x4f << 0  /* dividor */);
+	/*hifipll 1179.648M for s4/s4d*/
+	if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S4 ||
+		get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S4D)
+		audiobus_write(EE_AUDIO_CLK_SPDIFOUT_CTRL,
+				1 << 31   /* enable */
+				| 4 << 24 /* hifipll0 */
+				| 0xbf << 0  /* dividor */);
+	else
+		/*hifipll 491.52M*/
+		audiobus_write(EE_AUDIO_CLK_SPDIFOUT_CTRL,
+				1 << 31   /* enable */
+				| 4 << 24 /* hifipll0 */
+				| 0x4f << 0  /* dividor */);
 }
 
 static void aml_spdif_fifo_ctrl(void)
@@ -115,8 +123,10 @@ void frddr_init_without_mngr(void)
 	end_addr = start_addr + sizeof(buf) - 1;
 	int_addr = sizeof(buf) / 64;
 
-	//audiobus_write(EE_AUDIO_ARB_CTRL0, 0x800000ff);
-
+/*some chip not use arb, and not define*/
+#ifdef EE_AUDIO_ARB_CTRL0
+	audiobus_write(EE_AUDIO_ARB_CTRL0, 0x800000ff);
+#endif
 	audiobus_write(EE_AUDIO_FRDDR_A_START_ADDR, start_addr);
 
 	audiobus_write(EE_AUDIO_FRDDR_A_INIT_ADDR, start_addr);
