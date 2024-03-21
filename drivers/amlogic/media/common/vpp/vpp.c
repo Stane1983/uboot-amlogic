@@ -2122,6 +2122,19 @@ void hdr_tx_pkt_cb(void)
 			hdr_func(OSD4_HDR, SDR_HDR);
 		amvecm_cp_hdr_info(&hdr_data, BT2020_PQ);
 		hdmitx_set_drm_pkt(&hdr_data);
+	} else if ((hdrinfo && hdrinfo->hdr_sup_eotf_hlg) &&
+		(hdr_policy == 0 || hdr_policy == 3)) {
+		if (is_hdmi_mode(env_get("outputmode"))) {
+			hdr_func(OSD1_HDR, SDR_HLG);
+			hdr_func(OSD2_HDR, SDR_HLG);
+			hdr_func(VD1_HDR, SDR_HLG);
+		}
+		if (is_hdmi_mode(env_get("outputmode2")))
+			hdr_func(OSD3_HDR, SDR_HLG);
+		if (is_hdmi_mode(env_get("outputmode3")))
+			hdr_func(OSD4_HDR, SDR_HLG);
+		amvecm_cp_hdr_info(&hdr_data, BT2020_HLG);
+		hdmitx_set_drm_pkt(&hdr_data);
 	}
 
 	if ((hdrinfo && hdrinfo->hdr_sup_eotf_smpte_st_2084) &&
