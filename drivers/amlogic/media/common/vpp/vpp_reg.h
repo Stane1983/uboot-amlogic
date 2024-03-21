@@ -22,21 +22,123 @@
 
 #define REG_VPP_ADDR(reg)               (reg + 0L)
 
+#ifndef VIU_EOTF_CTL
 #ifdef VPP_EOTF_CTL
 #define VIU_EOTF_CTL VPP_EOTF_CTL
 #endif
+#endif
 
+#ifndef VIU_EOTF_LUT_ADDR_PORT
 #ifdef VPP_EOTF_LUT_ADDR_PORT
 #define VIU_EOTF_LUT_ADDR_PORT VPP_EOTF_LUT_ADDR_PORT
 #endif
+#endif
 
+#ifndef VIU_EOTF_LUT_DATA_PORT
 #ifdef VPP_EOTF_LUT_DATA_PORT
 #define VIU_EOTF_LUT_DATA_PORT VPP_EOTF_LUT_DATA_PORT
+#endif
+#endif
+
+#ifndef VPP_OSD1_MATRIX_COEF00_01
+#define VPP_OSD1_MATRIX_COEF00_01           0x3910
+#endif
+
+#ifndef VPP_OSD1_MATRIX_COEF02_10
+#define VPP_OSD1_MATRIX_COEF02_10           0x3911
+#endif
+
+#ifndef VPP_OSD1_MATRIX_COEF11_12
+#define VPP_OSD1_MATRIX_COEF11_12           0x3912
+#endif
+
+#ifndef VPP_OSD1_MATRIX_COEF20_21
+#define VPP_OSD1_MATRIX_COEF20_21           0x3913
+#endif
+
+#ifndef VPP_OSD1_MATRIX_COEF22
+#define VPP_OSD1_MATRIX_COEF22              0x3914
+#endif
+
+#ifndef VPP_OSD1_MATRIX_COEF13_14
+#define VPP_OSD1_MATRIX_COEF13_14           0x3915
+#endif
+
+#ifndef VPP_OSD1_MATRIX_COEF23_24
+#define VPP_OSD1_MATRIX_COEF23_24           0x3916
+#endif
+
+#ifndef VPP_OSD1_MATRIX_COEF15_25
+#define VPP_OSD1_MATRIX_COEF15_25           0x3917
+#endif
+
+#ifndef VPP_OSD1_MATRIX_CLIP
+#define VPP_OSD1_MATRIX_CLIP                0x3918
+#endif
+
+#ifndef VPP_OSD1_MATRIX_OFFSET0_1
+#define VPP_OSD1_MATRIX_OFFSET0_1           0x3919
+#endif
+
+#ifndef VPP_OSD1_MATRIX_OFFSET2
+#define VPP_OSD1_MATRIX_OFFSET2             0x391a
+#endif
+
+#ifndef VPP_OSD1_MATRIX_PRE_OFFSET0_1
+#define VPP_OSD1_MATRIX_PRE_OFFSET0_1       0x391b
+#endif
+
+#ifndef VPP_OSD1_MATRIX_PRE_OFFSET2
+#define VPP_OSD1_MATRIX_PRE_OFFSET2         0x391c
+#endif
+
+#ifndef VPP_OSD1_MATRIX_EN_CTRL
+#define VPP_OSD1_MATRIX_EN_CTRL             0x391d
 #endif
 
 /* ********************************
  * dummy registers *
  * ********************************* */
+#ifndef S0_VPP_POST2_MATRIX_COEF00_01
+#define S0_VPP_POST2_MATRIX_COEF00_01              0x2560
+#endif
+
+#ifndef S0_VPP_POST2_MATRIX_COEF02_10
+#define S0_VPP_POST2_MATRIX_COEF02_10              0x2561
+#endif
+
+#ifndef S0_VPP_POST2_MATRIX_COEF11_12
+#define S0_VPP_POST2_MATRIX_COEF11_12              0x2562
+#endif
+
+#ifndef S0_VPP_POST2_MATRIX_COEF20_21
+#define S0_VPP_POST2_MATRIX_COEF20_21              0x2563
+#endif
+
+#ifndef S0_VPP_POST2_MATRIX_COEF22
+#define S0_VPP_POST2_MATRIX_COEF22                 0x2564
+#endif
+
+#ifndef S0_VPP_POST2_MATRIX_OFFSET0_1
+#define S0_VPP_POST2_MATRIX_OFFSET0_1              0x2569
+#endif
+
+#ifndef S0_VPP_POST2_MATRIX_OFFSET2
+#define S0_VPP_POST2_MATRIX_OFFSET2                0x256a
+#endif
+
+#ifndef S0_VPP_POST2_MATRIX_PRE_OFFSET0_1
+#define S0_VPP_POST2_MATRIX_PRE_OFFSET0_1          0x256b
+#endif
+
+#ifndef S0_VPP_POST2_MATRIX_PRE_OFFSET2
+#define S0_VPP_POST2_MATRIX_PRE_OFFSET2            0x256c
+#endif
+
+#ifndef S0_VPP_POST2_MATRIX_EN_CTRL
+#define S0_VPP_POST2_MATRIX_EN_CTRL                0x256d
+#endif
+
 #ifndef VPP_POST2_MATRIX_PRE_OFFSET0_1
 #define VPP_POST2_MATRIX_PRE_OFFSET0_1             0x39ab
 #endif
@@ -76,7 +178,6 @@
 #ifndef VPP_POST2_MATRIX_EN_CTRL
 #define VPP_POST2_MATRIX_EN_CTRL                   0x39ad
 #endif
-
 
 #ifndef VPP_WRAP_OSD1_MATRIX_PRE_OFFSET0_1
 #define VPP_WRAP_OSD1_MATRIX_PRE_OFFSET0_1         0x3d6b
@@ -378,6 +479,70 @@
 #ifndef LCD_GAMMA_ADDR_PORT0
 #define LCD_GAMMA_ADDR_PORT0                       0x14b6
 #endif
+
+//s5 matrix
+#define S5_VPP_VD1_MATRIX_COEF00_01                0x1d90
+#define S5_VPP_VD1_MATRIX_COEF02_10                0x1d91
+#define S5_VPP_VD1_MATRIX_COEF11_12                0x1d92
+#define S5_VPP_VD1_MATRIX_COEF20_21                0x1d93
+#define S5_VPP_VD1_MATRIX_COEF22                   0x1d94
+#define S5_VPP_VD1_MATRIX_COEF13_14                0x1d95
+#define S5_VPP_VD1_MATRIX_COEF23_24                0x1d96
+#define S5_VPP_VD1_MATRIX_COEF15_25                0x1d97
+#define S5_VPP_VD1_MATRIX_CLIP                     0x1d98
+#define S5_VPP_VD1_MATRIX_OFFSET0_1                0x1d99
+#define S5_VPP_VD1_MATRIX_OFFSET2                  0x1d9a
+#define S5_VPP_VD1_MATRIX_PRE_OFFSET0_1            0x1d9b
+#define S5_VPP_VD1_MATRIX_PRE_OFFSET2              0x1d9c
+#define S5_VPP_VD1_MATRIX_EN_CTRL                  0x1d9d
+#define S5_VPP_VD1_MATRIX_SAT                      0x1d9e
+
+#define S5_VPP_POST2_MATRIX_COEF00_01              0x2560
+#define S5_VPP_POST2_MATRIX_COEF02_10              0x2561
+#define S5_VPP_POST2_MATRIX_COEF11_12              0x2562
+#define S5_VPP_POST2_MATRIX_COEF20_21              0x2563
+#define S5_VPP_POST2_MATRIX_COEF22                 0x2564
+#define S5_VPP_POST2_MATRIX_COEF13_14              0x2565
+#define S5_VPP_POST2_MATRIX_COEF23_24              0x2566
+#define S5_VPP_POST2_MATRIX_COEF15_25              0x2567
+#define S5_VPP_POST2_MATRIX_CLIP                   0x2568
+#define S5_VPP_POST2_MATRIX_OFFSET0_1              0x2569
+#define S5_VPP_POST2_MATRIX_OFFSET2                0x256a
+#define S5_VPP_POST2_MATRIX_PRE_OFFSET0_1          0x256b
+#define S5_VPP_POST2_MATRIX_PRE_OFFSET2            0x256c
+#define S5_VPP_POST2_MATRIX_EN_CTRL                0x256d
+
+#define S5_VPP_POST_MATRIX_COEF00_01               0x2580
+#define S5_VPP_POST_MATRIX_COEF02_10               0x2581
+#define S5_VPP_POST_MATRIX_COEF11_12               0x2582
+#define S5_VPP_POST_MATRIX_COEF20_21               0x2583
+#define S5_VPP_POST_MATRIX_COEF22                  0x2584
+#define S5_VPP_POST_MATRIX_COEF13_14               0x2585
+#define S5_VPP_POST_MATRIX_COEF23_24               0x2586
+#define S5_VPP_POST_MATRIX_COEF15_25               0x2587
+#define S5_VPP_POST_MATRIX_CLIP                    0x2588
+#define S5_VPP_POST_MATRIX_OFFSET0_1               0x2589
+#define S5_VPP_POST_MATRIX_OFFSET2                 0x258a
+#define S5_VPP_POST_MATRIX_PRE_OFFSET0_1           0x258b
+#define S5_VPP_POST_MATRIX_PRE_OFFSET2             0x258c
+#define S5_VPP_POST_MATRIX_EN_CTRL                 0x258d
+#define S5_VPP_POST_MATRIX_SAT                     0x258e
+
+#define S5_VPP_SLICE1_VD1_MATRIX_COEF00_01          0x2890
+#define S5_VPP_SLICE1_VD1_MATRIX_COEF02_10          0x2891
+#define S5_VPP_SLICE1_VD1_MATRIX_COEF11_12          0x2892
+#define S5_VPP_SLICE1_VD1_MATRIX_COEF20_21          0x2893
+#define S5_VPP_SLICE1_VD1_MATRIX_COEF22             0x2894
+#define S5_VPP_SLICE1_VD1_MATRIX_COEF13_14          0x2895
+#define S5_VPP_SLICE1_VD1_MATRIX_COEF23_24          0x2896
+#define S5_VPP_SLICE1_VD1_MATRIX_COEF15_25          0x2897
+#define S5_VPP_SLICE1_VD1_MATRIX_CLIP               0x2898
+#define S5_VPP_SLICE1_VD1_MATRIX_OFFSET0_1          0x2899
+#define S5_VPP_SLICE1_VD1_MATRIX_OFFSET2            0x289a
+#define S5_VPP_SLICE1_VD1_MATRIX_PRE_OFFSET0_1      0x289b
+#define S5_VPP_SLICE1_VD1_MATRIX_PRE_OFFSET2        0x289c
+#define S5_VPP_SLICE1_VD1_MATRIX_EN_CTRL            0x289d
+#define S5_VPP_SLICE1_VD1_MATRIX_SAT                0x289e
 
 //#define GAMMA_CNTL_PORT                            0x1400
 #define  GAMMA_VCOM_POL    7     /* RW */

@@ -752,7 +752,8 @@ void set_hdr_matrix(enum hdr_module_sel module_sel,
 		vpp_reg_setb(hdr_ctrl, 0, 17, 1);
 		/*mtx in en*/
 		/*bit14-15 is ai color for s5*/
-		if (get_cpu_id().family_id != MESON_CPU_MAJOR_ID_S5)
+		if (get_cpu_id().family_id != MESON_CPU_MAJOR_ID_S5 &&
+			get_cpu_id().family_id != MESON_CPU_MAJOR_ID_T3X)
 			vpp_reg_setb(hdr_ctrl, 1, 14, 1);
 
 		vpp_reg_write(MATRIXI_COEF00_01,
@@ -787,7 +788,8 @@ void set_hdr_matrix(enum hdr_module_sel module_sel,
 		/*for g12a/g12b osd blend shift rtl bug*/
 		if ((get_cpu_id().family_id >= MESON_CPU_MAJOR_ID_G12A) &&
 		    (hdr_mtx_param->p_sel & HDR_BYPASS) &&
-		    (module_sel & (OSD1_HDR | OSD2_HDR | OSD3_HDR | OSD4_HDR)))
+		    (module_sel & (OSD1_HDR | OSD2_HDR | OSD3_HDR | OSD4_HDR |
+		        VD1_HDR | VD2_HDR)))
 			gmut_shift = 10;
 		else
 			gmut_shift = 11;
@@ -904,7 +906,8 @@ void set_hdr_matrix(enum hdr_module_sel module_sel,
 		vpp_reg_setb(hdr_ctrl, 0, 17, 1);
 		/*mtx out en*/
 		/*bit14-15 is ai color for s5*/
-		if (get_cpu_id().family_id != MESON_CPU_MAJOR_ID_S5)
+		if (get_cpu_id().family_id != MESON_CPU_MAJOR_ID_S5 &&
+			get_cpu_id().family_id != MESON_CPU_MAJOR_ID_T3X)
 			vpp_reg_setb(hdr_ctrl, 1, 15, 1);
 
 		vpp_reg_write(MATRIXO_COEF00_01,
@@ -1210,7 +1213,8 @@ void hdr_func(enum hdr_module_sel module_sel,
 	case OSD3_HDR:
 		if ((get_cpu_id().family_id != MESON_CPU_MAJOR_ID_T3) &&
 			(get_cpu_id().family_id != MESON_CPU_MAJOR_ID_T7) &&
-			(get_cpu_id().family_id != MESON_CPU_MAJOR_ID_S5))
+			(get_cpu_id().family_id != MESON_CPU_MAJOR_ID_S5) &&
+			(get_cpu_id().family_id != MESON_CPU_MAJOR_ID_T3X))
 			return;
 		break;
 	case OSD4_HDR:
@@ -1225,7 +1229,7 @@ void hdr_func(enum hdr_module_sel module_sel,
 	case VD2_HDR:
 		/* VD1 and VD2 need not init in uboot, just skip */
 		if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S5 ||
-			get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S1A)
+			get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T3X)
 			return;
 		break;
 	default:
@@ -1253,7 +1257,8 @@ void hdr_func(enum hdr_module_sel module_sel,
 	if (module_sel & (VD1_HDR | VD2_HDR | VD3_HDR | OSD1_HDR |
 		OSD2_HDR | OSD3_HDR | OSD4_HDR)) {
 		if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S4 ||
-			get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T3)
+			get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T3 ||
+			get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T3X)
 			bit_depth = 10;
 		else
 			bit_depth = 12;
@@ -1417,7 +1422,6 @@ void hdr_func(enum hdr_module_sel module_sel,
 		(hdr_process_select & HDR_BYPASS)) {
 		/* sdr process, always rgb osd here*/
 		if (hdr_process_select & RGB_OSD) {
-			coeff_in = rgb2ycbcr_709;
 			coeff_in = rgb2ycbcr_709;
 			oft_pre_in = rgb2yuvpre;
 			oft_post_in = rgb2yuvpos;
