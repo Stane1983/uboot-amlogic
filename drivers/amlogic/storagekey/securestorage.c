@@ -13,6 +13,7 @@
 #endif
 #include <linux/arm-smccc.h>
 
+#ifndef ABANDON_SECURE_UNIFY_KEY
 static uint64_t storage_share_in_base;
 static uint64_t storage_share_out_base;
 static uint64_t storage_share_block_base;
@@ -265,9 +266,11 @@ void secure_storage_init(void)
 		else
 			storage_init_status = 1;
 }
+#endif
 
 void *secure_storage_getbuffer(uint32_t *size)
 {
+#ifndef ABANDON_SECURE_UNIFY_KEY
 	if (storage_init_status == 0)
 		secure_storage_init();
 
@@ -281,20 +284,29 @@ void *secure_storage_getbuffer(uint32_t *size)
 		*size = 0;
 		return NULL;
 	}
+#else
+	*size = 0;
+	return NULL;
+#endif
 }
 void secure_storage_notifier(void)
 {
+#ifndef ABANDON_SECURE_UNIFY_KEY
 	bl31_storage_ops(SECURITY_KEY_NOTIFY);
+#endif
 }
 
 void secure_storage_notifier_ex(uint32_t storagesize, uint32_t rsvarg)
 {
+#ifndef ABANDON_SECURE_UNIFY_KEY
 	bl31_storage_ops3(SECURITY_KEY_NOTIFY_EX, storagesize, rsvarg);
+#endif
 }
 
 int32_t secure_storage_write(uint8_t *keyname, uint8_t *keybuf,
 				uint32_t keylen, uint32_t keyattr)
 {
+#ifndef ABANDON_SECURE_UNIFY_KEY
 	uint32_t ret;
 
 	if (storage_init_status == 0)
@@ -305,11 +317,15 @@ int32_t secure_storage_write(uint8_t *keyname, uint8_t *keybuf,
 	else
 		ret = RET_EUND;
 	return smc_to_ns_errno(ret);
+#else
+	return -1;
+#endif
 }
 
 int32_t secure_storage_read(uint8_t *keyname, uint8_t *keybuf,
 			uint32_t keylen, uint32_t *readlen)
 {
+#ifndef ABANDON_SECURE_UNIFY_KEY
 	uint64_t ret;
 	if (storage_init_status == 0)
 		secure_storage_init();
@@ -320,10 +336,14 @@ int32_t secure_storage_read(uint8_t *keyname, uint8_t *keybuf,
 		ret = RET_EUND;
 
 	return smc_to_ns_errno(ret);
+#else
+	return -1;
+#endif
 }
 
 int32_t secure_storage_query(uint8_t *keyname, uint32_t *retval)
 {
+#ifndef ABANDON_SECURE_UNIFY_KEY
 	uint64_t ret;
 	if (storage_init_status == 0)
 		secure_storage_init();
@@ -334,10 +354,14 @@ int32_t secure_storage_query(uint8_t *keyname, uint32_t *retval)
 		ret = RET_EUND;
 
 	return smc_to_ns_errno(ret);
+#else
+	return -1;
+#endif
 }
 
 int32_t secure_storage_status(uint8_t *keyname, uint32_t *retval)
 {
+#ifndef ABANDON_SECURE_UNIFY_KEY
 	uint64_t ret;
 	if (storage_init_status == 0)
 		secure_storage_init();
@@ -348,10 +372,14 @@ int32_t secure_storage_status(uint8_t *keyname, uint32_t *retval)
 		ret = RET_EUND;
 
 	return smc_to_ns_errno(ret);
+#else
+	return -1;
+#endif
 }
 
 int32_t secure_storage_tell(uint8_t *keyname, uint32_t *retval)
 {
+#ifndef ABANDON_SECURE_UNIFY_KEY
 	uint64_t ret;
 	if (storage_init_status == 0)
 		secure_storage_init();
@@ -362,10 +390,14 @@ int32_t secure_storage_tell(uint8_t *keyname, uint32_t *retval)
 		ret = RET_EUND;
 
 	return smc_to_ns_errno(ret);
+#else
+	return -1;
+#endif
 }
 
 int32_t secure_storage_verify(uint8_t *keyname, uint8_t *hashbuf)
 {
+#ifndef ABANDON_SECURE_UNIFY_KEY
 	uint64_t ret;
 	if (storage_init_status == 0)
 		secure_storage_init();
@@ -376,11 +408,15 @@ int32_t secure_storage_verify(uint8_t *keyname, uint8_t *hashbuf)
 		ret = RET_EUND;
 
 	return smc_to_ns_errno(ret);
+#else
+	return -1;
+#endif
 }
 
 int32_t secure_storage_list(uint8_t *listbuf,
 		uint32_t buflen, uint32_t *readlen)
 {
+#ifndef ABANDON_SECURE_UNIFY_KEY
 	uint64_t ret;
 	if (storage_init_status == 0)
 		secure_storage_init();
@@ -391,10 +427,14 @@ int32_t secure_storage_list(uint8_t *listbuf,
 		ret = RET_EUND;
 
 	return smc_to_ns_errno(ret);
+#else
+	return -1;
+#endif
 }
 
 int32_t secure_storage_remove(uint8_t *keyname)
 {
+#ifndef ABANDON_SECURE_UNIFY_KEY
 	uint64_t ret;
 	if (storage_init_status == 0)
 		secure_storage_init();
@@ -405,32 +445,50 @@ int32_t secure_storage_remove(uint8_t *keyname)
 		ret = RET_EUND;
 
 	return smc_to_ns_errno(ret);
+#else
+	return -1;
+#endif
 }
 
 void secure_storage_set_info(uint32_t info)
 {
+	(void)info;
+#ifndef ABANDON_SECURE_UNIFY_KEY
 	struct arm_smccc_res res;
 
 	arm_smccc_smc(SET_STORAGE_INFO, info, 0, 0, 0, 0, 0, 0, &res);
+#endif
 }
 
 int32_t secure_storage_set_enctype(uint32_t type)
 {
+#ifndef ABANDON_SECURE_UNIFY_KEY
 	uint64_t  ret;
 	ret = bl31_storage_ops2(SECURITY_KEY_SET_ENCTYPE, type);
 	return smc_to_ns_errno(ret);
+#else
+	return -1;
+#endif
 }
 
 int32_t secure_storage_get_enctype(void)
 {
+#ifndef ABANDON_SECURE_UNIFY_KEY
 	uint64_t ret;
 	ret = bl31_storage_ops(SECURITY_KEY_GET_ENCTYPE);
 	return smc_to_ns_errno(ret);
+#else
+	return -1;
+#endif
 }
 
 int32_t secure_storage_version(void)
 {
+#ifndef ABANDON_SECURE_UNIFY_KEY
 	uint64_t ret;
 	ret = bl31_storage_ops(SECURITY_KEY_VERSION);
 	return smc_to_ns_errno(ret);
+#else
+	return -1;
+#endif
 }
