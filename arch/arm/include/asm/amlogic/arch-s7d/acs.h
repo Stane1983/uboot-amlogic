@@ -17,8 +17,5 @@
 
 #define MAX_REG_OPS_ENTRIES		(32)
 
-#ifndef __ASSEMBLY__
-
 #include <asm/amlogic/arch/acs_struct.h>
-#endif
 #endif
