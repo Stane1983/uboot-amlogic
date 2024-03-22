@@ -87,12 +87,23 @@
 #define KERNL_LOGLEVEL	"loglevel=7 "
 #endif
 
+#ifndef CONFIG_ARMV8_MULTIENTRY
+#define OSD_CMD	"osd open;osd clear;run load_bmp_logo;bmp scale; "
+#define ENABLE_SMP "display_on_smp=0\0"
+#define CHECK_DISPLAY "run check_display;"
+#else
+#define OSD_CMD " "
+#define ENABLE_SMP "display_on_smp=1\0"
+#define CHECK_DISPLAY " "
+#endif
+
 /* args/envs */
 #define CONFIG_SYS_MAXARGS  64
 #define CONFIG_EXTRA_ENV_SETTINGS \
        CONFIG_EXTRA_ENV_SETTINGS_BASE \
 		"firstboot=1\0"\
 		SILENT \
+		ENABLE_SMP \
 		"upgrade_step=0\0"\
 		"jtag=disable\0"\
 		"loadaddr=0x00020000\0"\
@@ -289,7 +300,8 @@
 			"run load_bmp_logo_base;"\
 			"\0"\
 	"init_display="\
-		"osd open;osd clear;run load_bmp_logo;bmp scale;vout output ${outputmode}"\
+		OSD_CMD \
+		"vout output ${outputmode}"\
 		"\0"\
 	"check_display="\
 		"echo check_display reboot_mode : ${reboot_mode} ,powermode : ${powermode};"\
@@ -337,7 +349,7 @@
             "run upgrade_check;"\
 	/* "run init_display;"\ */\
 	"get_rebootmode;"\
-	"run check_display;"\
+	CHECK_DISPLAY \
 	"run storeargs;"\
             "run upgrade_key;" \
             "bcb uboot-command;" \

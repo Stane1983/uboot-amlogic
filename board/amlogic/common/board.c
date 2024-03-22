@@ -327,7 +327,9 @@ int aml_board_late_init_tail(void *arg)
 void aml_display_on_job(unsigned long param)
 {
 	// ! fill init_display logic here
-	// run_command("vout output ${outputmode};", 0);
+	//run_command("vout output ${outputmode};", 0);
+	run_command("get_rebootmode", 0);
+	run_command("run check_display", 0);
 
 	printf("display[%lu] on%s done\n", param & 0xff, param ? " smp" : "");
 #ifdef CONFIG_ARMV8_MULTIENTRY
@@ -358,6 +360,7 @@ void aml_board_display_init(unsigned char vout_bit)
 #endif
 
 #ifdef CONFIG_ARMV8_MULTIENTRY
+	run_command("osd open;osd clear;run load_bmp_logo;bmp scale;", 0);
 	unsigned char i;
 	int smp_ret;
 

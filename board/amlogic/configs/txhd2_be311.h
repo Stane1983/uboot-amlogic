@@ -87,11 +87,30 @@
 #define CONFIG_ADC_POWER_KEY_VAL    0  /*sample value range: 0-1023*/
 
 #define CONFIG_SILENT_CONSOLE
+#ifdef CONFIG_NOVERBOSE_BUILD
+#define SILENT		"silent=1\0"
+#define KERNL_LOGLEVEL	"loglevel=2 "
+#else
+#define SILENT		"silent=0\0"
+#define KERNL_LOGLEVEL	"loglevel=7 "
+#endif
+
+#ifndef CONFIG_ARMV8_MULTIENTRY
+#define OSD_CMD	"osd open;osd clear;run load_bmp_logo;bmp scale; "
+#define ENABLE_SMP "display_on_smp=0\0"
+#define CHECK_DISPLAY "run check_display;"
+#else
+#define OSD_CMD " "
+#define ENABLE_SMP "display_on_smp=1\0"
+#define CHECK_DISPLAY " "
+#endif
+
 /* args/envs */
 #define CONFIG_SYS_MAXARGS  64
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	CONFIG_EXTRA_ENV_SETTINGS_BASE \
-		"silent=0\0"\
+		SILENT \
+		ENABLE_SMP \
 		"systemsuspend_switch=0\0"\
 		"ddr_resume=0\0"\
 		"otg_device=1\0" \
@@ -288,18 +307,17 @@
 	"init_display="\
 		"get_rebootmode;"\
 		"echo reboot_mode:::: ${reboot_mode};"\
+		OSD_CMD \
 		"if test ${reboot_mode} = quiescent; then "\
 			"setenv dolby_status 0;"\
 			"setenv dolby_vision_on 0;"\
 			"setenv bootconfig ${bootconfig} androidboot.quiescent=1;"\
-			"osd open;osd clear;"\
 		"else if test ${reboot_mode} = recovery_quiescent; then "\
 			"setenv dolby_status 0;"\
 			"setenv dolby_vision_on 0;"\
 			"setenv bootconfig ${bootconfig} androidboot.quiescent=1;"\
-			"osd open;osd clear;"\
 		"else "\
-			"osd open;osd clear;run load_bmp_logo;bmp scale;vout output ${outputmode};"\
+			"vout output ${outputmode};"\
 		"fi;fi;"\
 		"\0"\
 	"check_display="\
@@ -356,7 +374,7 @@
             "run upgrade_check;"\
 	/* "run init_display;"\ */\
 	"get_rebootmode;"\
-	"run check_display;"\
+	CHECK_DISPLAY \
 	"run storeargs;"\
             "run upgrade_key;" \
             "bcb uboot-command;" \
