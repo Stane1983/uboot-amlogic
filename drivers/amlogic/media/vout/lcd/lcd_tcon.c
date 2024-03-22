@@ -801,7 +801,6 @@ void lcd_tcon_disable(struct aml_lcd_drv_s *pdrv)
 
 	if (lcd_tcon_conf->tcon_disable)
 		lcd_tcon_conf->tcon_disable(pdrv);
-}
 
 static int lcd_tcon_forbidden_check(void)
 {

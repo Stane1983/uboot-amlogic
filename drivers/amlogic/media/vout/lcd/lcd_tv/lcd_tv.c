@@ -368,11 +368,11 @@ static void lcd_vmode_update(struct aml_lcd_drv_s *pdrv)
 		memcpy(&pdrv->config.timing.base_timing, ptiming,
 			sizeof(struct lcd_detail_timing_s));
 		lcd_cus_ctrl_config_update(pdrv, (void *)ptiming, LCD_CUS_CTRL_SEL_TIMMING);
-		if (pdrv->config.timing.base_timing.pixel_clk != pre_pclk)
-			pdrv->config.timing.clk_change |= LCD_CLK_PLL_RESET;
 
 		//update base_timing to act_timing
 		lcd_enc_timing_init_config(pdrv);
+		if (pdrv->config.timing.base_timing.pixel_clk != pre_pclk)
+			pdrv->config.timing.clk_change |= LCD_CLK_PLL_RESET;
 	}
 
 	if (!pdrv->vmode_mgr.cur_vmode_info || !pdrv->std_duration) {

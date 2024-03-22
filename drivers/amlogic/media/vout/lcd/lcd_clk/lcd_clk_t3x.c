@@ -456,6 +456,7 @@ static void lcd_set_vclk_crt(struct aml_lcd_drv_s *pdrv)
 	lcd_clk_setb(reg_vid_clk_ctrl2, 1, ENCL_GATE_VCLK, 1);
 }
 
+#ifdef CONFIG_AML_LCD_TCON
 /* tcon run base clk, include register access */
 static void lcd_set_tcon_clk_t3x(struct aml_lcd_drv_s *pdrv)
 {
@@ -471,19 +472,17 @@ static void lcd_set_tcon_clk_t3x(struct aml_lcd_drv_s *pdrv)
 	lcd_clk_write(CLKCTRL_TCON_CLK_CNTL, (1 << 7) | (1 << 6) | (7 << 0));
 
 	/* global reset tcon, take effect when pixel_clk ready */
-	lcd_reset_setb(RESETCTRL_RESET2_MASK, 0, 5, 1);
-	lcd_reset_setb(RESETCTRL_RESET2_LEVEL, 0, 5, 1);
-	udelay(1);
-	lcd_reset_setb(RESETCTRL_RESET2_LEVEL, 1, 5, 1);
-	udelay(2);
-	LCDPR("reset tcon\n");
+	lcd_tcon_global_reset(pdrv);
 }
+#endif
 
 //special setting by lcd interface
 static void lcd_clktree_set(struct aml_lcd_drv_s *pdrv)
 {
+#ifdef CONFIG_AML_LCD_TCON
 	if (pdrv->index == 0) /* tcon_clk invalid for lcd1 */
 		lcd_set_tcon_clk_t3x(pdrv);
+#endif
 }
 
 static void lcd_clk_disable(struct aml_lcd_drv_s *pdrv)

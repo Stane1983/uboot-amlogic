@@ -762,7 +762,7 @@ static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 	val |= (pdrv->boot_ctrl.clk_mode & 0x3) << 22;
 	val |= (pdrv->boot_ctrl.base_frame_rate & 0xff) << 24;
 
-	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 		LCDPR("[%d]: %s: ppc=%d, clk_mode=%d, base_fr=%d, bootctrl val=0x%x\n",
 			pdrv->index, __func__,
 			pdrv->config.timing.ppc,
@@ -790,7 +790,7 @@ static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 static void lcd_update_debug_bootargs(void)
 {
 	unsigned int val = 0;
-	char ctrl_str[20];
+	char dbg_str[20];
 
 	debug_ctrl.debug_print_flag = lcd_debug_print_flag;
 	debug_ctrl.debug_test_pattern = lcd_debug_test_flag;
@@ -799,18 +799,17 @@ static void lcd_update_debug_bootargs(void)
 
 	/*
 	 *bit[31:30]: lcd mode(0=normal, 1=tv; 2=tablet, 3=TBD)
-	 *bit[29:28]: lcd debug para source(0=normal, 1=dts, 2=unifykey,
-	 *                                  3=bsp for uboot)
-	 *bit[27:16]: reserved
-	 *bit[15:8]: lcd test pattern
-	 *bit[7:0]:  lcd debug print flag
+	 *bit[29:28]: lcd debug para source(0=normal, 1=dts, 2=unifykey, 3=bsp for uboot)
+	 *bit[27:20]: reserved
+	 *bit[19:16]: lcd test pattern
+	 *bit[15:0]:  lcd debug print flag
 	 */
-	val |= (debug_ctrl.debug_print_flag & 0xff);
-	val |= (debug_ctrl.debug_test_pattern & 0xff) << 8;
+	val |= (debug_ctrl.debug_print_flag & 0xffff);
+	val |= (debug_ctrl.debug_test_pattern & 0xf) << 16;
 	val |= (debug_ctrl.debug_para_source & 0x3) << 28;
 	val |= (debug_ctrl.debug_lcd_mode & 0x3) << 30;
-	sprintf(ctrl_str, "0x%08x", val);
-	env_set("lcd_debug", ctrl_str);
+	sprintf(dbg_str, "0x%08x", val);
+	env_set("lcd_debug", dbg_str);
 }
 
 void lcd_panel_config_load_to_drv(struct aml_lcd_drv_s *pdrv)
@@ -943,7 +942,7 @@ int lcd_probe(void)
 	int ret = 0;
 
 	lcd_debug_print_flag = env_get_ulong("lcd_debug_print", 16, 0);
-	LCDPR("lcd_debug_print flag: %d\n", lcd_debug_print_flag);
+	LCDPR("lcd_debug_print flag: 0x%x\n", lcd_debug_print_flag);
 
 	lcd_debug_test_flag = env_get_ulong("lcd_debug_test", 10, 0);
 

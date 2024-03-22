@@ -1817,8 +1817,6 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv)
 	if (ret)
 		return -1;
 
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		LCDPR("[%d]: %s: %s size: 0x%x\n", pdrv->index, __func__, key_str, key_len);
 	para = (unsigned char *)malloc(sizeof(unsigned char) * key_len);
 	if (!para) {
 		LCDERR("[%d]: %s: Not enough memory\n", pdrv->index, __func__);
