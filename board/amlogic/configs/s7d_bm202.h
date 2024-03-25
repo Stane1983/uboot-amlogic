@@ -169,6 +169,30 @@ defined(CONFIG_STORE_COMPATIBLE)
 #if defined(CONFIG_SPI_NAND) && defined(CONFIG_MTD_SPI_NAND) && defined(CONFIG_MESON_NFC)
 #error CONFIG_SPI_NAND/CONFIG_MTD_SPI_NAND/CONFIG_MESON_NFC can not support at the sametime;
 #endif
+ /* mtd device board config */
+#define CONFIG_BL2_COPY_NUM             8
+#define CONFIG_NAND_TPL_COPY_NUM        2
+#define CONFIG_NOR_TPL_COPY_NUM         1
+#define CONFIG_TPL_SIZE_PER_COPY        0x300000
+
+#define BOOTLOADER_MODE_NAND            ADVANCE_BOOTLOADER
+#define BOOTLOADER_MODE_SNAND           ADVANCE_BOOTLOADER
+#define BOOTLOADER_MODE_SNOR            ADVANCE_BOOTLOADER
+#define BOOTLOADER_MODE_ADVANCE_INIT        1
+#define BOOTLOADER_DDR_FIP_SIZE             0x40000
+
+/* mtd device rsv board config */
+#define MTD_RSV_START_BLOCK             16
+#define MTD_RSV_BLOCK_CNT               48
+#define MTD_RSV_GAP_BLOCK_CNT           4
+#define MTD_RSV_BBT_BLOCK_CNT           4
+#define MTD_RSV_ENV_BLOCK_CNT           4
+#define MTD_RSV_KEY_BLOCK_CNT           8
+#define MTD_RSV_DTB_BLOCK_CNT           0
+#define MTD_RSV_DDR_BLOCK_CNT           0
+#define MTD_RSV_KEY_SIZE            0x8000
+#define MTD_RSV_DTB_SIZE            0x10000
+#define MTD_RSV_DDR_SIZE            0x10000
 
 /* #define		CONFIG_AML_SD_EMMC 1 */
 #ifdef CONFIG_AML_SD_EMMC

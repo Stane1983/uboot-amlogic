@@ -74,7 +74,7 @@ void vpu_module_init_config(void)
 #ifdef VPU_RDARB_UGT_L2C1
 		vpu_vcbus_write(VPU_RDARB_UGT_L2C1, 0xf);
 #endif
-	else if (vpu_conf.data->chip_type == VPU_CHIP_S7 ||
+	} else if (vpu_conf.data->chip_type == VPU_CHIP_S7 ||
 		vpu_conf.data->chip_type == VPU_CHIP_S7D) {
 		/*S7 ONLY VPU0 READ*/
 		vpu_vcbus_write(VPU_RDARB_MODE_L2C1, 0x00000);

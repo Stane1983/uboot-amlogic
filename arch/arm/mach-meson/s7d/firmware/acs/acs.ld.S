@@ -7,6 +7,14 @@ OUTPUT_FORMAT("elf64-littleaarch64")
 OUTPUT_ARCH(aarch64)
 ENTRY(acs_entry)
 
+MEMORY {
+    RAM (rw): ORIGIN = 0x00000000, LENGTH = 0x00001000
+}
+
+MEMORY {
+    ROM (rx): ORIGIN = 0x00001000, LENGTH = 0x00000100
+}
+
 SECTIONS
 {
 	. = 0x00001000;
@@ -17,7 +25,7 @@ SECTIONS
 		*(.text*)
 		*(.data*)
 		*(.bss*)
-    }
+    } >ROM
 
 	. = 0x00000000;
 	.dev_header :
