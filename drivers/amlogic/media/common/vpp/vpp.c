@@ -2107,6 +2107,9 @@ void hdr_tx_pkt_cb(void)
 	if (!hdr_policy_env)
 		return;
 
+	if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S1A)
+		return;
+
 	if (hdr_force_mode_env)
 		hdr_force_mode = simple_strtoul(hdr_force_mode_env, NULL, 10);
 
