@@ -523,13 +523,13 @@ static int read_edid_8bytes(unsigned char *rx_edid, unsigned char addr,
 	unsigned int i = 0;
 	/*Program SLAVE/SEGMENT/ADDR*/
 	hdmitx_wr_reg(HDMITX_DWC_I2CM_SLAVE, 0x50);
-	hdmitx_wr_reg(HDMITX_DWC_I2CM_SEGADDR, 0x30);
-	hdmitx_wr_reg(HDMITX_DWC_I2CM_SEGPTR, 1);
 	hdmitx_wr_reg(HDMITX_DWC_I2CM_ADDRESS, addr);
-	if (blk_no < 2)
-		hdmitx_wr_reg(HDMITX_DWC_I2CM_OPERATION, 1 << 2);
-	else
-		hdmitx_wr_reg(HDMITX_DWC_I2CM_OPERATION, 1 << 3);
+	hdmitx_wr_reg(HDMITX_DWC_I2CM_OPERATION, 1 << 3);
+	hdmitx_wr_reg(HDMITX_DWC_I2CM_SEGADDR, 0x30);
+
+	/* Program SEGMENT */
+	hdmitx_wr_reg(HDMITX_DWC_I2CM_SEGPTR, blk_no / 2);
+
 	timeout = 0;
 	while ((!(hdmitx_rd_reg(HDMITX_DWC_IH_I2CM_STAT0) & (1 << 1))) && (timeout < 5)) {
 		mdelay(1);
