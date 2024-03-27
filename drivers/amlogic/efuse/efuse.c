@@ -223,6 +223,111 @@ uint32_t efuse_obj_read(uint32_t obj_id, char *name, uint8_t *buff, uint32_t *si
 	*size = efuseinfo.size;
 	return ret;
 }
+
+static int hex2bin(char *hex, void *bin, size_t binlen)
+{
+	int i, c, n1, n2, hexlen, k;
+
+	hexlen = strnlen(hex, 64);
+	k = 0;
+	n1 = -1;
+	n2 = -1;
+	for (i = 0; i < hexlen; i++) {
+		n2 = n1;
+		c = hex[i];
+		if (c >= '0' && c <= '9') {
+			n1 = c - '0';
+		} else if (c >= 'a' && c <= 'f') {
+			n1 = c - 'a' + 10;
+		} else if (c >= 'A' && c <= 'F') {
+			n1 = c - 'A' + 10;
+		} else if (c == ' ') {
+			n1 = -1;
+			continue;
+		} else {
+			return -1;
+		}
+
+		if (n1 >= 0 && n2 >= 0) {
+			((uint8_t *)bin)[k] = (n2 << 4) | n1;
+			n1 = -1;
+			k++;
+		}
+	}
+	return k;
+}
+
+uint32_t efuse_obj_set_data(char *name, char *data)
+{
+	uint32_t ret;
+	int dlen = strnlen(data, 64);
+	uint8_t databuf[32] = {0};
+
+	dlen = hex2bin(data, databuf, dlen);
+	if (dlen < 0) {
+		printf("parse data hex2bin error\n");
+		return EFUSE_OBJ_ERR_INVALID_DATA;
+	}
+	ret = efuse_obj_write(EFUSE_OBJ_EFUSE_DATA, name, databuf, dlen);
+
+	return ret;
+}
+
+uint32_t efuse_obj_set_license(char *name)
+{
+	uint32_t ret;
+	uint8_t databuf = 0x01;
+
+	ret = efuse_obj_write(EFUSE_OBJ_EFUSE_DATA, name, &databuf, 1);
+
+	return ret;
+}
+
+uint32_t efuse_obj_lock(char *name)
+{
+	uint32_t ret;
+	uint8_t databuf = 0x01;
+
+	ret = efuse_obj_write(EFUSE_OBJ_LOCK_STATUS, name, &databuf, 1);
+
+	return ret;
+}
+
+efuse_obj_field_t efuse_field;
+
+uint32_t efuse_obj_get_data(char *name)
+{
+	uint32_t ret;
+	uint8_t buff[32];
+	uint32_t bufflen = sizeof(buff);
+
+	ret = efuse_obj_read(EFUSE_OBJ_EFUSE_DATA, name, buff, &bufflen);
+	if (ret == EFUSE_OBJ_SUCCESS) {
+		memset(&efuse_field, 0, sizeof(efuse_field));
+		strncpy(efuse_field.name, name, sizeof(efuse_field.name) - 1);
+		memcpy(efuse_field.data, buff, bufflen);
+		efuse_field.size = bufflen;
+	}
+
+	return ret;
+}
+
+uint32_t efuse_obj_get_lock(char *name)
+{
+	uint32_t ret;
+	uint8_t buff[32];
+	uint32_t bufflen = sizeof(buff);
+
+	ret = efuse_obj_read(EFUSE_OBJ_LOCK_STATUS, name, buff, &bufflen);
+	if (ret == EFUSE_OBJ_SUCCESS) {
+		memset(&efuse_field, 0, sizeof(efuse_field));
+		strncpy(efuse_field.name, name, sizeof(efuse_field.name) - 1);
+		memcpy(efuse_field.data, buff, bufflen);
+		efuse_field.size = bufflen;
+	}
+
+	return ret;
+}
 #endif /* CONFIG_EFUSE_OBJ_API */
 
 #ifdef CONFIG_EFUSE_MRK_GET_CHECKNUM
