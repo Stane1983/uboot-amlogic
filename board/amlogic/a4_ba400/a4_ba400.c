@@ -350,9 +350,9 @@ static struct mtd_partition normal_partition_info[] = {
 	 .size = 0,
 	  },
 	{
-	 .name = "logo",
+	 .name = "misc",
 	 .offset = 0,
-	 .size = 2 * SZ_1M,
+	 .size = 1 * SZ_256K,
 	  },
 	{
 	 .name = "recovery",
