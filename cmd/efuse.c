@@ -245,9 +245,6 @@ U_BOOT_CMD(
 );
 
 #ifdef CONFIG_EFUSE_OBJ_API
-
-efuse_obj_field_t efuse_field;
-
 static char *efuse_obj_err_parse(uint32_t  efuse_obj_err_status)
 {
 	char *err_char = NULL;
@@ -283,44 +280,9 @@ static char *efuse_obj_err_parse(uint32_t  efuse_obj_err_status)
 	return err_char;
 }
 
-static int hex2bin(char *hex, void *bin, size_t binlen)
-{
-	int i, c, n1, n2, hexlen, k;
-
-	hexlen = strnlen(hex, 64);
-	k = 0;
-	n1 = -1;
-	n2 = -1;
-	for (i = 0; i < hexlen; i++) {
-		n2 = n1;
-		c = hex[i];
-		if (c >= '0' && c <= '9') {
-			n1 = c - '0';
-		} else if (c >= 'a' && c <= 'f') {
-			n1 = c - 'a' + 10;
-		} else if (c >= 'A' && c <= 'F') {
-			n1 = c - 'A' + 10;
-		} else if (c == ' ') {
-			n1 = -1;
-			continue;
-		} else {
-			return -1;
-		}
-
-		if (n1 >= 0 && n2 >= 0) {
-			((uint8_t *)bin)[k] = (n2 << 4) | n1;
-			n1 = -1;
-			k++;
-		}
-	}
-	return k;
-}
-
 int do_efuse_obj(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	uint32_t rc = CMD_RET_FAILURE;
-	uint8_t buff[32];
-	uint32_t bufflen = sizeof(buff);
 	char *name = NULL;
 
 	if (argc < 3 || argc > 4) {
@@ -328,25 +290,19 @@ int do_efuse_obj(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		return CMD_RET_USAGE;
 	}
 
-	memset(&buff[0], 0, sizeof(buff));
 	memset(&efuse_field, 0, sizeof(efuse_field));
 
 	if (strcmp(argv[1], "get") == 0) {
 		// $0 get field
 		if (argc == 3) {
 			name = argv[2];
-			rc = efuse_obj_read(EFUSE_OBJ_EFUSE_DATA, name, buff, &bufflen);
+			rc = efuse_obj_get_data(name);
 			if (rc == EFUSE_OBJ_SUCCESS) {
 				int i;
 
-				memset(&efuse_field, 0, sizeof(efuse_field));
-				strncpy(efuse_field.name, name, sizeof(efuse_field.name) - 1);
-				memcpy(efuse_field.data, buff, bufflen);
-				efuse_field.size = bufflen;
-
-				for (i = 0; i < bufflen; i++)
-					printf("%02x%s", buff[i],
-						((i && i % 16 == 15) || (i == bufflen - 1)
+				for (i = 0; i < efuse_field.size; i++)
+					printf("%02x%s", efuse_field.data[i],
+						((i && i % 16 == 15) || (i == efuse_field.size - 1)
 						? "\n" : " "));
 				rc = CMD_RET_SUCCESS;
 			} else {
@@ -363,15 +319,8 @@ int do_efuse_obj(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		if (argc == 4) {
 			name = argv[2];
 			char *data = argv[3];
-			int dlen = strnlen(data, 64);
-			uint8_t databuf[32] = {0};
 
-			dlen = hex2bin(data, databuf, dlen);
-			if (dlen < 0) {
-				printf("parse data hex2bin error\n");
-				return CMD_RET_FAILURE;
-			}
-			rc = efuse_obj_write(EFUSE_OBJ_EFUSE_DATA, name, databuf, dlen);
+			rc = efuse_obj_set_data(name, data);
 			if (rc == EFUSE_OBJ_SUCCESS) {
 				rc = CMD_RET_SUCCESS;
 			} else {
@@ -387,7 +336,7 @@ int do_efuse_obj(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		// $0 lock field
 		if (argc == 3) {
 			name = argv[2];
-			rc = efuse_obj_write(EFUSE_OBJ_LOCK_STATUS, name, buff, bufflen);
+			rc = efuse_obj_lock(name);
 			if (rc == EFUSE_OBJ_SUCCESS) {
 				rc = CMD_RET_SUCCESS;
 			} else {
@@ -403,18 +352,13 @@ int do_efuse_obj(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		// $0 get_lock field
 		if (argc == 3) {
 			name = argv[2];
-			rc = efuse_obj_read(EFUSE_OBJ_LOCK_STATUS, name, buff, &bufflen);
+			rc = efuse_obj_get_lock(name);
 			if (rc == EFUSE_OBJ_SUCCESS) {
 				int i;
 
-				memset(&efuse_field, 0, sizeof(efuse_field));
-				strncpy(efuse_field.name, name, sizeof(efuse_field.name) - 1);
-				memcpy(efuse_field.data, buff, bufflen);
-				efuse_field.size = bufflen;
-
-				for (i = 0; i < bufflen; i++)
-					printf("%02x%s", buff[i],
-						((i && i % 16 == 15) || (i == bufflen - 1)
+				for (i = 0; i < efuse_field.size; i++)
+					printf("%02x%s", efuse_field.data[i],
+						((i && i % 16 == 15) || (i == efuse_field.size - 1)
 						? "\n" : " "));
 				rc = CMD_RET_SUCCESS;
 			} else {
@@ -426,6 +370,9 @@ int do_efuse_obj(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			printf("Error: too many arguments %d\n", argc);
 			rc = CMD_RET_USAGE;
 		}
+	} else {
+		printf("Error: cmd %s not supported\n", argv[1]);
+		rc = CMD_RET_USAGE;
 	}
 
 	return rc;
