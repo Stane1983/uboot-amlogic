@@ -198,15 +198,24 @@ static int bootm_find_os(struct cmd_tbl *cmdtp, int flag, int argc,
 		env_set("initrd_high", "0D000000");
 		#endif
 		if (image_get_magic((image_header_t *)images.os.image_start) == IH_MAGIC) {
-			#ifdef CONFIG_INITRD_HIGH_ADDR
-			env_set("initrd_high", CONFIG_INITRD_HIGH_ADDR);
+			#ifdef CONFIG_INITRD_FDT_HIGH_ADDR
+			switch (env_get_bootm_size()) {
+			case 0x8000000:
+				env_set("initrd_high", "06000000");
+				env_set("fdt_high", "06000000");
+				break;
+			case 0x10000000:
+			case 0x20000000:
+				env_set("initrd_high", "0F400000");
+				env_set("fdt_high", "0F400000");
+				break;
+			default:
+				env_set("initrd_high", "0D000000");
+				env_set("fdt_high", "0D000000");
+				break;
+			}
 			#else
 			env_set("initrd_high", "0D000000");
-			#endif
-
-			#ifdef CONFIG_FDT_HIGH_ADDR
-			env_set("fdt_high", CONFIG_FDT_HIGH_ADDR);
-			#else
 			env_set("fdt_high", "0D000000");
 			#endif
 

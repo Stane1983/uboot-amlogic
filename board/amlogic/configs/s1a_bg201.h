@@ -308,5 +308,7 @@
 
 #define CONFIG_FULL_RAMDUMP
 
+#define CONFIG_INITRD_FDT_HIGH_ADDR
+
 #endif
 
