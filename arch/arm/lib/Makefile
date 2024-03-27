@@ -62,6 +62,7 @@ obj-y	+= reset.o
 endif
 
 obj-y	+= cache.o
+obj-$(CONFIG_ARMV8_MULTIENTRY) += switch.o
 obj-$(CONFIG_SYS_ARM_CACHE_CP15)	+= cache-cp15.o
 
 obj-y	+= psci-dt.o

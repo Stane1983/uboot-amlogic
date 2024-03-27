@@ -564,12 +564,9 @@ static void boot_jump_linux(bootm_headers_t *images, int flag)
 		do_nonsec_virt_switch();
 
 #ifdef CONFIG_ARMV8_MULTIENTRY
-		unsigned short cnt = 2000;
-
-		while (cpu_online_status() & 0xfffffffe && cnt--)
+		while (cpu_online_status() & 0xfffffffe)
 			mdelay(1);
-		if (cpu_online_status() & 0xfffffffe || cnt < 2000)
-			printf("cpu online %hums: 0x%08x\n", 2000 - cnt, cpu_online_status());
+		gd->flags &= ~GD_FLG_SMP;
 #endif
 
 		update_os_arch_secondary_cores(images->os.arch);

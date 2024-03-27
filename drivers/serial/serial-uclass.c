@@ -16,7 +16,7 @@
 #include <dm/of_access.h>
 
 DECLARE_GLOBAL_DATA_PTR;
-#ifdef CONFIG_ARMV8_MULTIENTR
+#ifdef CONFIG_ARMV8_MULTIENTRY
 #undef spin_lock_init
 #undef spin_lock
 #undef spin_unlock
@@ -164,7 +164,7 @@ static void serial_find_console_or_panic(void)
 /* Called prior to relocation */
 int serial_init(void)
 {
-#ifdef CONFIG_ARMV8_MULTIENTR
+#ifdef CONFIG_ARMV8_MULTIENTRY
 	spin_lock_init(&serial_lock);
 #endif
 #if CONFIG_IS_ENABLED(SERIAL_PRESENT)
@@ -196,13 +196,13 @@ static void _serial_putc(struct udevice *dev, char ch)
 
 static void _serial_puts(struct udevice *dev, const char *str)
 {
-#ifdef CONFIG_ARMV8_MULTIENTR
+#ifdef CONFIG_ARMV8_MULTIENTRY
 	if (gd->flags & GD_FLG_SMP)
 		spin_lock(&serial_lock);
 #endif
 	while (*str)
 		_serial_putc(dev, *str++);
-#ifdef CONFIG_ARMV8_MULTIENTR
+#ifdef CONFIG_ARMV8_MULTIENTRY
 	if (gd->flags & GD_FLG_SMP)
 		spin_unlock(&serial_lock);
 #endif

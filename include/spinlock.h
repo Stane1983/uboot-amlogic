@@ -123,9 +123,6 @@ static inline void irq_disable(void)
 }
 
 #ifdef CONFIG_ARMV8_MULTIENTRY
-#define ENABLE_SMP
-#endif
-#ifdef ENABLE_SMP
 /* Below functions should be defined in arch */
 void arch_spin_lock(void *lock);
 int arch_try_lock(void *lock);
