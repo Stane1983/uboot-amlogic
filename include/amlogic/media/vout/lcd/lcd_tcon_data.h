@@ -66,8 +66,8 @@
 #define is_block_ctrl_dma(block_ctrl) ((block_ctrl) & LCD_TCON_DATA_CTRL_FLAG_DMA)
 
 /* block_ctrl for basic init data */
-#define LCD_TCON_DATA_CTRL_FLAG_DLG             0xd0
-#define is_block_ctrl_dlg(block_ctrl) ((block_ctrl) == LCD_TCON_DATA_CTRL_FLAG_DLG)
+#define LCD_TCON_DATA_CTRL_FLAG_UFR             0xd0
+#define is_block_ctrl_ufr(block_ctrl) ((block_ctrl) == LCD_TCON_DATA_CTRL_FLAG_UFR)
 
 /* ctrl_method */
 #define LCD_TCON_DATA_CTRL_DEFAULT              0x00

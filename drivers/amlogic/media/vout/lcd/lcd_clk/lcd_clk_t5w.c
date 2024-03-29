@@ -192,6 +192,7 @@ set_pll_retry_tl1:
 	}
 }
 
+#ifdef CONFIG_AML_LCD_TCON
 static void lcd_set_tcon_clk_t5w(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_config_s *pconf = &pdrv->config;
@@ -226,13 +227,9 @@ static void lcd_set_tcon_clk_t5w(struct aml_lcd_drv_s *pdrv)
 	}
 
 	/* global reset tcon, take effect when pixel_clk ready */
-	lcd_reset_setb(RESET1_MASK, 0, 4, 1);
-	lcd_reset_setb(RESET1_LEVEL, 0, 4, 1);
-	udelay(1);
-	lcd_reset_setb(RESET1_LEVEL, 1, 4, 1);
-	udelay(2);
-	LCDPR("reset tcon\n");
+	lcd_tcon_global_reset(pdrv);
 }
+#endif
 
 static void lcd_clk_set_t5w(struct aml_lcd_drv_s *pdrv)
 {
@@ -292,8 +289,10 @@ static void lcd_set_vclk_crt(struct aml_lcd_drv_s *pdrv)
 //special setting by lcd interface
 static void lcd_clktree_set(struct aml_lcd_drv_s *pdrv)
 {
+#ifdef CONFIG_AML_LCD_TCON
 	if (pdrv->index == 0) /* tcon_clk invalid for lcd1 */
 		lcd_set_tcon_clk_t5w(pdrv);
+#endif
 }
 
 static void lcd_clk_disable(struct aml_lcd_drv_s *pdrv)

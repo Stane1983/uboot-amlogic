@@ -95,7 +95,7 @@ void lcd_cma_pool_init(struct aml_lcd_cma_mem *cma,
 	cma->ready = 1;
 }
 
-int lcd_cma_detect_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
+int lcd_cma_delect_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 {
 	int parent_offset, cell_size;
 	char *propdata;
@@ -1819,8 +1819,6 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv)
 	if (ret)
 		return -1;
 
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		LCDPR("[%d]: %s: %s size: 0x%x\n", pdrv->index, __func__, key_str, key_len);
 	para = (unsigned char *)malloc(sizeof(unsigned char) * key_len);
 	if (!para) {
 		LCDERR("[%d]: %s: Not enough memory\n", pdrv->index, __func__);
@@ -2592,7 +2590,7 @@ int lcd_get_panel_config(char *dt_addr, int load_id, struct aml_lcd_drv_s *pdrv)
 		return -1;
 
 	lcd_set_connector(pdrv);
-	lcd_cma_detect_dts(dt_addr, pdrv);
+	lcd_cma_delect_dts(dt_addr, pdrv);
 	lcd_config_load_init(pdrv);
 	lcd_config_load_print(pdrv);
 	lcd_pinmux_load_config(pdrv);

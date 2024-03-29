@@ -409,6 +409,7 @@ static void lcd_set_vid_pll_div_txhd2(struct lcd_clk_config_s *cconf)
 	lcd_ana_setb(COMBO_DPHY_VID_PLL0_DIV, 1, 19, 1);
 }
 
+#ifdef CONFIG_AML_LCD_TCON
 static void lcd_set_tcon_clk_tl1(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_config_s *pconf = &pdrv->config;
@@ -451,12 +452,7 @@ static void lcd_set_tcon_clk_t5(struct aml_lcd_drv_s *pdrv)
 	lcd_set_tcon_clk_tl1(pdrv);
 
 	/* global reset tcon */
-	lcd_reset_setb(RESET1_MASK, 0, 4, 1);
-	lcd_reset_setb(RESET1_LEVEL, 0, 4, 1);
-	udelay(1);
-	lcd_reset_setb(RESET1_LEVEL, 1, 4, 1);
-	udelay(2);
-	LCDPR("reset tcon\n");
+	lcd_tcon_global_reset(pdrv);
 }
 
 static void lcd_set_clk_phase_txhd2(unsigned int phase_value)
@@ -504,13 +500,9 @@ static void lcd_set_tcon_clk_txhd2(struct aml_lcd_drv_s *pdrv)
 	}
 
 	/* global reset tcon, take effect when pixel_clk ready */
-	lcd_reset_setb(RESET1_MASK, 0, 4, 1);
-	lcd_reset_setb(RESET1_LEVEL, 0, 4, 1);
-	udelay(1);
-	lcd_reset_setb(RESET1_LEVEL, 1, 4, 1);
-	udelay(2);
-	LCDPR("reset tcon\n");
+	lcd_tcon_global_reset(pdrv);
 }
+#endif
 
 static void lcd_set_dsi_phy_clk(struct aml_lcd_drv_s *pdrv)
 {
@@ -539,7 +531,9 @@ static void lcd_clk_set_tl1(struct aml_lcd_drv_s *pdrv)
 
 static void lcd_clktree_set_tl1(struct aml_lcd_drv_s *pdrv)
 {
+#ifdef CONFIG_AML_LCD_TCON
 	lcd_set_tcon_clk_tl1(pdrv);
+#endif
 }
 
 static void lcd_clk_set_t5(struct aml_lcd_drv_s *pdrv)
@@ -556,7 +550,9 @@ static void lcd_clk_set_t5(struct aml_lcd_drv_s *pdrv)
 
 static void lcd_clktree_set_t5(struct aml_lcd_drv_s *pdrv)
 {
+#ifdef CONFIG_AML_LCD_TCON
 	lcd_set_tcon_clk_t5(pdrv);
+#endif
 }
 
 static void lcd_clk_set_txhd2(struct aml_lcd_drv_s *pdrv)
@@ -578,7 +574,9 @@ static void lcd_clk_set_txhd2(struct aml_lcd_drv_s *pdrv)
 
 static void lcd_clktree_set_txhd2(struct aml_lcd_drv_s *pdrv)
 {
+#ifdef CONFIG_AML_LCD_TCON
 	lcd_set_tcon_clk_txhd2(pdrv);
+#endif
 }
 
 static void lcd_clk_disable(struct aml_lcd_drv_s *pdrv)

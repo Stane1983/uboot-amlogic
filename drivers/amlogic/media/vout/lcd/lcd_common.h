@@ -55,7 +55,7 @@ void lcd_display_init_reg_dump(struct aml_lcd_drv_s *pdrv);
 /* lcd common */
 void lcd_cma_pool_init(struct aml_lcd_cma_mem *cma,
 		phys_addr_t pa, unsigned long size, unsigned int page_size);
-int lcd_cma_detect_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv);
+int lcd_cma_delect_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv);
 void *lcd_cma_pool_simple_alloc(struct aml_lcd_cma_mem *cma, unsigned long size);
 void *lcd_alloc_dma_buffer(struct aml_lcd_drv_s *pdrv, unsigned long size);
 
@@ -159,6 +159,7 @@ void lcd_vbyone_hw_filter(struct aml_lcd_drv_s *pdrv, int flag);
 void lcd_tcon_info_print(struct aml_lcd_drv_s *pdrv);
 int lcd_tcon_enable(struct aml_lcd_drv_s *pdrv);
 void lcd_tcon_disable(struct aml_lcd_drv_s *pdrv);
+void lcd_tcon_global_reset(struct aml_lcd_drv_s *pdrv);
 void lcd_tcon_dbg_check(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timing_s *ptiming);
 int lcd_tcon_probe(char *dt_addr, struct aml_lcd_drv_s *pdrv, int load_id);
 #endif

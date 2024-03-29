@@ -797,8 +797,24 @@ void lcd_tcon_disable(struct aml_lcd_drv_s *pdrv)
 
 	if (lcd_tcon_conf->tcon_disable)
 		lcd_tcon_conf->tcon_disable(pdrv);
-	if (lcd_tcon_conf->tcon_global_reset)
+	if (lcd_tcon_conf->tcon_global_reset) {
 		lcd_tcon_conf->tcon_global_reset(pdrv);
+		LCDPR("reset tcon\n");
+	}
+}
+
+void lcd_tcon_global_reset(struct aml_lcd_drv_s *pdrv)
+{
+	int ret;
+
+	ret = lcd_tcon_valid_check();
+	if (ret)
+		return;
+
+	if (lcd_tcon_conf->tcon_global_reset) {
+		lcd_tcon_conf->tcon_global_reset(pdrv);
+		LCDPR("reset tcon\n");
+	}
 }
 
 static int lcd_tcon_forbidden_check(void)
@@ -1864,9 +1880,9 @@ static void lcd_tcon_axi_mem_config(void)
 			od_mem_size += tcon_rmem.axi_rmem[i].mem_size;
 		}
 	}
-	tcon_rmem.secure_cfg_rmem.mem_paddr = mem_paddr;
-	tcon_rmem.secure_cfg_rmem.mem_vaddr = mem_vaddr;
-	tcon_rmem.secure_cfg_rmem.mem_size = od_mem_size;
+	tcon_rmem.secure_axi_rmem.mem_paddr = mem_paddr;
+	tcon_rmem.secure_axi_rmem.mem_vaddr = mem_vaddr;
+	tcon_rmem.secure_axi_rmem.mem_size = od_mem_size;
 }
 
 static int lcd_tcon_mem_config(void)
@@ -2189,18 +2205,10 @@ static int lcd_tcon_get_config(char *dt_addr, struct aml_lcd_drv_s *pdrv, int lo
 	}
 
 	if (tcon_rmem.rsv_mem_paddr) {
-		if (tcon_rmem.rsv_mem_size < lcd_tcon_conf->rsv_mem_size) {
-			LCDERR("tcon rsv_mem size 0x%x is not enough, need 0x%x\n",
-				tcon_rmem.rsv_mem_size, lcd_tcon_conf->rsv_mem_size);
-			tcon_rmem.rsv_mem_paddr = 0;
-			tcon_rmem.rsv_mem_size = 0;
-			tcon_rmem.flag = 0;
-		} else {
-			tcon_rmem.flag = 1;
-			LCDPR("tcon: rsv_mem addr:0x%x, size:0x%x\n",
-				tcon_rmem.rsv_mem_paddr, tcon_rmem.rsv_mem_size);
-			lcd_tcon_mem_config();
-		}
+		tcon_rmem.flag = 1;
+		LCDPR("tcon: rsv_mem addr:0x%x, size:0x%x\n",
+		      tcon_rmem.rsv_mem_paddr, tcon_rmem.rsv_mem_size);
+		lcd_tcon_mem_config();
 	}
 
 	tcon_mm_table.core_reg_table_size = lcd_tcon_conf->reg_table_len;
