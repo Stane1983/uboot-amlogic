@@ -3184,12 +3184,10 @@ void lcd_pinmux_set(struct aml_lcd_drv_s *pdrv, int status)
 			if (pconf->pinmux_clr[i][0] == LCD_PINMUX_END)
 				break;
 			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-				LCDPR("pinmux_clr: %d, 0x%08x\n",
-					pconf->pinmux_clr[i][0],
-					pconf->pinmux_clr[i][1]);
+				LCDPR("pinmux_clr: 0x%x, 0x%08x\n",
+				      pconf->pinmux_clr[i][0], pconf->pinmux_clr[i][1]);
 			}
-			lcd_pinmux_clr_mask(pconf->pinmux_clr[i][0],
-				pconf->pinmux_clr[i][1]);
+			lcd_pinmux_clr_mask(pconf->pinmux_clr[i][0], pconf->pinmux_clr[i][1]);
 			i++;
 		}
 		i = 0;
@@ -3197,26 +3195,22 @@ void lcd_pinmux_set(struct aml_lcd_drv_s *pdrv, int status)
 			if (pconf->pinmux_set[i][0] == LCD_PINMUX_END)
 				break;
 			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-				LCDPR("pinmux_set: %d, 0x%08x\n",
-					pconf->pinmux_set[i][0],
-					pconf->pinmux_set[i][1]);
+				LCDPR("pinmux_set: 0x%x, 0x%08x\n",
+				      pconf->pinmux_set[i][0], pconf->pinmux_set[i][1]);
 			}
-			lcd_pinmux_set_mask(pconf->pinmux_set[i][0],
-				pconf->pinmux_set[i][1]);
+			lcd_pinmux_set_mask(pconf->pinmux_set[i][0], pconf->pinmux_set[i][1]);
 			i++;
 		}
 	} else {
 		i = 0;
 		while (i < LCD_PINMUX_NUM) {
-			if (pconf->pinmux_set[i][0] == LCD_PINMUX_END)
+			if (pconf->pinmux_clr[i][0] == LCD_PINMUX_END)
 				break;
 			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-				LCDPR("pinmux_clr: %d, 0x%08x\n",
-					pconf->pinmux_set[i][0],
-					pconf->pinmux_set[i][1]);
+				LCDPR("pinmux_clr: 0x%x, 0x%08x\n",
+				      pconf->pinmux_clr[i][0], pconf->pinmux_clr[i][1]);
 			}
-			lcd_pinmux_clr_mask(pconf->pinmux_set[i][0],
-				pconf->pinmux_set[i][1]);
+			lcd_pinmux_clr_mask(pconf->pinmux_clr[i][0], pconf->pinmux_clr[i][1]);
 			i++;
 		}
 	}
