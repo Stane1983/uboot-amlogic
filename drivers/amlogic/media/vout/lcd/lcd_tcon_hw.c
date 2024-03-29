@@ -466,29 +466,35 @@ static int lcd_tcon_acc_lut_tl1(void)
 	return 0;
 }
 
-void lcd_tcon_axi_rmem_lut_load(unsigned int index, unsigned char *buf,
-				unsigned int size)
+static void lcd_tcon_axi_rmem_lut_load(unsigned int index, unsigned char *buf, unsigned int size)
 {
 	struct tcon_rmem_s *tcon_rmem = get_lcd_tcon_rmem();
 	struct lcd_tcon_config_s *tcon_conf = get_lcd_tcon_config();
 
-	if (!tcon_rmem || !tcon_rmem->axi_rmem) {
-		LCDERR("axi_rmem is NULL\n");
+	if (!tcon_rmem || !tcon_rmem->axi_rmem || tcon_rmem->flag == 0) {
+		LCDERR("%s: no axi_rmem\n", __func__);
 		return;
 	}
 	if (!tcon_conf)
 		return;
 	if (index >= tcon_conf->axi_bank) {
-		LCDERR("axi_rmem index %d invalid\n", index);
+		LCDERR("%s: axi_rmem index %d invalid\n", __func__, index);
 		return;
 	}
 	if (tcon_rmem->axi_rmem[index].mem_size < size) {
-		LCDERR("axi_mem[%d] size 0x%x is not enough, need 0x%x\n",
-		       index, tcon_rmem->axi_rmem[index].mem_size, size);
+		LCDERR("%s: axi_mem[%d] size 0x%x is not enough, need 0x%x\n",
+		       __func__, index, tcon_rmem->axi_rmem[index].mem_size, size);
 		return;
 	}
 
 	memcpy(tcon_rmem->axi_rmem[index].mem_vaddr, buf, size);
+
+	flush_cache(tcon_rmem->axi_rmem[index].mem_paddr, tcon_rmem->axi_rmem[index].mem_size);
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+		LCDPR("%s: mem_paddr:0x%x, mem_size:0x%x, data_size:0x%x\n",
+		      __func__, tcon_rmem->axi_rmem[index].mem_paddr,
+		      tcon_rmem->axi_rmem[index].mem_size, size);
+	}
 }
 
 static int lcd_tcon_wr_n_data_write(struct lcd_tcon_data_part_wr_n_s *wr_n,
@@ -1227,7 +1233,6 @@ int lcd_tcon_enable_t5(struct aml_lcd_drv_s *pdrv)
 	struct lcd_tcon_config_s *tcon_conf = get_lcd_tcon_config();
 	struct tcon_mem_map_table_s *mm_table = get_lcd_tcon_mm_table();
 	struct lcd_tcon_local_cfg_s *local_cfg = get_lcd_tcon_local_cfg();
-	struct tcon_rmem_s *rmem = get_lcd_tcon_rmem();
 	int ret;
 
 	ret = lcd_tcon_valid_check();
@@ -1255,9 +1260,6 @@ int lcd_tcon_enable_t5(struct aml_lcd_drv_s *pdrv)
 	/* step 3:  tcon data set */
 	if (mm_table->version)
 		lcd_tcon_data_set(pdrv, mm_table);
-
-	if (rmem && rmem->flag && rmem->axi_rmem)
-		flush_cache(rmem->rsv_mem_paddr, rmem->rsv_mem_size);
 
 	/* step 4: tcon_top_output_set */
 	lcd_tcon_write(TCON_OUT_CH_SEL0, 0x76543210);
@@ -1275,7 +1277,6 @@ int lcd_tcon_enable_t3(struct aml_lcd_drv_s *pdrv)
 	struct lcd_tcon_config_s *tcon_conf = get_lcd_tcon_config();
 	struct tcon_mem_map_table_s *mm_table = get_lcd_tcon_mm_table();
 	struct lcd_tcon_local_cfg_s *local_cfg = get_lcd_tcon_local_cfg();
-	struct tcon_rmem_s *rmem = get_lcd_tcon_rmem();
 	int ret;
 
 	ret = lcd_tcon_valid_check();
@@ -1303,13 +1304,6 @@ int lcd_tcon_enable_t3(struct aml_lcd_drv_s *pdrv)
 	/* step 3:  tcon data set */
 	if (mm_table->version)
 		lcd_tcon_data_set(pdrv, mm_table);
-
-	if (rmem && rmem->flag && rmem->axi_rmem)
-		flush_cache(rmem->rsv_mem_paddr, rmem->rsv_mem_size);
-
-#if (IS_ENABLED(CONFIG_AMLOGIC_TEE))
-	lcd_tcon_mem_tee_protect(1);
-#endif
 
 	/* step 4: tcon_top_output_set */
 	lcd_tcon_write(TCON_OUT_CH_SEL0, 0x76543210);
@@ -1330,7 +1324,6 @@ int lcd_tcon_enable_txhd2(struct aml_lcd_drv_s *pdrv)
 	struct lcd_tcon_config_s *tcon_conf = get_lcd_tcon_config();
 	struct tcon_mem_map_table_s *mm_table = get_lcd_tcon_mm_table();
 	struct lcd_tcon_local_cfg_s *local_cfg = get_lcd_tcon_local_cfg();
-	struct tcon_rmem_s *rmem = get_lcd_tcon_rmem();
 	int ret;
 
 	ret = lcd_tcon_valid_check();
@@ -1358,13 +1351,6 @@ int lcd_tcon_enable_txhd2(struct aml_lcd_drv_s *pdrv)
 	/* step 3:  tcon data set */
 	if (mm_table->version)
 		lcd_tcon_data_set(pdrv, mm_table);
-
-	if (rmem && rmem->flag && rmem->axi_rmem)
-		flush_cache(rmem->rsv_mem_paddr, rmem->rsv_mem_size);
-
-#if (IS_ENABLED(CONFIG_AMLOGIC_TEE))
-	lcd_tcon_mem_tee_protect(1);
-#endif
 
 	/* step 4: tcon_top_output_set */
 	lcd_tcon_write(TCON_OUT_CH_SEL0, 0x76543210);

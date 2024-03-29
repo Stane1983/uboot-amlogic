@@ -11,7 +11,8 @@
 #include "lcd_unifykey.h"
 
 /* 20240314: sync from uboot2019 (3fb59b45dc4) + 405906/5 + 407129/6 */
-#define LCD_DRV_VERSION    "20240314"
+/* 20240318: optimize tcon reserved memory */
+#define LCD_DRV_VERSION    "20240318"
 
 extern unsigned long clk_util_clk_msr(unsigned long clk_mux);
 

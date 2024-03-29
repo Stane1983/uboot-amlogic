@@ -218,7 +218,6 @@ struct lcd_tcon_config_s *get_lcd_tcon_config(void);
 struct tcon_rmem_s *get_lcd_tcon_rmem(void);
 struct tcon_mem_map_table_s *get_lcd_tcon_mm_table(void);
 struct lcd_tcon_local_cfg_s *get_lcd_tcon_local_cfg(void);
-int lcd_tcon_mem_tee_protect(int protect_en);
 
 void lcd_tcon_init_table_pre_proc(unsigned char *table);
 void lcd_tcon_global_reset_t5(struct aml_lcd_drv_s *pdrv);
