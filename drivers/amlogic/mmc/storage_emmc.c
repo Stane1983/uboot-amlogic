@@ -15,7 +15,7 @@
 #include <asm/global_data.h>
 #include <asm/amlogic/arch/efuse.h>
 
-#if (IS_ENABLED(CONFIG_EFUSE_OBJ_API) && IS_ENABLED(CONFIG_CMD_EFUSE))
+#if IS_ENABLED(CONFIG_EFUSE_OBJ_API)
 extern efuse_obj_field_t efuse_field;
 #endif//#ifdef CONFIG_EFUSE_OBJ_API
 
@@ -358,7 +358,7 @@ R_SWITCH_BACK:
 
 int mmc_storage_init(unsigned char init_flag) {
 
-	int ret =1;
+	int ret = 1;
 	struct mmc *mmc;
 	mmc = find_mmc_device(STORAGE_EMMC);
 	if (!mmc) {
@@ -366,12 +366,31 @@ int mmc_storage_init(unsigned char init_flag) {
 		return -1;
 	}
 
-	mmc->has_init=0;
+	mmc->has_init = 0;
 	pinctrl_select_state(mmc->dev, "default");
 
 	ret = mmc_init(mmc);
 	if (ret != 0)
 		return -1;
+
+#if IS_ENABLED(CONFIG_EFUSE_OBJ_API) && IS_ENABLED(CONFIG_USER_PARTITION_DISABLE)
+	char *str;
+	// check and disable user partition
+	str = env_get("upgrade_step");
+	// only done when first upgrade
+	if (str && !strncmp(str, "0", 1)) {
+		ret = aml_gpt_valid(mmc);
+		if (ret)
+			return ret;
+
+		ret = efuse_obj_get_data("FEAT_DISABLE_EMMC_USER");
+		if (ret || *efuse_field.data)
+			return ret;
+
+		ret = efuse_obj_set_license("FEAT_DISABLE_EMMC_USER");
+		printf("Disable USER Partition %s\n", ret ? "failed" : "success");
+	}
+#endif /* CONFIG_EFUSE_OBJ_API && CONFIG_USER_PARTITION_DISABLE */
 
 	ret = storage_mmc_erase(init_flag, mmc);
 	return ret;
@@ -566,13 +585,13 @@ static int amlmmc_write_info_sector(struct mmc *mmc)
 int mmc_check_uboot_backup_efuse_bit(int index)
 {
 	int ret = 0;
-#if (IS_ENABLED(CONFIG_EFUSE_OBJ_API) && IS_ENABLED(CONFIG_CMD_EFUSE))
+#if IS_ENABLED(CONFIG_EFUSE_OBJ_API)
 	if (index == 0)
-		run_command("efuse_obj get FEAT_DISABLE_EMMC_USER", 0);
+		ret = efuse_obj_get_data("FEAT_DISABLE_EMMC_USER");
 	else if (index == 1)
-		run_command("efuse_obj get FEAT_DISABLE_EMMC_BOOT_0", 0);
+		ret = efuse_obj_get_data("FEAT_DISABLE_EMMC_BOOT_0");
 	else if (index == 2)
-		run_command("efuse_obj get FEAT_DISABLE_EMMC_BOOT_1", 0);
+		ret = efuse_obj_get_data("FEAT_DISABLE_EMMC_BOOT_1");
 
 	if (*efuse_field.data == 1)
 		ret = 1;

@@ -1479,30 +1479,30 @@ static int do_store_boot_copy_enable(cmd_tbl_t *cmdtp, int flag, int argc, char 
 {
 	enum boot_type_e medium_type = store_get_type();
 	struct storage_t *store = store_get_current();
-	int ret = 0, index;
+	int ret = CMD_RET_USAGE, index;
 
 	if (!store) {
 		pr_info("%s %d please init your storage device first!\n",
 			__func__, __LINE__);
-		return CMD_RET_USAGE;
+		return ret;
 	}
 
 	if (unlikely(argc != 3))
-		return CMD_RET_USAGE;
+		return ret;
 
 	if (medium_type != BOOT_EMMC) {
 		printf("%s %d not eMMC boot\n", __func__, __LINE__);
-		return CMD_RET_USAGE;
+		return ret;
 	}
 
 	index = simple_strtoul(argv[2], NULL, 16);
 	if (store->boot_copy_enable) {
 		ret = store->boot_copy_enable(index);
-		return ret;
-	}
+		printf("%s\n", ret ? "enable" : "disable");
+	} else
+		printf("boot copy enable is not prepared\n");
 
-	printf("boot copy enable is not prepared\n");
-	return CMD_RET_USAGE;
+	return ret;
 }
 
 static int do_store_rsv_ops(cmd_tbl_t *cmdtp,
