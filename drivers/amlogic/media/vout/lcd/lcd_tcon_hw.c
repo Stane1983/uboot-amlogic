@@ -959,8 +959,9 @@ static int lcd_tcon_data_set(struct aml_lcd_drv_s *pdrv,
 	return 0;
 }
 
-static int lcd_tcon_top_set_tl1(struct lcd_config_s *pconf)
+int lcd_tcon_top_set_tl1(struct aml_lcd_drv_s *pdrv)
 {
+	struct lcd_config_s *pconf = &pdrv->config;
 	struct tcon_rmem_s *tcon_rmem = get_lcd_tcon_rmem();
 	unsigned int axi_reg[3] = {0x200c, 0x2013, 0x2014};
 	unsigned int paddr;
@@ -1005,10 +1006,12 @@ static int lcd_tcon_top_set_tl1(struct lcd_config_s *pconf)
 	return 0;
 }
 
-static int lcd_tcon_top_set_t5(struct lcd_config_s *pconf)
+int lcd_tcon_top_set_t5(struct aml_lcd_drv_s *pdrv)
 {
+	struct lcd_config_s *pconf = &pdrv->config;
+
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		LCDPR("lcd tcon top set\n");
+		LCDPR("%s\n", __func__);
 
 	lcd_tcon_write(TCON_CLK_CTRL, 0x001f);
 	if (pconf->basic.lcd_type == LCD_P2P) {
@@ -1024,22 +1027,6 @@ static int lcd_tcon_top_set_t5(struct lcd_config_s *pconf)
 	} else {
 		lcd_tcon_write(TCON_TOP_CTRL, 0x8b99);
 	}
-	lcd_tcon_write(TCON_PLLLOCK_CNTL, 0x0037);
-	//lcd_tcon_write(TCON_RST_CTRL, 0x003f);
-	lcd_tcon_write(TCON_RST_CTRL, 0x0000);
-	lcd_tcon_write(TCON_DDRIF_CTRL0, 0x33fff000);
-	lcd_tcon_write(TCON_DDRIF_CTRL1, 0x300300);
-
-	return 0;
-}
-
-static int lcd_tcon_top_set_txhd2(struct lcd_config_s *pconf)
-{
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		LCDPR("lcd tcon top set\n");
-
-	lcd_tcon_write(TCON_CLK_CTRL, 0x001f);
-	lcd_tcon_write(TCON_TOP_CTRL, 0x8b98);
 	lcd_tcon_write(TCON_PLLLOCK_CNTL, 0x0037);
 	//lcd_tcon_write(TCON_RST_CTRL, 0x003f);
 	lcd_tcon_write(TCON_RST_CTRL, 0x0000);
@@ -1091,7 +1078,7 @@ int lcd_tcon_enable_tl1(struct aml_lcd_drv_s *pdrv)
 		return -1;
 
 	/* step 1: tcon top */
-	lcd_tcon_top_set_tl1(pconf);
+	//lcd_tcon_top_set_tl1(pconf);
 
 	/* step 2: tcon_core_reg_update */
 	lcd_tcon_core_reg_pre_od(tcon_conf, mm_table);
@@ -1189,7 +1176,7 @@ int lcd_tcon_disable_tl1(struct aml_lcd_drv_s *pdrv)
 
 int lcd_tcon_enable_t5(struct aml_lcd_drv_s *pdrv)
 {
-	struct lcd_config_s *pconf = &pdrv->config;
+	//struct lcd_config_s *pconf = &pdrv->config;
 	struct lcd_tcon_config_s *tcon_conf = get_lcd_tcon_config();
 	struct tcon_mem_map_table_s *mm_table = get_lcd_tcon_mm_table();
 	struct lcd_tcon_local_cfg_s *local_cfg = get_lcd_tcon_local_cfg();
@@ -1205,7 +1192,7 @@ int lcd_tcon_enable_t5(struct aml_lcd_drv_s *pdrv)
 	lcd_vcbus_write(ENCL_VIDEO_EN, 0);
 
 	/* step 1: tcon top */
-	lcd_tcon_top_set_t5(pconf);
+	//lcd_tcon_top_set_t5(pconf);
 
 	/* step 2: tcon_core_reg_update */
 	if (mm_table->core_reg_header) {
@@ -1240,7 +1227,7 @@ int lcd_tcon_enable_t5(struct aml_lcd_drv_s *pdrv)
 
 int lcd_tcon_enable_txhd2(struct aml_lcd_drv_s *pdrv)
 {
-	struct lcd_config_s *pconf = &pdrv->config;
+	//struct lcd_config_s *pconf = &pdrv->config;
 	struct lcd_tcon_config_s *tcon_conf = get_lcd_tcon_config();
 	struct tcon_mem_map_table_s *mm_table = get_lcd_tcon_mm_table();
 	struct lcd_tcon_local_cfg_s *local_cfg = get_lcd_tcon_local_cfg();
@@ -1256,7 +1243,7 @@ int lcd_tcon_enable_txhd2(struct aml_lcd_drv_s *pdrv)
 	lcd_vcbus_write(ENCL_VIDEO_EN, 0);
 
 	/* step 1: tcon top */
-	lcd_tcon_top_set_txhd2(pconf);
+	//lcd_tcon_top_set_txhd2(pconf);
 
 	/* step 2: tcon_core_reg_update */
 	if (mm_table->core_reg_header) {
