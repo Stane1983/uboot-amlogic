@@ -67,13 +67,6 @@ void vpu_module_init_config(void)
 	if (vpu_conf.data->chip_type == VPU_CHIP_T5M) {
 		vpu_vcbus_write(VPU_RDARB_MODE_L2C1, 0x0);
 		vpu_vcbus_write(VPU_WRARB_MODE_L2C1, 0x20000);
-	} else if (vpu_conf.data->chip_type == VPU_CHIP_TXHD2) {
-		/*TXHD2 ONLY VPU0 READ*/
-		vpu_vcbus_write(VPU_RDARB_MODE_L2C1, 0x00000);
-#ifdef VPP_RDARB_MODE
-		vpu_vcbus_write(VPP_RDARB_MODE, 0x00000);
-#endif
-		vpu_vcbus_write(VPU_WRARB_MODE_L2C1, 0x20000);
 	} else if (vpu_conf.data->chip_type == VPU_CHIP_T3X) {
 		//bit[27:26]=0, bit[23:22]=0, tcon read p1 & p3 on arb0, default value
 		vpu_vcbus_write(VPU_RDARB_MODE_L2C1, 0x100000);
@@ -86,7 +79,8 @@ void vpu_module_init_config(void)
 		vpu_vcbus_write(VPU_WRARB_UGT_L2C1, 0x00f003c0); //default 0x00f00000
 
 		vpu_vcbus_write(DI_WRARB_UGT_L1C1, 0x1154);//di write urgent
-	} else if (vpu_conf.data->chip_type == VPU_CHIP_T7) {
+	} else if (vpu_conf.data->chip_type == VPU_CHIP_T7 ||
+		vpu_conf.data->vpu_read_type == ONLY_READ0) {
 		init_arb_urgent_table();
 	} else {
 		vpu_vcbus_write(VPU_RDARB_MODE_L2C1, 0x900000);
