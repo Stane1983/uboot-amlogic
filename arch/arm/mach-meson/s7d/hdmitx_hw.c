@@ -13,6 +13,7 @@
 #include <linux/arm-smccc.h>
 
 static int hdmi_dbg;
+#define usleep_range(a, b) udelay(a)
 
 static const struct reg_map reg21_maps[] = {
 	[VPUCTRL_REG_IDX] = {
@@ -339,23 +340,32 @@ do { \
 	case HDMI_PHYPARA_6G:	/* 5.94/4.5/3.7Gbps */
 	case HDMI_PHYPARA_4p5G:
 	case HDMI_PHYPARA_3p7G:
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x37eb65c4);
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x2ab0ff3b);
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x0000080b);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0xa003a0ea);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x555);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x004ef001);
 		break;
 	case HDMI_PHYPARA_3G:	/* 2.97Gbps */
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x33eb42a2);
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x2ab0ff3b);
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x00000003);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0xa00380a4);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x555);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x004ef001);
 		break;
 	case HDMI_PHYPARA_270M:	/* 1.485Gbps, and below */
 	case HDMI_PHYPARA_DEF:
 	default:
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x33eb4252);
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x2ab0ff3b);
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x00000003);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0xa2238080);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x555);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x004ef001);
 		break;
 	}
+
+	/* The bit with resetn is configured later than other bits. */
+	usleep_range(100, 110);
+	hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL3, 3, 10, 2);
+	hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL3, 3, 3, 2);
+	hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL3, 1, 1, 1);
+	/* finally config bit[29:28] */
+	usleep_range(1000, 1010);
+	hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL3, 3, 28, 2);
 }
 
 void hdmitx_turnoff(void)

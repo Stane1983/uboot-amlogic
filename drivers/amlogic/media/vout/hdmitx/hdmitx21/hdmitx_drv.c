@@ -406,8 +406,8 @@ static void set_hdmi_tx_pixel_div(u32 div)
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
 	hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL2, 1, 5, 1);//enable gate
-	//for s7
-	if (hdev->chip_type == MESON_CPU_ID_S7) {
+	//for s7 s7d
+	if (hdev->chip_type == MESON_CPU_ID_S7 || hdev->chip_type == MESON_CPU_ID_S7D) {
 		if (hdev->para->cs == HDMI_COLORSPACE_YUV420) {
 			hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL, 1, 1, 1);
 			hd21_set_reg_bits(CLKCTRL_HDMI_CLK_CTRL, 1, 16, 1);
@@ -1494,19 +1494,16 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 		data32 |= (((para->cs == HDMI_COLORSPACE_YUV420) ? 1 : 0) << 20);
 		break;
 	case MESON_CPU_ID_S7D:
-		switch (hdev->vic) {
-		case HDMI_7_720x480i60_16x9:
-		case HDMI_22_720x576i50_16x9:
+		if (para->timing.pi_mode == 0 &&
+			(para->timing.v_active == 480 || para->timing.v_active == 576))
 			data32 |= 1;
-			break;
-		default:
+		else
 			data32 |= 2;
-			break;
-		}
 		data32 |= (para->timing.h_pol << 2);
 		data32 |= (para->timing.v_pol << 3);
-		data32 |= (0 << 5);
-		data32 |= (((para->cs == HDMI_COLORSPACE_RGB) ? 1 : 0) << 16);
+		data32 |= (((para->cs == HDMI_COLORSPACE_YUV420) ? 4 : 0) << 5);
+		data32 |= (((para->cs == HDMI_COLORSPACE_YUV420) ? 1 : 0) << 20);
+		data32 |= ((para->cs == HDMI_COLORSPACE_RGB ? 1 : 0) << 16);
 		break;
 	case MESON_CPU_ID_T7:
 	default:

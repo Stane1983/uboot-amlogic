@@ -75,8 +75,7 @@
 #define HDMITX_TOP_SECURE_DATA        (TOP_SEC_OFFSET_MASK + (0x041 << 2)) // 0x104
 #define HDMITX_TOP_DONT_TOUCH0        (TOP_SEC_OFFSET_MASK + (0x0FE << 2)) // 0x3F8
 #define HDMITX_TOP_DONT_TOUCH1        (TOP_SEC_OFFSET_MASK + (0x0FF << 2)) // 0x3FC
-
-//for s7
+//for s7 s7d
 /* bit[0] : reg_pbist_gate_en
  * bit[1] : reg_fdet_gate_en
  * bit[2] : reg_p2t_p0_gate_en
