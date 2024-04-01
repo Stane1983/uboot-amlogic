@@ -9,21 +9,23 @@
 #define PWR_ON    1
 #define PWR_OFF   0
 
-#define PDID_DOS_HCODEC	0
-#define PDID_DOS_HEVC	1
-#define PDID_DOS_VDEC  2
-#define PDID_VPU_HDMI   3
-#define PDID_USB_COMB     4
-#define PDID_SD_EMMC_C          5
-#define PDID_GE2D          6
-#define PDID_SD_EMMC_A    7
-#define PDID_SD_EMMC_B          8
-#define PDID_ETH     9
-#define PDID_AUCPU         10
-#define PDID_AUDIO     11
-#define PDID_AMFC     12
+#define PDID_DOS_HCODEC		0
+#define PDID_DOS_HEVC		1
+#define PDID_DOS_VDEC  		2
+#define PDID_VPU_HDMI   	3
+#define PDID_USB_U2DRD     	4
+#define PDID_USB_U2H     	5
+#define PDID_SD_EMMC_C          6
+#define PDID_GE2D          	7
+#define PDID_AMFC		8
+#define PDID_SD_EMMC_A    	9
+#define PDID_SD_EMMC_B          10
+#define PDID_ETH     		11
+#define PDID_AUCPU         	12
+#define PDID_AUDIO     		13
 
-#define PM_MAX		13
+
+#define PM_MAX			14
 
 unsigned long viu_init_psci_smc(void);
 unsigned long pwr_ctrl_psci_smc(unsigned int power_domain, bool power_control);
