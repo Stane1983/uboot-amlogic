@@ -324,8 +324,9 @@ static int initr_dm(void)
 
 static int initr_pm(void)
 {
+#ifdef CONFIG_CPU_PM
 	pm_initialize();
-
+#endif
 	return 0;
 }
 

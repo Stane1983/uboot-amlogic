@@ -56,6 +56,7 @@
 //#define CONFIG_BOOTLOADER_CONTROL_BLOCK
 #endif// #ifndef CONFIG_PXP_DDR
 
+#define CONFIG_DTB_BIND_KERNEL
 #ifdef CONFIG_DTB_BIND_KERNEL	//load dtb from kernel, such as boot partition
 #define CONFIG_DTB_LOAD  "imgread dtb ${boot_part} ${dtb_mem_addr}"
 #else
@@ -130,13 +131,13 @@
 		"\0" \
 	"storeboot="\
 		"run storage_param;"\
-		"imgread dtb _aml_dtb ${dtb_mem_addr};"\
+		"run common_dtb_load;"\
 		"imgread kernel ${boot_part} ${loadaddr_kernel};"\
 		"store read 0x01a80000 system 0 0x300000;bootm ${loadaddr_kernel};"\
 		"\0" \
 	"storeboot_ramdisk="\
 		"run storage_param;"\
-		"imgread dtb _aml_dtb ${dtb_mem_addr};"\
+		"run common_dtb_load;"\
 		"imgread kernel ${boot_part} ${loadaddr_kernel};"\
 		"store read 0x01a80000 system 0 0x300000;bootm ${loadaddr_kernel};"\
 		"\0" \
@@ -432,5 +433,6 @@
 #undef CONFIG_BOOTM_VXWORKS
 #undef CONFIG_BZIP2
 
+#define CONFIG_REDUCE_CODE_SIZE
 #endif
 

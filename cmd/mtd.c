@@ -444,8 +444,8 @@ static int do_mtd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	return CMD_RET_SUCCESS;
 }
 
-static char mtd_help_text[] =
 #ifdef CONFIG_SYS_LONGHELP
+static char mtd_help_text[] =
 	"- generic operations on memory technology devices\n\n"
 	"mtd list\n"
 	"mtd read[.raw][.oob]                  <name> <addr> [<off> [<size>]]\n"
@@ -467,7 +467,7 @@ static char mtd_help_text[] =
 	"\t\t* must be a multiple of a page otherwise (special case: default is a page with dump)\n"
 	"\n"
 	"The .dontskipff option forces writing empty pages, don't use it if unsure.\n"
-#endif
 	"";
+#endif
 
 U_BOOT_CMD(mtd, 10, 1, do_mtd, "MTD utils", mtd_help_text);

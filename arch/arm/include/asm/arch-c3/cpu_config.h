@@ -56,7 +56,7 @@
 #define PARAM_MESSAGE       0x04
 #define VERSION_1       0x01
 #define VERSION_2       0x02
-#define CONFIG_BUILD_MESSAGE
+//#define CONFIG_BUILD_MESSAGE
 typedef struct param_header {
 	uint8_t type;		/* type of the structure */
 	uint8_t version;    /* version of this structure */

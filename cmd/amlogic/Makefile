@@ -25,8 +25,9 @@ obj-y += cmd_delay.o
 
 obj-$(CONFIG_CMD_CAR_PARAMS) += cmd_car_param.o
 obj-$(CONFIG_CMD_CAR_PARAMS) += rvc_interface.o
+ifndef CONFIG_REDUCE_CODE_SIZE
 obj-$(CONFIG_NOVERBOSE_BUILD) += cmd_bl30_print_set.o
-
+endif
 ifdef CONFIG_BOOTLOADER_CONTROL_BLOCK
 obj-y += cmd_bcb.o
 obj-y += get_bcb_boot_part.o
@@ -53,6 +54,7 @@ obj-$(CONFIG_AML_RPMB) += cmd_rpmb.o
 obj-$(CONFIG_CMD_BOOTCTOL_AVB) += cmd_avb.o
 obj-$(CONFIG_CMD_DDR_D2PLL) += cmd_d2pll.o
 
+ifndef_any_of = $(filter undefined,$(foreach v,$(1),$(origin $(v))))
 ifdef CONFIG_NASC_NAGRA_TIER_1
 else
 
@@ -72,7 +74,15 @@ else
 ifdef CONFIG_MESON_T5M
 obj-y += cmd_ddr_test_t5m.o
 else
+ifdef CONFIG_MESON_TXHD2
+obj-y += cmd_ddr_test_txhd2.o
+else
+ifeq ($(call ifndef_any_of, CONFIG_MESON_C3 CONFIG_REDUCE_CODE_SIZE),)
+#obj-y += cmd_ddr_test_c3.o
+else
 obj-y += cmd_ddr_test_g12.o
+endif
+endif
 endif
 endif
 endif
