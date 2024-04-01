@@ -32,10 +32,11 @@
 #define USB2_PLL_LOCK_EN_BIT    24
 
 #define PHY_20_BASE             0xfe35c000
-#define PLL_REG32_4             (PHY_20_BASE + 0x10)
 #define PHY_COMP_BASE           0xfe358000
 #define RESET_BASE              0xFE002000
 #define RESET_LEVEL_BASE        0xFE002040
+
+#define TUNING_DISCONNECT_THRESHOLD 0x7f
 
 #define AMLOGIC_CTR_COUNT		(0x2)
 
@@ -136,18 +137,18 @@ static void usb_set_calibration_trim(uint32_t phy2_pll_base)
 
 		if (cali > 12)
 			cali = 12;
-		value = readl(PLL_REG32_4);
+		value = readl(phy2_pll_base + 0x10);
 		value &= (~0xfff);
 
 		for (i = 0; i < cali; i++)
 			value |= (1 << i);
 
-		writel(value, PLL_REG32_4);
+		writel(value, phy2_pll_base + 0x10);
 	} else {
-		value = readl(PLL_REG32_4);
+		value = readl(phy2_pll_base + 0x10);
 		value &= (~0xfff);
 		value |= 0x7f;
-		writel(value, PLL_REG32_4);
+		writel(value, phy2_pll_base + 0x10);
 	}
 
 	printf("0x10 trim value=0x%08x\n", value);
@@ -167,7 +168,6 @@ static void usb_enable_phy_pll(u32 base_addr)
 
 void set_usb_pll(uint32_t phy2_pll_base)
 {
-	uint32_t retry = 5;
 	uint32_t pll_val0;
 	u64 phy_reg_base;
 	phy_reg_base = phy2_pll_base;
@@ -180,7 +180,6 @@ void set_usb_pll(uint32_t phy2_pll_base)
 	*/
 	pll_val0 = 0x549540;
 
-__retry:
 	writel(pll_val0 | (1 << USB2_MPPLL_EN_CTRL_BIT),
 		(phy_reg_base + 0x40));
 	udelay(100);
@@ -204,16 +203,8 @@ __retry:
 
 	// wait for 200us
 	udelay(200);
-	//check lock bit
-	if (readl((phy_reg_base + 0x40)) >> 31) {
-		return;
-	} else {
-		retry --;
-		if (!retry) {
-			return;
-		}
-		goto __retry;
-	}
+
+	writel(TUNING_DISCONNECT_THRESHOLD, phy2_pll_base + 0xc);
 }
 
 int usb_save_phy_dev(unsigned int number, struct phy *phy)
