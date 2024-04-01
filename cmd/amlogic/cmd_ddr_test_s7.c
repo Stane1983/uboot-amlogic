@@ -138,6 +138,12 @@ typedef struct  ddr_base_address_table ddr_base_address_table_t;
 #else
 #define MESON_CPU_MAJOR_ID_S7			0x46
 #endif
+#ifdef MESON_CPU_MAJOR_ID_S7D
+#undef MESON_CPU_MAJOR_ID_S7D
+#define MESON_CPU_MAJOR_ID_S7D		0x47
+#else
+#define MESON_CPU_MAJOR_ID_S7D			0x47
+#endif
 #define MESON_CPU_VERSION_LVL_MAJOR     0
 #define MESON_CPU_VERSION_LVL_MINOR     1
 #define MESON_CPU_VERSION_LVL_PACK      2
@@ -788,6 +794,33 @@ ddr_base_address_table_t __ddr_base_address_table[] = {
 	{
 		.soc_family_name = "S7",
 		.chip_id = MESON_CPU_MAJOR_ID_S7,
+		.preg_sticky_reg0 = ((0x0000 << 2) + 0xfe036800),
+		.ddr_phy_base_address = 0xfc000000,
+		.ddr_dmc_base_address = 0xfe036000,
+		.ddr_pctl_timing_base_address = ((0x0000 << 2) + 0xfe036400),   //DMC_DRAM_TRFC
+		.ddr_pctl_timing_end_address = ((0x00bb << 2) + 0xfe036400),    //DMC_DRAM_DFI
+		.ddr_dmc_sticky0 = ((0x0000 << 2) + 0xfe036800),
+		.ddr_pll_base_address = ((0x0000 << 2) + 0xfc00a000),
+		//AM_DDR_PLL_CNTL0//
+		//.ddr_boot_reason_address = ((0x00e1 << 2) + 0xfe010000),
+		//SYSCTRL_SEC_STICKY_REG1,20210204,0xfe010384, confirm
+		.ddr_dmc_lpdd4_retraining_address = ((0x0097 << 2) + 0xfe036400),
+
+		.sys_watchdog_add = 0,
+		.sys_watchdog_enable_value = 0x03c401ff,
+		.ee_timer_base_address = ((0x003b << 2) + 0xfe010000),
+		//SYSCTRL_TIMERE                             ((0x003b  << 2) + 0xfe010000)
+		.ee_pwm_base_address = ((0x001 << 2) + 0xff807000),     //AO_PWM_PWM_B
+		.ddr_dmc_apd_address = ((0x008c << 2) + 0xfe036400),    //DMC_DRAM_APD_CTRL
+		.ddr_dmc_asr_address = ((0x008d << 2) + 0xfe036400),    //DMC_DRAM_ASR_CTRL
+		.ddr_dmc_refresh_ctrl_address = ((0x0092 << 2) + 0xfe036400),
+		// DMC_DRAM_REFR_CTRL ((0x0092 << 2) + 0xff638400)
+
+	},
+	//s7d
+	{
+		.soc_family_name = "S7d",
+		.chip_id = MESON_CPU_MAJOR_ID_S7D,
 		.preg_sticky_reg0 = ((0x0000 << 2) + 0xfe036800),
 		.ddr_phy_base_address = 0xfc000000,
 		.ddr_dmc_base_address = 0xfe036000,
