@@ -19,33 +19,23 @@
 #include <linux/ioport.h>
 #include <asm-generic/gpio.h>
 
-#define PHY20_RESET_LEVEL_BIT	8
-#define PHY21_RESET_LEVEL_BIT	9
-#define PHY22_RESET_LEVEL_BIT	7
-#define	USB_RESET_BIT			4
-#define USB_2_DRD_BIT 10
-#define USB2H_BIT 11
+#define PHY21_RESET_LEVEL_BIT   9
+#define PHY20_RESET_LEVEL_BIT   8
+#define USB20_RESET_BIT         7
+#define USB21_RESET_BIT         6
+#define USB_2_DRD_BIT           5
+#define USB2H_BIT               4
 
-#define USB2_PHY_PLL_OFFSET_40	(0x09400414)
-#define USB2_PHY_PLL_OFFSET_44	(0x927E0000)
-#define USB2_PHY_PLL_OFFSET_48	(0xac5f69e5)
+#define USB2_MPPLL_EN_CTRL_BIT  27
+#define USBPLL_BIAS_EN_BIT      26
+#define USB2_PLL_RSTN_BIT       25
+#define USB2_PLL_LOCK_EN_BIT    24
 
-#define USB2_PHY_PLL_OFFSET_10	(0x80000fff)
-#define USB2_PHY_PLL_OFFSET_34	(0x78000)
-#define USB2_REVB_PHY_PLL_OFFSET_34	(0x70000)
-
-#define USB2_PHY_PLL_OFFSET_38_CLEAR	(0)
-#define USB2_PHY_PLL_OFFSET_38_SET	    (0xe0004)
-#define USB2_PHY_PLL_OFFSET_50	(0xfe18)
-#define USB2_PHY_PLL_OFFSET_54	(0x2a)
-
-#define TUNING_DISCONNECT_THRESHOLD 0x3C
-#define DISCONNECT_THRESHOLD_ENHANCE 0x2
-
-#define PHY_20_BASE 0xfe03c000
-#define PHY_COMP_BASE 0xfe03a000
-#define RESET_BASE 0xFE002000
-#define RESET_LEVEL_BASE 0xFE002040
+#define PHY_20_BASE             0xfe35c000
+#define PLL_REG32_4             (PHY_20_BASE + 0x10)
+#define PHY_COMP_BASE           0xfe358000
+#define RESET_BASE              0xFE002000
+#define RESET_LEVEL_BASE        0xFE002040
 
 #define AMLOGIC_CTR_COUNT		(0x2)
 
@@ -55,7 +45,6 @@ struct ctr_info {
 };
 
 static struct ctr_info ctr[AMLOGIC_CTR_COUNT];
-//static struct phy usb_phys[4];
 
 int get_usbphy_baseinfo(void)
 {
@@ -141,19 +130,26 @@ static void usb_set_calibration_trim(uint32_t phy2_pll_base)
 	/*****if cali_en ==0, set 0x10 to the default value: 0x1700****/
 	cali_en = (cali >> 12) & 0x1;
 	cali = cali >> 8;
+
 	if (cali_en) {
-		cali = cali & 0xf;
+		cali = (cali & 0xf);
+
 		if (cali > 12)
 			cali = 12;
-	} else {
-		cali = 0x7;
-	}
-	value = readl(phy2_pll_base + 0x10);
-	value &= (~0xfff);
-	for (i = 0; i < cali; i++)
-		value |= (1 << i);
+		value = readl(PLL_REG32_4);
+		value &= (~0xfff);
 
-	writel(value, phy2_pll_base + 0x10);
+		for (i = 0; i < cali; i++)
+			value |= (1 << i);
+
+		writel(value, PLL_REG32_4);
+	} else {
+		value = readl(PLL_REG32_4);
+		value &= (~0xfff);
+		value |= 0x7f;
+		writel(value, PLL_REG32_4);
+	}
+
 	printf("0x10 trim value=0x%08x\n", value);
 }
 
@@ -167,38 +163,57 @@ static void usb_enable_phy_pll(u32 base_addr)
 {
 	writel(readl(RESET_LEVEL_BASE) | (1 << PHY20_RESET_LEVEL_BIT), RESET_LEVEL_BASE);
 	writel(readl(RESET_LEVEL_BASE) | (1 << PHY21_RESET_LEVEL_BIT), RESET_LEVEL_BASE);
-	writel(readl(RESET_LEVEL_BASE) | (1 << PHY22_RESET_LEVEL_BIT), RESET_LEVEL_BASE);
 }
 
 void set_usb_pll(uint32_t phy2_pll_base)
 {
-	int val;
-	ulong value;
+	uint32_t retry = 5;
+	uint32_t pll_val0;
+	u64 phy_reg_base;
+	phy_reg_base = phy2_pll_base;
 
-	value = USB2_PHY_PLL_OFFSET_40 | USB_PHY2_RESET | USB_PHY2_ENABLE;
-	writel(value, phy2_pll_base + 0x40);
-	value = USB2_PHY_PLL_OFFSET_44;
-	writel(value, phy2_pll_base + 0x44);
-	writel(USB2_PHY_PLL_OFFSET_48, phy2_pll_base + 0x48);
+	/*set default value
+	USB2_MPPLL_EN_CTRL	0
+	USBPLL_BIAS_EN		0
+	USB2_PLL_RSTN		0
+	USB2_PLL_LOCK_EN	0
+	*/
+	pll_val0 = 0x549540;
 
+__retry:
+	writel(pll_val0 | (1 << USB2_MPPLL_EN_CTRL_BIT),
+		(phy_reg_base + 0x40));
 	udelay(100);
-	value = ((USB2_PHY_PLL_OFFSET_40) | (USB_PHY2_ENABLE)) & (~(USB_PHY2_RESET));
-	writel(value, phy2_pll_base + 0x40);
 
-	writel(USB2_PHY_PLL_OFFSET_50, phy2_pll_base + 0x50);
+	writel(pll_val0 | (1 << USB2_MPPLL_EN_CTRL_BIT),
+		(phy_reg_base + 0x40));
+	udelay(100);
 
-	writel(USB2_PHY_PLL_OFFSET_54, phy2_pll_base + 0x54);
+	writel(pll_val0 | (1 << USB2_MPPLL_EN_CTRL_BIT) | (1 << USBPLL_BIAS_EN_BIT),
+		(phy_reg_base + 0x40));
+	udelay(100);
 
-	usb_set_calibration_trim(phy2_pll_base);
-	writel(TUNING_DISCONNECT_THRESHOLD, phy2_pll_base + 0xc);
+	writel(pll_val0 | (1 << USB2_MPPLL_EN_CTRL_BIT) | (1 << USBPLL_BIAS_EN_BIT) |
+		(1 << USB2_PLL_RSTN_BIT),
+		(phy_reg_base + 0x40));
+	udelay(100);
 
-	val = readl(phy2_pll_base + 0x38);
-	val &= ~0xc000000;
-	val |= (DISCONNECT_THRESHOLD_ENHANCE << 26 & 0xc000000);
-	writel(val, phy2_pll_base + 0x38);
-	writel(USB2_PHY_PLL_OFFSET_34, phy2_pll_base + 0x34);
+	writel(pll_val0 | (1 << USB2_MPPLL_EN_CTRL_BIT) | (1 << USBPLL_BIAS_EN_BIT) |
+		(1 << USB2_PLL_RSTN_BIT) | (1 << USB2_PLL_LOCK_EN_BIT),
+		(phy_reg_base + 0x40));
 
-	debug("tuning_disconnect_threshold=0x%x\n", TUNING_DISCONNECT_THRESHOLD);
+	// wait for 200us
+	udelay(200);
+	//check lock bit
+	if (readl((phy_reg_base + 0x40)) >> 31) {
+		return;
+	} else {
+		retry --;
+		if (!retry) {
+			return;
+		}
+		goto __retry;
+	}
 }
 
 int usb_save_phy_dev(unsigned int number, struct phy *phy)
@@ -230,17 +245,16 @@ int usb2_phy_init(struct phy *phy)
 
 	if (priv->usb_phy2_pll_base_addr[0] == PHY_20_BASE) {
 		debug("priv->reset_addr is 0x%x\n", priv->reset_addr);
-		writel((1 << USB_2_DRD_BIT) | (1 << USB_RESET_BIT), priv->reset_addr);
+		writel((1 << USB_2_DRD_BIT) | (1 << USB20_RESET_BIT), priv->reset_addr);
 
 		udelay(500);
 		priv->usbphy_reset_bit[0] = PHY20_RESET_LEVEL_BIT;
 	} else {
 		debug("priv->reset_addr is 0x%x\n", priv->reset_addr);
-		writel((1 << USB2H_BIT) | (1 << USB_RESET_BIT), priv->reset_addr);
+		writel((1 << USB2H_BIT) | (1 << USB21_RESET_BIT), priv->reset_addr);
 
 		udelay(500);
 		priv->usbphy_reset_bit[0] = PHY21_RESET_LEVEL_BIT;
-		priv->usbphy_reset_bit[1] = PHY22_RESET_LEVEL_BIT;
 	}
 
 	for (i = 0; i < priv->u2_port_num; i++) {
@@ -307,8 +321,12 @@ void usb_device_mode_init(int phy_num)
 		//mdelay(150);
 	//}
 
+	writel((readl(RESET_LEVEL_BASE) & (~(0x1 << PHY20_RESET_LEVEL_BIT))), RESET_LEVEL_BASE);
+	udelay(500);
+	writel((readl(RESET_LEVEL_BASE) | (0x1 << PHY20_RESET_LEVEL_BIT)), RESET_LEVEL_BASE);
+
 	//step 1: usb controller reset
-	usb_reset(reset_addr, USB_RESET_BIT);
+	usb_reset(reset_addr, USB20_RESET_BIT);
 
 	// step 3: enable usb INT internal USB
 	dev_usb_r0.d32	 = usb_aml_regs->usb_r0;
@@ -331,6 +349,8 @@ void usb_device_mode_init(int phy_num)
 	//step 6: phy21 reset
 	usb_reset(reset_addr, PHY20_RESET_LEVEL_BIT);
 
+	udelay(50);
+	usb_set_calibration_trim(phy_base_addr);
 	udelay(50);
 
 	// step 6: wait for phy ready

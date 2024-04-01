@@ -218,13 +218,13 @@
 
 &usb21_phy_v2 {
 	status = "okay";
-	portnum = <2>;
+	portnum = <1>;
 };
 
 &usb31_phy_v2 {
 	status = "okay";
 	portnum = <0>;
-	gpio-vbus-power = "GPIOD_6";
+	/* gpio-vbus-power = "GPIOD_6"; */
 	/* gpios = <&gpio GPIOD_6 GPIO_ACTIVE_HIGH>; */
 };
 
@@ -241,7 +241,7 @@
 &usb32_phy_v2 {
 	status = "okay";
 	portnum = <0>;
-	gpio-vbus-power = "GPIOD_10";
+	/* gpio-vbus-power = "GPIOD_10"; */
 	/* gpios = <&gpio GPIOD_10 GPIO_ACTIVE_HIGH>; */
 };
 
