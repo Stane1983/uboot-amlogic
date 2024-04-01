@@ -244,21 +244,13 @@ static int do_lcd_tcon(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 		} else {
 			printf("no tcon_reg_read\n");
 		}
-	} else if (strcmp(argv[1], "vac") == 0) {
-		if (pdrv->tcon_vac_print)
-			pdrv->tcon_vac_print();
+	} else if (strcmp(argv[1], "vac") == 0 ||
+		   strcmp(argv[1], "demura") == 0 ||
+		   strcmp(argv[1], "acc") == 0) {
+		if (pdrv->tcon_lut_print_tl1)
+			pdrv->tcon_lut_print_tl1(argv[1]);
 		else
-			printf("no lcd tcon_vac_print\n");
-	} else if (strcmp(argv[1], "demura") == 0) {
-		if (pdrv->tcon_demura_print)
-			pdrv->tcon_demura_print();
-		else
-			printf("no lcd tcon_demura_print\n");
-	} else if (strcmp(argv[1], "acc") == 0) {
-		if (pdrv->tcon_acc_print)
-			pdrv->tcon_acc_print();
-		else
-			printf("no lcd tcon_acc_print\n");
+			printf("no lcd tcon_lut_print\n");
 	} else if (strcmp(argv[1], "data") == 0) {
 		if (argc == 3) {
 			i = (unsigned char)simple_strtoul(argv[2], NULL, 10);

@@ -712,9 +712,7 @@ struct aml_lcd_drv_s {
 #ifdef CONFIG_AML_LCD_TCON
 	void (*tcon_reg_print)(void);
 	void (*tcon_table_print)(void);
-	void (*tcon_vac_print)(void);
-	void (*tcon_demura_print)(void);
-	void (*tcon_acc_print)(void);
+	void (*tcon_lut_print_tl1)(char *name);
 	void (*tcon_data_print)(unsigned char index);
 	void (*tcon_spi_print)(void);
 	int (*tcon_spi_data_load)(void);
