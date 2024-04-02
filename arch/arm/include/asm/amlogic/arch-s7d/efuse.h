@@ -34,8 +34,8 @@ typedef struct efuse_cali {
 	unsigned int usbphy_flag:1;
 	unsigned int odio33_data:2;
 	unsigned int odio33_flag:1;
-	unsigned int cvbsdac_data:7;
-	unsigned int cvbsdac_flag:1;
+	unsigned int cvbs_data:7;
+	unsigned int cvbs_flag:1;
 } efuse_cali_t;
 
 #define EFUSE_CALI_SIZE			8
