@@ -8,11 +8,11 @@ OUTPUT_ARCH(aarch64)
 ENTRY(acs_entry)
 
 MEMORY {
-    RAM (rw): ORIGIN = 0x00000000, LENGTH = 0x00002000
+    RAM (rw): ORIGIN = 0x00000000, LENGTH = 0x00001c00
 }
 
 MEMORY {
-    ROM (rx): ORIGIN = 0x00002000, LENGTH = 0x00000100
+    ROM (rx): ORIGIN = 0x00001c00, LENGTH = 0x00000100
 }
 
 SECTIONS
@@ -58,5 +58,5 @@ SECTIONS
 		*(.ddr_2acs_index*)
 		*(.ddr_2acs_data*)
 	}
-    ASSERT(. <= 0x00002000, "params image has exceeded its limit.")
+    ASSERT(. <= 0x00001c00, "params image has exceeded its limit.")
 }
