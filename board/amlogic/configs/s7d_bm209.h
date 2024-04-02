@@ -88,7 +88,10 @@
 	"dv_fw_dir=/reserved/firmware/dovi_fw.bin\0"\
 	"hdr_policy=0\0"\
 	"frac_rate_policy=1\0"\
-	"board=s7d_bm209\0"
+	"upgrade_key="\
+		"run upgrade_key_base;"\
+		"echo usr key;"\
+		"\0"\
 
 #ifndef CONFIG_PXP_DDR
 #define CONFIG_PREBOOT  \
