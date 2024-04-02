@@ -2447,6 +2447,11 @@ static int handle_panel_misc(struct panel_misc_s *p_misc)
 		sprintf(p_misc->version, "V%03d", tmp_val);
 	}
 
+	tmp_val = env_get_ulong("model_outputmode_bypass", 10, 0);
+	if (tmp_val) {
+		ALOGI("model_outputmode_bypass\n");
+		goto handle_panel_misc_next;
+	}
 	ini_value = IniGetString("panel_misc", "outputmode2", "null");
 	if (model_debug_flag & DEBUG_MISC)
 		ALOGD("%s, outputmode2 is (%s)\n", __func__, ini_value);
@@ -2468,6 +2473,12 @@ static int handle_panel_misc(struct panel_misc_s *p_misc)
 		run_command(buf, 0);
 	}
 
+handle_panel_misc_next:
+	tmp_val = env_get_ulong("model_connector_bypass", 10, 0);
+	if (tmp_val) {
+		ALOGI("model_connector_bypass\n");
+		goto handle_panel_misc_next2;
+	}
 	ini_value = IniGetString("panel_misc", "connector_type", "null");
 	if (model_debug_flag & DEBUG_MISC)
 		ALOGD("%s, connector_type is (%s)\n", __func__, ini_value);
@@ -2481,6 +2492,7 @@ static int handle_panel_misc(struct panel_misc_s *p_misc)
 		run_command("setenv connector_type null", 0);
 	}
 
+handle_panel_misc_next2:
 	rev_ctrl = env_get("reverse_ctrl");
 	if (!rev_ctrl || strcmp(rev_ctrl, "0") == 0) {
 		ini_value = IniGetString("panel_misc", "panel_reverse", "null");
