@@ -35,6 +35,10 @@
 #define CLK_LEVEL_DFT_C3      4
 #define CLK_LEVEL_MAX_C3      5
 
+#define CLK_LEVEL_DFT_S7D      8
+#define CLK_LEVEL_MAX_S7D      9
+
+
 /* vpu clk setting */
 #if 0
 static struct fclk_div_s fclk_div_table_gxb[] = {
@@ -76,6 +80,20 @@ static struct vpu_clk_s vpu_clk_table[] = {
 	{500000000,    FCLK_DIV4,    0}, /* 6 */
 	{666667000,    FCLK_DIV3,    0}, /* 7 */
 	{696000000,    GPLL_CLK,     0}, /* 8 */ /* invalid */
+	{850000000,    GPLL_CLK,     0}, /* 9 */ /* invalid */
+};
+
+static struct vpu_clk_s vpu_clk_table_s7d[] = {
+	/* frequency   clk_mux       div */
+	{100000000,    FCLK_DIV5,    3}, /* 0 */
+	{166667000,    FCLK_DIV3,    3}, /* 1 */
+	{200000000,    FCLK_DIV5,    1}, /* 2 */
+	{250000000,    FCLK_DIV4,    1}, /* 3 */
+	{333333000,    FCLK_DIV3,    1}, /* 4 */
+	{400000000,    FCLK_DIV5,    0}, /* 5 */
+	{500000000,    FCLK_DIV4,    0}, /* 6 */
+	{666667000,    FCLK_DIV3,    0}, /* 7 */
+	{666000000,    GPLL_CLK,     0}, /* 8 */ /* invalid */
 	{850000000,    GPLL_CLK,     0}, /* 9 */ /* invalid */
 };
 

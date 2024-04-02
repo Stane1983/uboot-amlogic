@@ -213,7 +213,7 @@ defined(CONFIG_STORE_COMPATIBLE)
 #endif
 
 /* vpu */
-#define AML_VPU_CLK_LEVEL_DFT 7
+#define AML_VPU_CLK_LEVEL_DFT 8
 
 /* osd */
 #define OSD_SCALE_ENABLE

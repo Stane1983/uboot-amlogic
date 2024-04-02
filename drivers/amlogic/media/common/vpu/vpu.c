@@ -664,9 +664,9 @@ static struct vpu_data_s vpu_data_s7 = {
 static struct vpu_data_s vpu_data_s7d = {
 	.chip_type = VPU_CHIP_S7D,
 	.chip_name = "s7d",
-	.clk_level_dft = CLK_LEVEL_DFT_G12A,
-	.clk_level_max = CLK_LEVEL_MAX_G12A,
-	.gp_pll_valid = 0,
+	.clk_level_dft = CLK_LEVEL_DFT_S7D,
+	.clk_level_max = CLK_LEVEL_MAX_S7D,
+	.gp_pll_valid = 1,
 
 	.vpu_clk_reg = CLKCTRL_VPU_CLK_CTRL,
 	.vpu_clkb_reg = VPU_REG_END,
@@ -676,7 +676,7 @@ static struct vpu_data_s vpu_data_s7d = {
 	.pwrctrl_id_table = vpu_pwrctrl_id_table,
 
 	.fclk_div_table = fclk_div_table_g12a,
-	.vpu_clk_table = vpu_clk_table,
+	.vpu_clk_table = vpu_clk_table_s7d,
 	.test_reg = vcbus_test_reg,
 
 	.mem_pd_table = NULL,
