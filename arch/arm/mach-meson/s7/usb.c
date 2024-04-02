@@ -420,6 +420,11 @@ void usb_device_mode_init(int phy_num)
 #define RESETCTRL0_OFFSET	0
 #define CC_RESET_BIT		10
 
+#define UFP_CURRENT_TYPE_CHECK(x)	((x) & GENMASK(5, 3))
+#define VBUS_OK_P_CHECK(x)		((x) & BIT(15))
+#define CC1_UFP_DET_P_CHECK(x)		(((x) & GENMASK(18, 16)) >> 16)
+#define CC2_UFP_DET_P_CHECK(x)		(((x) & GENMASK(21, 19)) >> 19)
+
 #define CC_REG_BASE	0xfe35e000
 
 static void aml_cc_ufp_init(void)
@@ -456,9 +461,10 @@ int aml_cc_get_ufp_status(u32 *val)
 		usb_udelay(20);
 		cnt++;
 
-		if (cnt > 10000)
-			break;
-
+		if (cnt > 10000) {
+			*val = readl(CC_REG_BASE + USB_CC_UFP_STATUS);
+			return -EINVAL;
+		}
 	} while (!(readl(CC_REG_BASE + USB_CC_INT_STATUS) &
 		 (CC_UFP_CURRENT_INT | CC_UFP_PLUG_IN_INT | CC_UFP_PLUG_OUT_INT)));
 
@@ -473,7 +479,7 @@ int aml_cc_get_ufp_status(u32 *val)
 
 void print_aml_cc_ufp_current_type(void)
 {
-	u32 status, cnt = 0;
+	u32 val, cnt = 0;
 
 	aml_cc_ufp_init();
 
@@ -487,20 +493,51 @@ void print_aml_cc_ufp_current_type(void)
 	} while (!(readl(CC_REG_BASE + USB_CC_INT_STATUS) &
 		 (CC_UFP_CURRENT_INT | CC_UFP_PLUG_IN_INT | CC_UFP_PLUG_OUT_INT)));
 
-	status = readl(CC_REG_BASE + USB_CC_UFP_STATUS);
-	switch (status & GENMASK(5, 3)) {
-	case 0x0:
-		printf("cc_ufp_current_type: detach\n");
-		break;
-	case 0x8:
-		printf("cc_ufp_current_type: supply <= 0.5 current\n");
-		break;
-	case 0x18:
-		printf("cc_ufp_current_type: Rp=12K, supply 1.5 current\n");
-		break;
-	case 0x38:
-		printf("cc_ufp_current_type: Rp=4.7K, supply 3.0 current\n");
-		break;
+	val = readl(CC_REG_BASE + USB_CC_UFP_STATUS);
+	if (cnt < 10000) {
+		switch (UFP_CURRENT_TYPE_CHECK(val)) {
+		case 0x0:
+			printf("cc_ufp_current_type: detach\n");
+			break;
+		case 0x8:
+			printf("cc_ufp_current_type: supply <= 0.5 current\n");
+			break;
+		case 0x18:
+			printf("cc_ufp_current_type: Rp=12K, supply 1.5 current\n");
+			break;
+		case 0x38:
+			printf("cc_ufp_current_type: Rp=4.7K, supply 3.0 current\n");
+			break;
+		}
+	} else {
+		if (VBUS_OK_P_CHECK(val)) {
+			if (CC1_UFP_DET_P_CHECK(val) == CC2_UFP_DET_P_CHECK(val)) {
+				switch (CC1_UFP_DET_P_CHECK(val)) {
+				case 0x0:
+					printf("cc_ufp_current_type:detach\n");
+					break;
+				case 0x1:
+					printf("cc_ufp_current_type:supply <= 0.5 current\n");
+					break;
+				case 0x3:
+					printf("cc_ufp_current_type:Rp=12K,supply 1.5 current\n");
+					break;
+				case 0x7:
+					printf("cc_ufp_current_type:Rp=4.7K,supply 3.0 current\n");
+					break;
+				}
+			} else if ((CC1_UFP_DET_P_CHECK(val) ^ CC2_UFP_DET_P_CHECK(val)) == 0x4) {
+				printf("cc_ufp_current_type: DAM mode supply <= 0.5 current\n");
+			} else if ((CC1_UFP_DET_P_CHECK(val) ^ CC2_UFP_DET_P_CHECK(val)) == 0x2) {
+				printf("cc_ufp_current_type: DAM mode supply 1.5 current\n");
+			} else if ((CC1_UFP_DET_P_CHECK(val) ^ CC2_UFP_DET_P_CHECK(val)) == 0x6) {
+				printf("cc_ufp_current_type: DAM mode supply 3.0 current\n");
+			} else {
+				printf("cc_ufp_current_type: detach\n");
+			}
+		} else {
+			printf("cc_ufp_current_type: detach\n");
+		}
 	}
 
 	/* clear INT */
