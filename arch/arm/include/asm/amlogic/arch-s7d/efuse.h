@@ -19,21 +19,23 @@ struct efuse_hal_api_arg {
 };
 
 typedef struct efuse_cali {
-	unsigned int revision:4;
-	unsigned int reserve1:4;
+	unsigned int who_burn:4;
+	unsigned int cali_version:4;
 	unsigned int tsensor_data:15;
 	unsigned int tsensor_flag:1;
-	unsigned int cvbs_data:7;
-	unsigned int cvbs_flag:1;
-	unsigned int ethernet_data:5;
-	unsigned int ethernet_flag:1;
-	unsigned int reserve2:2;
-	unsigned int saradc_data:6;
-	unsigned int saradc_flag:1;
-	unsigned int reserve3:1;
-	unsigned int usbphy_data:4;
+	unsigned int cclogic_data:6;
+	unsigned int cclogic_flag:1;
+	unsigned int reserved:1;
+	unsigned int miscpzq_data:8;
+	unsigned int miscpzq_flag:1;
+	unsigned int hdmitx_data:4;
+	unsigned int hdmitx_flag:1;
+	unsigned int usbphy_data:6;
 	unsigned int usbphy_flag:1;
-	unsigned int reserve4:11;
+	unsigned int odio33_data:2;
+	unsigned int odio33_flag:1;
+	unsigned int cvbsdac_data:7;
+	unsigned int cvbsdac_flag:1;
 } efuse_cali_t;
 
 #define EFUSE_CALI_SIZE			8
