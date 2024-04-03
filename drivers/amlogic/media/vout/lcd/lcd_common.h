@@ -157,6 +157,7 @@ void lcd_vbyone_hw_filter(struct aml_lcd_drv_s *pdrv, int flag);
 /* lcd tcon */
 #ifdef CONFIG_AML_LCD_TCON
 void lcd_tcon_info_print(struct aml_lcd_drv_s *pdrv);
+int lcd_tcon_top_init(struct aml_lcd_drv_s *pdrv);
 int lcd_tcon_enable(struct aml_lcd_drv_s *pdrv);
 void lcd_tcon_disable(struct aml_lcd_drv_s *pdrv);
 void lcd_tcon_global_reset(struct aml_lcd_drv_s *pdrv);
