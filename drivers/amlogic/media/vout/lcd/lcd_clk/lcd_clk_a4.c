@@ -50,7 +50,7 @@ static void lcd_set_fclk_div(struct aml_lcd_drv_s *pdrv)
 				min_err_sel_idx = i;
 				min_err_div = div;
 				min_err = error;
-				if (lcd_debug_print_flag & LCD_DBG_PR_ADV2)
+				if (lcd_debug_print_flag & LCD_DBG_PR_CLK)
 					LCDPR("_sel:%d, _div:%d, err:%d\n",
 						fclk_div_table[i][0], min_err_div, min_err);
 			}
