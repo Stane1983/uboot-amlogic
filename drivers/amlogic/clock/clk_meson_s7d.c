@@ -23,13 +23,14 @@ static struct meson_gate gates[] = {
 	{CLKID_SD_EMMC_A, S7D_CLKCTRL_SD_EMMC_CLK_CTRL, 7},
 	{CLKID_SD_EMMC_B, S7D_CLKCTRL_SD_EMMC_CLK_CTRL, 23},
 	{CLKID_SD_EMMC_C, S7D_CLKCTRL_NAND_CLK_CTRL, 7},
+	{CLKID_ETH_RMII, S7D_CLKCTRL_ETH_CLK_CTRL, 8},
 };
 
 static unsigned int saradc_parents[] = {CLKID_XTAL, CLKID_SYS_CLK};
 
 static unsigned int sd_emmc_parents[] = {CLKID_XTAL, CLKID_FCLK_DIV2,
 	CLKID_FCLK_DIV3, CLKID_UNREALIZED, CLKID_FCLK_DIV2P5,
-	CLKID_UNREALIZED, CLKID_GP0_PLL};
+	CLKID_UNREALIZED, CLKID_UNREALIZED, CLKID_GP0_PLL};
 
 static unsigned int spicc_parents[] = {CLKID_XTAL, CLKID_SYS_CLK,
 	CLKID_FCLK_DIV4, CLKID_FCLK_DIV3, CLKID_FCLK_DIV2,
@@ -49,12 +50,13 @@ static struct meson_div divs[] = {
 	{CLKID_SD_EMMC_A_DIV, S7D_CLKCTRL_SD_EMMC_CLK_CTRL, 0, 7, CLKID_SD_EMMC_A_MUX},
 	{CLKID_SD_EMMC_B_DIV, S7D_CLKCTRL_SD_EMMC_CLK_CTRL, 16, 7, CLKID_SD_EMMC_B_MUX},
 	{CLKID_SD_EMMC_C_DIV, S7D_CLKCTRL_NAND_CLK_CTRL, 0, 7, CLKID_SD_EMMC_C_MUX},
+	{CLKID_ETH_RMII_DIV, S7D_CLKCTRL_ETH_CLK_CTRL, 0, 7, CLKID_FCLK_DIV2},
 };
 
 static struct parm meson_gp0_pll_parm[5] = {
 	{S7D_ANACTRL_GP0PLL_CTRL0, 0, 9}, /* pm */
 	{S7D_ANACTRL_GP0PLL_CTRL0, 12, 3}, /* pn */
-	{S7D_ANACTRL_GP0PLL_CTRL0, 16, 3}, /* pod */
+	{S7D_ANACTRL_GP0PLL_CTRL0, 20, 3}, /* pod */
 	{S7D_ANACTRL_GP0PLL_CTRL1, 0, 19}, /* pfrac */
 	{S7D_ANACTRL_GP0PLL_CTRL4, 12, 1}, /* pen0p5 */
 };
@@ -121,7 +123,7 @@ static ulong meson_pll_get_rate(struct clk *clk, unsigned long id)
 			rate = rate >> 1;
 	}
 
-	return ((rate / n) >> od) * 1000000;
+	return ((rate >> n) >> od) * 1000000;
 }
 
 static ulong meson_clk_get_rate_by_id(struct clk *clk, ulong id)
