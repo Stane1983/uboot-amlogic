@@ -24,6 +24,7 @@
 #define PDID_AUCPU         	12
 #define PDID_AUDIO     		13
 
+#define PM_ETH			PDID_ETH
 
 #define PM_MAX			14
 

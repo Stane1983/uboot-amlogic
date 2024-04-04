@@ -8,6 +8,7 @@
 #include <dt-bindings/reset/amlogic,meson-gxbb-reset.h>
 #include <dt-bindings/amlogic/pwm/pwm.h>
 #include <dt-bindings/amlogic/pwm/meson.h>
+#include <dt-bindings/amlogic/clock/s7d-clkc.h>
 
 / {
 	compatible = "amlogic,meson-s7d";
@@ -100,23 +101,29 @@
 };
 
 &ethmac {
-	compatible = "amlogic,g12a-eth-dwmac";
-	reg = <0x0 0xfdc00000 0x0 0x10000
-		0x0 0xFE024000 0x0 0x8
-		0x0 0xFE028000 0x0 0xa0>;
+	compatible = "amlogic,t7-eth-dwmac";
+	reg = <0x0 0xfe368000 0x0 0x12ec
+		0x0 0xfe364000 0x0 0x8
+		0x0 0xfe360000 0x0 0xa0>;
 	reg-names = "eth_base", "eth_top", "eth_cfg";
 	phy_cntl1 = <0x41054147>;
 	internal_phy = <1>;
-	mc_val = <0x4be04>;
-	pll_val = <0x9c0040a 0x927e0000 0xac5f49e5>;
+	//mc_val = <0x4be04>;
+	mc_val = <0x1804>;
+	pll_val = <0x608200a0 0xea002000 0x00000150>;
 	analog_val = <0x20200000 0x0000c000 0x00000023>;
 	chip_num = <3>;
-	cali_val = <0x80000>;
+	soc_num = <5>;
+	/* 5: S1A, S7 */
 	//tx_amp_src = <0xfe005b30>;
 //	clocks = <&clkc CLKID_ETH_CORE>,
 //		 <&clkc CLKID_FCLK_DIV2>,
 //		 <&clkc CLKID_MPLL2>;
 //	clock-names = "stmmaceth", "clkin0", "clkin1";
+	clocks = <&clkc CLKID_ETH_RMII>;
+	clock-names = "stmmacethrmii";
+	assigned-clocks = <&clkc CLKID_ETH_RMII_DIV>;
+	assigned-clock-rates = <50000000>;
 
 	mdio0: mdio {
 		#address-cells = <1>;
