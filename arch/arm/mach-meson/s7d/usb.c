@@ -365,3 +365,302 @@ void usb_device_mode_init(int phy_num)
 
 	//--------------------------------------------------
 }
+
+/****************************************************************/
+/*			CC config				*/
+/****************************************************************/
+#define CC_OTP_REG			0x0
+#define USB_CC_INT_CLR			0x4
+#define  CC_INT_CLEAN			BIT(0)
+#define USB_CC_ANA			0x8
+#define  CC_ANA_CTRL_EN			BIT(0)
+#define  CC_UFP_EN			BIT(1)
+#define  CC_DFP_EN			BIT(2)
+#define  CC_RP_SEL0			(BIT(5) | BIT(6) | BIT(7))
+#define USB_CC_CNT			0xC
+#define USB_CC_INT_MASK			0x10
+#define  CABLE_PLUG_IN			BIT(6)
+#define  CABLE_PLUG_OUT			BIT(7)
+#define USB_CC_CTRL			0x14
+#define  CC_TOP_ENABLE			BIT(0)
+#define  CC_FAST_ENABLE			BIT(1)
+#define  CC_VBUS_FORCE_EN		BIT(4)
+#define USB_CC_INT_STATUS		0x18
+#define  CC_UFP_CURRENT_INT		BIT(0)
+#define  CC_UFP_PLUG_IN_INT		BIT(1)
+#define  CC_UFP_PLUG_OUT_INT		BIT(2)
+#define  CC_UFP_DAM_PLUG_IN_INT		BIT(8)
+#define  CC_UFP_DAM_PLUG_OUT_INT	BIT(9)
+#define USB_CC_FSM_STATUS		0x1C
+#define USB_CC_ANA_STATUS		0x20
+
+#define RESETCTRL0_OFFSET		0
+#define CC_RESET_BIT			10
+
+#define UFP_CURRENT_TYPE_CHECK(x)	((x) & GENMASK(9, 7) >> 7)
+#define UFP_DAM_CURRENT_TYPE_CHECK(x)	((x) & GENMASK(17, 15) >> 15)
+#define CC1_UFP_DET_D2_CHECK(x)		(((x) & GENMASK(9, 7)) >> 7)
+#define CC2_UFP_DET_D2_CHECK(x)		(((x) & GENMASK(12, 10)) >> 10)
+
+#define CC_REG_BASE	0xfe35e000
+
+static void aml_cc_ufp_init(void)
+{
+	u32 val;
+
+	/* reset cc */
+	val = readl(RESET_BASE + RESETCTRL0_OFFSET);
+	val = CC_RESET_BIT;
+	writel(val, RESET_BASE + RESETCTRL0_OFFSET);
+
+	udelay(800);
+
+	/* set UFP mode */
+	val = readl(CC_REG_BASE + USB_CC_ANA);
+	val &= (~(CC_ANA_CTRL_EN | CC_DFP_EN));
+	val |= CC_UFP_EN;
+	writel(val, CC_REG_BASE + USB_CC_ANA);
+
+	/* enable CC */
+	val = readl(CC_REG_BASE + USB_CC_CTRL);
+	val &= ~CC_VBUS_FORCE_EN;
+	val |= CC_TOP_ENABLE;
+	writel(val, CC_REG_BASE + USB_CC_CTRL);
+}
+
+int aml_cc_get_ufp_status(u32 *val1, u32 *val2)
+{
+	u32 cnt = 0;
+
+	aml_cc_ufp_init();
+
+	do {
+		udelay(20);
+		cnt++;
+
+		if (cnt > 10000)
+			return -EINVAL;
+
+	} while (!(readl(CC_REG_BASE + USB_CC_INT_STATUS) &
+		 (CC_UFP_CURRENT_INT | CC_UFP_PLUG_IN_INT | CC_UFP_DAM_PLUG_IN_INT)));
+
+	*val1 = readl(CC_REG_BASE + USB_CC_FSM_STATUS);
+	*val2 = readl(CC_REG_BASE + USB_CC_ANA_STATUS);
+
+	/* clear INT */
+	if ((readl(CC_REG_BASE + USB_CC_INT_STATUS)) & CC_UFP_PLUG_OUT_INT)
+		writel(CC_INT_CLEAN, CC_REG_BASE + USB_CC_INT_CLR);
+
+	return 0;
+}
+
+void print_aml_cc_ufp_current_type(void)
+{
+	u32 val, cnt = 0, status;
+
+	aml_cc_ufp_init();
+
+	do {
+		udelay(20);
+		cnt++;
+
+		if (cnt > 10000) {
+			printf("cc_ufp_current_type:detach\n");
+			return;
+		}
+
+	} while (!(readl(CC_REG_BASE + USB_CC_INT_STATUS) &
+		 (CC_UFP_CURRENT_INT | CC_UFP_PLUG_IN_INT | CC_UFP_DAM_PLUG_IN_INT)));
+
+	status = readl(CC_REG_BASE + USB_CC_INT_STATUS);
+	if (status & CC_UFP_DAM_PLUG_IN_INT) {
+		val = readl(CC_REG_BASE + USB_CC_FSM_STATUS);
+		switch (UFP_DAM_CURRENT_TYPE_CHECK(val)) {
+		case 0:
+			val = readl(CC_REG_BASE + USB_CC_ANA_STATUS);
+			if (CC1_UFP_DET_D2_CHECK(val) == CC2_UFP_DET_D2_CHECK(val)) {
+				switch (CC1_UFP_DET_D2_CHECK(val)) {
+				case 0:
+					printf("Two RP:detach\n");
+					break;
+				case 1:
+					printf("Two RP:supply <= 0.5 current\n");
+					break;
+				case 3:
+					printf("Two RP:Rp=12K,supply 1.5 current\n");
+					break;
+				case 7:
+					printf("Two RP:Rp=4.7K,supply 3.0 current\n");
+					break;
+				default:
+					printf("error status %s:%d\n", __func__, __LINE__);
+					break;
+				}
+			} else {
+				printf("unsupport this adpater\n");
+			}
+			break;
+		case 1:
+			printf("ufp_dam_current_type: supply <= 0.5 current\n");
+			break;
+		case 3:
+			printf("ufp_dam_current_type: Rp=12K, supply 1.5 current\n");
+			break;
+		case 7:
+			printf("ufp_dam_current_type: Rp=4.7K, supply 3.0 current\n");
+			break;
+		default:
+			printf("error status %s:%d\n", __func__, __LINE__);
+			break;
+		}
+	} else if (status & (CC_UFP_CURRENT_INT | CC_UFP_PLUG_IN_INT)) {
+		val = readl(CC_REG_BASE + USB_CC_FSM_STATUS);
+		switch (UFP_CURRENT_TYPE_CHECK(val)) {
+		case 0:
+			printf("cc_ufp_current_type: detach\n");
+			break;
+		case 1:
+			printf("cc_ufp_current_type: supply <= 0.5 current\n");
+			break;
+		case 3:
+			printf("cc_ufp_current_type: Rp=12K, supply 1.5 current\n");
+			break;
+		case 7:
+			printf("cc_ufp_current_type: Rp=4.7K, supply 3.0 current\n");
+			break;
+		default:
+			printf("error status %s:%d\n", __func__, __LINE__);
+			break;
+		}
+	}
+
+	/* clear INT */
+	if ((readl(CC_REG_BASE + USB_CC_INT_STATUS)) & CC_UFP_PLUG_OUT_INT)
+		writel(CC_INT_CLEAN, CC_REG_BASE + USB_CC_INT_CLR);
+}
+
+/**************************************************************/
+/*			BC config				*/
+/**************************************************************/
+#define BC_CTRL			0x4
+#define  BC_ENABLE		BIT(0)
+#define  BC_DET_CLEAN		BIT(1)
+#define  BC_INT_CLEAN		BIT(2)
+#define  BC_DETECT_END		BIT(3)
+#define BC_DIG_STATUS		0x1C
+
+#define CFG_REG0		0
+#define  HOST_DEVICE		BIT(0)
+#define  IDPULLUP0		BIT(4)
+#define CFG_REG3		0xC
+#define  VBUSDIG_IRQ		BIT(7)
+#define  VBUSDIG_EN1		BIT(5)
+#define  VBUSDIG_EN0		BIT(4)
+
+#define BC_REG_BASE	0xfe35d000
+
+#define BC_RESET_BIT		11
+
+
+static void aml_bc_init(void)
+{
+	u32 val;
+
+	/* set phy device mode */
+	val = readl(PHY_COMP_BASE + CFG_REG0);
+	val &= ~HOST_DEVICE;
+	writel(val, PHY_COMP_BASE + CFG_REG0);
+
+	/* reset bc */
+	val = readl(RESET_BASE + RESETCTRL0_OFFSET);
+	val = BC_RESET_BIT;
+	writel(val, RESET_BASE + RESETCTRL0_OFFSET);
+
+	udelay(200000);
+
+	/* enable BC */
+	val = readl(BC_REG_BASE + BC_CTRL);
+	val |= BC_ENABLE;
+	writel(val, BC_REG_BASE + BC_CTRL);
+}
+
+int aml_bc_get_port_status(u32 *val)
+{
+	u32 cnt = 0;
+
+	aml_bc_init();
+
+	do {
+		udelay(20);
+		cnt++;
+
+		if (cnt > 10000) {
+			printf("BC port status detect timeout\n");
+			return -EINVAL;
+		}
+	} while (!(readl(BC_REG_BASE + BC_CTRL) & BC_DETECT_END));
+
+	*val = readl(BC_REG_BASE + BC_DIG_STATUS);
+
+	return 0;
+}
+
+void print_aml_bc_port_status(void)
+{
+	u32 status, cnt = 0;
+
+	aml_bc_init();
+
+	do {
+		udelay(20);
+		cnt++;
+
+		if (cnt > 10000) {
+			printf("BC port status detect timeout\n");
+			return;
+		}
+	} while (!(readl(BC_REG_BASE + BC_CTRL) & BC_DETECT_END));
+
+	status = readl(BC_REG_BASE + BC_DIG_STATUS);
+	switch (status & GENMASK(3, 0)) {
+	case 0x0:
+		printf("BC STATUS is : default\n");
+		break;
+	case 0x1:
+		printf("BC STATUS is : SDP\n");
+		break;
+	case 0x2:
+		printf("BC STATUS is : DCP\n");
+		break;
+	case 0x3:
+		printf("BC STATUS is : CDP\n");
+		break;
+	case 0x4:
+		printf("BC STATUS is : ACA_A\n");
+		break;
+	case 0x5:
+		printf("BC STATUS is : ACA_B\n");
+		break;
+	case 0x6:
+		printf("BC STATUS is : ACA_C\n");
+		break;
+	case 0x7:
+		printf("BC STATUS is : ACA_DOCK\n");
+		break;
+	case 0x8:
+		printf("BC STATUS is : ACA GND ERROR\n");
+		break;
+	case 0x9:
+		printf("BC STATUS is : analog output error\n");
+		break;
+	case 0xA:
+		printf("BC STATUS is : VBUS remove\n");
+		break;
+	case 0xB:
+		printf("BC STATUS is : VBUS invalid\n");
+		break;
+	default:
+		printf("BC STATUS is : RESERVED\n");
+		break;
+	}
+}

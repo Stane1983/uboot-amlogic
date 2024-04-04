@@ -242,4 +242,12 @@ int usb_save_phy_dev(unsigned int number, struct phy *phy);
 int usb2_phy_init(struct phy *phy);
 void usb_device_mode_init(int phy_num);
 int m31_phy_init(unsigned int phy_num);
+
+/* cc */
+int aml_cc_get_ufp_status(u32 *val1, u32 *val2);
+void print_aml_cc_ufp_current_type(void);
+
+/* bc */
+int aml_bc_get_port_status(u32 *val);
+void print_aml_bc_port_status(void);
 #endif
