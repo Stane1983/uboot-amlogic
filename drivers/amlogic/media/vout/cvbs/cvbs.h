@@ -26,6 +26,7 @@ enum cvbs_chip_e {
 	CVBS_CHIP_S4D, /* 4 */
 	CVBS_CHIP_S1A, /* 5 */
 	CVBS_CHIP_S7, /* 6 */
+	CVBS_CHIP_S7D, /* 7 */
 	CVBS_CHIP_MAX,
 };
 

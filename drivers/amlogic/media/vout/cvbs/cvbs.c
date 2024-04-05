@@ -118,6 +118,20 @@ static struct cvbs_data_s cvbs_data_s7 = {
 	.vdac_gsw = 0x5c,
 };
 
+static struct cvbs_data_s cvbs_data_s7d = {
+	.chip_type = CVBS_CHIP_S7D,
+
+	.reg_vid_pll_clk_div = CLKCTRL_VID_PLL_CLK_DIV,
+	.reg_vid_clk_div = CLKCTRL_VID_CLK_DIV,
+	.reg_vid_clk_ctrl = CLKCTRL_VID_CLK_CTRL,
+	.reg_vid2_clk_div = CLKCTRL_VIID_CLK_DIV,
+	.reg_vid2_clk_ctrl = CLKCTRL_VIID_CLK_CTRL,
+	.reg_vid_clk_ctrl2 = CLKCTRL_VID_CLK_CTRL2,
+
+	.vdac_vref_adj = 0x10,
+	.vdac_gsw = 0x5c,
+};
+
 struct cvbs_drv_s *get_cvbs_drv(void)
 {
 	return &cvbs_drv;
@@ -311,6 +325,22 @@ fail_cmd:
 			printf("[notice]: cvbs pll locking\n"); \
 	} while(0);
 
+static int pll_wait_lock(unsigned int reg, unsigned int lock_bit)
+{
+	unsigned int pll_lock;
+	int wait_loop = 2000;
+	int ret = 0;
+
+	do {
+		udelay(50);
+		pll_lock = cvbs_get_hiu_bits(reg, lock_bit, 1);
+		wait_loop--;
+	} while ((pll_lock == 0) && (wait_loop > 0));
+	if (wait_loop == 0)
+		ret = -1;
+	return ret;
+}
+
 static void cvbs_config_hdmipll_g12a(void)
 {
 	printf("%s\n", __func__);
@@ -473,6 +503,110 @@ static void cvbs_s7_htxpll_clk_out(const u32 clk, u32 div)
 	cvbs_set_hiu_bits(ANACTRL_HDMIPLL_CTRL2, pll_od1, 19, 4);
 }
 
+/* htx pll VCO output: (3G, 6G), for tmds */
+static void cvbs_s7d_htxpll_clk_vco(const u32 clk)
+{
+	u32 quotient;
+	u32 remainder;
+
+	if (clk < 3000000 || clk > 6000000) {
+		pr_err("%s[%d] clock should be 4~6G\n", __func__, __LINE__);
+		return;
+	}
+
+	quotient = clk / 12000;
+	remainder = clk - quotient * 12000;
+	/* remainder range: 0 ~ 23999, 0x5dbf, 15bits */
+	remainder *= 1 << 17;
+	remainder /= 12000;
+	cvbs_write_hiu(ANACTRL_HDMIPLL_CTRL0, 0x00017000 | (quotient << 0));
+	cvbs_write_hiu(ANACTRL_HDMIPLL_CTRL1, 0x9040137d);
+	cvbs_write_hiu(ANACTRL_HDMIPLL_CTRL2, 0x04000000);
+	/* bit[23:22] od1, bit[29:24] od2 */
+	cvbs_write_hiu(ANACTRL_HDMIPLL_CTRL3, 0x00160000 | remainder);
+	/* tx_spll_bias_en */
+	cvbs_set_hiu_bits(ANACTRL_HDMIPLL_CTRL0, 1, 28, 1);
+	udelay(10);
+	/* tx_spll_free_run_en 1 */
+	cvbs_set_hiu_bits(ANACTRL_HDMIPLL_CTRL0, 1, 18, 1);
+	udelay(10);
+	/* tx_spll_rstn release reset */
+	cvbs_set_hiu_bits(ANACTRL_HDMIPLL_CTRL0, 1, 30, 1);
+	/* tx_spll_free_run_en 0 */
+	cvbs_set_hiu_bits(ANACTRL_HDMIPLL_CTRL0, 0, 18, 1);
+	udelay(80);
+	/* tx_spll_rstn_lock release reset */
+	cvbs_set_hiu_bits(ANACTRL_HDMIPLL_CTRL0, 1, 29, 1);
+	udelay(80);
+	pll_wait_lock(ANACTRL_HDMIPLL_CTRL0, 31);
+
+	printf("%s[%d] ANACTRL_HDMIPLL_CTRL0: 0x%x, CTRL3: 0x%x\n",
+		__func__, __LINE__,
+		cvbs_read_hiu(ANACTRL_HDMIPLL_CTRL0),
+		cvbs_read_hiu(ANACTRL_HDMIPLL_CTRL3));
+}
+
+static void cvbs_s7d_htxpll_clk_out(const u32 clk, u32 div)
+{
+	u32 pll_od0 = 0;
+	u32 pll_od00 = 0;
+	u32 pll_od01 = 0;
+	u32 pll_od21 = 0;
+
+	printf("%s[%d] htxpll vco %d div %d\n", __func__, __LINE__, clk, div);
+
+	if (clk < 3000000 || clk > 6000000) {
+		pr_err("%s[%d] %d out of htxpll range(3~6G]\n", __func__, __LINE__, clk);
+		return;
+	}
+	cvbs_s7d_htxpll_clk_vco(clk);
+
+	//pll_od00
+	if ((div % 8) == 0) {
+		pll_od00 = 3; //div8
+		div = div / 8;
+	} else if ((div % 4) == 0) {
+		pll_od00 = 2; //div4
+		div = div / 4;
+	} else if ((div % 2) == 0) {
+		pll_od00 = 1; //div2
+		div = div / 2;
+	}
+
+	//pll_od01
+	if ((div % 8) == 0) {
+		pll_od01 = 3;
+		div = div / 8;
+	} else if ((div % 4) == 0) {
+		pll_od01 = 2;
+		div = div / 4;
+	} else if ((div % 2) == 0) {
+		pll_od01 = 1;
+		div = div / 2;
+	}
+
+	//pll_od0
+	pll_od0 = (pll_od01 << 3) | pll_od00;
+
+	/* od21 for divider for hdmi_clk_out2 bit[1:0] */
+	if ((div % 8) == 0) {
+		pll_od21 = 3;
+		div = div / 8;
+	} else if ((div % 4) == 0) {
+		pll_od21 = 2;
+		div = div / 4;
+	} else if ((div % 2) == 0) {
+		pll_od21 = 1;
+		div = div / 2;
+	}
+
+	//tx_spll_hdmi_clk_select
+	cvbs_set_hiu_bits(ANACTRL_HDMIPLL_CTRL3, 1, 19, 1);
+	printf("pll_od0 = %d, pll_od21 = %d\n", pll_od0, pll_od21);
+	cvbs_set_hiu_bits(ANACTRL_HDMIPLL_CTRL3, pll_od21, 24, 2);
+	cvbs_set_hiu_bits(ANACTRL_HDMIPLL_CTRL0, pll_od0, 20, 6);
+}
+
 static void cvbs_set_vid1_clk(unsigned int src_pll)
 {
 	int sel = 0;
@@ -603,6 +737,12 @@ static int cvbs_config_clock(void)
 	case CVBS_CHIP_S7:
 		/* hdmi_clk_out2: 1485Mhz */
 		cvbs_s7_htxpll_clk_out(5940000, 4);
+		/* 1485Mhz / 55 = 27Mhz */
+		cvbs_set_vid2_clk(0);
+		break;
+	case CVBS_CHIP_S7D:
+		/* hdmi_clk_out2: 1485Mhz */
+		cvbs_s7d_htxpll_clk_out(5940000, 4);
 		/* 1485Mhz / 55 = 27Mhz */
 		cvbs_set_vid2_clk(0);
 		break;
@@ -993,6 +1133,9 @@ void vdac_data_config(void)
 		break;
 	case MESON_CPU_MAJOR_ID_S7:
 		cvbs_drv.data = &cvbs_data_s7;
+		break;
+	case MESON_CPU_MAJOR_ID_S7D:
+		cvbs_drv.data = &cvbs_data_s7d;
 		break;
 	default:
 		cvbs_drv.data = &cvbs_data_s4d;
