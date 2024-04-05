@@ -23,8 +23,8 @@
 				break; \
 			else { \
 				/* reset hpll */ \
-				hd21_set_reg_bits(reg, 1, 29, 1); \
-				hd21_set_reg_bits(reg, 0, 29, 1); \
+				hd21_set_reg_bits(reg, 1, 30, 1); \
+				hd21_set_reg_bits(reg, 0, 30, 1); \
 			} \
 		} \
 		if (cnt < 9) \
@@ -55,17 +55,17 @@ static void set_s7d_htxpll_clk_other(const u32 clk, const bool frl_en)
 		return;
 	}
 
-	quotient = clk / 24000;
-	remainder = clk - quotient * 24000;
+	quotient = clk / 12000;
+	remainder = clk - quotient * 12000;
 	/* remainder range: 0 ~ 23999, 0x5dbf, 15bits */
 	remainder *= 1 << 17;
-	remainder /= 24000;
+	remainder /= 12000;
 
-	hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x50016000 | (quotient << 0));
+	hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x00017000 | (quotient << 0));
 	hd21_write_reg(ANACTRL_HDMIPLL_CTRL1, 0x9040137d);
 	hd21_write_reg(ANACTRL_HDMIPLL_CTRL2, 0x04000000);
 	hd21_write_reg(ANACTRL_HDMIPLL_CTRL3, 0x01160000 | remainder);
-	hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL0, 0, 30, 1);
+	hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL0, 1, 28, 1);
 	usleep_range(10, 20);
 	hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL0, 1, 18, 1);
 	usleep_range(10, 20);
