@@ -47,7 +47,9 @@
 #ifdef CONFIG_SYS_NONCACHED_MEMORY
 #include <linux/sizes.h>
 #endif
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#include <asm/arch-meson/smp.h>
+#endif
 /*
  * Pointer to initial global data area
  *
@@ -708,7 +710,9 @@ static int reserve_stacks(void)
 	/* make stack pointer 16-byte aligned */
 	gd->start_addr_sp -= 16;
 	gd->start_addr_sp &= ~0xf;
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+//	gd->start_addr_sp -= ((NR_CPUS - 1) * secondary_sp_size);
+#endif
 	/*
 	 * let the architecture-specific code tailor gd->start_addr_sp and
 	 * gd->irq_sp

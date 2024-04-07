@@ -6,6 +6,7 @@
 #ifndef __SMP_H__
 #define __SMP_H__
 
+#define secondary_sp_size 0x100000
 struct smp_boot_param {
 	void (*bootup)(unsigned long args);
 	unsigned long param;
