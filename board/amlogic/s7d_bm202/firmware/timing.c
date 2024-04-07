@@ -69,11 +69,11 @@ __attribute__ ((section(".clk_param"))) = {
 #elif (VCCK_VAL == 840)
 #define VCCK_VAL_REG    0x1cd0219
 #elif (VCCK_VAL == 830)
-#define VCCK_VAL_REG    0x1ee01ee
+#define VCCK_VAL_REG    0x1ee01f8
 #elif (VCCK_VAL == 820)
-#define VCCK_VAL_REG    0x21f01cd
+#define VCCK_VAL_REG    0x21901cd
 #elif (VCCK_VAL == 810)
-#define VCCK_VAL_REG    0x23e01ac
+#define VCCK_VAL_REG    0x23a01ac
 #elif (VCCK_VAL == 800)
 #define VCCK_VAL_REG    0x25b018b
 #elif (VCCK_VAL == 790)
@@ -120,7 +120,7 @@ __attribute__ ((section(".clk_param"))) = {
 #elif (VDDEE_VAL == 740)
 #define VDDEE_VAL_REG   0x25b018b
 #elif (VDDEE_VAL == 750)
-#define VDDEE_VAL_REG   0x21f01cd
+#define VDDEE_VAL_REG   0x21901cd
 #elif (VDDEE_VAL == 760)
 #define VDDEE_VAL_REG   0x1cd0219
 #elif (VDDEE_VAL == 770)
