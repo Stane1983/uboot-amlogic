@@ -908,6 +908,7 @@ config CMD_LZMADEC
 config CMD_UNLZ4
 	bool "unlz4"
 	default y if CMD_BOOTI
+	default y if CMD_BOOTCTOL_AVB
 	select LZ4
 	help
 	  Support decompressing an LZ4 image from memory region.
