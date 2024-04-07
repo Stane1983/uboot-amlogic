@@ -385,6 +385,7 @@ void usb_device_mode_init(int phy_num)
 #define  CC_TOP_ENABLE			BIT(0)
 #define  CC_FAST_ENABLE			BIT(1)
 #define  CC_VBUS_FORCE_EN		BIT(4)
+#define  DAM_MODE_IN			BIT(9)
 #define USB_CC_INT_STATUS		0x18
 #define  CC_UFP_CURRENT_INT		BIT(0)
 #define  CC_UFP_PLUG_IN_INT		BIT(1)
@@ -397,8 +398,8 @@ void usb_device_mode_init(int phy_num)
 #define RESETCTRL0_OFFSET		0
 #define CC_RESET_BIT			10
 
-#define UFP_CURRENT_TYPE_CHECK(x)	((x) & GENMASK(9, 7) >> 7)
-#define UFP_DAM_CURRENT_TYPE_CHECK(x)	((x) & GENMASK(17, 15) >> 15)
+#define UFP_CURRENT_TYPE_CHECK(x)	(((x) & GENMASK(9, 7)) >> 7)
+#define UFP_DAM_CURRENT_TYPE_CHECK(x)	(((x) & GENMASK(17, 15)) >> 15)
 #define CC1_UFP_DET_D2_CHECK(x)		(((x) & GENMASK(9, 7)) >> 7)
 #define CC2_UFP_DET_D2_CHECK(x)		(((x) & GENMASK(12, 10)) >> 10)
 
@@ -424,7 +425,7 @@ static void aml_cc_ufp_init(void)
 	/* enable CC */
 	val = readl(CC_REG_BASE + USB_CC_CTRL);
 	val &= ~CC_VBUS_FORCE_EN;
-	val |= CC_TOP_ENABLE;
+	val |= CC_TOP_ENABLE | DAM_MODE_IN;
 	writel(val, CC_REG_BASE + USB_CC_CTRL);
 }
 
@@ -448,7 +449,8 @@ int aml_cc_get_ufp_status(u32 *val1, u32 *val2)
 	*val2 = readl(CC_REG_BASE + USB_CC_ANA_STATUS);
 
 	/* clear INT */
-	if ((readl(CC_REG_BASE + USB_CC_INT_STATUS)) & CC_UFP_PLUG_OUT_INT)
+	if ((readl(CC_REG_BASE + USB_CC_INT_STATUS)) &
+	    (CC_UFP_PLUG_OUT_INT | CC_UFP_DAM_PLUG_OUT_INT))
 		writel(CC_INT_CLEAN, CC_REG_BASE + USB_CC_INT_CLR);
 
 	return 0;
@@ -535,7 +537,8 @@ void print_aml_cc_ufp_current_type(void)
 	}
 
 	/* clear INT */
-	if ((readl(CC_REG_BASE + USB_CC_INT_STATUS)) & CC_UFP_PLUG_OUT_INT)
+	if ((readl(CC_REG_BASE + USB_CC_INT_STATUS)) &
+	    (CC_UFP_PLUG_OUT_INT | CC_UFP_DAM_PLUG_OUT_INT))
 		writel(CC_INT_CLEAN, CC_REG_BASE + USB_CC_INT_CLR);
 }
 
