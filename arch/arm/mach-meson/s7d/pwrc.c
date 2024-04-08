@@ -18,4 +18,8 @@ char *domain_name[] = {
 	"PDID_ETH",
 	"PDID_AUCPU",
 	"PDID_AUDIO",
+	"PDID_SRAMA",
+	"PDID_DMC0",
+	"PDID_DMC1",
+	"PDID_DDR",
 };

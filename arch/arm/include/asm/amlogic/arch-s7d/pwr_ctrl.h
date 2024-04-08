@@ -23,10 +23,14 @@
 #define PDID_ETH     		11
 #define PDID_AUCPU         	12
 #define PDID_AUDIO     		13
+#define PDID_SRAMA		14
+#define PDID_DMC0     		15
+#define PDID_DMC1         	16
+#define PDID_DDR     		17
 
 #define PM_ETH			PDID_ETH
 
-#define PM_MAX			14
+#define PM_MAX			18
 
 unsigned long viu_init_psci_smc(void);
 unsigned long pwr_ctrl_psci_smc(unsigned int power_domain, bool power_control);
