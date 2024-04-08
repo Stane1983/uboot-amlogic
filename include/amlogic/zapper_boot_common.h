@@ -58,7 +58,7 @@
 
 
 
-#define LDFLAG_LENGTH	(98) //LD_HEADER + LD_PAYLOAD + ERRORCode + Modifyflag + RebootFlag
+#define LDFLAG_LENGTH	(99) //LD_HEADER + LD_PAYLOAD + ERRORCode + Modifyflag + RebootFlag + DownloadMode
 #define HWCONFIG_LENGTH	(36)	//BBCB_HEADER + BBCB_PAYLOAD
 #define LDSEC_LENGTH	(1066)	//UK_HEADER + UK_PAYLOAD
 

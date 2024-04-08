@@ -11,10 +11,6 @@ int Zapper_get_jump_recovery_status(unsigned char* status)
 		return ZAPPER_ERROR;
 	}
 
-	if (*status < NO_NEED_JUMP || *status > UNKNOWN_JUMP) {
-		return ZAPPER_ERROR;
-	}
-
 	*status = jump_recover_status;
 	return ZAPPER_SUCCESS;
 

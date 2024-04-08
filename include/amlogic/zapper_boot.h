@@ -20,7 +20,14 @@ enum JUMP_RECOVERY_TYPE {
 	UNKNOWN_JUMP,
 };
 
-
+enum RCU_COMBINATION_TYPE {
+	RCU_COMBINATION_ADVANCED_TUNING_CODE_SCREEN = 0,
+	RCU_COMBINATION_ADVANCED_SETUP_SCREEN = 1,
+	RCU_COMBINATION_USB_UPGRADE = 2,
+	RCU_COMBINATION_MANUAL_FORCED_DOWNLOAD = 3,
+	RCU_COMBINATION_FACTORY_RESET = 4,
+	RCU_COMBINATION_MAX = 5,
+};
 
 struct Zapper_boot_info {
 	unsigned char loader_partition_header[LD_HEADER_LENGTH];
@@ -28,6 +35,7 @@ struct Zapper_boot_info {
 	unsigned char error_code[EC_LENGTH];
 	unsigned char modify_flag;
 	unsigned char reboot_flag;
+	unsigned char download_mode;
 
 	unsigned char bbcb_header[BBCB_HEADER_LENGTH];
 	unsigned char bbcb[BBCB_LENGTH];
@@ -57,6 +65,7 @@ int Zapper_set_nand_ldflag_partition_info(struct Zapper_boot_info *p_s_e_boot_in
 
 
 int Zapper_get_key_info(unsigned char *key_index);
+int Zapper_get_rcu_combination_type(unsigned char *type);
 
 
 int Zapper_get_jump_recovery_status(unsigned char* status);

@@ -13,6 +13,18 @@
 
 //#define DEBUG_ENABLE_USB_DOWNLOAD
 #define DOWNLOAD_MASK (0b00010000)
+/**
+ * Download MODE, Consistent with the definition in the downloader.
+ */
+enum DOWNLOAD_MODE_TYPE{
+    DOWNLOAD_MODE_NORMAL = 0,
+    DOWNLOAD_MODE_RESCUE,
+    DOWNLOAD_MODE_MANUAL_FORCE,
+    DOWNLOAD_MODE_USB,
+    DOWNLOAD_MODE_TUNING_CODE,
+    DOWNLOAD_MODE_ADVANCE_SETUP,
+    DOWNLOAD_MODE_MAX
+};
 
 static int g_download_flag_isenable = 0;
 
@@ -31,7 +43,7 @@ static lc_result LoaderPartition_SetLoaderPartition(lc_loader_pt_st *loaderPt)
 	return result;
 }
 
-static lc_result LoaderPartition_usb_init(lc_loader_pt_st *pLoaderPt)
+static lc_result LoaderPartition_usb_init(lc_loader_pt_st *pLoaderPt, unsigned char download_mode)
 {
 	lc_result result = LC_SUCCESS;
 
@@ -53,7 +65,7 @@ static lc_result LoaderPartition_usb_init(lc_loader_pt_st *pLoaderPt)
 	/* [7:4], 0x1 for download available */
 	/* [3:0], 0x03 for usb */
 	/* enble download for USB */
-	if (Zapper_get_usb_download_request()) {
+	if (Zapper_get_usb_download_request() || (download_mode == DOWNLOAD_MODE_USB)) {
 		pLoaderPt->sharedMemory.downloadIndicator = 0b00010011;
 		printf("After setting pLoaderPt->sharedMemory.downloadIndicator = %x\n",pLoaderPt->sharedMemory.downloadIndicator);
 		result = Zapper_set_jump_recovery_status(USB_DETECT_JUMP);
@@ -63,13 +75,13 @@ static lc_result LoaderPartition_usb_init(lc_loader_pt_st *pLoaderPt)
 }
 
 
-static lc_result LoaderPartition_enable_usb(void)
+static lc_result LoaderPartition_enable_usb(unsigned char download_mode)
 {
 	lc_result result = LC_SUCCESS;
 	lc_loader_pt_st pt;
 
 	/* write a normal LoaderPartition */
-	result = LoaderPartition_usb_init(&pt);
+	result = LoaderPartition_usb_init(&pt, download_mode);
 
 	if (g_download_flag_isenable == 0)
 	{
@@ -83,7 +95,7 @@ static lc_result LoaderPartition_enable_usb(void)
 	return result;
 }
 
-static lc_result LoaderPartition_ota_init(lc_loader_pt_st *pLoaderPt)
+static lc_result LoaderPartition_ota_init(lc_loader_pt_st *pLoaderPt, unsigned char download_mode)
 {
 	lc_result result = LC_SUCCESS;
 	unsigned char key = 0;
@@ -99,7 +111,7 @@ static lc_result LoaderPartition_ota_init(lc_loader_pt_st *pLoaderPt)
 		g_download_flag_isenable = 1;
 		printf("download flag is enabled from ota judge jump recovery directly\n");
 		run_command("reboot recovery", NO_DETAIL);
-	return result;
+		return result;
 	}
 
 	/* download flag and type */
@@ -107,7 +119,10 @@ static lc_result LoaderPartition_ota_init(lc_loader_pt_st *pLoaderPt)
 	/* [3:0], 0x03 for usb */
 	/* enble download for USB */
 	result = Zapper_get_key_info(&key);
-	if (result == ZAPPER_SUCCESS && key == ADC_KEY_A_PRESS) {
+	if ((result == ZAPPER_SUCCESS && key == ADC_KEY_A_PRESS) ||
+		(download_mode == DOWNLOAD_MODE_TUNING_CODE) ||
+		(download_mode == DOWNLOAD_MODE_ADVANCE_SETUP) ||
+		(download_mode == DOWNLOAD_MODE_MANUAL_FORCE)){
 		pLoaderPt->sharedMemory.downloadIndicator = 0b00010010;
 		printf("After setting pLoaderPt->sharedMemory.downloadIndicator = %x\n",pLoaderPt->sharedMemory.downloadIndicator);
 		result = Zapper_set_jump_recovery_status(OTA_DETECT_JUMP);
@@ -116,13 +131,13 @@ static lc_result LoaderPartition_ota_init(lc_loader_pt_st *pLoaderPt)
 	return result;
 }
 
-static lc_result LoaderPartition_enable_ota(void)
+static lc_result LoaderPartition_enable_ota(unsigned char download_mode)
 {
 	lc_result result = LC_SUCCESS;
 	lc_loader_pt_st pt;
 
 	/* write a normal LoaderPartition */
-	result = LoaderPartition_ota_init(&pt);
+	result = LoaderPartition_ota_init(&pt, download_mode);
 
 	if (g_download_flag_isenable == 0)
 	{
@@ -199,11 +214,29 @@ static lc_result BSTRAP_BootCheck(lc_bool *pCodeModuleError)
 
 lc_bool codeModuleError = LC_FALSE;
 
+static unsigned char rcu_combination_type_convert_to_download_mode(unsigned char rcu_combination_type)
+{
+	if (rcu_combination_type == RCU_COMBINATION_ADVANCED_TUNING_CODE_SCREEN) {
+		return DOWNLOAD_MODE_TUNING_CODE;
+	}
+	if (rcu_combination_type == RCU_COMBINATION_ADVANCED_SETUP_SCREEN) {
+		return DOWNLOAD_MODE_ADVANCE_SETUP;
+	}
+	if (rcu_combination_type == RCU_COMBINATION_USB_UPGRADE) {
+		return DOWNLOAD_MODE_USB;
+	}
+	if (rcu_combination_type == RCU_COMBINATION_MANUAL_FORCED_DOWNLOAD) {
+		return DOWNLOAD_MODE_MANUAL_FORCE;
+	}
+
+	return DOWNLOAD_MODE_MAX;
+}
+
 static int do_zapper_boot(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {
 	unsigned char boot_status = NO_NEED_JUMP;
-	unsigned char key_press_status = NO_ADC_KEY_PRESS;
 	int ret = ZAPPER_SUCCESS;
+	unsigned char rcu_combination_type;
 	struct Zapper_boot_info boot_info={0};
 
 	CRC_CreateTables();
@@ -212,12 +245,23 @@ static int do_zapper_boot(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv
 		return ZAPPER_ERROR;
 	}
 
-	ret = Zapper_get_key_info(&key_press_status);
-
-	if (ret == ZAPPER_SUCCESS && key_press_status == ADC_KEY_A_PRESS) {
-		printf("[ZAPPER] run OTA download flag judgement \n");
-		LoaderPartition_enable_ota();
+	ret = Zapper_get_rcu_combination_type(&rcu_combination_type);
+	if (ret == ZAPPER_SUCCESS && rcu_combination_type != RCU_COMBINATION_MAX) {
+		printf("[ZAPPER] get download mode success \n");
+		if (rcu_combination_type != RCU_COMBINATION_FACTORY_RESET) {
+			boot_info.download_mode = rcu_combination_type_convert_to_download_mode(rcu_combination_type);
+			ret = Zapper_set_nand_ldflag_partition_info(&boot_info);
+			if (ret) {
+				return ZAPPER_ERROR;
+			}
+		} else {
+			/* FACTORY RESET */
+			/* TODO */
+		}
 	}
+
+	LoaderPartition_enable_ota(boot_info.download_mode);
+
 	printf("[ZAPPER] boot_info.reboot_flag = %x \n",boot_info.reboot_flag);
 
 	if (boot_info.reboot_flag != 0xff && boot_info.reboot_flag != 0x55) {//0x55 & 0xff is used to jump dvtapp
@@ -225,7 +269,7 @@ static int do_zapper_boot(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv
 
 		if (ret == ZAPPER_SUCCESS && boot_status == NO_NEED_JUMP) {
 			printf("[ZAPPER] run usb download flag judgement \n");
-			LoaderPartition_enable_usb();
+			LoaderPartition_enable_usb(boot_info.download_mode);
 		}
 	}
 	else { //restore reboot_flag

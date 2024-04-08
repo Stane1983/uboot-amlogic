@@ -134,6 +134,7 @@ obj-$(CONFIG_ZAPPER_IRDETO_BOOT) += zapper_boot/zapper_nand.o
 obj-$(CONFIG_ZAPPER_IRDETO_BOOT) += zapper_boot/zapper_boot.o
 obj-$(CONFIG_ZAPPER_IRDETO_BOOT) += zapper_boot/zapper_panel_key.o
 obj-$(CONFIG_ZAPPER_IRDETO_BOOT) += zapper_boot/zapper_jump_recovery.o
+obj-$(CONFIG_ZAPPER_IRDETO_BOOT) += zapper_boot/zapper_rcu_key.o
 obj-$(CONFIG_ZAPPER_IRDETO_BOOT) += LoaderCore/Src/Shared/Bbcb.o
 obj-$(CONFIG_ZAPPER_IRDETO_BOOT) += LoaderCore/Src/Shared/Bit.o
 obj-$(CONFIG_ZAPPER_IRDETO_BOOT) += LoaderCore/Src/Shared/Crc.o
