@@ -80,6 +80,7 @@ struct tcon_sec_mem_config_s {
 
 struct tcon_rmem_s {
 	unsigned int flag;
+	int use_lrm;
 	unsigned int axi_bank;
 
 	unsigned int rsv_mem_paddr;
