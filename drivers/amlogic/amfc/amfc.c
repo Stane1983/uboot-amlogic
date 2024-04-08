@@ -35,7 +35,7 @@ int amfc_init(void)
 {
 	unsigned int value;
 
-	writel(0 | (1 << 6) | (4 << 7), CLKCTRL_AMFC_CLK_CTRL);
+	writel(0 | (1 << 6) | (5 << 7), CLKCTRL_AMFC_CLK_CTRL);
 	printf("AMFC VLSI version:%x, feature:%x\n",
 		readl(AMFC_GL_VERSION), readl(AMFC_GL_CMD1_FEATURE));
 
