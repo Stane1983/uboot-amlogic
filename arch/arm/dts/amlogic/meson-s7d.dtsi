@@ -108,18 +108,13 @@
 	reg-names = "eth_base", "eth_top", "eth_cfg";
 	phy_cntl1 = <0x41054147>;
 	internal_phy = <1>;
-	//mc_val = <0x4be04>;
-	mc_val = <0x1804>;
+	mc_val = <0x4be04>;
 	pll_val = <0x608200a0 0xea002000 0x00000150>;
 	analog_val = <0x20200000 0x0000c000 0x00000023>;
 	chip_num = <3>;
 	soc_num = <5>;
-	/* 5: S1A, S7 */
+	/* 5: S1A, S7, S7D */
 	//tx_amp_src = <0xfe005b30>;
-//	clocks = <&clkc CLKID_ETH_CORE>,
-//		 <&clkc CLKID_FCLK_DIV2>,
-//		 <&clkc CLKID_MPLL2>;
-//	clock-names = "stmmaceth", "clkin0", "clkin1";
 	clocks = <&clkc CLKID_ETH_RMII>;
 	clock-names = "stmmacethrmii";
 	assigned-clocks = <&clkc CLKID_ETH_RMII_DIV>;
