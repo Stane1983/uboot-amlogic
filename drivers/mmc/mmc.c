@@ -3238,32 +3238,33 @@ int mmc_key_erase(void)
 
 int mmc_key_write(unsigned char *buf, unsigned int size, uint32_t *actual_length)
 {
-	ulong blkcnt, ret;
+	ulong ret;
 	unsigned char * temp_buf = buf;
+	struct virtual_partition *vpart = NULL;
 #ifndef KEY_BACKUP
 	int dev = EMMC_DTB_DEV;
 	int i = 2;
 	struct mmc *mmc;
-	ulong start = 0, start_blk;
-	struct virtual_partition *vpart = NULL;
-	vpart = aml_get_virtual_partition_by_name(MMC_KEY_NAME);
+	ulong start, start_blk, blkcnt;
 	struct partitions * part = NULL;
-	part = aml_get_partition_by_name(MMC_RESERVED_NAME);
-
-	mmc = find_mmc_device(dev);
-	start = part->offset + vpart->offset;
-	start_blk = (start / MMC_BLOCK_SIZE);
 #endif
-	blkcnt = (size / MMC_BLOCK_SIZE);
+	vpart = aml_get_virtual_partition_by_name(MMC_KEY_NAME);
 	info_disprotect |= DISPROTECT_KEY;
 #ifdef KEY_BACKUP
-	ret = mmc_key_write_backup(MMC_KEY_NAME, temp_buf, blkcnt);
+	if (size > vpart->size)
+		size = vpart->size;
+	ret = mmc_key_write_backup(MMC_KEY_NAME, temp_buf, size);
 	if (ret != 0) {
 		pr_err("[%s] %d, mmc_bwrite error\n",
 			__func__, __LINE__);
 		return 1;
 	}
 #else
+	part = aml_get_partition_by_name(MMC_RESERVED_NAME);
+	mmc = find_mmc_device(dev);
+	start = part->offset + vpart->offset;
+	start_blk = (start / MMC_BLOCK_SIZE);
+	blkcnt = size / MMC_BLOCK_SIZE;
 	do {
 		ret = blk_dwrite(mmc_get_blk_desc(mmc), start_blk, blkcnt, temp_buf);
 		if (ret != blkcnt) {
@@ -3275,38 +3276,38 @@ int mmc_key_write(unsigned char *buf, unsigned int size, uint32_t *actual_length
 	} while (--i);
 #endif
 	info_disprotect &= ~DISPROTECT_KEY;
+	*actual_length = size;
 	return 0;
 }
 
 int mmc_key_read(unsigned char *buf, unsigned int size, uint32_t *actual_length)
 {
-	ulong blkcnt, ret;
+	ulong ret;
 	unsigned char *temp_buf = buf;
+	struct virtual_partition *vpart = NULL;
 #ifndef KEY_BACKUP
 	struct mmc *mmc;
 	int dev = EMMC_DTB_DEV;
-	ulong start, start_blk;
+	ulong start, start_blk, blkcnt;
 	struct partitions * part = NULL;
-	struct virtual_partition *vpart = NULL;
-	vpart = aml_get_virtual_partition_by_name(MMC_KEY_NAME);
-	part = aml_get_partition_by_name(MMC_RESERVED_NAME);
-
-	mmc = find_mmc_device(dev);
-	start = part->offset + vpart->offset;
-	start_blk = (start / MMC_BLOCK_SIZE);
 #endif
-
-	*actual_length =  0x40000;/*key size is 256KB*/
-	blkcnt = (size / MMC_BLOCK_SIZE);
+	vpart = aml_get_virtual_partition_by_name(MMC_KEY_NAME);
 	info_disprotect |= DISPROTECT_KEY;
 #ifdef KEY_BACKUP
-	ret = mmc_key_read_backup(MMC_KEY_NAME, temp_buf, blkcnt);
+	if (size > vpart->size)
+		size = vpart->size;
+	ret = mmc_key_read_backup(MMC_KEY_NAME, temp_buf, size);
 	if (ret != 0) {
 		pr_err("[%s] %d, mmc_bread error\n",
 			__func__, __LINE__);
 		return 1;
 	}
 #else
+	part = aml_get_partition_by_name(MMC_RESERVED_NAME);
+	mmc = find_mmc_device(dev);
+	start = part->offset + vpart->offset;
+	start_blk = (start / MMC_BLOCK_SIZE);
+	blkcnt = size / MMC_BLOCK_SIZE;
 	ret = blk_dread(mmc_get_blk_desc(mmc), start_blk, blkcnt, temp_buf);
 	if (ret != blkcnt) {
 		pr_err("[%s] %d, mmc_bread error\n",
@@ -3315,6 +3316,7 @@ int mmc_key_read(unsigned char *buf, unsigned int size, uint32_t *actual_length)
 	}
 #endif
 	info_disprotect &= ~DISPROTECT_KEY;
+	*actual_length = size;
 	return 0;
 }
 #endif

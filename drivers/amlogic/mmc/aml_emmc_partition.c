@@ -2212,7 +2212,7 @@ static int _key_read(struct mmc *mmc, u64 blk, u64 cnt, void * addr)
 	return (n != cnt);
 }
 
-static int _verify_key_checksum(struct mmc *mmc, void *addr, int cpy)
+static int _verify_key_checksum(struct mmc *mmc, void *addr, int cpy, unsigned int size)
 {
 	u64 checksum;
 	int ret = 0;
@@ -2232,13 +2232,13 @@ static int _verify_key_checksum(struct mmc *mmc, void *addr, int cpy)
 
 	memcpy(&key_infos[cpy], checksum_info, sizeof(struct aml_key_info));
 
-	checksum = _calc_key_checksum(addr, vpart->size);
+	checksum = _calc_key_checksum(addr, size);
 	printf("calc %llx, store %llx\n", checksum, key_infos[cpy].checksum);
 
 	return !(checksum == key_infos[cpy].checksum);
 }
 
-static int update_key_info(struct mmc *mmc, unsigned char *addr)
+static int update_key_info(struct mmc *mmc, unsigned char *addr, unsigned int size)
 {
 	int ret = 0;
 	u64 blk, cnt, key_glb_offset;
@@ -2253,7 +2253,7 @@ static int update_key_info(struct mmc *mmc, unsigned char *addr)
 
 	while (cpy >= 0) {
 		blk = (key_glb_offset + cpy * (vpart->size)) / MMC_BLOCK_SIZE;
-		cnt = vpart->size / mmc->read_bl_len;
+		cnt = size / mmc->read_bl_len;
 		ret = _key_read(mmc, blk, cnt, addr);
 		if (ret) {
 			printf("%s: block # %#llx, cnt # %#llx ERROR!\n",
@@ -2261,7 +2261,7 @@ static int update_key_info(struct mmc *mmc, unsigned char *addr)
 			return -1;
 		}
 
-		ret = _verify_key_checksum(mmc, addr, cpy);
+		ret = _verify_key_checksum(mmc, addr, cpy, size);
 		if (!ret && key_infos[cpy].magic != 0)
 			valid_flag += cpy + 1;
 		else
@@ -2290,7 +2290,7 @@ static int _key_write(struct mmc *mmc, u64 blk, u64 cnt, void *addr)
 	return (n != cnt);
 }
 
-static int write_invalid_key(struct mmc *mmc, void *addr, int valid_flag)
+static int write_invalid_key(struct mmc *mmc, void *addr, unsigned int size, int valid_flag)
 {
 	u64 blk, cnt, key_glb_offset;
 	int ret;
@@ -2306,71 +2306,40 @@ static int write_invalid_key(struct mmc *mmc, void *addr, int valid_flag)
 	key_glb_offset = part->offset + vpart->offset;
 
 	blk = (key_glb_offset + (valid_flag - 1) * (vpart->size)) / MMC_BLOCK_SIZE;
-	cnt = vpart->size / mmc->read_bl_len;
+	cnt = size / mmc->read_bl_len;
 
 	if (_key_read(mmc, blk, cnt, addr)) {
-	printf("%s: block # %#llx,cnt # %#llx ERROR!\n",
-			__func__, blk, cnt);
+		printf("%s: block # %#llx,cnt # %#llx ERROR!\n", __func__, blk, cnt);
 		ret = -2;
 	}
 	/* fixme, update the invalid one - key1 */
 	blk = (key_glb_offset + (valid_flag % 2) * vpart->size) / MMC_BLOCK_SIZE;
 	if (_key_write(mmc, blk, cnt, addr)) {
-		printf("%s: block # %#llx,cnt # %#llx ERROR!\n",
-			__func__, blk, cnt);
+		printf("%s: block # %#llx,cnt # %#llx ERROR!\n", __func__, blk, cnt);
 		ret = -4;
 	}
 
 	memcpy(checksum_info, &key_infos[valid_flag - 1], sizeof(struct aml_key_info));
 	blk = (key_glb_offset + 2 * (vpart->size)) / MMC_BLOCK_SIZE + valid_flag % 2;
 	if (_key_write(mmc, blk, 1, checksum_info)) {
-		printf("%s: block # %#llx,cnt # %#llx ERROR!\n",
-			__func__, blk, cnt);
+		printf("%s: block # %#llx,cnt # %#llx ERROR!\n", __func__, blk, cnt);
 		ret = -4;
 	}
 
 	return ret;
 }
 
-static int update_invalid_key(struct mmc *mmc, void *addr, int valid_flag)
+static int update_invalid_key(struct mmc *mmc, void *addr, unsigned int size, int valid_flag)
 {
-	int ret = 0, dev = STORAGE_EMMC;
-	u64 blk, cnt, key_glb_offset;
-	struct partitions * part = NULL;
-	struct virtual_partition *vpart = NULL;
-	char checksum_info[512] = {0};
+	int ret = 0;
 
-	vpart = aml_get_virtual_partition_by_name(MMC_KEY_NAME);
-	part = aml_get_partition_by_name(MMC_RESERVED_NAME);
-	key_glb_offset = part->offset + vpart->offset;
-	cnt = vpart->size / mmc->read_bl_len;
+	printf("update key%d\n", (valid_flag == 2) ? 1 : 2);
+	ret = write_invalid_key(mmc, addr, size, valid_flag);
 
-	if (valid_flag == 2) {
-		printf("update key1");
-		ret = write_invalid_key(mmc, addr, valid_flag);
-		if (ret)
-			ret = -2;
-	} else {
-		printf("update key2");
-		blk = (key_glb_offset + vpart->size) / MMC_BLOCK_SIZE;
-		if (_key_write(mmc, blk, cnt, addr)) {
-			printf("%s: dev # %d, block # %#llx,cnt # %#llx ERROR!\n",
-				__func__, dev, blk, cnt);
-			ret = -2;
-		}
-		memcpy(checksum_info, &key_infos[valid_flag - 1],
-				sizeof(struct aml_key_info));
-		blk = (key_glb_offset + 2 * (vpart->size)) / MMC_BLOCK_SIZE + valid_flag % 2;
-		if (_key_write(mmc, blk, 1, checksum_info)) {
-			printf("%s: block # %#llx,cnt # %#llx ERROR!\n",
-				__func__, blk, cnt);
-			ret = -4;
-		}
-	}
 	return ret;
 }
 
-int update_old_key(struct mmc *mmc, void *addr)
+int update_old_key(struct mmc *mmc, void *addr, unsigned int size)
 {
 	int ret = 0;
 	int valid_flag;
@@ -2386,7 +2355,7 @@ int update_old_key(struct mmc *mmc, void *addr)
 		return ret;
 	}
 
-	ret = write_invalid_key(mmc, addr, valid_flag);
+	ret = write_invalid_key(mmc, addr, size, valid_flag);
 	/*update key*/
 	if (ret)
 		ret = -3;
@@ -2410,8 +2379,7 @@ static struct mmc *_rsv_init(void)
 	return mmc;
 }
 
-int mmc_key_write_backup(const char *name,
-			      unsigned char *addr, unsigned int size)
+int mmc_key_write_backup(const char *name, unsigned char *addr, unsigned int size)
 {
 	int ret = 0;
 	u64 blk, cnt, key_glb_offset;
@@ -2431,7 +2399,7 @@ int mmc_key_write_backup(const char *name,
 
 	key_infos[0].stamp =  mmc->key_stamp + 1;
 	key_infos[0].magic = 9;
-	key_infos[0].checksum = _calc_key_checksum(addr, vpart->size);
+	key_infos[0].checksum = _calc_key_checksum(addr, size);
 	printf("new stamp %d, checksum 0x%llx, magic %d\n",
 		key_infos[0].stamp, key_infos[0].checksum, key_infos[0].magic);
 
@@ -2439,7 +2407,7 @@ int mmc_key_write_backup(const char *name,
 
 	for (cpy = 0; cpy < KEY_COPIES; cpy++) {
 		blk = (key_glb_offset + cpy * (vpart->size)) / MMC_BLOCK_SIZE;
-		cnt = vpart->size / mmc->read_bl_len;
+		cnt = size / mmc->read_bl_len;
 		ret |= _key_write(mmc, blk, cnt, addr);
 
 		blk = (key_glb_offset + 2 * (vpart->size)) / MMC_BLOCK_SIZE + cpy;
@@ -2454,8 +2422,7 @@ int mmc_key_write_backup(const char *name,
 	return ret;
 }
 
-int mmc_key_read_backup(const char *name,
-			      unsigned char *addr, unsigned int size)
+int mmc_key_read_backup(const char *name, unsigned char *addr, unsigned int size)
 {
 	int valid = 0;
 	struct mmc *mmc;
@@ -2465,7 +2432,7 @@ int mmc_key_read_backup(const char *name,
 		return -10;
 
 	/* check valid key flag , addr save the first key content */
-	valid = update_key_info(mmc, addr);
+	valid = update_key_info(mmc, addr, size);
 	switch (valid) {
 		/* none is valid, using the 1st one for compatibility*/
 		case 0:
@@ -2473,15 +2440,15 @@ int mmc_key_read_backup(const char *name,
 		break;
 		/* only first is valid, using the first update the second */
 		case 1:
-			update_invalid_key(mmc, addr, 1);
+			update_invalid_key(mmc, addr, size, 1);
 		break;
 		/* only second is valid, using the second */
 		case 2:
-			update_invalid_key(mmc, addr, 2);
+			update_invalid_key(mmc, addr, size, 2);
 		break;
 		case 3:
 		/*update the old key */
-			update_old_key(mmc, addr);
+			update_old_key(mmc, addr, size);
 		break;
 		default:
 			printf("impossible valid values.\n");

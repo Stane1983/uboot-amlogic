@@ -3639,7 +3639,7 @@ int do_emmc_key_read(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	int ret = 0;
 	void *addr = NULL;
 	u64 size;
-	uint32_t actual_length = 0;
+	u32 actual_length = 0;
 
 	if (argc != 4)
 		return CMD_RET_USAGE;
@@ -3658,14 +3658,14 @@ int do_emmc_key_write(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	int ret = 0;
 	void *addr = NULL;
 	u64 size;
-	uint32_t *actual_length=0;
+	u32 actual_length = 0;
 
 	if (argc != 4)
 		return CMD_RET_USAGE;
 
 	addr = (void *)simple_strtoul(argv[2], NULL, 16);
 	size = simple_strtoull(argv[3], NULL, 16);
-	ret = mmc_key_write(addr, size,actual_length);
+	ret = mmc_key_write(addr, size, &actual_length);
 	return ret;
 }
 
