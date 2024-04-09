@@ -5,8 +5,7 @@
 
 #include <common.h>
 #include <malloc.h>
-#include <asm/amlogic/arch/gpio.h>
-#include <fdtdec.h>
+#include <command.h>
 #include <amlogic/media/vout/aml_vmode.h>
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include "../lcd_reg.h"
@@ -418,9 +417,16 @@ static int lcd_config_valid(struct aml_lcd_drv_s *pdrv, char *mode)
 
 static void lcd_config_init(struct aml_lcd_drv_s *pdrv)
 {
+	char *mode_str;
+
 	lcd_enc_timing_init_config(pdrv);
-	lcd_output_vmode_init(pdrv);
 	pdrv->config.timing.clk_change = 0; /* clear clk_change flag */
+
+	lcd_output_vmode_init(pdrv);
+	//assign default outputmode for multi timing
+	mode_str = env_get("outputmode");
+	if (mode_str)
+		lcd_config_valid(pdrv, mode_str);
 }
 
 int lcd_mode_tv_init(struct aml_lcd_drv_s *pdrv)
