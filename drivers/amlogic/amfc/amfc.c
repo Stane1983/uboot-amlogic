@@ -61,8 +61,20 @@ int amfc_init(void)
 }
 
 static struct amfc_cmd_list acl  __attribute__((aligned(64)));
-static int page_table_mode = 1;
-static int log_en;
+static int page_table_mode = 0;
+static int log_en = 0;
+
+static void dump_addr(void *buf, unsigned int size)
+{
+        int i;
+        unsigned int *p = (unsigned int *)buf;
+
+        printf("%s addr:%px, size:%d\n", __func__, buf, size);
+        for (i = 0; i < size / 4; i += 4) {
+                printf("%px: %08x %08x %08x %08x\n",
+                        p + i, p[i], p[i + 1], p[i + 2], p[i + 3]);
+        }
+}
 
 static int build_tables(unsigned int *table, unsigned long base, ssize_t size, int type)
 {
@@ -221,6 +233,10 @@ int amfc_decompress(void *src, void *dst, ssize_t src_size, ssize_t dst_size)
 			acl.status, readl(AMFC_GL_CMD1_STATUS),
 			readl(AMFC_CMD1_TIME_MEASURE),
 			&acl, src, dst, src_size, dst_size, timeout);
+		dump_addr((void *)0xfe024000, 300);
+		dump_addr((void *)&acl, 32);
+		dump_addr((void *)src, 32);
+		dump_addr((void *)dst, 32);
 		writel(0x03, AMFC_GL_CMD1_IRQCLR);
 		return -EINVAL;
 	}
