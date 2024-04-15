@@ -846,7 +846,7 @@ void aml_nand_command(struct mtd_info *mtd,
 	return;
 }
 
-int aml_nand_erase_cmd(struct mtd_info *mtd, int page)
+int aml_nand_erase(struct mtd_info *mtd, int page)
 {
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
 	struct nand_chip *chip = mtd->priv;
@@ -908,7 +908,7 @@ int aml_nand_erase_cmd(struct mtd_info *mtd, int page)
 			}
 		}
 	}
-	return 0;
+	return chip->waitfunc(mtd, chip);
 }
 
 void aml_nand_dma_read_buf(struct mtd_info *mtd, u8 *buf, int len)

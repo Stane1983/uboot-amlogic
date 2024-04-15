@@ -51,8 +51,11 @@
 
 #define SRAM_DEBUG_BUFF_SIZE		256
 
+/* HDR_SIZE */
+#define UHDR_SIZE (4096)
+#define BL2_DATA_SIZE (219 * 1024)
 /* BL2 SPL size */
-#define BL2_SIZE			(219 * 1024)
+#define BL2_SIZE			(UHDR_SIZE + BL2_DATA_SIZE)
 
 //for signature test
 //#define CONFIG_AML_SIG_TEST_BUILD

@@ -5,6 +5,7 @@
 
 #include <amlogic/page_info.h>
 #include <amlogic/storage.h>
+#include <nand.h>
 
 struct boot_info *page_info;
 #ifdef CONFIG_AML_SPI_NFC
@@ -208,13 +209,15 @@ static int page_info_version_init(void)
 void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 					    struct udevice *udev)
 {
+	struct mtd_info *current_mtd = NULL;
 	unsigned char ecc_steps, *temp;
 	unsigned int checksum = 0, i;
 	enum PAGE_INFO_V page_info_ver;
 
+	current_mtd = get_nand_dev_by_index(nand_curr_device);
 	page_info_ver = page_info_version_init();
 	memcpy(page_info->magic, BOOTINFO_MAGIC, strlen(BOOTINFO_MAGIC));
-	page_info->dev_cfg0.page_size = mtd->writesize;
+	page_info->dev_cfg0.page_size = current_mtd->writesize;
 
 	if (page_info_ver == PAGE_INFO_V1) {
 		/* for compatible,  a1/c1/c2 ... need to know fip's start and size */
@@ -223,28 +226,28 @@ void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 		#endif
 		#ifdef	CONFIG_TPL_SIZE_PER_COPY
 		page_info->reserved[1] =
-			CONFIG_TPL_SIZE_PER_COPY / mtd->erasesize;
+			CONFIG_TPL_SIZE_PER_COPY / current_mtd->erasesize;
 		#endif
 		#ifdef	CONFIG_NAND_TPL_COPY_NUM
 		page_info->reserved[2] = CONFIG_NAND_TPL_COPY_NUM;
 		#endif
-		page_info->dev_cfg1.block_size = mtd->erasesize;
+		page_info->dev_cfg1.block_size = current_mtd->erasesize;
 	} else if (page_info_ver == PAGE_INFO_V2) {
-		i = mtd->erasesize_shift + mtd->writesize_shift;
-		page_info->reserved[2] = ((mtd->size >> i) ? (mtd->size >> i) : 1) & 0x3;
+		i = current_mtd->erasesize_shift + current_mtd->writesize_shift;
+		page_info->reserved[2] = ((current_mtd->size >> i) ? (current_mtd->size >> i) : 1) & 0x3;
 	}
 
 	if (page_info_ver != PAGE_INFO_V3)
 		goto _cal_sum;
 
-	ecc_steps = mtd->writesize >> 9;
+	ecc_steps = current_mtd->writesize >> 9;
 	page_info->host_cfg.n2m_cmd = (DEFAULT_ECC_MODE & (~0x3F)) | ecc_steps;
-	page_info->dev_cfg1.block_size = mtd->erasesize;
+	page_info->dev_cfg1.block_size = current_mtd->erasesize;
 
 #ifdef BOOTINFO_PROGRAMMER_SUPPORT
 	page_info->dev_cfg1.is_gang_programer = 0;
 	page_info->dev_cfg1.xor_bbt_start_block |= (1 << 24);
-	page_info->dev_cfg1.block_num_in_chip = mtd->size / mtd->erasesize;
+	page_info->dev_cfg1.block_num_in_chip = current_mtd->size / current_mtd->erasesize;
 #endif
 
 _cal_sum:
@@ -398,6 +401,9 @@ static void page_info_dump_info(void)
 	pr_info("rx_adj: 0x%x\n", rx_adj);
 	pr_info("device_ecc_disable: 0x%x\n", device_ecc_disable);
 	pr_info("n2m_cmd: 0x%x\n", n2m_cmd);
+	pr_info("is_gang_programer: %d\n", page_info->dev_cfg1.is_gang_programer);
+	pr_info("xor_bbt_start_block: 0x%x\n", page_info->dev_cfg1.xor_bbt_start_block);
+	pr_info("block_num_in_chip: %d\n", page_info->dev_cfg1.block_num_in_chip);
 }
 #endif
 

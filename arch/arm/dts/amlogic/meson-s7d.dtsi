@@ -183,12 +183,12 @@
 };
 
 &nand {
-	// clocks = <&clkc CLKID_SD_EMMC_C_MUX>,
-	// 		<&clkc CLKID_SD_EMMC_C_DIV>,
-	// 		<&clkc CLKID_SD_EMMC_C>,
-	// 		<&clkc CLKID_FCLK_DIV2>,
-	// 		<&clkc CLKID_XTAL>;
-	// clock-names = "mux", "div", "gate", "fdiv2", "xtal";
+	 clocks = <&clkc CLKID_SD_EMMC_C_MUX>,
+	 		<&clkc CLKID_SD_EMMC_C_DIV>,
+	 		<&clkc CLKID_SD_EMMC_C>,
+	 		<&clkc CLKID_FCLK_DIV2>,
+	 		<&clkc CLKID_XTAL>;
+	 clock-names = "mux", "div", "gate", "fdiv2", "xtal";
 };
 
 &spicc0 {
@@ -402,14 +402,14 @@
 
 	all_nand_pins: all_nand_pins {
 		mux {
-			groups =  "emmc_nand_d0",
-				"emmc_nand_d1",
-				"emmc_nand_d2",
-				"emmc_nand_d3",
-				"emmc_nand_d4",
-				"emmc_nand_d5",
-				"emmc_nand_d6",
-				"emmc_nand_d7",
+			groups =  "emmc_d0",
+				"emmc_d1",
+				"emmc_d2",
+				"emmc_d3",
+				"emmc_d4",
+				"emmc_d5",
+				"emmc_d6",
+				"emmc_d7",
 				"nand_ce0",
 				"nand_ale",
 				"nand_cle",

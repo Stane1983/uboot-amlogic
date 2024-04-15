@@ -549,7 +549,7 @@ void aml_nand_command(struct mtd_info *mtd,
 
 int aml_nand_wait(struct mtd_info *mtd, struct nand_chip *chip);
 
-int aml_nand_erase_cmd(struct mtd_info *mtd, int page);
+int aml_nand_erase(struct mtd_info *mtd, int page);
 
 int m3_nand_boot_erase_cmd(struct mtd_info *mtd, int page);
 
