@@ -47,7 +47,7 @@ static int lcd_extern_power_cmd_dynamic_size(struct lcd_extern_driver_s *edrv,
 					step, cmd_size);
 				goto power_cmd_dynamic_next;
 			}
-			lcd_ext_gpio_set(edrv, table[i + 2], table[i + 3]);
+			lcd_extern_gpio_set(edrv, table[i + 2], table[i + 3]);
 			if (cmd_size > 2) {
 				if (table[i + 4] > 0)
 					mdelay(table[i + 4]);
@@ -76,8 +76,8 @@ power_cmd_dynamic_next:
 	return ret;
 }
 
-static int lcd_extern_power_cmd(struct lcd_extern_driver_s *edrv,
-				struct lcd_extern_dev_s *edev, unsigned char *table)
+static int lcd_extern_power_ctrl(struct lcd_extern_driver_s *edrv,
+				 struct lcd_extern_dev_s *edev, unsigned char *table)
 {
 	int cmd_size;
 	int ret = 0;
@@ -102,7 +102,7 @@ static int lcd_extern_power_on(struct lcd_extern_driver_s *edrv,
 
 	lcd_extern_pinmux_set(edrv, 1);
 
-	lcd_extern_power_cmd(edrv, edev, edev->config.table_init_on);
+	lcd_extern_power_ctrl(edrv, edev, edev->config.table_init_on);
 
 	EXTPR("%s\n", __func__);
 	return ret;
@@ -111,7 +111,7 @@ static int lcd_extern_power_on(struct lcd_extern_driver_s *edrv,
 static int lcd_extern_power_off(struct lcd_extern_driver_s *edrv,
 				struct lcd_extern_dev_s *edev)
 {
-	lcd_extern_power_cmd(edrv, edev, edev->config.table_init_off);
+	lcd_extern_power_ctrl(edrv, edev, edev->config.table_init_off);
 	lcd_extern_pinmux_set(edrv, 0);
 	return 0;
 }

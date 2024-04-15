@@ -82,6 +82,7 @@ obj-$(CONFIG_CMD_INI) += ini.o
 obj-$(CONFIG_CMD_KEYPAD) += keypad.o
 ifdef CONFIG_CMD_INI
 obj-y += amlogic/ini/model.o
+obj-y += amlogic/ini/model_lcd_tcon.o
 obj-y += amlogic/ini/model_lcd_cus_ctrl.o
 obj-y += amlogic/ini/model_data_check.o
 obj-y += amlogic/ini/ini_proxy.o
