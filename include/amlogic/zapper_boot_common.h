@@ -33,7 +33,6 @@
 
 /* Start---ZAPPER Info in nand---*/
 #define BBCB_HEADER_LENGTH	(12)
-#define LD_HEADER_LENGTH	(12)
 #define UK_HEADER_LENGTH	(538)
 #define KERNEL_HEADER_LENGTH	(538)
 #define WORK100_HEADER_LENGTH	(538)
@@ -45,8 +44,6 @@
 
 
 #define BBCB_LENGTH	(24)
-#define LD_LENGTH	(80)
-#define EC_LENGTH	(4)
 #define UK_LENGTH	(528)
 //#define KERNEL_LENGTH	(7690240)
 //#define KERNEL_LENGTH	(12582912)	//MAX LENGTH
@@ -55,10 +52,27 @@
 #define WORK200_LENGTH	(4096) //MAX LENGTH
 #define WORK300_LENGTH	(4096) //MAX LENGTH
 
+/******  LoaderPartition  ******/
+#define LD_HEADER_LENGTH	(12)
 
+/* Size of Download info */
+#define LD_AREA_DOWNLOAD_INFO_SIZE (14)  /* size of download_info, same with downloader loadercore */
+/* Size of OTA parameters. */
+#define OTA_PARAMETER_SIZE (60)	/* included in shared-mem, same with downloader loadercore */
 
+#define LD_SHARED_MEM_SIZE		(2 * OTA_PARAMETER_SIZE + 1 + 1 + 4 + 6)	/* size of shared-mem, same with downloader loadercore */
+#define LD_LENGTH	(LD_SHARED_MEM_SIZE + LD_AREA_DOWNLOAD_INFO_SIZE)	/* = LDR_SHARED_MEM_SIZE + LDR_AREA_DOWNLOAD_INFO_SIZE */
+#define EC_LENGTH	(4)
 
-#define LDFLAG_LENGTH	(99) //LD_HEADER + LD_PAYLOAD + ERRORCode + Modifyflag + RebootFlag + DownloadMode
+#define LD_MODIFY_FLAG_LENGTH	(1)
+#define LD_REBOOT_FLAG_LENGTH	(1)
+#define LD_DOWNLOAD_MODE_LENGTH	(1)
+
+/* LD_HEADER_LENGTH(12) + LD_LENGTH(variable) + EC_LENGTH(4) + Modifyflag(1) + RebootFlag(1) + DownloadMode(1) */
+#define LDFLAG_LENGTH	(LD_HEADER_LENGTH + LD_LENGTH + EC_LENGTH + LD_MODIFY_FLAG_LENGTH + LD_REBOOT_FLAG_LENGTH + LD_DOWNLOAD_MODE_LENGTH)
+
+/******  LoaderPartition  ******/
+
 #define HWCONFIG_LENGTH	(36)	//BBCB_HEADER + BBCB_PAYLOAD
 #define LDSEC_LENGTH	(1066)	//UK_HEADER + UK_PAYLOAD
 

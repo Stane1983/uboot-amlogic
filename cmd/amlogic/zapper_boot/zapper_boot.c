@@ -52,8 +52,11 @@ static lc_result LoaderPartition_usb_init(lc_loader_pt_st *pLoaderPt, unsigned c
 	printf("pLoaderPt->sharedMemory.downloadIndicator = %x\n",pLoaderPt->sharedMemory.downloadIndicator);
 
 	/* check download flag */
-	/* if download flag is ture do nothing*/
-	if ((pLoaderPt->sharedMemory.downloadIndicator & DOWNLOAD_MASK) == DOWNLOAD_MASK)
+	/* if download flag is ture do nothing.
+	 * 0xff is means there don't have ld data.
+	 */
+	if ((pLoaderPt->sharedMemory.downloadIndicator != 0xff) &&
+		((pLoaderPt->sharedMemory.downloadIndicator & DOWNLOAD_MASK) == DOWNLOAD_MASK))
 	{
 		g_download_flag_isenable = 1;
 		printf("download flag is enabled go to recovery now in usb judgement\n");
@@ -65,7 +68,7 @@ static lc_result LoaderPartition_usb_init(lc_loader_pt_st *pLoaderPt, unsigned c
 	/* [7:4], 0x1 for download available */
 	/* [3:0], 0x03 for usb */
 	/* enble download for USB */
-	if (Zapper_get_usb_download_request() || (download_mode == DOWNLOAD_MODE_USB)) {
+	if (/*Zapper_get_usb_download_request() || */(download_mode == DOWNLOAD_MODE_USB)) {
 		pLoaderPt->sharedMemory.downloadIndicator = 0b00010011;
 		printf("After setting pLoaderPt->sharedMemory.downloadIndicator = %x\n",pLoaderPt->sharedMemory.downloadIndicator);
 		result = Zapper_set_jump_recovery_status(USB_DETECT_JUMP);
@@ -105,8 +108,11 @@ static lc_result LoaderPartition_ota_init(lc_loader_pt_st *pLoaderPt, unsigned c
 	printf("pLoaderPt->sharedMemory.downloadIndicator = %x\n",pLoaderPt->sharedMemory.downloadIndicator);
 
 	/* check download flag */
-	/* if download flag is ture do nothing*/
-	if ((pLoaderPt->sharedMemory.downloadIndicator & DOWNLOAD_MASK) == DOWNLOAD_MASK)
+	/* if download flag is ture do nothing.
+	 * 0xff is means there don't have ld data.
+	 */
+	if ((pLoaderPt->sharedMemory.downloadIndicator != 0xff) &&
+		((pLoaderPt->sharedMemory.downloadIndicator & DOWNLOAD_MASK) == DOWNLOAD_MASK))
 	{
 		g_download_flag_isenable = 1;
 		printf("download flag is enabled from ota judge jump recovery directly\n");
