@@ -380,10 +380,49 @@ static void bl_pwm_set_duty(struct bl_pwm_config_s *bl_pwm)
 		BLPR("pwm_reg=0x%08x\n", lcd_cbus_read(pwm_reg[port]));
 }
 
+static int bl_pwm_out_level_check(struct bl_pwm_config_s *bl_pwm)
+{
+	int out_level = 0xff;
+	unsigned int pwm_range;
+
+	if (bl_pwm->pwm_duty_max > 255)
+		pwm_range = 4095;
+	else if (bl_pwm->pwm_duty_max > 100)
+		pwm_range = 255;
+	else
+		pwm_range = 100;
+
+	switch (bl_pwm->pwm_method) {
+	case BL_PWM_POSITIVE:
+		if (bl_pwm->pwm_duty == 0)
+			out_level = 0;
+		else if (bl_pwm->pwm_duty == pwm_range)
+			out_level = 1;
+		else
+			out_level = 0xff;
+		break;
+	case BL_PWM_NEGATIVE:
+		if (bl_pwm->pwm_duty == 0)
+			out_level = 1;
+		else if (bl_pwm->pwm_duty == pwm_range)
+			out_level = 0;
+		else
+			out_level = 0xff;
+		break;
+	default:
+		BLERR("%s: port %d: invalid pwm_method %d\n",
+		      __func__, bl_pwm->pwm_port, bl_pwm->pwm_method);
+		break;
+	}
+
+	return out_level;
+}
+
 void bl_set_pwm(struct bl_pwm_config_s *bl_pwm)
 {
 	unsigned int port = bl_pwm->pwm_port;
 	unsigned int vs[8], ve[8], sw, n, i, pol = 0;
+	unsigned int out_level = 0xff;
 
 	if (!bl_pwm_ctrl_conf)
 		return;
@@ -411,23 +450,40 @@ void bl_set_pwm(struct bl_pwm_config_s *bl_pwm)
 
 	switch (port) {
 	case BL_PWM_VS:
-		bl_pwm->pwm_hi = bl_pwm->pwm_level;
-		n = bl_pwm->pwm_freq;
-		sw = (bl_pwm->pwm_cnt * 10 / n + 5) / 10;
-		bl_pwm->pwm_hi = (bl_pwm->pwm_hi * 10 / n + 5) / 10;
-		bl_pwm->pwm_hi = (bl_pwm->pwm_hi > 1) ? bl_pwm->pwm_hi : 1;
+		out_level = bl_pwm_out_level_check(bl_pwm);
 		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
-			BLPR("n=%d, sw=%d, pwm_high=%d, phase=%d\n",
-			n, sw, bl_pwm->pwm_hi, bl_pwm->pwm_phase);
-		for (i = 0; i < n; i++) {
-			vs[i] = 1 + (sw * i) + bl_pwm->pwm_phase;
-			ve[i] = vs[i] + bl_pwm->pwm_hi - 1;
+			BLPR("%s: pwm_duty=%d, out_level=%d\n",
+				__func__, bl_pwm->pwm_duty, out_level);
+
+		if (out_level == 0) {
+			for (i = 0; i < 8; i++) {
+				vs[i] = 0x1fff;
+				ve[i] = 0;
+			}
+		} else if (out_level == 1) {
+			for (i = 0; i < 8; i++) {
+				vs[i] = 0;
+				ve[i] = 0x1fff;
+			}
+		} else {
+			bl_pwm->pwm_hi = bl_pwm->pwm_level;
+			n = bl_pwm->pwm_freq;
+			sw = (bl_pwm->pwm_cnt * 10 / n + 5) / 10;
+			bl_pwm->pwm_hi = (bl_pwm->pwm_hi * 10 / n + 5) / 10;
+			bl_pwm->pwm_hi = (bl_pwm->pwm_hi > 1) ? bl_pwm->pwm_hi : 1;
 			if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
-				BLPR("vs[%d]=%d, ve[%d]=%d\n", i, vs[i], i, ve[i]);
-		}
-		for (i = n; i < 8; i++) {
-			vs[i] = 0x1fff;
-			ve[i] = 0x1fff;
+				BLPR("n=%d, sw=%d, pwm_high=%d, phase=%d\n",
+				n, sw, bl_pwm->pwm_hi, bl_pwm->pwm_phase);
+			for (i = 0; i < n; i++) {
+				vs[i] = 1 + (sw * i) + bl_pwm->pwm_phase;
+				ve[i] = vs[i] + bl_pwm->pwm_hi - 1;
+				if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
+					BLPR("vs[%d]=%d, ve[%d]=%d\n", i, vs[i], i, ve[i]);
+			}
+			for (i = n; i < 8; i++) {
+				vs[i] = 0x1fff;
+				ve[i] = 0x1fff;
+			}
 		}
 		lcd_vcbus_write(VPU_VPU_PWM_V0, (pol << 31) | (ve[0] << 16) | (vs[0]));
 		lcd_vcbus_write(VPU_VPU_PWM_V1, (ve[1] << 16) | (vs[1]));
