@@ -1696,6 +1696,51 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 		break;
 	}
 
+	propdata = (char *)fdt_getprop(dt_addr, child_offset, "phy_adv_attr", NULL);
+	if (propdata) {
+		phy_cfg->flag     = be32_to_cpup(((u32 *)propdata) + 0);
+		phy_cfg->vswing   = be32_to_cpup(((u32 *)propdata) + 1);
+		phy_cfg->vcm      = be32_to_cpup(((u32 *)propdata) + 2);
+		phy_cfg->ref_bias = be32_to_cpup(((u32 *)propdata) + 3);
+		phy_cfg->odt      = be32_to_cpup(((u32 *)propdata) + 4);
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+			LCDPR("%s: ctrl_flag=0x%x vsw=0x%08x vcm=0x%x, ref_bias=0x%x, odt=0x%x\n",
+				__func__, phy_cfg->flag, phy_cfg->vswing,
+				phy_cfg->vcm, phy_cfg->ref_bias, phy_cfg->odt);
+		}
+		propdata = (char *)fdt_getprop(dt_addr, child_offset, "phy_lane_ctrl", &len);
+
+		if (phy_cfg->flag & (0x3 << 12) && len > 0 && propdata) {
+			for (i = 0; i < phy_cfg->lane_num; i++) {
+				if (i >= (len / 4))
+					break;
+
+				if (phy_cfg->flag & (1 << 12))
+					phy_cfg->lane[i].preem =
+						be32_to_cpup(((u32 *)propdata) + i) & 0xffff;
+
+				if (phy_cfg->flag & (1 << 13))
+					phy_cfg->lane[i].amp =
+						be32_to_cpup(((u32 *)propdata) + i) >> 16;
+
+				if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+					if ((phy_cfg->flag >> 12 & 0x3) == 0x3) {
+						LCDPR("%s: lane[%d]: preem=0x%x amp=0x%x\n",
+							__func__, i,
+							phy_cfg->lane[i].preem,
+							phy_cfg->lane[i].amp);
+					} else if ((phy_cfg->flag >> 12 & 0x3) == 0x1) {
+						LCDPR("%s: lane[%d]: preem=0x%x\n",
+							__func__, i, phy_cfg->lane[i].preem);
+					} else if ((phy_cfg->flag >> 12 & 0x3) == 0x2) {
+						LCDPR("%s: lane[%d]: amp=0x%x\n",
+							__func__, i, phy_cfg->lane[i].amp);
+					}
+				}
+			}
+		}
+	}
+
 	lcd_config_timing_check(pdrv, &pdrv->config.timing.dft_timing);
 
 	/* check power_step */
