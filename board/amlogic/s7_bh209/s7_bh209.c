@@ -193,21 +193,25 @@ phys_size_t get_effective_memsize(void)
 
 static struct mm_region bd_mem_map[] = {
 	{
-	 .virt = 0x00000000UL,
-	 .phys = 0x00000000UL,
-	 .size = 0x80000000UL,
-	 .attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) | PTE_BLOCK_INNER_SHARE },
-	{
-	 .virt = 0xe0000000UL,
-	 .phys = 0xe0000000UL,
-	 .size = 0x20000000UL,
-	 .attrs =
-	    PTE_BLOCK_MEMTYPE
-	   (MT_DEVICE_NGNRNE) |
-	   PTE_BLOCK_NON_SHARE |
-	   PTE_BLOCK_PXN |
-	   PTE_BLOCK_UXN },
-	{
+		.virt = 0x00000000UL,
+		.phys = 0x00000000UL,
+		.size = 0x80000000UL,
+		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
+			PTE_BLOCK_INNER_SHARE
+	}, {
+		.virt = 0x00000000UL,
+		.phys = 0x00000000UL,
+		.size = 0xe0000000UL,
+		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
+			PTE_BLOCK_INNER_SHARE
+	}, {
+		.virt = 0xe0000000UL,
+		.phys = 0xe0000000UL,
+		.size = 0x20000000UL,
+		.attrs = PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
+			PTE_BLOCK_NON_SHARE |
+			PTE_BLOCK_PXN | PTE_BLOCK_UXN
+	}, {
 	     /* List terminator */
 	     0,
 	}
@@ -219,9 +223,32 @@ int mach_cpu_init(void)
 {
 	/* update mmu table from bl2 ddr auto detect size */
 	unsigned long nddrSize =
-	    ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) >
-	    0xe0000000 ? 0xe0000000 : ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4);
-	bd_mem_map[0].size = nddrSize;
+	    ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xffffUL) << 4) >
+	    0xe0000000 ? 0xe0000000 : ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xffffUL) << 4);
+
+	uint32_t rsv_addr;
+	uint32_t reg_size;
+	uint32_t rsv_size;
+#if defined(P_AO_SEC_GP_CFG3)
+	rsv_addr = *((volatile uint32_t *)((uintptr_t)(P_AO_SEC_GP_CFG5)));
+	reg_size = *((volatile uint32_t *)((uintptr_t)(P_AO_SEC_GP_CFG3)));
+#elif defined(SYSCTRL_SEC_STATUS_REG15)
+	rsv_addr = *((volatile uint32_t *)((uintptr_t)(SYSCTRL_SEC_STATUS_REG17)));
+	reg_size = *((volatile uint32_t *)((uintptr_t)(SYSCTRL_SEC_STATUS_REG15)));
+#endif
+	if ((reg_size >> 16) & 0xff)
+		rsv_size = (((reg_size & ~0xffff) >> 16) << 16) + ((reg_size & 0xffff) << 16);
+	else
+		rsv_size = (((reg_size & ~0xffff) >> 16) << 10) + ((reg_size & 0xffff) << 10);
+
+	rsv_addr += (1 << 20);
+	rsv_size -= (1 << 20);
+
+	bd_mem_map[0].size = rsv_addr;
+
+	bd_mem_map[1].virt = rsv_addr + rsv_size;
+	bd_mem_map[1].phys = rsv_addr + rsv_size;
+	bd_mem_map[1].size = nddrSize - bd_mem_map[1].phys;
 
 	//printf("\nmach_cpu_init\n");
 	return 0;
