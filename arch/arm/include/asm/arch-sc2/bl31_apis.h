@@ -126,7 +126,6 @@
 	#define HIFI_DSP_PWRCTRL_ACCESS		0x12
 	#define HIFI_DSP_PWR_SET		0x13
 
-
 #define SRAM_HAL_API_CHECK_EFUSE 0x403
 struct sram_hal_api_arg {
 	unsigned int cmd;

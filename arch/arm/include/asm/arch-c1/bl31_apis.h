@@ -94,9 +94,14 @@
 /* Secure HAL APIs */
 #define TRUSTZONE_HAL_API_SRAM                  0x400
 
-/*start hifi4 */
-#define START_HIFI4			0x82000090
-#define DSP_SEC_POWERSET		0x82000092
+/*hifi dsp*/
+#define SMC_SUBID_SHIFT				8
+#define PACK_SMC_SUBID_ID(subid, id) (((subid) << SMC_SUBID_SHIFT) | (id))
+#define HIFI_DSP				0x82000090
+	#define HIFI_DSP_BOOT			0x10
+	#define HIFI_DSP_REMAP			0x11
+	#define HIFI_DSP_PWRCTRL_ACCESS		0x12
+	#define HIFI_DSP_PWR_SET		0x13
 
 
 #define SRAM_HAL_API_CHECK_EFUSE 0x403

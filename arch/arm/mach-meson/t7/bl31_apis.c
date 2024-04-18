@@ -363,11 +363,11 @@ void init_dsp(unsigned int id,unsigned int addr,unsigned int cfg0)
 	arm_smccc_smc(HIFI_DSP, id, addr, cfg0, 0, 0, 0, 0, &res);
 }
 
-void remap_set(unsigned int dspid, unsigned int addr_0, unsigned int addr_1, unsigned int reg_sel)
+void remap_set(unsigned int id, unsigned int addr_0, unsigned int addr_1, unsigned int reg_sel)
 {
 	struct arm_smccc_res res;
 
-	arm_smccc_smc(HIFI_DSP, dspid, addr_0, addr_1, reg_sel, 0, 0, 0, &res);
+	arm_smccc_smc(HIFI_DSP, id, addr_0, addr_1, reg_sel, 0, 0, 0, &res);
 }
 
 unsigned aml_reboot(uint64_t function_id, uint64_t arg0, uint64_t arg1, uint64_t arg2)

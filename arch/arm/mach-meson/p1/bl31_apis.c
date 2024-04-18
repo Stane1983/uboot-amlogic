@@ -372,52 +372,27 @@ void set_viu_probe_enable(void)
 
 void power_set_dsp(unsigned int id, unsigned int powerflag)
 {
-	register long x0 asm("x0") = DSP_SEC_POWERSET;
-	register long x1 asm("x1") = id;
-	register long x2 asm("x2") = powerflag;
-	asm volatile(
-			__asmeq("%0", "x0")
-			__asmeq("%1", "x1")
-			__asmeq("%2", "x2")
-			"smc	#0\n"
-		: "+r" (x0)
-		: "r" (x1), "r" (x2));
+	struct arm_smccc_res res;
+
+	arm_smccc_smc(HIFI_DSP, id, powerflag, 0, 0, 0, 0, 0, &res);
 }
 
 void init_dsp(unsigned int id,unsigned int addr,unsigned int cfg0)
 {
-	register long x0 asm("x0") = START_HIFI4;
-	register long x1 asm("x1") = id;
-	register long x2 asm("x2") = addr;
-	register long x3 asm("x3") = cfg0;
-	asm volatile(
-			__asmeq("%0", "x0")
-			__asmeq("%1", "x1")
-			__asmeq("%2", "x2")
-			__asmeq("%3", "x3")
-			"smc	#0\n"
-		: "+r" (x0)
-		: "r" (x1), "r" (x2), "r" (x3));
+	struct arm_smccc_res res;
+
+	arm_smccc_smc(HIFI_DSP, id, addr, cfg0, 0, 0, 0, 0, &res);
 }
 
 void remap_set(unsigned int dspid, unsigned int addr_0, unsigned int addr_1, unsigned int reg_sel)
 {
-	register long x0 asm("x0") = DSP_SEC_REMAP_SET;
-	register long x1 asm("x1") = dspid;
-	register long x2 asm("x2") = addr_0;
-	register long x3 asm("x3") = addr_1;
-	register long x4 asm("x4") = reg_sel;
-	asm volatile(__asmeq("%0", "x0")
-				 __asmeq("%1", "x1")
-				 __asmeq("%2", "x2")
-				 __asmeq("%3", "x3")
-				 __asmeq("%4", "x4")
-				 "smc	#0\n"
-				 : "+r" (x0)
-				 : "r" (x1), "r" (x2), "r" (x3), "r" (x4));
+	struct arm_smccc_res res;
+
+	arm_smccc_smc(HIFI_DSP, dspid, addr_0, addr_1,
+			reg_sel, 0, 0, 0, &res);
 }
 
-void start_m4(unsigned int cpu_id,unsigned int bin_addr, uint32_t bank, uint32_t cmd)
+void start_m4(unsigned int id, unsigned int bin_addr, uint32_t bank)
 {
 	register long x0 asm("x0") = START_M4;
 	register long x1 asm("x1") = cpu_id;
@@ -425,15 +400,7 @@ void start_m4(unsigned int cpu_id,unsigned int bin_addr, uint32_t bank, uint32_t
 	register long x3 asm("x3") = bank;
 	register long x4 asm("x4") = cmd;
 
-	asm volatile(
-			__asmeq("%0", "x0")
-			__asmeq("%1", "x1")
-			__asmeq("%2", "x2")
-			__asmeq("%3", "x3")
-			__asmeq("%4", "x4")
-			"smc	#0\n"
-		: "+r" (x0)
-		: "r" (x1), "r" (x2), "r" (x3), "r" (x4));
+	arm_smccc_smc(START_MFH, id, bin_addr, bank, 0, 0, 0, 0, &res);
 }
 
 
