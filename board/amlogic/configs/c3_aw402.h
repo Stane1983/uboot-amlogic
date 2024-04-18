@@ -381,7 +381,7 @@
 //#define CONFIG_CMD_STARTDSP
 
 //use hardware sha2
-//#define CONFIG_AML_HW_SHA2
+#define CONFIG_AML_HW_SHA2
 
 //#define CONFIG_MULTI_DTB    1
 

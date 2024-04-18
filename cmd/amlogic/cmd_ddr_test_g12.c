@@ -4,6 +4,7 @@
  */
 
 #include <common.h>
+#include <u-boot/sha256.h>
 
 #define USE_FOR_UBOOT_2018
 //#define USE_FOR_UBOOT_2015
@@ -1410,11 +1411,15 @@ void sha256_finish_internal(sha256_context_ddr *ctx, uint8_t digest[32])
 void sha256_csum_wd_internal(const unsigned char *input, unsigned int ilen,
 			     unsigned char *output, unsigned int chunk_sz)
 {
+#ifdef CONFIG_AML_HW_SHA2
+	sha256_csum_wd(input, ilen, output, chunk_sz);
+#else
 	sha256_context_ddr ctx;
 
 	sha256_starts_internal(&ctx);
 	sha256_update_internal(&ctx, input, ilen);
 	sha256_finish_internal(&ctx, output);
+#endif
 }
 #endif
 
