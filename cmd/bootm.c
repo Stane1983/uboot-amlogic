@@ -153,6 +153,13 @@ int do_bootm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	/* add reboot_mode in bootargs for kernel command line */
 	char *pbootargs = env_get("bootargs");
 	char *preboot_mode = env_get("reboot_mode");
+	char *recoverystr = "factory_reset";
+	char *precovery_mode = env_get("recovery_mode");
+
+	//if recovery mode need set reboot_mode factory_reset
+	//for drm driver init recovery by reboot_mode
+	if (precovery_mode && !strcmp(precovery_mode, "true"))
+		preboot_mode = recoverystr;
 
 	if (pbootargs && preboot_mode) {
 		int nlen = strlen(pbootargs) + strlen(preboot_mode) + 16;
