@@ -123,7 +123,7 @@ static int save_string_data(const char *item_name, int mode, char data_buf[])
 		buf_ptr = data_buf;
 	}
 
-	tmp_crc32 = CalCRC32(0, (unsigned char *)buf_ptr, strlen(buf_ptr));
+	tmp_crc32 = cal_CRC32(0, (unsigned char *)buf_ptr, strlen(buf_ptr));
 	sprintf(tmp_buf, "%08x,%s", tmp_crc32, buf_ptr);
 
 	data_len = strlen(tmp_buf) + 1;
@@ -162,7 +162,7 @@ int check_hex_data_no_header_valid(unsigned int *tmp_crc32, int max_len, int buf
 	}
 	// ALOGD("%s, data len ok(0x%x, 0x%x)\n", __func__, data_len, buf_len);
 
-	cal_crc32 = CalCRC32(0, data_buf, buf_len);
+	cal_crc32 = cal_CRC32(0, data_buf, buf_len);
 
 	if (tmp_crc32)
 		*tmp_crc32 = cal_crc32;
@@ -186,7 +186,7 @@ int check_hex_data_have_header_valid(unsigned int *tmp_crc32, int max_len, int b
 	// ALOGD("%s, data len ok(0x%x, 0x%x)\n", __func__, data_len, buf_len);
 
 	memcpy((void *)&rd_crc32, (void *)data_buf, 4);
-	cal_crc32 = CalCRC32(0, (data_buf + 4), data_len - 4);
+	cal_crc32 = cal_CRC32(0, (data_buf + 4), data_len - 4);
 
 	if (rd_crc32 != cal_crc32) {
 		ALOGE("%s, data invalid (0x%08X, 0x%08X)\n", __func__, rd_crc32, cal_crc32);
@@ -213,7 +213,7 @@ int check_string_data_have_header_valid(unsigned int *tmp_crc32, char *data_str,
 
 		tmp_len = strlen(data_str);
 		if (tmp_len > chksum_head_len + ver_len) {
-			cal_chksum = CalCRC32(0, (unsigned char *)(data_str + chksum_head_len), tmp_len - chksum_head_len);
+			cal_chksum = cal_CRC32(0, (unsigned char *)(data_str + chksum_head_len), tmp_len - chksum_head_len);
 			memcpy(tmp_buf, data_str, chksum_head_len);
 			tmp_buf[chksum_head_len] = 0;
 			src_chksum = strtoul(tmp_buf, &endp, 16);
@@ -571,7 +571,7 @@ void print_data_buf(int data_cnt, unsigned char data_buf[])
 	ALOGD("%s, \n\n\n\n", __func__);
 }
 
-unsigned int CalCRC32(unsigned int crc, const unsigned char *ptr, int buf_len)
+unsigned int cal_CRC32(unsigned int crc, const unsigned char *ptr, int buf_len)
 {
 	static const unsigned int s_crc32[16] = {
 	    0, 0x1db71064, 0x3b6e20c8, 0x26d930ac, 0x76dc4190, 0x6b6b51f4, 0x4db26158, 0x5005713c,

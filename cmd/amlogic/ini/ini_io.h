@@ -63,7 +63,7 @@ int save_panel_all_data(int sec_no, int wr_size, unsigned char data_buf[]);
 int check_hex_data_no_header_valid(unsigned int* tmp_crc32, int max_len, int buf_len, unsigned char data_buf[]);
 int check_hex_data_have_header_valid(unsigned int* tmp_crc32, int max_len, int buf_len, unsigned char data_buf[]);
 int check_string_data_have_header_valid(unsigned int* tmp_crc32, char *data_str, int chksum_head_len, int ver_len);
-unsigned int CalCRC32(unsigned int crc, const unsigned char *ptr, int buf_len);
+unsigned int cal_CRC32(unsigned int crc, const unsigned char *ptr, int buf_len);
 void print_data_buf(int data_cnt, unsigned char data_buf[]);
 
 #ifdef __cplusplus

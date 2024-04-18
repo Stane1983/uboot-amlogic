@@ -49,6 +49,32 @@ extern int dtb_read(void *addr);
 extern int dtb_write(void *addr);
 extern int renew_partition_tbl(unsigned char *buffer);
 
+static unsigned int storage_cal_CRC32(unsigned int crc, const unsigned char *ptr, int buf_len)
+{
+	static const unsigned int s_crc32[16] = {
+	    0, 0x1db71064, 0x3b6e20c8, 0x26d930ac, 0x76dc4190, 0x6b6b51f4, 0x4db26158, 0x5005713c,
+	    0xedb88320, 0xf00f9344, 0xd6d6a3e8, 0xcb61b38c, 0x9b64c2b0, 0x86d3d2d4, 0xa00ae278,
+	    0xbdbdf21c};
+
+	unsigned int crcu32 = crc;
+	unsigned char b;
+
+	if (buf_len <= 0)
+		return 0;
+
+	if (!ptr)
+		return 0;
+
+	crcu32 = ~crcu32;
+	while (buf_len--) {
+		b = *ptr++;
+		crcu32 = (crcu32 >> 4) ^ s_crc32[(crcu32 & 0xf) ^ (b & 0xf)];
+		crcu32 = (crcu32 >> 4) ^ s_crc32[(crcu32 & 0xf) ^ (b >> 4)];
+	}
+
+	return ~crcu32;
+}
+
 static int storage_range_check(struct mmc *mmc,char const *part_name,loff_t offset, size_t *size,loff_t *off) {
 
 	struct partitions *part_info = NULL;
@@ -378,7 +404,7 @@ void mmc_write_cali_mattern(void *addr, struct aml_pattern *table)
 		else
 			mattern[i] = table->pattern;
 	}
-	mattern[i] = CalCRC32(0, (u8 *)addr, (vpart->size - 4));
+	mattern[i] = storage_cal_CRC32(0, (u8 *)addr, (vpart->size - 4));
 }
 
 int mmc_pattern_check(struct mmc *mmc, struct aml_pattern *table)
@@ -407,7 +433,7 @@ int mmc_pattern_check(struct mmc *mmc, struct aml_pattern *table)
 		return 1;
 	}
 	buf = (u32 *)addr;
-	crc32_s = CalCRC32(0, (u8 *)addr, (vpart->size - 4));
+	crc32_s = storage_cal_CRC32(0, (u8 *)addr, (vpart->size - 4));
 	if (crc32_s != buf[vpart->size / 4 - 1]) {
 		printf("check %s failed, need to write\n", table->name);
 		mmc_write_cali_mattern(addr, table);

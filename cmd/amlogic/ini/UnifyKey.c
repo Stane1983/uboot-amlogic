@@ -435,7 +435,7 @@ int write_ukey_data(const char *key_name, unsigned char data_buf[], int wr_size)
 
 unsigned int crc32(unsigned int crc, const unsigned char *ptr, int buf_len)
 {
-	return CalCRC32(crc, ptr, buf_len);
+	return cal_CRC32(crc, ptr, buf_len);
 }
 
 static unsigned char gTempBuf[0x400000];

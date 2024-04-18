@@ -15,7 +15,7 @@
 #include "ini_platform.h"
 #include "ini_io.h"
 #include "model.h"
-#include <partition_table.h>
+#include <amlogic/partition_table.h>
 
 #ifdef CONFIG_AML_LCD
 int glcd_cus_ctrl_cnt;

@@ -29,6 +29,10 @@ extern int handle_model_sum(void);
 #define DEBUG_LCD_CUS_CTRL  BIT(6)
 #define DEBUG_LCD_OPTICAL   BIT(7)
 
+#define CC_PARAM_CHECK_OK                             (0)
+#define CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM        (-1)
+#define CC_PARAM_CHECK_ERROR_NOT_NEED_UPDATE_PARAM    (-2)
+
 enum lcd_type_e {
 	LCD_RGB = 0,
 	LCD_LVDS,
@@ -98,6 +102,7 @@ enum lcd_extern_type_e {
 	LCD_EXTERN_I2C = 0,
 	LCD_EXTERN_SPI,
 	LCD_EXTERN_MIPI,
+	LCD_EXTERN_SIMPLE,
 	LCD_EXTERN_MAX,
 };
 #define LCD_EXTERN_I2C_BUS_INVALID 0xff
@@ -506,11 +511,25 @@ struct lcd_ext_type_s {
 
 #define CC_EXT_CMD_MAX_CNT           (300)
 
-#define LCD_EXTERN_INIT_CMD           0x00
-#define LCD_EXTERN_INIT_CMD2          0x01  //only for special i2c device
-#define LCD_EXTERN_INIT_NONE          0x10
-#define LCD_EXTERN_INIT_GPIO          0xf0
-#define LCD_EXTERN_INIT_END           0xff
+//special cmd for different parse
+#define LCD_EXT_CMD_TYPE_MULTI_LIST_FR          0x21 /* dlg fr multi list, 1byte frame rate*/
+#define LCD_EXT_CMD_TYPE_MULTI_LIST_UFR         0x2f /* ufr fr multi list, 2byte frame rate*/
+#define LCD_EXT_CMD_TYPE_CMD_BIN2               0xa0  /* replace data with offset by reg_addr */
+#define LCD_EXT_CMD_TYPE_CMD_BIN                0xb0  /* auto fill reg addr 0x0, and data */
+#define LCD_EXT_CMD_TYPE_CMD                    0xc0
+#define LCD_EXT_CMD_TYPE_CMD_BIN_DATA           0xd0 /* nonexistent reg_addr, all data replace */
+#define LCD_EXT_CMD_TYPE_CMD_MULTI              0xe0
+#define LCD_EXT_CMD_TYPE_CMD2_MULTI             0xe1
+#define LCD_EXT_CMD_TYPE_CMD3_MULTI             0xe2
+#define LCD_EXT_CMD_TYPE_CMD4_MULTI             0xe3
+#define LCD_EXT_CMD_TYPE_MULTI_CMD              0xec /* cmd for multi list matching*/
+#define LCD_EXT_CMD_TYPE_MULTI_DFT_CMD          0xed /* cmd for multi list matching,
+						      * as default setting will bypass when power on
+						      */
+#define LCD_EXT_CMD_TYPE_GPIO                   0xf0
+#define LCD_EXT_CMD_TYPE_WAIT_GPIO              0xf4
+#define LCD_EXT_CMD_TYPE_DELAY                  0xfd
+#define LCD_EXT_CMD_TYPE_END                    0xff
 
 struct lcd_ext_attr_s {
 	struct lcd_ext_header_s head;
@@ -589,11 +608,19 @@ struct all_info_header_s {
 extern int model_debug_flag;
 
 int trans_buffer_data(const char *data_str, unsigned int data_buf[]);
+int handle_read_bin_file(const char *file_name, unsigned long max_len);
 
 #ifdef CONFIG_AML_LCD
-extern int glcd_cus_ctrl_cnt;
+int check_param_valid(int mode, int parse_len, unsigned char parse_buf[],
+		      int ori_len, unsigned char ori_buf[]);
 
+extern int glcd_cus_ctrl_cnt;
 int handle_lcd_cus_ctrl(struct lcd_v2_attr_s *p_attr);
+
+#ifdef CONFIG_AML_LCD_TCON
+int handle_tcon_bin(void);
+int handle_tcon_path(void);
+#endif
 #endif
 
 unsigned char model_data_checksum(unsigned char *buf, unsigned int len);

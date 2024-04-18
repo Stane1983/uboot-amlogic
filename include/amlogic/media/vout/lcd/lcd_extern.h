@@ -11,6 +11,7 @@ enum lcd_extern_type_e {
 	LCD_EXTERN_I2C = 0,
 	LCD_EXTERN_SPI,
 	LCD_EXTERN_MIPI,
+	LCD_EXTERN_SIMPLE,
 	LCD_EXTERN_MAX,
 };
 
@@ -88,10 +89,24 @@ struct lcd_extern_multi_list_s {
 	struct lcd_extern_multi_list_s *next;
 };
 
+struct lcd_extern_check_block_s {
+	unsigned char offset;
+	unsigned char len;
+};
+
 struct lcd_extern_dev_s {
 	int dev_index;
+	unsigned char state;
+	unsigned char check_state;
+	unsigned char check_step;
+	unsigned char check_execute;
+	unsigned char check_block_cnt;
+	unsigned int check_block_size;
+	struct lcd_extern_check_block_s *check_block;
 	struct lcd_extern_config_s config;
 	struct lcd_extern_multi_list_s *multi_list_header;
+	unsigned char i2c_addr[4];
+
 	int (*reg_read)(struct lcd_extern_driver_s *ext_drv,
 			struct lcd_extern_dev_s *ext_dev,
 			unsigned char reg, unsigned char *buf);
