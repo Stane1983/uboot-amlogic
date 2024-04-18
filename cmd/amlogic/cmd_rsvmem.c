@@ -47,7 +47,9 @@ static int do_rsvmem_check(cmd_tbl_t *cmdtp, int flag, int argc,
 	unsigned int bl31_rsvmem_start = 0;
 	unsigned int bl32_rsvmem_start = 0;
 	unsigned int alignment = 0;
+#ifndef CONFIG_RSVMEM_ALIGNMENT_1M
 	unsigned int alignment_temp = 0;
+#endif
 	unsigned int secure_monitor_size = 0;
 	unsigned int secure_monitor_size_final = 0;
 	unsigned int ramoops_start = 0;
@@ -98,7 +100,28 @@ static int do_rsvmem_check(cmd_tbl_t *cmdtp, int flag, int argc,
 	//if (temp_env && !strcmp(temp_env, "0x01000000"))
 	if (temp_env && !strcmp(temp_env, "0x00000001"))
 		aarch32 = 1;
+#ifdef CONFIG_RSVMEM_ALIGNMENT_1M
+	alignment = 0x100000;
+	memset(cmdbuf, 0, sizeof(cmdbuf));
+	if (aarch32)
+		sprintf(cmdbuf,
+			"fdt set /reserved-memory/linux,secmon alignment <0x%x>;",
+			alignment);
+	else
+		sprintf(cmdbuf,
+			"fdt set /reserved-memory/linux,secmon alignment <0x0 0x%x>;",
+			alignment);
+	run_command(cmdbuf, 0);
 
+	memset(cmdbuf, 0, sizeof(cmdbuf));
+	sprintf(cmdbuf, "fdt get value temp_reusable /reserved-memory/linux,secmon reusable;");
+	ret = run_command(cmdbuf, 0);
+	if (!ret) {
+		memset(cmdbuf, 0, sizeof(cmdbuf));
+		sprintf(cmdbuf, "fdt rm /reserved-memory/linux,secmon reusable");
+		run_command(cmdbuf, 0);
+	}
+#else
 	/* Get alignment size
 	 * If arm64, alignment has 2 parameters
 	 * The second parameter need convert big-endian to little-endian
@@ -119,6 +142,7 @@ static int do_rsvmem_check(cmd_tbl_t *cmdtp, int flag, int argc,
 			alignment |= (alignment_temp & 0xff000000) >> 24;
 		}
 	}
+#endif
 
 	memset(cmdbuf, 0, sizeof(cmdbuf));
 	sprintf(cmdbuf, "fdt get value env_compatible /reserved-memory/linux,secmon compatible;");
