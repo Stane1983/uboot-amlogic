@@ -61,7 +61,7 @@
 #define VERSION_1       0x01
 #define VERSION_2       0x02
 
-#define CONFIG_BUILD_MESSAGE
+//#define CONFIG_BUILD_MESSAGE
 /***************************************************************************
  * This structure provides version information and the size of the
  * structure, attributes for the structure it represents

@@ -54,7 +54,7 @@ int serial_set_pin_port(unsigned long port_base)
 
 int dram_init(void)
 {
-	gd->ram_size = PHYS_SDRAM_1_SIZE;
+	gd->ram_size = (readl(SYSCTRL_SEC_STATUS_REG4) & ~0xffffUL) << 4;
 	return 0;
 }
 
@@ -104,8 +104,8 @@ void board_init_mem(void)
 	env_tmp = env_get("bootm_size");
 	if (!env_tmp) {
 		ram_size =
-		    ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) >
-		    0xe0000000 ? 0xe0000000 : ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4);
+		    ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xffffUL) << 4) >
+		    0xe0000000 ? 0xe0000000 : ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xffffUL) << 4);
 		env_set_hex("bootm_low", 0);
 		env_set_hex("bootm_size", ram_size);
 	}
@@ -114,6 +114,7 @@ void board_init_mem(void)
 int board_init(void)
 {
 	printf("board init\n");
+
 #ifdef CONFIG_AML_HDMITX21
 	hdmitx21_chip_type_init(MESON_CPU_ID_S7D);
 	hdmitx21_init();
@@ -238,17 +239,16 @@ phys_size_t get_effective_memsize(void)
 {
 	// >>16 -> MB, <<20 -> real size, so >>16<<20 = <<4
 #if defined(CONFIG_SYS_MEM_TOP_HIDE)
-	return ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) > 0xe0000000 ? 0xe0000000 :
-	    (((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) - CONFIG_SYS_MEM_TOP_HIDE);
+	return ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xffffUL) << 4) > 0xe0000000 ? 0xe0000000 :
+	    (((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xffffUL) << 4) - CONFIG_SYS_MEM_TOP_HIDE);
 #else
-	return ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) > 0xe0000000 ? 0xe0000000 :
-	    ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4);
+	return ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xffffUL) << 4) > 0xe0000000 ? 0xe0000000 :
+	    ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xffffUL) << 4);
 #endif /* CONFIG_SYS_MEM_TOP_HIDE */
 }
 
 int mach_cpu_init(void)
 {
-	//printf("\nmach_cpu_init\n");
 	return 0;
 }
 

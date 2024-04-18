@@ -20,6 +20,9 @@ struct param_e *next_entry(struct param_e *param_pre)
 
 struct param_e *param_of(int type)
 {
+#ifdef	CONFIG_PXP_EMULATOR
+	return NULL;
+#else
 	struct param_e *param;
 
 	param = (struct param_e *)BL2E2BL33_PARAM_START;
@@ -42,4 +45,5 @@ struct param_e *param_of(int type)
 	}
 	printf("ERROR %s(Type=%d) not found\n", __func__, type);
 	return NULL;
+#endif
 }
