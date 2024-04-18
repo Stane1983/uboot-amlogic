@@ -18,6 +18,8 @@ obj-$(CONFIG_CMD_RSVMEM) += cmd_rsvmem.o
 
 obj-y += cmd_version.o
 
+obj-$(CONFIG_CMD_DMCRW) += cmd_dmc.o
+
 obj-$(CONFIG_CMD_CAR_PARAMS) += cmd_car_param.o
 
 obj-$(CONFIG_AML_RPMB) += cmd_rpmb.o
