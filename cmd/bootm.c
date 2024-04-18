@@ -271,6 +271,37 @@ int do_bootm(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 {
 	int states;
 	int ret;
+
+	if (IS_ENABLED(CONFIG_AMLOGIC_MODIFY)) {
+		/* add reboot_mode in bootargs for kernel command line */
+		char *pbootargs = env_get("bootargs");
+		char *preboot_mode = env_get("reboot_mode");
+		char *recoverystr = "factory_reset";
+		char *precovery_mode = env_get("recovery_mode");
+
+		//if recovery mode need set reboot_mode factory_reset
+		//for drm driver init recovery by reboot_mode
+		if (precovery_mode && !strcmp(precovery_mode, "true"))
+			preboot_mode = recoverystr;
+
+		if (pbootargs && preboot_mode) {
+			int nlen = strlen(pbootargs) + strlen(preboot_mode) + 16;
+			char *pnewargs = malloc(nlen);
+
+			if (pnewargs) {
+				memset((void *)pnewargs, 0, nlen);
+				sprintf(pnewargs, "%s reboot_mode=%s\n", pbootargs, preboot_mode);
+				env_set("bootargs", pnewargs);
+				free(pnewargs);
+				pnewargs = NULL;
+			} else {
+				puts("Error: malloc in pnewbootargs failed!\n");
+			}
+		} else {
+			puts("Error: add reboot_mode in bootargs failed!\n");
+		}
+	}
+
 #if !defined(CONFIG_SKIP_KERNEL_DTB_SECBOOT_CHECK) && defined(CONFIG_IMAGE_CHECK)
 	char argv0_new[12] = {0};
 	char *argv_new = (char *)&argv0_new;
