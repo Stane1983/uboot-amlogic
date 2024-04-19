@@ -13,6 +13,8 @@ extern unsigned char infopage_force_hostecc;
 extern unsigned char disable_host_ecc;
 #endif
 
+extern struct mtd_info *mtd_store_get(int dev);
+
 unsigned char page_info_get_data_lanes_mode(void)
 {
 	return page_info->dev_cfg0.bus_width & 0x0f;
@@ -201,67 +203,27 @@ static int page_info_version_init(void)
 
 	return page_info->version;
 }
-#ifdef CONFIG_MESON_NFC
-void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
-					    struct udevice *udev)
+void page_info_update_checksum(struct boot_info *page_info)
 {
-	struct mtd_info *current_mtd = NULL;
-	unsigned char ecc_steps, *temp;
 	unsigned int checksum = 0, i;
-	enum PAGE_INFO_V page_info_ver;
+	unsigned char *temp = (unsigned char *)page_info;
 
-	current_mtd = get_nand_dev_by_index(nand_curr_device);
-	page_info_ver = page_info_version_init();
-	memcpy(page_info->magic, BOOTINFO_MAGIC, strlen(BOOTINFO_MAGIC));
-	page_info->dev_cfg0.page_size = current_mtd->writesize;
-
-	if (page_info_ver == PAGE_INFO_V1) {
-		/* for compatible,  a1/c1/c2 ... need to know fip's start and size */
-		#ifdef	BOOT_TOTAL_PAGES
-		page_info->reserved[0] = BOOT_TOTAL_PAGES / 64 + MTD_RSV_BLOCK_CNT;
-		#endif
-		#ifdef	CONFIG_TPL_SIZE_PER_COPY
-		page_info->reserved[1] =
-			CONFIG_TPL_SIZE_PER_COPY / current_mtd->erasesize;
-		#endif
-		#ifdef	CONFIG_NAND_TPL_COPY_NUM
-		page_info->reserved[2] = CONFIG_NAND_TPL_COPY_NUM;
-		#endif
-		page_info->dev_cfg1.block_size = current_mtd->erasesize;
-	} else if (page_info_ver == PAGE_INFO_V2) {
-		i = current_mtd->erasesize_shift + current_mtd->writesize_shift;
-		page_info->reserved[2] = ((current_mtd->size >> i) ? (current_mtd->size >> i) : 1) & 0x3;
-	}
-
-	if (page_info_ver != PAGE_INFO_V3)
-		goto _cal_sum;
-
-	ecc_steps = current_mtd->writesize >> 9;
-	page_info->host_cfg.n2m_cmd = (DEFAULT_ECC_MODE & (~0x3F)) | ecc_steps;
-	page_info->dev_cfg1.block_size = current_mtd->erasesize;
-
-#ifdef BOOTINFO_PROGRAMMER_SUPPORT
-	page_info->dev_cfg1.is_gang_programer = 0;
-	page_info->dev_cfg1.xor_bbt_start_block |= (1 << 24);
-	page_info->dev_cfg1.block_num_in_chip = current_mtd->size / current_mtd->erasesize;
-#endif
-
-_cal_sum:
 	page_info->checksum = 0;
-	temp = (unsigned char *)page_info;
 	for (i = 0; i < sizeof(struct boot_info); i++)
 		checksum += temp[i];
 	page_info->checksum = checksum;
 	printf("page info updated checksum : 0x%x\n", checksum);
 }
-#else
+
 void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 					    struct udevice *udev)
 {
-	struct nand_device *dev = mtd_to_nanddev(mtd);
-	unsigned char ecc_steps, *temp;
-	unsigned int checksum = 0, i;
+	unsigned char ecc_steps;
+	unsigned int i;
 	enum PAGE_INFO_V page_info_ver;
+
+#ifdef CONFIG_MTD_SPI_NAND
+	struct nand_device *dev = mtd_to_nanddev(mtd);
 	enum boot_type_e medium_type = store_get_type();
 
 	if (medium_type == BOOT_SNAND) {
@@ -284,6 +246,7 @@ void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 				(mtd->writesize_shift + 1) << 4;
 		}
 	}
+#endif
 
 	page_info_ver = page_info_version_init();
 	memcpy(page_info->magic, BOOTINFO_MAGIC, strlen(BOOTINFO_MAGIC));
@@ -304,18 +267,22 @@ void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 		page_info->dev_cfg1.block_size = mtd->erasesize;
 	} else if (page_info_ver == PAGE_INFO_V2) {
 		/* for compatible,  C3 use this field  */
-		#ifdef CONFIG_DDR_PARAMETER_SUPPORT
-		pages_shift = mtd->erasesize_shift - mtd->writesize_shift;
-		if (spinand->rsv->ddr_para->valid) {
-			ddr_param_page = spinand->rsv->ddr_para->nvalid->page_addr +
-				(spinand->rsv->ddr_para->nvalid->blk_addr << pages_shift);
-			page_info->reserved[0] = ddr_param_page & 0xff;
-			page_info->reserved[1] = ((ddr_param_page >> 8) & 0xff);
-			printf("save ddr param page: 0x%x to info page!\n", ddr_param_page);
-		} else {
-			printf("ddr param is invalid!\n");
+#ifdef CONFIG_MTD_SPI_NAND
+		if (medium_type == BOOT_SNAND) {
+			#ifdef CONFIG_DDR_PARAMETER_SUPPORT
+			pages_shift = mtd->erasesize_shift - mtd->writesize_shift;
+			if (spinand->rsv->ddr_para->valid) {
+				ddr_param_page = spinand->rsv->ddr_para->nvalid->page_addr +
+					(spinand->rsv->ddr_para->nvalid->blk_addr << pages_shift);
+				page_info->reserved[0] = ddr_param_page & 0xff;
+				page_info->reserved[1] = ((ddr_param_page >> 8) & 0xff);
+				printf("save ddr param page: 0x%x to info page!\n", ddr_param_page);
+			} else {
+				printf("ddr param is invalid!\n");
+			}
+			#endif
 		}
-		#endif
+#endif
 		i = mtd->erasesize_shift + mtd->writesize_shift;
 		page_info->reserved[2] = ((mtd->size >> i) ? (mtd->size >> i) : 1) & 0x3;
 	}
@@ -325,6 +292,7 @@ void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 
 	ecc_steps = mtd->writesize >> 9;
 	page_info->host_cfg.n2m_cmd = (DEFAULT_ECC_MODE & (~0x3F)) | ecc_steps;
+#ifdef CONFIG_MTD_SPI_NAND
 	if (medium_type == BOOT_SNAND) {
 		#ifdef CONFIG_AML_SPI_NFC
 		if (disable_host_ecc)
@@ -335,23 +303,22 @@ void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 		page_info->dev_cfg1.cs_deselect_time = 0xFF;
 		page_info->dev_cfg1.dummy_cycles = 0xFF;
 	}
+#endif
+
 	page_info->dev_cfg1.block_size = mtd->erasesize;
 
 #ifdef BOOTINFO_PROGRAMMER_SUPPORT
 	page_info->dev_cfg1.is_gang_programer = 0;
 	page_info->dev_cfg1.xor_bbt_start_block |= (1 << 24);
 	page_info->dev_cfg1.block_num_in_chip = mtd->size / mtd->erasesize;
+	if (mtd_store_get(1))
+		page_info->dev_cfg1.block_num_in_chip =
+			(mtd_store_get(1))->size / mtd->erasesize;
 #endif
 
 _cal_sum:
-	page_info->checksum = 0;
-	temp = (unsigned char *)page_info;
-	for (i = 0; i < sizeof(struct boot_info); i++)
-		checksum += temp[i];
-	page_info->checksum = checksum;
-	printf("page info updated checksum : 0x%x\n", checksum);
+	page_info_update_checksum(page_info);
 }
-#endif
 
 #ifdef __PXP_DEBUG__
 static void page_info_dump_info(void)

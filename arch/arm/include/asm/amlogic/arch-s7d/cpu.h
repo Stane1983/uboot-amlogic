@@ -81,4 +81,6 @@
 
 #define SBOOT_KEYSLOT_BASE		32
 
+#define CONFIG_SYS_NAND_BASE_LIST   {0}
+
 #endif /* _CPU_H */

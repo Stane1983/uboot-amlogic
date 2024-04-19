@@ -334,32 +334,12 @@
 			status = "disabled";
 		};
 
-		spifc: spi@fe056000 {
-			compatible = "amlogic,spifc";
-			status = "disabled";
-			reg = <0x0 0xfe056000 0x0 0x80>;
-			/* clocks = <&clkc CLKID_CLK81>; */
-			/* clock-names = "core"; */
-			pinctrl-names = "default";
-			pinctrl-0 = <&spifc_pins>;
+		spicc1: spi@fe052000 {
+			compatible = "amlogic,meson-s7-spicc";
+			reg = <0x0 0xfe051000 0x0 0x38>;
 			#address-cells = <1>;
 			#size-cells = <0>;
-			spi-flash@0 {
-				compatible = "spi-flash";
-				reg = <0>;
-				spi-max-frequency = <20000000>;
-				spi-tx-bus-width = <1>;
-				spi-rx-bus-width = <1>;
-				status = "disabled";
-			};
-			spi-nand@1 {
-				compatible = "spi-nand";
-				reg = <1>;
-				spi-max-frequency = <20000000>;
-				spi-tx-bus-width = <1>;
-				spi-rx-bus-width = <1>;
-				status = "disabled";
-			};
+			status = "disabled";
 		};
 
 		ethmac: ethernet@ff3f0000 {
@@ -383,6 +363,30 @@
 			status = "disabled";
 			clk_reg = <0 0xfe08c000>;
 			spi_cfg = <0xfe08d040>;
+		};
+
+		spi_nfc: spinfc@0xfe08d000 {
+			compatible = "amlogic,spi_nfc";
+			status = "disabled";
+			reg = <0x0 0xfe08d000 0x0 0x800>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			spi-flash@0 {
+				compatible = "spi-flash";
+				reg = <0>;
+				spi-max-frequency = <20000000>;
+				spi-tx-bus-width = <4>;
+				spi-rx-bus-width = <4>;
+				status = "disabled";
+			};
+			spi-nand@1 {
+				compatible = "spi-nand";
+				reg = <1>;
+				spi-max-frequency = <20000000>;
+				spi-tx-bus-width = <4>;
+				spi-rx-bus-width = <4>;
+				status = "disabled";
+			};
 		};
 
 		apb: apb@fe000000 {
