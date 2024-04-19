@@ -1013,11 +1013,11 @@ static int mtd_store_boot_read(const char *part_name,
 static int mtd_store_spinand_bl2_write(loff_t offset, size_t size,
 				       u_char *source, struct mtd_info *mtd)
 {
-	int i, ret, page_cnt;
+	int i, page_cnt, ret = 0;
 	size_t retlen, page_size, write_size = 0;
 	size_t data_len = (size > BL2_SIZE) ? BL2_SIZE : size;
 	struct udevice *dev = mtd->dev;
-	unsigned char *pageinfo = page_info_post_init(mtd, dev);
+	unsigned char *buf, *pageinfo = page_info_post_init(mtd, dev);
 	loff_t offset_pos = offset;
 
 	if (store_get_device_bootloader_mode() == DISCRETE_BOOTLOADER)
@@ -1025,27 +1025,35 @@ static int mtd_store_spinand_bl2_write(loff_t offset, size_t size,
 	else
 		page_size = mtd->writesize;
 
+	buf = kzalloc(mtd->writesize, GFP_KERNEL);
+	if (!buf)
+		return -ENOMEM;
+
+	memset(buf, 0xff, mtd->writesize);
+	memcpy(buf, pageinfo, 512);
 	page_cnt = (size + mtd->writesize - 1) / mtd->writesize;
 	for (i = 0; i < page_cnt; i++) {
 		offset_pos = offset + i * mtd->writesize;
 		if (page_info_is_page(offset_pos / mtd->writesize)) {
 			printf("write infopage at 0x%llx\n", offset_pos);
-			ret = mtd_write(mtd, offset_pos, page_size, &retlen, pageinfo);
+			ret = mtd_write(mtd, offset_pos, mtd->writesize, &retlen, buf);
 			if (ret) {
 				printf("write 0x%llx pageinfo failed\n", offset_pos);
-				return -EIO;
+				goto out;
 			}
 		} else if (write_size < data_len) {
 			ret = mtd_write(mtd, offset_pos, page_size, &retlen, source + write_size);
 			if (ret) {
 				printf("write 0x%llx bl2 data failed\n", offset_pos);
-				return -EIO;
+				goto out;
 			}
 			write_size += retlen;
 		}
 	}
 
-	return 0;
+out:
+	kfree(buf);
+	return ret;
 }
 #endif
 

@@ -27,7 +27,8 @@
 #define SPI_NFC_DEBUG(...)
 #endif
 
-unsigned char disable_host_ecc;
+/* default builin ecc */
+unsigned char disable_host_ecc = 1;
 
 struct spi_nfc_priv {
 	unsigned char save_cmd;
@@ -42,13 +43,26 @@ struct spi_nfc_platdata {
 	u32 frequency_index;
 };
 
+struct spi_nand_id {
+	u8 mfr_id;
+	u8 dev_id;
+};
+
+static struct spi_nand_id host_ecc_list[] = {
+	{0xc2, 0x14},	/* MX35LF1G24AD */
+};
+
 #define DATA_BUF_SIZE		(4096)
 #define OOB_BUF_SIZE		(128)
 #define SPI_NFC_BUF_SIZE	(DATA_BUF_SIZE + OOB_BUF_SIZE)
 
-static inline u8 get_poc(void)
+static void spi_nfc_select_ecc(u8 mfr_id, u8 dev_id)
 {
-	return (u8)(readl(SYSCTRL_POC) & 0xff);
+	for (u8 i = 0; i < (sizeof(host_ecc_list) / sizeof(struct spi_nand_id)); i++)
+		if (host_ecc_list[i].mfr_id == mfr_id && host_ecc_list[i].dev_id == dev_id)
+			disable_host_ecc = 0;
+
+	printf("spinfc use %s ecc!\n", disable_host_ecc ? "buildin" : "host");
 }
 
 static int spi_nfc_probe(struct udevice *bus)
@@ -71,13 +85,6 @@ static int spi_nfc_probe(struct udevice *bus)
 	page_info_pre_init();
 	page_info_initialize(DEFAULT_ECC_MODE, 0, 0);
 	nfc_set_clock_and_timing(NFC_STATUS_OFF, SPINAND_FLASH);
-
-	if (!(get_poc() & POC_DIS_NFC_ECC))
-		disable_host_ecc = 1;
-	else
-		disable_host_ecc = 0;
-
-	pr_info("spinand use %s ecc!\n", disable_host_ecc ? "buildin" : "host");
 
 	return 0;
 }
@@ -201,8 +208,13 @@ static void spi_nfc_xfer_prepare(struct udevice *dev)
 	struct dm_spi_slave_plat *plat;
 	struct mtd_info *mtd;
 
-	if (disable_host_ecc)
+	if (disable_host_ecc && GET_BCH_MODE(page_info->host_cfg.n2m_cmd)) {
+		mtd = dev_get_uclass_priv(dev);
+		page_info->host_cfg.n2m_cmd = N2M_RAW | mtd->writesize;
 		return;
+	} else if (disable_host_ecc) {
+		return;
+	}
 
 	plat = dev_get_parent_plat(dev);
 	if (!plat->cs) {
@@ -210,7 +222,7 @@ static void spi_nfc_xfer_prepare(struct udevice *dev)
 		return;
 	}
 
-	if (!page_info_get_block_size()) {
+	if (!page_info_get_block_size() || !GET_BCH_MODE(page_info->host_cfg.n2m_cmd)) {
 		mtd = dev_get_uclass_priv(dev);
 		page_info->dev_cfg0.page_size = mtd->writesize;
 		page_info->dev_cfg1.block_size = mtd->erasesize;
@@ -351,14 +363,17 @@ static int spi_nfc_xfer(struct udevice *dev,
 
 	if (len <= SPINAND_MAX_ID_LEN + 2) {
 		nfc_set_data_bus_width(0);
-		if (din)
+		if (din) {
 			ret = NFC_SEND_CMD_ADDR_DATA_RD(priv->save_cmd,
 				(uint8_t *)&priv->save_addr,
 				priv->save_addr_len, buf, len);
-		else
+			if (priv->save_cmd == 0x9F)
+				spi_nfc_select_ecc(buf[1], buf[2]);
+		} else {
 			ret = NFC_SEND_CMD_ADDR_DATA_WR(priv->save_cmd,
 				(uint8_t *)&priv->save_addr,
 				priv->save_addr_len, buf, len);
+		}
 		nfc_set_data_bus_width(page_info_get_data_lanes_mode());
 		return ret;
 	}

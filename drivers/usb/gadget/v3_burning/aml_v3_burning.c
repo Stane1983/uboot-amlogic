@@ -34,7 +34,7 @@ unsigned int _get_romcode_boot_id(void)
 	return boot_id;
 }
 
-static int is_boot_device_usb(void)
+int is_boot_device_usb(void)
 {
     return BOOT_DEVICE_USB == _get_romcode_boot_id();
 }

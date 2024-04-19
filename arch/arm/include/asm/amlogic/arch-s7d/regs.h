@@ -39,4 +39,8 @@
 #define REG_MDUMP_TIMEBASE_CNTL     ((0x0016  << 2) + 0xfe000800)
 #define REG_MDUMP_UART_WFIFO        ((0x0000  << 2) + 0xfe07a000)
 
+#define REG_MDUMP_RSVMEM_SIZE       ((0x00cf  << 2) + 0xfe010000)
+#define REG_MDUMP_RSVMEM_BL32_START ((0x00d0  << 2) + 0xfe010000)
+#define REG_MDUMP_RSVMEM_BL31_START ((0x00d1  << 2) + 0xfe010000)
+
 #endif /* __AML_REG_H__ */

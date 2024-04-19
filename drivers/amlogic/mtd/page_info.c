@@ -7,6 +7,10 @@
 #include <amlogic/storage.h>
 
 struct boot_info *page_info;
+#ifdef CONFIG_AML_SPI_NFC
+static int infopage_force_hostecc;
+extern unsigned char disable_host_ecc;
+#endif
 
 unsigned char page_info_get_data_lanes_mode(void)
 {
@@ -174,6 +178,11 @@ static int page_info_version_init(void)
 
 	switch (cpu_id.family_id) {
 	case MESON_CPU_MAJOR_ID_A4:
+	case MESON_CPU_MAJOR_ID_S1A:
+#ifdef CONFIG_AML_SPI_NFC
+		if (disable_host_ecc)
+			infopage_force_hostecc = 1;
+#endif
 		page_info->version = PAGE_INFO_V3;
 		break;
 	case MESON_CPU_MAJOR_ID_C3:
@@ -195,7 +204,6 @@ static int page_info_version_init(void)
 
 	return page_info->version;
 }
-
 #ifdef CONFIG_MESON_NFC
 void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 					    struct udevice *udev)
@@ -248,7 +256,6 @@ _cal_sum:
 	printf("page info updated checksum : 0x%x\n", checksum);
 }
 #else
-extern unsigned char disable_host_ecc;
 void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 					    struct udevice *udev)
 {
@@ -320,8 +327,10 @@ void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 	ecc_steps = mtd->writesize >> 9;
 	page_info->host_cfg.n2m_cmd = (DEFAULT_ECC_MODE & (~0x3F)) | ecc_steps;
 	if (medium_type == BOOT_SNAND) {
+		#ifdef CONFIG_AML_SPI_NFC
 		if (disable_host_ecc)
 			page_info->host_cfg.n2m_cmd = N2M_RAW | mtd->writesize;
+		#endif
 		page_info->host_cfg.frequency_index = 0xFF;
 		page_info->dev_cfg1.ca_lanes = 0;
 		page_info->dev_cfg1.cs_deselect_time = 0xFF;
@@ -415,10 +424,21 @@ int page_info_pre_init(void)
 bool page_info_is_page(int page)
 {
 	enum PAGE_INFO_V page_info_ver;
+	bool is_info_page = 0;
 
 	page_info_ver = page_info_version_init();
 	if (page_info_ver == PAGE_INFO_V1)
-		return page % 128 == BL2_SIZE / 2048 && page < 1024;
+		is_info_page = page % 128 == BL2_SIZE / 2048 && page < 1024;
+	else
+		is_info_page = (!(page % 128) && (page < 1024));
 
-	return (!(page % 128) && (page < 1024));
+#ifdef CONFIG_AML_SPI_NFC
+	if (infopage_force_hostecc) {
+		if (is_info_page)
+			disable_host_ecc = 0;
+		else
+			disable_host_ecc = 1;
+	}
+#endif
+	return is_info_page;
 }

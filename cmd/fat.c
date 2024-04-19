@@ -28,6 +28,7 @@ U_BOOT_CMD(
 	"      and determine its size."
 );
 
+#ifndef CONFIG_AML_DISABLE_DEV_CMDS
 int do_fat_fsload(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 {
 	return do_load(cmdtp, flag, argc, argv, FS_TYPE_FAT);
@@ -48,6 +49,7 @@ U_BOOT_CMD(
 	"      ARCH_DMA_MINALIGN then a misaligned buffer warning will\n"
 	"      be printed and performance will suffer for the load."
 );
+#endif//#ifndef CONFIG_AML_DISABLE_DEV_CMDS
 
 static int do_fat_ls(struct cmd_tbl *cmdtp, int flag, int argc,
 		     char *const argv[])

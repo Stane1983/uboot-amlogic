@@ -19,6 +19,5 @@ enum stick_mem_idx {
 };
 
 void get_stick_reboot_flag_mbx(void);
-
 u32 get_stick_reboot_flag(void);
 #endif
