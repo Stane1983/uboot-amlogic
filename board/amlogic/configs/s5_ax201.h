@@ -81,7 +81,7 @@
 	CONFIG_EXTRA_ENV_SETTINGS_BASE \
         "loadaddr_kernel=0x03080000\0"\
         "dv_fw_addr=0xa00000\0"\
-	"otg_device=0\0" \
+        "otg_device=1\0" \
         "panel_type=lcd_1\0" \
         "outputmode=1080p60hz\0" \
 	"hdmimode=none\0" \
