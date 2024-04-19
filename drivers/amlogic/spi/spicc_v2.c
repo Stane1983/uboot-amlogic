@@ -1185,6 +1185,10 @@ static const struct udevice_id spicc_v2_of_match[] = {
 		.compatible	= "amlogic,meson-a4-spicc",
 		.data		= 0,
 	},
+	{
+		.compatible	= "amlogic,meson-s7d-spicc",
+		.data		= 0,
+	},
 	{ /* sentinel */ }
 };
 
