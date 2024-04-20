@@ -92,6 +92,7 @@ int Zapper_get_nand_ldflag_partition_info(struct Zapper_boot_info *p_s_e_boot_in
 	p_s_e_boot_info->modify_flag = s_boot_info.modify_flag;
 	p_s_e_boot_info->reboot_flag = s_boot_info.reboot_flag;
 	p_s_e_boot_info->download_mode = s_boot_info.download_mode;
+	p_s_e_boot_info->standby_flag = s_boot_info.standby_flag;
 
 	for (int i = 0;i < LD_HEADER_LENGTH ; i++) {
 		printf ("p_s_e_boot_info->loader_partition_header[%d] is %x\n", i, *(p_s_e_boot_info->loader_partition_header + i));
@@ -151,6 +152,7 @@ int Zapper_set_nand_ldflag_partition_info(struct Zapper_boot_info *p_s_e_boot_in
 	zapper_ldflag_partition [LD_HEADER_LENGTH + LD_LENGTH + EC_LENGTH] = p_s_e_boot_info->modify_flag;
 	zapper_ldflag_partition [LD_HEADER_LENGTH + LD_LENGTH + EC_LENGTH + 1] = p_s_e_boot_info->reboot_flag;
 	zapper_ldflag_partition [LD_HEADER_LENGTH + LD_LENGTH + EC_LENGTH + 1 + 1] = p_s_e_boot_info->download_mode;
+	zapper_ldflag_partition [LD_HEADER_LENGTH + LD_LENGTH + EC_LENGTH + 1 + 1 + 1] = p_s_e_boot_info->standby_flag;
 
 	memcpy((void *)s_boot_info.loader_partition_header, (void *)zapper_ldflag_partition, LD_HEADER_LENGTH);
 	memcpy((void *)s_boot_info.loader_partition, (void *)zapper_ldflag_partition + LD_HEADER_LENGTH , LD_LENGTH);
@@ -158,6 +160,7 @@ int Zapper_set_nand_ldflag_partition_info(struct Zapper_boot_info *p_s_e_boot_in
 	s_boot_info.modify_flag = zapper_ldflag_partition [LD_HEADER_LENGTH + LD_LENGTH + EC_LENGTH];
 	s_boot_info.reboot_flag = zapper_ldflag_partition [LD_HEADER_LENGTH + LD_LENGTH + EC_LENGTH + 1];
 	s_boot_info.download_mode = zapper_ldflag_partition [LD_HEADER_LENGTH + LD_LENGTH + EC_LENGTH + 1 + 1];
+	s_boot_info.standby_flag= zapper_ldflag_partition [LD_HEADER_LENGTH + LD_LENGTH + EC_LENGTH + 1 + 1 + 1];
 
 	return ZAPPER_SUCCESS;
 }
@@ -240,6 +243,7 @@ static int Zapper_read_all_info(struct Zapper_boot_info *p_s_boot_info)
 	p_s_boot_info->modify_flag = zapper_ldflag_partition [LD_HEADER_LENGTH + LD_LENGTH + EC_LENGTH];
 	p_s_boot_info->reboot_flag = zapper_ldflag_partition [LD_HEADER_LENGTH + LD_LENGTH + EC_LENGTH + 1];
 	p_s_boot_info->download_mode = zapper_ldflag_partition [LD_HEADER_LENGTH + LD_LENGTH + EC_LENGTH + 1 + 1];
+	p_s_boot_info->standby_flag = zapper_ldflag_partition [LD_HEADER_LENGTH + LD_LENGTH + EC_LENGTH + 1 + 1 + 1];
 
 	memcpy((void *)p_s_boot_info->bbcb_header, (void *)zapper_hwconfig_partition, BBCB_HEADER_LENGTH);
 	memcpy((void *)p_s_boot_info->bbcb, (void *)zapper_hwconfig_partition + BBCB_HEADER_LENGTH, BBCB_LENGTH);
@@ -286,6 +290,11 @@ static int Zapper_write_ldflag(void)
 
 	}
 	return ZAPPER_SUCCESS;
+}
+
+unsigned char Zapper_get_nand_standby_flag(void)
+{
+	return s_boot_info.standby_flag;
 }
 
 static int do_zapper_read_flash(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])

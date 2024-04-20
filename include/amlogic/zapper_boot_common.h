@@ -60,16 +60,21 @@
 /* Size of OTA parameters. */
 #define OTA_PARAMETER_SIZE (60)	/* included in shared-mem, same with downloader loadercore */
 
-#define LD_SHARED_MEM_SIZE		(2 * OTA_PARAMETER_SIZE + 1 + 1 + 4 + 6)	/* size of shared-mem, same with downloader loadercore */
-#define LD_LENGTH	(LD_SHARED_MEM_SIZE + LD_AREA_DOWNLOAD_INFO_SIZE)	/* = LDR_SHARED_MEM_SIZE + LDR_AREA_DOWNLOAD_INFO_SIZE */
-#define EC_LENGTH	(4)
+/* size of shared-mem, same with downloader loadercore */
+#define LD_SHARED_MEM_SIZE		(2 * OTA_PARAMETER_SIZE + 1 + 1 + 4 + 6)
 
+/* = LDR_SHARED_MEM_SIZE + LDR_AREA_DOWNLOAD_INFO_SIZE */
+#define LD_LENGTH	(LD_SHARED_MEM_SIZE + LD_AREA_DOWNLOAD_INFO_SIZE)
+
+#define EC_LENGTH	(4)
 #define LD_MODIFY_FLAG_LENGTH	(1)
 #define LD_REBOOT_FLAG_LENGTH	(1)
 #define LD_DOWNLOAD_MODE_LENGTH	(1)
+#define LD_STANDBY_FLAG_LENGTH	(1)
 
 /* LD_HEADER_LENGTH(12) + LD_LENGTH(variable) + EC_LENGTH(4) + Modifyflag(1) + RebootFlag(1) + DownloadMode(1) */
-#define LDFLAG_LENGTH	(LD_HEADER_LENGTH + LD_LENGTH + EC_LENGTH + LD_MODIFY_FLAG_LENGTH + LD_REBOOT_FLAG_LENGTH + LD_DOWNLOAD_MODE_LENGTH)
+#define LDFLAG_LENGTH	(LD_HEADER_LENGTH + LD_LENGTH + EC_LENGTH + LD_MODIFY_FLAG_LENGTH + \
+	LD_REBOOT_FLAG_LENGTH + LD_DOWNLOAD_MODE_LENGTH + LD_STANDBY_FLAG_LENGTH)
 
 /******  LoaderPartition  ******/
 

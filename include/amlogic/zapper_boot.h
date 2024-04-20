@@ -29,6 +29,16 @@ enum RCU_COMBINATION_TYPE {
 	RCU_COMBINATION_MAX = 5,
 };
 
+typedef enum {
+	LED_POWER_RED,		/* The macro corresponds to the "Red" description of the Standby LED in the LDRS table */
+	LED_POWER_GREEN,	/* The macro corresponds to the "Green" description of the Standby LED in the LDRS table */
+	LED_POWER_OFF,		/* The macro corresponds to the "Off" description of the Standby LED in the LDRS table */
+	LED_REMOTE_RED,		/* The macro corresponds to the "Red" description of the Remote LED in the LDRS table */
+	LED_REMOTE_OFF,		/* The macro corresponds to the "Off" description of the Remote LED in the LDRS table */
+	LED_ALERT_YELLOW,	/* The macro corresponds to the "Yellow" description of the Alert LED in the LDRS table */
+	LED_ALERT_OFF,		/* The macro corresponds to the "Off" description of the Alert LED in the LDRS table */
+} led_display_type;
+
 struct Zapper_boot_info {
 	unsigned char loader_partition_header[LD_HEADER_LENGTH];
 	unsigned char loader_partition[LD_LENGTH];
@@ -36,6 +46,7 @@ struct Zapper_boot_info {
 	unsigned char modify_flag;
 	unsigned char reboot_flag;
 	unsigned char download_mode;
+	unsigned char standby_flag;
 
 	unsigned char bbcb_header[BBCB_HEADER_LENGTH];
 	unsigned char bbcb[BBCB_LENGTH];
@@ -60,6 +71,7 @@ int Zapper_get_nand_ldflag_partition_info(struct Zapper_boot_info *p_s_e_boot_in
 int Zapper_get_nand_hwconfig_partition_info(struct Zapper_boot_info *p_s_e_boot_info);
 int Zapper_get_nand_ldsec_partition_info(struct Zapper_boot_info *p_s_e_boot_info);
 int Zapper_get_nand_kernel_partition_info(struct Zapper_boot_info *p_s_e_boot_info);
+unsigned char Zapper_get_nand_standby_flag(void);
 
 int Zapper_set_nand_ldflag_partition_info(struct Zapper_boot_info *p_s_e_boot_info);
 
@@ -72,5 +84,10 @@ int Zapper_get_jump_recovery_status(unsigned char* status);
 int Zapper_set_jump_recovery_status(unsigned char status);
 int Zapper_clear_jump_recovery_status(void);
 
+/* set led display type */
+void Zapper_led_set(led_display_type type);
+
+/* Illuminate the LED through the LED type */
+void Zapper_led_show(void);
 
 #endif

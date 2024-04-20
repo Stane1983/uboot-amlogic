@@ -104,7 +104,7 @@ exit:
  * Advanced Setup Screen		Back -> 2 -> 4 -> 6 -> 5 -> i
  * USB Upgrade					Back -> 1 -> 5 -> 8 -> 5
  * Manual Forced Download		Back -> 2 -> 4 -> 8 -> 5
- * Factory Reset				Back -> 1 -> 5 -> 9 -> 0
+ * Factory Reset				1 -> 5 -> 9 -> 0
  */
 static int rcu_combination_key_detect(void)
 {
@@ -231,8 +231,24 @@ int Zapper_get_rcu_combination_type(unsigned char *type)
 {
 	printf("%s Hello, now we are going to do_zapper_key_detect\n", PRINT_TAG);
 	int ret = ZAPPER_ERROR;
+
+	/* LDRS's LED Behavior step 5 */
+	Zapper_led_set(LED_POWER_RED);
+	Zapper_led_set(LED_REMOTE_RED);
+	Zapper_led_set(LED_ALERT_YELLOW);
+	Zapper_led_show();
+
 	ret = rcu_combination_key_detect();
 	if ((ret != ZAPPER_SUCCESS) || (g_rcu_combinatoion_type == RCU_COMBINATION_MAX)) {
+		/* LDRS's LED Behavior step 6 */
+		if (Zapper_get_nand_standby_flag() == 0) {
+			Zapper_led_set(LED_POWER_GREEN);
+		} else {
+			Zapper_led_set(LED_POWER_RED);
+		}
+		Zapper_led_set(LED_REMOTE_OFF);
+		Zapper_led_set(LED_ALERT_OFF);
+		Zapper_led_show();
 		return ZAPPER_ERROR;
 	}
 	printf("%s g_rcu_combinatoion_type = %d\n", PRINT_TAG, g_rcu_combinatoion_type);

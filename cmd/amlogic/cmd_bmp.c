@@ -18,6 +18,9 @@
 #include <malloc.h>
 #include <splash.h>
 #include <amlogic/video.h>
+#ifdef CONFIG_ZAPPER_IRDETO_BOOT
+#include <amlogic/zapper_boot.h>
+#endif
 
 extern int osd_enabled;
 
@@ -120,6 +123,13 @@ static int do_bmp_display(cmd_tbl_t *cmdtp, int flag, int argc,
 	ulong addr;
 	int x = 0, y = 0;
 
+#ifdef CONFIG_ZAPPER_IRDETO_BOOT
+	run_command("zapper_bmp_display_led_set", 0);
+	if (Zapper_get_nand_standby_flag() == 1) {
+		printf("Zapper, In the standby mode, the logo is not displayed\n");
+		return 0;
+	}
+#endif
 	if (!osd_enabled) {
 		printf("osd not enabled\n");
 		return -1;

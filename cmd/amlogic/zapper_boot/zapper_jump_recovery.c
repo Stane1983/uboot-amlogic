@@ -43,6 +43,11 @@ static int do_zapper_jump_recovery(cmd_tbl_t *cmdtp, int flag, int argc, char *c
 	if (jump_recover_status) {
 		run_command("reboot recovery", 0);
 	}
+	/* LDRS's LED Behavior step 7 */
+	Zapper_led_set(LED_POWER_OFF);
+	Zapper_led_set(LED_REMOTE_OFF);
+	Zapper_led_set(LED_ALERT_OFF);
+	Zapper_led_show();
 	return ZAPPER_SUCCESS;
 }
 
