@@ -20,6 +20,7 @@
 #include <amlogic/partition_table.h>
 #include <jffs2/jffs2.h>
 #include <time.h>
+#include <amlogic/cpu_id.h>
 
 struct map_handler_t {
 	u16 *map;
@@ -460,6 +461,8 @@ static int mtd_store_get_offset(const char *partname, loff_t *retoff, loff_t off
 	struct part_info *part;
 	char tmp_part_name[20] = {0};
 	u8 pnum;
+	cpu_id_t cpu_id = get_cpu_id();
+	enum boot_type_e medium_type = store_get_type();
 #endif
 
 	*retoff = 0;
@@ -481,7 +484,17 @@ static int mtd_store_get_offset(const char *partname, loff_t *retoff, loff_t off
 				__func__, __LINE__, tmp_part_name);
 			return -EINVAL;
 		}
-		offset = part->offset + off;
+
+		if ((BOOT_SNOR == medium_type) && (!strcmp(BOOT_BL2, tmp_part_name) ||
+			!strcmp(BOOT_LOADER, tmp_part_name)) &&
+			(cpu_id.family_id == MESON_CPU_MAJOR_ID_A4 ||
+			cpu_id.family_id == MESON_CPU_MAJOR_ID_S1A ||
+			cpu_id.family_id == MESON_CPU_MAJOR_ID_S7 ||
+			cpu_id.family_id == MESON_CPU_MAJOR_ID_S7D)) {
+			offset = part->offset + off + 512;
+		} else {
+			offset = part->offset + off;
+		}
 	}
 #endif
 	else {

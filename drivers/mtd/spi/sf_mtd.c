@@ -79,7 +79,7 @@ static int spi_flash_mtd_write(struct mtd_info *mtd, loff_t to, size_t len,
 	struct spi_flash *flash = mtd->priv;
 #ifdef CONFIG_AMLOGIC_MODIFY
 	cpu_id_t cpu_id = get_cpu_id();
-	unsigned char *page_info;
+	unsigned char *page_info, *tmp;
 #endif
 	int err;
 
@@ -88,11 +88,20 @@ static int spi_flash_mtd_write(struct mtd_info *mtd, loff_t to, size_t len,
 #ifdef CONFIG_AMLOGIC_MODIFY
 	if (to == 512 && ((cpu_id.family_id == MESON_CPU_MAJOR_ID_A4)
 		|| (cpu_id.family_id == MESON_CPU_MAJOR_ID_S1A)
-		|| (cpu_id.family_id == MESON_CPU_MAJOR_ID_S7))) {
+		|| (cpu_id.family_id == MESON_CPU_MAJOR_ID_S7)
+		|| (cpu_id.family_id == MESON_CPU_MAJOR_ID_S7D))) {
 		page_info = page_info_post_init(mtd, flash->dev);
-		err = spi_flash_write(flash, 0, 512, page_info);
-		if (err)
+		tmp = kzalloc(512, GFP_KERNEL);
+		if (!tmp)
+			return -ENOMEM;
+		memset(tmp, 0xff, 512);
+		memcpy(tmp, page_info, 512);
+		err = spi_flash_write(flash, 0, 512, tmp);
+		if (err) {
+			kfree(tmp);
 			return err;
+		}
+		kfree(tmp);
 	}
 #endif
 	err = spi_flash_write(flash, to, len, buf);

@@ -211,6 +211,18 @@
 	pinctrl-1 = <&nand_cs_pins>;
 };
 
+&spi_nfc {
+	status = "disabled";
+	pinctrl-names = "default";
+	pinctrl-0 = <&spi_nfc_pins>;
+	spi-flash@0 {
+		status = "disabled";
+	};
+	spi-nand@1 {
+		status = "disabled";
+	};
+};
+
 &crg1 {
 	status = "okay";
 	dr_mode = "host";
@@ -257,18 +269,6 @@
 	/* pinctrl-0 = <&a_uart_pins>; */
 	/* pinctrl-names = "default";  */
 	uart-has-rtscts;
-};
-
-&spi_nfc {
-	status = "disabled";
-	pinctrl-names = "default";
-	pinctrl-0 = <&spi_nfc_pins>;
-	spi-flash@0 {
-		status = "disabled";
-	};
-	spi-nand@1 {
-		status = "disabled";
-	};
 };
 
 &spicc0 {
