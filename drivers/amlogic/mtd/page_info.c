@@ -9,7 +9,7 @@
 
 struct boot_info *page_info;
 #ifdef CONFIG_AML_SPI_NFC
-static int infopage_force_hostecc;
+extern unsigned char infopage_force_hostecc;
 extern unsigned char disable_host_ecc;
 #endif
 
@@ -180,10 +180,6 @@ static int page_info_version_init(void)
 	switch (cpu_id.family_id) {
 	case MESON_CPU_MAJOR_ID_A4:
 	case MESON_CPU_MAJOR_ID_S1A:
-#ifdef CONFIG_AML_SPI_NFC
-		if (disable_host_ecc)
-			infopage_force_hostecc = 1;
-#endif
 		page_info->version = PAGE_INFO_V3;
 		break;
 	case MESON_CPU_MAJOR_ID_C3:

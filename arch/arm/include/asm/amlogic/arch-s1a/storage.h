@@ -41,6 +41,6 @@
 #define NAND_ECC_ONLY_BCH8_1K
 #endif
 
-#define POC_DIS_NFC_ECC		BIT(4)
+#define INFO_PAGE_FORCE_ECC	1
 
 #endif /* _PLAT_STORAGE_H_ */

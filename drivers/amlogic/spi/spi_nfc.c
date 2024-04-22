@@ -29,6 +29,7 @@
 
 /* default builin ecc */
 unsigned char disable_host_ecc = 1;
+unsigned char infopage_force_hostecc = 0;
 
 struct spi_nfc_priv {
 	unsigned char save_cmd;
@@ -56,13 +57,22 @@ static struct spi_nand_id host_ecc_list[] = {
 #define OOB_BUF_SIZE		(128)
 #define SPI_NFC_BUF_SIZE	(DATA_BUF_SIZE + OOB_BUF_SIZE)
 
-static void spi_nfc_select_ecc(u8 mfr_id, u8 dev_id)
+static void spi_nfc_select_ecc(u8 mfr_id, u8 dev_id, struct udevice *dev)
 {
+	struct dm_spi_slave_plat *plat;
+
+	plat = dev_get_parent_plat(dev);
+	if (!plat->cs)
+		return;
+
 	for (u8 i = 0; i < (sizeof(host_ecc_list) / sizeof(struct spi_nand_id)); i++)
 		if (host_ecc_list[i].mfr_id == mfr_id && host_ecc_list[i].dev_id == dev_id)
 			disable_host_ecc = 0;
-
-	printf("spinfc use %s ecc!\n", disable_host_ecc ? "buildin" : "host");
+#ifdef INFO_PAGE_FORCE_ECC
+	if (disable_host_ecc)
+		infopage_force_hostecc = 1;
+#endif
+	printf("spinand selected %s ecc!\n", disable_host_ecc ? "builtin" : "host");
 }
 
 static int spi_nfc_probe(struct udevice *bus)
@@ -208,17 +218,17 @@ static void spi_nfc_xfer_prepare(struct udevice *dev)
 	struct dm_spi_slave_plat *plat;
 	struct mtd_info *mtd;
 
+	plat = dev_get_parent_plat(dev);
+	if (!plat->cs) {
+		disable_host_ecc = 1;
+		return;
+	}
+
 	if (disable_host_ecc && GET_BCH_MODE(page_info->host_cfg.n2m_cmd)) {
 		mtd = dev_get_uclass_priv(dev);
 		page_info->host_cfg.n2m_cmd = N2M_RAW | mtd->writesize;
 		return;
 	} else if (disable_host_ecc) {
-		return;
-	}
-
-	plat = dev_get_parent_plat(dev);
-	if (!plat->cs) {
-		disable_host_ecc = 1;
 		return;
 	}
 
@@ -231,8 +241,10 @@ static void spi_nfc_xfer_prepare(struct udevice *dev)
 		SPI_NFC_DEBUG("page_size = 0x%x block_size = 0x%x\n",
 			      page_info->dev_cfg0.page_size,
 			      page_info->dev_cfg1.block_size);
-		mtd_set_ooblayout(mtd, &spi_nfc_ecc_ooblayout);
-		mtd->oobavail = mtd_ooblayout_count_freebytes(mtd);
+		if (!infopage_force_hostecc) {
+			mtd_set_ooblayout(mtd, &spi_nfc_ecc_ooblayout);
+			mtd->oobavail = mtd_ooblayout_count_freebytes(mtd);
+		}
 	}
 }
 
@@ -368,7 +380,7 @@ static int spi_nfc_xfer(struct udevice *dev,
 				(uint8_t *)&priv->save_addr,
 				priv->save_addr_len, buf, len);
 			if (priv->save_cmd == 0x9F)
-				spi_nfc_select_ecc(buf[1], buf[2]);
+				spi_nfc_select_ecc(buf[1], buf[2], dev);
 		} else {
 			ret = NFC_SEND_CMD_ADDR_DATA_WR(priv->save_cmd,
 				(uint8_t *)&priv->save_addr,
