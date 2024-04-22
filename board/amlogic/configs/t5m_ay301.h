@@ -83,14 +83,15 @@
 #define KERNL_LOGLEVEL	"loglevel=7 "
 #endif
 
-#ifndef CONFIG_ARMV8_MULTIENTRY
 #define OSD_CMD	"osd open;osd clear;run load_bmp_logo;bmp scale; "
-#define ENABLE_SMP "display_on_smp=0\0"
-#define CHECK_DISPLAY "run check_display;"
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#define ENABLE_SMP	"display_on_smp=0\0"
+#define INIT_DISPLAY	"if test ${display_on_smp} = 0; then "\
+				"run init_display;" \
+			"fi;"
 #else
-#define OSD_CMD " "
-#define ENABLE_SMP "display_on_smp=1\0"
-#define CHECK_DISPLAY " "
+#define ENABLE_SMP	"display_on_smp=0\0"
+#define INIT_DISPLAY	"run init_display;"
 #endif
 
 /* args/envs */
@@ -106,6 +107,7 @@
 		"lcd_ctrl=0x00000000\0" \
 		"lcd_debug=0x00000000\0" \
 		"outputmode=1080p60hz\0" \
+		"bootup_display=on\0" \
 		"hdmimode=none\0" \
 		"connector_type=LVDS-A\0" \
 		"cvbsmode=576cvbs\0" \
@@ -281,8 +283,6 @@
 			"run load_bmp_logo_base;"\
 			"\0"\
 	"init_display="\
-		"get_rebootmode;"\
-		"echo reboot_mode:::: ${reboot_mode};"\
 		OSD_CMD \
 		"if test ${reboot_mode} = quiescent; then "\
 			"setenv dolby_status 0;"\
@@ -298,13 +298,32 @@
 			"vout output ${outputmode};"\
 		"fi;fi;"\
 		"\0"\
+	"init_display_pre="\
+		OSD_CMD \
+		"if test ${reboot_mode} = quiescent; then "\
+			"setenv dolby_status 0;"\
+			"setenv dolby_vision_on 0;"\
+			"setenv bootconfig ${bootconfig} androidboot.quiescent=1;"\
+		"else if test ${reboot_mode} = recovery_quiescent; then "\
+			"setenv dolby_status 0;"\
+			"setenv dolby_vision_on 0;"\
+			"setenv bootconfig ${bootconfig} androidboot.quiescent=1;"\
+		"fi;fi;"\
+		"vout prepare ${outputmode};"\
+		"\0"\
+	"init_display_post="\
+		"if test ${bootup_display} = on; then "\
+			"vout output ${outputmode};"\
+		"fi;"\
+		"\0"\
 	"check_display="\
 		"echo check_display reboot_mode : ${reboot_mode} ,powermode : ${powermode};"\
 		"if test ${reboot_mode} = ffv_reboot; then "\
 			"if test ${ffv_wake} = on; then "\
 				"echo ffv reboot no display; "\
+				"setenv bootup_display off; "\
 			"else "\
-				"run init_display; "\
+				"setenv bootup_display on; "\
 			"fi; "\
 		"else if test ${reboot_mode} = cold_boot; then "\
 			"if test ${powermode} = standby; then "\
@@ -315,20 +334,20 @@
 				"fi;"\
 			"fi;fi;"\
 			"if test ${powermode} = on; then "\
-				"echo powermode : ${powermode} ,need to init_display; "\
-				"run init_display; "\
+				"echo powermode : ${powermode} ,bootup_display on; "\
+				"setenv bootup_display on; "\
 			"else if test ${powermode} = standby; then "\
 				"echo reboot: ${reboot_mode} suspend: ${suspend};"\
-				"run init_display; "\
+				"setenv bootup_display on; "\
 			"else if test ${powermode} = last; then "\
 				"if test ${suspend} = off; then "\
-					"echo suspend : ${suspend} ,need to init_display; "\
-					"run init_display; "\
+					"echo suspend : ${suspend} ,bootup_display on; "\
+					"setenv bootup_display on; "\
 				"fi; "\
 			"fi;fi;fi; "\
 		"else "\
 			"echo reboot_mode is normal;"\
-			"run init_display; "\
+			"setenv bootup_display on; "\
 		"fi;fi; "\
 		"\0"\
 		"cmdline_keys="\
@@ -342,9 +361,7 @@
 
 #define CONFIG_PREBOOT  \
             "run upgrade_check;"\
-	"run init_display;"\
-	"get_rebootmode;"\
-	CHECK_DISPLAY \
+	INIT_DISPLAY \
 	"run storeargs;"\
             "run upgrade_key;" \
             "bcb uboot-command;" \

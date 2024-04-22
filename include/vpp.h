@@ -15,6 +15,7 @@ void vpp_pq_load(void);
 
 #define VPP_CM_RGB    0   /* same as COLOR_FMT_RGB444*/
 #define VPP_CM_YUV    2   /* same as COLOR_FMT_YUV444*/
+#define VPP_CM_INVALID 0xff
 
 extern void vpp_matrix_update(int type);
 extern void vpp_viu2_matrix_update(int type);

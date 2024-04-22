@@ -12,6 +12,7 @@ void vpp_pq_load(void);
 
 #define VPP_CM_RGB    0   /* same as COLOR_FMT_RGB444*/
 #define VPP_CM_YUV    2   /* same as COLOR_FMT_YUV444*/
+#define VPP_CM_INVALID 0xff
 
 enum vpp_gamma_sel_e {
 	VPP_GAMMA_R = 0,

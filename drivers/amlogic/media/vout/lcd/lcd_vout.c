@@ -31,8 +31,6 @@ static char *g_dt_addr = (char *)0x01000000;
 //static int lcd_poweron_suspend = 1;
 char *lcd_pm_name[LCD_MAX_DRV] = {"lcd_drv0_pm", "lcd_drv1_pm", "lcd_drv2_pm"};
 
-static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv);
-
 static struct aml_lcd_data_s lcd_data_g12a = {
 	.chip_type = LCD_CHIP_G12A,
 	.chip_name = "g12a",
@@ -516,8 +514,6 @@ static void lcd_module_enable(struct aml_lcd_drv_s *pdrv, char *mode, unsigned i
 			      pdrv->index, pdrv->boot_ctrl.init_level);
 		}
 	}
-
-	lcd_update_ctrl_bootargs(pdrv);
 }
 
 static void lcd_module_disable(struct aml_lcd_drv_s *pdrv)
@@ -554,8 +550,6 @@ static void lcd_module_prepare(struct aml_lcd_drv_s *pdrv,
 
 	if ((pdrv->status & LCD_STATUS_ENCL_ON) == 0)
 		lcd_encl_on(pdrv);
-
-	lcd_update_ctrl_bootargs(pdrv);
 }
 
 static int lcd_mode_init(struct aml_lcd_drv_s *pdrv)
@@ -768,15 +762,14 @@ static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 	val |= (pdrv->boot_ctrl.clk_mode & 0x3) << 22;
 	val |= (pdrv->boot_ctrl.base_frame_rate & 0xff) << 24;
 
+	sprintf(ctrl_str, "0x%08x", val);
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-		LCDPR("[%d]: %s: ppc=%d, clk_mode=%d, base_fr=%d, bootctrl val=0x%x\n",
+		LCDPR("[%d]: %s: ppc=%d, clk_mode=%d, base_fr=%d, bootctrl=%s\n",
 			pdrv->index, __func__,
 			pdrv->config.timing.ppc,
 			pdrv->config.timing.clk_mode,
-			pdrv->config.timing.base_timing.frame_rate, val);
+			pdrv->config.timing.base_timing.frame_rate, ctrl_str);
 	}
-
-	sprintf(ctrl_str, "0x%08x", val);
 
 	if (strlen(pdrv->config.basic.model_name) > 0) {
 		if (pdrv->index == 0)
