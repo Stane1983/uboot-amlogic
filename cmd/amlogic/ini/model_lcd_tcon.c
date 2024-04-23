@@ -813,6 +813,17 @@ static int handle_tcon_path_resv_for_kernel(unsigned int version)
 			n += 256;
 		}
 
+		// save dccd bin path
+		ini_value = ini_get_string("tcon_Path", "DCCD_BIN_PATH_K", "null");
+		if (strcmp(ini_value, "null")) {
+			if (model_debug_flag & DEBUG_TCON) {
+				ALOGD("%s, dccd bin path is (%s)\n",
+					__func__, ini_value);
+			}
+			strncpy((char *)&buf[n + 4], ini_value, 252);
+			block_cnt++;
+		}
+
 		/* block cnt */
 		buf[16] = block_cnt & 0xff;
 		buf[17] = (block_cnt >> 8) & 0xff;
@@ -1283,6 +1294,15 @@ handle_tcon_path_pmu_spi_bin_multi:
 			env_set(env_str, ini_value);
 	}
 
+	/* tcon base bin handle */
+	ini_value = ini_get_string("tcon_Path", "TCON_BASE_BIN_PATH", "null");
+	if (!strcmp(ini_value, "null")) {
+		if (model_debug_flag & DEBUG_TCON)
+			ALOGE("%s, tcon bin load file error!\n", __func__);
+	} else {
+		env_set("model_tcon_base", ini_value);
+	}
+
 	// start handle tcon_spi param
 	tmp_buf = (unsigned char *)malloc(tmp_buf_size);
 	if (!tmp_buf) {
@@ -1320,6 +1340,96 @@ handle_tcon_path_end:
 	return 0;
 }
 
+static int tcon_check_load_file(const char *file_name, unsigned int hasheader,
+		unsigned char *filebuf, unsigned int bufsize)
+{
+	unsigned int size = 0;
+	unsigned int file_crc32, calc_crc32;
+
+	if (!file_name || !filebuf || bufsize <= 0)
+		return -1;
+
+	if (!ini_is_file_exist(file_name)) {
+		ALOGE("%s, file name \"%s\" not exist.\n", __func__, file_name);
+		return -1;
+	}
+
+	if (hasheader)
+		size = handle_read_bin_file_with_header(file_name, CC_MAX_TCON_BIN_SIZE);
+	else
+		size = handle_read_bin_file(file_name, CC_MAX_TCON_BIN_SIZE);
+	if (size == 0 || size > bufsize)
+		return -1;
+
+	if (model_debug_flag & DEBUG_TCON)
+		ALOGD("Tcon load file: %s, size=%d\n", file_name, size);
+
+	get_bin_data(filebuf, size);
+	if (hasheader) {
+		file_crc32 = filebuf[0] | (filebuf[1] << 8) |
+			(filebuf[2] << 16) | (filebuf[3] << 24);
+		calc_crc32 = cal_CRC32(0, &filebuf[4], (size - 4));
+		if (file_crc32 != calc_crc32) {
+			if (model_debug_flag & DEBUG_TCON) {
+				ALOGE("%s, tcon bin crc error! raw:0x%08x, temp:0x%08x\n",
+					__func__, file_crc32, calc_crc32);
+			} else {
+				ALOGE("%s, tcon bin crc error!!!\n", __func__);
+			}
+			return -1;
+		}
+		if (model_debug_flag & DEBUG_TCON)
+			ALOGD("%s: load tcon bin with header\n", __func__);
+	} else {
+		if (model_debug_flag & DEBUG_TCON)
+			ALOGD("%s: load tcon bin\n", __func__);
+	}
+	return size;
+}
+
+static unsigned int tcon_check_dccd_info(unsigned int hasheader,
+		unsigned char *tconbuf, unsigned int bufsize, unsigned int rawsize)
+{
+	char *file_name;
+	unsigned int size = rawsize;
+	struct dccd_info_s *dccd_info = get_dccd_info();
+
+	if (!tconbuf || bufsize <= 0 || rawsize <= 0 || !dccd_info)
+		goto __tcon_check_dccd_info_exit;
+
+	if (!dccd_info->is_dccd) {
+		if (model_debug_flag & DEBUG_TCON)
+			ALOGD("%s, no dccd support\n", __func__);
+		goto __tcon_check_dccd_info_exit;
+	}
+
+	//check dccd flag & checksum
+	if (tconbuf[0x14] && dccd_info->checksum == tconbuf[0x15]) {
+		if (model_debug_flag & DEBUG_TCON) {
+			ALOGD("%s, dccd chksum(%#x) matched\n",
+				__func__, dccd_info->checksum);
+		}
+		goto __tcon_check_dccd_info_exit;
+	}
+
+	file_name = env_get("model_tcon_base");
+	if (!file_name) {
+		if (model_debug_flag & DEBUG_TCON)
+			ALOGD("%s, no model_tcon_base path\n", __func__);
+		goto __tcon_check_dccd_info_exit;
+	}
+
+	//recover to base.bin
+	size = tcon_check_load_file(file_name, hasheader,
+		tconbuf, bufsize);
+
+	if (size)  //need to run dccd flow
+		dccd_info->is_dccd_flow = 1;
+
+__tcon_check_dccd_info_exit:
+	return size;
+}
+
 int handle_tcon_bin(void)
 {
 	int tmp_len = 0, tcon_bin_size;
@@ -1327,8 +1437,8 @@ int handle_tcon_bin(void)
 	unsigned char *tmp_buf = NULL;
 	unsigned char *tcon_buf = NULL;
 	char *file_name;
-	unsigned int bypass, header, data_crc32, temp_crc32;
-	int tmp;
+	unsigned int bypass, header;
+	int tmp, ret = -1;
 
 	tmp = env_get_ulong("model_tcon_bypass", 10, 0xffff);
 	if (tmp != 0xffff) {
@@ -1352,52 +1462,22 @@ int handle_tcon_bin(void)
 	tmp_buf = (unsigned char *)malloc(tmp_buf_size);
 	if (!tmp_buf) {
 		ALOGE("%s, malloc buffer memory error!!!\n", __func__);
-		return -1;
+		goto __handle_tcon_bin_exit;
 	}
 
 	// start handle lcd_tcon param
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s: model_tcon: %s\n", __func__, file_name);
-	if (header)
-		size = handle_read_bin_file_with_header(file_name, tmp_buf_size);
-	else
-		size = handle_read_bin_file(file_name, tmp_buf_size);
-	if (size == 0) {
-		free(tmp_buf);
-		tmp_buf = NULL;
-		return -1;
-	}
-
-	get_bin_data(tmp_buf, size);
-	if (header) {
-		data_crc32 = tmp_buf[0] | (tmp_buf[1] << 8) |
-			(tmp_buf[2] << 16) | (tmp_buf[3] << 24);
-		temp_crc32 = cal_CRC32(0, &tmp_buf[4], (size - 4));
-		if (data_crc32 != temp_crc32) {
-			free(tmp_buf);
-			tmp_buf = NULL;
-			if (model_debug_flag & DEBUG_TCON) {
-				ALOGE("%s, tcon bin crc error! raw:0x%08x, temp:0x%08x\n",
-				      __func__, data_crc32, temp_crc32);
-			} else {
-				ALOGE("%s, tcon bin crc error!!!\n", __func__);
-			}
-			return -1;
-		}
-		if (model_debug_flag & DEBUG_TCON)
-			ALOGD("%s: load tcon bin with header, size:0x%x\n", __func__, size);
-	} else {
-		if (model_debug_flag & DEBUG_TCON)
-			ALOGD("%s: load tcon bin, size:0x%x\n", __func__, size);
-	}
+	size = tcon_check_load_file(file_name, header, tmp_buf, CC_MAX_TCON_BIN_SIZE);
+	size = tcon_check_dccd_info(header, tmp_buf, CC_MAX_TCON_BIN_SIZE, size);
+	if (size <= 0)
+		goto __handle_tcon_bin_exit;
 
 	tcon_bin_size = size;
 	tcon_buf = (unsigned char *)malloc(tcon_bin_size);
 	if (!tcon_buf) {
-		free(tmp_buf);
-		tmp_buf = NULL;
 		ALOGE("%s, malloc buffer memory error!!!\n", __func__);
-		return -1;
+		goto __handle_tcon_bin_exit;
 	}
 	memcpy(tcon_buf, tmp_buf, tcon_bin_size);
 
@@ -1412,15 +1492,18 @@ int handle_tcon_bin(void)
 		      __func__, tmp_len);
 		save_tcon_bin_param(tcon_bin_size, tcon_buf);
 	}
+	ret = 0;
 
-	memset((void *)tcon_buf, 0, tcon_bin_size);
-	free(tcon_buf);
-	// end handle lcd_tcon param
+__handle_tcon_bin_exit:
+	if (tmp_buf)
+		free(tmp_buf);
+	tmp_buf = NULL;
 
-	memset((void *)tmp_buf, 0, tmp_buf_size);
-	free(tmp_buf);
+	if (tcon_buf)
+		free(tcon_buf);
+	tcon_buf = NULL;
 
-	return 0;
+	return ret;
 }
 #endif
 #endif

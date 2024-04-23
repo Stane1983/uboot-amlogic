@@ -210,6 +210,9 @@ void edp_tx_ctrl(struct aml_lcd_drv_s *pdrv, int flag);
 #endif
 
 void lcd_wait_vsync(struct aml_lcd_drv_s *pdrv);
+#if IS_ENABLED(CONFIG_CMD_INI)
+unsigned int is_dccd_flow(void);
+#endif
 
 /* aml_bl driver */
 void aml_bl_probe_single(unsigned char index, int load_id);

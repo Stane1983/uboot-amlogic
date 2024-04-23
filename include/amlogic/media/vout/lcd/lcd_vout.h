@@ -594,20 +594,21 @@ struct lcd_vmode_mgr_s {
 #define LCD_VENC_4PPC                 2
 
 /*
- *bit[31:24]: base_frame_rate
- *bit[23:22]: clk_mode
- *bit[21:20]: ppc
- *bit[19:18]: lcd_init_level
- *bit[17]: reserved
- *bit[16]: custom pinmux flag
- *bit[15:8]: advanced flag(p2p_type when lcd_type=p2p)
- *bit[7:4]: lcd bits
- *bit[3:0]: lcd_type
+ * bit[31:24] : base_frame_rate
+ * bit[23:22] : clk_mode
+ * bit[21:20] : ppc
+ * bit[19:18] : lcd_init_level
+ * bit[17] : dccd flag
+ * bit[16] : custom pinmux flag
+ * bit[15:8] : advanced flag(p2p_type when lcd_type=p2p)
+ * bit[7:4] : lcd bits
+ * bit[3:0] : lcd_type
  */
 struct lcd_boot_ctrl_s {
 	unsigned char lcd_type;
 	unsigned char lcd_bits;
 	unsigned char advanced_flag;
+	unsigned char dccd_flag;
 	unsigned char custom_pinmux;
 	unsigned char init_level;
 	unsigned char ppc;

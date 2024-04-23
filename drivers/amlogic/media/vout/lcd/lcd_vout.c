@@ -505,6 +505,12 @@ static void lcd_module_enable(struct aml_lcd_drv_s *pdrv, char *mode, unsigned i
 		LCDERR("[%d]: %s: encl_on failed!\n", pdrv->index, __func__);
 		return;
 	}
+#if IS_ENABLED(CONFIG_CMD_INI)
+	if (is_dccd_flow()) {
+		LCDPR("[%d]: dccd flow bypass module enable\n", pdrv->index);
+		return;
+	}
+#endif
 	if ((pdrv->status & LCD_STATUS_IF_ON) == 0) {
 #ifdef CONFIG_AML_LCD_TABLET
 		if (unlikely(pdrv->mode == LCD_MODE_TABLET &&
@@ -761,13 +767,16 @@ static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 		pdrv->boot_ctrl.init_level = env_get_ulong("lcd_debug_init", 10, 0);
 	else
 		pdrv->boot_ctrl.init_level = env_get_ulong("lcd_init_level", 10, 0);
+#if IS_ENABLED(CONFIG_CMD_INI)
+	pdrv->boot_ctrl.dccd_flag = is_dccd_flow();
+#endif
 
 	/*
 	 *bit[31:23]: base frame rate
 	 *bit[23:22]: clk_mode
 	 *bit[21:20]: ppc
 	 *bit[19:18]: lcd_init_level
-	 *bit[17]: reserved
+	 *bit[17]: dccd flag
 	 *bit[16]: custom pinmux flag
 	 *bit[15:8]: advanced flag(p2p_type when lcd_type=p2p)
 	 *bit[7:4]: lcd bits
@@ -777,6 +786,7 @@ static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 	val |= (pdrv->boot_ctrl.lcd_bits & 0xf) << 4;
 	val |= (pdrv->boot_ctrl.advanced_flag & 0xff) << 8;
 	val |= (pdrv->boot_ctrl.custom_pinmux & 0x1) << 16;
+	val |= (pdrv->boot_ctrl.dccd_flag & 0x1) << 17;
 	val |= (pdrv->boot_ctrl.init_level & 0x3) << 18;
 	val |= (pdrv->boot_ctrl.ppc & 0x3) << 20;
 	val |= (pdrv->boot_ctrl.clk_mode & 0x3) << 22;

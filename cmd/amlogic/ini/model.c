@@ -35,6 +35,21 @@
 int model_debug_flag;
 
 #ifdef CONFIG_AML_LCD
+struct dccd_base_info_s {
+	unsigned int dccd;
+	unsigned char minor_ver:4;
+	unsigned char major_ver:4;
+	unsigned char port_idx:4;
+	unsigned char reserved0:2;
+	unsigned char port_type:2;
+	unsigned char capability1:4;
+	unsigned char dev_type:4;
+	unsigned char capability2;
+	unsigned char capability3;
+	unsigned char capability4;
+	unsigned short len;  //all others info len
+} __packed;
+
 static int glcd_dcnt, glcd_ext_dcnt, gbl_dcnt, glcd_optical_dcnt;
 static int g_lcd_pwr_on_seq_cnt, g_lcd_pwr_off_seq_cnt;
 #ifdef CONFIG_AML_LCD_BL_LDIM
@@ -44,6 +59,7 @@ static unsigned int g_ldim_dev_valid;
 static int glcd_ext_init_on_cnt, glcd_ext_init_off_cnt, glcd_ext_cmd_size;
 static struct lcd_ext_attr_s *lcd_ext_attr;
 static unsigned int g_lcd_if, g_lcd_tcon_valid;
+static struct dccd_info_s dccd_info;
 #endif
 
 int trans_buffer_data(const char *data_str, unsigned int data_buf[])
@@ -726,6 +742,16 @@ static int handle_lcd_v2_header(struct lcd_v2_attr_s *p_attr)
 void *handle_lcd_ext_buf_get(void)
 {
 	return (void *)lcd_ext_attr;
+}
+
+struct dccd_info_s *get_dccd_info(void)
+{
+	return &dccd_info;
+}
+
+unsigned int is_dccd_flow(void)
+{
+	return dccd_info.is_dccd_flow;
 }
 
 static int handle_lcd_ext_basic(struct lcd_ext_attr_s *p_attr)
@@ -2500,6 +2526,264 @@ static int handle_lcd_optical_header(struct lcd_optical_attr_s *p_attr)
 	return 0;
 }
 
+static void dccd_check_update(struct dccd_info_s *dccd)
+{
+	struct dccd_base_info_s *basic = NULL;
+	int bufidx = 0, i = 0;
+
+	if (!dccd || !dccd->data_buf || dccd->data_size <= 0)
+		return;
+
+	basic = (struct dccd_base_info_s *)dccd->data_buf;
+
+	//check if it's dccd bin
+	if (basic->dccd != 0x0d0c0c0d) {
+		if (model_debug_flag & DEBUG_LCD)
+			ALOGW("It's not dccd bin(%#x)\n", basic->dccd);
+		return;
+	}
+
+	//check dccd checksum
+	bufidx = sizeof(*basic) + basic->len - 1;
+	if (bufidx >= dccd->data_size) {
+		ALOGE("dccd len not match\n");
+		return;
+	}
+	dccd->checksum = dccd->data_buf[bufidx];
+
+	//check crc, calculate skip crc/checksum
+	for (i = 0, dccd->calc_chksum = 0; i <= bufidx; i++)
+		dccd->calc_chksum += dccd->data_buf[i];
+
+	dccd->is_dccd = !(dccd->calc_chksum & 0xff);
+	if (model_debug_flag & DEBUG_LCD) {
+		ALOGD("dccd raw checksum=%#x, calc checksum=%#x, %s\n",
+			dccd->checksum, dccd->calc_chksum,
+			dccd->is_dccd ? "matched" : "miss-matched");
+	}
+}
+
+static int dccd_update_lcd_attr(struct lcd_attr_s *p_attr, unsigned char *dccd_buf)
+{
+	int block_size = 0, data_start = 0;
+	int data = 0;
+	unsigned int hs_fp = 0, h_blk = 0, vs_fp = 0, v_blk = 0;
+	unsigned int pol = 0, width = 0;
+	unsigned int lane_num = 0;
+
+	//0x1f: save product Name length
+	block_size = dccd_buf[0x1f];
+	data_start =  0x1f + block_size + 1;
+
+	//0x80: panel timing data block
+	if (dccd_buf[data_start] == 0x80) {
+	/* offset 0x1: [7:4]:version, [3:0]:reserved
+	 * 0x2: data_length
+	 * 0x3: h_active[7:0]
+	 * 0x4: h_active[15:8]
+	 * 0x5: h_blank[7:0]
+	 * 0x6: h_blank[15:8]
+	 * 0x7: hsync_fp[7:0]
+	 * 0x8: hsync_fp[15:8]
+	 * 0x9: hsync_width[7:0]
+	 * 0xa: bit7: hsync_pol, [6:0]:hsync_width[14:8]
+	 * 0xb: v_active[7:0]
+	 * 0xc: v_active[15:8]
+	 * 0xf: vsync_fp[7:0]
+	 * 0x10: vsync_fp[15:8]
+	 * 0x11: vsync_width[7:0]
+	 * 0x12: bit7:vsync_pol, [6:0]: vsync_width[14:8]
+	 * 0x13~0x16: pixel_clk? [32:0]
+	 * 0x17: [3: 0]: lcd_bits(0:6bit, 1:8bit, 2:10bit, 3:12bit..)
+	 */
+		p_attr->head.version = dccd_buf[data_start + 0x1];
+		if (model_debug_flag & DEBUG_LCD_OPTICAL)
+			ALOGD("%s, version is (%d)\n", __func__, p_attr->head.version);
+		if (p_attr->head.version >= 2)
+			p_attr->head.block_next_flag = 1;
+
+		//lcd_timing
+		p_attr->timming.h_active = dccd_buf[data_start + 0x3] |
+					dccd_buf[data_start + 0x4] << 8;
+		if (model_debug_flag & DEBUG_LCD)
+			ALOGD("%s, h_active is (%d)\n", __func__, p_attr->timming.h_active);
+
+		h_blk = dccd_buf[data_start + 0x5] |
+					dccd_buf[data_start + 0x6] << 8;
+		if (model_debug_flag & DEBUG_LCD)
+			ALOGD("%s, h_blank is (%d)\n", __func__, h_blk);
+
+		hs_fp = dccd_buf[data_start + 0x7] |
+					dccd_buf[data_start + 0x8] << 8;
+		if (model_debug_flag & DEBUG_LCD)
+			ALOGD("%s, hsync_fp is (%d)\n", __func__, hs_fp);
+
+		width = dccd_buf[data_start + 0x9] |
+					(dccd_buf[data_start + 0xa] & 0x7f) << 8;
+		if (model_debug_flag & DEBUG_LCD)
+			ALOGD("%s, hsync_width is (%d)\n", __func__, width)
+
+		p_attr->timming.hsync_bp = h_blk - hs_fp - width;
+		if (model_debug_flag & DEBUG_LCD)
+			ALOGD("%s, hsync_bp is (%d)\n", __func__, p_attr->timming.hsync_bp);
+
+		pol = (dccd_buf[data_start + 0xa] & 0x80) >> 7;
+		if (model_debug_flag & DEBUG_LCD)
+			ALOGD("%s, hsync_pol is (%d)\n", __func__, pol);
+
+		p_attr->timming.hsync_width_pol = ((pol & 0xf) << 12) | (width & 0xfff);
+
+		p_attr->timming.v_active = dccd_buf[data_start + 0xb] |
+					dccd_buf[data_start + 0xc] << 8;
+		if (model_debug_flag & DEBUG_LCD)
+			ALOGD("%s, v_active is (%d)\n", __func__, p_attr->timming.v_active);
+
+		v_blk = dccd_buf[data_start + 0xd] | dccd_buf[data_start + 0xe] << 8;
+		if (model_debug_flag & DEBUG_LCD)
+			ALOGD("%s, v_blank is (%d)\n", __func__, v_blk);
+
+		vs_fp = dccd_buf[data_start + 0xf] | dccd_buf[data_start + 0x10] << 8;
+		if (vs_fp < 18)
+			vs_fp = 18;
+		if (model_debug_flag & DEBUG_LCD)
+			ALOGD("%s, vsync_fp is (%d)\n", __func__, vs_fp);
+
+		width = dccd_buf[data_start + 0x11] |
+					(dccd_buf[data_start + 0x12] & 0x7f) << 8;
+		if (model_debug_flag & DEBUG_LCD)
+			ALOGD("%s, vsync_width is (%d)\n", __func__, width);
+
+		p_attr->timming.vsync_bp = v_blk - vs_fp - width;
+		if (model_debug_flag & DEBUG_LCD)
+			ALOGD("%s, vsync_bp is (%d)\n", __func__, p_attr->timming.vsync_bp);
+
+		pol = (dccd_buf[data_start + 0x12] & 0x80) >> 7;
+		if (model_debug_flag & DEBUG_LCD)
+			ALOGD("%s, vsync_pol is (%d)\n", __func__, pol);
+
+		p_attr->timming.vsync_width_pol = ((pol & 0xf) << 12) | (width & 0xfff);
+
+		//lcd_basic
+		data = dccd_buf[data_start + 0x17] & 0xf;
+		switch (data) {
+		case 0:
+			p_attr->basic.lcd_bits_cfmt = 6;
+			break;
+		case 1:
+			p_attr->basic.lcd_bits_cfmt = 8;
+			break;
+		case 3:
+			p_attr->basic.lcd_bits_cfmt = 12;
+			break;
+		default:
+			p_attr->basic.lcd_bits_cfmt = 10;
+			break;
+		}
+		if (model_debug_flag & DEBUG_LCD)
+			ALOGD("%s, lcd_bits is (%d)\n", __func__, p_attr->basic.lcd_bits_cfmt);
+		data_start = 3 + data_start + dccd_buf[data_start + 0x2];
+	}
+
+	//0x81: panel timing data block2
+	if (dccd_buf[data_start] == 0x81) {
+		/* offset 0x1: [7:4]:version, [3:0]:reserved
+		 * 0x2: data_length
+		 * 0x3: screen_width[7:0] (cm)
+		 * 0x4: screen_height[7:0] (cm)
+		 * 0x5: [7:4]: screen_width[11:8], [3:0]: screen_height[11:8]
+		 * 0x6: lcd_interface(0:vb1, 1:lvds, 2:p2p, 3: mlvds)
+		 *   SS: don't support ss positive and negative, defalut use ss_level+ value
+		 * 0x7: ss max freq (KHz)
+		 * 0x8: ss_level+
+		 * 0x9: ss_level-
+		 * 0xc: lane_num
+		 */
+		g_lcd_if = dccd_buf[data_start + 0x6];
+		switch (g_lcd_if) {
+		case 0:
+			p_attr->interface.if_attr_0 = dccd_buf[data_start + 0xc];
+			lane_num = p_attr->interface.if_attr_0;
+			break;
+		case 1:
+			p_attr->interface.if_attr_8 = dccd_buf[data_start + 0xc];
+			lane_num = p_attr->interface.if_attr_8;
+			break;
+		case 2:
+			//p_attr->interface.if_attr_1 = dccd_buf[data_start + 0xc];
+			lane_num = p_attr->interface.if_attr_1;
+			break;
+		case 3:
+			p_attr->interface.if_attr_0 = dccd_buf[data_start + 0xc];
+			lane_num = p_attr->interface.if_attr_0;
+			break;
+		default:
+			break;
+		}
+		p_attr->basic.lcd_if_chk &= ~0x3f;
+		p_attr->basic.lcd_if_chk |= (g_lcd_if & 0x3f);
+		if (model_debug_flag & DEBUG_LCD)
+			ALOGD("%s, lcd_type is (%d), lane_num is (%d)\n",
+			      __func__, g_lcd_if, lane_num);
+
+		data_start = 3 + data_start + dccd_buf[data_start + 0x2];
+	}
+	return 0;
+}
+
+static int update_dccd_load(struct lcd_attr_s *p_attr)
+{
+	const char *ini_value = NULL;
+	unsigned char *tmp_buf = NULL;
+	unsigned int size = 0, temp = 0;
+
+	ini_value = ini_get_string("lcd_Attr", "dccd_flag", "0");
+	if (model_debug_flag & DEBUG_LCD)
+		ALOGD("%s, dccd_flag is (%s)\n", __func__, ini_value);
+	temp = strtoul(ini_value, NULL, 0);
+	if (!temp) {
+		ALOGD("%s: no need load dccd", __func__);
+		return 0;
+	}
+
+	//check dccd bin
+	ini_value = ini_get_string("tcon_Path", "DCCD_BIN_PATH", "null");
+	if (!strcmp(ini_value, "null")) {
+		if (model_debug_flag & DEBUG_TCON)
+			ALOGE("%s, dccd bin load file error!\n", __func__);
+	}
+	if (model_debug_flag & DEBUG_TCON)
+		ALOGD("%s: dccd_path: %s\n", __func__, ini_value);
+	if (!ini_is_file_exist(ini_value)) {
+		ALOGE("%s, file name \"%s\" not exist.\n", __func__, ini_value);
+		return -1;
+	}
+
+	size = handle_read_bin_file(ini_value, CC_MAX_TCON_BIN_SIZE);
+	if (!size)
+		return -1;
+
+	tmp_buf = (unsigned char *)malloc(size);
+	if (!tmp_buf) {
+		ALOGE("%s, malloc buffer memory error!!!\n", __func__);
+		return -1;
+	}
+
+	get_bin_data(tmp_buf, size);
+
+	dccd_info.data_buf = tmp_buf;
+	dccd_info.data_size = size;
+	dccd_check_update(&dccd_info);
+
+	ini_value = ini_get_string("lcd_Attr", "dccd_timing", "0");
+	if (model_debug_flag & DEBUG_LCD)
+		ALOGD("%s, dccd_timing is (%s)\n", __func__, ini_value);
+	if (!strcmp(ini_value, "1"))
+		dccd_update_lcd_attr(p_attr, tmp_buf);
+	bin_file_uninit();
+
+	return 0;
+}
+
 static int parse_panel_ini(const char *file_name, unsigned char *lcd_buf,
 			   struct lcd_ext_attr_s *ext_attr,
 			   struct bl_attr_s *bl_attr,
@@ -2549,6 +2833,8 @@ static int parse_panel_ini(const char *file_name, unsigned char *lcd_buf,
 	handle_lcd_interface(lcd_attr);
 	handle_lcd_pwr(lcd_attr);
 	handle_lcd_header(lcd_attr);
+
+	update_dccd_load(lcd_attr);
 
 	lcd_size = lcd_attr->head.block_cur_size;
 	memcpy((void *)lcd_buf, (void *)lcd_attr, lcd_attr->head.block_cur_size);

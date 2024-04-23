@@ -607,6 +607,18 @@ struct all_info_header_s {
 
 extern int model_debug_flag;
 
+struct dccd_info_s {
+	unsigned char *data_buf;
+	unsigned int data_size;
+	unsigned short calc_chksum;  //calculated checksum, need bit[7:0] = 0x00
+	unsigned char checksum;  //checksum byte inside dccd buffer
+	unsigned char is_dccd;   //check support dccd
+
+	unsigned int is_dccd_flow;  //check need to run dccd flow
+};
+
+struct dccd_info_s *get_dccd_info(void);
+
 int trans_buffer_data(const char *data_str, unsigned int data_buf[]);
 int handle_read_bin_file(const char *file_name, unsigned long max_len);
 
