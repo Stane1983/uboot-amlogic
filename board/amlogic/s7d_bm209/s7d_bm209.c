@@ -26,6 +26,7 @@
 #include <amlogic/board.h>
 #include <asm-generic/u-boot.h>
 #include <command.h>
+#include <asm/amlogic/arch/usb.h>
 
 #ifdef CONFIG_AML_VPU
 #include <amlogic/media/vpu/vpu.h>
@@ -116,6 +117,111 @@ void board_init_mem(void)
 	}
 }
 
+//read the power status and set env.
+void set_usb_status(void) {
+	int ret = -1;
+	u32 status;
+
+	u32 *val1 = malloc(sizeof(u32 *));
+	u32 *val2 = malloc(sizeof(u32 *));
+
+	ret = aml_cc_get_ufp_status(val1, val2);
+	if (ret) {
+		printf("failed to get cc port status!\n");
+		env_set("usb_status", "detach");
+		free(val1);
+		free(val2);
+		return;
+	} else {
+		if (!val1 || !val2) {
+			printf("usb_status is NULL!\n");
+			free(val1);
+			free(val2);
+			return;
+		} else {
+			status = readl(CC_REG_BASE + USB_CC_INT_STATUS);
+			if (status & CC_UFP_DAM_PLUG_IN_INT) {
+				//val = readl(CC_REG_BASE + USB_CC_FSM_STATUS);
+				switch (UFP_DAM_CURRENT_TYPE_CHECK(*val1)) {
+				case 0:
+					//val = readl(CC_REG_BASE + USB_CC_ANA_STATUS);
+					if (CC1_UFP_DET_D2_CHECK(*val2) == CC2_UFP_DET_D2_CHECK(*val2)) {
+						switch (CC1_UFP_DET_D2_CHECK(*val2)) {
+						case 0:
+							printf("Two RP:detach\n");
+							env_set("usb_status", "detach");
+							break;
+						case 1:
+							printf("Two RP:supply <= 0.5 current\n");
+							env_set("usb_status", "0.5a@5v");
+							break;
+						case 3:
+							printf("Two RP:Rp=12K,supply 1.5 current\n");
+							env_set("usb_status", "1.5a@5v");
+							break;
+						case 7:
+							printf("Two RP:Rp=4.7K,supply 3.0 current\n");
+							env_set("usb_status", "3a@5v");
+							break;
+						default:
+							printf("error status %s:%d\n", __func__, __LINE__);
+							env_set("usb_status", "error");
+							break;
+						}
+					} else {
+						printf("unsupport this adpater\n");
+						env_set("usb_status", "unsupport");
+					}
+					break;
+				case 1:
+					printf("ufp_dam_current_type: supply <= 0.5 current\n");
+					env_set("usb_status", "0.5a@5v");
+					break;
+				case 3:
+					printf("ufp_dam_current_type: Rp=12K, supply 1.5 current\n");
+					env_set("usb_status", "1.5a@5v");
+					break;
+				case 7:
+					printf("ufp_dam_current_type: Rp=4.7K, supply 3.0 current\n");
+					env_set("usb_status", "3a@5v");
+					break;
+				default:
+					printf("error status %s:%d\n", __func__, __LINE__);
+					env_set("usb_status", "error");
+					break;
+				}
+			} else if (status & (CC_UFP_CURRENT_INT | CC_UFP_PLUG_IN_INT)) {
+				//val = readl(CC_REG_BASE + USB_CC_FSM_STATUS);
+				switch (UFP_CURRENT_TYPE_CHECK(*val1)) {
+				case 0:
+					printf("cc_ufp_current_type: detach\n");
+					env_set("usb_status", "detach");
+					break;
+				case 1:
+					printf("cc_ufp_current_type: supply <= 0.5 current\n");
+					env_set("usb_status", "0.5a@5v");
+					break;
+				case 3:
+					printf("cc_ufp_current_type: Rp=12K, supply 1.5 current\n");
+					env_set("usb_status", "1.5a@5v");
+					break;
+				case 7:
+					printf("cc_ufp_current_type: Rp=4.7K, supply 3.0 current\n");
+					env_set("usb_status", "3a@5v");
+					break;
+				default:
+					printf("error status %s:%d\n", __func__, __LINE__);
+					env_set("usb_status", "error");
+					break;
+				}
+			}
+		}
+	}
+	free(val1);
+	free(val2);
+	return;
+}
+
 int board_init(void)
 {
 	printf("board init\n");
@@ -178,6 +284,7 @@ int board_late_init(void)
 #ifdef CONFIG_AML_CVBS
 	cvbs_init();
 #endif
+	set_usb_status();
 	aml_board_late_init_tail(NULL);
 	emmc_quirks();
 	return 0;

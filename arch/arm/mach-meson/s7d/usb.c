@@ -366,44 +366,6 @@ void usb_device_mode_init(int phy_num)
 	//--------------------------------------------------
 }
 
-/****************************************************************/
-/*			CC config				*/
-/****************************************************************/
-#define CC_OTP_REG			0x0
-#define USB_CC_INT_CLR			0x4
-#define  CC_INT_CLEAN			BIT(0)
-#define USB_CC_ANA			0x8
-#define  CC_ANA_CTRL_EN			BIT(0)
-#define  CC_UFP_EN			BIT(1)
-#define  CC_DFP_EN			BIT(2)
-#define  CC_RP_SEL0			(BIT(5) | BIT(6) | BIT(7))
-#define USB_CC_CNT			0xC
-#define USB_CC_INT_MASK			0x10
-#define  CABLE_PLUG_IN			BIT(6)
-#define  CABLE_PLUG_OUT			BIT(7)
-#define USB_CC_CTRL			0x14
-#define  CC_TOP_ENABLE			BIT(0)
-#define  CC_FAST_ENABLE			BIT(1)
-#define  CC_VBUS_FORCE_EN		BIT(4)
-#define  DAM_MODE_IN			BIT(9)
-#define USB_CC_INT_STATUS		0x18
-#define  CC_UFP_CURRENT_INT		BIT(0)
-#define  CC_UFP_PLUG_IN_INT		BIT(1)
-#define  CC_UFP_PLUG_OUT_INT		BIT(2)
-#define  CC_UFP_DAM_PLUG_IN_INT		BIT(8)
-#define  CC_UFP_DAM_PLUG_OUT_INT	BIT(9)
-#define USB_CC_FSM_STATUS		0x1C
-#define USB_CC_ANA_STATUS		0x20
-
-#define RESETCTRL0_OFFSET		0
-#define CC_RESET_BIT			10
-
-#define UFP_CURRENT_TYPE_CHECK(x)	(((x) & GENMASK(9, 7)) >> 7)
-#define UFP_DAM_CURRENT_TYPE_CHECK(x)	(((x) & GENMASK(17, 15)) >> 15)
-#define CC1_UFP_DET_D2_CHECK(x)		(((x) & GENMASK(9, 7)) >> 7)
-#define CC2_UFP_DET_D2_CHECK(x)		(((x) & GENMASK(12, 10)) >> 10)
-
-#define CC_REG_BASE	0xfe35e000
 
 static void aml_cc_ufp_init(void)
 {
