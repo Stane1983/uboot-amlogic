@@ -1417,6 +1417,8 @@ void osd_setting_default_hwc(u32 index, struct pandata_s *disp_data)
 		      (postbld_src3_sel & 0xf) << 0 |
 		      (postbld_osd1_premult & 0x1) << 4);
 #else
+	if (is_keystone_enable_for_txhd2())
+		postbld_src3_sel = 0;
 	osd_reg_write(OSD1_BLEND_SRC_CTRL,
 		      (0 & 0xf) << 0 |
 		      (0 & 0x1) << 4 |
