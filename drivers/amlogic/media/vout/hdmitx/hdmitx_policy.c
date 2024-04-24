@@ -836,24 +836,52 @@ static bool is_dv_support_mode(struct input_hdmi_data *hdmi_data, char *mode)
 	} else if (!strcmp(mode, MODE_1080P120HZ)) {
 		if (dv->sup_1080p120hz)
 			valid = true;
+	} else if (resolve_resolution_value(mode, RESOLUTION_PRIORITY) >
+		resolve_resolution_value(dv_displaymode, RESOLUTION_PRIORITY) ||
+		strstr(mode, "480p") || strstr(mode, "576p") ||
+		strstr(mode, "smpte") || strstr(mode, "4096") || strstr(mode, "i")) {
+		/* sync with system, don't support DV under some mode,
+		 * refer to SWPL-83949 and SWPL-159807
+		 */
+		valid = false;
 	} else {
-		/* sync with system, hdmitx driver don't filt 480p/576p,smpte,4096 */
-		/* refer to SWPL-155916 */
 		valid = true;
 	}
+
 	return valid;
 }
 
-static void update_dv_displaymode(struct input_hdmi_data *hdmi_data,
+/* 1.For previous android version, the mode list in UI is filtered, if
+ * current mode not support DV(e.g. 4k60hz, and EDID only support it
+ * with Y420), then it's filtered and not list on UI.
+ * 2.But setting menu for android U is from Google, the mode list of UI is
+ * from framework->hwc->drm and won't filter out as previous android S.
+ * if the TV only support 2160p30hz DV and only support 2160p60hz
+ * 420 8bit, firstly user select hdmi output 1080p60hz 422 12bit dv,
+ * then switch to 2160p60hz, hwc will set 2160p60hz 422 12bit to driver,
+ * then it will cause no signal. So need to run hdr process when
+ * current resolution not support dv.
+ * 3.return 0: mode support DV, -1: mode not support DV
+ */
+/* note below flag true is only for android R/S/U trunk + android U openlinux + linux:
+ * which means that if current mode not support DV, it will keep the selected resolution,
+ * and fallback to hdr policy to get hdr cs/cd.
+ * For R/S openlinux, the behaviour is as flag set false, which means that if current mode
+ * not support DV, it will downgrade to lower resolution to output DV
+ */
+static bool amdv_policy_fallback_hdr = true;
+
+static int update_dv_displaymode(struct input_hdmi_data *hdmi_data,
 	char *final_displaymode)
 {
 	char dv_displaymode[MODE_LEN] = {0};
 	char cur_outputmode[MODE_LEN] = {0};
 	int dv_type;
 	struct dv_info *dv = NULL;
+	int ret = 0;
 
 	if (!hdmi_data || !final_displaymode)
-		return;
+		return ret;
 	dv_type = hdmi_data->ubootenv_dv_type;
 
 	strcpy(cur_outputmode, hdmi_data->ubootenv_hdmimode);
@@ -891,7 +919,10 @@ static void update_dv_displaymode(struct input_hdmi_data *hdmi_data,
 	} else {
 		/* if current disp_mode is outside of maximum dv disp_mode */
 		if (!is_dv_support_mode(hdmi_data, cur_outputmode)) {
-			if (!strcmp(dv_displaymode, MODE_4K2K30HZ) ||
+			if (amdv_policy_fallback_hdr) {
+				ret = -1;
+				printf("cur_outputmode:%s doesn't support dv", cur_outputmode);
+			} else if (!strcmp(dv_displaymode, MODE_4K2K30HZ) ||
 				!strcmp(dv_displaymode, MODE_4K2K25HZ) ||
 				!strcmp(dv_displaymode, MODE_4K2K24HZ)) {
 				/* TV support dolby vision support 2160p30/25/24hz
@@ -909,6 +940,7 @@ static void update_dv_displaymode(struct input_hdmi_data *hdmi_data,
 
 	printf("final_displaymode:%s, cur_outputmode:%s, dv_displaymode:%s",
 	       final_displaymode, cur_outputmode, dv_displaymode);
+	return ret;
 }
 
 /* for some non-std TV, it declare 4k while MAX_TMDS_CLK
@@ -1153,13 +1185,14 @@ static void update_hdmi_deepcolor(struct input_hdmi_data *hdmi_data,
 	printf("colorattribute = %s\n", colorattribute);
 }
 
-void dolbyvision_scene_process(struct input_hdmi_data *hdmi_data,
+int dolbyvision_scene_process(struct input_hdmi_data *hdmi_data,
 	struct scene_output_info *output_info)
 {
 	int dv_type = DOLBY_VISION_DISABLE;
+	int ret = 0;
 
 	if (!hdmi_data || !output_info)
-		return;
+		return ret;
 	/* 1.update dolby vision output type */
 	dv_type = update_dv_type(hdmi_data);
 	output_info->final_dv_type = dv_type;
@@ -1173,8 +1206,9 @@ void dolbyvision_scene_process(struct input_hdmi_data *hdmi_data,
 	printf("dv final_deepcolor:%s\n", output_info->final_deepcolor);
 
 	/* 2.2 update dolby vision output mode */
-	update_dv_displaymode(hdmi_data, output_info->final_displaymode);
+	ret = update_dv_displaymode(hdmi_data, output_info->final_displaymode);
 	printf("dv final_displaymode:%s", output_info->final_displaymode);
+	return ret;
 }
 
 /* check 4k50/4k60 hdr support or not */

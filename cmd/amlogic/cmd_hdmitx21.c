@@ -1033,6 +1033,7 @@ void scene_process(struct hdmitx_dev *hdev,
 	struct scene_output_info *scene_output_info)
 {
 	struct input_hdmi_data hdmidata;
+	int dv_support = 0;
 
 	if (!hdev || !scene_output_info)
 		return;
@@ -1043,7 +1044,7 @@ void scene_process(struct hdmitx_dev *hdev,
 	/* 2. dolby vision scene process */
 	/* only for tv support dv and box enable dv */
 	if (is_dv_preference(hdev)) {
-		dolbyvision_scene_process(&hdmidata, scene_output_info);
+		dv_support = dolbyvision_scene_process(&hdmidata, scene_output_info);
 	} else if (is_dolby_enabled()) {
 		/* for enable dolby vision core when
 		 * first boot connecting non dv tv
@@ -1056,13 +1057,13 @@ void scene_process(struct hdmitx_dev *hdev,
 		 */
 		/* scene_output_info->final_dv_type = DOLBY_VISION_DISABLE; */
 	}
-	/* 3.sdr scene process */
+	/* 3.hdr/sdr scene process */
 	/* decide final display mode and deepcolor */
-	if (is_dv_preference(hdev)) {
+	if (is_dv_preference(hdev) && dv_support == 0) {
 		/* do nothing
 		 * already done above, just sync with sysctrl
 		 */
-	} else if (is_hdr_preference(hdev)) {
+	} else if (is_hdr_preference(hdev) || dv_support != 0) {
 		hdr_scene_process(&hdmidata, scene_output_info);
 	} else {
 		sdr_scene_process(&hdmidata, scene_output_info);

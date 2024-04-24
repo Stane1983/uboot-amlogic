@@ -72,7 +72,7 @@ bool is_dolby_enabled(void);
 bool is_tv_support_dv(struct hdmitx_dev *hdev);
 bool is_dv_preference(struct hdmitx_dev *hdev);
 bool is_hdr_preference(struct hdmitx_dev *hdev);
-void dolbyvision_scene_process(hdmi_data_t *hdmi_data,
+int dolbyvision_scene_process(hdmi_data_t *hdmi_data,
 	scene_output_info_t *output_info);
 void sdr_scene_process(hdmi_data_t *hdmi_data,
 	scene_output_info_t *output_info);
