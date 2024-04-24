@@ -46,50 +46,24 @@ static int _spinor_add_partitions(struct mtd_info *mtd,
 	int ret = 1;
 	cpu_id_t cpu_id = get_cpu_id();
 
-	if (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER)
-		part_num = nbparts + 5;
-	else
-		part_num = nbparts + 1;
+	part_num = nbparts + 1;
 
 	temp = kzalloc(sizeof(*temp) * part_num, GFP_KERNEL);
 	if (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER) {
-		temp[BOOT_AREA_BB1ST].name = BOOT_LOADER;
-		temp[BOOT_AREA_BB1ST].offset = general_boot_part_entry[BOOT_AREA_BB1ST].offset;
-		temp[BOOT_AREA_BB1ST].size = general_boot_part_entry[BOOT_AREA_BB1ST].size *
-					     g_ssp.boot_backups;
-		if (temp[BOOT_AREA_BB1ST].size % SPINOR_ALIGNED_SIZE)
-			WARN_ON(1);
-
-		temp[BOOT_AREA_BL2E].name = BOOT_BL2E;
-		temp[BOOT_AREA_BL2E].offset = general_boot_part_entry[BOOT_AREA_BL2E].offset;
-		temp[BOOT_AREA_BL2E].size = general_boot_part_entry[BOOT_AREA_BL2E].size *
-					    g_ssp.boot_backups;
+		temp[0].name = BOOT_LOADER;
+		temp[0].offset = general_boot_part_entry[0].offset;
+		temp[0].size = (general_boot_part_entry[BOOT_AREA_BB1ST].size +
+						general_boot_part_entry[BOOT_AREA_BL2E].size +
+						general_boot_part_entry[BOOT_AREA_BL2X].size +
+						general_boot_part_entry[BOOT_AREA_DDRFIP].size)
+						* g_ssp.boot_backups +
+						general_boot_part_entry[BOOT_AREA_DEVFIP].size
+						* CONFIG_NOR_TPL_COPY_NUM;
 		if (temp[0].size % SPINOR_ALIGNED_SIZE)
 			WARN_ON(1);
 
-		temp[BOOT_AREA_BL2X].name = BOOT_BL2X;
-		temp[BOOT_AREA_BL2X].offset = general_boot_part_entry[BOOT_AREA_BL2X].offset;
-		temp[BOOT_AREA_BL2X].size = general_boot_part_entry[BOOT_AREA_BL2X].size *
-					    g_ssp.boot_backups;
-		if (temp[0].size % SPINOR_ALIGNED_SIZE)
-			WARN_ON(1);
-
-		temp[BOOT_AREA_DDRFIP].name = BOOT_DDRFIP;
-		temp[BOOT_AREA_DDRFIP].offset = general_boot_part_entry[BOOT_AREA_DDRFIP].offset;
-		temp[BOOT_AREA_DDRFIP].size = general_boot_part_entry[BOOT_AREA_DDRFIP].size *
-					      g_ssp.boot_backups;
-		if (temp[0].size % SPINOR_ALIGNED_SIZE)
-			WARN_ON(1);
-
-		temp[BOOT_AREA_DEVFIP].name = BOOT_DEVFIP;
-		temp[BOOT_AREA_DEVFIP].offset = general_boot_part_entry[BOOT_AREA_DEVFIP].offset;
-		temp[BOOT_AREA_DEVFIP].size = general_boot_part_entry[BOOT_AREA_DEVFIP].size *
-			CONFIG_NOR_TPL_COPY_NUM;
-		if (temp[0].size % SPINOR_ALIGNED_SIZE)
-			WARN_ON(1);
-
-		off = temp[BOOT_AREA_DEVFIP].offset + temp[BOOT_AREA_DEVFIP].size;
-		parts_nm = &temp[5];
+		off = temp[0].offset + temp[0].size;
+		parts_nm = &temp[1];
 
 		if (cpu_id.family_id == MESON_CPU_MAJOR_ID_A4)
 			off = DIV_ROUND_UP(off, 0x1000) << 12;

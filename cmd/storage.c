@@ -288,14 +288,16 @@ static int storage_boot_layout_general_setting(struct boot_layout *boot_layout,
 				bl2e_size = pItem->nPayLoadSize;
 			if (nIndex == BOOT_AREA_BL2X)
 				bl2x_size = pItem->nPayLoadSize;
+			if (nIndex == BOOT_AREA_DDRFIP)
+				boot_entry[BOOT_AREA_DDRFIP].size = pItem->nPayLoadSize;
+			if (nIndex == BOOT_AREA_DEVFIP)
+				boot_entry[BOOT_AREA_DEVFIP].size = pItem->nPayLoadSize;
 			szPayload = pItem->nPayLoadSize;
 			pr_info("Item[%d]%4s offset 0x%08x sz 0x%x\n",
 			       nIndex, name, offPayload, szPayload);
 		}
 
 		boot_entry[BOOT_AREA_BB1ST].size = ssp->boot_entry[BOOT_AREA_BB1ST].size;
-		boot_entry[BOOT_AREA_DDRFIP].size = ssp->boot_entry[BOOT_AREA_DDRFIP].size;
-		boot_entry[BOOT_AREA_DEVFIP].size = ssp->boot_entry[BOOT_AREA_DEVFIP].size;
 		storage_boot_layout_rebuild(boot_layout, bl2e_size, bl2x_size);
 	} else {
 		/* may be sdcard boot and also have to rebuild layout */
@@ -391,7 +393,7 @@ static int storage_get_and_parse_ssp(int *need_build) // boot_device:
 			else if (IS_FEAT_DIS_NBL2_SNOR())
 				ssp->boot_backups = 1;
 			else
-				ssp->boot_backups = 1; /* Default 2 backup, consistent with rom */
+				ssp->boot_backups = 1;
 			break;
 		case BOOT_SNAND:
 			#ifdef BOARD_BL2EX_BACKUPS

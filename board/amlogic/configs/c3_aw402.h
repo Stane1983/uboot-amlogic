@@ -263,7 +263,22 @@
 #error CONFIG_SPI_NAND/CONFIG_MTD_SPI_NAND/CONFIG_MESON_NFC can not support at the sametime;
 #endif
 
-#define BOARD_DDRFIP_SIZE		0x1c0000
+/* mtd advance mode layout board config */
+#define BOARD_DEVFIP_SIZE	0xdf000
+#define BOARD_BL2EX_BACKUPS	4
+#define BOARD_DDRFIP_SIZE	0x1c0000
+#define BOARD_DEVFIP_BACKUPS	2
+
+#define BOARD_NAND_RSV_CONFIG
+#ifdef BOARD_NAND_RSV_CONFIG
+#define	NAND_RSV_BLOCK_NUM	24
+#define	NAND_GAP_BLOCK_NUM	4
+#define	NAND_BBT_BLOCK_NUM	4
+#define	NAND_ENV_BLOCK_NUM	4
+#define	NAND_KEY_BLOCK_NUM	4
+#define	NAND_DTB_BLOCK_NUM	4
+#define	NAND_DDR_BLOCK_NUM	4
+#endif
 
 /* #define		CONFIG_AML_SD_EMMC 1 */
 #ifdef CONFIG_AML_SD_EMMC

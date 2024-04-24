@@ -338,8 +338,8 @@
 			status = "disabled";
 			spi-flash@0 {
 				reg = <0>;
-				spi-tx-bus-width = <1>;
-				spi-rx-bus-width = <1>;
+				spi-tx-bus-width = <4>;
+				spi-rx-bus-width = <4>;
 				compatible = "spi-flash";
 				status = "okay";
 			};
