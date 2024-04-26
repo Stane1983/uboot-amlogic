@@ -14,6 +14,19 @@
 #define PRINT_TAG PRJ_TAG":"RCU_TAG
 
 /**************************** KEY VALUE DEFINE ******************************/
+#ifdef CONFIG_BG20AB_S805C1
+#define KEY_VALUE_BACK 	0x1c00083
+#define KEY_VALUE_INFO 	0x1c000cb
+#define KEY_VALUE_0 	0x1c00000
+#define KEY_VALUE_1 	0x1c00001
+#define KEY_VALUE_2 	0x1c00002
+#define KEY_VALUE_4 	0x1c00004
+#define KEY_VALUE_5 	0x1c00005
+#define KEY_VALUE_6 	0x1c00006
+#define KEY_VALUE_8 	0x1c00008
+#define KEY_VALUE_9 	0x1c00009
+#else
+/* AML RC */
 #define KEY_VALUE_BACK 	0xbc43fe01
 #define KEY_VALUE_INFO 	0xa659fe01
 #define KEY_VALUE_0 	0xf50afe01
@@ -24,6 +37,7 @@
 #define KEY_VALUE_6 	0xf906fe01
 #define KEY_VALUE_8 	0xf708fe01
 #define KEY_VALUE_9 	0xf609fe01
+#endif
 /**************************** KEY VALUE DEFINE ******************************/
 
 #define KEY_VALUE_TOTAL_NUM 10	/* count for KEY_VALUE_BACK~KEY_VALUE_9 */

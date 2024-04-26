@@ -24,4 +24,16 @@ config AML_REBOOT
        default y
        help
          support uboot reboot cmd
+
+config ZAPPER_IRDETO_BOOT
+       bool "Enable Zapper Irdeto Boot"
+       default n
+       help
+         support zapper Irdeto boot
+config BG20AB_S805C1
+       bool "support BG20AB-s805c1 features"
+       depends on ZAPPER_IRDETO_BOOT
+       default n
+       help
+         support BG20AB-s805c1 features
 endif
