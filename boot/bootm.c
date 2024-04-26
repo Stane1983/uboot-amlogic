@@ -143,8 +143,8 @@ static int bootm_find_os(struct cmd_tbl *cmdtp, int flag, int argc,
 		images.os.arch = image_get_arch(os_hdr);
 #ifdef CONFIG_AMLOGIC_MODIFY
 		if (images.os.arch == IH_ARCH_ARM) {
-			env_set("initrd_high", "0A000000");
-			env_set("fdt_high", "0A000000");
+			env_set("initrd_high", "0D000000");
+			env_set("fdt_high", "0D000000");
 		}
 #endif
 		break;
