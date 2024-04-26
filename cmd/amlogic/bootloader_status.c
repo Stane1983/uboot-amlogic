@@ -132,6 +132,11 @@ static int do_get_bootloader_status(cmd_tbl_t *cmdtp, int flag, int argc, char *
 			" forUpgrade_robustOta forUpgrade_flashType forUpgrade_bootloaderCopies "
 			" forUpgrade_bootloaderIndex forUpgrade_1stBootIndex", 0);
 
+	//8,production mode for ver4 boot.img bootconfig
+	env_set_ulong("production_mode", CONFIG_IS_ENABLED(AML_PRODUCT_MODE));
+	if (printStat)
+		run_command("printenv production_mode", 0);
+
 	if (saveenv) {
 #if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
 		run_command("update_env_part -p forUpgrade_robustOta forUpgrade_bootloaderIndex", 0

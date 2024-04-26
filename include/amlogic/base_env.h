@@ -107,6 +107,7 @@
 		"androidboot.firstboot=${firstboot} "\
 		"androidboot.bootloader=${bootloader_version} "\
 		"androidboot.hardware=amlogic "\
+		"androidboot.production_mode=${production_mode} "\
 		"androidboot.ddr_size=${ddr_size} ;"\
 		"\0"\
 	"storeboot_base="\
