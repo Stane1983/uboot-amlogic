@@ -1732,15 +1732,15 @@ static struct meson_pmx_func meson_t5m_periphs_functions[] = {
 };
 
 static struct meson_bank meson_t5m_periphs_banks[] = {
-	/*      name  first       last    pullen  pull  dir  out   in   ds */
+	/*  name  first  last  pullen  pull  dir  out  in  ds  (ds_ex  ds_div) */
 	BANK_DS("D",    GPIOD_0,    GPIOD_14,
 		0x03, 0,   0x04, 0,   0x02, 0,  0x01, 0,  0x00, 0,  0x7,  0),
 	BANK_DS("E",    GPIOE_0,    GPIOE_1,
 		0x0b, 0,   0x0c, 0,   0x0a, 0,  0x09, 0,  0x08, 0,  0xf,  0),
-	BANK_DS("Z",    GPIOZ_0,    GPIOZ_19,
-		0x13, 0,   0x14, 0,   0x12, 0,  0x11, 0,  0x10, 0,  0x17, 0),
-	BANK_DS("H",    GPIOH_0,    GPIOH_29,
-		0x1b, 0,   0x1c, 0,   0x1a, 0,  0x19, 0,  0x18, 0,  0x1f, 0),
+	BANK_DS_EX("Z", GPIOZ_0,    GPIOZ_19,  0x13,  0,  0x14, 0,
+		0x12, 0,   0x11, 0,   0x10, 0,  0x17, 0,  0xc0, 0, GPIOZ_16),
+	BANK_DS_EX("H", GPIOH_0,    GPIOH_29,  0x1b,  0,  0x1c, 0,
+		0x1a, 0,   0x19, 0,   0x18, 0,  0x1f, 0,  0xc1, 0, GPIOH_16),
 	BANK_DS("B",    GPIOB_0,    GPIOB_13,
 		0x2b, 0,   0x2c, 0,   0x2a, 0,  0x29, 0,  0x28, 0,  0x2f, 0),
 	BANK_DS("C",    GPIOC_0,    GPIOC_10,
@@ -1752,7 +1752,7 @@ static struct meson_bank meson_t5m_periphs_banks[] = {
 	BANK_DS("M",    GPIOM_0,    GPIOM_29,
 		0x73, 0,   0x74,  0,  0x72, 0,  0x71, 0,  0x70, 0,  0x77, 0),
 	BANK_DS("_TEST_N", GPIO_TEST_N,    GPIO_TEST_N,
-		0x83, 0,   0x84,  0,  0x82, 0,  0x81, 0,  0x80, 0,  0x87, 0)
+		0x83, 0,   0x84,  0,  0x82, 0,  0x81, 0,  0x80, 0,  0x87, 0),
 };
 
 static struct meson_pmx_bank meson_t5m_periphs_pmx_banks[] = {
@@ -1764,7 +1764,8 @@ static struct meson_pmx_bank meson_t5m_periphs_pmx_banks[] = {
 	BANK_PMX("D",    GPIOD_0,      GPIOD_14,    0xb,   0),
 	BANK_PMX("E",    GPIOE_0,      GPIOE_1,     0xd,   0),
 	BANK_PMX("M",    GPIOM_0,      GPIOM_29,    0xe,   0),
-	BANK_PMX("W",    GPIOW_0,      GPIOW_16,    0x12,  0),
+	BANK_PMX("W",    GPIOW_0,      GPIOW_15,    0x12,  0),
+	BANK_PMX_EX("W", GPIOW_16,    GPIOW_16, 16, 0x11, 28),
 	BANK_PMX("P",	 GPIOP_0,      GPIOP_9,     0x14,  0),
 	BANK_PMX("TSTN", GPIO_TEST_N,  GPIO_TEST_N, 0x15,  16),
 };

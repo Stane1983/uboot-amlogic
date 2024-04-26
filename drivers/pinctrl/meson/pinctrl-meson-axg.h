@@ -13,6 +13,9 @@ struct meson_pmx_bank {
 	const char *name;
 	unsigned int first;
 	unsigned int last;
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	unsigned int first_num;
+#endif
 	unsigned int reg;
 	unsigned int offset;
 };
@@ -22,6 +25,19 @@ struct meson_axg_pmx_data {
 	unsigned int num_pmx_banks;
 };
 
+#if defined(CONFIG_AMLOGIC_MODIFY)
+#define BANK_PMX_EX(n, f, l, fn, r, o)				\
+	{							\
+		.name   = n,					\
+		.first	= f,					\
+		.last	= l,					\
+		.first_num = fn,				\
+		.reg	= r,					\
+		.offset = o,					\
+	}
+
+#define BANK_PMX(n, f, l, r, o) BANK_PMX_EX(n, f, l, 0, r, o)
+#else
 #define BANK_PMX(n, f, l, r, o)				\
 	{							\
 		.name   = n,					\
@@ -30,6 +46,7 @@ struct meson_axg_pmx_data {
 		.reg	= r,					\
 		.offset = o,					\
 	}
+#endif
 
 struct meson_pmx_axg_data {
 	unsigned int func;

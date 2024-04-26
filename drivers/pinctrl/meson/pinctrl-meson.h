@@ -86,6 +86,9 @@ enum meson_reg_type {
 	REG_OUT,
 	REG_IN,
 	REG_DS,
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	REG_DS_EX,
+#endif
 	NUM_REG,
 };
 
@@ -106,6 +109,9 @@ struct meson_bank {
 	const char *name;
 	unsigned int first;
 	unsigned int last;
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	int ds_div;
+#endif
 	struct meson_reg_desc regs[NUM_REG];
 };
 
@@ -118,6 +124,29 @@ struct meson_bank {
 		.num_groups = ARRAY_SIZE(fn ## _groups),		\
 	}
 
+#if defined(CONFIG_AMLOGIC_MODIFY)
+#define BANK_DS_EX(n, f, l, per, peb, pr, pb, dr, db, or, ob, ir, ib,      \
+		   dsr, dsb, dsexr, dsexb, dsd)                            \
+	{                                                                  \
+		.name = n,                                                 \
+		.first = f,                                                \
+		.last = l,                                                 \
+		.regs = {                                                  \
+		    [REG_PULLEN] = {per, peb},                             \
+		    [REG_PULL] = {pr, pb},                                 \
+		    [REG_DIR] = {dr, db},                                  \
+		    [REG_OUT] = { or, ob},                                 \
+		    [REG_IN] = {ir, ib},                                   \
+		    [REG_DS] = {dsr, dsb},                                 \
+		    [REG_DS_EX] = {dsexr, dsexb},                          \
+		},                                                         \
+		.ds_div = dsd,                                             \
+	}
+
+#define BANK_DS(n, f, l, per, peb, pr, pb, dr, db, or, ob, ir, ib, dsr, dsb) \
+	BANK_DS_EX(n, f, l, per, peb, pr, pb, dr, db, or, ob, ir, ib, dsr, dsb, \
+		   0, 0, -1)
+#else
 #define BANK_DS(n, f, l, per, peb, pr, pb, dr, db, or, ob, ir, ib, \
 		dsr, dsb)                                                  \
 	{                                                                  \
@@ -133,6 +162,7 @@ struct meson_bank {
 		    [REG_DS] = {dsr, dsb},                                 \
 		},                                                         \
 	}
+#endif
 
 #define BANK(n, f, l, per, peb, pr, pb, dr, db, or, ob, ir, ib) \
 	BANK_DS(n, f, l, per, peb, pr, pb, dr, db, or, ob, ir, ib, 0, 0)

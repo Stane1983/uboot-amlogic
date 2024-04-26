@@ -80,7 +80,7 @@ const char *meson_pinctrl_get_pin_name(struct udevice *dev,
 		snprintf(pin_name, PINNAME_SIZE, "Error");
 	else
 		snprintf(pin_name, PINNAME_SIZE, "GPIO%s_%d",
-			 bank->name, pin - bank->first);
+			 bank->name, pin - bank->first + bank->first_num);
 #else
 	if (selector > priv->data->num_pins ||
 	    selector > priv->data->funcs[0].num_groups)
@@ -306,6 +306,25 @@ static int meson_pinconf_bias_set(struct udevice *dev, unsigned int pin,
 	return 0;
 }
 
+#if defined(CONFIG_AMLOGIC_MODIFY)
+static struct meson_bank *meson_pinconf_find_bank(struct meson_pinctrl *priv,
+						  unsigned int pin)
+{
+	struct meson_bank *bank = NULL;
+	int i;
+
+	for (i = 0; i < priv->data->num_banks; i++) {
+		if (pin >= priv->data->banks[i].first &&
+		    pin <= priv->data->banks[i].last) {
+			bank = &priv->data->banks[i];
+			break;
+		}
+	}
+
+	return bank;
+}
+#endif
+
 static int meson_pinconf_drive_strength_set(struct udevice *dev,
 					    unsigned int pin,
 					    unsigned int drive_strength_ua)
@@ -315,6 +334,10 @@ static int meson_pinconf_drive_strength_set(struct udevice *dev,
 	unsigned int reg, bit;
 	unsigned int ds_val;
 	int ret;
+#if defined(CONFIG_AMLOGIC_MODIFY)
+	enum meson_reg_type reg_type;
+	struct meson_bank *bank = meson_pinconf_find_bank(priv, pin);
+#endif
 
 	if (!priv->reg_ds) {
 		dev_err(dev, "drive-strength-microamp not supported\n");
@@ -322,7 +345,15 @@ static int meson_pinconf_drive_strength_set(struct udevice *dev,
 	}
 
 #if defined(CONFIG_AMLOGIC_MODIFY)
-	ret = meson_pinconf_calc_reg_and_bit(dev, offset, REG_DS, &reg, &bit);
+	if (bank && bank->ds_div > 0 && pin >= bank->ds_div) {
+		reg_type = REG_DS_EX;
+		offset -= bank->ds_div - bank->first;
+		debug("use ds1 register, offset: %u\n", offset);
+	} else {
+		reg_type = REG_DS;
+		debug("use ds0 register, offset: %u\n", offset);
+	}
+	ret = meson_pinconf_calc_reg_and_bit(dev, offset, reg_type, &reg, &bit);
 #else
 	ret = meson_gpio_calc_reg_and_bit(dev, offset, REG_DS, &reg, &bit);
 #endif
