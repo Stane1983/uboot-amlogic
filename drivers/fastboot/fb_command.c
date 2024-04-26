@@ -509,6 +509,7 @@ static void flash(char *cmd_parameter, char *response)
 		struct blk_desc *dev_desc;
 		int erase_flag = 0;
 		char *bootloaderindex;
+		char *boardname;
 		char *slot_name = NULL;
 		char partname[32] = {0};
 
@@ -612,14 +613,17 @@ static void flash(char *cmd_parameter, char *response)
 #endif//#ifdef CONFIG_EFUSE_OBJ_API
 
 		bootloaderindex = env_get("forUpgrade_bootloaderIndex");
+		boardname = env_get("board");
 
 		if (ret == 0) {
 			printf("gpt/nocs mode\n");
 #if CONFIG_IS_ENABLED(FASTBOOT_FLASH_MMC)
 			fastboot_mmc_flash_write("bootloader-boot1", fastboot_buf_addr, image_size,
 				 response);
-			if (strcmp(bootloaderindex, "1") != 0) {
-				printf("boot from boot1, means boot0 is error, rewrite it\n");
+			if (strcmp(bootloaderindex, "1") != 0 ||
+				(boardname && (strcmp(boardname, "adt4") == 0))) {
+				printf("boot from index %s, rewrite boot0\n", bootloaderindex);
+				printf("google device also write both boot0 and boot1\n");
 				fastboot_mmc_flash_write("bootloader-boot0",
 					fastboot_buf_addr, image_size, response);
 				run_command("mmc dev 1 0;", 0);
@@ -638,8 +642,10 @@ static void flash(char *cmd_parameter, char *response)
 				response);
 			fastboot_mmc_flash_write("bootloader-boot1", fastboot_buf_addr, image_size,
 				 response);
-			if (strcmp(bootloaderindex, "0") != 0) {
-				printf("boot from boot0, rewrite user bootloader is error\n");
+			if (strcmp(bootloaderindex, "0") != 0 ||
+				(boardname && (strcmp(boardname, "adt4") == 0))) {
+				printf("boot from index %s, rewrite bootloader\n", bootloaderindex);
+				printf("google device also write all bootloader\n");
 				fastboot_mmc_flash_write("bootloader",
 					fastboot_buf_addr, image_size, response);
 				run_command("mmc dev 1 0;", 0);

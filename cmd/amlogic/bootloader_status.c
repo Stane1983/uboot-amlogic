@@ -975,21 +975,21 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 		else
 			run_command("reboot next", 0);
 	}
-	if (mmc && fastboot_step && (strcmp(fastboot_step, "2") == 0)) {
+	if (mmc && fastboot_step &&
+		(strcmp(fastboot_step, "2") == 0 ||
+		strcmp(fastboot_step, "3") == 0)) {
 		struct blk_desc *dev_desc = mmc_get_blk_desc(mmc);
 
 		if (dev_desc && ((ret == 0 && !strcmp(bootloaderindex, "1")) ||
 			(ret != 0 && !strcmp(bootloaderindex, "0")))) {
 			printf("new bootloader error, please fastboot to another one\n");
-			env_set("fastboot_step", "0");
+			env_set("fastboot_step", "3");
 #if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
 			run_command("update_env_part -p fastboot_step;", 0);
 #else
 			run_command("defenv_reserve;setenv fastboot_step 0;saveenv;", 0);
 #endif
-
-			cli_init();
-			cli_loop();
+			run_command("run enter_fastboot", 0);
 		}
 	}
 #endif

@@ -594,6 +594,7 @@ static void rx_handler_command(struct usb_ep *ep, struct usb_request *req)
 	char cmdbuf[256];
 	char response[FASTBOOT_RESPONSE_LEN] = {0};
 	int cmd = -1;
+	char *fastboot_step = env_get("fastboot_step");
 
 	strncpy(cmdbuf, req->buf, 255);
 
@@ -602,6 +603,23 @@ static void rx_handler_command(struct usb_ep *ep, struct usb_request *req)
 
 	if (req->actual < req->length) {
 		cmdbuf[req->actual] = '\0';
+		if (fastboot_step && !strcmp(fastboot_step, "3")) {
+			printf("fastboot_step: %s,\n", fastboot_step);
+			if (!strncmp("flash:bootloader", cmdbuf, 16) ||
+				!strncmp("getvar:has-slot:bootloader", cmdbuf, 26)) {
+				printf("reset fastboot_step\n");
+				env_set("fastboot_step", "0");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+				run_command("update_env_part -p fastboot_step;", 0);
+#else
+				run_command("defenv_reserve;setenv fastboot_step 0;saveenv;", 0);
+#endif
+				fastboot_step = env_get("fastboot_step");
+			} else if (!strncmp("download", cmdbuf, 8)) {
+				printf("reboot bootloader\n");
+				run_command("reboot bootloader;", 0);
+			}
+		}
 		cmd = fastboot_handle_command(cmdbuf, response);
 	} else {
 		pr_err("buffer overflow");
@@ -634,6 +652,9 @@ static void rx_handler_command(struct usb_ep *ep, struct usb_request *req)
 			req->length = rx_bytes_expected(ep);
 		}
 	}
+
+	if (fastboot_step && !strcmp(fastboot_step, "3"))
+		fastboot_fail("new bootloader error, please fastboot to another one", response);
 
 	fastboot_tx_write_str(response);
 
