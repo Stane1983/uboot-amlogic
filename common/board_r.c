@@ -50,6 +50,9 @@
 #include <efi_loader.h>
 #include <amlogic/storage.h>
 #include <amlogic/pm.h>
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#include <asm/arch-meson/smp.h>
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -312,6 +315,9 @@ static int initr_dm(void)
 		return ret;
 #endif
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	cpu_smp_init_r();
+#endif
 	return 0;
 }
 #endif

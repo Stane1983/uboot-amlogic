@@ -21,6 +21,7 @@ DECLARE_GLOBAL_DATA_PTR;
 #undef spin_lock
 #undef spin_unlock
 #include <spinlock.h>
+#include <asm/arch-meson/smp.h>
 static spin_lock_t serial_lock;
 #endif
 
@@ -193,18 +194,46 @@ static void _serial_putc(struct udevice *dev, char ch)
 		err = ops->putc(dev, ch);
 	} while (err == -EAGAIN);
 }
+#ifdef CONFIG_ARMV8_MULTIENTRY
+static void print_cpu_tag(struct udevice *dev, char *tag)
+{
+	while (*tag)
+		_serial_putc(dev, *tag++);
+}
+#endif
 
 static void _serial_puts(struct udevice *dev, const char *str)
 {
 #ifdef CONFIG_ARMV8_MULTIENTRY
+	char cpu_tag[5] = {'[', '0', ']', ' '};
+	int cpu = get_core_id();
+	static int new_line = 1;
+
 	if (gd->flags & GD_FLG_SMP)
 		spin_lock(&serial_lock);
-#endif
-	while (*str)
-		_serial_putc(dev, *str++);
-#ifdef CONFIG_ARMV8_MULTIENTRY
+
+	cpu_tag[1] = '0' + cpu;
+	if (new_line) {
+		print_cpu_tag(dev, cpu_tag);
+		new_line = 0;
+	}
+
+	while (*str) {
+		_serial_putc(dev, *str);
+		// multi \n in single str
+		if ((*str == '\n' || *str == '\r') && str[1]) {
+			print_cpu_tag(dev, cpu_tag);
+		}
+		str++;
+	}
+	if (str[-1] == '\n' || str[-1] == '\r') {
+		new_line = 1;
+	}
 	if (gd->flags & GD_FLG_SMP)
 		spin_unlock(&serial_lock);
+#else
+	while (*str)
+		_serial_putc(dev, *str++);
 #endif
 }
 

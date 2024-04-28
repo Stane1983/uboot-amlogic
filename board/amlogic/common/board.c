@@ -392,7 +392,6 @@ void aml_board_display_init(unsigned char vout_bit)
 		return;
 
 	aml_display_on_pre(vout_bit);
-	cpu_smp_init_r();
 
 	smp_ret = run_smp_function(1, &aml_display_on_post_job, vout_bit);
 	if (smp_ret)

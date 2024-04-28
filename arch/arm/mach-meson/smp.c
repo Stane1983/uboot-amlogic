@@ -93,6 +93,21 @@ static int secondary_boot(unsigned int cpu, unsigned int entrypoint)
 	return ret;
 }
 
+unsigned int get_core_id(void)
+{
+	unsigned long mpidr = read_mpidr();
+	unsigned int cpuid;
+
+	if (mpidr & (1 << 24))
+		mpidr = mpidr >> 8;
+	cpuid = mpidr & 0xff;
+	mpidr = (mpidr >> 8) & 0xff;
+	if (mpidr)              /* cluster 1 */
+		cpuid = cpuid + 4;  /* meson soc cluster 0 has 4 cores */
+
+	return cpuid;
+}
+
 void secondary_off(void)
 {
 	unsigned long mpidr = read_mpidr();

@@ -711,7 +711,7 @@ static int reserve_stacks(void)
 	gd->start_addr_sp -= 16;
 	gd->start_addr_sp &= ~0xf;
 #ifdef CONFIG_ARMV8_MULTIENTRY
-//	gd->start_addr_sp -= ((NR_CPUS - 1) * secondary_sp_size);
+	gd->start_addr_sp -= ((NR_CPUS - 1) * secondary_sp_size);
 #endif
 	/*
 	 * let the architecture-specific code tailor gd->start_addr_sp and
