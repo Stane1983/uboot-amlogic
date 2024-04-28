@@ -216,36 +216,46 @@ bool is_vic_over_limited_1080p(enum hdmi_vic vic)
 	return 0;
 }
 
-static bool hdmitx_check_4x3_16x9_mode(struct hdmitx_dev *hdev,
-		enum hdmi_vic vic)
+static bool hdmitx21_edid_validate_mode(struct hdmitx_dev *hdev, enum hdmi_vic vic)
 {
-	bool flag = 0;
-	int j;
+	int i;
+	bool ret = false;
 	struct rx_cap *prxcap = NULL;
 
 	prxcap = &hdev->RXCap;
-	if (vic == HDMI_2_720x480p60_4x3 ||
-		vic == HDMI_6_720x480i60_4x3 ||
-		vic == HDMI_17_720x576p50_4x3 ||
-		vic == HDMI_21_720x576i50_4x3) {
-		for (j = 0; (j < prxcap->VIC_count) && (j < VIC_MAX_NUM); j++) {
-			if ((vic + 1) == (prxcap->VIC[j] & 0xff)) {
-				flag = 1;
-				break;
-			}
-		}
-	} else if (vic == HDMI_3_720x480p60_16x9 ||
-			vic == HDMI_7_720x480i60_16x9 ||
-			vic == HDMI_18_720x576p50_16x9 ||
-			vic == HDMI_22_720x576i50_16x9) {
-		for (j = 0; (j < prxcap->VIC_count) && (j < VIC_MAX_NUM); j++) {
-			if ((vic - 1) == (prxcap->VIC[j] & 0xff)) {
-				flag = 1;
-				break;
-			}
+	for (i = 0; (i < prxcap->VIC_count) && (i < VIC_MAX_NUM); i++) {
+		if ((vic & 0xff) == (prxcap->VIC[i] & 0xff)) {
+			ret = true;
+			break;
 		}
 	}
-	return flag;
+	return ret;
+}
+
+enum hdmi_vic hdmitx21_get_prefer_vic(struct hdmitx_dev *hdev, enum hdmi_vic vic)
+{
+	int i = 0;
+	const struct {
+		u32 mode_prefer_vic;
+		u32 mode_alternate_vic;
+	} vic_pairs[] = {
+		{HDMI_7_720x480i60_16x9, HDMI_6_720x480i60_4x3},
+		{HDMI_3_720x480p60_16x9, HDMI_2_720x480p60_4x3},
+		{HDMI_22_720x576i50_16x9, HDMI_21_720x576i50_4x3},
+		{HDMI_18_720x576p50_16x9, HDMI_17_720x576p50_4x3},
+	};
+
+	for (i = 0; i < ARRAY_SIZE(vic_pairs); i++) {
+		if (vic_pairs[i].mode_alternate_vic == vic || vic_pairs[i].mode_prefer_vic == vic) {
+			if (hdmitx21_edid_validate_mode(hdev, vic_pairs[i].mode_prefer_vic))
+				return vic_pairs[i].mode_prefer_vic;
+			if (hdmitx21_edid_validate_mode(hdev, vic_pairs[i].mode_alternate_vic))
+				return vic_pairs[i].mode_alternate_vic;
+			return HDMI_0_UNKNOWN;
+		}
+	}
+
+	return vic;
 }
 
 /* For some TV's EDID, there maybe exist some information ambiguous.
@@ -260,7 +270,6 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 	struct dv_info *dv = &hdev->RXCap.dv_info;
 	unsigned int rx_max_tmds_clk = 0;
 	unsigned int calc_tmds_clk = 0;
-	int i = 0;
 	int svd_flag = 0;
 	int must_frl_flag = 0;
 	/* Default max color depth is 24 bit */
@@ -271,6 +280,7 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 	/* maximum supported bandwidth of soc */
 	u32 tx_bandwidth_cap = 0;
 	const struct hdmi_timing *timing;
+	enum hdmi_vic vic;
 
 	if (!hdev || !para)
 		return 0;
@@ -329,16 +339,17 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 		if (para->cd != COLORDEPTH_24B || para->cs != HDMI_COLORSPACE_RGB)
 			return 0;
 	}
-	/* target mode is not contained at RX SVD */
-	for (i = 0; (i < prxcap->VIC_count) && (i < VIC_MAX_NUM); i++) {
-		if ((para->timing.vic & 0xff) == (prxcap->VIC[i] & 0xff)) {
-			svd_flag = 1;
-			break;
-		} else if (hdmitx_check_4x3_16x9_mode(hdev, para->timing.vic & 0xff)) {
-			svd_flag = 1;
-			break;
-		}
-	}
+
+	/* for compatibility: 480p/576p and other support 64x27 resolution,
+	 * 480p/576p and other support 64x27 resolutionuse same short name
+	 * in hdmitx_timing table, so when match name, will return
+	 * 4x3 or 64x27 mode fist. But user prefer 16x9 first, so try 16x9 first;
+	 */
+	vic = hdmitx21_get_prefer_vic(hdev, para->timing.vic & 0xff);
+	/* check if vic supported by RX */
+	if (hdmitx21_edid_validate_mode(hdev, vic))
+		svd_flag = 1;
+
 	if (svd_flag == 0)
 		return 0;
 

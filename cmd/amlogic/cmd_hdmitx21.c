@@ -567,6 +567,7 @@ static void disp_cap_show(struct hdmitx_dev *hdev)
 	const struct hdmi_timing *timing = NULL;
 	enum hdmi_vic vic;
 	int i;
+	enum hdmi_vic prefer_vic = HDMI_UNKNOWN;
 
 	if (!hdev)
 		return;
@@ -577,6 +578,12 @@ static void disp_cap_show(struct hdmitx_dev *hdev)
 		vic = rxcap->VIC[i];
 		if (check_vic_exist(hdev, vic, i))
 			continue;
+		prefer_vic = hdmitx21_get_prefer_vic(hdev, vic);
+		/* if mode_prefer_vic is support by RX, try 16x9 first */
+		if (prefer_vic != vic) {
+			printf("%s:prefer vic:%d exist, ignore [%d].\n", __func__, prefer_vic, vic);
+			continue;
+		}
 		timing = hdmitx21_gettiming_from_vic(vic);
 		if (timing && vic < HDMITX_VESA_OFFSET && !is_vic_over_limited_1080p(vic))
 			printf("  %s\n", timing->sname ? timing->sname : timing->name);

@@ -8,6 +8,7 @@
 #include <linux/math64.h>
 #include <common.h>
 #include "hdmi_param.h"
+#include <amlogic/media/vout/hdmitx21/hdmitx_module.h>
 
 const struct hdmi_timing *hdmitx21_get_timing_para0(void)
 {
@@ -121,7 +122,9 @@ static bool _tst_fmt_name(struct hdmi_format_para *para,
 	char const *name, char const *attr)
 {
 	int i;
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	const struct hdmi_timing *timing = hdmitx21_get_timing_para0();
+	enum hdmi_vic prefer_vic = HDMI_0_UNKNOWN;
 
 	if (!para || !name || !attr)
 		return 0;
@@ -146,6 +149,11 @@ static bool _tst_fmt_name(struct hdmi_format_para *para,
 	if (i == hdmitx21_timing_size())
 		return 0;
 next:
+	prefer_vic = hdmitx21_get_prefer_vic(hdev, timing->vic);
+	timing = hdmitx21_gettiming_from_vic(prefer_vic);
+	if (!timing)
+		return 0;
+	para->timing = *timing;
 	_parse_hdmi_attr(attr, &para->cs, &para->cd, &para->cr);
 
 	para->tmds_clk = _calc_tmds_clk(timing->pixel_freq, para->cs, para->cd);
@@ -295,8 +303,10 @@ const struct hdmi_timing *hdmitx21_gettiming_from_vic(enum hdmi_vic vic)
 
 const struct hdmi_timing *hdmitx21_gettiming_from_name(const char *name)
 {
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	const struct hdmi_timing *timing = hdmitx21_get_timing_para0();
 	int i;
+	enum hdmi_vic prefer_vic = HDMI_UNKNOWN;
 
 	/* check sname first */
 	for (i = 0; i < hdmitx21_timing_size(); i++) {
@@ -314,6 +324,8 @@ const struct hdmi_timing *hdmitx21_gettiming_from_name(const char *name)
 	if (i == hdmitx21_timing_size())
 		return NULL;
 next:
+	prefer_vic = hdmitx21_get_prefer_vic(hdev, timing->vic);
+	timing = hdmitx21_gettiming_from_vic(prefer_vic);
 	return timing;
 }
 
