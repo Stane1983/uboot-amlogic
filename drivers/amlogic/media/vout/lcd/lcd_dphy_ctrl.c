@@ -197,7 +197,7 @@ void lcd_lvds_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off)
 			/* set fifo_clk_sel: div 7 */
 			lcd_combo_dphy_write(reg_dphy_tx_ctrl0, (1 << 6));
 			/* set cntl_ser_en:  8-channel */
-			lcd_combo_dphy_setb(reg_dphy_tx_ctrl0, dual_port ? 0xfff : 0x3f, 16, 12);
+			lcd_combo_dphy_setb(reg_dphy_tx_ctrl0, 0xfff, 16, 12);
 			/* decoupling fifo enable, gated clock enable */
 			lcd_combo_dphy_write(reg_dphy_tx_ctrl1, 0xc1000000);
 		} else {
