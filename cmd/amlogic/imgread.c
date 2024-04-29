@@ -21,6 +21,9 @@
 #include <version.h>
 #include <amlogic/image_check.h>
 #include <fs.h>
+#ifdef CONFIG_AVB2
+#include <libavb.h>
+#endif
 
 #ifndef IS_FEAT_BOOT_VERIFY
 //#define IS_FEAT_BOOT_VERIFY() 0 //always undefined as IS_FEAT_BOOT_VERIFY is function not marco
@@ -624,6 +627,9 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 	ulong dtbLoadAddr = 0;
 	ulong secMemSize = get_rsv_mem_size();
 	char strAddr[128] = {0};
+#ifdef CONFIG_AVB2
+	u64 original_size = 0;
+#endif
 
 	if (argc > 2) {
 		loadaddr = (unsigned char *)simple_strtoul(argv[2], NULL, 16);
@@ -779,6 +785,11 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 	u64 rc_init;
 	char *slot_name;
 	p_boot_img_hdr_v3_t hdr_addr_v3 = NULL;
+#ifdef CONFIG_AVB2
+	bool kernel_preload = true;
+	bool init_boot_preload = true;
+	bool vendor_boot_preload = true;
+#endif
 
 	init_boot_ramdisk_size = 0;
 	slot_name = env_get("slot-suffixes");
@@ -833,6 +844,15 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 			MsgP("securekernelimgsz=0x%x\n", actualbootimgsz);
 		} else {
 			actualbootimgsz = kernel_size + ramdisk_size + 0x1000;
+#ifdef CONFIG_AVB2
+			original_size = actualbootimgsz;
+			actualbootimgsz = get_size_avb_footer(partname);
+			if (!actualbootimgsz) {
+				actualbootimgsz = original_size;
+				kernel_preload = false;
+				printf("part: %s footer not at correct location\n", partname);
+			}
+#endif
 		}
 
 		if (actualbootimgsz > IMG_PRELOAD_SZ) {
@@ -893,12 +913,18 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 						leftsz, partname, IMG_PRELOAD_SZ);
 					return __LINE__;
 				}
-
+#ifdef CONFIG_AVB2
+				if (kernel_preload)
+					set_avb_parts(partname, loadaddr, leftsz + IMG_PRELOAD_SZ);
+#endif
 				if (rc_init != -1) {
 					MsgP("read header from part: %s\n", partname_init);
 					unsigned int nflashloadlen_init = 0;
 					const int preloadsz_init = 0x1000 * 2;
 					unsigned char *pbuffpreload_init = 0;
+#ifdef CONFIG_AVB2
+					u8 *init_boot_buf = 0;
+#endif
 
 					nflashloadlen_init = preloadsz_init;
 					debugP("sizeof preloadSz=%u\n", nflashloadlen_init);
@@ -932,7 +958,29 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 					MsgP("init_boot header_version = %d\n",
 						pinitbootimghdr->header_version);
 					init_boot_ramdisk_size = pinitbootimghdr->ramdisk_size;
-
+#ifdef CONFIG_AVB2
+					original_size = ramdisk_size;
+					ramdisk_size = get_size_avb_footer(partname_init);
+					if (!ramdisk_size) {
+						ramdisk_size = original_size;
+						init_boot_preload = false;
+						printf("part: %s footer not at correct location\n",
+							partname_init);
+					}
+					if (init_boot_preload) {
+						init_boot_buf = malloc(ramdisk_size);
+					if (!init_boot_buf) {
+						printf("Fail to allocate memory for %s!\n",
+								partname_init);
+						free(pbuffpreload_init);
+						pbuffpreload_init = 0;
+						return __LINE__;
+					}
+						memcpy(init_boot_buf, pbuffpreload_init,
+					       nflashloadlen_init);
+						ramdisk_size -= BOOT_IMG_V3_HDR_SIZE;
+					}
+#endif
 					if (init_boot_ramdisk_size != 0) {
 						MsgP("read ramdisk from part: %s\n", partname_init);
 						rc = store_logic_read(partname_init,
@@ -947,7 +995,22 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 							pbuffpreload_init = 0;
 							return __LINE__;
 						}
+#ifdef CONFIG_AVB2
+					if (init_boot_preload) {
+						memcpy(init_boot_buf + BOOT_IMG_V3_HDR_SIZE,
+						       loadaddr + kernel_size +
+						       BOOT_IMG_V3_HDR_SIZE,
+							ramdisk_size);
 					}
+#endif
+					}
+#ifdef CONFIG_AVB2
+					if (init_boot_ramdisk_size != 0 && init_boot_preload) {
+						set_avb_parts(partname_init, init_boot_buf,
+							      ramdisk_size + BOOT_IMG_V3_HDR_SIZE);
+						free(init_boot_buf);
+					}
+#endif
 					free(pbuffpreload_init);
 					pbuffpreload_init = 0;
 				}
@@ -1086,6 +1149,18 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 				return __LINE__;
 			}
 
+#ifdef CONFIG_AVB2
+			if (!(upgrade_step_s && !(strcmp(upgrade_step_s, "3")))) {
+				original_size = nflashloadlen_r;
+				nflashloadlen_r =  get_size_avb_footer(partname_r);
+				if (!nflashloadlen_r) {
+					nflashloadlen_r = original_size;
+					vendor_boot_preload = false;
+					printf("part: %s footer not at correct location\n",
+						partname_r);
+				}
+			}
+#endif
 			if (nflashloadlen_r > preloadsz_r) {
 				free(pbuffpreload);
 				pbuffpreload = malloc(nflashloadlen_r);
@@ -1129,6 +1204,11 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 				}
 			}
 
+#ifdef CONFIG_AVB2
+			if (!rc_r && !(upgrade_step_s && !(strcmp(upgrade_step_s, "3"))) &&
+				vendor_boot_preload)
+				set_avb_parts(partname_r, (void *)pbuffpreload, nflashloadlen_r);
+#endif
 			debugP("totalSz=0x%x\n", nflashloadlen_r);
 			flush_cache((unsigned long)pbuffpreload, nflashloadlen_r);
 #ifndef CONFIG_SKIP_KERNEL_DTB_SECBOOT_CHECK

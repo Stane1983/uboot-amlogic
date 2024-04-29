@@ -27,8 +27,7 @@
 #define AVB_USE_TESTKEY
 #define MAX_DTB_SIZE (AML_DTB_IMG_MAX_SZ + 512)
 #define DTB_PARTITION_SIZE 258048
-#define AVB_NUM_SLOT (4)
-#define MAX_AVBKEY_LEN (8 + 1024)
+#define AVB_NUM_SLOT (6)
 
 /* use max nand page size, 4K */
 #define NAND_PAGE_SIZE (0x1000)
@@ -58,6 +57,86 @@ int compare_avbkey_with_fipkey(const uint8_t* public_key_data, size_t public_key
 void *memory_addr;
 AvbOps avb_ops_;
 int run_in_recovery;
+
+struct avb_part {
+	char name[16];
+	uint8_t *addr;
+	size_t length;
+};
+
+struct avb_part parts[AVB_NUM_SLOT];
+uint32_t avb_part_num;
+bool avb_preload = true;
+
+void set_avb_parts(const char *partname, uint8_t *addr, size_t length)
+{
+	struct avb_part *part = NULL;
+
+	if (!is_device_unlocked() && avb_preload) {
+		assert(avb_part_num < AVB_NUM_SLOT);
+
+		part = &parts[avb_part_num];
+		memset(part->name, 0, sizeof(part->name));
+		strncpy(part->name, partname, sizeof(part->name) - 1);
+		part->addr = malloc(length);
+		if (part->addr) {
+			memcpy(part->addr, addr, length);
+			part->length = length;
+			avb_part_num++;
+		}
+	}
+}
+
+void clear_avb_parts(void)
+{
+	struct avb_part *part = NULL;
+	u32 i = 0;
+
+	if (!is_device_unlocked()) {
+		for (i = 0; i < avb_part_num; i++) {
+			part = &parts[i];
+			memset(part->name, 0, sizeof(part->name));
+			if (part->addr) {
+				free(part->addr);
+				part->addr = NULL;
+				part->length = 0;
+			}
+		}
+	}
+	avb_part_num = 0;
+}
+
+u64 get_size_avb_footer(const char *partname)
+{
+	AvbFooter footer_src, footer_desc;
+	u64 rc = 0;
+	enum boot_type_e type = store_get_type();
+	u32 read_size = 512;
+	u8 read_buf[NAND_PAGE_SIZE];
+
+	if (!partname)
+		return 0;
+
+	if (type == BOOT_NAND_MTD || type == BOOT_SNAND)
+		read_size = NAND_PAGE_SIZE;
+
+	rc = store_logic_cap(partname);
+	if (rc > read_size) {
+		rc = store_logic_read(partname, rc - read_size,
+				read_size, read_buf);
+		if (rc) {
+			printf("failed to read footer from: %s\n", partname);
+			return 0;
+		}
+		memcpy(&footer_src, &read_buf[read_size - AVB_FOOTER_SIZE], AVB_FOOTER_SIZE);
+		if (avb_footer_validate_and_byteswap(&footer_src, &footer_desc))
+			return footer_desc.original_image_size;
+		else
+			return 0;
+	} else {
+		return rc;
+	}
+}
 
 static AvbIOResult read_from_partition(AvbOps *ops, const char *partition, int64_t offset,
 		size_t num_bytes, void *buffer, size_t *out_num_read)
@@ -179,6 +258,41 @@ static AvbIOResult read_from_partition(AvbOps *ops, const char *partition, int64
 
 out:
 	return result;
+}
+
+static AvbIOResult get_preloaded_partition(AvbOps *ops, const char *partition,
+					   size_t num_bytes,
+					   uint8_t **out_pointer,
+					   size_t *out_num_bytes_preloaded)
+{
+	int32_t i = 0;
+
+	*out_pointer = NULL;
+	*out_num_bytes_preloaded = 0;
+
+	if (avb_preload) {
+		for (i = 0; i < avb_part_num; i++) {
+			if (!strcmp(partition, parts[i].name)) {
+				if (num_bytes <= parts[i].length) {
+					*out_pointer = parts[i].addr;
+					*out_num_bytes_preloaded = num_bytes;
+				} else {
+					printf("preload: %s expected: %zd, got: %zd\n",
+						partition, num_bytes, parts[i].length);
+					if (parts[i].addr) {
+						free(parts[i].addr);
+						parts[i].addr = NULL;
+						parts[i].length = 0;
+						memset(parts[i].name, 0, sizeof(parts[i].name));
+					}
+				}
+				return AVB_IO_RESULT_OK;
+			}
+		}
+		printf("cannot find %s in preload, use storage read\n", partition);
+	}
+
+	return AVB_IO_RESULT_OK;
 }
 
 static AvbIOResult write_to_partition(AvbOps *ops, const char *partition,
@@ -992,7 +1106,7 @@ static int avb_init(void)
 
 	memset(&avb_ops_, 0, sizeof(AvbOps));
 	avb_ops_.read_from_partition = read_from_partition;
-	avb_ops_.get_preloaded_partition = NULL;
+	avb_ops_.get_preloaded_partition = get_preloaded_partition;
 	avb_ops_.write_to_partition = write_to_partition;
 	avb_ops_.validate_vbmeta_public_key = validate_vbmeta_public_key;
 	avb_ops_.read_rollback_index = read_rollback_index;
@@ -1044,13 +1158,13 @@ int avb_verify(AvbSlotVerifyData** out_data)
 #endif
 #ifdef CONFIG_OF_LIBFDT_OVERLAY
 	const char *requested_partitions_ab[AVB_NUM_SLOT + 1] = {"boot", "dtbo",
-		RECOVERY, NULL, NULL};
+		RECOVERY, NULL, NULL, NULL, NULL};
 #else
 	const char *requested_partitions_ab[AVB_NUM_SLOT + 1] = {"boot", RECOVERY,
-	    NULL, NULL, NULL};
+	    NULL, NULL, NULL, NULL, NULL};
 #endif
 	const char *requested_partitions[AVB_NUM_SLOT + 1] = {"boot", "dt",
-	    RECOVERY, NULL, NULL};
+	    RECOVERY, NULL, NULL, NULL, NULL};
 	AvbSlotVerifyResult result = AVB_SLOT_VERIFY_RESULT_OK;
 	char *s1 = NULL;
 	char *ab_suffix = NULL;
@@ -1059,6 +1173,9 @@ int avb_verify(AvbSlotVerifyData** out_data)
 	const char **partition_select = requested_partitions;
 	int i = 0;
 	int factory_part_num = -1;
+	char partname_init[32] = {0};
+	const char *init_boot = "init_boot";
+	u64 init_boot_size = 0;
 
 	AvbHashtreeErrorMode hashtree_error_mode =
 		AVB_HASHTREE_ERROR_MODE_RESTART_AND_INVALIDATE;
@@ -1089,6 +1206,15 @@ int avb_verify(AvbSlotVerifyData** out_data)
 	if (strcmp(ab_suffix, ""))
 		partition_select = requested_partitions_ab;
 
+	if (!strcmp(ab_suffix, "_a"))
+		strcpy((char *)partname_init, "init_boot_a");
+	else if (!strcmp(ab_suffix, "_b"))
+		strcpy((char *)partname_init, "init_boot_b");
+	else
+		strcpy((char *)partname_init, "init_boot");
+
+	init_boot_size = store_part_size(partname_init);
+
 	AvbSlotVerifyFlags flags = AVB_SLOT_VERIFY_FLAGS_NONE;
 
 	avb_init();
@@ -1098,6 +1224,14 @@ int avb_verify(AvbSlotVerifyData** out_data)
 		for (i = 0; i < AVB_NUM_SLOT; i++) {
 			if (!partition_select[i]) {
 				partition_select[i] = vendor_boot;
+				break;
+			}
+		}
+	}
+	if (init_boot_size != (u64)-1) {
+		for (i = 0; i < AVB_NUM_SLOT; i++) {
+			if (!partition_select[i]) {
+				partition_select[i] = init_boot;
 				break;
 			}
 		}
@@ -1126,6 +1260,8 @@ int avb_verify(AvbSlotVerifyData** out_data)
 
 	result = avb_slot_verify(&avb_ops_, partition_select, ab_suffix,
 			flags, hashtree_error_mode, out_data);
+
+	clear_avb_parts();
 
 	return result;
 #undef RECOVERY
@@ -1283,6 +1419,28 @@ static int do_avb_recovery(cmd_tbl_t *cmdtp, int flag, int argc, char * const ar
 	return CMD_RET_SUCCESS;
 }
 
+static int do_avb_preload(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	char *avb_s = NULL;
+
+	run_in_recovery = 0;
+
+	if (argc != 2)
+		return CMD_RET_FAILURE;
+
+	run_command("get_avb_mode;", 0);
+	avb_s = env_get("avb2");
+	if (!avb_s || !strcmp(avb_s, "0"))
+		return CMD_RET_SUCCESS;
+
+	if (!strcmp(argv[1], "1"))
+		avb_preload = 1;
+	else
+		avb_preload = 0;
+
+	return CMD_RET_SUCCESS;
+}
+
 uint32_t avb_get_boot_patchlevel_from_vbmeta(AvbSlotVerifyData *data)
 {
 		int i, j;
@@ -1352,6 +1510,7 @@ static cmd_tbl_t cmd_avb_sub[] = {
 #endif
 	U_BOOT_CMD_MKENT(memory, 4, 0, do_avb_verify_memory, "", ""),
 	U_BOOT_CMD_MKENT(recovery, 2, 0, do_avb_recovery, "", ""),
+	U_BOOT_CMD_MKENT(preload, 2, 0, do_avb_preload, "", ""),
 };
 
 static int do_avb_ops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
