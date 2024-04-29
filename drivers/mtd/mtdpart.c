@@ -710,12 +710,12 @@ static struct mtd_info *allocate_partition(struct mtd_info *master,
 		printf("[ZAPPER] know ldflag partition end at %llx\n",slave->offset + slave->size);
 		if (Zapper_get_nand_ldflag_partition_address(slave->offset, slave->offset + slave->size))
 			printf("[ZAPPER] fail to know ldflag partition address\n");
-	} else if (strstr(slave->name, "hwconfig") != NULL) {
+	} else if (strstr(slave->name, "hwconfig") != NULL) { /* BBCB */
 		printf("[ZAPPER] know hwconfig partition begin at %llx\n",slave->offset);
 		printf("[ZAPPER] know hwconfig partition end at %llx\n",slave->offset + slave->size);
 		if (Zapper_get_nand_hwconfig_partition_address(slave->offset, slave->offset + slave->size))
 			printf("[ZAPPER] fail to know hwconfig partition address\n");
-	} else if (strstr(slave->name, "ldsec") != NULL) {
+	} else if (strstr(slave->name, "ldsec") != NULL) { /* UK */
 		printf("[ZAPPER] know ldsec partition begin at %llx\n",slave->offset);
 		printf("[ZAPPER] know ldsec partition end at %llx\n",slave->offset + slave->size);
 		if (Zapper_get_nand_ldsec_partition_address(slave->offset, slave->offset + slave->size))

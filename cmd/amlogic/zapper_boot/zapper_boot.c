@@ -94,7 +94,10 @@ static lc_result LoaderPartition_enable_usb(unsigned char download_mode)
 			result = LoaderPartition_SetLoaderPartition(&pt);
 		}
 	}
-
+	if (result != LC_SUCCESS) {
+		printf("[ZAPPER] %s:%d set error code\n", __FUNCTION__, __LINE__);
+		ERR_REPORT_SetErrorCode(ERROR_CODE_INVALID_LOADERPT);
+	}
 	return result;
 }
 
@@ -154,18 +157,27 @@ static lc_result LoaderPartition_enable_ota(unsigned char download_mode)
 		}
 	}
 
+	if (result != LC_SUCCESS) {
+		printf("[ZAPPER] %s:%d set error code\n", __FUNCTION__, __LINE__);
+		ERR_REPORT_SetErrorCode(ERROR_CODE_INVALID_LOADERPT);
+	}
+
 	return result;
 }
 
 static lc_result BSTRAP_BootCheck(lc_bool *pCodeModuleError)
 {
 	lc_result result = LC_SUCCESS;
-	lc_uint32 moduleCount = 1;
-	//lc_uint16 *pModuleList = LC_NULL;
+	lc_uint32 moduleCount = 3;
 	unsigned short pModuleList[3] = {0};
 	lc_uchar *pUk = LC_NULL;
 	lc_uint32 cnt = 0;
-	pModuleList[0] = 33;
+	pModuleList[0] = 0x20;	/* boot module id, 0x20 */
+	pModuleList[1] = 0x21;	/* system module id, 0x21 */
+	//pModuleList[2] = 0x24;	/* casecure module id, 0x24 */
+	pModuleList[2] = 0x23;	/* ccaconfig module id, 0x23 */
+	//pModuleList[4] = 0x22;	/* rescue list module id, 0x22 */
+	//pModuleList[2] = 35;	/* backup ccaconfig & rescue list  */
 
 	/* Retrieve UK (optional, only necessary when boot check algorithm is LC_CHECKSUM_RSASSA_PKCS1_V1_5). */
 	if (LC_SUCCESS == result)

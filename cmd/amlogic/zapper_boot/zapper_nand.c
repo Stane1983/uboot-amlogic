@@ -3,7 +3,8 @@
 #include <command.h>
 #include <amlogic/zapper_boot.h>
 #include <../legacy-mtd-utils.h>
-
+#include "LoaderCore/Include/ImportSPI/LoaderCoreSPI.h"
+#include "LoaderCore/Src/Shared/ErrorReport.h"
 
 static unsigned char flash_map_index = 0;
 static unsigned long long hwconfig_start;	//hwconfig partition start address
@@ -261,16 +262,44 @@ static int Zapper_read_all_info(struct Zapper_boot_info *p_s_boot_info)
 static int Zapper_write_ldflag(void)
 {
 	int ret = ZAPPER_ERROR;
-	struct mtd_info *mtd = NULL;
+	struct mtd_info *mtd = get_nand_dev_by_index(ZAPPER_FLASH_DEV);
 	unsigned long rwsize;
-	mtd = get_nand_dev_by_index(ZAPPER_FLASH_DEV);
 
 	if (!mtd) {
 		puts("\n[ZAPPER]no devices available\n");
 		return ZAPPER_ERROR;
 	}
 
-    printf("[ZAPPER] The file is %s, function is %s, line is %d\n",__FILE__,__FUNCTION__,__LINE__);
+	printf("[ZAPPER] The file is %s, function is %s, line is %d\n",__FILE__,__FUNCTION__,__LINE__);
+
+	/* save bootstrap's error code to loader partition */
+	unsigned int bootstrap_ec = ERROR_CODE_SUCCESS;
+	ERR_REPORT_GetErrorCode(&bootstrap_ec, NULL);
+	printf("[ZAPPER] %s:%d, error code: 0x%x\n", __FUNCTION__, __LINE__, bootstrap_ec);
+	memcpy((void *)zapper_ldflag_partition + LD_HEADER_LENGTH + LD_LENGTH , (void *)&bootstrap_ec , EC_LENGTH);
+	memcpy((void *)s_boot_info.error_code, (void *)zapper_ldflag_partition + LD_HEADER_LENGTH + LD_LENGTH, EC_LENGTH);
+
+	if (bootstrap_ec != ERROR_CODE_SUCCESS) {
+		if (bootstrap_ec == ERROR_CODE_INVALID_BBCB) {
+			/* If there is an error with BBCB, as it cannot be upgraded, the device will keep rebooting. */
+			printf("[ZAPPER] ERROR!!! INVALID BBCB\n");
+			run_command("reboot", 0);
+		} else {
+			/* If any other errors occur, then it will enter rescue download upgrade mode. */
+			lc_loader_pt_st LoaderPt;
+
+			s_boot_info.download_mode = DOWNLOAD_MODE_RESCUE;
+			zapper_ldflag_partition [LD_HEADER_LENGTH + LD_LENGTH + EC_LENGTH + 1 + 1] = s_boot_info.download_mode;
+
+			memset(&LoaderPt, 0x0, sizeof(LoaderPt));
+			result = LC_ReadLoaderPartition(&LoaderPt);
+			printf("[ZAPPER] LoaderPt.sharedMemory.downloadIndicator = %x\n", LoaderPt.sharedMemory.downloadIndicator);
+			LoaderPt.sharedMemory.downloadIndicator = 0b00010010;
+			printf("After setting LoaderPt.sharedMemory.downloadIndicator = %x\n",LoaderPt.sharedMemory.downloadIndicator);
+			result = Zapper_set_jump_recovery_status(OTA_DETECT_JUMP);
+			result = LoaderPartition_SetLoaderPartition(&LoaderPt);
+		}
+	}
 
 	mtd = get_nand_dev_by_index(ZAPPER_FLASH_DEV);
 
@@ -289,6 +318,7 @@ static int Zapper_write_ldflag(void)
 		printf ("zapper_ldflag_partition[%d] is %x\n", i, *(zapper_ldflag_partition+i));
 
 	}
+
 	return ZAPPER_SUCCESS;
 }
 
@@ -301,20 +331,24 @@ static int do_zapper_read_flash(cmd_tbl_t *cmdtp, int flag, int argc, char *cons
 {
 	printf("Hello, now we are going to do zapper flash read\n");
 	int ret = ZAPPER_ERROR;
+
+	ERR_REPORT_Initialize();
 	ret = Zapper_read_all_info(&s_boot_info);
+	if (ret != ZAPPER_SUCCESS) {
+		printf("[ZAPPER] %s:%d set error code\n", __FUNCTION__, __LINE__);
+		ERR_REPORT_SetErrorCode(ERROR_CODE_BOOT_CHECK_FAILED);
+	}
 	return ret;
 }
 
-
 static int do_zapper_write_flash(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {
-	printf("Hello, now we are going to do zapper flash read\n");
+	printf("Hello, now we are going to do zapper flash write\n");
 	int ret = ZAPPER_ERROR;
 	run_command("nand erase.part ldflag", 0);
 	ret = Zapper_write_ldflag();
 	return ret;
 }
-
 
 
 U_BOOT_CMD(
@@ -324,5 +358,3 @@ U_BOOT_CMD(
 U_BOOT_CMD(
 	zapper_flash_write, 1, 0, do_zapper_write_flash,"zapper write" ,"zapper write for irdeto loader"
 );
-
-
