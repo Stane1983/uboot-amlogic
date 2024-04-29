@@ -616,17 +616,17 @@ static void hdmitx_enable_encp_clk(struct hdmitx_dev *hdev)
 
 void hdmitx21_set_audioclk(bool en)
 {
-	u32 data32;
-
-	// Enable hdmitx_aud_clk
-	// [10: 9] clk_sel for cts_hdmitx_aud_clk: 2=fclk_div3
-	// [    8] clk_en for cts_hdmitx_aud_clk
-	// [ 6: 0] clk_div for cts_hdmitx_aud_clk: fclk_div3/aud_clk_div
-	data32 = 0;
-	data32 |= (2 << 9);
-	data32 |= (0 << 8);
-	data32 |= ((18 - 1) << 0);
-	hd21_write_reg(CLKCTRL_HTX_CLK_CTRL1, data32);
+	/* cts_hdmitx_aud_clk is used by spdif, need to be more than 6 times
+	 * of spdif_clk. Configuring it to 200M can basically cover the currently
+	 * used cases
+	 *
+	 * Enable hdmitx_aud_clk
+	 * [10: 9] clk_sel for cts_hdmitx_aud_clk: 2=fclk_div3
+	 * [    8] clk_en for cts_hdmitx_aud_clk
+	 * [ 6: 0] clk_div for cts_hdmitx_aud_clk: fclk_div3/aud_clk_div
+	 */
+	hd21_set_reg_bits(CLKCTRL_HTX_CLK_CTRL1, 3, 9, 2);// FIXPLL/5
+	hd21_set_reg_bits(CLKCTRL_HTX_CLK_CTRL1, 1, 0, 8);//div2
 	// [    8] clk_en for cts_hdmitx_aud_clk
 	hd21_set_reg_bits(CLKCTRL_HTX_CLK_CTRL1, en, 8, 1);
 }
