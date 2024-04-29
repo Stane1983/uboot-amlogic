@@ -22,7 +22,6 @@
 #include <linux/mtd/partitions.h>
 #include <asm/amlogic/arch/bl31_apis.h>
 #include <amlogic/aml_mtd.h>
-#include <amlogic/aml_mmc.h>
 #include <amlogic/board.h>
 #include <asm-generic/u-boot.h>
 #include <command.h>
@@ -286,7 +285,6 @@ int board_late_init(void)
 #endif
 	set_usb_status();
 	aml_board_late_init_tail(NULL);
-	emmc_quirks();
 	return 0;
 }
 

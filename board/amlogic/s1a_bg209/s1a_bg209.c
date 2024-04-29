@@ -23,8 +23,6 @@
 #include <mtd/mtd-abi.h>
 #include <asm/amlogic/arch/bl31_apis.h>
 #include <amlogic/aml_mtd.h>
-#include <amlogic/aml_mmc.h>
-
 #include <command.h>
 #include <asm/amlogic/arch/stick_mem.h>
 
@@ -197,8 +195,6 @@ int board_late_init(void)
 	run_command("amlsecurecheck", 0);
 	run_command("update_tries", 0);
 	run_command("get_cpuid", 0);
-
-	emmc_quirks();
 	return 0;
 #endif
 }

@@ -22,7 +22,6 @@
 #include <linux/mtd/partitions.h>
 #include <asm/amlogic/arch/bl31_apis.h>
 #include <amlogic/aml_mtd.h>
-#include <amlogic/aml_mmc.h>
 #include <asm-generic/u-boot.h>
 #include <command.h>
 
@@ -238,7 +237,6 @@ int board_late_init(void)
 	} else {
 		env_set("cpu_id", "1234567890");
 	}
-	emmc_quirks();
 	return 0;
 }
 
