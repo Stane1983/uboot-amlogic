@@ -351,8 +351,12 @@
 		};
 
 		saradc: adc {
-			compatible = "amlogic,meson-saradc";
-			reg = <0x0 0xfe026000 0x0 0xf0>;
+			compatible = "amlogic,saradc";
+			reg = <0x00 0xfe026000 0x00 0x84>;
+			amlogic,clock-frequency = <1200000>;
+			amlogic,test-channel = <7>;
+			amlogic,fifo-data-width = <16>;
+			amlogic,out-data-width = <10>;
 			status = "disabled";
 		};
 

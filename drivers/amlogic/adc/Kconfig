@@ -21,3 +21,9 @@ config SARADC_MESON_C2
 	  - 8 analog input channels
 	  - 1O or 12 bits resolution
 	  - Up to 1MSPS of sample rate
+
+config AMLOGIC_SARADC
+	bool "Enable Amlogic SARADC driver"
+	select SARADC_AMLOGIC
+	help
+	  This enables driver for Amlogic SARADC.
