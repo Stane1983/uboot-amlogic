@@ -102,7 +102,7 @@
 		"frac_rate_policy=${frac_rate_policy} hdmi_read_edid=${hdmi_read_edid} "\
 		"cvbsmode=${cvbsmode} "\
 		"osd_reverse=${osd_reverse} video_reverse=${video_reverse} "\
-		"disable_ir=${disable_ir};"\
+		"disable_ir=${disable_ir} kvm-arm.mode=none;"\
 		"setenv bootconfig ${initconfig} androidboot.selinux=${EnableSelinux} "\
 		"androidboot.firstboot=${firstboot} "\
 		"androidboot.bootloader=${bootloader_version} "\
