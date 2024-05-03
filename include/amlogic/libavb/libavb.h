@@ -52,4 +52,6 @@ int is_device_unlocked(void);
 uint32_t avb_get_boot_patchlevel_from_vbmeta(AvbSlotVerifyData *data);
 uint32_t create_csrs(void);
 int set_successful_boot(void);
+void set_avb_parts(const char *partname, uint8_t *addr, size_t length);
+u64 get_size_avb_footer(const char *partname);
 #endif /* LIBAVB_H_ */
