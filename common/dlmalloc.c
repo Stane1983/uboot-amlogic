@@ -20,6 +20,10 @@ void malloc_stats();
 #ifdef CONFIG_AML_UASAN
 #include <amlogic/uasan.h>
 #endif
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#include <spinlock.h>
+static spin_lock_t malloc_lock;
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -631,6 +635,9 @@ void mem_malloc_init(ulong start, ulong size)
 	memset((void *)mem_malloc_start, 0x0, size);
 #endif
 	malloc_bin_reloc();
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock_init(&malloc_lock);
+#endif
 }
 
 /* field-extraction macros */
@@ -1288,6 +1295,9 @@ Void_t* mALLOc(bytes) size_t bytes;
 
   if ((long)bytes < 0) return NULL;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+  spin_lock(&malloc_lock);
+#endif
   nb = request2size(bytes);  /* padded request size; */
 
   /* Check for exact match in a bin */
@@ -1313,6 +1323,9 @@ Void_t* mALLOc(bytes) size_t bytes;
       unlink(victim, bck, fwd);
       set_inuse_bit_at_offset(victim, victim_size);
       check_malloced_chunk(victim, nb);
+    #ifdef CONFIG_ARMV8_MULTIENTRY
+      spin_unlock(&malloc_lock);
+    #endif
     #ifdef CONFIG_AML_UASAN
       uasan_alloc(victim, bytes);
       return chunk2mem(victim);
@@ -1345,6 +1358,9 @@ Void_t* mALLOc(bytes) size_t bytes;
 	unlink(victim, bck, fwd);
 	set_inuse_bit_at_offset(victim, victim_size);
 	check_malloced_chunk(victim, nb);
+      #ifdef CONFIG_ARMV8_MULTIENTRY
+        spin_unlock(&malloc_lock);
+      #endif
       #ifdef CONFIG_AML_UASAN
         uasan_alloc(victim, bytes);
         return chunk2mem(victim);
@@ -1373,6 +1389,9 @@ Void_t* mALLOc(bytes) size_t bytes;
       set_head(remainder, remainder_size | PREV_INUSE);
       set_foot(remainder, remainder_size);
       check_malloced_chunk(victim, nb);
+    #ifdef CONFIG_ARMV8_MULTIENTRY
+      spin_unlock(&malloc_lock);
+    #endif
     #ifdef CONFIG_AML_UASAN
       uasan_alloc(victim, bytes);
       return chunk2mem(victim);
@@ -1387,6 +1406,9 @@ Void_t* mALLOc(bytes) size_t bytes;
     {
       set_inuse_bit_at_offset(victim, victim_size);
       check_malloced_chunk(victim, nb);
+    #ifdef CONFIG_ARMV8_MULTIENTRY
+      spin_unlock(&malloc_lock);
+    #endif
     #ifdef CONFIG_AML_UASAN
       uasan_alloc(victim, bytes);
       return chunk2mem(victim);
@@ -1447,6 +1469,9 @@ Void_t* mALLOc(bytes) size_t bytes;
 	    set_head(remainder, remainder_size | PREV_INUSE);
 	    set_foot(remainder, remainder_size);
 	    check_malloced_chunk(victim, nb);
+          #ifdef CONFIG_ARMV8_MULTIENTRY
+            spin_unlock(&malloc_lock);
+          #endif
 	  #ifdef CONFIG_AML_UASAN
 	    uasan_alloc(victim, bytes);
 	    return chunk2mem(victim);
@@ -1460,6 +1485,9 @@ Void_t* mALLOc(bytes) size_t bytes;
 	    set_inuse_bit_at_offset(victim, victim_size);
 	    unlink(victim, bck, fwd);
 	    check_malloced_chunk(victim, nb);
+          #ifdef CONFIG_ARMV8_MULTIENTRY
+            spin_unlock(&malloc_lock);
+          #endif
 	  #ifdef CONFIG_AML_UASAN
 	    uasan_alloc(victim, bytes);
 	    return chunk2mem(victim);
@@ -1518,8 +1546,15 @@ Void_t* mALLOc(bytes) size_t bytes;
 
     /* Try to extend */
     malloc_extend_top(nb);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+    if ( (remainder_size = chunksize(top) - nb) < (long)MINSIZE) {
+      spin_unlock(&malloc_lock);
+      return NULL; /* propagate failure */
+    }
+#else
     if ( (remainder_size = chunksize(top) - nb) < (long)MINSIZE)
       return NULL; /* propagate failure */
+#endif
   }
 
   victim = top;
@@ -1527,6 +1562,9 @@ Void_t* mALLOc(bytes) size_t bytes;
   top = chunk_at_offset(victim, nb);
   set_head(top, remainder_size | PREV_INUSE);
   check_malloced_chunk(victim, nb);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+  spin_unlock(&malloc_lock);
+#endif
 #ifdef CONFIG_AML_UASAN
   uasan_alloc(victim, bytes);
   return chunk2mem(victim);
@@ -1598,6 +1636,9 @@ void fREe(mem) Void_t* mem;
   }
 #endif
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+  spin_lock(&malloc_lock);
+#endif
   check_inuse_chunk(p);
 
   sz = hd & ~PREV_INUSE;
@@ -1625,6 +1666,9 @@ void fREe(mem) Void_t* mem;
     top = p;
     if ((unsigned long)(sz) >= (unsigned long)trim_threshold)
       malloc_trim(top_pad);
+  #ifdef CONFIG_ARMV8_MULTIENTRY
+    spin_unlock(&malloc_lock);
+  #endif
     return;
   }
 
@@ -1662,10 +1706,10 @@ void fREe(mem) Void_t* mem;
   set_foot(p, sz);
   if (!islr)
     frontlink(p, sz, idx, bck, fwd);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+  spin_unlock(&malloc_lock);
+#endif
 }
-
-
-
 
 
 /*
@@ -1703,7 +1747,32 @@ void fREe(mem) Void_t* mem;
 
 */
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+Void_t* rEALLOc(Void_t* oldmem, size_t bytes)
+{
+	void *new;
+	mchunkptr oldp;
+	size_t oldsize;
 
+	if (bytes <= 0)
+		return NULL;
+	if (!oldmem)
+		return mALLOc(bytes);
+
+	oldp    = mem2chunk(oldmem);
+	oldsize = chunksize(oldp);
+
+	new = mALLOc(bytes);
+	if (!new)
+		return NULL;
+	if (oldsize > bytes)
+		memcpy(new, oldmem, bytes);
+	else
+		memcpy(new, oldmem, oldsize);
+	fREe(oldmem);
+	return new;
+}
+#else
 #if __STD_C
 Void_t* rEALLOc(Void_t* oldmem, size_t bytes)
 #else
@@ -1898,7 +1967,6 @@ Void_t* rEALLOc(oldmem, bytes) Void_t* oldmem; size_t bytes;
     /* Must allocate */
 
     newmem = mALLOc (bytes);
-
     if (newmem == NULL)  /* propagate failure */
       return NULL;
 
@@ -1950,6 +2018,7 @@ Void_t* rEALLOc(oldmem, bytes) Void_t* oldmem; size_t bytes;
   return chunk2mem(newp);
 #endif
 }
+#endif
 
 
 
