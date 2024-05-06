@@ -14,7 +14,7 @@
 #include <amlogic/aml_efuse.h>
 #include <asm/amlogic/arch/efuse.h>
 //#include "image.h"
-
+#include "../hdmitx_common/hdmitx_compliance.h"
 #include <amlogic/cpu_id.h>
 #include <fdtdec.h>
 //#include <asm/amlogic/arch/io.h>
@@ -1948,6 +1948,34 @@ static enum frl_rate_enum get_current_frl_rate(void)
 	return rate;
 }
 
+static int hdmi_move_hdr_pkt(bool flag)
+{
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
+	struct hdmi_format_para *para = hdev->para;
+	enum hdmi_vic vic = para->timing.vic;
+	const struct hdmi_timing *timing;
+	u8 move_val = 0;
+
+	/* Only S7 and later SOCs have this function */
+	if (hdev->chip_type == MESON_CPU_ID_S7 || hdev->chip_type == MESON_CPU_ID_S7D) {
+		if (flag) {
+			timing = hdmitx21_gettiming_from_vic(vic);
+			if (timing) {
+				move_val = timing->v_front + timing->v_sync + 1;
+				pr_info("vic = %d, move_val = %d\n", vic, move_val);
+				/* Move HDR PKT behind VSYNC */
+				pkt_send_position_change(0, GEN_PKT, move_val);
+			}
+		} else {
+			/* Restore HDR PKT to default position */
+			hdmitx21_wr_reg(PKT_AUTO_0_IVCTX,
+					hdmitx21_rd_reg(PKT_AUTO_0_IVCTX) | 0x40);
+			hdmitx21_wr_reg(PKT_LOC_GEN_IVCTX, 0);
+		}
+	}
+	return 0;
+}
+
 #define NUM_INT_VSYNC   INT_VEC_VIU1_VSYNC
 
 /*Pixel bit width: 4=24-bit; 5=30-bit; 6=36-bit; 7=48-bit.
@@ -2227,6 +2255,13 @@ static void config_hdmi21_tx(struct hdmitx_dev *hdev)
 	hdmitx21_set_reg_bits(PWD_SRST_IVCTX, 3, 1, 2);
 	hdmitx21_set_reg_bits(PWD_SRST_IVCTX, 0, 1, 2);
 	hdmitx21_set_reg_bits(TPI_SC_IVCTX, 1, 0, 1);
+	/* On Huawei TVs, HDR will cause a flickering screen,
+	 * and HDR PKT needs to be moved behind VSYNC on S7 or S7D
+	 */
+	if (hdmitx_find_hdr_pkt_delay_to_vsync(hdev->rawedid))
+		hdmi_move_hdr_pkt(true);
+	else
+		hdmi_move_hdr_pkt(false);
 } /* config_hdmi21_tx */
 
 #define GET_LOW8BIT(a)	((a) & 0xff)

@@ -63,17 +63,6 @@ const struct hdmi_timing *hdmitx_mode_match_timing_name(const char *name);
 static void edid_dtd_parsing(struct rx_cap *prxcap, unsigned char *data);
 static void hdmitx_edid_set_default_aud(struct rx_cap *prxcap);
 
-/* Base Block, Vendor/Product Information, byte[8]~[18] */
-struct edid_venddat_t {
-	u8 data[10];
-};
-
-static struct edid_venddat_t vendor_id[] = {
-{ {0x41, 0x0C, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x03, 0x14} },
-/* { {0x05, 0xAC, 0x30, 0x00, 0x01, 0x00, 0x00, 0x00, 0x20, 0x19} }, */
-/* Add new vendor data here */
-};
-
 static void phy_addr_clear(struct vsdb_phyaddr *vsdb_phy_addr)
 {
 	if (!vsdb_phy_addr)
@@ -2495,21 +2484,6 @@ static void check_dv_truly_support(struct rx_cap *prxcap, struct dv_info *dv)
 	}
 }
 
-bool hdmitx_find_philips(u8 *edid_buf)
-{
-	int j;
-	int length = sizeof(vendor_id) / sizeof(struct edid_venddat_t);
-
-	if (!edid_buf)
-		return false;
-
-	for (j = 0; j < length; j++) {
-		if (memcmp(edid_buf, &vendor_id[j], sizeof(struct edid_venddat_t)) == 0)
-			return true;
-	}
-	return false;
-}
-
 /*
  * if the EDID is invalid, then set the fallback mode
  * Resolution & RefreshRate:
@@ -2778,7 +2752,6 @@ int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf)
 	check_dv_truly_support(prxcap, dv);
 	dv = &prxcap->dv_info2;
 	check_dv_truly_support(prxcap, dv);
-// TODO	hdmitx_device->vend_id_hit = hdmitx_find_philips(tx_comm);
 	/* For some receivers, they don't claim the screen size
 	 * and re-calculate it from the h/v image size from dtd
 	 * the unit of screen size is cm, but the unit of image size is mm

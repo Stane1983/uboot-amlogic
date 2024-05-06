@@ -33,5 +33,6 @@ void hdmitx_vrr_set_maxlncnt(u32 max_lcnt);
 void hdmi_emp_frame_set_member(struct emp_packet_st *info,
 			       enum emp_component_conf conf, u32 val);
 void hdmi_emp_infoframe_set(enum emp_type type, struct emp_packet_st *info);
+void pkt_send_position_change(u32 enable_all, enum pkt_op pkt, u8 mov_val);
 
 #endif
