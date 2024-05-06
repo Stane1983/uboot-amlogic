@@ -219,7 +219,7 @@ static void qms_scene_pre_process(struct hdmitx_dev *hdev)
 		return;
 	}
 	color = env_get("user_colorattribute");
-	if (!color)
+	if (!color || !strcmp(color, "none"))
 		color = env_get("colorattribute");
 	/* save brr_vic to vic without the environment */
 	hdev->vic = hdev->brr_vic;
