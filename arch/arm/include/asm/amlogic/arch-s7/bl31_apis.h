@@ -26,16 +26,12 @@
 #define GET_SHARE_MEM_INPUT_BASE		0x82000020
 #define GET_SHARE_MEM_OUTPUT_BASE		0x82000021
 #define GET_REBOOT_REASON				0x82000022
-
-#define ABANDON_SECURE_UNIFY_KEY
-#ifndef ABANDON_SECURE_UNIFY_KEY
 #define GET_SHARE_STORAGE_IN_BASE		0x82000023
 #define GET_SHARE_STORAGE_OUT_BASE		0x82000024
 #define GET_SHARE_STORAGE_BLOCK_BASE	0x82000025
 #define GET_SHARE_STORAGE_MESSAGE_BASE	0x82000026
 #define GET_SHARE_STORAGE_BLOCK_SIZE	0x82000027
 #define SET_STORAGE_INFO				0x82000028
-#endif
 #define SET_STORAGE_BOOTSEQUENCE		0x82000029
 #define SET_REBOOT_REASON				0x82000049
 
@@ -94,7 +90,6 @@
 
 /*oscring efuse value get */
 #define OSCRING_EFUSE_GET       0x8200004D
-#ifndef ABANDON_SECURE_UNIFY_KEY
 /* Security Key*/
 #define SECURITY_KEY_QUERY	0x82000060
 #define SECURITY_KEY_READ	0x82000061
@@ -109,7 +104,6 @@
 #define SECURITY_KEY_SET_ENCTYPE	0x8200006A
 #define SECURITY_KEY_GET_ENCTYPE	0x8200006B
 #define SECURITY_KEY_VERSION		0x8200006C
-#endif
 
 /*viu probe en*/
 #define VIU_PREOBE_EN		0x82000080
@@ -163,6 +157,8 @@ struct sram_hal_api_arg {
 	#define GXB_IMG_DEC_RMD   (1 << 1)
 	#define GXB_IMG_DEC_DTB   (1 << 2)
 	#define GXB_IMG_DEC_ALL   (GXB_IMG_DEC_KNL | GXB_IMG_DEC_RMD | GXB_IMG_DEC_DTB)
+
+#define __asmeq(x, y)  ".ifnc " x "," y " ; .err ; .endif\n\t"
 
 void aml_set_jtag_state(unsigned state, unsigned select);
 unsigned aml_get_reboot_reason(void);

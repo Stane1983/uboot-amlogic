@@ -26,6 +26,7 @@ obj-y	+= fwcall.o
 endif
 obj-y	+= cpu-dt.o
 obj-$(CONFIG_ARM_SMCCC)		+= smccc-call.o
+obj-$(CONFIG_CPU_PM)			+= sleep.o suspend.o
 
 ifndef CONFIG_SPL_BUILD
 obj-$(CONFIG_ARMV8_SPIN_TABLE) += spin_table.o spin_table_v8.o

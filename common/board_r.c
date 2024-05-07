@@ -70,6 +70,9 @@
 #include <amlogic/storage.h>
 #include <amlogic/emmc_partitions.h>
 #endif
+#ifdef CONFIG_AMLOGIC_MODIFY
+#include <amlogic/pm.h>
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -294,6 +297,15 @@ static int initr_dm_devices(void)
 
 	return 0;
 }
+
+#ifdef CONFIG_AMLOGIC_MODIFY
+static int initr_pm(void)
+{
+	pm_initialize();
+
+	return 0;
+}
+#endif
 
 static int initr_bootstage(void)
 {
@@ -660,6 +672,9 @@ static init_fnc_t init_sequence_r[] = {
 	initr_barrier,
 	initr_malloc,
 	log_init,
+#ifdef CONFIG_AMLOGIC_MODIFY
+	initr_pm,
+#endif
 	initr_bootstage,	/* Needs malloc() but has its own timer */
 #if defined(CONFIG_CONSOLE_RECORD)
 	console_record_init,

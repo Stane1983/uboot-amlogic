@@ -25,6 +25,8 @@ source "drivers/amlogic/crypto/Kconfig"
 
 source "drivers/amlogic/mkl/Kconfig"
 
+source "drivers/amlogic/pm/Kconfig"
+
 source "drivers/amlogic/mmc/Kconfig"
 
 source "drivers/amlogic/net/Kconfig"
@@ -46,5 +48,7 @@ source "drivers/amlogic/clock/Kconfig"
 source "drivers/amlogic/image_check/Kconfig"
 
 source "drivers/amlogic/amfc/Kconfig"
+
+source "drivers/amlogic/pm/Kconfig"
 
 endmenu
