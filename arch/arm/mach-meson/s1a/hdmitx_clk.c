@@ -28,7 +28,7 @@ static void set21_s1a_hpll_clk_out(u32 frac_rate, u32 clk)
 	case 5940000:
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x31204F7);
 		if (frac_rate)
-			hd21_write_reg(ANACTRL_HDMIPLL_CTRL1, 0x8148);
+			hd21_write_reg(ANACTRL_HDMIPLL_CTRL1, 0x8168);
 		else
 			hd21_write_reg(ANACTRL_HDMIPLL_CTRL1, 0x00010000);
 		hd21_write_reg(ANACTRL_HDMIPLL_CTRL2, 0x01000000);

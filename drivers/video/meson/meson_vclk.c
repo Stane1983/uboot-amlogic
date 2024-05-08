@@ -757,7 +757,7 @@ meson_vclk_set(struct meson_vpu_priv *priv, unsigned int pll_base_freq,
 			break;
 		case 5940000:
 			m = 0xf7;
-			frac = vic_alternate_clock ? 0x8148 : 0x10000;
+			frac = vic_alternate_clock ? 0x8168 : 0x10000;
 			break;
 		}
 
