@@ -1555,8 +1555,10 @@ add_rsvparts:
 			pr_err("Can't increase blob size: %s\n", fdt_strerror(ret));
 			return ret;
 		}
+	} else if (rsvparts_offset == -FDT_ERR_EXISTS) {
+		return 0;
 	} else if (rsvparts_offset < 0) {
-		printf("Can't add mtdrsvpart node: %s\n",
+		pr_err("Can't add mtdrsvpart node: %s\n",
 				fdt_strerror(rsvparts_offset));
 		return rsvparts_offset;
 	}

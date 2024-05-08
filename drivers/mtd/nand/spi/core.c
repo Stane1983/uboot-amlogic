@@ -758,11 +758,13 @@ static int spinand_mtd_block_isbad(struct mtd_info *mtd, loff_t offs)
 static int spinand_markbad(struct nand_device *nand, const struct nand_pos *pos)
 {
 	struct spinand_device *spinand = nand_to_spinand(nand);
+	u8 marker[2] = { };
 	struct nand_page_io_req req = {
 		.pos = *pos,
 		.ooboffs = 0,
-		.ooblen = 2,
-		.oobbuf.out = spinand->oobbuf,
+		.ooblen = sizeof(marker),
+		.oobbuf.out = marker,
+		.mode = MTD_OPS_RAW,
 	};
 	int ret;
 
@@ -775,11 +777,6 @@ static int spinand_markbad(struct nand_device *nand, const struct nand_pos *pos)
 	if (ret)
 		return ret;
 
-	ret = spinand_erase_op(spinand, pos);
-	if (ret)
-		return ret;
-
-	memset(spinand->oobbuf, 0, 2);
 	return spinand_write_page(spinand, &req);
 }
 
@@ -1214,125 +1211,6 @@ static void spinand_cleanup(struct spinand_device *spinand)
 	kfree(spinand->databuf);
 	kfree(spinand->scratchbuf);
 }
-
-#ifdef CONFIG_AML_MTDPART
-/* The size of the partition must be block aligned */
-int spinand_add_partitions(struct mtd_info *mtd,
-				  const struct mtd_partition *parts,
-				  int nbparts)
-{
-	int part_num = 0, i = 0, ret = 1;
-	struct mtd_partition *temp, *parts_nm;
-	loff_t off;
-
-	if (store_get_device_bootloader_mode() == DISCRETE_BOOTLOADER)
-		part_num = nbparts + 2;
-	else if (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER)
-		part_num = nbparts + 5;
-	else
-		part_num = nbparts + 1;
-
-	temp = kzalloc(sizeof(*temp) * part_num, GFP_KERNEL);
-	memset(temp, 0, sizeof(*temp) * part_num);
-	temp[0].name = BOOT_LOADER;
-	temp[0].offset = 0;
-	temp[0].size = BOOT_TOTAL_PAGES * mtd->writesize;
-	if (temp[0].size % mtd->erasesize)
-		WARN_ON(1);
-	off = temp[0].size + NAND_RSV_BLOCK_NUM * mtd->erasesize;
-
-	if (store_get_device_bootloader_mode() == DISCRETE_BOOTLOADER) {
-		temp[1].name = BOOT_TPL;
-		temp[1].offset = off;
-		temp[1].size = CONFIG_TPL_SIZE_PER_COPY * CONFIG_NAND_TPL_COPY_NUM;
-		if (temp[1].size % mtd->erasesize)
-			WARN_ON(1);
-		parts_nm = &temp[2];
-		off += temp[1].size;
-	} else if (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER) {
-		extern struct storage_startup_parameter g_ssp;
-		temp[BOOT_AREA_BL2E].name = BOOT_BL2E;
-		temp[BOOT_AREA_BL2E].offset =
-			g_ssp.boot_entry[BOOT_AREA_BL2E].offset;
-		temp[BOOT_AREA_BL2E].size =
-			g_ssp.boot_entry[BOOT_AREA_BL2E].size * g_ssp.boot_backups;
-		if (temp[0].size % mtd->erasesize)
-			WARN_ON(1);
-
-		temp[BOOT_AREA_BL2X].name = BOOT_BL2X;
-		temp[BOOT_AREA_BL2X].offset =
-			g_ssp.boot_entry[BOOT_AREA_BL2X].offset;
-		temp[BOOT_AREA_BL2X].size =
-			g_ssp.boot_entry[BOOT_AREA_BL2X].size * g_ssp.boot_backups;
-		if (temp[0].size % mtd->erasesize)
-			WARN_ON(1);
-
-		temp[BOOT_AREA_DDRFIP].name = BOOT_DDRFIP;
-		temp[BOOT_AREA_DDRFIP].offset =
-			g_ssp.boot_entry[BOOT_AREA_DDRFIP].offset;
-		temp[BOOT_AREA_DDRFIP].size =
-			g_ssp.boot_entry[BOOT_AREA_DDRFIP].size * g_ssp.boot_backups;
-		if (temp[0].size % mtd->erasesize)
-			WARN_ON(1);
-
-		temp[BOOT_AREA_DEVFIP].name = BOOT_DEVFIP;
-		temp[BOOT_AREA_DEVFIP].offset =
-			g_ssp.boot_entry[BOOT_AREA_DEVFIP].offset;
-		temp[BOOT_AREA_DEVFIP].size =
-			g_ssp.boot_entry[BOOT_AREA_DEVFIP].size * CONFIG_NAND_TPL_COPY_NUM;
-		if (temp[0].size % mtd->erasesize)
-			WARN_ON(1);
-		off = temp[BOOT_AREA_DEVFIP].offset + temp[BOOT_AREA_DEVFIP].size;
-		parts_nm = &temp[5];
-	} else
-		parts_nm = &temp[1];
-
-	for (; i < nbparts; i++) {
-		//printf("add_partitions ==== name = %s\n",parts[i].name);
-		if (!parts[i].name) {
-			pr_err("name can't be null! ");
-			pr_err("please check your %d th partition name!\n",
-				 i + 1);
-			goto _out;
-		}
-		if ((off + parts[i].size) > mtd->size) {
-			pr_err("%s %d over nand size!\n",
-				__func__, __LINE__);
-			goto _out;
-		}
-		parts_nm[i].name = parts[i].name;
-#ifndef CONFIG_NOT_SKIP_BAD_BLOCK
-		loff_t offset = off, end = off + parts[i].size;
-
-		do {
-			if (mtd->_block_isbad(mtd, offset) == NAND_FACTORY_BAD) {
-				pr_err("%s %d found bad block in 0x%llx\n",
-					__func__, __LINE__, offset);
-				end += mtd->erasesize;
-			}
-			offset += mtd->erasesize;
-		} while (offset < end && offset < mtd->size);
-		parts_nm[i].size = end - off - parts[i].size;
-#endif/* CONFIG_NOT_SKIP_BAD_BLOCK */
-		parts_nm[i].offset = off;
-		if (parts[i].size % mtd->erasesize) {
-			pr_err("%s %d \"%s\" size auto align to block size\n",
-				__func__, __LINE__, parts[i].name);
-			parts_nm[i].size += parts[i].size % mtd->erasesize;
-		}
-		/* it's ok "+=" here because size has been set to 0 */
-		parts_nm[i].size += parts[i].size;
-		off += parts_nm[i].size;
-		if (i == (nbparts - 1))
-			parts_nm[i].size = mtd->size - off;
-	}
-
-	ret = add_mtd_partitions(mtd, temp, part_num);
-_out:
-	kfree(temp);
-	return ret;
-}
-#endif
 
 #if SPINAND_MESON_RSV /* add for meson rsv */
 static int spinand_scan_bbt(struct spinand_device *spinand, struct mtd_info *mtd)

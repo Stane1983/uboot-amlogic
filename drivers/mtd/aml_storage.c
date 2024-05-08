@@ -462,6 +462,8 @@ int mtd_store_get_offset(const char *partname, loff_t *retoff, loff_t off)
 		offset = off;
 #if defined(CONFIG_CMD_MTDPARTS)
 	else if (!mtdparts_init()) {
+		if (find_dev_and_part(partname, &dev, &pnum, &part) == 0)
+			goto _offset;
 		medium_type = store_get_type();
 		if ((store_get_device_bootloader_mode() == DISCRETE_BOOTLOADER) ||
 		    (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER)) {
@@ -506,9 +508,10 @@ int mtd_store_get_offset(const char *partname, loff_t *retoff, loff_t off)
 		ret = find_dev_and_part(tmp_part_name, &dev, &pnum, &part);
 		if (ret) {
 			pr_info("%s %d can not find part:%s\n",
-				__func__, __LINE__, tmp_part_name);
+				__func__, __LINE__, partname);
 			return -EINVAL;
 		}
+_offset:
 		offset = part->offset + off;
 	}
 #endif
@@ -558,6 +561,8 @@ static u64 mtd_store_size(const char *part_name)
 		return mtd->size;
 
 	if (!mtdparts_init()) {
+		if (find_dev_and_part(part_name, &dev, &pnum, &part) == 0)
+			goto _get_size;
 		strncpy(tmp_part_name, part_name, min_t(int, strlen(part_name), 20));
 		if ((store_get_device_bootloader_mode() == DISCRETE_BOOTLOADER) ||
 		   (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER)) {
@@ -576,6 +581,9 @@ static u64 mtd_store_size(const char *part_name)
 				if (!strcmp(part_name, BOOT_BL2) ||
 					!strcmp(part_name, BOOT_SPL))
 					strncpy(tmp_part_name, BOOT_LOADER, strlen(BOOT_LOADER));
+				else
+					strncpy(tmp_part_name, part_name,
+					min_t(int, strlen(part_name), 20));
 			}
 		}
 		ret = find_dev_and_part(tmp_part_name,
@@ -584,9 +592,10 @@ static u64 mtd_store_size(const char *part_name)
 					&part);
 		if (ret) {
 			pr_info("%s %d can not find part:%s\n",
-				__func__, __LINE__, tmp_part_name);
+				__func__, __LINE__, part_name);
 			return 0;
 		}
+_get_size:
 		return mtd_store_logic_part_size(mtd, part);
 	}
 	return 0;
@@ -601,7 +610,6 @@ static int mtd_store_read(const char *part_name,
 	int ret;
 	u8 backup_num = 0;
 	enum boot_type_e medium_type = store_get_type();
-
 
 	ret = mtd_store_get_offset((const char *)part_name, &offset, off);
 	if (ret)
@@ -771,18 +779,15 @@ static int mtd_store_erase(const char *part_name,
 		mtd = mtd_store_get(1);
 		if (flag & STORE_ERASE_DATA) {
 			printf("!!!warn: erase all data!!!\n");
-			if (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER) {
-				ret = mtd_store_get_offset(BOOT_DEVFIP, &offset, 0);
-				if (ret)
-					return ret;
-				offset += mtd_store_size(BOOT_DEVFIP);
-			} else if (store_get_device_bootloader_mode() == DISCRETE_BOOTLOADER) {
-				ret = mtd_store_get_offset(BOOT_TPL, &offset, 0);
-				if (ret)
-					return ret;
+			if (mtd_store_get_offset(BOOT_TPL, &offset, 0)) {
+				if (mtd_store_get_offset(BOOT_DEVFIP, &offset, 0)) {
+					offset = mtd_store_size(BOOT_LOADER);
+					offset += mtd_store_size(BOOT_LOADER);
+				} else {
+					offset += mtd_store_size(BOOT_DEVFIP);
+				}
+			} else {
 				offset += mtd_store_size(BOOT_TPL);
-			} else { /*spinor*/
-				offset = mtd_store_size(BOOT_LOADER);
 			}
 			size = mtd->size - offset;
 		} else if (flag & STORE_ERASE_RSV) {
@@ -939,9 +944,9 @@ static u64 mtd_store_boot_copy_size(const char *part_name)
 			for (i = 0; i < boot_count; i++, boot_entry++)
 				size += g_ssp.boot_entry[i].size;
 			return size;
-		} else
+		} else {
 			return 0;
-
+		}
 	} else {
 		u8 num;
 
@@ -996,10 +1001,11 @@ static int mtd_store_boot_read(const char *part_name,
 			       u8 cpy, size_t size, void *dest)
 {
 	struct mtd_info *mtd;
-	loff_t offset, limit;
+	loff_t offset, endoff = 0;
 	int ret = 1;
-	size_t retlen = 0, len = size;
-	u8 num = 0;
+	size_t retlen = 0, len;
+	u8 num = 0, good_num = 0,
+		good_threshold = DIV_ROUND_UP(g_ssp.boot_backups * 3, 4);
 	u64 size_per_copy = 0;
 
 	if (!part_name) {
@@ -1019,36 +1025,61 @@ static int mtd_store_boot_read(const char *part_name,
 	size_per_copy = mtd_store_boot_copy_size(part_name);
 	if (size_per_copy == 0)
 		return -ENXIO;
-	if (cpy >= num) {
-		pr_info("error: read cpy:0x%x >= num: 0x%x\
- please input again\n",
-			cpy, num);
-		return -ENXIO;
-	}
-	offset += (cpy * size_per_copy);
-	limit = offset + size_per_copy;
-	#ifdef CONFIG_MTD_SPI_NAND
-	enum boot_type_e medium_type = store_get_type();
 
-	if (medium_type == BOOT_SNAND &&
-	    (!strcmp(part_name, BOOT_BL2) ||
-	     !strcmp(part_name, BOOT_SPL))) {
-		ret = mtd_store_spinand_bl2_read(offset, size_per_copy, (u_char *)dest, mtd);
-		if (ret)
-			return -EIO;
+	if (cpy != BOOT_OPS_ALL) {
+		if (cpy >= num) {
+			pr_err("error: read cpy:0x%x >= num: 0x%x\n", cpy, num);
+			pr_err("please input again\n");
+			return -ENXIO;
+		}
+		offset += (cpy * size_per_copy);
+		endoff = offset + size_per_copy;
 	} else {
-	#else
-	{
-	#endif
-		ret = mtd_store_read_skip_bad(mtd,
-						  offset,
-						  &len,
-						  &retlen,
-						  limit,
-						  (u_char *)dest);
-		if (ret)
-			return -EIO;
+		endoff = offset + num * size_per_copy;
 	}
+
+	for (; offset < endoff; offset += size_per_copy) {
+		pr_info("read %lx bytes from %llx\n",
+			size, offset);
+		#ifdef CONFIG_MTD_SPI_NAND
+		enum boot_type_e medium_type = store_get_type();
+
+		if (medium_type == BOOT_SNAND &&
+				(!strcmp(part_name, BOOT_BL2) ||
+				 !strcmp(part_name, BOOT_SPL))) {
+			ret = mtd_store_spinand_bl2_read(offset, size_per_copy,
+					(u_char *)dest, mtd);
+			if (ret)
+				continue;
+
+			good_num++;
+			continue;
+		}
+		#endif
+
+		len = size;
+		ret = mtd_store_read_skip_bad(mtd,
+				offset,
+				&len,
+				&retlen,
+				size_per_copy,
+				(u_char *)dest);
+		if (!strcmp(part_name, BOOT_BL2) && !ret)
+			good_num++;
+	}
+
+	if (!strcmp(part_name, BOOT_BL2) &&
+		cpy == BOOT_OPS_ALL &&
+		good_num < good_threshold) {
+		pr_err("valid bl2 copy num %d is less than threshold %d\n",
+				good_num, good_threshold);
+		return -EIO;
+	} else if (!strcmp(part_name, BOOT_BL2) &&
+		cpy == BOOT_OPS_ALL &&
+		good_num >= good_threshold) {
+		ret = 0;
+	}
+
 	return ret;
 }
 
@@ -1096,9 +1127,9 @@ static int mtd_store_boot_write(const char *part_name,
 				u8 cpy, size_t size, void *source)
 {
 	struct mtd_info *mtd;
-	loff_t offset, limit, endoff = 0;
+	loff_t offset, endoff = 0;
 	int ret = 1;
-	size_t retlen = 0, len = size;
+	size_t retlen = 0, len;
 	u8 num = 0;
 	u64 size_per_copy = 0;
 
@@ -1138,8 +1169,6 @@ static int mtd_store_boot_write(const char *part_name,
 	for (; offset < endoff; offset += size_per_copy) {
 		pr_info("write %lx bytes to %llx\n",
 			size, offset);
-		limit = offset + size_per_copy;
-
 		#ifdef CONFIG_MTD_SPI_NAND
 		enum boot_type_e medium_type = store_get_type();
 
@@ -1153,14 +1182,16 @@ static int mtd_store_boot_write(const char *part_name,
 			continue;
 		}
 		#endif
+
+		len = size;
 		ret = mtd_store_write_skip_bad(mtd,
-					       offset,
-					       &len,
-					       &retlen,
-					       limit,
-					       (u_char *)source,
-					       0);
-		if (ret)
+				offset,
+				&len,
+				&retlen,
+				size_per_copy,
+				(u_char *)source,
+				0);
+		if (ret && ret != -EFBIG)
 			return -EIO;
 	}
 	return ret;
@@ -1500,7 +1531,7 @@ int mtd_store_param_partition(void)
 	char buf[512], size[32], offset[32];
 	char *p = buf;
 
-	count = get_aml_mtdpart_count();
+	count = mtd_store_count();
 
 	lenvir = snprintf(buf, sizeof(buf), "%s", "mtdparts=aml-mtd:");
 	p += lenvir;
@@ -1563,6 +1594,53 @@ static int mtd_store_param_rsv_partition(void)
 		return -1;
 }
 
+static int mtd_store_param_boot_layout(void)
+{
+	enum boot_type_e medium_type;
+	char buf[128];
+	char *fdtaddr = NULL;
+	int err = 0;
+	u32 mem_dtb;
+	u32 boot_layout = g_ssp.sip.nsp.boot_layout_compat;
+
+	medium_type = store_get_type();
+	if (medium_type != BOOT_SNAND)
+		return 0;
+
+	if (!working_fdt) {
+		pr_debug("%s: working_fdt is set, fdt add to set working_fdt\n",
+				__FILE__);
+		fdtaddr = env_get("dtb_mem_addr");
+		if (!fdtaddr) {
+			pr_err("get dtb_mem_addr NULL\n");
+			return -EBADMSG;
+		}
+		mem_dtb = simple_strtoul(fdtaddr, NULL, 16);
+		sprintf(buf, "fdt addr 0x%x", mem_dtb);
+		pr_debug("fdt addr 0x%x\n", mem_dtb);
+		if (run_command(buf, 0)) {
+			pr_err("fdt addr 0x%x error.\n", mem_dtb);
+			return -EBADMSG;
+		}
+	}
+
+add:
+	if (working_fdt) {
+		err = fdt_setprop_cell(working_fdt,
+				fdt_node_offset_by_compatible(working_fdt, -1, "spi-nand"),
+				"boot_layout", boot_layout);
+		if (err == -FDT_ERR_NOSPACE) {
+			err = fdt_increase_size(working_fdt, 512);
+			if (!err)
+				goto add;
+		}
+	} else {
+		err = -1;
+	}
+
+	return err;
+}
+
 int mtd_store_param_ops(void)
 {
 	static int init;
@@ -1574,6 +1652,9 @@ int mtd_store_param_ops(void)
 	ret = mtd_store_param_partition();
 	if (ret == 0)
 		ret = mtd_store_param_rsv_partition();
+
+	if (ret == 0)
+		ret = mtd_store_param_boot_layout();
 
 	if (ret == 0)
 		init = 1;

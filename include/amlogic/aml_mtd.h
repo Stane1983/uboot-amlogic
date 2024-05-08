@@ -7,6 +7,7 @@
 #define __AMLMTD_H_
 
 #define BOOT_TOTAL_PAGES			1024
+#define NAND_RSV_OFFSET	1024
 
 #define CONFIG_BL2_COPY_NUM			8
 #define CONFIG_TPL_SIZE_PER_COPY	0x200000
@@ -28,5 +29,23 @@
 #define BOOT_FIP			"fip"
 #define MAX_MTD_CNT			2
 
+struct mtd_info;
+struct mtd_partition;
 int mtd_store_get_offset(const char *partname, loff_t *retoff, loff_t off);
+
+int mtd_add_normal_partitions(struct mtd_info *mtd,
+				  const struct mtd_partition *parts,
+				  int nbparts, int normal_offset);
+int mtd_add_partitions(struct mtd_info *mtd,
+			   const struct mtd_partition *parts,
+			   int nbparts);
+int mtd_add_boot_partitions(struct mtd_info *mtd,
+			struct mtd_partition *parts,
+			int nparts);
+int mtd_get_boot_parts_num(void);
+int mtd_get_boot_partition(struct mtd_info *mtd,
+				struct mtd_partition *parts,
+				uint8_t index,
+				uint8_t cnt);
+uint64_t mtd_get_normal_part_offset(struct mtd_info *mtd);
 #endif/* __AMLMTD_H_ */

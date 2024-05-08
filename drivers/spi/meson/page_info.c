@@ -167,7 +167,7 @@ void page_info_initialize(unsigned int default_n2m,
 	page_info->dev_cfg1.dummy_cycles = 0xFF;
 }
 
-static int page_info_version_init(void)
+int page_info_version_init(unsigned char boot_layout)
 {
 	cpu_id_t cpu_id = get_cpu_id();
 
@@ -191,8 +191,35 @@ static int page_info_version_init(void)
 		page_info->version = PAGE_INFO_V3;
 		break;
 	}
+	page_info->version |= (boot_layout << 4);
 
-	return page_info->version;
+	return page_info->version & 0x0f;
+}
+
+static void apply_page_info_bbt(struct mtd_info *mtd)
+{
+	struct nand_device *nand = mtd_to_nanddev(mtd);
+	struct spinand_device *spinand = nand_to_spinand(nand);
+	unsigned short *page_info_bbt = page_info_get_bbt();
+	int bad_count = 0;
+	int i = BOOT_TOTAL_PAGES >> (mtd->erasesize_shift - mtd->writesize_shift);
+
+	for (; bad_count < MAX_F_BAD_BLOCK_NUM &&
+			i < mtd->size >> mtd->erasesize_shift; i++) {
+		if (spinand->bbt[i] == 0)
+			continue;
+		page_info_bbt[bad_count++] = i;
+	}
+}
+
+static unsigned int do_checksum(unsigned char *buf, int len)
+{
+	int i, checksum = 0;
+
+	for (i = 0; i < len; i++)
+		checksum += buf[i];
+
+	return checksum;
 }
 
 extern unsigned char disable_host_ecc;
@@ -201,15 +228,16 @@ static void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 {
 	struct nand_device *dev = mtd_to_nanddev(mtd);
 	struct dm_spi_slave_platdata *plat;
-	unsigned char ecc_steps, *temp;
-	unsigned int checksum = 0, i;
+	unsigned char ecc_steps;
+	unsigned int i, check_len = sizeof(struct boot_info);
 	enum PAGE_INFO_V page_info_ver;
 	#ifdef CONFIG_DDR_PARAMETER_SUPPORT
 	struct spinand_device *spinand = mtd_to_spinand(mtd);
 	unsigned int pages_shift, ddr_param_page;
 	#endif
+	struct storage_startup_parameter *ssp = &g_ssp;
 
-	page_info_ver = page_info_version_init();
+	page_info_ver = page_info_version_init(ssp->sip.nsp.boot_layout_compat);
 	memcpy(page_info->magic, BOOTINFO_MAGIC, strlen(BOOTINFO_MAGIC));
 	page_info->dev_cfg0.page_size = mtd->writesize;
 	page_info->dev_cfg0.planes_per_lun = dev->memorg.planes_per_lun;
@@ -254,10 +282,12 @@ static void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 		#endif
 		i = mtd->erasesize_shift + mtd->writesize_shift;
 		page_info->reserved[2] = ((mtd->size >> i) ? (mtd->size >> i) : 1) & 0x3;
+		/* bootinfo magic + version + reserved + dev_cfg0 */
+		check_len = 20;
 	}
 
 	if (page_info_ver != PAGE_INFO_V3)
-		goto _cal_sum;
+		goto _do_final;
 
 	ecc_steps = mtd->writesize >> 9;
 	page_info->host_cfg.n2m_cmd = (DEFAULT_ECC_MODE & (~0x3F)) | ecc_steps;
@@ -269,13 +299,15 @@ static void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 	page_info->dev_cfg1.dummy_cycles = 0xFF;
 	page_info->dev_cfg1.block_size = mtd->erasesize;
 
-_cal_sum:
+_do_final:
+	if (store_boot_layout_is_discrete_bl2()) {
+		page_info->dev_cfg1.enable_bbt = 1;
+		apply_page_info_bbt(mtd);
+	}
+
 	page_info->checksum = 0;
-	temp = (unsigned char *)page_info;
-	for (i = 0; i < sizeof(struct boot_info); i++)
-		checksum += temp[i];
-	page_info->checksum = checksum;
-	printf("page info updated checksum : 0x%x\n", checksum);
+	page_info->checksum = do_checksum((unsigned char *)page_info, check_len);
+	printf("page info updated checksum : 0x%x\n", page_info->checksum);
 }
 
 #ifdef __PXP_DEBUG__
@@ -349,7 +381,7 @@ bool page_info_is_page(int page)
 {
 	enum PAGE_INFO_V page_info_ver;
 
-	page_info_ver = page_info_version_init();
+	page_info_ver = page_info->version & 0x0F;
 	if (page_info_ver == PAGE_INFO_V1)
 		return page % 128 == BL2_SIZE / 2048 && page < 1024;
 
