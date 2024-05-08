@@ -366,7 +366,7 @@ do { \
 	rterm = (unsigned int)((res.a0) & 0xffffffff);
 	/* default value when efuse invalid, oxff indicate efuse invalid */
 	if (rterm != 0xff) {
-		pr_info("%s[%d] rterm = %x\n", __func__, __LINE__, rterm);
+		pr_info("%s[%d] rterm = %d\n", __func__, __LINE__, rterm);
 		hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL0, rterm, 28, 4);
 	} else {
 		pr_info("efuse invalid, use default value\n");
