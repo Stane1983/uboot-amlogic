@@ -18,6 +18,12 @@
 #include <linux/kernel.h>
 #include <linux/list.h>
 #include <linux/printk.h>
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#undef spin_lock_init
+#undef spin_lock
+#undef spin_unlock
+#include <spinlock.h>
+#endif
 
 struct driver_info;
 
@@ -145,6 +151,9 @@ struct udevice {
 	int seq;
 #ifdef CONFIG_DEVRES
 	struct list_head devres_head;
+#endif
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock_t lock;
 #endif
 };
 
