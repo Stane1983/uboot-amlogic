@@ -160,18 +160,34 @@ int dm_gpio_request(struct gpio_desc *desc, const char *label)
 	uc_priv = dev_get_uclass_priv(dev);
 	if (uc_priv->name[desc->offset])
 		return -EBUSY;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&dev->lock);
+#endif
 	str = strdup(label);
-	if (!str)
+	if (!str) {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		if (gd->flags & GD_FLG_SMP)
+			spin_unlock(&dev->lock);
+#endif
 		return -ENOMEM;
+	}
 	if (gpio_get_ops(dev)->request) {
 		ret = gpio_get_ops(dev)->request(dev, desc->offset, label);
 		if (ret) {
 			free(str);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+			if (gd->flags & GD_FLG_SMP)
+				spin_unlock(&dev->lock);
+#endif
 			return ret;
 		}
 	}
 	uc_priv->name[desc->offset] = str;
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&dev->lock);
+#endif
 	return 0;
 }
 
@@ -253,9 +269,16 @@ int _dm_gpio_free(struct udevice *dev, uint offset)
 			return ret;
 	}
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&dev->lock);
+#endif
 	free(uc_priv->name[offset]);
 	uc_priv->name[offset] = NULL;
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&dev->lock);
+#endif
 	return 0;
 }
 
@@ -287,14 +310,25 @@ static int check_reserved(const struct gpio_desc *desc, const char *func)
 		return -ENOENT;
 
 	uc_priv = dev_get_uclass_priv(desc->dev);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&desc->dev->lock);
+#endif
 	if (!uc_priv->name[desc->offset]) {
 		printf("%s: %s: error: gpio %s%d not reserved\n",
 		       desc->dev->name, func,
 		       uc_priv->bank_name ? uc_priv->bank_name : "",
 		       desc->offset);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		if (gd->flags & GD_FLG_SMP)
+			spin_unlock(&desc->dev->lock);
+#endif
 		return -EBUSY;
 	}
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&desc->dev->lock);
+#endif
 	return 0;
 }
 
@@ -841,6 +875,10 @@ int gpio_get_number(const struct gpio_desc *desc)
 static int gpio_post_probe(struct udevice *dev)
 {
 	struct gpio_dev_priv *uc_priv = dev_get_uclass_priv(dev);
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock_init(&dev->lock);
+#endif
 
 	uc_priv->name = calloc(uc_priv->gpio_count, sizeof(char *));
 	if (!uc_priv->name)

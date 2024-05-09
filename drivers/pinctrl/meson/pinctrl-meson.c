@@ -90,6 +90,10 @@ int meson_pinconf_set(struct udevice *dev, unsigned int offset,
 	ret = meson_gpio_get_bank(priv, offset, &bank);
 	if (ret)
 		return ret;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&priv->lock);
+#endif
 
 	switch (param) {
 	case PIN_CONFIG_BIAS_DISABLE:
@@ -150,18 +154,35 @@ int meson_pinconf_set(struct udevice *dev, unsigned int offset,
 		if (!priv->data->drv_data) {
 			debug("pin [%u] does not support drive-strength\n",
 					offset);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+			if (gd->flags & GD_FLG_SMP)
+				spin_unlock(&priv->lock);
+#endif
 			return -EINVAL;
 		}
 		ret = meson_pinconf_set_drive_strength(priv, offset, arg);
-		if (ret)
+		if (ret) {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+			if (gd->flags & GD_FLG_SMP)
+				spin_unlock(&priv->lock);
+#endif
 			return ret;
+		}
 
 		break;
 #endif
 	default:
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&priv->lock);
+#endif
 	      return -ENOTSUPP;
 	}
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&priv->lock);
+#endif
 	return 0;
 }
 
@@ -218,10 +239,18 @@ static int meson_gpio_get(struct udevice *dev, unsigned int offset)
 	ret = meson_gpio_get_bank(priv, offset, &bank);
 	if (ret)
 		return ret;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&priv->lock);
+#endif
 
 	meson_gpio_calc_reg_and_bit(bank, offset, REG_IN, &reg, &bit);
-
-	return !!(readl(priv->reg_gpio + reg) & BIT(bit));
+	ret = !!(readl(priv->reg_gpio + reg) & BIT(bit));
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&priv->lock);
+#endif
+	return ret;
 }
 
 static int meson_gpio_set(struct udevice *dev, unsigned int offset, int value)
@@ -234,10 +263,18 @@ static int meson_gpio_set(struct udevice *dev, unsigned int offset, int value)
 	ret = meson_gpio_get_bank(priv, offset, &bank);
 	if (ret)
 		return ret;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&priv->lock);
+#endif
 
 	meson_gpio_calc_reg_and_bit(bank, offset, REG_OUT, &reg, &bit);
 
 	clrsetbits_le32(priv->reg_gpio + reg, BIT(bit), value ? BIT(bit) : 0);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&priv->lock);
+#endif
 
 	return 0;
 }
@@ -252,12 +289,21 @@ static int meson_gpio_get_direction(struct udevice *dev, unsigned int offset)
 	ret = meson_gpio_get_bank(priv, offset, &bank);
 	if (ret)
 		return ret;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&priv->lock);
+#endif
 
 	meson_gpio_calc_reg_and_bit(bank, offset, REG_DIR, &reg, &bit);
 
 	val = readl(priv->reg_gpio + reg);
+	ret = (val & BIT(bit)) ? GPIOF_INPUT : GPIOF_OUTPUT;
 
-	return (val & BIT(bit)) ? GPIOF_INPUT : GPIOF_OUTPUT;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&priv->lock);
+#endif
+	return ret;
 }
 
 static int meson_gpio_direction_input(struct udevice *dev, unsigned int offset)
@@ -271,10 +317,18 @@ static int meson_gpio_direction_input(struct udevice *dev, unsigned int offset)
 	if (ret)
 		return ret;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&priv->lock);
+#endif
 	meson_gpio_calc_reg_and_bit(bank, offset, REG_DIR, &reg, &bit);
 
 	clrsetbits_le32(priv->reg_gpio + reg, BIT(bit), BIT(bit));
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&priv->lock);
+#endif
 	return 0;
 }
 
@@ -290,6 +344,10 @@ static int meson_gpio_direction_output(struct udevice *dev,
 	if (ret)
 		return ret;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&priv->lock);
+#endif
 	meson_gpio_calc_reg_and_bit(bank, offset, REG_OUT, &reg, &bit);
 
 	clrsetbits_le32(priv->reg_gpio + reg, BIT(bit), value ? BIT(bit) : 0);
@@ -297,6 +355,10 @@ static int meson_gpio_direction_output(struct udevice *dev,
 	meson_gpio_calc_reg_and_bit(bank, offset, REG_DIR, &reg, &bit);
 
 	clrsetbits_le32(priv->reg_gpio + reg, BIT(bit), 0);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&priv->lock);
+#endif
 
 	return 0;
 }
@@ -455,6 +517,10 @@ int meson_pinctrl_probe(struct udevice *dev)
 	/* Create child device UCLASS_GPIO and bind it */
 	device_bind(dev, &meson_gpio_driver, name, NULL, gpio, &gpio_dev);
 	dev_set_of_offset(gpio_dev, gpio);
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock_init(&priv->lock);
+#endif
 
 	return 0;
 }
