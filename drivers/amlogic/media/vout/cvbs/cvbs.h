@@ -51,7 +51,10 @@ struct cvbs_data_s {
 
 	unsigned int vdac_vref_adj;
 	unsigned int vdac_gsw;
+	/* for PAL, 1: use sva performance config, 0: use ctcc */
 	unsigned int sva_val;
+	/* for NTSC, 1: use TTC performance config, 0: use domestic */
+	unsigned int ntsc_ttc;
 };
 
 struct reg_s {
@@ -67,9 +70,14 @@ struct performance_config_s {
 
 struct cvbs_drv_s {
 	struct cvbs_data_s *data;
+	/* for PAL CTCC performance config */
 	struct performance_config_s perf_conf_pal;
-	struct performance_config_s perf_conf_ntsc;
+	/* for PAL SVA performance config */
 	struct performance_config_s perf_conf_pal_sva;
+	/* for NTSC domestic performance config */
+	struct performance_config_s perf_conf_ntsc;
+	/* for NTSC TTC performance config */
+	struct performance_config_s perf_conf_ntsc_ttc;
 };
 struct cvbs_drv_s *get_cvbs_drv(void);
 #endif

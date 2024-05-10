@@ -785,7 +785,10 @@ static void cvbs_performance_enhancement(int mode)
 		break;
 	case VMODE_NTSC:
 	case VMODE_NTSC_M:
-		perfconf = &cvbs_drv.perf_conf_ntsc;
+		if (cvbs_drv.data->ntsc_ttc)
+			perfconf = &cvbs_drv.perf_conf_ntsc_ttc;
+		else
+			perfconf = &cvbs_drv.perf_conf_ntsc;
 		break;
 	default:
 		break;
@@ -940,6 +943,7 @@ static char *cvbsout_performance_str[] = {
 	"performance", /* default for pal */
 	"performance_pal",
 	"performance_ntsc",
+	"performance_ntsc_ttc"
 };
 
 static void cvbs_get_config(void)
@@ -983,6 +987,16 @@ static void cvbs_get_config(void)
 	if (propdata) {
 		cvbs_drv.data->sva_val = be32_to_cpup((u32 *)propdata);
 		printf("cvbs: find sva_std: 0x%x\n", cvbs_drv.data->sva_val);
+	} else {
+		cvbs_drv.data->sva_val = 0;
+	}
+
+	propdata = (char *)fdt_getprop(dt_blob, node, "ntsc_ttc", NULL);
+	if (propdata) {
+		cvbs_drv.data->ntsc_ttc = be32_to_cpup((u32 *)propdata);
+		printf("cvbs: find ntsc_ttc: 0x%x\n", cvbs_drv.data->ntsc_ttc);
+	} else {
+		cvbs_drv.data->ntsc_ttc = 0;
 	}
 
 	/* performance: PAL CTCC */
@@ -1020,7 +1034,7 @@ static void cvbs_get_config(void)
 			j = 2 * i;
 			s->reg = be32_to_cpup((((u32*)propdata)+j));
 			s->val = be32_to_cpup((((u32*)propdata)+j+1));
-			/* printf("%p: 0x%04x = 0x%x\n", s, s->reg, s->val); */
+			/* printf("%p: 0x%08x = 0x%x\n", s, s->reg, s->val); */
 
 			s++;
 			i++;
@@ -1062,7 +1076,7 @@ static void cvbs_get_config(void)
 			j = 2 * i;
 			s->reg = be32_to_cpup((((u32 *)propdata) + j));
 			s->val = be32_to_cpup((((u32 *)propdata) + j + 1));
-			/* printf("%p: 0x%04x = 0x%x\n", s, s->reg, s->val); */
+			/* printf("%p: 0x%08x = 0x%x\n", s, s->reg, s->val); */
 
 			s++;
 			i++;
@@ -1086,7 +1100,7 @@ cvbs_performance_config_ntsc:
 	if (cnt >= CVBS_PERFORMANCE_CNT_MAX)
 		cnt = 0;
 	if (cnt > 0) {
-		printf("cvbs: find performance_ntsc config\n");
+		printf("cvbs: find %s config\n", str);
 		cvbs_drv.perf_conf_ntsc.reg_table = malloc(sizeof(struct reg_s) * cnt);
 		if (!cvbs_drv.perf_conf_ntsc.reg_table) {
 			printf("cvbs: error: failed to alloc %s table\n", str);
@@ -1101,7 +1115,44 @@ cvbs_performance_config_ntsc:
 			j = 2 * i;
 			s->reg = be32_to_cpup((((u32*)propdata)+j));
 			s->val = be32_to_cpup((((u32*)propdata)+j+1));
-			/* printf("%p: 0x%04x = 0x%x\n", s, s->reg, s->val); */
+			/* printf("%p: 0x%08x = 0x%x\n", s, s->reg, s->val); */
+
+			s++;
+			i++;
+		}
+	}
+
+	str = cvbsout_performance_str[3];
+	propdata = (char *)fdt_getprop(dt_blob, node, str, NULL);
+	if (!propdata)
+		return;
+	cnt = 0;
+	while (cnt < CVBS_PERFORMANCE_CNT_MAX) {
+		j = 2 * cnt;
+		temp = be32_to_cpup((((u32 *)propdata) + j));
+		if (temp == MREG_END_MARKER) /* ending */
+			break;
+		cnt++;
+	}
+	if (cnt >= CVBS_PERFORMANCE_CNT_MAX)
+		cnt = 0;
+	if (cnt > 0) {
+		printf("cvbs: find %s config\n", str);
+		cvbs_drv.perf_conf_ntsc_ttc.reg_table = malloc(sizeof(struct reg_s) * cnt);
+		if (!cvbs_drv.perf_conf_ntsc_ttc.reg_table) {
+			printf("cvbs: error: failed to alloc %s table\n", str);
+			cnt = 0;
+		}
+		memset(cvbs_drv.perf_conf_ntsc_ttc.reg_table, 0, (sizeof(struct reg_s) * cnt));
+		cvbs_drv.perf_conf_ntsc_ttc.reg_cnt = cnt;
+
+		i = 0;
+		s = cvbs_drv.perf_conf_ntsc_ttc.reg_table;
+		while (i < cvbs_drv.perf_conf_ntsc_ttc.reg_cnt) {
+			j = 2 * i;
+			s->reg = be32_to_cpup((((u32 *)propdata) + j));
+			s->val = be32_to_cpup((((u32 *)propdata) + j + 1));
+			/* printf("%p: 0x%08x = 0x%x\n", s, s->reg, s->val); */
 
 			s++;
 			i++;
