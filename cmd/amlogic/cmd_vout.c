@@ -242,8 +242,7 @@ static int vout2_hdmi_hpd(int hpd_st)
 	return 0;
 }
 
-int do_hpd_detect(cmd_tbl_t *cmdtp, int flag, int argc,
-		  char *const argv[])
+int do_hpd_detect(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {
 	char *st;
 	int hpd_st = 0;
@@ -255,7 +254,8 @@ int do_hpd_detect(cmd_tbl_t *cmdtp, int flag, int argc,
 #else
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 #endif
-	int ret = 0;
+	unsigned short on_connector_dev = vout_connector_check(0);
+
 
 	st = env_get("hdmitx_hpd_bypass");
 	if (st && (strcmp((const char *)(uintptr_t)st[0], "1") == 0)) {
@@ -281,9 +281,19 @@ int do_hpd_detect(cmd_tbl_t *cmdtp, int flag, int argc,
 	}
 	printf("%s, hpd_state=%d\n", __func__, hpd_st);
 
-	ret = vout_hdmi_hpd(hpd_st);
-	if (!ret)
-		vout2_hdmi_hpd(hpd_st);
+	for (i = 0; i < 3; i++) {
+		on_connector_dev = vout_connector_check(i);
+		if ((on_connector_dev & 0xf00) == CONNECTOR_HEAD_HDMI) {
+			if (i == 0) {
+				vout_hdmi_hpd(hpd_st);
+			} else if (i == 1) {
+				vout2_hdmi_hpd(hpd_st);
+			} else {
+				printf("warning unregistered connectorX_type\n");
+				vout_hdmi_hpd(hpd_st);
+			}
+		}
+	}
 
 	hdev->hpd_state = hpd_st;
 	return hpd_st;
