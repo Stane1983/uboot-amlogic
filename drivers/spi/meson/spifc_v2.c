@@ -138,10 +138,10 @@ static int spifc_enable_ahb(struct spifc_priv *priv, unsigned int slave_mode)
 static void spifc_disable_ahb(void)
 {
 	/* disable ahb */
+	writel((readl(SPIFC_AHB_CTRL) & ~(1 << 31)), SPIFC_AHB_CTRL);
 	writel(0, SPIFC_AHB_REQ_CTRL);
 	writel(0, SPIFC_AHB_REQ_CTRL1);
 	writel(0, SPIFC_AHB_REQ_CTRL2);
-	writel((readl(SPIFC_AHB_CTRL) & ~(1 << 31)), SPIFC_AHB_CTRL);
 }
 
 static int spifc_user_cmd(struct spifc_priv *priv,
