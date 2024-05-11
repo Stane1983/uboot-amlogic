@@ -126,6 +126,14 @@
 
 #endif
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#include <spinlock.h>
+#include <asm/arch-meson/smp.h>
+static spin_lock_t cmd_lock = {.lock = UNLOCK };
+static int lock_holder = -1;
+static int lock_depth;
+#endif
+
 #ifdef __U_BOOT__
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -3266,6 +3274,13 @@ int parse_string_outer(const char *s, int flag)
 		return 1;
 	if (!*s)
 		return 0;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (lock_holder != get_core_id()) {
+		spin_lock(&cmd_lock);
+		lock_holder = get_core_id();
+	}
+	lock_depth++;
+#endif
 	if (!(p = strchr(s, '\n')) || *++p) {
 		p = xmalloc(strlen(s) + 2);
 		strcpy(p, s);
@@ -3273,13 +3288,27 @@ int parse_string_outer(const char *s, int flag)
 		setup_string_in_str(&input, p);
 		rcode = parse_stream_outer(&input, flag);
 		free(p);
+	#ifndef CONFIG_ARMV8_MULTIENTRY
 		return rcode;
+	#endif
 	} else {
 #endif
 	setup_string_in_str(&input, s);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	rcode = parse_stream_outer(&input, flag);
+#else
 	return parse_stream_outer(&input, flag);
+#endif
 #ifdef __U_BOOT__
 	}
+#endif
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	lock_depth--;
+	if (!lock_depth) {
+		lock_holder = -1;
+		spin_unlock(&cmd_lock);
+	}
+	return rcode;
 #endif
 }
 

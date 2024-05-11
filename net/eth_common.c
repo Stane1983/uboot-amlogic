@@ -42,12 +42,18 @@ void eth_common_init(void)
 
 int eth_mac_skip(int index)
 {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	// avoid deadlock when add lock protect for env_set/env_get
+	// this will cause mac address always set during boot
+	return 0;
+#else
 	char enetvar[15];
 	char *skip_state;
 
 	sprintf(enetvar, index ? "eth%dmacskip" : "ethmacskip", index);
 	skip_state = env_get(enetvar);
 	return skip_state != NULL;
+#endif
 }
 
 void eth_current_changed(void)
