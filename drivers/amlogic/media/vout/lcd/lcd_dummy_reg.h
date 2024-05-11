@@ -754,6 +754,12 @@
 #ifndef VPU_VENC_DITH
 #define VPU_VENC_DITH                              ((0x1cee  << 2) + 0xff800000)
 #endif
+#ifndef VPU1_VENC_DITH
+#define VPU1_VENC_DITH                             ((0x22ee  << 2) + 0xff800000)
+#endif
+#ifndef VPU2_VENC_DITH
+#define VPU2_VENC_DITH                             ((0x24ee  << 2) + 0xff800000)
+#endif
 
 #ifndef ENCL_TST_EN
 #define ENCL_TST_EN                                ((0x1c98  << 2) + 0xff000000)
