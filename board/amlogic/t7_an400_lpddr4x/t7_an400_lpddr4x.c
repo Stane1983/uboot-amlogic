@@ -508,6 +508,15 @@ int checkhw(char * name)
 			//
 		}
 		break;
+	case CONFIG_T7_16G_SIZE:
+		if (cpu_id.chip_rev == 0xA || cpu_id.chip_rev == 0xb) {
+			strcpy(loc_name, "t7_a311d2_an400-16g\0");
+		} else if (cpu_id.chip_rev == 0xC) {
+			strcpy(loc_name, "t7c_a311d2_an400-16g\0");
+			//printf("checkhw aml_dt:%s\n", p_aml_dt);
+
+		}
+		break;
 	default:
 		printf("DDR size: 0x%llx, multi-dt doesn't support, ", ddr_size);
 		printf("set default t7_a311d2_an400\n");

@@ -50,8 +50,10 @@
 #define         AN_408_DDR0_2G_DDR1_1G          3
 #define         AN_408_DDR0_2G_DDR1_2G          4
 #define         AN_408_DDR0_2G_DDR1_2G_RANK01   5
-#define         AN_408_DDR0_4G_DDR1_4G_RANK01   6
+#define         AN_408_DDR0_4G_DDR1_4G_RANK01   9
 #define         AN_408_DDR0_3G_DDR1_3G_RANK01   7
+#define         AN_408_DDR0_4G_DDR1_4G          10
+#define         AN_408_DDR0_8G_DDR1_8G_RANK01   11
 
 #define DDR_SIZE_TYPE_1         AN_408_DDR0_2G_DDR1_2G
 
@@ -368,6 +370,30 @@ ddr_set_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 			(DRAM_SIZE_ID_256MBX4 << CONFIG_CS1_BYTE_23_SIZE_256_ID_OFFSET),
 		.DisabledDbyte[0] = 0x00, //bit 0 -3 ch0 cs0 ,bit 4-7 ch0 cs1,
 		.DisabledDbyte[1] = 0x00, //bit 0 -3 ch1 cs0 ,bit 4-7 ch1 cs1,
+#elif (DDR_SIZE_TYPE_1 == AN_408_DDR0_8G_DDR1_8G_RANK01)
+		.dram_ch0_size_MB =
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS0_BYTE_01_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS0_BYTE_23_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS1_BYTE_01_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS1_BYTE_23_SIZE_256_ID_OFFSET),
+		.dram_ch1_size_MB =
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS0_BYTE_01_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS0_BYTE_23_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS1_BYTE_01_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS1_BYTE_23_SIZE_256_ID_OFFSET),
+		.DisabledDbyte[0] = 0x00, //bit 0 -3 ch0 cs0 ,bit 4-7 ch0 cs1,
+#elif (DDR_SIZE_TYPE_1 == AN_408_DDR0_4G_DDR1_4G)
+		.dram_ch0_size_MB =
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS0_BYTE_01_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS0_BYTE_23_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX0 << CONFIG_CS1_BYTE_01_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX0 << CONFIG_CS1_BYTE_23_SIZE_256_ID_OFFSET),
+		.dram_ch1_size_MB =
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS0_BYTE_01_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS0_BYTE_23_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX0 << CONFIG_CS1_BYTE_01_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX0 << CONFIG_CS1_BYTE_23_SIZE_256_ID_OFFSET),
+		.DisabledDbyte[0] = 0x00, //bit 0 -3 ch0 cs0 ,bit 4-7 ch0 cs1,
 #endif
 		.training_SequenceCtrl = { 0x131f, 0x61 }, //ddr3 0x21f 0x31f
 		.phy_odt_config_rank = { 0, 0 },
@@ -577,6 +603,30 @@ ddr_set_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 			(DRAM_SIZE_ID_256MBX4 << CONFIG_CS1_BYTE_23_SIZE_256_ID_OFFSET),
 		.DisabledDbyte[0] = 0x00, //bit 0 -3 ch0 cs0 ,bit 4-7 ch0 cs1,
 		.DisabledDbyte[1] = 0x00, //bit 0 -3 ch1 cs0 ,bit 4-7 ch1 cs1,
+#elif (DDR_SIZE_TYPE_1 == AN_408_DDR0_8G_DDR1_8G_RANK01)
+		.dram_ch0_size_MB =
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS0_BYTE_01_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS0_BYTE_23_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS1_BYTE_01_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS1_BYTE_23_SIZE_256_ID_OFFSET),
+		.dram_ch1_size_MB =
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS0_BYTE_01_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS0_BYTE_23_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS1_BYTE_01_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS1_BYTE_23_SIZE_256_ID_OFFSET),
+		.DisabledDbyte[0] = 0x00, //bit 0 -3 ch0 cs0 ,bit 4-7 ch0 cs1,
+#elif (DDR_SIZE_TYPE_1 == AN_408_DDR0_4G_DDR1_4G)
+		.dram_ch0_size_MB =
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS0_BYTE_01_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS0_BYTE_23_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX0 << CONFIG_CS1_BYTE_01_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX0 << CONFIG_CS1_BYTE_23_SIZE_256_ID_OFFSET),
+		.dram_ch1_size_MB =
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS0_BYTE_01_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS0_BYTE_23_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX0 << CONFIG_CS1_BYTE_01_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX0 << CONFIG_CS1_BYTE_23_SIZE_256_ID_OFFSET),
+		.DisabledDbyte[0] = 0x00, //bit 0 -3 ch0 cs0 ,bit 4-7 ch0 cs1,
 #endif
 		.training_SequenceCtrl = { 0x131f, 0x61 }, //ddr3 0x21f 0x31f
 		.phy_odt_config_rank = { 0, 0 }, //use 0x23 0x13
@@ -680,6 +730,8 @@ ddr_set_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 #define DDR0_2G_DDR1_2G_DDR_ID        5//ddr id = 5
 #define DDR0_3G_DDR1_3G_RANK01_DDR_ID 7//ddr id = 7
 #define DDR0_4G_DDR1_4G_RANK01_DDR_ID 9//ddr id = 9
+#define DDR0_4G_DDR1_4G_DDR_ID        10//ddr id = 10
+#define DDR0_8G_DDR1_8G_RANK01_DDR_ID 11//ddr id = 11
 #define DDR_RESV_CHECK_ID_ENABLE   0Xfe
 #define SAR_ADC_DDR_ID_BASE   0
 #define SAR_ADC_DDR_ID_STEP   80
@@ -832,7 +884,112 @@ bl2_reg_t __bl2_reg[] __attribute__ ((section(".generic_param"))) = {
 		DDR_TIMMING_TUNE_TIMMING1
 				(DDR0_4G_DDR1_4G_RANK01_DDR_ID,
 				DisabledDbyte[1],
-				0x00)
+				0x00),
+		DDR_TIMMING_TUNE_TIMMING0
+			(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+			dram_ch0_size_MB,
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS0_BYTE_01_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS0_BYTE_23_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS1_BYTE_01_SIZE_256_ID_OFFSET) +
+			(DRAM_SIZE_ID_256MBX8 << CONFIG_CS1_BYTE_23_SIZE_256_ID_OFFSET)),
+
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+				dram_ch1_size_MB,
+				(DRAM_SIZE_ID_256MBX8 << CONFIG_CS0_BYTE_01_SIZE_256_ID_OFFSET) +
+				(DRAM_SIZE_ID_256MBX8 << CONFIG_CS0_BYTE_23_SIZE_256_ID_OFFSET) +
+				(DRAM_SIZE_ID_256MBX8 << CONFIG_CS1_BYTE_01_SIZE_256_ID_OFFSET) +
+				(DRAM_SIZE_ID_256MBX8 << CONFIG_CS1_BYTE_23_SIZE_256_ID_OFFSET)),
+
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+				DRAMFreq[0],
+				1848),
+
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+				DRAMFreq[0],
+				1848),
+
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+				cfg_ddr_training_delay_ps[0].dram_bit_vref[0],
+				12),
+
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+				cfg_ddr_training_delay_ps[0].dram_bit_vref[0],
+				12),
+
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+				dram_data_odt_ohm,
+				60),
+
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+				dram_data_odt_ohm,
+				60),
+
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+				training_offset,
+				((0x1 << 7) | (0 << 4))),
+
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+				training_offset,
+				((0x1 << 7) | (2 << 4))),
+
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+				DisabledDbyte[0],
+				0x00),
+
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+				DisabledDbyte[1],
+				0x00),
+
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+				DisabledDbyte[0],
+				0x00),
+
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+				DisabledDbyte[1],
+				0x00),
+
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+				ddr_rfc_type,
+				DDR_RFC_TYPE_LPDDR4_16Gbx1),
+
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+				ddr_rfc_type,
+				DDR_RFC_TYPE_LPDDR4_16Gbx1),
+
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+				ddr_dmc_remap[4],
+				(30 | 12 << 5 | 13 << 10 | 14 << 15 | 0 << 20 | 31 << 25)),
+
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+				ddr_dmc_remap[4],
+				(30 | 12 << 5 | 13 << 10 | 14 << 15 | 0 << 20 | 31 << 25)),
+
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+				lpddr4_x8_mode,
+				1),
+
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+				lpddr4_x8_mode,
+				1)
 };
 
 board_clk_set_t __board_clk_setting
