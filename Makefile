@@ -2350,6 +2350,7 @@ distclean: mrproper
 		-o -name '*.pyc' \) \
 		-type f -print | xargs rm -f
 	@rm -f boards.cfg CHANGELOG
+	@rm -rf $(srctree)/build
 
 # See doc/develop/python_cq.rst
 PHONY += pylint pylint_err
