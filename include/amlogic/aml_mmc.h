@@ -8,6 +8,7 @@
 
 #include <common.h>
 #include <mmc.h>
+#include "emmc_partitions.h"
 
 /*mmc.h*/
 #define NO_CARD_ERR   -16
@@ -143,7 +144,7 @@ int amlmmc_write_bootloader(int dev, int map,
 int amlmmc_erase_bootloader(int dev, int map);
 
 /* interface on reserved area. */
-void mmc_write_cali_mattern(void *addr);
+void mmc_write_cali_mattern(void *addr, struct aml_pattern *table);
 
 /* dtb operation */
 int dtb_write(void *addr);

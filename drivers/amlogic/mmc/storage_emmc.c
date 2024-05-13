@@ -14,6 +14,7 @@
 #include <linux/compat.h>
 #include <asm/global_data.h>
 #include <asm/amlogic/arch/efuse.h>
+#include "../../../cmd/amlogic/ini/ini_io.h"
 
 #if IS_ENABLED(CONFIG_EFUSE_OBJ_API)
 extern efuse_obj_field_t efuse_field;
@@ -33,6 +34,12 @@ extern efuse_obj_field_t efuse_field;
 /* max 2MB for emmc in blks */
 #define UBOOT_SIZE  (0x1000)
 #define BLOCK_SIZE 512
+
+struct aml_pattern aml_pattern_table[] = {
+	AML_PATTERN_ELEMENT(MMC_PATTERN_NAME, CALI_PATTERN),
+	AML_PATTERN_ELEMENT(MMC_MAGIC_NAME, MAGIC_PATTERN),
+	AML_PATTERN_ELEMENT(MMC_RANDOM_NAME, RANDOM_PATTERN),
+};
 
 extern int find_dev_num_by_partition_name (char const *name);
 extern struct partitions *get_partition_info_by_num(const int num);
@@ -358,11 +365,65 @@ R_SWITCH_BACK:
 	return ret;
 }
 
-int mmc_storage_init(unsigned char init_flag) {
+void mmc_write_cali_mattern(void *addr, struct aml_pattern *table)
+{
+	int i = 0;
+	unsigned int s = 10;
+	u32 *mattern = (u32 *)addr;
+	struct virtual_partition *vpart = aml_get_virtual_partition_by_name(table->name);
 
+	for (i = 0; i < (vpart->size) / 4 - 1; i++) {
+		if (!strcmp(table->name, "random"))
+			mattern[i] = rand_r(&s);
+		else
+			mattern[i] = table->pattern;
+	}
+	mattern[i] = CalCRC32(0, (u8 *)addr, (vpart->size - 4));
+}
+
+int mmc_pattern_check(struct mmc *mmc, struct aml_pattern *table)
+{
+	void *addr = NULL;
+	u64 cnt = 0, n = 0, blk = 0;
+	u32 *buf = NULL;
+	u32 crc32_s = 0;
+	struct partitions *part = NULL;
+	struct virtual_partition *vpart = NULL;
+
+	vpart = aml_get_virtual_partition_by_name(table->name);
+
+	addr = (void *)malloc(vpart->size);
+	if (!addr) {
+		printf("%s malloc failed\n", table->name);
+		return 1;
+	}
+	part = aml_get_partition_by_name(MMC_RESERVED_NAME);
+	blk = (part->offset + vpart->offset) / mmc->read_bl_len;
+	cnt = vpart->size / mmc->read_bl_len;
+	n = blk_dread(mmc_get_blk_desc(mmc), blk, cnt, addr);
+	if (n != cnt) {
+		printf("read pattern failed\n");
+		free(addr);
+		return 1;
+	}
+	buf = (u32 *)addr;
+	crc32_s = CalCRC32(0, (u8 *)addr, (vpart->size - 4));
+	if (crc32_s != buf[vpart->size / 4 - 1]) {
+		printf("check %s failed, need to write\n", table->name);
+		mmc_write_cali_mattern(addr, table);
+		n = blk_dwrite(mmc_get_blk_desc(mmc), blk, cnt, addr);
+		printf("several 0x%x pattern blocks write %s\n",
+		       table->pattern, (n == cnt) ? "OK" : "ERROR");
+	}
+	printf("crc32_s:0x%x == storage crc_pattern:0x%x!!!\n", crc32_s, buf[vpart->size / 4 - 1]);
+	free(addr);
+	return (n == cnt) ? 0 : 1;
+}
+
+static int mmc_storage_init(struct mmc *mmc, unsigned char init_flag)
+{
 	int ret = 1;
-	struct mmc *mmc;
-	mmc = find_mmc_device(STORAGE_EMMC);
+
 	if (!mmc) {
 		printf("[%s]  no mmc devices available\n", __func__);
 		return -1;
@@ -1106,15 +1167,28 @@ int emmc_pre(void)
 int emmc_probe(uint32_t init_flag)
 {
 	char ret = 0;
+	struct mmc *mmc;
 
-	ret = mmc_storage_init(init_flag); /*flag 0*/
+	mmc = find_mmc_device(STORAGE_EMMC);
+	if (!mmc) {
+		printf("[%s]  no mmc devices available\n", __func__);
+		return -ENODEV;
+	}
+
+	ret = mmc_storage_init(mmc, init_flag); /*flag 0*/
 	if (ret) {
 		printf("mmc init failed ret:%x\n", ret);
 		goto exit_error;
 	}
 	printf("emmc probe success\n");
 
-	mmc_partition_init();
+	ret = mmc_partition_init();
+	if (ret)
+		goto exit_error;
+	printf("eMMC/TSD partition table have been checked OK!\n");
+
+	for (int i = 0; i < ARRAY_SIZE(aml_pattern_table); i++)
+		mmc_pattern_check(mmc, &aml_pattern_table[i]);
 
 exit_error:
 	return ret;

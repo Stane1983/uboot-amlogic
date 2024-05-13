@@ -35,7 +35,6 @@ int has_boot_slot = 0;
 int has_system_slot = 0;
 bool dynamic_partition = false;
 bool vendor_boot_partition = false;
-bool is_partition_checked = false;
 #if CONFIG_IS_ENABLED(EFI_PARTITION)
 bool gpt_partition;
 #endif
@@ -188,7 +187,7 @@ int parse_gpt(struct blk_desc *dev_desc, void *buf)
 			printf("enable vendor_boot\n");
 		}
 	}
-	is_partition_checked = false;
+
 	return 0;
 }
 
@@ -353,8 +352,6 @@ int get_partition_from_dts(unsigned char *buffer)
 			printf("enable vendor_boot\n");
 		}
 	}
-	/*enable mmc_device_init when dtb is update from ddr*/
-	is_partition_checked = false;
 	return 0;
 
 _err:

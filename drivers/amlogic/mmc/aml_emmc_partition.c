@@ -104,7 +104,6 @@ struct aml_key_info {
 struct aml_key_info key_infos[2] = { {0, 0, 0}, {0, 0, 0} };
 
 unsigned device_boot_flag = 0xff;
-extern bool is_partition_checked;
 
 #ifndef CONFIG_AML_MMC_INHERENT_PART
 /* fixme, name should be changed as aml_inherent_ptbl */
@@ -1691,7 +1690,7 @@ int resize_gpt(struct mmc *mmc)
  *  when burning MBR on a emmc with rsv&MBR:
  *		with dtb, with rsv, with MBR
  ***************************************************/
-int mmc_device_init (struct mmc *mmc)
+int mmc_device_init(struct mmc *mmc)
 {
 	int ret = 1;
 
@@ -1845,7 +1844,7 @@ _out:
 
 int mmc_partition_init(void)
 {
-	struct mmc *mmc = find_mmc_device(1);
+	struct mmc *mmc = find_mmc_device(STORAGE_EMMC);
 	struct _iptbl iptbl_inh;
 	int ret;
 
