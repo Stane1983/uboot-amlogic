@@ -82,6 +82,7 @@
 	"fatload_dev=usb\0"\
 	"fs_type=""rootfstype=ramfs""\0"\
 	"disable_ir=0\0"\
+	"default_governor=performance\0"\
 	"upgrade_check_base="\
 		"echo recovery_status=${recovery_status};"\
 		"if itest.s \"${recovery_status}\" == \"in_progress\"; then "\
@@ -100,7 +101,7 @@
 		"hdr_policy=${hdr_policy} hdr_priority=${hdr_priority} "\
 		"hdr_force_mode=${hdr_force_mode} dolby_status=${dolby_status} "\
 		"frac_rate_policy=${frac_rate_policy} hdmi_read_edid=${hdmi_read_edid} "\
-		"cvbsmode=${cvbsmode} "\
+		"cvbsmode=${cvbsmode} cpufreq.default_governor=${default_governor} "\
 		"osd_reverse=${osd_reverse} video_reverse=${video_reverse} "\
 		"disable_ir=${disable_ir} kvm-arm.mode=none;"\
 		"setenv bootconfig ${initconfig} androidboot.selinux=${EnableSelinux} "\
