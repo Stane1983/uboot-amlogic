@@ -505,6 +505,12 @@ config S7_BP202
 	help
 		Select S7 BP202 config
 
+config S7_BP201
+	bool "S7_BP201"
+	select TARGET_S7_BP201
+	help
+		Select S7 BP201 config
+
 endchoice
 
 config TARGET_S7_SKT
@@ -530,6 +536,10 @@ config TARGET_S7_T223
 config TARGET_S7_BP202
 	bool "S7 BP202 board"
 	depends on S7_BP202
+
+config TARGET_S7_BP201
+	bool "S7 BP201 board"
+	depends on S7_BP201
 
 endif
 
@@ -672,6 +682,8 @@ source "board/amlogic/s7_bh209/Kconfig"
 source "board/amlogic/s7_t223/Kconfig"
 
 source "board/amlogic/s7_bp202/Kconfig"
+
+source "board/amlogic/s7_bp201/Kconfig"
 
 source "board/amlogic/s1a_bg201/Kconfig"
 
