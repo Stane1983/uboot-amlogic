@@ -17,6 +17,7 @@
 static int do_remapset(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	int ret = 0;
+	uint32_t id;
 	int dspid = 0;
 	int addr_0 = 0;
 	int addr_1 = 0;
@@ -26,8 +27,8 @@ static int do_remapset(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 	addr_0   = simple_strtoul(argv[2], NULL, 16);
 	addr_1   = simple_strtoul(argv[3], NULL, 16);
 	reg_sel  = simple_strtoul(argv[4], NULL, 16);
-
-	remap_set(dspid, addr_0, addr_1, reg_sel);
+	id = PACK_SMC_SUBID_ID(HIFI_DSP_REMAP, dspid);
+	remap_set(id, addr_0, addr_1, reg_sel);
 
 	return ret;
 }

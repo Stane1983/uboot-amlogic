@@ -100,6 +100,7 @@ static int do_startm4(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	uint32_t cpu_id;
 	uint32_t bin_addr;
 	uint32_t bank_config;
+	uint32_t id;
 	uint32_t cmd;
 
 	int ret = 0;
@@ -137,9 +138,10 @@ static int do_startm4(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		printf("M4B bin address:0x%x\n", bin_addr);
 	}
 
-	if (cmd == 1) {
+	if (cmd == MFH_V2_START) {
 		/*hold reset M4 */
-		start_m4(cpu_id, bin_addr, bank_config, 3);
+		id = PACK_SMC_SUBID_ID(MFH_V2_RESET, cpu_id);
+		start_m4(id, bin_addr, bank_config);
 
 		if (cpu_id == 0) {
 			/*repower on cpu */
@@ -152,9 +154,11 @@ static int do_startm4(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		/* 300MHz */
 		set_m4_clk(3u, 4u);
 		set_m4_pll_clk(1500);
-		start_m4(cpu_id, bin_addr, bank_config, cmd);
+		id = PACK_SMC_SUBID_ID(cmd, cpu_id);
+		start_m4(id, bin_addr, bank_config);
 	} else {
-		start_m4(cpu_id, bin_addr, bank_config, cmd);
+		id = PACK_SMC_SUBID_ID(MFH_V2_RESET, cpu_id);
+		start_m4(id, bin_addr, bank_config);
 	}
 
 	return ret;
@@ -162,11 +166,11 @@ static int do_startm4(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 U_BOOT_CMD(
 	startm4, 5, 1, do_startm4,
-	"load bin from DDR memory address ",
+	"load bin from DDR memory address(soc: p1)",
 	"\narg[0]: cmd\n"
 	"arg[1]: cpu_id, the cpu id 0 is start M4A, the cpu id 1 is start M4B\n"
 	"arg[2]: bin_ddr, load execution bin from ddr memory address\n"
 	"arg[3]: bank config, default:0xFCB87430u\n"
-	"arg[4]: cmd, 1--START, 2--STOP, 3--RESET\n"
+	"arg[4]: cmd, 0x21--START, 0x22--STOP, 0x22--RESET\n"
 );
 
