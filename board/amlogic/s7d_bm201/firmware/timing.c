@@ -17,9 +17,9 @@
 #define VMIN_TT_VALUE                           800
 #define VMIN_SS_VALUE                           810
 /* board vddee_value defines */
-#define VDDEE_FF_VALUE                          0x0c50321
-#define VDDEE_TT_VALUE                          0x0c50321
-#define VDDEE_SS_VALUE                          0x0c50321
+#define VDDEE_FF_VALUE                          0x2000b
+#define VDDEE_TT_VALUE                          0x2000b
+#define VDDEE_SS_VALUE                          0x2000b
 
 
 board_clk_set_t __board_clk_setting
@@ -106,37 +106,37 @@ __attribute__ ((section(".clk_param"))) = {
 
 /* VDDEE_VAL_REG */
 #if   (VDDEE_VAL == 680)
-#define VDDEE_VAL_REG   0x3e80000
+#define VDDEE_VAL_REG   0xf0000
 #elif (VDDEE_VAL == 690)
-#define VDDEE_VAL_REG   0x3a50041
+#define VDDEE_VAL_REG   0xd0000
 #elif (VDDEE_VAL == 700)
-#define VDDEE_VAL_REG   0x3630083
+#define VDDEE_VAL_REG   0xc0001
 #elif (VDDEE_VAL == 710)
-#define VDDEE_VAL_REG   0x32100c5
+#define VDDEE_VAL_REG   0xb0002
 #elif (VDDEE_VAL == 720)
-#define VDDEE_VAL_REG   0x2df0107
+#define VDDEE_VAL_REG   0xa0003
 #elif (VDDEE_VAL == 730)
-#define VDDEE_VAL_REG   0x29d0149
+#define VDDEE_VAL_REG   0x90004
 #elif (VDDEE_VAL == 740)
-#define VDDEE_VAL_REG   0x25b018b
+#define VDDEE_VAL_REG   0x80005
 #elif (VDDEE_VAL == 750)
-#define VDDEE_VAL_REG   0x21901cd
+#define VDDEE_VAL_REG   0x70006
 #elif (VDDEE_VAL == 760)
-#define VDDEE_VAL_REG   0x1cd0219
+#define VDDEE_VAL_REG   0x60007
 #elif (VDDEE_VAL == 770)
-#define VDDEE_VAL_REG   0x18b025b
+#define VDDEE_VAL_REG   0x50008
 #elif (VDDEE_VAL == 780)
-#define VDDEE_VAL_REG   0x149029d
+#define VDDEE_VAL_REG   0x40009
 #elif (VDDEE_VAL == 790)
-#define VDDEE_VAL_REG   0x10702df
+#define VDDEE_VAL_REG   0x3000a
 #elif (VDDEE_VAL == 800)
-#define VDDEE_VAL_REG   0x0c50321
+#define VDDEE_VAL_REG   0x2000b
 #elif (VDDEE_VAL == 810)
-#define VDDEE_VAL_REG   0x0830363
+#define VDDEE_VAL_REG   0x1000c
 #elif (VDDEE_VAL == 820)
-#define VDDEE_VAL_REG   0x04103a5
+#define VDDEE_VAL_REG   0x0000d
 #elif (VDDEE_VAL == 830)
-#define VDDEE_VAL_REG   0x00003e8
+#define VDDEE_VAL_REG   0x0000f
 #else
 #error "VDDEE val out of range\n"
 #endif
@@ -166,7 +166,7 @@ __attribute__ ((section(".misc_param"))) = {
 	{ PWM_MISC_REG_J,	   (0x1 << 0),	  (0x1 << 0), 0, 0, 0 },
 	/* set pwm h clock rate to 500M, enable them */
 	/* set pwm j clock rate to 500M, enable them */
-	{ CLKCTRL_PWM_CLK_GH_CTRL, (0x1 << 24) | (0x2 << 25), 0xffffffff, 0, 0, 0 },
+	{ CLKCTRL_PWM_CLK_GH_CTRL, (0x1 << 24), 0xffffffff, 0, 0, 0 },
 	{ CLKCTRL_PWM_CLK_IJ_CTRL, (0x1 << 24) | (0x2 << 25), 0xffffffff, 0, 0, 0 },
 	/* set GPIOE_0 GPIOE_1 drive strength to 3 */
 	{ PADCTRL_GPIOE_DS,	   0xf,		  0xf,	      0, 0, 0 },
