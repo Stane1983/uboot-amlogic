@@ -244,10 +244,76 @@ void usb_device_mode_init(int phy_num);
 int m31_phy_init(unsigned int phy_num);
 
 /* cc */
+#define CC_OTP_REG		0x0
+#define USB_CC_INT_CLR		0x4
+#define  CC_INT_CLEAN		BIT(0)
+#define USB_CC_ANA		0x8
+#define  CC_ANA_CTRL_EN		BIT(0)
+#define  CC_UFP_EN		BIT(1)
+#define  CC_DFP_EN		BIT(2)
+#define  CC_RP_SEL0		(BIT(5) | BIT(6) | BIT(7))
+#define USB_CC_CNT		0xC
+#define USB_CC_INT_MASK		0x10
+#define  CABLE_PLUG_IN		BIT(6)
+#define  CABLE_PLUG_OUT		BIT(7)
+#define USB_CC_CTRL		0x14
+#define  CC_TOP_ENABLE		BIT(0)
+#define  CC_FAST_ENABLE		BIT(1)
+#define  CC_VBUS_FORCE_EN	BIT(4)
+#define USB_CC_INT_STATUS	0x18
+#define  CC_UFP_CURRENT_INT	BIT(0)
+#define  CC_UFP_PLUG_IN_INT	BIT(1)
+#define  CC_UFP_PLUG_OUT_INT	BIT(2)
+#define USB_CC_FSM_STATUS	0x1C
+#define USB_CC_UFP_STATUS	0x20
+#define USB_CC_DFP_STATUS	0x24
+
+#define CC_RESET_BIT		10
+
+#define UFP_CURRENT_TYPE_CHECK(x)	((x) & GENMASK(5, 3))
+#define VBUS_OK_P_CHECK(x)		((x) & BIT(15))
+#define CC1_UFP_DET_P_CHECK(x)		(((x) & GENMASK(18, 16)) >> 16)
+#define CC2_UFP_DET_P_CHECK(x)		(((x) & GENMASK(21, 19)) >> 19)
+
+#define CC_REG_BASE	0xfe35e000
+
+#define CC_STATUS_DETACH	0
+#define CC_STATUS_DEFAULT	1
+#define CC_STATUS_1500MA	2
+#define CC_STATUS_3000MA	3
+#define CC_STATUS_TYPEA_SDP	4
+#define CC_STATUS_TYPEA_DCP	5
+#define CC_STATUS_TYPEA_CDP	6
+
 int aml_cc_get_ufp_status(u32 *val);
 void print_aml_cc_ufp_current_type(void);
 
 /* bc */
+#define BC_CTRL			0x4
+#define  BC_ENABLE		BIT(0)
+#define  BC_DET_CLEAN		BIT(1)
+#define  BC_INT_CLEAN		BIT(2)
+#define  BC_DETECT_END		BIT(3)
+#define BC_DIG_STATUS		0x1C
+
+#define CFG_REG0		0
+#define  HOST_DEVICE		BIT(0)
+#define  IDPULLUP0		BIT(4)
+#define CFG_REG3		0xC
+#define  VBUSDIG_IRQ		BIT(7)
+#define  VBUSDIG_EN1		BIT(5)
+#define  VBUSDIG_EN0		BIT(4)
+
+#define BC_REG_BASE	0xfe35d000
+
+#define BC_RESET_BIT		11
+
+#define BC_STATUS_DETACH	0
+#define BC_STATUS_SDP		1
+#define BC_STATUS_DCP		2
+#define BC_STATUS_CDP		3
+#define BC_STATUS_OTHER		4
+
 int aml_bc_get_port_status(u32 *val);
 void print_aml_bc_port_status(void);
 #endif
