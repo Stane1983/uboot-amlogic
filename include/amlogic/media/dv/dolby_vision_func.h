@@ -15,6 +15,17 @@
 #define EXT_MD_LEVEL_6   BIT(4)
 #define EXT_MD_LEVEL_255 BIT(31)
 
+#define NUM_IPCORE1 2
+#define NUM_IPCORE2 1
+#define IPCORE2_ID NUM_IPCORE1
+#define OUTPUT_CONTROL_DATA_SIZE 0x1000
+
+enum input_mode_enum {
+	IN_MODE_OTT = 0,
+	IN_MODE_HDMI = 1,
+	IN_MODE_GRAPHICS = 2
+};
+
 enum signal_format_enum {
 	FORMAT_INVALID = -1,
 	FORMAT_DOVI = 0,
@@ -28,10 +39,23 @@ enum priority_mode_enum {
 	G_PRIORITY = 1
 };
 
+enum cp_chroma_format_enum {
+	CP_P420 = 0,
+	CP_UYVY = 1,
+	CP_P444 = 2,
+	CP_I444 = 3
+};
+
 enum cp_signal_range_enum  {
 	SIGNAL_RANGE_SMPTE = 0,
 	SIGNAL_RANGE_FULL  = 1,
 	SIGNAL_RANGE_SDI   = 2
+};
+
+enum cp_clr_enum {
+	CP_YUV = 0,
+	CP_RGB = 1,
+	CP_IPT = 2
 };
 
 enum graphics_format_enum  {
@@ -295,6 +319,51 @@ struct ext_md_s {
 	struct ext_level_255 level_255;
 };
 
+enum ctrl_data_type_enum {
+	TYPE_INVALID = -1,
+	TYPE_VSIF = 0,
+	TYPE_VSEM = 1
+};
+
+enum cp_dv_type_eunm {
+	SRC_TYPE_NONDOVI = 0x0, /*output is not amdv*/
+	SRC_TYPE_DV    = 0x1, /*input is dv content, and output is amdv. */
+	SRC_TYPE_HDR10   = 0x3, /*input is HDR10, and output is a amdv. */
+	SRC_TYPE_SDR     = 0x5, /*input is SDR, and output is a amdv*/
+	SRC_TYPE_HLG     = 0x7  /*input is HLG, and output is a amdv */
+};
+
+struct vsif_parameter_s {
+	int lowlatency;
+	int backlight_ctrl_md_present;
+	int src_dm_version;
+	int eff_tmax_pq;
+	enum cp_dv_type_eunm dobly_vision_signal;
+	int auxi_md_present;
+	int l11_md_present;
+	u8 auxi_runmode;
+	u8 auxi_runversion;
+	u8 auxi_debug0;
+	u8 content_type;
+	u8 intended_white_point;
+	u8 l11_byte2;
+	u8 l11_byte3;
+	int bt2020_container;
+};
+
+struct content_info_s {
+	u8 content_type_info;
+	u8 white_point;
+	u8 l11_byte2;
+	u8 l11_byte3;
+};
+
+struct dovi_setting_video_s {
+	struct composer_reg_ipcore comp_reg;
+	struct dm_reg_ipcore1 dm_reg;
+	struct dm_lut_ipcore dm_lut;
+};
+
 struct dovi_setting_s {
 	struct composer_reg_ipcore comp_reg;
 	struct dm_reg_ipcore1 dm_reg1;
@@ -330,6 +399,104 @@ struct dovi_setting_s {
 	struct ext_md_s ext_md;
 };
 
+struct cp_struct {
+	int src_format;
+	int dst_format;
+	void *in_comp;
+	int in_comp_size;
+	void *in_md;
+	int in_md_size;
+	int set_priority;
+	int set_bit_depth;
+	int set_chroma_format;
+	int set_yuv_range;
+	int set_graphic_min_lum;
+	int set_graphic_max_lum;
+	int set_target_min_lum;
+	int set_target_max_lum;
+	int set_no_el;
+	void *p_hdr10_param;
+	void *dovi_setting;
+};
+
+//multi mode releated
+struct private_info_s {
+	int valid; /*1: input is valid; 0: input is invalid*/
+	enum signal_format_enum src_format;
+
+	/* enhanced layer */
+	bool el_flag;
+	bool el_halfsize_flag;
+
+	/* frame width & height */
+	u32 video_width;
+	u32 video_height;
+
+	/* Dovi LL or non Dovi */
+	int set_bit_depth;
+	enum cp_chroma_format_enum set_chroma_format;
+	enum cp_signal_range_enum set_yuv_range;
+	enum cp_clr_enum color_format;
+
+	char *in_comp;
+	int in_comp_size;
+	char *in_md;
+	int in_md_size;
+	char *vsem_if;
+	int vsem_if_size;
+	enum input_mode_enum input_mode;
+	int use_primaries_for_dv;
+	struct hdr10_parameter *p_hdr10_param;
+};
+
+struct m_dovi_setting_s {
+	/*********input to dv lib*******/
+	/*common info*/
+	int num_input;
+	int num_video;
+	int pri_input;
+	int enable_multi_core1;
+	int enable_debug;
+	enum priority_mode_enum set_priority;
+	uint32_t dovi2hdr10_nomapping;
+	uint32_t use_ll_flag;
+	uint32_t ll_rgb_desired;
+	uint32_t vout_width;
+	uint32_t vout_height;
+	u8 vsvdb_tbl[32];
+	u32 vsvdb_len;
+	u32 vsvdb_changed;
+	u32 mode_changed;
+	enum signal_format_enum dst_format;
+	/*private info for each instance*/
+	struct private_info_s input[NUM_IPCORE1 + NUM_IPCORE2];
+	/*only used for graphic*/
+	int set_graphic_min_lum;
+	int set_graphic_max_lum;
+	int set_target_min_lum;
+	int set_target_max_lum;
+
+	/********get from dv lib********/
+	struct dovi_setting_video_s core1[NUM_IPCORE1];
+	struct dm_reg_ipcore2 dm_reg2;
+	struct dm_reg_ipcore3 dm_reg3;
+	struct dm_lut_ipcore dm_lut2;
+	/* for dovi output */
+	struct md_reg_ipcore3 md_reg3;
+	/* for hdr10 output */
+	struct hdr10_infoframe hdr_info;
+	uint32_t diagnostic_enable;
+	uint32_t diagnostic_mux_select;
+	uint32_t dovi_ll_enable;
+	struct ext_md_s ext_md;
+	struct vsif_parameter_s output_vsif;
+	u8 *output_ctrl_data; /* VSEM or VSIF */
+	u32 output_ctrl_data_len;
+	enum ctrl_data_type_enum ctrl_data_type;
+	struct content_info_s content_info;/*copy src content infos*/
+	u32 reserved[128];
+};
+
 int control_path
 	(enum signal_format_enum in_format,
 	 enum signal_format_enum out_format,
@@ -342,4 +509,6 @@ int control_path
 	 int set_no_el,
 	 struct hdr10_parameter *hdr10_param,
 	 struct dovi_setting_s *output);
+
+int multi_control_path(struct m_dovi_setting_s *cp_para);
 #endif

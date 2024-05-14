@@ -21,26 +21,6 @@
 #define DV_FW_MAX_SIZE 0x80000 /*500k*/
 #define LOAD_FROM_ARRAY 0 /*only for debug*/
 
-struct cp_struct {
-	int src_format;
-	int dst_format;
-	void *in_comp;
-	int in_comp_size;
-	void *in_md;
-	int in_md_size;
-	int set_priority;
-	int set_bit_depth;
-	int set_chroma_format;
-	int set_yuv_range;
-	int set_graphic_min_lum;
-	int set_graphic_max_lum;
-	int set_target_min_lum;
-	int set_target_max_lum;
-	int set_no_el;
-	void *p_hdr10_param;
-	void *dovi_setting;
-};
-
 static unsigned long my_hex_atol(const char *str)
 {
 	unsigned long result = 0;
@@ -419,6 +399,36 @@ int control_path(
 		ret = load_dv_fw(fw_dir_vendor, &cp_info);
 	} else if (fw_dir && ini_is_file_exist(fw_dir)) {
 		ret = load_dv_fw(fw_dir, &cp_info);
+	} else {
+		printf("load dv fw fail\n");
+		ret = -1;
+	}
+#endif
+	return ret;
+}
+
+/*return 0: success*/
+int multi_control_path(struct m_dovi_setting_s *cp_para)
+{
+	char *fw_dir_odm_ext = NULL;
+	char *fw_dir_vendor = NULL;
+	char *fw_dir = NULL;
+	int ret = 0;
+
+	fw_dir_odm_ext = env_get("dv_fw_dir_odm_ext");
+	fw_dir_vendor = env_get("dv_fw_dir_vendor");
+	fw_dir = env_get("dv_fw_dir");
+
+	printf("multi control_path %p\n", cp_para);
+#if LOAD_FROM_ARRAY
+	load_dv_func(cp_para);// load dovi_func[] in dv_func.h and run
+#else
+	if (fw_dir_odm_ext && ini_is_file_exist(fw_dir_odm_ext)) {
+		ret = load_dv_fw(fw_dir_odm_ext, cp_para);
+	} else if (fw_dir_vendor && ini_is_file_exist(fw_dir_vendor)) {
+		ret = load_dv_fw(fw_dir_vendor, cp_para);
+	} else if (fw_dir && ini_is_file_exist(fw_dir)) {
+		ret = load_dv_fw(fw_dir, cp_para);
 	} else {
 		printf("load dv fw fail\n");
 		ret = -1;
