@@ -50,6 +50,26 @@ config BUILD_UNSIGN
 		When PXP bring up this option is open. This config should be
 		closed when signature is ready.
 
+config AML_SIGNED_UBOOT
+	bool "Amlogic signed bootloader"
+	help
+		Enable signed bootloader
+		For Amlogic boards
+
+config AML_CS_SIGNING_SCHEME
+	string "Amlogic chipset signing scheme"
+	default "rsa-mldsa" if MESON_S6
+	default "rsa"
+	help
+		Signed bootloader chipset signing scheme
+
+config AML_DV_SIGNING_SCHEME
+	string "Amlogic device-vendor signing scheme"
+	default "rsa-mldsa" if MESON_S6
+	default "rsa"
+	help
+		Signed bootloader device vendor signing scheme
+
 config BOARD_PACKAGE_NAME
 	string "rtos sdk name"
 	default ""
