@@ -512,6 +512,72 @@ int is_osd_high_version(void)
 
 /* OSD csc defines end */
 
+void mtx_setting(enum vpp_matrix_e mtx_sel,
+		 enum mtx_csc_e mtx_csc,
+	int mtx_on)
+{
+	unsigned int matrix_coef00_01 = 0;
+	unsigned int matrix_coef02_10 = 0;
+	unsigned int matrix_coef11_12 = 0;
+	unsigned int matrix_coef20_21 = 0;
+	unsigned int matrix_coef22 = 0;
+	unsigned int matrix_offset0_1 = 0;
+	unsigned int matrix_offset2 = 0;
+	unsigned int matrix_pre_offset0_1 = 0;
+	unsigned int matrix_pre_offset2 = 0;
+	unsigned int matrix_en_ctrl = 0;
+
+	if (mtx_sel == OSD_BLEDN_D0_MTX) {
+		matrix_coef00_01 = BLEND_D0_MATRIX_COEF00_01;
+		matrix_coef02_10 = BLEND_D0_MATRIX_COEF02_10;
+		matrix_coef11_12 = BLEND_D0_MATRIX_COEF11_12;
+		matrix_coef20_21 = BLEND_D0_MATRIX_COEF20_21;
+		matrix_coef22 = BLEND_D0_MATRIX_COEF22;
+		matrix_offset0_1 = BLEND_D0_MATRIX_OFFSET0_1;
+		matrix_offset2 = BLEND_D0_MATRIX_OFFSET2;
+		matrix_pre_offset0_1 = BLEND_D0_MATRIX_PRE_OFFSET0_1;
+		matrix_pre_offset2 = BLEND_D0_MATRIX_PRE_OFFSET2;
+		matrix_en_ctrl = BLEND_D0_MATRIX_EN_CTRL;
+
+		vpp_reg_setb(matrix_en_ctrl, mtx_on, 0, 1);
+	} else if (mtx_sel == OSD_BLEDN_D1_MTX) {
+		matrix_coef00_01 = BLEND_D1_MATRIX_COEF00_01;
+		matrix_coef02_10 = BLEND_D1_MATRIX_COEF02_10;
+		matrix_coef11_12 = BLEND_D1_MATRIX_COEF11_12;
+		matrix_coef20_21 = BLEND_D1_MATRIX_COEF20_21;
+		matrix_coef22 = BLEND_D1_MATRIX_COEF22;
+		matrix_offset0_1 = BLEND_D1_MATRIX_OFFSET0_1;
+		matrix_offset2 = BLEND_D1_MATRIX_OFFSET2;
+		matrix_pre_offset0_1 = BLEND_D1_MATRIX_PRE_OFFSET0_1;
+		matrix_pre_offset2 = BLEND_D1_MATRIX_PRE_OFFSET2;
+		matrix_en_ctrl = BLEND_D1_MATRIX_EN_CTRL;
+
+		vpp_reg_setb(matrix_en_ctrl, mtx_on, 0, 1);
+
+	} else {
+		return;
+	}
+
+	if (!mtx_on)
+		return;
+
+	switch (mtx_csc) {
+	case MATRIX_RGB_YUV709:
+		vpp_reg_write(matrix_coef00_01, 0x00bb0275);
+		vpp_reg_write(matrix_coef02_10, 0x003f1f99);
+		vpp_reg_write(matrix_coef11_12, 0x1ea601c2);
+		vpp_reg_write(matrix_coef20_21, 0x01c21e67);
+		vpp_reg_write(matrix_coef22, 0x00001fd7);
+		vpp_reg_write(matrix_offset0_1, 0x00400200);
+		vpp_reg_write(matrix_offset2, 0x00000200);
+		vpp_reg_write(matrix_pre_offset0_1, 0x0);
+		vpp_reg_write(matrix_pre_offset2, 0x0);
+		break;
+	default:
+		break;
+	}
+}
+
 #ifndef AML_S5_DISPLAY
 static void vpp_set_matrix_default_init(void)
 {

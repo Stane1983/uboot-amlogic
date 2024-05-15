@@ -7,6 +7,7 @@
 #include <malloc.h>
 #include "vpp_reg.h"
 #include "hdr2.h"
+#include "vpp.h"
 #include <common.h>
 
 #define OO_Y_LUT_BYPASS_VAL 512
@@ -1421,7 +1422,11 @@ void hdr_func(enum hdr_module_sel module_sel,
 	if ((module_sel & (OSD1_HDR | OSD2_HDR | OSD3_HDR)) &&
 		(hdr_process_select & HDR_BYPASS)) {
 		/* sdr process, always rgb osd here*/
-		if (hdr_process_select & RGB_OSD) {
+		if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T3X) {
+			coeff_in = bypass_coeff;
+			oft_pre_in = bypass_pre;
+			oft_post_in = bypass_pos;
+		} else if (hdr_process_select & RGB_OSD) {
 			coeff_in = rgb2ycbcr_709;
 			oft_pre_in = rgb2yuvpre;
 			oft_post_in = rgb2yuvpos;
@@ -1791,4 +1796,12 @@ void hdr_func(enum hdr_module_sel module_sel,
 
 	if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T3)
 		clip_func_after_ootf(hdr_mtx_param.mtx_gamut_mode, module_sel);
+
+	if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T3X &&
+		(hdr_process_select & HDR_BYPASS)) {
+		if (module_sel == OSD1_HDR ||
+			module_sel == OSD2_HDR ||
+			module_sel == OSD3_HDR)
+			mtx_setting(OSD_BLEDN_D0_MTX, MATRIX_RGB_YUV709, 1);
+	}
 }

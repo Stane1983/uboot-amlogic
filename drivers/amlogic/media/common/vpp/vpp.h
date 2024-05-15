@@ -52,7 +52,9 @@ enum vpp_matrix_e {
 	POST2_MTX = 0x2,
 	POST_MTX = 0x4,
 	VPP1_POST2_MTX = 0x8,
-	VPP2_POST2_MTX = 0x10
+	VPP2_POST2_MTX = 0x10,
+	OSD_BLEDN_D0_MTX = 0x20,
+	OSD_BLEDN_D1_MTX = 0x21
 };
 
 enum mtx_csc_e {
@@ -96,6 +98,10 @@ struct matrix_coef_s {
 	__u16 right_shift;
 	__u16 en;
 };
+
+void mtx_setting(enum vpp_matrix_e mtx_sel,
+		 enum mtx_csc_e mtx_csc,
+	int mtx_on);
 
 /* vpp1 post2 matrix */
 #ifndef VPP1_MATRIX_COEF00_01
@@ -192,6 +198,92 @@ struct matrix_coef_s {
 #endif
 #ifndef L_GAMMA_ADDR_PORT
 #define L_GAMMA_ADDR_PORT                          0x1902
+#endif
+
+/*after OSD blend matrix */
+#ifndef BLEND_D0_MATRIX_COEF00_01
+#define BLEND_D0_MATRIX_COEF00_01                  0x6100
+#endif
+#ifndef BLEND_D0_MATRIX_COEF02_10
+#define BLEND_D0_MATRIX_COEF02_10                  0x6101
+#endif
+#ifndef BLEND_D0_MATRIX_COEF11_12
+#define BLEND_D0_MATRIX_COEF11_12                  0x6102
+#endif
+#ifndef BLEND_D0_MATRIX_COEF20_21
+#define BLEND_D0_MATRIX_COEF20_21                  0x6103
+#endif
+#ifndef BLEND_D0_MATRIX_COEF22
+#define BLEND_D0_MATRIX_COEF22                     0x6104
+#endif
+#ifndef BLEND_D0_MATRIX_COEF30_31
+#define BLEND_D0_MATRIX_COEF30_31                  0x6105
+#endif
+#ifndef BLEND_D0_MATRIX_COEF32_40
+#define BLEND_D0_MATRIX_COEF32_40                  0x6106
+#endif
+#ifndef BLEND_D0_MATRIX_COEF41_42
+#define BLEND_D0_MATRIX_COEF41_42                  0x6107
+#endif
+#ifndef BLEND_D0_MATRIX_OFFSET0_1
+#define BLEND_D0_MATRIX_OFFSET0_1                  0x6108
+#endif
+#ifndef BLEND_D0_MATRIX_OFFSET2
+#define BLEND_D0_MATRIX_OFFSET2                    0x6109
+#endif
+#ifndef BLEND_D0_MATRIX_PRE_OFFSET0_1
+#define BLEND_D0_MATRIX_PRE_OFFSET0_1              0x610a
+#endif
+#ifndef BLEND_D0_MATRIX_PRE_OFFSET2
+#define BLEND_D0_MATRIX_PRE_OFFSET2                0x610b
+#endif
+#ifndef BLEND_D0_MATRIX_CLIP
+#define BLEND_D0_MATRIX_CLIP                       0x6118
+#endif
+#ifndef BLEND_D0_MATRIX_EN_CTRL
+#define BLEND_D0_MATRIX_EN_CTRL                    0x6139
+#endif
+#ifndef BLEND_D1_MATRIX_COEF00_01
+#define BLEND_D1_MATRIX_COEF00_01                  0x6120
+#endif
+#ifndef BLEND_D1_MATRIX_COEF02_10
+#define BLEND_D1_MATRIX_COEF02_10                  0x6121
+#endif
+#ifndef BLEND_D1_MATRIX_COEF11_12
+#define BLEND_D1_MATRIX_COEF11_12                  0x6122
+#endif
+#ifndef BLEND_D1_MATRIX_COEF20_21
+#define BLEND_D1_MATRIX_COEF20_21                  0x6123
+#endif
+#ifndef BLEND_D1_MATRIX_COEF22
+#define BLEND_D1_MATRIX_COEF22                     0x6124
+#endif
+#ifndef BLEND_D1_MATRIX_COEF30_31
+#define BLEND_D1_MATRIX_COEF30_31                  0x6125
+#endif
+#ifndef BLEND_D1_MATRIX_COEF32_40
+#define BLEND_D1_MATRIX_COEF32_40                  0x6126
+#endif
+#ifndef BLEND_D1_MATRIX_COEF41_42
+#define BLEND_D1_MATRIX_COEF41_42                  0x6127
+#endif
+#ifndef BLEND_D1_MATRIX_OFFSET0_1
+#define BLEND_D1_MATRIX_OFFSET0_1                  0x6128
+#endif
+#ifndef BLEND_D1_MATRIX_OFFSET2
+#define BLEND_D1_MATRIX_OFFSET2                    0x6129
+#endif
+#ifndef BLEND_D1_MATRIX_PRE_OFFSET0_1
+#define BLEND_D1_MATRIX_PRE_OFFSET0_1              0x612a
+#endif
+#ifndef BLEND_D1_MATRIX_PRE_OFFSET2
+#define BLEND_D1_MATRIX_PRE_OFFSET2                0x612b
+#endif
+#ifndef BLEND_D1_MATRIX_CLIP
+#define BLEND_D1_MATRIX_CLIP                       0x6138
+#endif
+#ifndef BLEND_D1_MATRIX_EN_CTRL
+#define BLEND_D1_MATRIX_EN_CTRL                    0x6159
 #endif
 
 #endif
