@@ -35,6 +35,7 @@ static enum frl_rate_enum get_current_frl_rate(void);
 #ifdef CONFIG_EFUSE_OBJ_API
 static void get_hdmi_efuse(struct hdmitx_dev *hdev);
 #endif
+static void hdmitx_set_frlrate_none(struct hdmitx_dev *hdev);
 
 struct hdmitx_dev *get_hdmitx21_device(void)
 {
@@ -1187,6 +1188,8 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 		pr_info("manually frl rate %d\n", hdev->frl_rate);
 	}
 
+	/* explicitly clear frl rate firstly when output FRL */
+	hdmitx_set_frlrate_none(hdev);
 	/* gp2 setting has been set for fe/enc for dsc*/
 	hdmitx21_set_clk(hdev);
 	hdmitx_phy_pre_init(hdev);
@@ -1986,6 +1989,11 @@ static void hdmitx_set_div40(bool div40)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
+	/* under frl mode, not send tmds clk ratio,
+	 * or forcely send tmds clk ratio/scramble as 0?
+	 * reserved for future compliance issue
+	 */
+	/* if (hdev->frl_rate == FRL_NONE) */
 	hdmitx_set_scdc_div40(div40);
 	switch (hdev->chip_type) {
 	case MESON_CPU_ID_S5:
