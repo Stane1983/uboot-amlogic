@@ -187,6 +187,7 @@ typedef struct global_data {
 #define GD_FLG_LOG_READY	0x08000 /* Log system is ready for use	   */
 #ifdef CONFIG_ARMV8_MULTIENTRY
 #define GD_FLG_SMP		0x20000     /* smp started			   */
+#define in_smp()		(gd->flags & GD_FLG_SMP)
 #endif
 #define GD_FLG_CACHE_EN		0x10000 /* Cache enabled                   */
 

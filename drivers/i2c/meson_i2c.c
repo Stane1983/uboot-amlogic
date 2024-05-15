@@ -218,12 +218,25 @@ static int meson_i2c_xfer(struct udevice *bus, struct i2c_msg *msg,
 	struct meson_i2c *i2c = dev_get_priv(bus);
 	int i, ret = 0;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (in_smp())
+		spin_lock(&bus->lock);
+#endif
 	for (i = 0; i < nmsgs; i++) {
 		ret = meson_i2c_xfer_msg(i2c, msg + i, i == nmsgs - 1);
-		if (ret)
+		if (ret) {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+			if (in_smp())
+				spin_unlock(&bus->lock);
+#endif
 			return ret;
+		}
 	}
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (in_smp())
+		spin_unlock(&bus->lock);
+#endif
 	return 0;
 }
 
@@ -345,10 +358,18 @@ static int meson_i2c_set_fast_speed(struct udevice *bus, unsigned int speed)
 
 static int meson_i2c_set_bus_speed(struct udevice *bus, unsigned int speed)
 {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (in_smp())
+		spin_lock(&bus->lock);
+#endif
 	if (speed >= 400000)
 		meson_i2c_set_fast_speed(bus, speed);
 	else
 		meson_i2c_set_std_speed(bus, speed);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (in_smp())
+		spin_unlock(&bus->lock);
+#endif
 	return 0;
 }
 
@@ -360,6 +381,9 @@ static int meson_i2c_probe(struct udevice *bus)
 
 	clrbits_le32(&i2c->regs->ctrl, REG_CTRL_START);
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock_init(&bus->lock);
+#endif
 	return 0;
 }
 
