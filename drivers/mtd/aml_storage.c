@@ -452,35 +452,53 @@ int mtd_store_get_offset(const char *partname, loff_t *retoff, loff_t off)
 	struct part_info *part;
 	char tmp_part_name[20] = {0};
 	u8 pnum, entry_num = -1;
+	enum boot_type_e medium_type;
 #endif
 
 	*retoff = 0;
 	if (!partname)
 		offset = off;
-
 #if defined(CONFIG_CMD_MTDPARTS)
 	else if (!mtdparts_init()) {
-		strncpy(tmp_part_name, partname,  min_t(int, strlen(partname), 20));
+		medium_type = store_get_type();
 		if ((store_get_device_bootloader_mode() == DISCRETE_BOOTLOADER) ||
 		    (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER)) {
-			if (!strcmp(partname, BOOT_BL2) ||
-			    !strcmp(partname, BOOT_SPL) ||
-				!strcmp(partname, BOOT_LOADER)) {
-				entry_num = BOOT_AREA_BB1ST;
-			} else if (!strcmp(partname, BOOT_BL2E)) {
-				entry_num = BOOT_AREA_BL2E;
-			} else if (!strcmp(partname, BOOT_BL2X)) {
-				entry_num = BOOT_AREA_BL2X;
-			} else if (!strcmp(partname, BOOT_DDRFIP)) {
-				entry_num = BOOT_AREA_DDRFIP;
-			} else if (!strcmp(partname, BOOT_DEVFIP)) {
-				entry_num = BOOT_AREA_DEVFIP;
-			}
-		}
+			if (medium_type == BOOT_SNOR) {
+				if (!strcmp(partname, BOOT_BL2) ||
+					!strcmp(partname, BOOT_SPL) ||
+					!strcmp(partname, BOOT_LOADER)) {
+					entry_num = BOOT_AREA_BB1ST;
+				} else if (!strcmp(partname, BOOT_BL2E)) {
+					entry_num = BOOT_AREA_BL2E;
+				} else if (!strcmp(partname, BOOT_BL2X)) {
+					entry_num = BOOT_AREA_BL2X;
+				} else if (!strcmp(partname, BOOT_DDRFIP)) {
+					entry_num = BOOT_AREA_DDRFIP;
+				} else if (!strcmp(partname, BOOT_DEVFIP)) {
+					entry_num = BOOT_AREA_DEVFIP;
+				}
 
-		if (entry_num <= BOOT_AREA_DEVFIP) {
-			off += g_ssp.boot_entry[entry_num].offset;
-			strncpy(tmp_part_name, BOOT_LOADER, strlen(BOOT_LOADER));
+				if (entry_num <= BOOT_AREA_DEVFIP) {
+					off += g_ssp.boot_entry[entry_num].offset;
+					strncpy(tmp_part_name, BOOT_LOADER, strlen(BOOT_LOADER));
+				} else if (!strcmp(partname, RSV_DDR_PARA)) {
+#ifdef	BOARD_SNOR_DDR_PARAM_SIZE
+					off += g_ssp.boot_entry[BOOT_AREA_DEVFIP].offset +
+							g_ssp.boot_entry[BOOT_AREA_DEVFIP].size;
+					strncpy(tmp_part_name, BOOT_LOADER, strlen(BOOT_LOADER));
+#endif
+				} else {
+					strncpy(tmp_part_name, partname,
+						min_t(int, strlen(partname), 20));
+				}
+			} else {
+				if (!strcmp(partname, BOOT_BL2) ||
+					!strcmp(partname, BOOT_SPL))
+					strncpy(tmp_part_name, BOOT_LOADER, strlen(BOOT_LOADER));
+				else
+					strncpy(tmp_part_name, partname,
+					min_t(int, strlen(partname), 20));
+			}
 		}
 
 		ret = find_dev_and_part(tmp_part_name, &dev, &pnum, &part);
@@ -527,6 +545,7 @@ static int mtd_store_name(int idx, char *partname)
 static u64 mtd_store_size(const char *part_name)
 {
 	struct mtd_info *mtd = mtd_store_get(1);
+	enum boot_type_e medium_type = store_get_type();
 	char tmp_part_name[20] = {0};
 	u8 pnum;
 	struct mtd_device *dev;
@@ -540,9 +559,22 @@ static u64 mtd_store_size(const char *part_name)
 		strncpy(tmp_part_name, part_name, min_t(int, strlen(part_name), 20));
 		if ((store_get_device_bootloader_mode() == DISCRETE_BOOTLOADER) ||
 		   (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER)) {
-			if (!strcmp(part_name, BOOT_BL2) ||
-			    !strcmp(part_name, BOOT_SPL))
-				strncpy(tmp_part_name, BOOT_LOADER, strlen(BOOT_LOADER));
+			if (medium_type == BOOT_SNOR) {
+				if (!strcmp(part_name, BOOT_BL2) || !strcmp(part_name, BOOT_SPL) ||
+				!strcmp(part_name, BOOT_LOADER) || !strcmp(part_name, BOOT_BL2E) ||
+				!strcmp(part_name, BOOT_BL2X) || !strcmp(part_name, BOOT_DDRFIP) ||
+				!strcmp(part_name, BOOT_DEVFIP)) {
+					strncpy(tmp_part_name, BOOT_LOADER, strlen(BOOT_LOADER));
+				}
+#ifdef	BOARD_SNOR_DDR_PARAM_SIZE
+				if (!strcmp(part_name, RSV_DDR_PARA))
+					return BOARD_SNOR_DDR_PARAM_SIZE;
+#endif
+			} else {
+				if (!strcmp(part_name, BOOT_BL2) ||
+					!strcmp(part_name, BOOT_SPL))
+					strncpy(tmp_part_name, BOOT_LOADER, strlen(BOOT_LOADER));
+			}
 		}
 		ret = find_dev_and_part(tmp_part_name,
 					&dev,
@@ -1391,7 +1423,8 @@ static int nor_rsv_write(const char *name, size_t size, void *buf)
 	if (ret)
 		return ret;
 	/* special path for erase */
-	if (!strcmp(name, RSV_ENV) || !strcmp(name, RSV_DTB) || !strcmp(name, RSV_KEY)) {
+	if (!strcmp(name, RSV_ENV) || !strcmp(name, RSV_DTB) ||
+		!strcmp(name, RSV_KEY) || !strcmp(name, RSV_DDR_PARA)) {
 		erase.mtd = mtd;
 		erase.addr = offset;
 		erase.callback = NULL;
@@ -1429,12 +1462,23 @@ extern struct part_info *get_aml_mtdpart_by_index(struct mtd_info *master, int i
 int mtd_store_param_partition(void)
 {
 	struct part_info *temp;
-	int lenvir, i, re, count;
+	int i, re, count, lenvir = 0;
+	enum boot_type_e medium_type;
 	char buf[512];
 	char *p = buf;
 
+	medium_type = store_get_type();
 	count = get_aml_mtdpart_count();
-	lenvir = snprintf(buf, sizeof(buf), "%s", "mtdparts=aml-nand:");
+
+#ifdef SKIP_MTD_PART_PARAM
+	if (medium_type == BOOT_SNAND)
+		return 0;
+#else
+	if (medium_type == BOOT_SNAND)
+		mtd_store_param_rsv();
+#endif
+
+	lenvir = snprintf(buf, sizeof(buf), "%s", "mtdparts=aml-mtd:");
 	p += lenvir;
 	re = sizeof(buf) - lenvir;
 	for (i = 0; i < count; i++) {
@@ -1442,9 +1486,9 @@ int mtd_store_param_partition(void)
 		if (!temp)
 			return -1;
 		lenvir = snprintf(p, re, "%dk@%dk(%s),",
-				 (int)(temp->size / 1024),
-				 (int)(temp->offset / 1024),
-				 temp->name);
+				(int)(temp->size / 1024),
+				(int)(temp->offset / 1024),
+				temp->name);
 		re -= lenvir;
 		p += lenvir;
 	}
@@ -1459,17 +1503,15 @@ int mtd_store_param_partition(void)
 
 int mtd_store_param_ops(void)
 {
-#ifndef SKIP_MTD_PART_PARAM
 	static int init;
 
 	if (init)
 		return 0;
 
 	mtd_store_param_partition();
-	mtd_store_param_rsv();
+
 	init = 1;
 
-#endif
 	return 0;
 }
 

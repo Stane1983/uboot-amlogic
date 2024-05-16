@@ -278,10 +278,11 @@
 #endif
 
 /* mtd advance mode layout board config */
-#define BOARD_DEVFIP_SIZE	0x275000
+#define BOARD_DEVFIP_SIZE	0x76000
 #define BOARD_BL2EX_BACKUPS	4
-#define BOARD_DDRFIP_SIZE	0x40000
+#define BOARD_DDRFIP_SIZE	0
 #define BOARD_DEVFIP_BACKUPS	2
+#define BOARD_SNOR_DDR_PARAM_SIZE	4096
 
 #define BOARD_NAND_RSV_CONFIG
 #ifdef BOARD_NAND_RSV_CONFIG

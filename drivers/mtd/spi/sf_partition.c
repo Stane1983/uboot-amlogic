@@ -59,6 +59,9 @@ static int _spinor_add_partitions(struct mtd_info *mtd,
 						* g_ssp.boot_backups +
 						general_boot_part_entry[BOOT_AREA_DEVFIP].size
 						* CONFIG_NOR_TPL_COPY_NUM;
+#ifdef	BOARD_SNOR_DDR_PARAM_SIZE
+		temp[0].size += BOARD_SNOR_DDR_PARAM_SIZE;
+#endif
 		if (temp[0].size % SPINOR_ALIGNED_SIZE)
 			WARN_ON(1);
 

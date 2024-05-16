@@ -301,18 +301,13 @@ static const struct mtd_partition spiflash_partitions[] = {
 	 .size = 1 * SZ_256K,
 	  },
 	{
-	 .name = "dtb",
+	 .name = "kernel",
 	 .offset = 0,
-	 .size = 1 * SZ_256K,
-	  },
-	{
-	 .name = "boot",
-	 .offset = 0,
-	 .size = 2 * SZ_1M,
+	 .size = 4 * SZ_1M,
 	  },
 	/* last partition get the rest capacity */
 	{
-	 .name = "user",
+	 .name = "rootfs",
 	 .offset = MTDPART_OFS_APPEND,
 	 .size = MTDPART_SIZ_FULL,
 	}

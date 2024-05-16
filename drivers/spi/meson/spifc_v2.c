@@ -139,6 +139,7 @@ static void spifc_disable_ahb(void)
 {
 	/* disable ahb */
 	writel((readl(SPIFC_AHB_CTRL) & ~(1 << 31)), SPIFC_AHB_CTRL);
+	WHILE_NULL_LOOP(!(readl(SPIFC_AHB_STS) & 0x80000000));
 	writel(0, SPIFC_AHB_REQ_CTRL);
 	writel(0, SPIFC_AHB_REQ_CTRL1);
 	writel(0, SPIFC_AHB_REQ_CTRL2);
@@ -216,22 +217,14 @@ static int spifc_user_cmd_dout(struct spifc_priv *priv,
 static int spifc_user_ahb_cmd_din(struct spifc_priv *priv,
 			      u8 *buf, int len)
 {
-	u64 *p;
-	int len64, i;
 	u64 *spifc_ahb_addr;
 
 	priv->save_addr = priv->save_addr >> 8;
 	spifc_ahb_addr = (u64 *)(SPI_ADDR_BASE + (u64)priv->save_addr);
 	writel(readl(SPIFC_AHB_REQ_CTRL) | (1 << 31), SPIFC_AHB_REQ_CTRL);
 
-	p = (u64 *)buf;
-	if (!(len % 8)) {
-		len64 = (len / 8);
-		for (i = 0; i < len64; i++)
-			*p++ = *spifc_ahb_addr++;
-	} else {
-		memcpy((void *)p, (void *)spifc_ahb_addr, len);
-	}
+	memcpy((void *)buf, (void *)spifc_ahb_addr, len);
+	WHILE_NULL_LOOP((readl(SPIFC_AHB_STS) & 0x20000000));
 
 	return 0;
 }
