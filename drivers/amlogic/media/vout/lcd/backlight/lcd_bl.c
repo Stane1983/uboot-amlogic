@@ -534,6 +534,22 @@ static void bl_power_en_ctrl(struct bl_config_s *bconf, int status)
 	}
 }
 
+static void bl_pwm_en_ctrl(struct bl_config_s *bconf, int status)
+{
+	switch (bconf->method) {
+	case BL_CTRL_PWM:
+		bl_pwm_en(bconf->bl_pwm, status);
+		break;
+	case BL_CTRL_PWM_COMBO:
+		bl_pwm_en(bconf->bl_pwm_combo0, status);
+		bl_pwm_en(bconf->bl_pwm_combo1, status);
+		break;
+	default:
+		BLERR("wrong backlight control method\n");
+		break;
+	}
+}
+
 static void bl_power_ctrl(struct aml_bl_drv_s *bdrv, int status)
 {
 	int gpio, value;
@@ -562,6 +578,7 @@ static void bl_power_ctrl(struct aml_bl_drv_s *bdrv, int status)
 		}
 
 		bdrv->state = 1;
+		bl_pwm_en_ctrl(bconf, 1);
 		/* check if factory test */
 		if (bdrv->factory_bl_on_delay >= 0) {
 			BLPR("%s: factory test power_on_delay!\n", __func__);
@@ -583,11 +600,9 @@ static void bl_power_ctrl(struct aml_bl_drv_s *bdrv, int status)
 				if (bconf->pwm_on_delay > 0)
 					mdelay(bconf->pwm_on_delay);
 				/* step 2: power on pwm */
-				bl_pwm_en(bconf->bl_pwm, 1);
 				bl_pwm_pinmux_ctrl(bdrv, 1);
 			} else {
 				/* step 1: power on pwm */
-				bl_pwm_en(bconf->bl_pwm, 1);
 				bl_pwm_pinmux_ctrl(bdrv, 1);
 				if (bconf->pwm_on_delay > 0)
 					mdelay(bconf->pwm_on_delay);
@@ -602,13 +617,9 @@ static void bl_power_ctrl(struct aml_bl_drv_s *bdrv, int status)
 				if (bconf->pwm_on_delay > 0)
 					mdelay(bconf->pwm_on_delay);
 				/* step 2: power on pwm_combo */
-				bl_pwm_en(bconf->bl_pwm_combo0, 1);
-				bl_pwm_en(bconf->bl_pwm_combo1, 1);
 				bl_pwm_pinmux_ctrl(bdrv, 1);
 			} else {
 				/* step 1: power on pwm_combo */
-				bl_pwm_en(bconf->bl_pwm_combo0, 1);
-				bl_pwm_en(bconf->bl_pwm_combo1, 1);
 				bl_pwm_pinmux_ctrl(bdrv, 1);
 				if (bconf->pwm_on_delay > 0)
 					mdelay(bconf->pwm_on_delay);
