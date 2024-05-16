@@ -669,7 +669,7 @@ void bl_pwm_config_init(struct bl_pwm_config_s *bl_pwm)
 	pdrv = aml_lcd_get_driver(bl_pwm->drv_index);
 	switch (bl_pwm->pwm_port) {
 	case BL_PWM_VS:
-		if (bl_pwm->pwm_freq > 4) {
+		if (bl_pwm->pwm_freq > 8) {
 			BLERR("bl_pwm_vs wrong freq %d\n", bl_pwm->pwm_freq);
 			bl_pwm->pwm_freq = BL_FREQ_VS_DEFAULT;
 		}
