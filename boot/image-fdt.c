@@ -632,6 +632,11 @@ int image_setup_libfdt(struct bootm_headers *images, void *blob,
 		printf("ERROR: /chosen node create failed\n");
 		goto err;
 	}
+	extern int fdt_bl_version(void *fdt);
+	if (fdt_bl_version(blob) < 0) {
+		printf("ERROR: /chosen node create version failed\n");
+		goto err;
+	}
 	if (arch_fixup_fdt(blob) < 0) {
 		printf("ERROR: arch-specific fdt fixup failed\n");
 		goto err;

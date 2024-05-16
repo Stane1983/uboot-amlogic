@@ -307,6 +307,16 @@ static int initr_pm(void)
 }
 #endif
 
+#ifdef CONFIG_AML_DRIVER
+static int initr_bootloader_build_message(void)
+{
+	extern int get_bootloader_build_message(void);
+	get_bootloader_build_message();
+
+	return 0;
+}
+#endif
+
 static int initr_bootstage(void)
 {
 	bootstage_mark_name(BOOTSTAGE_ID_START_UBOOT_R, "board_init_r");
@@ -674,6 +684,9 @@ static init_fnc_t init_sequence_r[] = {
 	log_init,
 #ifdef CONFIG_AMLOGIC_MODIFY
 	initr_pm,
+#endif
+#ifdef CONFIG_AML_DRIVER
+	initr_bootloader_build_message,
 #endif
 	initr_bootstage,	/* Needs malloc() but has its own timer */
 #if defined(CONFIG_CONSOLE_RECORD)

@@ -2014,7 +2014,8 @@ define filechk_version.h
 	echo \#define U_BOOT_VERSION_NUM_PATCH $$(echo $(PATCHLEVEL) | \
 		sed -e "s/^0*//"); \
 	echo \#define CC_VERSION_STRING \"$$(LC_ALL=C $(CC) --version | head -n 1)\"; \
-	echo \#define LD_VERSION_STRING \"$$(LC_ALL=C $(LD) --version | head -n 1)\"; )
+	echo \#define LD_VERSION_STRING \"$$(LC_ALL=C $(LD) --version | head -n 1)\"; \
+	echo \#define COMPILE_USER \"${USER}\";)
 endef
 
 # The SOURCE_DATE_EPOCH mechanism requires a date that behaves like GNU date.
