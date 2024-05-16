@@ -280,9 +280,12 @@ static int storage_write_in_part(char const *part_name, loff_t off, size_t size,
 static int storage_mmc_erase_user(struct mmc *mmc) {
 	int ret = 0, i;
 	struct partitions *part_info = NULL;
+	ulong n;
 
 	if (info_disprotect & DISPROTECT_KEY) {//key disprotect,erase all
-		ret = blk_derase(mmc_get_blk_desc(mmc), 0, 0);
+		n = blk_derase(mmc_get_blk_desc(mmc), 0, 0);
+		if (n != 0)
+			ret = -1;
 	} else {//key protect partition with the protect_flag
 		for (i = 0;;i++) {
 			part_info = get_partition_info_by_num(i);
@@ -300,14 +303,13 @@ static int storage_mmc_erase_user(struct mmc *mmc) {
 				printf("Part:%s is protected\n", part_info->name);
 				continue;
 			}
-			ret = blk_derase(mmc_get_blk_desc(mmc),
+			n = blk_derase(mmc_get_blk_desc(mmc),
 					part_info->offset / BLOCK_SIZE,
 					part_info->size / BLOCK_SIZE);
-			if (ret == part_info->size / BLOCK_SIZE)
-				ret = 0;
-			printf("Erased: %s %s\n",
-					part_info->name,
-					(ret == 0)? "OK" : "ERR");
+			if (n != part_info->size / BLOCK_SIZE)
+				ret = -1;
+			printf("Erased: %s %s\n", part_info->name,
+			       (n == part_info->size / BLOCK_SIZE) ? "OK" : "ERR");
 		}
 	}
 	printf("User partition erased: %s\n", (ret == 0) ? "OK" : "ERROR");
@@ -994,7 +996,7 @@ int mmc_erase_rsv(const char *rsv_name) {
 		ret = storage_byte_erase(mmc, off, size);
 
 	if (ret != 0) {
-		printf("erase resv failed\n");
+		printf("erase rsv failed\n");
 	}
 	return ret;
 }

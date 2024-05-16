@@ -3209,7 +3209,7 @@ __weak int mmc_get_env_dev(void)
 #ifdef CONFIG_AMLOGIC_MODIFY
 int mmc_key_erase(void)
 {
-	ulong start, start_blk, blkcnt, ret;
+	ulong start, start_blk, blkcnt, n;
 	struct partitions * part = NULL;
 	struct virtual_partition *vpart = NULL;
 	struct mmc *mmc;
@@ -3226,9 +3226,9 @@ int mmc_key_erase(void)
 	blkcnt = (vpart->size / MMC_BLOCK_SIZE) * 2;//key and backup key
 #endif
 	info_disprotect |= DISPROTECT_KEY;
-	ret = blk_derase(mmc_get_blk_desc(mmc), start_blk, blkcnt);
+	n = blk_derase(mmc_get_blk_desc(mmc), start_blk, blkcnt);
 	info_disprotect &= ~DISPROTECT_KEY;
-	if (ret) {
+	if (n != blkcnt) {
 		pr_err("[%s] %d mmc_berase error\n",
 				__func__, __LINE__);
 		return 1;
