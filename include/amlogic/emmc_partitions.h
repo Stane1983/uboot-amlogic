@@ -97,23 +97,26 @@
 * write 128KB data pattern
 * |<----pattern---->||<------DTB------>|
 */
-#define	MMC_PATTERN_NAME		"pattern"
+#define	MMC_PATTERN_NAME	"pattern"
 #define CALI_PATTERN_OFFSET	(SZ_1M * 3)
+#define CALI_PATTERN_ADDR	(RESERVED_GPT_OFFSET + CALI_PATTERN_OFFSET)
 #define CALI_PATTERN_SIZE	(256 * 512)
 #define CALI_BLOCK_SIZE		(512)
 #define CALI_PATTERN		(0x55aa55aa)
 
 #define	MMC_MAGIC_NAME		"magic"
-#define MAGIC_OFFSET	(SZ_1M * 6)
-#define MAGIC_SIZE	(256 * 512)
-#define MAGIC_BLOCK_SIZE		(512)
-#define MAGIC_PATTERN	(0X00FF00FF)
+#define MAGIC_OFFSET		(SZ_1M * 6)
+#define MAGIC_ADDR		(RESERVED_GPT_OFFSET + MAGIC_OFFSET)
+#define MAGIC_SIZE		(256 * 512)
+#define MAGIC_BLOCK_SIZE	(512)
+#define MAGIC_PATTERN		(0X00FF00FF)
 
 #define	MMC_RANDOM_NAME		"random"
-#define RANDOM_OFFSET	(SZ_1M * 7)
-#define RANDOM_SIZE	(256 * 512)
-#define RANDOM_BLOCK_SIZE		(512)
-#define RANDOM_PATTERN	(0X52414E44)
+#define RANDOM_OFFSET		(SZ_1M * 7)
+#define RANDOM_ADDR		(RESERVED_GPT_OFFSET + RANDOM_OFFSET)
+#define RANDOM_SIZE		(256 * 512)
+#define RANDOM_BLOCK_SIZE	(512)
+#define RANDOM_PATTERN		(0X52414E44)
 /*
  * 2 copies dtb were stored in dtb area.
  * each is 256K.
@@ -123,10 +126,11 @@
  */
 #define MMC_DTB_NAME		"dtb"
 #define DTB_OFFSET		(SZ_1M * 4)
+#define DTB_ADDR		(RESERVED_GPT_OFFSET + DTB_OFFSET)
 #define DTB_BLK_SIZE		(512)
-#define DTB_BLK_CNT			(512)
-#define DTB_SIZE			(DTB_BLK_CNT * DTB_BLK_SIZE)
-#define DTB_COPIES			(2)
+#define DTB_BLK_CNT		(512)
+#define DTB_SIZE		(DTB_BLK_CNT * DTB_BLK_SIZE)
+#define DTB_COPIES		(2)
 #define DTB_AREA_BLK_CNT	(DTB_BLK_CNT * DTB_COPIES)
 #define EMMC_DTB_DEV		(1)
 #define EMMC_FASTBOOT_CONTEXT_DEV         (1)

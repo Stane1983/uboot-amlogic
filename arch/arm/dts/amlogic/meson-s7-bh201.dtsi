@@ -186,6 +186,7 @@
 	bus-width = <8>;
 	cap-mmc-highspeed;
 	mmc-hs200-1_8v;
+	mmc-hs400-enhanced-strobe;
 	max-frequency = <200000000>;
 	non-removable;
 	disable-wp;
@@ -200,6 +201,9 @@
 
 	hs2_co_phase = <2>;
 	hs2_to_phase = <0>;
+
+	hs4es_co_phase = <0>;
+	hs4es_tx_delay = <17>;
 
 	hw_reset = <&gpio GPIOB_9 GPIO_ACTIVE_HIGH>;
 

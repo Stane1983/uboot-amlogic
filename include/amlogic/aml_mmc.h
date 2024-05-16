@@ -17,13 +17,33 @@
 #define IN_PROGRESS   -20
 #define SWITCH_ERR    -21
 
-#define MESON_SD_EMMC_ADJ_IDX_LOG 0x20
-#define MESON_SD_EMMC_CLKTEST_LOG 0x24
-#define MESON_SD_EMMC_CLKTEST_OUT 0x28
-#define MESON_SD_EMMC_EYETEST_LOG 0x2C
-#define MESON_SD_EMMC_EYETEST_OUT0 0x30
-#define MESON_SD_EMMC_EYETEST_OUT1 0x34
-#define MESON_SD_EMMC_INTF3   0x38
+#define MESON_SD_EMMC_CALOUT		0x10
+#define MESON_SD_EMMC_ADJ_IDX_LOG	0x20
+#define MESON_SD_EMMC_CLKTEST_LOG	0x24
+#define   CLKTEST_TIMES_MASK		GENMASK(30, 0)
+#define   CLKTEST_DONE			BIT(31)
+#define MESON_SD_EMMC_CLKTEST_OUT	0x28
+#define MESON_SD_EMMC_EYETEST_LOG	0x2c
+#define   EYETEST_TIMES_MASK		GENMASK(30, 0)
+#define   EYETEST_DONE			BIT(31)
+#define MESON_SD_EMMC_EYETEST_OUT0	0x30
+#define MESON_SD_EMMC_EYETEST_OUT1	0x34
+#define MESON_SD_EMMC_INTF3		0x38
+#define   CLKTEST_EXP_MASK		GENMASK(4, 0)
+#define   CLKTEST_ON_M			BIT(5)
+#define   EYETEST_EXP_MASK		GENMASK(10, 6)
+#define   EYETEST_ON			BIT(11)
+#define   DS_SHT_M_MASK			GENMASK(17, 12)
+#define   DS_SHT_EXP_MASK		GENMASK(21, 18)
+#define   SD_INTF3			BIT(22)
+#define   EYETEST_SEL			BIT(26)
+#define   RESP_SEL			BIT(27)
+#define   CFG_RX_SEL			BIT(26)
+#define   CFG_RX_PN			BIT(27)
+#define   RESP_OLD			BIT(28)
+#define   RESP_PN			BIT(29)
+#define   RESP_DS			BIT(30)
+
 #define MMC_CMD23
 
 #define MMC_CMD_SET_WRITE_PROTECT       28
@@ -69,6 +89,9 @@
 #define AML_BL_BOOT1	(0x1 << 2)
 #define AML_BL_BOOT     (0x6)
 #define AML_BL_ALL		(0x7)
+
+/* delay_cell=70ps, 1ns/delay_cell */
+#define DELAY_CELL_COUNTS 14
 
 /** For actually partitions with mask 8 store into bootinfo
  * name: partition name.

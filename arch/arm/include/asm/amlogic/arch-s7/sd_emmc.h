@@ -16,18 +16,18 @@
 #define SD_EMMC_CLKSRC_DIV2		1000000000	/* 1 GHz */
 
 #define MESON_SD_EMMC_CLOCK		0x00
-#define CLK_MAX_DIV   GENMASK(5, 0)
-#define CLK_MAX_SRC   GENMASK(7, 6)
-#define CFG_DIV		0
-#define CFG_SRC		6
-#define CFG_CO_PHASE	8
-#define	CFG_TX_PHASE	10
-#define	CFG_RX_PHASE	12
-#define	CFG_SRAM_PD		14
-#define	CFG_TX_DELAY	16
-#define	CFG_RX_DELAY	22
-#define	CFG_ALWAYS_ON	28
-#define	CFG_IRQ_SDIO_SLEEP   29
+#define CLK_MAX_DIV			GENMASK(5, 0)
+#define CLK_MAX_SRC			GENMASK(7, 6)
+#define CFG_DIV				0
+#define CFG_SRC				6
+#define CFG_CO_PHASE			8
+#define	CFG_TX_PHASE			10
+#define	CFG_RX_PHASE			12
+#define	CFG_SRAM_PD			14
+#define	CFG_TX_DELAY			16
+#define	CFG_RX_DELAY			22
+#define	CFG_ALWAYS_ON			28
+#define	CFG_IRQ_SDIO_SLEEP		29
 #define CFG_IRQ_SDIO_SLEEP_DS		30
 
 #define MESON_SD_EMMC_DELAY1	0x4
@@ -55,16 +55,16 @@
 #define DLY_d9	24
 
 #define MESON_SD_EMMC_ADJUST	0xC
-#define CALI_SEL_MASK	GENMASK(11, 8)
-#define ADJ_DLY_MASK	GENMASK(21, 16)
-#define CFG_CALI_SEL	8
+#define CALI_SEL_MASK		GENMASK(11, 8)
+#define ADJ_DLY_MASK		GENMASK(21, 16)
+#define CFG_CALI_SEL		8
 #define CFG_CALI_EN		12
 #define CFG_ADJ_EN		13
-#define CFG_CALI_RISE	14
+#define CFG_CALI_RISE		14
 #define CFG_DS_EN		15
 #define CFG_ADJ_DLY		16
-#define CFG_ADJ_AUTO	22
-#define CFG_ADJ_INIT	23
+#define CFG_ADJ_AUTO		22
+#define CFG_ADJ_INIT		23
 
 #define MESON_SD_EMMC_START		0x40
 #define   CFG_DESC_INIT			BIT(0)
@@ -76,7 +76,7 @@
 #define   CFG_BUS_WIDTH_1		0
 #define   CFG_BUS_WIDTH_4		1
 #define   CFG_BUS_WIDTH_8		2
-#define   CFG_DDR				BIT(2)
+#define   CFG_DDR			BIT(2)
 #define   CFG_BL_LEN_MASK		GENMASK(7, 4)
 #define   CFG_BL_LEN_SHIFT		4
 #define   CFG_BL_LEN_512		(9 << 4)

@@ -40,6 +40,7 @@ struct meson_host {
 	struct gpio_desc gpio_reset;
 	char *blk_test;
 	char *desc_buf;
+	unsigned char timing;
 };
 
 struct sd_emmc_desc_info {
@@ -58,7 +59,6 @@ struct sd_emmc_desc_info {
 #define MAX_TUNING_RETRY	(4)
 #define CALI_BLK_CNT		(1024)
 #define REFIX_BLK_CNT		(100)
-#define CALI_PATTERN_ADDR   (0x13800)
 #define TUNING_NUM_PER_POINT 40
 #define MMC_MAX_DESC_NUM	512
 #define MAX_RESPONSE_BYTES	4

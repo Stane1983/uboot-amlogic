@@ -55,16 +55,16 @@
 #define DLY_d9	24
 
 #define MESON_SD_EMMC_ADJUST	0xC
-#define CALI_SEL_MASK	GENMASK(11, 8)
-#define ADJ_DLY_MASK	GENMASK(21, 16)
-#define CFG_CALI_SEL	8
+#define CALI_SEL_MASK		GENMASK(11, 8)
+#define ADJ_DLY_MASK		GENMASK(21, 16)
+#define CFG_CALI_SEL		8
 #define CFG_CALI_EN		12
 #define CFG_ADJ_EN		13
-#define CFG_CALI_RISE	14
+#define CFG_CALI_RISE		14
 #define CFG_DS_EN		15
 #define CFG_ADJ_DLY		16
-#define CFG_ADJ_AUTO	22
-#define CFG_ADJ_INIT	23
+#define CFG_ADJ_AUTO		22
+#define CFG_ADJ_INIT		23
 
 #define MESON_SD_EMMC_START		0x40
 #define   CFG_DESC_INIT			BIT(0)
