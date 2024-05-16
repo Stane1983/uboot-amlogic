@@ -63,34 +63,45 @@ static void get_and_save_the_combination_type(unsigned int *key_press_list, unsi
 		printf("%s invalid rcu combination key \n", PRINT_TAG);
 		return;
 	}
-	if (cnt == 5) {
-		if ((key_press_list[0] == KEY_VALUE_2) && (key_press_list[1] == KEY_VALUE_4) &&
-		(key_press_list[2] == KEY_VALUE_6) && (key_press_list[3] == KEY_VALUE_5) &&
-		(key_press_list[4] == KEY_VALUE_INFO)) {
+	if (cnt == 4) {
+		if ((key_press_list[0] == KEY_VALUE_1) && (key_press_list[1] == KEY_VALUE_5) &&
+		(key_press_list[2] == KEY_VALUE_9) && (key_press_list[3] == KEY_VALUE_0)) {
+			g_rcu_combinatoion_type = RCU_COMBINATION_FACTORY_RESET;
+			goto exit;
+		}
+	}
+	if (cnt == 6) {
+		if ((key_press_list[0] == KEY_VALUE_BACK) && (key_press_list[1] == KEY_VALUE_2) &&
+			(key_press_list[2] == KEY_VALUE_4) && (key_press_list[3] == KEY_VALUE_6) &&
+			(key_press_list[4] == KEY_VALUE_5) && (key_press_list[5] == KEY_VALUE_INFO)) {
 			g_rcu_combinatoion_type = RCU_COMBINATION_ADVANCED_SETUP_SCREEN;
 			goto exit;
 		}
 	}
-	if ((key_press_list[0] == KEY_VALUE_2) && (key_press_list[1] == KEY_VALUE_4) &&
-		(key_press_list[2] == KEY_VALUE_6) && (key_press_list[3] == KEY_VALUE_5)) {
+	if ((key_press_list[0] == KEY_VALUE_BACK) && (key_press_list[1] == KEY_VALUE_2) &&
+		(key_press_list[2] == KEY_VALUE_4) && (key_press_list[3] == KEY_VALUE_6) &&
+		(key_press_list[4] == KEY_VALUE_5)) {
 		g_rcu_combinatoion_type = RCU_COMBINATION_ADVANCED_TUNING_CODE_SCREEN;
 		goto exit;
 	}
 
-	if ((key_press_list[0] == KEY_VALUE_1) && (key_press_list[1] == KEY_VALUE_5) &&
-		(key_press_list[2] == KEY_VALUE_8) && (key_press_list[3] == KEY_VALUE_5)) {
+	if ((key_press_list[0] == KEY_VALUE_BACK) && (key_press_list[1] == KEY_VALUE_1) &&
+		(key_press_list[2] == KEY_VALUE_5) && (key_press_list[3] == KEY_VALUE_8) &&
+		(key_press_list[4] == KEY_VALUE_5)) {
 		g_rcu_combinatoion_type = RCU_COMBINATION_USB_UPGRADE;
 		goto exit;
 	}
 
-	if ((key_press_list[0] == KEY_VALUE_2) && (key_press_list[1] == KEY_VALUE_4) &&
-		(key_press_list[2] == KEY_VALUE_8) && (key_press_list[3] == KEY_VALUE_5)) {
+	if ((key_press_list[0] == KEY_VALUE_BACK) && (key_press_list[1] == KEY_VALUE_2) &&
+		(key_press_list[2] == KEY_VALUE_4) && (key_press_list[3] == KEY_VALUE_8) &&
+		(key_press_list[4] == KEY_VALUE_5)) {
 		g_rcu_combinatoion_type = RCU_COMBINATION_MANUAL_FORCED_DOWNLOAD;
 		goto exit;
 	}
 
-	if ((key_press_list[0] == KEY_VALUE_1) && (key_press_list[1] == KEY_VALUE_5) &&
-		(key_press_list[2] == KEY_VALUE_9) && (key_press_list[3] == KEY_VALUE_0)) {
+	if ((key_press_list[0] == KEY_VALUE_BACK) && (key_press_list[1] == KEY_VALUE_1) &&
+		(key_press_list[2] == KEY_VALUE_5) && (key_press_list[3] == KEY_VALUE_9) &&
+		(key_press_list[4] == KEY_VALUE_0)) {
 		g_rcu_combinatoion_type = RCU_COMBINATION_FACTORY_RESET;
 		goto exit;
 	}
@@ -104,7 +115,7 @@ exit:
  * Advanced Setup Screen		Back -> 2 -> 4 -> 6 -> 5 -> i
  * USB Upgrade					Back -> 1 -> 5 -> 8 -> 5
  * Manual Forced Download		Back -> 2 -> 4 -> 8 -> 5
- * Factory Reset				1 -> 5 -> 9 -> 0
+ * Factory Reset				 1   -> 5 -> 9 -> 0
  */
 static int rcu_combination_key_detect(void)
 {
@@ -114,106 +125,117 @@ static int rcu_combination_key_detect(void)
 	unsigned int key_value_cnt = 0;
 	unsigned int valid_cnt = 0;
 
+	/* key-1 */
 	{
-		/* wait press 'BACK' key */
+		/* wait press 'BACK' or '1' key */
 		memset(cmd_str, 0, sizeof(cmd_str));
-		snprintf(cmd_str, sizeof(cmd_str), "%s %d 0x%x", RCU_KEY_DETECT_CMD, RCU_KEY_DETECT_TIMEOUT, KEY_VALUE_BACK);
+		snprintf(cmd_str, sizeof(cmd_str), "%s %d 0x%x 0x%x", RCU_KEY_DETECT_CMD, RCU_KEY_DETECT_TIMEOUT, KEY_VALUE_BACK, KEY_VALUE_1);
 		printf("%s cmd_str: %s\n", PRINT_TAG, cmd_str);
 		run_command(cmd_str, 0);
 
 		/* Check if the BACK button has been pressed, otherwise return due to timeout */
 		key_value_list[0] = KEY_VALUE_BACK;
-		key_value_cnt = 1;
-		if (check_and_output_key_value(key_value_list, key_value_cnt, NULL) != 0) {
-			printf("%s keyvalue: Not pressing the BACK key\n", PRINT_TAG);
+		key_value_list[1] = KEY_VALUE_1;
+		key_value_cnt = 2;
+		if (check_and_output_key_value(key_value_list, key_value_cnt, &key_press_list[valid_cnt]) != 0) {
+			printf("%s keyvalue: Not pressing the 'BACK' or '1' key\n", PRINT_TAG);
 			return ZAPPER_ERROR;
 		}
+		valid_cnt++;
 	}
 
+	/* key-2 */
 	{
-		/* wait press '1' or '2' key */
+		/* wait press '1' or '2' or '5' key */
 		memset(cmd_str, 0, sizeof(cmd_str));
-		snprintf(cmd_str, sizeof(cmd_str), "%s %d 0x%x 0x%x", RCU_KEY_DETECT_CMD, RCU_KEY_DETECT_TIMEOUT, KEY_VALUE_1, KEY_VALUE_2);
+		snprintf(cmd_str, sizeof(cmd_str), "%s %d 0x%x 0x%x 0x%x", RCU_KEY_DETECT_CMD, RCU_KEY_DETECT_TIMEOUT, KEY_VALUE_1, KEY_VALUE_2, KEY_VALUE_5);
 		printf("%s cmd_str: %s\n", PRINT_TAG, cmd_str);
 		run_command(cmd_str, 0);
 
-		/* Check if the BACK button has been pressed, otherwise return due to timeout */
+		/* Check if the '1' or '2' or '5' button has been pressed, otherwise return due to timeout */
 		key_value_list[0] = KEY_VALUE_1;
 		key_value_list[1] = KEY_VALUE_2;
-		key_value_cnt = 2;
-		if (check_and_output_key_value(key_value_list, key_value_cnt, &key_press_list[0]) != 0) {
-			printf("%s keyvalue: Not pressing the '1' or '2' key\n", PRINT_TAG);
+		key_value_list[2] = KEY_VALUE_5;
+		key_value_cnt = 3;
+		if (check_and_output_key_value(key_value_list, key_value_cnt, &key_press_list[valid_cnt]) != 0) {
+			printf("%s keyvalue: Not pressing the '1' or '2' or '5' key\n", PRINT_TAG);
 			return ZAPPER_ERROR;
 		}
 		valid_cnt++;
 	}
 
+	/* key-3 */
 	{
-		/* wait press '4' or '5' key */
+		/* wait press '4' or '5' or '9' key */
 		memset(cmd_str, 0, sizeof(cmd_str));
-		snprintf(cmd_str, sizeof(cmd_str), "%s %d 0x%x 0x%x", RCU_KEY_DETECT_CMD, RCU_KEY_DETECT_TIMEOUT, KEY_VALUE_4, KEY_VALUE_5);
+		snprintf(cmd_str, sizeof(cmd_str), "%s %d 0x%x 0x%x 0x%x", RCU_KEY_DETECT_CMD, RCU_KEY_DETECT_TIMEOUT, KEY_VALUE_4, KEY_VALUE_5, KEY_VALUE_9);
 		printf("%s cmd_str: %s\n", PRINT_TAG, cmd_str);
 		run_command(cmd_str, 0);
 
-		/* Check if the BACK button has been pressed, otherwise return due to timeout */
+		/* Check if the '4' or '5' or '9' button has been pressed, otherwise return due to timeout */
 		key_value_list[0] = KEY_VALUE_4;
 		key_value_list[1] = KEY_VALUE_5;
-		key_value_cnt = 2;
-		if (check_and_output_key_value(key_value_list, key_value_cnt, &key_press_list[1]) != 0) {
-			printf("%s keyvalue: Not pressing the '4' or '5' key\n", PRINT_TAG);
-			return ZAPPER_ERROR;
-		}
-		valid_cnt++;
-	}
-
-	{
-		/* wait press '6' or '8' or '9' key */
-		memset(cmd_str, 0, sizeof(cmd_str));
-		snprintf(cmd_str, sizeof(cmd_str), "%s %d 0x%x 0x%x 0x%x", RCU_KEY_DETECT_CMD, RCU_KEY_DETECT_TIMEOUT, KEY_VALUE_6, KEY_VALUE_8, KEY_VALUE_9);
-		printf("%s cmd_str: %s\n", PRINT_TAG, cmd_str);
-		run_command(cmd_str, 0);
-
-		/* Check if the BACK button has been pressed, otherwise return due to timeout */
-		key_value_list[0] = KEY_VALUE_6;
-		key_value_list[1] = KEY_VALUE_8;
 		key_value_list[2] = KEY_VALUE_9;
 		key_value_cnt = 3;
-		if (check_and_output_key_value(key_value_list, key_value_cnt, &key_press_list[2]) != 0) {
-			printf("%s keyvalue: Not pressing the '6' or '8' or '9' key\n", PRINT_TAG);
+		if (check_and_output_key_value(key_value_list, key_value_cnt, &key_press_list[valid_cnt]) != 0) {
+			printf("%s keyvalue: Not pressing the '4' or '5' or '9' key\n", PRINT_TAG);
 			return ZAPPER_ERROR;
 		}
 		valid_cnt++;
 	}
 
+	/* key-4 */
 	{
-		/* wait press '0' or '5' key */
+		/* wait press '6' or '8' or '0' key */
 		memset(cmd_str, 0, sizeof(cmd_str));
-		snprintf(cmd_str, sizeof(cmd_str), "%s %d 0x%x 0x%x", RCU_KEY_DETECT_CMD, RCU_KEY_DETECT_TIMEOUT, KEY_VALUE_0, KEY_VALUE_5);
+		snprintf(cmd_str, sizeof(cmd_str), "%s %d 0x%x 0x%x 0x%x", RCU_KEY_DETECT_CMD, RCU_KEY_DETECT_TIMEOUT, KEY_VALUE_6, KEY_VALUE_8, KEY_VALUE_0);
 		printf("%s cmd_str: %s\n", PRINT_TAG, cmd_str);
 		run_command(cmd_str, 0);
 
-		/* Check if the BACK button has been pressed, otherwise return due to timeout */
-		key_value_list[0] = KEY_VALUE_0;
-		key_value_list[1] = KEY_VALUE_5;
-		key_value_cnt = 2;
-		if (check_and_output_key_value(key_value_list, key_value_cnt, &key_press_list[3]) != 0) {
-			printf("%s keyvalue: Not pressing the '0' or '5' key\n", PRINT_TAG);
+		/* Check if the '6' or '8' or '0' button has been pressed, otherwise return due to timeout */
+		key_value_list[0] = KEY_VALUE_6;
+		key_value_list[1] = KEY_VALUE_8;
+		key_value_list[2] = KEY_VALUE_0;
+		key_value_cnt = 3;
+		if (check_and_output_key_value(key_value_list, key_value_cnt, &key_press_list[valid_cnt]) != 0) {
+			printf("%s keyvalue: Not pressing the '6' or '8' or '0' key\n", PRINT_TAG);
 			return ZAPPER_ERROR;
 		}
 		valid_cnt++;
 	}
 
-	{
+	/* key-5 */
+	/* if the fourth key is not equal to KEY_VALUE_0, then need wait next key */
+	if ((valid_cnt == 4) && (key_press_list[3] != KEY_VALUE_0)) {
+		/* wait press '5' key */
+		memset(cmd_str, 0, sizeof(cmd_str));
+		snprintf(cmd_str, sizeof(cmd_str), "%s %d 0x%x", RCU_KEY_DETECT_CMD, RCU_KEY_DETECT_TIMEOUT, KEY_VALUE_5);
+		printf("%s cmd_str: %s\n", PRINT_TAG, cmd_str);
+		run_command(cmd_str, 0);
+
+		/* Check if the '5' button has been pressed, otherwise return due to timeout */
+		key_value_list[0] = KEY_VALUE_5;
+		key_value_cnt = 1;
+		if (check_and_output_key_value(key_value_list, key_value_cnt, &key_press_list[valid_cnt]) != 0) {
+			printf("%s keyvalue: Not pressing the '5' key\n", PRINT_TAG);
+		} else {
+			valid_cnt++;
+		}
+	}
+
+	/* key-6 */
+	/* if the fifth key is equal to KEY_VALUE_5, then need wait next key */
+	if ((valid_cnt == 5) && (key_press_list[4] == KEY_VALUE_5)) {
 		/* wait press 'i' key */
 		memset(cmd_str, 0, sizeof(cmd_str));
 		snprintf(cmd_str, sizeof(cmd_str), "%s %d 0x%x", RCU_KEY_DETECT_CMD, RCU_KEY_DETECT_TIMEOUT, KEY_VALUE_INFO);
 		printf("%s cmd_str: %s\n", PRINT_TAG, cmd_str);
 		run_command(cmd_str, 0);
 
-		/* Check if the BACK button has been pressed, otherwise return due to timeout */
+		/* Check if the INFO button has been pressed, otherwise return due to timeout */
 		key_value_list[0] = KEY_VALUE_INFO;
 		key_value_cnt = 1;
-		if (check_and_output_key_value(key_value_list, key_value_cnt, &key_press_list[4]) != 0) {
+		if (check_and_output_key_value(key_value_list, key_value_cnt, &key_press_list[valid_cnt]) != 0) {
 			printf("%s keyvalue: Not pressing the 'INFO' key\n", PRINT_TAG);
 		} else {
 			valid_cnt++;
