@@ -184,9 +184,9 @@
 #define BOOTLOADER_DDR_FIP_SIZE			0//0x40000
 
 /* mtd device rsv board config */
-#define MTD_RSV_START_BLOCK			16
+#define MTD_RSV_START_BLOCK			8
 #define MTD_RSV_BLOCK_CNT			24
-#define MTD_RSV_GAP_BLOCK_CNT			4
+#define MTD_RSV_GAP_BLOCK_CNT			0
 #define MTD_RSV_BBT_BLOCK_CNT			4
 #define MTD_RSV_ENV_BLOCK_CNT			4
 #define MTD_RSV_KEY_BLOCK_CNT			8
@@ -309,6 +309,8 @@
 #define CONFIG_FULL_RAMDUMP
 
 #define CONFIG_INITRD_FDT_HIGH_ADDR
+
+#define BOARD_BOOT_LAYOUT_DISCRETE_BL2 1
 
 #endif
 

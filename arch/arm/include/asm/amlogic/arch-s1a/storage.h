@@ -43,4 +43,5 @@
 
 #define INFO_PAGE_FORCE_ECC	1
 
+#define BOOT_TOTAL_PAGES	512
 #endif /* _PLAT_STORAGE_H_ */

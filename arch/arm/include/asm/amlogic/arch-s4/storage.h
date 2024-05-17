@@ -40,4 +40,5 @@
 #define NAND_ECC_ONLY_BCH8_1K
 #endif
 
+#define BOOT_TOTAL_PAGES	1024
 #endif /* _PLAT_STORAGE_H_ */

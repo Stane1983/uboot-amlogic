@@ -16,8 +16,6 @@
 /* storage plat data */
 #include <asm/amlogic/arch/storage.h>
 
-extern struct storage_startup_parameter g_ssp;
-
 #define RSV_INVALID	140	/* rsv invalid error */
 
 #define DISPROTECT_KEY			BIT(0)
@@ -50,7 +48,35 @@ struct nand_startup_parameter {
 	int setup_data;
 	/* */
 	int page0_disable;
+	uint32_t reserve[5];
 };
+
+union storage_independent_parameter {
+	struct nand_startup_parameter nsp;
+};
+
+struct storage_boot_entry {
+	uint32_t offset;
+	uint32_t size;
+};
+
+enum BOOT_LAYOUT_VERS {
+	BOOT_DISCRETE_DEFAULT = 0,
+	BOOT_DISCRETE_ALL,
+	BOOT_DISCRETE_BL2,
+	BOOT_DISCRETE_MAX,
+};
+
+struct storage_startup_parameter {
+	uint8_t boot_device;
+	uint8_t	boot_seq;
+	uint8_t	boot_backups;
+	unsigned char boot_layout;
+	struct storage_boot_entry boot_entry[MAX_BOOT_AREA_ENTRIES];
+	union storage_independent_parameter sip;
+	unsigned char boot_layout_compat;
+};
+extern struct storage_startup_parameter g_ssp;
 
 typedef struct boot_area_entry {
     /* name */
@@ -65,39 +91,6 @@ struct boot_layout {
     boot_area_entry_t *boot_entry;
 };
 
-struct emmc_startup_parameter {
-	//sd_emmc_setup_t setup;
-};
-
-struct spi_nand_startup_parameter {
-	uint32_t pagesize;
-	uint32_t pages_per_eraseblock;
-	uint32_t eraseblocks_per_lun;
-	uint32_t planes_per_lun;
-	uint32_t luns_per_target;
-	uint32_t ntargets;
-	int layout_reserve_size;
-};
-
-struct storage_boot_entry {
-	uint32_t offset;
-	uint32_t size;
-};
-
-union storage_independent_parameter {
-	struct nand_startup_parameter nsp;
-	struct emmc_startup_parameter esp;
-	struct spi_nand_startup_parameter snasp;
-};
-
-struct storage_startup_parameter {
-	uint8_t boot_device;
-	uint8_t	boot_seq;
-	uint8_t	boot_backups;
-	uint8_t reserved;
-	struct storage_boot_entry boot_entry[MAX_BOOT_AREA_ENTRIES];
-	union storage_independent_parameter sip;
-};
 
 struct storage_info_t {
 	u8 name[32];
@@ -171,6 +164,18 @@ struct device_node_t {
 #define STORE_SCRUB			BIT(0)
 #define STORE_ERASE_DATA		BIT(1)
 #define STORE_ERASE_RSV			BIT(2)
+
+static inline bool store_boot_layout_is_discrete_all(void)
+{
+	return g_ssp.boot_layout == BOOT_DISCRETE_ALL;
+}
+
+static inline bool store_boot_layout_is_discrete_bl2(void)
+{
+	return (g_ssp.boot_layout == BOOT_DISCRETE_BL2 ||
+			g_ssp.boot_layout_compat == BOOT_DISCRETE_BL2);
+}
+
 /**
  * @usage: init all the valid storage device
  *
@@ -345,9 +350,9 @@ u64 store_boot_copy_size(const char *name);
 /**
  * @usage: read the [name] data from storage device
  *
- * @name: only can be "bl2" or "tpl"/"fip" in discrete mode
- *        be "bootloader" in compact mode
- * @copy: which copy you want read
+ * @name: fixed"bootloader"
+ * @copy: which copy you want read, if %0xff store_boot_read() would check if
+ *			the valid copy number of bootloader is meet with the minimum
  * @size: the amount of bytes to read
  * @buf: pointer of the target buffer
  *
@@ -360,8 +365,7 @@ int store_boot_read(const char *name, u8 copy, size_t size, void *buf);
 /**
  * @usage: write the [name] data into storage device
  *
- * @name: only can be "bl2" or "tpl"/"fip" in discrete mode
- *        be "bootloader" in compact mode
+ * @name: fixed "bootloader"
  * @copy: which copy you want write,
  *        it will write to all copies when copy = BOOT_OPS_ALL
  * @size: the amount of bytes to write
@@ -489,5 +493,7 @@ int store_gpt_erase(void);
 
 int check_valid_dts(unsigned char *buffer);
 int store_boot_copy_enable(int index);
+
+u8 mtd_store_boot_copy_num(const char *part_name);
 
 #endif/* __STORAGE_H__ */

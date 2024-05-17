@@ -13,7 +13,6 @@
 
 #ifndef __AMLMTD_H_
 #define __AMLMTD_H_
-#define BOOT_TOTAL_PAGES			1024
 
 #define BOOT_LOADER			"bootloader"
 #define BOOT_BL2			"bl2"

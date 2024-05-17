@@ -459,7 +459,6 @@ static int mtd_store_get_offset(const char *partname, loff_t *retoff, loff_t off
 #if defined(CONFIG_CMD_MTDPARTS)
 	struct mtd_device *dev;
 	struct part_info *part;
-	char tmp_part_name[20] = {0};
 	u8 pnum;
 	cpu_id_t cpu_id = get_cpu_id();
 	enum boot_type_e medium_type = store_get_type();
@@ -471,22 +470,14 @@ static int mtd_store_get_offset(const char *partname, loff_t *retoff, loff_t off
 
 #if defined(CONFIG_CMD_MTDPARTS)
 	else if (!mtdparts_init()) {
-		strncpy(tmp_part_name, partname,  min_t(int, strlen(partname), 20));
-		if ((store_get_device_bootloader_mode() == DISCRETE_BOOTLOADER) ||
-		    (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER)) {
-			if (!strcmp(partname, BOOT_BL2) ||
-			    !strcmp(partname, BOOT_SPL))
-				strncpy(tmp_part_name, BOOT_LOADER, strlen(BOOT_LOADER));
-		}
-		ret = find_dev_and_part(tmp_part_name, &dev, &pnum, &part);
+		ret = find_dev_and_part(partname, &dev, &pnum, &part);
 		if (ret) {
 			pr_info("%s %d can not find part:%s\n",
-				__func__, __LINE__, tmp_part_name);
+				__func__, __LINE__, partname);
 			return -EINVAL;
 		}
 
-		if ((BOOT_SNOR == medium_type) && (!strcmp(BOOT_BL2, tmp_part_name) ||
-			!strcmp(BOOT_LOADER, tmp_part_name)) &&
+		if ((BOOT_SNOR == medium_type) && (!strcmp(BOOT_BL2, partname)) &&
 			(cpu_id.family_id == MESON_CPU_MAJOR_ID_A4 ||
 			cpu_id.family_id == MESON_CPU_MAJOR_ID_S1A ||
 			cpu_id.family_id == MESON_CPU_MAJOR_ID_S7 ||
@@ -532,7 +523,6 @@ static int mtd_store_name(int idx, char *partname)
 static u64 mtd_store_size(const char *part_name)
 {
 	struct mtd_info *mtd = mtd_store_get(1);
-	char tmp_part_name[20] = {0};
 	u8 pnum;
 	struct mtd_device *dev;
 	struct part_info *part;
@@ -542,20 +532,13 @@ static u64 mtd_store_size(const char *part_name)
 		return mtd->size;
 
 	if (!mtdparts_init()) {
-		strncpy(tmp_part_name, part_name, min_t(int, strlen(part_name), 20));
-		if ((store_get_device_bootloader_mode() == DISCRETE_BOOTLOADER) ||
-		   (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER)) {
-			if (!strcmp(part_name, BOOT_BL2) ||
-			    !strcmp(part_name, BOOT_SPL))
-				strncpy(tmp_part_name, BOOT_LOADER, strlen(BOOT_LOADER));
-		}
-		ret = find_dev_and_part(tmp_part_name,
+		ret = find_dev_and_part(part_name,
 					&dev,
 					&pnum,
 					&part);
 		if (ret) {
 			pr_info("%s %d can not find part:%s\n",
-				__func__, __LINE__, tmp_part_name);
+				__func__, __LINE__, part_name);
 			return 0;
 		}
 		return mtd_store_logic_part_size(mtd, part);
@@ -742,18 +725,15 @@ static int mtd_store_erase(const char *part_name,
 		mtd = mtd_store_get(1);
 		if (flag & STORE_ERASE_DATA) {
 			printf("!!!warn: erase all data!!!\n");
-			if (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER) {
-				ret = mtd_store_get_offset(BOOT_DEVFIP, &offset, 0);
-				if (ret)
-					return ret;
-				offset += mtd_store_size(BOOT_DEVFIP);
-			} else if (store_get_device_bootloader_mode() == DISCRETE_BOOTLOADER) {
-				ret = mtd_store_get_offset(BOOT_TPL, &offset, 0);
-				if (ret)
-					return ret;
+			if (mtd_store_get_offset(BOOT_TPL, &offset, 0)) {
+				if (mtd_store_get_offset(BOOT_DEVFIP, &offset, 0)) {
+					offset = mtd_store_size(BOOT_LOADER);
+					offset += mtd_store_size(BOOT_LOADER);
+				} else {
+					offset += mtd_store_size(BOOT_DEVFIP);
+				}
+			} else {
 				offset += mtd_store_size(BOOT_TPL);
-			} else { /*spinor*/
-				offset = mtd_store_size(BOOT_LOADER);
 			}
 			size = mtd->size - offset;
 		} else if (flag & STORE_ERASE_RSV) {
@@ -785,7 +765,7 @@ static int mtd_store_erase(const char *part_name,
 	return _mtd_store_erase(mtd, offset, size, scrub_flag, !part_name);
 }
 
-static u8 mtd_store_boot_copy_num(const char *part_name)
+u8 mtd_store_boot_copy_num(const char *part_name)
 {
 	enum boot_type_e medium_type = store_get_type();
 
@@ -806,15 +786,10 @@ static u8 mtd_store_boot_copy_num(const char *part_name)
 		} else
 			return CONFIG_BL2_COPY_NUM;
 	} else if (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER) {
-		if (!strcmp(part_name, BOOT_DEVFIP) ||
-			!strcmp(part_name, BOOT_TPL) ||
-			!strcmp(part_name, BOOT_FIP)) {
-			if (BOOT_NAND_MTD == medium_type ||
-				BOOT_SNAND == medium_type)
-				return CONFIG_NAND_TPL_COPY_NUM;
-			if (medium_type == BOOT_SNOR)
-				return CONFIG_NOR_TPL_COPY_NUM;
-		} else
+		if (!strcmp(part_name, BOOT_BL2) ||
+			!strcmp(part_name, BOOT_SPL))
+				return CONFIG_BL2_COPY_NUM;
+		else
 			return g_ssp.boot_backups;
 	} else {
 		if (!strcmp(part_name, BOOT_LOADER))
@@ -909,9 +884,9 @@ static u64 mtd_store_boot_copy_size(const char *part_name)
 			for (i = 0; i < boot_count; i++, boot_entry++)
 				size += g_ssp.boot_entry[i].size;
 			return size;
-		} else
+		} else {
 			return 0;
-
+		}
 	} else {
 		u8 num;
 
@@ -966,10 +941,11 @@ static int mtd_store_boot_read(const char *part_name,
 			       u8 cpy, size_t size, void *dest)
 {
 	struct mtd_info *mtd;
-	loff_t offset, limit;
+	loff_t offset, limit, endoff = 0;
 	int ret = 1;
 	size_t retlen = 0, len = size;
-	u8 num = 0;
+	u8 num = 0, good_num = 0, good_threshold =
+	DIV_ROUND_UP(mtd_store_boot_copy_num(BOOT_BL2) * 3, 4);
 	u64 size_per_copy = 0;
 
 	if (!part_name) {
@@ -989,36 +965,57 @@ static int mtd_store_boot_read(const char *part_name,
 	size_per_copy = mtd_store_boot_copy_size(part_name);
 	if (size_per_copy == 0)
 		return -ENXIO;
-	if (cpy >= num) {
-		pr_info("error: read cpy:0x%x >= num: 0x%x\
- please input again\n",
-			cpy, num);
-		return -ENXIO;
-	}
-	offset += (cpy * size_per_copy);
-	limit = offset + size_per_copy;
-	#ifdef CONFIG_MTD_SPI_NAND
-	enum boot_type_e medium_type = store_get_type();
 
-	if (medium_type == BOOT_SNAND &&
-	    (!strcmp(part_name, BOOT_BL2) ||
-	     !strcmp(part_name, BOOT_SPL))) {
-		ret = mtd_store_spinand_bl2_read(offset, size_per_copy, (u_char *)dest, mtd);
-		if (ret)
-			return -EIO;
+	if (cpy != BOOT_OPS_ALL) {
+		if (cpy >= num) {
+			pr_info("error: read cpy:0x%x >= num: 0x%x\
+					please input again\n",
+			cpy, num);
+			return -ENXIO;
+		}
+		offset += (cpy * size_per_copy);
+		endoff = offset + size_per_copy;
 	} else {
-	#else
-	{
-	#endif
+		endoff = offset + num * size_per_copy;
+	}
+
+	for (; offset < endoff; offset += size_per_copy) {
+		pr_info("read %lx bytes from %llx\n",
+			size, offset);
+		limit = offset + size_per_copy;
+		#ifdef CONFIG_MTD_SPI_NAND
+		enum boot_type_e medium_type = store_get_type();
+
+		if (medium_type == BOOT_SNAND &&
+				(!strcmp(part_name, BOOT_BL2) ||
+				 !strcmp(part_name, BOOT_SPL))) {
+			ret = mtd_store_spinand_bl2_read(offset, size_per_copy, (u_char *)dest, mtd);
+			if (ret)
+				continue;
+			good_num++;
+
+			continue;
+		}
+		#endif
+
 		ret = mtd_store_read_skip_bad(mtd,
-						  offset,
-						  &len,
-						  &retlen,
-						  limit,
-						  (u_char *)dest);
+				offset,
+				&len,
+				&retlen,
+				limit,
+				(u_char *)dest);
 		if (ret)
 			return -EIO;
 	}
+
+	if (!strcmp(part_name, BOOT_BL2) &&
+		cpy == BOOT_OPS_ALL &&
+		good_num < good_threshold) {
+		pr_err("valid bl2 copy num %d is less than threshold %d\n",
+				good_num, good_threshold);
+		return -EIO;
+	}
+
 	return ret;
 }
 

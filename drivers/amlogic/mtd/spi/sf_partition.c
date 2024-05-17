@@ -56,7 +56,7 @@ static int _spinor_add_partitions(struct mtd_info *mtd,
 		temp[BOOT_AREA_BB1ST].name = BOOT_LOADER;
 		temp[BOOT_AREA_BB1ST].offset = general_boot_part_entry[BOOT_AREA_BB1ST].offset;
 		temp[BOOT_AREA_BB1ST].size = general_boot_part_entry[BOOT_AREA_BB1ST].size *
-					     g_ssp.boot_backups;
+					     mtd_store_boot_copy_num(BOOT_BL2);
 		if (temp[BOOT_AREA_BB1ST].size % SPINOR_ALIGNED_SIZE)
 			WARN_ON(1);
 

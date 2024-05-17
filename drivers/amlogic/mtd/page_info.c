@@ -2,7 +2,6 @@
 /*
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
-
 #include <amlogic/page_info.h>
 #include <amlogic/storage.h>
 #include <nand.h>
@@ -14,6 +13,7 @@ extern unsigned char disable_host_ecc;
 #endif
 
 extern struct mtd_info *mtd_store_get(int dev);
+extern struct storage_startup_parameter g_ssp;
 
 unsigned char page_info_get_data_lanes_mode(void)
 {
@@ -175,7 +175,7 @@ void page_info_initialize(unsigned int default_n2m,
 	page_info->dev_cfg1.dummy_cycles = 0xFF;
 }
 
-static int page_info_version_init(void)
+int page_info_version_init(unsigned char boot_layout)
 {
 	cpu_id_t cpu_id = get_cpu_id();
 
@@ -200,27 +200,45 @@ static int page_info_version_init(void)
 		page_info->version = PAGE_INFO_V3;
 		break;
 	}
+	page_info->version |= (boot_layout << 4);
 
-	return page_info->version;
+	return page_info->version & 0x0F;
 }
-void page_info_update_checksum(struct boot_info *page_info)
-{
-	unsigned int checksum = 0, i;
-	unsigned char *temp = (unsigned char *)page_info;
 
-	page_info->checksum = 0;
-	for (i = 0; i < sizeof(struct boot_info); i++)
-		checksum += temp[i];
-	page_info->checksum = checksum;
-	printf("page info updated checksum : 0x%x\n", checksum);
+static void apply_page_info_bbt(struct mtd_info *mtd)
+{
+	struct nand_device *nand = mtd_to_nanddev(mtd);
+	struct spinand_device *spinand = nand_to_spinand(nand);
+	unsigned short *page_info_bbt = page_info_get_bbt();
+	int bad_count = 0;
+	int i = (BOOT_TOTAL_PAGES >> (mtd->erasesize_shift - mtd->writesize_shift)) +
+		MTD_RSV_BLOCK_CNT;
+
+	for (; bad_count < MAX_F_BAD_BLOCK_NUM &&
+			i < mtd->size >> mtd->erasesize_shift; i++) {
+		if (spinand->bbt[i] == 0)
+			continue;
+		page_info_bbt[bad_count++] = i;
+	}
+}
+
+static unsigned int do_checksum(unsigned char *buf, int len)
+{
+	int i, checksum = 0;
+
+	for (i = 0; i < len; i++)
+		checksum += buf[i];
+
+	return checksum;
 }
 
 void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 					    struct udevice *udev)
 {
 	unsigned char ecc_steps;
-	unsigned int i;
+	unsigned int i, check_len = sizeof(struct boot_info);
 	enum PAGE_INFO_V page_info_ver;
+	struct storage_startup_parameter *ssp = &g_ssp;
 
 #ifdef CONFIG_MTD_SPI_NAND
 	struct nand_device *dev = mtd_to_nanddev(mtd);
@@ -248,7 +266,7 @@ void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 	}
 #endif
 
-	page_info_ver = page_info_version_init();
+	page_info_ver = page_info_version_init(ssp->boot_layout);
 	memcpy(page_info->magic, BOOTINFO_MAGIC, strlen(BOOTINFO_MAGIC));
 	page_info->dev_cfg0.page_size = mtd->writesize;
 
@@ -281,6 +299,8 @@ void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 				printf("ddr param is invalid!\n");
 			}
 			#endif
+			/* bootinfo magic + version + reserved + dev_cfg0 */
+			check_len = 20;
 		}
 #endif
 		i = mtd->erasesize_shift + mtd->writesize_shift;
@@ -288,7 +308,7 @@ void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 	}
 
 	if (page_info_ver != PAGE_INFO_V3)
-		goto _cal_sum;
+		goto _do_final;
 
 	ecc_steps = mtd->writesize >> 9;
 	page_info->host_cfg.n2m_cmd = (DEFAULT_ECC_MODE & (~0x3F)) | ecc_steps;
@@ -315,9 +335,14 @@ void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 		page_info->dev_cfg1.block_num_in_chip =
 			(mtd_store_get(1))->size / mtd->erasesize;
 #endif
+	page_info->dev_cfg1.enable_bbt = 1;
 
-_cal_sum:
-	page_info_update_checksum(page_info);
+_do_final:
+	apply_page_info_bbt(mtd);
+
+	page_info->checksum = 0;
+	page_info->checksum = do_checksum((unsigned char *)page_info, check_len);
+	printf("page info updated checksum : 0x%x\n", page_info->checksum);
 }
 
 #ifdef __PXP_DEBUG__
@@ -367,6 +392,9 @@ static void page_info_dump_info(void)
 	pr_info("is_gang_programer: %d\n", page_info->dev_cfg1.is_gang_programer);
 	pr_info("xor_bbt_start_block: 0x%x\n", page_info->dev_cfg1.xor_bbt_start_block);
 	pr_info("block_num_in_chip: %d\n", page_info->dev_cfg1.block_num_in_chip);
+	pr_info("version: 0x%x\n", page_info->version);
+	pr_info("layout_method: 0x%x\n", page_info->boot_layout.layout_method);
+	pr_info("boot size: 0x%x\n", page_info->boot_layout.boot_size);
 }
 #endif
 
@@ -395,11 +423,11 @@ bool page_info_is_page(int page)
 	enum PAGE_INFO_V page_info_ver;
 	bool is_info_page = 0;
 
-	page_info_ver = page_info_version_init();
+	page_info_ver = page_info->version & 0x0F;
 	if (page_info_ver == PAGE_INFO_V1)
-		is_info_page = page % 128 == BL2_SIZE / 2048 && page < 1024;
+		is_info_page = page % 128 == BL2_SIZE / 2048 && page < BOOT_TOTAL_PAGES;
 	else
-		is_info_page = (!(page % 128) && (page < 1024));
+		is_info_page = (!(page % 128) && (page < BOOT_TOTAL_PAGES));
 
 #ifdef CONFIG_AML_SPI_NFC
 	if (infopage_force_hostecc) {

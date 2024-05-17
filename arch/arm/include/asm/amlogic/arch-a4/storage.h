@@ -42,4 +42,5 @@
 
 #define POC_DIS_NFC_ECC		BIT(7)
 
+#define BOOT_TOTAL_PAGES	512
 #endif /* _PLAT_STORAGE_H_ */

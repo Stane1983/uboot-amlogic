@@ -18,9 +18,9 @@ extern int info_disprotect;
 static struct meson_rsv_handler_t *rsv_handler;
 
 struct rsv_info rsv_board_info[] = {
-	INFO_DATA(BBT_NAND_MAGIC, MTD_RSV_BBT_BLOCK_CNT, 0),
 	INFO_DATA(ENV_NAND_MAGIC, MTD_RSV_ENV_BLOCK_CNT, CONFIG_ENV_SIZE),
 	INFO_DATA(KEY_NAND_MAGIC, MTD_RSV_KEY_BLOCK_CNT, MTD_RSV_KEY_SIZE),
+	INFO_DATA(BBT_NAND_MAGIC, MTD_RSV_BBT_BLOCK_CNT, 0),
 	INFO_DATA(DTB_NAND_MAGIC, MTD_RSV_DTB_BLOCK_CNT, MTD_RSV_DTB_SIZE),
 	INFO_DATA(DDR_NAND_MAGIC, MTD_RSV_DDR_BLOCK_CNT, MTD_RSV_DDR_SIZE),
 };
@@ -630,19 +630,17 @@ int meson_rsv_check(struct meson_rsv_info_t *rsv_info)
 	return ret;
 }
 
-static void aml_nand_rsv_info_ptr_fill(struct mtd_info *mtd,
+static void aml_nand_rsv_info_ptr_fill(struct rsv_info *rsv_info,
 				       struct meson_rsv_handler_t *handler)
 {
-	if (rsv_board_info[BBT_INFO_INDEX].rsv_info)
-		handler->bbt = rsv_board_info[BBT_INFO_INDEX].rsv_info;
-	if (rsv_board_info[ENV_INFO_INDEX].rsv_info)
-		handler->env = rsv_board_info[ENV_INFO_INDEX].rsv_info;
-	if (rsv_board_info[KEY_INFO_INDEX].rsv_info)
-		handler->key = rsv_board_info[KEY_INFO_INDEX].rsv_info;
-	if (rsv_board_info[DTB_INFO_INDEX].rsv_info)
-		handler->dtb = rsv_board_info[DTB_INFO_INDEX].rsv_info;
-	if (rsv_board_info[DDR_INFO_INDEX].rsv_info)
-		handler->ddr_para = rsv_board_info[DDR_INFO_INDEX].rsv_info;
+	if (!strcmp(rsv_info->name, BBT_NAND_MAGIC))
+		handler->bbt = rsv_info->rsv_info;
+	else if (!strcmp(rsv_info->name, ENV_NAND_MAGIC))
+		handler->env = rsv_info->rsv_info;
+	else if (!strcmp(rsv_info->name, KEY_NAND_MAGIC))
+		handler->key = rsv_info->rsv_info;
+	else if (!strcmp(rsv_info->name, DTB_NAND_MAGIC))
+		handler->dtb = rsv_info->rsv_info;
 }
 
 static int aml_nand_rsv_info_alloc_init(struct mtd_info *mtd,
@@ -717,9 +715,9 @@ int meson_rsv_init(struct mtd_info *mtd,
 			       rsv_board_info[i].rsv_info->size);
 		}
 		vernier += rsv_board_info[i].blocks;
+		aml_nand_rsv_info_ptr_fill(&rsv_board_info[i], handler);
 	}
 
-	aml_nand_rsv_info_ptr_fill(mtd, handler);
 	if ((vernier - start) > MTD_RSV_BLOCK_CNT) {
 		pr_err("ERROR: total blk number is over the limit\n");
 		ret = -ENOMEM;

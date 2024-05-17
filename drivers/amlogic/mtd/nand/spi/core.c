@@ -1211,111 +1211,132 @@ static void spinand_cleanup(struct spinand_device *spinand)
 }
 
 #ifdef CONFIG_AML_MTDPART
-/* The size of the partition must be block aligned */
-extern struct boot_layout general_boot_layout;
-extern struct storage_startup_parameter g_ssp;
-int spinand_add_partitions(struct mtd_info *mtd,
-				  const struct mtd_partition *parts,
-				  int nbparts)
+#ifndef CONFIG_NOT_SKIP_BAD_BLOCK
+void spinand_get_logic_part_info(struct mtd_info *mtd,
+						struct mtd_partition *part)
 {
-	int part_num = 0, i = 0, ret = 1, j = 0;
-	struct mtd_partition *temp, *parts_nm;
-	boot_area_entry_t *boot_entry = general_boot_layout.boot_entry;
-	loff_t off;
+	loff_t offset = part->offset, end = part->offset + part->size;
+	loff_t append_size = 0;
 
-	if (store_get_device_bootloader_mode() == DISCRETE_BOOTLOADER) {
-		part_num = nbparts + 2;
-	} else if (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER) {
-		part_num = nbparts;
-		for (i = BOOT_AREA_BB1ST; i <= BOOT_AREA_DEVFIP; i++)
-			if (boot_entry[i].size)
-				part_num++;
-	} else {
-		part_num = nbparts + 1;
-	}
-	temp = kzalloc(sizeof(*temp) * part_num, GFP_KERNEL);
-	memset(temp, 0, sizeof(*temp) * part_num);
-	temp[0].name = BOOT_LOADER;
-	temp[0].offset = 0;
-	temp[0].size = BOOT_TOTAL_PAGES * mtd->writesize;
-	if (temp[0].size % mtd->erasesize)
-		WARN_ON(1);
-	off = temp[0].size + MTD_RSV_BLOCK_CNT * mtd->erasesize;
-
-	if (store_get_device_bootloader_mode() == DISCRETE_BOOTLOADER) {
-		temp[1].name = BOOT_TPL;
-		temp[1].offset = off;
-		temp[1].size = CONFIG_TPL_SIZE_PER_COPY * CONFIG_NAND_TPL_COPY_NUM;
-		if (temp[1].size % mtd->erasesize)
-			WARN_ON(1);
-		parts_nm = &temp[2];
-		off += temp[1].size;
-	} else if (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER) {
-		for (i = BOOT_AREA_BL2E, j = BOOT_AREA_BL2E; i <= BOOT_AREA_DEVFIP; i++) {
-			if (boot_entry[i].size) {
-				temp[j].name = boot_entry[i].name;
-				temp[j].offset = boot_entry[i].offset;
-				if (i == BOOT_AREA_DEVFIP)
-					temp[j].size = boot_entry[i].size
-					* CONFIG_NAND_TPL_COPY_NUM;
-				else
-					temp[j].size = boot_entry[i].size
-					* g_ssp.boot_backups;
-				if (temp[j++].size % mtd->erasesize)
-					WARN_ON(1);
-			}
+	do {
+		if (mtd->_block_isbad(mtd, offset) == NAND_FACTORY_BAD) {
+			pr_err("%s %d found bad block in 0x%llx\n",
+					__func__, __LINE__, offset);
+			end += mtd->erasesize;
+			append_size += mtd->erasesize;
 		}
-		off = boot_entry[BOOT_AREA_DEVFIP].offset + boot_entry[BOOT_AREA_DEVFIP].size
-			* CONFIG_NAND_TPL_COPY_NUM;
-		parts_nm = &temp[part_num - nbparts];
-	} else
-		parts_nm = &temp[1];
+		offset += mtd->erasesize;
+	} while (offset < end && offset < mtd->size);
+	part->size += append_size;
+}
+#else
+void spinand_get_logic_part_info(struct mtd_info *mtd,
+	struct mtd_partition *part) { }
+#endif
+
+const char *part_name[] = {
+	BOOT_LOADER, BOOT_BL2E, BOOT_BL2X, BOOT_DDRFIP, BOOT_DEVFIP
+};
+
+#define SET_PART(_part, _name, _offset, _size)	\
+{						\
+	_part.name = (_name);			\
+	_part.offset = (_offset);		\
+	_part.size = (_size);			\
+}
+
+static int spinand_add_boot_partitions(struct mtd_info *mtd,
+				       uint64_t *normal_part_offset)
+{
+	struct mtd_partition boot_parts[MAX_BOOT_AREA_ENTRIES];
+	uint64_t tpl_start, tpl_size;
+	int i, parts_num = 2;
+
+	SET_PART(boot_parts[0], BOOT_BL2, 0, BOOT_TOTAL_PAGES * mtd->writesize);
+	tpl_start = (MTD_RSV_START_BLOCK + MTD_RSV_BLOCK_CNT) * mtd->erasesize;
+
+	if (!BOOTLOADER_MODE_ADVANCE_INIT) {
+		tpl_size = CONFIG_TPL_SIZE_PER_COPY * CONFIG_NAND_TPL_COPY_NUM;
+		SET_PART(boot_parts[1], BOOT_TPL, tpl_start, tpl_size);
+	} else if (store_boot_layout_is_discrete_bl2()) {
+		/* if BOOT_DISCRETE_BL2, the devfip size includes all (BL2E,BL2X,....) */
+		tpl_size = g_ssp.boot_entry[BOOT_AREA_DEVFIP].size * g_ssp.boot_backups;
+		SET_PART(boot_parts[1], BOOT_TPL, tpl_start, tpl_size);
+		spinand_get_logic_part_info(mtd, &boot_parts[1]);
+	} else {
+		for (i = BOOT_AREA_BL2E; i <= BOOT_AREA_DEVFIP; i++) {
+			uint64_t part_size = g_ssp.boot_entry[i].size;
+
+			if (i == BOOT_AREA_DEVFIP) {
+				tpl_start = g_ssp.boot_entry[i].offset;
+				part_size *= CONFIG_NAND_TPL_COPY_NUM;
+			} else {
+				part_size *= g_ssp.boot_backups;
+			}
+			SET_PART(boot_parts[i], part_name[i],
+				 g_ssp.boot_entry[i].offset, part_size);
+			parts_num = 5;
+		}
+	}
+
+	*normal_part_offset = tpl_start + boot_parts[parts_num - 1].size;
+
+	return add_mtd_partitions(mtd, boot_parts, parts_num);
+}
+
+int spinand_add_normal_partitions(struct mtd_info *mtd,
+				  const struct mtd_partition *parts,
+				  int nbparts, int normal_offset)
+{
+	struct mtd_partition *new_part;
+	int normal_part_num = 0, i, ret;
+
+	new_part = kcalloc(nbparts, sizeof(*new_part), GFP_KERNEL);
+	if (IS_ERR_OR_NULL(new_part))
+		return -ENOMEM;
+
+	memcpy(new_part, parts, nbparts * sizeof(struct mtd_partition));
 
 	for (i = 0; i < nbparts; i++) {
-		//printf("add_partitions ==== name = %s\n",parts[i].name);
-		if (!parts[i].name) {
-			pr_err("name can't be null! ");
-			pr_err("please check your %d th partition name!\n",
-				 i + 1);
-			goto _out;
+		if (!new_part[i].size && !new_part[i].offset) {
+			normal_part_num++;
+			continue;
 		}
-		if ((off + parts[i].size) > mtd->size) {
-			pr_err("%s %d over nand size!\n",
-				__func__, __LINE__);
-			goto _out;
-		}
-		parts_nm[i].name = parts[i].name;
-		parts_nm[i].mask_flags = parts[i].mask_flags;
-#ifndef CONFIG_NOT_SKIP_BAD_BLOCK
-		loff_t offset = off, end = off + parts[i].size;
 
-		do {
-			if (mtd->_block_isbad(mtd, offset) == NAND_FACTORY_BAD) {
-				pr_err("%s %d found bad block in 0x%llx\n",
-					__func__, __LINE__, offset);
-				end += mtd->erasesize;
-			}
-			offset += mtd->erasesize;
-		} while (offset < end && offset < mtd->size);
-		parts_nm[i].size = end - off - parts[i].size;
-#endif/* CONFIG_NOT_SKIP_BAD_BLOCK */
-		parts_nm[i].offset = off;
-		if (parts[i].size % mtd->erasesize) {
-			pr_err("%s %d \"%s\" size auto align to block size\n",
-				__func__, __LINE__, parts[i].name);
-			parts_nm[i].size += parts[i].size % mtd->erasesize;
+		if ((normal_offset + new_part[i].size) > mtd->size) {
+			pr_err("%s %d over nand size!\n", __func__, __LINE__);
+			ret = -1;
+			goto _out;
 		}
-		/* it's ok "+=" here because size has been set to 0 */
-		parts_nm[i].size += parts[i].size;
-		off += parts_nm[i].size;
+
+		new_part[i].offset = normal_offset;
+		new_part[i].mask_flags = parts[i].mask_flags;
+		spinand_get_logic_part_info(mtd, &new_part[i]);
 		if (i == (nbparts - 1))
-			parts_nm[i].size = mtd->size - off;
+			new_part[i].size = mtd->size - normal_offset;
+		normal_offset += new_part[i].size;
 	}
 
-	ret = add_mtd_partitions(mtd, temp, part_num);
+	ret = add_mtd_partitions(mtd, new_part, nbparts - normal_part_num);
 _out:
-	kfree(temp);
+	free(new_part);
 	return ret;
+}
+
+/* The size of the partition must be block aligned */
+int spinand_add_partitions(struct mtd_info *mtd,
+			   const struct mtd_partition *parts,
+			   int nbparts)
+{
+	uint64_t normal_part_offset;
+	int ret;
+
+	ret = spinand_add_boot_partitions(mtd, &normal_part_offset);
+	if (ret)
+		return ret;
+
+	return spinand_add_normal_partitions(mtd, parts, nbparts,
+					     normal_part_offset);
 }
 #endif
 
