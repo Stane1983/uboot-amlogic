@@ -27,4 +27,9 @@ config DTB_BIND_KERNEL
 config AML_REBOOT
        bool "reboot cmd"
        default y
+
+config AML_DT_OVERLAY
+    bool "use dts overlay"
+    default n if HDMITX_ONLY="true"
+
 endif

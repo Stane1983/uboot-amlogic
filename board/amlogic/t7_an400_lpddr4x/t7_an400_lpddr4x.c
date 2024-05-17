@@ -521,13 +521,13 @@ int checkhw(char * name)
 	switch (ddr_size) {
 	case CONFIG_T7_4G_SIZE:
 		if (cpu_id.chip_rev == 0xA || cpu_id.chip_rev == 0xb) {
-			#ifdef CONFIG_HDMITX_ONLY
+			#if defined(CONFIG_HDMITX_ONLY) && !defined(CONFIG_AML_DT_OVERLAY)
 			strcpy(loc_name, "t7_a311d2_an400-hdmitx-only\0");
 			#else
 			strcpy(loc_name, "t7_a311d2_an400\0");
 			#endif
 		} else if (cpu_id.chip_rev == 0xC) {
-			#ifdef CONFIG_HDMITX_ONLY
+			#if defined(CONFIG_HDMITX_ONLY) && !defined(CONFIG_AML_DT_OVERLAY)
 			strcpy(loc_name, "t7c_a311d2_an400-hdmitx-only-4g\0");
 			#else
 			strcpy(loc_name, "t7c_a311d2_an400-4g\0");
