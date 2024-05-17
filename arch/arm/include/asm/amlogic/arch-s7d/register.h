@@ -12,7 +12,7 @@
 #else
 #define REGISTER_H
 
-#include "fixme.h"
+#include "extra_register.h"
 #if 0
 #ifndef VERIFICATION
     #define Wr64(addr, data) *(volatile uint64_t *)(addr)=(data)

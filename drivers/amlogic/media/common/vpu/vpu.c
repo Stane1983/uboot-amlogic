@@ -46,6 +46,7 @@ static struct vpu_data_s vpu_data_g12a = {
 	.vpu_clkb_reg = VPU_REG_END,  //no need init clkb
 	.vapb_clk_reg = HHI_VAPBCLK_CNTL,
 	.vid_clk_reg = HHI_VID_CLK_CNTL2,
+	.vpu_read_type = READ0_2,
 
 	.pwrctrl_id_table = NULL,
 
@@ -79,6 +80,7 @@ static struct vpu_data_s vpu_data_g12b = {
 	.vpu_clkb_reg = VPU_REG_END,  //no need init clkb
 	.vapb_clk_reg = HHI_VAPBCLK_CNTL,
 	.vid_clk_reg = HHI_VID_CLK_CNTL2,
+	.vpu_read_type = READ0_2,
 
 	.pwrctrl_id_table = NULL,
 
@@ -112,6 +114,7 @@ static struct vpu_data_s vpu_data_tl1 = {
 	.vpu_clkb_reg = VPU_REG_END,  //no need init clkb
 	.vapb_clk_reg = HHI_VAPBCLK_CNTL,
 	.vid_clk_reg = HHI_VID_CLK_CNTL2,
+	.vpu_read_type = READ0_2,
 
 	.pwrctrl_id_table = NULL,
 
@@ -179,6 +182,7 @@ static struct vpu_data_s vpu_data_tm2 = {
 	.vpu_clkb_reg = VPU_REG_END,  //no need init clkb
 	.vapb_clk_reg = HHI_VAPBCLK_CNTL,
 	.vid_clk_reg = HHI_VID_CLK_CNTL2,
+	.vpu_read_type = READ0_2,
 
 	.pwrctrl_id_table = NULL,
 
@@ -212,6 +216,7 @@ static struct vpu_data_s vpu_data_sc2 = {
 	.vpu_clkb_reg = VPU_REG_END,  //no need init clkb
 	.vapb_clk_reg = CLKCTRL_VAPBCLK_CTRL,
 	.vid_clk_reg = CLKCTRL_VID_CLK_CTRL2,
+	.vpu_read_type = READ0_2,
 
 	.pwrctrl_id_table = vpu_pwrctrl_id_table,
 
@@ -245,6 +250,7 @@ static struct vpu_data_s vpu_data_t5 = {
 	.vpu_clkb_reg = VPU_REG_END,  //no need init clkb
 	.vapb_clk_reg = HHI_VAPBCLK_CNTL,
 	.vid_clk_reg = HHI_VID_CLK_CNTL2,
+	.vpu_read_type = READ0_2,
 
 	.pwrctrl_id_table = vpu_pwrctrl_id_table,
 
@@ -278,6 +284,7 @@ static struct vpu_data_s vpu_data_t5d = {
 	.vpu_clkb_reg = VPU_REG_END,  //no need init clkb
 	.vapb_clk_reg = HHI_VAPBCLK_CNTL,
 	.vid_clk_reg = HHI_VID_CLK_CNTL2,
+	.vpu_read_type = READ0_2,
 
 	.pwrctrl_id_table = vpu_pwrctrl_id_table,
 
@@ -311,6 +318,7 @@ static struct vpu_data_s vpu_data_t5w = {
 	.vpu_clkb_reg = HHI_VPU_CLKB_CTRL,
 	.vapb_clk_reg = HHI_VAPBCLK_CNTL,
 	.vid_clk_reg = HHI_VID_CLK_CNTL2,
+	.vpu_read_type = READ0_2,
 
 	.pwrctrl_id_table = vpu_pwrctrl_id_table,
 
@@ -344,6 +352,7 @@ static struct vpu_data_s vpu_data_t7 = {
 	.vpu_clkb_reg = VPU_REG_END,  //no need init clkb
 	.vapb_clk_reg = CLKCTRL_VAPBCLK_CTRL,
 	.vid_clk_reg = CLKCTRL_VID_CLK0_CTRL2,
+	.vpu_read_type = READ0_2,
 
 	.pwrctrl_id_table = vpu_pwrctrl_id_table_t7,
 
@@ -377,6 +386,7 @@ static struct vpu_data_s vpu_data_s4 = {
 	.vpu_clkb_reg = VPU_REG_END,  //no need init clkb
 	.vapb_clk_reg = CLKCTRL_VAPBCLK_CTRL,
 	.vid_clk_reg = CLKCTRL_VID_CLK_CTRL2,
+	.vpu_read_type = READ0_2,
 
 	.pwrctrl_id_table = vpu_pwrctrl_id_table,
 
@@ -410,6 +420,7 @@ static struct vpu_data_s vpu_data_t3 = {
 	.vpu_clkb_reg = CLKCTRL_VPU_CLKB_CTRL,
 	.vapb_clk_reg = CLKCTRL_VAPBCLK_CTRL,
 	.vid_clk_reg = CLKCTRL_VID_CLK0_CTRL2,
+	.vpu_read_type = READ0_2,
 
 	.pwrctrl_id_table = vpu_pwrctrl_id_table_t3,
 
@@ -443,6 +454,7 @@ static struct vpu_data_s vpu_data_s4d = {
 	.vpu_clkb_reg = VPU_REG_END,
 	.vapb_clk_reg = CLKCTRL_VAPBCLK_CTRL,
 	.vid_clk_reg = CLKCTRL_VID_CLK_CTRL2,
+	.vpu_read_type = READ0_2,
 
 	.pwrctrl_id_table = vpu_pwrctrl_id_table,
 
@@ -476,6 +488,7 @@ static struct vpu_data_s vpu_data_c3 = {
 	.vpu_clkb_reg = VPU_REG_END,
 	.vapb_clk_reg = VPU_REG_END,
 	.vid_clk_reg = VPU_REG_END,
+	.vpu_read_type = READ0_2,
 
 	.pwrctrl_id_table = NULL,
 
@@ -509,6 +522,7 @@ static struct vpu_data_s vpu_data_s5 = {
 	.vpu_clkb_reg = VPU_REG_END,  //no need init clkb
 	.vapb_clk_reg = CLKCTRL_VAPBCLK_CTRL,
 	.vid_clk_reg = CLKCTRL_VID_CLK0_CTRL2,
+	.vpu_read_type = READ0_2,
 	.test_reg = vcbus_test_reg,
 
 	.pwrctrl_id_table = vpu_pwrctrl_id_table_t7,
@@ -540,6 +554,7 @@ static struct vpu_data_s vpu_data_t5m = {
 	.vpu_clkb_reg = CLKCTRL_VPU_CLKB_CTRL,
 	.vapb_clk_reg = CLKCTRL_VAPBCLK_CTRL,
 	.vid_clk_reg = CLKCTRL_VID_CLK0_CTRL2,
+	.vpu_read_type = READ0_2,
 
 	.pwrctrl_id_table = vpu_pwrctrl_id_table,
 
@@ -573,6 +588,7 @@ static struct vpu_data_s vpu_data_a4 = {
 	.vpu_clkb_reg = VPU_REG_END,
 	.vapb_clk_reg = VPU_REG_END,
 	.vid_clk_reg = VPU_REG_END,
+	.vpu_read_type = READ0_2,
 
 	.pwrctrl_id_table = NULL,
 
@@ -606,6 +622,7 @@ static struct vpu_data_s vpu_data_s1a = {
 	.vpu_clkb_reg = VPU_REG_END,
 	.vapb_clk_reg = CLKCTRL_VAPBCLK_CTRL,
 	.vid_clk_reg = CLKCTRL_VID_CLK_CTRL2,
+	.vpu_read_type = ONLY_READ0,
 
 	.pwrctrl_id_table = vpu_pwrctrl_id_table,
 
@@ -639,6 +656,7 @@ static struct vpu_data_s vpu_data_s7 = {
 	.vpu_clkb_reg = VPU_REG_END,
 	.vapb_clk_reg = CLKCTRL_VAPBCLK_CTRL,
 	.vid_clk_reg = CLKCTRL_VID_CLK_CTRL2,
+	.vpu_read_type = ONLY_READ0,
 
 	.pwrctrl_id_table = vpu_pwrctrl_id_table,
 
@@ -672,6 +690,7 @@ static struct vpu_data_s vpu_data_s7d = {
 	.vpu_clkb_reg = VPU_REG_END,
 	.vapb_clk_reg = CLKCTRL_VAPBCLK_CTRL,
 	.vid_clk_reg = CLKCTRL_VID_CLK_CTRL2,
+	.vpu_read_type = ONLY_READ0,
 
 	.pwrctrl_id_table = vpu_pwrctrl_id_table,
 
