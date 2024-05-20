@@ -56,6 +56,10 @@ config NAND_TPL_VALID_NUM
 	int
 	default -1
 
+config DISCRETE_BOOTLOADER_NEW
+	bool "handle discrte bootloader inside flash driver"
+	default y
+
 config ADNL_FORCE_BL1_IF_SCS
     depends on AML_V3_USB_TOOl
     bool

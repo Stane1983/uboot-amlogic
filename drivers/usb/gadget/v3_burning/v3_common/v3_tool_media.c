@@ -300,23 +300,32 @@ static int _discrete_bootloader_write(u8 *dataBuf, unsigned int off, unsigned in
 
 			p_payload_info_hdr_t hdr    = &pInfo->hdr;
 			p_payload_info_item_t pItem = pInfo->arrItems;
-			memset(name, 0, 8);
-			for (nIndex = 1, pItem += 1; nIndex < hdr->byItemNum; ++nIndex, ++pItem) {
-				memcpy(name, &pItem->nMagic, 8);
-				offPayload = pItem->nOffset;
-				szPayload  = pItem->nPayLoadSize;
-				FB_MSG("Item[%d]%4s offset 0x%08x sz 0x%x\n",
-				       nIndex, name, offPayload, szPayload);
-				if (!szPayload)
-					continue;
-				ret = _bootloader_write(dataBuf + offPayload, 0, szPayload, _flashPayload[nIndex]);
-				if (ret)
-					FBS_EXIT(_ACK, "Fail in flash payload %s\n", name);
-			}
 			_blxPayloadInf = (p_payload_info_t)V3_DOWNLOAD_VERIFY_INFO;
 			_payloadInfoSz = sizeof(payload_info_hdr_t) +
 					 pInfo->hdr.byItemNum * sizeof(payload_info_item_t);
 			memcpy(_blxPayloadInf, pInfo, _payloadInfoSz);
+			memset(name, 0, 8);
+
+			if (CONFIG_IS_ENABLED(DISCRETE_BOOTLOADER_NEW)) {
+				ret = store_boot_write("bootloader", 0xff, binsz, dataBuf);
+				if (ret)
+					FBS_EXIT(_ACK, "FAil program bootloader at copy 0xff\n");
+				FB_MSG("Okay burn ALL bootloader\n");
+				return 0;
+			} else {
+				for (nIndex = 1, pItem += 1; nIndex < hdr->byItemNum; ++nIndex, ++pItem) {
+					memcpy(name, &pItem->nMagic, 8);
+					offPayload = pItem->nOffset;
+					szPayload  = pItem->nPayLoadSize;
+					FB_MSG("Item[%d]%4s offset 0x%08x sz 0x%x\n",
+							nIndex, name, offPayload, szPayload);
+					if (!szPayload)
+						continue;
+					ret = _bootloader_write(dataBuf + offPayload, 0, szPayload, _flashPayload[nIndex]);
+					if (ret)
+						FBS_EXIT(_ACK, "Fail in flash payload %s\n", name);
+				}
+			}
 		}
 	}
 
@@ -439,18 +448,25 @@ static int _discrete_bootloader_read(u8 *dataBuf, unsigned int off, unsigned int
 		int offPayload = 0, szPayload = 0;
 
 		memset(name, 0, 8);
-		for (nIndex = 1, pItem += 1; nIndex < hdr->byItemNum; ++nIndex, ++pItem) {
-			memcpy(name, &pItem->nMagic, sizeof(unsigned int));
-			offPayload = pItem->nOffset;
-			szPayload  = pItem->nPayLoadSize;
-			FB_MSG("Item[%d]%4s offset 0x%08x sz 0x%x\n",
-			       nIndex, name, offPayload, szPayload);
-			if (!szPayload)
-				continue;
-			ret = _bootloader_read(dataBuf + offPayload, 0, szPayload,
-					       _flashPayload[nIndex]);
-			if (ret)
-				FBS_EXIT(_ACK, "Fail in read payload %s\n", name);
+		if (CONFIG_IS_ENABLED(DISCRETE_BOOTLOADER_NEW)) {
+				ret = store_boot_read("bootloader", 0xff, binsz, dataBuf);
+				if (ret)
+					FBS_EXIT(_ACK, "FAil read bootloader at copy 0xff\n");
+				FB_MSG("Okay read ALL bootloader\n");
+		} else {
+			for (nIndex = 1, pItem += 1; nIndex < hdr->byItemNum; ++nIndex, ++pItem) {
+				memcpy(name, &pItem->nMagic, sizeof(unsigned int));
+				offPayload = pItem->nOffset;
+				szPayload  = pItem->nPayLoadSize;
+				FB_MSG("Item[%d]%4s offset 0x%08x sz 0x%x\n",
+						nIndex, name, offPayload, szPayload);
+				if (!szPayload)
+					continue;
+				ret = _bootloader_read(dataBuf + offPayload, 0, szPayload,
+						_flashPayload[nIndex]);
+				if (ret)
+					FBS_EXIT(_ACK, "Fail in read payload %s\n", name);
+			}
 		}
 		memcpy(dataBuf + BL2_SIZE, _blxPayloadInf, _payloadInfoSz);
 	}
