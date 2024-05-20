@@ -1586,11 +1586,19 @@ static int do_load_logo_from_ext4(cmd_tbl_t *cmdtp, int flag, int argc, char * c
     void* loadaddr = (void*)simple_strtoul(argv[2], NULL, 16);
 	int autoSelectSlot = 1;//auto detect if need add _a/_b
 
-    if (argc > 3) {
-        env_set("ext4LogoPath", argv[3]);
-    } else {
-        env_set("ext4LogoPath", "/logo_files/bootup.bmp");
-    }
+	if (argc > 3) {
+		env_set("ext4LogoPath", argv[3]);
+	} else {
+		char *tmp = env_get("usb_status");
+		char *cc_enable = env_get("cc_enable");
+
+		if (tmp && strcmp("0.5a@5v", tmp) == 0 &&
+			cc_enable && strcmp("1", cc_enable) == 0) {
+			env_set("ext4LogoPath", "/logo_files/bootup_lowcurrent.bmp");
+		} else {
+			env_set("ext4LogoPath", "/logo_files/bootup.bmp");
+		}
+	}
 	if (argc > 4) {
 		const char *paraAutoSel = argv[4];
 
