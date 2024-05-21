@@ -511,6 +511,14 @@ int bootm_find_images(int flag, int argc, char * const argv[])
 		/* update dtb address, compatible with single dtb and multi dtbs */
 		images.ft_addr = (char*)get_multi_dt_entry((unsigned long)images.ft_addr);
 #endif /* CONFIG_MULTI_DTB */
+
+		if (argc < 3) {
+			char addr_buf[32] = {0};
+
+			snprintf(addr_buf, 31, "0x%lx", (unsigned long)images.ft_addr);
+			env_set("dtb_mem_addr", addr_buf);
+		}
+
 		ret = boot_get_fdt(flag, argc, argv, IH_ARCH_DEFAULT, &images,
 			   &images.ft_addr, &images.ft_len);
 	}
