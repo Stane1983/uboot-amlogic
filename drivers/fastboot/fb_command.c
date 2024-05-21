@@ -460,6 +460,34 @@ static void write_dts_reserve(void)
 	}
 }
 
+static int clear_misc_partition(void)
+{
+	char *partition = "misc";
+	char *buffer = NULL;
+	u64 rc = 0;
+
+	rc = store_part_size(partition);
+	buffer = (char *)malloc(rc - AVB_CUSTOM_KEY_LEN_MAX);
+	if (!buffer) {
+		printf("malloc error\n");
+		return -1;
+	}
+	memset(buffer, 0, rc - AVB_CUSTOM_KEY_LEN_MAX);
+
+	if (store_get_type() == BOOT_SNAND || store_get_type() == BOOT_NAND_MTD) {
+#ifdef CONFIG_BOOTLOADER_CONTROL_BLOCK
+		nand_store_write((const char *)partition, 0, rc - AVB_CUSTOM_KEY_LEN_MAX,
+								(unsigned char *)buffer);
+#endif
+	} else {
+		store_write((const char *)partition, 0, rc - AVB_CUSTOM_KEY_LEN_MAX,
+								(unsigned char *)buffer);
+	}
+	free(buffer);
+
+	return 0;
+}
+
 static void set_fastboot_flag(int flag)
 {
 	env_set("default_env", "1");
@@ -593,6 +621,13 @@ static void flash(char *cmd_parameter, char *response)
 				else
 					printf("write _aml_dtb ok\n");
 			}
+		}
+
+		ret = clear_misc_partition();
+		if (ret) {
+			printf("clear misc partition error\n");
+			fastboot_fail("clear misc partition fail", response);
+			return;
 		}
 
 		gpt_flag = aml_gpt_valid(mmc);
