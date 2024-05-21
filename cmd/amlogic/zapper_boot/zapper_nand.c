@@ -549,7 +549,7 @@ static void Zapper_factory_reset_led_display(int ret)
 {
 	unsigned int i = 0;
 	led_display_type standby_led;
-
+	printf("%s:%d\n", __FUNCTION__, __LINE__);
 	/* On successful clearing of all the data as per the above steps,
 	 * the Standby LED will blink in green colour for 5 times
 	 * whereas in case of failure in any of the above mentioned three steps it will blink in RED colour for 5 times

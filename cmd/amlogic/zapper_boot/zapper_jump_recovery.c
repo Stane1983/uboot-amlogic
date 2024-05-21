@@ -39,7 +39,7 @@ int Zapper_clear_jump_recovery_status(void)
 
 static int do_zapper_jump_recovery(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {
-
+	printf("%s:%d\n", __FUNCTION__, __LINE__);
 	if (jump_recover_status) {
 		run_command("reboot recovery", 0);
 	}

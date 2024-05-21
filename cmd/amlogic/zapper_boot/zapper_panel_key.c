@@ -22,10 +22,10 @@ static int front_panel_key_check(unsigned int period)
 {
 	struct udevice *dev;
 	int ret;
-	unsigned int val;
-	unsigned int val_1;
-	unsigned int val_2;
-
+	unsigned int val = 0;
+	unsigned int val_1 = 0;
+	unsigned int val_2 = 0;
+#ifdef CONFIG_ADC
 	//open saradc channel for key press check
 	printf("UCLASS_ADC is %d\n", UCLASS_ADC);
 	ret = uclass_get_device_by_name(UCLASS_ADC, "adc", &dev);//saradc key
@@ -48,7 +48,7 @@ static int front_panel_key_check(unsigned int period)
 		printf("adc_channel_single_shot_mode failed\n");
 		return ADC_DEVICE_ERROR;
 	}
-
+#endif
 	//printf("SARADC channel(0) val1 is %d.\n", val);
 	val_1 = val;
 

@@ -58,16 +58,45 @@ void Zapper_led_set(led_display_type type)
 
 void Zapper_led_show(void)
 {
+#ifdef CONFIG_BG20AB_S805C1
+	printf("%s g_standby_led_show: %d, g_remote_led_show: %d, g_alert_led_show: %d\n",
+		PRINT_TAG, g_standby_led_show, g_remote_led_show, g_alert_led_show);
+	if (g_standby_led_show == LED_DISPLAY_RED) {
+		run_command("gpio set gpiod_8", 0);
+		run_command("gpio clear gpiod_9", 0);
+	} else if (g_standby_led_show == LED_DISPLAY_GREEN) {
+		run_command("gpio set gpiod_9", 0);
+		run_command("gpio clear gpiod_8", 0);
+	} else if (g_standby_led_show == LED_DISPLAY_OFF) {
+		run_command("gpio clear gpiod_8", 0);
+		run_command("gpio clear gpiod_9", 0);
+	}
+
+	if (g_remote_led_show == LED_DISPLAY_RED) {
+		run_command("gpio set gpiod_7", 0);
+	} else if (g_remote_led_show == LED_DISPLAY_OFF) {
+		run_command("gpio clear gpiod_7", 0);
+	}
+
+	if (g_alert_led_show == LED_DISPLAY_YELLOW) {
+		run_command("gpio set gpioz_7", 0);
+	} else if (g_alert_led_show == LED_DISPLAY_OFF) {
+		run_command("gpio clear gpioz_7", 0);
+	}
+#else
 	char cmd_str[30] = { '\0' };
 
 	sprintf(cmd_str, "led_display %c%c%c%c", g_standby_led_show, g_remote_led_show, g_alert_led_show, LED_DISPLAY_OFF);
 	run_command(cmd_str, NO_DETAIL);
 	printf("%s cmd_str: %s\n", PRINT_TAG, cmd_str);
+#endif
+	udelay(1000*50);
 }
 
 /* LDRS's LED Behavior step 1 */
 static int do_zapper_board_init_led_set(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {
+	printf("%s: %d\n", __FUNCTION__, __LINE__);
 	Zapper_led_set(LED_POWER_RED);
 	Zapper_led_set(LED_REMOTE_OFF);
 	Zapper_led_set(LED_ALERT_OFF);
@@ -79,6 +108,7 @@ static int do_zapper_board_init_led_set(cmd_tbl_t *cmdtp, int flag, int argc, ch
 /* LDRS's LED Behavior step 2 */
 static int do_zapper_led_init_led_set(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {
+	printf("%s: %d\n", __FUNCTION__, __LINE__);
 	Zapper_led_set(LED_POWER_GREEN);
 	Zapper_led_set(LED_REMOTE_OFF);
 	Zapper_led_set(LED_ALERT_OFF);
@@ -90,6 +120,7 @@ static int do_zapper_led_init_led_set(cmd_tbl_t *cmdtp, int flag, int argc, char
 /* LDRS's LED Behavior step 3 */
 static int do_zapper_board_late_init_led_set(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {
+	printf("%s: %d\n", __FUNCTION__, __LINE__);
 	Zapper_led_set(LED_POWER_RED);
 	Zapper_led_set(LED_REMOTE_OFF);
 	Zapper_led_set(LED_ALERT_OFF);
@@ -104,6 +135,7 @@ static int do_zapper_bmp_display_led_set(cmd_tbl_t *cmdtp, int flag, int argc, c
 	/* get standby_flag from loader partition */
 	run_command("zapper_flash_read", 0);
 
+	printf("%s: %d, standby_flag: %d\n", __FUNCTION__, __LINE__, Zapper_get_nand_standby_flag());
 	if (Zapper_get_nand_standby_flag() == 0) {
 		Zapper_led_set(LED_POWER_GREEN);
 	} else {
