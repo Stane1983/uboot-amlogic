@@ -1141,6 +1141,38 @@ static int hdmitx_set_hdr_priority(struct rx_cap *prxcap, u32 hdr_priority)
 	return 0;
 }
 
+void hdmitx_update_dv_strategy_info(struct dv_info *dv)
+{
+	if (dv->ver == 0) {
+		if (dv->length == 0x19)
+			dv->support_DV_RGB_444_8BIT = 1;
+	}
+
+	if (dv->ver == 1) {
+		if (dv->length == 0x0B) {
+			dv->support_DV_RGB_444_8BIT = 1;
+			if (dv->low_latency == 0x01)
+				dv->support_LL_YCbCr_422_12BIT = 1;
+		} else if (dv->length == 0x0E) {
+			dv->support_DV_RGB_444_8BIT = 1;
+		}
+	}
+
+	if (dv->ver == 2) {
+		if (dv->length >= 0x0B) {
+			if (dv->Interface != 0x00 && dv->Interface != 0x01)
+				dv->support_DV_RGB_444_8BIT = 1;
+			dv->support_LL_YCbCr_422_12BIT = 1;
+			if (dv->Interface == 0x01 || dv->Interface == 0x03) {
+				if (dv->sup_10b_12b_444 == 0x1)
+					dv->support_LL_RGB_444_10BIT = 1;
+				if (dv->sup_10b_12b_444 == 0x2)
+					dv->support_LL_RGB_444_12BIT = 1;
+			}
+		}
+	}
+}
+
 static void get_parse_edid_data(struct hdmitx_dev *hdev)
 {
 	int hdr_priority = get_hdr_strategy_priority();
@@ -1152,6 +1184,10 @@ static void get_parse_edid_data(struct hdmitx_dev *hdev)
 
 	/* parse edid data */
 	hdmitx_edid_parse(&hdev->RXCap, hdev->rawedid);
+
+	/* Update the member variables used by the dv running strategy */
+	hdmitx_update_dv_strategy_info(&hdev->RXCap.dv_info);
+	hdmitx_update_dv_strategy_info(&hdev->RXCap.dv_info2);
 
 	if (hdr_priority == -1)
 		return;
