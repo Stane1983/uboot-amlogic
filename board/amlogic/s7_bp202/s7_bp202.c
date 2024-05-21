@@ -424,10 +424,10 @@ int checkhw(char *name)
 
 	switch (ddr_size) {
 	case 0x40000000:
-		strcpy(dtb_name, "s7_s805x3_bp202_1g\0");
+		strcpy(dtb_name, "s7_s805x3_bp202-1g\0");
 		break;
 	case 0x60000000:
-		strcpy(dtb_name, "s7_s805x3_bp202_1.5g\0");
+		strcpy(dtb_name, "s7_s805x3_bp202-1.5g\0");
 		break;
 	case 0x80000000:
 		strcpy(dtb_name, "s7_s805x3_bp202\0");
