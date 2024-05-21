@@ -183,7 +183,7 @@ typedef struct bootloader_control {
 #define MISC_VIRTUAL_AB_MESSAGE_VERSION 2
 #define MISC_VIRTUAL_AB_MAGIC_HEADER 0x56740AB0
 
-unsigned int kDefaultBootAttempts = 7;
+unsigned int kDefaultBootAttempts = 6;
 
 /* Magic for the A/B struct when serialized. */
 #define AVB_AB_MAGIC "\0AB0"
@@ -292,7 +292,7 @@ void boot_info_reset(bootloader_control* boot_ctrl)
 
 		if (slot < boot_ctrl->nb_slot) {
 			entry.priority = 7;
-			entry.tries_remaining = kDefaultBootAttempts;
+			entry.tries_remaining = 0;
 			entry.successful_boot = 0;
 		} else {
 			entry.priority = 0;  // Unbootable
@@ -302,7 +302,9 @@ void boot_info_reset(bootloader_control* boot_ctrl)
 
 		boot_ctrl->slot_info[slot] = entry;
 	}
-	boot_ctrl->slot_info[0].successful_boot = 1;
+	boot_ctrl->slot_info[0].priority = 15;
+	boot_ctrl->slot_info[0].tries_remaining = kDefaultBootAttempts;
+	boot_ctrl->slot_info[0].successful_boot = 0;
 	boot_ctrl->recovery_tries_remaining = 0;
 }
 
@@ -590,7 +592,7 @@ static void set_ddr_size(void)
 
 static void update_after_failed_rollback(void)
 {
-	run_command("run init_display; run storeargs; run update;", 0);
+	run_command("run init_display; run storeargs; run enter_fastboot;", 0);
 }
 
 void rollback_failure_handler(void) __attribute__((weak, alias("update_after_failed_rollback")));
@@ -706,6 +708,8 @@ static int do_GetValidSlot(
 			run_command("saveenv", 0);
 			run_command("reset", 0);
 		} else {
+			boot_info_reset(&boot_ctrl);
+			boot_info_save(&boot_ctrl, miscbuf);
 			rollback_failure_handler();
 		}
 	}
@@ -749,6 +753,8 @@ static int do_GetValidSlot(
 			run_command("saveenv", 0);
 			run_command("reset", 0);
 		} else {
+			boot_info_reset(&boot_ctrl);
+			boot_info_save(&boot_ctrl, miscbuf);
 			rollback_failure_handler();
 		}
 	}
@@ -868,6 +874,7 @@ static int do_SetUpdateTries(
 	int ret = -1;
 	bool nocs_mode = false;
 	int update_flag = 0;
+	char *rebootmode = env_get("reboot_mode");
 
 	if (has_boot_slot == 0) {
 		printf("device is not ab mode\n");
@@ -889,7 +896,8 @@ static int do_SetUpdateTries(
 
 	if (slot == 0) {
 		if (bootable_a) {
-			if (boot_ctrl.slot_info[0].successful_boot == 0) {
+			if (boot_ctrl.slot_info[0].successful_boot == 0 &&
+				rebootmode && strcmp(rebootmode, "fastboot")) {
 				boot_ctrl.slot_info[0].tries_remaining -= 1;
 				update_flag = 1;
 			}
@@ -898,7 +906,8 @@ static int do_SetUpdateTries(
 
 	if (slot == 1) {
 		if (bootable_b) {
-			if (boot_ctrl.slot_info[1].successful_boot == 0) {
+			if (boot_ctrl.slot_info[1].successful_boot == 0 &&
+				rebootmode && strcmp(rebootmode, "fastboot")) {
 				boot_ctrl.slot_info[1].tries_remaining -= 1;
 				update_flag = 1;
 			}
@@ -938,6 +947,16 @@ static int do_SetUpdateTries(
 			}
 		}
 	}
+
+	bootable_a = slot_is_bootable(&boot_ctrl.slot_info[0]);
+	bootable_b = slot_is_bootable(&boot_ctrl.slot_info[1]);
+	if (!bootable_a && !bootable_b) {
+		printf("both a & b can't bootup, enter fastboot\n");
+		boot_info_reset(&boot_ctrl);
+		boot_info_save(&boot_ctrl, miscbuf);
+		run_command("run init_display; run storeargs; run enter_fastboot;", 0);
+	}
+
 	return 0;
 }
 
