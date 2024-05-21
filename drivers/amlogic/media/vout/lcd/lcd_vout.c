@@ -756,7 +756,10 @@ static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 		break;
 	}
 	pdrv->boot_ctrl.custom_pinmux = pdrv->config.custom_pinmux ? 1 : 0;
-	pdrv->boot_ctrl.init_level = env_get_ulong("lcd_init_level", 10, 0);
+	if (env_get("lcd_debug_init"))
+		pdrv->boot_ctrl.init_level = env_get_ulong("lcd_debug_init", 10, 0);
+	else
+		pdrv->boot_ctrl.init_level = env_get_ulong("lcd_init_level", 10, 0);
 
 	/*
 	 *bit[31:23]: base frame rate
