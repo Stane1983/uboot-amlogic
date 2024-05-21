@@ -27925,3 +27925,9 @@
 
 #endif // REGISTER_H
 
+#define DMC_SEC_STATUS                             ((0x00fa  << 2) + 0xff639000)
+#define DMC_VIO_ADDR0                              ((0x00fb  << 2) + 0xff639000)
+#define DMC_VIO_ADDR1                              ((0x00fc  << 2) + 0xff639000)
+#define DMC_VIO_ADDR2                              ((0x00fd  << 2) + 0xff639000)
+#define DMC_VIO_ADDR3                              ((0x00fe  << 2) + 0xff639000)
+

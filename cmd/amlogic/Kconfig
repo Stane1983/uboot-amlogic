@@ -69,6 +69,13 @@ config CMD_RSVMEM
 	help
 	  support rsvmem cmd
 
+config CMD_DMCRW
+	bool "dmcrw cmd"
+	default y
+	help
+	  support dmc read write cmd
+	  support dmc sec violation check
+
 config CMD_DDR_D2PLL
 	bool "d2pll cmd"
 	default n

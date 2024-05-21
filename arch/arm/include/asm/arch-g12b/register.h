@@ -80,3 +80,9 @@
 #endif
 
 #endif //__REGISTER_H__
+
+#define DMC_SEC_STATUS                             ((0x00b8  << 2) + 0xff639000)
+#define DMC_VIO_ADDR0                              ((0x00b9  << 2) + 0xff639000)
+#define DMC_VIO_ADDR1                              ((0x00ba  << 2) + 0xff639000)
+#define DMC_VIO_ADDR2                              ((0x00bb  << 2) + 0xff639000)
+#define DMC_VIO_ADDR3                              ((0x00bc  << 2) + 0xff639000)

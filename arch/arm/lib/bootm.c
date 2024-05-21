@@ -109,6 +109,9 @@ __weak void board_quiesce_devices(void)
  */
 static void announce_and_cleanup(int fake)
 {
+#ifdef CONFIG_CMD_DMCRW
+	run_command("dmc_vio_check", 0);
+#endif
 	pr_info("\nStarting kernel ...%s\n\n", fake ?
 		"(fake run for tracing)" : "");
 	bootstage_mark_name(BOOTSTAGE_ID_BOOTM_HANDOFF, "start_kernel");

@@ -55059,3 +55059,12 @@
 
 #endif // REGISTER_H
 
+//registers to check the security protection and watch point error information.
+//DMC0 0xfe036000
+//DMC1 0xfe034000
+#define DMC_SEC_STATUS                             ((0x051a << 2) + 0xfe036000)
+#define DMC_VIO_ADDR0                              ((0x051b << 2) + 0xfe036000)
+#define DMC_VIO_ADDR1                              ((0x051c << 2) + 0xfe036000)
+#define DMC_VIO_ADDR2                              ((0x051d << 2) + 0xfe036000)
+#define DMC_VIO_ADDR3                              ((0x051e << 2) + 0xfe036000)
+
