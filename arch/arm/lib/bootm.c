@@ -84,6 +84,8 @@ static void announce_and_cleanup(int fake)
 		/* disable silent */
 		gd->flags &= ~GD_FLG_SILENT;
 	}
+
+	run_command("dmc_vio_check", 0);
 #endif
 
 	printf("\nStarting kernel ...%s\n\n", fake ?
