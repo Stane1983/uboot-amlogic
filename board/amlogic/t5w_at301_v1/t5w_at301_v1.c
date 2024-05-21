@@ -40,7 +40,6 @@
 #include <asm/arch/timer.h>
 #include <partition_table.h>
 
-#include <asm/armv8/mmu.h>
 #include <asm/arch/stick_mem.h>
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -667,28 +666,6 @@ phys_size_t get_effective_memsize(void)
 	return (((readl(AO_SEC_GP_CFG0)) & 0xFFFF0000) << 4);
 #endif
 }
-
-static struct mm_region bd_mem_map[] = {
-	{
-		.virt = 0x00000000UL,
-		.phys = 0x00000000UL,
-		.size = 0x80000000UL,
-		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
-			 PTE_BLOCK_INNER_SHARE
-	}, {
-		.virt = 0xf1000000UL,
-		.phys = 0xf1000000UL,
-		.size = 0x0f000000UL,
-		.attrs = PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
-			 PTE_BLOCK_NON_SHARE |
-			 PTE_BLOCK_PXN | PTE_BLOCK_UXN
-	}, {
-		/* List terminator */
-		0,
-	}
-};
-
-struct mm_region *mem_map = bd_mem_map;
 
 #ifdef CONFIG_MULTI_DTB
 int checkhw(char * name)

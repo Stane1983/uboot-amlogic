@@ -30,7 +30,6 @@
 #include <linux/sizes.h>
 #include <asm-generic/gpio.h>
 #include <dm.h>
-#include <asm/armv8/mmu.h>
 #include <amlogic/aml_v3_burning.h>
 #include <amlogic/aml_v2_burning.h>
 #include <linux/mtd/partitions.h>
@@ -223,37 +222,9 @@ phys_size_t get_effective_memsize(void)
 
 }
 
-static struct mm_region bd_mem_map[] = {
-	{
-		.virt = 0x00000000UL,
-		.phys = 0x00000000UL,
-		.size = 0xe0000000UL,
-		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
-			 PTE_BLOCK_INNER_SHARE
-	}, {
-		.virt = 0xe0000000UL,
-		.phys = 0xe0000000UL,
-		.size = 0x20000000UL,
-		.attrs = PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
-			 PTE_BLOCK_NON_SHARE |
-			 PTE_BLOCK_PXN | PTE_BLOCK_UXN
-	}, {
-		/* List terminator */
-		0,
-	}
-};
-
-struct mm_region *mem_map = bd_mem_map;
-
-int mach_cpu_init(void) {
+int mach_cpu_init(void)
+{
 	//printf("\nmach_cpu_init\n");
-#ifdef	CONFIG_UPDATE_MMU_TABLE
-	unsigned long nddrSize = (readl(SYSCTRL_SEC_STATUS_REG4) & ~0xffffUL) << 4;
-
-	if (nddrSize < 0xe0000000)
-		bd_mem_map[0].size = nddrSize;
-
-#endif
 	return 0;
 }
 

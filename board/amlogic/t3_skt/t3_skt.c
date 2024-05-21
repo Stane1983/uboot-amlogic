@@ -30,7 +30,6 @@
 #include <linux/sizes.h>
 #include <asm-generic/gpio.h>
 #include <dm.h>
-#include <asm/armv8/mmu.h>
 #include <amlogic/aml_v3_burning.h>
 #include <amlogic/aml_v2_burning.h>
 #include <linux/mtd/partitions.h>
@@ -204,28 +203,6 @@ ulong board_get_usable_ram_top(ulong total_size)
 		return 0xE0000000UL;
 	return top;
 }
-
-static struct mm_region bd_mem_map[] = {
-	{
-		.virt = 0x00000000UL,
-		.phys = 0x00000000UL,
-		.size = 0x80000000UL,
-		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
-			 PTE_BLOCK_INNER_SHARE
-	}, {
-		.virt = 0x80000000UL,
-		.phys = 0x80000000UL,
-		.size = 0x80000000UL,
-		.attrs = PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
-			 PTE_BLOCK_NON_SHARE |
-			 PTE_BLOCK_PXN | PTE_BLOCK_UXN
-	}, {
-		/* List terminator */
-		0,
-	}
-};
-
-struct mm_region *mem_map = bd_mem_map;
 
 int mach_cpu_init(void) {
 	//printf("\nmach_cpu_init\n");

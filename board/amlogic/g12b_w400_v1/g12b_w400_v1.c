@@ -39,7 +39,6 @@
 #ifdef CONFIG_AML_SPICC
 #include <amlogic/spicc.h>
 #endif
-#include <asm/armv8/mmu.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -620,28 +619,6 @@ int checkhw(char * name)
 	return 0;
 }
 #endif
-
-static struct mm_region bd_mem_map[] = {
-	{
-		.virt = 0x0UL,
-		.phys = 0x0UL,
-		.size = 0x80000000UL,
-		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
-			 PTE_BLOCK_INNER_SHARE
-	}, {
-		.virt = 0x80000000UL,
-		.phys = 0x80000000UL,
-		.size = 0x80000000UL,
-		.attrs = PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
-			 PTE_BLOCK_NON_SHARE |
-			 PTE_BLOCK_PXN | PTE_BLOCK_UXN
-	}, {
-		/* List terminator */
-		0,
-	}
-};
-
-struct mm_region *mem_map = bd_mem_map;
 
 int print_cpuinfo(void) {
 	printf("print_cpuinfo\n");

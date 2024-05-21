@@ -6,6 +6,8 @@
 #ifndef __REGISTER_H__
 #define __REGISTER_H__
 
+#include <asm/arch/secure_apb.h>
+
 #define IO_CBUS_BASE			0xFFD00000
 #define IO_AXI_BUS_BASE			0xFFB00000
 #define IO_AHB_BUS_BASE			0xFF500000
@@ -15,6 +17,8 @@
 
 #define CBUS_REG_OFFSET(reg) ((reg) << 2)
 #define CBUS_REG_ADDR(reg)	 (IO_CBUS_BASE + CBUS_REG_OFFSET(reg))
+
+#define SYSCTRL_SEC_STATUS_REG4	AO_SEC_GP_CFG0
 
 #if 0
 /* below UART0,UART1,AO_UART is m8 addr,it is placed is for compiling pass */

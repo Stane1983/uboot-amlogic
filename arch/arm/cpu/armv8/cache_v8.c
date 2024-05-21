@@ -12,6 +12,9 @@
 #include <asm/armv8/mmu.h>
 #include <asm/sections.h>
 
+#include <asm/arch/register.h>
+#include <asm/io.h>
+
 DECLARE_GLOBAL_DATA_PTR;
 
 #ifndef CONFIG_SYS_DCACHE_OFF
@@ -360,6 +363,40 @@ static int count_required_pts(u64 addr, int level, u64 maxaddr)
 	return r;
 }
 
+/* update mmu map from bl2 ddr auto detect size */
+int mmu_map_update(void)
+{
+	ulong ddr_size =
+	    ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xffffUL) << 4) >
+	    0xe0000000 ? 0xe0000000 : ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xffffUL) << 4);
+
+	u32 rsv_addr;
+	u32 reg_size;
+	u32 rsv_size;
+#if defined(P_AO_SEC_GP_CFG3)
+	rsv_addr = readl(P_AO_SEC_GP_CFG5);
+	reg_size = readl(P_AO_SEC_GP_CFG3);
+#elif defined(SYSCTRL_SEC_STATUS_REG15)
+	rsv_addr = readl(SYSCTRL_SEC_STATUS_REG17);
+	reg_size = readl(SYSCTRL_SEC_STATUS_REG15);
+#endif
+	if ((reg_size >> 16) & 0xff)
+		rsv_size = (((reg_size & ~0xffff) >> 16) << 16) + ((reg_size & 0xffff) << 16);
+	else
+		rsv_size = (((reg_size & ~0xffff) >> 16) << 10) + ((reg_size & 0xffff) << 10);
+
+	rsv_addr += (1 << 20);
+	rsv_size -= (1 << 20);
+
+	bd_mem_map[0].size = rsv_addr;
+
+	bd_mem_map[1].virt = rsv_addr + rsv_size;
+	bd_mem_map[1].phys = rsv_addr + rsv_size;
+	bd_mem_map[1].size = ddr_size - bd_mem_map[1].phys;
+
+	return 0;
+}
+
 /* Returns the estimated required size of all page tables */
 __weak u64 get_page_table_size(void)
 {
@@ -367,6 +404,8 @@ __weak u64 get_page_table_size(void)
 	u64 size = 0;
 	u64 va_bits;
 	int start_level = 0;
+
+	mmu_map_update();
 
 	get_tcr(0, NULL, &va_bits);
 	if (va_bits < 39)

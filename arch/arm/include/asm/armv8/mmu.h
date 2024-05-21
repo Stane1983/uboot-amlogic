@@ -133,10 +133,37 @@ struct mm_region {
 	u64 attrs;
 };
 
+struct mm_region bd_mem_map[] = {
+	{
+		.virt = 0x00000000UL,
+		.phys = 0x00000000UL,
+		.size = 0x80000000UL,
+		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
+			PTE_BLOCK_INNER_SHARE
+	}, {
+		.virt = 0x00000000UL,
+		.phys = 0x00000000UL,
+		.size = 0xe0000000UL,
+		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
+			PTE_BLOCK_INNER_SHARE
+	}, {
+		.virt = 0xe0000000UL,
+		.phys = 0xe0000000UL,
+		.size = 0x20000000UL,
+		.attrs = PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
+			PTE_BLOCK_NON_SHARE |
+			PTE_BLOCK_PXN | PTE_BLOCK_UXN
+	}, {
+	     /* List terminator */
+	     0,
+	}
+};
+
+struct mm_region *mem_map = bd_mem_map;
+
 #ifdef CONFIG_FULL_RAMDUMP
 void load_bl33z(void);
 #endif
-extern struct mm_region *mem_map;
 void setup_pgtables(void);
 u64 get_tcr(int el, u64 *pips, u64 *pva_bits);
 #endif
