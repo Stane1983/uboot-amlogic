@@ -751,7 +751,7 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 #ifdef CONFIG_AVB2
 			original_size = actualbootimgsz;
 			actualbootimgsz = get_size_avb_footer(partname);
-			if (!actualbootimgsz) {
+			if (!actualbootimgsz || actualbootimgsz < original_size) {
 				actualbootimgsz = original_size;
 				kernel_preload = false;
 				wrnP("part: %s footer not at correct location\n", partname);
@@ -872,7 +872,7 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 #ifdef CONFIG_AVB2
 					original_size = ramdisk_size;
 					ramdisk_size = get_size_avb_footer(partname_init);
-					if (!ramdisk_size) {
+					if (!ramdisk_size || ramdisk_size < original_size) {
 						ramdisk_size = original_size;
 						init_boot_preload = false;
 						wrnP("part: %s footer not at correct location\n",
@@ -1075,8 +1075,8 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 #ifdef CONFIG_AVB2
 			if (!(upgrade_step_s && !(strcmp(upgrade_step_s, "3")))) {
 				original_size = nflashloadlen_r;
-				nflashloadlen_r =  get_size_avb_footer(partname_r);
-				if (!nflashloadlen_r) {
+				nflashloadlen_r = get_size_avb_footer(partname_r);
+				if (!nflashloadlen_r || nflashloadlen_r < original_size) {
 					nflashloadlen_r = original_size;
 					vendor_boot_preload = false;
 					wrnP("part: %s footer not at correct location\n",
