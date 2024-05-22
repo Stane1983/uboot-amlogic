@@ -896,6 +896,18 @@ struct aml_nand_flash_dev aml_nand_flash_ids[] = {
 		(NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE
 		| NAND_TWO_PLANE_MODE | NAND_INTERLEAVING_MODE)},
 
+	{"FORESEE 4Gbit SLC NAND Flash FSNS8B004G",
+		{NAND_MFR_FORESEE, 0xDC, 0x00, 0xA2, 0x62},
+		4096,
+		512,
+		0x40000,
+		256,
+		1,
+		20,
+		15,
+		0,
+		NAND_TIMING_MODE4},
+
 	{NULL,}
 };
 

@@ -324,7 +324,7 @@ static struct mtd_partition normal_partition_info[] = {
 	{
 	 .name = "recovery",
 	 .offset = 0,
-	 .size = 16 * SZ_1M,
+	 .size = 18 * SZ_1M,
 	  },
 	{
 	 .name = "boot",
@@ -334,7 +334,7 @@ static struct mtd_partition normal_partition_info[] = {
 	{
 	 .name = "system",
 	 .offset = 0,
-	 .size = 64 * SZ_1M,
+	 .size = 128 * SZ_1M,
 	  },
 /* last partition get the rest capacity */
 	{

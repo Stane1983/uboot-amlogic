@@ -1004,6 +1004,7 @@ static inline void nand_set_controller_data(struct nand_chip *chip, void *priv)
 #define NAND_ID_ESMT		0xc8
 #define NAND_ID_WINBOND		0xef
 #define NAND_MFR_DOSILICON	0xf8
+#define NAND_MFR_FORESEE	0xcd
 #endif
 
 /* The maximum expected count of bytes in the NAND ID sequence */
