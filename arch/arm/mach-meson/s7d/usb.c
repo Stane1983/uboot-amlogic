@@ -133,7 +133,7 @@ static void usb_set_calibration_trim(uint32_t phy2_pll_base)
 	cali = cali >> 8;
 
 	if (cali_en) {
-		cali = (cali & 0xf);
+		cali = (cali & 0xf) + 2;
 
 		if (cali > 12)
 			cali = 12;
@@ -147,7 +147,7 @@ static void usb_set_calibration_trim(uint32_t phy2_pll_base)
 	} else {
 		value = readl(phy2_pll_base + 0x10);
 		value &= (~0xfff);
-		value |= 0x7f;
+		value |= 0x1ff;
 		writel(value, phy2_pll_base + 0x10);
 	}
 
@@ -257,6 +257,9 @@ int usb2_phy_init(struct phy *phy)
 		u2p_aml_reg->u2p_r0  = dev_u2p_r0.d32;
 		udelay(10);
 		writel(1 << priv->usbphy_reset_bit[i], priv->reset_addr);
+		udelay(50);
+
+		usb_set_calibration_trim(priv->usb_phy2_pll_base_addr[i]);
 		udelay(50);
 
 		/* wait for phy ready */
