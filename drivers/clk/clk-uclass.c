@@ -106,7 +106,7 @@ int clk_get_by_index(struct udevice *dev, int index, struct clk *clk)
 int clk_get_bulk(struct udevice *dev, struct clk_bulk *bulk)
 {
 	int i, ret, err, count;
-	
+
 	bulk->count = 0;
 
 	count = dev_count_phandle_with_args(dev, "clocks", "#clock-cells");
@@ -310,6 +310,9 @@ int clk_request(struct udevice *dev, struct clk *clk)
 
 	clk->dev = dev;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock_init(&dev->lock);
+#endif
 	if (!ops->request)
 		return 0;
 
@@ -319,61 +322,123 @@ int clk_request(struct udevice *dev, struct clk *clk)
 int clk_free(struct clk *clk)
 {
 	const struct clk_ops *ops = clk_dev_ops(clk->dev);
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	struct udevice *dev = clk->dev;
+	int ret;
+#endif
 	debug("%s(clk=%p)\n", __func__, clk);
 
 	if (!ops->free)
 		return 0;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&dev->lock);
+	ret = ops->free(clk);
+	if ((gd->flags & GD_FLG_SMP))
+		spin_unlock(&dev->lock);
+	return ret;
+#else
 	return ops->free(clk);
+#endif
 }
 
 ulong clk_get_rate(struct clk *clk)
 {
 	const struct clk_ops *ops = clk_dev_ops(clk->dev);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	struct udevice *dev = clk->dev;
+	int ret;
+#endif
 
 	debug("%s(clk=%p)\n", __func__, clk);
 
 	if (!ops->get_rate)
 		return -ENOSYS;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&dev->lock);
+	ret = ops->get_rate(clk);
+	if ((gd->flags & GD_FLG_SMP))
+		spin_unlock(&dev->lock);
+	return ret;
+#else
 	return ops->get_rate(clk);
+#endif
 }
 
 ulong clk_set_rate(struct clk *clk, ulong rate)
 {
 	const struct clk_ops *ops = clk_dev_ops(clk->dev);
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	struct udevice *dev = clk->dev;
+	int ret;
+#endif
 	debug("%s(clk=%p, rate=%lu)\n", __func__, clk, rate);
 
 	if (!ops->set_rate)
 		return -ENOSYS;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&dev->lock);
+	ret = ops->set_rate(clk, rate);
+	if ((gd->flags & GD_FLG_SMP))
+		spin_unlock(&dev->lock);
+	return ret;
+#else
 	return ops->set_rate(clk, rate);
+#endif
 }
 
 int clk_set_parent(struct clk *clk, struct clk *parent)
 {
 	const struct clk_ops *ops = clk_dev_ops(clk->dev);
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	struct udevice *dev = clk->dev;
+	int ret;
+#endif
 	debug("%s(clk=%p, parent=%p)\n", __func__, clk, parent);
 
 	if (!ops->set_parent)
 		return -ENOSYS;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&dev->lock);
+	ret = ops->set_parent(clk, parent);
+	if ((gd->flags & GD_FLG_SMP))
+		spin_unlock(&dev->lock);
+	return ret;
+#else
 	return ops->set_parent(clk, parent);
+#endif
 }
 
 int clk_enable(struct clk *clk)
 {
 	const struct clk_ops *ops = clk_dev_ops(clk->dev);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	struct udevice *dev = clk->dev;
+	int ret;
+#endif
 
 	debug("%s(clk=%p)\n", __func__, clk);
 
 	if (!ops->enable)
 		return -ENOSYS;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&dev->lock);
+	ret = ops->enable(clk);
+	if ((gd->flags & GD_FLG_SMP))
+		spin_unlock(&dev->lock);
+	return ret;
+#else
 	return ops->enable(clk);
+#endif
 }
 
 int clk_enable_bulk(struct clk_bulk *bulk)
@@ -392,13 +457,26 @@ int clk_enable_bulk(struct clk_bulk *bulk)
 int clk_disable(struct clk *clk)
 {
 	const struct clk_ops *ops = clk_dev_ops(clk->dev);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	struct udevice *dev = clk->dev;
+	int ret;
+#endif
 
 	debug("%s(clk=%p)\n", __func__, clk);
 
 	if (!ops->disable)
 		return -ENOSYS;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&dev->lock);
+	ret = ops->disable(clk);
+	if ((gd->flags & GD_FLG_SMP))
+		spin_unlock(&dev->lock);
+	return ret;
+#else
 	return ops->disable(clk);
+#endif
 }
 
 int clk_disable_bulk(struct clk_bulk *bulk)
