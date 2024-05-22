@@ -22,6 +22,10 @@
 #include <partition_table.h>
 #endif
 #include "normal_key.h"
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#include <spinlock.h>
+static spin_lock_t unify_lock;
+#endif
 
 /* key buffer status */
 /* bit0, dirty flag*/
@@ -229,6 +233,9 @@ static ssize_t _amlkey_write(const uint8_t *name, uint8_t *buffer, uint32_t len,
 		printf("%s() %d, invalid key ", __func__, __LINE__);
 		return retval;
 	}
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&unify_lock);
+#endif
 	ret = secure_storage_write((uint8_t *)name, buffer, len, attr);
 	if (ret) {
 		printf("%s() %d: return %d\n", __func__, __LINE__, ret);
@@ -248,6 +255,9 @@ static ssize_t _amlkey_write(const uint8_t *name, uint8_t *buffer, uint32_t len,
 		}
 	}
 _out:
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&unify_lock);
+#endif
 	return retval;
 }
 /**
@@ -443,7 +453,9 @@ static ssize_t _amlkey_write_normal(const uint8_t *name, uint8_t *buffer,
 		return 0;
 	}
 
-	mutex_lock(&normalkey_lock);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&unify_lock);
+#endif
 	ret = normalkey_add(name, buffer, len, attr);
 	if (ret) {
 		pr_err("write key fail\n");
@@ -468,7 +480,9 @@ static ssize_t _amlkey_write_normal(const uint8_t *name, uint8_t *buffer,
 	}
 	ret = len;
 unlock:
-	mutex_unlock(&normalkey_lock);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&unify_lock);
+#endif
 	return ret;
 }
 
@@ -560,7 +574,9 @@ int amlkey_if_init(const void* dt_addr)
 	if (inited)
 		return 0;
 	inited = 1;
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock_init(&unify_lock);
+#endif
 	if (secure_storage_getbuffer(&buffer_size)) {
 		amlkey_if = &amlkey_ifs[IFTYPE_SECURE_STORAGE];
 		return ret;
