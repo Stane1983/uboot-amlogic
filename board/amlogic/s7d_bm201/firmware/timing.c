@@ -176,6 +176,12 @@ __attribute__ ((section(".misc_param"))) = {
 	{ PADCTRL_GPIOD_PULL_UP,   (0x1 << 2),	  (0x1 << 2), 0, 0, 0 },
 	{ PWM_TEE_ONLY_J,          (0x1 << 0),	  (0xffffffff << 0), 0, 0, 0 },
 	{ PADCTRL_GPIOH_PULL_EN,   (0x0 << 3),    (0x1 << 3), 0, 0, 0 },
+#ifdef CONFIG_NOVERBOSE_BUILD
+	/* use acs flag to disable uart print in each blx
+	 * reg must be UART_B_WFIFO, flags: 1 --> disable uart print, 0: enable
+	 */
+	{ UART_B_WFIFO, 0, 0xffffffff, 0, 1, 0 },
+#endif
 };
 
 #define DEV_FIP_SIZE 0x300000
