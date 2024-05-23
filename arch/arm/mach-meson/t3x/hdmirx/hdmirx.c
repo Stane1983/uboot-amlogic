@@ -772,9 +772,11 @@ void rx_set_phy_rterm(void)
 	/*power domain control for hdmirx */
 	pwr_ctrl_psci_smc(PM_HDMIRX, PWR_ON);
 	extern int64_t meson_trustzone_efuse_caliItem(const char *str);
-	rterm_val = meson_trustzone_efuse_caliItem("hdmirx");
-	if (rterm_val >= 0) {
-		data32 = hdmirx_rd_amlphy(HHI_RX_PHY_MISC_CNTL1);
+	rterm_val_20 = meson_trustzone_efuse_caliItem("hdmirx");
+	rterm_val_21 = meson_trustzone_efuse_caliItem("hdmirx21");
+	/* if not trimed,meson_trustzone_efuse_caliItem return -1 */
+	if (rterm_val_20 >= 0) {
+		data32 = hdmirx_rd_amlphy(T3X_HDMIRX20PHY_DCHA_MISC1, E_PORT0);
 		data32 &= (~(0xf << 12));
 		/* rterm val */
 		data32 |= (rterm_val << 12);
@@ -783,7 +785,20 @@ void rx_set_phy_rterm(void)
 		hdmirx_wr_amlphy(HHI_RX_PHY_MISC_CNTL1, data32);
 		printf("rx trim:0x%x\n", data32);
 	} else {
-		printf("no trim val!\n");
+		printf("no 20 trim val!\n");
+	}
+	if (rterm_val_21 >= 0) {
+		data32 = hdmirx_rd_amlphy(T3X_HDMIRX21PHY_MISC2, E_PORT2);
+		data32 &= (~0xf);
+		/* rterm flag */
+		data32 |= (0x1 << 31);
+		/* rterm val */
+		data32 |= (rterm_val_21 << 0);
+		hdmirx_wr_amlphy(T3X_HDMIRX21PHY_MISC2, data32, E_PORT2);
+		hdmirx_wr_amlphy(T3X_HDMIRX21PHY_MISC2, data32, E_PORT3);
+		printf("rx 21 trim:0x%x\n", data32);
+	} else {
+		printf("no 21 trim val!\n");
 	}
 }
 
