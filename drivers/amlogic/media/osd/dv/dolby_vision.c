@@ -1148,7 +1148,7 @@ static int dolby_core2_set(
 	else if ((vinfo_width == 1920) &&
 		 (vinfo_height == 1080) &&
 		 (vinfo_field_height < 1080))
-		g_vpotch = 0x60;
+		g_vpotch = 0x48;
 	else if ((vinfo_width == 1280) && (vinfo_height == 720))
 		g_vpotch = 0x38;
 	else
@@ -1878,14 +1878,17 @@ static int  enable_dolby_vision(void)
 	return 0;
 }
 
-#if 0
 static int prepare_drm_pkt(struct master_display_info_s *data,
-	struct dovi_setting_s *setting, const struct hdmitx_dev *hdmitx_device)
+	const struct hdmitx_dev *hdmitx_device)
 {
 	struct hdr10_infoframe *p_hdr;
-	printk("run into prepare_drm_pkt\n");
-	p_hdr = &setting->hdr_info;
-	if (!data || !hdmitx_device || !setting)
+
+	if (is_multi_dv_mode())
+		p_hdr = &m_dovi_setting.hdr_info;
+	else
+		p_hdr = &dovi_setting.hdr_info;
+
+	if (!data || !hdmitx_device || !p_hdr)
 		return -1;
 
 	data->features = (1 << 29) | (5 << 26) | (0 << 25) | (1 << 24)
@@ -1924,53 +1927,6 @@ static int prepare_drm_pkt(struct master_display_info_s *data,
 		| p_hdr->max_frame_avg_light_level_lsb;
 	return 0;
 }
-
-static int m_prepare_drm_pkt(struct master_display_info_s *data,
-	struct m_dovi_setting_s *m_setting, const struct hdmitx_dev *hdmitx_device)
-{
-	struct hdr10_infoframe *p_hdr;
-	printk("run into m_prepare_drm_pkt\n");
-	p_hdr = &m_setting->hdr_info;
-	if (!data || !hdmitx_device || !m_setting)
-		return -1;
-
-	data->features = (1 << 29) | (5 << 26) | (0 << 25) | (1 << 24)
-			| (9 << 16) | (0x10 << 8) | (10 << 0);
-
-	/* ko return primaries in RGB order, uboot send pkt in RGB order, */
-	/* to keep same with kernel*/
-	data->primaries[0][0] = (p_hdr->primaries_x_0_msb << 8)
-	| p_hdr->primaries_x_0_lsb;
-	data->primaries[0][1] = (p_hdr->primaries_y_0_msb << 8)
-	| p_hdr->primaries_y_0_lsb;
-	data->primaries[1][0] = (p_hdr->primaries_x_1_msb << 8)
-	| p_hdr->primaries_x_1_lsb;
-	data->primaries[1][1] = (p_hdr->primaries_y_1_msb << 8)
-	| p_hdr->primaries_y_1_lsb;
-	data->primaries[2][0] = (p_hdr->primaries_x_2_msb << 8)
-		| p_hdr->primaries_x_2_lsb;
-	data->primaries[2][1] = (p_hdr->primaries_y_2_msb << 8)
-		| p_hdr->primaries_y_2_lsb;
-	data->white_point[0] = (p_hdr->white_point_x_msb << 8)
-		| p_hdr->white_point_x_lsb;
-	data->white_point[1] = (p_hdr->white_point_y_msb << 8)
-		| p_hdr->white_point_y_lsb;
-	data->luminance[0] =
-		(p_hdr->max_display_mastering_lum_msb << 8)
-		| p_hdr->max_display_mastering_lum_lsb;
-	data->luminance[1] =
-		(p_hdr->min_display_mastering_lum_msb << 8)
-		| p_hdr->min_display_mastering_lum_lsb;
-
-	data->max_content =
-		(p_hdr->max_content_light_level_msb << 8)
-		| p_hdr->max_content_light_level_lsb;
-	data->max_frame_average =
-		(p_hdr->max_frame_avg_light_level_msb << 8)
-		| p_hdr->max_frame_avg_light_level_lsb;
-	return 0;
-}
-#endif
 
 static int prepare_vsif_pkt(struct dv_vsif_para *vsif,
 	struct dovi_setting_s *setting, const struct hdmitx_dev *hdmitx_device)
@@ -2110,10 +2066,7 @@ void send_hdmi_pkt(void)
 		}
 	} else if (cur_dst_format == FORMAT_HDR10) {
 		memset(&drmif, 0, sizeof(drmif));
-		if (is_multi_dv_mode())
-			m_prepare_vsif_pkt(&vsif, &m_dovi_setting, hdev);
-		else
-			prepare_vsif_pkt(&vsif, &dovi_setting, hdev);
+		prepare_drm_pkt(&drmif, hdev);
 		hdmitx_set_drm_pkt(&drmif);
 	} else
 		return;
