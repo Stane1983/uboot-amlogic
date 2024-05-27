@@ -215,9 +215,7 @@ static void qms_scene_pre_process(struct hdmitx_dev *hdev)
 		pr_info("not find brr_vic %d timing\n", hdev->brr_vic);
 		return;
 	}
-	color = env_get("user_colorattribute");
-	if (!color || !strcmp(color, "none"))
-		color = env_get("colorattribute");
+	color = env_get("colorattribute");
 	/* save brr_vic to vic without the environment */
 	hdev->vic = hdev->brr_vic;
 	hdev->para = hdmitx21_get_fmtpara(t->sname ? t->sname : t->name, color);
