@@ -53,6 +53,7 @@ struct hdmitx_dev {
 	enum frl_rate_enum manual_frl_rate; /* for manual setting */
 	u8 tx_max_frl_rate; /* configure in dts file */
 	bool flt_train_st; /* 0 means FLT train failed */
+	bool frl_train_fail_flag;
 	u32 dsc_en;
 	u8 dsc_policy;
 	u32 dfm_type;

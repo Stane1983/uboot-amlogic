@@ -370,9 +370,9 @@ static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 		if (hdev->frl_rate && !hdev->flt_train_st) {
 			/* FLT training failed, need go to tmds mode */
 			printf("hdmitx frl training failed, set tmds mode\n");
-			run_command("setenv hdmimode 1080p60hz", 0);
-			run_command("setenv colorattribute 422,12bit", 0);
-			run_command("run init_display_base", 0);
+			hdmitx_module_disable();
+			hdev->frl_train_fail_flag = true;
+			run_command("run init_display", 0);
 		}
 	}
 	return CMD_RET_SUCCESS;
@@ -1379,6 +1379,16 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 				last_dv_status);
 		}
 	}
+	/* When outputting frl mode, if frl training fails under uboot,
+	 * in order to ensure that it is displayed under uboot, change
+	 * to the default TMDS mode for output display. systemctrl
+	 * maintains the original 8k policy. After the subsequent systermctrl
+	 * starts running, if it is checked that the current output is not the
+	 * original frl mode, it will switch to the original frl mode.
+	 */
+	if (hdev->frl_train_fail_flag) {
+		save_default_720p();
+	} else if (hdev->RXCap.edid_changed || no_manual_output || !mode_support || over_write) {
 	/* 4 cases need to decide output by uboot mode select policy:
 	 * 1.TV changed
 	 * 2.either hdmimode or colorattribute is NULL or "none",
@@ -1390,7 +1400,6 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 	 * with uboot policy.
 	 * 4.user selected mode is over writen by system policy
 	 */
-	if (hdev->RXCap.edid_changed || no_manual_output || !mode_support || over_write) {
 		/* find proper mode if EDID changed */
 		scene_process(hdev, &scene_output_info);
 		env_set("hdmichecksum", hdev->RXCap.hdmichecksum);
