@@ -52,7 +52,9 @@ enum vpp_matrix_e {
 	POST2_MTX = 0x2,
 	POST_MTX = 0x4,
 	VPP1_POST2_MTX = 0x8,
-	VPP2_POST2_MTX = 0x10
+	VPP2_POST2_MTX = 0x10,
+	VPP_OSD1_MTX = 0x40,
+	VPP_OSD2_MTX = 0x41
 };
 
 enum mtx_csc_e {
@@ -79,6 +81,7 @@ enum mtx_csc_e {
 	MATRIX_BT2020YUV_BT2020RGB = 0x40,
 	MATRIX_BT2020RGB_709RGB,
 	MATRIX_BT2020RGB_CUSRGB,
+	MATRIX_RGB_BT2020YUV
 };
 
 enum vpp_slice_e {
@@ -96,6 +99,10 @@ struct matrix_coef_s {
 	__u16 right_shift;
 	__u16 en;
 };
+
+void mtx_setting(enum vpp_matrix_e mtx_sel,
+		 enum mtx_csc_e mtx_csc,
+	int mtx_on);
 
 /* vpp1 post2 matrix */
 #ifndef VPP1_MATRIX_COEF00_01
