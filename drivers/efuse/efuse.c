@@ -8,6 +8,12 @@
 #include <command.h>
 #include <asm/arch/io.h>
 #include <asm/arch/efuse.h>
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#include <spinlock.h>
+#ifdef CONFIG_EFUSE_OBJ_API
+static spin_lock_t efuse_field_lock = {UNLOCK};
+#endif
+#endif
 
 char efuse_buf[EFUSE_BYTES] = {0};
 
@@ -301,6 +307,9 @@ uint32_t efuse_obj_get_data(char *name)
 	uint8_t buff[32];
 	uint32_t bufflen = sizeof(buff);
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&efuse_field_lock);
+#endif
 	ret = efuse_obj_read(EFUSE_OBJ_EFUSE_DATA, name, buff, &bufflen);
 	if (ret == EFUSE_OBJ_SUCCESS) {
 		memset(&efuse_field, 0, sizeof(efuse_field));
@@ -308,7 +317,9 @@ uint32_t efuse_obj_get_data(char *name)
 		memcpy(efuse_field.data, buff, bufflen);
 		efuse_field.size = bufflen;
 	}
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&efuse_field_lock);
+#endif
 	return ret;
 }
 
@@ -318,6 +329,9 @@ uint32_t efuse_obj_get_lock(char *name)
 	uint8_t buff[32];
 	uint32_t bufflen = sizeof(buff);
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&efuse_field_lock);
+#endif
 	ret = efuse_obj_read(EFUSE_OBJ_LOCK_STATUS, name, buff, &bufflen);
 	if (ret == EFUSE_OBJ_SUCCESS) {
 		memset(&efuse_field, 0, sizeof(efuse_field));
@@ -325,7 +339,9 @@ uint32_t efuse_obj_get_lock(char *name)
 		memcpy(efuse_field.data, buff, bufflen);
 		efuse_field.size = bufflen;
 	}
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&efuse_field_lock);
+#endif
 	return ret;
 }
 #endif /* CONFIG_EFUSE_OBJ_API */

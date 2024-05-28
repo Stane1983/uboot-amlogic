@@ -29,6 +29,11 @@
 #include <amlogic/cpu_id.h>
 #include <asm/arch/secure_apb.h>
 #include <asm/arch/cpu_config.h>
+#include <linux/arm-smccc.h>
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#include <spinlock.h>
+static spin_lock_t sharemem_info_lock = {UNLOCK};
+#endif
 
 static long sharemem_input_base;
 static long sharemem_output_base;
@@ -53,23 +58,16 @@ int32_t set_boot_params(const keymaster_boot_params *boot_params)
 	if (!sharemem_input_base)
 		sharemem_input_base =
 			get_sharemem_info(GET_SHARE_MEM_INPUT_BASE);
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&sharemem_info_lock);
+#endif
 	memcpy((void *)sharemem_input_base,
 			(const void *)boot_params, sizeof(keymaster_boot_params));
-
-	asm __volatile__("" : : : "memory");
-	register uint64_t x0 asm("x0") = cmd;
-	register uint64_t x1 asm("x1") = sizeof(keymaster_boot_params);
-	do {
-		asm volatile(__asmeq("%0", "x0")
-		    __asmeq("%1", "x0")
-		    __asmeq("%2", "x1")
-		    "smc    #0\n"
-		    : "=r"(x0)
-		    : "r"(x0), "r"(x1));
-	} while (0);
-
-	return (!x0)? -1: 0;
+	arm_smccc_smc(cmd, sizeof(keymaster_boot_params), 0, 0, 0, 0, 0, 0, &res);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&sharemem_info_lock);
+#endif
+	return (!res.a0) ? -1 : 0;
 }
 
 #ifdef CONFIG_EFUSE
@@ -86,7 +84,9 @@ uint32_t meson_efuse_obj_read(uint32_t obj_id, uint8_t *buff, uint32_t *size)
 	if (!sharemem_output_base)
 		sharemem_output_base =
 			get_sharemem_info(GET_SHARE_MEM_OUTPUT_BASE);
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&sharemem_info_lock);
+#endif
 	memcpy((void *)sharemem_input_base, buff, *size);
 
 	register uint64_t x0 asm("x0") = EFUSE_OBJ_READ;
@@ -115,7 +115,9 @@ uint32_t meson_efuse_obj_read(uint32_t obj_id, uint8_t *buff, uint32_t *size)
 			rc = EFUSE_OBJ_ERR_SIZE;
 		}
 	}
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&sharemem_info_lock);
+#endif
 	return rc;
 }
 
@@ -130,24 +132,16 @@ uint32_t meson_efuse_obj_write(uint32_t obj_id, uint8_t *buff, uint32_t size)
 	if (!sharemem_output_base)
 		sharemem_output_base =
 			get_sharemem_info(GET_SHARE_MEM_OUTPUT_BASE);
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&sharemem_info_lock);
+#endif
 	memcpy((void *)sharemem_input_base, buff, size);
 
-	register uint64_t x0 asm("x0") = EFUSE_OBJ_WRITE;
-	register uint64_t x1 asm("x1") = obj_id;
-	register uint64_t x2 asm("x2") = size;
-
-	do {
-		asm volatile(__asmeq("%0", "x0")
-			__asmeq("%1", "x0")
-			__asmeq("%2", "x1")
-			__asmeq("%3", "x2")
-			"smc	#0\n"
-			: "+r" (x0)
-			: "r" (x0), "r" (x1), "r" (x2));
-	} while (0);
-
-	rc = x0;
+	arm_smccc_smc(EFUSE_OBJ_WRITE, obj_id, size, 0, 0, 0, 0, 0, &res);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&sharemem_info_lock);
+#endif
+	rc = res.a0;
 	return rc;
 }
 #endif /* CONFIG_EFUSE_OBJ_API */
@@ -175,7 +169,9 @@ int32_t meson_trustzone_efuse(struct efuse_hal_api_arg *arg)
 		cmd = EFUSE_WRITE_PATTERN;
 	offset = arg->offset;
 	size = arg->size;
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&sharemem_info_lock);
+#endif
 	if (arg->cmd == EFUSE_HAL_API_WRITE) {
 		memcpy((void *)sharemem_input_base,
 		       (const void *)arg->buffer_phy, size);
@@ -202,7 +198,9 @@ int32_t meson_trustzone_efuse(struct efuse_hal_api_arg *arg)
 	if ((arg->cmd == EFUSE_HAL_API_READ || arg->cmd == EFUSE_HAL_API_READ_CALI) && (ret != 0))
 		memcpy((void *)arg->buffer_phy,
 		       (const void *)sharemem_output_base, ret);
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&sharemem_info_lock);
+#endif
 	if (!ret)
 		return -1;
 	else
@@ -398,9 +396,15 @@ void bl31_debug_efuse_write_pattern(const char *buf)
 	if (!sharemem_input_base)
 		sharemem_input_base =
 			get_sharemem_info(GET_SHARE_MEM_INPUT_BASE);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&sharemem_info_lock);
+#endif
 	memcpy((void *)sharemem_input_base, (const void *)buf, 512);
 
 	debug_efuse_cmd(DEBUG_EFUSE_WRITE_PATTERN);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&sharemem_info_lock);
+#endif
 }
 
 void bl31_debug_efuse_read_pattern(char *buf)
@@ -408,9 +412,15 @@ void bl31_debug_efuse_read_pattern(char *buf)
 	if (!sharemem_output_base)
 		sharemem_output_base =
 			get_sharemem_info(GET_SHARE_MEM_OUTPUT_BASE);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&sharemem_info_lock);
+#endif
 	debug_efuse_cmd(DEBUG_EFUSE_READ_PATTERN);
 
 	memcpy((void *)buf, (const void *)sharemem_output_base, 512);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&sharemem_info_lock);
+#endif
 }
 
 void aml_set_jtag_state(unsigned state, unsigned select)
@@ -450,14 +460,10 @@ unsigned aml_get_reboot_reason(void)
 	unsigned reason;
 	uint64_t ret;
 
-	register uint64_t x0 asm("x0") = GET_REBOOT_REASON;
-	asm volatile(
-		__asmeq("%0", "x0")
-		"smc #0\n"
-		:"+r"(x0));
-		ret = x0;
-		reason = (unsigned)(ret&0xffffffff);
-		return reason;
+	arm_smccc_smc(GET_REBOOT_REASON, 0, 0, 0, 0, 0, 0, 0, &res);
+	reason = (unsigned)(res.a0 & 0xffffffff);
+
+	return reason;
 }
 
 void set_viu_probe_enable(void)
@@ -664,8 +670,10 @@ int __get_chip_id(unsigned char *buff, unsigned int size)
 			get_sharemem_info(GET_SHARE_MEM_OUTPUT_BASE);
 
 	if (sharemem_output_base) {
-		register long x0 asm("x0") = GET_CHIP_ID;
-		register long x1 asm("x1") = 2;
+	#ifdef CONFIG_ARMV8_MULTIENTRY
+		spin_lock(&sharemem_info_lock);
+	#endif
+		arm_smccc_smc(GET_CHIP_ID, 2, 0, 0, 0, 0, 0, 0, &res);
 
 		asm volatile(
 			__asmeq("%0", "x0")
@@ -701,9 +709,14 @@ int __get_chip_id(unsigned char *buff, unsigned int size)
 				for (i = 0; i < 12; i++)
 					buff[i + 4] = ch[11 - i];
 			}
-
+		#ifdef CONFIG_ARMV8_MULTIENTRY
+			spin_unlock(&sharemem_info_lock);
+		#endif
 			return 0;
 		}
+	#ifdef CONFIG_ARMV8_MULTIENTRY
+		spin_unlock(&sharemem_info_lock);
+	#endif
 	}
 
 	return -1;
@@ -723,22 +736,21 @@ int bl31_get_cornerinfo(uint8_t *outbuf, int size)
 			get_sharemem_info(GET_SHARE_MEM_OUTPUT_BASE);
 
 	if (sharemem_output_base) {
-		register long x0 asm("x0") = OSCRING_EFUSE_GET;
-		register long x1 asm("x1") = size;
-
-		do {
-			asm volatile(
-				__asmeq("%0", "x0")
-				__asmeq("%1", "x1")
-				"smc	#0\n"
-				: "+r" (x0)
-				: "r" (x1));
-		} while(0);
-		buff_len = x0;
+	#ifdef CONFIG_ARMV8_MULTIENTRY
+		spin_lock(&sharemem_info_lock);
+	#endif
+		arm_smccc_smc(OSCRING_EFUSE_GET, size, 0, 0, 0, 0, 0, 0, &res);
+		buff_len = res.a0;
 		if (buff_len <= size) {
 			memcpy(outbuf, (void *)sharemem_output_base, buff_len);
+		#ifdef CONFIG_ARMV8_MULTIENTRY
+			spin_unlock(&sharemem_info_lock);
+		#endif
 			return 0;
 		} else {
+		#ifdef CONFIG_ARMV8_MULTIENTRY
+			spin_unlock(&sharemem_info_lock);
+		#endif
 			printf("BL33: corner efuse info buf len %d over storebuf size %d\n", buff_len, size);
 			return -1;
 		}
@@ -758,17 +770,10 @@ int32_t get_avbkey_from_fip(uint8_t *buf, uint32_t buflen)
 	if (!sharemem_output_base)
 		sharemem_output_base =
 			get_sharemem_info(GET_SHARE_MEM_OUTPUT_BASE);
-
-	asm __volatile__("" : : : "memory");
-	register uint64_t x0 asm("x0") = cmd;
-	do {
-		asm volatile(
-		    __asmeq("%0", "x0")
-		    __asmeq("%1", "x0")
-		    "smc    #0\n"
-		    : "=r"(x0)
-		    : "r"(x0));
-	} while (0);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&sharemem_info_lock);
+#endif
+	arm_smccc_smc(cmd, 0, 0, 0, 0, 0, 0, 0, &res);
 
 	if (!x0)
 		ret = -1;
@@ -776,7 +781,9 @@ int32_t get_avbkey_from_fip(uint8_t *buf, uint32_t buflen)
 
 	if (ret != -1 && buflen >= retlen)
 		memcpy(buf, (const void *)sharemem_output_base, retlen);
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&sharemem_info_lock);
+#endif
 	return ret;
 }
 
@@ -790,15 +797,15 @@ int32_t aml_get_bootloader_version(uint8_t *outbuf)
 		sharemem_output_base =
 			get_sharemem_info(GET_SHARE_MEM_OUTPUT_BASE);
 	if (sharemem_output_base) {
-		register long x0 asm("x0") = GET_SHARE_MEM_INFORMATION;
-		register long x1 asm("x1") = GET_SHARE_VERSION_DATA;
-		asm volatile(\
-			__asmeq("%0", "x0")
-			__asmeq("%1", "x1")
-			"smc	#0\n"
-			: "+r" (x0)
-			: "r" (x1));
+	#ifdef CONFIG_ARMV8_MULTIENTRY
+		spin_lock(&sharemem_info_lock);
+	#endif
+		arm_smccc_smc(GET_SHARE_MEM_INFORMATION, GET_SHARE_VERSION_DATA,
+				0, 0, 0, 0, 0, 0, &res);
 		memcpy(outbuf, (void *)sharemem_output_base, sizeof(build_messages_t));
+	#ifdef CONFIG_ARMV8_MULTIENTRY
+		spin_unlock(&sharemem_info_lock);
+	#endif
 		return 0;
 	}
 	return -1;
