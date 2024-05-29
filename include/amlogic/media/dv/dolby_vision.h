@@ -24,29 +24,6 @@
 
 #define DOLBY_VISION_FORCE_HDR        "3"
 
-enum vpp_matrix_sel_e {
-	VPP_MATRIX_0 = 0,	/* OSD convert matrix - new from GXL */
-	VPP_MATRIX_1,		/* vd1 matrix before post-blend */
-	VPP_MATRIX_2,		/* post matrix */
-	VPP_MATRIX_3,		/* xvycc matrix */
-	VPP_MATRIX_4,		/* in video eotf - new from GXL */
-	VPP_MATRIX_5,		/* in osd eotf - new from GXL */
-	VPP_MATRIX_6		/* vd2 matrix before pre-blend */
-};
-#define NUM_MATRIX 6
-
-/* matrix names */
-#define VPP_MATRIX_OSD		VPP_MATRIX_0
-#define VPP_MATRIX_VD1		VPP_MATRIX_1
-#define VPP_MATRIX_POST		VPP_MATRIX_2
-#define VPP_MATRIX_XVYCC	VPP_MATRIX_3
-#define VPP_MATRIX_EOTF		VPP_MATRIX_4
-#define VPP_MATRIX_OSD_EOTF	VPP_MATRIX_5
-#define VPP_MATRIX_VD2		VPP_MATRIX_6
-
-#define CSC_ON              1
-#define CSC_OFF             0
-
 enum mtx_en_e {
 	POST_MTX_EN = 0,
 	VD2_MTX_EN = 4,

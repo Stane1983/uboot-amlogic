@@ -29,6 +29,7 @@
 #include "./../vpp.h"
 #include "./../hdr2.h"
 #include "md_config.h"
+#include "./../../common/vpp/vpp.h"
 
 //#include <asm/arch/secure_apb.h>
 

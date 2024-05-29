@@ -9,6 +9,7 @@
 #include "hdr2.h"
 #include "vpp.h"
 #include <common.h>
+#include <amlogic/media/dv/dolby_vision.h>
 
 #define OO_Y_LUT_BYPASS_VAL 512
 
@@ -1243,6 +1244,7 @@ void hdr_func(enum hdr_module_sel module_sel,
 	int *oft_post_in = bypass_pos;
 	enum vpp_matrix_e mtx_sel = MTX_NULL;
 	enum mtx_csc_e mtx_csc = MATRIX_NULL;
+	int mtx_on = 1;
 
 	/* t3 have osd1/2/3 and vd1/2, no vd3 */
 	/* t7 have osd1/3 and vd1/2/3, no osd2 */
@@ -1651,7 +1653,28 @@ void hdr_func(enum hdr_module_sel module_sel,
 	} else if (hdr_process_select & SDR_HDR) {
 		hdr_mtx_param.mtx_only = HDR_ONLY;
 		hdr_mtx_param.mtx_gamut_mode = 1;
-		if ((get_cpu_id().family_id >= MESON_CPU_MAJOR_ID_G12A) &&
+		if ((get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S7D) &&
+		    (module_sel & (OSD1_HDR | OSD2_HDR))) {
+			for (i = 0; i < 15; i++) {
+				hdr_mtx_param.mtx_in[i] = bypass_coeff[i];
+				hdr_mtx_param.mtx_cgain[i] = bypass_coeff[i];
+				hdr_mtx_param.mtx_ogain[i] = bypass_coeff[i];
+				hdr_mtx_param.mtx_out[i] = bypass_coeff[i];
+				if (i < 9)
+					hdr_mtx_param.mtx_gamut[i] =
+					ncl_709_2020[i];
+				if (i < 3) {
+					hdr_mtx_param.mtxi_pre_offset[i] =
+						bypass_pre[i];
+					hdr_mtx_param.mtxi_pos_offset[i] =
+						bypass_pos[i];
+					hdr_mtx_param.mtxo_pre_offset[i] =
+						bypass_pre[i];
+					hdr_mtx_param.mtxo_pos_offset[i] =
+						bypass_pos[i];
+				}
+			}
+		} else if ((get_cpu_id().family_id >= MESON_CPU_MAJOR_ID_G12A) &&
 		    (module_sel & (OSD1_HDR | OSD2_HDR | OSD3_HDR | OSD4_HDR))) {
 			for (i = 0; i < 15; i++) {
 				hdr_mtx_param.mtx_in[i] = bypass_coeff[i];
@@ -1671,27 +1694,6 @@ void hdr_func(enum hdr_module_sel module_sel,
 						rgb2yuvpre[i];
 					hdr_mtx_param.mtxo_pos_offset[i] =
 						rgb2yuvpos[i];
-				}
-			}
-		} else if ((get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S7D) &&
-			(module_sel & (OSD1_HDR | OSD2_HDR))) {
-			for (i = 0; i < 15; i++) {
-				hdr_mtx_param.mtx_in[i] = bypass_coeff[i];
-				hdr_mtx_param.mtx_cgain[i] = bypass_coeff[i];
-				hdr_mtx_param.mtx_ogain[i] = bypass_coeff[i];
-				hdr_mtx_param.mtx_out[i] = bypass_coeff[i];
-				if (i < 9)
-					hdr_mtx_param.mtx_gamut[i] =
-					ncl_709_2020[i];
-				if (i < 3) {
-					hdr_mtx_param.mtxi_pre_offset[i] =
-						bypass_pre[i];
-					hdr_mtx_param.mtxi_pos_offset[i] =
-						bypass_pos[i];
-					hdr_mtx_param.mtxo_pre_offset[i] =
-						bypass_pre[i];
-					hdr_mtx_param.mtxo_pos_offset[i] =
-						bypass_pos[i];
 				}
 			}
 		} else {
@@ -1868,6 +1870,10 @@ void hdr_func(enum hdr_module_sel module_sel,
 	if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S7D &&
 		(module_sel & (OSD1_HDR | OSD2_HDR)) &&
 		(hdr_process_select & (HDR_BYPASS | SDR_HDR))) {
+		if (IS_ENABLED(CONFIG_AML_DOLBY))
+			if (check_dolby_vision_on())
+				mtx_on = 0;
+
 		if (module_sel == OSD1_HDR)
 			mtx_sel = VPP_OSD1_MTX;
 		else if (module_sel == OSD2_HDR)
@@ -1878,6 +1884,6 @@ void hdr_func(enum hdr_module_sel module_sel,
 		else if (hdr_process_select & SDR_HDR)
 			mtx_csc = MATRIX_RGB_BT2020YUV;
 
-		mtx_setting(mtx_sel, mtx_csc, 1);
+		mtx_setting(mtx_sel, mtx_csc, mtx_on);
 	}
 }
