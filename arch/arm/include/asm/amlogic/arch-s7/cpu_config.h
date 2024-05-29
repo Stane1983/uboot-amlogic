@@ -88,7 +88,14 @@ struct messages_info {
 	char ver_str[16];
 	unsigned int ver;
 	unsigned int init_flag;
-	char reserv[104];
+	union {
+		char reserv[104];
+		struct {
+			char ddr_hash[32];
+			char ddr_extern;
+			char reserv[71];
+		} ddr;
+	} ext_message;
 }; //sizeof = 0x100
 typedef struct build_messages {
 	param_header_t h;

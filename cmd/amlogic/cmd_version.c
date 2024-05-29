@@ -107,6 +107,11 @@ int get_bootloader_build_message(void)
 			//putin_buf(",");
 			putin_buf(build_info->bl2_message.hash);
 			putin_buf(",");
+			if (build_info->bl2_message.ext_message.ddr.ddr_extern) {
+				putin_buf(" DDR-");
+				putin_buf(build_info->bl2_message.ext_message.ddr.ddr_hash);
+				putin_buf(",");
+			}
 			putin_buf(build_info->bl2_message.time);
 			putin_buf(",");
 			putin_buf(build_info->bl2_message.user);
