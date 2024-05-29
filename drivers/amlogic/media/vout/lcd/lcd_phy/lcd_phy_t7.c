@@ -9,6 +9,7 @@
 #include "lcd_phy_config.h"
 #include "../lcd_common.h"
 
+#ifdef CONFIG_MESON_T7
 static struct lcd_phy_ctrl_s *phy_ctrl_p;
 
 static void lcd_phy_cntl_set(unsigned int flag,
@@ -261,12 +262,23 @@ static void lcd_edp_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 		LCDPR("phy lane_lock: 0x%x\n", phy_ctrl_p->lane_lock);
 }
 
+static unsigned int lcd_phy_preem_level_to_value_t7(struct aml_lcd_drv_s *pdrv, unsigned int level)
+{
+	unsigned int preem_value = 0;
+
+	preem_value = (level >= 0xf) ? 0xf : level;
+
+	return preem_value;
+}
+
 static struct lcd_phy_ctrl_s lcd_phy_ctrl_t7 = {
+	.lane_num = 16,
 	.lane_lock = 0,
 	.ctrl_bit_on = 1,
 	.phy_vswing_level_to_val = lcd_phy_vswing_level_to_value_dft,
+	.phy_preem_level_to_val = lcd_phy_preem_level_to_value_t7,
 	.phy_amp_dft_val = NULL,
-	.phy_preem_level_to_val = lcd_phy_preem_level_to_value_dft,
+	.phy_glb_param_dft_val = NULL,
 	.phy_set_lvds = lcd_lvds_phy_set,
 	.phy_set_vx1 = lcd_vbyone_phy_set,
 	.phy_set_mlvds = NULL,
@@ -280,3 +292,4 @@ struct lcd_phy_ctrl_s *lcd_phy_config_init_t7(struct aml_lcd_data_s *pdata)
 	phy_ctrl_p = &lcd_phy_ctrl_t7;
 	return phy_ctrl_p;
 }
+#endif

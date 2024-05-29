@@ -9,6 +9,7 @@
 #include "lcd_phy_config.h"
 #include "../lcd_common.h"
 
+#ifdef CONFIG_MESON_TXHD2
 static struct lcd_phy_ctrl_s *phy_ctrl_p;
 
 static unsigned int p2p_phy_ch_reg_mipi_dsi = 0x0002;
@@ -141,14 +142,14 @@ static void lcd_mlvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 	unsigned char i;
 	unsigned long long channel_sel;
 
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		LCDPR("%s: %d\n", __func__, status);
-
 	mlvds_conf = &pdrv->config.control.mlvds_cfg;
 	channel_sel = mlvds_conf->channel_sel1;
 	channel_sel = channel_sel << 32 | mlvds_conf->channel_sel0;
 	for (i = 0; i < 10; i++)
 		flag |= ((channel_sel >> (4 * i)) & 0xf) == 0xf ? 0 : 1 << i;
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("[%d]: %s: %d, flag=0x%04x\n", pdrv->index, __func__, status, flag);
 
 	if (status) {
 		lcd_phy_cntl14_update(phy, 0x106f1);
@@ -198,8 +199,7 @@ static unsigned int lcd_phy_preem_level_to_val_txhd2(struct aml_lcd_drv_s *pdrv,
 {
 	unsigned int preem_value = 0;
 
-	if (pdrv->config.basic.lcd_type == LCD_LVDS || pdrv->config.basic.lcd_type == LCD_MLVDS)
-		preem_value = (level >= 0xf) ? 0xf : level;
+	preem_value = (level >= 0xf) ? 0xf : level;
 
 	return preem_value;
 }
@@ -208,18 +208,19 @@ static unsigned int lcd_phy_amp_dft_txhd2(struct aml_lcd_drv_s *pdrv)
 {
 	unsigned int amp_value = 0;
 
-	if (pdrv->config.basic.lcd_type == LCD_LVDS || pdrv->config.basic.lcd_type == LCD_MLVDS)
-		amp_value = 0x5;
+	amp_value = 0x5;
 
 	return amp_value;
 }
 
 static struct lcd_phy_ctrl_s lcd_phy_ctrl_txhd2 = {
+	.lane_num = 12,
 	.lane_lock = 0,
 	.ctrl_bit_on = 0,
 	.phy_vswing_level_to_val = lcd_phy_vswing_level_to_value_dft,
-	.phy_amp_dft_val = lcd_phy_amp_dft_txhd2,
 	.phy_preem_level_to_val = lcd_phy_preem_level_to_val_txhd2,
+	.phy_amp_dft_val = lcd_phy_amp_dft_txhd2,
+	.phy_glb_param_dft_val = NULL,
 	.phy_set_lvds = lcd_lvds_phy_set,
 	.phy_set_vx1 = NULL,
 	.phy_set_mlvds = lcd_mlvds_phy_set,
@@ -233,3 +234,4 @@ struct lcd_phy_ctrl_s *lcd_phy_config_init_txhd2(struct aml_lcd_data_s *pdata)
 	phy_ctrl_p = &lcd_phy_ctrl_txhd2;
 	return phy_ctrl_p;
 }
+#endif

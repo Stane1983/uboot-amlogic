@@ -79,6 +79,20 @@ int lcd_unifykey_check(const char *key_name)
 	return 0;
 }
 
+void lcd_unifykey_header_print(unsigned char *buf)
+{
+	struct lcd_unifykey_header_s *header;
+
+	if (!buf)
+		return;
+	header = (struct lcd_unifykey_header_s *)buf;
+	LCDUKEY("unifykey v%d header:\n", header->version);
+	LCDUKEY("crc32             = 0x%08x\n", header->crc32);
+	LCDUKEY("data_len          = %d\n", header->data_len);
+	LCDUKEY("block_next_flag   = %d\n", header->block_next_flag);
+	LCDUKEY("block_cur_size    = %d\n", header->block_cur_size);
+}
+
 int lcd_unifykey_get_size(const char *key_name, int *len)
 {
 	ssize_t key_size = 0;
@@ -417,6 +431,11 @@ int lcd_unifykey_check(const char *key_name)
 {
 	LCDUKEYERR("Don't support unifykey\n");
 	return -1;
+}
+
+void lcd_unifykey_header_print(unsigned char *buf)
+{
+	LCDUKEYERR("Don't support unifykey\n");
 }
 
 int lcd_unifykey_get_size(const char *key_name, int *len)

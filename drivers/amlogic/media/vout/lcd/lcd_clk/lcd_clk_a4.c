@@ -12,6 +12,7 @@
 #include "lcd_clk_ctrl.h"
 #include "lcd_clk_utils.h"
 
+#ifdef CONFIG_MESON_A4
 static unsigned int fclk_div_table[][2] = {
 /*  sel,  divclk */
 	{1, 666666667},
@@ -166,3 +167,4 @@ void lcd_clk_config_chip_init_a4(struct aml_lcd_drv_s *pdrv, struct lcd_clk_conf
 {
 	cconf->data = &lcd_clk_data_a4;
 }
+#endif

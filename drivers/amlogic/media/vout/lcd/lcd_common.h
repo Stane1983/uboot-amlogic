@@ -68,7 +68,12 @@
 /* 20240412: lcd_extern support more option for tcon pmic usage */
 /* 20240528: lcd tablet multi timing support */
 /* 20240607: lcd tcon support extern header */
-#define LCD_DRV_VERSION    "20240607"
+/* 20240618: lcd tcon new ctrl_type(resolution) for demura multi lut */
+/* 20240620: optimize tcon multi data set */
+/* 20240704: lcd tcon support user info */
+/* 20240712: lcd tcon lut dma flow optimize */
+/* 20240806: support phy tuning function */
+#define LCD_DRV_VERSION    "20240806"
 
 extern unsigned long clk_util_clk_msr(unsigned long clk_mux);
 
@@ -148,7 +153,7 @@ void lcd_cus_ctrl_dump_raw_data(struct aml_lcd_drv_s *pdrv);
 void lcd_cus_ctrl_dump_info(struct aml_lcd_drv_s *pdrv);
 int lcd_cus_ctrl_load_from_dts(struct aml_lcd_drv_s *pdrv);
 int lcd_cus_ctrl_load_from_unifykey(struct aml_lcd_drv_s *pdrv, unsigned char *buf,
-		unsigned int max_size);
+		unsigned int max_size, unsigned char version);
 void lcd_cus_ctrl_config_remove(struct aml_lcd_drv_s *pdrv);
 int lcd_cus_ctrl_config_update(struct aml_lcd_drv_s *pdrv, void *param, unsigned int mask_sel);
 void lcd_cus_ctrl_state_clear(struct aml_lcd_drv_s *pdrv, unsigned int mask_sel);
@@ -181,15 +186,14 @@ void lcd_clk_config_probe(struct aml_lcd_drv_s *pdrv);
 int aml_lcd_prbs_test(struct aml_lcd_drv_s *pdrv, unsigned int ms, unsigned int mode_flag);
 
 /* lcd phy */
-void lcd_phy_tcon_chpi_bbc_init_tl1(struct lcd_config_s *pconf);
-unsigned int lcd_phy_vswing_level_to_value(struct aml_lcd_drv_s *pdrv, unsigned int level);
-unsigned int lcd_phy_amp_dft_value(struct aml_lcd_drv_s *pdrv);
-unsigned int lcd_phy_preem_level_to_value(struct aml_lcd_drv_s *pdrv, unsigned int level);
+int lcd_phy_param_preset(struct aml_lcd_drv_s *pdrv);
 void lcd_phy_set(struct aml_lcd_drv_s *pdrv, int status);
 int lcd_phy_probe(struct aml_lcd_drv_s *pdrv);
 int lcd_phy_config_init(struct aml_lcd_data_s *pdata);
 
 /* lcd dphy */
+void lcd_lane_map_preset(struct aml_lcd_drv_s *pdrv);
+void lcd_lane_map_update(struct aml_lcd_drv_s *pdrv);
 void lcd_mipi_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off);
 void lcd_edp_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off);
 void lcd_lvds_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off);
