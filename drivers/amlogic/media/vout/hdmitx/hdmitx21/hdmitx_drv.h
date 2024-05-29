@@ -34,5 +34,7 @@ void hdmi_emp_frame_set_member(struct emp_packet_st *info,
 			       enum emp_component_conf conf, u32 val);
 void hdmi_emp_infoframe_set(enum emp_type type, struct emp_packet_st *info);
 void pkt_send_position_change(u32 enable_all, enum pkt_op pkt, u8 mov_val);
+bool soc_freshrate_limited(const struct hdmi_timing *timing, u32 vsync);
+bool soc_resolution_limited(const struct hdmi_timing *timing, u32 res_v);
 
 #endif

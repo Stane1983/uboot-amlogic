@@ -12,7 +12,13 @@
 #include "hdmitx_ext.h"
 #include <amlogic/media/vout/hdmi_tx_repeater.h>
 
+struct hdmitx_common {
+	/*soc limitation config*/
+	u32 res_1080p;
+};
+
 struct hdmitx_dev {
+	struct hdmitx_common tx_common;
 	unsigned char rx_edid[512]; /* some RX may exceeds 256Bytes */
 	struct {
 		int (*get_hpd_state)(void);
@@ -73,6 +79,7 @@ void sdr_scene_process(hdmi_data_t *hdmi_data,
 void hdr_scene_process(struct input_hdmi_data *hdmi_data,
 	scene_output_info_t *output_info);
 bool _is_y420_vic(enum hdmi_vic vic);
+bool hdmitx_edid_check_y420_support(struct rx_cap *prxcap, enum hdmi_vic vic);
 
 void get_hdmi_data(struct hdmitx_dev *hdev, hdmi_data_t *data);
 bool pre_process_str(char *name);
@@ -114,6 +121,8 @@ bool is_hdmi_mode(char *mode);
 /* the hdmitx output limits to 1080p */
 bool is_hdmitx_limited_1080p(void);
 bool is_vic_over_limited_1080p(enum hdmi_vic vic);
+bool hdmitx_edid_check_data_valid(u8 edid_check, unsigned char *buf);
+int hdmitx_hw_validate_mode(struct hdmitx_dev *hdev, u32 vic);
 
 #ifndef printk
 #define printk printf

@@ -17,8 +17,51 @@
 
 #define HZ 100000000 // TODO
 
+struct tx_cap {
+	/* configure in dts file */
+	u8 tx_max_frl_rate;
+	/* default 600Mhz, if res_1080p, then 225Mhz */
+	u32 tx_max_tmds_clk;
+	bool dsc_capable;
+	u8 dsc_policy;
+};
+
+struct hdmitx_hw_common {
+	/* soc/hdmitx driver capability */
+	struct tx_cap hdmi_tx_cap;
+};
+
+struct hdmitx_common {
+	struct hdmitx_hw_common *tx_hw;
+	/*soc limitation config*/
+	u32 res_1080p;
+	/* efuse ctrl state
+	 * 1 disable the function
+	 * 0 dont disable the function
+	 */
+	bool efuse_dis_hdmi_4k60;	/* 4k50,60hz */
+	bool efuse_dis_output_4k;	/* all 4k resolution*/
+	bool efuse_dis_hdcp_tx22;	/* hdcptx22 */
+	bool efuse_dis_hdmi_tx3d;	/* 3d */
+	bool efuse_dis_hdcp_tx14;	/* s1a hdcptx14 */
+	u32 max_refreshrate;
+
+	/*edid related*/
+	/* edid hdr/dv cap lock, hdr/dv handle in irq, need spinlock*/
+	//spinlock_t edid_spinlock;
+	//u32 forced_edid; /* for external loading EDID */
+	//unsigned char EDID_buf[EDID_MAX_BLOCK * 128];
+	struct rx_cap rxcap;
+};
+
+struct hdmitx21_hw {
+	struct hdmitx_hw_common base;
+};
+
 struct hdmitx_dev {
 	struct tx_cap txcap;
+	struct hdmitx_common tx_common;
+	struct hdmitx21_hw tx_hw;
 	struct {
 		int (*get_hpd_state)(void);
 		int (*read_edid)(unsigned char *buf);
@@ -49,13 +92,10 @@ struct hdmitx_dev {
 	 * CLKCTRL_VID_CLK0_CTRL clk source should select vid_pix_clk.
 	 */
 	u8 s7_clk_config;
-	enum frl_rate_enum frl_rate; /* for mode setting */
 	enum frl_rate_enum manual_frl_rate; /* for manual setting */
 	u8 tx_max_frl_rate; /* configure in dts file */
 	bool flt_train_st; /* 0 means FLT train failed */
 	bool frl_train_fail_flag;
-	u32 dsc_en;
-	u8 dsc_policy;
 	u32 dfm_type;
 	/* pps data and clk info from dsc module */
 	struct dsc_offer_tx_data dsc_data;
@@ -66,7 +106,6 @@ struct hdmitx_dev {
 	enum mode_type hdmi_current_tunnel_mode;
 	/* Add dongle_mode, clock, phy may be different from mbox */
 	unsigned int dongle_mode;
-	unsigned char limit_res_1080p;
 	unsigned char enc_idx;
 	int dv_en;
 	int qms_en; /* qms function enable */
@@ -74,28 +113,19 @@ struct hdmitx_dev {
 	unsigned char pxp_mode; /* for running at pxp only */
 	enum amhdmitx_chip_e chip_type;
 	bool hpd_state;
-	/* efuse ctrl state
-	 * 1 disable the function
-	 * 0 dont disable the function
-	 */
-	bool efuse_dis_hdmi_4k60;	/* 4k50,60hz */
-	bool efuse_dis_output_4k;	/* all 4k resolution*/
-	bool efuse_dis_hdcp_tx22;	/* hdcptx22 */
-	bool efuse_dis_hdmi_tx3d;	/* 3d */
-	bool efuse_dis_hdcp_tx14;	/* s1a hdcptx14 */
 };
 
 struct hdmitx_dev *get_hdmitx21_device(void);
 void hdmitx21_mux_ddc(void);
-u32 get_frl_bandwidth(const enum frl_rate_enum rate);
-u32 calc_frl_bandwidth(u32 pixel_freq, enum hdmi_colorspace cs,
-	enum hdmi_color_depth cd);
-u32 calc_tmds_bandwidth(u32 pixel_freq, enum hdmi_colorspace cs,
-	enum hdmi_color_depth cd);
-enum frl_rate_enum hdmitx21_select_frl_rate(bool dsc_en, enum hdmi_vic vic,
-	enum hdmi_colorspace cs, enum hdmi_color_depth cd);
-enum frl_rate_enum hdmitx_select_frl_rate(bool dsc_en, enum hdmi_vic vic,
-	enum hdmi_colorspace cs, enum hdmi_color_depth cd);
+u32 hdmitx_calc_tmds_clk(u32 pixel_freq, enum hdmi_colorspace cs, enum hdmi_color_depth cd);
+u32 hdmitx_get_frl_bandwidth(const enum frl_rate_enum rate);
+u32 hdmitx_calc_frl_bandwidth(u32 pixel_freq, enum hdmi_colorspace cs, enum hdmi_color_depth cd);
+enum frl_rate_enum hdmitx_select_frl_rate(u8 *dsc_en, u8 dsc_policy, enum hdmi_vic vic,
+					  enum hdmi_colorspace cs, enum hdmi_color_depth cd);
+#ifdef CONFIG_AMLOGIC_DSC
+enum frl_rate_enum get_dsc_frl_rate(enum dsc_encode_mode dsc_mode);
+#endif
+
 bool hdmitx_frl_training_main(enum frl_rate_enum frl_rate);
 int hdmitx21_read_edid(u8 *_rx_edid);
 void scdc21_rd_sink(u8 adr, u8 *val);
@@ -114,9 +144,9 @@ struct hdmi_format_para *hdmitx21_get_fmtpara(const char *mode,
 struct hdmi_format_para *hdmitx21_get_fmt_name(char const *name, char const *attr);
 struct hdmi_format_para *hdmitx21_tst_fmt_name(char const *name, char const *attr);
 struct hdmi_format_para *hdmitx21_match_dtd_paras(struct dtd *t);
+bool pre_process_str(char *name);
 
 void hdmitx21_set(struct hdmitx_dev *hdev);
-void hdmitx21_select_frl(struct hdmitx_dev *hdev);
 void hdmitx_module_disable(void);
 void hdmitx21_dump_regs(void);
 void hdmitx21_infoframe_send(u16 info_type, u8 *body);
@@ -140,7 +170,6 @@ void hdmi_drm_infoframe_rawset(u8 *hb, u8 *pb);
 void hdmi_avi_infoframe_config(enum avi_component_conf conf, u8 val);
 void hdmi_sbtm_infoframe_rawset(u8 *hb, u8 *pb);
 
-bool edid_parsing_ok(struct hdmitx_dev *hdev);
 /* Parsing RAW EDID data from edid to prxcap */
 unsigned int hdmi_edid_parsing(unsigned char *edid, struct rx_cap *prxcap);
 void dsc_cap_show(struct rx_cap *prxcap);
@@ -154,24 +183,12 @@ void sdr_scene_process(hdmi_data_t *hdmi_data,
 	scene_output_info_t *output_info);
 void hdr_scene_process(struct input_hdmi_data *hdmi_data,
 	scene_output_info_t *output_info);
-bool _is_y420_vic(enum hdmi_vic vic);
-bool hdmitx_mode_validate_y420_vic(enum hdmi_vic vic);
-
 void get_hdmi_data(struct hdmitx_dev *hdev, hdmi_data_t *data);
 
-bool hdmitx_edid_check_y420_support(struct rx_cap *prxcap,
-	enum hdmi_vic vic);
-
-bool hdmitx_edid_validate_mode(struct rx_cap *rxcap, u32 vic);
-int hdmitx_edid_validate_format_para(struct tx_cap *hdmi_tx_cap,
-		struct rx_cap *prxcap, struct hdmi_format_para *para, u8 dsc_policy);
 bool hdmitx_edid_only_support_sd(struct rx_cap *prxcap);
 
-/* bool pre_process_str(char *name); */
 struct hdmi_format_para *hdmi_tst_fmt_name(char const *name, char const *attr);
 bool is_support_4k(void);
-bool is_supported_mode_attr(hdmi_data_t *hdmi_data, char *mode_attr);
-bool hdmitx_chk_mode_attr_sup(hdmi_data_t *hdmi_data, char *mode, char *attr);
 int get_ubootenv_dv_type(void);
 int get_ubootenv_dv_status(void);
 int get_hdr_policy(void);
@@ -181,11 +198,10 @@ int hdmitx_get_hpd_state(void);
 void hdmitx_turnoff(void);
 void hdmitx_test_prbs(void);
 struct hdr_info *hdmitx_get_rx_hdr_info(void);
-enum hdmi_vic hdmitx_edid_get_VIC(struct hdmitx_dev *hdev,
-	const char *disp_mode, char force_flag);
 const char *hdmitx_edid_vic_to_string(enum hdmi_vic vic);
 enum hdmi_vic hdmitx_edid_vic_tab_map_vic(const char *disp_mode);
 bool is_supported_mode_attr(struct input_hdmi_data *hdmi_data, char *mode_attr);
+bool hdmitx_chk_mode_attr_sup(hdmi_data_t *hdmi_data, char *mode, char *attr);
 void hdmitx_set_drm_pkt(struct master_display_info_s *data);
 void hdmitx_set_vsif_pkt(enum eotf_type type, enum mode_type tunnel_mode,
 	struct dv_vsif_para *data);
@@ -200,14 +216,18 @@ enum hdmi_vic hdmitx_find_brr_vic(enum hdmi_vic vic);
 
 /* the hdmitx output limits to 1080p */
 bool is_hdmitx_limited_1080p(void);
-bool is_vic_over_limited_1080p(enum hdmi_vic vic);
 const struct hdmi_timing *hdmitx21_match_dtd_timing(struct dtd *t);
-bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
-	struct hdmi_format_para *para);
 void hdmitx_dsc_cvtem_pkt_send(struct dsc_pps_data_s *pps,
 			       struct hdmi_timing *timing);
 void hdmitx_dsc_cvtem_pkt_disable(void);
-enum hdmi_vic hdmitx21_get_prefer_vic(struct hdmitx_dev *hdev, enum hdmi_vic vic);
+enum hdmi_vic hdmitx_get_prefer_vic(struct hdmitx_dev *hdev, enum hdmi_vic vic);
+
+int hdmitx_format_para_reset(struct hdmi_format_para *para);
+int hdmitx_common_build_format_para(struct hdmitx_common *tx_comm, struct hdmi_format_para *para,
+				    enum hdmi_vic vic, u32 frac_rate_policy,
+				    enum hdmi_colorspace cs, enum hdmi_color_depth cd,
+				    enum hdmi_quantization_range cr);
+int hdmitx_hw_validate_mode(struct hdmitx_hw_common *tx_hw, u32 vic);
 
 #ifdef CONFIG_AML_DSC_ENC
 bool edid_check_dsc_support(struct tx_cap *hdmi_tx_cap,

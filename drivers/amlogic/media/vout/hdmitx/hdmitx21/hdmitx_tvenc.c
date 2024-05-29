@@ -41,12 +41,12 @@ static void config_tv_enc_calc(struct hdmitx_dev *hdev, enum hdmi_vic vic)
 	timing = *tp;
 	tp = &timing;
 	/* the FRL works at dual mode, so the horizon parameters will reduce to half */
-	if (hdev->frl_rate && y420_mode == 1)
+	if (hdev->para->frl_rate && y420_mode == 1)
 		hpara_div = 4;
-	if (hdev->frl_rate && y420_mode == 0)
+	if (hdev->para->frl_rate && y420_mode == 0)
 		hpara_div = 2;
 	/* force 4 slices input to dsc encoder when dsc enabled */
-	if (hdev->dsc_en)
+	if (hdev->para->dsc_en)
 		hpara_div = 4;
 	timing.h_total /= hpara_div;
 	timing.h_blank /= hpara_div;
@@ -56,7 +56,7 @@ static void config_tv_enc_calc(struct hdmitx_dev *hdev, enum hdmi_vic vic)
 	timing.h_active /= hpara_div;
 
 	/* it will flash screen under 8k50/60hz if with this sync_st */
-	/* if (hdev->dsc_en) { */
+	/* if (hdev->para->dsc_en) { */
 	/* hsync_st = tp->h_front - 1; */
 	/* vsync_st = tp->v_front - 1; */
 	/* } */
@@ -376,9 +376,9 @@ void set_tv_encp_new(struct hdmitx_dev *hdev, u32 enc_index,
 	 * vpp every two clk(upsample = 1) with 4ppc, and then split to 2ppc
 	 * to hdmi module
 	 */
-	if (hdev->dsc_en)
+	if (hdev->para->dsc_en)
 		hd21_set_reg_bits(ENCP_VIDEO_MODE_ADV, 0, 0, 3);
-	else if (hdev->frl_rate && hdev->para->cs != HDMI_COLORSPACE_YUV420)
+	else if (hdev->para->frl_rate && hdev->para->cs != HDMI_COLORSPACE_YUV420)
 		hd21_set_reg_bits(ENCP_VIDEO_MODE_ADV, 1, 0, 3);
 	else
 		hd21_set_reg_bits(ENCP_VIDEO_MODE_ADV, 0, 0, 3);

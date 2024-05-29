@@ -580,8 +580,8 @@ static void hdmitx_dump_frl_status(void)
 	};
 
 	pr_info("\n--------frl status--------\n");
-	pr_info("FRL rate: %s\n", hdev->frl_rate < FRL_RATE_MAX ?
-		rate_string[hdev->frl_rate] : rate_string[FRL_RATE_MAX]);
+	pr_info("FRL rate: %s\n", hdev->para->frl_rate < FRL_RATE_MAX ?
+		rate_string[hdev->para->frl_rate] : rate_string[FRL_RATE_MAX]);
 	val = hdmitx21_rd_reg(INTR5_SW_TPI_IVCTX);
 	pr_info("INTR5_SW_TPI[0x%x] 0x%x\n", INTR5_SW_TPI_IVCTX, val);
 	hdmitx21_wr_reg(INTR5_SW_TPI_IVCTX, val);

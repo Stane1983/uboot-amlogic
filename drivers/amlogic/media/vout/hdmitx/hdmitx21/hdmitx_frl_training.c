@@ -9,9 +9,39 @@
 #include <time.h>
 #include <amlogic/media/vout/hdmitx21/hdmitx.h>
 #include "hdmitx_drv.h"
+#ifdef CONFIG_AML_VOUT
+#include <amlogic/media/vout/aml_vout.h>
+#endif
+
+u32 hdmitx_calc_tmds_clk(u32 pixel_freq, enum hdmi_colorspace cs,
+			 enum hdmi_color_depth cd)
+{
+	u32 tmds_clk = pixel_freq;
+
+	if (cs == HDMI_COLORSPACE_YUV420)
+		tmds_clk = tmds_clk / 2;
+	if (cs != HDMI_COLORSPACE_YUV422) {
+		switch (cd) {
+		case COLORDEPTH_48B:
+			tmds_clk *= 2;
+			break;
+		case COLORDEPTH_36B:
+			tmds_clk = tmds_clk * 3 / 2;
+			break;
+		case COLORDEPTH_30B:
+			tmds_clk = tmds_clk * 5 / 4;
+			break;
+		case COLORDEPTH_24B:
+		default:
+			break;
+		}
+	}
+
+	return tmds_clk;
+}
 
 /* get the corresponding bandwidth of current FRL_RATE, Unit: MHz */
-u32 get_frl_bandwidth(const enum frl_rate_enum rate)
+u32 hdmitx_get_frl_bandwidth(const enum frl_rate_enum rate)
 {
 	const u32 frl_bandwidth[] = {
 		[FRL_NONE] = 0,
@@ -28,23 +58,13 @@ u32 get_frl_bandwidth(const enum frl_rate_enum rate)
 	return frl_bandwidth[rate];
 }
 
-u32 calc_frl_bandwidth(u32 pixel_freq, enum hdmi_colorspace cs,
-	enum hdmi_color_depth cd)
+u32 hdmitx_calc_frl_bandwidth(u32 pixel_freq, enum hdmi_colorspace cs,
+			      enum hdmi_color_depth cd)
 {
-	u32 bandwidth = pixel_freq;
+		u32 bandwidth;
 
-	if (cs == HDMI_COLORSPACE_YUV420)
-		bandwidth /= 2;
-	if (cs != HDMI_COLORSPACE_YUV422) {
-		if (cd == COLORDEPTH_48B)
-			bandwidth = bandwidth * 2;
-		else if (cd == COLORDEPTH_36B)
-			bandwidth = bandwidth * 3 / 2;
-		else if (cd == COLORDEPTH_30B)
-			bandwidth = bandwidth * 5 / 4;
-		else
-			bandwidth = bandwidth * 1;
-	}
+	bandwidth = hdmitx_calc_tmds_clk(pixel_freq, cs, cd);
+
 	/* bandwidth = tmds_bandwidth * 24 * 1.122 */
 	bandwidth = bandwidth * 24;
 	bandwidth = bandwidth * 561 / 500;
@@ -52,43 +72,34 @@ u32 calc_frl_bandwidth(u32 pixel_freq, enum hdmi_colorspace cs,
 	return bandwidth;
 }
 
-u32 calc_tmds_bandwidth(u32 pixel_freq, enum hdmi_colorspace cs,
-	enum hdmi_color_depth cd)
-{
-	u32 bandwidth = pixel_freq;
-
-	if (cs == HDMI_COLORSPACE_YUV420)
-		bandwidth /= 2;
-	if (cs != HDMI_COLORSPACE_YUV422) {
-		if (cd == COLORDEPTH_48B)
-			bandwidth = bandwidth * 2;
-		else if (cd == COLORDEPTH_36B)
-			bandwidth = bandwidth * 3 / 2;
-		else if (cd == COLORDEPTH_30B)
-			bandwidth = bandwidth * 5 / 4;
-		else
-			bandwidth = bandwidth * 1;
-	}
-
-	return bandwidth;
-}
-
 /* for legacy HDMI2.0 or earlier modes, still select TMDS */
 /* TODO DSC modes */
-enum frl_rate_enum hdmitx21_select_frl_rate(bool dsc_en, enum hdmi_vic vic,
-	enum hdmi_colorspace cs, enum hdmi_color_depth cd)
+enum frl_rate_enum hdmitx_select_frl_rate(u8 *dsc_en, u8 dsc_policy, enum hdmi_vic vic,
+					  enum hdmi_colorspace cs, enum hdmi_color_depth cd)
 {
 	const struct hdmi_timing *timing;
-	enum frl_rate_enum rate = FRL_NONE;
+	enum frl_rate_enum frl_rate = FRL_NONE;
 	u32 tx_frl_bandwidth = 0;
 	u32 tx_tmds_bandwidth = 0;
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
+#ifdef CONFIG_AML_VOUT
+	struct vinfo_s *info = vout_get_current_vinfo();
 
-	pr_info("dsc_en %d  vic %d  cs %d  cd %d\n", dsc_en, vic, cs, cd);
-	timing = hdmitx21_gettiming_from_vic(vic);
+	if (!info) {
+		pr_info("warning: %s vinfo null\n", __func__);
+		return frl_rate;
+	}
+#endif
+
+	if (!dsc_en)
+		return frl_rate;
+	pr_info("dsc_policy %d  vic %d  cs %d  cd %d\n", dsc_policy, vic, cs, cd);
+	*dsc_en = 0;
+	timing = hdmitx_mode_vic_to_hdmi_timing(vic);
 	if (!timing)
 		return FRL_NONE;
 
-	tx_tmds_bandwidth = calc_tmds_bandwidth(timing->pixel_freq / 1000, cs, cd);
+	tx_tmds_bandwidth = hdmitx_calc_tmds_clk(timing->pixel_freq / 1000, cs, cd);
 	pr_info("Hactive=%d Vactive=%d Vfreq=%d TMDS_BandWidth=%d\n",
 		timing->h_active, timing->v_active,
 		timing->v_freq, tx_tmds_bandwidth);
@@ -101,14 +112,177 @@ enum frl_rate_enum hdmitx21_select_frl_rate(bool dsc_en, enum hdmi_vic vic,
 	/* tx_frl_bandwidth = tmds_bandwidth * 24 * 1.122 */
 	tx_frl_bandwidth = tx_tmds_bandwidth * 24;
 	tx_frl_bandwidth = tx_frl_bandwidth * 561 / 500;
-	for (rate = FRL_3G3L; rate < FRL_12G4L + 1; rate++) {
-		if (tx_frl_bandwidth <= get_frl_bandwidth(rate)) {
-			pr_info("select frl_rate as %d\n", rate);
-			return rate;
+	for (frl_rate = FRL_3G3L; frl_rate < FRL_12G4L + 1; frl_rate++) {
+		if (tx_frl_bandwidth <= hdmitx_get_frl_bandwidth(frl_rate)) {
+			pr_info("select frl_rate as %d\n", frl_rate);
+			break;
 		}
 	}
 
-	return FRL_NONE;
+#ifdef CONFIG_AMLOGIC_DSC
+	/* check tx_cap outside */
+	//if (!tx_hw->base.hdmi_tx_cap.dsc_capable) {
+	//	HDMITX_DEBUG("%s hdmitx not support DSC\n", __func__);
+	//	return frl_rate;
+	//}
+	/* DSC specific, automatically enable dsc if necessary */
+	if (vic == HDMI_199_7680x4320p60_16x9 ||
+	    vic == HDMI_207_7680x4320p60_64x27) {
+		if (cs == HDMI_COLORSPACE_YUV444 ||
+		    cs == HDMI_COLORSPACE_RGB) {
+			*dsc_en = 1;
+			/* note: previously spec FRL_6G4L can't work */
+			frl_rate = FRL_6G4L;
+			pr_info("%s automatically dsc enable\n", __func__);
+		} else if ((cs == HDMI_COLORSPACE_YUV420 &&
+			cd == COLORDEPTH_36B) ||
+			(cs == HDMI_COLORSPACE_YUV422)) {
+			*dsc_en = 1;
+			/* note: previously spec FRL_6G3L can't work */
+			frl_rate = FRL_6G3L;
+			pr_info("%s automatically dsc enable\n", __func__);
+		} else if (dsc_policy == 1) {
+			/* for 420,8/10bit */
+			/* force mode for dsc test, may need to also set manual_frl_rate */
+			*dsc_en = 1;
+			/* note: previously spec FRL_6G3L can't work */
+			frl_rate = FRL_6G3L;
+		} else {
+			*dsc_en = 0;
+		}
+		if (*dsc_en == 1)
+			pr_info("forced DSC rate %d\n", frl_rate);
+	} else if (vic == HDMI_198_7680x4320p50_16x9 ||
+		vic == HDMI_206_7680x4320p50_64x27) {
+		if (cs == HDMI_COLORSPACE_YUV444 ||
+		    cs == HDMI_COLORSPACE_RGB) {
+			*dsc_en = 1;
+			frl_rate = FRL_6G4L;
+			pr_info("%s automatically dsc enable\n", __func__);
+		} else if ((cs == HDMI_COLORSPACE_YUV420 &&
+			cd == COLORDEPTH_36B) ||
+			(cs == HDMI_COLORSPACE_YUV422)) {
+			*dsc_en = 1;
+			frl_rate = FRL_6G3L;
+			pr_info("%s automatically dsc enable\n", __func__);
+		} else if (dsc_policy == 1) {
+			/* for 420,8/10bit */
+			/* force mode for dsc test, may need to also set manual_frl_rate */
+			*dsc_en = 1;
+			frl_rate = FRL_6G3L;
+		} else {
+			*dsc_en = 0;
+		}
+		if (*dsc_en)
+			pr_info("spec recommended DSC frl rate: %d\n", frl_rate);
+	} else if (vic == HDMI_195_7680x4320p25_16x9 ||
+		vic == HDMI_203_7680x4320p25_64x27 ||
+		vic == HDMI_194_7680x4320p24_16x9 ||
+		vic == HDMI_202_7680x4320p24_64x27) {
+		if ((cs == HDMI_COLORSPACE_YUV444 || cs == HDMI_COLORSPACE_RGB) &&
+		    cd == COLORDEPTH_36B) {
+			*dsc_en = 1;
+			frl_rate = FRL_6G3L;
+			pr_info("%s automatically dsc enable\n", __func__);
+		} else if (dsc_policy == 1) {
+			/* force mode for test, may need to also set manual_frl_rate */
+			*dsc_en = 1;
+			/* for y444/rgb,8/10bit */
+			if (cs == HDMI_COLORSPACE_YUV444 || cs == HDMI_COLORSPACE_RGB)
+				frl_rate = FRL_6G3L;
+			else
+				frl_rate = FRL_3G3L; //for 422/420
+		} else {
+			*dsc_en = 0;
+		}
+		if (*dsc_en)
+			pr_info("spec recommended DSC frl rate: %d\n", frl_rate);
+	} else if (vic == HDMI_196_7680x4320p30_16x9 ||
+		vic == HDMI_204_7680x4320p30_64x27) {
+		if ((cs == HDMI_COLORSPACE_YUV444 || cs == HDMI_COLORSPACE_RGB) &&
+		    cd == COLORDEPTH_36B) {
+			*dsc_en = 1;
+			frl_rate = FRL_6G3L;
+			pr_info("%s automatically dsc enable\n", __func__);
+		} else if (dsc_policy == 1) {
+			/* force mode for test, may need to also set manual_frl_rate */
+			*dsc_en = 1;
+			/* for 444/rgb,8/10bit */
+			if (cs == HDMI_COLORSPACE_YUV444 || cs == HDMI_COLORSPACE_RGB)
+				frl_rate = FRL_6G3L;
+			else /* for 422/420, note: previously spec FRL_3G3L can't work */
+				frl_rate = FRL_3G3L;
+		} else {
+			*dsc_en = 0;
+		}
+		if (*dsc_en)
+			pr_info("forced DSC frl rate: %d\n", frl_rate);
+	} else if (vic == HDMI_97_3840x2160p60_16x9 ||
+		vic == HDMI_107_3840x2160p60_64x27 ||
+		vic == HDMI_96_3840x2160p50_16x9 ||
+		vic == HDMI_106_3840x2160p50_64x27) {
+		if (dsc_policy == 1) {
+			/* force mode for test, may need to also set manual_frl_rate */
+			*dsc_en = 1;
+			frl_rate = FRL_3G3L;
+		} else {
+			*dsc_en = 0;
+		}
+		if (*dsc_en)
+			pr_info("spec recommended DSC frl rate: %d\n", frl_rate);
+	} else if (vic == HDMI_117_3840x2160p100_16x9 ||
+		vic == HDMI_119_3840x2160p100_64x27 ||
+		vic == HDMI_118_3840x2160p120_16x9 ||
+		vic == HDMI_120_3840x2160p120_64x27) {
+		/* need 12G4L under uncompressed format */
+		if ((cs == HDMI_COLORSPACE_YUV444 || cs == HDMI_COLORSPACE_RGB) &&
+		    cd == COLORDEPTH_36B) {
+			*dsc_en = 1;
+			frl_rate = FRL_6G3L;
+			pr_info("%s automatically dsc enable\n", __func__);
+		} else if (dsc_policy == 1) {
+			/* force mode for test, may need to also set manual_frl_rate */
+			*dsc_en = 1;
+			/* for 444/rgb,8/10bit */
+			if (cs == HDMI_COLORSPACE_YUV444 || cs == HDMI_COLORSPACE_RGB)
+				frl_rate = FRL_6G3L;
+			else /* for 422/420, note: previously spec FRL_3G3L can't work */
+				frl_rate = FRL_3G3L;
+		} else {
+			*dsc_en = 0;
+		}
+		if (*dsc_en)
+			pr_info("spec recommended DSC frl rate: %d\n", frl_rate);
+	} else {
+		/* when switch mode to lower resolution, need to back to non-dsc mode */
+		if (dsc_policy != 2)
+			*dsc_en = 0;
+	}
+#endif
+
+	/* OSD bmp scale will use cur_enc_ppc of vinfo, so should update it early */
+	#ifdef CONFIG_AML_VOUT
+	info->cur_enc_ppc = 1;
+	info->vpp_post_out_color_fmt = 0;
+	if (hdev->chip_type == MESON_CPU_ID_S5) {
+		//hdev->frl_rate? or frl_rate?
+		if (hdev->para->frl_rate > FRL_NONE)
+			info->cur_enc_ppc = 4;
+		if (hdev->para->dsc_en) {
+			if (hdev->para->cs == HDMI_COLORSPACE_RGB)
+				info->vpp_post_out_color_fmt = 1;
+			else
+				info->vpp_post_out_color_fmt = 0;
+		} else {
+			info->vpp_post_out_color_fmt = 0;
+		}
+	}
+	pr_info("dsc_policy: %d, dsc_en: %d, frl_rate: %d\n",
+		hdev->tx_common.tx_hw->hdmi_tx_cap.dsc_policy, hdev->para->dsc_en,
+		hdev->para->frl_rate);
+	#endif
+
+	return frl_rate;
 }
 
 #define CALC_COEFF 10000
@@ -161,7 +335,7 @@ bool frl_check_full_bw(enum hdmi_colorspace cs, enum hdmi_color_depth cd, u32 pi
 	time_for_1_active_video_line = time_for_1_active_video_line / tmds_clock;
 	time_for_1_active_video_line = time_for_1_active_video_line / 201;
 
-	frl_mega_bits_rate = get_frl_bandwidth(frl_rate);
+	frl_mega_bits_rate = hdmitx_get_frl_bandwidth(frl_rate);
 	if (frl_rate == FRL_3G3L || frl_rate == FRL_6G3L) {
 		/* for 3 lanes, overhead max is 2.136% */
 		overhead_max_num = 267;
@@ -194,11 +368,94 @@ bool frl_check_full_bw(enum hdmi_colorspace cs, enum hdmi_color_depth cd, u32 pi
 		return 0;
 }
 
-enum frl_rate_enum hdmitx_select_frl_rate(bool dsc_en, enum hdmi_vic vic,
-	enum hdmi_colorspace cs, enum hdmi_color_depth cd)
+#ifdef CONFIG_AMLOGIC_DSC
+/* get the needed frl rate, refer to 2.1 spec table 7-37/38,
+ * actually it may also need to check bpp
+ */
+enum frl_rate_enum get_dsc_frl_rate(enum dsc_encode_mode dsc_mode)
 {
-	return hdmitx21_select_frl_rate(dsc_en, vic, cs, cd);
+	enum frl_rate_enum frl_rate = FRL_RATE_MAX;
+
+	switch (dsc_mode) {
+	case DSC_RGB_3840X2160_60HZ:
+	case DSC_YUV444_3840X2160_60HZ:
+	case DSC_YUV422_3840X2160_60HZ:
+	case DSC_YUV420_3840X2160_60HZ:
+	case DSC_RGB_3840X2160_50HZ:
+	case DSC_YUV444_3840X2160_50HZ:
+	case DSC_YUV422_3840X2160_50HZ:
+	case DSC_YUV420_3840X2160_50HZ:
+		frl_rate = FRL_3G3L;
+		break;
+	case DSC_RGB_3840X2160_120HZ:
+	case DSC_YUV444_3840X2160_120HZ:
+	case DSC_RGB_3840X2160_100HZ:
+	case DSC_YUV444_3840X2160_100HZ:
+		frl_rate = FRL_6G3L;
+		break;
+	case DSC_YUV422_3840X2160_120HZ:
+	case DSC_YUV420_3840X2160_120HZ:
+	case DSC_YUV422_3840X2160_100HZ:
+	case DSC_YUV420_3840X2160_100HZ:
+		frl_rate = FRL_3G3L;
+		break;
+
+	case DSC_RGB_7680X4320_60HZ:
+	case DSC_YUV444_7680X4320_60HZ:
+		/* 6G4L is spec recommended, but actually it can't
+		 * work on board, need to work under 8G4L
+		 */
+		frl_rate = FRL_6G4L;
+		break;
+	case DSC_YUV422_7680X4320_60HZ:
+	case DSC_YUV420_7680X4320_60HZ:
+		/* 6G3L is spec recommended, but actually it can't
+		 * work on board, need to work under 6G4L
+		 */
+		frl_rate = FRL_6G3L;
+		break;
+
+	case DSC_RGB_7680X4320_50HZ:
+	case DSC_YUV444_7680X4320_50HZ:
+		frl_rate = FRL_6G4L;
+		break;
+	case DSC_YUV422_7680X4320_50HZ:
+	case DSC_YUV420_7680X4320_50HZ:
+		frl_rate = FRL_6G3L;
+		break;
+
+	case DSC_YUV444_7680X4320_30HZ: /* bpp = 12 */
+	case DSC_RGB_7680X4320_30HZ: /* bpp = 12 */
+		frl_rate = FRL_6G3L;
+		break;
+	case DSC_YUV422_7680X4320_30HZ: /* bpp = 7.375 */
+	case DSC_YUV420_7680X4320_30HZ: /* bpp = 7.375 */
+		/* 3G3L is spec recommended, but actually it can't
+		 * work on board, need to work under 6G3L
+		 */
+		frl_rate = FRL_3G3L;
+		break;
+
+	case DSC_YUV444_7680X4320_25HZ: /* bpp = 12 */
+	case DSC_RGB_7680X4320_25HZ: /* bpp = 12 */
+	case DSC_YUV444_7680X4320_24HZ: /* bpp = 12 */
+	case DSC_RGB_7680X4320_24HZ: /* bpp = 12 */
+		frl_rate = FRL_6G3L;
+		break;
+	case DSC_YUV422_7680X4320_25HZ: /* bpp = 7.6875 */
+	case DSC_YUV420_7680X4320_25HZ: /* bpp = 7.6875 */
+	case DSC_YUV422_7680X4320_24HZ: /* bpp = 7.6875 */
+	case DSC_YUV420_7680X4320_24HZ: /* bpp = 7.6875 */
+		frl_rate = FRL_3G3L;
+		break;
+	case DSC_ENCODE_MAX:
+	default:
+		frl_rate = FRL_RATE_MAX;
+		break;
+	}
+	return frl_rate;
 }
+#endif
 
 /*
  * Config hdmitx Data Flow metering
@@ -677,7 +934,7 @@ static void stop_frl_transmission(enum frl_rate_enum frl_rate)
 
 void frl_tx_stop(struct hdmitx_dev *hdev)
 {
-	stop_frl_transmission(hdev->frl_rate);
+	stop_frl_transmission(hdev->para->frl_rate);
 }
 
 bool scdc_tx_frl_cfg1_set(u8 cfg1)

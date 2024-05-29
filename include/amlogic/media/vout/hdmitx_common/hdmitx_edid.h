@@ -279,7 +279,6 @@ bool hdmitx_edid_check_data_valid(u8 edid_check, unsigned char *buf);
 ssize_t _show_aud_cap(struct rx_cap *prxcap, char *buf);
 int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf);
 unsigned int hdmitx_edid_valid_block_num(unsigned char *edid_buf);
-bool hdmitx_mode_validate_y420_vic(enum hdmi_vic vic);
 void hdmitx_edid_print(u8 *edid_buf);
 void hdmitx_edid_buffer_clear(u8 *edid_buf, int size);
 void hdmitx_edid_rxcap_clear(struct rx_cap *prxcap);

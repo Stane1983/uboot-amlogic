@@ -222,6 +222,7 @@ enum hdmi_vic {
 	HDMI_217_10240x4320p120_64x27	= 217,
 	HDMI_218_4096x2160p100_256x135	= 218,
 	HDMI_219_4096x2160p120_256x135	= 219,
+	HDMI_CEA_VIC_END,
 
 	/*Vesa mode which dont have vic, we specify value for them also*/
 	HDMIV_0_640x480p60hz = HDMITX_VESA_OFFSET,
@@ -788,7 +789,7 @@ struct hdmi_format_para {
 	u32 scrambler_en:1;
 	u32 tmds_clk_div40:1;
 	u32 tmds_clk; /* Unit: 1000 */
-	u32 dsc_en;
+	u8 dsc_en;
 	enum frl_rate_enum frl_rate;
 	/*hw related information end*/
 };
@@ -919,14 +920,6 @@ enum pkt_op {
 	GEN4_PKT,
 	GEN5_PKT,
 	VTEM_PKT,
-};
-
-struct tx_cap {
-	/* configure in dts file */
-	u8 tx_max_frl_rate;
-	/* default 600Mhz, if res_1080p, then 225Mhz */
-	u32 tx_max_tmds_clk;
-	bool dsc_capable;
 };
 
 /* half for valid vic, half for vic with y420*/

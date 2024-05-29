@@ -17,6 +17,7 @@
 #include <amlogic/media/vout/dsc.h>
 #include <amlogic/media/vout/aml_vinfo.h>
 #include <linux/arm-smccc.h>
+#include <linux/compat.h>
 
 static unsigned char edid_raw_buf[512] = {0};
 /* there may be outputmode/2/3 when in multi-display case,
@@ -351,7 +352,7 @@ static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 		 */
 		hdmitx21_set(hdev);
 		qms_scene_post_process(hdev);
-		if (hdev->frl_rate && !hdev->flt_train_st) {
+		if (hdev->para->frl_rate && !hdev->flt_train_st) {
 			/* FLT training failed, need go to tmds mode */
 			printf("hdmitx frl training failed, set tmds mode\n");
 			hdmitx_module_disable();
@@ -542,52 +543,80 @@ static int do_debug(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	return 1;
 }
 
-static bool check_vic_exist(struct hdmitx_dev *hdev, enum hdmi_vic vic,
-					int count)
-{
-	struct rx_cap *rxcap = NULL;
-	int i;
-
-	rxcap = &hdev->RXCap;
-	for (i = 0; i < count; i++)
-		if (vic == rxcap->VIC[i])
-			return 1;
-
-	return 0;
-}
-
+/* step1, only select VIC which is supported in EDID
+ * step2, check if VIC is supported by SOC hdmitx
+ * step3, build format with basic mode/attr and check
+ * if it's supported by EDID/hdmitx_cap
+ */
 static void disp_cap_show(struct hdmitx_dev *hdev)
 {
-	struct rx_cap *rxcap = NULL;
-	const struct hdmi_timing *timing = NULL;
-	enum hdmi_vic vic;
-	int i;
-	enum hdmi_vic prefer_vic = HDMI_UNKNOWN;
-
 	if (!hdev)
 		return;
 
-	rxcap = &hdev->RXCap;
-	printf("disp_cap\n");
-	for (i = 0; i < rxcap->VIC_count && i < VIC_MAX_NUM; i++) {
-		vic = rxcap->VIC[i];
-		if (check_vic_exist(hdev, vic, i))
+	struct rx_cap *prxcap = &hdev->RXCap;
+	const struct hdmi_timing *timing = NULL;
+	enum hdmi_vic vic;
+	int i = 0;
+	int vic_len = prxcap->VIC_count + VESA_MAX_TIMING;
+	int *edid_vics = vmalloc(vic_len * sizeof(int));
+	enum hdmi_vic prefer_vic = HDMI_0_UNKNOWN;
+
+	memset(edid_vics, 0, vic_len * sizeof(int));
+
+	/* step1: only select VIC which is supported in EDID */
+	/*copy edid vic list*/
+	if (prxcap->VIC_count > 0)
+		memcpy(edid_vics, prxcap->VIC, sizeof(int) * prxcap->VIC_count);
+	for (i = 0; i < VESA_MAX_TIMING && prxcap->vesa_timing[i]; i++)
+		edid_vics[prxcap->VIC_count + i] = prxcap->vesa_timing[i];
+
+	for (i = 0; i < vic_len; i++) {
+		vic = edid_vics[i];
+		if (vic == HDMI_0_UNKNOWN)
 			continue;
-		prefer_vic = hdmitx21_get_prefer_vic(hdev, vic);
-		/* if mode_prefer_vic is support by RX, try 16x9 first */
+
+		prefer_vic = hdmitx_get_prefer_vic(hdev, vic);
+		/* if mode_best_vic is support by RX, try 16x9 first */
 		if (prefer_vic != vic) {
-			printf("%s:prefer vic:%d exist, ignore [%d].\n", __func__, prefer_vic, vic);
+			pr_info("%s: check prefer vic:%d exist, ignore [%d].\n",
+				__func__, prefer_vic, vic);
 			continue;
 		}
-		timing = hdmitx21_gettiming_from_vic(vic);
-		if (timing && vic < HDMITX_VESA_OFFSET && !is_vic_over_limited_1080p(vic))
-			printf("  %s\n", timing->sname ? timing->sname : timing->name);
+
+		timing = hdmitx_mode_vic_to_hdmi_timing(vic);
+		if (!timing) {
+			// HDMITX_ERROR("%s: unsupport vic [%d]\n", __func__, vic);
+			continue;
+		}
+
+		/* step2, check if VIC is supported by SOC hdmitx */
+		if (hdmitx_common_validate_vic(&hdev->tx_common, vic) != 0) {
+			// HDMITX_ERROR("%s: vic[%d] over range.\n", __func__, vic);
+			continue;
+		}
+
+		/* step3, build format with basic mode/attr and check
+		 * if it's supported by EDID/hdmitx_cap
+		 */
+		if (hdmitx_common_check_valid_para_of_vic(&hdev->tx_common, vic) != 0) {
+			//HDMITX_ERROR("%s: vic[%d] check fmt attr failed.\n", __func__, vic);
+			continue;
+		}
+
+		printf("  %s\n", timing->sname ? timing->sname : timing->name);
+
+		if (vic == prxcap->native_vic)
+			printf("*\n");
+		else
+			printf("\n");
 	}
+
 	printf("420_cap\n");
 	for (i = 0; i < Y420_VIC_MAX_NUM; i++) {
-		vic = rxcap->y420_vic[i];
+		vic = prxcap->y420_vic[i];
 		printf("420vic:%d\n", vic);
 	}
+	vfree(edid_vics);
 }
 
 static void vesa_cap_show(struct hdmitx_dev *hdev)
@@ -596,58 +625,50 @@ static void vesa_cap_show(struct hdmitx_dev *hdev)
 
 static void dc_cap_show(struct hdmitx_dev *hdev)
 {
-	enum hdmi_vic vic = HDMI_0_UNKNOWN;
 	struct rx_cap *prxcap = &hdev->RXCap;
-	const struct dv_info *dv = &hdev->RXCap.dv_info;
+	const struct dv_info *dv =  &prxcap->dv_info;
+	const struct dv_info *dv2 = &prxcap->dv_info2;
+	int i;
 
-	printf("dc_cap\n");
+	/* DVI case, only rgb,8bit */
+	if (prxcap->ieeeoui != HDMI_IEEE_OUI) {
+		printf("rgb,8bit\n");
+		return;
+	}
+
 	if (prxcap->dc_36bit_420)
 		printf("420,12bit\n");
-	if (prxcap->dc_30bit_420) {
+	if (prxcap->dc_30bit_420)
 		printf("420,10bit\n");
-		printf("420,8bit\n");
-	} else {
-		vic = hdmitx_edid_get_VIC(hdev, "2160p60hz420", 0);
-		if (vic != HDMI_0_UNKNOWN) {
+
+	for (i = 0; i < Y420_VIC_MAX_NUM; i++) {
+		if (prxcap->y420_vic[i]) {
 			printf("420,8bit\n");
-			goto next444;
-		}
-		vic = hdmitx_edid_get_VIC(hdev, "2160p50hz420", 0);
-		if (vic != HDMI_0_UNKNOWN) {
-			printf("420,8bit\n");
-			goto next444;
-		}
-		vic = hdmitx_edid_get_VIC(hdev, "smpte60hz420", 0);
-		if (vic != HDMI_0_UNKNOWN) {
-			printf("420,8bit\n");
-			goto next444;
-		}
-		vic = hdmitx_edid_get_VIC(hdev, "smpte50hz420", 0);
-		if (vic != HDMI_0_UNKNOWN) {
-			printf("420,8bit\n");
-			goto next444;
+			break;
 		}
 	}
-next444:
+
 	if (prxcap->native_Mode & (1 << 5)) {
 		if (prxcap->dc_y444) {
-			if (prxcap->dc_36bit || dv->sup_10b_12b_444 == 0x2)
+			if (prxcap->dc_36bit || dv->sup_10b_12b_444 == 0x2 ||
+			    dv2->sup_10b_12b_444 == 0x2)
 				printf("444,12bit\n");
-			if (prxcap->dc_30bit || dv->sup_10b_12b_444 == 0x1)
+			if (prxcap->dc_30bit || dv->sup_10b_12b_444 == 0x1 ||
+			    dv2->sup_10b_12b_444 == 0x1) {
 				printf("444,10bit\n");
+			}
 		}
 		printf("444,8bit\n");
 	}
 	/* y422, not check dc */
-	if (prxcap->native_Mode & (1 << 4)) {
+	if (prxcap->native_Mode & (1 << 4))
 		printf("422,12bit\n");
-		printf("422,10bit\n");
-		printf("422,8bit\n");
-	}
 
-	if (prxcap->dc_36bit || dv->sup_10b_12b_444 == 0x2)
+	if (prxcap->dc_36bit || dv->sup_10b_12b_444 == 0x2 ||
+	    dv2->sup_10b_12b_444 == 0x2)
 		printf("rgb,12bit\n");
-	if (prxcap->dc_30bit || dv->sup_10b_12b_444 == 0x1)
+	if (prxcap->dc_30bit || dv->sup_10b_12b_444 == 0x1 ||
+	    dv2->sup_10b_12b_444 == 0x1)
 		printf("rgb,10bit\n");
 	printf("rgb,8bit\n");
 }
@@ -938,8 +959,9 @@ static int do_info(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	dv_cap_show(hdev);
 	dc_cap_show(hdev);
 	edid_cap_show(hdev);
-	printf("dsc policy: %d, enable: %d\n", hdev->dsc_policy, hdev->dsc_en);
-	printf("frl_rate: %d\n", hdev->frl_rate);
+	printf("dsc policy: %d, enable: %d\n", hdev->tx_common.tx_hw->hdmi_tx_cap.dsc_policy,
+	       para->dsc_en);
+	printf("frl_rate: %d\n", hdev->para->frl_rate);
 	return 1;
 }
 
@@ -1172,8 +1194,10 @@ static void get_parse_edid_data(struct hdmitx_dev *hdev)
 	hdmitx_update_dv_strategy_info(&hdev->RXCap.dv_info2);
 
 	if (hdr_priority == -1)
-		return;
+		goto next;
 	hdmitx_set_hdr_priority(&hdev->RXCap, hdr_priority);
+next:
+	memcpy(&hdev->tx_common.rxcap, &hdev->RXCap, sizeof(hdev->tx_common.rxcap));
 }
 
 /* policy process: to find the output mode/attr/dv_type */
@@ -1335,7 +1359,7 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 	if (!no_manual_output) {
 		/* check current user selected mode + color support or not */
 		para = hdmitx21_get_fmtpara(hdmimode, colorattribute);
-		if (hdmitx_edid_check_valid_mode(hdev, para)) {
+		if (!hdmitx_common_validate_format_para(&hdev->tx_common, para)) {
 			mode_support = true;
 		} else {
 			printf("saved output mode not supported!\n");
@@ -1470,31 +1494,35 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 	hdev->para = hdmitx21_get_fmtpara(sel_hdmimode, env_get("colorattribute"));
 	hdev->vic = hdev->para->timing.vic;
 	hdmitx_mask_rx_info(hdev);
-	hdmitx21_select_frl(hdev);
+	hdev->para->frl_rate = hdmitx_select_frl_rate(&hdev->para->dsc_en,
+						      hdev->tx_common.tx_hw->hdmi_tx_cap.dsc_policy,
+						      hdev->para->vic, hdev->para->cs,
+						      hdev->para->cd);
 	return 0;
 }
 
 static int do_dsc_policy(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
+	struct tx_cap *txcap = &hdev->tx_common.tx_hw->hdmi_tx_cap;
 
 	if (argc < 1)
 		return cmd_usage(cmdtp);
 
 	if (strcmp(argv[1], "0") == 0)
-		hdev->dsc_policy = 0;
+		txcap->dsc_policy = 0;
 	else if (strcmp(argv[1], "1") == 0)
-		hdev->dsc_policy = 1;
+		txcap->dsc_policy = 1;
 	else if (strcmp(argv[1], "2") == 0)
-		hdev->dsc_policy = 2;
+		txcap->dsc_policy = 2;
 	else if (strcmp(argv[1], "3") == 0)
-		hdev->dsc_policy = 3;
+		txcap->dsc_policy = 3;
 	else if (strcmp(argv[1], "4") == 0)
-		hdev->dsc_policy = 4;
+		txcap->dsc_policy = 4;
 	else
 		printf("note: please set dsc policy as 0~4\n");
-	if (hdev->dsc_policy <= 4)
-		printf("use dsc policy: %d\n", hdev->dsc_policy);
+	if (txcap->dsc_policy <= 4)
+		printf("use dsc policy: %d\n", txcap->dsc_policy);
 
 	return CMD_RET_SUCCESS;
 }
@@ -1547,11 +1575,11 @@ static int do_efuse_show(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
 	get_hdmi_efuse(hdev);
-	pr_info("FEAT_DISABLE_HDMI_60HZ = %d\n", hdev->efuse_dis_hdmi_4k60);
-	pr_info("FEAT_DISABLE_OUTPUT_4K = %d\n", hdev->efuse_dis_output_4k);
-	pr_info("FEAT_DISABLE_HDCP_TX_22 = %d\n", hdev->efuse_dis_hdcp_tx22);
-	pr_info("FEAT_DISABLE_HDMI_TX_3D = %d\n", hdev->efuse_dis_hdmi_tx3d);
-	pr_info("FEAT_DISABLE_HDMI = %d\n", hdev->efuse_dis_hdcp_tx14);
+	pr_info("FEAT_DISABLE_HDMI_60HZ = %d\n", hdev->tx_common.efuse_dis_hdmi_4k60);
+	pr_info("FEAT_DISABLE_OUTPUT_4K = %d\n", hdev->tx_common.efuse_dis_output_4k);
+	pr_info("FEAT_DISABLE_HDCP_TX_22 = %d\n", hdev->tx_common.efuse_dis_hdcp_tx22);
+	pr_info("FEAT_DISABLE_HDMI_TX_3D = %d\n", hdev->tx_common.efuse_dis_hdmi_tx3d);
+	pr_info("FEAT_DISABLE_HDMI = %d\n", hdev->tx_common.efuse_dis_hdcp_tx14);
 
 	return 0;
 }

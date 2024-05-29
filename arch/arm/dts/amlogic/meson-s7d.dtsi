@@ -98,6 +98,12 @@
 		status = "disabled";
 	};
 
+	amhdmitx {
+		compatible = "amlogic, amhdmitx-s7";
+		status = "okay";
+		max_refreshrate = <120>; /* the max freshrate of S7D is upto 120hz */
+	};
+
 };
 
 &ethmac {

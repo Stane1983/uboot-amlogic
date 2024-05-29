@@ -2468,3 +2468,45 @@ struct hdmi_format_para *hdmi_tst_fmt_name(char const *name, char const *attr)
 	return &tst_para;
 }
 
+//todo 20 need there for policy
+//static bool hdmitx_mode_validate_y420_vic(enum hdmi_vic vic)
+//{
+//	const struct hdmi_format_para *para;
+//
+//	/* In Spec2.1 Table 7-34, greater than 2160p30hz will support y420 */
+//	para = hdmi_get_fmt_paras(vic);
+//	if (!para)
+//		return false;
+//	if (para->timing.v_active >= 2160 && para->timing.v_freq > 30000)
+//		return true;
+//	if (para->timing.v_active >= 4320)
+//		return true;
+//	return false;
+//}
+
+bool hdmitx_edid_check_y420_support(struct rx_cap *prxcap, enum hdmi_vic vic)
+{
+//	unsigned int i = 0;
+//	bool ret = false;
+//	const struct hdmi_timing *timing = hdmitx_mode_vic_to_hdmi_timing(vic);
+//
+//	if (!timing || !prxcap)
+//		return false;
+//
+//	if (hdmitx_mode_validate_y420_vic(vic)) {
+//		for (i = 0; i < Y420_VIC_MAX_NUM; i++) {
+//			if (prxcap->y420_vic[i]) {
+//				if (prxcap->y420_vic[i] == vic) {
+//					ret = true;
+//					break;
+//				}
+//			} else {
+//				ret = false;
+//				break;
+//			}
+//		}
+//	}
+
+	return 0;
+}
+

@@ -9,6 +9,7 @@
 #include <common.h>
 #include "hdmi_param.h"
 #include <amlogic/media/vout/hdmitx21/hdmitx_module.h>
+#include "../hdmitx_common/hdmitx_check_valid.h"
 
 const struct hdmi_timing *hdmitx21_get_timing_para0(void)
 {
@@ -38,6 +39,220 @@ static struct parse_cr parse_cr_[] = {
 	{COLORRANGE_LIM, "limit",},
 	{COLORRANGE_FUL, "full",},
 };
+
+/**
+ * sync function drm_mode_vrefresh()
+ */
+static int hdmi_timing_vrefresh(const struct hdmi_timing *t)
+{
+	unsigned int num, den;
+
+	if (t->h_total == 0 || t->v_total == 0)
+		return 0;
+
+	num = t->pixel_freq;
+	den = t->h_total * t->v_total;
+
+	/*interlace mode*/
+	if (t->pi_mode == 0)
+		num *= 2;
+
+	return DIV_ROUND_CLOSEST_ULL(mul_u32_u32(num, 1000), den);
+}
+
+bool hdmitx_mode_have_alternate_clock(const struct hdmi_timing *t)
+{
+	/*to be confirm if VESA can support frac rate.*/
+	if (t->vic == HDMI_0_UNKNOWN || t->vic >= HDMI_CEA_VIC_END)
+		return false;
+
+	if (hdmi_timing_vrefresh(t) % 6 != 0)
+		return false;
+
+	return true;
+}
+
+/* update pixel_clk and v_freq/h_freq according to frac_mode */
+int hdmitx_mode_update_timing(struct hdmi_timing *t,
+			      bool to_frac_mode)
+{
+	unsigned int alternate_clock = 0;
+	bool frac_timing = t->v_freq % 1000 == 0 ? false : true;
+
+	if (!hdmitx_mode_have_alternate_clock(t))
+		return -EINVAL;
+
+	if (!frac_timing && to_frac_mode)
+		alternate_clock = DIV_ROUND_CLOSEST_ULL(mul_u32_u32(t->pixel_freq, 1000), 1001);
+	else if (frac_timing && !to_frac_mode)
+		alternate_clock = DIV_ROUND_CLOSEST_ULL(mul_u32_u32(t->pixel_freq, 1001), 1000);
+
+	if (alternate_clock) {
+		t->pixel_freq = alternate_clock;
+		/*update vsync/hsync*/
+		t->v_freq = DIV_ROUND_CLOSEST_ULL(mul_u32_u32(t->pixel_freq, 1000000),
+						  mul_u32_u32(t->h_total, t->v_total));
+		t->h_freq = DIV_ROUND_CLOSEST_ULL(mul_u32_u32(t->pixel_freq, 1000), t->h_total);
+
+		/*HDMITX_INFO("Timing %s update frac_mode(%d):\n", t->name, to_frac_mode);
+		 *HDMITX_INFO("\tPixel_freq(%d), h_freq (%d), v_freq(%d).\n",
+		 *	t->pixel_freq, t->h_freq, t->v_freq);
+		 */
+	}
+
+	return alternate_clock;
+}
+
+int hdmitx_format_para_reset(struct hdmi_format_para *para)
+{
+	memset(para, 0, sizeof(struct hdmi_format_para));
+	para->vic = HDMI_0_UNKNOWN;
+	para->name = "invalid";
+	para->sname = "invalid";
+	para->cs = HDMI_COLORSPACE_RESERVED4;
+	para->cd = COLORDEPTH_RESERVED;
+	para->cr = HDMI_QUANTIZATION_RANGE_RESERVED;
+	para->frl_rate = FRL_NONE;
+	para->dsc_en = false;
+
+	return 0;
+}
+
+static int hdmitx21_calc_formatpara(struct hdmitx_dev *hdev,
+				    struct hdmi_format_para *para)
+{
+	enum frl_rate_enum tx_max_frl_rate;
+	u8 dsc_policy;
+
+	if (!hdev || !para)
+		return -EINVAL;
+	tx_max_frl_rate = hdev->tx_max_frl_rate;
+	dsc_policy = hdev->tx_common.tx_hw->hdmi_tx_cap.dsc_policy;
+	/* check current tx para with TMDS mode */
+	para->tmds_clk = hdmitx_calc_tmds_clk(para->timing.pixel_freq,
+					      para->cs, para->cd);
+
+	if (para->tmds_clk > 340000) { // TODO, if tmds_clk = 1180000, then ??
+		para->scrambler_en = 1;
+		para->tmds_clk_div40 = 1;
+	} else {
+		para->scrambler_en = 0;
+		para->tmds_clk_div40 = 0;
+	}
+
+	if (para->tmds_clk > 600000 && tx_max_frl_rate == FRL_NONE)
+		return -EINVAL;
+
+	/* check current tx para with FRL mode */
+	hdev->para->frl_rate = hdmitx_select_frl_rate(&para->dsc_en, dsc_policy,
+						      para->timing.vic, para->cs, para->cd);
+
+	return 0;
+}
+
+int hdmitx_format_para_init(struct hdmi_format_para *para,
+			    enum hdmi_vic vic, u32 frac_rate_policy,
+			    enum hdmi_colorspace cs, enum hdmi_color_depth cd,
+			    enum hdmi_quantization_range cr)
+{
+	int ret = 0;
+	const struct hdmi_timing *timing =
+		hdmitx_mode_vic_to_hdmi_timing(vic);
+
+	if (!timing) {
+		pr_info("%s got unknown vic %d\n", __func__, vic);
+		return -EINVAL;
+	}
+
+	/*reset to default value*/
+	hdmitx_format_para_reset(para);
+
+	para->timing = *timing;
+	para->vic = timing->vic;
+	para->name = timing->name;
+	para->sname = timing->sname;
+	para->tmds_clk = timing->pixel_freq;
+	para->cs = cs;
+	para->cd = cd;
+	para->cr = cr;
+
+	/*check fraction mode, and update pixel_freq*/
+	ret = hdmitx_mode_update_timing(&para->timing, frac_rate_policy);
+	if (ret < 0)
+		para->frac_mode = 0;
+	else
+		para->frac_mode = frac_rate_policy;
+
+	return 0;
+}
+
+int hdmitx_format_para_print(struct hdmi_format_para *para, char *log_buf)
+{
+	char buf[256];
+	const char *conf;
+	int i = 0;
+
+	if (para->vic == HDMI_0_UNKNOWN) {
+		printf("format_para: [INVALID] %px vic [0]", para);
+	} else {
+		printf("format_para: %px vic [%d]\n", para, para->vic);
+		printf("format_para: name %s frac %d\n",
+		       para->sname ? para->sname : para->name, para->frac_mode);
+
+		conf = NULL;
+		for (i = 0; i < sizeof(parse_cs_) / sizeof(struct parse_cs); i++) {
+			if (para->cs == parse_cs_[i].cs) {
+				conf = parse_cs_[i].name;
+				break;
+			}
+		}
+		if (!conf)
+			conf = "reserved";
+		printf("format_para: colorspace: %s, ", conf);
+
+		conf = NULL;
+		for (i = 0; i < sizeof(parse_cd_) / sizeof(struct parse_cd); i++) {
+			if (para->cd == parse_cd_[i].cd) {
+				conf = parse_cd_[i].name;
+				break;
+			}
+		}
+		if (!conf)
+			conf = "reserved";
+		printf("colordepth: %s\n", conf);
+
+		printf("format_para: TMDS %d DIV40 %d,%d\n",
+		       para->tmds_clk, para->tmds_clk_div40, para->scrambler_en);
+
+		printf("format_para: frl_rate %d, dsc_en: %d\n",
+		       para->frl_rate, para->dsc_en);
+	}
+
+	if (log_buf)
+		printf(log_buf, "%s", buf);
+	else
+		printf("%s", buf);
+
+	return 0;
+}
+
+/* build format para of current mode + cs/cd + frac */
+int hdmitx_common_build_format_para(struct hdmitx_common *tx_comm,
+				    struct hdmi_format_para *para, enum hdmi_vic vic,
+				    u32 frac_rate_policy, enum hdmi_colorspace cs,
+				    enum hdmi_color_depth cd, enum hdmi_quantization_range cr)
+{
+	int ret = 0;
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
+
+	ret = hdmitx_format_para_init(para, vic, frac_rate_policy, cs, cd, cr);
+	if (ret == 0)
+		ret = hdmitx21_calc_formatpara(hdev, para);
+	if (ret < 0)
+		hdmitx_format_para_print(para, NULL);
+
+	return ret;
+}
 
 /* parse the name string to cs/cd/cr */
 static void _parse_hdmi_attr(char const *name,
@@ -91,33 +306,6 @@ static void _parse_hdmi_attr(char const *name,
 		*cr = COLORRANGE_FUL;
 }
 
-static u32 _calc_tmds_clk(u32 pixel_freq, enum hdmi_colorspace cs,
-	enum hdmi_color_depth cd)
-{
-	u32 tmds_clk = pixel_freq;
-
-	if (cs == HDMI_COLORSPACE_YUV420)
-		tmds_clk = tmds_clk / 2;
-	if (cs != HDMI_COLORSPACE_YUV422) {
-		switch (cd) {
-		case COLORDEPTH_48B:
-			tmds_clk *= 2;
-			break;
-		case COLORDEPTH_36B:
-			tmds_clk = tmds_clk * 3 / 2;
-			break;
-		case COLORDEPTH_30B:
-			tmds_clk = tmds_clk * 5 / 4;
-			break;
-		case COLORDEPTH_24B:
-		default:
-			break;
-		}
-	}
-
-	return tmds_clk;
-}
-
 static bool _tst_fmt_name(struct hdmi_format_para *para,
 	char const *name, char const *attr)
 {
@@ -149,14 +337,16 @@ static bool _tst_fmt_name(struct hdmi_format_para *para,
 	if (i == hdmitx21_timing_size())
 		return 0;
 next:
-	prefer_vic = hdmitx21_get_prefer_vic(hdev, timing->vic);
+	prefer_vic = hdmitx_get_prefer_vic(hdev, timing->vic);
 	timing = hdmitx21_gettiming_from_vic(prefer_vic);
 	if (!timing)
 		return 0;
 	para->timing = *timing;
+	//there need copy vic to para
+	para->vic = timing->vic;
 	_parse_hdmi_attr(attr, &para->cs, &para->cd, &para->cr);
 
-	para->tmds_clk = _calc_tmds_clk(timing->pixel_freq, para->cs, para->cd);
+	para->tmds_clk = hdmitx_calc_tmds_clk(timing->pixel_freq, para->cs, para->cd);
 
 	return 1;
 }
@@ -233,26 +423,6 @@ const struct hdmi_timing *hdmitx_mode_vic_to_hdmi_timing(enum hdmi_vic vic)
 	return timing;
 }
 
-/**
- * sync function drm_mode_vrefresh()
- */
-int hdmi_timing_vrefresh(const struct hdmi_timing *t)
-{
-	unsigned int num, den;
-
-	if (t->h_total == 0 || t->v_total == 0)
-		return 0;
-
-	num = t->pixel_freq;
-	den = t->h_total * t->v_total;
-
-	/*interlace mode*/
-	if (t->pi_mode == 0)
-		num *= 2;
-
-	return DIV_ROUND_CLOSEST_ULL(mul_u32_u32(num, 1000), den);
-}
-
 const struct hdmi_timing *hdmitx_mode_match_vesa_timing(struct vesa_standard_timing *t)
 {
 	int i;
@@ -324,7 +494,7 @@ const struct hdmi_timing *hdmitx21_gettiming_from_name(const char *name)
 	if (i == hdmitx21_timing_size())
 		return NULL;
 next:
-	prefer_vic = hdmitx21_get_prefer_vic(hdev, timing->vic);
+	prefer_vic = hdmitx_get_prefer_vic(hdev, timing->vic);
 	timing = hdmitx21_gettiming_from_vic(prefer_vic);
 	return timing;
 }
@@ -351,8 +521,8 @@ struct hdmi_format_para *hdmitx21_get_fmtpara(const char *mode,
 	para->timing = *timing;
 	_parse_hdmi_attr(attr, &para->cs, &para->cd, &para->cr);
 
-	para->tmds_clk = _calc_tmds_clk(para->timing.pixel_freq,
-		para->cs, para->cd);
+	para->tmds_clk = hdmitx_calc_tmds_clk(para->timing.pixel_freq,
+					      para->cs, para->cd);
 
 	return hdev->para;
 }
@@ -360,6 +530,129 @@ struct hdmi_format_para *hdmitx21_get_fmtpara(const char *mode,
 /* For check all format parameters only */
 void check21_detail_fmt(void)
 {
+}
+
+enum hdmi_vic hdmitx_edid_vic_tab_map_vic(const char *disp_mode)
+{
+	int i;
+	enum hdmi_vic vic = HDMI_UNKNOWN;
+	int size = hdmitx21_timing_size();
+	const struct hdmi_timing *t = hdmitx21_get_timing_para0();
+
+	for (i = 0; i < size; i++) {
+		if (t->sname && strncmp(disp_mode, t->sname, strlen(t->sname)) == 0) {
+			vic = t->vic;
+			break;
+		}
+		if (strncmp(disp_mode, t->name, strlen(t->name)) == 0) {
+			vic = t->vic;
+			break;
+		}
+		t++;
+	}
+
+	if (vic == HDMI_UNKNOWN)
+		printf("not find mapped vic\n");
+
+	return vic;
+}
+
+enum hdmi_vic hdmitx_get_prefer_vic(struct hdmitx_dev *hdev, enum hdmi_vic vic)
+{
+	int i = 0;
+	const struct {
+		u32 mode_prefer_vic;
+		u32 mode_alternate_vic;
+	} vic_pairs[] = {
+		{HDMI_7_720x480i60_16x9, HDMI_6_720x480i60_4x3},
+		{HDMI_3_720x480p60_16x9, HDMI_2_720x480p60_4x3},
+		{HDMI_22_720x576i50_16x9, HDMI_21_720x576i50_4x3},
+		{HDMI_18_720x576p50_16x9, HDMI_17_720x576p50_4x3},
+	};
+
+	for (i = 0; i < ARRAY_SIZE(vic_pairs); i++) {
+		if (vic_pairs[i].mode_alternate_vic == vic || vic_pairs[i].mode_prefer_vic == vic) {
+			if (hdmitx_edid_validate_mode(&hdev->RXCap,
+						      vic_pairs[i].mode_prefer_vic))
+				return vic_pairs[i].mode_prefer_vic;
+			if (hdmitx_edid_validate_mode(&hdev->RXCap,
+						      vic_pairs[i].mode_alternate_vic))
+				return vic_pairs[i].mode_alternate_vic;
+			return HDMI_0_UNKNOWN;
+		}
+	}
+
+	return vic;
+}
+
+bool pre_process_str(char *name)
+{
+	int i;
+	unsigned int flag = 0;
+	char *color_format[4] = {"444", "422", "420", "rgb"};
+
+	for (i = 0 ; i < 4 ; i++) {
+		if (strstr(name, color_format[i]))
+			flag++;
+	}
+	if (flag >= 2)
+		return false;
+	else
+		return true;
+}
+
+//like hdmitx_chk_mode_attr_sup
+bool is_supported_mode_attr(hdmi_data_t *hdmi_data, char *mode_attr)
+{
+	struct hdmi_format_para *para = NULL;
+	struct hdmitx_dev *hdev = NULL;
+
+	if (!hdmi_data || !mode_attr)
+		return false;
+	hdev = container_of(hdmi_data->prxcap,
+			    struct hdmitx_dev, RXCap);
+
+	if (mode_attr[0]) {
+		if (!pre_process_str(mode_attr))
+			return false;
+		para = hdmitx21_tst_fmt_name(mode_attr, mode_attr);
+	}
+
+#if (0)
+	if (para) {
+		printf("sname = %s\n", para->sname);
+		printf("char_clk = %d\n", para->tmds_clk);
+		printf("cd = %d\n", para->cd);
+		printf("cs = %d\n", para->cs);
+	}
+#endif
+	return !hdmitx_common_validate_format_para(&hdev->tx_common, para);
+}
+
+//like is_supported_mode_attr
+bool hdmitx_chk_mode_attr_sup(hdmi_data_t *hdmi_data, char *mode, char *attr)
+{
+	struct hdmi_format_para *para = NULL;
+	struct hdmitx_dev *hdev = NULL;
+
+	if (!hdmi_data || !mode || !attr)
+		return false;
+	hdev = container_of(hdmi_data->prxcap,
+			    struct hdmitx_dev, RXCap);
+
+	if (attr[0]) {
+		if (!pre_process_str(attr))
+			return false;
+		para = hdmitx21_tst_fmt_name(mode, attr);
+	}
+	/* if (para) { */
+		/* printf("sname = %s\n", para->sname); */
+		/* printf("char_clk = %d\n", para->tmds_clk); */
+		/* printf("cd = %d\n", para->cd); */
+		/* printf("cs = %d\n", para->cs); */
+	/* } */
+
+	return !hdmitx_common_validate_format_para(&hdev->tx_common, para);
 }
 
 /* Recommended N and Expected CTS for 32kHz */

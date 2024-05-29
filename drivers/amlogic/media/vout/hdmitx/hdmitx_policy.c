@@ -418,7 +418,7 @@ bool is_hdmitx_limited_1080p(void)
 		return true;
 	else if (is_meson_s1a_package_805C1())
 		return true;
-	else if (hdev->limit_res_1080p == 1)
+	else if (hdev->tx_common.res_1080p == 1)
 		return true;
 	else
 		return false;
@@ -959,7 +959,7 @@ static bool hdmi_sink_disp_mode_sup(struct input_hdmi_data *hdmi_data, char *dis
 
 	vic = hdmitx_edid_vic_tab_map_vic(disp_mode);
 
-	if (_is_y420_vic(vic)) {
+	if (hdmitx_edid_check_y420_support(hdmi_data->prxcap, vic)) {
 		if (hdmitx_chk_mode_attr_sup(hdmi_data, disp_mode, "420,8bit"))
 			return true;
 		if (hdmitx_chk_mode_attr_sup(hdmi_data, disp_mode, "rgb,8bit"))
@@ -1033,6 +1033,7 @@ static void filter_hdmimode(struct input_hdmi_data *hdmi_data, char *mode)
 static void get_hdmi_outputmode(struct input_hdmi_data *hdmi_data, char *mode)
 {
 	struct hdmitx_dev *hdev = NULL;
+	int edid_check = 0;
 
 	if (!hdmi_data || !mode)
 		return;
@@ -1044,7 +1045,7 @@ static void get_hdmi_outputmode(struct input_hdmi_data *hdmi_data, char *mode)
     /* actually won't go into this edid parsing decision
      * as it will be decided outside
      */
-	if (!edid_parsing_ok(hdev)) {
+	if (!hdmitx_edid_check_data_valid(edid_check, hdev->rawedid)) {
 		strcpy(mode, DEFAULT_HDMI_MODE);
 		printf("EDID parsing error detected\n");
 		return;

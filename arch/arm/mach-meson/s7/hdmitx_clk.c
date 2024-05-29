@@ -101,7 +101,7 @@ void set21_s7_htxpll_clk_out(const u32 clk, u32 div)
 		pr_info("%s[%d] %d out of htxpll range(3~6G]\n", __func__, __LINE__, clk);
 		return;
 	}
-	set_s7_htxpll_clk_other(clk, hdev->frl_rate ? 1 : 0);
+	set_s7_htxpll_clk_other(clk, hdev->para->frl_rate ? 1 : 0);
 
 	if ((div % 8) == 0) {
 		pll_od10 = 3; //div8

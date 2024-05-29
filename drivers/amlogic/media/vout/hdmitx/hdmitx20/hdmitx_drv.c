@@ -742,7 +742,7 @@ static void hdmitx_load_dts_config(struct hdmitx_dev *hdev)
 	char *propdata;
 	int ret;
 
-	hdev->limit_res_1080p = 0;
+	hdev->tx_common.res_1080p = 0;
 	dt_blob = gd->fdt_blob;
 	if (dt_blob == NULL) {
 		printf("ERR: hdmitx: dt_blob is null\n");
@@ -764,13 +764,13 @@ static void hdmitx_load_dts_config(struct hdmitx_dev *hdev)
 	propdata = (char *)fdt_getprop(dt_blob, node, "res_1080p", NULL);
 	if (propdata) {
 		if (!strcmp(propdata, "0"))
-			hdev->limit_res_1080p = 0;
+			hdev->tx_common.res_1080p = 0;
 		else
-			hdev->limit_res_1080p = 1;
+			hdev->tx_common.res_1080p = 1;
 	} else {
-		hdev->limit_res_1080p = 0;
+		hdev->tx_common.res_1080p = 0;
 	}
-	printf("limit_res_1080p: %d\n", hdev->limit_res_1080p);
+	printf("limit_res_1080p: %d\n", hdev->tx_common.res_1080p);
 }
 
 void hdmitx_init(void)
@@ -3844,3 +3844,79 @@ void get_hdmi_efuse(struct hdmitx_dev *hdev)
 	}
 }
 #endif
+
+/* VIC is supported by SOC/IP level */
+int hdmitx_hw_validate_mode(struct hdmitx_dev *hdev, u32 vic)
+{
+	int i = 0;
+	/*tx20 supported vics*/
+	enum hdmi_vic ip_support_vics[] = {
+		HDMI_640x480p60_4x3,
+		HDMI_720x480p60_16x9,
+		HDMI_1280x720p60_16x9,
+		HDMI_1920x1080i60_16x9,
+		HDMI_720x480i60_4x3,
+		HDMI_720x480i60_16x9,
+		HDMI_1920x1080p60_16x9,
+		HDMI_720x576p50_4x3,
+		HDMI_720x576p50_16x9,
+		HDMI_1280x720p50_16x9,
+		HDMI_1920x1080i50_16x9,
+		HDMI_720x576i50_4x3,
+		HDMI_720x576i50_16x9,
+		HDMI_1920x1080p24_16x9,
+		HDMI_1920x1080p25_16x9,
+		HDMI_1920x1080p30_16x9,
+		HDMI_1920x1080p50_16x9,
+		HDMI_1920x1080p120_16x9,
+		HDMI_2560x1080p50_64x27,
+		HDMI_2560x1080p60_64x27,
+		HDMI_3840x2160p24_16x9,
+		HDMI_3840x2160p25_16x9,
+		HDMI_3840x2160p30_16x9,
+		HDMI_3840x2160p50_16x9,
+		HDMI_3840x2160p60_16x9,
+		HDMI_4096x2160p24_256x135,
+		HDMI_4096x2160p25_256x135,
+		HDMI_4096x2160p30_256x135,
+		HDMI_4096x2160p50_256x135,
+		HDMI_4096x2160p60_256x135,
+		/*VESA MODE*/
+		HDMIV_800x480p60hz,
+		HDMIV_800x600p60hz,
+		HDMIV_852x480p60hz,
+		HDMIV_854x480p60hz,
+		HDMIV_1024x600p60hz,
+		HDMIV_1024x768p60hz,
+		HDMIV_1152x864p75hz,
+		HDMIV_1280x600p60hz,
+		HDMIV_1280x768p60hz,
+		HDMIV_1280x800p60hz,
+		HDMIV_1280x960p60hz,
+		HDMIV_1280x1024p60hz,
+		HDMIV_1360x768p60hz,
+		HDMIV_1366x768p60hz,
+		HDMIV_1400x1050p60hz,
+		HDMIV_1440x900p60hz,
+		HDMIV_1440x2560p60hz,
+		HDMIV_1440x2560p70hz,
+		HDMIV_1600x900p60hz,
+		HDMIV_1600x1200p60hz,
+		HDMIV_1680x1050p60hz,
+		HDMIV_1920x1200p60hz,
+		HDMIV_2160x1200p90hz,
+		HDMIV_2560x1080p60hz,
+		HDMIV_2560x1440p60hz,
+		HDMIV_2560x1600p60hz,
+		HDMIV_3440x1440p60hz,
+		HDMIV_2400x1200p90hz,
+		HDMIV_3840x1080p60hz,
+	};
+
+	for (i = 0; i < ARRAY_SIZE(ip_support_vics); i++) {
+		if (vic == ip_support_vics[i])
+			return 0;
+	}
+
+	return -EINVAL;
+}

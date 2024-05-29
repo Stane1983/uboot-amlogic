@@ -1896,3 +1896,42 @@ bool edid_parsing_ok(struct hdmitx_dev *hdev)
 	return true;
 }
 
+/*
+ * check the EDID validity
+ * base structure: header, checksum
+ * extension: the first non-zero byte, checksum
+ */
+//20 not use, for build pass
+bool hdmitx_edid_check_data_valid(u8 edid_check, unsigned char *buf)
+{
+//	int i;
+//	int blk_cnt = 1;
+//
+//	if (!buf)
+//		return false;
+//
+//	blk_cnt = hdmitx_edid_get_block_count(buf);
+//
+//	/* check block 0 */
+//	if (_check_base_structure(edid_check, &buf[0]) == 0)
+//		return false;
+//
+//	if (blk_cnt == 1)
+//		return true;
+//	/* check block 1 extension tag */
+//	if (!(edid_check & 0x01)) {
+//		if (!(buf[0x80] == 0x2 || buf[0x80] == 0xf0))
+//			return false;
+//	}
+//	/* check extension block 1 and more */
+//	for (i = 1; i < blk_cnt; i++) {
+//		if (!(edid_check & 0x01)) {
+//			if (buf[i * 0x80] == 0)
+//				return false;
+//		}
+//		if (_check_edid_blk_chksum(edid_check, &buf[i * 0x80]) == false)
+//			return false;
+//	}
+//
+	return false;
+}
