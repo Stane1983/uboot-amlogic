@@ -18,3 +18,4 @@ else
 obj-$(CONFIG_AML_ANTIROLLBACK) += anti-rollback.o
 endif
 obj-$(CONFIG_ARMV8_MULTIENTRY) += lowlevel.o smp.o
+obj-y += mailbox-common.o

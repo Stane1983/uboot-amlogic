@@ -11,8 +11,14 @@
 #include <asm/arch/regs.h>
 #include <asm/arch/secure_apb.h>
 #include <asm/arch/mailbox.h>
+#include <../mailbox-common.h>
 
 //DEFINE_BAKERY_LOCK(mhu_lock);
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+DECLARE_GLOBAL_DATA_PTR;
+static struct mb_spinlock_t mb_spin_lock;
+#endif
 
 void open_scp_log(unsigned int channel)
 {
@@ -190,9 +196,19 @@ int scpi_send_data(uint32_t chan, uint32_t command, void *sendmessage,
 	uintptr_t mboxpl_addr = 0;
 	int ret = 0;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	mb_spinlock_try_init(&mb_spin_lock);
+	if (in_smp())
+		spin_lock(&mb_spin_lock.lock);
+#endif
+
 	ret = mhu_get_addr(chan, &mboxset_addr, &mboxstat_addr, &mboxpl_addr);
 	if (ret) {
 		printf("[BL33] mhu pl get addr fail\n");
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		if (in_smp())
+			spin_unlock(&mb_spin_lock.lock);
+#endif
 		return ret;
 	}
 	mhu_message_start(mboxstat_addr);
@@ -203,5 +219,9 @@ int scpi_send_data(uint32_t chan, uint32_t command, void *sendmessage,
 	if (revmessage != NULL && revsize != 0)
 		mhu_get_payload(mboxpl_addr, revmessage, revsize);
 	mhu_message_end(mboxpl_addr);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (in_smp())
+		spin_unlock(&mb_spin_lock.lock);
+#endif
 	return ret;
 }

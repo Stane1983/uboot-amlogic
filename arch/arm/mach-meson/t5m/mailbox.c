@@ -22,10 +22,16 @@
 #include <command.h>
 #include <malloc.h>
 #include <asm/arch/mailbox.h>
+#include <../mailbox-common.h>
 #include <asm/arch/secure_apb.h>
 
 #define aml_writel32(value, reg)	writel(value, reg)
 #define aml_readl32(reg)		readl(reg)
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+DECLARE_GLOBAL_DATA_PTR;
+static struct mb_spinlock_t mb_spin_lock;
+#endif
 
 static inline void mbwrite(uint32_t to, void *from, long count)
 {
@@ -88,14 +94,14 @@ int mhu_get_addr(uint32_t chan, uint32_t *mboxset, uint32_t *mboxsts,
 	return ret;
 }
 
-void mhu_message_start(uint32_t mboxsts)
+static void mhu_message_start(uint32_t mboxsts)
 {
 	/* Make sure any previous command has finished */
 	while (aml_readl32(mboxsts) != 0)
 		;
 }
 
-void mhu_build_payload(uint32_t mboxwr, void *message, uint32_t size)
+static void mhu_build_payload(uint32_t mboxwr, void *message, uint32_t size)
 {
 	if (size > (MHU_PAYLOAD_SIZE - MHU_DATA_OFFSET)) {
 		printf("bl33: scpi send input size error\n");
@@ -106,7 +112,7 @@ void mhu_build_payload(uint32_t mboxwr, void *message, uint32_t size)
 	mbwrite(mboxwr + MHU_DATA_OFFSET, message, size);
 }
 
-void mhu_get_payload(uint32_t mboxwr, uint32_t mboxrd, void *message, uint32_t size)
+static void mhu_get_payload(uint32_t mboxwr, uint32_t mboxrd, void *message, uint32_t size)
 {
 	if (size > (MHU_PAYLOAD_SIZE - MHU_DATA_OFFSET)) {
 		printf("bl33: scpi send input size error\n");
@@ -118,7 +124,7 @@ void mhu_get_payload(uint32_t mboxwr, uint32_t mboxrd, void *message, uint32_t s
 	mbclean(mboxwr, MHU_PAYLOAD_SIZE);
 }
 
-void mhu_message_send(uint32_t mboxset, uint32_t command, uint32_t size)
+static void mhu_message_send(uint32_t mboxset, uint32_t command, uint32_t size)
 {
 	uint32_t mbox_cmd;
 
@@ -126,7 +132,8 @@ void mhu_message_send(uint32_t mboxset, uint32_t command, uint32_t size)
 	aml_writel32(mbox_cmd, mboxset);
 }
 
-uint32_t mhu_message_wait(uint32_t mboxsts)
+static uint32_t mhu_message_wait(uint32_t mboxset, uint32_t mboxsts,
+	uint32_t command, uint32_t size)
 {
 	/* Wait for response from other core */
 	uint32_t response;
@@ -137,7 +144,7 @@ uint32_t mhu_message_wait(uint32_t mboxsts)
 	return response;
 }
 
-void mhu_message_end(uint32_t mboxwr, uint32_t mboxirqclr, uint32_t mboxid)
+static void mhu_message_end(uint32_t mboxwr, uint32_t mboxirqclr, uint32_t mboxid)
 {
 	uint64_t mask = 0;
 	uint32_t lmask = 0, hmask = 0;
@@ -170,11 +177,21 @@ int scpi_send_data(uint32_t chan, uint32_t command,
 	uint32_t mboxid = 0;
 	int ret = 0;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	mb_spinlock_try_init(&mb_spin_lock);
+	if (in_smp())
+		spin_lock(&mb_spin_lock.lock);
+#endif
+
 	ret = mhu_get_addr(chan, &mboxset, &mboxsts,
 			&mboxwr, &mboxrd,
 			&mboxirqclr, &mboxid);
 	if (ret) {
 		printf("bl33: mhu get addr fail\n");
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		if (in_smp())
+			spin_unlock(&mb_spin_lock.lock);
+#endif
 		return ret;
 	}
 	mhu_message_start(mboxsts);
@@ -185,5 +202,10 @@ int scpi_send_data(uint32_t chan, uint32_t command,
 	if (revmessage && revsize != 0)
 		mhu_get_payload(mboxwr, mboxrd, revmessage, revsize);
 	mhu_message_end(mboxwr, mboxirqclr, mboxid);
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (in_smp())
+		spin_unlock(&mb_spin_lock.lock);
+#endif
 	return ret;
 }
