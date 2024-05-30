@@ -508,6 +508,10 @@ static void hdmitx_check_frac_rate(struct hdmitx_dev *hdev)
 	else if (para && para->timing.name && likely_frac_rate_mode(para->timing.name))
 		frac_rate = 1;
 
+	/* when QMS is en, no need frac_rate */
+	if (hdev->qms_en)
+		frac_rate = 0;
+
 	hdev->frac_rate_policy = frac_rate;
 	pr_info("%s: frac_rate:%d\n", __func__, frac_rate);
 }
