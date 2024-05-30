@@ -837,101 +837,6 @@ static int handle_tcon_path_resv_for_kernel(unsigned int version)
 	return 0;
 }
 
-int handle_tcon_path(void)
-{
-	char str[50], env_str[50];
-	const char *ini_value = NULL;
-	unsigned int version, header;
-	int i, j, ret;
-
-	/* version */
-	ini_value = ini_get_string("tcon_Path", "version", "0");
-	if (model_debug_flag & DEBUG_TCON)
-		ALOGD("%s, version is (%s)\n", __func__, ini_value);
-	version = strtoul(ini_value, NULL, 0);
-
-	/* tcon_bin_header */
-	ini_value = ini_get_string("tcon_Path", "header", "0");
-	if (model_debug_flag & DEBUG_TCON)
-		ALOGD("%s, header is (%s)\n", __func__, ini_value);
-	header = strtoul(ini_value, NULL, 0);
-	snprintf(str, 50, "%d", header);
-	env_set("model_tcon_bin_header", str);
-
-	/* tcon regs bin */
-	ini_value = ini_get_string("tcon_Path", "TCON_BIN_PATH", "null");
-	if (!strcmp(ini_value, "null")) {
-		if (model_debug_flag & DEBUG_TCON)
-			ALOGE("%s, tcon bin load file error!\n", __func__);
-	}
-	env_set("model_tcon", ini_value);
-
-	handle_tcon_path_default(version);
-	ret = handle_tcon_path_resv_for_kernel(version);
-	if (ret) {
-		if (g_lcd_tcon_bin_path_resv_mem && g_lcd_tcon_bin_path_mem) {
-			memcpy(g_lcd_tcon_bin_path_resv_mem,
-			       g_lcd_tcon_bin_path_mem,
-			       CC_MAX_TCON_BIN_PATH_SIZE);
-			if (model_debug_flag & DEBUG_TCON)
-				ALOGD("%s, tcon bin path kernel same as uboot\n", __func__);
-		}
-	}
-
-	/* pmu bin */
-	for (i = 0; i < 4; i++) {
-		snprintf(str, 50, "TCON_EXT_B%d_BIN_PATH", i);
-		snprintf(env_str, 50, "model_tcon_ext_b%d", i);
-		ini_value = ini_get_string("tcon_Path", str, "null");
-		if (!strcmp(ini_value, "null")) {
-			if (model_debug_flag & DEBUG_TCON)
-				ALOGD("%s, no %s file\n", __func__, str);
-			goto handle_tcon_path_pmu_bin_multi;
-		}
-		env_set(env_str, ini_value);
-	}
-
-handle_tcon_path_pmu_bin_multi:
-	for (j = 0; j < 10; j++) {
-		snprintf(str, 50, "TCON_EXT_B%d_%d_BIN_PATH", i, j);
-		snprintf(env_str, 50, "model_tcon_ext_b%d_%d", i, j);
-		ini_value = ini_get_string("tcon_Path", str, "null");
-		if (!strcmp(ini_value, "null")) {
-			if (model_debug_flag & DEBUG_TCON)
-				ALOGD("%s, no %s file\n", __func__, str);
-			continue;
-		}
-		env_set(env_str, ini_value);
-	}
-
-	for (i = 0; i < 4; i++) {
-		snprintf(str, 50, "TCON_EXT_B%d_SPI_BIN_PATH", i);
-		snprintf(env_str, 50, "model_tcon_ext_b%d_spi", i);
-		ini_value = ini_get_string("tcon_Path", str, "null");
-		if (!strcmp(ini_value, "null")) {
-			if (model_debug_flag & DEBUG_TCON)
-				ALOGD("%s, no %s file\n", __func__, str);
-			goto handle_tcon_path_pmu_spi_bin_multi;
-		}
-		env_set(env_str, ini_value);
-	}
-
-handle_tcon_path_pmu_spi_bin_multi:
-	for (j = 0; j < 10; j++) {
-		snprintf(str, 50, "TCON_EXT_B%d_%d_SPI_BIN_PATH", i, j);
-			snprintf(env_str, 50, "model_tcon_ext_b%d_%d_spi", i, j);
-			ini_value = ini_get_string("tcon_Path", str, "null");
-			if (!strcmp(ini_value, "null")) {
-				if (model_debug_flag & DEBUG_TCON)
-					ALOGD("%s, no %s file\n", __func__, str);
-				continue;
-			}
-			env_set(env_str, ini_value);
-	}
-
-	return 0;
-}
-
 static int handle_tcon_spi_v0(unsigned char *buff)
 {
 	const char *ini_value = NULL;
@@ -1283,13 +1188,144 @@ static int handle_read_bin_file_with_header(const char *file_name, unsigned long
 	return data_size;
 }
 
+int handle_tcon_path(void)
+{
+	char str[50], env_str[50];
+	const char *ini_value = NULL;
+	unsigned char *tmp_buf = NULL;
+	unsigned char *tcon_spi = NULL;
+	unsigned int tmp_buf_size = CC_MAX_TCON_BIN_SIZE;
+	unsigned int version, header;
+	int tmp_len, i, j, ret;
+
+	/* version */
+	ini_value = ini_get_string("tcon_Path", "version", "0");
+	if (model_debug_flag & DEBUG_TCON)
+		ALOGD("%s, version is (%s)\n", __func__, ini_value);
+	version = strtoul(ini_value, NULL, 0);
+
+	/* tcon_bin_header */
+	ini_value = ini_get_string("tcon_Path", "header", "0");
+	if (model_debug_flag & DEBUG_TCON)
+		ALOGD("%s, header is (%s)\n", __func__, ini_value);
+	header = strtoul(ini_value, NULL, 0);
+	snprintf(str, 50, "%d", header);
+	env_set("model_tcon_bin_header", str);
+
+	/* tcon regs bin */
+	ini_value = ini_get_string("tcon_Path", "TCON_BIN_PATH", "null");
+	if (!strcmp(ini_value, "null")) {
+		if (model_debug_flag & DEBUG_TCON)
+			ALOGE("%s, tcon bin load file error!\n", __func__);
+	}
+	env_set("model_tcon", ini_value);
+
+	handle_tcon_path_default(version);
+	ret = handle_tcon_path_resv_for_kernel(version);
+	if (ret) {
+		if (g_lcd_tcon_bin_path_resv_mem && g_lcd_tcon_bin_path_mem) {
+			memcpy(g_lcd_tcon_bin_path_resv_mem,
+			       g_lcd_tcon_bin_path_mem,
+			       CC_MAX_TCON_BIN_PATH_SIZE);
+			if (model_debug_flag & DEBUG_TCON)
+				ALOGD("%s, tcon bin path kernel same as uboot\n", __func__);
+		}
+	}
+
+	/* pmu bin */
+	for (i = 0; i < 4; i++) {
+		snprintf(str, 50, "TCON_EXT_B%d_BIN_PATH", i);
+		snprintf(env_str, 50, "model_tcon_ext_b%d", i);
+		ini_value = ini_get_string("tcon_Path", str, "null");
+		if (!strcmp(ini_value, "null")) {
+			if (model_debug_flag & DEBUG_TCON)
+				ALOGD("%s, no %s file\n", __func__, str);
+			goto handle_tcon_path_pmu_bin_multi;
+		}
+		env_set(env_str, ini_value);
+	}
+
+handle_tcon_path_pmu_bin_multi:
+	for (j = 0; j < 10; j++) {
+		snprintf(str, 50, "TCON_EXT_B%d_%d_BIN_PATH", i, j);
+		snprintf(env_str, 50, "model_tcon_ext_b%d_%d", i, j);
+		ini_value = ini_get_string("tcon_Path", str, "null");
+		if (!strcmp(ini_value, "null")) {
+			if (model_debug_flag & DEBUG_TCON)
+				ALOGD("%s, no %s file\n", __func__, str);
+			continue;
+		}
+		env_set(env_str, ini_value);
+	}
+
+	for (i = 0; i < 4; i++) {
+		snprintf(str, 50, "TCON_EXT_B%d_SPI_BIN_PATH", i);
+		snprintf(env_str, 50, "model_tcon_ext_b%d_spi", i);
+		ini_value = ini_get_string("tcon_Path", str, "null");
+		if (!strcmp(ini_value, "null")) {
+			if (model_debug_flag & DEBUG_TCON)
+				ALOGD("%s, no %s file\n", __func__, str);
+			goto handle_tcon_path_pmu_spi_bin_multi;
+		}
+		env_set(env_str, ini_value);
+	}
+
+handle_tcon_path_pmu_spi_bin_multi:
+	for (j = 0; j < 10; j++) {
+		snprintf(str, 50, "TCON_EXT_B%d_%d_SPI_BIN_PATH", i, j);
+			snprintf(env_str, 50, "model_tcon_ext_b%d_%d_spi", i, j);
+			ini_value = ini_get_string("tcon_Path", str, "null");
+			if (!strcmp(ini_value, "null")) {
+				if (model_debug_flag & DEBUG_TCON)
+					ALOGD("%s, no %s file\n", __func__, str);
+				continue;
+			}
+			env_set(env_str, ini_value);
+	}
+
+	// start handle tcon_spi param
+	tmp_buf = (unsigned char *)malloc(tmp_buf_size);
+	if (!tmp_buf) {
+		ALOGE("%s, malloc buffer memory error!!!\n", __func__);
+		return -1;
+	}
+	tcon_spi = (unsigned char *)malloc(CC_MAX_TCON_SPI_SIZE);
+	if (!tcon_spi) {
+		ALOGE("%s, malloc buffer memory error!!!\n", __func__);
+		goto handle_tcon_path_end;
+	}
+	memset(tcon_spi, 0, CC_MAX_TCON_SPI_SIZE);
+
+	handle_tcon_spi(tcon_spi);
+	if (g_lcd_tcon_spi_cnt) {
+		memset((void *)tmp_buf, 0, tmp_buf_size);
+		tmp_len = read_tcon_spi_param(tmp_buf);
+		//ALOGD("%s, start check lcd_tcon_spi param data (0x%x).\n", __func__, tmp_len);
+		if (check_param_valid(0, g_lcd_tcon_spi_cnt, tcon_spi, tmp_len, tmp_buf) ==
+		    CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM) {
+			ALOGD("%s, check lcd_tcon_spi param data diff (0x%x), save new param.\n",
+			      __func__, tmp_len);
+			save_tcon_spi_param(g_lcd_tcon_spi_cnt, tcon_spi);
+		}
+	}
+
+	memset(tcon_spi, 0, CC_MAX_TCON_SPI_SIZE);
+	free(tcon_spi);
+	// end handle lcd_tcon_spi param
+
+handle_tcon_path_end:
+	memset((void *)tmp_buf, 0, tmp_buf_size);
+	free(tmp_buf);
+
+	return 0;
+}
+
 int handle_tcon_bin(void)
 {
 	int tmp_len = 0, tcon_bin_size;
 	unsigned int size = 0, tmp_buf_size = 0;
 	unsigned char *tmp_buf = NULL;
 	unsigned char *tcon_buf = NULL;
-	unsigned char *tcon_spi = NULL;
 	char *file_name;
 	unsigned int bypass, header, data_crc32, temp_crc32;
 	int tmp;
@@ -1381,32 +1417,6 @@ int handle_tcon_bin(void)
 	free(tcon_buf);
 	// end handle lcd_tcon param
 
-	// start handle tcon_spi param
-	tcon_spi = (unsigned char *)malloc(CC_MAX_TCON_SPI_SIZE);
-	if (!tcon_spi) {
-		ALOGE("%s, malloc buffer memory error!!!\n", __func__);
-		goto handle_tcon_bin_end;
-	}
-	memset(tcon_spi, 0, CC_MAX_TCON_SPI_SIZE);
-
-	handle_tcon_spi(tcon_spi);
-	if (g_lcd_tcon_spi_cnt) {
-		memset((void *)tmp_buf, 0, tmp_buf_size);
-		tmp_len = read_tcon_spi_param(tmp_buf);
-		//ALOGD("%s, start check lcd_tcon_spi param data (0x%x).\n", __func__, tmp_len);
-		if (check_param_valid(0, g_lcd_tcon_spi_cnt, tcon_spi, tmp_len, tmp_buf) ==
-		    CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM) {
-			ALOGD("%s, check lcd_tcon_spi param data diff (0x%x), save new param.\n",
-			      __func__, tmp_len);
-			save_tcon_spi_param(g_lcd_tcon_spi_cnt, tcon_spi);
-		}
-	}
-
-	memset(tcon_spi, 0, CC_MAX_TCON_SPI_SIZE);
-	free(tcon_spi);
-	// end handle lcd_tcon_spi param
-
-handle_tcon_bin_end:
 	memset((void *)tmp_buf, 0, tmp_buf_size);
 	free(tmp_buf);
 
