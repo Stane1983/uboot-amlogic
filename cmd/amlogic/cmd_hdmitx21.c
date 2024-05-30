@@ -145,37 +145,15 @@ static int do_rx_det(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	return st;
 }
 
-static int is_valid_hdmi(const char *input)
-{
-	static const char * const valid_hdmi_modes[] = {
-			"HDMI-A-A", /* venc0 */
-			"HDMI-A-B", /* venc1 */
-			"HDMI-A-C"  /* venc2 */
-	};
-
-	int num_modes = sizeof(valid_hdmi_modes) / sizeof(valid_hdmi_modes[0]);
-	int i;
-
-	for (i = 0; i < num_modes; i++) {
-		if (strcmp(input, valid_hdmi_modes[i]) == 0)
-			return 1; // Found a match
-	}
-	return 0; // No match found
-}
-
 static void save_default_720p(void)
 {
 	memcpy(sel_hdmimode, DEFAULT_HDMI_MODE, sizeof(DEFAULT_HDMI_MODE));
-	if (is_valid_hdmi(env_get("connector0_type"))) {
-		env_set("outputmode",	DEFAULT_HDMI_MODE);
-	} else if (is_valid_hdmi(env_get("connector1_type"))) {
+	if (is_hdmi_mode(env_get("outputmode")))
+		env_set("outputmode", DEFAULT_HDMI_MODE);
+	else if (is_hdmi_mode(env_get("outputmode2")))
 		env_set("outputmode2",	DEFAULT_HDMI_MODE);
-	} else if (is_valid_hdmi(env_get("connector2_type"))) {
-		env_set("outputmode3",	DEFAULT_HDMI_MODE);
-	} else {
-		pr_info("no config connectorX_type, save default 720p outputmode\n");
-		env_set("outputmode",	DEFAULT_HDMI_MODE);
-	}
+	else if (is_hdmi_mode(env_get("outputmode3")))
+		env_set("outputmode3", DEFAULT_HDMI_MODE);
 	env_set("colorattribute", DEFAULT_COLOR_FORMAT);
 }
 
@@ -1271,17 +1249,15 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 			 */
 			memcpy(sel_hdmimode, scene_output_info.final_displaymode,
 				sizeof(scene_output_info.final_displaymode));
-			// The outputmode must be saved based on the value of connectorX_type.
-			if (is_valid_hdmi(env_get("connector0_type"))) {
-				env_set("outputmode",	scene_output_info.final_displaymode);
-			} else if (is_valid_hdmi(env_get("connector1_type"))) {
-				env_set("outputmode2",	scene_output_info.final_displaymode);
-			} else if (is_valid_hdmi(env_get("connector2_type"))) {
-				env_set("outputmode3",	scene_output_info.final_displaymode);
-			} else {
-				pr_info("no config connectorX_type, save default %s outputmode\n",
-						scene_output_info.final_displaymode);
-				env_set("outputmode",	scene_output_info.final_displaymode);
+			if (is_hdmi_mode(env_get("outputmode"))) {
+				env_set("outputmode",
+					scene_output_info.final_displaymode);
+			} else if (is_hdmi_mode(env_get("outputmode2"))) {
+				env_set("outputmode2",
+					scene_output_info.final_displaymode);
+			} else if (is_hdmi_mode(env_get("outputmode3"))) {
+				env_set("outputmode3",
+					scene_output_info.final_displaymode);
 			}
 			env_set("colorattribute",
 			       scene_output_info.final_deepcolor);

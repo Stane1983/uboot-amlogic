@@ -436,6 +436,7 @@
 			status = "okay";
 			res_1080p = <0>;
 			/* below may re-defined in customer dts file */
+			enc_idx = <0>; /* default TV ENC is 0 */
 			vend_name = "Amlogic"; /* Max 8 bytes */
 			prod_desc = "MBox Meson Ref"; /* Max 16 bytes */
 		};

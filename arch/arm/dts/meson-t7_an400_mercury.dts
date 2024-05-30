@@ -26,6 +26,10 @@
 	status = "okay";
 };
 
+&amhdmitx {
+	enc_idx = <2>; /* value can be 0 or 2 */
+};
+
 /* demo for i2c user */
 &i2c3 {
 	status= "okay";

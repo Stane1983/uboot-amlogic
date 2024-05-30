@@ -114,10 +114,23 @@ u32 TO21_PHY_ADDR(u32 addr)
 	return (reg21_maps[index].phy_addr + offset);
 }
 
+static u32 get_enc_paddr(unsigned int addr)
+{
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
+	unsigned int idx = addr >> BASE_REG_OFFSET;
+	unsigned int offset = (addr & 0xffff) >> 2;
+
+	if (hdev->enc_idx == 2 && idx == VPUCTRL_REG_IDX) {
+		if (offset >= 0x1b00 && offset < 0x1d00)
+			return addr + (0x800 << 2);
+	}
+	return addr;
+}
+
 u32 hd21_read_reg(u32 vaddr)
 {
 	u32 val;
-	u32 paddr = TO21_PHY_ADDR(vaddr);
+	u32 paddr = TO21_PHY_ADDR(get_enc_paddr(vaddr));
 
 	val = readl(paddr);
 	if (hdmi_dbg)
@@ -128,7 +141,7 @@ u32 hd21_read_reg(u32 vaddr)
 void hd21_write_reg(u32 vaddr, u32 val)
 {
 	u32 rval;
-	u32 paddr = TO21_PHY_ADDR(vaddr);
+	u32 paddr = TO21_PHY_ADDR(get_enc_paddr(vaddr));
 
 	writel(val, paddr);
 	rval = readl(paddr);
