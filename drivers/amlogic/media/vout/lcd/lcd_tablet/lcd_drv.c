@@ -183,3 +183,4 @@ void lcd_tablet_driver_disable(struct aml_lcd_drv_s *pdrv)
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("[%d]: %s finished\n", pdrv->index, __func__);
 }
+

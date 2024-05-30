@@ -55,8 +55,7 @@ static void dsi_panel_try_match_dts(struct aml_lcd_drv_s *pdrv)
 	char type_name[10];
 	char *type_propdata;
 
-	offset = lcd_get_dts_panel_node_ofst(pdrv->index);
-
+	offset = fdt_path_offset(dconf->dt_addr, dconf->dsi_detect_dtb_path);
 	if (offset < 0)
 		return;
 

@@ -66,8 +66,7 @@
 /* 20240318: optimize tcon reserved memory */
 /* 20240319: add tcon pre_proc_clk_en control*/
 /* 20240412: lcd_extern support more option for tcon pmic usage */
-/* 20240528: lcd tablet multi timing support */
-#define LCD_DRV_VERSION    "20240528"
+#define LCD_DRV_VERSION    "20240412"
 
 extern unsigned long clk_util_clk_msr(unsigned long clk_mux);
 
@@ -82,6 +81,11 @@ static inline unsigned long long lcd_do_div(unsigned long long num, unsigned int
 	return ret;
 }
 
+static inline unsigned long long lcd_diff(unsigned long long a, unsigned long long b)
+{
+	return (a >= b) ? (a - b) : (b - a);
+}
+
 static inline unsigned long long div_around(unsigned long long num, unsigned int den)
 {
 	unsigned long long ret = num + den / 2;
@@ -94,11 +98,6 @@ static inline unsigned long long div_around(unsigned long long num, unsigned int
 	return ret;
 }
 
-static inline unsigned long long lcd_diff(unsigned long long a, unsigned long long b)
-{
-	return (a >= b) ? (a - b) : (b - a);
-}
-
 void lcd_display_init_test(struct aml_lcd_drv_s *pdrv);
 void lcd_display_init_reg_dump(struct aml_lcd_drv_s *pdrv);
 
@@ -108,7 +107,6 @@ void lcd_display_init_reg_dump(struct aml_lcd_drv_s *pdrv);
 #define LCD_CMA_PAGE_SIZE_8K (8 * 1024)
 
 /* lcd common */
-unsigned int str_add_vmode(char *buf, struct lcd_vmode_info_s *vm_info, unsigned short framerate);
 void lcd_cma_pool_init(struct aml_lcd_cma_mem *cma,
 		phys_addr_t pa, unsigned long size, unsigned int page_size);
 int lcd_cma_delect_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv);
@@ -119,8 +117,6 @@ int lcd_type_str_to_type(const char *str);
 char *lcd_type_type_to_str(int type);
 int lcd_mode_str_to_mode(const char *str);
 char *lcd_mode_mode_to_str(int mode);
-int lcd_get_dts_panel_node_ofst(unsigned char drv_idx);
-unsigned char dtimg_info_add(char *c_buf, struct lcd_detail_timing_s *dtm, unsigned char c_bits);
 
 void lcd_encl_on(struct aml_lcd_drv_s *pdrv);
 int lcd_config_timing_check(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timing_s *ptiming);
@@ -145,7 +141,7 @@ void lcd_edp_bit_rate_config(struct aml_lcd_drv_s *pdrv);
 /* lcd cus_ctrl */
 void lcd_cus_ctrl_dump_raw_data(struct aml_lcd_drv_s *pdrv);
 void lcd_cus_ctrl_dump_info(struct aml_lcd_drv_s *pdrv);
-int lcd_cus_ctrl_load_from_dts(struct aml_lcd_drv_s *pdrv);
+int lcd_cus_ctrl_load_from_dts(struct aml_lcd_drv_s *pdrv, struct device_node *child);
 int lcd_cus_ctrl_load_from_unifykey(struct aml_lcd_drv_s *pdrv, unsigned char *buf,
 		unsigned int max_size);
 void lcd_cus_ctrl_config_remove(struct aml_lcd_drv_s *pdrv);
@@ -237,9 +233,6 @@ int lcd_vbyone_cdr(struct aml_lcd_drv_s *pdrv);
 int lcd_vbyone_lock(struct aml_lcd_drv_s *pdrv);
 void lcd_debug_probe(struct aml_lcd_drv_s *pdrv);
 // int lcd_prbs_test(struct aml_lcd_drv_s *pdrv, unsigned int s, unsigned int mode_flag);
-
-char *get_current_env_connector(unsigned char cnt_idx);
-void sprintf_lcd_connector(char *buf, unsigned char lcd_idx, unsigned char lcd_type);
 
 /* lcd driver */
 #ifdef CONFIG_AML_LCD_TV

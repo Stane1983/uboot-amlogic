@@ -1,1 +1,0 @@
-obj-$(CONFIG_AML_LCD) += lcd_list.o

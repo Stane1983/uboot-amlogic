@@ -468,35 +468,7 @@ static void lcd_interface_on(struct aml_lcd_drv_s *pdrv)
 	pdrv->status |= LCD_STATUS_IF_ON;
 }
 
-__maybe_unused static void lcd_update_outputmode(struct aml_lcd_drv_s *pdrv)
-{
-	char curr_mode[20];
-	char mode_env_name[20] = "outputmode\0\0";
-	unsigned short framerate, dur_index;
-
-	if (!pdrv->vmode_mgr.cur_vmode_info) {
-		LCDERR("[%d]: curr vmode info is NULL\n", pdrv->index);
-		return;
-	}
-
-	dur_index = pdrv->vmode_mgr.cur_vmode_info->duration_index;
-	if (dur_index != 0xff)
-		framerate = pdrv->std_duration[dur_index].frame_rate;
-	else
-		framerate = pdrv->vmode_mgr.cur_vmode_info->base_fr;
-
-	memset(curr_mode, 0, 20 * sizeof(char));
-	str_add_vmode(curr_mode, pdrv->vmode_mgr.cur_vmode_info, framerate);
-
-	if (pdrv->viu_sel == 2)
-		mode_env_name[10] = '2';
-	else if (pdrv->viu_sel == 3)
-		mode_env_name[10] = '3';
-
-	env_set(mode_env_name, curr_mode);
-}
-
-static void lcd_module_enable(struct aml_lcd_drv_s *pdrv, char *mode)
+static void lcd_module_enable(struct aml_lcd_drv_s *pdrv, char *mode, unsigned int frac)
 {
 	unsigned int sync_duration;
 	struct lcd_config_s *pconf;
@@ -542,8 +514,6 @@ static void lcd_module_enable(struct aml_lcd_drv_s *pdrv, char *mode)
 			      pdrv->index, pdrv->boot_ctrl.init_level);
 		}
 	}
-
-	//lcd_update_outputmode(pdrv);
 }
 
 static void lcd_module_disable(struct aml_lcd_drv_s *pdrv)
@@ -564,7 +534,8 @@ static void lcd_module_disable(struct aml_lcd_drv_s *pdrv)
 	pdrv->status = 0;
 }
 
-static void lcd_module_prepare(struct aml_lcd_drv_s *pdrv, char *mode)
+static void lcd_module_prepare(struct aml_lcd_drv_s *pdrv,
+			       char *mode, unsigned int frac)
 {
 	int ret;
 
@@ -1062,33 +1033,39 @@ void aml_lcd_driver_list_support_mode(void)
 
 /***********************************************
  * use for vout
- * parameters:  mode, such as 1080p60hz...
+ * parameters:  mode, such as panel, panel2, 1080p60hz...
+ *              frac, 1=59.94hz
  * return:      viu_mux
  ************************************************/
-unsigned int aml_lcd_driver_outputmode_check(unsigned char lcd_idx, char *mode)
+unsigned int aml_lcd_driver_outputmode_check(char *mode, unsigned int frac)
 {
 	struct aml_lcd_drv_s *pdrv;
-	int ret;
+	unsigned int viu_mux = VIU_MUX_MAX;
+	int index, ret;
 
 	if (!mode) {
 		LCDERR("%s: mode is NULL\n", __func__);
 		return VIU_MUX_MAX;
 	}
 
-	pdrv = lcd_driver_check_valid(lcd_idx);
-	if (!pdrv)
-		return VIU_MUX_MAX;
+	for (index = 0; index < LCD_MAX_DRV; index++) {
+		pdrv = lcd_driver_check_valid(index);
+		if (!pdrv)
+			continue;
 
-	if (pdrv->outputmode_check) {
-		ret = pdrv->outputmode_check(pdrv, mode);
-		if (ret == 0)
-			return VIU_MUX_ENCL;
+		if (pdrv->outputmode_check) {
+			ret = pdrv->outputmode_check(pdrv, mode);
+			if (ret == 0) {
+				viu_mux = ((pdrv->index << 4) | VIU_MUX_ENCL);
+				break;
+			}
+		}
 	}
 
-	return VIU_MUX_MAX;
+	return viu_mux;
 }
 
-void aml_lcd_driver_prepare(int index, char *mode)
+void aml_lcd_driver_prepare(int index, char *mode, unsigned int frac)
 {
 	struct aml_lcd_drv_s *pdrv;
 
@@ -1106,10 +1083,10 @@ void aml_lcd_driver_prepare(int index, char *mode)
 		return;
 	}
 
-	lcd_module_prepare(pdrv, mode);
+	lcd_module_prepare(pdrv, mode, frac);
 }
 
-void aml_lcd_driver_enable(int index, char *mode)
+void aml_lcd_driver_enable(int index, char *mode, unsigned int frac)
 {
 	struct aml_lcd_drv_s *pdrv;
 	char *ddr_resume = NULL;
@@ -1128,6 +1105,7 @@ void aml_lcd_driver_enable(int index, char *mode)
 		pdrv->power_on_suspend = 0;
 		sprintf(pdrv->init_mode, "%s", mode);
 		pdrv->init_mode[strlen(mode)] = '\0';
+		pdrv->init_frac = frac;
 		LCDPR("%s drv mode=%s\n", __func__, pdrv->init_mode);
 		return;
 	}
@@ -1137,7 +1115,7 @@ void aml_lcd_driver_enable(int index, char *mode)
 		return;
 	}
 
-	lcd_module_enable(pdrv, mode);
+	lcd_module_enable(pdrv, mode, frac);
 }
 
 void aml_lcd_driver_disable(int index)
@@ -1562,7 +1540,7 @@ int aml_lcd_driver_resume(void *pm_ops)
 	if (!pdrv)
 		return -1;
 
-	aml_lcd_driver_enable(i, pdrv->init_mode);
+	aml_lcd_driver_enable(i, pdrv->init_mode, pdrv->init_frac);
 	LCDPR("%s driver enable\n", __func__);
 
 	return 0;

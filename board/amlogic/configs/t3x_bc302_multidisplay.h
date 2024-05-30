@@ -97,12 +97,14 @@
 		"panel_name=null\0" \
 		"lcd_ctrl=0x00000000\0" \
 		"lcd_debug=0x00000000\0" \
+		"outputmode2=panel1\0" \
+		"outputmode=panel\0" \
 		"hdmimode=1080p60hz\0" \
-		"connector0_type=VBYONE-A\0" \
-		"outputmode=2160p60hz\0" \
+		"connector_type=VBYONE-A\0" \
 		"connector1_type=VBYONE-B\0" \
-		"outputmode2=2160p60hz\0" \
+		"cvbsmode=576cvbs\0" \
 		"vout_init=disable\0" \
+		"model1_name=UHD_1RG\0" \
 		"gamma=0\0" \
 		"display_width=1920\0" \
 		"display_height=1080\0" \
@@ -144,6 +146,9 @@
 		"port_map=0x4321\0" \
 		"cec_fun=0x2F\0" \
 		"cec_ac_wakeup=1\0" \
+	"check_connector_type="\
+		"setenv bootconfig ${bootconfig} androidboot.connector_type=${connector_type};"\
+		"\0"\
 	"initargs="\
 		"init=/init " CONFIG_KNL_LOG_LEVEL "console=ttyS0,115200 "\
 		"no_console_suspend earlycon=aml-uart,0xfe07a000 "\
@@ -158,11 +163,11 @@
 		"get_bootloaderversion;" \
 		"run storeargs_base;"\
 		"setenv bootargs ${bootargs} powermode=${powermode} "\
-		"lcd_ctrl=${lcd_ctrl} lcd1_ctrl=${lcd1_ctrl} lcd_debug=${lcd_debug} "\
-		"panel_type=${panel_type} panel1_type=${panel1_type} "\
-		"outputmode=${outputmode} outputmode2=${outputmode2} "\
-		"vout=${outputmode},enable vout2=${outputmode2},enable "\
-		"connector0_type=${connector0_type} connector1_type=${connector1_type} "\
+		"lcd_ctrl=${lcd_ctrl} lcd1_ctrl=${lcd1_ctrl}  lcd_debug=${lcd_debug} "\
+		"outputmode=${outputmode} panel1_type=${panel1_type} "\
+		"vout=panel,enable outputmode=panel vout2=panel1,enable outputmod2=panel1 "\
+		"model_name=UHD_1RG outputmode2=panel1;  "\
+		"run check_connector_type; "\
 		"run cmdline_keys;"\
 		"\0"\
 	"cec_init="\
