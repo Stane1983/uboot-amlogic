@@ -1736,7 +1736,28 @@ void hdr_func(enum hdr_module_sel module_sel,
 	}  else if (hdr_process_select & SDR_HLG) {
 		hdr_mtx_param.mtx_only = HDR_ONLY;
 		hdr_mtx_param.mtx_gamut_mode = 1;
-		if ((get_cpu_id().family_id >= MESON_CPU_MAJOR_ID_G12A) &&
+		if ((get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S7D) &&
+		    (module_sel & (OSD1_HDR | OSD2_HDR))) {
+			for (i = 0; i < 15; i++) {
+				hdr_mtx_param.mtx_in[i] = bypass_coeff[i];
+				hdr_mtx_param.mtx_cgain[i] = bypass_coeff[i];
+				hdr_mtx_param.mtx_ogain[i] = bypass_coeff[i];
+				hdr_mtx_param.mtx_out[i] = bypass_coeff[i];
+				if (i < 9)
+					hdr_mtx_param.mtx_gamut[i] =
+					ncl_709_2020[i];
+				if (i < 3) {
+					hdr_mtx_param.mtxi_pre_offset[i] =
+						bypass_pre[i];
+					hdr_mtx_param.mtxi_pos_offset[i] =
+						bypass_pos[i];
+					hdr_mtx_param.mtxo_pre_offset[i] =
+						bypass_pre[i];
+					hdr_mtx_param.mtxo_pos_offset[i] =
+						bypass_pos[i];
+				}
+			}
+		} else if ((get_cpu_id().family_id >= MESON_CPU_MAJOR_ID_G12A) &&
 		    (module_sel & (OSD1_HDR | OSD2_HDR | OSD3_HDR | OSD4_HDR))) {
 			for (i = 0; i < 15; i++) {
 				hdr_mtx_param.mtx_in[i] = bypass_coeff[i];
@@ -1869,7 +1890,7 @@ void hdr_func(enum hdr_module_sel module_sel,
 
 	if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S7D &&
 		(module_sel & (OSD1_HDR | OSD2_HDR)) &&
-		(hdr_process_select & (HDR_BYPASS | SDR_HDR))) {
+		(hdr_process_select & (HDR_BYPASS | SDR_HDR | SDR_HLG))) {
 		if (IS_ENABLED(CONFIG_AML_DOLBY))
 			if (check_dolby_vision_on())
 				mtx_on = 0;
@@ -1881,7 +1902,7 @@ void hdr_func(enum hdr_module_sel module_sel,
 
 		if (hdr_process_select & HDR_BYPASS)
 			mtx_csc = MATRIX_RGB_YUV709;
-		else if (hdr_process_select & SDR_HDR)
+		else if (hdr_process_select & (SDR_HDR | SDR_HLG))
 			mtx_csc = MATRIX_RGB_BT2020YUV;
 
 		mtx_setting(mtx_sel, mtx_csc, mtx_on);
