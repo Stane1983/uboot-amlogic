@@ -114,6 +114,7 @@ struct tcon_mem_map_table_s {
 
 	unsigned int core_reg_table_size;
 	struct lcd_tcon_init_block_header_s *core_reg_header;
+	struct lcd_tcon_init_block_ext_header_s *core_reg_ext_header;
 	unsigned char *core_reg_table;
 
 	unsigned int *data_size;

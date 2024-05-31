@@ -67,7 +67,8 @@
 /* 20240319: add tcon pre_proc_clk_en control*/
 /* 20240412: lcd_extern support more option for tcon pmic usage */
 /* 20240528: lcd tablet multi timing support */
-#define LCD_DRV_VERSION    "20240528"
+/* 20240607: lcd tcon support extern header */
+#define LCD_DRV_VERSION    "20240607"
 
 extern unsigned long clk_util_clk_msr(unsigned long clk_mux);
 

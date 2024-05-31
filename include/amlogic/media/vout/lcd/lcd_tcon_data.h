@@ -81,7 +81,7 @@ struct lcd_tcon_init_block_header_s {
 	unsigned short v_active;
 	unsigned int block_size;
 	unsigned short header_size;
-	unsigned short reserved1;
+	unsigned short ext_header_size;
 	unsigned short block_type;
 	unsigned short block_ctrl;
 	unsigned char reserved2[5];
@@ -89,6 +89,11 @@ struct lcd_tcon_init_block_header_s {
 	unsigned short chipid;
 	unsigned char name[LCD_TCON_INIT_BIN_NAME_SIZE];
 	char version[LCD_TCON_INIT_BIN_VERSION_SIZE];
+};
+
+struct lcd_tcon_init_block_ext_header_s {
+	unsigned short framerate_min;
+	unsigned short framerate_max;
 };
 
 struct lcd_tcon_data_block_header_s {
