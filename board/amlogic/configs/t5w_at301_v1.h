@@ -93,7 +93,7 @@
 		"lcd_debug=0x00000000\0" \
 		"outputmode=1080p60hz\0" \
 		"hdmimode=none\0" \
-		"connector_type=LVDS-A\0" \
+		"connector0_type=LVDS-A\0" \
 		"cvbsmode=576cvbs\0" \
 		"vout_init=disable\0" \
 		"model_name=FHD2HDMI\0" \
@@ -135,9 +135,6 @@
         "Irq_check_en=0\0"\
         "fs_type=""rootfstype=ramfs""\0"\
 	"disable_ir=0\0"\
-	"check_connector_type="\
-		"setenv bootconfig ${bootconfig} androidboot.connector_type=${connector_type};"\
-		"\0"\
         "initargs="\
 			"init=/init console=ttyS0,115200 no_console_suspend earlycon=aml-uart,0xffd23000 "\
 			"printk.devkmsg=on ramoops.pstore_en=1 ramoops.record_size=0x8000 "\
@@ -151,8 +148,7 @@
 		"run storeargs_base;"\
 		"setenv bootargs ${bootargs} powermode=${powermode} kvm-arm.mode=none init_on_alloc=0 "\
 		"lcd_ctrl=${lcd_ctrl} lcd_debug=${lcd_debug} "\
-		"outputmode=${outputmode} gamma=${gamma};"\
-		"run check_connector_type; " \
+		"outputmode=${outputmode} connector0_type=${connector0_type} gamma=${gamma};"\
 		"run cmdline_keys;"\
             "\0"\
         "cec_init="\

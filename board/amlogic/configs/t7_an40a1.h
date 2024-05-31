@@ -73,6 +73,8 @@
         "lcd1_ctrl=0x00000000\0" \
         "lcd2_ctrl=0x00000000\0" \
         "lcd_debug=0x00000000\0" \
+	"connector0_type=VBYONE-A\0" \
+	"connector1_type=VBYONE-B\0" \
         "outputmode=panel2\0" \
 	"hdmimode=none\0" \
         "cvbsmode=576cvbs\0" \
@@ -128,11 +130,13 @@
 	"storeargs="\
 		"get_bootloaderversion;" \
 		"run storeargs_base;"\
-		"setenv bootargs ${bootargs} lcd_ctrl=${lcd_ctrl} lcd_debug=${lcd_debug} "\
-		"nn_adj_vol=${nn_adj_vol} "\
-		"panel1_type=${panel1_type} lcd1_ctrl=${lcd1_ctrl} "\
-		"panel2_type=${panel2_type} "\
-		"lcd2_ctrl=${lcd2_ctrl} outputmode=${outputmode};"\
+		"setenv bootargs ${bootargs} lcd_debug=${lcd_debug} "\
+			"nn_adj_vol=${nn_adj_vol} "\
+			"panel_type=${panel1_type}  lcd_ctrl=${lcd1_ctrl} "\
+			"panel1_type=${panel1_type} lcd1_ctrl=${lcd1_ctrl} "\
+			"panel2_type=${panel2_type} lcd2_ctrl=${lcd2_ctrl} "\
+			"connector0_type=${connector0_type} connector1_type=${connector1_type} connector2_type=${connector2_type} "\
+			"outputmode=${outputmode};"\
 		"run cmdline_keys;"\
 		"\0"\
         "switch_bootmode="\

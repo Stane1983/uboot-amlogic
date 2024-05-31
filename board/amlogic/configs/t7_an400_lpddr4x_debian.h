@@ -98,7 +98,8 @@
 		"setenv bootargs ${bootargs} powermode=${powermode} "\
 		"lcd_ctrl=${lcd_ctrl} lcd_debug=${lcd_debug} "\
 		"dptx0_ctrl=${dptx0_ctrl} dptx1_ctrl=${dptx1_ctrl} "\
-		"outputmode=${outputmode} hdmitx=${cecconfig},${colorattribute};"\
+		"outputmode=${outputmode} hdmitx=${cecconfig},${colorattribute} "\
+		"connector0_type=${connector0_type} connector1_type=${connector1_type} connector2_type=${connector2_type}; "\
 		"\0"\
 	"init_display_hdmitx="\
 		"hdmitx hpd;hdmitx get_parse_edid;dovi process;"\
@@ -116,6 +117,9 @@
 	"dptx1_ctrl=0x00000000\0" \
 	"outputmode=panel1\0" \
 	"outputmode2=1080p60hz\0" \
+	"connector0_type=VBYONE-B\0" \
+	"connector1_type=HDMI-A-C\0" \
+	"connector2_type=NULL\0" \
 	"cvbsmode=576cvbs\0" \
 	"storeargs_hdmitx="\
 		"setenv bootargs ${bootargs} powermode=${powermode} "\
@@ -124,6 +128,7 @@
 		"vout2=${outputmode2},enable panel1_type=${panel1_type} "\
 		"lcd1_ctrl=${lcd1_ctrl} panel2_type=${panel2_type} lcd2_ctrl=${lcd2_ctrl} "\
 		"dptx0_ctrl=${dptx0_ctrl} dptx1_ctrl=${dptx1_ctrl} "\
+		"connector0_type=${connector0_type} connector1_type=${connector1_type} connector2_type=${connector2_type} "\
 		"hdr_policy=${hdr_policy} hdr_priority=${hdr_priority};"\
 		"\0"\
 	"init_display_hdmitx="\
@@ -230,7 +235,7 @@
 		"get_bootloaderversion;" \
 		"run storeargs_base;"\
 		"setenv bootargs ${bootargs} kvm-arm.mode=none init_on_alloc=0 "\
-			"nn_adj_vol=${nn_adj_vol} boot_source=${boot_source};"\
+		"nn_adj_vol=${nn_adj_vol} boot_source=${boot_source};"\
 		"run storeargs_hdmitx;"\
 		"run cmdline_keys;"\
 		"\0"\

@@ -87,7 +87,8 @@
         "lcd_ctrl=0x00000000\0" \
         "lcd_debug=0x00000000\0" \
         "outputmode=1080p60hz\0" \
-	"hdmimode=none\0" \
+        "connector0_type=LVDS-A\0" \
+        "hdmimode=none\0" \
         "cvbsmode=576cvbs\0" \
         "vout_init=disable\0" \
         "model_name=FHD2HDMI\0" \
@@ -139,7 +140,8 @@
                 "logo=${display_layer},loaded,${fb_addr} vout=${outputmode},${vout_init} "\
                 "hdmimode=${hdmimode} cvbsmode=${cvbsmode} "\
                 "panel_type=${panel_type} lcd_ctrl=${lcd_ctrl} lcd_debug=${lcd_debug} "\
-                "osd_reverse=${osd_reverse} video_reverse=${video_reverse} irq_check_en=${Irq_check_en}  "\
+                "connector0_type=${connector0_type} "\
+                "osd_reverse=${osd_reverse} video_reverse=${video_reverse} irq_check_en=${Irq_check_en} "\
                 "androidboot.selinux=${EnableSelinux} androidboot.firstboot=${firstboot} jtag=${jtag}; "\
             "setenv bootargs ${bootargs} androidboot.bootloader=${bootloader_version} androidboot.hardware=amlogic;"\
             "run cmdline_keys;"\

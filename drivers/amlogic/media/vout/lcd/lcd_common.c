@@ -1174,6 +1174,36 @@ static void lcd_mlvds_phy_ckdi_config(struct aml_lcd_drv_s *pdrv)
 	}
 }
 
+int lcd_get_dts_panel_node_ofst(unsigned char drv_idx)
+{
+	int node_ofst;
+	char *dt_addr = lcd_get_dt_addr();
+	char parent_str[6], type_str[12], propname[30];
+	char *panel_type;
+
+	if (drv_idx == 0) {
+		sprintf(parent_str, "/lcd");
+		sprintf(type_str, "panel_type");
+	} else {
+		sprintf(parent_str, "/lcd%d", drv_idx);
+		sprintf(type_str, "panel%d_type", drv_idx);
+	}
+	panel_type = env_get(type_str);
+	if (!panel_type) {
+		LCDERR("[%d]: %s: no env: %s\n", drv_idx, __func__, type_str);
+		return -1;
+	}
+	snprintf(propname, 30, "%s/%s", parent_str, panel_type);
+
+	node_ofst = fdt_path_offset(dt_addr, propname);
+	if (node_ofst < 0) {
+		LCDERR("[%d]: %s: not find %s node: %s\n",
+			drv_idx, __func__, propname, fdt_strerror(node_ofst));
+		return -1;
+	}
+	return node_ofst;
+}
+
 static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 {
 #ifdef CONFIG_OF_LIBFDT
@@ -1181,53 +1211,30 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 	struct lcd_detail_timing_s *ptiming = &pdrv->config.timing.dft_timing;
 	union lcd_ctrl_config_u *pctrl = &pdrv->config.control;
 	struct phy_config_s *phy_cfg = &pdrv->config.phy_cfg;
-	int parent_offset;
+	// int parent_offset;
 	int child_offset;
-	char parent_str[10], type_str[20], propname[30];
+	char type_str[20];
 	char *propdata;
 	unsigned int temp, temp2;
 	int i, len;
 
-	LCDPR("config load from dts\n");
-
-	if (pdrv->index == 0) {
-		sprintf(parent_str, "/lcd");
+	if (pdrv->index == 0)
 		sprintf(type_str, "panel_type");
-	} else {
-		sprintf(parent_str, "/lcd%d", pdrv->index);
+	else
 		sprintf(type_str, "panel%d_type", pdrv->index);
-	}
-	parent_offset = fdt_path_offset(dt_addr, parent_str);
-	if (parent_offset < 0) {
-		LCDERR("not find %s node: %s\n",
-			parent_str, fdt_strerror(parent_offset));
-		return -1;
-	}
 
-	/* check panel_type */
 	char *panel_type = env_get(type_str);
-	if (!panel_type) {
-		LCDERR("[%d]: no %s\n", pdrv->index, type_str);
-		return -1;
-	}
-	LCDPR("[%d]: use %s=%s\n", pdrv->index, type_str, panel_type);
 
-	snprintf(propname, 30, "%s/%s", parent_str, panel_type);
-	child_offset = fdt_path_offset(dt_addr, propname);
-	if (child_offset < 0) {
-		LCDERR("[%d]: not find %s node: %s\n",
-			pdrv->index, propname, fdt_strerror(child_offset));
+	child_offset = lcd_get_dts_panel_node_ofst(pdrv->index);
+	if (child_offset < 0)
 		return -1;
-	}
 
 	propdata = (char *)fdt_getprop(dt_addr, child_offset, "model_name", NULL);
 	if (!propdata) {
 		LCDERR("[%d]: failed to get model_name\n", pdrv->index);
-		strncpy(pconf->basic.model_name, panel_type,
-			sizeof(pconf->basic.model_name) - 1);
+		strncpy(pconf->basic.model_name, panel_type, sizeof(pconf->basic.model_name) - 1);
 	} else {
-		strncpy(pconf->basic.model_name, propdata,
-			sizeof(pconf->basic.model_name) - 1);
+		strncpy(pconf->basic.model_name, propdata, sizeof(pconf->basic.model_name) - 1);
 	}
 	pconf->basic.model_name[sizeof(pconf->basic.model_name) - 1] = '\0';
 
@@ -1653,7 +1660,6 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 			pctrl->mipi_cfg.panel_det_attr |=
 				(be32_to_cpup(((u32 *)propdata) + 1) && 1) << 1; // store2env
 			pctrl->mipi_cfg.dt_addr = dt_addr;
-			strncpy(pctrl->mipi_cfg.dsi_detect_dtb_path, propname, 30);
 		}
 		break;
 	case LCD_EDP:
@@ -1745,6 +1751,8 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 
 	/* check power_step */
 	lcd_power_load_from_dts(pdrv, dt_addr, child_offset);
+
+	lcd_cus_ctrl_load_from_dts(pdrv);
 
 	propdata = (char *)fdt_getprop(dt_addr, child_offset, "backlight_index", NULL);
 	if (!propdata) {
@@ -2567,58 +2575,6 @@ static inline int lcd_get_opt_mode_idx(struct aml_lcd_drv_s *pdrv)
 	return -1;
 }
 
-static void lcd_set_connector(struct aml_lcd_drv_s *pdrv)
-{
-	char *buf;
-	char *connector_name_list[4] = {"LVDS", "VBYONE", "MIPI", "EDP"};
-	char con_name_str[10], con_type_str[20];
-	unsigned char name_idx, lcd_type = pdrv->config.basic.lcd_type;
-	int cnt_idx;
-
-	if (pdrv->mode == LCD_MODE_TABLET) {
-		cnt_idx = lcd_get_opt_mode_idx(pdrv);
-		if (cnt_idx < 0) {
-			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-				LCDPR("[%d]: %s: no outputmode to this panel",
-					pdrv->index, __func__);
-			}
-			return;
-		}
-	} else if (pdrv->mode == LCD_MODE_TV) {
-		cnt_idx = 0;
-	} else {
-		return;
-	}
-
-	if (lcd_type == LCD_LVDS || lcd_type == LCD_MLVDS)
-		name_idx = 0;
-	else if (lcd_type == LCD_VBYONE || lcd_type == LCD_P2P)
-		name_idx = 1;
-	else if (lcd_type == LCD_MIPI)
-		name_idx = 2;
-	else if (lcd_type == LCD_EDP)
-		name_idx = 3;
-	else
-		return;
-
-	buf = (char *)malloc(32 * sizeof(char));
-	if (!buf)
-		return;
-
-	snprintf(con_name_str, 10, "%s_%c", connector_name_list[name_idx], 'A' + pdrv->index);
-
-	if (cnt_idx == 0)
-		snprintf(con_type_str, 20, "connector_type");
-	else
-		snprintf(con_type_str, 20, "connector%d_type", cnt_idx);
-	snprintf(buf, 32, "setenv %s %s", con_type_str, con_name_str);
-
-	run_command(buf, 0);
-	LCDPR("[%d]: %s: %s: %s\n", pdrv->index, __func__, con_type_str, con_name_str);
-
-	free(buf);
-}
-
 int lcd_get_panel_config(char *dt_addr, int load_id, struct aml_lcd_drv_s *pdrv)
 {
 	int ret;
@@ -2632,7 +2588,6 @@ int lcd_get_panel_config(char *dt_addr, int load_id, struct aml_lcd_drv_s *pdrv)
 	if (ret)
 		return -1;
 
-	lcd_set_connector(pdrv);
 	lcd_cma_detect_dts(dt_addr, pdrv);
 	lcd_config_load_init(pdrv);
 	lcd_config_load_print(pdrv);
@@ -3263,3 +3218,36 @@ void lcd_pinmux_set(struct aml_lcd_drv_s *pdrv, int status)
 	}
 }
 
+unsigned int str_add_vmode(char *buf, struct lcd_vmode_info_s *vm_info, unsigned short framerate)
+{
+	unsigned char i, use_short = 0;
+	struct V_name_s { unsigned short h, v; unsigned short fr[5]; } V_name_table[] = {
+		{3840, 2160, { 60, 59, 50, 48, 47}},
+		{3840, 2160, { 30, 25, 24,  0,  0}},
+		{1920, 1080, {120, 60, 59, 50, 48}},
+		{1920, 1080, { 47, 30, 25, 24,  0}},
+		{1366,  768, { 60, 59, 50, 48, 47}},
+		{1024,  600, { 60, 59, 50, 48, 47}},
+		{1280,  720, { 60, 50,  0,  0,  0}},
+	};
+
+	for (i = 0; i < 5 * ARRAY_SIZE(V_name_table); i++) {
+		if (V_name_table[i / 5].h == vm_info->width &&
+		    V_name_table[i / 5].v == vm_info->height) {
+			if (V_name_table[i / 5].fr[i % 5] == 0)
+				continue;
+			if (framerate == V_name_table[i / 5].fr[i % 5] || framerate == 0) {
+				use_short = 1;
+				break;
+			}
+		}
+	}
+
+	i = 0;
+	i += use_short ? sprintf(buf + i,    "%up",                 vm_info->height) :
+			 sprintf(buf + i, "%ux%up", vm_info->width, vm_info->height);
+	if (framerate)
+		i += sprintf(buf + i, "%huhz", framerate);
+
+	return i;
+}

@@ -98,7 +98,7 @@
 		"lcd_debug=0x00000000\0" \
 		"outputmode=1080p60hz\0" \
 		"hdmimode=none\0" \
-		"connector_type=LVDS-A\0" \
+		"connector0_type=LVDS-A\0" \
 		"cvbsmode=576cvbs\0" \
 		"vout_init=disable\0" \
 		"vout_projector_mux=disable\0" \
@@ -142,9 +142,6 @@
         "Irq_check_en=0\0"\
         "fs_type=""rootfstype=ramfs""\0"\
 	"disable_ir=0\0"\
-	"check_connector_type="\
-		"setenv bootconfig ${bootconfig} androidboot.connector_type=${connector_type};"\
-		"\0"\
         "initargs="\
 			"init=/init console=ttyS0,115200 no_console_suspend earlycon=aml-uart,0xffd23000 "\
 			"printk.devkmsg=on ramoops.pstore_en=1 ramoops.record_size=0x8000 "\
@@ -160,7 +157,7 @@
 		"lcd_ctrl=${lcd_ctrl} lcd_debug=${lcd_debug} "\
 		"fb_width=${fb_width} fb_height=${fb_height} "\
 		"outputmode=${outputmode} gamma=${gamma} vout_projector_mux=${vout_projector_mux};"\
-		"run check_connector_type; " \
+		"connector0_type=${connector0_type} connector1_type=${connector1_type} "\
 		"run cmdline_keys;"\
             "\0"\
         "cec_init="\
