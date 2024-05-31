@@ -12,6 +12,7 @@
 #include <amlogic/amfc.h>
 #include <command.h>
 #include <time.h>
+#include <asm/amlogic/arch/register.h>
 
 #define CONFIG_AMFC_TEST	0
 
@@ -136,6 +137,8 @@ int amfc_decompress(void *src, void *dst, ssize_t src_size, ssize_t dst_size)
 	unsigned int status;
 	int cmd_time;
 	int timeout = ((src_size + PAGE_SIZE) / PAGE_SIZE) * 100 + 5000;
+	unsigned long inv_end = (unsigned long)dst + dst_size;
+	unsigned long secmon_start = readl(SYSCTRL_SEC_STATUS_REG17) + (1 << 20);
 
 	if (log_en)
 		printf("%s, acl:%p, src:%p, dst:%p, src size:%ld, dst size:%ld\n",
@@ -187,7 +190,11 @@ int amfc_decompress(void *src, void *dst, ssize_t src_size, ssize_t dst_size)
 
 	flush_dcache_range((unsigned long)src, (unsigned long)src + src_size);
 	flush_dcache_range((unsigned long)&acl, (unsigned long)&acl + sizeof(acl));
-	invalidate_dcache_range((unsigned long)dst, (unsigned long)dst + dst_size);
+
+	if (inv_end > secmon_start && (unsigned long)dst < secmon_start)
+		inv_end = secmon_start;
+
+	invalidate_dcache_range((unsigned long)dst, inv_end);
 
 	/* sw reset */
 	writel(0x80000000, AMFC_GL_CMD1_CONTROL);
