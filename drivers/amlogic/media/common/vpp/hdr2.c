@@ -1803,5 +1803,7 @@ void hdr_func(enum hdr_module_sel module_sel,
 			module_sel == OSD2_HDR ||
 			module_sel == OSD3_HDR)
 			mtx_setting(OSD_BLEDN_D0_MTX, MATRIX_RGB_YUV709, 1);
+		if (module_sel == OSD3_HDR)
+			mtx_setting(OSD3_BYP_MTX, MATRIX_RGB_YUV709, 1);
 	}
 }

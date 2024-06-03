@@ -54,7 +54,8 @@ enum vpp_matrix_e {
 	VPP1_POST2_MTX = 0x8,
 	VPP2_POST2_MTX = 0x10,
 	OSD_BLEDN_D0_MTX = 0x20,
-	OSD_BLEDN_D1_MTX = 0x21
+	OSD_BLEDN_D1_MTX = 0x21,
+	OSD3_BYP_MTX = 0x22
 };
 
 enum mtx_csc_e {
@@ -285,5 +286,46 @@ void mtx_setting(enum vpp_matrix_e mtx_sel,
 #ifndef BLEND_D1_MATRIX_EN_CTRL
 #define BLEND_D1_MATRIX_EN_CTRL                    0x6159
 #endif
-
+#ifndef OSD3_BYP_MATRIX_COEF00_01
+#define OSD3_BYP_MATRIX_COEF00_01                  0x6180
+#endif
+#ifndef OSD3_BYP_MATRIX_COEF02_10
+#define OSD3_BYP_MATRIX_COEF02_10                  0x6181
+#endif
+#ifndef OSD3_BYP_MATRIX_COEF11_12
+#define OSD3_BYP_MATRIX_COEF11_12                  0x6182
+#endif
+#ifndef OSD3_BYP_MATRIX_COEF20_21
+#define OSD3_BYP_MATRIX_COEF20_21                  0x6183
+#endif
+#ifndef OSD3_BYP_MATRIX_COEF22
+#define OSD3_BYP_MATRIX_COEF22                     0x6184
+#endif
+#ifndef OSD3_BYP_MATRIX_COEF30_31
+#define OSD3_BYP_MATRIX_COEF30_31                  0x6185
+#endif
+#ifndef OSD3_BYP_MATRIX_COEF32_40
+#define OSD3_BYP_MATRIX_COEF32_40                  0x6186
+#endif
+#ifndef OSD3_BYP_MATRIX_COEF41_42
+#define OSD3_BYP_MATRIX_COEF41_42                  0x6187
+#endif
+#ifndef OSD3_BYP_MATRIX_OFFSET0_1
+#define OSD3_BYP_MATRIX_OFFSET0_1                  0x6188
+#endif
+#ifndef OSD3_BYP_MATRIX_OFFSET2
+#define OSD3_BYP_MATRIX_OFFSET2                    0x6189
+#endif
+#ifndef OSD3_BYP_MATRIX_PRE_OFFSET0_1
+#define OSD3_BYP_MATRIX_PRE_OFFSET0_1              0x618a
+#endif
+#ifndef OSD3_BYP_MATRIX_PRE_OFFSET2
+#define OSD3_BYP_MATRIX_PRE_OFFSET2                0x618b
+#endif
+#ifndef OSD3_BYP_MATRIX_CLIP
+#define OSD3_BYP_MATRIX_CLIP                       0x6198
+#endif
+#ifndef OSD3_BYP_MATRIX_EN_CTRL
+#define OSD3_BYP_MATRIX_EN_CTRL                    0x61b9
+#endif
 #endif

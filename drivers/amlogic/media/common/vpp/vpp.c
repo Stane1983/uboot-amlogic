@@ -554,6 +554,20 @@ void mtx_setting(enum vpp_matrix_e mtx_sel,
 
 		vpp_reg_setb(matrix_en_ctrl, mtx_on, 0, 1);
 
+	} else if (mtx_sel == OSD3_BYP_MTX) {
+		matrix_coef00_01 = OSD3_BYP_MATRIX_COEF00_01;
+		matrix_coef02_10 = OSD3_BYP_MATRIX_COEF02_10;
+		matrix_coef11_12 = OSD3_BYP_MATRIX_COEF11_12;
+		matrix_coef20_21 = OSD3_BYP_MATRIX_COEF20_21;
+		matrix_coef22 = OSD3_BYP_MATRIX_COEF22;
+		matrix_offset0_1 = OSD3_BYP_MATRIX_OFFSET0_1;
+		matrix_offset2 = OSD3_BYP_MATRIX_OFFSET2;
+		matrix_pre_offset0_1 = OSD3_BYP_MATRIX_PRE_OFFSET0_1;
+		matrix_pre_offset2 = OSD3_BYP_MATRIX_PRE_OFFSET2;
+		matrix_en_ctrl = OSD3_BYP_MATRIX_EN_CTRL;
+
+		vpp_reg_setb(matrix_en_ctrl, mtx_on, 0, 1);
+
 	} else {
 		return;
 	}
