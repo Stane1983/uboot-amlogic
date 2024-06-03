@@ -1229,8 +1229,19 @@ void scene_process(struct hdmitx_dev *hdev,
 		 */
 	} else if (is_hdr_preference(hdev) || dv_support != 0) {
 		hdr_scene_process(&hdmidata, scene_output_info);
+		/* if the mode not support amdv, and fallback to hdr/sdr,
+		 * but amdv was enabled by HWC, need to forcely change
+		 * dolby_status to std mode(for example, from ll_mode).
+		 * Otherwise, after bootup, HWC find that mode not
+		 * support amdv, and switch to std amdv(only enable dv),
+		 * it will flash screen as ll_mode->std_mode switch
+		 */
+		if (is_dolby_enabled())
+			scene_output_info->final_dv_type = DOLBY_VISION_STD_ENABLE;
 	} else {
 		sdr_scene_process(&hdmidata, scene_output_info);
+		if (is_dolby_enabled())
+			scene_output_info->final_dv_type = DOLBY_VISION_STD_ENABLE;
 	}
 	/* not find outputmode and use default mode */
 	if (strlen(scene_output_info->final_displaymode) == 0)

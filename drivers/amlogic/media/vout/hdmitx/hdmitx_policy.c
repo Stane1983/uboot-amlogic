@@ -839,9 +839,6 @@ static bool is_dv_support_mode(struct input_hdmi_data *hdmi_data, char *mode)
 	else
 		strcpy(dv_displaymode, DV_MODE_4K2K30HZ);
 
-	if (!hdmi_sink_disp_mode_sup(hdmi_data, mode))
-		return false;
-
 	if (!strcmp(mode, MODE_1080P100HZ)) {
 		if (dv->sup_1080p120hz)
 			valid = true;
@@ -890,6 +887,7 @@ static int update_dv_displaymode(struct input_hdmi_data *hdmi_data,
 	int dv_type;
 	struct dv_info *dv = NULL;
 	int ret = 0;
+	bool need_best_policy = false;
 
 	if (!hdmi_data || !final_displaymode)
 		return ret;
@@ -903,7 +901,11 @@ static int update_dv_displaymode(struct input_hdmi_data *hdmi_data,
 	else
 		strcpy(dv_displaymode, DV_MODE_4K2K30HZ);
 
-	if (is_best_outputmode()) {
+	/* if current resolution is not supported, run best policy */
+	if (!hdmi_sink_disp_mode_sup(hdmi_data, cur_outputmode))
+		need_best_policy = true;
+
+	if (is_best_outputmode() || need_best_policy) {
 		if (dv->parity) {
 			/* TV support dolby vision 2160p60hz case */
 			if (!strcmp(dv_displaymode, DV_MODE_4K2K60HZ)) {
@@ -949,7 +951,7 @@ static int update_dv_displaymode(struct input_hdmi_data *hdmi_data,
 		}
 	}
 
-	printf("final_displaymode:%s, cur_outputmode:%s, dv_displaymode:%s",
+	printf("final_displaymode:%s, cur_outputmode:%s, dv_displaymode:%s\n",
 	       final_displaymode, cur_outputmode, dv_displaymode);
 	return ret;
 }
@@ -1218,7 +1220,7 @@ int dolbyvision_scene_process(struct input_hdmi_data *hdmi_data,
 
 	/* 2.2 update dolby vision output mode */
 	ret = update_dv_displaymode(hdmi_data, output_info->final_displaymode);
-	printf("dv final_displaymode:%s", output_info->final_displaymode);
+	printf("dv final_displaymode:%s\n", output_info->final_displaymode);
 	return ret;
 }
 
