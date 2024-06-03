@@ -920,14 +920,24 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 #else
 				run_command("saveenv", 0);
 #endif
-
-				if (update_flag != -1)
+				if (update_flag != -1) {
+					env_set("expect_index", "1");
+					if (gpt_flag != 0)
+						env_set("dts_to_gpt", "1");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+					run_command("update_env_part -p expect_index;", 0);
+					if (gpt_flag != 0)
+						run_command("update_env_part -p dts_to_gpt;", 0);
+#else
+					run_command("saveenv", 0);
+#endif
 					run_command("reset", 0);
+				}
 			}
 		}
 	}
 
-	if ((write_boot && !strcmp(write_boot, "1")) || update_flag > 0) {
+	if ((write_boot && !strcmp(write_boot, "1")) || update_flag != -1) {
 		printf("reset......\n");
 		env_set("write_boot", "0");
 		env_set("reboot_status", "reboot_next");
