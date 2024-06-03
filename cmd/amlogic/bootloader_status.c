@@ -407,12 +407,17 @@ void set_product(void)
 	char *dup_str = NULL;
 
 	str = strstr(board, "_");
+	if (!str) {
+		env_set("product", board);
+		return;
+	}
 	dup_str = strdup(str);
 	if (!(strstr(dup_str, "_")))
 		env_set("product", str + 1);
 	else
 		env_set("product", strtok(str, "_"));
 	free(dup_str);
+	return;
 }
 
 void fastboot_step_check(char *rebootmode, int gpt_flag)
