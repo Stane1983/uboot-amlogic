@@ -19,6 +19,8 @@
 #include <asm/arch/cpu_config.h>
 #include <partition_table.h>
 #include <time.h>
+#include <fdt_support.h>
+#include <linux/libfdt.h>
 
 struct map_handler_t {
 	u16 *map;
@@ -1463,25 +1465,42 @@ int mtd_store_param_rsv(void)
 	return run_command(buf, 0);
 }
 
+/**
+ * Format string describing supplied size. This routine does the opposite job
+ * to memsize_parse(). Size in bytes is converted to string and if possible
+ * shortened by using k (kilobytes), m (megabytes) or g (gigabytes) suffix.
+ *
+ * Note, that this routine does not check for buffer overflow, it's the caller
+ * who must assure enough space.
+ *
+ * @param buf : output buffer
+ * @param size : size to be converted to string
+ */
+static void memsize_format(char *buf, u64 size)
+{
+#define SIZE_GB ((u32)1024 * 1024 * 1024)
+#define SIZE_MB ((u32)1024 * 1024)
+#define SIZE_KB ((u32)1024)
+
+	if ((size % SZ_1G) == 0)
+		sprintf(buf, "%llug", size / SZ_1G);
+	else if ((size % SZ_1M) == 0)
+		sprintf(buf, "%llum", size / SZ_1M);
+	else if (size % SZ_1K == 0)
+		sprintf(buf, "%lluk", size / SZ_1K);
+	else
+		sprintf(buf, "%llu", size);
+}
+
 extern struct part_info *get_aml_mtdpart_by_index(struct mtd_info *master, int idx);
 int mtd_store_param_partition(void)
 {
 	struct part_info *temp;
 	int i, re, count, lenvir = 0;
-	enum boot_type_e medium_type;
-	char buf[512];
+	char buf[512], size[32], offset[32];
 	char *p = buf;
 
-	medium_type = store_get_type();
 	count = get_aml_mtdpart_count();
-
-#ifdef SKIP_MTD_PART_PARAM
-	if (medium_type == BOOT_SNAND)
-		return 0;
-#else
-	if (medium_type == BOOT_SNAND)
-		mtd_store_param_rsv();
-#endif
 
 	lenvir = snprintf(buf, sizeof(buf), "%s", "mtdparts=aml-mtd:");
 	p += lenvir;
@@ -1490,10 +1509,13 @@ int mtd_store_param_partition(void)
 		temp = get_aml_mtdpart_by_index(NULL, i);
 		if (!temp)
 			return -1;
-		lenvir = snprintf(p, re, "%dk@%dk(%s),",
-				(int)(temp->size / 1024),
-				(int)(temp->offset / 1024),
-				temp->name);
+
+		memset(size, 0, sizeof(size));
+		memsize_format(size, temp->size);
+		memset(offset, 0, sizeof(offset));
+		memsize_format(offset, temp->offset);
+		lenvir = snprintf(p, re, "%s@%s(%s),", size, offset, temp->name);
+
 		re -= lenvir;
 		p += lenvir;
 	}
@@ -1506,18 +1528,57 @@ int mtd_store_param_partition(void)
 	return run_command(buf, 0);
 }
 
+static int mtd_store_param_rsv_partition(void)
+{
+	enum boot_type_e medium_type;
+	char buf[128];
+	char *fdtaddr = NULL;
+	u32 mem_dtb;
+
+	medium_type = store_get_type();
+	if (medium_type != BOOT_SNAND)
+		return 0;
+
+	if (!working_fdt) {
+		pr_debug("%s: working_fdt is set, fdt add to set working_fdt\n",
+				__FILE__);
+		fdtaddr = env_get("dtb_mem_addr");
+		if (!fdtaddr) {
+			pr_err("get dtb_mem_addr NULL\n");
+			return -EBADMSG;
+		}
+		mem_dtb = simple_strtoul(fdtaddr, NULL, 16);
+		sprintf(buf, "fdt addr 0x%x", mem_dtb);
+		pr_debug("fdt addr 0x%x\n", mem_dtb);
+		if (run_command(buf, 0)) {
+			pr_err("fdt addr 0x%x error.\n", mem_dtb);
+			return -EBADMSG;
+		}
+	}
+
+	if (working_fdt)
+		return meson_rsv_add_dtb(working_fdt,
+			fdt_node_offset_by_compatible(working_fdt, -1, "spi-nand"));
+	else
+		return -1;
+}
+
 int mtd_store_param_ops(void)
 {
 	static int init;
+	int ret;
 
 	if (init)
 		return 0;
 
-	mtd_store_param_partition();
+	ret = mtd_store_param_partition();
+	if (ret == 0)
+		ret = mtd_store_param_rsv_partition();
 
-	init = 1;
+	if (ret == 0)
+		init = 1;
 
-	return 0;
+	return ret;
 }
 
 void mtd_store_mount_ops(struct storage_t *store)
