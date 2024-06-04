@@ -206,10 +206,19 @@ static inline bool is_meson_s7d(void)
 		return false;
 }
 
+static inline bool is_meson_s6(void)
+{
+	if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S6)
+		return true;
+	else
+		return false;
+}
+
 static inline bool is_meson_box(void)
 {
 	if (is_meson_gxm() || is_meson_g12() || is_meson_sc2() ||
-		is_meson_s4d() || is_meson_s5() || is_meson_s7d())
+		is_meson_s4d() || is_meson_s5() || is_meson_s7d() ||
+		is_meson_s6())
 		return true;
 	else
 		return false;
@@ -272,7 +281,7 @@ static inline bool is_meson_tvmode(void)
 
 /*idk2.6*/
 static inline bool is_multi_dv_mode(void) {
-	if (is_meson_s7d())
+	if (is_meson_s7d() || is_meson_s6())
 		return true;
 	else
 		return false;
@@ -285,7 +294,8 @@ static inline u32 READ_VPP_REG(u32 reg)
 	if (reg > 0x10000)
 		val = *(volatile unsigned int *)REG_DV_ADDR(reg);
 	else {
-		if (is_meson_sc2() || is_meson_s4d() || is_meson_t7() || is_meson_s7d())
+		if (is_meson_sc2() || is_meson_s4d() || is_meson_t7() ||
+			is_meson_s7d() || is_meson_s6())
 			val = *(volatile unsigned int *)REG_ADDR_VCBUS_SC2(reg);
 		else if (is_meson_s5())
 			val = *(volatile unsigned int *)REG_ADDR_VCBUS_S5(reg);
@@ -301,7 +311,8 @@ static inline void WRITE_VPP_REG(u32 reg,
 	if (reg > 0x10000)
 		*(volatile unsigned int *)REG_DV_ADDR(reg) = (val);
 	else {
-		if (is_meson_sc2() || is_meson_s4d() || is_meson_t7() || is_meson_s7d())
+		if (is_meson_sc2() || is_meson_s4d() || is_meson_t7() ||
+			is_meson_s7d() || is_meson_s6())
 			*(volatile unsigned int *)REG_ADDR_VCBUS_SC2(reg) = (val);
 		else if (is_meson_s5())
 			*(volatile unsigned int *)REG_ADDR_VCBUS_S5(reg) = (val);
@@ -322,7 +333,8 @@ static inline u32 phyaddr_to_dvaddr(u32 reg) {
 	u32 val;
 
 	if (reg > 0x10000) {
-		if (is_meson_sc2() || is_meson_s4d() || is_meson_t7() || is_meson_s7d())
+		if (is_meson_sc2() || is_meson_s4d() || is_meson_t7() ||
+			is_meson_s7d() || is_meson_s6())
 			val = (reg - REG_BASE_VCBUS_SC2) >> 2;
 		else if (is_meson_s5())
 			val = (reg - REG_BASE_VCBUS_S5) >> 2;
@@ -336,7 +348,7 @@ static inline u32 phyaddr_to_dvaddr(u32 reg) {
 
 static inline bool is_dolby_stb_chip(void) {
 	return (is_meson_g12() || is_meson_tm2_stbmode() || is_meson_sc2() || is_meson_s4d() ||
-			is_meson_t7() || is_meson_s5() || is_meson_s7d());
+			is_meson_t7() || is_meson_s5() || is_meson_s7d() || is_meson_s6());
 }
 
 /*currently disable dv under 4k120/8k*/
@@ -372,7 +384,8 @@ bool check_amdolby_efuse(void)
 		(get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S4D) ||
 		(get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T7) ||
 		(get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S5) ||
-		(get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S7D)) {
+		(get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S7D) ||
+		(get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S6)) {
 		reg_value = READ_VPP_REG(CORE1_CONTROL_REG);
 		printf("control reg_value %x\n", reg_value);
 		if (reg_value & 0x100)
@@ -456,7 +469,8 @@ bool check_dolby_vision_on(void)
 		(get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S4D) ||
 		(get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T7) ||
 		(get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S5) ||
-		(get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S7D)) {
+		(get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S7D) ||
+		(get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S6)) {
 		if (READ_VPP_REG(DOLBY_CORE3_SWAP_CTRL0) & 0x1)
 			return true;
 	}
@@ -853,7 +867,7 @@ static int dolby_vision_parse(struct hdmitx_dev *hdmitx_device)
 		m_dovi_setting.input[IPCORE2_ID].p_hdr10_param = NULL;
 
 		if (dst_format >= 0 && dst_format <= 2) {
-			if (is_meson_s5() || is_meson_s7d()) {
+			if (is_meson_s5() || is_meson_s7d() || is_meson_s6()) {
 				if (request_ll_mode())
 					graphic_max = dv_target_graphics_ll_max_26[dst_format];
 				else
@@ -926,7 +940,7 @@ static int dolby_vision_parse(struct hdmitx_dev *hdmitx_device)
 
 		if (dst_format >= 0 && dst_format <= 2) {
 			graphic_max = dv_target_graphics_max[dst_format];
-			if (is_meson_s5() || is_meson_s7d()) {
+			if (is_meson_s5() || is_meson_s7d() || is_meson_s6()) {
 				if (request_ll_mode())
 					graphic_max = dv_target_graphics_ll_max_26[dst_format];
 				else
