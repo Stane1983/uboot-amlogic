@@ -53,7 +53,7 @@
 
 /* HDR_SIZE */
 #define UHDR_SIZE (4096)
-#define BL2_DATA_SIZE (219 * 1024)
+#define BL2_DATA_SIZE (266 * 1024)
 /* BL2 SPL size */
 #define BL2_SIZE			(UHDR_SIZE + BL2_DATA_SIZE)
 
