@@ -175,6 +175,7 @@ __attribute__ ((section(".misc_param"))) = {
 	{ PADCTRL_PIN_MUX_REGI,	   (0x3 << 4),	  (0xf << 4), 0, 0, 0 },
 	{ PADCTRL_GPIOD_PULL_UP,   (0x1 << 2),	  (0x1 << 2), 0, 0, 0 },
 	{ PWM_TEE_ONLY_J,          (0x1 << 0),	  (0xffffffff << 0), 0, 0, 0 },
+	/* disable GPIOH_3 Pull */
 	{ PADCTRL_GPIOH_PULL_EN,   (0x0 << 3),    (0x1 << 3), 0, 0, 0 },
 #ifdef CONFIG_NOVERBOSE_BUILD
 	/* use acs flag to disable uart print in each blx
