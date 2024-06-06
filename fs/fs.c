@@ -17,6 +17,11 @@
 #include <asm/io.h>
 #include <div64.h>
 #include <linux/math64.h>
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#include <spinlock.h>
+static spin_lock_t fs_lock = {UNLOCK};
+static spin_lock_t set_blk_lock = {UNLOCK};
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -308,6 +313,9 @@ int fs_set_blk_dev(const char *ifname, const char *dev_part_str, int fstype)
 {
 	struct fstype_info *info;
 	int part, i;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&set_blk_lock);
+#endif
 #ifdef CONFIG_NEEDS_MANUAL_RELOC
 	static int relocated;
 
@@ -327,8 +335,12 @@ int fs_set_blk_dev(const char *ifname, const char *dev_part_str, int fstype)
 
 	part = blk_get_device_part_str(ifname, dev_part_str, &fs_dev_desc,
 					&fs_partition, 1);
-	if (part < 0)
+	if (part < 0) {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		spin_unlock(&set_blk_lock);
+#endif
 		return -1;
+	}
 
 	for (i = 0, info = fstypes; i < ARRAY_SIZE(fstypes); i++, info++) {
 		if (fstype != FS_TYPE_ANY && info->fstype != FS_TYPE_ANY &&
@@ -341,9 +353,15 @@ int fs_set_blk_dev(const char *ifname, const char *dev_part_str, int fstype)
 		if (!info->probe(fs_dev_desc, &fs_partition)) {
 			fs_type = info->fstype;
 			fs_dev_part = part;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+			spin_unlock(&set_blk_lock);
+#endif
 			return 0;
 		}
 	}
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&set_blk_lock);
+#endif
 
 	return -1;
 }
@@ -360,6 +378,7 @@ int fs_set_blk_dev_with_part(struct blk_desc *desc, int part)
 		ret = part_get_info_whole_disk(desc, &fs_partition);
 	if (ret)
 		return ret;
+
 	fs_dev_desc = desc;
 
 	for (i = 0, info = fstypes; i < ARRAY_SIZE(fstypes); i++, info++) {
@@ -610,14 +629,28 @@ int do_size(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
 	if (argc != 4)
 		return CMD_RET_USAGE;
 
-	if (fs_set_blk_dev(argv[1], argv[2], fstype))
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&fs_lock);
+#endif
+	if (fs_set_blk_dev(argv[1], argv[2], fstype)) {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		spin_unlock(&fs_lock);
+#endif
 		return 1;
+	}
 
-	if (fs_size(argv[3], &size) < 0)
+	if (fs_size(argv[3], &size) < 0) {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		spin_unlock(&fs_lock);
+#endif
 		return CMD_RET_FAILURE;
+	}
 
 	env_set_hex("filesize", size);
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		spin_unlock(&fs_lock);
+#endif
 	return 0;
 }
 
@@ -639,13 +672,24 @@ int do_load(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
 	if (argc > 7)
 		return CMD_RET_USAGE;
 
-	if (fs_set_blk_dev(argv[1], (argc >= 3) ? argv[2] : NULL, fstype))
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&fs_lock);
+#endif
+	if (fs_set_blk_dev(argv[1], argc >= 3 ? argv[2] : NULL, fstype)) {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		spin_unlock(&fs_lock);
+#endif
 		return 1;
+	}
 
 	if (argc >= 4) {
 		addr = simple_strtoul(argv[3], &ep, 16);
-		if (ep == argv[3] || *ep != '\0')
+		if (ep == argv[3] || *ep != '\0') {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+			spin_unlock(&fs_lock);
+#endif
 			return CMD_RET_USAGE;
+		}
 	} else {
 		addr_str = env_get("loadaddr");
 		if (addr_str != NULL)
@@ -659,6 +703,9 @@ int do_load(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
 		filename = env_get("bootfile");
 		if (!filename) {
 			puts("** No boot file defined **\n");
+#ifdef CONFIG_ARMV8_MULTIENTRY
+			spin_unlock(&fs_lock);
+#endif
 			return 1;
 		}
 	}
@@ -674,8 +721,12 @@ int do_load(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
 	time = get_timer(0);
 	ret = _fs_read(filename, addr, pos, bytes, 1, &len_read);
 	time = get_timer(time);
-	if (ret < 0)
+	if (ret < 0) {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		spin_unlock(&fs_lock);
+#endif
 		return 1;
+	}
 
 	printf("%llu bytes read in %lu ms", len_read, time);
 	if (time > 0) {
@@ -687,6 +738,9 @@ int do_load(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
 
 	env_set_hex("fileaddr", addr);
 	env_set_hex("filesize", len_read);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&fs_lock);
+#endif
 
 	return 0;
 }
@@ -699,11 +753,25 @@ int do_ls(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
 	if (argc > 4)
 		return CMD_RET_USAGE;
 
-	if (fs_set_blk_dev(argv[1], (argc >= 3) ? argv[2] : NULL, fstype))
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&fs_lock);
+#endif
+	if (fs_set_blk_dev(argv[1], argc >= 3 ? argv[2] : NULL, fstype)) {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		spin_unlock(&fs_lock);
+#endif
 		return 1;
+	}
 
-	if (fs_ls(argc >= 4 ? argv[3] : "/"))
+	if (fs_ls(argc >= 4 ? argv[3] : "/")) {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		spin_unlock(&fs_lock);
+#endif
 		return 1;
+	}
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&fs_lock);
+#endif
 
 	return 0;
 }
@@ -731,8 +799,15 @@ int do_save(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
 	if (argc < 6 || argc > 7)
 		return CMD_RET_USAGE;
 
-	if (fs_set_blk_dev(argv[1], argv[2], fstype))
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&fs_lock);
+#endif
+	if (fs_set_blk_dev(argv[1], argv[2], fstype)) {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		spin_unlock(&fs_lock);
+#endif
 		return 1;
+	}
 
 	addr = simple_strtoul(argv[3], NULL, 16);
 	filename = argv[4];
@@ -745,8 +820,12 @@ int do_save(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
 	time = get_timer(0);
 	ret = fs_write(filename, addr, pos, bytes, &len);
 	time = get_timer(time);
-	if (ret < 0)
+	if (ret < 0) {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		spin_unlock(&fs_lock);
+#endif
 		return 1;
+	}
 
 	printf("%llu bytes written in %lu ms", len, time);
 	if (time > 0) {
@@ -756,6 +835,9 @@ int do_save(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
 	}
 	puts("\n");
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&fs_lock);
+#endif
 	return 0;
 }
 
@@ -769,18 +851,32 @@ int do_fs_uuid(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
 	if (argc < 3 || argc > 4)
 		return CMD_RET_USAGE;
 
-	if (fs_set_blk_dev(argv[1], argv[2], fstype))
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&fs_lock);
+#endif
+	if (fs_set_blk_dev(argv[1], argv[2], fstype)) {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		spin_unlock(&fs_lock);
+#endif
 		return 1;
+	}
 
 	ret = fs_uuid(uuid);
-	if (ret)
+	if (ret) {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		spin_unlock(&fs_lock);
+#endif
 		return CMD_RET_FAILURE;
+	}
 
 	if (argc == 4)
 		env_set(argv[3], uuid);
 	else
 		printf("%s\n", uuid);
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&fs_lock);
+#endif
 	return CMD_RET_SUCCESS;
 }
 
@@ -791,8 +887,15 @@ int do_fs_type(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	if (argc < 3 || argc > 4)
 		return CMD_RET_USAGE;
 
-	if (fs_set_blk_dev(argv[1], argv[2], FS_TYPE_ANY))
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&fs_lock);
+#endif
+	if (fs_set_blk_dev(argv[1], argv[2], FS_TYPE_ANY)) {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		spin_unlock(&fs_lock);
+#endif
 		return 1;
+	}
 
 	info = fs_get_info(fs_type);
 
@@ -801,6 +904,9 @@ int do_fs_type(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	else
 		printf("%s\n", info->name);
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&fs_lock);
+#endif
 	return CMD_RET_SUCCESS;
 }
 
@@ -810,11 +916,25 @@ int do_rm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
 	if (argc != 4)
 		return CMD_RET_USAGE;
 
-	if (fs_set_blk_dev(argv[1], argv[2], fstype))
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&fs_lock);
+#endif
+	if (fs_set_blk_dev(argv[1], argv[2], fstype)) {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		spin_unlock(&fs_lock);
+#endif
 		return 1;
+	}
 
-	if (fs_unlink(argv[3]))
+	if (fs_unlink(argv[3])) {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		spin_unlock(&fs_lock);
+#endif
 		return 1;
+	}
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&fs_lock);
+#endif
 
 	return 0;
 }
@@ -827,14 +947,27 @@ int do_mkdir(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[],
 	if (argc != 4)
 		return CMD_RET_USAGE;
 
-	if (fs_set_blk_dev(argv[1], argv[2], fstype))
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&fs_lock);
+#endif
+	if (fs_set_blk_dev(argv[1], argv[2], fstype)) {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		spin_unlock(&fs_lock);
+#endif
 		return 1;
+	}
 
 	ret = fs_mkdir(argv[3]);
 	if (ret) {
 		printf("** Unable to create a directory \"%s\" **\n", argv[3]);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		spin_unlock(&fs_lock);
+#endif
 		return 1;
 	}
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&fs_lock);
+#endif
 
 	return 0;
 }
