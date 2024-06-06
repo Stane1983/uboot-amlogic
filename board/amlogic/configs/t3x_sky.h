@@ -142,8 +142,7 @@
 		"edid_select=0\0" \
 		"port_map=0x4321\0" \
 		"cec_fun=0x2F\0" \
-		"cec_ac_wakeup=1\0" \
-		"\0"\
+		"cec_ac_wakeup=1;\0" \
 	"initargs="\
 		"init=/init " CONFIG_KNL_LOG_LEVEL "console=ttyS0,115200 "\
 		"no_console_suspend earlycon=aml-uart,0xfe07a000 "\

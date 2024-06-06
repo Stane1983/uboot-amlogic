@@ -162,7 +162,7 @@
         "cec_ac_wakeup=1\0" \
         "Irq_check_en=0\0"\
         "fs_type=""rootfstype=ramfs""\0"\
-	"disable_ir=0\0"\
+	"disable_ir=0;\0"\
         "initargs="\
 			"init=/init console=ttyS0,115200 no_console_suspend earlycon=aml_uart,0xff803000 loglevel=4 "\
 			"printk.devkmsg=on ramoops.pstore_en=1 ramoops.record_size=0x8000 "\

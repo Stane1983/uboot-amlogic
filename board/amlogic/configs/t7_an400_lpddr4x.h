@@ -159,7 +159,7 @@
         "port_map=0x4321\0" \
         "cec_fun=0x2F\0" \
         "logic_addr=0x0\0" \
-        "cec_ac_wakeup=1\0" \
+        "cec_ac_wakeup=1;\0" \
 	CONFIG_EXTRA_HDMI_ENV_SETTINGS \
         "initargs="\
 		"init=/init" CONFIG_KNL_LOG_LEVEL "console=ttyS0,921600 no_console_suspend "\
