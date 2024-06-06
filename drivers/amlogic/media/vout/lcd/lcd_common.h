@@ -13,7 +13,8 @@
 /* 20240314: sync from uboot2019 (3fb59b45dc4) + 405906/5 + 407129/6 */
 /* 20240318: optimize tcon reserved memory */
 /* 20240412: lcd_extern support more option for tcon pmic usage */
-#define LCD_DRV_VERSION    "20240412"
+/* 20240607: lcd tcon support extern header */
+#define LCD_DRV_VERSION    "20240607"
 
 extern unsigned long clk_util_clk_msr(unsigned long clk_mux);
 

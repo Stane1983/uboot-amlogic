@@ -1506,37 +1506,43 @@ static int lcd_tcon_load_init_data_from_unifykey_new(struct aml_lcd_drv_s *pdrv)
 {
 	int key_len, data_len;
 	unsigned char *buf, *p;
-	struct lcd_tcon_init_block_header_s *data_header;
+	struct lcd_tcon_init_block_header_s *data_header = NULL, *tmp_header;
+	struct lcd_tcon_init_block_ext_header_s *data_ext_header = NULL;
 	struct lcd_tcon_config_s *tcon_conf = get_lcd_tcon_config();
 	int ret;
 
-	data_len = tcon_mm_table.core_reg_table_size + LCD_TCON_DATA_BLOCK_HEADER_SIZE;
 	ret = lcd_unifykey_get_size("lcd_tcon", &key_len);
 	if (ret)
 		return -1;
-	if (key_len < data_len) {
-		LCDERR("%s: key_len %d is not enough, need %d\n",
-			__func__, key_len, data_len);
-		return -1;
-	}
-	buf = (unsigned char *)malloc(key_len * sizeof(unsigned char));
+	buf = (unsigned char *)calloc(1, key_len);
 	if (!buf)
 		return -1;
-	memset(buf, 0, key_len);
-
-	data_header = malloc(LCD_TCON_DATA_BLOCK_HEADER_SIZE);
-	if (!data_header) {
-		free(buf);
-		return -1;
-	}
-	memset(data_header, 0, LCD_TCON_DATA_BLOCK_HEADER_SIZE);
-	tcon_mm_table.core_reg_header = data_header;
 
 	ret = lcd_unifykey_get_tcon("lcd_tcon", buf, key_len);
 	if (ret)
 		goto lcd_tcon_load_init_data_new_err;
 
-	memcpy(data_header, buf, LCD_TCON_DATA_BLOCK_HEADER_SIZE);
+	tmp_header = (struct lcd_tcon_init_block_header_s *)buf;
+	data_header = calloc(1, tmp_header->header_size);
+	if (!data_header)
+		goto lcd_tcon_load_init_data_new_err;
+	memcpy(data_header, tmp_header, tmp_header->header_size);
+	data_len = tcon_mm_table.core_reg_table_size + data_header->header_size
+			+ data_header->ext_header_size;
+	if (key_len < data_len || data_header->block_size < data_len) {
+		LCDERR("%s: key_len(%d) or data block_size(%d) are not enough, need %d\n",
+			__func__, key_len, data_header->block_size, data_len);
+		goto lcd_tcon_load_init_data_new_err;
+	}
+	if (data_header->ext_header_size > 0) {
+		data_ext_header = (struct lcd_tcon_init_block_ext_header_s *)
+			calloc(1, data_header->ext_header_size);
+		if (!data_ext_header)
+			goto lcd_tcon_load_init_data_new_err;
+		memcpy(data_ext_header, buf + data_header->header_size, sizeof(*data_ext_header));
+		tcon_mm_table.core_reg_ext_header = data_ext_header;
+	}
+	tcon_mm_table.core_reg_header = data_header;
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 		LCDPR("unifykey header:\n");
 		LCDPR("crc32             = 0x%08x\n", data_header->crc32);
@@ -1546,19 +1552,21 @@ static int lcd_tcon_load_init_data_from_unifykey_new(struct aml_lcd_drv_s *pdrv)
 			data_header->h_active, data_header->v_active);
 		LCDPR("block_ctrl        = 0x%x\n", data_header->block_ctrl);
 		LCDPR("name              = %s\n", data_header->name);
+		if (data_ext_header) {
+			LCDPR("unifykey extern header:\n");
+			LCDPR("framerate_range   = %d~%d\n", data_ext_header->framerate_min,
+				data_ext_header->framerate_max);
+		}
 	}
 	lcd_tcon_init_data_version_update(data_header->version);
 
 	data_len = tcon_mm_table.core_reg_table_size;
 	if (!tcon_mm_table.core_reg_table) {
-		tcon_mm_table.core_reg_table = (unsigned char *)
-				malloc(data_len * sizeof(unsigned char));
+		tcon_mm_table.core_reg_table = (unsigned char *)calloc(1, data_len);
 		if (!tcon_mm_table.core_reg_table)
 			goto lcd_tcon_load_init_data_new_err;
-		memset(tcon_mm_table.core_reg_table, 0,
-		       (sizeof(unsigned char) * data_len));
 	}
-	p = buf + LCD_TCON_DATA_BLOCK_HEADER_SIZE;
+	p = buf + data_header->header_size + data_header->ext_header_size;
 	memcpy(tcon_mm_table.core_reg_table, p, data_len);
 	if (tcon_conf && tcon_conf->tcon_init_table_pre_proc)
 		tcon_conf->tcon_init_table_pre_proc(tcon_mm_table.core_reg_table);
@@ -1573,7 +1581,12 @@ static int lcd_tcon_load_init_data_from_unifykey_new(struct aml_lcd_drv_s *pdrv)
 	return 0;
 
 lcd_tcon_load_init_data_new_err:
-	free(buf);
+	if (buf)
+		free(buf);
+	if (data_header)
+		free(data_header);
+	if (data_ext_header)
+		free(data_ext_header);
 	LCDERR("%s: tcon unifykey load error!!!\n", __func__);
 	return -1;
 }
