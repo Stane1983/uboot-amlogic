@@ -131,6 +131,7 @@ static int spifc_enable_ahb(struct spifc_priv *priv, unsigned int slave_mode)
 
 	/* clean the HRDATA buffer */
 	writel(readl(SPIFC_AHB_CTRL) | (7 << 12), SPIFC_AHB_CTRL);
+	WHILE_NULL_LOOP(readl(SPIFC_AHB_CTRL) & (7 < 12));
 
 	return 0;
 }
@@ -139,7 +140,7 @@ static void spifc_disable_ahb(void)
 {
 	/* disable ahb */
 	writel((readl(SPIFC_AHB_CTRL) & ~(1 << 31)), SPIFC_AHB_CTRL);
-	WHILE_NULL_LOOP(!(readl(SPIFC_AHB_STS) & 0x80000000));
+	WHILE_NULL_LOOP(!(readl(SPIFC_AHB_STS) & BIT(31)));
 	writel(0, SPIFC_AHB_REQ_CTRL);
 	writel(0, SPIFC_AHB_REQ_CTRL1);
 	writel(0, SPIFC_AHB_REQ_CTRL2);
@@ -221,10 +222,13 @@ static int spifc_user_ahb_cmd_din(struct spifc_priv *priv,
 
 	priv->save_addr = priv->save_addr >> 8;
 	spifc_ahb_addr = (u64 *)(SPI_ADDR_BASE + (u64)priv->save_addr);
+	WHILE_NULL_LOOP(!(readl(SPIFC_STATUS) & 1));
 	writel(readl(SPIFC_AHB_REQ_CTRL) | (1 << 31), SPIFC_AHB_REQ_CTRL);
 
 	memcpy((void *)buf, (void *)spifc_ahb_addr, len);
-	WHILE_NULL_LOOP((readl(SPIFC_AHB_STS) & 0x20000000));
+	WHILE_NULL_LOOP((readl(SPIFC_AHB_STS) & BIT(29)));
+	invalidate_dcache_range((unsigned long)SPI_ADDR_BASE,
+							(unsigned long)SPI_ADDR_BASE + 0x1000000);
 
 	return 0;
 }
@@ -475,7 +479,7 @@ static int spifc_probe(struct udevice *bus)
 	}
 
 	/* Do not use xtal */
-	ret = clk_disable(&priv->spifc_xtal_gate);
+	ret = clk_enable(&priv->spifc_xtal_gate);
 	if (ret) {
 		pr_err("disable xtal_gate fail\n");
 		return ret;
