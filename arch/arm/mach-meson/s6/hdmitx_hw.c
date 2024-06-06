@@ -342,19 +342,19 @@ do { \
 	case HDMI_PHYPARA_3p7G:
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x8003a8fb);
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x1555);
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x704efc1b);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x4ef001);
 		break;
 	case HDMI_PHYPARA_3G:	/* 2.97Gbps */
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x800380dd);
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x1555);
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x704efc1b);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x4ef001);
 		break;
 	case HDMI_PHYPARA_270M:	/* 1.485Gbps, and below */
 	case HDMI_PHYPARA_DEF:
 	default:
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x820380a0);
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x1555);
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x704efc1b);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x4ef001);
 		break;
 	}
 
@@ -363,16 +363,17 @@ do { \
 	hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL3, 3, 10, 2);
 	hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL3, 3, 3, 2);
 	hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL3, 1, 1, 1);
-	/* finally config bit[29:28] */
+	/* finally config bit[30:28] */
 	usleep_range(1000, 1010);
 	hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL3, 3, 28, 2);
+	hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL3, 1, 30, 1);
 }
 
 void hdmitx_turnoff(void)
 {
 	/* Close HDMITX PHY */
 	hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0);
-	hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0);
+	hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0xc1b);
 	hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0);
 	/* Disable HPLL */
 	hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0);
