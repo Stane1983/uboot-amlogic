@@ -629,6 +629,7 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 	char strAddr[128] = {0};
 #ifdef CONFIG_AVB2
 	u64 original_size = 0;
+	loff_t cache_recovery_size = 0;
 #endif
 
 	if (argc > 2) {
@@ -660,6 +661,11 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 				errorP("Fail to read recovery.img from cache\n");
 				cache_flag = false;
 			} else {
+#ifdef CONFIG_AVB2
+				fs_set_blk_dev("mmc", "1:2", FS_TYPE_EXT);
+				rc = fs_size("/recovery/recovery.img", &cache_recovery_size);
+				printf("cach recovery size: %llu\n", cache_recovery_size);
+#endif
 				cache_flag = true;
 			}
 		}
@@ -845,12 +851,17 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 		} else {
 			actualbootimgsz = kernel_size + ramdisk_size + 0x1000;
 #ifdef CONFIG_AVB2
-			original_size = actualbootimgsz;
-			actualbootimgsz = get_size_avb_footer(partname);
-			if (!actualbootimgsz || actualbootimgsz < original_size) {
-				actualbootimgsz = original_size;
-				kernel_preload = false;
-				printf("part: %s footer not at correct location\n", partname);
+			if (cache_flag && cache_recovery_size) {
+				actualbootimgsz = (u32)cache_recovery_size;
+			} else {
+				original_size = actualbootimgsz;
+				actualbootimgsz = get_size_avb_footer(partname);
+				if (!actualbootimgsz || actualbootimgsz < original_size) {
+					actualbootimgsz = original_size;
+					kernel_preload = false;
+					printf("part: %s footer not at correct location\n",
+							partname);
+				}
 			}
 #endif
 		}
@@ -901,6 +912,7 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 						cache_flag = false;
 					} else {
 						cache_flag = true;
+						env_set_hex("filesize", len_read);
 					}
 				}
 			}

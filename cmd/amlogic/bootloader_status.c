@@ -188,8 +188,14 @@ static void run_recovery_from_cache(void) {
 	run_command("if test ${vendor_boot_mode} = true; then "\
 		"setenv bootargs ${bootargs} ${fs_type} aml_dt=${aml_dt} recovery_part=${recovery_part} recovery_offset=${recovery_offset};"\
 		"imgread kernel ${recovery_part} ${loadaddr} ${recovery_offset};"\
+		"avb memory recovery ${loadaddr};"\
+		"avb recovery 1;"\
 		"else "\
-		"if ext4load mmc 1:2 ${loadaddr} /recovery/recovery.img; then echo cache recovery.img loaded; fi;"\
+		"if ext4load mmc 1:2 ${loadaddr} /recovery/recovery.img; then "\
+		"if avb memory recovery ${loadaddr}; then " \
+		"avb recovery 1;" \
+		"echo cache recovery.img loaded; fi;"\
+		"fi;" \
 		"fi;", 0);
 
 	env_set("check_result","recovery_succ");
