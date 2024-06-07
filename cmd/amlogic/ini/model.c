@@ -2284,24 +2284,24 @@ handle_panel_misc_next:
 	}
 
 	ini_value = IniGetString("panel_misc", "connector2_type", "null");
-	if (!strcmp(ini_value, "null")) {
+	if (strcmp(ini_value, "null")) {
 		connector_idx = 2;
 		goto handle_panel_misc_set_connector;
 	}
 
 	ini_value = IniGetString("panel_misc", "connector1_type", "null");
-	if (!strcmp(ini_value, "null")) {
+	if (strcmp(ini_value, "null")) {
 		connector_idx = 1;
 		goto handle_panel_misc_set_connector;
 	}
 
 	ini_value = IniGetString("panel_misc", "connector0_type", "null");
-	if (!strcmp(ini_value, "null")) {
+	if (strcmp(ini_value, "null")) {
 		connector_idx = 0;
 		goto handle_panel_misc_set_connector;
 	} else {
 		ini_value = IniGetString("panel_misc", "connector_type", "null");
-		if (!strcmp(ini_value, "null")) {
+		if (strcmp(ini_value, "null")) {
 			connector_idx = 0;
 			goto handle_panel_misc_set_connector;
 		}
