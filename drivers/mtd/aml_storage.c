@@ -1172,6 +1172,10 @@ static int _mtd_store_boot_erase(const char *part_name, u8 cpy)
 
 	num = mtd_store_boot_copy_num(part_name);
 	size_per_copy = mtd_store_boot_copy_size(part_name);
+	/*if one of bootpart's size equals to 0*/
+	if (!size_per_copy)
+		return 0;
+
 	if ((cpy > (num - 1)) && cpy != BOOT_OPS_ALL) {
 		pr_info("%s %d invalid copy number %d\n",
 			__func__, __LINE__, cpy);
@@ -1182,6 +1186,7 @@ static int _mtd_store_boot_erase(const char *part_name, u8 cpy)
 		offset = cpy * size_per_copy;
 		erasesize = size_per_copy;
 	}
+
 	return mtd_store_erase(part_name, offset, erasesize, 0);
 }
 
