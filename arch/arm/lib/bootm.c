@@ -49,6 +49,9 @@
 #include <initcall.h>
 #endif
 #endif
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#include <asm/arch-meson/smp.h>
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -106,6 +109,9 @@ static void announce_and_cleanup(int fake)
 	/* Remove all active vital devices next */
 	dm_remove_devices_flags(DM_REMOVE_ACTIVE_ALL);
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	gd->flags &= ~GD_FLG_SMP;
+#endif
 	cleanup_before_linux();
 }
 
@@ -567,6 +573,10 @@ static void boot_jump_linux(struct bootm_headers *images, int flag)
 					    ES_TO_AARCH64);
 #endif
 #else
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		while (cpu_online_status() & 0xfffffffe)
+			mdelay(1);
+#endif
 		extern uint32_t get_time(void);
 		printf("uboot time: %u us\n", get_time());
 		if (images->os.arch == IH_ARCH_ARM) {

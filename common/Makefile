@@ -123,3 +123,4 @@ obj-$(CONFIG_SCP03) += scp03.o
 
 obj-$(CONFIG_QFW) += qfw.o
 obj-$(CONFIG_AMLOGIC_TIME_PROFILE) += aml_time_profile.o
+obj-$(CONFIG_ARMV8_MULTIENTRY) += smp.o

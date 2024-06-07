@@ -80,6 +80,7 @@ endif
 obj-$(CONFIG_KALLSYMS) += stacktrace_64.o
 
 obj-y	+= cache.o
+obj-$(CONFIG_ARMV8_MULTIENTRY) += switch.o
 obj-$(CONFIG_SYS_ARM_CACHE_CP15)	+= cache-cp15.o
 CFLAGS_REMOVE_cache-cp15.o := $(LTO_CFLAGS)
 

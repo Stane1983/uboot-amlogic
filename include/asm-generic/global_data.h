@@ -686,8 +686,14 @@ enum gd_flags {
 	/* Cache enabled                   */
 	GD_FLG_CACHE_EN = 0x200000,
 #endif
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	GD_FLG_SMP = 0x400000,
+#endif
 };
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#define in_smp()		(gd->flags & GD_FLG_SMP)
+#endif
 
 #endif /* __ASSEMBLY__ */
 

@@ -21,6 +21,14 @@
 #include <linux/delay.h>
 
 DECLARE_GLOBAL_DATA_PTR;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#undef spin_lock_init
+#undef spin_lock
+#undef spin_unlock
+#include <spinlock.h>
+#include <asm/arch-meson/smp.h>
+static spin_lock_t serial_lock;
+#endif
 
 /*
  * Table with supported baudrates (defined in config_xyz.h)
@@ -161,6 +169,9 @@ static void serial_find_console_or_panic(void)
 /* Called prior to relocation */
 int serial_init(void)
 {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock_init(&serial_lock);
+#endif
 #if CONFIG_IS_ENABLED(SERIAL_PRESENT)
 	serial_find_console_or_panic();
 	gd->flags |= GD_FLG_SERIAL_READY;
@@ -216,10 +227,61 @@ static int __serial_puts(struct udevice *dev, const char *str, size_t len)
 	return 0;
 }
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+static void print_cpu_tag(struct udevice *dev, char *tag)
+{
+	while (*tag)
+		_serial_putc(dev, *tag++);
+}
+#endif
+
 static void _serial_puts(struct udevice *dev, const char *str)
 {
 	struct dm_serial_ops *ops = serial_get_ops(dev);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	char cpu_tag[5] = {'[', '0', ']', ' '};
+	int cpu = get_core_id();
+	static int new_line = 1;
 
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&serial_lock);
+	cpu_tag[1] = '0' + cpu;
+
+	if (!CONFIG_IS_ENABLED(SERIAL_PUTS) || !ops->puts) {
+		if (new_line) {
+			print_cpu_tag(dev, cpu_tag);
+			new_line = 0;
+		}
+		while (*str) {
+			_serial_putc(dev, *str);
+			if ((*str == '\n' || *str == '\r') && str[1])
+				print_cpu_tag(dev, cpu_tag);
+			str++;
+		}
+		if (str[-1] == '\n' || str[-1] == '\r')
+			new_line = 1;
+		goto puts_exit;
+	}
+
+	do {
+		const char *newline = strchrnul(str, '\n');
+		size_t len = newline - str;
+
+		print_cpu_tag(dev, cpu_tag);
+		if (__serial_puts(dev, str, len))
+			goto puts_exit;
+
+		if (*newline && __serial_puts(dev, "\r\n", 2))
+			goto puts_exit;
+
+		str += len + !!*newline;
+	} while (*str);
+
+puts_exit:
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&serial_lock);
+	return;
+#else
 	if (!CONFIG_IS_ENABLED(SERIAL_PUTS) || !ops->puts) {
 		while (*str)
 			_serial_putc(dev, *str++);
@@ -238,6 +300,7 @@ static void _serial_puts(struct udevice *dev, const char *str)
 
 		str += len + !!*newline;
 	} while (*str);
+#endif
 }
 
 #ifdef CONFIG_CONSOLE_FLUSH_SUPPORT

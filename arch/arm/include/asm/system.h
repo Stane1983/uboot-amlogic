@@ -6,6 +6,8 @@
 
 #ifdef CONFIG_ARM64
 
+#define CurrentEL_EL2           (2 << 2)
+
 /*
  * SCTLR_EL1/SCTLR_EL2/SCTLR_EL3 bits definitions
  */
@@ -83,7 +85,7 @@
 #define HCR_EL2_RW_AARCH32	(0 << 31) /* Lower levels are AArch32         */
 #define HCR_EL2_HCD_DIS		(1 << 29) /* Hypervisor Call disabled         */
 #define HCR_EL2_AMO_EL2		(1 <<  5) /* Route SErrors to EL2             */
-
+#define HCR_TGE	            (1 << 27)
 /*
  * ID_AA64ISAR1_EL1 bits definitions
  */
@@ -282,6 +284,8 @@ void smc_call(struct pt_regs *args);
 void __noreturn psci_system_reset(void);
 void __noreturn psci_system_reset2(u32 reset_level, u32 cookie);
 void __noreturn psci_system_off(void);
+int psci_cpu_on(unsigned int cpu, unsigned int entrypoint);
+void __noreturn psci_cpu_off(void);
 
 #ifdef CONFIG_ARMV8_PSCI
 extern char __secure_start[];

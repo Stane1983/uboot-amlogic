@@ -11,3 +11,4 @@ obj-y += common/
 obj-$(CONFIG_ARCH_MESON) += $(SOC)/
 
 
+obj-$(CONFIG_ARMV8_MULTIENTRY) += lowlevel.o smp.o

@@ -73,7 +73,9 @@
 #ifdef CONFIG_AMLOGIC_MODIFY
 #include <amlogic/pm.h>
 #endif
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#include <asm/arch-meson/smp.h>
+#endif
 DECLARE_GLOBAL_DATA_PTR;
 
 ulong monitor_flash_len;
@@ -294,7 +296,9 @@ static int initr_dm_devices(void)
 		if (ret)
 			return ret;
 	}
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	cpu_smp_init_r();
+#endif
 	return 0;
 }
 
