@@ -447,7 +447,7 @@ static const char * const bc_status_to_str[] = {
 	"CDP",			/* 3 */
 	"ACA_A",		/* 4 */
 	"ACA_B",		/* 5 */
-	"ACA_C"			/* 6 */
+	"ACA_C",		/* 6 */
 	"ACA_DOCK",		/* 7 */
 	"ACA GND ERROR",	/* 8 */
 	"analog output error",	/* 9 */
