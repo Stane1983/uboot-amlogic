@@ -46,6 +46,10 @@
 #define AML_ADC_POWER_KEY_CHAN   2  /*channel range: 0-7*/
 #define AML_ADC_POWER_KEY_VAL    0  /*sample value range: 0-1023*/
 
+/* AVB */
+#define CONFIG_AML_AVB2_ANTIROLLBACK 1
+#define CONFIG_AVB_VERIFY 1
+
 /* Bootloader Control Block function
    That is used for recovery and the bootloader to talk to each other
 */
@@ -55,6 +59,12 @@
 
 /* args/envs */
 #define CONFIG_SYS_MAXARGS  64
+
+/* AVB */
+#define CONFIG_AML_AVB2_ANTIROLLBACK 1
+#define CONFIG_AVB_VERIFY 1
+#define CONFIG_SUPPORT_EMMC_RPMB 1
+#define CONFIG_AML_DEV_ID 1
 
 //for common env list, please maintain it in board/amlogic/env/linux.env
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -88,7 +98,7 @@
 	"dv_fw_dir=/reserved/firmware/dovi_fw.bin\0"\
 	"hdr_policy=0\0"\
 	"frac_rate_policy=1\0"\
-	"board=s7d_skt\0"
+	"board=s6_bl209\0"
 
 #ifndef CONFIG_PXP_EMULATOR
 #define CONFIG_PREBOOT  \
@@ -102,7 +112,7 @@
 #else
 #define CONFIG_PREBOOT  "echo preboot"
 #endif
-#define CONFIG_ENV_IS_NOWHERE  1
+#define CONFIG_ENV_IS_NOWHERE  0
 //#define CONFIG_ENV_SIZE   (64 * 1024)
 #define CONFIG_FIT 1
 #define CONFIG_OF_LIBFDT 1
