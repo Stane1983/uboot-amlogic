@@ -366,8 +366,6 @@ bool check_amdolby_efuse(void)
 */
 int is_dolby_enable(void)
 {
-	bool check_outputmode_valid = true;
-
 	if (!is_dolby_stb_chip()) {
 		printf("not dolby stb chip %x\n", get_cpu_id().family_id);
 		return 0;
@@ -381,14 +379,11 @@ int is_dolby_enable(void)
 		hdr_policy = env_get("hdr_policy");
 
 	if (!(rma_test || rma_test_addr)) {
-		printf("dolby_status %s, dv_fw_valid %d, outmodevalid %d, ",
-			dolby_status, dv_fw_valid, check_outputmode_valid);
+		printf("dolby_status %s, dv_fw_valid %d\n", dolby_status, dv_fw_valid);
 		printf("hdr_force_mode %s\n", hdr_force_mode);
 	}
 
-	check_outputmode_valid = check_outputmode();
-
-	if (!dv_fw_valid || !check_outputmode_valid)
+	if (!dv_fw_valid)
 		return 0;
 
 	if (dolby_status) {
@@ -531,7 +526,11 @@ static int check_tv_support_dv(struct hdmitx_dev *hdmitx_device)
 		printf("check_tv_support_dv: maxTMDSRate2 = %d\n", maxTMDSRate);
 	}
 	//return true only if DV can truly be supported for a given mode
-	if (strstr(outputmode, "2160p60hz") || strstr(outputmode, "2160p50hz")) {
+	if (!check_outputmode()) {
+		/* currently all sink not support 4k100/120 and 8k dv */
+	    /*in the future, some new flag in vsvdb will be used to judge dv cap*/
+		return 0;
+	} else if (strstr(outputmode, "2160p60hz") || strstr(outputmode, "2160p50hz")) {
 		if ((dovi_mode.sup_2160p60hz) && (maxTMDSRate >= 594)) {
 			//safety check for yuv420 - shudn't be the case
 			if (strstr(outputmode, "2160p60hz420"))
@@ -552,10 +551,6 @@ static int check_tv_support_dv(struct hdmitx_dev *hdmitx_device)
 		/* dv display effect of 480/576p is not good on some TVs. */
 		/* currently some TVs not support smpte. */
 		/* for interlace output */
-		return 0;
-	} else if (!check_outputmode()) {
-		/* currently all sink not support 4k100/120 and 8k dv */
-	    /*in the future, some new flag in vsvdb will be used to judge dv cap*/
 		return 0;
 	}
 	return 1;
@@ -742,6 +737,9 @@ static void dolby_vision_get_vinfo(struct hdmitx_dev *hdmitx_device)
 	} else if (strstr(mode_name, "smpte")) {
 		width = 4096;
 		height = 2160;
+	} else if (strstr(mode_name, "7680x4320")) {
+		width = 7680;
+		height = 4320;
 	} else {
 		printf("unknown mode, use default 1080p\n");
 		width = 1920;
@@ -1248,8 +1246,13 @@ static int dolby_core3_set(
 #endif
 
 #ifdef AML_S5_DISPLAY
-	if (is_meson_s5())
+	if (is_meson_s5()) {
 		WRITE_VPP_REG_BITS(VPU_DOLBY_GATE_CTRL, 1, 9, 1);
+		if (vinfo_width > 1920)
+			htotal_add = 0xc0;
+		else
+			htotal_add = 0x140;
+	}
 #endif
 	if (dovi_setting.diagnostic_enable || dovi_setting.dovi_ll_enable) {
 		diag_enable = 1;
@@ -1405,8 +1408,7 @@ void update_core3_slice_info(u32 v_width, u32 v_height)
 	int i;
 	struct vpp_post_info_t *post_info;
 
-	/*current dv is disabled in 4k100 and 8k, only one slice*/
-	if (is_meson_s5()) { /*get from vpp*/
+	if (is_meson_s5()) {/*get slice info from vpp*/
 		post_info = get_vpp_post_amdv_info();
 		core3_slice_info.overlap_hsize = post_info->overlap_hsize;
 		core3_slice_info.slice_num = post_info->slice_num;
@@ -1511,7 +1513,9 @@ int apply_stb_core_settings(void)
 {
 	uint32_t graphics_w = 1920;
 	uint32_t graphics_h = 1080;
+#ifdef AML_S5_DISPLAY
 	int i = 0;
+#endif
 
 	if (!is_dolby_enable())
 		return 0;
@@ -1543,11 +1547,18 @@ int apply_stb_core_settings(void)
 #ifdef AML_S5_DISPLAY
 	update_core3_slice_info(vinfo_width, vinfo_height);
 	for (i = 0; i < core3_slice_info.slice_num; i++)
-#endif
 		dolby_core3_set(26, dovi_setting.md_reg3.size,
 			(uint32_t *)&dovi_setting.dm_reg3,
 			dovi_setting.md_reg3.raw_metadata, i,
-			vinfo_width, vinfo_height, 1, 1, 0);
+			core3_slice_info.slice[i].hsize,
+			core3_slice_info.slice[i].vsize,
+			1, 1, 0);
+#else
+	dolby_core3_set(26, dovi_setting.md_reg3.size,
+		(uint32_t *)&dovi_setting.dm_reg3,
+		dovi_setting.md_reg3.raw_metadata, 0,
+		vinfo_width, vinfo_height, 1, 1, 0);
+#endif
 
 #ifdef AML_S5_DISPLAY
 	if (is_meson_s5()) {
