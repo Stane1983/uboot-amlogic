@@ -29,4 +29,9 @@ config AML_REBOOT
        default y
        help
          support uboot reboot cmd
+
+config AML_DT_OVERLAY
+    bool "use dts overlay"
+    default n if HDMITX_ONLY="true"
+
 endif
