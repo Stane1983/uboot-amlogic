@@ -274,6 +274,8 @@ int aml_board_late_init_front(void *arg)
 int aml_board_late_init_tail(void *arg)
 {
 	unsigned char chipid[16];
+	char con_str[128], env_str[128];
+	int con_len = 0;
 
 	UNUSED(arg);
 	printf("init tail\n");
@@ -281,9 +283,21 @@ int aml_board_late_init_tail(void *arg)
 	run_command("update_tries", 0);
 
 	//Need save outputmode/connector_type to flash if changed after display drv init
-	if (env_get("outputmode") || env_get("connector_type")) {
-		run_command("printenv outputmode connector_type", 0);
-		run_command("update_env_part -p -f outputmode connector_type", 0);
+	if (env_get("outputmode"))
+		con_len = sprintf(con_str, "outputmode");
+	if (env_get("connector0_type"))
+		con_len += sprintf(con_str + con_len, " connector0_type");
+	else if (env_get("connector_type"))
+		con_len += sprintf(con_str + con_len, " connector_type");
+	if (env_get("connector1_type"))
+		con_len += sprintf(con_str + con_len, " connector1_type");
+	if (env_get("connector2_type"))
+		con_len += sprintf(con_str + con_len, " connector2_type");
+	if (con_len) {
+		sprintf(env_str, "printenv %s", con_str);
+		run_command(env_str, 0);
+		sprintf(env_str, "update_env_part -p -f %s", con_str);
+		run_command(env_str, 0);
 	}
 
 	memset(chipid, 0, 16);
