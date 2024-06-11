@@ -39,7 +39,7 @@ typedef struct _register_ops {
 	uint8_t rsv_0;
 } __attribute__ ((packed)) register_ops_t;
 
-#define MAX_REG_OPS_ENTRIES     (8)
+#define MAX_REG_OPS_ENTRIES     (16)
 typedef struct pin_pwm_parameter {
 	register_ops_t pin_pwm[MAX_REG_OPS_ENTRIES];
 } __attribute__ ((packed)) pin_pwm_parameter_t;

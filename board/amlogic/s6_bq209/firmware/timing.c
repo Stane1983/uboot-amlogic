@@ -2306,14 +2306,17 @@ __attribute__ ((section(".misc_param"))) = {
 	{ 0, VMIN_SS_VALUE, 0xffffffff, 0, BL2_INIT_STAGE_VMIN_FLAG_1, 0 },
 	{ 0, VMIN_TT_VALUE, 0xffffffff, 0, BL2_INIT_STAGE_VMIN_FLAG_2, 0 },
 	{ 0, VMIN_FF_VALUE, 0xffffffff, 0, BL2_INIT_STAGE_VMIN_FLAG_3, 0 },
-	/* set pwm d and pwm f clock rate to 24M, enable them */
+	{ PWM_MISC_REG_D,	   (0x1 << 0),	  (0x1 << 0), 0, 0, 0 },
+	{ PWM_MISC_REG_F,	   (0x1 << 0),	  (0x1 << 0), 0, 0, 0 },
+	{ PWM_MISC_REG_A,	   (0x1 << 0),	  (0x1 << 0), 0, 0, 0 },
+	/* set pwm a, pwm d and pwm f clock rate to 24M, 24M,666M, enable them */
+	{ CLKCTRL_PWM_CLK_AB_CTRL, (0x1 << 8), (0x1 << 8), 0, 0, 0 },
 	{ CLKCTRL_PWM_CLK_CD_CTRL, (0x1 << 24), (0x1 << 24), 0, 0, 0 },
-	{ CLKCTRL_PWM_CLK_EF_CTRL, (0x1 << 24), (0x1 << 24), 0, 0, 0 },
+	{ CLKCTRL_PWM_CLK_EF_CTRL, (0x1 << 24) | (0x3 << 25), (0x3 << 25), 0, 0, 0 },
 	/* set GPIOE_0 GPIOE_1 drive strength to 3 */
 	{ PADCTRL_GPIOE_DS,	   0xf,		  0xf,	      0, 0, 0 },
-	/* set GPIOE_0 GPIOE_1 mux to pwmd pwmf */
-	{ PADCTRL_PIN_MUX_REGI,	   (0x3 << 0) | (0x3 << 4),	  (0xf << 0) | (0xf << 4), 0, 0, 0 },
-	{ PADCTRL_GPIOD_PULL_UP,   (0x1 << 2),	  (0x1 << 2), 0, 0, 0 },
+	/* set GPIOE_0 GPIOE_1 GPIOE_2 mux to pwmd pwmf pwma */
+	{ PADCTRL_PIN_MUX_REGI,	   (0x3 << 0) | (0x3 << 4) | (0x2 << 8) ,	  (0xf << 0) | (0xf << 4) | (0xf << 4), 0, 0, 0 },
 };
 
 #define DEV_FIP_SIZE 0x300000
