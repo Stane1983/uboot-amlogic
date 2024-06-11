@@ -6,6 +6,10 @@
 #include "key_manage_i.h"
 #include <amlogic/keyunify.h>
 #include <linux/ctype.h>
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#include <spinlock.h>
+spin_lock_t unify_lock;
+#endif
 
 #define KEY_NO_EXIST	0
 #define KEY_BURNED		1
@@ -18,56 +22,56 @@
 #define KEY_WRITE_PROHIBIT	(11<<4)
 
 typedef struct _devKeyOps{
-    int     (*pInitFunc) (const char* buf, int len);
-    int     (*pUninitFunc)(void);
-    int     (*pWriteFunc)(const char *keyname, const void* keydata, unsigned int datalen);
-    ssize_t (*pGetSize)(const char* keyname);
-    int     (*pKeyExist)(const char* keyname);
-    int     (*pKeyCanRead)(const char* keyname);
-    int     (*pReadFunc)(const char* keyname, void* dataBuf,  unsigned buflen);
+	int     (*pInitFunc) (const char* buf, int len);
+	int     (*pUninitFunc)(void);
+	int     (*pWriteFunc)(const char *keyname, const void* keydata, unsigned int datalen);
+	ssize_t (*pGetSize)(const char* keyname);
+	int     (*pKeyExist)(const char* keyname);
+	int     (*pKeyCanRead)(const char* keyname);
+	int     (*pReadFunc)(const char* keyname, void* dataBuf,  unsigned buflen);
 
-    //Fields:
-    int     can_overwrite;//is OTP
+	//Fields:
+	int     can_overwrite;//is OTP
 
 }KmDevKeyOps;
 
 static KmDevKeyOps _SecukeyOps = {
-        .pInitFunc           = keymanage_securekey_init        ,
-        .pUninitFunc         = keymanage_securekey_exit        ,
-        .pWriteFunc          = keymanage_secukey_write         ,
-        .pGetSize            = keymanage_secukey_size          ,
-        .pKeyExist           = keymanage_secukey_exist         ,
-        .pKeyCanRead         = keymanage_secukey_can_read      ,
-        .pReadFunc           = keymanage_secukey_read          ,
+	.pInitFunc           = keymanage_securekey_init        ,
+	.pUninitFunc         = keymanage_securekey_exit        ,
+	.pWriteFunc          = keymanage_secukey_write         ,
+	.pGetSize            = keymanage_secukey_size          ,
+	.pKeyExist           = keymanage_secukey_exist         ,
+	.pKeyCanRead         = keymanage_secukey_can_read      ,
+	.pReadFunc           = keymanage_secukey_read          ,
 
-        .can_overwrite       = 1                               ,
+	.can_overwrite       = 1                               ,
 };
 
 #if defined(CONFIG_EFUSE)
 static KmDevKeyOps _efuseKeyOps = {
-        .pInitFunc           = keymanage_efuse_init            ,
-        .pUninitFunc         = keymange_efuse_exit             ,
-        .pWriteFunc          = keymanage_efuse_write           ,
-        .pGetSize            = keymanage_efuse_size            ,
-        .pKeyExist           = keymanage_efuse_exist           ,
-        .pKeyCanRead         = keymanage_efuse_query_can_read  ,
-        .pReadFunc           = keymanage_efuse_read            ,
+	.pInitFunc           = keymanage_efuse_init            ,
+	.pUninitFunc         = keymange_efuse_exit             ,
+	.pWriteFunc          = keymanage_efuse_write           ,
+	.pGetSize            = keymanage_efuse_size            ,
+	.pKeyExist           = keymanage_efuse_exist           ,
+	.pKeyCanRead         = keymanage_efuse_query_can_read  ,
+	.pReadFunc           = keymanage_efuse_read            ,
 
-        .can_overwrite       = 0                               ,
+	.can_overwrite       = 0                               ,
 };
 #endif//#if defined(CONFIG_EFUSE)
 
 #if defined(CONFIG_KEYMAN_PROVISION_KEY)
 static KmDevKeyOps _provisionKeyOps = {
-        .pInitFunc           = keymanage_provision_init             ,
-        .pUninitFunc         = keymanage_provision_exit             ,
-        .pWriteFunc          = keymanage_provision_write            ,
-        .pGetSize            = keymanage_provision_size             ,
-        .pKeyExist           = keymanage_provision_exist            ,
-        .pKeyCanRead         = keymanage_provision_query_can_read   ,
-        .pReadFunc           = keymanage_provision_read             ,
+	.pInitFunc           = keymanage_provision_init             ,
+	.pUninitFunc         = keymanage_provision_exit             ,
+	.pWriteFunc          = keymanage_provision_write            ,
+	.pGetSize            = keymanage_provision_size             ,
+	.pKeyExist           = keymanage_provision_exist            ,
+	.pKeyCanRead         = keymanage_provision_query_can_read   ,
+	.pReadFunc           = keymanage_provision_read             ,
 
-        .can_overwrite       = 1                                    ,
+	.can_overwrite       = 1                                    ,
 };
 #endif//#if defined(CONFIG_KEYMAN_PROVISION_KEY)
 
@@ -80,12 +84,12 @@ static KmDevKeyOps _provisionKeyOps = {
 #endif//#if defined(CONFIG_KEYMAN_PROVISION_KEY)
 
 static KmDevKeyOps* _km_devKeyOpsArr[] = {
-            [_KM_DEV_INDEX_SECUREKEY]      = &_SecukeyOps,
+	[_KM_DEV_INDEX_SECUREKEY]      = &_SecukeyOps,
 #if defined(CONFIG_KEYMAN_PROVISION_KEY)
-            [_KM_DEV_INDEX_PROVISION]	   = &_provisionKeyOps,
+	[_KM_DEV_INDEX_PROVISION]	   = &_provisionKeyOps,
 #endif//#if defined(CONFIG_KEYMAN_PROVISION_KEY)
 #if defined(CONFIG_EFUSE)
-            [_KM_DEV_INDEX_EFUSE]          = &_efuseKeyOps,
+	[_KM_DEV_INDEX_EFUSE]          = &_efuseKeyOps,
 #endif//#if defined(CONFIG_EFUSE)
 };
 
@@ -93,82 +97,82 @@ static const int _KM_DEVCNT = sizeof(_km_devKeyOpsArr) / sizeof(_km_devKeyOpsArr
 
 int _keyman_hex_ascii_to_buf(const char* input, char* buf, const unsigned bufSz)
 {
-    int ret = 0;
-    const char* tmpStr = input;
-    const unsigned inputLen = strlen(input);
-    int i = 0;
+	int ret = 0;
+	const char* tmpStr = input;
+	const unsigned inputLen = strlen(input);
+	int i = 0;
 
-    if (!inputLen) {
-        KM_ERR("err input len 0\n");
-        return __LINE__;
-    }
-    if (inputLen & 1) {
-        KM_ERR("inputLen %d not even\n", inputLen);
-        return __LINE__;
-    }
-    if (bufSz * 2 > inputLen) {
-        KM_ERR("bufSz %d not enough\n", bufSz);
-        return __LINE__;
-    }
-    for (tmpStr = input; *tmpStr; ++tmpStr)
-    {
-        char c = *tmpStr;
-        ret = isxdigit(c);
-        if (!ret) {
-            KM_ERR("input(%s) contain non xdigit, c=%c\n", input, c);
-            return __LINE__;
-        }
-    }
+	if (!inputLen) {
+		KM_ERR("err input len 0\n");
+		return __LINE__;
+	}
+	if (inputLen & 1) {
+		KM_ERR("inputLen %d not even\n", inputLen);
+		return __LINE__;
+	}
+	if (bufSz * 2 > inputLen) {
+		KM_ERR("bufSz %d not enough\n", bufSz);
+		return __LINE__;
+	}
+	for (tmpStr = input; *tmpStr; ++tmpStr)
+	{
+		char c = *tmpStr;
+		ret = isxdigit(c);
+		if (!ret) {
+			KM_ERR("input(%s) contain non xdigit, c=%c\n", input, c);
+			return __LINE__;
+		}
+	}
 
-    for (i = 0; i < inputLen; i += 2)
-    {
-        char tmpByte[8];
-        tmpByte[2] = '\0';
-        tmpByte[0] = input[i];
-        tmpByte[1] = input[i + 1];
+	for (i = 0; i < inputLen; i += 2)
+	{
+		char tmpByte[8];
+		tmpByte[2] = '\0';
+		tmpByte[0] = input[i];
+		tmpByte[1] = input[i + 1];
 
-        const unsigned val = simple_strtoul(tmpByte, NULL, 16);
-        if (val > 0xff) {
-            KM_ERR("Exception: val 0x%x > 0xff\n", val);
-            return __LINE__;
-        }
-        buf[i>>1] = val;
-    }
+		const unsigned val = simple_strtoul(tmpByte, NULL, 16);
+		if (val > 0xff) {
+			KM_ERR("Exception: val 0x%x > 0xff\n", val);
+			return __LINE__;
+		}
+		buf[i>>1] = val;
+	}
 
-    return 0;
+	return 0;
 }
 
 int _keyman_buf_to_hex_ascii(const uint8_t* pdata, const unsigned dataLen, char* fmtStr/*pr if NULL*/, int fmtSize)
 {
-    if (NULL == fmtStr) //Only print
-    {
-        int i = 0;
-        KM_MSG("key len is %d, hex value in hexdump:", dataLen);
-        for (; i < dataLen; ++i, ++pdata)
-        {
-            if (!(i & 0xf)) printf("\n\t[0x%04x]:\t\t", i);
-            printf("%02x ", *pdata);
-        }
-        printf("\n");
-    }
-    else
-    {
-        int i = 0;
-        int n = 0;
+	if (NULL == fmtStr) //Only print
+	{
+		int i = 0;
+		KM_MSG("key len is %d, hex value in hexdump:", dataLen);
+		for (; i < dataLen; ++i, ++pdata)
+		{
+			if (!(i & 0xf)) printf("\n\t[0x%04x]:\t\t", i);
+				printf("%02x ", *pdata);
+		}
+		printf("\n");
+	}
+	else
+	{
+		int i = 0;
+		int n = 0;
 
-        *fmtStr = '\0';
-        for (; i < dataLen; ++i, ++pdata)
-        {
-            //sprintf(fmtStr, "%s%02x", fmtStr, *pdata);
-            n += sprintf(&fmtStr[n], "%02x",  *pdata);
-            if (n > fmtSize) {
-                printf("%s:%d mem is overflow!!!\n",__func__,__LINE__);
-                break;
-            }
-        }
-    }
+		*fmtStr = '\0';
+		for (; i < dataLen; ++i, ++pdata)
+		{
+			//sprintf(fmtStr, "%s%02x", fmtStr, *pdata);
+			n += sprintf(&fmtStr[n], "%02x",  *pdata);
+			if (n > fmtSize) {
+				printf("%s:%d mem is overflow!!!\n",__func__,__LINE__);
+				break;
+			}
+		}
+	}
 
-    return 0;
+	return 0;
 }
 
 /*
@@ -179,47 +183,48 @@ int _keyman_buf_to_hex_ascii(const uint8_t* pdata, const unsigned dataLen, char*
  * */
 int key_unify_init(const char* seedStr, const char* dtbLoadaddr)
 {
-    int err=EINVAL;
-    int i;
-    uint64_t seedNum = 0;
+	int err=EINVAL;
+	int i;
+	uint64_t seedNum = 0;
 
-    if (!dtbLoadaddr)
-    {
-        dtbLoadaddr = env_get("dtb_mem_addr");
-        if (!dtbLoadaddr) {
-            KM_ERR("env dtb_mem_addr not defined, pls set ir or asign dtbLoadaddr\n");
-            return __LINE__;
-        }
-    }
-    dtbLoadaddr = (char*)simple_strtoul(dtbLoadaddr, NULL, 0) ;
+	if (!dtbLoadaddr)
+	{
+		dtbLoadaddr = env_get("dtb_mem_addr");
+		if (!dtbLoadaddr) {
+			KM_ERR("env dtb_mem_addr not defined, pls set ir or asign dtbLoadaddr\n");
+			return __LINE__;
+		}
+	}
+	dtbLoadaddr = (char*)simple_strtoul(dtbLoadaddr, NULL, 0) ;
 
-    if (keymanage_dts_parse(dtbLoadaddr)) {
-        KM_DBG("Fail parse /unifykey at addr[0x%p]\n", dtbLoadaddr);
-        return err;
-    }
+	if (keymanage_dts_parse(dtbLoadaddr)) {
+		KM_DBG("Fail parse /unifykey at addr[0x%p]\n", dtbLoadaddr);
+		return err;
+	}
 
-    seedNum = simple_strtoull(seedStr, NULL, 0);
-    if (!seedNum) {
-        KM_ERR("Seed is 0 err\n");
-        return __LINE__;
-    }
+	seedNum = simple_strtoull(seedStr, NULL, 0);
+	if (!seedNum) {
+		KM_ERR("Seed is 0 err\n");
+		return __LINE__;
+	}
 
-    if (amlkey_if_init(dtbLoadaddr)) {
-        KM_ERR("amlkey interface init fail\n");
-        return __LINE__;
-    }
-
-    for (i=0; i < _KM_DEVCNT; i++)
-    {
-        KmDevKeyOps* theDevOps = _km_devKeyOpsArr[i];
-        err = theDevOps->pInitFunc((char*)&seedNum, sizeof(uint64_t)/sizeof(char));
-        if (err) {
-            KM_ERR("Device[%d] init failed, err=%d\n", i, err);
-            return err;
-        }
-    }
-
-    return 0;
+	if (amlkey_if_init(dtbLoadaddr)) {
+		KM_ERR("amlkey interface init fail\n");
+		return __LINE__;
+	}
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock_init(&unify_lock);
+#endif
+	for (i=0; i < _KM_DEVCNT; i++)
+	{
+		KmDevKeyOps* theDevOps = _km_devKeyOpsArr[i];
+		err = theDevOps->pInitFunc((char*)&seedNum, sizeof(uint64_t)/sizeof(char));
+		if (err) {
+			KM_ERR("Device[%d] init failed, err=%d\n", i, err);
+			return err;
+		}
+	}
+	return 0;
 }
 
 /* function name: key_unify_uninit
@@ -228,60 +233,56 @@ int key_unify_init(const char* seedStr, const char* dtbLoadaddr)
  * */
 int key_unify_uninit(void)
 {
-    int err=-EINVAL;
-    int i;
+	int err=-EINVAL;
+	int i;
 
-    for (i=0; i < _KM_DEVCNT; i++)
-    {
-        KmDevKeyOps* theDevOps = _km_devKeyOpsArr[i];
-        err = theDevOps->pUninitFunc();
-        if (err) {
-            KM_ERR("device[%d] unini fail\n", i);
-            /*return err;*/
-        }
-    }
+	for (i=0; i < _KM_DEVCNT; i++)
+	{
+		KmDevKeyOps* theDevOps = _km_devKeyOpsArr[i];
+		err = theDevOps->pUninitFunc();
+		if (err) {
+			KM_ERR("device[%d] unini fail\n", i);
+			/*return err;*/
+		}
+	}
 
-    return 0;
+	return 0;
 }
 
 static const KmDevKeyOps* _get_km_ops_by_name(const char* keyname)
 {
-    KmDevKeyOps* theDevOps  = NULL;
+	KmDevKeyOps* theDevOps  = NULL;
 
-    //step 1: get device ops by configured key-device
-    enum key_manager_dev_e theDevice = keymanage_dts_get_key_device(keyname);
+	//step 1: get device ops by configured key-device
+	enum key_manager_dev_e theDevice = keymanage_dts_get_key_device(keyname);
 
-    switch (theDevice)
-    {
-        case KEY_M_EFUSE_NORMAL:
-            {
-                theDevOps = _km_devKeyOpsArr[_KM_DEV_INDEX_EFUSE];
-            }
-            break;
+	switch (theDevice)
+	{
+		case KEY_M_EFUSE_NORMAL:
+			theDevOps = _km_devKeyOpsArr[_KM_DEV_INDEX_EFUSE];
+			break;
 
-        case KEY_M_NORAML_KEY:
-        case KEY_M_SECURE_KEY:
-            {
-                theDevOps = _km_devKeyOpsArr[_KM_DEV_INDEX_SECUREKEY];
-            }
-            break;
+		case KEY_M_NORAML_KEY:
+		case KEY_M_SECURE_KEY:
+			theDevOps = _km_devKeyOpsArr[_KM_DEV_INDEX_SECUREKEY];
+			break;
 
-        case KEY_M_PROVISION_KEY:
-            theDevOps = _km_devKeyOpsArr[_KM_DEV_INDEX_PROVISION];
-            break;
+		case KEY_M_PROVISION_KEY:
+			theDevOps = _km_devKeyOpsArr[_KM_DEV_INDEX_PROVISION];
+			break;
 
-	case KEY_M_UNKNOWN_DEV:
-        default:
-            KM_ERR("key %s not know device %d\n", keyname, theDevice);
-            return NULL;
-    }
+		case KEY_M_UNKNOWN_DEV:
+		default:
+			KM_ERR("key %s not know device %d\n", keyname, theDevice);
+			return NULL;
+	}
 
-    return theDevOps;
+	return theDevOps;
 }
 
 int key_unify_query_key_has_configure(const char* keyname)
 {
-    return _get_km_ops_by_name(keyname) ? 1 : 0;
+	return _get_km_ops_by_name(keyname) ? 1 : 0;
 }
 
 /* funtion name: key_unify_write
@@ -298,31 +299,31 @@ int key_unify_query_key_has_configure(const char* keyname)
  * */
 int key_unify_write(const char *keyname, const void* keydata, const unsigned datalen)
 {
-    int err=0;
-    const KmDevKeyOps* theDevOps  = NULL;
+	int err=0;
+	const KmDevKeyOps* theDevOps  = NULL;
 
-    theDevOps = _get_km_ops_by_name(keyname);
-    if (!theDevOps) {
-        KM_ERR("key[%s] no cfg in dts\n", keyname);
-        return __LINE__;
-    }
+	theDevOps = _get_km_ops_by_name(keyname);
+	if (!theDevOps) {
+		KM_ERR("key[%s] no cfg in dts\n", keyname);
+		return __LINE__;
+	}
 
-    if (!theDevOps->can_overwrite) {
-        KM_DBG("can't overwrite\n");
-        int ret = theDevOps->pKeyExist(keyname);
+	if (!theDevOps->can_overwrite) {
+		KM_DBG("can't overwrite\n");
+		int ret = theDevOps->pKeyExist(keyname);
 		if (ret < 0) {
 			KM_ERR("fail in query key exist\n");
 			return __LINE__;
 		}
-        if (ret) {
-            KM_ERR("OTP key[%s] already existed, can't program twice!\n", keyname);
-            return __LINE__;
-        }
-    }
+		if (ret) {
+			KM_ERR("OTP key[%s] already existed, can't program twice!\n", keyname);
+			return __LINE__;
+		}
+	}
 
-    err = theDevOps->pWriteFunc(keyname, keydata, datalen);
+	err = theDevOps->pWriteFunc(keyname, keydata, datalen);
 
-    return err;
+	return err;
 }
 
 /*
@@ -335,78 +336,78 @@ int key_unify_write(const char *keyname, const void* keydata, const unsigned dat
  * */
 int key_unify_read(const char *keyname, void* keydata, const unsigned bufLen)
 {
-    int err=0;
-    const KmDevKeyOps* theDevOps  = NULL;
+	int err=0;
+	const KmDevKeyOps* theDevOps  = NULL;
 
-    theDevOps = _get_km_ops_by_name(keyname);
-    if (!theDevOps) {
-        KM_ERR("key[%s] no cfg in dts\n", keyname);
-        return __LINE__;
-    }
+	theDevOps = _get_km_ops_by_name(keyname);
+	if (!theDevOps) {
+		KM_ERR("key[%s] no cfg in dts\n", keyname);
+		return __LINE__;
+	}
 
-    int ret = theDevOps->pKeyExist(keyname);
-    if (!ret) {
-        KM_ERR("key[%s] not programed yet\n", keyname);
-        return __LINE__;
-    }
+	int ret = theDevOps->pKeyExist(keyname);
+	if (!ret) {
+		KM_ERR("key[%s] not programed yet\n", keyname);
+		return __LINE__;
+	}
 
-    ret = theDevOps->pKeyCanRead(keyname);
-    if (!ret) {
-        KM_ERR("key[%s] can't read as it's secure\n", keyname);
-        return __LINE__;
-    }
+	ret = theDevOps->pKeyCanRead(keyname);
+	if (!ret) {
+		KM_ERR("key[%s] can't read as it's secure\n", keyname);
+		return __LINE__;
+	}
 
-    const ssize_t keySz = theDevOps->pGetSize(keyname);
-    if (keySz > bufLen && bufLen) {
-        KM_ERR("keySz[%lu] > bufLen[%d]\n", keySz, bufLen);
-        return __LINE__;
-    }
+	const ssize_t keySz = theDevOps->pGetSize(keyname);
+	if (keySz > bufLen && bufLen) {
+		KM_ERR("keySz[%lu] > bufLen[%d]\n", keySz, bufLen);
+		return __LINE__;
+	}
 
-    err = theDevOps->pReadFunc(keyname, keydata, keySz);
+	err = theDevOps->pReadFunc(keyname, keydata, keySz);
 
-    return err;
+	return err;
 }
 
 int key_unify_query_size(const char* keyname, ssize_t* keysize)
 {
-    const KmDevKeyOps* theDevOps  = NULL;
+	const KmDevKeyOps* theDevOps  = NULL;
 
-    theDevOps = _get_km_ops_by_name(keyname);
-    if (!theDevOps) {
-        KM_ERR("key[%s] not cfg in dts\n", keyname);
-        return __LINE__;
-    }
+	theDevOps = _get_km_ops_by_name(keyname);
+	if (!theDevOps) {
+		KM_ERR("key[%s] not cfg in dts\n", keyname);
+		return __LINE__;
+	}
 
 #if 0
-    int ret = theDevOps->pKeyCanRead(keyname);
-    if (!ret) {
-        KM_ERR("key[%s] can't read as it's secure\n", keyname);
-        return __LINE__;
-    }
+	int ret = theDevOps->pKeyCanRead(keyname);
+	if (!ret) {
+		KM_ERR("key[%s] can't read as it's secure\n", keyname);
+		return __LINE__;
+	}
 #endif
 
-    *keysize = theDevOps->pGetSize(keyname);
+	*keysize = theDevOps->pGetSize(keyname);
 
-    return 0;
+	return 0;
 }
 
 int key_unify_query_exist(const char* keyname, int* exist)
 {
-    const KmDevKeyOps* theDevOps  = NULL;
+	const KmDevKeyOps* theDevOps  = NULL;
 
-    theDevOps = _get_km_ops_by_name (keyname) ;
-    if (!theDevOps) {
-        KM_ERR("key[%s] not cfg in dts\n", keyname);
-        return __LINE__;
-    }
+	theDevOps = _get_km_ops_by_name (keyname) ;
+	if (!theDevOps) {
+		KM_ERR("key[%s] not cfg in dts\n", keyname);
+		return __LINE__;
+	}
 
-    *exist = theDevOps->pKeyExist(keyname);
+	*exist = theDevOps->pKeyExist(keyname);
 	if (*exist < 0) {
 		KM_ERR("FAil in query key exist\n");
 		return __LINE__;
 	}
 
-    return 0;
+	return 0;
 }
 
 int key_unify_query_secure(const char* keyname, int* isSecure)
@@ -441,165 +442,165 @@ int key_unify_query_secure(const char* keyname, int* isSecure)
 
 int key_unify_query_canOverWrite(const char* keyname, int* canOverWrite)
 {
-    const KmDevKeyOps* theDevOps  = NULL;
+	const KmDevKeyOps* theDevOps  = NULL;
 
-    theDevOps = _get_km_ops_by_name(keyname);
-    if (!theDevOps) {
-        KM_ERR("key[%s] no cfg in dts\n", keyname);
-        return __LINE__;
-    }
+	theDevOps = _get_km_ops_by_name(keyname);
+	if (!theDevOps) {
+		KM_ERR("key[%s] no cfg in dts\n", keyname);
+		return __LINE__;
+	}
 
-    *canOverWrite = theDevOps->can_overwrite;
-    return 0;
+	*canOverWrite = theDevOps->can_overwrite;
+	return 0;
 }
 
 int do_keyunify (cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 {
-    int err;
-    char *cmd;
-    int ret = 0;
+	int err;
+	char *cmd;
+	int ret = 0;
 
-    if (argc < 2) return CMD_RET_USAGE;
+	if (argc < 2) return CMD_RET_USAGE;
 
-    cmd = argv[1];
-    //keyman init seedNum <dtbLoadAddr>
-    if (!strcmp(cmd,"init"))
-    {
-        if (argc < 3) {
-            return CMD_RET_USAGE;
-        }
-        const char* seedNum     = argv[2];
-        const char* dtbLoadaddr = argc > 3 ? argv[3] : NULL;
-        err = key_unify_init(seedNum, dtbLoadaddr);
-        return err ? CMD_RET_FAILURE : CMD_RET_SUCCESS;
-    }
+	cmd = argv[1];
+	//keyman init seedNum <dtbLoadAddr>
+	if (!strcmp(cmd,"init"))
+	{
+		if (argc < 3) {
+			return CMD_RET_USAGE;
+		}
+		const char* seedNum     = argv[2];
+		const char* dtbLoadaddr = argc > 3 ? argv[3] : NULL;
+		err = key_unify_init(seedNum, dtbLoadaddr);
+		return err ? CMD_RET_FAILURE : CMD_RET_SUCCESS;
+	}
 
-    //keyunify write keyname addr <size>
-    //keyunify write keyname hexascii
-    if (!strcmp(cmd,"write"))
-    {
-        if (argc < 4) return CMD_RET_USAGE;
+	//keyunify write keyname addr <size>
+	//keyunify write keyname hexascii
+	if (!strcmp(cmd,"write"))
+	{
+		if (argc < 4) return CMD_RET_USAGE;
 
-        const char* keyname = argv[2];
-        const char* keyData = (char*)simple_strtoul(argv[3], NULL, 16);
-        unsigned len  = argc > 4 ? simple_strtoul(argv[4], NULL, 0) : 0;
-        char*  dataBuf = NULL;
+		const char* keyname = argv[2];
+		const char* keyData = (char*)simple_strtoul(argv[3], NULL, 16);
+		unsigned len  = argc > 4 ? simple_strtoul(argv[4], NULL, 0) : 0;
+		char*  dataBuf = NULL;
 
-        if (argc == 4)
-        {
-            const char* hexascii = argv[3];
+		if (argc == 4)
+		{
+			const char* hexascii = argv[3];
 
-            len = strlen(hexascii) / 2;
-            dataBuf = (char*)malloc(len);
-            if (!dataBuf) {
-                KM_ERR("Fail in malloc len %d\n", len);
-                return CMD_RET_FAILURE;
-            }
+			len = strlen(hexascii) / 2;
+			dataBuf = (char*)malloc(len);
+			if (!dataBuf) {
+				KM_ERR("Fail in malloc len %d\n", len);
+				return CMD_RET_FAILURE;
+			}
 
-            err = _keyman_hex_ascii_to_buf(hexascii, dataBuf, len);
-            if (err) {
-                KM_ERR("Fail in decrypt hexascii to buf, err=%d\n", err);
-                free(dataBuf);
-                return CMD_RET_FAILURE;
-            }
-            keyData = dataBuf;
-        }
+			err = _keyman_hex_ascii_to_buf(hexascii, dataBuf, len);
+			if (err) {
+				KM_ERR("Fail in decrypt hexascii to buf, err=%d\n", err);
+				free(dataBuf);
+				return CMD_RET_FAILURE;
+			}
+			keyData = dataBuf;
+		}
 
-        KM_DBG("write key[%s], addr=%p, len=%d\n", keyname, keyData, len);
-        err = key_unify_write(keyname, keyData, len);
-        if (err ) {
-            KM_ERR("%s key write fail, err=%d\n", keyname, err);
-            return CMD_RET_FAILURE;
-        }
-        if (dataBuf)free(dataBuf) ;
+		KM_DBG("write key[%s], addr=%p, len=%d\n", keyname, keyData, len);
+		err = key_unify_write(keyname, keyData, len);
+		if (err ) {
+			KM_ERR("%s key write fail, err=%d\n", keyname, err);
+			return CMD_RET_FAILURE;
+		}
+		if (dataBuf)free(dataBuf) ;
 
-        return CMD_RET_SUCCESS;
-    }
+			return CMD_RET_SUCCESS;
+	}
 
-    //keyman query size/secure/exist keyname
-    if (!strcmp(cmd,"query"))
-    {
-        if (argc < 4) return CMD_RET_USAGE;
+	//keyman query size/secure/exist keyname
+	if (!strcmp(cmd,"query"))
+	{
+		if (argc < 4) return CMD_RET_USAGE;
 
-        const char* subCmd  = argv[2];
-        const char* keyname = argv[3];
+		const char* subCmd  = argv[2];
+		const char* keyname = argv[3];
 
-        ret = CMD_RET_FAILURE;
-        if (!strcmp("size", subCmd))
-        {
-            ssize_t keysize = 0;
-            err = key_unify_query_size(keyname, &keysize);
-            if (!err) {
-                ret = CMD_RET_SUCCESS;
-                KM_MSG("key[%s] is %u bytes\n", keyname, (unsigned)keysize);
-            }
-        }
-        else if(!strcmp("secure", subCmd))
-        {
-            int isSecure = 0;
+		ret = CMD_RET_FAILURE;
+		if (!strcmp("size", subCmd))
+		{
+			ssize_t keysize = 0;
+			err = key_unify_query_size(keyname, &keysize);
+			if (!err) {
+				ret = CMD_RET_SUCCESS;
+				KM_MSG("key[%s] is %u bytes\n", keyname, (unsigned)keysize);
+			}
+		}
+		else if(!strcmp("secure", subCmd))
+		{
+			int isSecure = 0;
 
-            err = key_unify_query_secure(keyname, &isSecure);
-            if (!err) {
-                ret = CMD_RET_SUCCESS;
-                KM_MSG("key[%s] is %s Secure\n", keyname, isSecure ? "DO" : "NON");
-            }
-        }
-        else if(!strcmp("exist", subCmd))
-        {
-            int exist = 0;
-            err = key_unify_query_exist(keyname, &exist);
-            if (!err) {
-                ret = CMD_RET_SUCCESS;
-                KM_MSG("key[%s] is %s existed\n", keyname, exist ? "DO" : "NON");
-            }
-        }
-        else{
-            return CMD_RET_USAGE;
-        }
+			err = key_unify_query_secure(keyname, &isSecure);
+			if (!err) {
+				ret = CMD_RET_SUCCESS;
+				KM_MSG("key[%s] is %s Secure\n", keyname, isSecure ? "DO" : "NON");
+			}
+		}
+		else if(!strcmp("exist", subCmd))
+		{
+			int exist = 0;
+			err = key_unify_query_exist(keyname, &exist);
+			if (!err) {
+				ret = CMD_RET_SUCCESS;
+				KM_MSG("key[%s] is %s existed\n", keyname, exist ? "DO" : "NON");
+			}
+		}
+		else{
+			return CMD_RET_USAGE;
+		}
 
-        return ret;
-    }
+		return ret;
+	}
 
-    //keyman read keyname memAddr
-    if (!strcmp(cmd,"read"))
-    {
-        if (argc < 4) return CMD_RET_USAGE;
+	//keyman read keyname memAddr
+	if (!strcmp(cmd,"read"))
+	{
+		if (argc < 4) return CMD_RET_USAGE;
 
-        const char* keyname = argv[2];
-        void* keydata = (void*)simple_strtoul(argv[3], NULL, 16);
+		const char* keyname = argv[2];
+		void* keydata = (void*)simple_strtoul(argv[3], NULL, 16);
 
-        ssize_t keysize = 0;
-        err = key_unify_query_size(keyname, &keysize);
-        if (err) {
-            KM_ERR("Fail in get keysz, err=%d\n", err);
-            return __LINE__;
-        }
+		ssize_t keysize = 0;
+		err = key_unify_query_size(keyname, &keysize);
+		if (err) {
+			KM_ERR("Fail in get keysz, err=%d\n", err);
+			return __LINE__;
+		}
 
-        err = key_unify_read(keyname, keydata, (unsigned)keysize);
-        if (err) {
-            KM_ERR("%s key read fail\n", keyname);
-            return CMD_RET_FAILURE;
-        }
-        _keyman_buf_to_hex_ascii(keydata, (unsigned)keysize, NULL, 0);
+		err = key_unify_read(keyname, keydata, (unsigned)keysize);
+		if (err) {
+			KM_ERR("%s key read fail\n", keyname);
+			return CMD_RET_FAILURE;
+		}
+		_keyman_buf_to_hex_ascii(keydata, (unsigned)keysize, NULL, 0);
 
-        return err;
-    }
+		return err;
+	}
 
-    if (!strcmp(cmd,"uninit"))
-    {
-        return key_unify_uninit();
-    }
+	if (!strcmp(cmd,"uninit"))
+	{
+		return key_unify_uninit();
+	}
 
-    return CMD_RET_USAGE;
+	return CMD_RET_USAGE;
 }
 
 U_BOOT_CMD(
-        keyunify, CONFIG_SYS_MAXARGS, 1, do_keyunify,
-        "key unify sub-system",
-        "init seedNum [dtbAddr] --init the drivers\n"
-        "keyunify uninit - init key in device\n"
+	keyunify, CONFIG_SYS_MAXARGS, 1, do_keyunify,
+	"key unify sub-system",
+	"init seedNum [dtbAddr] --init the drivers\n"
+	"keyunify uninit - init key in device\n"
 	"keyunify write keyname data <len>  ---- write key data. no len if data is ascii str\n"
-        "keyunify read keyname data-addr <len> \n"
+	"keyunify read keyname data-addr <len> \n"
 );
 
 

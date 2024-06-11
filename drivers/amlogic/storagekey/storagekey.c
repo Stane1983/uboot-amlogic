@@ -24,7 +24,7 @@
 #include "normal_key.h"
 #ifdef CONFIG_ARMV8_MULTIENTRY
 #include <spinlock.h>
-static spin_lock_t unify_lock;
+extern spin_lock_t unify_lock;
 #endif
 
 /* key buffer status */
@@ -56,6 +56,9 @@ static int32_t _amlkey_init(uint8_t *seed, uint32_t len, int encrypt_type)
 	int32_t ret = 0;
 	uint32_t buffer_size, actual_size;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&unify_lock);
+#endif
 	/* do nothing for now*/
 	pr_info("%s() enter!\n", __func__);
 	if (storagekey_info.buffer != NULL) {
@@ -106,6 +109,9 @@ static int32_t _amlkey_init(uint8_t *seed, uint32_t len, int encrypt_type)
 	info_disprotect &= ~DISPROTECT_KEY;  //protect
 #endif
 _out:
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&unify_lock);
+#endif
 	return ret;
 }
 
@@ -122,13 +128,17 @@ static int32_t _amlkey_isexsit(const uint8_t * name)
 		printf("%s() %d, invalid key ", __func__, __LINE__);
 		return 0;
 	}
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&unify_lock);
+#endif
 	ret = secure_storage_query((uint8_t *)name, &retval);
 	if (ret) {
 		printf("%s() %d: ret %d\n", __func__, __LINE__, ret);
 		retval = 0;
 	}
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&unify_lock);
+#endif
 	return (int32_t)retval;
 }
 
@@ -141,13 +151,17 @@ static uint32_t _amlkey_get_attr(const uint8_t * name)
 		printf("%s() %d, invalid key ", __func__, __LINE__);
 		return 0;
 	}
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&unify_lock);
+#endif
 	ret = secure_storage_status((uint8_t *)name, &retval);
 	if (ret) {
 		printf("%s() %d: ret %d\n", __func__, __LINE__, ret);
 		retval = 0;
 	}
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&unify_lock);
+#endif
 	return retval;
 }
 
@@ -182,13 +196,18 @@ static ssize_t _amlkey_size(const uint8_t *name)
 		printf("%s() %d, invalid key ", __func__, __LINE__);
 		return 0;
 	}
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&unify_lock);
+#endif
 	ret = secure_storage_tell((uint8_t *)name, &retval);
 	if (ret) {
 		printf("%s() %d: ret %d\n", __func__, __LINE__, ret);
 		retval = 0;
 	}
 	size = (ssize_t)retval;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&unify_lock);
+#endif
 	return size;
 }
 
@@ -206,6 +225,9 @@ static ssize_t _amlkey_read(const uint8_t *name, uint8_t *buffer, uint32_t len)
 		printf("%s() %d, invalid key ", __func__, __LINE__);
 		return 0;
 	}
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&unify_lock);
+#endif
 	ret = secure_storage_read((uint8_t *)name, buffer, len, &actual_len);
 	if (ret) {
 		printf("%s() %d: return %d\n", __func__, __LINE__, ret);
@@ -214,6 +236,9 @@ static ssize_t _amlkey_read(const uint8_t *name, uint8_t *buffer, uint32_t len)
 	}
 	retval = actual_len;
 _out:
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&unify_lock);
+#endif
 	return retval;
 }
 
@@ -233,9 +258,6 @@ static ssize_t _amlkey_write(const uint8_t *name, uint8_t *buffer, uint32_t len,
 		printf("%s() %d, invalid key ", __func__, __LINE__);
 		return retval;
 	}
-#ifdef CONFIG_ARMV8_MULTIENTRY
-	spin_lock(&unify_lock);
-#endif
 	ret = secure_storage_write((uint8_t *)name, buffer, len, attr);
 	if (ret) {
 		printf("%s() %d: return %d\n", __func__, __LINE__, ret);
@@ -255,9 +277,6 @@ static ssize_t _amlkey_write(const uint8_t *name, uint8_t *buffer, uint32_t len,
 		}
 	}
 _out:
-#ifdef CONFIG_ARMV8_MULTIENTRY
-	spin_unlock(&unify_lock);
-#endif
 	return retval;
 }
 /**
@@ -269,7 +288,6 @@ static int32_t _amlkey_hash_4_secure(const uint8_t * name, uint8_t * hash)
 	int32_t ret = 0;
 
 	ret = secure_storage_verify((uint8_t *)name, hash);
-
 	return ret;
 }
 
@@ -360,7 +378,9 @@ static int32_t _amlkey_init_normal(uint8_t *seed, uint32_t len, int encrypt_type
 	if (normalkey_init())
 		return -1;
 
-	mutex_lock(&normalkey_lock);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&unify_lock);
+#endif
 	ret = _store_key_read(normal_block,
 			     normal_blksz,
 			     &normal_flashsize);
@@ -382,7 +402,9 @@ static int32_t _amlkey_init_normal(uint8_t *seed, uint32_t len, int encrypt_type
 finish:
 	if (ret)
 		normalkey_deinit();
-	mutex_unlock(&normalkey_lock);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&unify_lock);
+#endif
 
 	return ret;
 }
@@ -391,9 +413,13 @@ static int32_t _amlkey_exist_normal(const uint8_t *name)
 {
 	struct storage_object *obj;
 
-	mutex_lock(&normalkey_lock);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&unify_lock);
+#endif
 	obj = normalkey_get(name);
-	mutex_unlock(&normalkey_lock);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&unify_lock);
+#endif
 
 	return !!obj;
 }
@@ -403,11 +429,15 @@ static uint32_t _amlkey_get_attr_normal(const uint8_t *name)
 	uint32_t attr = 0;
 	struct storage_object *obj;
 
-	mutex_lock(&normalkey_lock);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&unify_lock);
+#endif
 	obj = normalkey_get(name);
 	if (obj)
 		attr = obj->attribute;
-	mutex_unlock(&normalkey_lock);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&unify_lock);
+#endif
 
 	return attr;
 }
@@ -417,11 +447,15 @@ static ssize_t _amlkey_size_normal(const uint8_t *name)
 	unsigned int size = 0;
 	struct storage_object *obj;
 
-	mutex_lock(&normalkey_lock);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&unify_lock);
+#endif
 	obj = normalkey_get(name);
 	if (obj)
 		size = obj->datasize;
-	mutex_unlock(&normalkey_lock);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&unify_lock);
+#endif
 
 	return size;
 }
@@ -431,13 +465,17 @@ static ssize_t _amlkey_read_normal(const uint8_t *name, uint8_t *buffer, uint32_
 	unsigned int size = 0;
 	struct storage_object *obj;
 
-	mutex_lock(&normalkey_lock);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&unify_lock);
+#endif
 	obj = normalkey_get(name);
 	if (obj && len >= obj->datasize) {
 		size = obj->datasize;
 		memcpy(buffer, obj->dataptr, size);
 	}
-	mutex_unlock(&normalkey_lock);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&unify_lock);
+#endif
 
 	return size;
 }
@@ -453,9 +491,6 @@ static ssize_t _amlkey_write_normal(const uint8_t *name, uint8_t *buffer,
 		return 0;
 	}
 
-#ifdef CONFIG_ARMV8_MULTIENTRY
-	spin_lock(&unify_lock);
-#endif
 	ret = normalkey_add(name, buffer, len, attr);
 	if (ret) {
 		pr_err("write key fail\n");
@@ -480,9 +515,6 @@ static ssize_t _amlkey_write_normal(const uint8_t *name, uint8_t *buffer,
 	}
 	ret = len;
 unlock:
-#ifdef CONFIG_ARMV8_MULTIENTRY
-	spin_unlock(&unify_lock);
-#endif
 	return ret;
 }
 
@@ -491,13 +523,17 @@ static int32_t _amlkey_hash_normal(const uint8_t *name, uint8_t *hash)
 	int ret = -1;
 	struct storage_object *obj;
 
-	mutex_lock(&normalkey_lock);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&unify_lock);
+#endif
 	obj = normalkey_get(name);
 	if (obj) {
 		ret = 0;
 		memcpy(hash, obj->hashptr, 32);
 	}
-	mutex_unlock(&normalkey_lock);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&unify_lock);
+#endif
 
 	return ret;
 }
@@ -574,9 +610,7 @@ int amlkey_if_init(const void* dt_addr)
 	if (inited)
 		return 0;
 	inited = 1;
-#ifdef CONFIG_ARMV8_MULTIENTRY
-	spin_lock_init(&unify_lock);
-#endif
+
 	if (secure_storage_getbuffer(&buffer_size)) {
 		amlkey_if = &amlkey_ifs[IFTYPE_SECURE_STORAGE];
 		return ret;
