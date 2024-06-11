@@ -17,6 +17,7 @@
 
 #include <asm/amlogic/arch/io.h>
 #include <amlogic/image_check.h>
+#include <amlogic/partition_encryption.h>
 
 /*#define SRAM_READ				0x82000010
 #define CORE_RD_REV1			0x82000011
@@ -147,6 +148,10 @@ struct sram_hal_api_arg {
 #define JTAG_A53_EE 3
 #define CLUSTER_BIT 2
 
+#if CONFIG_PARTITION_ENCRYPTION_LOCAL
+#define CRYPTO_CMD                      (0x8200007B)
+	#define CRYPTO_CMD_PART_ENC_DERIVE_KEY  (0x001)
+#endif
 
 /* AVB2 */
 #define GET_AVBKEY_FROM_FIP              0x820000b0
@@ -187,5 +192,8 @@ void init_dsp(unsigned int id,unsigned int addr,unsigned int cfg0);
 void set_boot_first_timeout(uint64_t arg0);
 int bl31_get_cornerinfo(uint8_t *outbuf, int size);
 int32_t set_boot_params(const keymaster_boot_params*);
+#if CONFIG_PARTITION_ENCRYPTION_LOCAL
+int32_t partition_enc_kl_derive_key(const uint32_t kte);
+#endif
 int32_t get_avbkey_from_fip(uint8_t *buf, uint32_t buflen);
 #endif

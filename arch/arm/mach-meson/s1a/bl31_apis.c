@@ -46,6 +46,17 @@ int32_t set_boot_params(const keymaster_boot_params *boot_params)
 	return (!res.a0) ? -1 : 0;
 }
 
+#if CONFIG_PARTITION_ENCRYPTION_LOCAL
+int32_t partition_enc_kl_derive_key(const u32 kte)
+{
+	struct arm_smccc_res res;
+
+	arm_smccc_smc(CRYPTO_CMD, CRYPTO_CMD_PART_ENC_DERIVE_KEY, kte, 0, 0, 0, 0, 0, &res);
+
+	return (!res.a0) ? 0 : -1;
+}
+#endif
+
 #ifdef CONFIG_EFUSE
 #ifdef CONFIG_EFUSE_OBJ_API
 uint32_t meson_efuse_obj_read(uint32_t obj_id, uint8_t *buff, uint32_t *size)
