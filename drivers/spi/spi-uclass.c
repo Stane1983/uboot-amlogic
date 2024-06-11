@@ -57,6 +57,11 @@ int dm_spi_claim_bus(struct udevice *dev)
 	struct dm_spi_bus *spi = dev_get_uclass_priv(bus);
 	struct spi_slave *slave = dev_get_parent_priv(dev);
 	uint speed, mode;
+	int ret;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&bus->lock);
+#endif
 
 	speed = slave->max_hz;
 	mode = slave->mode;
@@ -71,16 +76,26 @@ int dm_spi_claim_bus(struct udevice *dev)
 		speed = SPI_DEFAULT_SPEED_HZ;
 
 	if (speed != spi->speed || mode != spi->mode) {
-		int ret = spi_set_speed_mode(bus, speed, slave->mode);
+		ret = spi_set_speed_mode(bus, speed, slave->mode);
 
-		if (ret)
-			return log_ret(ret);
+		if (ret) {
+			ret = log_ret(ret);
+			goto done;
+		}
 
 		spi->speed = speed;
 		spi->mode = mode;
 	}
 
-	return log_ret(ops->claim_bus ? ops->claim_bus(dev) : 0);
+	ret = log_ret(ops->claim_bus ? ops->claim_bus(dev) : 0);
+
+done:
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (ret && (gd->flags & GD_FLG_SMP))
+		spin_unlock(&bus->lock);
+#endif
+
+	return ret;
 }
 
 void dm_spi_release_bus(struct udevice *dev)
@@ -90,6 +105,11 @@ void dm_spi_release_bus(struct udevice *dev)
 
 	if (ops->release_bus)
 		ops->release_bus(dev);
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&bus->lock);
+#endif
 }
 
 int dm_spi_xfer(struct udevice *dev, unsigned int bitlen,
@@ -233,6 +253,9 @@ static int spi_post_probe(struct udevice *bus)
 	}
 #endif
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock_init(&bus->lock);
+#endif
 	return 0;
 }
 
@@ -492,15 +515,21 @@ int _spi_get_bus_and_cs(int busnum, int cs, int speed, int mode,
 		if (ret)
 			goto err;
 	}
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&bus->lock);
+#endif
 	/* In case bus frequency or mode changed, update it. */
 	if ((speed && bus_data->speed && bus_data->speed != speed) ||
 	    (plat && plat->mode != mode)) {
 		ret = spi_set_speed_mode(bus, speed, mode);
-		if (ret)
-			goto err_speed_mode;
 	}
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&bus->lock);
+#endif
+	if (ret)
+		goto err_speed_mode;
 	*busp = bus;
 	*devp = slave;
 	log_debug("%s: bus=%p, slave=%p\n", __func__, bus, *devp);
