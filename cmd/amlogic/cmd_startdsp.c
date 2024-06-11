@@ -144,6 +144,7 @@ int set_dsp_clk(uint32_t id, uint32_t freq_sel)
 static int do_startdsp(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	uint32_t dspid;
+	uint32_t id;
 	uint32_t addr;
 	uint32_t freq_sel;
 	uint32_t cfg0;
@@ -171,7 +172,8 @@ static int do_startdsp(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 	StatVectorSel = (addr != 0xfffa0000);
 	cfg0 = 0x1 | StatVectorSel << 1 | strobe << 2;
 
-	power_set_dsp(PDID_DSPA, PWR_ON);
+	id = PACK_SMC_SUBID_ID(HIFI_DSP_PWR_SET, PDID_DSPA);
+	power_set_dsp(id, PWR_ON);
 
 	udelay(100);
 
@@ -180,7 +182,8 @@ static int do_startdsp(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 
 	udelay(100);
 
-	init_dsp(dspid, addr, cfg0);
+	id = PACK_SMC_SUBID_ID(HIFI_DSP_BOOT, dspid);
+	init_dsp(id, addr, cfg0);
 	printf("dsp init over!\n");
 
 	return 0;
