@@ -135,6 +135,9 @@ static void announce_and_cleanup(int fake)
 	 */
 	dm_remove_devices_flags(DM_REMOVE_ACTIVE_ALL);
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	gd->flags &= ~GD_FLG_SMP;
+#endif
 	cleanup_before_linux();
 }
 
@@ -569,7 +572,6 @@ static void boot_jump_linux(bootm_headers_t *images, int flag)
 #ifdef CONFIG_ARMV8_MULTIENTRY
 		while (cpu_online_status() & 0xfffffffe)
 			mdelay(1);
-		gd->flags &= ~GD_FLG_SMP;
 #endif
 
 		update_os_arch_secondary_cores(images->os.arch);
