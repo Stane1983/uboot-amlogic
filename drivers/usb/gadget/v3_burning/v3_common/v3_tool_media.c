@@ -11,6 +11,7 @@
 #include <amlogic/nocs_seb.h>
 #include <asm/global_data.h>
 #include <amlogic/emmc_partitions.h>
+#include <amlogic/cpu_id.h>
 
 #define DWN_ERR FB_ERR
 #define BOOTLOADER_MAX_SZ   (0x2 << 20)
@@ -336,6 +337,61 @@ static int _discrete_bootloader_write(u8 *dataBuf, unsigned int off, unsigned in
 	return 0;
 }
 
+static int update_boot_hdr_4_s7d_reva(u8 *data_buf, unsigned binsz, int isread)
+{
+	const cpu_id_t cpuid = get_cpu_id();
+	const int familyid   = cpuid.family_id;
+	const int chip_rev   = cpuid.chip_rev;
+	const char *magic_reva = "BLOBHDR";
+	const char *magic_revb = "@ML";
+	const int reva_hdr_off = 0x43e00;
+	const int rva_len = 512;
+	char  rva_hdr[rva_len];
+	int ret = 0;
+
+	if (familyid != MESON_CPU_MAJOR_ID_S7D)
+		return 0;
+	if (chip_rev != MESON_CPU_CHIP_REVISION_A)
+		return 0;
+	FB_MSG("x5m reva\n");
+	ret = memcmp(magic_reva, data_buf, strnlen(magic_reva, 8));
+	if (!ret) {
+		FB_MSG("hdr match\n");
+		if (!isread)
+			return 0;
+	}
+	ret = memcmp(magic_revb, data_buf + isread * reva_hdr_off, strnlen(magic_revb, 8));
+	if (ret) {
+		if (isread) {
+			FB_MSG("no contain rvb inf\n");
+			return 0;
+		}
+		FB_ERR("boot inf magic err\n");
+		return -__LINE__;
+	}
+	if (isread) {
+		memcpy(rva_hdr, data_buf, rva_len);
+		ret = memcmp(magic_reva, rva_hdr, strnlen(magic_reva, 8));
+		if (ret) {
+			FB_ERR("boot inf at reva off err\n");
+			return -__LINE__;
+		}
+		memcpy(data_buf, data_buf + reva_hdr_off, rva_len);//recovery rvb hdr
+		memcpy(data_buf + reva_hdr_off, rva_hdr, rva_len);
+	} else {
+		memcpy(rva_hdr, data_buf + reva_hdr_off, rva_len);
+		ret = memcmp(magic_reva, rva_hdr, strnlen(magic_reva, 8));
+		if (ret) {
+			FB_ERR("boot inf at reva off err\n");
+			return -__LINE__;
+		}
+		memcpy(data_buf + reva_hdr_off, data_buf, rva_len);//save rvb hdr for verify
+		memcpy(data_buf, rva_hdr, rva_len);
+	}
+	FB_MSG("boot hdr changed\n");
+	return 0;
+}
+
 int bootloader_write(u8 *dataBuf, unsigned off, unsigned binsz)
 {
 	bool discreteMode = false;
@@ -344,6 +400,10 @@ int bootloader_write(u8 *dataBuf, unsigned off, unsigned binsz)
 	//_bl2x_mode_check_header(pInfo);
 	if (is_bootloader_discrte(&discreteMode))
 		return -__LINE__;
+	if (update_boot_hdr_4_s7d_reva(dataBuf, binsz, 0)) {
+		FB_ERR("Fail in update x5m inf\n");
+		return -__LINE__;
+	}
 	if (!discreteMode) {
 		return _bootloader_write(dataBuf, off, binsz, "bootloader");
 	} else {
@@ -506,6 +566,10 @@ int bootloader_read(u8 *pBuf, unsigned int off, unsigned int binsz)
 		memcpy(pBuf, src_data, binsz);
 	}
 #endif//#ifdef CONFIG_UPDATE_UBOOT_NOCS
+	if (update_boot_hdr_4_s7d_reva(pBuf, binsz, 1)) {
+		FB_ERR("Fail in update x5m inf\n");
+		return -__LINE__;
+	}
 	return 0;
 }
 
