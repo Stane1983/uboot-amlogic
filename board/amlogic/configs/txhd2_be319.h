@@ -159,7 +159,7 @@
 			"lcd_ctrl=${lcd_ctrl} lcd_debug=${lcd_debug} "\
 			"fb_width=${fb_width} fb_height=${fb_height} "\
 			"outputmode=${outputmode} gamma=${gamma} vout_projector_mux=${vout_projector_mux} "\
-			"connector0_type=${connector0_type} connector1_type=${connector1_type}; "\
+			"connector0_type=${connector0_type}; "\
 		"run cmdline_keys;"\
             "\0"\
         "cec_init="\
