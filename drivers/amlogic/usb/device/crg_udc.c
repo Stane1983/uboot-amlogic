@@ -3232,7 +3232,7 @@ int crg_handle_port_status(struct crg_gadget_dev *crg_udc)
 		}
 	}
 
-	if (portsc_val & CRG_U3DC_PORTSC_PLC) {
+	if ((portsc_val & CRG_U3DC_PORTSC_PEC) && !(portsc_val & CRG_U3DC_PORTSC_PED)) {
 		usb_gadget_register_driver(crg_udc->gadget_driver);
 		g_dnl_board_usb_cable_connected();
 	}
