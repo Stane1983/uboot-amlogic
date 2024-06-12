@@ -10,6 +10,7 @@
 #include <amlogic/tee_aml.h>
 #endif
 #include <amlogic/media/vout/lcd/aml_lcd.h>
+#include <amlogic/media/vout/lcd/lcd_memory.h>
 #include "lcd_reg.h"
 #include "lcd_common.h"
 #include "lcd_tcon.h"
@@ -835,6 +836,7 @@ int get_lcd_tcon_data_size(unsigned char *data_buf)
 	else
 		return 0;
 }
+
 static int lcd_tcon_reserved_mem_data_load(struct aml_lcd_drv_s *pdrv)
 {
 	unsigned char *table;
@@ -842,6 +844,7 @@ static int lcd_tcon_reserved_mem_data_load(struct aml_lcd_drv_s *pdrv)
 	unsigned char *vaddr;
 	unsigned int size = 0;
 	int i, data_relocate = 0;
+	char name[32];
 #endif
 	int ret;
 
@@ -905,10 +908,11 @@ static int lcd_tcon_reserved_mem_data_load(struct aml_lcd_drv_s *pdrv)
 
 			if (is_bin_type_dma(tcon_mm_table.data_mem_vaddr[i])) {
 				size = get_lcd_tcon_data_size(tcon_mm_table.data_mem_vaddr[i]);
-				if (pdrv->cma_pool.exist) {
-					vaddr = (unsigned char *)lcd_alloc_dma_buffer(pdrv, size);
+				if (lrm_exist()) {
+					sprintf(name, "lcd_tcon_data%d", i);
+					vaddr = (unsigned char *)lrm_phys_alloc_tail(size, name);
 					data_relocate = 1;
-					LCDPR("%s data relocate from cma\n", __func__);
+					LCDPR("%s data relocate from rsvd\n", __func__);
 				} else if ((unsigned long)tcon_mm_table.data_mem_vaddr[i] & 0xf) {
 					vaddr = memalign(16, size);
 					data_relocate = 1;
@@ -1596,17 +1600,26 @@ static int lcd_tcon_reserved_memory_init_dts(char *dt_addr, struct aml_lcd_drv_s
 {
 	int parent_offset, cell_size;
 	char *propdata;
+	phys_addr_t paddr = 0;
+	u32 size = 0;
+	int ret = 0;
+#ifdef CONFIG_AMLOGIC_TEE
+	u32 align = 0x10000;
+#else
+	u32 align = PAGE_SIZE;
+#endif
 
+	tcon_rmem.use_lrm = 0;
 	parent_offset = fdt_path_offset(dt_addr, "/reserved-memory");
 	if (parent_offset < 0) {
 		LCDERR("can't find node: /reserved-memory\n");
-		return -1;
+		goto tcon_rsvd_try_alloc_from_lrm;
 	}
 	cell_size = fdt_address_cells(dt_addr, parent_offset);
 	parent_offset = fdt_path_offset(dt_addr, "/reserved-memory/linux,lcd_tcon");
 	if (parent_offset < 0) {
 		LCDERR("can't find node: /reserved-memory/linux,lcd_tcon\n");
-		return -1;
+		goto tcon_rsvd_try_alloc_from_lrm;
 	}
 
 	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "alloc-ranges", NULL);
@@ -1619,7 +1632,7 @@ static int lcd_tcon_reserved_memory_init_dts(char *dt_addr, struct aml_lcd_drv_s
 		propdata = (char *)fdt_getprop(dt_addr, parent_offset, "size", NULL);
 		if (!propdata) {
 			LCDERR("failed to get tcon rsv_mem size from dts\n");
-			return -1;
+			goto tcon_rsvd_try_alloc_from_lrm;
 		}
 		if (cell_size == 2)
 			tcon_rmem.rsv_mem_size = be32_to_cpup((((u32 *)propdata) + 1));
@@ -1629,7 +1642,7 @@ static int lcd_tcon_reserved_memory_init_dts(char *dt_addr, struct aml_lcd_drv_s
 		propdata = (char *)fdt_getprop(dt_addr, parent_offset, "reg", NULL);
 		if (!propdata) {
 			LCDERR("failed to get lcd_tcon reserved-memory from dts\n");
-			return -1;
+			goto tcon_rsvd_try_alloc_from_lrm;
 		}
 		if (cell_size == 2) {
 			tcon_rmem.rsv_mem_paddr = be32_to_cpup((((u32 *)propdata) + 1));
@@ -1640,7 +1653,21 @@ static int lcd_tcon_reserved_memory_init_dts(char *dt_addr, struct aml_lcd_drv_s
 		}
 	}
 
-	return 0;
+tcon_rsvd_try_alloc_from_lrm:
+	if (!tcon_rmem.rsv_mem_paddr || !tcon_rmem.rsv_mem_size) {
+		ret = -1;
+		size = lrm_get_tcon_rsvd_size();
+		// tee protect require addr and size must be 0x10000 aligned
+		paddr = lrm_phys_alloc_align(size, align, "lcd_tcon_rsvd");
+		if (paddr && size) {
+			tcon_rmem.rsv_mem_paddr = paddr;
+			tcon_rmem.rsv_mem_size = size;
+			tcon_rmem.use_lrm = 1;
+			ret = 0;
+		}
+	}
+
+	return ret;
 }
 
 static int lcd_tcon_get_config(char *dt_addr, struct aml_lcd_drv_s *pdrv, int load_id)
@@ -1939,6 +1966,7 @@ static struct lcd_tcon_config_s tcon_data_t5m = {
 	.lut_dma_enable = lcd_tcon_lut_dma_enable_t5m,
 	.lut_dma_disable = lcd_tcon_lut_dma_disable_t5m,
 };
+
 static struct lcd_tcon_config_s tcon_data_t5w = {
 	.tcon_valid = 0,
 
@@ -2003,7 +2031,7 @@ static struct lcd_tcon_config_s tcon_data_t3x = {
 
 	.axi_bank = LCD_TCON_AXI_BANK_T3X,
 
-	.rsv_mem_size    = 0x00a02840, /* 10M+ */
+	.rsv_mem_size    = 0x00a02840, /* 10M10k */
 	.axi_size        = 0x00a00000, /* 10M */
 	.bin_path_size   = 0x00002800, /* 10K */
 	.secure_cfg_size = 0x00000040, /* 64byte */

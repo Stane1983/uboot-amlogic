@@ -95,7 +95,7 @@ void lcd_cma_pool_init(struct aml_lcd_cma_mem *cma,
 	cma->ready = 1;
 }
 
-int lcd_cma_delect_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
+int lcd_cma_detect_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 {
 	int parent_offset, cell_size;
 	char *propdata;
@@ -106,17 +106,17 @@ int lcd_cma_delect_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 
 	parent_offset = fdt_path_offset(dt_addr, "/reserved-memory");
 	if (parent_offset < 0) {
-		LCDERR("can't find node: /reserved-memory\n");
+		LCDPR("can't find node: /reserved-memory\n");
 		return 0;
 	}
 	cell_size = fdt_address_cells(dt_addr, parent_offset);
 	if (pdrv->index == 0)
-		sprintf(name, "/reserved-memory/linux,lcd-cma");
+		sprintf(name, "/reserved-memory/linux,lcd-reserved");
 	else
-		sprintf(name, "/reserved-memory/linux,lcd%d-cma", pdrv->index);
+		sprintf(name, "/reserved-memory/linux,lcd%d-reserved", pdrv->index);
 	parent_offset = fdt_path_offset(dt_addr, name);
 	if (parent_offset < 0) {
-		LCDERR("can't find node: %s\n", name);
+		LCDPR("can't find node: %s\n", name);
 		return 0;
 	}
 	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "reg", NULL);
@@ -2634,7 +2634,7 @@ int lcd_get_panel_config(char *dt_addr, int load_id, struct aml_lcd_drv_s *pdrv)
 		return -1;
 
 	lcd_set_connector(pdrv);
-	lcd_cma_delect_dts(dt_addr, pdrv);
+	lcd_cma_detect_dts(dt_addr, pdrv);
 	lcd_config_load_init(pdrv);
 	lcd_config_load_print(pdrv);
 	lcd_pinmux_load_config(pdrv);

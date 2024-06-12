@@ -13,6 +13,7 @@
 #include <amlogic/keyunify.h>
 #include <amlogic/media/vout/aml_vout.h>
 #include <amlogic/media/vout/lcd/aml_lcd.h>
+#include <amlogic/media/vout/lcd/lcd_memory.h>
 #ifdef CONFIG_AML_LCD_EXTERN
 #include <amlogic/media/vout/lcd/lcd_extern.h>
 #endif
@@ -887,6 +888,8 @@ static int lcd_config_probe(void)
 	}
 	load_id_lcd = load_id;
 
+	lcd_reserved_memory_init(g_dt_addr);
+
 	if (load_id_lcd & 0x1) {
 		drv_cnt_flag = lcd_get_drv_cnt_flag_from_dts(g_dt_addr);
 		if (drv_cnt_flag == 0) {
@@ -995,6 +998,8 @@ int lcd_probe(void)
 	lcd_power_domain_off(lcd_data);
 
 	lcd_update_debug_bootargs();
+
+	lrm_handle_mem_info_to_kernel();
 
 	return 0;
 }

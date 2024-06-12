@@ -7,6 +7,7 @@
 #include <command.h>
 #include <malloc.h>
 #include <amlogic/media/vout/lcd/aml_lcd.h>
+#include <amlogic/media/vout/lcd/lcd_memory.h>
 
 static unsigned int lcd_parse_vout_name(char *name)
 {
@@ -403,6 +404,39 @@ static int do_lcd_key(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		}
 		aml_lcd_driver_unifykey_dump(0, tmp);
 	}
+	return 0;
+}
+
+static int do_lcd_mem(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	u32 size;
+	char *name;
+	phys_addr_t pa = 0;
+
+	if (argc >= 4) {
+		if (strcmp(argv[1], "add") == 0) {
+			if (argc <  4)
+				return -1;
+			size = ustrtoul(argv[2], NULL, 10);
+			name = argv[3];
+			pa = lrm_phys_alloc(size, name);
+		} else if (strcmp(argv[1], "add_tail") == 0) {
+			if (argc <  4)
+				return -1;
+			size = ustrtoul(argv[2], NULL, 10);
+			name = argv[3];
+			pa = lrm_phys_alloc_tail(size, name);
+		}
+	} else if (argc == 3) {
+		if (strcmp(argv[1], "rm") == 0) {
+			name = argv[2];
+			lrm_get_by_name(name, &pa, &size);
+			lrm_free(NULL, pa);
+		}
+	}
+
+	lrm_show();
+
 	return 0;
 }
 
@@ -1057,6 +1091,7 @@ static cmd_tbl_t cmd_lcd_sub[] = {
 	U_BOOT_CMD_MKENT(check,   2, 0, do_lcd_check,    "", ""),
 	U_BOOT_CMD_MKENT(prbs,    2, 0, do_lcd_prbs,     "", ""),
 	U_BOOT_CMD_MKENT(key,     4, 0, do_lcd_key,      "", ""),
+	U_BOOT_CMD_MKENT(mem,     4, 0, do_lcd_mem,     "", ""),
 #ifdef CONFIG_AML_LCD_EXTERN
 	U_BOOT_CMD_MKENT(ext,     4, 0, do_lcd_ext,      "", ""),
 #endif
@@ -1139,6 +1174,7 @@ U_BOOT_CMD(
 	"lcd test         - show lcd bist pattern\n"
 	"lcd check        - show lcd bist pattern\n"
 	"lcd key          - show lcd unifykey test\n"
+	"lcd mem          - show lcd memory used\n"
 #ifdef CONFIG_AML_LCD_EXTERN
 	"lcd ext          - show lcd extern information\n"
 #endif
