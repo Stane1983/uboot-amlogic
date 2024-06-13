@@ -173,22 +173,17 @@ void hdmi_sbtm_infoframe_rawset(u8 *hb, u8 *pb);
 /* Parsing RAW EDID data from edid to prxcap */
 unsigned int hdmi_edid_parsing(unsigned char *edid, struct rx_cap *prxcap);
 void dsc_cap_show(struct rx_cap *prxcap);
-void get_hdmi_data(struct hdmitx_dev *hdev, struct input_hdmi_data *data);
 bool is_dolby_enabled(void);
 bool is_tv_support_dv(struct hdmitx_dev *hdev);
 bool is_dv_preference(struct hdmitx_dev *hdev);
 bool is_hdr_preference(struct hdmitx_dev *hdev);
-int dolbyvision_scene_process(hdmi_data_t *hdmi_data, scene_output_info_t *output_info);
-void sdr_scene_process(hdmi_data_t *hdmi_data,
-	scene_output_info_t *output_info);
-void hdr_scene_process(struct input_hdmi_data *hdmi_data,
-	scene_output_info_t *output_info);
-void get_hdmi_data(struct hdmitx_dev *hdev, hdmi_data_t *data);
 
 bool hdmitx_edid_only_support_sd(struct rx_cap *prxcap);
+bool hdmitx21_validate_mode(struct hdmitx_dev *hdev, struct hdmi_format_para *para);
 
 struct hdmi_format_para *hdmi_tst_fmt_name(char const *name, char const *attr);
 bool is_support_4k(void);
+bool hdmitx_chk_mode_attr_sup(struct hdmitx_dev *hdev, const char *mode, char *attr);
 int get_ubootenv_dv_type(void);
 int get_ubootenv_dv_status(void);
 int get_hdr_policy(void);
@@ -200,8 +195,6 @@ void hdmitx_test_prbs(void);
 struct hdr_info *hdmitx_get_rx_hdr_info(void);
 const char *hdmitx_edid_vic_to_string(enum hdmi_vic vic);
 enum hdmi_vic hdmitx_edid_vic_tab_map_vic(const char *disp_mode);
-bool is_supported_mode_attr(struct input_hdmi_data *hdmi_data, char *mode_attr);
-bool hdmitx_chk_mode_attr_sup(hdmi_data_t *hdmi_data, char *mode, char *attr);
 void hdmitx_set_drm_pkt(struct master_display_info_s *data);
 void hdmitx_set_vsif_pkt(enum eotf_type type, enum mode_type tunnel_mode,
 	struct dv_vsif_para *data);

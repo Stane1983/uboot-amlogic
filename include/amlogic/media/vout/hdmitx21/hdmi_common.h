@@ -854,38 +854,10 @@ typedef enum {
 #define FORCE_HDR10    3
 #define FORCE_HLG      5
 
-enum hdr_force_mode_e {
-	MESON_HDR_FORCE_MODE_INVALID    = 0,
-	MESON_HDR_FORCE_MODE_SDR        = 1,
-	MESON_HDR_FORCE_MODE_DV         = 2,
-	MESON_HDR_FORCE_MODE_HDR10      = 3,
-	MESON_HDR_FORCE_MODE_HDR10PLUS  = 4,  //need to do
-	MESON_HDR_FORCE_MODE_HLG        = 5,
-};
-
 enum {
 	RESOLUTION_PRIORITY = 0,
 	FRAMERATE_PRIORITY  = 1,
 };
-
-typedef struct input_hdmi_data {
-	char ubootenv_hdmimode[MODE_LEN];
-	char ubootenv_colorattribute[MODE_LEN];
-	int ubootenv_dv_type;
-	/* dynamic range fromat preference,0:dolby vision,1:hdr,2:sdr */
-	hdr_priority_e hdr_priority;
-	/* dynamic range policy,0 :follow sink, 1: match content */
-	hdr_policy_e hdr_policy;
-	/* save user force hdr mode 1 :force sdr, 2: force dv, 3: force hdr10, 5:force hlg */
-	enum hdr_force_mode_e hdr_force_mode;
-	struct rx_cap *prxcap;
-} hdmi_data_t;
-
-typedef struct scene_output_info {
-	char final_displaymode[MODE_LEN];
-	char final_deepcolor[MODE_LEN];
-	int final_dv_type;
-} scene_output_info_t;
 
 struct dispmode_vic {
 	const char *disp_mode;

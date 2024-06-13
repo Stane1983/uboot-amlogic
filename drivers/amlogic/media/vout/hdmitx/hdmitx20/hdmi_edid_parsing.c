@@ -842,7 +842,7 @@ static bool y420vicright(enum hdmi_vic vic)
 	return rtn_val;
 }
 
-bool _is_y420_vic(enum hdmi_vic vic)
+bool hdmitx_mode_validate_y420_vic(enum hdmi_vic vic)
 {
 	return y420vicright(vic);
 }
@@ -1769,40 +1769,12 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 	return valid;
 }
 
-bool is_supported_mode_attr(hdmi_data_t *hdmi_data, char *mode_attr)
+bool hdmitx_chk_mode_attr_sup(struct hdmitx_dev *hdev, const char *mode, char *attr)
 {
 	struct hdmi_format_para *para = NULL;
-	struct hdmitx_dev *hdev = NULL;
 
-	if (!hdmi_data || !mode_attr)
+	if (!hdev || !mode || !attr)
 		return false;
-	hdev = container_of(hdmi_data->prxcap,
-			struct hdmitx_dev, RXCap);
-
-	if (mode_attr[0]) {
-		if (!pre_process_str(mode_attr))
-			return false;
-		para = hdmi_tst_fmt_name(mode_attr, mode_attr);
-	}
-	/* if (para) { */
-		/* printf("sname = %s\n", para->sname); */
-		/* printf("char_clk = %d\n", para->tmds_clk); */
-		/* printf("cd = %d\n", para->cd); */
-		/* printf("cs = %d\n", para->cs); */
-	/* } */
-
-	return hdmitx_edid_check_valid_mode(hdev, para);
-}
-
-bool hdmitx_chk_mode_attr_sup(hdmi_data_t *hdmi_data, char *mode, char *attr)
-{
-	struct hdmi_format_para *para = NULL;
-	struct hdmitx_dev *hdev = NULL;
-
-	if (!hdmi_data || !mode || !attr)
-		return false;
-	hdev = container_of(hdmi_data->prxcap,
-			struct hdmitx_dev, RXCap);
 
 	if (attr[0]) {
 		if (!pre_process_str(attr))

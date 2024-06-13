@@ -12,6 +12,7 @@
 #include <amlogic/media/dv/dolby_vision.h>
 #include <linux/libfdt_env.h>
 #include <amlogic/media/vout/aml_vinfo.h>
+#include "../../drivers/amlogic/media/vout/hdmitx/hdmitx_common/hdmitx_policy_setting.h"
 
 static unsigned char edid_raw_buf[256] = {0};
 static void dump_edid_raw_8bytes(unsigned char *buf)
@@ -906,7 +907,6 @@ static void get_parse_edid_data(struct hdmitx_dev *hdev)
 	unsigned char *edid = hdev->rawedid;
 	unsigned int byte_num = 0;
 	unsigned char blk_no = 1;
-	int hdr_priority = get_hdr_strategy_priority();
 
 	/* get edid data */
 	while (byte_num < 128 * blk_no) {
@@ -930,69 +930,18 @@ static void get_parse_edid_data(struct hdmitx_dev *hdev)
 
 	/* parse edid data */
 	hdmi_edid_parsing(hdev->rawedid, &hdev->RXCap);
-
-	if (hdr_priority == -1)
-		return;
-	hdmitx_set_hdr_priority(&hdev->RXCap, hdr_priority);
 }
 
 /* policy process: to find the output mode/attr/dv_type */
 void scene_process(struct hdmitx_dev *hdev,
-	scene_output_info_t *scene_output_info)
+	struct meson_policy_out *output)
 {
-	hdmi_data_t hdmidata;
-	int dv_support = 0;
+	struct meson_policy_in input;
 
-	if (!hdev || !scene_output_info)
-		return;
-	/* 1.read dolby vision mode from prop(maybe need to env) */
-	memset(&hdmidata, 0, sizeof(hdmi_data_t));
-	get_hdmi_data(hdev, &hdmidata);
-
-	/* 2. dolby vision scene process */
-	/* only for tv support dv and box enable dv */
-	if (is_dv_preference(hdev)) {
-		dv_support = dolbyvision_scene_process(&hdmidata, scene_output_info);
-	} else if (is_dolby_enabled()) {
-		/* for enable dolby vision core when
-		 * first boot connecting non dv tv
-		 * NOTE: let systemcontrol to enable DV core
-		 */
-		/* scene_output_info->final_dv_type = DOLBY_VISION_ENABLE; */
-	} else {
-		/* for UI disable dolby vision core and boot keep the status
-		 * NOTE: TBD if need to disable DV here
-		 */
-		/* scene_output_info->final_dv_type = DOLBY_VISION_DISABLE; */
-	}
-	/* 3.hdr/sdr scene process */
-	/* decide final display mode and deepcolor */
-	if (is_dv_preference(hdev) && dv_support == 0) {
-		/* do nothing
-		 * already done above, just sync with sysctrl
-		 */
-	} else if (is_hdr_preference(hdev) || dv_support != 0) {
-		hdr_scene_process(&hdmidata, scene_output_info);
-		/* if the mode not support amdv, and fallback to hdr/sdr,
-		 * but amdv was enabled by HWC, need to forcely change
-		 * dolby_status to std mode(for example, from ll_mode).
-		 * Otherwise, after bootup, HWC find that mode not
-		 * support amdv, and switch to std amdv(only enable dv),
-		 * it will flash screen as ll_mode->std_mode switch
-		 */
-		if (is_dolby_enabled())
-			scene_output_info->final_dv_type = DOLBY_VISION_STD_ENABLE;
-	} else {
-		sdr_scene_process(&hdmidata, scene_output_info);
-		if (is_dolby_enabled())
-			scene_output_info->final_dv_type = DOLBY_VISION_STD_ENABLE;
-	}
-	/* not find outputmode and use default mode */
-	if (strlen(scene_output_info->final_displaymode) == 0)
-		strcpy(scene_output_info->final_displaymode, DEFAULT_HDMI_MODE);
-	/* not find color space and use default mode */
-	if (!strstr(scene_output_info->final_deepcolor, "bit"))
-		strcpy(scene_output_info->final_deepcolor, DEFAULT_COLOR_FORMAT);
+	hdmitx_set_mode_policy();
+	memset(&input, 0, sizeof(struct meson_policy_in));
+	get_hdmi_input(hdev, &input);
+	hdmitx_get_policy_output(output);
 }
 
 static int do_get_parse_edid(cmd_tbl_t * cmdtp, int flag, int argc,
@@ -1014,7 +963,7 @@ static int do_get_parse_edid(cmd_tbl_t * cmdtp, int flag, int argc,
 	int last_dv_status;
 	bool over_write = false;
 	char dv_type[2] = {0};
-	scene_output_info_t scene_output_info;
+	struct meson_policy_out output;
 	struct hdmi_format_para *para = NULL;
 	bool mode_support = false;
 	/* hdmi_mode / colorattribute may be null or "none".
@@ -1032,7 +981,7 @@ static int do_get_parse_edid(cmd_tbl_t * cmdtp, int flag, int argc,
 		printf("HDMI HPD low, no need parse EDID\n");
 		return 1;
 	}
-	memset(&scene_output_info, 0, sizeof(scene_output_info_t));
+	memset(&output, 0, sizeof(output));
 	memset(hdev->rawedid, 0, EDID_BLK_SIZE * EDID_BLK_NO);
 
 	get_parse_edid_data(hdev);
@@ -1146,24 +1095,24 @@ static int do_get_parse_edid(cmd_tbl_t * cmdtp, int flag, int argc,
 	 */
 	if (hdev->RXCap.edid_changed || no_manual_output || !mode_support || over_write) {
 		/* find proper mode if EDID changed */
-		scene_process(hdev, &scene_output_info);
+		scene_process(hdev, &output);
 		env_set("hdmichecksum", hdev->RXCap.checksum);
 		if (edid_parsing_ok(hdev)) {
 			env_set("outputmode",
-			       scene_output_info.final_displaymode);
+			       output.displaymode);
 			env_set("colorattribute",
-			       scene_output_info.final_deepcolor);
+			       output.deepcolor);
 			/* if change from DV TV to HDR/SDR TV, don't change
 			 * DV status to disabled, as DV core need to be enabled.
 			 * that's to say connect DV TV & output DV-> power down box ->
 			 * connect HDR/SDR TV -> power on box, the dolby_status
 			 * will keep the same as that when connect DV TV under follow sink.
 			 */
-			if ((scene_output_info.final_dv_type !=
+			if ((output.amdv_type !=
 			    get_ubootenv_dv_status()) &&
-			    (scene_output_info.final_dv_type !=
+			    (output.amdv_type !=
 			     DOLBY_VISION_DISABLE)) {
-				sprintf(dv_type, "%d", scene_output_info.final_dv_type);
+				sprintf(dv_type, "%d", output.amdv_type);
 				env_set("dolby_status", dv_type);
 				/* according to the policy of systemcontrol,
 				 * if current DV mode is not supported by TV
@@ -1172,7 +1121,7 @@ static int do_get_parse_edid(cmd_tbl_t * cmdtp, int flag, int argc,
 				 * update new DV output mode.
 				 */
 				printf("update dolby_status: %d\n",
-				       scene_output_info.final_dv_type);
+				       output.amdv_type);
 			}
 		} else {
 			save_default_720p();
@@ -1194,6 +1143,13 @@ static int do_get_parse_edid(cmd_tbl_t * cmdtp, int flag, int argc,
 		env_set("dolby_status", 0);
 	hdev->vic = hdmi_get_fmt_vic(env_get("outputmode"));
 	hdev->para = hdmi_get_fmt_paras(hdev->vic);
+
+	/* update the hdr/hdr10+/dv capabilities in the end of scene_process */
+	int hdr_priority = get_hdr_strategy_priority();
+
+	if (hdr_priority != -1)
+		hdmitx_set_hdr_priority(&hdev->RXCap, hdr_priority);
+
 	hdmitx_mask_rx_info(hdev);
 	return 0;
 }

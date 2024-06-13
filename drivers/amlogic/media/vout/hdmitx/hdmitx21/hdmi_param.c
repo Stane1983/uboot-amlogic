@@ -601,44 +601,29 @@ bool pre_process_str(char *name)
 		return true;
 }
 
-//like hdmitx_chk_mode_attr_sup
-bool is_supported_mode_attr(hdmi_data_t *hdmi_data, char *mode_attr)
+bool hdmitx21_validate_mode(struct hdmitx_dev *hdev, struct hdmi_format_para *para)
 {
-	struct hdmi_format_para *para = NULL;
-	struct hdmitx_dev *hdev = NULL;
-
-	if (!hdmi_data || !mode_attr)
+	if (!hdmitx_edid_validate_mode(&hdev->RXCap, para->vic)) {
+		printf("edid invalid vic %d return failed\n", para->vic);
 		return false;
-	hdev = container_of(hdmi_data->prxcap,
-			    struct hdmitx_dev, RXCap);
-
-	if (mode_attr[0]) {
-		if (!pre_process_str(mode_attr))
-			return false;
-		para = hdmitx21_tst_fmt_name(mode_attr, mode_attr);
 	}
-
-#if (0)
-	if (para) {
-		printf("sname = %s\n", para->sname);
-		printf("char_clk = %d\n", para->tmds_clk);
-		printf("cd = %d\n", para->cd);
-		printf("cs = %d\n", para->cs);
+	if (hdmitx_common_validate_vic(&hdev->tx_common, para->vic)) {
+		printf("soc not support vic %d return failed\n", para->vic);
+		return false;
 	}
-#endif
-	return !hdmitx_common_validate_format_para(&hdev->tx_common, para);
+	if (hdmitx_common_validate_format_para(&hdev->tx_common, para)) {
+		printf("format_para check failed\n");
+		return false;
+	}
+	return true;
 }
-
 //like is_supported_mode_attr
-bool hdmitx_chk_mode_attr_sup(hdmi_data_t *hdmi_data, char *mode, char *attr)
+bool hdmitx_chk_mode_attr_sup(struct hdmitx_dev *hdev, const char *mode, char *attr)
 {
 	struct hdmi_format_para *para = NULL;
-	struct hdmitx_dev *hdev = NULL;
 
-	if (!hdmi_data || !mode || !attr)
+	if (!hdev || !mode || !attr)
 		return false;
-	hdev = container_of(hdmi_data->prxcap,
-			    struct hdmitx_dev, RXCap);
 
 	if (attr[0]) {
 		if (!pre_process_str(attr))
@@ -652,7 +637,7 @@ bool hdmitx_chk_mode_attr_sup(hdmi_data_t *hdmi_data, char *mode, char *attr)
 		/* printf("cs = %d\n", para->cs); */
 	/* } */
 
-	return !hdmitx_common_validate_format_para(&hdev->tx_common, para);
+	return hdmitx21_validate_mode(hdev, para);
 }
 
 /* Recommended N and Expected CTS for 32kHz */

@@ -2,6 +2,6 @@
 
 obj-$(CONFIG_AML_HDMITX20) += hdmitx20/
 obj-$(CONFIG_AML_HDMITX21) += hdmitx21/
-obj-$(CONFIG_AML_HDMITX21) += hdmitx_common/
-obj-y += sound.o common.o hdmitx_policy.o
+obj-y += hdmitx_common/
+obj-y += sound.o common.o
 

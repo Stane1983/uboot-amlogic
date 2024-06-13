@@ -73,20 +73,13 @@ bool is_dolby_enabled(void);
 bool is_tv_support_dv(struct hdmitx_dev *hdev);
 bool is_dv_preference(struct hdmitx_dev *hdev);
 bool is_hdr_preference(struct hdmitx_dev *hdev);
-int dolbyvision_scene_process(hdmi_data_t *hdmi_data, scene_output_info_t *output_info);
-void sdr_scene_process(hdmi_data_t *hdmi_data,
-	scene_output_info_t *output_info);
-void hdr_scene_process(struct input_hdmi_data *hdmi_data,
-	scene_output_info_t *output_info);
-bool _is_y420_vic(enum hdmi_vic vic);
+bool hdmitx_mode_validate_y420_vic(enum hdmi_vic vic);
 bool hdmitx_edid_check_y420_support(struct rx_cap *prxcap, enum hdmi_vic vic);
 
-void get_hdmi_data(struct hdmitx_dev *hdev, hdmi_data_t *data);
 bool pre_process_str(char *name);
 struct hdmi_format_para *hdmi_tst_fmt_name(char const *name, char const *attr);
 bool is_support_4k(void);
-bool is_supported_mode_attr(hdmi_data_t *hdmi_data, char *mode_attr);
-bool hdmitx_chk_mode_attr_sup(hdmi_data_t *hdmi_data, char *mode, char *attr);
+bool hdmitx_chk_mode_attr_sup(struct hdmitx_dev *hdev, const char *mode, char *attr);
 int get_ubootenv_dv_type(void);
 int get_ubootenv_dv_status(void);
 int get_hdr_policy(void);
@@ -123,13 +116,6 @@ bool is_hdmitx_limited_1080p(void);
 bool is_vic_over_limited_1080p(enum hdmi_vic vic);
 bool hdmitx_edid_check_data_valid(u8 edid_check, unsigned char *buf);
 int hdmitx_hw_validate_mode(struct hdmitx_dev *hdev, u32 vic);
-
-#ifndef printk
-#define printk printf
-#endif
-#ifndef pr_info
-#define pr_info printf
-#endif
 
 #define hdmitx_debug() /* printf("hd: %s[%d]\n", __func__, __LINE__) */
 #endif
