@@ -9,6 +9,10 @@ config SYS_BOARD
 config SYS_CONFIG_NAME
 	default "s6_bl209"
 
+config BL30_SELECT
+	string "s6 BL30 board config"
+	default "s6_bl209"
+
 config DTB_BIND_KERNEL
     bool "load dtb from boot part but not flash rsv"
     default n
