@@ -24,6 +24,10 @@
 #include <net.h>
 #include <watchdog.h>
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#include <spinlock.h>
+extern spin_lock_t env_lock;
+#endif
 DECLARE_GLOBAL_DATA_PTR;
 
 /************************************************************************
@@ -119,14 +123,33 @@ char *env_get(const char *name)
 
 		e.key	= name;
 		e.data	= NULL;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		if (gd->flags & GD_FLG_SMP)
+			spin_lock(&env_lock);
+#endif
 		hsearch_r(e, ENV_FIND, &ep, &env_htab, 0);
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		if (gd->flags & GD_FLG_SMP)
+			spin_unlock(&env_lock);
+#endif
 		return ep ? ep->data : NULL;
 	}
 
 	/* restricted capabilities before import */
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&env_lock);
+	if (env_get_f(name, (char *)(gd->env_buf), sizeof(gd->env_buf)) >= 0) {
+		if (gd->flags & GD_FLG_SMP)
+			spin_unlock(&env_lock);
+		return (char *)(gd->env_buf);
+	}
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&env_lock);
+#else
 	if (env_get_f(name, (char *)(gd->env_buf), sizeof(gd->env_buf)) >= 0)
 		return (char *)(gd->env_buf);
+#endif
 
 	return NULL;
 }

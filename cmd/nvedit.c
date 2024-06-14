@@ -41,6 +41,11 @@
 #include <asm/byteorder.h>
 #include <asm/io.h>
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#include <spinlock.h>
+spin_lock_t env_lock = {.lock = UNLOCK};
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 #ifdef	CONFIG_AMLOGIC_MODIFY
@@ -331,15 +336,33 @@ static int _do_env_set(int flag, int argc, char *const argv[], int env_flag)
 int env_set(const char *varname, const char *varvalue)
 {
 	const char * const argv[4] = { "setenv", varname, varvalue, NULL };
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	int ret;
+#endif
 
 	/* before import into hashtable */
 	if (!(gd->flags & GD_FLG_ENV_READY))
 		return 1;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP) {
+		spin_lock(&env_lock);
+	}
+	if (varvalue == NULL || varvalue[0] == '\0') {
+		ret = _do_env_set(0, 2, (char * const *)argv, H_PROGRAMMATIC);
+	} else {
+		ret = _do_env_set(0, 3, (char * const *)argv, H_PROGRAMMATIC);
+	}
+	if (gd->flags & GD_FLG_SMP) {
+		spin_unlock(&env_lock);
+	}
+	return ret;
+#else
 	if (varvalue == NULL || varvalue[0] == '\0')
 		return _do_env_set(0, 2, (char * const *)argv, H_PROGRAMMATIC);
 	else
 		return _do_env_set(0, 3, (char * const *)argv, H_PROGRAMMATIC);
+#endif
 }
 
 #ifndef CONFIG_SPL_BUILD
