@@ -15,6 +15,7 @@
 #define VMIN_FF_VALUE                           770
 #define VMIN_TT_VALUE                           800
 #define VMIN_SS_VALUE                           810
+/* board vddee_value defines */
 #define VDDEE_FF_VALUE                          0x2000b
 #define VDDEE_TT_VALUE                          0x2000b
 #define VDDEE_SS_VALUE                          0x2000b
