@@ -19,20 +19,21 @@
 #include <linux/ioport.h>
 #include <asm-generic/gpio.h>
 
-#define PHY21_RESET_LEVEL_BIT   9
-#define PHY20_RESET_LEVEL_BIT   8
-#define USB20_RESET_BIT         7
+#define PHY20_RESET_LEVEL_BIT   9
+#define USB20_RESET_BIT         8
+#define USB_2_DRD_BIT           7
+
 #define USB21_RESET_BIT         6
-#define USB_2_DRD_BIT           5
-#define USB2H_BIT               4
+#define USB3H_BIT               5
+#define PHY21_RESET_LEVEL_BIT   4
 
 #define USB2_MPPLL_EN_CTRL_BIT  27
 #define USBPLL_BIAS_EN_BIT      26
 #define USB2_PLL_RSTN_BIT       25
 #define USB2_PLL_LOCK_EN_BIT    24
 
-#define PHY_20_BASE             0xfe35c000
-#define PHY_COMP_BASE           0xfe358000
+#define PHY_20_BASE             0xfe34c000
+#define PHY_COMP_BASE           0xfe348000
 #define RESET_BASE              0xFE002000
 #define RESET_LEVEL_BASE        0xFE002040
 
@@ -242,7 +243,7 @@ int usb2_phy_init(struct phy *phy)
 		priv->usbphy_reset_bit[0] = PHY20_RESET_LEVEL_BIT;
 	} else {
 		debug("priv->reset_addr is 0x%x\n", priv->reset_addr);
-		writel((1 << USB2H_BIT) | (1 << USB21_RESET_BIT), priv->reset_addr);
+		writel((1 << USB3H_BIT) | (1 << USB21_RESET_BIT), priv->reset_addr);
 
 		udelay(500);
 		priv->usbphy_reset_bit[0] = PHY21_RESET_LEVEL_BIT;

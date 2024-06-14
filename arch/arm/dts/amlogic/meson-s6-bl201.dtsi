@@ -211,34 +211,34 @@
 	pinctrl-1 = <&nand_cs_pins>;
 };
 
-&crg1 {
+&crg30 {
 	status = "okay";
 	dr_mode = "host";
 };
 
-&usb21_phy_v2 {
+&crg30u2_phy {
 	status = "okay";
-	portnum = <2>;
+	portnum = <1>;
 };
 
-&usb31_phy_v2 {
+&crg30u3_phy {
 	status = "okay";
 	portnum = <0>;
 	gpio-vbus-power = "GPIOD_6";
 	/* gpios = <&gpio GPIOD_6 GPIO_ACTIVE_HIGH>; */
 };
 
-&crg2 {
+&crg20 {
 	status = "okay";
 	dr_mode = "host";
 };
 
-&usb22_phy_v2 {
+&crg20u2_phy {
 	status = "okay";
 	portnum = <1>;
 };
 
-&usb32_phy_v2 {
+&crg20u3_phy {
 	status = "okay";
 	portnum = <0>;
 	gpio-vbus-power = "GPIOD_10";
