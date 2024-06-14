@@ -6,13 +6,16 @@
 #include <common.h>
 #include <asm/io.h>
 #include <command.h>
-#include <asm/amlogic/arch/secure_apb.h>
 #include <asm/amlogic/arch/mailbox.h>
 #include <asm/amlogic/arch/tsensor.h>
 #include <asm/amlogic/arch/bl31_apis.h>
 #include <linux/arm-smccc.h>
 #include <linux/delay.h>
 #include <linux/arm-smccc.h>
+
+unsigned int ts_cfg_reg1[2] = {TS_PLL_CFG_REG1, TS_CORE_CFG_REG1};
+unsigned int ts_state0_reg[2] = {TS_PLL_STAT0, TS_CORE_STAT0};
+char *sensor_name[2] = {"pll", "core"};
 
 int tsensor_tz_calibration(unsigned int type, unsigned int data)
 {
@@ -61,46 +64,39 @@ int r1p1_temp_read(int type)
 	int i, cnt;
 	char buf[2];
 
-	switch (type) {
-	case 1:
-		/*enable thermal1 */
-		writel(T_CONTROL_DATA, TS_PLL_CFG_REG1);
-		writel(T_TSCLK_DATA, CLKCTRL_TS_CLK_CTRL);
-		thermal_cali_data_read(1, &ret, 4);
-		printf("type: ret = %x\n", ret);
-		mdelay(5);
-		buf[0] = (ret) & 0xff;
-		buf[1] = (ret >> 8) & 0xff;
-		u_efuse = buf[1];
-		u_efuse = (u_efuse << 8) | buf[0];
-		value_ts = 0;
-		value_all_ts = 0;
-		cnt = 0;
-		for (i = 0; i <= 10; i++) {
-			udelay(50);
-			value_ts = readl(TS_PLL_STAT0) & 0xffff;
+	/*enable thermal1 */
+	writel(T_CONTROL_DATA, ts_cfg_reg1[type - 1]);
+	writel(T_TSCLK_DATA, CLKCTRL_TS_CLK_CTRL);
+	thermal_cali_data_read(type, &ret, 4);
+	printf("type: ret = %x\n", ret);
+	mdelay(5);
+	buf[0] = (ret) & 0xff;
+	buf[1] = (ret >> 8) & 0xff;
+	u_efuse = buf[1];
+	u_efuse = (u_efuse << 8) | buf[0];
+	value_ts = 0;
+	value_all_ts = 0;
+	cnt = 0;
+	for (i = 0; i <= 10; i++) {
+		udelay(50);
+		value_ts = readl(ts_state0_reg[type - 1]) & 0xffff;
+	}
+	for (i = 0; i <= T_AVG_NUM; i++) {
+		udelay(T_DLY_TIME);
+		value_ts = readl(ts_state0_reg[type - 1]) & 0xffff;
+		if (value_ts >= T_VALUE_MIN && value_ts <= T_VALUE_MAX) {
+			value_all_ts += value_ts;
+			cnt++;
 		}
-		for (i = 0; i <= T_AVG_NUM; i++) {
-			udelay(T_DLY_TIME);
-			value_ts = readl(TS_PLL_STAT0) & 0xffff;
-			if (value_ts >= T_VALUE_MIN && value_ts <= T_VALUE_MAX) {
-				value_all_ts += value_ts;
-				cnt++;
-			}
-		}
-		value_ts = value_all_ts / cnt;
-		printf("pll tsensor avg: 0x%x, u_efuse: 0x%x\n", value_ts, u_efuse);
-		if (value_ts == 0) {
-			printf("pll tsensor read temp is zero\n");
-			return -1;
-		}
-		tmp = r1p1_codetotemp(value_ts, u_efuse);
-		printf("temp1: %d\n", tmp);
-		break;
-	default:
-		printf("r1p1 tsensor trim type not support\n");
+	}
+	value_ts = value_all_ts / cnt;
+	printf("%s tsensor avg: 0x%x, u_efuse: 0x%x\n", sensor_name[type - 1], value_ts, u_efuse);
+	if (value_ts == 0) {
+		printf("%s tsensor read temp is zero\n", sensor_name[type - 1]);
 		return -1;
 	}
+	tmp = r1p1_codetotemp(value_ts, u_efuse);
+	printf("%s temp: %d\n", sensor_name[type - 1], tmp);
 	return tmp;
 }
 
@@ -200,15 +196,12 @@ int temp_read_entry(void)
 		break;
 	case 0x1:
 		r1p1_temp_read(1);
+		r1p1_temp_read(2);
 		printf("read the thermal\n");
 		break;
 	case 0x3:
 		printf("temp type no support\n");
-		return -1;
-		//break;
-	default:
-		printf("thermal version not support!!!Please check!\n");
-		return -1;
+		break;
 	}
 	return 0;
 }
