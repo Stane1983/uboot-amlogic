@@ -28,7 +28,7 @@ SECTIONS
 		*(.dev_header*)
 	}
 
-	.generic_param 0x0000050:
+	.generic_param 0x0000060:
 	{
 		*(.generic_param*)
 	}

@@ -139,6 +139,8 @@ uint32_t __ddr_parameter_reg_index[] __attribute__ ((section(".ddr_2acs_index"))
 //#define S4_DDR4_1RANK 1
 //#define S4_DDR3  1
 ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
+	0,
+#if 0
 #if S4_DDR3
 	{
 	 //timing_config,T212_DONGLE 4layer LPDDR4 rank01
@@ -2158,6 +2160,7 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 	 .cfg_ddr_training_delay_ps.reserve_training_parameter = { 0},
 
 	  },
+#endif
 #endif
 };
 
