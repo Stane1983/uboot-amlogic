@@ -432,6 +432,21 @@ static int do_vout_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv
 	if (argc != 2)
 		return CMD_RET_FAILURE;
 
+#ifdef CONFIG_AML_HDMITX
+	if (on_connector_dev == 0xffff) {
+		/* if current mode is HDMI mode, but lacks the environment
+		 * "HDMI-A-A" for "connector0_type", then assign the default
+		 * value for HDMI
+		 */
+		if (hdmi_outputmode_check(mode, 0) != VIU_MUX_MAX) {
+			env_set("connector0_type", "HDMI-A-A");
+			on_connector_dev = vout_connector_check(0);
+			printf("add default connector for HDMI mode %s", mode);
+		} else {
+			printf("error: invalid mode %s for hdmi or panel\n", mode);
+		}
+	}
+#endif
 	switch (on_connector_dev & 0xf00) {
 	case CONNECTOR_HEAD_LCD:
 #ifdef CONFIG_AML_LCD
