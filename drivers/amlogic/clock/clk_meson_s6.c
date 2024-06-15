@@ -122,7 +122,7 @@ static ulong meson_pll_get_rate(struct clk *clk, unsigned long id)
 			rate = rate >> 1;
 	}
 
-	return ((rate / n) >> od) * 1000000;
+	return ((rate >> n) >> od) * 1000000;
 }
 
 static ulong meson_clk_get_rate_by_id(struct clk *clk, ulong id)
@@ -175,7 +175,8 @@ static ulong meson_clk_get_rate(struct clk *clk)
 
 static ulong meson_clk_set_rate(struct clk *clk, ulong rate)
 {
-	ulong div_parent, mux_parent, parent_rate;
+	ulong parent_rate;
+	int parent;
 	unsigned int div_val;
 	struct meson_clk *priv = dev_get_priv(clk->dev);
 	unsigned int i;
@@ -185,10 +186,12 @@ static ulong meson_clk_set_rate(struct clk *clk, ulong rate)
 		if (clk->id == divs[i].index)
 			div = &divs[i];
 	}
-	div_parent = div->parent_index;
-	mux_parent = meson_clk_get_mux_parent(clk, muxes,
-					ARRAY_SIZE(muxes), div_parent);
-	parent_rate = meson_clk_get_rate_by_id(clk, mux_parent);
+	parent = meson_clk_get_mux_parent(clk, muxes,
+					ARRAY_SIZE(muxes), div->parent_index);
+	if (parent == -1)
+		parent = div->parent_index;
+
+	parent_rate = meson_clk_get_rate_by_id(clk, parent);
 
 	div_val = DIV_ROUND_CLOSEST(parent_rate, rate) - 1;
 
