@@ -119,6 +119,9 @@ int board_init(void)
 	printf("board init\n");
 
 #ifdef CONFIG_AML_HDMITX21
+	/*Power on VCC_5V for HDMI_5V */
+	/* GPIOH_6: H enable; L disable */
+	run_command("gpio set GPIOH_6", 0);
 	hdmitx21_chip_type_init(MESON_CPU_ID_S6);
 	hdmitx21_init();
 #endif
