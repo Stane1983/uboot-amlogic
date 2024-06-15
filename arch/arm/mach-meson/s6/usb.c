@@ -26,6 +26,7 @@
 #define USB21_RESET_BIT         6
 #define USB3H_BIT               5
 #define PHY21_RESET_LEVEL_BIT   4
+#define USB3_PHY3_BIT		3
 
 #define USB2_MPPLL_EN_CTRL_BIT  27
 #define USBPLL_BIAS_EN_BIT      26
@@ -234,6 +235,8 @@ int usb2_phy_init(struct phy *phy)
 
 	usb_save_phy_dev(0, phy);
 	usb_enable_phy_pll(priv->base_addr);
+
+	writel((readl(priv->reset_addr + 0x40) & (~(1 << USB3_PHY3_BIT))), priv->reset_addr + 0x40);
 
 	if (priv->usb_phy2_pll_base_addr[0] == PHY_20_BASE) {
 		debug("priv->reset_addr is 0x%x\n", priv->reset_addr);

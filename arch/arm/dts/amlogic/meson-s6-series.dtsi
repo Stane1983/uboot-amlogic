@@ -439,10 +439,10 @@
 			};
 		};
 
-		crg30: crg1@fe350000 {
+		crg30: crg30@fe350000 {
 			compatible = "crg-xhci";
 			status = "disable";
-			reg = <0x0 0xfe350000 0x0 0x40000>;
+			reg = <0x0 0xfe350000 0x0 0x4000>;
 			phys = <&crg30u2_phy>, <&crg30u3_phy>;
 			phy-names = "usb2-phy", "usb3-phy";
 		};
@@ -473,7 +473,7 @@
 		crg20: crg20@fe340000 {
 			compatible = "crg-xhci";
 			status = "disable";
-			reg = <0x0 0xfe340000 0x0 0x40000>;
+			reg = <0x0 0xfe340000 0x0 0x4000>;
 			phys = <&crg20u2_phy>, <&crg20u3_phy>;
 			phy-names = "usb2-phy", "usb3-phy";
 		};
