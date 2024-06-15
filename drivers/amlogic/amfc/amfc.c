@@ -13,6 +13,7 @@
 #include <command.h>
 #include <time.h>
 #include <asm/amlogic/arch/register.h>
+#include <amlogic/cpu_id.h>
 
 #define CONFIG_AMFC_TEST	0
 
@@ -35,8 +36,12 @@ int table_test_mask;
 int amfc_init(void)
 {
 	unsigned int value;
+	cpu_id_t cpu_id = get_cpu_id();
 
-	writel(0 | (1 << 6) | (5 << 7), CLKCTRL_AMFC_CLK_CTRL);
+	if (cpu_id.family_id == MESON_CPU_MAJOR_ID_S7D && cpu_id.chip_rev == 0x0A)
+		writel(0 | (1 << 6) | (5 << 7), CLKCTRL_AMFC_CLK_CTRL);
+	else
+		writel(0 | (1 << 6) | (4 << 7), CLKCTRL_AMFC_CLK_CTRL);
 	printf("AMFC VLSI version:%x, feature:%x\n",
 		readl(AMFC_GL_VERSION), readl(AMFC_GL_CMD1_FEATURE));
 
