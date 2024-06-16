@@ -192,7 +192,7 @@ static int storage_boot_layout_rebuild(struct boot_layout *boot_layout)
 			return -1;
 		STORAGE_ROUND_UP_IF_UNALIGN(boot_entry[BOOT_AREA_BB1ST].size,
 			((BOOT_TOTAL_PAGES / bl2_copy) * ssp->sip.nsp.page_size));
-		boot_entry[BOOT_AREA_BL2E].offset = MTD_RSV_START_BLOCK * ssp->sip.nsp.page_size
+		boot_entry[BOOT_AREA_BL2E].offset = MTD_RSV_START_BLOCK * ssp->sip.nsp.block_size
 						    + ssp->sip.nsp.layout_reserve_size;
 
 		if (store_boot_layout_is_discrete_all()) {
@@ -214,6 +214,7 @@ static int storage_boot_layout_rebuild(struct boot_layout *boot_layout)
 
 	ssp->boot_entry[BOOT_AREA_BB1ST].size = boot_entry[BOOT_AREA_BB1ST].size;
 	ssp->boot_entry[BOOT_AREA_BL2E].size = boot_entry[BOOT_AREA_BL2E].size;
+	ssp->boot_entry[BOOT_AREA_BL2E].offset =  boot_entry[BOOT_AREA_BL2E].offset;
 
 	for (;i <= BOOT_AREA_DEVFIP; i++) {
 		STORAGE_ROUND_UP_IF_UNALIGN(boot_entry[i].size, align_size);
