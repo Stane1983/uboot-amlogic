@@ -2988,6 +2988,10 @@ int mmc_init(struct mmc *mmc)
 #endif
 	if (mmc->has_init)
 		return 0;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 
 	mmc_reset_reg(mmc);
 	start = get_timer(0);
@@ -2999,6 +3003,12 @@ int mmc_init(struct mmc *mmc)
 		err = mmc_complete_init(mmc);
 	if (err)
 		pr_info("%s: %d, time %lu\n", __func__, err, get_timer(start));
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
+
 	info_disprotect |= DISPROTECT_KEY;
 	if (IS_MMC(mmc)) {
 		if (!is_partition_checked) {
@@ -3584,6 +3594,10 @@ static int mmc_key_write_backup(const char *name, unsigned char *addr, unsigned 
 		key_infos[0].stamp, key_infos[0].checksum, key_infos[0].magic);
 
 	memcpy(checksum_info, &key_infos[0], sizeof(struct aml_key_info));
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 
 	for (cpy = 0; cpy < KEY_COPIES; cpy++) {
 		blk = (key_glb_offset + cpy * (vpart->size)) / MMC_BLOCK_SIZE;
@@ -3593,7 +3607,10 @@ static int mmc_key_write_backup(const char *name, unsigned char *addr, unsigned 
 		blk = (key_glb_offset + 2 * (vpart->size)) / MMC_BLOCK_SIZE + cpy;
 		ret |= _key_write(mmc, blk, 1, checksum_info);
 	}
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	if (ret) {
 		printf("%s() %d: emmc init %d\n", __func__, __LINE__, ret);
 		ret = -2;
@@ -3610,6 +3627,11 @@ static int mmc_key_read_backup(const char *name, unsigned char *addr, unsigned i
 	mmc = _rsv_init();
 	if (mmc == NULL)
 		return -10;
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 
 	/* check valid key flag , addr save the first key content */
 	valid = update_key_info(mmc, addr, size);
@@ -3636,6 +3658,10 @@ static int mmc_key_read_backup(const char *name, unsigned char *addr, unsigned i
 		break;
 	}
 _out:
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	return 0;
 }
 #endif
@@ -3669,15 +3695,27 @@ int mmc_key_write(unsigned char *buf, unsigned int size, uint32_t *actual_length
 	start = part->offset + vpart->offset;
 	start_blk = (start / MMC_BLOCK_SIZE);
 	blkcnt = size / MMC_BLOCK_SIZE;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	do {
 		ret = blk_dwrite(mmc_get_blk_desc(mmc), start_blk, blkcnt, temp_buf);
 		if (ret != blkcnt) {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+			if (gd->flags & GD_FLG_SMP)
+				spin_unlock(&mmc->lock);
+#endif
 			pr_err("[%s] %d, mmc_bwrite error\n",
 				__func__, __LINE__);
 			return 1;
 		}
 		start_blk += vpart->size / MMC_BLOCK_SIZE;
 	} while (--i);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 #endif
 	info_disprotect &= ~DISPROTECT_KEY;
 	*actual_length = size;
@@ -3690,8 +3728,8 @@ int mmc_key_read(unsigned char *buf, unsigned int size, uint32_t *actual_length)
 	unsigned char *temp_buf = buf;
 	struct virtual_partition *vpart = NULL;
 #ifndef KEY_BACKUP
-	struct mmc *mmc;
 	int dev = EMMC_DTB_DEV;
+	struct mmc *mmc;
 	ulong start, start_blk, blkcnt;
 	struct partitions * part = NULL;
 #endif
@@ -3700,6 +3738,7 @@ int mmc_key_read(unsigned char *buf, unsigned int size, uint32_t *actual_length)
 #ifdef KEY_BACKUP
 	if (size > vpart->size)
 		size = vpart->size;
+
 	ret = mmc_key_read_backup(MMC_KEY_NAME, temp_buf, size);
 	if (ret != 0) {
 		pr_err("[%s] %d, mmc_bread error\n",
@@ -3707,12 +3746,20 @@ int mmc_key_read(unsigned char *buf, unsigned int size, uint32_t *actual_length)
 		return 1;
 	}
 #else
-	part = aml_get_partition_by_name(MMC_RESERVED_NAME);
 	mmc = find_mmc_device(dev);
+	part = aml_get_partition_by_name(MMC_RESERVED_NAME);
 	start = part->offset + vpart->offset;
 	start_blk = (start / MMC_BLOCK_SIZE);
 	blkcnt = size / MMC_BLOCK_SIZE;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	ret = blk_dread(mmc_get_blk_desc(mmc), start_blk, blkcnt, temp_buf);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	if (ret != blkcnt) {
 		pr_err("[%s] %d, mmc_bread error\n",
 			__func__, __LINE__);

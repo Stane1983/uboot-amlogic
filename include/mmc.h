@@ -15,6 +15,14 @@
 #include <asm/gpio.h>
 #include <part.h>
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#include <asm/arch-meson/smp.h>
+#undef spin_lock_init
+#undef spin_lock
+#undef spin_unlock
+#include <spinlock.h>
+#endif
+
 #if CONFIG_IS_ENABLED(MMC_HS200_SUPPORT)
 #define MMC_SUPPORTS_TUNING
 #endif
@@ -700,6 +708,9 @@ struct mmc {
 				  */
 	int refix;
 	u32 quirks;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock_t lock;
+#endif
 };
 
 struct mmc_hwpart_conf {

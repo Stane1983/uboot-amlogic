@@ -63,7 +63,7 @@ static struct aml_dtb_info dtb_infos = {{0, 0}, {0, 0}};
 /* move this out to storage */
 //int info_disprotect = 0;
 
-int mmc_read_status(struct mmc *mmc, int timeout)
+static int mmc_read_status(struct mmc *mmc, int timeout)
 {
 	struct mmc_cmd cmd;
 	int err, retries = 5;
@@ -106,7 +106,7 @@ int mmc_read_status(struct mmc *mmc, int timeout)
 	return 0;
 }
 
-bool emmckey_is_protected (struct mmc *mmc)
+static bool emmckey_is_protected(struct mmc *mmc)
 {
 #ifdef CONFIG_STORE_COMPATIBLE
 #ifdef CONFIG_SECURITYKEY
@@ -209,21 +209,25 @@ int amlmmc_erase_bootloader(int dev, int map)
 
 	/* do nothing */
 	if (0 == map)
-		goto _out;
+		return ret;
 
 	if (!mmc) {
 		printf("%s() %d: not valid emmc %d\n", __func__, __LINE__, dev);
 		ret = -1;
-		goto _out;
+		return ret;
 	}
 	/* make sure mmc is initialized! */
 	ret = mmc_init(mmc);
 	if (ret) {
 		printf("%s() %d: emmc %d init %d\n", __func__, __LINE__, dev, ret);
 		ret = -2;
-		goto _out;
+		return ret;
 	}
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	blk_shift = ffs(mmc->read_bl_len) -1;
 	if (blk_shift < 0) {
 		printf("bad shift.\n");
@@ -290,6 +294,10 @@ int amlmmc_erase_bootloader(int dev, int map)
 	blk_select_hwpart(mmc->dev, 0);
 
 _out:
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	return ret;
 }
 
@@ -328,6 +336,11 @@ int amlmmc_write_bootloader(int dev, int map, unsigned int size, const void *src
 	if (cpu_id.family_id >= MESON_CPU_MAJOR_ID_GXL)
 		start = GXL_START_BLK;
 	blkcnt = (size + mmc->read_bl_len - 1) / mmc->read_bl_len;
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 
 #if defined(CONFIG_ZIRCON_GPT)
 	/* erase bootloader boot0/boot1 */
@@ -368,6 +381,10 @@ int amlmmc_write_bootloader(int dev, int map, unsigned int size, const void *src
 	blk_select_hwpart(mmc->dev, 0);
 
 _out:
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	return ret;
 }
 
@@ -397,9 +414,16 @@ static int amlmmc_erase_in_dev(int argc, char *const argv[])
 
 	mmc_init(mmc);
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	if (cnt != 0)
 		n = blk_derase(mmc_get_blk_desc(mmc), blk, cnt);
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	printf("dev # %d, %s, several blocks erased %s\n",
 				dev, " ", (n == 0) ? "OK" : "ERROR");
 
@@ -452,8 +476,16 @@ static int amlmmc_erase_in_card(int argc, char *const argv[])
 
 	mmc_init(mmc);
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	if (cnt != 0)
 		n = blk_derase(mmc_get_blk_desc(mmc), blk, cnt);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 
 	printf("dev # %d, %s, several blocks erased %s\n",
 				dev, argv[2], (n == 0) ? "OK" : "ERROR");
@@ -505,10 +537,16 @@ static int amlmmc_erase_in_part(int argc, char *const argv[])
 			dev, blk, cnt);
 
 	mmc_init(mmc);
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	if (cnt != 0)
 		n = blk_derase(mmc_get_blk_desc(mmc), blk, cnt);
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	printf("dev # %d, %s, several blocks erased %s\n",
 				dev, argv[2], (n == 0) ? "OK" : "ERROR");
 	return (n == 0) ? 0 : 1;
@@ -563,10 +601,14 @@ static int amlmmc_erase_non_loader(int argc, char *const argv[])
 	else
 		start_blk = (part_info->offset + part_info->size) >> blk_shift;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	if (emmckey_is_protected(mmc)) {
 		part_info = find_mmc_partition_by_name(MMC_RESERVED_NAME);
 		if (part_info == NULL) {
-			return 1;
+			goto _err;
 		}
 		blk = part_info->offset;
 		// it means: there should be other partitions before reserve-partition.
@@ -587,7 +629,17 @@ static int amlmmc_erase_non_loader(int argc, char *const argv[])
 	} else {
 		n = blk_derase(mmc_get_blk_desc(mmc), start_blk, 0); // erase the whole card
 	}
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	return (n == 0) ? 0 : 1;
+_err:
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
+	return 1;
 }
 
 static int amlmmc_erase_single_part(int argc, char *const argv[])
@@ -633,8 +685,18 @@ static int amlmmc_erase_single_part(int argc, char *const argv[])
 	if (emmc_cur_partition && !strncmp(name, "bootloader", strlen("bootloader")))
 		cnt = 0;
 	else
-	cnt = part_info->size >> blk_shift;
+		cnt = part_info->size >> blk_shift;
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
+
 	n = blk_derase(mmc_get_blk_desc(mmc), blk, cnt);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 
 	return (n == 0) ? 0 : 1;
 }
@@ -667,11 +729,14 @@ static int amlmmc_erase_whole(int argc, char *const argv[])
 		return 1;
 	}
 	start_blk = 0;
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	if (emmckey_is_protected(mmc)) {
 		part_info = find_mmc_partition_by_name(MMC_RESERVED_NAME);
 		if (part_info == NULL) {
-			return 1;
+			goto _err;
 		}
 		blk = part_info->offset;
 		// it means: there should be other partitions before reserve-partition.
@@ -692,12 +757,22 @@ static int amlmmc_erase_whole(int argc, char *const argv[])
 	} else {
 		n = blk_derase(mmc_get_blk_desc(mmc), start_blk, 0); // erase the whole card
 	}
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	map = AML_BL_BOOT;
 	if (n == 0)
 		n = amlmmc_erase_bootloader(dev, map);
 	if (n)
 		printf("erase bootloader in boot partition failed\n");
 	return (n == 0) ? 0 : 1;
+_err:
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
+	return 1;
 }
 
 static int amlmmc_erase_non_cache(int arc, char *const argv[])
@@ -710,6 +785,7 @@ static int amlmmc_erase_non_cache(int arc, char *const argv[])
 	struct partitions *part_info;
 	struct mmc *mmc;
 	int map;
+	u64 erase_cnt;
 
 	name = "logo";
 	dev = find_dev_num_by_partition_name(name);
@@ -726,45 +802,54 @@ static int amlmmc_erase_non_cache(int arc, char *const argv[])
 		printf("bad shift.\n");
 		return 1;
 	 }
-	 if (emmckey_is_protected(mmc)) {
-		 part_info = find_mmc_partition_by_name(MMC_RESERVED_NAME);
-		 if (part_info == NULL) {
-			 return 1;
-		 }
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
+	if (emmckey_is_protected(mmc)) {
+		part_info = find_mmc_partition_by_name(MMC_RESERVED_NAME);
+		if (!part_info)
+			goto _err;
 
-		 blk = part_info->offset;
-		 // it means: there should be other partitions before reserve-partition.
+		blk = part_info->offset;
+		// it means: there should be other partitions before reserve-partition.
 		if (blk > 0) {
 			blk -= PARTITION_RESERVED;
-		 }
-		 blk >>= blk_shift;
-		 blk -= start_blk;
-		 // (1) erase all the area before reserve-partition
-		 if (blk > 0) {
-			 n = blk_derase(mmc_get_blk_desc(mmc), start_blk, blk);
-			 // printf("(1) erase blk: 0 --> %llx %s\n", blk, (n == 0) ? "OK" : "ERROR");
-		 }
-		 if (n == 0) { // not error
-			 // (2) erase all the area after reserve-partition
-			 part_info = find_mmc_partition_by_name(MMC_CACHE_NAME);
-			 if (part_info == NULL) {
-				 return 1;
-			 }
-			 start_blk = (part_info->offset + part_info->size + PARTITION_RESERVED)
-						  >> blk_shift;
-			 u64 erase_cnt = (mmc->capacity >> blk_shift) - start_blk;
-			 n = blk_derase(mmc_get_blk_desc(mmc), start_blk, erase_cnt);
-		 }
-	 } else {
-		 n = blk_derase(mmc_get_blk_desc(mmc), start_blk, 0); // erase the whole card
-	 }
-	 map = AML_BL_BOOT;
-	 if (n == 0) {
-		 n = amlmmc_erase_bootloader(dev, map);
-		 if (n)
-			 printf("erase bootloader in boot partition failed\n");
-	 }
-	 return (n == 0) ? 0 : 1;
+		}
+		blk >>= blk_shift;
+		blk -= start_blk;
+		// (1) erase all the area before reserve-partition
+		if (blk > 0) {
+			n = blk_derase(mmc_get_blk_desc(mmc), start_blk, blk);
+			// printf("(1) erase blk: 0 --> %llx %s\n", blk, (n == 0) ? "OK" : "ERROR");
+		}
+		if (n == 0) { // not error
+			// (2) erase all the area after reserve-partition
+			part_info = find_mmc_partition_by_name(MMC_CACHE_NAME);
+			if (!part_info)
+				goto _err;
+
+			start_blk = (part_info->offset + part_info->size + PARTITION_RESERVED)
+				>> blk_shift;
+			erase_cnt = (mmc->capacity >> blk_shift) - start_blk;
+			n = blk_derase(mmc_get_blk_desc(mmc), start_blk, erase_cnt);
+		}
+	} else {
+		n = blk_derase(mmc_get_blk_desc(mmc), start_blk, 0); // erase the whole card
+	}
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
+	map = AML_BL_BOOT;
+	if (n == 0) {
+		n = amlmmc_erase_bootloader(dev, map);
+		if (n)
+			printf("erase bootloader in boot partition failed\n");
+	}
+	return (n == 0) ? 0 : 1;
+_err:
+	return 1;
 }
 
 static int amlmmc_erase_dev(int argc, char *const argv[])
@@ -864,6 +949,10 @@ static int amlmmc_write_in_part(int argc, char *const argv[])
 		get_off_size(mmc, name, offset, size, &blk, &cnt, &sz_byte);
 
 	mmc_init(mmc);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	n = blk_dwrite(mmc_get_blk_desc(mmc), blk, cnt, addr);
 	//write sz_byte bytes
 	if ((n == cnt) && (sz_byte != 0)) {
@@ -874,25 +963,35 @@ static int amlmmc_write_in_part(int argc, char *const argv[])
 
 		if (addr_tmp == NULL) {
 			printf("mmc write: malloc fail\n");
-			return 1;
+			goto _err;
 		}
 
 		if (blk_dread(mmc_get_blk_desc(mmc), start_blk, 1, addr_tmp) != 1) { // read 1 block
 			free(addr_tmp);
 			printf("mmc read 1 block fail\n");
-			return 1;
+			goto _err;
 		}
 
 		memcpy(addr_tmp, addr_byte, sz_byte);
 		if (blk_dwrite(mmc_get_blk_desc(mmc), start_blk, 1, addr_tmp) != 1) { // write 1 block
 			free(addr_tmp);
 			printf("mmc write 1 block fail\n");
-			return 1;
+			goto _err;
 		}
 		free(addr_tmp);
 	}
 	//printf("%#llx blocks , %#llx bytes written: %s\n", n, sz_byte, (n==cnt) ? "OK" : "ERROR");
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	return (n == cnt) ? 0 : 1;
+_err:
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
+	return 1;
 }
 
 static int amlmmc_write_in_card(int argc, char *const argv[])
@@ -925,8 +1024,12 @@ static int amlmmc_write_in_card(int argc, char *const argv[])
 	cnt = size >> blk_shift;
 	blk = offset >> blk_shift;
 	sz_byte = size - (cnt<<blk_shift);
-	 mmc_init(mmc);
+	mmc_init(mmc);
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	n = blk_dwrite(mmc_get_blk_desc(mmc), blk, cnt, addr);
 
 	//write sz_byte bytes
@@ -938,25 +1041,35 @@ static int amlmmc_write_in_card(int argc, char *const argv[])
 
 		if (addr_tmp == NULL) {
 			printf("mmc write: malloc fail\n");
-			return 1;
+			goto _err;
 		}
 
 		if (blk_dread(mmc_get_blk_desc(mmc), start_blk, 1, addr_tmp) != 1) { // read 1 block
 			free(addr_tmp);
 			printf("mmc read 1 block fail\n");
-			return 1;
+			goto _err;
 		}
 
 		memcpy(addr_tmp, addr_byte, sz_byte);
 		if (blk_dwrite(mmc_get_blk_desc(mmc), start_blk, 1, addr_tmp) != 1) { // write 1 block
 			free(addr_tmp);
 			printf("mmc write 1 block fail\n");
-			return 1;
+			goto _err;
 		}
 		free(addr_tmp);
 	}
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	//printf("%#llx blocks , %#llx bytes written: %s\n", n, sz_byte, (n==cnt) ? "OK" : "ERROR");
 	return (n == cnt) ? 0 : 1;
+_err:
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
+	return 1;
 }
 
 static int amlmmc_write_in_dev(int argc, char *const argv[])
@@ -981,8 +1094,15 @@ static int amlmmc_write_in_dev(int argc, char *const argv[])
 	 //dev, blk, cnt);
 
 	mmc_init(mmc);
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	n = blk_dwrite(mmc_get_blk_desc(mmc), blk, cnt, addr);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	return (n == cnt) ? 0 : 1;
 }
 
@@ -1022,7 +1142,15 @@ static int amlmmc_read_in_dev(int argc, char *const argv[])
 	mmc = find_mmc_device(dev);
 	if (!mmc)
 		return 1;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	n = blk_dread(mmc_get_blk_desc(mmc), blk, cnt, addr);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	return (n == cnt) ? 0 : 1;
 }
 
@@ -1065,26 +1193,41 @@ static int amlmmc_read_in_card(int argc, char *const argv[])
 	sz_byte = size - (cnt<<blk_shift);
 
 	mmc_init(mmc);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	n = blk_dread(mmc_get_blk_desc(mmc), blk, cnt, addr);
-
 	//read sz_byte bytes
 	if ((n == cnt) && (sz_byte != 0)) {
-	   addr_tmp = malloc(mmc->read_bl_len);
-	   addr_byte = (void *)(addr+cnt*(mmc->read_bl_len));
-	   start_blk = blk+cnt;
-	   if (addr_tmp == NULL) {
-		   printf("mmc read: malloc fail\n");
-		   return 1;
-	   }
-	   if (blk_dread(mmc_get_blk_desc(mmc), start_blk, 1, addr_tmp) != 1) { // read 1 block
-		   free(addr_tmp);
-		   printf("mmc read 1 block fail\n");
-		   return 1;
-	   }
-	   memcpy(addr_byte, addr_tmp, sz_byte);
-	   free(addr_tmp);
+		addr_tmp = malloc(mmc->read_bl_len);
+		addr_byte = (void *)(addr + cnt * (mmc->read_bl_len));
+		start_blk = blk + cnt;
+		if (!addr_tmp) {
+			printf("mmc read: malloc fail\n");
+			goto _err;
+		}
+		if (blk_dread(mmc_get_blk_desc(mmc), start_blk, 1, addr_tmp) != 1) { // read 1 block
+			free(addr_tmp);
+			printf("mmc read 1 block fail\n");
+			goto _err;
+		}
+		memcpy(addr_byte, addr_tmp, sz_byte);
+		free(addr_tmp);
 	}
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
+
 	return (n == cnt) ? 0 : 1;
+_err:
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
+	return 1;
 }
 
 static int amlmmc_read_in_part(int argc, char *const argv[])
@@ -1116,30 +1259,42 @@ static int amlmmc_read_in_part(int argc, char *const argv[])
 
 	get_off_size(mmc, name, offset, size, &blk, &cnt, &sz_byte);
 	mmc_init(mmc);
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	n = blk_dread(mmc_get_blk_desc(mmc), blk, cnt, addr);
 
 	//read sz_byte bytes
 	if ((n == cnt) && (sz_byte != 0)) {
-	   /*printf("sz_byte=%#llx bytes\n",sz_byte);*/
-	   addr_tmp = malloc(mmc->read_bl_len);
-	   addr_byte = (void *)(addr+cnt*(mmc->read_bl_len));
-	   start_blk = blk+cnt;
-
-	   if (addr_tmp == NULL) {
-		   printf("mmc read: malloc fail\n");
-		   return 1;
-	   }
-
-	   if (blk_dread(mmc_get_blk_desc(mmc), start_blk, 1, addr_tmp) != 1) { // read 1 block
-		   free(addr_tmp);
-		   printf("mmc read 1 block fail\n");
-		   return 1;
-	   }
-
-	   memcpy(addr_byte, addr_tmp, sz_byte);
-	   free(addr_tmp);
+		/*printf("sz_byte=%#llx bytes\n",sz_byte);*/
+		addr_tmp = malloc(mmc->read_bl_len);
+		addr_byte = (void *)(addr + cnt * (mmc->read_bl_len));
+		start_blk = blk + cnt;
+		if (!addr_tmp) {
+			printf("mmc read: malloc fail\n");
+			goto _err;
+		}
+		if (blk_dread(mmc_get_blk_desc(mmc), start_blk, 1, addr_tmp) != 1) { // read 1 block
+			free(addr_tmp);
+			printf("mmc read 1 block fail\n");
+			goto _err;
+		}
+		memcpy(addr_byte, addr_tmp, sz_byte);
+		free(addr_tmp);
 	}
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	return (n == cnt) ? 0 : 1;
+_err:
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
+	return 1;
 }
 
 static int do_amlmmc_read(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
@@ -1160,8 +1315,22 @@ static int do_amlmmc_read(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv
 
 static int do_amlmmc_env(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	struct mmc *mmc = NULL;
+
+	mmc = find_mmc_device(1);
+#endif
+
 	printf("herh\n");
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	env_relocate();
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	return 0;
 }
 
@@ -1217,7 +1386,15 @@ static int amlmmc_get_ext_csd(int argc, char *const argv[])
 		return 1;
 	}
 	mmc_init(mmc);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	ret = mmc_get_ext_csd(mmc, ext_csd);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	printf("read EXT_CSD byte[%d] val[0x%x] %s\n",
 			byte, ext_csd[byte], (ret == 0) ? "ok" : "fail");
 	return ret;
@@ -1249,8 +1426,15 @@ static int amlmmc_set_ext_csd(int argc, char *const argv[])
 	}
 
 	mmc_init(mmc);
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	ret = mmc_set_ext_csd(mmc, byte, val);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	printf("write EXT_CSD byte[%d] val[0x%x] %s\n",
 			byte, val, (ret == 0) ? "ok" : "fail");
 	return ret;
@@ -1288,6 +1472,10 @@ static int do_amlmmc_switch(cmd_tbl_t *cmdtp, int flag, int argc, char *const ar
 	mmc_init(mmc);
 	printf("mmc switch to ");
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	if (strcmp(argv[3], "boot0") == 0) {
 		rc = mmc_switch_part(mmc, 1);
 		if (rc == 0) {
@@ -1328,6 +1516,11 @@ static int do_amlmmc_switch(cmd_tbl_t *cmdtp, int flag, int argc, char *const ar
 #endif
 	else
 		printf("%s failed\n", argv[3]);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
+
 	return rc;
 }
 
@@ -1435,7 +1628,15 @@ static int do_amlmmc_status(cmd_tbl_t *cmdtp, int flag, int argc, char *const ar
 		printf("mmc dev %d has not been initialed\n", dev);
 		return 1;
 	}
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	rc = mmc_read_status(mmc, 1000);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	if (rc)
 		return 1;
 	else
@@ -1681,7 +1882,7 @@ static u64 write_protect_group_size(struct mmc *mmc, u8 *ext_csd)
 	return write_protect_group_size;
 }
 
-int is_write_protect_valid(u8 *ext_csd)
+static int is_write_protect_valid(u8 *ext_csd)
 {
 	u8 class_6_ctrl = ext_csd[EXT_CSD_CLASS_6_CTRL];
 	if (class_6_ctrl == 0)
@@ -2144,10 +2345,18 @@ static int do_amlmmc_write_protect(cmd_tbl_t *cmdtp, int flag, int argc, char *c
 	else
 		return ret;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	if (argc == 4)
 		ret = set_part_write_protect(mmc, write_protect_type, name);
 	else
 		ret = set_add_write_protect(mmc, write_protect_type, start, cnt);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 
 	return ret;
 }
@@ -2186,6 +2395,10 @@ static int do_amlmmc_boot_wp(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 
 	mmc_init(mmc);
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	ret = mmc_get_ext_csd(mmc, ext_csd);
 	if (ret)
 		printf("get ext_csd failed\n");
@@ -2204,7 +2417,7 @@ static int do_amlmmc_boot_wp(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 		else if (!strcmp(name, "boot1"))
 			boot_wp = 0x8c;
 		else
-			return -1;
+			goto _err;
 	}
 
 	if (!strcmp(type, "poweron")) {
@@ -2216,18 +2429,25 @@ static int do_amlmmc_boot_wp(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 		} else if (!strcmp(name, "boot1")) {
 			boot_wp |= 0x83;
 		} else {
-			return -1;
+			goto _err;
 		}
 	}
 
 	printf("boot_wp is 0x%x\n", boot_wp);
 
 	ret = mmc_set_ext_csd(mmc, EXT_CSD_BOOT_WP, boot_wp);
-	if (ret) {
+	if (ret)
 		printf("set ext_csd boot_wp field failed\n");
-		return ret;
-	}
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
+	return ret;
+_err:
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	return ret;
 }
 
@@ -2258,6 +2478,10 @@ static int do_amlmmc_boot_wp_status(cmd_tbl_t *cmdtp,
 	}
 
 	mmc_init(mmc);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	ret = mmc_get_ext_csd(mmc, ext_csd);
 	if (ret)
 		printf("get ext_csd failed\n");
@@ -2276,7 +2500,10 @@ static int do_amlmmc_boot_wp_status(cmd_tbl_t *cmdtp,
 		printf("boot1 is power on protected\n");
 	else if ((boot_wp_status & 0xc) == 8)
 		printf("boot1 is permanently protected\n");
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	return ret;
 }
 
@@ -2474,11 +2701,18 @@ static int do_amlmmc_clear_wp(cmd_tbl_t *cmdtp, int flag, int argc, char *const 
 	}
 
 	mmc_init(mmc);
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	if (argc == 3)
 		ret = set_part_clear_wp(mmc, name);
 	else
 		ret = set_add_clear_wp(mmc, start, cnt);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 
 	return ret;
 }
@@ -2656,12 +2890,18 @@ static int do_amlmmc_send_wp_status(cmd_tbl_t *cmdtp,
 	}
 
 	mmc_init(mmc);
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	if (argc == 3)
 		ret = send_part_wp_status(mmc, name);
 	else
 		ret = send_add_wp_status(mmc, start, cnt);
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	if (ret) {
 		printf("Failed: send partition write protect status failed\n");
 	}
@@ -2708,12 +2948,18 @@ static int do_amlmmc_send_wp_type(cmd_tbl_t *cmdtp,
 	}
 
 	mmc_init(mmc);
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	if (argc == 3)
 		ret = send_part_wp_type(mmc, name);
 	else
 		ret = send_add_wp_type(mmc, start, cnt);
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	if (ret) {
 		printf("Failed: send partitions write protect type failed\n");
 	}
@@ -2771,6 +3017,7 @@ static int get_driver_strength(struct mmc *mmc)
 	u8 support_ds_type = 0;
 	u8 cur_driver_strength;
 	u8 hs_timing = 0;
+
 	ret = mmc_get_ext_csd(mmc, ext_csd);
 	if (ret) {
 		printf("get ext_csd failed\n");
@@ -2795,6 +3042,7 @@ static int get_driver_strength(struct mmc *mmc)
 		support_ds_type = support_ds_type >> 1;
 	}
 	printf("\n");
+
 	return ret;
 }
 
@@ -2816,8 +3064,15 @@ static int amlmmc_set_driver_strength(int argc, char *const argv[])
 	}
 	mmc_init(mmc);
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	ret = set_driver_strength(mmc, strength);
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	return ret;
 }
 
@@ -2837,8 +3092,15 @@ static int amlmmc_get_driver_strength(int argc, char *const argv[])
 		return 1;
 	}
 	mmc_init(mmc);
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	ret = get_driver_strength(mmc);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 
 	return ret;
 }
@@ -3116,7 +3378,7 @@ static int update_invalid_dtb(struct mmc *mmc, void *addr)
 	return ret;
 }
 
-int update_old_dtb(struct mmc *mmc, void *addr)
+static int update_old_dtb(struct mmc *mmc, void *addr)
 {
 	int ret = 0, dev = EMMC_DTB_DEV;
 	u64 blk, cnt, dtb_glb_offset;
@@ -3168,8 +3430,13 @@ int dtb_read(void *addr)
 	if (mmc == NULL)
 		return -10;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
+
 	if (dtb_read_shortcut(mmc, addr) == 0)
-		return ret;
+		goto _out;
 
 	valid = update_dtb_info(mmc, addr);
 	dtb_info("total valid %d\n", valid);
@@ -3194,9 +3461,12 @@ int dtb_read(void *addr)
 		break;
 	}
 _out:
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	return ret;
 }
-
 
 int dtb_write(void *addr)
 {
@@ -3215,6 +3485,11 @@ int dtb_write(void *addr)
 	mmc = _dtb_init();
 	if (NULL == mmc)
 		return -10;
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 
 	/* stamp */
 	valid = info->valid[0] + info->valid[1];
@@ -3248,6 +3523,10 @@ int dtb_write(void *addr)
 		info->stamp[cpy] = dtb->timestamp;
 	}
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	return ret;
 }
 
@@ -3424,19 +3703,34 @@ int emmc_erase_rsv(struct mmc *mmc, char *rsv_part)
 
 	if (rsv_part == NULL)
 		return -1;
-
 	vpart = aml_get_virtual_partition_by_name(MMC_DTB_NAME);
 	part = aml_get_partition_by_name(MMC_RESERVED_NAME);
 	if (strcmp(rsv_part, "dtb") == 0) {
 		blk = (part->offset + vpart->offset) / mmc->read_bl_len;
 		cnt = (vpart->size * 2) / mmc->read_bl_len;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		if (gd->flags & GD_FLG_SMP)
+			spin_lock(&mmc->lock);
+#endif
 		if (cnt != 0)
 			n = blk_derase(mmc_get_blk_desc(mmc), blk, cnt);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		if (gd->flags & GD_FLG_SMP)
+			spin_unlock(&mmc->lock);
+#endif
 		printf("%s is erased %s\n",
 				rsv_part, (n == 0) ? "OK" : "ERROR");
 		return (n == 0) ? 0 : 1;
 	} else if (strcmp(rsv_part, "key") == 0) {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		if (gd->flags & GD_FLG_SMP)
+			spin_lock(&mmc->lock);
+#endif
 		n = mmc_key_erase();
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		if (gd->flags & GD_FLG_SMP)
+			spin_unlock(&mmc->lock);
+#endif
 		printf("%s is erased %s\n",
 				rsv_part, (n == 0) ? "OK" : "ERROR");
 		return (n == 0) ? 0 : 1;
@@ -3467,8 +3761,16 @@ int do_emmc_erase(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		}
 		blk = (part->offset + vpart->offset) / mmc->read_bl_len;
 		cnt = (vpart->size * 2) / mmc->read_bl_len;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		if (gd->flags & GD_FLG_SMP)
+			spin_lock(&mmc->lock);
+#endif
 		if (cnt != 0)
 			n = blk_derase(mmc_get_blk_desc(mmc), blk, cnt);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		if (gd->flags & GD_FLG_SMP)
+			spin_unlock(&mmc->lock);
+#endif
 		printf("dev # %d, %s, several blocks erased %s\n",
 				dev, (flag == 0) ? " ":(argv[2]),(n == 0) ? "OK" : "ERROR");
 		return (n == 0) ? 0 : 1;
@@ -3480,7 +3782,15 @@ int do_emmc_erase(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			printf("not find mmc\n");
 			return 1;
 		}
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		if (gd->flags & GD_FLG_SMP)
+			spin_lock(&mmc->lock);
+#endif
 		n = mmc_key_erase();
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		if (gd->flags & GD_FLG_SMP)
+			spin_unlock(&mmc->lock);
+#endif
 		printf("dev # %d, %s, several blocks erased %s\n",
 				dev, (flag == 0) ? " ":(argv[2]),(n == 0) ? "OK" : "ERROR");
 		return (n == 0) ? 0 : 1;
@@ -3530,7 +3840,7 @@ static int _fastboot_context_read(struct mmc *mmc, u64 blk,
 	return n != cnt;
 }
 
-int fastboot_context_read(void *buf, size_t size)
+static int fastboot_context_read(void *buf, size_t size)
 {
 	uint32_t crc_result;
 	struct mmc *mmc;
@@ -3540,6 +3850,7 @@ int fastboot_context_read(void *buf, size_t size)
 	int dev = EMMC_FASTBOOT_CONTEXT_DEV;
 	struct partitions *part = NULL;
 	struct virtual_partition *vpart = NULL;
+	int ret;
 
 	mmc = find_mmc_device(dev);
 	if (!mmc) {
@@ -3559,7 +3870,16 @@ int fastboot_context_read(void *buf, size_t size)
 	blk = fb_glb_offset / mmc->read_bl_len;
 	cnt = size / mmc->read_bl_len;
 
-	if (_fastboot_context_read(mmc, blk, cnt, buf))
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
+	ret = _fastboot_context_read(mmc, blk, cnt, buf);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
+	if (ret)
 		return 1;
 
 	fb_cont = (struct FastbootContext *)buf;
@@ -3604,7 +3924,7 @@ static int _fastboot_context_write(struct mmc *mmc, u64 blk,
 	return n != cnt;
 }
 
-int fastboot_context_write(void *buf, size_t size)
+static int fastboot_context_write(void *buf, size_t size)
 {
 	int ret = 0;
 	struct FastbootContext *fb_cont = (struct FastbootContext *)buf;
@@ -3633,8 +3953,16 @@ int fastboot_context_write(void *buf, size_t size)
 	fb_cont->crc32 = crc32(0, buf, fb_size - 4);
 	blk = fb_glb_offset / mmc->read_bl_len;
 	cnt = size / mmc->read_bl_len;
-	ret = _fastboot_context_write(mmc, blk, cnt, buf);
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
+	ret = _fastboot_context_write(mmc, blk, cnt, buf);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	return ret;
 }
 
@@ -3684,14 +4012,10 @@ int do_emmc_key_write(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	addr = (void *)simple_strtoul(argv[2], NULL, 16);
 	size = simple_strtoull(argv[3], NULL, 16);
+
 	ret = mmc_key_write(addr, size, &actual_length);
 	return ret;
-
-
 }
-
-
-
 
 static cmd_tbl_t cmd_emmc[] = {
 	U_BOOT_CMD_MKENT(dtb_read,  4, 0, do_emmc_dtb_read,  "", ""),

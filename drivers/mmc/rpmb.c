@@ -361,36 +361,46 @@ static int rpmb_route_write_req(struct mmc *mmc, struct s_rpmb *req,
 				unsigned short rsp_cnt)
 {
 	int ret;
-
 	/*
 	 * Send the write request.
 	 */
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	ret = mmc_set_blockcount(mmc, req_cnt, true);
 	if (ret)
-		return ret;
+		goto _err;
 
 	ret = send_write_mult_block(mmc, req, req_cnt);
 	if (ret)
-		return ret;
+		goto _err;
 
 	/*
 	 * Read the result of the request.
 	 */
 	ret = mmc_set_blockcount(mmc, 1, false);
 	if (ret)
-		return ret;
+		goto _err;
 
 	memset(rsp, 0, sizeof(*rsp));
 	rsp->request = cpu_to_be16(RPMB_REQ_STATUS);
 	ret = send_write_mult_block(mmc, rsp, 1);
 	if (ret)
-		return ret;
+		goto _err;
 
 	ret = mmc_set_blockcount(mmc, 1, false);
 	if (ret)
-		return ret;
+		goto _err;
 
-	return send_read_mult_block(mmc, rsp, 1);
+	ret =  send_read_mult_block(mmc, rsp, 1);
+
+_err:
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
+	return ret;
 }
 
 static int rpmb_route_read_req(struct mmc *mmc, struct s_rpmb *req,
@@ -402,13 +412,17 @@ static int rpmb_route_read_req(struct mmc *mmc, struct s_rpmb *req,
 	/*
 	 * Send the read request.
 	 */
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	ret = mmc_set_blockcount(mmc, 1, false);
 	if (ret)
-		return ret;
+		goto _err;
 
 	ret = send_write_mult_block(mmc, req, 1);
 	if (ret)
-		return ret;
+		goto _err;
 
 	/*
 	 * Read the result of the request.
@@ -416,9 +430,15 @@ static int rpmb_route_read_req(struct mmc *mmc, struct s_rpmb *req,
 
 	ret = mmc_set_blockcount(mmc, rsp_cnt, false);
 	if (ret)
-		return ret;
+		goto _err;
 
-	return send_read_mult_block(mmc, rsp, rsp_cnt);
+	 ret = send_read_mult_block(mmc, rsp, rsp_cnt);
+_err:
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
+	return ret;
 }
 
 static int rpmb_route_frames(struct mmc *mmc, struct s_rpmb *req,

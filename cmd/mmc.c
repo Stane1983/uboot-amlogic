@@ -268,16 +268,32 @@ static int do_mmcrpmb(cmd_tbl_t *cmdtp, int flag,
 #else
 	original_part = mmc_get_blk_desc(mmc)->hwpart;
 #endif
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
+
 	if (blk_select_hwpart_devnum(IF_TYPE_MMC, curr_device, MMC_PART_RPMB) !=
 	    0)
-		return CMD_RET_FAILURE;
+		goto _err;
 	ret = cp->cmd(cmdtp, flag, argc, argv);
 
 	/* Return to original partition */
 	if (blk_select_hwpart_devnum(IF_TYPE_MMC, curr_device, original_part) !=
 	    0)
-		return CMD_RET_FAILURE;
+		goto _err;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	return ret;
+_err:
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
+	return CMD_RET_FAILURE;
 }
 #endif
 
@@ -302,7 +318,16 @@ static int do_mmc_read(cmd_tbl_t *cmdtp, int flag,
 	printf("\nMMC read: dev # %d, block # %d, count %d ... ",
 	       curr_device, blk, cnt);
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	n = blk_dread(mmc_get_blk_desc(mmc), blk, cnt, addr);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
+
 	printf("%d blocks read: %s\n", n, (n == cnt) ? "OK" : "ERROR");
 
 	return (n == cnt) ? CMD_RET_SUCCESS : CMD_RET_FAILURE;
@@ -332,6 +357,7 @@ static int do_mmc_sparse_write(cmd_tbl_t *cmdtp, int flag,
 	char dest[11];
 	void *addr;
 	u32 blk;
+	int ret;
 
 	if (argc != 3)
 		return CMD_RET_USAGE;
@@ -366,10 +392,20 @@ static int do_mmc_sparse_write(cmd_tbl_t *cmdtp, int flag,
 	sparse.mssg = NULL;
 	sprintf(dest, "0x" LBAF, sparse.start * sparse.blksz);
 
-	if (write_sparse_image(&sparse, dest, addr, NULL))
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
+	ret = write_sparse_image(&sparse, dest, addr, NULL);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
+	if (ret)
 		return CMD_RET_FAILURE;
 	else
 		return CMD_RET_SUCCESS;
+
 }
 #endif
 
@@ -399,7 +435,15 @@ static int do_mmc_write(cmd_tbl_t *cmdtp, int flag,
 		printf("Error: card is write protected!\n");
 		return CMD_RET_FAILURE;
 	}
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	n = blk_dwrite(mmc_get_blk_desc(mmc), blk, cnt, addr);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	printf("%d blocks written: %s\n", n, (n == cnt) ? "OK" : "ERROR");
 
 	return (n == cnt) ? CMD_RET_SUCCESS : CMD_RET_FAILURE;
@@ -427,7 +471,16 @@ static int do_mmc_erase(cmd_tbl_t *cmdtp, int flag,
 		printf("Error: card is write protected!\n");
 		return CMD_RET_FAILURE;
 	}
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	n = blk_derase(mmc_get_blk_desc(mmc), blk, cnt);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	printf("%d blocks erased: %s\n", n, (n == 0) ? "OK" : "ERROR");
 
 	return (!n) ? CMD_RET_SUCCESS : CMD_RET_FAILURE;
@@ -490,8 +543,16 @@ static int do_mmc_dev(cmd_tbl_t *cmdtp, int flag,
 	if (!mmc)
 		return CMD_RET_FAILURE;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	blk_dcache_invalid(mmc_get_blk_desc(mmc));
 	ret = blk_select_hwpart_devnum(IF_TYPE_MMC, dev, part);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	printf("switch to partitions #%d, %s\n",
 	       part, (!ret) ? "OK" : "ERROR");
 	if (ret)
@@ -577,7 +638,15 @@ static int do_mmc_ffu(cmd_tbl_t *cmdtp, int flag,
 	if (!mmc)
 		return CMD_RET_FAILURE;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	ret = mmc_ffu_op(curr_device, ver, addr, cnt);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	return (ret == 0) ? CMD_RET_SUCCESS : CMD_RET_FAILURE;
 }
 
@@ -665,12 +734,16 @@ static int do_mmc_hwpartition(cmd_tbl_t *cmdtp, int flag,
 	if (argc < 1)
 		return CMD_RET_USAGE;
 	i = 1;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	while (i < argc) {
 		if (!strcmp(argv[i], "user")) {
 			i++;
 			r = parse_hwpart_user(&pconf, argc-i, &argv[i]);
 			if (r < 0)
-				return CMD_RET_USAGE;
+				goto _err;
 			i += r;
 		} else if (!strncmp(argv[i], "gp", 2) &&
 			   strlen(argv[i]) == 3 &&
@@ -679,7 +752,7 @@ static int do_mmc_hwpartition(cmd_tbl_t *cmdtp, int flag,
 			i++;
 			r = parse_hwpart_gp(&pconf, pidx, argc-i, &argv[i]);
 			if (r < 0)
-				return CMD_RET_USAGE;
+				goto _err;
 			i += r;
 		} else if (!strcmp(argv[i], "check")) {
 			mode = MMC_HWPART_CONF_CHECK;
@@ -691,8 +764,9 @@ static int do_mmc_hwpartition(cmd_tbl_t *cmdtp, int flag,
 			mode = MMC_HWPART_CONF_COMPLETE;
 			i++;
 		} else {
-			return CMD_RET_USAGE;
+			goto _err;
 		}
+
 	}
 
 	puts("Partition configuration:\n");
@@ -725,11 +799,25 @@ static int do_mmc_hwpartition(cmd_tbl_t *cmdtp, int flag,
 		if (mode == MMC_HWPART_CONF_COMPLETE)
 			puts("Partitioning successful, "
 			     "power-cycle to make effective\n");
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		if (gd->flags & GD_FLG_SMP)
+			spin_unlock(&mmc->lock);
+#endif
 		return CMD_RET_SUCCESS;
 	} else {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		if (gd->flags & GD_FLG_SMP)
+			spin_unlock(&mmc->lock);
+#endif
 		puts("Failed!\n");
 		return CMD_RET_FAILURE;
 	}
+_err:
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
+	return CMD_RET_USAGE;
 }
 #endif
 
@@ -740,6 +828,7 @@ static int do_mmc_bootbus(cmd_tbl_t *cmdtp, int flag,
 	int dev;
 	struct mmc *mmc;
 	u8 width, reset, mode;
+	int ret;
 
 	if (argc != 5)
 		return CMD_RET_USAGE;
@@ -757,9 +846,19 @@ static int do_mmc_bootbus(cmd_tbl_t *cmdtp, int flag,
 		return CMD_RET_FAILURE;
 	}
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	/* acknowledge to be sent during boot operation */
-	return mmc_set_boot_bus_width(mmc, width, reset, mode);
+	ret =  mmc_set_boot_bus_width(mmc, width, reset, mode);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
+	return ret
 }
+
 static int do_mmc_boot_resize(cmd_tbl_t *cmdtp, int flag,
 			      int argc, char * const argv[])
 {
@@ -782,11 +881,25 @@ static int do_mmc_boot_resize(cmd_tbl_t *cmdtp, int flag,
 		return CMD_RET_FAILURE;
 	}
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
+
 	if (mmc_boot_partition_size_change(mmc, bootsize, rpmbsize)) {
 		printf("EMMC boot partition Size change Failed.\n");
+#ifdef CONFIG_ARMV8_MULTIENTRY
+		if (gd->flags & GD_FLG_SMP)
+			spin_unlock(&mmc->lock);
+#endif
 		return CMD_RET_FAILURE;
+
 	}
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	printf("EMMC boot partition Size %d MB\n", bootsize);
 	printf("EMMC RPMB partition Size %d MB\n", rpmbsize);
 	return CMD_RET_SUCCESS;
@@ -819,6 +932,7 @@ static int do_mmc_partconf(cmd_tbl_t *cmdtp, int flag,
 	int dev;
 	struct mmc *mmc;
 	u8 ack, part_num, access;
+	int ret;
 
 	if (argc != 2 && argc != 5)
 		return CMD_RET_USAGE;
@@ -842,7 +956,16 @@ static int do_mmc_partconf(cmd_tbl_t *cmdtp, int flag,
 	access = simple_strtoul(argv[4], NULL, 10);
 
 	/* acknowledge to be sent during boot operation */
-	return mmc_set_part_conf(mmc, ack, part_num, access);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
+	ret =  mmc_set_part_conf(mmc, ack, part_num, access);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
+	return ret;
 }
 static int do_mmc_rst_func(cmd_tbl_t *cmdtp, int flag,
 			   int argc, char * const argv[])
@@ -876,7 +999,16 @@ static int do_mmc_rst_func(cmd_tbl_t *cmdtp, int flag,
 		return CMD_RET_FAILURE;
 	}
 
-	return mmc_set_rst_n_function(mmc, enable);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
+	ret =  mmc_set_rst_n_function(mmc, enable);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
+	return ret;
 }
 #endif
 static int do_mmc_setdsr(cmd_tbl_t *cmdtp, int flag,
@@ -895,7 +1027,15 @@ static int do_mmc_setdsr(cmd_tbl_t *cmdtp, int flag,
 		printf("no mmc device at slot %x\n", curr_device);
 		return CMD_RET_FAILURE;
 	}
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
 	ret = mmc_set_dsr(mmc, val);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
 	printf("set dsr %s\n", (!ret) ? "OK, force rescan" : "ERROR");
 	if (!ret) {
 		mmc->has_init = 0;
@@ -913,6 +1053,7 @@ static int do_mmc_bkops_enable(cmd_tbl_t *cmdtp, int flag,
 {
 	int dev;
 	struct mmc *mmc;
+	int ret;
 
 	if (argc != 2)
 		return CMD_RET_USAGE;
@@ -927,8 +1068,16 @@ static int do_mmc_bkops_enable(cmd_tbl_t *cmdtp, int flag,
 		puts("BKOPS_EN only exists on eMMC\n");
 		return CMD_RET_FAILURE;
 	}
-
-	return mmc_set_bkops_enable(mmc);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_lock(&mmc->lock);
+#endif
+	ret =  mmc_set_bkops_enable(mmc);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	if (gd->flags & GD_FLG_SMP)
+		spin_unlock(&mmc->lock);
+#endif
+	return ret;
 }
 #endif
 
