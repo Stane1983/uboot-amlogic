@@ -176,10 +176,11 @@ int board_late_init(void)
 	aml_board_late_init_front(NULL);
 	get_stick_reboot_flag_mbx();
 
-#ifdef CONFIG_SC2_AH212_DEBIAN
+#ifdef CONFIG_BUILD_DEBIAN_SYSTEM
 	// Set boot source
 	board_set_boot_source();
 #endif
+
 	/* reset vout init state */
 	run_command("setenv vout_init disable", 0);
 #ifdef CONFIG_AML_VPU

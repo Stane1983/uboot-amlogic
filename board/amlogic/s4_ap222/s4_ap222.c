@@ -148,7 +148,7 @@ int board_late_init(void)
 	aml_board_late_init_front(NULL);
 	get_stick_reboot_flag_mbx();
 
-#ifdef CONFIG_S4_AP222_DEBIAN
+#ifdef CONFIG_BUILD_DEBIAN_SYSTEM
 	// Set boot source
 	board_set_boot_source();
 #endif

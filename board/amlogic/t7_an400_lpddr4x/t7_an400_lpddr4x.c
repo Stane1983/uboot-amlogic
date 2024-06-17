@@ -238,7 +238,7 @@ int board_late_init(void)
 	aml_board_late_init_front(NULL);
 	get_stick_reboot_flag_mbx();
 
-#ifdef CONFIG_T7_AN400_LPDDR4X_DEBIAN
+#ifdef CONFIG_BUILD_DEBIAN_SYSTEM
 	/* Select fdtfile */
 	SetCurrentDtbFile();
 

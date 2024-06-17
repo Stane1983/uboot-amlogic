@@ -58,6 +58,11 @@ config KALLSYMS
 		This config can help to print call stack like linux kernel panic
 		when crash. It's very useful for debug crash issues.
 
+config BUILD_DEBIAN_SYSTEM
+	bool "Config flag of building debian system"
+	help
+		Config flag of building debian system.
+
 config PXP_AOCPU
 	bool "Amlogic Pxp aocpu flag"
 	help
@@ -513,14 +518,6 @@ config S4_AP222
 	help
 		Select S4 AP222(XXXX) config
 
-config S4_AP222_DEBIAN
-	bool "S4_AP222_DEBIAN"
-	select TARGET_S4_AP222
-	help
-	  Select S4 AP222 DEBIAN config
-	  it's based in S4 AP222
-	  and add debian configs
-
 config S4_AP22CB
 	bool "S4_AP22CB"
 	select TARGET_S4_AP22CB
@@ -601,7 +598,7 @@ config TARGET_S4_SKT
 
 config TARGET_S4_AP222
 	bool "S4 AP222 board"
-	depends on S4_AP222 || S4_AP222_DEBIAN
+	depends on S4_AP222
 
 config TARGET_S4_AP22CB
 	bool "S4 AP22CB board"
@@ -922,14 +919,6 @@ config SC2_AH212
 	help
 	  Select SC2 AH212 config
 
-config SC2_AH212_DEBIAN
-	bool "SC2_AH212_DEBIAN"
-	select TARGET_SC2_AH212
-	help
-	  Select SC2 AH212 DEBIAN config
-	  it's based in SC2 AH212
-	  and add debian configs
-
 config SC2_AH232
 	bool "SC2_AH232"
 	select TARGET_SC2_AH232
@@ -972,7 +961,7 @@ config TARGET_SC2_AH219
 
 config TARGET_SC2_AH212
 	bool "SC2 AH212 board"
-	depends on SC2_AH212 || SC2_AH212_DEBIAN
+	depends on SC2_AH212
 
 config TARGET_SC2_AH232
 	bool "SC2 AH232 board"
@@ -1202,14 +1191,6 @@ config T7_AN400_LPDDR4X
 	help
 	  Select T7 AN400 LPDDR4X config
 
-config T7_AN400_LPDDR4X_DEBIAN
-	bool "T7_AN400_LPDDR4X_DEBIAN"
-	select TARGET_T7_AN400_LPDDR4X
-	help
-	  Select T7 AN400 LPDDR4X DEBIAN config
-	  it's based in T7 AN400 LPDDR4X
-	  and add debian configs
-
 config T7_AN400_LPDDR4X_BLUEBELL
 	bool "T7_AN400_LPDDR4X_BLUEBELL"
 	select TARGET_T7_AN400_LPDDR4X_BLUEBELL
@@ -1267,7 +1248,7 @@ config TARGET_T7_AN409_DDR4
 
 config TARGET_T7_AN400_LPDDR4X
 	bool "T7 AN400 lpddr4x board"
-	depends on T7_AN400_LPDDR4X || T7_AN400_LPDDR4X_DEBIAN
+	depends on T7_AN400_LPDDR4X
 
 config TARGET_T7_AN400_LPDDR4X_BLUEBELL
 	bool "T7 AN400 lpddr4x bluebell board"
@@ -1628,10 +1609,6 @@ if S4_AP222
 source "board/amlogic/s4_ap222/Kconfig"
 endif
 
-if S4_AP222_DEBIAN
-source "board/amlogic/s4_ap222_debian/Kconfig"
-endif
-
 source "board/amlogic/s4_ap22cb/Kconfig"
 
 source "board/amlogic/s4_ap223/Kconfig"
@@ -1667,10 +1644,6 @@ source "board/amlogic/a5_av409/Kconfig"
 source "board/amlogic/sc2_skt/Kconfig"
 
 source "board/amlogic/sc2_ah219/Kconfig"
-
-if SC2_AH212_DEBIAN
-source "board/amlogic/sc2_ah212_debian/Kconfig"
-endif
 
 source "board/amlogic/sc2_ah212/Kconfig"
 
@@ -1730,10 +1703,6 @@ source "board/amlogic/t7_an409_ddr4/Kconfig"
 
 if T7_AN400_LPDDR4X
 source "board/amlogic/t7_an400_lpddr4x/Kconfig"
-endif
-
-if T7_AN400_LPDDR4X_DEBIAN
-source "board/amlogic/t7_an400_lpddr4x_debian/Kconfig"
 endif
 
 if T7_AN400_LPDDR4X_BLUEBELL
