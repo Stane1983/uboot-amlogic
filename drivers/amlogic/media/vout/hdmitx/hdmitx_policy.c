@@ -372,6 +372,14 @@ static bool hdmi_sink_disp_mode_sup(struct input_hdmi_data *hdmi_data, char *dis
 static bool is_best_outputmode(void)
 {
 	char *is_bestmode = env_get("is.bestmode");
+	char *user_hdmi_mode = env_get("hdmimode");
+
+	if (!user_hdmi_mode || !strstr(user_hdmi_mode, "hz")) {
+		/* if hdmimode is empty or no resolution is saved,
+		 * then enable the auto to best strategy
+		 */
+		return true;
+	}
 
 	return !is_bestmode || (strcmp(is_bestmode, "true") == 0);
 }
