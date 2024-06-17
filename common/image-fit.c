@@ -1490,6 +1490,11 @@ static int fdt_check_no_at(const void *fit, int parent)
 	return 0;
 }
 
+int fdt_check_full(const void *fdt, size_t bufsize)
+{
+	return 0;
+}
+
 int fit_check_format(const void *fit, ulong size)
 {
 	int ret;
@@ -2020,8 +2025,20 @@ int fit_image_load(bootm_headers_t *images, ulong addr,
 
 	/* verify that image data is a proper FDT blob */
 	if (image_type == IH_TYPE_FLATDT && fdt_check_header(buf)) {
-		puts("Subimage data is not a FDT");
-		return -ENOEXEC;
+#ifndef USE_HOSTCC
+#ifdef CONFIG_MULTI_DTB
+		extern unsigned long get_multi_dt_entry(unsigned long fdt_addr);
+		puts("\n Found that there is not an fdt, try to parse dtb.img ");
+		/* update dtb address, compatible with single dtb and multi dtbs */
+		images->ft_addr = (char *)get_multi_dt_entry((unsigned long)buf);
+		//fit_image_get_data_size(&data, 0, (int *)&len);
+		if ((unsigned long)images->ft_addr == 0)
+#endif
+#endif
+		{
+			puts("\n Subimage data is not a FDT");
+			return -ENOEXEC;
+		}
 	}
 
 	bootstage_mark(bootstage_id + BOOTSTAGE_SUB_GET_DATA_OK);

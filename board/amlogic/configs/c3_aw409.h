@@ -108,7 +108,7 @@
 	"Irq_check_en=0\0"\
 	"common_dtb_load=" CONFIG_DTB_LOAD "\0"\
 	"fatload_dev=usb\0"\
-	"fs_type=""rootfstype=ramfs""\0"\
+	"fs_type=""rootfstype=squashfs""\0"\
 	"initargs="\
 	"init=/init " CONFIG_KNL_LOG_LEVEL "console=ttyS0,921600 no_console_suspend "\
 	"earlycon=aml_uart,0xfe07a000 ramoops.pstore_en=1 ramoops.record_size=0x8000 "\
@@ -146,9 +146,19 @@
 		"fi;fi;fi;fi;fi;fi;"\
 		"\0" \
 	"storeboot="\
-		"run storage_param;"\
-		"imgread kernel ${boot_part} ${loadaddr_kernel};"\
-		"store read 0x01a80000 system 0 0x300000;bootm ${loadaddr_kernel};"\
+		"if test ${os_type} = fdt; then "\
+			"run storage_param;"\
+			"setenv loadaddr ${loadaddr_kernel};"\
+			"setenv dtb_mem_addr ${loadaddr_kernel};"\
+			"setenv initrd_high 0x3000000;"\
+			"setenv bootargs ${bootargs} init=/sbin/init rootfstype=squashfs root=/dev/mtdblock9;"\
+			"store read ${loadaddr} ${boot_part} 0 0x1000000;"\
+			"bootm ${loadaddr};"\
+		"else run storage_param;"\
+			"run common_dtb_load;"\
+			"imgread kernel ${boot_part} ${loadaddr_kernel};"\
+			"bootm ${loadaddr_kernel};"\
+		"fi;"\
 		"\0" \
 	"storeboot_ramdisk="\
 		"run storage_param;"\
@@ -412,6 +422,7 @@
 //#define CONFIG_CMD_STARTDSP
 
 //use hardware sha2
+//disable to use armce
 //#define CONFIG_AML_HW_SHA2
 
 #define CONFIG_MULTI_DTB    1

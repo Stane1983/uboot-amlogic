@@ -1210,6 +1210,7 @@ static const void *boot_get_kernel(cmd_tbl_t *cmdtp, int flag, int argc,
 	const char	*fit_uname_config = NULL;
 	const char	*fit_uname_kernel = NULL;
 	char *avb_s;
+	int genimg_format;
 	avb_s = env_get("avb2");
 	printf("avb2: %s\n", avb_s);
 
@@ -1226,7 +1227,11 @@ static const void *boot_get_kernel(cmd_tbl_t *cmdtp, int flag, int argc,
 	/* check image type, for FIT images get FIT kernel node */
 	*os_data = *os_len = 0;
 	buf = map_sysmem(img_addr, 0);
-	switch (genimg_get_format(buf)) {
+	genimg_format = genimg_get_format(buf);
+#if defined(CONFIG_FIT_SIGNATURE)
+	genimg_format = IMAGE_FORMAT_FIT;
+#endif
+	switch (genimg_format) {
 #if defined(CONFIG_IMAGE_FORMAT_LEGACY)
 	case IMAGE_FORMAT_LEGACY:
 		printf("## Booting kernel from Legacy Image at %08lx ...\n",

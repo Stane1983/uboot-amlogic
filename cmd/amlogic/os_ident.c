@@ -39,7 +39,7 @@ static int do_os_ident(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 		case IMAGE_FORMAT_FIT:
 			debug_print("IMAGE_FORMAT_FIT format\n");
 			/* ignore fdt format, it's not an OS */
-			//env_set("os_type", "fdt");
+			env_set("os_type", "fdt");
 			break;
 		case IMAGE_FORMAT_ANDROID:
 			debug_print("IMAGE_FORMAT_ANDROID format\n");
