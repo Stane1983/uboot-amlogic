@@ -10,6 +10,12 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+typedef enum {
+	AFF_STATE_ON = 0,
+	AFF_STATE_OFF = 1,
+	AFF_STATE_ON_PENDING = 2
+} aff_info_state_t;
+
 unsigned int __cpu_online_mask;
 unsigned int __num_online_cpus;
 struct smp_boot_param smp_boot[NR_CPUS - 1];
@@ -32,7 +38,6 @@ void set_cpu_online(unsigned int cpu, bool online)
 
 	} else {
 		__cpu_online_mask &= ~(1 << cpu);
-		__num_online_cpus--;
 	}
 }
 
@@ -141,6 +146,21 @@ void secondary_start(void)
 
 	if (smp_boot[cpu].bootup)
 		smp_boot[cpu].bootup(smp_boot[cpu].param);
+}
+
+int is_secondary_core_power_on(void)
+{
+	unsigned int i = 0, pwsts = 0;
+
+	if (__num_online_cpus > NR_CPUS)
+		__num_online_cpus = NR_CPUS;
+
+	for (i = 1; i < __num_online_cpus; i++) {
+		if (psci_get_aff_info(i) != AFF_STATE_OFF)
+			pwsts |= (1 << i);
+	}
+
+	return pwsts;
 }
 
 int run_smp_function(unsigned int cpu, void (*func)(unsigned long arg),  unsigned long arg)

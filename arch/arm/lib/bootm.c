@@ -53,6 +53,7 @@
 DECLARE_GLOBAL_DATA_PTR;
 
 static struct tag *params;
+unsigned int timeout_cout = 500;
 
 static ulong get_sp(void)
 {
@@ -510,7 +511,9 @@ static void boot_jump_linux(bootm_headers_t *images, int flag)
 			void *res2);
 	int fake = (flag & BOOTM_STATE_OS_FAKE_GO);
 	unsigned long machid = 0xf81;
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	int waitcount = 0;
+#endif
 	kernel_entry = (void (*)(void *fdt_addr, void *res0, void *res1,
 				void *res2))images->ep;
 
@@ -570,8 +573,17 @@ static void boot_jump_linux(bootm_headers_t *images, int flag)
 		do_nonsec_virt_switch();
 
 #ifdef CONFIG_ARMV8_MULTIENTRY
-		while (cpu_online_status() & 0xfffffffe)
-			mdelay(1);
+		while (cpu_online_status() & 0xfffffffe) {
+			waitcount++;
+			if (waitcount >= timeout_cout) {
+				if (!is_secondary_core_power_on())
+					break;
+				else
+					waitcount = 0;
+			} else {
+				mdelay(1);
+			}
+		}
 #endif
 
 		update_os_arch_secondary_cores(images->os.arch);

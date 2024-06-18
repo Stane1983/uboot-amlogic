@@ -260,6 +260,7 @@ void __noreturn psci_system_reset(void);
 void __noreturn psci_system_off(void);
 int psci_cpu_on(unsigned int cpu, unsigned int entrypoint);
 void __noreturn psci_cpu_off(void);
+int psci_get_aff_info(unsigned int cpu);
 
 #ifdef CONFIG_ARMV8_PSCI
 extern char __secure_start[];
