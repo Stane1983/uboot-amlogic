@@ -18,4 +18,5 @@ void secondary_off(void);
 unsigned int cpu_online_status(void);
 int run_smp_function(unsigned int cpu, void (*func)(unsigned long arg),  unsigned long arg);
 unsigned int get_core_id(void);
+int is_secondary_core_power_on(void);
 #endif

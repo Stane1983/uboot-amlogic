@@ -165,3 +165,20 @@ void __noreturn psci_cpu_off(void)
 		;
 }
 
+int psci_get_aff_info(unsigned int cpu)
+{
+	struct pt_regs regs;
+
+	regs.regs[0] = ARM_PSCI_0_2_FN_AFFINITY_INFO;
+	regs.regs[1] = cpu;
+	regs.regs[2] = 0;
+	regs.regs[3] = 0;
+
+	if (use_smc_for_psci)
+		smc_call(&regs);
+	else
+		hvc_call(&regs);
+
+	return (int)regs.regs[0];
+}
+

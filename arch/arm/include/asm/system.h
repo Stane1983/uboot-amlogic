@@ -291,6 +291,7 @@ void __noreturn psci_system_reset2(u32 reset_level, u32 cookie);
 void __noreturn psci_system_off(void);
 int psci_cpu_on(unsigned int cpu, unsigned int entrypoint);
 void __noreturn psci_cpu_off(void);
+int psci_get_aff_info(unsigned int cpu);
 
 #ifdef CONFIG_ARMV8_PSCI
 extern char __secure_start[];
