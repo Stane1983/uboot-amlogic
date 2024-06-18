@@ -17,6 +17,8 @@
 #include <amlogic/android_vab.h>
 #include <amlogic/aml_rollback.h>
 #include <cli.h>
+#include <amlogic/store_wrapper.h>
+
 
 #if defined(CONFIG_EFUSE_OBJ_API) && defined(CONFIG_CMD_EFUSE)
 extern efuse_obj_field_t efuse_field;
@@ -358,6 +360,13 @@ static int write_bootloader(int i)
 	if (iret) {
 		errorP("Fail to read 0x%xB from part[%s] at offset 0\n",
 					BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET, partname);
+		free(buffer);
+		return -1;
+	}
+
+	iret = update_boot_hdr_4_s7d_reva(buffer, BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET, 0);
+	if (iret) {
+		printf("Failed to write s7d reva boot0\n");
 		free(buffer);
 		return -1;
 	}

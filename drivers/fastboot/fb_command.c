@@ -604,6 +604,13 @@ static void flash(char *cmd_parameter, char *response)
 		char *slot_name = NULL;
 		char partname[32] = {0};
 
+		ret = update_boot_hdr_4_s7d_reva(fastboot_buf_addr, image_size, 0);
+		if (ret) {
+			printf("Failed to write s7d reva boot0\n");
+			fastboot_fail("Failed to write s7d reva boot0", response);
+			return;
+		}
+
 		slot_name = env_get("active_slot");
 		if (slot_name && (strcmp(slot_name, "_a") == 0))
 			strcpy((char *)partname, "bootloader_a");
@@ -792,6 +799,14 @@ static void flash(char *cmd_parameter, char *response)
 		return;
 	} else if (strcmp(cmd_parameter, "dts") == 0) {
 		strcpy(name, "dtb");
+	} else if (!strcmp(cmd_parameter, "bootloader-boot0") ||
+		!strcmp(cmd_parameter, "bootloader-boot1")) {
+		ret = update_boot_hdr_4_s7d_reva(fastboot_buf_addr, image_size, 0);
+		if (ret) {
+			printf("Failed to write s7d reva boot0\n");
+			fastboot_fail("Failed to write s7d reva boot0-1", response);
+			return;
+		}
 	} else {
 		strncpy(name, cmd_parameter, 31);
 	}

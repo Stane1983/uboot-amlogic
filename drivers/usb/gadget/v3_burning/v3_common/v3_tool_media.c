@@ -337,7 +337,7 @@ static int _discrete_bootloader_write(u8 *dataBuf, unsigned int off, unsigned in
 	return 0;
 }
 
-static int update_boot_hdr_4_s7d_reva(u8 *data_buf, unsigned binsz, int isread)
+int update_boot_hdr_4_s7d_reva(u8 *data_buf, unsigned int binsz, int isread)
 {
 	const cpu_id_t cpuid = get_cpu_id();
 	const int familyid   = cpuid.family_id;

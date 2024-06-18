@@ -18,6 +18,8 @@ u64 store_logic_cap(const char* partName);
 int store_gpt_ops(size_t sz, void *buf, int is_wr);
 
 int store_boot_copy_enable(int id);
+
+int update_boot_hdr_4_s7d_reva(u8 *data_buf, unsigned int binsz, int isread);
 #ifdef CONFIG_CMD_MMC
 int usb_burn_erase_data(unsigned char init_flag);
 #else
