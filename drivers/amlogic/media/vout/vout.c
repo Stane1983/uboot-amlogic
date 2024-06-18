@@ -548,6 +548,15 @@ static const struct vout_set_s vout_sets_dft[] = {
 		.field_height      = 4320,
 		.viu_color_fmt     = VPP_CM_YUV,
 		.viu_mux           = VIU_MUX_ENCP,
+	},
+	{ /* 800x1280p53hz */
+		.name              = "800x1280p53hz",
+		.mode              = VMODE_800x1280p53hz,
+		.width             = 800,
+		.height            = 1280,
+		.field_height      = 1280,
+		.viu_color_fmt     = VPP_CM_YUV,
+		.viu_mux           = VIU_MUX_ENCP,
 	}
 };
 
