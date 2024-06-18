@@ -779,7 +779,8 @@ static int lcd_tcon_data_load(struct aml_lcd_drv_s *pdrv, unsigned char *data_bu
 			return -1;
 
 		init_header = (struct lcd_tcon_init_block_header_s *)data_buf;
-		core_reg_table = data_buf + sizeof(struct lcd_tcon_data_block_header_s);
+		core_reg_table = data_buf + block_header->header_size
+				+ block_header->ext_header_size;
 
 		if (tcon_conf->tcon_init_table_pre_proc)
 			tcon_conf->tcon_init_table_pre_proc(core_reg_table);
