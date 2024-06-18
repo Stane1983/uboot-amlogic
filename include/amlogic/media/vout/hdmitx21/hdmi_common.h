@@ -690,6 +690,27 @@ struct rx_cap {
 	u8 additional_vsif_num;
 };
 
+#define DRM_DISPLAY_MODE_LEN     32
+#define MAX_QMS_GROUP_NUM 8
+
+struct drm_vrr_mode_group {
+	__u32 brr_vic; /* brr vic for hdmitx */
+	__u32 width;
+	__u32 height;
+	__u32 vrr_min; /* QMS_VRR range, Unit: 0.01, for example, 2397, 2400, 5994, ... etc */
+	__u32 vrr_max;
+
+	/* the list will be limited to qms_vrr_min ~ max */
+	/* the TFR contains 13 items, but 2397 and 2400 will be merged to 2400's vic */
+	__u16 qms_vic_lists[MAX_QMS_GROUP_NUM];
+
+	__u32 game_vrr_min; /* GAME_VRR range */
+	__u32 game_vrr_max;
+
+	__u32 brr;
+	char modename[DRM_DISPLAY_MODE_LEN];
+};
+
 enum color_attr_type {
 	COLOR_ATTR_YCBCR444_12BIT = 0,
 	COLOR_ATTR_YCBCR422_12BIT,
@@ -927,5 +948,7 @@ enum hdcptx_oprcmd {
 	CONF_ENC_IDX, /* 0: get idx; 1: set idx */
 	HDMITX_GET_RTERM, /* get the rterm value */
 };
+
+#define HDMITX_DEBUG printf
 
 #endif
