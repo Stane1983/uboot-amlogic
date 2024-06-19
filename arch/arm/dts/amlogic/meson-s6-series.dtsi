@@ -379,8 +379,25 @@
 		};
 
 		saradc: adc {
-			compatible = "amlogic,meson-saradc";
-			reg = <0x0 0xfe026000 0x0 0xf0>;
+			compatible = "amlogic,saradc";
+			reg = <0x00 0xfe026000 0x00 0x84>;
+			amlogic,clock-frequency = <3000000>;
+			amlogic,test-channel = <7>;
+			amlogic,fifo-data-width = <16>;
+			amlogic,out-data-width = <10>;
+			/* Filter control */
+			amlogic,reg7-init = <0x00000c11>;
+			amlogic,reg8-init = <0x0280614d>;
+			/* Delay configure */
+			amlogic,reg3-init = <0x10a02403>;
+			amlogic,reg4-init = <0x001dd080>;
+			amlogic,reg5-init = <0x00103c0b>;
+			/* Control */
+			amlogic,reg6-init = <0x00000031>;
+			/* Set aux and extern vref */
+			amlogic,reg9-init = <0x0000e4e4>;
+			amlogic,reg10-init = <0x74543414>;
+			amlogic,reg11-init = <0xf4d4b494>;
 			status = "disabled";
 		};
 
