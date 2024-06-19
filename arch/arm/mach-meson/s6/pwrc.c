@@ -22,5 +22,6 @@ char *domain_name[] = {
 	"PDID_PCIE",
 	"PDID_NNA_4T",
 	"PDID_AUDIO",
-	"PDID_AUCPU"
+	"PDID_AUCPU",
+	"PDID_ADAPT"
 };

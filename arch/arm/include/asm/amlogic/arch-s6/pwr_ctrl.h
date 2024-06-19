@@ -28,10 +28,11 @@
 #define PDID_NNA_4T		16
 #define PDID_AUDIO		17
 #define PDID_AUCPU		18
+#define PDID_ADAPT		19
 
 #define PM_ETH			PDID_ETH
 
-#define PM_MAX		19
+#define PM_MAX		20
 
 unsigned long viu_init_psci_smc(void);
 unsigned long pwr_ctrl_psci_smc(unsigned int power_domain, bool power_control);
