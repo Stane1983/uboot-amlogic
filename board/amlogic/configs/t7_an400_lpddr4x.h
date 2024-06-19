@@ -618,7 +618,7 @@
 #define CONFIG_AML_CRYPTO_UBOOT   1
 
 #ifdef CONFIG_SCS
-	#define CONFIG_AML_SIGNED_UBOOT   1
+    #define CONFIG_AML_SIGNED_UBOOT   1
 #endif
 /* unify build for generate encrypted kernel image
    SRC : "board/amlogic/(board)/boot.img"
