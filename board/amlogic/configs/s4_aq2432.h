@@ -62,7 +62,7 @@
 	CONFIG_EXTRA_ENV_SETTINGS_BASE \
         "silent=1\0"\
         "otg_device=1\0" \
-        "panel_type=lcd_1\0" \
+	"connector0_type=HDMI-A-A\0" \
         "outputmode=1080p60hz\0" \
 	"hdmimode=none\0" \
         "hdmi_read_edid=0\0" \

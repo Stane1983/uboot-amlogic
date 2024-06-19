@@ -67,7 +67,7 @@
         "loadaddr_rtos=0x00080000\0"\
         "loadaddr_kernel=0x03080000\0"\
         "otg_device=1\0" \
-        "panel_type=lcd_1\0" \
+        "connector0_type=HDMI-A-A\0" \
         "outputmode=1080p60hz\0" \
 	"hdmimode=none\0" \
         "cvbsmode=576cvbs\0" \

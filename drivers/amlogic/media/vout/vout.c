@@ -30,6 +30,46 @@ static struct vout_conf_s *vout_conf;
 static int vout_conf_check(void);
 #include "vout_reg.h"
 
+struct cntor_name2val_s {
+	char *name;
+	unsigned short val;
+};
+
+static struct cntor_name2val_s vout_supported_cnt_list[] = {
+	{.name = "LVDS-A",   .val = 0x100},
+	{.name = "LVDS-B",   .val = 0x101},
+	{.name = "LVDS-C",   .val = 0x102},
+	{.name = "VBYONE-A", .val = 0x110},
+	{.name = "VBYONE-B", .val = 0x111},
+	{.name = "MIPI-A",   .val = 0x120},
+	{.name = "MIPI-B",   .val = 0x121},
+	{.name = "EDP-A",    .val = 0x130},
+	{.name = "EDP-B",    .val = 0x131},
+	{.name = "HDMI-A-A", .val = 0x300},
+	{.name = "HDMI-A-B", .val = 0x301},
+	{.name = "HDMI-A-C", .val = 0x302},
+	{.name = "CVBS",     .val = 0x400},
+};
+
+unsigned short vout_connector_check(unsigned char vout_index)
+{
+	char *cntor;
+	char cnt_name[20] = "connectorX_type";
+	unsigned char i;
+
+	cnt_name[9] = '0' + vout_index;
+	cntor = env_get(cnt_name);
+	if (!cntor)
+		return 0xffff;
+
+	for (i = 0; i < ARRAY_SIZE(vout_supported_cnt_list); i++) {
+		if (strcmp(cntor, vout_supported_cnt_list[i].name) == 0)
+			return vout_supported_cnt_list[i].val;
+	}
+
+	return 0xffff;
+}
+
 static const struct vout_set_s vout_sets_lcd[] = {
 	{ /* VMODE_LCD */
 		.name              = "panel",

@@ -42,50 +42,6 @@ __weak void vpp_viu3_matrix_update(int cfmt) {}
 static unsigned int vpp_viu1_cm_state = VPP_CM_INVALID;
 #endif
 
-struct cntor_name2val_s {
-	char *name;
-	unsigned short val;
-};
-
-#define CONNECTOR_HEAD_LCD      0x100
-#define CONNECTOR_HEAD_RESERVED 0x200
-#define CONNECTOR_HEAD_HDMI     0x300
-#define CONNECTOR_HEAD_CVBS     0x400
-struct cntor_name2val_s vout_supported_cnt_list[] = {
-	{.name = "LVDS-A",   .val = 0x100},
-	{.name = "LVDS-B",   .val = 0x101},
-	{.name = "LVDS-C",   .val = 0x102},
-	{.name = "VBYONE-A", .val = 0x110},
-	{.name = "VBYONE-B", .val = 0x111},
-	{.name = "MIPI-A",   .val = 0x120},
-	{.name = "MIPI-B",   .val = 0x121},
-	{.name = "EDP-A",    .val = 0x130},
-	{.name = "EDP-B",    .val = 0x131},
-	{.name = "HDMI-A-A", .val = 0x300},
-	{.name = "HDMI-A-B", .val = 0x301},
-	{.name = "HDMI-A-C", .val = 0x302},
-	{.name = "CVBS",     .val = 0x400},
-};
-
-static unsigned short vout_connector_check(unsigned char vout_index)
-{
-	char *cntor;
-	char cnt_name[20] = "connectorX_type";
-	unsigned char i;
-
-	cnt_name[9] = '0' + vout_index;
-	cntor = env_get(cnt_name);
-	if (!cntor)
-		return 0xffff;
-
-	for (i = 0; i < ARRAY_SIZE(vout_supported_cnt_list); i++) {
-		if (strcmp(cntor, vout_supported_cnt_list[i].name) == 0)
-			return vout_supported_cnt_list[i].val;
-	}
-
-	return 0xffff;
-}
-
 static void pr_connector_and_vmode(void)
 {
 	char *cntor, *opt_vmode;
@@ -285,7 +241,7 @@ int do_hpd_detect(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 
 	for (i = 0; i < 3; i++) {
 		on_connector_dev = vout_connector_check(i);
-		if ((on_connector_dev & 0xf00) == CONNECTOR_HEAD_HDMI) {
+		if ((on_connector_dev & CONNECTOR_DEV_MASK) == CONNECTOR_DEV_HDMI) {
 			if (i == 0) {
 				vout_hdmi_hpd(hpd_st);
 			} else if (i == 1) {
@@ -357,8 +313,8 @@ static int do_vout_prepare(cmd_tbl_t *cmdtp, int flag, int argc, char *const arg
 	if (argc != 2)
 		return CMD_RET_FAILURE;
 
-	switch (on_connector_dev & 0xf00) {
-	case CONNECTOR_HEAD_LCD:
+	switch (on_connector_dev & CONNECTOR_DEV_MASK) {
+	case CONNECTOR_DEV_LCD:
 #ifdef CONFIG_AML_LCD
 		mux_sel = aml_lcd_driver_outputmode_check(venc_index, mode);
 		venc_sel = mux_sel & 0xf;
@@ -371,7 +327,7 @@ static int do_vout_prepare(cmd_tbl_t *cmdtp, int flag, int argc, char *const arg
 		return CMD_RET_SUCCESS;
 #endif
 		break;
-	case CONNECTOR_HEAD_HDMI:
+	case CONNECTOR_DEV_HDMI:
 #ifdef CONFIG_AML_HDMITX
 		mux_sel = hdmi_outputmode_check(mode, 0);
 		venc_sel = mux_sel & 0xf;
@@ -388,7 +344,7 @@ static int do_vout_prepare(cmd_tbl_t *cmdtp, int flag, int argc, char *const arg
 		}
 #endif
 		break;
-	case CONNECTOR_HEAD_CVBS:
+	case CONNECTOR_DEV_CVBS:
 #ifdef CONFIG_AML_CVBS
 		mux_sel = cvbs_outputmode_check(mode);
 		venc_sel = mux_sel & 0xf;
@@ -447,8 +403,8 @@ static int do_vout_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv
 		}
 	}
 #endif
-	switch (on_connector_dev & 0xf00) {
-	case CONNECTOR_HEAD_LCD:
+	switch (on_connector_dev & CONNECTOR_DEV_MASK) {
+	case CONNECTOR_DEV_LCD:
 #ifdef CONFIG_AML_LCD
 		mux_sel = aml_lcd_driver_outputmode_check(venc_index, mode);
 		venc_sel = mux_sel & 0xf;
@@ -462,7 +418,7 @@ static int do_vout_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv
 		return CMD_RET_SUCCESS;
 #endif
 		break;
-	case CONNECTOR_HEAD_HDMI:
+	case CONNECTOR_DEV_HDMI:
 #ifdef CONFIG_AML_HDMITX
 		mux_sel = hdmi_outputmode_check(mode, 0);
 		venc_sel = mux_sel & 0xf;
@@ -483,7 +439,7 @@ static int do_vout_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv
 		}
 #endif
 		break;
-	case CONNECTOR_HEAD_CVBS:
+	case CONNECTOR_DEV_CVBS:
 #ifdef CONFIG_AML_CVBS
 		mux_sel = cvbs_outputmode_check(mode);
 		venc_sel = mux_sel & 0xf;
@@ -564,8 +520,8 @@ static int do_vout2_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const arg
 	if (argc != 2)
 		return CMD_RET_FAILURE;
 
-	switch (on_connector_dev & 0xf00) {
-	case CONNECTOR_HEAD_LCD:
+	switch (on_connector_dev & CONNECTOR_DEV_MASK) {
+	case CONNECTOR_DEV_LCD:
 #ifdef CONFIG_AML_LCD
 		mux_sel = aml_lcd_driver_outputmode_check(venc_index, mode);
 		venc_sel = mux_sel & 0xf;
@@ -576,7 +532,7 @@ static int do_vout2_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const arg
 		return CMD_RET_SUCCESS;
 #endif
 		break;
-	case CONNECTOR_HEAD_HDMI:
+	case CONNECTOR_DEV_HDMI:
 #ifdef CONFIG_AML_HDMITX
 		mux_sel = hdmi_outputmode_check(mode, 0);
 		venc_sel = mux_sel & 0xf;
@@ -589,7 +545,7 @@ static int do_vout2_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const arg
 		}
 #endif
 		break;
-	case CONNECTOR_HEAD_CVBS:
+	case CONNECTOR_DEV_CVBS:
 #ifdef CONFIG_AML_CVBS
 		mux_sel = cvbs_outputmode_check(mode);
 		venc_sel = mux_sel & 0xf;
@@ -629,8 +585,8 @@ static int do_vout2_prepare(cmd_tbl_t *cmdtp, int flag, int argc, char *const ar
 	if (argc != 2)
 		return CMD_RET_FAILURE;
 
-	switch (on_connector_dev & 0xf00) {
-	case CONNECTOR_HEAD_LCD:
+	switch (on_connector_dev & CONNECTOR_DEV_MASK) {
+	case CONNECTOR_DEV_LCD:
 #ifdef CONFIG_AML_LCD
 		mux_sel = aml_lcd_driver_outputmode_check(venc_index, mode);
 		venc_sel = mux_sel & 0xf;
@@ -642,7 +598,7 @@ static int do_vout2_prepare(cmd_tbl_t *cmdtp, int flag, int argc, char *const ar
 		return CMD_RET_SUCCESS;
 #endif
 		break;
-	case CONNECTOR_HEAD_HDMI:
+	case CONNECTOR_DEV_HDMI:
 #ifdef CONFIG_AML_HDMITX
 		mux_sel = hdmi_outputmode_check(mode, 0);
 		venc_sel = mux_sel & 0xf;
@@ -653,7 +609,7 @@ static int do_vout2_prepare(cmd_tbl_t *cmdtp, int flag, int argc, char *const ar
 		}
 #endif
 		break;
-	case CONNECTOR_HEAD_CVBS:
+	case CONNECTOR_DEV_CVBS:
 #ifdef CONFIG_AML_CVBS
 		mux_sel = cvbs_outputmode_check(mode);
 		venc_sel = mux_sel & 0xf;
@@ -726,8 +682,8 @@ static int do_vout3_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const arg
 	if (argc != 2)
 		return CMD_RET_FAILURE;
 
-	switch (on_connector_dev & 0xf00) {
-	case CONNECTOR_HEAD_LCD:
+	switch (on_connector_dev & CONNECTOR_DEV_MASK) {
+	case CONNECTOR_DEV_LCD:
 #ifdef CONFIG_AML_LCD
 		mux_sel = aml_lcd_driver_outputmode_check(venc_index, mode);
 		venc_sel = mux_sel & 0xf;
@@ -738,7 +694,7 @@ static int do_vout3_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const arg
 		return CMD_RET_SUCCESS;
 #endif
 		break;
-	case CONNECTOR_HEAD_HDMI:
+	case CONNECTOR_DEV_HDMI:
 #ifdef CONFIG_AML_HDMITX
 		mux_sel = hdmi_outputmode_check(mode, 0);
 		venc_sel = mux_sel & 0xf;
@@ -751,7 +707,7 @@ static int do_vout3_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const arg
 		}
 #endif
 		break;
-	case CONNECTOR_HEAD_CVBS:
+	case CONNECTOR_DEV_CVBS:
 #ifdef CONFIG_AML_CVBS
 		mux_sel = cvbs_outputmode_check(mode);
 		venc_sel = mux_sel & 0xf;
@@ -790,8 +746,8 @@ static int do_vout3_prepare(cmd_tbl_t *cmdtp, int flag, int argc, char *const ar
 	if (argc != 2)
 		return CMD_RET_FAILURE;
 
-	switch (on_connector_dev & 0xf00) {
-	case CONNECTOR_HEAD_LCD:
+	switch (on_connector_dev & CONNECTOR_DEV_MASK) {
+	case CONNECTOR_DEV_LCD:
 #ifdef CONFIG_AML_LCD
 		mux_sel = aml_lcd_driver_outputmode_check(venc_index, mode);
 		venc_sel = mux_sel & 0xf;
@@ -803,7 +759,7 @@ static int do_vout3_prepare(cmd_tbl_t *cmdtp, int flag, int argc, char *const ar
 		return CMD_RET_SUCCESS;
 #endif
 		break;
-	case CONNECTOR_HEAD_HDMI:
+	case CONNECTOR_DEV_HDMI:
 #ifdef CONFIG_AML_HDMITX
 		mux_sel = hdmi_outputmode_check(mode, 0);
 		venc_sel = mux_sel & 0xf;
@@ -814,7 +770,7 @@ static int do_vout3_prepare(cmd_tbl_t *cmdtp, int flag, int argc, char *const ar
 		}
 #endif
 		break;
-	case CONNECTOR_HEAD_CVBS:
+	case CONNECTOR_DEV_CVBS:
 #ifdef CONFIG_AML_CVBS
 		mux_sel = cvbs_outputmode_check(mode);
 		venc_sel = mux_sel & 0xf;
