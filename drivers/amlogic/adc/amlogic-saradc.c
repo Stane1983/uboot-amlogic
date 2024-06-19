@@ -115,27 +115,28 @@ enum amlogic_saradc_num_samples {
 static int amlogic_saradc_parse_dt(struct udevice *dev)
 {
 	struct amlogic_saradc *priv = dev_get_priv(dev);
+	ofnode node = dev_ofnode(dev);
 	int ret;
 
-	ret = ofnode_read_u32(dev_ofnode(dev), "amlogic,clock-frequency",
+	ret = ofnode_read_u32(node, "amlogic,clock-frequency",
 			      &priv->clock_frequency);
 	if (ret)
 		priv->clock_frequency = SARADC_DEFAULT_CLOCK_FREQUENCY;
 	debug("saradc clock-frequency: %u\n", priv->clock_frequency);
 
-	ret = ofnode_read_u32(dev_ofnode(dev), "amlogic,test-channel",
+	ret = ofnode_read_u32(node, "amlogic,test-channel",
 			      &priv->test_channel);
 	if (ret)
 		priv->test_channel = SARADC_DEFAULT_TEST_CHANNEL;
 	debug("saradc test-channel: %u\n", priv->test_channel);
 
-	ret = ofnode_read_u32(dev_ofnode(dev), "amlogic,fifo-data-width",
+	ret = ofnode_read_u32(node, "amlogic,fifo-data-width",
 			      &priv->fifo_data_width);
 	if (ret)
 		priv->fifo_data_width = SARADC_DEFAULT_FIFO_DATA_WIDTH;
 	debug("saradc fifo-data-width: %u\n", priv->fifo_data_width);
 
-	ret = ofnode_read_u32(dev_ofnode(dev), "amlogic,out-data-width",
+	ret = ofnode_read_u32(node, "amlogic,out-data-width",
 			      &priv->out_data_width);
 	if (ret)
 		priv->out_data_width = SARADC_DEFAULT_OUT_DATA_WIDTH;
@@ -203,27 +204,33 @@ static void amlogic_saradc_set_averaging(struct amlogic_saradc *priv, int addres
 			SARADC_REG2_AVG_MODE_MASK(address), val);
 }
 
-static void amlogic_saradc_hw_init(struct amlogic_saradc *priv)
+static void amlogic_saradc_hw_init(struct udevice *dev)
 {
-	/* Filter control */
-	writel(0x00000c21, priv->base + SARADC_REG7);
-	writel(0x0280614d, priv->base + SARADC_REG8);
+	struct amlogic_saradc *priv = dev_get_priv(dev);
+	ofnode node = dev_ofnode(dev);
+	char buf[32];
+	u32 reg_value;
+	int ret;
+	int index;
 
-	/* Delay configure */
-	writel(0x10a02403, priv->base + SARADC_REG3);
-	writel(0x00000080, priv->base + SARADC_REG4);
-	writel(0x0010340b, priv->base + SARADC_REG5);
-
-	/* Control */
-	writel(0x00000031, priv->base + SARADC_REG6);
-
-	/* Set aux and extern vref */
-	writel(0x0000e4e4, priv->base + SARADC_REG9);
-	writel(0x74543414, priv->base + SARADC_REG10);
-	writel(0xf4d4b494, priv->base + SARADC_REG11);
+	/* Load register configuration from DT [REG0 - REG14] */
+	for (index = 0; index <= 14; index++) {
+		/* Generate attribute names */
+		snprintf(buf, sizeof(buf), "amlogic,reg%d-init", index);
+		/* If it exists, configure it to the register */
+		ret = ofnode_read_u32(node, buf, &reg_value);
+		if (!ret)
+			writel(reg_value, priv->base + (index << 2));
+	}
 
 	/* ADC is disabled by default */
-	writel(0x00400000, priv->base + SARADC_REG0);
+	clrsetbits_le32(priv->base + SARADC_REG0,
+			SARADC_REG0_SAMPLING_STOP,
+			SARADC_REG0_SAMPLING_STOP);
+	clrsetbits_le32(priv->base + SARADC_REG0,
+			SARADC_REG0_SAMPLING_ENABLE, 0);
+	clrsetbits_le32(priv->base + SARADC_REG0,
+			SARADC_REG0_ADC_EN, 0);
 
 	/* Configure the averaging mode of the channels we use */
 	amlogic_saradc_set_averaging(priv, 0, MEDIAN_AVERAGING, EIGHT_SAMPLES);
@@ -508,7 +515,7 @@ int amlogic_saradc_probe(struct udevice *dev)
 	clk_enable(&priv->clk_gate);
 	udelay(5);
 
-	amlogic_saradc_hw_init(priv);
+	amlogic_saradc_hw_init(dev);
 
 	amlogic_saradc_hw_enable(priv);
 
