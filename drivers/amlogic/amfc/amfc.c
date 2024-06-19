@@ -15,7 +15,7 @@
 #include <asm/amlogic/arch/register.h>
 #include <amlogic/cpu_id.h>
 
-#define CONFIG_AMFC_TEST	0
+#define CONFIG_AMFC_TEST	1
 
 #ifdef CONFIG_AMFC_TEST
 #include <linux/zstd.h>
@@ -127,6 +127,32 @@ static int build_tables(unsigned int *table, unsigned long base, ssize_t size, i
 	return 0;
 }
 
+#define ADDR_SRC		0
+#define ADDR_DST		1
+
+static void set_up_addr(struct amfc_cmd_list *acl, unsigned long addr, int type)
+{
+	unsigned int low, high = 0;
+
+	low  = addr & 0xffffffff;
+	high = (addr >> 32) & 0xf;
+
+	switch (type) {
+	case ADDR_SRC:
+		acl->src_addr = low;
+		acl->control |= (high << 20);
+		break;
+
+	case ADDR_DST:
+		acl->dst_addr = low;
+		acl->control |= (high << 16);
+		break;
+
+	default:
+		break;
+	}
+}
+
 /*
  * src: source buffer that need decompress
  * dst: destination buffer that need store
@@ -161,13 +187,13 @@ int amfc_decompress(void *src, void *dst, ssize_t src_size, ssize_t dst_size)
 
 		tmp = (unsigned int *)(((unsigned long)src_table + PAGE_SIZE) & PAGE_MASK);
 		build_tables(tmp, (unsigned long)src, src_size, TABLE_SRC);
-		acl.src_addr = virt_to_phys(tmp);
+		set_up_addr(&acl, virt_to_phys(tmp), ADDR_SRC);
 		acl.src_scatter = 1;
 		if (log_en)
 			printf("%s, table_size:%d, src_table:%p, tmp:%p\n",
 				__func__, table_size, src_table, tmp);
 	} else {
-		acl.src_addr = virt_to_phys(src);
+		set_up_addr(&acl, virt_to_phys(src), ADDR_SRC);
 	}
 
 	if (page_table_mode && dst_size > PAGE_SIZE) {
@@ -179,13 +205,13 @@ int amfc_decompress(void *src, void *dst, ssize_t src_size, ssize_t dst_size)
 
 		tmp = (unsigned int *)(((unsigned long)dst_table + PAGE_SIZE) & PAGE_MASK);
 		build_tables(tmp, (unsigned long)dst, dst_size, TABLE_DST);
-		acl.dst_addr = virt_to_phys(tmp);
+		set_up_addr(&acl, virt_to_phys(tmp), ADDR_DST);
 		acl.dst_scatter = 1;
 		if (log_en)
 			printf("%s, table_size:%d, dst_table:%p, tmp:%p\n",
 				__func__, table_size, dst_table, tmp);
 	} else {
-		acl.dst_addr = virt_to_phys(dst);
+		set_up_addr(&acl, virt_to_phys(dst), ADDR_DST);
 	}
 	acl.algorithm = ALGORITHM_ZSTD;
 	acl.end       = 1;
@@ -278,13 +304,13 @@ int amfc_compress(void *src, void *dst, ssize_t src_size, ssize_t dst_size)
 
 		tmp = (unsigned int *)(((unsigned long)src_table + PAGE_SIZE) & PAGE_MASK);
 		build_tables(tmp, (unsigned long)src, src_size, TABLE_SRC);
-		acl.src_addr = virt_to_phys(tmp);
+		set_up_addr(&acl, virt_to_phys(tmp), ADDR_SRC);
 		acl.src_scatter = 1;
 		if (log_en)
 			printf("%s, table_size:%d, src_table:%p, tmp:%p\n",
 				__func__, table_size, src_table, tmp);
 	} else {
-		acl.src_addr = virt_to_phys(src);
+		set_up_addr(&acl, virt_to_phys(src), ADDR_SRC);
 	}
 
 	if (page_table_mode && dst_size > PAGE_SIZE) {
@@ -296,7 +322,7 @@ int amfc_compress(void *src, void *dst, ssize_t src_size, ssize_t dst_size)
 
 		tmp = (unsigned int *)(((unsigned long)dst_table + PAGE_SIZE) & PAGE_MASK);
 		build_tables(tmp, (unsigned long)dst, dst_size, TABLE_DST);
-		acl.dst_addr = virt_to_phys(tmp);
+		set_up_addr(&acl, virt_to_phys(tmp), ADDR_DST);
 		acl.dst_scatter = 1;
 	#ifdef CONFIG_AMFC_TEST
 		if (table_test_mask)
@@ -306,7 +332,7 @@ int amfc_compress(void *src, void *dst, ssize_t src_size, ssize_t dst_size)
 			printf("%s, table_size:%d, dst_table:%p, tmp:%p\n",
 				__func__, table_size, dst_table, tmp);
 	} else {
-		acl.dst_addr = virt_to_phys(dst);
+		set_up_addr(&acl, virt_to_phys(dst), ADDR_DST);
 	}
 	acl.algorithm = ALGORITHM_ZSTD;
 	acl.end       = 1;
