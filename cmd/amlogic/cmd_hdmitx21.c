@@ -48,21 +48,6 @@ static void dump_full_edid(const unsigned char *buf)
 	printf("\n");
 }
 
-static int do_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
-{
-	unsigned char st = 0;
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-
-	memset(edid_raw_buf, 0, ARRAY_SIZE(edid_raw_buf));
-
-	st = hdev->hwop.read_edid(edid_raw_buf);
-
-	if (!st)
-		printf("edid read failed\n");
-
-	return st;
-}
-
 static int do_rx_det(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {
 	unsigned char st = 0;
@@ -358,7 +343,6 @@ static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 		}
 		printf("set hdmitx VIC = %d CS = %d CD = %d\n",
 			hdev->vic, hdev->para->cs, hdev->para->cd);
-		qms_scene_pre_process(hdev);
 		/* currently, hdmi mode is always set, if
 		 * mode set abort/exit, need to add return
 		 * result of mode setting, so that vout
@@ -1201,6 +1185,10 @@ void scene_process(struct hdmitx_dev *hdev,
 
 	if (!hdev || !scene_output_info)
 		return;
+	// QMS BRR selection
+	// 120 or 60
+	// TX cap & Rx Cap
+	qms_scene_pre_process(hdev);
 	/* 1.read dolby vision mode from prop(maybe need to env) */
 	memset(&hdmidata, 0, sizeof(struct input_hdmi_data));
 	get_hdmi_data(hdev, &hdmidata);
@@ -1571,7 +1559,6 @@ static int do_efuse_show(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[
 
 static cmd_tbl_t cmd_hdmi_sub[] = {
 	U_BOOT_CMD_MKENT(hpd, 1, 1, do_hpd_detect, "", ""),
-	U_BOOT_CMD_MKENT(edid, 3, 1, do_edid, "", ""),
 	U_BOOT_CMD_MKENT(rx_det, 1, 1, do_rx_det, "", ""),
 	U_BOOT_CMD_MKENT(output, 3, 1, do_output, "", ""),
 	U_BOOT_CMD_MKENT(clkmsr, 3, 1, do_clkmsr, "", ""),

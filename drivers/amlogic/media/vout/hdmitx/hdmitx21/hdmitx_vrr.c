@@ -11,6 +11,7 @@
 #include <amlogic/auge_sound.h>
 #include <linux/arm-smccc.h>
 #include "hdmitx_drv.h"
+#include "../hdmitx_common/hdmitx_log.h"
 
 static const u16 vsync_tfr_table[TFR_MAX] = {
 	[TFR_QMSVRR_INACTIVE] = 0,
@@ -89,18 +90,173 @@ void vrr_init_qms_para(struct hdmitx_dev *hdev)
 	hdmitx_vrr_set_maxlncnt(timing->v_total);
 }
 
+static const enum hdmi_vic brr_list[] = {
+	HDMI_63_1920x1080p120_16x9,
+	HDMI_16_1920x1080p60_16x9,
+	HDMI_47_1280x720p120_16x9,
+	HDMI_4_1280x720p60_16x9,
+	HDMI_118_3840x2160p120_16x9,
+	HDMI_97_3840x2160p60_16x9,
+	HDMI_219_4096x2160p120_256x135,
+	HDMI_102_4096x2160p60_256x135,
+	HDMI_199_7680x4320p60_16x9,
+};
+
+static bool is_rx_supported_vic(enum hdmi_vic brr_vic)
+{
+	int i;
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
+	struct rx_cap *prxcap = &hdev->RXCap;
+
+	for (i = 0; i < prxcap->VIC_count; i++) {
+		if (brr_vic == prxcap->VIC[i])
+			return 1;
+	}
+
+	return 0;
+}
+
+/* refer to HDMI 2.1 Sink Capability Indication for QMS/GAME VRR */
+/* brr_vfreq unit: 100    23.976Hz -> 2397 */
+static void calc_vrr_range(struct rx_cap *prxcap, struct drm_vrr_mode_group *group, u32 brr_vfreq)
+{
+	bool qms;
+	bool qms_tfr_min;
+	bool qms_tfr_max;
+	bool vrrmin;
+	bool vrrmax;
+	u8 data;
+
+	if (!prxcap || !group)
+		return;
+
+	qms = !!prxcap->qms;
+	qms_tfr_min = !!prxcap->qms_tfr_min;
+	qms_tfr_max = !!prxcap->qms_tfr_max;
+	vrrmin = !!prxcap->vrr_min;
+	vrrmax = !!(prxcap->vrr_max >= 100);
+	data = (qms << 4) | (qms_tfr_min << 3) | (qms_tfr_max << 2) | (vrrmin << 1) | vrrmax;
+
+	switch (data) {
+	case 0x00:
+		group->vrr_min = 0;
+		group->vrr_max = 0;
+		group->game_vrr_min = 0;
+		group->game_vrr_max = 0;
+		break;
+	case 0x02:
+		group->vrr_min = 0;
+		group->vrr_max = 0;
+		group->game_vrr_min = prxcap->vrr_min;
+		group->game_vrr_max = brr_vfreq;
+		break;
+	case 0x03:
+		group->vrr_min = 0;
+		group->vrr_max = 0;
+		group->game_vrr_min = prxcap->vrr_min;
+		group->game_vrr_max = prxcap->vrr_max;
+		break;
+	case 0x10:
+		group->vrr_min = 48000 / 1001 * 100;
+		group->vrr_max = 60 * 100;
+		group->game_vrr_min = 0;
+		group->game_vrr_max = 0;
+		break;
+	case 0x14:
+		group->vrr_min = 48000 / 1001 * 100;
+		group->vrr_max = brr_vfreq;
+		group->game_vrr_min = 0;
+		group->game_vrr_max = 0;
+		break;
+	case 0x12:
+		group->vrr_min = prxcap->vrr_min * 100;
+		group->vrr_max = 60 * 100;
+		group->game_vrr_min = prxcap->vrr_min * 100;
+		group->game_vrr_max = brr_vfreq;
+		break;
+	case 0x16:
+		group->vrr_min = prxcap->vrr_min * 100;
+		group->vrr_max = brr_vfreq;
+		group->game_vrr_min = prxcap->vrr_min * 100;
+		group->game_vrr_max = brr_vfreq;
+		break;
+	case 0x13:
+		group->vrr_min = prxcap->vrr_min * 100;
+		group->vrr_max = 60 * 100;
+		group->game_vrr_min = prxcap->vrr_min * 100;
+		group->game_vrr_max = prxcap->vrr_max * 100;
+		break;
+	case 0x17:
+		group->vrr_min = prxcap->vrr_min * 100;
+		group->vrr_max = prxcap->vrr_max * 100;
+		group->game_vrr_min = prxcap->vrr_min * 100;
+		group->game_vrr_max = prxcap->vrr_max * 100;
+		break;
+	case 0x18:
+		group->vrr_min = 24000 / 1001 * 100;
+		group->vrr_max = 60 * 100;
+		group->game_vrr_min = 0;
+		group->game_vrr_max = 0;
+		break;
+	case 0x1c:
+		group->vrr_min = 24000 / 1001 * 100;
+		group->vrr_max = brr_vfreq;
+		group->game_vrr_min = 0;
+		group->game_vrr_max = 0;
+		break;
+	case 0x1a:
+		group->vrr_min = 24000 / 1001 * 100;
+		group->vrr_max = 60 * 100;
+		group->game_vrr_min = prxcap->vrr_min * 100;
+		group->game_vrr_max = brr_vfreq;
+		break;
+	case 0x1e:
+		group->vrr_min = 24000 / 1001 * 100;
+		group->vrr_max = brr_vfreq;
+		group->game_vrr_min = prxcap->vrr_min * 100;
+		group->game_vrr_max = brr_vfreq;
+		break;
+	case 0x1b:
+		group->vrr_min = 24000 / 1001 * 100;
+		group->vrr_max = 60 * 100;
+		group->game_vrr_min = prxcap->vrr_min * 100;
+		group->game_vrr_max = prxcap->vrr_max * 100;
+		break;
+	case 0x1f:
+		group->vrr_min = 24000 / 1001 * 100;
+		group->vrr_max = prxcap->vrr_max * 100;
+		group->game_vrr_min = prxcap->vrr_min * 100;
+		group->game_vrr_max = prxcap->vrr_max * 100;
+		break;
+	default:
+		group->vrr_min = 0;
+		group->vrr_max = 0;
+		group->game_vrr_min = 0;
+		group->game_vrr_max = 0;
+		HDMITX_DEBUG("%s invalid VRR capability\n", __func__);
+		HDMITX_DEBUG("qms %d qms_tfr_min/max %d %d vrr_min/max %d %d\n",
+			     qms, qms_tfr_min, qms_tfr_max, prxcap->vrr_min, prxcap->vrr_max);
+		break;
+	}
+}
+
+// TODO
+int get_tx_max_vfreq(void)
+{
+	/* by default as 60 */
+	return 60 * 100;
+}
+
 /* find current VIC's BRR VIC */
 enum hdmi_vic hdmitx_find_brr_vic(enum hdmi_vic vic)
 {
 	int i;
+	enum hdmi_vic brr_vic = HDMI_UNKNOWN;
 	const struct hdmi_timing *vic_timing = NULL;
 	const struct hdmi_timing *brr_timing = NULL;
-	enum hdmi_vic brr_vics[] = {
-		HDMI_16_1920x1080p60_16x9,
-		HDMI_4_1280x720p60_16x9,
-		HDMI_97_3840x2160p60_16x9,
-		HDMI_102_4096x2160p60_256x135,
-	};
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
+	struct rx_cap *prxcap = &hdev->RXCap;
+	struct drm_vrr_mode_group test_group = {0};
 
 	vic_timing = hdmitx21_gettiming_from_vic(vic);
 	if (!vic_timing) {
@@ -108,16 +264,22 @@ enum hdmi_vic hdmitx_find_brr_vic(enum hdmi_vic vic)
 		return HDMI_UNKNOWN;
 	}
 
-	for (i = 0; i < ARRAY_SIZE(brr_vics); i++) {
-		if (vic == brr_vics[i])
-			return vic;
-		brr_timing = hdmitx21_gettiming_from_vic(brr_vics[i]);
+	for (i = 0; i < ARRAY_SIZE(brr_list); i++) {
+		if (vic == brr_list[i])
+			brr_vic = vic;
+		brr_timing = hdmitx21_gettiming_from_vic(brr_list[i]);
 		if (!brr_timing)
-			return HDMI_UNKNOWN;
+			brr_vic = HDMI_UNKNOWN;
 		if (vic_timing->h_active == brr_timing->h_active &&
-		    vic_timing->v_active == brr_timing->v_active)
-			return brr_vics[i];
+			vic_timing->v_active == brr_timing->v_active)
+			brr_vic = brr_list[i];
 	}
 
-	return HDMI_UNKNOWN;
+	if (!is_rx_supported_vic(brr_vic))
+		brr_vic = HDMI_UNKNOWN;
+
+	calc_vrr_range(prxcap, &test_group, get_tx_max_vfreq());
+	// TODO for 120
+
+	return brr_vic;
 }
