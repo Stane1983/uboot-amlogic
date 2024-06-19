@@ -57,6 +57,7 @@ int compare_avbkey_with_fipkey(const uint8_t* public_key_data, size_t public_key
 void *memory_addr;
 AvbOps avb_ops_;
 int run_in_recovery;
+int recovery_from_memory;
 
 struct avb_part {
 	char name[16];
@@ -1192,7 +1193,11 @@ int avb_verify(AvbSlotVerifyData** out_data)
 		if (run_in_recovery) {
 			flags |= AVB_SLOT_VERIFY_FLAGS_NO_VBMETA_PARTITION;
 			memset(requested_partitions, 0, sizeof(requested_partitions));
-			requested_partitions[0] = "recovery";
+			if (recovery_from_memory)
+				requested_partitions[0] = "recovery-memory";
+			else
+				requested_partitions[0] = "recovery";
+			recovery_from_memory = 0;
 		}
 	}
 
@@ -1301,9 +1306,6 @@ static int do_avb_persist(cmd_tbl_t *cmdtp, int flag, int argc, char * const arg
 
 static int do_avb_verify_memory(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	AvbSlotVerifyResult result = AVB_SLOT_VERIFY_RESULT_OK;
-	AvbSlotVerifyData *out_data = NULL;
-	const char *requested_partitions[2] = {NULL, NULL};
 	char *avb_s = NULL;
 
 	if (argc != 3)
@@ -1317,26 +1319,12 @@ static int do_avb_verify_memory(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 	if (!avb_s || !strcmp(avb_s, "0"))
 		return CMD_RET_SUCCESS;
 
-	if (!strcmp(argv[1], "recovery"))
-		requested_partitions[0] = "recovery-memory";
-	else
+	if (strcmp(argv[1], "recovery"))
 		return CMD_RET_FAILURE;
 
 	memory_addr = (void *)simple_strtoul(argv[2], NULL, 16);
-
-	AvbSlotVerifyFlags flags = AVB_SLOT_VERIFY_FLAGS_NO_VBMETA_PARTITION;
-
-	avb_init();
-	result = avb_slot_verify(&avb_ops_, requested_partitions, "",
-				 flags,
-				 AVB_HASHTREE_ERROR_MODE_RESTART_AND_INVALIDATE, &out_data);
-
-	avb_slot_verify_data_free(out_data);
-
-	if (result == AVB_SLOT_VERIFY_RESULT_OK)
-		return CMD_RET_SUCCESS;
-	else
-		return CMD_RET_FAILURE;
+	recovery_from_memory = 1;
+	return CMD_RET_SUCCESS;
 }
 
 static int do_avb_recovery(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
