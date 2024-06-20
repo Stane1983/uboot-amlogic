@@ -978,9 +978,19 @@ struct dccd_info_s *get_dccd_info(void)
 	return &dccd_info;
 }
 
-unsigned int is_dccd_flow(void)
+unsigned int get_dccd_crc(void)
 {
-	return dccd_info.is_dccd_flow;
+	return dccd_info.checksum;
+}
+
+unsigned int is_support_dccd(void)
+{
+	return dccd_info.is_dccd;
+}
+
+unsigned int dccd_has_tcon_file(void)
+{
+	return dccd_info.has_tcon_file;
 }
 
 static int handle_lcd_ext_basic(struct lcd_ext_attr_s *p_attr)

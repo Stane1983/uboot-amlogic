@@ -127,6 +127,7 @@ struct tcon_mem_map_table_s {
 struct lcd_tcon_local_cfg_s {
 	char bin_ver[TCON_BIN_VER_LEN];
 	unsigned char *cur_core_reg_table;
+	unsigned char is_dccd_flow;
 };
 
 /* **********************************
