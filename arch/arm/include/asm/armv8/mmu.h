@@ -8,6 +8,7 @@
 #define _ASM_ARMV8_MMU_H_
 
 #include <linux/const.h>
+#include <asm/arch/cpu.h>
 
 /*
  * block/section address mask and size definitions.
@@ -140,12 +141,14 @@ struct mm_region bd_mem_map[] = {
 		.size = 0x80000000UL,
 		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
 			PTE_BLOCK_INNER_SHARE
+#ifndef CONFIG_SKIP_UPDATE_MMUMAP
 	}, {
 		.virt = 0x00000000UL,
 		.phys = 0x00000000UL,
 		.size = 0xe0000000UL,
 		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
 			PTE_BLOCK_INNER_SHARE
+#endif
 	}, {
 		.virt = 0xe0000000UL,
 		.phys = 0xe0000000UL,

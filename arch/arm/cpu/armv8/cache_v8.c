@@ -14,6 +14,7 @@
 #include <linux/sizes.h>
 #include <asm/arch/register.h>
 #include <asm/io.h>
+#include <asm/arch/cpu.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -363,6 +364,7 @@ static int count_required_pts(u64 addr, int level, u64 maxaddr)
 	return r;
 }
 
+#ifndef CONFIG_SKIP_UPDATE_MMUMAP
 /* update mmu map from bl2 ddr auto detect size */
 int mmu_map_update(void)
 {
@@ -403,6 +405,7 @@ int mmu_map_update(void)
 #endif
 	return 0;
 }
+#endif
 
 /* Returns the estimated required size of all page tables */
 __weak u64 get_page_table_size(void)
@@ -412,7 +415,9 @@ __weak u64 get_page_table_size(void)
 	u64 va_bits;
 	int start_level = 0;
 
+#ifndef CONFIG_SKIP_UPDATE_MMUMAP
 	mmu_map_update();
+#endif
 
 	get_tcr(0, NULL, &va_bits);
 	if (va_bits < 39)
