@@ -19,8 +19,12 @@
 #include <amlogic/storage.h>
 #include <amlogic/cpu_id.h>
 
+/* use STORAGE_ROUND_UP, y must be power of 2 */
+#define SPINOR_ROUND_UP_IF_UNALIGN(x, y) ((x) = (((x) + (y) - 1) & (~(y - 1))))
+
 /* Hard code, all partitions are aligned in block size, fast erasing */
 #define SPINOR_ALIGNED_SIZE		(64 * 1024)
+
 extern struct storage_startup_parameter g_ssp;
 
 /* do not use default value, rewrite this function in the board file */
@@ -62,8 +66,12 @@ static int _spinor_add_partitions(struct mtd_info *mtd,
 #ifdef	BOARD_SNOR_DDR_PARAM_SIZE
 		temp[0].size += BOARD_SNOR_DDR_PARAM_SIZE;
 #endif
-		if (temp[0].size % SPINOR_ALIGNED_SIZE)
-			WARN_ON(1);
+
+		if (temp[0].size % SPINOR_ALIGNED_SIZE) {
+			pr_info("%s %d \"%s\" size auto align to block size\n",
+				__func__, __LINE__, temp[0].name);
+			SPINOR_ROUND_UP_IF_UNALIGN(temp[0].size, SPINOR_ALIGNED_SIZE);
+		}
 
 		off = temp[0].offset + temp[0].size;
 		parts_nm = &temp[1];
@@ -94,13 +102,13 @@ static int _spinor_add_partitions(struct mtd_info *mtd,
 		}
 		parts_nm[i].name = parts[i].name;
 		parts_nm[i].offset = off;
-		if (parts[i].size % SPINOR_ALIGNED_SIZE) {
-			pr_err("%s %d \"%s\" size auto align to block size\n",
-				__func__, __LINE__, parts[i].name);
-			parts_nm[i].size += parts[i].size % SPINOR_ALIGNED_SIZE;
-		}
 		/* it's ok "+=" here because size has been set to 0 */
 		parts_nm[i].size += parts[i].size;
+		if (parts_nm[i].size % SPINOR_ALIGNED_SIZE) {
+			pr_info("%s %d \"%s\" size auto align to block size\n",
+				__func__, __LINE__, parts[i].name);
+			SPINOR_ROUND_UP_IF_UNALIGN(parts_nm[i].size, SPINOR_ALIGNED_SIZE);
+		}
 		off += parts_nm[i].size;
 		if (i == (nbparts - 1))
 			parts_nm[i].size = mtd->size - off;
