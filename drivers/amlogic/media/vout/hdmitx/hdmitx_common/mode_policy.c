@@ -737,6 +737,11 @@ static bool hdr_scene_process(struct meson_policy_in *input,
         return false;
     }
 
+    if (strstr(input->con_info.ubootenv_colorattr, "8bit") != NULL) {
+        input->con_info.is_bestcolorspace = true;
+        SYS_LOGI("Do not output 8bit hdr. Change to auto color space");
+    }
+
     SYS_LOGI("policy:%d is_bestcolorspace:%d state:%d\n", policy, input->con_info.is_bestcolorspace, input->state);
 
     /*
