@@ -1292,18 +1292,28 @@ void hdr_scene_process(struct input_hdmi_data *hdmi_data,
 	int colorList_length = 0;
 	int j = 0;
 	bool need_best_mode_policy = false;
+	bool is_best_color = is_best_color_space();
+	char *user_color = env_get("user_colorattribute");
 
 	if (!hdmi_data || !output_info)
 		return;
-
+	/* if switch color depth to 8bit in the menu, and then switch to
+	 * "always HDR", it will actually not enable HDR as color depth
+	 * is 8bit. Per suggestion of G, HDR control take precedence over
+	 * the user selected color depth. so need to select auto best color.
+	 * note that it only applicates to android U.
+	 */
+	if (user_color && strstr(user_color, "8bit")) {
+		is_best_color = true;
+		printf("8bit color with hdr scene, now change to best color space/depth\n");
+	}
 	/* if ubootenv_hdmimode is not supported, run best policy */
 	if (!hdmi_sink_disp_mode_sup(hdmi_data, hdmi_data->ubootenv_hdmimode) ||
 		is_best_outputmode())
 		need_best_mode_policy = true;
 
-	if (need_best_mode_policy && is_best_color_space()) {
+	if (need_best_mode_policy && is_best_color) {
 		/* case1: both best mode/color are selected */
-
 		find = find_hdr_prefer_mode(hdmi_data, output_info);
 		if (!find)
 			printf("%s not find hdr support mode\n", __func__);
@@ -1333,7 +1343,7 @@ void hdr_scene_process(struct input_hdmi_data *hdmi_data,
 				break;
 			}
 		}
-	} else if (is_best_color_space()) {
+	} else if (is_best_color) {
 		/* case3: is_best_mode is disabled, use user selected mode */
 
 		if (!strcmp(hdmi_data->ubootenv_hdmimode, MODE_4K2K60HZ) ||
@@ -1393,7 +1403,7 @@ void hdr_scene_process(struct input_hdmi_data *hdmi_data,
 	}
 
 	/* not find support mode and colorspace and try best policy */
-	if (!find && !(need_best_mode_policy && is_best_color_space())) {
+	if (!find && !(need_best_mode_policy && is_best_color)) {
 		/* for case2/3/4, if not find proper mode/cs,
 		 * use best policy enable case
 		 */
