@@ -59,7 +59,7 @@
 #define LCD_TCON_INIT_BIN_VERSION_SIZE          8
 
 /* tcon data control define */
-/* block_ctrl for normal tcon data */
+/* block_ctrl for normal tcon data, bit match */
 #define LCD_TCON_DATA_CTRL_FLAG_MULTI           0x01
 #define LCD_TCON_DATA_CTRL_FLAG_DMA             0x02
 #define is_block_ctrl_multi(block_ctrl) ((block_ctrl) & LCD_TCON_DATA_CTRL_FLAG_MULTI)
@@ -74,6 +74,8 @@
 #define LCD_TCON_DATA_CTRL_MULTI_VFREQ          0x01
 #define LCD_TCON_DATA_CTRL_MULTI_BL_LEVEL       0x11
 #define LCD_TCON_DATA_CTRL_MULTI_BL_PWM_DUTY    0x12
+#define LCD_TCON_DATA_CTRL_MULTI_RESOLUTION     0x21
+#define LCD_TCON_DATA_CTRL_MULTI_MAX            0xff
 
 struct lcd_tcon_init_block_header_s {
 	unsigned int crc32;

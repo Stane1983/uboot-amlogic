@@ -319,15 +319,16 @@ void lcd_tcon_dbg_check(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timing_s *
 		printf("lcd tcon setting check: PASS\n");
 }
 
-static int lcd_tcon_data_multi_match_policy_check(struct aml_lcd_drv_s *pdrv,
-		struct lcd_tcon_data_part_ctrl_s *ctrl_part, unsigned char *p)
+static int lcd_tcon_data_multi_match_check(struct aml_lcd_drv_s *pdrv,
+					   struct lcd_tcon_data_part_ctrl_s *ctrl_part,
+					   unsigned char *p)
 {
 #ifdef CONFIG_AML_LCD_BACKLIGHT
 	struct aml_bl_drv_s *bldrv;
 	struct bl_pwm_config_s *bl_pwm = NULL;
 #endif
-	unsigned int data_byte, data_cnt, data, min, max;
-	unsigned int temp, j, k;
+	unsigned int data_byte, data_cnt, data = 0, min = 0, max = 0, hsize = 0, vsize = 0;
+	unsigned int temp, j, k = 0;
 
 	if (!ctrl_part)
 		return -1;
@@ -336,11 +337,6 @@ static int lcd_tcon_data_multi_match_policy_check(struct aml_lcd_drv_s *pdrv,
 
 	data_byte = ctrl_part->data_byte_width;
 	data_cnt = ctrl_part->data_cnt;
-
-	k = 0;
-	data = 0;
-	min = 0;
-	max = 0;
 
 	switch (ctrl_part->ctrl_method) {
 	case LCD_TCON_DATA_CTRL_MULTI_VFREQ:
@@ -355,6 +351,24 @@ static int lcd_tcon_data_multi_match_policy_check(struct aml_lcd_drv_s *pdrv,
 			max |= (p[k + j] << (j * 8));
 		if (temp < min || temp > max)
 			goto lcd_tcon_data_multi_match_check_exit;
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDPR("%s: vfreq %d-%d hit: %d\n", __func__, min, max, temp);
+		break;
+	case LCD_TCON_DATA_CTRL_MULTI_RESOLUTION:
+		if (data_cnt != 2)
+			goto lcd_tcon_data_multi_match_check_err_data_cnt;
+
+		for (j = 0; j < data_byte; j++)
+			hsize |= (p[k + j] << (j * 8));
+		k += data_byte;
+		for (j = 0; j < data_byte; j++)
+			vsize |= (p[k + j] << (j * 8));
+
+		if (pdrv->config.timing.act_timing.h_active != hsize ||
+		    pdrv->config.timing.act_timing.v_active != vsize)
+			goto lcd_tcon_data_multi_match_check_exit;
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDPR("%s: resolution %dx%d hit\n", __func__, hsize, vsize);
 		break;
 	case LCD_TCON_DATA_CTRL_MULTI_BL_LEVEL:
 #ifdef CONFIG_AML_LCD_BACKLIGHT
@@ -372,6 +386,8 @@ static int lcd_tcon_data_multi_match_policy_check(struct aml_lcd_drv_s *pdrv,
 			max |= (p[k + j] << (j * 8));
 		if (temp < min || temp > max)
 			goto lcd_tcon_data_multi_match_check_exit;
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDPR("%s: bl_level %d-%d hit: %d\n", __func__, min, max, temp);
 #endif
 		break;
 	case LCD_TCON_DATA_CTRL_MULTI_BL_PWM_DUTY:
@@ -410,6 +426,10 @@ static int lcd_tcon_data_multi_match_policy_check(struct aml_lcd_drv_s *pdrv,
 		temp = bl_pwm->pwm_duty;
 		if (temp < min || temp > max)
 			goto lcd_tcon_data_multi_match_check_exit;
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+			LCDPR("%s: bl_pwm[%d] duty %d-%d hit: %d\n",
+			      __func__, bl_pwm->index, min, max, temp);
+		}
 #endif
 		break;
 	case LCD_TCON_DATA_CTRL_DEFAULT:
@@ -468,8 +488,7 @@ int lcd_tcon_data_multi_match_find(struct aml_lcd_drv_s *pdrv, unsigned char *da
 					 ctrl_part->data_byte_width);
 			if (!(ctrl_part->ctrl_data_flag & LCD_TCON_DATA_CTRL_FLAG_MULTI))
 				break;
-			ret = lcd_tcon_data_multi_match_policy_check(pdrv,
-				ctrl_part, (p + offset));
+			ret = lcd_tcon_data_multi_match_check(pdrv, ctrl_part, (p + offset));
 			if (ret == 0)
 				return 0;
 			if (ret == 1)
