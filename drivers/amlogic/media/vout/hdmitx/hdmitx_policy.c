@@ -1344,9 +1344,14 @@ void hdr_scene_process(struct input_hdmi_data *hdmi_data,
 	const char **colorList = NULL;
 	int colorList_length = 0;
 	int j = 0;
+	bool need_best_policy = false;
 
 	if (!hdmi_data || !output_info)
 		return;
+
+	/* if ubootenv_hdmimode is not supported, run best policy */
+	if (!hdmi_sink_disp_mode_sup(hdmi_data, hdmi_data->ubootenv_hdmimode))
+		need_best_policy = true;
 
 	if (is_best_outputmode() && is_best_color_space()) {
 		/* case1: both best mode/color are selected */
@@ -1354,7 +1359,7 @@ void hdr_scene_process(struct input_hdmi_data *hdmi_data,
 		find = find_hdr_prefer_mode(hdmi_data, output_info);
 		if (!find)
 			printf("%s not find hdr support mode\n", __func__);
-	} else if (is_best_outputmode()) {
+	} else if (is_best_outputmode() || need_best_policy) {
 		/* case2: best_color_space is disabled, use user selected color */
 
 		if (is_framerate_priority()) {
