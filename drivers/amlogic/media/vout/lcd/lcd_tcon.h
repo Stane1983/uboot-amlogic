@@ -209,7 +209,8 @@ void lcd_tcon_lut_dma_enable_t5m(struct aml_lcd_drv_s *pdrv);
 void lcd_tcon_lut_dma_disable_t5m(struct aml_lcd_drv_s *pdrv);
 
 void lcd_tcon_init_data_version_update(char *data_buf);
-int lcd_tcon_data_multi_match_find(struct aml_lcd_drv_s *pdrv, unsigned char *data_buf);
+int lcd_tcon_data_multi_init_check(struct aml_lcd_drv_s *pdrv,
+				   struct lcd_tcon_data_part_ctrl_s *ctrl_part, unsigned char *p);
 int lcd_tcon_spi_data_probe(struct aml_lcd_drv_s *pdrv);
 void lcd_tcon_debug_probe(struct aml_lcd_drv_s *pdrv);
 

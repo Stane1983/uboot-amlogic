@@ -319,9 +319,9 @@ void lcd_tcon_dbg_check(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timing_s *
 		printf("lcd tcon setting check: PASS\n");
 }
 
-static int lcd_tcon_data_multi_match_check(struct aml_lcd_drv_s *pdrv,
-					   struct lcd_tcon_data_part_ctrl_s *ctrl_part,
-					   unsigned char *p)
+int lcd_tcon_data_multi_init_check(struct aml_lcd_drv_s *pdrv,
+				   struct lcd_tcon_data_part_ctrl_s *ctrl_part,
+				   unsigned char *p)
 {
 #ifdef CONFIG_AML_LCD_BACKLIGHT
 	struct aml_bl_drv_s *bldrv;
@@ -332,8 +332,6 @@ static int lcd_tcon_data_multi_match_check(struct aml_lcd_drv_s *pdrv,
 
 	if (!ctrl_part)
 		return -1;
-	if (!(ctrl_part->ctrl_data_flag & LCD_TCON_DATA_CTRL_FLAG_MULTI))
-		return -1;
 
 	data_byte = ctrl_part->data_byte_width;
 	data_cnt = ctrl_part->data_cnt;
@@ -341,7 +339,7 @@ static int lcd_tcon_data_multi_match_check(struct aml_lcd_drv_s *pdrv,
 	switch (ctrl_part->ctrl_method) {
 	case LCD_TCON_DATA_CTRL_MULTI_VFREQ:
 		if (data_cnt != 2)
-			goto lcd_tcon_data_multi_match_check_err_data_cnt;
+			goto lcd_tcon_data_multi_init_check_err_data_cnt;
 		temp = pdrv->config.timing.act_timing.frame_rate;
 
 		for (j = 0; j < data_byte; j++)
@@ -350,13 +348,13 @@ static int lcd_tcon_data_multi_match_check(struct aml_lcd_drv_s *pdrv,
 		for (j = 0; j < data_byte; j++)
 			max |= (p[k + j] << (j * 8));
 		if (temp < min || temp > max)
-			goto lcd_tcon_data_multi_match_check_exit;
+			goto lcd_tcon_data_multi_init_check_exit;
 		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 			LCDPR("%s: vfreq %d-%d hit: %d\n", __func__, min, max, temp);
 		break;
 	case LCD_TCON_DATA_CTRL_MULTI_RESOLUTION:
 		if (data_cnt != 2)
-			goto lcd_tcon_data_multi_match_check_err_data_cnt;
+			goto lcd_tcon_data_multi_init_check_err_data_cnt;
 
 		for (j = 0; j < data_byte; j++)
 			hsize |= (p[k + j] << (j * 8));
@@ -366,7 +364,7 @@ static int lcd_tcon_data_multi_match_check(struct aml_lcd_drv_s *pdrv,
 
 		if (pdrv->config.timing.act_timing.h_active != hsize ||
 		    pdrv->config.timing.act_timing.v_active != vsize)
-			goto lcd_tcon_data_multi_match_check_exit;
+			goto lcd_tcon_data_multi_init_check_exit;
 		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 			LCDPR("%s: resolution %dx%d hit\n", __func__, hsize, vsize);
 		break;
@@ -374,18 +372,18 @@ static int lcd_tcon_data_multi_match_check(struct aml_lcd_drv_s *pdrv,
 #ifdef CONFIG_AML_LCD_BACKLIGHT
 		bldrv = aml_bl_get_driver(pdrv->index);
 		if (!bldrv)
-			goto lcd_tcon_data_multi_match_check_err_type;
+			goto lcd_tcon_data_multi_init_check_err_type;
 		temp = bldrv->level;
 
 		if (data_cnt != 2)
-			goto lcd_tcon_data_multi_match_check_err_data_cnt;
+			goto lcd_tcon_data_multi_init_check_err_data_cnt;
 		for (j = 0; j < data_byte; j++)
 			min |= (p[k + j] << (j * 8));
 		k += data_byte;
 		for (j = 0; j < data_byte; j++)
 			max |= (p[k + j] << (j * 8));
 		if (temp < min || temp > max)
-			goto lcd_tcon_data_multi_match_check_exit;
+			goto lcd_tcon_data_multi_init_check_exit;
 		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 			LCDPR("%s: bl_level %d-%d hit: %d\n", __func__, min, max, temp);
 #endif
@@ -394,10 +392,10 @@ static int lcd_tcon_data_multi_match_check(struct aml_lcd_drv_s *pdrv,
 #ifdef CONFIG_AML_LCD_BACKLIGHT
 		bldrv = aml_bl_get_driver(pdrv->index);
 		if (!bldrv)
-			goto lcd_tcon_data_multi_match_check_err_type;
+			goto lcd_tcon_data_multi_init_check_err_type;
 
 		if (data_cnt != 3)
-			goto lcd_tcon_data_multi_match_check_err_data_cnt;
+			goto lcd_tcon_data_multi_init_check_err_data_cnt;
 		for (j = 0; j < data_byte; j++)
 			data |= (p[k + j] << (j * 8));
 		k += data_byte;
@@ -421,11 +419,11 @@ static int lcd_tcon_data_multi_match_check(struct aml_lcd_drv_s *pdrv,
 			break;
 		}
 		if (!bl_pwm)
-			goto lcd_tcon_data_multi_match_check_err_type;
+			goto lcd_tcon_data_multi_init_check_err_type;
 
 		temp = bl_pwm->pwm_duty;
 		if (temp < min || temp > max)
-			goto lcd_tcon_data_multi_match_check_exit;
+			goto lcd_tcon_data_multi_init_check_exit;
 		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 			LCDPR("%s: bl_pwm[%d] duty %d-%d hit: %d\n",
 			      __func__, bl_pwm->index, min, max, temp);
@@ -440,67 +438,18 @@ static int lcd_tcon_data_multi_match_check(struct aml_lcd_drv_s *pdrv,
 
 	return 0;
 
-lcd_tcon_data_multi_match_check_exit:
+lcd_tcon_data_multi_init_check_exit:
 	return -1;
 
-lcd_tcon_data_multi_match_check_err_data_cnt:
+lcd_tcon_data_multi_init_check_err_data_cnt:
 	LCDERR("%s: ctrl_part %s data_cnt error\n", __func__, ctrl_part->name);
 	return -1;
 
 #ifdef CONFIG_AML_LCD_BACKLIGHT
-lcd_tcon_data_multi_match_check_err_type:
+lcd_tcon_data_multi_init_check_err_type:
 	LCDERR("%s: ctrl_part %s type invalid\n", __func__, ctrl_part->name);
 	return -1;
 #endif
-}
-
-/* return:
- *    0: matched
- *    1: dft list
- *   -1: not match
- */
-int lcd_tcon_data_multi_match_find(struct aml_lcd_drv_s *pdrv, unsigned char *data_buf)
-{
-	struct lcd_tcon_data_block_header_s *block_header;
-	struct lcd_tcon_data_block_ext_header_s *ext_header;
-	struct lcd_tcon_data_part_ctrl_s *ctrl_part;
-	unsigned char *p, part_type;
-	unsigned int size, data_offset, offset, i;
-	unsigned short part_cnt;
-	int ret;
-
-	block_header = (struct lcd_tcon_data_block_header_s *)data_buf;
-	p = data_buf + LCD_TCON_DATA_BLOCK_HEADER_SIZE;
-	ext_header = (struct lcd_tcon_data_block_ext_header_s *)p;
-	part_cnt = ext_header->part_cnt;
-
-	data_offset = LCD_TCON_DATA_BLOCK_HEADER_SIZE + block_header->ext_header_size;
-	size = 0;
-	for (i = 0; i < part_cnt; i++) {
-		p = data_buf + data_offset;
-		part_type = p[LCD_TCON_DATA_PART_NAME_SIZE + 3];
-
-		switch (part_type) {
-		case LCD_TCON_DATA_PART_TYPE_CONTROL:
-			offset = LCD_TCON_DATA_PART_CTRL_SIZE_PRE;
-			ctrl_part = (struct lcd_tcon_data_part_ctrl_s *)p;
-			size = offset + (ctrl_part->data_cnt *
-					 ctrl_part->data_byte_width);
-			if (!(ctrl_part->ctrl_data_flag & LCD_TCON_DATA_CTRL_FLAG_MULTI))
-				break;
-			ret = lcd_tcon_data_multi_match_check(pdrv, ctrl_part, (p + offset));
-			if (ret == 0)
-				return 0;
-			if (ret == 1)
-				return 1;
-			break;
-		default:
-			return -1;
-		}
-		data_offset += size;
-	}
-
-	return -1;
 }
 
 /* **********************************

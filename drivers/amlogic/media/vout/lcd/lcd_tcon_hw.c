@@ -540,20 +540,20 @@ static int lcd_tcon_wr_n_data_write(struct lcd_tcon_data_part_wr_n_s *wr_n,
 	return 0;
 }
 
-static int lcd_tcon_data_common_parse_set(unsigned char *data_buf)
+static int lcd_tcon_data_common_parse_set(struct aml_lcd_drv_s *pdrv, unsigned char *data_buf)
 {
 	struct lcd_tcon_config_s *tcon_conf = get_lcd_tcon_config();
 	struct lcd_tcon_data_block_header_s *block_header;
 	struct lcd_tcon_data_block_ext_header_s *ext_header;
 	union lcd_tcon_data_part_u data_part;
-	unsigned char *p, *part_start;
+	unsigned char *p, *part_pos;
 	unsigned short part_cnt;
-	unsigned char part_type;
-	unsigned int size, reg, data, mask, temp, reg_base = 0;
+	unsigned char part_type, part_mapping_byte;
+	unsigned int size = 0, reg, data, mask, temp, reg_base = 0;
 	unsigned int data_offset = 0, offset, i, j, k, d, m, n, step = 0;
 	unsigned int reg_cnt, reg_byte, data_cnt, data_byte;
 	unsigned short block_ctrl_flag;
-	unsigned int *part_pos, ext_header_size, part_start_offset = 0;
+	unsigned int part_start_offset, part_offset;
 	phys_addr_t paddr;
 	int ret;
 
@@ -561,25 +561,25 @@ static int lcd_tcon_data_common_parse_set(unsigned char *data_buf)
 		reg_base = tcon_conf->core_reg_start;
 
 	block_header = (struct lcd_tcon_data_block_header_s *)data_buf;
-	p = data_buf + LCD_TCON_DATA_BLOCK_HEADER_SIZE;
+	p = data_buf + block_header->header_size;
 	ext_header = (struct lcd_tcon_data_block_ext_header_s *)p;
 	part_cnt = ext_header->part_cnt;
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		LCDPR("%s: %s, part_cnt: %d\n", __func__, block_header->name, part_cnt);
+	part_mapping_byte = ext_header->part_mapping_byte;
+	part_pos = p + LCD_TCON_DATA_BLOCK_EXT_HEADER_SIZE_PRE;
 
-	part_pos = (unsigned int *)(p + LCD_TCON_DATA_BLOCK_EXT_HEADER_SIZE_PRE);
-	ext_header_size = block_header->ext_header_size;
 	block_ctrl_flag = block_header->block_ctrl;
-	part_start = data_buf + LCD_TCON_DATA_BLOCK_HEADER_SIZE + ext_header_size;
-	part_start_offset = LCD_TCON_DATA_BLOCK_HEADER_SIZE + ext_header_size;
-	size = 0;
+	part_start_offset = block_header->header_size + block_header->ext_header_size;
 	for (i = 0; i < part_cnt; i++) {
-		p = part_start + part_pos[i];
-		data_offset = part_start_offset + part_pos[i];
+		p = part_pos + i * part_mapping_byte;
+		part_offset = 0;
+		for (j = 0; j < part_mapping_byte; j++)
+			part_offset |= (p[j] << j * 8);
+		data_offset = part_start_offset + part_offset;
+		p = data_buf + data_offset;
 		part_type = p[LCD_TCON_DATA_PART_NAME_SIZE + 3];
 		if (lcd_debug_print_flag & LCD_DBG_PR_ADV) {
-			LCDPR("%s: start step %d, %s, type=0x%02x\n",
-			      __func__, step, p, part_type);
+			LCDPR("%s: part[%d] start: %s, pos=0x%x, type=0x%02x\n",
+			      __func__, step, p, part_offset, part_type);
 		}
 		switch (part_type) {
 		case LCD_TCON_DATA_PART_TYPE_CONTROL:
@@ -592,11 +592,23 @@ static int lcd_tcon_data_common_parse_set(unsigned char *data_buf)
 				goto lcd_tcon_data_common_parse_set_err_size;
 			if (block_header->block_ctrl == 0)
 				break;
-			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+			if (lcd_debug_print_flag & LCD_DBG_PR_ADV) {
 				LCDPR("%s: block %s: ctrl data_flag=0x%x, ctrl_method=0x%x\n",
 				      __func__, block_header->name,
 				      data_part.ctrl->ctrl_data_flag,
 				      data_part.ctrl->ctrl_method);
+			}
+			if (block_header->block_ctrl != data_part.ctrl->ctrl_data_flag) {
+				LCDERR("%s: block %s: block_ctrl %x mismatch ctrl_data_flag %x\n",
+				       __func__, block_header->name, block_header->block_ctrl,
+				       data_part.ctrl->ctrl_data_flag);
+				return -1;
+			}
+			if (data_part.ctrl->ctrl_data_flag & LCD_TCON_DATA_CTRL_FLAG_MULTI) {
+				ret = lcd_tcon_data_multi_init_check(pdrv, data_part.ctrl,
+								     (p + offset));
+				if (ret) //not match, exit
+					return 1;
 			}
 			break;
 		case LCD_TCON_DATA_PART_TYPE_WR_N:
@@ -871,36 +883,37 @@ static int lcd_tcon_data_common_parse_set(unsigned char *data_buf)
 			break;
 		}
 		if (lcd_debug_print_flag & LCD_DBG_PR_ADV) {
-			LCDPR("%s: end step %d, %s, type=0x%02x, size=%d\n",
+			LCDPR("%s: part[%d] end: %s, type=0x%02x, size=%d\n",
 			      __func__, step, p, part_type, size);
 		}
 		step++;
 	}
 
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("%s: %s, part_cnt: %d\n", __func__, block_header->name, part_cnt);
 	return 0;
 
 lcd_tcon_data_common_parse_set_ctrl_err:
-	LCDERR("%s: block %s need control part\n", __func__, block_header->name);
+	LCDERR("%s: block %s: need control part\n", __func__, block_header->name);
 	return -1;
 
 lcd_tcon_data_common_parse_set_err_reg:
-	LCDERR("%s: block %s step %d reg 0x%04x error\n",
+	LCDERR("%s: block %s part[%d]: reg 0x%04x error\n",
 	       __func__, block_header->name, step, reg);
 	return -1;
 
 lcd_tcon_data_common_parse_set_err_size:
-	LCDERR("%s: block %s step %d size error\n",
+	LCDERR("%s: block %s part[%d]: size error\n",
 	       __func__, block_header->name, step);
 	return -1;
 }
 
-static int lcd_tcon_data_set(struct aml_lcd_drv_s *pdrv,
-		struct tcon_mem_map_table_s *mm_table)
+static int lcd_tcon_data_set(struct aml_lcd_drv_s *pdrv, struct tcon_mem_map_table_s *mm_table)
 {
 	struct lcd_tcon_data_block_header_s *block_header;
 	unsigned char *data_buf;
 	unsigned int temp_crc32;
-	int i, ret;
+	int i;
 
 	if (!mm_table || !mm_table->data_mem_vaddr) {
 		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
@@ -938,16 +951,12 @@ static int lcd_tcon_data_set(struct aml_lcd_drv_s *pdrv,
 		}
 
 		/* apply data */
-		if (is_block_type_basic_init(block_header->block_type)) {
+		switch (block_header->block_type) {
+		case LCD_TCON_DATA_BLOCK_TYPE_BASIC_INIT:
 			lcd_tcon_data_init_set(pdrv, data_buf);
 			continue;
-		}
-
-		/* skip pdf case */
-		if (block_header->block_type == LCD_TCON_DATA_BLOCK_TYPE_PDF)
-			continue;
-
-		switch (block_header->block_type) {
+		case LCD_TCON_DATA_BLOCK_TYPE_PDF:
+			continue; /* skip pdf case */
 		case LCD_TCON_DATA_BLOCK_TYPE_OD_LUT:
 			// skip od stage when memory is not ready
 			if (!lcd_tcon_mem_od_is_valid()) {
@@ -971,13 +980,7 @@ static int lcd_tcon_data_set(struct aml_lcd_drv_s *pdrv,
 			break;
 		}
 
-		if (is_block_ctrl_multi(block_header->block_ctrl)) {
-			ret = lcd_tcon_data_multi_match_find(pdrv, data_buf);
-			if (ret == 0)
-				lcd_tcon_data_common_parse_set(data_buf);
-		} else {
-			lcd_tcon_data_common_parse_set(data_buf);
-		}
+		lcd_tcon_data_common_parse_set(pdrv, data_buf);
 	}
 
 	LCDPR("%s finish\n", __func__);
