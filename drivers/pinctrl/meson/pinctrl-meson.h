@@ -13,6 +13,14 @@
 struct meson_pinctrl;
 #endif
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#include <asm/arch-meson/smp.h>
+#undef spin_lock_init
+#undef spin_lock
+#undef spin_unlock
+#include <spinlock.h>
+#endif
+
 struct meson_pmx_group {
 	const char *name;
 	const unsigned int *pins;
@@ -45,6 +53,9 @@ struct meson_pinctrl_data {
 
 struct meson_pinctrl {
 	struct meson_pinctrl_data *data;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock_t lock;
+#endif
 	void __iomem *reg_mux;
 	void __iomem *reg_gpio;
 	void __iomem *reg_pull;

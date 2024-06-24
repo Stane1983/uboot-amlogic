@@ -25,6 +25,21 @@
 #include "pinctrl-meson-axg.h"
 #endif
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#define pinctrl_smp_lock() {		\
+	if (gd->flags & GD_FLG_SMP)	\
+		spin_lock(&priv->lock);	\
+	}
+
+#define pinctrl_smp_unlock() {		\
+	if (gd->flags & GD_FLG_SMP)	\
+		spin_unlock(&priv->lock);\
+	}
+#else
+#define pinctrl_smp_lock() {}
+#define pinctrl_smp_unlock() {}
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 static const char *meson_pinctrl_dummy_name = "_dummy";
@@ -174,7 +189,11 @@ int meson_gpio_get(struct udevice *dev, unsigned int offset)
 	if (ret)
 		return ret;
 
-	return !!(readl(priv->reg_gpio + reg) & BIT(bit));
+	pinctrl_smp_lock();
+	ret =  !!(readl(priv->reg_gpio + reg) & BIT(bit));
+	pinctrl_smp_unlock();
+
+	return ret;
 }
 
 int meson_gpio_set(struct udevice *dev, unsigned int offset, int value)
@@ -192,7 +211,9 @@ int meson_gpio_set(struct udevice *dev, unsigned int offset, int value)
 	if (ret)
 		return ret;
 
+	pinctrl_smp_lock();
 	clrsetbits_le32(priv->reg_gpio + reg, BIT(bit), value ? BIT(bit) : 0);
+	pinctrl_smp_unlock();
 
 	return 0;
 }
@@ -212,7 +233,9 @@ int meson_gpio_get_direction(struct udevice *dev, unsigned int offset)
 	if (ret)
 		return ret;
 
+	pinctrl_smp_lock();
 	val = readl(priv->reg_gpio + reg);
+	pinctrl_smp_unlock();
 
 	return (val & BIT(bit)) ? GPIOF_INPUT : GPIOF_OUTPUT;
 }
@@ -232,7 +255,9 @@ int meson_gpio_direction_input(struct udevice *dev, unsigned int offset)
 	if (ret)
 		return ret;
 
+	pinctrl_smp_lock();
 	setbits_le32(priv->reg_gpio + reg, BIT(bit));
+	pinctrl_smp_unlock();
 
 	return 0;
 }
@@ -253,7 +278,9 @@ int meson_gpio_direction_output(struct udevice *dev,
 	if (ret)
 		return ret;
 
+	pinctrl_smp_lock();
 	clrbits_le32(priv->reg_gpio + reg, BIT(bit));
+	pinctrl_smp_unlock();
 
 #if defined(CONFIG_AMLOGIC_MODIFY)
 	ret = meson_gpio_calc_reg_and_bit(dev, offset, REG_OUT, &reg, &bit);
@@ -263,8 +290,9 @@ int meson_gpio_direction_output(struct udevice *dev,
 #endif
 	if (ret)
 		return ret;
-
+	pinctrl_smp_lock();
 	clrsetbits_le32(priv->reg_gpio + reg, BIT(bit), value ? BIT(bit) : 0);
+	pinctrl_smp_unlock();
 
 	return 0;
 }
@@ -286,7 +314,9 @@ static int meson_pinconf_bias_set(struct udevice *dev, unsigned int pin,
 		return ret;
 
 	if (param == PIN_CONFIG_BIAS_DISABLE) {
+		pinctrl_smp_lock();
 		clrsetbits_le32(priv->reg_pullen + reg, BIT(bit), 0);
+		pinctrl_smp_unlock();
 		return 0;
 	}
 
@@ -299,9 +329,10 @@ static int meson_pinconf_bias_set(struct udevice *dev, unsigned int pin,
 #endif
 	if (ret)
 		return ret;
-
+	pinctrl_smp_lock();
 	clrsetbits_le32(priv->reg_pull + reg, BIT(bit),
 			(param == PIN_CONFIG_BIAS_PULL_UP ? BIT(bit) : 0));
+	pinctrl_smp_unlock();
 
 	return 0;
 }
@@ -383,7 +414,9 @@ static int meson_pinconf_drive_strength_set(struct udevice *dev,
 		ds_val = MESON_PINCONF_DRV_4000UA;
 	}
 
+	pinctrl_smp_lock();
 	clrsetbits_le32(priv->reg_ds + reg, 0x3 << bit, ds_val << bit);
+	pinctrl_smp_unlock();
 
 	return 0;
 }
@@ -403,7 +436,9 @@ static int meson_pinconf_input_enable(struct udevice *dev, unsigned int pin,
 	if (ret)
 		return ret;
 
+	pinctrl_smp_lock();
 	clrsetbits_le32(priv->reg_gpio + reg, 0x1 << bit, param << bit);
+	pinctrl_smp_unlock();
 
 	return 0;
 }
@@ -421,8 +456,9 @@ static int meson_pinconf_output_set(struct udevice *dev, unsigned int pin,
 	ret = meson_pinconf_calc_reg_and_bit(dev, offset, REG_OUT, &reg, &bit);
 	if (ret)
 		return ret;
-
+	pinctrl_smp_lock();
 	clrsetbits_le32(priv->reg_gpio + reg, 0x1 << bit, param << bit);
+	pinctrl_smp_unlock();
 
 	return meson_pinconf_input_enable(dev, pin, 0);
 }
@@ -703,6 +739,10 @@ int meson_pinctrl_probe(struct udevice *dev)
 	/* Create child device UCLASS_GPIO and bind it */
 	device_bind(dev, priv->data->gpio_driver, name, NULL,
 		    offset_to_ofnode(gpio), &gpio_dev);
+#endif
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock_init(&priv->lock);
 #endif
 	return 0;
 }

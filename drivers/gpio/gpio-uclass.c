@@ -26,6 +26,21 @@
 #include <linux/ctype.h>
 #include <linux/delay.h>
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#define gpio_smp_lock() {		\
+	if (gd->flags & GD_FLG_SMP)	\
+		spin_lock(&dev->lock);	\
+	}
+
+#define gpio_smp_unlock() {		\
+	if (gd->flags & GD_FLG_SMP)	\
+		spin_unlock(&dev->lock);\
+	}
+#else
+#define gpio_smp_lock() {}
+#define gpio_smp_unlock() {}
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 /**
@@ -375,17 +390,22 @@ int dm_gpio_request(struct gpio_desc *desc, const char *label)
 	uc_priv = dev_get_uclass_priv(dev);
 	if (uc_priv->name[desc->offset])
 		return -EBUSY;
+	gpio_smp_lock();
 	str = strdup(label);
-	if (!str)
+	if (!str) {
+		gpio_smp_unlock();
 		return -ENOMEM;
+	}
 	if (ops->request) {
 		ret = ops->request(dev, desc->offset, label);
 		if (ret) {
 			free(str);
+			gpio_smp_unlock();
 			return ret;
 		}
 	}
 	uc_priv->name[desc->offset] = str;
+	gpio_smp_unlock();
 
 	return 0;
 }
@@ -468,9 +488,10 @@ int _dm_gpio_free(struct udevice *dev, uint offset)
 		if (ret)
 			return ret;
 	}
-
+	gpio_smp_lock();
 	free(uc_priv->name[offset]);
 	uc_priv->name[offset] = NULL;
+	gpio_smp_unlock();
 
 	return 0;
 }
@@ -498,19 +519,26 @@ int gpio_free(unsigned gpio)
 static int check_reserved(const struct gpio_desc *desc, const char *func)
 {
 	struct gpio_dev_priv *uc_priv;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	struct udevice *dev = desc->dev;
+	/* use by gpio_smp_lock macro */
+	dev = dev;
+#endif
 
 	if (!dm_gpio_is_valid(desc))
 		return -ENOENT;
-
+	gpio_smp_lock();
 	uc_priv = dev_get_uclass_priv(desc->dev);
 	if (!uc_priv->name[desc->offset]) {
 		printf("%s: %s: error: gpio %s%d not reserved\n",
 		       desc->dev->name, func,
 		       uc_priv->bank_name ? uc_priv->bank_name : "",
 		       desc->offset);
+		gpio_smp_unlock();
 		return -EBUSY;
 	}
 
+	gpio_smp_unlock();
 	return 0;
 }
 
@@ -1352,6 +1380,10 @@ int gpio_get_number(const struct gpio_desc *desc)
 static int gpio_post_probe(struct udevice *dev)
 {
 	struct gpio_dev_priv *uc_priv = dev_get_uclass_priv(dev);
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock_init(&dev->lock);
+#endif
 
 	uc_priv->name = calloc(uc_priv->gpio_count, sizeof(char *));
 	if (!uc_priv->name)
