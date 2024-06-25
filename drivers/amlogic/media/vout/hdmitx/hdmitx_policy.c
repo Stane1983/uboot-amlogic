@@ -165,7 +165,7 @@ static const char * const MODE_NON4K_LIST[] = {
 	MODE_480I,
 };
 
-/* ascending order */
+/* ascending order, for HDR/SDR policy */
 static const char *MODE_RESOLUTION_FIRST[] = {
 	MODE_480I,
 	MODE_576I,
@@ -183,15 +183,20 @@ static const char *MODE_RESOLUTION_FIRST[] = {
 	MODE_4K2K30HZ,
 	MODE_4K2K50HZ,
 	MODE_4K2K60HZ,
-	MODE_8K4K24HZ,
-	MODE_8K4K25HZ,
-	MODE_8K4K30HZ,
-	MODE_8K4K48HZ,
-	MODE_8K4K50HZ,
-	MODE_8K4K60HZ
+	/*
+	 * for hdmi compatibility not choose 8k as preferred mode
+	 */
+	/* MODE_4K2K100HZ, */
+	/* MODE_4K2K120HZ, */
+	/* MODE_8K4K24HZ, */
+	/* MODE_8K4K25HZ, */
+	/* MODE_8K4K30HZ, */
+	/* MODE_8K4K48HZ, */
+	/* MODE_8K4K50HZ, */
+	/* MODE_8K4K60HZ, */
 };
 
-/* ascending order */
+/* ascending order, for HDR/SDR policy */
 static const char *MODE_FRAMERATE_FIRST[] = {
 	MODE_480I,
 	MODE_576I,
@@ -209,8 +214,17 @@ static const char *MODE_FRAMERATE_FIRST[] = {
 	MODE_1080P,
 	MODE_4K2K50HZ,
 	MODE_4K2K60HZ,
-	MODE_8K4K50HZ,
-	MODE_8K4K60HZ
+	/*
+	 * for hdmi compatibility not choose 8k as preferred mode
+	 */
+	/* MODE_4K2K100HZ, */
+	/* MODE_4K2K120HZ, */
+	/* MODE_8K4K24HZ, */
+	/* MODE_8K4K25HZ, */
+	/* MODE_8K4K30HZ, */
+	/* MODE_8K4K48HZ, */
+	/* MODE_8K4K50HZ, */
+	/* MODE_8K4K60HZ, */
 };
 
 /* this is prior selected list for sdr of
@@ -305,66 +319,6 @@ static const char *HDR_NON4K_COLOR_ATTRIBUTE_LIST[] = {
 static const char *HDR_4K_COLOR_ATTRIBUTE_LIST[] = {
 	COLOR_YCBCR420_10BIT,
 	COLOR_YCBCR422_12BIT,
-};
-
-/* support format lists */
-static const char *disp_mode_t[] = {
-	"480i60hz", /* 16:9 */
-	"576i50hz",
-	"480p60hz",
-	"576p50hz",
-	"720p60hz",
-	"1080i60hz",
-	"1080p60hz",
-	"1080p120hz",
-	"720p50hz",
-	"1080i50hz",
-	"1080p30hz",
-	"1080p50hz",
-	"1080p25hz",
-	"1080p24hz",
-	"2560x1080p50hz",
-	"2560x1080p60hz",
-	"2160p30hz",
-	"2160p25hz",
-	"2160p24hz",
-	"smpte24hz",
-	"smpte25hz",
-	"smpte30hz",
-	"smpte50hz",
-	"smpte60hz",
-	"2160p50hz",
-	"2160p60hz",
-	/* VESA modes */
-	"640x480p60hz",
-	"800x480p60hz",
-	"800x600p60hz",
-	"852x480p60hz",
-	"854x480p60hz",
-	"1024x600p60hz",
-	"1024x768p60hz",
-	"1152x864p75hz",
-	"1280x600p60hz",
-	"1280x768p60hz",
-	"1280x800p60hz",
-	"1280x960p60hz",
-	"1280x1024p60hz",
-	"1360x768p60hz",
-	"1366x768p60hz",
-	"1400x1050p60hz",
-	"1440x900p60hz",
-	"1440x2560p60hz",
-	"1600x900p60hz",
-	"1600x1200p60hz",
-	"1680x1050p60hz",
-	"1920x1200p60hz",
-	"2160x1200p90hz",
-	"2560x1440p60hz",
-	"2560x1600p60hz",
-	"3440x1440p60hz",
-	"2400x1200p90hz",
-	"3840x1080p60hz",
-	NULL
 };
 
 static bool hdmi_sink_disp_mode_sup(struct input_hdmi_data *hdmi_data, char *disp_mode);
@@ -722,6 +676,32 @@ static int resolve_resolution_value(const char *mode, int flag)
 {
 	bool validmode = false;
 	int i;
+	static const char *const MODE_RESOLUTION[] = {
+		MODE_8K4K60HZ,
+		MODE_8K4K50HZ,
+		MODE_8K4K48HZ,
+		MODE_8K4K30HZ,
+		MODE_8K4K25HZ,
+		MODE_8K4K24HZ,
+		MODE_4K2K120HZ,
+		MODE_4K2K100HZ,
+		MODE_4K2K60HZ,
+		MODE_4K2K50HZ,
+		MODE_4K2K30HZ,
+		MODE_4K2K25HZ,
+		MODE_4K2K24HZ,
+		MODE_1080P,
+		MODE_1080P50HZ,
+		MODE_720P,
+		MODE_720P50HZ,
+		MODE_576P,
+		MODE_480P,
+		MODE_640x480p,
+		MODE_1080I,
+		MODE_1080I50HZ,
+		MODE_576I,
+		MODE_480I,
+	};
 
 	if (!mode)
 		return -1;
@@ -745,8 +725,8 @@ static int resolve_resolution_value(const char *mode, int flag)
 				return i;
 		}
 	} else {
-		for (i = 0; i < ARRAY_SIZE(MODE_RESOLUTION_FIRST); i++) {
-			if (strcmp(mode, MODE_RESOLUTION_FIRST[i]) == 0)
+		for (i = 0; i < ARRAY_SIZE(MODE_RESOLUTION); i++) {
+			if (strcmp(mode, MODE_RESOLUTION[i]) == 0)
 				return i;
 		}
 	}
@@ -853,7 +833,7 @@ static bool is_dv_support_mode(struct input_hdmi_data *hdmi_data, char *mode)
 	} else if (!strcmp(mode, MODE_1080P120HZ)) {
 		if (dv->sup_1080p120hz)
 			valid = true;
-	} else if (resolve_resolution_value(mode, RESOLUTION_PRIORITY) >
+	} else if (resolve_resolution_value(mode, RESOLUTION_PRIORITY) <
 		resolve_resolution_value(dv_displaymode, RESOLUTION_PRIORITY) ||
 		strstr(mode, "480p") || strstr(mode, "576p") ||
 		strstr(mode, "smpte") || strstr(mode, "4096") || strstr(mode, "i")) {
@@ -1004,24 +984,29 @@ static void get_highest_hdmimode(struct input_hdmi_data *hdmi_data, char *mode)
 {
 	char value[MODE_LEN] = {0};
 	char mode_tmp[MODE_LEN];
+	const char **resolution_list = NULL;
+	int resolution_list_length = 0;
 	int i;
 
 	if (!hdmi_data || !mode)
 		return;
-	/* i timing need to output for spec edid during HDMI CTS,
-	 * use 480i60hz as base mode
-	 */
-	strcpy(value, "480i60hz");
 
-	for (i = 0; disp_mode_t[i]; i++) {
+	//choose base table
+	if (is_framerate_priority()) {
+		resolution_list = MODE_FRAMERATE_FIRST;
+		resolution_list_length = ARRAY_SIZE(MODE_FRAMERATE_FIRST);
+	} else {
+		resolution_list = MODE_RESOLUTION_FIRST;
+		resolution_list_length = ARRAY_SIZE(MODE_RESOLUTION_FIRST);
+	}
+
+	//find preferred mode
+	for (i = resolution_list_length - 1; i >= 0 ; i--) {
 		memset(mode_tmp, 0, sizeof(mode_tmp));
-		strncpy(mode_tmp, disp_mode_t[i], MODE_LEN - 1);
-		if (!hdmi_sink_disp_mode_sup(hdmi_data, mode_tmp))
-			continue;
-		if (resolve_resolution_value(mode_tmp, FRAMERATE_PRIORITY) >
-		    resolve_resolution_value(value, FRAMERATE_PRIORITY)) {
-			memset(value, 0, MODE_LEN);
+		strncpy(mode_tmp, resolution_list[i], MODE_LEN - 1);
+		if (hdmi_sink_disp_mode_sup(hdmi_data, mode_tmp)) {
 			strcpy(value, mode_tmp);
+			break;
 		}
 	}
 
