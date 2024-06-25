@@ -21,6 +21,7 @@
 #include <linux/mtd/partitions.h>
 #include <asm/amlogic/arch/bl31_apis.h>
 #include <amlogic/aml_mtd.h>
+#include <asm/amlogic/arch/stick_mem.h>
 #include <amlogic/board.h>
 #include <asm-generic/u-boot.h>
 #include <command.h>
@@ -166,6 +167,7 @@ int board_late_init(void)
 	printf("board late init\n");
 	env_set("defenv_para", "-c");
 	aml_board_late_init_front(NULL);
+	get_stick_reboot_flag_mbx();
 #ifdef CONFIG_PXP_EMULATOR
 	return 0;
 #endif
