@@ -278,7 +278,7 @@ int m31_phy_init(unsigned int phy_num);
 #define CC1_UFP_DET_D2_CHECK(x)		(((x) & GENMASK(9, 7)) >> 7)
 #define CC2_UFP_DET_D2_CHECK(x)		(((x) & GENMASK(12, 10)) >> 10)
 
-#define CC_REG_BASE	0xfe35e000
+#define CC_REG_BASE	0xfe34e000
 
 #define CC_STATUS_DETACH	0
 #define CC_STATUS_DEFAULT	1
@@ -307,7 +307,7 @@ void print_aml_cc_ufp_current_type(void);
 #define  VBUSDIG_EN1		BIT(5)
 #define  VBUSDIG_EN0		BIT(4)
 
-#define BC_REG_BASE	0xfe35d000
+#define BC_REG_BASE	0xfe34d000
 
 #define BC_RESET_BIT		11
 
