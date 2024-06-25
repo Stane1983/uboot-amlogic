@@ -1532,6 +1532,17 @@ static int lcd_tcon_load_init_data_from_unifykey_new(struct aml_lcd_drv_s *pdrv)
 				data_ext_header->framerate_max);
 		}
 	}
+	if (data_header->block_size > data_len) {
+		//user info
+		tcon_mm_table.user_info = calloc(sizeof(char),
+			data_header->block_size - data_len + 1);
+		if (!tcon_mm_table.user_info)
+			goto lcd_tcon_load_init_data_new_err;
+		memcpy(tcon_mm_table.user_info, buf + data_len,
+			data_header->block_size - data_len);
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDPR("user info:\n%s\n", tcon_mm_table.user_info);
+	}
 	lcd_tcon_init_data_version_update(data_header->version);
 
 	data_len = tcon_mm_table.core_reg_table_size;
@@ -1547,6 +1558,9 @@ static int lcd_tcon_load_init_data_from_unifykey_new(struct aml_lcd_drv_s *pdrv)
 	free(buf);
 
 	tcon_local_cfg.cur_core_reg_table = tcon_mm_table.core_reg_table;
+	tcon_local_cfg.cur_user_info = tcon_mm_table.user_info;
+	tcon_local_cfg.cur_core_header = tcon_mm_table.core_reg_header;
+	tcon_local_cfg.cur_core_ext_header = tcon_mm_table.core_reg_ext_header;
 	lcd_tcon_init_setting_check(pdrv, &pdrv->config.timing.dft_timing,
 			tcon_mm_table.core_reg_table);
 
@@ -1561,6 +1575,8 @@ lcd_tcon_load_init_data_new_err:
 		free(data_header);
 	if (data_ext_header)
 		free(data_ext_header);
+	if (tcon_mm_table.user_info)
+		free(tcon_mm_table.user_info);
 	LCDERR("%s: tcon unifykey load error!!!\n", __func__);
 	return -1;
 }

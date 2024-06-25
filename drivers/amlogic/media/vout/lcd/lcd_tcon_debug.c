@@ -529,6 +529,34 @@ void lcd_tcon_info_print(struct aml_lcd_drv_s *pdrv)
 		!!(mm_table->lut_valid_flag & LCD_TCON_DATA_VALID_DEMURA),
 		!!(mm_table->lut_valid_flag & LCD_TCON_DATA_VALID_DITHER));
 
+	printf("\nbin info:\n");
+	if (local_cfg->cur_core_header) {
+		char user_version[TCON_BIN_VER_LEN];
+
+		memset(user_version, 0, sizeof(user_version));
+		memcpy(user_version, local_cfg->cur_core_header->version,
+			sizeof(local_cfg->cur_core_header->version));
+		printf("basic info:\n"
+			"userVersion=%s\n"
+			"userBinName=%s\n"
+			"h_active=%d\n"
+			"v_active=%d\n"
+			"block_ctrl=%d\n",
+			user_version,
+			local_cfg->cur_core_header->name,
+			local_cfg->cur_core_header->h_active,
+			local_cfg->cur_core_header->v_active,
+			local_cfg->cur_core_header->block_ctrl);
+	}
+	if (local_cfg->cur_core_ext_header) {
+		printf("framerate_min=%d\n"
+			"framerate_max=%d\n",
+			local_cfg->cur_core_ext_header->framerate_min,
+			local_cfg->cur_core_ext_header->framerate_max);
+	}
+	if (local_cfg->cur_user_info && strlen(local_cfg->cur_user_info) > 0)
+		printf("\nuser info:\n%s\n", local_cfg->cur_user_info);
+
 	printf("\n");
 }
 

@@ -16,7 +16,8 @@
 /* 20240607: lcd tcon support extern header */
 /* 20240618: lcd tcon new ctrl_type(resolution) for demura multi lut */
 /* 20240620: optimize tcon multi data set */
-#define LCD_DRV_VERSION    "20240620"
+/* 20240704: lcd tcon support user info */
+#define LCD_DRV_VERSION    "20240704"
 
 extern unsigned long clk_util_clk_msr(unsigned long clk_mux);
 

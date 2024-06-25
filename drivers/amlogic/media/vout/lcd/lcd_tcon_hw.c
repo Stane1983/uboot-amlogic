@@ -222,6 +222,7 @@ static void lcd_tcon_data_init_set(struct aml_lcd_drv_s *pdrv, unsigned char *da
 	struct lcd_tcon_init_block_ext_header_s *init_ext_header = NULL;
 	struct lcd_detail_timing_s *act_timing = NULL;
 	unsigned char *core_reg_table;
+	unsigned int len = 0;  //header_size + ext_header_size + core_reg_size
 
 	if (!tcon_conf || !mm_table || !local_cfg)
 		return;
@@ -231,6 +232,8 @@ static void lcd_tcon_data_init_set(struct aml_lcd_drv_s *pdrv, unsigned char *da
 	core_reg_table = data_buf + init_header->header_size + init_header->ext_header_size;
 	init_ext_header = (struct lcd_tcon_init_block_ext_header_s *)
 		(init_header->ext_header_size ? (data_buf + init_header->header_size) : NULL);
+	len = mm_table->core_reg_table_size + init_header->header_size +
+		init_header->ext_header_size;
 	switch (init_header->block_ctrl) {
 	case LCD_TCON_DATA_CTRL_FLAG_UFR:
 		if (act_timing->h_active == init_header->h_active &&
@@ -246,6 +249,11 @@ static void lcd_tcon_data_init_set(struct aml_lcd_drv_s *pdrv, unsigned char *da
 				}
 			}
 			lcd_tcon_init_data_version_update(init_header->version);
+			local_cfg->cur_user_info = NULL;
+			if (init_header->block_size > len)
+				local_cfg->cur_user_info = (char *)(data_buf + len);
+			local_cfg->cur_core_header = init_header;
+			local_cfg->cur_core_ext_header = init_ext_header;
 			local_cfg->cur_core_reg_table = core_reg_table;
 			LCDPR("%s: ufr %dx%d@%dhz init, bin_ver:%s\n",
 				__func__, init_header->h_active,
@@ -1226,6 +1234,9 @@ int lcd_tcon_enable_t5(struct aml_lcd_drv_s *pdrv)
 	if (mm_table->core_reg_header) {
 		if (mm_table->core_reg_header->block_ctrl == 0) {
 			local_cfg->cur_core_reg_table = mm_table->core_reg_table;
+			local_cfg->cur_user_info = mm_table->user_info;
+			local_cfg->cur_core_header = mm_table->core_reg_header;
+			local_cfg->cur_core_ext_header = mm_table->core_reg_ext_header;
 			lcd_tcon_core_reg_set(pdrv, tcon_conf, mm_table,
 				mm_table->core_reg_table);
 		}
@@ -1272,6 +1283,9 @@ int lcd_tcon_enable_txhd2(struct aml_lcd_drv_s *pdrv)
 	if (mm_table->core_reg_header) {
 		if (mm_table->core_reg_header->block_ctrl == 0) {
 			local_cfg->cur_core_reg_table = mm_table->core_reg_table;
+			local_cfg->cur_user_info = mm_table->user_info;
+			local_cfg->cur_core_header = mm_table->core_reg_header;
+			local_cfg->cur_core_ext_header = mm_table->core_reg_ext_header;
 			lcd_tcon_core_reg_set(pdrv, tcon_conf, mm_table,
 				mm_table->core_reg_table);
 		}

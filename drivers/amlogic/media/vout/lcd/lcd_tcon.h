@@ -117,6 +117,7 @@ struct tcon_mem_map_table_s {
 	struct lcd_tcon_init_block_header_s *core_reg_header;
 	struct lcd_tcon_init_block_ext_header_s *core_reg_ext_header;
 	unsigned char *core_reg_table;
+	char *user_info;
 
 	unsigned int *data_size;
 	unsigned char **data_mem_vaddr;
@@ -126,6 +127,9 @@ struct tcon_mem_map_table_s {
 #define MEM_FLAG_MAX
 struct lcd_tcon_local_cfg_s {
 	char bin_ver[TCON_BIN_VER_LEN];
+	char *cur_user_info;
+	struct lcd_tcon_init_block_header_s *cur_core_header;
+	struct lcd_tcon_init_block_ext_header_s *cur_core_ext_header;
 	unsigned char *cur_core_reg_table;
 };
 
