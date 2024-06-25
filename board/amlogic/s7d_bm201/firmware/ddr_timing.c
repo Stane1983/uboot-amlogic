@@ -299,7 +299,7 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 	{
 		.cfg_board_common_setting.timming_magic = 0,
 		.cfg_board_common_setting.timming_max_valid_configs = 1,
-		.cfg_board_common_setting.timming_struct_version = 0,
+		.cfg_board_common_setting.timming_struct_version = 9139,
 		.cfg_board_common_setting.timming_struct_org_size =
 			sizeof(ddr_set_ps0_only_t),
 		.cfg_board_common_setting.timming_struct_real_size = 0,
@@ -386,8 +386,8 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		.cfg_ddr_training_delay_ps.reserve_para[8 + 6] = (1 << 7) | 0x10,//read dqs
 		.cfg_ddr_training_delay_ps.reserve_para[8 + 7] = (1 << 7) | 0x10,//read dqs
 
-		#define  AC_OFFSET  (0)
-		#define WL0  (0)
+		#define  AC_OFFSET  (128)
+		//#define WL0  (0)
 		.cfg_ddr_training_delay_ps.ac_trace_delay[0] = 256 + AC_OFFSET,
 		.cfg_ddr_training_delay_ps.ac_trace_delay[1] = 256 + AC_OFFSET,
 		.cfg_ddr_training_delay_ps.ac_trace_delay[2] = 256 + AC_OFFSET,
@@ -429,14 +429,14 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		.cfg_ddr_training_delay_ps.ac_trace_delay[2] = 128 + AC_OFFSET,//odt0
 		.cfg_ddr_training_delay_ps.ac_trace_delay[11] = 128 + AC_OFFSET,//odt1
 
-		.cfg_ddr_training_delay_ps.write_dqs_delay[0] = 128 + AC_OFFSET + WL0,
-		.cfg_ddr_training_delay_ps.write_dqs_delay[1] = 128 + AC_OFFSET + WL0,
-		.cfg_ddr_training_delay_ps.write_dqs_delay[2] = 128 + AC_OFFSET + WL0,
-		.cfg_ddr_training_delay_ps.write_dqs_delay[3] = 128 + AC_OFFSET + WL0,
-		.cfg_ddr_training_delay_ps.write_dqs_delay[4] = 128 + AC_OFFSET + WL0,
-		.cfg_ddr_training_delay_ps.write_dqs_delay[5] = 128 + AC_OFFSET + WL0,
-		.cfg_ddr_training_delay_ps.write_dqs_delay[6] = 128 + AC_OFFSET + WL0,
-		.cfg_ddr_training_delay_ps.write_dqs_delay[7] = 128 + AC_OFFSET + WL0,
+		.cfg_ddr_training_delay_ps.write_dqs_delay[0] = 128,
+		.cfg_ddr_training_delay_ps.write_dqs_delay[1] = 128,
+		.cfg_ddr_training_delay_ps.write_dqs_delay[2] = 128,
+		.cfg_ddr_training_delay_ps.write_dqs_delay[3] = 128,
+		.cfg_ddr_training_delay_ps.write_dqs_delay[4] = 128,
+		.cfg_ddr_training_delay_ps.write_dqs_delay[5] = 128,
+		.cfg_ddr_training_delay_ps.write_dqs_delay[6] = 128,
+		.cfg_ddr_training_delay_ps.write_dqs_delay[7] = 128,
 
 		.cfg_ddr_training_delay_ps.read_dqs_delay[0] = 128,
 		.cfg_ddr_training_delay_ps.read_dqs_delay[1] = 128,
