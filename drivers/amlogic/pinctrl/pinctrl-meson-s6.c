@@ -114,14 +114,14 @@ static const unsigned int pwm_f_e_pins[]			= { GPIOE_1 };
 static const unsigned int gen_clk_e_pins[]			= { GPIOE_2 };
 
 /* GPIOB func1 */
-static const unsigned int emmc_d0_pins[]			= { GPIOB_0 };
-static const unsigned int emmc_d1_pins[]			= { GPIOB_1 };
-static const unsigned int emmc_d2_pins[]			= { GPIOB_2 };
-static const unsigned int emmc_d3_pins[]			= { GPIOB_3 };
-static const unsigned int emmc_d4_pins[]			= { GPIOB_4 };
-static const unsigned int emmc_d5_pins[]			= { GPIOB_5 };
-static const unsigned int emmc_d6_pins[]			= { GPIOB_6 };
-static const unsigned int emmc_d7_pins[]			= { GPIOB_7 };
+static const unsigned int emmc_nand_d0_pins[]			= { GPIOB_0 };
+static const unsigned int emmc_nand_d1_pins[]			= { GPIOB_1 };
+static const unsigned int emmc_nand_d2_pins[]			= { GPIOB_2 };
+static const unsigned int emmc_nand_d3_pins[]			= { GPIOB_3 };
+static const unsigned int emmc_nand_d4_pins[]			= { GPIOB_4 };
+static const unsigned int emmc_nand_d5_pins[]			= { GPIOB_5 };
+static const unsigned int emmc_nand_d6_pins[]			= { GPIOB_6 };
+static const unsigned int emmc_nand_d7_pins[]			= { GPIOB_7 };
 static const unsigned int emmc_clk_pins[]			= { GPIOB_8 };
 static const unsigned int emmc_rstgpio_pins[]			= { GPIOB_9 };
 static const unsigned int emmc_cmd_pins[]			= { GPIOB_10 };
@@ -719,14 +719,14 @@ static struct meson_pmx_group meson_s6_periphs_groups[] = {
 	GROUP(gen_clk_e,		3),
 
 	/* GPIOB func1 */
-	GROUP(emmc_d0,			1),
-	GROUP(emmc_d1,			1),
-	GROUP(emmc_d2,			1),
-	GROUP(emmc_d3,			1),
-	GROUP(emmc_d4,			1),
-	GROUP(emmc_d5,			1),
-	GROUP(emmc_d6,			1),
-	GROUP(emmc_d7,			1),
+	GROUP(emmc_nand_d0,		1),
+	GROUP(emmc_nand_d1,		1),
+	GROUP(emmc_nand_d2,		1),
+	GROUP(emmc_nand_d3,		1),
+	GROUP(emmc_nand_d4,		1),
+	GROUP(emmc_nand_d5,		1),
+	GROUP(emmc_nand_d6,		1),
+	GROUP(emmc_nand_d7,		1),
 	GROUP(emmc_clk,			1),
 	GROUP(emmc_rstgpio,		1),
 	GROUP(emmc_cmd,			1),
@@ -1330,12 +1330,14 @@ static const char * const mic_mute_groups[] = {
 };
 
 static const char * const emmc_groups[] = {
-	"emmc_d0", "emmc_d1", "emmc_d2", "emmc_d3", "emmc_d4",
-	"emmc_d5", "emmc_d6", "emmc_d7", "emmc_ds",
+	"emmc_nand_d0", "emmc_nand_d1", "emmc_nand_d2", "emmc_nand_d3",
+	"emmc_nand_d4", "emmc_nand_d5", "emmc_nand_d6", "emmc_nand_d7", "emmc_ds",
 	"emmc_clk", "emmc_cmd", "emmc_rstgpio",
 };
 
 static const char * const nand_groups[] = {
+	"emmc_nand_d0", "emmc_nand_d1", "emmc_nand_d2", "emmc_nand_d3",
+	"emmc_nand_d4", "emmc_nand_d5", "emmc_nand_d6", "emmc_nand_d7",
 	"nand_ale", "nand_cle", "nand_ce0", "nand_ren_wr",
 	"nand_wen_clk"
 };
