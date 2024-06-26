@@ -615,7 +615,7 @@ config DDRFW_TYPE
 
 config CHIPSET_NAME
 	string "s7d CHIPSET NAME"
-	default "s905x5m"
+	default "s905x5m.mini-fip"
 
 config CHIPSET_VARIANT
 	string "s7d CHIPSET VARIANT"
