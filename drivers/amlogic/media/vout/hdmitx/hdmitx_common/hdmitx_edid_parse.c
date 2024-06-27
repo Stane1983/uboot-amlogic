@@ -990,7 +990,7 @@ static int _edid_parsedrmsb(struct hdr_info *info, u8 *buf)
 	pos++;
 	info->hdr_support = buf[pos];
 	pos++;
-	info->static_metadata_type1 = buf[pos];
+	info->static_metadata_type1 = buf[pos] & 0x1;
 	pos++;
 	if (data_end == 3)
 		return 0;
@@ -2099,11 +2099,11 @@ static void edid_manufacture_date_parse(struct rx_cap *prxcap,
 
 	/* week:
 	 *	0: not specified
-	 *	0x1~0x36: valid week
+	 *	0x1~0x35: valid week
 	 *	0x37~0xfe: reserved
 	 *	0xff: model year is specified
 	 */
-	if (data[0] == 0 || (data[0] >= 0x37 && data[0] <= 0xfe))
+	if (data[0] == 0 || (data[0] >= 0x36 && data[0] <= 0xfe))
 		prxcap->manufacture_week = 0;
 	else
 		prxcap->manufacture_week = data[0];
@@ -2920,15 +2920,14 @@ int hdmitx_edid_print_sink_cap(const struct rx_cap *prxcap,
 
 /*	pos += snprintf(buffer + pos, buffer_len - pos,
  *		"EDID block number: 0x%x\n", tx_comm->EDID_buf[0x7e]);
- *
- *
- *	pos += snprintf(buffer + pos, buffer_len - pos,
- *		"Source Physical Address[a.b.c.d]: %x.%x.%x.%x\n",
- *		hdmitx_device->hdmi_info.vsdb_phy_addr.a,
- *		hdmitx_device->hdmi_info.vsdb_phy_addr.b,
- *		hdmitx_device->hdmi_info.vsdb_phy_addr.c,
- *		hdmitx_device->hdmi_info.vsdb_phy_addr.d);
  */
+
+	pos += snprintf(buffer + pos, buffer_len - pos,
+		"Source Physical Address[a.b.c.d]: %x.%x.%x.%x\n",
+		prxcap->vsdb_phy_addr.a,
+		prxcap->vsdb_phy_addr.b,
+		prxcap->vsdb_phy_addr.c,
+		prxcap->vsdb_phy_addr.d);
 
 	// TODO native_vic2
 	pos += snprintf(buffer + pos, buffer_len - pos,
