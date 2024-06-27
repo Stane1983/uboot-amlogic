@@ -13,13 +13,14 @@
 #define DSU_CLK                                 1200
 
 /* board vmin_value defines */
-#define VMIN_FF_VALUE                           770
-#define VMIN_TT_VALUE                           800
-#define VMIN_SS_VALUE                           810
+#define VMIN_FF_VALUE                           670
+#define VMIN_TT_VALUE                           720
+#define VMIN_SS_VALUE                           770
 /* board vddee_value defines */
-#define VDDEE_FF_VALUE                          0x2000b
-#define VDDEE_TT_VALUE                          0x2000b
-#define VDDEE_SS_VALUE                          0x2000b
+/* SS/TT/FF = 0.77V/0.74V/0.71V */
+#define VDDEE_FF_VALUE                          0x50008
+#define VDDEE_TT_VALUE                          0x80005
+#define VDDEE_SS_VALUE                          0xb0002
 
 
 board_clk_set_t __board_clk_setting
