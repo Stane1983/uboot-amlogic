@@ -97,6 +97,7 @@
 #define   STATUS_RESP_TIMEOUT		BIT(11)
 #define   STATUS_DESC_TIMEOUT		BIT(12)
 #define   STATUS_END_OF_CHAIN		BIT(13)
+#define   STATUS_DATA_0			BIT(16)
 
 #define MESON_SD_EMMC_IRQ_EN		0x4c
 

@@ -385,6 +385,21 @@ int meson_get_cd(struct udevice *dev)
 	return host->is_in;
 }
 
+static int meson_wait_dat0(struct udevice *dev, int state, int timeout_us)
+{
+	struct mmc *mmc = mmc_get_mmc_dev(dev);
+	unsigned long timeout = timer_get_us() + timeout_us;
+	u32 status = 0;
+
+	do {
+		status = meson_read(mmc, MESON_SD_EMMC_STATUS);
+		if (!!(status & STATUS_DATA_0) == !!state)
+			return 0;
+	} while (!timeout_us || !time_after(timer_get_us(), timeout));
+
+	return -ETIMEDOUT;
+}
+
 static int mmc_controller_debug(struct udevice *dev,
 				struct mmc_cmd *cmd, u32 status)
 {
@@ -1141,6 +1156,7 @@ static const struct dm_mmc_ops meson_dm_mmc_ops = {
 	.send_cmd = meson_dm_mmc_send_cmd,
 	.set_ios = meson_dm_mmc_set_ios,
 	.get_cd = meson_get_cd,
+	.wait_dat0 = meson_wait_dat0,
 #ifdef MMC_SUPPORTS_TUNING
 	.execute_tuning = meson_execute_tuning,
 #endif
