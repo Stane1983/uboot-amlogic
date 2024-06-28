@@ -452,11 +452,13 @@ void hdmitx21_set_audioclk(bool en)
 	// [10: 9] clk_sel for cts_hdmitx_aud_clk: 2=fclk_div3
 	// [    8] clk_en for cts_hdmitx_aud_clk
 	// [ 6: 0] clk_div for cts_hdmitx_aud_clk: fclk_div3/aud_clk_div
+	//use 200M = 2G / 5 / 2
 	data32 = 0;
-	data32 |= (2 << 9);
+	data32 |= (3 << 9); /* FIXPLL/5 */
 	data32 |= (0 << 8);
-	data32 |= ((18 - 1) << 0);
+	data32 |= (1 << 0); /* div 2 */
 	hd21_write_reg(CLKCTRL_HTX_CLK_CTRL1, data32);
+
 	// [    8] clk_en for cts_hdmitx_aud_clk
 	hd21_set_reg_bits(CLKCTRL_HTX_CLK_CTRL1, en, 8, 1);
 }
