@@ -59,6 +59,12 @@
 #define VERSION_2       0x02
 
 #define CONFIG_BUILD_MESSAGE
+#ifdef CONFIG_BUILD_MESSAGE
+#define CONFIG_BL30_VERSION_SAVE
+#define CONFIG_BL30_VERSION_RTOSSDK
+#undef CONFIG_SYS_PBSIZE
+#define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16 + 400)
+#endif
 /***************************************************************************
  * This structure provides version information and the size of the
  * structure, attributes for the structure it represents

@@ -25,6 +25,7 @@
 #include <linux/err.h>
 #include <linux/types.h>
 #include <linux/string.h>
+#include <asm/amlogic/arch/cpu_config.h>
 
 /* we use this so that we can do without the ctype library */
 #define is_digit(c)	((c) >= '0' && (c) <= '9')

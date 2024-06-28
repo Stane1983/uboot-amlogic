@@ -29,15 +29,18 @@ const char __weak version_string[] = U_BOOT_VERSION_STRING;
 #include <asm/amlogic/arch/cpu.h>
 #define GET_BL30_VERSION_SIZE 0x30303000
 #define GET_BL30_VERSION_INFO 0x30303001
+#define GET_BL30_VERSION_TIME 0x30303002
 #define GET_BL30_LEN_MAX 400
 #define GET_BL30_LEN_ONCE MAILBOX_USER_DATA_SIZE
-int bl30_version_flag, bl30_version_size;
-char bl30_version_str[GET_BL30_LEN_MAX];
-char bl30_version_str_once[GET_BL30_LEN_ONCE];
+static int bl30_version_flag, bl30_version_size;
+static char bl30_version_str[GET_BL30_LEN_MAX];
+static char bl30_version_str_once[GET_BL30_LEN_ONCE];
 #endif
 
 #ifdef CONFIG_BL30_VERSION_RTOSSDK
 #define BUFF_LENGTH		(512 + 400)
+static int bl30_version_total_size, bl30_version_size_once;
+static int bl30_version_trans_times;
 #else
 #define BUFF_LENGTH		512
 #endif
@@ -157,6 +160,39 @@ int get_bootloader_build_message(void)
 			//putin_buf(build_info->bl30_message.ver_str);
 			//putin_buf(",");
 #ifdef CONFIG_BL30_VERSION_SAVE
+#ifdef CONFIG_BL30_VERSION_RTOSSDK
+			bl30_version_flag = GET_BL30_VERSION_TIME;
+			if (!scpi_send_data(AOCPU_REE_CHANNEL, CMD_GET_BL30_VERSION,
+			    &bl30_version_flag, 4, &bl30_version_str_once, GET_BL30_LEN_ONCE)) {
+				putin_buf(bl30_version_str_once);
+				memset(bl30_version_str_once, 0, GET_BL30_LEN_ONCE);
+			} else {
+				printf("bl30 version message get fail\n");
+			}
+
+			bl30_version_flag = GET_BL30_VERSION_INFO;
+			bl30_version_total_size = bl30_version_size & 0xffff;
+			bl30_version_size_once = bl30_version_size >> 16;
+			if (bl30_version_total_size % bl30_version_size_once)
+				bl30_version_trans_times =
+					bl30_version_total_size / bl30_version_size_once + 1;
+			else
+				bl30_version_trans_times =
+					bl30_version_total_size / bl30_version_size_once;
+
+			for (int i = 0; i < bl30_version_trans_times; i++) {
+				if (!scpi_send_data(AOCPU_REE_CHANNEL, CMD_GET_BL30_VERSION,
+				    &bl30_version_flag, 4, &bl30_version_str_once,
+				    bl30_version_size_once)) {
+					memcpy(&bl30_version_str[i * bl30_version_size_once],
+					bl30_version_str_once, bl30_version_size_once);
+					memset(bl30_version_str_once, 0, bl30_version_size_once);
+				} else {
+					printf("bl30 version message get fail\n");
+					break;
+				}
+			}
+#else
 			bl30_version_flag = GET_BL30_VERSION_INFO;
 			for (int i = 0; i < (bl30_version_size / GET_BL30_LEN_ONCE + 1); i++) {
 				if (!scpi_send_data(AOCPU_REE_CHANNEL, CMD_GET_BL30_VERSION,
@@ -170,6 +206,7 @@ int get_bootloader_build_message(void)
 					break;
 				}
 			}
+#endif
 			putin_buf(bl30_version_str);
 #else
 			putin_buf(build_info->bl30_message.hash);
