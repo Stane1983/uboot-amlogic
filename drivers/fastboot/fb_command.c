@@ -807,8 +807,9 @@ static void flash(char *cmd_parameter, char *response)
 			fastboot_fail("Failed to write s7d reva boot0-1", response);
 			return;
 		}
+		strlcpy(name, cmd_parameter, 31);
 	} else {
-		strncpy(name, cmd_parameter, 31);
+		strlcpy(name, cmd_parameter, 31);
 	}
 	strcat(name, "\0");
 
