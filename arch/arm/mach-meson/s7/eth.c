@@ -143,24 +143,15 @@ static void setup_internal_phy(struct udevice *dev)
 
 static void setup_external_phy(struct udevice *dev)
 {
-	int mc_val = 0;
-	int cali_val = 0;
-	int analog_ver = 0;
-	int chip_num = 0;
+	int mc_val = -1;
+	int cali_val = -1;
 	int rtn = 0;
 	struct resource eth_top, eth_cfg;
-	/*reset phy*/
-	struct gpio_desc desc;
-	int ret;
+	//struct gpio_desc desc;
+	//int ret;
 
-	chip_num = dev_read_u32_default(dev, "chip_num", 4);
-	if (chip_num < 0) {
-		chip_num = 0;
-		printf("use 0 as default chip num\n");
-	}
-	printf("chip num %d\n", chip_num);
-
-	if (chip_num != ETH_PHY_SC2) {
+#if 0
+	if (0) {
 		ret = gpio_request_by_name(dev, "reset-gpios", 0, &desc, GPIOD_IS_OUT);
 		if (ret) {
 			printf("request gpio failed!\n");
@@ -172,16 +163,19 @@ static void setup_external_phy(struct udevice *dev)
 		}
 		dm_gpio_free(dev, &desc);
 	}
+#endif
 
-	mc_val = dev_read_u32_default(dev, "mc_val", 4);
-	if (mc_val < 0) {
+	mc_val = dev_read_u32_default(dev, "mc_val", -1);
+	if (mc_val == -1)
 		printf("miss mc_val\n");
-	}
+	else
+		printf("mc_val=0x%x\n", mc_val);
 
-	cali_val = dev_read_u32_default(dev, "cali_val", 4);
-	if (mc_val < 0) {
+	cali_val = dev_read_u32_default(dev, "cali_val", -1);
+	if (cali_val == -1)
 		printf("miss cali_val\n");
-	}
+	else
+		printf("cali_val=0x%x\n", cali_val);
 
 	/*set rmii pinmux*/
 	if (mc_val & 0x4) {
@@ -204,21 +198,13 @@ static void setup_external_phy(struct udevice *dev)
 	}
 //	printf("eth_top 0x%x eth_cfg 0x%x \n", eth_top.start, eth_cfg.start);
 
-	setbits_le32(eth_top.start, mc_val);
-	setbits_le32(eth_top.start + 4, cali_val);
+	/* configure eth_top */
+	if (mc_val != -1)
+		setbits_le32(eth_top.start, mc_val);
+	if (cali_val != -1)
+		setbits_le32(eth_top.start + 4, cali_val);
 
-	analog_ver = dev_read_u32_default(dev, "analog_ver", 4);
-	if (mc_val < 0) {
-		printf("miss analog_ver\n");
-	}
-	if (analog_ver != 2)
-		writel(0x0, eth_cfg.start + AML_ETH_PHY_CNTL2);
-
-	if (chip_num != ETH_PHY_SC2) {
-		clrbits_le32(ANACTRL_PLL_GATE_DIS, (0x1 << 6));
-		clrbits_le32(ANACTRL_PLL_GATE_DIS, (0x1 << 7));
-		clrbits_le32(ANACTRL_PLL_GATE_DIS, (0x1 << 19));
-	}
+	writel(0x0, eth_cfg.start + AML_ETH_PHY_CNTL2);
 }
 
 void __iomem *DM_network_interface_setup(struct udevice *dev)
@@ -307,7 +293,7 @@ static unsigned int phy_tst_read(struct phy_device *phy_dev, unsigned int rd_add
 
 void DM_network_interface_setup_final(struct phy_device *phydev)
 {
-	#if 0
+#if 0
 	unsigned int reg_val;
 
 	if (internal_phy) {
@@ -324,7 +310,7 @@ void DM_network_interface_setup_final(struct phy_device *phydev)
 	printf("A5_CONFIG=0x%X\n", reg_val);
 	reg_val = phy_tst_read(phydev, 23);
 	printf("A6_CONFIG=0x%X\n", reg_val);
-	#endif
+#endif
 }
 
 #endif
