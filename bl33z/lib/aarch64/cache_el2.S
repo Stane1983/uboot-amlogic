@@ -102,11 +102,24 @@ __asm_flush_dcache_level:
 	mrs x6, ccsidr_el1		/* read the new cssidr_el1 */
 	and x2, x6, #7		/* x2 <- log2(cache line size)-4 */
 	add x2, x2, #4		/* x2 <- log2(cache line size) */
+	mrs	x14, ID_AA64MMFR2_EL1
+	ubfx x14, x14, #20, #4
+	cbz	x14, 1f			// check for FEAT_CCIDX for Associativity
+	ubfx	x3, x6, #3, #21		// x3 = associativity CCSIDR_EL1[23:3]
+	b	2f
+1:
 	mov x3, #0x3ff
 	and x3, x3, x6, lsr #3	/* x3 <- max number of #ways */
+2:
 	clz w5, w3			/* bit position of #ways */
+	cbz	x14, 3f			// check for FEAT_CCIDX for NumSets
+	ubfx    x4, x6, #32, #24	// x4 (w4) = numsets CCSIDR_EL1[55:32]
+	b	4f
+3:
 	mov x4, #0x7fff
 	and x4, x4, x6, lsr #13 /* x4 <- max number of #sets */
+4:
+	nop
 	/* x12 <- cache level << 1 */
 	/* x2 <- line length offset */
 	/* x3 <- number of cache ways - 1 */
