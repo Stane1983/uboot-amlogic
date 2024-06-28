@@ -385,15 +385,15 @@ static void lcd_set_vid_pll_div_txhd2(struct lcd_clk_config_s *cconf)
 	lcd_ana_setb(COMBO_DPHY_VID_PLL0_DIV, 0, 15, 1);
 
 	i = 0;
-	while (lcd_clk_div_table[i][0] < cconf->data->div_sel_max) {
-		if (cconf->div_sel == lcd_clk_div_table[i][0])
+	while (lcd_clk_div_table[i].divider < cconf->data->div_sel_max) {
+		if (cconf->div_sel == lcd_clk_div_table[i].divider)
 			break;
 		i++;
 	}
-	if (lcd_clk_div_table[i][0] == cconf->data->div_sel_max)
+	if (lcd_clk_div_table[i].divider == cconf->data->div_sel_max)
 		LCDERR("invalid clk divider\n");
-	shift_val = lcd_clk_div_table[i][1];
-	shift_sel = lcd_clk_div_table[i][2];
+	shift_val = lcd_clk_div_table[i].shift_val;
+	shift_sel = lcd_clk_div_table[i].shift_sel;
 	if (shift_val == 0xffff) { /* if divide by 1 */
 		lcd_ana_setb(COMBO_DPHY_VID_PLL0_DIV, 1, 18, 1);
 	} else {

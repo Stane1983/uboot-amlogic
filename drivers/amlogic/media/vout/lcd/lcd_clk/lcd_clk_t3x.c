@@ -319,15 +319,15 @@ static void _lcd_set_vid_pll_div_by_cconf(struct aml_lcd_drv_s *pdrv,
 	lcd_combo_dphy_setb(reg_vid_pll_div, 0, 15, 1);
 
 	i = 0;
-	while (lcd_clk_div_table[i][0] < cconf->data->div_sel_max) {
-		if (cconf->div_sel == lcd_clk_div_table[i][0])
+	while (lcd_clk_div_table[i].divider < cconf->data->div_sel_max) {
+		if (cconf->div_sel == lcd_clk_div_table[i].divider)
 			break;
 		i++;
 	}
-	if (lcd_clk_div_table[i][0] == cconf->data->div_sel_max)
+	if (lcd_clk_div_table[i].divider == cconf->data->div_sel_max)
 		LCDERR("[%d]: invalid clk divider\n", pdrv->index);
-	shift_val = lcd_clk_div_table[i][1];
-	shift_sel = lcd_clk_div_table[i][2];
+	shift_val = lcd_clk_div_table[i].shift_val;
+	shift_sel = lcd_clk_div_table[i].shift_sel;
 
 	if (shift_val == 0xffff) { /* if divide by 1 */
 		lcd_combo_dphy_setb(reg_vid_pll_div, 1, 18, 1);

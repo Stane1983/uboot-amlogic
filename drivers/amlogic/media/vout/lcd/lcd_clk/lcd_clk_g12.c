@@ -12,26 +12,6 @@
 #include "lcd_clk_ctrl.h"
 #include "lcd_clk_utils.h"
 
-static char *lcd_clk_div_sel_table[] = {
-	"1",
-	"2",
-	"3",
-	"3.5",
-	"3.75",
-	"4",
-	"5",
-	"6",
-	"6.25",
-	"7",
-	"7.5",
-	"12",
-	"14",
-	"15",
-	"2.5",
-	"4.67",
-	"invalid",
-};
-
 static const unsigned int od_table[6] = {1, 2, 4, 8, 16, 32};
 
 static void lcd_pll_frac_set_gp0(struct aml_lcd_drv_s *pdrv, unsigned int frac)
@@ -565,7 +545,7 @@ static void lcd_clk_config_print_g12a(struct aml_lcd_drv_s *pdrv)
 			cconf->pll_frac, cconf->pll_fvco,
 			cconf->pll_od1_sel, cconf->pll_od2_sel,
 			cconf->pll_od3_sel, cconf->pll_fout,
-			lcd_clk_div_sel_table[cconf->div_sel],
+			lcd_clk_div_table[cconf->div_sel].name,
 			cconf->div_sel, cconf->xd,
 			cconf->fout);
 	}

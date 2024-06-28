@@ -371,8 +371,7 @@ static void lcd_set_phy_dig_div(struct aml_lcd_drv_s *pdrv)
 	switch (pdrv->config.basic.lcd_type) {
 	case LCD_EDP:
 		if (port_sel == 2) {
-			LCDERR("[%d]: %s: invalid port: %d\n",
-			       pdrv->index, __func__, port_sel);
+			LCDERR("[%d]: %s: invalid port: %d\n", pdrv->index, __func__, port_sel);
 			return;
 		}
 		// Disable edp_div clock
@@ -387,8 +386,7 @@ static void lcd_set_phy_dig_div(struct aml_lcd_drv_s *pdrv)
 	case LCD_MIPI:
 	case LCD_VBYONE:
 		if (port_sel == 2) {
-			LCDERR("[%d]: %s: invalid port: %d\n",
-			       pdrv->index, __func__, port_sel);
+			LCDERR("[%d]: %s: invalid port: %d\n", pdrv->index, __func__, port_sel);
 			return;
 		}
 		// sel pll clock
@@ -441,15 +439,15 @@ static void lcd_set_vid_pll_div_t7(struct aml_lcd_drv_s *pdrv)
 	lcd_combo_dphy_setb(reg_vid_pll_div, 0, 15, 1);
 
 	i = 0;
-	while (lcd_clk_div_table[i][0] < cconf->data->div_sel_max) {
-		if (cconf->div_sel == lcd_clk_div_table[i][0])
+	while (lcd_clk_div_table[i].divider < cconf->data->div_sel_max) {
+		if (cconf->div_sel == lcd_clk_div_table[i].divider)
 			break;
 		i++;
 	}
-	if (lcd_clk_div_table[i][0] == cconf->data->div_sel_max)
+	if (lcd_clk_div_table[i].divider == cconf->data->div_sel_max)
 		LCDERR("[%d]: invalid clk divider\n", pdrv->index);
-	shift_val = lcd_clk_div_table[i][1];
-	shift_sel = lcd_clk_div_table[i][2];
+	shift_val = lcd_clk_div_table[i].shift_val;
+	shift_sel = lcd_clk_div_table[i].shift_sel;
 
 	if (shift_val == 0xffff) { /* if divide by 1 */
 		lcd_combo_dphy_setb(reg_vid_pll_div, 1, 18, 1);
@@ -558,15 +556,15 @@ static void lcd_set_vid_pll_div_t3(struct aml_lcd_drv_s *pdrv)
 	lcd_ana_setb(ANACTRL_VID_PLL_CLK_DIV, 0, 15, 1);
 
 	i = 0;
-	while (lcd_clk_div_table[i][0] < cconf->data->div_sel_max) {
-		if (cconf->div_sel == lcd_clk_div_table[i][0])
+	while (lcd_clk_div_table[i].divider < cconf->data->div_sel_max) {
+		if (cconf->div_sel == lcd_clk_div_table[i].divider)
 			break;
 		i++;
 	}
-	if (lcd_clk_div_table[i][0] == cconf->data->div_sel_max)
+	if (lcd_clk_div_table[i].divider == cconf->data->div_sel_max)
 		LCDERR("[%d]: invalid clk divider\n", pdrv->index);
-	shift_val = lcd_clk_div_table[i][1];
-	shift_sel = lcd_clk_div_table[i][2];
+	shift_val = lcd_clk_div_table[i].shift_val;
+	shift_sel = lcd_clk_div_table[i].shift_sel;
 
 	if (shift_val == 0xffff) { /* if divide by 1 */
 		lcd_ana_setb(ANACTRL_VID_PLL_CLK_DIV, 1, 18, 1);
@@ -1488,7 +1486,7 @@ static struct lcd_clk_data_s lcd_clk_data_t7_0 = {
 	.pll_out_fmax = 3100000000ULL,
 	.pll_out_fmin = 187500000,
 	.div_in_fmax = 3100000000ULL,
-	.div_out_fmax = 750000000,
+	.div_out_fmax = 1500000000U,
 	.xd_out_fmax = 750000000,
 	.od_cnt = 3,
 	.have_tcon_div = 1,
@@ -1543,7 +1541,7 @@ static struct lcd_clk_data_s lcd_clk_data_t7_1 = {
 	.pll_out_fmax = 3100000000ULL,
 	.pll_out_fmin = 187500000,
 	.div_in_fmax = 3100000000ULL,
-	.div_out_fmax = 750000000,
+	.div_out_fmax = 1500000000U,
 	.xd_out_fmax = 750000000,
 	.od_cnt = 3,
 	.have_tcon_div = 1,

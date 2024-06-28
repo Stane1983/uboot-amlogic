@@ -101,6 +101,15 @@ enum div_sel_e {
 	CLK_DIV_SEL_MAX,
 };
 
-extern unsigned int lcd_clk_div_table[][5];
+struct lcd_clk_div_table_s {
+	char *name;
+	unsigned char divider;
+	unsigned char num;
+	unsigned char den;
+	unsigned char shift_sel;
+	unsigned short shift_val;
+};
+
+extern struct lcd_clk_div_table_s lcd_clk_div_table[];
 
 #endif
