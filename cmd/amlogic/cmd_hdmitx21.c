@@ -326,11 +326,15 @@ static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 			}
 			break;
 		default:
-			/* In Spec2.1 Table 7-34, greater than 2160p30hz will support y420 */
+			/* In Spec2.1 Table 7-34, v_active greater than or equal to 2160 and refresh
+			 * rate greater than 30 will support y420
+			 * Only the S5 will run this case, because 4k 50/60hz has already been
+			 * filtered and only S5 support over 6G (4k 100/120hz)
+			 */
 			timing = hdmitx21_gettiming_from_vic(hdev->vic);
 			if (!timing)
 				break;
-			if (timing->v_active > 2160 && timing->v_freq > 30000)
+			if (timing->v_active >= 2160 && timing->v_freq > 30000)
 				break;
 			if (timing->v_active >= 4320)
 				break;
