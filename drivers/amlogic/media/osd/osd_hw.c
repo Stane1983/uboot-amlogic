@@ -1324,6 +1324,15 @@ void osd_setting_default_hwc(u32 index, struct pandata_s *disp_data)
 	else if (index == OSD3)
 		din_reoder_sel = 0x4443;
 
+	/*s7d revB only osd blend din1/din3*/
+	if (osd_get_chip_type() == MESON_CPU_MAJOR_ID_S7D &&
+	    get_cpu_id().chip_rev == MESON_CPU_CHIP_REVISION_B) {
+		if (index == OSD1)
+			din_reoder_sel = 0x4414;
+		else if (index == OSD2)
+			din_reoder_sel = 0x4424;
+		blend_din_en = 0x7;
+	}
 	/* depend on din0_premult_en */
 	postbld_osd1_premult = 0;
 	/* depend on din_premult_en bit 4 */
@@ -1375,35 +1384,39 @@ void osd_setting_default_hwc(u32 index, struct pandata_s *disp_data)
 		0x0  << 20 |
 		0x0  << 11 |
 		0x0);
+	/*
+	 *s7d revB use osd dummy alpha as global alpha
+	 */
+	if (osd_get_chip_type() == MESON_CPU_MAJOR_ID_S7D &&
+	    get_cpu_id().chip_rev == MESON_CPU_CHIP_REVISION_B)
+		osd_reg_write(VIU_OSD_BLEND_DUMMY_ALPHA,
+			      OSD_GLOBAL_ALPHA_DEF << 20 |
+			      OSD_GLOBAL_ALPHA_DEF << 11 |
+			      0x0);
 
 	width = disp_data->x_end - disp_data->x_start + 1;
 	height = disp_data->y_end - disp_data->y_start + 1 + shift_line;
 	/* it is setting for osdx */
-	osd_reg_write(
-		VIU_OSD_BLEND_DIN0_SCOPE_H + reg_offset * index,
-		disp_data->x_end << 16 |
-		disp_data->x_start);
-	osd_reg_write(
-		VIU_OSD_BLEND_DIN0_SCOPE_V + reg_offset * index,
-		(disp_data->y_end + shift_line) << 16 |
-		(disp_data->y_start + shift_line));
+	osd_reg_write(VIU_OSD_BLEND_DIN0_SCOPE_H + reg_offset * index,
+		      disp_data->x_end << 16 |
+		      disp_data->x_start);
+	osd_reg_write(VIU_OSD_BLEND_DIN0_SCOPE_V + reg_offset * index,
+		      (disp_data->y_end + shift_line) << 16 |
+		      (disp_data->y_start + shift_line));
 	if (index == OSD1) {
 		int i;
 
 		for (i = 1; i < 4; i++)
-			osd_reg_write(
-				VIU_OSD_BLEND_DIN0_SCOPE_V + reg_offset * i,
-				0xffffffff);
+			osd_reg_write(VIU_OSD_BLEND_DIN0_SCOPE_V + reg_offset * i,
+				      0xffffffff);
 	} else if (index == OSD2) {
 		int i = 0;
 
-		osd_reg_write(
-			VIU_OSD_BLEND_DIN0_SCOPE_V + reg_offset * i,
-			0xffffffff);
+		osd_reg_write(VIU_OSD_BLEND_DIN0_SCOPE_V + reg_offset * i,
+			      0xffffffff);
 		for (i = 2; i < 4; i++)
-			osd_reg_write(
-				VIU_OSD_BLEND_DIN0_SCOPE_V + reg_offset * i,
-				0xffffffff);
+			osd_reg_write(VIU_OSD_BLEND_DIN0_SCOPE_V + reg_offset * i,
+				      0xffffffff);
 	} else if (index == OSD3) {
 		int i = 0;
 
