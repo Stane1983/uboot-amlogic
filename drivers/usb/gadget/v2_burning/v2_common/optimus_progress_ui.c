@@ -19,9 +19,9 @@ extern int lcd_drawchars (ushort x, ushort y, uchar *str, int count);
 
 #ifdef CONFIG_AML_VOUT
 #ifdef OSD_SCALE_ENABLE
-#define _VIDEO_DEV_OPEN "hdmitx hpd;osd open;osd clear;vout output ${outputmode};bmp scale;"
+#define _VIDEO_DEV_OPEN "setenv display_layer osd0;hdmitx hpd;osd open;osd clear;vout output ${outputmode};bmp scale;"
 #else
-#define _VIDEO_DEV_OPEN "hdmitx hpd;osd open;osd clear;vout output ${outputmode};"
+#define _VIDEO_DEV_OPEN "setenv display_layer osd0;hdmitx hpd;osd open;osd clear;vout output ${outputmode};"
 #endif//#ifdef OSD_SCALE_ENABLE
 #else
 #define _VIDEO_DEV_OPEN "video dev bl_on;"
@@ -125,7 +125,7 @@ int video_res_prepare_for_upgrade(HIMAGE hImg)
 static int _show_burn_logo(const char* bmpOffsetName) //Display logo to report burning result is failed
 {
     int ret = 0;
-    char bmpCmd[64] = "bmp display %s";
+    char bmpCmd[128] = "bmp display %s";
     char* bmpAddrEnv = getenv((char*)bmpOffsetName);
 
     if (!bmpAddrEnv) {
@@ -137,7 +137,7 @@ static int _show_burn_logo(const char* bmpOffsetName) //Display logo to report b
         }
         bmpAddrEnv = getenv((char*)bmpOffsetName);
     }
-    sprintf(bmpCmd, "bmp display %s ", bmpAddrEnv);
+    sprintf(bmpCmd, "setenv display_layer osd0;bmp display %s ", bmpAddrEnv);
 
     ret = run_command(bmpCmd, 0);
     if (ret) {
