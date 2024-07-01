@@ -87,7 +87,11 @@ else
 ifdef CONFIG_MESON_S7D
 obj-y += cmd_ddr_test_s7.o
 else
+ifdef CONFIG_MESON_S6
+obj-y += cmd_ddr_test_s7.o
+else
 obj-y += cmd_ddr_test_g12.o
+endif
 endif
 endif
 endif
