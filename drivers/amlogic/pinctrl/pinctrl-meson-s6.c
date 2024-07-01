@@ -99,8 +99,8 @@ static const unsigned int mic_mute_en_pins[]			= { GPIOF_0 };
 static const unsigned int mic_mute_key_pins[]			= { GPIOF_1 };
 
 /* GPIOE func1 */
-static const unsigned int i2c0_sda_e_pins[]			= { GPIOE_0 };
-static const unsigned int i2c0_scl_e_pins[]			= { GPIOE_1 };
+static const unsigned int i2c0_scl_e_pins[]			= { GPIOE_0 };
+static const unsigned int i2c0_sda_e_pins[]			= { GPIOE_1 };
 static const unsigned int clk12m_24m_e_pins[]			= { GPIOE_2 };
 
 /* GPIOE func2 */
@@ -181,8 +181,8 @@ static const unsigned int tsin_a_sop_c_pins[]			= { GPIOC_1 };
 static const unsigned int tsin_a_valid_c_pins[]			= { GPIOC_2 };
 static const unsigned int tsin_a_din0_c_pins[]			= { GPIOC_3 };
 static const unsigned int gen_clk_c_pins[]			= { GPIOC_4 };
-static const unsigned int i2c1_scl_c_pins[]			= { GPIOC_5 };
-static const unsigned int i2c1_sda_c_pins[]			= { GPIOC_6 };
+static const unsigned int i2c1_sda_c_pins[]			= { GPIOC_5 };
+static const unsigned int i2c1_scl_c_pins[]			= { GPIOC_6 };
 
 /* GPIOC func4 */
 static const unsigned int pdm_din0_c_pins[]			= { GPIOC_0 };
@@ -231,8 +231,8 @@ static const unsigned int uart_a_rx_x13_pins[]			= { GPIOX_13 };
 static const unsigned int uart_a_cts_pins[]			= { GPIOX_14 };
 static const unsigned int uart_a_rts_pins[]			= { GPIOX_15 };
 static const unsigned int pwm_e_pins[]				= { GPIOX_16 };
-static const unsigned int i2c1_scl_x_pins[]			= { GPIOX_17 };
-static const unsigned int i2c1_sda_x_pins[]			= { GPIOX_18 };
+static const unsigned int i2c1_sda_x_pins[]			= { GPIOX_17 };
+static const unsigned int i2c1_scl_x_pins[]			= { GPIOX_18 };
 static const unsigned int pwm_b_x_pins[]			= { GPIOX_19 };
 
 /* GPIOX func2 */
@@ -264,14 +264,14 @@ static const unsigned int tsin_b_din0_x10_pins[]		= { GPIOX_10 };
 static const unsigned int tsin_b_clk_x11_pins[]			= { GPIOX_11 };
 static const unsigned int iso7816_clk_x12_pins[]		= { GPIOX_12 };
 static const unsigned int iso7816_data_x13_pins[]		= { GPIOX_13 };
-static const unsigned int i2c3_scl_x14_pins[]			= { GPIOX_14 };
-static const unsigned int i2c3_sda_x15_pins[]			= { GPIOX_15 };
+static const unsigned int i2c3_sda_x14_pins[]			= { GPIOX_14 };
+static const unsigned int i2c3_scl_x15_pins[]			= { GPIOX_15 };
 
 /* GPIOX func4 */
-static const unsigned int i2c3_scl_x0_pins[]			= { GPIOX_0 };
-static const unsigned int i2c3_sda_x1_pins[]			= { GPIOX_1 };
-static const unsigned int i2c2_scl_x_pins[]			= { GPIOX_2 };
-static const unsigned int i2c2_sda_x_pins[]			= { GPIOX_3 };
+static const unsigned int i2c3_sda_x0_pins[]			= { GPIOX_0 };
+static const unsigned int i2c3_scl_x1_pins[]			= { GPIOX_1 };
+static const unsigned int i2c2_sda_x_pins[]			= { GPIOX_2 };
+static const unsigned int i2c2_scl_x_pins[]			= { GPIOX_3 };
 static const unsigned int spi_a_mosi_x_pins[]			= { GPIOX_8 };
 static const unsigned int spi_a_miso_x_pins[]			= { GPIOX_9 };
 static const unsigned int spi_a_ss0_x_pins[]			= { GPIOX_10 };
@@ -288,8 +288,8 @@ static const unsigned int tdm_d5_x6_pins[]			= { GPIOX_6 };
 static const unsigned int tdm_d2_x7_pins[]			= { GPIOX_7 };
 static const unsigned int iso7816_clk_x8_pins[]			= { GPIOX_8 };
 static const unsigned int iso7816_data_x9_pins[]		= { GPIOX_9 };
-static const unsigned int i2c3_scl_x10_pins[]			= { GPIOX_10 };
-static const unsigned int i2c3_sda_x11_pins[]			= { GPIOX_11 };
+static const unsigned int i2c3_sda_x10_pins[]			= { GPIOX_10 };
+static const unsigned int i2c3_scl_x11_pins[]			= { GPIOX_11 };
 static const unsigned int tdm_d3_x17_pins[]			= { GPIOX_17 };
 
 /* GPIOX func6 */
@@ -421,18 +421,18 @@ static const unsigned int pdm_din1_z_pins[]			= { GPIOZ_3 };
 static const unsigned int pdm_din2_z4_pins[]			= { GPIOZ_4 };
 static const unsigned int pdm_din3_z5_pins[]			= { GPIOZ_5 };
 static const unsigned int pdm_dclk_z_pins[]			= { GPIOZ_6 };
-static const unsigned int i2c5_scl_z_pins[]			= { GPIOZ_7 };
-static const unsigned int i2c5_sda_z_pins[]			= { GPIOZ_8 };
-static const unsigned int i2c2_scl_z10_pins[]			= { GPIOZ_10 };
-static const unsigned int i2c2_sda_z11_pins[]			= { GPIOZ_11 };
+static const unsigned int i2c5_sda_z_pins[]			= { GPIOZ_7 };
+static const unsigned int i2c5_scl_z_pins[]			= { GPIOZ_8 };
+static const unsigned int i2c2_sda_z10_pins[]			= { GPIOZ_10 };
+static const unsigned int i2c2_scl_z11_pins[]			= { GPIOZ_11 };
 static const unsigned int pwm_f_z_pins[]			= { GPIOZ_12 };
 static const unsigned int pwm_b_z13_pins[]			= { GPIOZ_13 };
 static const unsigned int pdm_din2_z14_pins[]			= { GPIOZ_14 };
 static const unsigned int pdm_din3_z15_pins[]			= { GPIOZ_15 };
 
 /* GPIOZ func6 */
-static const unsigned int i2c2_scl_z0_pins[]			= { GPIOZ_0 };
-static const unsigned int i2c2_sda_z1_pins[]			= { GPIOZ_1 };
+static const unsigned int i2c2_sda_z0_pins[]			= { GPIOZ_0 };
+static const unsigned int i2c2_scl_z1_pins[]			= { GPIOZ_1 };
 static const unsigned int i2c1_sda_z3_pins[]			= { GPIOZ_3 };
 static const unsigned int pdm_din2_z7_pins[]			= { GPIOZ_7 };
 static const unsigned int pdm_din3_z8_pins[]			= { GPIOZ_8 };
@@ -476,8 +476,8 @@ static const unsigned int pdm_din3_a_pins[]			= { GPIOA_10 };
 static const unsigned int pdm_din2_a_pins[]			= { GPIOA_11 };
 static const unsigned int spdif_in_a12_pins[]			= { GPIOA_12 };
 static const unsigned int spdif_out_a_pins[]			= { GPIOA_13 };
-static const unsigned int i2c3_scl_a14_pins[]			= { GPIOA_14 };
-static const unsigned int i2c3_sda_a15_pins[]			= { GPIOA_15 };
+static const unsigned int i2c3_sda_a14_pins[]			= { GPIOA_14 };
+static const unsigned int i2c3_scl_a15_pins[]			= { GPIOA_15 };
 
 /* GPIOA func3 */
 static const unsigned int i2c0_sda_a_pins[]			= { GPIOA_0 };
@@ -488,10 +488,10 @@ static const unsigned int i2c2_scl_a_pins[]			= { GPIOA_4 };
 static const unsigned int i2c2_sda_a_pins[]			= { GPIOA_5 };
 static const unsigned int i2c3_scl_a6_pins[]			= { GPIOA_6 };
 static const unsigned int i2c3_sda_a7_pins[]			= { GPIOA_7 };
-static const unsigned int i2c4_sda_a_pins[]			= { GPIOA_8 };
-static const unsigned int i2c4_scl_a_pins[]			= { GPIOA_9 };
-static const unsigned int i2c5_scl_a10_pins[]			= { GPIOA_10 };
-static const unsigned int i2c5_sda_a11_pins[]			= { GPIOA_11 };
+static const unsigned int i2c4_scl_a_pins[]			= { GPIOA_8 };
+static const unsigned int i2c4_sda_a_pins[]			= { GPIOA_9 };
+static const unsigned int i2c5_sda_a10_pins[]			= { GPIOA_10 };
+static const unsigned int i2c5_scl_a11_pins[]			= { GPIOA_11 };
 static const unsigned int pdm_din0_a12_pins[]			= { GPIOA_12 };
 static const unsigned int pdm_din1_a13_pins[]			= { GPIOA_13 };
 static const unsigned int spdif_in_a14_pins[]			= { GPIOA_14 };
@@ -704,8 +704,8 @@ static struct meson_pmx_group meson_s6_periphs_groups[] = {
 	GROUP(mic_mute_key,		7),
 
 	/* GPIOE func1 */
-	GROUP(i2c0_sda_e,		1),
 	GROUP(i2c0_scl_e,		1),
+	GROUP(i2c0_sda_e,		1),
 	GROUP(clk12m_24m_e,		1),
 
 	/* GPIOE func2 */
@@ -786,8 +786,8 @@ static struct meson_pmx_group meson_s6_periphs_groups[] = {
 	GROUP(tsin_a_valid_c,		3),
 	GROUP(tsin_a_din0_c,		3),
 	GROUP(gen_clk_c,		3),
-	GROUP(i2c1_scl_c,		3),
 	GROUP(i2c1_sda_c,		3),
+	GROUP(i2c1_scl_c,		3),
 
 	/* GPIOC func4 */
 	GROUP(pdm_din0_c,		4),
@@ -836,8 +836,8 @@ static struct meson_pmx_group meson_s6_periphs_groups[] = {
 	GROUP(uart_a_cts,		1),
 	GROUP(uart_a_rts,		1),
 	GROUP(pwm_e,			1),
-	GROUP(i2c1_scl_x,		1),
 	GROUP(i2c1_sda_x,		1),
+	GROUP(i2c1_scl_x,		1),
 	GROUP(pwm_b_x,			1),
 
 	/* GPIOX func2 */
@@ -869,14 +869,14 @@ static struct meson_pmx_group meson_s6_periphs_groups[] = {
 	GROUP(tsin_b_clk_x11,		3),
 	GROUP(iso7816_clk_x12,		3),
 	GROUP(iso7816_data_x13,		3),
-	GROUP(i2c3_scl_x14,		3),
-	GROUP(i2c3_sda_x15,		3),
+	GROUP(i2c3_sda_x14,		3),
+	GROUP(i2c3_scl_x15,		3),
 
 	/* GPIOX func4 */
-	GROUP(i2c3_scl_x0,		4),
-	GROUP(i2c3_sda_x1,		4),
-	GROUP(i2c2_scl_x,		4),
+	GROUP(i2c3_sda_x0,		4),
+	GROUP(i2c3_scl_x1,		4),
 	GROUP(i2c2_sda_x,		4),
+	GROUP(i2c2_scl_x,		4),
 	GROUP(spi_a_mosi_x,		4),
 	GROUP(spi_a_miso_x,		4),
 	GROUP(spi_a_ss0_x,		4),
@@ -893,8 +893,8 @@ static struct meson_pmx_group meson_s6_periphs_groups[] = {
 	GROUP(tdm_d2_x7,		5),
 	GROUP(iso7816_clk_x8,		5),
 	GROUP(iso7816_data_x9,		5),
-	GROUP(i2c3_scl_x10,		5),
-	GROUP(i2c3_sda_x11,		5),
+	GROUP(i2c3_sda_x10,		5),
+	GROUP(i2c3_scl_x11,		5),
 	GROUP(tdm_d3_x17,		5),
 
 	/* GPIOX func6 */
@@ -1026,18 +1026,18 @@ static struct meson_pmx_group meson_s6_periphs_groups[] = {
 	GROUP(pdm_din2_z4,		5),
 	GROUP(pdm_din3_z5,		5),
 	GROUP(pdm_dclk_z,		5),
-	GROUP(i2c5_scl_z,		5),
 	GROUP(i2c5_sda_z,		5),
-	GROUP(i2c2_scl_z10,		5),
-	GROUP(i2c2_sda_z11,		5),
+	GROUP(i2c5_scl_z,		5),
+	GROUP(i2c2_sda_z10,		5),
+	GROUP(i2c2_scl_z11,		5),
 	GROUP(pwm_f_z,			5),
 	GROUP(pwm_b_z13,		5),
 	GROUP(pdm_din2_z14,		5),
 	GROUP(pdm_din3_z15,		5),
 
 	/* GPIOZ func6 */
-	GROUP(i2c2_scl_z0,		6),
-	GROUP(i2c2_sda_z1,		6),
+	GROUP(i2c2_sda_z0,		6),
+	GROUP(i2c2_scl_z1,		6),
 	GROUP(i2c1_sda_z3,		6),
 	GROUP(pdm_din2_z7,		6),
 	GROUP(pdm_din3_z8,		6),
@@ -1081,8 +1081,8 @@ static struct meson_pmx_group meson_s6_periphs_groups[] = {
 	GROUP(pdm_din3_a,		2),
 	GROUP(spdif_in_a12,		2),
 	GROUP(spdif_out_a,		2),
-	GROUP(i2c3_scl_a14,		2),
-	GROUP(i2c3_sda_a15,		2),
+	GROUP(i2c3_sda_a14,		2),
+	GROUP(i2c3_scl_a15,		2),
 
 	/* GPIOA func3 */
 	GROUP(i2c0_sda_a,		3),
@@ -1093,10 +1093,10 @@ static struct meson_pmx_group meson_s6_periphs_groups[] = {
 	GROUP(i2c2_sda_a,		3),
 	GROUP(i2c3_scl_a6,		3),
 	GROUP(i2c3_sda_a7,		3),
-	GROUP(i2c4_sda_a,		3),
 	GROUP(i2c4_scl_a,		3),
-	GROUP(i2c5_scl_a10,		3),
-	GROUP(i2c5_sda_a11,		3),
+	GROUP(i2c4_sda_a,		3),
+	GROUP(i2c5_sda_a10,		3),
+	GROUP(i2c5_scl_a11,		3),
 	GROUP(pdm_din0_a12,		3),
 	GROUP(pdm_din1_a13,		3),
 	GROUP(spdif_in_a14,		3),
@@ -1169,23 +1169,23 @@ static const char * const i2c1_groups[] = {
 static const char * const i2c2_groups[] = {
 	"i2c2_scl_d", "i2c2_sda_d", "i2c2_scl_x", "i2c2_sda_x",
 	"i2c2_sda_h", "i2c2_scl_h", "i2c2_scl_a", "i2c2_sda_a",
-	"i2c2_scl_z0", "i2c2_sda_z1", "i2c2_scl_z10", "i2c2_sda_z11"
+	"i2c2_sda_z0", "i2c2_scl_z1", "i2c2_sda_z10", "i2c2_scl_z11"
 };
 
 static const char * const i2c3_groups[] = {
 	"i2c3_scl_f", "i2c3_sda_f", "i2c3_sda_h", "i2c3_scl_h",
-	"i2c3_scl_x0", "i2c3_sda_x1", "i2c3_scl_a6", "i2c3_sda_a7",
-	"i2c3_scl_x14", "i2c3_sda_x15", "i2c3_scl_x10", "i2c3_sda_x11",
-	"i2c3_scl_a14", "i2c3_sda_a15"
+	"i2c3_sda_x0", "i2c3_scl_x1", "i2c3_scl_a6", "i2c3_sda_a7",
+	"i2c3_sda_x14", "i2c3_scl_x15", "i2c3_sda_x10", "i2c3_scl_x11",
+	"i2c3_sda_a14", "i2c3_scl_a15"
 };
 
 static const char * const i2c4_groups[] = {
 	"i2c4_sda_b", "i2c4_scl_b", "i2c4_sda_h", "i2c4_scl_h",
-	"i2c4_sda_z", "i2c4_scl_z", "i2c4_sda_a", "i2c4_scl_a",
+	"i2c4_sda_z", "i2c4_scl_z", "i2c4_scl_a", "i2c4_sda_a",
 };
 
 static const char * const i2c5_groups[] = {
-	"i2c5_scl_z", "i2c5_sda_z", "i2c5_scl_a10", "i2c5_sda_a11",
+	"i2c5_scl_z", "i2c5_sda_z", "i2c5_sda_a10", "i2c5_scl_a11",
 	"i2c5_sda_a14", "i2c5_scl_a15"
 };
 
