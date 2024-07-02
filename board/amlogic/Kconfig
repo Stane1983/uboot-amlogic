@@ -736,6 +736,13 @@ config S6_BQ209
 	select TARGET_S6_BQ209
 	help
 		Select S6 BQ209 config
+
+config S6_BN201
+	bool "S6_BN201"
+	select TARGET_S6_BN201
+	help
+		Select S6 BN201 config
+
 endchoice
 
 config TARGET_S6_SKT
@@ -765,6 +772,10 @@ config TARGET_S6_BQ208
 config TARGET_S6_BQ209
 	bool "S6 BQ209 board"
 	depends on S6_BQ209
+
+config TARGET_S6_BN201
+	bool "S6 BN201 board"
+	depends on S6_BN201
 endif
 
 # Amlogic boards
@@ -824,3 +835,5 @@ source "board/amlogic/s6_bq201/Kconfig"
 source "board/amlogic/s6_bq208/Kconfig"
 
 source "board/amlogic/s6_bq209/Kconfig"
+
+source "board/amlogic/s6_bn201/Kconfig"
