@@ -15,7 +15,6 @@
 #include "lcd_common.h"
 #include "lcd_tcon.h"
 #include "env.h"
-#include <linux/crc32.h>
 
 enum {
 	TCON_AXI_MEM_TYPE_OD = 0,
@@ -220,7 +219,7 @@ static int lcd_tcon_bin_path_resv_mem_set(void)
 		}
 
 		/* update data check */
-		temp_crc = crc32(0, &buf[4], (data_size - 4));
+		temp_crc = lcd_crc32(0, &buf[4], (data_size - 4));
 		buf[0] = temp_crc & 0xff;
 		buf[1] = (temp_crc >> 8) & 0xff;
 		buf[2] = (temp_crc >> 16) & 0xff;
@@ -709,7 +708,7 @@ void lcd_tcon_data_block_regen_crc(unsigned char *data)
 	header = (struct lcd_tcon_data_block_header_s *)data;
 
 	raw_crc32 = (data[0] | (data[1] << 8) | (data[2] << 16) | (data[3] << 24));
-	new_crc32 = crc32(0, data + 4, header->block_size - 4);
+	new_crc32 = lcd_crc32(0, data + 4, header->block_size - 4);
 	if (raw_crc32 != new_crc32) {
 		data[0] = (unsigned char)(new_crc32 & 0xff);
 		data[1] = (unsigned char)((new_crc32 >> 8) & 0xff);
@@ -947,7 +946,7 @@ static int lcd_tcon_bin_path_update(unsigned int size)
 		(mem_vaddr[1] << 8) |
 		(mem_vaddr[2] << 16) |
 		(mem_vaddr[3] << 24);
-	temp_crc32 = crc32(0, &mem_vaddr[4], (data_size - 4));
+	temp_crc32 = lcd_crc32(0, &mem_vaddr[4], (data_size - 4));
 	if (data_crc32 != temp_crc32) {
 		LCDERR("%s: tcon_bin_path data crc error\n", __func__);
 		return -1;

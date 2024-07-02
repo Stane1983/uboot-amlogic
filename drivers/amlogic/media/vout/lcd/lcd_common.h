@@ -230,5 +230,7 @@ unsigned int aml_bl_get_level(int index);
 void aml_bl_config_print(int index);
 int aml_bl_pwm_reg_config_init(struct aml_lcd_data_s *pdata);
 
+unsigned int lcd_crc32(unsigned int seed, const unsigned char *ptr, int buf_len);
+
 #endif
 

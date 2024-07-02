@@ -89,7 +89,7 @@ int _ini_file_parse(const char *filename, INI_HANDLER_DATA *pHandlerData)
 int ini_mem_parse(unsigned char *file_buf, INI_HANDLER_DATA *pHandlerData)
 {
 	// ALOGD("%s, entering...\n", __func__);
-	return ini_parse_mem((char *)file_buf, handler, (void *)pHandlerData);
+	return _ini_mem_parse((char *)file_buf, handler, (void *)pHandlerData);
 }
 
 int _ini_set_save_file_name(const char *filename, INI_HANDLER_DATA *pHandlerData)

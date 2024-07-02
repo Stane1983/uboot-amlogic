@@ -11,7 +11,7 @@
 #include "ini_log.h"
 #include "UnifyKey.h"
 #include "ini_size_define.h"
-#include <linux/crc32.h>
+#include "ini_io.h"
 
 #if (defined(CC_INI_IO_USE_UNIFY_KEY))
 
@@ -389,7 +389,7 @@ unifykey_read:
 		}
 	}
 
-	key_crc = crc32(0, &data_buf[4], (key_len - 4)); // except crc32
+	key_crc = cal_CRC32(0, &data_buf[4], (key_len - 4)); // except crc32
 	key_crc32 = (unsigned int)key_crc;
 	if (key_crc32 != tmp_crc) {
 		ALOGE("%s, %s crc32 0x%08x is not match 0x%08x\n", __func__,

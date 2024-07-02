@@ -9,7 +9,6 @@
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include "lcd_common.h"
 #include "lcd_tcon.h"
-#include <linux/crc32.h>
 
 static struct lcd_tcon_spi_s tcon_spi = {
 	.block_cnt = 0,
@@ -91,7 +90,7 @@ static int lcd_tcon_spi_ext_update(struct lcd_extern_dev_s *ext_dev)
 	buf[6] = (size >> 16) & 0xff;
 	buf[7] = (size >> 24) & 0xff;
 
-	crc = (unsigned int)(crc32(0, &buf[4], (size - 4)));
+	crc = (unsigned int)(lcd_crc32(0, &buf[4], (size - 4)));
 	buf[0] = crc & 0xff;
 	buf[1] = (crc >> 8) & 0xff;
 	buf[2] = (crc >> 16) & 0xff;

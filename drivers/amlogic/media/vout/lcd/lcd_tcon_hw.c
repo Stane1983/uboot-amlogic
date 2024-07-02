@@ -10,7 +10,6 @@
 #include "lcd_reg.h"
 #include "lcd_common.h"
 #include "lcd_tcon.h"
-#include <linux/crc32.h>
 
 #define DMA_TRANS_QUEUE_MAX (32)
 unsigned int dma_trans[DMA_TRANS_QUEUE_MAX][2];
@@ -941,7 +940,7 @@ static int lcd_tcon_data_set(struct aml_lcd_drv_s *pdrv, struct tcon_mem_map_tab
 			       __func__, i, block_header->block_size);
 			continue;
 		}
-		temp_crc32 = crc32(0, &data_buf[4], (block_header->block_size - 4));
+		temp_crc32 = lcd_crc32(0, &data_buf[4], (block_header->block_size - 4));
 		if (temp_crc32 != block_header->crc32) {
 			LCDERR("%s: block[%d] %s: data crc 0x%x error (raw 0x%x)\n",
 				__func__, i, block_header->name,

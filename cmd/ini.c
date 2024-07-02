@@ -16,6 +16,7 @@
 #include <env.h>
 #include <linux/ctype.h>
 #include <linux/string.h>
+#include <amlogic/ini.h>
 
 #ifdef CONFIG_INI_MAX_LINE
 #define MAX_LINE CONFIG_INI_MAX_LINE
@@ -252,4 +253,38 @@ U_BOOT_CMD(
 	ini, 4, 0, do_ini,
 	"parse an ini file in memory and merge the specified section into the env",
 	"section [[file-address] file-size]"
+);
+
+static int do_ini_model_list(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int ret;
+
+	if (argc > 1)
+		return CMD_RET_USAGE;
+
+	ret = handle_model_list();
+	return ret;
+}
+
+U_BOOT_CMD(
+	model_list, 4, 0, do_ini_model_list,
+	"list ini model name",
+	" "
+);
+
+static int do_ini_model(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int ret;
+
+	if (argc > 1)
+		return CMD_RET_USAGE;
+
+	ret = handle_model_sum();
+	return ret;
+}
+
+U_BOOT_CMD(
+	ini_model, 4, 0, do_ini_model,
+	"parse ini file by env model_name",
+	" "
 );

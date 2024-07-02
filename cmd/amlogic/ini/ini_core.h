@@ -39,7 +39,7 @@ int ini_parse_file(FILE* file,
                 const char* value), void* user);
 #endif
 
-int ini_parse_mem(const char* buf,
+int _ini_mem_parse(const char* buf,
         int (*handler)(void* user, const char* section, const char* name,
                 const char* value), void* user);
 
