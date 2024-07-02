@@ -7,6 +7,7 @@
 #define __TEE_AML_H
 
 #define TEE_MEM_TYPE_TCON 0xb
+#define TEE_MEM_TYPE_MTE  0xf
 
 u32 tee_protect_tvp_mem(u32 start, u32 size, u32 *handle);
 
