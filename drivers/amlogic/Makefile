@@ -52,3 +52,5 @@ obj-$(CONFIG_IMAGE_CHECK) += image_check/
 obj-$(CONFIG_AMLOGIC_AMFC) += amfc/
 
 obj-$(CONFIG_CPU_PM) += pm/
+
+obj-$(CONFIG_CMD_SND) += sound/
