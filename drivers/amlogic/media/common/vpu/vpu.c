@@ -713,9 +713,12 @@ static struct vpu_data_s vpu_data_s7d = {
 	.change_clk = change_vpu_clk,
 };
 
-static struct vpu_data_s vpu_data_s6 = {
-	.chip_type = VPU_CHIP_S6,
-	.chip_name = "s6",
+/*
+ * s7d revA vpu clk use gp0_Pll,revB use fix_pll div3
+ */
+static struct vpu_data_s vpu_data_s7d_revb = {
+	.chip_type = VPU_CHIP_S7D,
+	.chip_name = "s7d",
 	.clk_level_dft = CLK_LEVEL_DFT_G12A,
 	.clk_level_max = CLK_LEVEL_MAX_G12A,
 	.gp_pll_valid = 0,
@@ -724,6 +727,7 @@ static struct vpu_data_s vpu_data_s6 = {
 	.vpu_clkb_reg = VPU_REG_END,
 	.vapb_clk_reg = CLKCTRL_VAPBCLK_CTRL,
 	.vid_clk_reg = CLKCTRL_VID_CLK_CTRL2,
+	.vpu_read_type = ONLY_READ0,
 
 	.pwrctrl_id_table = vpu_pwrctrl_id_table,
 
@@ -749,8 +753,10 @@ static struct vpu_data_s vpu_data_s6 = {
 static void vpu_chip_detect(void)
 {
 	unsigned int cpu_type;
+	unsigned int chip_rev;
 
 	cpu_type = get_cpu_id().family_id;
+	chip_rev = get_cpu_id().chip_rev;
 	switch (cpu_type) {
 	case MESON_CPU_MAJOR_ID_G12A:
 		vpu_conf.data = &vpu_data_g12a;
@@ -810,7 +816,10 @@ static void vpu_chip_detect(void)
 		vpu_conf.data = &vpu_data_s7;
 		break;
 	case MESON_CPU_MAJOR_ID_S7D:
-		vpu_conf.data = &vpu_data_s7d;
+		if (chip_rev == MESON_CPU_CHIP_REVISION_B)
+			vpu_conf.data = &vpu_data_s7d_revb;
+		else
+			vpu_conf.data = &vpu_data_s7d;
 		break;
 	case MESON_CPU_MAJOR_ID_S6:
 		vpu_conf.data = &vpu_data_s6;
@@ -828,8 +837,13 @@ static void vpu_chip_detect(void)
 	}
 
 #ifdef AML_VPU_CLK_LEVEL_DFT
-	vpu_conf.data->clk_level_dft = AML_VPU_CLK_LEVEL_DFT;
-	VPUPR("find AML_VPU_CLK_LEVEL_DFT: %d\n", AML_VPU_CLK_LEVEL_DFT);
+#ifdef AML_VPU_CLK_LEVEL_DFT_REVB
+	if (chip_rev == MESON_CPU_CHIP_REVISION_B)
+		vpu_conf.data->clk_level_dft = AML_VPU_CLK_LEVEL_DFT_REVB;
+	else
+#endif
+		vpu_conf.data->clk_level_dft = AML_VPU_CLK_LEVEL_DFT;
+	VPUPR("find AML_VPU_CLK_LEVEL_DFT: %d\n", vpu_conf.data->clk_level_dft);
 #endif
 
 #ifdef VPU_DEBUG_PRINT
@@ -890,6 +904,11 @@ static int get_vpu_config(void)
 	int node;
 	char *propdata;
 	int ret;
+	unsigned int cpu_type;
+	unsigned int chip_rev;
+
+	cpu_type = get_cpu_id().family_id;
+	chip_rev = get_cpu_id().chip_rev;
 
 	dt_blob = gd->fdt_blob;
 	if (dt_blob == NULL) {
@@ -915,7 +934,9 @@ static int get_vpu_config(void)
 	}
 	vpu_conf.clk_level = be32_to_cpup((u32 *)propdata);
 	if (vpu_conf.clk_level >= vpu_conf.data->clk_level_max) {
-		VPUERR("clk_level in dts is out of support, set to default\n");
+		if (cpu_type != MESON_CPU_MAJOR_ID_S7D &&
+		    chip_rev != MESON_CPU_CHIP_REVISION_B)
+			VPUERR("clk_level in dts is out of support, set to default\n");
 		goto get_vpu_config_dft;
 	}
 
