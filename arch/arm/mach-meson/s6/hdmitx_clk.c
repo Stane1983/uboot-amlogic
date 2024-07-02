@@ -103,7 +103,7 @@ void set21_s6_htxpll_clk_out(const u32 clk, u32 div)
 		return;
 	}
 
-	set_s6_htxpll_clk_other(clk, hdev->frl_rate ? 1 : 0);
+	set_s6_htxpll_clk_other(clk, hdev->para->frl_rate ? 1 : 0);
 
 	//pll_od00
 	if ((div % 8) == 0) {
