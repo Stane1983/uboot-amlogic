@@ -12,13 +12,14 @@
 #define CPU_CLK                                 1200
 
 /* board vmin_value defines */
-#define VMIN_FF_VALUE                           770
-#define VMIN_TT_VALUE                           800
-#define VMIN_SS_VALUE                           810
+#define VMIN_FF_VALUE                           740
+#define VMIN_TT_VALUE                           780
+#define VMIN_SS_VALUE                           820
 /* board vddee_value defines */
-#define VDDEE_FF_VALUE                          0x4000e
-#define VDDEE_TT_VALUE                          0x4000e
-#define VDDEE_SS_VALUE                          0x4000e
+/* FF/TT/SS=0.78/0.82/0.86 */
+#define VDDEE_FF_VALUE                          0xa0008
+#define VDDEE_TT_VALUE                          0x6000c
+#define VDDEE_SS_VALUE                          0x20010
 
 board_clk_set_t __board_clk_setting
 __attribute__ ((section(".clk_param"))) = {
