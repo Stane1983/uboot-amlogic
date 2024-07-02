@@ -188,8 +188,8 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		//bit 0 -3 ch1 cs0 ,bit 4-7 ch1
 		.cfg_board_common_setting.dram_x4x8x16_mode = CONFIG_DRAM_MODE_X16,
 		.cfg_board_common_setting.Is2Ttiming = CONFIG_USE_DDR_2T_MODE,
-		//.cfg_board_common_setting.log_level = 0xff,
-		.cfg_board_common_setting.log_level = 4,
+		.cfg_board_common_setting.log_level = 0xff,
+		//.cfg_board_common_setting.log_level = 4,
 		//4,//LOG_LEVEL_BASIC,
 		.cfg_board_common_setting.dbi_enable = 0,
 		.cfg_board_common_setting.pll_ssc_mode =
@@ -217,7 +217,7 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		.cfg_board_SI_setting_ps.dram_data_drv_ohm = 40,
 		.cfg_board_SI_setting_ps.dram_data_odt_ohm = 60,
 		.cfg_board_SI_setting_ps.dram_data_wr_odt_ohm = 0,
-		.cfg_board_SI_setting_ps.dram_ac_odt_ohm = 120,//240,//120,
+		.cfg_board_SI_setting_ps.dram_ac_odt_ohm = 240,//must 240 ohm for 8die 16GB LP5
 		.cfg_board_SI_setting_ps.dram_drv_pull_up_cal_ohm =
 			DDR_DRAM_LPDDR4_ODT_40_OHM,
 		.cfg_board_SI_setting_ps.lpddr4_dram_vout_range =
@@ -357,8 +357,8 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		//bit 0 -3 ch1 cs0 ,bit 4-7 ch1
 		.cfg_board_common_setting.dram_x4x8x16_mode = CONFIG_DRAM_MODE_X16,
 		.cfg_board_common_setting.Is2Ttiming = CONFIG_USE_DDR_2T_MODE,
-		//.cfg_board_common_setting.log_level = 0xff,
-		.cfg_board_common_setting.log_level = 4,
+		.cfg_board_common_setting.log_level = 0xff,
+		//.cfg_board_common_setting.log_level = 4,
 		//4,//LOG_LEVEL_BASIC,
 		.cfg_board_common_setting.dbi_enable = 0,
 		.cfg_board_common_setting.pll_ssc_mode =
