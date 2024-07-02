@@ -11,7 +11,7 @@
 #include <asm/system.h>
 #include <asm/armv8/mmu.h>
 #include <asm/sections.h>
-
+#include <linux/sizes.h>
 #include <asm/arch/register.h>
 #include <asm/io.h>
 
@@ -367,8 +367,8 @@ static int count_required_pts(u64 addr, int level, u64 maxaddr)
 int mmu_map_update(void)
 {
 	ulong ddr_size =
-	    ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xffffUL) << 4) >
-	    0xe0000000 ? 0xe0000000 : ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xffffUL) << 4);
+	    ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0x7ffffUL) << 4) >
+	    0xe0000000 ? 0xe0000000 : ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0x7ffffUL) << 4);
 
 	u32 rsv_addr;
 	u32 reg_size;
@@ -394,6 +394,13 @@ int mmu_map_update(void)
 	bd_mem_map[1].phys = rsv_addr + rsv_size;
 	bd_mem_map[1].size = ddr_size - bd_mem_map[1].phys;
 
+#if defined(PSRAM_START) && defined(PSRAM_SIZE)
+	bd_mem_map[0].size = ddr_size;
+	bd_mem_map[1].virt = PSRAM_START;
+	bd_mem_map[1].phys = PSRAM_START;
+	bd_mem_map[1].size = PSRAM_SIZE;
+	bd_mem_map[2].size = SZ_4G - bd_mem_map[2].virt - bd_mem_map[1].size;
+#endif
 	return 0;
 }
 

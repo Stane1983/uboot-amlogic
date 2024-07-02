@@ -83,4 +83,7 @@ like the AES key not ready when secure boot enabled for the first time.
 
 //#define CONFIG_AML_EFUSE_GEN_AES_ONLY 1
 
+#define PSRAM_START 0XFFE00000
+#define PSRAM_SIZE  0x200000
+
 #endif /* _CPU_H */
