@@ -119,6 +119,8 @@ static int initr_reloc(void)
  */
 static int initr_caches(void)
 {
+	dcache_disable();
+
 	/* Enable caches */
 	enable_caches();
 	return 0;

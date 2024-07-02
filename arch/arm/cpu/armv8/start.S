@@ -146,6 +146,13 @@ pie_fixup_done:
 	set_vbar vbar_el2, x0
 	mov	x0, #0x33ff
 	msr	cptr_el2, x0			/* Enable FP/SIMD */
+#if 1
+	branch_if_slave x0, 0f
+	mrs	x0, sctlr_el2
+	orr x0, x0, #(1 << 0)		/* SCTLR_M_BIT */
+	orr x0, x0, #(1 << 2)		/* SCTLR_C_BIT */
+	msr	sctlr_el2, x0
+#endif
 	b	0f
 1:	set_vbar vbar_el1, x0
 	mov	x0, #3 << 20
