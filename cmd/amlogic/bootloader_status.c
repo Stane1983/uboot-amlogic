@@ -312,6 +312,7 @@ void update_rollback(void)
 	char *slot = NULL;
 	int ret = -1;
 	int gpt_flag = -1;
+	char *rebootmode = env_get("reboot_mode");
 
 #ifdef CONFIG_MMC_MESON_GX
 	struct mmc *mmc = NULL;
@@ -370,7 +371,10 @@ void update_rollback(void)
 	env_set("update_dts_gpt", "0");
 	env_set("write_boot", "0");
 	run_command("saveenv", 0);
-	run_command("reset", 0);
+	if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+		run_command("reboot quiescent", 0);
+	else
+		run_command("reboot", 0);
 }
 
 static int write_bootloader(int i)
@@ -754,7 +758,10 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 		env_set("update_env", "1");
 		env_set("reboot_status", "reboot_next");
 		run_command("saveenv", 0);
-		run_command("reset", 0);
+		if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+			run_command("reboot quiescent", 0);
+		else
+			run_command("reboot", 0);
 	}
 
 	char *recovery_check = env_get("recovery_check_part");
@@ -814,7 +821,10 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 		run_command("saveenv", 0);
 #endif
 
-		run_command("reset", 0);
+		if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+			run_command("reboot quiescent", 0);
+		else
+			run_command("reboot", 0);
 	}
 
 	if (has_boot_slot == 0 && recovery_check &&
@@ -833,7 +843,10 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 		env_set("write_boot", "0");
 		env_set("upgrade_step", "1");
 		run_command("saveenv", 0);
-		run_command("reset", 0);
+		if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+			run_command("reboot quiescent", 0);
+		else
+			run_command("reboot", 0);
 	}
 
 	//check_result init
@@ -931,7 +944,10 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 #else
 					run_command("saveenv", 0);
 #endif
-					run_command("reset", 0);
+					if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+						run_command("reboot quiescent", 0);
+					else
+						run_command("reboot", 0);
 				}
 			}
 		}
@@ -944,7 +960,10 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 		env_set("expect_index", "1");
 		env_set("update_env", "1");
 		run_command("saveenv", 0);
-		run_command("reset", 0);
+		if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+			run_command("reboot quiescent", 0);
+		else
+			run_command("reboot", 0);
 	}
 
 #ifdef CONFIG_MMC_MESON_GX
@@ -967,7 +986,10 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 #else
 				run_command("saveenv", 0);
 #endif
-				run_command("reset", 0);
+				if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+					run_command("reboot quiescent", 0);
+				else
+					run_command("reboot", 0);
 			}
 		}
 	}
@@ -1108,7 +1130,10 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 				env_set("update_env", "1");
 				env_set("reboot_status", "reboot_next");
 				run_command("saveenv", 0);
-				run_command("reset", 0);
+				if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+					run_command("reboot quiescent", 0);
+				else
+					run_command("reboot", 0);
 			} else {
 				env_set("reboot_status","reboot_finish");
 				run_command("saveenv", 0);
@@ -1195,7 +1220,10 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 					env_set("reboot_status","reboot_next");
 					env_set("expect_index","0");
 					run_command("saveenv", 0);
-					run_command("reset", 0);
+					if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+						run_command("reboot quiescent", 0);
+					else
+						run_command("reboot", 0);
 				}
 
 			} else {
