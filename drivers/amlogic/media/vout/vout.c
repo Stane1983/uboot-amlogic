@@ -657,14 +657,18 @@ static void vout_vmode_init(void)
 	uint index = 0;
 
 	index = get_osd_layer();
-	if (is_vpp0(index))
-		outputmode = env_get("outputmode");
-	else if (is_vpp1(index))
+	if (is_vpp0(index)) {
+		if (is_keystone_enable_for_txhd2())
+			outputmode = env_get("outputmode2");
+		else
+			outputmode = env_get("outputmode");
+	} else if (is_vpp1(index)) {
 		outputmode = env_get("outputmode2");
-	else if (is_vpp2(index))
+	} else if (is_vpp2(index)) {
 		outputmode = env_get("outputmode3");
-	else
+	} else {
 		vout_log("%s, layer%d is not supported\n", __func__, index);
+	}
 
 
 	vset = vout_find_mode_by_name(outputmode);
