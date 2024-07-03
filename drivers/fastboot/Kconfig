@@ -55,7 +55,7 @@ config FASTBOOT_BUF_SIZE
 	default 0x6000000 if ARCH_ZYNQMP
 	default 0x2000000 if ARCH_SUNXI
 	default 0x8192 if SANDBOX
-	default 0x7000000
+	default 0xB0000000
 	help
 	  The fastboot protocol requires a large memory buffer for
 	  downloads. This buffer should be as large as possible for a
