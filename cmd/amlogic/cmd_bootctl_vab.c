@@ -610,6 +610,7 @@ static int do_GetValidSlot(
 	int AB_mode = 0;
 	bool bootable_a, bootable_b;
 	bool nocs_mode = false;
+	char *rebootmode = env_get("reboot_mode");
 
 	if (argc != 1)
 		return cmd_usage(cmdtp);
@@ -706,7 +707,10 @@ static int do_GetValidSlot(
 				env_set("expect_index", "0");
 			}
 			run_command("saveenv", 0);
-			run_command("reset", 0);
+			if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+				run_command("reboot quiescent", 0);
+			else
+				run_command("reboot", 0);
 		} else {
 			boot_info_reset(&boot_ctrl);
 			boot_info_save(&boot_ctrl, miscbuf);
@@ -751,7 +755,10 @@ static int do_GetValidSlot(
 				env_set("expect_index", "0");
 			}
 			run_command("saveenv", 0);
-			run_command("reset", 0);
+			if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+				run_command("reboot quiescent", 0);
+			else
+				run_command("reboot", 0);
 		} else {
 			boot_info_reset(&boot_ctrl);
 			boot_info_save(&boot_ctrl, miscbuf);
@@ -970,6 +977,7 @@ static int do_CheckABState(cmd_tbl_t *cmdtp,
 	bool bootable_a, bootable_b;
 	int slot;
 	int retry_times = 0;
+	char *rebootmode = env_get("reboot_mode");
 
 	if (has_boot_slot == 0) {
 		printf("device is not ab mode\n");
@@ -1005,8 +1013,10 @@ static int do_CheckABState(cmd_tbl_t *cmdtp,
 		retry_times = boot_ctrl.slot_info[1].tries_remaining;
 
 	printf("ab update mode, try %d times again\n", retry_times + 1);
-	run_command("reset", 0);
-
+	if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+		run_command("reboot quiescent", 0);
+	else
+		run_command("reboot", 0);
 	return 0;
 }
 
@@ -1090,6 +1100,7 @@ static int do_GetAvbMode(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv
 static int do_UpdateDt(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	char *update_dt = env_get("update_dt");
+	char *rebootmode = env_get("reboot_mode");
 
 	printf("update_dt %s\n", update_dt);
 	if (update_dt && (!strcmp(update_dt, "1"))) {
@@ -1114,7 +1125,10 @@ static int do_UpdateDt(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 #endif
 
 			printf("part changes, reset\n");
-			run_command("reset", 0);
+			if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+				run_command("reboot quiescent", 0);
+			else
+				run_command("reboot", 0);
 		}
 	}
 	return 0;

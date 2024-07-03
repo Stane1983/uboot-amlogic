@@ -720,7 +720,10 @@ int non_ab_update(char *rebootmode)
 		env_set("write_boot", "0");
 		env_set("upgrade_step", "1");
 		run_command("saveenv", 0);
-		run_command("reset", 0);
+		if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+			run_command("reboot quiescent", 0);
+		else
+			run_command("reboot", 0);
 	}
 
 	recovery_update();
@@ -838,7 +841,10 @@ int ab_update_rollback(char *rebootmode, int gpt_flag)
 		env_set("expect_index", "1");
 		env_set("update_env", "1");
 		run_command("saveenv", 0);
-		run_command("reset", 0);
+		if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+			run_command("reboot quiescent", 0);
+		else
+			run_command("reboot", 0);
 	}
 
 	//check rescueparty and rollback
@@ -887,7 +893,10 @@ int ab_update_rollback(char *rebootmode, int gpt_flag)
 		env_set("update_env", "1");
 		env_set("reboot_status", "reboot_next");
 		run_command("saveenv", 0);
-		run_command("reset", 0);
+		if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+			run_command("reboot quiescent", 0);
+		else
+			run_command("reboot", 0);
 	}
 
 	//get bootloader index
@@ -962,7 +971,10 @@ int ab_update_rollback(char *rebootmode, int gpt_flag)
 			env_set("update_env", "1");
 			env_set("reboot_status", "reboot_next");
 			run_command("saveenv", 0);
-			run_command("reset", 0);
+			if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+				run_command("reboot quiescent", 0);
+			else
+				run_command("reboot", 0);
 			return 0;
 		}
 	}
