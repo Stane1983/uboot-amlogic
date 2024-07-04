@@ -162,7 +162,7 @@ int lrm_tee_protect(struct lcd_mem_info_s *mem_info, u32 type, s32 sec)
 		/* user flush manually if needed
 		 * flush_dcache_range(paddr, size);
 		 */
-		ret = tee_protect_mem_by_type(type, paddr, size, &mem_info->sec_handle);
+		ret = tee_protect_mem(type, 0, paddr, size, &mem_info->sec_handle);
 
 		if (ret) {
 			LRMERR("%s: protect failed! start:0x%llx, size:0x%x, ret:%d\n",

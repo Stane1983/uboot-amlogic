@@ -1194,7 +1194,7 @@ static int lcd_tcon_mem_tee_protect(int protect_en)
 			return 0;
 		flush_dcache_range(tcon_rmem.secure_axi_rmem.mem_paddr,
 		      tcon_rmem.secure_axi_rmem.mem_paddr + tcon_rmem.secure_axi_rmem.mem_size);
-		ret = tee_protect_mem_by_type(TEE_MEM_TYPE_TCON,
+		ret = tee_protect_mem(TEE_MEM_TYPE_TCON, 0,
 					      tcon_rmem.secure_axi_rmem.mem_paddr,
 					      tcon_rmem.secure_axi_rmem.mem_size,
 					      &tcon_rmem.secure_axi_rmem.sec_handle);
