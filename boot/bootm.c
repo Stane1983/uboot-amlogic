@@ -981,6 +981,11 @@ int do_bootm_states(struct cmd_tbl *cmdtp, int flag, int argc,
 		return ret;
 	}
 #endif
+
+	/* memtag region protect */
+#ifdef CONFIG_CMD_MEMTAG
+	run_command("memtag check", 0);
+#endif
 #endif
 
 	/* From now on, we need the OS boot function */

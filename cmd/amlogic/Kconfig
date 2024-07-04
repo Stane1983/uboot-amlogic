@@ -144,6 +144,12 @@ config CMD_DSP_REMAP
 	help
 	  Support uboot dsp remap
 
+config CMD_MEMTAG
+	bool "memtag cmd"
+	default n
+	help
+	  support memtag cmd
+
 #prduct mode start---->
 config NO_FASTBOOT_FLASHING
 	depends on FASTBOOT
