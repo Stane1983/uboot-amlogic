@@ -70,6 +70,81 @@ unsigned short vout_connector_check(unsigned char vout_index)
 	return 0xffff;
 }
 
+void vout_pr_connector_and_vmode(void)
+{
+	char *cntor, *opt_vmode;
+	char cnt_name[20] = "connectorX_type";
+	char opt_mode_name[20] = "outputmode\0\0";
+	unsigned char idx;
+
+	printf("VOUT: connector & outputmode info:\n");
+	for (idx = 0; idx < 3; idx++) {
+		cnt_name[9] = '0' + idx;
+		if (idx)
+			opt_mode_name[10] = '1' + idx;
+
+		cntor = env_get(cnt_name);
+		opt_vmode = env_get(opt_mode_name);
+		printf("  VOUT%c: %s: %-9s | outputmode%c: %s\n", idx ? '1' + idx : ' ',
+			cnt_name, cntor, idx ? '1' + idx : ' ', opt_vmode);
+	}
+}
+
+// ! only to maintain compatibility for uboot 2019, NO sync to 2023
+void vout_legacy_panel_mode_support(unsigned char vout_index)
+{
+#ifdef CONFIG_AML_LCD
+	char *opt_vmode;
+	char cnt_name[20] = "connectorX_type";
+	char opt_mode_name[20] = "outputmode\0\0";
+	char legacy_lcd_mode[3][8] = {"panel", "panel1", "panel2"};
+	unsigned char i, legacy_mode_find = 0xff, name_idx, lcd_type;
+	char *connector_name_list[4] = {"LVDS", "VBYONE", "MIPI", "EDP"};
+	struct aml_lcd_drv_s *pdrv;
+	char cnt_buf[12], cmd_buf[64];
+
+	if (vout_index)
+		opt_mode_name[10] = '1' + vout_index;
+
+	opt_vmode = env_get(opt_mode_name);
+	if (!opt_vmode)
+		return;
+
+	for (i = 0; i < 3; i++) {
+		if (!strcmp(legacy_lcd_mode[i], opt_vmode))
+			legacy_mode_find = i;
+	}
+
+	if (legacy_mode_find == 0xff)
+		return;
+
+	pdrv = aml_lcd_get_driver(legacy_mode_find);
+	if (!pdrv)
+		return;
+
+	lcd_type = pdrv->config.basic.lcd_type;
+	if (lcd_type == LCD_LVDS || lcd_type == LCD_MLVDS)
+		name_idx = 0;
+	else if (lcd_type == LCD_VBYONE || lcd_type == LCD_P2P)
+		name_idx = 1;
+	else if (lcd_type == LCD_MIPI)
+		name_idx = 2;
+	else if (lcd_type == LCD_EDP)
+		name_idx = 3;
+	else
+		return;
+
+	sprintf(cnt_buf, "%s-%c", connector_name_list[name_idx], 'A' + legacy_mode_find);
+
+	cnt_name[9] = '0' + vout_index;
+
+	sprintf(cmd_buf, "setenv %s %s", cnt_name, cnt_buf);
+	printf("vout: lcd compatible (%s)\n", cmd_buf);
+
+	run_command(cmd_buf, 0);
+#endif
+}
+
 static const struct vout_set_s vout_sets_lcd[] = {
 	{ /* VMODE_LCD */
 		.name              = "panel",

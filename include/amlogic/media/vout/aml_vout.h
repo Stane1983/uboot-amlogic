@@ -38,6 +38,8 @@ enum viu_mux_e {
 #define CONNECTOR_SUB_DEV_CVBS       0x0000
 
 unsigned short vout_connector_check(unsigned char vout_index);
+void vout_pr_connector_and_vmode(void);
+void vout_legacy_panel_mode_support(unsigned char vout_index);
 
 void vout_init(void);
 void vout_vinfo_dump(void);
@@ -49,5 +51,7 @@ void vout_viu_mux(int index, unsigned int mux_sel);
 extern unsigned long get_fb_addr(void);
 
 void vout_probe(void);
+
+int aml_vout_output(char *mode);
 #endif
 

@@ -246,10 +246,117 @@ static void qms_scene_post_process(struct hdmitx_dev *hdev)
 	}
 }
 
-static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+int aml_hdmitx_output(const char *mode)
 {
 	const struct hdmi_timing *timing = NULL;
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
+
+	if (!edid_parsing_ok(hdev)) {
+		/* in SWPL-34712: if EDID parsing error in kernel,
+		 * only forcely output default mode(480p,RGB,8bit)
+		 * in sysctl, not save the default mode to env.
+		 * if uboot follow this rule, will cause issue OTT-19333:
+		 * uboot read edid error and then output default mode,
+		 * without save it mode env. if then kernel edid normal,
+		 * sysctrl/kernel get mode from env, the actual output
+		 * mode differs with outputmode env,it will
+		 * cause display abnormal(such as stretch). so don't
+		 * follow this rule in uboot, that's to say the actual
+		 * output mode needs to stays with the outputmode env.
+		 */
+		printf("edid parsing ng, forcely output 720p, rgb,8bit\n");
+		save_default_720p();
+		hdev->vic = HDMI_4_1280x720p60_16x9;
+		hdev->para = hdmitx21_get_fmtpara("720p60hz", "rgb,8bit");
+		hdev->para->cs = HDMI_COLORSPACE_RGB;
+		hdev->para->cd = COLORDEPTH_24B;
+		hdmitx21_set(hdev);
+		return 0;
+	}
+	if (!env_get("colorattribute"))
+		env_set("colorattribute", "444,8bit");
+	hdev->para = hdmitx21_get_fmtpara(mode, env_get("colorattribute"));
+	if (!hdev->para) {
+		printf("null hdmitx para\n");
+		return -1;
+	}
+	hdev->vic = hdev->para->timing.vic;
+	if (hdev->vic == HDMI_UNKNOWN) {
+		/* Not find VIC */
+		printf("Not find '%s' mapped VIC\n", mode);
+		return -1;
+	}
+	printf("set hdmitx VIC = %d\n", hdev->vic);
+	if (strstr(mode, "hz420"))
+		hdev->para->cs = HDMI_COLORSPACE_YUV420;
+	/* S5 support over 6G, T7 not support */
+	switch (hdev->vic) {
+	case HDMI_96_3840x2160p50_16x9:
+	case HDMI_97_3840x2160p60_16x9:
+	case HDMI_101_4096x2160p50_256x135:
+	case HDMI_102_4096x2160p60_256x135:
+	case HDMI_106_3840x2160p50_64x27:
+	case HDMI_107_3840x2160p60_64x27:
+		if (hdev->chip_type == MESON_CPU_ID_T7) {
+			if (hdev->para->cs == HDMI_COLORSPACE_RGB ||
+				hdev->para->cs == HDMI_COLORSPACE_YUV444) {
+				if (hdev->para->cd != COLORDEPTH_24B) {
+					printf("vic %d cs %d has no cd %d\n",
+						hdev->vic,
+						hdev->para->cs,
+						hdev->para->cd);
+					hdev->para->cd = COLORDEPTH_24B;
+					printf("set cd as %d\n", COLORDEPTH_24B);
+				}
+			}
+		}
+		break;
+	default:
+		/* In Spec2.1 Table 7-34, v_active greater than or equal to 2160 and refresh
+		 * rate greater than 30 will support y420
+		 * Only the S5 will run this case, because 4k 50/60hz has already been
+		 * filtered and only S5 support over 6G (4k 100/120hz)
+		 */
+		timing = hdmitx21_gettiming_from_vic(hdev->vic);
+		if (!timing)
+			break;
+		if (timing->v_active >= 2160 && timing->v_freq > 30000)
+			break;
+		if (timing->v_active >= 4320)
+			break;
+		if (hdev->para->cs == HDMI_COLORSPACE_YUV420) {
+			printf("vic %d has no cs %d\n", hdev->vic,
+				hdev->para->cs);
+			hdev->para->cs = HDMI_COLORSPACE_YUV444;
+			printf("set cs as %d\n", HDMI_COLORSPACE_YUV444);
+		}
+		break;
+	}
+	printf("set hdmitx VIC = %d CS = %d CD = %d\n",
+		hdev->vic, hdev->para->cs, hdev->para->cd);
+	/* currently, hdmi mode is always set, if
+	 * mode set abort/exit, need to add return
+	 * result of mode setting, so that vout
+	 * driver will pass it to kernel, and do
+	 * mode setting again when vout init in kernel
+	 */
+	hdmitx21_set(hdev);
+	qms_scene_post_process(hdev);
+	if (hdev->frl_rate && !hdev->flt_train_st) {
+		/* FLT training failed, need go to tmds mode */
+		printf("hdmitx frl training failed, set tmds mode\n");
+		hdmitx_module_disable();
+		hdev->frl_train_fail_flag = true;
+		run_command("run init_display", 0);
+	}
+
+	return 0;
+}
+
+static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+{
+	struct hdmitx_dev *hdev = get_hdmitx21_device();
+	int ret;
 
 	if (argc < 1)
 		return cmd_usage(cmdtp);
@@ -293,106 +400,9 @@ static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 			div40 = 1;
 		hdev->hwop.set_div40(div40);
 	} else { /* "output" */
-		if (!edid_parsing_ok(hdev)) {
-			/* in SWPL-34712: if EDID parsing error in kernel,
-			 * only forcely output default mode(480p,RGB,8bit)
-			 * in sysctl, not save the default mode to env.
-			 * if uboot follow this rule, will cause issue OTT-19333:
-			 * uboot read edid error and then output default mode,
-			 * without save it mode env. if then kernel edid normal,
-			 * sysctrl/kernel get mode from env, the actual output
-			 * mode differs with outputmode env,it will
-			 * cause display abnormal(such as stretch). so don't
-			 * follow this rule in uboot, that's to say the actual
-			 * output mode needs to stays with the outputmode env.
-			 */
-			printf("edid parsing ng, forcely output 720p, rgb,8bit\n");
-			save_default_720p();
-			hdev->vic = HDMI_4_1280x720p60_16x9;
-			hdev->para =
-				hdmitx21_get_fmtpara("720p60hz", "rgb,8bit");
-			hdev->para->cs = HDMI_COLORSPACE_RGB;
-			hdev->para->cd = COLORDEPTH_24B;
-			hdmitx21_set(hdev);
-			return CMD_RET_SUCCESS;
-		}
-		if (!env_get("colorattribute"))
-			env_set("colorattribute", "444,8bit");
-		hdev->para = hdmitx21_get_fmtpara(argv[1], env_get("colorattribute"));
-		if (!hdev->para) {
-			printf("null hdmitx para\n");
+		ret = aml_hdmitx_output(argv[1]);
+		if (ret)
 			return CMD_RET_FAILURE;
-		}
-		hdev->vic = hdev->para->timing.vic;
-		if (hdev->vic == HDMI_UNKNOWN) {
-			/* Not find VIC */
-			printf("Not find '%s' mapped VIC\n", argv[1]);
-			return CMD_RET_FAILURE;
-		} else {
-			printf("set hdmitx VIC = %d\n", hdev->vic);
-		}
-		if (strstr(argv[1], "hz420"))
-			hdev->para->cs = HDMI_COLORSPACE_YUV420;
-		/* S5 support over 6G, T7 not support */
-		switch (hdev->vic) {
-		case HDMI_96_3840x2160p50_16x9:
-		case HDMI_97_3840x2160p60_16x9:
-		case HDMI_101_4096x2160p50_256x135:
-		case HDMI_102_4096x2160p60_256x135:
-		case HDMI_106_3840x2160p50_64x27:
-		case HDMI_107_3840x2160p60_64x27:
-			if (hdev->chip_type == MESON_CPU_ID_T7) {
-				if (hdev->para->cs == HDMI_COLORSPACE_RGB ||
-				    hdev->para->cs == HDMI_COLORSPACE_YUV444) {
-					if (hdev->para->cd != COLORDEPTH_24B) {
-						printf("vic %d cs %d has no cd %d\n",
-							hdev->vic,
-							hdev->para->cs,
-							hdev->para->cd);
-						hdev->para->cd = COLORDEPTH_24B;
-						printf("set cd as %d\n", COLORDEPTH_24B);
-					}
-				}
-			}
-			break;
-		default:
-			/* In Spec2.1 Table 7-34, v_active greater than or equal to 2160 and refresh
-			 * rate greater than 30 will support y420
-			 * Only the S5 will run this case, because 4k 50/60hz has already been
-			 * filtered and only S5 support over 6G (4k 100/120hz)
-			 */
-			timing = hdmitx21_gettiming_from_vic(hdev->vic);
-			if (!timing)
-				break;
-			if (timing->v_active >= 2160 && timing->v_freq > 30000)
-				break;
-			if (timing->v_active >= 4320)
-				break;
-			if (hdev->para->cs == HDMI_COLORSPACE_YUV420) {
-				printf("vic %d has no cs %d\n", hdev->vic,
-					hdev->para->cs);
-				hdev->para->cs = HDMI_COLORSPACE_YUV444;
-				printf("set cs as %d\n", HDMI_COLORSPACE_YUV444);
-			}
-			break;
-		}
-		printf("set hdmitx VIC = %d CS = %d CD = %d\n",
-			hdev->vic, hdev->para->cs, hdev->para->cd);
-		/* currently, hdmi mode is always set, if
-		 * mode set abort/exit, need to add return
-		 * result of mode setting, so that vout
-		 * driver will pass it to kernel, and do
-		 * mode setting again when vout init in kernel
-		 */
-		hdmitx21_set(hdev);
-		qms_scene_post_process(hdev);
-		if (hdev->frl_rate && !hdev->flt_train_st) {
-			/* FLT training failed, need go to tmds mode */
-			printf("hdmitx frl training failed, set tmds mode\n");
-			hdmitx_module_disable();
-			hdev->frl_train_fail_flag = true;
-			run_command("run init_display", 0);
-		}
 	}
 	return CMD_RET_SUCCESS;
 }

@@ -26,8 +26,14 @@
 #ifdef CONFIG_RX_RTERM
 #include <amlogic/aml_hdmirx.h>
 #endif
+#ifdef CONFIG_AML_VOUT
+#include <amlogic/media/vout/aml_vout.h>
+#endif
 #ifdef CONFIG_AML_LCD
 #include <amlogic/media/vout/lcd/lcd_vout.h>
+#endif
+#ifdef CONFIG_AML_CVBS
+#include <amlogic/media/vout/aml_cvbs.h>
 #endif
 #ifdef CONFIG_ARMV8_MULTIENTRY
 #include <asm/arch-meson/smp.h>
@@ -362,19 +368,22 @@ static void aml_board_display_env_handler(void)
 }
 
 #ifdef CONFIG_ARMV8_MULTIENTRY
+#ifdef CONFIG_AML_VOUT
 static void aml_display_on_pre(unsigned char vout_idx)
 {
-	run_command("run init_display_pre", 0);
+	run_command("run init_display", 0);
 	printf("display on pre done\n");
 }
 
 //param bit[0:7]:curr vout idx;
 static void aml_display_on_post_job(unsigned long param)
 {
-	run_command("run init_display_post", 0);
+	aml_vout_output(env_get("outputmode"));
+
 	printf("display on post smp done\n");
 	secondary_off();
 }
+#endif
 #endif
 
 // each bit refers to vout index, eg. 0x5=(vout+vout3)
@@ -400,16 +409,19 @@ void aml_board_display_init(unsigned char vout_bit)
 #endif
 
 #ifdef CONFIG_ARMV8_MULTIENTRY
+#ifdef CONFIG_AML_VOUT
 	int smp_ret;
 
 	if (!(unsigned char)env_get_ulong("display_on_smp", 10, 0))
 		return;
 
 	aml_display_on_pre(vout_bit);
-
-	smp_ret = run_smp_function(1, &aml_display_on_post_job, vout_bit);
-	if (smp_ret)
-		printf("display smp failed\n");
+	if (strcmp(env_get("bootup_display"), "on") == 0) {
+		smp_ret = run_smp_function(1, &aml_display_on_post_job, vout_bit);
+		if (smp_ret)
+			printf("display smp failed\n");
+	}
+#endif
 #endif
 }
 

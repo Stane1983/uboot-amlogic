@@ -14,4 +14,6 @@ int hdmitx_likely_frac_rate_mode(char *m);
 unsigned int hdmi_outputmode_check(char *mode, unsigned int frac);
 int do_hpd_detect(cmd_tbl_t *cmdtp, int flag, int argc,
 		  char *const argv[]);
+
+int aml_hdmitx_output(const char *mode);
 #endif

@@ -92,10 +92,16 @@
 #define ENABLE_SMP	"display_on_smp=0\0"
 #define INIT_DISPLAY	"if test ${display_on_smp} = 0; then "\
 				"run init_display;" \
-			"fi;"
+			"fi; "
+#define VOUT_CMD	"if test ${display_on_smp} = 1; then "\
+				"vout prepare ${outputmode};"\
+			"else "\
+				"vout output ${outputmode};"\
+			"fi; "
 #else
 #define ENABLE_SMP	"display_on_smp=0\0"
-#define INIT_DISPLAY	"run init_display;"
+#define INIT_DISPLAY	"run init_display; "
+#define VOUT_CMD	"vout output ${outputmode}; "
 #endif
 
 /* args/envs */
@@ -300,16 +306,7 @@
 			"\0"\
 	"init_display="\
 		OSD_CMD \
-		"vout output ${outputmode}"\
-		"\0"\
-	"init_display_pre="\
-		OSD_CMD \
-		"vout prepare ${outputmode}"\
-		"\0"\
-	"init_display_post="\
-		"if test ${bootup_display} = on; then "\
-			"vout output ${outputmode};"\
-		"fi;"\
+		VOUT_CMD \
 		"\0"\
 	"check_display="\
 		"echo check_display reboot_mode : ${reboot_mode} ,powermode : ${powermode};"\

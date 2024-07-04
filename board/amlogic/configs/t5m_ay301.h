@@ -85,13 +85,19 @@
 
 #define OSD_CMD	"osd open;osd clear;run load_bmp_logo;bmp scale; "
 #ifdef CONFIG_ARMV8_MULTIENTRY
-#define ENABLE_SMP	"display_on_smp=0\0"
+#define ENABLE_SMP	"display_on_smp=1\0"
 #define INIT_DISPLAY	"if test ${display_on_smp} = 0; then "\
 				"run init_display;" \
-			"fi;"
+			"fi; "
+#define VOUT_CMD	"if test ${display_on_smp} = 1; then "\
+				"vout prepare ${outputmode};"\
+			"else "\
+				"vout output ${outputmode};"\
+			"fi; "
 #else
 #define ENABLE_SMP	"display_on_smp=0\0"
-#define INIT_DISPLAY	"run init_display;"
+#define INIT_DISPLAY	"run init_display; "
+#define VOUT_CMD	"vout output ${outputmode}; "
 #endif
 
 /* args/envs */
@@ -290,27 +296,8 @@
 			"setenv dolby_vision_on 0;"\
 			"run storeargs;"\
 			"setenv bootconfig ${bootconfig} androidboot.quiescent=1;"\
-		"else "\
-			"vout output ${outputmode};"\
 		"fi;fi;"\
-		"\0"\
-	"init_display_pre="\
-		OSD_CMD \
-		"if test ${reboot_mode} = quiescent; then "\
-			"setenv dolby_status 0;"\
-			"setenv dolby_vision_on 0;"\
-			"setenv bootconfig ${bootconfig} androidboot.quiescent=1;"\
-		"else if test ${reboot_mode} = recovery_quiescent; then "\
-			"setenv dolby_status 0;"\
-			"setenv dolby_vision_on 0;"\
-			"setenv bootconfig ${bootconfig} androidboot.quiescent=1;"\
-		"fi;fi;"\
-		"vout prepare ${outputmode};"\
-		"\0"\
-	"init_display_post="\
-		"if test ${bootup_display} = on; then "\
-			"vout output ${outputmode};"\
-		"fi;"\
+		VOUT_CMD \
 		"\0"\
 	"check_display="\
 		"echo check_display reboot_mode : ${reboot_mode} ,powermode : ${powermode};"\

@@ -203,6 +203,102 @@ static void hdmitx_config_csc_en(struct hdmitx_dev *hdev)
 	}
 }
 
+int aml_hdmitx_output(const char *mode)
+{
+	struct hdmitx_dev *hdev = hdmitx_get_hdev();
+	int ret;
+
+	if (!edid_parsing_ok(hdev)) {
+		/* in SWPL-34712: if EDID parsing error in kernel,
+		 * only forcely output default mode(480p,RGB,8bit)
+		 * in sysctl, not save the default mode to env.
+		 * if uboot follow this rule, will cause issue OTT-19333:
+		 * uboot read edid error and then output default mode,
+		 * without save it mode env. if then kernel edid normal,
+		 * sysctrl/kernel get mode from env, the actual output
+		 * mode differs with outputmode env,it will
+		 * cause display abnormal(such as stretch). so don't
+		 * follow this rule in uboot, that's to say the actual
+		 * output mode needs to stays with the outputmode env.
+		 */
+		printf("edid parsing ng, forcely output 720p, rgb,8bit\n");
+		save_default_720p();
+		hdev->vic = HDMI_1280x720p60_16x9;
+		hdev->para = hdmi_get_fmt_paras(hdev->vic);
+		hdev->para->cs = HDMI_COLOR_FORMAT_RGB;
+		hdev->para->cd = HDMI_COLOR_DEPTH_24B;
+		hdmi_tx_set(hdev);
+		return 0;
+	}
+	hdev->vic = hdmi_get_fmt_vic(mode);
+	hdev->para = hdmi_get_fmt_paras(hdev->vic);
+	if (hdev->vic == HDMI_unknown) {
+		/* Not find VIC */
+		printf("Not find '%s' mapped VIC\n", mode);
+		return -1;
+	}
+	printf("set hdmitx VIC = %d\n", hdev->vic);
+	if (!hdev->para) {
+		printf("null hdmitx para\n");
+		return -1;
+	}
+	if (env_get("colorattribute"))
+		hdmi_parse_attr(hdev->para, env_get("colorattribute"));
+	if (strstr(mode, "hz420"))
+		hdev->para->cs = HDMI_COLOR_FORMAT_420;
+	/* For RGB444 or YCbCr444 under 6Gbps mode, no deepcolor */
+	/* Only 4k50/60 has 420 modes */
+	switch (hdev->vic) {
+	case HDMI_3840x2160p50_16x9:
+	case HDMI_3840x2160p60_16x9:
+	case HDMI_4096x2160p50_256x135:
+	case HDMI_4096x2160p60_256x135:
+	case HDMI_3840x2160p50_64x27:
+	case HDMI_3840x2160p60_64x27:
+	case HDMI_3840x2160p50_16x9_Y420:
+	case HDMI_3840x2160p60_16x9_Y420:
+	case HDMI_4096x2160p50_256x135_Y420:
+	case HDMI_4096x2160p60_256x135_Y420:
+	case HDMI_3840x2160p50_64x27_Y420:
+	case HDMI_3840x2160p60_64x27_Y420:
+		if (hdev->para->cs == HDMI_COLOR_FORMAT_RGB ||
+		    hdev->para->cs == HDMI_COLOR_FORMAT_444) {
+			if (hdev->para->cd != HDMI_COLOR_DEPTH_24B) {
+				printf("vic %d cs %d has no cd %d\n",
+					hdev->vic,
+					hdev->para->cs,
+					hdev->para->cd);
+				hdev->para->cd = HDMI_COLOR_DEPTH_24B;
+				printf("set cd as %d\n", HDMI_COLOR_DEPTH_24B);
+			}
+		}
+		if (hdev->para->cs == HDMI_COLOR_FORMAT_420)
+			hdev->vic |= HDMITX_VIC420_OFFSET;
+		break;
+	default:
+		if (hdev->para->cs == HDMI_COLOR_FORMAT_420) {
+			printf("vic %d has no cs %d\n", hdev->vic,
+				hdev->para->cs);
+			hdev->para->cs = HDMI_COLOR_FORMAT_444;
+			printf("set cs as %d\n", HDMI_COLOR_FORMAT_444);
+		}
+		/* For VESA modes, should be RGB format */
+		if (hdev->vic >= HDMITX_VESA_OFFSET) {
+			hdev->para->cs = HDMI_COLOR_FORMAT_RGB;
+			hdev->para->cd = HDMI_COLOR_DEPTH_24B;
+		}
+		break;
+	}
+	printf("set hdmitx VIC = %d CS = %d CD = %d\n",
+		hdev->vic, hdev->para->cs, hdev->para->cd);
+	hdmitx_config_csc_en(hdev);
+	ret = hdmi_tx_set(hdev);
+	if (ret != 0)
+		return -1;
+
+	return 0;
+}
+
 static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {
 	struct hdmitx_dev *hdev = hdmitx_get_hdev();
@@ -247,94 +343,8 @@ static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 			div40 = 1;
 		hdev->hwop.set_div40(div40);
 	} else { /* "output" */
-		if (!edid_parsing_ok(hdev)) {
-			/* in SWPL-34712: if EDID parsing error in kernel,
-			 * only forcely output default mode(480p,RGB,8bit)
-			 * in sysctl, not save the default mode to env.
-			 * if uboot follow this rule, will cause issue OTT-19333:
-			 * uboot read edid error and then output default mode,
-			 * without save it mode env. if then kernel edid normal,
-			 * sysctrl/kernel get mode from env, the actual output
-			 * mode differs with outputmode env,it will
-			 * cause display abnormal(such as stretch). so don't
-			 * follow this rule in uboot, that's to say the actual
-			 * output mode needs to stays with the outputmode env.
-			 */
-			printf("edid parsing ng, forcely output 720p, rgb,8bit\n");
-			save_default_720p();
-			hdev->vic = HDMI_1280x720p60_16x9;
-			hdev->para =
-				hdmi_get_fmt_paras(hdev->vic);
-			hdev->para->cs = HDMI_COLOR_FORMAT_RGB;
-			hdev->para->cd = HDMI_COLOR_DEPTH_24B;
-			hdmi_tx_set(hdev);
-			return CMD_RET_SUCCESS;
-		}
-		hdev->vic = hdmi_get_fmt_vic(argv[1]);
-		hdev->para = hdmi_get_fmt_paras(hdev->vic);
-		if (hdev->vic == HDMI_unknown) {
-			/* Not find VIC */
-			printf("Not find '%s' mapped VIC\n", argv[1]);
-			return CMD_RET_FAILURE;
-		} else {
-			printf("set hdmitx VIC = %d\n", hdev->vic);
-		}
-		if (!hdev->para) {
-			printf("null hdmitx para\n");
-			return CMD_RET_FAILURE;
-		}
-		if (env_get("colorattribute"))
-			hdmi_parse_attr(hdev->para, env_get("colorattribute"));
-		if (strstr(argv[1], "hz420") != NULL)
-			hdev->para->cs = HDMI_COLOR_FORMAT_420;
-		/* For RGB444 or YCbCr444 under 6Gbps mode, no deepcolor */
-		/* Only 4k50/60 has 420 modes */
-		switch (hdev->vic) {
-		case HDMI_3840x2160p50_16x9:
-		case HDMI_3840x2160p60_16x9:
-		case HDMI_4096x2160p50_256x135:
-		case HDMI_4096x2160p60_256x135:
-		case HDMI_3840x2160p50_64x27:
-		case HDMI_3840x2160p60_64x27:
-		case HDMI_3840x2160p50_16x9_Y420:
-		case HDMI_3840x2160p60_16x9_Y420:
-		case HDMI_4096x2160p50_256x135_Y420:
-		case HDMI_4096x2160p60_256x135_Y420:
-		case HDMI_3840x2160p50_64x27_Y420:
-		case HDMI_3840x2160p60_64x27_Y420:
-			if ((hdev->para->cs == HDMI_COLOR_FORMAT_RGB) ||
-			    (hdev->para->cs == HDMI_COLOR_FORMAT_444)) {
-				if (hdev->para->cd != HDMI_COLOR_DEPTH_24B) {
-					printf("vic %d cs %d has no cd %d\n",
-						hdev->vic,
-						hdev->para->cs,
-						hdev->para->cd);
-					hdev->para->cd = HDMI_COLOR_DEPTH_24B;
-					printf("set cd as %d\n", HDMI_COLOR_DEPTH_24B);
-				}
-			}
-			if (hdev->para->cs == HDMI_COLOR_FORMAT_420)
-				hdev->vic |= HDMITX_VIC420_OFFSET;
-			break;
-		default:
-			if (hdev->para->cs == HDMI_COLOR_FORMAT_420) {
-				printf("vic %d has no cs %d\n", hdev->vic,
-					hdev->para->cs);
-				hdev->para->cs = HDMI_COLOR_FORMAT_444;
-				printf("set cs as %d\n", HDMI_COLOR_FORMAT_444);
-			}
-			/* For VESA modes, should be RGB format */
-			if (hdev->vic >= HDMITX_VESA_OFFSET) {
-				hdev->para->cs = HDMI_COLOR_FORMAT_RGB;
-				hdev->para->cd = HDMI_COLOR_DEPTH_24B;
-			}
-			break;
-		}
-		printf("set hdmitx VIC = %d CS = %d CD = %d\n",
-			hdev->vic, hdev->para->cs, hdev->para->cd);
-		hdmitx_config_csc_en(hdev);
-		ret = hdmi_tx_set(hdev);
-		if (ret != 0)
+		ret = aml_hdmitx_output(argv[1]);
+		if (ret)
 			return CMD_RET_FAILURE;
 	}
 	return CMD_RET_SUCCESS;
