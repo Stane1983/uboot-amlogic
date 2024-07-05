@@ -98,6 +98,7 @@ enum lcd_chip_e {
 	LCD_CHIP_T3X,
 	LCD_CHIP_A4,
 	LCD_CHIP_TXHD2,
+	LCD_CHIP_S6,
 	LCD_CHIP_MAX,
 };
 
@@ -762,6 +763,7 @@ int aml_lcd_edp_debug(int index, char *str, int num);
 
 // switch MIPI DSI mode: 0:display, 1:command
 void aml_lcd_mipi_dsi_mode(int index, unsigned char mode);
+void aml_lcd_mipi_dsi_dphy_test(int index, unsigned char mode);
 // exec DSI command, payload:[0]:data_type, [1]:number of leftover cmd, [2+]: command
 void aml_lcd_mipi_dsi_cmd(int index, unsigned char *payload);
 // read DSI command

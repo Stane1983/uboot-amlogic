@@ -1027,9 +1027,25 @@ static int do_mipi_dsi_cmd(int index, cmd_tbl_t *cmdtp, int flag, int argc, char
 	if (argc < 3)
 		return -1;
 
-	temp = (unsigned int)simple_strtoul(argv[2], NULL, 10);
+	if (!strcmp(argv[1], "HS") || !strcmp(argv[1], "LP")) {
+		temp = (argv[1][0] == 'H') ? 0x10 : 0x00;
+		if (!strcmp(argv[2], "HIGH"))
+			temp |= 0x0;
+		if (!strcmp(argv[2], "LOW"))
+			temp |= 0x1;
+		if (!strcmp(argv[2], "PRBS7"))
+			temp |= 0x2;
+		if (!strcmp(argv[2], "PRBS11"))
+			temp |= 0x3;
+		if (!strcmp(argv[2], "PRBS15"))
+			temp |= 0x4;
+
+		aml_lcd_mipi_dsi_dphy_test(index, temp);
+		return 0;
+	}
 
 	if (strcmp(argv[1], "mpmode") == 0) {
+		temp = (unsigned int)simple_strtoul(argv[2], NULL, 10);
 		aml_lcd_mipi_dsi_mode(index, temp);
 		return 0;
 	}

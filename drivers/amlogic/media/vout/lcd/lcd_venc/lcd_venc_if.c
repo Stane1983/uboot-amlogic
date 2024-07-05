@@ -181,6 +181,7 @@ int lcd_venc_probe(struct aml_lcd_data_s *pdata)
 		ret = lcd_venc_op_init_t3x(&lcd_venc_op);
 		break;
 	case LCD_CHIP_TXHD2:
+	case LCD_CHIP_S6:
 	default:
 		ret = lcd_venc_op_init_dft(&lcd_venc_op);
 		break;

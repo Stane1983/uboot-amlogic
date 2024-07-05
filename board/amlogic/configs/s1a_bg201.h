@@ -65,7 +65,6 @@
 	"board=bg201\0"\
 	"boot_part=boot\0"\
 	"recovery_part=recovery\0"\
-		"panel_type=lcd_1\0" \
 		"outputmode=1080p60hz\0" \
 		"hdmimode=1080p60hz\0" \
 		"colorattribute=444,8bit\0"\

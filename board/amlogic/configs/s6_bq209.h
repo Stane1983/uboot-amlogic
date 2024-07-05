@@ -69,12 +69,13 @@
 #define CONFIG_SUPPORT_EMMC_RPMB 1
 #define CONFIG_AML_DEV_ID 1
 
-//for common env list, please maintain it in board/amlogic/env/linux.env
+//for common env list, please maintain it in board/amlogic/env/android_multidisplay.env
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"uart_base=0xfe07a000\0"\
 	"usb_burning=" CONFIG_USB_TOOL_ENTRY "\0"\
-	"panel_type=lcd_1\0"\
-	"outputmode=1080p60hz\0"\
+	"panel_type=dsi_0\0"\
+	"outputmode=panel\0"\
+	"outputmode2=1080p60hz\0"\
 	"hdmimode=1080p60hz\0"\
 	"colorattribute=444,8bit\0"\
 	"cvbsmode=576cvbs\0"\

@@ -32,6 +32,9 @@
 #ifdef CONFIG_AML_VPP
 #include <amlogic/media/vpp/vpp.h>
 #endif
+#ifdef CONFIG_AML_LCD
+#include <amlogic/media/vout/lcd/lcd_vout.h>
+#endif
 #ifdef CONFIG_AML_HDMITX20
 #include <amlogic/media/vout/hdmitx/hdmitx_module.h>
 #endif
@@ -174,6 +177,9 @@ int board_late_init(void)
 
 #ifdef CONFIG_AML_VPU
 	vpu_probe();
+#endif
+#ifdef CONFIG_AML_LCD
+	lcd_probe();
 #endif
 #ifdef CONFIG_AML_VPP
 	vpp_init();

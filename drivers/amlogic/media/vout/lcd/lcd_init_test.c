@@ -804,7 +804,9 @@ static void mipi_dsi_tx_init(struct aml_lcd_drv_s *pdrv)
 
 	pdrv->config.timing.bit_rate = 283500000; //378000000;
 	// pdrv->config.control.mipi_cfg.clk_factor = 6;//8;
+#ifdef CONFIG_AML_LCD_TABLET
 	lcd_dsi_tx_ctrl(pdrv, 1);
+#endif
 }
 
 #define MIPI_DSI_1G_TEST    0

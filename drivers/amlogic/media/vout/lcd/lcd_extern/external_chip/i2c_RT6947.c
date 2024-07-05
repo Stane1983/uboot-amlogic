@@ -9,9 +9,9 @@
 #include <fdtdec.h>
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include <amlogic/media/vout/lcd/lcd_extern.h>
-#include "lcd_extern.h"
-#include "../lcd_common.h"
-#include "../lcd_reg.h"
+#include "../lcd_extern.h"
+#include "../../lcd_common.h"
+#include "../../lcd_reg.h"
 
 #define LCD_EXTERN_NAME			"i2c_RT6947"
 //#define LCD_EXTERN_I2C_ADDR		(0x66 >> 1) //7bit address

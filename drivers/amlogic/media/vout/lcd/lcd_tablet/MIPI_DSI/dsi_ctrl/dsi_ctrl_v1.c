@@ -122,7 +122,8 @@ static void dsi_phy_init(struct aml_lcd_drv_s *pdrv, struct dsi_dphy_s *dphy)
 		(0 << 9)  | /* enable the divider clock out */
 		(0 << 10) | /* clock divider. 1: freq/4, 0: freq/2 */
 		(0 << 11) | /* 1: select the mipi DDRCLKHS from clock divider, 0: from PLL clock */
-		(0 << 12)); /* enable the byte clock generateion. */
+		(0 << 12) | /* enable the byte clock generateion. */
+		(0 << 25)); /* use dsi_pll_clk (s6). */
 	/* enable the divider clock out */
 	dsi_phy_setb(pdrv, MIPI_DSI_PHY_CTRL,  1, 9, 1);
 	/* enable the byte clock generateion. */
@@ -1012,6 +1013,13 @@ static void dsi_host_on_post(struct aml_lcd_drv_s *pdrv)
 		set_mipi_dsi_host(pdrv, MIPI_DSI_VIRTUAL_CHAN_ID,
 			0, //Chroma sub sample, only for YUV 422 or 420, even or odd
 			op_mode_disp); //DSI operation mode, video or command
+
+		if (pdrv->config.control.mipi_cfg.bit_rate_max > 1500) {
+			dsi_host_setb(pdrv, MIPI_DSI_DESKEW_CTRL, 1, 16, 1);
+			dsi_host_write(pdrv, MIPI_DSI_TX_SKEW_CAL_CTRL_OS, 0x19);
+			dsi_host_write(pdrv, MIPI_DSI_TX_SKEW_PRD_TIME_OS, 0x01);
+			dsi_host_write(pdrv, MIPI_DSI_TX_SKEW_CAL_TIME_OS, 0x10001000);
+		}
 	}
 	if (op_mode_disp == MIPI_DSI_OPERATION_MODE_VIDEO)
 		lcd_venc_enable(pdrv, 1);

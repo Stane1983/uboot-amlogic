@@ -10,6 +10,8 @@
 
 #include "lcd_clk_config.h"
 
+extern char *lcd_clk_div_sel_table[];
+
 /* **********************************
  * lcd controller operation
  * **********************************/
@@ -36,6 +38,7 @@ void lcd_clk_config_init_print_dft(struct aml_lcd_drv_s *pdrv);
 void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv);
 void lcd_set_vid_pll_div_dft(struct lcd_clk_config_s *cconf);
 void lcd_set_vclk_crt_dft(struct aml_lcd_drv_s *pdrv);
+unsigned char lcd_dsi_generate_DSI_PLL_s6_model(struct aml_lcd_drv_s *pdrv);
 
 /* ****************************************************
  * lcd clk chip init help func
@@ -56,6 +59,7 @@ void lcd_clk_config_chip_init_t5d(struct aml_lcd_drv_s *pdrv, struct lcd_clk_con
 void lcd_clk_config_chip_init_t5w(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
 void lcd_clk_config_chip_init_a4(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
 void lcd_clk_config_chip_init_txhd2(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
+void lcd_clk_config_chip_init_s6(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
 
 /* ****************************************************
  * lcd clk prbs func

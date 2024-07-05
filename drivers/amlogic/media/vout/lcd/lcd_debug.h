@@ -172,6 +172,21 @@ static unsigned int lcd_reg_dump_clk_c3[] = {
 	LCD_DEBUG_REG_END
 };
 
+static unsigned int lcd_reg_dump_pll_s6[] = {
+	ANACTRL_DSIPLL_CTRL0,
+	ANACTRL_DSIPLL_CTRL1,
+	ANACTRL_DSIPLL_CTRL2,
+	ANACTRL_DSIPLL_CTRL3,
+	ANACTRL_DSIPLL_STS,
+	LCD_DEBUG_REG_END
+};
+
+static unsigned int lcd_reg_dump_clk_s6[] = {
+	CLKCTRL_VIID_CLK_DIV,
+	CLKCTRL_VIID_CLK_CTRL,
+	LCD_DEBUG_REG_END
+};
+
 static unsigned int lcd_reg_dump_pll_t3x_independence[] = {
 	ANACTRL_TCON_PLL0_CNTL0,
 	ANACTRL_TCON_PLL0_CNTL1,

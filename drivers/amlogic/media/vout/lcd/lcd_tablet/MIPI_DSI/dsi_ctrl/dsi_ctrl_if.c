@@ -174,6 +174,7 @@ void lcd_dsi_if_bind(struct aml_lcd_drv_s *pdrv)
 	case LCD_CHIP_MAX:
 		dsi_ctrl_op = dsi_bind_v2(pdrv);
 		break;
+	case LCD_CHIP_S6:
 	default:
 		dsi_ctrl_op = dsi_bind_v1(pdrv);
 		break;

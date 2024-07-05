@@ -718,8 +718,9 @@ static void lcd_reg_print_edp(struct aml_lcd_drv_s *pdrv)
 	reg = EDP_TX_AUX_TRANSFER_STATUS;
 	printf("EDP_TX_AUX_TRANSFER_STATUS       [0x%04x] = 0x%08x\n",
 	       reg, dptx_reg_read(index, reg));
-
+#ifdef CONFIG_AML_LCD_TABLET
 	dptx_DPCD_dump(pdrv);
+#endif
 }
 
 static void lcd_reg_print_serializer(void)
@@ -1150,6 +1151,17 @@ static void lcd_reg_print_mipi_phy_analog_c3(struct aml_lcd_drv_s *pdrv)
 	       reg, lcd_clk_read(reg));
 }
 
+static void lcd_reg_print_mipi_phy_analog_s6(struct aml_lcd_drv_s *pdrv)
+{
+	unsigned int reg;
+
+	printf("\nphy analog registers:\n");
+	reg = ANACTRL_MIPIDSI_CTRL0;
+	printf("PHY_CNTL0   [0x%08x] = 0x%08x\n", reg, lcd_clk_read(reg));
+	reg = ANACTRL_MIPIDSI_CTRL1;
+	printf("PHY_CNTL1   [0x%08x] = 0x%08x\n", reg, lcd_clk_read(reg));
+}
+
 /* **********************************
  * lcd prbs function
  * **********************************
@@ -1428,6 +1440,14 @@ static struct lcd_debug_info_reg_s lcd_debug_info_reg_c3 = {
 	.reg_pinmux_table = lcd_reg_dump_pinmux_c3,
 };
 
+static struct lcd_debug_info_reg_s lcd_debug_info_reg_s6 = {
+	.reg_pll_table = lcd_reg_dump_pll_s6,
+	.reg_clk_table = lcd_reg_dump_clk_s6,
+	.reg_clk_combo_dphy_table = NULL,
+	.reg_encl_table = lcd_reg_dump_encl_dft,
+	.reg_pinmux_table = NULL,
+};
+
 /* interface data */
 static struct lcd_debug_info_if_s lcd_debug_info_if_rgb = {
 	.interface_print = lcd_info_print_rgb,
@@ -1615,6 +1635,11 @@ void lcd_debug_probe(struct aml_lcd_drv_s *pdrv)
 		lcd_debug_info_reg = &lcd_debug_info_reg_c3;
 		lcd_debug_info_if_mipi.reg_dump_phy =
 			lcd_reg_print_mipi_phy_analog_c3;
+		break;
+	case LCD_CHIP_S6:
+		lcd_debug_info_reg = &lcd_debug_info_reg_s6;
+		lcd_debug_info_if_mipi.reg_dump_phy =
+			lcd_reg_print_mipi_phy_analog_s6;
 		break;
 	default:
 		lcd_debug_info_reg = NULL;

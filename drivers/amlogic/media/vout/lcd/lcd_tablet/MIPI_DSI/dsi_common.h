@@ -166,7 +166,7 @@ enum dsi_vid_type_e {
 #define DPHY_TIME_LP_TA_GETX(ui)  (5 * DPHY_TIME_LP_LPX(ui))
 /* >100ns */
 #define DPHY_TIME_HS_EXIT(ui)     (110 * 100)
-/* max(8*ui, 60+4*ui), (test)<105+12*ui */
+/* > max(8*ui, 60+4*ui), (test)<105+12*ui */
 static inline u32 DPHY_TIME_HS_TRAIL(u32 ui)
 {
 	return ui > (60 * 100 / 4) ? (8 * ui) : ((60 * 100) + 4 * ui);

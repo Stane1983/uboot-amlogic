@@ -62,10 +62,6 @@
 	"usb_burning=" CONFIG_USB_TOOL_ENTRY "\0"\
 	"panel_type=rgb_0\0"\
 	"outputmode=panel\0"\
-	"hdmimode=1080p60hz\0"\
-	"colorattribute=444,8bit\0"\
-	"cvbsmode=576cvbs\0"\
-	"cvbs_drv=0\0"\
 	"display_width=1024\0"\
 	"display_height=600\0"\
 	"display_bpp=16\0"\

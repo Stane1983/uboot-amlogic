@@ -200,6 +200,17 @@ __maybe_unused static struct aml_lcd_data_s lcd_data_txhd2 = {
 	.dft_conf = {NULL, NULL, NULL},
 };
 
+static struct aml_lcd_data_s lcd_data_s6 = {
+	.chip_type = LCD_CHIP_S6,
+	.chip_name = "s6",
+	.rev_type = 0,
+	.drv_max = 1,
+	.offset_venc = {0x0},
+	.offset_venc_if = {0x0},
+	.offset_venc_data = {0x0},
+	.dft_conf = {NULL, NULL, NULL},
+};
+
 static void lcd_chip_detect(void)
 {
 #if 1
@@ -258,6 +269,9 @@ static void lcd_chip_detect(void)
 		lcd_data = &lcd_data_txhd2;
 		break;
 	*/
+	case MESON_CPU_MAJOR_ID_S6:
+		lcd_data = &lcd_data_s6;
+		break;
 	default:
 		lcd_data = NULL;
 		return;
@@ -1366,6 +1380,19 @@ void aml_lcd_mipi_dsi_mode(int index, u8 mode)
 		return;
 
 	lcd_dsi_set_operation_mode(pdrv, mode);
+#endif
+}
+
+void aml_lcd_mipi_dsi_dphy_test(int index, unsigned char mode)
+{
+#ifdef CONFIG_AML_LCD_TABLET
+	struct aml_lcd_drv_s *pdrv;
+
+	pdrv = lcd_driver_check_valid(index);
+	if (!pdrv)
+		return;
+
+	lcd_dsi_dphy_test(pdrv, mode);
 #endif
 }
 

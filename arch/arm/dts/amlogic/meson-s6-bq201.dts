@@ -57,6 +57,13 @@
 	/* pinctrl-0 = <&i2c3_master_pins2>;*/
 };
 
+&i2c0 {
+	status= "okay";
+	clock-frequency = <100000>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c0_pins3>;
+};
+
 /* for internal phy */
 //&ethmac {
 //	status = "okay";

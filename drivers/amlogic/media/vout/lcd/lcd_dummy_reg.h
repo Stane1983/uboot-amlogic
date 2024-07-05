@@ -7,68 +7,259 @@
 #define REG_BASE_DSI_HOST                          (0xFFD00000L)
 
 /* ********  mipi_dsi_host = 0xffD06000(0xffD06000 - 0xffD06fff) *********/
+#ifndef MIPI_DSI_DWC_VERSION_OS
 #define MIPI_DSI_DWC_VERSION_OS                (0x1800)
-#define MIPI_DSI_DWC_PWR_UP_OS                 (0x1801)
-#define MIPI_DSI_DWC_CLKMGR_CFG_OS             (0x1802)
-#define MIPI_DSI_DWC_DPI_VCID_OS               (0x1803)
-#define MIPI_DSI_DWC_DPI_COLOR_CODING_OS       (0x1804)
-#define MIPI_DSI_DWC_DPI_CFG_POL_OS            (0x1805)
-#define MIPI_DSI_DWC_DPI_LP_CMD_TIM_OS         (0x1806)
-#define MIPI_DSI_DWC_PCKHDL_CFG_OS             (0x180b)
-#define MIPI_DSI_DWC_GEN_VCID_OS               (0x180c)
-#define MIPI_DSI_DWC_MODE_CFG_OS               (0x180d)
-#define MIPI_DSI_DWC_VID_MODE_CFG_OS           (0x180e)
-#define MIPI_DSI_DWC_VID_PKT_SIZE_OS           (0x180f)
-#define MIPI_DSI_DWC_VID_NUM_CHUNKS_OS         (0x1810)
-#define MIPI_DSI_DWC_VID_NULL_SIZE_OS          (0x1811)
-#define MIPI_DSI_DWC_VID_HSA_TIME_OS           (0x1812)
-#define MIPI_DSI_DWC_VID_HBP_TIME_OS           (0x1813)
-#define MIPI_DSI_DWC_VID_HLINE_TIME_OS         (0x1814)
-#define MIPI_DSI_DWC_VID_VSA_LINES_OS          (0x1815)
-#define MIPI_DSI_DWC_VID_VBP_LINES_OS          (0x1816)
-#define MIPI_DSI_DWC_VID_VFP_LINES_OS          (0x1817)
-#define MIPI_DSI_DWC_VID_VACTIVE_LINES_OS      (0x1818)
-#define MIPI_DSI_DWC_EDPI_CMD_SIZE_OS          (0x1819)
-#define MIPI_DSI_DWC_CMD_MODE_CFG_OS           (0x181a)
-#define MIPI_DSI_DWC_GEN_HDR_OS                (0x181b)
-#define MIPI_DSI_DWC_GEN_PLD_DATA_OS           (0x181c)
-#define MIPI_DSI_DWC_CMD_PKT_STATUS_OS         (0x181d)
-#define MIPI_DSI_DWC_TO_CNT_CFG_OS             (0x181e)
-#define MIPI_DSI_DWC_HS_RD_TO_CNT_OS           (0x181f)
-#define MIPI_DSI_DWC_LP_RD_TO_CNT_OS           (0x1820)
-#define MIPI_DSI_DWC_HS_WR_TO_CNT_OS           (0x1821)
-#define MIPI_DSI_DWC_LP_WR_TO_CNT_OS           (0x1822)
-#define MIPI_DSI_DWC_BTA_TO_CNT_OS             (0x1823)
-#define MIPI_DSI_DWC_SDF_3D_OS                 (0x1824)
-#define MIPI_DSI_DWC_LPCLK_CTRL_OS             (0x1825)
-#define MIPI_DSI_DWC_PHY_TMR_LPCLK_CFG_OS      (0x1826)
-#define MIPI_DSI_DWC_PHY_TMR_CFG_OS            (0x1827)
-#define MIPI_DSI_DWC_PHY_RSTZ_OS               (0x1828)
-#define MIPI_DSI_DWC_PHY_IF_CFG_OS             (0x1829)
-#define MIPI_DSI_DWC_PHY_ULPS_CTRL_OS          (0x182a)
-#define MIPI_DSI_DWC_PHY_TX_TRIGGERS_OS        (0x182b)
-#define MIPI_DSI_DWC_PHY_STATUS_OS             (0x182c)
-#define MIPI_DSI_DWC_PHY_TST_CTRL0_OS          (0x182d)
-#define MIPI_DSI_DWC_PHY_TST_CTRL1_OS          (0x182e)
-#define MIPI_DSI_DWC_INT_ST0_OS                (0x182f)
-#define MIPI_DSI_DWC_INT_ST1_OS                (0x1830)
-#define MIPI_DSI_DWC_INT_MSK0_OS               (0x1831)
-#define MIPI_DSI_DWC_INT_MSK1_OS               (0x1832)
+#endif
 
+#ifndef MIPI_DSI_DWC_PWR_UP_OS
+#define MIPI_DSI_DWC_PWR_UP_OS                 (0x1801)
+#endif
+
+#ifndef MIPI_DSI_DWC_CLKMGR_CFG_OS
+#define MIPI_DSI_DWC_CLKMGR_CFG_OS             (0x1802)
+#endif
+
+#ifndef MIPI_DSI_DWC_DPI_VCID_OS
+#define MIPI_DSI_DWC_DPI_VCID_OS               (0x1803)
+#endif
+
+#ifndef MIPI_DSI_DWC_DPI_COLOR_CODING_OS
+#define MIPI_DSI_DWC_DPI_COLOR_CODING_OS       (0x1804)
+#endif
+
+#ifndef MIPI_DSI_DWC_DPI_CFG_POL_OS
+#define MIPI_DSI_DWC_DPI_CFG_POL_OS            (0x1805)
+#endif
+
+#ifndef MIPI_DSI_DWC_DPI_LP_CMD_TIM_OS
+#define MIPI_DSI_DWC_DPI_LP_CMD_TIM_OS         (0x1806)
+#endif
+
+#ifndef MIPI_DSI_DWC_PCKHDL_CFG_OS
+#define MIPI_DSI_DWC_PCKHDL_CFG_OS             (0x180b)
+#endif
+
+#ifndef MIPI_DSI_DWC_GEN_VCID_OS
+#define MIPI_DSI_DWC_GEN_VCID_OS               (0x180c)
+#endif
+
+#ifndef MIPI_DSI_DWC_MODE_CFG_OS
+#define MIPI_DSI_DWC_MODE_CFG_OS               (0x180d)
+#endif
+
+#ifndef MIPI_DSI_DWC_VID_MODE_CFG_OS
+#define MIPI_DSI_DWC_VID_MODE_CFG_OS           (0x180e)
+#endif
+
+#ifndef MIPI_DSI_DWC_VID_PKT_SIZE_OS
+#define MIPI_DSI_DWC_VID_PKT_SIZE_OS           (0x180f)
+#endif
+
+#ifndef MIPI_DSI_DWC_VID_NUM_CHUNKS_OS
+#define MIPI_DSI_DWC_VID_NUM_CHUNKS_OS         (0x1810)
+#endif
+
+#ifndef MIPI_DSI_DWC_VID_NULL_SIZE_OS
+#define MIPI_DSI_DWC_VID_NULL_SIZE_OS          (0x1811)
+#endif
+
+#ifndef MIPI_DSI_DWC_VID_HSA_TIME_OS
+#define MIPI_DSI_DWC_VID_HSA_TIME_OS           (0x1812)
+#endif
+
+#ifndef MIPI_DSI_DWC_VID_HBP_TIME_OS
+#define MIPI_DSI_DWC_VID_HBP_TIME_OS           (0x1813)
+#endif
+
+#ifndef MIPI_DSI_DWC_VID_HLINE_TIME_OS
+#define MIPI_DSI_DWC_VID_HLINE_TIME_OS         (0x1814)
+#endif
+
+#ifndef MIPI_DSI_DWC_VID_VSA_LINES_OS
+#define MIPI_DSI_DWC_VID_VSA_LINES_OS          (0x1815)
+#endif
+
+#ifndef MIPI_DSI_DWC_VID_VBP_LINES_OS
+#define MIPI_DSI_DWC_VID_VBP_LINES_OS          (0x1816)
+#endif
+
+#ifndef MIPI_DSI_DWC_VID_VFP_LINES_OS
+#define MIPI_DSI_DWC_VID_VFP_LINES_OS          (0x1817)
+#endif
+
+#ifndef MIPI_DSI_DWC_VID_VACTIVE_LINES_OS
+#define MIPI_DSI_DWC_VID_VACTIVE_LINES_OS      (0x1818)
+#endif
+
+#ifndef MIPI_DSI_DWC_EDPI_CMD_SIZE_OS
+#define MIPI_DSI_DWC_EDPI_CMD_SIZE_OS          (0x1819)
+#endif
+
+#ifndef MIPI_DSI_DWC_CMD_MODE_CFG_OS
+#define MIPI_DSI_DWC_CMD_MODE_CFG_OS           (0x181a)
+#endif
+
+#ifndef MIPI_DSI_DWC_GEN_HDR_OS
+#define MIPI_DSI_DWC_GEN_HDR_OS                (0x181b)
+#endif
+
+#ifndef MIPI_DSI_DWC_GEN_PLD_DATA_OS
+#define MIPI_DSI_DWC_GEN_PLD_DATA_OS           (0x181c)
+#endif
+
+#ifndef MIPI_DSI_DWC_CMD_PKT_STATUS_OS
+#define MIPI_DSI_DWC_CMD_PKT_STATUS_OS         (0x181d)
+#endif
+
+#ifndef MIPI_DSI_DWC_TO_CNT_CFG_OS
+#define MIPI_DSI_DWC_TO_CNT_CFG_OS             (0x181e)
+#endif
+
+#ifndef MIPI_DSI_DWC_HS_RD_TO_CNT_OS
+#define MIPI_DSI_DWC_HS_RD_TO_CNT_OS           (0x181f)
+#endif
+
+#ifndef MIPI_DSI_DWC_LP_RD_TO_CNT_OS
+#define MIPI_DSI_DWC_LP_RD_TO_CNT_OS           (0x1820)
+#endif
+
+#ifndef MIPI_DSI_DWC_HS_WR_TO_CNT_OS
+#define MIPI_DSI_DWC_HS_WR_TO_CNT_OS           (0x1821)
+#endif
+
+#ifndef MIPI_DSI_DWC_LP_WR_TO_CNT_OS
+#define MIPI_DSI_DWC_LP_WR_TO_CNT_OS           (0x1822)
+#endif
+
+#ifndef MIPI_DSI_DWC_BTA_TO_CNT_OS
+#define MIPI_DSI_DWC_BTA_TO_CNT_OS             (0x1823)
+#endif
+
+#ifndef MIPI_DSI_DWC_SDF_3D_OS
+#define MIPI_DSI_DWC_SDF_3D_OS                 (0x1824)
+#endif
+
+#ifndef MIPI_DSI_DWC_LPCLK_CTRL_OS
+#define MIPI_DSI_DWC_LPCLK_CTRL_OS             (0x1825)
+#endif
+
+#ifndef MIPI_DSI_DWC_PHY_TMR_LPCLK_CFG_OS
+#define MIPI_DSI_DWC_PHY_TMR_LPCLK_CFG_OS      (0x1826)
+#endif
+
+#ifndef MIPI_DSI_DWC_PHY_TMR_CFG_OS
+#define MIPI_DSI_DWC_PHY_TMR_CFG_OS            (0x1827)
+#endif
+
+#ifndef MIPI_DSI_DWC_PHY_RSTZ_OS
+#define MIPI_DSI_DWC_PHY_RSTZ_OS               (0x1828)
+#endif
+
+#ifndef MIPI_DSI_DWC_PHY_IF_CFG_OS
+#define MIPI_DSI_DWC_PHY_IF_CFG_OS             (0x1829)
+#endif
+
+#ifndef MIPI_DSI_DWC_PHY_ULPS_CTRL_OS
+#define MIPI_DSI_DWC_PHY_ULPS_CTRL_OS          (0x182a)
+#endif
+
+#ifndef MIPI_DSI_DWC_PHY_TX_TRIGGERS_OS
+#define MIPI_DSI_DWC_PHY_TX_TRIGGERS_OS        (0x182b)
+#endif
+
+#ifndef MIPI_DSI_DWC_PHY_STATUS_OS
+#define MIPI_DSI_DWC_PHY_STATUS_OS             (0x182c)
+#endif
+
+#ifndef MIPI_DSI_DWC_PHY_TST_CTRL0_OS
+#define MIPI_DSI_DWC_PHY_TST_CTRL0_OS          (0x182d)
+#endif
+
+#ifndef MIPI_DSI_DWC_PHY_TST_CTRL1_OS
+#define MIPI_DSI_DWC_PHY_TST_CTRL1_OS          (0x182e)
+#endif
+
+#ifndef MIPI_DSI_DWC_INT_ST0_OS
+#define MIPI_DSI_DWC_INT_ST0_OS                (0x182f)
+#endif
+
+#ifndef MIPI_DSI_DWC_INT_ST1_OS
+#define MIPI_DSI_DWC_INT_ST1_OS                (0x1830)
+#endif
+
+#ifndef MIPI_DSI_DWC_INT_MSK0_OS
+#define MIPI_DSI_DWC_INT_MSK0_OS               (0x1831)
+#endif
+
+#ifndef MIPI_DSI_DWC_INT_MSK1_OS
+#define MIPI_DSI_DWC_INT_MSK1_OS               (0x1832)
+#endif
+
+#ifndef MIPI_DSI_TOP_SW_RESET
 #define MIPI_DSI_TOP_SW_RESET                  (0x18f0)
+#endif
+
+#ifndef MIPI_DSI_TOP_CLK_CNTL
 #define MIPI_DSI_TOP_CLK_CNTL                  (0x18f1)
+#endif
+
+#ifndef MIPI_DSI_TOP_CNTL
 #define MIPI_DSI_TOP_CNTL                      (0x18f2)
+#endif
+
+#ifndef MIPI_DSI_TOP_SUSPEND_CNTL
 #define MIPI_DSI_TOP_SUSPEND_CNTL              (0x18f3)
+#endif
+
+#ifndef MIPI_DSI_TOP_SUSPEND_LINE
 #define MIPI_DSI_TOP_SUSPEND_LINE              (0x18f4)
+#endif
+
+#ifndef MIPI_DSI_TOP_SUSPEND_PIX
 #define MIPI_DSI_TOP_SUSPEND_PIX               (0x18f5)
+#endif
+
+#ifndef MIPI_DSI_TOP_MEAS_CNTL
 #define MIPI_DSI_TOP_MEAS_CNTL                 (0x18f6)
+#endif
+
+#ifndef MIPI_DSI_TOP_STAT
 #define MIPI_DSI_TOP_STAT                      (0x18f7)
+#endif
+
+#ifndef MIPI_DSI_TOP_MEAS_STAT_TE0
 #define MIPI_DSI_TOP_MEAS_STAT_TE0             (0x18f8)
+#endif
+
+#ifndef MIPI_DSI_TOP_MEAS_STAT_TE1
 #define MIPI_DSI_TOP_MEAS_STAT_TE1             (0x18f9)
+#endif
+
+#ifndef MIPI_DSI_TOP_MEAS_STAT_VS0
 #define MIPI_DSI_TOP_MEAS_STAT_VS0             (0x18fa)
+#endif
+
+#ifndef MIPI_DSI_TOP_MEAS_STAT_VS1
 #define MIPI_DSI_TOP_MEAS_STAT_VS1             (0x18fb)
+#endif
+
+#ifndef MIPI_DSI_TOP_INTR_CNTL_STAT
 #define MIPI_DSI_TOP_INTR_CNTL_STAT            (0x18fc)
+#endif
+
+#ifndef MIPI_DSI_TOP_MEM_PD
 #define MIPI_DSI_TOP_MEM_PD                    (0x18fd)
+#endif
+#ifndef MIPI_DSI_TX_SKEW_CAL_CTRL_OS
+#define MIPI_DSI_TX_SKEW_CAL_CTRL_OS           (0x0034)
+#endif
+#ifndef MIPI_DSI_TX_SKEW_CAL_TIME_OS
+#define MIPI_DSI_TX_SKEW_CAL_TIME_OS           (0x0035)
+#endif
+#ifndef MIPI_DSI_TX_SKEW_PRD_TIME_OS
+#define MIPI_DSI_TX_SKEW_PRD_TIME_OS           (0x0036)
+#endif
+
 /* #ifndef MIPI_DSI_REGISTER */
 #endif
 
@@ -122,6 +313,13 @@
 #ifndef MIPI_DSI_TEST_CTRL1
 #define MIPI_DSI_TEST_CTRL1                                (0xff640000 + (0x010 << 2))
 #endif
+#ifndef MIPI_DSI_DESKEW_CTRL
+#define MIPI_DSI_DESKEW_CTRL                               (0xfe01c000 + (0x11  << 2))
+#endif
+#ifndef MIPI_DSI_DESKEW_CTRL1
+#define MIPI_DSI_DESKEW_CTRL1                              (0xfe01c000 + (0x12  << 2))
+#endif
+
 #ifndef HHI_MIPI_CNTL0
 #define HHI_MIPI_CNTL0                                     (0xff63c000 + (0x00 << 2))
 #endif
@@ -355,6 +553,18 @@
 #ifndef ANACTRL_VID_PLL_CLK_DIV
 #define ANACTRL_VID_PLL_CLK_DIV                    ((0x00f8  << 2) + 0xfe008000)
 #endif
+#ifndef CLKCTRL_DSI_PLL_CLK_DIV
+#define CLKCTRL_DSI_PLL_CLK_DIV                    ((0x0045  << 2) + 0xfe000000)
+#endif
+#ifndef CLKCTRL_VID_CLK_CTRL2
+#define CLKCTRL_VID_CLK_CTRL2                      ((0x0031  << 2) + 0xfe000000)
+#endif
+#ifndef CLKCTRL_VIID_CLK_DIV
+#define CLKCTRL_VIID_CLK_DIV                       ((0x0033  << 2) + 0xfe000000)
+#endif
+#ifndef CLKCTRL_VIID_CLK_CTRL
+#define CLKCTRL_VIID_CLK_CTRL                      ((0x0034  << 2) + 0xfe000000)
+#endif
 
 #ifndef COMBO_DPHY_CNTL0
 #define COMBO_DPHY_CNTL0			((0x0000  << 2) + 0xfe018000)
@@ -550,6 +760,21 @@
 #endif
 #ifndef ANACTRL_GP0PLL_STS
 #define ANACTRL_GP0PLL_STS                         ((0x0027  << 2) + 0xfe008000)
+#endif
+#ifndef ANACTRL_DSIPLL_CTRL0
+#define ANACTRL_DSIPLL_CTRL0                       ((0x00f0  << 2) + 0xfe008000)
+#endif
+#ifndef ANACTRL_DSIPLL_CTRL1
+#define ANACTRL_DSIPLL_CTRL1                       ((0x00f1  << 2) + 0xfe008000)
+#endif
+#ifndef ANACTRL_DSIPLL_CTRL2
+#define ANACTRL_DSIPLL_CTRL2                       ((0x00f2  << 2) + 0xfe008000)
+#endif
+#ifndef ANACTRL_DSIPLL_CTRL3
+#define ANACTRL_DSIPLL_CTRL3                       ((0x00f3  << 2) + 0xfe008000)
+#endif
+#ifndef ANACTRL_DSIPLL_STS
+#define ANACTRL_DSIPLL_STS                         ((0x00f4  << 2) + 0xfe008000)
 #endif
 #ifndef ANACTRL_MIPIDSI_CTRL0
 #define ANACTRL_MIPIDSI_CTRL0                      ((0x00a0  << 2) + 0xfe008000)

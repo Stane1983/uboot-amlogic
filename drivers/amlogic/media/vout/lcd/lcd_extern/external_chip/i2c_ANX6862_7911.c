@@ -9,9 +9,9 @@
 #include <fdtdec.h>
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include <amlogic/media/vout/lcd/lcd_extern.h>
-#include "lcd_extern.h"
-#include "../lcd_common.h"
-#include "../lcd_reg.h"
+#include "../lcd_extern.h"
+#include "../../lcd_common.h"
+#include "../../lcd_reg.h"
 
 #define LCD_EXTERN_NAME			"i2c_ANX6862_7911"
 

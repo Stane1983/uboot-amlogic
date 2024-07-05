@@ -71,5 +71,10 @@ int lcd_extern_i2c_oled_probe(struct lcd_extern_driver_s *edrv,
 			      struct lcd_extern_dev_s *ext_dev);
 #endif
 
+#ifdef CONFIG_AML_LCD_EXTERN_LT8911EXB
+int aml_lcd_extern_LT8911EXB_probe(struct lcd_extern_driver_s *ext_drv,
+				   struct lcd_extern_dev_s *ext_dev);
+#endif
+
 #endif
 

@@ -17,7 +17,8 @@
 /* 20240618: lcd tcon new ctrl_type(resolution) for demura multi lut */
 /* 20240620: optimize tcon multi data set */
 /* 20240704: lcd tcon support user info */
-#define LCD_DRV_VERSION    "20240704"
+/* 20240710: add support for S6 */
+#define LCD_DRV_VERSION    "20240710"
 
 extern unsigned long clk_util_clk_msr(unsigned long clk_mux);
 
@@ -200,6 +201,7 @@ unsigned long long lcd_dsi_get_min_bitrate(struct aml_lcd_drv_s *pdrv);
 /* @dsi_debug.c */
 void lcd_dsi_info_print(struct lcd_config_s *pconf);
 void lcd_dsi_set_operation_mode(struct aml_lcd_drv_s *pdrv, unsigned char op_mode);
+void lcd_dsi_dphy_test(struct aml_lcd_drv_s *pdrv, unsigned char test_item);
 void lcd_dsi_write_cmd(struct aml_lcd_drv_s *pdrv, unsigned char *payload);
 unsigned char lcd_dsi_read(struct aml_lcd_drv_s *pdrv,
 			unsigned char *payload, unsigned char *rd_data, unsigned char rd_byte_len);
