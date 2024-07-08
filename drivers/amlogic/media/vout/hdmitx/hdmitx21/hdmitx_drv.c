@@ -413,6 +413,10 @@ void hdmitx21_init(void)
 #endif
 	hdev->para = &para;
 	hdev->dfm_type = -1;
+
+	/* enable analog frequency division by default on S6 */
+	if (hdev->chip_type == MESON_CPU_ID_S6)
+		hdev->s7_clk_config = 1;
 }
 
 /* vid_pll_clk for master clk

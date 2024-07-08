@@ -154,8 +154,12 @@ void set21_s6_htxpll_clk_out(const u32 clk, u32 div)
 		pll_od1 = 0;//pll_div3 = 5;
 	else if (cd == COLORDEPTH_30B)
 		pll_od1 = 1;//pll_div3 = 6.25;
-	else if (cd == COLORDEPTH_36B)
-		pll_od1 = 2;//pll_div3 = 7.5;
+	else if (cd == COLORDEPTH_36B) {
+		if (cs == HDMI_COLORSPACE_YUV422)
+			pll_od1 = 0;//pll_div3 = 5;
+		else
+			pll_od1 = 2;//pll_div3 = 7.5;
+	}
 
 	//tx_spll_hdmi_clk_select
 	hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL3, 1, 19, 1);
@@ -193,13 +197,14 @@ void hdmitx21_set_default_clk(void)
 	hd21_set_reg_bits(CLKCTRL_SYS_CLK_EN0_REG2, 1, 4, 1);
 
 	// Enable fixed hdmitx_sys_clk
-	data32 = 0;
-	data32 |= (3 << 9); // [10: 9] clk_sel for cts_hdmitx_sys_clk: 3=fclk_div5
-	data32 |= (0 << 8); // [    8] clk_en for cts_hdmitx_sys_clk
-	data32 |= (1 << 0); // [ 6: 0] clk_div for cts_hdmitx_sys_clk: fclk_dvi5/2=400/2=200M
-	hd21_write_reg(CLKCTRL_HDMI_CLK_CTRL, data32);
-	data32 |= (1 << 8); // [    8] clk_en for cts_hdmitx_sys_clk
-	hd21_write_reg(CLKCTRL_HDMI_CLK_CTRL, data32);
+	// [10: 9] clk_sel for cts_hdmitx_sys_clk: 3=fclk_div5
+	hd21_set_reg_bits(CLKCTRL_HDMI_CLK_CTRL, 3, 9, 2);
+	// [    8] clk_en for cts_hdmitx_sys_clk
+	hd21_set_reg_bits(CLKCTRL_HDMI_CLK_CTRL, 0, 8, 1);
+	// [ 6: 0] clk_div for cts_hdmitx_sys_clk: fclk_dvi5/2=400/2=200M
+	hd21_set_reg_bits(CLKCTRL_HDMI_CLK_CTRL, 1, 0, 7);
+	// [    8] clk_en for cts_hdmitx_sys_clk
+	hd21_set_reg_bits(CLKCTRL_HDMI_CLK_CTRL, 1, 8, 1);
 
 	// Enable fixed hdmitx_prif_clk, hdmitx_200m_clk
 	data32 = 0;
@@ -467,10 +472,18 @@ static void set_hdmitx_htx_pll(struct hdmitx_dev *hdev)
 	enum hdmi_color_depth cd = hdev->para->cd;
 	u8 clk_div_val = VID_PLL_DIV_5;
 
-	//if (hdev->pxp_mode) /* skip VCO setting */
-	//	return;
+	if (hdev->pxp_mode) /* skip VCO setting */
+		return;
 
 	set_hdmitx_s6_htx_pll(hdev);
+	if (hdev->s7_clk_config) {
+		/* bit15
+		 * 1: Analog frequency division
+		 * 0: Digital frequency division(default)
+		 */
+		hd21_set_reg_bits(CLKCTRL_HDMI_CLK_CTRL, 1, 15, 1);
+		return;
+	}
 
 	if (cs != HDMI_COLORSPACE_YUV422) {
 		if (cd == COLORDEPTH_36B)
