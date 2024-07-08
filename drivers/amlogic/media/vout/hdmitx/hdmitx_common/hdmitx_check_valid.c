@@ -83,7 +83,7 @@ int hdmitx_common_validate_vic(struct hdmitx_common *tx_comm, u32 vic)
 	}
 
 	/*ip level filter*/
-	if (hdmitx_hw_validate_mode(tx_comm->tx_hw, vic) != 0)
+	if (hdmitx_hw_validate_mode(tx_comm->tx_hw, vic, tx_comm->max_refreshrate) != 0)
 		return -EPERM;
 
 	return 0;

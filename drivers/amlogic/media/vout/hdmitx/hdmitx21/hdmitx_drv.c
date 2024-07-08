@@ -270,6 +270,7 @@ static void hdmitx_load_dts_config(struct hdmitx_dev *hdev)
 
 	hdev->tx_common.res_1080p = 0;
 	hdev->enc_idx = 0;
+	hdev->tx_common.max_refreshrate = 60; /* default */
 	dt_blob = gd->fdt_blob;
 	if (!dt_blob) {
 		printf("ERR: hdmitx: dt_blob is null\n");
@@ -328,7 +329,6 @@ static void hdmitx_load_dts_config(struct hdmitx_dev *hdev)
 
 	printf("tx_max_frl_rate: %d\n", hdev->tx_max_frl_rate);
 
-	hdev->tx_common.max_refreshrate = 60; /* default */
 	propdata = (char *)fdt_getprop(dt_blob, node, "max_refreshrate", NULL);
 	if (propdata) {
 		max_refreshrate = be32_to_cpup((u32 *)propdata);
@@ -2905,7 +2905,7 @@ bool soc_freshrate_limited(const struct hdmi_timing *timing, u32 vsync)
 }
 
 /* VIC is supported by SOC/IP level */
-int hdmitx_hw_validate_mode(struct hdmitx_hw_common *tx_hw, u32 vic)
+int hdmitx_hw_validate_mode(struct hdmitx_hw_common *tx_hw, u32 vic, u32 max_refreshrate)
 {
 	int ret = 0;
 	const struct hdmi_timing *timing;
@@ -2923,19 +2923,16 @@ int hdmitx_hw_validate_mode(struct hdmitx_hw_common *tx_hw, u32 vic)
 	case MESON_CPU_ID_S5:
 		/* for S5, the MAX capabilities are 8K60, and 4k120, and below */
 		ret = (soc_resolution_limited(timing, 4320) && soc_freshrate_limited(timing, 60)) ||
-		       (soc_resolution_limited(timing, 2160) && soc_freshrate_limited(timing, 120));
+		       (soc_resolution_limited(timing, 2160) &&
+				soc_freshrate_limited(timing, max_refreshrate));
 		break;
 	case MESON_CPU_ID_S1A:
 		ret = soc_resolution_limited(timing, 1080) && soc_freshrate_limited(timing, 60);
 		break;
-	case MESON_CPU_ID_S7D:
-		ret = (soc_resolution_limited(timing, 2160) && soc_freshrate_limited(timing, 60)) ||
-		       (soc_resolution_limited(timing, 1080) && soc_freshrate_limited(timing, 120));
-		break;
-	case MESON_CPU_ID_S7:
-	case MESON_CPU_ID_T7:
 	default:
-		ret = soc_resolution_limited(timing, 2160) && soc_freshrate_limited(timing, 60);
+		ret = (soc_resolution_limited(timing, 2160) && soc_freshrate_limited(timing, 60)) ||
+		       (soc_resolution_limited(timing, 1080) &&
+				soc_freshrate_limited(timing, max_refreshrate));
 		break;
 	}
 

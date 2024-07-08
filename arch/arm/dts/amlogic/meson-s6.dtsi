@@ -97,6 +97,11 @@
 		status = "disabled";
 	};
 
+	amhdmitx: amhdmitx {
+		compatible = "amlogic, amhdmitx-s6";
+		status = "okay";
+		max_refreshrate = <120>; /* the max freshrate of S6 is upto 120hz */
+	};
 };
 
 &ethmac {

@@ -227,7 +227,7 @@ int hdmitx_common_build_format_para(struct hdmitx_common *tx_comm, struct hdmi_f
 				    enum hdmi_vic vic, u32 frac_rate_policy,
 				    enum hdmi_colorspace cs, enum hdmi_color_depth cd,
 				    enum hdmi_quantization_range cr);
-int hdmitx_hw_validate_mode(struct hdmitx_hw_common *tx_hw, u32 vic);
+int hdmitx_hw_validate_mode(struct hdmitx_hw_common *tx_hw, u32 vic, u32 max_refreshrate);
 
 #ifdef CONFIG_AML_DSC_ENC
 bool edid_check_dsc_support(struct tx_cap *hdmi_tx_cap,
