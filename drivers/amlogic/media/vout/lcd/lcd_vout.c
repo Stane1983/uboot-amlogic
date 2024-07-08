@@ -1568,17 +1568,14 @@ void aml_lcd_driver_unifykey_dump(int index, unsigned int flag)
 
 int aml_lcd_driver_suspend(void *pm_ops)
 {
-	int i = 0;
 #if 0
+	int i = 0;
 	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
-#endif
 
 	for (i = 0; i < LCD_MAX_DRV; i++) {
-#if 0
 		printf("%s %d: pm->name=%s\n", __func__, __LINE__, pm->name);
 		if (strcmp(pm->name, lcd_pm_name[i]) == 0)
 			break;
-#endif
 	}
 
 	if (i >= LCD_MAX_DRV || i < 0) {
@@ -1588,24 +1585,22 @@ int aml_lcd_driver_suspend(void *pm_ops)
 
 	aml_lcd_driver_disable(i);
 	LCDPR("%s driver disabled\n", __func__);
-
+#endif
+	LCDERR("%s %d: %s is not supported, only return 0 here\n", __func__, __LINE__, __func__);
 	return 0;
 }
 
 int aml_lcd_driver_resume(void *pm_ops)
 {
-	int i = 0;
 #if 0
+	int i = 0;
 	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
-#endif
 	struct aml_lcd_drv_s *pdrv;
 
 
 	for (i = 0; i < LCD_MAX_DRV; i++) {
-#if 0
 		if (strcmp(pm->name, lcd_pm_name[i]) == 0)
 			break;
-#endif
 	}
 
 	pdrv = lcd_driver_check_valid(i);
@@ -1614,7 +1609,8 @@ int aml_lcd_driver_resume(void *pm_ops)
 
 	aml_lcd_driver_enable(i, pdrv->init_mode, pdrv->init_frac);
 	LCDPR("%s driver enable\n", __func__);
-
+#endif
+	LCDERR("%s %d: %s is not supported, only return 0 here\n", __func__, __LINE__, __func__);
 	return 0;
 }
 

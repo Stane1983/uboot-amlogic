@@ -415,14 +415,10 @@ static int do_lcd_mem(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	if (argc >= 4) {
 		if (strcmp(argv[1], "add") == 0) {
-			if (argc <  4)
-				return -1;
 			size = ustrtoul(argv[2], NULL, 10);
 			name = argv[3];
 			pa = lrm_phys_alloc(size, name);
 		} else if (strcmp(argv[1], "add_tail") == 0) {
-			if (argc <  4)
-				return -1;
 			size = ustrtoul(argv[2], NULL, 10);
 			name = argv[3];
 			pa = lrm_phys_alloc_tail(size, name);

@@ -1432,7 +1432,8 @@ __tcon_check_dccd_info_exit:
 
 int handle_tcon_bin(void)
 {
-	int tmp_len = 0, tcon_bin_size;
+	int tmp_len = 0;
+	unsigned int tcon_bin_size;
 	unsigned int size = 0, tmp_buf_size = 0;
 	unsigned char *tmp_buf = NULL;
 	unsigned char *tcon_buf = NULL;

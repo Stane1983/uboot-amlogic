@@ -222,9 +222,10 @@ phys_addr_t __lrm_phys_alloc(u32 size, u32 align, u32 dir, char *desc)
 
 	mem->info.size = ALIGN(size, PAGE_SIZE);
 	mem->info.attr = 0;
-	if (desc)
+	if (desc) {
 		strncpy(mem->info.name, desc, sizeof(mem->info.name));
-
+		mem->info.name[sizeof(mem->info.name) - 1] = '\0';
+	}
 	align = ALIGN(align, PAGE_SIZE);
 	lrm_spin_lock();
 
