@@ -102,7 +102,7 @@ static void earcrx_cmdc_init(int version)
 	/* eARC_RX_CONN_START Max time 200ms */
 	update_bits(EARC_RX_CMDC_VSM_CTRL1,
 			 0xfffff << 12,
-			 200 << 12
+			 0x80 << 12
 			);
 	update_bits(EARC_RX_CMDC_VSM_CTRL0,
 			 0x1 << 19,
