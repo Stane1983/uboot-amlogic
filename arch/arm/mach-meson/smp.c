@@ -18,7 +18,7 @@ typedef enum {
 
 unsigned int __cpu_online_mask;
 unsigned int __num_online_cpus;
-struct smp_boot_param smp_boot[NR_CPUS - 1];
+struct smp_boot_param smp_boot[NR_CPUS];
 
 void set_cpu_online(unsigned int cpu, bool online)
 {
@@ -165,13 +165,15 @@ int is_secondary_core_power_on(void)
 
 int run_smp_function(unsigned int cpu, void (*func)(unsigned long arg),  unsigned long arg)
 {
-	int ret;
+	int ret = -1;
 
-	if (cpu > (NR_CPUS - 1))
+	if (cpu > (NR_CPUS - 1)) {
 		printf("CPU%u larger than max cpuidx %d\n", cpu, NR_CPUS - 1);
-	smp_boot[cpu].bootup = func;
-	smp_boot[cpu].param = arg;
-	ret = secondary_boot(cpu, (unsigned int)gd->relocaddr);
+	} else {
+		smp_boot[cpu].bootup = func;
+		smp_boot[cpu].param = arg;
+		ret = secondary_boot(cpu, (unsigned int)gd->relocaddr);
+	}
 
 	return ret;
 }
