@@ -6,6 +6,11 @@
 
 #ifdef CONFIG_ARM64
 
+#if defined(CONFIG_AMLOGIC_MODIFY) && !defined(ID_AA64MMFR2_EL1)
+/* ID_AA64MMFR2_EL1 definitions */
+#define ID_AA64MMFR2_EL1            S3_0_C0_C7_2
+#endif
+
 #define CurrentEL_EL2           (2 << 2)
 
 /*
