@@ -205,6 +205,7 @@ int vpu_rdarb_bind_l1(enum vpu_arb_mod_e level1_module, enum vpu_arb_mod_e level
 			break;
 		vpu0_2_level1_module++;
 	}
+	/*coverity[check_after_deref] it has done in function beginning*/
 	if (!vpu0_2_level1_module) {
 		VPUERR("level1_table no such module\n");
 		return -1;
@@ -242,11 +243,17 @@ void print_bind1_change_info(enum vpu_arb_mod_e level1_module, enum vpu_arb_mod_
 	struct vpu_arb_table_s *vpu0_2_level1_module =
 							vpu_rdarb_vpu0_2_level1_tables;
 
+	if (!vpu0_2_level1_module ||
+		level1_module >= VPU_ARB_VPP_ARB0) {
+		VPUERR("%s table or module err\n", __func__);
+		return;
+	}
 	while (vpu0_2_level1_module->vmod) {
 		if (level1_module == vpu0_2_level1_module->vmod)
 			break;
 		vpu0_2_level1_module++;
 	}
+	/*coverity[check_after_deref] it has done in function beginning*/
 	if (!vpu0_2_level1_module) {
 		VPUERR("level1_table no such module\n");
 		return;
@@ -281,6 +288,7 @@ int vpu_rdarb_bind_l2(enum vpu_arb_mod_e level2_module, u32 vpu_read_port)
 			break;
 		vpu0_2_level2_module++;
 	}
+	/*coverity[check_after_deref] it has done in function beginning*/
 	if (!vpu0_2_level2_module) {
 		VPUERR("level2_table no such module\n");
 		return -1;
@@ -317,11 +325,16 @@ void print_bind2_change_info(enum vpu_arb_mod_e level2_module, u32 vpu_read_port
 	u32 val;
 	struct vpu_arb_table_s *vpu0_2_level2_module = vpu_rdarb_vpu0_2_level2_tables;
 
+	if (!vpu0_2_level2_module) {
+		VPUERR("%s table err\n", __func__);
+		return;
+	}
 	while (vpu0_2_level2_module->vmod) {
 		if (level2_module == vpu0_2_level2_module->vmod)
 			break;
 		vpu0_2_level2_module++;
 	}
+	/*coverity[check_after_deref] it has done in function beginning*/
 	if (!vpu0_2_level2_module) {
 		VPUERR("level2_table no such module\n");
 		return;
@@ -355,6 +368,7 @@ int vpu_wrarb0_bind(enum vpu_arb_mod_e write_module, u32 vpu_write_port)
 			break;
 		vpu_write0_module++;
 	}
+	/*coverity[check_after_deref] it has done in function beginning*/
 	if (!vpu_write0_module) {
 		VPUERR("write0 table no such module\n");
 		return -1;
@@ -379,7 +393,7 @@ void get_arb_module_info(void)
 	struct vpu_arb_table_s *vpu0_2_level1_tables = vpu_rdarb_vpu0_2_level1_tables;
 	struct vpu_arb_table_s *vpu0_2_level2_tables = vpu_rdarb_vpu0_2_level2_tables;
 
-	if (!vpu0_2_level2_tables ||
+	if (!vpu0_2_level1_tables ||
 		!vpu0_2_level2_tables)
 		return;
 	VPUPR("===========level1 port_num===========\n");
@@ -411,8 +425,8 @@ int vpu_read0_2_urgent_set(u32 vmod, u32 urgent_value)
 	struct vpu_urgent_table_s *rd_vpu0_2_level2_urgent_tables =
 					vpu_urgent_table_rd_vpu0_2_level2_tables;
 
-	if (urgent_value > 3) {
-		VPUERR("urgent value is error range:0-3\n");
+	if (urgent_value > 3 || !rd_vpu0_2_level2_urgent_tables) {
+		VPUERR("urgent value or urgent table error\n");
 		return -1;
 	}
 	while (rd_vpu0_2_level2_urgent_tables->vmod) {
@@ -420,6 +434,7 @@ int vpu_read0_2_urgent_set(u32 vmod, u32 urgent_value)
 			break;
 		rd_vpu0_2_level2_urgent_tables++;
 	}
+	/*coverity[check_after_deref] it has done in function beginning*/
 	if (!rd_vpu0_2_level2_urgent_tables) {
 		VPUERR("level2_urgent_table no such module\n");
 		return -1;
@@ -436,11 +451,16 @@ int vpu_write0_urgent_set(u32 vmod, u32 urgent_value)
 	struct vpu_urgent_table_s *write0_urgent_tables =
 					vpu_urgent_table_wr_vpu0_tables;
 
+	if (!write0_urgent_tables) {
+		VPUERR("urgent table error\n");
+		return -1;
+	}
 	while (write0_urgent_tables->vmod) {
 		if (write0_urgent_tables->vmod == vmod)
 			break;
 		write0_urgent_tables++;
 	}
+	/*coverity[check_after_deref] it has done in function beginning*/
 	if (!write0_urgent_tables) {
 		VPUERR("level2_urgent_table no such module\n");
 		return -1;
@@ -479,8 +499,11 @@ void print_urgent_change_info(u32 vmod, u32 urgent_value)
 					vpu_urgent_table_wr_vpu0_tables;
 	struct vpu_urgent_table_s *set_urgent_module = NULL;
 
-	if (urgent_value > 3)
+	if (urgent_value > 3 || !rd_vpu0_2_level2_urgent_tables ||
+		!write0_urgent_tables) {
+		VPUERR("urgent value or urgent table error\n");
 		return;
+	}
 	if (vmod >= VPU_ARB_VPP_ARB0 &&
 		vmod <= VPU_ARB_VPU_DMA) {
 		while (rd_vpu0_2_level2_urgent_tables->vmod) {
@@ -495,6 +518,10 @@ void print_urgent_change_info(u32 vmod, u32 urgent_value)
 				set_urgent_module = write0_urgent_tables;
 			write0_urgent_tables++;
 		}
+	}
+	if (!set_urgent_module) {
+		VPUERR("no such module\n");
+		return;
 	}
 	VPUPR("%s urgent set to %d\n", set_urgent_module->name, urgent_value);
 	val = vpu_vcbus_read(set_urgent_module->reg);
@@ -533,8 +560,10 @@ void vpu_urgent_get(void)
 	struct vpu_urgent_table_s *rd_vpu0_2_level2_urgent_tables =
 						vpu_urgent_table_rd_vpu0_2_level2_tables;
 
-	if (!rd_vpu0_2_level2_urgent_tables)
+	if (!rd_vpu0_2_level2_urgent_tables) {
 		VPUERR("vpu_read0_2 urgent table is error\n");
+		return;
+	}
 	sort_urgent_table(vpu_urgent_table_rd_vpu0_2_level2_tables);
 	VPUPR("===========vpu urgent table===========\n");
 	/*urgent value = 3*/
@@ -667,8 +696,10 @@ void dump_vpu_urgent_table(void)
 	struct vpu_urgent_table_s *rd_vpu0_2_level2_urgent_tables =
 						vpu_urgent_table_rd_vpu0_2_level2_tables;
 
-	if (!rd_vpu0_2_level2_urgent_tables)
+	if (!rd_vpu0_2_level2_urgent_tables) {
 		VPUERR("vpu_read0_2 urgent table is error\n");
+		return;
+	}
 	sort_urgent_table(vpu_urgent_table_rd_vpu0_2_level2_tables);
 	VPUPR("===========vpu urgent table===========\n");
 	/*urgent value = 3*/
