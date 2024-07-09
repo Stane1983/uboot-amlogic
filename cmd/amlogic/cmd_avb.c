@@ -1144,38 +1144,15 @@ int is_device_unlocked(void)
 		return 0;
 }
 
-/* CONFIG_AVB2_RECOVERY is for chaining recovery partition into vbmeta.
- * This is mainly useful if AVB2 signing is controlled and signed by 3rd party.
- * For non-AB devices, this should not be set because when update fails, vbmeta
- * might be in a invalid state and bricks the device.
- */
 int avb_verify(AvbSlotVerifyData** out_data)
 {
-#ifdef CONFIG_AVB2_RECOVERY
-#define RECOVERY "recovery"
-#else
-#define RECOVERY NULL
-#endif
-#ifdef CONFIG_OF_LIBFDT_OVERLAY
-	const char *requested_partitions_ab[AVB_NUM_SLOT + 1] = {"boot", "dtbo",
-		RECOVERY, NULL, NULL, NULL, NULL};
-#else
-	const char *requested_partitions_ab[AVB_NUM_SLOT + 1] = {"boot", RECOVERY,
-	    NULL, NULL, NULL, NULL, NULL};
-#endif
-	const char *requested_partitions[AVB_NUM_SLOT + 1] = {"boot", "dt",
-	    RECOVERY, NULL, NULL, NULL, NULL};
+	/* The last slot must be NULL */
+	const char *requested_partitions[AVB_NUM_SLOT + 1] = {"boot", "dt", "dtbo",
+	    "init_boot", "vendor_boot", NULL, NULL};
 	AvbSlotVerifyResult result = AVB_SLOT_VERIFY_RESULT_OK;
 	char *s1 = NULL;
 	char *ab_suffix = NULL;
-	const char *vendor_boot = "vendor_boot";
-	char *vendor_boot_status = NULL;
-	const char **partition_select = requested_partitions;
-	int i = 0;
 	int factory_part_num = -1;
-	char partname_init[32] = {0};
-	const char *init_boot = "init_boot";
-	u64 init_boot_size = 0;
 
 	AvbHashtreeErrorMode hashtree_error_mode =
 		AVB_HASHTREE_ERROR_MODE_RESTART_AND_INVALIDATE;
@@ -1203,44 +1180,13 @@ int avb_verify(AvbSlotVerifyData** out_data)
 		ab_suffix = "";
 	printf("ab_suffix is %s\n", ab_suffix);
 
-	if (strcmp(ab_suffix, ""))
-		partition_select = requested_partitions_ab;
-
-	if (!strcmp(ab_suffix, "_a"))
-		strcpy((char *)partname_init, "init_boot_a");
-	else if (!strcmp(ab_suffix, "_b"))
-		strcpy((char *)partname_init, "init_boot_b");
-	else
-		strcpy((char *)partname_init, "init_boot");
-
-	init_boot_size = store_part_size(partname_init);
-
 	AvbSlotVerifyFlags flags = AVB_SLOT_VERIFY_FLAGS_NONE;
 
 	avb_init();
 
-	vendor_boot_status = env_get("vendor_boot_mode");
-	if (vendor_boot_status && !strcmp(vendor_boot_status, "true")) {
-		for (i = 0; i < AVB_NUM_SLOT; i++) {
-			if (!partition_select[i]) {
-				partition_select[i] = vendor_boot;
-				break;
-			}
-		}
-	}
-	if (init_boot_size != (u64)-1) {
-		for (i = 0; i < AVB_NUM_SLOT; i++) {
-			if (!partition_select[i]) {
-				partition_select[i] = init_boot;
-				break;
-			}
-		}
-	}
-
 	if (is_device_unlocked())
 		flags |= AVB_SLOT_VERIFY_FLAGS_ALLOW_VERIFICATION_ERROR;
 
-#if !CONFIG_IS_ENABLED(AVB2_RECOVERY)
 	if (!strcmp(ab_suffix, "")) {
 		printf("recovery: %d\n", run_in_recovery);
 		if (run_in_recovery) {
@@ -1249,7 +1195,6 @@ int avb_verify(AvbSlotVerifyData** out_data)
 			requested_partitions[0] = "recovery";
 		}
 	}
-#endif
 
 	if (type == BOOT_NAND_MTD || type == BOOT_SNAND || factory_part_num < 0)
 		hashtree_error_mode =
@@ -1258,13 +1203,13 @@ int avb_verify(AvbSlotVerifyData** out_data)
 		hashtree_error_mode =
 			AVB_HASHTREE_ERROR_MODE_MANAGED_RESTART_AND_EIO;
 
-	result = avb_slot_verify(&avb_ops_, partition_select, ab_suffix,
-			flags, hashtree_error_mode, out_data);
+	result = avb_slot_verify(&avb_ops_, requested_partitions, ab_suffix,
+				 flags, hashtree_error_mode, out_data);
 
 	clear_avb_parts();
 
+	run_in_recovery = 0;
 	return result;
-#undef RECOVERY
 }
 
 static int do_avb_verify(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
