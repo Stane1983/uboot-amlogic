@@ -227,8 +227,6 @@ static int spifc_user_ahb_cmd_din(struct spifc_priv *priv,
 
 	memcpy((void *)buf, (void *)spifc_ahb_addr, len);
 	WHILE_NULL_LOOP((readl(SPIFC_AHB_STS) & BIT(29)));
-	invalidate_dcache_range((unsigned long)SPI_ADDR_BASE,
-							(unsigned long)SPI_ADDR_BASE + 0x1000000);
 
 	return 0;
 }
