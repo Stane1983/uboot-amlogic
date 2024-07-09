@@ -19,25 +19,49 @@ struct efuse_hal_api_arg {
 };
 
 typedef struct efuse_cali {
-	unsigned int who_burn:4;
-	unsigned int cali_version:4;
-	unsigned int tsensor0_data:15;
-	unsigned int tsensor0_flag:1;
-	unsigned int tsensor1_data:15;
-	unsigned int tsensor1_flag:1;
-	unsigned int reserved0:1;
-	unsigned int hdmitx_data:4;
-	unsigned int hdmitx_flag:1;
-	unsigned int usbphy_data:6;
-	unsigned int usbphy_flag:1;
-	unsigned int odio33_data:2;
-	unsigned int odio33_flag:1;
-	unsigned int cclogic_data:6;
-	unsigned int cclogic_flag:1;
-	unsigned int reserved1:1;
+	unsigned long long who_burn:4;
+	unsigned long long cali_version:4;
+	unsigned long long tsensor0_data:15;
+	unsigned long long tsensor0_flag:1;
+	unsigned long long tsensor1_data:15;
+	unsigned long long tsensor1_flag:1;
+	unsigned long long reserved0:1;
+	unsigned long long hdmitx_data:4;
+	unsigned long long hdmitx_flag:1;
+	unsigned long long usbphy_data:6;
+	unsigned long long usbphy_flag:1;
+	unsigned long long odio33_data:2;
+	unsigned long long odio33_flag:1;
+	unsigned long long cclogic_data:6;
+	unsigned long long cclogic_flag:1;
+	unsigned long long reserved1:1;
+	//Cali info2
+	unsigned long long saradc_vref_data:6;
+	unsigned long long saradc_vref_flag:1;
+	unsigned long long saradc_min_data:16;
+	unsigned long long saradc_min_flag:1;
+	unsigned long long saradc_max_data:16;
+	unsigned long long saradc_max_flag:1;
+	unsigned long long vref14_data:7;
+	unsigned long long vref14_flag:1;
+	unsigned long long eth_txamp_data:5;
+	unsigned long long eth_txamp_flag:1;
+	unsigned long long eth_resctl_data:8;
+	unsigned long long eth_resctl_flag:1;
+	unsigned long long earcrx_data:5;
+	unsigned long long earcrx_flag:1;
+	unsigned long long u3pcie_tx_data:5;
+	unsigned long long u3pcie_tx_flag:1;
+	unsigned long long u3pcie_rx_data:4;
+	unsigned long long u3pcie_rx_flag:1;
+	unsigned long long dsi_data:4;
+	unsigned long long dsi_flag:1;
+	unsigned long long csi_data:4;
+	unsigned long long csi_flag:1;
+	unsigned long long reserved2:5;
 } efuse_cali_t;
 
-#define EFUSE_CALI_SIZE			8
+#define EFUSE_CALI_SIZE			20
 //#define EFUSE_CALI_CVBS
 
 #define EFUSE_BYTES				512   /* (EFUSE_BITS/8) */
@@ -47,6 +71,7 @@ typedef struct efuse_cali {
 #define EFUSE_HAL_API_WRITE_PATTERN 2
 #define EFUSE_HAL_API_USER_MAX 3
 #define EFUSE_HAL_API_READ_CALI 4
+#define EFUSE_HAL_API_READ_CALI_ITEM 5
 #define EFUSE_HAL_API_CHECKPATTERN_ITEM  6
 #define CONFIG_EFUSE_OBJ_API 1
 

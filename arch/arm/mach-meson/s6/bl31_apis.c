@@ -183,6 +183,52 @@ struct t_efuse_item {
 	int item;
 };
 
+const struct t_efuse_item efusecaliitem_cfg[] = {
+	{.name = "sensor0", .item = EFUSE_CALI_SUBITEM_SENSOR0},
+	{.name = "sensor1", .item = EFUSE_CALI_SUBITEM_SENSOR1},
+	{.name = "hdmitx", .item = EFUSE_CALI_SUBITEM_HDMITX},
+	{.name = "usbphy", .item = EFUSE_CALI_SUBITEM_USBPHY},
+	{.name = "odio33", .item = EFUSE_CALI_SUBITEM_ODIO33},
+	{.name = "cclogic", .item = EFUSE_CALI_SUBITEM_USBCCLOGIC},
+	{.name = "saradc_vref", .item = EFUSE_CALI_SUBITEM_SARADC_VREF},
+	{.name = "saradc_min", .item = EFUSE_CALI_SUBITEM_SARADC_MIN},
+	{.name = "saradc_max", .item = EFUSE_CALI_SUBITEM_SARADC_MAX},
+	{.name = "vref14", .item = EFUSE_CALI_SUBITEM_VREF14},
+	{.name = "eth_txamp", .item = EFUSE_CALI_SUBITEM_ETH_TXAMP},
+	{.name = "eth_resctl", .item = EFUSE_CALI_SUBITEM_ETH_RESCTL},
+	{.name = "earcrx", .item = EFUSE_CALI_SUBITEM_EARCRX},
+	{.name = "u3pcie_tx", .item = EFUSE_CALI_SUBITEM_U3PCIE_TX},
+	{.name = "u3pcie_rx", .item = EFUSE_CALI_SUBITEM_U3PCIE_RX},
+	{.name = "dsi", .item = EFUSE_CALI_SUBITEM_DSI},
+	{.name = "csi", .item = EFUSE_CALI_SUBITEM_CSI},
+
+};
+
+#define EFUSE_CALIITE_CNT ARRAY_SIZE(efusecaliitem_cfg)
+
+/*
+ * return: >=0: succ and valid data, -1:fail
+ */
+int64_t meson_trustzone_efuse_caliItem(const char *str)
+{
+	int i;
+	unsigned int subcmd;
+	int64_t ret;
+
+	for (i = 0; i < EFUSE_CALIITE_CNT; i++) {
+		if (strncmp(efusecaliitem_cfg[i].name, str,
+			strlen(efusecaliitem_cfg[i].name)) == 0) {
+			subcmd = efusecaliitem_cfg[i].item;
+			break;
+		}
+	}
+	if (i >= EFUSE_CALIITE_CNT)
+		return -1;
+
+	ret = __meson_trustzone_efuse_caliitem(EFUSE_READ_CALI_ITEM, subcmd);
+	return ret;
+}
+
 const struct t_efuse_item efuselockitem_cfg[] = {
 	{.name = "dgpk1", .item = EFUSE_LOCK_SUBITEM_DGPK1_KEY },
 	{.name = "dgpk2", .item = EFUSE_LOCK_SUBITEM_DGPK2_KEY },
