@@ -24,6 +24,7 @@
 #define DMA_END  (uint32_t)(DMA_BASE + 0x3ff)
 
 #define P_DMA_T0   (volatile uint32_t *)(DMA_BASE + 0x00)
+#define P_DMA_T0_H   (volatile uint32_t *)(DMA_BASE + 0x80)
 #define P_DMA_T1   (volatile uint32_t *)(DMA_BASE + 0x04)
 #define P_DMA_T2   (volatile uint32_t *)(DMA_BASE + 0x08)
 #define P_DMA_T3   (volatile uint32_t *)(DMA_BASE + 0x0c)

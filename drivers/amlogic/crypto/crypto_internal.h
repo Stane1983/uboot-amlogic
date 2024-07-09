@@ -86,14 +86,14 @@ struct dma_dsc {
 		    unsigned owner:1;
 		} b;
 	} dsc_cfg;
-#ifdef DMA_64_BIT
+#ifdef CONFIG_AML_CRYPTO_64
 	uint64_t src_addr;
 	uint64_t tgt_addr;
 #else
 	uint32_t src_addr;
 	uint32_t tgt_addr;
 #endif
-};
+} __packed;
 
 /*
  * aes_cipher - aes cipher

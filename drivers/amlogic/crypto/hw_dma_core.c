@@ -11,6 +11,7 @@
 #include <dma.h>
 #include <asm/amlogic/arch/regs.h>
 #include <asm/amlogic/arch/secure_apb.h>
+#include <linux/arm-smccc.h>
 #include <amlogic/aml_crypto.h>
 #include <crypto_internal.h>
 #include <cpu_func.h>
@@ -19,6 +20,44 @@
 
 /* lock for crypto T0 if needed in the future */
 DEFINE_MUTEX(&crypto_lock);
+
+s8 hw_dma_inited;
+
+#define CRYPTO_CMD					0x8200007B
+	#define CRYPTO_CMD_PART_ENC_DERIVE_KEY  0x001
+	#define CRYPTO_CMD_CRYPTO_DMA_SET_BUS64 0x002
+
+static int32_t hw_dma_init(void)
+{
+	s32 ret = 0;
+#ifdef CONFIG_AML_CRYPTO_64
+	struct arm_smccc_res res;
+#endif
+	if (hw_dma_inited)
+		goto out;
+#ifdef CONFIG_AML_CRYPTO_64
+	arm_smccc_smc(CRYPTO_CMD, CRYPTO_CMD_CRYPTO_DMA_SET_BUS64,
+		      0,	/* thread */
+		      64,	/* mode */
+		      0, 0, 0, 0, &res);
+	ret = res.a0;
+#endif
+	if (!ret)
+		hw_dma_inited = 1;
+out:
+	return ret;
+}
+
+#ifdef CONFIG_AML_CRYPTO_64
+static inline void write_thread_reg(u64 data)
+{
+	u32 high = (u32)(0xff & (data >> 32));
+	u32 low = (u32)(0xffffffff & data);
+
+	*P_DMA_T0_H = high;
+	*P_DMA_T0 = low;
+}
+#endif
 
 static int32_t cipher_core(void *key, uint32_t keylen, uint8_t *iv, uint32_t ivlen,
 		   const void *src, void *dst, uint8_t encrypt, uint8_t mode,
@@ -32,6 +71,9 @@ static int32_t cipher_core(void *key, uint32_t keylen, uint8_t *iv, uint32_t ivl
 #ifdef CRYPTO_DEBUG
 	uint32_t i = 0;
 #endif
+	ret = hw_dma_init();
+	if (ret)
+		return ret;
 
 	if (blocks > MAX_BLOCK_TRANSFER)
 		return CRYPTO_ERROR_BAD_PARAMETERS;
@@ -107,7 +149,11 @@ static int32_t cipher_core(void *key, uint32_t keylen, uint8_t *iv, uint32_t ivl
 	flush_dcache_range((uintptr_t)dst, (uintptr_t)dst + size);
 
 	*P_DMA_STS0 = 0xf;
+#ifdef CONFIG_AML_CRYPTO_64
+	write_thread_reg((uintptr_t)dsc | 2);
+#else
 	*P_DMA_T0 = (uintptr_t)dsc | 2;
+#endif
 	while (*P_DMA_STS0 == 0)
 		;
 
@@ -120,6 +166,7 @@ static int32_t cipher_core(void *key, uint32_t keylen, uint8_t *iv, uint32_t ivl
 
 	mutex_unlock(&crypto_lock);
 #ifdef CRYPTO_DEBUG
+	printf("*P_DMA_STS0 = %x\n", *P_DMA_STS0);
 	for (i = 0; i < sizeof(dsc) / sizeof(struct dma_dsc); i++) {
 		printf("desc (%4x) (len) = 0x%8x\n", i,
 				dsc[i].dsc_cfg.b.length);
@@ -145,10 +192,17 @@ static int32_t cipher_core(void *key, uint32_t keylen, uint8_t *iv, uint32_t ivl
 				dsc[i].dsc_cfg.b.error);
 		printf("desc (%4x) (own) = 0x%8x\n", i,
 				dsc[i].dsc_cfg.b.owner);
+#ifdef CONFIG_AML_CRYPTO_64
+		printf("desc (%4x) (src) = 0x%llx\n", i,
+		       dsc[i].src_addr);
+		printf("desc (%4x) (tgt) = 0x%llx\n", i,
+		       dsc[i].tgt_addr);
+#else
 		printf("desc (%4x) (src) = 0x%8x\n", i,
 				dsc[i].src_addr);
 		printf("desc (%4x) (tgt) = 0x%8x\n", i,
 				dsc[i].tgt_addr);
+#endif
 	}
 #endif
 	return ret;
@@ -189,6 +243,9 @@ int32_t sha2_update_internal(sha2_ctx *ctx, const uint8_t *input,
 #ifdef CRYPTO_DEBUG
 	uint32_t i = 0;
 #endif
+	ret = hw_dma_init();
+	if (ret)
+		return ret;
 
 	if (!ctx)
 		return CRYPTO_ERROR_BAD_PARAMETERS;
@@ -256,7 +313,11 @@ int32_t sha2_update_internal(sha2_ctx *ctx, const uint8_t *input,
 	flush_dcache_range((uintptr_t)hash_tmp, (uintptr_t)hash_tmp + sizeof(hash_tmp));
 
 	*P_DMA_STS0 = 0xf;
-	*P_DMA_T0 = (uintptr_t)&dsc | 2;
+#ifdef CONFIG_AML_CRYPTO_64
+	write_thread_reg((uintptr_t)dsc | 2);
+#else
+	*P_DMA_T0 = (uintptr_t)dsc | 2;
+#endif
 	while (*P_DMA_STS0 == 0)
 		;
 
@@ -277,6 +338,7 @@ int32_t sha2_update_internal(sha2_ctx *ctx, const uint8_t *input,
 		ret = CRYPTO_ERROR_NO_ERROR;
 
 #ifdef CRYPTO_DEBUG
+	printf("*P_DMA_STS0 = %x\n", *P_DMA_STS0);
 	for (i = 0; i < sizeof(dsc) / sizeof(struct dma_dsc); i++) {
 		printf("desc (%4x) (len) = 0x%8x\n", i,
 				dsc[i].dsc_cfg.b.length);
@@ -302,10 +364,17 @@ int32_t sha2_update_internal(sha2_ctx *ctx, const uint8_t *input,
 				dsc[i].dsc_cfg.b.error);
 		printf("desc (%4x) (own) = 0x%8x\n", i,
 				dsc[i].dsc_cfg.b.owner);
+#ifdef CONFIG_AML_CRYPTO_64
+		printf("desc (%4x) (src) = 0x%llx\n", i,
+		       dsc[i].src_addr);
+		printf("desc (%4x) (tgt) = 0x%llx\n", i,
+		       dsc[i].tgt_addr);
+#else
 		printf("desc (%4x) (src) = 0x%8x\n", i,
 				dsc[i].src_addr);
 		printf("desc (%4x) (tgt) = 0x%8x\n", i,
 				dsc[i].tgt_addr);
+#endif
 	}
 #endif
 
@@ -326,6 +395,10 @@ int32_t sha3_update_internal(sha3_ctx *ctx, const uint8_t *input,
 #endif
 	uint32_t op_mode = 0;
 	uint32_t enc_sha_only = 0;
+
+	ret = hw_dma_init();
+	if (ret)
+		return ret;
 
 	if (blocks > MAX_BLOCK_TRANSFER) {
 		printf("Err:sha too large: %d, ilen: %d\n", blocks, ilen);
@@ -398,7 +471,11 @@ int32_t sha3_update_internal(sha3_ctx *ctx, const uint8_t *input,
 	flush_dcache_range((uintptr_t)hash_tmp, (uintptr_t)hash_tmp + sizeof(hash_tmp));
 
 	*P_DMA_STS0 = 0xf;
-	*P_DMA_T0 = (uintptr_t)&dsc | 2;
+#ifdef CONFIG_AML_CRYPTO_64
+	write_thread_reg((uintptr_t)dsc | 2);
+#else
+	*P_DMA_T0 = (uintptr_t)dsc | 2;
+#endif
 	while (*P_DMA_STS0 == 0)
 		;
 
@@ -416,6 +493,7 @@ int32_t sha3_update_internal(sha3_ctx *ctx, const uint8_t *input,
 		ret = CRYPTO_ERROR_NO_ERROR;
 
 #ifdef CRYPTO_DEBUG
+	printf("*P_DMA_STS0 = %x\n", *P_DMA_STS0);
 	for (i = 0; i < sizeof(dsc) / sizeof(struct dma_dsc); i++) {
 		printf("desc (%4x) (len) = 0x%8x\n", i,
 				dsc[i].dsc_cfg.b.length);
@@ -441,10 +519,17 @@ int32_t sha3_update_internal(sha3_ctx *ctx, const uint8_t *input,
 				dsc[i].dsc_cfg.b.error);
 		printf("desc (%4x) (own) = 0x%8x\n", i,
 				dsc[i].dsc_cfg.b.owner);
+#ifdef CONFIG_AML_CRYPTO_64
+		printf("desc (%4x) (src) = 0x%llx\n", i,
+		       dsc[i].src_addr);
+		printf("desc (%4x) (tgt) = 0x%llx\n", i,
+		       dsc[i].tgt_addr);
+#else
 		printf("desc (%4x) (src) = 0x%8x\n", i,
 				dsc[i].src_addr);
 		printf("desc (%4x) (tgt) = 0x%8x\n", i,
 				dsc[i].tgt_addr);
+#endif
 	}
 #endif
 
@@ -463,6 +548,10 @@ int32_t sha3_shake_squeeze_internal(sha3_ctx *ctx, uint8_t *digest, uint32_t has
 	uint32_t i = 0;
 #endif
 	uint32_t op_mode = 0;
+
+	ret = hw_dma_init();
+	if (ret)
+		return ret;
 
 	if (blocks > MAX_BLOCK_TRANSFER) {
 		printf("Err:sha too large\n");
@@ -565,7 +654,11 @@ int32_t sha3_shake_squeeze_internal(sha3_ctx *ctx, uint8_t *digest, uint32_t has
 	flush_dcache_range((uintptr_t)hash_tmp, (uintptr_t)hash_tmp + sizeof(hash_tmp));
 
 	*P_DMA_STS0 = 0xf;
-	*P_DMA_T0 = (uintptr_t)&dsc | 2;
+#ifdef CONFIG_AML_CRYPTO_64
+	write_thread_reg((uintptr_t)dsc | 2);
+#else
+	*P_DMA_T0 = (uintptr_t)dsc | 2;
+#endif
 	while (*P_DMA_STS0 == 0)
 		;
 
@@ -604,10 +697,17 @@ int32_t sha3_shake_squeeze_internal(sha3_ctx *ctx, uint8_t *digest, uint32_t has
 				dsc[i].dsc_cfg.b.error);
 		printf("desc (%4x) (own) = 0x%8x\n", i,
 				dsc[i].dsc_cfg.b.owner);
+#ifdef CONFIG_AML_CRYPTO_64
+		printf("desc (%4x) (src) = 0x%llx\n", i,
+		       dsc[i].src_addr);
+		printf("desc (%4x) (tgt) = 0x%llx\n", i,
+		       dsc[i].tgt_addr);
+#else
 		printf("desc (%4x) (src) = 0x%8x\n", i,
 				dsc[i].src_addr);
 		printf("desc (%4x) (tgt) = 0x%8x\n", i,
 				dsc[i].tgt_addr);
+#endif
 	}
 #endif
 

@@ -1,3 +1,11 @@
+config AML_CRYPTO_64
+	tristate "Amlogic Crypto driver 64 bits mode"
+	default n
+	depends on AML_CRYPTO
+	help
+	  Support Amlogic Crypto driver 64 bits mode
+
+	  64 bits Crypto driver for Amlogic DMA device
 config AML_CRYPTO
 	tristate "Amlogic Crypto driver"
 	default n
