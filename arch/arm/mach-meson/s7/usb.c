@@ -407,7 +407,6 @@ static void aml_bc_init(void)
 	writel(val, PHY_COMP_BASE + CFG_REG0);
 
 	/* reset bc */
-	val = readl(RESET_BASE + RESETCTRL0_OFFSET);
 	val = BC_RESET_BIT;
 	writel(val, RESET_BASE + RESETCTRL0_OFFSET);
 
@@ -544,7 +543,6 @@ static void aml_cc_ufp_init(void)
 	u32 val;
 
 	/* reset cc */
-	val = readl(RESET_BASE + RESETCTRL0_OFFSET);
 	val = CC_RESET_BIT;
 	writel(val, RESET_BASE + RESETCTRL0_OFFSET);
 

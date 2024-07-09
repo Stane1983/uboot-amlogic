@@ -384,7 +384,6 @@ static void aml_bc_init(void)
 	writel(val, PHY_COMP_BASE + CFG_REG0);
 
 	/* reset bc */
-	val = readl(RESET_BASE + RESETCTRL0_OFFSET);
 	val = BC_RESET_BIT;
 	writel(val, RESET_BASE + RESETCTRL0_OFFSET);
 
@@ -424,7 +423,7 @@ static const char * const bc_status_to_str[] = {
 	"CDP",			/* 3 */
 	"ACA_A",		/* 4 */
 	"ACA_B",		/* 5 */
-	"ACA_C"			/* 6 */
+	"ACA_C",		/* 6 */
 	"ACA_DOCK",		/* 7 */
 	"ACA GND ERROR",	/* 8 */
 	"analog output error",	/* 9 */
@@ -519,7 +518,6 @@ static void aml_cc_ufp_init(void)
 	u32 val;
 
 	/* reset cc */
-	val = readl(RESET_BASE + RESETCTRL0_OFFSET);
 	val = CC_RESET_BIT;
 	writel(val, RESET_BASE + RESETCTRL0_OFFSET);
 
@@ -567,7 +565,7 @@ int aml_cc_get_ufp_status(u32 *val1, u32 *val2)
 
 void print_aml_cc_ufp_current_type(void)
 {
-	u32 val, val1, cnt = 0;
+	u32 val, val1 = 0, cnt = 0;
 
 	cc_statue = CC_STATUS_DETACH;
 
