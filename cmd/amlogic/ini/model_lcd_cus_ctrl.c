@@ -501,10 +501,10 @@ static unsigned short handle_lcd_cus_ctrl_swpdf(unsigned char *p, unsigned short
 		memcpy((p + offset), threshold, threshold_size);
 		offset += threshold_size;
 
-		memcpy((p + offset), block, block_size * block_num);
+		memcpy((p + offset), block, (size_t)block_size * (size_t)block_num);
 		offset += block_size * block_num;
 
-		memcpy((p + offset), act, act_size * act_num);
+		memcpy((p + offset), act, (size_t)act_size * (size_t)act_num);
 		offset += act_size * act_num;
 		pattern_cnt++;
 	}
