@@ -65,10 +65,12 @@
 	"board=bg209\0"\
 	"boot_part=boot\0"\
 	"recovery_part=recovery\0"\
+		"connector0_type=HDMI-A-A\0" \
 		"outputmode=1080p60hz\0" \
 		"hdmimode=none\0" \
 		"colorattribute=444,8bit\0"\
 		"cvbsmode=576cvbs\0" \
+		"is.bestmode=false\0" \
 	"vout_init=enable\0" \
 		"display_width=1920\0" \
 		"display_height=1080\0" \

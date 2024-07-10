@@ -779,7 +779,8 @@ void init_read0_2_write0_urgent(void)
 int init_arb_urgent_table(void)
 {
 #ifndef AML_C3_DISPLAY
-	if (vpu_conf.data->chip_type == VPU_CHIP_T7) {
+	if (vpu_conf.data->chip_type == VPU_CHIP_T7 ||
+	    vpu_conf.data->chip_type == VPU_CHIP_S6) {
 		vpu_rdarb_vpu0_2_level1_tables = vpu_rdarb_vpu0_2_level1_t7;
 		vpu_rdarb_vpu0_2_level2_tables = vpu_rdarb_vpu0_2_level2_t7;
 		vpu_wrarb_vpu0_tables = vpu_wrarb_vpu0_t7;

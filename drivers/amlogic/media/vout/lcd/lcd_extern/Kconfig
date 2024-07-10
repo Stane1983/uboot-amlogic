@@ -16,12 +16,6 @@ config AML_LCD_EXTERN_I2C_RT6947
 	help
 	  Support for rt6947 extern device
 
-config AML_LCD_EXTERN_LT8911EXB
-	bool "lcd LT8911EXB extern device driver"
-	depends on AML_LCD_EXTERN
-	help
-	  Support for LT8911EXB MIPI-DSI to eDP convert
-
 config AML_LCD_EXTERN_I2C_OLED
 	bool "i2c_oled extern device driver"
 	depends on AML_LCD_EXTERN

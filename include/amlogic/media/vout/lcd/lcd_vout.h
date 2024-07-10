@@ -99,6 +99,7 @@ enum lcd_chip_e {
 	LCD_CHIP_A4,
 	LCD_CHIP_TXHD2,
 	LCD_CHIP_S6,
+	LCD_CHIP_T6D,
 	LCD_CHIP_MAX,
 };
 
@@ -348,7 +349,6 @@ struct dsi_config_s {
 	unsigned char check_state;
 	//dsi_panel_detect.c
 	char matched_panel[20];
-	char dsi_detect_dtb_path[30];
 	char *dt_addr;
 	unsigned char panel_det_attr; //[0]:det_en, [1]:store2env, [2]:0=bsp/1=dts [3]:on_matched
 };
@@ -741,11 +741,11 @@ struct aml_lcd_drv_s {
 	unsigned char probe_done;
 	unsigned char clk_path; /* 0=hpll, 1=gp0_pll */
 	char init_mode[64];
-	int init_frac;
 	unsigned int power_on_suspend;
 	unsigned char clk_conf_num;
 	unsigned char config_check_glb;
 	unsigned char config_check_en;
+	unsigned char viu_sel; // 1=vout; 2=vou2; 3=vout3
 
 	struct lcd_config_s config;
 	struct aml_lcd_data_s *data;
@@ -794,12 +794,11 @@ int lcd_probe(void);
 /* global api for cmd */
 int aml_lcd_driver_probe(int index);
 void aml_lcd_driver_list_support_mode(void);
-unsigned int aml_lcd_driver_outputmode_check(char *mode, unsigned int frac);
-void aml_lcd_driver_prepare(int index, char *mode, unsigned int frac);
-void aml_lcd_driver_enable(int index, char *mode, unsigned int frac);
+unsigned int aml_lcd_driver_outputmode_check(unsigned char lcd_idx, char *mode);
+void aml_lcd_driver_prepare(int index, char *mode);
+void aml_lcd_driver_enable(int index, char *mode);
 void aml_lcd_driver_disable(int index);
-void aml_lcd_driver_set_ss(int index, unsigned int level, unsigned int freq,
-			   unsigned int mode);
+void aml_lcd_driver_set_ss(int index, unsigned int level, unsigned int freq, unsigned int mode);
 void aml_lcd_driver_get_ss(int index);
 void aml_lcd_driver_clk_info(int index);
 void aml_lcd_driver_debug_print(int index, unsigned int val);

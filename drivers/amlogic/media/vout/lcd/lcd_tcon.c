@@ -1499,6 +1499,7 @@ static struct lcd_tcon_config_s tcon_data_t3x = {
 
 	.axi_tbl_len = ARRAY_SIZE(axi_mem_cfg_tbl_t3x),
 	.axi_mem_cfg_tbl = (axi_mem_cfg_tbl_t3x),
+	.lut_dma_ops = &lcd_tcon_dma_ops_t3x,
 
 	.tcon_init_table_pre_proc = lcd_tcon_init_table_pre_proc,
 	.tcon_global_reset = lcd_tcon_global_reset_t3x,
@@ -1541,6 +1542,7 @@ static struct lcd_tcon_config_s tcon_data_txhd2 = {
 
 	.axi_tbl_len = ARRAY_SIZE(axi_mem_cfg_tbl_txhd2),
 	.axi_mem_cfg_tbl = axi_mem_cfg_tbl_txhd2,
+	.lut_dma_ops = NULL,
 
 	.tcon_init_table_pre_proc = lcd_tcon_init_table_pre_proc,
 	.tcon_global_reset = lcd_tcon_global_reset_txhd2,

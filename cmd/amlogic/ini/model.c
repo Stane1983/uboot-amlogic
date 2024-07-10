@@ -2496,7 +2496,9 @@ static int handle_panel_misc(struct panel_misc_s *p_misc)
 	const char *ini_value = NULL;
 	const char *display_layer = NULL;
 	char *rev_ctrl = NULL;
+	char *ret = NULL;
 	char buf[64] = {0};
+	unsigned char connector_idx;
 
 	ini_value = ini_get_string("panel_misc", "panel_misc_version", "null");
 	if (model_debug_flag & DEBUG_MISC)
@@ -2543,18 +2545,44 @@ handle_panel_misc_next:
 		ALOGI("model_connector_bypass\n");
 		goto handle_panel_misc_next2;
 	}
-	ini_value = ini_get_string("panel_misc", "connector_type", "null");
-	if (model_debug_flag & DEBUG_MISC)
-		ALOGD("%s, connector_type is (%s)\n", __func__, ini_value);
-	if (strcmp(ini_value, "null")) {
-		strlcpy(p_misc->connector_type, ini_value,
-			sizeof(p_misc->connector_type) - 1);
-		p_misc->connector_type[sizeof(p_misc->connector_type) - 1] = '\0';
-		snprintf(buf, 63, "setenv connector_type %s", p_misc->connector_type);
-		run_command(buf, 0);
-	} else {
-		run_command("setenv connector_type null", 0);
+
+	ini_value = ini_get_string("panel_misc", "connector2_type", "null");
+	if (!strcmp(ini_value, "null")) {
+		connector_idx = 2;
+		goto handle_panel_misc_set_connector;
 	}
+
+	ini_value = ini_get_string("panel_misc", "connector1_type", "null");
+	if (!strcmp(ini_value, "null")) {
+		connector_idx = 1;
+		goto handle_panel_misc_set_connector;
+	}
+
+	ini_value = ini_get_string("panel_misc", "connector0_type", "null");
+	if (!strcmp(ini_value, "null")) {
+		connector_idx = 0;
+		goto handle_panel_misc_set_connector;
+	} else {
+		ini_value = ini_get_string("panel_misc", "connector_type", "null");
+		if (!strcmp(ini_value, "null")) {
+			connector_idx = 0;
+			goto handle_panel_misc_set_connector;
+		}
+	}
+
+	ALOGD("%s: connector not assigned\n", __func__);
+	goto handle_panel_misc_next2;
+
+handle_panel_misc_set_connector:
+	if (model_debug_flag & DEBUG_MISC)
+		ALOGD("%s, connector%u_type is (%s)\n", __func__, connector_idx, ini_value);
+	strncpy(p_misc->connector_type, ini_value, sizeof(p_misc->connector_type) - 1);
+	p_misc->connector_type[sizeof(p_misc->connector_type) - 1] = '\0';
+	ret = strstr(p_misc->connector_type, "_");
+	if (ret)
+		p_misc->connector_type[ret - p_misc->connector_type] = '-';
+	snprintf(buf, 63, "setenv connector%u_type %s", connector_idx, p_misc->connector_type);
+	run_command(buf, 0);
 
 handle_panel_misc_next2:
 	rev_ctrl = env_get("reverse_ctrl");

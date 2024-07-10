@@ -2281,4 +2281,8 @@
 #define VPU_LUT_DMA_INTR_SEL                       ((0x2717  << 2) + 0xff800000)
 #endif
 
+#ifndef VPU_TOP_MISC
+#define VPU_TOP_MISC                               ((0x2709  << 2) + 0xff800000)
+#endif
+
 #endif

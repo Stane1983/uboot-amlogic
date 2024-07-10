@@ -15,4 +15,11 @@ int hdmitx_likely_frac_rate_mode(char *m);
 unsigned int hdmi_outputmode_check(char *mode, unsigned int frac);
 int do_hpd_detect(cmd_tbl_t *cmdtp, int flag, int argc,
 		  char *const argv[]);
+/*
+ * sync with uboot 2019 follow SWPL-166617
+ * When updating outputmodeX env, check whether the connectorX is HDMI
+ * to avoid affecting the MIPI screen
+ */
+int is_valid_hdmi(const char *input);
+
 #endif

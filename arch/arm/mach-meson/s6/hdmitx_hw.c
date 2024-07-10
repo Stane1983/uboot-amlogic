@@ -70,7 +70,7 @@ static void sec_wr(u32 addr, u32 data)
 {
 	struct arm_smccc_res res;
 
-	//pr_info("sec_wr32[0x%08x] 0x%08x\n", addr, data);
+	/* pr_info("sec_wr32[0x%08x] 0x%08x\n", addr, data); */
 	arm_smccc_smc(0x82000019, (unsigned long)addr, data, 32, 0, 0, 0, 0, &res);
 	if (hdmi_dbg)
 		pr_info("sec_wr32[0x%08x] 0x%08x\n", addr, data);
@@ -80,7 +80,7 @@ static void sec_wr8(u32 addr, u8 data)
 {
 	struct arm_smccc_res res;
 
-//	pr_info("[0x%08x] 0x%02x\n", addr, data);
+	/* pr_info("[0x%08x] 0x%02x\n", addr, data); */
 	arm_smccc_smc(0x82000019, (unsigned long)addr, data & 0xff, 8, 0, 0, 0, 0, &res);
 	if (hdmi_dbg)
 		pr_info("[0x%08x] 0x%02x\n", addr, data);
@@ -123,23 +123,10 @@ u32 TO21_PHY_ADDR(u32 addr)
 	return (reg21_maps[index].phy_addr + offset);
 }
 
-static u32 get_enc_paddr(unsigned int addr)
-{
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	unsigned int idx = addr >> BASE_REG_OFFSET;
-	unsigned int offset = (addr & 0xffff) >> 2;
-
-	if (hdev->enc_idx == 2 && idx == VPUCTRL_REG_IDX) {
-		if (offset >= 0x1b00 && offset < 0x1d00)
-			return addr + (0x800 << 2);
-	}
-	return addr;
-}
-
 u32 hd21_read_reg(u32 vaddr)
 {
 	u32 val;
-	u32 paddr = TO21_PHY_ADDR(get_enc_paddr(vaddr));
+	u32 paddr = TO21_PHY_ADDR(vaddr);
 
 	val = readl(paddr);
 	if (hdmi_dbg)
@@ -150,7 +137,7 @@ u32 hd21_read_reg(u32 vaddr)
 void hd21_write_reg(u32 vaddr, u32 val)
 {
 	u32 rval;
-	u32 paddr = TO21_PHY_ADDR(get_enc_paddr(vaddr));
+	u32 paddr = TO21_PHY_ADDR(vaddr);
 
 	writel(val, paddr);
 	rval = readl(paddr);
@@ -179,10 +166,10 @@ static u32 hdmitx_rd_top(u32 addr)
 	u32 data;
 
 	base_offset = reg21_maps[HDMITX_TOP_REG_IDX].phy_addr;
-//	printf("hdmitx_rd_top 0x%x\n",base_offset);
+	/* printf("hdmitx_rd_top 0x%x\n",base_offset); */
 	data = sec_rd(base_offset + addr);
 	return data;
-} /* hdmitx_rd_top */
+}
 
 static u8 hdmitx_rd_cor(u32 addr)
 {
@@ -190,19 +177,19 @@ static u8 hdmitx_rd_cor(u32 addr)
 	u8 data;
 
 	base_offset = reg21_maps[HDMITX_COR_REG_IDX].phy_addr;
-//	printf("hdmitx_rd_cor 0x%x\n",base_offset);
+	/* printf("hdmitx_rd_cor 0x%x\n",base_offset); */
 	data = sec_rd8(base_offset + addr);
 	return data;
-} /* hdmitx_rd_cor */
+}
 
 static void hdmitx_wr_top(u32 addr, u32 data)
 {
 	u32 base_offset;
 
-	//printf("hdmitx_wr_top\n");
+	/* printf("hdmitx_wr_top\n"); */
 	base_offset = reg21_maps[HDMITX_TOP_REG_IDX].phy_addr;
 	sec_wr(base_offset + addr, data);
-} /* hdmitx_wr_top */
+}
 
 static void hdmitx_wr_cor(u32 addr, u8 data)
 {
@@ -210,7 +197,7 @@ static void hdmitx_wr_cor(u32 addr, u8 data)
 
 	base_offset = reg21_maps[HDMITX_COR_REG_IDX].phy_addr;
 	sec_wr8(base_offset + addr, data);
-} /* hdmitx_wr_cor */
+}
 
 u32 hdmitx21_rd_reg(u32 addr)
 {
@@ -280,7 +267,7 @@ void hdmitx21_poll_reg(unsigned int addr, unsigned int exp_data, unsigned int ma
 	}
 	if (done == 0)
 		pr_info("%s 0x%x access time-out!\n", __func__, addr);
-} /* hdmitx21_poll_reg */
+}
 
 u32 hdmitx21_rd_check_reg(u32 addr, u32 exp_data,
 				 u32 mask)
@@ -321,7 +308,8 @@ u32 hd_get_paddr(u32 addr)
 void hdmitx_set_phypara(enum hdmi_phy_para mode)
 {
 	struct arm_smccc_res res;
-	u8 rterm = 0; /* this will get from efuse */
+	/* this will get from efuse */
+	u8 rterm = 0;
 
 	hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x0);
 /* P_ANACTRL_HDMIPHY_CTRL1	bit[1]: enable clock	bit[0]: soft reset */
@@ -340,19 +328,22 @@ do { \
 #undef RESET_HDMI_PHY
 
 	switch (mode) {
-	case HDMI_PHYPARA_6G:	/* 5.94/4.5/3.7Gbps */
+	/* 5.94/4.5/3.7Gbps */
+	case HDMI_PHYPARA_6G:
 	case HDMI_PHYPARA_4p5G:
 	case HDMI_PHYPARA_3p7G:
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x8003cafb);
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x2555);
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x4ef001);
 		break;
-	case HDMI_PHYPARA_3G:	/* 2.97Gbps */
+	/* 2.97Gbps */
+	case HDMI_PHYPARA_3G:
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x800380dd);
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x2555);
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x4ef001);
 		break;
-	case HDMI_PHYPARA_270M:	/* 1.485Gbps, and below */
+	/* 1.485Gbps, and below */
+	case HDMI_PHYPARA_270M:
 	case HDMI_PHYPARA_DEF:
 	default:
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x82038088);

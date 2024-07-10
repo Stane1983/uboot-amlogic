@@ -86,12 +86,11 @@
 	"scramble_reg=0xfe02e030\0"\
 		"systemsuspend_switch=0\0"\
 		"ddr_resume=0\0"\
+		"baudrate=115200\0"\
 		"panel_type=lvds_1\0" \
 		"connector0_type=LVDS-A\0" \
 		"lcd_debug=0x00000000\0" \
 		"outputmode=1080p60hz\0" \
-		"connector_type=LVDS-A\0" \
-		"cvbsmode=576cvbs\0" \
 		"vout_init=disable\0" \
 		"model_name=FHD2HDMI\0" \
 		"gamma=0\0" \

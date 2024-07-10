@@ -71,7 +71,8 @@ struct lcd_clk_data_s {
 
 	unsigned char vclk_sel;
 	unsigned char clk1_path_sel;//display 1 clk path sel tcon_pll0/1
-	int enc_clk_msr_id;
+	short enc_clk_msr_id;
+	short fifo_clk_msr_id;
 
 	//for some parameter changed to different lcd interface
 	void (*clk_parameter_init)(struct aml_lcd_drv_s *pdrv);

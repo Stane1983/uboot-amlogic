@@ -61,8 +61,9 @@
 	"scramble_reg=0xfe02e030\0"\
 	"uart_base=0xfe07a000\0"\
 	"usb_burning=" CONFIG_USB_TOOL_ENTRY "\0"\
-	"panel_type=lcd_1\0"\
-	"outputmode=panel\0"\
+	"panel_type=rgb_0\0"\
+	"outputmode=600p60hz\0"\
+	"connector0_type=LCD-A\0"\
 	"display_width=1920\0"\
 	"display_height=1080\0"\
 	"display_bpp=16\0"\

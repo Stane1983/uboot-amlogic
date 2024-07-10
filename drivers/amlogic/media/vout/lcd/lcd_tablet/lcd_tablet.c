@@ -5,23 +5,73 @@
 
 #include <common.h>
 #include <malloc.h>
-#include <asm/amlogic/arch/gpio.h>
 #include <fdtdec.h>
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include "../lcd_reg.h"
 #include "../lcd_common.h"
 #include "lcd_tablet.h"
+#include <string.h>
 #include "env.h"
-#include "command.h"
 
-static void lcd_list_support_mode(struct aml_lcd_drv_s *pdrv)
+// 1.vmode : vmode_add, vmode_remove, vmode_clear_all, vmode_set(parse, check, apply), vmode_list
+//               '-<-.--------<------.                  .------------<-----------'
+// 2.timing: dft_timing2vmode, exd_timing2vmode, timing_apply, (dft/exd)timing_add, timing_remove
+//                  .----------------------->----------------------- '
+// 3.eDP   : EDID_to_timing
+
+//
+//vmode_init: (remove all, add dft timing, add extend timing)
+
+static struct lcd_duration_s lcd_std_fr[] = {
+	{144, 144,    1,    0},
+	{120, 120,    1,    0},
+	{119, 120000, 1001, 1},
+	{100, 100,    1,    0},
+	{96,  96,     1,    0},
+	{95,  96000,  1001, 1},
+	{60,  60,     1,    0},
+	{59,  60000,  1001, 1},
+	{50,  50,     1,    0},
+	{48,  48,     1,    0},
+	{47,  48000,  1001, 1},
+	{0,   0,      0,    0}
+};
+
+static int lcd_vmode_add_single(struct aml_lcd_drv_s *pdrv, struct lcd_vmode_info_s *vmode)
 {
-	printf("panel\n");
+	struct lcd_vmode_list_s *temp_list;
+	struct lcd_vmode_list_s *cur_list;
+
+	if (!vmode)
+		return -1;
+
+	/* create list */
+	cur_list = malloc(sizeof(struct lcd_vmode_list_s));
+	if (!cur_list)
+		return -1;
+	memset(cur_list, 0, sizeof(struct lcd_vmode_list_s));
+	cur_list->info = vmode;
+
+	if (!pdrv->vmode_mgr.vmode_list_header) {
+		pdrv->vmode_mgr.vmode_list_header = cur_list;
+	} else {
+		temp_list = pdrv->vmode_mgr.vmode_list_header;
+		while (temp_list->next)
+			temp_list = temp_list->next;
+		temp_list->next = cur_list;
+	}
+	pdrv->vmode_mgr.vmode_cnt += vmode->duration_cnt + 1;
+
+	LCDPR("%s: name:%s, base_fr:%dhz\n",
+		__func__, cur_list->info->name, cur_list->info->base_fr);
+
+	return 0;
 }
 
-static int lcd_outputmode_is_matched(struct aml_lcd_drv_s *pdrv, char *mode)
+static void lcd_vmode_add_duration(struct lcd_vmode_info_s *vmode, struct lcd_detail_timing_s *dtm)
 {
-	char str[16];
+	unsigned int n = 0, i;//, fr, ht, vt;
+	unsigned long long qms_fr_min, qms_fr_max;
 
 	memset(vmode->duration, 0, sizeof(struct lcd_duration_s) * LCD_DURATION_MAX);
 
@@ -294,11 +344,6 @@ static void lcd_vmode_update(struct aml_lcd_drv_s *pdrv)
 		      pdrv->config.timing.act_timing.sync_duration_den,
 		      dur_index);
 	}
-
-	if (strcmp(mode, str))
-		return -1;
-
-	return 0;
 }
 
 static void lcd_update_outputmode(struct aml_lcd_drv_s *pdrv)
@@ -355,8 +400,13 @@ check_connector_outputmode:
 
 static int lcd_config_valid(struct aml_lcd_drv_s *pdrv, char *mode)
 {
-	if (lcd_outputmode_is_matched(pdrv, mode))
+	int ret;
+
+	ret = lcd_tablet_connector_check(pdrv, mode);
+	if (ret < 0)
 		return -1;
+
+	lcd_vmode_update(pdrv);
 
 	return 0;
 }
@@ -373,8 +423,8 @@ static void lcd_config_init(struct aml_lcd_drv_s *pdrv)
 
 int lcd_mode_tablet_init(struct aml_lcd_drv_s *pdrv)
 {
-	pdrv->list_support_mode = lcd_list_support_mode;
-	pdrv->outputmode_check = lcd_outputmode_is_matched;
+	pdrv->list_support_mode = lcd_list_support_timing;
+	pdrv->outputmode_check = lcd_tablet_connector_check;
 	pdrv->config_valid = lcd_config_valid;
 	pdrv->driver_init_pre = lcd_tablet_driver_init_pre;
 	pdrv->driver_init = lcd_tablet_driver_init;
@@ -385,5 +435,3 @@ int lcd_mode_tablet_init(struct aml_lcd_drv_s *pdrv)
 
 	return 0;
 }
-
-

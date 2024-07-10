@@ -1241,42 +1241,21 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 	struct phy_config_s *phy_cfg = &pdrv->config.phy_cfg;
 	struct phy_attr_s *phy = NULL;
 	int child_offset;
-	char parent_str[10], type_str[20], propname[30];
+	char type_str[20];
 	char *propdata;
 	unsigned int temp;
 	int i, len;
 
-	LCDPR("config load from dts\n");
-
-	if (pdrv->index == 0) {
-		sprintf(parent_str, "/lcd");
+	if (pdrv->index == 0)
 		sprintf(type_str, "panel_type");
-	} else {
-		sprintf(parent_str, "/lcd%d", pdrv->index);
+	else
 		sprintf(type_str, "panel%d_type", pdrv->index);
-	}
-	parent_offset = fdt_path_offset(dt_addr, parent_str);
-	if (parent_offset < 0) {
-		LCDERR("not find %s node: %s\n",
-			parent_str, fdt_strerror(parent_offset));
-		return -1;
-	}
 
-	/* check panel_type */
 	char *panel_type = env_get(type_str);
-	if (!panel_type) {
-		LCDERR("[%d]: no %s\n", pdrv->index, type_str);
-		return -1;
-	}
-	LCDPR("[%d]: use %s=%s\n", pdrv->index, type_str, panel_type);
 
-	snprintf(propname, 30, "%s/%s", parent_str, panel_type);
-	child_offset = fdt_path_offset(dt_addr, propname);
-	if (child_offset < 0) {
-		LCDERR("[%d]: not find %s node: %s\n",
-			pdrv->index, propname, fdt_strerror(child_offset));
+	child_offset = lcd_get_dts_panel_node_ofst(pdrv->index);
+	if (child_offset < 0)
 		return -1;
-	}
 
 	propdata = (char *)fdt_getprop(dt_addr, child_offset, "model_name", NULL);
 	if (!propdata) {
@@ -1695,7 +1674,6 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 			pctrl->mipi_cfg.panel_det_attr |=
 				(be32_to_cpup(((u32 *)propdata) + 1) && 1) << 1; // store2env
 			pctrl->mipi_cfg.dt_addr = dt_addr;
-			strncpy(pctrl->mipi_cfg.dsi_detect_dtb_path, propname, 30);
 		}
 
 		phy_cfg->vswing_level = 0;
@@ -2712,8 +2690,6 @@ int lcd_get_panel_config(char *dt_addr, int load_id, struct aml_lcd_drv_s *pdrv)
 		return -1;
 
 	lcd_lane_map_update(pdrv);
-
-	lcd_set_connector(pdrv);
 
 	lcd_cma_detect_dts(dt_addr, pdrv);
 	lcd_config_load_init(pdrv);

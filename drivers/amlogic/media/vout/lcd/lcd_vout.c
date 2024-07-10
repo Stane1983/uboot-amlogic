@@ -103,6 +103,17 @@ static struct aml_lcd_data_s lcd_data_s6 = {
 	.dft_conf = {NULL, NULL, NULL},
 };
 
+__maybe_unused static struct aml_lcd_data_s lcd_data_t6d = {
+	.chip_type = LCD_CHIP_T6D,
+	.chip_name = "t6d",
+	.rev_type = 0,
+	.drv_max = 1,
+	.offset_venc = {0x0},
+	.offset_venc_if = {0x0},
+	.offset_venc_data = {0x0},
+	.dft_conf = {NULL, NULL, NULL},
+};
+
 static void lcd_chip_detect(void)
 {
 #if 1
@@ -133,6 +144,9 @@ static void lcd_chip_detect(void)
 	*/
 	case MESON_CPU_MAJOR_ID_S6:
 		lcd_data = &lcd_data_s6;
+		break;
+	case MESON_CPU_MAJOR_ID_T6D:
+		lcd_data = &lcd_data_t6d;
 		break;
 	default:
 		lcd_data = NULL;
@@ -440,8 +454,7 @@ static void lcd_module_disable(struct aml_lcd_drv_s *pdrv)
 	pdrv->status = 0;
 }
 
-static void lcd_module_prepare(struct aml_lcd_drv_s *pdrv,
-			       char *mode, unsigned int frac)
+static void lcd_module_prepare(struct aml_lcd_drv_s *pdrv, char *mode)
 {
 	int ret;
 
@@ -1009,39 +1022,33 @@ void aml_lcd_driver_list_support_mode(void)
 
 /***********************************************
  * use for vout
- * parameters:  mode, such as panel, panel2, 1080p60hz...
- *              frac, 1=59.94hz
+ * parameters:  mode, such as 1080p60hz...
  * return:      viu_mux
  ************************************************/
-unsigned int aml_lcd_driver_outputmode_check(char *mode, unsigned int frac)
+unsigned int aml_lcd_driver_outputmode_check(unsigned char lcd_idx, char *mode)
 {
 	struct aml_lcd_drv_s *pdrv;
-	unsigned int viu_mux = VIU_MUX_MAX;
-	int index, ret;
+	int ret;
 
 	if (!mode) {
 		LCDERR("%s: mode is NULL\n", __func__);
 		return VIU_MUX_MAX;
 	}
 
-	for (index = 0; index < LCD_MAX_DRV; index++) {
-		pdrv = lcd_driver_check_valid(index);
-		if (!pdrv)
-			continue;
+	pdrv = lcd_driver_check_valid(lcd_idx);
+	if (!pdrv)
+		return VIU_MUX_MAX;
 
-		if (pdrv->outputmode_check) {
-			ret = pdrv->outputmode_check(pdrv, mode);
-			if (ret == 0) {
-				viu_mux = ((pdrv->index << 4) | VIU_MUX_ENCL);
-				break;
-			}
-		}
+	if (pdrv->outputmode_check) {
+		ret = pdrv->outputmode_check(pdrv, mode);
+		if (ret == 0)
+			return VIU_MUX_ENCL;
 	}
 
-	return viu_mux;
+	return VIU_MUX_MAX;
 }
 
-void aml_lcd_driver_prepare(int index, char *mode, unsigned int frac)
+void aml_lcd_driver_prepare(int index, char *mode)
 {
 	struct aml_lcd_drv_s *pdrv;
 
@@ -1059,10 +1066,10 @@ void aml_lcd_driver_prepare(int index, char *mode, unsigned int frac)
 		return;
 	}
 
-	lcd_module_prepare(pdrv, mode, frac);
+	lcd_module_prepare(pdrv, mode);
 }
 
-void aml_lcd_driver_enable(int index, char *mode, unsigned int frac)
+void aml_lcd_driver_enable(int index, char *mode)
 {
 	struct aml_lcd_drv_s *pdrv;
 	char *ddr_resume = NULL;
@@ -1081,7 +1088,6 @@ void aml_lcd_driver_enable(int index, char *mode, unsigned int frac)
 		pdrv->power_on_suspend = 0;
 		sprintf(pdrv->init_mode, "%s", mode);
 		pdrv->init_mode[strlen(mode)] = '\0';
-		pdrv->init_frac = frac;
 		LCDPR("%s drv mode=%s\n", __func__, pdrv->init_mode);
 		return;
 	}
@@ -1091,7 +1097,7 @@ void aml_lcd_driver_enable(int index, char *mode, unsigned int frac)
 		return;
 	}
 
-	lcd_module_enable(pdrv, mode, frac);
+	lcd_module_enable(pdrv, mode);
 }
 
 void aml_lcd_driver_disable(int index)
@@ -1535,7 +1541,7 @@ int aml_lcd_driver_resume(void *pm_ops)
 	if (!pdrv)
 		return -1;
 
-	aml_lcd_driver_enable(i, pdrv->init_mode, pdrv->init_frac);
+	aml_lcd_driver_enable(i, pdrv->init_mode);
 	LCDPR("%s driver enable\n", __func__);
 #endif
 	LCDERR("%s %d: %s is not supported, only return 0 here\n", __func__, __LINE__, __func__);

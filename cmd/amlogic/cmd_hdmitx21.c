@@ -735,8 +735,10 @@ static void disp_cap_show(struct hdmitx_dev *hdev)
 
 	memset(edid_vics, 0, vic_len * sizeof(int));
 
-	/* step1: only select VIC which is supported in EDID */
-	/*copy edid vic list*/
+	/*
+	 * step1: only select VIC which is supported in EDID
+	 * copy edid vic list
+	 */
 	if (prxcap->VIC_count > 0)
 		memcpy(edid_vics, prxcap->VIC, sizeof(int) * prxcap->VIC_count);
 	for (i = 0; i < VESA_MAX_TIMING && prxcap->vesa_timing[i]; i++)
@@ -757,21 +759,22 @@ static void disp_cap_show(struct hdmitx_dev *hdev)
 
 		timing = hdmitx_mode_vic_to_hdmi_timing(vic);
 		if (!timing) {
-			// HDMITX_ERROR("%s: unsupport vic [%d]\n", __func__, vic);
+			/* HDMITX_ERROR("%s: unsupport vic [%d]\n", __func__, vic); */
 			continue;
 		}
 
 		/* step2, check if VIC is supported by SOC hdmitx */
 		if (hdmitx_common_validate_vic(&hdev->tx_common, vic) != 0) {
-			// HDMITX_ERROR("%s: vic[%d] over range.\n", __func__, vic);
+			/* HDMITX_ERROR("%s: vic[%d] over range.\n", __func__, vic); */
 			continue;
 		}
 
-		/* step3, build format with basic mode/attr and check
+		/*
+		 * step3, build format with basic mode/attr and check
 		 * if it's supported by EDID/hdmitx_cap
 		 */
 		if (hdmitx_common_check_valid_para_of_vic(&hdev->tx_common, vic) != 0) {
-			//HDMITX_ERROR("%s: vic[%d] check fmt attr failed.\n", __func__, vic);
+			/* HDMITX_ERROR("%s: vic[%d] check fmt attr failed.\n", __func__, vic); */
 			continue;
 		}
 
@@ -973,7 +976,8 @@ static void edid_cap_show(struct hdmitx_dev *hdev)
 	printf("EDID Version: %d.%d\n",
 		prxcap->edid_version, prxcap->edid_revision);
 
-/*	printf(
+/*
+ *	printf(
  *		"EDID block number: 0x%x\n", tx_comm->EDID_buf[0x7e]);
  *
  *
@@ -985,7 +989,7 @@ static void edid_cap_show(struct hdmitx_dev *hdev)
  *		hdmitx_device->hdmi_info.vsdb_phy_addr.d);
  */
 
-	// TODO native_vic2
+	/* TODO native_vic2 */
 	printf("native Mode %x, VIC (native %d):\n",
 		prxcap->native_Mode, prxcap->native_vic);
 
@@ -1096,7 +1100,8 @@ static void edid_cap_show(struct hdmitx_dev *hdev)
 	printf("\n");
 	printf("additional_vsif_num: %d\n", prxcap->additional_vsif_num);
 	printf("ifdb_present: %d\n", prxcap->ifdb_present);
-	/* for checkvalue which maybe used by application to adjust
+	/*
+	 * for checkvalue which maybe used by application to adjust
 	 * whether edid is changed
 	 */
 	printf("checkvalue: %s\n", prxcap->hdmichecksum);
@@ -1154,7 +1159,8 @@ static int xtochar(int num, char *checksum)
 	return 0;
 }
 
-/* hdr_priority definition:
+/*
+ * hdr_priority definition:
  *   strategy1: bit[3:0]
  *       0: original cap
  *       1: disable dolby vision cap
@@ -1168,7 +1174,8 @@ static int xtochar(int num, char *checksum)
  *       1: strategy2
  */
 
-/* for uboot, there is no need to dynamically change the hdr_priority as
+/*
+ * for uboot, there is no need to dynamically change the hdr_priority as
  * kernel. So below functions only implement the disable_xxx_info() function,
  * and leave the enable_xxx_info as blank
  */
@@ -1515,7 +1522,8 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 			mode_support = false;
 		}
 
-		/* if user selected mode/color/dv type which saved in ubootenv of
+		/*
+		 * if user selected mode/color/dv type which saved in ubootenv of
 		 * hdmimode/user_colorattribute/user_prefer_dv_type are different
 		 * with last actual output mode/color/dv type which saved in
 		 * ubootenv of outputmode/colorattribute/dolby_status, then it means
@@ -1531,7 +1539,8 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 		 * there will be always a mode change during bootup
 		 */
 		if (mode_support) {
-			/* note that for T7 multi-display, it may store panel in
+			/*
+			 * note that for T7 multi-display, it may store panel in
 			 * "outputmode" env, and will always run uboot policy
 			 */
 			if (!last_output_mode || strcmp(hdmimode, last_output_mode))
@@ -1551,7 +1560,8 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 				last_dv_status);
 		}
 	}
-	/* When outputting frl mode, if frl training fails under uboot,
+	/*
+	 * When outputting frl mode, if frl training fails under uboot,
 	 * in order to ensure that it is displayed under uboot, change
 	 * to the default TMDS mode for output display. systemctrl
 	 * maintains the original 8k policy. After the subsequent systermctrl
@@ -1561,7 +1571,8 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 	if (hdev->frl_train_fail_flag) {
 		save_default_720p();
 	} else if (hdev->RXCap.edid_changed || no_manual_output || !mode_support || over_write) {
-	/* 4 cases need to decide output by uboot mode select policy:
+	/*
+	 * 4 cases need to decide output by uboot mode select policy:
 	 * 1.TV changed
 	 * 2.either hdmimode or colorattribute is NULL or "none",
 	 * which means that user have not selected mode or colorattribute,
@@ -1576,7 +1587,8 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 		scene_process(hdev, &output);
 		env_set("hdmichecksum", hdev->RXCap.hdmichecksum);
 		if (hdmitx_edid_check_data_valid(0, hdev->rawedid)) {
-			/* SWPL-34712: if EDID parsing error case, not save env,
+			/*
+			 * SWPL-34712: if EDID parsing error case, not save env,
 			 * only output default mode(480p,RGB,8bit). after
 			 * EDID read OK, systemcontrol will recover the hdmi
 			 * mode from env, to avoid keep the default hdmi output
@@ -1600,7 +1612,8 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 			}
 			env_set("colorattribute",
 			       output.deepcolor);
-			/* if change from DV TV to HDR/SDR TV, don't change
+			/*
+			 * if change from DV TV to HDR/SDR TV, don't change
 			 * DV status to disabled, as DV core need to be enabled.
 			 * that's to say connect DV TV & output DV-> power down box ->
 			 * connect HDR/SDR TV -> power on box, the dolby_status
@@ -1610,7 +1623,8 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 			    output.amdv_type != DOLBY_VISION_DISABLE) {
 				sprintf(dv_type, "%d", output.amdv_type);
 				env_set("dolby_status", dv_type);
-				/* according to the policy of systemcontrol,
+				/*
+				 * according to the policy of systemcontrol,
 				 * if current DV mode is not supported by TV
 				 * EDID, DV type maybe changed to one witch
 				 * TV support, and need VPP/DV module to

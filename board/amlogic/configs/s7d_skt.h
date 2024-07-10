@@ -62,6 +62,7 @@
 	"uart_base=0xfe07a000\0"\
 	"usb_burning=" CONFIG_USB_TOOL_ENTRY "\0"\
 	"outputmode=1080p60hz\0"\
+	"connector0_type=HDMI-A-A\0" \
 	"hdmimode=none\0"\
 	"colorattribute=444,8bit\0"\
 	"cvbsmode=576cvbs\0"\
@@ -286,6 +287,8 @@ defined(CONFIG_STORE_COMPATIBLE)
 
 #define CONFIG_FAT_WRITE 1
 #define CONFIG_AML_FACTORY_PROVISION 1
+
+#define CONFIG_AML_WATERMARK 1
 
 /* Cache Definitions */
 /* #define CONFIG_SYS_DCACHE_OFF */

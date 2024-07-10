@@ -308,3 +308,57 @@ int hdmitx21_read_edid(u8 *_rx_edid)
 	}
 	return 1;
 }
+
+static void ddc_tx_sequential_write(u8 *data, u16 len)
+{
+	int i;
+
+	if (!data || !len)
+		return;
+	hdmitx21_wr_reg(DDC_DIN_CNT2_IVCTX, (u8)(len >> 8));
+	hdmitx21_wr_reg(DDC_DIN_CNT1_IVCTX, (u8)len);
+	hdmitx21_wr_reg(DDC_CMD_IVCTX, DDC_CMD_CLR_FIFO | 0x30);
+	for (i = 0; i < len; i++)
+		hdmitx21_wr_reg(DDC_DATA_AON_IVCTX, data[i]);
+	if (len == 1)
+		hdmitx21_wr_reg(DDC_CMD_IVCTX, DDC_CMD_SEQ_RW_IGNORE_ACK | 0x30);
+	else
+		hdmitx21_wr_reg(DDC_CMD_IVCTX, DDC_CMD_SEQ_RW_REQUIRE_ACK | 0x30);
+}
+
+static enum ddc_err_t _hdmitx_ddcm_write_(u8 seg_index,
+		u8 slave_addr, u8 reg_addr, u8 *data, u16 length)
+{
+	enum ddc_err_t ds_ddc_error = DDC_ERR_NONE;
+	u8 val = ddc_tx_hdcp2x_check();
+
+	mutex_lock(&ddc_mutex);
+	if (!ddc_wait_free()) {
+		ddc_tx_scdc_clr(val);
+		mutex_unlock(&ddc_mutex);
+		return DDC_ERR_BUSY;
+	}
+
+	ddc_tx_en(seg_index, slave_addr, reg_addr);
+	ddc_tx_sequential_write(data, length);
+
+	usleep_range(2000, 3000);
+	if (ddc_tx_err_check())
+		ds_ddc_error = DDC_ERR_NACK;
+
+	ddc_tx_scdc_clr(val);
+	ddc_tx_error_check(ds_ddc_error);
+
+	/* disable the DDC master */
+	ddc_tx_disable();
+	mutex_unlock(&ddc_mutex);
+	return ds_ddc_error;
+}
+
+bool hdmitx_ddcm_write(u8 seg_index, u8 slave_addr, u8 reg_addr, u8 *data, u16 len)
+{
+	enum ddc_err_t ddc_err;
+
+	ddc_err = _hdmitx_ddcm_write_(seg_index, slave_addr, reg_addr, data, len);
+	return (ddc_err == DDC_ERR_NONE) ? false : true;
+}

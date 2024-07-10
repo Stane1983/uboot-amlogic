@@ -436,6 +436,7 @@ static struct lcd_clk_data_s lcd_clk_data_s6 = {
 
 	.vclk_sel = 3, // dsi_pll_clk
 	.enc_clk_msr_id = 53,
+	.fifo_clk_msr_id = 71,
 
 	.div_sel_max = CLK_DIV_SEL_15,
 	.xd_max = 128,

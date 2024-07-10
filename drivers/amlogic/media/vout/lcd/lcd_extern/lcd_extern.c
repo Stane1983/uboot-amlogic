@@ -1770,10 +1770,6 @@ static int lcd_extern_add_dev(struct lcd_extern_driver_s *edrv, struct lcd_exter
 	} else if (strcmp(edev->config.name, "i2c_ANX6862_7911") == 0) {
 		ret = lcd_extern_i2c_ANX6862_7911_probe(edrv, edev);
 #endif
-#ifdef CONFIG_AML_LCD_EXTERN_LT8911EXB
-	} else if (strcmp(edev->config.name, "LT8911EXB") == 0) {
-		ret = aml_lcd_extern_LT8911EXB_probe(edrv, edev);
-#endif
 #ifdef CONFIG_AML_LCD_EXTERN_I2C_OLED
 	} else if (strcmp(edev->config.name, "i2c_oled") == 0) {
 		ret = lcd_extern_i2c_oled_probe(edrv, edev);

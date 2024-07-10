@@ -149,6 +149,7 @@ static struct lcd_clk_data_s lcd_clk_data_a4 = {
 
 	.vclk_sel = 0xff, //unassigned
 	.enc_clk_msr_id = -1,
+	.fifo_clk_msr_id = -1,
 
 	.ss_support = 0,
 

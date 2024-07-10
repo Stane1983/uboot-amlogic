@@ -12,11 +12,11 @@
  * platform power init config
  */
 
-#define AML_VCCK_INIT_VOLTAGE	  950	    //VCCK power up voltage
-#define AML_VDDEE_INIT_VOLTAGE    800       // VDDEE power up voltage
-#define AML_VDDDDR_INIT_VOLTAGE    800       // VDDDDR power up voltage
+#define AML_VCCK_INIT_VOLTAGE_1	  919	    //VCCK power up voltage
+#define AML_VCCK_INIT_VOLTAGE_2	  1009	    //VCCK power up voltage
+#define AML_VDDEE_INIT_VOLTAGE    799       // VDDEE power up voltage
 /*Distinguish whether to use efuse to adjust vddee*/
-//#define CONFIG_PDVFS_ENABLE
+#define CONFIG_PDVFS_ENABLE
 
 /* SMP definitions */
 #define CPU_RELEASE_ADDR		secondary_boot_func
@@ -90,7 +90,9 @@
 	"scramble_reg=0xfe02e030\0"\
 	"uart_base=0xfe07a000\0"\
 	"usb_burning=" CONFIG_USB_TOOL_ENTRY "\0"\
-	"panel_type=dsi_0\0"\
+	"panel_type=mipi_0\0"\
+	"connector0_type=HDMI-A-A\0" \
+	"connector1_type=NULL\0" \
 	"outputmode=1080p60hz\0"\
 	"outputmode2=1080p60hz\0"\
 	"hdmimode=none\0"\

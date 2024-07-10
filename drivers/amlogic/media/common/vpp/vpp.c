@@ -16,6 +16,9 @@
 #include "vpp_reg.h"
 #include "vpp.h"
 #include "hdr2.h"
+#ifdef CONFIG_AML_VOUT
+#include <amlogic/media/vout/aml_vout.h>
+#endif
 
 #define VPP_PR(fmt, args...)     printf("vpp: "fmt"", ## args)
 
@@ -2204,27 +2207,27 @@ void hdr_tx_pkt_cb(void)
 
 	if ((hdrinfo && (hdrinfo->hdr_support & HDR_SUP_EOTF_SMPTE_ST_2084)) &&
 		(hdr_policy == 0 || hdr_policy == 3)) {
-		if (is_hdmi_mode(env_get("outputmode"))) {
+		if ((vout_connector_check(0) & CONNECTOR_DEV_MASK) == CONNECTOR_DEV_HDMI) {
 			hdr_func(OSD1_HDR, SDR_HDR);
 			hdr_func(OSD2_HDR, SDR_HDR);
 			hdr_func(VD1_HDR, SDR_HDR);
 		}
-		if (is_hdmi_mode(env_get("outputmode2")))
+		if ((vout_connector_check(1) & CONNECTOR_DEV_MASK) == CONNECTOR_DEV_HDMI)
 			hdr_func(OSD3_HDR, SDR_HDR);
-		if (is_hdmi_mode(env_get("outputmode3")))
+		if ((vout_connector_check(2) & CONNECTOR_DEV_MASK) == CONNECTOR_DEV_HDMI)
 			hdr_func(OSD4_HDR, SDR_HDR);
 		amvecm_cp_hdr_info(&hdr_data, BT2020_PQ);
 		hdmitx_set_drm_pkt(&hdr_data);
 	} else if ((hdrinfo && (hdrinfo->hdr_support & HDR_SUP_EOTF_HLG)) &&
 		(hdr_policy == 0 || hdr_policy == 3)) {
-		if (is_hdmi_mode(env_get("outputmode"))) {
+		if ((vout_connector_check(0) & CONNECTOR_DEV_MASK) == CONNECTOR_DEV_HDMI) {
 			hdr_func(OSD1_HDR, SDR_HLG);
 			hdr_func(OSD2_HDR, SDR_HLG);
 			hdr_func(VD1_HDR, SDR_HLG);
 		}
-		if (is_hdmi_mode(env_get("outputmode2")))
+		if ((vout_connector_check(1) & CONNECTOR_DEV_MASK) == CONNECTOR_DEV_HDMI)
 			hdr_func(OSD3_HDR, SDR_HLG);
-		if (is_hdmi_mode(env_get("outputmode3")))
+		if ((vout_connector_check(2) & CONNECTOR_DEV_MASK) == CONNECTOR_DEV_HDMI)
 			hdr_func(OSD4_HDR, SDR_HLG);
 		amvecm_cp_hdr_info(&hdr_data, BT2020_HLG);
 		hdmitx_set_drm_pkt(&hdr_data);
@@ -2232,14 +2235,14 @@ void hdr_tx_pkt_cb(void)
 
 	if ((hdrinfo && (hdrinfo->hdr_support & HDR_SUP_EOTF_SMPTE_ST_2084)) &&
 		hdr_policy == 4 && hdr_force_mode == 3) {
-		if (is_hdmi_mode(env_get("outputmode"))) {
+		if ((vout_connector_check(0) & CONNECTOR_DEV_MASK) == CONNECTOR_DEV_HDMI) {
 			hdr_func(OSD1_HDR, SDR_HDR);
 			hdr_func(OSD2_HDR, SDR_HDR);
 			hdr_func(VD1_HDR, SDR_HDR);
 		}
-		if (is_hdmi_mode(env_get("outputmode2")))
+		if ((vout_connector_check(1) & CONNECTOR_DEV_MASK) == CONNECTOR_DEV_HDMI)
 			hdr_func(OSD3_HDR, SDR_HDR);
-		if (is_hdmi_mode(env_get("outputmode3")))
+		if ((vout_connector_check(2) & CONNECTOR_DEV_MASK) == CONNECTOR_DEV_HDMI)
 			hdr_func(OSD4_HDR, SDR_HDR);
 		amvecm_cp_hdr_info(&hdr_data, BT2020_PQ);
 		hdmitx_set_drm_pkt(&hdr_data);
@@ -2247,14 +2250,14 @@ void hdr_tx_pkt_cb(void)
 
 	if ((hdrinfo && (hdrinfo->hdr_support & HDR_SUP_EOTF_HLG)) &&
 		hdr_policy == 4 && hdr_force_mode == 5) {
-		if (is_hdmi_mode(env_get("outputmode"))) {
+		if ((vout_connector_check(0) & CONNECTOR_DEV_MASK) == CONNECTOR_DEV_HDMI) {
 			hdr_func(OSD1_HDR, SDR_HLG);
 			hdr_func(OSD2_HDR, SDR_HLG);
 			hdr_func(VD1_HDR, SDR_HLG);
 		}
-		if (is_hdmi_mode(env_get("outputmode2")))
+		if ((vout_connector_check(1) & CONNECTOR_DEV_MASK) == CONNECTOR_DEV_HDMI)
 			hdr_func(OSD3_HDR, SDR_HLG);
-		if (is_hdmi_mode(env_get("outputmode3")))
+		if ((vout_connector_check(2) & CONNECTOR_DEV_MASK) == CONNECTOR_DEV_HDMI)
 			hdr_func(OSD4_HDR, SDR_HLG);
 		amvecm_cp_hdr_info(&hdr_data, BT2020_HLG);
 		hdmitx_set_drm_pkt(&hdr_data);

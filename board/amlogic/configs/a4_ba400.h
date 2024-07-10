@@ -62,7 +62,8 @@
 	"uart_base=0xfe07a000\0"\
 	"usb_burning=" CONFIG_USB_TOOL_ENTRY "\0"\
 	"panel_type=rgb_0\0"\
-	"outputmode=panel\0"\
+	"outputmode=600p60hz\0"\
+	"connector0_type=LCD-A\0"\
 	"display_width=1024\0"\
 	"display_height=600\0"\
 	"display_bpp=16\0"\

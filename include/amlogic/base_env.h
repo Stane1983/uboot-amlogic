@@ -211,6 +211,7 @@
 	"init_display_base="\
 		"get_rebootmode;"\
 		"echo reboot_mode:::: ${reboot_mode};"\
+		"setenv bootargs ${bootargs} connector0_type=${connector0_type}; "\
 		"if test ${reboot_mode} = quiescent; then "\
 			"setenv reboot_mode_android ""quiescent"";"\
 			"setenv dolby_status 0;"\

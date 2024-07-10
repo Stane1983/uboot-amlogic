@@ -170,6 +170,24 @@ static int do_rx_det(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 	return st;
 }
 
+int is_valid_hdmi(const char *input)
+{
+	static const char * const valid_hdmi_modes[] = {
+			"HDMI-A-A", /* venc0 */
+			"HDMI-A-B", /* venc1 */
+			"HDMI-A-C"  /* venc2 */
+	};
+
+	int num_modes = ARRAY_SIZE(valid_hdmi_modes);
+	int i;
+
+	for (i = 0; i < num_modes; i++) {
+		if (strcmp(input, valid_hdmi_modes[i]) == 0)
+			return 1;
+	}
+	return 0;
+}
+
 static void save_default_720p(void)
 {
 	env_set("outputmode", DEFAULT_HDMI_MODE);

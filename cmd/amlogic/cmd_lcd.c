@@ -9,24 +9,6 @@
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include <amlogic/media/vout/lcd/lcd_memory.h>
 
-static unsigned int lcd_parse_vout_name(char *name)
-{
-	char *p, *frac_str;
-	unsigned int frac = 0;
-
-	p = strchr(name, ',');
-	if (!p) {
-		frac = 0;
-	} else {
-		frac_str = p + 1;
-		*p = '\0';
-		if (strcmp(frac_str, "frac") == 0)
-			frac = 1;
-	}
-
-	return frac;
-}
-
 static int do_lcd_probe(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	aml_lcd_driver_probe(0);
@@ -36,7 +18,6 @@ static int do_lcd_probe(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[
 static int do_lcd_enable(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	char *mode, *str;
-	unsigned int frac;
 
 	str = env_get("outputmode");
 	if (!str) {
@@ -51,9 +32,8 @@ static int do_lcd_enable(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv
 	}
 	memset(mode, 0, 64);
 	sprintf(mode, "%s", str);
-	frac = lcd_parse_vout_name(mode);
 
-	aml_lcd_driver_enable(0, mode, frac);
+	aml_lcd_driver_enable(0, mode);
 
 	free(mode);
 	return 0;
@@ -497,27 +477,7 @@ static int do_lcd1_probe(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv
 
 static int do_lcd1_enable(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	char *mode, *str;
-	unsigned int frac;
-
-	str = env_get("outputmode2");
-	if (!str) {
-		printf("no outputmode2\n");
-		return -1;
-	}
-
-	mode = (char *)malloc(64);
-	if (!mode) {
-		printf("%s: create mode failed\n", __func__);
-		return -1;
-	}
-	memset(mode, 0, 64);
-	sprintf(mode, "%s", str);
-	frac = lcd_parse_vout_name(mode);
-
-	aml_lcd_driver_enable(1, mode, frac);
-
-	free(mode);
+	aml_lcd_driver_enable(1, "NULL");
 	return 0;
 }
 
@@ -787,27 +747,7 @@ static int do_lcd2_probe(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv
 
 static int do_lcd2_enable(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	char *mode, *str;
-	unsigned int frac;
-
-	str = env_get("outputmode3");
-	if (!str) {
-		printf("no outputmode3\n");
-		return -1;
-	}
-
-	mode = (char *)malloc(64);
-	if (!mode) {
-		printf("%s: create mode failed\n", __func__);
-		return -1;
-	}
-	memset(mode, 0, 64);
-	sprintf(mode, "%s", str);
-	frac = lcd_parse_vout_name(mode);
-
-	aml_lcd_driver_enable(2, mode, frac);
-
-	free(mode);
+	aml_lcd_driver_enable(2, "NULL");
 	return 0;
 }
 
@@ -1097,7 +1037,44 @@ static int do_lcd1_dsi(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 	return do_mipi_dsi_cmd(1, cmdtp, flag, argc, argv);
 }
 
+static int do_lcd_list(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	aml_lcd_list();
+	return argc;
+}
+
+static int do_lcd0_set(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	if (argc != 2)
+		return 0;
+
+	aml_lcd_set(0, argv[1]);
+	return argc;
+}
+
+static int do_lcd1_set(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	if (argc != 2)
+		return 0;
+
+	aml_lcd_set(1, argv[1]);
+	return argc;
+}
+
+static int do_lcd2_set(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	if (argc != 2)
+		return 0;
+
+	aml_lcd_set(2, argv[1]);
+	return argc;
+}
+
+U_BOOT_CMD(lcd_list, 4, 0, do_lcd_list, "lcd dts config setting helper", "");
+
 static cmd_tbl_t cmd_lcd_sub[] = {
+	U_BOOT_CMD_MKENT(list,    2, 0, do_lcd_list,     "", ""),
+	U_BOOT_CMD_MKENT(set,     2, 0, do_lcd0_set,     "", ""),
 	U_BOOT_CMD_MKENT(probe,   2, 0, do_lcd_probe,    "", ""),
 	U_BOOT_CMD_MKENT(enable,  2, 0, do_lcd_enable,   "", ""),
 	U_BOOT_CMD_MKENT(disable, 2, 0, do_lcd_disable,  "", ""),
@@ -1124,6 +1101,8 @@ static cmd_tbl_t cmd_lcd_sub[] = {
 };
 
 static cmd_tbl_t cmd_lcd1_sub[] = {
+	U_BOOT_CMD_MKENT(list,    2, 0, do_lcd_list,     "", ""),
+	U_BOOT_CMD_MKENT(set,     2, 0, do_lcd1_set,     "", ""),
 	U_BOOT_CMD_MKENT(probe,   2, 0, do_lcd1_probe,   "", ""),
 	U_BOOT_CMD_MKENT(enable,  2, 0, do_lcd1_enable,  "", ""),
 	U_BOOT_CMD_MKENT(disable, 2, 0, do_lcd1_disable, "", ""),
@@ -1146,6 +1125,8 @@ static cmd_tbl_t cmd_lcd1_sub[] = {
 };
 
 static cmd_tbl_t cmd_lcd2_sub[] = {
+	U_BOOT_CMD_MKENT(list,    2, 0, do_lcd_list,     "", ""),
+	U_BOOT_CMD_MKENT(set,     2, 0, do_lcd2_set,     "", ""),
 	U_BOOT_CMD_MKENT(probe,   2, 0, do_lcd2_probe,   "", ""),
 	U_BOOT_CMD_MKENT(enable,  2, 0, do_lcd2_enable,  "", ""),
 	U_BOOT_CMD_MKENT(disable, 2, 0, do_lcd2_disable, "", ""),
@@ -1174,12 +1155,11 @@ static int do_lcd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	c = find_cmd_tbl(argv[0], &cmd_lcd_sub[0], ARRAY_SIZE(cmd_lcd_sub));
 
-	if (c) {
+	if (c)
 		return c->cmd(cmdtp, flag, argc, argv);
-	} else {
-		cmd_usage(cmdtp);
-		return 1;
-	}
+
+	cmd_usage(cmdtp);
+	return 1;
 }
 
 U_BOOT_CMD(
@@ -1215,12 +1195,11 @@ static int do_lcd1(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	c = find_cmd_tbl(argv[0], &cmd_lcd1_sub[0], ARRAY_SIZE(cmd_lcd1_sub));
 
-	if (c) {
+	if (c)
 		return c->cmd(cmdtp, flag, argc, argv);
-	} else {
-		cmd_usage(cmdtp);
-		return 1;
-	}
+
+	cmd_usage(cmdtp);
+	return 1;
 }
 
 U_BOOT_CMD(
@@ -1254,12 +1233,11 @@ static int do_lcd2(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	c = find_cmd_tbl(argv[0], &cmd_lcd2_sub[0], ARRAY_SIZE(cmd_lcd2_sub));
 
-	if (c) {
+	if (c)
 		return c->cmd(cmdtp, flag, argc, argv);
-	} else {
-		cmd_usage(cmdtp);
-		return 1;
-	}
+
+	cmd_usage(cmdtp);
+	return 1;
 }
 
 U_BOOT_CMD(

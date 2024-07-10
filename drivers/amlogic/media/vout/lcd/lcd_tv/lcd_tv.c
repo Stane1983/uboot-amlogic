@@ -124,7 +124,7 @@ static int lcd_vmode_add_list(struct aml_lcd_drv_s *pdrv, struct lcd_vmode_info_
 	if (!vmode_info)
 		return -1;
 
-	/* creat list */
+	/* create list */
 	cur_list = malloc(sizeof(*cur_list));
 	if (!cur_list)
 		return -1;
@@ -331,6 +331,7 @@ static int lcd_outputmode_is_matched(struct aml_lcd_drv_s *pdrv, char *mode)
 		}
 		temp_list = temp_list->next;
 	}
+	pdrv->viu_sel = 1;
 
 	LCDERR("[%d]: %s: invalid mode: %s\n", pdrv->index, __func__, mode);
 	return -1;
