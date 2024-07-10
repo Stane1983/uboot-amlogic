@@ -321,7 +321,7 @@ u32 hd_get_paddr(u32 addr)
 void hdmitx_set_phypara(enum hdmi_phy_para mode)
 {
 	struct arm_smccc_res res;
-	u32 rterm = 0; /* this will get from efuse */
+	u8 rterm = 0; /* this will get from efuse */
 
 	hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x0);
 /* P_ANACTRL_HDMIPHY_CTRL1	bit[1]: enable clock	bit[0]: soft reset */
@@ -363,7 +363,7 @@ do { \
 
 	/* write Rterm */
 	arm_smccc_smc(HDCPTX_IOOPR, HDMITX_GET_RTERM, 0, 0, 0, 0, 0, 0, &res);
-	rterm = (unsigned int)((res.a0) & 0xffffffff);
+	rterm = (u8)((res.a0) & 0xff);
 	/* default value when efuse invalid, 0xff indicate efuse invalid */
 	if (rterm != 0xff) {
 		pr_info("%s[%d] rterm = %x\n", __func__, __LINE__, rterm);
