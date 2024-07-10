@@ -18,10 +18,9 @@
 #define VMIN_SS_VALUE                           770
 /* board vddee_value defines */
 /* SS/TT/FF = 0.77V/0.74V/0.71V */
-#define VDDEE_FF_VALUE                          0x50008
+#define VDDEE_FF_VALUE                          0xb0002
 #define VDDEE_TT_VALUE                          0x80005
-#define VDDEE_SS_VALUE                          0xb0002
-
+#define VDDEE_SS_VALUE                          0x50008
 board_clk_set_t __board_clk_setting
 __attribute__ ((section(".clk_param"))) = {
 	/* clock settings for bl2 */
