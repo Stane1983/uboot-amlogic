@@ -210,6 +210,30 @@ uint32_t efuse_obj_write(uint32_t obj_id, char *name, uint8_t *buff, uint32_t si
 	return ret;
 }
 
+uint32_t efuse_obj_enc_write(uint32_t obj_id, char *name, uint8_t *buff, uint32_t size)
+{
+	uint32_t ret;
+	efuse_obj_enc_field_t efuseinfo;
+	size_t data_len;
+	const size_t IV_LEN = 12;
+	const size_t TAG_LEN = 16;
+
+	if (size <= IV_LEN + TAG_LEN)
+		return EFUSE_OBJ_ERR_SIZE;
+	data_len = size - IV_LEN - TAG_LEN;
+	if (data_len > sizeof(efuseinfo.data))
+		return EFUSE_OBJ_ERR_SIZE;
+
+	memset(&efuseinfo, 0, sizeof(efuseinfo));
+	strncpy(efuseinfo.name, name, sizeof(efuseinfo.name) - 1);
+	efuseinfo.size = data_len;
+	memcpy(efuseinfo.data, buff, efuseinfo.size);
+	memcpy(efuseinfo.iv, buff + data_len, IV_LEN);
+	memcpy(efuseinfo.tag, buff + data_len + IV_LEN, TAG_LEN);
+	ret = meson_efuse_obj_write(obj_id, (uint8_t *)&efuseinfo, sizeof(efuseinfo));
+	return ret;
+}
+
 uint32_t efuse_obj_read(uint32_t obj_id, char *name, uint8_t *buff, uint32_t *size)
 {
 	uint32_t ret;
@@ -224,11 +248,10 @@ uint32_t efuse_obj_read(uint32_t obj_id, char *name, uint8_t *buff, uint32_t *si
 	return ret;
 }
 
-static int hex2bin(char *hex, void *bin, size_t binlen)
+static int hex2bin(char *hex, void *bin, size_t hexlen)
 {
-	int i, c, n1, n2, hexlen, k;
+	int i, c, n1, n2, k;
 
-	hexlen = strnlen(hex, 64);
 	k = 0;
 	n1 = -1;
 	n2 = -1;
@@ -269,6 +292,22 @@ uint32_t efuse_obj_set_data(char *name, char *data)
 		return EFUSE_OBJ_ERR_INVALID_DATA;
 	}
 	ret = efuse_obj_write(EFUSE_OBJ_EFUSE_DATA, name, databuf, dlen);
+
+	return ret;
+}
+
+uint32_t efuse_obj_set_enc_data(char *name, char *data)
+{
+	uint32_t ret;
+	int dlen = strnlen(data, 128);
+	uint8_t databuf[64] = {0};
+
+	dlen = hex2bin(data, databuf, dlen);
+	if (dlen < 0) {
+		printf("parse data hex2bin error\n");
+		return EFUSE_OBJ_ERR_INVALID_DATA;
+	}
+	ret = efuse_obj_enc_write(EFUSE_OBJ_EFUSE_ENC_DATA, name, databuf, dlen);
 
 	return ret;
 }

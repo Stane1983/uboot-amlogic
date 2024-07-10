@@ -211,6 +211,9 @@ static char *efuse_obj_err_parse(uint32_t  efuse_obj_err_status)
 	case EFUSE_OBJ_ERR_WRITE_PROTECTED:
 		err_char = "write protected";
 		break;
+	case EFUSE_OBJ_ERR_TAG:
+		err_char = "invalid encrypted data tag. check device pub key and re-encrypt";
+		break;
 	case EFUSE_OBJ_ERR_INTERNAL:
 	case EFUSE_OBJ_ERR_OTHER_INTERNAL:
 		err_char = "internal error";
@@ -275,6 +278,26 @@ int do_efuse_obj(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			printf("Error: too few arguments %d\n", argc);
 			rc = CMD_RET_USAGE;
 		}
+#if (IS_ENABLED(CONFIG_AMPK))
+	} else if (strcmp(argv[1], "set_enc") == 0) {
+		// $0 set field data
+		if (argc == 4) {
+			name = argv[2];
+			char *data = argv[3];
+
+			rc = efuse_obj_set_enc_data(name, data);
+			if (rc == EFUSE_OBJ_SUCCESS) {
+				rc = CMD_RET_SUCCESS;
+			} else {
+				printf("Error setting eFUSE object: %s: %d\n",
+					efuse_obj_err_parse(rc), rc);
+				rc = CMD_RET_FAILURE;
+			}
+		} else {
+			printf("Error: too few arguments %d\n", argc);
+			rc = CMD_RET_USAGE;
+		}
+#endif /* CONFIG_AMPK */
 	} else if (strcmp(argv[1], "lock") == 0) {
 		// $0 lock field
 		if (argc == 3) {
@@ -328,6 +351,10 @@ static char efuse_obj_help_text[] =
 	"                          expected_data is an optional expected data\n"
 	"set FIELD DATA    Set field to data.  DATA is in continuous\n"
 	"                          hexdump format, e.g. aabb1122\n"
+#if defined(CONFIG_AMPK)
+	"set_enc FIELD ENC_DATA    Set field to encrypted data.  ENC_DATA is in continuous\n"
+	"                          hexdump format, e.g. aabb1122\n"
+#endif /* CONFIG_AMPK */
 	"lock FIELD        Lock field. Program exits with status 0 if success\n"
 	"get_lock FIELD    Check if field is locked.  Program exits with\n"
 	"                          status 1 if locked, or 0 if unlocked\n"

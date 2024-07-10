@@ -219,6 +219,14 @@ config AMLOGIC_EMMC
 		Support Amlogic to modify for
 		emmc/sdcard
 
+config AMPK
+	bool "Amlogic AMPK and efuse_obj set_enc"
+	default n
+	help
+		"Embed vendor public key into ACS for AMPK
+		and enables efuse_obj set_enc command
+		"
+
 choice
 	prompt "BL2E size"
 	default BL2E_64K

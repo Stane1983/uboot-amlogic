@@ -72,6 +72,8 @@ typedef enum efuse_obj_status_s {
 	EFUSE_OBJ_ERR_ACCESS		= 200,
 	EFUSE_OBJ_ERR_WRITE_PROTECTED = 201,
 
+	EFUSE_OBJ_ERR_TAG = 220,
+
 	EFUSE_OBJ_ERR_UNKNOWN		= 300,
 	EFUSE_OBJ_ERR_INTERNAL,
 } efuse_obj_status_e;
@@ -79,6 +81,7 @@ typedef enum efuse_obj_status_s {
 typedef enum efuse_obj_info_s {
 	EFUSE_OBJ_EFUSE_DATA	= 0,
 	EFUSE_OBJ_LOCK_STATUS,
+	EFUSE_OBJ_EFUSE_ENC_DATA,
 } efuse_obj_info_e;
 
 typedef struct {
@@ -86,6 +89,14 @@ typedef struct {
 	unsigned char data[32];
 	unsigned int size;
 } efuse_obj_field_t;
+
+typedef struct {
+	char name[48];
+	unsigned char data[32];
+	unsigned int size;
+	unsigned char iv[12];
+	unsigned char tag[16];
+} efuse_obj_enc_field_t;
 
 int efuse_read_usr(char *buf, size_t count, loff_t *ppos);
 int efuse_write_usr(char *buf, size_t count, loff_t *ppos);
@@ -103,6 +114,7 @@ uint32_t meson_efuse_obj_read(uint32_t obj_id, uint8_t *buff, uint32_t *size);
 uint32_t efuse_obj_write(uint32_t obj_id, char *name, uint8_t *buff, uint32_t size);
 uint32_t efuse_obj_read(uint32_t obj_id, char *name, uint8_t *buff, uint32_t *size);
 uint32_t efuse_obj_set_data(char *name, char *data);
+uint32_t efuse_obj_set_enc_data(char *name, char *data);
 uint32_t efuse_obj_set_license(char *name);
 uint32_t efuse_obj_lock(char *name);
 uint32_t efuse_obj_get_data(char *name);
