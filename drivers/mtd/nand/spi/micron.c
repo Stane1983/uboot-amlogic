@@ -148,7 +148,7 @@ static int micron_spinand_detect(struct spinand_device *spinand)
 		return 0;
 
 	ret = spinand_match_and_init(spinand, micron_spinand_table,
-				     ARRAY_SIZE(micron_spinand_table), id[1]);
+				     ARRAY_SIZE(micron_spinand_table), id + 1, 0);
 	if (ret)
 		return ret;
 

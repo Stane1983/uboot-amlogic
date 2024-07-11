@@ -248,7 +248,7 @@ static int macronix_spinand_detect(struct spinand_device *spinand)
 
 	ret = spinand_match_and_init(spinand, macronix_spinand_table,
 				     ARRAY_SIZE(macronix_spinand_table),
-				     id[1]);
+				     id + 1, 0);
 	if (ret)
 		return ret;
 

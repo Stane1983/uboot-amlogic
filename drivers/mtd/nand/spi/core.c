@@ -992,7 +992,7 @@ spinand_select_op_variant(struct spinand_device *spinand,
  */
 int spinand_match_and_init(struct spinand_device *spinand,
 			   const struct spinand_info *table,
-			   unsigned int table_size, u8 devid)
+			   unsigned int table_size, u8 *devid_buf, u8 devid_double)
 {
 	struct nand_device *nand = spinand_to_nand(spinand);
 	unsigned int i;
@@ -1001,8 +1001,14 @@ int spinand_match_and_init(struct spinand_device *spinand,
 		const struct spinand_info *info = &table[i];
 		const struct spi_mem_op *op;
 
-		if (devid != info->devid)
-			continue;
+		if (!devid_double) {
+			if (devid_buf[0] != info->devid)
+				continue;
+		} else {
+			if (devid_buf[0] != info->devid ||
+			    devid_buf[1] != info->devid1)
+				continue;
+		}
 
 		nand->memorg = table[i].memorg;
 		nand->eccreq = table[i].eccreq;

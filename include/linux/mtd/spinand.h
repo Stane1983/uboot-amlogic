@@ -303,6 +303,7 @@ struct spinand_info {
 	} op_variants;
 	int (*select_target)(struct spinand_device *spinand,
 			     unsigned int target);
+	u8 devid1;
 };
 
 #define SPINAND_INFO_OP_VARIANTS(__read, __write, __update)		\
@@ -326,6 +327,19 @@ struct spinand_info {
 	{								\
 		.model = __model,					\
 		.devid = __id,						\
+		.memorg = __memorg,					\
+		.eccreq = __eccreq,					\
+		.op_variants = __op_variants,				\
+		.flags = __flags,					\
+		__VA_ARGS__						\
+	}
+
+#define SPINAND_INFO_DEVID_DOUBLE(__model, __id, __id1, __memorg, __eccreq, __op_variants,	\
+		     __flags, ...)					\
+	{								\
+		.model = __model,					\
+		.devid = __id,						\
+		.devid1 = __id1,						\
 		.memorg = __memorg,					\
 		.eccreq = __eccreq,					\
 		.op_variants = __op_variants,				\
@@ -459,7 +473,7 @@ static inline void spinand_set_of_node(struct spinand_device *spinand,
 
 int spinand_match_and_init(struct spinand_device *dev,
 			   const struct spinand_info *table,
-			   unsigned int table_size, u8 devid);
+			   unsigned int table_size, u8 *devid_buf, u8 devid_double);
 
 int spinand_upd_cfg(struct spinand_device *spinand, u8 mask, u8 val);
 int spinand_select_target(struct spinand_device *spinand, unsigned int target);
