@@ -534,6 +534,16 @@ static void aml_cc_ufp_init(void)
 	val &= ~CC_VBUS_FORCE_EN;
 	val |= CC_TOP_ENABLE | DAM_MODE_IN;
 	writel(val, CC_REG_BASE + USB_CC_CTRL);
+
+	val = readl(SYSCTRL_SEC_STATUS_REG12);
+	if (val & 0x80000000) {
+		val = (val >> 25) & 0x3f;
+		val = ((val & 0x7) << 3) | ((val >> 3) & 0x7);
+	} else {
+		val = 0x2b;
+	}
+
+	writel(val, CC_REG_BASE + CC_OTP_REG);
 }
 
 int aml_cc_get_ufp_status(u32 *val1, u32 *val2)
