@@ -1264,21 +1264,31 @@ static const char * const spidf_out_groups[] = {
 	"spdif_out_d", "spdif_out_h", "spdif_out_a"
 };
 
-static const char * const tsin_groups[] = {
+static const char * const tsin_a_groups[] = {
 	"tsin_a_sop_d", "tsin_a_din0_d", "tsin_a_clk_d", "tsin_a_valid_d",
 	"tsin_a_clk_c", "tsin_a_sop_c", "tsin_a_valid_c", "tsin_a_din0_c",
+	"tsin_a_din0_z", "tsin_a_sop_z", "tsin_a_valid_z",
+	"tsin_a_clk_z",
+};
+
+static const char * const tsin_b_groups[] = {
 	"tsin_b_clk_c", "tsin_b_sop_c", "tsin_b_valid_c", "tsin_b_din0_c",
 	"tsin_b_din0_x0", "tsin_b_sop_x1", "tsin_b_valid_x2",
 	"tsin_b_clk_x3", "tsin_b_sop_x8", "tsin_b_valid_x9", "tsin_b_din0_x10",
-	"tsin_b_clk_x11", "tsin_a_din0_z", "tsin_a_sop_z", "tsin_a_valid_z",
-	"tsin_a_clk_z", "tsin_b_sop_z4", "tsin_b_valid_z5", "tsin_b_din0_z6",
-	"tsin_b_clk_z7",
-	"tsin_c_valid", "tsin_c_sop", "tsin_c_din0", "tsin_c_clk",
-	"tsin_d_valid", "tsin_d_sop", "tsin_d_din0", "tsin_d_clk",
+	"tsin_b_clk_x11",
+	"tsin_b_sop_z4", "tsin_b_valid_z5", "tsin_b_din0_z6", "tsin_b_clk_z7",
 	"tsin_b_valid_z2", "tsin_b_sop_z3", "tsin_b_din0_z4", "tsin_b_fail",
 	"tsin_b_din1", "tsin_b_din2", "tsin_b_din3",
 	"tsin_b_din4", "tsin_b_din5", "tsin_b_din6",
 	"tsin_b_din7"
+};
+
+static const char * const tsin_c_groups[] = {
+	"tsin_c_valid", "tsin_c_sop", "tsin_c_din0", "tsin_c_clk",
+};
+
+static const char * const tsin_d_groups[] = {
+	"tsin_d_valid", "tsin_d_sop", "tsin_d_din0", "tsin_d_clk",
 };
 
 static const char * const tdm_groups[] = {
@@ -1408,7 +1418,10 @@ static struct meson_pmx_func meson_s6_periphs_functions[] = {
 	FUNCTION(gen_clk),
 	FUNCTION(spidf_in),
 	FUNCTION(spidf_out),
-	FUNCTION(tsin),
+	FUNCTION(tsin_a),
+	FUNCTION(tsin_b),
+	FUNCTION(tsin_c),
+	FUNCTION(tsin_d),
 	FUNCTION(tdm),
 	FUNCTION(mclk),
 	FUNCTION(clk12m_24m),
