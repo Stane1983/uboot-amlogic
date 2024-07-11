@@ -12,6 +12,7 @@
 //#include <asm/plat-cpu.h>
 //#include <asm/arch/ddr.h>
 
+#define CONFIG_DISMMU_BOARDF
 #define CONFIG_AML_MESON 1
 #define CONFIG_AML_MESON_GX 1
 #define CONFIG_AML_MESON_G12A 1

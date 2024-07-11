@@ -131,7 +131,7 @@ pie_fixup_done:
 	mrs	x0, hcr_el2
 	orr	x0, x0, #(1 << 27)
 	msr	hcr_el2, x0
-#if 1
+#ifndef CONFIG_DISMMU_BOARDF
 	branch_if_slave x0, 0f
 	mrs	x0, sctlr_el2
 	orr x0, x0, #(1 << 0)		/* SCTLR_M_BIT */
