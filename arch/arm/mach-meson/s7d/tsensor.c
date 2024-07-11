@@ -15,7 +15,7 @@
 
 int tsensor_tz_calibration(unsigned int type, unsigned int data)
 {
-	int ret;
+	long ret;
 
 	register long x0 asm("x0") = TSENSOR_CALI_SET;
 	register long x1 asm("x1") = type;
@@ -201,25 +201,18 @@ int temp_read_entry(void)
 	}
 	ret = (ver & 0xf) >> 2;
 	switch (ret) {
-	case 0x0:
-		printf("temp type no support\n");
-		break;
-	case 0x2:
-		printf("temp type no support\n");
-		break;
+	/*0x0/0x2/0x3 not used for the moment*/
 	case 0x1:
 		r1p1_temp_read(1);
+		ret = 0;
 		printf("read the thermal\n");
 		break;
-	case 0x3:
-		printf("temp type no support\n");
-		return -1;
-		//break;
 	default:
+		ret = -1;
 		printf("thermal version not support!!!Please check!\n");
-		return -1;
+		break;
 	}
-	return 0;
+	return ret;
 }
 
 int temp_trim_entry(int tempbase, int tempver)
