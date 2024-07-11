@@ -74,8 +74,7 @@
 	"uart_base=0xfe07a000\0"\
 	"usb_burning=" CONFIG_USB_TOOL_ENTRY "\0"\
 	"panel_type=dsi_0\0"\
-	"outputmode=panel\0"\
-	"outputmode2=1080p60hz\0"\
+	"outputmode=1080p60hz\0"\
 	"hdmimode=1080p60hz\0"\
 	"colorattribute=444,8bit\0"\
 	"cvbsmode=576cvbs\0"\
