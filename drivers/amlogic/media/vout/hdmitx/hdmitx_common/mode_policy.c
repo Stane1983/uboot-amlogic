@@ -214,33 +214,6 @@ static void update_dv_attr(struct meson_hdr_info *info, int amdv_type, char *amd
  * TODO: refactor
  */
 static int32_t find_resolution_index(const char *mode, int flag) {
-    const char* MODE_RESOLUTION[] = {
-        MODE_8K4K60HZ,
-        MODE_8K4K50HZ,
-        MODE_8K4K48HZ,
-        MODE_8K4K30HZ,
-        MODE_8K4K25HZ,
-        MODE_8K4K24HZ,
-        MODE_4K2K120HZ,
-        MODE_4K2K100HZ,
-        MODE_4K2K60HZ,
-        MODE_4K2K50HZ,
-        MODE_4K2K30HZ,
-        MODE_4K2K25HZ,
-        MODE_4K2K24HZ,
-        MODE_1080P,
-        MODE_1080P50HZ,
-        MODE_720P,
-        MODE_720P50HZ,
-        MODE_576P,
-        MODE_480P,
-        MODE_640x480P,
-        MODE_1080I,
-        MODE_1080I50HZ,
-        MODE_576I,
-        MODE_480I,
-    };
-
     /*
      * check mode is or not valid mode
      */
@@ -282,8 +255,8 @@ static int32_t find_resolution_index(const char *mode, int flag) {
          * resolution priority than frame rate
          * ex:2160p30hz prefer to 1080p60hz
          */
-        for (int64_t index = 0; index < sizeof(MODE_RESOLUTION)/sizeof(char *); index++) {
-            if (strcmp(mode, MODE_RESOLUTION[index]) == 0) {
+        for (int64_t index = 0; index < ARRAY_SIZE(DISPLAY_MODE_LIST); index++) {
+            if (strcmp(mode, DISPLAY_MODE_LIST[index]) == 0) {
                 return index;
             }
         }
@@ -326,8 +299,10 @@ static bool is_dv_support_mode(struct meson_policy_in *input, char *mode) {
     /*
      * need to check the flag of Parity for high frame rate
      */
-    if (!strcmp(mode, MODE_1080P100HZ)
-        || !strcmp(mode, MODE_1080P120HZ)) {
+    if (!strcmp(mode, MODE_1080P100HZ) ||
+        !strcmp(mode, MODE_1080P120HZ) ||
+        !strcmp(mode, MODE_720P100HZ) ||
+        !strcmp(mode, MODE_720P120HZ)) {
             if (support_DV_VSVDB_PARITY(&input->hdr_info)) {
             validMode = true;
         }
@@ -365,9 +340,9 @@ static int32_t amdv_update_mode(struct meson_policy_in *input,
     /*
      * 1. update tv support amdolby vision resolution
      */
-    for (int i = ARRAY_SIZE(DV_MODE_LIST) - 1; i >= 0; i--) {
-        if (strstr(input->hdr_info.dv_max_mode, DV_MODE_LIST[i]) != NULL) {
-            strlcpy(dv_displaymode, DV_MODE_LIST[i], sizeof(dv_displaymode));
+    for (int i = 0; i < ARRAY_SIZE(DISPLAY_MODE_LIST); i++) {
+        if (strstr(input->hdr_info.dv_max_mode, DISPLAY_MODE_LIST[i]) != NULL) {
+            strlcpy(dv_displaymode, DISPLAY_MODE_LIST[i], sizeof(dv_displaymode));
             break;
         }
     }
@@ -386,25 +361,25 @@ static int32_t amdv_update_mode(struct meson_policy_in *input,
         || policy == MESON_POLICY_RESOLUTION
         || policy == MESON_POLICY_FRAMERATE) {
         /* 2.1 best policy enable case */
-        if (!strcmp(dv_displaymode, DV_MODE_4K2K60HZ)) {
+        if (!strcmp(dv_displaymode, MODE_4K2K60HZ)) {
             /* TV support amdolby vision 2160p60hz case */
             if (amdv_type == DOLBY_VISION_LL_RGB) {
                 /* amdolby vision LL RGB(rgb 10/12bit) only support 1080p60hz */
-                strcpy(final_displaymode, DV_MODE_1080P);
+                strcpy(final_displaymode, MODE_1080P);
             } else {
                 /* other amdolby visin mode,use 2160p60hz */
-                strcpy(final_displaymode, DV_MODE_4K2K60HZ);
+                strcpy(final_displaymode, MODE_4K2K60HZ);
             }
         } else {
             /* TV support amdolby vision non 2160p60hz case */
-            if (!strcmp(dv_displaymode, DV_MODE_4K2K30HZ) ||
-                    !strcmp(dv_displaymode, DV_MODE_4K2K25HZ) ||
-                    !strcmp(dv_displaymode, DV_MODE_4K2K24HZ)) {
+            if (!strcmp(dv_displaymode, MODE_4K2K30HZ) ||
+                    !strcmp(dv_displaymode,MODE_4K2K25HZ) ||
+                    !strcmp(dv_displaymode, MODE_4K2K24HZ)) {
                 /*
                  * TV support amdolby vision support 2160p30hz or 2160p25hz or 2160p24hz
                  * 1080p60hz prefer to 2160p30hz 2160p25hz 2160p24hz
                  */
-                strcpy(final_displaymode, DV_MODE_1080P);
+                strcpy(final_displaymode, MODE_1080P);
             } else {
                 /*
                  * TV support amdolby vision non 2160p30hz 2160p25hz 2160p24hz
@@ -1388,9 +1363,9 @@ int32_t meson_mode_support_mode(int32_t connector, int32_t type, char *mode) {
          * 1. get tv support max amdolby vision resolution
          */
         char dv_displaymode[MESON_MODE_LEN] = {0};
-        for (int i = ARRAY_SIZE(DV_MODE_LIST) - 1; i >= 0; i--) {
-            if (strstr(input->hdr_info.dv_max_mode, DV_MODE_LIST[i]) != NULL) {
-                strlcpy(dv_displaymode, DV_MODE_LIST[i], sizeof(dv_displaymode));
+        for (int i = 0; i < ARRAY_SIZE(DISPLAY_MODE_LIST); i++) {
+            if (strstr(input->hdr_info.dv_max_mode, DISPLAY_MODE_LIST[i]) != NULL) {
+                strlcpy(dv_displaymode, DISPLAY_MODE_LIST[i], sizeof(dv_displaymode));
                 break;
             }
         }
@@ -1398,9 +1373,11 @@ int32_t meson_mode_support_mode(int32_t connector, int32_t type, char *mode) {
         /*
          * special resolution not support dv
          */
-        if ((strstr(mode, "480p") != NULL) || (strstr(mode, "576p") != NULL)
-            || (strstr(mode, "smpte") != NULL) || (strstr(mode, "4096") != NULL)
-            || (strstr(mode, "i") != NULL)) {
+        if ((strstr(mode, "480p") != NULL) ||
+            (strstr(mode, "576p") != NULL) ||
+            (strstr(mode, "smpte") != NULL) ||
+            (strstr(mode, "4096") != NULL) ||
+            (strstr(mode, "i") != NULL)) {
             SYS_LOGI("%s mode:%s not support dv", __func__, mode);
             return -EINVAL;
         }
@@ -1441,8 +1418,10 @@ int32_t meson_mode_support_mode(int32_t connector, int32_t type, char *mode) {
         /*
          * need to check the flag of Parity for high frame rate
          */
-        if (!strcmp(mode, MODE_1080P100HZ)
-            || !strcmp(mode, MODE_1080P120HZ)) {
+        if (!strcmp(mode, MODE_1080P100HZ) ||
+            !strcmp(mode, MODE_1080P120HZ) ||
+            !strcmp(mode, MODE_720P100HZ) ||
+            !strcmp(mode, MODE_720P120HZ)) {
             if (support_DV_VSVDB_PARITY(&input->hdr_info)) {
                 SYS_LOGI("dv support current mode:[%s]\n", mode);
                 ret = 0;

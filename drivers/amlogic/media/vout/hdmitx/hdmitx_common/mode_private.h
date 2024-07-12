@@ -33,20 +33,6 @@ extern "C" {
 #define MESON_DEFAULT_COLOR_FORMAT          "rgb,8bit"
 #define MESON_DEFAULT_HDMI_MODE             "720p60hz"
 
-#define DV_MODE_720P48HZ                "720p48hz"
-#define DV_MODE_720P50HZ                "720p50hz"
-#define DV_MODE_720P                    "720p60hz"
-#define DV_MODE_1080P24HZ               "1080p24hz"
-#define DV_MODE_1080P48HZ               "1080p48hz"
-#define DV_MODE_1080P50HZ               "1080p50hz"
-#define DV_MODE_1080P                   "1080p60hz"
-#define DV_MODE_4K2K24HZ                "2160p24hz"
-#define DV_MODE_4K2K25HZ                "2160p25hz"
-#define DV_MODE_4K2K30HZ                "2160p30hz"
-#define DV_MODE_4K2K48HZ                "2160p48hz"
-#define DV_MODE_4K2K50HZ                "2160p50hz"
-#define DV_MODE_4K2K60HZ                "2160p60hz"
-
 /*
  * check high frame rate support dv or not
  */
@@ -138,70 +124,58 @@ extern "C" {
 #define COLOR_RGB_10BIT                  "rgb,10bit"
 #define COLOR_RGB_8BIT                   "rgb,8bit"
 
-static const char* DV_MODE_LIST[ ] = {
-    DV_MODE_720P48HZ,
-    DV_MODE_720P50HZ,
-    DV_MODE_720P,
-    DV_MODE_1080P24HZ,
-    DV_MODE_1080P48HZ,
-    DV_MODE_1080P50HZ,
-    DV_MODE_1080P,
-    DV_MODE_4K2K24HZ,
-    DV_MODE_4K2K25HZ,
-    DV_MODE_4K2K30HZ,
-    DV_MODE_4K2K48HZ,
-    DV_MODE_4K2K50HZ,
-    DV_MODE_4K2K60HZ,
-};
-
 /*
  * define mode list
+ * must sort by resolution
  */
 static const char* DISPLAY_MODE_LIST[] = {
-    MODE_640x480P,
-    MODE_480I,
-    MODE_480P,
-    MODE_576I,
-    MODE_576P,
-    MODE_720P48HZ,
+    MODE_8K4K60HZ,
+    MODE_8K4K50HZ,
+    MODE_8K4K48HZ,
+    MODE_8K4K30HZ,
+    MODE_8K4K25HZ,
+    MODE_8K4K24HZ,
+    MODE_4K2KSMPTE120HZ,
+    MODE_4K2KSMPTE100HZ,
+    MODE_4K2KSMPTE60HZ,
+    MODE_4K2KSMPTE50HZ,
+    MODE_4K2KSMPTE30HZ,
+    MODE_4K2KSMPTE24HZ,
+    MODE_4K2K120HZ,
+    MODE_4K2K100HZ,
+    MODE_4K2K60HZ,
+    MODE_4K2K50HZ,
+    MODE_4K2K48HZ,
+    MODE_4K2K30HZ,
+    MODE_4K2K25HZ,
+    MODE_4K2K24HZ,
+    MODE_1440P120HZ,
+    MODE_1440P100HZ,
+    MODE_1440P60HZ,
+    MODE_1440P50HZ,
+    MODE_1080P120HZ,
+    MODE_1080P100HZ,
+    MODE_1080P,
+    MODE_1080I,
+    MODE_1080P50HZ,
+    MODE_1080I50HZ,
+    MODE_1080P48HZ,
+    MODE_1080P30HZ,
+    MODE_1080P25HZ,
+    MODE_1080P24HZ,
+    MODE_720P120HZ,
+    MODE_720P100HZ,
     MODE_720P,
     MODE_720P50HZ,
-    MODE_720P100HZ,
-    MODE_720P120HZ,
-    MODE_1080P24HZ,
-    MODE_1080P25HZ,
-    MODE_1080P30HZ,
-    MODE_1080P48HZ,
-    MODE_1080I50HZ,
-    MODE_1080P50HZ,
-    MODE_1080I,
-    MODE_1080P,
-    MODE_1080P100HZ,
-    MODE_1080P120HZ,
-    MODE_1440P50HZ,
-    MODE_1440P60HZ,
-    MODE_1440P100HZ,
-    MODE_1440P120HZ,
-    MODE_4K2K24HZ,
-    MODE_4K2K25HZ,
-    MODE_4K2K30HZ,
-    MODE_4K2K48HZ,
-    MODE_4K2K50HZ,
-    MODE_4K2K60HZ,
-    MODE_4K2K100HZ,
-    MODE_4K2K120HZ,
-    MODE_4K2KSMPTE24HZ,
-    MODE_4K2KSMPTE30HZ,
-    MODE_4K2KSMPTE50HZ,
-    MODE_4K2KSMPTE60HZ,
-    MODE_4K2KSMPTE100HZ,
-    MODE_4K2KSMPTE120HZ,
-    MODE_8K4K24HZ,
-    MODE_8K4K25HZ,
-    MODE_8K4K30HZ,
-    MODE_8K4K48HZ,
-    MODE_8K4K50HZ,
-    MODE_8K4K60HZ,
+    MODE_720P48HZ,
+    MODE_576P,
+    MODE_480P,
+    MODE_640x480P,
+    MODE_576I,
+    MODE_480I,
+    /*
+     * non hdmi solution
+     */
     MODE_768P,
     MODE_PANEL,
     MODE_480CVBS,
