@@ -78,7 +78,7 @@ const char *meson_pinctrl_get_pin_name(struct udevice *dev,
 #if defined(CONFIG_AMLOGIC_MODIFY)
 	int i;
 	struct meson_axg_pmx_data *pmx = priv->data->pmx_data;
-	struct meson_pmx_bank *bank;
+	struct meson_pmx_bank *bank = NULL;
 	unsigned int pin;
 
 	pin = selector + priv->data->pin_base;
@@ -93,7 +93,7 @@ const char *meson_pinctrl_get_pin_name(struct udevice *dev,
 
 	if (i == pmx->num_pmx_banks)
 		snprintf(pin_name, PINNAME_SIZE, "Error");
-	else
+	else if (bank)
 		snprintf(pin_name, PINNAME_SIZE, "GPIO%s_%d",
 			 bank->name, pin - bank->first + bank->first_num);
 #else
