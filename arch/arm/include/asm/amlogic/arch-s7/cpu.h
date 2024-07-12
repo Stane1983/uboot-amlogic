@@ -79,6 +79,6 @@
 #define CONFIG_AVB2_KPUB_FROM_FIP 1
 #define CONFIG_SYS_NAND_BASE_LIST   {0}
 
-#define SBOOT_KEYSLOT_BASE		32
+#define SBOOT_KEYSLOT_BASE		128
 
 #endif /* _CPU_H */
