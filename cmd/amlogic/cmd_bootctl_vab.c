@@ -174,7 +174,8 @@ typedef struct bootloader_control {
 	// Per-slot information.  Up to 4 slots.
 	struct slot_metadata slot_info[4];
 	// Reserved for further use.
-	uint8_t reserved1[8];
+	uint8_t merge_flag;
+	uint8_t reserved1[7];
 	// CRC32 of all 28 bytes preceding this field (little endian
 	// format).
 	uint32_t crc32_le;
@@ -286,6 +287,7 @@ void boot_info_reset(bootloader_control* boot_ctrl)
 	boot_ctrl->version = BOOT_CTRL_VERSION;
 	boot_ctrl->nb_slot = 2;
 	boot_ctrl->roll_flag = 0;
+	boot_ctrl->merge_flag = -1;
 
 	for (slot = 0; slot < 4; ++slot) {
 		slot_metadata entry = {};
@@ -881,6 +883,8 @@ static int do_SetUpdateTries(
 	int ret = -1;
 	bool nocs_mode = false;
 	int update_flag = 0;
+	int success_flag = -1;
+	int merge_ret = -1;
 	char *rebootmode = env_get("reboot_mode");
 
 	if (has_boot_slot == 0) {
@@ -903,26 +907,55 @@ static int do_SetUpdateTries(
 
 	if (slot == 0) {
 		if (bootable_a) {
-			if (boot_ctrl.slot_info[0].successful_boot == 0 &&
-				rebootmode && strcmp(rebootmode, "fastboot")) {
-				boot_ctrl.slot_info[0].tries_remaining -= 1;
-				update_flag = 1;
+			if (boot_ctrl.slot_info[0].successful_boot == 0) {
+				success_flag = 0;
+				if (rebootmode && strcmp(rebootmode, "fastboot")) {
+					boot_ctrl.slot_info[0].tries_remaining -= 1;
+					update_flag = 1;
+				}
 			}
 		}
 	}
 
 	if (slot == 1) {
 		if (bootable_b) {
-			if (boot_ctrl.slot_info[1].successful_boot == 0 &&
-				rebootmode && strcmp(rebootmode, "fastboot")) {
-				boot_ctrl.slot_info[1].tries_remaining -= 1;
-				update_flag = 1;
+			if (boot_ctrl.slot_info[1].successful_boot == 0) {
+				success_flag = 0;
+				if (rebootmode && strcmp(rebootmode, "fastboot")) {
+					boot_ctrl.slot_info[1].tries_remaining -= 1;
+					update_flag = 1;
+				}
 			}
 		}
 	}
 
+	printf("boot_ctrl.merge_flag = %d\n", boot_ctrl.merge_flag);
+
 	if (update_flag == 1)
 		boot_info_save(&boot_ctrl, miscbuf);
+
+	if (boot_ctrl.merge_flag == SNAPSHOTTED) {
+		printf("merge_flag is SNAPSHOTTED\n");
+		merge_ret = 1;
+	}
+
+	if (rebootmode && (!strcmp(rebootmode, "fastboot")) &&
+		success_flag == 0 &&
+		merge_ret == 1) {
+		printf("reboot bootloader during merge, rollback\n");
+		if (slot == 0 && bootable_a) {
+			if (boot_ctrl.slot_info[0].successful_boot == 0)
+				boot_ctrl.slot_info[0].tries_remaining = 0;
+		} else if (slot == 1 && bootable_b) {
+			if (boot_ctrl.slot_info[1].successful_boot == 0)
+				boot_ctrl.slot_info[1].tries_remaining = 0;
+		}
+		boot_info_save(&boot_ctrl, miscbuf);
+		if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+			run_command("reboot quiescent", 0);
+		else
+			run_command("reboot", 0);
+	}
 
 	printf("do_SetUpdateTries boot_ctrl.roll_flag = %d\n", boot_ctrl.roll_flag);
 	if (boot_ctrl.roll_flag == 1) {
