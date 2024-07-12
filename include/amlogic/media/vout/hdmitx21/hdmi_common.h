@@ -532,7 +532,7 @@ struct dv_info {
 	u8 sup_yuv422_12bit:1;
 	/* if as 0, then support 2160p30hz */
 	u8 sup_2160p60hz:1;
-	/* if equals 0, then don't support 1080p100/120hz */
+	/* if equals 0, then don't support 720p100/120hz,1080p100/120hz */
 	u8 sup_1080p120hz:1;
 	u8 sup_global_dimming:1;
 	u16 Rx;
