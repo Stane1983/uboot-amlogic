@@ -1681,7 +1681,11 @@ static void hdmitx_edid_parse_hfscdb(struct rx_cap *prxcap,
 		return;
 	prxcap->vrr_max = (((blockbuf[offset + 8] & 0xc0) >> 6) << 8) +
 				blockbuf[offset + 9];
+	if (prxcap->vrr_max > 0 && prxcap->vrr_max < 100)
+		HDMITX_INFO("vrr_max is reserved value %d\n", prxcap->vrr_max);
 	prxcap->vrr_min = (blockbuf[offset + 8] & 0x3f);
+	if (prxcap->vrr_min > 48)
+		HDMITX_INFO("vrr_min is reserved value %d\n", prxcap->vrr_min);
 	prxcap->fapa_start_loc = !!(blockbuf[offset + 7] & (1 << 0));
 
 	if (count < 11)
