@@ -32,6 +32,11 @@ SECTIONS
 		*(.dev_header*)
 	}
 
+	.vendor_key 0x00000080 :
+	{
+		*(.vendor_key*)
+	}
+
 	.generic_param 0x00000100:
 	{
 		*(.generic_param*)

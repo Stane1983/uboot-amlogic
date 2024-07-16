@@ -197,9 +197,9 @@ CFLAGS			+= 	-Wno-unused
 LDFLAGS			+=	--fatal-warnings -O1
 LDFLAGS			+=	--gc-sections
 
-OCFLAGS		+= -j .dev_header -j .generic_param -j .clk_param \
-			   -j .misc_param -j .store_param -j .ddr_param \
-			   -j .ddr_2acs_index -j .ddr_2acs_data \
+OCFLAGS		+= -j .dev_header -j .vendor_key -j .generic_param \
+			   -j .clk_param -j .misc_param -j .store_param \
+			   -j .ddr_param -j .ddr_2acs_index -j .ddr_2acs_data \
 			   --gap-fill 0x0
 
 CC			:=	${CROSS_COMPILE}gcc
@@ -217,6 +217,13 @@ FIPTOOLPATH		?=	tools/fip_create
 FIPTOOL			?=	${FIPTOOLPATH}/fip_create
 fiptool:		${FIPTOOL}
 fip:			${BUILD_PLAT}/fip.bin
+
+VENDOR_PUB_KEY := $(buildsrc)/board/${BOARDDIR}/firmware/vendor_pub.pem
+ifeq ($(CONFIG_AMPK),y)
+VENDOR_PUB_OBJ := $(BUILD_PLAT)/vendor_pub.o
+else
+VENDOR_PUB_OBJ :=
+endif
 
 locate-checkpatch:
 ifndef CHECKPATCH
@@ -368,12 +375,36 @@ define MAKE_BL
 $(BUILD_DIR) :
 	$$(Q)mkdir -p "$$@"
 
-$(ELF) : $(OBJS) $(LINKERFILE)
+$(ELF) : $(OBJS) $(LINKERFILE) $(VENDOR_PUB_OBJ)
 	@echo "  LD      $$@"
 	@echo 'const char build_message[] = "Built : "__TIME__", "__DATE__". \\nver:${GIT_VERSION} - ${BUILDER}";' | \
 		$$(CC) $$(CFLAGS) -xc - -o $(BUILD_DIR)/build_message.o
 	$$(Q)$$(LD) -o $$@ $$(LDFLAGS) -Map=$(MAPFILE) --script $(LINKERFILE) \
-					$(BUILD_DIR)/build_message.o $(OBJS)
+					$(BUILD_DIR)/build_message.o \
+					$(VENDOR_PUB_OBJ) \
+					$(OBJS)
+
+ifeq ($(CONFIG_AMPK),y)
+$(VENDOR_PUB_OBJ): $(VENDOR_PUB_KEY)
+	@echo "Embedding AMPK vendor pub key"
+ifeq ($(wildcard $(VENDOR_PUB_KEY)),)
+	@echo Error: file does not exist "$$(VENDOR_PUB_KEY)"
+	false
+else
+	@echo '#include <asm/amlogic/arch/acs.h>' > "$$(BUILD_DIR)/vendor_pub.c"
+	@echo 'vendor_key_t __vendor_key __attribute__ ((section(".vendor_key"))) = { \
+			.magic = 0x6b706d61, \
+			.flags = 0x1, \
+			.pubkey = { ' >> "$$(BUILD_DIR)/vendor_pub.c"
+	@openssl ec -in "$$(VENDOR_PUB_KEY)" -pubin -noout -text | \
+		grep -Pzo ' 04:( *[[:xdigit:]]{2}:?\n?){64}' | \
+		sed -e 's/^ 04://'  | \
+		xxd -r -p | xxd -i -c16 >> "$$(BUILD_DIR)/vendor_pub.c"
+	@echo ' }, };' >> "$$(BUILD_DIR)/vendor_pub.c"
+	@echo "  CC      vendor_pub.o"
+	$$(Q)$$(CC) $$(CFLAGS) "$$(BUILD_DIR)/vendor_pub.c" -o $(VENDOR_PUB_OBJ)
+endif
+endif
 
 $(DUMP) : $(ELF)
 	@echo "  OD      $$@"
