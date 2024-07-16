@@ -426,9 +426,8 @@ static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 		hdev->hwop.set_div40(div40);
 	} else { /* "output" */
 		if (!hdev->pxp_mode) {
-			if (!hdmitx_edid_check_data_valid(0, hdev->rawedid)) {
-				/*
-				 * in SWPL-34712: if EDID parsing error in kernel,
+			if (!hdmitx_edid_check_data_valid(hdev->RXCap.edid_check, hdev->rawedid)) {
+				/* in SWPL-34712: if EDID parsing error in kernel,
 				 * only forcely output default mode(480p,RGB,8bit)
 				 * in sysctl, not save the default mode to env.
 				 * if uboot follow this rule, will cause issue OTT-19333:
@@ -1459,6 +1458,48 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 	 * mode or colorattribute by policy
 	 */
 	bool no_manual_output = false;
+	/*
+	 * The hdmitx driver gets the value of env too early in hdmitx21_init.
+	 * The value of emmc's env partition has not been loaded yet.
+	 * Therefore, the value obtained at this time is the data saved at compile time,
+	 * which is the default value defined in board.h.
+	 * To prevent this case, need to get the value of env later
+	 */
+	char *dongle_mode = env_get("dongle_mode");
+	char *dsc_policy = env_get("dsc_policy");
+	char *edid_check = env_get("edid_check");
+	struct tx_cap *txcap = &hdev->tx_common.tx_hw->hdmi_tx_cap;
+
+	if (dongle_mode && (dongle_mode[0] == '1'))
+		hdev->dongle_mode = 1;
+	if (!dsc_policy) {
+		txcap->dsc_policy = 0;
+	} else {
+		if (strcmp(dsc_policy, "0") == 0)
+			txcap->dsc_policy = 0;
+		else if (strcmp(dsc_policy, "1") == 0)
+			txcap->dsc_policy = 1;
+		else if (strcmp(dsc_policy, "2") == 0)
+			txcap->dsc_policy = 2;
+		else if (strcmp(dsc_policy, "3") == 0)
+			txcap->dsc_policy = 3;
+		else if (strcmp(dsc_policy, "4") == 0)
+			txcap->dsc_policy = 4;
+		else
+			txcap->dsc_policy = 0;
+	}
+	if (edid_check && edid_check[0] != '\0') {
+		u8 tmp = edid_check[0] - '0';
+
+		if (tmp <= 3)
+			hdev->RXCap.edid_check = tmp;
+		else
+			hdev->RXCap.edid_check = 0;
+	} else {
+		hdev->RXCap.edid_check = 0;
+	}
+	printf("[%s][%d] dongle_mode=[%d], dsc_policy=[%d], edid_check=[%d]\n", __func__, __LINE__,
+	       hdev->dongle_mode, txcap->dsc_policy, hdev->RXCap.edid_check);
 
 	memset(edid, 0, EDID_BLK_SIZE * EDID_MAX_BLOCK);
 
@@ -1606,7 +1647,7 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 		/* find proper mode if EDID changed */
 		scene_process(hdev, &output);
 		env_set("hdmichecksum", hdev->RXCap.hdmichecksum);
-		if (hdmitx_edid_check_data_valid(0, hdev->rawedid)) {
+		if (hdmitx_edid_check_data_valid(hdev->RXCap.edid_check, hdev->rawedid)) {
 			/*
 			 * SWPL-34712: if EDID parsing error case, not save env,
 			 * only output default mode(480p,RGB,8bit). after

@@ -776,22 +776,6 @@ static void hdmitx_load_dts_config(struct hdmitx_dev *hdev)
 void hdmitx_init(void)
 {
 	struct hdmitx_dev *hdev = hdmitx_get_hdev();
-	char *dongle_mode = env_get("dongle_mode");
-	char *edid_check = env_get("edid_check");
-
-	if (dongle_mode && (dongle_mode[0] == '1'))
-		hdev->dongle_mode = 1;
-
-	if (edid_check && edid_check[0] != '\0') {
-		u8 tmp = edid_check[0] - '0';
-
-		if (tmp <= 3)
-			hdev->RXCap.edid_check = tmp;
-		else
-			hdev->RXCap.edid_check = 0;
-	} else {
-		hdev->RXCap.edid_check = 0;
-	}
 
 	hdev->hwop.get_hpd_state = hdmitx_get_hpd_state;
 	hdev->hwop.read_edid = hdmitx_read_edid;

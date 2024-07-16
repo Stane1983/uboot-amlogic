@@ -341,7 +341,7 @@ bool is_hdmi_edid_parserok(struct meson_policy_in *input) {
     struct hdmitx_dev *hdev = get_hdmitx21_device();
 #endif
     bool ret = false;
-    int edid_check = 0;
+    int edid_check = hdev->RXCap.edid_check;
     /*
      * check input param
      */

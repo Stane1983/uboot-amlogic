@@ -400,42 +400,8 @@ static void amhdmitx_infoframe_init(struct hdmitx_dev *hdev)
 void hdmitx21_init(void)
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	char *dongle_mode = env_get("dongle_mode");
-	char *dsc_policy = env_get("dsc_policy");
-	char *edid_check = env_get("edid_check");
 	static struct hdmi_format_para para;
-
 	hdev->tx_common.tx_hw = &hdev->tx_hw.base;
-	struct tx_cap *txcap = &hdev->tx_common.tx_hw->hdmi_tx_cap;
-
-	if (dongle_mode && (dongle_mode[0] == '1'))
-		hdev->dongle_mode = 1;
-	if (!dsc_policy) {
-		txcap->dsc_policy = 0;
-	} else {
-		if (strcmp(dsc_policy, "0") == 0)
-			txcap->dsc_policy = 0;
-		else if (strcmp(dsc_policy, "1") == 0)
-			txcap->dsc_policy = 1;
-		else if (strcmp(dsc_policy, "2") == 0)
-			txcap->dsc_policy = 2;
-		else if (strcmp(dsc_policy, "3") == 0)
-			txcap->dsc_policy = 3;
-		else if (strcmp(dsc_policy, "4") == 0)
-			txcap->dsc_policy = 4;
-		else
-			txcap->dsc_policy = 0;
-	}
-	if (edid_check && edid_check[0] != '\0') {
-		u8 tmp = edid_check[0] - '0';
-
-		if (tmp <= 3)
-			hdev->RXCap.edid_check = tmp;
-		else
-			hdev->RXCap.edid_check = 0;
-	} else {
-		hdev->RXCap.edid_check = 0;
-	}
 
 	hdev->hwop.get_hpd_state = hdmitx_get_hpd_state;
 	hdev->hwop.read_edid = hdmitx21_read_edid;
