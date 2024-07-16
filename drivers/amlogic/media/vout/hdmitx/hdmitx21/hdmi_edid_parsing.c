@@ -23,7 +23,8 @@
 #define HDMI_EDID_BLOCK_TYPE_RESERVED2	        6
 #define HDMI_EDID_BLOCK_TYPE_EXTENDED_TAG       7
 
-#define EXTENSION_VENDOR_SPECIFIC 0x1
+#define EXTENSION_VIDEO_CAPABILITY_TAG 0x0
+#define EXTENSION_VENDOR_SPECIFIC_TAG 0x1
 #define EXTENSION_COLORMETRY_TAG 0x5
 /* DRM stands for "Dynamic Range and Mastering " */
 #define EXTENSION_DRM_STATIC_TAG	0x6
@@ -1126,7 +1127,10 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap,
 
 				ext_tag = blockbuf[offset + 1];
 				switch (ext_tag) {
-				case EXTENSION_VENDOR_SPECIFIC:
+				case EXTENSION_VIDEO_CAPABILITY_TAG:
+					prxcap->video_capability_data = blockbuf[offset + 2];
+					break;
+				case EXTENSION_VENDOR_SPECIFIC_TAG:
 					edid_parsingvendspec(prxcap, &blockbuf[offset]);
 					break;
 				case EXTENSION_COLORMETRY_TAG:

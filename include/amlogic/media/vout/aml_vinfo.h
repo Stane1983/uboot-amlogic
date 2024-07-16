@@ -6,6 +6,15 @@
 #ifndef __AML_VINFO_H_
 #define __AML_VINFO_H_
 
+/* vpp_post_out_range */
+#define HDMI_LIMIT_COLOR_RANGE   0
+#define HDMI_FULL_COLOR_RANGE    1
+/* vpp_post_out_colorimetry */
+#define HDMI_709_COLORIMETRY     0
+#define HDMI_601_COLORIMETRY     1
+#define HDMI_2020_COLORIMETRY    2
+#define HDMI_2020C_COLORIMETRY   3
+
 struct vinfo_s {
 	ushort width;  /* Number of columns (i.e. 160) */
 	ushort height; /* Number of rows (i.e. 100) */
@@ -23,7 +32,8 @@ struct vinfo_s {
 
 	ushort *cmap; /* Pointer to the colormap */
 	void *priv; /* Pointer to driver-specific data */
-	/* new parameters for s5 or later
+	/*
+	 * new parameters for s5 or later
 	 * if current output is FRL or DSC mode,
 	 * then there may use 2 or 4 slices pixel per clock.
 	 * the default value is 0 or 1.
@@ -31,6 +41,10 @@ struct vinfo_s {
 	u_char cur_enc_ppc;
 	/* 0: yuv, 1: rgb */
 	u8 vpp_post_out_color_fmt;
+	/* 0: limit, 1: full */
+	u8 vpp_post_out_range:1;
+	/* 0: 709, 1: 601, 2:2020, 3:2020c */
+	u8 vpp_post_out_colorimetry:2;
 };
 
 

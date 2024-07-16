@@ -795,6 +795,8 @@ static void edid_cap_show(struct hdmitx_dev *hdev)
 
 	if (prxcap->colorimetry_data)
 		printf("ColorMetry: 0x%x\n", prxcap->colorimetry_data);
+	if (prxcap->video_capability_data)
+		printf("Video_Capability_Data: 0x%x\n", prxcap->video_capability_data);
 	printf("SCDC: %x\n", prxcap->scdc_present);
 	printf("RR_Cap: %x\n", prxcap->scdc_rr_capable);
 	printf("LTE_340M_Scramble: %x\n", prxcap->lte_340mcsc_scramble);

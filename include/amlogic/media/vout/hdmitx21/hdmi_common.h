@@ -605,20 +605,27 @@ struct rx_cap {
 	unsigned int native_Mode;
 	/*video*/
 	unsigned int VIC[VIC_MAX_NUM];
-	unsigned int SVD_VIC[SVD_VIC_MAX_NUM]; /* used to store SVD in VDB */
+	/* used to store SVD in VDB */
+	unsigned int SVD_VIC[SVD_VIC_MAX_NUM];
 	unsigned int y420_vic[Y420_VIC_MAX_NUM];
 	unsigned int VIC_count;
 	unsigned int SVD_VIC_count;
 	unsigned int native_VIC;
 	/*vendor*/
 	unsigned int IEEEOUI;
-	unsigned int Max_TMDS_Clock1; /* HDMI1.4b TMDS_CLK */
-	unsigned int HF_IEEEOUI;	/* For HDMI Forum */
-	unsigned int Max_TMDS_Clock2; /* HDMI2.0 TMDS_CLK */
+	/* HDMI1.4b TMDS_CLK */
+	unsigned int Max_TMDS_Clock1;
+	/* For HDMI Forum */
+	unsigned int HF_IEEEOUI;
+	/* HDMI2.0 TMDS_CLK */
+	unsigned int Max_TMDS_Clock2;
+	/* CTA-861-I, Table 85 Video Capability Data Block */
+	u8 video_capability_data;
 	/* CEA861-F, Table 56, Colorimetry Data Block */
 	unsigned int colorimetry_data;
 	unsigned int scdc_present:1;
-	unsigned int scdc_rr_capable:1; /* SCDC read request */
+	/* SCDC read request */
+	unsigned int scdc_rr_capable:1;
 	unsigned int lte_340mcsc_scramble:1;
 	unsigned support_ycbcr444_flag:1;
 	unsigned support_ycbcr422_flag:1;
