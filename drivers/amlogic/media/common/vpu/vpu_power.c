@@ -74,9 +74,8 @@ void vpu_module_init_config(void)
 #ifdef VPU_RDARB_UGT_L2C1
 		vpu_vcbus_write(VPU_RDARB_UGT_L2C1, 0xf);
 #endif
-	} else if (vpu_conf.data->chip_type == VPU_CHIP_T7 ||
-		vpu_conf.data->chip_type == VPU_CHIP_S6 ||
-		vpu_conf.data->vpu_read_type == ONLY_READ0) {
+	} else if (vpu_conf.data->chip_type == VPU_CHIP_S7 ||
+		vpu_conf.data->chip_type == VPU_CHIP_S7D) {
 		/*ONLY VPU0 READ*/
 		init_arb_urgent_table();
 	} else {

@@ -14,7 +14,6 @@
 #include <time.h>
 #include <amlogic/cpu_id.h>
 #include <asm/amlogic/arch/register.h>
-#include <amlogic/cpu_id.h>
 
 #define CONFIG_AMFC_TEST	1
 
