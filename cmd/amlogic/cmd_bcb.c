@@ -30,6 +30,7 @@
 #define CMD_RESIZE_DATA    "resize2fs_data"
 #define CMD_FOR_RECOVERY "recovery_"
 #define CMD_FASTBOOTD          "fastbootd"
+#define CMD_RECOVERY_WIPE      "prompt_and_wipe_data"
 
 static const char *  const temp_for_compile[] = {"__test1", "__test2", "__test3", NULL};
 extern const char * const _env_list_execute_[0] __attribute__((weak, alias("temp_for_compile")));
@@ -380,6 +381,23 @@ static int do_RunBcbCommand(
 #else
 			run_command("saveenv;", 0);
 #endif
+		}
+
+		if (strstr(recovery, CMD_RECOVERY_WIPE) &&
+			remain_time == 7) {
+			char *rebootmode = env_get("reboot_mode");
+
+			printf("enter recovery first time, try again\n");
+			if (clear_misc_partition(clearbuf, sizeof(clearbuf)) < 0) {
+				printf("clear misc partition failed.\n");
+				goto ERR;
+			}
+
+			if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+				run_command("reboot quiescent", 0);
+			else
+				run_command("reboot", 0);
+			return 0;
 		}
 
         if (run_command("run recovery_from_flash", 0) < 0) {

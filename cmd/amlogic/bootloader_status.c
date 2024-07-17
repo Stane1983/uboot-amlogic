@@ -507,7 +507,7 @@ static int update_gpt(int flag)
 
 			if (erase_flag == 4 && has_boot_slot == 0) {
 				printf("null ab critical partition change, refused to upgrade\n");
-				ret = -1;
+				ret = 5;
 				goto exit;
 			} else if (has_boot_slot == 1 && (erase_flag == 3 || erase_flag == 4)) {
 				printf("Important partition changes, refused to upgrade\n");
@@ -809,7 +809,7 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 		run_command("defenv_reserv; saveenv;", 0);
 		run_command("run bcb_cmd", 0);
 
-		if (update_flag == 0) {
+		if (update_flag < 1) {
 			printf("check & update part ok......\n");
 			env_set("recovery_check_part", "2");
 			printf("boot from boot0\n");
