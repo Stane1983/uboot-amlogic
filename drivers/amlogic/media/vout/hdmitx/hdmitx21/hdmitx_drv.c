@@ -1287,6 +1287,14 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 		videocode == HDMI_98_4096x2160p24_256x135)
 		hdmi_set_vend_spec_infofram(hdev, videocode);
 
+	/* if TV support traditional SDR, then enable hdr.sdr packet by default */
+	if (hdev->RXCap.hdr_info2.hdr_support & 0x1) {
+		struct master_display_info_s data = {0};
+
+		data.features = 0x00010100;
+		hdmitx_set_drm_pkt(&data);
+	}
+
 	// [1   0] src_sel, t7 and s5 is differnet
 	// for t7:
 	// 0=disable hdmi source; 1=select VENC0 data to hdmi; 2=select VENC2 data to hdmi
@@ -2248,8 +2256,9 @@ void hdmitx_set_drm_pkt(struct master_display_info_s *data)
 		break;
 	case 0:
 	default:
-		/*other case*/
-		hdmi_drm_infoframe_rawset(NULL, NULL);
+		/* other case, currently it's only for hdr.sdr sent by hdmitx driver iteslf */
+		drm_db[0] = 0x0;
+		hdmi_drm_infoframe_rawset(drm_hb, db);
 		hdmi_avi_infoframe_config(CONF_AVI_BT2020, CLR_AVI_BT2020);
 		hdr_status = "SDR";
 		break;
