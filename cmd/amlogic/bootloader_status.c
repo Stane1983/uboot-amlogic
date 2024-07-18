@@ -976,6 +976,14 @@ int ab_update_rollback(char *rebootmode, int gpt_flag)
 			else
 				run_command("reboot", 0);
 			return 0;
+		}else {
+			wrnP("current index is expect, no need reboot next, set reboot_status reboot_init\n");
+			env_set("reboot_status", "reboot_init");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+			run_command("update_env_part -p reboot_status;", 0);
+#else
+			run_command("saveenv", 0);
+#endif
 		}
 	}
 
