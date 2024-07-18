@@ -87,7 +87,7 @@
 };
 
 &vpu {
-	clk_level = <7>;
+	clk_level = <5>;
 };
 
 &ir {

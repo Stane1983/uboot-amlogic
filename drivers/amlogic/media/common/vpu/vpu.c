@@ -783,6 +783,39 @@ static struct vpu_data_s vpu_data_s6 = {
 	.change_clk = change_vpu_clk,
 };
 
+static struct vpu_data_s vpu_data_t6d = {
+	.chip_type = VPU_CHIP_T6D,
+	.chip_name = "t6d",
+	.clk_level_dft = CLK_LEVEL_DFT_S1A,
+	.clk_level_max = CLK_LEVEL_MAX_S1A,
+	.gp_pll_valid = 0,
+
+	.vpu_clk_reg = CLKCTRL_VPU_CLK_CTRL,
+	.vpu_clkb_reg = CLKCTRL_VPU_CLKB_CTRL,
+	.vapb_clk_reg = CLKCTRL_VAPBCLK_CTRL,
+	.vid_clk_reg = CLKCTRL_VID_CLK0_CTRL2,
+
+	.pwrctrl_id_table = vpu_pwrctrl_id_table,
+
+	.fclk_div_table = fclk_div_table_g12a,
+	.vpu_clk_table = vpu_clk_table,
+	.test_reg = vcbus_test_reg,
+
+	.mem_pd_table = NULL,
+	.power_table = NULL,
+	.iso_table = NULL,
+	.reset_table = NULL,
+
+	.module_init_table_cnt = 0,
+	.module_init_table = NULL,
+
+	.power_on = vpu_power_on_new,
+	.power_off = vpu_power_off_new,
+	.mem_pd_init_off = vpu_mem_pd_init_off,
+	.module_init_config = vpu_module_init_config,
+	.change_clk = change_vpu_clk,
+};
+
 static void vpu_chip_detect(void)
 {
 	unsigned int cpu_type;
@@ -856,6 +889,8 @@ static void vpu_chip_detect(void)
 		break;
 	case MESON_CPU_MAJOR_ID_S6:
 		vpu_conf.data = &vpu_data_s6;
+	case MESON_CPU_MAJOR_ID_T6D:
+		vpu_conf.data = &vpu_data_t6d;
 		break;
 	default:
 		vpu_conf.data = NULL;
@@ -921,6 +956,7 @@ static int vpu_check(void)
 	case VPU_CHIP_S7:
 	case VPU_CHIP_S7D:
 	case VPU_CHIP_S6:
+	case VPU_CHIP_T6D:
 		ret = 0;
 		break;
 	default:
