@@ -440,6 +440,42 @@ int board_init(void)
 	return 0;
 }
 
+void *memmem(const void *haystack, size_t haystacklen, const void *needle, size_t needlelen)
+{
+	if (!haystack || !needle || needlelen > haystacklen)
+		return NULL;
+
+	const unsigned char *h = (const unsigned char *)haystack;
+	const unsigned char *n = (const unsigned char *)needle;
+
+	for (size_t i = 0; i <= haystacklen - needlelen; ++i) {
+		if (memcmp(h + i, n, needlelen) == 0)
+			return (void *)(h + i);
+	}
+	return NULL;
+}
+
+int hibernate_boot_check(void)
+{
+	const char *suspend_str = "S1SUSPEND";
+	const char *hibernate_partition = "std_data";
+	char buffer[512] = {0}; // at least 512 bytes needed
+
+	if (store_read(hibernate_partition, 4096 - 512, 512, (unsigned char *)buffer) == 0) {
+		if (memmem(buffer, 512, suspend_str, strlen(suspend_str))) {
+			printf("Hibernate boot\n");
+		} else {
+			printf("Normal(not hibernate) boot\n");
+			return -1;
+		}
+	} else {
+		printf("%s: Failed read STD partition\n", __func__);
+		return -1;
+	}
+
+	return 0;
+}
+
 int board_boot_freertos(void)
 {
 	int rc;
@@ -450,6 +486,12 @@ int board_boot_freertos(void)
 	char partName[20] = {0};
 	IRtosParam *car_param = NULL;
 	char *car_mem_addr = env_get("car_mem_addr");
+
+	//if hibernate boot, just finish rtos
+	if (hibernate_boot_check() == 0) {
+		printf("freertos will not work because hibernate\n");
+		return 0;
+	}
 
 	slot_name = env_get("slot-suffixes");
 	if (strcmp(slot_name, "0") == 0)
