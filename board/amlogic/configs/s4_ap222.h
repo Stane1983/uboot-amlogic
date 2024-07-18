@@ -89,7 +89,8 @@
 	"storeargs="\
 		"get_bootloaderversion;" \
 		"run storeargs_base;"\
-		"setenv bootargs ${bootargs} ${emmc_quirks} kvm-arm.mode=none init_on_alloc=0;"\
+		"setenv bootargs ${bootargs} ${emmc_quirks} kvm-arm.mode=none init_on_alloc=0 "\
+		"config_csc_en=${config_csc_en} ;"\
 		"run cmdline_keys;"\
 		"\0"\
 	"init_display="\
@@ -125,6 +126,7 @@
 	"hdmichecksum=0x00000000\0" \
 	"frac_rate_policy=1\0" \
 	"hdr_policy=0\0" \
+	"config_csc_en=1\0" \
 	"usb_burning=" CONFIG_USB_TOOL_ENTRY "\0" \
 	"fdt_high=0x20000000\0"\
 	"sdcburncfg=aml_sdc_burn.ini\0"\
