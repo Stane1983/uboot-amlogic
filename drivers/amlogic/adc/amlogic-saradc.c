@@ -15,6 +15,7 @@
 #include <log.h>
 #include <adc.h>
 #include <clk.h>
+#include <reset.h>
 
 #define SARADC_REG0				0x00
 #define SARADC_REG0_SAMPLING_STOP		BIT(14)
@@ -95,6 +96,8 @@ struct amlogic_saradc {
 	u32 test_channel;
 	u32 fifo_data_width;
 	u32 out_data_width;
+	bool apply_workaround;
+	struct reset_ctl_bulk resets;
 	int info_offset;
 	int info_scale;
 };
@@ -141,6 +144,8 @@ static int amlogic_saradc_parse_dt(struct udevice *dev)
 	if (ret)
 		priv->out_data_width = SARADC_DEFAULT_OUT_DATA_WIDTH;
 	debug("saradc out-data-width: %u\n", priv->out_data_width);
+
+	priv->apply_workaround = device_is_compatible(dev, "amlogic,s7d-saradc");
 
 	return 0;
 }
@@ -287,16 +292,38 @@ static void amlogic_saradc_enable_channel(struct amlogic_saradc *priv,
 			SARADC_REG1_ENTRY_MASK(index), regval);
 }
 
-static void amlogic_saradc_start_sample(struct amlogic_saradc *priv)
+static int amlogic_saradc_start_sample(struct amlogic_saradc *priv)
 {
+	int ret;
+
+	if (priv->apply_workaround)
+		udelay(50);
+
 	clrsetbits_le32(priv->base + SARADC_REG0,
 			SARADC_REG0_ADC_EN,
 			SARADC_REG0_ADC_EN);
+
+	if (priv->apply_workaround) {
+		udelay(200);
+		ret = reset_assert_bulk(&priv->resets);
+		if (ret)
+			goto failed;
+		ret = reset_deassert_bulk(&priv->resets);
+		if (ret)
+			goto failed;
+	}
+
 	udelay(20);
 
 	clrsetbits_le32(priv->base + SARADC_REG0,
 			SARADC_REG0_SAMPLE_START,
 			SARADC_REG0_SAMPLE_START);
+
+	return 0;
+failed:
+	clrsetbits_le32(priv->base + SARADC_REG0,
+			SARADC_REG0_ADC_EN, 0);
+	return ret;
 }
 
 static void amlogic_saradc_stop_sample(struct amlogic_saradc *priv)
@@ -385,7 +412,9 @@ static int amlogic_saradc_read_raw_data(struct udevice *dev, int channel,
 	unsigned int ch_data;
 
 	amlogic_saradc_clear_fifo(priv);
-	amlogic_saradc_start_sample(priv);
+	ret = amlogic_saradc_start_sample(priv);
+	if (ret)
+		return ret;
 
 	do {
 		ret = amlogic_saradc_channel_raw_data(dev, &from_ch, &ch_data);
@@ -510,6 +539,12 @@ int amlogic_saradc_probe(struct udevice *dev)
 	ret = amlogic_saradc_clk_init(dev);
 	if (ret)
 		return ret;
+
+	if (priv->apply_workaround) {
+		ret = reset_get_bulk(dev, &priv->resets);
+		if (ret)
+			return ret;
+	}
 
 	clk_enable(&priv->clk_gate);
 	udelay(5);
