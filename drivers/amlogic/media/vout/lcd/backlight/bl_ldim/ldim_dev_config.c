@@ -769,6 +769,18 @@ static int ldim_dev_get_config_from_ukey(struct ldim_dev_driver_s *dev_drv)
 	dev_drv->en_gpio_on = *(p + LCD_UKEY_LDIM_DEV_EN_GPIO_ON);
 	dev_drv->en_gpio_off = *(p + LCD_UKEY_LDIM_DEV_EN_GPIO_OFF);
 
+	dev_drv->hw_on_delay =
+		(*(p + LCD_UKEY_LDIM_DEV_ON_DELAY) |
+		((*(p + LCD_UKEY_LDIM_DEV_ON_DELAY + 1)) << 8));
+	dev_drv->hw_off_delay =
+		(*(p + LCD_UKEY_LDIM_DEV_OFF_DELAY) |
+		((*(p + LCD_UKEY_LDIM_DEV_OFF_DELAY + 1)) << 8));
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
+		LDIMPR("hw_on_delay=%dms, hw_off_delay=%dms\n",
+		       dev_drv->hw_on_delay, dev_drv->hw_off_delay);
+	}
+
 	temp = *(p + LCD_UKEY_LDIM_DEV_ERR_GPIO);
 	if (temp >= BL_GPIO_NUM_MAX) {
 		dev_drv->lamp_err_gpio = LCD_GPIO_MAX;
@@ -1061,6 +1073,9 @@ int ldim_dev_get_config_from_json(struct ldim_dev_driver_s *dev_drv)
 		if (dev_drv->lamp_err_gpio < BL_GPIO_NUM_MAX)
 			dev_drv->fault_check = 1;
 
+
+		dev_drv->hw_on_delay = json_get_obj_u32(jsp, child, "hw_on_delay_ms", 500);
+		dev_drv->hw_off_delay = json_get_obj_u32(jsp, child, "hw_off_delay_ms", 0);
 		dev_drv->write_check = json_get_obj_u32(jsp, child, "write_check", 0);
 	}
 
@@ -1320,6 +1335,8 @@ int ldim_dev_get_config_from_ini(struct ldim_dev_driver_s *dev_drv)
 		ldim_gpio_set(dev_drv, dev_drv->lamp_err_gpio, LCD_GPIO_INPUT);
 	}
 
+	dev_drv->hw_on_delay = lcd_ini_get_val(inip, psec, "hw_on_delay", 500);
+	dev_drv->hw_off_delay = lcd_ini_get_val(inip, psec, "hw_off_delay", 0);
 	dev_drv->write_check = lcd_ini_get_val(inip, psec, "write_check", 0);
 
 	dev_drv->dim_max = lcd_ini_get_val(inip, psec, "dim_max", 0);

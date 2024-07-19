@@ -1680,6 +1680,16 @@ static int handle_bl_ldim(struct bl_attr_s *p_attr)
 		ALOGD("%s, bl_ldim_dev_index is (%s)\n", __func__, ini_value);
 	p_attr->ldim.ldim_dev_index = strtoul(ini_value, NULL, 0);
 
+	ini_value = ini_get_string("Backlight_Attr", "on_delay", "0");
+	if (model_debug_flag & DEBUG_BACKLIGHT)
+		ALOGD("%s, on_delay is (%s)\n", __func__, ini_value);
+	p_attr->ldim.hw_on_delay = strtoul(ini_value, NULL, 0);
+
+	ini_value = ini_get_string("Backlight_Attr", "off_delay", "0");
+	if (model_debug_flag & DEBUG_BACKLIGHT)
+		ALOGD("%s, off_delay is (%s)\n", __func__, ini_value);
+	p_attr->ldim.hw_off_delay = strtoul(ini_value, NULL, 0);
+
 	p_attr->ldim.ldim_attr_4 = 0;
 	p_attr->ldim.ldim_attr_5 = 0;
 	p_attr->ldim.ldim_attr_6 = 0;

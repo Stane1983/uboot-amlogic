@@ -791,6 +791,9 @@ static void bl_power_ctrl(struct aml_bl_drv_s *bdrv, int status)
 		if (bconf->power_off_delay > 0)
 			mdelay(bconf->power_off_delay);
 	}
+	if (bconf->bl_hold_on > 0)
+		mdelay(bconf->bl_hold_on);
+
 	BLPR("%s: %d\n", __func__, status);
 }
 

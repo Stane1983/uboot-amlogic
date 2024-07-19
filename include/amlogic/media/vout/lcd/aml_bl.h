@@ -126,6 +126,7 @@ struct bl_config_s {
 	struct bl_pwm_config_s *bl_pwm_combo1;
 	unsigned int pwm_on_delay;
 	unsigned int pwm_off_delay;
+	unsigned int bl_hold_on;
 
 	char gpio_name[BL_GPIO_NUM_MAX][LCD_CPU_GPIO_NAME_MAX];
 	struct lcd_pinmux_ctrl_s *bl_pinmux;

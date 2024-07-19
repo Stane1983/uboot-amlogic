@@ -108,6 +108,9 @@ struct ldim_dev_driver_s {
 	unsigned int init_on_cnt;
 	unsigned int init_off_cnt;
 
+	unsigned int hw_on_delay;
+	unsigned int hw_off_delay;
+
 	struct bl_pwm_config_s ldim_pwm_config;
 	struct bl_pwm_config_s analog_pwm_config;
 	struct ldim_spi_dev_info_s spi_info;

@@ -86,6 +86,7 @@ void bl_config_print(struct aml_bl_drv_s *bdrv)
 	else
 		BLPR("pwr_on_dly  = %d\n", bconf->power_on_delay);
 	BLPR("pwr_off_dly = %d\n\n", bconf->power_off_delay);
+	BLPR("bl_hold_on  = %d\n", bconf->bl_hold_on);
 	switch (bconf->method) {
 	case BL_CTRL_PWM:
 		if (bconf->bl_pwm) {
@@ -904,11 +905,14 @@ static int bl_config_load_from_ukey(char *dt_addr, struct aml_bl_drv_s *bdrv)
 	bconf->power_off_delay = (*(p + LCD_UKEY_BL_OFF_DELAY) |
 		((*(p + LCD_UKEY_BL_OFF_DELAY + 1)) << 8));
 
-	if (bl_header->version == 2)
+	if (bl_header->version == 2) {
 		bconf->en_sequence_reverse = (*(p + LCD_UKEY_BL_CUST_VAL_0) |
 					((*(p + LCD_UKEY_BL_CUST_VAL_0 + 1)) << 8));
-	else
+		bconf->bl_hold_on = (*(p + LCD_UKEY_BL_CUST_VAL_3) |
+					((*(p + LCD_UKEY_BL_CUST_VAL_3 + 1)) << 8));
+	} else {
 		bconf->en_sequence_reverse = 0;
+	}
 
 	BLPR("[%d]: config from ukey: %s, method: %s(%d), en_seq_rev: %d\n",
 	     bdrv->index, bconf->name, bl_method_type_to_str(bconf->method),
@@ -1342,6 +1346,7 @@ static int bl_config_load_from_json(char *dt_addr, struct aml_bl_drv_s *bdrv)
 	//bconf->power_off_delay   = json_get_obj_u32(jsp, child, "bl_off_delay_ms", 0);
 	bconf->pwm_on_delay        = json_get_obj_u32(jsp, child, "pwm_on_delay_ms", 0);
 	bconf->pwm_off_delay       = json_get_obj_u32(jsp, child, "pwm_off_delay_ms", 0);
+	bconf->bl_hold_on          = json_get_obj_u32(jsp, child, "bl_hold_on", 0);
 	bconf->en_sequence_reverse = json_get_obj_u32(jsp, child, "en_sequence_reverse", 0);
 
 	if (bconf->method == BL_CTRL_LOCAL_DIMMING) {
@@ -1482,9 +1487,9 @@ static int bl_config_load_from_ini(char *dt_addr, struct aml_bl_drv_s *bdrv)
 	bconf->power_off_delay = lcd_ini_get_val(inip, psec, "bl_off_delay", 0);
 
 	bconf->en_sequence_reverse = lcd_ini_get_val(inip, psec, "bl_custome_val_0", 0);
-	//val = lcd_ini_get_val(inip, psec, "bl_custome_val_1", 0);
-	//val = lcd_ini_get_val(inip, psec, "bl_custome_val_2", 0);
-	//val = lcd_ini_get_val(inip, psec, "bl_custome_val_3", 0);
+	// bconf->bl_pwm_switch_port = lcd_ini_get_val(inip, psec, "bl_custome_val_1", 0);
+	// bconf->bl_pwm_switch_freq = lcd_ini_get_val(inip, psec, "bl_custome_val_2", 0);
+	bconf->bl_hold_on = lcd_ini_get_val(inip, psec, "bl_custome_val_3", 0);
 	//val = lcd_ini_get_val(inip, psec, "bl_custome_val_4", 0);
 
 	BLPR("[%d]: config from ini: %s, method: %s(%d), en_seq_rev: %d\n",

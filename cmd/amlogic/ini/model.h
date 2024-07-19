@@ -363,6 +363,9 @@ struct bl_ldim_s {
 	unsigned short ldim_attr_7;
 	unsigned short ldim_attr_8;
 	unsigned short ldim_attr_9;
+
+	unsigned int hw_on_delay;
+	unsigned int hw_off_delay;
 };
 
 struct bl_custome_s {

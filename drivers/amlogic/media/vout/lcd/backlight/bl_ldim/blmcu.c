@@ -66,7 +66,7 @@ static int blmcu_hw_init_on(struct ldim_dev_driver_s *dev_drv)
 
 	if (((dev_drv->mcu_dim >> 20) & 0x1) == 0) {
 		/* step 2: delay for internal logic stable */
-		mdelay(500);
+		mdelay(dev_drv->hw_on_delay); // default 500ms
 
 		/* step 3: Generate external VSYNC to VSYNC/PWM pin */
 		ldim_set_duty_pwm(&dev_drv->ldim_pwm_config);
