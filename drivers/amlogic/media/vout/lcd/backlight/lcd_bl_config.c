@@ -1344,6 +1344,7 @@ static int bl_config_load_from_json(char *dt_addr, struct aml_bl_drv_s *bdrv)
 	//bconf->power_off_delay   = json_get_obj_u32(jsp, child, "bl_off_delay_ms", 0);
 	bconf->pwm_on_delay        = json_get_obj_u32(jsp, child, "pwm_on_delay_ms", 0);
 	bconf->pwm_off_delay       = json_get_obj_u32(jsp, child, "pwm_off_delay_ms", 0);
+	bconf->bl_hold_on          = json_get_obj_u32(jsp, child, "bl_hold_on", 0);
 	bconf->en_sequence_reverse = json_get_obj_u32(jsp, child, "en_sequence_reverse", 0);
 
 	if (bconf->method == BL_CTRL_LOCAL_DIMMING) {
