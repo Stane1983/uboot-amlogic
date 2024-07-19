@@ -251,10 +251,6 @@ static void amlogic_saradc_clear_fifo(struct amlogic_saradc *priv)
 static void amlogic_saradc_hw_enable(struct amlogic_saradc *priv)
 {
 	clrsetbits_le32(priv->base + SARADC_REG0,
-			SARADC_REG0_ADC_EN,
-			SARADC_REG0_ADC_EN);
-
-	clrsetbits_le32(priv->base + SARADC_REG0,
 			SARADC_REG0_SAMPLING_ENABLE,
 			SARADC_REG0_SAMPLING_ENABLE);
 
@@ -270,9 +266,6 @@ static void amlogic_saradc_hw_disable(struct amlogic_saradc *priv)
 
 	clrsetbits_le32(priv->base + SARADC_REG0,
 			SARADC_REG0_SAMPLING_ENABLE, 0);
-
-	clrsetbits_le32(priv->base + SARADC_REG0,
-			SARADC_REG0_ADC_EN, 0);
 }
 
 static int amlogic_saradc_set_mode(struct udevice *dev, int ch, unsigned int mode)
@@ -297,8 +290,19 @@ static void amlogic_saradc_enable_channel(struct amlogic_saradc *priv,
 static void amlogic_saradc_start_sample(struct amlogic_saradc *priv)
 {
 	clrsetbits_le32(priv->base + SARADC_REG0,
+			SARADC_REG0_ADC_EN,
+			SARADC_REG0_ADC_EN);
+	udelay(20);
+
+	clrsetbits_le32(priv->base + SARADC_REG0,
 			SARADC_REG0_SAMPLE_START,
 			SARADC_REG0_SAMPLE_START);
+}
+
+static void amlogic_saradc_stop_sample(struct amlogic_saradc *priv)
+{
+	clrsetbits_le32(priv->base + SARADC_REG0,
+			SARADC_REG0_ADC_EN, 0);
 }
 
 static int amlogic_saradc_start_channel(struct udevice *dev, int channel)
@@ -306,10 +310,6 @@ static int amlogic_saradc_start_channel(struct udevice *dev, int channel)
 	struct amlogic_saradc *priv = dev_get_priv(dev);
 
 	amlogic_saradc_enable_channel(priv, channel, 0);
-
-	amlogic_saradc_clear_fifo(priv);
-
-	amlogic_saradc_start_sample(priv);
 
 	return 0;
 }
@@ -375,45 +375,17 @@ static inline int amlogic_saradc_channel_raw_data(struct udevice *dev, int *from
 	return 0;
 }
 
-static int amlogic_saradc_channel_data(struct udevice *dev, int channel,
-				       unsigned int *data)
-{
-	struct amlogic_saradc *priv = dev_get_priv(dev);
-	int ret;
-	int from_ch;
-	unsigned int ch_data;
-	short signed_data;
-	unsigned int mask;
-
-	ret = amlogic_saradc_channel_raw_data(dev, &from_ch, &ch_data);
-	if (ret)
-		return ret;
-
-	if (channel != from_ch) {
-		dev_err(dev, "channel mismatch: required channel is %d, actual channel is %d\n",
-			channel, from_ch);
-		return -EINVAL;
-	}
-
-	/* Calibration data */
-	signed_data = (short)ch_data;
-	signed_data += priv->info_offset;
-	signed_data = signed_data < 0 ? 0 : signed_data;
-	signed_data = signed_data * priv->info_scale / 1000000;
-	mask = BIT(priv->out_data_width) - 1;
-	signed_data = signed_data > mask ? mask : signed_data;
-	*data = signed_data;
-
-	return 0;
-}
-
 static int amlogic_saradc_read_raw_data(struct udevice *dev, int channel,
 					unsigned int *data)
 {
+	struct amlogic_saradc *priv = dev_get_priv(dev);
 	int ret;
 	unsigned int timeout_us = 30000;
 	int from_ch;
 	unsigned int ch_data;
+
+	amlogic_saradc_clear_fifo(priv);
+	amlogic_saradc_start_sample(priv);
 
 	do {
 		ret = amlogic_saradc_channel_raw_data(dev, &from_ch, &ch_data);
@@ -421,6 +393,8 @@ static int amlogic_saradc_read_raw_data(struct udevice *dev, int channel,
 			break;
 		udelay(1);
 	} while (timeout_us--);
+
+	amlogic_saradc_stop_sample(priv);
 
 	if (ret)
 		return ret;
@@ -432,6 +406,31 @@ static int amlogic_saradc_read_raw_data(struct udevice *dev, int channel,
 	}
 
 	*data = ch_data;
+
+	return 0;
+}
+
+static int amlogic_saradc_channel_data(struct udevice *dev, int channel,
+				       unsigned int *data)
+{
+	struct amlogic_saradc *priv = dev_get_priv(dev);
+	int ret;
+	unsigned int ch_data;
+	short signed_data;
+	unsigned int mask;
+
+	ret = amlogic_saradc_read_raw_data(dev, channel, &ch_data);
+	if (ret)
+		return -EINVAL;
+
+	/* Calibration data */
+	signed_data = (short)ch_data;
+	signed_data += priv->info_offset;
+	signed_data = signed_data < 0 ? 0 : signed_data;
+	signed_data = signed_data * priv->info_scale / 1000000;
+	mask = BIT(priv->out_data_width) - 1;
+	signed_data = signed_data > mask ? mask : signed_data;
+	*data = signed_data;
 
 	return 0;
 }
