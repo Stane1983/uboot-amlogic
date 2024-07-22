@@ -270,7 +270,7 @@ enum hdmi_vic hdmitx_find_brr_vic(enum hdmi_vic vic)
 		brr_timing = hdmitx21_gettiming_from_vic(brr_list[i]);
 		if (!brr_timing)
 			brr_vic = HDMI_UNKNOWN;
-		if (vic_timing->h_active == brr_timing->h_active &&
+		else if (vic_timing->h_active == brr_timing->h_active &&
 			vic_timing->v_active == brr_timing->v_active)
 			brr_vic = brr_list[i];
 	}

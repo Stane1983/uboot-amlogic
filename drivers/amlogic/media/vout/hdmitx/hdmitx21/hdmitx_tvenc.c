@@ -30,6 +30,8 @@ static void config_tv_enc_calc(struct hdmitx_dev *hdev, enum hdmi_vic vic)
 	bool y420_mode = 0;
 	int hpara_div = 1;
 
+	if (!hdev || !hdev->para)
+		return;
 	if (hdev->para && hdev->para->cs == HDMI_COLORSPACE_YUV420)
 		y420_mode = 1;
 	tp = hdmitx21_gettiming_from_vic(vic);

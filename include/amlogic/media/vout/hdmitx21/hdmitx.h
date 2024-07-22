@@ -10,7 +10,6 @@
 #include "hdmitx_reg.h"
 #include "mach_reg.h"
 #include <command.h>
-#include "../../../../../drivers/amlogic/media/vout/hdmitx/hdmitx_common/hdmitx_check_valid.h"
 
 int hdmitx_likely_frac_rate_mode(char *m);
 unsigned int hdmi_outputmode_check(char *mode, unsigned int frac);

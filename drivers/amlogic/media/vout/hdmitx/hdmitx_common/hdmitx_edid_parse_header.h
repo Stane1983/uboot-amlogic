@@ -18,6 +18,6 @@
 #include "../hdmitx21/hdmitx_drv.h"
 #include "hdmitx_log.h"
 #include <amlogic/media/vout/dsc.h>
-
+#include "hdmitx_check_valid.h"
 #endif
 

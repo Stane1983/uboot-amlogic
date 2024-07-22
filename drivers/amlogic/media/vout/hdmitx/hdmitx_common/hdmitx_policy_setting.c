@@ -15,6 +15,7 @@
 #include <amlogic/media/vout/hdmitx/hdmitx.h>
 #else
 #include <amlogic/media/vout/hdmitx21/hdmitx.h>
+#include "hdmitx_check_valid.h"
 #endif
 #include <amlogic/media/dv/dolby_vision.h>
 #include <cpu.h>

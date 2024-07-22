@@ -18,6 +18,7 @@
 #include <amlogic/media/vout/aml_vinfo.h>
 #include <linux/arm-smccc.h>
 #include <linux/compat.h>
+#include "../../drivers/amlogic/media/vout/hdmitx/hdmitx_common/hdmitx_check_valid.h"
 #include "../../drivers/amlogic/media/vout/hdmitx/hdmitx_common/hdmitx_policy_setting.h"
 
 static unsigned char edid_raw_buf[512] = {0};

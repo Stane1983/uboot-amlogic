@@ -188,7 +188,6 @@ int hdmitx_format_para_init(struct hdmi_format_para *para,
 
 int hdmitx_format_para_print(struct hdmi_format_para *para, char *log_buf)
 {
-	char buf[256];
 	const char *conf;
 	int i = 0;
 
@@ -229,9 +228,7 @@ int hdmitx_format_para_print(struct hdmi_format_para *para, char *log_buf)
 	}
 
 	if (log_buf)
-		printf(log_buf, "%s", buf);
-	else
-		printf("%s", buf);
+		printf("%s", log_buf);
 
 	return 0;
 }
