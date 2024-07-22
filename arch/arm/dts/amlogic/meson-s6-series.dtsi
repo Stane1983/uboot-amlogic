@@ -216,12 +216,6 @@
 				status = "disabled";
 			};
 
-			reset: reset-controller@1000 {
-				compatible = "amlogic,meson-gx-reset", "amlogic,meson-gxbb-reset";
-				reg = <0x0 0x01000 0x0 0x1000>;
-				#reset-cells = <1>;
-			};
-
 			uart_c: serial@22000 {
 				compatible = "amlogic,meson-uart";
 				reg = <0x0 0x22000 0x0 0x18>;
@@ -405,6 +399,12 @@
 			#address-cells = <2>;
 			#size-cells = <2>;
 			ranges = <0x0 0x0 0x0 0xfe000000 0x0 0x1000000>;
+
+			reset: reset-controller@2000 {
+				compatible = "amlogic,meson-s7d-reset";
+				reg = <0x0 0x2000 0x0 0x98>;
+				#reset-cells = <1>;
+			};
 
 			watchdog {
 				compatible = "amlogic,meson-sc2-wdt";

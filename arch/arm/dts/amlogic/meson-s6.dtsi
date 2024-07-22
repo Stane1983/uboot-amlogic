@@ -5,7 +5,7 @@
 
 #include "amlogic/meson-s6-series.dtsi"
 #include <dt-bindings/amlogic/gpio/meson-s6-gpio.h>
-#include <dt-bindings/reset/amlogic,meson-gxbb-reset.h>
+#include <dt-bindings/amlogic/reset/amlogic,meson-s7d-reset.h>
 #include <dt-bindings/amlogic/pwm/pwm.h>
 #include <dt-bindings/amlogic/pwm/meson.h>
 
