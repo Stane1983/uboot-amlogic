@@ -76,8 +76,8 @@
 	"dv_fw_addr=0xa00000\0"\
 	"otg_device=1\0" \
 	"panel_type=lcd_1\0" \
-	"outputmode=1080p60hz\0" \
-	"hdmimode=1080p60hz\0" \
+	"outputmode=panel\0" \
+	"connector0_type=LCD-A\0" \
 	"colorattribute=444,8bit\0"\
 	"cvbsmode=576cvbs\0" \
 	"display_width=1920\0" \
@@ -137,6 +137,7 @@
 		"get_bootloaderversion;" \
 		"setenv bootargs ${initargs} ${fs_type} otg_device=${otg_device} "\
 			"logo=${display_layer},loaded,${fb_addr} vout=${outputmode},enable panel_type=${panel_type} "\
+			"connector0_type=${connector0_type} lcd_ctrl=${lcd_ctrl} lcd_debug=${lcd_debug} "\
 			"hdmitx=${cecconfig},${colorattribute} hdmimode=${hdmimode} "\
 			"hdmichecksum=${hdmichecksum} dolby_vision_on=${dolby_vision_on} " \
 			"hdr_policy=${hdr_policy} hdr_priority=${hdr_priority} "\

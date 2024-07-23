@@ -45,6 +45,7 @@ static struct cntor_name2val_s vout_supported_cnt_list[] = {
 	{.name = "MIPI-B",   .val = 0x121},
 	{.name = "EDP-A",    .val = 0x130},
 	{.name = "EDP-B",    .val = 0x131},
+	{.name = "LCD-A",    .val = 0x1f0},
 	{.name = "HDMI-A-A", .val = 0x300},
 	{.name = "HDMI-A-B", .val = 0x301},
 	{.name = "HDMI-A-C", .val = 0x302},
@@ -99,7 +100,7 @@ void vout_legacy_panel_mode_support(unsigned char vout_index)
 	char opt_mode_name[20] = "outputmode\0\0";
 	char legacy_lcd_mode[3][8] = {"panel", "panel1", "panel2"};
 	unsigned char i, legacy_mode_find = 0xff, name_idx, lcd_type;
-	char *connector_name_list[4] = {"LVDS", "VBYONE", "MIPI", "EDP"};
+	char *connector_name_list[5] = {"LVDS", "VBYONE", "MIPI", "EDP", "LCD"};
 	struct aml_lcd_drv_s *pdrv;
 	char cnt_buf[12], cmd_buf[64];
 
@@ -132,7 +133,7 @@ void vout_legacy_panel_mode_support(unsigned char vout_index)
 	else if (lcd_type == LCD_EDP)
 		name_idx = 3;
 	else
-		return;
+		name_idx = 4;
 
 	sprintf(cnt_buf, "%s-%c", connector_name_list[name_idx], 'A' + legacy_mode_find);
 
@@ -672,7 +673,25 @@ static const struct vout_set_s vout_sets_dft[] = {
 		.field_height      = 1280,
 		.viu_color_fmt     = VPP_CM_YUV,
 		.viu_mux           = VIU_MUX_ENCP,
-	}
+	},
+	{ /* 1024x600p60hz */
+		.name              = "600p60hz",
+		.mode              = VMODE_1024x600p60hz,
+		.width             = 1024,
+		.height            = 600,
+		.field_height      = 600,
+		.viu_color_fmt     = VPP_CM_RGB,
+		.viu_mux           = VIU_MUX_ENCL,
+	},
+	{ /* 1024x600p60hz */
+		.name              = "1200x1920p60hz",
+		.mode              = VMODE_1200x1920p60hz,
+		.width             = 1200,
+		.height            = 1920,
+		.field_height      = 1920,
+		.viu_color_fmt     = VPP_CM_RGB,
+		.viu_mux           = VIU_MUX_ENCL,
+	},
 };
 
 static struct vinfo_s vout_info = {
