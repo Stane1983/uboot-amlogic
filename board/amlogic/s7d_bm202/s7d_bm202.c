@@ -156,6 +156,7 @@ void set_usb_status(void) {
 	return;
 }
 
+extern void set_usb_power_off(void);
 int board_init(void)
 {
 	printf("board init\n");
@@ -196,6 +197,7 @@ int board_init(void)
 #ifdef CONFIG_AMLOGIC_AMFC
 	amfc_init();
 #endif
+	set_usb_power_off();
 	return 0;
 }
 

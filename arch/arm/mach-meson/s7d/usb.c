@@ -289,6 +289,16 @@ int usb2_phy_tuning(uint32_t phy2_pll_base, int port)
 	return 0;
 }
 
+void set_usb_power_off(void)
+{
+	unsigned int val;
+	// only off the phy21 now.
+	printf("set s7d usb phy21 off.\n");
+	val = readl(RESETCTRL_RESET0_LEVEL);
+	val &= ~(1 << PHY21_RESET_LEVEL_BIT);
+	writel(val, RESETCTRL_RESET0_LEVEL);
+}
+
 /**************************************************************/
 /*           device mode config                               */
 /**************************************************************/

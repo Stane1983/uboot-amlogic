@@ -14,7 +14,7 @@
 
 	cvbsout {
 		compatible = "amlogic, cvbsout-s7d";
-		status = "okay";
+		status = "disabled";
 
 		/* performance: reg_address, reg_value */
 		/* s7d */
@@ -58,7 +58,7 @@
 };
 
 &ethmac {
-	status = "okay";
+	status = "disabled";
 	internal_phy = <1>;
 	mc_val = <0x1804>;
 	/*mc_val = <0x1621>;*/
