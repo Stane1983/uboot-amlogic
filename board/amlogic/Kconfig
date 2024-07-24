@@ -235,28 +235,35 @@ config BL2E_64K
 	bool "64KB"
 	help
 		This config enable 64KB select of BL2E size
-		BL2E size must be one of BL2E_64K/BL2E_128K/
+		BL2E size must be one of BL2E_64K/BL2E_96K/BL2E_128K/
+		BL2E_256K/BL2E_1024K
+
+config BL2E_96K
+	bool "96KB"
+	help
+		This config enable 96KB select of BL2E size
+		BL2E size must be one of BL2E_64K/BL2E_96K/BL2E_128K/
 		BL2E_256K/BL2E_1024K
 
 config BL2E_128K
 	bool "128KB"
 	help
 		This config enable 128KB select of BL2E size
-		BL2E size must be one of BL2E_64K/BL2E_128K/
+		BL2E size must be one of BL2E_64K/BL2E_96K/BL2E_128K/
 		BL2E_256K/BL2E_1024K
 
 config BL2E_256K
 	bool "256KB"
 	help
 		This config enable 256KB select of BL2E size
-		BL2E size must be one of BL2E_64K/BL2E_128K/
+		BL2E size must be one of BL2E_64K/BL2E_96K/BL2E_128K/
 		BL2E_256K/BL2E_1024K
 
 config BL2E_1024K
 	bool "1024KB"
 	help
 		This config enable 1024KB select of BL2E size
-		BL2E size must be one of BL2E_64K/BL2E_128K/
+		BL2E size must be one of BL2E_64K/BL2E_96K/BL2E_128K/
 		BL2E_256K/BL2E_1024K
 
 endchoice
@@ -264,6 +271,7 @@ endchoice
 config BL2E_PAYLOAD_SIZE
 	int
 	default   65536 if BL2E_64K
+	default   98304 if BL2E_96K
 	default  131072 if BL2E_128K
 	default  262144 if BL2E_256K
 	default 1048576 if BL2E_1024K
