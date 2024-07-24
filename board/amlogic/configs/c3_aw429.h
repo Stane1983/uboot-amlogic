@@ -397,6 +397,41 @@
 #error CONFIG_SPI_NAND/CONFIG_MTD_SPI_NAND/CONFIG_MESON_NFC can not support at the sametime;
 #endif
 
+/* mtd advance mode layout board config */
+#ifdef CONFIG_TEE_TYPE
+	#if defined(CONFIG_BL33_SIZE_SMALL)
+		#define BOARD_DEVFIP_SIZE   0x105000		// BL33_SIZE is "s", size +64k
+	#elif defined(CONFIG_BL33_SIZE_MEDIUM)
+		#define BOARD_DEVFIP_SIZE   0x115000		// BL33_SIZE is "m", size +128k
+	#else
+		#define BOARD_DEVFIP_SIZE	0xf5000			// BL33_SIZE default "xs"
+	#endif
+#else
+	#if defined(CONFIG_BL33_SIZE_SMALL)
+		#define BOARD_DEVFIP_SIZE   0x86000		// BL33_SIZE is "s", size +64k
+	#elif defined(CONFIG_BL33_SIZE_MEDIUM)
+		#define BOARD_DEVFIP_SIZE   0x96000		// BL33_SIZE is "m", size +128k
+	#else
+		#define BOARD_DEVFIP_SIZE	0x76000		// BL33_SIZE default "xs"
+	#endif
+#endif
+
+#define BOARD_BL2_BACKUPS 4
+#define BOARD_BL2EX_BACKUPS	4
+#define BOARD_DEVFIP_BACKUPS	BOARD_BL2EX_BACKUPS
+#define BOARD_DDRFIP_SIZE	0
+#define BOARD_SNOR_DDR_PARAM_SIZE	4096
+
+#define BOARD_NAND_RSV_CONFIG
+#ifdef BOARD_NAND_RSV_CONFIG
+#define	NAND_RSV_BLOCK_NUM	24
+#define	NAND_GAP_BLOCK_NUM	4
+#define	NAND_BBT_BLOCK_NUM	4
+#define	NAND_ENV_BLOCK_NUM	4
+#define	NAND_KEY_BLOCK_NUM	4
+#define	NAND_DTB_BLOCK_NUM	4
+#define	NAND_DDR_BLOCK_NUM	4
+#endif
 /* #define		CONFIG_AML_SD_EMMC 1 */
 #ifdef CONFIG_AML_SD_EMMC
 	#define		CONFIG_GENERIC_MMC 1

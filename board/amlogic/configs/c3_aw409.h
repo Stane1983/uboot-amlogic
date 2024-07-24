@@ -288,10 +288,27 @@
 #endif
 
 /* mtd advance mode layout board config */
-#define BOARD_DEVFIP_SIZE	0x76000
+#ifdef CONFIG_TEE_TYPE
+	#if defined(CONFIG_BL33_SIZE_SMALL)
+		#define BOARD_DEVFIP_SIZE   0xff000		// BL33_SIZE is "s", size +64k
+	#elif defined(CONFIG_BL33_SIZE_MEDIUM)
+		#define BOARD_DEVFIP_SIZE   0x10f000		// BL33_SIZE is "m", size +128k
+	#else
+		#define BOARD_DEVFIP_SIZE	0xef000			// BL33_SIZE default "xs"
+	#endif
+#else
+	#if defined(CONFIG_BL33_SIZE_SMALL)
+		#define BOARD_DEVFIP_SIZE   0x80000		// BL33_SIZE is "s", size +64k
+	#elif defined(CONFIG_BL33_SIZE_MEDIUM)
+		#define BOARD_DEVFIP_SIZE   0x90000		// BL33_SIZE is "m", size +128k
+	#else
+		#define BOARD_DEVFIP_SIZE	0x70000		// BL33_SIZE default "xs"
+	#endif
+#endif
+#define BOARD_BL2_BACKUPS 4
 #define BOARD_BL2EX_BACKUPS	4
+#define BOARD_DEVFIP_BACKUPS	BOARD_BL2EX_BACKUPS
 #define BOARD_DDRFIP_SIZE	0
-#define BOARD_DEVFIP_BACKUPS	2
 #define BOARD_SNOR_DDR_PARAM_SIZE	4096
 
 #define BOARD_NAND_RSV_CONFIG
