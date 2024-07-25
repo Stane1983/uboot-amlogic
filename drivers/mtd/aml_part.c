@@ -90,6 +90,17 @@ uint64_t mtd_get_normal_part_offset(struct mtd_info *mtd)
 	return mtd_get_tpl_start(mtd) + mtd_get_tpl_size(mtd);
 }
 
+static uint32_t mtd_get_invalid_boot_parts(void)
+{
+	int i, cnt = 0;
+
+	for (i = 0; i <= BOOT_AREA_DEVFIP; i++)
+		if (!g_ssp.boot_entry[i].size)
+			cnt++;
+
+	return cnt;
+}
+
 int mtd_get_boot_parts_num(void)
 {
 	if ((store_boot_layout_is_discrete_all() ||
@@ -100,7 +111,7 @@ int mtd_get_boot_parts_num(void)
 		 * uboot set boot layout to discrete bl2, but bl2 pass boot layout by
 		 * boot_layout_compat
 		 */
-		return 5;
+		return 5 - mtd_get_invalid_boot_parts();
 	else
 		return 2;
 }
@@ -113,7 +124,7 @@ int mtd_get_boot_partition(struct mtd_info *mtd,
 	struct mtd_partition boot_parts[MAX_BOOT_AREA_ENTRIES];
 	uint32_t page_size = g_ssp.sip.nsp.page_size;
 	uint64_t tpl_start, tpl_size;
-	int i;
+	int i, j;
 
 	if (index + cnt > MAX_BOOT_AREA_ENTRIES)
 		return -1;
@@ -131,7 +142,8 @@ int mtd_get_boot_partition(struct mtd_info *mtd,
 		store_boot_layout_is_discrete_default()) {
 		set_part_info(&boot_parts[0], BOOT_LOADER, 0,
 				BOOT_TOTAL_PAGES * (uint64_t)page_size);
-		for (i = BOOT_AREA_BL2E; i <= BOOT_AREA_DEVFIP; i++) {
+		for (i = BOOT_AREA_BL2E, j = BOOT_AREA_BL2E;
+				i <= BOOT_AREA_DEVFIP; i++) {
 			uint64_t part_size = g_ssp.boot_entry[i].size;
 
 			if (i == BOOT_AREA_DEVFIP)
@@ -139,8 +151,11 @@ int mtd_get_boot_partition(struct mtd_info *mtd,
 			else
 				part_size *= g_ssp.boot_backups;
 
-			set_part_info(&boot_parts[i], part_name[i],
-				 g_ssp.boot_entry[i].offset, part_size);
+			if (part_size) {
+				set_part_info(&boot_parts[j], part_name[i],
+					 g_ssp.boot_entry[i].offset, part_size);
+				j++;
+			}
 		}
 	}
 
