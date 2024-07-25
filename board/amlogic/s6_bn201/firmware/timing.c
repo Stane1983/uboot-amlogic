@@ -23,7 +23,7 @@
 board_clk_set_t __board_clk_setting
 __attribute__ ((section(".clk_param"))) = {
 	/* clock settings for bl2 */
-	.cpu_clk	= CPU_CLK / 24 * 24,
+	.cpu_clk	= CPU_CLK / 12 * 12,
 #ifdef CONFIG_PXP_DDR
 	.pxp = 1,
 #else
