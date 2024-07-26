@@ -21,6 +21,10 @@
 #include <amlogic/cpu_id.h>
 #include "../include/v3_tool_def.h"
 #include <asm/arch/efuse.h>
+#if defined(CONFIG_AML_ANTIROLLBACK) || defined(CONFIG_AML_AVB2_ANTIROLLBACK)
+#include <amlogic/anti-rollback.h>
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 static void cb_aml_media_write(struct usb_ep *ep, struct usb_request *req);
 static void cb_aml_media_read(struct usb_ep *outep, struct usb_request *outreq);
@@ -929,6 +933,17 @@ static void cb_oem_cmd(struct usb_ep *ep, struct usb_request *req)
 		int gptImgSz = (_memDtbImg[1].hadDown == 0x1b8e) ? _memDtbImg[1].imgSize : 0;
 
 		ret = v3tool_storage_init(toErase, dtbImgSz, gptImgSz);
+#if defined(CONFIG_AML_ANTIROLLBACK) || defined(CONFIG_AML_AVB2_ANTIROLLBACK)
+		if (!ret && toErase > 0) {
+			if (is_avb_arb_available()) {
+				ret = !avb_lock();
+				if (ret)
+					printf("lock failed!\n");
+				else
+					printf("lock success!\n");
+			}
+		}
+#endif
 	} else if( !strcmp("save_setting", argv[0]) ){
 #if defined(CONFIG_CMD_SAVEENV) && !defined(CONFIG_ENV_IS_NOWHERE)
 		env_set("firstboot", "1");
