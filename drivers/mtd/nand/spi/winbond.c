@@ -107,7 +107,7 @@ static int w25m02gv_select_target(struct spinand_device *spinand,
 }
 
 static const struct spinand_info winbond_spinand_table[] = {
-	SPINAND_INFO("W25M02GV", 0xAB,
+	SPINAND_INFO_DEVID_DOUBLE("W25M02GV", 0xAB, 0x21,
 		     NAND_MEMORG(1, 2048, 64, 64, 1024, 1, 1, 2),
 		     NAND_ECCREQ(1, 512),
 		     SPINAND_INFO_OP_VARIANTS(&read_cache_variants,
@@ -116,7 +116,7 @@ static const struct spinand_info winbond_spinand_table[] = {
 		     0,
 		     SPINAND_ECCINFO(&w25m02gv_ooblayout, NULL),
 		     SPINAND_SELECT_TARGET(w25m02gv_select_target)),
-	SPINAND_INFO("W25N04KW", 0xBA,
+	SPINAND_INFO_DEVID_DOUBLE("W25N04KW", 0xBA, 0x23,
 		     NAND_MEMORG(1, 2048, 128, 64, 4096, 2, 1, 1),
 		     NAND_ECCREQ(1, 512),
 		     SPINAND_INFO_OP_VARIANTS(&read_cache_variants,
@@ -140,7 +140,7 @@ static int winbond_spinand_detect(struct spinand_device *spinand)
 		return 0;
 
 	ret = spinand_match_and_init(spinand, winbond_spinand_table,
-				     ARRAY_SIZE(winbond_spinand_table), id[1]);
+				     ARRAY_SIZE(winbond_spinand_table), id + 1, 1);
 	if (ret)
 		return ret;
 

@@ -111,7 +111,7 @@ static int dosilicon_spinand_detect(struct spinand_device *spinand)
 
 	ret = spinand_match_and_init(spinand, dosilicon_spinand_table,
 				     ARRAY_SIZE(dosilicon_spinand_table),
-				     id[1]);
+				     id + 1, 0);
 	if (ret)
 		return ret;
 

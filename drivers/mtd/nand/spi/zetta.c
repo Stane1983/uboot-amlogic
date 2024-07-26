@@ -120,7 +120,7 @@ static int zetta_spinand_detect(struct spinand_device *spinand)
 
 	ret = spinand_match_and_init(spinand, zetta_spinand_table,
 				     ARRAY_SIZE(zetta_spinand_table),
-				     id[1]);
+				     id + 1, 0);
 	if (ret)
 		return ret;
 
