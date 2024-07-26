@@ -569,4 +569,7 @@ void aml_nand_set_onfi_features(struct aml_nand_chip *aml_chip,
 	uint8_t *buf, int addr);
 uint8_t aml_nand_get_onfi_features(struct aml_nand_chip *aml_chip,
 	uint8_t *buf, int addr);
+
+struct mtd_partition *get_aml_mtd_partition(void);
+int get_aml_partition_count(void);
 #endif

@@ -48,35 +48,12 @@ struct nand_startup_parameter {
 	int layout_reserve_size;
 	int pages_per_block;
 	int setup_data;
-	/* */
-	int page0_disable;
+	short page0_disable;
+	short boot_layout_compat;
 };
 
-typedef struct boot_area_entry {
-    /* name */
-    char name[11];
-    /* index */
-    uint8_t idx;
-    uint64_t offset;
-    uint64_t size;
-} boot_area_entry_t;
-
-struct boot_layout {
-    boot_area_entry_t *boot_entry;
-};
-
-struct emmc_startup_parameter {
-	//sd_emmc_setup_t setup;
-};
-
-struct spi_nand_startup_parameter {
-	uint32_t pagesize;
-	uint32_t pages_per_eraseblock;
-	uint32_t eraseblocks_per_lun;
-	uint32_t planes_per_lun;
-	uint32_t luns_per_target;
-	uint32_t ntargets;
-	int layout_reserve_size;
+union storage_independent_parameter {
+	struct nand_startup_parameter nsp;
 };
 
 struct storage_boot_entry {
@@ -84,19 +61,33 @@ struct storage_boot_entry {
 	uint32_t size;
 };
 
-union storage_independent_parameter {
-	struct nand_startup_parameter nsp;
-	struct emmc_startup_parameter esp;
-	struct spi_nand_startup_parameter snasp;
+enum BOOT_LAYOUT_VERS {
+	BOOT_DISCRETE_DEFAULT = 0,
+	BOOT_DISCRETE_ALL,
+	BOOT_DISCRETE_BL2,
+	BOOT_DISCRETE_MAX,
 };
 
 struct storage_startup_parameter {
 	uint8_t boot_device;
 	uint8_t	boot_seq;
 	uint8_t	boot_backups;
-	uint8_t reserved;
+	unsigned char boot_layout;
 	struct storage_boot_entry boot_entry[MAX_BOOT_AREA_ENTRIES];
 	union storage_independent_parameter sip;
+};
+
+extern struct storage_startup_parameter g_ssp;
+
+typedef struct boot_area_entry {
+	char name[11];
+	uint8_t idx;
+	uint64_t offset;
+	uint64_t size;
+} boot_area_entry_t;
+
+struct boot_layout {
+	boot_area_entry_t *boot_entry;
 };
 
 struct storage_info_t {
@@ -171,6 +162,25 @@ struct device_node_t {
 #define STORE_SCRUB			BIT(0)
 #define STORE_ERASE_DATA		BIT(1)
 #define STORE_ERASE_RSV			BIT(2)
+
+static inline bool store_boot_layout_is_discrete_default(void)
+{
+	return (BOOTLOADER_MODE_ADVANCE_INIT &&
+			g_ssp.sip.nsp.boot_layout_compat == BOOT_DISCRETE_DEFAULT);
+}
+
+static inline bool store_boot_layout_is_discrete_all(void)
+{
+	return (BOOTLOADER_MODE_ADVANCE_INIT &&
+			g_ssp.sip.nsp.boot_layout_compat == BOOT_DISCRETE_ALL);
+}
+
+static inline bool store_boot_layout_is_discrete_bl2(void)
+{
+	return (BOOTLOADER_MODE_ADVANCE_INIT &&
+			g_ssp.sip.nsp.boot_layout_compat == BOOT_DISCRETE_BL2);
+}
+
 /**
  * @usage: init all the valid storage device
  *
