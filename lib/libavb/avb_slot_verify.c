@@ -510,6 +510,9 @@ static AvbSlotVerifyResult load_requested_partitions(
 		if (io_ret == AVB_IO_RESULT_ERROR_OOM) {
 			ret = AVB_SLOT_VERIFY_RESULT_ERROR_OOM;
 			goto out;
+		} else if (io_ret == AVB_IO_RESULT_ERROR_NO_SUCH_PARTITION) {
+			ret = AVB_SLOT_VERIFY_RESULT_OK;
+			goto out;
 		} else if (io_ret != AVB_IO_RESULT_OK) {
 			avb_errorv(part_name, ": Error determining partition size.\n", NULL);
 			ret = AVB_SLOT_VERIFY_RESULT_ERROR_IO;
