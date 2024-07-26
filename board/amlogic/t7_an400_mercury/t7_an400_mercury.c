@@ -620,6 +620,9 @@ void board_power_domain_on(void)
 	pwr_ctrl_psci_smc(PM_HDMIRX, PWR_ON);
 	// spicc1
 	//pwr_ctrl_psci_smc(PM_SPICC1, PWR_ON);
+
+	//adla nn
+	pwr_ctrl_psci_smc(PM_NNA_TOP, PWR_ON);
 }
 
 int board_late_init(void)
