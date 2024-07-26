@@ -607,7 +607,7 @@ config DDRFW_TYPE
 
 config CHIPSET_NAME
 	string "T6D CHIPSET NAME"
-	default ""
+	default "t950d5"
 
 config CHIPSET_VARIANT
 	string "T6D CHIPSET VARIANT"
@@ -617,10 +617,6 @@ config AMLOGIC_KEY_TYPE
 	string "T6D AMLOGIC KEY TYPE"
 	default "dev-keys"
 
-config BL30_SELECT
-	string "T6D BL30 board config"
-	default "t6d_skt"
-
 choice
 	prompt "T6D Board"
 
@@ -629,11 +625,31 @@ config T6D_SKT
 	select TARGET_T6D_SKT
 	help
 		Select T6D SKT config
+
+config T6D_BR301
+	bool "T6D_BR301"
+	select TARGET_T6D_BR301
+	help
+		Select T6D BR301 config
+
+config T6D_BR309
+	bool "T6D_BR309"
+	select TARGET_T6D_BR309
+	help
+		Select T6D BR309 config
 endchoice
 
 config TARGET_T6D_SKT
 	bool "T6D SKT board"
 	depends on T6D_SKT
+
+config TARGET_T6D_BR301
+	bool "T6D BR301 board"
+	depends on T6D_BR301
+
+config TARGET_T6D_BR309
+	bool "T6D BR309 board"
+	depends on T6D_BR309
 
 endif
 
@@ -909,6 +925,10 @@ source "board/amlogic/s1a_bg209/Kconfig"
 source "board/amlogic/s1a_bg209_s805c1eng/Kconfig"
 
 source "board/amlogic/t6d_skt/Kconfig"
+
+source "board/amlogic/t6d_br301/Kconfig"
+
+source "board/amlogic/t6d_br309/Kconfig"
 
 source "board/amlogic/t5m_ay301/Kconfig"
 
