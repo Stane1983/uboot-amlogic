@@ -3275,7 +3275,7 @@ int parse_string_outer(const char *s, int flag)
 	if (!*s)
 		return 0;
 #ifdef CONFIG_ARMV8_MULTIENTRY
-	if (lock_holder != get_core_id()) {
+	if (lock_holder != get_core_id() && (gd->flags & GD_FLG_SMP)) {
 		spin_lock(&cmd_lock);
 		lock_holder = get_core_id();
 	}
