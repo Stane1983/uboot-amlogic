@@ -332,6 +332,15 @@ static int storage_boot_layout_general_setting(struct boot_layout *boot_layout,
 		}
 	}
 
+	/* devfip size (BOARD_DEVFIP_SIZE) maybe not align block size,
+	 * so we need to resize.
+	 */
+	if (store_boot_layout_is_discrete_bl2()) {
+		STORAGE_ROUND_UP_IF_UNALIGN(boot_entry[BOOT_AREA_DEVFIP].size,
+								current->info.erase_unit);
+		ssp->boot_entry[BOOT_AREA_DEVFIP].size = boot_entry[BOOT_AREA_DEVFIP].size;
+	}
+
 	return 0;
 }
 
