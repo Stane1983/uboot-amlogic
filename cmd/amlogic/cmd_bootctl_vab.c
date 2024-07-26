@@ -620,17 +620,15 @@ static void set_ddr_size(void)
 
 static int is_f2fs_by_name(char *name)
 {
-	if (store_get_type() != BOOT_EMMC)
-		return -1;
-
 	int ret = -1;
+#ifdef CONFIG_AML_SD_EMMC
 	struct partitions *partition = NULL;
 
 	partition = find_mmc_partition_by_name(name);
 	if (!partition)
 		return ret;
-
 	ret = (partition->mask_flags >> 12) & 0x1;
+#endif
 
 	return ret;
 }
@@ -643,9 +641,7 @@ int check_mergestatus(const char *filename)
 	if (!filename)
 		return -1;
 
-	if (store_get_type() != BOOT_EMMC)
-		return -1;
-
+#ifdef CONFIG_AML_SD_EMMC
 	int part_no = -1;
 	char cmd[256] = {0};
 
@@ -672,7 +668,7 @@ int check_mergestatus(const char *filename)
 
 	if (pData[1] == Initiated || pData[1] == Unverified)
 		return 1;
-
+#endif
 	return 0;
 }
 
@@ -1013,6 +1009,7 @@ static int do_SetUpdateTries(
 	int ret = -1;
 	bool nocs_mode = false;
 	int update_flag = 0;
+	int success_flag = -1;
 	int merge_ret = -1;
 	char *rebootmode = env_get("reboot_mode");
 
@@ -1036,20 +1033,24 @@ static int do_SetUpdateTries(
 
 	if (slot == 0) {
 		if (bootable_a) {
-			if (boot_ctrl.slot_info[0].successful_boot == 0 &&
-				rebootmode && strcmp(rebootmode, "fastboot")) {
-				boot_ctrl.slot_info[0].tries_remaining -= 1;
-				update_flag = 1;
+			if (boot_ctrl.slot_info[0].successful_boot == 0) {
+				success_flag = 0;
+				if (rebootmode && strcmp(rebootmode, "fastboot")) {
+					boot_ctrl.slot_info[0].tries_remaining -= 1;
+					update_flag = 1;
+				}
 			}
 		}
 	}
 
 	if (slot == 1) {
 		if (bootable_b) {
-			if (boot_ctrl.slot_info[1].successful_boot == 0 &&
-				rebootmode && strcmp(rebootmode, "fastboot")) {
-				boot_ctrl.slot_info[1].tries_remaining -= 1;
-				update_flag = 1;
+			if (boot_ctrl.slot_info[1].successful_boot == 0) {
+				success_flag = 0;
+				if (rebootmode && strcmp(rebootmode, "fastboot")) {
+					boot_ctrl.slot_info[1].tries_remaining -= 1;
+					update_flag = 1;
+				}
 			}
 		}
 	}
@@ -1062,14 +1063,13 @@ static int do_SetUpdateTries(
 	if (is_f2fs_by_name("metadata") == 0) {
 		printf("metadata is ext4\n");
 		merge_ret = check_mergestatus(MERGE_STATE_FILE);
-	} else if (boot_ctrl.merge_flag == Initiated ||
-		boot_ctrl.merge_flag == Unverified) {
-		printf("merge_flag is Initiated or Unverified\n");
+	} else if (boot_ctrl.merge_flag == SNAPSHOTTED) {
+		printf("merge_flag is SNAPSHOTTED\n");
 		merge_ret = 1;
 	}
 
 	if (rebootmode && (!strcmp(rebootmode, "fastboot")) &&
-		update_flag == 1 &&
+		success_flag == 0 &&
 		merge_ret == 1) {
 		printf("reboot bootloader during merge, rollback\n");
 		if (slot == 0 && bootable_a) {
