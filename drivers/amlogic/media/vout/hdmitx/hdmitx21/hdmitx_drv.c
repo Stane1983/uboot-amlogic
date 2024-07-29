@@ -1025,6 +1025,20 @@ static void vpu_hdmi_set_matrix_ycbcr2rgb(void)
 	hd21_set_reg_bits(VPU_HDMI_FMT_CTRL, 3, 0, 2);
 }
 
+static void hdmitx_set_phy_todig(struct hdmitx_dev *hdev)
+{
+	switch (hdev->chip_type) {
+	case MESON_CPU_ID_S7:
+		hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL3, 3, 0, 2);
+		hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL3, 1, 3, 1);
+		break;
+	default:
+		//pr_info("not match chip type to enable phy to dig\n");
+		return;
+	}
+	pr_info("enable phy to dig\n");
+}
+
 static void hdmitx_set_clkdiv(struct hdmitx_dev *hdev)
 {
 }
@@ -1555,7 +1569,12 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 	else
 		hdmitx21_venc_en(1, 1);
 
-	/* check the deep color phase */
+	hdmitx_set_phy_todig(hdev);
+	/*
+	 * when in deep color, htotal is fractional value
+	 * here need check the phase is stable or not
+	 * otherwise it may cause display flash and abnormal issue
+	 */
 	{
 		enum hdmi_colorspace cs = hdev->para->cs;
 		enum hdmi_color_depth cd = hdev->para->cd;
@@ -1568,9 +1587,7 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 			__func__, __LINE__, get_current_frl_rate(), h_total, cs, cd, h_unstable);
 		if (!h_unstable && hdev->chip_type > MESON_CPU_ID_T7) {
 			while (loop--) {
-				hdmitx21_set_reg_bits(INTR2_SW_TPI_IVCTX, 0, 1, 1);
-				mdelay(1);
-				hdmitx21_poll_reg(INTR2_SW_TPI_IVCTX, 1 << 1, ~(1 << 1), HZ / 100);
+				hdmitx21_poll_reg(SYS_STAT_IVCTX, 1 << 0, ~(1 << 0), HZ / 100);
 				if (is_deep_phase_unstable(cs, cd)) {
 					/* reset pfifo */
 					hdmitx21_set_reg_bits(PWD_SRST_IVCTX, 1, 1, 1);
@@ -1582,6 +1599,7 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 			}
 		}
 	}
+
 	hdmitx_set_phy(hdev);
 	if (hdev->chip_type == MESON_CPU_ID_S5)
 		hdmitx_dfm_cfg(0, 0);

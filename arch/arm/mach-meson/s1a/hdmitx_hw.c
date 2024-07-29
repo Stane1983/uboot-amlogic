@@ -286,8 +286,9 @@ void hdmitx21_poll_reg(unsigned int addr, unsigned int exp_data, unsigned int ma
 		}
 	}
 	if (done == 0)
-		pr_info("%s 0x%x access time-out!\n", __func__, addr);
-} /* hdmitx21_poll_reg */
+		pr_info("%s addr:0x%x exp_data:0x%x rd_data:0x%x poll time-out!\n",
+			__func__, addr, exp_data, rd_data);
+}
 
 u32 hdmitx21_rd_check_reg(u32 addr, u32 exp_data,
 				 u32 mask)
