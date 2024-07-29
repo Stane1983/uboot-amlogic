@@ -409,7 +409,7 @@ static void get_osd_version(void)
 	else
 		osd_hw.osd_ver = OSD_HIGH_ONE;
 
-	#ifdef AML_T7_DISPLAY
+	#if defined(AML_T7_DISPLAY) || defined(AML_S6_DISPLAY)
 	osd_hw.viux_scale_cap = 1;
 	#else
 	osd_hw.viux_scale_cap = 0;

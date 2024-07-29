@@ -68,7 +68,22 @@
 #define CONFIG_AVB_VERIFY 1
 #define CONFIG_SUPPORT_EMMC_RPMB 1
 #define CONFIG_AML_DEV_ID 1
+#define CONFIG_HDMITX_ONLY
 
+#ifdef CONFIG_HDMITX_ONLY
+#define CONFIG_EXTRA_HDMI_ENV_SETTINGS \
+	"init_display_hdmitx="\
+		"hdmitx hpd;hdmitx get_parse_edid;dovi process;"\
+		"osd open;osd clear;run load_bmp_logo;bmp scale;vout output ${outputmode};"\
+		"dovi set;dovi pkg;vpp hdrpkt;"\
+		"\0"
+#else
+#define CONFIG_EXTRA_HDMI_ENV_SETTINGS \
+	"init_display_hdmitx="\
+		"hdmitx hpd;hdmitx get_parse_edid;dovi process;"\
+		"osd dual_logo;"\
+		"\0"
+#endif
 //for common env list, please maintain it in board/amlogic/env/android_multidisplay.env
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"uart_base=0xfe07a000\0"\
@@ -102,7 +117,11 @@
 	"dv_fw_dir=/reserved/firmware/dovi_fw.bin\0"\
 	"hdr_policy=0\0"\
 	"frac_rate_policy=1\0"\
-	"board=s6_bq208\0"
+	"board=s6_bq208\0"\
+	CONFIG_EXTRA_HDMI_ENV_SETTINGS \
+	"init_display="\
+		"run init_display_hdmitx;"\
+		"\0"
 
 #ifndef CONFIG_PXP_EMULATOR
 #define CONFIG_PREBOOT  \
@@ -116,6 +135,46 @@
 #else
 #define CONFIG_PREBOOT  "echo preboot"
 #endif
+
+#ifndef CONFIG_HDMITX_ONLY
+/* dual logo, normal boot */
+#define CONFIG_DUAL_LOGO \
+	"setenv display_layer viu2_osd0;vout2 prepare ${outputmode2};"\
+	"osd open;osd clear;run load_bmp_logo;vout2 output ${outputmode2};bmp scale;"\
+	"if test ${outputmode2} = ${save_outputmode}; then "\
+		"dovi set;dovi pkg;vpp hdrpkt;"\
+	"fi; "\
+	"setenv display_layer osd0;osd open;osd clear;"\
+	"run load_bmp_logo;bmp scale;vout output ${outputmode};"\
+	"if test ${outputmode} = ${save_outputmode}; then "\
+		"dovi set;dovi pkg;vpp hdrpkt;"\
+	"fi; "\
+	"\0"\
+
+/* dual logo, factory_reset boot, recovery always displays on panel */
+#define CONFIG_RECOVERY_DUAL_LOGO \
+	"setenv display_layer viu2_osd0;vout2 prepare ${outputmode2};"\
+	"osd open;osd clear;run load_bmp_logo;vout2 output ${outputmode2};bmp scale;"\
+	"if test ${outputmode2} = ${save_outputmode}; then "\
+		"dovi set;dovi pkg;vpp hdrpkt;"\
+	"fi; "\
+	"setenv display_layer osd0;osd open;osd clear;"\
+	"run load_bmp_logo;bmp scale;vout output ${outputmode};"\
+	"if test ${outputmode} = ${save_outputmode}; then "\
+		"dovi set;dovi pkg;vpp hdrpkt;"\
+	"fi; "\
+	"\0"\
+
+/* single logo */
+#define CONFIG_SINGLE_LOGO \
+	"setenv display_layer osd0;osd open;osd clear;"\
+	"run load_bmp_logo;bmp scale;vout output ${outputmode};"\
+	"if test ${outputmode} = ${save_outputmode}; then "\
+		"dovi set;dovi pkg;vpp hdrpkt;"\
+	"fi; "\
+	"\0"
+#endif
+
 #define CONFIG_ENV_IS_NOWHERE  0
 //#define CONFIG_ENV_SIZE   (64 * 1024)
 #define CONFIG_FIT 1
@@ -232,6 +291,7 @@ defined(CONFIG_STORE_COMPATIBLE)
 /* osd */
 #define OSD_SCALE_ENABLE
 #define AML_OSD_HIGH_VERSION
+#define AML_S6_DISPLAY
 
 /* USB
  * Enable CONFIG_MUSB_HCD for Host functionalities MSC, keyboard

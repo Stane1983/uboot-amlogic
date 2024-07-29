@@ -422,7 +422,7 @@ static void osd_debug_dump_register_all(void)
 		osd_logi("reg[0x%x]: 0x%08x\n\n", REG_INDEX_VCBUS(reg), osd_reg_read(reg));
 	}
 #endif
-#ifdef AML_T7_DISPLAY
+#if defined(AML_T7_DISPLAY) || defined(AML_S6_DISPLAY)
 	if (!strcmp(env_get("display_layer"), "osd2") ||
 	    !strcmp(env_get("display_layer"), "viu2_osd0")) {
 		reg = hw_osd_reg_array[2].osd_sc_ctrl0;
