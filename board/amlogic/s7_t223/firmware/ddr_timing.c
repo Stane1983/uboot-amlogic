@@ -135,7 +135,7 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 	{
 		.cfg_board_common_setting.timming_magic = 0,
 		.cfg_board_common_setting.timming_max_valid_configs = 1,
-		.cfg_board_common_setting.timming_struct_version = 0,
+		.cfg_board_common_setting.timming_struct_version = 9175,
 		.cfg_board_common_setting.timming_struct_org_size =
 			sizeof(ddr_set_ps0_only_t),
 		.cfg_board_common_setting.timming_struct_real_size = 0,
@@ -202,7 +202,7 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		.cfg_board_SI_setting_ps.vref_dram_data_permil = 0,
 		.cfg_board_SI_setting_ps.max_core_timmming_frequency = 0,
 
-		.cfg_board_common_setting.ddr_rfc_type = DDR_RFC_TYPE_LPDDR4_8Gbx1, // 13,
+		.cfg_board_common_setting.ddr_rfc_type = 0, // 13,
 		.cfg_board_common_setting.pll_ssc_mode = 0x00000000,    // 0,0x00000044
 		.cfg_board_common_setting.ac_pinmux = {
 			6,	2,	0,	3,	4,	5,	0,	1,	0,
@@ -304,7 +304,7 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 	{
 		.cfg_board_common_setting.timming_magic = 0,
 		.cfg_board_common_setting.timming_max_valid_configs = 1,
-		.cfg_board_common_setting.timming_struct_version = 0,
+		.cfg_board_common_setting.timming_struct_version = 9175,
 		.cfg_board_common_setting.timming_struct_org_size =
 			sizeof(ddr_set_ps0_only_t),
 		.cfg_board_common_setting.timming_struct_real_size = 0,
@@ -348,7 +348,7 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		.cfg_board_SI_setting_ps.vref_dram_data_permil = 800,
 		.cfg_board_SI_setting_ps.max_core_timmming_frequency = 0,
 		.cfg_board_common_setting.dbi_enable = 0x00000000,
-		.cfg_board_common_setting.ddr_rfc_type = DDR_RFC_TYPE_DDR4_2Gbx8,
+		.cfg_board_common_setting.ddr_rfc_type = 0,
 		.cfg_board_common_setting.pll_ssc_mode = 0x00000000,
 
 		.cfg_board_SI_setting_ps.clk_drv_ohm = 40,
@@ -475,7 +475,7 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 	{
 		.cfg_board_common_setting.timming_magic = 0,
 		.cfg_board_common_setting.timming_max_valid_configs = 1,
-		.cfg_board_common_setting.timming_struct_version = 0,
+		.cfg_board_common_setting.timming_struct_version = 9175,
 		.cfg_board_common_setting.timming_struct_org_size =
 			sizeof(ddr_set_ps0_only_t),
 		.cfg_board_common_setting.timming_struct_real_size = 0,
@@ -517,7 +517,7 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		.cfg_board_SI_setting_ps.vref_dram_data_permil = 0,
 		.cfg_board_SI_setting_ps.max_core_timmming_frequency = 0,//1320,//0,
 		.cfg_board_common_setting.dbi_enable = 0x00000000,
-		.cfg_board_common_setting.ddr_rfc_type = DDR_RFC_TYPE_DDR4_2Gbx8,
+		.cfg_board_common_setting.ddr_rfc_type = 0,
 		.cfg_board_common_setting.pll_ssc_mode = 0x00000000,
 
 		.cfg_board_SI_setting_ps.clk_drv_ohm = 40,
