@@ -2392,7 +2392,7 @@ static inline void copy_para(struct hdmi_format_para *des,
 	memcpy(des, src, sizeof(struct hdmi_format_para));
 }
 
-bool pre_process_str(char *name)
+bool pre_process_str(const char *name)
 {
 	int i;
 	unsigned int flag = 0;

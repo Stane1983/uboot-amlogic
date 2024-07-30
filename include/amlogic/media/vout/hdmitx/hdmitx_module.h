@@ -81,11 +81,11 @@ void hdr_scene_process(struct input_hdmi_data *hdmi_data,
 bool _is_y420_vic(enum hdmi_vic vic);
 
 void get_hdmi_data(struct hdmitx_dev *hdev, hdmi_data_t *data);
-bool pre_process_str(char *name);
+bool pre_process_str(const char *name);
 struct hdmi_format_para *hdmi_tst_fmt_name(char const *name, char const *attr);
 bool is_support_4k(void);
 bool is_supported_mode_attr(hdmi_data_t *hdmi_data, char *mode_attr);
-bool hdmitx_chk_mode_attr_sup(hdmi_data_t *hdmi_data, char *mode, char *attr);
+bool hdmitx_chk_mode_attr_sup(hdmi_data_t *hdmi_data, const char *mode, const char *attr);
 int get_ubootenv_dv_type(void);
 int get_ubootenv_dv_status(void);
 int get_hdr_policy(void);

@@ -1720,7 +1720,7 @@ bool is_supported_mode_attr(hdmi_data_t *hdmi_data, char *mode_attr)
 	return hdmitx_edid_check_valid_mode(hdev, para);
 }
 
-bool hdmitx_chk_mode_attr_sup(hdmi_data_t *hdmi_data, char *mode, char *attr)
+bool hdmitx_chk_mode_attr_sup(hdmi_data_t *hdmi_data, const char *mode, const char *attr)
 {
 	struct hdmi_format_para *para = NULL;
 	struct hdmitx_dev *hdev = NULL;
