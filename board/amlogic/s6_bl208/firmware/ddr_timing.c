@@ -9,6 +9,7 @@
 
 #define DDR_FUNC_CONFIG_ENABLE_PZQ_DET_DRAM_TYPE_RETURN                   (0 + (1 << 20))
 #define DDR_FUNC_CONFIG_AUTO_DET_DQ_PINMUX_FUNCTION                   (0 + (1 << 21))
+#define DDR_FUNC_CONFIG_WR_ECC_FUNCTION                                        (0 + (1 << 17))
 //bit 6 adc_channel bit 0-5 adc value,chan 3 value 8 is layer 2
 #define DDR_ID_ACS_ADC   ((3 << 6) | (8))
 
@@ -191,7 +192,6 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		.cfg_board_common_setting.log_level = 0xff,
 		//.cfg_board_common_setting.log_level = 4,
 		//4,//LOG_LEVEL_BASIC,
-		.cfg_board_common_setting.dbi_enable = 0,
 		.cfg_board_common_setting.pll_ssc_mode =
 			(1 << 20) | (1 << 8) | (2 << 4) | 0,
 		//center_ssc_1000ppm,//SSC_DISABLE,(1 << 20) | (0 << 8) | (2 << 4) | 0,
@@ -226,7 +226,7 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		.cfg_board_SI_setting_ps.vref_soc_data_permil = 0,
 		.cfg_board_SI_setting_ps.vref_dram_data_permil = 0,
 		.cfg_board_SI_setting_ps.max_core_timmming_frequency = 0,
-		.cfg_board_common_setting.dbi_enable = 0,      // 0,0x00000041
+		.cfg_board_common_setting.dbi_enable = 3,      // 0,0x00000041
 		.cfg_board_common_setting.ddr_rfc_type = DDR_RFC_TYPE_LPDDR5_32Gbx1, // 13,
 		.cfg_board_common_setting.pll_ssc_mode = 0x00000000,    // 0,0x00000044
 		.cfg_board_common_setting.ac_pinmux = { //0-11 cha,12-23 chb
@@ -254,8 +254,10 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		},
 		//.cfg_ddr_training_delay_ps.rx_offset[0] = (1 << 7) | 0x10,
 		//.cfg_ddr_training_delay_ps.tx_offset[0] = (1 << 7) | 0x8,
-		////.cfg_ddr_training_delay_ps.dac_offset[0] = 0,//(1 << 7) | 0x10,
-		////.cfg_ddr_training_delay_ps.dac_offset[1] = 0,//(0 << 7) | 0x10,
+		.cfg_ddr_training_delay_ps.dac_offset[0] = (1 << 7) | 0x1,//1step 2mv
+		.cfg_ddr_training_delay_ps.dac_offset[1] = (0 << 7) | 0x1,//1step 2mv
+		.cfg_ddr_training_delay_ps.dac_offset[2] = (1 << 7) | 0x1,//1step 2mv
+		.cfg_ddr_training_delay_ps.dac_offset[3] = (0 << 7) | 0x1,//1step 2mv
 		//.cfg_ddr_training_delay_ps.dac_offset[0] = (1 << 7) | 0x3,
 		//.cfg_ddr_training_delay_ps.dac_offset[1] = (0 << 7) | 0x3,
 		//.cfg_ddr_training_delay_ps.reserve_para[0] = (0 << 7) | 0x8,     //write dqs
@@ -360,7 +362,6 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		.cfg_board_common_setting.log_level = 0xff,
 		//.cfg_board_common_setting.log_level = 4,
 		//4,//LOG_LEVEL_BASIC,
-		.cfg_board_common_setting.dbi_enable = 0,
 		.cfg_board_common_setting.pll_ssc_mode =
 			(1 << 20) | (1 << 8) | (2 << 4) | 0,
 		//center_ssc_1000ppm,//SSC_DISABLE,(1 << 20) | (0 << 8) | (2 << 4) | 0,
@@ -454,10 +455,10 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		},
 		//.cfg_ddr_training_delay_ps.rx_offset[0] = (1 << 7) | 0x10,
 		//.cfg_ddr_training_delay_ps.tx_offset[0] = (1 << 7) | 0x8,
-		////.cfg_ddr_training_delay_ps.dac_offset[0] = 0,//(1 << 7) | 0x10,
-		////.cfg_ddr_training_delay_ps.dac_offset[1] = 0,//(0 << 7) | 0x10,
-		//.cfg_ddr_training_delay_ps.dac_offset[0] = (1 << 7) | 0x3,
-		//.cfg_ddr_training_delay_ps.dac_offset[1] = (0 << 7) | 0x3,
+		.cfg_ddr_training_delay_ps.dac_offset[0] = (1 << 7) | 0x1,//1step 2mv
+		.cfg_ddr_training_delay_ps.dac_offset[1] = (0 << 7) | 0x1,//1step 2mv
+		.cfg_ddr_training_delay_ps.dac_offset[2] = (1 << 7) | 0x1,//1step 2mv
+		.cfg_ddr_training_delay_ps.dac_offset[3] = (0 << 7) | 0x1,//1step 2mv
 		//.cfg_ddr_training_delay_ps.reserve_para[0] = (0 << 7) | 0x8,     //write dqs
 		//.cfg_ddr_training_delay_ps.reserve_para[1] = (0 << 7) | 0x8,     //write dqs
 		//.cfg_ddr_training_delay_ps.reserve_para[2] = (0 << 7) | 0x8,     //write dqs
