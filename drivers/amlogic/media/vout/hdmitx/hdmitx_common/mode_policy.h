@@ -235,6 +235,11 @@ int32_t meson_mode_set_policy_input(int32_t connector, const struct meson_policy
  */
 int32_t meson_mode_get_policy_output(int32_t connector, struct meson_policy_out *out);
 
+/*
+ * check mode support or not under type
+ */
+int32_t meson_mode_support_mode(int32_t connector, int32_t type, const char *mode);
+
 #ifndef __UBOOT__
 /*
  * below api is uesd only by hwc and linux
@@ -244,11 +249,6 @@ int32_t meson_mode_get_policy_output(int32_t connector, struct meson_policy_out 
  * get current mode support color
  */
 int32_t meson_mode_get_support_color(int32_t connector, const char *mode, char* color);
-
-/*
- * check mode support or not under type
- */
-int32_t meson_mode_support_mode(int32_t connector, int32_t type, char *mode);
 
 /*
  * for parse dv mode type

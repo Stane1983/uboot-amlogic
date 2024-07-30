@@ -265,7 +265,7 @@ static int32_t find_resolution_index(const char *mode, int flag) {
     return -1;
 }
 
-static bool is_dv_support_mode(struct meson_policy_in *input, char *mode) {
+static bool is_dv_support_mode(struct meson_policy_in *input, const char *mode) {
     bool validMode = false;
 
     /*
@@ -303,7 +303,7 @@ static bool is_dv_support_mode(struct meson_policy_in *input, char *mode) {
         !strcmp(mode, MODE_1080P120HZ) ||
         !strcmp(mode, MODE_720P100HZ) ||
         !strcmp(mode, MODE_720P120HZ)) {
-            if (support_DV_VSVDB_PARITY(&input->hdr_info)) {
+        if (support_DV_VSVDB_PARITY(&input->hdr_info)) {
             validMode = true;
         }
     } else {
@@ -784,7 +784,7 @@ static bool hdr_scene_process(struct meson_policy_in *input,
             }
         } else if (policy == MESON_POLICY_RESOLUTION || policy == MESON_POLICY_FRAMERATE) {
             /*
-             * best resolution policy and best color space disable case
+             * best resolution policy enable and best color space disable case
              */
             const char **resolution_list = NULL;
             int resolution_list_length   = 0;
@@ -799,16 +799,35 @@ static bool hdr_scene_process(struct meson_policy_in *input,
                 resolution_list_length = ARRAY_SIZE(MODE_RESOLUTION_FIRST);
             }
 
+            /*
+             * choose prefer resolution for hdr
+             */
             for (int j = resolution_list_length - 1; j >= 0 ; j--) {
                 if (is_support_hdmimode(input, resolution_list[j])) {
-                    if (mode_support_check(resolution_list[j], input->con_info.ubootenv_colorattr, input)) {
-                        SYS_LOGI("%s mode:[%s], deep color:[%s]\n", __FUNCTION__, resolution_list[j], input->con_info.ubootenv_colorattr);
-                        strlcpy(output->deepcolor, input->con_info.ubootenv_colorattr, sizeof(output->deepcolor));
+                    if (meson_mode_support_mode(MESON_MODE_HDMI, MESON_HDR10_PRIORITY, resolution_list[j]) == 0) {
+                        SYS_LOGI("%s mode:[%s] support hdr\n", __FUNCTION__, resolution_list[j]);
                         strlcpy(output->displaymode, resolution_list[j], sizeof(output->displaymode));
                         find = true;
                         break;
                     }
                 }
+            }
+
+            if (find) {
+                /*
+                 * check color space base resolution support or not
+                 * if not support, choose prefer color space base resolution
+                 */
+                if (mode_support_check(output->displaymode, input->con_info.ubootenv_colorattr, input)) {
+                    SYS_LOGI("support current mode:[%s], deep color:[%s]\n", output->displaymode, input->con_info.ubootenv_colorattr);
+                    strlcpy(output->deepcolor, input->con_info.ubootenv_colorattr, sizeof(output->deepcolor));
+                } else {
+                    char color_attribute[MESON_MODE_LEN] = {0};
+                    get_best_color_attr(input, output->displaymode, color_attribute);
+                    strlcpy(output->deepcolor, color_attribute, sizeof(output->deepcolor));
+                }
+            } else {
+                SYS_LOGE("%s not find mode support hdr\n", __FUNCTION__);
             }
         } else if (input->con_info.is_bestcolorspace) {
             /*
@@ -1266,65 +1285,31 @@ int32_t meson_mode_get_policy_output(int32_t connector,
     return 0;
 }
 
-#ifndef __UBOOT__
-/*
- * below api is uesd only by hwc and linux
- */
-
-/*
- * @function: get color format list of mode
- */
-int32_t meson_mode_get_support_color(int32_t connector, const char *mode, char* color) {
-    /*
-     * check input param
-     */
-    if (!mode || !color) {
-        SYS_LOGE("%s mode or color is null\n", __FUNCTION__);
-        return -EINVAL;
-    }
-
-    GET_CURRENT_POLICY(connector);
-    struct meson_policy_in *input = &mp->input;
-    char dc_cap[MESON_MAX_STR_LEN] = {0};
-    strncpy(dc_cap, input->con_info.dc_cap, MESON_MAX_STR_LEN - 1);
-    dc_cap[MESON_MAX_STR_LEN -1] = '\0';
-
-    char *token = NULL;
-    char *rest = dc_cap;
-    for (token = strtok_r(rest, "\n", &rest); token != NULL; token = strtok_r(NULL, "\n", &rest)) {
-        if (mode_support_check(mode, token, input)) {
-            strcat(color, token);
-            strcat(color, "\n");
-        }
-    }
-
-    return 0;
-}
-
 /*
  * @function: check mode is support or not as the hdr type
  * @param type: dv,hdr,sdr
  */
-int32_t meson_mode_support_mode(int32_t connector, int32_t type, char *mode) {
+int32_t meson_mode_support_mode(int32_t connector, int32_t type, const char *mode) {
+    int32_t ret = -EINVAL;
+
     /*
      * check input param
      */
     if (!mode) {
         SYS_LOGE("%s mode is null\n", __FUNCTION__);
-        return -EINVAL;
+        return ret;
     }
 
     SYS_LOGI("%s type:%d mode:%s", __func__, type, mode);
     GET_CURRENT_POLICY(connector);
     struct meson_policy_in *input = &mp->input;
 
-    int32_t ret = -EINVAL;
     /*
      * check mode support or not
      */
     if (!is_support_hdmimode(input, mode)) {
         SYS_LOGI("%s could not find mode:%s", __func__, mode);
-        return -EINVAL;
+        return ret;
     }
 
     if (type == MESON_HDR10_PRIORITY) {
@@ -1359,76 +1344,11 @@ int32_t meson_mode_support_mode(int32_t connector, int32_t type, char *mode) {
             }
         }
     } else if (type == MESON_DOLBY_VISION_PRIORITY) {
-        /*
-         * 1. get tv support max amdolby vision resolution
-         */
-        char dv_displaymode[MESON_MODE_LEN] = {0};
-        for (int i = 0; i < ARRAY_SIZE(DISPLAY_MODE_LIST); i++) {
-            if (strstr(input->hdr_info.dv_max_mode, DISPLAY_MODE_LIST[i]) != NULL) {
-                strlcpy(dv_displaymode, DISPLAY_MODE_LIST[i], sizeof(dv_displaymode));
-                break;
-            }
-        }
-
-        /*
-         * special resolution not support dv
-         */
-        if ((strstr(mode, "480p") != NULL) ||
-            (strstr(mode, "576p") != NULL) ||
-            (strstr(mode, "smpte") != NULL) ||
-            (strstr(mode, "4096") != NULL) ||
-            (strstr(mode, "i") != NULL)) {
-            SYS_LOGI("%s mode:%s not support dv", __func__, mode);
-            return -EINVAL;
-        }
-
-        meson_mode_info_t *current_ptr = NULL;
-        meson_mode_info_t *max_dv_ptr = NULL;
-        meson_mode_info_t *modes_ptr = input->con_info.modes;
-        for (int i = 0; i < input->con_info.modes_size; i ++) {
-            meson_mode_info_t *it = &modes_ptr[i];
-
-            if (!strcmp(it->name, dv_displaymode)) {
-                max_dv_ptr = it;
-            }
-            if (!strcmp(it->name, mode)) {
-                current_ptr =it;
-            }
-        }
-
-        if (!current_ptr || !max_dv_ptr) {
-            SYS_LOGI("could not find max dv or current mode");
-            return -EINVAL;
-        }
-
-        if ((current_ptr->pixel_w > max_dv_ptr->pixel_w) ||
-                (current_ptr->pixel_w == max_dv_ptr->pixel_w &&
-                    current_ptr->refresh_rate -1  > max_dv_ptr->refresh_rate)) {
-            SYS_LOGI("dv not support current mode :%s (%dx%d@%.2f), max dv: %s(%dx%d@%.2f)",
-                    current_ptr->name, current_ptr->pixel_w,
-                    current_ptr->pixel_h, current_ptr->refresh_rate,
-                    max_dv_ptr->name, max_dv_ptr->pixel_w,
-                    max_dv_ptr->pixel_h, max_dv_ptr->refresh_rate);
-            return -EINVAL;
-        }
-
-        int amdv_type = update_dv_type(&input->hdr_info);
-        char amdv_attr[MESON_MODE_LEN] = {0};
-        update_dv_attr(&input->hdr_info, amdv_type, amdv_attr);
-        /*
-         * need to check the flag of Parity for high frame rate
-         */
-        if (!strcmp(mode, MODE_1080P100HZ) ||
-            !strcmp(mode, MODE_1080P120HZ) ||
-            !strcmp(mode, MODE_720P100HZ) ||
-            !strcmp(mode, MODE_720P120HZ)) {
-            if (support_DV_VSVDB_PARITY(&input->hdr_info)) {
-                SYS_LOGI("dv support current mode:[%s]\n", mode);
-                ret = 0;
-            }
-        } else if (mode_support_check(mode, amdv_attr, input)) {
-            SYS_LOGI("dv support current mode:[%s], color format:[%s]\n", mode, amdv_attr);
+        if (is_dv_support_mode(input, mode)) {
+            SYS_LOGI("%s mode:%s support dv\n", __func__, mode);
             ret = 0;
+        } else {
+            SYS_LOGI("%s mode:%s not support dv\n", __func__, mode);
         }
     } else if (type == MESON_SDR_PRIORITY) {
         /*
@@ -1438,6 +1358,41 @@ int32_t meson_mode_support_mode(int32_t connector, int32_t type, char *mode) {
     }
 
     return ret;
+}
+
+#ifndef __UBOOT__
+/*
+ * below api is uesd only by hwc and linux
+ */
+
+/*
+ * @function: get color format list of mode
+ */
+int32_t meson_mode_get_support_color(int32_t connector, const char *mode, char* color) {
+    /*
+     * check input param
+     */
+    if (!mode || !color) {
+        SYS_LOGE("%s mode or color is null\n", __FUNCTION__);
+        return -EINVAL;
+    }
+
+    GET_CURRENT_POLICY(connector);
+    struct meson_policy_in *input = &mp->input;
+    char dc_cap[MESON_MAX_STR_LEN] = {0};
+    strncpy(dc_cap, input->con_info.dc_cap, MESON_MAX_STR_LEN - 1);
+    dc_cap[MESON_MAX_STR_LEN -1] = '\0';
+
+    char *token = NULL;
+    char *rest = dc_cap;
+    for (token = strtok_r(rest, "\n", &rest); token != NULL; token = strtok_r(NULL, "\n", &rest)) {
+        if (mode_support_check(mode, token, input)) {
+            strcat(color, token);
+            strcat(color, "\n");
+        }
+    }
+
+    return 0;
 }
 
 const char *meson_hdrPriorityToString(int32_t type) {
