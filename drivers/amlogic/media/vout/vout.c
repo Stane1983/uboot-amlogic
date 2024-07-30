@@ -589,6 +589,60 @@ static void vout_viu_mux_default(int index, unsigned int mux_sel)
 	}
 }
 
+static void vout_viu_mux_s6(int index, unsigned int mux_sel)
+{
+	unsigned int clk_bit = 0xff, clk_sel = 0;
+	unsigned int vout_viu_sel = 0xf;
+	unsigned int venc_sel = mux_sel;
+
+	switch (index) {
+	case VOUT_VIU2_SEL:
+		if (vout_conf->viu_valid[1]) {
+			/* set cts_vpu_clkc to 250MHz*/
+			vout_clk_setb(CLKCTRL_VPU_CLKC_CTRL, 4, 9, 3);
+			vout_clk_setb(CLKCTRL_VPU_CLKC_CTRL, 3, 0, 7);
+			vout_clk_setb(CLKCTRL_VPU_CLKC_CTRL, 1, 8, 1);
+			clk_sel = 1;
+		}
+		if (venc_sel == vout_viu1_mux)
+			vout_viu1_mux = VIU_MUX_MAX;
+		vout_viu2_mux = venc_sel;
+		break;
+	case VOUT_VIU1_SEL:
+		clk_sel = 0;
+		if (venc_sel == vout_viu2_mux) {
+			if (vout_conf->viu_valid[1])
+				vout_clk_setb(HHI_VPU_CLKC_CNTL, 0, 8, 1);
+			vout_viu2_mux = VIU_MUX_MAX;
+		}
+		vout_viu1_mux = venc_sel;
+		break;
+	default:
+		break;
+	}
+	vout_viu_sel = (vout_viu1_mux | (vout_viu2_mux << 2));
+
+	switch (venc_sel) {
+	case VIU_MUX_ENCL:
+		clk_bit = 1;
+		break;
+	case VIU_MUX_ENCI:
+		clk_bit = 2;
+		break;
+	case VIU_MUX_ENCP:
+		clk_bit = 0;
+		break;
+	default:
+		break;
+	}
+
+	vout_reg_setb(VPU_VIU_VENC_MUX_CTRL, vout_viu_sel, 0, 4);
+	if (vout_conf->viu_valid[1]) {
+		if (clk_bit < 0xff)
+			vout_reg_setb(VPU_VENCX_CLK_CTRL, clk_sel, clk_bit, 1);
+	}
+}
+
 static void vout_viu_mux_t7(int index, unsigned int mux_sel)
 {
 	unsigned int viu_bit = 0xff, venc_idx;
@@ -737,6 +791,17 @@ static struct vout_conf_s vout_config_single_s5 = {
 	.reg_dump = vout_reg_dump,
 };
 
+static struct vout_conf_s vout_config_dual_s6 = {
+	.viu_valid[0] = 1,
+	.viu_valid[1] = 1,
+	.viu_valid[2] = 0,
+
+	.viu_mux_reg = VPU_VIU_VENC_MUX_CTRL,
+
+	.viu_mux = vout_viu_mux_s6,
+	.reg_dump = vout_reg_dump,
+};
+
 void vout_probe(void)
 {
 	switch (get_cpu_id().family_id) {
@@ -765,6 +830,9 @@ void vout_probe(void)
 	case MESON_CPU_MAJOR_ID_S5:
 		vout_conf = &vout_config_single_s5;
 		vout_reg_write(VPU_VIU_VENC_MUX_CTRL, 0x3f);
+		break;
+	case MESON_CPU_MAJOR_ID_S6:
+		vout_conf = &vout_config_dual_s6;
 		break;
 	default:
 		vout_conf = &vout_config_single;
