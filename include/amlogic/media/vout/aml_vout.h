@@ -12,6 +12,8 @@
 #define VOUT_VIU2_SEL    2
 #define VOUT_VIU3_SEL    3
 
+#define VOUT_MAX_CNT     3
+
 enum viu_mux_e {
 	VIU_MUX_ENCL = 0,
 	VIU_MUX_ENCI,
@@ -43,7 +45,6 @@ void vout_legacy_panel_mode_support(unsigned char vout_index);
 
 void vout_init(void);
 void vout_vinfo_dump(void);
-int vout_get_current_vmode(void);
 int vout_get_current_axis(int *axis);
 void vout_set_current_vmode(int mode);
 struct vinfo_s *vout_get_current_vinfo(void);

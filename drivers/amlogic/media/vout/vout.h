@@ -16,12 +16,9 @@ struct vout_conf_s {
 
 struct vout_set_s {
 	char *name;
-	int mode;
-	ulong width;
-	ulong height;
-	ulong field_height;
-	int viu_color_fmt;
-	unsigned int viu_mux;
+	unsigned short width;
+	unsigned short height;
+	unsigned short field_height;
 };
 
 #endif

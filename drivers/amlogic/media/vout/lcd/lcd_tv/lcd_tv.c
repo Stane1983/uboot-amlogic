@@ -7,7 +7,6 @@
 #include <malloc.h>
 #include <asm/arch/gpio.h>
 #include <fdtdec.h>
-#include <amlogic/media/vout/aml_vmode.h>
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include "../lcd_reg.h"
 #include "../lcd_common.h"
