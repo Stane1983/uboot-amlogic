@@ -6,7 +6,6 @@
 #include <common.h>
 #include <asm/amlogic/arch/io.h>
 #include <asm/amlogic/arch/secure_apb.h>
-#include <amlogic/media/vout/aml_vmode.h>
 #include <amlogic/storage.h>
 #include <amlogic/media/vout/aml_vout.h>
 #ifdef CONFIG_AML_HDMITX20

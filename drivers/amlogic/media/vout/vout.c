@@ -11,7 +11,6 @@
 #include <amlogic/cpu_id.h>
 #include <amlogic/fb.h>
 #include <amlogic/media/vpp/vpp.h>
-#include <amlogic/media/vout/aml_vmode.h>
 #include <amlogic/media/vout/aml_vout.h>
 #ifdef CONFIG_AML_LCD
 #include <amlogic/media/vout/lcd/aml_lcd.h>
@@ -28,10 +27,10 @@
 			vout_log("%s:%d\n", __func__, __LINE__); \
 	} while (0)
 
-static int g_vmode = -1;
 static struct vout_conf_s *vout_conf;
 static int vout_conf_check(void);
 #include "vout_reg.h"
+<<<<<<< HEAD
 
 static const struct vout_set_s vout_sets_lcd[] = {
 	{ /* VMODE_LCD */
@@ -59,10 +58,72 @@ static const struct vout_set_s vout_sets_lcd[] = {
 		.field_height      = 1080,
 		.viu_color_fmt     = VPP_CM_RGB,
 		.viu_mux           = (2 << 4) | VIU_MUX_ENCL,
-	}
+=======
+struct cntor_name2val_s {
+	char *name;
+	unsigned short val;
 };
 
+static struct cntor_name2val_s vout_supported_cnt_list[] = {
+	{.name = "LVDS-A",    .val = 0x100},
+	{.name = "LVDS-B",    .val = 0x101},
+	{.name = "LVDS-C",    .val = 0x102},
+	{.name = "VBYONE-A",  .val = 0x110},
+	{.name = "VBYONE-B",  .val = 0x111},
+	{.name = "MIPI-A",    .val = 0x120},
+	{.name = "MIPI-B",    .val = 0x121},
+	{.name = "EDP-A",     .val = 0x130},
+	{.name = "EDP-B",     .val = 0x131},
+	{.name = "LCD-A",     .val = 0x1f0},
+	{.name = "HDMI-A-A",  .val = 0x300},
+	{.name = "HDMI-A-B",  .val = 0x301},
+	{.name = "HDMI-A-C",  .val = 0x302},
+	/* Follow SWPL-177195, change CVBS's name to TV-1, matching the DRM framework. */
+	{.name = "TV-1",      .val = 0x400},
+};
+
+unsigned short vout_connector_check(unsigned char vout_index)
+{
+	char *cntor;
+	char cnt_name[20] = "connectorX_type";
+	unsigned char i;
+
+	cnt_name[9] = '0' + vout_index;
+	cntor = env_get(cnt_name);
+	if (!cntor)
+		return 0xffff;
+
+	for (i = 0; i < ARRAY_SIZE(vout_supported_cnt_list); i++) {
+		if (strcmp(cntor, vout_supported_cnt_list[i].name) == 0)
+			return vout_supported_cnt_list[i].val;
+	}
+
+	return 0xffff;
+}
+
+void vout_pr_connector_and_vmode(void)
+{
+	char *cntor, *opt_vmode;
+	char cnt_name[20] = "connectorX_type";
+	char opt_mode_name[20] = "outputmode\0\0";
+	unsigned char idx;
+
+	printf("VOUT: connector & outputmode info:\n");
+	for (idx = 0; idx < VOUT_MAX_CNT; idx++) {
+		cnt_name[9] = '0' + idx;
+		if (idx)
+			opt_mode_name[10] = '1' + idx;
+
+		cntor = env_get(cnt_name);
+		opt_vmode = env_get(opt_mode_name);
+		printf("  VOUT%c: %s: %-9s | outputmode%c: %s\n", idx ? '1' + idx : ' ',
+		       cnt_name, cntor, idx ? '1' + idx : ' ', opt_vmode);
+>>>>>>> 5252a220bae (vout: auto parse outputmode to 2023 [1/1])
+	}
+}
+
 static const struct vout_set_s vout_sets_dft[] = {
+<<<<<<< HEAD
 	{ /* VMODE_480I */
 		.name              = "480i",
 		.mode              = VMODE_480I,
@@ -514,6 +575,36 @@ static const struct vout_set_s vout_sets_dft[] = {
 		.viu_color_fmt     = VPP_CM_YUV,
 		.viu_mux           = VIU_MUX_ENCP,
 	}
+=======
+/*       name,      width, height, field_height */
+	{"480i",    720,   480,    240},
+	{"480cvbs", 720,   480,    240},
+	{"ntsc_m",  720,   480,    240},
+	{"pal_m",   720,   480,    240},
+	{"pal_n",   720,   576,    288},
+	{"480p",    720,   480,    480},
+	{"576i",    720,   576,    288},
+	{"576cvbs", 720,   576,    288},
+	{"576p",    720,   576,    576},
+	{"720p",   1280,   720,    720},
+	{"768p",   1366,   768,    768},
+	{"1080i",  1920,  1080,    540},
+	{"1080p",  1920,  1080,   1080},
+	{"2160p",  3840,  2160,   2160},
+	{"smpte",  4096,  2160,   2160},
+	{"vga",     640,   480,    480},
+	{"svga",    800,   600,    600},
+	{"xga",    1024,   768,    768},
+	{"sxga",   1280,  1024,   1024},
+	{"wsxga",  1440,   900,    900},
+	{"fhdvga", 1920,  1080,   1080},
+};
+
+static struct vout_set_s vout_sets_full[VOUT_MAX_CNT] = {
+	{"VOUT_VMODE",  640, 480, 480},
+	{"VOUT2_VMODE", 640, 480, 480},
+	{"VOUT3_VMODE", 640, 480, 480},
+>>>>>>> 5252a220bae (vout: auto parse outputmode to 2023 [1/1])
 };
 
 static struct vinfo_s vout_info = {
@@ -547,26 +638,92 @@ static int vout_conf_check(void)
 	return 0;
 }
 
-static const struct vout_set_s *vout_find_mode_by_name(const char *name)
+static int my_atoi(const char *str)
 {
+	int result = 0;
+	int signal = 1;
+
+	if ((*str >= '0' && *str <= '9') || *str == '-' || *str == '+') {
+		if (*str == '-' || *str == '+') {
+			if (*str == '-')
+				signal = -1;
+			str++;
+		}
+	} else {
+		return 0;
+	}
+
+	while (*str >= '0' && *str <= '9')
+		result = result * 10 + (*str++ - '0');
+
+	return signal * result;
+}
+
+int parse_resolution(const char *str, unsigned int *width, unsigned int *height, unsigned int *fr)
+{
+	const char *ptr, *ptr2;
+
+	ptr2 = str;
+	ptr = strstr(str, "x");
+	if (!ptr)
+		return 0;
+	*width = my_atoi(ptr2);
+
+	ptr2 = ptr;
+	ptr = strstr(ptr + 1, "p");
+	if (!ptr)
+		return 0;
+	*height = my_atoi(ptr2 + 1);
+
+	ptr2 = ptr;
+	ptr = strstr(ptr + 1, "hz");
+	if (!ptr)
+		return 0;
+	*fr = my_atoi(ptr2 + 1);
+
+	return 1; // Success
+}
+
+static const struct vout_set_s *vout_find_mode_by_vout_idx(uint8_t vout_idx)
+{
+	char check_name[16] = "outputmode\0\0";
+	char *outputmode;
 	const struct vout_set_s *vset = NULL;
+	unsigned int width, height, fr;
 	int i = 0;
+
+	if (vout_idx)
+		check_name[10] = '1' + vout_idx;
+	if (vout_idx >= VOUT_MAX_CNT)
+		return NULL;
+
+	outputmode = env_get(check_name);
+
+	if (!outputmode)
+		return NULL;
+
+	if (parse_resolution(outputmode, &width, &height, &fr)) {
+		vout_sets_full[vout_idx].width = width;
+		vout_sets_full[vout_idx].height = height;
+		vout_sets_full[vout_idx].field_height = height;
+		vout_log("vout[%u] parse: W=%u, H=%u, FR=%uHz\n", vout_idx, width, height, fr);
+		return &vout_sets_full[vout_idx];
+	}
 
 	vset = vout_sets_dft;
 	for (i = 0; i < sizeof(vout_sets_dft) / sizeof(struct vout_set_s); i++) {
-		if (strncmp(name, vset->name, strlen(vset->name)) == 0)
-			return vset;
+		if (strncmp(outputmode, vset->name, strlen(vset->name)) == 0) {
+			vout_sets_full[vout_idx].width = vset->width;
+			vout_sets_full[vout_idx].height = vset->height;
+			vout_sets_full[vout_idx].field_height = vset->field_height;
+			vout_log("vout[%u] match: W=%u, H=%u, %s\n", vout_idx, vset->width,
+				 vset->height, vset->height == vset->field_height ? "P" : "I");
+			return &vout_sets_full[vout_idx];
+		}
 		vset++;
 	}
 
-	vset = vout_sets_lcd;
-	for (i = 0; i < sizeof(vout_sets_lcd) / sizeof(struct vout_set_s); i++) {
-		if (strcmp(name, vset->name) == 0)
-			return vset;
-		vset++;
-	}
-
-	vout_log("mode: %s not found\n", name);
+	vout_log("mode: %s not found\n", outputmode);
 	return NULL;
 }
 
@@ -597,82 +754,53 @@ static void vout_axis_init(ulong w, ulong h)
 
 static void vout_vmode_init(void)
 {
-	char *outputmode = NULL;
+	uint8_t check_connector_idx = 0;
+
 	const struct vout_set_s *vset = NULL;
-	int vmode = -1;
 	ulong width = 0;
 	ulong height = 0;
 	ulong field_height = 0;
 #ifdef CONFIG_AML_LCD
 	struct aml_lcd_drv_s *pdrv;
-	unsigned int venc_index;
+	uint16_t connector;
+	unsigned char venc_index = 0xff;
 #endif
 	uint index = 0;
 
 	index = get_osd_layer();
+
 	if (index < VIU2_OSD1)
-		outputmode = env_get("outputmode");
+		check_connector_idx = 0;
 	else if (index == VIU2_OSD1)
-		outputmode = env_get("outputmode2");
+		check_connector_idx = 1;
 	else if (index == VIU3_OSD1)
-		outputmode = env_get("outputmode3");
+		check_connector_idx = 2;
 	else
 		vout_log("%s, layer%d is not supported\n", __func__, index);
 
-
-	vset = vout_find_mode_by_name(outputmode);
+	vset = vout_find_mode_by_vout_idx(check_connector_idx);
 	if (!vset)
 		return;
 
-	vmode = vset->mode;
-	vout_set_current_vmode(vmode);
-	switch (vmode) {
 #ifdef CONFIG_AML_LCD
-	case VMODE_LCD:
-		venc_index = (vset->viu_mux >> 4) & 0xf;
-		pdrv = aml_lcd_get_driver(venc_index);
-		width = pdrv->config.timing.act_timing.h_active;
-		height = pdrv->config.timing.act_timing.v_active;
-		field_height = pdrv->config.timing.act_timing.v_active;
-		vout_info.cur_enc_ppc = pdrv->config.timing.ppc;
-		break;
-#endif
-	default:
-		width = vset->width;
-		height = vset->height;
-		field_height = vset->field_height;
-#ifdef CONFIG_AML_LCD
-		venc_index = (vset->viu_mux >> 4) & 0xf;
+	connector = vout_connector_check(check_connector_idx);
+	if ((connector & CONNECTOR_DEV_MASK) == CONNECTOR_DEV_LCD)
+		venc_index = connector & CONNECTOR_ENC_IDX_MASK;
+	if (venc_index != 0xff) {
 		pdrv = aml_lcd_get_driver(venc_index);
 		if (pdrv)
 			vout_info.cur_enc_ppc = pdrv->config.timing.ppc;
 		printf("%s cur_enc_ppc = %d\n", __func__, vout_info.cur_enc_ppc);
-#endif
-		break;
 	}
+#endif
+
+	width = vset->width;
+	height = vset->height;
+	field_height = vset->field_height;
+
 	vout_axis_init(width, height);
 
 	vout_vinfo_init(width, height, field_height);
-}
-
-static int my_atoi(const char *str)
-{
-	int result = 0;
-	int signal = 1;
-
-	if ((*str >= '0' && *str <= '9') || *str == '-' || *str == '+') {
-		if (*str == '-' || *str == '+') {
-			if (*str == '-')
-				signal = -1;
-			str++;
-		}
-	} else
-		return 0;
-
-	while (*str >= '0' && *str <= '9')
-		result = result * 10 + (*str++ -'0');
-
-	return signal * result;
 }
 
 static int getenv_int(char *env, int def)
@@ -788,17 +916,6 @@ static int get_window_axis(int *axis)
 	}
 
 	return ret;
-}
-
-void vout_set_current_vmode(int mode)
-{
-	g_vmode = mode;
-}
-
-int vout_get_current_vmode(void)
-{
-	vout_logl();
-	return g_vmode;
 }
 
 struct vinfo_s *vout_get_current_vinfo(void)

@@ -14,7 +14,6 @@
 #include <command.h>
 
 /* Local Headers */
-#include <amlogic/media/vout/aml_vmode.h>
 #ifdef CONFIG_AML_CANVAS
 #include <amlogic/canvas.h>
 #endif
@@ -1046,25 +1045,14 @@ static void osd_check_scan_mode(void)
 #define	VOUT_ENCI	1
 #define	VOUT_ENCP	2
 #define	VOUT_ENCT	3
-	int vmode = -1;
+	struct vinfo_s *vinfo = NULL;
 
 	osd_hw.scan_mode = SCAN_MODE_PROGRESSIVE;
 #ifdef CONFIG_AML_VOUT
-	vmode = vout_get_current_vmode();
+	vinfo = vout_get_current_vinfo();
 #endif
-	switch (vmode) {
-	/* case VMODE_LCD:*/
-	case VMODE_480I:
-	case VMODE_480CVBS:
-	case VMODE_576I:
-	case VMODE_576CVBS:
-	case VMODE_1080I:
-	case VMODE_1080I_50HZ:
+	if (vinfo && vinfo->height != vinfo->field_height) // interlace
 		osd_hw.scan_mode = SCAN_MODE_INTERLACE;
-		break;
-	default:
-		break;
-	}
 }
 
 #ifdef AML_C3_DISPLAY
@@ -1156,80 +1144,65 @@ void osd_wait_vsync_hw(void)
 int osd_set_scan_mode(u32 index)
 {
 	u32 data32 = 0x0;
-	int vmode = -1;
+	struct vinfo_s *vinfo = NULL;
 	int real_scan_mode = SCAN_MODE_INTERLACE;
 
 #ifdef CONFIG_AML_VOUT
-	vmode = vout_get_current_vmode();
+	vinfo = vout_get_current_vinfo();
 #endif
 	osd_hw.scan_mode = SCAN_MODE_PROGRESSIVE;
 	if (osd_hw.fb_for_4k2k) {
 		if (osd_hw.free_scale_enable[index])
 			osd_hw.scale_workaround = 1;
 	}
-	switch (vmode) {
-	/* case VMODE_LCD: */
-	case VMODE_480I:
-	case VMODE_480CVBS:
-	case VMODE_576I:
-	case VMODE_576CVBS:
-		if (osd_hw.free_scale_mode[index]) {
-			osd_hw.field_out_en = 1;
-			switch (osd_hw.free_scale_data[index].y_end) {
-			case 719:
-				osd_hw.bot_type = 2;
-				break;
-			case 1079:
-				osd_hw.bot_type = 3;
-				break;
-			default:
-				osd_hw.bot_type = 2;
-				break;
+
+	if (vinfo) {
+		if (vinfo->height != vinfo->field_height) { // interlace
+			osd_hw.scan_mode = real_scan_mode = SCAN_MODE_INTERLACE;
+			if (vinfo->height == 480 || vinfo->height == 576) { //480i/576i/cvbs
+				if (osd_hw.free_scale_mode[index]) {
+					osd_hw.field_out_en = 1;
+					switch (osd_hw.free_scale_data[index].y_end) {
+					case 719:
+						osd_hw.bot_type = 2;
+						break;
+					case 1079:
+						osd_hw.bot_type = 3;
+						break;
+					default:
+						osd_hw.bot_type = 2;
+						break;
+					}
+				}
+			} else { //1080i
+				if (osd_hw.free_scale_mode[index]) {
+					osd_hw.field_out_en = 1;
+					switch (osd_hw.free_scale_data[index].y_end) {
+					case 719:
+						osd_hw.bot_type = 1;
+						break;
+					case 1079:
+						osd_hw.bot_type = 2;
+						break;
+					default:
+						osd_hw.bot_type = 1;
+						break;
+					}
+				}
 			}
-		}
-		osd_hw.scan_mode = real_scan_mode = SCAN_MODE_INTERLACE;
-		break;
-	case VMODE_1080I:
-	case VMODE_1080I_50HZ:
-#ifdef CONFIG_AML_VOUT_FRAMERATE_AUTOMATION
-	case VMODE_1080I_59HZ:
-#endif
-		if (osd_hw.free_scale_mode[index]) {
-			osd_hw.field_out_en = 1;
-			switch (osd_hw.free_scale_data[index].y_end) {
-			case 719:
-				osd_hw.bot_type = 1;
-				break;
-			case 1079:
-				osd_hw.bot_type = 2;
-				break;
-			default:
-				osd_hw.bot_type = 1;
-				break;
+		} else if (vinfo->width == 4096 && vinfo->height == 2160) { // progressive(smpte)
+			if (osd_hw.fb_for_4k2k) {
+				if (osd_hw.free_scale_enable[index])
+					osd_hw.scale_workaround = 1;
 			}
+			osd_hw.field_out_en = 0;
+		} else { // progressive
+			if (osd_hw.free_scale_mode[index])
+				osd_hw.field_out_en = 0;
 		}
-		osd_hw.scan_mode = real_scan_mode = SCAN_MODE_INTERLACE;
-		break;
-	case VMODE_4K2K_24HZ:
-	case VMODE_4K2K_25HZ:
-	case VMODE_4K2K_30HZ:
-	case VMODE_4K2K_SMPTE:
-	case VMODE_4K2K_SMPTE_25HZ:
-	case VMODE_4K2K_SMPTE_30HZ:
-	case VMODE_4K2K_SMPTE_50HZ:
-	case VMODE_4K2K_SMPTE_60HZ:
-	case VMODE_4K2K_SMPTE_50HZ_Y420:
-	case VMODE_4K2K_SMPTE_60HZ_Y420:
-		if (osd_hw.fb_for_4k2k) {
-			if (osd_hw.free_scale_enable[index])
-				osd_hw.scale_workaround = 1;
-		}
-		osd_hw.field_out_en = 0;
-		break;
-	default:
+	} else { // progressive
 		if (osd_hw.free_scale_mode[index])
 			osd_hw.field_out_en = 0;
-		break;
 	}
 	if (osd_hw.free_scale_enable[index])
 		osd_hw.scan_mode = SCAN_MODE_PROGRESSIVE;
@@ -1610,27 +1583,15 @@ void osd_update_blend(struct pandata_s *disp_data)
 #ifdef AML_S5_DISPLAY
 	u32 blend_width, blend_height;
 #endif
-	int vmode = -1;
+	struct vinfo_s *vinfo = NULL;
 
 #ifdef CONFIG_AML_VOUT
-	vmode = vout_get_current_vmode();
+	vinfo = vout_get_current_vinfo();
 #endif
-	switch (vmode) {
-	/* case VMODE_LCD: */
-	case VMODE_480I:
-	case VMODE_480CVBS:
-	case VMODE_576I:
-	case VMODE_576CVBS:
-	case VMODE_1080I:
-	case VMODE_1080I_50HZ:
-#ifdef CONFIG_AML_VOUT_FRAMERATE_AUTOMATION
-	case VMODE_1080I_59HZ:
-#endif
+
+	if (vinfo && vinfo->height != vinfo->field_height) { // interlace
 		disp_data->y_start /=2;
 		disp_data->y_end /= 2;
-		break;
-	default:
-		break;
 	}
 	width = disp_data->x_end - disp_data->x_start + 1;
 	height = disp_data->y_end - disp_data->y_start + 1;
@@ -2416,29 +2377,18 @@ void osd_set_scale_axis_hw(u32 index, s32 x0, s32 y0, s32 x1, s32 y1)
 
 void osd_get_window_axis_hw(u32 index, s32 *x0, s32 *y0, s32 *x1, s32 *y1)
 {
-	int vmode = -1;
+	struct vinfo_s *vinfo = NULL;
 
 #ifdef CONFIG_AML_VOUT
-	vmode = vout_get_current_vmode();
+	vinfo = vout_get_current_vinfo();
 #endif
-	switch (vmode) {
-	/*case VMODE_LCD:*/
-	case VMODE_480I:
-	case VMODE_480CVBS:
-	case VMODE_576I:
-	case VMODE_576CVBS:
-	case VMODE_1080I:
-	case VMODE_1080I_50HZ:
-#ifdef CONFIG_AML_VOUT_FRAMERATE_AUTOMATION
-	case VMODE_1080I_59HZ:
-#endif
+
+	if (vinfo && vinfo->height != vinfo->field_height) { // interlace
 		*y0 = osd_hw.free_dst_data[index].y_start * 2;
 		*y1 = osd_hw.free_dst_data[index].y_end * 2;
-		break;
-	default:
+	} else {
 		*y0 = osd_hw.free_dst_data[index].y_start;
 		*y1 = osd_hw.free_dst_data[index].y_end;
-		break;
 	}
 	*x0 = osd_hw.free_dst_data[index].x_start;
 	*x1 = osd_hw.free_dst_data[index].x_end;
@@ -2446,29 +2396,17 @@ void osd_get_window_axis_hw(u32 index, s32 *x0, s32 *y0, s32 *x1, s32 *y1)
 
 void osd_set_window_axis_hw(u32 index, s32 x0, s32 y0, s32 x1, s32 y1)
 {
-	int vmode = -1;
+	struct vinfo_s *vinfo = NULL;
 
 #ifdef CONFIG_AML_VOUT
-	vmode = vout_get_current_vmode();
+	vinfo = vout_get_current_vinfo();
 #endif
-	switch (vmode) {
-	/* case VMODE_LCD: */
-	case VMODE_480I:
-	case VMODE_480CVBS:
-	case VMODE_576I:
-	case VMODE_576CVBS:
-	case VMODE_1080I:
-	case VMODE_1080I_50HZ:
-#ifdef CONFIG_AML_VOUT_FRAMERATE_AUTOMATION
-	case VMODE_1080I_59HZ:
-#endif
+	if (vinfo && vinfo->height != vinfo->field_height) { // interlace
 		osd_hw.free_dst_data[index].y_start = y0 / 2;
 		osd_hw.free_dst_data[index].y_end = y1 / 2;
-		break;
-	default:
+	} else {
 		osd_hw.free_dst_data[index].y_start = y0;
 		osd_hw.free_dst_data[index].y_end = y1;
-		break;
 	}
 	osd_hw.free_dst_data[index].x_start = x0;
 	osd_hw.free_dst_data[index].x_end = x1;
