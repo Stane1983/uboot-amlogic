@@ -3,7 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
-//#define DEBUG
+/* #define DEBUG */
 #include "hdmitx_edid_parse_header.h"
 
 #define CEA_DATA_BLOCK_COLLECTION_ADDR_1STP 0x04
@@ -36,8 +36,10 @@
 #define EXTENSION_Y420_VDB_TAG	0xe
 #define EXTENSION_Y420_CMDB_TAG	0xf
 #define EXTENSION_DOLBY_VSADB	0x11
-#define EXTENSION_SCDB_EXT_TAG	0x79 /*HDMI Forum Sink Capability Data Block*/
-#define EXTENSION_SBTM_EXT_TAG	0x7a /* 122 */
+/* HDMI Forum Sink Capability Data Block */
+#define EXTENSION_SCDB_EXT_TAG	0x79
+/* 122 */
+#define EXTENSION_SBTM_EXT_TAG	0x7a
 
 #define EDID_DETAILED_TIMING_DES_BLOCK0_POS 0x36
 #define EDID_DETAILED_TIMING_DES_BLOCK1_POS 0x48
@@ -48,7 +50,8 @@
 #define TAG_PRODUCT_SERIAL_NUMBER 0xFF
 #define TAG_ALPHA_DATA_STRING 0xFE
 #define TAG_RANGE_LIMITS 0xFD
-#define TAG_DISPLAY_PRODUCT_NAME_STRING 0xFC /* MONITOR NAME */
+/* MONITOR NAME */
+#define TAG_DISPLAY_PRODUCT_NAME_STRING 0xFC
 #define TAG_COLOR_POINT_DATA 0xFB
 #define TAG_STANDARD_TIMINGS 0xFA
 #define TAG_DISPLAY_COLOR_MANAGEMENT 0xF9
@@ -243,7 +246,6 @@ static void _show_pcm_ch(struct rx_cap *prxcap, int i,
 	*ppos += snprintf(buf + *ppos - 1, PAGE_SIZE, " bit\n") - 1;
 }
 
-/**/
 ssize_t _show_aud_cap(struct rx_cap *prxcap, char *buf)
 {
 	int i, pos = 0, j;
@@ -318,7 +320,7 @@ ssize_t _show_aud_cap(struct rx_cap *prxcap, char *buf)
 
 	if (cap->ieeeoui == DOVI_IEEEOUI) {
 		/*
-		 *Dolby Vendor Specific:
+		 * Dolby Vendor Specific:
 		 *  headphone_playback_only:0,
 		 *  center_speaker:1,
 		 *  surround_speaker:1,
@@ -354,9 +356,9 @@ ssize_t _show_aud_cap(struct rx_cap *prxcap, char *buf)
 	return pos;
 }
 
-/*index is hdmi 1.4 vic in vsif, value is hdmi2.0 vic*/
+/* index is hdmi 1.4 vic in vsif, value is hdmi2.0 vic */
 static const u32 hdmi14_4k_vics[] = {
-/* 0 - dummy*/
+/* 0 - dummy */
 	0,
 /* 1 - 3840x2160@30Hz */
 	95,
@@ -368,7 +370,8 @@ static const u32 hdmi14_4k_vics[] = {
 	98,
 };
 
-/* HDMI 1.4 introduces the 4 types of 4K resolutions
+/*
+ * HDMI 1.4 introduces the 4 types of 4K resolutions
  * 3840x2160@30/25/24Hz and 4096x2160@24Hz
  * but no corresponding CEA-861-D VIC.
  * so it uses VSIF.hdmi_vic as 1/2/3/4 to represent 4 types
@@ -438,7 +441,8 @@ static void edid_parsing_id_serial_number(struct rx_cap *prxcap,
 		prxcap->IDSerialNumber[i] = data[3 - i];
 }
 
-/* store the idx of vesa_timing[32], which is 0
+/*
+ * store the idx of vesa_timing[32], which is 0
  * note: only save vesa mode, for compliance with uboot.
  * uboot not parse standard timing, or CVT block.
  * as disp_cap will check all mode in rx_cap->VIC[],
@@ -583,7 +587,8 @@ static void calc_timing(struct rx_cap *prxcap, u8 *data, struct vesa_standard_ti
 			t->vesa_timing = standard_timing->vic;
 
 		if (t->vesa_timing < HDMITX_VESA_OFFSET) {
-			/* for compliance with uboot, don't
+			/*
+			 * for compliance with uboot, don't
 			 * save CEA mode in standard_timing block.
 			 * uboot don't parse standard_timing block
 			 */
@@ -615,8 +620,7 @@ static void edid_receiverproductnameparse(struct rx_cap *prxcap,
 
 	if (!prxcap || !data)
 		return;
-	/* some Display Product name end with 0x20, not 0x0a
-	 */
+	/* some Display Product name end with 0x20, not 0x0a */
 	while ((data[i] != 0x0a) && (data[i] != 0x20) && (i < 13)) {
 		prxcap->ReceiverProductName[i] = data[i];
 		i++;
@@ -724,7 +728,7 @@ static void _edid_parsingvendspec(struct dv_info *dv,
 	ieeeoui += dat[pos++] << 16;
 	HDMITX_DEBUG_EDID("Edid_ParsingVendSpec:ieeeoui=0x%x,len=%u\n", ieeeoui, length);
 
-/*HDR10+ use vsvdb*/
+	/* HDR10+ use vsvdb */
 	if (ieeeoui == HDR10_PLUS_IEEE_OUI) {
 		memset(hdr10_plus, 0, sizeof(struct hdr10_plus_info));
 		hdr10_plus->length = length;
@@ -734,7 +738,8 @@ static void _edid_parsingvendspec(struct dv_info *dv,
 		return;
 	}
 	if (ieeeoui == CUVA_IEEEOUI) {
-		memcpy(cuva->rawdata, cuva_dat, 15); /* 15, fixed length */
+		/* 15, fixed length */
+		memcpy(cuva->rawdata, cuva_dat, 15);
 		cuva->length = cuva_dat[0] & 0x1f;
 		cuva->ieeeoui = cuva_dat[2] |
 				(cuva_dat[3] << 8) |
@@ -752,7 +757,7 @@ static void _edid_parsingvendspec(struct dv_info *dv,
 	}
 
 	if (ieeeoui == DV_IEEE_OUI) {
-		/* it is a Dovi block*/
+		/* it is a Dovi block */
 		memset(dv, 0, sizeof(struct dv_info));
 		dv->block_flag = CORRECT;
 		dv->length = length;
@@ -806,7 +811,8 @@ static void _edid_parsingvendspec(struct dv_info *dv,
 		}
 
 		if (dv->ver == 1) {
-			if (dv->length == 0x0B) {/* Refer to DV 2.9 Page 33 */
+			if (dv->length == 0x0B) {
+				/* Refer to DV 2.9 Page 33 */
 				dv->dm_version = (dat[pos] >> 2) & 0x7;
 				dv->sup_yuv422_12bit = dat[pos] & 0x1;
 				dv->sup_2160p60hz = (dat[pos] >> 1) & 0x1;
@@ -842,7 +848,8 @@ static void _edid_parsingvendspec(struct dv_info *dv,
 				pos++;
 				dv->colorimetry = dat[pos] & 0x1;
 				dv->tmin_lum = dat[pos] >> 1;
-				pos += 2; /* byte8 is reserved as 0 */
+				/* byte8 is reserved as 0 */
+				pos += 2;
 				dv->Rx = dat[pos++];
 				dv->Ry = dat[pos++];
 				dv->Gx = dat[pos++];
@@ -856,13 +863,15 @@ static void _edid_parsingvendspec(struct dv_info *dv,
 			}
 		}
 		if (dv->ver == 2) {
-			/* v2 VSVDB length could be greater than 0xB
+			/*
+			 * v2 VSVDB length could be greater than 0xB
 			 * and should not be treated as unrecognized
 			 * block. Instead, we should parse it as a regular
 			 * v2 VSVDB using just the remaining 11 bytes here
 			 */
 			if (dv->length >= 0x0B) {
-				dv->sup_2160p60hz = 0x1;/*default*/
+				/* default */
+				dv->sup_2160p60hz = 0x1;
 				dv->dm_version = (dat[pos] >> 2) & 0x7;
 				dv->sup_yuv422_12bit = dat[pos] & 0x1;
 				dv->sup_backlight_control = (dat[pos] >> 1) & 0x1;
@@ -921,8 +930,7 @@ static void edid_parsingvendspec(struct rx_cap *prxcap, u8 *buf)
 	pos++;
 
 	if (buf[pos] != 1) {
-		HDMITX_INFO("edid: parsing fail %s[%d]\n", __func__,
-			__LINE__);
+		HDMITX_ERROR("edid: parsing fail %s[%d]\n", __func__, __LINE__);
 		return;
 	}
 
@@ -1050,7 +1058,7 @@ static int _edid_parsedrmdb(struct hdr_info *info, u8 *buf)
 	    ext_tag != EXTENSION_DRM_DYNAMIC_TAG)
 		goto INVALID_DRM_DYNAMIC;
 	pos++;
-	data_end--;/*extended tag code byte doesn't need*/
+	data_end--;
 
 	while (data_end) {
 		type_length = buf[pos];
@@ -1194,7 +1202,8 @@ static void edid_parsingdolbyvsadb(struct rx_cap *prxcap, unsigned char *buf)
 
 	cap = &prxcap->dolby_vsadb_cap;
 	memset(cap->rawdata, 0, sizeof(cap->rawdata));
-	memcpy(cap->rawdata, buf, 7); /* fixed 7 bytes */
+	/* fixed 7 bytes */
+	memcpy(cap->rawdata, buf, 7);
 
 	pos = 0;
 	length = buf[pos] & 0x1f;
@@ -1525,11 +1534,13 @@ static void hdmitx_edid_parse_hdmi14(struct rx_cap *prxcap,
 	}
 }
 
-/* force_vsvdb */
-/*  0: no force, use TV's */
-/*  1~n: use preset vsvdb 0~n-1 */
-/*  255: use current vsvdb_data */
-/*       update by module param vsvdb_data */
+/*
+ * force_vsvdb
+ *  0: no force, use TV's
+ *  1~n: use preset vsvdb 0~n-1
+ *  255: use current vsvdb_data
+ *       update by module param vsvdb_data
+ */
 static unsigned int force_vsvdb;
 static unsigned int vsvdb_size = 12;
 static unsigned char vsvdb_data[32] = {
@@ -1572,11 +1583,13 @@ MODULE_PARM_DESC(force_vsvdb, "\n force_vsvdb\n");
 module_param_array(vsvdb_data, byte, &vsvdb_size, 0664);
 MODULE_PARM_DESC(vsvdb_data, "\n vsvdb data\n");
 
-/* force_hdr */
-/*  0: no force, use TV's */
-/*  1~n: use preset drm 0~n-1 */
-/*  255: use current drm_data */
-/*       update by module param drm_data */
+/*
+ * force_hdr
+ *  0: no force, use TV's
+ *  1~n: use preset drm 0~n-1
+ *  255: use current drm_data
+ *       update by module param drm_data
+ */
 static unsigned int force_hdr;
 static unsigned int drm_size = 4;
 static unsigned char drm_data[8] = {
@@ -1621,7 +1634,8 @@ static void hdmitx_edid_parse_ifdb(struct rx_cap *prxcap, u8 *blockbuf)
 	/* begin with an InfoFrame Processing Descriptor */
 	if ((blockbuf[2] & 0x1f) != 0)
 		HDMITX_ERROR("ERR: IFDB not begin with InfoFrame Processing Descriptor\n");
-	sum_len = 1; /* Extended Tag Code len */
+	/* Extended Tag Code len */
+	sum_len = 1;
 
 	len = (blockbuf[2] >> 5) & 0x7;
 	sum_len += (len + 2);
@@ -1698,7 +1712,8 @@ static void hdmitx_edid_parse_hfscdb(struct rx_cap *prxcap,
 	prxcap->qms_tfr_max = !!(blockbuf[offset + 10] & (1 << 5));
 	prxcap->dsc_native_420 = !!(blockbuf[offset + 10] & (1 << 6));
 	prxcap->dsc_1p2 = !!(blockbuf[offset + 10] & (1 << 7));
-	/* dsc_1p2 shall be cleared (=0) for devices that
+	/*
+	 * dsc_1p2 shall be cleared (=0) for devices that
 	 * do not support FRL (i.e. Max_FRL_Rate=0).
 	 */
 	if (prxcap->max_frl_rate == 0)
@@ -1709,18 +1724,21 @@ static void hdmitx_edid_parse_hfscdb(struct rx_cap *prxcap,
 			prxcap->dsc_1p2 = 0;
 			return;
 		}
-		/* 3: up to 4 slices and up to (340 MHz/K SliceAdjust)
+		/*
+		 * 3: up to 4 slices and up to (340 MHz/K SliceAdjust)
 		 * pixel clock per slice
 		 * 4: up to 8 slices and up to (340 MHz/K SliceAdjust)
 		 * pixel clock per slice
 		 */
 		prxcap->dsc_max_slices = blockbuf[offset + 11] & 0xf;
-		/* This is value shall be the same or lower than
+		/*
+		 * This is value shall be the same or lower than
 		 * the physical maximum rate specified by the
 		 * Max_FRL_Rate field.
 		 */
 		prxcap->dsc_max_frl_rate = (blockbuf[offset + 11] >> 4) & 0xf;
-		/* The number of bytes is computed as:
+		/*
+		 * The number of bytes is computed as:
 		 * 1024 x (1+DSC_ TotalChunkKBytes)
 		 */
 		prxcap->dsc_total_chunk_bytes = blockbuf[offset + 12] & 0x3f;
@@ -1853,16 +1871,18 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap, u8 *block_buf)
 	if (!prxcap || !block_buf)
 		return -1;
 
-	end = block_buf[2]; /* CEA description. */
+	/* CEA description */
+	end = block_buf[2];
 	prxcap->native_Mode = block_buf[1] >= 2 ? block_buf[3] : 0;
 	prxcap->number_of_dtd += block_buf[1] >= 2 ? (block_buf[3] & 0xf) : 0;
 	/* Initialize SVD_VIC used for SVD storage in the video data block */
 	prxcap->SVD_VIC_count = 0;
 	memset(prxcap->SVD_VIC, 0, sizeof(prxcap->SVD_VIC));
-	/* do not reset anything during parsing as there could be
+	/*
+	 * do not reset anything during parsing as there could be
 	 * more than one block. Below variable should be reset once
 	 * before parsing and are already being reset before parse
-	 *call
+	 * call
 	 */
 	/* prxcap->native_vic = 0;*/
 	/* prxcap->native_vic2 = 0;*/
@@ -1903,7 +1923,8 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap, u8 *block_buf)
 		case HDMI_EDID_BLOCK_TYPE_VIDEO:
 			offset++;
 			for (i = 0; i < count ; i++) {
-				/* The SVD in the video data block is stored in SVD_VIC
+				/*
+				 * The SVD in the video data block is stored in SVD_VIC
 				 * and mapped with 420 CMDB
 				 */
 				_store_vics(prxcap, block_buf[offset + i]);
@@ -1923,7 +1944,8 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap, u8 *block_buf)
 				(block_buf[offset + 2] == 0xc4))
 				hdmitx_edid_parse_hfscdb(prxcap, offset,
 							 block_buf, count);
-			offset += count; /* ignore the remains. */
+			/* ignore the remains. */
+			offset += count;
 			break;
 
 		case HDMI_EDID_BLOCK_TYPE_SPEAKER:
@@ -1963,7 +1985,8 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap, u8 *block_buf)
 					edid_parsedrmdb(prxcap, &block_buf[offset]);
 					break;
 				case EXTENSION_VFPDB_TAG:
-/* Just record VFPDB offset address, call Edid_ParsingVFPDB() after DTD
+/*
+ * Just record VFPDB offset address, call Edid_ParsingVFPDB() after DTD
  * parsing, in case that
  * SVR >=129 and SVR <=144, Interpret as the Kth DTD in the EDID,
  * where K = SVR C 128 (for K=1 to 16)
@@ -2056,13 +2079,18 @@ static void hdmitx_edid_set_default_aud(struct rx_cap *prxcap)
 		return;
 
 	prxcap->AUD_count = 1;
-	prxcap->RxAudioCap[0].audio_format_code = 1; /* PCM */
-	prxcap->RxAudioCap[0].channel_num_max = 1; /* 2ch */
-	prxcap->RxAudioCap[0].freq_cc = 7; /* 32/44.1/48 kHz */
-	prxcap->RxAudioCap[0].cc3 = 1; /* 16bit */
+	/* PCM */
+	prxcap->RxAudioCap[0].audio_format_code = 1;
+	/* 2ch */
+	prxcap->RxAudioCap[0].channel_num_max = 1;
+	/* 32/44.1/48 kHz */
+	prxcap->RxAudioCap[0].freq_cc = 7;
+	/* 16bit */
+	prxcap->RxAudioCap[0].cc3 = 1;
 }
 
-/* for below cases:
+/*
+ * for below cases:
  * for exception process: no CEA vic in parse result
  * DVI case(only one block), HDMI/HDCP CTS(TODO)
  */
@@ -2101,7 +2129,8 @@ static void edid_manufacture_date_parse(struct rx_cap *prxcap,
 	if (!data)
 		return;
 
-	/* week:
+	/*
+	 * week:
 	 *	0: not specified
 	 *	0x1~0x35: valid week
 	 *	0x37~0xfe: reserved
@@ -2112,7 +2141,8 @@ static void edid_manufacture_date_parse(struct rx_cap *prxcap,
 	else
 		prxcap->manufacture_week = data[0];
 
-	/* year:
+	/*
+	 * year:
 	 *	0x0~0xf: reserved
 	 *	0x10~0xff: year of manufacture,
 	 *		or model year(if specified by week=0xff)
@@ -2198,7 +2228,7 @@ static void edid_dtd_parsing(struct rx_cap *prxcap, u8 *data)
 		return;
 
 	t = &prxcap->dtd[prxcap->dtd_idx];
-	/* if data[0-2] are zeroes, no need parse, and skip*/
+	/* if data[0-2] are zeroes, no need parse, and skip */
 	if (data[0] == 0 && data[1] == 0 && data[2] == 0)
 		return;
 	memset(t, 0, sizeof(struct dtd));
@@ -2227,9 +2257,11 @@ static void edid_dtd_parsing(struct rx_cap *prxcap, u8 *data)
  * Special handling of 480i60hz, 576i50hz
  */
 	if ((((t->flags >> 1) & 0x3) == 0) && t->h_active == 1440) {
-		if (t->pixel_clock == 2700) /* 576i50hz */
+		/* 576i50hz */
+		if (t->pixel_clock == 2700)
 			goto next;
-		if ((t->pixel_clock - 2700) < 10) /* 480i60hz */
+		/* 480i60hz */
+		if ((t->pixel_clock - 2700) < 10)
 			t->pixel_clock = 2702;
 next:
 		t->v_active = t->v_active / 2;
@@ -2252,7 +2284,8 @@ next:
 		} else {
 			t->vic = timing->vic;
 		}
-		prxcap->preferred_mode = prxcap->dtd[0].vic; /* Select dtd0 */
+		/* Select dtd0 */
+		prxcap->preferred_mode = prxcap->dtd[0].vic;
 		pr_debug(EDID "get dtd%d vic: %d\n",
 			prxcap->dtd_idx, t->vic);
 		prxcap->dtd_idx++;
@@ -2436,7 +2469,8 @@ static void check_dv_truly_support(struct rx_cap *prxcap, struct dv_info *dv)
 		return;
 
 	if (dv->ieeeoui == DV_IEEE_OUI && dv->ver <= 2) {
-		/* check max tmds rate to determine if 4k60 DV can truly be
+		/*
+		 * check max tmds rate to determine if 4k60 DV can truly be
 		 * supported.
 		 */
 		if (prxcap->Max_TMDS_Clock2) {
@@ -2453,11 +2487,12 @@ static void check_dv_truly_support(struct rx_cap *prxcap, struct dv_info *dv)
 
 		if (dv->ver == 1 && dv->length == 0xB) {
 			if (dv->low_latency == 0x00) {
-				/*standard mode */
+				/* standard mode */
 				dv->sup_2160p60hz = dv->sup_2160p60hz &&
 							(max_tmds_clk >= 594);
 			} else if (dv->low_latency == 0x01) {
-				/* both standard and LL are supported. 4k60 LL
+				/*
+				 * both standard and LL are supported. 4k60 LL
 				 * DV support should/can be determined using
 				 * video formats supported inthe E-EDID as flag
 				 * sup_2160p60hz might not be set.
@@ -2476,7 +2511,8 @@ static void check_dv_truly_support(struct rx_cap *prxcap, struct dv_info *dv)
 						(max_tmds_clk >= 594);
 
 		if (dv->ver == 2) {
-			/* 4k60 DV support should be determined using video
+			/*
+			 * 4k60 DV support should be determined using video
 			 * formats supported in the EEDID as flag sup_2160p60hz
 			 * is not applicable for VSVDB V2.
 			 */
@@ -2516,9 +2552,12 @@ static void edid_set_fallback_mode(struct rx_cap *prxcap)
 	phyaddr->valid = 0;
 	prxcap->physical_addr = 0xffff;
 
-	prxcap->Max_TMDS_Clock1 = DEFAULT_MAX_TMDS_CLK; /* 165MHZ / 5 */
-	prxcap->native_Mode = 0; /* only RGB */
-	prxcap->dc_y444 = 0; /* only 8bit */
+	/* 165MHZ / 5 */
+	prxcap->Max_TMDS_Clock1 = DEFAULT_MAX_TMDS_CLK;
+	/* only RGB */
+	prxcap->native_Mode = 0;
+	/* only 8bit */
+	prxcap->dc_y444 = 0;
 	prxcap->VIC_count = 0x3;
 	prxcap->VIC[0] = HDMI_16_1920x1080p60_16x9;
 	prxcap->VIC[1] = HDMI_4_1280x720p60_16x9;
@@ -2556,7 +2595,8 @@ static void _edid_parse_base_structure(struct rx_cap *prxcap, unsigned char *EDI
 
 	if (cta_block_count == 0) {
 		HDMITX_INFO("EDID BlockCount=0\n");
-		/* DVI case judgement: only contains one block and
+		/*
+		 * DVI case judgement: only contains one block and
 		 * checksum valid
 		 */
 		checksum = 0;
@@ -2660,7 +2700,8 @@ int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf)
 	}
 
 	edid_check_pcm_declare(prxcap);
-	/* move parts that may contain cea timing parse behind
+	/*
+	 * move parts that may contain cea timing parse behind
 	 * VDB parse, so that to not affect VDB index which
 	 * will be used in Y420CMDB map
 	 */
@@ -2739,7 +2780,8 @@ int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf)
 
 	if (!prxcap->AUD_count && !prxcap->ieeeoui)
 		hdmitx_edid_set_default_aud(prxcap);
-	/* CEA-861F 7.5.2  If only Basic Audio is supported,
+	/*
+	 * CEA-861F 7.5.2  If only Basic Audio is supported,
 	 * no Short Audio Descriptors are necessary.
 	 */
 	if (!prxcap->AUD_count)
@@ -2756,7 +2798,8 @@ int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf)
 	check_dv_truly_support(prxcap, dv);
 	dv = &prxcap->dv_info2;
 	check_dv_truly_support(prxcap, dv);
-	/* For some receivers, they don't claim the screen size
+	/*
+	 * For some receivers, they don't claim the screen size
 	 * and re-calculate it from the h/v image size from dtd
 	 * the unit of screen size is cm, but the unit of image size is mm
 	 */
@@ -2798,7 +2841,8 @@ void hdmitx_edid_rxcap_clear(struct rx_cap *prxcap)
 	memset(prxcap, 0, sizeof(struct rx_cap));
 	prxcap->edid_check = ret;
 
-	/* Note: in most cases, we think that rx is tv and the default
+	/*
+	 * Note: in most cases, we think that rx is tv and the default
 	 * IEEEOUI is HDMI Identifier
 	 */
 	prxcap->ieeeoui = HDMI_IEEE_OUI;
@@ -2806,7 +2850,7 @@ void hdmitx_edid_rxcap_clear(struct rx_cap *prxcap)
 	prxcap->edid_parsing = 0;
 	hdmitx_edid_set_default_aud(prxcap);
 	rx_set_hdr_lumi(&tmp[0], 2);
-	//rx_set_receiver_edid(&tmp[0], 2);
+	/* rx_set_receiver_edid(&tmp[0], 2); */
 	phy_addr_clear(&prxcap->vsdb_phy_addr);
 }
 
@@ -2830,7 +2874,8 @@ static void hdmitx_edid_blk_print(unsigned char *blk, unsigned int blk_idx)
 	HDMITX_INFO("edid: blk%d raw data\n", blk_idx);
 	for (i = 0, pos = 0; i < 128; i++) {
 		pos += sprintf(tmp_buf + pos, "%02x", blk[i]);
-		if (((i + 1) & 0x3f) == 0)    /* print 64 bytes a line */
+		/* print 64 bytes a line */
+		if (((i + 1) & 0x3f) == 0)
 			pos += sprintf(tmp_buf + pos, "\n");
 	}
 	HDMITX_INFO("%s", tmp_buf);
@@ -2922,7 +2967,8 @@ int hdmitx_edid_print_sink_cap(const struct rx_cap *prxcap,
 		"EDID Version: %d.%d\n",
 		prxcap->edid_version, prxcap->edid_revision);
 
-/*	pos += snprintf(buffer + pos, buffer_len - pos,
+/*
+ *	pos += snprintf(buffer + pos, buffer_len - pos,
  *		"EDID block number: 0x%x\n", tx_comm->EDID_buf[0x7e]);
  */
 
@@ -2933,7 +2979,6 @@ int hdmitx_edid_print_sink_cap(const struct rx_cap *prxcap,
 		prxcap->vsdb_phy_addr.c,
 		prxcap->vsdb_phy_addr.d);
 
-	// TODO native_vic2
 	pos += snprintf(buffer + pos, buffer_len - pos,
 		"native Mode %x, VIC (native %d):\n",
 		prxcap->native_Mode, prxcap->native_vic);
@@ -3075,7 +3120,8 @@ int hdmitx_edid_print_sink_cap(const struct rx_cap *prxcap,
 			prxcap->additional_vsif_num);
 	pos += snprintf(buffer + pos, buffer_len - pos, "ifdb_present: %d\n",
 			prxcap->ifdb_present);
-	/* for checkvalue which maybe used by application to adjust
+	/*
+	 * for checkvalue which maybe used by application to adjust
 	 * whether edid is changed
 	 */
 	pos += snprintf(buffer + pos, buffer_len - pos,
