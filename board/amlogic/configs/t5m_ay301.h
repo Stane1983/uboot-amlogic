@@ -130,6 +130,7 @@
 		"dtb_mem_addr=0x01000000\0" \
 		"fb_width=1920\0" \
 		"fb_height=1080\0" \
+		"vpu_overclock=0\0" \
 		"frac_rate_policy=1\0" \
 		"usb_burning=" CONFIG_USB_TOOL_ENTRY "\0" \
 		"fdt_high=0x20000000\0"\
@@ -168,7 +169,7 @@
 		"get_bootloaderversion;" \
 		"run storeargs_base;"\
 		"setenv bootargs ${bootargs} powermode=${powermode} kvm-arm.mode=none init_on_alloc=0 "\
-		"lcd_ctrl=${lcd_ctrl} lcd_debug=${lcd_debug} "\
+		"lcd_ctrl=${lcd_ctrl} lcd_debug=${lcd_debug} vpu_overclock=${vpu_overclock} "\
 		"outputmode=${outputmode} connector0_type=${connector0_type} gamma=${gamma};"\
 		"run cmdline_keys;"\
 		"\0"\

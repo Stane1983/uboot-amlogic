@@ -10,6 +10,7 @@
 #include "vpu_reg.h"
 #include "vpu.h"
 #include "vpu_ctrl.h"
+#include "amlogic/aml_efuse.h"
 
 /* v20181009: init version */
 /* v20190313: add sm1 support */
@@ -676,6 +677,19 @@ static struct vpu_data_s vpu_data_txhd2 = {
 	.change_clk = change_vpu_clk,
 };
 
+static void vpu_support_overclock(void)
+{
+	unsigned int cpu_type;
+
+	cpu_type = get_cpu_id().family_id;
+	if (cpu_type == MESON_CPU_MAJOR_ID_T5M) {
+		if (IS_FEAT_EN_VPU_OVER_SPEED()) {
+			env_set("vpu_overclock", "1");
+			VPUPR("vpu support overclock\n");
+		}
+	}
+}
+
 static void vpu_chip_detect(void)
 {
 	unsigned int cpu_type;
@@ -858,6 +872,7 @@ int vpu_probe(void)
 {
 	int ret;
 	vpu_chip_detect();
+	vpu_support_overclock();
 	if (vpu_check())
 		return -1;
 
