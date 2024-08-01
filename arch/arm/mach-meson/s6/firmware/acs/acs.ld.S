@@ -28,22 +28,27 @@ SECTIONS
 		*(.dev_header*)
 	}
 
-	.generic_param 0x00000060:
+	.vendor_key 0x00000080 :
+	{
+		*(.vendor_key*)
+	}
+
+	.generic_param 0x00000100:
 	{
 		*(.generic_param*)
 	}
 
-	.clk_param 0x00000d0:
+	.clk_param 0x0000170:
 	{
 		*(.clk_param*)
 	}
 
-	.misc_param 0x0000150:
+	.misc_param 0x00001F0:
 	{
 		*(.misc_param*)
 	}
 
-	.store_param 0x00000250:
+	.store_param 0x000002F0:
 	{
 		*(.store_param*)
 	}

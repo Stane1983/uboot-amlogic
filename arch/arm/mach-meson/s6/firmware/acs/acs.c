@@ -31,3 +31,8 @@ dev_param_hdr_t __param_hdr __attribute__ ((section(".dev_header"))) = {
 	.ddr_2acs_data_p = (unsigned int *)__bl2_ddr_reg_data,
 };
 
+__attribute__ ((__weak__)) vendor_key_t __vendor_key __attribute__ ((section(".vendor_key"))) = {
+	.magic = 0x6b706d61,
+	.flags = 0x0,
+	.pubkey = {0},
+};
