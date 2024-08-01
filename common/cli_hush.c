@@ -872,6 +872,14 @@ static int builtin_not_written(struct child_prog *child)
 }
 #endif
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+void release_cmd_locker(int cpu)
+{
+	if (lock_holder == cpu)
+		spin_unlock(&cmd_lock);
+}
+#endif
+
 static int b_check_space(o_string *o, int len)
 {
 	/* It would be easy to drop a more restrictive policy
