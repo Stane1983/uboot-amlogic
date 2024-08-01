@@ -113,6 +113,7 @@ uint32_t meson_efuse_obj_read(uint32_t obj_id, uint8_t *buff, uint32_t *size);
 uint32_t efuse_obj_write(uint32_t obj_id, char *name, uint8_t *buff, uint32_t size);
 uint32_t efuse_obj_read(uint32_t obj_id, char *name, uint8_t *buff, uint32_t *size);
 uint32_t efuse_obj_set_data(char *name, char *data);
+uint32_t efuse_obj_set_enc_data(char *name, char *data);
 uint32_t efuse_obj_set_license(char *name);
 uint32_t efuse_obj_set_enc_data(char *name, char *data);
 uint32_t efuse_obj_lock(char *name);
