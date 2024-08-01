@@ -76,6 +76,7 @@
 	"panel_type=dsi_0\0"\
 	"outputmode=1080p60hz\0"\
 	"hdmimode=none\0"\
+	"qms_en=1\0"\
 	"colorattribute=444,8bit\0"\
 	"cvbsmode=576cvbs\0"\
 	"cvbs_drv=0\0"\
