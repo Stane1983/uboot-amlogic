@@ -403,8 +403,8 @@ nextchunk-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 /* pad request bytes into a usable size */
 
 #define request2size(req) \
- (((long)((req) + (SIZE_SZ + MALLOC_ALIGN_MASK)) < \
-  (long)(MINSIZE + MALLOC_ALIGN_MASK)) ? MINSIZE : \
+ ((((req) + (SIZE_SZ + MALLOC_ALIGN_MASK)) < \
+  (MINSIZE + MALLOC_ALIGN_MASK)) ? MINSIZE : \
    (((req) + (SIZE_SZ + MALLOC_ALIGN_MASK)) & ~(MALLOC_ALIGN_MASK)))
 #endif /* CONFIG_AML_UASAN */
 
