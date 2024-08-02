@@ -177,9 +177,9 @@ __attribute__ ((section(".misc_param"))) = {
 	{ PWM_MISC_REG_H,	   (0x1 << 0),	  (0x1 << 0), 0, 0, 0 },
 	{ PWM_MISC_REG_J,	   (0x1 << 0),	  (0x1 << 0), 0, 0, 0 },
 	/* set pwm h clock rate to 500M, enable them */
-	/* set pwm j clock rate to 500M, enable them */
-	{ CLKCTRL_PWM_CLK_GH_CTRL, (0x1 << 24) | (0x2 << 25), 0xffffffff, 0, 0, 0 },
-	{ CLKCTRL_PWM_CLK_IJ_CTRL, (0x1 << 24) | (0x2 << 25), 0xffffffff, 0, 0, 0 },
+	/* set pwm j clock rate to fdiv3, enable them */
+	{ CLKCTRL_PWM_CLK_GH_CTRL, (0x1 << 24), 0xffffffff, 0, 0, 0 },
+	{ CLKCTRL_PWM_CLK_IJ_CTRL, (0x1 << 24) | (0x3 << 25), 0xffffffff, 0, 0, 0 },
 	/* set GPIOE_0 GPIOE_1 drive strength to 3 */
 	{ PADCTRL_GPIOE_DS,	   0xf,		  0xf,	      0, 0, 0 },
 	/* set GPIOE_0 GPIOE_1 mux to pwmh pwmj */
