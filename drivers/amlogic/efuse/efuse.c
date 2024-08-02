@@ -210,6 +210,7 @@ uint32_t efuse_obj_write(uint32_t obj_id, char *name, uint8_t *buff, uint32_t si
 	return ret;
 }
 
+#if (IS_ENABLED(CONFIG_AMPK))
 uint32_t efuse_obj_enc_write(uint32_t obj_id, char *name, uint8_t *buff, uint32_t size)
 {
 	uint32_t ret;
@@ -233,6 +234,7 @@ uint32_t efuse_obj_enc_write(uint32_t obj_id, char *name, uint8_t *buff, uint32_
 	ret = meson_efuse_obj_write(obj_id, (uint8_t *)&efuseinfo, sizeof(efuseinfo));
 	return ret;
 }
+#endif
 
 uint32_t efuse_obj_read(uint32_t obj_id, char *name, uint8_t *buff, uint32_t *size)
 {
@@ -296,6 +298,7 @@ uint32_t efuse_obj_set_data(char *name, char *data)
 	return ret;
 }
 
+#if (IS_ENABLED(CONFIG_AMPK))
 uint32_t efuse_obj_set_enc_data(char *name, char *data)
 {
 	uint32_t ret;
@@ -311,6 +314,7 @@ uint32_t efuse_obj_set_enc_data(char *name, char *data)
 
 	return ret;
 }
+#endif
 
 uint32_t efuse_obj_set_license(char *name)
 {

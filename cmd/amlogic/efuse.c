@@ -211,9 +211,11 @@ static char *efuse_obj_err_parse(uint32_t  efuse_obj_err_status)
 	case EFUSE_OBJ_ERR_WRITE_PROTECTED:
 		err_char = "write protected";
 		break;
+#if (IS_ENABLED(CONFIG_AMPK))
 	case EFUSE_OBJ_ERR_TAG:
 		err_char = "invalid encrypted data tag. check device pub key and re-encrypt";
 		break;
+#endif
 	case EFUSE_OBJ_ERR_INTERNAL:
 	case EFUSE_OBJ_ERR_OTHER_INTERNAL:
 		err_char = "internal error";
