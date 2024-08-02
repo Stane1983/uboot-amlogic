@@ -731,7 +731,7 @@ static void clocks_set_vid_clk_div_for_hdmi(int div_sel)
 {
 	int shift_val = 0;
 	int shift_sel = 0;
-	u32 reg_vid_pll = CLKCTRL_VID_PLL_CLK0_DIV;;
+	u32 reg_vid_pll = CLKCTRL_VID_PLL_CLK0_DIV;
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
 	pr_info("%s[%d] div = %d\n", __func__, __LINE__, div_sel);
@@ -1156,15 +1156,34 @@ static void hdmitx_check_frac_rate(struct hdmitx_dev *hdev)
 {
 	struct hdmi_format_para *para = NULL;
 	char *frac_rate_str = NULL;
+	char *user_hdmimode = NULL;
 
-	para = hdev->para;
-	frac_rate_str = env_get("frac_rate_policy");
-	if (frac_rate_str && (frac_rate_str[0] == '0'))
-		frac_rate = 0;
-	else if (para && para->timing.name && likely_frac_rate_mode(para->timing.name))
+	user_hdmimode = env_get("hdmimode");
+	/*
+	 * If the user-selected hdmimode differs from the currently output hdmimode,
+	 * indicating that the best policy for output should be executed,
+	 * the default frac_rate_policy value of 1 should be used for the output.
+	 */
+	if (!(strstr(user_hdmimode, para->timing.sname) ||
+	      strstr(user_hdmimode, para->timing.name)) &&
+		likely_frac_rate_mode(para->timing.name)) {
 		frac_rate = 1;
+	} else {
+		para = hdev->para;
+		frac_rate_str = env_get("frac_rate_policy");
+		if (frac_rate_str && (frac_rate_str[0] == '0'))
+			frac_rate = 0;
+		else if (para && para->timing.name && likely_frac_rate_mode(para->timing.name))
+			frac_rate = 1;
+	}
 
 	hdev->frac_rate_policy = frac_rate;
+	/*
+	 * "frac_rate_policy" saves user-selected settings and don't make changes.
+	 * Use new environment variables "actual_frac_rate" save the real frac_rate,
+	 * and transfer it to the kernel in the env file as bootargs.
+	 */
+	env_set("actual_frac_rate", frac_rate ? "1" : "0");
 	pr_info("hdmitx_check_frac_rate: frac_rate:%d\n", frac_rate);
 }
 
