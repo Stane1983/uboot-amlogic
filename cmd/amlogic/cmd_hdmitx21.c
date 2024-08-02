@@ -1052,10 +1052,7 @@ void scene_process(struct hdmitx_dev *hdev,
 
 	if (!hdev || !scene_output_info)
 		return;
-	// QMS BRR selection
-	// 120 or 60
-	// TX cap & Rx Cap
-	qms_scene_pre_process(hdev);
+
 	/* 1.read dolby vision mode from prop(maybe need to env) */
 	memset(&hdmidata, 0, sizeof(struct input_hdmi_data));
 	get_hdmi_data(hdev, &hdmidata);
@@ -1334,7 +1331,8 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 		env_set("colorattribute", colorattribute);
 	}
 	env_set("save_outputmode", sel_hdmimode);
-	/* ubootenv dolby_status is used for is_dv_preference() decision,
+	/*
+	 * ubootenv dolby_status is used for is_dv_preference() decision,
 	 * system_control save current dv output status in it.
 	 * it will be used by dv module later to decide DV output later.
 	 * if currently adaptive hdr, then we should set dolby_status to
@@ -1344,6 +1342,12 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 		env_set("dolby_status", 0);
 	hdev->para = hdmitx21_get_fmtpara(sel_hdmimode, env_get("colorattribute"));
 	hdev->vic = hdev->para->timing.vic;
+	/*
+	 * QMS BRR selection
+	 * 120 or 60
+	 * TX cap & Rx Cap
+	 */
+	qms_scene_pre_process(hdev);
 	hdmitx_mask_rx_info(hdev);
 	hdmitx21_select_frl(hdev);
 	return 0;
