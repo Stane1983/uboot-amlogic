@@ -393,8 +393,8 @@ static int count_required_pts(u64 addr, int level, u64 maxaddr)
 int mmu_map_update(void)
 {
 	ulong ddr_size =
-	    ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xffffUL) << 4) >
-	    0xe0000000 ? 0xe0000000 : ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xffffUL) << 4);
+	    ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0x7ffffUL) << 4) >
+	    0xe0000000 ? 0xe0000000 : ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0x7ffffUL) << 4);
 
 	u32 rsv_addr;
 	u32 reg_size;
