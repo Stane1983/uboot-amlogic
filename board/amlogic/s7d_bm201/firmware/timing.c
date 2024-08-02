@@ -9,7 +9,7 @@
 #include <ddr_timing.c>
 
 /* board clk defines */
-#define CPU_CLK                                 2004
+#define CPU_CLK                                 2508
 
 /* board vmin_value defines */
 #define VMIN_FF_VALUE                           670
