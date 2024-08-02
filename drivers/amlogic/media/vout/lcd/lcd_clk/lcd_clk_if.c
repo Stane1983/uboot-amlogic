@@ -352,6 +352,11 @@ static int lcd_clk_config_chip_init(struct aml_lcd_drv_s *pdrv, struct lcd_clk_c
 		lcd_clk_config_chip_init_s6(pdrv, cconf);
 		break;
 #endif
+#if (IS_ENABLED(CONFIG_MESON_T6D))
+	case LCD_CHIP_T6D:
+		lcd_clk_config_chip_init_t6d(pdrv, cconf);
+		break;
+#endif
 	default:
 		LCDPR("[%d]: %s: invalid chip type\n", pdrv->index, __func__);
 		return -1;

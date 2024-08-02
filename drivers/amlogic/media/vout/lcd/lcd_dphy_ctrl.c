@@ -113,6 +113,7 @@ static void lcd_lvds_lane_swap(struct aml_lcd_drv_s *pdrv)
 		break;
 	case LCD_CHIP_T5D:
 	case LCD_CHIP_TXHD2:
+	case LCD_CHIP_T6D:
 		phy->ch_swap0 = ch_map_5lane[ch_reg_idx];
 		phy->ch_swap1 = ch_map_5lane[ch_reg_idx + 1];
 		break;
@@ -458,6 +459,7 @@ void lcd_lvds_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off)
 		break;
 	case LCD_CHIP_T3:
 	case LCD_CHIP_T5M:
+	case LCD_CHIP_T6D:
 		reg_dphy_tx_ctrl0 = ANACTRL_LVDS_TX_PHY_CNTL0;
 		reg_dphy_tx_ctrl1 = ANACTRL_LVDS_TX_PHY_CNTL1;
 		break;
@@ -547,6 +549,10 @@ void lcd_lvds_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off)
 			/* disable lane */
 			lcd_ana_setb(reg_dphy_tx_ctrl0, 0, 16, 12);
 		}
+		break;
+	case LCD_CHIP_T6D:
+		lcd_ana_write(reg_dphy_tx_ctrl1, on_off ? 0xc3000000 : 0);
+		lcd_lane_map_set(pdrv);
 		break;
 	case LCD_CHIP_TXHD2:
 		if (on_off) {
