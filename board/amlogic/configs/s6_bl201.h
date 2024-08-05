@@ -102,7 +102,12 @@
 	"hdr_policy=0\0"\
 	"config_csc_en=1\0"\
 	"frac_rate_policy=1\0"\
-	"board=s6_bl201\0"
+	"board=s6_bl201\0"\
+	"upgrade_key="\
+		"run upgrade_key_base;"\
+		"echo usr key;"\
+		"\0"\
+
 
 #ifndef CONFIG_PXP_EMULATOR
 #define CONFIG_PREBOOT  \
