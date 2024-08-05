@@ -38,28 +38,29 @@ void lcd_clk_config_init_print_dft(struct aml_lcd_drv_s *pdrv);
 void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv);
 void lcd_set_vid_pll_div_dft(struct lcd_clk_config_s *cconf);
 void lcd_set_vclk_crt_dft(struct aml_lcd_drv_s *pdrv);
+#ifdef CONFIG_MESON_S6
 unsigned char lcd_dsi_generate_DSI_PLL_s6_model(struct aml_lcd_drv_s *pdrv);
+#endif
 
 /* ****************************************************
  * lcd clk chip init help func
  * ****************************************************
  */
-void lcd_clk_config_chip_init_c3(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
-void lcd_clk_config_chip_init_g12a(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
-void lcd_clk_config_chip_init_g12b(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
-void lcd_clk_config_chip_init_t7(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
-void lcd_clk_config_chip_init_t3(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
-void lcd_clk_config_chip_init_t3x(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
-#ifndef CONFIG_AMLOGIC_REMOVE_OLD
-void lcd_clk_config_chip_init_tl1(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
+#ifdef CONFIG_MESON_T5M
+void lcd_clk_config_chip_init_t5m(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
 #endif
-void lcd_clk_config_chip_init_tm2(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
-void lcd_clk_config_chip_init_t5(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
-void lcd_clk_config_chip_init_t5d(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
-void lcd_clk_config_chip_init_t5w(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
+#ifdef CONFIG_MESON_T3X
+void lcd_clk_config_chip_init_t3x(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
+#endif
+#ifdef CONFIG_MESON_A4
 void lcd_clk_config_chip_init_a4(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
+#endif
+#ifdef CONFIG_MESON_TXHD2
 void lcd_clk_config_chip_init_txhd2(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
+#endif
+#ifdef CONFIG_MESON_S6
 void lcd_clk_config_chip_init_s6(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
+#endif
 
 /* ****************************************************
  * lcd clk prbs func

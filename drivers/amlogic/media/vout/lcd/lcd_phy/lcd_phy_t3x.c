@@ -9,20 +9,43 @@
 #include "lcd_phy_config.h"
 #include "../lcd_common.h"
 
+#ifdef CONFIG_MESON_T3X
 static struct lcd_phy_ctrl_s *phy_ctrl_p;
 
-/*
- *    chreg: channel ctrl
- *    bypass: 1=bypass
- *    mode: 1=normal mode, 0=low common mode
- *    ckdi: clk phase for minilvds
- */
-static void lcd_phy_cntl_set(struct aml_lcd_drv_s *pdrv,
-				struct phy_config_s *phy,
-				int status, uint32_t flag,
-				int bypass, unsigned int mode, unsigned int ckdi)
+static void lcd_phy_common_update(struct phy_config_s *phy, unsigned int com_data)
 {
-	unsigned int cntl_vinlp_pi, cntl_ckdi;
+	unsigned int cntl19 = 0, cntl20 = 0;
+
+	com_data &= ~(0xf);
+	com_data |= phy->vswing;
+
+	/* vcm */
+	com_data &= ~(0x7df << 4); //left bit[9] for bandgap
+	com_data |= (phy->vcm & 0x7df) << 4;
+	/* ref bias switch */
+	com_data &= ~(1 << 15);
+	com_data |= (phy->ref_bias & 0x1) << 15;
+	/* odt */
+	com_data &= ~(0xff << 24);
+	com_data |= (phy->odt & 0xff) << 24;
+	//bandgap
+	com_data |= (1 << 9);
+
+	if (phy->cv_mode == PHY_VMODE) //0=cm, 1=vm
+		cntl19 = 0x000e0000;
+	else
+		cntl19 = 0x00070000;
+
+	cntl20 = 0x80000000;
+
+	lcd_ana_write(ANACTRL_DIF_PHY_CNTL18, com_data);
+	lcd_ana_write(ANACTRL_DIF_PHY_CNTL19, cntl19);
+	lcd_ana_write(ANACTRL_DIF_PHY_CNTL20, cntl20);
+}
+
+static void lcd_phy_cntl_set(struct aml_lcd_drv_s *pdrv, struct phy_config_s *phy,
+			     int status, uint32_t flag, int bypass)
+{
 	unsigned int chdig, chreg, reg_data;
 	uint8_t bit, i, lane_idx = 0;
 
@@ -46,19 +69,12 @@ static void lcd_phy_cntl_set(struct aml_lcd_drv_s *pdrv,
 
 	if (status) {
 		phy_ctrl_p->lane_lock |= flag;
-
-		if (mode) {
-			reg_data |= 0x0002;
-			cntl_vinlp_pi = 0x00070000;
-		} else {
+		if (phy->cv_mode == PHY_VMODE)
 			reg_data |= 0x000b;
-			if (phy->weakly_pull_down)
-				reg_data &= ~(1 << 3);
-			cntl_vinlp_pi = 0x000e0000;
-		}
-		cntl_ckdi = ckdi | 0x80000000;
-		lcd_ana_write(ANACTRL_DIF_PHY_CNTL19, cntl_vinlp_pi);
-		lcd_ana_write(ANACTRL_DIF_PHY_CNTL20, cntl_ckdi);
+		else
+			reg_data |= 0x0002;
+		if (phy->weakly_pull_down)
+			reg_data &= ~(1 << 3);
 	} else {
 		phy_ctrl_p->lane_lock &= ~flag;
 		if (!phy_ctrl_p->lane_lock) {
@@ -82,28 +98,6 @@ static void lcd_phy_cntl_set(struct aml_lcd_drv_s *pdrv,
 			lane_idx++;
 		}
 	}
-}
-
-static void lcd_phy_common_update(struct phy_config_s *phy, unsigned int com_data)
-{
-	if (!phy)
-		return;
-	/* vcm */
-	if ((phy->flag & (1 << 1))) {
-		com_data &= ~(0x7ff << 4);
-		com_data |= (phy->vcm & 0x7ff) << 4;
-	}
-	/* ref bias switch */
-	if ((phy->flag & (1 << 2))) {
-		com_data &= ~(1 << 15);
-		com_data |= (phy->ref_bias & 0x1) << 15;
-	}
-	/* odt */
-	if ((phy->flag & (1 << 3))) {
-		com_data &= ~(0xff << 24);
-		com_data |= (phy->odt & 0xff) << 24;
-	}
-	lcd_ana_write(ANACTRL_DIF_PHY_CNTL18, com_data);
 }
 
 static void lcd_lvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
@@ -146,15 +140,11 @@ static void lcd_lvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 			return;
 		}
 		phy_ctrl_p->lane_lock |= flag;
-		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-			LCDPR("vswing_level=0x%x\n", phy->vswing_level);
 
-		com_data = 0xff2027e0 | phy->vswing;
+		com_data = 0xff2027e0;
 		lcd_phy_common_update(phy, com_data);
-		lcd_phy_cntl_set(pdrv, phy, status, flag, 1, 1, 0);
-	} else {
-		lcd_phy_cntl_set(pdrv, phy, status, flag, 1, 0, 0);
 	}
+	lcd_phy_cntl_set(pdrv, phy, status, flag, 1);
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("phy lane_lock: 0x%x\n", phy_ctrl_p->lane_lock);
@@ -182,20 +172,13 @@ static void lcd_vbyone_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 		}
 		phy_ctrl_p->lane_lock |= flag;
 
-		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-			LCDPR("vswing_level=0x%x, ext_pullup=%d\n",
-			      phy->vswing_level, phy->ext_pullup);
-		}
-
 		if (phy->ext_pullup)
-			com_data = 0xff2027e0 | phy->vswing;
+			com_data = 0xff2027e0;
 		else
-			com_data = 0xf02027a0 | phy->vswing;
+			com_data = 0xf02027a0;
 		lcd_phy_common_update(phy, com_data);
-		lcd_phy_cntl_set(pdrv, phy, status, flag, 1, 1, 0);
-	} else {
-		lcd_phy_cntl_set(pdrv, phy, status, flag, 1, 0, 0);
 	}
+	lcd_phy_cntl_set(pdrv, phy, status, flag, 1);
 }
 
 static void lcd_p2p_phy_set(struct aml_lcd_drv_s *pdrv, int status)
@@ -205,7 +188,6 @@ static void lcd_p2p_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 	struct phy_config_s *phy = &pdrv->config.phy_cfg;
 	unsigned int com_data = 0;
 	uint32_t flag = 0;
-	uint8_t mode = 1;  //1-normal mode, 0-low common mode
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_ADV)
 		LCDPR("%s: %d\n", __func__, status);
@@ -221,24 +203,20 @@ static void lcd_p2p_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 		}
 		phy_ctrl_p->lane_lock |= flag;
 
-		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-			LCDPR("vswing_level=0x%x, ext_pullup=%d\n",
-			      phy->vswing_level, phy->ext_pullup);
-		}
 		p2p_type = p2p_conf->p2p_type & 0x1f;
 		vcm_flag = (p2p_conf->p2p_type >> 5) & 0x1;
-
 		switch (p2p_type) {
 		case P2P_CEDS:
 		case P2P_CMPI:
 		case P2P_ISP:
 		case P2P_EPI:
-			com_data = 0xff2027a0 | phy->vswing;
-			mode = 1;
+			phy->low_common_mode = 0;
+			com_data = 0xff2027a0;
 			break;
 		case P2P_CHPI: /* low common mode */
 		case P2P_CSPI:
 		case P2P_USIT:
+			phy->low_common_mode = 1;
 			if (p2p_type == P2P_CHPI)
 				phy->weakly_pull_down = 1;
 
@@ -246,34 +224,24 @@ static void lcd_p2p_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 				com_data = 0xe0600272;
 			else /* default 385mV */
 				com_data = 0xfe60027f;
-
-			/* vswing */
-			com_data &= ~(0xf);
-			com_data |= phy->vswing;
-			mode = 0;
 			break;
 		default:
 			LCDERR("%s: invalid p2p_type %d\n", __func__, p2p_type);
 			return;
 		}
 		lcd_phy_common_update(phy, com_data);
-		lcd_phy_cntl_set(pdrv, phy, status, flag, 1, mode, 0);
-	} else {
-		lcd_phy_cntl_set(pdrv, phy, status, flag, 1, 0, 0);
 	}
-}
-
-static unsigned int lcd_phy_amp_dft_t3x(struct aml_lcd_drv_s *pdrv)
-{
-	return 0x7;
+	lcd_phy_cntl_set(pdrv, phy, status, flag, 1);
 }
 
 static struct lcd_phy_ctrl_s lcd_phy_ctrl_t3x = {
+	.lane_num = 16,
 	.lane_lock = 0,
 	.ctrl_bit_on = 1,
 	.phy_vswing_level_to_val = lcd_phy_vswing_level_to_value_dft,
-	.phy_amp_dft_val = lcd_phy_amp_dft_t3x,
-	.phy_preem_level_to_val = lcd_phy_preem_level_to_value_legacy,
+	.phy_preem_level_to_val = lcd_phy_preem_level_to_value_dft,
+	.phy_amp_dft_val = lcd_phy_amp_dft,
+	.phy_glb_param_dft_val = lcd_phy_glb_param_dft,
 	.phy_set_lvds = lcd_lvds_phy_set,
 	.phy_set_vx1 = lcd_vbyone_phy_set,
 	.phy_set_mlvds = NULL,
@@ -287,3 +255,4 @@ struct lcd_phy_ctrl_s *lcd_phy_config_init_t3x(struct aml_lcd_data_s *pdata)
 	phy_ctrl_p = &lcd_phy_ctrl_t3x;
 	return phy_ctrl_p;
 }
+#endif

@@ -383,25 +383,28 @@ static void lcd_phy_print(struct lcd_config_s *pconf)
 	case LCD_MLVDS:
 	case LCD_P2P:
 	case LCD_EDP:
-		printf("ctrl_flag:         0x%x\n"
-		"vswing_level:      %u\n"
-		"ext_pullup:        %u\n"
-		"preem_level:       %u\n"
-		"vcm:               0x%x\n"
-		"ref_bias:          0x%x\n"
-		"odt:               0x%x\n",
-		phy->flag,
-		phy->vswing_level,
-		phy->ext_pullup,
-		phy->preem_level,
-		phy->vcm,
-		phy->ref_bias,
-		phy->odt);
+		printf("phy config:\n"
+			"ctrl_flag:     0x%x\n"
+			"vswing_level:  %u\n"
+			"ext_pullup:    %u\n"
+			"preem_level:   %u\n"
+			"vswing:        0x%x\n"
+			"vcm:           0x%x\n"
+			"ref_bias:      0x%x\n"
+			"odt:           0x%x\n"
+			"cv_mode:       %d\n",
+			phy->flag,
+			phy->vswing_level,
+			phy->ext_pullup,
+			phy->preem_level,
+			phy->vswing,
+			phy->vcm,
+			phy->ref_bias,
+			phy->odt,
+			phy->cv_mode);
 		for (i = 0; i < phy->lane_num; i++) {
-			printf("lane%d_amp:        0x%x\n"
-			"lane%d_preem:      0x%x\n",
-			i, phy->lane[i].amp,
-			i, phy->lane[i].preem);
+			printf("lane[%d] amp: 0x%x, preem: 0x%x, sel: 0x%x\n",
+			       i, phy->lane[i].amp, phy->lane[i].preem, phy->lane[i].sel);
 		}
 		printf("\n");
 		break;
@@ -475,6 +478,12 @@ static void lcd_reg_print_vbyone(struct aml_lcd_drv_s *pdrv)
 	reg = VBO_STATUS_L + offset;
 	printf("VX1_STATUS          [0x%04x] = 0x%08x\n",
 	       reg, lcd_vcbus_read(reg));
+	reg = VBO_CTRL_L + offset;
+	printf("VBO_CTRL            [0x%04x] = 0x%08x\n",
+	       reg, lcd_vcbus_read(reg));
+	reg = VBO_GCLK_MAIN + offset;
+	printf("VBO_GCLK_MAIN       [0x%04x] = 0x%08x\n",
+	       reg, lcd_vcbus_read(reg));
 	reg = VBO_FSM_HOLDER_L + offset;
 	printf("VX1_FSM_HOLDER_L    [0x%04x] = 0x%08x\n",
 	       reg, lcd_vcbus_read(reg));
@@ -494,7 +503,7 @@ static void lcd_reg_print_vbyone(struct aml_lcd_drv_s *pdrv)
 	printf("VBO_INSGN_CTRL      [0x%04x] = 0x%08x\n",
 	       reg, lcd_vcbus_read(reg));
 	reg = LCD_PORT_SWAP + offset;
-	printf("LCD_PORT_SWAP        [0x%04x] = 0x%08x\n",
+	printf("LCD_PORT_SWAP       [0x%04x] = 0x%08x\n",
 	       reg, lcd_vcbus_read(reg));
 	reg = P2P_CH_SWAP0 + offset;
 	printf("P2P_CH_SWAP0        [0x%04x] = 0x%08x\n",
@@ -1518,12 +1527,9 @@ void lcd_debug_probe(struct aml_lcd_drv_s *pdrv)
 			lcd_debug_info_reg = &lcd_debug_info_reg_t7_0;
 			break;
 		}
-		lcd_debug_info_if_lvds.reg_dump_phy =
-			lcd_reg_print_phy_analog_t7;
-		lcd_debug_info_if_vbyone.reg_dump_phy =
-			lcd_reg_print_phy_analog_t7;
-		lcd_debug_info_if_mipi.reg_dump_phy =
-			lcd_reg_print_phy_analog_t7;
+		lcd_debug_info_if_lvds.reg_dump_phy = lcd_reg_print_phy_analog_t7;
+		lcd_debug_info_if_vbyone.reg_dump_phy = lcd_reg_print_phy_analog_t7;
+		lcd_debug_info_if_mipi.reg_dump_phy = lcd_reg_print_phy_analog_t7;
 		break;
 	case LCD_CHIP_T5M:
 	case LCD_CHIP_T3:
@@ -1535,19 +1541,13 @@ void lcd_debug_probe(struct aml_lcd_drv_s *pdrv)
 			lcd_debug_info_reg = &lcd_debug_info_reg_t3_0;
 			break;
 		}
-		lcd_debug_info_if_lvds.reg_dump_phy =
-			lcd_reg_print_phy_analog_t3;
-		lcd_debug_info_if_vbyone.reg_dump_phy =
-			lcd_reg_print_phy_analog_t3;
+		lcd_debug_info_if_lvds.reg_dump_phy = lcd_reg_print_phy_analog_t3;
+		lcd_debug_info_if_vbyone.reg_dump_phy = lcd_reg_print_phy_analog_t3;
 #ifdef CONFIG_AML_LCD_TCON
-		lcd_debug_info_if_mlvds.reg_dump_interface =
-			lcd_reg_print_tcon_t3;
-		lcd_debug_info_if_mlvds.reg_dump_phy =
-			lcd_reg_print_phy_analog_t3;
-		lcd_debug_info_if_p2p.reg_dump_interface =
-			lcd_reg_print_tcon_t3;
-		lcd_debug_info_if_p2p.reg_dump_phy =
-			lcd_reg_print_phy_analog_t3;
+		lcd_debug_info_if_mlvds.reg_dump_interface = lcd_reg_print_tcon_t3;
+		lcd_debug_info_if_mlvds.reg_dump_phy = lcd_reg_print_phy_analog_t3;
+		lcd_debug_info_if_p2p.reg_dump_interface = lcd_reg_print_tcon_t3;
+		lcd_debug_info_if_p2p.reg_dump_phy = lcd_reg_print_phy_analog_t3;
 #endif
 		break;
 	case LCD_CHIP_T3X:
@@ -1565,33 +1565,23 @@ void lcd_debug_probe(struct aml_lcd_drv_s *pdrv)
 			}
 			break;
 		}
-		lcd_debug_info_if_lvds.reg_dump_phy =
-			lcd_reg_print_phy_analog_t3x;
-		lcd_debug_info_if_vbyone.reg_dump_phy =
-			lcd_reg_print_phy_analog_t3x;
+		lcd_debug_info_if_lvds.reg_dump_phy = lcd_reg_print_phy_analog_t3x;
+		lcd_debug_info_if_vbyone.reg_dump_phy = lcd_reg_print_phy_analog_t3x;
 #ifdef CONFIG_AML_LCD_TCON
-		lcd_debug_info_if_mlvds.reg_dump_interface =
-			lcd_reg_print_tcon_t3;
-		lcd_debug_info_if_mlvds.reg_dump_phy =
-			lcd_reg_print_phy_analog_t3x;
-		lcd_debug_info_if_p2p.reg_dump_interface =
-			lcd_reg_print_tcon_t3;
-		lcd_debug_info_if_p2p.reg_dump_phy =
-			lcd_reg_print_phy_analog_t3x;
+		lcd_debug_info_if_mlvds.reg_dump_interface = lcd_reg_print_tcon_t3;
+		lcd_debug_info_if_mlvds.reg_dump_phy = lcd_reg_print_phy_analog_t3x;
+		lcd_debug_info_if_p2p.reg_dump_interface = lcd_reg_print_tcon_t3;
+		lcd_debug_info_if_p2p.reg_dump_phy = lcd_reg_print_phy_analog_t3x;
 #endif
 		break;
 
 	case LCD_CHIP_T5W:
 		lcd_debug_info_reg = &lcd_debug_info_reg_t5w;
-		lcd_debug_info_if_lvds.reg_dump_phy =
-			lcd_reg_print_phy_analog_tl1;
-		lcd_debug_info_if_mipi.reg_dump_phy =
-			lcd_reg_print_phy_analog_tl1;
+		lcd_debug_info_if_lvds.reg_dump_phy = lcd_reg_print_phy_analog_tl1;
+		lcd_debug_info_if_mipi.reg_dump_phy = lcd_reg_print_phy_analog_tl1;
 #ifdef CONFIG_AML_LCD_TCON
-		lcd_debug_info_if_mlvds.reg_dump_phy =
-			lcd_reg_print_phy_analog_tl1;
-		lcd_debug_info_if_p2p.reg_dump_phy =
-			lcd_reg_print_phy_analog_tl1;
+		lcd_debug_info_if_mlvds.reg_dump_phy = lcd_reg_print_phy_analog_tl1;
+		lcd_debug_info_if_p2p.reg_dump_phy = lcd_reg_print_phy_analog_tl1;
 #endif
 		break;
 	case LCD_CHIP_TL1:
@@ -1599,28 +1589,20 @@ void lcd_debug_probe(struct aml_lcd_drv_s *pdrv)
 	case LCD_CHIP_T5:
 	case LCD_CHIP_T5D:
 		lcd_debug_info_reg = &lcd_debug_info_reg_tl1;
-		lcd_debug_info_if_lvds.reg_dump_phy =
-			lcd_reg_print_phy_analog_tl1;
-		lcd_debug_info_if_mipi.reg_dump_phy =
-			lcd_reg_print_phy_analog_tl1;
+		lcd_debug_info_if_lvds.reg_dump_phy = lcd_reg_print_phy_analog_tl1;
+		lcd_debug_info_if_mipi.reg_dump_phy = lcd_reg_print_phy_analog_tl1;
 #ifdef CONFIG_AML_LCD_TCON
-		lcd_debug_info_if_mlvds.reg_dump_phy =
-			lcd_reg_print_phy_analog_tl1;
-		lcd_debug_info_if_p2p.reg_dump_phy =
-			lcd_reg_print_phy_analog_tl1;
+		lcd_debug_info_if_mlvds.reg_dump_phy = lcd_reg_print_phy_analog_tl1;
+		lcd_debug_info_if_p2p.reg_dump_phy = lcd_reg_print_phy_analog_tl1;
 #endif
 		break;
 	case LCD_CHIP_TXHD2:
 		lcd_debug_info_reg = &lcd_debug_info_reg_txhd2;
-		lcd_debug_info_if_lvds.reg_dump_phy =
-			lcd_reg_print_phy_analog_txhd2;
-		lcd_debug_info_if_mipi.reg_dump_phy =
-			lcd_reg_print_phy_analog_txhd2;
+		lcd_debug_info_if_lvds.reg_dump_phy = lcd_reg_print_phy_analog_txhd2;
+		lcd_debug_info_if_mipi.reg_dump_phy = lcd_reg_print_phy_analog_txhd2;
 #ifdef CONFIG_AML_LCD_TCON
-		lcd_debug_info_if_mlvds.reg_dump_phy =
-			lcd_reg_print_phy_analog_txhd2;
-		lcd_debug_info_if_p2p.reg_dump_phy =
-			lcd_reg_print_phy_analog_txhd2;
+		lcd_debug_info_if_mlvds.reg_dump_phy = lcd_reg_print_phy_analog_txhd2;
+		lcd_debug_info_if_p2p.reg_dump_phy = lcd_reg_print_phy_analog_txhd2;
 #endif
 		break;
 	case LCD_CHIP_G12A:
@@ -1633,13 +1615,11 @@ void lcd_debug_probe(struct aml_lcd_drv_s *pdrv)
 		break;
 	case LCD_CHIP_C3:
 		lcd_debug_info_reg = &lcd_debug_info_reg_c3;
-		lcd_debug_info_if_mipi.reg_dump_phy =
-			lcd_reg_print_mipi_phy_analog_c3;
+		lcd_debug_info_if_mipi.reg_dump_phy = lcd_reg_print_mipi_phy_analog_c3;
 		break;
 	case LCD_CHIP_S6:
 		lcd_debug_info_reg = &lcd_debug_info_reg_s6;
-		lcd_debug_info_if_mipi.reg_dump_phy =
-			lcd_reg_print_mipi_phy_analog_s6;
+		lcd_debug_info_if_mipi.reg_dump_phy = lcd_reg_print_mipi_phy_analog_s6;
 		break;
 	default:
 		lcd_debug_info_reg = NULL;

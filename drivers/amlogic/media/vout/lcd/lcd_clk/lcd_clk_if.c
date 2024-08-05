@@ -123,6 +123,7 @@ void lcd_clk_generate_parameter(struct aml_lcd_drv_s *pdrv)
 		cconf->data->clk_parameter_init(pdrv);
 	if (cconf->data->clk_generate_parameter)
 		cconf->data->clk_generate_parameter(pdrv);
+	lcd_cus_ctrl_config_update(pdrv, NULL, LCD_CUS_CTRL_SEL_TUNING_ATTR);
 
 	ss_level = pconf->timing.ss_level;
 	cconf->ss_level = (ss_level >= cconf->data->ss_level_max) ?
@@ -326,52 +327,31 @@ static int lcd_clk_config_chip_init(struct aml_lcd_drv_s *pdrv, struct lcd_clk_c
 	}
 
 	switch (pdrv->data->chip_type) {
-	case LCD_CHIP_G12A:
-	case LCD_CHIP_SM1:
-		lcd_clk_config_chip_init_g12a(pdrv, cconf);
-		break;
-	case LCD_CHIP_G12B:
-		lcd_clk_config_chip_init_g12b(pdrv, cconf);
-		break;
-#ifndef CONFIG_AMLOGIC_REMOVE_OLD
-	case LCD_CHIP_TL1:
-		lcd_clk_config_chip_init_tl1(pdrv, cconf);
+#ifdef CONFIG_MESON_T5M
+	case LCD_CHIP_T5M: //same as t3, but only support 1 driver
+		lcd_clk_config_chip_init_t5m(pdrv, cconf);
 		break;
 #endif
-	case LCD_CHIP_TM2:
-		lcd_clk_config_chip_init_tm2(pdrv, cconf);
-		break;
-	case LCD_CHIP_T5:
-		lcd_clk_config_chip_init_t5(pdrv, cconf);
-		break;
-	case LCD_CHIP_T5D:
-		lcd_clk_config_chip_init_t5d(pdrv, cconf);
-		break;
-	case LCD_CHIP_T7:
-		lcd_clk_config_chip_init_t7(pdrv, cconf);
-		break;
-	case LCD_CHIP_T5M: //the same as t3, but only support 1 driver
-	case LCD_CHIP_T3: /* only one pll */
-		lcd_clk_config_chip_init_t3(pdrv, cconf);
-		break;
+#ifdef CONFIG_MESON_T3X
 	case LCD_CHIP_T3X:
 		lcd_clk_config_chip_init_t3x(pdrv, cconf);
 		break;
-	case LCD_CHIP_T5W:
-		lcd_clk_config_chip_init_t5w(pdrv, cconf);
-		break;
-	case LCD_CHIP_C3:
-		lcd_clk_config_chip_init_c3(pdrv, cconf);
-		break;
+#endif
+#ifdef CONFIG_MESON_A4
 	case LCD_CHIP_A4:
 		lcd_clk_config_chip_init_a4(pdrv, cconf);
 		break;
+#endif
+#ifdef CONFIG_MESON_TXHD2
 	case LCD_CHIP_TXHD2:
 		lcd_clk_config_chip_init_txhd2(pdrv, cconf);
 		break;
+#endif
+#ifdef CONFIG_MESON_S6
 	case LCD_CHIP_S6:
 		lcd_clk_config_chip_init_s6(pdrv, cconf);
 		break;
+#endif
 	default:
 		LCDPR("[%d]: %s: invalid chip type\n", pdrv->index, __func__);
 		return -1;

@@ -559,7 +559,7 @@ static int handle_lcd_pwr(struct lcd_attr_s *p_attr)
 	ini_value = ini_get_string("lcd_Attr", "power_on_step", "null");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, power_on_step is (%s)\n", __func__, ini_value);
-	tmp_cnt = trans_buffer_data(ini_value, tmp_buf + 0);
+	tmp_cnt = trans_buffer_data(ini_value, tmp_buf);
 	g_lcd_pwr_on_seq_cnt = tmp_cnt / CC_LCD_PWR_ITEM_CNT;
 	for (i = 0; i < g_lcd_pwr_on_seq_cnt; i++) {
 		tmp_base_ind = i * CC_LCD_PWR_ITEM_CNT;
@@ -572,10 +572,10 @@ static int handle_lcd_pwr(struct lcd_attr_s *p_attr)
 	ini_value = ini_get_string("lcd_Attr", "power_off_step", "null");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, power_off_step is (%s)\n", __func__, ini_value);
-	tmp_cnt = trans_buffer_data(ini_value, tmp_buf + tmp_cnt);
+	tmp_cnt = trans_buffer_data(ini_value, tmp_buf);
 	g_lcd_pwr_off_seq_cnt = tmp_cnt / CC_LCD_PWR_ITEM_CNT;
 	for (i = 0; i < g_lcd_pwr_off_seq_cnt; i++) {
-		tmp_base_ind = (g_lcd_pwr_on_seq_cnt + i)* CC_LCD_PWR_ITEM_CNT;
+		tmp_base_ind = i * CC_LCD_PWR_ITEM_CNT;
 		p_attr->pwr[i + g_lcd_pwr_on_seq_cnt].pwr_step_type = tmp_buf[tmp_base_ind + 0];
 		p_attr->pwr[i + g_lcd_pwr_on_seq_cnt].pwr_step_index = tmp_buf[tmp_base_ind + 1];
 		p_attr->pwr[i + g_lcd_pwr_on_seq_cnt].pwr_step_val = tmp_buf[tmp_base_ind + 2];
@@ -588,19 +588,19 @@ static int handle_lcd_pwr(struct lcd_attr_s *p_attr)
 static int handle_lcd_header(struct lcd_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
+	unsigned int size = 0;
 
-	glcd_dcnt = 0;
-	glcd_dcnt += sizeof(struct lcd_header_s);
-	glcd_dcnt += sizeof(struct lcd_basic_s);
-	glcd_dcnt += sizeof(struct lcd_timming_s);
-	glcd_dcnt += sizeof(struct lcd_customer_s);
-	glcd_dcnt += sizeof(struct lcd_interface_s);
+	size += sizeof(struct lcd_header_s);
+	size += sizeof(struct lcd_basic_s);
+	size += sizeof(struct lcd_timming_s);
+	size += sizeof(struct lcd_customer_s);
+	size += sizeof(struct lcd_interface_s);
 
-	glcd_dcnt += sizeof(struct lcd_pwr_s) * g_lcd_pwr_on_seq_cnt;
-	glcd_dcnt += sizeof(struct lcd_pwr_s) * g_lcd_pwr_off_seq_cnt;
+	size += sizeof(struct lcd_pwr_s) * g_lcd_pwr_on_seq_cnt;
+	size += sizeof(struct lcd_pwr_s) * g_lcd_pwr_off_seq_cnt;
 
-	p_attr->head.data_len = glcd_dcnt;
-	p_attr->head.block_cur_size = glcd_dcnt;
+	//p_attr->head.data_len = size;; //total data len will handle after all parameters parsed
+	p_attr->head.block_cur_size = size;
 
 	ini_value = ini_get_string("lcd_Attr", "version", "null");
 	if (model_debug_flag & DEBUG_LCD)
@@ -617,126 +617,166 @@ static int handle_lcd_header(struct lcd_attr_s *p_attr)
 	return 0;
 }
 
-static int handle_lcd_phy(struct lcd_v2_attr_s *p_attr)
+static int handle_lcd_phy(unsigned char *p_attr)
 {
+	struct lcd_phy_s *phy;
 	const char *ini_value = NULL;
-	unsigned int reg_buf[216];
-	int reg_cnt = 0;
-	int i, j = 0;
+	unsigned int temp_buf[72];
+	unsigned int offset, lane_cnt = 0;
+	int i, j, n;
+
+	offset = sizeof(struct lcd_header_s);
+	phy = (struct lcd_phy_s *)(p_attr + offset);
 
 	ini_value = ini_get_string("lcd_Attr", "phy_attr_flag", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_flag is (%s)\n", __func__, ini_value);
-	p_attr->phy.phy_attr_flag = strtoul(ini_value, NULL, 0);
+	phy->phy_attr_flag = strtoul(ini_value, NULL, 0);
 
 	ini_value = ini_get_string("lcd_Attr", "phy_attr_0", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_0 is (%s)\n", __func__, ini_value);
-	p_attr->phy.phy_attr_0 = strtoul(ini_value, NULL, 0);
+	phy->phy_attr_0 = strtoul(ini_value, NULL, 0);
 
 	ini_value = ini_get_string("lcd_Attr", "phy_attr_1", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_1 is (%s)\n", __func__, ini_value);
-	p_attr->phy.phy_attr_1 = strtoul(ini_value, NULL, 0);
+	phy->phy_attr_1 = strtoul(ini_value, NULL, 0);
 
 	ini_value = ini_get_string("lcd_Attr", "phy_attr_2", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_2 is (%s)\n", __func__, ini_value);
-	p_attr->phy.phy_attr_2 = strtoul(ini_value, NULL, 0);
+	phy->phy_attr_2 = strtoul(ini_value, NULL, 0);
 
 	ini_value = ini_get_string("lcd_Attr", "phy_attr_3", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_3 is (%s)\n", __func__, ini_value);
-	p_attr->phy.phy_attr_3 = strtoul(ini_value, NULL, 0);
+	phy->phy_attr_3 = strtoul(ini_value, NULL, 0);
 
 	ini_value = ini_get_string("lcd_Attr", "phy_attr_4", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_4 is (%s)\n", __func__, ini_value);
-	p_attr->phy.phy_attr_4 = strtoul(ini_value, NULL, 0);
+	phy->phy_attr_4 = strtoul(ini_value, NULL, 0);
 
 	ini_value = ini_get_string("lcd_Attr", "phy_attr_5", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_5 is (%s)\n", __func__, ini_value);
-	p_attr->phy.phy_attr_5 = strtoul(ini_value, NULL, 0);
+	phy->phy_attr_5 = strtoul(ini_value, NULL, 0);
 
 	ini_value = ini_get_string("lcd_Attr", "phy_attr_6", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_6 is (%s)\n", __func__, ini_value);
-	p_attr->phy.phy_attr_6 = strtoul(ini_value, NULL, 0);
+	phy->phy_attr_6 = strtoul(ini_value, NULL, 0);
 
 	ini_value = ini_get_string("lcd_Attr", "phy_attr_7", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_7 is (%s)\n", __func__, ini_value);
-	p_attr->phy.phy_attr_7 = strtoul(ini_value, NULL, 0);
+	phy->phy_attr_7 = strtoul(ini_value, NULL, 0);
 
 	ini_value = ini_get_string("lcd_Attr", "phy_attr_8", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_8 is (%s)\n", __func__, ini_value);
-	p_attr->phy.phy_attr_8 = strtoul(ini_value, NULL, 0);
+	phy->phy_attr_8 = strtoul(ini_value, NULL, 0);
 
 	ini_value = ini_get_string("lcd_Attr", "phy_attr_9", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_9 is (%s)\n", __func__, ini_value);
-	p_attr->phy.phy_attr_9 = strtoul(ini_value, NULL, 0);
+	phy->phy_attr_9 = strtoul(ini_value, NULL, 0);
 
 	ini_value = ini_get_string("lcd_Attr", "phy_attr_10", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_10 is (%s)\n", __func__, ini_value);
-	p_attr->phy.phy_attr_10 = strtoul(ini_value, NULL, 0);
+	phy->phy_attr_10 = strtoul(ini_value, NULL, 0);
 
 	ini_value = ini_get_string("lcd_Attr", "phy_attr_11", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_attr_11 is (%s)\n", __func__, ini_value);
-	p_attr->phy.phy_attr_11 = strtoul(ini_value, NULL, 0);
+	phy->phy_attr_11 = strtoul(ini_value, NULL, 0);
 
-	ini_value = ini_get_string("lcd_Attr", "phy_lane_pn_swap", "0");
+	ini_value = ini_get_string("lcd_Attr", "phy_lane_pn_swap", "null");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, phy_lane_pn_swap is (%s)\n", __func__, ini_value);
-	j += reg_cnt;
-	reg_cnt = trans_buffer_data(ini_value, reg_buf + 0);
-	for (i = 0; i < 4; i++)
-		p_attr->phy.phy_lane_pn_swap[i] = reg_buf[i];
-
-	ini_value = ini_get_string("lcd_Attr", "phy_lane_ctrl", "0");
-	if (model_debug_flag & DEBUG_LCD)
-		ALOGD("%s, phy_lane_ctrl is (%s)\n", __func__, ini_value);
-	j += reg_cnt;
-	reg_cnt = trans_buffer_data(ini_value, reg_buf + reg_cnt);
-	for (i = 0; i < reg_cnt; i++) {
-		p_attr->phy.phy_lane_ctrl[i] = reg_buf[i + j];
-		if (model_debug_flag & DEBUG_LCD) {
-			ALOGD("%s, phy_lane_ctrl[%d] is (0x%x)\n", __func__,
-				i, p_attr->phy.phy_lane_ctrl[i]);
+	if (strcmp(ini_value, "null")) {
+		lane_cnt = trans_buffer_data(ini_value, temp_buf);
+		for (i = 0; i < lane_cnt; i++) {
+			j = i / 8;
+			n = i % 8;
+			phy->phy_lane_pn_swap[j] = ((temp_buf[i] ? 1 : 0) << n);
 		}
 	}
 
-	ini_value = ini_get_string("lcd_Attr", "phy_lane_swap", "0");
+	ini_value = ini_get_string("lcd_Attr", "phy_lane_ctrl", "null");
 	if (model_debug_flag & DEBUG_LCD)
-		ALOGD("%s, phy_lane_swap is (%s)\n", __func__, ini_value);
-	j += reg_cnt;
-	reg_cnt = trans_buffer_data(ini_value, reg_buf + reg_cnt);
-	for (i = 0; i < reg_cnt; i++)
-		p_attr->phy.phy_lane_swap[i] = reg_buf[i + j];
+		ALOGD("%s, phy_lane_ctrl is (%s)\n", __func__, ini_value);
+	if (strcmp(ini_value, "null")) {
+		lane_cnt = trans_buffer_data(ini_value, temp_buf);
+		for (i = 0; i < lane_cnt; i++) {
+			phy->phy_lane_ctrl[i] = temp_buf[i];
+			if (model_debug_flag & DEBUG_LCD) {
+				ALOGD("%s, phy_lane_ctrl[%d] is (0x%x)\n", __func__,
+				      i, phy->phy_lane_ctrl[i]);
+			}
+		}
+	}
+
+	ini_value = ini_get_string("lcd_Attr", "phy_lane_sel", "null");
+	if (model_debug_flag & DEBUG_LCD)
+		ALOGD("%s, phy_lane_sel is (%s)\n", __func__, ini_value);
+	if (strcmp(ini_value, "null")) {
+		lane_cnt = trans_buffer_data(ini_value, temp_buf);
+		for (i = 0; i < lane_cnt; i++)
+			phy->phy_lane_sel[i] = temp_buf[i];
+	}
+
+	if (model_debug_flag & DEBUG_LCD) {
+		ALOGD("%s, phy_attr_flag: 0x%x\n", __func__, phy->phy_attr_flag);
+		ALOGD("%s, vswing:0x%x, vcm:0x%x, ref_bias:0x%x, odt:0x%x, cv_mode:0x%x\n",
+		      __func__, phy->phy_attr_0, phy->phy_attr_1,
+		      phy->phy_attr_2, phy->phy_attr_3, phy->phy_attr_4);
+		for (i = 0; i < lane_cnt; i++) {
+			ALOGD("%s, lane[%d]: ctrl:0x%x, sel:0x%x\n",
+			      __func__, i, phy->phy_lane_ctrl[i], phy->phy_lane_sel[i]);
+		}
+	}
 
 	return 0;
 }
 
-static int handle_lcd_v2_header(struct lcd_v2_attr_s *p_attr)
+static void handle_lcd_v2_header(struct lcd_header_s *header)
 {
 	unsigned int data_cnt;
+
+	if (!header)
+		return;
 
 	data_cnt = 0;
 	data_cnt += sizeof(struct lcd_header_s);
 	data_cnt += sizeof(struct lcd_phy_s);
 	data_cnt += glcd_cus_ctrl_cnt;
 
-	p_attr->head.crc32 = 0xffffffff;
-	p_attr->head.data_len = 0;
-	p_attr->head.version = 2;
-	p_attr->head.block_next_flag = 0;
-	p_attr->head.block_cur_size = data_cnt;
+	header->crc32 = 0xffffffff;
+	header->data_len = 0;
+	header->version = 2;
+	header->block_next_flag = 0;
+	header->block_cur_size = data_cnt;
+}
 
-	return 0;
+static void handle_lcd_v3_header(struct lcd_header_s *header)
+{
+	unsigned int data_cnt;
+
+	if (!header)
+		return;
+
+	data_cnt = 0;
+	data_cnt += sizeof(struct lcd_header_s);
+	data_cnt += glcd_cus_ctrl_cnt;
+
+	header->crc32 = 0xffffffff;
+	header->data_len = 0;
+	header->version = 3;
+	header->block_next_flag = 0;
+	header->block_cur_size = data_cnt;
 }
 
 void *handle_lcd_ext_buf_get(void)
@@ -2792,9 +2832,8 @@ static int parse_panel_ini(const char *file_name, unsigned char *lcd_buf,
 			   struct lcd_optical_attr_s *optical_attr)
 {
 	struct lcd_attr_s *lcd_attr;
-	struct lcd_v2_attr_s *lcd_v2_attr;
-	unsigned short lcd_size = 0;
-	struct lcd_header_s *header;
+	unsigned char *lcd_next_attr;
+	struct lcd_header_s *header, *next_header = NULL;
 	int ret;
 
 	ini_parser_init();
@@ -2812,51 +2851,35 @@ static int parse_panel_ini(const char *file_name, unsigned char *lcd_buf,
 		return -1;
 	}
 
-	lcd_attr = (struct lcd_attr_s *)malloc(sizeof(struct lcd_attr_s));
-	if (!lcd_attr) {
-		ini_parser_uninit();
-		return -1;
-	}
-	memset(lcd_attr, 0, sizeof(struct lcd_attr_s));
-	lcd_v2_attr = (struct lcd_v2_attr_s *)malloc(sizeof(struct lcd_v2_attr_s));
-	if (!lcd_v2_attr) {
-		free(lcd_attr);
-		ini_parser_uninit();
-		return -1;
-	}
-	memset(lcd_v2_attr, 0, sizeof(struct lcd_v2_attr_s));
-
 	/* handle lcd attr */
+	lcd_attr = (struct lcd_attr_s *)lcd_buf;
 	handle_lcd_basic(lcd_attr);
 	handle_lcd_timming(lcd_attr);
 	handle_lcd_customer(lcd_attr);
 	handle_lcd_interface(lcd_attr);
 	handle_lcd_pwr(lcd_attr);
+	update_dccd_load(lcd_attr);
 	handle_lcd_header(lcd_attr);
 
-	update_dccd_load(lcd_attr);
-
-	lcd_size = lcd_attr->head.block_cur_size;
-	memcpy((void *)lcd_buf, (void *)lcd_attr, lcd_attr->head.block_cur_size);
-	/* handle lcd_v2 attr*/
-	if (lcd_attr->head.version == 2) {
-		handle_lcd_phy(lcd_v2_attr);
-		handle_lcd_cus_ctrl(lcd_v2_attr);
-		handle_lcd_v2_header(lcd_v2_attr);
-		lcd_size += lcd_v2_attr->head.block_cur_size;
-		memcpy((void *)(lcd_buf + lcd_attr->head.block_cur_size),
-			(void *)lcd_v2_attr, lcd_v2_attr->head.block_cur_size);
+	header = &lcd_attr->head;
+	lcd_next_attr = lcd_buf + header->block_cur_size;
+	next_header = (struct lcd_header_s *)lcd_next_attr;
+	if (header->version == 2) {
+		handle_lcd_phy(lcd_next_attr);
+		handle_lcd_cus_ctrl(lcd_next_attr, header->version);
+		handle_lcd_v2_header(next_header);
+	} else if (header->version == 3) {
+		handle_lcd_cus_ctrl(lcd_next_attr, header->version);
+		handle_lcd_v3_header(next_header);
 	}
 
-	header = (struct lcd_header_s *)lcd_buf;
-	glcd_dcnt = lcd_size;
-	header->data_len = lcd_size;
-	header->crc32 = cal_CRC32(0, (lcd_buf + 4), lcd_size - 4);
+	glcd_dcnt = header->block_cur_size + next_header->block_cur_size;
+	header->data_len = glcd_dcnt;
+	header->crc32 = cal_CRC32(0, (lcd_buf + 4), glcd_dcnt - 4);
 	if (model_debug_flag & DEBUG_LCD) {
-		ALOGD("%s: data_len=%d, glcd_dcnt=%d, block1_size=%d, block2_size=%d\n",
-			__func__, header->data_len, glcd_dcnt,
-			lcd_attr->head.block_cur_size,
-			lcd_v2_attr->head.block_cur_size);
+		ALOGD("%s: version=%d, data_len=%d, glcd_dcnt=%d, block1_size=%d, block2_size=%d\n",
+		      __func__, header->version, header->data_len, glcd_dcnt,
+		      header->block_cur_size, next_header->block_cur_size);
 	}
 
 	if (g_lcd_if == LCD_MLVDS ||
@@ -2914,10 +2937,6 @@ static int parse_panel_ini(const char *file_name, unsigned char *lcd_buf,
 
 	ini_parser_uninit();
 
-	memset(lcd_v2_attr, 0, sizeof(struct lcd_v2_attr_s));
-	free(lcd_v2_attr);
-	memset(lcd_attr, 0, sizeof(struct lcd_attr_s));
-	free(lcd_attr);
 	return 0;
 }
 
@@ -2973,7 +2992,7 @@ int handle_panel_ini(int index)
 	print_flag = env_get_ulong("model_debug_print", 16, 0xffff);
 	if (print_flag != 0xffff) {
 		model_debug_flag = print_flag;
-		ALOGD("model_debug_flag: %d\n", model_debug_flag);
+		ALOGD("model_debug_flag: 0x%x\n", model_debug_flag);
 	}
 
 	file_name = env_get(str);

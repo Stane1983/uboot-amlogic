@@ -11,37 +11,31 @@
 
 static struct lcd_phy_ctrl_s *lcd_phy_ctrl;
 
-unsigned int lcd_phy_vswing_level_to_value(struct aml_lcd_drv_s *pdrv, unsigned int level)
+int lcd_phy_param_preset(struct aml_lcd_drv_s *pdrv)
 {
+	struct phy_config_s *phy = &pdrv->config.phy_cfg;
+	unsigned int amp = 0, preem = 0;
+	int i;
+
 	if (!lcd_phy_ctrl)
-		return 0;
+		return -1;
 
-	if (!lcd_phy_ctrl->phy_vswing_level_to_val)
-		return level;
+	phy->lane_num = lcd_phy_ctrl->lane_num;
+	if (lcd_phy_ctrl->phy_glb_param_dft_val)
+		lcd_phy_ctrl->phy_glb_param_dft_val(pdrv);
+	if (lcd_phy_ctrl->phy_vswing_level_to_val)
+		phy->vswing = lcd_phy_ctrl->phy_vswing_level_to_val(pdrv, phy->vswing_level);
+	if (lcd_phy_ctrl->phy_preem_level_to_val)
+		preem = lcd_phy_ctrl->phy_preem_level_to_val(pdrv, phy->preem_level);
+	if (lcd_phy_ctrl->phy_amp_dft_val)
+		amp = lcd_phy_ctrl->phy_amp_dft_val(pdrv);
+	for (i = 0; i < phy->lane_num; i++) {
+		phy->lane[i].amp = amp;
+		phy->lane[i].preem = preem;
+		phy->lane[i].sel = i;
+	}
 
-	return lcd_phy_ctrl->phy_vswing_level_to_val(pdrv, level);
-}
-
-unsigned int lcd_phy_amp_dft_value(struct aml_lcd_drv_s *pdrv)
-{
-	if (!lcd_phy_ctrl)
-		return 0;
-
-	if (!lcd_phy_ctrl->phy_amp_dft_val)
-		return 0;
-
-	return lcd_phy_ctrl->phy_amp_dft_val(pdrv);
-}
-
-unsigned int lcd_phy_preem_level_to_value(struct aml_lcd_drv_s *pdrv, unsigned int level)
-{
-	if (!lcd_phy_ctrl)
-		return 0;
-
-	if (!lcd_phy_ctrl->phy_preem_level_to_val)
-		return level;
-
-	return lcd_phy_ctrl->phy_preem_level_to_val(pdrv, level);
+	return 0;
 }
 
 void lcd_phy_set(struct aml_lcd_drv_s *pdrv, int status)
@@ -100,39 +94,26 @@ int lcd_phy_config_init(struct aml_lcd_data_s *pdata)
 	lcd_phy_ctrl = NULL;
 
 	switch (pdata->chip_type) {
-	case LCD_CHIP_G12A:
-	case LCD_CHIP_G12B:
-	case LCD_CHIP_SM1:
-		lcd_phy_ctrl = lcd_phy_config_init_g12a(pdata);
-		break;
-	case LCD_CHIP_TL1:
-	case LCD_CHIP_TM2:
-		lcd_phy_ctrl = lcd_phy_config_init_tl1(pdata);
-		break;
-	case LCD_CHIP_T5:
-	case LCD_CHIP_T5D:
-	case LCD_CHIP_T5W:
-		lcd_phy_ctrl = lcd_phy_config_init_t5(pdata);
-		break;
-	case LCD_CHIP_T3:
+#ifdef CONFIG_MESON_T5M
 	case LCD_CHIP_T5M:
-		lcd_phy_ctrl = lcd_phy_config_init_t3_t5m(pdata);
+		lcd_phy_ctrl = lcd_phy_config_init_t5m(pdata);
 		break;
-	case LCD_CHIP_T7:
-		lcd_phy_ctrl = lcd_phy_config_init_t7(pdata);
-		break;
-	case LCD_CHIP_C3:
-		lcd_phy_ctrl = lcd_phy_config_init_c3(pdata);
-		break;
+#endif
+#ifdef CONFIG_MESON_T3X
 	case LCD_CHIP_T3X:
 		lcd_phy_ctrl = lcd_phy_config_init_t3x(pdata);
 		break;
+#endif
+#ifdef CONFIG_MESON_TXHD2
 	case LCD_CHIP_TXHD2:
 		lcd_phy_ctrl = lcd_phy_config_init_txhd2(pdata);
 		break;
+#endif
+#ifdef CONFIG_MESON_S6
 	case LCD_CHIP_S6:
 		lcd_phy_ctrl = lcd_phy_config_init_s6(pdata);
 		break;
+#endif
 	default:
 		break;
 	}

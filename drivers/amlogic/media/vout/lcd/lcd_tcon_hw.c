@@ -1100,7 +1100,6 @@ void lcd_tcon_global_reset_t3x(struct aml_lcd_drv_s *pdrv)
 
 int lcd_tcon_enable_tl1(struct aml_lcd_drv_s *pdrv)
 {
-	struct lcd_config_s *pconf = &pdrv->config;
 	struct lcd_tcon_config_s *tcon_conf = get_lcd_tcon_config();
 	struct tcon_mem_map_table_s *mm_table = get_lcd_tcon_mm_table();
 	struct lcd_tcon_local_cfg_s *local_cfg = get_lcd_tcon_local_cfg();
@@ -1122,15 +1121,6 @@ int lcd_tcon_enable_tl1(struct aml_lcd_drv_s *pdrv)
 			local_cfg->cur_core_reg_table = mm_table->core_reg_table;
 			lcd_tcon_core_reg_set(pdrv, tcon_conf, mm_table,
 				mm_table->core_reg_table);
-		}
-	}
-	if (pconf->basic.lcd_type == LCD_P2P) {
-		switch (pconf->control.p2p_cfg.p2p_type) {
-		case P2P_CHPI:
-			lcd_phy_tcon_chpi_bbc_init_tl1(pconf);
-			break;
-		default:
-			break;
 		}
 	}
 
