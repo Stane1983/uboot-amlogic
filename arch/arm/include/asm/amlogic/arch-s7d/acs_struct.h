@@ -376,4 +376,12 @@ typedef struct dev_param_hdr {
 
 	unsigned int		RFU[4];
 } __attribute__ ((packed)) dev_param_hdr_t;
+
+typedef struct vendor_key_s {
+	uint32_t magic;
+	uint32_t flags;
+	uint8_t  pubkey[64];
+	uint8_t  reserved[56];
+} __attribute__ ((packed)) vendor_key_t;
+
 #endif
