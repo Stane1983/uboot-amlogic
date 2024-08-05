@@ -100,7 +100,7 @@
 		"hdmichecksum=${hdmichecksum} dolby_vision_on=${dolby_vision_on} "\
 		"hdr_policy=${hdr_policy} hdr_priority=${hdr_priority} "\
 		"hdr_force_mode=${hdr_force_mode} dolby_status=${dolby_status} "\
-		"frac_rate_policy=${frac_rate_policy} hdmi_read_edid=${hdmi_read_edid} "\
+		"frac_rate_policy=${actual_frac_rate} hdmi_read_edid=${hdmi_read_edid} "\
 		"cvbsmode=${cvbsmode} cpufreq.default_governor=${default_governor} "\
 		"osd_reverse=${osd_reverse} video_reverse=${video_reverse} "\
 		"disable_ir=${disable_ir} kvm-arm.mode=none;"\
