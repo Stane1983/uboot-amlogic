@@ -175,7 +175,9 @@ typedef struct bootloader_control {
 	struct slot_metadata slot_info[4];
 	// Reserved for further use.
 	uint8_t merge_flag;
-	uint8_t reserved1[7];
+	u8 firstboot;
+	u8 boot_tries_remaining;
+	u8 reserved1[5];
 	// CRC32 of all 28 bytes preceding this field (little endian
 	// format).
 	uint32_t crc32_le;
@@ -184,7 +186,7 @@ typedef struct bootloader_control {
 #define MISC_VIRTUAL_AB_MESSAGE_VERSION 2
 #define MISC_VIRTUAL_AB_MAGIC_HEADER 0x56740AB0
 
-unsigned int kDefaultBootAttempts = 6;
+#define BOOT_ATTEMPTS 4
 
 /* Magic for the A/B struct when serialized. */
 #define AVB_AB_MAGIC "\0AB0"
@@ -288,6 +290,8 @@ void boot_info_reset(bootloader_control* boot_ctrl)
 	boot_ctrl->nb_slot = 2;
 	boot_ctrl->roll_flag = 0;
 	boot_ctrl->merge_flag = -1;
+	boot_ctrl->firstboot = 1;
+	boot_ctrl->boot_tries_remaining = BOOT_ATTEMPTS;
 
 	for (slot = 0; slot < 4; ++slot) {
 		slot_metadata entry = {};
@@ -305,8 +309,8 @@ void boot_info_reset(bootloader_control* boot_ctrl)
 		boot_ctrl->slot_info[slot] = entry;
 	}
 	boot_ctrl->slot_info[0].priority = 15;
-	boot_ctrl->slot_info[0].tries_remaining = kDefaultBootAttempts;
-	boot_ctrl->slot_info[0].successful_boot = 0;
+	boot_ctrl->slot_info[0].tries_remaining = BOOT_ATTEMPTS;
+	boot_ctrl->slot_info[0].successful_boot = 1;
 	boot_ctrl->recovery_tries_remaining = 0;
 }
 
@@ -319,6 +323,9 @@ static void dump_boot_info(bootloader_control *boot_ctrl)
 	printf("boot_ctrl->magic = 0x%x\n", boot_ctrl->magic);
 	printf("boot_ctrl->version = %d\n", boot_ctrl->version);
 	printf("boot_ctrl->nb_slot = %d\n", boot_ctrl->nb_slot);
+	printf("boot_ctrl->firstboot = %d\n", boot_ctrl->firstboot);
+	printf("boot_ctrl->boot_tries_remaining = %d\n",
+		boot_ctrl->boot_tries_remaining);
 	for (slot = 0; slot < 4; ++slot) {
 		printf("boot_ctrl->slot_info[%d].priority = %d\n",
 				slot, boot_ctrl->slot_info[slot].priority);
@@ -929,6 +936,13 @@ static int do_SetUpdateTries(
 		}
 	}
 
+	if (boot_ctrl.firstboot == 1) {
+		if (rebootmode && strcmp(rebootmode, "fastboot")) {
+			boot_ctrl.boot_tries_remaining -= 1;
+			update_flag = 1;
+		}
+	}
+
 	printf("boot_ctrl.merge_flag = %d\n", boot_ctrl.merge_flag);
 
 	if (update_flag == 1)
@@ -990,7 +1004,8 @@ static int do_SetUpdateTries(
 
 	bootable_a = slot_is_bootable(&boot_ctrl.slot_info[0]);
 	bootable_b = slot_is_bootable(&boot_ctrl.slot_info[1]);
-	if (!bootable_a && !bootable_b) {
+	if ((!bootable_a && !bootable_b) ||
+		(boot_ctrl.firstboot == 1 && boot_ctrl.boot_tries_remaining <= 0)) {
 		printf("both a & b can't bootup, enter fastboot\n");
 		boot_info_reset(&boot_ctrl);
 		boot_info_save(&boot_ctrl, miscbuf);
