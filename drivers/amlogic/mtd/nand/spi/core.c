@@ -40,6 +40,8 @@
 #include <amlogic/storage.h>
 #endif
 
+extern const struct spinand_manufacturer foresee_spinand_manufacturer;
+
 /* SPI NAND index visible in MTD names */
 static int spi_nand_idx;
 #ifdef CONFIG_AML_STORAGE
@@ -904,6 +906,7 @@ static const struct spinand_manufacturer *spinand_manufacturers[] = {
 	&micron_spinand_manufacturer,
 	&toshiba_spinand_manufacturer,
 	&winbond_spinand_manufacturer,
+	&foresee_spinand_manufacturer,
 };
 
 static int spinand_manufacturer_detect(struct spinand_device *spinand)
