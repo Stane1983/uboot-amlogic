@@ -49,12 +49,12 @@
 	status = "okay";
 };
 
-/* demo for i2c user */
-&i2c3 {
-	status= "disabled";
+/* lcd i2c */
+&i2c2 {
+	status= "okay";
 	clock-frequency = <100000>;
-	/* pinctrl-names = "default";*/
-	/* pinctrl-0 = <&i2c3_master_pins2>;*/
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c2_pins2>;
 };
 
 &ethmac {

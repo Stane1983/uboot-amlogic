@@ -190,6 +190,10 @@ struct lcd_tcon_local_cfg_s {
 #define LCD_TCON_TABLE_LEN_TXHD2          0x1670 /* 0x59c*4 */
 #define LCD_TCON_AXI_BANK_TXHD2           2
 
+/* T6D */
+#define LCD_TCON_TABLE_LEN_T6D            0x1668 /* 0x59a*4 */
+#define LCD_TCON_AXI_BANK_T6D             2
+
 #ifdef CONFIG_CMD_INI
 void *handle_lcd_ext_buf_get(void);
 void *handle_tcon_path_mem_get(unsigned int size);
@@ -237,6 +241,7 @@ int lcd_tcon_forbidden_check_t5(void);
 int lcd_tcon_forbidden_check_t5d(void);
 int lcd_tcon_top_set_tl1(struct aml_lcd_drv_s *pdrv);
 int lcd_tcon_top_set_t5(struct aml_lcd_drv_s *pdrv);
+int lcd_tcon_top_set_t6d(struct aml_lcd_drv_s *pdrv);
 
 int lcd_tcon_init_setting_check(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timing_s *ptiming,
 		unsigned char *core_reg_table);

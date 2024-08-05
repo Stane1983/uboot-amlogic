@@ -182,6 +182,7 @@ static void lcd_mlvds_phy_ckdi_config(struct aml_lcd_drv_s *pdrv)
 	case LCD_CHIP_T5W:
 	case LCD_CHIP_T5M:
 	case LCD_CHIP_TXHD2:
+	case LCD_CHIP_T6D:
 		/* mlvds channel:    //tx 8 channels
 		 *    0: d0_a
 		 *    1: d1_a
@@ -796,6 +797,15 @@ void lcd_mlvds_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off)
 			lcd_ana_setb(COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL1, 0, 30, 2);
 			/* disable lane */
 			lcd_ana_setb(COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0, 0, 16, 12);
+		}
+		break;
+	case LCD_CHIP_T6D:
+		if (on_off) {
+			lcd_ana_write(ANACTRL_LVDS_TX_PHY_CNTL1, 0xc3000000);
+			// lane_swap_set
+			lcd_lane_map_set(pdrv);
+		} else {
+			lcd_ana_write(ANACTRL_LVDS_TX_PHY_CNTL1, 0);
 		}
 		break;
 	default:

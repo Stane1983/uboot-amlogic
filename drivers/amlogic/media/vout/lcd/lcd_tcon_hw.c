@@ -1071,6 +1071,21 @@ int lcd_tcon_top_set_t5(struct aml_lcd_drv_s *pdrv)
 	return 0;
 }
 
+int lcd_tcon_top_set_t6d(struct aml_lcd_drv_s *pdrv)
+{
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("%s\n", __func__);
+
+	lcd_tcon_write(TCON_CLK_CTRL, 0x001f);
+	lcd_tcon_write(TCON_TOP_CTRL, 0xbb99);
+	lcd_tcon_write(TCON_PLLLOCK_CNTL, 0x0037);
+	lcd_tcon_write(TCON_RST_CTRL, 0x0000);
+	lcd_tcon_write(TCON_DDRIF_CTRL0, 0x33fff000);
+	lcd_tcon_write(TCON_DDRIF_CTRL1, 0x300300);
+
+	return 0;
+}
+
 void lcd_tcon_global_reset_t5(struct aml_lcd_drv_s *pdrv)
 {
 	lcd_reset_setb(RESET1_MASK, 0, 4, 1);

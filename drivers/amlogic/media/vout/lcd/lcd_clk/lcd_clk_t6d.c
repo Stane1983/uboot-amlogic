@@ -315,6 +315,7 @@ static void lcd_set_tcon_clk_t6d(struct aml_lcd_drv_s *pdrv)
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("[%d]: %s\n", pdrv->index, __func__);
 
+	val = pconf->control.mlvds_cfg.clk_phase & 0xfff;
 	p0 = val & 0xf;
 	pa = (val >> 4) & 0xf;
 	pb = (val >> 8) & 0xf;
@@ -323,7 +324,12 @@ static void lcd_set_tcon_clk_t6d(struct aml_lcd_drv_s *pdrv)
 	case LCD_MLVDS:
 		val = ((pa << 4) | (pb << 0)) & 0xff;
 		lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL2, p0,  28, 4);
-		lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL3, val, 24, 8);
+		lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL3, val, 16, 8);
+
+		//set phase load sequence
+		lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL3, 0, 31, 1);
+		udelay(10);
+		lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL3, 1, 31, 1);
 
 		/* tcon_clk */
 		if (pconf->timing.enc_clk >= 100000000) /* 25M */
@@ -396,7 +402,7 @@ static struct lcd_clk_data_s lcd_clk_data_t6d = {
 	.phy_clk_location = 0,
 
 	.vclk_sel = 0,
-	.enc_clk_msr_id = 3,
+	.enc_clk_msr_id = 222,
 
 	.div_sel_max = CLK_DIV_SEL_MAX,
 	.xd_max = 256,
