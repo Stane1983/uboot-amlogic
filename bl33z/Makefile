@@ -31,8 +31,14 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-
+current_dir := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
+prebuild_gcc :=  $(current_dir)/../../../prebuild/
+DIR_EXIST := $(shell [ -d $(prebuild_gcc)/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu ] && echo "1" || echo "0" )
+ifeq ($(DIR_EXIST),1)
+CROSS_COMPILE :=$(prebuild_gcc)/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
+else
 CROSS_COMPILE ?=/opt/gcc-linaro-7.3.1-2018.05-i686_aarch64-elf/bin/aarch64-elf-
+endif
 export CROSS_COMPILE
 ################################################################################
 # Toolchain

@@ -10,6 +10,9 @@ MINOR_VERSION 	=	5
 PATCH_VERSION 	=	14
 RELEASE_VERSION	=	bl-${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}
 
+current_dir := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
+prebuild_gcc :=  $(current_dir)/../../prebuild/
+
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
 # More info can be located in ./README
@@ -284,9 +287,19 @@ endif
 
 ifdef CONFIG_AML_UASAN
 #use gcc version above 9.0 to support asan-instrument-allocas option
-CROSS_COMPILE ?=/opt/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
+DIR_EXIST := $(shell [ -d $(prebuild_gcc)/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu ] && echo "1" || echo "0" )
+ifeq ($(DIR_EXIST),1)
+CROSS_COMPILE :=$(prebuild_gcc)/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
 else
-CROSS_COMPILE ?=/opt/arm-gnu-toolchain-13.2.Rel1-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
+CROSS_COMPILE ?=/opt/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
+endif
+else
+DIR_EXIST := $(shell [ -d $(prebuild_gcc)/arm-gnu-toolchain-13.2.Rel1-x86_64-aarch64-none-elf ] && echo "1" || echo "0" )
+ifeq ($(DIR_EXIST),1)
+CROSS_COMPILE := $(prebuild_gcc)/arm-gnu-toolchain-13.2.Rel1-x86_64-aarch64-none-elf/bin/aarch64-none-elf-
+else
+CROSS_COMPILE ?= /opt/arm-gnu-toolchain-13.2.Rel1-x86_64-aarch64-none-elf/bin/aarch64-none-elf-
+endif
 endif
 export CROSS_COMPILE
 
