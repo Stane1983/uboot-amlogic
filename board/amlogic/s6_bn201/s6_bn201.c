@@ -44,6 +44,7 @@
 #ifdef CONFIG_AMLOGIC_AMFC
 #include <amlogic/amfc.h>
 #endif
+#include <amlogic/aml_profile.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -172,6 +173,7 @@ int board_late_init(void)
 	return 0;
 #endif
 
+	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_s);
 #ifdef CONFIG_AML_VPU
 	vpu_probe();
 #endif
@@ -181,6 +183,7 @@ int board_late_init(void)
 #ifdef CONFIG_AML_CVBS
 	cvbs_init();
 #endif
+	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_e);
 
 	aml_board_late_init_tail(NULL);
 	return 0;

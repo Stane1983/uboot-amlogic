@@ -53,6 +53,7 @@
 #include <asm/arch-meson/smp.h>
 #include <cli.h>
 #endif
+#include <amlogic/aml_profile.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -579,8 +580,10 @@ static void boot_jump_linux(struct bootm_headers *images, int flag)
 		while (cpu_online_status() & 0xfffffffe)
 			mdelay(1);
 #endif
+		PUSH_TIME_TE(__func__, BL33_BOOT_KERNEL_s);
 		extern uint32_t get_time(void);
 		printf("uboot time: %u us\n", get_time());
+		DUMP_TE();
 		if (images->os.arch == IH_ARCH_ARM) {
 			printf("boot 32bit kernel\n");
 			jump_to_a32_kernel(images->ep, machid, (unsigned long)images->ft_addr);

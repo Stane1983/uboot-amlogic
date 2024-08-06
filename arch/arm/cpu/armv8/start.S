@@ -62,6 +62,9 @@ _bss_end_ofs:
 	.quad	__bss_end - _start
 
 reset:
+#ifdef CONFIG_MEASUREMENT_BOOT_TIME
+	bl  push_time_te_bl33
+#endif
 	branch_if_slave x0, skip_bl33z
 	/* Allow the board to save important registers */
 #if (defined CONFIG_SUPPORT_BL33Z) && (defined CONFIG_FULL_RAMDUMP)

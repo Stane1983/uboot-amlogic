@@ -363,6 +363,11 @@ static int abortboot_key_sequence(int bootdelay)
 	return abort;
 }
 
+#ifdef CONFIG_MEASUREMENT_BOOT_TIME
+int ss_key = -1;
+extern int dump_boot_time_flag;
+#endif
+
 static int abortboot_single_key(int bootdelay)
 {
 	int abort = 0;
@@ -374,7 +379,11 @@ static int abortboot_single_key(int bootdelay)
 	 * Check if key already pressed
 	 */
 	if (tstc()) {	/* we got a key press	*/
-		getchar();	/* consume input	*/
+#ifdef CONFIG_MEASUREMENT_BOOT_TIME
+			ss_key = getchar();	/* consume input	*/
+#else
+			getchar();	/* consume input	*/
+#endif
 		puts("\b\b\b 0");
 		abort = 1;	/* don't auto boot	*/
 	}
@@ -390,6 +399,9 @@ static int abortboot_single_key(int bootdelay)
 				abort  = 1;	/* don't auto boot	*/
 				bootdelay = 0;	/* no more delay	*/
 				key = getchar();/* consume input	*/
+#ifdef CONFIG_MEASUREMENT_BOOT_TIME
+					ss_key = key;	/* consume input	*/
+#endif
 				if (IS_ENABLED(CONFIG_AUTOBOOT_USE_MENUKEY))
 					menukey = key;
 				break;
@@ -430,6 +442,13 @@ static int abortboot(int bootdelay)
 		else
 			abort = abortboot_single_key(bootdelay);
 	}
+
+#ifdef CONFIG_MEASUREMENT_BOOT_TIME
+	if (ss_key == 'P') {
+		dump_boot_time_flag = 1;
+		abort = 0;
+	}
+#endif
 
 	if (IS_ENABLED(CONFIG_SILENT_CONSOLE) && abort)
 		gd->flags &= ~GD_FLG_SILENT;

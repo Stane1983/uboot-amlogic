@@ -150,6 +150,13 @@ config CMD_MEMTAG
 	help
 	  support memtag cmd
 
+config MEASUREMENT_BOOT_TIME
+	bool "profile time cmd"
+	default n
+	help
+	  support print profile time command,
+	  It will display in detail the time nodes of the bootloader phase.
+
 #prduct mode start---->
 config NO_FASTBOOT_FLASHING
 	depends on FASTBOOT

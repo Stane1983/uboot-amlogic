@@ -39,6 +39,7 @@
 #ifdef CONFIG_AML_LCD
 #include <amlogic/media/vout/lcd/lcd_vout.h>
 #endif
+#include <amlogic/aml_profile.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -188,6 +189,7 @@ int board_late_init(void)
 #endif //#if defined(CONFIG_AML_V3_FACTORY_BURN) && defined(CONFIG_AML_V3_USB_TOOl)
 #endif // #if !defined(CONFIG_PXP_DDR) //bypass below operations for pxp
 
+	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_s);
 #ifdef CONFIG_AML_VPU
 	vpu_probe();
 #endif
@@ -200,6 +202,7 @@ int board_late_init(void)
 #ifdef CONFIG_AML_LCD
 	lcd_probe();
 #endif
+	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_e);
 	run_command("amlsecurecheck", 0);
 	run_command("update_tries", 0);
 

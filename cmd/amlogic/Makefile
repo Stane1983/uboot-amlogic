@@ -144,6 +144,7 @@ obj-$(CONFIG_CMD_EFUSE) += efuse.o
 obj-$(CONFIG_PARTITION_ENCRYPTION) += partition_encryption.o
 obj-$(CONFIG_NOVERBOSE_BUILD) += cmd_bl30_print_set.o
 obj-$(CONFIG_CMD_MEMTAG) += cmd_memtag.o
+obj-$(CONFIG_MEASUREMENT_BOOT_TIME) += profile.o
 
 # zapper_boot command
 obj-$(CONFIG_ZAPPER_IRDETO_BOOT) += zapper_boot/zapper_usb.o
