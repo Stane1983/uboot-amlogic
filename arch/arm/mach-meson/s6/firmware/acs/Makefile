@@ -219,7 +219,7 @@ fiptool:		${FIPTOOL}
 fip:			${BUILD_PLAT}/fip.bin
 
 VENDOR_PUB_KEY := $(buildsrc)/board/${BOARDDIR}/firmware/vendor_pub.pem
-ifeq ($(CONFIG_AMPK_EMBED_PUB_KEY),y)
+ifeq ($(CONFIG_AMPK),y)
 VENDOR_PUB_OBJ := $(BUILD_PLAT)/vendor_pub.o
 else
 VENDOR_PUB_OBJ :=
@@ -384,7 +384,7 @@ $(ELF) : $(OBJS) $(LINKERFILE) $(VENDOR_PUB_OBJ)
 					$(VENDOR_PUB_OBJ) \
 					$(OBJS)
 
-ifeq ($(CONFIG_AMPK_EMBED_PUB_KEY),y)
+ifeq ($(CONFIG_AMPK),y)
 $(VENDOR_PUB_OBJ): $(VENDOR_PUB_KEY)
 	@echo "Embedding AMPK vendor pub key"
 ifeq ($(wildcard $(VENDOR_PUB_KEY)),)
