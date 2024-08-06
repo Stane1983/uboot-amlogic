@@ -25,13 +25,6 @@
 /* SMP Definitions */
 #define CPU_RELEASE_ADDR		secondary_boot_func
 
-/* Bootloader Control Block function
-   That is used for recovery and the bootloader to talk to each other
-  */
-#if 0
-#define CONFIG_BOOTLOADER_CONTROL_BLOCK
-#endif
-
 /* Serial config */
 #define CONFIG_CONS_INDEX 2
 #define CONFIG_BAUDRATE  115200
@@ -60,7 +53,6 @@
 #define AML_ADC_POWER_KEY_CHAN   2  /*channel range: 0-7*/
 #define AML_ADC_POWER_KEY_VAL	0  /*sample value range: 0-1023*/
 
-/* args/envs */
 #define CONFIG_SYS_MAXARGS  64
 
 /* define for linux/android system */
@@ -187,7 +179,7 @@
 	"cec_fun=0x2F\0" \
 	"logic_addr=0x0\0" \
 	SYSTEM_PRI_ENV_SETTINGS \
-	"cec_ac_wakeup=1;\0" \
+	"cec_ac_wakeup=1\0" \
 	CONFIG_EXTRA_HDMI_ENV_SETTINGS \
 	SYSTEM_PRI_COMMANDS \
 	"upgrade_check="\
@@ -246,25 +238,25 @@
 			"setenv vout_init enable;"\
 				"run recovery_from_flash;"\
 		"else if test ${reboot_mode} = cold_boot; then "\
-				"echo cold boot: ffv_wake=${ffv_wake} "\
-				"powermode=${powermode} suspend=${suspend};"\
-				"if test ${ffv_wake} = on; then "\
-					"if test ${powermode} = on; then "\
+			"echo cold boot: ffv_wake=${ffv_wake} "\
+			"powermode=${powermode} suspend=${suspend};"\
+			"if test ${ffv_wake} = on; then "\
+				"if test ${powermode} = on; then "\
+					"setenv bootargs ${bootargs} ffv_freeze=off; "\
+				"else if test ${powermode} = standby; then "\
+					"run ffv_freeze_action; "\
+				"else if test ${powermode} = last; then "\
+					"if test ${suspend} = off; then "\
 						"setenv bootargs ${bootargs} ffv_freeze=off; "\
-					"else if test ${powermode} = standby; then "\
+					"else if test ${suspend} = on; then "\
 						"run ffv_freeze_action; "\
-					"else if test ${powermode} = last; then "\
-						"if test ${suspend} = off; then "\
-							"setenv bootargs ${bootargs} ffv_freeze=off; "\
-						"else if test ${suspend} = on; then "\
-							"run ffv_freeze_action; "\
-						"else if test ${suspend} = shutdown; then "\
-							"run ffv_freeze_action; "\
-						"fi; fi; fi; "\
+					"else if test ${suspend} = shutdown; then "\
+						"run ffv_freeze_action; "\
 					"fi; fi; fi; "\
-				"else "\
-					"run cold_boot_normal_check;"\
-				"fi; "\
+				"fi; fi; fi; "\
+			"else "\
+				"run cold_boot_normal_check;"\
+			"fi; "\
 		"else if test ${reboot_mode} = ffv_reboot; then "\
 			"if test ${ffv_wake} = on; then "\
 				"run ffv_freeze_action; "\
@@ -353,13 +345,13 @@
 		"\0"
 
 #define CONFIG_PREBOOT  \
-			"run upgrade_check;"\
-			"run check_display;"\
-			"run storeargs;"\
-			"run upgrade_key;" \
-			"bcb uboot-command;" \
-			"run switch_bootmode;" \
-			"run reset_suspend;"
+	"run upgrade_check;"\
+	"run check_display;"\
+	"run storeargs;"\
+	"run upgrade_key;" \
+	"bcb uboot-command;" \
+	"run switch_bootmode;" \
+	"run reset_suspend;"
 
 #ifndef CONFIG_HDMITX_ONLY
 /* dual logo, normal boot */
@@ -401,11 +393,11 @@
 #endif
 
 /* #define CONFIG_ENV_IS_NOWHERE  1 */
-#define CONFIG_ENV_SIZE   (64*1024)
+#define CONFIG_ENV_SIZE   (64 * 1024)
 #define CONFIG_FIT 1
 #define CONFIG_OF_LIBFDT 1
 #define CONFIG_ANDROID_BOOT_IMAGE 1
-#define CONFIG_SYS_BOOTM_LEN (64<<20) /* Increase max gunzip size*/
+#define CONFIG_SYS_BOOTM_LEN (64 << 20) /* Increase max gunzip size*/
 
 /* ATTENTION */
 /* DDR configs move to board/amlogic/[board]/firmware/timing.c */
@@ -435,26 +427,26 @@
 /* #define	 CONFIG_CMD_SAVEENV */
 /* fixme, need fix*/
 
-#if (defined(CONFIG_ENV_IS_IN_AMLNAND) || defined(CONFIG_ENV_IS_IN_MMC)) && defined(CONFIG_STORE_COMPATIBLE)
+#if (defined(CONFIG_ENV_IS_IN_AMLNAND) || defined(CONFIG_ENV_IS_IN_MMC)) && \
+	defined(CONFIG_STORE_COMPATIBLE)
 #error env in amlnand/mmc already be compatible;
 #endif
 
 /*
-*				storage
-*		|---------|---------|
-*		|					|
-*		emmc<--Compatible-->nand
-*					|-------|-------|
-*					|		|
-*					MTD<-Exclusive->NFTL
-*					|
-*			|***************|***************|
-*			slc-nand	SPI-nand	SPI-nor
-*			(raw nand)
-*/
+ *				storage
+ *		|---------|---------|
+ *		|					|
+ *		emmc<--Compatible-->nand
+ *					|-------|-------|
+ *					|		|
+ *					MTD<-Exclusive->NFTL
+ *					|
+ *			|***************|***************|
+ *			slc-nand	SPI-nand	SPI-nor
+ *			(raw nand)
+ */
 /* axg only support slc nand */
 /* swither for mtd nand which is for slc only. */
-
 
 #if defined(CONFIG_AML_NAND) && defined(CONFIG_MESON_NFC)
 #error CONFIG_AML_NAND/CONFIG_MESON_NFC can not support at the sametime;
@@ -478,9 +470,6 @@
 	#define CONFIG_EMMC_DDR52_CLK 35000000
 #endif
 #define		CONFIG_PARTITIONS 1
-#if 0
-#define	 CONFIG_SYS_NO_FLASH  1
-#endif
 
 #if defined CONFIG_MESON_NFC || defined CONFIG_SPI_NAND || defined CONFIG_MTD_SPI_NAND
 	#define CONFIG_SYS_MAX_NAND_DEVICE  2
@@ -520,7 +509,6 @@
 
 /* UBOOT fastboot config */
 
-
 /* UBOOT factory usb/sdcard burning config */
 
 /* net */
@@ -534,14 +522,11 @@
 	#define CONFIG_CMD_DHCP 1
 	#define CONFIG_CMD_RARP 1
 	#define CONFIG_HOSTNAME		"arm_gxbb"
-#if 0
-	#define CONFIG_RANDOM_ETHADDR  1				   /* use random eth addr, or default */
-#endif
-	#define CONFIG_ETHADDR	(00 : 15 : 18 : 01 : 81 : 31) /* Ethernet address */
-	#define CONFIG_IPADDR	(10.18.9.97)	/* Our ip address */
-	#define CONFIG_GATEWAYIP	(10.18.9.1)	/* Our getway ip address */
-	#define CONFIG_SERVERIP	(10.18.9.113)	/* Tftp server ip address */
-	#define CONFIG_NETMASK	(255.255.255.0)
+	#define CONFIG_ETHADDR		00:15:18:01:81:31   /* Ethernet address */
+	#define CONFIG_IPADDR		192.168.31.200	/* Our ip address */
+	#define CONFIG_GATEWAYIP	192.168.31.1		/* Our getway ip address */
+	#define CONFIG_SERVERIP		192.168.31.230	/* Tftp server ip address */
+	#define CONFIG_NETMASK		255.255.255.0
 #endif /* (CONFIG_CMD_NET) */
 
 #define MAC_ADDR_NEW  1
@@ -621,8 +606,9 @@
     #define CONFIG_AML_SIGNED_UBOOT   1
 #endif
 /* unify build for generate encrypted kernel image
-   SRC : "board/amlogic/(board)/boot.img"
-   DST : "fip/boot.img.encrypt" */
+ * SRC : "board/amlogic/(board)/boot.img"
+ * DST : "fip/boot.img.encrypt"
+ */
 /* #define CONFIG_AML_CRYPTO_IMG	   1 */
 
 #endif /* CONFIG_AML_SECURE_UBOOT */
@@ -636,3 +622,4 @@
 #define CONFIG_AML_KASLR_SEED
 
 #endif
+

@@ -60,14 +60,13 @@
 	"tftp_kernel_path=boot/Image \0" \
 	"tftp_dtb_path=boot/dtb/ \0" \
 	"tftp_initrd_path=boot/initrd.img \0" \
-	"nfsroot_path= ;\0" \
+	"nfsroot_path= \0" \
 	"initargs="\
-		"init=data=writeback rw rootfstype=ext4" CONFIG_KNL_LOG_LEVEL " "\
+		"init=data=writeback rw rootfstype=ext4 loglevel=4 "\
 		"console=ttyS0,921600 console=tty0 no_console_suspend "\
 		"earlycon=aml_uart,0xfe07a000 ramoops.pstore_en=1 ramoops.record_size=0x8000 "\
 		"ramoops.console_size=0x4000 loop.max_part=4 scsi_mod.scan=async "\
 		"xhci_hcd.quirks=0x800000 loglevel=4 scramble_reg=0xfe02e030 "\
-		"gamma=0 "\
 		"\0"
 
 #undef SYSTEM_PRI_COMMANDS
