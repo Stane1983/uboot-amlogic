@@ -260,6 +260,13 @@ err:
 }
 #endif /* CONFIG_IS_ENABLED(OF_CONTROL) */
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+void cli_release_lock(int cpu)
+{
+	release_cmd_locker(cpu);
+}
+#endif
+
 void cli_loop(void)
 {
 	bootstage_mark(BOOTSTAGE_ID_ENTER_CLI_LOOP);

@@ -153,6 +153,8 @@ void cli_loop(void);
 /** Set up the command line interpreter ready for action */
 void cli_init(void);
 
+void cli_release_lock(int cpu);
+
 #define endtick(seconds) (get_ticks() + (uint64_t)(seconds) * get_tbclk())
 
 #endif
