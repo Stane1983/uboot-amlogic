@@ -5,7 +5,7 @@
 
 #include <common.h>
 #include <linux/string.h>
-#include <asm/armv8/mmu.h>
+//#include <asm/armv8/mmu.h>
 #include <hexdump.h>
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -159,7 +159,7 @@ static const char *get_wild_bug_type(struct uasan_report_info *info)
 {
 	const char *bug_type = "unknown-crash";
 
-	if ((unsigned long)info->access_addr < PAGE_SIZE)
+	if ((unsigned long)info->access_addr < (1 << 12))
 		bug_type = "null-ptr-deref";
 
 	return bug_type;
