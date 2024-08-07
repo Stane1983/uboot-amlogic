@@ -51,7 +51,7 @@ void mmc_print_reg(struct udevice *dev)
 {
 	struct mmc *mmc = mmc_get_mmc_dev(dev);
 
-	pr_info("%s: clk = %x, dly1 = %x, dly2 = %x, adj = %x, cfg = %x\n",
+	printf("%s: clk = %x, dly1 = %x, dly2 = %x, adj = %x, cfg = %x\n",
 		mmc->cfg->name,
 		meson_read(mmc, MESON_SD_EMMC_CLOCK),
 		meson_read(mmc, MESON_SD_EMMC_DELAY1),
@@ -156,8 +156,8 @@ static void meson_mmc_config_clock(struct meson_host *host)
 					(clk_div << CFG_DIV));
 
 	meson_write(mmc, meson_mmc_clk, MESON_SD_EMMC_CLOCK);
-	debug("clk_config:0x%x\n", meson_read(mmc, MESON_SD_EMMC_CLOCK));
-	debug("sd_src:0x%x, emmc_src:0x%x\n", readl(0xfe00016c), readl(0xfe000168));
+	printf("clk_config:0x%x\n", meson_read(mmc, MESON_SD_EMMC_CLOCK));
+	printf("sd_src:0x%x, emmc_src:0x%x\n", readl(0xfe00016c), readl(0xfe000168));
 	/*
 	 * SM1 SoCs doesn't work fine over 50MHz with CLK_CO_PHASE_180
 	 * If CLK_CO_PHASE_270 is used, it's more stable than other.
@@ -1281,6 +1281,9 @@ static int meson_mmc_probe(struct udevice *dev)
 	val &= ~CFG_SDCLK_ALWAYS_ON;
 	val |= CFG_AUTO_CLK;
 	meson_write(mmc, val, MESON_SD_EMMC_CFG);
+	writel(0x11111111, 0xfe004000);
+	writel(0x1101, 0xfe004004);
+	mmc_print_reg(dev);
 
 	printf("[%s]%s: Controller probe success!\n",
 	       __func__, mmc->cfg->name);
