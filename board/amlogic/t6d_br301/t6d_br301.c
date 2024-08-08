@@ -45,6 +45,9 @@
 #ifdef CONFIG_AML_LCD
 #include <amlogic/media/vout/lcd/lcd_vout.h>
 #endif
+#ifdef CONFIG_AMLOGIC_AMFC
+#include <amlogic/amfc.h>
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -153,6 +156,9 @@ int board_init(void)
 #endif
 #endif // #if !defined(CONFIG_PXP_DDR) //bypass below operations for pxp
 	pinctrl_devices_active(PIN_CONTROLLER_NUM);
+#ifdef CONFIG_AMLOGIC_AMFC
+	amfc_init();
+#endif
 	return 0;
 }
 

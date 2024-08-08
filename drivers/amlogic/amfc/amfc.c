@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <common.h>
 #include <malloc.h>
-#include <amlogic/amfc_regs.h>
 #include <amlogic/amfc.h>
 #include <command.h>
 #include <time.h>
@@ -38,10 +37,13 @@ int amfc_init(void)
 	unsigned int value;
 	cpu_id_t cpu_id = get_cpu_id();
 
-	if (cpu_id.family_id == MESON_CPU_MAJOR_ID_S7D && cpu_id.chip_rev == 0x0A)
+	if (cpu_id.family_id == MESON_CPU_MAJOR_ID_S7D && cpu_id.chip_rev == 0x0A) {
 		writel(0 | (1 << 6) | (5 << 7), CLKCTRL_AMFC_CLK_CTRL);	// 500MHz
-	else
+	} else if (cpu_id.family_id == MESON_CPU_MAJOR_ID_T6D) {
+		writel(0 | (1 << 8) | (1 << 9), CLKCTRL_AMFC_CLK_CTRL);	// 666MHz
+	} else { // s7d/s6
 		writel(0 | (1 << 6) | (4 << 7), CLKCTRL_AMFC_CLK_CTRL);	// 666MHz
+	}
 
 	printf("AMFC VLSI version:%x, feature:%x\n",
 		readl(AMFC_GL_VERSION), readl(AMFC_GL_CMD1_FEATURE));

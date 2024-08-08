@@ -9697,6 +9697,10 @@
 //Bit 31: 2        reserved
 //Bit 1            reg_cmd1_erro_irq_clr             // unsigned,     RW, default = 0  clear irq state
 //Bit 0            reg_cmd1_done_irq_clr             // unsigned,     RW, default = 0  clear irq state
+#define AMFC_CMD0_TIME_MEASURE                     ((0x001c  << 2) + 0xfe024000)
+//Bit 31:0         ro_cmd0_time_measure                  // unsigned , RO, default = 0, cmd0 work time/count measured by wclk
+#define AMFC_CMD1_TIME_MEASURE                     ((0x001d  << 2) + 0xfe024000)
+//Bit 31:0         ro_cmd1_time_measure                  // unsigned , RO, default = 0, cmd1 work time/count measured by wclk
 //---------------------------------------------
 //Gate clock control
 #define AMFC_CMD_GATE_CLK_CTRL                     ((0x0020  << 2) + 0xfe024000)
