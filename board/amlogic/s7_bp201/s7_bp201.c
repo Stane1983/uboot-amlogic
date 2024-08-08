@@ -283,22 +283,27 @@ static struct mtd_partition normal_partition_info[] = {
 	{
 	 .name = "recovery",
 	 .offset = 0,
-	 .size = 16 * SZ_1M,
+	 .size = 32 * SZ_1M,
 	  },
 	{
 	 .name = "boot",
 	 .offset = 0,
-	 .size = 16 * SZ_1M,
+	 .size = 64 * SZ_1M,
 	  },
 	{
 	 .name = "system",
 	 .offset = 0,
-	 .size = 64 * SZ_1M,
+	 .size = 300 * SZ_1M,
 	  },
 	{
 		.name = "vendor",
 		.offset = 0,
 		.size = 16 * SZ_1M,
+	},
+	{
+		.name = "vbmeta",
+		.offset = 0,
+		.size = 1 * SZ_1M,
 	},
 /* last partition get the rest capacity */
 	{
