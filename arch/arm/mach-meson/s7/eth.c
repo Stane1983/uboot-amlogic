@@ -84,38 +84,36 @@ void setup_tx_amp(struct udevice *dev)
 }
 static void setup_internal_phy(struct udevice *dev)
 {
-	int mc_val = 0;
+	u32 mc_val = 0xffffffff;
 	int chip_num = 0;
-	int rtn = 0;
+	int ret = 0;
 	struct resource eth_top, eth_cfg;
 
-	mc_val = dev_read_u32_default(dev, "mc_val", 4);
-	if (mc_val < 0) {
-		printf("miss mc_val\n");
+	if (dev_read_u32(dev, "mc_val", &mc_val) < 0)
+		printf("missing mc_val\n");
+	else
+		printf("mc_val=0x%x\n", mc_val);
+
+	if (dev_read_u32(dev, "chip_num", &chip_num) < 0)
+		printf("missing chip_num, use 0 as default\n");
+	else
+		printf("chip_num=%d\n", chip_num);
+
+	ret = dev_read_resource_byname(dev, "eth_top", &eth_top);
+	if (ret) {
+		printf("can't get eth_top resource(ret = %d)\n", ret);
 	}
 
-	chip_num = dev_read_u32_default(dev, "chip_num", 4);
-	if (chip_num < 0) {
-		chip_num = 0;
-		printf("use 0 as default chip num\n");
-	}
-	printf("chip num %d\n", chip_num);
-
-	rtn = dev_read_resource_byname(dev, "eth_top", &eth_top);
-	if (rtn) {
-		printf("can't get eth_top resource(ret = %d)\n", rtn);
-	}
-
-	rtn = dev_read_resource_byname(dev, "eth_cfg", &eth_cfg);
-	if (rtn) {
-		printf("can't get eth_cfg resource(ret = %d)\n", rtn);
+	ret = dev_read_resource_byname(dev, "eth_cfg", &eth_cfg);
+	if (ret) {
+		printf("can't get eth_cfg resource(ret = %d)\n", ret);
 	}
 
 	setup_tx_amp(dev);
 
 	/* configure eth_top */
-	printf("mc_val=0x%x\n", mc_val);
-	setbits_le32(eth_top.start, mc_val);
+	if (mc_val != 0xffffffff)
+		setbits_le32(eth_top.start, mc_val);
 
 	/* configure pll */
 	writel(0x00510630, eth_cfg.start + AML_ETH_PLL_CTL0);
@@ -143,12 +141,11 @@ static void setup_internal_phy(struct udevice *dev)
 
 static void setup_external_phy(struct udevice *dev)
 {
-	int mc_val = -1;
-	int cali_val = -1;
-	int rtn = 0;
+	u32 mc_val = 0xffffffff;
+	u32 cali_val = 0xffffffff;
+	int ret = 0;
 	struct resource eth_top, eth_cfg;
 	//struct gpio_desc desc;
-	//int ret;
 
 #if 0
 	if (0) {
@@ -165,15 +162,13 @@ static void setup_external_phy(struct udevice *dev)
 	}
 #endif
 
-	mc_val = dev_read_u32_default(dev, "mc_val", -1);
-	if (mc_val == -1)
-		printf("miss mc_val\n");
+	if (dev_read_u32(dev, "mc_val", &mc_val) < 0)
+		printf("missing mc_val\n");
 	else
 		printf("mc_val=0x%x\n", mc_val);
 
-	cali_val = dev_read_u32_default(dev, "cali_val", -1);
-	if (cali_val == -1)
-		printf("miss cali_val\n");
+	if (dev_read_u32(dev, "cali_val", &cali_val) < 0)
+		printf("missing cali_val\n");
 	else
 		printf("cali_val=0x%x\n", cali_val);
 
@@ -187,14 +182,14 @@ static void setup_external_phy(struct udevice *dev)
 		pinctrl_select_state(dev, "external_eth_rgmii_pins");
 		printf("set rgmii\n");
 	}
-	rtn = dev_read_resource_byname(dev, "eth_top", &eth_top);
-	if (rtn) {
-		printf("can't get eth_top resource(ret = %d)\n", rtn);
+	ret = dev_read_resource_byname(dev, "eth_top", &eth_top);
+	if (ret) {
+		printf("can't get eth_top resource(ret = %d)\n", ret);
 	}
 
-	rtn = dev_read_resource_byname(dev, "eth_cfg", &eth_cfg);
-	if (rtn) {
-		printf("can't get eth_cfg resource(ret = %d)\n", rtn);
+	ret = dev_read_resource_byname(dev, "eth_cfg", &eth_cfg);
+	if (ret) {
+		printf("can't get eth_cfg resource(ret = %d)\n", ret);
 	}
 //	printf("eth_top 0x%x eth_cfg 0x%x \n", eth_top.start, eth_cfg.start);
 

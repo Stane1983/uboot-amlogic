@@ -44,6 +44,7 @@
 #define ANACTRL_PLL_GATE_DIS 0xffffffff
 #endif
 
+#define AML_ETH_PLL_STS  0x40
 #define AML_ETH_PLL_CTL0 0x44
 #define AML_ETH_PLL_CTL1 0x48
 #define AML_ETH_PLL_CTL2 0x4C
@@ -56,6 +57,7 @@
 #define AML_ETH_PHY_CNTL0 0x80
 #define AML_ETH_PHY_CNTL1 0x84
 #define AML_ETH_PHY_CNTL2 0x88
+
 
 enum {
 	/* chip num */
@@ -83,65 +85,38 @@ void setup_tx_amp(struct udevice *dev)
 }
 static void setup_internal_phy(struct udevice *dev)
 {
-	int phy_cntl1 = 0;
-	int mc_val = 0;
+	u32 mc_val = 0xffffffff;
 	int chip_num = 0;
-	unsigned int pll_val[3] = {0};
-	unsigned int analog_val[3] = {0};
-	int rtn = 0;
+	int ret = 0;
 	struct resource eth_top, eth_cfg;
 
-	phy_cntl1 = dev_read_u32_default(dev, "phy_cntl1", 4);
-	if (phy_cntl1 < 0) {
-		printf("miss phy_cntl1\n");
+	if (dev_read_u32(dev, "mc_val", &mc_val) < 0)
+		printf("missing mc_val\n");
+	else
+		printf("mc_val=0x%x\n", mc_val);
+
+	if (dev_read_u32(dev, "chip_num", &chip_num) < 0)
+		printf("missing chip_num, use 0 as default\n");
+	else
+		printf("chip_num=%d\n", chip_num);
+
+	ret = dev_read_resource_byname(dev, "eth_top", &eth_top);
+	if (ret) {
+		printf("can't get eth_top resource(ret = %d)\n", ret);
 	}
 
-	mc_val = dev_read_u32_default(dev, "mc_val", 4);
-	if (mc_val < 0) {
-		printf("miss mc_val\n");
+	ret = dev_read_resource_byname(dev, "eth_cfg", &eth_cfg);
+	if (ret) {
+		printf("can't get eth_cfg resource(ret = %d)\n", ret);
 	}
-
-	chip_num = dev_read_u32_default(dev, "chip_num", 4);
-	if (chip_num < 0) {
-		chip_num = 0;
-		printf("use 0 as default chip num\n");
-	}
-	printf("chip num %d\n", chip_num);
-
-	rtn = dev_read_u32_array(dev, "pll_val", pll_val, ARRAY_SIZE(pll_val));
-	if (rtn < 0) {
-		printf("miss pll_val\n");
-	}
-
-	dev_read_u32_array(dev, "analog_val", analog_val, ARRAY_SIZE(analog_val));
-	if (rtn < 0) {
-		printf("miss analog_val\n");
-	}
-
-	for (int i = 0;i <3; i++) {
-		debug("pll_val 0x%08x\n", pll_val[i]);
-	}
-
-	for (int i = 0;i <3; i++) {
-		debug("analog_val 0x%08x\n", analog_val[i]);
-	}
-
-	rtn = dev_read_resource_byname(dev, "eth_top", &eth_top);
-	if (rtn) {
-		printf("can't get eth_top resource(ret = %d)\n", rtn);
-	}
-
-	rtn = dev_read_resource_byname(dev, "eth_cfg", &eth_cfg);
-	if (rtn) {
-		printf("can't get eth_cfg resource(ret = %d)\n", rtn);
-	}
-//	printf("wzh eth_top 0x%x eth_cfg 0x%x \n", eth_top.start, eth_cfg.start);
 
 	setup_tx_amp(dev);
-	/*top*/
-//	setbits_le32(ETHTOP_CNTL0, mc_val);
-	setbits_le32(eth_top.start, mc_val);
-	/*pll*/
+
+	/* configure eth_top */
+	if (mc_val != 0xffffffff)
+		setbits_le32(eth_top.start, mc_val);
+
+	/* configure pll */
 	writel(0x00510630, eth_cfg.start + AML_ETH_PLL_CTL0);
 	writel(0x222210a0, eth_cfg.start + AML_ETH_PLL_CTL1);
 	writel(0x00518630, eth_cfg.start + AML_ETH_PLL_CTL0);
@@ -149,56 +124,32 @@ static void setup_internal_phy(struct udevice *dev)
 	writel(0x222200a0, eth_cfg.start + AML_ETH_PLL_CTL1);
 	udelay(200);
 	writel(0x00118630, eth_cfg.start + AML_ETH_PLL_CTL0);
-
-	/*analog*/
-	writel(analog_val[0], eth_cfg.start + AML_ETH_PLL_CTL5);
-	writel(analog_val[1], eth_cfg.start + AML_ETH_PLL_CTL6);
-	writel(analog_val[2], eth_cfg.start + AML_ETH_PLL_CTL7);
-
-	/*ctrl*/
-	/*config phyid should between  a 0~0xffffffff*/
-	/*please don't use 44000181, this has been used by internal phy*/
-	writel(0x33000180, eth_cfg.start + AML_ETH_PHY_CNTL0);
-
-	/*use_phy_smi | use_phy_ip | co_clkin from eth_phy_top*/
-	writel(0x260, eth_cfg.start + AML_ETH_PHY_CNTL2);
-	writel(phy_cntl1, eth_cfg.start + AML_ETH_PHY_CNTL1);
-	writel(phy_cntl1 & (~0x40000), eth_cfg.start + AML_ETH_PHY_CNTL1);
-	writel(phy_cntl1, eth_cfg.start + AML_ETH_PHY_CNTL1);
-	udelay(200);
-
-	if (chip_num != ETH_PHY_SC2) {
-		clrbits_le32(ANACTRL_PLL_GATE_DIS, (0x1 << 6));
-		clrbits_le32(ANACTRL_PLL_GATE_DIS, (0x1 << 7));
-		clrbits_le32(ANACTRL_PLL_GATE_DIS, (0x1 << 19));
-	}
-	/*s7 analog amp*/
+	udelay(800);
 	writel(0x00000023, eth_cfg.start + AML_ETH_PLL_CTL7);
-	writel(0x0000c001, eth_cfg.start + AML_ETH_PLL_CTL6);
-	writel(0x20220000, eth_cfg.start + AML_ETH_PLL_CTL5);
-	writel(0xaa820000, eth_cfg.start + AML_ETH_PLL_CTL3);
+	writel(0x00004001, eth_cfg.start + AML_ETH_PLL_CTL6);
+	writel(0x20000000, eth_cfg.start + AML_ETH_PLL_CTL5);
+	writel(0xaa800000, eth_cfg.start + AML_ETH_PLL_CTL3);
+
+	/* configure phy control */
+	/* config phyid should between  a 0~0xffffffff */
+	/* please don't use 44000181, this has been used by internal phy */
+	writel(0x33000180, eth_cfg.start + AML_ETH_PHY_CNTL0);
+	writel(0x34147, eth_cfg.start + AML_ETH_PHY_CNTL1);
+	writel(0x260, eth_cfg.start + AML_ETH_PHY_CNTL2);
+	writel(0x42074147, eth_cfg.start + AML_ETH_PHY_CNTL1);
+
 }
 
 static void setup_external_phy(struct udevice *dev)
 {
-	int mc_val = 0;
-	int cali_val = 0;
-	int analog_ver = 0;
-	int chip_num = 0;
-	int rtn = 0;
+	u32 mc_val = 0xffffffff;
+	u32 cali_val = 0xffffffff;
+	int ret = 0;
 	struct resource eth_top, eth_cfg;
-	/*reset phy*/
-	struct gpio_desc desc;
-	int ret;
+	//struct gpio_desc desc;
 
-	chip_num = dev_read_u32_default(dev, "chip_num", 4);
-	if (chip_num < 0) {
-		chip_num = 0;
-		printf("use 0 as default chip num\n");
-	}
-	printf("chip num %d\n", chip_num);
-
-	if (chip_num != ETH_PHY_SC2) {
+#if 0
+	if (0) {
 		ret = gpio_request_by_name(dev, "reset-gpios", 0, &desc, GPIOD_IS_OUT);
 		if (ret) {
 			printf("request gpio failed!\n");
@@ -210,16 +161,17 @@ static void setup_external_phy(struct udevice *dev)
 		}
 		dm_gpio_free(dev, &desc);
 	}
+#endif
 
-	mc_val = dev_read_u32_default(dev, "mc_val", 4);
-	if (mc_val < 0) {
-		printf("miss mc_val\n");
-	}
+	if (dev_read_u32(dev, "mc_val", &mc_val) < 0)
+		printf("missing mc_val\n");
+	else
+		printf("mc_val=0x%x\n", mc_val);
 
-	cali_val = dev_read_u32_default(dev, "cali_val", 4);
-	if (mc_val < 0) {
-		printf("miss cali_val\n");
-	}
+	if (dev_read_u32(dev, "cali_val", &cali_val) < 0)
+		printf("missing cali_val\n");
+	else
+		printf("cali_val=0x%x\n", cali_val);
 
 	/*set rmii pinmux*/
 	if (mc_val & 0x4) {
@@ -231,32 +183,24 @@ static void setup_external_phy(struct udevice *dev)
 		pinctrl_select_state(dev, "external_eth_rgmii_pins");
 		printf("set rgmii\n");
 	}
-	rtn = dev_read_resource_byname(dev, "eth_top", &eth_top);
-	if (rtn) {
-		printf("can't get eth_top resource(ret = %d)\n", rtn);
+	ret = dev_read_resource_byname(dev, "eth_top", &eth_top);
+	if (ret) {
+		printf("can't get eth_top resource(ret = %d)\n", ret);
 	}
 
-	rtn = dev_read_resource_byname(dev, "eth_cfg", &eth_cfg);
-	if (rtn) {
-		printf("can't get eth_cfg resource(ret = %d)\n", rtn);
+	ret = dev_read_resource_byname(dev, "eth_cfg", &eth_cfg);
+	if (ret) {
+		printf("can't get eth_cfg resource(ret = %d)\n", ret);
 	}
 //	printf("eth_top 0x%x eth_cfg 0x%x \n", eth_top.start, eth_cfg.start);
 
-	setbits_le32(eth_top.start, mc_val);
-	setbits_le32(eth_top.start + 4, cali_val);
+	/* configure eth_top */
+	if (mc_val != -1)
+		setbits_le32(eth_top.start, mc_val);
+	if (cali_val != -1)
+		setbits_le32(eth_top.start + 4, cali_val);
 
-	analog_ver = dev_read_u32_default(dev, "analog_ver", 4);
-	if (mc_val < 0) {
-		printf("miss analog_ver\n");
-	}
-	if (analog_ver != 2)
-		writel(0x0, eth_cfg.start + AML_ETH_PHY_CNTL2);
-
-	if (chip_num != ETH_PHY_SC2) {
-		clrbits_le32(ANACTRL_PLL_GATE_DIS, (0x1 << 6));
-		clrbits_le32(ANACTRL_PLL_GATE_DIS, (0x1 << 7));
-		clrbits_le32(ANACTRL_PLL_GATE_DIS, (0x1 << 19));
-	}
+	writel(0x0, eth_cfg.start + AML_ETH_PHY_CNTL2);
 }
 
 void __iomem *DM_network_interface_setup(struct udevice *dev)
@@ -279,6 +223,7 @@ void __iomem *DM_network_interface_setup(struct udevice *dev)
 	return 0;
 }
 
+#if 0
 static unsigned int return_write_val(struct phy_device *phy_dev, int rd_addr)
 {
 	int rd_data;
@@ -313,13 +258,55 @@ static unsigned int phy_tst_write(struct phy_device *phy_dev, unsigned int wr_ad
 	return 0;
 }
 
+
+
+static unsigned int phy_tst_read(struct phy_device *phy_dev, unsigned int rd_addr)
+{
+	unsigned int rd_data_hi;
+	unsigned int rd_data = 0;
+
+	/*init*/
+	phy_write(phy_dev, MDIO_DEVAD_NONE, 20, 0x0000);
+	phy_write(phy_dev, MDIO_DEVAD_NONE, 20, 0x0400);
+	phy_write(phy_dev, MDIO_DEVAD_NONE, 20, 0x0000);
+	phy_write(phy_dev, MDIO_DEVAD_NONE, 20, 0x0400);
+
+	if (rd_addr <= 31) {
+		phy_write(phy_dev, MDIO_DEVAD_NONE, 20,
+			((1 << 15) | (1 << 10) | ((rd_addr & 0x1f) << 5)));
+
+		rd_data = phy_read(phy_dev, MDIO_DEVAD_NONE, 21);
+		rd_data_hi = phy_read(phy_dev, MDIO_DEVAD_NONE, 22);
+		rd_data = ((rd_data_hi & 0xffff) << 16) | rd_data;
+		printf("read tstcntl phy [reg_%d] 0x%x\n", rd_addr, rd_data);
+	} else {
+		printf("Invalid parameter\n");
+	}
+
+	return rd_data;
+}
+#endif
+
 void DM_network_interface_setup_final(struct phy_device *phydev)
 {
+#if 0
+	unsigned int reg_val;
+
 	if (internal_phy) {
 		phy_tst_write(phydev, 0x18, 0x8);
 		phy_tst_write(phydev, 0x16, 0x8400);
 		phy_tst_write(phydev, 0x15, 0x4408);
 	}
+
+	reg_val = phy_tst_read(phydev, 20);
+	printf("A3_CONFIG=0x%X\n", reg_val);
+	reg_val = phy_tst_read(phydev, 21);
+	printf("A4_CONFIG=0x%X\n", reg_val);
+	reg_val = phy_tst_read(phydev, 22);
+	printf("A5_CONFIG=0x%X\n", reg_val);
+	reg_val = phy_tst_read(phydev, 23);
+	printf("A6_CONFIG=0x%X\n", reg_val);
+#endif
 }
 
 #endif
