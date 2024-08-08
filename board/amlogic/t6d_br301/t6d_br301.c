@@ -160,6 +160,8 @@ int board_late_init(void)
 {
 	printf("board late init\n");
 	env_set("defenv_para", "-c");
+	aml_board_late_init_front(NULL);
+
 #ifdef CONFIG_PXP_EMULATOR
 	return 0;
 #endif
@@ -177,6 +179,8 @@ int board_late_init(void)
 #ifdef CONFIG_AML_LCD
 	lcd_probe();
 #endif
+	aml_board_late_init_tail(NULL);
+
 	run_command("amlsecurecheck", 0);
 	run_command("update_tries", 0);
 

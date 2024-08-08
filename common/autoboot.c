@@ -407,7 +407,7 @@ static int abortboot_single_key(int bootdelay)
 				break;
 			}
 #ifdef CONFIG_AMLOGIC_MODIFY
-			udelay(100);
+			udelay(10000);
 		} while (!abort && get_timer(ts) < 100);
 #else
 			udelay(10000);
