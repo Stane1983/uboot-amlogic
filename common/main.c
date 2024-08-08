@@ -11,6 +11,7 @@
 #include <cli.h>
 #include <console.h>
 #include <version.h>
+#include <amlogic/aml_profile.h>
 
 /*
  * Board-specific Platform code can reimplement show_boot_progress () if needed
@@ -29,7 +30,9 @@ static void run_preboot_environment_command(void)
 		if (IS_ENABLED(CONFIG_AUTOBOOT_KEYED))
 			prev = disable_ctrlc(1); /* disable Ctrl-C checking */
 
+		PUSH_TIME_TE(__func__, BL33_PREBOOT_s);
 		run_command_list(p, -1, 0);
+		PUSH_TIME_TE(__func__, BL33_PREBOOT_e);
 
 		if (IS_ENABLED(CONFIG_AUTOBOOT_KEYED))
 			disable_ctrlc(prev);	/* restore Ctrl-C checking */

@@ -101,3 +101,4 @@ obj-$(CONFIG_CMD_HDMIRX) += cmd_hdmirx.o
 obj-$(CONFIG_CMD_CEC) += cmd_cec.o
 obj-$(CONFIG_CMD_PMU) += cmd_pmic.o
 obj-$(CONFIG_CMD_RMA) += cmd_rma.o
+obj-$(CONFIG_MEASUREMENT_BOOT_TIME) += profile.o

@@ -53,7 +53,7 @@
 #ifdef CONFIG_ARMV8_MULTIENTRY
 #include <asm/arch-meson/smp.h>
 #endif
-
+#include <amlogic/aml_profile.h>
 DECLARE_GLOBAL_DATA_PTR;
 
 ulong monitor_flash_len;
@@ -99,6 +99,7 @@ static int initr_reloc(void)
 {
 	/* tell others: relocation done */
 	gd->flags |= GD_FLG_RELOC | GD_FLG_FULL_MALLOC_INIT;
+	PUSH_TIME_TE(__func__, BL33_RELOCATE_finish);
 
 	return 0;
 }
@@ -362,7 +363,9 @@ static int initr_manual_reloc_cmdtable(void)
 #ifdef CONFIG_AML_STORAGE
 static int initr_storage(void)
 {
+	PUSH_TIME_TE(__func__, BL33_STORAGE_s);
 	store_init(0);
+	PUSH_TIME_TE(__func__, BL33_STORAGE_e);
 	return 0;
 }
 #else
@@ -473,6 +476,7 @@ static int should_load_env(void)
 
 static int initr_env(void)
 {
+	PUSH_TIME_TE(__func__, BL33_ENV_s);
 	/* initialize environment */
 	if (should_load_env())
 		env_relocate();
@@ -496,6 +500,7 @@ static int initr_env(void)
 		}
 	}
 #endif
+	PUSH_TIME_TE(__func__, BL33_ENV_e);
 
 	return 0;
 }

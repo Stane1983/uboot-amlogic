@@ -56,6 +56,7 @@
 #ifdef CONFIG_RX_RTERM
 #include <amlogic/aml_hdmirx.h>
 #endif
+#include <amlogic/aml_profile.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -183,6 +184,7 @@ int board_late_init(void)
 	aml_board_late_init_front(NULL);
 	get_stick_reboot_flag_mbx();
 
+	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_s);
 #ifndef CONFIG_PXP_EMULATOR
 #ifdef CONFIG_AML_VPU
 	vpu_probe();
@@ -201,6 +203,7 @@ int board_late_init(void)
 	lcd_probe();
 #endif
 #endif
+	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_e);
 	aml_board_late_init_tail(NULL);
 	return 0;
 }

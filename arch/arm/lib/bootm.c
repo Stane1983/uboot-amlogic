@@ -50,6 +50,7 @@
 #include <asm/arch-meson/smp.h>
 #include <cli.h>
 #endif
+#include <amlogic/aml_profile.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -613,8 +614,10 @@ static void boot_jump_linux(bootm_headers_t *images, int flag)
 		}
 #endif
 #endif
+		PUSH_TIME_TE(__func__, BL33_BOOT_KERNEL_s);
 		extern uint32_t get_time(void);
 		printf("uboot time: %u us\n", get_time());
+		DUMP_TE();
 	#ifdef CONFIG_AMLOGIC_TIME_PROFILE
 		if (gd->time_print_flag)
 			dump_initcall_time();

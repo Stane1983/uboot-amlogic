@@ -42,6 +42,7 @@
 #endif
 
 #include <amlogic/board.h>
+#include <amlogic/aml_profile.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -149,6 +150,7 @@ int board_late_init(void)
 	get_stick_reboot_flag_mbx();
 
 	//board_boot_freertos();
+	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_s);
 #ifdef CONFIG_AML_VPU
 	vpu_probe();
 #endif
@@ -169,6 +171,7 @@ int board_late_init(void)
 #ifdef CONFIG_AML_LCD
 	lcd_probe();
 #endif
+	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_e);
 	aml_board_late_init_tail(NULL);
 
 

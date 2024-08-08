@@ -38,6 +38,7 @@
 #ifdef CONFIG_ARMV8_MULTIENTRY
 #include <asm/arch-meson/smp.h>
 #endif
+#include <amlogic/aml_profile.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 #define UNUSED(x) (void)(x)
@@ -260,12 +261,14 @@ int aml_board_late_init_front(void *arg)
 	run_command("run bcb_cmd", 0);
 
 #ifndef CONFIG_SYSTEM_RTOS //prue rtos not need dtb
+	PUSH_TIME_TE("load dtb", BL33_LOAD_DTB_s);
 	if (run_command("run common_dtb_load", 0)) {
 		printf("Fail in load dtb with cmd[%s], try _aml_dtb\n", env_get("common_dtb_load"));
 		//load dtb here then users can directly use 'fdt' command
 		run_command("echo reboot_mode ${reboot_mode}; "
 				"imgread dtb _aml_dtb ${dtb_mem_addr}; fi;", 0);
 	}
+	PUSH_TIME_TE("load dtb", BL33_LOAD_DTB_e);
 	run_command("if fdt addr ${dtb_mem_addr}; then else echo no dtb at ${dtb_mem_addr};fi;", 0);
 	/* load unifykey */
 	run_command("keyman init 0x1234", 0);
@@ -282,7 +285,7 @@ int aml_board_late_init_tail(void *arg)
 	unsigned char chipid[16];
 	char con_str[128], env_str[128];
 	int con_len = 0;
-
+	PUSH_TIME_TE("tail init", BL33_TAIL_INIT_s);
 	UNUSED(arg);
 	printf("init tail\n");
 	run_command("amlsecurecheck", 0);
@@ -336,6 +339,7 @@ int aml_board_late_init_tail(void *arg)
 #ifdef CONFIG_AML_FACTORY_BURN_LOCAL_UPGRADE //try auto upgrade from ext-sdcard
 	aml_try_factory_sdcard_burning(0, gd->bd);
 #endif//#ifdef CONFIG_AML_FACTORY_BURN_LOCAL_UPGRADE
+	PUSH_TIME_TE("tail init", BL33_TAIL_INIT_e);
 
 	return 0;
 }

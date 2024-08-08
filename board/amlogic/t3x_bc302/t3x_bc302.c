@@ -38,6 +38,7 @@
 #include <asm/arch/stick_mem.h>
 #include <amlogic/board.h>
 
+#include <amlogic/aml_profile.h>
 DECLARE_GLOBAL_DATA_PTR;
 
 void sys_led_init(void)
@@ -164,8 +165,10 @@ int board_late_init(void)
 	aml_board_late_init_front(NULL);
 	get_stick_reboot_flag_mbx();
 
+	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_s);
 	aml_board_display_init(0x01);
 
+	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_e);
 	aml_board_late_init_tail(NULL);
 	return 0;
 }
