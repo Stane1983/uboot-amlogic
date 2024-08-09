@@ -5097,7 +5097,8 @@ void osd_init_hw(void)
 		osd_logi("VPP_OFIFO_SIZE:0x%x\n", data32);
 		if (osd_hw.osd_ver == OSD_HIGH_ONE) {
 			data32 &= ~((0xfff << 20) | 0x3fff);
-			if (osd_get_chip_type() == MESON_CPU_MAJOR_ID_S1A) {
+			if (osd_get_chip_type() == MESON_CPU_MAJOR_ID_S1A ||
+				osd_get_chip_type() == MESON_CPU_MAJOR_ID_T6D) {
 				/*s1a vpp_fifo: 0x7ff*/
 				data32 |= (0x7ff << 20);
 				data32 |= (0x7ff + 1);
