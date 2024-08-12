@@ -33,6 +33,8 @@
 #define VPU_VENC_CTRL                              ((0x1cef << 2) + 0xff000000L)
 #endif
 
+#define VPP_MISC_T6D                       ((0x1d26  << 2) + 0xff800000L)
+
 static inline unsigned int vout_reg_read(u32 reg)
 {
 	unsigned int val;
