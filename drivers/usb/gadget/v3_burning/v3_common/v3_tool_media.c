@@ -607,16 +607,13 @@ struct mtd_partition* __attribute__((weak)) get_partition_table(int *partitions)
 int __attribute__((weak)) sheader_need(void) { FB_WRN("sheader_need undefined\n"); return 0;}
 void __attribute__((weak)) sheader_load(void *addr) { FB_WRN("sheader_load undefined\n"); return;}
 
-#ifdef CONFIG_BACKUP_PART_NORMAL_ERASE
-const char* BackupPart = (const char*)(CONFIG_BACKUP_PART_NORMAL_ERASE);
-char* BackupPartAddr = (char*)(V3_DOWNLOAD_MEM_BASE);
-#endif// #ifdef CONFIG_BACKUP_PART_NORMAL_ERASE
-
 int v3tool_storage_init(const int eraseFlash, unsigned int dtbImgSz, unsigned int gptImgSz)
 {
 	int ret = 0;
 	unsigned char* dtbLoadedAddr = (unsigned char*)V3_DTB_LOAD_ADDR;
 	unsigned char *gptLoadedAddr = (unsigned char *)V3_GPT_LOAD_ADDR;
+	int initFlag = 0;
+	int erase_key = 0, force_erase_all = 0;
 
 	if (V3TOOL_WORK_MODE_USB_PRODUCE != v3tool_work_mode_get()) {//Already inited in other work mode
 		/*DWN_MSG("Exit before re-init\n");*/
@@ -646,10 +643,6 @@ int v3tool_storage_init(const int eraseFlash, unsigned int dtbImgSz, unsigned in
 	if (ret <= 0)
 		FBS_EXIT(_ACK, "Fail in store init %d, ret %d\n", 1, ret);
 
-#ifdef CONFIG_BACKUP_PART_NORMAL_ERASE
-	u32 backupPartSz = 0;
-#endif//#ifdef CONFIG_BACKUP_PART_NORMAL_ERASE
-	int initFlag = 0;
 	switch (eraseFlash) {
 		case 0://NO erase
 		case 5://NO erase
@@ -659,24 +652,11 @@ int v3tool_storage_init(const int eraseFlash, unsigned int dtbImgSz, unsigned in
 		case 3://erase all(with key)
 		case 1://normal erase, store init 3
 			initFlag = 3;
-			if (3 == eraseFlash) {
-				if (store_rsv_protect("key", false))
-					FBS_EXIT(_ACK, "Fail in disprotect key\n");
-			} else {
-#ifdef CONFIG_BACKUP_PART_NORMAL_ERASE
-				//backup env to memory
-				backupPartSz = (u32)store_part_size(BackupPart);
-				FB_MSG("BackupPart %s sz 0x%x\n", BackupPart, backupPartSz);
-				if (!backupPartSz) { FBS_EXIT(_ACK, " FAil in find BackupPart %s\n", BackupPart);}
-				ret = store_read(BackupPart, 0, backupPartSz, BackupPartAddr);
-				if (ret) { FBS_EXIT(_ACK, "FAil in backup important part %s to mem\n", BackupPart);}
-#endif//#ifdef CONFIG_BACKUP_PART_NORMAL_ERASE
-			}
+			erase_key = (eraseFlash == 3);
 			break;
 
 		case 4: {//force erase all
-				if (store_rsv_protect(NULL, false))
-					FBS_EXIT(_ACK, "Fail in disprotect all rsv\n");
+				force_erase_all = 1;
 				initFlag = 4;
 				break;
 			}
@@ -711,6 +691,15 @@ int v3tool_storage_init(const int eraseFlash, unsigned int dtbImgSz, unsigned in
 					FB_WRN("Fail in update dtb\n");
 			}
 		}
+
+		if (erase_key) {
+			if (store_rsv_protect("key", false))
+				FBS_EXIT(_ACK, "Fail in disprotect key\n");
+		}
+		if (force_erase_all) {
+			if (store_rsv_protect(NULL, false))
+				FBS_EXIT(_ACK, "Fail in disprotect all rsv\n");
+		}
 		if (is_nocs_scs_chip() > 0) {
 			if (store_get_type() != BOOT_EMMC) {
 				FBS_ERR(_ACK, "nocs scs chip but storage not emmc\n");
@@ -734,14 +723,6 @@ int v3tool_storage_init(const int eraseFlash, unsigned int dtbImgSz, unsigned in
 		}
 		if (ret)
 			FBS_EXIT(_ACK, "Fail in erase flash, ret[%d]\n", ret);
-#ifdef CONFIG_BACKUP_PART_NORMAL_ERASE
-		if (backupPartSz) {
-			FB_MSG("restore BackupPart %s from mem\n", BackupPart);
-			ret = store_write(BackupPart, 0, backupPartSz, BackupPartAddr);
-			if (ret)
-				FB_MSG("FAil in restore part %s\n", BackupPart);
-		}
-#endif//#ifdef CONFIG_BACKUP_PART_NORMAL_ERASE
 	}
 
 	if (V3TOOL_WORK_MODE_USB_PRODUCE == v3tool_work_mode_get()) {

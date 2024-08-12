@@ -245,7 +245,9 @@ int usb_burn_erase_data(unsigned char init_flag)
 		}
 		if (part_info->mask_flags & PART_PROTECT_FLAG) {
 			printf("Part:%s is protected\n", part_info->name);
-			continue;
+			if (!(info_disprotect & DISPROTECT_KEY))
+				continue;
+			printf("Still erase as key protect off\n");
 		}
 		ret = blk_derase(mmc_get_blk_desc(mmc),
 				part_info->offset / BLOCK_SIZE,
