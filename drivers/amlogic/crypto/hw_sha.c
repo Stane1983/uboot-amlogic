@@ -601,19 +601,12 @@ static int do_sha_test(uint32_t test_case)
 		case 0:
 			test_sha256();
 			test_sha224();
-			test_sha3_224();
-			test_sha3_256();
-			test_sha3_384();
-			test_sha3_512();
-			test_shake_128();
-			test_shake_256();
-			test_shake_128_variable();
-			test_shake_256_variable();
 			return 0;
 		case 1:
 			test_sha3_224();
 			test_sha3_256();
 			test_sha3_384();
+			test_sha3_512();
 			test_shake_128();
 			test_shake_256();
 			test_shake_128_variable();
