@@ -1178,7 +1178,8 @@ static int mtd_store_boot_erase(const char *part_name, u8 cpy)
 
 	if ((store_get_device_bootloader_mode() == DISCRETE_BOOTLOADER) ||
 	    (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER)) {
-		if (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER) {
+		if (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER &&
+		    !store_boot_layout_is_discrete_bl2()) {
 			boot_entry = boot_entry_advance;
 			boot_entry_cnt = 5;
 		}

@@ -177,7 +177,7 @@ static int storage_boot_layout_rebuild(struct boot_layout *boot_layout)
 {
 	struct storage_startup_parameter *ssp = &g_ssp;
 	boot_area_entry_t *boot_entry = boot_layout->boot_entry;
-	uint64_t align_size, cal_copy = 1;
+	u64 align_size, cal_copy = 1;
 	cpu_id_t cpu_id = get_cpu_id();
 	u8 i = BOOT_AREA_BL2E, bl2_copy;
 
@@ -395,7 +395,6 @@ static int storage_get_and_parse_ssp(int *need_build) // boot_device:
 	}
 
 	/* sanity check */
-
 	printf("boot_device:%d\n", ssp->boot_device);
 	printf("boot_seq:%d\n", ssp->boot_seq);
 	printf("boot_backups:%d\n", ssp->boot_backups);
