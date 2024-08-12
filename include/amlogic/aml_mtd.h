@@ -29,6 +29,8 @@ struct mtd_info;
 struct mtd_partition;
 extern struct mtd_partition *get_aml_mtd_partition(void);
 extern int get_aml_partition_count(void);
+extern struct part_info *get_aml_mtdpart_by_index(struct mtd_info *master,
+						   int idx);
 
 int mtd_add_normal_partitions(struct mtd_info *mtd,
 			       const struct mtd_partition *parts,

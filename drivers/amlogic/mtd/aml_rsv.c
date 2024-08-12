@@ -13,6 +13,7 @@
 #include <amlogic/partition_table.h>
 #include <asm/amlogic/arch/cpu_config.h>
 #include <amlogic/storage.h>
+#include <fdt_support.h>
 
 extern int info_disprotect;
 static struct meson_rsv_handler_t *rsv_handler;
@@ -1291,4 +1292,143 @@ struct rsv_info *meson_rsv_get_info(int *size)
 {
 	*size = ARRAY_SIZE(rsv_board_info);
 	return rsv_board_info;
+}
+
+static int meson_rsv_fdt_setprop(void *fdt, int node_offset,
+		const char *name, const void *val, bool string)
+{
+	int err = 0;
+
+add:
+	if (string) {
+		err = fdt_setprop_string(fdt, node_offset, name, val);
+	} else {
+		u32 *tmp = (u32 *)val;
+
+		err = fdt_setprop_cell(fdt, node_offset, name, *tmp);
+	}
+	if (err == -FDT_ERR_NOSPACE) {
+		err = fdt_increase_size(fdt, 512);
+		if (!err)
+			goto add;
+		else
+			goto err_size;
+	}
+
+	return err;
+
+err_size:
+	pr_err("Can't increase blob size: %s\n", fdt_strerror(err));
+	return err;
+}
+
+static int meson_rsv_add_node(void *blob, int parent_offset, int index,
+		const char *name, u32 block_start, u32 block_cnt, u32 size)
+{
+	int err = 0, node_offset = 0;
+	char buf[64];
+
+	pr_debug("%s : add node%d %s block start %u block cnt %u size %u\n",
+			__func__, index, name, block_start, block_cnt, size);
+add_node:
+	memset(buf, 0, sizeof(buf));
+	sprintf(buf, "node%d", index);
+	node_offset = fdt_add_subnode(blob, parent_offset, buf);
+	if (node_offset == -FDT_ERR_NOSPACE) {
+		err = fdt_increase_size(blob, 512);
+		if (!err)
+			goto add_node;
+		else
+			goto err_size;
+	} else if (node_offset == -FDT_ERR_EXISTS) {
+		return 0;
+	} else if (node_offset < 0) {
+		printf("Can't add mtdrsvpart node: %s\n",
+				fdt_strerror(node_offset));
+		return node_offset;
+	}
+
+	err = meson_rsv_fdt_setprop(blob, node_offset, "size", &size, 0);
+	if (err)
+		goto err_prop;
+
+	err = meson_rsv_fdt_setprop(blob, node_offset, "block_cnt",
+			&block_cnt, 0);
+	if (err)
+		goto err_prop;
+
+	err = meson_rsv_fdt_setprop(blob, node_offset, "block_start",
+			&block_start, 0);
+	if (err)
+		goto err_prop;
+
+	err = meson_rsv_fdt_setprop(blob, node_offset, "label", name, 1);
+	if (err)
+		goto err_prop;
+
+	return 0;
+
+err_size:
+	pr_err("Can't increase blob size: %s\n", fdt_strerror(err));
+
+err_prop:
+	pr_err("Can't add property: %s\n", fdt_strerror(err));
+	return err;
+}
+
+int meson_rsv_add_dtb(void *blob, int parent_offset)
+{
+	struct meson_rsv_info_t **rsv_info_iter = NULL, *rsv_info = NULL;
+	int rsvparts_offset, cnt, ret = 0, idx = 0;
+	char buf[64];
+	struct rsv_info *info;
+
+	sprintf(buf, "rsv_partition");
+add_rsvparts:
+	rsvparts_offset = fdt_add_subnode(blob, parent_offset, buf);
+	if (rsvparts_offset == -FDT_ERR_NOSPACE) {
+		ret = fdt_increase_size(blob, 512);
+		if (!ret) {
+			goto add_rsvparts;
+		} else {
+			pr_err("Can't increase blob size: %s\n", fdt_strerror(ret));
+			return ret;
+		}
+	} else if (rsvparts_offset == -FDT_ERR_EXISTS) {
+		return 0;
+	} else if (rsvparts_offset < 0) {
+		pr_err("Can't add mtdrsvpart node: %s\n",
+				fdt_strerror(rsvparts_offset));
+		return rsvparts_offset;
+	}
+
+	ret = meson_rsv_add_node(blob, rsvparts_offset, idx, "nrsv",
+			MTD_RSV_START_BLOCK, MTD_RSV_BLOCK_CNT, 0);
+	if (ret < 0)
+		return ret;
+
+	idx++;
+	ret = meson_rsv_add_node(blob, rsvparts_offset, idx, "ngap",
+			MTD_RSV_START_BLOCK, MTD_RSV_GAP_BLOCK_CNT, 0);
+	if (ret < 0)
+		return ret;
+
+	idx++;
+	info = meson_rsv_get_info(&cnt);
+	for (rsv_info_iter = &rsv_handler->bbt;
+			*rsv_info_iter && idx < ARRAY_SIZE(rsv_board_info);
+			rsv_info_iter++, idx++) {
+		rsv_info = *rsv_info_iter;
+		ret = meson_rsv_add_node(blob,
+				rsvparts_offset,
+				idx,
+				rsv_info->name,
+				rsv_info->start,
+				rsv_info->end - rsv_info->start,
+				rsv_info->size);
+		if (ret < 0)
+			return ret;
+	}
+
+	return 0;
 }

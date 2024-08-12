@@ -112,4 +112,6 @@ int meson_rsv_save(struct meson_rsv_info_t *rsv_info, u_char *buf);
 int meson_rsv_write(struct meson_rsv_info_t *rsv_info, u_char *buf);
 int meson_rsv_erase_protect(struct meson_rsv_handler_t *handler,
 uint32_t block_addr);
+int meson_rsv_add_dtb(void *blob, int parent_offset);
+struct mtd_info *mtd_store_get(int dev);
 #endif/* __MESON_RSV_H_ */

@@ -21,6 +21,8 @@
 #include <jffs2/jffs2.h>
 #include <time.h>
 #include <amlogic/cpu_id.h>
+#include <fdt_support.h>
+#include <linux/libfdt.h>
 
 struct map_handler_t {
 	u16 *map;
@@ -1423,75 +1425,153 @@ static int nor_rsv_protect(const char *name, bool ops)
 	return 0;
 }
 
-int mtd_store_param_rsv(void)
+static int mtd_store_param_rsv_partition(void)
 {
-	struct mtd_info *mtd = mtd_store_get(0);
-	struct rsv_info *info;
-	int lenvir, i, re, base, cnt;
-	char buf[256];
-	char *p = buf;
+	char buf[128];
+	char *fdtaddr = NULL;
+	u32 mem_dtb;
+	enum boot_type_e medium_type = store_get_type();
+	int parent_offset;
 
-	info = meson_rsv_get_info(&cnt);
-	base = mtd->erasesize / 1024;
-	lenvir = snprintf(buf, sizeof(buf), "%s", "mtdrsvparts=aml-nand:");
-	p += lenvir;
-	re = sizeof(buf) - lenvir;
-	lenvir = snprintf(p, re, "%dk@%dk@0k(rsv),",
-			  MTD_RSV_START_BLOCK * base,
-			  (MTD_RSV_BLOCK_CNT + MTD_RSV_START_BLOCK) * base);
-	p += lenvir;
-	re -= lenvir;
-	lenvir = snprintf(p, re, "%dk@%dk@0k(gap),",
-			  MTD_RSV_START_BLOCK * base,
-			  (MTD_RSV_START_BLOCK + MTD_RSV_GAP_BLOCK_CNT) * base);
-	p += lenvir;
-	re -= lenvir;
-	for (i = 0; i < cnt; i++) {
-		if (info[i].rsv_info) {
-			lenvir = snprintf(p, re, "%dk@%dk@%dk(%s),",
-					  (int)info[i].rsv_info->start * base,
-					  (int)info[i].rsv_info->end * base,
-					  (int)info[i].rsv_info->size / 1024,
-					  info[i].name);
-			re -= lenvir;
-			p += lenvir;
-		} else {
-			lenvir = snprintf(p, re, "0k@0k@0k(%s),",
-					  info[i].name);
-			re -= lenvir;
-			p += lenvir;
+	if (!working_fdt) {
+		pr_debug("%s: working_fdt is set, fdt add to set working_fdt\n",
+				__FILE__);
+		fdtaddr = env_get("dtb_mem_addr");
+		if (!fdtaddr) {
+			pr_err("get dtb_mem_addr NULL\n");
+			return -EBADMSG;
+		}
+		mem_dtb = simple_strtoul(fdtaddr, NULL, 16);
+		sprintf(buf, "fdt addr 0x%x", mem_dtb);
+		pr_debug("fdt addr 0x%x\n", mem_dtb);
+		if (run_command(buf, 0)) {
+			pr_err("fdt addr 0x%x error.\n", mem_dtb);
+			return -EBADMSG;
 		}
 	}
 
-	p = buf;
-	env_set("mtdrsvparts", p);
-	memset(buf, 0, sizeof(buf));
-	sprintf(buf, "setenv bootargs ${bootargs} ${mtdrsvparts}");
-	printf("command: %s\n", buf);
+	if (working_fdt) {
+		if (medium_type == BOOT_SNAND)
+			parent_offset = fdt_node_offset_by_compatible(working_fdt, -1, "spi-nand");
+		else if (medium_type == BOOT_NAND_MTD)
+			parent_offset = fdt_path_offset(working_fdt, "/soc/nfc");
+		else
+			return 0;
+	} else {
+		return -1;
+	}
 
-	return run_command(buf, 0);
+	return meson_rsv_add_dtb(working_fdt, parent_offset);
 }
 
-extern struct part_info *get_aml_mtdpart_by_index(struct mtd_info *master, int idx);
+static int mtd_store_param_bl2_partition(void)
+{
+	char buf[128];
+	char *fdtaddr = NULL;
+	u32 mem_dtb;
+	enum boot_type_e medium_type = store_get_type();
+	int node_offset, err = 0;
+	int count = mtd_store_count();
+	struct part_info *bl2 = NULL;
+
+	if (!working_fdt) {
+		pr_debug("%s: working_fdt is set, fdt add to set working_fdt\n",
+				__FILE__);
+		fdtaddr = env_get("dtb_mem_addr");
+		if (!fdtaddr) {
+			pr_err("get dtb_mem_addr NULL\n");
+			return -EBADMSG;
+		}
+		mem_dtb = simple_strtoul(fdtaddr, NULL, 16);
+		sprintf(buf, "fdt addr 0x%x", mem_dtb);
+		pr_debug("fdt addr 0x%x\n", mem_dtb);
+		if (run_command(buf, 0)) {
+			pr_err("fdt addr 0x%x error.\n", mem_dtb);
+			return -EBADMSG;
+		}
+	}
+
+	if (working_fdt && medium_type == BOOT_NAND_MTD) {
+		node_offset = fdt_path_offset(working_fdt,
+						 "/soc/nfc/nand@bootloader/partition@0");
+
+		if (count > 0) {
+			bl2 = get_aml_mtdpart_by_index(NULL, 0);
+			if (!bl2)
+				return -EINVAL;
+
+			memset(buf, 0, sizeof(buf));
+			*(fdt32_t *)&buf[0] = cpu_to_fdt32(bl2->offset);
+			*(fdt32_t *)&buf[4] = cpu_to_fdt32(bl2->size);
+			err = fdt_setprop(working_fdt, node_offset, "reg", buf, 8);
+			if (err < 0)
+				printf("WARNING: could not set bootloader property: %s\n",
+				       fdt_strerror(err));
+		}
+
+		return err;
+	}
+
+	return 0;
+}
+
+/**
+ * Format string describing supplied size. This routine does the opposite job
+ * to memsize_parse(). Size in bytes is converted to string and if possible
+ * shortened by using k (kilobytes), m (megabytes) or g (gigabytes) suffix.
+ *
+ * Note, that this routine does not check for buffer overflow, it's the caller
+ * who must assure enough space.
+ *
+ * @param buf : output buffer
+ * @param size : size to be converted to string
+ */
+static void memsize_format(char *buf, u64 size)
+{
+#define SIZE_GB ((u32)1024 * 1024 * 1024)
+#define SIZE_MB ((u32)1024 * 1024)
+#define SIZE_KB ((u32)1024)
+
+	if ((size % SZ_1G) == 0)
+		sprintf(buf, "%llug", size / SZ_1G);
+	else if ((size % SZ_1M) == 0)
+		sprintf(buf, "%llum", size / SZ_1M);
+	else if (size % SZ_1K == 0)
+		sprintf(buf, "%lluk", size / SZ_1K);
+	else
+		sprintf(buf, "%llu", size);
+}
+
 int mtd_store_param_partition(void)
 {
 	struct part_info *temp;
 	int lenvir, i, re, count;
-	char buf[512];
+	char buf[512], size[32], offset[32];
 	char *p = buf;
+	enum boot_type_e medium_type = store_get_type();
 
-	count = get_aml_mtdpart_count();
-	lenvir = snprintf(buf, sizeof(buf), "%s", "mtdparts=aml-nand:");
+	count = mtd_store_count();
+	lenvir = snprintf(buf, sizeof(buf), "%s", "mtdparts=aml-mtd:");
 	p += lenvir;
 	re = sizeof(buf) - lenvir;
-	for (i = 0; i < count; i++) {
+
+	i = 0;
+	/* slcnand bl2 pass to kernel still by dtb, other partitions by cmdline */
+	if (medium_type == BOOT_NAND_MTD) {
+		mtd_store_param_bl2_partition();
+		i = 1;
+	}
+
+	for (; i < count; i++) {
 		temp = get_aml_mtdpart_by_index(NULL, i);
 		if (!temp)
 			return -EINVAL;
-		lenvir = snprintf(p, re, "%dk@%dk(%s),",
-				  (int)(temp->size / 1024),
-				  (int)(temp->offset / 1024),
-				  temp->name);
+
+		memset(size, 0, sizeof(size));
+		memsize_format(size, temp->size);
+		memset(offset, 0, sizeof(offset));
+		memsize_format(offset, temp->offset);
+		lenvir = snprintf(p, re, "%s@%s(%s),", size, offset, temp->name);
 		re -= lenvir;
 		p += lenvir;
 	}
@@ -1513,7 +1593,7 @@ int mtd_store_param_ops(void)
 		return 0;
 
 	mtd_store_param_partition();
-	mtd_store_param_rsv();
+	mtd_store_param_rsv_partition();
 	init = 1;
 
 	return 0;
