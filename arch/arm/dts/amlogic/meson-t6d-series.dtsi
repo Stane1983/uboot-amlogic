@@ -334,10 +334,10 @@
 			status = "disabled";
 		};
 
-		spi_nfc: spi@0xfe08c000 {
+		spi_nfc: spi@0xfe08d000 {
 			compatible = "amlogic,spi_nfc";
 			status = "disabled";
-			reg = <0x0 0xfe08c000 0x0 0x80>;
+			reg = <0x0 0xfe08d000 0x0 0x80>;
 			#address-cells = <1>;
 			#size-cells = <0>;
 			spi-flash@0 {

@@ -1516,6 +1516,51 @@ static int mtd_store_param_bl2_partition(void)
 	return 0;
 }
 
+static int mtd_store_param_boot_layout(void)
+{
+	enum boot_type_e medium_type;
+	char buf[128];
+	char *fdtaddr = NULL;
+	int node_offset, err = 0;
+	u32 mem_dtb;
+	u32 boot_layout = g_ssp.boot_layout;
+
+	medium_type = store_get_type();
+	if (medium_type != BOOT_SNAND)
+		return 0;
+
+	if (!working_fdt) {
+		pr_debug("%s: working_fdt is set, fdt add to set working_fdt\n", __FILE__);
+		fdtaddr = env_get("dtb_mem_addr");
+		if (!fdtaddr) {
+			pr_err("get dtb_mem_addr NULL\n");
+			return -EBADMSG;
+		}
+		mem_dtb = simple_strtoul(fdtaddr, NULL, 16);
+		sprintf(buf, "fdt addr 0x%x", mem_dtb);
+		pr_debug("fdt addr 0x%x\n", mem_dtb);
+		if (run_command(buf, 0)) {
+			pr_err("fdt addr 0x%x error.\n", mem_dtb);
+			return -EBADMSG;
+		}
+	}
+
+add:
+	if (working_fdt) {
+		node_offset = fdt_node_offset_by_compatible(working_fdt, -1, "spi-nand");
+		err = fdt_setprop_cell(working_fdt, node_offset, "boot_layout", boot_layout);
+		if (err == -FDT_ERR_NOSPACE) {
+			err = fdt_increase_size(working_fdt, 512);
+			if (!err)
+				goto add;
+		}
+	} else {
+		err = -1;
+	}
+
+	return err;
+}
+
 /**
  * Format string describing supplied size. This routine does the opposite job
  * to memsize_parse(). Size in bytes is converted to string and if possible
@@ -1595,6 +1640,7 @@ int mtd_store_param_ops(void)
 
 	mtd_store_param_partition();
 	mtd_store_param_rsv_partition();
+	mtd_store_param_boot_layout();
 	init = 1;
 
 	return 0;
