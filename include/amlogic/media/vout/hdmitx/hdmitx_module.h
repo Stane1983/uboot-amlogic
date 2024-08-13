@@ -95,6 +95,7 @@ unsigned int hdmi_edid_parsing(unsigned char *edid, struct rx_cap *prxcap);
 struct hdmi_format_para *hdmi_match_dtd_paras(struct dtd *t);
 bool hdmimode_is_interlaced(enum hdmi_vic vic);
 void hdmitx_ddc_init(void);
+u32 hdmitx_check_frac_rate(struct hdmitx_dev *hdev);
 void hdmitx_set_clk(struct hdmitx_dev *hdev);
 void hdmitx_turnoff(void);
 int hdmitx_get_hpd_state(void);

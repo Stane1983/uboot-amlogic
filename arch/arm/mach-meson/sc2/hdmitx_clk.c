@@ -1080,35 +1080,10 @@ static bool test_pixel_clk(struct hdmitx_dev *hdev, const struct hw_enc_clk_val_
 
 void hdmitx_set_clk(struct hdmitx_dev *hdev)
 {
-	char *frac_rate_str = NULL;
 	int i = 0;
 	struct hw_enc_clk_val_group test_clks = {0};
-	char *user_hdmimode = NULL;
 
-	user_hdmimode = env_get("hdmimode");
-	/*
-	 * If the user-selected hdmimode differs from the currently output hdmimode,
-	 * indicating that the best policy for output should be executed,
-	 * the default frac_rate_policy value of 1 should be used for the output.
-	 */
-	if (!strstr(user_hdmimode, hdev->para->ext_name) &&
-		hdmitx_likely_frac_rate_mode(hdev->para->ext_name)) {
-		frac_rate = 1;
-	} else {
-		frac_rate_str = env_get("frac_rate_policy");
-		if (frac_rate_str && (frac_rate_str[0] == '0'))
-			frac_rate = 0;
-		else if (hdmitx_likely_frac_rate_mode(hdev->para->ext_name))
-			frac_rate = 1;
-	}
-	hdev->frac_rate_policy = frac_rate;
-	/*
-	 * "frac_rate_policy" saves user-selected settings and don't make changes.
-	 * Use new environment variables "actual_frac_rate" save the real frac_rate,
-	 * and transfer it to the kernel in the env file as bootargs.
-	 */
-	env_set("actual_frac_rate", frac_rate ? "1" : "0");
-
+	frac_rate = hdmitx_check_frac_rate(hdev);
 	/* set the clock and test the pixel clock */
 	for (i = 0; i < SET_CLK_MAX_TIMES; i++) {
 		if (hdev->para->cs != HDMI_COLOR_FORMAT_422)

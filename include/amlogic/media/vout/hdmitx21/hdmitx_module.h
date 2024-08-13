@@ -96,6 +96,7 @@ void scdc21_wr_sink(u8 adr, u8 val);
 struct hdmi_format_para *hdmitx21_get_fmt_paras(enum hdmi_vic vic);
 const struct hdmi_timing *hdmitx21_get_timing_para0(void);
 int hdmitx21_timing_size(void);
+u32 hdmitx21_check_frac_rate(struct hdmitx_dev *hdev);
 void hdmitx21_set_clk(struct hdmitx_dev *hdev);
 void hdmitx_set_clkdiv(struct hdmitx_dev *hdev);
 const struct hdmi_timing *hdmitx21_gettiming_from_vic(enum hdmi_vic vic);
