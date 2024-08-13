@@ -134,6 +134,7 @@ struct hdmi_format_para *hdmitx21_get_fmt_paras(enum hdmi_vic vic);
 const struct hdmi_timing *hdmitx21_get_timing_para0(void);
 int hdmitx21_timing_size(void);
 void hdmitx21_set_clk(struct hdmitx_dev *hdev);
+u32 hdmitx_check_frac_rate(struct hdmitx_dev *hdev);
 const struct hdmi_timing *hdmitx_mode_vic_to_hdmi_timing(enum hdmi_vic vic);
 const struct hdmi_timing *hdmitx21_gettiming_from_vic(enum hdmi_vic vic);
 const struct hdmi_timing *hdmitx_mode_match_vesa_timing(struct vesa_standard_timing *t);

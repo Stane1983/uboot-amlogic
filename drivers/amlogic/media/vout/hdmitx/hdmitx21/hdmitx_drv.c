@@ -2942,3 +2942,47 @@ int hdmitx_hw_validate_mode(struct hdmitx_hw_common *tx_hw, u32 vic, u32 max_ref
 
 	return (ret == 1) ? 0 : -EINVAL;
 }
+
+u32 hdmitx_check_frac_rate(struct hdmitx_dev *hdev)
+{
+	struct hdmi_format_para *para = hdev->para;
+	char *frac_rate_str = NULL;
+	char *user_hdmimode = NULL;
+	u32 frac_rate = 0;
+	char ext_name[32];
+
+	if (para->timing.sname)
+		memcpy(ext_name, para->timing.sname, sizeof(ext_name));
+	else if (para->timing.name)
+		memcpy(ext_name, para->timing.name, sizeof(ext_name));
+	user_hdmimode = env_get("hdmimode");
+	/*
+	 * If the user-selected hdmimode differs from the currently output hdmimode,
+	 * indicating that the best policy for output should be executed,
+	 * the default frac_rate_policy value of 1 should be used for the output.
+	 */
+	if (user_hdmimode && !strstr(user_hdmimode, ext_name) &&
+	    hdmitx_likely_frac_rate_mode(ext_name)) {
+		frac_rate = 1;
+	} else {
+		frac_rate_str = env_get("frac_rate_policy");
+		if (frac_rate_str && (frac_rate_str[0] == '0'))
+			frac_rate = 0;
+		else if (para && hdmitx_likely_frac_rate_mode(ext_name))
+			frac_rate = 1;
+	}
+
+	/* when QMS is en, no need frac_rate */
+	if (hdev->qms_en)
+		frac_rate = 0;
+
+	hdev->frac_rate_policy = frac_rate;
+	/*
+	 * "frac_rate_policy" saves user-selected settings and don't make changes.
+	 * Use new environment variables "actual_frac_rateto" save the real frac_rate,
+	 * and transfer it to the kernel in the env file as bootargs.
+	 */
+	env_set("actual_frac_rate", frac_rate ? "1" : "0");
+	pr_info("%s: frac_rate:%d\n", __func__, frac_rate);
+	return frac_rate;
+}

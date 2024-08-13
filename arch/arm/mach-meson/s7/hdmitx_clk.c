@@ -33,8 +33,6 @@
 
 #define usleep_range(a, b) udelay(a)
 
-static int likely_frac_rate_mode(char *m);
-
 /* local frac_rate flag */
 static u32 frac_rate;
 
@@ -369,7 +367,7 @@ static u32 check_clock_shift(enum hdmi_vic vic, u32 frac_policy)
 	}
 
 	/* only check such as 24hz, 30hz, 60hz, ... */
-	if (!likely_frac_rate_mode(timing->name))
+	if (!hdmitx_likely_frac_rate_mode(timing->name))
 		return 0;
 
 	if (is_vsync_int(timing->v_freq)) {
@@ -487,57 +485,9 @@ static void set_hdmitx_htx_pll(struct hdmitx_dev *hdev)
 
 }
 
-static int likely_frac_rate_mode(char *m)
-{
-	if (strstr(m, "24hz") || strstr(m, "30hz") || strstr(m, "60hz") ||
-	    strstr(m, "120hz") || strstr(m, "240hz"))
-		return 1;
-	else
-		return 0;
-}
-
-static void hdmitx_check_frac_rate(struct hdmitx_dev *hdev)
-{
-	struct hdmi_format_para *para = hdev->para;
-	char *frac_rate_str = NULL;
-	char *user_hdmimode = NULL;
-
-	user_hdmimode = env_get("hdmimode");
-	/*
-	 * If the user-selected hdmimode differs from the currently output hdmimode,
-	 * indicating that the best policy for output should be executed,
-	 * the default frac_rate_policy value of 1 should be used for the output.
-	 */
-	if (!(strstr(user_hdmimode, para->timing.sname) ||
-	      strstr(user_hdmimode, para->timing.name)) &&
-		likely_frac_rate_mode(para->timing.name)) {
-		frac_rate = 1;
-	} else {
-		frac_rate = hdev->frac_rate_policy;
-		frac_rate_str = env_get("frac_rate_policy");
-		if (frac_rate_str && (frac_rate_str[0] == '0'))
-			frac_rate = 0;
-		else if (para && para->timing.name && likely_frac_rate_mode(para->timing.name))
-			frac_rate = 1;
-	}
-
-	/* when QMS is en, no need frac_rate */
-	if (hdev->qms_en)
-		frac_rate = 0;
-
-	hdev->frac_rate_policy = frac_rate;
-	/*
-	 * "frac_rate_policy" saves user-selected settings and don't make changes.
-	 * Use new environment variables "actual_frac_rate" save the real frac_rate,
-	 * and transfer it to the kernel in the env file as bootargs.
-	 */
-	env_set("actual_frac_rate", frac_rate ? "1" : "0");
-	pr_info("%s: frac_rate:%d\n", __func__, frac_rate);
-}
-
 void hdmitx21_set_clk(struct hdmitx_dev *hdev)
 {
-	hdmitx_check_frac_rate(hdev);
+	frac_rate = hdmitx_check_frac_rate(hdev);
 	disable_hdmitx_s7_plls(hdev);
 	set_hdmitx_htx_pll(hdev);
 }

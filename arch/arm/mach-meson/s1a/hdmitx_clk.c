@@ -1143,50 +1143,6 @@ next:
 		set_crt_video_enc2(0, 0, 1);
 }
 
-static int likely_frac_rate_mode(char *m)
-{
-	if (strstr(m, "24hz") || strstr(m, "30hz") || strstr(m, "60hz") ||
-	    strstr(m, "120hz") || strstr(m, "240hz"))
-		return 1;
-	else
-		return 0;
-}
-
-static void hdmitx_check_frac_rate(struct hdmitx_dev *hdev)
-{
-	struct hdmi_format_para *para = NULL;
-	char *frac_rate_str = NULL;
-	char *user_hdmimode = NULL;
-
-	user_hdmimode = env_get("hdmimode");
-	/*
-	 * If the user-selected hdmimode differs from the currently output hdmimode,
-	 * indicating that the best policy for output should be executed,
-	 * the default frac_rate_policy value of 1 should be used for the output.
-	 */
-	if (!(strstr(user_hdmimode, para->timing.sname) ||
-	      strstr(user_hdmimode, para->timing.name)) &&
-		likely_frac_rate_mode(para->timing.name)) {
-		frac_rate = 1;
-	} else {
-		para = hdev->para;
-		frac_rate_str = env_get("frac_rate_policy");
-		if (frac_rate_str && (frac_rate_str[0] == '0'))
-			frac_rate = 0;
-		else if (para && para->timing.name && likely_frac_rate_mode(para->timing.name))
-			frac_rate = 1;
-	}
-
-	hdev->frac_rate_policy = frac_rate;
-	/*
-	 * "frac_rate_policy" saves user-selected settings and don't make changes.
-	 * Use new environment variables "actual_frac_rate" save the real frac_rate,
-	 * and transfer it to the kernel in the env file as bootargs.
-	 */
-	env_set("actual_frac_rate", frac_rate ? "1" : "0");
-	pr_info("hdmitx_check_frac_rate: frac_rate:%d\n", frac_rate);
-}
-
 /*
  * calculate the pixel clock with current clock parameters
  * and measure the pixel clock from hardware clkmsr
@@ -1288,7 +1244,7 @@ void hdmitx21_set_clk(struct hdmitx_dev *hdev)
 	int i = 0;
 		struct hw_enc_clk_val_group test_clks = {0};
 
-	hdmitx_check_frac_rate(hdev);
+	frac_rate = hdmitx_check_frac_rate(hdev);
 
 	/* set the clock and test the pixel clock */
 	for (i = 0; i < SET_CLK_MAX_TIMES; i++) {
