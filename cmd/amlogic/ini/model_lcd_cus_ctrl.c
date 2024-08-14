@@ -405,37 +405,245 @@ static unsigned short handle_lcd_cus_ctrl_clk_adv(unsigned char *p, unsigned cha
 
 	ini_value = ini_get_string("lcd_Attr", "ss_freq", "0");
 	if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
-		ALOGD("%s, ufr_vtotal_min is (%s)\n", __func__, ini_value);
+		ALOGD("%s, ss_freq is (%s)\n", __func__, ini_value);
 	*(p + offset) = strtoul(ini_value, NULL, 0);
 	offset += 1;
 
 	ini_value = ini_get_string("lcd_Attr", "ss_mode", "0");
 	if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
-		ALOGD("%s, ufr_vtotal_max is (%s)\n", __func__, ini_value);
+		ALOGD("%s, ss_mode is (%s)\n", __func__, ini_value);
 	*(p + offset) = strtoul(ini_value, NULL, 0);
 	offset += 1;
 
 	return offset;
 }
 
-int handle_lcd_cus_ctrl(struct lcd_v2_attr_s *p_attr)
+static unsigned short handle_lcd_cus_ctrl_tuning_attr(unsigned char *p, unsigned short *ctrl_attr)
+{
+	struct lcd_tuning_ch_sel_s ch_sel;
+	struct lcd_tuning_s lcd_tuning;
+	struct lcd_tuning_phy_ch_s lcd_phy_ch;
+	char sec_str[16], ch_sel_str[16], ch_amp_str[16], ch_preem_str[16];
+	const char *ini_value = NULL;
+	unsigned short lane_cnt, offset = 0, ch_sel_size, tuning_size, phy_ch_size;
+	unsigned int group_cnt = 0;
+	int i, n;
+
+	ch_sel_size = sizeof(struct lcd_tuning_ch_sel_s);
+	tuning_size = sizeof(struct lcd_tuning_s);
+	phy_ch_size = sizeof(struct lcd_tuning_phy_ch_s);
+
+	*ctrl_attr &= (unsigned short)~0xf0;
+
+	//detect exist
+	ini_value = ini_get_string("lane_sel_Attr", "lcd_if", "null");
+	if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
+		ALOGD("%s, lcd_if is (%s)\n", __func__, ini_value);
+	if (strcmp(ini_value, "null") == 0) {
+		*ctrl_attr &= (unsigned short)~0xf0;
+		return 0;
+	}
+
+	ini_value = ini_get_string("lane_sel_Attr", "lane_count", "null");
+	if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
+		ALOGD("%s, lane_count is (%s)\n", __func__, ini_value);
+	if (strcmp(ini_value, "null") == 0) {
+		*ctrl_attr &= (unsigned short)~0xf0;
+		return 0;
+	}
+	lane_cnt = strtoul(ini_value, NULL, 0);
+	*(p + offset) = lane_cnt;
+	offset += 2;
+
+	for (i = 0; i < lane_cnt; i++) {
+		sprintf(ch_sel_str, "ch%u_sel", i);
+
+		ch_sel.pn_swap = 0; //reserved
+
+		ini_value = ini_get_string("lane_sel_Attr", ch_sel_str, "null");
+		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
+			ALOGD("%s, %s is (%s)\n", __func__, ch_sel_str, ini_value);
+		if (strcmp(ini_value, "null") == 0)
+			goto handle_lcd_cus_ctrl_tuning_attr_err;
+		ch_sel.sel = strtoul(ini_value, NULL, 0);
+
+		//save to attr_buf
+		memcpy((p + offset), &ch_sel, ch_sel_size);
+		offset += ch_sel_size;
+	}
+
+	for (n = 0; n < 15; n++) {
+		if (n == 0)
+			sprintf(sec_str, "tuning_Attr");
+		else
+			sprintf(sec_str, "tuning_Attr%d", n);
+
+		//phy_clk match
+		ini_value = ini_get_string(sec_str, "phy_clk", "null");
+		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
+			ALOGD("%s, phy_clk is (%s)\n", __func__, ini_value);
+		if (strcmp(ini_value, "null") == 0)
+			break;
+		lcd_tuning.phy_clk = strtoul(ini_value, NULL, 0);
+
+		lcd_tuning.phy_clk_min = 0;
+		lcd_tuning.phy_clk_max = 0;
+
+		//ssc
+		ini_value = ini_get_string(sec_str, "ss_level", "null");
+		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
+			ALOGD("%s, ss_level is (%s)\n", __func__, ini_value);
+		if (strcmp(ini_value, "null") == 0)
+			goto handle_lcd_cus_ctrl_tuning_attr_err;
+		lcd_tuning.ss_level = strtoul(ini_value, NULL, 0);
+
+		ini_value = ini_get_string(sec_str, "ss_frequency", "null");
+		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
+			ALOGD("%s, ss_frequency is (%s)\n", __func__, ini_value);
+		if (strcmp(ini_value, "null") == 0)
+			goto handle_lcd_cus_ctrl_tuning_attr_err;
+		lcd_tuning.ss_freq = strtoul(ini_value, NULL, 0);
+
+		ini_value = ini_get_string(sec_str, "ss_mode", "null");
+		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
+			ALOGD("%s, ss_mode is (%s)\n", __func__, ini_value);
+		if (strcmp(ini_value, "null") == 0)
+			goto handle_lcd_cus_ctrl_tuning_attr_err;
+		lcd_tuning.ss_mode = strtoul(ini_value, NULL, 0);
+
+		ini_value = ini_get_string(sec_str, "mlvds_clk_phase", "null");
+		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
+			ALOGD("%s, mlvds_clk_phase is (%s)\n", __func__, ini_value);
+		if (strcmp(ini_value, "null") == 0)
+			lcd_tuning.mlvds_clk_phase = 0;
+		else
+			lcd_tuning.mlvds_clk_phase = strtoul(ini_value, NULL, 0);
+
+		//phy
+		ini_value = ini_get_string(sec_str, "vswing", "null");
+		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
+			ALOGD("%s, vswing is (%s)\n", __func__, ini_value);
+		if (strcmp(ini_value, "null") == 0)
+			goto handle_lcd_cus_ctrl_tuning_attr_err;
+		lcd_tuning.phy_vswing = strtoul(ini_value, NULL, 0);
+
+		ini_value = ini_get_string(sec_str, "vcm", "null");
+		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
+			ALOGD("%s, vcm is (%s)\n", __func__, ini_value);
+		if (strcmp(ini_value, "null") == 0)
+			goto handle_lcd_cus_ctrl_tuning_attr_err;
+		lcd_tuning.phy_vcm = strtoul(ini_value, NULL, 0);
+
+		ini_value = ini_get_string(sec_str, "ref_bias", "null");
+		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
+			ALOGD("%s, ref_bias is (%s)\n", __func__, ini_value);
+		if (strcmp(ini_value, "null") == 0)
+			goto handle_lcd_cus_ctrl_tuning_attr_err;
+		lcd_tuning.phy_ref_bias = strtoul(ini_value, NULL, 0);
+
+		ini_value = ini_get_string(sec_str, "odt", "null");
+		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
+			ALOGD("%s, odt is (%s)\n", __func__, ini_value);
+		if (strcmp(ini_value, "null") == 0)
+			goto handle_lcd_cus_ctrl_tuning_attr_err;
+		lcd_tuning.phy_odt = strtoul(ini_value, NULL, 0);
+
+		ini_value = ini_get_string(sec_str, "cv_mode", "null");
+		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
+			ALOGD("%s, cv_mode is (%s)\n", __func__, ini_value);
+		if (strcmp(ini_value, "null") == 0)
+			goto handle_lcd_cus_ctrl_tuning_attr_err;
+		lcd_tuning.phy_cv_mode = strtoul(ini_value, NULL, 0);
+
+		lcd_tuning.phy_attr_5 = 0;
+		lcd_tuning.phy_attr_6 = 0;
+		lcd_tuning.phy_attr_7 = 0;
+		lcd_tuning.phy_attr_8 = 0;
+		lcd_tuning.phy_attr_9 = 0;
+		lcd_tuning.phy_attr_10 = 0;
+		lcd_tuning.phy_attr_11 = 0;
+
+		//save to attr_buf
+		memcpy((p + offset), &lcd_tuning, tuning_size);
+		offset += tuning_size;
+
+		for (i = 0; i < lane_cnt; i++) {
+			sprintf(ch_amp_str, "ch%u_amp", i);
+			sprintf(ch_preem_str, "ch%u_preem", i);
+
+			ini_value = ini_get_string(sec_str, ch_preem_str, "null");
+			if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
+				ALOGD("%s, %s is (%s)\n", __func__, ch_preem_str, ini_value);
+			if (strcmp(ini_value, "null") == 0)
+				goto handle_lcd_cus_ctrl_tuning_attr_err;
+			lcd_phy_ch.preem = strtoul(ini_value, NULL, 0);
+
+			ini_value = ini_get_string(sec_str, ch_amp_str, "null");
+			if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
+				ALOGD("%s, %s is (%s)\n", __func__, ch_amp_str, ini_value);
+			if (strcmp(ini_value, "null") == 0)
+				goto handle_lcd_cus_ctrl_tuning_attr_err;
+			lcd_phy_ch.amp = strtoul(ini_value, NULL, 0);
+
+			//save to attr_buf
+			memcpy((p + offset), &lcd_phy_ch, phy_ch_size);
+			offset += phy_ch_size;
+		}
+
+		group_cnt++;
+	}
+
+	*ctrl_attr |= ((unsigned short)group_cnt << 4);//bit[7:4]: group_cnt
+	if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
+		ALOGD("%s, lane_cnt:%d, group_cnt:%d\n", __func__, lane_cnt, group_cnt);
+
+	return offset;
+
+handle_lcd_cus_ctrl_tuning_attr_err:
+	ALOGE("%s, miss parameter, exit!\n", __func__);
+	return 0;
+}
+
+int handle_lcd_cus_ctrl(unsigned char *p_attr, unsigned char version)
 {
 	const char *ini_value = NULL;
 	char str[30];
 	unsigned char *p;
+	struct lcd_cus_ctrl_s *cus_ctrl = NULL;
 	unsigned short offset, param_size, ctrl_attr;
 	unsigned short *p_param_size;
 	unsigned char attr_type, param_flag;
 	int i;
+
+	if (!p_attr) {
+		ALOGE("%s, p_attr is NULL\n", __func__);
+		return -1;
+	}
+	switch (version) {
+	case 2:
+		offset = sizeof(struct lcd_header_s) + sizeof(struct lcd_phy_s);
+		cus_ctrl = (struct lcd_cus_ctrl_s *)(p_attr + offset);
+		break;
+	case 3:
+		offset = sizeof(struct lcd_header_s);
+		cus_ctrl = (struct lcd_cus_ctrl_s *)(p_attr + offset);
+		break;
+	default:
+		break;
+	}
+	if (!cus_ctrl) {
+		ALOGE("%s, cus_ctrl is NULL\n", __func__);
+		return -1;
+	}
 
 	ini_value = ini_get_string("lcd_Attr", "ctrl_attr_en", "none");
 	if (strcmp(ini_value, "none") == 0) //old version compatible
 		ini_value = ini_get_string("lcd_Attr", "ctrl_attr_flag", "none");
 	if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
 		ALOGD("%s, ctrl_attr_en is (%s)\n", __func__, ini_value);
-	p_attr->cus_ctrl.ctrl_attr_en = strtoul(ini_value, NULL, 0);
+	cus_ctrl->ctrl_attr_en = strtoul(ini_value, NULL, 0);
 
-	p = p_attr->cus_ctrl.data;
+	p = cus_ctrl->data;
 	offset = 0;
 	for (i = 0; i < LCD_CUS_CTRL_ATTR_CNT_MAX; i++) {
 		sprintf(str, "ctrl_attr_%d", i);
@@ -465,6 +673,15 @@ int handle_lcd_cus_ctrl(struct lcd_v2_attr_s *p_attr)
 			break;
 		case LCD_CUS_CTRL_TYPE_CLK_ADV:
 			param_size = handle_lcd_cus_ctrl_clk_adv((p + offset), param_flag);
+			break;
+		case LCD_CUS_CTRL_TYPE_TUNING_ATTR:
+			if (version < 3) {
+				param_size = 0;
+				ALOGE("%s, don't support tuning_attr with ukey version %d!\n",
+				      __func__, version);
+				break;
+			}
+			param_size = handle_lcd_cus_ctrl_tuning_attr((p + offset + 4), &ctrl_attr);
 			break;
 		case LCD_CUS_CTRL_TYPE_TCON_SW_POL:
 			param_size = 0;

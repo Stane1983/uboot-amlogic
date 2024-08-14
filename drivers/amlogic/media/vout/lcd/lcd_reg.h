@@ -223,6 +223,38 @@ static inline void lcd_ana_clr_mask(unsigned int reg, unsigned int _mask)
 	lcd_ana_write(reg, (lcd_ana_read(reg) & (~(_mask))));
 }
 
+static inline unsigned int lcd_hiu_read(unsigned int reg)
+{
+	unsigned int val;
+
+	val = *(volatile unsigned int *)(REG_ADDR_HIU(reg));
+	if (lcd_debug_print_flag & LCD_DBG_PR_REG)
+		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
+
+	return val;
+};
+
+static inline void lcd_hiu_write(unsigned int reg, unsigned int val)
+{
+	if (lcd_debug_print_flag & LCD_DBG_PR_REG)
+		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
+	*(volatile unsigned int *)REG_ADDR_HIU(reg) = (val);
+};
+
+static inline void lcd_hiu_setb(unsigned int reg, unsigned int val,
+				unsigned int start, unsigned int len)
+{
+	lcd_hiu_write(reg, ((lcd_hiu_read(reg) &
+			~(((1L << (len)) - 1) << (start))) |
+			(((val) & ((1L << (len)) - 1)) << (start))));
+}
+
+static inline unsigned int lcd_hiu_getb(unsigned int reg,
+					unsigned int start, unsigned int len)
+{
+	return (lcd_hiu_read(reg) >> (start)) & ((1L << (len)) - 1);
+}
+
 static inline unsigned int lcd_cbus_read(unsigned int reg)
 {
 	unsigned int val;

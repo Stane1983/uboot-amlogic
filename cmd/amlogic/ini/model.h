@@ -207,7 +207,7 @@ struct lcd_phy_s {
 	unsigned short phy_attr_11; //2byte //reserved
 	unsigned int   phy_lane_ctrl[64]; //64 *2byte lane_reg //
 	unsigned char  phy_lane_pn_swap[8]; //64bit //pn_swap
-	unsigned char  phy_lane_swap[64]; //64byte //channel_swap
+	unsigned char  phy_lane_sel[64]; //64byte //channel_swap
 };
 
 #define LCD_CUS_CTRL_ATTR_CNT_MAX        32
@@ -216,6 +216,7 @@ struct lcd_phy_s {
 #define LCD_CUS_CTRL_TYPE_DFR            0x01
 #define LCD_CUS_CTRL_TYPE_EXTEND_TMG     0x02
 #define LCD_CUS_CTRL_TYPE_CLK_ADV        0x03
+#define LCD_CUS_CTRL_TYPE_TUNING_ATTR    0x0a
 #define LCD_CUS_CTRL_TYPE_TCON_SW_POL    0x10
 #define LCD_CUS_CTRL_TYPE_TCON_SW_PDF    0x11
 #define LCD_CUS_CTRL_TYPE_MAX            0xff
@@ -256,6 +257,38 @@ struct lcd_cus_ctrl_extend_tmg_s {
 	unsigned int pclk_max;
 };
 
+struct lcd_tuning_ch_sel_s {
+	unsigned char pn_swap;
+	unsigned char sel;
+};
+
+struct lcd_tuning_s {
+	unsigned short phy_clk;
+	unsigned short phy_clk_min; //reserved
+	unsigned short phy_clk_max; //reserved
+	unsigned short ss_level;
+	unsigned short ss_freq;
+	unsigned short ss_mode;
+	unsigned short mlvds_clk_phase;
+	unsigned short phy_vswing;
+	unsigned short phy_vcm;
+	unsigned short phy_ref_bias;
+	unsigned short phy_odt;
+	unsigned short phy_cv_mode;
+	unsigned short phy_attr_5; //2byte //reserved
+	unsigned short phy_attr_6; //2byte //reserved
+	unsigned short phy_attr_7; //2byte //reserved
+	unsigned short phy_attr_8; //2byte //reserved
+	unsigned short phy_attr_9; //2byte //reserved
+	unsigned short phy_attr_10; //2byte //reserved
+	unsigned short phy_attr_11; //2byte //reserved
+};
+
+struct lcd_tuning_phy_ch_s {
+	unsigned short preem;
+	unsigned short amp;
+};
+
 #define LCD_CUS_CTRL_MAX        18244
 #define LCD_CUS_CTRL_DATA_MAX   18240
 struct lcd_cus_ctrl_s {
@@ -263,11 +296,12 @@ struct lcd_cus_ctrl_s {
 	unsigned char data[LCD_CUS_CTRL_DATA_MAX];
 };
 
-struct lcd_v2_attr_s {
-	struct lcd_header_s head;
-	struct lcd_phy_s phy;
-	struct lcd_cus_ctrl_s cus_ctrl;
-};
+#define LCD_NEXT_ATTR_MAX   20480
+//struct lcd_v2_attr_s {
+//	struct lcd_header_s head;
+//	struct lcd_phy_s phy;
+//	struct lcd_cus_ctrl_s cus_ctrl;
+//};
 
 #define CC_BL_NAME_LEN_MAX        (30)
 
@@ -627,7 +661,7 @@ int check_param_valid(int mode, int parse_len, unsigned char parse_buf[],
 		      int ori_len, unsigned char ori_buf[]);
 
 extern int glcd_cus_ctrl_cnt;
-int handle_lcd_cus_ctrl(struct lcd_v2_attr_s *p_attr);
+int handle_lcd_cus_ctrl(unsigned char *p_attr, unsigned char version);
 
 #ifdef CONFIG_AML_LCD_TCON
 int handle_tcon_bin(void);

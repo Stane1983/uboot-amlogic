@@ -1262,9 +1262,11 @@ void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 		break;
 	case LCD_MIPI:
 		if (pdrv->data->chip_type == LCD_CHIP_S6) {
+#ifdef CONFIG_MESON_S6
 			done = lcd_dsi_generate_DSI_PLL_s6_model(pdrv);
 			if (done)
 				done = pll_od_setting_generate(cconf, cconf->pll_fout);
+#endif
 		} else {
 			done = lcd_clk_generate_DSI_1PLL(pdrv);
 			// common DSI PLL model already had pll_od_setting_generate

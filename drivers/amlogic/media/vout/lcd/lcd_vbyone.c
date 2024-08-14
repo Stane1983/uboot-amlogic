@@ -134,16 +134,6 @@ static int lcd_vbyone_lanes_set_t3x(struct aml_lcd_drv_s *pdrv, unsigned int off
 	lcd_vcbus_setb(VBO_CTRL + offset, 2, 16, 4);
 	lcd_vcbus_setb(VBO_CTRL + offset, 1, 0, 1);//enable
 
-	if (pdrv->index)
-		return 0;
-
-	if (lane_num <= 8 && slice == 2) {
-		lcd_vcbus_write(P2P_CH_SWAP0, 0xba983210);
-		lcd_vcbus_write(P2P_CH_SWAP1, 0xfedc7654);
-	} else {
-		lcd_vcbus_write(P2P_CH_SWAP0, 0x76543210);
-		lcd_vcbus_write(P2P_CH_SWAP1, 0xfedcba98);
-	}
 	return 0;
 }
 
@@ -376,7 +366,7 @@ void lcd_vbyone_wait_hpd(struct aml_lcd_drv_s *pdrv)
 		LCDPR("[%d]: ctrl_flag for hpd_data delay\n", pdrv->index);
 		mdelay(pdrv->config.control.vbyone_cfg.hpd_data_delay);
 	} else {
-		mdelay(10);; /* add 10ms delay for compatibility */
+		mdelay(10); /* add 10ms delay for compatibility */
 	}
 }
 

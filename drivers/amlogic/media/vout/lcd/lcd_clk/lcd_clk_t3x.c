@@ -12,6 +12,7 @@
 #include "lcd_clk_ctrl.h"
 #include "lcd_clk_utils.h"
 
+#ifdef CONFIG_MESON_T3X
 static void lcd_pll_ss_enable(struct aml_lcd_drv_s *pdrv, int status)
 {
 	struct lcd_clk_config_s *cconf;
@@ -986,4 +987,4 @@ void lcd_clk_config_chip_init_t3x(struct aml_lcd_drv_s *pdrv, struct lcd_clk_con
 		break;
 	}
 }
-
+#endif

@@ -12,6 +12,7 @@
 #include "lcd_clk_ctrl.h"
 #include "lcd_clk_utils.h"
 
+#ifdef CONFIG_MESON_S6
 /*
  *  DSI_VCO(2.8G) --- 3od --- dsi_phy_clk(2div)
  *        |                        '--- host clk
@@ -355,3 +356,4 @@ void lcd_clk_config_chip_init_s6(struct aml_lcd_drv_s *pdrv, struct lcd_clk_conf
 {
 	cconf->data = &lcd_clk_data_s6;
 }
+#endif

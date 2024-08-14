@@ -17,12 +17,14 @@ void lcd_cus_ctrl_dump_info(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_cus_ctrl_attr_config_s *attr_conf;
 	struct lcd_detail_timing_s *ptiming;
-	int i, j, ret, herr, verr;
+	struct lcd_tuning_param_s *tuning_param;
+	unsigned short lane_cnt;
+	int i, j, k, ret, herr, verr;
 
-	printf("\ncus_ctrl info:\n"
-		"ctrl_en:     0x%x\n"
-		"ctrl_cnt:    %d\n"
-		"timing_ctrl: valid:%d, active:0x%x\n",
+	printf("cus_ctrl info:\n"
+		"  ctrl_en:     0x%x\n"
+		"  ctrl_cnt:    %d\n"
+		"  timing_ctrl: valid:%d, active:0x%x\n",
 		pdrv->config.cus_ctrl.ctrl_en,
 		pdrv->config.cus_ctrl.ctrl_cnt,
 		pdrv->config.cus_ctrl.timing_ctrl_valid,
@@ -157,6 +159,56 @@ void lcd_cus_ctrl_dump_info(struct aml_lcd_drv_s *pdrv)
 				"    ss_mode:  %d\n",
 				attr_conf->attr.clk_adv_attr->ss_freq,
 				attr_conf->attr.clk_adv_attr->ss_mode);
+			break;
+		case LCD_CUS_CTRL_TYPE_TUNING_ATTR:
+			if (!attr_conf->attr.tuning_attr ||
+			    !attr_conf->attr.tuning_attr->tuning_param)
+				break;
+			lane_cnt = attr_conf->attr.tuning_attr->ch_config.lane_cnt;
+			printf("  tuning_config:\n"
+				"    lane_cnt:     %d\n"
+				"    lane_sel:\n",
+				lane_cnt);
+			if (!attr_conf->attr.tuning_attr->ch_config.lane_sel)
+				continue;
+			for (k = 0; k < lane_cnt; k++) {
+				printf("    [%d]: sel=0x%x\n",
+				       k, attr_conf->attr.tuning_attr->ch_config.lane_sel[k].sel);
+			}
+			for (j = 0; j < attr_conf->attr.tuning_attr->group_cnt; j++) {
+				tuning_param = &attr_conf->attr.tuning_attr->tuning_param[j];
+				printf("  tuning_Attr[%d]: %dMHz %s:\n"
+					"    ss_level:     %d\n"
+					"    ss_freq:      %d\n"
+					"    ss_mode:      %d\n"
+					"    mlvds_clk_phase: 0x%x\n"
+					"    phy_vswing:   0x%x\n"
+					"    phy_vcm:      0x%x\n"
+					"    phy_ref_bias: %d\n"
+					"    phy_odt:      0x%x\n"
+					"    phy_cv_mode:  %d\n"
+					"    phy_lane:\n",
+					j,
+					tuning_param->phy_clk,
+					attr_conf->active ?
+						((attr_conf->priv_sel == j) ? "(v)" : "") : "",
+					tuning_param->ss_level,
+					tuning_param->ss_freq,
+					tuning_param->ss_mode,
+					tuning_param->mlvds_clk_phase,
+					tuning_param->phy_vswing,
+					tuning_param->phy_vcm,
+					tuning_param->phy_ref_bias,
+					tuning_param->phy_odt,
+					tuning_param->phy_cv_mode);
+				if (!tuning_param->phy_lane)
+					continue;
+				for (k = 0; k < lane_cnt; k++) {
+					printf("    [%d]: preem=0x%x, amp=0x%x\n",
+					       k, tuning_param->phy_lane[k].preem,
+					       tuning_param->phy_lane[k].amp);
+				}
+			}
 			break;
 		case LCD_CUS_CTRL_TYPE_TCON_SW_POL:
 			break;
@@ -522,6 +574,156 @@ static int lcd_cus_ctrl_attr_parse_clk_adv_ukey(struct aml_lcd_drv_s *pdrv,
 	return 0;
 }
 
+static int lcd_cus_ctrl_attr_parse_tuning_attr_ukey(struct aml_lcd_drv_s *pdrv,
+						    struct lcd_cus_ctrl_attr_config_s *attr_conf,
+						    unsigned char *p)
+{
+	struct lcd_tuning_s *tuning_attr;
+	struct lcd_tuning_ch_sel_s *lane_sel;
+	struct lcd_tuning_param_s *tuning_param;
+	struct lcd_tuning_phy_ch_s *phy_lane;
+	struct phy_config_s *phy = &pdrv->config.phy_cfg;
+	unsigned int offset = 0, ch_sel_size, param_size, ch_size;
+	unsigned short lane_cnt;
+	int i, j;
+
+	if (attr_conf->param_size == 0)
+		return 0;
+
+	tuning_attr = malloc(sizeof(struct lcd_tuning_s));
+	if (!tuning_attr)
+		return -1;
+	memset(tuning_attr, 0, sizeof(struct lcd_tuning_s));
+
+	lane_cnt = *(unsigned short *)(p + offset);
+	offset += 2;
+	tuning_attr->ch_config.lane_cnt = lane_cnt;
+	if (lane_cnt == 0) {
+		memset(tuning_attr, 0, sizeof(struct lcd_tuning_s));
+		free(tuning_attr);
+		return -1;
+	}
+
+	ch_sel_size = lane_cnt * sizeof(struct lcd_tuning_ch_sel_s);
+	tuning_attr->ch_config.lane_sel = malloc(ch_sel_size);
+	if (!tuning_attr->ch_config.lane_sel) {
+		memset(tuning_attr, 0, sizeof(struct lcd_tuning_s));
+		free(tuning_attr);
+		return -1;
+	}
+	memset(tuning_attr->ch_config.lane_sel, 0, ch_sel_size);
+	for (j = 0; j < lane_cnt; j++) {
+		lane_sel = &tuning_attr->ch_config.lane_sel[j];
+		lane_sel->pn_swap = *(p + offset);
+		offset += 1;
+		lane_sel->sel = *(p + offset);
+		offset += 1;
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDPR("%s: lane[%d]: sel=0x%x\n", __func__, j, lane_sel->sel);
+	}
+
+	tuning_attr->group_cnt = attr_conf->param_flag;
+	param_size = tuning_attr->group_cnt * sizeof(struct lcd_tuning_param_s);
+	if (tuning_attr->group_cnt) {
+		tuning_attr->tuning_param = malloc(param_size);
+		if (!tuning_attr->tuning_param) {
+			memset(tuning_attr->ch_config.lane_sel, 0, ch_sel_size);
+			free(tuning_attr->ch_config.lane_sel);
+			memset(tuning_attr, 0, sizeof(struct lcd_tuning_s));
+			free(tuning_attr);
+			return -1;
+		}
+		memset(tuning_attr->tuning_param, 0, param_size);
+		for (i = 0;  i < tuning_attr->group_cnt; i++) {
+			tuning_param = &tuning_attr->tuning_param[i];
+			tuning_param->phy_clk = *(unsigned short *)(p + offset);
+			offset += 2;
+			offset += 4; //phy_clk_min_max reserved
+			tuning_param->ss_level = *(unsigned short *)(p + offset);
+			offset += 2;
+			tuning_param->ss_freq = *(unsigned short *)(p + offset);
+			offset += 2;
+			tuning_param->ss_mode = *(unsigned short *)(p + offset);
+			offset += 2;
+			tuning_param->mlvds_clk_phase = *(unsigned short *)(p + offset);
+			offset += 2;
+			tuning_param->phy_vswing = *(unsigned short *)(p + offset);
+			offset += 2;
+			tuning_param->phy_vcm = *(unsigned short *)(p + offset);
+			offset += 2;
+			tuning_param->phy_ref_bias = *(unsigned short *)(p + offset);
+			offset += 2;
+			tuning_param->phy_odt = *(unsigned short *)(p + offset);
+			offset += 2;
+			tuning_param->phy_cv_mode = *(unsigned short *)(p + offset);
+			offset += 2;
+			offset += 14; //phy_attr_5~11
+			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+				LCDPR("%s: vswing=0x%x, vcm=0x%x, bias=0x%x, odt=0x%x, cvmode=%d\n",
+				      __func__, tuning_param->phy_vswing, tuning_param->phy_vcm,
+				      tuning_param->phy_ref_bias, tuning_param->phy_odt,
+				      tuning_param->phy_cv_mode);
+			}
+
+			ch_size = lane_cnt * sizeof(struct lcd_tuning_phy_ch_s);
+			tuning_param->phy_lane = malloc(ch_size);
+			if (!tuning_param->phy_lane) {
+				memset(tuning_attr->tuning_param, 0, param_size);
+				free(tuning_attr->tuning_param);
+				memset(tuning_attr->ch_config.lane_sel, 0, ch_sel_size);
+				free(tuning_attr->ch_config.lane_sel);
+				memset(tuning_attr, 0, sizeof(struct lcd_tuning_s));
+				free(tuning_attr);
+				return -1;
+			}
+			memset(tuning_param->phy_lane, 0, ch_size);
+			for (j = 0; j < lane_cnt; j++) {
+				phy_lane = &tuning_param->phy_lane[j];
+				phy_lane->preem = *(unsigned short *)(p + offset);
+				offset += 2;
+				phy_lane->amp = *(unsigned short *)(p + offset);
+				offset += 2;
+				if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+					LCDPR("%s: lane[%d]: preem=0x%x, amp=0x%x\n",
+					      __func__, i, phy_lane->preem, phy_lane->amp);
+				}
+			}
+			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+				LCDPR("[%d]: %s: tuning_param[%d]: phy_clk:%d, lane_cnt:%d\n",
+				      pdrv->index, __func__, i, tuning_param->phy_clk, lane_cnt);
+			}
+		}
+	}
+
+	if (attr_conf->param_size < offset) {
+		for (i = 0;  i < tuning_attr->group_cnt; i++) {
+			ch_size = tuning_attr->tuning_param[i].lane_cnt *
+				sizeof(struct lcd_tuning_phy_ch_s);
+			memset(tuning_attr->tuning_param[i].phy_lane, 0, ch_size);
+			free(tuning_attr->tuning_param[i].phy_lane);
+		}
+		memset(tuning_attr->tuning_param, 0, param_size);
+		free(tuning_attr->tuning_param);
+		memset(tuning_attr->ch_config.lane_sel, 0, ch_sel_size);
+		free(tuning_attr->ch_config.lane_sel);
+		memset(tuning_attr, 0, sizeof(struct lcd_tuning_s));
+		free(tuning_attr);
+		LCDERR("[%d]: %s: param_size(%d) and offset(%d) are mismatch!\n",
+		       pdrv->index, __func__, attr_conf->param_size, offset);
+		return -1;
+	}
+
+	//update driver phy lane_sel
+	if (lane_cnt <= phy->lane_num) {
+		for (i = 0; i < lane_cnt; i++)
+			phy->lane[i].sel = tuning_attr->ch_config.lane_sel[i].sel;
+	}
+
+	attr_conf->attr.tuning_attr = tuning_attr;
+
+	return 0;
+}
+
 static int lcd_cus_ctrl_attr_parse_tcon_sw_pol_ukey(struct aml_lcd_drv_s *pdrv,
 		struct lcd_cus_ctrl_attr_config_s *attr_conf, unsigned char *p)
 {
@@ -535,7 +737,7 @@ static int lcd_cus_ctrl_attr_parse_tcon_sw_pdf_ukey(struct aml_lcd_drv_s *pdrv,
 }
 
 int lcd_cus_ctrl_load_from_unifykey(struct aml_lcd_drv_s *pdrv, unsigned char *buf,
-		unsigned int max_size)
+		unsigned int max_size, unsigned char version)
 {
 	unsigned char *p;
 	struct lcd_cus_ctrl_attr_config_s *attr_conf;
@@ -626,15 +828,25 @@ int lcd_cus_ctrl_load_from_unifykey(struct aml_lcd_drv_s *pdrv, unsigned char *b
 				ret = lcd_cus_ctrl_attr_parse_clk_adv_ukey(pdrv,
 					&attr_conf[n], (p + 4));
 				break;
+			case LCD_CUS_CTRL_TYPE_TUNING_ATTR:
+				if (version < 3) {
+					ret = -1;
+					LCDERR("[%d]: %s, invalid tuning_attr with ukey_ver %d\n",
+					       pdrv->index, __func__, version);
+					break;
+				}
+				ret = lcd_cus_ctrl_attr_parse_tuning_attr_ukey(pdrv, &attr_conf[n],
+									       (p + 4));
+				break;
 			case LCD_CUS_CTRL_TYPE_TCON_SW_POL:
 				LCDERR("todo\n");
-				ret = lcd_cus_ctrl_attr_parse_tcon_sw_pol_ukey(pdrv,
-					&attr_conf[n], (p + 4));
+				ret = lcd_cus_ctrl_attr_parse_tcon_sw_pol_ukey(pdrv, &attr_conf[n],
+									       (p + 4));
 				break;
 			case LCD_CUS_CTRL_TYPE_TCON_SW_PDF:
 				LCDERR("todo\n");
-				ret = lcd_cus_ctrl_attr_parse_tcon_sw_pdf_ukey(pdrv,
-					&attr_conf[n], (p + 4));
+				ret = lcd_cus_ctrl_attr_parse_tcon_sw_pdf_ukey(pdrv, &attr_conf[n],
+									       (p + 4));
 				break;
 			default:
 				LCDERR("[%d]: %s: invalid attr_type: 0x%x\n",
@@ -737,6 +949,66 @@ static int lcd_cus_ctrl_config_update_clk_adv(struct aml_lcd_drv_s *pdrv,
 	return 0;
 }
 
+static int lcd_cus_ctrl_config_update_tuning_attr(struct aml_lcd_drv_s *pdrv,
+						  struct lcd_cus_ctrl_attr_config_s *attr_conf)
+{
+	struct lcd_tuning_param_s *tuning_param = NULL;
+	unsigned short lane_cnt;
+	unsigned int drv_phy_clk, match = 0;
+	int i;
+
+	if (!attr_conf->attr.tuning_attr || !attr_conf->attr.tuning_attr->tuning_param) {
+		LCDERR("[%d]: %s: tuning_attr or tuning_param is NULL\n", pdrv->index, __func__);
+		return -1;
+	}
+
+	lane_cnt = attr_conf->attr.tuning_attr->ch_config.lane_cnt;
+	drv_phy_clk = lcd_do_div(pdrv->config.timing.bit_rate, 1000000);
+	for (i = 0; i < attr_conf->attr.tuning_attr->group_cnt; i++) {
+		tuning_param = &attr_conf->attr.tuning_attr->tuning_param[i];
+		if (tuning_param->phy_clk == 0) {
+			match = 1;
+			attr_conf->active = 1;
+			attr_conf->priv_sel = i;
+			break;
+		}
+		if ((tuning_param->phy_clk >= drv_phy_clk - 20) &&
+		    (tuning_param->phy_clk <= drv_phy_clk + 20)) {
+			match = 1;
+			attr_conf->active = 1;
+			attr_conf->priv_sel = i;
+			break;
+		}
+	}
+
+	if (match && tuning_param) {
+		//ssc
+		pdrv->config.timing.ss_level = tuning_param->ss_level;
+		pdrv->config.timing.ss_freq = tuning_param->ss_freq;
+		pdrv->config.timing.ss_mode = tuning_param->ss_mode;
+
+		//minilvds clk_phase reserved
+
+		//phy
+		pdrv->config.phy_cfg.vswing = tuning_param->phy_vswing;
+		pdrv->config.phy_cfg.vcm = tuning_param->phy_vcm;
+		pdrv->config.phy_cfg.ref_bias = tuning_param->phy_ref_bias;
+		pdrv->config.phy_cfg.odt = tuning_param->phy_odt;
+		pdrv->config.phy_cfg.cv_mode = tuning_param->phy_cv_mode;
+		if (tuning_param->phy_lane) {
+			for (i = 0; i < lane_cnt; i++) {
+				pdrv->config.phy_cfg.lane[i].preem =
+					tuning_param->phy_lane[i].preem;
+				pdrv->config.phy_cfg.lane[i].amp = tuning_param->phy_lane[i].amp;
+			}
+		}
+		LCDPR("[%d]: %s: match tuning_phy_clk:%d, drv_phy_clk:%d\n",
+		      pdrv->index, __func__, tuning_param->phy_clk, drv_phy_clk);
+	}
+
+	return 0;
+}
+
 int lcd_cus_ctrl_config_update(struct aml_lcd_drv_s *pdrv, void *param, unsigned int mask_sel)
 {
 	struct lcd_cus_ctrl_attr_config_s *attr_conf;
@@ -748,6 +1020,9 @@ int lcd_cus_ctrl_config_update(struct aml_lcd_drv_s *pdrv, void *param, unsigned
 
 	if (!pdrv->config.cus_ctrl.attr_config)
 		return -1;
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("[%d]: %s: mask_sel=0x%x\n", pdrv->index, __func__, mask_sel);
 
 	for (i = 0; i < pdrv->config.cus_ctrl.ctrl_cnt; i++) {
 		attr_conf = &pdrv->config.cus_ctrl.attr_config[i];
@@ -855,6 +1130,11 @@ int lcd_cus_ctrl_config_update(struct aml_lcd_drv_s *pdrv, void *param, unsigned
 			if (!attr_conf->attr.clk_adv_attr)
 				break;
 			ret = lcd_cus_ctrl_config_update_clk_adv(pdrv, attr_conf);
+			return ret;
+		case LCD_CUS_CTRL_TYPE_TUNING_ATTR:
+			if ((mask_sel & LCD_CUS_CTRL_SEL_TUNING_ATTR) == 0)
+				break;
+			ret = lcd_cus_ctrl_config_update_tuning_attr(pdrv, attr_conf);
 			return ret;
 		case LCD_CUS_CTRL_TYPE_TCON_SW_POL:
 			if ((mask_sel & LCD_CUS_CTRL_SEL_TCON_SW_POL) == 0)

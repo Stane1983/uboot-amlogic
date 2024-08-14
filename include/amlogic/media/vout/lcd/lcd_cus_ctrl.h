@@ -16,6 +16,7 @@
 #define LCD_CUS_CTRL_SEL_DFR              0x00000002
 #define LCD_CUS_CTRL_SEL_EXTEND_TMG       0x00000004
 #define LCD_CUS_CTRL_SEL_CLK_ADV          0x00000008
+#define LCD_CUS_CTRL_SEL_TUNING_ATTR      0x00000100
 #define LCD_CUS_CTRL_SEL_TCON_SW_POL      0x00010000
 #define LCD_CUS_CTRL_SEL_TCON_SW_PDF      0x00020000
 
@@ -28,6 +29,7 @@
 #define LCD_CUS_CTRL_TYPE_DFR            0x01
 #define LCD_CUS_CTRL_TYPE_EXTEND_TMG     0x02
 #define LCD_CUS_CTRL_TYPE_CLK_ADV        0x03
+#define LCD_CUS_CTRL_TYPE_TUNING_ATTR    0x0a
 #define LCD_CUS_CTRL_TYPE_TCON_SW_POL    0x10
 #define LCD_CUS_CTRL_TYPE_TCON_SW_PDF    0x11
 #define LCD_CUS_CTRL_TYPE_MAX            0xff
@@ -77,11 +79,57 @@ struct lcd_clk_adv_s {
 	unsigned char ss_mode;
 };
 
+struct lcd_tuning_ch_sel_s {
+	unsigned char pn_swap;
+	unsigned char sel;
+};
+
+struct lcd_tuning_ch_config_s {
+	unsigned short lane_cnt;
+	struct lcd_tuning_ch_sel_s *lane_sel;
+};
+
+struct lcd_tuning_phy_ch_s {
+	unsigned short preem;
+	unsigned short amp;
+};
+
+struct lcd_tuning_param_s {
+	unsigned short phy_clk;
+	unsigned short phy_clk_min; //reserved
+	unsigned short phy_clk_max; //reserved
+	unsigned short ss_level;
+	unsigned short ss_freq;
+	unsigned short ss_mode;
+	unsigned short mlvds_clk_phase;
+	unsigned short lane_cnt;
+	unsigned short phy_vswing;
+	unsigned short phy_vcm;
+	unsigned short phy_ref_bias;
+	unsigned short phy_odt;
+	unsigned short phy_cv_mode;
+	unsigned short phy_attr_5; //2byte //reserved
+	unsigned short phy_attr_6; //2byte //reserved
+	unsigned short phy_attr_7; //2byte //reserved
+	unsigned short phy_attr_8; //2byte //reserved
+	unsigned short phy_attr_9; //2byte //reserved
+	unsigned short phy_attr_10; //2byte //reserved
+	unsigned short phy_attr_11; //2byte //reserved
+	struct lcd_tuning_phy_ch_s *phy_lane;
+};
+
+struct lcd_tuning_s {
+	unsigned char group_cnt;
+	struct lcd_tuning_ch_config_s ch_config;
+	struct lcd_tuning_param_s *tuning_param;
+};
+
 union lcd_cus_ctrl_attr_u {
 	struct lcd_ufr_s *ufr_attr;
 	struct lcd_dfr_s *dfr_attr;
 	struct lcd_extend_tmg_s *extend_tmg_attr;
 	struct lcd_clk_adv_s *clk_adv_attr;
+	struct lcd_tuning_s *tuning_attr;
 };
 
 struct lcd_cus_ctrl_attr_config_s {

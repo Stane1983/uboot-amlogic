@@ -9,6 +9,7 @@
 #include "lcd_phy_config.h"
 #include <amlogic/aml_efuse.h>
 
+#ifdef CONFIG_MESON_S6
 #define DSI_PHY_LPRX_HI   1   // CH0 LPRX hi : 0=0.82v 1=0.86v 2=0.89v 3=0.93v
 #define DSI_PHY_LPRX_LOW  1   // CH0 LPRX low: 0=0.52v 1=0.56v 2=0.60v 3=0.64v
 #define DSI_PHY_LPCD_HI   1   // CH0 LPCD hi : 0=0.37v 1=0.41v 2=0.45v 3=0.49v
@@ -88,11 +89,13 @@ static void lcd_mipi_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 }
 
 static struct lcd_phy_ctrl_s lcd_phy_ctrl_s6 = {
+	.lane_num = 5,
 	.lane_lock = 0,
 	.ctrl_bit_on = 1,
 	.phy_vswing_level_to_val = NULL,
-	.phy_amp_dft_val = NULL,
 	.phy_preem_level_to_val = NULL,
+	.phy_amp_dft_val = NULL,
+	.phy_glb_param_dft_val = NULL,
 	.phy_set_lvds = NULL,
 	.phy_set_vx1 = NULL,
 	.phy_set_mlvds = NULL,
@@ -105,3 +108,4 @@ struct lcd_phy_ctrl_s *lcd_phy_config_init_s6(struct aml_lcd_data_s *pdata)
 {
 	return &lcd_phy_ctrl_s6;
 }
+#endif
