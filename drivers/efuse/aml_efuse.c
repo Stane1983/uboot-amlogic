@@ -101,3 +101,8 @@ int  __attribute__((weak)) IS_FEAT_DIS_NBL2_NAND(void)
 {
 	return 1;
 }
+
+int  __attribute__((weak)) IS_FEAT_EN_VPU_OVER_SPEED(void)
+{
+	return 0;
+}
