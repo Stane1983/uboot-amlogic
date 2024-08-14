@@ -225,6 +225,11 @@ static int __abortboot(int bootdelay)
 static int menukey;
 #endif
 
+#ifdef CONFIG_MEASUREMENT_BOOT_TIME
+int ss_key = -1;
+extern int dump_boot_time_flag;
+#endif
+
 static int __abortboot(int bootdelay)
 {
 	int abort = 0;
@@ -240,7 +245,11 @@ static int __abortboot(int bootdelay)
 	 * Check if key already pressed
 	 */
 	if (tstc()) {	/* we got a key press	*/
+#ifdef CONFIG_MEASUREMENT_BOOT_TIME
+		ss_key = getc();	/* consume input	*/
+#else
 		(void) getc();  /* consume input	*/
+#endif
 		puts("\b\b\b 0");
 		abort = 1;	/* don't auto boot	*/
 	}
@@ -256,6 +265,9 @@ static int __abortboot(int bootdelay)
 # ifdef CONFIG_MENUKEY
 				menukey = getc();
 # else
+#ifdef CONFIG_MEASUREMENT_BOOT_TIME
+				ss_key = getc();	/* consume input	*/
+#endif
 				(void) getc();  /* consume input	*/
 # endif
 				break;
@@ -278,6 +290,13 @@ static int abortboot(int bootdelay)
 
 	if (bootdelay >= 0)
 		abort = __abortboot(bootdelay);
+
+#ifdef CONFIG_MEASUREMENT_BOOT_TIME
+	if (ss_key == 'P') {
+		dump_boot_time_flag = 1;
+		abort = 0;
+	}
+#endif
 
 #ifdef CONFIG_SILENT_CONSOLE
 	if (env_get("silent") != NULL) {

@@ -36,6 +36,7 @@
 #ifdef CONFIG_AML_CVBS
 #include <amlogic/media/vout/aml_cvbs.h>
 #endif
+#include <amlogic/aml_profile.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -199,6 +200,7 @@ int board_late_init(void)
 #ifdef CONFIG_AML_CVBS
 	cvbs_init();
 #endif
+	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_e);
 	run_command("amlsecurecheck", 0);
 	run_command("update_tries", 0);
 

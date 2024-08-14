@@ -44,6 +44,7 @@
 #include <asm/arch/pwr_ctrl.h>
 #include <amlogic/board.h>
 #include <amlogic/rvc_interface.h>
+#include <amlogic/aml_profile.h>
 
 // copied from cmd/amlogic/cmd_car_param.c. keep the same value;
 #define CAR_FREERTOS_SHARED_MEM_ADDR 0x80001100
@@ -636,6 +637,7 @@ int board_late_init(void)
 
 	board_power_domain_on();
 	board_boot_freertos();
+	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_s);
 #ifdef CONFIG_AML_VPU
 	vpu_probe();
 #endif
@@ -656,6 +658,7 @@ int board_late_init(void)
 #ifdef CONFIG_AML_LCD
 	lcd_probe();
 #endif
+	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_e);
 
 	/* The board id is used to determine if the NN needs to adjust voltage */
 	switch (readl(SYSCTRL_SEC_STATUS_REG4) >> 8 & 0xff) {

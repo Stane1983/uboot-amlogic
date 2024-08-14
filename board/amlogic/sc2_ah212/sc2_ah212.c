@@ -38,6 +38,7 @@
 #ifdef CONFIG_CMD_SND
 #include "amlogic/auge_sound.h"
 #endif
+#include <amlogic/aml_profile.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -183,6 +184,7 @@ int board_late_init(void)
 
 	/* reset vout init state */
 	run_command("setenv vout_init disable", 0);
+	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_s);
 #ifdef CONFIG_AML_VPU
 	vpu_probe();
 #endif
@@ -193,6 +195,7 @@ int board_late_init(void)
 #ifdef CONFIG_AML_CVBS
 	cvbs_init();
 #endif
+	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_e);
 
 	aml_board_late_init_tail(NULL);
 	return 0;

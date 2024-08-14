@@ -24,6 +24,7 @@
 #ifdef CONFIG_AVB2
 #include <libavb.h>
 #endif
+#include <amlogic/aml_profile.h>
 
 #ifndef IS_FEAT_BOOT_VERIFY
 //#define IS_FEAT_BOOT_VERIFY() 0 //always undefined as IS_FEAT_BOOT_VERIFY is function not marco
@@ -1519,6 +1520,7 @@ static int do_image_read(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv
 	return 0;
 #else
 	cmd_tbl_t *c;
+	int ret;
 
 	/* Strip off leading 'imgread' command argument */
 	argc--;
@@ -1527,7 +1529,12 @@ static int do_image_read(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv
 	c = find_cmd_tbl(argv[0], &cmd_imgread_sub[0], ARRAY_SIZE(cmd_imgread_sub));
 
 	if (c) {
-		return	c->cmd(cmdtp, flag, argc, argv);
+		if (!strcmp("kernel", argv[0]))
+			PUSH_TIME_TE(__func__, BL33_LOAD_UIMAGE_s);
+		ret = c->cmd(cmdtp, flag, argc, argv);
+		if (!strcmp("kernel", argv[0]))
+			PUSH_TIME_TE(__func__, BL33_LOAD_UIMAGE_e);
+		return	ret;
 	} else {
 		cmd_usage(cmdtp);
 		return 1;
