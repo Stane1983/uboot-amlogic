@@ -1031,6 +1031,15 @@ static int do_get_parse_edid(cmd_tbl_t * cmdtp, int flag, int argc,
 	 * mode or colorattribute by policy
 	 */
 	bool no_manual_output = false;
+	/*
+	 * The hdmitx driver gets the value of env too early in hdmitx21_init.
+	 * The value of emmc's env partition has not been loaded yet.
+	 * Therefore, the value obtained at this time is the data saved at compile time,
+	 * which is the default value defined in board.h.
+	 * To prevent this case, need to get the value of env later
+	 */
+	char *dongle_mode = env_get("dongle_mode");
+	char *edid_check = env_get("edid_check");
 
 	if (!hdev) {
 		printf("null hdmitx dev\n");
@@ -1042,6 +1051,23 @@ static int do_get_parse_edid(cmd_tbl_t * cmdtp, int flag, int argc,
 	}
 	memset(&scene_output_info, 0, sizeof(scene_output_info_t));
 	memset(hdev->rawedid, 0, EDID_BLK_SIZE * EDID_BLK_NO);
+
+	if (dongle_mode && (dongle_mode[0] == '1'))
+		hdev->dongle_mode = 1;
+
+	if (edid_check && edid_check[0] != '\0') {
+		int tmp = edid_check[0] - '0';
+
+		if (tmp >= 0 && tmp <= 3)
+			hdev->edid_check = tmp;
+		else
+			hdev->edid_check = 0;
+	} else {
+		hdev->edid_check = 0;
+	}
+
+	printf("[%s][%d] dongle_mode=[%d], edid_check=[%d]\n", __func__, __LINE__,
+	hdev->dongle_mode, hdev->edid_check);
 
 	get_parse_edid_data(hdev);
 
