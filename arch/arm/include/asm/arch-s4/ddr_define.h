@@ -356,6 +356,8 @@
 
 #define		CONFIG_DISABLE_D32_D63		0xf0
 #define		CONFIG_DISABLE_D16_D31		0xfc
+#define    ENABLE (1)
+#define    DIS_ENABLE (0)
 
 #define		CONFIG_DDR0_SIZE_0MB		0
 #define		CONFIG_DDR0_SIZE_128MB		128
