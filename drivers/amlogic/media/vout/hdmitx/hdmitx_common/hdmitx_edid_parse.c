@@ -2971,7 +2971,6 @@ int hdmitx_edid_print_sink_cap(const struct rx_cap *prxcap,
  *	pos += snprintf(buffer + pos, buffer_len - pos,
  *		"EDID block number: 0x%x\n", tx_comm->EDID_buf[0x7e]);
  */
-
 	pos += snprintf(buffer + pos, buffer_len - pos,
 		"Source Physical Address[a.b.c.d]: %x.%x.%x.%x\n",
 		prxcap->vsdb_phy_addr.a,
