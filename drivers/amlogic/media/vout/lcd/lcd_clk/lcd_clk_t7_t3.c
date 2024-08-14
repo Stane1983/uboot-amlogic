@@ -12,6 +12,7 @@
 #include "lcd_clk_ctrl.h"
 #include "lcd_clk_utils.h"
 
+#if defined(CONFIG_MESON_T7) || defined(CONFIG_MESON_T3) || defined(CONFIG_MESON_T5M)
 static unsigned int tcon_div[5][3] = {
 	/* div_mux, div2/4_sel, div4_bypass */
 	{1, 0, 1},  /* div1 */
@@ -1779,3 +1780,4 @@ void lcd_clk_config_chip_init_t3(struct aml_lcd_drv_s *pdrv, struct lcd_clk_conf
 		cconf->pll_id = 1;
 	}
 }
+#endif

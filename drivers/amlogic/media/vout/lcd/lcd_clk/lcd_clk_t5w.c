@@ -12,6 +12,7 @@
 #include "lcd_clk_ctrl.h"
 #include "lcd_clk_utils.h"
 
+#ifdef CONFIG_MESON_T5W
 static unsigned int tcon_div[5][3] = {
 	/* div_mux, div2/4_sel, div4_bypass */
 	{1, 0, 1},  /* div1 */
@@ -536,3 +537,4 @@ void lcd_clk_config_chip_init_t5w(struct aml_lcd_drv_s *pdrv, struct lcd_clk_con
 	cconf->data = &lcd_clk_data_t5w;
 	cconf->pll_od_fb = lcd_clk_data_t5w.pll_od_fb;
 }
+#endif

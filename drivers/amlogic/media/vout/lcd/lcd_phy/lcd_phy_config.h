@@ -8,11 +8,13 @@
 #include <amlogic/media/vout/lcd/lcd_vout.h>
 
 struct lcd_phy_ctrl_s {
+	unsigned int lane_num;
 	unsigned int lane_lock;
 	unsigned int ctrl_bit_on;
 	unsigned int (*phy_vswing_level_to_val)(struct aml_lcd_drv_s *pdrv, unsigned int level);
 	unsigned int (*phy_amp_dft_val)(struct aml_lcd_drv_s *pdrv);
 	unsigned int (*phy_preem_level_to_val)(struct aml_lcd_drv_s *pdrv, unsigned int level);
+	void (*phy_glb_param_dft_val)(struct aml_lcd_drv_s *pdrv);
 	void (*phy_set_lvds)(struct aml_lcd_drv_s *pdrv, int status);
 	void (*phy_set_vx1)(struct aml_lcd_drv_s *pdrv, int status);
 	void (*phy_set_mlvds)(struct aml_lcd_drv_s *pdrv, int status);
@@ -21,18 +23,31 @@ struct lcd_phy_ctrl_s {
 	void (*phy_set_edp)(struct aml_lcd_drv_s *pdrv, int status);
 };
 
+#ifdef CONFIG_MESON_C3
 struct lcd_phy_ctrl_s *lcd_phy_config_init_c3(struct aml_lcd_data_s *pdata);
+#endif
+#if defined(CONFIG_MESON_G12A) || defined(CONFIG_MESON_G12B) || defined(CONFIG_MESON_SM1)
 struct lcd_phy_ctrl_s *lcd_phy_config_init_g12a(struct aml_lcd_data_s *pdata);
+#endif
+#if defined(CONFIG_MESON_T3) || defined(CONFIG_MESON_T5M)
 struct lcd_phy_ctrl_s *lcd_phy_config_init_t3_t5m(struct aml_lcd_data_s *pdata);
-struct lcd_phy_ctrl_s *lcd_phy_config_init_t5(struct aml_lcd_data_s *pdata);
+#endif
+#ifdef CONFIG_MESON_T5W
 struct lcd_phy_ctrl_s *lcd_phy_config_init_t5w(struct aml_lcd_data_s *pdata);
+#endif
+#ifdef CONFIG_MESON_T7
 struct lcd_phy_ctrl_s *lcd_phy_config_init_t7(struct aml_lcd_data_s *pdata);
-struct lcd_phy_ctrl_s *lcd_phy_config_init_tl1(struct aml_lcd_data_s *pdata);
+#endif
+#ifdef CONFIG_MESON_T3X
 struct lcd_phy_ctrl_s *lcd_phy_config_init_t3x(struct aml_lcd_data_s *pdata);
+#endif
+#ifdef CONFIG_MESON_TXHD2
 struct lcd_phy_ctrl_s *lcd_phy_config_init_txhd2(struct aml_lcd_data_s *pdata);
+#endif
 
 unsigned int lcd_phy_vswing_level_to_value_dft(struct aml_lcd_drv_s *pdrv, unsigned int level);
 unsigned int lcd_phy_preem_level_to_value_dft(struct aml_lcd_drv_s *pdrv, unsigned int level);
-unsigned int lcd_phy_preem_level_to_value_legacy(struct aml_lcd_drv_s *pdrv, unsigned int level);
+unsigned int lcd_phy_amp_dft(struct aml_lcd_drv_s *pdrv);
+void lcd_phy_glb_param_dft(struct aml_lcd_drv_s *pdrv);
 
 #endif

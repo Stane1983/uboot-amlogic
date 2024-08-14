@@ -383,25 +383,28 @@ static void lcd_phy_print(struct lcd_config_s *pconf)
 	case LCD_MLVDS:
 	case LCD_P2P:
 	case LCD_EDP:
-		printf("ctrl_flag:         0x%x\n"
-		"vswing_level:      %u\n"
-		"ext_pullup:        %u\n"
-		"preem_level:       %u\n"
-		"vcm:               0x%x\n"
-		"ref_bias:          0x%x\n"
-		"odt:               0x%x\n",
-		phy->flag,
-		phy->vswing_level,
-		phy->ext_pullup,
-		phy->preem_level,
-		phy->vcm,
-		phy->ref_bias,
-		phy->odt);
+		printf("phy config:\n"
+			"ctrl_flag:     0x%x\n"
+			"vswing_level:  %u\n"
+			"ext_pullup:    %u\n"
+			"preem_level:   %u\n"
+			"vswing:        0x%x\n"
+			"vcm:           0x%x\n"
+			"ref_bias:      0x%x\n"
+			"odt:           0x%x\n"
+			"cv_mode:       %d\n",
+			phy->flag,
+			phy->vswing_level,
+			phy->ext_pullup,
+			phy->preem_level,
+			phy->vswing,
+			phy->vcm,
+			phy->ref_bias,
+			phy->odt,
+			phy->cv_mode);
 		for (i = 0; i < phy->lane_num; i++) {
-			printf("lane%d_amp:        0x%x\n"
-			"lane%d_preem:      0x%x\n",
-			i, phy->lane[i].amp,
-			i, phy->lane[i].preem);
+			printf("lane[%d] amp: 0x%x, preem: 0x%x, sel: 0x%x\n",
+				i, phy->lane[i].amp, phy->lane[i].preem, phy->lane[i].sel);
 		}
 		printf("\n");
 		break;

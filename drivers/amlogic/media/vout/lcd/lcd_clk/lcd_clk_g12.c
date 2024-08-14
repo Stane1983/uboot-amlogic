@@ -12,26 +12,7 @@
 #include "lcd_clk_ctrl.h"
 #include "lcd_clk_utils.h"
 
-static char *lcd_clk_div_sel_table[] = {
-	"1",
-	"2",
-	"3",
-	"3.5",
-	"3.75",
-	"4",
-	"5",
-	"6",
-	"6.25",
-	"7",
-	"7.5",
-	"12",
-	"14",
-	"15",
-	"2.5",
-	"4.67",
-	"invalid",
-};
-
+#if defined(CONFIG_MESON_G12A) || defined(CONFIG_MESON_G12B) || defined(CONFIG_MESON_SM1)
 static const unsigned int od_table[6] = {1, 2, 4, 8, 16, 32};
 
 static void lcd_pll_frac_set_gp0(struct aml_lcd_drv_s *pdrv, unsigned int frac)
@@ -788,3 +769,4 @@ void lcd_clk_config_chip_init_g12b(struct aml_lcd_drv_s *pdrv, struct lcd_clk_co
 		cconf->pll_od_fb = lcd_clk_data_g12b_path0.pll_od_fb;
 	}
 }
+#endif

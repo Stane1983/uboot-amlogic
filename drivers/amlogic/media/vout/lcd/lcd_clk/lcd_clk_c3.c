@@ -12,6 +12,7 @@
 #include "lcd_clk_ctrl.h"
 #include "lcd_clk_utils.h"
 
+#ifdef CONFIG_MESON_C3
 static const unsigned int od_table[6] = {1, 2, 4, 8, 16, 32};
 
 static void lcd_set_pll(struct aml_lcd_drv_s *pdrv)
@@ -236,3 +237,4 @@ void lcd_clk_config_chip_init_c3(struct aml_lcd_drv_s *pdrv, struct lcd_clk_conf
 	cconf->data = &lcd_clk_data_c3;
 	cconf->pll_od_fb = lcd_clk_data_c3.pll_od_fb;
 }
+#endif
