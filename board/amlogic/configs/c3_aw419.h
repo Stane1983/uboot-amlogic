@@ -82,7 +82,8 @@
 	"dv_fw_addr=0xa00000\0"\
 	"otg_device=1\0" \
 	"panel_type=mipi_0\0" \
-	"outputmode=panel\0" \
+	"outputmode=600p60hz\0" \
+	"connector0_type=MIPI-A\0" \
 	"hdmimode=none\0" \
 	"colorattribute=444,8bit\0"\
 	"cvbsmode=576cvbs\0" \
@@ -143,10 +144,7 @@
 		"get_bootloaderversion;" \
 		"setenv bootargs ${initargs} ${fs_type} otg_device=${otg_device} "\
 			"logo=${display_layer},loaded,${fb_addr} vout=${outputmode},enable panel_type=${panel_type} "\
-			"hdmitx=${cecconfig},${colorattribute} hdmimode=${hdmimode} "\
-			"hdmichecksum=${hdmichecksum} dolby_vision_on=${dolby_vision_on} " \
-			"hdr_policy=${hdr_policy} hdr_priority=${hdr_priority} "\
-			"frac_rate_policy=${frac_rate_policy} hdmi_read_edid=${hdmi_read_edid} cvbsmode=${cvbsmode} "\
+			"lcd_ctrl=${lcd_ctrl} lcd_debug=${lcd_debug} connector0_type=${connector0_type} "\
 			"osd_reverse=${osd_reverse} video_reverse=${video_reverse} irq_check_en=${Irq_check_en}  "\
 			"androidboot.selinux=${EnableSelinux} androidboot.firstboot=${firstboot} jtag=${jtag}; "\
 		"setenv bootargs ${bootargs} androidboot.bootloader=${bootloader_version} androidboot.hardware=amlogic;"\

@@ -230,7 +230,7 @@ char *get_current_env_connector(unsigned char cnt_idx)
 
 void sprintf_lcd_connector(char *buf, unsigned char lcd_idx, unsigned char lcd_type)
 {
-	char *connector_name_list[5] = {"LVDS", "VBYONE", "MIPI", "EDP", "NULL"};
+	char *connector_name_list[5] = {"LVDS", "VBYONE", "MIPI", "EDP", "LCD"};
 	unsigned char name_idx;
 
 	if (lcd_type == LCD_LVDS || lcd_type == LCD_MLVDS)
