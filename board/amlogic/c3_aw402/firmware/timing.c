@@ -516,8 +516,8 @@ __attribute__ ((section(".misc_param"))) = {
 storage_parameter_t __store_para __attribute__ ((section(".store_param"))) = {
 	.common				= {
 		.version = 0x01,
-		.device_fip_container_size = DEV_FIP_SIZE,
-		.device_fip_container_copies = 4,
+		.device_fip_container_size = BOARD_DEVFIP_SIZE,
+		.device_fip_container_copies = BOARD_DEVFIP_BACKUPS,
 		.ddr_fip_container_size = BOARD_DDRFIP_SIZE,
 	},
 	.nand				= {

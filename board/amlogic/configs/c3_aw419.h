@@ -547,6 +547,11 @@
 
 #endif /* CONFIG_AML_SECURE_UBOOT */
 
+/* mtd advance mode layout board config */
+#define BOARD_BL2_BACKUPS 4
+#define BOARD_BL2EX_BACKUPS	4
+#define BOARD_DEVFIP_BACKUPS	BOARD_BL2EX_BACKUPS
+
 #define CONFIG_FIP_IMG_SUPPORT  1
 
 #define BL32_SHARE_MEM_SIZE  0x800000

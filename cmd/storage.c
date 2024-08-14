@@ -204,8 +204,22 @@ static int storage_boot_layout_rebuild(struct boot_layout *boot_layout)
 
 	if (ssp->boot_device == BOOT_SNAND ||
 	    ssp->boot_device == BOOT_NAND_MTD) {
-		STORAGE_ROUND_UP_IF_UNALIGN(boot_entry[BOOT_AREA_BB1ST].size,
-			((BOOT_TOTAL_PAGES / ssp->boot_backups) * ssp->sip.nsp.page_size));
+		if (ssp->boot_device == BOOT_SNAND) {
+			#ifdef CONFIG_SPINAND_BL2_COPY_NUM
+			STORAGE_ROUND_UP_IF_UNALIGN(boot_entry[BOOT_AREA_BB1ST].size,
+					((BOOT_TOTAL_PAGES / CONFIG_SPINAND_BL2_COPY_NUM)
+					 * ssp->sip.nsp.page_size));
+			#else
+			STORAGE_ROUND_UP_IF_UNALIGN(boot_entry[BOOT_AREA_BB1ST].size,
+					((BOOT_TOTAL_PAGES / ssp->boot_backups)
+					 * ssp->sip.nsp.page_size));
+			#endif
+		} else {
+			STORAGE_ROUND_UP_IF_UNALIGN(boot_entry[BOOT_AREA_BB1ST].size,
+					((BOOT_TOTAL_PAGES / ssp->boot_backups)
+					 * ssp->sip.nsp.page_size));
+		}
+
 		boot_entry[BOOT_AREA_BL2E].offset =
 						NAND_RSV_OFFSET * ssp->sip.nsp.page_size
 						    + ssp->sip.nsp.layout_reserve_size;
