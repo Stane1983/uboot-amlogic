@@ -51,6 +51,7 @@
 #endif
 #ifdef CONFIG_ARMV8_MULTIENTRY
 #include <asm/arch-meson/smp.h>
+#include <cli.h>
 #endif
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -111,6 +112,7 @@ static void announce_and_cleanup(int fake)
 
 #ifdef CONFIG_ARMV8_MULTIENTRY
 	gd->flags &= ~GD_FLG_SMP;
+	cli_release_lock(0);
 #endif
 	cleanup_before_linux();
 }
