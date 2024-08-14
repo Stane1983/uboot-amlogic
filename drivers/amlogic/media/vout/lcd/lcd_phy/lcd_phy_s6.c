@@ -7,7 +7,7 @@
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include "../lcd_reg.h"
 #include "lcd_phy_config.h"
-#include "../lcd_common.h"
+#include <amlogic/aml_efuse.h>
 
 #define DSI_PHY_LPRX_HI   1   // CH0 LPRX hi : 0=0.82v 1=0.86v 2=0.89v 3=0.93v
 #define DSI_PHY_LPRX_LOW  1   // CH0 LPRX low: 0=0.52v 1=0.56v 2=0.60v 3=0.64v
@@ -15,14 +15,16 @@
 #define DSI_PHY_LPCD_LOW  1   // CH0 LPCD low: 0=0.17v 1=0.20v 2=0.24v 3=0.27v
 
 //0.4V setting: 0=0.375v 1=0.4v 2=0.425v 3=0.45v 4=0.475v 5=0.5v 6=0.525v 7=0.551v
-#define DSI_PHY_DATA_HS_400mV    6
-#define DSI_PHY_CLK_HS_400mV     4
+#define DSI_PHY_DATA_HS_400mV    1
+#define DSI_PHY_CLK_HS_400mV     1
 //1.2V setting: 0=1.11v 1=1.13v 2=1.15v 3=1.18v 4=1.21v 5=1.23v 6=1.26v 7=1.28v
 #define DSI_PHY_DATA_LP_1200mV   4
 
 static void lcd_mipi_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 {
 	unsigned int mipi_dsi_ctl0, mipi_dsi_ctl1, mipi_dsi_ctl2, mipi_dsi_ctl3;
+	unsigned short CHCK_HS_driver_ability;
+	int HSTX_50R_calid_val;
 
 	if (status == 0) {
 		lcd_ana_write(ANACTRL_MIPIDSI_CTRL1, 0);
@@ -30,10 +32,16 @@ static void lcd_mipi_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 		return;
 	}
 
-	// mipi_dsi_ctl1 = 0x0278;
-	// mipi_dsi_ctl2 = 0x031f;
-	// mipi_dsi_ctl0 = 0x0055;
-	// mipi_dsi_ctl3 = 0xc694;
+	// 1.5G: PHY_CNTL0[0xfe0083d4] = 0x393b8055; PHY_CNTL1[0xfe0083d8] = 0xe134031f;
+	// 2.5G: PHY_CNTL0[0xfe0083d4] = 0x393b8055; PHY_CNTL1[0xfe0083d8] = 0xe134061f;
+
+	CHCK_HS_driver_ability = pdrv->config.control.mipi_cfg.bit_rate_max > 1500 ? 0x6 : 0x3;
+	HSTX_50R_calid_val = efuse_get_cali_item("dsi");
+	if (HSTX_50R_calid_val < 0) {
+		LCDERR("[%u]: DSI HSTX 50Ω resistance uncalibrated\n", pdrv->index);
+		HSTX_50R_calid_val = 0xb;
+	}
+
 	mipi_dsi_ctl0 = (0x0 << 15) | //serlizer reset
 			(0x0 << 14) | // ccp reset;
 			(0x0 << 13) | // input data select: 0=external input; 1=internal prbs7;
@@ -46,14 +54,14 @@ static void lcd_mipi_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 			(DSI_PHY_LPCD_HI  << 2)  | // LPCD hi : 00=0.37v 01=0.41v 10=0.45v 11=0.49v
 			(DSI_PHY_LPCD_LOW << 0);   // LPCD low: 00=0.17v 01=0.20v 10=0.24v 11=0.27v
 	mipi_dsi_ctl1 = (0x0 << 14) | // CH 0/1/2/3 hstx slew setting (2bit)
-			(0x0 << 11) | // CHCK/CH 0/1/2/3/ lptx slew setting (3bit)
-			(0x2 << 8)  | // CH0/1/2/3 hstx post setting (3bit)
-			(0x7 << 4)  | // CH0/1/2/3 hstx driver ability setting (3bit)
-			(0x8 << 0);   // CHCK/CH0/1/2/3/ hstx 50Ω resistance calibration setting (4bit)
+			(0x7 << 11) | // CHCK/CH 0/1/2/3/ lptx slew setting (3bit)
+			(0x1 << 8)  | // CH0/1/2/3 hstx post setting (3bit)
+			(0x3 << 4)  | // CH0/1/2/3 hstx driver ability setting (3bit)
+			(HSTX_50R_calid_val << 0); // hstx 50Ω resistance calibration setting(4bit)
 	mipi_dsi_ctl2 = (0x0 << 15) | // LPRX ref voltage: 1=0.74V 0=0.88V
 			(0x0 << 12) | // CHCK hstx post setting (3bit)
 			(0x0 << 11) | // CHCK half clk inversion: 1=inversion 0=no inversion
-			(0x3 << 8)  | // CHCK hstx driver ability setting (3bit)
+			(CHCK_HS_driver_ability << 8)  | // CHCK hstx driver ability setting (3bit)
 			(0x0 << 7)  | // CHCK input full clk inversion: 0=inversion 1=no inversion
 			(0x0 << 5)  | // CHCK HSTX slew setting (2bit)
 			(0x1 << 4)  | // CHCK channel enable
