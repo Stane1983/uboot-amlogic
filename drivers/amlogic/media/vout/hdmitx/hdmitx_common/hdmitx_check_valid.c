@@ -15,7 +15,7 @@ bool hdmitx_edid_validate_mode(struct rx_cap *rxcap, u32 vic)
 		return false;
 
 	if (vic < HDMITX_VESA_OFFSET) {
-		/*check cea cap*/
+		/* check cea cap */
 		for (i = 0 ; i < rxcap->VIC_count; i++) {
 			if (rxcap->VIC[i] == vic) {
 				edid_matched = true;
@@ -24,7 +24,7 @@ bool hdmitx_edid_validate_mode(struct rx_cap *rxcap, u32 vic)
 		}
 	} else {
 		enum hdmi_vic *vesa_t = &rxcap->vesa_timing[0];
-		/*check vesa mode.*/
+		/* check vesa mode. */
 		for (i = 0; i < VESA_MAX_TIMING && vesa_t[i]; i++) {
 			if (vic == vesa_t[i]) {
 				edid_matched = true;
@@ -44,10 +44,11 @@ int hdmitx_common_validate_vic(struct hdmitx_common *tx_comm, u32 vic)
 	if (!timing)
 		return -EINVAL;
 
-	/*soc level filter*/
-	/*filter 1080p max size.*/
+	/* soc level filter */
+	/* filter 1080p max size. */
 	if (tx_comm->res_1080p) {
-		/* if the vic equals to HDMI_0_UNKNOWN or VESA,
+		/*
+		 * if the vic equals to HDMI_0_UNKNOWN or VESA,
 		 * then create it as over limited
 		 */
 		if (vic == HDMI_0_UNKNOWN || vic >= HDMITX_VESA_OFFSET)
@@ -75,14 +76,14 @@ int hdmitx_common_validate_vic(struct hdmitx_common *tx_comm, u32 vic)
 		if (timing->v_active >= 2160 && timing->v_freq >= 5000)
 			return -ERANGE;
 
-	/*filter max refreshrate.*/
+	/* filter max refreshrate. */
 	if (timing->v_freq > (tx_comm->max_refreshrate * 1000)) {
-		//HDMITX_INFO("validate refreshrate (%s)-(%d) fail\n",
-		//timing->name, timing->v_freq);
+		/* HDMITX_INFO("validate refreshrate (%s)-(%d) fail\n", */
+		/* timing->name, timing->v_freq); */
 		return -EACCES;
 	}
 
-	/*ip level filter*/
+	/* ip level filter */
 	if (hdmitx_hw_validate_mode(tx_comm->tx_hw, vic, tx_comm->max_refreshrate) != 0)
 		return -EPERM;
 
@@ -179,7 +180,8 @@ static bool hdmitx_check_dsc_support(struct tx_cap *hdmi_tx_cap,
 			dsc_slice_num, dsc_max_slices_num[rxcap->dsc_max_slices]);
 		return false;
 	}
-	/* note: pixel clock per slice not checked, assume
+	/*
+	 * note: pixel clock per slice not checked, assume
 	 * it's always within rx cap
 	 */
 	/* check dsc frl rate within rx cap */
@@ -191,7 +193,8 @@ static bool hdmitx_check_dsc_support(struct tx_cap *hdmi_tx_cap,
 			dsc_frl_rate, rxcap->dsc_max_frl_rate, rxcap->max_frl_rate);
 		return false;
 	}
-	/* 2.1 spec table 6-56, if Bytes Target is greater than
+	/*
+	 * 2.1 spec table 6-56, if Bytes Target is greater than
 	 * the value indicated by DSC_TotalChunkKBytes (see Sections
 	 * 7.7.1 and 7.7.4.2), then the configuration is not
 	 * supported with Compressed Video Transport.
@@ -223,7 +226,7 @@ bool hdmitx_mode_validate_y420_vic(enum hdmi_vic vic)
 }
 EXPORT_SYMBOL(hdmitx_mode_validate_y420_vic);
 
-//return true means support; false means not support
+/* return true means support; false means not support */
 bool hdmitx_edid_check_y420_support(struct rx_cap *prxcap, enum hdmi_vic vic)
 {
 	unsigned int i = 0;
@@ -250,7 +253,8 @@ bool hdmitx_edid_check_y420_support(struct rx_cap *prxcap, enum hdmi_vic vic)
 	return ret;
 }
 
-/* For some TV's EDID, there maybe exist some information ambiguous.
+/*
+ * For some TV's EDID, there maybe exist some information ambiguous.
  * Such as EDID declare support 2160p60hz(Y444 8bit), but no valid
  * Max_TMDS_Clock2 to indicate that it can support 5.94G signal.
  */
@@ -279,7 +283,8 @@ static int hdmitx_edid_validate_format_para(struct tx_cap *hdmi_tx_cap,
 	dv = &prxcap->dv_info;
 	/* step1: check if mode + cs/cd is supported by TX */
 	switch (para->timing.vic) {
-	/* Note: below check for formats which should use FRL
+	/*
+	 * Note: below check for formats which should use FRL
 	 * is also checked in step3, so remove
 	 */
 	/* case HDMI_96_3840x2160p50_16x9: */
@@ -377,7 +382,8 @@ static int hdmitx_edid_validate_format_para(struct tx_cap *hdmi_tx_cap,
 		} else {
 			/* try to check if able to run under FRL mode */
 
-			/* output format need FRL while RX not support FRL
+			/*
+			 * output format need FRL while RX not support FRL
 			 * no need below check, it will be checked with rx_frl_bandwidth_cap
 			 */
 			if (prxcap->max_frl_rate == FRL_NONE) {
@@ -406,9 +412,10 @@ static int hdmitx_edid_validate_format_para(struct tx_cap *hdmi_tx_cap,
 			} else {
 				if (tx_frl_bandwidth <= tx_frl_bandwidth_cap &&
 				    tx_frl_bandwidth <= rx_frl_bandwidth_cap)
-					; // non-dsc bandwidth is within cap, continue check
+					; /* non-dsc bandwidth is within cap, continue check */
 #ifdef CONFIG_AMLOGIC_DSC
-				else if (dsc_policy == 3) //forcely filter out dsc mode output
+				/* forcely filter out dsc mode output */
+				else if (dsc_policy == 3)
 					return -EPERM;
 				else if (!hdmitx_check_dsc_support(hdmi_tx_cap, prxcap, para))
 					return -EPERM;
@@ -482,7 +489,8 @@ static int hdmitx_edid_validate_format_para(struct tx_cap *hdmi_tx_cap,
 	return -EACCES;
 }
 
-/* check fmt para is supported or not by hdmitx/edid.
+/*
+ * check fmt para is supported or not by hdmitx/edid.
  * note that vic is not checked if supported by hdmitx/edid
  * return 0 means valid, other value means invalid
  */
@@ -505,7 +513,8 @@ int hdmitx_common_validate_format_para(struct hdmitx_common *tx_comm,
 }
 EXPORT_SYMBOL(hdmitx_common_validate_format_para);
 
-/* check VIC supported or not with basic cs/cd
+/*
+ * check VIC supported or not with basic cs/cd
  * compare with hdmitx_common_validate_mode_locked()
  * or valid_mode_store(), it doesn't check if vic
  * is supported by hdmitx/rx or not
@@ -514,9 +523,12 @@ EXPORT_SYMBOL(hdmitx_common_validate_format_para);
 int hdmitx_common_check_valid_para_of_vic(struct hdmitx_common *tx_comm, enum hdmi_vic vic)
 {
 	struct hdmi_format_para tst_para;
-	enum hdmi_color_depth cd; /* cd8, cd10 or cd12 */
-	enum hdmi_colorspace cs; /* 0/1/2/3: rgb/422/444/420 */
-	const enum hdmi_quantization_range cr = HDMI_QUANTIZATION_RANGE_FULL; /*default to full*/
+	/* cd8, cd10 or cd12 */
+	enum hdmi_color_depth cd;
+	/* 0/1/2/3: rgb/422/444/420 */
+	enum hdmi_colorspace cs;
+	/* default to full */
+	const enum hdmi_quantization_range cr = HDMI_QUANTIZATION_RANGE_FULL;
 	int i = 0;
 
 	if (!tx_comm || vic == HDMI_0_UNKNOWN)
