@@ -1879,6 +1879,19 @@
 #define PWM_PWM_F                                  0x6401
 #endif
 
+#ifndef PWM_PWM_G
+#define PWM_PWM_G                                  0x6402
+#endif
+#ifndef PWM_PWM_H
+#define PWM_PWM_H                                  0x6403
+#endif
+#ifndef PWM_PWM_I
+#define PWM_PWM_I                                  0x6404
+#endif
+#ifndef PWM_PWM_J
+#define PWM_PWM_J                                  0x6405
+#endif
+
 #ifndef AO_PWM_PWM_A
 #define AO_PWM_PWM_A                               (0xff807000 + (0x000 << 2))
 #endif
