@@ -1223,13 +1223,13 @@ void aml_lcd_driver_test(int index, int num)
 	if (!pdrv)
 		return;
 
-	if (num == 10) {
-		lcd_display_init_test(pdrv);
-		return;
-	} else if (num == 20) {
-		lcd_display_init_reg_dump(pdrv);
-		return;
-	}
+	//if (num == 10) {
+	//	lcd_display_init_test(pdrv);
+	//	return;
+	//} else if (num == 20) {
+	//	lcd_display_init_reg_dump(pdrv);
+	//	return;
+	//}
 
 	if ((pdrv->status & LCD_STATUS_IF_ON) == 0) {
 		LCDPR("[%d]: already disabled\n", pdrv->index);

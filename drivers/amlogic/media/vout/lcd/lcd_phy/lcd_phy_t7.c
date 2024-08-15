@@ -12,6 +12,35 @@
 #ifdef CONFIG_MESON_T7
 static struct lcd_phy_ctrl_s *phy_ctrl_p;
 
+static void lcd_phy_reg_dump(struct aml_lcd_drv_s *pdrv)
+{
+	struct reg_name_set_s reg_table[] = {
+		{ANACTRL_DIF_PHY_CNTL1,  "PHY_CNTL1"},
+		{ANACTRL_DIF_PHY_CNTL2,  "PHY_CNTL2"},
+		{ANACTRL_DIF_PHY_CNTL3,  "PHY_CNTL3"},
+		{ANACTRL_DIF_PHY_CNTL4,  "PHY_CNTL4"},
+		{ANACTRL_DIF_PHY_CNTL5,  "PHY_CNTL5"},
+		{ANACTRL_DIF_PHY_CNTL6,  "PHY_CNTL6"},
+		{ANACTRL_DIF_PHY_CNTL7,  "PHY_CNTL7"},
+		{ANACTRL_DIF_PHY_CNTL8,  "PHY_CNTL8"},
+		{ANACTRL_DIF_PHY_CNTL9,  "PHY_CNTL9"},
+		{ANACTRL_DIF_PHY_CNTL10, "PHY_CNTL10"},
+		{ANACTRL_DIF_PHY_CNTL11, "PHY_CNTL11"},
+		{ANACTRL_DIF_PHY_CNTL12, "PHY_CNTL12"},
+		{ANACTRL_DIF_PHY_CNTL13, "PHY_CNTL13"},
+		{ANACTRL_DIF_PHY_CNTL14, "PHY_CNTL14"},
+		{ANACTRL_DIF_PHY_CNTL15, "PHY_CNTL15"},
+		{ANACTRL_DIF_PHY_CNTL16, "PHY_CNTL16"},
+		{ANACTRL_DIF_PHY_CNTL17, "PHY_CNTL17"},
+		{ANACTRL_DIF_PHY_CNTL18, "PHY_CNTL18"},
+		{ANACTRL_DIF_PHY_CNTL19, "PHY_CNTL19"},
+		{ANACTRL_DIF_PHY_CNTL20, "PHY_CNTL20"},
+		{ANACTRL_DIF_PHY_CNTL21, "PHY_CNTL21"}
+	};
+
+	str_add_reg_sets(pdrv, LCD_REG_DBG_ANA_BUS, 0, reg_table, ARRAY_SIZE(reg_table));
+}
+
 static void lcd_phy_cntl_set(unsigned int flag,
 				unsigned int data_lane0_aux,
 				unsigned int data_lane1_aux,
@@ -279,6 +308,9 @@ static struct lcd_phy_ctrl_s lcd_phy_ctrl_t7 = {
 	.phy_preem_level_to_val = lcd_phy_preem_level_to_value_t7,
 	.phy_amp_dft_val = NULL,
 	.phy_glb_param_dft_val = NULL,
+	.phy_param_get = NULL,
+	.phy_reg_dump = lcd_phy_reg_dump,
+
 	.phy_set_lvds = lcd_lvds_phy_set,
 	.phy_set_vx1 = lcd_vbyone_phy_set,
 	.phy_set_mlvds = NULL,

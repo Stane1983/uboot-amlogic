@@ -713,6 +713,122 @@ static void lcd_clk_disable(struct aml_lcd_drv_s *pdrv)
 	lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL0 + offset, 1, 29, 1);  //reset
 }
 
+static void lcd_clk_reg_dump_t7(struct aml_lcd_drv_s *pdrv)
+{
+	int i;
+	unsigned int *table = NULL, size = 0;
+	unsigned int pll_reg_table[][6] = {
+		{
+			ANACTRL_TCON_PLL0_CNTL0,
+			ANACTRL_TCON_PLL0_CNTL1,
+			ANACTRL_TCON_PLL0_CNTL2,
+			ANACTRL_TCON_PLL0_CNTL3,
+			ANACTRL_TCON_PLL0_CNTL4,
+			ANACTRL_TCON_PLL0_STS
+		},
+		{
+			ANACTRL_TCON_PLL1_CNTL0,
+			ANACTRL_TCON_PLL1_CNTL1,
+			ANACTRL_TCON_PLL1_CNTL2,
+			ANACTRL_TCON_PLL1_CNTL3,
+			ANACTRL_TCON_PLL1_CNTL4,
+			ANACTRL_TCON_PLL1_STS
+		},
+		{
+			ANACTRL_TCON_PLL2_CNTL0,
+			ANACTRL_TCON_PLL2_CNTL1,
+			ANACTRL_TCON_PLL2_CNTL2,
+			ANACTRL_TCON_PLL2_CNTL3,
+			ANACTRL_TCON_PLL2_CNTL4,
+			ANACTRL_TCON_PLL2_STS
+		}
+	};
+	unsigned int clk_reg_table[][3] = {
+		{
+			CLKCTRL_VIID_CLK0_DIV,
+			CLKCTRL_VIID_CLK0_CTRL,
+			CLKCTRL_VID_CLK0_CTRL2
+		},
+		{
+			CLKCTRL_VIID_CLK1_DIV,
+			CLKCTRL_VIID_CLK1_CTRL,
+			CLKCTRL_VID_CLK1_CTRL2
+		},
+		{
+			CLKCTRL_VIID_CLK2_DIV,
+			CLKCTRL_VIID_CLK2_CTRL,
+			CLKCTRL_VID_CLK2_CTRL2
+		}
+	};
+	unsigned int combo_dphy_reg_table[] = {
+		COMBO_DPHY_VID_PLL0_DIV,
+		COMBO_DPHY_VID_PLL1_DIV,
+		COMBO_DPHY_VID_PLL2_DIV
+	};
+
+	if (!pdrv || pdrv->index > 2)
+		return;
+
+	table = pll_reg_table[pdrv->index];
+	size = ARRAY_SIZE(pll_reg_table[pdrv->index]);
+	for (i = 0; i < size; i++)
+		printf("pll [0x%08x] = 0x%08x\n", table[i], lcd_ana_read(table[i]));
+
+	table = clk_reg_table[pdrv->index];
+	size = ARRAY_SIZE(clk_reg_table[pdrv->index]);
+	for (i = 0; i < size; i++)
+		printf("clk [0x%08x] = 0x%08x\n", table[i], lcd_clk_read(table[i]));
+
+	printf("combo_dphy [0x%08x] = 0x%08x\n",
+		combo_dphy_reg_table[pdrv->index],
+		lcd_combo_dphy_read(combo_dphy_reg_table[pdrv->index]));
+}
+
+static void lcd_clk_reg_dump_t3(struct aml_lcd_drv_s *pdrv)
+{
+	int i;
+	unsigned int *table = NULL, size = 0;
+	unsigned int pll_reg_table[] = {
+		ANACTRL_TCON_PLL0_CNTL0,
+		ANACTRL_TCON_PLL0_CNTL1,
+		ANACTRL_TCON_PLL0_CNTL2,
+		ANACTRL_TCON_PLL0_CNTL3,
+		ANACTRL_TCON_PLL0_CNTL4,
+		ANACTRL_TCON_PLL0_STS,
+		ANACTRL_VID_PLL_CLK_DIV
+	};
+	unsigned int clk_reg_table[][3] = {
+		{
+			CLKCTRL_VIID_CLK0_DIV,
+			CLKCTRL_VIID_CLK0_CTRL,
+			CLKCTRL_VID_CLK0_CTRL2
+		},
+		{
+			CLKCTRL_VIID_CLK1_DIV,
+			CLKCTRL_VIID_CLK1_CTRL,
+			CLKCTRL_VID_CLK1_CTRL2
+		}
+	};
+
+	if (!pdrv || pdrv->index > 1)
+		return;
+
+	table = pll_reg_table;
+	size = ARRAY_SIZE(pll_reg_table);
+	for (i = 0; i < size; i++)
+		printf("pll [0x%08x] = 0x%08x\n", table[i], lcd_ana_read(table[i]));
+
+	table = clk_reg_table[pdrv->index];
+	size = ARRAY_SIZE(clk_reg_table[pdrv->index]);
+	for (i = 0; i < size; i++)
+		printf("clk [0x%08x] = 0x%08x\n", table[i], lcd_clk_read(table[i]));
+
+	if (pdrv->index == 0) {
+		printf("clk [0x%08x] = 0x%08x\n",
+			CLKCTRL_TCON_CLK_CNTL, lcd_clk_read(CLKCTRL_TCON_CLK_CNTL));
+	}
+}
+
 static void lcd_prbs_config_clk_t7(struct aml_lcd_drv_s *pdrv, unsigned int lcd_prbs_mode,
 		unsigned int *encl_clk, unsigned int *fifo_clk)
 {
@@ -1148,6 +1264,7 @@ static struct lcd_clk_data_s lcd_clk_data_t7_0 = {
 	.clktree_set = NULL,
 	.clk_config_init_print = lcd_clk_config_init_print_dft,
 	.clk_config_print = lcd_clk_config_print_dft,
+	.clk_reg_print = lcd_clk_reg_dump_t7,
 	.prbs_test = lcd_prbs_test_t7,
 };
 
@@ -1202,6 +1319,7 @@ static struct lcd_clk_data_s lcd_clk_data_t7_1 = {
 	.clktree_set = NULL,
 	.clk_config_init_print = lcd_clk_config_init_print_dft,
 	.clk_config_print = lcd_clk_config_print_dft,
+	.clk_reg_print = lcd_clk_reg_dump_t7,
 	.prbs_test = lcd_prbs_test_t7,
 };
 
@@ -1256,6 +1374,7 @@ static struct lcd_clk_data_s lcd_clk_data_t7_2 = {
 	.clktree_set = NULL,
 	.clk_config_init_print = lcd_clk_config_init_print_dft,
 	.clk_config_print = lcd_clk_config_print_dft,
+	.clk_reg_print = lcd_clk_reg_dump_t7,
 	.prbs_test = lcd_prbs_test_t7,
 };
 
@@ -1310,6 +1429,7 @@ static struct lcd_clk_data_s lcd_clk_data_t3_0 = {
 	.clktree_set = lcd_clktree_set,
 	.clk_config_init_print = lcd_clk_config_init_print_dft,
 	.clk_config_print = lcd_clk_config_print_dft,
+	.clk_reg_print = lcd_clk_reg_dump_t3,
 	.prbs_test = lcd_prbs_test_t3,
 };
 
@@ -1364,6 +1484,7 @@ static struct lcd_clk_data_s lcd_clk_data_t3_1 = {
 	.clktree_set = lcd_clktree_set,
 	.clk_config_init_print = lcd_clk_config_init_print_dft,
 	.clk_config_print = lcd_clk_config_print_dft,
+	.clk_reg_print = lcd_clk_reg_dump_t3,
 	.prbs_test = lcd_prbs_test_t3,
 };
 

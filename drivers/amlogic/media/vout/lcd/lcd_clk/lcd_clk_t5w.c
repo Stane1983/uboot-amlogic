@@ -309,6 +309,39 @@ static void lcd_clk_disable(struct aml_lcd_drv_s *pdrv)
 	lcd_ana_setb(HHI_TCON_PLL_CNTL0, 1, 29, 1); //reset
 }
 
+static void lcd_clk_reg_dump(struct aml_lcd_drv_s *pdrv)
+{
+	int i;
+	unsigned int *table = NULL, size = 0;
+	unsigned int pll_reg_table[] = {
+		HHI_TCON_PLL_CNTL0,
+		HHI_TCON_PLL_CNTL1,
+		HHI_TCON_PLL_CNTL2,
+		HHI_TCON_PLL_CNTL3,
+		HHI_TCON_PLL_CNTL4,
+		HHI_VID_PLL_CLK_DIV
+	};
+	unsigned int clk_reg_table[] = {
+		HHI_VIID_CLK0_DIV,
+		HHI_VIID_CLK0_CTRL,
+		HHI_VID_CLK0_CTRL2,
+		HHI_TCON_CLK_CNTL
+	};
+
+	if (!pdrv)
+		return;
+
+	table = pll_reg_table;
+	size = ARRAY_SIZE(pll_reg_table);
+	for (i = 0; i < size; i++)
+		printf("pll [0x%02x] = 0x%08x\n", table[i], lcd_ana_read(table[i]));
+
+	table = clk_reg_table;
+	size = ARRAY_SIZE(clk_reg_table);
+	for (i = 0; i < size; i++)
+		printf("clk [0x%02x] = 0x%08x\n", table[i], lcd_clk_read(table[i]));
+}
+
 static void lcd_prbs_config_clk(struct aml_lcd_drv_s *pdrv, unsigned int lcd_prbs_mode,
 		unsigned int *encl_clk, unsigned int *fifo_clk)
 {
@@ -527,6 +560,7 @@ static struct lcd_clk_data_s lcd_clk_data_t5w = {
 	.clktree_set = lcd_clktree_set,
 	.clk_config_init_print = lcd_clk_config_init_print_dft,
 	.clk_config_print = lcd_clk_config_print_dft,
+	.clk_reg_print = lcd_clk_reg_dump,
 	.prbs_test = lcd_clk_prbs_test,
 };
 

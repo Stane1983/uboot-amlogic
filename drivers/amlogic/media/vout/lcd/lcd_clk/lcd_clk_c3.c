@@ -183,6 +183,39 @@ static void lcd_clk_config_print_c3(struct aml_lcd_drv_s *pdrv)
 		cconf->xd, cconf->phy_div, cconf->fout);
 }
 
+static void lcd_clk_reg_dump(struct aml_lcd_drv_s *pdrv)
+{
+	int i;
+	unsigned int *table = NULL, size = 0;
+	unsigned int pll_reg_table[] = {
+		ANACTRL_GP0PLL_CTRL0,
+		ANACTRL_GP0PLL_CTRL1,
+		ANACTRL_GP0PLL_CTRL2,
+		ANACTRL_GP0PLL_CTRL3,
+		ANACTRL_GP0PLL_CTRL4,
+		ANACTRL_GP0PLL_CTRL5,
+		ANACTRL_GP0PLL_CTRL6,
+		ANACTRL_GP0PLL_STS
+	};
+	unsigned int clk_reg_table[] = {
+		CLKCTRL_VOUTENC_CLK_CTRL,
+		CLKCTRL_MIPIDSI_PHY_CLK_CTRL
+	};
+
+	if (!pdrv)
+		return;
+
+	table = pll_reg_table;
+	size = ARRAY_SIZE(pll_reg_table);
+	for (i = 0; i < size; i++)
+		printf("pll [0x%08x] = 0x%08x\n", table[i], lcd_ana_read(table[i]));
+
+	table = clk_reg_table;
+	size = ARRAY_SIZE(clk_reg_table);
+	for (i = 0; i < size; i++)
+		printf("clk [0x%08x] = 0x%08x\n", table[i], lcd_clk_read(table[i]));
+}
+
 static struct lcd_clk_data_s lcd_clk_data_c3 = {
 	.pll_od_fb = 0,
 	.pll_m_max = 511,
@@ -228,6 +261,7 @@ static struct lcd_clk_data_s lcd_clk_data_c3 = {
 	.clktree_set = NULL,
 	.clk_config_init_print = lcd_clk_config_init_print_dft,
 	.clk_config_print = lcd_clk_config_print_c3,
+	.clk_reg_print = lcd_clk_reg_dump,
 	.prbs_test = NULL,
 };
 

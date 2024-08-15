@@ -34,11 +34,55 @@ static unsigned int chdig_reg[5] = {
 	HHI_DIF_CSI_PHY_CNTL12
 };
 
+static void lcd_phy_reg_dump(struct aml_lcd_drv_s *pdrv)
+{
+	struct reg_name_set_s reg_table[] = {
+		{HHI_DIF_CSI_PHY_CNTL1,  "PHY_CNTL1"},
+		{HHI_DIF_CSI_PHY_CNTL2,  "PHY_CNTL2"},
+		{HHI_DIF_CSI_PHY_CNTL3,  "PHY_CNTL3"},
+		{HHI_DIF_CSI_PHY_CNTL4,  "PHY_CNTL4"},
+		{HHI_DIF_CSI_PHY_CNTL6,  "PHY_CNTL6"},
+		{HHI_DIF_CSI_PHY_CNTL8,  "PHY_CNTL8"},
+		{HHI_DIF_CSI_PHY_CNTL9,  "PHY_CNTL9"},
+		{HHI_DIF_CSI_PHY_CNTL10, "PHY_CNTL10"},
+		{HHI_DIF_CSI_PHY_CNTL11, "PHY_CNTL11"},
+		{HHI_DIF_CSI_PHY_CNTL12, "PHY_CNTL12"},
+		{HHI_DIF_CSI_PHY_CNTL13, "PHY_CNTL13"},
+		{HHI_DIF_CSI_PHY_CNTL14, "PHY_CNTL14"},
+		{HHI_DIF_CSI_PHY_CNTL15, "PHY_CNTL15"}
+	};
+
+	str_add_reg_sets(pdrv, LCD_REG_DBG_ANA_BUS, 0, reg_table, ARRAY_SIZE(reg_table));
+}
+
+static int lcd_phy_param_get_from_reg(struct aml_lcd_drv_s *pdrv, struct phy_config_s *phy)
+{
+	unsigned int data32, chreg, bit;
+	int i;
+
+	data32 = lcd_ana_read(HHI_DIF_CSI_PHY_CNTL14);
+	phy->vswing = (data32 >> 12) & 0xf;
+	phy->vcm = (data32 >> 4) & 0xff;
+	phy->odt = (data32 >> 23) & 0xff;
+	phy->ref_bias = 0;
+	phy->cv_mode = 0;
+
+	data32 = lcd_ana_read(HHI_DIF_CSI_PHY_CNTL13);
+	phy->ckdi = (data32 >> 16) & 0x3ff;
+
+	for (i = 0; i < phy->lane_num; i++) {
+		bit = i & 0x1 ? 16 : 0;
+		chreg = lcd_ana_getb(chreg_reg[i >> 1], bit, 16);
+
+		phy->lane[i].preem = (chreg >> 9) & 0xf;
+		phy->lane[i].amp = (chreg >> 3) & 0x7;
+	}
+
+	return 0;
+}
+
 static void lcd_phy_cntl14_update(struct phy_config_s *phy, unsigned int cntl14)
 {
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		LCDPR("vswing=0x%x\n", phy->vswing);
-
 	/* vswing */
 	cntl14 &= ~(0xf << 12);
 	cntl14 |= (phy->vswing << 12);
@@ -224,6 +268,9 @@ static struct lcd_phy_ctrl_s lcd_phy_ctrl_txhd2 = {
 	.phy_preem_level_to_val = lcd_phy_preem_level_to_val_txhd2,
 	.phy_amp_dft_val = lcd_phy_amp_dft_txhd2,
 	.phy_glb_param_dft_val = NULL,
+	.phy_param_get = lcd_phy_param_get_from_reg,
+	.phy_reg_dump = lcd_phy_reg_dump,
+
 	.phy_set_lvds = lcd_lvds_phy_set,
 	.phy_set_vx1 = NULL,
 	.phy_set_mlvds = lcd_mlvds_phy_set,

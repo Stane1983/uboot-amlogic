@@ -14,6 +14,8 @@
 #include "../lcd_common.h"
 #include "lcd_venc.h"
 
+#if defined(CONFIG_MESON_T7) || defined(CONFIG_MESON_T3) || \
+	defined(CONFIG_MESON_T5W) || defined(CONFIG_MESON_T5M)
 static void lcd_venc_wait_vsync(struct aml_lcd_drv_s *pdrv)
 {
 	unsigned int offset, reg;
@@ -374,6 +376,112 @@ static unsigned int lcd_venc_get_encl_line_cnt(struct aml_lcd_drv_s *pdrv)
 	return cnt;
 }
 
+static void lcd_venc_reg_dump(struct aml_lcd_drv_s *pdrv)
+{
+	int i;
+	unsigned int *reg_table = NULL, size_encl = 0;
+	unsigned int encl_0_reg[] = {
+		VPU_VIU_VENC_MUX_CTRL,
+		ENCL_VIDEO_EN,
+		ENCL_VIDEO_MODE,
+		ENCL_VIDEO_MODE_ADV,
+		ENCL_VIDEO_MAX_PXCNT,
+		ENCL_VIDEO_MAX_LNCNT,
+		ENCL_VIDEO_HAVON_BEGIN,
+		ENCL_VIDEO_HAVON_END,
+		ENCL_VIDEO_VAVON_BLINE,
+		ENCL_VIDEO_VAVON_ELINE,
+		ENCL_VIDEO_HSO_BEGIN,
+		ENCL_VIDEO_HSO_END,
+		ENCL_VIDEO_VSO_BEGIN,
+		ENCL_VIDEO_VSO_END,
+		ENCL_VIDEO_VSO_BLINE,
+		ENCL_VIDEO_VSO_ELINE,
+		ENCL_VIDEO_RGBIN_CTRL,
+		LCD_GAMMA_CNTL_PORT0,
+		LCD_RGB_BASE_ADDR,
+		LCD_RGB_COEFF_ADDR,
+		LCD_POL_CNTL_ADDR,
+		LCD_DITH_CNTL_ADDR,
+		VPU_DISP_VIU0_CTRL,
+		VPU_VENC_CTRL,
+		ENCL_INBUF_CNTL0,
+		ENCL_INBUF_CNTL1
+	};
+	unsigned int encl_1_reg[] = {
+		VPU_VIU_VENC_MUX_CTRL,
+		ENCL_VIDEO_EN + (0x600 << 2),
+		ENCL_VIDEO_MODE + (0x600 << 2),
+		ENCL_VIDEO_MODE_ADV + (0x600 << 2),
+		ENCL_VIDEO_MAX_PXCNT + (0x600 << 2),
+		ENCL_VIDEO_MAX_LNCNT + (0x600 << 2),
+		ENCL_VIDEO_HAVON_BEGIN + (0x600 << 2),
+		ENCL_VIDEO_HAVON_END + (0x600 << 2),
+		ENCL_VIDEO_VAVON_BLINE + (0x600 << 2),
+		ENCL_VIDEO_VAVON_ELINE + (0x600 << 2),
+		ENCL_VIDEO_HSO_BEGIN + (0x600 << 2),
+		ENCL_VIDEO_HSO_END + (0x600 << 2),
+		ENCL_VIDEO_VSO_BEGIN + (0x600 << 2),
+		ENCL_VIDEO_VSO_END + (0x600 << 2),
+		ENCL_VIDEO_VSO_BLINE + (0x600 << 2),
+		ENCL_VIDEO_VSO_ELINE + (0x600 << 2),
+		ENCL_VIDEO_RGBIN_CTRL + (0x600 << 2),
+		LCD_GAMMA_CNTL_PORT0 + (0x100 << 2),
+		LCD_RGB_BASE_ADDR + (0x100 << 2),
+		LCD_RGB_COEFF_ADDR + (0x100 << 2),
+		LCD_POL_CNTL_ADDR + (0x100 << 2),
+		LCD_DITH_CNTL_ADDR + (0x100 << 2),
+		VPU_DISP_VIU1_CTRL,
+		VPU_VENC_CTRL + (0x600 << 2),
+		ENCL_INBUF_CNTL0 + (0x600 << 2),
+		ENCL_INBUF_CNTL1 + (0x600 << 2)
+	};
+	unsigned int encl_2_reg[] = {
+		VPU_VIU_VENC_MUX_CTRL,
+		ENCL_VIDEO_EN + (0x800 << 2),
+		ENCL_VIDEO_MODE + (0x800 << 2),
+		ENCL_VIDEO_MODE_ADV + (0x800 << 2),
+		ENCL_VIDEO_MAX_PXCNT + (0x800 << 2),
+		ENCL_VIDEO_MAX_LNCNT + (0x800 << 2),
+		ENCL_VIDEO_HAVON_BEGIN + (0x800 << 2),
+		ENCL_VIDEO_HAVON_END + (0x800 << 2),
+		ENCL_VIDEO_VAVON_BLINE + (0x800 << 2),
+		ENCL_VIDEO_VAVON_ELINE + (0x800 << 2),
+		ENCL_VIDEO_HSO_BEGIN + (0x800 << 2),
+		ENCL_VIDEO_HSO_END + (0x800 << 2),
+		ENCL_VIDEO_VSO_BEGIN + (0x800 << 2),
+		ENCL_VIDEO_VSO_END + (0x800 << 2),
+		ENCL_VIDEO_VSO_BLINE + (0x800 << 2),
+		ENCL_VIDEO_VSO_ELINE + (0x800 << 2),
+		ENCL_VIDEO_RGBIN_CTRL + (0x800 << 2),
+		LCD_GAMMA_CNTL_PORT0 + (0x200 << 2),
+		LCD_RGB_BASE_ADDR + (0x200 << 2),
+		LCD_RGB_COEFF_ADDR + (0x200 << 2),
+		LCD_POL_CNTL_ADDR + (0x200 << 2),
+		LCD_DITH_CNTL_ADDR + (0x200 << 2),
+		VPU_DISP_VIU2_CTRL,
+		VPU_VENC_CTRL + (0x800 << 2),
+		ENCL_INBUF_CNTL0 + (0x800 << 2),
+		ENCL_INBUF_CNTL1 + (0x800 << 2)
+	};
+
+	if (!pdrv)
+		return;
+
+	if (pdrv->index == 2) {
+		reg_table = encl_2_reg;
+		size_encl = ARRAY_SIZE(encl_2_reg);
+	} else if (pdrv->index == 1) {
+		reg_table = encl_1_reg;
+		size_encl = ARRAY_SIZE(encl_1_reg);
+	} else {
+		reg_table = encl_0_reg;
+		size_encl = ARRAY_SIZE(encl_0_reg);
+	}
+	for (i = 0; i < size_encl; i++)
+		printf("vcbus [0x%04x] = 0x%08x\n", reg_table[i], lcd_vcbus_read(reg_table[i]));
+}
+
 int lcd_venc_op_init_t7(struct lcd_venc_op_s *venc_op)
 {
 	if (!venc_op)
@@ -387,6 +495,8 @@ int lcd_venc_op_init_t7(struct lcd_venc_op_s *venc_op)
 	venc_op->venc_enable = lcd_venc_enable_ctrl;
 	venc_op->mute_set = lcd_venc_mute_set;
 	venc_op->get_encl_line_cnt = lcd_venc_get_encl_line_cnt;
+	venc_op->venc_reg_dump = lcd_venc_reg_dump;
 
 	return 0;
 };
+#endif

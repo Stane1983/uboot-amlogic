@@ -88,6 +88,7 @@ struct lcd_clk_data_s {
 	void (*clktree_set)(struct aml_lcd_drv_s *pdrv);
 	void (*clk_config_init_print)(struct aml_lcd_drv_s *pdrv);
 	void (*clk_config_print)(struct aml_lcd_drv_s *pdrv);
+	void (*clk_reg_print)(struct aml_lcd_drv_s *pdrv);
 	int (*prbs_test)(struct aml_lcd_drv_s *pdrv, unsigned int ms, unsigned int mode_flag);
 };
 

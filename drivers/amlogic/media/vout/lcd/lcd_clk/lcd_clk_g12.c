@@ -552,6 +552,53 @@ static void lcd_clk_config_print_g12a(struct aml_lcd_drv_s *pdrv)
 	}
 }
 
+static void lcd_clk_reg_dump(struct aml_lcd_drv_s *pdrv)
+{
+	int i;
+	unsigned int *table = NULL, size = 0;
+	unsigned int clk_gp0_reg_table[] = {
+		HHI_GP0_PLL_CNTL0,
+		HHI_GP0_PLL_CNTL1,
+		HHI_GP0_PLL_CNTL2,
+		HHI_GP0_PLL_CNTL3,
+		HHI_GP0_PLL_CNTL4,
+		HHI_GP0_PLL_CNTL5,
+		HHI_GP0_PLL_CNTL6,
+		HHI_VIID_CLK_DIV,
+		HHI_VIID_CLK_CNTL,
+		HHI_VID_CLK_CNTL2,
+		HHI_MIPIDSI_PHY_CLK_CNTL
+	};
+	unsigned int clk_hpll_reg_table[] = {
+		HHI_HDMI_PLL_CNTL0,
+		HHI_HDMI_PLL_CNTL1,
+		HHI_HDMI_PLL_CNTL2,
+		HHI_HDMI_PLL_CNTL3,
+		HHI_HDMI_PLL_CNTL4,
+		HHI_HDMI_PLL_CNTL5,
+		HHI_HDMI_PLL_CNTL6,
+		HHI_VID_PLL_CLK_DIV,
+		HHI_VIID_CLK_DIV,
+		HHI_VIID_CLK_CNTL,
+		HHI_VID_CLK_CNTL2,
+		HHI_MIPIDSI_PHY_CLK_CNTL
+	};
+
+	if (!pdrv)
+		return;
+
+	if (pdrv->clk_path) {
+		table = clk_gp0_reg_table;
+		size = ARRAY_SIZE(clk_gp0_reg_table);
+	} else {
+		table = clk_hpll_reg_table;
+		size = ARRAY_SIZE(clk_hpll_reg_table);
+	}
+
+	for (i = 0; i < size; i++)
+		printf("hiu [0x%02x] = 0x%08x\n", table[i], lcd_hiu_read(table[i]));
+}
+
 static struct lcd_clk_data_s lcd_clk_data_g12a_path0 = { //HPLL
 	.pll_od_fb = 0,
 	.pll_m_max = 511,
@@ -597,6 +644,7 @@ static struct lcd_clk_data_s lcd_clk_data_g12a_path0 = { //HPLL
 	.clktree_set = NULL,
 	.clk_config_init_print = lcd_clk_config_init_print_g12a,
 	.clk_config_print = lcd_clk_config_print_g12a,
+	.clk_reg_print = lcd_clk_reg_dump,
 	.prbs_test = NULL,
 };
 
@@ -645,6 +693,7 @@ static struct lcd_clk_data_s lcd_clk_data_g12a_path1 = {  //GP0
 	.clktree_set = NULL,
 	.clk_config_init_print = lcd_clk_config_init_print_g12a,
 	.clk_config_print = lcd_clk_config_print_g12a,
+	.clk_reg_print = lcd_clk_reg_dump,
 	.prbs_test = NULL,
 };
 
@@ -693,6 +742,7 @@ static struct lcd_clk_data_s lcd_clk_data_g12b_path0 = {  //HPLL
 	.clktree_set = NULL,
 	.clk_config_init_print = lcd_clk_config_init_print_g12a,
 	.clk_config_print = lcd_clk_config_print_g12a,
+	.clk_reg_print = lcd_clk_reg_dump,
 	.prbs_test = NULL,
 };
 
@@ -741,6 +791,7 @@ static struct lcd_clk_data_s lcd_clk_data_g12b_path1 = { //GP0
 	.clktree_set = NULL,
 	.clk_config_init_print = lcd_clk_config_init_print_g12a,
 	.clk_config_print = lcd_clk_config_print_g12a,
+	.clk_reg_print = lcd_clk_reg_dump,
 	.prbs_test = NULL,
 };
 

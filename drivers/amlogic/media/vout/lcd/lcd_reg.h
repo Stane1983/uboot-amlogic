@@ -12,6 +12,29 @@
 #include "edp_tx_reg.h"
 #include "lcd_dummy_reg.h"
 
+struct reg_name_set_s {
+	unsigned int reg;
+	char *name;
+};
+
+#define LCD_REG_DBG_VC_BUS          0
+#define LCD_REG_DBG_ANA_BUS         1
+#define LCD_REG_DBG_CLK_BUS         2
+#define LCD_REG_DBG_PERIPHS_BUS     3
+#define LCD_REG_DBG_MIPIHOST_BUS    4
+#define LCD_REG_DBG_MIPIPHY_BUS     5
+#define LCD_REG_DBG_TCON_BUS        6
+#define LCD_REG_DBG_EDPHOST_BUS     7
+#define LCD_REG_DBG_EDPDPCD_BUS     8
+#define LCD_REG_DBG_COMBOPHY_BUS    9
+#define LCD_REG_DBG_RST_BUS         10
+#define LCD_REG_DBG_HHI_BUS         11
+#define LCD_REG_DBG_MAX_BUS         0xff
+
+void str_add_reg_sets(struct aml_lcd_drv_s *pdrv,
+		      unsigned char reg_bus, unsigned int reg_offset,
+		      struct reg_name_set_s *reg_table, unsigned char reg_cnt);
+
 /* ********************************
  * register define
  * ********************************* */
@@ -722,5 +745,9 @@ static inline unsigned int dptx_reg_getb(int index, unsigned int reg,
 {
 	return (dptx_reg_read(index, reg) >> (start)) & ((1L << (len)) - 1);
 }
+
+#ifdef CONFIG_AML_LCD_TABLET
+int dptx_aux_read(struct aml_lcd_drv_s *pdrv, unsigned int addr, int len, unsigned char *buf);
+#endif
 
 #endif

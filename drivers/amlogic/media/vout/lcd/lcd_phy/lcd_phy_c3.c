@@ -10,6 +10,17 @@
 #include "../lcd_common.h"
 
 #ifdef CONFIG_MESON_C3
+static void lcd_phy_reg_dump(struct aml_lcd_drv_s *pdrv)
+{
+	struct reg_name_set_s reg_table[] = {
+		{ANACTRL_MIPIDSI_CTRL0, "PHY_CNTL0"},
+		{ANACTRL_MIPIDSI_CTRL1, "PHY_CNTL1"},
+		{ANACTRL_MIPIDSI_CTRL2, "PHY_CNTL2"}
+	};
+
+	str_add_reg_sets(pdrv, LCD_REG_DBG_ANA_BUS, 0, reg_table, ARRAY_SIZE(reg_table));
+}
+
 static void lcd_mipi_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 {
 	if (status) {
@@ -31,6 +42,9 @@ static struct lcd_phy_ctrl_s lcd_phy_ctrl_c3 = {
 	.phy_preem_level_to_val = NULL,
 	.phy_amp_dft_val = NULL,
 	.phy_glb_param_dft_val = NULL,
+	.phy_param_get = NULL,
+	.phy_reg_dump = lcd_phy_reg_dump,
+
 	.phy_set_lvds = NULL,
 	.phy_set_vx1 = NULL,
 	.phy_set_mlvds = NULL,

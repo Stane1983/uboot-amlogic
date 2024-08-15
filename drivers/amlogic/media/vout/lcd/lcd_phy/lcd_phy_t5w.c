@@ -12,6 +12,70 @@
 #ifdef CONFIG_MESON_T5W
 static struct lcd_phy_ctrl_s *phy_ctrl_p;
 
+static uint32_t chreg_reg[6] = {
+	HHI_DIF_CSI_PHY_CNTL1, HHI_DIF_CSI_PHY_CNTL2,
+	HHI_DIF_CSI_PHY_CNTL3, HHI_DIF_CSI_PHY_CNTL4,
+	HHI_DIF_CSI_PHY_CNTL6, HHI_DIF_CSI_PHY_CNTL7,
+};
+
+static uint32_t chdig_reg[6] = {
+	HHI_DIF_CSI_PHY_CNTL8, HHI_DIF_CSI_PHY_CNTL9,
+	HHI_DIF_CSI_PHY_CNTL10, HHI_DIF_CSI_PHY_CNTL11,
+	HHI_DIF_CSI_PHY_CNTL12, HHI_DIF_CSI_PHY_CNTL13,
+};
+
+static void lcd_phy_reg_dump(struct aml_lcd_drv_s *pdrv)
+{
+	struct reg_name_set_s reg_table[] = {
+		{HHI_DIF_CSI_PHY_CNTL1,  "PHY_CNTL1"},
+		{HHI_DIF_CSI_PHY_CNTL2,  "PHY_CNTL2"},
+		{HHI_DIF_CSI_PHY_CNTL3,  "PHY_CNTL3"},
+		{HHI_DIF_CSI_PHY_CNTL4,  "PHY_CNTL4"},
+		{HHI_DIF_CSI_PHY_CNTL6,  "PHY_CNTL6"},
+		{HHI_DIF_CSI_PHY_CNTL7,  "PHY_CNTL7"},
+		{HHI_DIF_CSI_PHY_CNTL8,  "PHY_CNTL8"},
+		{HHI_DIF_CSI_PHY_CNTL9,  "PHY_CNTL9"},
+		{HHI_DIF_CSI_PHY_CNTL10, "PHY_CNTL10"},
+		{HHI_DIF_CSI_PHY_CNTL11, "PHY_CNTL11"},
+		{HHI_DIF_CSI_PHY_CNTL12, "PHY_CNTL12"},
+		{HHI_DIF_CSI_PHY_CNTL13, "PHY_CNTL13"},
+		{HHI_DIF_CSI_PHY_CNTL14, "PHY_CNTL14"},
+		{HHI_DIF_CSI_PHY_CNTL15, "PHY_CNTL15"},
+		{HHI_DIF_CSI_PHY_CNTL16, "PHY_CNTL16"},
+	};
+
+	str_add_reg_sets(pdrv, LCD_REG_DBG_ANA_BUS, 0, reg_table, ARRAY_SIZE(reg_table));
+}
+
+static int lcd_phy_param_get_from_reg(struct aml_lcd_drv_s *pdrv, struct phy_config_s *phy)
+{
+	unsigned int data32, chreg, chdig, bit;
+	int i;
+
+	data32 = lcd_ana_read(HHI_DIF_CSI_PHY_CNTL14);
+	phy->vswing = data32 & 0xf;
+	phy->vcm = (data32 >> 4) & 0x7df;
+	phy->ref_bias = (data32 >> 15) & 0x1;
+	phy->odt = (data32 >> 24) & 0xff;
+
+	data32 = lcd_ana_read(HHI_DIF_CSI_PHY_CNTL15);
+	phy->cv_mode = (data32 >> 19) & 0x1;
+
+	data32 = lcd_ana_read(HHI_DIF_CSI_PHY_CNTL16);
+	phy->ckdi = (data32 >> 12) & 0xfff;
+
+	for (i = 0; i < phy->lane_num; i++) {
+		bit = i & 0x1 ? 16 : 0;
+		chreg = lcd_ana_getb(chreg_reg[i >> 1], bit, 16);
+		chdig = lcd_ana_getb(chdig_reg[i >> 1], bit, 16);
+
+		phy->lane[i].preem = (chreg >> 8) & 0xff;
+		phy->lane[i].amp = (chdig >> 3) & 0x7;
+	}
+
+	return 0;
+}
+
 static void lcd_phy_common_update(struct phy_config_s *phy, unsigned int cntl14)
 {
 	unsigned int cntl15 = 0, cntl16 = 0;
@@ -48,17 +112,6 @@ static void lcd_phy_cntl_set(struct aml_lcd_drv_s *pdrv, struct phy_config_s *ph
 {
 	unsigned int chreg = 0, reg_data = 0, chdig = 0;
 	unsigned char i, bit;
-
-	uint32_t chreg_reg[6] = {
-		HHI_DIF_CSI_PHY_CNTL1, HHI_DIF_CSI_PHY_CNTL2,
-		HHI_DIF_CSI_PHY_CNTL3, HHI_DIF_CSI_PHY_CNTL4,
-		HHI_DIF_CSI_PHY_CNTL6, HHI_DIF_CSI_PHY_CNTL7,
-	};
-	uint32_t chdig_reg[6] = {
-		HHI_DIF_CSI_PHY_CNTL8, HHI_DIF_CSI_PHY_CNTL9,
-		HHI_DIF_CSI_PHY_CNTL10, HHI_DIF_CSI_PHY_CNTL11,
-		HHI_DIF_CSI_PHY_CNTL12, HHI_DIF_CSI_PHY_CNTL13,
-	};
 
 	if (!phy_ctrl_p)
 		return;
@@ -231,6 +284,9 @@ static struct lcd_phy_ctrl_s lcd_phy_ctrl_t5w = {
 	.phy_preem_level_to_val = lcd_phy_preem_level_to_value_dft,
 	.phy_amp_dft_val = lcd_phy_amp_dft,
 	.phy_glb_param_dft_val = lcd_phy_glb_param_dft,
+	.phy_param_get = lcd_phy_param_get_from_reg,
+	.phy_reg_dump = lcd_phy_reg_dump,
+
 	.phy_set_lvds = lcd_lvds_phy_set,
 	.phy_set_vx1 = lcd_vbyone_phy_set,
 	.phy_set_mlvds = lcd_mlvds_phy_set,
