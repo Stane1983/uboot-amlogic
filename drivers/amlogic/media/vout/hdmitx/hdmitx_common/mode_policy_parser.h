@@ -22,7 +22,7 @@ bool is_support_color_format(struct meson_policy_in *input, const char* color_fo
 bool is_hdmi_edid_parserok(struct meson_policy_in *input);
 bool is_hdmi_dc_cap_ok(struct meson_policy_in *input);
 bool mode_support_check(const char *mode, const char * color, struct meson_policy_in *input);
-
+bool find_brr_mode(const char *mode, struct meson_policy_in *input, char* outputmode);
 /*
  * for unit test mode
  */
@@ -32,7 +32,6 @@ void meson_mode_set_test_mode_enable(const bool enable);
 /*
  * only android and linux need api
  */
-bool find_brr_mode(const char *mode, struct meson_policy_in *input, char* outputmode);
 
 #else
 /*

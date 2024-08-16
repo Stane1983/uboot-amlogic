@@ -912,10 +912,11 @@ static bool hdr_scene_process(struct meson_policy_in *input,
              * if displaymode support ,and find best color format base mode.
              */
             char color_attribute[MESON_MODE_LEN] = {0};
+            char brr_mode[MESON_MODE_LEN] = {0};
+            find_brr_mode(input->cur_displaymode, input, brr_mode);
+            SYS_LOGI("support current mode:[%s]  brr_mode:[%s]\n", input->cur_displaymode, brr_mode);
 
-            SYS_LOGI("support current mode:[%s]\n", input->cur_displaymode);
-
-            get_best_color_attr(input, input->cur_displaymode, color_attribute);
+            get_best_color_attr(input, brr_mode, color_attribute);
             strlcpy(output->deepcolor, color_attribute, sizeof(output->deepcolor));
             strlcpy(output->displaymode, input->cur_displaymode, sizeof(output->displaymode));
             find = true;

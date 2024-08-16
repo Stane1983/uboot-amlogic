@@ -369,10 +369,19 @@ bool is_hdmi_dc_cap_ok(struct meson_policy_in *input) {
     return true;
 }
 
-/* uboot hdmitx not need
- * we need find the brr mode and check it with cs/cd.
+/*
+ * uboot cannot be executed temporarily, it is just to synchronize the code
+ * compilation pass, and then make modifications when it is used later.
  */
-//bool find_brr_mode(const char *mode, struct meson_policy_in *input, char* outputmode) {}
+bool find_brr_mode(const char *mode, struct meson_policy_in *input, char* outputmode) {
+    if (!mode || !input || !outputmode) {
+        SYS_LOGE("%s input or mode or outputmode is null\n", __FUNCTION__);
+        return false;
+    }
+
+    strcpy(outputmode, mode);
+    return true;
+}
 
 /*
  * check resolution and color format support or not
