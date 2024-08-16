@@ -38,116 +38,6 @@ unsigned int lcd_prbs_flag = 0, lcd_prbs_freq = 0, lcd_prbs_performed = 0, lcd_p
 
 static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv);
 
-static struct aml_lcd_data_s lcd_data_g12a = {
-	.chip_type = LCD_CHIP_G12A,
-	.chip_name = "g12a",
-	.rev_type = 0,
-	.drv_max = 1,
-	.offset_venc = {0},
-	.offset_venc_if = {0},
-	.offset_venc_data = {0},
-	.dft_conf = {NULL, NULL, NULL},
-};
-
-static struct aml_lcd_data_s lcd_data_g12b = {
-	.chip_type = LCD_CHIP_G12B,
-	.chip_name = "g12b",
-	.rev_type = 0,
-	.drv_max = 1,
-	.offset_venc = {0},
-	.offset_venc_if = {0},
-	.offset_venc_data = {0},
-	.dft_conf = {NULL, NULL, NULL},
-};
-
-static struct aml_lcd_data_s lcd_data_tl1 = {
-	.chip_type = LCD_CHIP_TL1,
-	.chip_name = "tl1",
-	.rev_type = 0,
-	.drv_max = 1,
-	.offset_venc = {0},
-	.offset_venc_if = {0},
-	.offset_venc_data = {0},
-	.dft_conf = {NULL, NULL, NULL},
-};
-
-static struct aml_lcd_data_s lcd_data_sm1 = {
-	.chip_type = LCD_CHIP_SM1,
-	.chip_name = "sm1",
-	.rev_type = 0,
-	.drv_max = 1,
-	.offset_venc = {0},
-	.offset_venc_if = {0},
-	.offset_venc_data = {0},
-	.dft_conf = {NULL, NULL, NULL},
-};
-
-static struct aml_lcd_data_s lcd_data_tm2 = {
-	.chip_type = LCD_CHIP_TM2,
-	.chip_name = "tm2",
-	.rev_type = 0,
-	.drv_max = 1,
-	.offset_venc = {0},
-	.offset_venc_if = {0},
-	.offset_venc_data = {0},
-	.dft_conf = {NULL, NULL, NULL},
-};
-
-static struct aml_lcd_data_s lcd_data_t5 = {
-	.chip_type = LCD_CHIP_T5,
-	.chip_name = "t5",
-	.rev_type = 0,
-	.drv_max = 1,
-	.offset_venc = {0},
-	.offset_venc_if = {0},
-	.offset_venc_data = {0},
-	.dft_conf = {NULL, NULL, NULL},
-};
-
-static struct aml_lcd_data_s lcd_data_t5d = {
-	.chip_type = LCD_CHIP_T5D,
-	.chip_name = "t5d",
-	.rev_type = 0,
-	.drv_max = 1,
-	.offset_venc = {0},
-	.offset_venc_if = {0},
-	.offset_venc_data = {0},
-	.dft_conf = {NULL, NULL, NULL},
-};
-
-static struct aml_lcd_data_s lcd_data_t5w = {
-	.chip_type = LCD_CHIP_T5W,
-	.chip_name = "t5w",
-	.rev_type = 0,
-	.drv_max = 1,
-	.offset_venc = {0},
-	.offset_venc_if = {0},
-	.offset_venc_data = {0},
-	.dft_conf = {NULL, NULL, NULL},
-};
-
-static struct aml_lcd_data_s lcd_data_t7 = {
-	.chip_type = LCD_CHIP_T7,
-	.chip_name = "t7",
-	.rev_type = 0,
-	.drv_max = 3,
-	.offset_venc = {0x0, (0x600 << 2), (0x800 << 2)},
-	.offset_venc_if = {0x0, (0x500 << 2), (0x600 << 2)},
-	.offset_venc_data = {0x0, (0x100 << 2), (0x200 << 2)},
-	.dft_conf = {NULL, NULL, NULL},
-};
-
-static struct aml_lcd_data_s lcd_data_t3 = {
-	.chip_type = LCD_CHIP_T3,
-	.chip_name = "t3",
-	.rev_type = 0,
-	.drv_max = 2,
-	.offset_venc = {0x0, (0x600 << 2), 0},
-	.offset_venc_if = {0x0, (0x500 << 2), 0},
-	.offset_venc_data = {0x0, (0x100 << 2), 0},
-	.dft_conf = {NULL, NULL, NULL},
-};
-
 static struct aml_lcd_data_s lcd_data_c3 = {
 	.chip_type = LCD_CHIP_C3,
 	.chip_name = "c3",
@@ -222,36 +112,6 @@ static void lcd_chip_detect(void)
 	cpu_type = get_cpu_id().family_id;
 	rev_type = get_cpu_id().chip_rev;
 	switch (cpu_type) {
-	case MESON_CPU_MAJOR_ID_G12A:
-		lcd_data = &lcd_data_g12a;
-		break;
-	case MESON_CPU_MAJOR_ID_G12B:
-		lcd_data = &lcd_data_g12b;
-		break;
-	case MESON_CPU_MAJOR_ID_TL1:
-		lcd_data = &lcd_data_tl1;
-		break;
-	case MESON_CPU_MAJOR_ID_SM1:
-		lcd_data = &lcd_data_sm1;
-		break;
-	case MESON_CPU_MAJOR_ID_TM2:
-		lcd_data = &lcd_data_tm2;
-		break;
-	case MESON_CPU_MAJOR_ID_T5:
-		lcd_data = &lcd_data_t5;
-		break;
-	case MESON_CPU_MAJOR_ID_T5D:
-		lcd_data = &lcd_data_t5d;
-		break;
-	case MESON_CPU_MAJOR_ID_T5W:
-		lcd_data = &lcd_data_t5w;
-		break;
-	case MESON_CPU_MAJOR_ID_T7:
-		lcd_data = &lcd_data_t7;
-		break;
-	case MESON_CPU_MAJOR_ID_T3:
-		lcd_data = &lcd_data_t3;
-		break;
 	case MESON_CPU_MAJOR_ID_C3:
 		lcd_data = &lcd_data_c3;
 		break;
@@ -808,15 +668,14 @@ static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 	val |= (pdrv->boot_ctrl.clk_mode & 0x3) << 22;
 	val |= (pdrv->boot_ctrl.base_frame_rate & 0xff) << 24;
 
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-		LCDPR("[%d]: %s: ppc=%d, clk_mode=%d, base_fr=%d, bootctrl val=0x%x\n",
-			pdrv->index, __func__,
-			pdrv->config.timing.ppc,
-			pdrv->config.timing.clk_mode,
-			pdrv->config.timing.base_timing.frame_rate, val);
-	}
-
 	sprintf(ctrl_str, "0x%08x", val);
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+		LCDPR("[%d]: %s: ppc=%d, clk_mode=%d, base_fr=%d, bootctrl=%s\n",
+		      pdrv->index, __func__,
+		      pdrv->config.timing.ppc,
+		      pdrv->config.timing.clk_mode,
+		      pdrv->config.timing.base_timing.frame_rate, ctrl_str);
+	}
 
 	if (strlen(pdrv->config.basic.model_name) > 0) {
 		if (pdrv->index == 0)
@@ -1235,13 +1094,13 @@ void aml_lcd_driver_test(int index, int num)
 	if (!pdrv)
 		return;
 
-	if (num == 10) {
-		lcd_display_init_test(pdrv);
-		return;
-	} else if (num == 20) {
-		lcd_display_init_reg_dump(pdrv);
-		return;
-	}
+	//if (num == 20) {
+	//	lcd_display_init_test(pdrv);
+	//	return;
+	//} else if (num == 21) {
+	//	lcd_display_init_reg_dump(pdrv);
+	//	return;
+	//}
 
 	if ((pdrv->status & LCD_STATUS_IF_ON) == 0) {
 		LCDPR("[%d]: already disabled\n", pdrv->index);

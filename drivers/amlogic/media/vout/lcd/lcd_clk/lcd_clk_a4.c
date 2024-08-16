@@ -114,6 +114,12 @@ static void lcd_clk_config_print_a4(struct aml_lcd_drv_s *pdrv)
 		pdrv->index, cconf->data->vclk_sel, cconf->xd, cconf->fout);
 }
 
+static void lcd_clk_reg_dump(struct aml_lcd_drv_s *pdrv)
+{
+	printf("clk [0x%08x] = 0x%08x\n",
+	       CLKCTRL_VOUTENC_CLK_CTRL, lcd_clk_read(CLKCTRL_VOUTENC_CLK_CTRL));
+}
+
 static struct lcd_clk_data_s lcd_clk_data_a4 = {
 	.pll_od_fb = 0,
 	.pll_m_max = 511,
@@ -159,6 +165,7 @@ static struct lcd_clk_data_s lcd_clk_data_a4 = {
 	.clktree_set = NULL,
 	.clk_config_init_print = NULL,
 	.clk_config_print = lcd_clk_config_print_a4,
+	.clk_reg_print = lcd_clk_reg_dump,
 	.prbs_test = NULL,
 };
 

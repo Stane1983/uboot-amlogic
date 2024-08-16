@@ -8,9 +8,8 @@
 #include "lcd_reg.h"
 #include "lcd_common.h"
 
-static void lcd_ch_swap_to_lane_sel(struct aml_lcd_drv_s *pdrv)
+static void lcd_ch_swap_to_lane_sel(struct aml_lcd_drv_s *pdrv, struct phy_config_s *phy)
 {
-	struct phy_config_s *phy = &pdrv->config.phy_cfg;
 	unsigned int sel = 0xff;
 	int i, n;
 
@@ -63,16 +62,6 @@ static void lcd_lvds_lane_swap(struct aml_lcd_drv_s *pdrv)
 					0xab012345, 0x6789,  // 0, 1
 					0x76543210, 0xba98}; // 0, 0
 
-	// 12-12 channel:
-	// d0_a:0 d1_a:1 d2_a:2 clk_a:3 d3_a:4 d4_a:5 d0_b:6 d1_b:7 d2_b:8 clk_b:9 d3_b:a d4_b:b
-	// DIF_CH0:d0_a DIF_CH1:d1_a DIF_CH2:d2_a DIF_CH3:clk_a DIF_CH4:d3_a
-	// DIF_CH5:d0_b DIF_CH6:d1_b DIF_CH7:d2_b DIF_CH8:clk_b DIF_CH9:d3_b
-	// DIF_CH10:d4_a/invalid  DIF_CH11:d4_b/invalid
-	unsigned int ch_map_6_to_5lane[8] = {0x345789ab, 0x0612,  // 1, 1
-					     0x210a9876, 0x5b43,  // 1, 0
-					     0x9ab12345, 0x6078,  // 0, 1
-					     0x87643210, 0xb5a9}; // 0, 0
-
 	// 10-12 channel: //2k chips
 	// d0_a:0 d1_a:1 d2_a:2 clk_a:3 d3_a:4 d0_b:6 d1_b:7 d2_b:8 clk_b:9 d3_b:a
 	// 5 & b: null
@@ -99,36 +88,14 @@ static void lcd_lvds_lane_swap(struct aml_lcd_drv_s *pdrv)
 
 	/* lvds swap */
 	switch (pdrv->data->chip_type) {
-	case LCD_CHIP_TL1:
-	case LCD_CHIP_TM2:
-	case LCD_CHIP_T5W:
 	case LCD_CHIP_T5M:
-	case LCD_CHIP_T3:
 		phy->ch_swap0 = ch_map_6lane[ch_reg_idx];
 		phy->ch_swap1 = ch_map_6lane[ch_reg_idx + 1];
 		break;
-	case LCD_CHIP_T5:
-		phy->ch_swap0 = ch_map_6_to_5lane[ch_reg_idx];
-		phy->ch_swap1 = ch_map_6_to_5lane[ch_reg_idx + 1];
-		break;
-	case LCD_CHIP_T5D:
 	case LCD_CHIP_TXHD2:
 	case LCD_CHIP_T6D:
 		phy->ch_swap0 = ch_map_5lane[ch_reg_idx];
 		phy->ch_swap1 = ch_map_5lane[ch_reg_idx + 1];
-		break;
-	case LCD_CHIP_T7:
-		//don't support port_swap and lane_reverse when single port
-		if (pdrv->index == 2 && pdrv->config.control.lvds_cfg.dual_port) {
-			phy->ch_swap0 = ch_map_6_to_5lane[ch_reg_idx];
-			phy->ch_swap1 = ch_map_6_to_5lane[ch_reg_idx + 1];
-		} else if (pdrv->index == 1) {
-			phy->ch_swap0 = 0xf43210ff;
-			phy->ch_swap1 = 0xffff;
-		} else { // (drv==2, single port) || drv==0
-			phy->ch_swap0 = 0xfff43210;
-			phy->ch_swap1 = 0xffff;
-		}
 		break;
 	case LCD_CHIP_T3X: // second path not support lvds
 		phy->ch_swap0 = ch_map_8_to_6lane[ch_reg_idx];
@@ -149,37 +116,6 @@ static void lcd_mlvds_phy_ckdi_config(struct aml_lcd_drv_s *pdrv)
 
 	/* pi_clk select */
 	switch (pdrv->data->chip_type) {
-	case LCD_CHIP_TL1:
-	case LCD_CHIP_TM2:
-		/* mlvds channel:    //tx 12 channels
-		 *    0: clk_a
-		 *    1: d0_a
-		 *    2: d1_a
-		 *    3: d2_a
-		 *    4: d3_a
-		 *    5: d4_a
-		 *    6: clk_b
-		 *    7: d0_b
-		 *    8: d1_b
-		 *    9: d2_b
-		 *   10: d3_b
-		 *   11: d4_b
-		 */
-		for (i = 0; i < 8; i++) {
-			temp = (channel_sel0 >> (i * 4)) & 0xf;
-			if (temp == 0 || temp == 6)
-				pi_clk_sel |= (1 << i);
-		}
-		for (i = 0; i < 4; i++) {
-			temp = (channel_sel1 >> (i * 4)) & 0xf;
-			if (temp == 0 || temp == 6)
-				pi_clk_sel |= (1 << (i + 8));
-		}
-		break;
-	case LCD_CHIP_T5:
-	case LCD_CHIP_T5D:
-	case LCD_CHIP_T3:
-	case LCD_CHIP_T5W:
 	case LCD_CHIP_T5M:
 	case LCD_CHIP_TXHD2:
 	case LCD_CHIP_T6D:
@@ -253,7 +189,7 @@ void lcd_lane_map_preset(struct aml_lcd_drv_s *pdrv)
 	default:
 		break;
 	}
-	lcd_ch_swap_to_lane_sel(pdrv);
+	lcd_ch_swap_to_lane_sel(pdrv, phy);
 	if (pdrv->config.basic.lcd_type == LCD_MLVDS)
 		lcd_mlvds_phy_ckdi_config(pdrv);
 
@@ -296,6 +232,21 @@ void lcd_lane_map_update(struct aml_lcd_drv_s *pdrv)
 		lcd_mlvds_phy_ckdi_config(pdrv);
 }
 
+int lcd_lane_sel_get(struct aml_lcd_drv_s *pdrv, struct phy_config_s *phy)
+{
+	unsigned int offset;
+
+	if (!pdrv || !phy)
+		return -1;
+
+	offset = pdrv->data->offset_venc_if[pdrv->index];
+	phy->ch_swap0 = lcd_vcbus_read(P2P_CH_SWAP0 + offset);
+	phy->ch_swap1 = lcd_vcbus_read(P2P_CH_SWAP1 + offset);
+	lcd_ch_swap_to_lane_sel(pdrv, phy);
+
+	return 0;
+}
+
 static void lcd_lane_map_set(struct aml_lcd_drv_s *pdrv)
 {
 	unsigned int offset;
@@ -303,24 +254,6 @@ static void lcd_lane_map_set(struct aml_lcd_drv_s *pdrv)
 	offset = pdrv->data->offset_venc_if[pdrv->index];
 	lcd_vcbus_write(P2P_CH_SWAP0 + offset, pdrv->config.phy_cfg.ch_swap0);
 	lcd_vcbus_write(P2P_CH_SWAP1 + offset, pdrv->config.phy_cfg.ch_swap1);
-}
-
-static void lcd_lane_map_set_t7_lvds(struct aml_lcd_drv_s *pdrv)
-{
-	unsigned int offset;
-
-	offset = pdrv->data->offset_venc_if[pdrv->index];
-	//don't support port_swap and lane_reverse when single port
-	if (pdrv->index == 2 && pdrv->config.control.lvds_cfg.dual_port) {
-		lcd_vcbus_write(P2P_CH_SWAP0 + offset, pdrv->config.phy_cfg.ch_swap0);
-		lcd_vcbus_write(P2P_CH_SWAP1 + offset, pdrv->config.phy_cfg.ch_swap1);
-	} else if (pdrv->index == 1) {
-		lcd_vcbus_write(P2P_CH_SWAP0 + offset, 0xf43210ff);
-		lcd_vcbus_write(P2P_CH_SWAP1 + offset, 0xffff);
-	} else { // (drv==2, single port) || drv==0
-		lcd_vcbus_write(P2P_CH_SWAP0 + offset, 0xfff43210);
-		lcd_vcbus_write(P2P_CH_SWAP1 + offset, 0xffff);
-	}
 }
 
 void lcd_mipi_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off)
@@ -331,7 +264,6 @@ void lcd_mipi_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off)
 		LCDPR("[%d]: %s\n", pdrv->index, __func__);
 
 	switch (pdrv->data->chip_type) {
-	case LCD_CHIP_T7:
 	case LCD_CHIP_TXHD2:
 		if (pdrv->index == 0) {
 			bit_lane_sel = 0;
@@ -409,35 +341,6 @@ void lcd_lvds_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off)
 	dual_port = pdrv->config.control.lvds_cfg.dual_port & 0x1;
 
 	switch (pdrv->data->chip_type) {
-	case LCD_CHIP_T7:
-		if (pdrv->index == 0) { /* lane0~lane4 */
-			reg_dphy_tx_ctrl0 = COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0;
-			reg_dphy_tx_ctrl1 = COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL1;
-			bit_data_in_lvds = 0;
-			bit_data_in_edp = 1;
-			bit_lane_sel = 0;
-			// should only t3x drv0 has dual port
-			val_lane_sel = dual_port ? 0x5550555 : 0x155;
-			len_lane_sel = dual_port ? 32 : 10;
-		} else if (pdrv->index == 1) { /* lane10~lane14 */
-			reg_dphy_tx_ctrl0 = COMBO_DPHY_EDP_LVDS_TX_PHY1_CNTL0;
-			reg_dphy_tx_ctrl1 = COMBO_DPHY_EDP_LVDS_TX_PHY1_CNTL1;
-			bit_data_in_lvds = 2;
-			bit_data_in_edp = 3;
-			bit_lane_sel = 20;
-			val_lane_sel = 0x155;
-			len_lane_sel = 10;
-		} else { // should only t7 has drv2
-			reg_dphy_tx_ctrl0 = COMBO_DPHY_EDP_LVDS_TX_PHY2_CNTL0;
-			reg_dphy_tx_ctrl1 = COMBO_DPHY_EDP_LVDS_TX_PHY2_CNTL1;
-			bit_data_in_lvds = 4;
-			bit_data_in_edp = 0xff;
-			bit_lane_sel = 10;
-			// dual_port ? lane5~lane14 : lane5~lane9
-			val_lane_sel = dual_port ? 0xaaaaa : 0x2aa;
-			len_lane_sel = dual_port ? 20 : 10;
-		}
-		break;
 	case LCD_CHIP_T3X:
 		if (pdrv->index == 0) { /* lane0~lane4 */
 			reg_dphy_tx_ctrl0 = COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0;
@@ -458,7 +361,6 @@ void lcd_lvds_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off)
 			len_lane_sel = 10;
 		}
 		break;
-	case LCD_CHIP_T3:
 	case LCD_CHIP_T5M:
 	case LCD_CHIP_T6D:
 		reg_dphy_tx_ctrl0 = ANACTRL_LVDS_TX_PHY_CNTL0;
@@ -475,32 +377,6 @@ void lcd_lvds_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off)
 	}
 
 	switch (pdrv->data->chip_type) {
-	case LCD_CHIP_T7:
-		if (on_off) {
-			// sel dphy data_in
-			if (bit_data_in_edp < 0xff)
-				lcd_combo_dphy_setb(COMBO_DPHY_CNTL0, 0, bit_data_in_edp, 1);
-			lcd_combo_dphy_setb(COMBO_DPHY_CNTL0, 1, bit_data_in_lvds, 1);
-			// sel dphy lane
-			lcd_combo_dphy_setb(COMBO_DPHY_CNTL1, val_lane_sel,
-					    bit_lane_sel, len_lane_sel);
-			/* set fifo_clk_sel: div 7 */
-			lcd_combo_dphy_write(reg_dphy_tx_ctrl0, (1 << 5));
-			/* set cntl_ser_en:  8-channel */
-			lcd_combo_dphy_setb(reg_dphy_tx_ctrl0, 0x3ff, 16, 10);
-			/* decoupling fifo enable, gated clock enable */
-			lcd_combo_dphy_write(reg_dphy_tx_ctrl1, (1 << 6) | (1 << 0));
-			/* decoupling fifo write enable after fifo enable */
-			lcd_combo_dphy_setb(reg_dphy_tx_ctrl1, 1, 7, 1);
-
-			lcd_lane_map_set_t7_lvds(pdrv);
-		} else {
-			/* disable fifo */
-			lcd_combo_dphy_setb(reg_dphy_tx_ctrl1, 0, 6, 2);
-			/* disable lane */
-			lcd_combo_dphy_setb(reg_dphy_tx_ctrl0, 0, 16, 16);
-		}
-		break;
 	case LCD_CHIP_T3X:
 		if (on_off) {
 			// sel dphy data_in
@@ -529,7 +405,6 @@ void lcd_lvds_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off)
 			lcd_combo_dphy_setb(reg_dphy_tx_ctrl0, 0, 16, 16);
 		}
 		break;
-	case LCD_CHIP_T3:
 	case LCD_CHIP_T5M:
 		if (on_off) {
 			/* set fifo_clk_sel: div 7 */
@@ -617,7 +492,6 @@ void lcd_vbyone_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off)
 		div_sel = 3;
 
 	switch (pdrv->data->chip_type) {
-	case LCD_CHIP_T7:
 	case LCD_CHIP_T3X:
 		if (pdrv->index == 0) {
 			reg_dphy_tx_ctrl0 = COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0;
@@ -635,7 +509,6 @@ void lcd_vbyone_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off)
 			lane_sel = 0xaaaa;
 		}
 		break;
-	case LCD_CHIP_T3:
 	case LCD_CHIP_T5M:
 		if (pdrv->index == 0) {
 			reg_dphy_tx_ctrl0 = ANACTRL_LVDS_TX_PHY_CNTL0;
@@ -658,7 +531,6 @@ void lcd_vbyone_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off)
 	}
 
 	switch (pdrv->data->chip_type) {
-	case LCD_CHIP_T7:
 	case LCD_CHIP_T3X:
 		if (on_off) {
 			// sel dphy data_in
@@ -694,7 +566,6 @@ void lcd_vbyone_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off)
 			lcd_combo_dphy_setb(reg_dphy_tx_ctrl0, 0, 16, 16);
 		}
 		break;
-	case LCD_CHIP_T3:
 	case LCD_CHIP_T5M:
 		if (on_off) {
 			/* set fifo_clk_sel: div 7 */
@@ -851,7 +722,6 @@ void lcd_p2p_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off)
 	}
 
 	switch (pdrv->data->chip_type) {
-	case LCD_CHIP_T3:
 	case LCD_CHIP_T5M:
 		if (on_off) {
 			/* fifo_clk_sel[7:6]: 0=div6, 1=div 7, 2=div8, 3=div10 */
@@ -929,3 +799,81 @@ void lcd_p2p_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off)
 	}
 }
 #endif
+
+void lcd_dphy_reg_print(struct aml_lcd_drv_s *pdrv)
+{
+	struct reg_name_set_s *reg_dphy_table = NULL, *reg_ctrl_table = NULL, *reg_ch_swap = NULL;
+	unsigned int size_dphy = 0, size_ctrl = 0, size_ch_swap = 0, reg_bus, reg_offset;
+	struct reg_name_set_s ch_swap_reg_dft[] = {
+		{P2P_CH_SWAP0, "P2P_CH_SWAP0"},
+		{P2P_CH_SWAP1, "P2P_CH_SWAP1"}
+	};
+	struct reg_name_set_s dphy_ctrl_reg_t3x[] = {
+		{COMBO_DPHY_CNTL0, "COMBO_DPHY_CNTL0"},
+		{COMBO_DPHY_CNTL1, "COMBO_DPHY_CNTL1"}
+	};
+	struct reg_name_set_s dphy_reg_t3x[] = {
+		{COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0, "COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0"},
+		{COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL1, "COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL1"},
+		{COMBO_DPHY_EDP_LVDS_TX_PHY1_CNTL0, "COMBO_DPHY_EDP_LVDS_TX_PHY1_CNTL0"},
+		{COMBO_DPHY_EDP_LVDS_TX_PHY1_CNTL1, "COMBO_DPHY_EDP_LVDS_TX_PHY1_CNTL1"},
+		{COMBO_DPHY_EDP_LVDS_TX_PHY2_CNTL0, "COMBO_DPHY_EDP_LVDS_TX_PHY2_CNTL0"},
+		{COMBO_DPHY_EDP_LVDS_TX_PHY2_CNTL1, "COMBO_DPHY_EDP_LVDS_TX_PHY2_CNTL1"}
+	};
+	struct reg_name_set_s dphy_reg_t5m[] = {
+		{ANACTRL_LVDS_TX_PHY_CNTL0, "ANACTRL_LVDS_TX_PHY_CNTL0"},
+		{ANACTRL_LVDS_TX_PHY_CNTL1, "ANACTRL_LVDS_TX_PHY_CNTL1"},
+		{ANACTRL_LVDS_TX_PHY_CNTL2, "ANACTRL_LVDS_TX_PHY_CNTL2"},
+		{ANACTRL_LVDS_TX_PHY_CNTL3, "ANACTRL_LVDS_TX_PHY_CNTL3"}
+	};
+	struct reg_name_set_s dphy_reg_txhd2[] = {
+		{COMBO_DPHY_CNTL0,                  "COMBO_DPHY_CNTL0"},
+		{COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0, "COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0"},
+		{COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL1, "COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL1"}
+	};
+
+	if (!pdrv)
+		return;
+
+	switch (pdrv->data->chip_type) {
+	case LCD_CHIP_T5M:
+	case LCD_CHIP_T6D:
+		reg_ch_swap = ch_swap_reg_dft;
+		size_ch_swap = ARRAY_SIZE(ch_swap_reg_dft);
+		reg_dphy_table = &dphy_reg_t5m[0];
+		size_dphy = 2;
+		reg_bus = LCD_REG_DBG_ANA_BUS;
+		break;
+	case LCD_CHIP_T3X:
+		reg_ch_swap = ch_swap_reg_dft;
+		size_ch_swap = ARRAY_SIZE(ch_swap_reg_dft);
+		reg_ctrl_table = dphy_ctrl_reg_t3x;
+		size_ctrl = ARRAY_SIZE(dphy_ctrl_reg_t3x);
+		if (pdrv->index) {
+			reg_dphy_table = &dphy_reg_t3x[2];
+			size_dphy = 2;
+		} else {
+			reg_dphy_table = &dphy_reg_t3x[0];
+			size_dphy = 2;
+		}
+		reg_bus = LCD_REG_DBG_COMBOPHY_BUS;
+		break;
+	case LCD_CHIP_TXHD2:
+		reg_ch_swap = ch_swap_reg_dft;
+		size_ch_swap = ARRAY_SIZE(ch_swap_reg_dft);
+		reg_dphy_table = dphy_reg_txhd2;
+		size_dphy = ARRAY_SIZE(dphy_reg_txhd2);
+		reg_bus = LCD_REG_DBG_COMBOPHY_BUS;
+		break;
+	default:
+		return;
+	}
+
+	if (reg_ch_swap) {
+		reg_offset = pdrv->data->offset_venc_if[pdrv->index];
+		str_add_reg_sets(pdrv, LCD_REG_DBG_VC_BUS, reg_offset, reg_ch_swap, size_ch_swap);
+	}
+	if (reg_ctrl_table)
+		str_add_reg_sets(pdrv, reg_bus, 0, reg_ctrl_table, size_ctrl);
+	str_add_reg_sets(pdrv, reg_bus, 0, reg_dphy_table, size_dphy);
+}

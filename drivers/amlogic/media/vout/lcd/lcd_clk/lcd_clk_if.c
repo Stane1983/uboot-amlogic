@@ -304,6 +304,18 @@ void lcd_clk_config_print(struct aml_lcd_drv_s *pdrv)
 		cconf->data->clk_config_print(pdrv);
 }
 
+void lcd_clk_reg_print(struct aml_lcd_drv_s *pdrv)
+{
+	struct lcd_clk_config_s *cconf;
+
+	cconf = get_lcd_clk_config(pdrv);
+	if (!cconf || !cconf->data)
+		return;
+
+	if (cconf->data->clk_reg_print)
+		cconf->data->clk_reg_print(pdrv);
+}
+
 int aml_lcd_prbs_test(struct aml_lcd_drv_s *pdrv, unsigned int ms, unsigned int mode_flag)
 {
 	struct lcd_clk_config_s *cconf;

@@ -5,7 +5,6 @@ obj-$(CONFIG_AML_LCD) += lcd_debug.o
 obj-$(CONFIG_AML_LCD) += lcd_unifykey.o
 obj-$(CONFIG_AML_LCD) += lcd_cus_ctrl.o
 obj-$(CONFIG_AML_LCD) += lcd_i2c_dev.o
-obj-$(CONFIG_AML_LCD) += lcd_init_test.o
 obj-$(CONFIG_AML_LCD) += lcd_memory.o
 
 obj-$(CONFIG_AML_LCD) += lcd_vbyone.o

@@ -20,7 +20,9 @@
 /* 20240710: add support for S6 */
 /* 20240712: lcd tcon lut dma flow optimize */
 /* 20240806: support phy tuning function */
-#define LCD_DRV_VERSION    "20240806"
+/* 20240815: sync lcd multi-timing from 2019 */
+/* 20240909: update phy tuning: get real state from register */
+#define LCD_DRV_VERSION    "20240909"
 
 extern unsigned long clk_util_clk_msr(unsigned long clk_mux);
 
@@ -121,11 +123,13 @@ void lcd_set_venc_timing(struct aml_lcd_drv_s *pdrv);
 void lcd_set_venc(struct aml_lcd_drv_s *pdrv);
 void lcd_venc_enable(struct aml_lcd_drv_s *pdrv, int flag);
 void lcd_mute_set(struct aml_lcd_drv_s *pdrv,  unsigned char flag);
+void lcd_venc_reg_print(struct aml_lcd_drv_s *pdrv);
 int lcd_venc_probe(struct aml_lcd_data_s *pdata);
 
 /* lcd clk*/
 struct lcd_clk_config_s *get_lcd_clk_config(struct aml_lcd_drv_s *pdrv);
 void lcd_clk_config_print(struct aml_lcd_drv_s *pdrv);
+void lcd_clk_reg_print(struct aml_lcd_drv_s *pdrv);
 void lcd_get_ss(struct aml_lcd_drv_s *pdrv);
 int lcd_set_ss(struct aml_lcd_drv_s *pdrv, unsigned int level,
 	       unsigned int freq, unsigned int mode);
@@ -138,6 +142,9 @@ int aml_lcd_prbs_test(struct aml_lcd_drv_s *pdrv, unsigned int ms, unsigned int 
 
 /* lcd phy */
 int lcd_phy_param_preset(struct aml_lcd_drv_s *pdrv);
+int lcd_phy_param_get(struct aml_lcd_drv_s *pdrv, struct phy_config_s *phy);
+void lcd_phy_param_print(struct aml_lcd_drv_s *pdrv);
+void lcd_phy_analog_reg_print(struct aml_lcd_drv_s *pdrv);
 void lcd_phy_set(struct aml_lcd_drv_s *pdrv, int status);
 int lcd_phy_probe(struct aml_lcd_drv_s *pdrv);
 int lcd_phy_config_init(struct aml_lcd_data_s *pdata);
@@ -145,6 +152,7 @@ int lcd_phy_config_init(struct aml_lcd_data_s *pdata);
 /* lcd dphy */
 void lcd_lane_map_preset(struct aml_lcd_drv_s *pdrv);
 void lcd_lane_map_update(struct aml_lcd_drv_s *pdrv);
+int lcd_lane_sel_get(struct aml_lcd_drv_s *pdrv, struct phy_config_s *phy);
 void lcd_mipi_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off);
 void lcd_edp_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off);
 void lcd_lvds_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off);
@@ -153,6 +161,7 @@ void lcd_vbyone_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off);
 void lcd_mlvds_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off);
 void lcd_p2p_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off);
 #endif
+void lcd_dphy_reg_print(struct aml_lcd_drv_s *pdrv);
 
 /* lcd lvds*/
 void lcd_lvds_enable(struct aml_lcd_drv_s *pdrv);

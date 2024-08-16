@@ -227,71 +227,6 @@ static void lcd_tcon_data_block_print(char *buf, unsigned char *data_mem, unsign
 	}
 }
 
-static void lcd_tcon_lut_print_tl1(char *name)
-{
-	struct tcon_mem_map_table_s *mm_table = get_lcd_tcon_mm_table();
-	struct tcon_rmem_s *tcon_rmem = get_lcd_tcon_rmem();
-	unsigned char *lut_buf = NULL, *lut2_buf = NULL;
-	char *pr_buf = NULL;
-	unsigned int lut_valid = 0, size;
-	int ret;
-
-	ret = lcd_tcon_valid_check();
-	if (ret)
-		return;
-	if (!mm_table || !tcon_rmem)
-		return;
-
-	if (mm_table->version) {
-		LCDERR("tcon: mem map version invalid\n");
-		return;
-	}
-
-	if (strcmp(name, "vac") == 0) {
-		if (mm_table->lut_valid_flag & LCD_TCON_DATA_VALID_VAC) {
-			lut_valid = 1;
-			lut_buf = tcon_rmem->vac_rmem.mem_vaddr;
-		}
-	} else if (strcmp(name, "demura") == 0) {
-		if (mm_table->lut_valid_flag & LCD_TCON_DATA_VALID_DEMURA) {
-			lut_valid = 1;
-			lut_buf = tcon_rmem->demura_lut_rmem.mem_vaddr;
-			lut2_buf = tcon_rmem->demura_set_rmem.mem_vaddr;
-		}
-	} else if (strcmp(name, "acc") == 0) {
-		if (mm_table->lut_valid_flag & LCD_TCON_DATA_VALID_ACC) {
-			lut_valid = 1;
-			lut_buf = tcon_rmem->acc_lut_rmem.mem_vaddr;
-		}
-	}
-	if (lut_valid == 0 || !lut_buf) {
-		LCDERR("tcon: %s lut invalid\n", name);
-		return;
-	}
-
-	pr_buf = (char *)malloc(PR_LINE_BUF_MAX * sizeof(char));
-	if (!pr_buf) {
-		LCDERR("tcon: pr_buf malloc error\n");
-		return;
-	}
-
-	printf("tcon: %s lut:\n", name);
-	size = lut_buf[0] | (lut_buf[1] << 8) |
-		(lut_buf[2] << 16) | (lut_buf[3] << 24);
-	size += 8; /* header for data_cnt & crc */
-	lcd_tcon_data_block_print(pr_buf, lut_buf, size);
-
-	if (lut2_buf) {
-		printf("\ntcon: %s set:\n", name);
-		size = lut2_buf[0] | (lut2_buf[1] << 8) |
-			(lut2_buf[2] << 16) | (lut2_buf[3] << 24);
-		size += 8; /* header for data_cnt & crc */
-		lcd_tcon_data_block_print(pr_buf, lut2_buf, size);
-	}
-
-	free(pr_buf);
-}
-
 static void lcd_tcon_data_print(unsigned char index)
 {
 	struct tcon_mem_map_table_s *mm_table = get_lcd_tcon_mm_table();
@@ -373,31 +308,6 @@ static void lcd_tcon_axi_mem_print(struct tcon_rmem_s *tcon_rmem)
 	}
 }
 
-static void lcd_tcon_mm_table_v0_print(struct tcon_mem_map_table_s *mm_table,
-		struct tcon_rmem_s *tcon_rmem)
-{
-	printf("vac_mem\n"
-		"  vaddr: 0x%p\n"
-		"  size:  0x%x\n"
-		"demura_set_mem\n"
-		"  vaddr: 0x%p\n"
-		"  size:  0x%x\n"
-		"demura_lut_mem\n"
-		"  vaddr: 0x%p\n"
-		"  size:  0x%x\n"
-		"acc_lut_mem\n"
-		"  vaddr: 0x%p\n"
-		"  size:  0x%x\n\n",
-		tcon_rmem->vac_rmem.mem_vaddr,
-		tcon_rmem->vac_rmem.mem_size,
-		tcon_rmem->demura_set_rmem.mem_vaddr,
-		tcon_rmem->demura_set_rmem.mem_size,
-		tcon_rmem->demura_lut_rmem.mem_vaddr,
-		tcon_rmem->demura_lut_rmem.mem_size,
-		tcon_rmem->acc_lut_rmem.mem_vaddr,
-		tcon_rmem->acc_lut_rmem.mem_size);
-}
-
 static void lcd_tcon_mm_table_v1_print(struct tcon_mem_map_table_s *mm_table,
 		struct tcon_rmem_s *tcon_rmem)
 {
@@ -470,10 +380,7 @@ void lcd_tcon_info_print(struct aml_lcd_drv_s *pdrv)
 
 	if (tcon_rmem->flag) {
 		lcd_tcon_axi_mem_print(tcon_rmem);
-		if (mm_table->version == 0)
-			lcd_tcon_mm_table_v0_print(mm_table, tcon_rmem);
-		else if (mm_table->version < 0xff)
-			lcd_tcon_mm_table_v1_print(mm_table, tcon_rmem);
+		lcd_tcon_mm_table_v1_print(mm_table, tcon_rmem);
 
 		if (tcon_rmem->bin_path_rmem.mem_vaddr) {
 			size = *(unsigned int *)&tcon_rmem->bin_path_rmem.mem_vaddr[4];
@@ -564,7 +471,6 @@ void lcd_tcon_debug_probe(struct aml_lcd_drv_s *pdrv)
 {
 	pdrv->tcon_reg_print = lcd_tcon_reg_readback_print;
 	pdrv->tcon_table_print = lcd_tcon_reg_table_print;
-	pdrv->tcon_lut_print_tl1 = lcd_tcon_lut_print_tl1;
 	pdrv->tcon_data_print = lcd_tcon_data_print;
 	pdrv->tcon_reg_read = lcd_tcon_reg_read;
 	pdrv->tcon_reg_write = lcd_tcon_reg_write;

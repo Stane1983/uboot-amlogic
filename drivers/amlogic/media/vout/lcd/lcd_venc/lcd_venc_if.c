@@ -159,6 +159,19 @@ void lcd_mute_set(struct aml_lcd_drv_s *pdrv,  unsigned char flag)
 	LCDPR("[%d]: %s: %d\n", pdrv->index, __func__, flag);
 }
 
+void lcd_venc_reg_print(struct aml_lcd_drv_s *pdrv)
+{
+	if (!pdrv)
+		return;
+	if (!lcd_venc_op.venc_reg_dump) {
+		LCDERR("[%d]: %s: invalid\n", pdrv->index, __func__);
+		return;
+	}
+
+	printf("\nencl regs:\n");
+	lcd_venc_op.venc_reg_dump(pdrv);
+}
+
 int lcd_venc_probe(struct aml_lcd_data_s *pdata)
 {
 	int ret;
@@ -167,19 +180,23 @@ int lcd_venc_probe(struct aml_lcd_data_s *pdata)
 		return -1;
 
 	switch (pdata->chip_type) {
-	case LCD_CHIP_T7:
-	case LCD_CHIP_T3:
-	case LCD_CHIP_T5W:
+#if defined (CONFIG_MESON_T5M) || defined(CONFIG_MESON_T6D)
 	case LCD_CHIP_T5M:
-		ret = lcd_venc_op_init_t7(&lcd_venc_op);
+	case LCD_CHIP_T6D:
+		ret = lcd_venc_op_init_t5m(&lcd_venc_op);
 		break;
+#endif
+#if defined(CONFIG_MESON_C3) || defined(CONFIG_MESON_A4)
 	case LCD_CHIP_C3:
 	case LCD_CHIP_A4:
 		ret = lcd_venc_op_init_c3(&lcd_venc_op);
 		break;
+#endif
+#ifdef CONFIG_MESON_T3X
 	case LCD_CHIP_T3X:
 		ret = lcd_venc_op_init_t3x(&lcd_venc_op);
 		break;
+#endif
 	case LCD_CHIP_TXHD2:
 	case LCD_CHIP_S6:
 	default:

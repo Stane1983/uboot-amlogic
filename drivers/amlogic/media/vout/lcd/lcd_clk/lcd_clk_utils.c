@@ -1067,10 +1067,14 @@ void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 			for (tcon_div_sel = 0; tcon_div_sel < 5; tcon_div_sel++) {
 				if (tcon_div_table[tcon_div_sel] == phy_div * od1 * od2 * od3) {
 					cconf->pll_tcon_div_sel = tcon_div_sel;
+					cconf->phy_clk = lcd_do_div(cconf->pll_fvco,
+								    tcon_div_table[tcon_div_sel]);
 					done = 1;
 					break;
 				}
 			}
+		} else {
+			cconf->phy_clk = cconf->pll_fout;
 		}
 		break;
 	case LCD_VBYONE:
@@ -1131,10 +1135,15 @@ void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 			for (tcon_div_sel = 0; tcon_div_sel < 5; tcon_div_sel++) {
 				if (tcon_div_table[tcon_div_sel] == od1 * od2 * od3) {
 					cconf->pll_tcon_div_sel = tcon_div_sel;
+					cconf->phy_clk =
+						lcd_do_div(cconf->pll_fvco,
+							   tcon_div_table[tcon_div_sel]);
 					done = 1;
 					break;
 				}
 			}
+		} else {
+			cconf->phy_clk = cconf->pll_fout;
 		}
 		break;
 	case LCD_MLVDS:
@@ -1166,6 +1175,8 @@ void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 					cconf->div_sel = clk_div_sel;
 					cconf->pll_tcon_div_sel = tcon_div_sel;
 					cconf->pll_div_fout = clk_div_out;
+					cconf->phy_clk = lcd_do_div(pll_fvco,
+								    tcon_div_table[tcon_div_sel]);
 					pll_fout = clk_div_in;
 					if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
 						LCDPR("clk_div_sel=%s(%d)\n",

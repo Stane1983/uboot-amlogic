@@ -534,6 +534,81 @@ static void lcd_clk_disable(struct aml_lcd_drv_s *pdrv)
 	}
 }
 
+static void lcd_clk_reg_dump(struct aml_lcd_drv_s *pdrv)
+{
+	int i;
+	unsigned int *table_pll = NULL, *table_clk = NULL, *table_combo_dphy = NULL;
+	unsigned int size_pll = 0, size_clk = 0, size_combo_dphy = 0;
+	unsigned int pll_reg_table[] = {
+		ANACTRL_TCON_PLL0_CNTL0,
+		ANACTRL_TCON_PLL0_CNTL1,
+		ANACTRL_TCON_PLL0_CNTL2,
+		ANACTRL_TCON_PLL0_CNTL3,
+		ANACTRL_TCON_PLL0_CNTL4,
+		ANACTRL_TCON_PLL0_STS,
+		ANACTRL_TCON_PLL1_CNTL0,
+		ANACTRL_TCON_PLL1_CNTL1,
+		ANACTRL_TCON_PLL1_CNTL2,
+		ANACTRL_TCON_PLL1_CNTL3,
+		ANACTRL_TCON_PLL1_CNTL4,
+		ANACTRL_TCON_PLL1_STS
+	};
+	unsigned int clk_reg_table[][3] = {
+		{
+			CLKCTRL_VIID_CLK0_DIV,
+			CLKCTRL_VIID_CLK0_CTRL,
+			CLKCTRL_VID_CLK0_CTRL2,
+		},
+		{
+			CLKCTRL_VIID_CLK1_DIV,
+			CLKCTRL_VIID_CLK1_CTRL,
+			CLKCTRL_VID_CLK1_CTRL2
+		}
+	};
+	unsigned int combo_dphy_reg_table[] = {
+		COMBO_DPHY_VID_PLL0_DIV,
+		COMBO_DPHY_VID_PLL1_DIV
+	};
+
+	if (!pdrv || pdrv->index > 1)
+		return;
+
+	if (pdrv->index == 1) {
+		table_pll = &pll_reg_table[6];
+		size_pll = 6;
+		table_combo_dphy = &combo_dphy_reg_table[1];
+		size_combo_dphy = 1;
+	} else {
+		table_pll = &pll_reg_table[0];
+		table_combo_dphy = &combo_dphy_reg_table[0];
+		if (pdrv->config.timing.clk_mode == LCD_CLK_MODE_INDEPENDENCE) {
+			size_pll = 12;
+			size_combo_dphy = 2;
+		} else {
+			size_pll = 6;
+			size_combo_dphy = 1;
+		}
+	}
+	table_clk = clk_reg_table[pdrv->index];
+	size_clk = ARRAY_SIZE(clk_reg_table[pdrv->index]);
+
+	for (i = 0; i < size_pll; i++)
+		printf("pll [0x%08x] = 0x%08x\n", table_pll[i], lcd_ana_read(table_pll[i]));
+
+	for (i = 0; i < size_clk; i++)
+		printf("clk [0x%08x] = 0x%08x\n", table_clk[i], lcd_clk_read(table_clk[i]));
+
+	for (i = 0; i < size_combo_dphy; i++) {
+		printf("combo_dphy [0x%08x] = 0x%08x\n",
+		       table_combo_dphy[i], lcd_combo_dphy_read(table_combo_dphy[i]));
+	}
+
+	if (pdrv->index == 0) {
+		printf("clk [0x%08x] = 0x%08x\n",
+		       CLKCTRL_TCON_CLK_CNTL, lcd_clk_read(CLKCTRL_TCON_CLK_CNTL));
+	}
+}
+
 static void lcd_prbs_config_clk(struct aml_lcd_drv_s *pdrv, unsigned int lcd_prbs_mode,
 				unsigned int *encl_clk, unsigned int *fifo_clk)
 {
@@ -783,6 +858,7 @@ static struct lcd_clk_data_s lcd_clk_data_t3x_0 = {
 	.clktree_set = lcd_clktree_set,
 	.clk_config_init_print = lcd_clk_config_init_print_dft,
 	.clk_config_print = lcd_clk_config_print_dft,
+	.clk_reg_print = lcd_clk_reg_dump,
 	.prbs_test = lcd_clk_prbs_test,
 };
 
@@ -837,6 +913,7 @@ static struct lcd_clk_data_s lcd_clk_data_t3x_1 = {
 	.clktree_set = lcd_clktree_set,
 	.clk_config_init_print = lcd_clk_config_init_print_dft,
 	.clk_config_print = lcd_clk_config_print_dft,
+	.clk_reg_print = lcd_clk_reg_dump,
 	.prbs_test = lcd_clk_prbs_test,
 };
 

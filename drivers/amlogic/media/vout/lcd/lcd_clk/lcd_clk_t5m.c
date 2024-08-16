@@ -395,6 +395,41 @@ static void lcd_clk_disable(struct aml_lcd_drv_s *pdrv)
 	lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL0 + offset, 1, 29, 1);  //reset
 }
 
+static void lcd_clk_reg_dump(struct aml_lcd_drv_s *pdrv)
+{
+	int i;
+	unsigned int *table = NULL, size = 0;
+	unsigned int pll_reg_table[] = {
+		ANACTRL_TCON_PLL0_CNTL0,
+		ANACTRL_TCON_PLL0_CNTL1,
+		ANACTRL_TCON_PLL0_CNTL2,
+		ANACTRL_TCON_PLL0_CNTL3,
+		ANACTRL_TCON_PLL0_CNTL4,
+		ANACTRL_TCON_PLL0_STS,
+		ANACTRL_VID_PLL_CLK_DIV
+	};
+	unsigned int clk_reg_table[] = {
+		CLKCTRL_VIID_CLK0_DIV,
+		CLKCTRL_VIID_CLK0_CTRL,
+		CLKCTRL_VID_CLK0_CTRL2
+	};
+
+	table = pll_reg_table;
+	size = ARRAY_SIZE(pll_reg_table);
+	for (i = 0; i < size; i++)
+		printf("pll [0x%08x] = 0x%08x\n", table[i], lcd_ana_read(table[i]));
+
+	table = clk_reg_table;
+	size = ARRAY_SIZE(clk_reg_table);
+	for (i = 0; i < size; i++)
+		printf("clk [0x%08x] = 0x%08x\n", table[i], lcd_clk_read(table[i]));
+
+	if (pdrv->index == 0) {
+		printf("clk [0x%08x] = 0x%08x\n",
+		       CLKCTRL_TCON_CLK_CNTL, lcd_clk_read(CLKCTRL_TCON_CLK_CNTL));
+	}
+}
+
 static void lcd_prbs_config_clk(struct aml_lcd_drv_s *pdrv, unsigned int lcd_prbs_mode,
 				unsigned int *encl_clk, unsigned int *fifo_clk)
 {
@@ -620,6 +655,7 @@ static struct lcd_clk_data_s lcd_clk_data_t5m = {
 	.clktree_set = lcd_clktree_set,
 	.clk_config_init_print = lcd_clk_config_init_print_dft,
 	.clk_config_print = lcd_clk_config_print_dft,
+	.clk_reg_print = lcd_clk_reg_dump,
 	.prbs_test = lcd_prbs_test_t5m,
 };
 

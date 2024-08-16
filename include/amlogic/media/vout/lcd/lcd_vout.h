@@ -468,6 +468,7 @@ struct phy_config_s {
 	unsigned int preem_level;
 	unsigned int low_common_mode;
 	unsigned int ckdi;
+	unsigned int valid_lane;
 };
 
 union lcd_ctrl_config_u {
@@ -732,7 +733,6 @@ struct aml_lcd_drv_s {
 #ifdef CONFIG_AML_LCD_TCON
 	void (*tcon_reg_print)(void);
 	void (*tcon_table_print)(void);
-	void (*tcon_lut_print_tl1)(char *name);
 	void (*tcon_data_print)(unsigned char index);
 	void (*tcon_spi_print)(void);
 	int (*tcon_spi_data_load)(void);
@@ -744,8 +744,7 @@ struct aml_lcd_drv_s {
 	int (*tcon_mem_tee_protect)(int protect_en);
 	int (*tcon_forbidden_check)(void);
 #endif
-	void *debug_info_reg;
-	void *debug_info_if;
+	void *debug_info;
 	void (*phy_set)(struct aml_lcd_drv_s *pdrv, int status);
 	struct dev_pm_ops *dev_pm_ops;
 	/* for factory test */

@@ -12,6 +12,7 @@
 #include "lcd_clk_ctrl.h"
 #include "lcd_clk_utils.h"
 
+#ifdef CONFIG_MESON_T6D
 static unsigned int tcon_div[][3] = {
 	/* vx1pll_div214h, vx1pll_phase_div_en, vx1pll_clk1x_selh */
 	{0, 0, 1},  /* div1 */
@@ -353,13 +354,6 @@ static void lcd_clktree_set_t6d(struct aml_lcd_drv_s *pdrv)
 #endif
 }
 
-static int lcd_clk_prbs_test_t6d(struct aml_lcd_drv_s *pdrv,
-				 unsigned int ms, unsigned int mode_flag)
-{
-	LCDPR("TODO");
-	return 0;
-}
-
 static void lcd_clk_disable_t6d(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_clk_config_s *cconf;
@@ -376,6 +370,48 @@ static void lcd_clk_disable_t6d(struct aml_lcd_drv_s *pdrv)
 
 	lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL0, 0, 28, 1);  //disable
 	lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL0, 1, 30, 1);  //resetn
+}
+
+static void lcd_clk_reg_dump(struct aml_lcd_drv_s *pdrv)
+{
+	int i;
+	unsigned int *table = NULL, size = 0;
+	unsigned int pll_reg_table[] = {
+		ANACTRL_TCON_PLL0_CNTL0,
+		ANACTRL_TCON_PLL0_CNTL1,
+		ANACTRL_TCON_PLL0_CNTL2,
+		ANACTRL_TCON_PLL0_CNTL3,
+		ANACTRL_TCON_PLL0_CNTL4,
+		ANACTRL_TCON_PLL0_STS,
+		ANACTRL_VID_PLL_CLK_DIV
+	};
+	unsigned int clk_reg_table[] = {
+		CLKCTRL_VIID_CLK0_DIV,
+		CLKCTRL_VIID_CLK0_CTRL,
+		CLKCTRL_VID_CLK0_CTRL2,
+		CLKCTRL_HDMI_VID_PLL_CLK_DIV,
+		CLKCTRL_TCON_CLK_CNTL
+	};
+
+	if (!pdrv)
+		return;
+
+	table = pll_reg_table;
+	size = ARRAY_SIZE(pll_reg_table);
+	for (i = 0; i < size; i++)
+		printf("pll [0x%08x] = 0x%08x\n", table[i], lcd_ana_read(table[i]));
+
+	table = clk_reg_table;
+	size = ARRAY_SIZE(clk_reg_table);
+	for (i = 0; i < size; i++)
+		printf("clk [0x%08x] = 0x%08x\n", table[i], lcd_clk_read(table[i]));
+}
+
+static int lcd_clk_prbs_test_t6d(struct aml_lcd_drv_s *pdrv,
+				 unsigned int ms, unsigned int mode_flag)
+{
+	LCDPR("TODO");
+	return 0;
 }
 
 static struct lcd_clk_data_s lcd_clk_data_t6d = {
@@ -429,6 +465,7 @@ static struct lcd_clk_data_s lcd_clk_data_t6d = {
 	.clktree_set = lcd_clktree_set_t6d,
 	.clk_config_init_print = lcd_clk_config_init_print_dft,
 	.clk_config_print = lcd_clk_config_print_dft,
+	.clk_reg_print = lcd_clk_reg_dump,
 	.prbs_test = lcd_clk_prbs_test_t6d,
 };
 
@@ -438,4 +475,4 @@ void lcd_clk_config_chip_init_t6d(struct aml_lcd_drv_s *pdrv,
 	cconf->data = &lcd_clk_data_t6d;
 	cconf->pll_od_fb = lcd_clk_data_t6d.pll_od_fb;
 }
-
+#endif

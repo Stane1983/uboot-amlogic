@@ -14,8 +14,8 @@
 #include "../lcd_common.h"
 #include "lcd_venc.h"
 
-static inline
-unsigned int __cal_h_timing_to_reg(unsigned int origin, unsigned int ppc)
+#ifdef CONFIG_MESON_T3X
+static inline unsigned int __cal_h_timing_to_reg(unsigned int origin, unsigned int ppc)
 {
 	unsigned int val = 0;
 
@@ -23,8 +23,8 @@ unsigned int __cal_h_timing_to_reg(unsigned int origin, unsigned int ppc)
 	return  (val > 0 ? val - 1 : 0);
 }
 
-static inline
-unsigned int __lcd_round_inc(unsigned int base, unsigned int val, unsigned int round_const)
+static inline unsigned int __lcd_round_inc(unsigned int base, unsigned int val,
+					   unsigned int round_const)
 {
 	unsigned int res;
 
@@ -387,6 +387,65 @@ static void lcd_venc_mute_set(struct aml_lcd_drv_s *pdrv, unsigned char flag)
 		lcd_venc_debug_test(pdrv, 0);
 }
 
+static void lcd_venc_reg_dump(struct aml_lcd_drv_s *pdrv)
+{
+	int i;
+	unsigned int *reg_table = NULL, size_encl = 0;
+	unsigned int encl_0_reg[] = {
+		VPU_VIU_VENC_MUX_CTRL,
+		ENCL_VIDEO_EN,
+		ENCL_VIDEO_MODE,
+		ENCL_VIDEO_VSRC_CTRL,
+		ENCL_VIDEO_MAX_CNT,
+		ENCL_VIDEO_HAVON_PX_RNG,
+		ENCL_VIDEO_VAVON_LN_RNG,
+		ENCL_VIDEO_HSO_PX_RNG,
+		ENCL_VIDEO_VSO_PX_RNG,
+		ENCL_VIDEO_VSO_LN_RNG,
+		ENCL_VIDEO_GAIN_RGB_CTRL,
+		VPU_DISP_VIU0_CTRL,
+		LCD_GAMMA_CNTL_PORT0,
+		VPU_VENC_CTRL,
+		LCD_LCD_IF_CTRL,
+		LCD_DITH_CTRL,
+		ENCL_INBUF_CNTL0,
+		ENCL_INBUF_CNTL1
+	};
+	unsigned int encl_1_reg[] = {
+		VPU_VIU_VENC_MUX_CTRL,
+		ENCL_VIDEO_EN + (0x100 << 2),
+		ENCL_VIDEO_MODE + (0x100 << 2),
+		ENCL_VIDEO_VSRC_CTRL + (0x100 << 2),
+		ENCL_VIDEO_MAX_CNT + (0x100 << 2),
+		ENCL_VIDEO_HAVON_PX_RNG + (0x100 << 2),
+		ENCL_VIDEO_VAVON_LN_RNG + (0x100 << 2),
+		ENCL_VIDEO_HSO_PX_RNG + (0x100 << 2),
+		ENCL_VIDEO_VSO_PX_RNG + (0x100 << 2),
+		ENCL_VIDEO_VSO_LN_RNG + (0x100 << 2),
+		ENCL_VIDEO_GAIN_RGB_CTRL + (0x100 << 2),
+		VPU_DISP_VIU1_CTRL,
+		LCD1_GAMMA_CNTL_PORT0,
+		VPU_VENC_CTRL + 0x600,
+		LCD_LCD_IF_CTRL + 0x600,
+		LCD_DITH_CTRL + 0x600,
+		ENCL_INBUF_CNTL0 + (0x100 << 2),
+		ENCL_INBUF_CNTL1 + (0x100 << 2)
+	};
+
+	if (!pdrv)
+		return;
+
+	if (pdrv->index == 1) {
+		reg_table = encl_1_reg;
+		size_encl = ARRAY_SIZE(encl_1_reg);
+	} else {
+		reg_table = encl_0_reg;
+		size_encl = ARRAY_SIZE(encl_0_reg);
+	}
+	for (i = 0; i < size_encl; i++)
+		printf("vcbus [0x%04x] = 0x%08x\n", reg_table[i], lcd_vcbus_read(reg_table[i]));
+}
+
 int lcd_venc_op_init_t3x(struct lcd_venc_op_s *venc_op)
 {
 	if (!venc_op)
@@ -403,6 +462,8 @@ int lcd_venc_op_init_t3x(struct lcd_venc_op_s *venc_op)
 	venc_op->venc_enable = lcd_venc_enable_ctrl;
 	venc_op->mute_set = lcd_venc_mute_set;
 	venc_op->get_encl_line_cnt = NULL;
+	venc_op->venc_reg_dump = lcd_venc_reg_dump;
 
 	return 0;
 };
+#endif

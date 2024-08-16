@@ -879,6 +879,9 @@
 #ifndef LCD_GAMMA_ADDR_PORT0
 #define LCD_GAMMA_ADDR_PORT0                       ((0x14b6  << 2) + 0xff000000)
 #endif
+#ifndef LCD1_GAMMA_CNTL_PORT0
+#define LCD1_GAMMA_CNTL_PORT0                      ((0x15b4  << 2) + 0xff800000)
+#endif
 
 #ifndef ENCL_TST_DATA
 #define ENCL_TST_DATA                              ((0x14b6  << 2) + 0xff800000)

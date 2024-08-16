@@ -278,6 +278,65 @@ static unsigned int lcd_venc_get_encl_line_cnt(struct aml_lcd_drv_s *pdrv)
 	return cnt;
 }
 
+static void lcd_venc_reg_dump(struct aml_lcd_drv_s *pdrv)
+{
+	int i;
+	unsigned int *reg_table = NULL, *reg_ctrl = NULL, size_encl = 0, size_ctrl = 0;
+	unsigned int encl_reg_dft[] = {
+		VPU_VIU_VENC_MUX_CTRL,
+		ENCL_VIDEO_EN,
+		ENCL_VIDEO_MODE,
+		ENCL_VIDEO_MODE_ADV,
+		ENCL_VIDEO_MAX_PXCNT,
+		ENCL_VIDEO_MAX_LNCNT,
+		ENCL_VIDEO_HAVON_BEGIN,
+		ENCL_VIDEO_HAVON_END,
+		ENCL_VIDEO_VAVON_BLINE,
+		ENCL_VIDEO_VAVON_ELINE,
+		ENCL_VIDEO_HSO_BEGIN,
+		ENCL_VIDEO_HSO_END,
+		ENCL_VIDEO_VSO_BEGIN,
+		ENCL_VIDEO_VSO_END,
+		ENCL_VIDEO_VSO_BLINE,
+		ENCL_VIDEO_VSO_ELINE,
+		ENCL_VIDEO_RGBIN_CTRL,
+		L_GAMMA_CNTL_PORT,
+		L_RGB_BASE_ADDR,
+		L_RGB_COEFF_ADDR,
+		L_POL_CNTL_ADDR,
+		L_DITH_CNTL_ADDR
+	};
+	static unsigned int ctrl_reg_table[] = {
+		ENCL_INBUF_CNTL0,
+		ENCL_INBUF_CNTL1,
+	};
+
+	switch (pdrv->data->chip_type) {
+	case LCD_CHIP_TXHD2:
+		reg_table = encl_reg_dft;
+		size_encl = ARRAY_SIZE(encl_reg_dft);
+		reg_ctrl = ctrl_reg_table;
+		size_ctrl = ARRAY_SIZE(ctrl_reg_table);
+		break;
+	default:
+		reg_table = encl_reg_dft;
+		size_encl = ARRAY_SIZE(encl_reg_dft);
+		break;
+	}
+
+	if (!reg_table)
+		return;
+
+	for (i = 0; i < size_encl; i++)
+		printf("vcbus [0x%04x] = 0x%08x\n", reg_table[i], lcd_vcbus_read(reg_table[i]));
+	if (reg_ctrl) {
+		for (i = 0; i < size_ctrl; i++) {
+			printf("vcbus [0x%04x] = 0x%08x\n",
+			       reg_ctrl[i], lcd_vcbus_read(reg_ctrl[i]));
+		}
+	}
+}
+
 int lcd_venc_op_init_dft(struct lcd_venc_op_s *venc_op)
 {
 	if (!venc_op)
@@ -291,6 +350,7 @@ int lcd_venc_op_init_dft(struct lcd_venc_op_s *venc_op)
 	venc_op->venc_enable = lcd_venc_enable_ctrl;
 	venc_op->mute_set = lcd_venc_mute_set;
 	venc_op->get_encl_line_cnt = lcd_venc_get_encl_line_cnt;
+	venc_op->venc_reg_dump = lcd_venc_reg_dump;
 
 	return 0;
 };
