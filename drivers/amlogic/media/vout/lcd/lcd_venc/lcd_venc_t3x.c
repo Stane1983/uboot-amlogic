@@ -380,15 +380,6 @@ static void lcd_venc_enable_ctrl(struct aml_lcd_drv_s *pdrv, int flag)
 		lcd_vcbus_setb(ENCL_VIDEO_EN + offset, 0, 0, 1);
 }
 
-static void lcd_venc_mute_set(struct aml_lcd_drv_s *pdrv, unsigned char flag)
-{
-	lcd_venc_wait_vsync(pdrv);
-	if (flag)
-		lcd_venc_debug_test(pdrv, 8);
-	else
-		lcd_venc_debug_test(pdrv, 0);
-}
-
 static void lcd_venc_reg_dump(struct aml_lcd_drv_s *pdrv)
 {
 	int i;
@@ -462,7 +453,7 @@ int lcd_venc_op_init_t3x(struct lcd_venc_op_s *venc_op)
 	venc_op->venc_set_timing = lcd_venc_set_timing;
 	venc_op->venc_set = lcd_venc_set;
 	venc_op->venc_enable = lcd_venc_enable_ctrl;
-	venc_op->mute_set = lcd_venc_mute_set;
+	venc_op->mute_set = NULL;
 	venc_op->get_encl_line_cnt = NULL;
 	venc_op->venc_reg_dump = lcd_venc_reg_dump;
 

@@ -228,11 +228,6 @@ static int lcd_venc_debug_test(struct aml_lcd_drv_s *pdrv, unsigned int num)
 	return -1;
 }
 
-static void lcd_venc_mute_set(struct aml_lcd_drv_s *pdrv, unsigned char flag)
-{
-	LCDPR("%s: todo\n", __func__);
-}
-
 static void lcd_venc_reg_dump(struct aml_lcd_drv_s *pdrv)
 {
 	int i;
@@ -267,7 +262,7 @@ int lcd_venc_op_init_c3(struct lcd_venc_op_s *venc_op)
 	venc_op->venc_set_timing = NULL;
 	venc_op->venc_set = lcd_venc_set;
 	venc_op->venc_enable = lcd_venc_enable_ctrl;
-	venc_op->mute_set = lcd_venc_mute_set;
+	venc_op->mute_set = NULL;
 	venc_op->get_encl_line_cnt = NULL;
 	venc_op->venc_reg_dump = lcd_venc_reg_dump;
 

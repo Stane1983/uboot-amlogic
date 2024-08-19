@@ -35,8 +35,6 @@ char *lcd_pm_name[LCD_MAX_DRV] = {"lcd_drv0_pm", "lcd_drv1_pm", "lcd_drv2_pm"};
 
 unsigned int lcd_prbs_freq = 0, lcd_prbs_performed = 0, lcd_prbs_err = 0;
 
-static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv);
-
 static int aml_lcd_driver_suspend(void *pm_ops);
 static int aml_lcd_driver_resume(void *pm_ops);
 static int aml_lcd_driver_poweroff(void *pm_ops);
@@ -504,6 +502,11 @@ static void lcd_module_enable(struct aml_lcd_drv_s *pdrv, char *mode)
 			aml_bl_driver_enable(pdrv->index);
 #endif
 #endif
+		} else if (pdrv->boot_ctrl.init_level == LCD_INIT_LEVEL_PREBOOT) {
+			LCDPR("[%d]: preboot bypass backlight for init_level %d\n",
+			      pdrv->index, pdrv->boot_ctrl.init_level);
+			lcd_interface_on(pdrv);
+			lcd_mute_set(pdrv, 1);
 		} else {
 			LCDPR("[%d]: bypass interface for init_level %d\n",
 			      pdrv->index, pdrv->boot_ctrl.init_level);
@@ -707,7 +710,7 @@ static int lcd_driver_remove(int index)
 	return 0;
 }
 
-static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
+void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 {
 	unsigned int val = 0;
 	char env_str[12], type_str[12], ctrl_str[48];

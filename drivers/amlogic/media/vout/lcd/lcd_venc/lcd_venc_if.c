@@ -151,12 +151,20 @@ void lcd_mute_set(struct aml_lcd_drv_s *pdrv,  unsigned char flag)
 	if (!pdrv)
 		return;
 	if (!lcd_venc_op.mute_set) {
-		LCDERR("[%d]: %s: invalid\n", pdrv->index, __func__);
-		return;
+#ifdef CONFIG_AML_VPP
+		if (flag)
+			set_vpp_mute();
+		else
+			set_vpp_unmute();
+#endif
+		LCDPR("[%d]: %s: set vpp mute: %d\n", pdrv->index, __func__, flag);
+	} else {
+		lcd_venc_op.mute_set(pdrv, flag);
+		LCDPR("[%d]: %s: set venc mute: %d\n", pdrv->index, __func__, flag);
 	}
 
-	lcd_venc_op.mute_set(pdrv, flag);
-	LCDPR("[%d]: %s: %d\n", pdrv->index, __func__, flag);
+	pdrv->boot_ctrl.mute_flag = flag ?  1 : 0;
+	lcd_update_ctrl_bootargs(pdrv);
 }
 
 void lcd_venc_reg_print(struct aml_lcd_drv_s *pdrv)
@@ -199,7 +207,7 @@ int lcd_venc_probe(struct aml_lcd_data_s *pdata)
 	case LCD_CHIP_T3:
 	case LCD_CHIP_T5W:
 	case LCD_CHIP_T5M:
-		ret = lcd_venc_op_init_t7(&lcd_venc_op);
+		ret = lcd_venc_op_init_t7(pdata, &lcd_venc_op);
 		break;
 #endif
 #if defined(CONFIG_MESON_C3) || defined(CONFIG_MESON_A4)

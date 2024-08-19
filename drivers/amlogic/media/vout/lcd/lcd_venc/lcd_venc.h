@@ -24,7 +24,7 @@ struct lcd_venc_op_s {
 };
 
 int lcd_venc_op_init_dft(struct lcd_venc_op_s *venc_op);
-int lcd_venc_op_init_t7(struct lcd_venc_op_s *venc_op);
+int lcd_venc_op_init_t7(struct aml_lcd_data_s *pdata, struct lcd_venc_op_s *venc_op);
 int lcd_venc_op_init_c3(struct lcd_venc_op_s *venc_op);
 int lcd_venc_op_init_t3x(struct lcd_venc_op_s *venc_op);
 

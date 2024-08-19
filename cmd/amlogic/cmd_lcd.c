@@ -428,6 +428,21 @@ static int do_lcd_ext(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 }
 #endif
 
+static int do_lcd_mute(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	unsigned char temp;
+	struct aml_lcd_drv_s *pdrv = aml_lcd_get_driver(0);
+
+	if (argc == 1)
+		return -1;
+
+	temp = (unsigned char)simple_strtoul(argv[1], NULL, 10);
+
+	lcd_mute_set(pdrv, temp);
+
+	return 0;
+}
+
 static int do_lcd_bl(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	unsigned int level;
@@ -1048,6 +1063,7 @@ static cmd_tbl_t cmd_lcd_sub[] = {
 #ifdef CONFIG_AML_LCD_EXTERN
 	U_BOOT_CMD_MKENT(ext,     4, 0, do_lcd_ext,      "", ""),
 #endif
+	U_BOOT_CMD_MKENT(mutex,   2, 0, do_lcd_mute,    "", ""),
 	U_BOOT_CMD_MKENT(bl,      4, 0, do_lcd_bl,       "", ""),
 };
 

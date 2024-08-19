@@ -367,6 +367,8 @@ static void aml_board_display_env_handler(void)
 #ifdef CONFIG_AML_LCD
 	if (strcmp(bootup_display, "on") == 0)
 		snprintf(lcd_init_str, 8, "%d", LCD_INIT_LEVEL_NORMAL);
+	else if (strcmp(bootup_display, "preboot") == 0)
+		snprintf(lcd_init_str, 8, "%d", LCD_INIT_LEVEL_PREBOOT);
 	else
 		snprintf(lcd_init_str, 8, "%d", LCD_INIT_LEVEL_PWR_OFF);
 
@@ -424,7 +426,8 @@ void aml_board_display_init(unsigned char vout_bit)
 		return;
 
 	aml_display_on_pre(vout_bit);
-	if (strcmp(env_get("bootup_display"), "on") == 0) {
+	if (strcmp(env_get("bootup_display"), "on") == 0 ||
+		 strcmp(env_get("bootup_display"), "preboot") == 0) {
 		smp_ret = run_smp_function(1, &aml_display_on_post_job, vout_bit);
 		if (smp_ret)
 			printf("display smp failed\n");

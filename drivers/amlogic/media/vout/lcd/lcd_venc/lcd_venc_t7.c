@@ -343,27 +343,6 @@ static void lcd_venc_enable_ctrl(struct aml_lcd_drv_s *pdrv, int flag)
 		lcd_vcbus_write(ENCL_VIDEO_EN + offset, 0);
 }
 
-static void lcd_venc_mute_set(struct aml_lcd_drv_s *pdrv, unsigned char flag)
-{
-	unsigned int offset;
-
-	offset = pdrv->data->offset_venc[pdrv->index];
-
-	lcd_venc_wait_vsync(pdrv);
-	if (flag) {
-		lcd_vcbus_write(ENCL_VIDEO_RGBIN_CTRL + offset, 3);
-		lcd_vcbus_write(ENCL_TST_MDSEL + offset, 0);
-		lcd_vcbus_write(ENCL_TST_Y + offset, 0);
-		lcd_vcbus_write(ENCL_TST_CB + offset, 0);
-		lcd_vcbus_write(ENCL_TST_CR + offset, 0);
-		lcd_vcbus_write(ENCL_TST_EN + offset, 1);
-		lcd_vcbus_setb(ENCL_VIDEO_MODE_ADV + offset, 0, 3, 1);
-	} else {
-		lcd_vcbus_setb(ENCL_VIDEO_MODE_ADV + offset, 1, 3, 1);
-		lcd_vcbus_write(ENCL_TST_EN + offset, 0);
-	}
-}
-
 static unsigned int lcd_venc_get_encl_line_cnt(struct aml_lcd_drv_s *pdrv)
 {
 	unsigned int offset, cnt;
@@ -489,7 +468,9 @@ static void lcd_venc_save_bootctrl_to_reg(struct aml_lcd_drv_s *pdrv)
 	unsigned int offset = pdrv->data->offset_venc[pdrv->index];
 
 	val = (pdrv->boot_ctrl.init_level & 0xf) | (!!(pdrv->status & LCD_STATUS_IF_ON) << 4)
-		| ((pdrv->boot_ctrl.dccd_flag & 0x1) << 5) | (0xa << 9);
+		| ((pdrv->boot_ctrl.dccd_flag & 0x1) << 5)
+		| ((pdrv->boot_ctrl.mute_flag & 0x1) << 6)
+		| (0xa << 9);
 	lcd_vcbus_write(L_STH1_HS_ADDR + offset, val);
 
 	val = pdrv->boot_ctrl.base_frame_rate & 0x1fff;
@@ -504,7 +485,7 @@ static void lcd_venc_save_bootctrl_to_reg(struct aml_lcd_drv_s *pdrv)
 	lcd_vcbus_write(L_STH1_HS_ADDR + offset + 12, val);
 }
 
-int lcd_venc_op_init_t7(struct lcd_venc_op_s *venc_op)
+int lcd_venc_op_init_t7(struct aml_lcd_data_s *pdata, struct lcd_venc_op_s *venc_op)
 {
 	if (!venc_op)
 		return -1;
@@ -515,10 +496,10 @@ int lcd_venc_op_init_t7(struct lcd_venc_op_s *venc_op)
 	venc_op->venc_set_timing = lcd_venc_set_timing;
 	venc_op->venc_set = lcd_venc_set;
 	venc_op->venc_enable = lcd_venc_enable_ctrl;
-	venc_op->mute_set = lcd_venc_mute_set;
 	venc_op->get_encl_line_cnt = lcd_venc_get_encl_line_cnt;
 	venc_op->venc_reg_dump = lcd_venc_reg_dump;
 	venc_op->bootctrl_to_regs = lcd_venc_save_bootctrl_to_reg;
+	venc_op->mute_set = NULL;
 
 	return 0;
 };

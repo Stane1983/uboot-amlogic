@@ -255,23 +255,6 @@ static void lcd_venc_enable_ctrl(struct aml_lcd_drv_s *pdrv, int flag)
 		lcd_vcbus_write(ENCL_VIDEO_EN, 0);
 }
 
-static void lcd_venc_mute_set(struct aml_lcd_drv_s *pdrv, unsigned char flag)
-{
-	lcd_venc_wait_vsync(pdrv);
-	if (flag) {
-		lcd_vcbus_write(ENCL_VIDEO_RGBIN_CTRL, 3);
-		lcd_vcbus_write(ENCL_TST_MDSEL, 0);
-		lcd_vcbus_write(ENCL_TST_Y, 0);
-		lcd_vcbus_write(ENCL_TST_CB, 0);
-		lcd_vcbus_write(ENCL_TST_CR, 0);
-		lcd_vcbus_write(ENCL_TST_EN, 1);
-		lcd_vcbus_setb(ENCL_VIDEO_MODE_ADV, 0, 3, 1);
-	} else {
-		lcd_vcbus_setb(ENCL_VIDEO_MODE_ADV, 1, 3, 1);
-		lcd_vcbus_write(ENCL_TST_EN, 0);
-	}
-}
-
 static unsigned int lcd_venc_get_encl_line_cnt(struct aml_lcd_drv_s *pdrv)
 {
 	unsigned int cnt = lcd_vcbus_getb(ENCL_INFO_READ, 16, 13);
@@ -343,7 +326,9 @@ static void lcd_venc_save_bootctrl_to_reg(struct aml_lcd_drv_s *pdrv)
 	unsigned int val = 0;
 
 	val = (pdrv->boot_ctrl.init_level & 0xf) | (!!(pdrv->status & LCD_STATUS_IF_ON) << 4)
-		| ((pdrv->boot_ctrl.dccd_flag & 0x1) << 5) | (0xa << 9);
+		| ((pdrv->boot_ctrl.dccd_flag & 0x1) << 5)
+		| ((pdrv->boot_ctrl.mute_flag & 0x1) << 6)
+		| (0xa << 9);
 	lcd_vcbus_write(L_STH1_HS_ADDR, val);
 
 	val = pdrv->boot_ctrl.base_frame_rate & 0x1fff;
@@ -369,7 +354,7 @@ int lcd_venc_op_init_dft(struct lcd_venc_op_s *venc_op)
 	venc_op->venc_set_timing = lcd_venc_set_timing;
 	venc_op->venc_set = lcd_venc_set;
 	venc_op->venc_enable = lcd_venc_enable_ctrl;
-	venc_op->mute_set = lcd_venc_mute_set;
+	venc_op->mute_set = NULL;
 	venc_op->get_encl_line_cnt = lcd_venc_get_encl_line_cnt;
 	venc_op->venc_reg_dump = lcd_venc_reg_dump;
 	venc_op->bootctrl_to_regs = lcd_venc_save_bootctrl_to_reg;

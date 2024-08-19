@@ -643,6 +643,8 @@ struct lcd_vmode_mgr_s {
 #define LCD_INIT_LEVEL_NORMAL         0
 #define LCD_INIT_LEVEL_PWR_OFF        1
 #define LCD_INIT_LEVEL_KERNEL_ON      2
+#define LCD_INIT_LEVEL_KERNEL_OFF     3  // reserve, not used
+#define LCD_INIT_LEVEL_PREBOOT        4  // lcd on, bl off
 
 #define LCD_VENC_1PPC                 0
 #define LCD_VENC_2PPC                 1
@@ -664,6 +666,7 @@ struct lcd_boot_ctrl_s {
 	unsigned char lcd_bits;
 	unsigned char advanced_flag;
 	unsigned char dccd_flag;
+	unsigned char mute_flag;
 	unsigned char custom_pinmux;
 	unsigned char init_level;
 	unsigned char ppc;
@@ -819,6 +822,8 @@ void aml_lcd_vbyone_rst(int index);
 int aml_lcd_vbyone_cdr(int index);
 int aml_lcd_vbyone_lock(int index);
 int aml_lcd_edp_debug(int index, char *str, int num);
+void lcd_mute_set(struct aml_lcd_drv_s *pdrv,  unsigned char flag);
+void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv);
 
 // switch MIPI DSI mode: 0:display, 1:command
 void aml_lcd_mipi_dsi_mode(int index, unsigned char mode);
