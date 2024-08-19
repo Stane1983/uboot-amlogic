@@ -2529,9 +2529,9 @@ static void hdmitx_set_phy(struct hdmitx_dev *hdev)
 
 	if (hdev->para->tmds_clk > 450000)
 		hdmitx_set_phypara(HDMI_PHYPARA_6G);
-	else if (hdev->para->tmds_clk > 370000)
+	else if (hdev->para->tmds_clk > 380000)
 		hdmitx_set_phypara(HDMI_PHYPARA_4p5G);
-	else if (hdev->para->tmds_clk > 290000)
+	else if (hdev->para->tmds_clk > 300000)
 		hdmitx_set_phypara(HDMI_PHYPARA_3p7G);
 	else if (hdev->para->tmds_clk > 150000)
 		hdmitx_set_phypara(HDMI_PHYPARA_3G);
