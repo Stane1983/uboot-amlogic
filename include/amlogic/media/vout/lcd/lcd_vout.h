@@ -657,6 +657,8 @@ struct lcd_vmode_mgr_s {
 #define LCD_INIT_LEVEL_NORMAL         0
 #define LCD_INIT_LEVEL_PWR_OFF        1
 #define LCD_INIT_LEVEL_KERNEL_ON      2
+#define LCD_INIT_LEVEL_KERNEL_OFF     3
+#define LCD_INIT_LEVEL_PRBOOT         4  // lcd on, bl off
 
 #define LCD_VENC_1PPC                 0
 #define LCD_VENC_2PPC                 1
@@ -835,6 +837,7 @@ void aml_lcd_vbyone_rst(int index);
 int aml_lcd_vbyone_cdr(int index);
 int aml_lcd_vbyone_lock(int index);
 // int aml_lcd_edp_debug(int index, char *str, int num);
+void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv);
 
 // switch MIPI DSI mode: 0:display, 1:command
 void aml_lcd_mipi_dsi_mode(int index, unsigned char mode);
@@ -850,6 +853,7 @@ int aml_lcd_mipi_dsi_read(int index,
 		unsigned char *payload, unsigned char *rd_data, unsigned char rd_byte_len);
 void aml_lcd_driver_test(int index, int num);
 int aml_lcd_driver_prbs(int index, unsigned int s, unsigned int prbs_freq, unsigned int mode_flag);
+void aml_lcd_driver_mute(int index, unsigned char flag);
 void aml_lcd_panel_dump(int index, const char *path);
 void aml_lcd_param_mem_dump(void);
 void aml_lcd_config_check(int index);

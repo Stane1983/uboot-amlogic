@@ -6,6 +6,7 @@
 #include <common.h>
 #include <command.h>
 #include <malloc.h>
+#include <amlogic/media/vpp/vpp.h>
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include <amlogic/media/vout/lcd/lcd_memory.h>
 
@@ -477,6 +478,22 @@ static int do_lcd_ext(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	return 0;
 }
 #endif
+
+static int do_lcd_mute(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	unsigned char temp;
+
+	if (argc == 1)
+		return -1;
+
+	temp = (unsigned char)simple_strtoul(argv[1], NULL, 10);
+	if (temp)
+		aml_lcd_driver_mute(0, 1);
+	else
+		aml_lcd_driver_mute(0, 0);
+
+	return 0;
+}
 
 static int do_lcd_bl(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
@@ -1101,6 +1118,7 @@ static cmd_tbl_t cmd_lcd_sub[] = {
 #ifdef CONFIG_AML_LCD_EXTERN
 	U_BOOT_CMD_MKENT(ext,     4, 0, do_lcd_ext,      "", ""),
 #endif
+	U_BOOT_CMD_MKENT(mute,    2, 0, do_lcd_mute,    "", ""),
 	U_BOOT_CMD_MKENT(bl,      4, 0, do_lcd_bl,       "", ""),
 };
 

@@ -260,6 +260,8 @@ void aml_board_display_env_handler(void)
 #ifdef CONFIG_AML_LCD
 	if (strcmp(bootup_display, "on") == 0)
 		snprintf(lcd_init_str, 8, "%d", LCD_INIT_LEVEL_NORMAL);
+	else if (strcmp(bootup_display, "preboot") == 0)
+		snprintf(lcd_init_str, 8, "%d", LCD_INIT_LEVEL_PRBOOT);
 	else
 		snprintf(lcd_init_str, 8, "%d", LCD_INIT_LEVEL_PWR_OFF);
 

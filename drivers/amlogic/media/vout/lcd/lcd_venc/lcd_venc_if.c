@@ -150,13 +150,20 @@ void lcd_mute_set(struct aml_lcd_drv_s *pdrv,  unsigned char flag)
 {
 	if (!pdrv)
 		return;
-	if (!lcd_venc_op.mute_set) {
-		LCDERR("[%d]: %s: invalid\n", pdrv->index, __func__);
-		return;
+	if (lcd_venc_op.mute_set) {
+		lcd_venc_op.mute_set(pdrv, flag);
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDPR("[%d]: %s, venc mute\n", pdrv->index, __func__);
+	} else {
+#ifdef CONFIG_AML_VPP
+		if (flag)
+			set_vpp_mute();
+		else
+			set_vpp_unmute();
+#endif
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDPR("[%d]: %s, vpp mute\n", pdrv->index, __func__);
 	}
-
-	lcd_venc_op.mute_set(pdrv, flag);
-	LCDPR("[%d]: %s: %d\n", pdrv->index, __func__, flag);
 }
 
 void lcd_venc_reg_print(struct aml_lcd_drv_s *pdrv)

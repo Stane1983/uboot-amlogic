@@ -9,6 +9,7 @@
 #include <asm/gpio.h>
 #include <fdtdec.h>
 #include <amlogic/media/vout/lcd/aml_lcd.h>
+#include <amlogic/media/vout/lcd/lcd_vout.h>
 #ifdef CONFIG_AML_LCD_BL_LDIM
 #include <amlogic/media/vout/lcd/bl_ldim.h>
 #endif
@@ -926,6 +927,21 @@ int aml_bl_init(void)
 	return 0;
 }
 
+void init_level_sync_with_preboot(int index)
+{
+	struct aml_lcd_drv_s *pdrv = aml_lcd_get_driver(index);
+
+	pdrv->boot_ctrl.init_level = LCD_INIT_LEVEL_NORMAL;
+	env_set("lcd_init_level", LCD_INIT_LEVEL_NORMAL);
+	pdrv->boot_ctrl.mute_flag = 0; // clear mute flag
+	lcd_update_ctrl_bootargs(pdrv);
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
+		BLPR("%s: index=%d, init_level=%d, mute_flag=%d\n",
+			__func__, index, pdrv->boot_ctrl.init_level,
+			pdrv->boot_ctrl.mute_flag);
+}
+
 void aml_bl_driver_enable(int index)
 {
 	struct aml_bl_drv_s *bdrv;
@@ -941,6 +957,8 @@ void aml_bl_driver_enable(int index)
 	bl_pwm_config_update(bdrv);
 	bl_set_level(bdrv, bdrv->config.level_default);
 	bl_power_ctrl(bdrv, 1);
+	init_level_sync_with_preboot(index);
+
 }
 
 void aml_bl_driver_disable(int index)
