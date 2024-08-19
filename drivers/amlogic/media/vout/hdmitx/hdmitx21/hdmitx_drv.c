@@ -841,8 +841,7 @@ static void construct_audio_packet(struct hdmitx_dev *hdev)
 static void hdmi_set_vend_spec_infofram(struct hdmitx_dev *hdev,
 					enum hdmi_vic videocode)
 {
-	int i;
-	u8 db[28];
+	u8 db[28] = {0};
 	u8 *ven_db = &db[1];
 	u8 ven_hb[3];
 
@@ -856,8 +855,6 @@ static void hdmi_set_vend_spec_infofram(struct hdmitx_dev *hdev,
 		return;
 	}
 
-	for (i = 0; i < 0x6; i++)
-		ven_db[i] = 0;
 	ven_db[0] = GET_OUI_BYTE0(HDMI_IEEE_OUI);
 	ven_db[1] = GET_OUI_BYTE1(HDMI_IEEE_OUI);
 	ven_db[2] = GET_OUI_BYTE2(HDMI_IEEE_OUI);
