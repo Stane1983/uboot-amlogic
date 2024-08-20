@@ -52,7 +52,6 @@ typedef struct efuse_cali {
 #define EFUSE_HAL_API_READ_CALI 4
 #define EFUSE_HAL_API_CHECKPATTERN_ITEM  6
 #define CONFIG_EFUSE_OBJ_API 1
-#define CONFIG_EFUSE_MRK_GET_CHECKNUM
 
 #define EFUSE_USER_MASK            (0x1 << 16)
 #define EFUSE_THERMAL_MASK         (0x1 << 17)
@@ -93,13 +92,6 @@ typedef struct {
 	unsigned int size;
 } efuse_obj_field_t;
 
-typedef enum efuse_mrk_checknum_status_s {
-	EFUSE_MRK_CHECKNUM_SUCCESS             = 0,
-
-	EFUSE_MRK_CHECKNUM_NOT_SUPPORTED       = 1,
-	EFUSE_MRK_CHECKNUM_INVALID_ARGUMENT    = 2,
-} efuse_mrk_checknum_status_e;
-
 typedef struct {
 	char name[48];
 	unsigned char data[32];
@@ -132,8 +124,15 @@ uint32_t efuse_obj_get_lock(char *name);
 extern efuse_obj_field_t efuse_field;
 #endif /* CONFIG_EFUSE_OBJ_API */
 #ifdef CONFIG_EFUSE_MRK_GET_CHECKNUM
-uint32_t efuse_mrk_get_checknum(char *name, uint32_t *checknum);
-uint32_t meson_efuse_mrk_get_checknum(char *name, uint32_t *checknum);
+typedef enum efuse_mrk_checknum_status_s {
+	EFUSE_MRK_CHECKNUM_SUCCESS             = 0,
+
+	EFUSE_MRK_CHECKNUM_NOT_SUPPORTED       = 1,
+	EFUSE_MRK_CHECKNUM_INVALID_ARGUMENT    = 2,
+} efuse_mrk_checknum_status_e;
+
+uint32_t efuse_mrk_get_checknum(char *name, uint32_t longmrk, uint32_t *checknum);
+uint32_t meson_efuse_mrk_get_checknum(char *name, uint32_t longmrk, uint32_t *checknum);
 #endif
 #endif
 

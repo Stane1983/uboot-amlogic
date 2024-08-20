@@ -53,4 +53,6 @@ source "drivers/amlogic/pm/Kconfig"
 
 source "drivers/amlogic/wifi/Kconfig"
 
+source "drivers/amlogic/efuse/Kconfig"
+
 endmenu

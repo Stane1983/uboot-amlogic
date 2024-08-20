@@ -104,7 +104,7 @@ uint32_t meson_efuse_obj_write(uint32_t obj_id, uint8_t *buff, uint32_t size)
 #endif /* CONFIG_EFUSE_OBJ_API */
 
 #ifdef CONFIG_EFUSE_MRK_GET_CHECKNUM
-uint32_t meson_efuse_mrk_get_checknum(char *name, uint32_t *checknum)
+uint32_t meson_efuse_mrk_get_checknum(char *name, uint32_t longmrk, uint32_t *checksum)
 {
 	uint32_t rc = EFUSE_MRK_CHECKNUM_SUCCESS;
 	struct arm_smccc_res res;
@@ -119,10 +119,13 @@ uint32_t meson_efuse_mrk_get_checknum(char *name, uint32_t *checknum)
 
 	strncpy((void *)sharemem_input_base, name, 16);
 
-	arm_smccc_smc(EFUSE_MRK_GET_CHECKNUM, 0, 0, 0, 0, 0, 0, 0, &res);
+	arm_smccc_smc(EFUSE_MRK_GET_CHECKNUM, longmrk, 0, 0, 0, 0, 0, 0, &res);
 
 	rc = res.a0;
-	*checknum = res.a1;
+	if (longmrk == 1)
+		memcpy((void *)checksum, (void *)sharemem_output_base, 16);
+	else
+		*checksum = res.a1;
 
 	return rc;
 }

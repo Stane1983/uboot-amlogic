@@ -1,0 +1,6 @@
+
+config EFUSE_MRK_GET_CHECKNUM
+	bool "efuse get MRK checksum support"
+	default y
+	help
+	  Enable command for get MRK checksum

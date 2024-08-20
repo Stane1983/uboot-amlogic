@@ -374,14 +374,14 @@ uint32_t efuse_obj_get_lock(char *name)
 #endif /* CONFIG_EFUSE_OBJ_API */
 
 #ifdef CONFIG_EFUSE_MRK_GET_CHECKNUM
-uint32_t efuse_mrk_get_checknum(char *name, uint32_t *checknum)
+uint32_t efuse_mrk_get_checknum(char *name, uint32_t longmrk, uint32_t *checknum)
 {
 	uint32_t ret;
 	char mrk_name[16];
 
 	memset(mrk_name, 0, sizeof(mrk_name));
 	strncpy(mrk_name, name, sizeof(mrk_name) - 1);
-	ret = meson_efuse_mrk_get_checknum(name, checknum);
+	ret = meson_efuse_mrk_get_checknum(name, longmrk, checknum);
 	return ret;
 }
 #endif
