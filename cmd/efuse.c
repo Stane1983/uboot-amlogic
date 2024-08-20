@@ -410,11 +410,41 @@ int do_efuse_mrk(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	memset(name, 0, sizeof(name));
 	strncpy(name, argv[1], sizeof(name) - 1);
-	if (!efuse_mrk_get_checknum(name, &checknum)) {
+	rc = efuse_mrk_get_checknum(name, 0, &checknum);
+	if (!rc) {
 		printf("%s: 0x%08x\n", argv[1], checknum);
 		rc = CMD_RET_SUCCESS;
+	} else if (rc == EFUSE_MRK_CHECKNUM_NOT_SUPPORTED) {
+		printf("MRK field %s not supported\n", argv[1]);
 	} else {
-		printf("get mrk checknum for %s failed\n", argv[1]);
+		printf("get mrk checknum for %s failed, MRK field may not be written\n", argv[1]);
+	}
+
+	return rc;
+}
+
+int do_efuse_mrk_long(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	uint32_t rc = CMD_RET_FAILURE;
+	char name[16];
+	uint32_t checknum[4];
+
+	if (argc != 2) {
+		printf("Invalid number of arguments %d\n", argc);
+		return CMD_RET_USAGE;
+	}
+
+	memset(name, 0, sizeof(name));
+	strncpy(name, argv[1], sizeof(name) - 1);
+	rc = efuse_mrk_get_checknum(name, 1, &checknum[0]);
+	if (!rc) {
+		printf("%s: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+			argv[1], checknum[0], checknum[1], checknum[2], checknum[3]);
+		rc = CMD_RET_SUCCESS;
+	} else if (rc == EFUSE_MRK_CHECKNUM_NOT_SUPPORTED) {
+		printf("MRK field %s not supported\n", argv[1]);
+	} else {
+		printf("get mrk checknum for %s failed, MRK field may not be written\n", argv[1]);
 	}
 
 	return rc;
@@ -422,6 +452,7 @@ int do_efuse_mrk(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 static char efuse_mrk_help_text[] =
 	"<MRK>\n"
+	"efuse_mrk | efuse_mkr_long,\n"
 	"Supported MRK includes: DVGK, DVUK,\n"
 	"DGPK1, DGPK2,\n"
 	"ETSI_SCK_0, ETSI_SCK_1, ETSI_SCK_2,\n"
@@ -429,5 +460,9 @@ static char efuse_mrk_help_text[] =
 
 U_BOOT_CMD(efuse_mrk,	2,	0,	do_efuse_mrk,
 	"eFUSE mrk checknum", efuse_mrk_help_text
+);
+
+U_BOOT_CMD(efuse_mrk_long,	2,	0,	do_efuse_mrk_long,
+	"eFUSE mrk long checknum", efuse_mrk_help_text
 );
 #endif /* CONFIG_EFUSE_MRK_GET_CHECKNUM */

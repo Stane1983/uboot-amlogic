@@ -116,8 +116,8 @@ uint32_t efuse_obj_get_lock(char *name);
 extern efuse_obj_field_t efuse_field;
 #endif /* CONFIG_EFUSE_OBJ_API */
 #ifdef CONFIG_EFUSE_MRK_GET_CHECKNUM
-uint32_t efuse_mrk_get_checknum(char *name, uint32_t *checknum);
-uint32_t meson_efuse_mrk_get_checknum(char *name, uint32_t *checknum);
+uint32_t efuse_mrk_get_checknum(char *name, uint32_t longmrk, uint32_t *checksum);
+uint32_t meson_efuse_mrk_get_checknum(char *name, uint32_t longmrk, uint32_t *checksum);
 #endif
 #endif
 
