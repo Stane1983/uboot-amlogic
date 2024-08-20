@@ -25,7 +25,24 @@
 #define BOOT_FIP			"fip"
 #define MAX_MTD_CNT			2
 
+struct mtd_info;
+struct mtd_partition;
 extern struct mtd_partition *get_aml_mtd_partition(void);
 extern int get_aml_partition_count(void);
 
+int mtd_add_normal_partitions(struct mtd_info *mtd,
+			       const struct mtd_partition *parts,
+			       int nbparts, int normal_offset);
+int mtd_add_partitions(struct mtd_info *mtd,
+			const struct mtd_partition *parts,
+			int nbparts);
+int mtd_add_boot_partitions(struct mtd_info *mtd,
+			     struct mtd_partition *parts,
+			     int nparts);
+int mtd_get_boot_parts_num(void);
+int mtd_get_boot_partition(struct mtd_info *mtd,
+			    struct mtd_partition *parts,
+			    uint8_t index,
+			    uint8_t cnt);
+uint64_t mtd_get_normal_part_offset(struct mtd_info *mtd);
 #endif/* __AMLMTD_H_ */

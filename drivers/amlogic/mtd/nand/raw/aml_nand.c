@@ -124,144 +124,6 @@ int aml_nand_block_bad_scrub_update_bbt(struct mtd_info *mtd)
 	return 0;
 }
 
-static int aml_nand_add_partition(struct aml_nand_chip *aml_chip)
-{
-	struct nand_chip *chip = &aml_chip->chip;
-	struct mtd_info *mtd = &chip->mtd;
-	struct aml_nand_platform *plat = aml_chip->platform;
-#ifdef CONFIG_MTD_PARTITIONS
-	struct mtd_partition *temp_parts = NULL;
-	struct mtd_partition *parts;
-	int nr, i, ret = 0;
-	loff_t adjust_offset = 0;
-	u64 part_size = 0;
-	int reserved_part_blk_num = MTD_RSV_BLOCK_CNT;
-	u64 fip_part_size = 0;
-#ifndef CONFIG_NOT_SKIP_BAD_BLOCK
-	int phys_erase_shift, error = 0, internal_part_count = 0;
-	u64 start_blk = 0, part_blk = 0;
-	loff_t offset;
-
-	phys_erase_shift = fls(mtd->erasesize) - 1;
-	if (phys_erase_shift < 0) {
-		pr_info("%s %d can not get erase shift\n",
-				__func__, __LINE__);
-		return -EINVAL;
-	}
-#endif
-	if (!strncmp((char *)plat->name, NAND_BOOT_NAME, strlen((const char *)NAND_BOOT_NAME))) {
-		/* boot partition must be set as this because of romboot restrict */
-		parts = kzalloc(sizeof(struct mtd_partition),
-				GFP_KERNEL);
-		if (!parts)
-			return -ENOMEM;
-		parts->name = NAND_BOOT_NAME;
-		parts->offset = 0;
-		parts->size = (mtd->writesize * 1024);
-		nr = 1;
-	} else {
-		/* normal partitions */
-		parts = get_aml_mtd_partition();
-		nr = get_aml_partition_count();
-		adjust_offset = 1024 * mtd->writesize +
-			(loff_t)reserved_part_blk_num * mtd->erasesize;
-
-		if (store_get_device_bootloader_mode() == COMPACT_BOOTLOADER)
-			goto _COMPAT_BOOTLOADER;
-
-		if (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER) {
-			fip_part_size = g_ssp.boot_entry[BOOT_AREA_DEVFIP].size * CONFIG_NAND_TPL_COPY_NUM;
-			adjust_offset = g_ssp.boot_entry[BOOT_AREA_DEVFIP].offset + fip_part_size;
-			internal_part_count = 4;
-		} else {
-			fip_part_size = CONFIG_TPL_SIZE_PER_COPY * CONFIG_NAND_TPL_COPY_NUM;
-			internal_part_count = 1;
-		}
-
-		for (i = 0; i < internal_part_count; i++) {
-			temp_parts = parts + i;
-			if (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER) {
-				temp_parts->offset = g_ssp.boot_entry[i + 1].offset;
-				if (i == internal_part_count - 1)
-					temp_parts->size = fip_part_size;
-				else
-					temp_parts->size = g_ssp.boot_entry[i + 1].size *
-							   g_ssp.boot_backups;
-			} else {
-				temp_parts->offset = adjust_offset;
-				temp_parts->size = fip_part_size;
-				adjust_offset += fip_part_size;
-			}
-		}
-
-_COMPAT_BOOTLOADER:
-		for (i = internal_part_count; i < nr; i++) {
-			temp_parts = parts + i;
-			if (mtd->size < adjust_offset) {
-				printf("%s %d error : over the nand size!!!\n",
-				       __func__, __LINE__);
-				return -ENOMEM;
-			}
-			temp_parts->offset = adjust_offset;
-			part_size = temp_parts->size;
-			if (i == nr - 1)
-				part_size = mtd->size - adjust_offset;
-#ifndef CONFIG_NOT_SKIP_BAD_BLOCK
-			offset = 0;
-			start_blk = 0;
-			part_blk = part_size >> phys_erase_shift;
-
-			do {
-				offset = adjust_offset + start_blk *
-					mtd->erasesize;
-				error = mtd->_block_isbad(mtd, offset);
-				if (error == FACTORY_BAD_BLOCK_ERROR) {
-					pr_info("%s:%d factory bad addr=%llx\n",
-							__func__, __LINE__,
-							(u64)(offset >> phys_erase_shift));
-					if (i != nr - 1) {
-						adjust_offset += mtd->erasesize;
-						continue;
-					}
-				}
-				start_blk++;
-			} while (start_blk < part_blk);
-#endif
-			if (!temp_parts->name) {
-				temp_parts->name = kzalloc(MAX_MTD_PART_NAME_LEN, GFP_KERNEL);
-				if (!temp_parts->name)
-					return -ENOMEM;
-				sprintf((char *)temp_parts->name, "mtd%d", nr);
-			}
-			adjust_offset += part_size;
-			temp_parts->size = adjust_offset - temp_parts->offset;
-		}
-	}
-	ret = add_mtd_partitions(mtd, parts, nr);
-	if (nr == 1)
-		kfree(parts);
-	return ret;
-#else
-	return add_mtd_device(mtd);
-#endif
-}
-
-/*
-void nand_get_chip(void *chip)
-{
-
-	struct aml_nand_chip *aml_chip = (struct aml_nand_chip *)chip;
-	struct hw_controller *controller = aml_chip->controller;
-	int ret = 0;
-
-	ret = pinctrl_select_state(controller->device, "default");
-	if (ret) {
-		printf("ERROR get pinmux failed\n");
-	}
-	return;
-}
-*/
-
 static inline void nand_release_chip(void)
 {
 	NFC_SEND_CMD_STANDBY(controller, 5);
@@ -1915,6 +1777,12 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 	int oobmul;
 	unsigned valid_chip_num = 0;
 	struct nand_oobfree *oobfree = NULL;
+	int boot_parts_num = mtd_get_boot_parts_num();
+	struct mtd_partition *parts = NULL;
+
+	parts = kcalloc(boot_parts_num, sizeof(*parts), GFP_KERNEL);
+	if (!parts)
+		return -ENOMEM;
 
 	chip->ecc.layout = &aml_nand_oob_64;
 	chip->select_chip = aml_nand_select_chip;
@@ -2058,7 +1926,8 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 			kzalloc((mtd->size >> mtd->erasesize_shift), GFP_KERNEL);
 		if (aml_chip->block_status == NULL) {
 			pr_info("no memory for flash block status\n");
-			return -ENOMEM;
+			err = -ENOMEM;
+			goto exit_error;
 		}
 		memset(aml_chip->block_status, 0, (mtd->size >> mtd->erasesize_shift));
 
@@ -2075,13 +1944,26 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 		meson_rsv_check(aml_chip->rsv->dtb);
 #endif
 		meson_rsv_check(aml_chip->rsv->ddr_para);
+
+		mtd_get_boot_partition(mtd, parts, 1, boot_parts_num - 1);
+		err = mtd_add_boot_partitions(mtd, parts, boot_parts_num - 1);
+		if (err)
+			goto exit_error;
+
+		err = mtd_add_normal_partitions(mtd,
+						get_aml_mtd_partition(),
+						get_aml_partition_count(),
+						mtd_get_normal_part_offset(mtd));
+		if (err)
+			goto exit_error;
+	} else {
+		mtd_get_boot_partition(mtd, parts, 0, 1);
+		err = mtd_add_boot_partitions(mtd, parts, 1);
+		if (err)
+			goto exit_error;
 	}
 
-	if (aml_nand_add_partition(aml_chip) != 0) {
-		err = -ENXIO;
-		goto exit_error;
-	}
-
+	kfree(parts);
 	printf("%s initialized ok\n", mtd->name);
 	return 0;
 
@@ -2107,6 +1989,8 @@ exit_error:
 		kfree(aml_chip->rsv);
 		aml_chip->rsv = NULL;
 	}
+
+	kfree(parts);
 	return err;
 }
 

@@ -165,6 +165,11 @@ struct device_node_t {
 #define STORE_ERASE_DATA		BIT(1)
 #define STORE_ERASE_RSV			BIT(2)
 
+static inline bool store_boot_layout_is_discrete_default(void)
+{
+	return (BOOTLOADER_MODE_ADVANCE_INIT && g_ssp.boot_layout == BOOT_DISCRETE_DEFAULT);
+}
+
 static inline bool store_boot_layout_is_discrete_all(void)
 {
 	return g_ssp.boot_layout == BOOT_DISCRETE_ALL;
