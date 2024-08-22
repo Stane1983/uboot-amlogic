@@ -1020,6 +1020,111 @@ static void vpp_top_post2_matrix_yuv2rgb(int vpp_top)
 	}
 
 }
+
+static int YUV_to_UYV_coeff12[MATRIX_5x3_COEF_SIZE] = {
+	0, 0, 0, /* pre offset */
+	COEFF_NORM12(0.0),	COEFF_NORM12(1.0),	COEFF_NORM12(0.0),
+	COEFF_NORM12(1.0),	COEFF_NORM12(0.0),	COEFF_NORM12(0.0),
+	COEFF_NORM12(0.0),	COEFF_NORM12(0.0),	COEFF_NORM12(1.0),
+	0, 0, 0, /* 30/31/32 */
+	0, 0, 0, /* 40/41/42 */
+	0, 0, 0, /* offset */
+	0, 0, 0 /* mode, right_shift, clip_en */
+};
+
+static void vpp_top_post2_matrix_yuv2CrYCb(int vpp_top)
+{
+	int *m = NULL;
+	unsigned int reg_mtrx_coeff00_01;
+	unsigned int reg_mtrx_coeff02_10;
+	unsigned int reg_mtrx_coeff11_12;
+	unsigned int reg_mtrx_coeff20_21;
+	unsigned int reg_mtrx_coeff22;
+	unsigned int reg_mtrx_offset0_1;
+	unsigned int reg_mtrx_offset2;
+	unsigned int reg_mtrx_pre_offset0_1;
+	unsigned int reg_mtrx_pre_offset2;
+	unsigned int reg_mtrx_en_ctrl;
+
+	m = YUV_to_UYV_coeff12;
+
+	reg_mtrx_coeff00_01 = VPP_POST2_MATRIX_COEF00_01;
+	reg_mtrx_coeff02_10 = VPP_POST2_MATRIX_COEF02_10;
+	reg_mtrx_coeff11_12 = VPP_POST2_MATRIX_COEF11_12;
+	reg_mtrx_coeff20_21 = VPP_POST2_MATRIX_COEF20_21;
+	reg_mtrx_coeff22 = VPP_POST2_MATRIX_COEF22;
+	reg_mtrx_offset0_1 = VPP_POST2_MATRIX_OFFSET0_1;
+	reg_mtrx_offset2 = VPP_POST2_MATRIX_COEF22;
+	reg_mtrx_pre_offset0_1 = VPP_POST2_MATRIX_PRE_OFFSET0_1;
+	reg_mtrx_pre_offset2 = VPP_POST2_MATRIX_PRE_OFFSET2;
+	reg_mtrx_en_ctrl = VPP_POST2_MATRIX_EN_CTRL;
+
+	if (vpp_top == 0) {
+		/* VPP WRAP POST2 matrix */
+		vpp_reg_write(reg_mtrx_pre_offset0_1,
+			(((m[0] >> 2) & 0xfff) << 16) | ((m[1] >> 2) & 0xfff));
+		vpp_reg_write(reg_mtrx_pre_offset2,
+			(m[2] >> 2) & 0xfff);
+		vpp_reg_write(reg_mtrx_coeff00_01,
+			(((m[3] >> 2) & 0x1fff) << 16) | ((m[4] >> 2) & 0x1fff));
+		vpp_reg_write(reg_mtrx_coeff02_10,
+			(((m[5] >> 2) & 0x1fff) << 16) | ((m[6] >> 2) & 0x1fff));
+		vpp_reg_write(reg_mtrx_coeff11_12,
+			(((m[7] >> 2) & 0x1fff) << 16) | ((m[8] >> 2) & 0x1fff));
+		vpp_reg_write(reg_mtrx_coeff20_21,
+			(((m[9] >> 2) & 0x1fff) << 16) | ((m[10] >> 2) & 0x1fff));
+		vpp_reg_write(reg_mtrx_coeff22,
+			(m[11] >> 2) & 0x1fff);
+		vpp_reg_write(reg_mtrx_offset0_1,
+			(((m[18] >> 2) & 0xfff) << 16) | ((m[19] >> 2) & 0xfff));
+		vpp_reg_write(reg_mtrx_offset2,
+			(m[20] >> 2) & 0xfff);
+		vpp_reg_setb(reg_mtrx_en_ctrl, 1, 0, 1);
+	} else if (vpp_top == 1) {
+		vpp_reg_write(VPP1_MATRIX_PRE_OFFSET0_1,
+			(((m[0] >> 2) & 0xfff) << 16) | ((m[1] >> 2) & 0xfff));
+		vpp_reg_write(VPP1_MATRIX_PRE_OFFSET2,
+			(m[2] >> 2) & 0xfff);
+		vpp_reg_write(VPP1_MATRIX_COEF00_01,
+			(((m[3] >> 2) & 0x1fff) << 16) | ((m[4] >> 2) & 0x1fff));
+		vpp_reg_write(VPP1_MATRIX_COEF02_10,
+			(((m[5] >> 2) & 0x1fff) << 16) | ((m[6] >> 2) & 0x1fff));
+		vpp_reg_write(VPP1_MATRIX_COEF11_12,
+			(((m[7] >> 2) & 0x1fff) << 16) | ((m[8] >> 2) & 0x1fff));
+		vpp_reg_write(VPP1_MATRIX_COEF20_21,
+			(((m[9] >> 2) & 0x1fff) << 16) | ((m[10] >> 2) & 0x1fff));
+		vpp_reg_write(VPP1_MATRIX_COEF22,
+			(m[11] >> 2) & 0x1fff);
+
+		vpp_reg_write(VPP1_MATRIX_OFFSET0_1,
+			(((m[18] >> 2) & 0xfff) << 16) | ((m[19] >> 2) & 0xfff));
+		vpp_reg_write(VPP1_MATRIX_OFFSET2,
+			(m[20] >> 2) & 0xfff);
+		vpp_reg_setb(VPP1_MATRIX_EN_CTRL, 1, 0, 1);
+	} else if (vpp_top == 2) {
+		vpp_reg_write(VPP2_MATRIX_PRE_OFFSET0_1,
+			(((m[0] >> 2) & 0xfff) << 16) | ((m[1] >> 2) & 0xfff));
+		vpp_reg_write(VPP2_MATRIX_PRE_OFFSET2,
+			(m[2] >> 2) & 0xfff);
+		vpp_reg_write(VPP2_MATRIX_COEF00_01,
+			(((m[3] >> 2) & 0x1fff) << 16) | ((m[4] >> 2) & 0x1fff));
+		vpp_reg_write(VPP2_MATRIX_COEF02_10,
+			(((m[5] >> 2) & 0x1fff) << 16) | ((m[6] >> 2) & 0x1fff));
+		vpp_reg_write(VPP2_MATRIX_COEF11_12,
+			(((m[7] >> 2) & 0x1fff) << 16) | ((m[8] >> 2) & 0x1fff));
+		vpp_reg_write(VPP2_MATRIX_COEF20_21,
+			(((m[9] >> 2) & 0x1fff) << 16) | ((m[10] >> 2) & 0x1fff));
+		vpp_reg_write(VPP2_MATRIX_COEF22,
+			(m[11] >> 2) & 0x1fff);
+
+		vpp_reg_write(VPP2_MATRIX_OFFSET0_1,
+			(((m[18] >> 2) & 0xfff) << 16) | ((m[19] >> 2) & 0xfff));
+		vpp_reg_write(VPP2_MATRIX_OFFSET2,
+			(m[20] >> 2) & 0xfff);
+		vpp_reg_setb(VPP2_MATRIX_EN_CTRL, 1, 0, 1);
+	}
+}
+
 static void vpp_set_matrix_ycbcr2rgb(int vd1_or_vd2_or_post, int mode)
 {
 	//VPP_PR("%s: %d, %d\n", __func__, vd1_or_vd2_or_post, mode);
@@ -2041,6 +2146,9 @@ void vpp_matrix_update(int type)
 		break;
 	case VPP_CM_YUV:
 		break;
+	case VPP_CM_CrYCb:
+		vpp_top_post2_matrix_yuv2CrYCb(0);
+		break;
 	default:
 		break;
 	}
@@ -2072,6 +2180,9 @@ void vpp_viu2_matrix_update(int type)
 		set_viu2_osd_matrix_rgb2yuv(1);
 		#endif
 		break;
+	case VPP_CM_CrYCb:
+		vpp_top_post2_matrix_yuv2CrYCb(1);
+		break;
 	default:
 		break;
 	}
@@ -2100,6 +2211,9 @@ void vpp_viu3_matrix_update(int type)
 		#ifndef AML_T7_DISPLAY
 		//set_viu2_osd_matrix_rgb2yuv(2);
 		#endif
+		break;
+	case VPP_CM_CrYCb:
+		vpp_top_post2_matrix_yuv2CrYCb(2);
 		break;
 	default:
 		break;

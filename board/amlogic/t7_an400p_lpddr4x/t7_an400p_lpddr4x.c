@@ -36,6 +36,9 @@
 #ifdef CONFIG_AML_LCD
 #include <amlogic/media/vout/lcd/lcd_vout.h>
 #endif
+#ifdef CONFIG_AML_DisplayPort_TX
+#include <amlogic/media/vout/DisplayPort/DPTX_export.h>
+#endif
 #include <asm/arch/pmic_bd71837.h>
 #ifdef CONFIG_RX_RTERM
 #include <amlogic/aml_hdmirx.h>
@@ -171,6 +174,9 @@ int board_late_init(void)
 #endif
 #ifdef CONFIG_AML_LCD
 	lcd_probe();
+#endif
+#ifdef CONFIG_AML_DisplayPort_TX
+	dptx_probe();
 #endif
 	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_e);
 

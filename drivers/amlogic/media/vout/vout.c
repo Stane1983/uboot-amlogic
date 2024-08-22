@@ -43,6 +43,8 @@ static struct cntor_name2val_s vout_supported_cnt_list[] = {
 	{.name = "EDP-A",    .val = 0x130},
 	{.name = "EDP-B",    .val = 0x131},
 	{.name = "LCD-A",    .val = 0x1f0},
+	{.name = "DP-A",     .val = 0x200},
+	{.name = "DP-B",     .val = 0x201},
 	{.name = "HDMI-A-A", .val = 0x300},
 	{.name = "HDMI-A-B", .val = 0x301},
 	{.name = "HDMI-A-C", .val = 0x302},

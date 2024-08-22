@@ -37,6 +37,9 @@
 #ifdef CONFIG_AML_LCD
 #include <amlogic/media/vout/lcd/lcd_vout.h>
 #endif
+#ifdef CONFIG_AML_DisplayPort_TX
+#include <amlogic/media/vout/DisplayPort/DPTX_export.h>
+#endif
 #ifdef CONFIG_RX_RTERM
 #include <amlogic/aml_hdmirx.h>
 #endif

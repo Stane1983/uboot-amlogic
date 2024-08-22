@@ -15,6 +15,7 @@
 #else
 #define VPP_CM_RGB     0
 #define VPP_CM_YUV     2
+#define VPP_CM_CrYCb   4
 #define VPP_CM_INVALID 0xff
 __weak void vpp_matrix_update(int cfmt) {}
 __weak void vpp_viu2_matrix_update(int cfmt) {}
@@ -22,6 +23,15 @@ __weak void vpp_viu3_matrix_update(int cfmt) {}
 #endif
 
 #include <amlogic/media/vout/aml_vout.h>
+
+#ifdef CONFIG_AML_LCD
+#include <amlogic/media/vout/lcd/aml_lcd.h>
+#endif
+
+#ifdef CONFIG_AML_DisplayPort_TX
+#include <amlogic/media/vout/DisplayPort/DPTX_export.h>
+#endif
+
 #ifdef CONFIG_AML_HDMITX
 #ifdef CONFIG_AML_HDMITX20
 #include <amlogic/media/vout/hdmitx/hdmitx.h>
@@ -32,10 +42,6 @@ __weak void vpp_viu3_matrix_update(int cfmt) {}
 
 #ifdef CONFIG_AML_CVBS
 #include <amlogic/media/vout/aml_cvbs.h>
-#endif
-
-#ifdef CONFIG_AML_LCD
-#include <amlogic/media/vout/lcd/aml_lcd.h>
 #endif
 
 #if defined(CONFIG_AML_CVBS) || defined(CONFIG_AML_HDMITX) || defined(CONFIG_AML_LCD)
@@ -212,6 +218,12 @@ static int do_vout_list(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv
 	aml_lcd_driver_list_support_mode();
 #endif
 
+#ifdef CONFIG_AML_DisplayPort_TX
+		printf("\nvalid DisplayPort mode:\n");
+		dptx_driver_list_vmode(0);
+		dptx_driver_list_vmode(1);
+#endif
+
 	return CMD_RET_SUCCESS;
 }
 
@@ -227,9 +239,10 @@ static int do_vout_prepare(cmd_tbl_t *cmdtp, int flag, int argc, char *const arg
 	memset(mode, 0, 64);
 	sprintf(mode, "%s", argv[1]);
 #endif
-#ifdef CONFIG_AML_LCD
+#if defined(CONFIG_AML_LCD) || defined(CONFIG_AML_DisplayPort_TX)
 	unsigned int venc_index = on_connector_dev & 0xf;
 #endif
+
 #ifdef CONFIG_AML_HDMITX
 	struct vinfo_s *vinfo  = vout_get_current_vinfo();
 	unsigned int fmt_mode = vinfo->vpp_post_out_color_fmt;
@@ -249,6 +262,21 @@ static int do_vout_prepare(cmd_tbl_t *cmdtp, int flag, int argc, char *const arg
 		vpp_viu1_cm_state = VPP_CM_RGB;
 		vpp_matrix_update(VPP_CM_RGB);
 		aml_lcd_driver_prepare(venc_index, mode);
+		return CMD_RET_SUCCESS;
+#endif
+		break;
+	case CONNECTOR_DEV_DisplayPort:
+#ifdef CONFIG_AML_DisplayPort_TX
+		mux_sel = dptx_driver_outputmode_check(venc_index, mode);
+		venc_sel = mux_sel & 0xf;
+		if (venc_sel != VIU_MUX_ENCL)
+			break;
+		vout_viu_mux(VOUT_VIU1_SEL, VIU_MUX_ENCL | venc_index << 4);
+		if (dptx_driver_prepare(venc_index, mode))
+			vpp_viu1_cm_state = VPP_CM_CrYCb;
+		else
+			vpp_viu1_cm_state = VPP_CM_RGB;
+		vpp_matrix_update(vpp_viu1_cm_state);
 		return CMD_RET_SUCCESS;
 #endif
 		break;
@@ -301,9 +329,10 @@ static int do_vout_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv
 	memset(mode, 0, 64);
 	sprintf(mode, "%s", argv[1]);
 #endif
-#ifdef CONFIG_AML_LCD
+#if defined(CONFIG_AML_LCD) || defined(CONFIG_AML_DisplayPort_TX)
 	unsigned int venc_index = on_connector_dev & 0xf;
 #endif
+
 #ifdef CONFIG_AML_HDMITX
 	struct vinfo_s *vinfo = vout_get_current_vinfo();
 	unsigned int fmt_mode = vinfo->vpp_post_out_color_fmt;
@@ -339,6 +368,28 @@ static int do_vout_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv
 		if (vpp_viu1_cm_state != VPP_CM_RGB)
 			vpp_matrix_update(VPP_CM_RGB);
 		aml_lcd_driver_enable(venc_index, mode);
+		run_command("setenv vout_init enable", 0);
+		return CMD_RET_SUCCESS;
+#endif
+		break;
+	case CONNECTOR_DEV_DisplayPort:
+#ifdef CONFIG_AML_DisplayPort_TX
+		mux_sel = dptx_driver_outputmode_check(venc_index, mode);
+		venc_sel = mux_sel & 0xf;
+		if (venc_sel != VIU_MUX_ENCL)
+			break;
+		vout_viu_mux(VOUT_VIU1_SEL, VIU_MUX_ENCL | venc_index << 4);
+		if (dptx_driver_enable(venc_index, mode)) {
+			if (vpp_viu1_cm_state != VPP_CM_CrYCb) {
+				vpp_viu1_cm_state = VPP_CM_CrYCb;
+				vpp_matrix_update(VPP_CM_CrYCb);
+			}
+		} else {
+			if (vpp_viu1_cm_state != VPP_CM_RGB) {
+				vpp_viu1_cm_state = VPP_CM_RGB;
+				vpp_matrix_update(VPP_CM_RGB);
+			}
+		}
 		run_command("setenv vout_init enable", 0);
 		return CMD_RET_SUCCESS;
 #endif
@@ -470,6 +521,12 @@ static int do_vout2_list(cmd_tbl_t * cmdtp, int flag, int argc, char * const arg
 	aml_lcd_driver_list_support_mode();
 #endif
 
+#ifdef CONFIG_AML_DisplayPort_TX
+		printf("\nvalid DisplayPort mode:\n");
+		dptx_driver_list_vmode(0);
+		dptx_driver_list_vmode(1);
+#endif
+
 	return CMD_RET_SUCCESS;
 }
 
@@ -485,9 +542,10 @@ static int do_vout2_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const arg
 	memset(mode, 0, 64);
 	sprintf(mode, "%s", argv[1]);
 #endif
-#ifdef CONFIG_AML_LCD
+#if defined(CONFIG_AML_LCD) || defined(CONFIG_AML_DisplayPort_TX)
 	unsigned int venc_index = on_connector_dev & 0xf;
 #endif
+
 #ifdef CONFIG_AML_HDMITX
 	char str[64];
 #endif
@@ -507,6 +565,17 @@ static int do_vout2_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const arg
 			break;
 		aml_lcd_driver_enable(venc_index, mode);
 		run_command("setenv vout2_init enable", 0);
+		return CMD_RET_SUCCESS;
+#endif
+		break;
+	case CONNECTOR_DEV_DisplayPort:
+#ifdef CONFIG_AML_DisplayPort_TX
+		mux_sel = dptx_driver_outputmode_check(venc_index, mode);
+		venc_sel = mux_sel & 0xf;
+		if (venc_sel != VIU_MUX_ENCL)
+			break;
+		dptx_driver_enable(venc_index, mode);
+		run_command("setenv vout_init enable", 0);
 		return CMD_RET_SUCCESS;
 #endif
 		break;
@@ -556,7 +625,7 @@ static int do_vout2_prepare(cmd_tbl_t *cmdtp, int flag, int argc, char *const ar
 	memset(mode, 0, 64);
 	sprintf(mode, "%s", argv[1]);
 #endif
-#ifdef CONFIG_AML_LCD
+#if defined(CONFIG_AML_LCD) || defined(CONFIG_AML_DisplayPort_TX)
 	unsigned int venc_index = on_connector_dev & 0xf;
 #endif
 
@@ -573,6 +642,20 @@ static int do_vout2_prepare(cmd_tbl_t *cmdtp, int flag, int argc, char *const ar
 		vout_viu_mux(VOUT_VIU2_SEL, VIU_MUX_ENCL | venc_index << 4);
 		vpp_viu2_matrix_update(VPP_CM_RGB);
 		aml_lcd_driver_prepare(venc_index, mode);
+		return CMD_RET_SUCCESS;
+#endif
+		break;
+	case CONNECTOR_DEV_DisplayPort:
+#ifdef CONFIG_AML_DisplayPort_TX
+		mux_sel = dptx_driver_outputmode_check(venc_index, mode);
+		venc_sel = mux_sel & 0xf;
+		if (venc_sel != VIU_MUX_ENCL)
+			break;
+		vout_viu_mux(VOUT_VIU2_SEL, VIU_MUX_ENCL | venc_index << 4);
+		if (dptx_driver_prepare(venc_index, mode))
+			vpp_viu2_matrix_update(VPP_CM_CrYCb);
+		else
+			vpp_viu2_matrix_update(VPP_CM_RGB);
 		return CMD_RET_SUCCESS;
 #endif
 		break;
@@ -635,6 +718,11 @@ static int do_vout3_list(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv
 	aml_lcd_driver_list_support_mode();
 #endif
 
+#ifdef CONFIG_AML_DisplayPort_TX
+		printf("\nvalid DisplayPort mode:\n");
+		dptx_driver_list_vmode(0);
+		dptx_driver_list_vmode(1);
+#endif
 	return CMD_RET_SUCCESS;
 }
 
@@ -653,7 +741,7 @@ static int do_vout3_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const arg
 #ifdef CONFIG_AML_HDMITX
 	char str[64];
 #endif
-#ifdef CONFIG_AML_LCD
+#if defined(CONFIG_AML_LCD) || defined(CONFIG_AML_DisplayPort_TX)
 	unsigned int venc_index = on_connector_dev & 0xf;
 #endif
 
@@ -668,6 +756,17 @@ static int do_vout3_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const arg
 		if (venc_sel != VIU_MUX_ENCL)
 			break;
 		aml_lcd_driver_enable(venc_index, mode);
+		run_command("setenv vout3_init enable", 0);
+		return CMD_RET_SUCCESS;
+#endif
+		break;
+	case CONNECTOR_DEV_DisplayPort:
+#ifdef CONFIG_AML_DisplayPort_TX
+		mux_sel = dptx_driver_outputmode_check(venc_index, mode);
+		venc_sel = mux_sel & 0xf;
+		if (venc_sel != VIU_MUX_ENCL)
+			break;
+		dptx_driver_enable(venc_index, mode);
 		run_command("setenv vout3_init enable", 0);
 		return CMD_RET_SUCCESS;
 #endif
@@ -717,7 +816,7 @@ static int do_vout3_prepare(cmd_tbl_t *cmdtp, int flag, int argc, char *const ar
 	memset(mode, 0, (sizeof(char) * 64));
 	sprintf(mode, "%s", argv[1]);
 #endif
-#ifdef CONFIG_AML_LCD
+#if defined(CONFIG_AML_LCD) || defined(CONFIG_AML_DisplayPort_TX)
 	unsigned int venc_index = on_connector_dev & 0xf;
 #endif
 
@@ -734,6 +833,20 @@ static int do_vout3_prepare(cmd_tbl_t *cmdtp, int flag, int argc, char *const ar
 		vout_viu_mux(VOUT_VIU3_SEL, VIU_MUX_ENCL | venc_index << 4);
 		vpp_viu3_matrix_update(VPP_CM_RGB);
 		aml_lcd_driver_prepare(venc_index, mode);
+		return CMD_RET_SUCCESS;
+#endif
+		break;
+	case CONNECTOR_DEV_DisplayPort:
+#ifdef CONFIG_AML_DisplayPort_TX
+		mux_sel = dptx_driver_outputmode_check(venc_index, mode);
+		venc_sel = mux_sel & 0xf;
+		if (venc_sel != VIU_MUX_ENCL)
+			break;
+		vout_viu_mux(VOUT_VIU3_SEL, VIU_MUX_ENCL | venc_index << 4);
+		if (dptx_driver_prepare(venc_index, mode))
+			vpp_viu3_matrix_update(VPP_CM_CrYCb);
+		else
+			vpp_viu3_matrix_update(VPP_CM_RGB);
 		return CMD_RET_SUCCESS;
 #endif
 		break;

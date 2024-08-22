@@ -21,22 +21,27 @@ enum viu_mux_e {
 	VIU_MUX_MAX,
 };
 
-#define CONNECTOR_DEV_MASK     0x0f00
-#define CONNECTOR_SUB_DEV_MASK 0x00f0
-#define CONNECTOR_ENC_IDX_MASK 0x000f
+#define CONNECTOR_DEV_MASK           0x0f00
+#define CONNECTOR_SUB_DEV_MASK       0x00f0
+#define CONNECTOR_ENC_IDX_MASK       0x000f
 
-#define CONNECTOR_DEV_INVALID  0x0f00
-#define CONNECTOR_DEV_LCD      0x0100
-#define CONNECTOR_DEV_RESERVED 0x0200
-#define CONNECTOR_DEV_HDMI     0x0300
-#define CONNECTOR_DEV_CVBS     0x0400
+#define CONNECTOR_DEV_INVALID        0x0f00
+#define CONNECTOR_DEV_LCD            0x0100
+#define CONNECTOR_DEV_DisplayPort    0x0200
+#define CONNECTOR_DEV_HDMI           0x0300
+#define CONNECTOR_DEV_CVBS           0x0400
 
 #define CONNECTOR_SUB_DEV_INVALID    0x0f00
 #define CONNECTOR_SUB_DEV_LCD_LVDS   0x0000
 #define CONNECTOR_SUB_DEV_LCD_VBYONE 0x0010
 #define CONNECTOR_SUB_DEV_LCD_MIPI   0x0020
 #define CONNECTOR_SUB_DEV_LCD_EDP    0x0030
+
+#define CONNECTOR_SUB_DEV_DP         0x0000
+#define CONNECTOR_SUB_DEV_DP_MST     0x0010
+
 #define CONNECTOR_SUB_DEV_HDMI       0x0000
+
 #define CONNECTOR_SUB_DEV_CVBS       0x0000
 
 unsigned short vout_connector_check(unsigned char vout_index);

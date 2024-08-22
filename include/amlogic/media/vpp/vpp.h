@@ -10,8 +10,9 @@ extern void vpp_init(void);
 void vpp_pq_init(int brightness, int contrast, int sat, int hue);
 void vpp_pq_load(void);
 
-#define VPP_CM_RGB    0   /* same as COLOR_FMT_RGB444*/
-#define VPP_CM_YUV    2   /* same as COLOR_FMT_YUV444*/
+#define VPP_CM_RGB      0   /* same as COLOR_FMT_RGB444*/
+#define VPP_CM_YUV      2   /* same as COLOR_FMT_YUV444*/
+#define VPP_CM_CrYCb    4
 #define VPP_CM_INVALID 0xff
 
 enum vpp_gamma_sel_e {
