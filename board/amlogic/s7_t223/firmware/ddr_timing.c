@@ -7,6 +7,7 @@
 #include <asm/amlogic/arch/timing.h>
 #include <asm/amlogic/arch/ddr_define.h>
 
+#define DDR_FUNC_CONFIG_DISABLE_DDR_DVFS_FUNCTION                   (0 + (1 << 19))
 #define DDR_FUNC_CONFIG_ENABLE_PZQ_DET_DRAM_TYPE_RETURN                   (0 + (1 << 20))
 #define DDR_FUNC_CONFIG_AUTO_DET_DQ_PINMUX_FUNCTION                   (0 + (1 << 21))
 //bit 6 adc_channel bit 0-5 adc value,chan 3 value 8 is layer 2
@@ -143,7 +144,8 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 			0x0, 0, 0, 0
 		},
 		.cfg_board_common_setting.ddr_func = DDR_FUNC_CONFIG_DFE_FUNCTION |
-		DDR_FUNC_CONFIG_ENABLE_PZQ_DET_DRAM_TYPE_RETURN,
+		DDR_FUNC_CONFIG_DISABLE_DDR_DVFS_FUNCTION,
+		//DDR_FUNC_CONFIG_ENABLE_PZQ_DET_DRAM_TYPE_RETURN,
 		.cfg_board_common_setting.board_id = CONFIG_BOARD_ID_MASK,
 		.cfg_board_common_setting.DramType = CONFIG_DDR_TYPE_LPDDR4,
 		.cfg_board_common_setting.enable_lpddr4x_mode = 0,
@@ -312,7 +314,8 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 			0, 0, 0, 0
 		},
 		.cfg_board_common_setting.ddr_func = DDR_FUNC_CONFIG_DFE_FUNCTION |
-		DDR_FUNC_CONFIG_ENABLE_PZQ_DET_DRAM_TYPE_RETURN,
+		DDR_FUNC_CONFIG_DISABLE_DDR_DVFS_FUNCTION,
+		//DDR_FUNC_CONFIG_ENABLE_PZQ_DET_DRAM_TYPE_RETURN,
 		.cfg_board_common_setting.board_id = CONFIG_BOARD_ID_MASK,
 		.cfg_board_common_setting.DramType = CONFIG_DDR_TYPE_DDR4,
 		.cfg_board_common_setting.enable_lpddr4x_mode = 0,
@@ -483,7 +486,8 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 			0, 0, 0, 0
 		},
 		.cfg_board_common_setting.ddr_func =
-		DDR_FUNC_CONFIG_ENABLE_PZQ_DET_DRAM_TYPE_RETURN,
+		DDR_FUNC_CONFIG_DISABLE_DDR_DVFS_FUNCTION,
+		//DDR_FUNC_CONFIG_ENABLE_PZQ_DET_DRAM_TYPE_RETURN,
 		.cfg_board_common_setting.board_id = CONFIG_BOARD_ID_MASK,
 		.cfg_board_common_setting.DramType = CONFIG_DDR_TYPE_DDR3,
 		.cfg_board_common_setting.enable_lpddr4x_mode = 0,
