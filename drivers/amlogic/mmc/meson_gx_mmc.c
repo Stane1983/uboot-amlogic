@@ -739,6 +739,8 @@ static int meson_send_cali_blks(struct udevice *dev, u32 opcode, char *buffer,
 	}
 
 	if (cnt > 1 || err) {
+		if (err & SD_EMMC_RESP_CRC_ERROR || err == -ETIMEDOUT)
+			mdelay(8);
 		stop.cmdidx = MMC_CMD_STOP_TRANSMISSION;
 		stop.cmdarg = 0;
 		stop.resp_type = MMC_RSP_R1b;
