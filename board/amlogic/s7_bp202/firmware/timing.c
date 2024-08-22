@@ -162,9 +162,6 @@ bl2_reg_t __bl2_reg[] __attribute__ ((section(".generic_param"))) = {
 /* gpio/pinmux/pwm init */
 register_ops_t __bl2_ops_reg[MAX_REG_OPS_ENTRIES]
 __attribute__ ((section(".misc_param"))) = {
-	/* Push-pull the TEST_N output high to make VDDCPU_EN more stable */
-	{ PADCTRL_TESTN_O,         (0x1 << 0),    (0x1 << 0), 0, 0, 0 },
-	{ PADCTRL_TESTN_OEN,       (0x0 << 0),    (0x1 << 0), 0, 0, 0 },
 	/* config vmin_ft value */
 	{ 0, VMIN_SS_VALUE, 0xffffffff, 0, BL2_INIT_STAGE_VMIN_FLAG_1, 0 },
 	{ 0, VMIN_TT_VALUE, 0xffffffff, 0, BL2_INIT_STAGE_VMIN_FLAG_2, 0 },
@@ -177,6 +174,9 @@ __attribute__ ((section(".misc_param"))) = {
 #else
 	{ PWM_PWM_H,		   VDDEE_VAL_REG, 0xffffffff, 0, 0, 0},
 #endif
+	/* Push-pull the TEST_N output high to make VDDCPU_EN more stable */
+	{ PADCTRL_TESTN_O,         (0x1 << 0),    (0x1 << 0), 0, 0, 0 },
+	{ PADCTRL_TESTN_OEN,       (0x0 << 0),    (0x1 << 0), 0, 0, 0 },
 	{ PWM_PWM_J,		   VCCK_VAL_REG,  0xffffffff, 0, 0, 0 },
 	{ PWM_MISC_REG_H,	   (0x1 << 0),	  (0x1 << 0), 0, 0, 0 },
 	{ PWM_MISC_REG_J,	   (0x1 << 0),	  (0x1 << 0), 0, 0, 0 },
