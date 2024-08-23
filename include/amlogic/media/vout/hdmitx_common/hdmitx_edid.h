@@ -12,6 +12,7 @@ struct hdmitx_common;
 /* the default max_tmds_clk is 165MHz/5 in H14b Table 8-16 */
 #define DEFAULT_MAX_TMDS_CLK    33
 
+#define EDID_BLK_SIZE		128
 #define EDID_MAX_BLOCK		8
 #define VESA_MAX_TIMING		64
 #define AUD_MAX_NUM			60

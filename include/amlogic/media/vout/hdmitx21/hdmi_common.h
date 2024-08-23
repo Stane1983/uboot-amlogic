@@ -771,8 +771,16 @@ struct parse_cr {
 	const char *name;
 };
 
-#define EDID_BLK_NO	8
-#define EDID_BLK_SIZE	128
+/* DDC bus error codes */
+enum ddc_err_t {
+	DDC_ERR_NONE = 0x00,
+	DDC_ERR_TIMEOUT = 0x01,
+	DDC_ERR_NACK = 0x02,
+	DDC_ERR_BUSY = 0x03,
+	DDC_ERR_HW = 0x04,
+	DDC_ERR_LIM_EXCEED = 0x05,
+};
+
 struct hdmi_format_para {
 	enum hdmi_vic vic;
 	unsigned char *name;
