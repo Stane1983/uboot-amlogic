@@ -653,6 +653,7 @@ static void flash(char *cmd_parameter, char *response)
 		if (ret == 0) {
 			printf("gpt/nocs mode\n");
 #if CONFIG_IS_ENABLED(FASTBOOT_FLASH_MMC)
+			fastboot_mmc_erase("bootloader-boot1", response);
 			fastboot_mmc_flash_write("bootloader-boot1", fastboot_buf_addr, image_size,
 				 response);
 			if (strcmp(bootloaderindex, "1") != 0 ||
