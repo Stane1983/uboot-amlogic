@@ -789,8 +789,22 @@ struct parse_cr {
 	const char *name;
 };
 
+/* DDC bus error codes */
+enum ddc_err_t {
+	DDC_ERR_NONE = 0x00,
+	DDC_ERR_TIMEOUT = 0x01,
+	DDC_ERR_NACK = 0x02,
+	DDC_ERR_BUSY = 0x03,
+	DDC_ERR_HW = 0x04,
+	DDC_ERR_LIM_EXCEED = 0x05,
+};
+
 #define EDID_BLK_NO	8
 #define EDID_BLK_SIZE	128
+
+#define EXTENSION_EEODB_EXT_TAG	0xe2 /* Fixed value, HDMI EEODB Data Block*/
+#define EXTENSION_EEODB_EXT_CODE	0x78 /* HDMI EEODB tag code */
+
 struct hdmi_format_para {
 	char *sname; /* link to timing.sname or name */
 	enum hdmi_color_depth cd; /* cd8, cd10 or cd12 */
