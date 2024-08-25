@@ -85,7 +85,7 @@ struct hdmitx_dev {
 	unsigned char rawedid[EDID_BLK_SIZE * EDID_MAX_BLOCK];
 	struct rx_cap RXCap;
 	struct hdmi_format_para *para;
-	enum hdmi_vic vic;
+	enum hdmi_vic vic; /* qms: tfr_vic  normal: vic */
 	/* for s7,s7d default 0
 	 * 1: new clk config, encp/pixel clk is directly configured by the pll simulation part.
 	 * through [ 49]hdmi_vx1_pix_clk to encp/pixel clk

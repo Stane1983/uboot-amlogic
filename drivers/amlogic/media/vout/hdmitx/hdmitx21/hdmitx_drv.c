@@ -135,6 +135,8 @@ static void hdmi_hwp_init(void)
 }
 
 static struct hdmi_support_mode gxbb_modes[] = {
+	{HDMI_114_3840x2160p48_16x9, "2160p48hz", 1},
+	{HDMI_111_1920x1080p48_16x9, "1080p48hz", 0},
 	{HDMI_97_3840x2160p60_16x9, "2160p60hz", 0},
 	{HDMI_96_3840x2160p50_16x9, "2160p50hz", 0},
 	{HDMI_95_3840x2160p30_16x9, "2160p30hz", 0},
@@ -1554,14 +1556,6 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 	memcpy(checksum, hdev->RXCap.hdmichecksum, 10);
 	checksum[10] = '\0';
 	env_set("hdmichecksum", (const char *)checksum);
-	if (hdev->qms_en) {
-		const struct hdmi_timing *t = NULL;
-
-		/* if current mode is BRR, then set the environment as BRR name */
-		t = hdmitx21_gettiming_from_vic(hdev->brr_vic);
-		if (t)
-			env_set("outputmode", t->sname ? t->sname : t->name);
-	}
 	printf("hdmi_tx_set: mode: %s, attr: %s, save hdmichecksum: %s\n",
 	       env_get("outputmode"), env_get("colorattribute"), env_get("hdmichecksum"));
 	run_command("saveenv", 0);

@@ -520,7 +520,7 @@ struct hdmi_format_para *hdmitx21_get_fmtpara(const char *mode,
 
 	para->tmds_clk = hdmitx_calc_tmds_clk(para->timing.pixel_freq,
 					      para->cs, para->cd);
-
+	para->vic = timing->vic;
 	return hdev->para;
 }
 
@@ -600,6 +600,9 @@ bool pre_process_str(char *name)
 
 bool hdmitx21_validate_mode(struct hdmitx_dev *hdev, struct hdmi_format_para *para)
 {
+	if (!hdev || !para)
+		return false;
+
 	if (!hdmitx_edid_validate_mode(&hdev->RXCap, para->vic)) {
 		printf("edid invalid vic %d return failed\n", para->vic);
 		return false;

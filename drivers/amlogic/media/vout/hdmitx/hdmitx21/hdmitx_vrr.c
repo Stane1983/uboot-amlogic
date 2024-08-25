@@ -6,16 +6,18 @@
 #include <common.h>
 #include <asm/io.h>
 #include <linux/delay.h>
+#include <linux/math64.h>
 #include <amlogic/media/vout/aml_vout.h>
 #include <amlogic/media/vout/hdmitx21/hdmitx.h>
 #include <amlogic/auge_sound.h>
 #include <linux/arm-smccc.h>
 #include "hdmitx_drv.h"
+#include <../hdmitx_common/hdmitx_check_valid.h>
 #include "../hdmitx_common/hdmitx_log.h"
 
 static const u16 vsync_tfr_table[TFR_MAX] = {
 	[TFR_QMSVRR_INACTIVE] = 0,
-	[TFR_23P97] = 2397,
+	[TFR_23P97] = 2398,
 	[TFR_24] = 2400,
 	[TFR_25] = 2500,
 	[TFR_29P97] = 2997,
@@ -51,19 +53,41 @@ void vrr_init_qms_para(struct hdmitx_dev *hdev)
 	u16 brr_rate = 60;
 	u16 brr_vfront;
 	const struct hdmi_timing *timing = NULL;
+	const struct hdmi_timing *tfr_timing = NULL;
+	u32 tfr_vtotal = 0;
+	u32 tfr_vsync = 0;
+	bool frac_rate = 0;
+	char *mode = NULL;
 
 	if (!hdev->qms_en)
 		return;
 	timing = hdmitx21_gettiming_from_vic(hdev->brr_vic);
 	if (!timing) {
-		pr_info("hdmitx: can't find timing for BRR VIC %d\n", hdev->brr_vic);
+		pr_info("hdmitx: qms: can't find timing for BRR VIC %d\n", hdev->brr_vic);
 		return;
 	}
-	pr_info("hdmitx: set qms parameters\n");
+	mode = env_get("tfr_mode");
+	if (mode)
+		tfr_timing = hdmitx21_gettiming_from_name(mode);
+	if (!tfr_timing) {
+		pr_info("hdmitx: qms: failed to init para %s", mode);
+		return;
+	}
+	frac_rate = env_get_ulong("frac_rate_policy", 10, 0);
+	pr_info("hdmitx: qms: set tfr %s parameters\n", mode);
 	brr_rate = timing->v_freq / 1000;
 
+	brr_vfront = timing->v_front;
+	tfr_vtotal = timing->v_total * timing->v_freq / tfr_timing->v_freq;
+	tfr_vsync = tfr_timing->v_freq / 10;
+	if (frac_rate && (tfr_timing->v_freq % 6 == 0)) {
+		tfr_vtotal = DIV_ROUND_CLOSEST_ULL(mul_u32_u32(tfr_vtotal, 1001), 1000);
+		tfr_vsync = DIV_ROUND_CLOSEST_ULL(mul_u32_u32(tfr_vsync, 1000), 1001);
+	}
+
 	memset(vrr_pkt, 0, sizeof(*vrr_pkt));
-	vrr_pkt->type = EMP_TYPE_VRR_QMS; /* FIXED VALUE */
+	/* FIXED VALUE */
+	vrr_pkt->type = EMP_TYPE_VRR_QMS;
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_HEADER_INIT,
 				  HDMI_INFOFRAME_TYPE_EMP);
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_HEADER_FIRST, 1);
@@ -78,46 +102,36 @@ void vrr_init_qms_para(struct hdmitx_dev *hdev)
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_ORG_ID, 1);
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_DATA_SET_TAG, 1);
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_DATA_SET_LENGTH, 4);
-
-	brr_vfront = timing->v_front;
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_M_CONST, 0);
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_QMS_EN, 1);
-	hdmi_emp_frame_set_member(vrr_pkt, CONF_NEXT_TFR, vsync_match_to_tfr(timing->v_freq / 10));
+	hdmi_emp_frame_set_member(vrr_pkt, CONF_NEXT_TFR, vsync_match_to_tfr(tfr_vsync));
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_BASE_VFRONT, brr_vfront);
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_BASE_REFRESH_RATE, brr_rate);
 	hdmi_emp_frame_set_member(vrr_pkt, CONF_M_CONST, 1);
 	hdmi_emp_infoframe_set(EMP_TYPE_VRR_QMS, vrr_pkt);
-	hdmitx_vrr_set_maxlncnt(timing->v_total);
+	hdmitx_vrr_set_maxlncnt(tfr_vtotal);
 }
 
-static const enum hdmi_vic brr_list[] = {
-	HDMI_63_1920x1080p120_16x9,
-	HDMI_16_1920x1080p60_16x9,
-	HDMI_47_1280x720p120_16x9,
-	HDMI_4_1280x720p60_16x9,
-	HDMI_118_3840x2160p120_16x9,
-	HDMI_97_3840x2160p60_16x9,
-	HDMI_219_4096x2160p120_256x135,
-	HDMI_102_4096x2160p60_256x135,
-	HDMI_199_7680x4320p60_16x9,
-};
-
-static bool is_rx_supported_vic(enum hdmi_vic brr_vic)
+/*
+ * if rate is a multiple of 6, then reduce 0.1%
+ * A Video Timing with a vertical frequency that is an integer multiple of
+ * 6.00 Hz (e.g., 24.00 or 120.00 Hz) is considered to be the same as a
+ * Video Timing with the equivalent detailed timing information but where the
+ * vertical frequency is adjusted by a factor of 1000/1001 (e.g., 24/1.001
+ * or 120/1.001).
+ */
+static u32 reduce_0p1_percent(u32 value)
 {
-	int i;
-	struct hdmitx_dev *hdev = get_hdmitx21_device();
-	struct rx_cap *prxcap = &hdev->RXCap;
-
-	for (i = 0; i < prxcap->VIC_count; i++) {
-		if (brr_vic == prxcap->VIC[i])
-			return 1;
-	}
-
-	return 0;
+	/* the max value is 120000, so multiply with 1000 won't overflow */
+	if (value % 6 == 0)
+		return DIV_ROUND_CLOSEST_ULL(mul_u32_u32(value, 1000), 1001);
+	return value;
 }
 
-/* refer to HDMI 2.1 Sink Capability Indication for QMS/GAME VRR */
-/* brr_vfreq unit: 100    23.976Hz -> 2397 */
+/*
+ * refer to HDMI 2.1 Sink Capability Indication for QMS/GAME VRR
+ * brr_vfreq unit: 100    23.976Hz -> 2398
+ */
 static void calc_vrr_range(struct rx_cap *prxcap, struct drm_vrr_mode_group *group, u32 brr_vfreq)
 {
 	bool qms;
@@ -157,13 +171,13 @@ static void calc_vrr_range(struct rx_cap *prxcap, struct drm_vrr_mode_group *gro
 		group->game_vrr_max = prxcap->vrr_max;
 		break;
 	case 0x10:
-		group->vrr_min = 48000 / 1001 * 100;
+		group->vrr_min = reduce_0p1_percent(4800);
 		group->vrr_max = 60 * 100;
 		group->game_vrr_min = 0;
 		group->game_vrr_max = 0;
 		break;
 	case 0x14:
-		group->vrr_min = 48000 / 1001 * 100;
+		group->vrr_min = reduce_0p1_percent(4800);
 		group->vrr_max = brr_vfreq;
 		group->game_vrr_min = 0;
 		group->game_vrr_max = 0;
@@ -193,37 +207,37 @@ static void calc_vrr_range(struct rx_cap *prxcap, struct drm_vrr_mode_group *gro
 		group->game_vrr_max = prxcap->vrr_max * 100;
 		break;
 	case 0x18:
-		group->vrr_min = 24000 / 1001 * 100;
+		group->vrr_min = reduce_0p1_percent(2400);
 		group->vrr_max = 60 * 100;
 		group->game_vrr_min = 0;
 		group->game_vrr_max = 0;
 		break;
 	case 0x1c:
-		group->vrr_min = 24000 / 1001 * 100;
+		group->vrr_min = reduce_0p1_percent(2400);
 		group->vrr_max = brr_vfreq;
 		group->game_vrr_min = 0;
 		group->game_vrr_max = 0;
 		break;
 	case 0x1a:
-		group->vrr_min = 24000 / 1001 * 100;
+		group->vrr_min = reduce_0p1_percent(2400);
 		group->vrr_max = 60 * 100;
 		group->game_vrr_min = prxcap->vrr_min * 100;
 		group->game_vrr_max = brr_vfreq;
 		break;
 	case 0x1e:
-		group->vrr_min = 24000 / 1001 * 100;
+		group->vrr_min = reduce_0p1_percent(2400);
 		group->vrr_max = brr_vfreq;
 		group->game_vrr_min = prxcap->vrr_min * 100;
 		group->game_vrr_max = brr_vfreq;
 		break;
 	case 0x1b:
-		group->vrr_min = 24000 / 1001 * 100;
+		group->vrr_min = reduce_0p1_percent(2400);
 		group->vrr_max = 60 * 100;
 		group->game_vrr_min = prxcap->vrr_min * 100;
 		group->game_vrr_max = prxcap->vrr_max * 100;
 		break;
 	case 0x1f:
-		group->vrr_min = 24000 / 1001 * 100;
+		group->vrr_min = reduce_0p1_percent(2400);
 		group->vrr_max = prxcap->vrr_max * 100;
 		group->game_vrr_min = prxcap->vrr_min * 100;
 		group->game_vrr_max = prxcap->vrr_max * 100;
@@ -247,6 +261,18 @@ int get_tx_max_vfreq(void)
 	return 60 * 100;
 }
 
+static const enum hdmi_vic brr_list[] = {
+	HDMI_63_1920x1080p120_16x9,
+	HDMI_16_1920x1080p60_16x9,
+	HDMI_47_1280x720p120_16x9,
+	HDMI_4_1280x720p60_16x9,
+	HDMI_118_3840x2160p120_16x9,
+	HDMI_97_3840x2160p60_16x9,
+	HDMI_219_4096x2160p120_256x135,
+	HDMI_102_4096x2160p60_256x135,
+	HDMI_199_7680x4320p60_16x9,
+};
+
 /* find current VIC's BRR VIC */
 enum hdmi_vic hdmitx_find_brr_vic(enum hdmi_vic vic)
 {
@@ -260,23 +286,40 @@ enum hdmi_vic hdmitx_find_brr_vic(enum hdmi_vic vic)
 
 	vic_timing = hdmitx21_gettiming_from_vic(vic);
 	if (!vic_timing) {
-		pr_info("hdmitx: can't find timing for VIC %d\n", vic);
+		pr_info("hdmitx: qms: can't find brr timing for VIC %d\n", vic);
 		return HDMI_UNKNOWN;
 	}
 
 	for (i = 0; i < ARRAY_SIZE(brr_list); i++) {
-		if (vic == brr_list[i])
-			brr_vic = vic;
 		brr_timing = hdmitx21_gettiming_from_vic(brr_list[i]);
 		if (!brr_timing)
-			brr_vic = HDMI_UNKNOWN;
-		else if (vic_timing->h_active == brr_timing->h_active &&
-			vic_timing->v_active == brr_timing->v_active)
+			continue;
+		/* if RX not support QMS tfr_max, then skip 120 */
+		if (!prxcap->qms_tfr_max && brr_timing->v_freq == 120000)
+			continue;
+		/* if h/v is same, then find brr_vic */
+		if (vic_timing->h_active == brr_timing->h_active &&
+			vic_timing->v_active == brr_timing->v_active) {
 			brr_vic = brr_list[i];
+			/* check brr_vic is supported by both Tx and Rx */
+			if (!hdmitx_edid_validate_mode(prxcap, brr_vic) ||
+				hdmitx_common_validate_vic(&hdev->tx_common, brr_vic) < 0)
+				brr_vic = HDMI_UNKNOWN;
+			if (brr_vic) {
+				struct hdmi_format_para *para;
+				char *mode = NULL;
+				char *color = NULL;
+
+				mode = brr_timing->sname ? brr_timing->sname : brr_timing->name;
+				color = env_get("colorattribute");
+				para = hdmitx21_get_fmtpara(mode, color ? color : "");
+				if (hdmitx_common_validate_format_para(&hdev->tx_common, para) >= 0)
+					break;
+			} else
+				brr_vic = HDMI_UNKNOWN;
+		}
 	}
 
-	if (!is_rx_supported_vic(brr_vic))
-		brr_vic = HDMI_UNKNOWN;
 
 	calc_vrr_range(prxcap, &test_group, get_tx_max_vfreq());
 	// TODO for 120
