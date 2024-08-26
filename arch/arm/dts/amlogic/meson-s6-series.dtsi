@@ -450,26 +450,26 @@
 			phy-names = "usb2-phy", "usb3-phy";
 		};
 
-		crg30u2_phy: crg30u2phy@fe354000 {
+		crg30u2_phy: crg30u2phy@fe358000 {
 			compatible = "amlogic, amlogic-new-usb2-v2";
 			status = "disable";
 			#address-cells = <2>;
 			#size-cells = <2>;
 			phy-version = <2>;
-			reg = <0x0 0xfe354000 0x0 0x80
+			reg = <0x0 0xfe358000 0x0 0x80
 			       0x0 0xFE002000 0x0 0x100
-			       0x0 0xfe358000 0x0 0x2000>;
+			       0x0 0xfe35c000 0x0 0x2000>;
 			dwc2_a_reg = <0xfe350000>;
 			#phy-cells = <0>;
 		};
 
-		crg30u3_phy: crg30u3phy@fe354080 {
+		crg30u3_phy: crg30u3phy@fe358080 {
 			compatible = "amlogic, amlogic-new-usb3-v2";
 			status = "disable";
 			#address-cells = <2>;
 			#size-cells = <2>;
 			phy-version = <3>;
-			reg = <0x0 0xfe354080 0x0 0x20>;
+			reg = <0x0 0xfe358080 0x0 0x20>;
 			#phy-cells = <0>;
 		};
 
