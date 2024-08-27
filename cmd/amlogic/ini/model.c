@@ -75,7 +75,7 @@ int trans_buffer_data(const char *data_str, unsigned int data_buf[])
 	tmp_buf = (char *) malloc(CC_MAX_TEMP_BUF_SIZE);
 	if (!tmp_buf) {
 		ALOGE("%s, malloc buffer memory error!!!\n", __func__);
-		return -1;
+		return 0;
 	}
 
 	memset((void *)tmp_buf, 0, CC_MAX_TEMP_BUF_SIZE);
