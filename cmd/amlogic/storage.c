@@ -1120,8 +1120,8 @@ static int do_store_partition(cmd_tbl_t *cmdtp,
 		store_dev = store_get_current();
 		if (store_dev->get_part_count)
 			partitions = store_dev->get_part_count();
-		pr_info("%d partitions of device %s:\n",
-			partitions, store_dev->info.name);
+		pr_err("%d partitions of device %s:\n",
+		       partitions, store_dev->info.name);
 
 		if (store_dev->list_part_name)
 			ret = store_dev->list_part_name(i, name);

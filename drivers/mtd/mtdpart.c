@@ -907,10 +907,10 @@ int get_aml_mtdpart_name(struct mtd_info *master, int idx, char *name)
 
 	list_for_each_entry(dentry, &aml_device, link) {
 		list_for_each_entry(temp, &dentry->parts, link) {
-			pr_info("0x%012llx-0x%012llx : \"%s\"\n",
-			(unsigned long long)temp->offset,
-			(unsigned long long)(temp->offset + temp->size),
-			temp->name);
+			pr_err("0x%012llx-0x%012llx : \"%s\"\n",
+			       (unsigned long long)temp->offset,
+			       (unsigned long long)(temp->offset + temp->size),
+			       temp->name);
 		}
 	}
 	return 0;
@@ -941,8 +941,8 @@ void list_aml_mtd_partitions(struct mtd_info *master)
 	int i = 0;
 
 	list_for_each_entry(slave, &master->partitions, node)
-		pr_info("%2d: %-20s0x%08llx\t0x%08llx\n",
-					i++, slave->name, slave->size, slave->offset);
+		pr_debug("%2d: %-20s0x%08llx\t0x%08llx\n",
+			 i++, slave->name, slave->size, slave->offset);
 	return;
 }
 
@@ -1206,8 +1206,8 @@ int mtdparts_init(void)
 
 	for (i = 0; i < cnt; i++) {
 		mtd = mtd_store_get(i);
-		pr_debug("%s, %d,mtd->partition: 0x%p, mtd: 0x%p\n",
-				__func__, __LINE__, &mtd->partitions, mtd);
+		pr_err("%s, %d,mtd->partition: 0x%p, mtd: 0x%p\n",
+		       __func__, __LINE__, &mtd->partitions, mtd);
 		list_for_each_entry(part, &mtd->partitions, node) {
 			dev = kzalloc(sizeof(*dev), GFP_KERNEL);
 			dev->num_parts = 1;
@@ -1236,11 +1236,11 @@ int mtdparts_init(void)
 	}
 	list_for_each_entry(dentry, &aml_device, link) {
 		list_for_each_entry(temp, &dentry->parts, link) {
-			pr_info("0x%012llx-0x%012llx : \"%s\"\n",
-			(unsigned long long)temp->offset,
-			(unsigned long long)(temp->offset + temp->size),
-			temp->name);
-			aml_nbparts++;
+			pr_err("0x%012llx-0x%012llx : \"%s\"\n",
+			       (unsigned long long)temp->offset,
+			       (unsigned long long)(temp->offset + temp->size),
+			       temp->name);
+			       aml_nbparts++;
 		}
 	}
 	init_flag = 1;
