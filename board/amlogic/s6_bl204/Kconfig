@@ -1,0 +1,39 @@
+if TARGET_S6_BL204
+
+config SYS_SOC
+	default "s6"
+
+config SYS_BOARD
+	default "s6_bl204"
+
+config SYS_CONFIG_NAME
+	default "s6_bl204"
+
+config BL30_SELECT
+	string "s6 BL30 board config"
+	default "s6_bl204"
+
+config DTB_BIND_KERNEL
+    bool "load dtb from boot part but not flash rsv"
+    default n
+
+config CMD_PLLTEST
+        bool "support plltest command"
+        default n
+		help
+			support plltest command
+
+config AML_REBOOT
+		bool "reboot cmd"
+		default y
+		help
+			support uboot reboot cmd
+
+config ENABLE_AML_GPIO_UPGRADE
+	bool "upgrade key check"
+	default n
+
+config AML_GPIO_UPGRADE_KEY
+	string "gpio key"
+	default ""
+endif
