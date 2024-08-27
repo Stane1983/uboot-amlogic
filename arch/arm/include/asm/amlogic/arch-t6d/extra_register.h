@@ -10,4 +10,6 @@
 
 #define OTP_LIC0		(OTP_LIC00)
 
+#define REG_BASE_VCBUS                             (0xff800000L)
+
 #endif

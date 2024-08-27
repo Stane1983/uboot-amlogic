@@ -17,6 +17,7 @@
 #ifdef REGISTER_H
 #else
 #define REGISTER_H
+#include "extra_register.h"
 
 #if 0
 #ifndef VERIFICATION
@@ -36271,10 +36272,6 @@
 //
 // Closing file:  ./parser_regs.h
 //
-
-#include "fixme.h"
-
-
 #define DMC_SEC_STATUS                             ((0x051a  << 2) + 0xfe036000)
 //bit 31~2. not used.                                                          
 //bit 6                                                                        

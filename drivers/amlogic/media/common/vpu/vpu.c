@@ -794,6 +794,7 @@ static struct vpu_data_s vpu_data_t6d = {
 	.vpu_clkb_reg = CLKCTRL_VPU_CLKB_CTRL,
 	.vapb_clk_reg = CLKCTRL_VAPBCLK_CTRL,
 	.vid_clk_reg = CLKCTRL_VID_CLK0_CTRL2,
+	.vpu_read_type = ONLY_READ0,
 
 	.pwrctrl_id_table = vpu_pwrctrl_id_table,
 
