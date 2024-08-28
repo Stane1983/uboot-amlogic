@@ -11,9 +11,92 @@
 #include "lcd_common.h"
 #include "lcd_tcon.h"
 
-#define DMA_TRANS_QUEUE_MAX (32)
-unsigned int dma_trans[DMA_TRANS_QUEUE_MAX][2];
-unsigned int dma_array_refs;
+struct lcd_tcon_dma_info_s {
+	phys_addr_t paddr;
+	unsigned int size;
+	struct list_head list;
+};
+
+int tcon_lut_dma_get_frame_cnt(struct aml_lcd_drv_s *pdrv)
+{
+	return lcd_vcbus_getb(VPU_DMA_RDMIF7_CTRL, 28, 2);
+}
+
+void tcon_lut_dma_start(struct aml_lcd_drv_s *pdrv)
+{
+	lcd_tcon_setb(0x207, 1, 31, 1); //enable dma clk
+	lcd_tcon_setb(0x367, 1, 0, 14); // triger delay
+	lcd_tcon_setb(0x367, 1, 16, 1); // enable tcon intr
+}
+
+void tcon_lut_dma_start_t6d(struct aml_lcd_drv_s *pdrv)
+{
+	lcd_tcon_setb(0x36f, 1, 15, 1); // enale tcon intr
+	lcd_tcon_setb(0x36f, 1, 0, 14); // triger delay
+	lcd_tcon_setb(0x222, 1, 31, 1); // enable dma clk
+}
+
+void tcon_lut_dma_stop(struct aml_lcd_drv_s *pdrv)
+{
+	lcd_tcon_setb(0x367, 0, 16, 1); // disable tcon intr
+}
+
+void tcon_lut_dma_stop_t6d(struct aml_lcd_drv_s *pdrv)
+{
+	lcd_tcon_setb(0x36f, 0, 15, 1); // disable tcon intr
+}
+
+void tcon_lut_dma_init_t5m(struct aml_lcd_drv_s *pdrv, struct lcd_tcon_dma_ops_s *ops)
+{
+	ops->status = 0;
+	ops->addr_list = NULL;
+	lcd_vcbus_write(VPU_LUT_DMA_INTR_SEL, 0);//0:sel tcon 1:sel venc2
+}
+
+void tcon_lut_dma_init_t3x(struct aml_lcd_drv_s *pdrv, struct lcd_tcon_dma_ops_s *ops)
+{
+	ops->status = 0;
+	ops->addr_list = NULL;
+	lcd_vcbus_write(VPU_TOP_MISC, 1);
+}
+
+void tcon_lut_dma_deinit(struct aml_lcd_drv_s *pdrv, struct lcd_tcon_dma_ops_s *ops)
+{
+	struct lcd_tcon_dma_info_s *info;
+	struct list_head *list_temp;
+
+	if (!pdrv || !ops)
+		return;
+
+	switch (pdrv->data->chip_type) {
+	case LCD_CHIP_T5M:
+	case LCD_CHIP_T3X:
+		lcd_tcon_setb(0x367, 0, 16, 1); // disable tcon intr
+		lcd_tcon_setb(0x207, 0, 31, 1); // disable dma clk
+		break;
+	case LCD_CHIP_T6D:
+		lcd_tcon_setb(0x36f, 0, 15, 1); // disable tcon intr
+		lcd_tcon_setb(0x222, 0, 31, 1); // disable dma clk
+		break;
+	default:
+		break;
+	}
+
+	while (ops->addr_list) {
+		info = list_entry(ops->addr_list, struct lcd_tcon_dma_info_s, list);
+
+		if (ops->addr_list->next != ops->addr_list) {
+			list_temp = ops->addr_list->next;
+			list_del(ops->addr_list);
+			ops->addr_list = list_temp;
+		} else {
+			ops->addr_list = NULL;
+		}
+		free(info);
+	}
+	ops->status = 0;
+}
+
 /*
  * must check addr and size before called
  * paddr: 16bytes aligned
