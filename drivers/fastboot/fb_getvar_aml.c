@@ -632,7 +632,7 @@ static void getvar_partition_type(char *part_name, char *response)
 
 static void getvar_partition_size(char *part_name, char *response)
 {
-	int r;
+	int r = 0;
 	size_t size;
 	char name[32] = {0};
 	u64 rc = 0;
@@ -652,10 +652,28 @@ static void getvar_partition_size(char *part_name, char *response)
 	struct blk_desc *dev_desc;
 	disk_partition_t part_info;
 
-	r = fastboot_mmc_get_part_info(name, &dev_desc, &part_info,
-				       response);
-	if (r >= 0)
-		size = part_info.size * 512;
+	if (!strncmp("bootloader", part_name, strlen("bootloader"))) {
+		int capacity_boot = 0;
+
+		if (IS_ENABLED(CONFIG_MMC_MESON_GX)) {
+			struct mmc *mmc = NULL;
+
+			if (store_get_type() == BOOT_EMMC)
+				mmc = find_mmc_device(1);
+
+			if (mmc)
+				capacity_boot = mmc->capacity_boot;
+		}
+
+		size = capacity_boot;
+
+		printf("capacity_boot: %x\n", capacity_boot);
+		printf("size: 0x%016zx\n", size);
+	} else {
+		r = fastboot_mmc_get_part_info(name, &dev_desc, &part_info, response);
+		if (r >= 0)
+			size = part_info.size * 512;
+	}
 #endif
 #if CONFIG_IS_ENABLED(FASTBOOT_FLASH_NAND)
 	struct part_info *part_info;
