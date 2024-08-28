@@ -19,58 +19,11 @@
 /* DDC func */
 DEFINE_MUTEX(ddc_mutex);
 
-static u32 ddc_write_1byte(u8 slave, u8 offset_addr, u8 data)
+static void ddc_print(int slave_addr, int reg_addr, int ddc_ret)
 {
-	u32 st = 0;
-
-	/* Programe I2C operation */
-	/* SCDC slave addr */
-	hdmitx21_wr_reg(DDC_ADDR_IVCTX, 0xa8);
-	/* SCDC slave offset */
-	hdmitx21_wr_reg(DDC_OFFSET_IVCTX, offset_addr & 0xff);
-	/* SCDC slave offset data to ddc fifo */
-	hdmitx21_wr_reg(DDC_DATA_AON_IVCTX, data & 0xff);
-	/* data length lo */
-	hdmitx21_wr_reg(DDC_DIN_CNT1_IVCTX, 0x01);
-	/* data length hi */
-	hdmitx21_wr_reg(DDC_DIN_CNT2_IVCTX, 0x00);
-	/* DDC Write CMD */
-	hdmitx21_wr_reg(DDC_CMD_IVCTX, DDC_CMD_SEQ_RW_IGNORE_ACK);
-	/* Wait until I2C done */
-	/* i2c process */
-	hdmitx21_poll_reg(DDC_STATUS_IVCTX, 1 << 4, ~(1 << 4), 0xffffffff);
-	/* i2c done */
-	hdmitx21_poll_reg(DDC_STATUS_IVCTX, 0 << 4, ~(1 << 4), 0xffffffff);
-
-	return st;
-}
-
-static u32 ddc_read_1byte(u8 slave, u8 offset_addr, u8 *rd_data)
-{
-	u32 st = 0;
-
-	/* Programe I2C operation */
-	/* clear fifo */
-	hdmitx21_wr_reg(DDC_CMD_CLR_FIFO, DDC_CMD_CLR_FIFO);
-	/* SCDC slave addr */
-	hdmitx21_wr_reg(DDC_ADDR_IVCTX, 0xa8);
-	/* SCDC slave offset */
-	hdmitx21_wr_reg(DDC_OFFSET_IVCTX, offset_addr & 0xff);
-	/* data length lo */
-	hdmitx21_wr_reg(DDC_DIN_CNT1_IVCTX, 0x01);
-	/* data length hi */
-	hdmitx21_wr_reg(DDC_DIN_CNT2_IVCTX, 0x00);
-	/* DDC Write CMD */
-	hdmitx21_wr_reg(DDC_CMD_IVCTX, DDC_CMD_SEQ_RD_NO_ACK);
-	/* Wait until I2C done */
-	/* i2c process */
-	hdmitx21_poll_reg(DDC_STATUS_IVCTX, 1 << 4, ~(1 << 4), 0xffffffff);
-	/* i2c done */
-	hdmitx21_poll_reg(DDC_STATUS_IVCTX, 0 << 4, ~(1 << 4), 0xffffffff);
-	/* Read back 1 byte */
-	*rd_data = hdmitx21_rd_reg(DDC_DATA_AON_IVCTX);
-
-	return st;
+	if (ddc_ret)
+		HDMITX_INFO("DDC ret = %d, slave_addr = 0x%x, reg_addr = 0x%x\n",
+			    ddc_ret, slave_addr, reg_addr);
 }
 
 static void ddc_tx_en(u8 seg_index, u8 slave_addr, u8 reg_addr)
@@ -88,16 +41,6 @@ static void ddc_tx_read(u8 seg_index, u16 length, u8 read_cmd)
 	hdmitx21_wr_reg(DDC_DIN_CNT2_IVCTX, (u8)(length >> 8));
 	hdmitx21_wr_reg(DDC_DIN_CNT1_IVCTX, (u8)length);
 	hdmitx21_wr_reg(DDC_CMD_IVCTX, read_cmd);
-}
-
-void scdc21_rd_sink(u8 adr, u8 *val)
-{
-	ddc_read_1byte(DDC_SCDC_ADDR, adr, val);
-}
-
-void scdc21_wr_sink(u8 adr, u8 val)
-{
-	ddc_write_1byte(DDC_SCDC_ADDR, adr, val);
 }
 
 void hdmitx21_fifo_read(u16 offset, u8 *buf, u16 cnt)
@@ -159,14 +102,16 @@ static void ddc_tx_error_check(enum ddc_err_t ds_ddc_error)
 {
 	if (ds_ddc_error) {
 		hdmitx21_wr_reg(DDC_CMD_IVCTX, DDC_CMD_ABORT_TRANSACTION);
+		usleep_range(1, 2);
 		hdmitx21_wr_reg(DDC_CMD_IVCTX, DDC_CMD_CLK_RESET);
 	}
 }
 
-static void ddc_tx_ddc_error_reset(void)
+static void hdmi_ddc_error_reset(void)
 {
 	hdmitx21_set_bit(TPI_DDC_MASTER_EN_IVCTX, BIT_TPI_DDC_MASTER_EN_HW_EN, true);
 	hdmitx21_wr_reg(DDC_CMD_IVCTX, DDC_CMD_ABORT_TRANSACTION);
+	usleep_range(1, 2);
 	hdmitx21_wr_reg(DDC_CMD_IVCTX, DDC_CMD_CLK_RESET);
 	hdmitx21_set_bit(TPI_DDC_MASTER_EN_IVCTX, BIT_TPI_DDC_MASTER_EN_HW_EN, false);
 }
@@ -192,7 +137,7 @@ static bool ddc_wait_free(void)
 			usleep_range(2000, 2500);
 		}
 		HDMITX_INFO("ddc bus busy\n");
-		ddc_tx_ddc_error_reset();
+		hdmi_ddc_error_reset();
 		usleep_range(2000, 2500);
 	}
 	return false;
@@ -262,6 +207,7 @@ static enum ddc_err_t _hdmitx_ddcm_read_(u8 seg_index, u8 slave_addr, u8 reg_add
 	/* disable the DDC master */
 	ddc_tx_disable();
 	mutex_unlock(&ddc_mutex);
+	ddc_print(slave_addr, reg_addr, ds_ddc_error);
 	return ds_ddc_error;
 }
 
@@ -351,6 +297,7 @@ static enum ddc_err_t _hdmitx_ddcm_write_(u8 seg_index,
 	if (!ddc_wait_free()) {
 		ddc_tx_scdc_clr(val);
 		mutex_unlock(&ddc_mutex);
+		ddc_print(slave_addr, reg_addr, ds_ddc_error);
 		return DDC_ERR_BUSY;
 	}
 
@@ -367,6 +314,7 @@ static enum ddc_err_t _hdmitx_ddcm_write_(u8 seg_index,
 	/* disable the DDC master */
 	ddc_tx_disable();
 	mutex_unlock(&ddc_mutex);
+	ddc_print(slave_addr, reg_addr, ds_ddc_error);
 	return ds_ddc_error;
 }
 
@@ -376,4 +324,14 @@ bool hdmitx_ddcm_write(u8 seg_index, u8 slave_addr, u8 reg_addr, u8 *data, u16 l
 
 	ddc_err = _hdmitx_ddcm_write_(seg_index, slave_addr, reg_addr, data, len);
 	return (ddc_err == DDC_ERR_NONE) ? false : true;
+}
+
+void scdc21_rd_sink(u8 adr, u8 *val)
+{
+	hdmitx_ddcm_read(0, DDC_SCDC_ADDR, adr, val, 1, TPI_DDC_CMD_SEQUENTIAL_READ);
+}
+
+void scdc21_wr_sink(u8 adr, u8 val, u16 len)
+{
+	hdmitx_ddcm_write(0, DDC_SCDC_ADDR, adr, &val, len);
 }

@@ -134,10 +134,6 @@ enum frl_rate_enum get_dsc_frl_rate(enum dsc_encode_mode dsc_mode);
 #endif
 
 bool hdmitx_frl_training_main(enum frl_rate_enum frl_rate);
-int hdmitx21_read_edid(u8 *_rx_edid);
-void config_i2c_rate(int rate);
-void scdc21_rd_sink(u8 adr, u8 *val);
-void scdc21_wr_sink(u8 adr, u8 val);
 struct hdmi_format_para *hdmitx21_get_fmt_paras(enum hdmi_vic vic);
 const struct hdmi_timing *hdmitx21_get_timing_para0(void);
 int hdmitx21_timing_size(void);
@@ -234,6 +230,10 @@ int hdmitx_common_build_format_para(struct hdmitx_common *tx_comm, struct hdmi_f
 int hdmitx_hw_validate_mode(struct hdmitx_hw_common *tx_hw, u32 vic, u32 max_refreshrate);
 
 /* DDC */
+void config_i2c_rate(int rate);
+int hdmitx21_read_edid(u8 *_rx_edid);
+void scdc21_rd_sink(u8 adr, u8 *val);
+void scdc21_wr_sink(u8 adr, u8 val, u16 len);
 bool hdmitx_ddcm_write(u8 seg_index, u8 slave_addr, u8 reg_addr, u8 *data, u16 len);
 void hdmitx21_send_ake_init(void);
 

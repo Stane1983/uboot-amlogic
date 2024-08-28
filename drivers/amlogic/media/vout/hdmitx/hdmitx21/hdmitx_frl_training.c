@@ -598,11 +598,11 @@ static void TX_LTS_2_SETTING(enum frl_rate_enum frl_rate)
 	//  4'd2:FFE_LEVEL2;
 	//  4'd3:FFE_LEVEL3;
 	data8 |= (0 << 4);
-	scdc21_wr_sink(0x31, data8);
+	scdc21_wr_sink(0x31, data8, 1);
 	pr_info("configure SCDC/0x31 as %x\n", data8);
 	scdc21_rd_sink(0x30, &data8);
 	pr_info("read SCDC/0x30 as %x\n", data8);
-	scdc21_wr_sink(0x30, 0);
+	scdc21_wr_sink(0x30, 0, 1);
 	pr_info("write SCDC/0x30 as %x\n", 0);
 }
 
@@ -657,9 +657,9 @@ static void TX_FLT_UPDATE_CLEAR(void)
 
 	scdc21_rd_sink(0x10, &hdmi21_update_reg);//Update_flag registers,0x10
 	if (hdmi21_update_reg & 0x10)
-		scdc21_wr_sink(0x10, 0x20);//Update_flag registers,0x10
+		scdc21_wr_sink(0x10, 0x20, 1);//Update_flag registers,0x10
 	else
-		scdc21_wr_sink(0x10, hdmi21_update_reg | 0x20);//Update_flag registers,0x10
+		scdc21_wr_sink(0x10, hdmi21_update_reg | 0x20, 1);//Update_flag registers,0x10
 }
 
 //======================= LTS P ========================
@@ -737,7 +737,7 @@ static void TX_LTS_P_POLL_FRL_START(void)
 		FRL_start = hdmi21_update_reg & 0x10; //[4] FRL_start
 	}
 	//Step2:write FLT_start to 0
-	scdc21_wr_sink(0x10, hdmi21_update_reg & (~0x10));//Update_flag registers,0x10
+	scdc21_wr_sink(0x10, hdmi21_update_reg & (~0x10), 1);//Update_flag registers,0x10
 
 	/* Note reset p2t fifo here will cause LG OLED55CXPCA "invalid signal" */
 
@@ -752,7 +752,7 @@ static void TX_LTS_P_POLL_FRL_START(void)
 	hdmitx21_wr_reg(H21TXSB_CTRL_1_IVCTX, data8);
 
 	//Step4:Clear FRL_start by writing "1"
-	scdc21_wr_sink(0x10, hdmi21_update_reg | 0x10);//Update_flag registers,0x10
+	scdc21_wr_sink(0x10, hdmi21_update_reg | 0x10, 1);//Update_flag registers,0x10
 }
 
 //=================================
@@ -878,7 +878,7 @@ bool hdmitx_frl_training_main(enum frl_rate_enum frl_rate)
 	scdc21_rd_sink(0x01, &data8);
 	pr_info("[FRL TRAINING] read sink version %x\n", data8);
 	data8 = 0x01;
-	scdc21_wr_sink(0x02, data8);
+	scdc21_wr_sink(0x02, data8, 1);
 	pr_info("[FRL TRAINING] write source version %x\n", data8);
 	scdc21_rd_sink(0x35, &data8);
 	pr_info("[FRL TRAINING] ************** TX_LTS_1_HDMI21_CONFIG************\n");
@@ -939,7 +939,7 @@ void frl_tx_stop(struct hdmitx_dev *hdev)
 
 bool scdc_tx_frl_cfg1_set(u8 cfg1)
 {
-	scdc21_wr_sink(SCDC_CONFIG_1, cfg1);
+	scdc21_wr_sink(SCDC_CONFIG_1, cfg1, 1);
 
 	return true;
 }
@@ -951,7 +951,7 @@ u8 scdc_tx_update_flags_get(void)
 	scdc21_rd_sink(SCDC_UPDATE_0, &data);
 	if (data && (data & HDMI20_UPDATE_FLAGS)) {
 		/* clear the flags after reading */
-		scdc21_wr_sink(SCDC_UPDATE_0, HDMI20_UPDATE_FLAGS & data);
+		scdc21_wr_sink(SCDC_UPDATE_0, HDMI20_UPDATE_FLAGS & data, 1);
 	}
 
 	return data;
@@ -962,7 +962,7 @@ bool scdc_tx_update_flags_set(u8 update_flags)
 	u8 data;
 
 	data = update_flags & HDMI21_UPDATE_FLAGS;
-	scdc21_wr_sink(SCDC_UPDATE_0, data);
+	scdc21_wr_sink(SCDC_UPDATE_0, data, 1);
 
 	return true;
 }

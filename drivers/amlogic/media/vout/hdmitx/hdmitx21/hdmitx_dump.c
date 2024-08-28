@@ -590,7 +590,7 @@ static void hdmitx_dump_frl_status(void)
 
 	/* clear UPDATE_0 firstly */
 	scdc21_rd_sink(UPDATE_0, &val);
-	scdc21_wr_sink(UPDATE_0, val);
+	scdc21_wr_sink(UPDATE_0, val, 1);
 	for (scdc_reg = SINK_VER; scdc_reg < 0x100; scdc_reg++) {
 		scdc21_rd_sink(scdc_reg, &val);
 		pr_info("SCDC[0x%02x] 0x%02x\n", scdc_reg, val);
