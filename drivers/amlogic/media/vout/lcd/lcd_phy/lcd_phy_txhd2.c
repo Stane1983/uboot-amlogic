@@ -132,6 +132,7 @@ static void lcd_lvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 		lcd_ana_write(HHI_DIF_CSI_PHY_CNTL14, 0x0);
 
 	lcd_phy_cntl_lvds_set(pdrv, phy, status, flag, 0);
+	lcd_combo_dphy_write(COMBO_DPHY_CNTL0, status ? 0x55555 : 0xaaaaa);
 }
 
 static void lcd_mlvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
@@ -158,6 +159,7 @@ static void lcd_mlvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 	} else {
 		lcd_ana_write(HHI_DIF_CSI_PHY_CNTL14, 0x0);
 		lcd_phy_cntl_lvds_set(pdrv, phy, status, flag, 0);
+		lcd_combo_dphy_write(COMBO_DPHY_CNTL0, 0xaaaaa);
 	}
 }
 
@@ -193,6 +195,7 @@ static void lcd_mipi_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 			lcd_ana_setb(chdig_reg[i >> 1], 0, bit, 16);
 		}
 	}
+	lcd_combo_dphy_write(COMBO_DPHY_CNTL0, status ? 0x0 : 0xaaaaa);
 }
 
 static unsigned int lcd_phy_preem_level_to_val_txhd2(struct aml_lcd_drv_s *pdrv, unsigned int level)
