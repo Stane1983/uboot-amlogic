@@ -462,8 +462,6 @@ static int mtd_store_get_offset(const char *partname, loff_t *retoff, loff_t off
 	struct mtd_device *dev;
 	struct part_info *part;
 	u8 pnum;
-	cpu_id_t cpu_id = get_cpu_id();
-	enum boot_type_e medium_type = store_get_type();
 #endif
 
 	*retoff = 0;
@@ -479,15 +477,7 @@ static int mtd_store_get_offset(const char *partname, loff_t *retoff, loff_t off
 			return -EINVAL;
 		}
 
-		if ((BOOT_SNOR == medium_type) && (!strcmp(BOOT_BL2, partname)) &&
-			(cpu_id.family_id == MESON_CPU_MAJOR_ID_A4 ||
-			cpu_id.family_id == MESON_CPU_MAJOR_ID_S1A ||
-			cpu_id.family_id == MESON_CPU_MAJOR_ID_S7 ||
-			cpu_id.family_id == MESON_CPU_MAJOR_ID_S7D)) {
-			offset = part->offset + off + 512;
-		} else {
-			offset = part->offset + off;
-		}
+		offset = part->offset + off;
 	}
 #endif
 	else {
@@ -788,9 +778,9 @@ u8 mtd_store_boot_copy_num(const char *part_name)
 		} else
 			return CONFIG_BL2_COPY_NUM;
 	} else if (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER) {
-		if (!strcmp(part_name, BOOT_BL2) ||
-			!strcmp(part_name, BOOT_SPL))
-				return CONFIG_BL2_COPY_NUM;
+		if (medium_type != BOOT_SNOR && (!strcmp(part_name, BOOT_BL2) ||
+						 !strcmp(part_name, BOOT_SPL)))
+			return CONFIG_BL2_COPY_NUM;
 		else
 			return g_ssp.boot_backups;
 	} else {
@@ -939,11 +929,25 @@ static int mtd_store_spinand_bl2_read(loff_t offset, size_t size,
 }
 #endif
 
+static int mtd_store_get_page_info_size(enum boot_type_e medium_type)
+{
+	if (medium_type == BOOT_SNOR) {
+		#ifdef SPINOR_HAS_BOOTINFO
+		return 512;
+		#else
+		return 0;
+		#endif
+	} else {
+		return 0;
+	}
+}
+
 static int mtd_store_boot_read(const char *part_name,
 			       u8 cpy, size_t size, void *dest)
 {
+	enum boot_type_e medium_type = store_get_type();
 	struct mtd_info *mtd;
-	loff_t offset, limit, endoff = 0;
+	loff_t offset, limit, page_info_offset = 0, endoff = 0;
 	int ret = 1;
 	size_t retlen = 0, len = size;
 	u8 num = 0, good_num = 0, good_threshold =
@@ -986,8 +990,6 @@ static int mtd_store_boot_read(const char *part_name,
 			size, offset);
 		limit = offset + size_per_copy;
 		#ifdef CONFIG_MTD_SPI_NAND
-		enum boot_type_e medium_type = store_get_type();
-
 		if (medium_type == BOOT_SNAND &&
 				(!strcmp(part_name, BOOT_BL2) ||
 				 !strcmp(part_name, BOOT_SPL))) {
@@ -999,9 +1001,12 @@ static int mtd_store_boot_read(const char *part_name,
 			continue;
 		}
 		#endif
+		if (medium_type == BOOT_SNOR &&
+		    !strcmp(part_name, BOOT_LOADER))
+			page_info_offset = mtd_store_get_page_info_size(medium_type);
 
 		ret = mtd_store_read_skip_bad(mtd,
-				offset,
+				offset + page_info_offset,
 				&len,
 				&retlen,
 				limit,
@@ -1072,12 +1077,14 @@ out:
 static int mtd_store_boot_write(const char *part_name,
 				u8 cpy, size_t size, void *source)
 {
+	enum boot_type_e medium_type = store_get_type();
 	struct mtd_info *mtd;
 	loff_t offset, limit, endoff = 0;
 	int ret = 1;
-	size_t retlen = 0, len = size;
+	size_t retlen = 0, len = size, page_info_len;
 	u8 num = 0;
 	u64 size_per_copy = 0;
+	char *page_info;
 
 	if (!part_name) {
 		pr_info("%s %d invalid name!\n",
@@ -1116,8 +1123,6 @@ static int mtd_store_boot_write(const char *part_name,
 		limit = offset + size_per_copy;
 
 		#ifdef CONFIG_MTD_SPI_NAND
-		enum boot_type_e medium_type = store_get_type();
-
 		if (medium_type == BOOT_SNAND &&
 		    (!strcmp(part_name, BOOT_BL2) ||
 		     !strcmp(part_name, BOOT_SPL))) {
@@ -1128,8 +1133,31 @@ static int mtd_store_boot_write(const char *part_name,
 			continue;
 		}
 		#endif
+
+		if (medium_type == BOOT_SNOR &&
+		    (!strcmp(part_name, BOOT_BL2) ||
+		    !strcmp(part_name, BOOT_SPL) ||
+		    !strcmp(part_name, BOOT_LOADER))) {
+			page_info_len = mtd_store_get_page_info_size(medium_type);
+			page_info = page_info_post_init(mtd, mtd->dev);
+
+			pr_info("write %lx bytes to %llx\n",
+				page_info_len, offset);
+			ret = mtd_store_write_skip_bad(mtd,
+						       offset,
+						       &page_info_len,
+						       NULL,
+						       page_info_len,
+						       (u_char *)page_info,
+						       0);
+			if (ret)
+				return ret;
+		}
+
+		pr_info("write %lx bytes to %llx\n",
+			len, offset + mtd_store_get_page_info_size(medium_type));
 		ret = mtd_store_write_skip_bad(mtd,
-					       offset,
+					       offset + mtd_store_get_page_info_size(medium_type),
 					       &len,
 					       &retlen,
 					       limit,

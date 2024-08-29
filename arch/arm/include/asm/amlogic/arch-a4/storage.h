@@ -32,6 +32,8 @@
 
 #define BOOTLOADER_MODE_EMMC		COMPACT_BOOTLOADER
 
+#define SPINOR_HAS_BOOTINFO	1
+
 /*
  * TODO: This is the attribute of nand, it will be moved to the
  * plat file of nand in the future.

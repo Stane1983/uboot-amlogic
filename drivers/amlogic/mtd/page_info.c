@@ -239,10 +239,10 @@ void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 	unsigned int i, check_len = sizeof(struct boot_info);
 	enum PAGE_INFO_V page_info_ver;
 	struct storage_startup_parameter *ssp = &g_ssp;
+	enum boot_type_e medium_type = store_get_type();
 
 #ifdef CONFIG_MTD_SPI_NAND
 	struct nand_device *dev = mtd_to_nanddev(mtd);
-	enum boot_type_e medium_type = store_get_type();
 
 	if (medium_type == BOOT_SNAND) {
 		struct dm_spi_slave_plat *plat;
@@ -338,7 +338,8 @@ void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 	page_info->dev_cfg1.enable_bbt = 1;
 
 _do_final:
-	apply_page_info_bbt(mtd);
+	if (medium_type != BOOT_SNOR)
+		apply_page_info_bbt(mtd);
 
 	page_info->checksum = 0;
 	page_info->checksum = do_checksum((unsigned char *)page_info, check_len);

@@ -15,6 +15,7 @@
 #include <amlogic/aml_mtd.h>
 #include <amlogic/aml_pageinfo.h>
 #include <amlogic/cpu_id.h>
+#include <asm/amlogic/arch/storage.h>
 #endif
 #if CONFIG_IS_ENABLED(DM_SPI_FLASH)
 
@@ -77,33 +78,11 @@ static int spi_flash_mtd_write(struct mtd_info *mtd, loff_t to, size_t len,
 							   size_t *retlen, const u_char *buf)
 {
 	struct spi_flash *flash = mtd->priv;
-#ifdef CONFIG_AMLOGIC_MODIFY
-	cpu_id_t cpu_id = get_cpu_id();
-	unsigned char *page_info, *tmp;
-#endif
 	int err;
 
 	if (!flash)
 		return -ENODEV;
-#ifdef CONFIG_AMLOGIC_MODIFY
-	if (to == 512 && ((cpu_id.family_id == MESON_CPU_MAJOR_ID_A4)
-		|| (cpu_id.family_id == MESON_CPU_MAJOR_ID_S1A)
-		|| (cpu_id.family_id == MESON_CPU_MAJOR_ID_S7)
-		|| (cpu_id.family_id == MESON_CPU_MAJOR_ID_S7D))) {
-		page_info = page_info_post_init(mtd, flash->dev);
-		tmp = kzalloc(512, GFP_KERNEL);
-		if (!tmp)
-			return -ENOMEM;
-		memset(tmp, 0xff, 512);
-		memcpy(tmp, page_info, 512);
-		err = spi_flash_write(flash, 0, 512, tmp);
-		if (err) {
-			kfree(tmp);
-			return err;
-		}
-		kfree(tmp);
-	}
-#endif
+
 	err = spi_flash_write(flash, to, len, buf);
 	if (!err)
 		*retlen = len;

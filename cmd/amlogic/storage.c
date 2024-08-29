@@ -178,7 +178,6 @@ static int storage_boot_layout_rebuild(struct boot_layout *boot_layout)
 	struct storage_startup_parameter *ssp = &g_ssp;
 	boot_area_entry_t *boot_entry = boot_layout->boot_entry;
 	u64 align_size, cal_copy = 1;
-	cpu_id_t cpu_id = get_cpu_id();
 	u8 i = BOOT_AREA_BL2E, bl2_copy;
 
 	align_size = ALIGN_SIZE;
@@ -206,14 +205,11 @@ static int storage_boot_layout_rebuild(struct boot_layout *boot_layout)
 	} else if (ssp->boot_device == BOOT_EMMC) {
 		ssp->boot_entry[BOOT_AREA_BB1ST].offset =
 			boot_entry[BOOT_AREA_BB1ST].offset += BL2_CORE_BASE_OFFSET_EMMC;
-	} else if (ssp->boot_device == BOOT_SNOR &&
-		((cpu_id.family_id == MESON_CPU_MAJOR_ID_A4) ||
-		(cpu_id.family_id == MESON_CPU_MAJOR_ID_S1A) ||
-		(cpu_id.family_id == MESON_CPU_MAJOR_ID_S7) ||
-		(cpu_id.family_id == MESON_CPU_MAJOR_ID_S7D))) {
-		boot_entry[BOOT_AREA_BB1ST].size += 0x200;
-		STORAGE_ROUND_UP_IF_UNALIGN(boot_entry[BOOT_AREA_BB1ST].size,
-			align_size);
+	} else if (ssp->boot_device == BOOT_SNOR) {
+		#ifdef SPINOR_HAS_BOOTINFO
+		boot_entry[BOOT_AREA_BB1ST].offset += 0x200;
+		#endif
+		cal_copy = ssp->boot_backups;
 	}
 
 	ssp->boot_entry[BOOT_AREA_BB1ST].size = boot_entry[BOOT_AREA_BB1ST].size;
@@ -363,7 +359,7 @@ static int storage_get_and_parse_ssp(int *need_build) // boot_device:
 			ssp->boot_layout = BOOT_DISCRETE_DEFAULT;
 			break;
 		case BOOT_SNOR:
-			ssp->boot_layout = BOOT_DISCRETE_ALL;
+			ssp->boot_layout = BOOT_DISCRETE_DEFAULT;
 			if (IS_FEAT_EN_4BL2_SNOR())
 				ssp->boot_backups = 4;
 			else if (IS_FEAT_DIS_NBL2_SNOR())
@@ -886,9 +882,7 @@ int store_boot_write(const char *name, u8 copy, size_t size, void *buf)
 		return 1;
 	}
 
-	if (!strcmp(name, "bootloader") &&
-	    (store->type == BOOT_SNAND ||
-	    store->type == BOOT_NAND_MTD))
+	if (!strcmp(name, "bootloader"))
 		return _store_boot_write(name, copy, size, buf);
 
 	return store->boot_write(name, copy, size, buf);

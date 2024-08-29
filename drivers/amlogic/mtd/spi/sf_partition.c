@@ -23,10 +23,14 @@
 #define SPINOR_ALIGNED_SIZE		(64 * 1024)
 extern struct storage_startup_parameter g_ssp;
 
-/* do not use default value, rewrite this function in the board file */
-uint64_t __weak spiflash_bootloader_size(void)
+uint64_t spiflash_bootloader_size(void)
 {
+#if defined(CONFIG_BOOTLOADER_SIZE)
+	return (((DIV_ROUND_UP((CONFIG_BOOTLOADER_SIZE + 0x200), 0x1000)) << 12) *
+			g_ssp.boot_backups);
+#else
 	return SZ_2M;
+#endif
 }
 
 uint32_t __weak spiflash_rsv_block_num(void)
@@ -44,7 +48,6 @@ static int _spinor_add_partitions(struct mtd_info *mtd,
 	struct mtd_partition *temp, *parts_nm;
 	loff_t off;
 	int ret = 1;
-	cpu_id_t cpu_id = get_cpu_id();
 
 	if (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER)
 		part_num = nbparts + 5;
@@ -52,8 +55,15 @@ static int _spinor_add_partitions(struct mtd_info *mtd,
 		part_num = nbparts + 1;
 
 	temp = kzalloc(sizeof(*temp) * part_num, GFP_KERNEL);
-	if (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER) {
-		temp[BOOT_AREA_BB1ST].name = BOOT_LOADER;
+	if (store_get_device_bootloader_mode() == COMPACT_BOOTLOADER) {
+		temp[0].name = BOOT_LOADER;
+		temp[0].offset = 0;
+		temp[0].size = spiflash_bootloader_size();
+		off = temp[0].size + temp[0].offset;
+		parts_nm = &temp[1];
+
+	} else if (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER) {
+		temp[BOOT_AREA_BB1ST].name = BOOT_BL2;
 		temp[BOOT_AREA_BB1ST].offset = general_boot_part_entry[BOOT_AREA_BB1ST].offset;
 		temp[BOOT_AREA_BB1ST].size = general_boot_part_entry[BOOT_AREA_BB1ST].size *
 					     mtd_store_boot_copy_num(BOOT_BL2);
@@ -91,11 +101,7 @@ static int _spinor_add_partitions(struct mtd_info *mtd,
 		off = temp[BOOT_AREA_DEVFIP].offset + temp[BOOT_AREA_DEVFIP].size;
 		parts_nm = &temp[5];
 
-		if ((cpu_id.family_id == MESON_CPU_MAJOR_ID_A4) ||
-			(cpu_id.family_id == MESON_CPU_MAJOR_ID_S1A) ||
-			(cpu_id.family_id == MESON_CPU_MAJOR_ID_S7) ||
-			(cpu_id.family_id == MESON_CPU_MAJOR_ID_S7D))
-			off = DIV_ROUND_UP(off, 0x1000) << 12;
+		off = DIV_ROUND_UP(off, 0x1000) << 12;
 	} else {
 		temp[0].name = BOOT_LOADER;
 		temp[0].offset = 0;
