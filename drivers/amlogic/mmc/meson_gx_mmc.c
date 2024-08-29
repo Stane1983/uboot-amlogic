@@ -74,12 +74,8 @@ static void meson_mmc_config_clock(struct meson_host *host)
 
 	/* 1GHz / CLK_MAX_DIV = 15,9 MHz */
 	if (mmc->clock > 16000000) {
-		clk = SD_EMMC_CLKSRC_DIV2;
+		clk = clk_get_rate(&host->div2);
 		clk_src = 1;
-		if (host->src_clk != 0) {
-			clk = host->src_clk;
-			clk_src = 0;
-		}
 		clk_disable(&host->xtal);
 		clk_set_parent(&host->mux, &host->div2);
 		clk_set_rate(&host->div, clk);
@@ -789,7 +785,6 @@ int meson_execute_tuning(struct udevice *dev, uint opcode)
 	struct meson_mmc_plat *pdata = dev_get_plat(dev);
 	struct meson_host *host = dev_get_priv(dev);
 	struct mmc *mmc = &pdata->mmc;
-	u32 clk_src, clock;
 	u32 vclk = 0, clk_div = 0, adj = 0, dly = 0, d1_dly, old_dly;
 	int ret = 0, adj_delay = 0;
 	int tuning_num = 0;
@@ -822,12 +817,7 @@ tuning:
 
 	vclk = meson_read(mmc, MESON_SD_EMMC_CLOCK);
 	clk_div = vclk & CLK_MAX_DIV;
-	if (!(vclk & CLK_MAX_SRC))
-		clk_src = 24000000;
-	else
-		clk_src = 1000000000;
-	clock = (clk_src / clk_div);
-	pr_debug("%s: clk %d tuning start:\n", mmc->cfg->name, clock);
+	pr_debug("%s: clk %d tuning start:\n", mmc->cfg->name, mmc->clock);
 
 	host->is_tuning = 1;
 	for (adj_delay = 0; adj_delay < clk_div; adj_delay++) {
@@ -1182,8 +1172,6 @@ static int meson_mmc_of_to_plat(struct udevice *dev)
 	ret = mmc_of_parse(dev, cfg);
 	if (ret)
 		return ret;
-
-	host->src_clk = dev_read_u32_default(dev, "source-clock", 0);
 
 	dev->name = dev_read_string(dev, "pinname");
 	if (dev_read_bool(dev, "non-removable"))

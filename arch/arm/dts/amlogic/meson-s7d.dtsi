@@ -224,7 +224,6 @@
 			<&clkc CLKID_GP0_PLL>,
 			<&clkc CLKID_XTAL>;
 			clock-names = "mux", "div", "gate", "clkin", "xtal";
-			source-clock = <1152000000>;
 };
 
 &nand {
