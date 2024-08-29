@@ -112,8 +112,8 @@ static int w25n02kv_ooblayout_free(struct mtd_info *mtd, int section,
 	if (section > 3)
 		return -ERANGE;
 
-	region->offset = (16 * section) + 2;
-	region->length = 14;
+	region->offset = (16 * section) + 4;
+	region->length = 12;
 
 	return 0;
 }
@@ -195,7 +195,7 @@ static const struct spinand_info winbond_spinand_table[] = {
 		     SPINAND_ECCINFO(&W25N04KW_ooblayout, NULL)),
 	SPINAND_INFO_DEVID_DOUBLE("W25N02KV", 0xAA, 0x22,
 		     NAND_MEMORG(1, 2048, 128, 64, 2048, 1, 1, 1),
-		     NAND_ECCREQ(1, 512),
+		     NAND_ECCREQ(8, 512),
 		     SPINAND_INFO_OP_VARIANTS(&read_cache_variants,
 					      &write_cache_variants,
 					      &update_cache_variants),
@@ -203,7 +203,7 @@ static const struct spinand_info winbond_spinand_table[] = {
 		     SPINAND_ECCINFO(&w25n02kv_ooblayout, w25n02kv_ecc_get_status)),
 	SPINAND_INFO_DEVID_DOUBLE("W25N04KV", 0xAA, 0x23,
 		     NAND_MEMORG(1, 2048, 128, 64, 4096, 2, 1, 1),
-		     NAND_ECCREQ(1, 512),
+		     NAND_ECCREQ(8, 512),
 		     SPINAND_INFO_OP_VARIANTS(&read_cache_variants,
 					      &write_cache_variants,
 					      &update_cache_variants),
