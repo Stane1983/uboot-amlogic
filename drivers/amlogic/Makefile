@@ -6,6 +6,9 @@ obj-y += i2c/
 obj-y += watchdog/
 obj-y += adc/
 obj-y += pwm/
+
+obj-$(CONFIG_AMLOGIC_WIFI_USB2T) += wifi/
+
 obj-$(CONFIG_AML_MEDIA) += media/
 
 obj-$(CONFIG_UNIFY_KEY_MANAGE) += keymanage/

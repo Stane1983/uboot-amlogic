@@ -27,6 +27,9 @@
 #include <command.h>
 #include <asm/amlogic/arch/stick_mem.h>
 
+#ifdef CONFIG_AMLOGIC_WIFI_USB2T
+#include "wifi.h"
+#endif
 #ifdef CONFIG_AML_VPU
 #include <amlogic/media/vpu/vpu.h>
 #endif
@@ -204,6 +207,9 @@ int board_late_init(void)
 	run_command("ini_model", 0);
 #ifdef CONFIG_AML_LCD
 	lcd_probe();
+#endif
+#ifdef CONFIG_AMLOGIC_WIFI_USB2T
+	wifi_init();
 #endif
 	aml_board_late_init_tail(NULL);
 
