@@ -429,7 +429,6 @@ static struct lcd_clk_data_s lcd_clk_data_t6d = {
 	.clktree_set = lcd_clktree_set_t6d,
 	.clk_config_init_print = lcd_clk_config_init_print_dft,
 	.clk_config_print = lcd_clk_config_print_dft,
-	.prbs_clk_config = NULL,
 	.prbs_test = lcd_clk_prbs_test_t6d,
 };
 

@@ -163,7 +163,8 @@ struct ext_lcd_config_s {
 #define LCD_NUM_MAX         20
 #define LCD_PRBS_MODE_LVDS    BIT(0)
 #define LCD_PRBS_MODE_VX1     BIT(1)
-#define LCD_PRBS_MODE_MAX     2
+#define LCD_PRBS_MODE_FREQ    BIT(2)
+#define LCD_PRBS_MODE_MAX     3
 
 extern struct ext_lcd_config_s ext_lcd_config[LCD_NUM_MAX];
 

@@ -1175,23 +1175,6 @@ static void lcd_reg_print_mipi_phy_analog_s6(struct aml_lcd_drv_s *pdrv)
  * lcd prbs function
  * **********************************
  */
-unsigned int lcd_prbs_flag = 0, lcd_prbs_performed = 0, lcd_prbs_err = 0;
-
-int lcd_prbs_test(struct aml_lcd_drv_s *pdrv, unsigned int ms,
-		  unsigned int mode_flag)
-{
-	struct lcd_debug_info_reg_s *info_reg;
-	int ret = -1;
-
-	info_reg = (struct lcd_debug_info_reg_s *)pdrv->debug_info_reg;
-	if (info_reg && info_reg->prbs_test)
-		ret = info_reg->prbs_test(pdrv, ms, mode_flag);
-	else
-		LCDERR("[%d]: %s: don't support prbs test\n", pdrv->index, __func__);
-
-	return ret;
-}
-
 void lcd_info_print(struct aml_lcd_drv_s *pdrv)
 {
 	unsigned int sync_duration;

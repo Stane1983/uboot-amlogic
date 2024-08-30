@@ -34,6 +34,8 @@ static char *g_dt_addr = (char *)0x01000000;
 //static int lcd_poweron_suspend = 1;
 char *lcd_pm_name[LCD_MAX_DRV] = {"lcd_drv0_pm", "lcd_drv1_pm", "lcd_drv2_pm"};
 
+unsigned int lcd_prbs_flag = 0, lcd_prbs_freq = 0, lcd_prbs_performed = 0, lcd_prbs_err = 0;
+
 static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv);
 
 static struct aml_lcd_data_s lcd_data_g12a = {
@@ -1541,7 +1543,7 @@ void aml_lcd_driver_bl_config_print(int index)
 #endif
 }
 
-int aml_lcd_driver_prbs(int index, unsigned int ms, unsigned int mode_flag)
+int aml_lcd_driver_prbs(int index, unsigned int ms, unsigned int prbs_freq, unsigned int mode_flag)
 {
 	struct aml_lcd_drv_s *pdrv;
 
@@ -1549,6 +1551,7 @@ int aml_lcd_driver_prbs(int index, unsigned int ms, unsigned int mode_flag)
 	if (!pdrv)
 		return 0;
 
+	lcd_prbs_freq = prbs_freq;
 	return aml_lcd_prbs_test(pdrv, ms, mode_flag);
 }
 

@@ -1345,6 +1345,137 @@ generate_clk_dft_done:
 	}
 }
 
+void lcd_clk_generate_prbs_clk(struct aml_lcd_drv_s *pdrv,
+			       unsigned int enc_clk, unsigned long long bit_rate)
+{
+	struct lcd_clk_config_s *cconf;
+	unsigned long long pll_fout, clk_div_in;
+	unsigned int clk_div_out, clk_div_sel, xd, tcon_div_sel = 0;
+	unsigned int od1, od2, od3, tmp_clk;
+	int done = 0;
+
+	cconf = get_lcd_clk_config(pdrv);
+	if (!cconf)
+		return;
+
+	cconf->fout = enc_clk;
+	pll_fout = bit_rate;
+	clk_div_in = pll_fout;
+	if (clk_div_in > cconf->data->div_in_fmax)
+		goto lcd_clk_generate_prbs_clk_done;
+	if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
+		LCDPR("enc_clk=%d, pll_fout=%lld, clk_div_in=%lld\n",
+		      cconf->fout, pll_fout, clk_div_in);
+	}
+
+	for (clk_div_sel = CLK_DIV_SEL_1; clk_div_sel < cconf->data->div_sel_max; clk_div_sel++) {
+		clk_div_out = clk_vid_pll_div_calc(clk_div_in, clk_div_sel, CLK_DIV_I2O);
+		if (clk_div_out > cconf->data->div_out_fmax)
+			continue;
+		if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
+			LCDPR("clk_div_out=%u, clk_div_sel=%s(%d)\n",
+			      clk_div_out, lcd_clk_div_table[clk_div_sel].name, clk_div_sel);
+		}
+
+		done = 0;
+		for (xd = 1; xd <= cconf->data->xd_max; xd++) {
+			tmp_clk = cconf->fout * xd;
+			if (tmp_clk > clk_div_out)
+				break;
+			if (tmp_clk == clk_div_out) {
+				cconf->xd = xd;
+				cconf->div_sel = clk_div_sel;
+				cconf->pll_div_fout = clk_div_out;
+				done = 1;
+				if (lcd_debug_print_flag & LCD_DBG_PR_CLK)
+					LCDPR("fout=%u, xd=%d\n", cconf->fout, xd);
+				break;
+			}
+		}
+
+		if (done)
+			break;
+	}
+	if (done == 0)
+		goto lcd_clk_generate_prbs_clk_done;
+
+	done = pll_od_setting_generate(cconf, pll_fout);
+	if (done == 0)
+		goto lcd_clk_generate_prbs_clk_done;
+
+	if (cconf->data->have_tcon_div) {
+		done = 0;
+		if (cconf->data->od_cnt == 3) {
+			od1 = od_table[cconf->pll_od1_sel];
+			od2 = od_table[cconf->pll_od2_sel];
+			od3 = od_table[cconf->pll_od3_sel];
+		} else {
+			od1 = od_table[cconf->pll_od1_sel];
+			od2 = 1;
+			od3 = 1;
+		}
+		for (tcon_div_sel = 0; tcon_div_sel < 5; tcon_div_sel++) {
+			if (tcon_div_table[tcon_div_sel] == od1 * od2 * od3) {
+				cconf->pll_tcon_div_sel = tcon_div_sel;
+					cconf->phy_clk =
+						lcd_do_div(cconf->pll_fvco,
+							   tcon_div_table[tcon_div_sel]);
+				done = 1;
+				break;
+			}
+		}
+	} else {
+		cconf->phy_clk = cconf->pll_fout;
+	}
+
+lcd_clk_generate_prbs_clk_done:
+	if (done) {
+		cconf->done = 1;
+	} else {
+		cconf->done = 0;
+		LCDERR("[%d]: %s: Out of clock range\n", pdrv->index, __func__);
+	}
+}
+
+int lcd_prbs_clk_check(unsigned int encl_clk, int encl_msr_id,
+		       unsigned int fifo_clk, int fifo_msr_id, unsigned int cnt)
+{
+	unsigned long clk_check, clk_msr, temp;
+
+	if (encl_msr_id == -1)
+		goto lcd_prbs_clk_check_next;
+	clk_check = encl_clk;
+	clk_msr = clk_util_clk_msr(encl_msr_id) * 1000000;
+	if (clk_check != clk_msr) {
+		temp = lcd_diff(clk_check, clk_msr);
+		if (temp >= PLL_CLK_CHECK_MAX) {
+			if (lcd_debug_print_flag & LCD_DBG_PR_TEST) {
+				LCDERR("encl_clk error: chk %ld, msr %ld, cnt: %d\n",
+				       clk_check, clk_msr, cnt);
+			}
+			return -1;
+		}
+	}
+
+lcd_prbs_clk_check_next:
+	if (fifo_msr_id == -1)
+		return 0;
+	clk_check = fifo_clk;
+	clk_msr = clk_util_clk_msr(fifo_msr_id) * 1000000;
+	if (clk_check != clk_msr) {
+		temp = lcd_diff(clk_check, clk_msr);
+		if (temp >= PLL_CLK_CHECK_MAX) {
+			if (lcd_debug_print_flag & LCD_DBG_PR_TEST) {
+				LCDERR("fifo_clk error: chk %ld, msr %ld, cnt:%d\n",
+				       clk_check, clk_msr, cnt);
+			}
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
 void lcd_set_vid_pll_div_dft(struct lcd_clk_config_s *cconf)
 {
 	unsigned int shift_val, shift_sel;
@@ -1535,41 +1666,4 @@ void lcd_clk_config_print_dft(struct aml_lcd_drv_s *pdrv)
 				cconf->ss_freq, cconf->ss_mode, cconf->ss_en);
 		}
 	}
-}
-
-int lcd_prbs_clk_check(unsigned long encl_clk, int encl_msr_id,
-			unsigned long fifo_clk, int fifo_msr_id, unsigned int cnt)
-{
-	unsigned long clk_check, temp;
-
-	if (encl_msr_id == -1)
-		goto lcd_prbs_clk_check_next;
-	clk_check = clk_util_clk_msr(encl_msr_id) * 1000000;
-	if (clk_check != encl_clk) {
-		temp = lcd_diff(clk_check, encl_clk);
-		if (temp >= PLL_CLK_CHECK_MAX) {
-			if (lcd_debug_print_flag & LCD_DBG_PR_TEST) {
-				LCDERR("encl clkmsr error %ld, cnt: %d\n",
-				       clk_check, cnt);
-			}
-			return -1;
-		}
-	}
-
-lcd_prbs_clk_check_next:
-	if (fifo_msr_id == -1)
-		return 0;
-	clk_check = clk_util_clk_msr(fifo_msr_id) * 1000000;
-	if (clk_check != fifo_clk) {
-		temp = lcd_diff(clk_check, fifo_clk);
-		if (temp >= PLL_CLK_CHECK_MAX) {
-			if (lcd_debug_print_flag & LCD_DBG_PR_TEST) {
-				LCDERR("fifo clkmsr error %ld, cnt:%d\n",
-				       clk_check, cnt);
-			}
-			return -1;
-		}
-	}
-
-	return 0;
 }

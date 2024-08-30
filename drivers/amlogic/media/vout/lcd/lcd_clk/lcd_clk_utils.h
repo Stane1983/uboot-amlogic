@@ -36,6 +36,10 @@ void lcd_clk_config_print_dft(struct aml_lcd_drv_s *pdrv);
 void lcd_pll_frac_generate_dft(struct aml_lcd_drv_s *pdrv);
 void lcd_clk_config_init_print_dft(struct aml_lcd_drv_s *pdrv);
 void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv);
+void lcd_clk_generate_prbs_clk(struct aml_lcd_drv_s *pdrv,
+			       unsigned int enc_clk, unsigned long long bit_rate);
+int lcd_prbs_clk_check(unsigned int encl_clk, int encl_msr_id, unsigned int fifo_clk,
+		       int fifo_msr_id, unsigned int c);
 void lcd_set_vid_pll_div_dft(struct lcd_clk_config_s *cconf);
 void lcd_set_vclk_crt_dft(struct aml_lcd_drv_s *pdrv);
 #ifdef CONFIG_MESON_S6
@@ -65,12 +69,5 @@ void lcd_clk_config_chip_init_s6(struct aml_lcd_drv_s *pdrv, struct lcd_clk_conf
 void lcd_clk_config_chip_init_t6d(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
 #endif
 
-/* ****************************************************
- * lcd clk prbs func
- * ****************************************************
- */
-extern unsigned int lcd_prbs_flag, lcd_prbs_performed, lcd_prbs_err;
-int lcd_prbs_clk_check(unsigned long encl_clk, int encl_msr_id, unsigned long fifo_clk,
-					int fifo_msr_id, unsigned int c);
 unsigned long long lcd_abs(unsigned long long a, unsigned long long b);
 #endif

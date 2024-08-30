@@ -52,6 +52,13 @@ static inline unsigned long long div_around(unsigned long long num, unsigned int
 	return ret;
 }
 
+static inline unsigned long long lcd_diff(unsigned long long a, unsigned long long b)
+{
+	return (a >= b) ? (a - b) : (b - a);
+}
+
+extern unsigned int lcd_prbs_flag, lcd_prbs_freq, lcd_prbs_performed, lcd_prbs_err;
+
 void lcd_display_init_test(struct aml_lcd_drv_s *pdrv);
 void lcd_display_init_reg_dump(struct aml_lcd_drv_s *pdrv);
 
@@ -185,7 +192,6 @@ void lcd_vbyone_rst(struct aml_lcd_drv_s *pdrv);
 int lcd_vbyone_cdr(struct aml_lcd_drv_s *pdrv);
 int lcd_vbyone_lock(struct aml_lcd_drv_s *pdrv);
 void lcd_debug_probe(struct aml_lcd_drv_s *pdrv);
-// int lcd_prbs_test(struct aml_lcd_drv_s *pdrv, unsigned int s, unsigned int mode_flag);
 
 /* lcd driver */
 #ifdef CONFIG_AML_LCD_TV

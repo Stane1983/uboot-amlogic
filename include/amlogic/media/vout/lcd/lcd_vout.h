@@ -792,7 +792,7 @@ void aml_lcd_mipi_dsi_cmd(int index, unsigned char *payload);
 int aml_lcd_mipi_dsi_read(int index,
 		unsigned char *payload, unsigned char *rd_data, unsigned char rd_byte_len);
 void aml_lcd_driver_test(int index, int num);
-int aml_lcd_driver_prbs(int index, unsigned int s, unsigned int mode_flag);
+int aml_lcd_driver_prbs(int index, unsigned int s, unsigned int prbs_freq, unsigned int mode_flag);
 void aml_lcd_driver_unifykey_dump(int index, unsigned int flag);
 void aml_lcd_config_check(int index);
 
