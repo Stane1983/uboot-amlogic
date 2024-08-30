@@ -145,6 +145,8 @@ struct andr_img_hdr {
 #define _BA0_(c, x) _BA1_(c, x)
 #define BUILD_ASSERT(cond) _BA0_(cond, __LINE__)
 
+#define KERNEL_HIGH_DEC_ADDR		0x10000000
+#define KERNEL_DECOMPRESS_MAX_SIZE		0x1800000
 #define IOTRACE_LOAD_ADDR		0x4F00000
 #define KERNEL_LOAD_HIGH_ADDR		0xD000000
 #define KERNEL_DEFAULT_LOAD_ADDR	0x3000000

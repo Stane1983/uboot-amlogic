@@ -682,8 +682,6 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 		//because secure boot will use DMA which need disable MMU temp
 		//here must update the cache, otherwise nand will fail (eMMC is OK)
 		flush_cache((unsigned long)loadaddr, (unsigned long)actualbootimgsz);
-
-		return 0;
     }
     else {
 	char partname_init[32] = {0};
@@ -1166,6 +1164,15 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 			pbuffpreload = 0;
 		}
 	} /*ANDROID R/S*/
+
+	/* image size exceed 24M meanwhile need to decompress would overlap secure zone */
+	if ((android_image_get_comp((void *)loadaddr) != IH_COMP_NONE) &&
+			(kernel_size > KERNEL_DECOMPRESS_MAX_SIZE)) {
+		memset(strAddr, 0, sizeof(strAddr));
+		sprintf(strAddr, "%x", KERNEL_HIGH_DEC_ADDR);
+		env_set("decaddr_kernel", strAddr);
+	}
+
     return 0;
 }
 

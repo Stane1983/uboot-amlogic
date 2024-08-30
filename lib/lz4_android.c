@@ -88,6 +88,7 @@ int unlz4(const void *src, size_t srcn, void *dst, size_t *dstn)
 
 		ret = -1;
 		outp += dest_len;
+		*dstn += dest_len;
 		size -= chunksize;
 
 		if (size == 0) {

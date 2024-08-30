@@ -835,7 +835,7 @@ static bool _read_in_bootconfig(struct vendor_boot_img_hdr *boot_info, uint32_t 
 static ulong android_image_get_comp_v3(const boot_img_hdr_v3_t *os_hdr)
 {
 	int i;
-	unsigned char *src = (unsigned char *)os_hdr + 0x1000;
+	unsigned char *src = (unsigned char *)os_hdr + sizeof(boot_img_hdr_v3_t);
 
 	for (i = 0;i< ARRAY_SIZE(arrComp);++i)
 	{

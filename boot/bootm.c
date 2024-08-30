@@ -225,7 +225,7 @@ static int bootm_find_os(struct cmd_tbl *cmdtp, int flag, int argc,
 		images.os.type = IH_TYPE_KERNEL;
 
 		if (images.os.arch == IH_ARCH_ARM)
-			images.os.comp = image_get_comp(os_hdr + 0x800);
+			images.os.comp = image_get_comp(os_hdr + sizeof(sizeof(boot_img_hdr_t)));
 		else
 			images.os.comp =  android_image_get_comp(os_hdr);
 
@@ -646,7 +646,7 @@ static int bootm_load_os(struct bootm_headers *images, int boot_progress)
 
 	flush_cache(flush_start, ALIGN(load_end, ARCH_DMA_MINALIGN) - flush_start);
 
-	debug("   kernel loaded at 0x%08lx, end = 0x%08lx\n", load, load_end);
+	printf("   kernel loaded at 0x%08lx, end = 0x%08lx\n", load, load_end);
 	bootstage_mark(BOOTSTAGE_ID_KERNEL_LOADED);
 
 	no_overlap = (os.comp == IH_COMP_NONE && load == image_start);
