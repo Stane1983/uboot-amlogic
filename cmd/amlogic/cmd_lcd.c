@@ -337,10 +337,9 @@ static int do_lcd_check(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[
 	return 0;
 }
 
-static int do_lcd_prbs(cmd_tbl_t *cmdtp, int flag, int argc,
-		       char * const argv[])
+static int do_lcd_prbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	unsigned int ms, prbs_mode_flag;
+	unsigned int ms, prbs_freq = 0, prbs_mode_flag;
 
 	if (argc == 1)
 		return -1;
@@ -357,12 +356,19 @@ static int do_lcd_prbs(cmd_tbl_t *cmdtp, int flag, int argc,
 		else
 			return -1;
 		ms = (unsigned int)simple_strtoul(argv[2], NULL, 10);
+	} else if (strcmp(argv[1], "freq") == 0) {
+		if (argc == 4)
+			prbs_mode_flag = LCD_PRBS_MODE_FREQ;
+		else
+			return -1;
+		prbs_freq = (unsigned int)simple_strtoul(argv[2], NULL, 10);
+		ms = (unsigned int)simple_strtoul(argv[3], NULL, 10);
 	} else {
 		prbs_mode_flag = LCD_PRBS_MODE_LVDS | LCD_PRBS_MODE_VX1;
 		ms = (unsigned int)simple_strtoul(argv[1], NULL, 10);
 	}
 
-	aml_lcd_driver_prbs(0, ms, prbs_mode_flag);
+	aml_lcd_driver_prbs(0, ms, prbs_freq, prbs_mode_flag);
 	return 0;
 }
 
@@ -632,7 +638,7 @@ static int do_lcd1_check(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv
 
 static int do_lcd1_prbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	unsigned int ms, prbs_mode_flag;
+	unsigned int ms, prbs_freq = 0, prbs_mode_flag;
 
 	if (argc == 1)
 		return -1;
@@ -649,12 +655,19 @@ static int do_lcd1_prbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[
 		else
 			return -1;
 		ms = (unsigned int)simple_strtoul(argv[2], NULL, 10);
+	} else if (strcmp(argv[1], "freq") == 0) {
+		if (argc == 4)
+			prbs_mode_flag = LCD_PRBS_MODE_FREQ;
+		else
+			return -1;
+		prbs_freq = (unsigned int)simple_strtoul(argv[2], NULL, 10);
+		ms = (unsigned int)simple_strtoul(argv[3], NULL, 10);
 	} else {
 		prbs_mode_flag = LCD_PRBS_MODE_LVDS | LCD_PRBS_MODE_VX1;
 		ms = (unsigned int)simple_strtoul(argv[1], NULL, 10);
 	}
 
-	aml_lcd_driver_prbs(1, ms, prbs_mode_flag);
+	aml_lcd_driver_prbs(1, ms, prbs_freq, prbs_mode_flag);
 	return 0;
 }
 
@@ -853,7 +866,7 @@ static int do_lcd2_check(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv
 
 static int do_lcd2_prbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	unsigned int ms, prbs_mode_flag;
+	unsigned int ms, prbs_freq = 0, prbs_mode_flag;
 
 	if (argc == 1)
 		return -1;
@@ -870,12 +883,19 @@ static int do_lcd2_prbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[
 		else
 			return -1;
 		ms = (unsigned int)simple_strtoul(argv[2], NULL, 10);
+	} else if (strcmp(argv[1], "freq") == 0) {
+		if (argc == 4)
+			prbs_mode_flag = LCD_PRBS_MODE_FREQ;
+		else
+			return -1;
+		prbs_freq = (unsigned int)simple_strtoul(argv[2], NULL, 10);
+		ms = (unsigned int)simple_strtoul(argv[3], NULL, 10);
 	} else {
 		prbs_mode_flag = LCD_PRBS_MODE_LVDS | LCD_PRBS_MODE_VX1;
 		ms = (unsigned int)simple_strtoul(argv[1], NULL, 10);
 	}
 
-	aml_lcd_driver_prbs(2, ms, prbs_mode_flag);
+	aml_lcd_driver_prbs(2, ms, prbs_freq, prbs_mode_flag);
 	return 0;
 }
 

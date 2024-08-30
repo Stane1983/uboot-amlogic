@@ -597,7 +597,6 @@ static struct lcd_clk_data_s lcd_clk_data_g12a_path0 = { //HPLL
 	.clktree_set = NULL,
 	.clk_config_init_print = lcd_clk_config_init_print_g12a,
 	.clk_config_print = lcd_clk_config_print_g12a,
-	.prbs_clk_config = NULL,
 	.prbs_test = NULL,
 };
 
@@ -646,7 +645,6 @@ static struct lcd_clk_data_s lcd_clk_data_g12a_path1 = {  //GP0
 	.clktree_set = NULL,
 	.clk_config_init_print = lcd_clk_config_init_print_g12a,
 	.clk_config_print = lcd_clk_config_print_g12a,
-	.prbs_clk_config = NULL,
 	.prbs_test = NULL,
 };
 
@@ -695,7 +693,6 @@ static struct lcd_clk_data_s lcd_clk_data_g12b_path0 = {  //HPLL
 	.clktree_set = NULL,
 	.clk_config_init_print = lcd_clk_config_init_print_g12a,
 	.clk_config_print = lcd_clk_config_print_g12a,
-	.prbs_clk_config = NULL,
 	.prbs_test = NULL,
 };
 
@@ -744,7 +741,6 @@ static struct lcd_clk_data_s lcd_clk_data_g12b_path1 = { //GP0
 	.clktree_set = NULL,
 	.clk_config_init_print = lcd_clk_config_init_print_g12a,
 	.clk_config_print = lcd_clk_config_print_g12a,
-	.prbs_clk_config = NULL,
 	.prbs_test = NULL,
 };
 

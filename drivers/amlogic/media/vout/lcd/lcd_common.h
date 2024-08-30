@@ -105,6 +105,8 @@ static inline unsigned long long lcd_diff(unsigned long long a, unsigned long lo
 	return (a >= b) ? (a - b) : (b - a);
 }
 
+extern unsigned int lcd_prbs_flag, lcd_prbs_freq, lcd_prbs_performed, lcd_prbs_err;
+
 void lcd_display_init_test(struct aml_lcd_drv_s *pdrv);
 void lcd_display_init_reg_dump(struct aml_lcd_drv_s *pdrv);
 
@@ -241,7 +243,6 @@ void lcd_vbyone_rst(struct aml_lcd_drv_s *pdrv);
 int lcd_vbyone_cdr(struct aml_lcd_drv_s *pdrv);
 int lcd_vbyone_lock(struct aml_lcd_drv_s *pdrv);
 void lcd_debug_probe(struct aml_lcd_drv_s *pdrv);
-// int lcd_prbs_test(struct aml_lcd_drv_s *pdrv, unsigned int s, unsigned int mode_flag);
 
 char *get_current_env_connector(unsigned char cnt_idx);
 void sprintf_lcd_connector(char *buf, unsigned char lcd_idx, unsigned char lcd_type);

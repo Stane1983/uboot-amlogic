@@ -72,6 +72,7 @@ struct lcd_clk_data_s {
 	unsigned char vclk_sel;
 	unsigned char clk1_path_sel;//display 1 clk path sel tcon_pll0/1
 	int enc_clk_msr_id;
+	int fifo_clk_msr_id;
 
 	//for some parameter changed to different lcd interface
 	void (*clk_parameter_init)(struct aml_lcd_drv_s *pdrv);
@@ -87,7 +88,6 @@ struct lcd_clk_data_s {
 	void (*clktree_set)(struct aml_lcd_drv_s *pdrv);
 	void (*clk_config_init_print)(struct aml_lcd_drv_s *pdrv);
 	void (*clk_config_print)(struct aml_lcd_drv_s *pdrv);
-	void (*prbs_clk_config)(struct aml_lcd_drv_s *pdrv, unsigned int lcd_prbs_mode);
 	int (*prbs_test)(struct aml_lcd_drv_s *pdrv, unsigned int ms, unsigned int mode_flag);
 };
 
@@ -95,6 +95,7 @@ struct lcd_clk_config_s { /* unit: Hz */
 	/* IN-OUT parameters */
 	unsigned int fin;
 	unsigned int fout;
+	unsigned int prbs_mode;
 
 	/* pll parameters */
 	unsigned int pll_id;
