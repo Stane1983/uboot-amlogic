@@ -64,21 +64,8 @@
 	pinctrl-0 = <&i2c0_pins3>;
 };
 
-/* for internal phy */
-//&ethmac {
-//	status = "okay";
-//	internal_phy = <1>;
-//	mc_val = <0x4be04>;
-//	/*mc_val = <0x1621>;*/
-//};
-
-/* for external phy */
 &ethmac {
 	status = "okay";
-	pinctrl-names = "external_eth_rgmii_pins";
-	pinctrl-0 = <&external_eth_rgmii_pins>;
-	internal_phy = <0>;
-	mc_val = <0x1621>;
 };
 
 &pinctrl_periphs {

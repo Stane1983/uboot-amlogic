@@ -370,11 +370,7 @@
 			};
 		};
 
-		ethmac: ethernet@ff3f0000 {
-			compatible = "amlogic,g12a-eth-dwmac";
-			phy_cntl1 = <0x41054147>;
-			pll_val = <0x9c0040a 0x927e0000 0xac5f49e5>;
-			analog_val = <0x20200000 0x0000c000 0x00000023>;
+		ethmac: ethernet@fe368000 {
 			status = "disabled";
 		};
 

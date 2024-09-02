@@ -86,7 +86,6 @@ void setup_tx_amp(struct udevice *dev)
 static void setup_internal_phy(struct udevice *dev)
 {
 	u32 mc_val = 0xffffffff;
-	int chip_num = 0;
 	int reg_val = 0;
 	int ret = 0;
 	struct resource eth_top, eth_cfg;
@@ -95,11 +94,6 @@ static void setup_internal_phy(struct udevice *dev)
 		printf("missing mc_val\n");
 	else
 		printf("mc_val=0x%x\n", mc_val);
-
-	if (dev_read_u32(dev, "chip_num", &chip_num) < 0)
-		printf("missing chip_num, use 0 as default\n");
-	else
-		printf("chip_num=%d\n", chip_num);
 
 	ret = dev_read_resource_byname(dev, "eth_top", &eth_top);
 	if (ret) {

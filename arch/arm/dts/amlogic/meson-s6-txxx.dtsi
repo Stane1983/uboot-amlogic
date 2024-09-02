@@ -10,7 +10,3 @@
 	compatible = "amlogic,txxx", "amlogic,meson-s6";
 };
 
-&ethmac {
-	phy-mode = "rmii";
-//	phy-handle = <&external_phy>;
-};

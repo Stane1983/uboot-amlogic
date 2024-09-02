@@ -110,57 +110,15 @@
 		0x0 0xfe364000 0x0 0x8
 		0x0 0xfe360000 0x0 0xa4>;
 	reg-names = "eth_base", "eth_top", "eth_cfg";
-	phy_cntl1 = <0x41054147>;
-	internal_phy = <1>;
-	mc_val = <0x4be04>;
+	phy-mode = "rmii";
+	soc_num = <5>;
+
+	internal_phy = <0>;
+	pinctrl-names = "external_eth_rgmii_pins";
+	pinctrl-0 = <&external_eth_rgmii_pins>;
+	mc_val = <0x1621>;
 	cali_val = <0x80000>;
 	//reset-gpios = <&gpio GPIOZ_15 GPIO_ACTIVE_HIGH>;
-	pll_val = <0x608200a0 0xea002000 0x00000150>;
-	analog_val = <0x20200000 0x0000c000 0x00000023>;
-	chip_num = <3>;
-	soc_num = <5>;
-	/* 5: S1A, S7, S7D, S6 */
-	//tx_amp_src = <0xfe005b30>;
-//	clocks = <&clkc CLKID_ETH_CORE>,
-//		 <&clkc CLKID_FCLK_DIV2>,
-//		 <&clkc CLKID_MPLL2>;
-//	clock-names = "stmmaceth", "clkin0", "clkin1";
-
-	mdio0: mdio {
-		#address-cells = <1>;
-		#size-cells = <0>;
-		compatible = "snps,dwmac-mdio";
-	};
-};
-
-&periphs {
-
-	eth-phy-mux {
-		compatible = "mdio-mux-mmioreg", "mdio-mux";
-		#address-cells = <1>;
-		#size-cells = <0>;
-		reg = <0x0 0x15c 0x0 0x4>;
-		mux-mask = <0xffffffff>;
-		mdio-parent-bus = <&mdio0>;
-
-		internal_mdio: mdio@e40908ff {
-			reg = <0xe40908ff>;
-			#address-cells = <1>;
-			#size-cells = <0>;
-
-			internal_phy: ethernet-phy@8 {
-				compatible = "ethernet-phy-id0181.4400", "ethernet-phy-ieee802.3-c22";
-				reg = <8>;
-				max-speed = <100>;
-			};
-		};
-
-		external_mdio: mdio@2009087f {
-			reg = <0x2009087f>;
-			#address-cells = <1>;
-			#size-cells = <0>;
-		};
-	};
 };
 
 &saradc {
