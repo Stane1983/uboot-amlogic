@@ -212,6 +212,11 @@ struct rx_cap {
 	bool ifdb_present;
 	/* IFDB, currently only use below node */
 	u8 additional_vsif_num;
+	/*
+	 * Whether the current edid is valid
+	 * 0:edid is invalid
+	 * 1:edid is valid
+	 */
 	u8 edid_parsing;
 	/*blk0 check sum*/
 	u8 blk0_chksum;
