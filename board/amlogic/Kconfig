@@ -547,6 +547,12 @@ config S7_BP201
 	help
 		Select S7 BP201 config
 
+config S7_T233
+	bool "S7_T233"
+	select TARGET_S7_T233
+	help
+		Select S7 T233 config
+
 endchoice
 
 config TARGET_S7_SKT
@@ -576,6 +582,10 @@ config TARGET_S7_BP202
 config TARGET_S7_BP201
 	bool "S7 BP201 board"
 	depends on S7_BP201
+
+config TARGET_S7_T233
+	bool "S7 T233 board"
+	depends on S7_T233
 
 endif
 
@@ -667,6 +677,13 @@ config S7D_BM209
 	select TARGET_S7D_BM209
 	help
 		Select S7D BM209 config
+
+config S7D_T232
+	bool "S7D_T232"
+	select TARGET_S7D_T232
+	help
+		Select S7D T232 config
+
 endchoice
 
 config TARGET_S7D_SKT
@@ -684,6 +701,10 @@ config TARGET_S7D_BM202
 config TARGET_S7D_BM209
 	bool "S7D BM209 board"
 	depends on S7D_BM209
+
+config TARGET_S7D_T232
+	bool "S7D T232 board"
+	depends on S7D_T232
 
 endif
 
@@ -831,6 +852,8 @@ source "board/amlogic/s7_bp202/Kconfig"
 
 source "board/amlogic/s7_bp201/Kconfig"
 
+source "board/amlogic/s7_t233/Kconfig"
+
 source "board/amlogic/s1a_bg201/Kconfig"
 
 source "board/amlogic/s1a_bg209/Kconfig"
@@ -846,6 +869,8 @@ source "board/amlogic/s7d_bm201/Kconfig"
 source "board/amlogic/s7d_bm202/Kconfig"
 
 source "board/amlogic/s7d_bm209/Kconfig"
+
+source "board/amlogic/s7d_t232/Kconfig"
 
 source "board/amlogic/s6_skt/Kconfig"
 
