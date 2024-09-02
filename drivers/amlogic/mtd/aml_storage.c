@@ -1111,8 +1111,6 @@ static int mtd_store_boot_write(const char *part_name,
 		endoff = offset + num * size_per_copy;
 	}
 	for (; offset < endoff; offset += size_per_copy) {
-		pr_info("write %lx bytes to %llx\n",
-			size, offset);
 		limit = offset + size_per_copy;
 
 		#ifdef CONFIG_MTD_SPI_NAND

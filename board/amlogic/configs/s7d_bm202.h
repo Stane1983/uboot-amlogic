@@ -187,14 +187,16 @@ defined(CONFIG_STORE_COMPATIBLE)
 #error CONFIG_SPI_NAND/CONFIG_MTD_SPI_NAND/CONFIG_MESON_NFC can not support at the sametime;
 #endif
  /* mtd device board config */
-#define CONFIG_BL2_COPY_NUM             8
-#define CONFIG_NAND_TPL_COPY_NUM        2
-#define CONFIG_NOR_TPL_COPY_NUM         1
-#define CONFIG_TPL_SIZE_PER_COPY        0x300000
+#define BOARD_BOOT_LAYOUT_DISCRETE_BL2         1
+#define CONFIG_BL2_COPY_NUM                    8
+#define CONFIG_NAND_TPL_COPY_NUM           2
+#define CONFIG_NOR_TPL_COPY_NUM                1
+#define CONFIG_TPL_SIZE_PER_COPY           0x380000
+#define CONFIG_BOOTLOADER_SIZE			0x380000
 
 #define BOOTLOADER_MODE_NAND            ADVANCE_BOOTLOADER
 #define BOOTLOADER_MODE_SNAND           ADVANCE_BOOTLOADER
-#define BOOTLOADER_MODE_SNOR            ADVANCE_BOOTLOADER
+#define BOOTLOADER_MODE_SNOR            COMPACT_BOOTLOADER
 #define BOOTLOADER_MODE_ADVANCE_INIT        1
 #define BOOTLOADER_DDR_FIP_SIZE             0x40000
 
