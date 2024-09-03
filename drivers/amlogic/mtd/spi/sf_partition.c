@@ -14,6 +14,7 @@
 #include <linux/sizes.h>
 #include <malloc.h>
 #include <linux/errno.h>
+#include <linux/kernel.h>
 #include <mtd.h>
 #include <amlogic/aml_mtd.h>
 #include <amlogic/storage.h>
@@ -59,6 +60,7 @@ static int _spinor_add_partitions(struct mtd_info *mtd,
 		temp[0].name = BOOT_LOADER;
 		temp[0].offset = 0;
 		temp[0].size = spiflash_bootloader_size();
+		temp[0].size = ALIGN(temp[0].size, SPINOR_ALIGNED_SIZE);
 		off = temp[0].size + temp[0].offset;
 		parts_nm = &temp[1];
 
