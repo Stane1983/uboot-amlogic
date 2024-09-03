@@ -27,10 +27,13 @@ struct blmcu_s {
 	unsigned short vsync_cnt;
 	unsigned int rbuf_size;
 	unsigned int tbuf_size;
-	unsigned int header;	/*4byte default 0x55AA0014 */
-	unsigned int adim;	/*1byte 0xff */
-	unsigned int pdim;	/*1byte 0x4d 30%duty */
-	unsigned int type;	/*1byte 0:3bytes, 1:6byte */
+	unsigned int header;	/*command */
+	unsigned char adim;	/*1byte 0xff */
+	unsigned char pdim;	/*1byte 0x4d 30%duty */
+	unsigned char type;	/*0:4+3, 1: 4+6, 2:6+6, 3:6+8 */
+	unsigned char datawidth;	/*0:8bit, 1:12bit, 2:16bit */
+	unsigned char ext_len;
+	unsigned char bl_pwm_en;	/*0:default uboot have pwm, 1: uboot without pwm*/
 	unsigned int apl;
 
 	/* local dimming driver smr api usage */
@@ -54,13 +57,15 @@ static int blmcu_hw_init_on(struct ldim_dev_driver_s *dev_drv)
 	/* step 1: system power_on */
 	ldim_gpio_set(dev_drv, dev_drv->en_gpio, dev_drv->en_gpio_on);
 
-	/* step 2: delay for internal logic stable */
-	mdelay(500);
+	if (((dev_drv->mcu_dim >> 20) & 0x1) == 0) {
+		/* step 2: delay for internal logic stable */
+		mdelay(500);
 
-	/* step 3: Generate external VSYNC to VSYNC/PWM pin */
-	ldim_set_duty_pwm(&dev_drv->ldim_pwm_config);
-	ldim_set_duty_pwm(&dev_drv->analog_pwm_config);
-	dev_drv->pinmux_ctrl(dev_drv, 1);
+		/* step 3: Generate external VSYNC to VSYNC/PWM pin */
+		ldim_set_duty_pwm(&dev_drv->ldim_pwm_config);
+		ldim_set_duty_pwm(&dev_drv->analog_pwm_config);
+		dev_drv->pinmux_ctrl(dev_drv, 1);
+	}
 
 	return 0;
 }
@@ -80,21 +85,21 @@ static inline void ldim_data_mapping(unsigned short *duty_buf,
 				     unsigned int zone_num)
 {
 	unsigned int i, j, val, apl, k;
-	unsigned char datawidth;
-
-	datawidth = (bl_mcu->header >> 3) & 0x03;
+	unsigned char header_cnt = 0;
 
 	j = 0;
 	apl = 0;
 	for (i = 0; i < zone_num; i++) {
-		val = min + ((duty_buf[i] * (max - min)) / LD_DATA_MAX);
+		val = duty_buf[i];
 		apl += val;
-		if (datawidth == 0x03) {
-			//16bits
-			bl_mcu->rbuf[j + 1] = (val >> 8) & 0xff;
-			bl_mcu->rbuf[j] = val & 0xff;
+		if (bl_mcu->datawidth == 0x03) {
+			//16bits (6+10)
+			//bl_mcu->rbuf[j + 1] = (val >> 8) & 0xff;
+			//bl_mcu->rbuf[j] = val & 0xff;
+			bl_mcu->rbuf[j] = ((bl_mcu->adim << 2) | (val >> 10)) & 0xff;
+			bl_mcu->rbuf[j + 1] = (val >> 2) & 0xff;
 			j += 2;
-		} else {
+		} else if (bl_mcu->datawidth == 0x02) {
 			//12bits
 			if (i % 2 == 0) {
 				bl_mcu->rbuf[j] = (val >> 4) & 0xff;
@@ -104,38 +109,78 @@ static inline void ldim_data_mapping(unsigned short *duty_buf,
 				bl_mcu->rbuf[j + 2] = val & 0xff;
 				j += 3;
 			}
+		} else {
+			bl_mcu->rbuf[j] = (val >> 4) & 0xff;
+			j++;
 		}
 	}
 
 	bl_mcu->apl = apl / zone_num;
 
-	if (datawidth == 0x03)
+	if (bl_mcu->datawidth == 0x03)
 		k = zone_num * 2;
-	else
+	else if (bl_mcu->datawidth == 0x02)
 		k = (3 * zone_num + 1) / 2;
+	else
+		k = zone_num;
+
+	if (bl_mcu->type > 1) {
+		header_cnt = 6;
+		bl_mcu->tbuf[0] = 0x55;
+		bl_mcu->tbuf[1] = 0xaa;
+		bl_mcu->tbuf[2] = (bl_mcu->header >> 24) & 0xff;
+		bl_mcu->tbuf[3] = (bl_mcu->header >> 16) & 0xff;
+		bl_mcu->tbuf[4] = (bl_mcu->header >> 8) & 0xff;
+		bl_mcu->tbuf[5] = bl_mcu->header & 0xff;
+	} else {
+		header_cnt = 4;
+		bl_mcu->tbuf[0] = (bl_mcu->header >> 24) & 0xff;
+		bl_mcu->tbuf[1] = (bl_mcu->header >> 16) & 0xff;
+		bl_mcu->tbuf[2] = (bl_mcu->header >> 8) & 0xff;
+		bl_mcu->tbuf[3] = bl_mcu->header & 0xff;
+	}
 
 	for (i = 0; i < k; i++)
-		bl_mcu->tbuf[i + 4] = bl_mcu->rbuf[i];
+		bl_mcu->tbuf[i + header_cnt] = bl_mcu->rbuf[i];
 
-	bl_mcu->tbuf[0] = (bl_mcu->header >> 24) & 0xff;	//0x55;
-	bl_mcu->tbuf[1] = (bl_mcu->header >> 16) & 0xff;	//0xaa;
-	bl_mcu->tbuf[2] = (bl_mcu->header >> 8) & 0xff; //0x00;
-	bl_mcu->tbuf[3] = bl_mcu->header & 0xff;	//0x14;
-	bl_mcu->tbuf[k + 4] = bl_mcu->pdim & 0xff;  //PDIM
-	bl_mcu->tbuf[k + 5] = bl_mcu->adim & 0xff;  //ADIM
-
-	if (bl_mcu->type == 1) {
+	switch (bl_mcu->type) {
+	case 0:// 3byte tail
+		bl_mcu->tbuf[k + 4] = bl_mcu->pdim;
+		bl_mcu->tbuf[k + 5] = bl_mcu->adim;
+		bl_mcu->tbuf[k + 6] = (bl_mcu->apl >> 4) & 0xff;  //apl
+		break;
+	case 1:// 6byte tail
+		bl_mcu->tbuf[k + 4] = bl_mcu->pdim;
+		bl_mcu->tbuf[k + 5] = bl_mcu->adim;
 		bl_mcu->tbuf[k + 6] = (bl_mcu->apl >> 8) & 0xff;  //apl
 		bl_mcu->tbuf[k + 7] = bl_mcu->apl & 0xff;  //apl
 		bl_mcu->tbuf[k + 8] = 0xff;  //reseve
 		bl_mcu->tbuf[k + 9] = 0xff;  //reserve
-
-		bl_mcu->tbuf_size = k + 10;
-	} else {
-		bl_mcu->tbuf[k + 6] = (bl_mcu->apl >> 4) & 0xff;  //apl
-
-		bl_mcu->tbuf_size = k + 7;
+		break;
+	case 2:// 6byte tail
+		bl_mcu->tbuf[k + 6] = 0;
+		bl_mcu->tbuf[k + 7] = 0;
+		bl_mcu->tbuf[k + 8] = 0;
+		bl_mcu->tbuf[k + 9] = 0;
+		bl_mcu->tbuf[k + 10] = 0;
+		bl_mcu->tbuf[k + 11] = 0;
+		break;
+	case 3:// 8byte tail
+		bl_mcu->tbuf[k + 6] = 0;
+		bl_mcu->tbuf[k + 7] = 0;
+		bl_mcu->tbuf[k + 8] = 0;
+		bl_mcu->tbuf[k + 9] = 0;
+		bl_mcu->tbuf[k + 10] = 0;
+		bl_mcu->tbuf[k + 11] = 0;
+		bl_mcu->tbuf[k + 12] = 0;
+		bl_mcu->tbuf[k + 13] = 0;
+		break;
+	default:
+		break;
 	}
+
+	for (i = k + bl_mcu->ext_len; i < bl_mcu->tbuf_size; i++)
+		bl_mcu->tbuf[i] = 0;
 }
 
 static int blmcu_smr(struct aml_ldim_driver_s *ldim_drv, unsigned short *buf,
@@ -223,7 +268,6 @@ static int blmcu_ldim_dev_update(struct ldim_dev_driver_s *dev_drv)
 int ldim_dev_blmcu_probe(struct aml_ldim_driver_s *ldim_drv)
 {
 	struct ldim_dev_driver_s *dev_drv = ldim_drv->dev_drv;
-	unsigned char datawidth;
 
 	if (!dev_drv) {
 		LDIMERR("%s: dev_drv is null\n", __func__);
@@ -239,29 +283,57 @@ int ldim_dev_blmcu_probe(struct aml_ldim_driver_s *ldim_drv)
 
 	bl_mcu->dev_on_flag = 0;
 	bl_mcu->vsync_cnt = 0;
+	LDIMPR("%s: mcu_header=0x%08x,mcu_dim=0x%08x\n",
+		__func__, dev_drv->mcu_header, dev_drv->mcu_dim);
+
 	bl_mcu->adim = (dev_drv->mcu_dim >> 8) & 0xff;
 	bl_mcu->pdim = dev_drv->mcu_dim & 0xff;
-	bl_mcu->type = (dev_drv->mcu_dim >> 16) & 0xff;
+	bl_mcu->type = (dev_drv->mcu_dim >> 16) & 0xf;
+	if (bl_mcu->type > 1)
+		bl_mcu->datawidth = (dev_drv->mcu_dim >> 21) & 0x7;
+	else
+		bl_mcu->datawidth = (bl_mcu->header >> 3) & 0x03;
+	bl_mcu->bl_pwm_en = (dev_drv->mcu_dim >> 20) & 0x1;
 	bl_mcu->header = dev_drv->mcu_header;
 
+	/* header + data + suffix */
+	/* according custom backlight mcu spi spec to set tbuf_size */
+	switch (bl_mcu->type) {
+	case 0:
+		bl_mcu->ext_len = 7;//4+3
+		break;
+	case 1:
+		bl_mcu->ext_len = 10;//4+6
+		break;
+	case 2:
+		bl_mcu->ext_len = 12;//6+6
+		break;
+	case 3:
+		bl_mcu->ext_len = 14;//6+8
+		break;
+	default:
+		break;
+	}
+
+	if (bl_mcu->datawidth == 3)	//16bit
+		bl_mcu->tbuf_size = 2 * dev_drv->zone_num;
+	else if (bl_mcu->datawidth == 2)	//12bit
+		bl_mcu->tbuf_size = (dev_drv->zone_num * 3 + 1) / 2;
+	else	//8bit
+		bl_mcu->tbuf_size = dev_drv->zone_num;
+
+	/*packet length*/
+	bl_mcu->tbuf_size += bl_mcu->ext_len;
+	LDIMPR("%s: bl_mcu type=%d,datawidth=%d, tbuf_size=%d\n",
+		__func__, bl_mcu->type, bl_mcu->datawidth, bl_mcu->tbuf_size);
+
 	/* each zone 2 bytes */
-	bl_mcu->rbuf_size = 2 * dev_drv->zone_num;
+	bl_mcu->rbuf_size = bl_mcu->tbuf_size;
 	bl_mcu->rbuf = (unsigned char *)malloc(bl_mcu->rbuf_size);
 	if (!bl_mcu->rbuf)
 		goto ldim_dev_blmcu_probe_err0;
 	memset(bl_mcu->rbuf, 0, bl_mcu->rbuf_size);
 
-	/* header + data + suffix */
-	/* according custom backlight mcu spi spec */
-	datawidth = (bl_mcu->header >> 3) & 0x03;
-	if (datawidth == 3)
-		bl_mcu->tbuf_size = 2 * dev_drv->zone_num;
-	else
-		bl_mcu->tbuf_size = (dev_drv->zone_num * 3 + 1) / 2;
-	if (bl_mcu->type == 1)
-		bl_mcu->tbuf_size += 10;
-	else
-		bl_mcu->tbuf_size += 7;
 	bl_mcu->tbuf = (unsigned char *)malloc(bl_mcu->tbuf_size);
 	if (!bl_mcu->tbuf)
 		goto ldim_dev_blmcu_probe_err1;
