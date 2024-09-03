@@ -349,6 +349,10 @@ static int ldim_dev_add_driver(struct aml_ldim_driver_s *ldim_drv)
 #ifdef CONFIG_AML_LCD_BL_LDIM_IW7027
 		ret = ldim_dev_iw7027_probe(ldim_drv);
 #endif
+	} else if (strcmp(dev_drv->name, "iw7039") == 0) {
+#ifdef CONFIG_AML_LCD_BL_LDIM_IW7039
+		ret = ldim_dev_iw7039_probe(ldim_drv);
+#endif
 	} else if (strcmp(dev_drv->name, "blmcu") == 0) {
 #ifdef CONFIG_AML_LCD_BL_LDIM_BLMCU
 		ret = ldim_dev_blmcu_probe(ldim_drv);
@@ -390,6 +394,10 @@ static int ldim_dev_remove_driver(struct aml_ldim_driver_s *ldim_drv)
 	if (strcmp(dev_drv->name, "iw7027") == 0) {
 #ifdef CONFIG_AML_LCD_BL_LDIM_IW7027
 		ldim_dev_iw7027_remove(ldim_drv);
+#endif
+	} else if (strcmp(dev_drv->name, "iw7039") == 0) {
+#ifdef CONFIG_AML_LCD_BL_LDIM_IW7039
+		ldim_dev_iw7039_remove(ldim_drv);
 #endif
 	} else if (strcmp(dev_drv->name, "blmcu") == 0) {
 #ifdef CONFIG_AML_LCD_BL_LDIM_BLMCU

@@ -31,6 +31,11 @@ int ldim_dev_iw7027_probe(struct aml_ldim_driver_s *ldim_drv);
 int ldim_dev_iw7027_remove(struct aml_ldim_driver_s *ldim_drv);
 #endif
 
+#ifdef CONFIG_AML_LCD_BL_LDIM_IW7039
+int ldim_dev_iw7039_probe(struct aml_ldim_driver_s *ldim_drv);
+int ldim_dev_iw7039_remove(struct aml_ldim_driver_s *ldim_drv);
+#endif
+
 #ifdef CONFIG_AML_LCD_BL_LDIM_BLMCU
 int ldim_dev_blmcu_probe(struct aml_ldim_driver_s *ldim_drv);
 int ldim_dev_blmcu_remove(struct aml_ldim_driver_s *ldim_drv);
