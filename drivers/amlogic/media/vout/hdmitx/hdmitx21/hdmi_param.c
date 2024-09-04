@@ -633,8 +633,10 @@ bool hdmitx_chk_mode_attr_sup(struct hdmitx_dev *hdev, const char *mode, char *a
 		/* printf("cd = %d\n", para->cd); */
 		/* printf("cs = %d\n", para->cs); */
 	/* } */
-
-	return hdmitx21_validate_mode(hdev, para);
+	if (para)
+		return hdmitx21_validate_mode(hdev, para);
+	else
+		return false;
 }
 
 /* Recommended N and Expected CTS for 32kHz */

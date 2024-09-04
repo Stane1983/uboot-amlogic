@@ -20,6 +20,7 @@
 #include <linux/compat.h>
 #include "../../drivers/amlogic/media/vout/hdmitx/hdmitx_common/hdmitx_check_valid.h"
 #include "../../drivers/amlogic/media/vout/hdmitx/hdmitx_common/hdmitx_policy_setting.h"
+#include "../../drivers/amlogic/media/vout/hdmitx/hdmitx_common/hdmitx_compliance.h"
 
 static unsigned char edid_raw_buf[512] = {0};
 /* there may be outputmode/2/3 when in multi-display case,
@@ -357,6 +358,9 @@ static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 		 * mode setting again when vout init in kernel
 		 */
 		hdmitx21_set(hdev);
+		/* for special LG TV, need send ake_init first */
+		if (hdmitx_find_send_ake_init(hdev->rawedid))
+			hdmitx21_send_ake_init();
 		qms_scene_post_process(hdev);
 		if (hdev->para->frl_rate && !hdev->flt_train_st) {
 			/* FLT training failed, need go to tmds mode */

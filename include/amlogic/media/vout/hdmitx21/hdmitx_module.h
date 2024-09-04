@@ -223,6 +223,10 @@ int hdmitx_common_build_format_para(struct hdmitx_common *tx_comm, struct hdmi_f
 				    enum hdmi_quantization_range cr);
 int hdmitx_hw_validate_mode(struct hdmitx_hw_common *tx_hw, u32 vic, u32 max_refreshrate);
 
+/* DDC */
+bool hdmitx_ddcm_write(u8 seg_index, u8 slave_addr, u8 reg_addr, u8 *data, u16 len);
+void hdmitx21_send_ake_init(void);
+
 #ifdef CONFIG_AML_DSC_ENC
 bool edid_check_dsc_support(struct tx_cap *hdmi_tx_cap,
 		struct rx_cap *rxcap, struct hdmi_format_para *para, u8 dsc_policy);

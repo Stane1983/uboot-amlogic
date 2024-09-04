@@ -2995,3 +2995,12 @@ u32 hdmitx_check_frac_rate(struct hdmitx_dev *hdev)
 	pr_info("%s: frac_rate:%d\n", __func__, frac_rate);
 	return frac_rate;
 }
+
+void hdmitx21_send_ake_init(void)
+{
+	u8 ake_init_data[12] = {0x02, 0x0df, 0x0d, 0x48, 0xf4, 0xd8, 0x6b,
+		0x11, 0xb5, 0x2, 0x0, 0x0};
+
+	pr_info("hdmitx: send ake_init\n");
+	hdmitx_ddcm_write(0, 0x74, 0x60, ake_init_data, 12);
+}

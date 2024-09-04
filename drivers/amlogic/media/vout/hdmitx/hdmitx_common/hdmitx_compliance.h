@@ -7,6 +7,7 @@
 #define __HDMITX_COMPLIANCE_H
 
 bool hdmitx_find_hdr_pkt_delay_to_vsync(unsigned char *edid_buf);
+bool hdmitx_find_send_ake_init(unsigned char *edid_buf);
 
 #endif
 
