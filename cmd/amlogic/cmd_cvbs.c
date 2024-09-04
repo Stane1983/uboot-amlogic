@@ -33,6 +33,8 @@ static int do_cvbs_debug(cmd_tbl_t * cmdtp, int flag, int argc, char * const arg
 
 static int do_cvbs_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {
+	int ret = 0;
+
 	if (argc < 1)
 		return cmd_usage(cmdtp);
 
@@ -55,7 +57,10 @@ static int do_cvbs_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv
 		else
 			cvbs_set_bist(argv[2]);
 	} else { /* "output" */
-			cvbs_set_vmode(argv[1]);
+
+		ret = cvbs_set_vmode(argv[1]);
+		if (ret != 0)
+			return CMD_RET_FAILURE;
 	}
 	return CMD_RET_SUCCESS;
 }
