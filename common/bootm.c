@@ -213,7 +213,7 @@ static int bootm_find_os(cmd_tbl_t *cmdtp, int flag, int argc,
 		images.os.type = IH_TYPE_KERNEL;
 
 		if (images.os.arch == IH_ARCH_ARM)
-			images.os.comp = image_get_comp(os_hdr + 0x800);
+			images.os.comp = image_get_comp(os_hdr + sizeof(sizeof(boot_img_hdr_t)));
 		else
 			images.os.comp =  android_image_get_comp(os_hdr);
 

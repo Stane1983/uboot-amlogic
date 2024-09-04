@@ -610,15 +610,15 @@ uint32_t get_rsv_mem_size(void)
 
 static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-    unsigned    kernel_size;
-    unsigned    ramdisk_size;
-    boot_img_hdr_t *hdr_addr = NULL;
-    int genFmt = 0;
+	unsigned kernel_size = 0;
+	unsigned ramdisk_size = 0;
+	boot_img_hdr_t *hdr_addr = NULL;
+	int genFmt = 0;
 	u32 actualbootimgsz = 0;
 	u32 dtbsz = 0;
 	const char *const partname = argv[1];
-    unsigned char* loadaddr = 0;
-    int rc = 0;
+	unsigned char *loadaddr = 0;
+	int rc = 0;
 	u64 flashreadoff = 0;
 	u32 securekernelimgsz = 0;
 	char *upgrade_step_s = NULL;
@@ -784,8 +784,6 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 		//because secure boot will use DMA which need disable MMU temp
 		//here must update the cache, otherwise nand will fail (eMMC is OK)
 		flush_cache((unsigned long)loadaddr, (unsigned long)actualbootimgsz);
-
-		return 0;
     }
     else {
 	char partname_init[32] = {0};
@@ -1251,6 +1249,15 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 			pbuffpreload = 0;
 		}
 	} /*ANDROID R/S*/
+
+	/* image size exceed 24M meanwhile need to decompress would overlap secure zone */
+	if ((android_image_get_comp((void *)loadaddr) != IH_COMP_NONE) &&
+			kernel_size > KERNEL_DECOMPRESS_MAX_SIZE) {
+		memset(strAddr, 0, sizeof(strAddr));
+		sprintf(strAddr, "%x", KERNEL_HIGH_DEC_ADDR);
+		env_set("decaddr_kernel", strAddr);
+	}
+
     return 0;
 }
 
