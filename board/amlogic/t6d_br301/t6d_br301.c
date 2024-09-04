@@ -48,7 +48,16 @@
 #ifdef CONFIG_AMLOGIC_AMFC
 #include <amlogic/amfc.h>
 #endif
-
+#include <amlogic/aml_profile.h>
+#ifdef CONFIG_RX_RTERM
+#include <amlogic/aml_hdmirx.h>
+#endif
+#ifdef CONFIG_CEC_TRIM_VAL
+#include <amlogic/aml_cec.h>
+#endif
+#ifdef CONFIG_CVBS_CALI
+#include <amlogic/aml_tvafe.h>
+#endif
 DECLARE_GLOBAL_DATA_PTR;
 
 void sys_led_init(void)
@@ -179,9 +188,20 @@ int board_late_init(void)
 #ifdef CONFIG_AML_VPP
 	vpp_init();
 #endif
+#ifdef CONFIG_RX_RTERM
+		rx_set_phy_rterm();
+#endif
 #ifdef CONFIG_AML_CVBS
 	cvbs_init();
 #endif
+#ifdef CONFIG_CVBS_CALI
+		cvbs_dac_cfg();
+#endif
+#ifdef CONFIG_CEC_TRIM_VAL
+		cec_get_trim_val();
+#endif
+	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_e);
+	run_command("ini_model", 0);
 #ifdef CONFIG_AML_LCD
 	lcd_probe();
 #endif

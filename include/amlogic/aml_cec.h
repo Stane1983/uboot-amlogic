@@ -74,6 +74,7 @@
 #define	CEC_OC_VENDOR_REMOTE_BUTTON_UP 				0x8B
 
 int cec_hw_init(int logic_addr, unsigned char fun_cfg);
+void cec_get_trim_val(void);
 
 #endif/*_AML_CEC_H*/
 
