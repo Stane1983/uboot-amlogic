@@ -2550,6 +2550,9 @@ u32 hdmitx21_check_frac_rate(struct hdmitx_dev *hdev)
 	u32 frac_rate = 0;
 	char ext_name[32];
 
+	if (!para)
+		return 0;
+	memset(ext_name, 0, sizeof(ext_name));
 	if (para->timing.sname)
 		memcpy(ext_name, para->timing.sname, sizeof(ext_name));
 	else if (para->timing.name)
@@ -2567,7 +2570,7 @@ u32 hdmitx21_check_frac_rate(struct hdmitx_dev *hdev)
 		frac_rate_str = env_get("frac_rate_policy");
 		if (frac_rate_str && (frac_rate_str[0] == '0'))
 			frac_rate = 0;
-		else if (para && hdmitx_likely_frac_rate_mode(ext_name))
+		else if (hdmitx_likely_frac_rate_mode(ext_name))
 			frac_rate = 1;
 	}
 
