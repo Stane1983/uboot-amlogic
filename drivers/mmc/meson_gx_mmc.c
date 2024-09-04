@@ -47,9 +47,19 @@ static inline void meson_write(struct mmc *mmc, uint32_t val, int offset)
 	writel(val, get_regbase(mmc) + offset);
 }
 
+#ifdef CONFIG_MMC_FBOOT
+void mmc_reset_reg(struct mmc *mmc, int reinit)
+#else
 void mmc_reset_reg(struct mmc *mmc)
+#endif
 {
+#ifdef CONFIG_MMC_FBOOT
+	if ((emmc_boot_chk(mmc) && is_boot_device_usb()) ||
+		!emmc_boot_chk(mmc) || reinit)
+		meson_write(mmc, 0x4890, MESON_SD_EMMC_CFG);
+#else
 	meson_write(mmc, 0x4890, MESON_SD_EMMC_CFG);
+#endif
 	meson_write(mmc, 0x0, MESON_SD_EMMC_INTF3);
 	meson_write(mmc, 0x0, MESON_SD_EMMC_DELAY1);
 	meson_write(mmc, 0x0, MESON_SD_EMMC_DELAY2);

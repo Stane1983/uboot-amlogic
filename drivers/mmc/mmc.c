@@ -92,15 +92,17 @@ int emmc_boot_chk(struct mmc *mmc)
 {
 	u32 val = 0;
 
-	if (strcmp(mmc->dev->name, "emmc"))
+	if (!strcmp(mmc->dev->name, "emmc"))
+		return 1;
+	if (!strcmp(mmc->dev->name, "sd"))
 		return 0;
 
 	val = readl(SEC_AO_SEC_GP_CFG0);
 	pr_info("SEC_AO_SEC_GP_CFG0 = %x\n", val);
 	if ((val & 0xf) == 0x1)
-		return 1;
+		return 0;
 
-	return 0;
+	return 1;
 }
 
 #if CONFIG_IS_ENABLED(MMC_TINY)
@@ -2350,7 +2352,11 @@ error:
 	return err;
 }
 
+#ifdef CONFIG_MMC_FBOOT
+static int mmc_startup(struct mmc *mmc, int reinit)
+#else
 static int mmc_startup(struct mmc *mmc)
+#endif
 {
 	int err, i;
 	uint mult, freq;
@@ -2370,7 +2376,7 @@ static int mmc_startup(struct mmc *mmc)
 #endif
 
 #ifdef CONFIG_MMC_FBOOT
-	if (emmc_boot_chk(mmc)) {
+	if (emmc_boot_chk(mmc) && !is_boot_device_usb() && !reinit) {
 		mmc_switch_part(mmc, 0);
 
 		/* disSelect the card, and put it into detect Mode */
@@ -2861,10 +2867,11 @@ int mmc_start_init(struct mmc *mmc)
 	}
 
 #ifdef CONFIG_MMC_FBOOT
-	if (emmc_boot_chk(mmc)) {
+	if (emmc_boot_chk(mmc) && !is_boot_device_usb()) {
 		mmc->high_capacity = 1;
 		mmc->rca = 1;
 		mmc->version = MMC_VERSION_UNKNOWN;
+		printf("mmc fboot\n");
 	} else
 #endif
 		err = mmc_get_op_cond(mmc);
@@ -2898,17 +2905,38 @@ int enable_mmc_reset(struct mmc *mmc)
 static int mmc_complete_init(struct mmc *mmc)
 {
 	int err = 0;
+#ifdef CONFIG_MMC_FBOOT
+	int reinit = 0;
+	int retries = 3;
 
+try_again:
+#endif
 	mmc->init_in_progress = 0;
 	if (mmc->op_cond_pending)
 		err = mmc_complete_op_cond(mmc);
 
 	if (!err)
+#ifdef CONFIG_MMC_FBOOT
+		err = mmc_startup(mmc, reinit);
+#else
 		err = mmc_startup(mmc);
-	if (err)
+#endif
+	if (err) {
 		mmc->has_init = 0;
-	else
+#ifdef CONFIG_MMC_FBOOT
+		if (emmc_boot_chk(mmc) && retries > 0) {
+			retries--;
+			reinit = 1;
+			mmc_reset_reg(mmc, reinit);
+			err = mmc_get_op_cond(mmc);
+			if (!err)
+				mmc->init_in_progress = 1;
+			goto try_again;
+		}
+#endif
+	} else {
 		mmc->has_init = 1;
+	}
 	if (!IS_SD(mmc))
 		enable_mmc_reset(mmc);
 	return err;
@@ -2993,7 +3021,11 @@ int mmc_init(struct mmc *mmc)
 		spin_lock(&mmc->lock);
 #endif
 
+#ifdef CONFIG_MMC_FBOOT
+	mmc_reset_reg(mmc, 0);
+#else
 	mmc_reset_reg(mmc);
+#endif
 	start = get_timer(0);
 
 	if (!mmc->init_in_progress)
