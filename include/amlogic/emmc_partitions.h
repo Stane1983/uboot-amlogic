@@ -297,6 +297,7 @@ int check_gpt_change(struct blk_desc *dev_desc, void *buf);
 int mmc_device_init (struct mmc *mmc);
 int get_ept_from_gpt(struct mmc *mmc);
 int mmc_partition_init(void);
+int resize_gpt(struct mmc *mmc);
 int check_gpt_part(struct blk_desc *dev_desc, void *buf);
 int get_partition_from_gpt(unsigned char *buffer);
 int mmc_key_write_backup(const char *name,

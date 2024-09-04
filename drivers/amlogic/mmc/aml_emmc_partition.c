@@ -262,6 +262,7 @@ int fill_ept_by_gpt(struct mmc *mmc)
 	size_t efiname_len, dosname_len;
 	struct _iptbl *ept = NULL;
 	struct partitions *partitions = NULL;
+	int ret = 0;
 
 	if (!p_iptbl_ept)
 		return 1;
@@ -284,6 +285,11 @@ int fill_ept_by_gpt(struct mmc *mmc)
 			return 1;
 		}
 		printf("%s: *** Using Backup GPT ***\n", __func__);
+	}
+
+	if (resize_gpt(mmc)) {
+		ret = 1;
+		goto _out;
 	}
 
 	for (i = 0; i < le32_to_cpu(gpt_head->num_partition_entries); i++) {
@@ -330,8 +336,9 @@ int fill_ept_by_gpt(struct mmc *mmc)
 		}
 	}
 	ept->count = i;
+_out:
 	free(gpt_pte);
-	return 0;
+	return ret;
 }
 
 /*
@@ -1879,7 +1886,7 @@ int mmc_partition_init(void)
 	return ret;
 }
 
-struct partitions *find_mmc_partition_by_name (char const *name)
+struct partitions *find_mmc_partition_by_name(char const *name)
 {
 	struct partitions *partition = NULL;
 
@@ -2134,7 +2141,7 @@ int check_gpt_part(struct blk_desc *dev_desc, void *buf)
 
 	if (alternate_flag) {
 		last_usable_lba = cpu_to_le64(dev_desc->lba - 34);
-		last_ending_lba = ((last_usable_lba >> 12) << 12) - 1;
+		last_ending_lba = ((last_usable_lba >> 3) << 3) - 1;
 	} else {
 		last_usable_lba = cpu_to_le64(dev_desc->lba - 1);
 		last_ending_lba = last_usable_lba;

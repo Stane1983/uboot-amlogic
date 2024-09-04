@@ -573,14 +573,13 @@ uint8_t mmc_storage_get_copies(const char *part_name) {
 }
 
 uint64_t mmc_get_copy_size(const char *part_name) {
-	struct partitions *part_info = NULL;
+	struct mmc *mmc;
 
-	part_info = aml_get_partition_by_name("bootloader");
-	if (part_info == NULL) {
-		printf("get partition info failed !!\n");
-		return -1;
-	}
-	return part_info->size;
+	mmc = find_mmc_device(STORAGE_EMMC);
+	if (!mmc)
+		return 0;
+
+	return mmc->capacity_boot;
 }
 
 /* dtb read&write operation with backup updates */
