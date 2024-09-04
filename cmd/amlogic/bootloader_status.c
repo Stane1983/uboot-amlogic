@@ -453,6 +453,7 @@ static int update_gpt(int flag)
 		capacity_boot = mmc->capacity_boot;
 
 	printf("capacity_boot: 0x%x\n", capacity_boot);
+	printf("flag: %d\n", flag);
 	buffer = (unsigned char *)malloc(capacity_boot);
 	if (!buffer) {
 		printf("ERROR! fail to allocate memory ...\n");
@@ -532,6 +533,8 @@ static int update_gpt(int flag)
 #endif
 			}
 
+			run_command("store boot_erase bootloader 0;", 0);
+
 			if (write_mbr_and_gpt_partitions(dev_desc, buffer + 0x3DFE00)) {
 				printf("%s: writing GPT partitions failed\n", __func__);
 				ret = 1;
@@ -544,6 +547,16 @@ static int update_gpt(int flag)
 				goto exit;
 			}
 			printf("%s: writing GPT partitions ok\n", __func__);
+		}
+	}
+
+	if (flag == 0) {
+		memset(buffer + 0x3DFE00, 0, capacity_boot - 0x3DFE00);
+		iRet = store_boot_write("bootloader", 1, 0, buffer);
+		if (iRet) {
+			printf("Failed to write boot0\n");
+			ret = -1;
+			goto exit;
 		}
 	}
 
@@ -567,6 +580,7 @@ static int update_gpt(int flag)
 				goto exit;
 			}
 		}
+		memset(buffer + 0x3DFE00, 0, capacity_boot - 0x3DFE00);
 		iRet = store_boot_write("bootloader", 1, 0, buffer);
 		if (iRet) {
 			printf("Failed to write boot0\n");
