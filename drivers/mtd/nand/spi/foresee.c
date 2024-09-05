@@ -121,6 +121,30 @@ static const struct mtd_ooblayout_ops f35sqb002g_ooblayout = {
 	.free = f35sqb002g_ooblayout_free,
 };
 
+static int f35sqb004g_ooblayout_ecc(struct mtd_info *mtd, int section,
+					 struct mtd_oob_region *region)
+{
+	/* Unable to know the layout of ECC */
+	return -ERANGE;
+}
+
+static int f35sqb004g_ooblayout_free(struct mtd_info *mtd, int section,
+					  struct mtd_oob_region *region)
+{
+	if (section > 7)
+		return -ERANGE;
+
+	region->offset = (16 * section) + 4;
+	region->length = 12;
+
+	return 0;
+}
+
+static const struct mtd_ooblayout_ops f35sqb004g_ooblayout = {
+	.ecc = f35sqb004g_ooblayout_ecc,
+	.free = f35sqb004g_ooblayout_free,
+};
+
 static int f35sqb002g_ecc_get_status(struct spinand_device *spinand,
 					  u8 status)
 {
@@ -172,6 +196,15 @@ static const struct spinand_info foresee_spinand_table[] = {
 					      &update_cache_variants),
 		     SPINAND_HAS_QE_BIT,
 		     SPINAND_ECCINFO(&f35sqb002g_ooblayout,
+				     f35sqb002g_ecc_get_status)),
+	SPINAND_INFO("F35SQB004G 3.3v", 0x53,
+		     NAND_MEMORG(1, 4096, 128, 64, 2048, 1, 1, 1),
+		     NAND_ECCREQ(8, 512),
+		     SPINAND_INFO_OP_VARIANTS(&read_cache_variants,
+					      &write_cache_variants,
+					      &update_cache_variants),
+		     SPINAND_HAS_QE_BIT,
+		     SPINAND_ECCINFO(&f35sqb004g_ooblayout,
 				     f35sqb002g_ecc_get_status)),
 };
 
