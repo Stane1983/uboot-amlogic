@@ -27,6 +27,7 @@
 #include <command.h>
 #include <asm/amlogic/arch/stick_mem.h>
 
+<<<<<<< HEAD
 #ifdef CONFIG_AML_VPU
 #include <amlogic/media/vpu/vpu.h>
 #endif
@@ -43,6 +44,8 @@
 #include <amlogic/media/vout/aml_cvbs.h>
 #endif
 
+=======
+>>>>>>> a35829b0dab (lcd: enable display on smp for 2023 [1/1])
 DECLARE_GLOBAL_DATA_PTR;
 
 void sys_led_init(void)
@@ -91,12 +94,6 @@ int active_clk(void)
 	return 0;
 }
 
-#ifdef CONFIG_AML_HDMITX20
-static void hdmitx_set_hdmi_5v(void)
-{
-	/*Power on VCC_5V for HDMI_5V */
-}
-#endif
 void board_init_mem(void)
 {
 	/* config bootm low size, make sure whole dram/psram space can be used */
@@ -116,10 +113,6 @@ void board_init_mem(void)
 int board_init(void)
 {
 	printf("board init\n");
-#ifdef CONFIG_AML_HDMITX21
-	hdmitx21_chip_type_init(MESON_CPU_ID_S7);
-	hdmitx21_init();
-#endif
 
 #if 0
 	run_command("startdsp 0 0x300a0000 0", 0);
@@ -162,6 +155,7 @@ int board_late_init(void)
 #endif
 	get_stick_reboot_flag_mbx();
 
+<<<<<<< HEAD
 #ifdef CONFIG_AML_VPU
 	vpu_probe();
 #endif
@@ -171,6 +165,10 @@ int board_late_init(void)
 #ifdef CONFIG_AML_CVBS
 	cvbs_init();
 #endif
+=======
+	aml_board_display_init(0x01);
+
+>>>>>>> a35829b0dab (lcd: enable display on smp for 2023 [1/1])
 	run_command("amlsecurecheck", 0);
 	run_command("update_tries", 0);
 

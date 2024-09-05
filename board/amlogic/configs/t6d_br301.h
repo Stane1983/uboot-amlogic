@@ -19,7 +19,7 @@
 #define CONFIG_PDVFS_ENABLE
 
 /* SMP definitions */
-#define CPU_RELEASE_ADDR		secondary_boot_func
+// #define CPU_RELEASE_ADDR		secondary_boot_func
 
 /* Serial config */
 #define CONFIG_CONS_INDEX 2
@@ -29,6 +29,12 @@
 //#define CONFIG_SILENT_CONSOLE
 #ifdef CONFIG_SILENT_CONSOLE
 #undef CONFIG_SILENT_CONSOLE_UPDATE_ON_RELOC
+#endif
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#define INIT_DISPLAY "if test ${display_on_smp} = 0; then run init_display; fi;"
+#else
+#define INIT_DISPLAY "run init_display;"
 #endif
 
 /*low console baudrate*/
@@ -77,9 +83,7 @@
 	"panel_type=lvds_0\0"\
 	"outputmode=1080p60hz\0"\
 	"connector0_type=LVDS-A\0" \
-	"hdmimode=1080p60hz\0"\
 	"colorattribute=444,8bit\0"\
-	"cvbsmode=576cvbs\0"\
 	"vout_projector_mux=disable\0" \
 	"cvbs_drv=0\0"\
 	"display_width=1920\0"\
@@ -109,7 +113,7 @@
 #define CONFIG_PREBOOT  \
 		"run bcb_cmd; "\
 		"run upgrade_check;"\
-		"run init_display;"\
+		INIT_DISPLAY \
 		"run storeargs;"\
 		"run upgrade_key;" \
 		"bcb uboot-command;"\

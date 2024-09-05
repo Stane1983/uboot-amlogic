@@ -19,7 +19,39 @@
 #include <amlogic/cpu_id.h>
 #include <asm-generic/u-boot.h>
 #include <amlogic/aml_profile.h>
-
+#ifdef CONFIG_AML_CVBS
+#include <amlogic/media/vout/aml_cvbs.h>
+#endif
+#ifdef CONFIG_AML_VPU
+#include <amlogic/media/vpu/vpu.h>
+#endif
+#ifdef CONFIG_AML_VPP
+#include <amlogic/media/vpp/vpp.h>
+#endif
+#ifdef CONFIG_AML_LCD
+#include <amlogic/media/vout/lcd/lcd_vout.h>
+#endif
+#ifdef CONFIG_RX_RTERM
+#include <amlogic/aml_hdmirx.h>
+#endif
+#ifdef CONFIG_AML_VOUT
+#include <amlogic/media/vout/aml_vout.h>
+#endif
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#include <asm/arch-meson/smp.h>
+#endif
+#ifdef CONFIG_AMLOGIC_AMFC
+#include <amlogic/amfc.h>
+#endif
+#ifdef CONFIG_RX_RTERM
+#include <amlogic/aml_hdmirx.h>
+#endif
+#ifdef CONFIG_CEC_TRIM_VAL
+#include <amlogic/aml_cec.h>
+#endif
+#ifdef CONFIG_CVBS_CALI
+#include <amlogic/aml_tvafe.h>
+#endif
 DECLARE_GLOBAL_DATA_PTR;
 #define UNUSED(x) (void)(x)
 
@@ -187,6 +219,117 @@ int aml_board_late_init_tail(void *arg)
 	return 0;
 }
 #endif//#ifdef CONFIG_BOARD_LATE_INIT
+
+static void aml_board_display_env_handler(void)
+{
+	char *bootup_display;
+#ifdef CONFIG_AML_LCD
+	char lcd_init_str[8];
+#endif
+
+	run_command("get_rebootmode", 0);
+	printf("reboot_mode: %s\n", env_get("reboot_mode"));
+	run_command("run check_display", 0);
+	bootup_display = env_get("bootup_display");
+	if (!bootup_display)
+		return;
+
+	printf("bootup_display: %s\n", bootup_display);
+#ifdef CONFIG_AML_LCD
+	if (strcmp(bootup_display, "on") == 0)
+		snprintf(lcd_init_str, 8, "%d", LCD_INIT_LEVEL_NORMAL);
+	else
+		snprintf(lcd_init_str, 8, "%d", LCD_INIT_LEVEL_PWR_OFF);
+
+	env_set("lcd_init_level", lcd_init_str);
+	//printf("lcd_init_level: %s\n", env_get("lcd_init_level"));
+#endif
+}
+
+#ifdef CONFIG_AML_VOUT
+#ifdef CONFIG_ARMV8_MULTIENTRY
+static void aml_display_on_pre(unsigned char vout_bit)
+{
+	run_command("run init_display", 0);
+
+	printf("display[0x%x] on pre done\n", vout_bit);
+}
+
+//param bit[0:7]:curr vout idx;
+static void aml_display_on_post_job(unsigned long param)
+{
+	if ((param & 0xf) == 0)
+		aml_vout_output(0, env_get("outputmode"));
+	else if ((param & 0xf) == 1)
+		aml_vout_output(1, env_get("outputmode2"));
+	else if ((param & 0xf) == 2)
+		aml_vout_output(2, env_get("outputmode3"));
+
+	printf("display[%lu] on post done\n", param);
+	secondary_off();
+}
+#endif
+#endif
+
+// each bit refers to vout index, eg. 0x5=(vout+vout3)
+void aml_board_display_init(unsigned char vout_bit)
+{
+#ifdef CONFIG_AML_VPU
+	vpu_probe();
+#endif
+#ifdef CONFIG_AML_VPP
+	vpp_init();
+#endif
+#ifdef CONFIG_RX_RTERM
+	rx_set_phy_rterm();
+#endif
+#ifdef CONFIG_AML_CVBS
+	cvbs_init();
+#endif
+#ifdef CONFIG_CVBS_CALI
+	cvbs_dac_cfg();
+#endif
+#ifdef CONFIG_CEC_TRIM_VAL
+	cec_get_trim_val();
+#endif
+	run_command("ini_model", 0);
+	aml_board_display_env_handler();
+#ifdef CONFIG_AML_LCD
+	lcd_probe();
+#endif
+
+#ifdef CONFIG_AML_VOUT
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	int smp_ret = 0;
+	unsigned char cpu_id = 1;
+
+	if (!(unsigned char)env_get_ulong("display_on_smp", 10, 0))
+		return;
+
+	aml_display_on_pre(vout_bit);
+	if (env_get("bootup_display") && (strcmp(env_get("bootup_display"), "on") == 0)) {
+		if (vout_bit & BIT(0)) {
+			smp_ret = run_smp_function(cpu_id, &aml_display_on_post_job, 0x0);
+			if (smp_ret)
+				printf("display smp failed\n");
+			cpu_id++;
+		}
+		if (vout_bit & BIT(1)) {
+			smp_ret = run_smp_function(cpu_id, &aml_display_on_post_job, 0x1);
+			if (smp_ret)
+				printf("display2 smp failed\n");
+			cpu_id++;
+		}
+		if (vout_bit & BIT(2)) {
+			smp_ret = run_smp_function(cpu_id, &aml_display_on_post_job, 0x2);
+			if (smp_ret)
+				printf("display3 smp failed\n");
+			cpu_id++;
+		}
+	}
+#endif
+#endif
+}
 
 #ifdef CONFIG_BOARD_RNG_SEED
 unsigned int random(void)

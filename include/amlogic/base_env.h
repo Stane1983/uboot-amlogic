@@ -218,7 +218,7 @@
 			"setenv initconfig androidboot.quiescent=1 "\
 			"androidboot.bootreason=${reboot_mode};"\
 			"run storeargs;"\
-			"osd open;osd clear;"\
+			"setenv bootup_display off;"\
 		"else if test ${reboot_mode} = recovery_quiescent; then "\
 			"setenv reboot_mode_android ""quiescent"";"\
 			"setenv dolby_status 0;"\
@@ -226,14 +226,12 @@
 			"setenv initconfig androidboot.quiescent=1 "\
 			"androidboot.bootreason=recovery,quiescent;"\
 			"run storeargs;"\
-			"osd open;osd clear;"\
+			"setenv bootup_display off;"\
 		"else "\
 			"setenv reboot_mode_android ""normal"";"\
 			"setenv initconfig androidboot.bootreason=${reboot_mode};"\
 			"run storeargs;"\
-			"hdmitx hpd;hdmitx get_parse_edid;"\
-			"dovi process;watermark_init;osd open;osd clear;run load_bmp_logo;"\
-			"bmp scale;vout output ${outputmode};dovi set;dovi pkg;vpp hdrpkt;"\
+			"setenv bootup_display on;"\
 		"fi;fi;"\
 		"\0"\
 	"storage_param_base="\

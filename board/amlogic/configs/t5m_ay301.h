@@ -37,8 +37,14 @@
 #define CONFIG_SUPPORT_EMMC_RPMB 1
 #define CONFIG_AML_DEV_ID 1
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#define INIT_DISPLAY "if test ${display_on_smp} = 0; then run init_display; fi;"
+#else
+#define INIT_DISPLAY "run init_display;"
+#endif
+
 /* SMP Definitions */
-#define CPU_RELEASE_ADDR		secondary_boot_func
+// #define CPU_RELEASE_ADDR		secondary_boot_func
 
 /* Bootloader Control Block function
    That is used for recovery and the bootloader to talk to each other
@@ -117,7 +123,7 @@
 #define CONFIG_PREBOOT  \
 	"run upgrade_check;"\
 	"get_rebootmode;"\
-	"run check_display;"\
+	INIT_DISPLAY \
 	"run storeargs;"\
 	"run upgrade_key;" \
 	"bcb uboot-command;" \

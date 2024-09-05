@@ -26,41 +26,14 @@
 #include <asm-generic/u-boot.h>
 #include <command.h>
 #include <asm/amlogic/arch/stick_mem.h>
-
 #ifdef CONFIG_AMLOGIC_WIFI_USB2T
 #include "wifi.h"
-#endif
-#ifdef CONFIG_AML_VPU
-#include <amlogic/media/vpu/vpu.h>
-#endif
-#ifdef CONFIG_AML_VPP
-#include <amlogic/media/vpp/vpp.h>
-#endif
-#ifdef CONFIG_AML_HDMITX20
-#include <amlogic/media/vout/hdmitx/hdmitx_module.h>
-#endif
-#ifdef CONFIG_AML_HDMITX21
-#include <amlogic/media/vout/hdmitx21/hdmitx_module.h>
-#endif
-#ifdef CONFIG_AML_CVBS
-#include <amlogic/media/vout/aml_cvbs.h>
-#endif
-#ifdef CONFIG_AML_LCD
-#include <amlogic/media/vout/lcd/lcd_vout.h>
 #endif
 #ifdef CONFIG_AMLOGIC_AMFC
 #include <amlogic/amfc.h>
 #endif
 #include <amlogic/aml_profile.h>
-#ifdef CONFIG_RX_RTERM
-#include <amlogic/aml_hdmirx.h>
-#endif
-#ifdef CONFIG_CEC_TRIM_VAL
-#include <amlogic/aml_cec.h>
-#endif
-#ifdef CONFIG_CVBS_CALI
-#include <amlogic/aml_tvafe.h>
-#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 void sys_led_init(void)
@@ -109,12 +82,6 @@ int active_clk(void)
 	return 0;
 }
 
-#ifdef CONFIG_AML_HDMITX20
-static void hdmitx_set_hdmi_5v(void)
-{
-	/*Power on VCC_5V for HDMI_5V */
-}
-#endif
 void board_init_mem(void)
 {
 	/* config bootm low size, make sure whole dram/psram space can be used */
@@ -134,10 +101,6 @@ void board_init_mem(void)
 int board_init(void)
 {
 	printf("board init\n");
-#ifdef CONFIG_AML_HDMITX21
-	hdmitx21_chip_type_init(MESON_CPU_ID_S7);
-	hdmitx21_init();
-#endif
 
 #if 0
 	run_command("startdsp 0 0x300a0000 0", 0);
@@ -162,10 +125,7 @@ int board_init(void)
 	active_clk();
 #endif
 	run_command("gpio set GPIOH_7", 0);
-#ifdef CONFIG_AML_HDMITX20
-	hdmitx_set_hdmi_5v();
-	hdmitx_init();
-#endif
+
 #endif // #if !defined(CONFIG_PXP_DDR) //bypass below operations for pxp
 	pinctrl_devices_active(PIN_CONTROLLER_NUM);
 #ifdef CONFIG_AMLOGIC_AMFC
@@ -185,29 +145,12 @@ int board_late_init(void)
 #endif
 	get_stick_reboot_flag_mbx();
 
-#ifdef CONFIG_AML_VPU
-	vpu_probe();
-#endif
-#ifdef CONFIG_AML_VPP
-	vpp_init();
-#endif
-#ifdef CONFIG_RX_RTERM
-		rx_set_phy_rterm();
-#endif
-#ifdef CONFIG_AML_CVBS
-	cvbs_init();
-#endif
-#ifdef CONFIG_CVBS_CALI
-		cvbs_dac_cfg();
-#endif
-#ifdef CONFIG_CEC_TRIM_VAL
-		cec_get_trim_val();
-#endif
+	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_s);
+
+	aml_board_display_init(0x01);
+
 	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_e);
-	run_command("ini_model", 0);
-#ifdef CONFIG_AML_LCD
-	lcd_probe();
-#endif
+
 #ifdef CONFIG_AMLOGIC_WIFI_USB2T
 	wifi_init();
 #endif

@@ -51,5 +51,7 @@ void vout_viu_mux(int index, unsigned int mux_sel);
 extern unsigned long get_fb_addr(void);
 
 void vout_probe(void);
+int aml_vout_prepare(uint8_t vout_idx, char *mode);
+int aml_vout_output(uint8_t vout_idx, char *mode);
 #endif
 

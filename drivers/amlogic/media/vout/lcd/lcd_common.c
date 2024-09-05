@@ -3164,6 +3164,39 @@ void lcd_pinmux_set(struct aml_lcd_drv_s *pdrv, int status)
 	}
 }
 
+unsigned int str_add_vmode(char *buf, struct lcd_vmode_info_s *vm_info, unsigned short framerate)
+{
+	unsigned char i, use_short = 0;
+	struct V_name_s { unsigned short h, v; unsigned short fr[5]; } V_name_table[] = {
+		{3840, 2160, { 60, 59, 50, 48, 47}},
+		{3840, 2160, { 30, 25, 24,  0,  0}},
+		{1920, 1080, {120, 60, 59, 50, 48}},
+		{1920, 1080, { 47, 30, 25, 24,  0}},
+		{1366,  768, { 60, 59, 50, 48, 47}},
+		{1280,  720, { 60, 50,  0,  0,  0}},
+	};
+
+	for (i = 0; i < 5 * ARRAY_SIZE(V_name_table); i++) {
+		if (V_name_table[i / 5].h == vm_info->width &&
+		    V_name_table[i / 5].v == vm_info->height) {
+			if (V_name_table[i / 5].fr[i % 5] == 0)
+				continue;
+			if (framerate == V_name_table[i / 5].fr[i % 5] || framerate == 0) {
+				use_short = 1;
+				break;
+			}
+		}
+	}
+
+	i = 0;
+	i += use_short ? sprintf(buf + i,    "%up",                 vm_info->height) :
+			 sprintf(buf + i, "%ux%up", vm_info->width, vm_info->height);
+	if (framerate)
+		i += sprintf(buf + i, "%huhz", framerate);
+
+	return i;
+}
+
 unsigned int lcd_crc32(unsigned int seed, const unsigned char *ptr, int buf_len)
 {
 	static const unsigned int s_crc32[16] = {
