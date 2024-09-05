@@ -1135,7 +1135,6 @@ static int do_UpdateDt(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 	char *update_dt = env_get("update_dt");
 	char *rebootmode = env_get("reboot_mode");
 
-	printf("update_dt %s\n", update_dt);
 	if (update_dt && (!strcmp(update_dt, "1"))) {
 		printf("write dtb from ${boot_part}\n");
 		run_command("imgread dtb ${boot_part} ${dtb_mem_addr}", 0);
