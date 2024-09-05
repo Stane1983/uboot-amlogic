@@ -702,11 +702,6 @@ struct mtd_partition *__attribute__((weak)) get_partition_table(int *partitions)
 int __attribute__((weak)) sheader_need(void) {FB_WRN("sheader_need undefined\n"); return 0; }
 void __attribute__((weak)) sheader_load(void *addr) {FB_WRN("sheader_load undefined\n"); }
 
-#ifdef CONFIG_BACKUP_PART_NORMAL_ERASE
-const char *BackupPart = (const char *)(CONFIG_BACKUP_PART_NORMAL_ERASE);
-char *BackupPartAddr = (char *)(V3_DOWNLOAD_MEM_BASE);
-#endif// #ifdef CONFIG_BACKUP_PART_NORMAL_ERASE
-
 int v3tool_storage_init(const int eraseFlash, unsigned int dtbImgSz, unsigned int gptImgSz)
 {
 	int ret = 0;
@@ -736,10 +731,8 @@ int v3tool_storage_init(const int eraseFlash, unsigned int dtbImgSz, unsigned in
 	mmc_partition_init();
 #endif
 
-#ifdef CONFIG_BACKUP_PART_NORMAL_ERASE
-	u32 backupPartSz = 0;
-#endif//#ifdef CONFIG_BACKUP_PART_NORMAL_ERASE
 	int initFlag = 0;
+	int erase_key = 0, force_erase_all = 0;
 
 	switch (eraseFlash) {
 	case 0://NO erase
@@ -749,25 +742,10 @@ int v3tool_storage_init(const int eraseFlash, unsigned int dtbImgSz, unsigned in
 	case 3://erase all(with key)
 	case 1://normal erase, store init 3
 		initFlag = 3;
-		if (eraseFlash == 3) {
-			if (store_rsv_protect("key", false))
-				FBS_EXIT(_ACK, "Fail in disprotect key\n");
-		} else {
-#ifdef CONFIG_BACKUP_PART_NORMAL_ERASE
-			//backup env to memory
-			backupPartSz = (u32)store_part_size(BackupPart);
-			FB_MSG("BackupPart %s sz 0x%x\n", BackupPart, backupPartSz);
-			if (!backupPartSz)
-				FBS_EXIT(_ACK, " FAil in find BackupPart %s\n", BackupPart);
-			ret = store_read(BackupPart, 0, backupPartSz, BackupPartAddr);
-			if (ret)
-				FBS_EXIT(_ACK, "FAil in backup important part %s to mem\n",
-					 BackupPart);
-#endif//#ifdef CONFIG_BACKUP_PART_NORMAL_ERASE
-		} break;
+		erase_key = (eraseFlash == 3);
+		break;
 	case 4: {//force erase all
-		if (store_rsv_protect(NULL, false))
-			FBS_EXIT(_ACK, "Fail in disprotect all rsv\n");
+		force_erase_all = 1;
 		initFlag = 4;
 		break;
 	}
@@ -801,6 +779,15 @@ int v3tool_storage_init(const int eraseFlash, unsigned int dtbImgSz, unsigned in
 				if (ret)
 					FB_WRN("Fail in update dtb\n");
 			}
+		}
+
+		if (erase_key) {
+			if (store_rsv_protect("key", false))
+				FBS_EXIT(_ACK, "Fail in disprotect key\n");
+		}
+		if (force_erase_all) {
+			if (store_rsv_protect(NULL, false))
+				FBS_EXIT(_ACK, "Fail in disprotect all rsv\n");
 		}
 		if (is_nocs_scs_chip() > 0) {
 			if (store_get_type() != BOOT_EMMC) {

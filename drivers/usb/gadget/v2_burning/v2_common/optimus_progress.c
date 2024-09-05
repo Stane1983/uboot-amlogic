@@ -7,6 +7,7 @@
 #include <amlogic/aml_mmc.h>
 #include <dm/pinctrl.h>
 #include <amlogic/emmc_partitions.h>
+extern int info_disprotect;
 
 #define BLOCK_SIZE 512
 #define OPTIMUS_PROMPT_SIZE_MIN     (4U << 20)//minimal size to prompt burning progress step
@@ -228,7 +229,9 @@ int usb_burn_erase_data(unsigned char init_flag)
 		}
 		if (part_info->mask_flags & PART_PROTECT_FLAG) {
 			printf("Part:%s is protected\n", part_info->name);
-			continue;
+			if (!(info_disprotect & DISPROTECT_KEY))
+				continue;
+			printf("Still erase as key disprotect\n");
 		}
 		ret = blk_derase(mmc_get_blk_desc(mmc),
 				part_info->offset / BLOCK_SIZE,
