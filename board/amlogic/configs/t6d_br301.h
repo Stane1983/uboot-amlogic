@@ -60,9 +60,17 @@
 /* args/envs */
 #define CONFIG_SYS_MAXARGS  64
 
+/* set loglevel 7, too many kernel log may cause bootvideo stuck */
+#ifdef CONFIG_NOVERBOSE_BUILD
+#define CONFIG_KERNEL_LOGLEVEL "loglevel=2"
+#else
+#define CONFIG_KERNEL_LOGLEVEL "loglevel=7"
+#endif
+
 //for common env list, please maintain it in board/amlogic/env/linux.env
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"uart_base=0xfe078400\0"\
+	CONFIG_KERNEL_LOGLEVEL "\0"\
 	"usb_burning=" CONFIG_USB_TOOL_ENTRY "\0"\
 	"baudrate=115200\0"\
 	"model_name=FHD2HDMI\0"\
