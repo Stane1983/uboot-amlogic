@@ -950,8 +950,7 @@ static int mtd_store_boot_read(const char *part_name,
 	loff_t offset, limit, page_info_offset = 0, endoff = 0;
 	int ret = 1;
 	size_t retlen = 0, len = size;
-	u8 num = 0, good_num = 0, good_threshold =
-	DIV_ROUND_UP(mtd_store_boot_copy_num(BOOT_BL2) * 3, 4);
+	u8 num = 0, good_num = 0, good_threshold = 0;
 	u64 size_per_copy = 0;
 
 	if (!part_name) {
@@ -985,14 +984,19 @@ static int mtd_store_boot_read(const char *part_name,
 		endoff = offset + num * size_per_copy;
 	}
 
+	if (!strcmp(part_name, BOOT_BL2) || !strcmp(part_name, BOOT_SPL))
+		good_threshold = DIV_ROUND_UP(mtd_store_boot_copy_num(BOOT_BL2) * 3, 4);
+
 	for (; offset < endoff; offset += size_per_copy) {
 		pr_info("read %lx bytes from %llx\n",
 			size, offset);
-		limit = offset + size_per_copy;
+
+		if (medium_type == BOOT_NAND_MTD && good_threshold)
+			limit = offset + ROUND(BL2_SIZE, mtd->erasesize);
+		else
+			limit = offset + size_per_copy;
 		#ifdef CONFIG_MTD_SPI_NAND
-		if (medium_type == BOOT_SNAND &&
-				(!strcmp(part_name, BOOT_BL2) ||
-				 !strcmp(part_name, BOOT_SPL))) {
+		if (medium_type == BOOT_SNAND && good_threshold) {
 			ret = mtd_store_spinand_bl2_read(offset, size_per_copy, (u_char *)dest, mtd);
 			if (ret)
 				continue;
@@ -1011,15 +1015,19 @@ static int mtd_store_boot_read(const char *part_name,
 				&retlen,
 				limit,
 				(u_char *)dest);
-		if (ret)
+		if (ret && good_threshold)
+			continue;
+		else if (ret)
 			return -EIO;
+
+		if (good_threshold)
+			good_num++;
 	}
 
-	if (!strcmp(part_name, BOOT_BL2) &&
-		cpy == BOOT_OPS_ALL &&
-		good_num < good_threshold) {
+	if (good_threshold && cpy == BOOT_OPS_ALL &&
+	    good_num < good_threshold) {
 		pr_err("valid bl2 copy num %d is less than threshold %d\n",
-				good_num, good_threshold);
+		       good_num, good_threshold);
 		return -EIO;
 	}
 
