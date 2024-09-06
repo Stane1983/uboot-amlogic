@@ -3,6 +3,9 @@
 	.global __asm_set_sctlr
 	.global __asm_get_currentel
 	.global __asm_get_elr_el
+	.global __asm_get_ttbr
+	.global __asm_get_tcr
+	.global __asm_get_mair
 	.global __asm_set_ttbr_tcr_mair
 	.global __asm_invalidate_tlb_all
 	.global __asm_flush_dcache_level
@@ -56,6 +59,21 @@ __asm_set_sctlr:
 	.type __asm_get_currentel, @function
 __asm_get_currentel:
 	mrs x0, CurrentEL
+	ret
+
+	.type __asm_get_ttbr, @function
+__asm_get_ttbr:
+	mrs x0, ttbr0_el2
+	ret
+
+	.type __asm_get_tcr, @function
+__asm_get_tcr:
+	mrs x0, tcr_el2
+	ret
+
+	.type __asm_get_mair, @function
+__asm_get_mair:
+	mrs x0, mair_el2
 	ret
 
 	.type __asm_set_ttbr_tcr_mair, @function

@@ -165,11 +165,11 @@
  * Memory layout:
  * --> 0x00000000  --> code start
  * --> 0x00004000  --> code end
- * --> 0x013F0000  --> stack bottom
- * --> 0x01400000  --> stack top / mmu base
- * --> 0x01420000  --> mmu end / compress scrach buffer
- * --> 0x01480000  --> compress scrach end / first compress out buffer
- * --> 0x014E0000  --> first compress out end
+ * --> 0x005F0000  --> stack bottom
+ * --> 0x00600000  --> stack top / mmu base
+ * --> 0x00620000  --> mmu end / compress scrach buffer
+ * --> 0x00680000  --> compress scrach end / first compress out buffer
+ * --> 0x006E0000  --> first compress out end
  */
 
 /* CODE space */
@@ -180,7 +180,7 @@
 /* STACK space */
 #define PLATFORM_STACK_BOTTOM		(PLATFORM_STACK_POSI - PLATFORM_STACK_SIZE)
 #define PLATFORM_STACK_SIZE			0x00010000	/* 64KB stack size */
-#define PLATFORM_STACK_POSI			0x00800000	/* stack top addr */
+#define PLATFORM_STACK_POSI			0x00600000	/* skip bl2e area 0x00880000 */
 
 /* MMU space */
 #define CONFIG_AML_MMU_ADDR			(PLATFORM_STACK_POSI)

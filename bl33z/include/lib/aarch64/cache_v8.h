@@ -14,6 +14,9 @@ void __asm_flush_dcache_all(void);
 void __asm_invalidate_dcache_all(void);
 void __asm_invalidate_icache_all(void);
 void __asm_flush_dcache_range(unsigned long, unsigned long);
+unsigned long __asm_get_ttbr(void);
+unsigned long __asm_get_tcr(void);
+unsigned long __asm_get_mair(void);
 void __asm_set_ttbr_tcr_mair(unsigned long, unsigned long, unsigned long);
 void __asm_invalidate_tlb_all(void);
 
