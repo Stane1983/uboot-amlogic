@@ -71,6 +71,9 @@
 /* Constant to highlight the assumption that MPIDR allocation starts from 0 */
 #define FIRST_MPIDR		0
 
+/* ID_AA64MMFR2_EL1 definitions */
+#define ID_AA64MMFR2_EL1            S3_0_C0_C7_2
+
 /*******************************************************************************
  * Implementation defined sysreg encodings
  ******************************************************************************/

@@ -75,11 +75,18 @@
  ********************************************************************************/
 #define CONFIG_DDR_TOTAL_SIZE		(1UL << 32)			/* get from cpu reg */
 
+/* 1. bl33z will get the DDR SIZE again from kernel REG_MDUMP_CPUBOOT_STATUS.*/
+/* 2. bl33z will update the ramdump section addr with new DDR SIZE.*/
+#define	CONFIG_DDR_SIZE_128MB		(0x08000000)	/* RANGE 1: 0.0M - 128M */
+#define	CONFIG_DDR_SIZE_256MB		(0x10000000)	/* RANGE 1: 0.0M - 256M */
+#define	CONFIG_DDR_SIZE_512MB		(0x20000000)	/* RANGE 1: 0.0M - 512M */
 #define	CONFIG_DDR_SIZE_RANGE1		((1UL << 32) - 0x20000000)	/* RANGE 1: 0.0G - 3.5G */
 #define	CONFIG_DDR_SIZE_RANGE2		(1UL << 32)			/* RANGE 2: 4.0G - 7.0G */
 #define	CONFIG_DDR_SIZE_RANGE3		((1UL << 32) + 0xC0000000)	/* RANGE 3: 7.0G - end  */
 
-#define CONFIG_SMALL_COMPRESS_ADDR	(0x0c000000)
+#define	CONFIG_128MB_COMPRESS_ADDR	(0x02800000)		/* 40MB for 128MB ddr */
+#define	CONFIG_256MB_COMPRESS_ADDR	(0x05800000)		/* 88MB for 256MB ddr */
+#define CONFIG_SMALL_COMPRESS_ADDR	(0x0c000000)		/* 192MB for 512MB ddr */
 #define CONFIG_BIG_COMPRESS_ADDR	(1UL << 32)
 #if (CONFIG_DDR_TOTAL_SIZE <= CONFIG_DDR_SIZE_RANGE3)
 #define CONFIG_COMPRESSED_DATA_ADDR	(CONFIG_SMALL_COMPRESS_ADDR)/* section6 start addr */
@@ -93,7 +100,7 @@
 #define CONFIG_BL2E_END_ADDR		(0x01280000)        /* bl2x end addr */
 #define CONFIG_BL33Z_RSVMEM		    (0x01800000)		/* reserved memory 24MB */
 #define CONFIG_BL31_LOAD_ADDR		(0x05000000)		/* bl31 start addr */
-#define CONFIG_BL31_LOAD_SIZE		(0x00300000)		/* bl31 size: 3MB */
+#define CONFIG_BL31_LOAD_SIZE		(0x00200000)		/* bl31 size: 2MB */
 #define CONFIG_BL32_LOAD_ADDR		(CONFIG_BL31_LOAD_ADDR + CONFIG_BL31_LOAD_SIZE)
 #define CONFIG_BL32_LOAD_SIZE		(0x03000000)		/* bl32 size: 48MB(rsvmem dump)*/
 #define CONFIG_ACS_DDR_LOAD_ADDR	(0x05200000)
@@ -158,11 +165,11 @@
  * Memory layout:
  * --> 0x00000000  --> code start
  * --> 0x00004000  --> code end
- * --> 0x013F0000  --> stack bottom
- * --> 0x01400000  --> stack top / mmu base
- * --> 0x01420000  --> mmu end / compress scrach buffer
- * --> 0x01480000  --> compress scrach end / first compress out buffer
- * --> 0x014E0000  --> first compress out end
+ * --> 0x005F0000  --> stack bottom
+ * --> 0x00600000  --> stack top / mmu base
+ * --> 0x00620000  --> mmu end / compress scrach buffer
+ * --> 0x00680000  --> compress scrach end / first compress out buffer
+ * --> 0x006E0000  --> first compress out end
  */
 
 /* CODE space */
@@ -173,7 +180,7 @@
 /* STACK space */
 #define PLATFORM_STACK_BOTTOM		(PLATFORM_STACK_POSI - PLATFORM_STACK_SIZE)
 #define PLATFORM_STACK_SIZE			0x00010000	/* 64KB stack size */
-#define PLATFORM_STACK_POSI			0x00800000	/* stack top addr */
+#define PLATFORM_STACK_POSI			0x00600000	/* skip bl2e area 0x00880000 */
 
 /* MMU space */
 #define CONFIG_AML_MMU_ADDR			(PLATFORM_STACK_POSI)

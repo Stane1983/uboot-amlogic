@@ -14,8 +14,6 @@
 #include <string.h>
 #include <io.h>
 #include <cache_v8.h>
-//#include "secure_apb.h"
-//#include "register.h"
 
 /* a must be order of 2 */
 #define __ALIGN(x, mask)		(((x) + (mask)) & ~(mask))
@@ -25,6 +23,7 @@ typedef void (*cb)(unsigned long processed, unsigned long total);
 extern unsigned char debug_enable;
 typedef unsigned int  u32;
 typedef unsigned long u64;
+u64 bl2e_ttbr = 0, bl2e_tcr = 0, bl2e_mair = 0;
 static inline u64 readq(void *reg)
 {
 	return ((u64)readl((u64)reg + 0x4UL) << 32) | (u64)readl((u64)reg);
@@ -469,7 +468,7 @@ int check_reboot_reason(unsigned long *mem_size)
 		return 0;
 
 	unsigned long nTotal = cfg & AMLOGIC_USERAM_MASK;
-	*mem_size = (((nTotal - 1) / 512 + 1) * 512) << 20;
+	*mem_size = (((nTotal - 1) / 64 + 1) * 64) << 20;
 	serial_puts("mem size:0x");
 	serial_put_hex(*mem_size, 64);
 	serial_puts("\n");
@@ -531,8 +530,31 @@ static struct ram_compress_work_info rcwi = {
 static void fix_up_ddr_size(struct ram_compress_full *rcf,
 			    unsigned long size)
 {
-
-	if (size < CONFIG_DDR_SIZE_RANGE1) {
+	if (size <= CONFIG_DDR_SIZE_128MB) {
+		/* 0 ~ 128MB, use 5 sections */
+		serial_puts("ddr size range 0: 0 ~ 128MB\n");
+		rcf->store_phy_addr = (void *)CONFIG_128MB_COMPRESS_ADDR;
+		rcf->full_memsize   = size;
+		rcf->sections[0].phy_addr = (void *)CONFIG_128MB_COMPRESS_ADDR;
+		rcf->sections[0].section_size = size - CONFIG_128MB_COMPRESS_ADDR;
+		rcf->sections[3].section_size = 0x200000;
+		rcf->sections[4].phy_addr = (void *)((unsigned long)rcf->sections[3].phy_addr + 0x200000);
+		rcf->sections[4].section_size = CONFIG_128MB_COMPRESS_ADDR - (unsigned long)rcf->sections[4].phy_addr;
+		rcf->sections[5].section_size = 0;
+		rcf->sections[6].section_size = 0;
+	} else if (size <= CONFIG_DDR_SIZE_256MB) {
+		/* 0 ~ 256MB, use 5 sections */
+		serial_puts("ddr size range 0: 0 ~ 256MB\n");
+		rcf->store_phy_addr = (void *)CONFIG_256MB_COMPRESS_ADDR;
+		rcf->full_memsize   = size;
+		rcf->sections[0].phy_addr = (void *)CONFIG_256MB_COMPRESS_ADDR;
+		rcf->sections[0].section_size = size - CONFIG_256MB_COMPRESS_ADDR;
+		rcf->sections[3].section_size = 0x200000;
+		rcf->sections[4].phy_addr = (void *)((unsigned long)rcf->sections[3].phy_addr + 0x200000);
+		rcf->sections[4].section_size = CONFIG_256MB_COMPRESS_ADDR - (unsigned long)rcf->sections[4].phy_addr;
+		rcf->sections[5].section_size = 0;
+		rcf->sections[6].section_size = 0;
+	} else if (size < CONFIG_DDR_SIZE_RANGE1) {
 		/* 0 ~ 3.5G, use 5 sections */
 		serial_puts("ddr size range 1: 0 ~ 3.5G\n");
 		rcf->store_phy_addr = (void *)CONFIG_SMALL_COMPRESS_ADDR;
@@ -553,7 +575,7 @@ static void fix_up_ddr_size(struct ram_compress_full *rcf,
 		serial_puts("ddr size range 3: 7.0G ~\n");
 		rcf->store_phy_addr = (void *)CONFIG_BIG_COMPRESS_ADDR;
 		rcf->full_memsize   = size + REG_SPACE_RANGE_SIZE;
-		rcf->sections[0].section_size = REG_SPACE_START_ADDR - CONFIG_BIG_COMPRESS_ADDR;
+		rcf->sections[0].section_size = REG_SPACE_START_ADDR - CONFIG_SMALL_COMPRESS_ADDR;
 		rcf->sections[5].section_size = REG_SPACE_RANGE_SIZE;
 		rcf->sections[6].section_size = size - CONFIG_BIG_COMPRESS_ADDR;
 	}
@@ -734,6 +756,27 @@ unsigned long ramdump_compress_all(struct ram_compress_full *rcf,
 	return ret;
 }
 
+void get_bl2e_ttbr_tcr_mair(void)
+{
+	bl2e_ttbr = __asm_get_ttbr();
+	bl2e_tcr  = __asm_get_tcr();
+	bl2e_mair = __asm_get_mair();
+
+	serial_puts("Get bl2e mmu table. TTBR0_EL2:0x");
+	serial_put_hex(bl2e_ttbr, 32);
+	serial_puts(", TCR_EL2:0x");
+	serial_put_hex(bl2e_tcr, 32);
+	serial_puts(", MAIR_EL2:0x");
+	serial_put_hex(bl2e_mair, 32);
+	serial_puts("\n");
+}
+
+void set_bl2e_ttbr_tcr_mair(void)
+{
+	__asm_set_ttbr_tcr_mair(bl2e_ttbr, bl2e_tcr, bl2e_mair);
+	serial_puts("Overwrite bl2e mmu table for bl33 board_f.");
+}
+
 /*******************************************************************************
  * The only thing to do in BL2 is to load further images and pass control to
  * BL31. The memory occupied by BL2 will be reclaimed by BL3_x stages. BL2 runs
@@ -761,6 +804,8 @@ void aml_ramdump_compress(struct ram_compress_full *rcf,
 			return;
 		}
 
+		get_bl2e_ttbr_tcr_mair();
+
 		serial_puts("DDR compress in 3 seconds ...\n\n");
 		_udelay(3000000);
 
@@ -780,6 +825,8 @@ void aml_ramdump_compress(struct ram_compress_full *rcf,
 		disable_caches();
 		enable_icache();
 		timer_end("\nMEM DUMP USED");
+
+		set_bl2e_ttbr_tcr_mair();
 
 		if (0) {
 			serial_puts("\ncompress end, get SCTLR_EL2:0x");
