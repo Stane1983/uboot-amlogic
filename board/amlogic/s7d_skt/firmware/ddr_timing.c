@@ -10,6 +10,8 @@
 #define DDR_FUNC_CONFIG_DISABLE_DDR_DVFS_FUNCTION                   (0 + (1 << 19))
 #define DDR_FUNC_CONFIG_ENABLE_PZQ_DET_DRAM_TYPE_RETURN                   (0 + (1 << 20))
 #define DDR_FUNC_CONFIG_AUTO_DET_DQ_PINMUX_FUNCTION                   (0 + (1 << 21))
+#define CONFIG_DRAM_MODE_FORCE_DISABLE_X8  0x81
+#define CONFIG_DRAM_MODE_FORCE_ENABLE_X8  0x1
 //bit 6 adc_channel bit 0-5 adc value,chan 3 value 8 is layer 2
 #define DDR_ID_ACS_ADC   ((3 << 6) | (8))
 
@@ -128,6 +130,10 @@ uint32_t __ddr_parameter_reg_index[] __attribute__ ((section(".ddr_2acs_index"))
 #define LPDDR4_SKT 1
 #define DDR4_SKT 1
 #define DDR3_SKT 1
+//#define LPDDR4_USE_2LAYER_BOARD 1
+//default 1RANK 16BIT X2 DDR4
+//#define USE_2RANK_16BIT_X2_DDR4 1 //use ap222 board
+//#define ENABLE_8BIT_DDR4_CS0_CS1_SAME_PHASE 1 //t233
 
 ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 #if LPDDR4_SKT
@@ -136,7 +142,7 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 	{
 		.cfg_board_common_setting.timming_magic = 0,
 		.cfg_board_common_setting.timming_max_valid_configs = 1,
-		.cfg_board_common_setting.timming_struct_version = 9175,
+		.cfg_board_common_setting.timming_struct_version = 9215,
 		.cfg_board_common_setting.timming_struct_org_size =
 			sizeof(ddr_set_ps0_only_t),
 		.cfg_board_common_setting.timming_struct_real_size = 0,
@@ -187,14 +193,17 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		.cfg_board_SI_setting_ps.clk_drv_ohm = 40,
 		.cfg_board_SI_setting_ps.cs_drv_ohm = 40,
 		.cfg_board_SI_setting_ps.ac_drv_ohm = 40,
-		.cfg_board_SI_setting_ps.soc_data_drv_ohm_p = 40,
-		.cfg_board_SI_setting_ps.soc_data_drv_ohm_n = 40,
+		.cfg_board_SI_setting_ps.soc_data_drv_ohm_p = 34,
+		.cfg_board_SI_setting_ps.soc_data_drv_ohm_n = 34,
 		.cfg_board_SI_setting_ps.soc_data_odt_ohm_p = 0,
-		.cfg_board_SI_setting_ps.soc_data_odt_ohm_n = 40, //60,
+		.cfg_board_SI_setting_ps.soc_data_odt_ohm_n = 80, //60,
 		.cfg_board_SI_setting_ps.dram_data_drv_ohm = 40,
-		.cfg_board_SI_setting_ps.dram_data_odt_ohm = 60,
+		.cfg_board_SI_setting_ps.dram_data_odt_ohm = 48,
 		.cfg_board_SI_setting_ps.dram_data_wr_odt_ohm = 0,
 		.cfg_board_SI_setting_ps.dram_ac_odt_ohm = 120,//240,//120,
+#ifdef LPDDR4_USE_2LAYER_BOARD
+		.cfg_board_SI_setting_ps.soc_data_odt_ohm_n = 120,
+#endif
 		.cfg_board_SI_setting_ps.dram_drv_pull_up_cal_ohm =
 			DDR_DRAM_LPDDR4_ODT_40_OHM,
 		.cfg_board_SI_setting_ps.lpddr4_dram_vout_range =
@@ -296,12 +305,18 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 
 #if DDR4_SKT
 //s7 signoff with 3200MBPS
-#define  CACLU_CLK_D4   1584// 600 //1200 //1792//600 //1200 //(1900)// (1440)//(1008)
+#if defined USE_2RANK_16BIT_X2_DDR4 || defined ENABLE_8BIT_DDR4_CS0_CS1_SAME_PHASE
+//USE_2RANK_16BIT_DDR4 use ap222 board
+//#define ENABLE_8BIT_DDR4_CS0_CS1_SAME_PHASE 1 //t233
+#define  CACLU_CLK_D4   1320// 600
+#else
+#define  CACLU_CLK_D4   1584
+#endif
 //ddr_set_ps0_only_t __attribute__ ((aligned(8))) ddr_set_t_default_ddr4 = {
 	{
 		.cfg_board_common_setting.timming_magic = 0,
 		.cfg_board_common_setting.timming_max_valid_configs = 1,
-		.cfg_board_common_setting.timming_struct_version = 9175,
+		.cfg_board_common_setting.timming_struct_version = 9215,
 		.cfg_board_common_setting.timming_struct_org_size =
 			sizeof(ddr_set_ps0_only_t),
 		.cfg_board_common_setting.timming_struct_real_size = 0,
@@ -332,7 +347,8 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		//bit 0 -3 ch0 cs0 ,bit 4-7 ch0 cs1,
 		//.cfg_board_common_setting.DisabledDbyte[1] = 0xfc,
 		//bit 0 -3 ch1 cs0 ,bit 4-7 ch1
-		.cfg_board_common_setting.dram_x4x8x16_mode = CONFIG_DRAM_MODE_X16,
+		.cfg_board_common_setting.dram_x4x8x16_mode = CONFIG_DRAM_MODE_FORCE_DISABLE_X8,
+		//.cfg_board_common_setting.dram_x4x8x16_mode = CONFIG_DRAM_MODE_FORCE_ENABLE_X8,
 		.cfg_board_common_setting.Is2Ttiming = CONFIG_USE_DDR_2T_MODE,
 		.cfg_board_common_setting.log_level = 0xff,
 		//.cfg_board_common_setting.log_level = 4,
@@ -343,17 +359,19 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		.cfg_board_SI_setting_ps.dfi_odt_config = DDR_DRAM_ODT_DDR4_PARK_ENABLE,
 		.cfg_board_SI_setting_ps.vref_ac_permil = 0,
 		.cfg_board_SI_setting_ps.vref_soc_data_permil = 0,
-		.cfg_board_SI_setting_ps.vref_dram_data_permil = 800,
+		.cfg_board_SI_setting_ps.vref_dram_data_permil = 0,//800,
 		.cfg_board_SI_setting_ps.max_core_timmming_frequency = 0,
 		.cfg_board_common_setting.dbi_enable = 0x00000000,
 		.cfg_board_common_setting.ddr_rfc_type = 0,
 		.cfg_board_common_setting.pll_ssc_mode = 0x00000000,
-
-		.cfg_board_SI_setting_ps.clk_drv_ohm = 40,
-		.cfg_board_SI_setting_ps.cs_drv_ohm = 40,
-		.cfg_board_SI_setting_ps.ac_drv_ohm = 40,
-		.cfg_board_SI_setting_ps.soc_data_drv_ohm_p = 40,
-		.cfg_board_SI_setting_ps.soc_data_drv_ohm_n = 40,
+#if ENABLE_8BIT_DDR4_CS0_CS1_SAME_PHASE
+		//.cfg_board_common_setting.dram_x4x8x16_mode = CONFIG_DRAM_MODE_FORCE_DISABLE_X8,
+		.cfg_board_common_setting.dram_x4x8x16_mode = CONFIG_DRAM_MODE_FORCE_ENABLE_X8,
+		.cfg_board_SI_setting_ps.clk_drv_ohm = 34,
+		.cfg_board_SI_setting_ps.cs_drv_ohm = 34,
+		.cfg_board_SI_setting_ps.ac_drv_ohm = 34,
+		.cfg_board_SI_setting_ps.soc_data_drv_ohm_p = 34,
+		.cfg_board_SI_setting_ps.soc_data_drv_ohm_n = 34,
 		.cfg_board_SI_setting_ps.soc_data_odt_ohm_p = 60,
 		.cfg_board_SI_setting_ps.soc_data_odt_ohm_n = 0,
 		.cfg_board_SI_setting_ps.dram_data_drv_ohm = 34,
@@ -365,11 +383,47 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		.cfg_board_SI_setting_ps.lpddr4_dram_vout_range =
 			DDR_DRAM_LPDDR4_OUTPUT_1_3_VDDQ,
 		.cfg_board_common_setting.ac_pinmux = {
+			22,	22,	26,	3,	7,	5,	6,	4,	0,	19,
+			11,	27,	18,	14,	17,	16,	20,	15,	12,	10,	9,
+			8,	21,	2,	13,	1,	24,	25,	28,	29,
+			},
+#else
+		.cfg_board_SI_setting_ps.clk_drv_ohm = 40,
+		.cfg_board_SI_setting_ps.cs_drv_ohm = 40,
+		.cfg_board_SI_setting_ps.ac_drv_ohm = 40,
+		.cfg_board_SI_setting_ps.soc_data_drv_ohm_p = 40,
+		.cfg_board_SI_setting_ps.soc_data_drv_ohm_n = 40,
+		.cfg_board_SI_setting_ps.soc_data_odt_ohm_p = 60,
+		.cfg_board_SI_setting_ps.soc_data_odt_ohm_n = 0,
+		.cfg_board_SI_setting_ps.dram_data_drv_ohm = 34,
+		.cfg_board_SI_setting_ps.dram_data_odt_ohm = 60,
+#ifdef USE_2RANK_16BIT_X2_DDR4
+		.cfg_board_common_setting.dram_x4x8x16_mode = CONFIG_DRAM_MODE_FORCE_DISABLE_X8,
+		//.cfg_board_common_setting.dram_x4x8x16_mode = CONFIG_DRAM_MODE_FORCE_ENABLE_X8,
+		.cfg_board_SI_setting_ps.vref_soc_data_permil = 820,
+		.cfg_board_SI_setting_ps.vref_dram_data_permil = 820,//800,
+		.cfg_board_SI_setting_ps.clk_drv_ohm = 34,
+		.cfg_board_SI_setting_ps.cs_drv_ohm = 40,
+		.cfg_board_SI_setting_ps.ac_drv_ohm = 40,
+		.cfg_board_SI_setting_ps.soc_data_drv_ohm_p = 48,
+		.cfg_board_SI_setting_ps.soc_data_drv_ohm_n = 48,
+		.cfg_board_SI_setting_ps.soc_data_odt_ohm_p = 48,
+		.cfg_board_SI_setting_ps.soc_data_odt_ohm_n = 0,
+		.cfg_board_SI_setting_ps.dram_data_drv_ohm = 48,
+		.cfg_board_SI_setting_ps.dram_data_odt_ohm = 48,
+#endif
+		.cfg_board_SI_setting_ps.dram_data_wr_odt_ohm = 0,
+		.cfg_board_SI_setting_ps.dram_ac_odt_ohm = 120,
+		.cfg_board_SI_setting_ps.dram_drv_pull_up_cal_ohm =
+			DDR_DRAM_LPDDR4_ODT_40_OHM,
+		.cfg_board_SI_setting_ps.lpddr4_dram_vout_range =
+			DDR_DRAM_LPDDR4_OUTPUT_1_3_VDDQ,
+		.cfg_board_common_setting.ac_pinmux = {
 			23,	22,	26,	3,	7,	5,	6,	4,	0,	19,
 			11,	27,	18,	14,	17,	16,	20,	15,	12,	10,	9,
 			8,	21,	2,	13,	1,	24,	25,	28,	29,
 			},
-
+#endif
 		//.cfg_ddr_training_delay_ps.tx_offset[0] = (0 << 7) | 0x0,
 		//.cfg_ddr_training_delay_ps.rx_offset[0] = (0 << 7) | 0x0,
 		.cfg_ddr_training_delay_ps.reserve_para[0] = (1 << 7) | 0x8,     //write dqs
@@ -388,9 +442,11 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		.cfg_ddr_training_delay_ps.reserve_para[8 + 5] = (1 << 7) | 0x10,//read dqs
 		.cfg_ddr_training_delay_ps.reserve_para[8 + 6] = (1 << 7) | 0x10,//read dqs
 		.cfg_ddr_training_delay_ps.reserve_para[8 + 7] = (1 << 7) | 0x10,//read dqs
+		//.cfg_ddr_training_delay_ps.dac_offset[0] = (1 << 7) | 0x3,
+		//.cfg_ddr_training_delay_ps.dac_offset[1] = (0 << 7) | 0xa,
 
 		#define  AC_OFFSET  (128)
-		#define WL0  (0)
+		#define WL0  (-128)
 		.cfg_ddr_training_delay_ps.ac_trace_delay[0] = 256 + AC_OFFSET,
 		.cfg_ddr_training_delay_ps.ac_trace_delay[1] = 256 + AC_OFFSET,
 		.cfg_ddr_training_delay_ps.ac_trace_delay[2] = 256 + AC_OFFSET,
@@ -431,15 +487,59 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		.cfg_ddr_training_delay_ps.ac_trace_delay[27] = 128 + AC_OFFSET, //cke
 		.cfg_ddr_training_delay_ps.ac_trace_delay[2] = 128 + AC_OFFSET,//odt0
 		.cfg_ddr_training_delay_ps.ac_trace_delay[11] = 128 + AC_OFFSET,//odt1
+#if ENABLE_8BIT_DDR4_CS0_CS1_SAME_PHASE
+		.cfg_ddr_training_delay_ps.ac_trace_delay[4] = 256 - 100 + AC_OFFSET,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[5] = 256 - 100 + AC_OFFSET,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[6] = 256 - 100 + AC_OFFSET,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[8] = 256 - 50 + AC_OFFSET,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[10] = 256 - 50 + AC_OFFSET,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[13] = 256 - 50 + AC_OFFSET,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[14] = 256 - 50 + AC_OFFSET,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[16] = 256 - 50 + AC_OFFSET,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[17] = 256 - 50 + AC_OFFSET,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[19] = 256 - 50 + AC_OFFSET,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[20] = 256 - 50 + AC_OFFSET,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[21] = 256 - 100 + AC_OFFSET,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[22] = 256 - 100 + AC_OFFSET,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[23] = 256 - 50 + AC_OFFSET,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[24] = 256 - 50 + AC_OFFSET,
 
-		.cfg_ddr_training_delay_ps.write_dqs_delay[0] = 128,
-		.cfg_ddr_training_delay_ps.write_dqs_delay[1] = 128,
-		.cfg_ddr_training_delay_ps.write_dqs_delay[2] = 128,
-		.cfg_ddr_training_delay_ps.write_dqs_delay[3] = 128,
-		.cfg_ddr_training_delay_ps.write_dqs_delay[4] = 128,
-		.cfg_ddr_training_delay_ps.write_dqs_delay[5] = 128,
-		.cfg_ddr_training_delay_ps.write_dqs_delay[6] = 128,
-		.cfg_ddr_training_delay_ps.write_dqs_delay[7] = 128,
+		.cfg_ddr_training_delay_ps.write_dqs_delay[0] = 128 + AC_OFFSET + WL0 + 40,
+		.cfg_ddr_training_delay_ps.write_dqs_delay[1] = 128 + AC_OFFSET + WL0 + 40,
+		.cfg_ddr_training_delay_ps.write_dqs_delay[2] = 128 + AC_OFFSET + WL0 + 90,
+		.cfg_ddr_training_delay_ps.write_dqs_delay[3] = 128 + AC_OFFSET + WL0 + 90,
+		.cfg_ddr_training_delay_ps.write_dqs_delay[4] = 128 + AC_OFFSET + WL0,
+		.cfg_ddr_training_delay_ps.write_dqs_delay[5] = 128 + AC_OFFSET + WL0,
+		.cfg_ddr_training_delay_ps.write_dqs_delay[6] = 128 + AC_OFFSET + WL0,
+		.cfg_ddr_training_delay_ps.write_dqs_delay[7] = 128 + AC_OFFSET + WL0,
+#else
+#ifdef USE_2RANK_16BIT_X2_DDR4
+		.cfg_ddr_training_delay_ps.ac_trace_delay[0] = 128 + AC_OFFSET - 50,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[4] = 256 + AC_OFFSET - 100,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[5] = 256 + AC_OFFSET - 100,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[6] = 256 + AC_OFFSET - 50,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[7] = 256 + AC_OFFSET - 50,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[8] = 256 + AC_OFFSET - 50,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[9] = 256 + AC_OFFSET - 50,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[10] = 256 + AC_OFFSET - 50,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[13] = 256 + AC_OFFSET - 50,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[14] = 256 + AC_OFFSET - 50,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[17] = 256 + AC_OFFSET - 50,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[20] = 256 + AC_OFFSET - 50,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[21] = 256 + AC_OFFSET - 50,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[22] = 256 + AC_OFFSET - 50,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[23] = 256 + AC_OFFSET - 50,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[24] = 256 + AC_OFFSET - 50,
+#endif
+		.cfg_ddr_training_delay_ps.write_dqs_delay[0] = 128 + AC_OFFSET + WL0,
+		.cfg_ddr_training_delay_ps.write_dqs_delay[1] = 128 + AC_OFFSET + WL0,
+		.cfg_ddr_training_delay_ps.write_dqs_delay[2] = 128 + AC_OFFSET + WL0,
+		.cfg_ddr_training_delay_ps.write_dqs_delay[3] = 128 + AC_OFFSET + WL0,
+		.cfg_ddr_training_delay_ps.write_dqs_delay[4] = 128 + AC_OFFSET + WL0,
+		.cfg_ddr_training_delay_ps.write_dqs_delay[5] = 128 + AC_OFFSET + WL0,
+		.cfg_ddr_training_delay_ps.write_dqs_delay[6] = 128 + AC_OFFSET + WL0,
+		.cfg_ddr_training_delay_ps.write_dqs_delay[7] = 128 + AC_OFFSET + WL0,
+#endif
 
 		.cfg_ddr_training_delay_ps.read_dqs_delay[0] = 128,
 		.cfg_ddr_training_delay_ps.read_dqs_delay[1] = 128,
@@ -464,7 +564,7 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 	{
 		.cfg_board_common_setting.timming_magic = 0,
 		.cfg_board_common_setting.timming_max_valid_configs = 1,
-		.cfg_board_common_setting.timming_struct_version = 9175,
+		.cfg_board_common_setting.timming_struct_version = 9215,
 		.cfg_board_common_setting.timming_struct_org_size =
 			sizeof(ddr_set_ps0_only_t),
 		.cfg_board_common_setting.timming_struct_real_size = 0,
