@@ -456,7 +456,7 @@ $(BIN) : $(ELF)
 	@echo
 
 .PHONY : bl$(1)
-bl$(1) : $(BUILD_DIR) $(DUMP) $(BIN)
+bl$(1) : $(BUILD_DIR) $(ELF) $(DUMP) $(BIN)
 # update __acs_set symbol value in bin
 ifeq (${ARCH},aarch32)
 	@python tools/t32_tool/t32_tool.py $(DUMP) __acs_set $(BIN) 4
