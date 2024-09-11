@@ -1529,16 +1529,55 @@ static void memsize_format(char *buf, u64 size)
 		sprintf(buf, "%llu", size);
 }
 
+extern struct boot_layout general_boot_layout;
+int mtd_store_param_boot_partition(void)
+{
+	boot_area_entry_t *boot_entry = general_boot_layout.boot_entry;
+	char bufvir[128];
+	int lenvir, i, re;
+	char *p = bufvir;
+
+	lenvir = snprintf(bufvir, sizeof(bufvir), "%s", "mtdbootparts=aml-nand:");
+	p += lenvir;
+	re = sizeof(bufvir) - lenvir;
+
+	for (i = BOOT_AREA_BL2E; i <= BOOT_AREA_DEVFIP; i++) {
+		lenvir = snprintf(p, re, "%dk(%s),",
+				 (int)(boot_entry[i].size / 1024),
+				 boot_entry[i].name);
+		re -= lenvir;
+		p += lenvir;
+	}
+	p = bufvir;
+	bufvir[strlen(p) - 1] = 0;	/* delete the last comma */
+	env_set("mtdbootparts", p);
+
+	if (!strstr(env_get("bootargs"), "mtdbootparts")) {
+		pr_err("set mtdbootparts!\n");
+		run_command("setenv bootargs ${bootargs} ${mtdbootparts}", 0);
+	} else {
+		pr_err("mtdbootparts exit!\n");
+	}
+
+	return 0;
+}
+
 extern struct part_info *get_aml_mtdpart_by_index(struct mtd_info *master, int idx);
 int mtd_store_param_partition(void)
 {
+	enum boot_type_e medium_type = store_get_type();
 	struct part_info *temp;
 	int i, re, count, lenvir = 0;
 	char buf[512], size[32], offset[32];
 	char *p = buf;
 
-	count = mtd_store_count();
+	if (store_get_device_bootloader_mode() != ADVANCE_BOOTLOADER)
+		return 0;
 
+	if (medium_type == BOOT_NAND_MTD)
+		return mtd_store_param_boot_partition();
+
+	count = mtd_store_count();
 	lenvir = snprintf(buf, sizeof(buf), "%s", "mtdparts=aml-mtd:");
 	p += lenvir;
 	re = sizeof(buf) - lenvir;
@@ -1559,10 +1598,15 @@ int mtd_store_param_partition(void)
 	p = buf;
 	buf[strlen(p) - 1] = 0;	/* delete the last comma */
 	env_set("mtdparts", p);
-	memset(buf, 0, sizeof(buf));
-	sprintf(buf, "setenv bootargs ${bootargs} ${mtdparts}");
 
-	return run_command(buf, 0);
+	if (!strstr(env_get("bootargs"), "mtdparts")) {
+		pr_err("set mtdparts to bootargs!\n");
+		run_command("setenv bootargs ${bootargs} ${mtdparts}", 0);
+	} else {
+		pr_err("mtdparts already exit in bootargs!\n");
+	}
+
+	return 0;
 }
 
 static int mtd_store_param_rsv_partition(void)
@@ -1577,7 +1621,7 @@ static int mtd_store_param_rsv_partition(void)
 		return 0;
 
 	if (!working_fdt) {
-		pr_debug("%s: working_fdt is set, fdt add to set working_fdt\n",
+		pr_err("%s: working_fdt is set, fdt add to set working_fdt\n",
 				__FILE__);
 		fdtaddr = env_get("dtb_mem_addr");
 		if (!fdtaddr) {
@@ -1586,7 +1630,7 @@ static int mtd_store_param_rsv_partition(void)
 		}
 		mem_dtb = simple_strtoul(fdtaddr, NULL, 16);
 		sprintf(buf, "fdt addr 0x%x", mem_dtb);
-		pr_debug("fdt addr 0x%x\n", mem_dtb);
+		pr_err("fdt addr 0x%x\n", mem_dtb);
 		if (run_command(buf, 0)) {
 			pr_err("fdt addr 0x%x error.\n", mem_dtb);
 			return -EBADMSG;
@@ -1649,22 +1693,20 @@ add:
 
 int mtd_store_param_ops(void)
 {
-	static int init;
-	int ret;
+	int ret = 0;
 
-	if (init)
-		return 0;
-
+	pr_err("mtd device do param ops!\n");
 	ret = mtd_store_param_partition();
-	if (ret == 0)
-		ret = mtd_store_param_rsv_partition();
+	if (ret)
+		goto error;
+	ret = mtd_store_param_rsv_partition();
+	if (ret)
+		goto error;
+	ret = mtd_store_param_boot_layout();
+	if (ret)
+		goto error;
 
-	if (ret == 0)
-		ret = mtd_store_param_boot_layout();
-
-	if (ret == 0)
-		init = 1;
-
+error:
 	return ret;
 }
 

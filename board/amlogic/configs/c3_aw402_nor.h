@@ -136,13 +136,11 @@
 		"fi;fi;fi;fi;fi;fi;"\
 		"\0" \
 	"storeboot="\
-		"run storage_param;"\
 		"run common_dtb_load;"\
 		"imgread kernel ${boot_part} ${loadaddr_kernel};"\
 		"store read 0x01a80000 system 0 0x300000;bootm ${loadaddr_kernel};"\
 		"\0" \
 	"storeboot_ramdisk="\
-		"run storage_param;"\
 		"run common_dtb_load;"\
 		"imgread kernel ${boot_part} ${loadaddr_kernel};"\
 		"store read 0x01a80000 system 0 0x300000;bootm ${loadaddr_kernel};"\
@@ -171,7 +169,6 @@
 		"if mmcinfo; then run recovery_from_fat_dev; fi;"\
 		"\0"\
 	"recovery_from_flash="\
-		"run storage_param;"\
 		"setenv loadaddr ${loadaddr_kernel};"\
 		"setenv bootargs ${bootargs} ${fs_type} aml_dt=${aml_dt} "\
 		"recovery_part=${recovery_part} recovery_offset=${recovery_offset};"\

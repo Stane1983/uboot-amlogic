@@ -163,7 +163,6 @@
 		"\0" \
 	"storeboot="\
 		"run get_os_type;"\
-		"run storage_param;"\
 		"if test ${os_type} = rtos; then "\
 			"setenv loadaddr ${loadaddr_rtos};"\
 			"store read ${loadaddr} ${boot_part} 0 0x400000;"\

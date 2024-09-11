@@ -723,6 +723,19 @@ u64 store_boot_copy_size(const char *name)
 	return store->get_copy_size(name);
 }
 
+int store_send_param(void)
+{
+	struct storage_t *store = store_get_current();
+
+	if (!store || !store->param_ops) {
+		pr_info("%s %d please init storage func first\n",
+			__func__, __LINE__);
+		return 1;
+	}
+
+	return store->param_ops();
+}
+
 static int _store_boot_read(const char *part_name, u8 cpy, size_t size, void *addr)
 {
 	struct storage_t *store = store_get_current();
@@ -1701,31 +1714,9 @@ static int do_store_rsv_ops(cmd_tbl_t *cmdtp,
 static int do_store_param_ops(cmd_tbl_t *cmdtp,
 			    int flag, int argc, char * const argv[])
 {
-	boot_area_entry_t *boot_entry = general_boot_layout.boot_entry;
 	struct storage_t *store = store_get_current();
-	char bufvir[128];
-	int lenvir, i, re;
-	char *p = bufvir;
 
-	if (store_get_device_bootloader_mode() != ADVANCE_BOOTLOADER)
-		return 0;
-
-	lenvir = snprintf(bufvir, sizeof(bufvir), "%s", "mtdbootparts=aml-nand:");
-	p += lenvir;
-	re = sizeof(bufvir) - lenvir;
-
-	for (i = BOOT_AREA_BL2E; i <= BOOT_AREA_DEVFIP; i++) {
-		lenvir = snprintf(p, re, "%dk(%s),",
-				 (int)(boot_entry[i].size / 1024),
-				 boot_entry[i].name);
-		re -= lenvir;
-		p += lenvir;
-	}
-	p = bufvir;
-	bufvir[strlen(p) - 1] = 0;	/* delete the last comma */
-	env_set("mtdbootparts", p);
-
-	if (store->type != BOOT_NAND_MTD && store->param_ops)
+	if (store && store->param_ops)
 		return store->param_ops();
 
 	return 0;

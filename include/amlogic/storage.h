@@ -497,5 +497,6 @@ int store_gpt_read(void *buf);
 int store_gpt_write(void *buf);
 int store_gpt_erase(void);
 int store_boot_copy_enable(int index);
+int store_send_param(void);
 
 #endif/* __STORAGE_H__ */

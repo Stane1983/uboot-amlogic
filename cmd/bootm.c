@@ -192,6 +192,11 @@ int do_bootm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	}
 #endif
 
+#ifdef CONFIG_AML_MTD
+	/* send store param by dtb or env */
+	store_send_param();
+#endif
+
 	/* determine if we have a sub command */
 	argc--; argv++;
 	if (argc > 0) {

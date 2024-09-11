@@ -146,19 +146,9 @@
 		"fi;fi;fi;fi;fi;fi;"\
 		"\0" \
 	"storeboot="\
-		"if test ${os_type} = fdt; then "\
-			"run storage_param;"\
-			"setenv loadaddr ${loadaddr_kernel};"\
-			"setenv dtb_mem_addr ${loadaddr_kernel};"\
-			"setenv initrd_high 0x3000000;"\
-			"setenv bootargs ${bootargs} init=/sbin/init rootfstype=squashfs root=/dev/mtdblock9;"\
-			"store read ${loadaddr} ${boot_part} 0 0x1000000;"\
-			"bootm ${loadaddr};"\
-		"else run storage_param;"\
-			"run common_dtb_load;"\
-			"imgread kernel ${boot_part} ${loadaddr_kernel};"\
-			"bootm ${loadaddr_kernel};"\
-		"fi;"\
+		"run common_dtb_load;"\
+		"imgread kernel ${boot_part} ${loadaddr_kernel};"\
+		"bootm ${loadaddr_kernel};"\
 		"\0" \
 	"storeboot_ramdisk="\
 		"run storage_param;"\

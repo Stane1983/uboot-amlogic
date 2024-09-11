@@ -163,53 +163,9 @@
 		"fi;fi;fi;fi;fi;fi;"\
 		"\0" \
 	"storeboot="\
-		"run get_os_type;"\
-		"run storage_param;"\
-		"if test ${os_type} = rtos; then "\
-			"setenv loadaddr ${loadaddr_rtos};"\
-			"store read ${loadaddr} ${boot_part} 0 0x400000;"\
-			"bootm ${loadaddr};"\
-		"else if test ${os_type} = kernel; then "\
-			"get_system_as_root_mode;"\
-			"echo system_mode in storeboot: ${system_mode};"\
-			"get_avb_mode;"\
-			"echo active_slot in storeboot: ${active_slot};"\
-			"if test ${system_mode} = 1; then "\
-				"setenv bootargs ${bootargs} ro rootwait skip_initramfs;"\
-			"else "\
-				"setenv bootargs ${bootargs} androidboot.force_normal_boot=1;"\
-			"fi;"\
-			"if test ${active_slot} != normal; then "\
-				"setenv bootargs ${bootargs} androidboot.slot_suffix=${active_slot};"\
-			"fi;"\
-			"if fdt addr ${dtb_mem_addr}; then else echo retry common dtb; run common_dtb_load; fi;"\
-			"setenv loadaddr ${loadaddr_kernel};"\
-			"if imgread kernel ${boot_part} ${loadaddr}; then bootm ${loadaddr}; fi;"\
-		"else echo wrong OS format ${os_type}; fi;fi;"\
-		"echo try upgrade as booting failure; run update;"\
-		"\0" \
-	 "update="\
-		/*first usb burning, second sdc_burn, third ext-sd autoscr/recovery, last udisk autoscr/recovery*/\
-		"run usb_burning; "\
-		"run recovery_from_sdcard;"\
-		"run recovery_from_udisk;"\
-		"run recovery_from_flash;"\
-		"\0"\
-	"recovery_from_fat_dev="\
-		"setenv loadaddr ${loadaddr_kernel};"\
-		"if fatload ${fatload_dev} 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;"\
-		"if fatload ${fatload_dev} 0 ${loadaddr} recovery.img; then "\
-			"if fatload ${fatload_dev} 0 ${dtb_mem_addr} dtb.img; then echo ${fatload_dev} dtb.img loaded; fi;"\
-			"setenv bootargs ${bootargs} ${fs_type};"\
-			"bootm ${loadaddr};fi;"\
-		"\0"\
-	"recovery_from_udisk="\
-		"setenv fatload_dev usb;"\
-		"if usb start 0; then run recovery_from_fat_dev; fi;"\
-		"\0"\
-	"recovery_from_sdcard="\
-		"setenv fatload_dev mmc;"\
-		"if mmcinfo; then run recovery_from_fat_dev; fi;"\
+		"run common_dtb_load;"\
+		"imgread kernel ${boot_part} ${loadaddr_kernel};"\
+		"bootm ${loadaddr_kernel};"\
 		"\0"\
 	"recovery_from_flash="\
 		"echo active_slot: ${active_slot};"\
@@ -227,23 +183,7 @@
 		"if imgread dtb recovery ${dtb_mem_addr}; then "\
 			"else echo restore dtb; run common_dtb_load;"\
 		"fi;"\
-			"fi;"\
 		"if imgread kernel ${recovery_part} ${loadaddr} ${recovery_offset}; then bootm ${loadaddr}; fi;"\
-		"else "\
-			"if fdt addr ${dtb_mem_addr}; then else echo retry common dtb; run common_dtb_load; fi;"\
-			"if test ${partition_mode} = normal; then "\
-				"setenv bootargs ${bootargs} ${fs_type} aml_dt=${aml_dt} recovery_part=${boot_part} recovery_offset=${recovery_offset};"\
-				"if imgread kernel ${boot_part} ${loadaddr}; then bootm ${loadaddr}; fi;"\
-			"else "\
-				"if test ${vendor_boot_mode} = true; then "\
-					"setenv bootargs ${bootargs} ${fs_type} aml_dt=${aml_dt} recovery_part=${boot_part} recovery_offset=${recovery_offset} androidboot.slot_suffix=${active_slot};"\
-					"if imgread kernel ${boot_part} ${loadaddr}; then bootm ${loadaddr}; fi;"\
-				"else "\
-					"setenv bootargs ${bootargs} ${fs_type} aml_dt=${aml_dt} recovery_part=${recovery_part} recovery_offset=${recovery_offset} androidboot.slot_suffix=${active_slot};"\
-					"if imgread kernel ${recovery_part} ${loadaddr} ${recovery_offset}; then wipeisb; bootm ${loadaddr}; fi;"\
-				"fi;"\
-			"fi;"\
-		"fi;"\
 		"\0"\
 	"bcb_cmd="\
 		"get_avb_mode;"\
@@ -256,36 +196,6 @@
 			"echo ab mode, read dtb from kernel;"\
 			"setenv common_dtb_load ""imgread dtb ${boot_part} ${dtb_mem_addr}"";"\
 		"fi;"\
-		"\0"\
-	"load_bmp_logo="\
-		"if rdext4pic ${board_logo_part} $loadaddr; then bmp display $logoLoadAddr; " \
-		"else if imgread pic logo bootup $loadaddr; then bmp display $bootup_offset; fi; fi;" \
-		"\0"\
-	"init_display="\
-		"get_rebootmode;"\
-		"echo reboot_mode:::: ${reboot_mode};"\
-		"if test ${reboot_mode} = quiescent; then "\
-			"setenv reboot_mode_android ""quiescent"";"\
-			"setenv dolby_status 0;"\
-			"setenv dolby_vision_on 0;"\
-			"run storeargs;"\
-			"setenv bootargs ${bootargs} androidboot.quiescent=1;"\
-			"osd open;osd clear;"\
-		"else if test ${reboot_mode} = recovery_quiescent; then "\
-			"setenv reboot_mode_android ""quiescent"";"\
-			"setenv dolby_status 0;"\
-			"setenv dolby_vision_on 0;"\
-			"run storeargs;"\
-			"setenv bootargs ${bootargs} androidboot.quiescent=1;"\
-			"osd open;osd clear;"\
-		"else "\
-			"setenv reboot_mode_android ""normal"";"\
-			"run storeargs;"\
-			"hdmitx hpd;hdmitx get_preferred_mode;hdmitx get_parse_edid;dovi process; \
-				osd open;osd clear;run load_bmp_logo;bmp scale; \
-				vout output ${outputmode}; \
-				dovi set;dovi pkg;vpp hdrpkt;"\
-		"fi;fi;"\
 		"\0"\
 	"storage_param="\
 		"setenv bootargs ${bootargs} ${emmc_quirks}; "\
