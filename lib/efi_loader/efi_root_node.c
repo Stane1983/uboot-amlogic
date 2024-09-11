@@ -37,6 +37,7 @@ efi_status_t efi_root_node_register(void)
 	if (!dp)
 		return EFI_OUT_OF_RESOURCES;
 
+	EFI_ENTRY("%#lx", (unsigned long)dp);
 	/* Fill vendor node */
 	dp->vendor.dp.type = DEVICE_PATH_TYPE_HARDWARE_DEVICE;
 	dp->vendor.dp.sub_type = DEVICE_PATH_SUB_TYPE_VENDOR;

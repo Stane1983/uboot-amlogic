@@ -5,11 +5,15 @@
 
 #include <common.h>
 #include <linux/string.h>
-#include <asm/armv8/mmu.h>
+//#include <asm/armv8/mmu.h>
 #include <hexdump.h>
 #include <asm/global_data.h>
 
 DECLARE_GLOBAL_DATA_PTR;
+
+#ifndef PAGE_SIZE
+#define PAGE_SIZE      (BIT(12))
+#endif
 
 /* Shadow layout customization. */
 #define SHADOW_BYTES_PER_BLOCK	1

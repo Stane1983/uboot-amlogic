@@ -677,6 +677,9 @@ include/config/%.conf: $(KCONFIG_CONFIG) include/config/auto.conf.cmd
 
 u-boot.cfg spl/u-boot.cfg tpl/u-boot.cfg: include/config.h FORCE
 	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.autoconf $(@)
+ifdef CONFIG_AML_UASAN
+	echo "#define CONFIG_AML_UASAN 1"  >> $(config_h)
+endif
 
 -include include/autoconf.mk
 -include include/autoconf.mk.dep
@@ -1985,10 +1988,6 @@ ifneq ($(KBUILD_SRC),)
 		echo >&2 "  in the '$(srctree)' directory.";\
 		/bin/false; \
 	fi;
-endif
-
-ifdef CONFIG_AML_UASAN
-	echo "#define CONFIG_AML_UASAN 1"  >> $(config_h)
 endif
 
 # prepare2 creates a makefile if using a separate output directory
