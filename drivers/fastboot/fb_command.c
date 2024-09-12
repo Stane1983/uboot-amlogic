@@ -1388,7 +1388,14 @@ next:
 	} else if (!strcmp_l1("lock_bootloader", cmd)) {
 		info.lock_bootloader = 1;
 	} else if (!strcmp_l1("unlock", cmd)) {
+#if defined(CONFIG_AML_ANTIROLLBACK) || defined(CONFIG_AML_AVB2_ANTIROLLBACK)
+		u32 rpmb_lock_state = 0;
+		bool ret = get_avb_lock_state(&rpmb_lock_state);
+
+		if (info.lock_state == 1 || (ret && rpmb_lock_state == 1)) {
+#else
 		if (info.lock_state == 1) {
+#endif
 			char *avb_s;
 
 			run_command("get_avb_mode;", 0);
