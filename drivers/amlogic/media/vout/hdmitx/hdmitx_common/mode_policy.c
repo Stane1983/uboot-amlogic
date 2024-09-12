@@ -608,8 +608,12 @@ static void get_best_color_attr(struct meson_policy_in *input,
      * if read /sys/class/amhdmitx/amhdmitx0/dc_cap is NULL
      * use default color format(444 8bit)
      */
+    char brr_mode[MESON_MODE_LEN] = {0};
+    find_brr_mode(outputmode, input, brr_mode);
+    SYS_LOGI("get_best_color_attr current mode:[%s]  brr_mode:[%s]\n", outputmode, brr_mode);
+
     if (!is_hdmi_dc_cap_ok(input)) {
-        if (is_support_420_mode(outputmode)) {
+        if (is_support_420_mode(brr_mode)) {
             strcpy(colorattribute, MESON_DEFAULT_COLOR_FORMAT_4K);
         } else {
             strcpy(colorattribute, MESON_DEFAULT_COLOR_FORMAT);
@@ -622,7 +626,7 @@ static void get_best_color_attr(struct meson_policy_in *input,
     /*
      * 1. select the color format table for different resolution or scene.
      */
-    if (is_support_420_mode(outputmode)) {
+    if (is_support_420_mode(brr_mode)) {
         /*
          * 2160p50hz 2160p60hz 3840x2160p60hz 3840x2160p50hz case
          */
@@ -835,8 +839,10 @@ static bool hdr_scene_process(struct meson_policy_in *input,
              */
             const char **color_list = NULL;
             int color_list_length   = 0;
+            char brr_mode[MESON_MODE_LEN] = {0};
+            find_brr_mode(input->cur_displaymode, input, brr_mode);
 
-            if (is_support_420_mode(input->cur_displaymode)) {
+            if (is_support_420_mode(brr_mode)) {
                 //2160p50hz 2160p60hz 3840x2160p60hz 3840x2160p50hz case
                 //use 4k color format table
                 color_list        = COLOR_ATTRIBUTE_LIST1;
@@ -912,11 +918,7 @@ static bool hdr_scene_process(struct meson_policy_in *input,
              * if displaymode support ,and find best color format base mode.
              */
             char color_attribute[MESON_MODE_LEN] = {0};
-            char brr_mode[MESON_MODE_LEN] = {0};
-            find_brr_mode(input->cur_displaymode, input, brr_mode);
-            SYS_LOGI("support current mode:[%s]  brr_mode:[%s]\n", input->cur_displaymode, brr_mode);
-
-            get_best_color_attr(input, brr_mode, color_attribute);
+            get_best_color_attr(input, input->cur_displaymode, color_attribute);
             strlcpy(output->deepcolor, color_attribute, sizeof(output->deepcolor));
             strlcpy(output->displaymode, input->cur_displaymode, sizeof(output->displaymode));
             find = true;
@@ -1033,8 +1035,11 @@ static void get_hdmi_color_attr(struct meson_policy_in *input,
      * if read /sys/class/amhdmitx/amhdmitx0/dc_cap is NULL.
      * use default color format
      */
+    char brr_mode[MESON_MODE_LEN] = {0};
+    find_brr_mode(outputmode, input, brr_mode);
+
     if (!is_hdmi_dc_cap_ok(input)) {
-        if (is_support_420_mode(outputmode)) {
+        if (is_support_420_mode(brr_mode)) {
             strcpy(color_attr, MESON_DEFAULT_COLOR_FORMAT_4K);
         } else {
             strcpy(color_attr, MESON_DEFAULT_COLOR_FORMAT);
@@ -1319,7 +1324,10 @@ int32_t meson_mode_support_mode(int32_t connector, int32_t type, const char *mod
         /*
          * 1. select the color format table for different resolution
          */
-        if (is_support_420_mode(mode)) {
+        char brr_mode[MESON_MODE_LEN] = {0};
+        find_brr_mode(mode, input, brr_mode);
+
+        if (is_support_420_mode(brr_mode)) {
             /*
              * resolution support 420 case
              */
