@@ -1409,7 +1409,14 @@ next:
 		env_set("lock_state", "green");
 		fastboot_okay(NULL, response);
 	} else if (!strcmp_l1("lock", cmd)) {
+#if defined(CONFIG_AML_ANTIROLLBACK) || defined(CONFIG_AML_AVB2_ANTIROLLBACK)
+		u32 rpmb_lock_state = 0;
+		bool ret = get_avb_lock_state(&rpmb_lock_state);
+
+		if (info.lock_state == 0 || (ret && rpmb_lock_state == 0)) {
+#else
 		if (info.lock_state == 0) {
+#endif
 			char *avb_s;
 
 			run_command("get_avb_mode;", 0);
