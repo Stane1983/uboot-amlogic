@@ -90,6 +90,13 @@
 #define ENABLE_SMP	"display_on_smp=0\0"
 #endif
 
+#define CHECK_POWERBUTTON	"if test ${preboot_mode} = 1 && test ${powermode} = standby; then "\
+						"setenv bootup_display preboot;"\
+						"irkey_wakeup 4;"\
+						"if test ${ir_preboot_key} != 0x0; then "\
+						"setenv bootup_display on;"\
+						"fi;fi;"
+
 /* args/envs */
 #define CONFIG_SYS_MAXARGS  64
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -98,6 +105,8 @@
 		ENABLE_SMP \
 		"systemsuspend_switch=0\0"\
 		"ddr_resume=0\0"\
+		"preboot_mode=0\0"\
+		"ir_preboot_key=0x0\0"\
 		"otg_device=1\0" \
 		"panel_type=lvds_1\0" \
 		"lcd_debug=0x00000000\0" \
@@ -130,6 +139,7 @@
 		"cvbs_drv=0\0"\
 		"osd_reverse=0\0"\
 		"video_reverse=0\0"\
+		"disable_ir=0\0"\
 	"board=t963d4\0"\
 		"upgrade_key_flag=2\0"\
 		"suspend=off\0"\
@@ -153,6 +163,8 @@
             "\0"\
         "upgrade_check="\
 			"run upgrade_check_base;"\
+			"if test ${disable_ir} = 1; then irkey_wakeup 3 1;fi;"\
+			CHECK_POWERBUTTON \
 			"\0"\
 	"storeargs="\
 		"get_bootloaderversion;" \
@@ -161,6 +173,7 @@
 		"lcd0=${lcd0_attr} lcd_debug=${lcd_debug} vpu_overclock=${vpu_overclock} "\
 		"outputmode=${outputmode} connector0_type=${connector0_type} gamma=${gamma};"\
 		"run cmdline_keys;"\
+		CHECK_POWERBUTTON \
 		"\0"\
 	"cec_init="\
 		"echo cec_ac_wakeup=${cec_ac_wakeup}; "\
@@ -185,17 +198,23 @@
 			/*"run try_auto_burn; "*/\
 		"else if test ${powermode} = standby; then "\
 			"run cec_init;"\
-			"if test ${systemsuspend_switch} = 0;then systemoff; fi;"\
+			"if test ${systemsuspend_switch} = 0"\
+			" && test ${preboot_mode} = 0;then "\
+				"irkey_wakeup 3 0; systemoff; fi;"\
 		"else if test ${powermode} = last; then "\
 			"echo suspend=${suspend}; "\
 			"if test ${suspend} = off; then "\
 				/*"run try_auto_burn; "*/\
 			"else if test ${suspend} = on; then "\
 				"run cec_init;"\
-				"if test ${systemsuspend_switch} = 0;then systemoff; fi;"\
+				"if test ${systemsuspend_switch} = 0 "\
+					"&& test ${preboot_mode} = 0;then "\
+					"irkey_wakeup 3 0; systemoff; fi;"\
 			"else if test ${suspend} = shutdown; then "\
 				"run cec_init;"\
-				"if test ${systemsuspend_switch} = 0;then systemoff; fi;"\
+				"if test ${systemsuspend_switch} = 0 "\
+					"&& test ${preboot_mode} = 0;then "\
+				"irkey_wakeup 3 0; systemoff; fi;"\
 			"fi; fi; fi; "\
 		"fi; fi; fi; "\
 		"\0"\
@@ -300,11 +319,15 @@
 			"fi; "\
 		"else if test ${reboot_mode} = cold_boot; then "\
 			"if test ${powermode} = standby; then "\
+				"if test ${preboot_mode} = 0; then "\
 				"setenv ddr_resume 1;"\
+				"fi;"\
 			"else if test ${powermode} = last; then "\
 				"if test ${suspend} != off; then "\
 					"echo suspend: ${suspend};"\
-					"setenv ddr_resume 1;"\
+					"if test ${preboot_mode} = 0; then "\
+						"setenv ddr_resume 1;"\
+					"fi;"\
 				"fi;"\
 			"fi;fi; "\
 		"else if test ${reboot_mode} = quiescent; then "\
@@ -314,6 +337,7 @@
 			"echo quiescent reboot no display; "\
 			"setenv bootup_display off; "\
 		"fi;fi;fi;fi; "\
+		CHECK_POWERBUTTON \
 		"\0"\
 	"cmdline_keys="\
 		"setenv usid t963d4${cpu_id};"\

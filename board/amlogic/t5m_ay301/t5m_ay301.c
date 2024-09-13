@@ -114,12 +114,23 @@ void board_init_mem(void) {
 
 int board_init(void)
 {
+	static const char * const cmd_ir[] = {"irkey_wakeup 0 9 0x0",
+			"0xef10fe01 0xba45bd02 0xef10fb04",
+			"0xf20dfe01 0xe51afb04 0x3ac5bd02",
+			"0xe7187788 0xb8477788 0x9c637788"};
+	char cmd[256];
+
 	printf("board init\n");
 
 	/* The non-secure watchdog is enabled in BL2 TEE, disable it */
 	run_command("watchdog off", 0);
 	printf("watchdog disable\n");
 
+	snprintf(cmd, sizeof(cmd), "%s %s %s %s", cmd_ir[0],
+		cmd_ir[1], cmd_ir[2], cmd_ir[3]);
+	run_command(cmd, 0);  //set bl30 preboot key list
+	//run_command("irkey_wakeup 3 1", 0);                   //enable bl30 ir
+	clrsetbits_le32(PADCTRL_PIN_MUX_REGB, 0xf << 20, 0x1 << 20);//set GPIOD_5 pinmux as IR_IN
 	run_command("gpio set GPIO_TEST_N0", 0);
 	run_command("gpio clr GPIOD_11", 0);
 	aml_set_bootsequence(0);
