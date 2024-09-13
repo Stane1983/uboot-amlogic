@@ -56,53 +56,9 @@ static struct aml_lcd_data_s lcd_data_g12b = {
 	.dft_conf = {NULL, NULL, NULL},
 };
 
-static struct aml_lcd_data_s lcd_data_tl1 = {
-	.chip_type = LCD_CHIP_TL1,
-	.chip_name = "tl1",
-	.rev_type = 0,
-	.drv_max = 1,
-	.offset_venc = {0},
-	.offset_venc_if = {0},
-	.offset_venc_data = {0},
-	.dft_conf = {NULL, NULL, NULL},
-};
-
 static struct aml_lcd_data_s lcd_data_sm1 = {
 	.chip_type = LCD_CHIP_SM1,
 	.chip_name = "sm1",
-	.rev_type = 0,
-	.drv_max = 1,
-	.offset_venc = {0},
-	.offset_venc_if = {0},
-	.offset_venc_data = {0},
-	.dft_conf = {NULL, NULL, NULL},
-};
-
-static struct aml_lcd_data_s lcd_data_tm2 = {
-	.chip_type = LCD_CHIP_TM2,
-	.chip_name = "tm2",
-	.rev_type = 0,
-	.drv_max = 1,
-	.offset_venc = {0},
-	.offset_venc_if = {0},
-	.offset_venc_data = {0},
-	.dft_conf = {NULL, NULL, NULL},
-};
-
-static struct aml_lcd_data_s lcd_data_t5 = {
-	.chip_type = LCD_CHIP_T5,
-	.chip_name = "t5",
-	.rev_type = 0,
-	.drv_max = 1,
-	.offset_venc = {0},
-	.offset_venc_if = {0},
-	.offset_venc_data = {0},
-	.dft_conf = {NULL, NULL, NULL},
-};
-
-static struct aml_lcd_data_s lcd_data_t5d = {
-	.chip_type = LCD_CHIP_T5D,
-	.chip_name = "t5d",
 	.rev_type = 0,
 	.drv_max = 1,
 	.offset_venc = {0},
@@ -213,20 +169,8 @@ static void lcd_chip_detect(void)
 	case MESON_CPU_MAJOR_ID_G12B:
 		lcd_data = &lcd_data_g12b;
 		break;
-	case MESON_CPU_MAJOR_ID_TL1:
-		lcd_data = &lcd_data_tl1;
-		break;
 	case MESON_CPU_MAJOR_ID_SM1:
 		lcd_data = &lcd_data_sm1;
-		break;
-	case MESON_CPU_MAJOR_ID_TM2:
-		lcd_data = &lcd_data_tm2;
-		break;
-	case MESON_CPU_MAJOR_ID_T5:
-		lcd_data = &lcd_data_t5;
-		break;
-	case MESON_CPU_MAJOR_ID_T5D:
-		lcd_data = &lcd_data_t5d;
 		break;
 	case MESON_CPU_MAJOR_ID_T5W:
 		lcd_data = &lcd_data_t5w;

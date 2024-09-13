@@ -86,37 +86,13 @@ static void lcd_phy_cntl_set(unsigned int flag,
 
 static void lcd_lvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 {
-	unsigned int flag, data_lane0_aux, data_lane1_aux, data_lane;
-	struct lvds_config_s *lvds_conf;
+	unsigned int data_lane0_aux, data_lane1_aux, data_lane;
 	struct phy_config_s *phy = &pdrv->config.phy_cfg;
 
 	if (!phy_ctrl_p)
 		return;
 
-	lvds_conf = &pdrv->config.control.lvds_cfg;
-	flag = pdrv->config.basic.lcd_bits == 6 ? 0x0f : 0x1f;
-	if (pdrv->index == 2) {
-		if (lvds_conf->dual_port)
-			flag = (flag << 5) | (flag << 10);
-		else
-			flag = flag << (lvds_conf->port_swap ? 10 : 5);
-	} else if (pdrv->index == 1) {
-		flag = flag << 10;
-	} else {
-		flag = flag;
-	}
-
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		LCDPR("[%d]: %s: %d, flag=0x%04x\n", pdrv->index, __func__, status, flag);
-
 	if (status) {
-		if ((phy_ctrl_p->lane_lock & flag) &&
-			((phy_ctrl_p->lane_lock & flag) != flag)) {
-			LCDERR("phy lane already locked: 0x%x, invalid 0x%x\n",
-				phy_ctrl_p->lane_lock, flag);
-			return;
-		}
-		phy_ctrl_p->lane_lock |= flag;
 		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 			LCDPR("vswing_level=0x%x, preem_level=0x%x\n",
 			      phy->vswing_level, phy->preem_level);
@@ -125,47 +101,29 @@ static void lcd_lvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 		data_lane0_aux = 0x06430028 | (phy->preem_level << 28);
 		data_lane1_aux = 0x0100ffff;
 		data_lane = 0x06530028 | (phy->preem_level << 28);
-		lcd_phy_cntl_set(flag, data_lane0_aux, data_lane1_aux, data_lane);
+		lcd_phy_cntl_set(phy->lane_valid, data_lane0_aux, data_lane1_aux, data_lane);
 		lcd_ana_write(ANACTRL_DIF_PHY_CNTL19, 0x00406240 | phy->vswing_level);
 	} else {
-		phy_ctrl_p->lane_lock &= ~flag;
-		lcd_phy_cntl_set(flag, 0, 0, 0);
-		if (phy_ctrl_p->lane_lock == 0)
+		lcd_phy_cntl_set(phy->lane_valid, 0, 0, 0);
+		if (phy_ctrl_p->lane_lock_total == 0)
 			lcd_ana_write(ANACTRL_DIF_PHY_CNTL19, 0);
 	}
-
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		LCDPR("phy lane_lock: 0x%x\n", phy_ctrl_p->lane_lock);
 }
 
 static void lcd_vbyone_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 {
-	unsigned int flag, data_lane0_aux, data_lane1_aux, data_lane;
+	unsigned int data_lane0_aux, data_lane1_aux, data_lane;
 	struct phy_config_s *phy = &pdrv->config.phy_cfg;
 
 	if (!phy_ctrl_p)
 		return;
 
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		LCDPR("%s: %d\n", __func__, status);
-
-	if (pdrv->index == 0) {
-		flag = 0xff;
-	} else if (pdrv->index == 1) {
-		flag = (0xff << 8);
-	} else {
+	if (pdrv->index == 2) {
 		LCDERR("invalid drv_index %d for vbyone\n", pdrv->index);
 		return;
 	}
 
 	if (status) {
-		if ((phy_ctrl_p->lane_lock & flag) &&
-			((phy_ctrl_p->lane_lock & flag) != flag)) {
-			LCDERR("phy lane already locked: 0x%x, invalid 0x%x\n",
-				phy_ctrl_p->lane_lock, flag);
-			return;
-		}
-		phy_ctrl_p->lane_lock |= flag;
 		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 			LCDPR("vswing_level=0x%x, preem_level=0x%x\n",
 			      phy->vswing_level, phy->preem_level);
@@ -174,51 +132,33 @@ static void lcd_vbyone_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 		data_lane0_aux = 0x06430028 | (phy->preem_level << 28);
 		data_lane1_aux = 0x0000ffff;
 		data_lane = 0x06530028 | (phy->preem_level << 28);
-		lcd_phy_cntl_set(flag, data_lane0_aux, data_lane1_aux, data_lane);
+		lcd_phy_cntl_set(phy->lane_valid, data_lane0_aux, data_lane1_aux, data_lane);
 		lcd_ana_write(ANACTRL_DIF_PHY_CNTL19, 0x00401640 | phy->vswing_level);
 	} else {
-		phy_ctrl_p->lane_lock &= ~flag;
-		lcd_phy_cntl_set(flag, 0, 0, 0);
-		if (phy_ctrl_p->lane_lock == 0)
+		lcd_phy_cntl_set(phy->lane_valid, 0, 0, 0);
+		if (phy_ctrl_p->lane_lock_total == 0)
 			lcd_ana_write(ANACTRL_DIF_PHY_CNTL19, 0);
 	}
-
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		LCDPR("phy lane_lock: 0x%x\n", phy_ctrl_p->lane_lock);
 }
 
 static void lcd_mipi_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 {
-	unsigned int flag, data_lane0_aux, data_lane1_aux, data_lane;
+	unsigned int data_lane0_aux, data_lane1_aux, data_lane;
+	struct phy_config_s *phy = &pdrv->config.phy_cfg;
 
 	if (!phy_ctrl_p)
 		return;
 
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		LCDPR("%s: %d\n", __func__, status);
-
-	if (pdrv->index == 0) {
-		flag = 0x1f;
-	} else if (pdrv->index == 1) {
-		flag = (0x1f << 8);
-	} else {
+	if (pdrv->index == 2) {
 		LCDERR("invalid drv_index %d for mipi dsi\n", pdrv->index);
 		return;
 	}
 
 	if (status) {
-		if ((phy_ctrl_p->lane_lock & flag) &&
-			((phy_ctrl_p->lane_lock & flag) != flag)) {
-			LCDERR("phy lane already locked: 0x%x, invalid 0x%x\n",
-				phy_ctrl_p->lane_lock, flag);
-			return;
-		}
-		phy_ctrl_p->lane_lock |= flag;
-
 		data_lane0_aux = 0x022a0028;
 		data_lane1_aux = 0x0000ffcf;
 		data_lane = 0x022a0028;
-		lcd_phy_cntl_set(flag, data_lane0_aux, data_lane1_aux, data_lane);
+		lcd_phy_cntl_set(phy->lane_valid, data_lane0_aux, data_lane1_aux, data_lane);
 		if (pdrv->index)
 			lcd_ana_write(ANACTRL_DIF_PHY_CNTL13, 0x822a0028);
 		else
@@ -229,47 +169,30 @@ static void lcd_mipi_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 		else
 			lcd_ana_write(ANACTRL_DIF_PHY_CNTL20, (0xffff << 16));
 	} else {
-		phy_ctrl_p->lane_lock &= ~flag;
-		lcd_phy_cntl_set(flag, 0, 0, 0);
-		if (phy_ctrl_p->lane_lock == 0)
+		lcd_phy_cntl_set(phy->lane_valid, 0, 0, 0);
+		if (phy_ctrl_p->lane_lock_total == 0)
 			lcd_ana_write(ANACTRL_DIF_PHY_CNTL19, 0);
 		if (pdrv->index)
 			lcd_ana_write(ANACTRL_DIF_PHY_CNTL21, 0);
 		else
 			lcd_ana_write(ANACTRL_DIF_PHY_CNTL20, 0);
 	}
-
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		LCDPR("phy lane_lock: 0x%x\n", phy_ctrl_p->lane_lock);
 }
 
 static void lcd_edp_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 {
-	unsigned int flag, data_lane0_aux, data_lane1_aux, data_lane;
+	unsigned int data_lane0_aux, data_lane1_aux, data_lane;
 	struct phy_config_s *phy = &pdrv->config.phy_cfg;
 
 	if (!phy_ctrl_p)
 		return;
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		LCDPR("%s: %d\n", __func__, status);
 
-	if (pdrv->index == 0) {
-		flag = 0x1f;
-	} else if (pdrv->index == 1) {
-		flag = (0x1f << 8);
-	} else {
+	if (pdrv->index == 2) {
 		LCDERR("invalid drv_index %d for edp\n", pdrv->index);
 		return;
 	}
 
 	if (status) {
-		if ((phy_ctrl_p->lane_lock & flag) &&
-			((phy_ctrl_p->lane_lock & flag) != flag)) {
-			LCDERR("phy lane already locked: 0x%x, invalid 0x%x\n",
-				phy_ctrl_p->lane_lock, flag);
-			return;
-		}
-		phy_ctrl_p->lane_lock |= flag;
 		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 			LCDPR("vswing_level=0x%x, preem_level=0x%x\n",
 			      phy->vswing_level, phy->preem_level);
@@ -278,17 +201,13 @@ static void lcd_edp_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 		data_lane0_aux = 0x46770038;
 		data_lane1_aux = 0x0000ffff;
 		data_lane = 0x06530028 | (phy->preem_level << 28);
-		lcd_phy_cntl_set(flag, data_lane0_aux, data_lane1_aux, data_lane);
+		lcd_phy_cntl_set(phy->lane_valid, data_lane0_aux, data_lane1_aux, data_lane);
 		lcd_ana_write(ANACTRL_DIF_PHY_CNTL19, 0x00406240 | phy->vswing_level);
 	} else {
-		phy_ctrl_p->lane_lock &= ~flag;
-		lcd_phy_cntl_set(flag, 0, 0, 0);
-		if (phy_ctrl_p->lane_lock == 0)
+		lcd_phy_cntl_set(phy->lane_valid, 0, 0, 0);
+		if (phy_ctrl_p->lane_lock_total == 0)
 			lcd_ana_write(ANACTRL_DIF_PHY_CNTL19, 0);
 	}
-
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		LCDPR("phy lane_lock: 0x%x\n", phy_ctrl_p->lane_lock);
 }
 
 static unsigned int lcd_phy_preem_level_to_value_t7(struct aml_lcd_drv_s *pdrv, unsigned int level)
@@ -302,8 +221,7 @@ static unsigned int lcd_phy_preem_level_to_value_t7(struct aml_lcd_drv_s *pdrv, 
 
 static struct lcd_phy_ctrl_s lcd_phy_ctrl_t7 = {
 	.lane_num = 16,
-	.lane_lock = 0,
-	.ctrl_bit_on = 1,
+
 	.phy_vswing_level_to_val = lcd_phy_vswing_level_to_value_dft,
 	.phy_preem_level_to_val = lcd_phy_preem_level_to_value_t7,
 	.phy_amp_dft_val = NULL,

@@ -36,8 +36,7 @@ static void lcd_mipi_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 
 static struct lcd_phy_ctrl_s lcd_phy_ctrl_c3 = {
 	.lane_num = 5,
-	.lane_lock = 0,
-	.ctrl_bit_on = 1,
+
 	.phy_vswing_level_to_val = NULL,
 	.phy_preem_level_to_val = NULL,
 	.phy_amp_dft_val = NULL,
