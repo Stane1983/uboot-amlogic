@@ -407,9 +407,7 @@ static int lcd_prbs_test_process(struct aml_lcd_drv_s *pdrv, unsigned int timeou
 	lcd_ana_setb(HHI_LVDS_TX_PHY_CNTL0, 1, 13, 1);
 	lcd_ana_setb(HHI_LVDS_TX_PHY_CNTL0, 1, 12, 1);
 
-	while (lcd_prbs_flag) {
-		if (lcd_prbs_cnt++ >= timeout)
-			break;
+	while (lcd_prbs_cnt++ < timeout) {
 		ret = -1;
 		val1 = lcd_ana_getb(HHI_LVDS_TX_PHY_CNTL1, 12, 12);
 		udelay(1000);

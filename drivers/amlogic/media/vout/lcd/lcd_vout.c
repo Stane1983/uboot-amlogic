@@ -32,7 +32,7 @@ static char *g_dt_addr = (char *)0x01000000;
 //static int lcd_poweron_suspend = 1;
 char *lcd_pm_name[LCD_MAX_DRV] = {"lcd_drv0_pm", "lcd_drv1_pm", "lcd_drv2_pm"};
 
-unsigned int lcd_prbs_flag = 0, lcd_prbs_freq = 0, lcd_prbs_performed = 0, lcd_prbs_err = 0;
+unsigned int lcd_prbs_freq = 0, lcd_prbs_performed = 0, lcd_prbs_err = 0;
 
 static struct aml_lcd_data_s lcd_data_g12a = {
 	.chip_type = LCD_CHIP_G12A,
