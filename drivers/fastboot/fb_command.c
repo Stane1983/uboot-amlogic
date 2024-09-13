@@ -1388,25 +1388,19 @@ next:
 	} else if (!strcmp_l1("lock_bootloader", cmd)) {
 		info.lock_bootloader = 1;
 	} else if (!strcmp_l1("unlock", cmd)) {
-		if (info.unlock_ability == 1) {
-			if (info.lock_state == 1) {
-				char *avb_s;
+		if (info.lock_state == 1) {
+			char *avb_s;
 
-				run_command("get_avb_mode;", 0);
-				avb_s = env_get("avb2");
-				printf("avb2: %s\n", avb_s);
-				if (strcmp(avb_s, "1") == 0) {
-					try_unlock_dev(rc);
-				}
-			}
-			info.lock_state = 0;
-			info.lock_critical_state = 0;
-			env_set("lock_state", "green");
-			fastboot_okay(NULL, response);
-		} else {
-			printf("unlock_ability is 0, can not unlock, please set it in android setting\n");
-			fastboot_response("FAIL", response, "%s", "unlock_ability is 0, can not unlock");
+			run_command("get_avb_mode;", 0);
+			avb_s = env_get("avb2");
+			printf("avb2: %s\n", avb_s);
+			if (strcmp(avb_s, "1") == 0)
+				try_unlock_dev(rc);
 		}
+		info.lock_state = 0;
+		info.lock_critical_state = 0;
+		env_set("lock_state", "green");
+		fastboot_okay(NULL, response);
 	} else if (!strcmp_l1("lock", cmd)) {
 		if (info.lock_state == 0) {
 			char *avb_s;
