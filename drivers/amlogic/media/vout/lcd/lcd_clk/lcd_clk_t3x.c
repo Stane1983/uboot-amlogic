@@ -692,9 +692,7 @@ static int lcd_prbs_test_process(struct aml_lcd_drv_s *pdrv, unsigned int timeou
 	lcd_combo_dphy_setb(reg_phy_tx_ctrl0, 1, 13, 1);
 	lcd_combo_dphy_setb(reg_phy_tx_ctrl0, 1, 12, 1);
 
-	while (lcd_prbs_flag) {
-		if (lcd_prbs_cnt++ >= timeout)
-			break;
+	while (lcd_prbs_cnt++ < timeout) {
 		ret = -1;
 		val1 = lcd_combo_dphy_getb(reg_ctrl_out, 16, 16);
 		udelay(1000);

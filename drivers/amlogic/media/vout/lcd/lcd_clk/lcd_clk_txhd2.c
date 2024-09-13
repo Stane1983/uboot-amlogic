@@ -443,9 +443,7 @@ static int lcd_clk_prbs_test_txhd2(struct aml_lcd_drv_s *pdrv,
 	lcd_combo_dphy_setb(combo_dphy_ctrl0, 1, 13, 1);
 	lcd_combo_dphy_setb(combo_dphy_ctrl0, 1, 12, 1);
 
-	while (lcd_prbs_flag) {
-		if (lcd_prbs_cnt++ >= timeout)
-			break;
+	while (lcd_prbs_cnt++ < timeout) {
 		ret = 1;
 		val1 = lcd_combo_dphy_getb(combo_dphy_ctrl1, bit_width, bit_width);
 		udelay(1000);
@@ -484,7 +482,6 @@ static int lcd_clk_prbs_test_txhd2(struct aml_lcd_drv_s *pdrv,
 
 	lcd_prbs_performed = LCD_PRBS_MODE_LVDS;
 	lcd_prbs_err = 0;
-	lcd_prbs_flag = 0;
 	LCDPR("[%d]: lvds prbs check ok\n", pdrv->index);
 	return 0;
 
