@@ -65,7 +65,7 @@
 		"hdmitx=${cecconfig},${colorattribute} hdmimode=${hdmimode} "\
 		"hdmichecksum=${hdmichecksum} dolby_vision_on=${dolby_vision_on} "\
 		"hdr_policy=${hdr_policy} hdr_priority=${hdr_priority} "\
-		"hdr_force_mode=${hdr_force_mode} dolby_status=${dolby_status} "\
+		"dolby_status=${dolby_status} "\
 		"frac_rate_policy=${actual_frac_rate} hdmi_read_edid=${hdmi_read_edid} "\
 		"cvbsmode=${cvbsmode} "\
 		"osd_reverse=${osd_reverse} video_reverse=${video_reverse} "\
