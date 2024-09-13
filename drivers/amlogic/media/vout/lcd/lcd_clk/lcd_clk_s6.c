@@ -303,6 +303,109 @@ static void lcd_pll_ss_enable(struct aml_lcd_drv_s *pdrv, int status)
 	lcd_ana_write(ANACTRL_DSIPLL_CTRL3, pll_ctrl3);
 }
 
+static void lcd_clk_reg_dump(struct aml_lcd_drv_s *pdrv)
+{
+	int i;
+	unsigned int *table = NULL, size = 0;
+	unsigned int pll_reg_table[] = {
+		ANACTRL_DSIPLL_CTRL0,
+		ANACTRL_DSIPLL_CTRL1,
+		ANACTRL_DSIPLL_CTRL2,
+		ANACTRL_DSIPLL_CTRL3
+	};
+	unsigned int clk_reg_table[] = {
+		CLKCTRL_VIID_CLK_DIV,
+		CLKCTRL_VIID_CLK_CTRL,
+		CLKCTRL_VID_CLK_CTRL2
+	};
+
+	if (!pdrv)
+		return;
+
+	table = pll_reg_table;
+	size = ARRAY_SIZE(pll_reg_table);
+	for (i = 0; i < size; i++)
+		printf("pll [0x%08x] = 0x%08x\n", table[i], lcd_ana_read(table[i]));
+
+	table = clk_reg_table;
+	size = ARRAY_SIZE(clk_reg_table);
+	for (i = 0; i < size; i++)
+		printf("clk [0x%08x] = 0x%08x\n", table[i], lcd_clk_read(table[i]));
+
+	printf("combo_dphy [0x%08x] = 0x%08x\n",
+	       CLKCTRL_DSI_PLL_CLK_DIV, lcd_combo_dphy_read(CLKCTRL_DSI_PLL_CLK_DIV));
+}
+
+static int lcd_prbs_test_s6(struct aml_lcd_drv_s *pdrv, unsigned int ms,
+			    unsigned int mode_flag)
+{
+	struct lcd_clk_config_s *cconf;
+	unsigned int val, timeout;
+	unsigned int cnt = 0;
+	unsigned int clk_err_cnt = 0;
+	unsigned long lcd_encl_clk_check_std, lcd_byte_clk_check_std;
+	int j, ret;
+
+	cconf = get_lcd_clk_config(pdrv);
+	if (!cconf)
+		return -1;
+
+	cconf->pll_m = 0x68; //2496MHz
+	cconf->pll_od1_sel = 0; //analog div 0
+	cconf->pll_frac = 0;
+	cconf->div_sel = CLK_DIV_SEL_3;
+	cconf->xd = 2;
+	lcd_encl_clk_check_std = 416000000;
+	lcd_byte_clk_check_std = 312000000;
+
+	cconf->data->vclk_crt_set(pdrv);
+	cconf->data->clk_set(pdrv);
+
+	lcd_ana_write(ANACTRL_MIPIDSI_CTRL0, 0x393b2c55);
+	lcd_ana_write(ANACTRL_MIPIDSI_CTRL1, 0xc134061f);
+	udelay(20);
+	lcd_ana_write(ANACTRL_MIPIDSI_CTRL1, 0xe134061f);
+	udelay(20);
+	lcd_ana_write(ANACTRL_MIPIDSI_CTRL0, 0x393bcc55);
+
+	timeout = (ms > 1000) ? 1000 : ms;
+
+	udelay(1000);
+
+	while (cnt++ < timeout) {
+		udelay(10);
+		ret = 1;
+		for (j = 0; j < 20; j++) {
+			udelay(5);
+			val = dsi_phy_getb(pdrv, MIPI_DSI_TEST_CTRL0, 28, 4);
+			if (val == 0x0f) {
+				ret = 0;
+				break;
+			}
+		}
+		if (ret) {
+			LCDERR("[%d]: prbs check error, val:0x%x, cnt:%d\n", pdrv->index, val, cnt);
+			break;
+		}
+
+		if (lcd_prbs_clk_check(lcd_encl_clk_check_std, cconf->data->enc_clk_msr_id,
+				       lcd_byte_clk_check_std, cconf->data->fifo_clk_msr_id, cnt))
+			clk_err_cnt++;
+		else
+			clk_err_cnt = 0;
+		if (clk_err_cnt >= 10) {
+			LCDERR("[%d]: prbs check error (clkmsr), cnt:%d\n", pdrv->index, cnt);
+			ret = 1;
+			break;
+		}
+	}
+
+	printf("\n[[%d]: lcd prbs result]:\n", pdrv->index);
+	printf("  MIPI-DSI prbs performed: 1, error: %d\n", ret);
+
+	return 0;
+}
+
 static struct lcd_clk_data_s lcd_clk_data_s6 = {
 	.pll_od_fb = 0,
 	.pll_m_max = 511,
@@ -348,6 +451,7 @@ static struct lcd_clk_data_s lcd_clk_data_s6 = {
 	.clktree_set = NULL,
 	.clk_config_init_print = lcd_clk_config_init_print_dft,
 	.clk_config_print = NULL,
+	.clk_reg_print = lcd_clk_reg_dump,
 	.prbs_test = lcd_prbs_test_s6,
 };
 

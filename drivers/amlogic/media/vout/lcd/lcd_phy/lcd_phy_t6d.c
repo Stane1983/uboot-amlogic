@@ -9,8 +9,7 @@
 #include "lcd_phy_config.h"
 #include "../lcd_common.h"
 
-static struct lcd_phy_ctrl_s *phy_ctrl_p;
-
+#ifdef CONFIG_MESON_T6D
 static void lcd_phy_cntl14_update(struct phy_config_s *phy, unsigned int cntl14)
 {
 	/* vswing */
@@ -51,15 +50,12 @@ static void lcd_phy_cntl_set(struct aml_lcd_drv_s *pdrv, struct phy_config_s *ph
 		ANACTRL_DIF_PHY_CNTL12,
 	};
 
-	if (!phy_ctrl_p)
-		return;
-
 	if (lcd_debug_print_flag & LCD_DBG_PR_ADV)
 		LCDPR("%s: %d, bypass:%d\n", __func__, status, bypass);
 
 	if (status) {
-		reg_data = phy_ctrl_p->ctrl_bit_on << 0;
-		dig_data = phy_ctrl_p->ctrl_bit_on << 15;
+		reg_data = 1 << 0;
+		dig_data = 1 << 15;
 		cntl15 = 0x17300000;
 		/* odt */
 		if ((phy->flag & (1 << 3))) {
@@ -68,8 +64,8 @@ static void lcd_phy_cntl_set(struct aml_lcd_drv_s *pdrv, struct phy_config_s *ph
 		}
 	} else {
 		cntl15 = 0x17900000;
-		reg_data = (!phy_ctrl_p->ctrl_bit_on) << 0;
-		dig_data = (!phy_ctrl_p->ctrl_bit_on) << 15;
+		reg_data = 0;
+		dig_data = 0;
 		lcd_ana_write(ANACTRL_DIF_PHY_CNTL14, 0x1300d100);
 	}
 
@@ -195,8 +191,7 @@ static unsigned int lcd_phy_amp_dft_t6d(struct aml_lcd_drv_s *pdrv)
 
 static struct lcd_phy_ctrl_s lcd_phy_ctrl_t6d = {
 	.lane_num = 12,
-	.lane_lock = 0,
-	.ctrl_bit_on = 1,
+
 	.phy_vswing_level_to_val = lcd_phy_vswing_level_to_value_dft,
 	.phy_amp_dft_val = lcd_phy_amp_dft_t6d,
 	.phy_preem_level_to_val = lcd_phy_preem_level_to_val_t6d,
@@ -210,6 +205,6 @@ static struct lcd_phy_ctrl_s lcd_phy_ctrl_t6d = {
 
 struct lcd_phy_ctrl_s *lcd_phy_config_init_t6d(struct aml_lcd_data_s *pdata)
 {
-	phy_ctrl_p = &lcd_phy_ctrl_t6d;
-	return phy_ctrl_p;
+	return &lcd_phy_ctrl_t6d;
 }
+#endif

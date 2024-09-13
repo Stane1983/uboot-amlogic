@@ -41,7 +41,7 @@ int lcd_phy_param_preset(struct aml_lcd_drv_s *pdrv)
 	return 0;
 }
 
-int lcd_phy_param_get(struct aml_lcd_drv_s *pdrv, struct phy_config_s *phy)
+static int lcd_phy_param_get(struct aml_lcd_drv_s *pdrv, struct phy_config_s *phy)
 {
 	int ret;
 
@@ -53,16 +53,8 @@ int lcd_phy_param_get(struct aml_lcd_drv_s *pdrv, struct phy_config_s *phy)
 	if (!lcd_phy_ctrl || !lcd_phy_ctrl->phy_param_get)
 		return -1;
 
-	phy->flag = pdrv->config.phy_cfg.flag;
-	phy->lane_num = pdrv->config.phy_cfg.lane_num;
-	phy->ch_swap0 = pdrv->config.phy_cfg.ch_swap0;
-	phy->ch_swap1 = pdrv->config.phy_cfg.ch_swap1;
-	phy->vswing_level = pdrv->config.phy_cfg.vswing_level;
-	phy->ext_pullup = pdrv->config.phy_cfg.ext_pullup;
-	phy->preem_level = pdrv->config.phy_cfg.preem_level;
-	phy->weakly_pull_down = pdrv->config.phy_cfg.weakly_pull_down;
-	phy->low_common_mode = pdrv->config.phy_cfg.low_common_mode;
-	phy->valid_lane = pdrv->config.phy_cfg.valid_lane;
+	memcpy(phy, &pdrv->config.phy_cfg, sizeof(struct phy_config_s));
+	lcd_lane_sel_get(pdrv, phy);
 	ret = lcd_phy_ctrl->phy_param_get(pdrv, phy);
 	return ret;
 }
@@ -77,12 +69,11 @@ void lcd_phy_param_print(struct aml_lcd_drv_s *pdrv)
 #endif
 	if (!pdrv)
 		return;
+	phy = &pdrv->config.phy_cfg;
 	ret = lcd_phy_param_get(pdrv, &local_phy);
 	if (ret)
 		return;
-	lcd_lane_sel_get(pdrv, &local_phy);
 
-	phy = &pdrv->config.phy_cfg;
 	printf("vswing  = 0x%x(0x%x)\n"
 		"odt     = 0x%x(0x%x)\n"
 		"vcm     = 0x%x(0x%x)\n"
@@ -100,10 +91,10 @@ void lcd_phy_param_print(struct aml_lcd_drv_s *pdrv)
 		       phy->lane[i].amp, local_phy.lane[i].amp,
 		       phy->lane[i].preem, local_phy.lane[i].preem);
 	}
-	printf("flag=0x%x, lane_num=%d, valid_lane=0x%x, ",
-	       phy->flag, phy->lane_num, phy->valid_lane);
-	printf("ch_swap0=0x%x, ch_swap1=0x%x, ckdi=0x%x\n",
-	       phy->ch_swap0, phy->ch_swap1, phy->ckdi);
+	printf("flag=0x%x, lane_num=%d, lane_valid=0x%x, lane_offset=%d, lane_mask=0x%x\n",
+	       phy->flag, phy->lane_num, phy->lane_valid, phy->lane_offset, phy->lane_mask);
+	printf("ch_swap0=0x%x, ch_swap1=0x%x, clk_phase=0x%x, ckdi=0x%x\n",
+	       phy->ch_swap0, phy->ch_swap1, phy->clk_phase, phy->ckdi);
 }
 
 void lcd_phy_analog_reg_print(struct aml_lcd_drv_s *pdrv)
@@ -122,17 +113,38 @@ void lcd_phy_analog_reg_print(struct aml_lcd_drv_s *pdrv)
 
 void lcd_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 {
+	struct phy_config_s *phy = &pdrv->config.phy_cfg;
+	int i;
+
 #ifdef CONFIG_AML_LCD_PXP
 	return;
 #endif
-	if (!pdrv->phy_set) {
+	if (!lcd_phy_ctrl || !pdrv->phy_set) {
 		LCDPR("[%d]: %s: phy_set is null\n", pdrv->index, __func__);
 		return;
 	}
 
+	for (i = 0; i < pdrv->data->drv_max; i++) {
+		if (pdrv->index == i)
+			continue;
+		if (phy->lane_valid & lcd_phy_ctrl->lane_lock[i]) {
+			LCDERR("[%d]: %s: lane_valid 0x%x conflict with lane_lock[%d] 0x%x\n",
+			       pdrv->index, __func__, phy->lane_valid,
+			       i, lcd_phy_ctrl->lane_lock[i]);
+			return;
+		}
+	}
+
+	lcd_phy_ctrl->lane_lock[pdrv->index] = phy->lane_valid;
+	if (status)
+		lcd_phy_ctrl->lane_lock_total |= phy->lane_valid;
+	else
+		lcd_phy_ctrl->lane_lock_total &= ~phy->lane_valid;
+
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-		LCDPR("[%d]: %s: %d, flag=0x%x\n",
-		      pdrv->index, __func__, status, pdrv->config.phy_cfg.flag);
+		LCDPR("[%d]: %s: %d: lane_valid=0x%x, lane_lock_total=0x%x\n",
+		      pdrv->index, __func__, status, phy->lane_valid,
+		      lcd_phy_ctrl->lane_lock_total);
 	}
 	pdrv->phy_set(pdrv, status);
 }
@@ -147,6 +159,7 @@ int lcd_phy_probe(struct aml_lcd_drv_s *pdrv)
 	if (!lcd_phy_ctrl)
 		return 0;
 
+	lcd_phy_ctrl->lane_lock[pdrv->index] = 0;
 	switch (pdrv->config.basic.lcd_type) {
 	case LCD_LVDS:
 		pdrv->phy_set = lcd_phy_ctrl->phy_set_lvds;
@@ -177,6 +190,9 @@ int lcd_phy_probe(struct aml_lcd_drv_s *pdrv)
 int lcd_phy_config_init(struct aml_lcd_data_s *pdata)
 {
 	lcd_phy_ctrl = NULL;
+#ifdef CONFIG_AML_LCD_PXP
+	return 0;
+#endif
 
 	switch (pdata->chip_type) {
 #ifdef CONFIG_MESON_T5M
@@ -207,6 +223,8 @@ int lcd_phy_config_init(struct aml_lcd_data_s *pdata)
 	default:
 		break;
 	}
+	if (lcd_phy_ctrl)
+		lcd_phy_ctrl->lane_lock_total = 0;
 
 	return 0;
 }

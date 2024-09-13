@@ -142,7 +142,6 @@ int aml_lcd_prbs_test(struct aml_lcd_drv_s *pdrv, unsigned int ms, unsigned int 
 
 /* lcd phy */
 int lcd_phy_param_preset(struct aml_lcd_drv_s *pdrv);
-int lcd_phy_param_get(struct aml_lcd_drv_s *pdrv, struct phy_config_s *phy);
 void lcd_phy_param_print(struct aml_lcd_drv_s *pdrv);
 void lcd_phy_analog_reg_print(struct aml_lcd_drv_s *pdrv);
 void lcd_phy_set(struct aml_lcd_drv_s *pdrv, int status);

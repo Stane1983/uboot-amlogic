@@ -113,7 +113,7 @@ static void lcd_phy_common_update(struct phy_config_s *phy, unsigned int com_dat
 }
 
 static void lcd_phy_cntl_set(struct aml_lcd_drv_s *pdrv, struct phy_config_s *phy,
-			     int status, uint32_t flag, int bypass)
+			     int status, int bypass)
 {
 	unsigned int chdig, chreg, reg_data;
 	uint8_t bit, i, lane_idx = 0;
@@ -121,10 +121,11 @@ static void lcd_phy_cntl_set(struct aml_lcd_drv_s *pdrv, struct phy_config_s *ph
 	if (lcd_debug_print_flag & LCD_DBG_PR_ADV)
 		LCDPR("%s: %d\n", __func__, status);
 
-	reg_data = phy_ctrl_p->ctrl_bit_on ? 0x1 : 0x0;
+	if (!phy_ctrl_p)
+		return;
+	reg_data = 1; //bit[0]=1
 
 	if (status) {
-		phy_ctrl_p->lane_lock |= flag;
 		if (phy->cv_mode == PHY_VMODE)
 			reg_data |= 0x000b;
 		else
@@ -132,8 +133,7 @@ static void lcd_phy_cntl_set(struct aml_lcd_drv_s *pdrv, struct phy_config_s *ph
 		if (phy->weakly_pull_down)
 			reg_data &= ~(1 << 3);
 	} else {
-		phy_ctrl_p->lane_lock &= ~flag;
-		if (!phy_ctrl_p->lane_lock) {
+		if (!phy_ctrl_p->lane_lock_total) {
 			lcd_ana_write(ANACTRL_DIF_PHY_CNTL19, 0);
 			lcd_ana_write(ANACTRL_DIF_PHY_CNTL20, 0);
 			lcd_ana_write(ANACTRL_DIF_PHY_CNTL18, 0);
@@ -141,7 +141,7 @@ static void lcd_phy_cntl_set(struct aml_lcd_drv_s *pdrv, struct phy_config_s *ph
 	}
 
 	for (i = 0; i < 16; i++) {
-		if (flag & (1 << i)) {
+		if (phy->lane_valid & (1 << i)) {
 			bit = i & 0x1 ? 16 : 0;
 			chreg = reg_data;
 			chdig = bypass ? 0x4 : 0;
@@ -159,51 +159,18 @@ static void lcd_phy_cntl_set(struct aml_lcd_drv_s *pdrv, struct phy_config_s *ph
 static void lcd_lvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 {
 	struct phy_config_s *phy = &pdrv->config.phy_cfg;
-	unsigned int com_data = 0, flag;
-	unsigned short lvds_flag_8lane[2][3] = {
-		{0x000f, 0x001f, 0x003f}, {0x0f00, 0x1f00, 0x3f00}};
-	unsigned char bit_idx;
+	unsigned int com_data = 0;
 
 	if (pdrv->index) {
 		LCDERR("invalid drv_index %d for lvds\n", pdrv->index);
 		return;
 	}
 
-	if (pdrv->config.basic.lcd_bits == 6)
-		bit_idx = 0;
-	else if (pdrv->config.basic.lcd_bits == 8)
-		bit_idx = 1;
-	else //pdrv->config.basic.lcd_bits == 10
-		bit_idx = 2;
-
-	if (pdrv->config.control.lvds_cfg.dual_port) {
-		flag = lvds_flag_8lane[0][bit_idx] | lvds_flag_8lane[1][bit_idx];
-	} else {
-		if (pdrv->config.control.lvds_cfg.port_swap)
-			flag = lvds_flag_8lane[1][bit_idx];
-		else
-			flag = lvds_flag_8lane[0][bit_idx];
-	}
-
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		LCDPR("[%d]: %s: %d, flag=0x%04x\n", pdrv->index, __func__, status, flag);
-
 	if (status) {
-		if ((phy_ctrl_p->lane_lock & flag) &&
-			((phy_ctrl_p->lane_lock & flag) != flag)) {
-			LCDERR("phy lane already locked: 0x%x, invalid 0x%x\n",
-				phy_ctrl_p->lane_lock, flag);
-			return;
-		}
-		phy_ctrl_p->lane_lock |= flag;
-
 		com_data = 0xff2027e0;
 		lcd_phy_common_update(phy, com_data);
 	}
-	lcd_phy_cntl_set(pdrv, phy, status, flag, 1);
-
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		LCDPR("phy lane_lock: 0x%x\n", phy_ctrl_p->lane_lock);
+	lcd_phy_cntl_set(pdrv, phy, status, 1);
 }
 
 static void lcd_vbyone_phy_set(struct aml_lcd_drv_s *pdrv, int status)
@@ -211,30 +178,14 @@ static void lcd_vbyone_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 	struct phy_config_s *phy = &pdrv->config.phy_cfg;
 	unsigned int com_data = 0, flag;
 
-	if (lcd_debug_print_flag & LCD_DBG_PR_ADV)
-		LCDPR("%s: %d\n", __func__, status);
-
-	if (pdrv->index)
-		flag = 0xff << 8;
-	else
-		flag = pdrv->config.control.vbyone_cfg.lane_count == 16 ? 0xffff : 0xff;
-
 	if (status) {
-		if ((phy_ctrl_p->lane_lock & flag) &&
-			((phy_ctrl_p->lane_lock & flag) != flag)) {
-			LCDERR("phy lane already locked: 0x%x, invalid 0x%x\n",
-				phy_ctrl_p->lane_lock, flag);
-			return;
-		}
-		phy_ctrl_p->lane_lock |= flag;
-
 		if (phy->ext_pullup)
 			com_data = 0xff2027e0;
 		else
 			com_data = 0xf02027a0;
 		lcd_phy_common_update(phy, com_data);
 	}
-	lcd_phy_cntl_set(pdrv, phy, status, flag, 1);
+	lcd_phy_cntl_set(pdrv, phy, status, 1);
 }
 
 static void lcd_p2p_phy_set(struct aml_lcd_drv_s *pdrv, int status)
@@ -243,22 +194,8 @@ static void lcd_p2p_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 	struct p2p_config_s *p2p_conf = &pdrv->config.control.p2p_cfg;
 	struct phy_config_s *phy = &pdrv->config.phy_cfg;
 	unsigned int com_data = 0;
-	uint32_t flag = 0;
-
-	if (lcd_debug_print_flag & LCD_DBG_PR_ADV)
-		LCDPR("%s: %d\n", __func__, status);
-
-	flag = 0xffff; // select full CH temporary, fix in lane mapping dev
 
 	if (status) {
-		if ((phy_ctrl_p->lane_lock & flag) &&
-			((phy_ctrl_p->lane_lock & flag) != flag)) {
-			LCDERR("phy lane already locked: 0x%x, invalid 0x%x\n",
-				phy_ctrl_p->lane_lock, flag);
-			return;
-		}
-		phy_ctrl_p->lane_lock |= flag;
-
 		p2p_type = p2p_conf->p2p_type & 0x1f;
 		vcm_flag = (p2p_conf->p2p_type >> 5) & 0x1;
 		switch (p2p_type) {
@@ -287,13 +224,12 @@ static void lcd_p2p_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 		}
 		lcd_phy_common_update(phy, com_data);
 	}
-	lcd_phy_cntl_set(pdrv, phy, status, flag, 1);
+	lcd_phy_cntl_set(pdrv, phy, status, 1);
 }
 
 static struct lcd_phy_ctrl_s lcd_phy_ctrl_t3x = {
 	.lane_num = 16,
-	.lane_lock = 0,
-	.ctrl_bit_on = 1,
+
 	.phy_vswing_level_to_val = lcd_phy_vswing_level_to_value_dft,
 	.phy_preem_level_to_val = lcd_phy_preem_level_to_value_dft,
 	.phy_amp_dft_val = lcd_phy_amp_dft,
