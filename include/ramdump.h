@@ -30,4 +30,27 @@ extern unsigned long ramdump_size;
 
 int ramdump_save_compress_data(void);
 
+/* ramdump ddr md5 check */
+#define MD5_BLOCK_SIZE              (8 << 20)
+#define MD5_STORE_SIZE              (64 << 10)
+#define MD5_PER_ROW_NUM             (32)
+#define MD5_BL2E_1_BASE_ADDR        (0x00B00000)
+#define MD5_BL2E_2_BASE_ADDR        (0x00B10000)
+#define MD5_BL33Z_1_BASE_ADDR       (0x00B20000)
+#define MD5_BL33Z_2_BASE_ADDR       (0x00B30000)
+#define MD5_BL33X_1_BASE_ADDR       (0x00B40000)
+#define MD5_BL33X_2_BASE_ADDR       (0x00B50000)
+#define MD5_MAGIC                   "RAMDUMPMD5"
+
+struct rammd5_info_t {
+	char magic[16];
+	char stage[16];
+	unsigned int block_size;
+	unsigned int ddr_size;
+	unsigned int area1_start;
+	unsigned int area1_end;
+	unsigned int area2_start;
+	unsigned int area2_end;
+};
+
 #endif /* __RAMDUMP_H__ */

@@ -5,6 +5,7 @@
 
 #include <string.h>
 #include <serial.h>
+#include <stdint.h>
 #include <lz4.h>
 #include <ram_compress.h>
 #include <arch.h>
@@ -777,6 +778,93 @@ void set_bl2e_ttbr_tcr_mair(void)
 	serial_puts("Overwrite bl2e mmu table for bl33 board_f.");
 }
 
+static int ramdump_save_ddr_md5_info(unsigned long ddr_size,
+						unsigned int block_size,
+						unsigned int *store_addr,
+						char *stage_info)
+{
+	unsigned int i, j;
+	unsigned int total_size, blk_uint_num;
+	unsigned int *src_addr = (unsigned int *)0x0;
+	unsigned long sum = 0;
+	uintptr_t addr_ptr;
+	unsigned int skip1_start, skip2_start;
+	unsigned int skip1_end, skip2_end;
+	struct rammd5_info_t *md5_info;
+
+	/* Max check size is 3.5GB */
+	total_size = ddr_size > 0xe0000000 ? 0xe0000000 : ddr_size;
+
+	/* set ddr md5 skip area */
+#ifdef MD5_SKIP_UBOOT_END
+	skip1_start	= MD5_SKIP_UBOOT_START;
+	skip1_end	= MD5_SKIP_UBOOT_END;
+#else
+	skip1_start	= 0;
+	skip1_end	= 0x01800000;
+#endif
+
+#ifdef REG_MDUMP_RSVMEM_SIZE
+	unsigned int data = 0;
+
+	/* bl31/32 rsvmem start */
+	skip2_start = readl(REG_MDUMP_RSVMEM_BL31_START);
+	skip2_end = readl(REG_MDUMP_RSVMEM_BL32_START);
+
+	/* bl32_start + bl32_rsvmem_size = skip2_end */
+	data = readl(REG_MDUMP_RSVMEM_SIZE);
+	if ((data >> 16) & 0xff)
+		skip2_end +=  (data & 0x0000ffff) << 16;
+	else
+		skip2_end +=  (data & 0x0000ffff) << 10;
+
+	/* + bl32 stack reserved 1MB */
+	skip2_end += (1 << 20);
+#else
+	serial_puts("ramdump md5 use default bl32 size.\n");
+	skip2_start	= 0x05000000;
+	skip2_end	= 0x08400000;
+#endif
+	serial_puts("ramdump md5sum skip: 0x");
+	serial_put_hex(skip1_start, 32);
+	serial_puts("~0x");
+	serial_put_hex(skip1_end, 32);
+	serial_puts(", 0x");
+	serial_put_hex(skip2_start, 32);
+	serial_puts("~0x");
+	serial_put_hex(skip2_end, 32);
+	serial_puts("\n");
+
+	md5_info = (struct rammd5_info_t *)store_addr;
+	memcpy(md5_info->magic, MD5_MAGIC, sizeof(md5_info->magic));
+	memcpy(md5_info->stage, stage_info, sizeof(md5_info->stage));
+	md5_info->block_size = block_size;
+	md5_info->ddr_size = ddr_size;
+	md5_info->area1_start = skip1_start;
+	md5_info->area1_end = skip1_end;
+	md5_info->area2_start = skip2_start;
+	md5_info->area2_end = skip2_end;
+
+	store_addr += sizeof(struct rammd5_info_t) / sizeof(unsigned int);
+	blk_uint_num = block_size / sizeof(unsigned int);
+	for (i = 0; i < (total_size / block_size - 1); i++) {
+		for (j = 0, sum = 0; j < blk_uint_num; j++) {
+			addr_ptr = (uintptr_t)&src_addr[i * blk_uint_num + j];
+			if ((addr_ptr >= skip1_start && addr_ptr < skip1_end) ||
+				(addr_ptr >= skip2_start && addr_ptr < skip2_end))
+				sum += 0;
+			else
+				sum += src_addr[i * blk_uint_num + j];
+		}
+		*store_addr = (unsigned int)(sum & 0xFFFFFFFF);
+		store_addr++;
+	}
+
+	serial_puts("ramdump save md5sum in BL33Z ok.");
+
+	return 0;
+}
+
 /*******************************************************************************
  * The only thing to do in BL2 is to load further images and pass control to
  * BL31. The memory occupied by BL2 will be reclaimed by BL3_x stages. BL2 runs
@@ -813,6 +901,9 @@ void aml_ramdump_compress(struct ram_compress_full *rcf,
 		timer_start();
 		enable_caches(size);
 
+		ramdump_save_ddr_md5_info(size, MD5_BLOCK_SIZE,
+					(unsigned int *)MD5_BL33Z_1_BASE_ADDR, "BL33Z-1");
+
 		if (0) {
 			serial_puts("compress start, get SCTLR_EL2:0x");
 			serial_put_hex((unsigned long)__asm_get_sctlr(), 32);
@@ -821,6 +912,9 @@ void aml_ramdump_compress(struct ram_compress_full *rcf,
 
 		ret = ramdump_compress_all(rcf, arg, flag, ctrl, size);
 		save_ramp_dump((unsigned long)rcf->store_phy_addr, ret);
+
+		ramdump_save_ddr_md5_info(size, MD5_BLOCK_SIZE,
+					(unsigned int *)MD5_BL33Z_2_BASE_ADDR, "BL33Z-2");
 
 		disable_caches();
 		enable_icache();

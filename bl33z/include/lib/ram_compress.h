@@ -120,6 +120,17 @@ struct ram_compress_info {
 	struct ram_compress_work_info *rcwi;
 };
 
+struct rammd5_info_t {
+	char magic[16];
+	char stage[16];
+	unsigned int block_size;
+	unsigned int ddr_size;
+	unsigned int area1_start;
+	unsigned int area1_end;
+	unsigned int area2_start;
+	unsigned int area2_end;
+};
+
 void aml_ramdump_compress(struct ram_compress_full *rcf,
 	       void *arg, unsigned long flag, unsigned long ctrl);
 

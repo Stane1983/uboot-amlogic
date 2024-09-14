@@ -170,6 +170,8 @@
  * --> 0x00620000  --> mmu end / compress scrach buffer
  * --> 0x00680000  --> compress scrach end / first compress out buffer
  * --> 0x006E0000  --> first compress out end
+ * --> 0x00B00000  --> ramdump md5sum info start. bl2e1/ble2/bl33z/bl33x
+ * --> 0x00B60000  --> ramdump md5sum info end.
  */
 
 /* CODE space */
@@ -196,5 +198,17 @@
 #define CONFIG_RAMDUMP_TMPOUT_ADDR	(CONFIG_RAMDUMP_TMPWORK_ADDR + \
 							CONFIG_RAMDUMP_TMPWORK_SIZE)
 #define CONFIG_RAMDUMP_TMPOUT_SIZE	(384 << 10)
+
+/* ramdump ddr md5 check */
+#define MD5_BLOCK_SIZE              (8 << 20)
+#define MD5_STORE_SIZE              (64 << 10)
+#define MD5_PER_ROW_NUM             (32)
+#define MD5_BL2E_1_BASE_ADDR        (0x00B00000)
+#define MD5_BL2E_2_BASE_ADDR        (0x00B10000)
+#define MD5_BL33Z_1_BASE_ADDR       (0x00B20000)
+#define MD5_BL33Z_2_BASE_ADDR       (0x00B30000)
+#define MD5_BL33X_1_BASE_ADDR       (0x00B40000)
+#define MD5_BL33X_2_BASE_ADDR       (0x00B50000)
+#define MD5_MAGIC                   "RAMDUMPMD5"
 
 #endif /* __PLATFORM_DEF_H__ */
