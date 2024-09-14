@@ -1918,10 +1918,17 @@ int mmc_device_init (struct mmc *mmc)
 				sizeof(struct partitions) * MAX_PART_COUNT);
 	}
 
-	mmc_check_gpt(mmc);
+	//get bootloader index
+	const int bootCpyIndex = store_bootup_bootidx("bootloader");
 
-	if (resize_gpt(mmc))
-		goto _out;
+	printf("bootCpyIndex = %d\n", bootCpyIndex);
+
+	if (bootCpyIndex != 0) {
+		mmc_check_gpt(mmc);
+
+		if (resize_gpt(mmc))
+			goto _out;
+	}
 
 	/* calculate inherent offset */
 	iptbl_inh.count = get_emmc_partition_arraysize();
