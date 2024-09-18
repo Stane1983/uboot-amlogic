@@ -1695,11 +1695,23 @@ static void hdmitx_edid_parse_hfscdb(struct rx_cap *prxcap,
 		return;
 	prxcap->vrr_max = (((blockbuf[offset + 8] & 0xc0) >> 6) << 8) +
 				blockbuf[offset + 9];
-	if (prxcap->vrr_max > 0 && prxcap->vrr_max < 100)
-		HDMITX_INFO("vrr_max is reserved value %d\n", prxcap->vrr_max);
+	/*
+	 * Values of 1~99 are reserved.
+	 * Source shall interpret non-zero values less than 100 as a value of 100
+	 */
+	if (prxcap->vrr_max > 0 && prxcap->vrr_max < 100) {
+		HDMITX_INFO("edid: vrr_max is reserved value %d\n", prxcap->vrr_max);
+		prxcap->vrr_max = 100;
+	}
+	/*
+	 * Values of 49~63 are reserved.
+	 * Source shall interpret non-zero values higher than 48 as a value of 48
+	 */
 	prxcap->vrr_min = (blockbuf[offset + 8] & 0x3f);
-	if (prxcap->vrr_min > 48)
-		HDMITX_INFO("vrr_min is reserved value %d\n", prxcap->vrr_min);
+	if (prxcap->vrr_min > 48) {
+		HDMITX_INFO("edid: vrr_min is reserved value %d\n", prxcap->vrr_min);
+		prxcap->vrr_min = 48;
+	}
 	prxcap->fapa_start_loc = !!(blockbuf[offset + 7] & (1 << 0));
 
 	if (count < 11)
@@ -1944,6 +1956,11 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap, u8 *block_buf)
 				(block_buf[offset + 2] == 0xc4))
 				hdmitx_edid_parse_hfscdb(prxcap, offset,
 							 block_buf, count);
+			if (prxcap->qms)
+				HDMITX_INFO("qms: qms/tfr_min/max/vrr_min/max %d %d %d %d %d\n",
+					prxcap->qms,
+					prxcap->qms_tfr_min, prxcap->qms_tfr_max,
+					prxcap->vrr_min, prxcap->vrr_max);
 			/* ignore the remains. */
 			offset += count;
 			break;
