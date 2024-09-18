@@ -1125,7 +1125,7 @@ static void get_hdmi_colorattribute(struct input_hdmi_data *hdmi_data,
 	/* use ubootenv.var.colorattribute when best color space policy is disable */
 	/* will check resolution + color format be support TV EDID */
 	if (!is_best_color_space()) {
-		strcpy(temp_mode, hdmi_data->ubootenv_hdmimode);
+		strncpy(temp_mode, outputmode, MODE_LEN - 1);
 		strcat(temp_mode, hdmi_data->ubootenv_colorattribute);
 		if (is_supported_mode_attr(hdmi_data, temp_mode))
 			strcpy(colorattribute,
