@@ -95,7 +95,7 @@
 	"storeargs_base="\
 		"setenv bootargs ${initargs} otg_device=${otg_device} "\
 		"logo=${display_layer},loaded,${fb_addr} "\
-		"vout=${outputmode},${vout_init} panel_type=${panel_type} "\
+		"vout=${outputmode},${vout_init} "\
 		"hdmitx=${cecconfig},${colorattribute} hdmimode=${hdmimode} "\
 		"hdmichecksum=${hdmichecksum} dolby_vision_on=${dolby_vision_on} "\
 		"hdr_policy=${hdr_policy} hdr_priority=${hdr_priority} "\

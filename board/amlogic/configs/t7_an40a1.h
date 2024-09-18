@@ -69,9 +69,6 @@
         "panel_type=vbyone_0\0" \
         "panel1_type=vbyone_0\0" \
         "panel2_type=lvds_1\0" \
-        "lcd_ctrl=0x00000000\0" \
-        "lcd1_ctrl=0x00000000\0" \
-        "lcd2_ctrl=0x00000000\0" \
         "lcd_debug=0x00000000\0" \
 	"connector0_type=VBYONE-A\0" \
 	"connector1_type=VBYONE-B\0" \
@@ -132,9 +129,7 @@
 		"run storeargs_base;"\
 		"setenv bootargs ${bootargs} lcd_debug=${lcd_debug} "\
 			"nn_adj_vol=${nn_adj_vol} "\
-			"panel_type=${panel1_type}  lcd_ctrl=${lcd1_ctrl} "\
-			"panel1_type=${panel1_type} lcd1_ctrl=${lcd1_ctrl} "\
-			"panel2_type=${panel2_type} lcd2_ctrl=${lcd2_ctrl} "\
+			"lcd0=${lcd0_attr} lcd1=${lcd1_attr} lcd2=${lcd2_attr} "\
 			"connector0_type=${connector0_type} connector1_type=${connector1_type} connector2_type=${connector2_type} "\
 			"outputmode=${outputmode};"\
 		"run cmdline_keys;"\

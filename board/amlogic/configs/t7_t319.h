@@ -67,7 +67,6 @@
         "loadaddr_kernel=0x01080000\0"\
         "otg_device=1\0" \
         "panel_type=edp_0\0" \
-        "lcd_ctrl=0x00000000\0" \
         "lcd_debug=0x00000000\0" \
         "outputmode=panel\0" \
 	"hdmimode=none\0" \
@@ -112,7 +111,7 @@
 		"storeargs="\
 			"get_bootloaderversion;" \
 			"run storeargs_base;"\
-			"setenv bootargs ${bootargs} lcd_ctrl=${lcd_ctrl} lcd_debug=${lcd_debug} "\
+			"setenv bootargs ${bootargs} lcd0=${lcd0_attr} lcd_debug=${lcd_debug} "\
 			"nn_adj_vol=${nn_adj_vol} "\
 			"outputmode=${outputmode};"\
             "run cmdline_keys;"\

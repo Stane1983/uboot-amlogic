@@ -138,7 +138,6 @@
             "get_bootloaderversion;" \
             "setenv bootargs ${initargs} ${fs_type} otg_device=${otg_device} "\
                 "logo=${display_layer},loaded,${fb_addr} vout=${outputmode},${vout_init} "\
-                "hdmimode=${hdmimode} cvbsmode=${cvbsmode} "\
                 "panel_type=${panel_type} lcd_ctrl=${lcd_ctrl} lcd_debug=${lcd_debug} "\
                 "connector0_type=${connector0_type} "\
                 "osd_reverse=${osd_reverse} video_reverse=${video_reverse} irq_check_en=${Irq_check_en} "\

@@ -76,9 +76,6 @@
         "panel_type=lvds_1\0" \
         "panel1_type=vbyone_0\0" \
         "panel2_type=lvds_1\0" \
-        "lcd_ctrl=0x00000000\0" \
-        "lcd1_ctrl=0x00000000\0" \
-        "lcd2_ctrl=0x00000000\0" \
         "lcd_debug=0x00000000\0" \
         "outputmode=panel\0" \
 	"hdmimode=none\0" \
@@ -135,8 +132,7 @@
             "setenv bootargs ${initargs} otg_device=${otg_device} "\
 		"nn_adj_vol=${nn_adj_vol} "\
                 "logo=${display_layer},loaded,${fb_addr} vout=${outputmode},enable "\
-                "panel_type=${panel_type} lcd_ctrl=${lcd_ctrl} lcd_debug=${lcd_debug} "\
-                "panel1_type=${panel1_type} lcd1_ctrl=${lcd1_ctrl} panel2_type=${panel2_type} lcd2_ctrl=${lcd2_ctrl} "\
+                "lcd0=${lcd0_attr} lcd1=${lcd1_attr} lcd2=${lcd2_attr} lcd_debug=${lcd_debug} "\
                 "hdmimode=${hdmimode} outputmode=${outputmode} "\
                 "osd_reverse=${osd_reverse} video_reverse=${video_reverse} irq_check_en=${Irq_check_en}  "\
                 "androidboot.selinux=${EnableSelinux} androidboot.firstboot=${firstboot} jtag=${jtag}; "\

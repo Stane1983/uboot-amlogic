@@ -94,8 +94,6 @@
 		"otg_device=1\0" \
 		"panel_type=vbyone_1\0" \
 		"panel1_type=vbyone_1\0" \
-		"panel_name=null\0" \
-		"lcd_ctrl=0x00000000\0" \
 		"lcd_debug=0x00000000\0" \
 		"hdmimode=1080p60hz\0" \
 		"connector0_type=VBYONE-A\0" \
@@ -158,8 +156,7 @@
 		"get_bootloaderversion;" \
 		"run storeargs_base;"\
 		"setenv bootargs ${bootargs} powermode=${powermode} "\
-		"lcd_ctrl=${lcd_ctrl} lcd1_ctrl=${lcd1_ctrl} lcd_debug=${lcd_debug} "\
-		"panel_type=${panel_type} panel1_type=${panel1_type} "\
+		"lcd0=${lcd0_attr} lcd1=${lcd1_attr} lcd_debug=${lcd_debug} "\
 		"outputmode=${outputmode} outputmode2=${outputmode2} "\
 		"vout=${outputmode},enable vout2=${outputmode2},enable "\
 		"connector0_type=${connector0_type} connector1_type=${connector1_type}; "\

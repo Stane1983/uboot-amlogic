@@ -70,8 +70,8 @@
 	"outputmode=1080p60hz\0" \
 	"storeargs_hdmitx="\
 		"setenv bootargs ${bootargs} powermode=${powermode} "\
-		"lcd_ctrl=${lcd_ctrl} lcd_debug=${lcd_debug} "\
-		"dptx0_ctrl=${dptx0_ctrl} dptx1_ctrl=${dptx1_ctrl} "\
+		"lcd0=${lcd0_attr} lcd_debug=${lcd_debug} "\
+		"dptx0=${dptx0_ctrl} dptx1=${dptx1_ctrl} "\
 		"outputmode=${outputmode} hdmitx=${cecconfig},${colorattribute};"\
 		"\0"\
 	"init_display_hdmitx="\
@@ -84,10 +84,8 @@
 	"panel_type=vbyone_0\0" \
 	"panel1_type=vbyone_2\0" \
 	"panel2_type=lvds_1\0" \
-	"lcd1_ctrl=0x00000000\0" \
-	"lcd2_ctrl=0x00000000\0" \
-	"dptx0_ctrl=0x00000000\0" \
-	"dptx1_ctrl=0x00000000\0" \
+	"lcd1_attr=0x00000000,lvds_1\0" \
+	"lcd2_attr=0x00000000,lvds_1\0" \
 	"outputmode=1080p60hz\0" \
 	"outputmode2=1080p60hz\0" \
 	"cvbsmode=576cvbs\0" \
@@ -96,12 +94,12 @@
 	"connector2_type=NULL\0" \
 	"storeargs_hdmitx="\
 		"setenv bootargs ${bootargs} powermode=${powermode} "\
-			"lcd_ctrl=${lcd_ctrl} lcd_debug=${lcd_debug} "\
+			"lcd0=${lcd0_attr} lcd_debug=${lcd_debug} "\
 			"outputmode=${outputmode} hdmitx=${cecconfig},${colorattribute} "\
-			"vout2=${outputmode2},enable panel1_type=${panel1_type} "\
-			"lcd1_ctrl=${lcd1_ctrl} panel2_type=${panel2_type} lcd2_ctrl=${lcd2_ctrl} "\
+			"vout2=${outputmode2},enable "\
+			"lcd1=${lcd1_attr} panel2_type=${panel2_type} lcd2=${lcd2_attr} "\
 			"connector0_type=${connector0_type} connector1_type=${connector1_type} connector2_type=${connector2_type} "\
-			"dptx0_ctrl=${dptx0_ctrl} dptx1_ctrl=${dptx1_ctrl} "\
+			"dptx0=${dptx0_ctrl} dptx1=${dptx1_ctrl} "\
 			"hdr_policy=${hdr_policy} hdr_priority=${hdr_priority};"\
 		"\0"\
 	"init_display_hdmitx="\
@@ -115,7 +113,6 @@
         "loadaddr_kernel=0x01080000\0"\
 		"dv_fw_addr=0xa00000\0"\
         "otg_device=1\0" \
-        "lcd_ctrl=0x00000000\0" \
         "lcd_debug=0x00000000\0" \
 	"hdmimode=none\0" \
 	"qms_en=1\0" \

@@ -96,7 +96,6 @@
 		"ddr_resume=0\0"\
 		"otg_device=1\0" \
 		"panel_type=lvds_1\0" \
-		"lcd_ctrl=0x00000000\0" \
 		"lcd_debug=0x00000000\0" \
 		"outputmode=1080p60hz\0" \
 		"hdmimode=none\0" \
@@ -156,7 +155,7 @@
 		"get_bootloaderversion;" \
 		"run storeargs_base;"\
 		"setenv bootargs ${bootargs} powermode=${powermode} kvm-arm.mode=none init_on_alloc=0 "\
-			"lcd_ctrl=${lcd_ctrl} lcd_debug=${lcd_debug} "\
+			"lcd0=${lcd0_attr} lcd_debug=${lcd_debug} "\
 			"fb_width=${fb_width} fb_height=${fb_height} "\
 			"outputmode=${outputmode} gamma=${gamma} vout_projector_mux=${vout_projector_mux} "\
 			"connector0_type=${connector0_type}; "\
