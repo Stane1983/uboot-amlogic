@@ -354,6 +354,7 @@ static int storage_mmc_erase(int flag, struct mmc *mmc) {
 	int ret = 0;
 	loff_t off = 0;
 	size_t size = 0;
+	void *buffer;
 
 	if (flag >= ERASE_ALL) {//erase all except reserved
 		ret = storage_mmc_erase_user(mmc);
@@ -374,6 +375,17 @@ static int storage_mmc_erase(int flag, struct mmc *mmc) {
 #endif
 		ret = storage_erase_in_part("bootloader", off, size);
 		printf("boot1 partition erased: %s\n", (ret == 0) ? "OK" : "ERROR");
+
+		if (((mmc->cid[0] & 0xff) == 0x31 && mmc->cid[1] == 0x32384739) ||
+		    ((mmc->cid[0] & 0xff) == 0x30 && mmc->cid[1] == 0x36344739)) {
+			buffer = malloc(MMC_BLOCK_SIZE);
+			if (!buffer)
+				return -ENOMEM;
+			memset(buffer, 0, MMC_BLOCK_SIZE);
+			ret = blk_dwrite(mmc_get_blk_desc(mmc), 0, 1, buffer);
+			printf("boot1 partition write: %s\n", (ret == 1) ? "OK" : "ERROR");
+			free(buffer);
+		}
 R_SWITCH_BACK:
 		ret = blk_select_hwpart_devnum(UCLASS_MMC, STORAGE_EMMC, USER_PARTITION);
 
