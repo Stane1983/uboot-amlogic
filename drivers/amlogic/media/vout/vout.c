@@ -432,14 +432,34 @@ static int getenv_int(char *env, int def)
 static int get_window_axis(int *axis)
 {
 	int ret = 0;
-	char *mode = env_get("outputmode");
+	char *mode = NULL;
 	int def_x, def_y, def_w, def_h;
+	uint index = 0;
+
+	index = get_osd_layer();
+	if (is_vpp0(index))
+		mode = env_get("outputmode");
+	else if (is_vpp1(index))
+		mode = env_get("outputmode2");
+	else if (is_vpp2(index))
+		mode = env_get("outputmode3");
+	else
+		vout_log("%s, osd%d is not supported\n", __func__, index);
 
 	def_x = 0;
 	def_y = 0;
 	def_w = vout_info.width;
 	def_h = vout_info.height;
 
+	if (!mode) {
+		axis[0] = def_x;
+		axis[1] = def_y;
+		axis[2] = def_w;
+		axis[3] = def_h;
+		vout_log("%s, osd%d cannot get env outputmode\n",
+			 __func__, index);
+		return -1;
+	}
 	/* adjust reproduction ratio */
 	if (strncmp(mode, "480i", 4) == 0) {
 		axis[0] = getenv_int("480i_x", def_x);

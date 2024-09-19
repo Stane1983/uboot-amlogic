@@ -1587,6 +1587,8 @@ int video_scale_bitmap(void)
 
 	vout_get_current_axis(axis);
 	osd_index = get_osd_layer();
+	osd_logd2("osd%d axis(%d %d %d %d)\n", osd_index,
+		  axis[0], axis[1], axis[2], axis[3]);
 	if (osd_index < 0) {
 		osd_loge("%s: invalid display_layer\n", __func__);
 		return -1;

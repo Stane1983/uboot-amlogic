@@ -4685,120 +4685,122 @@ void osd_init_hw_viux(u32 index)
 		return;
 	data32 = 1;
 
-	/* hold_fifo_lines */
-	if (is_vpp1(index))
-		s = env_get("viu2_hold_line");
-	else if (is_vpp2(index))
-		s = env_get("viu3_hold_line");
-	if (s) {
-		holdline = simple_strtoul(s, NULL, 10);
-		data32 |= holdline << 5;  /* hold_fifo_lines */
-	} else {
-		if (osd_hw.osd_ver == OSD_HIGH_ONE)
-			data32 |= 8 << 5;  /* hold_fifo_lines */
-		else
-			data32 |= 4 << 5;
-	}
-	/* burst_len_sel: 3=64 */
-	if (osd_hw.osd_ver == OSD_HIGH_ONE) {
-		data32 |= 1 << 10;
-		data32 |= 1 << 31;
-	} else {
-		data32 |= 3  << 10;
-	}
-
-	/*
-	 * bit 23:22, fifo_ctrl
-	 * 00 : for 1 word in 1 burst
-	 * 01 : for 2 words in 1 burst
-	 * 10 : for 4 words in 1 burst
-	 * 11 : reserved
-	 */
-	data32 |= 2 << 22;
-	/* bit 28:24, fifo_lim */
-	data32 |= 2 << 24;
-
-	/* fifo_depth_val: 32*8=256 */
-	data32 |= 64 << 12;
-	osd_reg_write(hw_osd_reg_array[index].osd_fifo_ctrl_stat, data32);
-
-	/* just disable osd to avoid booting hang up */
-	data32 = 0x0 << 0;
-	data32 |= OSD_GLOBAL_ALPHA_DEF << 12;
-	osd_reg_write(hw_osd_reg_array[index].osd_ctrl_stat, data32);
-
-	/* set replaced_alpha */
-	data32 = 0x1 << 14;
-	data32 |= 0xff << 6;
-	osd_reg_write(hw_osd_reg_array[index].osd_ctrl_stat2, data32);
-
-	if (osd_get_chip_type() == MESON_CPU_MAJOR_ID_T3 ||
-		osd_get_chip_type() == MESON_CPU_MAJOR_ID_T5M)
-		osd_hw.path_ctrl_independ = 1;
-
-	if (is_vpp1(index)) {
-		/* OSD3 -> VPP1 */
-		if (osd_hw.path_ctrl_independ) {
-			independ_path_default_regs();
-			/* osd byp osd_blend */
-			osd_reg_set_bits(VIU_OSD3_PATH_CTRL, 0x1, 4, 1);
+	if (!logo_loaded[index]) {
+		/* hold_fifo_lines */
+		if (is_vpp1(index))
+			s = env_get("viu2_hold_line");
+		else if (is_vpp2(index))
+			s = env_get("viu3_hold_line");
+		if (s) {
+			holdline = simple_strtoul(s, NULL, 10);
+			data32 |= holdline << 5;  /* hold_fifo_lines */
 		} else {
-			fix_vpu_clk2_default_regs();
-			/* osd byp osd_blend */
-			osd_reg_set_bits(VPP_OSD3_SCALE_CTRL, 0x7, 0, 3);
+			if (osd_hw.osd_ver == OSD_HIGH_ONE)
+				data32 |= 8 << 5;  /* hold_fifo_lines */
+			else
+				data32 |= 4 << 5;
 		}
+		/* burst_len_sel: 3=64 */
+		if (osd_hw.osd_ver == OSD_HIGH_ONE) {
+			data32 |= 1 << 10;
+			data32 |= 1 << 31;
+		} else {
+			data32 |= 3  << 10;
+		}
+
+		/*
+		 * bit 23:22, fifo_ctrl
+		 * 00 : for 1 word in 1 burst
+		 * 01 : for 2 words in 1 burst
+		 * 10 : for 4 words in 1 burst
+		 * 11 : reserved
+		 */
+		data32 |= 2 << 22;
+		/* bit 28:24, fifo_lim */
+		data32 |= 2 << 24;
+
+		/* fifo_depth_val: 32*8=256 */
+		data32 |= 64 << 12;
+		osd_reg_write(hw_osd_reg_array[index].osd_fifo_ctrl_stat, data32);
+
+		/* just disable osd to avoid booting hang up */
+		data32 = 0x0 << 0;
+		data32 |= OSD_GLOBAL_ALPHA_DEF << 12;
+		osd_reg_write(hw_osd_reg_array[index].osd_ctrl_stat, data32);
+
+		/* set replaced_alpha */
+		data32 = 0x1 << 14;
+		data32 |= 0xff << 6;
+		osd_reg_write(hw_osd_reg_array[index].osd_ctrl_stat2, data32);
+
+		if (osd_get_chip_type() == MESON_CPU_MAJOR_ID_T3 ||
+			osd_get_chip_type() == MESON_CPU_MAJOR_ID_T5M)
+			osd_hw.path_ctrl_independ = 1;
+
+		if (is_vpp1(index)) {
+			/* OSD3 -> VPP1 */
+			if (osd_hw.path_ctrl_independ) {
+				independ_path_default_regs();
+				/* osd byp osd_blend */
+				osd_reg_set_bits(VIU_OSD3_PATH_CTRL, 0x1, 4, 1);
+			} else {
+				fix_vpu_clk2_default_regs();
+				/* osd byp osd_blend */
+				osd_reg_set_bits(VPP_OSD3_SCALE_CTRL, 0x7, 0, 3);
+			}
 
 #ifdef AML_T7_DISPLAY
-		/* vpp_top input mux */
-		osd_reg_set_bits(OSD_PATH_MISC_CTRL, OSD3 + VPP_OSD1,
-				 OSD3 * 4 + 16, 4);
+			/* vpp_top input mux */
+			osd_reg_set_bits(OSD_PATH_MISC_CTRL, OSD3 + VPP_OSD1,
+					 OSD3 * 4 + 16, 4);
 
-		/* to vpp_top1 */
-		osd_reg_set_bits(PATH_START_SEL, VPU_VPP1, 24, 2);
+			/* to vpp_top1 */
+			osd_reg_set_bits(PATH_START_SEL, VPU_VPP1, 24, 2);
 #endif
 #ifdef AML_S5_DISPLAY
-		/* use vpp1 vsync */
-		osd_reg_set_bits(VIU_OSD3_MISC, 1, 0, 1);
-		/* 1mux3,  OSD3 -> din5 */
-		osd_reg_set_bits(OSD_PROC_1MUX3_SEL, 0, 4, 2);
-		/* 5mux4, select din5 */
-		osd_reg_set_bits(OSD_SYS_5MUX4_SEL, 5, 8, 4);
-		/* 0:select postblend 1:select vpp1 blend */
-		osd_reg_set_bits(VPP1_BLD_CTRL, 1, 29, 1);
-		/* 1:output to vpp slice1 0:output to venc1 directly */
-		osd_reg_set_bits(VPP1_BLD_CTRL, 0, 30, 1);
+			/* use vpp1 vsync */
+			osd_reg_set_bits(VIU_OSD3_MISC, 1, 0, 1);
+			/* 1mux3,  OSD3 -> din5 */
+			osd_reg_set_bits(OSD_PROC_1MUX3_SEL, 0, 4, 2);
+			/* 5mux4, select din5 */
+			osd_reg_set_bits(OSD_SYS_5MUX4_SEL, 5, 8, 4);
+			/* 0:select postblend 1:select vpp1 blend */
+			osd_reg_set_bits(VPP1_BLD_CTRL, 1, 29, 1);
+			/* 1:output to vpp slice1 0:output to venc1 directly */
+			osd_reg_set_bits(VPP1_BLD_CTRL, 0, 30, 1);
 #endif
-		/* vpp1 osd order, premult, blend_en */
-		osd_reg_set_bits(VPP1_BLD_CTRL, bld_src2_sel, 4, 4);
-		osd_reg_set_bits(VPP1_BLD_CTRL, osd_premult, 17, 1);
-		osd_reg_set_bits(VPP1_BLD_CTRL, blend_en, 31, 1);
-	}
-
-	if (is_vpp2(index)) {
-		/* OSD4 -> VPP2 */
-		if (osd_hw.path_ctrl_independ) {
-			independ_path_default_regs();
-			/* osd byp osd_blend */
-			osd_reg_set_bits(VIU_OSD4_PATH_CTRL, 0x1, 4, 1);
-		} else {
-			fix_vpu_clk2_default_regs();
-			/* osd byp osd_blend */
-			osd_reg_set_bits(VPP_OSD4_SCALE_CTRL, 0x7, 0, 3);
+			/* vpp1 osd order, premult, blend_en */
+			osd_reg_set_bits(VPP1_BLD_CTRL, bld_src2_sel, 4, 4);
+			osd_reg_set_bits(VPP1_BLD_CTRL, osd_premult, 17, 1);
+			osd_reg_set_bits(VPP1_BLD_CTRL, blend_en, 31, 1);
 		}
 
-		/* vpp1 osd order, premult, blend_en */
-		osd_reg_set_bits(VPP2_BLD_CTRL, bld_src2_sel, 4, 4);
-		osd_reg_set_bits(VPP2_BLD_CTRL, osd_premult, 17, 1);
-		osd_reg_set_bits(VPP2_BLD_CTRL, blend_en, 31, 1);
+		if (is_vpp2(index)) {
+			/* OSD4 -> VPP2 */
+			if (osd_hw.path_ctrl_independ) {
+				independ_path_default_regs();
+				/* osd byp osd_blend */
+				osd_reg_set_bits(VIU_OSD4_PATH_CTRL, 0x1, 4, 1);
+			} else {
+				fix_vpu_clk2_default_regs();
+				/* osd byp osd_blend */
+				osd_reg_set_bits(VPP_OSD4_SCALE_CTRL, 0x7, 0, 3);
+			}
 
-		/* vpp_top input mux */
-		osd_reg_set_bits(OSD_PATH_MISC_CTRL, OSD4 + VPP_OSD1,
-				 OSD4 * 4 + 16, 4);
+			/* vpp1 osd order, premult, blend_en */
+			osd_reg_set_bits(VPP2_BLD_CTRL, bld_src2_sel, 4, 4);
+			osd_reg_set_bits(VPP2_BLD_CTRL, osd_premult, 17, 1);
+			osd_reg_set_bits(VPP2_BLD_CTRL, blend_en, 31, 1);
 
-		/* to vpp_top2 */
-		osd_reg_set_bits(PATH_START_SEL, VPU_VPP2, 28, 2);
+			/* vpp_top input mux */
+			osd_reg_set_bits(OSD_PATH_MISC_CTRL, OSD4 + VPP_OSD1,
+					 OSD4 * 4 + 16, 4);
+
+			/* to vpp_top2 */
+			osd_reg_set_bits(PATH_START_SEL, VPU_VPP2, 28, 2);
+		}
+		logo_loaded[index] = 1;
 	}
-
 	/* init param */
 	osd_reverse = env_get("osd_reverse");
 	for (group = 0; group < HW_OSD_COUNT; group++)
