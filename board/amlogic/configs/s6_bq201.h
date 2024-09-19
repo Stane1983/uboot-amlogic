@@ -68,22 +68,22 @@
 #define CONFIG_AVB_VERIFY 1
 #define CONFIG_SUPPORT_EMMC_RPMB 1
 #define CONFIG_AML_DEV_ID 1
-#define CONFIG_HDMITX_ONLY
 
 #ifdef CONFIG_HDMITX_ONLY
-#define CONFIG_EXTRA_HDMI_ENV_SETTINGS \
-	"init_display_hdmitx="\
+#define CONFIG_INIT_DISPLAY_ENV_SETTINGS \
+	"init_display="\
 		"hdmitx hpd;hdmitx get_parse_edid;dovi process;"\
 		"osd open;osd clear;run load_bmp_logo;bmp scale;vout output ${outputmode};"\
 		"dovi set;dovi pkg;vpp hdrpkt;"\
 		"\0"
 #else
-#define CONFIG_EXTRA_HDMI_ENV_SETTINGS \
-	"init_display_hdmitx="\
+#define CONFIG_INIT_DISPLAY_ENV_SETTINGS \
+	"init_display="\
 		"hdmitx hpd;hdmitx get_parse_edid;dovi process;"\
 		"osd dual_logo;"\
 		"\0"
 #endif
+
 //for common env list, please maintain it in board/amlogic/env/android_multidisplay.env
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"uart_base=0xfe07a000\0"\
@@ -119,9 +119,7 @@
 	"hdr_policy=0\0"\
 	"frac_rate_policy=1\0"\
 	"board=s6_bq201\0"\
-	CONFIG_EXTRA_HDMI_ENV_SETTINGS \
-	"init_display="\
-		"run init_display_hdmitx;"\
+	CONFIG_INIT_DISPLAY_ENV_SETTINGS \
 		"\0"
 
 #ifndef CONFIG_PXP_EMULATOR

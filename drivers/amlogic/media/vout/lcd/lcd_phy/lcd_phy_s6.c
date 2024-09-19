@@ -10,6 +10,7 @@
 #include <amlogic/aml_efuse.h>
 
 #ifdef CONFIG_MESON_S6
+
 #define DSI_PHY_LPRX_HI   1   // CH0 LPRX hi : 0=0.82v 1=0.86v 2=0.89v 3=0.93v
 #define DSI_PHY_LPRX_LOW  1   // CH0 LPRX low: 0=0.52v 1=0.56v 2=0.60v 3=0.64v
 #define DSI_PHY_LPCD_HI   1   // CH0 LPCD hi : 0=0.37v 1=0.41v 2=0.45v 3=0.49v
@@ -24,8 +25,8 @@
 static void lcd_phy_reg_dump(struct aml_lcd_drv_s *pdrv)
 {
 	struct reg_name_set_s reg_table[] = {
-		{ANACTRL_MIPIDSI_CTRL0,  "PHY_CNTL0"},
-		{ANACTRL_MIPIDSI_CTRL1,  "PHY_CNTL1"}
+		{ANACTRL_MIPIDSI_CTRL0,  "MIPIDSI_CTRL0"},
+		{ANACTRL_MIPIDSI_CTRL1,  "MIPIDSI_CTRL1"},
 	};
 
 	str_add_reg_sets(pdrv, LCD_REG_DBG_ANA_BUS, 0, reg_table, ARRAY_SIZE(reg_table));

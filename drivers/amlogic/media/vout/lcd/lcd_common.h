@@ -24,8 +24,6 @@
 /* 20240909: update phy tuning: get real state from register */
 #define LCD_DRV_VERSION    "20240909"
 
-extern unsigned long clk_util_clk_msr(unsigned long clk_mux);
-
 void mdelay(unsigned long n);
 
 static inline unsigned long long lcd_do_div(unsigned long long num, unsigned int den)

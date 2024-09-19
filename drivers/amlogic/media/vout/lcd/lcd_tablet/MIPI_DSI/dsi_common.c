@@ -140,7 +140,7 @@ void lcd_dsi_init_table_load_bsp(struct dsi_config_s *dconf)
 
 static void dsi_req_print(int ret, struct dsi_cmd_req_s *req)
 {
-	char string[256];
+	char *_str;
 	u32 n, k;
 
 	u8 is_DCS =
@@ -159,7 +159,14 @@ static void dsi_req_print(int ret, struct dsi_cmd_req_s *req)
 	//DCS_LONG_WR:0x29, GEN_LONG_WR:0x39
 	u8 num = (req->data_type & 0xf) == 0x9 ? 3 : (req->data_type >> 4) & 0xf;
 
-	n = snprintf(string, 255, "DSI %s %s %s%u%s: ",
+	_str = malloc(PR_BUF_MAX * sizeof(char));
+	if (!_str) {
+		LCDERR("%s: buf malloc error\n", __func__);
+		return;
+	}
+	memset(_str, 0, PR_BUF_MAX);
+
+	n = snprintf(_str, PR_BUF_MAX, "DSI %s %s %s%u%s: ",
 		is_DCS  ? "DCS"          : "generic",
 		is_read ? "RD"           : "WR",
 		is_long ? "long("        : "",
@@ -167,18 +174,19 @@ static void dsi_req_print(int ret, struct dsi_cmd_req_s *req)
 		is_long ? ")"            : "");
 
 	for (k = 0; k < req->pld_count; k++)
-		n += snprintf(string + n, 255 - n, "0x%02x ", req->payload[k]);
+		n += snprintf(_str + n, PR_BUF_MAX - n, "0x%02x ", req->payload[k]);
 
 	if (ret) {
-		snprintf(string + n, 255 - n, " failed");
+		snprintf(_str + n, PR_BUF_MAX - n, " failed");
 	} else {
 		if (req->rd_out_len)
-			n += snprintf(string + n, 255 - n, ": ");
+			n += snprintf(_str + n, PR_BUF_MAX - n, ": ");
 
 		for (k = 0; k < req->rd_out_len; k++)
-			n += snprintf(string + n, 255 - n, "0x%02x ", req->rd_data[k]);
+			n += snprintf(_str + n, PR_BUF_MAX - n, "0x%02x ", req->rd_data[k]);
 	}
-	pr_info("%s\n", string);
+	pr_info("%s\n", _str);
+	free(_str);
 }
 
 /* helper func to check req->pld_count satisfied req->data_type and return req->payload[pld_idx] */

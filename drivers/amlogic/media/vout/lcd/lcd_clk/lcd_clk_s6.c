@@ -11,6 +11,7 @@
 #include "lcd_clk_config.h"
 #include "lcd_clk_ctrl.h"
 #include "lcd_clk_utils.h"
+#include <amlogic/clk_measure.h>
 
 #ifdef CONFIG_MESON_S6
 /*
@@ -264,9 +265,9 @@ static void lcd_clk_disable_s6(struct aml_lcd_drv_s *pdrv)
 	lcd_clk_setb(CLKCTRL_VID_CLK_CTRL2, 0, ENCL_GATE_VCLK, 1);
 
 	lcd_ana_write(ANACTRL_DSIPLL_CTRL0, 0x0);
-	lcd_ana_write(ANACTRL_DSIPLL_CTRL0, 0x0);
 	lcd_ana_write(ANACTRL_DSIPLL_CTRL1, 0x0);
 	lcd_ana_write(ANACTRL_DSIPLL_CTRL2, 0x0);
+	lcd_ana_write(ANACTRL_DSIPLL_CTRL3, 0x0);
 }
 
 // ANACTRL_DSIPLL_CTRL3
@@ -301,39 +302,6 @@ static void lcd_pll_ss_enable(struct aml_lcd_drv_s *pdrv, int status)
 		LCDPR("[%d]: pll ss disable\n", pdrv->index);
 	}
 	lcd_ana_write(ANACTRL_DSIPLL_CTRL3, pll_ctrl3);
-}
-
-static void lcd_clk_reg_dump(struct aml_lcd_drv_s *pdrv)
-{
-	int i;
-	unsigned int *table = NULL, size = 0;
-	unsigned int pll_reg_table[] = {
-		ANACTRL_DSIPLL_CTRL0,
-		ANACTRL_DSIPLL_CTRL1,
-		ANACTRL_DSIPLL_CTRL2,
-		ANACTRL_DSIPLL_CTRL3
-	};
-	unsigned int clk_reg_table[] = {
-		CLKCTRL_VIID_CLK_DIV,
-		CLKCTRL_VIID_CLK_CTRL,
-		CLKCTRL_VID_CLK_CTRL2
-	};
-
-	if (!pdrv)
-		return;
-
-	table = pll_reg_table;
-	size = ARRAY_SIZE(pll_reg_table);
-	for (i = 0; i < size; i++)
-		printf("pll [0x%08x] = 0x%08x\n", table[i], lcd_ana_read(table[i]));
-
-	table = clk_reg_table;
-	size = ARRAY_SIZE(clk_reg_table);
-	for (i = 0; i < size; i++)
-		printf("clk [0x%08x] = 0x%08x\n", table[i], lcd_clk_read(table[i]));
-
-	printf("combo_dphy [0x%08x] = 0x%08x\n",
-	       CLKCTRL_DSI_PLL_CLK_DIV, lcd_combo_dphy_read(CLKCTRL_DSI_PLL_CLK_DIV));
 }
 
 static int lcd_prbs_test_s6(struct aml_lcd_drv_s *pdrv, unsigned int ms,
@@ -406,6 +374,43 @@ static int lcd_prbs_test_s6(struct aml_lcd_drv_s *pdrv, unsigned int ms,
 	return 0;
 }
 
+static void lcd_clk_reg_dump_s6(struct aml_lcd_drv_s *pdrv)
+{
+	int i;
+	unsigned int *table = NULL, size = 0;
+	unsigned int pll_reg_table[] = {
+		ANACTRL_DSIPLL_CTRL0,
+		ANACTRL_DSIPLL_CTRL1,
+		ANACTRL_DSIPLL_CTRL2,
+		ANACTRL_DSIPLL_CTRL3,
+	};
+	unsigned int clk_reg_table[] = {
+		CLKCTRL_DSI_PLL_CLK_DIV,
+		CLKCTRL_VID_CLK_CTRL2,
+		CLKCTRL_VIID_CLK_DIV,
+		CLKCTRL_VIID_CLK_CTRL,
+	};
+	unsigned int key_clk_msr_id[] = {29, 30, 53, 70, 71};
+
+	table = pll_reg_table;
+	size = ARRAY_SIZE(pll_reg_table);
+	for (i = 0; i < size; i++)
+		printf("pll [0x%08x] = 0x%08x\n", table[i], lcd_ana_read(table[i]));
+
+	table = clk_reg_table;
+	size = ARRAY_SIZE(clk_reg_table);
+	for (i = 0; i < size; i++)
+		printf("clk [0x%08x] = 0x%08x\n", table[i], lcd_clk_read(table[i]));
+
+	table = key_clk_msr_id;
+	size = ARRAY_SIZE(key_clk_msr_id);
+	for (i = 0; i < size; i++)
+		clk_msr(table[i]);
+
+	printf("combo_dphy [0x%08x] = 0x%08x\n",
+		CLKCTRL_DSI_PLL_CLK_DIV, lcd_combo_dphy_read(CLKCTRL_DSI_PLL_CLK_DIV));
+}
+
 static struct lcd_clk_data_s lcd_clk_data_s6 = {
 	.pll_od_fb = 0,
 	.pll_m_max = 511,
@@ -451,7 +456,7 @@ static struct lcd_clk_data_s lcd_clk_data_s6 = {
 	.clktree_set = NULL,
 	.clk_config_init_print = lcd_clk_config_init_print_dft,
 	.clk_config_print = NULL,
-	.clk_reg_print = lcd_clk_reg_dump,
+	.clk_reg_print = lcd_clk_reg_dump_s6,
 	.prbs_test = lcd_prbs_test_s6,
 };
 
