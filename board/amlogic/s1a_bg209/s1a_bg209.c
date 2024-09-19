@@ -259,6 +259,26 @@ const struct mtd_partition *get_spiflash_partition_table(int *partitions)
 }
 #endif /* CONFIG_SPI_FLASH */
 
+struct rsv_part rsv_partitions[] = {
+#ifndef CONFIG_ENV_IS_IN_NAND
+	{ ENV_NAND_MAGIC, 0, MTD_RSV_ENV_BLOCK_CNT, CONFIG_ENV_SIZE },
+#endif
+	{ KEY_NAND_MAGIC, 0, MTD_RSV_KEY_BLOCK_CNT, MTD_RSV_KEY_SIZE },
+#ifndef CONFIG_DTB_BIND_KERNEL
+	{ DTB_NAND_MAGIC, 0, MTD_RSV_DTB_BLOCK_CNT, MTD_RSV_DTB_SIZE },
+#endif
+};
+
+struct rsv_part *get_mtd_rsv_partition(void)
+{
+	return rsv_partitions;
+}
+
+int get_mtd_rsv_partition_count(void)
+{
+	return ARRAY_SIZE(rsv_partitions) + 1;
+}
+
 #ifdef CONFIG_MESON_NFC
 static struct mtd_partition normal_partition_info[] = {
 {

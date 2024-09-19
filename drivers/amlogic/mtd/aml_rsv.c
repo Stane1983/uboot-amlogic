@@ -18,21 +18,130 @@
 extern int info_disprotect;
 static struct meson_rsv_handler_t *rsv_handler;
 
-struct rsv_info rsv_board_info[] = {
-	INFO_DATA(BBT_NAND_MAGIC, MTD_RSV_BBT_BLOCK_CNT, 0),
-	INFO_DATA(ENV_NAND_MAGIC, MTD_RSV_ENV_BLOCK_CNT, CONFIG_ENV_SIZE),
-	INFO_DATA(KEY_NAND_MAGIC, MTD_RSV_KEY_BLOCK_CNT, MTD_RSV_KEY_SIZE),
-	INFO_DATA(DTB_NAND_MAGIC, MTD_RSV_DTB_BLOCK_CNT, MTD_RSV_DTB_SIZE),
-	INFO_DATA(DDR_NAND_MAGIC, MTD_RSV_DDR_BLOCK_CNT, MTD_RSV_DDR_SIZE),
-};
+int rsvname2index(const char *rsv_name)
+{
+	struct meson_rsv_info_t *rsv_info = rsv_handler->rsv_info;
+	int i, len = get_mtd_rsv_partition_count();
+
+	for (i = 0; i < len; i++)
+		if (!strncmp(rsv_name, rsv_info[i].name, 4) ||
+		    !strncmp(rsv_name, &rsv_info[i].name[1], 3))
+			return i;
+	return -1;
+}
+
+u32 meson_rsv_part_get_bl2_part_size(struct mtd_info *mtd)
+{
+	static u32 bl2_part_size = 0;
+
+	if (bl2_part_size)
+		return bl2_part_size;
+
+	if (BOARD_CONFIG_BL2_LAYOUT_TYPE == BL2_LAYOUT_1024)
+		bl2_part_size = 1024 * mtd->writesize;
+	else if (BOARD_CONFIG_BL2_LAYOUT_TYPE == BL2_LAYOUT_512)
+		bl2_part_size = 512 * mtd->writesize;
+	else {
+		bl2_part_size = round_up(BL2_SIZE, mtd->erasesize);
+		bl2_part_size *= CONFIG_BL2_COPY_NUM;
+	}
+
+	return bl2_part_size;
+}
+
+u32 meson_rsv_part_get_start_block(struct mtd_info *mtd)
+{
+	u32 bl2_part_size;
+	static u32 rev_start_block = 0;
+
+	if (rev_start_block)
+		return rev_start_block;
+
+	bl2_part_size = meson_rsv_part_get_bl2_part_size(mtd);
+	rev_start_block = bl2_part_size / mtd->erasesize;
+	return rev_start_block;
+}
+
+static u32 meson_rsv_part_get_total_blocks(struct rsv_part *rsv_part)
+{
+	int array_size, i;
+	static u32 blocks = 0;
+
+	if (blocks)
+		return blocks;
+
+	array_size = get_mtd_rsv_partition_count();
+	for (i = 0; i < array_size; i++)
+		blocks += rsv_part[i].blocks;
+
+	if (blocks > MTD_RSV_BLOCK_CNT)
+		printf("mismatch between calculation(%d) and defination(%d)\n",
+		        blocks, MTD_RSV_BLOCK_CNT);
+
+	return blocks;
+}
+
+u64 meson_rsv_part_get_tpl_start(struct mtd_info *mtd)
+{
+	u64 reserved_start_block, tpl_start, reserved_total_blocks;
+
+	reserved_start_block = meson_rsv_part_get_start_block(mtd);
+	reserved_total_blocks = meson_rsv_part_get_total_blocks(rsv_handler->rsv_part);
+	tpl_start = (u64)(reserved_start_block + reserved_total_blocks) * mtd->erasesize;
+
+	return tpl_start;
+}
+
+u64 meson_rsv_part_get_tpl_size(struct mtd_info *mtd)
+{
+	return CONFIG_TPL_SIZE_PER_COPY * CONFIG_NAND_TPL_COPY_NUM;
+}
+
+static struct rsv_part *meson_rsv_info_calculate_start_block(struct mtd_info *mtd)
+{
+	struct rsv_part *rsv_part, *rsv_partitions;
+	int i = 0, array_size;
+	u32 bbt_start = BBT_START_BLOCK;
+	u32 bbt_end = BBT_START_BLOCK + BBT_TOTAL_BLOCKS;
+	u32 cur_part_end;
+
+	array_size = get_mtd_rsv_partition_count();
+	if (array_size > MAX_MESON_RSV_INFO_NUM)
+		return NULL;
+
+	rsv_part = kzalloc(sizeof(*rsv_part) * array_size, GFP_KERNEL);
+	if (!rsv_part)
+		return NULL;
+
+	/* insert bbt  and always put it 1st */
+	rsv_part[0].start_block = BBT_START_BLOCK;
+	rsv_part[0].blocks = BBT_TOTAL_BLOCKS;
+	memcpy(rsv_part[0].name, BBT_NAND_MAGIC, 4);
+
+	rsv_partitions = get_mtd_rsv_partition();
+	rsv_partitions[0].start_block = meson_rsv_part_get_start_block(mtd);
+	for (i = 0; i < array_size - 1; i++) {
+		cur_part_end = rsv_partitions[i].start_block +
+				     rsv_partitions[i].blocks;
+
+		if (cur_part_end >= bbt_start &&
+		    bbt_end > rsv_partitions[i].start_block)
+			cur_part_end += BBT_TOTAL_BLOCKS;
+
+		rsv_partitions[i + 1].start_block = cur_part_end;
+	}
+	memcpy(&rsv_part[1], rsv_partitions,
+	       (array_size - 1) * sizeof(struct rsv_part));
+
+	return rsv_part;
+}
 
 static struct free_node_t *get_free_node(struct meson_rsv_info_t *rsv_info)
 {
 	struct meson_rsv_handler_t *handler = rsv_info->handler;
 	u32 index;
 
-	index =
-		find_first_zero_bit((void *)&handler->fn_bitmask,
+	index = find_first_zero_bit((void *)&handler->fn_bitmask,
 				    MTD_RSV_BLOCK_CNT);
 	if (index >= MTD_RSV_BLOCK_CNT) {
 		pr_info("%s %d index :%d is greater than max rsv block num\n",
@@ -78,19 +187,54 @@ static inline void menson_rsv_protect(void)
 
 }
 
+static inline u32 is_rsv_block(struct meson_rsv_info_t *rsv_info, u32 block)
+{
+	struct free_node_t *temp_node = rsv_info->nfree;
+
+	if (block == rsv_info->nvalid->blk_addr)
+		return 1;
+
+	while (temp_node) {
+		if (block == temp_node->blk_addr)
+			return 1;
+		temp_node = temp_node->next;
+	}
+	return 0;
+};
+
 int meson_rsv_erase_protect(struct meson_rsv_handler_t *handler,
 			    u32 block_addr)
 {
-	if (handler->key && handler->key->valid) {
+	struct meson_rsv_info_t *rsv_info;
+	static u32 rsv_end;
+	int index = rsvname2index(KEY_NAND_MAGIC);
+
+	if (index < 0)
+		return -1;
+
+	if (!rsv_end) {
+		rsv_end = meson_rsv_part_get_start_block(handler->mtd) +
+		meson_rsv_part_get_total_blocks(handler->rsv_part);
+	}
+
+	if (block_addr > rsv_end)
+		return 0;
+
+	rsv_info = &handler->rsv_info[index];
+	if (rsv_info->valid) {
 		if (!(info_disprotect & DISPROTECT_KEY) &&
-		    block_addr >= handler->key->start &&
-		    block_addr < handler->key->end)
+			 is_rsv_block(rsv_info, block_addr))
 			return -1;
 	}
-	if (handler->bbt && handler->bbt->valid) {
-		if ((!(info_disprotect & DISPROTECT_FBBT)) &&
-			(block_addr >= handler->bbt->start) &&
-			(block_addr < handler->bbt->end))
+
+	index = rsvname2index(BBT_NAND_MAGIC);
+	if (index < 0)
+		return -1;
+
+	rsv_info = &handler->rsv_info[index];
+	if (rsv_info->valid) {
+		if (!(info_disprotect & DISPROTECT_FBBT) &&
+		    is_rsv_block(rsv_info, block_addr))
 			return -1;
 	}
 	return 0;
@@ -144,27 +288,18 @@ int meson_rsv_free(struct meson_rsv_info_t *rsv_info)
 
 int meson_rsv_save(struct meson_rsv_info_t *rsv_info, u_char *buf)
 {
-	struct mtd_info *mtd;
+	struct mtd_info *mtd = rsv_info->mtd;
 	struct free_node_t *free_node, *temp_node;
 	struct erase_info erase_info;
 	int ret = 0, i = 1, pages_per_blk;
 	loff_t offset = 0;
 
-	if (!rsv_info) {
-		pr_info("%s %d rsv info has not inited yet!\n",
-			__func__, __LINE__);
-		return 1;
-	}
-
-	mtd = rsv_info->mtd;
 	pages_per_blk = 1 << (mtd->erasesize_shift - mtd->writesize_shift);
 	if ((rsv_info->nvalid->status & POWER_ABNORMAL_FLAG) ||
 	    (rsv_info->nvalid->status & ECC_ABNORMAL_FLAG))
 		rsv_info->nvalid->page_addr = pages_per_blk;
 	if (mtd->writesize < rsv_info->size)
 		i = (rsv_info->size + mtd->writesize - 1) / mtd->writesize;
-	pr_info("%s %d: %s, valid = %d, pages = %d\n", __func__, __LINE__,
-		rsv_info->name, rsv_info->valid, i);
 RE_SEARCH:
 	if (rsv_info->valid) {
 		rsv_info->nvalid->page_addr += i;
@@ -222,7 +357,7 @@ RE_SEARCH:
 			 * so we need check it here and for fear
 			 * of data lost.
 			 */
-			pr_info("%s %d: %s bad block here 0x%llx\n",
+			printf("%s %d: %s bad block here 0x%llx\n",
 				__func__, __LINE__, rsv_info->name, offset);
 			rsv_info->nvalid->page_addr = pages_per_blk - i;
 			goto RE_SEARCH;
@@ -235,7 +370,7 @@ RE_SEARCH:
 		ret = mtd_erase(mtd, &erase_info);
 		menson_rsv_protect();
 		if (ret) {
-			pr_info("%s %d %s erase failed at 0x%llx ,mark it bad\n",
+			printf("%s %d %s erase failed at 0x%llx ,mark it bad\n",
 				__func__, __LINE__, rsv_info->name, offset);
 			mtd_block_markbad(mtd, offset);
 			//return ret;
@@ -390,7 +525,7 @@ int meson_rsv_erase(struct meson_rsv_info_t *rsv_info)
 
 	temp_node = rsv_info->nfree;
 	while (temp_node) {
-		memset(&erase_info,	0, sizeof(struct erase_info));
+		memset(&erase_info, 0, sizeof(struct erase_info));
 		erase_info.mtd = mtd;
 		erase_info.addr = temp_node->blk_addr* mtd->erasesize;
 		erase_info.len = mtd->erasesize;
@@ -405,34 +540,33 @@ int meson_rsv_erase(struct meson_rsv_info_t *rsv_info)
 	return ret;
 }
 
+static u32 skip_bbt_blocks(struct meson_rsv_info_t *rsv_info, u32 start)
+{
+	if (memcmp(BBT_NAND_MAGIC, rsv_info->name, 4))
+		if (start >= BBT_START_BLOCK &&
+		    start < BBT_START_BLOCK + BBT_TOTAL_BLOCKS)
+			return start + BBT_TOTAL_BLOCKS;
+	return start;
+}
+
 int meson_rsv_scan(struct meson_rsv_info_t *rsv_info)
 {
-	struct mtd_info *mtd;
+	struct mtd_info *mtd = rsv_info->mtd;
 	struct mtd_oob_ops oob_ops;
 	struct oobinfo_t oobinfo;
 	struct free_node_t *free_node, *temp_node;
 	loff_t offset;
 	u32 start, end;
 	int ret = 0, error, rsv_status, i, k;
-
 	u8 scan_status;
 	u8 good_addr[256] = {0};
 	u32 page_num, pages_per_blk;
 
-	if (!rsv_info) {
-		pr_info("%s %d rsv info has not inited yet!\n",
-			__func__, __LINE__);
-		return 1;
-	}
-
-	mtd = rsv_info->mtd;
 RE_RSV_INFO_EXT:
 	start = rsv_info->start;
 	end = rsv_info->end;
-	pr_info("%s:info size = 0x%x, start blk = %d, end blk = %d\n",
-		rsv_info->name, rsv_info->size, start, end);
 	do {
-		offset = start;
+		offset = skip_bbt_blocks(rsv_info, start);
 		offset *= mtd->erasesize;
 		scan_status = 0;
 RE_RSV_INFO:
@@ -459,8 +593,7 @@ RE_RSV_INFO:
 		rsv_info->init = 1;
 		rsv_info->nvalid->status = 0;
 		/* Do not use strlen ,Use ARRAY_SIZE to make the length 4 */
-		if (!memcmp(oobinfo.name, rsv_info->name,
-			    4)) {
+		if (!memcmp(oobinfo.name, rsv_info->name, 4)) {
 			rsv_info->valid = 1;
 			if (rsv_info->nvalid->blk_addr >= 0) {
 				free_node = get_free_node(rsv_info);
@@ -472,13 +605,14 @@ RE_RSV_INFO:
 					free_node->blk_addr =
 						rsv_info->nvalid->blk_addr;
 					free_node->ec = rsv_info->nvalid->ec;
-					rsv_info->nvalid->blk_addr = start;
+					rsv_info->nvalid->blk_addr =
+								skip_bbt_blocks(rsv_info, start);
 					rsv_info->nvalid->page_addr = 0;
 					rsv_info->nvalid->ec = oobinfo.ec;
 					rsv_info->nvalid->timestamp =
 						oobinfo.timestamp;
 				} else {
-					free_node->blk_addr = start;
+					free_node->blk_addr = skip_bbt_blocks(rsv_info, start);
 					free_node->ec = oobinfo.ec;
 				}
 				if (!rsv_info->nfree) {
@@ -490,7 +624,7 @@ RE_RSV_INFO:
 					temp_node->next = free_node;
 				}
 			} else {
-				rsv_info->nvalid->blk_addr = start;
+				rsv_info->nvalid->blk_addr = skip_bbt_blocks(rsv_info, start);
 				rsv_info->nvalid->page_addr = 0;
 				rsv_info->nvalid->ec = oobinfo.ec;
 				rsv_info->nvalid->timestamp = oobinfo.timestamp;
@@ -499,7 +633,7 @@ RE_RSV_INFO:
 			free_node = get_free_node(rsv_info);
 			if (!free_node)
 				return -ENOMEM;
-			free_node->blk_addr = start;
+			free_node->blk_addr = skip_bbt_blocks(rsv_info, start);
 			free_node->ec = oobinfo.ec;
 			if (!rsv_info->nfree) {
 				rsv_info->nfree = free_node;
@@ -512,13 +646,13 @@ RE_RSV_INFO:
 		}
 	} while ((++start) < end);
 
-	pr_info("%s blk = %d, ec = %d, page = %d, timestamp = %d\n",
+	printf("%s blk = %d, ec = %d, page = %d, timestamp = %d\n",
 			rsv_info->name, rsv_info->nvalid->blk_addr, rsv_info->nvalid->ec,
 			rsv_info->nvalid->page_addr, rsv_info->nvalid->timestamp);
-	pr_info("%s free list:\n", rsv_info->name);
+	printf("%s free list:\n", rsv_info->name);
 	temp_node = rsv_info->nfree;
 	while (temp_node) {
-		pr_info("block num = %d, ec = %d, dirty_flag = %d\n",
+		printf("block num = %d, ec = %d, dirty_flag = %d\n",
 			temp_node->blk_addr,
 			temp_node->ec,
 			temp_node->dirty_flag);
@@ -613,12 +747,6 @@ int meson_rsv_check(struct meson_rsv_info_t *rsv_info)
 {
 	int ret = 0;
 
-	if (!rsv_info) {
-		pr_info("%s %d rsv info has not inited yet!\n",
-			__func__, __LINE__);
-		return 1;
-	}
-
 	ret = meson_rsv_scan(rsv_info);
 	if (ret)
 		pr_info("%s %d %s info check failed ret %d\n",
@@ -631,390 +759,133 @@ int meson_rsv_check(struct meson_rsv_info_t *rsv_info)
 	return ret;
 }
 
-static void aml_nand_rsv_info_ptr_fill(struct rsv_info *rsv_info,
-				       struct meson_rsv_handler_t *handler)
+void meson_rsv_check_all_except_bbt(void)
 {
-	if (!strcmp(rsv_info->name, BBT_NAND_MAGIC))
-		handler->bbt = rsv_info->rsv_info;
-	else if (!strcmp(rsv_info->name, ENV_NAND_MAGIC))
-		handler->env = rsv_info->rsv_info;
-	else if (!strcmp(rsv_info->name, KEY_NAND_MAGIC))
-		handler->key = rsv_info->rsv_info;
-	else if (!strcmp(rsv_info->name, DTB_NAND_MAGIC))
-		handler->dtb = rsv_info->rsv_info;
+	struct meson_rsv_info_t *rsv_info;
+	int i;
+
+	for (i = 1; i < rsv_handler->entries; i++) {
+		rsv_info = &rsv_handler->rsv_info[i];
+		meson_rsv_check(rsv_info);
+	}
+}
+
+int meson_rsv_check_bbt(void)
+{
+	struct meson_rsv_info_t *rsv_info;
+	int index = rsvname2index(BBT_NAND_MAGIC);
+
+	if (index < 0)
+		return -1;
+
+	rsv_info = &rsv_handler->rsv_info[index];
+	return meson_rsv_check(rsv_info);
+}
+
+int meson_rsv_save_bbt(u8 *bbt)
+{
+	struct meson_rsv_info_t *rsv_info;
+	int index = rsvname2index(BBT_NAND_MAGIC);
+
+	if (index < 0)
+		return -1;
+
+	rsv_info = &rsv_handler->rsv_info[index];
+	return meson_rsv_save(rsv_info, bbt);
+}
+
+int meson_rsv_read_bbt(u8 *bbt)
+{
+	struct meson_rsv_info_t *rsv_info;
+	int index = rsvname2index(BBT_NAND_MAGIC);
+
+	if (index < 0)
+		return -1;
+
+	rsv_info = &rsv_handler->rsv_info[index];
+	return meson_rsv_read(rsv_info, bbt);
 }
 
 static int aml_nand_rsv_info_alloc_init(struct mtd_info *mtd,
-					u32 vernier,
-					char *name,
-					struct meson_rsv_info_t **rsv_info,
 					struct meson_rsv_handler_t *handler,
-					unsigned int blocks, unsigned int size)
+					struct rsv_part *rsv_part)
 {
-	if (!blocks)
-		return 1;
+	struct meson_rsv_info_t *rsv_info = &handler->rsv_info[handler->entries++];
 
-	*rsv_info = kzalloc(sizeof(struct meson_rsv_info_t), GFP_KERNEL);
-	if (!(*rsv_info))
-		return -ENOMEM;
-
-	(*rsv_info)->nvalid =
+	rsv_info->nvalid =
 		kzalloc(sizeof(struct valid_node_t), GFP_KERNEL);
-	if (!(*rsv_info)->nvalid)
+	if (!rsv_info->nvalid)
 		return -ENOMEM;
 
-	(*rsv_info)->mtd = mtd;
-	(*rsv_info)->start = vernier;
-	(*rsv_info)->end = vernier + blocks;
-	(*rsv_info)->nvalid->blk_addr = -1;
-	(*rsv_info)->handler = handler;
-	if (!memcmp(name, BBT_NAND_MAGIC, 4))
-		(*rsv_info)->size = mtd->size >> mtd->erasesize_shift;
+	rsv_info->mtd = mtd;
+	rsv_info->start = rsv_part->start_block;
+	rsv_info->end = rsv_part->start_block + rsv_part->blocks;
+	rsv_info->nvalid->blk_addr = -1;
+	rsv_info->handler = handler;
+	if (!memcmp(rsv_part->name, BBT_NAND_MAGIC, 4))
+		rsv_info->size = mtd->size >> mtd->erasesize_shift;
 	else
-		(*rsv_info)->size = size;
+		rsv_info->size = rsv_part->size;
 
-	memcpy((*rsv_info)->name, name, 4);
+	memcpy(rsv_info->name, rsv_part->name, 4);
+	rsv_info->name[4] = '\0';
+
+	printf("%s init : start(end) = %d(%d) %p\n",
+		rsv_info->name, rsv_info->start, rsv_info->end, rsv_info);
 	return 0;
 }
 
 int meson_rsv_init(struct mtd_info *mtd,
 		   struct meson_rsv_handler_t *handler)
 {
-	int i, ret = 0;
-	u32 start, vernier;
+	struct rsv_part *rsv_part;
+	struct free_node_t *ptr;
+	int i, ret = 0, array_size;
+	u32 rsv_blocks;
 
-	start = MTD_RSV_START_BLOCK + MTD_RSV_GAP_BLOCK_CNT;
-	vernier = start;
+	rsv_part = meson_rsv_info_calculate_start_block(mtd);
+	if (!rsv_part)
+		return -ENOMEM;
+
+	rsv_handler = handler;
+	rsv_handler->rsv_part = rsv_part;
+	handler->entries = 0;
+
+	rsv_blocks = meson_rsv_part_get_total_blocks(rsv_part);
+	handler->free_node = kzalloc(rsv_blocks * sizeof(struct free_node_t *), GFP_KERNEL);
+	if (!handler->free_node)
+		return -ENOMEM;
+
+	ptr = kzalloc(sizeof(struct free_node_t) * rsv_blocks, GFP_KERNEL);
+	if (!ptr) {
+		kfree(handler->free_node);
+		return -ENOMEM;
+	}
+
 	handler->fn_bitmask = 0;
-	for (i = 0; i < MTD_RSV_BLOCK_CNT; i++) {
-		handler->free_node[i] =
-			kzalloc(sizeof(struct free_node_t), GFP_KERNEL);
-		if (!handler->free_node[i]) {
-			ret = -ENOMEM;
-			goto error0;
-		}
-		memset(handler->free_node[i], 0, sizeof(struct free_node_t));
+	for (i = 0; i < rsv_blocks; i++, ptr++) {
+		handler->free_node[i] = ptr;
 		handler->free_node[i]->index = i;
 	}
 
-	for (i = 0; i < ARRAY_SIZE(rsv_board_info); i++) {
-		ret = aml_nand_rsv_info_alloc_init(mtd, vernier, rsv_board_info[i].name,
-						   &rsv_board_info[i].rsv_info,
-						   handler,
-						   rsv_board_info[i].blocks,
-						   rsv_board_info[i].size);
-		if (ret < 0) {
-			pr_err("%s info alloc init failed\n", rsv_board_info[i].name);
-			ret = -ENOMEM;
-			goto error1;
-		} else if (ret == 1) {
-			pr_err("rsv no need to init %s\n", rsv_board_info[i].name);
-		} else {
-			pr_err("%s start 0x%x end 0x%x size 0x%x\n", rsv_board_info[i].name,
-			       rsv_board_info[i].rsv_info->start,
-			       rsv_board_info[i].rsv_info->end,
-			       rsv_board_info[i].rsv_info->size);
-		}
-		vernier += rsv_board_info[i].blocks;
-		aml_nand_rsv_info_ptr_fill(&rsv_board_info[i], handler);
+	array_size = get_mtd_rsv_partition_count();
+	for (i = 0; i < array_size; i++, rsv_part++) {
+		if (!rsv_part->blocks)
+			continue;
+		ret = aml_nand_rsv_info_alloc_init(mtd, handler, rsv_part);
+		if (ret)
+			break;
 	}
 
-	if ((vernier - start) > MTD_RSV_BLOCK_CNT) {
-		pr_err("ERROR: total blk number is over the limit\n");
-		ret = -ENOMEM;
-		goto error2;
-	}
-	rsv_handler = handler;
-	return 0;
+	for (; ret && handler->entries > 0; --handler->entries)
+		kfree(handler->rsv_info[handler->entries].nvalid);
 
-error2:
-	handler->ddr_para = NULL;
-	handler->key = NULL;
-	handler->env = NULL;
-	handler->bbt = NULL;
-	handler->bbt = NULL;
-error1:
-	for (i = 0; i < ARRAY_SIZE(rsv_board_info); i++) {
-		kfree(rsv_board_info[i].rsv_info->nvalid);
-		rsv_board_info[i].rsv_info->nvalid = NULL;
-		kfree(rsv_board_info[i].rsv_info);
-		rsv_board_info[i].rsv_info = NULL;
-	}
-error0:
-	for (i = 0; i < MTD_RSV_BLOCK_CNT; i++) {
-		kfree(handler->free_node[i]);
-		handler->free_node[i] = NULL;
-	}
+	if (ret)
+		kfree(rsv_handler->rsv_part);
 
 	return ret;
 }
 
-int meson_rsv_bbt_read(u_char *dest, size_t size)
-{
-	u_char *temp;
-	size_t len;
-	int ret;
-
-	if (!rsv_handler ||
-	    !rsv_handler->bbt) {
-		pr_info("%s %d: not inited yet!\n",
-			__func__, __LINE__);
-		return 1;
-	}
-
-	if (!rsv_handler->bbt->valid) {
-		pr_info("%s, %d, %s invalid!, read exit!\n",
-			__func__, __LINE__,
-			rsv_handler->bbt->name);
-		return RSV_INVALID;
-	}
-	if (!dest || size == 0) {
-		pr_info("%s %d parameter error %p %ld\n",
-			__func__, __LINE__, dest, size);
-		return 1;
-	}
-	len = rsv_handler->bbt->size;
-	temp = kzalloc(len, GFP_KERNEL);
-	if (!temp) {
-		pr_err("%s %d kzalloc fail size = %ld\n",
-			__func__, __LINE__, len);
-		return -ENOMEM;
-	}
-	memset(temp, 0, len);
-	ret = meson_rsv_read(rsv_handler->bbt, temp);
-	memcpy(dest, temp, len > size ? size : len);
-	pr_info("%s %d read 0x%lx bytes from bbt, ret %d\n",
-		__func__, __LINE__, len > size ? size : len, ret);
-	kfree(temp);
-	return ret;
-}
-
-int meson_rsv_key_read(u_char *dest, size_t size)
-{
-	u_char *temp;
-	size_t len;
-	int ret;
-
-	if (!rsv_handler ||
-	    !rsv_handler->key) {
-		pr_info("%s %d: not inited yet!\n",
-			__func__, __LINE__);
-		return 1;
-	}
-
-	if (!rsv_handler->key->valid) {
-		pr_info("%s, %d, %s invalid!, read exit!\n",
-			__func__, __LINE__,
-			rsv_handler->key->name);
-		return RSV_INVALID;
-	}
-	if (!dest || size == 0) {
-		pr_info("%s %d parameter error %p %ld\n",
-			__func__, __LINE__, dest, size);
-		return 1;
-	}
-	len = rsv_handler->key->size;
-	temp = kzalloc(len, GFP_KERNEL);
-	if (!temp) {
-		pr_err("%s %d kzalloc fail size = 0x%lx\n",
-			__func__, __LINE__, len);
-		return -ENOMEM;
-	}
-	memset(temp, 0, len);
-	ret = meson_rsv_read(rsv_handler->key, temp);
-	memcpy(dest, temp, len > size ? size : len);
-	pr_info("%s %d read 0x%lx bytes from key, ret %d\n",
-		__func__, __LINE__, len > size ? size : len, ret);
-	kfree(temp);
-	return ret;
-}
-
-int meson_rsv_ddr_para_read(u_char *dest, size_t size)
-{
-	u_char *temp;
-	size_t len;
-	int ret;
-
-	if (!rsv_handler ||
-	    !rsv_handler->ddr_para) {
-		pr_info("%s %d: not inited yet!\n",
-			__func__, __LINE__);
-		return 1;
-	}
-
-	if (!rsv_handler->ddr_para->valid) {
-		pr_info("%s, %d, %s invalid!, read exit!\n",
-			__func__, __LINE__,
-			rsv_handler->ddr_para->name);
-		return RSV_INVALID;
-	}
-	if (!dest || size == 0) {
-		pr_info("%s %d parameter error %p %ld\n",
-			__func__, __LINE__, dest, size);
-		return 1;
-	}
-	len = rsv_handler->ddr_para->size;
-	temp = kzalloc(len, GFP_KERNEL);
-	if (!temp) {
-		pr_err("%s %d kzalloc fail size = 0x%lx\n",
-			__func__, __LINE__, len);
-		return -ENOMEM;
-	}
-	memset(temp, 0, len);
-	ret = meson_rsv_read(rsv_handler->ddr_para, temp);
-	memcpy(dest, temp, len > size ? size : len);
-	pr_info("%s %d read 0x%lx bytes from ddr_para, ret %d\n",
-		__func__, __LINE__, len > size ? size : len, ret);
-	kfree(temp);
-	return ret;
-}
-
-int meson_rsv_env_read(u_char *dest, size_t size)
-{
-	u_char *temp;
-	size_t len;
-	int ret;
-
-	if (!rsv_handler ||
-	    !rsv_handler->env) {
-		pr_info("%s %d: not inited yet!\n",
-			__func__, __LINE__);
-		return 1;
-	}
-	if (!rsv_handler->env->valid) {
-		pr_info("%s, %d, %s invalid!, read exit!\n",
-			__func__, __LINE__,
-			rsv_handler->env->name);
-		return RSV_INVALID;
-	}
-	if (!dest || size == 0) {
-		pr_info("%s %d parameter error %p %ld\n",
-			__func__, __LINE__, dest, size);
-		return 1;
-	}
-	len = rsv_handler->env->size;
-	temp = kzalloc(len, GFP_KERNEL);
-	if (!temp) {
-		pr_err("%s %d kzalloc fail size = 0x%lx\n",
-			__func__, __LINE__, len);
-		return -ENOMEM;
-	}
-	memset(temp, 0, len);
-	ret = meson_rsv_read(rsv_handler->env, temp);
-	memcpy(dest, temp, len > size ? size : len);
-	pr_info("%s %d read 0x%lx bytes from env, ret %d\n",
-		__func__, __LINE__, len > size ? size : len, ret);
-	kfree(temp);
-	return ret;
-}
-
-int meson_rsv_dtb_read(u_char *dest, size_t size)
-{
-	u_char *temp;
-	size_t len;
-	int ret;
-
-	if (!rsv_handler ||
-	    !rsv_handler->dtb) {
-		pr_info("%s %d: rsv info not inited yet!\n",
-			__func__, __LINE__);
-		return 1;
-	}
-	if (!rsv_handler->dtb->valid) {
-		pr_info("%s, %d, %s invalid!, read exit!\n",
-			__func__, __LINE__,
-			rsv_handler->dtb->name);
-		return RSV_INVALID;
-	}
-	if (!dest || size == 0) {
-		pr_info("%s %d parameter error %p %ld\n",
-			__func__, __LINE__, dest, size);
-		return 1;
-	}
-	len = rsv_handler->dtb->size;
-	temp = kzalloc(len, GFP_KERNEL);
-	if (!temp) {
-		pr_err("%s %d kzalloc fail size = 0x%lx\n",
-			__func__, __LINE__, len);
-		return -ENOMEM;
-	}
-	memset(temp, 0, len);
-	ret = meson_rsv_read(rsv_handler->dtb, temp);
-	memcpy(dest, temp, len > size ? size : len);
-	pr_info("%s %d read 0x%lx bytes from dtb, ret %d\n",
-		__func__, __LINE__, len > size ? size : len, ret);
-	kfree(temp);
-	return ret;
-}
-
-/*update bbt*/
-int meson_rsv_bbt_write(u_char *source, size_t size)
-{
-	u_char *temp;
-	size_t len;
-	int ret;
-
-	if (!rsv_handler ||
-	    !rsv_handler->bbt) {
-		pr_info("%s %d rsv info not inited yet!\n",
-			__func__, __LINE__);
-		return 1;
-	}
-	if (!source || size == 0) {
-		pr_info("%s %d parameter error %p %ld\n",
-			__func__, __LINE__, source, size);
-		return 1;
-	}
-	len = rsv_handler->bbt->size;
-	temp = kzalloc(len, GFP_KERNEL);
-	if (!temp) {
-		pr_err("%s %d kzalloc fail size = 0x%lx\n",
-			__func__, __LINE__, len);
-		return -ENOMEM;
-	}
-	memset(temp, 0, len);
-	memcpy(temp, source, len > size ? size : len);
-	ret = meson_rsv_save(rsv_handler->bbt, temp);
-	pr_info("%s %d write 0x%lx bytes to bbt, ret %d\n",
-		__func__, __LINE__, len > size ? size : len, ret);
-	kfree(temp);
-	return ret;
-}
-
-int meson_rsv_key_write(u_char *source, size_t size)
-{
-	u_char *temp;
-	size_t len;
-	int ret;
-
-	if (!rsv_handler ||
-	    !rsv_handler->key) {
-		pr_info("%s %d rsv info not inited yet!\n",
-			__func__, __LINE__);
-		return 1;
-	}
-	if (!source || size == 0) {
-		pr_info("%s %d parameter error %p %ld\n",
-			__func__, __LINE__, source, size);
-		return 1;
-	}
-	len = rsv_handler->key->size;
-	temp = kzalloc(len, GFP_KERNEL);
-	if (!temp) {
-		pr_err("%s %d kzalloc fail size = 0x%lx\n",
-			__func__, __LINE__, len);
-		return -ENOMEM;
-	}
-	memset(temp, 0, len);
-	memcpy(temp, source, len > size ? size : len);
-	ret = meson_rsv_save(rsv_handler->key, temp);
-	pr_info("%s %d write 0x%lx bytes to key, ret %d\n",
-		__func__, __LINE__, len > size ? size : len, ret);
-	kfree(temp);
-	return ret;
-}
-
-#ifdef CONFIG_DDR_PARAMETER_SUPPORT
 int meson_modify_page_info_and_save(struct mtd_info *mtd)
 {
 	u64 bl2_mem, bl2_size = BL2_SIZE;
@@ -1051,247 +922,70 @@ _err_modify_page_info:
 	free(bl2_buf);
 	return ret;
 }
-#endif
 
-int meson_rsv_ddr_para_write(u_char *source, size_t size)
+int meson_ext_rsv_info_read(u_char *dest, size_t size, int index)
 {
-#if defined(CONFIG_DDR_PARAMETER_SUPPORT) && defined(CONFIG_MTD_SPI_NAND)
-	struct mtd_info *mtd = rsv_handler->ddr_para->mtd;
-#endif
+	struct meson_rsv_info_t *rsv_info;
 	u_char *temp;
-	size_t len;
 	int ret;
 
-	if (!rsv_handler ||
-	    !rsv_handler->ddr_para) {
-		pr_info("%s %d rsv info not inited yet!\n",
-			__func__, __LINE__);
-		return 1;
+	rsv_info = &rsv_handler->rsv_info[index];
+	if (!rsv_info->size || !rsv_info->valid) {
+		pr_info("%s %d: not inited yet!\n", __func__, __LINE__);
+		return RSV_INVALID;
 	}
-	if (!source || size == 0) {
-		pr_info("%s %d parameter error %p %ld\n",
-			__func__, __LINE__, source, size);
-		return 1;
-	}
-	len = rsv_handler->ddr_para->size;
-	temp = kzalloc(len, GFP_KERNEL);
-	if (!temp) {
-		pr_err("%s %d kzalloc fail size = 0x%lx\n",
-			__func__, __LINE__, len);
-		return -ENOMEM;
-	}
-	memset(temp, 0, len);
-	memcpy(temp, source, len > size ? size : len);
-	ret = meson_rsv_save(rsv_handler->ddr_para, temp);
-	pr_info("%s %d write 0x%lx bytes to key, ret %d\n",
-		__func__, __LINE__, len > size ? size : len, ret);
 
-#if defined(CONFIG_DDR_PARAMETER_SUPPORT) && defined(CONFIG_MTD_SPI_NAND)
-	ret = meson_modify_page_info_and_save(mtd);
-#endif
+	temp = kzalloc(rsv_info->size, GFP_KERNEL);
+	if (!temp)
+		return -ENOMEM;
+
+	ret = meson_rsv_read(rsv_info, temp);
+	memcpy(dest, temp, rsv_info->size > size ? size : rsv_info->size);
+
 	kfree(temp);
 	return ret;
 }
 
-int meson_rsv_env_write(u_char *source, size_t size)
+int meson_ext_rsv_info_write(u_char *source, size_t size, int index)
 {
+	struct meson_rsv_info_t *rsv_info;
 	u_char *temp;
-	size_t len;
 	int ret;
 
-	if (!rsv_handler ||
-	    !rsv_handler->env) {
-		pr_info("%s %d rsv info has not inited yet!\n",
-			__func__, __LINE__);
-		return 1;
+	rsv_info = &rsv_handler->rsv_info[index];
+	if (!rsv_info->size) {
+		pr_info("%s %d: not inited yet!\n", __func__, __LINE__);
+		return RSV_INVALID;
 	}
-	if (!source || size == 0) {
-		pr_info("%s %d parameter error %p %ld\n",
-			__func__, __LINE__, source, size);
-		return 1;
-	}
-	len = rsv_handler->env->size;
-	temp = kzalloc(len, GFP_KERNEL);
-	if (!temp) {
-		pr_err("%s %d kzalloc fail size = 0x%lx\n",
-			__func__, __LINE__, len);
+
+	temp = kzalloc(rsv_info->size, GFP_KERNEL);
+	if (!temp)
 		return -ENOMEM;
-	}
-	memset(temp, 0, len);
-	memcpy(temp, source, len > size ? size : len);
-	ret = meson_rsv_save(rsv_handler->env, temp);
-	pr_info("%s %d write 0x%lx bytes to env, ret %d\n",
-		__func__, __LINE__, len > size ? size : len, ret);
+
+	memset(temp, 0, rsv_info->size);
+	memcpy(temp, source, rsv_info->size > size ? size : rsv_info->size);
+	ret = meson_rsv_save(rsv_info, temp);
 	kfree(temp);
+
+	if (IS_ENABLED(CONFIG_DDR_PARAMETER_SUPPORT) && IS_ENABLED(CONFIG_MTD_SPI_NAND))
+		ret = meson_modify_page_info_and_save(rsv_info->mtd);
+
 	return ret;
 }
 
-int meson_rsv_dtb_write(u_char *source, size_t size)
+u32 meson_ext_rsv_info_size(int index)
 {
-	u_char *temp;
-	size_t len;
-	int ret;
-
-	if (!rsv_handler ||
-	    !rsv_handler->dtb) {
-		pr_info("%s %d rsv info has not inited yet!\n",
-			__func__, __LINE__);
-		return 1;
-	}
-	if (!source || size == 0) {
-		pr_info("%s %d parameter error %p %ld\n",
-			__func__, __LINE__, source, size);
-		return 1;
-	}
-	len = rsv_handler->dtb->size;
-	temp = kzalloc(len, GFP_KERNEL);
-	if (!temp) {
-		pr_err("%s %d kzalloc fail size = 0x%lx\n",
-			__func__, __LINE__, len);
-		return -ENOMEM;
-	}
-	memset(temp, 0, len);
-	memcpy(temp, source, len > size ? size : len);
-	ret = meson_rsv_save(rsv_handler->dtb, temp);
-	pr_info("%s %d write 0x%lx bytes to dtb, ret %d\n",
-		__func__, __LINE__, len > size ? size : len, ret);
-	kfree(temp);
-	return ret;
+	return rsv_handler->rsv_info[index].size;
 }
 
-u32 meson_rsv_bbt_size(void)
+int meson_ext_rsv_info_erase(int index)
 {
-	if (!rsv_handler ||
-	    !rsv_handler->bbt) {
-		pr_info("%s %d rsv info has not inited yet!\n",
-			__func__, __LINE__);
-		return 0;
-	}
-	return rsv_handler->bbt->size;
-}
+	struct meson_rsv_info_t *rsv_info;
 
-u32 meson_rsv_key_size(void)
-{
-	if (!rsv_handler ||
-	    !rsv_handler->key) {
-		pr_info("%s %d rsv info has not inited yet!\n",
-			__func__, __LINE__);
-		return 0;
-	}
-	return rsv_handler->key->size;
-}
-
-u32 meson_rsv_ddr_para_size(void)
-{
-	if (!rsv_handler ||
-	    !rsv_handler->ddr_para) {
-		pr_info("%s %d rsv info has not inited yet!\n",
-			__func__, __LINE__);
-		return 0;
-	}
-	return rsv_handler->ddr_para->size;
-}
-
-
-u32 meson_rsv_env_size(void)
-{
-	if (!rsv_handler ||
-	    !rsv_handler->env) {
-		pr_info("%s %d rsv info has not inited yet!\n",
-			__func__, __LINE__);
-		return 0;
-	}
-	return rsv_handler->env->size;
-}
-
-u32 meson_rsv_dtb_size(void)
-{
-	if (!rsv_handler ||
-	    !rsv_handler->dtb) {
-		pr_info("%s %d rsv info has not inited yet!\n",
-			__func__, __LINE__);
-		return 0;
-	}
-	return rsv_handler->dtb->size;
-}
-
-int meson_rsv_bbt_erase(void)
-{
-	if (!rsv_handler ||
-	    !rsv_handler->bbt) {
-		pr_info("%s %d rsv info has not inited yet!\n",
-			__func__, __LINE__);
-		return 1;
-	}
-
-	if (rsv_handler->bbt->valid) {
-		return meson_rsv_erase(rsv_handler->bbt);
-	}
+	rsv_info = &rsv_handler->rsv_info[index];
+	if (rsv_info->valid)
+		return meson_rsv_erase(rsv_info);
 	return 0;
-}
-
-int meson_rsv_key_erase(void)
-{
-	if (!rsv_handler ||
-	    !rsv_handler->key) {
-		pr_info("%s %d rsv info has not inited yet!\n",
-			__func__, __LINE__);
-		return 1;
-	}
-	if (rsv_handler->key->valid) {
-		return meson_rsv_erase(rsv_handler->key);
-	}
-	return 0;
-}
-
-int meson_rsv_ddr_para_erase(void)
-{
-	if (!rsv_handler ||
-	    !rsv_handler->ddr_para) {
-		pr_info("%s %d rsv info has not inited yet!\n",
-			__func__, __LINE__);
-		return 1;
-	}
-	if (rsv_handler->ddr_para->valid) {
-		return meson_rsv_erase(rsv_handler->ddr_para);
-	}
-	return 0;
-}
-
-
-int meson_rsv_env_erase(void)
-{
-	if (!rsv_handler ||
-	    !rsv_handler->env) {
-		pr_info("%s %d rsv info has not inited yet!\n",
-			__func__, __LINE__);
-		return 1;
-	}
-	if (rsv_handler->env->valid) {
-		return meson_rsv_erase(rsv_handler->env);
-	}
-	return 0;
-}
-
-int meson_rsv_dtb_erase(void)
-{
-	if (!rsv_handler ||
-	    !rsv_handler->dtb) {
-		pr_info("%s %d rsv info has not inited yet!\n",
-			__func__, __LINE__);
-		return 1;
-	}
-	if (rsv_handler->dtb->valid) {
-		return meson_rsv_erase(rsv_handler->dtb);
-	}
-	return 0;
-
-}
-
-struct rsv_info *meson_rsv_get_info(int *size)
-{
-	*size = ARRAY_SIZE(rsv_board_info);
-	return rsv_board_info;
 }
 
 static int meson_rsv_fdt_setprop(void *fdt, int node_offset,
@@ -1378,10 +1072,9 @@ err_prop:
 
 int meson_rsv_add_dtb(void *blob, int parent_offset)
 {
-	struct meson_rsv_info_t **rsv_info_iter = NULL, *rsv_info = NULL;
-	int rsvparts_offset, cnt, ret = 0, idx = 0;
+	struct meson_rsv_info_t *rsv_info;
+	int rsvparts_offset, ret = 0, idx = 0, array_size;
 	char buf[64];
-	struct rsv_info *info;
 
 	sprintf(buf, "rsv_partition");
 add_rsvparts:
@@ -1403,25 +1096,18 @@ add_rsvparts:
 	}
 
 	ret = meson_rsv_add_node(blob, rsvparts_offset, idx, "nrsv",
-			MTD_RSV_START_BLOCK, MTD_RSV_BLOCK_CNT, 0);
+				 meson_rsv_part_get_start_block(rsv_handler->mtd),
+				 meson_rsv_part_get_total_blocks(rsv_handler->rsv_part),
+				 0);
 	if (ret < 0)
 		return ret;
 
-	idx++;
-	ret = meson_rsv_add_node(blob, rsvparts_offset, idx, "ngap",
-			MTD_RSV_START_BLOCK, MTD_RSV_GAP_BLOCK_CNT, 0);
-	if (ret < 0)
-		return ret;
-
-	idx++;
-	info = meson_rsv_get_info(&cnt);
-	for (rsv_info_iter = &rsv_handler->bbt;
-			*rsv_info_iter && idx < ARRAY_SIZE(rsv_board_info);
-			rsv_info_iter++, idx++) {
-		rsv_info = *rsv_info_iter;
+	array_size = get_mtd_rsv_partition_count();
+	for (rsv_info = rsv_handler->rsv_info;
+	     idx < array_size; rsv_info++, idx++) {
 		ret = meson_rsv_add_node(blob,
 				rsvparts_offset,
-				idx,
+				idx + 1,
 				rsv_info->name,
 				rsv_info->start,
 				rsv_info->end - rsv_info->start,

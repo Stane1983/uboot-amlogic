@@ -145,13 +145,45 @@
 #define CONFIG_SYS_INIT_SP_ADDR				(0x00300000)
 #endif
 
-#define MTD_RSV_BLOCK_CNT					48
+ /* mtd device board config */
+#define BOARD_BOOT_LAYOUT_DISCRETE_BL2         1
 #define CONFIG_BL2_COPY_NUM					8
 #define CONFIG_NOR_TPL_COPY_NUM				1
 #define CONFIG_NAND_TPL_COPY_NUM			2
 #define CONFIG_TPL_SIZE_PER_COPY			0x300000
-#define MTD_RSV_START_BLOCK					16
-#define MTD_RSV_GAP_BLOCK_CNT				4
+
+#ifndef CONFIG_ENV_IS_IN_NAND
+#define MTD_RSV_ENV_BLOCK_CNT			4
+#else
+#define MTD_RSV_ENV_BLOCK_CNT			0
+#endif
+
+#define MTD_RSV_KEY_BLOCK_CNT			8
+
+#ifndef CONFIG_DTB_BIND_KERNEL
+#define MTD_RSV_DTB_BLOCK_CNT			4
+#else
+#define MTD_RSV_DTB_BLOCK_CNT			0
+#endif
+
+#define MTD_RSV_DDR_BLOCK_CNT			0
+
+#define MTD_RSV_KEY_SIZE			0x8000
+#define MTD_RSV_DTB_SIZE			0x10000
+#define MTD_RSV_DDR_SIZE			0x10000
+#define MTD_RSV_BLOCK_CNT	\
+	(MTD_RSV_ENV_BLOCK_CNT + \
+	MTD_RSV_KEY_BLOCK_CNT +	\
+	MTD_RSV_DTB_BLOCK_CNT +	\
+	MTD_RSV_DDR_BLOCK_CNT + 4)
+
+/*
+ * use BOARD_CONFIG_BL2_LAYOUT_TYPE  to select the BL2 layout:
+ * 0 : indicates bl2 is aligned with block size
+ * 1 : indicates bl2 is fixed size with 512 pages
+ * 2 : indicates bl2  is fixed size with 1024 pages
+ */
+#define BOARD_CONFIG_BL2_LAYOUT_TYPE		1
 
 //#define CONFIG_NR_DRAM_BANKS			1
 /* ddr functions */

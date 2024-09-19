@@ -1300,21 +1300,16 @@ static int spinand_probe(struct udevice *dev)
 	spinand->rsv = kzalloc(sizeof(*spinand->rsv), GFP_KERNEL);
 	meson_rsv_init(mtd, spinand->rsv);
 	spinand->bbt = kzalloc(mtd->size >> mtd->erasesize_shift, GFP_KERNEL);
-	if (meson_rsv_check(spinand->rsv->bbt)) {
+	if (meson_rsv_check_bbt()) {
 		pr_err("no valid bbt info, scanning!\n");
 		spinand_scan_bbt(spinand, mtd);
-		meson_rsv_save(spinand->rsv->bbt, spinand->bbt);
+		meson_rsv_save_bbt(spinand->bbt);
 	} else {
 		pr_info("reading bbt info from %s!\n", mtd->name);
-		meson_rsv_read(spinand->rsv->bbt, spinand->bbt);
+		meson_rsv_read_bbt(spinand->bbt);
 	}
 
-	meson_rsv_check(spinand->rsv->env);
-	meson_rsv_check(spinand->rsv->key);
-	meson_rsv_check(spinand->rsv->dtb);
-#ifdef CONFIG_DDR_PARAMETER_SUPPORT
-	meson_rsv_check(spinand->rsv->ddr_para);
-#endif
+	meson_rsv_check_all_except_bbt();
 #endif
 
 #ifdef CONFIG_CMD_NAND

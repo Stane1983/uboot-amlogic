@@ -26,9 +26,18 @@
 
 #define INFO_DATA(n, b, s)	{ .name = (n), .blocks = (b), .size = (s) }
 
-struct rsv_info {
+#define BBT_START_BLOCK		20
+#define BBT_TOTAL_BLOCKS	4
+
+enum BL2_LAYOUT_SELECT {
+	BL2_LAYOUT_DEFAULT = 0,	//BL2 align with block size
+	BL2_LAYOUT_512	   = 1,	//BL2 size fixed 512 pages
+	BL2_LAYOUT_1024	   = 2,	//BL2 size fixed 1024 pages
+};
+
+struct rsv_part {
 	char name[8];
-	struct meson_rsv_info_t *rsv_info;
+	unsigned int start_block;
 	unsigned int blocks;
 	unsigned int size;
 };
@@ -69,41 +78,33 @@ struct oobinfo_t {
 	unsigned status_page:1;
 };
 
+#define MAX_MESON_RSV_INFO_NUM	8
+
 struct meson_rsv_handler_t {
 	struct mtd_info *mtd;
 	unsigned long long fn_bitmask;
-	struct free_node_t *free_node[MTD_RSV_BLOCK_CNT];
-	struct meson_rsv_info_t *bbt;
-#ifndef CONFIG_ENV_IS_IN_NAND
-	struct meson_rsv_info_t *env;
-#endif
-	struct meson_rsv_info_t *key;
-	struct meson_rsv_info_t *dtb;
-	struct meson_rsv_info_t *ddr_para;
+	struct free_node_t **free_node;
+	struct rsv_part *rsv_part;
+	int entries;
+	struct meson_rsv_info_t rsv_info[MAX_MESON_RSV_INFO_NUM];
 	void *priv;
 };
 
-struct rsv_info *meson_rsv_get_info(int *size);
-int meson_rsv_bbt_read(u_char *dest, size_t size);
-int meson_rsv_key_read(u_char *dest, size_t size);
-int meson_rsv_env_read(u_char *dest, size_t size);
-int meson_rsv_dtb_read(u_char *dest, size_t size);
-int meson_rsv_ddr_para_read(u_char *dest, size_t size);
-/* do not provide bbt write operates */
-int meson_rsv_key_write(u_char *source, size_t size);
-int meson_rsv_env_write(u_char *source, size_t size);
-int meson_rsv_dtb_write(u_char *source, size_t size);
-int meson_rsv_ddr_para_write(u_char *source, size_t size);
-uint32_t meson_rsv_bbt_size(void);
-uint32_t meson_rsv_key_size(void);
-uint32_t meson_rsv_env_size(void);
-uint32_t meson_rsv_dtb_size(void);
-u32 meson_rsv_ddr_para_size(void);
-/* do not provide bbt erase operates */
-int meson_rsv_key_erase(void);
-int meson_rsv_env_erase(void);
-int meson_rsv_dtb_erase(void);
-int meson_rsv_ddr_para_erase(void);
+int rsvname2index(const char *rsv_name);
+u32 meson_rsv_part_get_start_block(struct mtd_info *mtd);
+u32 meson_rsv_part_get_bl2_part_size(struct mtd_info *mtd);
+u64 meson_rsv_part_get_tpl_start(struct mtd_info *mtd);
+u64 meson_rsv_part_get_tpl_size(struct mtd_info *mtd);
+int meson_ext_rsv_info_read(u_char *dest, size_t size, int index);
+int meson_ext_rsv_info_write(u_char *source, size_t size, int index);
+u32 meson_ext_rsv_info_size(int index);
+int meson_ext_rsv_info_erase(int index);
+
+void meson_rsv_check_all_except_bbt(void);
+int meson_rsv_check_bbt(void);
+int meson_rsv_save_bbt(u8 *bbt);
+int meson_rsv_read_bbt(u8 *bbt);
+
 int meson_rsv_check(struct meson_rsv_info_t *rsv_info);
 int meson_rsv_init(struct mtd_info *mtd, struct meson_rsv_handler_t *handler);
 int meson_rsv_scan(struct meson_rsv_info_t *rsv_info);
@@ -114,4 +115,8 @@ int meson_rsv_erase_protect(struct meson_rsv_handler_t *handler,
 uint32_t block_addr);
 int meson_rsv_add_dtb(void *blob, int parent_offset);
 struct mtd_info *mtd_store_get(int dev);
+
+struct rsv_part *get_mtd_rsv_partition(void);
+int get_mtd_rsv_partition_count(void);
+
 #endif/* __MESON_RSV_H_ */

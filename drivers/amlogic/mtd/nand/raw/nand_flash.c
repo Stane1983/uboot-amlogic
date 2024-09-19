@@ -1402,7 +1402,7 @@ static int aml_nand_scan_ident(struct mtd_info *mtd, int maxchips)
 	/* fixme, need -1 for each copies? */
 	if (!strncmp((char *)plat->name,
 		NAND_BOOT_NAME, strlen((const char *)NAND_BOOT_NAME)))
-		mtd->size =  BOOT_TOTAL_PAGES * mtd->writesize;
+		mtd->size = meson_rsv_part_get_bl2_part_size(mtd);
 
 	return 0;
 }

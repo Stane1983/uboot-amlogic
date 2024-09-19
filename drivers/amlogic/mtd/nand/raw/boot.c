@@ -137,7 +137,8 @@ int m3_nand_boot_read_page_hwecc(struct mtd_info *mtd,
 	else
 		boot_num = (!aml_chip->boot_copy_num) ? 1 : aml_chip->boot_copy_num;
 
-	each_boot_pages = BOOT_TOTAL_PAGES / boot_num;
+	each_boot_pages = meson_rsv_part_get_start_block(mtd) << pages_per_blk_shift;
+	each_boot_pages /= boot_num;
 
 	if (page >= (each_boot_pages * boot_num)) {
 		memset(buf, 0, (1 << chip->page_shift));
@@ -265,6 +266,7 @@ int m3_nand_boot_write_page_hwecc(struct mtd_info *mtd,
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
 	uint8_t *oob_buf = chip->oob_poi;
 	unsigned nand_page_size = chip->ecc.steps * chip->ecc.size;
+	unsigned pages_per_blk_shift = chip->phys_erase_shift - chip->page_shift;
 	int user_byte_num = (chip->ecc.steps * aml_chip->user_byte_mode);
 	int error = 0, i = 0, bch_mode, ecc_size;
 	int each_boot_pages, boot_num;
@@ -275,7 +277,8 @@ int m3_nand_boot_write_page_hwecc(struct mtd_info *mtd,
 	else
 		boot_num = (!aml_chip->boot_copy_num) ? 1 : aml_chip->boot_copy_num;
 
-	each_boot_pages = BOOT_TOTAL_PAGES / boot_num;
+	each_boot_pages = meson_rsv_part_get_start_block(mtd) << pages_per_blk_shift;
+	each_boot_pages /= boot_num;
 	ecc_size = chip->ecc.size;
 	bch_mode = aml_chip->bch_mode;
 
@@ -315,6 +318,7 @@ int m3_nand_boot_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 	int oob_required, int page, int raw)
 {
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
+	unsigned pages_per_blk_shift = chip->phys_erase_shift - chip->page_shift;
 	int status, write_page;
 	int en_slc = 0, each_boot_pages, boot_num;
 	loff_t ofs;
@@ -325,7 +329,8 @@ int m3_nand_boot_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 	else
 		boot_num = (!aml_chip->boot_copy_num) ? 1 : aml_chip->boot_copy_num;
 
-	each_boot_pages = BOOT_TOTAL_PAGES / boot_num;
+	each_boot_pages = meson_rsv_part_get_start_block(mtd) << pages_per_blk_shift;
+	each_boot_pages /= boot_num;
 
 	/* actual page to be written */
 	write_page = page;

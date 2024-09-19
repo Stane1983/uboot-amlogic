@@ -14,6 +14,8 @@
 #ifndef __AMLMTD_H_
 #define __AMLMTD_H_
 
+#include <amlogic/aml_rsv.h>
+
 #define BOOT_LOADER			"bootloader"
 #define BOOT_BL2			"bl2"
 #define BOOT_SPL			"spl"
@@ -31,20 +33,12 @@ extern struct mtd_partition *get_aml_mtd_partition(void);
 extern int get_aml_partition_count(void);
 extern struct part_info *get_aml_mtdpart_by_index(struct mtd_info *master,
 						   int idx);
-
-int mtd_add_normal_partitions(struct mtd_info *mtd,
-			       const struct mtd_partition *parts,
-			       int nbparts, int normal_offset);
-int mtd_add_partitions(struct mtd_info *mtd,
-			const struct mtd_partition *parts,
-			int nbparts);
-int mtd_add_boot_partitions(struct mtd_info *mtd,
-			     struct mtd_partition *parts,
-			     int nparts);
-int mtd_get_boot_parts_num(void);
-int mtd_get_boot_partition(struct mtd_info *mtd,
-			    struct mtd_partition *parts,
-			    uint8_t index,
-			    uint8_t cnt);
 uint64_t mtd_get_normal_part_offset(struct mtd_info *mtd);
+int mtd_raw_nand_add_boot_partitions(struct mtd_info *mtd);
+int mtd_raw_nand_add_normal_partitions(struct mtd_info *mtd,
+				       const struct mtd_partition *parts,
+				       int nbparts);
+int mtd_spi_nand_add_partitions(struct mtd_info *mtd,
+				const struct mtd_partition *parts,
+				int nbparts);
 #endif/* __AMLMTD_H_ */

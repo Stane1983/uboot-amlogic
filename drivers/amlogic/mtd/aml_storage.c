@@ -554,7 +554,7 @@ static int mtd_store_read(const char *part_name,
 		return ret;
 	if (!part_name) {/*normal area except tpl*/
 		offset = off;
-		offset += BOOT_TOTAL_PAGES * ((u64)mtd->writesize);
+		offset += meson_rsv_part_get_bl2_part_size(mtd);
 		offset += MTD_RSV_BLOCK_CNT * ((u64)mtd->erasesize);
 
 		if ((store_get_device_bootloader_mode() == DISCRETE_BOOTLOADER) ||
@@ -598,8 +598,7 @@ static int mtd_store_write(const char *part_name,
 		return ret;
 	if (!part_name) {/*normal area except tpl*/
 		offset = off;
-		offset += BOOT_TOTAL_PAGES * ((u64)mtd->writesize);
-		offset += MTD_RSV_BLOCK_CNT * ((u64)mtd->erasesize);
+		offset += meson_rsv_part_get_tpl_start(mtd);
 		if ((store_get_device_bootloader_mode() == DISCRETE_BOOTLOADER) ||
 		    (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER)) {
 			if (BOOT_NAND_MTD == medium_type ||
@@ -687,7 +686,7 @@ static int _mtd_store_erase(struct mtd_info *mtd,
 			if (!bb_flag) /*erase partition,erase_len except bb*/
 				erased_size++;
 
-			loff_t bootloader_max_addr = BOOT_TOTAL_PAGES * ((u64)mtd->writesize);
+			loff_t bootloader_max_addr = meson_rsv_part_get_bl2_part_size(mtd);
 			if (offset >= bootloader_max_addr) {
 				mtd = mtd_store_get(1);
 			}
@@ -735,7 +734,7 @@ static int mtd_store_erase(const char *part_name,
 			}
 			printf("!!!warn: erase all rsv!!!\n");
 			offset = mtd_store_size("bl2");
-			size = BOOT_TOTAL_PAGES * (u64)mtd->writesize;
+			size = meson_rsv_part_get_bl2_part_size(mtd);
 		} else {
 			printf("!!!warn: erase all chip!!!\n");
 			offset = 0;
@@ -835,7 +834,7 @@ static char **get_bootloader_entry(int *boot_count)
 static u64 mtd_store_boot_copy_size(const char *part_name)
 {
 	struct mtd_info *mtd = mtd_store_get(0);
-	int pages_per_copy = 0, boot_count = 2, i;
+	int boot_count = 2, i;
 	u64 size = 0;
 	char **boot_entry;
 
@@ -846,15 +845,14 @@ static u64 mtd_store_boot_copy_size(const char *part_name)
 	if (store_get_device_bootloader_mode() == DISCRETE_BOOTLOADER) {
 		if (!strcmp(part_name, BOOT_BL2) ||
 		    !strcmp(part_name, BOOT_SPL)) {
-			pages_per_copy = BOOT_TOTAL_PAGES / CONFIG_BL2_COPY_NUM;
-			return ((u64)mtd->writesize) * pages_per_copy;
+			return meson_rsv_part_get_bl2_part_size(mtd) / CONFIG_BL2_COPY_NUM;
 		} else if (!strcmp(part_name, BOOT_TPL) ||
 			   !strcmp(part_name, BOOT_FIP) ||
 			   !strcmp(part_name, BOOT_DEVFIP)) {
 			return CONFIG_TPL_SIZE_PER_COPY;
 		} else if (!strcmp(part_name, BOOT_LOADER)) {
 			return CONFIG_TPL_SIZE_PER_COPY +
-				(BOOT_TOTAL_PAGES / CONFIG_BL2_COPY_NUM)* ((u64)mtd->writesize);
+				(meson_rsv_part_get_bl2_part_size(mtd) / CONFIG_BL2_COPY_NUM);
 		} else
 			return 0;
 	} else if (store_get_device_bootloader_mode() == ADVANCE_BOOTLOADER) {
@@ -884,15 +882,15 @@ static u64 mtd_store_boot_copy_size(const char *part_name)
 
 		if (strcmp(part_name, BOOT_LOADER))
 			return 0;
-		num = mtd_store_boot_copy_num(part_name);
-		if (!num)
-			return 0;
-		pages_per_copy = BOOT_TOTAL_PAGES / num;
 
 		if (mtd->writesize == 1)
 			size = mtd_store_size(BOOT_LOADER);
-		else
-			size = ((u64)mtd->writesize) * pages_per_copy;
+		else {
+			num = mtd_store_boot_copy_num(part_name);
+			if (!num)
+				return 0;
+			size = meson_rsv_part_get_bl2_part_size(mtd) / num;
+		}
 		return size;
 	}
 }
@@ -1247,95 +1245,40 @@ static int mtd_store_boot_erase(const char *part_name, u8 cpy)
 	return _mtd_store_boot_erase(part_name, cpy);
 }
 
-
 static u32 mtd_store_rsv_size(const char *rsv_name)
 {
-	if (!rsv_name) {
-		pr_info("%s %d invalid rsv name, null\n",
-			__func__, __LINE__);
+	int index = rsvname2index(rsv_name);
+
+	if (index < 0)
 		return 0;
-	}
-	if (!strcmp(rsv_name, RSV_BBT))
-		return meson_rsv_bbt_size();
-	else if (!strcmp(rsv_name, RSV_KEY))
-		return meson_rsv_key_size();
-	else if (!strcmp(rsv_name, RSV_ENV))
-		return meson_rsv_env_size();
-	else if (!strcmp(rsv_name, RSV_DTB))
-		return meson_rsv_dtb_size();
-	else if (!strcmp(rsv_name, RSV_DDR_PARA))
-		return meson_rsv_ddr_para_size();
-	pr_info("%s %d invalid rsv info name: %s\n",
-		__func__, __LINE__, rsv_name);
-	return 0;
+	return meson_ext_rsv_info_size(index);
 }
 
 static int mtd_store_rsv_read(const char *rsv_name, size_t size, void *dest)
 {
-	if (!rsv_name) {
-		pr_info("%s %d rsv info name can not be null\n",
-			__func__, __LINE__);
-		return 1;
-	}
-	if (!strcmp(rsv_name, RSV_BBT))
-		return meson_rsv_bbt_read((u_char *)dest, size);
-	else if (!strcmp(rsv_name, RSV_KEY))
-		return meson_rsv_key_read((u_char *)dest, size);
-	else if (!strcmp(rsv_name, RSV_ENV))
-		return meson_rsv_env_read((u_char *)dest, size);
-	else if (!strcmp(rsv_name, RSV_DTB))
-		return meson_rsv_dtb_read((u_char *)dest, size);
-	else if (!strcmp(rsv_name, RSV_DDR_PARA))
-		return meson_rsv_ddr_para_read((u_char *)dest, size);
-	pr_info("%s %d invalid rsv info name: %s\n",
-		__func__, __LINE__, rsv_name);
-	return 1;
+	int index = rsvname2index(rsv_name);
+
+	if (index < 0)
+		return -1;
+	return meson_ext_rsv_info_read(dest, size, index);
 }
 
 static int mtd_store_rsv_write(const char *rsv_name, size_t size, void *source)
 {
-	if (!rsv_name) {
-		pr_info("%s %d rsv info name can not be null\n",
-			__func__, __LINE__);
-		return 1;
-	}
-	if (!strcmp(rsv_name, RSV_BBT))
-		pr_info("%s %d can not write bbt!\n",
-			__func__, __LINE__);
-	else if (!strcmp(rsv_name, RSV_KEY))
-		return meson_rsv_key_write((u_char *)source, size);
-	else if (!strcmp(rsv_name, RSV_ENV))
-		return meson_rsv_env_write((u_char *)source, size);
-	else if (!strcmp(rsv_name, RSV_DTB))
-		return meson_rsv_dtb_write((u_char *)source, size);
-	else if (!strcmp(rsv_name, RSV_DDR_PARA))
-		return meson_rsv_ddr_para_write((u_char *)source, size);
-	pr_info("%s %d invalid rsv info name: %s\n",
-		__func__, __LINE__, rsv_name);
-	return 1;
+	int index = rsvname2index(rsv_name);
+
+	if (index < 0)
+		return -1;
+	return meson_ext_rsv_info_write(source, size, index);
 }
 
 static int mtd_store_rsv_erase(const char *rsv_name)
 {
-	if (!rsv_name) {
-		pr_info("%s %d rsv info name can not be null\n",
-			__func__, __LINE__);
-		return 1;
-	}
-	if (!strcmp(rsv_name, RSV_BBT))
-		pr_info("%s %d can not erase bbt!\n",
-			__func__, __LINE__);
-	else if (!strcmp(rsv_name, RSV_KEY))
-		return meson_rsv_key_erase();
-	else if (!strcmp(rsv_name, RSV_ENV))
-		return meson_rsv_env_erase();
-	else if (!strcmp(rsv_name, RSV_DTB))
-		return meson_rsv_dtb_erase();
-	else if (!strcmp(rsv_name, RSV_DDR_PARA))
-		return meson_rsv_ddr_para_erase();
-	pr_info("%s %d invalid rsv info name: %s\n",
-		__func__, __LINE__, rsv_name);
-	return 1;
+	int index = rsvname2index(rsv_name);
+
+	if (index < 0)
+		return -1;
+	return meson_ext_rsv_info_erase(index);
 }
 
 static int mtd_store_rsv_protect(const char *rsv_name, bool ops)

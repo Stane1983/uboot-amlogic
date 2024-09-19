@@ -220,7 +220,9 @@ storage_parameter_t __store_para __attribute__ ((section(".store_param"))) = {
 	.common = {
 		.version			= 0x01,
 		.device_fip_container_size	= DEV_FIP_SIZE,
-		.device_fip_container_copies	= 4,
+		.device_fip_container_copies = ((BOARD_CONFIG_BL2_LAYOUT_TYPE << 24) |
+						(CONFIG_BL2_COPY_NUM << 16) |
+						(CONFIG_NAND_TPL_COPY_NUM)),
 		.ddr_fip_container_size		= DDR_FIP_SIZE,
 	},
 	.nand = {
@@ -235,7 +237,7 @@ storage_parameter_t __store_para __attribute__ ((section(".store_param"))) = {
 						  (0 << 13) |			  \
 						  (64 << 6) |			  \
 						  (8 << 0),
-		.reserved_area_blk_cnt		= 48,
+		.reserved_area_blk_cnt		= MTD_RSV_BLOCK_CNT,
 		.page_per_block			= 64,
 		.use_param_page_list		= 0,
 	},

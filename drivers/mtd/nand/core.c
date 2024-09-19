@@ -106,7 +106,7 @@ int nanddev_markbad(struct nand_device *nand, const struct nand_pos *pos)
 		pr_warn("failed to write BBM to block @%llx (err = %d)\n",
 			nanddev_pos_to_offs(nand, pos), ret);
 #if defined(CONFIG_AMLOGIC_MODIFY) && defined(CONFIG_MTD_SPI_NAND)
-	extern int meson_rsv_bbt_write(u_char *source, size_t size);
+	extern int meson_rsv_save_bbt(u8 *bbt);
 	struct spinand_device *spinand = nand_to_spinand(nand);
 	u8 bad_block;
 	u8 *buf = NULL;
@@ -126,8 +126,7 @@ int nanddev_markbad(struct nand_device *nand, const struct nand_pos *pos)
 		if (bad_block == NAND_BLOCK_GOOD) {
 			buf = spinand->bbt;
 			buf[pos->eraseblock] = NAND_BLOCK_BAD;
-			meson_rsv_bbt_write((u_char *)buf,
-					    spinand->rsv->bbt->size);
+			meson_rsv_save_bbt((u_char *)buf);
 		}
 	} else {
 		pr_err("meson bbt table is not initial");

@@ -211,8 +211,9 @@ storage_parameter_t __store_para __section(".store_param") = {
 	.common				= {
 		.version = 0x01,
 		.device_fip_container_size = CONFIG_TPL_SIZE_PER_COPY,
-		.device_fip_container_copies = ((CONFIG_BL2_COPY_NUM << 16)
-						  | (CONFIG_NAND_TPL_COPY_NUM)),
+		.device_fip_container_copies = ((CONFIG_NAND_TPL_COPY_NUM) |
+						(CONFIG_BL2_COPY_NUM << 16) |
+						(BOARD_CONFIG_BL2_LAYOUT_TYPE << 24)),
 		.ddr_fip_container_size = BOOTLOADER_DDR_FIP_SIZE,
 	},
 	.nand				= {
@@ -231,9 +232,10 @@ storage_parameter_t __store_para __section(".store_param") = {
 storage_parameter_t __store_para __attribute__ ((section(".store_param"))) = {
 	.common					= {
 		.version			= 0x01,
-		.device_fip_container_size	= CONFIG_TPL_SIZE_PER_COPY,
-		.device_fip_container_copies	= ((CONFIG_BL2_COPY_NUM << 16)
-						  | (CONFIG_NAND_TPL_COPY_NUM)),
+		.device_fip_container_size  = CONFIG_TPL_SIZE_PER_COPY,
+		.device_fip_container_copies    = ((CONFIG_NAND_TPL_COPY_NUM) |
+						   (CONFIG_BL2_COPY_NUM << 16) |
+						   (BOARD_CONFIG_BL2_LAYOUT_TYPE << 24)),
 		.ddr_fip_container_size		= BOOTLOADER_DDR_FIP_SIZE,
 	},
 	.nand					= {

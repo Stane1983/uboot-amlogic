@@ -146,11 +146,6 @@ typedef union nand_core_clk {
 #define	NAND_NORMAL_NAME	"nandnormal"
 #define NAND_RESERVED_NAME	"nandreserved"
 
-
-#define BOOT_PAGES_PER_COPY	(1024)
-#define	BOOT_COPY_NUM	(BOOT_TOTAL_PAGES/BOOT_PAGES_PER_COPY)
-
-
 #define AML_CHIP_NONE_RB	4
 #define AML_INTERLEAVING_MODE	8
 
