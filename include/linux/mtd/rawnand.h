@@ -474,7 +474,11 @@ struct nand_jedec_params {
  *			when a hw controller is available.
  */
 struct nand_hw_control {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock_t lock;
+#else
 	spinlock_t lock;
+#endif
 	struct nand_chip *active;
 };
 
