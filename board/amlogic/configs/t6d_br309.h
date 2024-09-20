@@ -79,6 +79,8 @@
 	CONFIG_KERNEL_LOGLEVEL "\0"\
 	"usb_burning=" CONFIG_USB_TOOL_ENTRY "\0"\
 	"panel_type=lvds_0\0"\
+	"model_name=FHD2HDMI\0" \
+	"lcd_debug=0x00000000\0" \
 	"outputmode=1080p60hz\0"\
 	"connector0_type=LVDS-A\0" \
 	"hdmimode=1080p60hz\0"\

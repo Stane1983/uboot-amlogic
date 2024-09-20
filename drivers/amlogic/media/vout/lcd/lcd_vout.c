@@ -607,7 +607,7 @@ static int lcd_driver_remove(int index)
 static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 {
 	unsigned int val = 0;
-	char env_str[15], ctrl_str[20];
+	char env_str[12], type_str[12], ctrl_str[48];
 
 	pdrv->boot_ctrl.lcd_type = pdrv->config.basic.lcd_type;
 	pdrv->boot_ctrl.lcd_bits = pdrv->config.basic.lcd_bits;
@@ -626,11 +626,6 @@ static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 		break;
 	}
 	switch (pdrv->config.basic.lcd_type) {
-	case LCD_RGB:
-		pdrv->boot_ctrl.advanced_flag =
-			(pdrv->config.control.rgb_cfg.sync_valid << 1) |
-			(pdrv->config.control.rgb_cfg.de_valid << 0);
-		break;
 	case LCD_P2P:
 		pdrv->boot_ctrl.advanced_flag =
 			pdrv->config.control.p2p_cfg.p2p_type;
@@ -668,28 +663,37 @@ static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 	val |= (pdrv->boot_ctrl.clk_mode & 0x3) << 22;
 	val |= (pdrv->boot_ctrl.base_frame_rate & 0xff) << 24;
 
-	sprintf(ctrl_str, "0x%08x", val);
+	if (pdrv->index == 0) {
+		sprintf(type_str, "panel_type");
+		//sprintf(env_str, "lcd_ctrl");
+	} else {
+		sprintf(type_str, "panel%d_type", pdrv->index);
+		//sprintf(env_str, "lcd%d_ctrl", pdrv->index);
+	}
+	//sprintf(ctrl_str, "0x%08x", val);
+	//env_set(env_str, ctrl_str);
+
+	sprintf(env_str, "lcd%d_attr", pdrv->index);
+	sprintf(ctrl_str, "0x%08x,%s,%s", val,
+		pdrv->boot_ctrl.custom_pinmux ? pdrv->config.basic.model_name : "",
+		pdrv->key_valid ? "" : (env_get(type_str) ? env_get(type_str) : ""));
+	env_set(env_str, ctrl_str);
+
+	//if (strlen(pdrv->config.basic.model_name) > 0) {
+	//	if (pdrv->index == 0)
+	//		sprintf(env_str, "panel_name");
+	//	else
+	//		sprintf(env_str, "panel%d_name", pdrv->index);
+	//	env_set(env_str, pdrv->config.basic.model_name);
+	//}
+
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 		LCDPR("[%d]: %s: ppc=%d, clk_mode=%d, base_fr=%d, bootctrl=%s\n",
-		      pdrv->index, __func__,
-		      pdrv->config.timing.ppc,
-		      pdrv->config.timing.clk_mode,
-		      pdrv->config.timing.base_timing.frame_rate, ctrl_str);
+			pdrv->index, __func__,
+			pdrv->config.timing.ppc,
+			pdrv->config.timing.clk_mode,
+			pdrv->config.timing.base_timing.frame_rate, ctrl_str);
 	}
-
-	if (strlen(pdrv->config.basic.model_name) > 0) {
-		if (pdrv->index == 0)
-			sprintf(env_str, "panel_name");
-		else
-			sprintf(env_str, "panel%d_name", pdrv->index);
-		env_set(env_str, pdrv->config.basic.model_name);
-	}
-
-	if (pdrv->index == 0)
-		sprintf(env_str, "lcd_ctrl");
-	else
-		sprintf(env_str, "lcd%d_ctrl", pdrv->index);
-	env_set(env_str, ctrl_str);
 }
 
 static void lcd_update_debug_bootargs(void)

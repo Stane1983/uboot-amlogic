@@ -81,6 +81,8 @@
 	"baudrate=115200\0"\
 	"model_name=FHD2HDMI\0"\
 	"panel_type=lvds_0\0"\
+	"model_name=FHD2HDMI\0" \
+	"lcd_debug=0x00000000\0" \
 	"outputmode=1080p60hz\0"\
 	"connector0_type=LVDS-A\0" \
 	"colorattribute=444,8bit\0"\
