@@ -29,6 +29,10 @@ int lcd_unifykey_check_exist(const char *key_name)
 {
 	int key_exist = 0;
 	int ret;
+	unsigned int size;
+
+	if (is_ukey_in_param_mem())
+		return panel_param_mem_get(key_name, &size) ? 0 : -1;
 
 	if (!key_name) {
 		LCDUKEYERR("%s: key_name is null\n", __func__);
@@ -54,6 +58,10 @@ int lcd_unifykey_check(const char *key_name)
 {
 	int key_exist = 0, isSecure;
 	int ret;
+	unsigned int size;
+
+	if (is_ukey_in_param_mem())
+		return panel_param_mem_get(key_name, &size) ? 0 : -1;
 
 	ret = key_unify_query_exist(key_name, &key_exist);
 	if (ret) {
@@ -79,24 +87,22 @@ int lcd_unifykey_check(const char *key_name)
 	return 0;
 }
 
-void lcd_unifykey_header_print(unsigned char *buf)
-{
-	struct lcd_unifykey_header_s *header;
-
-	if (!buf)
-		return;
-	header = (struct lcd_unifykey_header_s *)buf;
-	LCDUKEY("unifykey v%d header:\n", header->version);
-	LCDUKEY("crc32             = 0x%08x\n", header->crc32);
-	LCDUKEY("data_len          = %d\n", header->data_len);
-	LCDUKEY("block_next_flag   = %d\n", header->block_next_flag);
-	LCDUKEY("block_cur_size    = %d\n", header->block_cur_size);
-}
-
 int lcd_unifykey_get_size(const char *key_name, int *len)
 {
 	ssize_t key_size = 0;
+	unsigned int size = 0;
 	int ret;
+
+	if (is_ukey_in_param_mem()) {
+		panel_param_mem_get(key_name, &size);
+		printf("%s: %s size:%d\n", __func__, key_name, size);
+		if (size) {
+			*len = (int)size;
+			return 0;
+		} else {
+			return -1;
+		}
+	}
 
 	ret = lcd_unifykey_check(key_name);
 	if (ret)
@@ -119,8 +125,20 @@ int lcd_unifykey_get(const char *key_name, unsigned char *buf, int len)
 {
 	struct lcd_unifykey_header_s *key_header;
 	uint32_t key_crc;
-	unsigned int retry_cnt = 0, key_crc32;
+	unsigned int retry_cnt = 0, key_crc32, size = 0;
 	int ret;
+	unsigned char *mem;
+
+	if (is_ukey_in_param_mem()) {
+		mem = panel_param_mem_get(key_name, &size);
+		if (!mem || !size || len < size)
+			return -1;
+		memcpy(buf, mem, size);
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDUKEY("%s %s from panel_param_mem, size:%d\n", __func__, key_name, size);
+
+		return 0;
+	}
 
 	ret = lcd_unifykey_check(key_name);
 	if (ret)
@@ -174,8 +192,20 @@ int lcd_unifykey_get_tcon(const char *key_name, unsigned char *buf, int len)
 #ifdef CONFIG_AML_LCD_TCON
 	struct lcd_tcon_init_block_header_s *init_header;
 	int retry_cnt = 0;
-	unsigned int key_crc32;
+	unsigned int key_crc32, size = 0;
 	int ret;
+	unsigned char *mem;
+
+	if (is_ukey_in_param_mem()) {
+		mem = panel_param_mem_get(key_name, &size);
+		if (!mem || !size || len < size)
+			return -1;
+		memcpy(buf, mem, size);
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDUKEY("%s %s from panel_param_mem, size:%d\n", __func__, key_name, size);
+
+		return 0;
+	}
 
 	ret = lcd_unifykey_check(key_name);
 	if (ret)
@@ -234,6 +264,19 @@ lcd_unifykey_get_tcon_retry:
 int lcd_unifykey_get_no_header(const char *key_name, unsigned char *buf, int len)
 {
 	int ret;
+	unsigned char *mem;
+	unsigned int size = 0;
+
+	if (is_ukey_in_param_mem()) {
+		mem = panel_param_mem_get(key_name, &size);
+		if (!mem || !size || len < size)
+			return -1;
+		memcpy(buf, mem, size);
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDUKEY("%s %s from panel_param_mem, size:%d\n", __func__, key_name, size);
+
+		return 0;
+	}
 
 	ret = lcd_unifykey_check(key_name);
 	if (ret)
@@ -249,8 +292,145 @@ int lcd_unifykey_get_no_header(const char *key_name, unsigned char *buf, int len
 
 int lcd_unifykey_write(const char *key_name, unsigned char *buf, int len)
 {
+	if (is_ukey_in_param_mem())
+		return panel_param_mem_modify(buf, key_name, len);
+
 	key_unify_write(key_name, buf, len);
 	return 0;
+}
+
+#else
+/* dummy driver */
+int lcd_unifykey_len_check(int key_len, int len)
+{
+	if (key_len < len) {
+		LCDUKEYERR("invalid unifykey length %d, need %d\n", key_len, len);
+		return -1;
+	}
+	return 0;
+}
+
+int lcd_unifykey_check_exist(const char *key_name)
+{
+	unsigned int size;
+
+	if (is_ukey_in_param_mem())
+		return panel_param_mem_get(key_name, &size) ? 0 : -1;
+
+	return -1;
+}
+
+int lcd_unifykey_header_check(unsigned char *buf,
+			      struct lcd_unifykey_header_s *header)
+{
+	LCDUKEYERR("Don't support unifykey\n");
+	return -1;
+}
+
+int lcd_unifykey_check(const char *key_name)
+{
+	unsigned int size;
+
+	if (is_ukey_in_param_mem() && panel_param_mem_get(key_name, &size))
+		return 0;
+
+	return -1;
+}
+
+int lcd_unifykey_get_size(const char *key_name, int *len)
+{
+	u32 key_size;
+
+	if (is_ukey_in_param_mem() && panel_param_mem_get(key_name, &key_size)) {
+		if (key_size) {
+			*len = (int)key_size;
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+int lcd_unifykey_get(const char *key_name, unsigned char *buf, int len)
+{
+	unsigned char *mem;
+	unsigned int size;
+
+	if (is_ukey_in_param_mem()) {
+		mem = panel_param_mem_get(key_name, &size);
+		if (!mem || !size || len < size)
+			return -1;
+		memcpy(buf, mem, size);
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDUKEY("%s %s from panel_param_mem, size:%d\n", __func__, key_name, size);
+
+		return 0;
+	}
+
+	return -1;
+}
+
+int lcd_unifykey_get_tcon(const char *key_name, unsigned char *buf, int len)
+{
+#ifdef CONFIG_AML_LCD_TCON
+	unsigned char *mem;
+	unsigned int size;
+
+	if (is_ukey_in_param_mem()) {
+		mem = panel_param_mem_get(key_name, &size);
+		if (!mem || !size || len < size)
+			return -1;
+		memcpy(buf, mem, size);
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDUKEY("%s %s from panel_param_mem, size:%d\n", __func__, key_name, size);
+
+		return 0;
+	}
+#endif
+	return -1;
+}
+
+int lcd_unifykey_get_no_header(const char *key_name, unsigned char *buf, int len)
+{
+	unsigned char *mem;
+	unsigned int size;
+
+	if (is_ukey_in_param_mem()) {
+		mem = panel_param_mem_get(key_name, &size);
+		if (!mem || !size || len < size)
+			return -1;
+		memcpy(buf, mem, size);
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDUKEY("%s %s from panel_param_mem, size:%d\n", __func__, key_name, size);
+
+		return 0;
+	}
+
+	return -1;
+}
+
+int lcd_unifykey_write(const char *key_name, unsigned char *buf, int len)
+{
+	if (is_ukey_in_param_mem())
+		return panel_param_mem_modify(buf, key_name, len);
+
+	return -1;
+}
+
+#endif
+
+void lcd_unifykey_header_print(unsigned char *buf)
+{
+	struct lcd_unifykey_header_s *header;
+
+	if (!buf)
+		return;
+	header = (struct lcd_unifykey_header_s *)buf;
+	LCDUKEY("unifykey v%d header:\n", header->version);
+	LCDUKEY("crc32             = 0x%08x\n", header->crc32);
+	LCDUKEY("data_len          = %d\n", header->data_len);
+	LCDUKEY("block_next_flag   = %d\n", header->block_next_flag);
+	LCDUKEY("block_cur_size    = %d\n", header->block_cur_size);
 }
 
 void lcd_unifykey_dump(int index, unsigned int flag)
@@ -411,68 +591,4 @@ lcd_unifykey_dump_tcon:
 	free(para);
 #endif
 }
-
-#else
-/* dummy driver */
-int lcd_unifykey_len_check(int key_len, int len)
-{
-	LCDUKEYERR("Don't support unifykey\n");
-	return -1;
-}
-
-int lcd_unifykey_header_check(unsigned char *buf,
-			      struct lcd_unifykey_header_s *header)
-{
-	LCDUKEYERR("Don't support unifykey\n");
-	return -1;
-}
-
-int lcd_unifykey_check(const char *key_name)
-{
-	LCDUKEYERR("Don't support unifykey\n");
-	return -1;
-}
-
-void lcd_unifykey_header_print(unsigned char *buf)
-{
-	LCDUKEYERR("Don't support unifykey\n");
-}
-
-int lcd_unifykey_get_size(const char *key_name, int *len)
-{
-	LCDUKEYERR("Don't support unifykey\n");
-	return -1;
-}
-
-int lcd_unifykey_get(const char *key_name, unsigned char *buf, int len)
-{
-	LCDUKEYERR("Don't support unifykey\n");
-	return -1;
-}
-
-int lcd_unifykey_get_tcon(const char *key_name, unsigned char *buf, int len)
-{
-	LCDUKEYERR("Don't support unifykey\n");
-	return -1;
-}
-
-int lcd_unifykey_get_no_header(const char *key_name, unsigned char *buf, int len)
-{
-	LCDUKEYERR("Don't support unifykey\n");
-	return -1;
-}
-
-int lcd_unifykey_write(const char *key_name, unsigned char *buf, int len)
-{
-	LCDUKEYERR("Don't support unifykey\n");
-	return -1;
-}
-
-void lcd_unifykey_dump(int index, unsigned int flag)
-{
-	LCDUKEYERR("Don't support unifykey\n");
-}
-
-#endif
-
 

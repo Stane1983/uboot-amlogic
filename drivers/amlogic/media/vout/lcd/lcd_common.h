@@ -22,7 +22,8 @@
 /* 20240806: support phy tuning function */
 /* 20240815: sync lcd multi-timing from 2019 */
 /* 20240909: update phy tuning: get real state from register */
-#define LCD_DRV_VERSION    "20240909"
+/* 20240923: support reserved memory to transmit panel parameter to kernel */
+#define LCD_DRV_VERSION    "20240923"
 
 void mdelay(unsigned long n);
 

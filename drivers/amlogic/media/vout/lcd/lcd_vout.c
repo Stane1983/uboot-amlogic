@@ -845,6 +845,54 @@ void lcd_power_domain_off(struct aml_lcd_data_s *lcd_data_p)
 #endif
 }
 
+void lcd_handle_panel_param_to_kernel(void)
+{
+#ifdef CONFIG_CMD_INI
+#define PANEL_PARAM_KEY_NUM_MAX (64 - 1)
+#define PANEL_PARAM_KEY_SIZE 64
+#define PANEL_PARAM_HEAD_SIZE PANEL_PARAM_KEY_SIZE
+#define PANEL_PARAM_KEY_MEM_OFST (PANEL_PARAM_KEY_NUM_MAX * PANEL_PARAM_KEY_SIZE +\
+			PANEL_PARAM_HEAD_SIZE)
+	unsigned char *panel_param;
+	unsigned int size = 0, key_size = 0, key_mem_size = 0;
+	phys_addr_t paddr;
+	unsigned char *panel_rsvd;
+	struct panel_param_head_s {
+		unsigned int _crc32, size;
+		unsigned short key_cnt, ukey_exist;
+		unsigned char rsvd[PANEL_PARAM_HEAD_SIZE - 12];
+	} *head;
+
+	panel_param = get_panel_param_mem();
+	if (panel_param) {
+		head = (struct panel_param_head_s *)panel_param;
+		if (head->size <= PANEL_PARAM_KEY_MEM_OFST || head->key_cnt == 0) {
+			LCDPR("error panel_param header\n");
+			return;
+		}
+		key_size = head->key_cnt * PANEL_PARAM_KEY_SIZE + PANEL_PARAM_HEAD_SIZE;
+		key_mem_size = head->size - PANEL_PARAM_KEY_MEM_OFST;
+		size  = key_size + key_mem_size;
+
+		panel_rsvd = (unsigned char *)lrm_alloc_tail(size, &paddr, "panel_config");
+		if (!panel_rsvd) {
+			LCDPR("no rsvd mem to save panel_config\n");
+			return;
+		}
+		memcpy(panel_rsvd, panel_param, key_size);
+		memcpy(panel_rsvd + key_size, panel_param + PANEL_PARAM_KEY_MEM_OFST,
+		       key_mem_size);
+
+		head = (struct panel_param_head_s *)panel_rsvd;
+		head->size = size;
+		head->_crc32 = lcd_crc32(0, panel_rsvd + 4, size - 4);
+
+		LCDPR("%s, paddr:0x%llx crc:0x%x, size:%d, key_cnt:%d, ukey_exist:%d\n", __func__,
+		      (u64)paddr, head->_crc32, head->size, head->key_cnt, head->ukey_exist);
+	}
+#endif
+}
+
 int lcd_probe(void)
 {
 	int ret = 0;
@@ -884,6 +932,7 @@ int lcd_probe(void)
 
 	lcd_update_debug_bootargs();
 
+	lcd_handle_panel_param_to_kernel();
 	lrm_handle_mem_info_to_kernel();
 
 	return 0;

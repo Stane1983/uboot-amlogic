@@ -60,19 +60,52 @@ static int glcd_ext_init_on_cnt, glcd_ext_init_off_cnt, glcd_ext_cmd_size;
 static struct lcd_ext_attr_s *lcd_ext_attr;
 static unsigned int g_lcd_if, g_lcd_tcon_valid;
 static struct dccd_info_s dccd_info;
+
+#define PANEL_PARAM_MEM_RSVD_SIZE CC_MAX_PANEL_ALL_DATA_SIZE
+#define PANEL_PARAM_KEY_NUM_MAX (64 - 1)
+#define PANEL_PARAM_KEY_SIZE (64)
+#define PANEL_PARAM_HEAD_SIZE PANEL_PARAM_KEY_SIZE
+#define PANEL_PARAM_KEY_NAME_SIZE (PANEL_PARAM_KEY_SIZE - 8)
+
+#define PANEL_PARAM_KEY_MEM_OFST (PANEL_PARAM_KEY_NUM_MAX * PANEL_PARAM_KEY_SIZE +\
+	PANEL_PARAM_HEAD_SIZE)
+
+struct panel_param_key_s {
+	unsigned int size;
+	unsigned int mem_pos;
+	char name[PANEL_PARAM_KEY_NAME_SIZE];
+};
+
+struct panel_param_head_s {
+	unsigned int _crc32;
+	unsigned int size;
+	unsigned short key_cnt;
+	unsigned short ukey_exist;
+	unsigned char rsvd[PANEL_PARAM_HEAD_SIZE - 12];
+};
+
+struct panel_param_mem_s {
+	unsigned int key_mem_pos;
+	struct panel_param_head_s *head;
+	unsigned char *mem;
+	unsigned char *key_mem;
+	struct panel_param_key_s *keys;
+};
+
+static struct panel_param_mem_s panel_param_mem = {0, NULL, NULL, NULL, NULL};
 #endif
 
 int trans_buffer_data(const char *data_str, unsigned int data_buf[])
 {
 	int item_ind = 0;
 	char *token = NULL;
-	char *pSave = NULL;
+	char *psave = NULL;
 	char *tmp_buf = NULL;
 
-	if (data_str == NULL)
+	if (!data_str)
 		return 0;
 
-	tmp_buf = (char *) malloc(CC_MAX_TEMP_BUF_SIZE);
+	tmp_buf = (char *)malloc(CC_MAX_TEMP_BUF_SIZE);
 	if (!tmp_buf) {
 		ALOGE("%s, malloc buffer memory error!!!\n", __func__);
 		return -1;
@@ -80,11 +113,11 @@ int trans_buffer_data(const char *data_str, unsigned int data_buf[])
 
 	memset((void *)tmp_buf, 0, CC_MAX_TEMP_BUF_SIZE);
 	strlcpy(tmp_buf, data_str, CC_MAX_TEMP_BUF_SIZE - 1);
-	token = plat_strtok_r(tmp_buf, ",", &pSave);
-	while (token != NULL) {
+	token = plat_strtok_r(tmp_buf, ",", &psave);
+	while (token) {
 		data_buf[item_ind] = strtoul(token, NULL, 0);
 		item_ind++;
-		token = plat_strtok_r(NULL, ",", &pSave);
+		token = plat_strtok_r(NULL, ",", &psave);
 	}
 
 	free(tmp_buf);
@@ -94,6 +127,162 @@ int trans_buffer_data(const char *data_str, unsigned int data_buf[])
 }
 
 #ifdef CONFIG_AML_LCD
+static void mem_dump(unsigned char *addr, int size)
+{
+	int i = 0, j = 0, len = 0;
+	char buf[128];
+
+	for (j = 0; j < (size >> 4); j++) {
+		for (i = 0, len = 0; i < 16; i++)
+			len += sprintf(buf + len, "%02x ", (unsigned int)addr[j * 16 + i]);
+		printf("0x%04x: %s\n", j * 16,  buf);
+	}
+	if (size & 0xf) {
+		for (i = 0, len = 0; i < (size & 0xf); i++)
+			len += sprintf(buf + len, "%02x ", (unsigned int)addr[j * 16 + i]);
+		printf("0x%04x: %s\n", j * 16,  buf);
+	}
+}
+
+void panel_param_mem_dump(void)
+{
+	int i = 0;
+	struct panel_param_key_s *key;
+
+	if (!panel_param_mem.mem || !panel_param_mem.head->key_cnt)
+		return;
+
+	printf("\npanel param dump: key_cnt:%d\n", panel_param_mem.head->key_cnt);
+	for (i = 0; i < panel_param_mem.head->key_cnt; i++) {
+		key = &panel_param_mem.keys[i];
+		printf("[%02d]: size:0x%x, mem_ofst:0x%x, name:%s\n",
+		       i, key->size, key->mem_pos, key->name);
+
+		mem_dump(panel_param_mem.key_mem + key->mem_pos, key->size);
+		printf("\n");
+	}
+}
+
+unsigned char *get_panel_param_mem(void)
+{
+	if (panel_param_mem.mem && panel_param_mem.head->key_cnt)
+		return panel_param_mem.mem;
+
+	return NULL;
+}
+
+int is_panel_param_mem_ok(void)
+{
+	return (panel_param_mem.mem && panel_param_mem.head->key_cnt) ? 1 : 0;
+}
+
+int is_ukey_in_param_mem(void)
+{
+	return (panel_param_mem.head && panel_param_mem.head->ukey_exist) ? 1 : 0;
+}
+
+void panel_param_mem_set_ukey_flag(void)
+{
+	panel_param_mem.head->ukey_exist = 1;
+}
+
+/*head(64byte)|keys(64 * N)......|key_mems......*/
+int panel_param_mem_put(unsigned char *mem, const char *name, u32 len)
+{
+	struct panel_param_key_s *key;
+
+	if (!panel_param_mem.mem) {
+		panel_param_mem.mem = (unsigned char *)malloc(PANEL_PARAM_MEM_RSVD_SIZE);
+		if (panel_param_mem.mem) {
+			memset(panel_param_mem.mem, 0, PANEL_PARAM_MEM_RSVD_SIZE);
+			panel_param_mem.head = (struct panel_param_head_s *)panel_param_mem.mem;
+			panel_param_mem.keys = (struct panel_param_key_s *)(panel_param_mem.mem +
+				PANEL_PARAM_HEAD_SIZE);
+			panel_param_mem.key_mem = (unsigned char *)(panel_param_mem.mem +
+				PANEL_PARAM_KEY_MEM_OFST);
+			panel_param_mem.head->size = PANEL_PARAM_KEY_MEM_OFST;
+			panel_param_mem.key_mem_pos = 0;
+		} else {
+			printf("%s, no memory alloc\n", __func__);
+			return -1;
+		}
+	}
+
+	key = &panel_param_mem.keys[panel_param_mem.head->key_cnt];
+	key->size = len;
+	key->mem_pos = panel_param_mem.key_mem_pos;
+	if (key->mem_pos + key->size > PANEL_PARAM_MEM_RSVD_SIZE - PANEL_PARAM_KEY_MEM_OFST) {
+		printf("%s, memory not enough\n", __func__);
+		return -1;
+	}
+	strlcpy(key->name, name, sizeof(key->name));
+	memcpy(panel_param_mem.key_mem + key->mem_pos, mem, len);
+	panel_param_mem.key_mem_pos += len;
+	panel_param_mem.key_mem_pos = ALIGN(panel_param_mem.key_mem_pos, 16);
+	panel_param_mem.head->key_cnt++;
+	panel_param_mem.head->size = panel_param_mem.key_mem_pos + PANEL_PARAM_KEY_MEM_OFST;
+
+	return 0;
+}
+
+unsigned char *panel_param_mem_get(const char *name, u32 *len)
+{
+	int i = 0;
+	struct panel_param_key_s *key;
+
+	if (!panel_param_mem.key_mem || !panel_param_mem.head->key_cnt)
+		return NULL;
+
+	for (i = 0; i < panel_param_mem.head->key_cnt; i++) {
+		key = &panel_param_mem.keys[i];
+		if (strncmp(key->name, name, sizeof(key->name)) == 0) {
+			*len = key->size;
+			return panel_param_mem.key_mem + key->mem_pos;
+		}
+	}
+
+	return NULL;
+}
+
+int panel_param_mem_modify(unsigned char *mem, const char *name, u32 len)
+{
+	struct panel_param_key_s *key;
+	unsigned int _crc32;
+	int ret = 0, i = 0;
+
+	if (!mem || !panel_param_mem.mem || !panel_param_mem.head->key_cnt)
+		return -1;
+
+	for (i = 0; i < panel_param_mem.head->key_cnt; i++) {
+		key = &panel_param_mem.keys[i];
+		if (strncmp(key->name, name, sizeof(key->name)) == 0) {
+			if (len < key->size) {
+				memset(panel_param_mem.key_mem + key->mem_pos, 0, key->size);
+				memcpy(panel_param_mem.key_mem + key->mem_pos, mem, len);
+				key->size = len;
+			} else {
+				//once for all, we don't care about this memory
+				memset(panel_param_mem.key_mem + key->mem_pos, 0, key->size);
+				memset(key, 0, PANEL_PARAM_KEY_SIZE);
+				ret = panel_param_mem_put(mem, name, len);
+			}
+			if (ret == 0) {
+				_crc32 = cal_CRC32(0, panel_param_mem.mem + 4,
+						   panel_param_mem.head->size - 4);
+				panel_param_mem.head->_crc32 = _crc32;
+			}
+			return ret;
+		}
+	}
+
+	ret = panel_param_mem_put(mem, name, len);
+	if (ret == 0) {
+		_crc32 = cal_CRC32(0, panel_param_mem.mem + 4, panel_param_mem.head->size - 4);
+		panel_param_mem.head->_crc32 = _crc32;
+	}
+	return ret;
+}
+
 int check_param_valid(int mode, int parse_len, unsigned char parse_buf[],
 		      int ori_len, unsigned char ori_buf[])
 {
@@ -2983,6 +3172,7 @@ int handle_panel_ini(int index)
 	char *file_name;
 	int print_flag;
 	char str[15];
+	char key_name[PANEL_PARAM_KEY_NAME_SIZE];
 
 	if (index == 0)
 		sprintf(str, "model_panel");
@@ -3064,9 +3254,15 @@ int handle_panel_ini(int index)
 	}
 
 	// start handle lcd param
+	if (index)
+		snprintf(key_name, PANEL_PARAM_KEY_NAME_SIZE - 1, "lcd%d", index);
+	else
+		snprintf(key_name, PANEL_PARAM_KEY_NAME_SIZE - 1, "lcd");
+	if (panel_param_mem_put((u8 *)lcd_buf, key_name, glcd_dcnt) == 0)
+		panel_param_mem_set_ukey_flag();
+
 	memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
 	tmp_len = read_lcd_param(index, tmp_buf);
-	//ALOGD("%s, start check lcd param data (0x%x).\n", __func__, tmp_len);
 	if (check_param_valid(0, glcd_dcnt, lcd_buf, tmp_len, tmp_buf) ==
 	    CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM) {
 		ALOGD("%s, check lcd param data diff (0x%x), save new param.\n",
@@ -3076,6 +3272,12 @@ int handle_panel_ini(int index)
 	// end handle lcd param
 
 	// start handle lcd extern param
+	if (index)
+		snprintf(key_name, PANEL_PARAM_KEY_NAME_SIZE - 1, "lcd%d_extern", index);
+	else
+		snprintf(key_name, PANEL_PARAM_KEY_NAME_SIZE - 1, "lcd_extern");
+	panel_param_mem_put((u8 *)lcd_ext_attr, key_name, glcd_ext_dcnt);
+
 	memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
 	tmp_len = read_lcd_extern_param(index, tmp_buf);
 	//ALOGD("%s, start check lcd extern param data (0x%x).\n", __func__, tmp_len);
@@ -3085,23 +3287,29 @@ int handle_panel_ini(int index)
 		      __func__, tmp_len);
 		save_lcd_extern_param(index, glcd_ext_dcnt, (unsigned char *)lcd_ext_attr);
 	}
-	// end handle lcd extern param
 
 	// start handle backlight param
+	if (index)
+		snprintf(key_name, PANEL_PARAM_KEY_NAME_SIZE - 1, "backlight%d", index);
+	else
+		snprintf(key_name, PANEL_PARAM_KEY_NAME_SIZE - 1, "backlight");
+	panel_param_mem_put((u8 *)bl_attr, key_name, gbl_dcnt);
+
 	memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
 	tmp_len = read_backlight_param(index, tmp_buf);
-	//ALOGD("%s, start check backlight param data (0x%x).\n", __func__, tmp_len);
 	if (check_param_valid(0, gbl_dcnt, (unsigned char *)bl_attr, tmp_len, tmp_buf) ==
 	    CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM) {
 		ALOGD("%s, check backlight param data diff (0x%x), save new param.\n",
 		      __func__, tmp_len);
 		save_backlight_param(index, gbl_dcnt, (unsigned char *)bl_attr);
 	}
-	// end handle backlight param
 
 #ifdef CONFIG_AML_LCD_BL_LDIM
 	// start handle ldim_dev param
 	if (g_ldim_dev_valid) {
+		snprintf(key_name, PANEL_PARAM_KEY_NAME_SIZE - 1, "ldim_dev");
+		panel_param_mem_put((u8 *)ldim_dev_attr, key_name, gldim_dev_dcnt);
+
 		memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
 		tmp_len = read_ldim_dev_param(tmp_buf);
 		//ALOGD("%s, start check ldim_dev param data (0x%x).\n", __func__, tmp_len);
@@ -3117,6 +3325,12 @@ int handle_panel_ini(int index)
 
 	// start handle lcd_optical param
 	if (glcd_optical_dcnt) {
+		if (index)
+			snprintf(key_name, PANEL_PARAM_KEY_NAME_SIZE - 1, "lcd%d_optical", index);
+		else
+			snprintf(key_name, PANEL_PARAM_KEY_NAME_SIZE - 1, "lcd_optical");
+		panel_param_mem_put((u8 *)optical_attr, key_name, glcd_optical_dcnt);
+
 		memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
 		tmp_len = read_lcd_optical_param(index, tmp_buf);
 		//ALOGD("%s, start check lcd_tcon_spi param data (0x%x).\n", __func__, tmp_len);

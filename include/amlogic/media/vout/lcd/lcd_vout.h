@@ -813,4 +813,47 @@ int aml_lcd_driver_suspend(void *pm_ops);
 int aml_lcd_driver_resume(void *pm_ops);
 int aml_lcd_driver_poweroff(void *pm_ops);
 void aml_lcd_set_poweron_suspend_sta(int state);
+
+void aml_lcd_list(void);
+void aml_lcd_set(uint8_t drv_idx, char *lcd_type_name);
+
+#ifdef CONFIG_CMD_INI
+int is_panel_param_mem_ok(void);
+int is_ukey_in_param_mem(void);
+void panel_param_mem_dump(void);
+unsigned char *get_panel_param_mem(void);
+int panel_param_mem_put(unsigned char *mem, const char *name, u32 len);
+unsigned char *panel_param_mem_get(const char *name, u32 *len);
+int panel_param_mem_modify(unsigned char *mem, const char *name, u32 len);
+#else
+static inline int is_panel_param_mem_ok(void)
+{
+	return 0;
+}
+
+static inline int is_ukey_in_param_mem(void)
+{
+	return 0;
+}
+
+static inline void panel_param_mem_dump(void)
+{
+}
+
+static inline unsigned char *get_panel_param_mem(void)
+{
+	return NULL;
+}
+
+static inline unsigned char *panel_param_mem_get(const char *name, u32 *len)
+{
+	return NULL;
+}
+
+static inline int panel_param_mem_modify(unsigned char *mem, const char *name, u32 len)
+{
+	return -1;
+}
+#endif
+
 #endif /* INC_AML_LCD_VOUT_H */
