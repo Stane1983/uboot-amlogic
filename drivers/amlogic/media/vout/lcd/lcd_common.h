@@ -75,7 +75,8 @@
 /* 20240712: lcd tcon lut dma flow optimize */
 /* 20240806: support phy tuning function */
 /* 20240909: update phy tuning: get real state from register */
-#define LCD_DRV_VERSION    "20240909"
+/* 20240923: support reserved memory to transmit panel parameter to kernel */
+#define LCD_DRV_VERSION    "20240923"
 
 extern unsigned long clk_util_clk_msr(unsigned long clk_mux);
 

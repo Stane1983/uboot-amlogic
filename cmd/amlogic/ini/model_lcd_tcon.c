@@ -1319,6 +1319,8 @@ handle_tcon_path_pmu_spi_bin_multi:
 
 	handle_tcon_spi(tcon_spi);
 	if (g_lcd_tcon_spi_cnt) {
+		panel_param_mem_put((u8 *)tcon_spi, "lcd_tcon_spi", g_lcd_tcon_spi_cnt);
+
 		memset((void *)tmp_buf, 0, tmp_buf_size);
 		tmp_len = ReadTconSpiParam(tmp_buf);
 		//ALOGD("%s, start check lcd_tcon_spi param data (0x%x).\n", __func__, tmp_len);
@@ -1484,6 +1486,8 @@ int handle_tcon_bin(void)
 	memcpy(tcon_buf, tmp_buf, tcon_bin_size);
 
 	BinFileUninit();
+
+	panel_param_mem_put((u8 *)tcon_buf, "lcd_tcon", tcon_bin_size);
 
 	memset((void *)tmp_buf, 0, tmp_buf_size);
 	tmp_len = ReadTconBinParam(tmp_buf);
