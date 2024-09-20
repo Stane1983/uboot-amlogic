@@ -11,10 +11,10 @@ struct lcd_phy_ctrl_s {
 	unsigned int lane_num;
 	unsigned int lane_lock_total;
 	unsigned int lane_lock[LCD_MAX_DRV];
-
 	unsigned int (*phy_vswing_level_to_val)(struct aml_lcd_drv_s *pdrv, unsigned int level);
 	unsigned int (*phy_amp_dft_val)(struct aml_lcd_drv_s *pdrv);
 	unsigned int (*phy_preem_level_to_val)(struct aml_lcd_drv_s *pdrv, unsigned int level);
+	unsigned char (*phy_lane_phase_sel_def)(struct aml_lcd_drv_s *pdrv, unsigned int lane);
 	void (*phy_glb_param_dft_val)(struct aml_lcd_drv_s *pdrv);
 	int (*phy_param_get)(struct aml_lcd_drv_s *pdrv, struct phy_config_s *phy);
 	void (*phy_reg_dump)(struct aml_lcd_drv_s *pdrv);

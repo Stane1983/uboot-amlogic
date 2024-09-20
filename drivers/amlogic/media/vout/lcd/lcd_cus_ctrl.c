@@ -585,6 +585,7 @@ static int lcd_cus_ctrl_attr_parse_tuning_attr_ukey(struct aml_lcd_drv_s *pdrv,
 	struct phy_config_s *phy = &pdrv->config.phy_cfg;
 	unsigned int offset = 0, ch_sel_size, param_size, ch_size;
 	unsigned short lane_cnt;
+	unsigned char pn_phase;
 	int i, j;
 
 	if (attr_conf->param_size == 0)
@@ -614,12 +615,18 @@ static int lcd_cus_ctrl_attr_parse_tuning_attr_ukey(struct aml_lcd_drv_s *pdrv,
 	memset(tuning_attr->ch_config.lane_sel, 0, ch_sel_size);
 	for (j = 0; j < lane_cnt; j++) {
 		lane_sel = &tuning_attr->ch_config.lane_sel[j];
-		lane_sel->pn_swap = *(p + offset);
+		pn_phase = *(p + offset);
+		lane_sel->pn_swap = pn_phase & 0x1;
+		lane_sel->phase_sel = (pn_phase >> 1) & 0xf;
+		if (lane_sel->phase_sel == 0xf)
+			lane_sel->phase_sel = 0xff;
 		offset += 1;
 		lane_sel->sel = *(p + offset);
 		offset += 1;
-		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-			LCDPR("%s: lane[%d]: sel=0x%x\n", __func__, j, lane_sel->sel);
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+			LCDPR("%s: lane[%d]: sel=0x%x, phase_sel=0x%x\n",
+				__func__, j, lane_sel->sel, lane_sel->phase_sel);
+		}
 	}
 
 	tuning_attr->group_cnt = attr_conf->param_flag;
@@ -715,8 +722,10 @@ static int lcd_cus_ctrl_attr_parse_tuning_attr_ukey(struct aml_lcd_drv_s *pdrv,
 
 	//update driver phy lane_sel
 	if (lane_cnt <= phy->lane_num) {
-		for (i = 0; i < lane_cnt; i++)
+		for (i = 0; i < lane_cnt; i++) {
 			phy->lane[i].sel = tuning_attr->ch_config.lane_sel[i].sel;
+			phy->lane[i].phase_sel = tuning_attr->ch_config.lane_sel[i].phase_sel;
+		}
 	}
 
 	attr_conf->attr.tuning_attr = tuning_attr;
@@ -987,7 +996,11 @@ static int lcd_cus_ctrl_config_update_tuning_attr(struct aml_lcd_drv_s *pdrv,
 		pdrv->config.timing.ss_freq = tuning_param->ss_freq;
 		pdrv->config.timing.ss_mode = tuning_param->ss_mode;
 
-		//minilvds clk_phase reserved
+		//minilvds clk_phase
+		if (pdrv->config.basic.lcd_type == LCD_MLVDS) {
+			pdrv->config.control.mlvds_cfg.clk_phase =
+				tuning_param->mlvds_clk_phase;
+		}
 
 		//phy
 		pdrv->config.phy_cfg.vswing = tuning_param->phy_vswing;
@@ -999,7 +1012,8 @@ static int lcd_cus_ctrl_config_update_tuning_attr(struct aml_lcd_drv_s *pdrv,
 			for (i = 0; i < lane_cnt; i++) {
 				pdrv->config.phy_cfg.lane[i].preem =
 					tuning_param->phy_lane[i].preem;
-				pdrv->config.phy_cfg.lane[i].amp = tuning_param->phy_lane[i].amp;
+				pdrv->config.phy_cfg.lane[i].amp =
+					tuning_param->phy_lane[i].amp;
 			}
 		}
 		LCDPR("[%d]: %s: match tuning_phy_clk:%d, drv_phy_clk:%d\n",

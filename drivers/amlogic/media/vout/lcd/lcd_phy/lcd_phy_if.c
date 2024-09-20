@@ -11,6 +11,14 @@
 
 static struct lcd_phy_ctrl_s *lcd_phy_ctrl;
 
+unsigned int lcd_phy_check_lane_phase_sel(struct aml_lcd_drv_s *pdrv)
+{
+	if (!lcd_phy_ctrl || pdrv->config.basic.lcd_type != LCD_MLVDS)
+		return 0;
+
+	return lcd_phy_ctrl->phy_lane_phase_sel_def ? 1 : 0;
+}
+
 int lcd_phy_param_preset(struct aml_lcd_drv_s *pdrv)
 {
 	struct phy_config_s *phy = &pdrv->config.phy_cfg;
@@ -36,6 +44,12 @@ int lcd_phy_param_preset(struct aml_lcd_drv_s *pdrv)
 		phy->lane[i].amp = amp;
 		phy->lane[i].preem = preem;
 		phy->lane[i].sel = i;
+		if (lcd_phy_ctrl->phy_lane_phase_sel_def) {
+			phy->lane[i].phase_sel =
+				lcd_phy_ctrl->phy_lane_phase_sel_def(pdrv, i);
+		} else {
+			phy->lane[i].phase_sel = 0xff;
+		}
 	}
 
 	return 0;
@@ -84,10 +98,11 @@ void lcd_phy_param_print(struct aml_lcd_drv_s *pdrv)
 		phy->vcm, local_phy.vcm,
 		phy->cv_mode, local_phy.cv_mode,
 		phy->ref_bias, local_phy.ref_bias);
-	printf("  lane  sel       amp       preem\n");
+	printf("  lane  sel       phase_sel  amp       preem\n");
 	for (i = 0; i < local_phy.lane_num; i++) {
-		printf("  [%2d]: 0x%x(0x%x), 0x%x(0x%x), 0x%x(0x%x)\n",
+		printf("  [%2d]: 0x%x(0x%x), 0x%x(0x%x), 0x%x(0x%x), 0x%x(0x%x)\n",
 		       i, phy->lane[i].sel, local_phy.lane[i].sel,
+		       phy->lane[i].phase_sel, local_phy.lane[i].phase_sel,
 		       phy->lane[i].amp, local_phy.lane[i].amp,
 		       phy->lane[i].preem, local_phy.lane[i].preem);
 	}
@@ -215,7 +230,7 @@ int lcd_phy_config_init(struct aml_lcd_data_s *pdata)
 		lcd_phy_ctrl = lcd_phy_config_init_s6(pdata);
 		break;
 #endif
-#if (IS_ENABLED(CONFIG_MESON_T6D))
+#ifdef CONFIG_MESON_T6D
 	case LCD_CHIP_T6D:
 		lcd_phy_ctrl = lcd_phy_config_init_t6d(pdata);
 		break;

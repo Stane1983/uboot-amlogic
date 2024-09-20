@@ -304,11 +304,32 @@ static void lcd_set_vclk_crt_t6d(struct aml_lcd_drv_s *pdrv)
 }
 
 #if (IS_ENABLED(CONFIG_AML_LCD_TCON))
+static int lcd_set_mlvds_clk_phase_t6d(struct aml_lcd_drv_s *pdrv)
+{
+	struct lcd_config_s *pconf = &pdrv->config;
+	unsigned int val, p0, pa, pb;
+
+	val = pconf->control.mlvds_cfg.clk_phase & 0xfff;
+	p0 = val & 0xf;
+	pa = (val >> 8) & 0xf;
+	pb = (val >> 4) & 0xf;
+
+	val = ((pa << 4) | (pb << 0)) & 0xff;
+	lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL2, p0,  28, 4);
+	lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL3, val, 16, 8);
+
+	//set phase load sequence
+	lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL3, 0, 31, 1);
+	udelay(10);
+	lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL3, 1, 31, 1);
+
+	return 0;
+}
+
 /* tcon run base clk, include register access */
 static void lcd_set_tcon_clk_t6d(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_config_s *pconf = &pdrv->config;
-	unsigned int val, p0, pa, pb;
 
 	if (pconf->basic.lcd_type != LCD_MLVDS)
 		return;
@@ -316,21 +337,9 @@ static void lcd_set_tcon_clk_t6d(struct aml_lcd_drv_s *pdrv)
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("[%d]: %s\n", pdrv->index, __func__);
 
-	val = pconf->control.mlvds_cfg.clk_phase & 0xfff;
-	p0 = val & 0xf;
-	pa = (val >> 4) & 0xf;
-	pb = (val >> 8) & 0xf;
-
 	switch (pconf->basic.lcd_type) {
 	case LCD_MLVDS:
-		val = ((pa << 4) | (pb << 0)) & 0xff;
-		lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL2, p0,  28, 4);
-		lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL3, val, 16, 8);
-
-		//set phase load sequence
-		lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL3, 0, 31, 1);
-		udelay(10);
-		lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL3, 1, 31, 1);
+		lcd_set_mlvds_clk_phase_t6d(pdrv);
 
 		/* tcon_clk */
 		if (pconf->timing.enc_clk >= 100000000) /* 25M */

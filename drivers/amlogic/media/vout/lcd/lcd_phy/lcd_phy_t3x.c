@@ -233,6 +233,7 @@ static struct lcd_phy_ctrl_s lcd_phy_ctrl_t3x = {
 	.phy_vswing_level_to_val = lcd_phy_vswing_level_to_value_dft,
 	.phy_preem_level_to_val = lcd_phy_preem_level_to_value_dft,
 	.phy_amp_dft_val = lcd_phy_amp_dft,
+	.phy_lane_phase_sel_def = NULL,
 	.phy_glb_param_dft_val = lcd_phy_glb_param_dft,
 	.phy_param_get = lcd_phy_param_get_from_reg,
 	.phy_reg_dump = lcd_phy_reg_dump,

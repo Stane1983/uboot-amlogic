@@ -441,10 +441,15 @@ struct p2p_config_s {
 #define PHY_BIT_LAEN_AMP    BIT(13)
 #define PHY_BIT_LANE_SEL    BIT(14)
 
+#define PHY_PHASE_0 0
+#define PHY_PHASE_A 1
+#define PHY_PHASE_B 2
+
 struct phy_lane_s {
 	unsigned int preem; //flag bit[12]
 	unsigned int amp;   //flag bit[13]
 	unsigned int sel;   //flag bit[14]
+	unsigned char phase_sel;  //flag bit[15]
 };
 
 #define PHY_CMODE   0

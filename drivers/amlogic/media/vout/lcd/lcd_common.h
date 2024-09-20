@@ -140,6 +140,7 @@ void lcd_clk_config_probe(struct aml_lcd_drv_s *pdrv);
 int aml_lcd_prbs_test(struct aml_lcd_drv_s *pdrv, unsigned int ms, unsigned int mode_flag);
 
 /* lcd phy */
+unsigned int lcd_phy_check_lane_phase_sel(struct aml_lcd_drv_s *pdrv);
 int lcd_phy_param_preset(struct aml_lcd_drv_s *pdrv);
 void lcd_phy_param_print(struct aml_lcd_drv_s *pdrv);
 void lcd_phy_analog_reg_print(struct aml_lcd_drv_s *pdrv);

@@ -82,6 +82,7 @@ struct lcd_clk_adv_s {
 struct lcd_tuning_ch_sel_s {
 	unsigned char pn_swap;
 	unsigned char sel;
+	unsigned char phase_sel;
 };
 
 struct lcd_tuning_ch_config_s {

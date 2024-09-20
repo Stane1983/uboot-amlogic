@@ -105,6 +105,7 @@ static struct lcd_phy_ctrl_s lcd_phy_ctrl_s6 = {
 	.phy_vswing_level_to_val = NULL,
 	.phy_preem_level_to_val = NULL,
 	.phy_amp_dft_val = NULL,
+	.phy_lane_phase_sel_def = NULL,
 	.phy_glb_param_dft_val = NULL,
 	.phy_param_get = NULL,
 	.phy_reg_dump = lcd_phy_reg_dump,
