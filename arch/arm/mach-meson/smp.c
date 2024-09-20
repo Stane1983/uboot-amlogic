@@ -125,8 +125,8 @@ void secondary_off(void)
 	if (mpidr)              /* cluster 1 */
 		cpu = cpu + 4;     /* meson soc cluster 0 has 4 cores*/
 
-	dcache_disable();
 	set_cpu_online(cpu, 0);
+	dcache_disable();
 	cpu_off();
 }
 
