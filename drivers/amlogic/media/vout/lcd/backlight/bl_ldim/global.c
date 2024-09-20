@@ -55,7 +55,7 @@ static unsigned int global_get_value(unsigned int dim_max, unsigned int dim_min,
 	return val;
 }
 
-static int global_smr(struct aml_ldim_driver_s *ldim_drv, unsigned short *buf, unsigned char len)
+static int global_smr(struct aml_ldim_driver_s *ldim_drv, unsigned short *buf, unsigned int len)
 {
 	struct ldim_dev_driver_s *dev_drv = ldim_drv->dev_drv;
 	unsigned short val;

@@ -139,7 +139,7 @@ static inline void ldim_data_mapping(unsigned short *duty_buf,
 }
 
 static int blmcu_smr(struct aml_ldim_driver_s *ldim_drv, unsigned short *buf,
-		      unsigned char len)
+		      unsigned int len)
 {
 	struct ldim_dev_driver_s *dev_drv = ldim_drv->dev_drv;
 	int ret = 0;
