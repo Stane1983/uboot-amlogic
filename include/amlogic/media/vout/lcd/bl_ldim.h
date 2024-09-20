@@ -97,7 +97,7 @@ struct ldim_dev_driver_s {
 	int (*power_on)(struct aml_ldim_driver_s *ldim_drv);
 	int (*power_off)(struct aml_ldim_driver_s *ldim_drv);
 	int (*dev_smr)(struct aml_ldim_driver_s *ldim_drv,
-		       unsigned short *buf, unsigned char len);
+		       unsigned short *buf, unsigned int len);
 };
 
 /*******global API******/
