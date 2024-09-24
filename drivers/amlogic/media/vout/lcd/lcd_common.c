@@ -1557,6 +1557,11 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 			pctrl->mipi_cfg.dt_addr = dt_addr;
 			strncpy(pctrl->mipi_cfg.dsi_detect_dtb_path, propname, 30);
 		}
+
+		phy_cfg->vswing_level = 0;
+		phy_cfg->preem_level = 0;
+		lcd_phy_param_preset(pdrv);
+		lcd_lane_map_preset(pdrv);
 		break;
 	case LCD_EDP:
 		propdata = (char *)fdt_getprop(dt_addr, child_offset, "edp_attr", NULL);
@@ -2357,6 +2362,11 @@ static int lcd_config_load_from_bsp(struct aml_lcd_drv_s *pdrv)
 			lcd_extern_drv_index_add(pdrv->index, pctrl->mipi_cfg.extern_init);
 #endif
 		}
+
+		phy_cfg->vswing_level = 0;
+		phy_cfg->preem_level = 0;
+		lcd_phy_param_preset(pdrv);
+		lcd_lane_map_preset(pdrv);
 		break;
 	case LCD_EDP:
 		pctrl->edp_cfg.max_lane_count = ext_lcd->lcd_spc_val0;

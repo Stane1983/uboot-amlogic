@@ -207,6 +207,35 @@ static void lcd_lvds_lane_swap(struct aml_lcd_drv_s *pdrv)
 	}
 }
 
+static void lcd_vbyone_slice_lane_swap(struct aml_lcd_drv_s *pdrv)
+{
+	struct phy_config_s *phy = &pdrv->config.phy_cfg;
+
+	switch (pdrv->config.control.vbyone_cfg.lane_count) {
+	case 1:
+		phy->ch_swap0 = 0xfffffff0;
+		phy->ch_swap1 = 0xffffffff;
+		break;
+	case 2:
+		phy->ch_swap0 = 0xffffff80;
+		phy->ch_swap1 = 0xffffffff;
+		break;
+	case 4:
+		phy->ch_swap0 = 0xffff9810;
+		phy->ch_swap1 = 0xffffffff;
+		break;
+	case 16:
+		phy->ch_swap0 = 0x76543210;
+		phy->ch_swap1 = 0xfedcba98;
+		break;
+	case 8:
+	default:
+		phy->ch_swap0 = 0xba983210;
+		phy->ch_swap1 = 0xffffffff;
+		break;
+	}
+}
+
 static void lcd_mlvds_phy_ckdi_config(struct aml_lcd_drv_s *pdrv)
 {
 	unsigned int channel_sel0, channel_sel1, pi_clk_sel = 0;
@@ -264,22 +293,11 @@ void lcd_lane_map_preset(struct aml_lcd_drv_s *pdrv)
 		lcd_lvds_lane_swap(pdrv);
 		break;
 	case LCD_VBYONE:
-		if (pdrv->data->chip_type == LCD_CHIP_T3X) {
-			if (pdrv->config.control.vbyone_cfg.lane_count == 16) {
-				phy->ch_swap0 = 0xba983210;
-				phy->ch_swap1 = 0xfedc7654;
-			} else {
-				if (pdrv->config.control.vbyone_cfg.slice == 2) {
-					phy->ch_swap0 = 0xba983210;
-					phy->ch_swap1 = 0xffffffff;
-				} else {
-					phy->ch_swap0 = 0x76543210;
-					phy->ch_swap1 = 0xffffffff;
-				}
-			}
-		} else {
+		if (pdrv->config.control.vbyone_cfg.slice == 1) {
 			phy->ch_swap0 = 0x76543210;
 			phy->ch_swap1 = 0xffffffff;
+		} else {
+			lcd_vbyone_slice_lane_swap(pdrv);
 		}
 		break;
 	case LCD_MLVDS:
