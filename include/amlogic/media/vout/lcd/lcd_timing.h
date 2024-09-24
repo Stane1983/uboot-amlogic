@@ -21,6 +21,13 @@ struct lcd_detail_timing_s {
 	unsigned char hsync_pol;
 	unsigned char vsync_pol;
 	unsigned char fr_adjust_type; /* 0=clock, 1=htotal, 2=vtotal */
+	unsigned char switch_type;
+	unsigned char lcd_bits;
+	unsigned char cfmt;
+	unsigned char ss_level;
+	unsigned char ss_freq;
+	unsigned char ss_mode;
+	unsigned char ss_force;
 	unsigned int pixel_clk;
 
 	unsigned short h_period_min;
@@ -38,6 +45,7 @@ struct lcd_detail_timing_s {
 	unsigned short frac;
 	unsigned int sync_duration_num;  //driver calculate for internal usage
 	unsigned int sync_duration_den;  //driver calculate for internal usage
+	unsigned int check_status;
 };
 
 #endif

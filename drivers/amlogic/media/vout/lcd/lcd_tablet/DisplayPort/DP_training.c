@@ -133,7 +133,7 @@ static int dptx_training_phy_adj_req_process(struct aml_lcd_drv_s *pdrv)
 static int dptx_training_phy_update_apply(struct aml_lcd_drv_s *pdrv)
 {
 	struct edp_config_s *_cfg = &pdrv->config.control.edp_cfg;
-	struct phy_config_s *phy = &pdrv->config.phy_cfg;
+	struct phy_config_s *phy_cfg = &pdrv->config.phy_cfg;
 	unsigned char aux_data[4];
 	int max_vsw = 0, max_pre = 0;
 	int i, ret;
@@ -146,8 +146,8 @@ static int dptx_training_phy_update_apply(struct aml_lcd_drv_s *pdrv)
 		max_pre = max_pre > _cfg->adj_req_preem[i] ? max_pre : _cfg->adj_req_preem[i];
 	}
 
-	phy->vswing_level = dptx_vswing_std_to_phy(max_vsw);
-	phy->preem_level = dptx_preem_std_to_phy(max_pre);
+	phy_cfg->vswing_level = dptx_vswing_std_to_phy(max_vsw);
+	phy_cfg->preem_level = dptx_preem_std_to_phy(max_pre);
 
 	lcd_phy_set(pdrv, 1);
 

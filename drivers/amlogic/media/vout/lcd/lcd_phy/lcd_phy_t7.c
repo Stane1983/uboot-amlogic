@@ -87,24 +87,25 @@ static void lcd_phy_cntl_set(unsigned int flag,
 static void lcd_lvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 {
 	unsigned int data_lane0_aux, data_lane1_aux, data_lane;
-	struct phy_config_s *phy = &pdrv->config.phy_cfg;
+	struct phy_attr_s *phy = pdrv->config.phy_cfg.act_phy;
+	struct phy_config_s *phy_cfg = &pdrv->config.phy_cfg;
 
-	if (!phy_ctrl_p)
+	if (!phy_ctrl_p || !phy)
 		return;
 
 	if (status) {
 		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 			LCDPR("vswing_level=0x%x, preem_level=0x%x\n",
-			      phy->vswing_level, phy->preem_level);
+				phy_cfg->vswing_level, phy_cfg->preem_level);
 		}
 
-		data_lane0_aux = 0x06430028 | (phy->preem_level << 28);
+		data_lane0_aux = 0x06430028 | (phy_cfg->preem_level << 28);
 		data_lane1_aux = 0x0100ffff;
-		data_lane = 0x06530028 | (phy->preem_level << 28);
-		lcd_phy_cntl_set(phy->lane_valid, data_lane0_aux, data_lane1_aux, data_lane);
-		lcd_ana_write(ANACTRL_DIF_PHY_CNTL19, 0x00406240 | phy->vswing_level);
+		data_lane = 0x06530028 | (phy_cfg->preem_level << 28);
+		lcd_phy_cntl_set(phy_cfg->lane_valid, data_lane0_aux, data_lane1_aux, data_lane);
+		lcd_ana_write(ANACTRL_DIF_PHY_CNTL19, 0x00406240 | phy_cfg->vswing_level);
 	} else {
-		lcd_phy_cntl_set(phy->lane_valid, 0, 0, 0);
+		lcd_phy_cntl_set(phy_cfg->lane_valid, 0, 0, 0);
 		if (phy_ctrl_p->lane_lock_total == 0)
 			lcd_ana_write(ANACTRL_DIF_PHY_CNTL19, 0);
 	}
@@ -113,9 +114,10 @@ static void lcd_lvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 static void lcd_vbyone_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 {
 	unsigned int data_lane0_aux, data_lane1_aux, data_lane;
-	struct phy_config_s *phy = &pdrv->config.phy_cfg;
+	struct phy_attr_s *phy = pdrv->config.phy_cfg.act_phy;
+	struct phy_config_s *phy_cfg = &pdrv->config.phy_cfg;
 
-	if (!phy_ctrl_p)
+	if (!phy_ctrl_p || !phy)
 		return;
 
 	if (pdrv->index == 2) {
@@ -126,16 +128,16 @@ static void lcd_vbyone_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 	if (status) {
 		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 			LCDPR("vswing_level=0x%x, preem_level=0x%x\n",
-			      phy->vswing_level, phy->preem_level);
+			       phy_cfg->vswing_level, phy_cfg->preem_level);
 		}
 
-		data_lane0_aux = 0x06430028 | (phy->preem_level << 28);
+		data_lane0_aux = 0x06430028 | (phy_cfg->preem_level << 28);
 		data_lane1_aux = 0x0000ffff;
-		data_lane = 0x06530028 | (phy->preem_level << 28);
-		lcd_phy_cntl_set(phy->lane_valid, data_lane0_aux, data_lane1_aux, data_lane);
-		lcd_ana_write(ANACTRL_DIF_PHY_CNTL19, 0x00401640 | phy->vswing_level);
+		data_lane = 0x06530028 | (phy_cfg->preem_level << 28);
+		lcd_phy_cntl_set(phy_cfg->lane_valid, data_lane0_aux, data_lane1_aux, data_lane);
+		lcd_ana_write(ANACTRL_DIF_PHY_CNTL19, 0x00401640 | phy_cfg->vswing_level);
 	} else {
-		lcd_phy_cntl_set(phy->lane_valid, 0, 0, 0);
+		lcd_phy_cntl_set(phy_cfg->lane_valid, 0, 0, 0);
 		if (phy_ctrl_p->lane_lock_total == 0)
 			lcd_ana_write(ANACTRL_DIF_PHY_CNTL19, 0);
 	}
@@ -182,9 +184,10 @@ static void lcd_mipi_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 static void lcd_edp_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 {
 	unsigned int data_lane0_aux, data_lane1_aux, data_lane;
-	struct phy_config_s *phy = &pdrv->config.phy_cfg;
+	struct phy_config_s *phy_cfg = &pdrv->config.phy_cfg;
+	struct phy_attr_s *phy = pdrv->config.phy_cfg.act_phy;
 
-	if (!phy_ctrl_p)
+	if (!phy_ctrl_p || !phy)
 		return;
 
 	if (pdrv->index == 2) {
@@ -195,16 +198,16 @@ static void lcd_edp_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 	if (status) {
 		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 			LCDPR("vswing_level=0x%x, preem_level=0x%x\n",
-			      phy->vswing_level, phy->preem_level);
+			      phy_cfg->vswing_level, phy_cfg->preem_level);
 		}
 
 		data_lane0_aux = 0x46770038;
 		data_lane1_aux = 0x0000ffff;
-		data_lane = 0x06530028 | (phy->preem_level << 28);
-		lcd_phy_cntl_set(phy->lane_valid, data_lane0_aux, data_lane1_aux, data_lane);
-		lcd_ana_write(ANACTRL_DIF_PHY_CNTL19, 0x00406240 | phy->vswing_level);
+		data_lane = 0x06530028 | (phy_cfg->preem_level << 28);
+		lcd_phy_cntl_set(phy_cfg->lane_valid, data_lane0_aux, data_lane1_aux, data_lane);
+		lcd_ana_write(ANACTRL_DIF_PHY_CNTL19, 0x00406240 | phy_cfg->vswing_level);
 	} else {
-		lcd_phy_cntl_set(phy->lane_valid, 0, 0, 0);
+		lcd_phy_cntl_set(phy_cfg->lane_valid, 0, 0, 0);
 		if (phy_ctrl_p->lane_lock_total == 0)
 			lcd_ana_write(ANACTRL_DIF_PHY_CNTL19, 0);
 	}

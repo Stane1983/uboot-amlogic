@@ -162,7 +162,6 @@ static int lcd_vmode_remove_all(struct aml_lcd_drv_s *pdrv)
 static void lcd_tablet_add_all_vmode(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_vmode_info_s *vmode_find = NULL;
-	struct lcd_detail_timing_s **timing_match;
 	int i;
 
 	if (!pdrv)
@@ -170,22 +169,11 @@ static void lcd_tablet_add_all_vmode(struct aml_lcd_drv_s *pdrv)
 
 	lcd_vmode_remove_all(pdrv);
 
-	vmode_find = lcd_detail_timing_to_vmode(&pdrv->config.timing.dft_timing);
-	if (!vmode_find)
-		return;
-	lcd_vmode_add_single(pdrv, vmode_find);
-
-	timing_match = lcd_cus_ctrl_timing_match_get(pdrv);
-	if (timing_match) {
-		for (i = 0; i < pdrv->config.cus_ctrl.timing_cnt; i++) {
-			if (!timing_match[i])
-				break;
-			vmode_find = lcd_detail_timing_to_vmode(timing_match[i]);
-			if (!vmode_find)
-				continue;
-			lcd_vmode_add_single(pdrv, vmode_find);
-		}
-		free(timing_match);
+	for (i = 0; i < pdrv->config.timing.num_timings; i++) {
+		vmode_find = lcd_detail_timing_to_vmode(pdrv->config.timing.timings[i]);
+		if (!vmode_find)
+			continue;
+		lcd_vmode_add_single(pdrv, vmode_find);
 	}
 }
 
@@ -333,15 +321,15 @@ static void lcd_vmode_update(struct aml_lcd_drv_s *pdrv)
 	struct lcd_detail_timing_s *ptiming;
 	unsigned char dur_index;
 
+	if (!pdrv->config.timing.base_timing)
+		return;
 	if (pdrv->vmode_mgr.next_vmode_info) {
 		pdrv->vmode_mgr.cur_vmode_info = pdrv->vmode_mgr.next_vmode_info;
 		pdrv->vmode_mgr.next_vmode_info = NULL;
 
 		pdrv->std_duration = pdrv->vmode_mgr.cur_vmode_info->duration;
 		ptiming = pdrv->vmode_mgr.cur_vmode_info->dft_timing;
-		memcpy(&pdrv->config.timing.base_timing, ptiming,
-			sizeof(struct lcd_detail_timing_s));
-		lcd_cus_ctrl_config_update(pdrv, (void *)ptiming, LCD_CUS_CTRL_SEL_TIMMING);
+		pdrv->config.timing.base_timing = ptiming;
 
 		//update base_timing to act_timing
 		lcd_enc_timing_init_config(pdrv);
@@ -374,9 +362,10 @@ static void lcd_vmode_update(struct aml_lcd_drv_s *pdrv)
 	lcd_frame_rate_change(pdrv);
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-		LCDPR("[%d]: %s: %dx%d, duration=%d:%d, dur_index=%d\n", pdrv->index, __func__,
+		LCDPR("[%d]: %s: %dx%dp%dhz, duration=%d:%d, dur_index=%d\n", pdrv->index, __func__,
 			pdrv->config.timing.act_timing.h_active,
 			pdrv->config.timing.act_timing.v_active,
+			pdrv->config.timing.act_timing.frame_rate,
 			pdrv->config.timing.act_timing.sync_duration_num,
 			pdrv->config.timing.act_timing.sync_duration_den,
 			dur_index);

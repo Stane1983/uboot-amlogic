@@ -1172,11 +1172,13 @@ static int lcd_tcon_load_init_data_from_unifykey_new(struct aml_lcd_drv_s *pdrv)
 	free(buf);
 
 	tcon_local_cfg.cur_core_reg_table = tcon_mm_table.core_reg_table;
-	lcd_tcon_init_setting_check(pdrv, &pdrv->config.timing.dft_timing,
-			tcon_mm_table.core_reg_table);
+	tcon_local_cfg.cur_user_info = tcon_mm_table.user_info;
+	tcon_local_cfg.cur_core_header = tcon_mm_table.core_reg_header;
+	tcon_local_cfg.cur_core_ext_header = tcon_mm_table.core_reg_ext_header;
+	lcd_tcon_init_setting_check(pdrv, pdrv->config.timing.dft_timing,
+		tcon_mm_table.core_reg_table);
 
-	LCDPR("tcon: load init data len: %d, ver: %s\n",
-	      data_len, tcon_local_cfg.bin_ver);
+	LCDPR("tcon: load init data len: %d, ver: %s\n", data_len, tcon_local_cfg.bin_ver);
 	return 0;
 
 lcd_tcon_load_init_data_new_err:
@@ -1212,7 +1214,7 @@ static int lcd_tcon_reserved_memory_init_dts(char *dt_addr, struct aml_lcd_drv_s
 	cell_size = fdt_address_cells(dt_addr, parent_offset);
 	parent_offset = fdt_path_offset(dt_addr, "/reserved-memory/linux,lcd_tcon");
 	if (parent_offset < 0) {
-		LCDERR("can't find node: /reserved-memory/linux,lcd_tcon\n");
+		LCDPR("can't find: /reserved-memory/linux,lcd_tcon, try tcon mem from lrm\n");
 		goto tcon_rsvd_try_alloc_from_lrm;
 	}
 
