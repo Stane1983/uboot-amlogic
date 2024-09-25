@@ -17,6 +17,9 @@ obj-$(CONFIG_AML_REBOOT) += cmd_reboot.o
 obj-$(CONFIG_CMD_RSVMEM) += cmd_rsvmem.o
 
 obj-y += cmd_version.o
+ifdef  CONFIG_AML_UPDATE_PDVFS
+obj-y += cmd_pdvfs.o
+endif
 
 obj-$(CONFIG_CMD_DMCRW) += cmd_dmc.o
 

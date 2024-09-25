@@ -56,6 +56,13 @@ config AML_SIGNED_UBOOT
 		Enable signed bootloader
 		For Amlogic boards
 
+config AML_UPDATE_PDVFS
+	bool "Enable AML PDVFS Update"
+	default n
+	help
+		Update pdvfs Voltage and frequency tables to determine based on other qualifiers
+		For Amlogic boards
+
 config AML_CS_SIGNING_SCHEME
 	string "Amlogic chipset signing scheme"
 	default "rsa-mldsa" if MESON_S6

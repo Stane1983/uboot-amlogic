@@ -485,6 +485,9 @@ extern void jump_to_a32_kernel(unsigned long, unsigned long, unsigned long);
 #endif
 static void boot_jump_linux(struct bootm_headers *images, int flag)
 {
+#ifdef  CONFIG_AML_UPDATE_PDVFS
+	run_command("update_pdvfs", 0);
+#endif
 #ifdef  CONFIG_KEY_PRESERVE
 	(*((volatile unsigned int *)(STARTUP_KEY_PRESERVE))) |= 0x1;
 #endif
