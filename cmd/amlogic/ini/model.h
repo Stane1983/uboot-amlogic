@@ -262,7 +262,7 @@ struct lcd_cus_ctrl_extend_tmg_s {
 };
 
 struct lcd_tuning_ch_sel_s {
-	unsigned char pn_swap;
+	unsigned char pn_phase;  //[4:1]phase sel, [0:0]pn swap
 	unsigned char sel;
 };
 

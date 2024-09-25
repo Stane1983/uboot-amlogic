@@ -427,6 +427,7 @@ static unsigned short handle_lcd_cus_ctrl_tuning_attr(unsigned char *p, unsigned
 	struct lcd_tuning_s lcd_tuning;
 	struct lcd_tuning_phy_ch_s lcd_phy_ch;
 	char sec_str[16], ch_sel_str[16], ch_amp_str[16], ch_preem_str[16];
+	char ch_phase_str[16], phase_sel;
 	const char *ini_value = NULL;
 	unsigned short lane_cnt, offset = 0, ch_sel_size, tuning_size, phy_ch_size;
 	unsigned int group_cnt = 0;
@@ -460,8 +461,9 @@ static unsigned short handle_lcd_cus_ctrl_tuning_attr(unsigned char *p, unsigned
 
 	for (i = 0; i < lane_cnt; i++) {
 		sprintf(ch_sel_str, "ch%u_sel", i);
+		sprintf(ch_phase_str, "ch%u_phase", i);
 
-		ch_sel.pn_swap = 0; //reserved
+		ch_sel.pn_phase = 0; //reserved for pn swap
 
 		ini_value = IniGetString("lane_sel_Attr", ch_sel_str, "null");
 		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
@@ -469,6 +471,16 @@ static unsigned short handle_lcd_cus_ctrl_tuning_attr(unsigned char *p, unsigned
 		if (strcmp(ini_value, "null") == 0)
 			goto handle_lcd_cus_ctrl_tuning_attr_err;
 		ch_sel.sel = strtoul(ini_value, NULL, 0);
+
+		ini_value = IniGetString("lane_sel_Attr", ch_phase_str, "null");
+		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
+			ALOGD("%s, %s is (%s)\n", __func__, ch_phase_str, ini_value);
+		if (strcmp(ini_value, "null") == 0)
+			phase_sel = 0xf;
+		else
+			phase_sel = strtoul(ini_value, NULL, 0);
+		ch_sel.pn_phase &= ~(0xf << 1);
+		ch_sel.pn_phase |= (phase_sel & 0xf) << 1;
 
 		//save to attr_buf
 		memcpy((p + offset), &ch_sel, ch_sel_size);

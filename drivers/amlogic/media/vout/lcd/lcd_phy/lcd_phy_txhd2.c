@@ -218,6 +218,7 @@ static struct lcd_phy_ctrl_s lcd_phy_ctrl_txhd2 = {
 	.phy_preem_level_to_val = lcd_phy_preem_level_to_val_txhd2,
 	.phy_amp_dft_val = lcd_phy_amp_dft_txhd2,
 	.phy_glb_param_dft_val = NULL,
+	.phy_lane_phase_sel_def = NULL,
 	.phy_param_get = lcd_phy_param_get_from_reg,
 	.phy_reg_dump = lcd_phy_reg_dump,
 
