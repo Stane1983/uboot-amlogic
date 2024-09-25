@@ -357,7 +357,7 @@ void hdmitx_set_s5_gp2pll(u32 clk, u32 div)
 	hd21_set_reg_bits(CLKCTRL_GP2PLL_CTRL0, 1, 28, 1);
 	hd21_write_reg(CLKCTRL_GP2PLL_CTRL1, 0x03a00000 | remainder);
 	hd21_write_reg(CLKCTRL_GP2PLL_CTRL2, 0x00040000);
-	hd21_write_reg(CLKCTRL_GP2PLL_CTRL3, 0x010da000);
+	hd21_write_reg(CLKCTRL_GP2PLL_CTRL3, 0x030da000);
 	if (remainder)
 		hd21_set_reg_bits(CLKCTRL_GP2PLL_CTRL3, 1, 27, 1); /* enable frac */
 	usleep_range(20, 30);
