@@ -46,18 +46,15 @@ struct lcd_ufr_s {
 struct lcd_dfr_fr_s {
 	unsigned char timing_index;
 	unsigned short frame_rate;
+	unsigned short frame_rate_min;
+	unsigned short frame_rate_max;
 	struct lcd_detail_timing_s timing;
 };
 
 struct lcd_dfr_timing_s {
-	unsigned short htotal;
 	unsigned short vtotal;
 	unsigned short vtotal_min;
 	unsigned short vtotal_max;
-	unsigned short frame_rate_min;
-	unsigned short frame_rate_max;
-	unsigned short hpw;
-	unsigned short hbp;
 	unsigned short vpw;
 	unsigned short vbp;
 };
