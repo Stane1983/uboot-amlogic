@@ -64,17 +64,33 @@ static char *lcd_enc_tst_str[] = {
 	"8-Black",       /* 8 */
 };
 
-static unsigned int lcd_enc_tst[][7] = {
-/*tst_mode,    Y,       Cb,     Cr,     tst_en,  vfifo_en  rgbin*/
-	{0,    0x200,   0x200,  0x200,   0,      1,        3},  /* 0 */
-	{1,    0x200,   0x200,  0x200,   1,      0,        1},  /* 1 */
-	{2,    0x200,   0x200,  0x200,   1,      0,        1},  /* 2 */
-	{3,    0x200,   0x200,  0x200,   1,      0,        1},  /* 3 */
-	{0,    0x1ff,   0x1ff,  0x1ff,   1,      0,        3},  /* 4 */
-	{0,    0x3ff,     0x0,    0x0,   1,      0,        3},  /* 5 */
-	{0,      0x0,   0x3ff,    0x0,   1,      0,        3},  /* 6 */
-	{0,      0x0,     0x0,  0x3ff,   1,      0,        3},  /* 7 */
-	{0,      0x0,     0x0,    0x0,   1,      0,        3},  /* 8 */
+static struct lcd_enc_test_t lcd_enc_tst_comm[] = {
+	{"0-None",         0,    0x200,   0x200, 0x200, 0, 1, 3},  /* 0 */
+	{"1-Color Bar",    1,    0x200,   0x200, 0x200, 1, 0, 1},  /* 1 */
+	{"2-Thin Line",    2,    0x200,   0x200, 0x200, 1, 0, 1},  /* 2 */
+	{"3-Dot Grid",     3,    0x200,   0x200, 0x200, 1, 0, 1},  /* 3 */
+	{"4-Gray",         0,    0x1ff,   0x1ff, 0x1ff, 1, 0, 3},  /* 4 */
+	{"5-Red",          0,    0x3ff,     0x0,   0x0, 1, 0, 3},  /* 5 */
+	{"6-Green",        0,      0x0,   0x3ff,   0x0, 1, 0, 3},  /* 6 */
+	{"7-Blue",         0,      0x0,     0x0, 0x3ff, 1, 0, 3},  /* 7 */
+	{"8-Black",        0,      0x0,     0x0,   0x0, 1, 0, 3},  /* 8 */
+};
+
+static struct lcd_enc_test_t lcd_enc_tst_t6d[] = {
+	{"0-None",         0,    0x200,   0x200, 0x200, 0, 1, 3},  /* 0 */
+	{"1-Color Bar",    1,    0x200,   0x200, 0x200, 1, 0, 1},  /* 1 */
+	{"2-Thin Line",    2,    0x200,   0x200, 0x200, 1, 0, 1},  /* 2 */
+	{"3-Dot Grid",     3,    0x200,   0x200, 0x200, 1, 0, 1},  /* 3 */
+	{"4-Gray",         0,    0x1ff,   0x1ff, 0x1ff, 1, 0, 3},  /* 4 */
+	{"5-Red",          0,    0x3ff,     0x0,   0x0, 1, 0, 3},  /* 5 */
+	{"6-Green",        0,      0x0,   0x3ff,   0x0, 1, 0, 3},  /* 6 */
+	{"7-Blue",         0,      0x0,     0x0, 0x3ff, 1, 0, 3},  /* 7 */
+	{"8-Black",        0,      0x0,     0x0,   0x0, 1, 0, 3},  /* 8 */
+	{"9-Not support",  0,    0x200,   0x200, 0x200, 0, 1, 3},  /* 9 */
+	{"10-Gray Scale",  5, 0xffffffff,   0x7,   0x7, 1, 0, 3},  /* 10 */
+	{"11-Red Scale",   5,      0x1,     0x0,   0x1, 1, 0, 3},  /* 11 */
+	{"12-Green Scale", 5,      0x1,     0x0,   0x2, 1, 0, 3},  /* 12 */
+	{"13-Blue Scale",  5,      0x1,     0x0,   0x4, 1, 0, 3},  /* 13 */
 };
 
 static int lcd_venc_debug_test(struct aml_lcd_drv_s *pdrv, unsigned int num)
