@@ -163,7 +163,7 @@ int meson_yaffs2_mount(char *mtpoint, char *part_name)
 	}
 
 	cmd_yaffs_devconfig(mtpoint, nand_index, part->offset / mtd->erasesize,
-			(part->offset + part->size) / mtd->erasesize);
+			(part->offset + part->size) / mtd->erasesize - 1);
 	cmd_yaffs_mount(mtpoint);
 
 	return 0;
