@@ -847,10 +847,7 @@ static void meson_nfc_init_dm(void)
 {
 	struct udevice *dev;
 
-	for (uclass_first_device(UCLASS_MTD, &dev);
-	     dev;
-	     uclass_next_device(&dev))
-		 ;
+	uclass_get_device_by_driver(UCLASS_MTD, DM_DRIVER_GET(meson_nfc), &dev);
 }
 
 void board_nand_init(void)

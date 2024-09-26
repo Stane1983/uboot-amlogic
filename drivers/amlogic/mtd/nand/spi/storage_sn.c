@@ -102,12 +102,16 @@ int spi_nand_probe(u32 init_flag)
 	struct mtd_info *mtd;
 	int partition_count, ret;
 	static int probe_flag;
+	struct dm_spi_ops *ops;
 
 	/* Maybe pinmux be modified by emmc, set again here */
 	extern struct mtd_info *mtd_store_get(int dev);
 	mtd = mtd_store_get(0);
 	spinand_dev = mtd_to_spinand(mtd);
-	//dm_spi_claim_bus(spinand_dev->slave->dev);
+	ops = spi_get_ops(spinand_dev->slave->dev->parent);
+	/* set clock */
+	ops->set_mode(spinand_dev->slave->dev->parent, 0);
+
 	ret = pinctrl_select_state(spinand_dev->slave->dev->parent, "default");
 	if (ret) {
 		pr_err("select state %s failed\n", "default");

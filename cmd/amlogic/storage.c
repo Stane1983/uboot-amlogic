@@ -125,8 +125,12 @@ int store_init(u32 init_flag)
 
 	/*1. pre scan*/
 	for (i = 0; i < ARRAY_SIZE(device_list); i++) {
+		if ((record & BOOT_NAND_MTD) &&
+		     ((device_list[i].index & BOOT_SNAND) ||
+		       (device_list[i].index & BOOT_SNOR)))
+			continue;
 		if (!device_list[i].pre()) {
-			record |= BIT(i);
+			record |= device_list[i].index;
 		}
 	}
 
@@ -139,7 +143,7 @@ int store_init(u32 init_flag)
 
 	/*2. Enter the probe of the valid device*/
 	for (i = 0; i < ARRAY_SIZE(device_list); i++) {
-		if (record & BIT(i)) {
+		if (record & device_list[i].index) {
 			ret = device_list[i].probe(init_flag);
 			if (ret)
 				pr_info("the 0x%x storage device probe failed\n",
