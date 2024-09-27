@@ -894,16 +894,29 @@ void set_hdr_matrix(enum hdr_module_sel module_sel,
 				adpscl_shift[2] << 16 |
 				adpscl_alpha[2]);
 		} else {
-			vpp_reg_write(ADPS_CTRL,
-				adpscl_enable[2] << 6 |
-				adpscl_enable[1] << 5 |
-				adpscl_enable[0] << 4 |
-				adpscl_mode);
-			vpp_reg_write(ADPS_ALPHA1,
-				adpscl_shift[0] << 24 |
-				adpscl_shift[1] << 20 |
-				adpscl_shift[2] << 16 |
-				adpscl_alpha[2]);
+			if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T6D) {
+				vpp_reg_write(ADPS_CTRL,
+					adpscl_enable[2] << 6 |
+					adpscl_enable[1] << 5 |
+					adpscl_enable[0] << 4 |
+					adpscl_mode);
+				vpp_reg_write(ADPS_ALPHA1,
+					adpscl_shift[0] << 28 |
+					adpscl_shift[1] << 20 |
+					adpscl_shift[2] << 16 |
+					adpscl_alpha[2]);
+			} else {
+				vpp_reg_write(ADPS_CTRL,
+					adpscl_enable[2] << 6 |
+					adpscl_enable[1] << 5 |
+					adpscl_enable[0] << 4 |
+					adpscl_mode);
+				vpp_reg_write(ADPS_ALPHA1,
+					adpscl_shift[0] << 24 |
+					adpscl_shift[1] << 20 |
+					adpscl_shift[2] << 16 |
+					adpscl_alpha[2]);
+			}
 		}
 
 		vpp_reg_write(ADPS_ALPHA0,
@@ -1253,7 +1266,8 @@ void hdr_func(enum hdr_module_sel module_sel,
 	case OSD2_HDR:
 		if (get_cpu_id().family_id != MESON_CPU_MAJOR_ID_T3 &&
 			get_cpu_id().family_id != MESON_CPU_MAJOR_ID_S7D &&
-			get_cpu_id().family_id != MESON_CPU_MAJOR_ID_S6)
+			get_cpu_id().family_id != MESON_CPU_MAJOR_ID_S6 &&
+			get_cpu_id().family_id != MESON_CPU_MAJOR_ID_T6D)
 			return;
 		break;
 	case OSD3_HDR:
@@ -1317,7 +1331,8 @@ void hdr_func(enum hdr_module_sel module_sel,
 
 	printf("hdr_process_select0\n");
 	if ((get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S7D ||
-		get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S6) &&
+		get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S6 ||
+		get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T6D) &&
 		(module_sel == OSD1_HDR ||
 		module_sel == OSD2_HDR))
 		bit_depth = 10;
@@ -1901,7 +1916,8 @@ void hdr_func(enum hdr_module_sel module_sel,
 		clip_func_after_ootf(hdr_mtx_param.mtx_gamut_mode, module_sel);
 
 	if ((get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S7D ||
-		get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S6) &&
+		get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S6 ||
+		get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T6D) &&
 		(module_sel & (OSD1_HDR | OSD2_HDR)) &&
 		(hdr_process_select & (HDR_BYPASS | SDR_HDR | SDR_HLG))) {
 		if (IS_ENABLED(CONFIG_AML_DOLBY))
