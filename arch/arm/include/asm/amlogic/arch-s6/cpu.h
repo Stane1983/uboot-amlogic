@@ -82,4 +82,8 @@
 #define SBOOT_KEYSLOT_BASE		128
 
 #define CONFIG_SYS_NAND_BASE_LIST	{0}
+
+/*improve eth performance*/
+#define CONFIG_SYS_NONCACHED_MEMORY     (1 << 20)       /* 1 MiB */
+
 #endif /* _CPU_H */
