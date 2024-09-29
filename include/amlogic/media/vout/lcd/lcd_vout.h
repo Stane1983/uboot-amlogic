@@ -129,10 +129,14 @@ struct lcd_basic_s {
 #define LCD_CLK_FRAC_UPDATE     BIT(0)
 #define LCD_CLK_PLL_CHANGE      BIT(1)
 #define LCD_CLK_PLL_RESET       BIT(2)
+#define LCD_MAX_NUM_TIMINGS     10
+
 struct lcd_timing_s {
-	struct lcd_detail_timing_s dft_timing; //panel parameter probe stage
-	struct lcd_detail_timing_s base_timing; //panel parameter init stage
+	struct lcd_detail_timing_s *dft_timing; //panel parameter probe stage
+	struct lcd_detail_timing_s *base_timing; //panel parameter init stage
 	struct lcd_detail_timing_s act_timing; //panel parameter actual stage
+	struct lcd_detail_timing_s *timings[LCD_MAX_NUM_TIMINGS];
+	unsigned char num_timings;
 
 	unsigned char pll_flag;
 	unsigned char clk_mode;
@@ -438,7 +442,7 @@ struct p2p_config_s {
 #define PHY_BIT_ODT         BIT(3)
 #define PHY_BIT_CV_MODE     BIT(4)
 #define PHY_BIT_LANE_PREEM  BIT(12)
-#define PHY_BIT_LAEN_AMP    BIT(13)
+#define PHY_BIT_LANE_AMP    BIT(13)
 #define PHY_BIT_LANE_SEL    BIT(14)
 
 #define PHY_PHASE_0 0
@@ -447,37 +451,59 @@ struct p2p_config_s {
 
 struct phy_lane_s {
 	unsigned int preem; //flag bit[12]
-	unsigned int amp;   //flag bit[13]
-	unsigned int sel;   //flag bit[14]
-	unsigned char phase_sel;  //flag bit[15]
+	unsigned int amp; //flag bit[13]
+};
+
+struct ss_config_s {
+	unsigned char level;
+	unsigned char freq;
+	unsigned char mode;
 };
 
 #define PHY_CMODE   0
 #define PHY_VMODE   1
 #define CH_LANE_MAX 32
-struct phy_config_s {
-	unsigned int flag;
+#define MAX_NUM_PHY_CFGS 6
+struct phy_attr_s {
 	unsigned int vswing;     //flag bit[0]
 	unsigned int vcm;        //flag bit[1]
 	unsigned int ref_bias;   //flag bit[2]
 	unsigned int odt;        //flag bit[3]
 	unsigned int cv_mode;    //flag bit[4] //val:0=cm,1=vm
-	unsigned int weakly_pull_down;
+	unsigned short phy_clk;
+	unsigned short clk_phase;
 	struct phy_lane_s lane[CH_LANE_MAX];
+	struct ss_config_s ss;
+};
 
-	unsigned int lane_num;
+struct phy_ch_ctrl_s {
+	unsigned char phase_sel;
+	unsigned char pn_swap;
+	unsigned char sel;
+	unsigned char en;
+};
+
+struct phy_config_s {
+	unsigned short lane_num;
+	unsigned short group_num;
 	unsigned int ch_swap0;
 	unsigned int ch_swap1;
 	unsigned int vswing_level;
 	unsigned int ext_pullup;
 	unsigned int preem_level;
+	unsigned int weakly_pull_down;
 	unsigned int low_common_mode;
-	unsigned int clk_phase;
-	unsigned int ckdi;
 
+	unsigned int state;
+	unsigned int flag;
+	unsigned int ckdi;
 	unsigned int lane_valid; //(valid & mask)<<offset
 	unsigned int lane_offset;
 	unsigned int lane_mask; //local mask for lane range
+
+	struct phy_ch_ctrl_s ch_ctrl[CH_LANE_MAX];
+	struct phy_attr_s *act_phy;
+	struct phy_attr_s *phys[MAX_NUM_PHY_CFGS];
 };
 
 union lcd_ctrl_config_u {

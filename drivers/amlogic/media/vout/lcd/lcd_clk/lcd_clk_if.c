@@ -87,13 +87,68 @@ void lcd_clk_frac_generate(struct aml_lcd_drv_s *pdrv)
 		cconf->data->pll_frac_generate(pdrv);
 }
 
+static void lcd_bit_rate_match_phy(struct aml_lcd_drv_s *pdrv)
+{
+	struct phy_config_s *phy_cfg = &pdrv->config.phy_cfg;
+	struct phy_attr_s *phy;
+	int i = 0;
+	unsigned int phy_clk;
+
+	phy_cfg->act_phy = phy_cfg->phys[0];// if not matched, use default
+	phy_clk = lcd_do_div(pdrv->config.timing.bit_rate, 1000000);
+	for (i = 0; i < phy_cfg->group_num; i++) {
+		phy = phy_cfg->phys[i];
+		if (phy->phy_clk < phy_clk - 20 || phy->phy_clk > phy_clk + 20)
+			continue;
+
+		phy_cfg->act_phy = phy_cfg->phys[i];
+		LCDPR("phy_clk=%d, match phy[%d]=%d\n", phy_clk, i, phy->phy_clk);
+		return;
+	}
+	LCDPR("no phy_clk matched, use default(phy[0])\n");
+}
+
+static void lcd_phy_match_ss(struct aml_lcd_drv_s *pdrv)
+{
+	struct phy_attr_s *phy;
+	struct lcd_clk_config_s *cconf;
+	struct lcd_timing_s *tim = &pdrv->config.timing;
+
+	phy = pdrv->config.phy_cfg.act_phy;
+	if (!phy)
+		return;
+	cconf = get_lcd_clk_config(pdrv);
+	if (!cconf || !cconf->data)
+		return;
+
+	if (tim->act_timing.ss_force) {
+		tim->ss_freq = tim->act_timing.ss_freq;
+		tim->ss_level = tim->act_timing.ss_level;
+		tim->ss_mode = tim->act_timing.ss_mode;
+	} else {
+		tim->ss_freq = phy->ss.freq;
+		tim->ss_level = phy->ss.level;
+		tim->ss_mode = phy->ss.mode;
+	}
+
+	cconf->ss_level = (tim->ss_level >= cconf->data->ss_level_max) ?
+				cconf->data->ss_level_max : tim->ss_level;
+
+	cconf->ss_freq = (tim->ss_freq >= cconf->data->ss_freq_max) ?
+				cconf->data->ss_freq_max : tim->ss_freq;
+
+	cconf->ss_mode = (tim->ss_mode >= cconf->data->ss_mode_max) ? 0 :
+				tim->ss_mode;
+	if (lcd_debug_print_flag & LCD_DBG_PR_ADV2) {
+		LCDPR("[%d]: %s: ss_level=%d, ss_freq=%d, ss_mode=%d\n",
+		      pdrv->index, __func__,
+		      cconf->ss_level, cconf->ss_freq, cconf->ss_mode);
+	}
+}
+
 void lcd_clk_generate_parameter(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_clk_config_s *cconf;
-	struct lcd_config_s *pconf = &pdrv->config;
-	unsigned int ss_level;
-	unsigned int ss_freq;
-	unsigned int ss_mode;
 
 	cconf = get_lcd_clk_config(pdrv);
 	if (!cconf || !cconf->data)
@@ -123,23 +178,10 @@ void lcd_clk_generate_parameter(struct aml_lcd_drv_s *pdrv)
 		cconf->data->clk_parameter_init(pdrv);
 	if (cconf->data->clk_generate_parameter)
 		cconf->data->clk_generate_parameter(pdrv);
-	lcd_cus_ctrl_config_update(pdrv, NULL, LCD_CUS_CTRL_SEL_TUNING_ATTR);
 
-	ss_level = pconf->timing.ss_level;
-	cconf->ss_level = (ss_level >= cconf->data->ss_level_max) ?
-				ss_level >= cconf->data->ss_level_max : ss_level;
+	lcd_bit_rate_match_phy(pdrv);//bitrate match phy
 
-	ss_freq = pconf->timing.ss_freq;
-	cconf->ss_freq = (ss_freq >= cconf->data->ss_freq_max) ?
-				cconf->data->ss_freq_max : ss_freq;
-
-	ss_mode = pconf->timing.ss_mode;
-	cconf->ss_mode = (ss_mode >= cconf->data->ss_mode_max) ? 0 : ss_mode;
-	if (lcd_debug_print_flag & LCD_DBG_PR_ADV2) {
-		LCDPR("[%d]: %s: ss_level=%d, ss_freq=%d, ss_mode=%d\n",
-		      pdrv->index, __func__,
-		      cconf->ss_level, cconf->ss_freq, cconf->ss_mode);
-	}
+	lcd_phy_match_ss(pdrv);//phy match ss
 }
 
 void lcd_get_ss(struct aml_lcd_drv_s *pdrv)

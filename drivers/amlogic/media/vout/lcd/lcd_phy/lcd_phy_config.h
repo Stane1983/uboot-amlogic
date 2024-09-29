@@ -16,7 +16,8 @@ struct lcd_phy_ctrl_s {
 	unsigned int (*phy_preem_level_to_val)(struct aml_lcd_drv_s *pdrv, unsigned int level);
 	unsigned char (*phy_lane_phase_sel_def)(struct aml_lcd_drv_s *pdrv, unsigned int lane);
 	void (*phy_glb_param_dft_val)(struct aml_lcd_drv_s *pdrv);
-	int (*phy_param_get)(struct aml_lcd_drv_s *pdrv, struct phy_config_s *phy);
+	int (*phy_param_get)(struct aml_lcd_drv_s *pdrv,
+			     struct phy_config_s *phy_cfg, struct phy_attr_s *phy);
 	void (*phy_reg_dump)(struct aml_lcd_drv_s *pdrv);
 
 	void (*phy_set_lvds)(struct aml_lcd_drv_s *pdrv, int status);

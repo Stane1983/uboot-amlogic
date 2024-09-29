@@ -1177,8 +1177,8 @@ static int lcd_tcon_load_init_data_from_unifykey_new(struct aml_lcd_drv_s *pdrv)
 	tcon_local_cfg.cur_user_info = tcon_mm_table.user_info;
 	tcon_local_cfg.cur_core_header = tcon_mm_table.core_reg_header;
 	tcon_local_cfg.cur_core_ext_header = tcon_mm_table.core_reg_ext_header;
-	lcd_tcon_init_setting_check(pdrv, &pdrv->config.timing.dft_timing,
-			tcon_mm_table.core_reg_table);
+	lcd_tcon_init_setting_check(pdrv, pdrv->config.timing.dft_timing,
+				    tcon_mm_table.core_reg_table);
 
 	LCDPR("tcon: load init data len: %d, ver: %s\n",
 	      data_len, tcon_local_cfg.bin_ver);

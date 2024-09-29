@@ -21,7 +21,8 @@ unsigned int lcd_phy_check_lane_phase_sel(struct aml_lcd_drv_s *pdrv)
 
 int lcd_phy_param_preset(struct aml_lcd_drv_s *pdrv)
 {
-	struct phy_config_s *phy = &pdrv->config.phy_cfg;
+	struct phy_attr_s *phy = pdrv->config.phy_cfg.act_phy;
+	struct phy_config_s *phy_cfg = &pdrv->config.phy_cfg;
 	unsigned int amp = 0, preem = 0;
 	int i;
 
@@ -31,51 +32,59 @@ int lcd_phy_param_preset(struct aml_lcd_drv_s *pdrv)
 	if (!lcd_phy_ctrl)
 		return -1;
 
-	phy->lane_num = lcd_phy_ctrl->lane_num;
+	phy_cfg->lane_num = lcd_phy_ctrl->lane_num;
 	if (lcd_phy_ctrl->phy_glb_param_dft_val)
 		lcd_phy_ctrl->phy_glb_param_dft_val(pdrv);
+
 	if (lcd_phy_ctrl->phy_vswing_level_to_val)
-		phy->vswing = lcd_phy_ctrl->phy_vswing_level_to_val(pdrv, phy->vswing_level);
+		phy->vswing = lcd_phy_ctrl->phy_vswing_level_to_val(pdrv, phy_cfg->vswing_level);
+
 	if (lcd_phy_ctrl->phy_preem_level_to_val)
-		preem = lcd_phy_ctrl->phy_preem_level_to_val(pdrv, phy->preem_level);
+		preem = lcd_phy_ctrl->phy_preem_level_to_val(pdrv, phy_cfg->preem_level);
+
 	if (lcd_phy_ctrl->phy_amp_dft_val)
 		amp = lcd_phy_ctrl->phy_amp_dft_val(pdrv);
-	for (i = 0; i < phy->lane_num; i++) {
+
+	for (i = 0; i < phy_cfg->lane_num; i++) {
 		phy->lane[i].amp = amp;
 		phy->lane[i].preem = preem;
-		phy->lane[i].sel = i;
+		phy_cfg->ch_ctrl[i].sel = i;
 		if (lcd_phy_ctrl->phy_lane_phase_sel_def) {
-			phy->lane[i].phase_sel =
+			phy_cfg->ch_ctrl[i].phase_sel =
 				lcd_phy_ctrl->phy_lane_phase_sel_def(pdrv, i);
 		} else {
-			phy->lane[i].phase_sel = 0xff;
+			phy_cfg->ch_ctrl[i].phase_sel = 0xff;
 		}
 	}
+	for (; i < CH_LANE_MAX; i++)
+		phy_cfg->ch_ctrl[i].sel = 0xff;
 
 	return 0;
 }
 
-static int lcd_phy_param_get(struct aml_lcd_drv_s *pdrv, struct phy_config_s *phy)
+int lcd_phy_param_get(struct aml_lcd_drv_s *pdrv, struct phy_config_s *phy_cfg,
+		      struct phy_attr_s *phy)
 {
 	int ret;
 
 #ifdef CONFIG_AML_LCD_PXP
 	return 0;
 #endif
-	if (!pdrv || !phy)
+	if (!pdrv || !phy_cfg || !phy)
 		return -1;
 	if (!lcd_phy_ctrl || !lcd_phy_ctrl->phy_param_get)
 		return -1;
 
-	memcpy(phy, &pdrv->config.phy_cfg, sizeof(struct phy_config_s));
-	lcd_lane_sel_get(pdrv, phy);
-	ret = lcd_phy_ctrl->phy_param_get(pdrv, phy);
+	memcpy(phy_cfg, &pdrv->config.phy_cfg, sizeof(struct phy_config_s));
+	lcd_lane_sel_get(pdrv, phy_cfg);
+	ret = lcd_phy_ctrl->phy_param_get(pdrv, phy_cfg, phy);
 	return ret;
 }
 
 void lcd_phy_param_print(struct aml_lcd_drv_s *pdrv)
 {
-	struct phy_config_s local_phy, *phy;
+	struct phy_config_s local_phy_cfg, *phy_cfg;
+	struct phy_attr_s local_phy, *phy;
 	int i, ret;
 
 #ifdef CONFIG_AML_LCD_PXP
@@ -83,10 +92,12 @@ void lcd_phy_param_print(struct aml_lcd_drv_s *pdrv)
 #endif
 	if (!pdrv)
 		return;
-	phy = &pdrv->config.phy_cfg;
-	ret = lcd_phy_param_get(pdrv, &local_phy);
+	ret = lcd_phy_param_get(pdrv, &local_phy_cfg, &local_phy);
 	if (ret)
 		return;
+
+	phy_cfg = &pdrv->config.phy_cfg;
+	phy = pdrv->config.phy_cfg.act_phy;
 
 	printf("vswing  = 0x%x(0x%x)\n"
 		"odt     = 0x%x(0x%x)\n"
@@ -98,18 +109,19 @@ void lcd_phy_param_print(struct aml_lcd_drv_s *pdrv)
 		phy->vcm, local_phy.vcm,
 		phy->cv_mode, local_phy.cv_mode,
 		phy->ref_bias, local_phy.ref_bias);
-	printf("  lane  sel       phase_sel  amp       preem\n");
-	for (i = 0; i < local_phy.lane_num; i++) {
+	printf("  lane  sel       phase_sel   amp       preem\n");
+	for (i = 0; i < local_phy_cfg.lane_num; i++) {
 		printf("  [%2d]: 0x%x(0x%x), 0x%x(0x%x), 0x%x(0x%x), 0x%x(0x%x)\n",
-		       i, phy->lane[i].sel, local_phy.lane[i].sel,
-		       phy->lane[i].phase_sel, local_phy.lane[i].phase_sel,
-		       phy->lane[i].amp, local_phy.lane[i].amp,
-		       phy->lane[i].preem, local_phy.lane[i].preem);
+			i, phy_cfg->ch_ctrl[i].sel, local_phy_cfg.ch_ctrl[i].sel,
+			phy_cfg->ch_ctrl[i].phase_sel, local_phy_cfg.ch_ctrl[i].phase_sel,
+			phy->lane[i].amp, local_phy.lane[i].amp,
+			phy->lane[i].preem, local_phy.lane[i].preem);
 	}
 	printf("flag=0x%x, lane_num=%d, lane_valid=0x%x, lane_offset=%d, lane_mask=0x%x\n",
-	       phy->flag, phy->lane_num, phy->lane_valid, phy->lane_offset, phy->lane_mask);
+		phy_cfg->flag, phy_cfg->lane_num, phy_cfg->lane_valid,
+		phy_cfg->lane_offset, phy_cfg->lane_mask);
 	printf("ch_swap0=0x%x, ch_swap1=0x%x, clk_phase=0x%x, ckdi=0x%x\n",
-	       phy->ch_swap0, phy->ch_swap1, phy->clk_phase, phy->ckdi);
+		phy_cfg->ch_swap0, phy_cfg->ch_swap1, phy->clk_phase, phy_cfg->ckdi);
 }
 
 void lcd_phy_analog_reg_print(struct aml_lcd_drv_s *pdrv)
@@ -171,8 +183,10 @@ int lcd_phy_probe(struct aml_lcd_drv_s *pdrv)
 	pdrv->phy_set = NULL;
 	return 0;
 #endif
-	if (!lcd_phy_ctrl)
+	if (!pdrv->config.phy_cfg.act_phy || !lcd_phy_ctrl) {
+		pdrv->phy_set = NULL;
 		return 0;
+	}
 
 	lcd_phy_ctrl->lane_lock[pdrv->index] = 0;
 	switch (pdrv->config.basic.lcd_type) {

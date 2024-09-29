@@ -313,7 +313,7 @@ static void lcd_power_ctrl(struct aml_lcd_drv_s *pdrv, int status)
 
 void lcd_encl_on(struct aml_lcd_drv_s *pdrv)
 {
-	int ret;
+	unsigned int ret;
 
 	if (pdrv->config_check_en == 0) {
 		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
@@ -609,10 +609,12 @@ static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 	unsigned int val = 0;
 	char env_str[12], type_str[12], ctrl_str[48];
 
+	if (!pdrv->config.timing.base_timing)
+		return;
 	pdrv->boot_ctrl.lcd_type = pdrv->config.basic.lcd_type;
 	pdrv->boot_ctrl.lcd_bits = pdrv->config.basic.lcd_bits;
 	pdrv->boot_ctrl.clk_mode = pdrv->config.timing.clk_mode;
-	pdrv->boot_ctrl.base_frame_rate = pdrv->config.timing.base_timing.frame_rate;
+	pdrv->boot_ctrl.base_frame_rate = pdrv->config.timing.base_timing->frame_rate;
 	switch (pdrv->config.timing.ppc) {
 	case 2:
 		pdrv->boot_ctrl.ppc = LCD_VENC_2PPC;
@@ -692,7 +694,7 @@ static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 			pdrv->index, __func__,
 			pdrv->config.timing.ppc,
 			pdrv->config.timing.clk_mode,
-			pdrv->config.timing.base_timing.frame_rate, ctrl_str);
+			pdrv->config.timing.base_timing->frame_rate, ctrl_str);
 	}
 }
 
@@ -1209,7 +1211,7 @@ void aml_lcd_driver_reg_info(int index)
 void aml_lcd_config_check(int index)
 {
 	struct aml_lcd_drv_s *pdrv;
-	int ret;
+	unsigned int ret;
 
 	pdrv = lcd_driver_check_valid(index);
 	if (!pdrv)

@@ -96,69 +96,30 @@ void str_add_reg_sets(struct aml_lcd_drv_s *pdrv,
 static void lcd_timing_info_print(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_config_s *pconf = &pdrv->config;
-	int ret, herr, verr;
+	int i = 0, base_id = 0;
+	struct lcd_detail_timing_s *dt, *base, *dft;
 
-	ret = lcd_config_timing_check(pdrv, &pconf->timing.act_timing);
-	herr = ret & 0xf;
-	verr = (ret >> 4) & 0xf;
+	base = pconf->timing.base_timing;
+	dft = pconf->timing.dft_timing;
+	if (!base || !dft)
+		return;
 
-	printf("h_period          %d\n"
-		"v_period          %d\n"
-		"hs_width          %d\n"
-		"hs_backporch      %d%s\n"
-		"hs_frontporch     %d%s\n"
-		"hs_pol            %d\n"
-		"vs_width          %d\n"
-		"vs_backporch      %d%s\n"
-		"vs_frontporch     %d%s\n"
-		"vs_pol            %d\n"
-		"pre_de_h          %d\n"
-		"pre_de_v          %d\n"
-		"video_hstart      %d\n"
-		"video_vstart      %d\n\n",
-		pconf->timing.act_timing.h_period,
-		pconf->timing.act_timing.v_period,
-		pconf->timing.act_timing.hsync_width,
-		pconf->timing.act_timing.hsync_bp,
-		((herr & 0x4) ? "(X)" : ((herr & 0x8) ? "(!)" : "")),
-		pconf->timing.act_timing.hsync_fp,
-		((herr & 0x1) ? "(X)" : ((herr & 0x2) ? "(!)" : "")),
-		pconf->timing.act_timing.hsync_pol,
-		pconf->timing.act_timing.vsync_width,
-		pconf->timing.act_timing.vsync_bp,
-		((verr & 0x4) ? "(X)" : ((verr & 0x8) ? "(!)" : "")),
-		pconf->timing.act_timing.vsync_fp,
-		((verr & 0x1) ? "(X)" : ((verr & 0x2) ? "(!)" : "")),
-		pconf->timing.act_timing.vsync_pol,
-		pconf->timing.pre_de_h,
-		pconf->timing.pre_de_v,
-		pconf->timing.hstart, pconf->timing.vstart);
+	printf("support timings:\n");
+	for (i = 0; i < pconf->timing.num_timings; i++) {
+		dt = pconf->timing.timings[i];
+		if (base == dt)
+			base_id = i;
+		printf("dt[%d]:%s%s\n", i, base == dt ? "(base)" : "", dft == dt ? "(dft)" : "");
+		lcd_detail_timing_print(pdrv, dt);
+	}
 
-	printf("Timing range:\n"
-		"  h_period  : %4d ~ %4d\n"
-		"  v_period  : %4d ~ %4d\n"
-		"  frame_rate: %4d ~ %4d\n"
-		"  pixel_clk : %4d ~ %4d\n"
-		"  vrr_range : %4d ~ %4d\n\n",
-		pconf->timing.act_timing.h_period_min,
-		pconf->timing.act_timing.h_period_max,
-		pconf->timing.act_timing.v_period_min,
-		pconf->timing.act_timing.v_period_max,
-		pconf->timing.act_timing.frame_rate_min,
-		pconf->timing.act_timing.frame_rate_max,
-		pconf->timing.act_timing.pclk_min,
-		pconf->timing.act_timing.pclk_max,
-		pconf->timing.act_timing.vfreq_vrr_min,
-		pconf->timing.act_timing.vfreq_vrr_max);
+	dt = &pconf->timing.act_timing;
+	printf("active timing based:dt[%d] detail:\n", base_id);
+	lcd_detail_timing_print(pdrv, dt);
 
-	printf("base_pixel_clk  %d\n"
-		"base_h_period   %d\n"
-		"base_v_period   %d\n"
-		"base_frame_rate %d\n\n",
-		pconf->timing.base_timing.pixel_clk,
-		pconf->timing.base_timing.h_period,
-		pconf->timing.base_timing.v_period,
-		pconf->timing.base_timing.frame_rate);
+	printf("pre_de_h:%d, pre_de_v:%d, video_hstart:%d, video_vstart:%d\n",
+	       pconf->timing.pre_de_h, pconf->timing.pre_de_v,
+	       pconf->timing.hstart, pconf->timing.vstart);
 
 	printf("pll_ctrl       0x%08x\n"
 		"div_ctrl       0x%08x\n"
@@ -411,12 +372,28 @@ static void lcd_info_print_p2p(struct aml_lcd_drv_s *pdrv)
 
 static void lcd_phy_print(struct aml_lcd_drv_s *pdrv)
 {
+	struct phy_attr_s *phy;
+	struct phy_config_s *phy_cfg = &pdrv->config.phy_cfg;
+	int base_id = 0, i;
+
 	switch (pdrv->config.basic.lcd_type) {
 	case LCD_LVDS:
 	case LCD_VBYONE:
 	case LCD_MLVDS:
 	case LCD_P2P:
 	case LCD_EDP:
+		printf("support phy group:\n");
+		for (i = 0; i < phy_cfg->group_num; i++) {
+			phy = pdrv->config.phy_cfg.phys[i];
+			if (!phy)
+				continue;
+			printf("phy group[%d]:\n", i);
+			lcd_phy_attr_print(phy, phy_cfg->lane_num);
+			if (phy == pdrv->config.phy_cfg.act_phy)
+				base_id = i;
+		}
+
+		printf("active phy(group[%d]):\n", base_id);
 		lcd_phy_param_print(pdrv);
 		printf("\n");
 		break;
@@ -616,9 +593,6 @@ void lcd_info_print(struct aml_lcd_drv_s *pdrv)
 	}
 
 	lcd_phy_print(pdrv);
-
-	lcd_cus_ctrl_dump_info(pdrv);
-
 	lcd_power_info_print(pdrv, 1);
 	lcd_power_info_print(pdrv, 0);
 

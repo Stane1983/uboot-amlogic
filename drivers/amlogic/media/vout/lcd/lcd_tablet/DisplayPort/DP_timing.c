@@ -157,23 +157,31 @@ void dptx_timing_update(struct aml_lcd_drv_s *pdrv, struct dptx_detail_timing_s 
 {
 	struct lcd_config_s *pconf = &pdrv->config;
 
-	pconf->timing.base_timing.h_active = timing->h_a;
-	pconf->timing.base_timing.v_active = timing->v_a;
-	pconf->timing.base_timing.h_period = timing->h_a + timing->h_b;
-	pconf->timing.base_timing.v_period = timing->v_a + timing->v_b;
-	pconf->timing.base_timing.pixel_clk = timing->pclk;
+	if (!pconf->timing.dft_timing)
+		pconf->timing.dft_timing = lcd_timing_alloc(pdrv);
+	if (!pconf->timing.dft_timing) {
+		LCDERR("%s dft_timing alloc error\n", __func__);
+		return;
+	}
 
-	pconf->timing.base_timing.hsync_width = timing->h_pw;
-	pconf->timing.base_timing.hsync_bp = timing->h_b - timing->h_fp - timing->h_pw;
-	pconf->timing.base_timing.hsync_pol = (timing->timing_ctrl >> 1) & 0x1;
-	pconf->timing.base_timing.vsync_width = timing->v_pw;
-	pconf->timing.base_timing.vsync_bp = timing->v_b - timing->v_fp - timing->v_pw;
-	pconf->timing.base_timing.vsync_pol = (timing->timing_ctrl >> 2) & 0x1;
+	pconf->timing.dft_timing->h_active = timing->h_a;
+	pconf->timing.dft_timing->v_active = timing->v_a;
+	pconf->timing.dft_timing->h_period = timing->h_a + timing->h_b;
+	pconf->timing.dft_timing->v_period = timing->v_a + timing->v_b;
+	pconf->timing.dft_timing->pixel_clk = timing->pclk;
+
+	pconf->timing.dft_timing->hsync_width = timing->h_pw;
+	pconf->timing.dft_timing->hsync_bp = timing->h_b - timing->h_fp - timing->h_pw;
+	pconf->timing.dft_timing->hsync_pol = (timing->timing_ctrl >> 1) & 0x1;
+	pconf->timing.dft_timing->vsync_width = timing->v_pw;
+	pconf->timing.dft_timing->vsync_bp = timing->v_b - timing->v_fp - timing->v_pw;
+	pconf->timing.dft_timing->vsync_pol = (timing->timing_ctrl >> 2) & 0x1;
 
 	pconf->basic.screen_width = timing->h_size;
 	pconf->basic.screen_height = timing->v_size;
 
-	lcd_clk_frame_rate_init(&pconf->timing.base_timing);
+	lcd_clk_frame_rate_init(pconf->timing.dft_timing);
+	lcd_default_to_basic_timing_init_config(pdrv);
 
 	lcd_enc_timing_init_config(pdrv);
 	lcd_clk_generate_parameter(pdrv);

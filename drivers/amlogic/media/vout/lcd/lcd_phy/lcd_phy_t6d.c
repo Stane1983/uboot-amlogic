@@ -76,8 +76,7 @@ static void lcd_phy_reg_dump(struct aml_lcd_drv_s *pdrv)
 
 #define PHY_GET_PHASE_REG_BY_SEL 0
 #define PHY_GET_PHASE_SEL_BY_REG 1
-static int lcd_phy_get_phase(struct phy_config_s *phy,
-		int opr, unsigned char sel)
+static int lcd_phy_get_phase(struct phy_config_s *phy_cfg, int opr, unsigned char sel)
 {
 	int i, res = -1, temp1, temp2;
 	struct {
@@ -109,7 +108,7 @@ static int lcd_phy_get_phase(struct phy_config_s *phy,
  * update odt based on efuse for display
  *   display_odt = DEF_ODT + (read_odt - cali_odt)
  */
-static unsigned int lcd_phy_get_display_odt(struct phy_config_s *phy)
+static unsigned int lcd_phy_get_display_odt(struct phy_attr_s *phy)
 {
 	int disp_odt;
 	unsigned int read_odt, data32;
@@ -129,7 +128,7 @@ static unsigned int lcd_phy_get_display_odt(struct phy_config_s *phy)
  * update odt based on efuse trim value
  *   write_odt = cali_odt + (custom_odt - DEF_ODT)
  */
-static unsigned int lcd_phy_get_write_odt(struct phy_config_s *phy)
+static unsigned int lcd_phy_get_write_odt(struct phy_attr_s *phy)
 {
 	int odt = cali_odt + phy->odt - PHY_DEF_ODT;
 
@@ -141,7 +140,8 @@ static unsigned int lcd_phy_get_write_odt(struct phy_config_s *phy)
 	return odt;
 }
 
-static int lcd_phy_param_get_from_reg(struct aml_lcd_drv_s *pdrv, struct phy_config_s *phy)
+static int lcd_phy_param_get_from_reg(struct aml_lcd_drv_s *pdrv,
+				      struct phy_config_s *phy_cfg, struct phy_attr_s *phy)
 {
 	unsigned int data32, chreg, bit, i;
 	unsigned char phase_sel;
@@ -153,23 +153,25 @@ static int lcd_phy_param_get_from_reg(struct aml_lcd_drv_s *pdrv, struct phy_con
 	phy->cv_mode = 0;
 	phy->odt = lcd_phy_get_display_odt(phy) & 0x1f;
 
-	for (i = 0; i < phy->lane_num; i++) {
+	for (i = 0; i < phy_cfg->lane_num; i++) {
 		bit = i & 0x1 ? 16 : 0;
 		chreg = lcd_ana_getb(chreg_reg[i >> 1], bit, 16);
 
 		phy->lane[i].preem = (chreg >> 12) & 0xf;
 		phy->lane[i].amp = (chreg >> 8) & 0xf;
 		phase_sel = (chreg >> 1) & 0x3;
-		phy->lane[i].phase_sel = lcd_phy_get_phase(phy,
-			PHY_GET_PHASE_SEL_BY_REG, phase_sel);
+		phy_cfg->ch_ctrl[i].phase_sel = lcd_phy_get_phase(phy_cfg,
+								  PHY_GET_PHASE_SEL_BY_REG,
+								  phase_sel);
 	}
 
 	return 0;
 }
 
-static void lcd_phy_common_update(struct phy_config_s *phy, unsigned int cntl14)
+static void lcd_phy_common_update(struct aml_lcd_drv_s *pdrv, unsigned int cntl14)
 {
 	unsigned int cntl15 = 0x17300000;
+	struct phy_attr_s *phy = pdrv->config.phy_cfg.act_phy;
 
 	/* vswing */
 	cntl14 &= ~(0xf << 26);
@@ -195,16 +197,17 @@ static void lcd_phy_common_update(struct phy_config_s *phy, unsigned int cntl14)
  *    chreg: channel ctrl
  *    ckdi: clk phase for minilvds
  */
-static void lcd_phy_cntl_set(struct aml_lcd_drv_s *pdrv, struct phy_config_s *phy,
-			     int status, unsigned int ckdi)
+static void lcd_phy_cntl_set(struct aml_lcd_drv_s *pdrv, int status)
 {
 	int sel = -1;
 	unsigned int chreg, reg_data = 0, chdig = 0;
 	unsigned char i, bit;
 	unsigned char is_mlvds = pdrv->config.basic.lcd_type == LCD_MLVDS;
+	struct phy_config_s *phy_cfg = &pdrv->config.phy_cfg;
+	struct phy_attr_s *phy = pdrv->config.phy_cfg.act_phy;
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		LCDPR("%s: %d, ckdi:0x%x\n", __func__, status, ckdi);
+		LCDPR("%s: %d, ckdi:0x%x\n", __func__, status, phy_cfg->ckdi);
 
 	if (status) {
 		reg_data = 1 << 0;
@@ -215,7 +218,7 @@ static void lcd_phy_cntl_set(struct aml_lcd_drv_s *pdrv, struct phy_config_s *ph
 	}
 
 	for (i = 0; i < 10; i++) {
-		if (phy->lane_valid & (1 << i)) {
+		if (phy_cfg->lane_valid & (1 << i)) {
 			bit = i & 0x1 ? 16 : 0;
 			chreg = reg_data;
 			chdig = 1 << 10 |
@@ -227,11 +230,12 @@ static void lcd_phy_cntl_set(struct aml_lcd_drv_s *pdrv, struct phy_config_s *ph
 
 				// check lane phase select
 				if (is_mlvds) {
-					sel = lcd_phy_get_phase(phy, PHY_GET_PHASE_REG_BY_SEL,
-						phy->lane[i].phase_sel);
+					sel = lcd_phy_get_phase(phy_cfg, PHY_GET_PHASE_REG_BY_SEL,
+								phy_cfg->ch_ctrl[i].phase_sel);
 					if (sel < 0) {
 						LCDERR("[%d]: err lane[%d].phase_sel=%#x\n",
-							pdrv->index, i, phy->lane[i].phase_sel);
+							pdrv->index, i,
+							phy_cfg->ch_ctrl[i].phase_sel);
 					} else {
 						chreg |= ((unsigned char)sel) << 1;
 					}
@@ -245,26 +249,24 @@ static void lcd_phy_cntl_set(struct aml_lcd_drv_s *pdrv, struct phy_config_s *ph
 
 static void lcd_lvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 {
-	struct phy_config_s *phy = &pdrv->config.phy_cfg;
 	unsigned int cntl14 = 0;
 
 	if (status) {
 		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-			LCDPR("vswing_level=0x%x\n", phy->vswing_level);
+			LCDPR("vswing_level=0x%x\n", pdrv->config.phy_cfg.vswing_level);
 
 		cntl14 =  0x1310d107;
-		lcd_phy_common_update(phy, cntl14);
-		lcd_phy_cntl_set(pdrv, phy, status,  0);
+		lcd_phy_common_update(pdrv, cntl14);
+		lcd_phy_cntl_set(pdrv, status);
 		udelay(1);
 		lcd_ana_setb(ANACTRL_DIF_PHY_CNTL14, 1, 19, 1);
 	} else {
-		lcd_phy_cntl_set(pdrv, phy, status, 0);
+		lcd_phy_cntl_set(pdrv, status);
 	}
 }
 
 static void lcd_mlvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 {
-	struct phy_config_s *phy = &pdrv->config.phy_cfg;
 	unsigned int cntl14 = 0;
 
 	if (status) {
@@ -275,12 +277,12 @@ static void lcd_mlvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 			cntl14 |= (2 << 16);
 		else
 			cntl14 |= (3 << 16);
-		lcd_phy_common_update(phy, cntl14);
-		lcd_phy_cntl_set(pdrv, phy, status, phy->ckdi);
+		lcd_phy_common_update(pdrv, cntl14);
+		lcd_phy_cntl_set(pdrv, status);
 		udelay(1);
 		lcd_ana_setb(ANACTRL_DIF_PHY_CNTL14, 1, 19, 1);
 	} else {
-		lcd_phy_cntl_set(pdrv, phy, status, 0);
+		lcd_phy_cntl_set(pdrv, status);
 	}
 }
 
@@ -318,7 +320,7 @@ static unsigned char lcd_phy_lane_phase_sel_def(struct aml_lcd_drv_s *pdrv, unsi
 
 static void phy_glb_param_dft_t6d(struct aml_lcd_drv_s *pdrv)
 {
-	struct phy_config_s *phy = &pdrv->config.phy_cfg;
+	struct phy_attr_s *phy = pdrv->config.phy_cfg.act_phy;
 
 	phy->ref_bias = 0;
 	switch (pdrv->config.basic.lcd_type) {

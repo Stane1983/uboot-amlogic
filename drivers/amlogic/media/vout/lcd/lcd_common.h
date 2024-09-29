@@ -81,7 +81,8 @@ int lcd_mode_str_to_mode(const char *str);
 char *lcd_mode_mode_to_str(int mode);
 
 void lcd_encl_on(struct aml_lcd_drv_s *pdrv);
-int lcd_config_timing_check(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timing_s *ptiming);
+unsigned int lcd_config_timing_check(struct aml_lcd_drv_s *pdrv,
+				     struct lcd_detail_timing_s *ptiming);
 int lcd_base_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv);
 int lcd_base_config_load_from_bsp(struct aml_lcd_drv_s *pdrv);
 void lcd_panel_config_load_to_drv(struct aml_lcd_drv_s *pdrv);
@@ -99,6 +100,14 @@ void lcd_mlvds_bit_rate_config(struct aml_lcd_drv_s *pdrv);
 void lcd_p2p_bit_rate_config(struct aml_lcd_drv_s *pdrv);
 void lcd_mipi_dsi_bit_rate_config(struct aml_lcd_drv_s *pdrv);
 void lcd_edp_bit_rate_config(struct aml_lcd_drv_s *pdrv);
+struct lcd_detail_timing_s *lcd_timing_alloc(struct aml_lcd_drv_s *pdrv);
+void lcd_timing_free_last(struct aml_lcd_drv_s *pdrv);
+struct phy_attr_s *lcd_phy_alloc(struct aml_lcd_drv_s *pdrv);
+void lcd_phy_free_last(struct aml_lcd_drv_s *pdrv);
+
+void lcd_detail_timing_print(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timing_s *dt);
+void lcd_phy_cfg_print(struct phy_config_s *cfg);
+void lcd_phy_attr_print(struct phy_attr_s *phy, u32 lane_num);
 
 /* lcd cus_ctrl */
 void lcd_cus_ctrl_dump_raw_data(struct aml_lcd_drv_s *pdrv);
@@ -142,6 +151,8 @@ int aml_lcd_prbs_test(struct aml_lcd_drv_s *pdrv, unsigned int ms, unsigned int 
 /* lcd phy */
 unsigned int lcd_phy_check_lane_phase_sel(struct aml_lcd_drv_s *pdrv);
 int lcd_phy_param_preset(struct aml_lcd_drv_s *pdrv);
+int lcd_phy_param_get(struct aml_lcd_drv_s *pdrv, struct phy_config_s *phy_cfg,
+		      struct phy_attr_s *phy);
 void lcd_phy_param_print(struct aml_lcd_drv_s *pdrv);
 void lcd_phy_analog_reg_print(struct aml_lcd_drv_s *pdrv);
 void lcd_phy_set(struct aml_lcd_drv_s *pdrv, int status);
@@ -151,7 +162,7 @@ int lcd_phy_config_init(struct aml_lcd_data_s *pdata);
 /* lcd dphy */
 void lcd_lane_map_preset(struct aml_lcd_drv_s *pdrv);
 void lcd_lane_map_update(struct aml_lcd_drv_s *pdrv);
-int lcd_lane_sel_get(struct aml_lcd_drv_s *pdrv, struct phy_config_s *phy);
+int lcd_lane_sel_get(struct aml_lcd_drv_s *pdrv, struct phy_config_s *phy_cfg);
 void lcd_mipi_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off);
 void lcd_edp_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off);
 void lcd_lvds_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off);

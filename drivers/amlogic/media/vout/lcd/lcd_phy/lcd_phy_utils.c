@@ -66,7 +66,12 @@ unsigned int lcd_phy_amp_dft(struct aml_lcd_drv_s *pdrv)
 
 void lcd_phy_glb_param_dft(struct aml_lcd_drv_s *pdrv)
 {
-	struct phy_config_s *phy = &pdrv->config.phy_cfg;
+	struct phy_config_s *phy_cfg = &pdrv->config.phy_cfg;
+	struct phy_attr_s *phy = phy_cfg->act_phy;
+
+	//phys[0]:base phy config, copy to phys[N] before phys[N] parse
+	if (!phy)
+		return;
 
 	phy->ref_bias = 0;
 	switch (pdrv->config.basic.lcd_type) {
@@ -76,7 +81,7 @@ void lcd_phy_glb_param_dft(struct aml_lcd_drv_s *pdrv)
 		phy->cv_mode = 0;
 		break;
 	case LCD_VBYONE:
-		if (phy->ext_pullup) {
+		if (phy_cfg->ext_pullup) {
 			phy->vcm = 0x27e;
 			phy->odt = 0xff;
 		} else {
