@@ -91,15 +91,17 @@ struct amfc_cmd_list {
 	union {
 		unsigned int control;
 		struct {
-			unsigned irq_mask    : 8;
+			unsigned src_hash    : 8;
 			unsigned algorithm   : 4;
-			unsigned rsved       : 12;
+			unsigned rsved       : 4;
+			unsigned dst_addr_h  : 4;
+			unsigned src_addr_h  : 4;
 			unsigned end         : 1;
 			unsigned dst_scatter : 1;
 			unsigned src_scatter : 1;
 			unsigned link_mode   : 1;
-			unsigned interrupt   : 1;
-			unsigned ratio_check : 1;
+			unsigned stream      : 1;
+			unsigned hash        : 1;
 			unsigned compress    : 1;
 			unsigned owner       : 1;
 		};
@@ -109,6 +111,7 @@ struct amfc_cmd_list {
 };
 
 int amfc_init(void);
-int amfc_decompress(void *src, void *dst, ssize_t src_size, ssize_t dst_size);
+int amfc_decompress(void *src, void *dst, ssize_t src_size,
+		    ssize_t dst_size, int stream);
 
 #endif

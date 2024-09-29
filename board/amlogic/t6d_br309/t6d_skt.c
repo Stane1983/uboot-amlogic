@@ -26,6 +26,9 @@
 #include <asm-generic/u-boot.h>
 #include <command.h>
 #include <asm/amlogic/arch/stick_mem.h>
+#ifdef CONFIG_AMLOGIC_AMFC
+#include <amlogic/amfc.h>
+#endif
 
 #ifdef CONFIG_AMLOGIC_AMFC
 #include <amlogic/amfc.h>
@@ -131,7 +134,6 @@ int board_init(void)
 #ifdef CONFIG_AMLOGIC_AMFC
 	amfc_init();
 #endif
-	usb_power_init();
 	return 0;
 }
 

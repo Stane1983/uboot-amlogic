@@ -32,19 +32,39 @@ bool self;
 int table_test_mask;
 #endif
 
+#define HW_VERSION_10		0x100
+#define HW_VERSION_11		0x101
+
+static unsigned int hw_version;
+
 int amfc_init(void)
 {
 	unsigned int value;
 	cpu_id_t cpu_id = get_cpu_id();
 
-	if (cpu_id.family_id == MESON_CPU_MAJOR_ID_S7D && cpu_id.chip_rev == 0x0A) {
-		writel(0 | (1 << 6) | (5 << 7), CLKCTRL_AMFC_CLK_CTRL);	// 500MHz
-	} else if (cpu_id.family_id == MESON_CPU_MAJOR_ID_T6D) {
-		writel(1 | (1 << 8) | (6 << 9), CLKCTRL_AMFC_CLK_CTRL);	// 576MHz
-	} else { // s7d/s6
-		writel(0 | (1 << 6) | (4 << 7), CLKCTRL_AMFC_CLK_CTRL);	// 666MHz
+	switch (cpu_id.family_id) {
+	case MESON_CPU_MAJOR_ID_S7D:
+		if (cpu_id.chip_rev == 0x0A) {	// 500MHz
+			writel(0 | (1 << 6) | (5 << 7), CLKCTRL_AMFC_CLK_CTRL);
+			break;
+		}
+	case MESON_CPU_MAJOR_ID_S6:
+		 // 666MHz
+		writel(0 | (1 << 6) | (4 << 7), CLKCTRL_AMFC_CLK_CTRL);
+		break;
+
+	case MESON_CPU_MAJOR_ID_T6D:
+	case MESON_CPU_MAJOR_ID_T6W:
+		// 666MHz
+		writel(0 | (1 << 8) | (1 << 9), CLKCTRL_AMFC_CLK_CTRL);
+		break;
+
+	default:
+		printf("unsupported CPU id:%x\n", cpu_id.family_id);
+		return -1;
 	}
 
+	hw_version = readl(AMFC_GL_VERSION);
 	printf("AMFC VLSI version:%x, feature:%x\n",
 		readl(AMFC_GL_VERSION), readl(AMFC_GL_CMD1_FEATURE));
 
@@ -88,18 +108,19 @@ static void dump_addr(void *buf, unsigned int size)
 static int build_tables(unsigned int *table, unsigned long base, ssize_t size, int type)
 {
 	int i, count, need_reverse = 0;
-	unsigned long tmp;
+	unsigned long tmp, end = base + size - 1;
 
 	if (!table || size <= PAGE_SIZE)
 		return -1;
 
-	if (base & ~PAGE_MASK) {
+	if ((base & ~PAGE_MASK) && hw_version < HW_VERSION_11) {
 		printf("%s, base:%lx not align to %d\n",
 			__func__, base, PAGE_SIZE);
 		return -1;
 	}
+
 	/* physical contiguous in uboot */
-	count = ALIGN(size, PAGE_SIZE) / PAGE_SIZE;
+	count = (end >> PAGE_SHIFT) - (base >> PAGE_SHIFT) + 1;
 	/*
 	 * type and page_table_mode for test
 	 * page_table_mode = 1 --> src/dst all sequence table
@@ -143,12 +164,12 @@ static void set_up_addr(struct amfc_cmd_list *acl, unsigned long addr, int type)
 	switch (type) {
 	case ADDR_SRC:
 		acl->src_addr = low;
-		acl->control |= (high << 20);
+		acl->src_addr_h = high;
 		break;
 
 	case ADDR_DST:
 		acl->dst_addr = low;
-		acl->control |= (high << 16);
+		acl->dst_addr_h = high;
 		break;
 
 	default:
@@ -162,17 +183,22 @@ static void set_up_addr(struct amfc_cmd_list *acl, unsigned long addr, int type)
  * src_size: size of source buffer
  * dst_size: size for destination buffer, caller should make sure
  *           dst size is enough
+ * stream: stream mode support, 0: disable, 1: enable
  * return value: decompressed size if success, negative value if failed
  */
-int amfc_decompress(void *src, void *dst, ssize_t src_size, ssize_t dst_size)
+int amfc_decompress(void *src, void *dst, ssize_t src_size, ssize_t dst_size, int stream)
 {
 	unsigned int *src_table = NULL, *dst_table = NULL, *tmp;
 	int table_size;
-	unsigned int status;
+	unsigned int status, off;
 	int cmd_time;
 	int timeout = ((src_size + PAGE_SIZE) / PAGE_SIZE) * 100 + 5000;
 	unsigned long inv_end = (unsigned long)dst + dst_size;
 	unsigned long secmon_start = readl(SYSCTRL_SEC_STATUS_REG17) + (1 << 20);
+	int ret;
+
+	if (!src || !dst || src_size < 0 || dst_size < 0)
+		return -1;
 
 	if (log_en)
 		printf("%s, acl:%p, src:%p, dst:%p, src size:%ld, dst size:%ld\n",
@@ -189,6 +215,10 @@ int amfc_decompress(void *src, void *dst, ssize_t src_size, ssize_t dst_size)
 			return -ENOMEM;
 
 		tmp = (unsigned int *)(((unsigned long)src_table + PAGE_SIZE) & PAGE_MASK);
+		if (hw_version > HW_VERSION_10) {
+			off = (unsigned long)src & (~PAGE_MASK);
+			acl.link_addr |= off << 16;
+		}
 		build_tables(tmp, (unsigned long)src, src_size, TABLE_SRC);
 		set_up_addr(&acl, virt_to_phys(tmp), ADDR_SRC);
 		acl.src_scatter = 1;
@@ -207,6 +237,10 @@ int amfc_decompress(void *src, void *dst, ssize_t src_size, ssize_t dst_size)
 			return -ENOMEM;
 
 		tmp = (unsigned int *)(((unsigned long)dst_table + PAGE_SIZE) & PAGE_MASK);
+		if (hw_version > HW_VERSION_10) {
+			off = (unsigned long)dst & (~PAGE_MASK);
+			acl.link_addr |= off;
+		}
 		build_tables(tmp, (unsigned long)dst, dst_size, TABLE_DST);
 		set_up_addr(&acl, virt_to_phys(tmp), ADDR_DST);
 		acl.dst_scatter = 1;
@@ -216,6 +250,7 @@ int amfc_decompress(void *src, void *dst, ssize_t src_size, ssize_t dst_size)
 	} else {
 		set_up_addr(&acl, virt_to_phys(dst), ADDR_DST);
 	}
+	acl.stream    = stream ? 1 : 0;
 	acl.algorithm = ALGORITHM_ZSTD;
 	acl.end       = 1;
 	acl.compress  = CMD_DECOMPRESS;
@@ -250,11 +285,6 @@ int amfc_decompress(void *src, void *dst, ssize_t src_size, ssize_t dst_size)
 	}
 	cmd_time = get_time() - cmd_time;
 
-	if (src_table)
-		free(src_table);
-	if (dst_table)
-		free(dst_table);
-
 	status = readl(AMFC_GL_CMD1_STATUS);
 	if (!(status & AMFC_ERROR_MASK)) {
 	#ifdef CONFIG_AMFC_TEST
@@ -268,28 +298,37 @@ int amfc_decompress(void *src, void *dst, ssize_t src_size, ssize_t dst_size)
 			printf("decompress done:%x %x, size:%d, cycles:%d, time:%d us\n",
 				acl.status, status, acl.result_size,
 				readl(AMFC_CMD1_TIME_MEASURE), cmd_time);
-		return acl.result_size;
+		if (stream)
+			ret = acl.result_size & ~(0x80000000);
+		else
+			ret = acl.result_size;
 	} else {
 		printf("decompress failed:%x %x, time:%d us, acl:%p, src:%p, dst:%p, src_size:%ld, dst_size:%ld, timeout:%d\n",
 			acl.status, readl(AMFC_GL_CMD1_STATUS),
 			readl(AMFC_CMD1_TIME_MEASURE),
 			&acl, src, dst, src_size, dst_size, timeout);
-		dump_addr((void *)0xfe024000, 300);
+		dump_addr((void *)AMFC_GL_VERSION, 300);
 		dump_addr((void *)&acl, 32);
 		dump_addr((void *)src, 32);
 		dump_addr((void *)dst, 32);
 		writel(0x03, AMFC_GL_CMD1_IRQCLR);
-		return -EINVAL;
+		ret = -EINVAL;
 	}
+	if (src_table)
+		free(src_table);
+	if (dst_table)
+		free(dst_table);
+	return ret;
 }
 
 int amfc_compress(void *src, void *dst, ssize_t src_size, ssize_t dst_size)
 {
 	unsigned int *src_table = NULL, *dst_table = NULL, *tmp;
 	int table_size;
-	unsigned int status;
+	unsigned int status, off;
 	int cmd_time;
 	int timeout = ((src_size + PAGE_SIZE) / PAGE_SIZE) * 20 + 5000;
+	int ret;
 
 	if (log_en)
 		printf("%s, acl:%p, src:%p, dst:%p, src sizs:%ld, dst size:%ld\n",
@@ -306,6 +345,10 @@ int amfc_compress(void *src, void *dst, ssize_t src_size, ssize_t dst_size)
 			return -ENOMEM;
 
 		tmp = (unsigned int *)(((unsigned long)src_table + PAGE_SIZE) & PAGE_MASK);
+		if (hw_version > HW_VERSION_10) {
+			off = (unsigned long)src & (~PAGE_MASK);
+			acl.link_addr |= (off << 16);
+		}
 		build_tables(tmp, (unsigned long)src, src_size, TABLE_SRC);
 		set_up_addr(&acl, virt_to_phys(tmp), ADDR_SRC);
 		acl.src_scatter = 1;
@@ -324,6 +367,10 @@ int amfc_compress(void *src, void *dst, ssize_t src_size, ssize_t dst_size)
 			return -ENOMEM;
 
 		tmp = (unsigned int *)(((unsigned long)dst_table + PAGE_SIZE) & PAGE_MASK);
+		if (hw_version > HW_VERSION_10) {
+			off = (unsigned long)dst & (~PAGE_MASK);
+			acl.link_addr |= off;
+		}
 		build_tables(tmp, (unsigned long)dst, dst_size, TABLE_DST);
 		set_up_addr(&acl, virt_to_phys(tmp), ADDR_DST);
 		acl.dst_scatter = 1;
@@ -367,10 +414,6 @@ int amfc_compress(void *src, void *dst, ssize_t src_size, ssize_t dst_size)
 	}
 	cmd_time = get_time() - cmd_time;
 
-	if (src_table)
-		free(src_table);
-	if (dst_table)
-		free(dst_table);
 	status = readl(AMFC_GL_CMD0_STATUS);
 	if (!(status & AMFC_ERROR_MASK)) {
 	#ifdef CONFIG_AMFC_TEST
@@ -381,15 +424,24 @@ int amfc_compress(void *src, void *dst, ssize_t src_size, ssize_t dst_size)
 			printf("compress done:%x %x, size:%d, cycles:%d, time:%d us\n",
 				acl.status, status, acl.result_size,
 				readl(AMFC_CMD0_TIME_MEASURE), cmd_time);
-		return acl.result_size;
+		ret = acl.result_size;
 	} else {
 		printf("compress failed:%x %x, time:%d us, acl:%p, src:%p, dst:%p, src_size:%ld, dst_size:%ld, timeout:%d\n",
 			acl.status, readl(AMFC_GL_CMD0_STATUS),
 			readl(AMFC_CMD0_TIME_MEASURE),
 			&acl, src, dst, src_size, dst_size, timeout);
+		dump_addr((void *)AMFC_GL_VERSION, 300);
+		dump_addr((void *)&acl, 32);
+		dump_addr((void *)src, 32);
+		dump_addr((void *)dst, 32);
 		writel(0x03, AMFC_GL_CMD0_IRQCLR);
-		return -EINVAL;
+		ret = -EINVAL;
 	}
+	if (src_table)
+		free(src_table);
+	if (dst_table)
+		free(dst_table);
+	return ret;
 }
 
 #ifdef CONFIG_AMFC_TEST
@@ -506,7 +558,7 @@ static void amfc_pack_test(unsigned long base, void *dst, void *dst2)
 			cur_src_addr = src;
 			if (ret > 0) {
 				printf("decompress %s\n", pack->name);
-				ret = amfc_decompress(dst, dst2, ret, pack->size);
+				ret = amfc_decompress(dst, dst2, ret, pack->size, 0);
 				ret = memcmp(dst2, src, pack->size);
 				printf("compare %p -> %p with %d %s\n\n",
 					dst2, cur_src_addr, cur_src_size,
@@ -519,7 +571,7 @@ static void amfc_pack_test(unsigned long base, void *dst, void *dst2)
 			 * check sw compressed and hw decompress
 			 */
 			printf("decompress %s\n", pack->name);
-			ret = amfc_decompress(src, dst, pack->size, cur_src_size);
+			ret = amfc_decompress(src, dst, pack->size, cur_src_size, 0);
 			ret = memcmp(dst, cur_src_addr, cur_src_size);
 			printf("compare %p -> %p with %d %s\n\n",
 				dst, cur_src_addr, cur_src_size,
@@ -617,7 +669,7 @@ static void amfc_zram_test(void *src, unsigned long size, int cmp)
 			if (z) {
 				sw_csize = PAGE_SIZE - (z - p);
 				total_sw_compressed_size += sw_csize;
-				amfc_decompress(z, test_page, sw_csize, PAGE_SIZE);
+				amfc_decompress(z, test_page, sw_csize, PAGE_SIZE, 0);
 				sw_decompress++;
 				if (cmp && memcmp(test_page, (void *)((unsigned long)p - PAGE_SIZE), PAGE_SIZE)) {
 					printf("hw decompress address :%p not match\n", p);
@@ -630,7 +682,7 @@ static void amfc_zram_test(void *src, unsigned long size, int cmp)
 			hw_compress++;
 			if (hw_csize > 0) {
 				total_hw_compressed_size += hw_csize;
-				amfc_decompress(test_page, test_page + PAGE_SIZE, hw_csize, PAGE_SIZE);
+				amfc_decompress(test_page, test_page + PAGE_SIZE, hw_csize, PAGE_SIZE, 0);
 				hw_decompress++;
 				if (cmp && memcmp1(test_page + PAGE_SIZE, (void *)p, PAGE_SIZE)) {
 					char cmd[128] = {0};
@@ -737,7 +789,7 @@ static void amfc_erofs_test(void *src, unsigned long size, int pcluster, int ver
 		//	continue;
 		//}
 		if (p) {  // zstd compressed page
-			hw_decompress = amfc_decompress(p, test_page, c_size, EROFS_MAX_SIZE);
+			hw_decompress = amfc_decompress(p, test_page, c_size, EROFS_MAX_SIZE, 0);
 			if (hw_decompress) {
 				/* sw_decompress and double check */
 				total_decompress += hw_decompress;
@@ -1316,7 +1368,7 @@ static void amfc_address_test(void *src, void *dst,
 
 		ret = amfc_compress(src, p, src_size, src_size);
 		if (ret > 0) {
-			amfc_decompress(p, dst2, ret, src_size);
+			amfc_decompress(p, dst2, ret, src_size, 0);
 			if (memcmp(src, dst2, src_size)) {
 				printf("%s, src:%p, dst:%p, dst2:%p, ret:%d, src_size:%d, i:%d not match\n",
 					__func__, src, p, dst2, ret, src_size, i);
@@ -1365,7 +1417,7 @@ static void amfc_address_test(void *src, void *dst,
 		memset(dst2, 0, src_size + 128);
 		run_command("dcache flush", 0);
 
-		ret = amfc_decompress(dst, p, ret, src_size);
+		ret = amfc_decompress(dst, p, ret, src_size, 0);
 		if (ret > 0) {
 			if (memcmp(p, src, src_size)) {
 				printf("%s, p:%p, src:%p, ret:%d, src_size:%d, i:%d not match\n",
@@ -1386,6 +1438,82 @@ static void amfc_address_test(void *src, void *dst,
 		}
 	}
 }
+
+static void amfc_pagetable_test(void *src, void *dst, void *dst2, int size)
+{
+	int i, j, ret;
+	char *p = src;
+
+	page_table_mode = 1;
+	/* set to fixed pattern */
+	for (i = 0; i < size + PAGE_SIZE; i++) {
+		p[i] = i & 0xff;
+	}
+
+	p = dst2;
+	for (j = 0; j <= PAGE_SIZE; j++) {
+		memset(dst, 0, size + PAGE_SIZE * 2);
+		memset(dst2, 0, size + PAGE_SIZE * 3);
+		flush_dcache_range((unsigned long)dst2, (unsigned long)dst2 + size + PAGE_SIZE * 3);
+		ret = amfc_compress(src + j, dst + j, size + j, size + j);
+		if (ret < 0) {
+			printf("%d compress %p failed:%d\n", j, src + j, ret);
+			return;
+		}
+		ret = amfc_decompress(dst + j, dst2 + j, ret, size + j, 0);
+		if (ret < 0) {
+			printf("%d decompress %p failed:%d\n", j, src + j, ret);
+			return;
+		}
+		if (memcmp(src + j, dst2 + j, size + j)) {
+			printf("%d compare %p %p not match\n", j, src + j, dst2 + j);
+			return;
+		}
+		for (i = 0; i < j; i++) {
+			if (p[i] || p[j + size + j]) {
+				printf("%d mem overwrite %p %p\n", j, p + i, p + j + size + j);
+				return;
+			}
+		}
+	}
+	printf("test pass \n");
+}
+static void amfc_stream_mode_test(void *src, void *dst, void *dst2, int size)
+{
+	int i, ret, src_size;
+	char *p = src;
+
+	page_table_mode = 1;
+	/* set to fixed pattern */
+	for (i = 0; i < size + PAGE_SIZE; i++) {
+		p[i] = i & 0xff;
+	}
+
+	p = dst2;
+	src_size = amfc_compress(src, dst, size, size);
+	if (src_size < 0) {
+		printf("compress %p failed:%d\n", src, src_size);
+		return;
+	}
+	for (i = 1; i < size; i++) {
+		memset(dst2, 0, size + PAGE_SIZE * 3);
+		flush_dcache_range((unsigned long)dst2, (unsigned long)dst2 + size + PAGE_SIZE * 3);
+		ret = amfc_decompress(dst, dst2, src_size, i, 1);
+		if (ret < -1) {
+			printf("%d decompress %p failed:%d\n", i, src, ret);
+			return;
+		}
+		if (memcmp(src, dst2, i)) {
+			printf("%d compare %p %p not match\n", i, src, dst2);
+			return;
+		}
+		if (p[i]) {
+			printf("%d mem overwrite %p\n", i, p + i);
+			return;
+		}
+	}
+	printf("test pass \n");
+}
 #endif
 
 
@@ -1396,6 +1524,9 @@ static int do_amfc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	unsigned long src_size;
 	unsigned long dst_size;
 	int ret;
+
+	if (argc < 2)
+		return -1;
 
 	if (!strcmp(argv[1], "set")) {
 		if (argc != 4)
@@ -1480,6 +1611,26 @@ static int do_amfc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		amfc_address_test((void *)src, (void *)dst, (void *)src_size, dst_size);
 		return 0;
 	}
+	if (!strcmp(argv[1], "pagetable_test")) {
+		if (argc != 6)
+			return -1;
+		src      = simple_strtoul(argv[2], NULL, 16);
+		dst      = simple_strtoul(argv[3], NULL, 16);
+		src_size = simple_strtoul(argv[4], NULL, 16);
+		dst_size = simple_strtoul(argv[5], NULL, 16);
+		amfc_pagetable_test((void *)src, (void *)dst, (void *)src_size, dst_size);
+		return 0;
+	}
+	if (!strcmp(argv[1], "stream_test")) {
+		if (argc != 6)
+			return -1;
+		src      = simple_strtoul(argv[2], NULL, 16);
+		dst      = simple_strtoul(argv[3], NULL, 16);
+		src_size = simple_strtoul(argv[4], NULL, 16);
+		dst_size = simple_strtoul(argv[5], NULL, 16);
+		amfc_stream_mode_test((void *)src, (void *)dst, (void *)src_size, dst_size);
+		return 0;
+	}
 #endif
 
 	if (argc != 6)
@@ -1491,7 +1642,7 @@ static int do_amfc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	if (!strcmp(argv[1], "compress"))
 		ret  = amfc_compress((void *)src, (void *)dst, src_size, dst_size);
 	else if (!strcmp(argv[1], "decompress"))
-		ret  = amfc_decompress((void *)src, (void *)dst, src_size, dst_size);
+		ret  = amfc_decompress((void *)src, (void *)dst, src_size, dst_size, 0);
 
 	return 0;
 }

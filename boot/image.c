@@ -533,7 +533,7 @@ int image_decomp(int comp, ulong load, ulong image_start, int type,
 	#ifdef CONFIG_AMLOGIC_AMFC
 		if (!tools_build()) {
 			ret = amfc_decompress(image_buf, load_buf,
-					      image_len, unc_len);
+					      image_len, unc_len, 0);
 			if (ret >= 0) {
 				image_len = ret;
 				ret = 0;
