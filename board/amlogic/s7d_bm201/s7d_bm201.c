@@ -33,9 +33,6 @@
 #ifdef CONFIG_AML_VPP
 #include <amlogic/media/vpp/vpp.h>
 #endif
-#ifdef CONFIG_AML_HDMITX20
-#include <amlogic/media/vout/hdmitx/hdmitx_module.h>
-#endif
 #ifdef CONFIG_AML_HDMITX21
 #include <amlogic/media/vout/hdmitx21/hdmitx_module.h>
 #endif
@@ -191,9 +188,10 @@ int board_init(void)
 	active_clk();
 #endif
 	run_command("gpio set GPIOH_7", 0);
-#ifdef CONFIG_AML_HDMITX20
-	hdmitx_set_hdmi_5v();
-	hdmitx_init();
+#ifdef CONFIG_CMD_SND
+	/* pinmux HDMITX_HPD_IN: GPIOH_2,  */
+	update_bits(PADCTRL_PIN_MUX_REGB, 0xf << 8, 0x1 << 8);
+	earcrx_init(EARC_RX_ANA_V3);
 #endif
 #endif // #if !defined(CONFIG_PXP_DDR) //bypass below operations for pxp
 	pinctrl_devices_active(PIN_CONTROLLER_NUM);
