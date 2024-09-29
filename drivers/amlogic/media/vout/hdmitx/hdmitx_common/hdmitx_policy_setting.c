@@ -108,7 +108,7 @@ int get_ubootenv_dv_type(void)
 		return DOLBY_VISION_DISABLE;
 }
 
-static bool is_amdolby_enabled(void)
+bool is_amdolby_enabled(void)
 {
 	if (get_ubootenv_dv_status() != DOLBY_VISION_DISABLE)
 		return true;

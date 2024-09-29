@@ -1351,6 +1351,8 @@ void hdmitx_update_dv_strategy_info(struct dv_info *dv)
 
 static void get_parse_edid_data(struct hdmitx_dev *hdev)
 {
+	int hdr_priority = get_hdr_strategy_priority();
+
 	hdev->hwop.read_edid(hdev->rawedid);
 
 	/* dump edid raw data */
@@ -1362,6 +1364,25 @@ static void get_parse_edid_data(struct hdmitx_dev *hdev)
 	/* Update the member variables used by the dv running strategy */
 	hdmitx_update_dv_strategy_info(&hdev->RXCap.dv_info);
 	hdmitx_update_dv_strategy_info(&hdev->RXCap.dv_info2);
+
+	/*
+	 * For the first boot after burning, if the hdr_priority environment
+	 * variable is not configured, need to set it manually to avoid
+	 * the inconsistency between the value of the hdr_priority environment
+	 * variable and the result of the Google hdr policy during the boot
+	 * process, causing the TV to flash black.
+	 * 268435456 = 0x10000000, DV priority
+	 * 268435472 = 0x10000010,HDR priority
+	 */
+	if (hdr_priority == -1) {
+		if (is_amdolby_enabled()) {
+			hdr_priority = 268435456;
+			env_set("hdr_priority", "268435456");
+		} else {
+			hdr_priority = 268435472;
+			env_set("hdr_priority", "268435472");
+		}
+	}
 
 	memcpy(&hdev->tx_common.rxcap, &hdev->RXCap, sizeof(hdev->tx_common.rxcap));
 }
@@ -1400,7 +1421,9 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 	struct meson_policy_out output;
 	struct hdmi_format_para *para = NULL;
 	bool mode_support = false;
-	/* hdmi_mode / colorattribute may be null or "none".
+	int hdr_priority = get_hdr_strategy_priority();
+	/*
+	 * hdmi_mode / colorattribute may be null or "none".
 	 * if either is null or "none", it means user not
 	 * selected manually, and need to select the best
 	 * mode or colorattribute by policy
@@ -1622,9 +1645,18 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 	hdev->para = hdmitx21_get_fmtpara(sel_hdmimode, env_get("colorattribute"));
 	hdev->vic = hdev->para->timing.vic;
 
-	/* update the hdr/hdr10+/dv capabilities in the end of scene_process */
-	int hdr_priority = get_hdr_strategy_priority();
-
+	/*
+	 * update the hdr/hdr10+/dv capabilities in the end of scene_process.
+	 * In order to be consistent with the HWC mode output policy, the real
+	 * capabilities of the TV need to be used when executing the uboot mode
+	 * policy. Finally, the corresponding hdr_cap/dv_cap needs to be blocked
+	 * based on hdr_priority.
+	 * eg: TV and BOX all support 1080p60hz DV, not support 1080p120hz DV, support HDR10, SDR
+	 * scene: UI choose 1080p120hz, always DV, reboot.
+	 * if update the hdr/hdr10+/dv capabilities before scene_process, uboot
+	 * scene_process executes sdr policy, but hwc executes hdr policy, Inconsistent
+	 * output modes lead to black flash
+	 */
 	if (hdr_priority != -1) {
 		hdmitx_set_hdr_priority(&hdev->RXCap, hdr_priority);
 		memcpy(&hdev->tx_common.rxcap, &hdev->RXCap, sizeof(hdev->tx_common.rxcap));

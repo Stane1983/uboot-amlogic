@@ -175,6 +175,7 @@ void hdmi_sbtm_infoframe_rawset(u8 *hb, u8 *pb);
 unsigned int hdmi_edid_parsing(unsigned char *edid, struct rx_cap *prxcap);
 void dsc_cap_show(struct rx_cap *prxcap);
 bool is_dolby_enabled(void);
+bool is_amdolby_enabled(void);
 bool is_tv_support_dv(struct hdmitx_dev *hdev);
 bool is_dv_preference(struct hdmitx_dev *hdev);
 bool is_hdr_preference(struct hdmitx_dev *hdev);

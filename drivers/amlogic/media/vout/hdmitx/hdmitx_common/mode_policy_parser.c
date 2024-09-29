@@ -415,7 +415,7 @@ bool find_brr_mode(const char *mode, struct meson_policy_in *input, char* output
 	if (!(env_qms_en && progressive_mode && rx_qms_cap)) {
 		strcpy(outputmode, mode);
 		SYS_LOGE("hdmitx: qms: env %d mode %d rx_qms %d\n",
-			 env_qms_en, progressive_mode, rx_qms_cap);
+			env_qms_en, progressive_mode, rx_qms_cap);
 		return false;
 	}
 	tfr_timing = hdmitx21_gettiming_from_name(mode);
