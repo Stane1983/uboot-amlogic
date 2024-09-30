@@ -277,7 +277,7 @@ int hdmitx_edid_print_sink_cap(const struct rx_cap *prxcap, char *buffer, int bu
 /*edid is good return 0, otherwise return < 0.*/
 bool hdmitx_edid_is_all_zeros(unsigned char *rawedid);
 bool hdmitx_edid_check_data_valid(u8 edid_check, unsigned char *buf);
-ssize_t _show_aud_cap(struct rx_cap *prxcap, char *buf);
+ssize_t _show_aud_cap(struct rx_cap *prxcap, char *buf, int size);
 int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf);
 unsigned int hdmitx_edid_valid_block_num(unsigned char *edid_buf);
 void hdmitx_edid_print(u8 *edid_buf);
