@@ -5109,56 +5109,11 @@ static void independ_path_default_regs(void)
 #endif
 }
 
-static void switch_osd_to_dmcx(u32 dmc_num)
-{
-#ifndef AML_C3_DISPLAY
-	static int init;
-	u32 val = 0;
-
-	if (init)
-		return;
-
-	init = 1;
-
-	osd_logd("%s, dmc%d\n", __func__, dmc_num);
-	if (dmc_num == 1) {
-		/* OSD1->vpp_arb1 */
-		val |= 1 << 20;
-		/* OSD2->vpp_arb1 */
-		val |= 1 << 21;
-		/* OSD3->vpp_arb1 */
-		val |= 1 << 24;
-		/* OSD4->vpp_arb1 */
-		val |= 1 << 25;
-		/* mali afbcd->vpp_arb1 */
-		val |= 1 << 27;
-		osd_reg_write(VPP_RDARB_MODE, val);
-
-		/* vpp_arb1->vpu arb read2 */
-		osd_reg_set_bits(VPU_RDARB_MODE_L2C1, 0, 16, 1);
-		osd_reg_set_bits(VPU_RDARB_MODE_L2C1, 1, 17, 1);
-	} else {
-		osd_reg_write(VPP_RDARB_MODE, 0);
-		osd_reg_set_bits(VPU_RDARB_MODE_L2C1, 0, 16, 1);
-	}
-#endif
-}
-
 void osd_init_hw(u32 index)
 {
 	u32 group, idx, data32, data2, holdline = 8;
 	char *osd_reverse;
 	char *s;
-
-	/* T5M RevA, switch osd to dmc1
-	 * T5M RevB, switch osd to dmc0
-	 */
-	if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T5M) {
-		if (get_cpu_id().chip_rev == MESON_CPU_CHIP_REVISION_A)
-			switch_osd_to_dmcx(1);
-		else
-			switch_osd_to_dmcx(0);
-	}
 
 #ifdef AML_T7_DISPLAY
 	if (index >= OSD3) {

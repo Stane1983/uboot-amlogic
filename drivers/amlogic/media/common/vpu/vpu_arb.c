@@ -41,6 +41,54 @@ static struct vpu_arb_table_s vpu_rdarb_vpu0_2_level1_t7[] = {
 		{}
 };
 
+static struct vpu_arb_table_s vpu_rdarb_vpu0_2_level1_t5m_rev_a[] = {
+		/* vpu module,        reg,             bit, len, bind_port,        name */
+	{VPU_ARB_OSD1,        VPP_RDARB_MODE,  20,  1,   VPU_ARB_VPP_ARB1,  "osd1",
+		/*slv_reg,             bit,        len*/
+		VPP_RDARB_REQEN_SLV,   0,          2},
+	{VPU_ARB_OSD2,        VPP_RDARB_MODE,  21,  1,   VPU_ARB_VPP_ARB1,  "osd2",
+		VPP_RDARB_REQEN_SLV,   2,          2},
+	{VPU_ARB_VD1,         VPP_RDARB_MODE,  22,  1,   VPU_ARB_VPP_ARB0,  "vd1",
+		VPP_RDARB_REQEN_SLV,   4,          2},
+	{VPU_ARB_VD2,         VPP_RDARB_MODE,  23,  1,   VPU_ARB_VPP_ARB0,  "vd2",
+		VPP_RDARB_REQEN_SLV,   6,          2},
+	{VPU_ARB_OSD3,        VPP_RDARB_MODE,  24,  1,   VPU_ARB_VPP_ARB1,  "osd3",
+		VPP_RDARB_REQEN_SLV,   8,          2},
+	{VPU_ARB_OSD4,        VPP_RDARB_MODE,  25,  1,   VPU_ARB_VPP_ARB1,  "osd4",
+		VPP_RDARB_REQEN_SLV,   10,          2},
+	{VPU_ARB_AMDOLBY0,    VPP_RDARB_MODE,  26,  1,   VPU_ARB_VPP_ARB0,  "amdolby0",
+		VPP_RDARB_REQEN_SLV,   12,          2},
+	{VPU_ARB_MALI_AFBCD,  VPP_RDARB_MODE,  27,  1,   VPU_ARB_VPP_ARB1,  "mali_afbc",
+		VPP_RDARB_REQEN_SLV,   14,          2},
+	{VPU_ARB_VD3,         VPP_RDARB_MODE,  28,  1,   VPU_ARB_VPP_ARB0,  "vd3",
+		VPP_RDARB_REQEN_SLV,   16,          2},
+		{}
+};
+
+static struct vpu_arb_table_s vpu_rdarb_vpu0_2_level1_t5m_rev_b[] = {
+		/* vpu module,        reg,             bit, len, bind_port,        name */
+	{VPU_ARB_OSD1,        VPP_RDARB_MODE,  20,  1,   VPU_ARB_VPP_ARB0,  "osd1",
+		/*slv_reg,             bit,        len*/
+		VPP_RDARB_REQEN_SLV,   0,          2},
+	{VPU_ARB_OSD2,        VPP_RDARB_MODE,  21,  1,   VPU_ARB_VPP_ARB0,  "osd2",
+		VPP_RDARB_REQEN_SLV,   2,          2},
+	{VPU_ARB_VD1,         VPP_RDARB_MODE,  22,  1,   VPU_ARB_VPP_ARB0,  "vd1",
+		VPP_RDARB_REQEN_SLV,   4,          2},
+	{VPU_ARB_VD2,         VPP_RDARB_MODE,  23,  1,   VPU_ARB_VPP_ARB0,  "vd2",
+		VPP_RDARB_REQEN_SLV,   6,          2},
+	{VPU_ARB_OSD3,        VPP_RDARB_MODE,  24,  1,   VPU_ARB_VPP_ARB0,  "osd3",
+		VPP_RDARB_REQEN_SLV,   8,          2},
+	{VPU_ARB_OSD4,        VPP_RDARB_MODE,  25,  1,   VPU_ARB_VPP_ARB0,  "osd4",
+		VPP_RDARB_REQEN_SLV,   10,          2},
+	{VPU_ARB_AMDOLBY0,    VPP_RDARB_MODE,  26,  1,   VPU_ARB_VPP_ARB0,  "amdolby0",
+		VPP_RDARB_REQEN_SLV,   12,          2},
+	{VPU_ARB_MALI_AFBCD,  VPP_RDARB_MODE,  27,  1,   VPU_ARB_VPP_ARB0,  "mali_afbc",
+		VPP_RDARB_REQEN_SLV,   14,          2},
+	{VPU_ARB_VD3,         VPP_RDARB_MODE,  28,  1,   VPU_ARB_VPP_ARB0,  "vd3",
+		VPP_RDARB_REQEN_SLV,   16,          2},
+		{}
+};
+
 static struct vpu_arb_table_s vpu_rdarb_vpu0_2_level1_txhd2[] = {
 	/* vpu module,        reg,             bit, len, bind_port,        name */
 	{VPU_ARB_OSD1,        VPP_RDARB_MODE,  20,  1,   VPU_ARB_VPP_ARB0,  "osd1",
@@ -71,6 +119,58 @@ static struct vpu_arb_table_s vpu_rdarb_vpu0_2_level2_t7[] = {
 	{VPU_ARB_RDMA_READ,     VPU_RDARB_MODE_L2C1, 18, 1, VPU_READ0, "rdma_read",
 		VPU_RDARB_REQEN_SLV_L2C1,	4,			2},
 	{VPU_ARB_LDIM_RD,       VPU_RDARB_MODE_L2C1, 23, 1, VPU_READ2, "ldim_rd",
+		VPU_RDARB_REQEN_SLV_L2C1,	14,			2},
+	{VPU_ARB_VDIN_AFBCE_RD, VPU_RDARB_MODE_L2C1, 24, 1, VPU_READ0, "vdin_afbce_rd",
+		VPU_RDARB_REQEN_SLV_L2C1,	16,			2},
+	{VPU_ARB_VPU_DMA,       VPU_RDARB_MODE_L2C1, 25, 1, VPU_READ0, "vpu_dma",
+		VPU_RDARB_REQEN_SLV_L2C1,	18,			2},
+		{}
+};
+
+static struct vpu_arb_table_s vpu_rdarb_vpu0_2_level2_t5m_rev_a[] = {
+	/* vpu module,			reg,			bit, len,   bind_port, name */
+	{VPU_ARB_VPP_ARB0,      VPU_RDARB_MODE_L2C1, 16, 1, VPU_READ0, "vpp_arb0",
+		/*slv_reg,                 bit,       len*/
+		VPU_RDARB_REQEN_SLV_L2C1,	0,			2},
+	{VPU_ARB_VPP_ARB1,      VPU_RDARB_MODE_L2C1, 17, 1, VPU_READ2, "vpp_arb1",
+		VPU_RDARB_REQEN_SLV_L2C1,	2,			2},
+	{VPU_ARB_RDMA_READ,     VPU_RDARB_MODE_L2C1, 18, 1, VPU_READ0, "rdma_read",
+		VPU_RDARB_REQEN_SLV_L2C1,	4,			2},
+	{VPU_ARB_VIU2,          VPU_RDARB_MODE_L2C1, 19, 1, VPU_READ0, "viu2",
+		VPU_RDARB_REQEN_SLV_L2C1,	6,			2},
+	{VPU_ARB_TCON_P1,       VPU_RDARB_MODE_L2C1, 20, 1, VPU_READ0, "tcon_p1",
+		VPU_RDARB_REQEN_SLV_L2C1,	8,			2},
+	{VPU_ARB_TVFE_READ,     VPU_RDARB_MODE_L2C1, 21, 1, VPU_READ0, "tvfe_read",
+		VPU_RDARB_REQEN_SLV_L2C1,	10,			2},
+	{VPU_ARB_TCON_P2,       VPU_RDARB_MODE_L2C1, 22, 1, VPU_READ0, "tcon_p2",
+		VPU_RDARB_REQEN_SLV_L2C1,	12,			2},
+	{VPU_ARB_LDIM_RD,       VPU_RDARB_MODE_L2C1, 23, 1, VPU_READ0, "ldim_rd",
+		VPU_RDARB_REQEN_SLV_L2C1,	14,			2},
+	{VPU_ARB_VDIN_AFBCE_RD, VPU_RDARB_MODE_L2C1, 24, 1, VPU_READ0, "vdin_afbce_rd",
+		VPU_RDARB_REQEN_SLV_L2C1,	16,			2},
+	{VPU_ARB_VPU_DMA,       VPU_RDARB_MODE_L2C1, 25, 1, VPU_READ0, "vpu_dma",
+		VPU_RDARB_REQEN_SLV_L2C1,	18,			2},
+		{}
+};
+
+static struct vpu_arb_table_s vpu_rdarb_vpu0_2_level2_t5m_rev_b[] = {
+	/* vpu module,			reg,			bit, len,   bind_port, name */
+	{VPU_ARB_VPP_ARB0,      VPU_RDARB_MODE_L2C1, 16, 1, VPU_READ0, "vpp_arb0",
+		/*slv_reg,                 bit,       len*/
+		VPU_RDARB_REQEN_SLV_L2C1,	0,			2},
+	{VPU_ARB_VPP_ARB1,      VPU_RDARB_MODE_L2C1, 17, 1, VPU_READ0, "vpp_arb1",
+		VPU_RDARB_REQEN_SLV_L2C1,	2,			2},
+	{VPU_ARB_RDMA_READ,     VPU_RDARB_MODE_L2C1, 18, 1, VPU_READ0, "rdma_read",
+		VPU_RDARB_REQEN_SLV_L2C1,	4,			2},
+	{VPU_ARB_VIU2,          VPU_RDARB_MODE_L2C1, 19, 1, VPU_READ0, "viu2",
+		VPU_RDARB_REQEN_SLV_L2C1,	6,			2},
+	{VPU_ARB_TCON_P1,       VPU_RDARB_MODE_L2C1, 20, 1, VPU_READ0, "tcon_p1",
+		VPU_RDARB_REQEN_SLV_L2C1,	8,			2},
+	{VPU_ARB_TVFE_READ,     VPU_RDARB_MODE_L2C1, 21, 1, VPU_READ0, "tvfe_read",
+		VPU_RDARB_REQEN_SLV_L2C1,	10,			2},
+	{VPU_ARB_TCON_P2,       VPU_RDARB_MODE_L2C1, 22, 1, VPU_READ0, "tcon_p2",
+		VPU_RDARB_REQEN_SLV_L2C1,	12,			2},
+	{VPU_ARB_LDIM_RD,       VPU_RDARB_MODE_L2C1, 23, 1, VPU_READ0, "ldim_rd",
 		VPU_RDARB_REQEN_SLV_L2C1,	14,			2},
 	{VPU_ARB_VDIN_AFBCE_RD, VPU_RDARB_MODE_L2C1, 24, 1, VPU_READ0, "vdin_afbce_rd",
 		VPU_RDARB_REQEN_SLV_L2C1,	16,			2},
@@ -769,9 +869,24 @@ void init_read0_2_write0_urgent(void)
 int init_arb_urgent_table(void)
 {
 #ifndef AML_C3_DISPLAY
-	if (vpu_conf.data->chip_type == VPU_CHIP_T7) {
-		vpu_rdarb_vpu0_2_level1_tables = vpu_rdarb_vpu0_2_level1_t7;
-		vpu_rdarb_vpu0_2_level2_tables = vpu_rdarb_vpu0_2_level2_t7;
+	if (vpu_conf.data->chip_type == VPU_CHIP_T7 ||
+		vpu_conf.data->chip_type == VPU_CHIP_T5M) {
+		if (vpu_conf.data->chip_type == VPU_CHIP_T5M) {
+			/*
+			 * T5M revA osd to dmc1
+			 * T5M revB osd to dmc0
+			 */
+			if (get_cpu_id().chip_rev == MESON_CPU_CHIP_REVISION_A) {
+				vpu_rdarb_vpu0_2_level1_tables = vpu_rdarb_vpu0_2_level1_t5m_rev_a;
+				vpu_rdarb_vpu0_2_level2_tables = vpu_rdarb_vpu0_2_level2_t5m_rev_a;
+			} else {
+				vpu_rdarb_vpu0_2_level1_tables = vpu_rdarb_vpu0_2_level1_t5m_rev_b;
+				vpu_rdarb_vpu0_2_level2_tables = vpu_rdarb_vpu0_2_level2_t5m_rev_b;
+			}
+		} else {
+			vpu_rdarb_vpu0_2_level1_tables = vpu_rdarb_vpu0_2_level1_t7;
+			vpu_rdarb_vpu0_2_level2_tables = vpu_rdarb_vpu0_2_level2_t7;
+		}
 		vpu_wrarb_vpu0_tables = vpu_wrarb_vpu0_t7;
 		vpu_urgent_table_rd_vpu0_2_level2_tables = vpu_urgent_table_rd_vpu0_2_level2_t7;
 		vpu_urgent_table_wr_vpu0_tables = vpu_urgent_table_wr_vpu0_t7;
