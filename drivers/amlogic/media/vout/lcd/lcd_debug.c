@@ -734,6 +734,21 @@ static struct lcd_debug_info_s lcd_debug_info_t7_0 = {
 #endif
 };
 
+static struct lcd_debug_info_s lcd_debug_info_t7_1 = {
+	.reg_pinmux_table = lcd_reg_dump_pinmux_t7,
+
+	.reg_dump_lvds   = lcd_reg_print_lvds,
+	.reg_dump_vbyone = lcd_reg_print_vbyone,
+#ifdef CONFIG_AML_LCD_TABLET
+	.reg_dump_mipi   = lcd_reg_print_mipi,
+	.reg_dump_edp    = lcd_reg_print_edp,
+#endif
+#ifdef CONFIG_AML_LCD_TCON
+	.reg_dump_mlvds  = NULL,
+	.reg_dump_p2p    = NULL,
+#endif
+};
+
 static struct lcd_debug_info_s lcd_debug_info_t7_2 = {
 	.reg_pinmux_table = lcd_reg_dump_pinmux_t7,
 
@@ -863,6 +878,9 @@ void lcd_debug_probe(struct aml_lcd_drv_s *pdrv)
 		switch (pdrv->index) {
 		case 2:
 			lcd_debug_info = &lcd_debug_info_t7_2;
+			break;
+		case 1:
+			lcd_debug_info = &lcd_debug_info_t7_1;
 			break;
 		default:
 			lcd_debug_info = &lcd_debug_info_t7_0;

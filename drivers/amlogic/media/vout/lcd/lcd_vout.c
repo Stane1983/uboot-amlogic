@@ -415,34 +415,6 @@ static void lcd_interface_on(struct aml_lcd_drv_s *pdrv)
 	pdrv->status |= LCD_STATUS_IF_ON;
 }
 
-__maybe_unused static void lcd_update_outputmode(struct aml_lcd_drv_s *pdrv)
-{
-	char curr_mode[20];
-	char mode_env_name[20] = "outputmode\0\0";
-	unsigned short framerate, dur_index;
-
-	if (!pdrv->vmode_mgr.cur_vmode_info) {
-		LCDERR("[%d]: curr vmode info is NULL\n", pdrv->index);
-		return;
-	}
-
-	dur_index = pdrv->vmode_mgr.cur_vmode_info->duration_index;
-	if (dur_index != 0xff)
-		framerate = pdrv->std_duration[dur_index].frame_rate;
-	else
-		framerate = pdrv->vmode_mgr.cur_vmode_info->base_fr;
-
-	memset(curr_mode, 0, 20 * sizeof(char));
-	str_add_vmode(curr_mode, pdrv->vmode_mgr.cur_vmode_info, framerate);
-
-	if (pdrv->viu_sel == 2)
-		mode_env_name[10] = '2';
-	else if (pdrv->viu_sel == 3)
-		mode_env_name[10] = '3';
-
-	env_set(mode_env_name, curr_mode);
-}
-
 static void lcd_module_enable(struct aml_lcd_drv_s *pdrv, char *mode)
 {
 	unsigned int sync_duration;
@@ -495,8 +467,6 @@ static void lcd_module_enable(struct aml_lcd_drv_s *pdrv, char *mode)
 			      pdrv->index, pdrv->boot_ctrl.init_level);
 		}
 	}
-
-	//lcd_update_outputmode(pdrv);
 }
 
 static void lcd_module_disable(struct aml_lcd_drv_s *pdrv)

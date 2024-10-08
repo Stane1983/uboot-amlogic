@@ -2643,6 +2643,34 @@ static inline int lcd_get_opt_mode_idx(struct aml_lcd_drv_s *pdrv)
 	return -1;
 }
 
+char *get_current_env_connector(unsigned char cnt_idx)
+{
+	char cnt_name[20];
+
+	sprintf(cnt_name, "connector%hu_type", cnt_idx);
+
+	return env_get(cnt_name);
+}
+
+void sprintf_lcd_connector(char *buf, unsigned char lcd_idx, unsigned char lcd_type)
+{
+	char *connector_name_list[5] = {"LVDS", "VBYONE", "MIPI", "EDP", "LCD"};
+	unsigned char name_idx;
+
+	if (lcd_type == LCD_LVDS || lcd_type == LCD_MLVDS)
+		name_idx = 0;
+	else if (lcd_type == LCD_VBYONE || lcd_type == LCD_P2P)
+		name_idx = 1;
+	else if (lcd_type == LCD_MIPI)
+		name_idx = 2;
+	else if (lcd_type == LCD_EDP)
+		name_idx = 3;
+	else
+		name_idx = 4;
+
+	sprintf(buf, "%s-%c", connector_name_list[name_idx], 'A' + lcd_idx);
+}
+
 int lcd_get_panel_config(char *dt_addr, int load_id, struct aml_lcd_drv_s *pdrv)
 {
 	int ret;
@@ -3371,7 +3399,6 @@ unsigned int str_add_vmode(char *buf, struct lcd_vmode_info_s *vm_info, unsigned
 		{1920, 1080, {120, 60, 59, 50, 48}},
 		{1920, 1080, { 47, 30, 25, 24,  0}},
 		{1366,  768, { 60, 59, 50, 48, 47}},
-		{1024,  600, { 60, 59, 50, 48, 47}},
 		{1280,  720, { 60, 50,  0,  0,  0}},
 	};
 
