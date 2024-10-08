@@ -5,44 +5,15 @@
 
 #include <common.h>
 #include <command.h>
-#include <malloc.h>
 #include <asm/io.h>
-#include <asm/amlogic/arch/clock.h>
 #include <asm/amlogic/arch/secure_apb.h>
-#include <asm/amlogic/arch/timer.h>
-#include <asm/amlogic/arch/pll.h>
-#include <linux/arm-smccc.h>
+#include <../clk-pll.h>
+#include <linux/kernel.h>
 
-#define STR_PLL_TEST_ALL	"all"
-#define STR_PLL_TEST_SYS	"sys"
-#define STR_PLL_TEST_FIX	"fix"
-#define STR_PLL_TEST_DDR	"ddr"
-#define STR_PLL_TEST_HDMI	"hdmi"
-#define STR_PLL_TEST_GP0	"gp0"
-#define STR_PLL_TEST_GP1	"gp1"
-#define STR_PLL_TEST_HIFI	"hifi"
-#define STR_PLL_TEST_PCIE	"pcie"
-#define STR_PLL_TEST_ETHPHY	"ethphy"
-#define STR_PLL_TEST_USBPHY	"usbphy"
-#define STR_PLL_TEST_MPLL	"mpll"
+#define SECURE_PLL_CLK		0x82000098
+#define SECURE_CPU_CLK		0x82000099
 
-#define PLL_LOCK_CHECK_MAX		3
-
-#define RET_PLL_LOCK_FAIL		0x1000
-#define RET_CLK_NOT_MATCH		0x1
-#define SYS_PLL_DIV16_CNTL		BIT(24)
-#define SYS_CLK_DIV16_CNTL		BIT(1)
-#define SYS_PLL_TEST_DIV		4	/* div16 */
-#define HDMI_PLL_DIV_CNTL		BIT(18)
-#define HDMI_PLL_DIV_GATE		BIT(19)
-
-#define PLL_DIV16_OFFSET		4	/* div2/2/4 */
-
-#define RW_CPUCTRL_SYS_CPU_CLK	0
-#define SYS_PLL	1
-#define RW_CPUCTRL_SYS_CPU_CLK5	2
-#define GP1_PLL	3
-
+/* PLL secure clock index */
 enum sec_pll {
 	SECID_SYS0_DCO_PLL = 0,
 	SECID_SYS0_DCO_PLL_DIS,
@@ -53,946 +24,633 @@ enum sec_pll {
 	SECID_CPU_CLK_SEL,
 	SECID_CPU_CLK_RD,
 	SECID_CPU_CLK_DYN,
+	SECID_DSU_CLK_SEL,
+	SECID_DSU_CLK_RD,
+	SECID_DSU_CLK_DYN,
+	SECID_DSU_FINAL_CLK_SEL,
+	SECID_DSU_FINAL_CLK_RD,
+	SECID_PLL_TEST,
 };
 
-extern unsigned long clk_util_clk_msr(unsigned long clk_mux);
-
-gp0_pll_cfg_t gp0_pll_cfg = {
-	.gp0_pll[0] = {
-		       .pll_clk = 6000,	/* MHz */
-		       .pll_cntl0 = 0x080304fa,
-		       .pll_cntl1 = 0x00000000,
-		       .pll_cntl2 = 0x00000000,
-		       .pll_cntl3 = 0x48681c00,
-		       .pll_cntl4 = 0x88770290,
-		       .pll_cntl5 = 0x39272000,
-		       .pll_cntl6 = 0x56540000 },
-	.gp0_pll[1] = {
-		       .pll_clk = 3000,	/* MHz */
-		       .pll_cntl0 = 0X0803047d,
-		       .pll_cntl1 = 0x00006aab,
-		       .pll_cntl2 = 0x00000000,
-		       .pll_cntl3 = 0x6a295c00,
-		       .pll_cntl4 = 0x65771290,
-		       .pll_cntl5 = 0x39272000,
-		       .pll_cntl6 = 0x54540000 },
-};
-
-gp1_pll_cfg_t gp1_pll_cfg = {
-	.gp1_pll[0] = {
-		       .pll_clk = 6000,	/* MHz */
-		       .pll_cntl0 = 0x080304fa,
-		       .pll_cntl1 = 0x00000000,
-		       .pll_cntl2 = 0x00000000,
-		       .pll_cntl3 = 0x48681c00,
-		       .pll_cntl4 = 0x88770290,
-		       .pll_cntl5 = 0x39272000,
-		       .pll_cntl6 = 0x56540000 },
-	.gp1_pll[1] = {
-		       .pll_clk = 3000,	/* MHz */
-		       .pll_cntl0 = 0X0803047d,
-		       .pll_cntl1 = 0x00006aab,
-		       .pll_cntl2 = 0x00000000,
-		       .pll_cntl3 = 0x6a295c00,
-		       .pll_cntl4 = 0x65771290,
-		       .pll_cntl5 = 0x39272000,
-		       .pll_cntl6 = 0x54540000 },
-};
-
-hdmi_pll_cfg_t hdmi_pll_cfg = {
-	.hdmi_pll[0] = {
-			.pll_clk = 5940,	/* MHz */
-			.pll_cntl0 = 0x0b3004f7,
-			.pll_cntl1 = 0x00010000,
-			.pll_cntl2 = 0x00000000,
-			.pll_cntl3 = 0x6a28dc00,
-			.pll_cntl4 = 0x65771290,
-			.pll_cntl5 = 0x39272000,
-			.pll_cntl6 = 0x56540000 },
-	.hdmi_pll[1] = {
-			.pll_clk = 2970,
-			.pll_cntl0 = 0x0b00047b,
-			.pll_cntl1 = 0x00018000,
-			.pll_cntl2 = 0x00000000,
-			.pll_cntl3 = 0x6a29dc00,
-			.pll_cntl4 = 0x65771290,
-			.pll_cntl5 = 0x39272000,
-			.pll_cntl6 = 0x54540000 },
-};
-
-uint32_t sys_pll_clk[] = { 6000, 3000 };
-
-sys_pll_cfg_t sys_pll_cfg = {
-	.sys_pll[0] = {
-		       .cpu_clk = 6000,
-		       .pll_cntl = 0X080304fa,
-		       .pll_cntl1 = 0x0,
-		       .pll_cntl2 = 0x0,
-		       .pll_cntl3 = 0x48681c00,
-		       .pll_cntl4 = 0x88770290,
-		       .pll_cntl5 = 0x39272000,
-		       .pll_cntl6 = 0x56540000 },
-
-	.sys_pll[1] = {
-		       .cpu_clk = 3000,
-		       .pll_cntl = 0X0803047d,
-		       .pll_cntl1 = 0x0,
-		       .pll_cntl2 = 0x0,
-		       .pll_cntl3 = 0x48681c00,
-		       .pll_cntl4 = 0x88770290,
-		       .pll_cntl5 = 0x39272000,
-		       .pll_cntl6 = 0x56540000 },
-};
-
-hifi_pll_cfg_t hifi_pll_cfg = {
-	.hifi_pll[0] = {
-			.pll_clk = 6005,
-			.pll_cntl0 = 0X080304fa,
-			.pll_cntl1 = 0X00006aab,
-			.pll_cntl2 = 0x0,
-			.pll_cntl3 = 0x6a285c00,
-			.pll_cntl4 = 0x65771290,
-			.pll_cntl5 = 0x39272000,
-			.pll_cntl6 = 0x56540000 },
-
-	.hifi_pll[1] = {
-			.pll_clk = 3000,
-			.pll_cntl0 = 0X0803047d,
-			.pll_cntl1 = 0X00006aab,
-			.pll_cntl2 = 0x0,
-			.pll_cntl3 = 0x68295c00,
-			.pll_cntl4 = 0x65771290,
-			.pll_cntl5 = 0x39272000,
-			.pll_cntl6 = 0x54540000 },
-};
-
-mpll_pll_set_t mpll = {
-	.pll_clk = 100,
-	.pll_cntl0 = 0x00000543,
-	.pll_cntl1 = 0xc14003e7,
-	.pll_cntl2 = 0x60000033,
-	.pll_cntl3 = 0xc14003e7,
-	.pll_cntl4 = 0x60000033,
-	.pll_cntl5 = 0xc14003e7,
-	.pll_cntl6 = 0x60000033,
-	.pll_cntl7 = 0xc14003e7,
-	.pll_cntl8 = 0x60000033
-};
-
-/*PCIE clk_out = 24M*m/2^(n+1)/OD*/
-static const struct pciepll_rate_table pcie_pll_rate_table[] = {
-	PLL_RATE(4800, 200, 1, 12),
-};
-
-static void pll_report(unsigned int flag, char *name)
-{
-	if (flag)
-		printf("%s pll test failed!\n", name);
-	else
-		printf("%s pll test pass!\n", name);
-}
-
-static int clk_around(unsigned int clk, unsigned int cmp)
-{
-	if (cmp == 1)
-		cmp += 1;
-	if (((cmp - 2) <= clk) && (clk <= (cmp + 2)))
-		return 1;
-	else
-		return 0;
-}
-
-static void clocks_set_sys_cpu_clk(uint32_t freq)
+int t6x_sys0_pll_prepare(struct meson_clk_pll_data *pll)
 {
 	struct arm_smccc_res res;
 
-	arm_smccc_smc(0x82000099, SECID_CPU_CLK_SEL, (1 << 11), freq ? 1 : 0, 0, 0, 0, 0, &res);
-	arm_smccc_smc(0x82000099, SECID_CPU_CLK_DYN, freq, 0, 0, 0, 0, 0, &res);
-}
+	/* store rate */
+	meson_pll_store_rate(pll);
 
-static int sys_pll_init(sys_pll_set_t *sys_pll_set)
-{
-	unsigned int lock_check = PLL_LOCK_CHECK_MAX;
-	unsigned int lock_timeout = 0;
-	struct arm_smccc_res res;
+	/* Set fixed clk to 1G, Switch to fixed clk first */
+	arm_smccc_smc(SECURE_CPU_CLK, SECID_CPU_CLK_DYN, 1, 0, 0, 0, 0, 0, &res);
 
-	do {
-		arm_smccc_smc(0x82000098, SECID_SYS0_DCO_PLL,
-			      (sys_pll_set->pll_cntl & 0x1FF),
-			      ((sys_pll_set->pll_cntl >> 10) & 0x1F),
-			      ((sys_pll_set->pll_cntl >> 16) & 0x3), 0, 0, 0, &res);
-		//Wr(ANACTRL_SYSPLL_CTRL0, sys_pll_set->pll_cntl);
-		//Wr(ANACTRL_SYSPLL_CTRL0, sys_pll_set->pll_cntl | (3 << 28));
-		//Wr(ANACTRL_SYSPLL_CTRL1, sys_pll_set->pll_cntl1);
-		//Wr(ANACTRL_SYSPLL_CTRL2, sys_pll_set->pll_cntl2);
-		//Wr(ANACTRL_SYSPLL_CTRL3, sys_pll_set->pll_cntl3);
-		//Wr(ANACTRL_SYSPLL_CTRL4, sys_pll_set->pll_cntl4);
-		//Wr(ANACTRL_SYSPLL_CTRL5, sys_pll_set->pll_cntl5);
-		//Wr(ANACTRL_SYSPLL_CTRL6, sys_pll_set->pll_cntl6);
-		//Wr(ANACTRL_SYSPLL_CTRL0, ((1<<29) | Rd(HHI_SYS_PLL_CNTL0)));
-		//Wr(ANACTRL_SYSPLL_CTRL0, Rd(HHI_SYS_PLL_CNTL0)&(~(1<<29)));
-		lock_timeout = 200;
-		do {
-			_udelay(2);
-		} while ((!((readl(ANACTRL_SYSPLL_STS) >> 31) & 0x1)) && --lock_timeout);
-	} while ((!((readl(ANACTRL_SYSPLL_STS) >> 31) & 0x1)) && --lock_check);
+	meson_switch_cpu_clk(SECURE_CPU_CLK, SECID_CPU_CLK_SEL, 0);
 
-	if (lock_check != 0)
-		return 0;
-	else
-		return RET_PLL_LOCK_FAIL;
-}
-
-static int sys_pll_test(sys_pll_set_t *sys_pll_set)
-{
-	unsigned int clk_msr_val = 0;
-	unsigned int sys_clk = 0;
-	sys_pll_set_t sys_pll;
-	int ret = 0, od = 0;
-
-	od = ((sys_pll_set->pll_cntl >> 16) & 0x3);
-	/* switch sys clk to oscillator */
-	clocks_set_sys_cpu_clk(0);
-
-	/* store current sys pll cntl */
-	sys_pll.pll_cntl = readl(ANACTRL_SYSPLL_CTRL0);
-	sys_pll.pll_cntl1 = readl(ANACTRL_SYSPLL_CTRL1);
-	sys_pll.pll_cntl2 = readl(ANACTRL_SYSPLL_CTRL2);
-	sys_pll.pll_cntl3 = readl(ANACTRL_SYSPLL_CTRL3);
-	sys_pll.pll_cntl4 = readl(ANACTRL_SYSPLL_CTRL4);
-	sys_pll.pll_cntl5 = readl(ANACTRL_SYSPLL_CTRL5);
-	sys_pll.pll_cntl6 = readl(ANACTRL_SYSPLL_CTRL6);
-
-	if (sys_pll_set->cpu_clk == 0) {
-		sys_clk = (24 / ((sys_pll_set->pll_cntl >> 10) & 0x1F) *
-			   (sys_pll_set->pll_cntl & 0x1FF)) >>
-		    ((sys_pll_set->pll_cntl >> 16) & 0x3);
-	} else {
-		sys_clk = sys_pll_set->cpu_clk;
-	}
-
-	if (sys_pll_set->pll_cntl == 0) {
-		printf("sys pll cntl equal NULL, skip\n");
-		return -1;
-	}
-
-	/* test sys pll */
-	ret = sys_pll_init(sys_pll_set);
-	_udelay(5);
-	if (ret) {
-		printf("SYS pll lock Failed! - %4d MHz\n", sys_clk);
-	} else {
-		printf("SYS pll lock OK! - %4d MHz. Div16 >>%d - %4d MHz. ",
-		       sys_clk, od, (sys_clk >> SYS_PLL_TEST_DIV) >> od);
-		clk_msr_val = clk_util_clk_msr(23);
-		printf("CLKMSR(23) - %4d MHz ", clk_msr_val);
-		if (clk_around(clk_msr_val, (sys_clk >> SYS_PLL_TEST_DIV) >> od)) {
-			/* sys clk/pll div16 */
-			printf(": Match\n");
-		} else {
-			ret = RET_CLK_NOT_MATCH;
-			printf(": MisMatch\n");
-		}
-	}
-
-	/* restore sys pll */
-	sys_pll_init(&sys_pll);
-	clocks_set_sys_cpu_clk(2);
-
-	return ret;
-}
-
-static int sys_pll_test_all(sys_pll_cfg_t *sys_pll_cfg)
-{
-	unsigned int i = 0;
-	int ret = 0;
-
-	for (i = 0; i < (sizeof(sys_pll_cfg_t) / sizeof(sys_pll_set_t)); i++)
-		ret += sys_pll_test(&sys_pll_cfg->sys_pll[i]);
-	return ret;
-}
-
-static void set_dsu_clk(uint32_t flag)
-{
-	struct arm_smccc_res res;
-
-	arm_smccc_smc(0x8200009C, RW_CPUCTRL_SYS_CPU_CLK5, flag, 0, 0, 0, 0, 0, &res);
-}
-
-static int gp1_pll_init(gp1_pll_set_t *gp1_pll_set)
-{
-	unsigned int lock_check = PLL_LOCK_CHECK_MAX;
-	unsigned int lock_timeout = 0;
-	struct arm_smccc_res res;
-
-	do {
-		arm_smccc_smc(0x8200009C, GP1_PLL, gp1_pll_set->pll_cntl0,
-			      gp1_pll_set->pll_cntl3, gp1_pll_set->pll_cntl4, 0, 0, 0, &res);
-		lock_timeout = 200;
-		do {
-			_udelay(2);
-		} while ((!((readl(ANACTRL_GP1PLL_STS) >> 31) & 0x1)) && --lock_timeout);
-	} while ((!((readl(ANACTRL_GP1PLL_STS) >> 31) & 0x1)) && --lock_check);
-
-	if (lock_check != 0)
-		return 0;
-	else
-		return RET_PLL_LOCK_FAIL;
-}
-
-static int gp1_pll_test(gp1_pll_set_t *gp1_pll_set)
-{
-	unsigned int clk_msr_val = 0, od = 0;
-	unsigned int pll_clk = 0;
-	gp1_pll_set_t gp1_pll;
-	int ret = 0;
-
-	od = (gp1_pll_set->pll_cntl0 >> 16) & 0x7;
-	/* switch dsu clk to oscillator */
-	set_dsu_clk(0);
-
-	/* store current gp1 pll cntl */
-	gp1_pll.pll_cntl0 = readl(ANACTRL_GP1PLL_CTRL0);
-	gp1_pll.pll_cntl1 = readl(ANACTRL_GP1PLL_CTRL1);
-	gp1_pll.pll_cntl2 = readl(ANACTRL_GP1PLL_CTRL2);
-	gp1_pll.pll_cntl3 = readl(ANACTRL_GP1PLL_CTRL3);
-	gp1_pll.pll_cntl4 = readl(ANACTRL_GP1PLL_CTRL4);
-	gp1_pll.pll_cntl5 = readl(ANACTRL_GP1PLL_CTRL5);
-	gp1_pll.pll_cntl6 = readl(ANACTRL_GP1PLL_CTRL6);
-
-	if (gp1_pll_set->pll_clk == 0) {
-		pll_clk = (24 / ((gp1_pll_set->pll_cntl0 >> 10) & 0x1F) *
-			   (gp1_pll_set->pll_cntl0 & 0x1FF));
-	} else {
-		pll_clk = gp1_pll_set->pll_clk;
-	}
-
-	if (gp1_pll_set->pll_cntl0 == 0) {
-		printf("gp1 pll cntl equal NULL, skip\n");
-		return -1;
-	}
-
-	/* test gp1 pll */
-	ret = gp1_pll_init(gp1_pll_set);
-	_udelay(5);
-	if (ret) {
-		printf("GP1 pll lock Failed! - %4d MHz\n", pll_clk);
-	} else {
-		printf("GP1 pll lock OK! - %4d MHz>>%d - %4d MHz. ", pll_clk, od, pll_clk >> od);
-		clk_msr_val = clk_util_clk_msr(21);
-		printf("CLKMSR(21) - %4d MHz ", clk_msr_val);
-		if (clk_around(clk_msr_val, pll_clk >> od)) {
-			printf(": Match\n");
-		} else {
-			ret = RET_CLK_NOT_MATCH;
-			printf(": MisMatch\n");
-		}
-	}
-
-	/* restore gp1 pll */
-	gp1_pll_init(&gp1_pll);
-	set_dsu_clk(1);
-
-	return ret;
-}
-
-static int gp1_pll_test_all(gp1_pll_cfg_t *gp1_pll_cfg)
-{
-	unsigned int i = 0;
-	int ret = 0;
-
-	for (i = 0; i < (sizeof(gp1_pll_cfg_t) / sizeof(gp1_pll_set_t)); i++)
-		ret += gp1_pll_test(&gp1_pll_cfg->gp1_pll[i]);
-	return ret;
-}
-
-static int fix_pll_test(void)
-{
 	return 0;
 }
 
-static int ddr_pll_test(void)
+void t6x_sys0_pll_unprepare(struct meson_clk_pll_data *pll)
 {
+	/* restore rate */
+	meson_pll_restore_rate(pll);
+
+	/* Switch back cpu to sys pll */
+	meson_switch_cpu_clk(SECURE_CPU_CLK, SECID_CPU_CLK_SEL, 1);
+}
+
+static const struct pll_params_table t6x_sys_pll_table[] = {
+	PLL_PARAMS(75, 1, 0), /*DCO=1800M OD=1800M restore*/
+	PLL_PARAMS(80, 1, 0), /*DCO=1920M OD=1920M */
+	PLL_PARAMS(126, 1, 1), /*DCO=1512M OD=1512M*/
+	{ /* sentinel */ }
+};
+
+static unsigned int t6x_sys_pll_default_rate[] = {1512, 1920};
+
+static const struct reg_sequence t6x_sys0_pll_init_regs[] = {
+	{ .reg = ANACTRL_SYS0PLL_CTRL0, .def = 0x20011086 },
+	{ .reg = ANACTRL_SYS0PLL_CTRL0, .def = 0x30011086 },
+	{ .reg = ANACTRL_SYS0PLL_CTRL1, .def = 0x3420500f },
+	{ .reg = ANACTRL_SYS0PLL_CTRL2, .def = 0x00023041 },
+	{ .reg = ANACTRL_SYS0PLL_CTRL3, .def = 0x00000000, .delay_us = 20 },
+	{ .reg = ANACTRL_SYS0PLL_CTRL0, .def = 0x10011086, .delay_us = 20  },
+	{ .reg = ANACTRL_SYS0PLL_CTRL2, .def = 0x00023001 }
+};
+
+struct meson_clk_pll_data t6x_sys0_pll = {
+	.name = "sys0",
+	.en = {
+		.reg = ANACTRL_SYS0PLL_CTRL0,
+		.shift   = 28,
+		.width   = 1,
+	},
+	.m = {
+		.reg = ANACTRL_SYS0PLL_CTRL0,
+		.shift   = 0,
+		.width   = 8,
+	},
+	.n = {
+		.reg = ANACTRL_SYS0PLL_CTRL0,
+		.shift   = 16,
+		.width   = 5,
+	},
+	.od = {
+		.reg = ANACTRL_SYS0PLL_CTRL0,
+		.shift	 = 12,
+		.width	 = 3,
+	},
+	.l = {
+		.reg = ANACTRL_SYS0PLL_CTRL0,
+		.shift   = 31,
+		.width   = 1,
+	},
+	.rst = {
+		.reg = ANACTRL_SYS0PLL_CTRL0,
+		.shift   = 29,
+		.width   = 1,
+	},
+	.ops = &(const struct meson_pll_test_ops) {
+		.pll_prepare = t6x_sys0_pll_prepare,
+		.pll_unprepare = t6x_sys0_pll_unprepare,
+		.pll_disable = meson_secure_pll_disable,
+		.pll_set_rate = meson_secure_pll_set_rate,
+		.pll_set_parm_rate = meson_secure_pll_set_parm_rate,
+		.pll_rate_to_msr = meson_div16_to_msr,
+
+	},
+	.def_rate = t6x_sys_pll_default_rate,
+	.def_cnt = ARRAY_SIZE(t6x_sys_pll_default_rate),
+	.table = t6x_sys_pll_table,
+	.init_regs = t6x_sys0_pll_init_regs,
+	.init_count = ARRAY_SIZE(t6x_sys0_pll_init_regs),
+	.smc_id = SECURE_PLL_CLK,
+	.secid_disable = SECID_SYS0_DCO_PLL_DIS,
+	.secid_test = SECID_PLL_TEST,
+	.secid = SECID_SYS0_DCO_PLL,
+	.clkmsr_id = 23,
+	.clkmsr_margin = 10,
+};
+
+int t6x_sys1_pll_prepare(struct meson_clk_pll_data *pll)
+{
+	struct arm_smccc_res res;
+
+	/* store rate */
+	meson_pll_store_rate(pll);
+
+	/* Set fixed clk to 1G, Switch to fixed clk first */
+	arm_smccc_smc(SECURE_CPU_CLK, SECID_DSU_CLK_DYN, 1, 0, 0, 0, 0, 0, &res);
+
+	arm_smccc_smc(SECURE_CPU_CLK, SECID_DSU_CLK_SEL, 1, 0, 0, 0, 0, 0, &res);
+
 	return 0;
 }
 
-static int hdmi_pll_init(hdmi_pll_set_t *hdmi_pll)
+void t6x_sys1_pll_unprepare(struct meson_clk_pll_data *pll)
 {
-	unsigned int lock_check = PLL_LOCK_CHECK_MAX;
+	struct arm_smccc_res res;
 
-	do {
-		writel(hdmi_pll->pll_cntl0, ANACTRL_HDMIPLL_CTRL0);
-		writel(hdmi_pll->pll_cntl0 | (3 << 28), ANACTRL_HDMIPLL_CTRL0);
-		writel(hdmi_pll->pll_cntl1, ANACTRL_HDMIPLL_CTRL1);
-		writel(hdmi_pll->pll_cntl2, ANACTRL_HDMIPLL_CTRL2);
-		writel(hdmi_pll->pll_cntl3, ANACTRL_HDMIPLL_CTRL3);
-		writel(hdmi_pll->pll_cntl4, ANACTRL_HDMIPLL_CTRL4);
-		writel(hdmi_pll->pll_cntl5, ANACTRL_HDMIPLL_CTRL5);
-		writel(hdmi_pll->pll_cntl6, ANACTRL_HDMIPLL_CTRL6);
+	/* restore rate */
+	meson_pll_restore_rate(pll);
 
-		writel(readl(ANACTRL_HDMIPLL_CTRL0) | (1 << 29), ANACTRL_HDMIPLL_CTRL0);
-		_udelay(10);
-		writel(readl(ANACTRL_HDMIPLL_CTRL0) & (~(1 << 29)), ANACTRL_HDMIPLL_CTRL0);
-		_udelay(100);
-	} while ((!(0x3 == ((readl(ANACTRL_HDMIPLL_STS) >> 30) & 0x3))) && --lock_check);
-	if (lock_check != 0)
-		return 0;
+	/* Switch back cpu to sys1 pll */
+	arm_smccc_smc(SECURE_CPU_CLK, SECID_DSU_CLK_SEL, 3, 0, 0, 0, 0, 0, &res);
+}
+
+static const struct pll_params_table t6x_sys1_pll_table[] = {
+	PLL_PARAMS(127, 1, 1), /*DCO=3048M OD=1524M restore*/
+	PLL_PARAMS(80, 1, 0), /*DCO=1920M OD=1920M */
+	PLL_PARAMS(126, 1, 1), /*DCO=1512M OD=1512M*/
+	{ /* sentinel */ }
+};
+
+static unsigned int t6x_sys1_pll_default_rate[] = {1512, 1920};
+
+static const struct reg_sequence t6x_sys1_pll_init_regs[] = {
+	{ .reg = ANACTRL_SYS1PLL_CTRL0, .def = 0x20011086 },
+	{ .reg = ANACTRL_SYS1PLL_CTRL0, .def = 0x30011086 },
+	{ .reg = ANACTRL_SYS1PLL_CTRL1, .def = 0x3420500f },
+	{ .reg = ANACTRL_SYS1PLL_CTRL2, .def = 0x00023041 },
+	{ .reg = ANACTRL_SYS1PLL_CTRL3, .def = 0x00000000, .delay_us = 20 },
+	{ .reg = ANACTRL_SYS1PLL_CTRL0, .def = 0x10011086, .delay_us = 20  },
+	{ .reg = ANACTRL_SYS1PLL_CTRL2, .def = 0x00023001 }
+};
+
+struct meson_clk_pll_data t6x_sys1_pll = {
+	.name = "sys1",
+	.en = {
+		.reg = ANACTRL_SYS1PLL_CTRL0,
+		.shift   = 28,
+		.width   = 1,
+	},
+	.m = {
+		.reg = ANACTRL_SYS1PLL_CTRL0,
+		.shift   = 0,
+		.width   = 8,
+	},
+	.n = {
+		.reg = ANACTRL_SYS1PLL_CTRL0,
+		.shift   = 16,
+		.width   = 5,
+	},
+	.od = {
+		.reg = ANACTRL_SYS1PLL_CTRL0,
+		.shift	 = 12,
+		.width	 = 3,
+	},
+	.l = {
+		.reg = ANACTRL_SYS1PLL_CTRL0,
+		.shift   = 31,
+		.width   = 1,
+	},
+	.rst = {
+		.reg = ANACTRL_SYS1PLL_CTRL0,
+		.shift   = 29,
+		.width   = 1,
+	},
+	.ops = &(const struct meson_pll_test_ops) {
+		.pll_prepare = t6x_sys1_pll_prepare,
+		.pll_unprepare = t6x_sys1_pll_unprepare,
+		.pll_disable = meson_secure_pll_disable,
+		.pll_set_rate = meson_secure_pll_set_rate,
+		.pll_set_parm_rate = meson_secure_pll_set_parm_rate,
+		.pll_rate_to_msr = meson_div16_to_msr,
+
+	},
+	.def_rate = t6x_sys1_pll_default_rate,
+	.def_cnt = ARRAY_SIZE(t6x_sys1_pll_default_rate),
+	.table = t6x_sys1_pll_table,
+	.init_regs = t6x_sys1_pll_init_regs,
+	.init_count = ARRAY_SIZE(t6x_sys1_pll_init_regs),
+	.smc_id = SECURE_PLL_CLK,
+	.secid_disable = SECID_SYS1_DCO_PLL_DIS,
+	.secid_test = SECID_PLL_TEST,
+	.secid = SECID_SYS1_DCO_PLL,
+	.clkmsr_id = 23,
+	.clkmsr_margin = 10,
+};
+
+static unsigned int t6x_gp0_pll_default_rate[] = {576, 768};
+
+/* set the od = 2, clkmsr can not measure 6000M */
+static const struct pll_params_table t6x_gp0_pll_table[] = {
+	PLL_PARAMS(192, 1, 1), /* DCO = 3024M  OD = 1152M for restore */
+	PLL_PARAMS(192, 1, 2), /* DCO = 3024M  OD = 576M */
+	PLL_PARAMS(256, 1, 2), /* DCO = 3072M  OD = 768M */
+	{ /* sentinel */  }
+};
+
+static const struct reg_sequence t6x_gp0_init_regs[] = {
+	{ .reg = ANACTRL_GP0PLL_CTRL0, .def = 0x200104c0 },
+	{ .reg = ANACTRL_GP0PLL_CTRL0, .def = 0x300104c0 },
+	{ .reg = ANACTRL_GP0PLL_CTRL1, .def = 0x00000000 },
+	{ .reg = ANACTRL_GP0PLL_CTRL2, .def = 0x00040000 },
+	{ .reg = ANACTRL_GP0PLL_CTRL3, .def = 0x0f0da000 },
+	{ .reg = ANACTRL_GP0PLL_CTRL0, .def = 0x100104c0 },
+	{ .reg = ANACTRL_GP0PLL_CTRL3, .def = 0x0f0da200 }
+};
+
+struct meson_clk_pll_data t6x_gp0_pll = {
+	.name = "gp0",
+	.en = {
+		.reg = ANACTRL_GP0PLL_CTRL0,
+		.shift   = 28,
+		.width   = 1,
+	},
+	.m = {
+		.reg = ANACTRL_GP0PLL_CTRL0,
+		.shift   = 0,
+		.width   = 9,
+	},
+	.n = {
+		.reg = ANACTRL_GP0PLL_CTRL0,
+		.shift   = 16,
+		.width   = 5,
+	},
+	.od = {
+		.reg = ANACTRL_GP0PLL_CTRL0,
+		.shift	 = 10,
+		.width	 = 3,
+	},
+	.en0p5 = {
+		.reg = ANACTRL_GP0PLL_CTRL3,
+		.shift	 = 26,
+		.width	 = 1,
+	},
+	.l = {
+		.reg = ANACTRL_GP0PLL_CTRL0,
+		.shift   = 31,
+		.width   = 1,
+	},
+	.rst = {
+		.reg = ANACTRL_GP0PLL_CTRL0,
+		.shift   = 29,
+		.width   = 1,
+	},
+	.ops = &(const struct meson_pll_test_ops) {
+		.pll_prepare = meson_pll_store_rate,
+		.pll_unprepare = meson_pll_restore_rate,
+	},
+	.flags = CLK_MESON_PLL_FIXED_EN0P5,
+	.def_rate = t6x_gp0_pll_default_rate,
+	.def_cnt = ARRAY_SIZE(t6x_gp0_pll_default_rate),
+	.table = t6x_gp0_pll_table,
+	.init_regs = t6x_gp0_init_regs,
+	.init_count = ARRAY_SIZE(t6x_gp0_init_regs),
+	.clkmsr_id = 20,
+	.clkmsr_margin = 2
+};
+
+static unsigned int t6x_gp1_pll_default_rate[] = {576, 768};
+
+/* set the od = 2, clkmsr can not measure 6000M */
+static const struct pll_params_table t6x_gp1_pll_table[] = {
+	PLL_PARAMS(70, 1, 0), /* DCO = 1680M  OD = 1680M for restore */
+	PLL_PARAMS(96, 1, 2), /* DCO = 3024M  OD = 576M */
+	PLL_PARAMS(128, 1, 2), /* DCO = 3072M  OD = 768M */
+	{ /* sentinel */  }
+};
+
+static const struct reg_sequence t6x_gp1_init_regs[] = {
+	{ .reg = ANACTRL_GP1PLL_CTRL0, .def = 0x20010046 },
+	{ .reg = ANACTRL_GP1PLL_CTRL0, .def = 0x30010046 },
+	{ .reg = ANACTRL_GP1PLL_CTRL1, .def = 0x3420500f },
+	{ .reg = ANACTRL_GP1PLL_CTRL2, .def = 0x00023041 },
+	{ .reg = ANACTRL_GP1PLL_CTRL3, .def = 0x00000000, .delay_us = 20 },
+	{ .reg = ANACTRL_GP1PLL_CTRL0, .def = 0x10010046, .delay_us = 20 },
+	{ .reg = ANACTRL_GP1PLL_CTRL2, .def = 0x00023001 }
+};
+
+struct meson_clk_pll_data t6x_gp1_pll = {
+	.name = "gp1",
+	.en = {
+		.reg = ANACTRL_GP1PLL_CTRL0,
+		.shift   = 28,
+		.width   = 1,
+	},
+	.m = {
+		.reg = ANACTRL_GP1PLL_CTRL0,
+		.shift   = 0,
+		.width   = 9,
+	},
+	.n = {
+		.reg = ANACTRL_GP1PLL_CTRL0,
+		.shift   = 16,
+		.width   = 5,
+	},
+	.od = {
+		.reg = ANACTRL_GP1PLL_CTRL0,
+		.shift	 = 12,
+		.width	 = 3,
+	},
+	.l = {
+		.reg = ANACTRL_GP1PLL_CTRL0,
+		.shift   = 31,
+		.width   = 1,
+	},
+	.rst = {
+		.reg = ANACTRL_GP1PLL_CTRL0,
+		.shift   = 29,
+		.width   = 1,
+	},
+	.ops = &(const struct meson_pll_test_ops) {
+		.pll_prepare = meson_pll_store_rate,
+		.pll_unprepare = meson_pll_restore_rate,
+	},
+	.def_rate = t6x_gp1_pll_default_rate,
+	.def_cnt = ARRAY_SIZE(t6x_gp1_pll_default_rate),
+	.table = t6x_gp1_pll_table,
+	.init_regs = t6x_gp1_init_regs,
+	.init_count = ARRAY_SIZE(t6x_gp1_init_regs),
+	.clkmsr_id = 21,
+	.clkmsr_margin = 2
+};
+
+static unsigned int t6x_gp2_pll_default_rate[] = {576, 768};
+
+/* set the od = 2, clkmsr can not measure 6000M */
+static const struct pll_params_table t6x_gp2_pll_table[] = {
+	PLL_PARAMS(198, 1, 2), /* DCO = 2376M  OD = 594M for restore */
+	PLL_PARAMS(192, 1, 2), /* DCO = 3024M  OD = 576M */
+	PLL_PARAMS(256, 1, 2), /* DCO = 3072M  OD = 768M */
+	{ /* sentinel */  }
+};
+
+static const struct reg_sequence t6x_gp2_init_regs[] = {
+	{ .reg = ANACTRL_GP2PLL_CTRL0, .def = 0x2001110b },
+	{ .reg = ANACTRL_GP2PLL_CTRL0, .def = 0x3001110b },
+	{ .reg = ANACTRL_GP2PLL_CTRL1, .def = 0x03a00000 },
+	{ .reg = ANACTRL_GP2PLL_CTRL2, .def = 0x00040000 },
+	{ .reg = ANACTRL_GP2PLL_CTRL3, .def = 0x0f0da000 },
+	{ .reg = ANACTRL_GP2PLL_CTRL0, .def = 0x1001110b },
+	{ .reg = ANACTRL_GP2PLL_CTRL3, .def = 0x0f0da200 }
+};
+
+struct meson_clk_pll_data t6x_gp2_pll = {
+	.name = "gp2",
+	.en = {
+		.reg = ANACTRL_GP2PLL_CTRL0,
+		.shift   = 28,
+		.width   = 1,
+	},
+	.m = {
+		.reg = ANACTRL_GP2PLL_CTRL0,
+		.shift   = 0,
+		.width   = 9,
+	},
+	.n = {
+		.reg = ANACTRL_GP2PLL_CTRL0,
+		.shift   = 16,
+		.width   = 5,
+	},
+	.od = {
+		.reg = ANACTRL_GP2PLL_CTRL0,
+		.shift	 = 10,
+		.width	 = 3,
+	},
+	.en0p5 = {
+		.reg = ANACTRL_GP2PLL_CTRL3,
+		.shift	 = 26,
+		.width	 = 1,
+	},
+	.l = {
+		.reg = ANACTRL_GP2PLL_CTRL0,
+		.shift   = 31,
+		.width   = 1,
+	},
+	.rst = {
+		.reg = ANACTRL_GP2PLL_CTRL0,
+		.shift   = 29,
+		.width   = 1,
+	},
+	.ops = &(const struct meson_pll_test_ops) {
+		.pll_prepare = meson_pll_store_rate,
+		.pll_unprepare = meson_pll_restore_rate,
+	},
+	.flags = CLK_MESON_PLL_FIXED_EN0P5,
+	.def_rate = t6x_gp2_pll_default_rate,
+	.def_cnt = ARRAY_SIZE(t6x_gp2_pll_default_rate),
+	.table = t6x_gp2_pll_table,
+	.init_regs = t6x_gp2_init_regs,
+	.init_count = ARRAY_SIZE(t6x_gp2_init_regs),
+	.clkmsr_id = 25,
+	.clkmsr_margin = 2
+};
+
+static const struct pll_params_table t6x_hifi_pll_table[] = {
+	PLL_PARAMS(150, 1, 2), /* DCO = 1800M OD = 4 PLL = 450M */
+	PLL_PARAMS(163, 1, 2), /* DCO = 1944M OD = 4 PLL = 489M */
+	{ /* sentinel */  }
+};
+
+static unsigned int t6x_hifi_pll_default_rate[] = {450, 489};
+
+int t6x_hifi1_pll_prepare(struct meson_clk_pll_data *pll)
+{
+	writel(readl(EE_AUDIO_CLK_GATE_EN1) | 0x20, EE_AUDIO_CLK_GATE_EN1);
+	writel(readl(EARCTX_ANA_CTRL1) | (1 << 19), EARCTX_ANA_CTRL1);
+	writel(readl(EARCTX_ANA_CTRL2) | 0x1, EARCTX_ANA_CTRL2);
+
+	/* store rate, do it after the audio register set*/
+	meson_pll_store_rate(pll);
+
+	return 0;
+}
+
+void t6x_hifi1_pll_unprepare(struct meson_clk_pll_data *pll)
+{
+	unsigned int reg;
+
+	/* restore rate, do it before audio register clear */
+	meson_pll_restore_rate(pll);
+
+	reg = readl(EE_AUDIO_CLK_GATE_EN1);
+	reg &= ~0x20;
+	writel(reg, EE_AUDIO_CLK_GATE_EN1);
+	reg = readl(EARCTX_ANA_CTRL1);
+	reg &= ~(1 << 19);
+	writel(reg, EARCTX_ANA_CTRL1);
+	reg = readl(EARCTX_ANA_CTRL2);
+	reg &= ~0x1;
+	writel(reg, EARCTX_ANA_CTRL2);
+}
+
+static const struct reg_sequence t6x_hifi_init_regs[] = {
+	{ .reg = ANACTRL_HIFIPLL_CTRL0,  .def = 0x2001110b },
+	{ .reg = ANACTRL_HIFIPLL_CTRL0,  .def = 0x3001110b },
+	{ .reg = ANACTRL_HIFIPLL_CTRL1,  .def = 0x3a000000 },
+	{ .reg = ANACTRL_HIFIPLL_CTRL2,  .def = 0x00040000 },
+	{ .reg = ANACTRL_HIFIPLL_CTRL3,  .def = 0x0f0da000 },
+	{ .reg = ANACTRL_HIFIPLL_CTRL0,  .def = 0x1001110b },
+	{ .reg = ANACTRL_HIFIPLL_CTRL3,  .def = 0x0f0da200 },
+};
+
+struct meson_clk_pll_data t6x_hifi_pll = {
+	.name = "hifi",
+	.en = {
+		.reg = ANACTRL_HIFIPLL_CTRL0,
+		.shift   = 28,
+		.width   = 1,
+	},
+	.m = {
+		.reg = ANACTRL_HIFIPLL_CTRL0,
+		.shift   = 0,
+		.width   = 9,
+	},
+	.n = {
+		.reg = ANACTRL_HIFIPLL_CTRL0,
+		.shift   = 16,
+		.width   = 5,
+	},
+	.od = {
+		.reg = ANACTRL_HIFIPLL_CTRL0,
+		.shift	 = 10,
+		.width	 = 3,
+	},
+	.en0p5 = {
+		.reg = ANACTRL_HIFIPLL_CTRL3,
+		.shift	 = 26,
+		.width	 = 1,
+	},
+	.l = {
+		.reg = ANACTRL_HIFIPLL_CTRL0,
+		.shift   = 31,
+		.width   = 1,
+	},
+	.rst = {
+		.reg = ANACTRL_HIFIPLL_CTRL0,
+		.shift   = 29,
+		.width   = 1,
+	},
+	.ops = &(const struct meson_pll_test_ops) {
+		.pll_prepare = meson_pll_store_rate,
+		.pll_unprepare = meson_pll_restore_rate,
+	},
+	.flags = CLK_MESON_PLL_FIXED_EN0P5,
+	.def_rate = t6x_hifi_pll_default_rate,
+	.def_cnt = ARRAY_SIZE(t6x_hifi_pll_default_rate),
+	.table = t6x_hifi_pll_table,
+	.init_regs = t6x_hifi_init_regs,
+	.init_count = ARRAY_SIZE(t6x_hifi_init_regs),
+	.clkmsr_id = 19,
+	.clkmsr_margin = 2
+};
+
+static const struct reg_sequence t6x_hifi1_init_regs[] = {
+	{ .reg = ANACTRL_HIFI1PLL_CTRL0,  .def = 0x2001110b },
+	{ .reg = ANACTRL_HIFI1PLL_CTRL0,  .def = 0x3001110b },
+	{ .reg = ANACTRL_HIFI1PLL_CTRL1,  .def = 0x3a000000 },
+	{ .reg = ANACTRL_HIFI1PLL_CTRL2,  .def = 0x00040000 },
+	{ .reg = ANACTRL_HIFI1PLL_CTRL3,  .def = 0x0f0da000 },
+	{ .reg = ANACTRL_HIFI1PLL_CTRL0,  .def = 0x1001110b },
+	{ .reg = ANACTRL_HIFI1PLL_CTRL3,  .def = 0x0f0da200 },
+};
+
+struct meson_clk_pll_data t6x_hifi1_pll = {
+	.name = "hifi1",
+	.en = {
+		.reg = ANACTRL_HIFI1PLL_CTRL0,
+		.shift   = 28,
+		.width   = 1,
+	},
+	.m = {
+		.reg = ANACTRL_HIFI1PLL_CTRL0,
+		.shift   = 0,
+		.width   = 9,
+	},
+	.n = {
+		.reg = ANACTRL_HIFI1PLL_CTRL0,
+		.shift   = 16,
+		.width   = 5,
+	},
+	.od = {
+		.reg = ANACTRL_HIFI1PLL_CTRL0,
+		.shift	 = 10,
+		.width	 = 3,
+	},
+	.en0p5 = {
+		.reg = ANACTRL_HIFI1PLL_CTRL3,
+		.shift	 = 26,
+		.width	 = 1,
+	},
+	.l = {
+		.reg = ANACTRL_HIFI1PLL_CTRL0,
+		.shift   = 31,
+		.width   = 1,
+	},
+	.rst = {
+		.reg = ANACTRL_HIFI1PLL_CTRL0,
+		.shift   = 29,
+		.width   = 1,
+	},
+	.ops = &(const struct meson_pll_test_ops) {
+		.pll_prepare = t6x_hifi1_pll_prepare,
+		.pll_unprepare = t6x_hifi1_pll_unprepare,
+	},
+	.flags = CLK_MESON_PLL_FIXED_EN0P5,
+	.def_rate = t6x_hifi_pll_default_rate,
+	.def_cnt = ARRAY_SIZE(t6x_hifi_pll_default_rate),
+	.table = t6x_hifi_pll_table,
+	.init_regs = t6x_hifi1_init_regs,
+	.init_count = ARRAY_SIZE(t6x_hifi1_init_regs),
+	.clkmsr_id = 18,
+	.clkmsr_margin = 2
+};
+
+struct meson_clk_pll_data *t6x_pll_list[] = {
+	&t6x_sys0_pll,
+	&t6x_sys1_pll,
+	&t6x_gp0_pll,
+	&t6x_gp1_pll,
+	&t6x_gp2_pll,
+	&t6x_hifi_pll,
+	&t6x_hifi1_pll,
+};
+
+void t6x_meson_plls_all_test(void)
+{
+	for (int i = 0; i < ARRAY_SIZE(t6x_pll_list); i++)
+		meson_pll_test(t6x_pll_list[i]);
+}
+
+void t6x_meson_hdmirx_plls_test(int argc, char * const argv[])
+{
+	/* todo: need add hdmirx plls test */
+}
+
+void t6x_meson_tcon_plls_test(int argc, char * const argv[])
+{
+	/* todo: need add tcon plls test */
+}
+
+void t6x_meson_plls_test(int argc, char * const argv[])
+{
+	struct meson_clk_pll_data *pll;
+
+	pll = meson_pll_find_by_name(t6x_pll_list, ARRAY_SIZE(t6x_pll_list), argv[1]);
+	if (!pll) {
+		printf("The pll is not supported Or wrong pll name\n");
+		return;
+	}
+
+	if ((argc - 2) == pll->init_count)
+		meson_pll_parm_test(pll, argv);
+	else if (argc == 2)
+		meson_pll_test(pll);
 	else
-		return RET_PLL_LOCK_FAIL;
+		printf("The pll cmd argc is error!\n");
+
+	return;
 }
 
-static int hdmi_pll_test(hdmi_pll_set_t *hdmi_pll_set)
+int pll_test(int argc, char * const argv[])
 {
-	unsigned int pll_clk = 0, od = 0;
-	unsigned int pll_clk_div = 0;
-	unsigned int clk_msr_val = 0;
-	unsigned int clk_msr_reg = 0;
-	int ret = 0;
-
-	/* store pll div setting */
-	clk_msr_reg = readl(CLKCTRL_VID_PLL_CLK_DIV);
-	/* connect vid_pll_div to HDMIPLL directly */
-	clrbits_le32(CLKCTRL_VID_PLL_CLK_DIV, 1 << 19);
-	clrbits_le32(CLKCTRL_VID_PLL_CLK_DIV, 1 << 15);
-
-	/* div14 */
-	clrbits_le32(CLKCTRL_VID_PLL_CLK_DIV, 1 << 18);
-	clrbits_le32(CLKCTRL_VID_PLL_CLK_DIV, 0x3 << 16);
-	clrbits_le32(CLKCTRL_VID_PLL_CLK_DIV, 1 << 15);
-	clrbits_le32(CLKCTRL_VID_PLL_CLK_DIV, 0x7fff);
-	setbits_le32(CLKCTRL_VID_PLL_CLK_DIV, 1 << 16);
-	setbits_le32(CLKCTRL_VID_PLL_CLK_DIV, 1 << 15);
-	setbits_le32(CLKCTRL_VID_PLL_CLK_DIV, 0x3f80);
-	clrbits_le32(CLKCTRL_VID_PLL_CLK_DIV, 1 << 15);
-
-	setbits_le32(CLKCTRL_VID_PLL_CLK_DIV, 1 << 19);
-
-	/* test pll */
-	if (hdmi_pll_set->pll_clk == 0)
-		pll_clk = ((24 * (hdmi_pll_set->pll_cntl0 & 0xff)) /
-			   ((hdmi_pll_set->pll_cntl0 >> 10) & 0x1f));
+	if (!strcmp("all", argv[1]))
+		t6x_meson_plls_all_test();
+	else if (!strcmp("tcon", argv[1]))
+		t6x_meson_tcon_plls_test(argc, argv);
+	else if (!strcmp("hdmirx", argv[1]))
+		t6x_meson_hdmirx_plls_test(argc, argv);
 	else
-		pll_clk = hdmi_pll_set->pll_clk;
-
-	_udelay(10);
-	ret = hdmi_pll_init(hdmi_pll_set);
-	if (ret) {
-		printf("HDMI pll lock Failed! - %4d MHz\n", pll_clk);
-	} else {
-		od = (hdmi_pll_set->pll_cntl0 >> 20) & 0x3;
-		pll_clk_div = (pll_clk >> od) / 14;
-		printf("HDMI pll lock OK! - %4d MHz>>%d and Div14 - %4d MHz. ",
-		       pll_clk, od, pll_clk_div);
-		/* get [  55][1485 MHz] vid_pll_div_clk_out */
-		clk_msr_val = clk_util_clk_msr(50);
-		printf("CLKMSR(50) - %4d MHz ", clk_msr_val);
-		if (clk_around(clk_msr_val, pll_clk_div)) {
-			printf(": Match\n");
-		} else {
-			ret = RET_CLK_NOT_MATCH;
-			printf(": MisMatch\n");
-		}
-	}
-
-	/* restore pll */
-	/* restore div cntl bit */
-	writel(clk_msr_reg, CLKCTRL_VID_PLL_CLK_DIV);
-
-	return ret;
-}
-
-static int hdmi_pll_test_all(hdmi_pll_cfg_t *hdmi_pll_cfg)
-{
-	unsigned int i = 0;
-	int ret = 0;
-
-	for (i = 0; i < (sizeof(hdmi_pll_cfg_t) / sizeof(hdmi_pll_set_t)); i++)
-		ret += hdmi_pll_test(&hdmi_pll_cfg->hdmi_pll[i]);
-	return ret;
-}
-
-static int gp0_pll_test(gp0_pll_set_t *gp0_pll)
-{
-	unsigned int pll_clk = 0;
-	int ret = 0;
-	unsigned int lock_check = PLL_LOCK_CHECK_MAX;
-	unsigned int clk_msr_val = 0, od = 0;
-
-	od = (gp0_pll->pll_cntl0 >> 16) & 0x7;
-
-	if (gp0_pll->pll_clk == 0)
-		pll_clk = (24 / ((gp0_pll->pll_cntl0 >> 10) & 0x1F) * (gp0_pll->pll_cntl0 & 0x1FF));
-	else
-		pll_clk = gp0_pll->pll_clk;
-
-	do {
-		writel(gp0_pll->pll_cntl0, ANACTRL_GP0PLL_CTRL0);
-		writel(gp0_pll->pll_cntl0 | (3 << 28), ANACTRL_GP0PLL_CTRL0);
-		writel(gp0_pll->pll_cntl1, ANACTRL_GP0PLL_CTRL1);
-		writel(gp0_pll->pll_cntl2, ANACTRL_GP0PLL_CTRL2);
-		writel(gp0_pll->pll_cntl3, ANACTRL_GP0PLL_CTRL3);
-		writel(gp0_pll->pll_cntl4, ANACTRL_GP0PLL_CTRL4);
-		writel(gp0_pll->pll_cntl5, ANACTRL_GP0PLL_CTRL5);
-		writel(gp0_pll->pll_cntl6, ANACTRL_GP0PLL_CTRL6);
-
-		writel(readl(ANACTRL_GP0PLL_CTRL0) | (1 << 29), ANACTRL_GP0PLL_CTRL0);
-		_udelay(10);
-		writel(readl(ANACTRL_GP0PLL_CTRL0) & (~(1 << 29)), ANACTRL_GP0PLL_CTRL0);
-		_udelay(100);
-	} while ((!((readl(ANACTRL_GP0PLL_STS) >> 31) & 0x1)) && --lock_check);
-
-	if (lock_check == 0) {
-		printf("GP0 pll lock Failed! - %4d MHz\n", pll_clk);
-		ret = RET_PLL_LOCK_FAIL;
-	} else {
-		printf("GP0 pll lock OK! - %4d MHz >>%d - %4d MHz. ", pll_clk, od, pll_clk >> od);
-		/* get gp0_pll_clk */
-		clk_msr_val = clk_util_clk_msr(20);
-		printf("CLKMSR(20) - %4d MHz ", clk_msr_val);
-		if (clk_around(clk_msr_val, pll_clk >> od)) {
-			printf(": Match\n");
-		} else {
-			printf(": MisMatch\n");
-			ret = RET_CLK_NOT_MATCH;
-		}
-	}
-	return ret;
-}
-
-static int gp0_pll_test_all(gp0_pll_cfg_t *gp0_pll_cfg)
-{
-	unsigned int i = 0;
-	int ret = 0;
-
-	for (i = 0; i < (sizeof(gp0_pll_cfg_t) / sizeof(gp0_pll_set_t)); i++)
-		ret += gp0_pll_test(&gp0_pll_cfg->gp0_pll[i]);
-	return ret;
-}
-
-static int hifi_pll_test(hifi_pll_set_t *hifi_pll)
-{
-	unsigned int pll_clk = 0;
-	int ret = 0;
-	unsigned int lock_check = PLL_LOCK_CHECK_MAX;
-	unsigned int clk_msr_val = 0, od = 0;
-
-	od = (hifi_pll->pll_cntl0 >> 16) & 0x3;
-
-	if (hifi_pll->pll_clk == 0)
-		pll_clk = (24 / ((hifi_pll->pll_cntl0 >> 10) & 0x1F) *
-			   (hifi_pll->pll_cntl0 & 0x1FF));
-	else
-		pll_clk = hifi_pll->pll_clk;
-
-	do {
-		writel(hifi_pll->pll_cntl0, ANACTRL_HIFIPLL_CTRL0);
-		writel(hifi_pll->pll_cntl0 | (3 << 28), ANACTRL_HIFIPLL_CTRL0);
-		writel(hifi_pll->pll_cntl1, ANACTRL_HIFIPLL_CTRL1);
-		writel(hifi_pll->pll_cntl2, ANACTRL_HIFIPLL_CTRL2);
-		writel(hifi_pll->pll_cntl3, ANACTRL_HIFIPLL_CTRL3);
-		writel(hifi_pll->pll_cntl4, ANACTRL_HIFIPLL_CTRL4);
-		writel(hifi_pll->pll_cntl5, ANACTRL_HIFIPLL_CTRL5);
-		writel(hifi_pll->pll_cntl6, ANACTRL_HIFIPLL_CTRL6);
-		writel(readl(ANACTRL_HIFIPLL_CTRL0) | (1 << 29), ANACTRL_HIFIPLL_CTRL0);
-		_udelay(10);
-		writel(readl(ANACTRL_HIFIPLL_CTRL0) & (~(1 << 29)), ANACTRL_HIFIPLL_CTRL0);
-		_udelay(100);
-	} while ((!((readl(ANACTRL_HIFIPLL_STS) >> 31) & 0x1)) && --lock_check);
-	if (lock_check == 0) {
-		printf("HIFI pll lock Failed! - %4d MHz\n", pll_clk);
-		ret = RET_PLL_LOCK_FAIL;
-	} else {
-		printf("HIFI pll lock OK! - %4d MHz.Div8  - %4d MHz.", pll_clk, pll_clk >> od);
-		/* get hifi_pll_clk */
-		clk_msr_val = clk_util_clk_msr(19);
-		printf("CLKMSR(19) - %4d MHz ", clk_msr_val);
-		if (clk_around(clk_msr_val, pll_clk >> od)) {
-			printf(": Match\n");
-		} else {
-			printf(": MisMatch\n");
-			ret = RET_CLK_NOT_MATCH;
-		}
-	}
-	return ret;
-}
-
-static int hifi_pll_test_all(hifi_pll_cfg_t *hifi_pll_cfg)
-{
-	unsigned int i = 0;
-	int ret = 0;
-
-	for (i = 0; i < (sizeof(hifi_pll_cfg_t) / sizeof(hifi_pll_set_t)); i++)
-		ret += hifi_pll_test(&hifi_pll_cfg->hifi_pll[i]);
-	return ret;
-}
-
-static int pcie_pll_test(pcie_pll_set_t *pcie_pll)
-{
-	int ret = 0;
-	unsigned int i = 0, pll_clk = 0;
-	unsigned int lock_check = PLL_LOCK_CHECK_MAX;
-	unsigned int clk_msr_val = 0;
-
-	for (i = 0; i < (sizeof(pcie_pll_rate_table) / sizeof(pcie_pll_rate_table[0])); i++) {
-		if ((pcie_pll->pll_cntl0 & 0xFF) == pcie_pll_rate_table[i].m)
-			pll_clk = pcie_pll_rate_table[i].rate;
-	}
-
-	do {
-		writel(pcie_pll->pll_cntl0, ANACTRL_PCIEPLL_CTRL0);
-		writel(pcie_pll->pll_cntl0 | 0x30000000, ANACTRL_PCIEPLL_CTRL0);
-		writel(pcie_pll->pll_cntl1, ANACTRL_PCIEPLL_CTRL1);
-		writel(pcie_pll->pll_cntl2, ANACTRL_PCIEPLL_CTRL2);
-		writel(pcie_pll->pll_cntl3, ANACTRL_PCIEPLL_CTRL3);
-		writel(pcie_pll->pll_cntl4, ANACTRL_PCIEPLL_CTRL4);
-		writel(pcie_pll->pll_cntl5, ANACTRL_PCIEPLL_CTRL5);
-		writel(pcie_pll->pll_cntl5 | 0x68, ANACTRL_PCIEPLL_CTRL5);
-		_udelay(20);
-		writel(pcie_pll->pll_cntl4 | 0x00800000, ANACTRL_PCIEPLL_CTRL4);
-		_udelay(10);
-		writel(pcie_pll->pll_cntl0 | 0x34000000, ANACTRL_PCIEPLL_CTRL0);
-		writel(((pcie_pll->pll_cntl0 & (~(1 << 29))) | (1 << 26)) |
-		       (1 << 28), ANACTRL_PCIEPLL_CTRL0);
-		_udelay(10);
-		writel(pcie_pll->pll_cntl2 & (~(1 << 8)), ANACTRL_PCIEPLL_CTRL2);
-		_udelay(10);
-	} while ((!((readl(ANACTRL_PCIEPLL_STS) >> 31) & 0x1)) && --lock_check);
-	if (lock_check == 0) {
-		printf("PCIE pll lock Failed! - %4d MHz\n", pll_clk);
-		ret = RET_PLL_LOCK_FAIL;
-	} else {
-		printf("PCIE pll lock OK! - %4d MHz.Div48  - %4d MHz. ", pll_clk, pll_clk / 48);
-		/* get pcie_pll_clk */
-		clk_msr_val = clk_util_clk_msr(16);
-		printf("CLKMSR(16) - %4d MHz ", clk_msr_val);
-		if (clk_around(clk_msr_val, pll_clk / 48)) {
-			printf(": Match\n");
-		} else {
-			printf(": MisMatch\n");
-			ret = RET_CLK_NOT_MATCH;
-		}
-	}
-
-	return ret;
-}
-
-static int pcie_pll_test_all(void)
-{
-	unsigned int i = 0;
-	unsigned int lock_check = PLL_LOCK_CHECK_MAX;
-	unsigned int clk_msr_val = 0;
-	int ret = 0;
-
-	do {
-		writel(0x200c04c8, ANACTRL_PCIEPLL_CTRL0);
-		writel(0x300c04c8, ANACTRL_PCIEPLL_CTRL0);
-		writel(0x30000000, ANACTRL_PCIEPLL_CTRL1);
-		writel(0x00001100, ANACTRL_PCIEPLL_CTRL2);
-		writel(0x10058e00, ANACTRL_PCIEPLL_CTRL3);
-		writel(0x000100c0, ANACTRL_PCIEPLL_CTRL4);
-		writel(0x68000048, ANACTRL_PCIEPLL_CTRL5);
-		writel(0x68000068, ANACTRL_PCIEPLL_CTRL5);
-		_udelay(20);
-		writel(0x008100c0, ANACTRL_PCIEPLL_CTRL4);
-		_udelay(10);
-		writel(0x340c04c8, ANACTRL_PCIEPLL_CTRL0);
-		writel(0x140c04c8, ANACTRL_PCIEPLL_CTRL0);
-		_udelay(10);
-		writel(0x00001000, ANACTRL_PCIEPLL_CTRL2);
-		_udelay(10);
-	} while ((!((readl(ANACTRL_PCIEPLL_STS) >> 31) & 0x1)) && --lock_check);
-
-	if (lock_check == 0) {
-		printf("pcie pll lock Failed! - %4d MHz\n", pcie_pll_rate_table[i].rate);
-		ret += RET_PLL_LOCK_FAIL;
-	} else {
-		printf("pcie pll lock OK! - %4d MHz.Div48  - %4d MHz.",
-		       pcie_pll_rate_table[i].rate, pcie_pll_rate_table[i].rate / 48);
-		/* get pcie_pll_clk */
-		clk_msr_val = clk_util_clk_msr(16);
-		printf("CLKMSR(16) - %4d MHz ", clk_msr_val);
-		if (clk_around(clk_msr_val, pcie_pll_rate_table[i].rate / 48)) {
-			printf(": Match\n");
-		} else {
-			printf(": MisMatch\n");
-			ret += RET_CLK_NOT_MATCH;
-		}
-	}
-
-	return ret;
-}
-
-static void set_mpll(mpll_pll_set_t *mpll)
-{
-	writel(mpll->pll_cntl0, ANACTRL_MPLL_CTRL0);
-	writel(mpll->pll_cntl1, ANACTRL_MPLL_CTRL1);
-	writel(mpll->pll_cntl2, ANACTRL_MPLL_CTRL2);
-	writel(mpll->pll_cntl3, ANACTRL_MPLL_CTRL3);
-	writel(mpll->pll_cntl4, ANACTRL_MPLL_CTRL4);
-	writel(mpll->pll_cntl5, ANACTRL_MPLL_CTRL5);
-	writel(mpll->pll_cntl6, ANACTRL_MPLL_CTRL6);
-	writel(mpll->pll_cntl7, ANACTRL_MPLL_CTRL7);
-	writel(mpll->pll_cntl8, ANACTRL_MPLL_CTRL8);
-}
-
-static int mpll_pll_test(mpll_pll_set_t *mpll)
-{
-	unsigned int i, ret = 0, clk_msr_val = 0;
-	mpll_pll_set_t old_mpll;
-	u64 clk_rate[4] = { 0 };
-
-	old_mpll.pll_cntl0 = readl(ANACTRL_MPLL_CTRL0);
-	old_mpll.pll_cntl1 = readl(ANACTRL_MPLL_CTRL1);
-	old_mpll.pll_cntl2 = readl(ANACTRL_MPLL_CTRL2);
-	old_mpll.pll_cntl3 = readl(ANACTRL_MPLL_CTRL3);
-	old_mpll.pll_cntl4 = readl(ANACTRL_MPLL_CTRL4);
-	old_mpll.pll_cntl5 = readl(ANACTRL_MPLL_CTRL5);
-	old_mpll.pll_cntl6 = readl(ANACTRL_MPLL_CTRL6);
-	old_mpll.pll_cntl7 = readl(ANACTRL_MPLL_CTRL7);
-	old_mpll.pll_cntl8 = readl(ANACTRL_MPLL_CTRL8);
-
-	if (!mpll->pll_clk) {
-		clk_rate[0] = (2000 * 16384) /
-		    ((16384 * ((mpll->pll_cntl1 >> 20) & 0x1ff)) + (mpll->pll_cntl1 & 0x7fff));
-		clk_rate[1] = (2000 * 16384) /
-		    ((16384 * ((mpll->pll_cntl3 >> 20) & 0x1ff)) + (mpll->pll_cntl3 & 0x7fff));
-		clk_rate[2] = (2000 * 16384) /
-		    ((16384 * ((mpll->pll_cntl5 >> 20) & 0x1ff)) + (mpll->pll_cntl5 & 0x7fff));
-		clk_rate[3] = (2000 * 16384) /
-		    ((16384 * ((mpll->pll_cntl7 >> 20) & 0x1ff)) + (mpll->pll_cntl7 & 0x7fff));
-	}
-
-	set_mpll(mpll);
-	for (i = 0; i < 4; i++) {
-		if (mpll->pll_clk)
-			clk_rate[i] = mpll->pll_clk;
-
-		printf("mpll%d - %4lld MHz-", i, clk_rate[i]);
-		clk_msr_val = clk_util_clk_msr(11 + i);
-		printf("CLKMSR(16) - %4d MHz ", clk_msr_val);
-		if (clk_around(clk_msr_val, clk_rate[i])) {
-			printf(": Match\n");
-		} else {
-			printf(": MisMatch\n");
-			ret += RET_CLK_NOT_MATCH;
-		}
-	}
-
-	set_mpll(&old_mpll);
-	return ret;
-}
-
-static int pll_test_all(unsigned char *pll_list)
-{
-	int ret = 0;
-	unsigned char i = 0;
-
-	for (i = 0; i < PLL_ENUM; i++) {
-		switch (pll_list[i]) {
-		case PLL_SYS:
-			ret = sys_pll_test_all(&sys_pll_cfg);
-			pll_report(ret, STR_PLL_TEST_SYS);
-			break;
-		case PLL_FIX:
-			ret = fix_pll_test();
-			pll_report(ret, STR_PLL_TEST_FIX);
-			break;
-		case PLL_DDR:
-			ret = ddr_pll_test();
-			pll_report(ret, STR_PLL_TEST_DDR);
-			break;
-		case PLL_HDMI:
-			ret = hdmi_pll_test_all(&hdmi_pll_cfg);
-			pll_report(ret, STR_PLL_TEST_HDMI);
-			break;
-		case PLL_GP0:
-			ret = gp0_pll_test_all(&gp0_pll_cfg);
-			pll_report(ret, STR_PLL_TEST_GP0);
-			break;
-		case PLL_HIFI:
-			ret = hifi_pll_test_all(&hifi_pll_cfg);
-			pll_report(ret, STR_PLL_TEST_HIFI);
-			break;
-		case PLL_PCIE:
-			ret = pcie_pll_test_all();
-			pll_report(ret, STR_PLL_TEST_PCIE);
-			break;
-		case PLL_GP1:
-			ret = gp1_pll_test_all(&gp1_pll_cfg);
-			pll_report(ret, STR_PLL_TEST_GP1);
-			break;
-		case PLL_MPLL:
-			ret = mpll_pll_test(&mpll);
-			pll_report(ret, STR_PLL_TEST_MPLL);
-			break;
-		default:
-			break;
-		}
-	}
-	return ret;
-}
-
-int pll_test(int argc, char *const argv[])
-{
-	int ret = 0;
-	sys_pll_set_t sys_pll_set = { 0 };
-	hdmi_pll_set_t hdmi_pll_set = { 0 };
-	gp0_pll_set_t gp0_pll_set = { 0 };
-	gp1_pll_set_t gp1_pll_set = { 0 };
-	hifi_pll_set_t hifi_pll_set = { 0 };
-	pcie_pll_set_t pcie_pll_set = { 0 };
-	mpll_pll_set_t mpll_pll_set = { 0 };
-
-	unsigned char plls[PLL_ENUM] = {
-		PLL_SYS,
-		0xff,		// PLL_FIX, //0xff will skip this pll
-		0xff,		// PLL_DDR,
-		0xff,		// PLL_HDMI
-		PLL_GP0,
-		PLL_HIFI,
-		0xff,		//PLL_PCIE
-		0xff,		//PLL_GP1
-		0xff,		//PLL_USBPHY
-		PLL_MPLL,
-	};
-
-	if (strcmp(STR_PLL_TEST_ALL, argv[1]) == 0) {
-		printf("Test all plls\n");
-		pll_test_all(plls);
-	} else if (strcmp(STR_PLL_TEST_SYS, argv[1]) == 0) {
-		if (argc == 2) {
-			ret = sys_pll_test_all(&sys_pll_cfg);
-			pll_report(ret, STR_PLL_TEST_SYS);
-		} else if (argc != 9) {
-			printf("%s pll test: args error\n", STR_PLL_TEST_SYS);
-			return -1;
-		} else {
-			sys_pll_set.pll_cntl = simple_strtoul(argv[2], NULL, 16);
-			sys_pll_set.pll_cntl1 = simple_strtoul(argv[3], NULL, 16);
-			sys_pll_set.pll_cntl2 = simple_strtoul(argv[4], NULL, 16);
-			sys_pll_set.pll_cntl3 = simple_strtoul(argv[5], NULL, 16);
-			sys_pll_set.pll_cntl4 = simple_strtoul(argv[6], NULL, 16);
-			sys_pll_set.pll_cntl5 = simple_strtoul(argv[7], NULL, 16);
-			sys_pll_set.pll_cntl6 = simple_strtoul(argv[8], NULL, 16);
-			ret = sys_pll_test(&sys_pll_set);
-			pll_report(ret, STR_PLL_TEST_SYS);
-		}
-	} else if (strcmp(STR_PLL_TEST_HDMI, argv[1]) == 0) {
-		if (argc == 2) {
-			ret = hdmi_pll_test_all(&hdmi_pll_cfg);
-			pll_report(ret, STR_PLL_TEST_HDMI);
-		} else if (argc != 9) {
-			printf("%s pll test: args error\n", STR_PLL_TEST_HDMI);
-			return -1;
-		} else {
-			hdmi_pll_set.pll_cntl0 = simple_strtoul(argv[2], NULL, 16);
-			hdmi_pll_set.pll_cntl1 = simple_strtoul(argv[3], NULL, 16);
-			hdmi_pll_set.pll_cntl2 = simple_strtoul(argv[4], NULL, 16);
-			hdmi_pll_set.pll_cntl3 = simple_strtoul(argv[5], NULL, 16);
-			hdmi_pll_set.pll_cntl4 = simple_strtoul(argv[6], NULL, 16);
-			hdmi_pll_set.pll_cntl5 = simple_strtoul(argv[7], NULL, 16);
-			hdmi_pll_set.pll_cntl6 = simple_strtoul(argv[8], NULL, 16);
-			ret = hdmi_pll_test(&hdmi_pll_set);
-			pll_report(ret, STR_PLL_TEST_HDMI);
-		}
-	} else if (strcmp(STR_PLL_TEST_GP0, argv[1]) == 0) {
-		if (argc == 2) {
-			ret = gp0_pll_test_all(&gp0_pll_cfg);
-			pll_report(ret, STR_PLL_TEST_GP0);
-		} else if (argc != 9) {
-			printf("%s pll test: args error\n", STR_PLL_TEST_GP0);
-			return -1;
-		} else {
-			gp0_pll_set.pll_cntl0 = simple_strtoul(argv[2], NULL, 16);
-			gp0_pll_set.pll_cntl1 = simple_strtoul(argv[3], NULL, 16);
-			gp0_pll_set.pll_cntl2 = simple_strtoul(argv[4], NULL, 16);
-			gp0_pll_set.pll_cntl3 = simple_strtoul(argv[5], NULL, 16);
-			gp0_pll_set.pll_cntl4 = simple_strtoul(argv[6], NULL, 16);
-			gp0_pll_set.pll_cntl5 = simple_strtoul(argv[7], NULL, 16);
-			gp0_pll_set.pll_cntl6 = simple_strtoul(argv[8], NULL, 16);
-			ret = gp0_pll_test(&gp0_pll_set);
-			pll_report(ret, STR_PLL_TEST_GP0);
-		}
-	} else if (strcmp(STR_PLL_TEST_HIFI, argv[1]) == 0) {
-		if (argc == 2) {
-			ret = hifi_pll_test_all(&hifi_pll_cfg);
-			pll_report(ret, STR_PLL_TEST_HIFI);
-		} else if (argc != 9) {
-			printf("%s pll test:args error\n", STR_PLL_TEST_HIFI);
-			return -1;
-		} else {
-			hifi_pll_set.pll_cntl0 = simple_strtoul(argv[2], NULL, 16);
-			hifi_pll_set.pll_cntl1 = simple_strtoul(argv[3], NULL, 16);
-			hifi_pll_set.pll_cntl2 = simple_strtoul(argv[4], NULL, 16);
-			hifi_pll_set.pll_cntl3 = simple_strtoul(argv[5], NULL, 16);
-			hifi_pll_set.pll_cntl4 = simple_strtoul(argv[6], NULL, 16);
-			hifi_pll_set.pll_cntl5 = simple_strtoul(argv[7], NULL, 16);
-			hifi_pll_set.pll_cntl6 = simple_strtoul(argv[8], NULL, 16);
-			ret = hifi_pll_test(&hifi_pll_set);
-			pll_report(ret, STR_PLL_TEST_HIFI);
-		}
-	} else if (strcmp(STR_PLL_TEST_PCIE, argv[1]) == 0) {
-		if (argc == 2) {
-			ret = pcie_pll_test_all();
-			pll_report(ret, STR_PLL_TEST_PCIE);
-		} else if (argc != 8) {
-			printf("%s pll test: args error\n", STR_PLL_TEST_PCIE);
-			return -1;
-		} else {
-			pcie_pll_set.pll_cntl0 = simple_strtoul(argv[2], NULL, 16);
-			pcie_pll_set.pll_cntl1 = simple_strtoul(argv[3], NULL, 16);
-			pcie_pll_set.pll_cntl2 = simple_strtoul(argv[4], NULL, 16);
-			pcie_pll_set.pll_cntl3 = simple_strtoul(argv[5], NULL, 16);
-			pcie_pll_set.pll_cntl4 = simple_strtoul(argv[6], NULL, 16);
-			pcie_pll_set.pll_cntl5 = simple_strtoul(argv[7], NULL, 16);
-			ret = pcie_pll_test(&pcie_pll_set);
-			pll_report(ret, STR_PLL_TEST_PCIE);
-		}
-	} else if (strcmp(STR_PLL_TEST_MPLL, argv[1]) == 0) {
-		if (argc == 2) {
-			ret = mpll_pll_test(&mpll);
-			pll_report(ret, STR_PLL_TEST_MPLL);
-		} else if (argc != 11) {
-			printf("%s pll test: args error\n", STR_PLL_TEST_MPLL);
-			return -1;
-		} else {
-			mpll_pll_set.pll_cntl0 = simple_strtoul(argv[2], NULL, 16);
-			mpll_pll_set.pll_cntl1 = simple_strtoul(argv[3], NULL, 16);
-			mpll_pll_set.pll_cntl2 = simple_strtoul(argv[4], NULL, 16);
-			mpll_pll_set.pll_cntl3 = simple_strtoul(argv[5], NULL, 16);
-			mpll_pll_set.pll_cntl4 = simple_strtoul(argv[6], NULL, 16);
-			mpll_pll_set.pll_cntl5 = simple_strtoul(argv[7], NULL, 16);
-			mpll_pll_set.pll_cntl6 = simple_strtoul(argv[8], NULL, 16);
-			mpll_pll_set.pll_cntl7 = simple_strtoul(argv[9], NULL, 16);
-			mpll_pll_set.pll_cntl8 = simple_strtoul(argv[10], NULL, 16);
-			ret = mpll_pll_test(&mpll_pll_set);
-			pll_report(ret, STR_PLL_TEST_MPLL);
-		}
-	} else if (strcmp(STR_PLL_TEST_GP1, argv[1]) == 0) {
-		if (argc == 2) {
-			ret = gp1_pll_test_all(&gp1_pll_cfg);
-			pll_report(ret, STR_PLL_TEST_GP1);
-		} else if (argc != 9) {
-			printf("%s pll test: args error\n", STR_PLL_TEST_GP1);
-			return -1;
-		} else {
-			gp1_pll_set.pll_cntl0 = simple_strtoul(argv[2], NULL, 16);
-			gp1_pll_set.pll_cntl1 = simple_strtoul(argv[3], NULL, 16);
-			gp1_pll_set.pll_cntl2 = simple_strtoul(argv[4], NULL, 16);
-			gp1_pll_set.pll_cntl3 = simple_strtoul(argv[5], NULL, 16);
-			gp1_pll_set.pll_cntl4 = simple_strtoul(argv[6], NULL, 16);
-			gp1_pll_set.pll_cntl5 = simple_strtoul(argv[7], NULL, 16);
-			gp1_pll_set.pll_cntl6 = simple_strtoul(argv[8], NULL, 16);
-			ret = gp1_pll_test(&gp1_pll_set);
-			pll_report(ret, STR_PLL_TEST_GP1);
-		}
-	} else if (strcmp(STR_PLL_TEST_DDR, argv[1]) == 0) {
-		printf("%s pll not support now\n", STR_PLL_TEST_DDR);
-		return -1;
-	} else if (strcmp(STR_PLL_TEST_FIX, argv[1]) == 0) {
-		printf("%s pll not support now\n", STR_PLL_TEST_FIX);
-		return -1;
-	}
+		t6x_meson_plls_test(argc, argv);
 
 	return 0;
 }

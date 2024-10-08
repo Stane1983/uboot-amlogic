@@ -9,6 +9,6 @@ obj-$(CONFIG_MESON_G12A) += board-g12a.o
 
 obj-y += common/
 obj-$(CONFIG_ARCH_MESON) += $(SOC)/
-
+obj-$(CONFIG_CMD_PLLTEST) += clk-pll.o
 
 obj-$(CONFIG_ARMV8_MULTIENTRY) += lowlevel.o smp.o
