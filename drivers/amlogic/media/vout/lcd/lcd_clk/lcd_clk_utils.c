@@ -572,7 +572,7 @@ static unsigned char lcd_clk_generate_DSI_1PLL(struct aml_lcd_drv_s *pdrv)
 		pll_out = pll_out * cconf->fout;
 		if (pll_out > cconf->data->div_out_fmax)
 			continue;
-		for (frac_sel = CLK_DIV_SEL_1; frac_sel <= cconf->data->div_sel_max; frac_sel++) {
+		for (frac_sel = CLK_DIV_SEL_1; frac_sel < cconf->data->div_sel_max; frac_sel++) {
 			pll_out = clk_vid_pll_div_calc(pll_out, frac_sel, CLK_DIV_O2I);
 
 			if (pll_out > cconf->data->pll_out_fmax ||

@@ -157,34 +157,6 @@ static void lcd_list_support_timing(struct aml_lcd_drv_s *pdrv)
 	}
 }
 
-char *get_current_env_connector(unsigned char cnt_idx)
-{
-	char cnt_name[20];
-
-	sprintf(cnt_name, "connector%hu_type", cnt_idx);
-
-	return env_get(cnt_name);
-}
-
-void sprintf_lcd_connector(char *buf, unsigned char lcd_idx, unsigned char lcd_type)
-{
-	char *connector_name_list[5] = {"LVDS", "VBYONE", "MIPI", "EDP", "LCD"};
-	unsigned char name_idx;
-
-	if (lcd_type == LCD_LVDS || lcd_type == LCD_MLVDS)
-		name_idx = 0;
-	else if (lcd_type == LCD_VBYONE || lcd_type == LCD_P2P)
-		name_idx = 1;
-	else if (lcd_type == LCD_MIPI)
-		name_idx = 2;
-	else if (lcd_type == LCD_EDP)
-		name_idx = 3;
-	else
-		name_idx = 4;
-
-	sprintf(buf, "%s-%c", connector_name_list[name_idx], 'A' + lcd_idx);
-}
-
 static int lcd_tablet_connector_check(struct aml_lcd_drv_s *pdrv, char *mode)
 {
 	char lcd_to_cnt_name[12], opt_mode_name[12] = "outputmode\0";
@@ -328,6 +300,58 @@ static void lcd_vmode_update(struct aml_lcd_drv_s *pdrv)
 	return 0;
 }
 
+static void lcd_update_outputmode(struct aml_lcd_drv_s *pdrv)
+{
+	char curr_mode[20];
+	char mode_env_name[20] = "outputmode\0\0";
+	char dev_cntor[10];
+	char *cnt_type_name, *outputmode;
+	unsigned char i, j;
+	char timing_name[32];
+	struct lcd_vmode_list_s *temp_list = pdrv->vmode_mgr.vmode_list_header;
+
+	sprintf_lcd_connector(dev_cntor, pdrv->index, pdrv->config.basic.lcd_type);
+
+	for (i = 0; i < 3; i++) {
+		cnt_type_name = get_current_env_connector(i);
+		if (!cnt_type_name)
+			continue;
+		if (i)
+			mode_env_name[10] = '1' + i;
+		outputmode = env_get(mode_env_name);
+		if (!strcmp(dev_cntor, cnt_type_name))
+			goto check_connector_outputmode;
+	}
+	return;
+
+check_connector_outputmode:
+	while (temp_list && outputmode) {
+		memset(timing_name, 0, 32);
+		str_add_vmode(timing_name, temp_list->info, temp_list->info->base_fr);
+		if (strcmp(outputmode, timing_name) == 0)
+			return;
+
+		for (j = 0; i < LCD_DURATION_MAX; j++) {
+			if (temp_list->info->duration[j].frame_rate == 0)
+				break;
+			memset(timing_name, 0, 32);
+			str_add_vmode(timing_name, temp_list->info,
+					temp_list->info->duration[j].frame_rate);
+			if (strcmp(outputmode, timing_name) == 0)
+				return;
+		}
+		temp_list = temp_list->next;
+	}
+
+	memset(curr_mode, 0, 20 * sizeof(char));
+	str_add_vmode(curr_mode, pdrv->vmode_mgr.vmode_list_header->info,
+		      pdrv->vmode_mgr.vmode_list_header->info->base_fr);
+
+	env_set(mode_env_name, curr_mode);
+	LCDPR("[%d]: connector[%u]=%s, update [%s] to %s\n", pdrv->index,
+		i, cnt_type_name, mode_env_name, curr_mode);
+}
+
 static int lcd_config_valid(struct aml_lcd_drv_s *pdrv, char *mode)
 {
 	if (lcd_outputmode_is_matched(pdrv, mode))
@@ -341,6 +365,9 @@ static void lcd_config_init(struct aml_lcd_drv_s *pdrv)
 	lcd_enc_timing_init_config(pdrv);
 	lcd_clk_generate_parameter(pdrv);
 	pdrv->config.timing.clk_change = 0; /* clear clk_change flag */
+	lcd_tablet_add_all_vmode(pdrv);
+	if (pdrv->key_valid == 0)
+		lcd_update_outputmode(pdrv);
 }
 
 int lcd_mode_tablet_init(struct aml_lcd_drv_s *pdrv)

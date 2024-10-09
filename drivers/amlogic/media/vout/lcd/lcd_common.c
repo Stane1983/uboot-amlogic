@@ -2666,28 +2666,19 @@ static inline int lcd_get_opt_mode_idx(struct aml_lcd_drv_s *pdrv)
 	return -1;
 }
 
-static void lcd_set_connector(struct aml_lcd_drv_s *pdrv)
+char *get_current_env_connector(unsigned char cnt_idx)
 {
-	char *buf;
-	char *connector_name_list[4] = {"LVDS", "VBYONE", "MIPI", "EDP"};
-	char con_name_str[10], con_type_str[20];
-	unsigned char name_idx, lcd_type = pdrv->config.basic.lcd_type;
-	int cnt_idx;
+	char cnt_name[20];
 
-	if (pdrv->mode == LCD_MODE_TABLET) {
-		cnt_idx = lcd_get_opt_mode_idx(pdrv);
-		if (cnt_idx < 0) {
-			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-				LCDPR("[%d]: %s: no outputmode to this panel",
-					pdrv->index, __func__);
-			}
-			return;
-		}
-	} else if (pdrv->mode == LCD_MODE_TV) {
-		cnt_idx = 0;
-	} else {
-		return;
-	}
+	sprintf(cnt_name, "connector%hu_type", cnt_idx);
+
+	return env_get(cnt_name);
+}
+
+void sprintf_lcd_connector(char *buf, unsigned char lcd_idx, unsigned char lcd_type)
+{
+	char *connector_name_list[5] = {"LVDS", "VBYONE", "MIPI", "EDP", "LCD"};
+	unsigned char name_idx;
 
 	if (lcd_type == LCD_LVDS || lcd_type == LCD_MLVDS)
 		name_idx = 0;
@@ -2698,24 +2689,9 @@ static void lcd_set_connector(struct aml_lcd_drv_s *pdrv)
 	else if (lcd_type == LCD_EDP)
 		name_idx = 3;
 	else
-		return;
+		name_idx = 4;
 
-	buf = (char *)malloc(32 * sizeof(char));
-	if (!buf)
-		return;
-
-	snprintf(con_name_str, 10, "%s_%c", connector_name_list[name_idx], 'A' + pdrv->index);
-
-	if (cnt_idx == 0)
-		snprintf(con_type_str, 20, "connector_type");
-	else
-		snprintf(con_type_str, 20, "connector%d_type", cnt_idx);
-	snprintf(buf, 32, "setenv %s %s", con_type_str, con_name_str);
-
-	run_command(buf, 0);
-	LCDPR("[%d]: %s: %s: %s\n", pdrv->index, __func__, con_type_str, con_name_str);
-
-	free(buf);
+	sprintf(buf, "%s-%c", connector_name_list[name_idx], 'A' + lcd_idx);
 }
 
 int lcd_get_panel_config(char *dt_addr, int load_id, struct aml_lcd_drv_s *pdrv)

@@ -353,7 +353,7 @@ static void lcd_interface_on(struct aml_lcd_drv_s *pdrv)
 	pdrv->status |= LCD_STATUS_IF_ON;
 }
 
-static void lcd_module_enable(struct aml_lcd_drv_s *pdrv, char *mode, unsigned int frac)
+static void lcd_module_enable(struct aml_lcd_drv_s *pdrv, char *mode)
 {
 	unsigned int sync_duration;
 	struct lcd_config_s *pconf;
