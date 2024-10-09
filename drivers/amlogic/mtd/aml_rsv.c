@@ -49,6 +49,39 @@ u32 meson_rsv_part_get_bl2_part_size(struct mtd_info *mtd)
 	return bl2_part_size;
 }
 
+u32 meson_rsv_part_get_bl2_copy_number(struct mtd_info *mtd)
+{
+	static u32 bl2_copy_number;
+	u32 bl2_part_size =  meson_rsv_part_get_bl2_part_size(mtd);
+	u32 bl2_align_size = round_up(BL2_SIZE, mtd->erasesize);
+
+	if (bl2_copy_number)
+		return bl2_copy_number;
+
+	bl2_copy_number = bl2_part_size / bl2_align_size;
+
+	/*
+	 * To BL2_LAYOUT_1024 and BL2_LAYOUT_512, if boot_info.layout_method
+	 *  is set to LAYOUT_VER0, the copy number must be even number; because ROM
+	 *  can only try the 0/128/256/512/768 page address.
+	 */
+	if (BOARD_CONFIG_BL2_LAYOUT_TYPE ==
+		BL2_LAYOUT_1024 || BOARD_CONFIG_BL2_LAYOUT_TYPE == BL2_LAYOUT_512)
+		bl2_copy_number = (bl2_copy_number & 0xE);
+
+	return bl2_copy_number;
+}
+
+u32 meson_rsv_part_get_bl2_copy_size(struct mtd_info *mtd)
+{
+	u32 bl2_part_size, bl2_copy_number;
+
+	bl2_part_size = meson_rsv_part_get_bl2_part_size(mtd);
+	bl2_copy_number = meson_rsv_part_get_bl2_copy_number(mtd);
+
+	return bl2_part_size / bl2_copy_number;
+}
+
 u32 meson_rsv_part_get_start_block(struct mtd_info *mtd)
 {
 	u32 bl2_part_size;
@@ -814,8 +847,10 @@ static int aml_nand_rsv_info_alloc_init(struct mtd_info *mtd,
 
 	rsv_info->nvalid =
 		kzalloc(sizeof(struct valid_node_t), GFP_KERNEL);
-	if (!rsv_info->nvalid)
+	if (!rsv_info->nvalid) {
+		handler->entries--;
 		return -ENOMEM;
+	}
 
 	rsv_info->mtd = mtd;
 	rsv_info->start = rsv_part->start_block;
@@ -878,10 +913,14 @@ int meson_rsv_init(struct mtd_info *mtd,
 	}
 
 	for (; ret && handler->entries > 0; --handler->entries)
-		kfree(handler->rsv_info[handler->entries].nvalid);
+		kfree(handler->rsv_info[handler->entries - 1].nvalid);
 
-	if (ret)
+	if (!handler->entries) {
+		kfree(ptr);
+		kfree(rsv_handler->free_node);
 		kfree(rsv_handler->rsv_part);
+		ret = -1;
+	}
 
 	return ret;
 }

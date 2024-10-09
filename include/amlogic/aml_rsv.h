@@ -93,6 +93,8 @@ struct meson_rsv_handler_t {
 int rsvname2index(const char *rsv_name);
 u32 meson_rsv_part_get_start_block(struct mtd_info *mtd);
 u32 meson_rsv_part_get_bl2_part_size(struct mtd_info *mtd);
+u32 meson_rsv_part_get_bl2_copy_number(struct mtd_info *mtd);
+u32 meson_rsv_part_get_bl2_copy_size(struct mtd_info *mtd);
 u64 meson_rsv_part_get_tpl_start(struct mtd_info *mtd);
 u64 meson_rsv_part_get_tpl_size(struct mtd_info *mtd);
 int meson_ext_rsv_info_read(u_char *dest, size_t size, int index);

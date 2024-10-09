@@ -164,22 +164,8 @@ struct device_node_t {
 #define STORE_SCRUB			BIT(0)
 #define STORE_ERASE_DATA		BIT(1)
 #define STORE_ERASE_RSV			BIT(2)
-
-static inline bool store_boot_layout_is_discrete_default(void)
-{
-	return (BOOTLOADER_MODE_ADVANCE_INIT && g_ssp.boot_layout == BOOT_DISCRETE_DEFAULT);
-}
-
-static inline bool store_boot_layout_is_discrete_all(void)
-{
-	return g_ssp.boot_layout == BOOT_DISCRETE_ALL;
-}
-
-static inline bool store_boot_layout_is_discrete_bl2(void)
-{
-	return (g_ssp.boot_layout == BOOT_DISCRETE_BL2 ||
-			g_ssp.boot_layout_compat == BOOT_DISCRETE_BL2);
-}
+/*erase partition erase_len except bb */
+#define STORE_ERASE_LEN_BB		BIT(3)
 
 /**
  * @usage: init all the valid storage device

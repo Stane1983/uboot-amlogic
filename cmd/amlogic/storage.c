@@ -20,6 +20,8 @@
 
 #include <display_options.h>
 
+#define ALIGN_SIZE	(4096)
+
 #ifdef CONFIG_SPI_FLASH_MTD
 extern int spi_nor_pre(void);
 extern int spi_nor_probe(u32 init_flag);
@@ -116,325 +118,6 @@ void store_unregister(struct storage_t *store_dev)
 	}
 }
 
-int sheader_need(void)
-{
-	return BOOTLOADER_MODE_ADVANCE_INIT;
-}
-
-unsigned char *ubootdata = NULL;
-void sheader_load(void *addr)
-{
-	ubootdata = addr;
-}
-
-/*
- * storage header which size is 512B
- * is bind into the tail of bl2.bin.
- * @addr: uboot address.
- */
-static p_payload_info_t parse_uboot_sheader(void *addr)
-{
-	p_payload_info_t pInfo = (p_payload_info_t)(addr + BL2_SIZE);
-
-	if (AML_MAGIC_HDR_L == pInfo->hdr.nMagicL &&
-	    AML_MAGIC_HDR_R == pInfo->hdr.nMagicR) {
-		printf("aml log : bootloader blxx mode!\n");
-		return pInfo;
-	}
-	return NULL;
-}
-
-boot_area_entry_t general_boot_part_entry[MAX_BOOT_AREA_ENTRIES] = {
-	{BOOT_BL2, BOOT_AREA_BB1ST, 0, 0},
-	{BOOT_BL2E, BOOT_AREA_BL2E, 0, 0},
-	{BOOT_BL2X, BOOT_AREA_BL2X, 0, 0},
-	{BOOT_DDRFIP, BOOT_AREA_DDRFIP, 0, 0},
-	{BOOT_DEVFIP, BOOT_AREA_DEVFIP, 0, 0},
-};
-
-struct boot_layout general_boot_layout = {.boot_entry = general_boot_part_entry};
-struct storage_startup_parameter g_ssp;
-struct storage_bl *g_storage = NULL;
-
-static void storage_boot_layout_debug_info(
-			struct boot_layout *boot_layout)
-{
-	boot_area_entry_t *boot_entry = boot_layout->boot_entry;
-	int i;
-
-	printf("boot area list: \n");
-	for (i = 0; i <= BOOT_AREA_DEVFIP; i++) {
-		printf("%10s    ", boot_entry[i].name);
-		printf("%10llx    ", boot_entry[i].offset);
-		printf("%10llx\n", boot_entry[i].size);
-	}
-}
-
-u32 storage_boot_get_rsv_start_block(struct storage_startup_parameter *ssp)
-{
-	u32 start_block;
-
-	start_block = round_up(BL2_SIZE, ssp->sip.nsp.block_size);
-	start_block /= ssp->sip.nsp.block_size;
-	start_block *= CONFIG_BL2_COPY_NUM;
-
-	if (BOARD_CONFIG_BL2_LAYOUT_TYPE == BL2_LAYOUT_1024)
-		return 1024 >> ssp->sip.nsp.pages_per_block;
-	else if (BOARD_CONFIG_BL2_LAYOUT_TYPE == BL2_LAYOUT_512)
-		return 512 >> ssp->sip.nsp.pages_per_block;
-	else
-		return start_block;
-}
-
-/* use STORAGE_ROUND_UP, y must be power of 2 */
-#define STORAGE_ROUND_UP_IF_UNALIGN(x, y) ((x) = (((x) + (y) - 1) & (~(y - 1))))
-#define ALIGN_SIZE	(4096)
-static int storage_boot_layout_rebuild(struct boot_layout *boot_layout)
-{
-	struct storage_startup_parameter *ssp = &g_ssp;
-	boot_area_entry_t *boot_entry = boot_layout->boot_entry;
-	u64 align_size, cal_copy = 1, reserved_start;
-	u8 i = BOOT_AREA_BL2E, bl2_copy;
-
-	align_size = ALIGN_SIZE;
-	STORAGE_ROUND_UP_IF_UNALIGN(boot_entry[BOOT_AREA_BB1ST].size, align_size);
-	STORAGE_ROUND_UP_IF_UNALIGN(boot_entry[BOOT_AREA_BL2E].size, align_size);
-	STORAGE_ROUND_UP_IF_UNALIGN(boot_entry[BOOT_AREA_BL2X].size, align_size);
-
-	if ((ssp->boot_device == BOOT_SNAND) ||
-		(ssp->boot_device == BOOT_NAND_MTD)) {
-		bl2_copy = mtd_store_boot_copy_num(BOOT_BL2);
-		if (!bl2_copy)
-			return -1;
-		STORAGE_ROUND_UP_IF_UNALIGN(boot_entry[BOOT_AREA_BB1ST].size,
-			((BOOT_TOTAL_PAGES / bl2_copy) * ssp->sip.nsp.page_size));
-		reserved_start = storage_boot_get_rsv_start_block(ssp);
-		boot_entry[BOOT_AREA_BL2E].offset = reserved_start * ssp->sip.nsp.block_size
-						    + ssp->sip.nsp.layout_reserve_size;
-
-		if (store_boot_layout_is_discrete_all()) {
-			align_size = ssp->sip.nsp.block_size;
-			cal_copy = ssp->boot_backups;
-			STORAGE_ROUND_UP_IF_UNALIGN(boot_entry[BOOT_AREA_BL2E].size,
-						    align_size);
-		}
-		i = BOOT_AREA_BL2X;
-	} else if (ssp->boot_device == BOOT_EMMC) {
-		ssp->boot_entry[BOOT_AREA_BB1ST].offset =
-			boot_entry[BOOT_AREA_BB1ST].offset += BL2_CORE_BASE_OFFSET_EMMC;
-	} else if (ssp->boot_device == BOOT_SNOR) {
-		#ifdef SPINOR_HAS_BOOTINFO
-		boot_entry[BOOT_AREA_BB1ST].offset += 0x200;
-		#endif
-		cal_copy = ssp->boot_backups;
-	}
-
-	ssp->boot_entry[BOOT_AREA_BB1ST].size = boot_entry[BOOT_AREA_BB1ST].size;
-	ssp->boot_entry[BOOT_AREA_BL2E].size = boot_entry[BOOT_AREA_BL2E].size;
-	ssp->boot_entry[BOOT_AREA_BL2E].offset =  boot_entry[BOOT_AREA_BL2E].offset;
-
-	for (;i <= BOOT_AREA_DEVFIP; i++) {
-		STORAGE_ROUND_UP_IF_UNALIGN(boot_entry[i].size, align_size);
-		boot_entry[i].offset = boot_entry[i - 1].offset +
-				boot_entry[i - 1].size * cal_copy;
-		ssp->boot_entry[i].size = boot_entry[i].size;
-		ssp->boot_entry[i].offset = boot_entry[i].offset;
-	}
-
-	return 0;
-}
-
-/* use STORAGE_ROUND_UP, y must be power of 2 */
-#define STORAGE_ROUND_UP_IF_UNALIGN(x, y) ((x) = (((x) + (y) - 1) & (~(y - 1))))
-#define ALIGN_SIZE	(4096)
-static int storage_boot_layout_general_setting(struct boot_layout *boot_layout, int need_build)
-{
-	struct storage_startup_parameter *ssp = &g_ssp;
-	boot_area_entry_t *boot_entry = boot_layout->boot_entry;
-	struct storage_boot_entry *sbentry = ssp->boot_entry;
-	p_payload_info_t p_info = parse_uboot_sheader(ubootdata);
-	p_payload_info_hdr_t hdr;
-	p_payload_info_item_t p_item;
-	int off_payload = 0, sz_payload = 0;
-	unsigned int bl2e_size = 0, bl2x_size = 0;
-	char name[8] = {0};
-	int n_index = 0;
-
-	if (need_build == BOOT_ID_USB) {
-		if (!p_info)
-			return -1;
-
-		hdr = &p_info->hdr;
-		p_item = p_info->arrItems;
-
-		for (n_index = 1, p_item += 1; n_index < hdr->byItemNum; ++n_index, ++p_item) {
-			memcpy(name, &p_item->nMagic, sizeof(unsigned int));
-			off_payload = p_item->nOffset;
-			if (n_index == BOOT_AREA_BL2E)
-				bl2e_size = p_item->nPayLoadSize;
-			if (n_index == BOOT_AREA_BL2X)
-				bl2x_size = p_item->nPayLoadSize;
-			sz_payload = p_item->nPayLoadSize;
-			pr_info("Item[%d]%4s offset 0x%08x sz 0x%x\n",
-					n_index, name, off_payload, sz_payload);
-		}
-
-		boot_entry[BOOT_AREA_BB1ST].size =
-			ssp->boot_entry[BOOT_AREA_BB1ST].size;
-		boot_entry[BOOT_AREA_BL2E].size = bl2e_size;
-		boot_entry[BOOT_AREA_BL2X].size = bl2x_size;
-		boot_entry[BOOT_AREA_DDRFIP].size =
-			ssp->boot_entry[BOOT_AREA_DDRFIP].size;
-		boot_entry[BOOT_AREA_DEVFIP].size =
-			ssp->boot_entry[BOOT_AREA_DEVFIP].size;
-		storage_boot_layout_rebuild(boot_layout);
-	} else {
-		/* may be sdcard boot and also have to rebuild layout */
-		if (need_build == BOOT_ID_SDCARD) {
-			bl2e_size = sbentry[BOOT_AREA_BL2E].size;
-			bl2x_size = sbentry[BOOT_AREA_BL2X].size;
-			printf("bl2e_size=%x bl2x_size=%x current->type=%d\n",
-					bl2e_size, bl2x_size, current->type);
-			boot_entry[BOOT_AREA_BB1ST].size =
-				ssp->boot_entry[BOOT_AREA_BB1ST].size;
-			boot_entry[BOOT_AREA_BL2E].size = bl2e_size;
-			boot_entry[BOOT_AREA_BL2X].size = bl2x_size;
-			boot_entry[BOOT_AREA_DDRFIP].size =
-				ssp->boot_entry[BOOT_AREA_DDRFIP].size;
-			boot_entry[BOOT_AREA_DEVFIP].size =
-				ssp->boot_entry[BOOT_AREA_DEVFIP].size;
-			storage_boot_layout_rebuild(boot_layout);
-			return 0;
-		}
-		/* normal boot */
-		for (n_index = 0; n_index <= BOOT_AREA_DEVFIP; n_index++, sbentry++) {
-			boot_entry[n_index].size = sbentry->size;
-			boot_entry[n_index].offset = sbentry->offset;
-		}
-	}
-
-	return 0;
-}
-
-uint8_t emmc_boot_seqs_tbl[8][2] = {
-		{0, 3}, {0, 2}, {0, 3}, {0, 1},
-		{1, 2}, {1, 1}, {2, 1}, {0, 0}
-	};
-
-static int _get_emmc_boot_seqs(void)
-{
-	uint8_t ebcfg = 0;
-	if (IS_FEAT_DIS_EMMC_USER())
-		ebcfg |= (1<<2);
-	if (IS_FEAT_DIS_EMMC_BOOT_0())
-		ebcfg |= (1<<1);
-	if (IS_FEAT_DIS_EMMC_BOOT_1())
-		ebcfg |= (1<<0);
-
-	return ebcfg;
-}
-
-static int storage_get_emmc_boot_seqs(void)
-{
-	return emmc_boot_seqs_tbl[_get_emmc_boot_seqs()][1];;
-}
-
-static int storage_get_emmc_boot_start(void)
-{
-	return emmc_boot_seqs_tbl[_get_emmc_boot_seqs()][0];;
-}
-
-#define NSP_PAGE0_DISABLE 1
-extern unsigned char *ubootdata;
-static int storage_get_and_parse_ssp(int *need_build) // boot_device:
-{
-	struct storage_startup_parameter *ssp = &g_ssp;
-	union storage_independent_parameter *sip;
-	static struct param_e *storage_param_e;
-	int usb_boot = *need_build;
-
-	memset(ssp, 0, sizeof(struct storage_startup_parameter));
-	if (!usb_boot) {
-		storage_param_e = param_of(STORAGE_PARAM_TYPE);
-		if (!storage_param_e)
-			return -1;
-		memcpy(ssp, storage_param_e->data,
-			sizeof(struct storage_startup_parameter));
-		/* may be sdcard boot and also have to rebuild layout */
-		if (ssp->boot_device == BOOT_ID_SDCARD ||
-		    ssp->boot_device == BOOT_ID_USB) {
-			/* need change the storage base here */
-			*need_build = ssp->boot_device;
-		}
-	}
-
-	if (*need_build) {
-		sip = &ssp->sip;
-		ssp->boot_device = current->type;
-		switch (ssp->boot_device) {
-		case BOOT_EMMC:
-			ssp->boot_backups = storage_get_emmc_boot_seqs();
-			ssp->boot_layout = BOOT_DISCRETE_DEFAULT;
-			break;
-		case BOOT_SNOR:
-			ssp->boot_layout = BOOT_DISCRETE_DEFAULT;
-			if (IS_FEAT_EN_4BL2_SNOR())
-				ssp->boot_backups = 4;
-			else if (IS_FEAT_DIS_NBL2_SNOR())
-				ssp->boot_backups = 1;
-			else
-				ssp->boot_backups = 1; /* Default 2 backup, consistent with rom */
-			break;
-		case BOOT_SNAND:
-		case BOOT_NAND_MTD:
-			ssp->boot_backups = CONFIG_NAND_TPL_COPY_NUM;
-			#ifdef BOARD_BOOT_LAYOUT_DISCRETE_BL2
-			ssp->boot_layout = BOOT_DISCRETE_BL2;
-			#else
-			ssp->boot_layout = BOOT_DISCRETE_ALL;
-			#endif
-			sip->nsp.page_size =  current->info.write_unit;
-			sip->nsp.block_size = current->info.erase_unit;
-			sip->nsp.pages_per_block =
-			current->info.erase_unit / current->info.write_unit;
-			sip->nsp.layout_reserve_size =
-				MTD_RSV_BLOCK_CNT * sip->nsp.block_size;
-			sip->nsp.page0_disable =  NSP_PAGE0_DISABLE;
-			break;
-		default:
-			/* do nothing. */
-			break;
-		}
-
-	}
-
-	/* sanity check */
-	printf("boot_device:%d\n", ssp->boot_device);
-	printf("boot_seq:%d\n", ssp->boot_seq);
-	printf("boot_backups:%d\n", ssp->boot_backups);
-	printf("rebuild_id :%d\n", *need_build);
-
-	return 0;
-}
-
-int storage_post_init(void)
-{
-	int ret = -1;
-	int need_build = 0;
-
-	ret = storage_get_and_parse_ssp(&need_build);
-	if (ret < 0)
-		return -1;
-
-	ret = storage_boot_layout_general_setting(&general_boot_layout, need_build);
-	if (ret < 0)
-		return ret;
-
-	storage_boot_layout_debug_info(&general_boot_layout);
-
-	return ret;
-}
-
 int store_init(u32 init_flag)
 {
 	int i, ret = 0;
@@ -452,12 +135,6 @@ int store_init(u32 init_flag)
 	if (!record) {
 		pr_info("No Valid storage device\n");
 		return record;
-	}
-
-	if (BOOTLOADER_MODE_ADVANCE_INIT) {
-		ret = storage_post_init();
-		if (ret)
-			pr_info("storage_post_init failed\n");
 	}
 
 	/*2. Enter the probe of the valid device*/
@@ -601,6 +278,29 @@ u8 store_boot_copy_num(const char *name)
 	return store->get_copies(name);
 }
 
+u8 emmc_boot_seqs_tbl[8][2] = {
+		{0, 3}, {0, 2}, {0, 3}, {0, 1},
+		{1, 2}, {1, 1}, {2, 1}, {0, 0}
+	};
+
+static int _get_emmc_boot_seqs(void)
+{
+	u8 ebcfg = 0;
+
+	if (IS_FEAT_DIS_EMMC_USER())
+		ebcfg |= (1 << 2);
+	if (IS_FEAT_DIS_EMMC_BOOT_0())
+		ebcfg |= (1 << 1);
+	if (IS_FEAT_DIS_EMMC_BOOT_1())
+		ebcfg |= (1 << 0);
+
+	return ebcfg;
+}
+
+static int storage_get_emmc_boot_start(void)
+{
+	return emmc_boot_seqs_tbl[_get_emmc_boot_seqs()][0];
+}
 
 #ifndef  SYSCTRL_SEC_STATUS_REG2
 static u32 fake_reg = 0;
@@ -668,253 +368,62 @@ u64 store_boot_copy_size(const char *name)
 {
 	struct storage_t *store = store_get_current();
 
-	if (!store) {
-		pr_info("%s %d please init storage device first\n",
-			__func__, __LINE__);
-		return 1;
-	}
 	return store->get_copy_size(name);
 }
 
 static int _store_boot_read(const char *part_name, u8 cpy, size_t size, void *addr)
 {
 	struct storage_t *store = store_get_current();
-	int ret, read_len, tpl_offset = BL2_SIZE;
+	size_t bl2_align_size = ALIGN(BL2_SIZE, ALIGN_SIZE);
+	u_char *buffer = (u_char *)addr;
+	int ret;
 
 	if (store_get_device_bootloader_mode() == COMPACT_BOOTLOADER)
-		return store->boot_read(part_name, cpy, size, (u_char *)addr);
+		return store->boot_read(part_name, cpy, size, buffer);
 
-	read_len = size > tpl_offset ? tpl_offset : size;
-	ret = store->boot_read(BOOT_BL2, cpy, read_len, addr);
-	if (ret) {
-		pr_err("read bl2 fail\n");
-		goto out;
-	}
+	ret = store->boot_read(BOOT_BL2, cpy, BL2_SIZE, buffer);
+	if (ret)
+		return ret;
 
-	if (size <= BL2_SIZE)
-		goto out;
-
-	if (store_boot_layout_is_discrete_all()) {
-		p_payload_info_t pinfo = parse_uboot_sheader((u8 *)ubootdata);
-		p_payload_info_hdr_t hdr    = &pinfo->hdr;
-		p_payload_info_item_t pitem = pinfo->arrItems;
-		tpl_offset = ALIGN(BL2_SIZE, ALIGN_SIZE);
-		int nindex, offset = 0;
-
-		for (nindex = 1, pitem += 1; nindex < hdr->byItemNum; ++nindex, ++pitem) {
-			pr_info("item[%d]%4s offset 0x%08x sz 0x%x\n",
-					nindex, (char *)&pitem->nMagic,
-					offset, pitem->nPayLoadSize);
-			if (!pitem->nPayLoadSize)
-				continue;
-
-			read_len = size > pitem->nPayLoadSize ? pitem->nPayLoadSize : size;
-			if (read_len > 0) {
-				ret = store->boot_read(general_boot_part_entry[nindex].name,
-						cpy,
-						read_len,
-						(u_char *)(addr + tpl_offset + offset));
-				if (ret) {
-					pr_info("Fail in flash payload %s\n",
-							general_boot_part_entry[nindex].name);
-					goto out;
-				}
-			}
-
-			offset += pitem->nPayLoadSize;
-			size -= read_len;
-		}
-
-	} else {
-		if (store_boot_layout_is_discrete_bl2())
-			tpl_offset = ALIGN(BL2_SIZE, ALIGN_SIZE);
-		ret = store->boot_read(BOOT_TPL,
-						cpy,
-						size - tpl_offset,
-						(u_char *)addr + tpl_offset);
-		if (ret) {
-			pr_err("read tpl fail\n");
-			goto out;
-		}
-	}
-
-out:
-	return ret;
+	return store->boot_read(BOOT_TPL, cpy,
+				  size - bl2_align_size,
+				  buffer + bl2_align_size);
 }
 
 int store_boot_read(const char *name, u8 copy, size_t size, void *buf)
 {
-	struct storage_t *store = store_get_current();
+	return _store_boot_read(name, copy, size, buf);
 
-	if (!store) {
-		pr_info("%s %d please init storage device first\n",
-			__func__, __LINE__);
-		return 1;
-	}
-
-	if (!strcmp(name, "bootloader") &&
-	    (store->type == BOOT_SNAND ||
-	    store->type == BOOT_NAND_MTD))
-		return _store_boot_read(name, copy, size, buf);
-
-	return store->boot_read(name, copy, size, buf);
-}
-
-static int bl2x_mode_check_header(p_payload_info_t pInfo)
-{
-	p_payload_info_hdr_t hdr    = &pInfo->hdr;
-	const int nItemNum = hdr->byItemNum;
-	p_payload_info_item_t pItem = pInfo->arrItems;
-	u8 i = 0, bl2_copy;
-	int sz_payload = 0;
-	uint64_t align_size = 1;
-	struct storage_startup_parameter *ssp = &g_ssp;
-
-	printf("\naml log : info parse...\n");
-	printf("\tsztimes : %s\n",hdr->szTimeStamp);
-	printf("\tversion : %d\n",hdr->byVersion);
-	printf("\tItemNum : %d\n",nItemNum);
-	printf("\tSize    : %d(0x%x)\n",    hdr->nSize, hdr->nSize);
-	if (nItemNum > MAX_BOOT_AREA_ENTRIES || nItemNum < 3) {
-		pr_info("illegal nitem num %d\n", nItemNum);
-		return __LINE__;
-	}
-	if (ssp->boot_device == BOOT_NAND_MTD ||
-	    ssp->boot_device == BOOT_SNAND) {
-		bl2_copy = mtd_store_boot_copy_num(BOOT_BL2);
-		if (!bl2_copy)
-			return __LINE__;
-		align_size = (uint64_t)(BOOT_TOTAL_PAGES / bl2_copy) * ssp->sip.nsp.page_size;
-	}
-
-	sz_payload = pItem->nPayLoadSize;
-	STORAGE_ROUND_UP_IF_UNALIGN(sz_payload, align_size);
-	if (sz_payload > ssp->boot_entry[0].size)
-		return __LINE__;
-	if (ssp->boot_device == BOOT_NAND_MTD ||
-	    ssp->boot_device == BOOT_SNAND)
-		align_size = ssp->sip.nsp.block_size;
-
-	++pItem;
-
-	for (i = 1; i < nItemNum; i++, ++pItem) {
-		sz_payload = pItem->nPayLoadSize;
-		STORAGE_ROUND_UP_IF_UNALIGN(sz_payload, align_size);
-		if (sz_payload > ssp->boot_entry[i].size)
-			return __LINE__;
-	}
-
-	return 0;
 }
 
 static int _store_boot_write(const char *part_name, u8 cpy, size_t size, void *addr)
 {
-	int ret = 0;
 	struct storage_t *store = store_get_current();
+	int ret = 0;
+	u_char *buffer = (u_char *)addr;
+	size_t bl2_align_size = ALIGN(BL2_SIZE, ALIGN_SIZE);
 
 	if (store_get_device_bootloader_mode() == COMPACT_BOOTLOADER)
-		return store->boot_write(part_name, cpy, size, (u_char *)addr);
+		return store->boot_write(part_name, cpy, size, buffer);
 
-	if (store_get_device_bootloader_mode() == DISCRETE_BOOTLOADER) {
-		if (size > (BL2_SIZE + CONFIG_TPL_SIZE_PER_COPY)) {
-			pr_info("bootloader sz 0x%lx too large,max sz 0x%x\n",
-				size, BL2_SIZE + CONFIG_TPL_SIZE_PER_COPY);
-			return CMD_RET_FAILURE;
-		}
-	}
+	ret =  store->boot_write("bl2", cpy, BL2_SIZE, buffer);
+	if (ret)
+		return ret;
 
-	if ((cpy >= mtd_store_boot_copy_num(BOOT_TPL) ||
-		 cpy >= mtd_store_boot_copy_num(BOOT_BL2)) &&
-		 cpy != BOOT_OPS_ALL) {
-		pr_info("update copy %d invalid, must < min(%d, %d)\n",
-			cpy, mtd_store_boot_copy_num(BOOT_TPL),
-			mtd_store_boot_copy_num(BOOT_BL2));
-		return CMD_RET_FAILURE;
-	}
-
-	if (store_boot_layout_is_discrete_all()) {
-		p_payload_info_t pinfo = parse_uboot_sheader((u8 *)addr);
-		p_payload_info_hdr_t hdr    = &pinfo->hdr;
-		p_payload_info_item_t pitem = pinfo->arrItems;
-		char name[8];
-		int nindex = 0, off_payload = 0, sz_payload = 0;
-
-		if (bl2x_mode_check_header(pinfo)) {
-			pr_info("!!!warning bl2xx size is bigger than bl2x layout size\n");
-			pr_info("please check bl2x,or erase flash and turn off\n");
-			pr_info("then turn on, and update uboot again\n");
-			return CMD_RET_FAILURE;
-		}
-
-		memset(name, 0, 8);
-		for (nindex = 1, pitem += 1; nindex < hdr->byItemNum; ++nindex, ++pitem) {
-			memcpy(name, &pitem->nMagic, sizeof(unsigned int));
-			off_payload = pitem->nOffset;
-			sz_payload = pitem->nPayLoadSize;
-			pr_info("item[%d]%4s offset 0x%08x sz 0x%x\n",
-					nindex, name, off_payload, sz_payload);
-			if (!sz_payload)
-				continue;
-			ret = store->boot_write(general_boot_part_entry[nindex].name,
-					cpy,
-					sz_payload,
-					(u_char *)(addr + off_payload));
-			if (ret) {
-				pr_info("Fail in flash payload %s\n", name);
-				return CMD_RET_FAILURE;
-			}
-		}
-	} else if (store_boot_layout_is_discrete_bl2()) {
-		ret = store->boot_write("tpl",
-				cpy,
-				size - ALIGN(BL2_SIZE, ALIGN_SIZE),
-				(u_char *)(addr + ALIGN(BL2_SIZE, ALIGN_SIZE)));
-	} else {
-		ret = store->boot_write("tpl",
-				cpy,
-				size - BL2_SIZE,
-				(u_char *)(addr + BL2_SIZE));
-		if (ret) {
-			pr_info("failed update tpl\n");
-			return CMD_RET_FAILURE;
-		}
-
-	}
-
-	ret =  store->boot_write("bl2", cpy, BL2_SIZE, (u_char *)addr);
-	if (ret) {
-		pr_info("Fail in flash payload bl2\n");
-		return CMD_RET_FAILURE;
-	}
-
-	return ret;
+	return store->boot_write("tpl", cpy,
+				 size - bl2_align_size,
+				 buffer + bl2_align_size);
 }
 
 int store_boot_write(const char *name, u8 copy, size_t size, void *buf)
 {
-	struct storage_t *store = store_get_current();
-
-	if (!store) {
-		pr_info("%s %d please init storage device first\n",
-			__func__, __LINE__);
-		return 1;
-	}
-
-	if (!strcmp(name, "bootloader"))
-		return _store_boot_write(name, copy, size, buf);
-
-	return store->boot_write(name, copy, size, buf);
+	return _store_boot_write(name, copy, size, buf);
 }
 
 int store_boot_erase(const char *name, u8 copy)
 {
 	struct storage_t *store = store_get_current();
 
-	if (!store) {
-		pr_info("%s %d please init storage device first\n",
-			__func__, __LINE__);
-		return 1;
-	}
 	return store->boot_erase(name, copy);
 }
 
@@ -922,13 +431,9 @@ int store_gpt_read(void *buf)
 {
 	struct storage_t *store = store_get_current();
 
-	if (!store) {
-		pr_info("%s %d please init storage device first\n",
-			__func__, __LINE__);
-		return 1;
-	}
 	if (!store->gpt_read)
 		return 1;
+
 	return store->gpt_read(buf);
 }
 
@@ -936,13 +441,9 @@ int store_gpt_write(void *buf)
 {
 	struct storage_t *store = store_get_current();
 
-	if (!store) {
-		pr_info("%s %d please init storage device first\n",
-			__func__, __LINE__);
-		return 1;
-	}
 	if (!store->gpt_write)
 		return 1;
+
 	return store->gpt_write(buf);
 }
 
@@ -950,13 +451,9 @@ int store_gpt_erase(void)
 {
 	struct storage_t *store = store_get_current();
 
-	if (!store) {
-		pr_info("%s %d please init storage device first\n",
-			__func__, __LINE__);
-		return 1;
-	}
 	if (!store->gpt_erase)
 		return 1;
+
 	return store->gpt_erase();
 }
 
@@ -964,13 +461,9 @@ int store_boot_copy_enable(int index)
 {
 	struct storage_t *store = store_get_current();
 
-	if (!store) {
-		pr_info("%s %d please init storage device first\n",
-			__func__, __LINE__);
-		return -1;
-	}
 	if (!store->boot_copy_enable)
 		return -1;
+
 	return store->boot_copy_enable(index);
 }
 
@@ -978,11 +471,6 @@ u32 store_rsv_size(const char *name)
 {
 	struct storage_t *store = store_get_current();
 
-	if (!store) {
-		pr_info("%s %d please init storage device first\n",
-			__func__, __LINE__);
-		return 1;
-	}
 	return store->get_rsv_size(name);
 }
 
@@ -990,11 +478,6 @@ int store_rsv_read(const char *name, size_t size, void *buf)
 {
 	struct storage_t *store = store_get_current();
 
-	if (!store) {
-		pr_info("%s %d please init storage device first\n",
-			__func__, __LINE__);
-		return 1;
-	}
 	return store->read_rsv(name, size, buf);
 }
 
@@ -1002,11 +485,6 @@ int store_rsv_write(const char *name, size_t size, void *buf)
 {
 	struct storage_t *store = store_get_current();
 
-	if (!store) {
-		pr_info("%s %d please init storage device first\n",
-			__func__, __LINE__);
-		return 1;
-	}
 	return store->write_rsv(name, size, buf);
 }
 
@@ -1014,11 +492,6 @@ int store_rsv_erase(const char *name)
 {
 	struct storage_t *store = store_get_current();
 
-	if (!store) {
-		pr_info("%s %d please init storage device first\n",
-			__func__, __LINE__);
-		return 1;
-	}
 	return store->erase_rsv(name);
 }
 
@@ -1026,11 +499,6 @@ int store_rsv_protect(const char *name, bool ops)
 {
 	struct storage_t *store = store_get_current();
 
-	if (!store) {
-		pr_info("%s %d please init storage device first\n",
-			__func__, __LINE__);
-		return 1;
-	}
 	return store->protect_rsv(name, ops);
 }
 
@@ -1270,82 +738,6 @@ static int do_store_read(cmd_tbl_t *cmdtp,
 		puts(")");
 	}
 	puts("\n");
-
-	return ret;
-}
-
-static int name2index(struct boot_layout *boot_layout, const char *img)
-{
-	boot_area_entry_t *boot_entry = NULL;
-	int i;
-
-	boot_entry = boot_layout->boot_entry;
-	for (i = 1; i <= BOOT_AREA_DEVFIP; i++) {
-		if (!strncmp(img, boot_entry[i].name, strlen(boot_entry[i].name)))
-			return i;
-	}
-
-	return -1;
-}
-
-static int do_store_write_bl2img(cmd_tbl_t *cmdtp,
-			  int flag, int argc, char * const argv[])
-{
-	struct storage_t *store = store_get_current();
-	unsigned long offset, addr;
-	size_t size, size_src;
-	char *name = NULL;
-	int ret = -1, index;
-	struct boot_layout *boot_layout = &general_boot_layout;
-
-	if (!store) {
-		pr_info("%s %d please init your storage device first!\n",
-			__func__, __LINE__);
-		return CMD_RET_FAILURE;
-	}
-
-	addr = simple_strtoul(argv[2], NULL, 16);
-	name = argv[3];
-	size = simple_strtoul(argv[4], NULL, 16);
-
-	index = name2index(&general_boot_layout, name);
-	offset = boot_layout->boot_entry[index].offset;
-	size_src = boot_layout->boot_entry[index].size;
-	printf("[%s] offset:0x%lx, index:%d\n", name, offset, index);
-
-	if (size_src != size)
-		printf("new img size:0x%lx != img src:0x%lx\n", size, size_src);
-
-	ret = store->boot_write(name, offset, size, (u_char *)addr);
-
-	return ret;
-}
-
-int store_write_bl2img(void* addr, const char *name, size_t size)
-{
-	struct storage_t *store = store_get_current();
-	unsigned long offset;
-	size_t size_src;
-	int ret = -1, index;
-	struct boot_layout *boot_layout = &general_boot_layout;
-
-	if (!store) {
-		pr_info("%s %d please init your storage device first!\n",
-			__func__, __LINE__);
-		return CMD_RET_FAILURE;
-	}
-
-	index = name2index(&general_boot_layout, name);
-	offset = boot_layout->boot_entry[index].offset;
-	size_src = boot_layout->boot_entry[index].size;
-	printf("[%s] offset:0x%lx, index:%d\n", name, offset, index);
-
-	if (size_src != size)
-		printf("new img size:0x%zx != img src:0x%zx\n", size, size_src);
-
-	ret = store->boot_write(name, offset, size, (u_char *)addr);
-	if (size != 0)
-		printf("[%s][%d]%lx bytes\n", __func__, __LINE__, size);
 
 	return ret;
 }
@@ -1669,7 +1061,6 @@ static cmd_tbl_t cmd_store_sub[] = {
 	U_BOOT_CMD_MKENT(write_gpt, 3, 0, do_store_gpt_write, "", ""),
 	U_BOOT_CMD_MKENT(read_gpt, 3, 0, do_store_gpt_read, "", ""),
 	U_BOOT_CMD_MKENT(erase_gpt, 2, 0, do_store_gpt_erase, "", ""),
-	U_BOOT_CMD_MKENT(write_bl2img, 5, 0, do_store_write_bl2img, "", ""),
 	U_BOOT_CMD_MKENT(boot_read,	6, 0, do_store_boot_read, "", ""),
 	U_BOOT_CMD_MKENT(boot_write, 6, 0, do_store_boot_write, "", ""),
 	U_BOOT_CMD_MKENT(boot_erase, 4, 0, do_store_boot_erase, "", ""),

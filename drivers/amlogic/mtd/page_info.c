@@ -13,7 +13,6 @@ extern unsigned char disable_host_ecc;
 #endif
 
 extern struct mtd_info *mtd_store_get(int dev);
-extern struct storage_startup_parameter g_ssp;
 
 unsigned char page_info_get_data_lanes_mode(void)
 {
@@ -205,14 +204,17 @@ int page_info_version_init(unsigned char boot_layout)
 	return page_info->version & 0x0F;
 }
 
-static unsigned int do_checksum(unsigned char *buf, int len)
+static void calc_checksum(struct boot_info *boot_info)
 {
-	int i, checksum = 0;
+	u8 *buf = (u8 *)boot_info;
+	u32 i, checksum = 0;
 
-	for (i = 0; i < len; i++)
+	boot_info->checksum = 0;
+	for (i = 0; i < sizeof(struct boot_info); i++)
 		checksum += buf[i];
+	boot_info->checksum = checksum;
 
-	return checksum;
+	printf("bootinfo checksum : 0x%x\n", boot_info->checksum);
 }
 
 void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
@@ -220,7 +222,7 @@ void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 {
 	unsigned char ecc_steps;
 	enum PAGE_INFO_V page_info_ver;
-	struct storage_startup_parameter *ssp = &g_ssp;
+	u32 boot_layout;
 
 #ifdef CONFIG_MTD_SPI_NAND
 	enum boot_type_e medium_type = store_get_type();
@@ -248,7 +250,12 @@ void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 	}
 #endif
 
-	page_info_ver = page_info_version_init(ssp->boot_layout);
+#ifdef BOARD_BOOT_LAYOUT_DISCRETE_BL2
+	boot_layout = BOOT_DISCRETE_BL2;
+#else
+	boot_layout = BOOT_DISCRETE_ALL;
+#endif
+	page_info_ver = page_info_version_init(boot_layout);
 	memcpy(page_info->magic, BOOTINFO_MAGIC, strlen(BOOTINFO_MAGIC));
 	page_info->dev_cfg0.page_size = mtd->writesize;
 	ecc_steps = mtd->writesize >> 9;
@@ -276,10 +283,9 @@ void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 		page_info->dev_cfg1.block_num_in_chip =
 			(mtd_store_get(1))->size / mtd->erasesize;
 #endif
-	page_info->dev_cfg1.enable_bbt = 1;
-	page_info->checksum =
-		do_checksum((unsigned char *)page_info, sizeof(struct boot_info));
-	printf("page info updated checksum : 0x%x\n", page_info->checksum);
+	if (meson_rsv_part_get_bl2_copy_number(mtd) > 2)
+		page_info->dev_cfg1.enable_bbt = 1;
+	calc_checksum(page_info);
 }
 
 #ifdef __PXP_DEBUG__
@@ -355,16 +361,18 @@ int page_info_pre_init(void)
 	return 0;
 }
 
-bool page_info_is_page(int page)
+bool page_info_is_page(struct mtd_info *mtd, int page)
 {
 	enum PAGE_INFO_V page_info_ver;
 	bool is_info_page = 0;
+	u32 pages_per_copy =
+		 meson_rsv_part_get_bl2_copy_size(mtd) / mtd->writesize;
 
 	page_info_ver = page_info->version & 0x0F;
 	if (page_info_ver == PAGE_INFO_V1)
 		is_info_page = page % 128 == BL2_SIZE / 2048;
 	else
-		is_info_page = (!(page % 128));
+		is_info_page = (!(page % pages_per_copy));
 
 #ifdef CONFIG_AML_SPI_NFC
 	if (infopage_force_hostecc) {
