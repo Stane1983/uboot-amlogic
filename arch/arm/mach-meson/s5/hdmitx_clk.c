@@ -148,7 +148,10 @@ static void set_s5_htxpll_clk_other(const u32 clk, const bool frl_en)
 	/* HDMIPLL_CTRL4[25] enable tx_phy_clk1618 */
 	/* bit16: spll_div_0p5_en */
 	hd21_write_reg(ANACTRL_HDMIPLL_CTRL4, 0x414412f2 | (frl_en << 25) | (div0p5_en << 16));
-	hd21_write_reg(ANACTRL_HDMIPLL_CTRL5, 0x00000203);
+	/* bit5:4 increase pll lock tolerance of frac part
+	 * to prevent hpll unlock after mode set
+	 */
+	hd21_write_reg(ANACTRL_HDMIPLL_CTRL5, 0x00000223);
 	hd21_write_reg(ANACTRL_HDMIPLL_CTRL6, (!!remainder << 31) | remainder);
 	hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL3, 1, 0, 1);
 	hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL3, 1, 1, 1);
