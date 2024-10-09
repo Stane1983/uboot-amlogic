@@ -75,7 +75,11 @@ static void meson_mmc_config_clock(struct meson_host *host)
 	/* 1GHz / CLK_MAX_DIV = 15,9 MHz */
 	if (mmc->clock > 16000000) {
 		clk = clk_get_rate(&host->div2);
-		clk_src = 1;
+		clk_src = 0;
+		if (host->src_clk != 0) {
+			clk = SD_EMMC_CLKSRC_DIV2;
+			clk_src = 1;
+		}
 		clk_disable(&host->xtal);
 		clk_set_parent(&host->mux, &host->div2);
 		clk_set_rate(&host->div, clk);
@@ -1172,6 +1176,8 @@ static int meson_mmc_of_to_plat(struct udevice *dev)
 	ret = mmc_of_parse(dev, cfg);
 	if (ret)
 		return ret;
+
+	host->src_clk = dev_read_u32_default(dev, "source-clock", 0);
 
 	dev->name = dev_read_string(dev, "pinname");
 	if (dev_read_bool(dev, "non-removable"))
