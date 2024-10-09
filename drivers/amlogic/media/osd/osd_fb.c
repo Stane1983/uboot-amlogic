@@ -311,6 +311,52 @@ void osd2_layer_init(void)
 }
 #endif
 
+unsigned long get_fb_addr_from_reserved_memory(char *dt_addr)
+{
+	char *propdata = NULL;
+	int cell_size = 0;
+	unsigned long fb_addr = 0;
+	int parent_offset = 0;
+	char name[128];
+
+	parent_offset = fdt_path_offset(dt_addr, "/reserved-memory");
+	if (parent_offset < 0) {
+		osd_logi("can't find node: /reserved-memory\n");
+		return fb_addr;
+	}
+	cell_size = fdt_address_cells(dt_addr, parent_offset);
+	sprintf(name, "/reserved-memory/linux,meson-fb");
+
+	parent_offset = fdt_path_offset(dt_addr, name);
+	if (parent_offset < 0) {
+		osd_logi("can't find node: %s\n", name);
+		return fb_addr;
+	}
+
+	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "reg", NULL);
+	if (propdata) {
+		if (cell_size == 2)
+			fb_addr = ((unsigned long)be32_to_cpup((u32 *)propdata) << 32) |
+				be32_to_cpup(((u32 *)propdata) + 1);
+		else
+			fb_addr = be32_to_cpup(((u32 *)propdata));
+		osd_logi("Found fb_addr from reserved memory: 0x%lx\n", fb_addr);
+	} else {
+		propdata = (char *)fdt_getprop(dt_addr, parent_offset, "alloc-ranges", NULL);
+		if (!propdata) {
+			osd_logi("failed to get meson-fb reserved-memory from dts\n");
+			return fb_addr;
+		}
+		if (cell_size == 2)
+			fb_addr = ((unsigned long)be32_to_cpup((u32 *)propdata) << 32) |
+				be32_to_cpup(((u32 *)propdata) + 1);
+		else
+			fb_addr = be32_to_cpup(((u32 *)propdata));
+		osd_logi("Found fb_addr from reserved memory: 0x%lx\n", fb_addr);
+	}
+	return fb_addr;
+}
+
 unsigned long get_fb_addr(void)
 {
 	char *dt_addr = NULL;
@@ -322,6 +368,7 @@ unsigned long get_fb_addr(void)
 #ifdef CONFIG_OF_LIBFDT
 	int parent_offset = 0;
 	char *propdata = NULL;
+	unsigned long reserved_logo_addr = 0;
 #endif
 
 	fb_addr = env_strtoul("fb_addr", 16);
@@ -338,6 +385,7 @@ unsigned long get_fb_addr(void)
 			osd_logi("dt_addr is null, load default parameters\n");
 			goto ret_fb_addr;
 		}
+
 		if (fdt_check_header(dt_addr) < 0) {
 			dt_addr = (char *)gd->fdt_blob;
 			if (fdt_check_header(dt_addr) < 0) {
@@ -350,6 +398,16 @@ unsigned long get_fb_addr(void)
 			osd_logi("check dts: %s, load default fb_addr parameters\n",
 				fdt_strerror(fdt_check_header(dt_addr)));
 		} else {
+			/* get fb_addr from reserved memory
+			 * else if get fb_addr from logo_addr
+			 * else use default parameter
+			 */
+			reserved_logo_addr = get_fb_addr_from_reserved_memory(dt_addr);
+			if (reserved_logo_addr) {
+				fb_addr = reserved_logo_addr;
+				goto ret_fb_addr;
+			}
+
 			strcpy(fdt_node, "/fb");
 			osd_logi("load fb addr from dts:%s\n", fdt_node);
 			parent_offset = get_dts_node(dt_addr, fdt_node);
