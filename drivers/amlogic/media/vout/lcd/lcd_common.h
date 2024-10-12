@@ -196,6 +196,7 @@ void lcd_tcon_disable(struct aml_lcd_drv_s *pdrv);
 void lcd_tcon_global_reset(struct aml_lcd_drv_s *pdrv);
 void lcd_tcon_dbg_check(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timing_s *ptiming);
 int lcd_tcon_probe(char *dt_addr, struct aml_lcd_drv_s *pdrv, int load_id);
+int lcd_tcon_is_dccd_flow(void);
 #endif
 
 /* lcd gpio */
@@ -242,7 +243,9 @@ void edp_tx_ctrl(struct aml_lcd_drv_s *pdrv, int flag);
 
 void lcd_wait_vsync(struct aml_lcd_drv_s *pdrv);
 #if IS_ENABLED(CONFIG_CMD_INI)
-unsigned int is_dccd_flow(void);
+unsigned int is_support_dccd(void);
+unsigned int dccd_has_tcon_file(void);
+unsigned int get_dccd_crc(void);
 #endif
 
 /* aml_bl driver */

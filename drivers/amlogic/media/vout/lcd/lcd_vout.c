@@ -353,6 +353,21 @@ static void lcd_interface_on(struct aml_lcd_drv_s *pdrv)
 	pdrv->status |= LCD_STATUS_IF_ON;
 }
 
+static int is_dccd_flow(struct aml_lcd_drv_s *pdrv)
+{
+	int res = 0;
+
+	if (!pdrv)
+		return 0;
+
+#ifdef CONFIG_AML_LCD_TCON
+	if (pdrv->config.basic.lcd_type == LCD_P2P ||
+			pdrv->config.basic.lcd_type == LCD_MLVDS)
+		res = lcd_tcon_is_dccd_flow();
+#endif
+	return res;
+}
+
 static void lcd_module_enable(struct aml_lcd_drv_s *pdrv, char *mode)
 {
 	unsigned int sync_duration;
@@ -381,12 +396,10 @@ static void lcd_module_enable(struct aml_lcd_drv_s *pdrv, char *mode)
 		LCDERR("[%d]: %s: encl_on failed!\n", pdrv->index, __func__);
 		return;
 	}
-#if IS_ENABLED(CONFIG_CMD_INI)
-	if (is_dccd_flow()) {
+	if (is_dccd_flow(pdrv)) {
 		LCDPR("[%d]: dccd flow bypass module enable\n", pdrv->index);
 		return;
 	}
-#endif
 	if ((pdrv->status & LCD_STATUS_IF_ON) == 0) {
 #ifdef CONFIG_AML_LCD_TABLET
 		if (unlikely(pdrv->mode == LCD_MODE_TABLET &&
@@ -640,9 +653,7 @@ static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 		pdrv->boot_ctrl.init_level = env_get_ulong("lcd_debug_init", 10, 0);
 	else
 		pdrv->boot_ctrl.init_level = env_get_ulong("lcd_init_level", 10, 0);
-#if IS_ENABLED(CONFIG_CMD_INI)
-	pdrv->boot_ctrl.dccd_flag = is_dccd_flow();
-#endif
+	pdrv->boot_ctrl.dccd_flag = is_dccd_flow(pdrv);
 
 	/*
 	 *bit[31:23]: base frame rate

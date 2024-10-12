@@ -648,6 +648,7 @@ struct dccd_info_s {
 	unsigned char checksum;  //checksum byte inside dccd buffer
 	unsigned char is_dccd;   //check support dccd
 
+	unsigned char has_tcon_file;  //check TCON_BIN_PATH
 	unsigned int is_dccd_flow;  //check need to run dccd flow
 };
 

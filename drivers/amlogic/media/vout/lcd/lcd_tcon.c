@@ -1271,6 +1271,68 @@ tcon_rsvd_try_alloc_from_lrm:
 	return ret;
 }
 
+int lcd_tcon_is_dccd_flow(void)
+{
+	struct lcd_tcon_local_cfg_s *tcon_local = get_lcd_tcon_local_cfg();
+
+	if (!tcon_local)
+		return 0;
+	return tcon_local->is_dccd_flow;
+}
+
+#ifdef CONFIG_CMD_INI
+static void lcd_tcon_update_dccd_flow(void)
+{
+	struct tcon_mem_map_table_s *mm_table = get_lcd_tcon_mm_table();
+	struct lcd_tcon_local_cfg_s *tcon_local = get_lcd_tcon_local_cfg();
+	struct lcd_tcon_init_block_header_s *header;
+	unsigned int crc;
+	unsigned char *data_buf;
+	int i, is_dccd_flow = 0;
+
+	if (!is_support_dccd())
+		goto __is_dccd_flow_exit;
+
+	if (!dccd_has_tcon_file()) {
+		is_dccd_flow = 1;
+		goto __is_dccd_flow_exit;
+	}
+
+	if (!tcon_local || !mm_table || !mm_table->core_reg_header ||
+			!mm_table->data_mem_vaddr || mm_table->version == 0)
+		goto __is_dccd_flow_exit;
+
+	crc = get_dccd_crc();
+
+	//check tcon bin
+	if (!mm_table->core_reg_header->dccd_flag ||
+			mm_table->core_reg_header->dccd_crc != crc) {
+		is_dccd_flow = 1;
+		goto __is_dccd_flow_exit;
+	}
+
+	//check multi bin
+	for (i = 0; i < mm_table->block_cnt; i++) {
+		if (!mm_table->data_mem_vaddr[i])
+			continue;
+		data_buf = mm_table->data_mem_vaddr[i];
+		header = (struct lcd_tcon_init_block_header_s *)data_buf;
+		if (is_block_type_basic_init(header->block_type) &&
+				is_block_ctrl_ufr(header->block_ctrl)) {
+			if (!header->dccd_flag || header->dccd_crc != crc) {
+				is_dccd_flow = 1;
+				break;
+			}
+		}
+	}
+
+__is_dccd_flow_exit:
+	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
+		LCDPR("%s: dccd flow flag=%d\n", __func__, is_dccd_flow);
+	tcon_local->is_dccd_flow = is_dccd_flow;
+}
+#endif
+
 static int lcd_tcon_get_config(char *dt_addr, struct aml_lcd_drv_s *pdrv, int load_id)
 {
 	int ret;
@@ -1297,6 +1359,7 @@ static int lcd_tcon_get_config(char *dt_addr, struct aml_lcd_drv_s *pdrv, int lo
 	lcd_tcon_reserved_mem_data_load(pdrv);
 
 #ifdef CONFIG_CMD_INI
+	lcd_tcon_update_dccd_flow();
 	lcd_tcon_bin_path_resv_mem_set();
 #endif
 #if (IS_ENABLED(CONFIG_AMLOGIC_TEE))

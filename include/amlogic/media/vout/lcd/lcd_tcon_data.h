@@ -86,7 +86,9 @@ struct lcd_tcon_init_block_header_s {
 	unsigned short ext_header_size;
 	unsigned short block_type;
 	unsigned short block_ctrl;
-	unsigned char reserved2[5];
+	unsigned char dccd_flag;
+	unsigned char dccd_crc;
+	unsigned char reserved2[3];
 	unsigned char data_byte_width;
 	unsigned short chipid;
 	unsigned char name[LCD_TCON_INIT_BIN_NAME_SIZE];

@@ -127,6 +127,7 @@ struct lcd_tcon_local_cfg_s {
 	struct lcd_tcon_init_block_header_s *cur_core_header;
 	struct lcd_tcon_init_block_ext_header_s *cur_core_ext_header;
 	unsigned char *cur_core_reg_table;
+	unsigned char is_dccd_flow;
 };
 
 /* **********************************
