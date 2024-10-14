@@ -912,6 +912,7 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 					} else {
 						cache_flag = true;
 						env_set_hex("filesize", len_read);
+						run_command("avb memory recovery ${loadaddr}", 0);
 					}
 				}
 			}

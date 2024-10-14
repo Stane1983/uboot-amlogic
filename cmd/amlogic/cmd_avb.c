@@ -595,7 +595,7 @@ static AvbIOResult validate_public_key_for_partition(AvbOps *ops,
 
 	if (!strcmp(partition, "recovery") ||
 			!strcmp(partition, "recovery-memory")) {
-		printf("checking for recovery partition\n");
+		printf("checking for %s partition\n", partition);
 		ret = validate_vbmeta_public_key(ops, public_key_data,
 				public_key_length, public_key_metadata,
 				public_key_metadata_length,
