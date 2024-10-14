@@ -66,8 +66,7 @@ static void aml_set_audio_spdif_clk(void)
 		       | 1 << 0 /* ddr_arb */);
 
 	/*hifipll 1179.648M for s4/s4d*/
-	if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S4 ||
-		get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S4D)
+	if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S4)
 		audiobus_write(EE_AUDIO_CLK_SPDIFOUT_CTRL,
 				1 << 31   /* enable */
 				| 4 << 24 /* hifipll0 */
