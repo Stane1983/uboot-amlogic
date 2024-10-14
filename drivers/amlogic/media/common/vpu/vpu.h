@@ -36,7 +36,8 @@ enum vpu_chip_e {
 	VPU_CHIP_S7D,  /* 19 */
 	VPU_CHIP_S6,   /* 20 */
 	VPU_CHIP_T6D,  /* 21 */
-	VPU_CHIP_MAX,  /* 22 */
+	VPU_CHIP_T6W,  /* 22 */
+	VPU_CHIP_MAX,  /* 23 */
 };
 
 struct vpu_arb_table_s {
@@ -95,6 +96,8 @@ enum vpu_mux_e {
 	VID_PLL_CLK,
 	VID2_PLL_CLK,
 	GPLL_CLK,
+	GPLL_CLK1,
+	GPLL_CLK2,
 	FCLK_DIV_MAX,
 };
 

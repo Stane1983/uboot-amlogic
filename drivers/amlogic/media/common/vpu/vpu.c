@@ -24,7 +24,7 @@
 /* v20230509: add s1a support */
 /* v20230801: add s7 support */
 
-#define VPU_VERSION "v20230801"
+#define VPU_VERSION "v20241011"
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -817,6 +817,41 @@ static struct vpu_data_s vpu_data_t6d = {
 	.change_clk = change_vpu_clk,
 };
 
+
+static struct vpu_data_s vpu_data_t6w = {
+	.chip_type = VPU_CHIP_T6W,
+	.chip_name = "t6w",
+	.clk_level_dft = CLK_LEVEL_DFT_T6W,
+	.clk_level_max = CLK_LEVEL_MAX_T6W,
+	.gp_pll_valid = 1,
+
+	.vpu_clk_reg = CLKCTRL_VPU_CLK_CTRL,
+	.vpu_clkb_reg = VPU_REG_END,
+	.vapb_clk_reg = CLKCTRL_VAPBCLK_CTRL,
+	.vid_clk_reg = CLKCTRL_VID_CLK0_CTRL2,
+	.vpu_read_type = READ0_2,
+
+	.pwrctrl_id_table = vpu_pwrctrl_id_table,
+
+	.fclk_div_table = fclk_div_table_t6w,
+	.vpu_clk_table = vpu_clk_table_t6w,
+	.test_reg = vcbus_test_reg,
+
+	.mem_pd_table = NULL,
+	.power_table = NULL,
+	.iso_table = NULL,
+	.reset_table = NULL,
+
+	.module_init_table_cnt = 0,
+	.module_init_table = NULL,
+
+	.power_on = vpu_power_on_new,
+	.power_off = vpu_power_off_new,
+	.mem_pd_init_off = vpu_mem_pd_init_off,
+	.module_init_config = vpu_module_init_config,
+	.change_clk = change_vpu_clk,
+};
+
 static void vpu_chip_detect(void)
 {
 	unsigned int cpu_type;
@@ -894,6 +929,9 @@ static void vpu_chip_detect(void)
 	case MESON_CPU_MAJOR_ID_T6D:
 		vpu_conf.data = &vpu_data_t6d;
 		break;
+	case MESON_CPU_MAJOR_ID_T6W:
+		vpu_conf.data = &vpu_data_t6w;
+		break;
 	default:
 		vpu_conf.data = NULL;
 		//vpu_conf.data = &vpu_data_t3;
@@ -959,6 +997,7 @@ static int vpu_check(void)
 	case VPU_CHIP_S7D:
 	case VPU_CHIP_S6:
 	case VPU_CHIP_T6D:
+	case VPU_CHIP_T6W:
 		ret = 0;
 		break;
 	default:

@@ -20,6 +20,11 @@
 #define CLK_LEVEL_DFT_G12A     7
 #define CLK_LEVEL_MAX_G12A     8
 
+/* T6W */
+/* freq max=840M, default=840M */
+#define CLK_LEVEL_DFT_T6W     10
+#define CLK_LEVEL_MAX_T6W     12
+
 /* T5D */
 /* freq max=400M, default=250M */
 #define CLK_LEVEL_DFT_T5D     3
@@ -60,6 +65,18 @@ static struct fclk_div_s fclk_div_table_g12a[] = {
 	{FCLK_DIV_MAX, 8,    1},
 };
 
+static struct fclk_div_s fclk_div_table_t6w[] = {
+	/* id,         mux,  div */
+	{FCLK_DIV3,    0,    3},
+	{FCLK_DIV4,    1,    4},
+	{GPLL_CLK1,    2,    0},
+	{FCLK_DIV2P5,  3,    0},
+	{GPLL_CLK,     4,    0},
+	{VID_PLL_CLK,  5,    0},
+	{GPLL_CLK2,    6,    0},
+	{FCLK_DIV_MAX, 8,    1},
+};
+
 static struct fclk_div_s fclk_div_table_c3[] = {
 	/* id,         mux,  div */
 	{FCLK_DIV3,    1,    3},
@@ -95,6 +112,23 @@ static struct vpu_clk_s vpu_clk_table_s7d[] = {
 	{666667000,    FCLK_DIV3,    0}, /* 7 */
 	{666000000,    GPLL_CLK,     0}, /* 8 */ /* invalid */
 	{850000000,    GPLL_CLK,     0}, /* 9 */ /* invalid */
+};
+
+static struct vpu_clk_s vpu_clk_table_t6w[] = {
+	/* frequency   clk_mux       div */
+	{100000000,    FCLK_DIV5,    3}, /* 0 */
+	{166667000,    FCLK_DIV3,    3}, /* 1 */
+	{200000000,    FCLK_DIV5,    1}, /* 2 */
+	{250000000,    FCLK_DIV4,    1}, /* 3 */
+	{333333000,    FCLK_DIV3,    1}, /* 4 */
+	{400000000,    FCLK_DIV5,    0}, /* 5 */
+	{500000000,    FCLK_DIV4,    0}, /* 6 */
+	{666667000,    FCLK_DIV3,    0}, /* 7 */
+	{800000000,    FCLK_DIV2P5,  0}, /* 8 */
+	{696000000,    GPLL_CLK,     0}, /* 9 */  /* invalid */
+	{840000000,    GPLL_CLK1,    0}, /* 10 */ /* for t6w gp1*/
+	{808000000,    GPLL_CLK2,    0}, /* 11 */ /* for t6w gp2*/
+	{850000000,    GPLL_CLK,     0}, /* 12 */ /* invalid */
 };
 
 /* ******************************************************* */
