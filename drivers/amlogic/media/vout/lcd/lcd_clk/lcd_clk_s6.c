@@ -159,7 +159,7 @@ set_pll_retry:
 	lcd_ana_write(ANACTRL_DSIPLL_CTRL0, pll_ctrl0 | 0x10010000);
 
 	lcd_ana_write(ANACTRL_DSIPLL_CTRL1, 0x11480000 | cconf->pll_frac);
-	lcd_ana_write(ANACTRL_DSIPLL_CTRL2, 0x1215b010);
+	lcd_ana_write(ANACTRL_DSIPLL_CTRL2, 0x121db010);
 	lcd_ana_write(ANACTRL_DSIPLL_CTRL3, 0x00008010);
 
 	lcd_ana_write(ANACTRL_DSIPLL_CTRL1, 0x19480000 | cconf->pll_frac);
