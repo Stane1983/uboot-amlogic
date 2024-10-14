@@ -1348,6 +1348,35 @@ int check_gpt_change(struct blk_desc *dev_desc, void *buf)
 					if (ret == 0)
 						ret = 2;
 				}
+
+				if (strcmp(name, "userdata") == 0 &&
+					partitions[j].offset == offset &&
+					(partitions[j].size - size) == 0x200000) {
+					printf("userdata offset is same, just size changed\n");
+					printf("move backgpt to gap\n");
+					gpt_h->last_usable_lba = cpu_to_le64(dev_desc->lba - 1);
+					gpt_h->alternate_lba = gpt_e[1].starting_lba - 1;
+					gpt_e[i].ending_lba = gpt_h->last_usable_lba;
+
+					printf("GPT: reset last_usable_lba: %llX\n",
+						le64_to_cpu(gpt_h->last_usable_lba));
+					printf("GPT: reset alternate_lba: %llX\n",
+						le64_to_cpu(gpt_h->alternate_lba));
+					printf("reset userdata size: %016llx\n",
+						((le64_to_cpu(gpt_e[i].ending_lba) + 1) -
+						le64_to_cpu(gpt_e[i].starting_lba)) << 9ULL);
+
+					calc_crc32 = crc32(0, (const unsigned char *)gpt_e,
+						entries_num *
+						le32_to_cpu(gpt_h->sizeof_partition_entry));
+					gpt_h->partition_entry_array_crc32 = calc_crc32;
+					gpt_h->header_crc32 = 0;
+					calc_crc32 = crc32(0, (const unsigned char *)gpt_h,
+							le32_to_cpu(gpt_h->header_size));
+					gpt_h->header_crc32 = calc_crc32;
+					ret = 5;
+					data_size_new = partitions[j].size;
+				}
 			}
 		}
 	}

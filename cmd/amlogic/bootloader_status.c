@@ -546,6 +546,11 @@ static int update_gpt(int flag)
 				ret = 2;
 				goto exit;
 			}
+
+			if (erase_flag == 5) {
+				printf("userdata size change, adjust backup gpt\n");
+				ret = -1;
+			}
 			printf("%s: writing GPT partitions ok\n", __func__);
 		}
 	}
