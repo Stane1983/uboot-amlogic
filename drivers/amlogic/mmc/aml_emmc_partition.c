@@ -2141,7 +2141,7 @@ int check_gpt_part(struct blk_desc *dev_desc, void *buf)
 
 	if (alternate_flag) {
 		last_usable_lba = cpu_to_le64(dev_desc->lba - 34);
-		last_ending_lba = ((last_usable_lba >> 3) << 3) - 1;
+		last_ending_lba = ((last_usable_lba >> 12) << 12) - 1;
 	} else {
 		last_usable_lba = cpu_to_le64(dev_desc->lba - 1);
 		last_ending_lba = last_usable_lba;
