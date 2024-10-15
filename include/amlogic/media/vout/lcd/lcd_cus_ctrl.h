@@ -100,7 +100,6 @@ struct lcd_tuning_param_s {
 	unsigned short ss_freq;
 	unsigned short ss_mode;
 	unsigned short mlvds_clk_phase;
-	unsigned short lane_cnt;
 	unsigned short phy_vswing;
 	unsigned short phy_vcm;
 	unsigned short phy_ref_bias;

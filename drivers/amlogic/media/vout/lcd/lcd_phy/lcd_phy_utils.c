@@ -20,39 +20,16 @@ unsigned int lcd_phy_vswing_level_to_value_dft(struct aml_lcd_drv_s *pdrv, unsig
 
 unsigned int lcd_phy_preem_level_to_value_dft(struct aml_lcd_drv_s *pdrv, unsigned int level)
 {
-	unsigned int p2p_type;
+	struct phy_attr_s *phy = pdrv->config.phy_cfg.act_phy;
 	unsigned int phy_vmode_preem[6] = {0x07, 0x17, 0x37, 0x77, 0xf7, 0xff};
 	unsigned int phy_cmode_preem[7] = {0x06, 0x26, 0x46, 0x66, 0x86, 0xa6, 0xf6};
 
-	switch (pdrv->config.basic.lcd_type) {
-	case LCD_LVDS:
-	case LCD_VBYONE:
-	case LCD_MLVDS:
+	if (phy->cv_mode == PHY_VMODE) {
+		if (level < 6)
+			return phy_vmode_preem[level];
+	} else { //default cmode
 		if (level < 7)
 			return phy_cmode_preem[level];
-		break;
-	case LCD_P2P:
-		p2p_type = pdrv->config.control.p2p_cfg.p2p_type & 0x1f;
-		switch (p2p_type) {
-		case P2P_CEDS:
-		case P2P_CMPI:
-		case P2P_ISP:
-		case P2P_EPI:
-			if (level < 7)
-				return phy_cmode_preem[level];
-			break;
-		case P2P_CHPI: /* low common mode */
-		case P2P_CSPI:
-		case P2P_USIT:
-			if (level < 6)
-				return phy_vmode_preem[level];
-			break;
-		default:
-			return 0;
-		}
-		break;
-	default:
-		return 0;
 	}
 
 	LCDERR("[%d]: %s: level %d invalid\n", pdrv->index, __func__, level);
@@ -78,7 +55,7 @@ void lcd_phy_glb_param_dft(struct aml_lcd_drv_s *pdrv)
 	case LCD_LVDS:
 		phy->vcm = 0x27e;
 		phy->odt = 0xff;
-		phy->cv_mode = 0;
+		phy->cv_mode = PHY_CMODE;
 		break;
 	case LCD_VBYONE:
 		if (phy_cfg->ext_pullup) {
@@ -88,12 +65,12 @@ void lcd_phy_glb_param_dft(struct aml_lcd_drv_s *pdrv)
 			phy->vcm = 0x27a;
 			phy->odt = 0xf0;
 		}
-		phy->cv_mode = 0;
+		phy->cv_mode = PHY_CMODE;
 		break;
 	case LCD_MLVDS:
 		phy->vcm = 0x27e;
 		phy->odt = 0xff;
-		phy->cv_mode = 0;
+		phy->cv_mode = PHY_CMODE;
 		break;
 	case LCD_P2P:
 		switch (pdrv->config.control.p2p_cfg.p2p_type & 0x1f) {
@@ -103,7 +80,7 @@ void lcd_phy_glb_param_dft(struct aml_lcd_drv_s *pdrv)
 		case P2P_EPI:
 			phy->vcm = 0x27a;
 			phy->odt = 0xff;
-			phy->cv_mode = 0;
+			phy->cv_mode = PHY_CMODE;
 			break;
 		case P2P_CHPI: /* low common mode */
 		case P2P_CSPI:
@@ -113,7 +90,7 @@ void lcd_phy_glb_param_dft(struct aml_lcd_drv_s *pdrv)
 				phy->odt = 0xe0; /* 580mV */
 			else
 				phy->odt = 0xfe; /* default 385mV */
-			phy->cv_mode = 1;
+			phy->cv_mode = PHY_VMODE;
 			break;
 		default:
 			return;

@@ -222,6 +222,16 @@ static unsigned int lcd_phy_preem_level_to_value_t7(struct aml_lcd_drv_s *pdrv, 
 	return preem_value;
 }
 
+static void phy_glb_param_dft_t7(struct aml_lcd_drv_s *pdrv)
+{
+	struct phy_config_s *phy_cfg = &pdrv->config.phy_cfg;
+
+	if (pdrv->index == 2)
+		phy_cfg->lane_num = 10;
+	else
+		phy_cfg->lane_num = 8;
+}
+
 static struct lcd_phy_ctrl_s lcd_phy_ctrl_t7 = {
 	.lane_num = 16,
 
@@ -229,7 +239,7 @@ static struct lcd_phy_ctrl_s lcd_phy_ctrl_t7 = {
 	.phy_preem_level_to_val = lcd_phy_preem_level_to_value_t7,
 	.phy_amp_dft_val = NULL,
 	.phy_lane_phase_sel_def = NULL,
-	.phy_glb_param_dft_val = NULL,
+	.phy_glb_param_dft_val = phy_glb_param_dft_t7,
 	.phy_param_get = NULL,
 	.phy_reg_dump = lcd_phy_reg_dump,
 

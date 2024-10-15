@@ -329,8 +329,7 @@ static void lcd_info_print_mlvds(struct aml_lcd_drv_s *pdrv)
 		"bit_swap          %u\n"
 		"phy_vswing        0x%x\n"
 		"phy_preem         0x%x\n"
-		"bit_rate          %lluHz\n"
-		"pi_clk_sel        0x%03x\n\n",
+		"bit_rate          %lluHz\n\n",
 		pdrv->config.control.mlvds_cfg.channel_num,
 		pdrv->config.control.mlvds_cfg.channel_sel0,
 		pdrv->config.control.mlvds_cfg.channel_sel1,
@@ -339,8 +338,7 @@ static void lcd_info_print_mlvds(struct aml_lcd_drv_s *pdrv)
 		pdrv->config.control.mlvds_cfg.bit_swap,
 		pdrv->config.control.mlvds_cfg.phy_vswing,
 		pdrv->config.control.mlvds_cfg.phy_preem,
-		pdrv->config.timing.bit_rate,
-		pdrv->config.control.mlvds_cfg.pi_clk_sel);
+		pdrv->config.timing.bit_rate);
 	lcd_tcon_info_print(pdrv);
 	lcd_pinmux_info_print(&pdrv->config);
 }
