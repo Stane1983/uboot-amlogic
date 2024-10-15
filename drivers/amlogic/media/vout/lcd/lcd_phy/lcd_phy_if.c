@@ -85,7 +85,8 @@ void lcd_phy_param_print(struct aml_lcd_drv_s *pdrv)
 {
 	struct phy_config_s local_phy_cfg, *phy_cfg;
 	struct phy_attr_s local_phy, *phy;
-	int i, ret;
+	char str_sel[12], str_phase[12];
+	int i, n, ret;
 
 #ifdef CONFIG_AML_LCD_PXP
 	return;
@@ -110,12 +111,27 @@ void lcd_phy_param_print(struct aml_lcd_drv_s *pdrv)
 		phy->cv_mode, local_phy.cv_mode,
 		phy->ref_bias, local_phy.ref_bias);
 	printf("  lane  sel       phase_sel   amp       preem\n");
-	for (i = 0; i < local_phy_cfg.lane_num; i++) {
-		printf("  [%2d]: 0x%x(0x%x), 0x%x(0x%x), 0x%x(0x%x), 0x%x(0x%x)\n",
-			i, phy_cfg->ch_ctrl[i].sel, local_phy_cfg.ch_ctrl[i].sel,
-			phy_cfg->ch_ctrl[i].phase_sel, local_phy_cfg.ch_ctrl[i].phase_sel,
-			phy->lane[i].amp, local_phy.lane[i].amp,
-			phy->lane[i].preem, local_phy.lane[i].preem);
+	for (i = 0; i < phy_cfg->lane_num; i++) {
+		if (phy_cfg->ch_ctrl[i].sel == 0xff)
+			n = sprintf(str_sel, " - ");
+		else
+			n = sprintf(str_sel, "0x%x", phy_cfg->ch_ctrl[i].sel);
+		if (local_phy_cfg.ch_ctrl[i].sel == 0xff)
+			sprintf(str_sel + n, "( - )");
+		else
+			sprintf(str_sel + n, "(0x%x)", local_phy_cfg.ch_ctrl[i].sel);
+		if (phy_cfg->ch_ctrl[i].phase_sel == 0xff)
+			n = sprintf(str_phase, " - ");
+		else
+			n = sprintf(str_phase, "0x%x", phy_cfg->ch_ctrl[i].phase_sel);
+		if (local_phy_cfg.ch_ctrl[i].phase_sel == 0xff)
+			sprintf(str_phase + n, "( - )");
+		else
+			sprintf(str_phase + n, "(0x%x)", local_phy_cfg.ch_ctrl[i].phase_sel);
+		printf("  [%2d]:  %s, %s, 0x%x(0x%x), 0x%x(0x%x)\n",
+		       i, str_sel, str_phase,
+		       phy->lane[i].amp, local_phy.lane[i].amp,
+		       phy->lane[i].preem, local_phy.lane[i].preem);
 	}
 	printf("flag=0x%x, lane_num=%d, lane_valid=0x%x, lane_offset=%d, lane_mask=0x%x\n",
 		phy_cfg->flag, phy_cfg->lane_num, phy_cfg->lane_valid,

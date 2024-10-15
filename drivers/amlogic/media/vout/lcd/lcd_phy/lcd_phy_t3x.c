@@ -56,7 +56,7 @@ static void lcd_phy_reg_dump(struct aml_lcd_drv_s *pdrv)
 static int lcd_phy_param_get_from_reg(struct aml_lcd_drv_s *pdrv,
 				      struct phy_config_s *phy_cfg, struct phy_attr_s *phy)
 {
-	unsigned int data32, chreg, chdig, bit;
+	unsigned int data32, chreg, chdig, lane_idx, bit;
 	int i;
 
 	data32 = lcd_ana_read(ANACTRL_DIF_PHY_CNTL18);
@@ -68,10 +68,11 @@ static int lcd_phy_param_get_from_reg(struct aml_lcd_drv_s *pdrv,
 	data32 = lcd_ana_read(ANACTRL_DIF_PHY_CNTL19);
 	phy->cv_mode = (data32 >> 19) & 0x1;
 	phy_cfg->ckdi = 0;
-	for (i = 0; i < pdrv->config.phy_cfg.lane_num; i++) {
-		bit = i & 0x1 ? 16 : 0;
-		chreg = lcd_ana_getb(chreg_reg[i >> 1], bit, 16);
-		chdig = lcd_ana_getb(chdig_reg[i >> 1], bit, 16);
+	for (i = 0; i < phy_cfg->lane_num; i++) {
+		lane_idx = phy_cfg->lane_offset + i;
+		bit = lane_idx & 0x1 ? 16 : 0;
+		chreg = lcd_ana_getb(chreg_reg[lane_idx >> 1], bit, 16);
+		chdig = lcd_ana_getb(chdig_reg[lane_idx >> 1], bit, 16);
 
 		phy->lane[i].preem = (chreg >> 8) & 0xff;
 		phy->lane[i].amp = (chdig >> 3) & 0x7;
@@ -114,10 +115,10 @@ static void lcd_phy_common_update(struct aml_lcd_drv_s *pdrv, unsigned int com_d
 
 static void lcd_phy_cntl_set(struct aml_lcd_drv_s *pdrv, int status, int bypass)
 {
-	unsigned int chdig, chreg, reg_data;
-	uint8_t bit, i, lane_idx = 0;
 	struct phy_config_s *phy_cfg = &pdrv->config.phy_cfg;
 	struct phy_attr_s *phy = pdrv->config.phy_cfg.act_phy;
+	unsigned int chdig, chreg, reg_data, lane_idx, bit;
+	int i;
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_ADV)
 		LCDPR("%s: %d\n", __func__, status);
@@ -141,18 +142,18 @@ static void lcd_phy_cntl_set(struct aml_lcd_drv_s *pdrv, int status, int bypass)
 		}
 	}
 
-	for (i = 0; i < 16; i++) {
-		if (phy_cfg->lane_valid & (1 << i)) {
-			bit = i & 0x1 ? 16 : 0;
+	for (i = 0; i < phy_cfg->lane_num; i++) {
+		lane_idx = phy_cfg->lane_offset + i;
+		if (phy_cfg->lane_valid & (1 << lane_idx)) {
+			bit = lane_idx & 0x1 ? 16 : 0;
 			chreg = reg_data;
 			chdig = bypass ? 0x4 : 0;
 			if (status) {
-				chreg |= (phy->lane[lane_idx].preem & 0xff) << 8;
-				chdig |= (phy->lane[lane_idx].amp & 0x7) << 3;
+				chreg |= (phy->lane[i].preem & 0xff) << 8;
+				chdig |= (phy->lane[i].amp & 0x7) << 3;
 			}
-			lcd_ana_setb(chreg_reg[i >> 1], chreg, bit, 16);
-			lcd_ana_setb(chdig_reg[i >> 1], chdig, bit, 16);
-			lane_idx++;
+			lcd_ana_setb(chreg_reg[lane_idx >> 1], chreg, bit, 16);
+			lcd_ana_setb(chdig_reg[lane_idx >> 1], chdig, bit, 16);
 		}
 	}
 }
@@ -227,6 +228,17 @@ static void lcd_p2p_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 	lcd_phy_cntl_set(pdrv, status, 1);
 }
 
+static void lcd_phy_glb_param_dft_t3x(struct aml_lcd_drv_s *pdrv)
+{
+	struct phy_config_s *phy_cfg = &pdrv->config.phy_cfg;
+
+	if (pdrv->index)
+		phy_cfg->lane_num = 8;
+	else
+		phy_cfg->lane_num = 16;
+	lcd_phy_glb_param_dft(pdrv);
+}
+
 static struct lcd_phy_ctrl_s lcd_phy_ctrl_t3x = {
 	.lane_num = 16,
 
@@ -234,7 +246,7 @@ static struct lcd_phy_ctrl_s lcd_phy_ctrl_t3x = {
 	.phy_preem_level_to_val = lcd_phy_preem_level_to_value_dft,
 	.phy_amp_dft_val = lcd_phy_amp_dft,
 	.phy_lane_phase_sel_def = NULL,
-	.phy_glb_param_dft_val = lcd_phy_glb_param_dft,
+	.phy_glb_param_dft_val = lcd_phy_glb_param_dft_t3x,
 	.phy_param_get = lcd_phy_param_get_from_reg,
 	.phy_reg_dump = lcd_phy_reg_dump,
 

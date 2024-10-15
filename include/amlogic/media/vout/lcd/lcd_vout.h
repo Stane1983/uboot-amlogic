@@ -409,9 +409,6 @@ struct mlvds_config_s {
 	unsigned int bit_swap; /* MSB/LSB reverse */
 	unsigned int phy_vswing;
 	unsigned int phy_preem;
-
-	/* internal used */
-	unsigned int pi_clk_sel; /* bit[9:0] */
 };
 
 enum p2p_type_e {
@@ -486,8 +483,6 @@ struct phy_ch_ctrl_s {
 struct phy_config_s {
 	unsigned short lane_num;
 	unsigned short group_num;
-	unsigned int ch_swap0;
-	unsigned int ch_swap1;
 	unsigned int vswing_level;
 	unsigned int ext_pullup;
 	unsigned int preem_level;
@@ -497,6 +492,8 @@ struct phy_config_s {
 	unsigned int state;
 	unsigned int flag;
 	unsigned int ckdi;
+	unsigned int ch_swap0; //for reg
+	unsigned int ch_swap1; //for reg
 	unsigned int lane_valid; //(valid & mask)<<offset
 	unsigned int lane_offset;
 	unsigned int lane_mask; //local mask for lane range
