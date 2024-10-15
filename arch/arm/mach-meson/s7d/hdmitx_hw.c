@@ -320,6 +320,22 @@ u32 hd_get_paddr(u32 addr)
 
 void hdmitx_set_phypara(enum hdmi_phy_para mode)
 {
+	struct arm_smccc_res res;
+	/* this will get from efuse */
+	u8 rterm = 0;
+	u32 val = 0x80000000;
+
+	/* write Rterm */
+	arm_smccc_smc(HDCPTX_IOOPR, HDMITX_GET_RTERM, 0, 0, 0, 0, 0, 0, &res);
+	rterm = (u8)((res.a0) & 0xff);
+	/* default value when efuse invalid, 0xff indicate efuse invalid */
+	if (rterm != 0xff) {
+		val = rterm << 28;
+		pr_info("%s[%d] rterm = %x\n", __func__, __LINE__, rterm);
+        } else {
+		pr_info("efuse invalid, use default value\n");
+	}
+
 	hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x0);
 /* P_ANACTRL_HDMIPHY_CTRL1	bit[1]: enable clock	bit[0]: soft reset */
 #define RESET_HDMI_PHY() \
@@ -337,22 +353,25 @@ do { \
 #undef RESET_HDMI_PHY
 
 	switch (mode) {
-	case HDMI_PHYPARA_6G:	/* 5.94/4.5/3.7Gbps */
+	/* 5.94/4.5/3.7Gbps */
+	case HDMI_PHYPARA_6G:
 	case HDMI_PHYPARA_4p5G:
 	case HDMI_PHYPARA_3p7G:
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x8003cafb);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, (0x3cafb | val));
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x2555);
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x4ef001);
 		break;
-	case HDMI_PHYPARA_3G:	/* 2.97Gbps */
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x800380dd);
+	/* 2.97Gbps */
+	case HDMI_PHYPARA_3G:
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, (0x380dd | val));
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x2555);
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x4ef001);
 		break;
-	case HDMI_PHYPARA_270M:	/* 1.485Gbps, and below */
+	/* 1.485Gbps, and below */
+	case HDMI_PHYPARA_270M:
 	case HDMI_PHYPARA_DEF:
 	default:
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, 0x82038088);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, (0x2038088 | val));
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x2555);
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x4ef001);
 		break;
