@@ -83,6 +83,7 @@
 /* args/envs */
 #define CONFIG_SYS_MAXARGS  64
 #define CONFIG_EXTRA_ENV_SETTINGS \
+	"scramble_reg=0xfe02e030\0"\
 		"systemsuspend_switch=0\0"\
 		"ddr_resume=0\0"\
 		"panel_type=lvds_1\0" \

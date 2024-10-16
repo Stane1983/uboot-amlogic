@@ -75,6 +75,7 @@
 
 //for common env list, please maintain it in board/amlogic/env/linux.env
 #define CONFIG_EXTRA_ENV_SETTINGS \
+	"scramble_reg=0xfe02e030\0"\
 	"uart_base=0xfe078400\0"\
 	CONFIG_KERNEL_LOGLEVEL "\0"\
 	"usb_burning=" CONFIG_USB_TOOL_ENTRY "\0"\

@@ -60,6 +60,7 @@
 //text based env guide: v2023/ doc/usage/environment.rst
 //for common env, pls maintain it in board/amlogic/env/android.env
 #define CONFIG_EXTRA_ENV_SETTINGS \
+	"scramble_reg=0xfe02e030\0"\
 	"uart_base=0xfe07a000\0"\
 	"usb_burning=" CONFIG_USB_TOOL_ENTRY "\0"\
 	"board=oppen\0"\
