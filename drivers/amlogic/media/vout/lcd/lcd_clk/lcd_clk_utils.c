@@ -981,7 +981,8 @@ void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 		cconf->pll_mode = pconf->timing.pll_flag;
 		cconf->fout = pconf->timing.enc_clk;
 		if (cconf->fout > cconf->data->xd_out_fmax) {
-			LCDERR("%s: wrong enc_clk value %uHz\n", __func__, cconf->fout);
+			LCDERR("%s: enc_clk %uHz out of %uHz\n",
+			       __func__, cconf->fout, cconf->data->xd_out_fmax);
 			goto generate_clk_dft_done;
 		}
 	}
@@ -1201,7 +1202,9 @@ void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 			pixconf->fout = pconf->timing.enc_clk;
 			pixconf->pll_mode = pconf->timing.pll_flag;
 			if (pixconf->fout > pixconf->data->xd_out_fmax) {
-				LCDERR("%s: wrong enc_clk value %uHz\n", __func__, pixconf->fout);
+				LCDERR("%s: enc_clk %uHzout of %uHz, pll_id:%d\n",
+				       __func__, pixconf->fout, pixconf->data->xd_out_fmax,
+				       pixconf->pll_id);
 				goto generate_clk_dft_done;
 			}
 
@@ -1577,48 +1580,56 @@ void lcd_clk_config_init_print_dft(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_clk_config_s *cconf;
 	struct lcd_clk_data_s *data;
+	int i;
 
 	cconf = get_lcd_clk_config(pdrv);
 	if (!cconf)
 		return;
 
-	data = cconf->data;
-	LCDPR("[%d]: lcd clk config data init:\n"
-		"pll_m_max:           %d\n"
-		"pll_m_min:           %d\n"
-		"pll_n_max:           %d\n"
-		"pll_n_min:           %d\n"
-		"pll_od_fb:           %d\n"
-		"pll_frac_range:      %d\n"
-		"pll_od_sel_max:      %d\n"
-		"pll_ref_fmax:        %d\n"
-		"pll_ref_fmin:        %d\n"
-		"pll_vco_fmax:        %lld\n"
-		"pll_vco_fmin:        %lld\n"
-		"pll_out_fmax:        %lld\n"
-		"pll_out_fmin:        %lld\n"
-		"div_in_fmax:         %lld\n"
-		"div_out_fmax:        %d\n"
-		"xd_out_fmax:         %d\n"
-		"ss_level_max:        %d\n"
-		"ss_dep_base:         %d\n"
-		"ss_dep_sel_max:      %d\n"
-		"ss_str_m_max:        %d\n"
-		"ss_freq_max:         %d\n"
-		"ss_mode_max:         %d\n\n",
-		pdrv->index,
-		data->pll_m_max, data->pll_m_min,
-		data->pll_n_max, data->pll_n_min,
-		data->pll_od_fb, data->pll_frac_range,
-		data->pll_od_sel_max,
-		data->pll_ref_fmax, data->pll_ref_fmin,
-		data->pll_vco_fmax, data->pll_vco_fmin,
-		data->pll_out_fmax, data->pll_out_fmin,
-		data->div_in_fmax, data->div_out_fmax,
-		data->xd_out_fmax, data->ss_level_max,
-		data->ss_dep_base, data->ss_dep_sel_max,
-		data->ss_str_m_max,
-		data->ss_freq_max, data->ss_mode_max);
+	for (i = 0; i < pdrv->clk_conf_num; i++) {
+		if (!cconf[i].data) {
+			LCDERR("[%d]: %s: cconf[%d] data is NULL\n", pdrv->index, __func__, i);
+			return;
+		}
+
+		data = cconf[i].data;
+		LCDPR("[%d]: clk[%d] data init:\n"
+			"pll_m_max:           %d\n"
+			"pll_m_min:           %d\n"
+			"pll_n_max:           %d\n"
+			"pll_n_min:           %d\n"
+			"pll_od_fb:           %d\n"
+			"pll_frac_range:      %d\n"
+			"pll_od_sel_max:      %d\n"
+			"pll_ref_fmax:        %d\n"
+			"pll_ref_fmin:        %d\n"
+			"pll_vco_fmax:        %lld\n"
+			"pll_vco_fmin:        %lld\n"
+			"pll_out_fmax:        %lld\n"
+			"pll_out_fmin:        %lld\n"
+			"div_in_fmax:         %lld\n"
+			"div_out_fmax:        %d\n"
+			"xd_out_fmax:         %d\n"
+			"ss_level_max:        %d\n"
+			"ss_dep_base:         %d\n"
+			"ss_dep_sel_max:      %d\n"
+			"ss_str_m_max:        %d\n"
+			"ss_freq_max:         %d\n"
+			"ss_mode_max:         %d\n\n",
+			pdrv->index, cconf[i].pll_id,
+			data->pll_m_max, data->pll_m_min,
+			data->pll_n_max, data->pll_n_min,
+			data->pll_od_fb, data->pll_frac_range,
+			data->pll_od_sel_max,
+			data->pll_ref_fmax, data->pll_ref_fmin,
+			data->pll_vco_fmax, data->pll_vco_fmin,
+			data->pll_out_fmax, data->pll_out_fmin,
+			data->div_in_fmax, data->div_out_fmax,
+			data->xd_out_fmax, data->ss_level_max,
+			data->ss_dep_base, data->ss_dep_sel_max,
+			data->ss_str_m_max,
+			data->ss_freq_max, data->ss_mode_max);
+	}
 }
 
 void lcd_clk_config_print_dft(struct aml_lcd_drv_s *pdrv)
@@ -1632,7 +1643,7 @@ void lcd_clk_config_print_dft(struct aml_lcd_drv_s *pdrv)
 
 	for (i = 0; i < pdrv->clk_conf_num; i++) {
 		cconf = &cconf_tbl[i];
-		LCDPR("[%d]: lcd clk[%d] config:\n"
+		LCDPR("[%d]: clk[%d] config:\n"
 			"  pll_id:     %d\n"
 			"  pll_offset: 0x%x\n"
 			"  pll_mode:   %d\n"

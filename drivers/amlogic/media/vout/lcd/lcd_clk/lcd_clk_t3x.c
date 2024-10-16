@@ -192,10 +192,7 @@ set_pll_retry:
 	udelay(10);
 	lcd_ana_write(reg_ctrl2, 0x0000110c);
 	udelay(10);
-	if (cconf->pll_fvco < 3800000000ULL)
-		lcd_ana_write(reg_ctrl3, 0x10051100);
-	else
-		lcd_ana_write(reg_ctrl3, 0x10051400);
+	lcd_ana_write(reg_ctrl3, 0x10051100);
 	udelay(10);
 	lcd_ana_setb(reg_ctrl4, 0x0100c0, 0, 24);
 	udelay(10);
@@ -818,11 +815,11 @@ static struct lcd_clk_data_s lcd_clk_data_t3x_0 = {
 	.pll_ref_fmin = 5000000,
 	.pll_vco_fmax = 6000000000ULL,
 	.pll_vco_fmin = 3000000000ULL,
-	.pll_out_fmax = 3700000000,
+	.pll_out_fmax = 4100000000,
 	.pll_out_fmin = 187500000,
-	.div_in_fmax = 3700000000ULL,
-	.div_out_fmax = 720000000,
-	.xd_out_fmax = 720000000,
+	.div_in_fmax = 4100000000ULL,
+	.div_out_fmax = 820000000,
+	.xd_out_fmax = 820000000,
 	.od_cnt = 3,
 	.have_tcon_div = 0,
 	.have_pll_div = 1,
@@ -873,11 +870,11 @@ static struct lcd_clk_data_s lcd_clk_data_t3x_1 = {
 	.pll_ref_fmin = 5000000,
 	.pll_vco_fmax = 6000000000ULL,
 	.pll_vco_fmin = 3000000000ULL,
-	.pll_out_fmax = 3700000000,
+	.pll_out_fmax = 4100000000,
 	.pll_out_fmin = 187500000,
-	.div_in_fmax = 3700000000ULL,
-	.div_out_fmax = 720000000,
-	.xd_out_fmax = 720000000,
+	.div_in_fmax = 4100000000ULL,
+	.div_out_fmax = 820000000,
+	.xd_out_fmax = 820000000,
 	.od_cnt = 3,
 	.have_tcon_div = 0,
 	.have_pll_div = 1,

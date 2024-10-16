@@ -2730,7 +2730,7 @@ static unsigned int vbyone_lane_num[] = {
 	8,
 };
 
-#define VBYONE_BIT_RATE_MAX		3700000000ULL //Hz
+#define VBYONE_BIT_RATE_MAX		4100000000ULL //Hz
 #define VBYONE_BIT_RATE_MIN		600000000
 void lcd_vbyone_bit_rate_config(struct aml_lcd_drv_s *pdrv)
 {
@@ -3002,7 +3002,7 @@ void lcd_clk_frame_rate_init(struct lcd_detail_timing_s *ptiming)
 	if (ptiming->pixel_clk == 0) /* default 0 for 60hz */
 		ptiming->pixel_clk = 60;
 	else
-		LCDPR("custom clk: %d\n", ptiming->pixel_clk);
+		LCDPR("init pclk: %dHz\n", ptiming->pixel_clk);
 
 	h_period = ptiming->h_period;
 	v_period = ptiming->v_period;

@@ -416,16 +416,9 @@ static int lcd_clk_config_chip_init(struct aml_lcd_drv_s *pdrv, struct lcd_clk_c
 		return -1;
 	}
 
-	for (i = 0; i < pdrv->clk_conf_num; i++) {
-		if (!cconf[i].data) {
-			LCDERR("[%d]: %s: cconf[%d] data is NULL\n",
-				pdrv->index, __func__, i);
-			return -1;
-		}
-		if (lcd_debug_print_flag & LCD_DBG_PR_ADV2) {
-			if (cconf[i].data->clk_config_init_print)
-				cconf[i].data->clk_config_init_print(pdrv);
-		}
+	if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
+		if (cconf->data->clk_config_init_print)
+			cconf->data->clk_config_init_print(pdrv);
 	}
 
 	return 0;
