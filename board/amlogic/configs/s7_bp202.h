@@ -104,6 +104,7 @@
 		"run bcb_cmd; "\
 		"run upgrade_check;"\
 		"run init_display;"\
+		"run cmdline_keys;"\
 		"run upgrade_key;" \
 		"bcb uboot-command;"\
 		"run switch_bootmode;"
