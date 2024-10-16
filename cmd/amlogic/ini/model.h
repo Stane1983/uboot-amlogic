@@ -226,14 +226,9 @@ struct lcd_phy_s {
 #define LCD_CUS_CTRL_TYPE_MAX            0xff
 
 struct lcd_dfr_timing_s {
-	unsigned short htotal;
 	unsigned short vtotal;
 	unsigned short vtotal_min;
 	unsigned short vtotal_max;
-	unsigned short frame_rate_min;
-	unsigned short frame_rate_max;
-	unsigned short hpw;
-	unsigned short hbp;
 	unsigned short vpw;
 	unsigned short vbp;
 };

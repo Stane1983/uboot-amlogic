@@ -119,20 +119,27 @@ static unsigned short handle_lcd_cus_ctrl_dfr(unsigned char *p, unsigned short *
 		temp[1] = strtoul(ini_value, NULL, 0);
 		*(unsigned short *)(p + offset) = (temp[1] & 0xfff) | ((temp[0] & 0xf) << 12);
 		offset += 2;
+
+		sprintf(str, "dfr_fr_%d_frame_rate_min", i);
+		ini_value = ini_get_string("lcd_Attr", str, "0");
+		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
+			ALOGD("%s, %s is (%s)\n", __func__, str, ini_value);
+		*(unsigned short *)(p + offset) = strtoul(ini_value, NULL, 0);
+		offset += 2;
+
+		sprintf(str, "dfr_fr_%d_frame_rate_max", i);
+		ini_value = ini_get_string("lcd_Attr", str, "0");
+		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
+			ALOGD("%s, %s is (%s)\n", __func__, str, ini_value);
+		*(unsigned short *)(p + offset) = strtoul(ini_value, NULL, 0);
+		offset += 2;
+
 		fr_cnt++;
 	}
 	*p_fr_cnt = fr_cnt;
 
 	timing_size = sizeof(struct lcd_dfr_timing_s);
 	for (i = 1; i < 15; i++) {
-		sprintf(str, "dfr_tmg_%d_htotal", i);
-		ini_value = ini_get_string("lcd_Attr", str, "none");
-		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
-			ALOGD("%s, %s is (%s)\n", __func__, str, ini_value);
-		if (strcmp(ini_value, "none") == 0)
-			break;
-		dfr_timing.htotal = strtoul(ini_value, NULL, 0);
-
 		sprintf(str, "dfr_tmg_%d_vtotal", i);
 		ini_value = ini_get_string("lcd_Attr", str, "none");
 		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
@@ -156,40 +163,6 @@ static unsigned short handle_lcd_cus_ctrl_dfr(unsigned char *p, unsigned short *
 		if (strcmp(ini_value, "none") == 0)
 			break;
 		dfr_timing.vtotal_max = strtoul(ini_value, NULL, 0);
-
-		sprintf(str, "dfr_tmg_%d_frame_rate_min", i);
-		ini_value = ini_get_string("lcd_Attr", str, "none");
-		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
-			ALOGD("%s, %s is (%s)\n", __func__, str, ini_value);
-		if (strcmp(ini_value, "none") == 0)
-			dfr_timing.frame_rate_min = 0;
-		else
-			dfr_timing.frame_rate_min = strtoul(ini_value, NULL, 0);
-
-		sprintf(str, "dfr_tmg_%d_frame_rate_max", i);
-		ini_value = ini_get_string("lcd_Attr", str, "none");
-		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
-			ALOGD("%s, %s is (%s)\n", __func__, str, ini_value);
-		if (strcmp(ini_value, "none") == 0)
-			dfr_timing.frame_rate_max = 0;
-		else
-			dfr_timing.frame_rate_max = strtoul(ini_value, NULL, 0);
-
-		sprintf(str, "dfr_tmg_%d_hpw", i);
-		ini_value = ini_get_string("lcd_Attr", str, "none");
-		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
-			ALOGD("%s, %s is (%s)\n", __func__, str, ini_value);
-		if (strcmp(ini_value, "none") == 0)
-			break;
-		dfr_timing.hpw = strtoul(ini_value, NULL, 0);
-
-		sprintf(str, "dfr_tmg_%d_hbp", i);
-		ini_value = ini_get_string("lcd_Attr", str, "none");
-		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
-			ALOGD("%s, %s is (%s)\n", __func__, str, ini_value);
-		if (strcmp(ini_value, "none") == 0)
-			break;
-		dfr_timing.hbp = strtoul(ini_value, NULL, 0);
 
 		sprintf(str, "dfr_tmg_%d_vpw", i);
 		ini_value = ini_get_string("lcd_Attr", str, "none");
