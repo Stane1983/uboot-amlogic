@@ -94,6 +94,15 @@ static inline int lcd_s32_constraint(int v, int min, int max)
 	return v > max ? max : v < min ? min : v;
 }
 
+static inline unsigned short gcd(unsigned short a, unsigned short b) {
+	while (b != 0) {
+        unsigned short temp = b;
+        b = a % b;
+        a = temp;
+    }
+    return a;
+}
+
 extern unsigned int lcd_prbs_freq, lcd_prbs_performed, lcd_prbs_err;
 
 struct num_str_s {

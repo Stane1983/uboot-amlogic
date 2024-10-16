@@ -119,6 +119,17 @@ __maybe_unused static struct aml_lcd_data_s lcd_data_t6d = {
 	.dft_conf = {NULL, NULL, NULL},
 };
 
+__maybe_unused static struct aml_lcd_data_s lcd_data_t6w = {
+	.chip_type = LCD_CHIP_T6W,
+	.chip_name = "t6w",
+	.rev_type = 0,
+	.drv_max = 1,
+	.offset_venc = {0x0},
+	.offset_venc_if = {0x0},
+	.offset_venc_data = {0x0},
+	.dft_conf = {NULL, NULL, NULL},
+};
+
 static void lcd_chip_detect(void)
 {
 #if 1
@@ -152,6 +163,9 @@ static void lcd_chip_detect(void)
 		break;
 	case MESON_CPU_MAJOR_ID_T6D:
 		lcd_data = &lcd_data_t6d;
+		break;
+	case MESON_CPU_MAJOR_ID_T6W:
+		lcd_data = &lcd_data_t6w;
 		break;
 	default:
 		lcd_data = NULL;

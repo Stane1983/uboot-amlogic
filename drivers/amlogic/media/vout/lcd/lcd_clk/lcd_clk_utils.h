@@ -65,7 +65,7 @@ void lcd_clk_config_chip_init_txhd2(struct aml_lcd_drv_s *pdrv, struct lcd_clk_c
 #ifdef CONFIG_MESON_S6
 void lcd_clk_config_chip_init_s6(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
 #endif
-#ifdef CONFIG_MESON_T6D
+#if defined(CONFIG_MESON_T6D) || defined(CONFIG_MESON_T6W)
 void lcd_clk_config_chip_init_t6d(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
 #endif
 

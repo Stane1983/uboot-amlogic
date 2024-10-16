@@ -13,7 +13,7 @@
 #include "lcd_clk_ctrl.h"
 #include "lcd_clk_utils.h"
 
-#ifdef CONFIG_MESON_T6D
+#if defined(CONFIG_MESON_T6D) || defined(CONFIG_MESON_T6W)
 static unsigned int tcon_div[][3] = {
 	/* vx1pll_div214h, vx1pll_phase_div_en, vx1pll_clk1x_selh */
 	{0, 0, 1},  /* div1 */
@@ -267,7 +267,10 @@ static void lcd_set_vclk_crt_t6d(struct aml_lcd_drv_s *pdrv)
 	lcd_clk_setb(CLKCTRL_VIID_CLK0_DIV, cconf->xd, VCLK2_XD, 8);
 	udelay(5);
 	/* select vid_pll_clk */
-	lcd_clk_setb(CLKCTRL_VIID_CLK0_CTRL, 7, VCLK2_CLK_IN_SEL, 3);
+	if (pdrv->config.timing.act_timing.h_active == 3840)
+		lcd_clk_setb(CLKCTRL_VIID_CLK0_CTRL, 1, VCLK2_CLK_IN_SEL, 3);
+	else
+		lcd_clk_setb(CLKCTRL_VIID_CLK0_CTRL, 7, VCLK2_CLK_IN_SEL, 3);
 #else
 	/* setup the XD divider value */
 	lcd_clk_setb(CLKCTRL_VIID_CLK0_DIV, (cconf->xd - 1), VCLK2_XD, 8);
@@ -574,7 +577,7 @@ static struct lcd_clk_data_s lcd_clk_data_t6d = {
 	.pll_out_fmin = 187500000,
 	.div_in_fmax = 3100000000ULL,
 	.div_out_fmax = 750000000,
-	.xd_out_fmax = 400000000,
+	.xd_out_fmax = 800000000,
 	.od_cnt = 3,
 	.have_tcon_div = 1,
 	.phy_clk_location = 0,

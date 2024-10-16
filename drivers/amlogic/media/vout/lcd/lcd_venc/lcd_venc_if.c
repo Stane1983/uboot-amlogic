@@ -191,11 +191,11 @@ int lcd_venc_probe(struct aml_lcd_data_s *pdata)
 
 	if (!pdata)
 		return -1;
-
 	switch (pdata->chip_type) {
-#if defined (CONFIG_MESON_T5M) || defined(CONFIG_MESON_T6D)
+#if defined (CONFIG_MESON_T5M) || defined(CONFIG_MESON_T6D) || defined(CONFIG_MESON_T6W)
 	case LCD_CHIP_T5M:
 	case LCD_CHIP_T6D:
+	case LCD_CHIP_T6W:
 		ret = lcd_venc_op_init_t5m(&lcd_venc_op);
 		break;
 #endif
