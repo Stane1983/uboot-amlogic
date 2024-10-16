@@ -177,7 +177,7 @@ set_pll_retry_tl1:
 	udelay(10);
 	lcd_ana_write(HHI_TCON_PLL_CNTL2, 0x0000300c);
 
-	ret = lcd_pll_wait_lock(HHI_TCON_PLL_CNTL0, 31);
+	ret = lcd_pll_wait_lock(cconf->pll_id, HHI_TCON_PLL_CNTL0, 31);
 	if (ret) {
 		if (cnt++ < PLL_RETRY_MAX)
 			goto set_pll_retry_tl1;

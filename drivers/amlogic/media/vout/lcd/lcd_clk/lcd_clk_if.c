@@ -105,7 +105,8 @@ static void lcd_bit_rate_match_phy(struct aml_lcd_drv_s *pdrv)
 		LCDPR("phy_clk=%d, match phy[%d]=%d\n", phy_clk, i, phy->phy_clk);
 		return;
 	}
-	LCDPR("no phy_clk matched, use default(phy[0])\n");
+	if (phy_cfg->phys[0]->phy_clk)
+		LCDPR("no phy_clk matched, use default(phy[0])\n");
 }
 
 static void lcd_phy_match_ss(struct aml_lcd_drv_s *pdrv)

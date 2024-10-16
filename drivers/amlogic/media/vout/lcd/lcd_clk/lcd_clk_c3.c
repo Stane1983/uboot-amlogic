@@ -45,7 +45,7 @@ set_pll_retry_c3:
 	lcd_ana_write(ANACTRL_GP0PLL_CTRL2, 0x00023001);
 	udelay(20);
 
-	ret = lcd_pll_wait_lock(ANACTRL_GP0PLL_STS, 31);
+	ret = lcd_pll_wait_lock(cconf->pll_id, ANACTRL_GP0PLL_STS, 31);
 	if (ret) {
 		if (cnt++ < PLL_RETRY_MAX)
 			goto set_pll_retry_c3;

@@ -253,7 +253,7 @@ set_gp0_pll_retry_g12b:
 	udelay(100);
 	lcd_ana_setb(HHI_GP0_PLL_CNTL0, 0, LCD_PLL_RST_GP0_G12A, 1);
 
-	ret = lcd_pll_wait_lock(HHI_GP0_PLL_CNTL0, LCD_PLL_LOCK_GP0_G12A);
+	ret = lcd_pll_wait_lock(cconf->pll_id, HHI_GP0_PLL_CNTL0, LCD_PLL_LOCK_GP0_G12A);
 	if (ret) {
 		if (cnt++ < PLL_RETRY_MAX)
 			goto set_gp0_pll_retry_g12b;
@@ -305,7 +305,7 @@ set_hpll_pll_retry_g12b:
 	udelay(100);
 	lcd_ana_setb(HHI_HDMI_PLL_CNTL0, 0, LCD_PLL_RST_HPLL_G12A, 1);
 
-	ret = lcd_pll_wait_lock(HHI_HDMI_PLL_CNTL0, LCD_PLL_LOCK_HPLL_G12A);
+	ret = lcd_pll_wait_lock(cconf->pll_id, HHI_HDMI_PLL_CNTL0, LCD_PLL_LOCK_HPLL_G12A);
 	if (ret) {
 		if (cnt++ < PLL_RETRY_MAX)
 			goto set_hpll_pll_retry_g12b;

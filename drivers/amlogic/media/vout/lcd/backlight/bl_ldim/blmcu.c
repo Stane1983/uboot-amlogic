@@ -283,8 +283,6 @@ int ldim_dev_blmcu_probe(struct aml_ldim_driver_s *ldim_drv)
 
 	bl_mcu->dev_on_flag = 0;
 	bl_mcu->vsync_cnt = 0;
-	LDIMPR("%s: mcu_header=0x%08x,mcu_dim=0x%08x\n",
-		__func__, dev_drv->mcu_header, dev_drv->mcu_dim);
 
 	bl_mcu->adim = (dev_drv->mcu_dim >> 8) & 0xff;
 	bl_mcu->pdim = dev_drv->mcu_dim & 0xff;
