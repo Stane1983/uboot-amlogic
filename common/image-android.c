@@ -21,6 +21,11 @@ static const unsigned char lzop_magic[] = {
 static bool _read_in_bootconfig(struct vendor_boot_img_hdr *boot_info, uint32_t ramdisk_size);
 
 #define ANDROID_IMAGE_DEFAULT_KERNEL_ADDR	0x10008000
+#define BIG_TO_LITTLE(val) \
+		((((val) >> 24) & 0x000000FF) | \
+		(((val)  >>  8) & 0x0000FF00) | \
+		(((val)  <<  8) & 0x00FF0000) | \
+		(((val)  << 24) & 0xFF000000))
 
 #if (defined CONFIG_SUPPORT_BL33Z) && (defined CONFIG_FULL_RAMDUMP)
 #define KNLIMG_DEC_ADDR	0x1880000
@@ -135,14 +140,35 @@ static ulong android_image_get_kernel_addr(const  boot_img_hdr_t *hdr)
 	 *
 	 * Otherwise, we will return the actual value set by the user.
 	 */
-#if (defined CONFIG_SUPPORT_BL33Z) && (defined CONFIG_FULL_RAMDUMP)
+	image_header_t *legacy_hdr = NULL;
+	unsigned int load_addr;
+
+	legacy_hdr = (image_header_t *)((ulong)hdr + hdr->page_size);
+	if (image_get_magic(legacy_hdr) == IH_MAGIC &&
+		legacy_hdr->ih_arch == IH_ARCH_ARM) {
+		load_addr  = BIG_TO_LITTLE(legacy_hdr->ih_load);
+		pr_info("Get loadaddr from uImage legacy_hdr->ih_load=0x%08x.\n", load_addr);
+		return load_addr;
+	}
+
+	pr_info("It is not arm32 legacy_hdr, try using KNLIMG_DEC_ADDR=0x%08x.\n", KNLIMG_DEC_ADDR);
+#if defined(CONFIG_SUPPORT_BL33Z) && defined(CONFIG_FULL_RAMDUMP)
 	return KNLIMG_DEC_ADDR;
-#else
+#endif
+	/*
+	 * boot.img = boot_img_hdr_t + legacy_header + zImage + ramdisk.
+	 * The hdr->kernel_addr is defined by BOARD_KERNEL_OFFSET in Android
+	 * /device/.../BoardConfig.mk. Its value is typically 0x01080000.
+	 * When TEXT_OFFSET is 0x02008000, loadaddr should be greater than
+	 * the 0x01800000.
+	 */
+	if (hdr->kernel_addr < KNLIMG_DEC_ADDR)
+		return KNLIMG_DEC_ADDR;
+
 	if (hdr->kernel_addr == ANDROID_IMAGE_DEFAULT_KERNEL_ADDR)
 		return (ulong)hdr + hdr->page_size;
 
 	return hdr->kernel_addr;
-#endif
 }
 
 /**
