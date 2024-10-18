@@ -27,6 +27,7 @@ DECLARE_GLOBAL_DATA_PTR;
 static int _assert_logic_partition_cap(const char *thePartName, const uint64_t nandPartCap)
 {
 	extern struct partitions  *part_table;
+	int num_parts = 0;
 	int partIndex                   = 0;
 	struct partitions  *thePart     = NULL;
 
@@ -34,17 +35,19 @@ static int _assert_logic_partition_cap(const char *thePartName, const uint64_t n
 		return 0;
 	if (store_get_type() != BOOT_EMMC && store_get_type() != BOOT_NAND_NFTL)
 		return 0;
-	for (thePart = part_table; partIndex < MAX_PART_NUM; ++thePart, ++partIndex) {
+	num_parts = get_partition_count();
+	for (thePart = part_table; partIndex < num_parts; ++thePart, ++partIndex) {
 		const u64 partSzInBytes = thePart->size;
 
 		if (memcmp(thePartName, thePart->name, strlen(thePartName)))
 			continue;
 
 		FB_DBG("cfg partSzInBytes %llx for part(%s)\n", partSzInBytes, thePartName);
-		if (NAND_PART_SIZE_FULL == partSzInBytes)
+		FB_MSG("part(%s) sz: cfg %llx , flash %llx\n", thePartName, partSzInBytes, nandPartCap);
+		if (partIndex + 1 == num_parts) {
+			FB_MSG("last part not need check sz\n");
 			return 0;
-		if ((partSzInBytes >> 32) == 0xffffffffUL) //GPT mode last part
-			return 0;
+		}
 		if (partSzInBytes > nandPartCap) {
 			FB_EXIT("partSz of logic part(%s): sz dts %llx > Sz flash %llx\n",
 					thePartName, partSzInBytes, nandPartCap);
