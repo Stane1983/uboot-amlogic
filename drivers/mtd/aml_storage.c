@@ -154,7 +154,7 @@ int meson_yaffs2_mount(char *mtpoint, char *part_name)
 
 	/* mtd_dev 1 is a normal partition */
 	cmd_yaffs_devconfig(mtpoint, 1, part->offset / mtd->erasesize,
-			(part->offset + part->size) / mtd->erasesize);
+			(part->offset + part->size) / mtd->erasesize - 1);
 	cmd_yaffs_mount(mtpoint);
 
 	return 0;
