@@ -364,7 +364,7 @@ struct aml_nand_flash_dev aml_nand_flash_ids[] = {
 		20,
 		25,
 		0,
-		(NAND_TIMING_MODE5 | NAND_ECC_BCH8_MODE )},
+		(NAND_TIMING_MODE4 | NAND_ECC_BCH8_MODE )},
 	{"A revision NAND 2Gib TC58NVG1S3HBAI4 ",
 		{NAND_MFR_TOSHIBA, 0xda, 0x90, 0x15, 0x76},
 		2048,
