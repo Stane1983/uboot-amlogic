@@ -1371,10 +1371,13 @@ static void get_parse_edid_data(struct hdmitx_dev *hdev)
 	 * the inconsistency between the value of the hdr_priority environment
 	 * variable and the result of the Google hdr policy during the boot
 	 * process, causing the TV to flash black.
+	 * Android use strategy2:
 	 * 268435456 = 0x10000000, DV priority
-	 * 268435472 = 0x10000010,HDR priority
+	 * 268435472 = 0x10000010, HDR priority
+	 * Linux Yocto not set
 	 */
 	if (hdr_priority == -1) {
+#ifndef CONFIG_YOCTO
 		if (is_amdolby_enabled()) {
 			hdr_priority = 268435456;
 			env_set("hdr_priority", "268435456");
@@ -1382,6 +1385,7 @@ static void get_parse_edid_data(struct hdmitx_dev *hdev)
 			hdr_priority = 268435472;
 			env_set("hdr_priority", "268435472");
 		}
+#endif
 	}
 
 	memcpy(&hdev->tx_common.rxcap, &hdev->RXCap, sizeof(hdev->tx_common.rxcap));
