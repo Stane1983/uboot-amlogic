@@ -33,6 +33,7 @@
 
 #define usleep_range(a, b) udelay(a)
 
+static void set_hpll_sspll_s7(enum hdmi_vic vic);
 /* local frac_rate flag */
 static u32 frac_rate;
 
@@ -462,11 +463,15 @@ static void set_hdmitx_htx_pll(struct hdmitx_dev *hdev)
 	enum hdmi_colorspace cs = hdev->para->cs;
 	enum hdmi_color_depth cd = hdev->para->cd;
 	u8 clk_div_val = VID_PLL_DIV_5;
+	char *sspll_dis = NULL;
 
 	if (hdev->pxp_mode) /* skip VCO setting */
 		return;
 
 	set_hdmitx_s7_htx_pll(hdev);
+	sspll_dis = env_get("sspll_dis");
+	if ((!sspll_dis || !strcmp(sspll_dis, "0")) && cd == COLORDEPTH_24B)
+		set_hpll_sspll_s7(hdev->para->vic);
 	if (hdev->s7_clk_config) {
 		pr_info("select vid_pix_clk source for encp/pixel_clk\n");
 		return;
@@ -490,4 +495,23 @@ void hdmitx21_set_clk(struct hdmitx_dev *hdev)
 	frac_rate = hdmitx_check_frac_rate(hdev);
 	disable_hdmitx_s7_plls(hdev);
 	set_hdmitx_htx_pll(hdev);
+}
+
+static void set_hpll_sspll_s7(enum hdmi_vic vic)
+{
+	switch (vic) {
+	case HDMI_16_1920x1080p60_16x9:
+	case HDMI_31_1920x1080p50_16x9:
+	case HDMI_4_1280x720p60_16x9:
+	case HDMI_19_1280x720p50_16x9:
+	case HDMI_5_1920x1080i60_16x9:
+	case HDMI_20_1920x1080i50_16x9:
+		/* enable ssc, need update electric to 0x0100 */
+		hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL1, 4, 25, 4);
+		hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL2, 2, 3, 4);//set ssc 1000 ppm
+		hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL2, 1, 2, 1);//enable ssc
+		break;
+	default:
+		break;
+	}
 }
