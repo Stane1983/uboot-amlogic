@@ -390,7 +390,7 @@ static int do_update_env_part(cmd_tbl_t *cmdtp, int flag, int argc, char * const
 				const char *usr_env = argv[i];
 				const char *usr_env_val = env_get(usr_env);
 
-				if (strncmp(current_kv, usr_env, s_env_v - current_kv - 1))
+				if (strcmp(current_kv, usr_env))
 					continue;
 				//Found key
 				++n_env_in_flash;
@@ -495,7 +495,7 @@ static int do_update_env_part(cmd_tbl_t *cmdtp, int flag, int argc, char * const
 
 				if (!usr_env)
 					continue;//disposed
-				if (!strncmp(current_kv, usr_env, s_env_v - current_kv - 1))
+				if (!strcmp(current_kv, usr_env))
 					break;
 			}
 			kv_len = (unsigned long)(next - current_kv);
