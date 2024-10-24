@@ -69,18 +69,14 @@ id_adc_ch | id_value)
 #define DDR_TIMMING_TUNE_STRUCT_SIZE(a)  sizeof(a)
 
 uint32_t __bl2_ddr_reg_data[] __attribute__ ((section(".ddr_2acs_data"))) = {
-	DDR_TIMMING_TUNE_START(DDR_ID_FROM_ADC, DDR_ADC_CH1, DDR_ADC_VALUE1),
+	DDR_TIMMING_TUNE_START(DDR_ID_FROM_ADC, DDR_ADC_CH2, DDR_ADC_VALUE12),
 	//data start
-	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_common_setting.Is2Ttiming, CONFIG_USE_DDR_2T_MODE),
-
-	DDR_TIMMING_TUNE_START(DDR_ID_FROM_ADC, DDR_ADC_CH0, DDR_ADC_VALUE2),
-	//data start
-
-	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_common_setting.Is2Ttiming, CONFIG_USE_DDR_2T_MODE),
-	//
-	//...
-	//...
-	//data end
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_common_setting.dram_cs0_size_MB,
+	CONFIG_DDR0_SIZE_1536MB),
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_common_setting.dram_cs1_size_MB,
+	CONFIG_DDR0_SIZE_0MB),
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_common_setting.dram_rank_config,
+	CONFIG_DDR0_32BIT_16BIT_RANK0_CH0),
 };
 
 ////_ddr_para_2nd_setting

@@ -72,15 +72,6 @@ uint32_t __bl2_ddr_reg_data[] __attribute__ ((section(".ddr_2acs_data"))) = {
 	DDR_TIMMING_TUNE_START(DDR_ID_FROM_ADC, DDR_ADC_CH1, DDR_ADC_VALUE1),
 	//data start
 	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_common_setting.Is2Ttiming, CONFIG_USE_DDR_2T_MODE),
-
-	DDR_TIMMING_TUNE_START(DDR_ID_FROM_ADC, DDR_ADC_CH0, DDR_ADC_VALUE2),
-	//data start
-
-	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_common_setting.Is2Ttiming, CONFIG_USE_DDR_2T_MODE),
-	//
-	//...
-	//...
-	//data end
 };
 
 ////_ddr_para_2nd_setting

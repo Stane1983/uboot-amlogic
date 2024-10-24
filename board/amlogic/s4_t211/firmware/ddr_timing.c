@@ -8,7 +8,7 @@
 #include <asm/arch/ddr_define.h>
 
 /* board clk defines */
-#define CPU_CLK                                 2004
+#define CPU_CLK                                 1800
 //bit 6 adc_channel bit 0-5 adc value,chan 3 value 8 is layer 2
 #define DDR_ID_ACS_ADC   ((3 << 6) | (8))
 
@@ -71,16 +71,8 @@ id_adc_ch | id_value)
 uint32_t __bl2_ddr_reg_data[] __attribute__ ((section(".ddr_2acs_data"))) = {
 	DDR_TIMMING_TUNE_START(DDR_ID_FROM_ADC, DDR_ADC_CH1, DDR_ADC_VALUE1),
 	//data start
-	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_common_setting.Is2Ttiming, CONFIG_USE_DDR_2T_MODE),
-
-	DDR_TIMMING_TUNE_START(DDR_ID_FROM_ADC, DDR_ADC_CH0, DDR_ADC_VALUE2),
-	//data start
-
-	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_common_setting.Is2Ttiming, CONFIG_USE_DDR_2T_MODE),
-	//
-	//...
-	//...
-	//data end
+DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_SI_setting_ps.dram_data_odt_ohm, DDR_DRAM_DDR4_ODT_40_OHM),
+DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_SI_setting_ps.vref_dram_data_permil, 750),
 };
 
 ////_ddr_para_2nd_setting

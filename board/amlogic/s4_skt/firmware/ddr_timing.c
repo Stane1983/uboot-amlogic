@@ -8,9 +8,9 @@
 #include <asm/arch/ddr_define.h>
 
 /* board clk defines */
-#define CPU_CLK                                 2004
-//bit 6 adc_channel bit 0-5 adc value,chan 3 value 8 is layer 2
+#define CPU_CLK                                 1512
 #define DDR_ID_ACS_ADC   ((3 << 6) | (8))
+//bit 6 adc_channel bit 0-5 adc value,chan 3 value 8 is layer 2
 
 #define DDR_RESV_CHECK_ID_ENABLE  0Xfe
 #define SAR_ADC_DDR_ID_BASE   0
@@ -71,16 +71,8 @@ id_adc_ch | id_value)
 uint32_t __bl2_ddr_reg_data[] __attribute__ ((section(".ddr_2acs_data"))) = {
 	DDR_TIMMING_TUNE_START(DDR_ID_FROM_ADC, DDR_ADC_CH1, DDR_ADC_VALUE1),
 	//data start
-	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_common_setting.Is2Ttiming, CONFIG_USE_DDR_2T_MODE),
-
-	DDR_TIMMING_TUNE_START(DDR_ID_FROM_ADC, DDR_ADC_CH0, DDR_ADC_VALUE2),
-	//data start
-
-	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_common_setting.Is2Ttiming, CONFIG_USE_DDR_2T_MODE),
-	//
-	//...
-	//...
-	//data end
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_common_setting.Is2Ttiming,
+	CONFIG_USE_DDR_2T_MODE),
 };
 
 ////_ddr_para_2nd_setting
