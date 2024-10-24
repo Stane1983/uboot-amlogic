@@ -15,6 +15,7 @@ extern "C" {
 #define u32 unsigned int
 #endif
 
+int handle_model_list_panel_key(void);
 extern int handle_model_list(void);
 extern int handle_model_sum(void);
 

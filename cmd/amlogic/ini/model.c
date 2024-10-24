@@ -3519,6 +3519,29 @@ const char *get_model_sum_path(int index)
 	return model_path;
 }
 
+int handle_model_list_panel_key(void)
+{
+	char *path_path;
+
+	path_path = env_get("model_panel");
+	if (!path_path)
+		return -1;
+
+	IniParserInit();
+
+	if (IniParseFile(path_path) < 0) {
+		ALOGE("%s: ini load file error!\n", __func__);
+		IniParserUninit();
+		return -1;
+	}
+
+	IniPrintAll();
+
+	IniParserUninit();
+
+	return 0;
+}
+
 int handle_model_list(void)
 {
 	char *model, str[15];
