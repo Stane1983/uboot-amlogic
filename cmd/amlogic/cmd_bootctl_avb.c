@@ -793,17 +793,6 @@ static int do_GetSystemMode(cmd_tbl_t *cmdtp, int flag, int argc, char * const a
 	return 0;
 }
 
-static int do_GetAvbMode(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
-{
-#ifdef CONFIG_AVB2
-	env_set("avb2", "1");
-#else
-	env_set("avb2", "0");
-#endif
-
-	return 0;
-}
-
 #ifdef CONFIG_UNIFY_BOOTLOADER
 bootctl_func_handles *get_bootctl_cmd_func_avb(void)
 {
@@ -812,7 +801,6 @@ bootctl_func_handles *get_bootctl_cmd_func_avb(void)
 	avb_cmd_bootctrl_handles.do_SetRollFlag_func = do_SetRollFlag;
 	avb_cmd_bootctrl_handles.do_SetUpdateTries_func = do_SetUpdateTries;
 	avb_cmd_bootctrl_handles.do_GetSystemMode_func = do_GetSystemMode;
-	avb_cmd_bootctrl_handles.do_GetAvbMode_func = do_GetAvbMode;
 
 	return &avb_cmd_bootctrl_handles;
 }
@@ -860,13 +848,6 @@ U_BOOT_CMD
 	"get_system_as_root_mode",
 	"\nThis command will get system_as_root_mode\n"
 	"So you can execute command: get_system_as_root_mode"
-);
-
-U_BOOT_CMD(
-	get_avb_mode, 1,	0, do_GetAvbMode,
-	"get_avb_mode",
-	"\nThis command will get avb mode\n"
-	"So you can execute command: get_avb_mode"
 );
 #endif
 

@@ -290,13 +290,8 @@ int do_bootm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	}
 
 #ifdef CONFIG_CMD_BOOTCTOL_AVB
+#ifdef CONFIG_AVB2
 	int rc = 0;
-	char *avb_s = NULL;
-
-	run_command("get_avb_mode;", 0);
-	avb_s = env_get("avb2");
-	printf("avb2: %s\n", avb_s);
-	if (strcmp(avb_s, "1") == 0) {
 		AvbSlotVerifyData *out_data = NULL;
 		char *bootargs = NULL;
 		char *newbootargs = NULL;
@@ -405,7 +400,7 @@ int do_bootm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			newbootargs = NULL;
 			avb_slot_verify_data_free(out_data);
 		}
-	}else {
+#else
 		const int is_dev_unlocked = is_device_unlocked();
 		if (is_dev_unlocked)
 			run_command("setenv bootconfig ${bootconfig} "\
@@ -413,7 +408,7 @@ int do_bootm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		else
 			run_command("setenv bootconfig ${bootconfig} "\
 			"androidboot.verifiedbootstate=green", 0);
-	}
+#endif
 #endif//CONFIG_CMD_BOOTCTOL_AVB
 
 	recovery_mode_process();

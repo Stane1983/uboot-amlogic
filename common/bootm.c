@@ -1209,10 +1209,7 @@ static const void *boot_get_kernel(cmd_tbl_t *cmdtp, int flag, int argc,
 	const void *buf;
 	const char	*fit_uname_config = NULL;
 	const char	*fit_uname_kernel = NULL;
-	char *avb_s;
 	int genimg_format;
-	avb_s = env_get("avb2");
-	printf("avb2: %s\n", avb_s);
 
 #if IMAGE_ENABLE_FIT
 	int		os_noffset;
