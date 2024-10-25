@@ -115,22 +115,24 @@ static int _assert_logic_partition_cap(const char *thePartName, const uint64_t n
 	extern struct partitions  *part_table;
 	int partIndex                   = 0;
 	struct partitions  *thePart     = NULL;
+	int num_parts = 0;
 
 	if (!part_table)
 		return 0;
 	if (!strcmp("1", thePartName))
 		return 0;
 
-	for (thePart = part_table; partIndex < MAX_PART_NUM; ++thePart, ++partIndex) {
+	num_parts = get_partition_count();
+	for (thePart = part_table; partIndex < num_parts; ++thePart, ++partIndex) {
+		const uint64_t dtsPartSz = thePart->size;
+
 		if (memcmp(thePartName, thePart->name, strnlen(thePartName, MAX_PART_NAME_LEN)))
 			continue;
-
-		const uint64_t dtsPartSz = thePart->size;
 		DWN_DBG("cfg dtsPartSz %llx for part(%s)\n", dtsPartSz, thePartName);
-		if (NAND_PART_SIZE_FULL == dtsPartSz)
+		if (partIndex + 1 == num_parts) {
+			DWN_MSG("last part not need check sz\n");
 			return 0;
-		if ((dtsPartSz >> 32) == 0xffffffffUL) //GPT mode last part
-			return 0;
+		}
 		if (dtsPartSz > nandPartCap) {
 			DWN_ERR("partSz of logic part(%s): sz dts %llx > Sz flash %llx\n",
 					thePartName, dtsPartSz, nandPartCap);

@@ -316,8 +316,13 @@ static int storage_mmc_erase_user(struct mmc *mmc) {
 	ulong n;
 
 	if (info_disprotect & DISPROTECT_KEY) {//key disprotect,erase all
-		n = blk_derase(mmc_get_blk_desc(mmc), 0, 0);
-		if (n != 0)
+		u32 blkcnt = 0;
+
+		blkcnt = mmc->capacity/512 - (mmc->capacity/512)% mmc->erase_grp_size; // erase whole
+		printf("blkcnt = %u\n",blkcnt);
+		printf("capacity = 0x%llx\n",mmc->capacity);
+		n = blk_derase(mmc_get_blk_desc(mmc), 0, blkcnt);
+		if (n != blkcnt)
 			ret = -1;
 	} else {//key protect partition with the protect_flag
 		for (i = 0;;i++) {
