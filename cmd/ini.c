@@ -259,11 +259,16 @@ static int do_ini_model_list(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
 {
 	int ret;
 
-	if (argc > 1)
-		return CMD_RET_USAGE;
+	if (argc == 1) {
+		ret = handle_model_list();
+		return ret;
+	}
+	if (strcmp(argv[1], "lcd") == 0 || strcmp(argv[1], "panel") == 0) {
+		handle_model_list_panel_key();
+		return 0;
+	}
 
-	ret = handle_model_list();
-	return ret;
+	return CMD_RET_USAGE;
 }
 
 U_BOOT_CMD(

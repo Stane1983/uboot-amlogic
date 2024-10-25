@@ -6,6 +6,10 @@
 #include "ini_config.h"
 #include "ini_core.h"
 #include "ini_size_define.h"
+#include "ini_log.h"
+
+#define LOG_TAG "ini_core"
+#define LOG_NDEBUG 0
 
 /* Strip whitespace chars off end of given string, in place. Return s. */
 static char *rstrip(char *s)
@@ -30,7 +34,7 @@ static char *lskip(const char *s)
 static char *find_char_or_comment(const char *s, char c)
 {
 	int was_whitespace = 0;
-	while (*s && *s != c && !(was_whitespace && *s == ';')) {
+	while (*s && *s != c && !(was_whitespace && (*s == ';' || *s == '#'))) {
 		was_whitespace = isspace((unsigned char)(*s));
 		s++;
 	}
@@ -163,6 +167,7 @@ int _ini_mem_parse(const char *buf,
 	char *value;
 	int lineno = 0;
 	int error = 0;
+	int ret;
 
 #if !INI_USE_STACK
 	line = (char *)malloc(INI_MAX_LINE);
@@ -212,17 +217,8 @@ int _ini_mem_parse(const char *buf,
 				/* No ']' found on section line */
 				error = lineno;
 			}
-		}
-#if INI_ALLOW_MULTILINE
-		else if (*prev_name && *start && (start > line || strstr(start, "=") == NULL)) {
-			/* Non-black line with leading whitespace, treat as continuation
-			 of previous name's value (as per Python ConfigParser). */
-			if (!handler(user, section, prev_name, start) && !error)
-				error = lineno;
-		}
-#endif
-		else if (*start && *start != ';') {
-			/* Not a comment, must be a name[=:]value pair */
+		} else if (*start) {
+			/* Not a comment, should be a name[=:]value pair */
 			end = find_char_or_comment(start, '=');
 			if (*end != '=')
 				end = find_char_or_comment(start, ':');
@@ -232,20 +228,33 @@ int _ini_mem_parse(const char *buf,
 				name = rstrip(start);
 				value = lskip(end + 1);
 				end = find_char_or_comment(value, '\0');
-				if (*end == ';')
+				if (*end == ';' || *end == '#')
 					*end = '\0';
 				rstrip(value);
 
 				/* Valid name[=:]value pair found, call handler */
 				strncpy0(prev_name, name, sizeof(prev_name));
-				if (!handler(user, section, name, value) && !error)
-					error = lineno;
-			} else if (!error) {
-				/* No '=' or ':' found on name[=:]value line */
-				error = lineno;
+				ret = handler(user, section, name, value);
+			} else {
+#if INI_ALLOW_MULTILINE
+				if (*prev_name && *start &&
+				    (start > line || !strstr(start, "="))) {
+					/* Non-black line with leading whitespace,
+					 * treat as continuation of previous name's value
+					 * (as per Python ConfigParser).
+					 */
+					ret = handler(user, section, prev_name, start);
+				} else {
+					ret = 0;
+				}
+#endif
 			}
+			if (ret == 0 && !error)
+				error = lineno;
 		}
 	}
+	if (error)
+		ALOGE("%s: error=%d\n", __func__, error);
 
 #if !INI_USE_STACK
 	free(line);

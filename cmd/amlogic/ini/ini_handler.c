@@ -100,6 +100,21 @@ int _ini_set_save_file_name(const char *filename, INI_HANDLER_DATA *pHandlerData
 	return 0;
 }
 
+static void _ini_line_free(INI_LINE *pline)
+{
+	if (pline->Value) {
+		memset(pline->Value, 0, pline->value_size);
+		free(pline->Value);
+	}
+
+#if CC_MEMORY_ALLOC_FREE_TRACE == 1
+	free_mem(__func__, "pLine", pline);
+#endif
+
+	memset(pline, 0, sizeof(INI_LINE));
+	free(pline);
+}
+
 void _ini_free_mem(INI_HANDLER_DATA *pHandlerData)
 {
 	// ALOGD("%s, entering...\n", __func__);
@@ -118,11 +133,7 @@ void _ini_free_mem(INI_HANDLER_DATA *pHandlerData)
 
 		while (pLine) {
 			pNextLine = pLine->pNext;
-#if CC_MEMORY_ALLOC_FREE_TRACE == 1
-			free_mem(__func__, "pLine", pLine);
-#endif
-
-			free(pLine);
+			_ini_line_free(pLine);
 			pLine = pNextLine;
 		}
 
@@ -130,6 +141,7 @@ void _ini_free_mem(INI_HANDLER_DATA *pHandlerData)
 		free_mem(__func__, "pSec", pSec);
 #endif
 
+		memset(pSec, 0, sizeof(INI_SECTION));
 		free(pSec);
 		pSec = pNextSec;
 	}
@@ -195,14 +207,47 @@ static void trim_all(char *str)
 void _ini_print_all(INI_HANDLER_DATA *pHandlerData)
 {
 	INI_SECTION *pSec = NULL;
+	INI_LINE *pLine = NULL;
+	char *str;
+	int i, j, n, m;
+
+	str = (char *)malloc(512);
+	if (!str) {
+		printf("%s: malloc print memory error\n", __func__);
+		return;
+	}
 
 	for (pSec = pHandlerData->mpFirstSection; pSec != NULL; pSec = pSec->pNext) {
-		ALOGD("[%s]\n", pSec->Name);
-		INI_LINE *pLine = NULL;
-		for (pLine = pSec->pLine; pLine != NULL; pLine = pLine->pNext)
-			ALOGD("%s = %s\n", pLine->Name, pLine->Value);
-		ALOGD("\n\n\n");
+		printf("[%s]\n", pSec->Name);
+		pLine = pSec->pLine;
+		while (pLine) {
+			if (pLine->value_size >= 510) {
+				printf("  %s = ", pLine->Name);
+				n = pLine->value_size / 510;
+				m = pLine->value_size % 510;
+				for (i = 0; i < n; i++) {
+					j = i * 510;
+					strncpy(str, pLine->Value + j, 510);
+					str[510] = '\0';
+					printf("%s\n", str);
+				}
+				if (m) {
+					j = n * 510;
+					strncpy(str, pLine->Value + j, m);
+					str[m] = '\0';
+					printf("%s\n", str);
+				}
+			} else {
+				printf("  %s = %s\n", pLine->Name, pLine->Value);
+			}
+
+			pLine = pLine->pNext;
+		}
+		printf("\n");
 	}
+
+	memset(str, 0, 512);
+	free(str);
 }
 
 void _ini_list_section(INI_HANDLER_DATA *pHandlerData)
@@ -305,17 +350,73 @@ int _ini_save_to_file(const char *filename, INI_HANDLER_DATA *pHandlerData)
 #endif
 }
 
+static int ini_set_line_exist_key_val(INI_LINE *pline, const char *value, unsigned int set_mode)
+{
+	char *pvalue = NULL;
+	int pre_len, new_len, n;
+
+	if (!pline || !value)
+		return -1;
+
+	pre_len = pline->value_size;
+	new_len = strlen(value) + 1;
+
+	if (set_mode == 1) {
+		pvalue = (char *)malloc(new_len);
+		if (!pvalue)
+			return -1;
+		memset(pvalue, 0, new_len);
+
+		memset(pline->Value, 0, pre_len);
+		free(pline->Value);
+		pline->Value = pvalue;
+		strcpy(pline->Value, value);
+		pline->value_size = new_len;
+		return 0;
+	}
+
+	pvalue = (char *)malloc(pre_len + new_len - 1);
+	if (!pvalue)
+		return -1;
+	memset(pvalue, 0, (pre_len + new_len - 1));
+
+	n = sprintf(pvalue, "%s", pline->Value);
+
+	memset(pline->Value, 0, pre_len);
+	free(pline->Value);
+
+	pline->Value = pvalue;
+	sprintf(pline->Value + n, "%s", value);
+	pline->value_size = pre_len + new_len - 1;
+	return 0;
+}
+
 static INI_LINE *new_line(const char *name, const char *value)
 {
 	INI_LINE *pLine = NULL;
+	char *pvalue = NULL;
+	unsigned int val_size;
 
 	pLine = (INI_LINE *)malloc(sizeof(INI_LINE));
 	if (pLine != NULL) {
+		memset(pLine, 0, sizeof(INI_LINE));
+		val_size = strlen(value) + 1;
+		pvalue = (char *)malloc(val_size);
+		if (!pvalue) {
+			ALOGE("%s: malloc value error, size %d\n", __func__, val_size);
+			free(pLine);
+			return NULL;
+		}
+		memset(pvalue, 0, val_size);
+
 		pLine->pNext = NULL;
 		strncpy(pLine->Name, name, sizeof(pLine->Name) - 1);
 		pLine->Name[sizeof(pLine->Name) - 1] = '\0';
-		strncpy(pLine->Value, value, sizeof(pLine->Value) - 1);
-		pLine->Value[sizeof(pLine->Value) - 1] = '\0';
+
+		pLine->Value = pvalue;
+		strcpy(pLine->Value, value);
+		pLine->Value[val_size - 1] = '\0';
+		pLine->value_size = val_size;
 
 #if CC_MEMORY_ALLOC_FREE_TRACE == 1
 		alloc_mem(__func__, "pLine", pLine);
@@ -331,6 +432,7 @@ static INI_SECTION *new_section(const char *section, INI_LINE *pLine)
 
 	pSec = (INI_SECTION *)malloc(sizeof(INI_SECTION));
 	if (pSec != NULL) {
+		memset(pSec, 0, sizeof(INI_SECTION));
 		pSec->pLine = pLine;
 		pSec->pNext = NULL;
 		strncpy(pSec->Name, section, sizeof(pSec->Name) - 1);
@@ -350,6 +452,7 @@ static int set_key_value(void *user, const char *section, const char *key,
 	INI_LINE *pLine = NULL;
 	INI_SECTION *pSec = NULL;
 	INI_HANDLER_DATA *pHandlerData = (INI_HANDLER_DATA *)user;
+	int ret;
 
 	if (section == NULL || key == NULL || value == NULL)
 		return 1;
@@ -363,13 +466,19 @@ static int set_key_value(void *user, const char *section, const char *key,
 		return 1;
 	}
 	if (strlen(value) > CC_MAX_INI_FILE_LINE_LEN) {
-		ALOGE("key name is too long, limit %d.\n", CC_MAX_INI_FILE_LINE_LEN);
+		ALOGE("value is too long, limit %d.\n", CC_MAX_INI_FILE_LINE_LEN);
 		return 1;
 	}
 
 	if (pHandlerData->mpFirstSection == NULL) {
 		pLine = new_line(key, value);
+		if (!pLine)
+			goto ini_set_key_value_end;
 		pSec = new_section(section, pLine);
+		if (!pSec) {
+			_ini_line_free(pLine);
+			goto ini_set_key_value_end;
+		}
 
 		pHandlerData->mpFirstSection = pSec;
 		pHandlerData->mpCurSection = pSec;
@@ -378,29 +487,38 @@ static int set_key_value(void *user, const char *section, const char *key,
 		pSec = _get_section(section, pHandlerData);
 		if (!pSec) {
 			pLine = new_line(key, value);
+			if (!pLine)
+				goto ini_set_key_value_end;
 			pSec = new_section(section, pLine);
+			if (!pSec) {
+				_ini_line_free(pLine);
+				goto ini_set_key_value_end;
+			}
 
 			pHandlerData->mpCurSection->pNext = pSec;
 			pHandlerData->mpCurSection = pSec;
-			pSec->pCurLine = pLine;
-
 			pSec->pCurLine = pLine;
 		} else {
 			pLine = get_key_line_at_sec(pSec, key);
 			if (pLine == NULL) {
 				pLine = new_line(key, value);
+				if (!pLine)
+					goto ini_set_key_value_end;
 
 				pSec->pCurLine->pNext = pLine;
 				pSec->pCurLine = pLine;
 			} else {
-				if (set_mode == 1)
-					strcpy(pLine->Value, value);
-				else
-					strcat(pLine->Value, value);
+				ret = ini_set_line_exist_key_val(pLine, value, set_mode);
+				if (ret)
+					goto ini_set_key_value_end;
 			}
 		}
 	}
 
+	return 0;
+
+ini_set_key_value_end:
+	printf("%s: section[%s]: key_name: %s, error\n", __func__, section, key);
 	return 0;
 }
 

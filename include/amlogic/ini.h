@@ -6,6 +6,7 @@
 #ifndef __AML_INI_H__
 #define __AML_INI_H__
 
+int handle_model_list_panel_key(void);
 int handle_model_list(void);
 int handle_model_sum(void);
 

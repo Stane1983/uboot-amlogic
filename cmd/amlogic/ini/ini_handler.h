@@ -10,7 +10,8 @@
 typedef struct S_INI_LINE {
     struct S_INI_LINE *pNext;
     char Name[CC_MAX_INI_LINE_NAME_LEN];
-    char Value[CC_MAX_INI_FILE_LINE_LEN];
+    unsigned int value_size;
+    char *Value;
 } INI_LINE;
 
 typedef struct S_INI_SECTION {

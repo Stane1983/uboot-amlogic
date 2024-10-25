@@ -53,12 +53,12 @@ int _ini_mem_parse(const char* buf,
 /* Nonzero to allow a UTF-8 BOM sequence (0xEF 0xBB 0xBF) at the start of
  the file. See http://code.google.com/p/inih/issues/detail?id=21 */
 #ifndef INI_ALLOW_BOM
-#define INI_ALLOW_BOM 1
+#define INI_ALLOW_BOM 0
 #endif
 
 /* Nonzero to use stack, zero to use heap (malloc/free). */
 #ifndef INI_USE_STACK
-#define INI_USE_STACK 1
+#define INI_USE_STACK 0
 #endif
 
 /* Maximum line length for any line in INI file. */
