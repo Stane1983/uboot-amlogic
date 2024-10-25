@@ -80,21 +80,21 @@ static int lcd_phy_param_get_from_reg(struct aml_lcd_drv_s *pdrv,
 	return 0;
 }
 
-static void lcd_phy_cntl14_update(struct aml_lcd_drv_s *pdrv, unsigned int cntl14)
+static void lcd_phy_common_update(struct aml_lcd_drv_s *pdrv, unsigned int cntl14)
 {
 	struct phy_attr_s *phy = pdrv->config.phy_cfg.act_phy;
 
 	/* vswing */
 	cntl14 &= ~(0xf << 12);
 	cntl14 |= (phy->vswing << 12);
-
 	/* vcm */
 	cntl14 &= ~(0xff << 4);
 	cntl14 |= (phy->vcm & 0xff) << 4;
-
 	/* odt */
 	cntl14 &= ~(0xff << 23);
 	cntl14 |= (phy->odt & 0xff) << 23;
+	/* bandgap */
+	cntl14 |= (1 << 0);
 
 	lcd_ana_write(HHI_DIF_CSI_PHY_CNTL14, cntl14);
 }
@@ -127,7 +127,7 @@ static void lcd_phy_cntl_lvds_set(struct aml_lcd_drv_s *pdrv, unsigned int statu
 		dig_data = 0;
 	}
 
-	for (i = 0; i < 10; i++) {
+	for (i = 0; i < phy_cfg->lane_num; i++) {
 		if (phy_cfg->lane_valid & (1 << i)) {
 			bit = i & 0x1 ? 16 : 0;
 			chreg = reg_data;
@@ -149,7 +149,7 @@ static void lcd_phy_cntl_lvds_set(struct aml_lcd_drv_s *pdrv, unsigned int statu
 static void lcd_lvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 {
 	if (status)
-		lcd_phy_cntl14_update(pdrv, 0x106f1);
+		lcd_phy_common_update(pdrv, 0x106f1);
 	else
 		lcd_ana_write(HHI_DIF_CSI_PHY_CNTL14, 0x0);
 
@@ -160,7 +160,7 @@ static void lcd_lvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 static void lcd_mlvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 {
 	if (status) {
-		lcd_phy_cntl14_update(pdrv, 0x106f1);
+		lcd_phy_common_update(pdrv, 0x106f1);
 		lcd_phy_cntl_lvds_set(pdrv, status);
 		lcd_combo_dphy_write(COMBO_DPHY_CNTL0, 0x55555);
 	} else {
@@ -212,14 +212,24 @@ static unsigned int lcd_phy_amp_dft_txhd2(struct aml_lcd_drv_s *pdrv)
 	return amp_value;
 }
 
+static void lcd_phy_glb_param_dft_txhd2(struct aml_lcd_drv_s *pdrv)
+{
+	struct phy_attr_s *phy = pdrv->config.phy_cfg.act_phy;
+
+	phy->cv_mode = 0;
+	phy->ref_bias = 0;
+	phy->vcm = 0x6f;
+	phy->odt = 0x0;
+}
+
 static struct lcd_phy_ctrl_s lcd_phy_ctrl_txhd2 = {
-	.lane_num = 12,
+	.lane_num = 10,
 
 	.phy_vswing_level_to_val = lcd_phy_vswing_level_to_value_dft,
 	.phy_preem_level_to_val = lcd_phy_preem_level_to_val_txhd2,
 	.phy_amp_dft_val = lcd_phy_amp_dft_txhd2,
 	.phy_lane_phase_sel_def = NULL,
-	.phy_glb_param_dft_val = NULL,
+	.phy_glb_param_dft_val = lcd_phy_glb_param_dft_txhd2,
 	.phy_param_get = lcd_phy_param_get_from_reg,
 	.phy_reg_dump = lcd_phy_reg_dump,
 
