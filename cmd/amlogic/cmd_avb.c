@@ -1306,31 +1306,26 @@ static int do_avb_persist(cmd_tbl_t *cmdtp, int flag, int argc, char * const arg
 
 static int do_avb_verify_memory(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	char *avb_s = NULL;
-
 	if (argc != 3)
 		return 0;
 
 	if (is_device_unlocked())
 		return CMD_RET_SUCCESS;
 
-	run_command("get_avb_mode;", 0);
-	avb_s = env_get("avb2");
-	if (!avb_s || !strcmp(avb_s, "0"))
-		return CMD_RET_SUCCESS;
-
+#ifndef CONFIG_AVB2
+	return CMD_RET_SUCCESS;
+#else
 	if (strcmp(argv[1], "recovery"))
 		return CMD_RET_FAILURE;
 
 	memory_addr = (void *)simple_strtoul(argv[2], NULL, 16);
 	recovery_from_memory = 1;
 	return CMD_RET_SUCCESS;
+#endif
 }
 
 static int do_avb_recovery(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	char *avb_s = NULL;
-
 	run_in_recovery = 0;
 
 	if (argc != 2)
@@ -1339,39 +1334,35 @@ static int do_avb_recovery(cmd_tbl_t *cmdtp, int flag, int argc, char * const ar
 	if (is_device_unlocked())
 		return CMD_RET_SUCCESS;
 
-	run_command("get_avb_mode;", 0);
-	avb_s = env_get("avb2");
-	if (!avb_s || !strcmp(avb_s, "0"))
-		return CMD_RET_SUCCESS;
-
+#ifndef CONFIG_AVB2
+	return CMD_RET_SUCCESS;
+#else
 	if (!strcmp(argv[1], "1"))
 		run_in_recovery = 1;
 	else
 		run_in_recovery = 0;
 
 	return CMD_RET_SUCCESS;
+#endif
 }
 
 static int do_avb_preload(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	char *avb_s = NULL;
-
 	run_in_recovery = 0;
 
 	if (argc != 2)
 		return CMD_RET_FAILURE;
 
-	run_command("get_avb_mode;", 0);
-	avb_s = env_get("avb2");
-	if (!avb_s || !strcmp(avb_s, "0"))
-		return CMD_RET_SUCCESS;
-
+#ifndef CONFIG_AVB2
+	return CMD_RET_SUCCESS;
+#else
 	if (!strcmp(argv[1], "1"))
 		avb_preload = 1;
 	else
 		avb_preload = 0;
 
 	return CMD_RET_SUCCESS;
+#endif
 }
 
 uint32_t avb_get_boot_patchlevel_from_vbmeta(AvbSlotVerifyData *data)
@@ -1467,6 +1458,23 @@ static int do_avb_ops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	return ret;
 }
 
+int do_GetAvbMode(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+#ifdef CONFIG_AVB2
+	env_set("avb2", "1");
+#else
+	env_set("avb2", "0");
+#endif
+
+	return 0;
+}
+
+U_BOOT_CMD
+(get_avb_mode, 1,	0, do_GetAvbMode,
+"get_avb_mode",
+"\nThis command will get avb mode\n"
+"So you can execute command: get_avb_mode"
+);
 
 U_BOOT_CMD(
 		avb, 4, 0, do_avb_ops,

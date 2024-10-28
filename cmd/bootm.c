@@ -125,6 +125,7 @@ static int do_bootm_subcommand(struct cmd_tbl *cmdtp, int flag, int argc,
 }
 
 #if CONFIG_IS_ENABLED(CMD_BOOTCTOL_AVB)
+#ifdef CONFIG_AVB2
 #if CONFIG_IS_ENABLED(AML_ANTIROLLBACK) || CONFIG_IS_ENABLED(AML_AVB2_ANTIROLLBACK)
 static void bootm_avb_bootctl_anti_rollback(int rc, AvbSlotVerifyData *out_data)
 {
@@ -157,18 +158,15 @@ static void bootm_avb_bootctl_anti_rollback(int rc, AvbSlotVerifyData *out_data)
 	}
 }
 #endif
+#endif
 
 static int bootm_avb_bootctl(void)
 {
 	int rc = 0;
-	char *avb_s = NULL;
+
+#ifdef CONFIG_AVB2
 	char *newbootargs = NULL;
 	AvbSlotVerifyData *out_data = NULL;
-
-	run_command("get_avb_mode;", 0);
-	avb_s = env_get("avb2");
-	printf("avb2: %s\n", avb_s);
-	if (strcmp(avb_s, "1") == 0) {
 		char *bootargs = NULL;
 		char *avb_cmdline = "\0";
 		const char *bootstate_o = "androidboot.verifiedbootstate=orange";
@@ -255,10 +253,11 @@ static int bootm_avb_bootctl(void)
 			avb_cmdline, bootstate);
 		env_set("bootconfig", newbootargs);
 		free(newbootargs);
-	}
+
 out:
 	if (out_data)
 		avb_slot_verify_data_free(out_data);
+#endif
 	return rc;
 }
 #endif

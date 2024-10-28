@@ -18,7 +18,6 @@ typedef struct _bootctl_func_handles {
 	bootctl_cmd_func do_CopySlot_func;
 	bootctl_cmd_func do_SetUpdateTries_func;
 	bootctl_cmd_func do_GetSystemMode_func;
-	bootctl_cmd_func do_GetAvbMode_func;
 	bootctl_cmd_func do_UpdateDt_func;
 	bootctl_cmd_func do_CheckABState_func;
 } bootctl_func_handles;

@@ -358,13 +358,6 @@ static int do_GetSystemMode(cmd_tbl_t *cmdtp, int flag, int argc, char * const a
 	return 0;
 }
 
-static int do_GetAvbMode(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
-{
-	env_set("avb2", "0");
-
-	return 0;
-}
-
 #endif /* CONFIG_BOOTLOADER_CONTROL_BLOCK */
 
 #ifdef CONFIG_UNIFY_BOOTLOADER
@@ -398,13 +391,6 @@ U_BOOT_CMD
 "get_system_as_root_mode",
 "\nThis command will get system_as_root_mode\n"
 "So you can execute command: get_system_as_root_mode"
-);
-
-U_BOOT_CMD
-(get_avb_mode, 1,	0, do_GetAvbMode,
-"get_avb_mode",
-"\nThis command will get avb mode\n"
-"So you can execute command: get_avb_mode"
 );
 #endif
 

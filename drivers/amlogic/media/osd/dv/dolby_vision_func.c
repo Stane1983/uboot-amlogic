@@ -13,6 +13,7 @@
 #include <u-boot/md5.h>
 #include <u-boot/sha256.h>
 #include <amlogic/libavb/libavb.h>
+#include <version.h>
 
 #include <amlogic/media/dv/dolby_vision_func.h>
 
@@ -114,7 +115,7 @@ char* sha256_hex2str(unsigned char* in_sha_hex, char* out_sha_str)
     return out_sha_str;
 }
 
-#ifdef CONFIG_CMD_BOOTCTOL_AVB
+#ifdef CONFIG_AVB2
 static const char *avb_get_dovi_hash_from_vbmeta(AvbSlotVerifyData* data)
 {
 	int i;
@@ -155,30 +156,22 @@ static const char *avb_get_dovi_hash_from_vbmeta(AvbSlotVerifyData* data)
 
 /*pass: return 1; fail: return -1*/
 int check_dovi_sha256(unsigned char* dovi_body, int size) {
-
-	unsigned char sha256[SHA256_SUM_LEN] = {0};
-	char sha256_str[SHA256_SUM_LEN * 2 + 1] = {0};
-	sha256_context sha256_cxt;
-#ifdef CONFIG_CMD_BOOTCTOL_AVB
-	int nRet = 0;
-	AvbSlotVerifyData* out_data = NULL;
-	const char *tmp = NULL;
-#endif
-	char dovi_expect_hash[SHA256_SUM_LEN * 2 + 1] = {0};
-
 	if (!dovi_body)
 		return -1;
 
-#ifdef CONFIG_CMD_BOOTCTOL_AVB
 	/*step 1: check if avb enabled, if not enable, no check dv sha256 */
-	char *avb_s = NULL;
+#ifndef CONFIG_AVB2
+	printf("disable avb2, skip\n");
+	return -1;
+#else
+	unsigned char sha256[SHA256_SUM_LEN] = {0};
+	char sha256_str[SHA256_SUM_LEN * 2 + 1] = {0};
+	sha256_context sha256_cxt;
+	int nRet = 0;
+	AvbSlotVerifyData *out_data = NULL;
+	const char *tmp = NULL;
+	char dovi_expect_hash[SHA256_SUM_LEN * 2 + 1] = {0};
 
-	run_command("get_avb_mode;", 0);
-	avb_s = env_get("avb2");
-	printf("check_dovi_sha256, avb2: %s\n", avb_s);
-	if (avb_s == NULL || (avb_s && (strcmp(avb_s, "1") != 0))) {
-		return -1;
-	}
 	/*step 2: avb_verify */
 	nRet = avb_verify(&out_data);
 	printf("check_dovi_sha256: locked=%d, result=%d\n", !is_device_unlocked(), nRet);
@@ -213,7 +206,6 @@ int check_dovi_sha256(unsigned char* dovi_body, int size) {
 	} else {
 		return -1;
 	}
-#endif//CONFIG_CMD_BOOTCTOL_AVB
 
 	/*step 3: calculate dovi.fw sha256*/
 	sha256_starts(&sha256_cxt);
@@ -228,6 +220,7 @@ int check_dovi_sha256(unsigned char* dovi_body, int size) {
 		return -1;
 	}
 	return 1;
+#endif
 }
 
 

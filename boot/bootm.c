@@ -1137,15 +1137,12 @@ static const void *boot_get_kernel(struct cmd_tbl *cmdtp, int flag, int argc,
 #endif
 
 #ifdef CONFIG_AMLOGIC_MODIFY
-	char *avb_s;
-	avb_s = env_get("avb2");
-	if (avb_s)
-		printf("avb2: %s\n", avb_s);
-	if (avb_s && strcmp(avb_s, "1") != 0) {
+#ifndef CONFIG_AVB2
 #ifdef CONFIG_AML_ANTIROLLBACK
 		boot_img_hdr_t **tmp_img_hdr = (boot_img_hdr_t **)&buf;
 #endif
-	}
+#endif
+
 #endif
 
 	img_addr = genimg_get_kernel_addr_fit(argc < 1 ? NULL : argv[0],
@@ -1238,14 +1235,14 @@ static const void *boot_get_kernel(struct cmd_tbl *cmdtp, int flag, int argc,
 					     os_data, os_len))
 			return NULL;
 
-		if (avb_s && strcmp(avb_s, "1") != 0) {
+#ifndef CONFIG_AVB2
 #ifdef CONFIG_AML_ANTIROLLBACK
 			if (!check_antirollback((*tmp_img_hdr)->kernel_version)) {
 				*os_len = 0;
 				return NULL;
 			}
 #endif
-		}
+#endif
 #endif
 		break;
 #endif

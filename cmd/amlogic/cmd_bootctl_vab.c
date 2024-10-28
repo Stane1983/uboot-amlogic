@@ -1134,17 +1134,6 @@ static int do_GetSystemMode(cmd_tbl_t *cmdtp, int flag, int argc, char * const a
 	return 0;
 }
 
-static int do_GetAvbMode(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
-{
-#ifdef CONFIG_AVB2
-	env_set("avb2", "1");
-#else
-	env_set("avb2", "0");
-#endif
-
-	return 0;
-}
-
 static int do_UpdateDt(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	char *update_dt = env_get("update_dt");
@@ -1192,7 +1181,6 @@ bootctl_func_handles *get_bootctl_cmd_func_vab(void)
 	vab_cmd_bootctrl_handles.do_CopySlot_func = do_CopySlot;
 	vab_cmd_bootctrl_handles.do_SetUpdateTries_func = do_SetUpdateTries;
 	vab_cmd_bootctrl_handles.do_GetSystemMode_func = do_GetSystemMode;
-	vab_cmd_bootctrl_handles.do_GetAvbMode_func = do_GetAvbMode;
 	vab_cmd_bootctrl_handles.do_UpdateDt_func = do_UpdateDt;
 	vab_cmd_bootctrl_handles.do_CheckABState_func = do_CheckABState;
 
@@ -1251,12 +1239,6 @@ U_BOOT_CMD(
 	"So you can execute command: get_system_as_root_mode"
 );
 
-U_BOOT_CMD(
-	get_avb_mode, 1,	0, do_GetAvbMode,
-	"get_avb_mode",
-	"\nThis command will get avb mode\n"
-	"So you can execute command: get_avb_mode"
-);
 U_BOOT_CMD
 (update_dt, 1,	0, do_UpdateDt,
 	"update_dt",

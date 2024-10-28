@@ -24,6 +24,7 @@
 #include <malloc.h>
 #include <amlogic/image_check.h>
 #include <fs.h>
+#include <version.h>
 #if defined(CONFIG_AML_ANTIROLLBACK) || defined(CONFIG_AML_AVB2_ANTIROLLBACK)
 #include <amlogic/anti-rollback.h>
 #endif
@@ -1396,13 +1397,9 @@ next:
 #else
 		if (info.lock_state == 1) {
 #endif
-			char *avb_s;
-
-			run_command("get_avb_mode;", 0);
-			avb_s = env_get("avb2");
-			printf("avb2: %s\n", avb_s);
-			if (strcmp(avb_s, "1") == 0)
-				try_unlock_dev(rc);
+#ifdef CONFIG_AVB2
+			try_unlock_dev(rc);
+#endif
 		}
 		info.lock_state = 0;
 		info.lock_critical_state = 0;
@@ -1417,14 +1414,9 @@ next:
 #else
 		if (info.lock_state == 0) {
 #endif
-			char *avb_s;
-
-			run_command("get_avb_mode;", 0);
-			avb_s = env_get("avb2");
-			printf("avb2: %s\n", avb_s);
-			if (strcmp(avb_s, "1") == 0) {
-				try_lock_dev(rc);
-			}
+#ifdef CONFIG_AVB2
+			try_lock_dev(rc);
+#endif
 		}
 		info.lock_state = 1;
 		env_set("lock_state", "orange");
