@@ -2462,6 +2462,15 @@ static int mmc_startup_v4(struct mmc *mmc)
 		* ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE]
 		* ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
 #endif
+	if (IS_ENABLED(CONFIG_AMLOGIC_MODIFY)) {
+		/* enable emmc hardware reset */
+		if (ext_csd[EXT_CSD_RST_N_FUNCTION] == 0) {
+			err = mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL,
+					 EXT_CSD_RST_N_FUNCTION, 1);
+			if (err)
+				goto error;
+		}
+	}
 
 	mmc->wr_rel_set = ext_csd[EXT_CSD_WR_REL_SET];
 
