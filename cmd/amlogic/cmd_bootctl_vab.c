@@ -1082,7 +1082,8 @@ static int do_SetUpdateTries(
 		merge_ret = 1;
 	}
 
-	if (rebootmode && (!strcmp(rebootmode, "fastboot")) &&
+	if (rebootmode && (!strcmp(rebootmode, "fastboot") ||
+		!strcmp(rebootmode, "kernel_panic")) &&
 		success_flag == 0 &&
 		merge_ret == 1) {
 		printf("reboot bootloader during merge, rollback\n");
