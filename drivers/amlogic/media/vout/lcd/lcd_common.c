@@ -192,8 +192,8 @@ void lcd_detail_timing_print(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timin
 	ck_vbp = (verr & 0x4) ? ck[0] : (verr & 0x8) ? ck[1] : ck[2];
 	ck_vfp = (verr & 0x1) ? ck[0] : (verr & 0x2) ? ck[1] : ck[2];
 
-	printf("ht:%04d(%04d ~ %04d), hact:%04d hbp:%d%s, hsw:%03d, hfp:%04d%s, hpol:%d\n"
-	       "vt:%04d(%04d ~ %04d), vact:%04d vbp:%d%s, vsw:%03d, vfp:%04d%s, vpol:%d\n"
+	printf("ht:%4d(%4d ~ %4d), hact:%4d hbp:%d%s, hsw:%2d, hfp:%3d%s, hpol:%d\n"
+	       "vt:%4d(%4d ~ %4d), vact:%4d vbp:%d%s, vsw:%2d, vfp:%3d%s, vpol:%d\n"
 	       "lcd_bits:%d, cfmt:%d, fr_adj_type:%d, switch_type:0x%x\n"
 	       "ss_level:%d, ss_mode:%d, ss_freq:%d, ss_force:%d\n"
 	       "pclk:%d(%d ~ %d)\n"
@@ -212,19 +212,23 @@ void lcd_detail_timing_print(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timin
 
 void lcd_phy_cfg_print(struct phy_config_s *cfg)
 {
-	int i;
+	int m, n, i;
 
-	printf("stat:  %08d, lane_num:%08d, nphys:  %d, swap0:0x%08x, swap1:0x%08x\n"
-	       "flag:0x%08x, ckdi  :0x%08x, ofst :0x%08x, mask :0x%08x, valid:0x%x\n"
-	       "weakly_pd:0x%x, low_com:0x%x\n",
-	       cfg->state, cfg->lane_num, cfg->group_num, cfg->ch_swap0, cfg->ch_swap1,
-	       cfg->flag, cfg->ckdi, cfg->lane_offset, cfg->lane_mask, cfg->lane_valid,
-	       cfg->weakly_pull_down, cfg->low_common_mode);
+	printf("flag: 0x%x, lane_num: %d, nphys: %d\n"
+	       "swap0: 0x%08x, swap1: 0x%08x, lane ofst: %d, mask: 0x%x, valid: 0x%x\n"
+	       "ckdi: 0x%x, weakly_pd:0x%x, low_com:0x%x\n",
+	       cfg->flag, cfg->lane_num, cfg->group_num,
+	       cfg->ch_swap0, cfg->ch_swap1,
+	       cfg->lane_offset, cfg->lane_mask, cfg->lane_valid,
+	       cfg->ckdi, cfg->weakly_pull_down, cfg->low_common_mode);
 
-	printf("lane  en    sel   phase_sel\n");
-	for (i = 0; i < cfg->lane_num; i++) {
-		printf("[%02d]  %d     %02d    0x%02x\n",
-		       i, cfg->ch_ctrl[i].en, cfg->ch_ctrl[i].sel, cfg->ch_ctrl[i].phase_sel);
+	m = (cfg->lane_num + 1) / 2;
+	n = m;
+	printf("lane  sel   phase_sel    lane  sel   phase_sel\n");
+	for (i = 0; i < m; i++, n++) {
+		printf("[%2d]  0x%02x  0x%02x         [%02d]  0x%02x  0x%02x\n",
+		       i, cfg->ch_ctrl[i].sel, cfg->ch_ctrl[i].phase_sel,
+		       n, cfg->ch_ctrl[n].sel, cfg->ch_ctrl[n].phase_sel);
 	}
 	printf("\n");
 }
@@ -245,7 +249,7 @@ void lcd_phy_attr_print(struct phy_attr_s *phy, u32 lane_num)
 
 	printf("lane  amp   preem     lane  amp   preem\n");
 	for (i = 0; i < m; i++, n++) {
-		printf("[%02d]  0x%02x  0x%02x      [%02d]  0x%02x  0x%02x\n",
+		printf("[%2d]  0x%02x  0x%02x      [%2d]  0x%02x  0x%02x\n",
 		       i, lane[i].amp, lane[i].preem, n, lane[n].amp, lane[n].preem);
 	}
 
@@ -288,7 +292,7 @@ static void lcd_config_load_print(struct aml_lcd_drv_s *pdrv)
 		phy = pdrv->config.phy_cfg.phys[i];
 		if (!phy)
 			continue;
-		printf("phy group[%d]:\n", i);
+		printf("phy_attr[%d]:\n", i);
 		lcd_phy_attr_print(phy, phy_cfg->lane_num);
 	}
 

@@ -114,10 +114,11 @@ static void lcd_timing_info_print(struct aml_lcd_drv_s *pdrv)
 	}
 
 	dt = &pconf->timing.act_timing;
-	printf("active timing based:dt[%d] detail:\n", base_id);
+	printf("active timing: based dt[%d]:\n", base_id);
 	lcd_detail_timing_print(pdrv, dt);
 
-	printf("pre_de_h:%d, pre_de_v:%d, video_hstart:%d, video_vstart:%d\n",
+	printf("pre_de_h:%d, pre_de_v:%d\n"
+	       "hstart:%d, vstart:%d\n\n",
 	       pconf->timing.pre_de_h, pconf->timing.pre_de_v,
 	       pconf->timing.hstart, pconf->timing.vstart);
 
@@ -385,13 +386,13 @@ static void lcd_phy_print(struct aml_lcd_drv_s *pdrv)
 			phy = pdrv->config.phy_cfg.phys[i];
 			if (!phy)
 				continue;
-			printf("phy group[%d]:\n", i);
+			printf("phy_attr[%d]:\n", i);
 			lcd_phy_attr_print(phy, phy_cfg->lane_num);
 			if (phy == pdrv->config.phy_cfg.act_phy)
 				base_id = i;
 		}
 
-		printf("active phy(group[%d]):\n", base_id);
+		printf("active phy_attr(group[%d]):\n", base_id);
 		lcd_phy_param_print(pdrv);
 		printf("\n");
 		break;
