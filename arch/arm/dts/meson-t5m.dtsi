@@ -609,6 +609,15 @@
 		};
 	};
 
+	spicc0_cs_pins: spicc0_cs_pins {
+		mux {
+			groups = "spi_ss0_h8";
+			function = "spi0";
+			drive-strength = <3>;
+			bias-pull-up;
+		};
+	};
+
 	spicc1_pins: spicc1_pins {
 		mux {
 			groups = "spi1_mosi_h",
@@ -620,6 +629,15 @@
 		};
 	};
 
+	spicc1_cs_pins: spicc1_cs_pins {
+		mux {
+			groups = "spi1_ss0_h";
+			function = "spi1";
+			drive-strength = <3>;
+			bias-pull-up;
+		};
+	};
+
 	spicc2_pins_c: spicc2_pins_c {
 		mux {
 			groups = "spi2_mosi_c",
@@ -628,6 +646,15 @@
 				 "spi2_clk_c";
 			function = "spi2";
 			drive-strength = <2>;
+		};
+	};
+
+	spicc2_cs_pins: spicc2_cs_pins {
+		mux {
+			groups = "spi2_ss0_c";
+			function = "spi1";
+			drive-strength = <3>;
+			bias-pull-up;
 		};
 	};
 

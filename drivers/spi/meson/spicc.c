@@ -17,6 +17,7 @@
 #include <dm/root.h>
 #include <dm/lists.h>
 #include <dm/util.h>
+#include <dm/pinctrl.h>
 #ifdef CONFIG_SECURE_POWER_CONTROL
 #include <asm/arch/pwr_ctrl.h>
 #endif
@@ -25,6 +26,7 @@
 #define CONFIG_CLK_IF
 #endif
 
+#define	SPICC_MAX_SLAVE_NUM	4
 /* use DDR generally, mustn't enable it unless SRAM test */
 //#define CONFIG_SPICC_DMA_SRAM
 
@@ -229,6 +231,8 @@ struct meson_spicc_device {
 	unsigned int			using_dma;
 	u32				cs2clk;
 	u32				clk2cs;
+	u32	cs_pinmask;
+	bool	ctrl_pinctrl_select[SPICC_MAX_SLAVE_NUM];
 };
 
 static void meson_spicc_oen_enable(struct meson_spicc_device *spicc)
@@ -442,7 +446,7 @@ static u32 meson_spicc_calc_dma_len(struct meson_spicc_device *spicc, u32 *req)
 }
 
 static void meson_spicc_setup_dma_burst(struct meson_spicc_device *spicc,
-					bool tx, bool rx, u8 trig_src)
+					bool tx, bool rx, u8 trig_src, struct spi_slave *slave)
 {
 	unsigned int words, req;
 	unsigned int count_en = 0;
@@ -462,7 +466,11 @@ static void meson_spicc_setup_dma_burst(struct meson_spicc_device *spicc,
 	/* Setup burst length */
 	writel_bits_relaxed(SPICC_BURSTLENGTH_MASK, SPICC_BURSTLENGTH_MASK,
 			    spicc->base + SPICC_CONREG);
-	meson_spicc_set_tcsh(spicc, spicc->xfer_remain ? 0 : spicc->clk2cs);
+
+	if (!spicc->xfer_remain)
+		meson_spicc_set_tcsh(spicc, slave->use_ctrl_cs ?
+		DIV_ROUND_UP(slave->ss_trailing_gap * spicc->parent_clk_rate, 1000000)
+		: spicc->clk2cs);
 
 #ifdef CONFIG_SPI_DMA_TRIG
 	if (trig_src == DMA_TRIG_LINE_N)
@@ -506,7 +514,7 @@ static void meson_spicc_setup_dma_burst(struct meson_spicc_device *spicc,
 		    spicc->base + SPICC_DMAREG);
 }
 
-static void meson_spicc_setup_pio_burst(struct meson_spicc_device *spicc)
+static void meson_spicc_setup_pio_burst(struct meson_spicc_device *spicc, struct spi_slave *slave)
 {
 	unsigned int burst_len;
 
@@ -525,7 +533,11 @@ static void meson_spicc_setup_pio_burst(struct meson_spicc_device *spicc)
 			FIELD_PREP(SPICC_BURSTLENGTH_MASK,
 				burst_len - 1),
 			spicc->base + SPICC_CONREG);
-	meson_spicc_set_tcsh(spicc, spicc->xfer_remain ? 0 : spicc->clk2cs);
+
+	if (!spicc->xfer_remain)
+		meson_spicc_set_tcsh(spicc, slave->use_ctrl_cs ?
+		DIV_ROUND_UP(slave->ss_trailing_gap * spicc->parent_clk_rate, 1000000)
+		: (spicc->clk2cs ? spicc->clk2cs : 0));
 
 	/* Fill TX FIFO */
 	meson_spicc_tx(spicc);
@@ -572,6 +584,17 @@ static int meson_spicc_rx_remain(struct meson_spicc_device *spicc)
 	return spicc->rx_remain ? -ETIME : 0;
 }
 
+static void meson_spi_delay_exec(u8 us)
+{
+	if (!us)
+		return;
+
+	if (us > 15)
+		us = 15;
+
+	udelay(us);
+}
+
 static void spicc_chipselect(struct udevice *dev, bool select)
 {
 	struct meson_spicc_device *spicc = dev_get_priv(dev->parent);
@@ -579,7 +602,7 @@ static void spicc_chipselect(struct udevice *dev, bool select)
 	bool level = slave->mode & SPI_CS_HIGH;
 	int cs = spi_chip_select(dev);
 
-	if (!dm_gpio_is_valid(&spicc->cs_gpios[0])) {
+	if (cs >= 0 && !dm_gpio_is_valid(&spicc->cs_gpios[cs])) {
 		/* SSPOL was set in spicc_set_mode already */
 		writel_bits_relaxed(SPICC_CS_MASK,
 				    FIELD_PREP(SPICC_CS_MASK, cs),
@@ -587,13 +610,39 @@ static void spicc_chipselect(struct udevice *dev, bool select)
 	} else if (cs >= 0 && cs < spicc->num_chipselect) {
 		if (!select)
 			level = !level;
+
+		if (!select)
+			meson_spi_delay_exec(slave->ss_trailing_gap ? slave->ss_trailing_gap
+				: (spicc->clk2cs ? spicc->clk2cs : 0));
+
 		dm_gpio_set_value(&spicc->cs_gpios[cs], level);
+
+		if (select)
+			meson_spi_delay_exec(slave->ss_leading_gap ? slave->ss_leading_gap
+				: (spicc->cs2clk ? spicc->cs2clk : 0));
+
 	}
 }
 
 static int spicc_claim_bus(struct udevice *dev)
 {
 	//spicc_chipselect(dev, 1);
+#ifdef CONFIG_DM_SPI
+	struct meson_spicc_device *spicc = dev_get_priv(dev->parent);
+	struct dm_spi_slave_platdata *plat = dev_get_parent_platdata(dev);
+	struct spi_slave *slave = dev_get_parent_priv(dev);
+
+	if (plat && slave->use_ctrl_cs && !spicc->ctrl_pinctrl_select[plat->cs]) {
+		if (dm_gpio_is_valid(&spicc->cs_gpios[plat->cs])) {
+			dm_gpio_free(dev->parent, &spicc->cs_gpios[plat->cs]);
+			spicc->cs_gpios[plat->cs].dev = NULL;
+		}
+
+		pinctrl_select_state(dev->parent, "ctrl_cs");
+		spicc->ctrl_pinctrl_select[plat->cs] = true;
+	}
+#endif
+
 	return 0;
 }
 
@@ -739,7 +788,9 @@ int dirspi_dma_trig(struct spi_slave *slave,
 	struct udevice *bus = slave->dev->parent;
 	struct meson_spicc_device *spicc = dev_get_priv(bus);
 
-	meson_spicc_set_tcsl(spicc, spicc->cs2clk);
+	meson_spicc_set_tcsl(spicc, slave->use_ctrl_cs ?
+		DIV_ROUND_UP(slave->ss_leading_gap * spicc->parent_clk_rate, 1000000)
+		: (spicc->cs2clk ? spicc->cs2clk : 0));
 	spicc_set_wordlen(bus, slave->wordlen);
 	meson_spicc_pre_burst(spicc);
 
@@ -750,7 +801,7 @@ int dirspi_dma_trig(struct spi_slave *slave,
 	meson_spicc_setup_dma_burst(spicc,
 			tx_dma ? true : false,
 			rx_dma ? true : false,
-			src);
+			src, slave);
 
 	writel_relaxed(spicc->speed_hz >> 25, spicc->base + SPICC_PERIODREG);
 	writel_relaxed(tx_dma, spicc->base + SPICC_LD_RADDR);
@@ -833,6 +884,10 @@ static int spicc_xfer(struct udevice *dev,
 	spicc->rx_buf = (u8 *)din;
 	spicc->xfer_remain = bitlen >> 3;
 
+	meson_spicc_set_tcsl(spicc, slave->use_ctrl_cs ?
+		DIV_ROUND_UP(slave->ss_leading_gap * spicc->parent_clk_rate, 1000000)
+		: (spicc->cs2clk ? spicc->cs2clk : 0));
+
 #ifndef CONFIG_SPICC_DMA_SRAM
 	if (spicc->using_dma) {
 		flush_dcache_range((unsigned long)dout,
@@ -845,7 +900,6 @@ static int spicc_xfer(struct udevice *dev,
 	if (flags & SPI_XFER_BEGIN)
 		spicc_chipselect(dev, 1);
 
-	meson_spicc_set_tcsl(spicc, spicc->cs2clk);
 	first_burst = true;
 
 	while (spicc->xfer_remain) {
@@ -855,7 +909,7 @@ static int spicc_xfer(struct udevice *dev,
 			meson_spicc_setup_dma_burst(spicc,
 					dout ? true : false,
 					din ? true : false,
-					0);
+					0, slave);
 			writel_relaxed((u32)(unsigned long)spicc->tx_buf,
 					spicc->base + SPICC_DRADDR);
 			writel_relaxed((u32)(unsigned long)spicc->rx_buf,
@@ -869,7 +923,7 @@ static int spicc_xfer(struct udevice *dev,
 			writel_bits_relaxed(SPICC_SMC, SPICC_SMC,
 					spicc->base + SPICC_CONREG);
 		} else {
-			meson_spicc_setup_pio_burst(spicc);
+			meson_spicc_setup_pio_burst(spicc, slave);
 		}
 
 		ret = spicc_wait_complete(spicc);
@@ -934,11 +988,11 @@ static int spicc_clk_init(struct udevice *bus)
 
 	/* get cs-clk and clk-cs delay */
 	us = 0;
-	dev_read_u32(bus, "cs2clk-us", &us);
-	spicc->cs2clk = DIV_ROUND_UP(us * spicc->parent_clk_rate, 1000000);
+	if (dev_read_u32(bus, "cs2clk-us", &us))
+		spicc->cs2clk = DIV_ROUND_UP(us * spicc->parent_clk_rate, 1000000);
 	us = 0;
-	dev_read_u32(bus, "clk2cs-us", &us);
-	spicc->clk2cs = DIV_ROUND_UP(us * spicc->parent_clk_rate, 1000000);
+	if (dev_read_u32(bus, "clk2cs-us", &us))
+		spicc->clk2cs = DIV_ROUND_UP(us * spicc->parent_clk_rate, 1000000);
 
 	spicc_info("parent clk rate %d\n", spicc->parent_clk_rate);
 	return spicc->parent_clk_rate ? 0 : -ENODEV;
@@ -947,7 +1001,7 @@ static int spicc_clk_init(struct udevice *bus)
 static int spicc_cs_init(struct udevice *bus)
 {
 	struct meson_spicc_device *spicc = dev_get_priv(bus);
-	int i;
+	int i, j;
 	struct gpio_desc cs;
 
 	spicc->num_chipselect = 0;
@@ -963,8 +1017,18 @@ static int spicc_cs_init(struct udevice *bus)
 		 */
 		dm_gpio_set_value(&cs, 1);
 		dm_gpio_set_dir_flags(&cs, GPIOD_IS_OUT | GPIOD_IS_OUT_ACTIVE);
-		spicc->cs_gpios[i] = cs;
-		spicc->num_chipselect++;
+		if (spicc->cs_pinmask & BIT(i)) {
+			spicc->cs_gpios[i] = cs;
+			spicc->num_chipselect++;
+		} else {
+			for (j = i; j < SPICC_MAX_SLAVE_NUM; j++) {
+				if (spicc->cs_pinmask & BIT(j)) {
+					spicc->cs_gpios[i] = cs;
+					spicc->num_chipselect++;
+					break;
+				}
+			}
+		}
 	}
 
 	spicc_info("total cs %d\n", spicc->num_chipselect);
@@ -987,6 +1051,9 @@ static int spicc_probe(struct udevice *bus)
 	spicc_info("0x%p\n", spicc->base);
 	if (spicc_clk_init(bus))
 		return -ENODEV;
+
+	if (dev_read_u32(bus, "cs-pinmask", &spicc->cs_pinmask))
+		spicc->cs_pinmask = 0xf;
 
 	if (spicc_cs_init(bus))
 		return -ENODEV;

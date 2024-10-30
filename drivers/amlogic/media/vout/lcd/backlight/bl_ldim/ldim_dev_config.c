@@ -435,10 +435,22 @@ static int ldim_dev_get_config_from_dts(struct ldim_dev_driver_s *dev_drv,
 			dev_drv->cs_hold_delay = be32_to_cpup((u32 *)propdata);
 			dev_drv->cs_clk_delay = be32_to_cpup((((u32 *)propdata) + 1));
 		}
+		propdata = (char *)fdt_getprop(dt_addr, child_offset, "spi_line_n", NULL);
+		if (!propdata) {
+			LDIMERR("failed to get spi_line_n\n");
+			dev_drv->use_ctrl_cs = 0;
+		} else {
+			temp = (unsigned int)(be32_to_cpup((u32 *)propdata));
+			if (temp)
+				dev_drv->use_ctrl_cs = 1;
+			else
+				dev_drv->use_ctrl_cs = 0;
+		}
 		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-			LDIMPR("cs_hold_delay=%dus, cs_clk_delay=%dus\n",
+			LDIMPR("cs_hold_delay=%dus, cs_clk_delay=%dus, use_ctrl_cs=%d\n",
 			       dev_drv->cs_hold_delay,
-			       dev_drv->cs_clk_delay);
+			       dev_drv->cs_clk_delay,
+				   dev_drv->use_ctrl_cs);
 		}
 		break;
 	default:
@@ -896,6 +908,15 @@ static int ldim_dev_get_config_from_ukey(struct ldim_dev_driver_s *dev_drv)
 		((*(p + LCD_UKEY_LDIM_DEV_CUST_ATTR_1 + 1)) << 8) |
 		((*(p + LCD_UKEY_LDIM_DEV_CUST_ATTR_1 + 2)) << 16) |
 		((*(p + LCD_UKEY_LDIM_DEV_CUST_ATTR_1 + 3)) << 24));
+	temp =
+		(*(p + LCD_UKEY_LDIM_DEV_CUST_ATTR_2) |
+		((*(p + LCD_UKEY_LDIM_DEV_CUST_ATTR_2 + 1)) << 8) |
+		((*(p + LCD_UKEY_LDIM_DEV_CUST_ATTR_2 + 2)) << 16) |
+		((*(p + LCD_UKEY_LDIM_DEV_CUST_ATTR_2 + 3)) << 24));
+	if (temp)
+		dev_drv->use_ctrl_cs = 1;
+	else
+		dev_drv->use_ctrl_cs = 0;
 
 	dev_drv->chip_cnt =
 		(*(p + LCD_UKEY_LDIM_DEV_CHIP_COUNT) |
@@ -915,8 +936,9 @@ static int ldim_dev_get_config_from_ukey(struct ldim_dev_driver_s *dev_drv)
 		}
 	}
 
-	dbg_str_len += sprintf(dbg_str + dbg_str_len, "mcu_header=0x%08x, mcu_dim=0x%08x, ",
-		dev_drv->mcu_header, dev_drv->mcu_dim);
+	dbg_str_len += sprintf(dbg_str + dbg_str_len,
+		"mcu_header=0x%08x, mcu_dim=0x%08x, use_ctrl_cs=%d",
+		dev_drv->mcu_header, dev_drv->mcu_dim, dev_drv->use_ctrl_cs);
 	sprintf(dbg_str + dbg_str_len, "chip_cnt:%d, cus pwm_pinmux_sel:%s",
 		dev_drv->chip_cnt, dev_drv->pinmux_name);
 	LDIMPR("load ukey config: %s: type:%d, %s\n", dev_drv->name, dev_drv->type, dbg_str);

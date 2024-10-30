@@ -151,6 +151,10 @@ int ldim_spi_driver_add(struct ldim_dev_driver_s *dev_drv)
 		return -1;
 	}
 	dev_drv->spi_info.spi->wordlen = dev_drv->spi_info.wordlen;
+	dev_drv->spi_info.spi->use_ctrl_cs = dev_drv->use_ctrl_cs;
+	dev_drv->spi_info.spi->ss_leading_gap = dev_drv->cs_hold_delay;
+	dev_drv->spi_info.spi->ss_trailing_gap = dev_drv->cs_clk_delay;
+
 	cs_hold_delay = dev_drv->cs_hold_delay;
 #ifdef LDIM_SPI_CUSTOM_DELAY
 	cs_clk_delay = dev_drv->cs_clk_delay;
