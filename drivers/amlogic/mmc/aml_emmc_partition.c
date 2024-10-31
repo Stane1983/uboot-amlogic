@@ -277,14 +277,18 @@ int fill_ept_by_gpt(struct mmc *mmc)
 
 	ALLOC_CACHE_ALIGN_BUFFER_PAD(gpt_header, gpt_head, 1, dev_desc->blksz);
 
-	if (is_gpt_valid(dev_desc, GPT_PRIMARY_PARTITION_TABLE_LBA,
-				gpt_head, &gpt_pte) != 1) {
-		if (is_gpt_valid(dev_desc, (dev_desc->lba - 1),
-					gpt_head, &gpt_pte) != 1) {
-			printf("%s: invalid gpt\n", __func__);
-			return 1;
-		}
-		printf("%s: *** Using Backup GPT ***\n", __func__);
+	if (is_gpt_valid(dev_desc, (dev_desc->lba - 1), gpt_head, &gpt_pte) != 1) {
+		ret = gpt_repair_headers(dev_desc);
+		printf("Repaired Backup GPT %s\n", ret ? "failed" : "success");
+		if (ret)
+			return ret;
+	}
+
+	if (is_gpt_valid(dev_desc, GPT_PRIMARY_PARTITION_TABLE_LBA, gpt_head, &gpt_pte) != 1) {
+		ret = gpt_repair_headers(dev_desc);
+		printf("Repaired Primary GPT %s\n", ret ? "failed" : "success");
+		if (ret)
+			return ret;
 	}
 
 	if (resize_gpt(mmc)) {
@@ -1394,120 +1398,6 @@ int check_gpt_change(struct blk_desc *dev_desc, void *buf)
 	}
 
 	return ret;
-}
-
-int is_gpt_changed(struct mmc *mmc, struct _iptbl *p_iptbl_ept)
-{
-	int i, k;
-	gpt_entry *gpt_pte = NULL;
-	size_t efiname_len;
-	struct _iptbl *ept = p_iptbl_ept;
-	struct partitions *partitions = ept->partitions;
-	int parts_num = ept->count;
-	uint64_t offset;
-	uint64_t size;
-	char name[PARTNAME_SZ];
-	int gpt_changed = 0;
-	struct blk_desc *dev_desc = mmc_get_blk_desc(mmc);
-
-	if (dev_desc == NULL) {
-		printf("%s: Invalid Argument(s)\n", __func__);
-		return 1;
-	}
-
-	ALLOC_CACHE_ALIGN_BUFFER_PAD(gpt_header, gpt_head, 1, dev_desc->blksz);
-
-	if (is_gpt_valid(dev_desc, GPT_PRIMARY_PARTITION_TABLE_LBA,
-				gpt_head, &gpt_pte) != 1) {
-		printf("%s: ***ERROR:Invalid GPT ***\n", __func__);
-		if (is_gpt_valid(dev_desc, (dev_desc->lba - 1),
-					gpt_head, &gpt_pte) != 1) {
-			printf("%s: ***ERROR: Invalid Backup GPT ***\n",
-					__func__);
-			return 1;
-		} else {
-			printf("%s: *** Using Backup GPT ***\n",
-					__func__);
-		}
-	}
-	for (i = 0; i < le32_to_cpu(gpt_head->num_partition_entries); i++) {
-		if (!is_pte_valid(&gpt_pte[i]))
-			break;
-
-		offset = le64_to_cpu(gpt_pte[i].starting_lba<<9ULL);
-		if (partitions[i].offset != offset) {
-			printf("Caution! GPT offset had been changed\n");
-			gpt_changed = 1;
-			break;
-		}
-
-		size = ((le64_to_cpu(gpt_pte[i].ending_lba)+1) -
-			le64_to_cpu(gpt_pte[i].starting_lba)) << 9ULL;
-		if (i == parts_num - 1) {
-			if ((partitions[i].size - GPT_TOTAL_SIZE) != size) {
-				printf("Caution! GPT size had been changed\n");
-				gpt_changed = 1;
-				break;
-			}
-		} else {
-		if (partitions[i].size != size) {
-			printf("Caution! GPT size had been changed\n");
-			gpt_changed = 1;
-			break;
-			}
-		}
-
-		/* partition name */
-		efiname_len = sizeof(gpt_pte[i].partition_name)
-			/ sizeof(efi_char16_t);
-
-		memset(name, 0, PARTNAME_SZ);
-		for (k = 0; k < efiname_len; k++)
-			name[k] = (char)gpt_pte[i].partition_name[k];
-		if (strcmp(name, partitions[i].name) != 0) {
-			printf("Caution! GPT name had been changed\n");
-			gpt_changed = 1;
-			break;
-		}
-
-	}
-	if ((i != parts_num) && (gpt_changed == 0)) {
-		gpt_changed = 1;
-		printf("Caution! GPT number had been changed\n");
-	}
-
-	free(gpt_pte);
-	return gpt_changed;
-}
-
-int is_gpt_broken(struct mmc *mmc)
-{
-	gpt_entry *gpt_pte = NULL;
-	int broken_status = 0;
-	struct blk_desc *dev_desc = mmc_get_blk_desc(mmc);
-
-	if (!dev_desc) {
-		printf("%s: Invalid Argument(s)\n", __func__);
-		return 1;
-	}
-	ALLOC_CACHE_ALIGN_BUFFER_PAD(gpt_header, gpt_head, 1, dev_desc->blksz);
-
-	if (is_gpt_valid(dev_desc, GPT_PRIMARY_PARTITION_TABLE_LBA,
-				gpt_head, &gpt_pte) != 1) {
-		broken_status += 1;
-		printf("%s: ***ERROR:Invalid GPT ***\n", __func__);
-	}
-	if (is_gpt_valid(dev_desc, (dev_desc->lba - 1),
-				gpt_head, &gpt_pte) != 1) {
-		printf("%s: ***ERROR: Invalid Backup GPT ***\n",
-					__func__);
-		broken_status += 2;
-	}
-
-	if (broken_status != 3)
-		free(gpt_pte);
-	return broken_status;
-
 }
 
 /*
