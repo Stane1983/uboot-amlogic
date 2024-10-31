@@ -265,15 +265,12 @@ static void lcd_config_load_print(struct aml_lcd_drv_s *pdrv)
 	union lcd_ctrl_config_u *pctrl;
 	int i = 0;
 
-	LCDPR("[%d]: %s, %s, %dbit, %dx%d\n",
-		pdrv->index,
-		pconf->basic.model_name,
-		lcd_type_type_to_str(pconf->basic.lcd_type),
-		pconf->basic.lcd_bits,
-		ptiming->h_active, ptiming->v_active);
-
 	if ((lcd_debug_print_flag & LCD_DBG_PR_NORMAL) == 0)
 		return;
+
+	LCDPR("[%d]: %s, %s\n",
+	      pdrv->index, pconf->basic.model_name,
+	      lcd_type_type_to_str(pconf->basic.lcd_type));
 
 	for (i = 0; i < pdrv->config.timing.num_timings; i++) {
 		ptiming = pdrv->config.timing.timings[i];
@@ -323,7 +320,7 @@ static void lcd_config_load_print(struct aml_lcd_drv_s *pdrv)
 		LCDPR("channel_num = %d\n", pctrl->mlvds_cfg.channel_num);
 		LCDPR("channel_sel0 = 0x%x\n", pctrl->mlvds_cfg.channel_sel0);
 		LCDPR("channel_sel1 = 0x%x\n", pctrl->mlvds_cfg.channel_sel1);
-		LCDPR("clk_phase = %d\n", pctrl->mlvds_cfg.clk_phase);
+		LCDPR("clk_phase = 0x%x\n", pctrl->mlvds_cfg.clk_phase);
 		LCDPR("phy_vswing = 0x%x\n", pctrl->mlvds_cfg.phy_vswing);
 		LCDPR("phy_preem = 0x%x\n", pctrl->mlvds_cfg.phy_preem);
 	} else if (pconf->basic.lcd_type == LCD_P2P) {
@@ -549,7 +546,8 @@ int lcd_base_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 	char *propdata, *p, snode[10];
 	const char *str;
 	unsigned int temp;
-	int i;
+	char str_info[128];
+	int str_info_len = 0, i;
 
 	if (pdrv->index == 0)
 		sprintf(snode, "/lcd");
@@ -592,16 +590,10 @@ int lcd_base_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 
 	/* check lcd_clk_path */
 	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "clk_path", NULL);
-	if (!propdata) {
-		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-			LCDPR("[%d]: failed to get clk_path\n", pdrv->index);
+	if (!propdata)
 		pdrv->clk_path = 0;
-	} else {
+	else
 		pdrv->clk_path = (unsigned char)(be32_to_cpup((u32 *)propdata));
-	}
-	LCDPR("[%d]: detect mode: %s, key_valid: %d, clk_path: %d\n",
-	      pdrv->index, lcd_mode_mode_to_str(pdrv->mode),
-	      pdrv->key_valid, pdrv->clk_path);
 
 	temp = env_get_ulong("lcd_clk_path", 10, 0xffff);
 	if (temp != 0xffff) {
@@ -609,7 +601,7 @@ int lcd_base_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 			pdrv->clk_path = 1;
 		else
 			pdrv->clk_path = 0;
-		LCDPR("[%d]: lcd_clk_path flag set clk_path: %d\n",
+		LCDPR("[%d]: lcd_clk_path env set clk_path: %d\n",
 		      pdrv->index, pdrv->clk_path);
 	}
 
@@ -638,15 +630,16 @@ int lcd_base_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 		strcpy(pconf->power.cpu_gpio[i], "invalid");
 
 	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "config_check_glb", NULL);
-	if (!propdata) {
+	if (!propdata)
 		pdrv->config_check_glb = 0;
-	} else {
+	else
 		pdrv->config_check_glb = be32_to_cpup((u32 *)propdata);
-		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-			LCDPR("[%d]: find config_check_glb: %d\n",
-				pdrv->index, pdrv->config_check_glb);
-		}
-	}
+
+	str_info_len += sprintf(str_info + str_info_len, "clk_path: %d, ", pdrv->clk_path);
+	sprintf(str_info + str_info_len, "cfg_chk_glb: %d", pdrv->config_check_glb);
+	LCDPR("[%d]: drv_ver: %s(%d-%s), lcd_mode: %s, key_valid: %d, %s\n",
+	      pdrv->index, LCD_DRV_VERSION, pdrv->data->chip_type, pdrv->data->chip_name,
+	      lcd_mode_mode_to_str(pdrv->mode), pdrv->key_valid, str_info);
 
 	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "display_timing_req_min", NULL);
 	if (!propdata) {
@@ -1244,7 +1237,8 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 	char type_str[20];
 	char *propdata;
 	unsigned int temp;
-	int i, len;
+	char str_info[128];
+	int i, str_info_len = 0, len;
 
 	if (pdrv->index == 0)
 		sprintf(type_str, "panel_type");
@@ -1406,6 +1400,23 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 	lcd_clk_frame_rate_init(ptiming);
 	lcd_config_timing_check(pdrv, ptiming);
 	lcd_default_to_basic_timing_init_config(pdrv);
+
+	str_info_len += sprintf(str_info + str_info_len, "ppc:%d, ",
+			pconf->timing.ppc);
+	str_info_len += sprintf(str_info + str_info_len, "clk_mode:%d, ",
+			pconf->timing.clk_mode);
+	if (pconf->timing.pre_de_h || pconf->timing.pre_de_h) {
+		str_info_len += sprintf(str_info + str_info_len, "pre_de:%d,%d, ",
+				pconf->timing.pre_de_h, pconf->timing.pre_de_h);
+	}
+	str_info_len += sprintf(str_info + str_info_len, "cfg_chk:0x%x, ",
+			pconf->basic.config_check);
+	sprintf(str_info + str_info_len, "cus_pinmux:%d", pconf->custom_pinmux);
+	LCDPR("[%d]: load dts config: %s, %s, %dbit, %dx%d, %s\n",
+	      pdrv->index, pconf->basic.model_name,
+	      lcd_type_type_to_str(pconf->basic.lcd_type),
+	      pconf->basic.lcd_bits, ptiming->h_active, ptiming->v_active,
+	      str_info);
 
 	switch (pconf->basic.lcd_type) {
 	case LCD_LVDS:
@@ -1822,7 +1833,7 @@ static int lcd_config_load_from_unifykey_v2(struct aml_lcd_drv_s *pdrv,
 	len = offset + header->block_cur_size;
 	ret = lcd_unifykey_len_check(key_len, len);
 	if (ret < 0) {
-		LCDERR("unifykey parameters length is incorrect\n");
+		LCDERR("ukey parameters length is incorrect\n");
 		return -1;
 	}
 
@@ -1918,7 +1929,7 @@ static int lcd_config_load_from_unifykey_v3(struct aml_lcd_drv_s *pdrv,
 	len = offset + header->block_cur_size;
 	ret = lcd_unifykey_len_check(key_len, len);
 	if (ret < 0) {
-		LCDERR("unifykey parameters length is incorrect\n");
+		LCDERR("ukey parameters length is incorrect\n");
 		return -1;
 	}
 
@@ -1943,7 +1954,8 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv)
 	unsigned char *p, val;
 	const char *str;
 	unsigned int temp;
-	int ret = 0;
+	char str_info[128];
+	int str_info_len = 0, ret = 0;
 
 	if (pdrv->index == 0)
 		sprintf(key_str, "lcd");
@@ -1967,8 +1979,6 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv)
 
 	/* step 1: check header */
 	lcd_header = (struct lcd_unifykey_header_s *)para;
-	LCDPR("[%d]: config load from unifykey, version: 0x%04x\n",
-		pdrv->index, lcd_header->version);
 	len = LCD_UKEY_DATA_LEN_V1; /*10+36+18+31+20*/
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		lcd_unifykey_header_print(para);
@@ -1976,7 +1986,7 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv)
 	/* step 2: check lcd parameters */
 	ret = lcd_unifykey_len_check(key_len, len);
 	if (ret) {
-		LCDERR("[%d]: unifykey parameters length is incorrect\n", pdrv->index);
+		LCDERR("[%d]: ukey parameters length is incorrect\n", pdrv->index);
 		goto load_from_unifykey_exit;
 	}
 
@@ -2073,6 +2083,25 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv)
 	lcd_clk_frame_rate_init(ptiming);
 	lcd_config_timing_check(pdrv, ptiming);
 	lcd_default_to_basic_timing_init_config(pdrv);
+
+	str_info_len += sprintf(str_info + str_info_len, "ppc:%d, ",
+			pconf->timing.ppc);
+	str_info_len += sprintf(str_info + str_info_len, "clk_mode:%d, ",
+			pconf->timing.clk_mode);
+	if (pconf->timing.pre_de_h || pconf->timing.pre_de_h) {
+		str_info_len += sprintf(str_info + str_info_len, "pre_de:%d,%d, ",
+				pconf->timing.pre_de_h, pconf->timing.pre_de_h);
+	}
+	str_info_len += sprintf(str_info + str_info_len, "cfg_chk:0x%x, ",
+			pconf->basic.config_check);
+	str_info_len += sprintf(str_info + str_info_len, "cus_pinmux:%d, ",
+			pconf->custom_pinmux);
+	sprintf(str_info + str_info_len, "afr_cus:0x%x", pconf->fr_auto_cus);
+	LCDPR("[%d]: load ukey config: %s, %s, %dbit, %dx%d, %s\n",
+	      pdrv->index, pconf->basic.model_name,
+	      lcd_type_type_to_str(pconf->basic.lcd_type),
+	      pconf->basic.lcd_bits, ptiming->h_active, ptiming->v_active,
+	      str_info);
 
 	/* interface: 20byte */
 	switch (pconf->basic.lcd_type) {
@@ -2285,9 +2314,8 @@ static int lcd_config_load_from_bsp(struct aml_lcd_drv_s *pdrv)
 	struct lcd_power_step_s *power_step;
 	char *panel_type, str[15];
 	unsigned int i, done;
-	unsigned int temp;
-
-	LCDPR("config load from bsp\n");
+	unsigned int temp, str_info_len = 0;
+	char str_info[128];
 
 	if (pdrv->index >= LCD_MAX_DRV) {
 		LCDERR("[%d]: invalid drv index %d\n", pdrv->index, pdrv->index);
@@ -2414,6 +2442,23 @@ static int lcd_config_load_from_bsp(struct aml_lcd_drv_s *pdrv)
 	lcd_clk_frame_rate_init(ptiming);
 	lcd_config_timing_check(pdrv, ptiming);
 	lcd_default_to_basic_timing_init_config(pdrv);
+
+	str_info_len += sprintf(str_info + str_info_len, "ppc:%d, ",
+			pconf->timing.ppc);
+	str_info_len += sprintf(str_info + str_info_len, "clk_mode:%d, ",
+			pconf->timing.clk_mode);
+	if (pconf->timing.pre_de_h || pconf->timing.pre_de_h) {
+		str_info_len += sprintf(str_info + str_info_len, "pre_de:%d,%d, ",
+				pconf->timing.pre_de_h, pconf->timing.pre_de_h);
+	}
+	str_info_len += sprintf(str_info + str_info_len, "cfg_chk:0x%x, ",
+			pconf->basic.config_check);
+	sprintf(str_info + str_info_len, "cus_pinmux:%d", pconf->custom_pinmux);
+	LCDPR("[%d]: load bsp config: %s, %s, %dbit, %dx%d, %s\n",
+	      pdrv->index, pconf->basic.model_name,
+	      lcd_type_type_to_str(pconf->basic.lcd_type),
+	      pconf->basic.lcd_bits, ptiming->h_active, ptiming->v_active,
+	      str_info);
 
 	switch (pconf->basic.lcd_type) {
 	case LCD_LVDS:
@@ -2981,8 +3026,6 @@ void lcd_clk_frame_rate_init(struct lcd_detail_timing_s *ptiming)
 
 	if (ptiming->pixel_clk == 0) /* default 0 for 60hz */
 		ptiming->pixel_clk = 60;
-	else
-		LCDPR("init pclk: %dHz\n", ptiming->pixel_clk);
 
 	h_period = ptiming->h_period;
 	v_period = ptiming->v_period;

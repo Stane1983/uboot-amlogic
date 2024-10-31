@@ -971,9 +971,9 @@ static int lcd_tcon_mem_config(void)
 	if (lcd_tcon_conf->axi_tbl_len && lcd_tcon_conf->axi_mem_cfg_tbl) {
 		for (i = 0; i < lcd_tcon_conf->axi_tbl_len; i++) {
 			axi_cfg = &lcd_tcon_conf->axi_mem_cfg_tbl[i];
-				LCDPR("axi mem type=%d, size=%#x, reg=%#x, valid=%d\n",
-					axi_cfg->mem_type, axi_cfg->mem_size,
-					axi_cfg->axi_reg, axi_cfg->mem_valid);
+				LCDPR("axi[%d] mem type=%d, size=%#x, reg=%#x, valid=%d\n",
+				      i, axi_cfg->mem_type, axi_cfg->mem_size,
+				      axi_cfg->axi_reg, axi_cfg->mem_valid);
 			switch (axi_cfg->mem_type) {
 			case TCON_AXI_MEM_TYPE_OD:
 				mem_od_size += axi_cfg->mem_size;
@@ -1219,7 +1219,8 @@ static int lcd_tcon_reserved_memory_init_dts(char *dt_addr, struct aml_lcd_drv_s
 	cell_size = fdt_address_cells(dt_addr, parent_offset);
 	parent_offset = fdt_path_offset(dt_addr, "/reserved-memory/linux,lcd_tcon");
 	if (parent_offset < 0) {
-		LCDERR("can't find node: /reserved-memory/linux,lcd_tcon\n");
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDERR("can't find rmem node: /reserved-memory/linux,lcd_tcon\n");
 		goto tcon_rsvd_try_alloc_from_lrm;
 	}
 

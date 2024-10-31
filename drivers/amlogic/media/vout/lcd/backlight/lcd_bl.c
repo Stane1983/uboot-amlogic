@@ -36,6 +36,34 @@ struct aml_bl_drv_s *aml_bl_get_driver(int index)
 	return bl_driver[index];
 }
 
+struct bl_method_match_s {
+	char *name;
+	enum bl_ctrl_method_e type;
+};
+
+static struct bl_method_match_s bl_method_match_table[] = {
+	{"gpio",          BL_CTRL_GPIO},
+	{"pwm",           BL_CTRL_PWM},
+	{"pwm_combo",     BL_CTRL_PWM_COMBO},
+	{"local_dimming", BL_CTRL_LOCAL_DIMMING},
+	{"extern",        BL_CTRL_EXTERN},
+	{"invalid",       BL_CTRL_MAX},
+};
+
+static char *bl_method_type_to_str(int type)
+{
+	int i;
+	char *str = bl_method_match_table[BL_CTRL_MAX].name;
+
+	for (i = 0; i < BL_CTRL_MAX; i++) {
+		if (type == bl_method_match_table[i].type) {
+			str = bl_method_match_table[i].name;
+			break;
+		}
+	}
+	return str;
+}
+
 static struct bl_config_s *bl_check_valid(struct aml_bl_drv_s *bdrv)
 {
 	struct bl_config_s *bconf;
@@ -545,7 +573,6 @@ static void bl_pwm_en_ctrl(struct bl_config_s *bconf, int status)
 		bl_pwm_en(bconf->bl_pwm_combo1, status);
 		break;
 	default:
-		BLERR("wrong backlight control method\n");
 		break;
 	}
 }
@@ -1016,8 +1043,6 @@ static int bl_config_load_from_dts(char *dt_addr, struct aml_bl_drv_s *bdrv)
 	else
 		sprintf(sname, "/backlight%d", bdrv->index);
 
-	BLPR("[%d]: load config %s from dts\n", bdrv->index, sname);
-
 	bconf->method = BL_CTRL_MAX; /* default */
 	parent_offset = fdt_path_offset(dt_addr, sname);
 	if (parent_offset < 0) {
@@ -1058,8 +1083,7 @@ static int bl_config_load_from_dts(char *dt_addr, struct aml_bl_drv_s *bdrv)
 	} else {
 		bconf->level_default = be32_to_cpup((u32*)propdata);
 	}
-	propdata = (char *)fdt_getprop(dt_addr, child_offset,
-				       "bl_level_attr", NULL);
+	propdata = (char *)fdt_getprop(dt_addr, child_offset, "bl_level_attr", NULL);
 	if (!propdata) {
 		BLERR("failed to get bl_level_attr\n");
 		bconf->level_max = BL_LEVEL_MAX;
@@ -1070,12 +1094,10 @@ static int bl_config_load_from_dts(char *dt_addr, struct aml_bl_drv_s *bdrv)
 		bconf->level_max = be32_to_cpup((u32 *)propdata);
 		bconf->level_min = be32_to_cpup((((u32 *)propdata) + 1));
 		bconf->level_mid = be32_to_cpup((((u32 *)propdata) + 2));
-		bconf->level_mid_mapping =
-				be32_to_cpup((((u32 *)propdata) + 3));
+		bconf->level_mid_mapping = be32_to_cpup((((u32 *)propdata) + 3));
 	}
 
-	propdata = (char *)fdt_getprop(dt_addr, child_offset,
-				       "bl_ctrl_method", NULL);
+	propdata = (char *)fdt_getprop(dt_addr, child_offset, "bl_ctrl_method", NULL);
 	if (!propdata) {
 		BLERR("failed to get bl_ctrl_method\n");
 		bconf->method = BL_CTRL_MAX;
@@ -1083,8 +1105,7 @@ static int bl_config_load_from_dts(char *dt_addr, struct aml_bl_drv_s *bdrv)
 	} else {
 		bconf->method = be32_to_cpup((u32 *)propdata);
 	}
-	propdata = (char *)fdt_getprop(dt_addr, child_offset,
-				       "bl_power_attr", NULL);
+	propdata = (char *)fdt_getprop(dt_addr, child_offset, "bl_power_attr", NULL);
 	if (!propdata) {
 		BLERR("failed to get bl_power_attr\n");
 		bconf->en_gpio = BL_GPIO_NUM_MAX;
@@ -1099,6 +1120,17 @@ static int bl_config_load_from_dts(char *dt_addr, struct aml_bl_drv_s *bdrv)
 		bconf->power_on_delay = be32_to_cpup((((u32 *)propdata) + 3));
 		bconf->power_off_delay = be32_to_cpup((((u32 *)propdata) + 4));
 	}
+
+	propdata = (char *)fdt_getprop(dt_addr, child_offset, "en_sequence_reverse", NULL);
+	if (!propdata)
+		bconf->en_sequence_reverse = 0;
+	else
+		bconf->en_sequence_reverse = be32_to_cpup((u32 *)propdata);
+
+	BLPR("[%d]: config from dts: %s: %s, method: %s(%d), en_seq_rev: %d\n",
+	     bdrv->index, propname, bconf->name,
+	     bl_method_type_to_str(bconf->method),
+	     bconf->method, bconf->en_sequence_reverse);
 
 	switch (bconf->method) {
 	case BL_CTRL_PWM:
@@ -1169,26 +1201,6 @@ static int bl_config_load_from_dts(char *dt_addr, struct aml_bl_drv_s *bdrv)
 				be32_to_cpup((((u32 *)propdata) + 2));
 			bconf->pwm_off_delay =
 				be32_to_cpup((((u32 *)propdata) + 3));
-		}
-		propdata = (char *)fdt_getprop(dt_addr, child_offset,
-					       "bl_pwm_en_sequence_reverse",
-					       NULL);
-		if (!propdata) {
-			propdata = (char *)fdt_getprop(dt_addr, child_offset,
-						       "en_sequence_reverse",
-						       NULL);
-			if (!propdata) {
-				bconf->en_sequence_reverse = 0;
-			} else {
-				bconf->en_sequence_reverse =
-					be32_to_cpup((u32 *)propdata);
-				BLPR("find en_sequence_reverse: %d\n",
-				     bconf->en_sequence_reverse);
-			}
-		} else {
-			bconf->en_sequence_reverse = be32_to_cpup((u32 *)propdata);
-			BLPR("find en_sequence_reverse: %d\n",
-			     bconf->en_sequence_reverse);
 		}
 
 		bl_pwm->pwm_duty = bl_pwm->pwm_duty_min;
@@ -1326,25 +1338,6 @@ static int bl_config_load_from_dts(char *dt_addr, struct aml_bl_drv_s *bdrv)
 			bconf->pwm_off_delay =
 				be32_to_cpup((((u32 *)propdata) + 5));
 		}
-		propdata = (char *)fdt_getprop(dt_addr, child_offset,
-					       "bl_pwm_en_sequence_reverse",
-					       NULL);
-		if (!propdata) {
-			propdata = (char *)fdt_getprop(dt_addr, child_offset,
-						       "en_sequence_reverse",
-						       NULL);
-			if (!propdata) {
-				bconf->en_sequence_reverse = 0;
-			} else {
-				bconf->en_sequence_reverse =
-					be32_to_cpup((u32 *)propdata);
-				BLPR("find en_sequence_reverse: %d\n",
-				     bconf->en_sequence_reverse);
-			}
-		} else {
-			bconf->en_sequence_reverse =
-					be32_to_cpup((u32 *)propdata);
-		}
 
 		pwm_combo0->pwm_duty = pwm_combo0->pwm_duty_min;
 		pwm_combo1->pwm_duty = pwm_combo1->pwm_duty_min;
@@ -1357,27 +1350,12 @@ static int bl_config_load_from_dts(char *dt_addr, struct aml_bl_drv_s *bdrv)
 			BLERR("no ldim driver\n");
 			break;
 		}
-		propdata = (char *)fdt_getprop(dt_addr, child_offset, "en_sequence_reverse", NULL);
-		if (!propdata) {
-			bconf->en_sequence_reverse = 0;
-		} else {
-			bconf->en_sequence_reverse = be32_to_cpup((u32 *)propdata);
-			BLPR("find en_sequence_reverse: %d\n", bconf->en_sequence_reverse);
-		}
 
 		aml_ldim_probe(bdrv, dt_addr, child_offset, NULL, 0);
 		break;
 #endif
 #ifdef CONFIG_AML_LCD_BL_EXTERN
 	case BL_CTRL_EXTERN:
-		propdata = (char *)fdt_getprop(dt_addr, child_offset, "en_sequence_reverse", NULL);
-		if (!propdata) {
-			bconf->en_sequence_reverse = 0;
-		} else {
-			bconf->en_sequence_reverse = be32_to_cpup((u32 *)propdata);
-			BLPR("find en_sequence_reverse: %d\n", bconf->en_sequence_reverse);
-		}
-
 		/* get bl_extern_index from dts */
 		propdata = (char *)fdt_getprop(dt_addr, child_offset, "bl_extern_index", NULL);
 		if (!propdata) {
@@ -1434,8 +1412,6 @@ static int bl_config_load_from_unifykey(char *dt_addr, struct aml_bl_drv_s *bdrv
 
 	/* step 1: check header */
 	bl_header = (struct lcd_unifykey_header_s *)para;
-	BLPR("[%d]: load config from unifykey, version: 0x%x\n",
-		bdrv->index, bl_header->version);
 	switch (bl_header->version) {
 	case 2:
 		len = 10 + 30 + 12 + 8 + 32 + 10;
@@ -1444,16 +1420,13 @@ static int bl_config_load_from_unifykey(char *dt_addr, struct aml_bl_drv_s *bdrv
 		len = 10 + 30 + 12 + 8 + 32;
 		break;
 	}
-	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-		BLPR("unifykey header:\n");
-		BLPR("crc32             = 0x%08x\n", bl_header->crc32);
-		BLPR("data_len          = %d\n", bl_header->data_len);
-	}
+	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
+		lcd_unifykey_header_print(para);
 
 	/* step 2: check backlight parameters */
 	ret = lcd_unifykey_len_check(key_len, len);
 	if (ret) {
-		BLERR("unifykey length is incorrect\n");
+		BLERR("ukey length is incorrect\n");
 		free(para);
 		return -1;
 	}
@@ -1485,6 +1458,16 @@ static int bl_config_load_from_unifykey(char *dt_addr, struct aml_bl_drv_s *bdrv
 		((*(p + LCD_UKEY_BL_ON_DELAY + 1)) << 8));
 	bconf->power_off_delay = (*(p + LCD_UKEY_BL_OFF_DELAY) |
 		((*(p + LCD_UKEY_BL_OFF_DELAY + 1)) << 8));
+
+	if (bl_header->version == 2)
+		bconf->en_sequence_reverse = (*(p + LCD_UKEY_BL_CUST_VAL_0) |
+					((*(p + LCD_UKEY_BL_CUST_VAL_0 + 1)) << 8));
+	else
+		bconf->en_sequence_reverse = 0;
+
+	BLPR("[%d]: config from ukey: %s, method: %s(%d), en_seq_rev: %d\n",
+	     bdrv->index, bconf->name, bl_method_type_to_str(bconf->method),
+	     bconf->method, bconf->en_sequence_reverse);
 
 	/* pwm: 32byte */
 	switch (bconf->method) {
@@ -1524,13 +1507,6 @@ static int bl_config_load_from_unifykey(char *dt_addr, struct aml_bl_drv_s *bdrv
 		bl_pwm->pwm_duty_min = *(p + LCD_UKEY_BL_PWM_DUTY_MIN);
 		bl_pwm->pwm_gpio = *(p + LCD_UKEY_BL_PWM_GPIO);
 		bl_pwm->pwm_gpio_off = *(p + LCD_UKEY_BL_PWM_GPIO_OFF);
-
-		if (bl_header->version == 2)
-			bconf->en_sequence_reverse =
-				(*(p + LCD_UKEY_BL_CUST_VAL_0) |
-				((*(p + LCD_UKEY_BL_CUST_VAL_0 + 1)) << 8));
-		else
-			bconf->en_sequence_reverse = 0;
 
 		bl_pwm->pwm_duty = bl_pwm->pwm_duty_min;
 		/* bl_pwm_config_init(bl_pwm); */
@@ -1604,12 +1580,6 @@ static int bl_config_load_from_unifykey(char *dt_addr, struct aml_bl_drv_s *bdrv
 			((*(p + LCD_UKEY_BL_PWM2_LEVEL_MAX + 1)) << 8));
 		pwm_combo1->bl_level_min = (*(p + LCD_UKEY_BL_PWM2_LEVEL_MIN) |
 			((*(p + LCD_UKEY_BL_PWM2_LEVEL_MIN + 1)) << 8));
-
-		if (bl_header->version == 2)
-			bconf->en_sequence_reverse = (*(p + LCD_UKEY_BL_CUST_VAL_0) |
-				((*(p + LCD_UKEY_BL_CUST_VAL_0 + 1)) << 8));
-		else
-			bconf->en_sequence_reverse = 0;
 
 		pwm_combo0->pwm_duty = pwm_combo0->pwm_duty_min;
 		pwm_combo1->pwm_duty = pwm_combo1->pwm_duty_min;
@@ -2120,12 +2090,8 @@ static int bl_config_load(char *dt_addr, int load_id, struct aml_bl_drv_s *bdrv)
 		return -1;
 	}
 	bl_pinmux_load_from_bsp(bdrv);
-	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
+	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
 		bl_config_print(bdrv);
-	} else {
-		BLPR("[%d]: name: %s, method: %d\n",
-		      bdrv->index, bdrv->config.name, bdrv->config.method);
-	}
 
 	/* get bl_off_policy */
 	bdrv->bl_off_policy = BL_OFF_POLICY_NONE;

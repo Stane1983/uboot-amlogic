@@ -163,7 +163,8 @@ static void lcd_venc_set_timing(struct aml_lcd_drv_s *pdrv)
 
 	ppc = pconf->timing.ppc;//must check zero in init place
 	offset = pdrv->data->offset_venc[pdrv->index];
-	LCDPR("%s, ppc=%d\n", __func__, ppc);
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("%s, ppc=%d\n", __func__, ppc);
 
 	hstart = __cal_h_timing_to_reg(pconf->timing.hstart, ppc);
 	hend = __cal_h_timing_to_reg(pconf->timing.hend + 1, ppc) - 1;

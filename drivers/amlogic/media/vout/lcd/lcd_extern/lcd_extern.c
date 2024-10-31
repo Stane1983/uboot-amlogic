@@ -891,8 +891,6 @@ static int lcd_extern_get_config_dts(char *dtaddr, char *snode,
 	const char *str;
 	int ret = 0;
 
-	EXTPR("[%d]: load dev config %d from dts\n", edrv->index, edev->dev_index);
-
 	extconf->table_init_loaded = 0;
 	nodeoffset = lcd_extern_get_dts_child(dtaddr, snode, edev->dev_index);
 	if (nodeoffset < 0)
@@ -906,8 +904,6 @@ static int lcd_extern_get_config_dts(char *dtaddr, char *snode,
 	} else {
 		extconf->index = (unsigned char)(be32_to_cpup((u32*)propdata));
 	}
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		EXTPR("index = %d\n", extconf->index);
 
 	propdata = (char *)fdt_getprop(dtaddr, nodeoffset, "extern_name", NULL);
 	if (propdata == NULL) {
@@ -929,8 +925,8 @@ static int lcd_extern_get_config_dts(char *dtaddr, char *snode,
 		else
 			extconf->status = 0;
 	}
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		EXTPR("%s: status = %d\n", extconf->name, extconf->status);
+	if (extconf->status == 0)
+		return -1;
 
 	propdata = (char *)fdt_getprop(dtaddr, nodeoffset, "type", NULL);
 	if (!propdata) {
@@ -940,8 +936,8 @@ static int lcd_extern_get_config_dts(char *dtaddr, char *snode,
 	}
 	extconf->type = be32_to_cpup((u32 *)propdata);
 
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		EXTPR("%s: type = %d\n", extconf->name, extconf->type);
+	EXTPR("[%d]: load dts config: dev[%d]: %s(%d), type: %d\n",
+	      edrv->index, edev->dev_index, extconf->name, extconf->index, extconf->type);
 
 	switch (extconf->type) {
 	case LCD_EXTERN_I2C:
@@ -1439,7 +1435,6 @@ static int lcd_extern_get_config_unifykey(struct lcd_extern_driver_s *edrv,
 	unsigned char *para, *p;
 	int key_len, len;
 	const char *str;
-	struct lcd_unifykey_header_s *ext_header;
 	int ret;
 
 	edev->config.table_init_loaded = 0;
@@ -1467,15 +1462,8 @@ static int lcd_extern_get_config_unifykey(struct lcd_extern_driver_s *edrv,
 		return -1;
 	}
 
-	/* header: 10byte */
-	ext_header = (struct lcd_unifykey_header_s *)para;
-	EXTPR("[%d]: load dev config %d from unifykey, version:0x%x\n",
-		edrv->index, edev->dev_index, ext_header->version);
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-		EXTPR("[%d]: unifykey header:\n", edrv->index);
-		EXTPR("crc32     = 0x%08x\n", ext_header->crc32);
-		EXTPR("data_len  = %d\n", ext_header->data_len);
-	}
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		lcd_unifykey_header_print(para);
 
 	/* basic: 33byte */
 	p = para;
@@ -1485,12 +1473,19 @@ static int lcd_extern_get_config_unifykey(struct lcd_extern_driver_s *edrv,
 	edev->config.type = *(p + LCD_UKEY_EXT_TYPE);
 	edev->config.status = *(p + LCD_UKEY_EXT_STATUS);
 
-	if (edev->dev_index != edev->config.index) {
-		EXTERR("[%d]: dev_index %d err, config index %d\n",
-		       edrv->index, edev->dev_index, edev->config.index);
+	if (edev->config.status == 0) {
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+			EXTPR("[%d]: dev[%d]: %s(%d) is disabled\n",
+			      edrv->index, edev->dev_index,
+			      edev->config.name, edev->config.index);
+		}
 		free(para);
 		return -1;
 	}
+
+	EXTPR("[%d]: load ukey config: dev[%d]: %s(%d), type: %d\n",
+	      edrv->index, edev->dev_index, edev->config.name,
+	      edev->config.index, edev->config.type);
 
 	/* type: 10byte */
 	switch (edev->config.type) {
@@ -1833,7 +1828,7 @@ static int lcd_extern_dev_probe(char *dtaddr, int load_id,
 			if (ret == 0)
 				ret = lcd_extern_get_config_unifykey(edrv, edev, skey);
 		} else {
-			EXTPR("[%d]: load dev config %d from bsp\n", edrv->index, dev_index);
+			EXTPR("[%d]: load dev[%d] from bsp\n", edrv->index, dev_index);
 			dft_conf = edrv->data->dft_conf[edrv->index];
 			if (dev_index >= dft_conf->ext_common->ext_num) {
 				EXTERR("[%d]: %s: %d invalid\n",

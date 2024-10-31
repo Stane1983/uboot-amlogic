@@ -174,7 +174,7 @@ set_pll_retry_txhd2:
 	lcd_ana_setb(HHI_TCON_PLL_CNTL0, 1, 15, 1);
 	lcd_ana_write(HHI_TCON_PLL_CNTL6, 0x50440000);
 
-	ret = lcd_pll_wait_lock(HHI_TCON_PLL_STS, 31);
+	ret = lcd_pll_wait_lock(cconf->pll_id, HHI_TCON_PLL_STS, 31);
 	if (ret) {
 		if (cnt++ < PLL_RETRY_MAX)
 			goto set_pll_retry_txhd2;

@@ -102,7 +102,7 @@ int lcd_pll_ss_level_generate(struct lcd_clk_config_s *cconf)
 	return 0;
 }
 
-int lcd_pll_wait_lock(unsigned int reg, unsigned int lock_bit)
+int lcd_pll_wait_lock(int id, unsigned int reg, unsigned int lock_bit)
 {
 	unsigned int pll_lock;
 	int wait_loop = PLL_WAIT_LOCK_CNT; /* 200 */
@@ -115,8 +115,8 @@ int lcd_pll_wait_lock(unsigned int reg, unsigned int lock_bit)
 	} while ((pll_lock == 0) && (wait_loop > 0));
 	if (pll_lock == 0)
 		ret = -1;
-	LCDPR("%s: pll_lock=%d, wait_loop=%d\n",
-	      __func__, pll_lock, (PLL_WAIT_LOCK_CNT - wait_loop));
+	LCDPR("%s: [%d]: pll_lock=%d, wait_loop=%d\n",
+	      __func__, id, pll_lock, (PLL_WAIT_LOCK_CNT - wait_loop));
 
 	return ret;
 }

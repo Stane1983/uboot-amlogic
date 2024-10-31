@@ -170,7 +170,7 @@ set_pll_retry:
 	lcd_ana_write(ANACTRL_DSIPLL_CTRL3, 0x20008010);
 	udelay(20);
 
-	ret = lcd_pll_wait_lock(ANACTRL_DSIPLL_CTRL0, 31);
+	ret = lcd_pll_wait_lock(cconf->pll_id, ANACTRL_DSIPLL_CTRL0, 31);
 	if (ret) {
 		if (cnt++ < PLL_RETRY_MAX)
 			goto set_pll_retry;

@@ -2805,8 +2805,7 @@ static void dccd_check_update(struct dccd_info_s *dccd)
 
 	//check if it's dccd bin
 	if (basic->dccd != 0x0d0c0c0d) {
-		if (model_debug_flag & DEBUG_LCD)
-			ALOGW("It's not dccd bin(%#x)\n", basic->dccd);
+		ALOGE("It's not dccd bin(%#x)\n", basic->dccd);
 		return;
 	}
 
@@ -3007,21 +3006,26 @@ static int update_dccd_load(struct lcd_attr_s *p_attr)
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, dccd_flag is (%s)\n", __func__, ini_value);
 	temp = strtoul(ini_value, NULL, 0);
-	if (!temp) {
-		ALOGD("%s: no need load dccd", __func__);
+	if (!temp)
 		return 0;
-	}
+
+	ini_value = ini_get_string("lcd_Attr", "dccd_timing", "0");
+	if (model_debug_flag & DEBUG_LCD)
+		ALOGD("%s, dccd_timing is (%s)\n", __func__, ini_value);
+	temp = strtoul(ini_value, NULL, 0);
+	if (!temp)
+		return 0;
 
 	//check dccd bin
 	ini_value = ini_get_string("tcon_Path", "DCCD_BIN_PATH", "null");
 	if (!strcmp(ini_value, "null")) {
-		if (model_debug_flag & DEBUG_TCON)
-			ALOGE("%s, dccd bin load file error!\n", __func__);
+		ALOGE("%s, no dccd_bin file error!\n", __func__);
+		return -1;
 	}
-	if (model_debug_flag & DEBUG_TCON)
+	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s: dccd_path: %s\n", __func__, ini_value);
 	if (!ini_is_file_exist(ini_value)) {
-		ALOGE("%s, file name \"%s\" not exist.\n", __func__, ini_value);
+		ALOGE("%s, file \"%s\" not exist.\n", __func__, ini_value);
 		return -1;
 	}
 
@@ -3031,7 +3035,7 @@ static int update_dccd_load(struct lcd_attr_s *p_attr)
 
 	tmp_buf = (unsigned char *)malloc(size);
 	if (!tmp_buf) {
-		ALOGE("%s, malloc buffer memory error!!!\n", __func__);
+		ALOGE("%s, malloc buffer error!\n", __func__);
 		return -1;
 	}
 
@@ -3039,12 +3043,10 @@ static int update_dccd_load(struct lcd_attr_s *p_attr)
 
 	dccd_info.data_buf = tmp_buf;
 	dccd_info.data_size = size;
+	dccd_info.is_dccd = 0;
 	dccd_check_update(&dccd_info);
 
-	ini_value = ini_get_string("lcd_Attr", "dccd_timing", "0");
-	if (model_debug_flag & DEBUG_LCD)
-		ALOGD("%s, dccd_timing is (%s)\n", __func__, ini_value);
-	if (!strcmp(ini_value, "1"))
+	if (dccd_info.is_dccd)
 		dccd_update_lcd_attr(p_attr, tmp_buf);
 	bin_file_uninit();
 

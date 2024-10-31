@@ -95,7 +95,8 @@ int lcd_unifykey_get_size(const char *key_name, int *len)
 
 	if (is_ukey_in_param_mem()) {
 		panel_param_mem_get(key_name, &size);
-		printf("%s: %s size:%d\n", __func__, key_name, size);
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			printf("%s: %s size:%d\n", __func__, key_name, size);
 		if (size) {
 			*len = (int)size;
 			return 0;

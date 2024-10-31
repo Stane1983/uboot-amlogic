@@ -144,7 +144,6 @@ static int ldim_config_load_from_dts(char *dt_addr, int child_offset,
 		ldim_drv->config.row = be32_to_cpup((u32*)propdata);
 		ldim_drv->config.col = be32_to_cpup((((u32*)propdata)+1));
 	}
-	LDIMPR("get bl_zone row = %d, col = %d\n", ldim_drv->config.row, ldim_drv->config.col);
 
 	propdata = (char *)fdt_getprop(dt_addr, child_offset, "ldim_dev_index", NULL);
 	if (!propdata) {
@@ -153,7 +152,6 @@ static int ldim_config_load_from_dts(char *dt_addr, int child_offset,
 	} else {
 		ldim_drv->config.dev_index = be32_to_cpup((u32 *)propdata);
 	}
-	LDIMPR("get dev_index = %d\n", ldim_drv->config.dev_index);
 
 	return 0;
 }
@@ -174,12 +172,9 @@ static int ldim_config_load_from_unifykey(unsigned char *para, struct aml_ldim_d
 	/* get bl_ldim_region_row_col 4byte*/
 	ldim_drv->config.row = *(p + LCD_UKEY_BL_LDIM_ROW);
 	ldim_drv->config.col = *(p + LCD_UKEY_BL_LDIM_COL);
-	LDIMPR("get bl_zone row = %d, col = %d\n",
-	       ldim_drv->config.row, ldim_drv->config.col);
 
 	/* get ldim_dev_index 1byte*/
 	ldim_drv->config.dev_index = *(p + LCD_UKEY_BL_LDIM_DEV_INDEX);
-	LDIMPR("get dev_index = %d\n", ldim_drv->config.dev_index);
 
 	return 0;
 }
@@ -226,6 +221,9 @@ int aml_ldim_probe(struct aml_bl_drv_s *bdrv, char *dt_addr, int child_offset,
 		LDIMERR("%s failed\n", __func__);
 		return -1;
 	}
+
+	LDIMPR("get bl_zone row = %d, col = %d, dev_index = %d\n",
+	       ldim_driver->config.row, ldim_driver->config.col, ldim_driver->config.dev_index);
 
 	ret = aml_ldim_device_probe(dt_addr, ldim_driver);
 	if (ret)

@@ -257,7 +257,9 @@ static void lcd_tcon_core_reg_set(struct aml_lcd_drv_s *pdrv,
 				lcd_tcon_write(i, table8[i]);
 		}
 	}
-	LCDPR("%s\n", __func__);
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("%s finish\n", __func__);
 }
 
 static void lcd_tcon_data_init_set(struct aml_lcd_drv_s *pdrv, unsigned char *data_buf)

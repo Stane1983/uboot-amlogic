@@ -690,7 +690,8 @@ static int ldim_dev_get_config_from_dts(struct ldim_dev_driver_s *dev_drv,
 	const char *str;
 	int temp;
 	struct bl_pwm_config_s *bl_pwm;
-	int i, ret = 0;
+	char dbg_str[160];
+	int i, dbg_str_len = 0, ret = 0;
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
 		LDIMPR("load ldim_dev config from dts\n");
@@ -712,12 +713,10 @@ static int ldim_dev_get_config_from_dts(struct ldim_dev_driver_s *dev_drv,
 	free(propname);
 
 	propdata = (char *)fdt_getprop(dt_addr, child_offset, "ldim_dev_name", NULL);
-	if (!propdata) {
+	if (!propdata)
 		LDIMERR("failed to get ldim_dev_name\n");
-	} else {
+	else
 		strncpy(dev_drv->name, propdata, 19);
-	}
-	LDIMPR("get dev config: %s[%d]\n", dev_drv->name, dev_drv->index);
 
 	propdata = (char *)fdt_getprop(dt_addr, child_offset, "type", NULL);
 	if (!propdata) {
@@ -725,7 +724,6 @@ static int ldim_dev_get_config_from_dts(struct ldim_dev_driver_s *dev_drv,
 		return -1;
 	}
 	dev_drv->type = be32_to_cpup((u32 *)propdata);
-	LDIMPR("type: %d\n", dev_drv->type);
 	if (dev_drv->type >= LDIM_DEV_TYPE_MAX) {
 		LDIMERR("invalid type %d\n", dev_drv->type);
 		return -1;
@@ -924,8 +922,6 @@ static int ldim_dev_get_config_from_dts(struct ldim_dev_driver_s *dev_drv,
 	} else {
 		dev_drv->mcu_header = (unsigned int)(be32_to_cpup((u32 *)propdata));
 	}
-	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
-		LDIMPR("mcu_header=%d\n", dev_drv->mcu_header);
 
 	propdata = (char *)fdt_getprop(dt_addr, child_offset, "mcu_dim", NULL);
 	if (!propdata) {
@@ -934,18 +930,12 @@ static int ldim_dev_get_config_from_dts(struct ldim_dev_driver_s *dev_drv,
 	} else {
 		dev_drv->mcu_dim = (unsigned int)(be32_to_cpup((u32 *)propdata));
 	}
-	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-		LDIMPR("mcu_header=0x%0x, mcu_dim=0x%x\n",
-		       dev_drv->mcu_header, dev_drv->mcu_dim);
-	}
 
 	propdata = (char *)fdt_getprop(dt_addr, child_offset, "chip_count", NULL);
-	if (!propdata) {
+	if (!propdata)
 		dev_drv->chip_cnt = 1;
-	} else {
+	else
 		dev_drv->chip_cnt = be32_to_cpup((u32 *)propdata);
-		LDIMPR("chip_count: %d\n", dev_drv->chip_cnt);
-	}
 
 	propdata = (char *)fdt_getprop(dt_addr, child_offset, "ldim_zone_mapping_path", NULL);
 	if (propdata) {
@@ -972,6 +962,13 @@ static int ldim_dev_get_config_from_dts(struct ldim_dev_driver_s *dev_drv,
 		dev_drv->bl_mapping[i] = (unsigned short)be32_to_cpup((((u32 *)propdata) + i));
 
 ldim_dev_get_config_from_dts_next:
+	dbg_str_len += sprintf(dbg_str + dbg_str_len, "mcu_header=0x%08x, mcu_dim=0x%08x, ",
+		dev_drv->mcu_header, dev_drv->mcu_dim);
+	sprintf(dbg_str + dbg_str_len, "chip_cnt:%d, cus pwm_pinmux_sel:%s",
+		dev_drv->chip_cnt, dev_drv->pinmux_name);
+	LDIMPR("load dts config: %s[%d]: type:%d, %s\n",
+	       dev_drv->name, dev_drv->index, dev_drv->type, dbg_str);
+
 	/* get init_cmd */
 	propdata = (char *)fdt_getprop(dt_addr, child_offset, "cmd_size", NULL);
 	if (!propdata) {
@@ -1003,12 +1000,9 @@ static int ldim_dev_get_config_from_ukey(struct ldim_dev_driver_s *dev_drv)
 	int key_len, len;
 	const char *str;
 	unsigned int temp;
-	struct lcd_unifykey_header_s *ldev_header;
 	struct bl_pwm_config_s *bl_pwm;
-	int i, ret = 0;
-
-	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
-		LDIMPR("load ldim_dev config from unifykey\n");
+	char dbg_str[160];
+	int i, dbg_str_len = 0, ret = 0;
 
 	ret = lcd_unifykey_get_size("ldim_dev", &key_len);
 	if (ret)
@@ -1025,13 +1019,8 @@ static int ldim_dev_get_config_from_ukey(struct ldim_dev_driver_s *dev_drv)
 	}
 
 	/* step 1: check header */
-	ldev_header = (struct lcd_unifykey_header_s *)para;
-	LDIMPR("unifykey version: 0x%04x\n", ldev_header->version);
-	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-		LDIMPR("unifykey header:\n");
-		LDIMPR("crc32             = 0x%08x\n", ldev_header->crc32);
-		LDIMPR("data_len          = %d\n", ldev_header->data_len);
-	}
+	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
+		lcd_unifykey_header_print(para);
 
 	/* step 2: check backlight parameters */
 	len = 65; //10+30+25
@@ -1167,12 +1156,10 @@ static int ldim_dev_get_config_from_ukey(struct ldim_dev_driver_s *dev_drv)
 	}
 
 	str = (const char *)(p + LCD_UKEY_LDIM_DEV_PINMUX_SEL);
-	if (strlen(str) == 0) {
+	if (strlen(str) == 0)
 		strcpy(dev_drv->pinmux_name, "invalid");
-	} else {
+	else
 		strncpy(dev_drv->pinmux_name, str, (LDIM_DEV_NAME_MAX - 1));
-		LDIMPR("find custom ldim_pwm_pinmux_sel: %s\n", str);
-	}
 
 	/* ctrl (271Byte) */
 	temp = *(p + LCD_UKEY_LDIM_DEV_EN_GPIO);
@@ -1216,22 +1203,26 @@ static int ldim_dev_get_config_from_ukey(struct ldim_dev_driver_s *dev_drv)
 	dev_drv->chip_cnt =
 		(*(p + LCD_UKEY_LDIM_DEV_CHIP_COUNT) |
 		((*(p + LCD_UKEY_LDIM_DEV_CHIP_COUNT + 1)) << 8));
-	LDIMPR("chip_count: %d\n", dev_drv->chip_cnt);
 
 	str = (const char *)(p + LCD_UKEY_LDIM_DEV_ZONE_MAP_PATH);
 	if (strlen(str) == 0) {
 		for (i = 0; i < dev_drv->zone_num; i++)
 			dev_drv->bl_mapping[i] = (unsigned short)i;
 	} else {
-		LDIMPR("find custom ldim_zone_mapping\n");
 		str = env_get("bl_mapping_path");
-		LDIMPR("env_get ldim_zone_mapping = %s\n", str);
+		LDIMPR("find custom zone_mapping: %s\n", str);
 		ret = ldim_dev_zone_mapping_load(dev_drv, str);
 		if (ret) {
 			for (i = 0; i < dev_drv->zone_num; i++)
 				dev_drv->bl_mapping[i] = (unsigned short)i;
 		}
 	}
+
+	dbg_str_len += sprintf(dbg_str + dbg_str_len, "mcu_header=0x%08x, mcu_dim=0x%08x, ",
+		dev_drv->mcu_header, dev_drv->mcu_dim);
+	sprintf(dbg_str + dbg_str_len, "chip_cnt:%d, cus pwm_pinmux_sel:%s",
+		dev_drv->chip_cnt, dev_drv->pinmux_name);
+	LDIMPR("load ukey config: %s: type:%d, %s\n", dev_drv->name, dev_drv->type, dbg_str);
 
 	dev_drv->cmd_size = *(p + LCD_UKEY_LDIM_DEV_CMD_SIZE);
 	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
@@ -1302,7 +1293,7 @@ static int ldim_dev_get_config(char *dt_addr, struct aml_ldim_driver_s *ldim_drv
 		val = be32_to_cpup((u32 *)propdata);
 	}
 	dev_drv->key_valid = val;
-	LDIMPR("key_valid: %d\n", dev_drv->key_valid);
+	//LDIMPR("key_valid: %d\n", dev_drv->key_valid);
 
 	/* init gpio */
 	i = 0;

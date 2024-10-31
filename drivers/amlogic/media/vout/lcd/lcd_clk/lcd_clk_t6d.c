@@ -185,7 +185,7 @@ static void lcd_set_pll_t6d(struct aml_lcd_drv_s *pdrv)
 		udelay(80);
 		lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL0, 0, 18, 1);
 		lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL0, 3, 29, 2);
-		ret = lcd_pll_wait_lock(ANACTRL_TCON_PLL0_STS, 31);
+		ret = lcd_pll_wait_lock(cconf->pll_id, ANACTRL_TCON_PLL0_STS, 31);
 	} while (ret && ++cnt < PLL_RETRY_MAX);
 
 	if (ret)
