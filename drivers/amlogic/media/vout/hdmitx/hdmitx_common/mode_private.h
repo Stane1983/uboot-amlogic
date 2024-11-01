@@ -54,6 +54,9 @@ extern "C" {
 #define MODE_640x480P                   "640x480p60hz"
 #define MODE_576I                       "576i50hz"
 #define MODE_576P                       "576p50hz"
+#define MODE_720P24HZ                   "720p24hz"
+#define MODE_720P25HZ                   "720p25hz"
+#define MODE_720P30HZ                   "720p30hz"
 #define MODE_720P48HZ                   "720p48hz"
 #define MODE_720P50HZ                   "720p50hz"
 #define MODE_720P                       "720p60hz"
@@ -168,6 +171,9 @@ static const char* DISPLAY_MODE_LIST[] = {
     MODE_720P,
     MODE_720P50HZ,
     MODE_720P48HZ,
+    MODE_720P30HZ,
+    MODE_720P25HZ,
+    MODE_720P24HZ,
     MODE_576P,
     MODE_480P,
     MODE_640x480P,

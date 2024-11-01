@@ -1732,7 +1732,7 @@ unsigned int hdmi_outputmode_check(char *mode, unsigned int frac)
 	int i, ret = 0xff;
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
-	if (hdev->chip_type == MESON_CPU_ID_S5) {
+	if (hdev->chip_type >= MESON_CPU_ID_S5) {
 		const struct hdmi_timing *timing = NULL;
 
 		timing = hdmitx21_gettiming_from_name(mode);
