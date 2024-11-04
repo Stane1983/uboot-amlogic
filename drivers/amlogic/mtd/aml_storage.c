@@ -1287,13 +1287,12 @@ static int nor_rsv_protect(const char *name, bool ops)
 	return 0;
 }
 
-static int mtd_store_param_rsv_partition(void)
+static int mtd_store_get_fdt_node_offset(enum boot_type_e medium_type)
 {
 	char buf[128];
 	char *fdtaddr = NULL;
 	u32 mem_dtb;
-	enum boot_type_e medium_type = store_get_type();
-	int parent_offset;
+	int node_offset;
 
 	if (!working_fdt) {
 		pr_debug("%s: working_fdt is set, fdt add to set working_fdt\n",
@@ -1314,16 +1313,27 @@ static int mtd_store_param_rsv_partition(void)
 
 	if (working_fdt) {
 		if (medium_type == BOOT_SNAND)
-			parent_offset = fdt_node_offset_by_compatible(working_fdt, -1, "spi-nand");
+			node_offset = fdt_node_offset_by_compatible(working_fdt, -1, "spi-nand");
 		else if (medium_type == BOOT_NAND_MTD)
-			parent_offset = fdt_path_offset(working_fdt, "/soc/nfc");
+			node_offset = fdt_path_offset(working_fdt, "/soc/nfc");
 		else
 			return 0;
 	} else {
 		return -1;
 	}
 
-	return meson_rsv_add_dtb(working_fdt, parent_offset);
+	return node_offset;
+}
+
+static int mtd_store_param_rsv_partition(void)
+{
+	int parent_offset;
+
+	parent_offset = mtd_store_get_fdt_node_offset(store_get_type());
+	if (parent_offset > 0)
+		return meson_rsv_add_dtb(working_fdt, parent_offset);
+
+	return 0;
 }
 
 static int mtd_store_param_bl2_partition(void)
@@ -1379,50 +1389,36 @@ static int mtd_store_param_bl2_partition(void)
 
 static int mtd_store_param_boot_layout(void)
 {
-	enum boot_type_e medium_type;
-	char buf[128];
-	char *fdtaddr = NULL;
-	int node_offset, err = 0;
-	u32 mem_dtb;
+	struct mtd_info *mtd = mtd_store_get(0);
+	int node_offset, err = -1;
+	/* bit0:3 - boot layout
+	 * bit4:7 - bl2 layout
+	 * bit8:11 - bl2 copy number,
+	 * bit12:22 - page number per bl2 copy
+	 */
 	u32 boot_layout;
+	u8 bl2_copy_number = meson_rsv_part_get_bl2_copy_number(mtd);
+	u16 pages_per_copy = meson_rsv_part_get_bl2_copy_size(mtd) / mtd->writesize;
 
 #ifdef BOARD_BOOT_LAYOUT_DISCRETE_BL2
 	boot_layout = BOOT_DISCRETE_BL2;
 #else
 	boot_layout = BOOT_DISCRETE_ALL;
 #endif
-
-	medium_type = store_get_type();
-	if (medium_type != BOOT_SNAND)
-		return 0;
-
-	if (!working_fdt) {
-		pr_debug("%s: working_fdt is set, fdt add to set working_fdt\n", __FILE__);
-		fdtaddr = env_get("dtb_mem_addr");
-		if (!fdtaddr) {
-			pr_err("get dtb_mem_addr NULL\n");
-			return -EBADMSG;
-		}
-		mem_dtb = simple_strtoul(fdtaddr, NULL, 16);
-		sprintf(buf, "fdt addr 0x%x", mem_dtb);
-		pr_debug("fdt addr 0x%x\n", mem_dtb);
-		if (run_command(buf, 0)) {
-			pr_err("fdt addr 0x%x error.\n", mem_dtb);
-			return -EBADMSG;
-		}
-	}
+	boot_layout |= (BOARD_CONFIG_BL2_LAYOUT_TYPE << 4);
+	boot_layout |= ((bl2_copy_number & 0x0F) << 8);
+	boot_layout |= ((pages_per_copy & 0x3FF) << 12);
 
 add:
-	if (working_fdt) {
-		node_offset = fdt_node_offset_by_compatible(working_fdt, -1, "spi-nand");
-		err = fdt_setprop_cell(working_fdt, node_offset, "boot_layout", boot_layout);
+	node_offset = mtd_store_get_fdt_node_offset(store_get_type());
+	if (node_offset > 0) {
+		err = fdt_setprop_cell(working_fdt, node_offset, "boot_layout",
+				       boot_layout);
 		if (err == -FDT_ERR_NOSPACE) {
 			err = fdt_increase_size(working_fdt, 512);
 			if (!err)
 				goto add;
 		}
-	} else {
-		err = -1;
 	}
 
 	return err;
