@@ -939,24 +939,8 @@ static void get_parse_edid_data(struct hdmitx_dev *hdev)
 	/* parse edid data */
 	hdmi_edid_parsing(hdev->rawedid, &hdev->RXCap);
 
-	/*
-	 * For the first boot after burning, if the hdr_priority environment
-	 * variable is not configured, need to set it manually to avoid
-	 * the inconsistency between the value of the hdr_priority environment
-	 * variable and the result of the Google hdr policy during the boot
-	 * process, causing the TV to flash black.
-	 * 268435456 = 0x10000000, DV priority
-	 * 268435472 = 0x10000010,HDR priority
-	 */
-	if (hdr_priority == -1) {
-		if (is_dolby_enabled()) {
-			hdr_priority = 268435456;
-			env_set("hdr_priority", "268435456");
-		} else {
-			hdr_priority = 268435472;
-			env_set("hdr_priority", "268435472");
-		}
-	}
+	if (hdr_priority == -1)
+		return;
 	hdmitx_set_hdr_priority(&hdev->RXCap, hdr_priority);
 }
 
