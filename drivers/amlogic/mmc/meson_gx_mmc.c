@@ -486,7 +486,7 @@ static int mmc_pre_dma(struct udevice *dev, struct mmc_data *data,
 
 	meson_mmc_cmd = &desc_cur->cmd_info;
 	if (data->flags == MMC_DATA_WRITE)
-		data_addr = (ulong)pdata->w_buf;
+		data_addr = (ulong)data->src;
 	else
 		data_addr = (ulong)data->dest;
 
@@ -496,8 +496,8 @@ static int mmc_pre_dma(struct udevice *dev, struct mmc_data *data,
 		while (blks) {
 			meson_mmc_cmd = &desc_cur->cmd_info;
 			*meson_mmc_cmd |= CMD_CFG_BLOCK_MODE;
-			bl_len = (blks > mmc->cfg->b_max) ?
-				mmc->cfg->b_max : blks;
+			bl_len = (blks > SD_EMMC_DESC_MAX_BLKS) ?
+				SD_EMMC_DESC_MAX_BLKS : blks;
 			*meson_mmc_cmd &= ~CMD_CFG_LENGTH_MASK;
 			*meson_mmc_cmd |= bl_len;
 			blks -= bl_len;
@@ -514,7 +514,7 @@ static int mmc_pre_dma(struct udevice *dev, struct mmc_data *data,
 				*meson_mmc_cmd |= CMD_CFG_DATA_WR;
 			*meson_mmc_cmd |= CMD_CFG_TIMEOUT_4S;
 			desc_cur->data_addr = data_addr
-				+ (desc_cnt * mmc->cfg->b_max * mmc->read_bl_len);
+				+ (desc_cnt * SD_EMMC_DESC_MAX_BLKS * mmc->read_bl_len);
 			desc_cur->data_addr &= ~(1 << 0);
 			if (blks) {
 				desc_cur++;
@@ -535,10 +535,8 @@ static int mmc_pre_dma(struct udevice *dev, struct mmc_data *data,
 static int mmc_setup_data(struct udevice *dev, struct mmc_data *data,
 			  struct sd_emmc_desc_info *desc_cur)
 {
-	struct meson_mmc_plat *pdata = dev_get_plat(dev);
 	u32 *meson_mmc_cmd = NULL;
 	unsigned int data_size, desc_cnt = 0;
-	u32 data_addr = 0;
 
 	meson_mmc_cmd = &desc_cur->cmd_info;
 	*meson_mmc_cmd |= CMD_CFG_DATA_IO;
@@ -548,17 +546,12 @@ static int mmc_setup_data(struct udevice *dev, struct mmc_data *data,
 	data_size = data->blocks * data->blocksize;
 	if (data->flags == MMC_DATA_WRITE) {
 		*meson_mmc_cmd |= CMD_CFG_DATA_WR;
-		pdata->w_buf = (u32 *)malloc(data_size);
-		memset(pdata->w_buf, 0, data_size);
-		memcpy(pdata->w_buf, (u32 *)data->src, data_size);
-		flush_dcache_range((ulong)pdata->w_buf,
-				   (ulong)(pdata->w_buf + data_size));
-		data_addr = (ulong)pdata->w_buf;
+		flush_dcache_range((ulong)data->src,
+				   (ulong)data->src + data_size);
 	} else {
 		*meson_mmc_cmd &= ~CMD_CFG_DATA_WR;
-		data_addr = (ulong)data->dest;
-		invalidate_dcache_range(data_addr,
-					data_addr + data_size);
+		invalidate_dcache_range((ulong)data->dest,
+					(ulong)data->dest + data_size);
 	}
 
 	desc_cnt = mmc_pre_dma(dev, data, desc_cur);
@@ -665,7 +658,6 @@ static int meson_dm_mmc_send_cmd(struct udevice *dev, struct mmc_cmd *cmd,
 				 struct mmc_data *data)
 {
 	struct mmc *mmc = mmc_get_mmc_dev(dev);
-	struct meson_mmc_plat *pdata = mmc->priv;
 	u32 status;
 	ulong start;
 	int ret = 0;
@@ -685,9 +677,6 @@ static int meson_dm_mmc_send_cmd(struct udevice *dev, struct mmc_cmd *cmd,
 	ret = mmc_controller_debug(dev, cmd, status);
 
 	meson_mmc_read_response(mmc, cmd);
-
-	if (data && data->flags == MMC_DATA_WRITE)
-		free(pdata->w_buf);
 
 	if (ret) {
 		if (status & STATUS_RESP_TIMEOUT)
@@ -1240,7 +1229,8 @@ static int meson_mmc_probe(struct udevice *dev)
 	cfg->voltages = MMC_VDD_33_34 | MMC_VDD_32_33 |
 			MMC_VDD_31_32 | MMC_VDD_165_195;
 	cfg->f_min = 400000; /* 400 Khz */
-	cfg->b_max = 511; /* max 512 - 1 blocks */
+	/* max (MMC_MAX_DESC_NUM * SD_EMMC_DESC_MAX_BLKS) blocks */
+	cfg->b_max = CONFIG_SYS_MMC_MAX_BLK_COUNT;
 	cfg->name = dev->name;
 	host->mmc = &pdata->mmc;
 	if (!host->blk_test)

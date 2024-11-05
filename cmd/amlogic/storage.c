@@ -733,9 +733,9 @@ static int do_store_read(cmd_tbl_t *cmdtp,
 	time = get_timer(time);
 
 	if (size != 0)
-		pr_info("%lu bytes ", size);
+		printf("%lu %s ", size, (argc == 6) ? "bytes" : "blocks");
 
-	pr_info("read in %lu ms", time);
+	printf("read in %lu ms", time);
 	if ((time > 0) && (size != 0)) {
 		puts(" (");
 		print_size(div_u64(size, time) * 1000, "/s");
@@ -781,7 +781,7 @@ static int do_store_write(cmd_tbl_t *cmdtp,
 	time = get_timer(time);
 
 	if (size != 0)
-		printf("%lu bytes ", size);
+		printf("%lu %s ", size, (argc == 6) ? "bytes" : "blocks");
 
 	printf("write in %lu ms", time);
 	if ((time > 0) && (size != 0)) {
