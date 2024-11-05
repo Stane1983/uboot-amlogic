@@ -66,6 +66,7 @@ static void lcd_tcon_spi_print(void)
 #ifdef CONFIG_AML_LCD_EXTERN
 static int lcd_tcon_spi_ext_update(struct lcd_extern_dev_s *ext_dev)
 {
+	struct lcd_unifykey_header_s *header;
 	unsigned char *buf;
 	unsigned int size, crc;
 
@@ -82,19 +83,15 @@ static int lcd_tcon_spi_ext_update(struct lcd_extern_dev_s *ext_dev)
 	       tcon_spi.ext_init_on_cnt);
 	ext_dev->config.table_init_on_cnt = tcon_spi.ext_init_on_cnt;
 
+	header = (struct lcd_unifykey_header_s *)buf;
+
 	/* update size & crc, then write to unifykey */
 	size = LCD_UKEY_EXT_INIT + tcon_spi.ext_init_on_cnt +
 		tcon_spi.ext_init_off_cnt;
-	buf[4] = size & 0xff;
-	buf[5] = (size >> 8) & 0xff;
-	buf[6] = (size >> 16) & 0xff;
-	buf[7] = (size >> 24) & 0xff;
+	header->data_len = size;
 
 	crc = (unsigned int)(lcd_crc32(0, &buf[4], (size - 4)));
-	buf[0] = crc & 0xff;
-	buf[1] = (crc >> 8) & 0xff;
-	buf[2] = (crc >> 16) & 0xff;
-	buf[3] = (crc >> 24) & 0xff;
+	header->crc32 = crc;
 
 	lcd_unifykey_write("lcd_extern", buf, size);
 
@@ -421,7 +418,7 @@ static int lcd_tcon_spi_data_parse(void)
 	unsigned int ext_size;
 #ifdef CONFIG_CMD_INI
 	unsigned char *data_buf = (unsigned char *)handle_lcd_ext_buf_get();
-	unsigned int data_buf_size;
+	struct lcd_unifykey_header_s *header;
 #endif
 #endif
 	struct lcd_tcon_spi_unifykey_header_s *spi_header;
@@ -590,11 +587,13 @@ static int lcd_tcon_spi_data_parse(void)
 			memset(tcon_spi.ext_buf, 0, (ext_size * sizeof(unsigned char)));
 #ifdef CONFIG_CMD_INI
 			if (data_buf) {
-				data_buf_size = data_buf[4] |
-					(data_buf[5] << 8) |
-					(data_buf[6] << 16) |
-					(data_buf[7] << 24);
-				memcpy(tcon_spi.ext_buf, data_buf, data_buf_size);
+				header = (struct lcd_unifykey_header_s *)data_buf;
+				if (header->data_len > ext_size) {
+					LCDERR("%s: [%d] data_size %d out of support\n",
+					       __func__, i, header->data_len);
+				} else {
+					memcpy(tcon_spi.ext_buf, data_buf, header->data_len);
+				}
 			}
 #endif
 		}

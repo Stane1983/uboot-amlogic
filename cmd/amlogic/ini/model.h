@@ -305,13 +305,6 @@ struct lcd_cus_ctrl_s {
 
 #define CC_BL_NAME_LEN_MAX        (30)
 
-struct bl_header_s {
-	unsigned int crc32;
-	unsigned short data_len;
-	unsigned short version;
-	unsigned short rev;
-};
-
 struct bl_basic_s {
 	char bl_name[CC_BL_NAME_LEN_MAX];
 };
@@ -383,7 +376,7 @@ struct bl_custome_s {
 };
 
 struct bl_attr_s {
-	struct bl_header_s head;
+	struct lcd_header_s head;
 	struct bl_basic_s basic;
 	struct bl_level_s level;
 	struct bl_method_s method;
@@ -393,13 +386,6 @@ struct bl_attr_s {
 };
 
 #define CC_LDIM_DEV_NAME_LEN_MAX        (30)
-
-struct ldim_dev_header_s {/* header (10Byte) */
-	unsigned int crc32;
-	unsigned short data_len;
-	unsigned short version;
-	unsigned short rev;
-};
 
 struct ldim_dev_basic_s {/* basic (30Byte) */
 	char dev_name[CC_LDIM_DEV_NAME_LEN_MAX];
@@ -500,7 +486,7 @@ struct ldim_dev_init_s {
 };
 
 struct ldim_dev_attr_s {
-	struct ldim_dev_header_s head;
+	struct lcd_header_s head;
 	struct ldim_dev_basic_s basic;
 	struct ldim_dev_if_s interface;
 	struct ldim_dev_pwm_s pwm;
@@ -511,13 +497,6 @@ struct ldim_dev_attr_s {
 };
 
 #define CC_LCD_EXT_NAME_LEN_MAX        (30)
-
-struct lcd_ext_header_s {
-	unsigned int crc32;
-	unsigned short data_len;
-	unsigned short version;
-	unsigned short rev;
-};
 
 #define LCD_EXTERN_CMD_SIZE_DYNAMIC    0xff
 #define LCD_EXTERN_INIT_ON_MAX         3000
@@ -566,7 +545,7 @@ struct lcd_ext_type_s {
 #define LCD_EXT_CMD_TYPE_END                    0xff
 
 struct lcd_ext_attr_s {
-	struct lcd_ext_header_s head;
+	struct lcd_header_s head;
 	struct lcd_ext_basic_s basic;
 	struct lcd_ext_type_s type;
 	unsigned char cmd_data[LCD_EXTERN_INIT_ON_MAX+LCD_EXTERN_INIT_OFF_MAX];

@@ -1496,7 +1496,7 @@ static int lcd_ext_data_to_buf(unsigned char tmp_buf[], struct lcd_ext_attr_s *p
 
 	tmp_off = 0;
 
-	tmp_len = sizeof(struct lcd_ext_header_s);
+	tmp_len = sizeof(struct lcd_header_s);
 	memcpy((void *)(tmp_buf + tmp_off), (void *)(&p_attr->head), tmp_len);
 	tmp_off += tmp_len;
 
@@ -1531,7 +1531,7 @@ static int handle_lcd_ext_header(struct lcd_ext_attr_s *p_attr)
 	}
 
 	glcd_ext_dcnt = 0;
-	glcd_ext_dcnt += sizeof(struct lcd_ext_header_s);
+	glcd_ext_dcnt += sizeof(struct lcd_header_s);
 	glcd_ext_dcnt += sizeof(struct lcd_ext_basic_s);
 	glcd_ext_dcnt += sizeof(struct lcd_ext_type_s);
 
@@ -1548,7 +1548,8 @@ static int handle_lcd_ext_header(struct lcd_ext_attr_s *p_attr)
 	else
 		p_attr->head.version = strtoul(ini_value, NULL, 0);
 
-	p_attr->head.rev = 0;
+	p_attr->head.block_next_flag = 0;
+	p_attr->head.block_cur_size = glcd_ext_dcnt;
 
 	memset((void *)tmp_buf, 0, CC_MAX_TEMP_BUF_SIZE);
 	lcd_ext_data_to_buf(tmp_buf, p_attr);
@@ -1921,7 +1922,7 @@ static int handle_bl_header(struct bl_attr_s *p_attr)
 		p_attr->head.version = strtoul(ini_value, NULL, 0);
 
 	gbl_dcnt = 0;
-	gbl_dcnt += sizeof(struct bl_header_s);
+	gbl_dcnt += sizeof(struct lcd_header_s);
 	gbl_dcnt += sizeof(struct bl_basic_s);
 	gbl_dcnt += sizeof(struct bl_level_s);
 	gbl_dcnt += sizeof(struct bl_method_s);
@@ -1932,7 +1933,8 @@ static int handle_bl_header(struct bl_attr_s *p_attr)
 	}
 	p_attr->head.data_len = gbl_dcnt;
 
-	p_attr->head.rev = 0;
+	p_attr->head.block_next_flag = 0;
+	p_attr->head.block_cur_size = gbl_dcnt;
 	p_attr->head.crc32 = cal_CRC32(0, (((unsigned char *)p_attr) + 4), gbl_dcnt - 4);
 
 	return 0;
@@ -2472,7 +2474,7 @@ static int handle_ldim_dev_header(struct ldim_dev_attr_s *p_attr)
 		p_attr->head.version = strtoul(ini_value, NULL, 0);
 
 	gldim_dev_dcnt = 0;
-	gldim_dev_dcnt += sizeof(struct ldim_dev_header_s);
+	gldim_dev_dcnt += sizeof(struct lcd_header_s);
 	gldim_dev_dcnt += sizeof(struct ldim_dev_basic_s);
 	gldim_dev_dcnt += sizeof(struct ldim_dev_if_s);
 	gldim_dev_dcnt += sizeof(struct ldim_dev_pwm_s);
@@ -2483,7 +2485,8 @@ static int handle_ldim_dev_header(struct ldim_dev_attr_s *p_attr)
 	gldim_dev_dcnt += g_ldim_dev_init_off_cnt;
 	p_attr->head.data_len = gldim_dev_dcnt;
 
-	p_attr->head.rev = 0;
+	p_attr->head.block_next_flag = 0;
+	p_attr->head.block_cur_size = gldim_dev_dcnt;
 	p_attr->head.crc32 = cal_CRC32(0, (((unsigned char *)p_attr) + 4), gldim_dev_dcnt - 4);
 
 	return 0;
