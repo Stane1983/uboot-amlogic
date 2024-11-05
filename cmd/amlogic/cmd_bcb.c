@@ -148,6 +148,7 @@ static int do_RunBcbCommand(
     char miscbuf[MISCBUF_SIZE] = {0};
     char clearbuf[COMMANDBUF_SIZE+STATUSBUF_SIZE+RECOVERYBUF_SIZE] = {0};
     char* RebootMode;
+	char *powermode;
 	int remain_time = 0;
 
     if (argc != 2) {
@@ -230,11 +231,20 @@ static int do_RunBcbCommand(
 
     run_command("get_rebootmode", 0);
     RebootMode = env_get("reboot_mode");
-    if (strstr(RebootMode, "quiescent") != NULL) {
-        printf("quiescent mode.\n");
+	if (RebootMode && strstr(RebootMode, "quiescent")) {
+		printf("quiescent mode.\n");
         run_command("run storeargs", 0);
 	run_command("setenv bootconfig ${bootconfig} androidboot.quiescent=1;", 0);
     }
+
+	powermode = env_get("powermode");
+	if (RebootMode && !strcmp(RebootMode, "cold_boot")) {
+		if (powermode && !strcmp(powermode, "standby")) {
+			printf("cold_boot default standby, ignore recovery mode\n");
+			clear_misc_partition(clearbuf, sizeof(clearbuf));
+			return 0;
+		}
+	}
 
 	char *retry_times;
 
