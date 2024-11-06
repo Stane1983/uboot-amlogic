@@ -756,6 +756,8 @@ static int lcd_power_load_from_dts(struct aml_lcd_drv_s *pdrv,
 #ifdef CONFIG_AML_LCD_EXTERN
 				lcd_extern_drv_index_add(pdrv->index, pstep[i].index);
 #endif
+			} else if (pstep[i].type == LCD_POWER_TYPE_MUTE) {
+				pdrv->status |= LCD_STATUS_PRE_MUTE;
 			}
 			i++;
 		}
@@ -845,6 +847,8 @@ static int lcd_power_load_from_unifykey(struct aml_lcd_drv_s *pdrv,
 #ifdef CONFIG_AML_LCD_EXTERN
 			lcd_extern_drv_index_add(pdrv->index, pstep[i].index);
 #endif
+		} else if (pstep[i].type == LCD_POWER_TYPE_MUTE) {
+			pdrv->status |= LCD_STATUS_PRE_MUTE;
 		}
 		i++;
 	}

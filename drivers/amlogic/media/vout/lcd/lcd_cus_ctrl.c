@@ -573,7 +573,7 @@ static int lcd_cus_ctrl_attr_parse_tuning_attr_ukey(struct aml_lcd_drv_s *pdrv,
 		}
 	}
 
-	if (phy_cfg->phys[0 && phy_cfg->phys[1]] &&
+	if (phy_cfg->phys[0] && phy_cfg->phys[1] &&
 	    phy_cfg->phys[0]->phy_clk == phy_cfg->phys[1]->phy_clk) {
 		free(phy_cfg->phys[0]);
 		for (i = 0; i < phy_cfg->group_num - 1; i++)

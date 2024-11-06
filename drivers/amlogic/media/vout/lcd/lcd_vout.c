@@ -307,6 +307,17 @@ static void lcd_power_ctrl(struct aml_lcd_drv_s *pdrv, int status)
 			pdrv->tcon_spi_data_load();
 			break;
 #endif
+#ifdef CONFIG_AML_LCD_BACKLIGHT
+		case LCD_POWER_TYPE_BACKLIGHT:
+			if (power_step->value)
+				aml_bl_driver_enable(pdrv->index);
+			else
+				aml_bl_driver_disable(pdrv->index);
+			break;
+#endif
+		case LCD_POWER_TYPE_MUTE:
+				lcd_mute_set(pdrv, power_step->value);
+			break;
 		default:
 			break;
 		}

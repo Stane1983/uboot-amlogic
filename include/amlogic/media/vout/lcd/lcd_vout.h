@@ -524,6 +524,8 @@ enum lcd_power_type_e {
 	LCD_POWER_TYPE_WAIT_GPIO,           /* 4 */
 	LCD_POWER_TYPE_CLK_SS,              /* 5 */
 	LCD_POWER_TYPE_TCON_SPI_DATA_LOAD,  /* 6 */
+	LCD_POWER_TYPE_BACKLIGHT,           /* 7 */
+	LCD_POWER_TYPE_MUTE,                /* 8 */
 	LCD_POWER_TYPE_MAX,
 };
 
@@ -716,8 +718,9 @@ struct aml_lcd_data_s {
 };
 
 /* ==============lcd driver================== */
-#define LCD_STATUS_IF_ON      (1 << 0)
-#define LCD_STATUS_ENCL_ON    (1 << 1)
+#define LCD_STATUS_IF_ON      BIT(0)
+#define LCD_STATUS_ENCL_ON    BIT(1)
+#define LCD_STATUS_PRE_MUTE   BIT(3)
 
 struct aml_lcd_cma_mem {
 	signed char exist;

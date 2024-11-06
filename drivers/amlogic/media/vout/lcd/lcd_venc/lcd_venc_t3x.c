@@ -293,7 +293,8 @@ static void lcd_venc_set(struct aml_lcd_drv_s *pdrv)
 
 	lcd_vcbus_write(ENCL_VIDEO_EN + offset, 0);
 	lcd_venc_set_timing(pdrv);
-	lcd_venc_pattern(pdrv, 0);
+	if (pdrv->status & LCD_STATUS_PRE_MUTE)
+		lcd_venc_pattern(pdrv, 8);
 
 	if (pdrv->index == 0) {
 		reg_data  = lcd_vcbus_read(ENCL_VIDEO_HAVON_PX_RNG);

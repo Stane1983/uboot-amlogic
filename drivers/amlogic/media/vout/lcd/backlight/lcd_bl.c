@@ -2324,6 +2324,10 @@ void aml_bl_driver_enable(int index)
 	if (!bdrv)
 		return;
 
+	if (bdrv->state) {
+		BLPR("already enabled\n");
+		return;
+	}
 	bl_pwm_config_update(bdrv);
 	bl_set_level(bdrv, bdrv->config.level_default);
 	bl_power_ctrl(bdrv, 1);
@@ -2336,6 +2340,11 @@ void aml_bl_driver_disable(int index)
 	bdrv = aml_bl_get_driver(index);
 	if (!bdrv)
 		return;
+
+	if (!bdrv->state) {
+		BLPR("already disabled\n");
+		return;
+	}
 
 	bl_power_ctrl(bdrv, 0);
 }

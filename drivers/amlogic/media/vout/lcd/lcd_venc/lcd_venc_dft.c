@@ -243,6 +243,8 @@ static void lcd_venc_set(struct aml_lcd_drv_s *pdrv)
 
 	lcd_vcbus_write(ENCL_VIDEO_RGBIN_CTRL, 3);
 
+	if (pdrv->status & LCD_STATUS_PRE_MUTE)
+		lcd_venc_debug_test(pdrv, 8);//mute
 	lcd_vcbus_write(ENCL_VIDEO_EN, 1);
 }
 
