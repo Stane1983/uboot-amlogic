@@ -165,6 +165,7 @@
 		"logic_addr=0x0\0" \
 		"edid_14_dir=/odm/etc/tvconfig/hdmi/port1_14.bin\0" \
 		"edid_20_dir=/odm/etc/tvconfig/hdmi/port1_20.bin\0" \
+		"upgrade_key_flag=2\0"\
 		"edid_select=0\0" \
 		"port_map=0x4321\0" \
 		"cec_fun=0x2F\0" \
@@ -334,17 +335,9 @@
 			"run cmdline_keys_base;"\
 			"\0"\
 	"upgrade_key="\
-		"if gpio input GPIOD_3; then "\
-			"echo detect upgrade key;"\
-			"if test ${boot_flag} = 0; then "\
-				"echo enter fastboot; setenv boot_flag 1; saveenv; fastboot 1;"\
-			"else if test ${boot_flag} = 1; then "\
-				"echo enter update; setenv boot_flag 2; saveenv; run update;"\
-			"else "\
-				"echo enter recovery; setenv boot_flag 0; saveenv; run recovery_from_flash;"\
-			"fi;fi;"\
-		"fi;"\
-		"\0"\
+		"run upgrade_key_base;"\
+		"echo usr key;"\
+		"\0"
 
 #ifndef CONFIG_PXP_EMULATOR
 #define CONFIG_PREBOOT  \

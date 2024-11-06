@@ -127,6 +127,7 @@
 		"reverse_ctrl=0\0"\
 		"video_reverse=0\0"\
 	"board=t950s\0"\
+		"upgrade_key_flag=2\0"\
 		"suspend=off\0"\
 		"powermode=on\0"\
 		"ffv_wake=off\0"\
@@ -335,18 +336,11 @@
 			"setenv usid t950s${cpu_id};"\
 			"run cmdline_keys_base;"\
 			"\0"\
-        "upgrade_key="\
-            "if gpio input GPIOAO_3; then "\
-			"echo detect upgrade key;"\
-			"if test ${boot_flag} = 0; then "\
-				"echo enter fastboot; setenv boot_flag 1; saveenv; fastboot 1;"\
-			"else if test ${boot_flag} = 1; then "\
-				"echo enter update; setenv boot_flag 2; saveenv; run update;"\
-			"else "\
-				"echo enter recovery; setenv boot_flag 0; saveenv; run recovery_from_flash;"\
-			"fi;fi;"\
-		"fi;"\
-		"\0"\
+		"upgrade_key="\
+			"run upgrade_key_base;"\
+			"echo usr key;"\
+			"\0"\
+
 
 #define CONFIG_PREBOOT  \
             "run upgrade_check;"\
