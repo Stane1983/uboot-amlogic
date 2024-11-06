@@ -271,9 +271,9 @@ static void lcd_mlvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 
 	if (status) {
 		cntl14 =  0x1310d107;
-		if (pdrv->config.basic.lcd_bits == 6)
+		if (pdrv->config.timing.act_timing.lcd_bits == 18)
 			cntl14 |= (1 << 16);
-		else if (pdrv->config.basic.lcd_bits == 8)
+		else if (pdrv->config.timing.act_timing.lcd_bits == 24)
 			cntl14 |= (2 << 16);
 		else
 			cntl14 |= (3 << 16);

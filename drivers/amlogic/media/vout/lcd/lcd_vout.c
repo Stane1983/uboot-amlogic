@@ -638,7 +638,7 @@ static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 	if (!pdrv->config.timing.base_timing)
 		return;
 	pdrv->boot_ctrl.lcd_type = pdrv->config.basic.lcd_type;
-	pdrv->boot_ctrl.lcd_bits = pdrv->config.basic.lcd_bits;
+	pdrv->boot_ctrl.lcd_bits = pdrv->config.timing.base_timing->lcd_bits;
 	pdrv->boot_ctrl.clk_mode = pdrv->config.timing.clk_mode;
 	pdrv->boot_ctrl.base_frame_rate = pdrv->config.timing.base_timing->frame_rate;
 	switch (pdrv->config.timing.ppc) {

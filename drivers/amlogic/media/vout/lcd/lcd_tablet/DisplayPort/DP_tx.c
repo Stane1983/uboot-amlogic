@@ -117,21 +117,21 @@ void dptx_set_msa(struct aml_lcd_drv_s *pdrv)
 	else
 		n_vid = 162000;
 
-	/*6bit:0x0, 8bit:0x1, 10bit:0x2, 12bit:0x3 */
-	if (pconf->basic.lcd_bits == 6)
+	/*18bit:0x0, 24bit:0x1, 30bit:0x2, 36bit:0x3 */
+	if (pconf->timing.act_timing.lcd_bits == 18)
 		bit_depth = 0x0;
-	else if (pconf->basic.lcd_bits == 10)
+	else if (pconf->timing.act_timing.lcd_bits == 30)
 		bit_depth = 0x2;
-	else if (pconf->basic.lcd_bits == 12)
+	else if (pconf->timing.act_timing.lcd_bits == 36)
 		bit_depth = 0x3;
-	else if (pconf->basic.lcd_bits == 16)
+	else if (pconf->timing.act_timing.lcd_bits == 48)
 		bit_depth = 0x4;
 	else
 		bit_depth = 0x1;
 
-	bpc = pconf->basic.lcd_bits; /* bits per color */
+	bpc = pconf->timing.act_timing.lcd_bits; /* bits per color */
 	sync_mode = pconf->control.edp_cfg.sync_clk_mode;
-	data_per_lane = ((hactive * bpc * 3) + 15) / 16 - 1;
+	data_per_lane = ((hactive * bpc) + 15) / 16 - 1;
 
 	/*bit[0] sync mode (1=sync 0=async) */
 	misc0_data = (bit_depth << 5) | (cfmt << 1) | (sync_mode << 0);

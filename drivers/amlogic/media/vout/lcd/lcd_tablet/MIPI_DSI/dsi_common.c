@@ -537,9 +537,9 @@ u64 lcd_dsi_get_min_bitrate(struct aml_lcd_drv_s *pdrv)
 	if (dconf->operation_mode_display == OPERATION_VIDEO_MODE) {
 		if (dconf->video_mode_type != BURST_MODE)
 			//band_width = band_width * 4 * dconf->data_bits;
-			band_width = band_width * 3 * pdrv->config.timing.dft_timing->lcd_bits;
+			band_width = band_width * pdrv->config.timing.dft_timing->lcd_bits;
 		else
-			band_width = band_width * 3 * pdrv->config.timing.dft_timing->lcd_bits;
+			band_width = band_width * pdrv->config.timing.dft_timing->lcd_bits;
 	} else {
 		LCDERR("[%d]: %s: Only VIDEO mode need HS bitrate\n", pdrv->index, __func__);
 		return 0;

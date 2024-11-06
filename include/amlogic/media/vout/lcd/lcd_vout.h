@@ -120,7 +120,6 @@ enum lcd_type_e {
 struct lcd_basic_s {
 	char model_name[MOD_LEN_MAX];
 	enum lcd_type_e lcd_type;
-	unsigned char lcd_bits;
 	unsigned char config_check;
 
 	unsigned short screen_width;  /* screen physical width in "mm" unit */

@@ -165,14 +165,14 @@ static void lcd_venc_set_tcon(struct aml_lcd_drv_s *pdrv)
 	lcd_vcbus_write(reg_rgb_coeff, 0x400);
 
 	if (pconf->basic.lcd_type != LCD_P2P && pconf->basic.lcd_type != LCD_MLVDS) {
-		switch (pconf->basic.lcd_bits) {
-		case 6:
+		switch (pconf->timing.act_timing.lcd_bits) {
+		case 18:
 			lcd_vcbus_write(reg_dith_ctrl,  0x600);
 			break;
-		case 8:
+		case 24:
 			lcd_vcbus_write(reg_dith_ctrl,  0x400);
 			break;
-		case 10:
+		case 30:
 		default:
 			lcd_vcbus_write(reg_dith_ctrl,  0x0);
 			break;

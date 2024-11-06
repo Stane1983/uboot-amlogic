@@ -570,7 +570,7 @@ void lcd_info_print(struct aml_lcd_drv_s *pdrv)
 		"fr_adj_type       %d\n\n",
 		pconf->basic.model_name,
 		lcd_type_type_to_str(pconf->basic.lcd_type),
-		pconf->basic.lcd_bits, pconf->timing.ppc,
+		pdrv->config.timing.act_timing.lcd_bits, pconf->timing.ppc,
 		pconf->timing.act_timing.h_active, pconf->timing.act_timing.v_active,
 		(sync_duration / 100), (sync_duration % 100),
 		pconf->timing.act_timing.pixel_clk, pconf->timing.enc_clk,
