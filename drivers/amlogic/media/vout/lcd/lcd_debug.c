@@ -32,7 +32,7 @@ void str_add_reg_sets(struct aml_lcd_drv_s *pdrv,
 #ifdef CONFIG_AML_LCD_TABLET
 	unsigned char reg_temp;
 #endif
-	unsigned int reg_val;
+	unsigned int  reg_addr = 0, reg_val = 0;
 
 	for (idx = 0; idx < reg_cnt; idx++) {
 		if (strlen(reg_table[idx].name) > str_pos)
@@ -43,53 +43,73 @@ void str_add_reg_sets(struct aml_lcd_drv_s *pdrv,
 	for (idx = 0; idx < reg_cnt; idx++) {
 		switch (reg_bus) {
 		case LCD_REG_DBG_VC_BUS:
-			reg_val = lcd_vcbus_read(reg_table[idx].reg + reg_offset);
+			reg_addr = reg_table[idx].reg + reg_offset;
+			reg_val = lcd_vcbus_read(reg_addr);
 			break;
 		case LCD_REG_DBG_ANA_BUS:
-			reg_val = lcd_ana_read(reg_table[idx].reg + reg_offset);
+			reg_addr = reg_table[idx].reg + reg_offset;
+			reg_val = lcd_ana_read(reg_addr);
 			break;
 		case LCD_REG_DBG_CLK_BUS:
-			reg_val = lcd_clk_read(reg_table[idx].reg + reg_offset);
+			reg_addr = reg_table[idx].reg + reg_offset;
+			reg_val = lcd_clk_read(reg_addr);
 			break;
 		case LCD_REG_DBG_PERIPHS_BUS:
-			reg_val = lcd_periphs_read(reg_table[idx].reg + reg_offset);
+			reg_addr = reg_table[idx].reg + reg_offset;
+			reg_val = lcd_periphs_read(reg_addr);
 			break;
 #ifdef CONFIG_AML_LCD_TABLET
 		case LCD_REG_DBG_MIPIHOST_BUS:
-			reg_val = dsi_host_read(pdrv, reg_table[idx].reg + reg_offset);
+			reg_addr = reg_table[idx].reg + reg_offset;
+			if (pdrv->index)
+				reg_addr = REG_ADDR_DSI_B_HOST(reg_addr);
+			else
+				reg_addr = REG_ADDR_DSI_HOST(reg_addr);
+			reg_val = dsi_host_read(pdrv, reg_addr);
 			break;
 		case LCD_REG_DBG_MIPIPHY_BUS:
-			reg_val = dsi_phy_read(pdrv, reg_table[idx].reg + reg_offset);
+			reg_addr = reg_table[idx].reg + reg_offset;
+			if (pdrv->index)
+				reg_addr = REG_ADDR_DSI_B_PHY(reg_addr);
+			else
+				reg_addr = REG_ADDR_DSI_PHY(reg_addr);
+			reg_val = dsi_phy_read(pdrv, reg_addr);
 			break;
 		case LCD_REG_DBG_EDPHOST_BUS:
-			reg_val = dptx_reg_read(pdrv->index, reg_table[idx].reg + reg_offset);
+			reg_addr = reg_table[idx].reg + reg_offset;
+			reg_val = dptx_reg_read(pdrv->index, reg_addr);
 			break;
 		case LCD_REG_DBG_EDPDPCD_BUS:
-			if (dptx_aux_read(pdrv, reg_table[idx].reg + reg_offset, 1, &reg_temp))
+			reg_addr = reg_table[idx].reg;
+			if (dptx_aux_read(pdrv, reg_addr, 1, &reg_temp))
 				continue;
 			reg_val = reg_temp;
 			break;
 #endif
 #ifdef CONFIG_AMLOGIC_LCD_TV
 		case LCD_REG_DBG_TCON_BUS:
-			reg_val = lcd_tcon_reg_read(pdrv, reg_table[idx].reg + reg_offset);
+			reg_addr = reg_table[idx].reg + reg_offset;
+			reg_val = lcd_tcon_reg_read(pdrv, reg_addr);
 			break;
 #endif
 		case LCD_REG_DBG_COMBOPHY_BUS:
-			reg_val = lcd_combo_dphy_read(reg_table[idx].reg + reg_offset);
+			reg_addr = reg_table[idx].reg + reg_offset;
+			reg_val = lcd_combo_dphy_read(reg_addr);
 			break;
 		case LCD_REG_DBG_RST_BUS:
-			reg_val = lcd_reset_read(reg_table[idx].reg + reg_offset);
+			reg_addr = reg_table[idx].reg + reg_offset;
+			reg_val = lcd_reset_read(reg_addr);
 			break;
 		case LCD_REG_DBG_HHI_BUS:
-			reg_val = lcd_hiu_read(reg_table[idx].reg + reg_offset);
+			reg_addr = reg_table[idx].reg + reg_offset;
+			reg_val = lcd_hiu_read(reg_addr);
 			break;
 		default:
 			return;
 		}
 
 		printf("%-*s [0x%04x] = 0x%08x\n", str_pos,
-		       reg_table[idx].name, reg_table[idx].reg, reg_val);
+		       reg_table[idx].name, reg_addr, reg_val);
 	}
 }
 
@@ -509,37 +529,25 @@ static void lcd_reg_print_tcon(struct aml_lcd_drv_s *pdrv)
 #ifdef CONFIG_AML_LCD_TABLET
 static void lcd_reg_print_mipi(struct aml_lcd_drv_s *pdrv)
 {
-	unsigned int reg;
+	struct reg_name_set_s reg_table[] = {
+		{MIPI_DSI_TOP_CNTL,            "TOP_CNTL"},
+		{MIPI_DSI_TOP_CLK_CNTL,        "TOP_CLK_CNTL"},
+		{MIPI_DSI_DWC_PWR_UP_OS,       "DWC_PWR_UP_OS"},
+		{MIPI_DSI_DWC_PCKHDL_CFG_OS,   "DWC_PCKHDL_CFG_OS"},
+		{MIPI_DSI_DWC_LPCLK_CTRL_OS,   "DWC_LPCLK_CTRL_OS"},
+		{MIPI_DSI_DWC_CMD_MODE_CFG_OS, "DWC_CMD_MODE_CFG_OS"},
+		{MIPI_DSI_DWC_VID_MODE_CFG_OS, "DWC_VID_MODE_CFG_OS"},
+		{MIPI_DSI_DWC_MODE_CFG_OS,     "DWC_MODE_CFG_OS"},
+		{MIPI_DSI_DWC_PHY_STATUS_OS,   "DWC_PHY_STATUS_OS"},
+		{MIPI_DSI_DWC_INT_ST0_OS,      "DWC_INT_ST0_OS"},
+		{MIPI_DSI_DWC_INT_ST1_OS,      "DWC_INT_ST1_OS"},
+		{MIPI_DSI_TOP_STAT,            "TOP_STAT"},
+		{MIPI_DSI_TOP_INTR_CNTL_STAT,  "TOP_INTR_CNTL_STAT"},
+		{MIPI_DSI_TOP_MEM_PD,          "TOP_MEM_PD"},
+	};
 
 	printf("\nmipi_dsi registers:\n");
-	reg = MIPI_DSI_TOP_CNTL;
-	printf("MIPI_DSI_TOP_CNTL            [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
-	reg = MIPI_DSI_TOP_CLK_CNTL;
-	printf("MIPI_DSI_TOP_CLK_CNTL        [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
-	reg = MIPI_DSI_DWC_PWR_UP_OS;
-	printf("MIPI_DSI_DWC_PWR_UP_OS       [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
-	reg = MIPI_DSI_DWC_PCKHDL_CFG_OS;
-	printf("MIPI_DSI_DWC_PCKHDL_CFG_OS   [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
-	reg = MIPI_DSI_DWC_LPCLK_CTRL_OS;
-	printf("MIPI_DSI_DWC_LPCLK_CTRL_OS   [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
-	reg = MIPI_DSI_DWC_CMD_MODE_CFG_OS;
-	printf("MIPI_DSI_DWC_CMD_MODE_CFG_OS [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
-	reg = MIPI_DSI_DWC_VID_MODE_CFG_OS;
-	printf("MIPI_DSI_DWC_VID_MODE_CFG_OS [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
-	reg = MIPI_DSI_DWC_MODE_CFG_OS;
-	printf("MIPI_DSI_DWC_MODE_CFG_OS     [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
-	reg = MIPI_DSI_DWC_PHY_STATUS_OS;
-	printf("MIPI_DSI_DWC_PHY_STATUS_OS   [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
-	reg = MIPI_DSI_DWC_INT_ST0_OS;
-	printf("MIPI_DSI_DWC_INT_ST0_OS      [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
-	reg = MIPI_DSI_DWC_INT_ST1_OS;
-	printf("MIPI_DSI_DWC_INT_ST1_OS      [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
-	reg = MIPI_DSI_TOP_STAT;
-	printf("MIPI_DSI_TOP_STAT            [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
-	reg = MIPI_DSI_TOP_INTR_CNTL_STAT;
-	printf("MIPI_DSI_TOP_INTR_CNTL_STAT  [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
-	reg = MIPI_DSI_TOP_MEM_PD;
-	printf("MIPI_DSI_TOP_MEM_PD          [0x%04x] = 0x%08x\n", reg, dsi_host_read(pdrv, reg));
+	str_add_reg_sets(pdrv, LCD_REG_DBG_MIPIHOST_BUS, 0, reg_table, ARRAY_SIZE(reg_table));
 }
 #endif
 
