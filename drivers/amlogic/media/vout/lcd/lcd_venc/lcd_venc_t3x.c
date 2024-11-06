@@ -312,14 +312,14 @@ static void lcd_venc_set(struct aml_lcd_drv_s *pdrv)
 	lcd_vcbus_setb(LCD_LCD_IF_CTRL + offset, (0x400 << 12), 0, 23);
 	if (pconf->basic.lcd_type != LCD_P2P &&
 		pconf->basic.lcd_type != LCD_MLVDS) {
-		switch (pconf->basic.lcd_bits) {
-		case 6:
+		switch (pconf->timing.act_timing.lcd_bits) {
+		case 18:
 			lcd_vcbus_write(LCD_DITH_CTRL + offset,   0x600);
 			break;
-		case 8:
+		case 24:
 			lcd_vcbus_write(LCD_DITH_CTRL + offset,   0x400);
 			break;
-		case 10:
+		case 30:
 		default:
 			lcd_vcbus_write(LCD_DITH_CTRL + offset,   0);
 			break;

@@ -155,14 +155,14 @@ void lcd_vbyone_enable(struct aml_lcd_drv_s *pdrv)
 	/* color_fmt = pdrv->config.control.vbyone_cfg.color_fmt; // 4 */
 
 	vin_color = 4; /* fixed RGB */
-	switch (pdrv->config.basic.lcd_bits) {
-	case 6:
+	switch (pdrv->config.timing.act_timing.lcd_bits) {
+	case 18:
 		vin_bpp = 2; /* 18bbp 4:4:4 */
 		break;
-	case 8:
+	case 24:
 		vin_bpp = 1; /* 24bbp 4:4:4 */
 		break;
-	case 10:
+	case 30:
 	default:
 		vin_bpp = 0; /* 30bbp 4:4:4 */
 		break;

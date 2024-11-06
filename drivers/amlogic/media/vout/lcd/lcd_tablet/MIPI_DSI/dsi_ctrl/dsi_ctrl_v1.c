@@ -664,7 +664,7 @@ static void mipi_dsi_non_burst_packet_config(struct lcd_config_s *pconf)
 	lane_num = (int)(dconf->lane_num);
 	hactive = pconf->timing.act_timing.h_active;
 	bit_rate_required = pconf->timing.act_timing.pixel_clk;
-	bit_rate_required = bit_rate_required * 3 * pconf->basic.lcd_bits;
+	bit_rate_required = bit_rate_required * pconf->timing.act_timing.lcd_bits;
 	bit_rate_required = lcd_do_div(bit_rate_required, lane_num);
 	if (pconf->timing.bit_rate > bit_rate_required)
 		multi_pkt_en = 1;
@@ -947,7 +947,7 @@ static void mipi_dsi_color_format_config(struct aml_lcd_drv_s *pdrv)
 {
 	struct dsi_config_s *dconf = &pdrv->config.control.mipi_cfg;
 
-	if (pdrv->config.basic.lcd_bits == 6) {
+	if (pdrv->config.timing.base_timing->lcd_bits == 18) {
 		dconf->venc_data_width = MIPI_DSI_VENC_COLOR_18B;
 		dconf->dpi_data_format = MIPI_DSI_COLOR_18BIT;
 	} else {
