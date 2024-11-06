@@ -799,18 +799,19 @@ static void mipi_dsi_vid_mode_config(struct lcd_config_s *pconf)
 }
 
 /* ********************** DSI tx host/phy control ****************************/
-static void mipi_dsi_phy_config(struct dsi_dphy_s *dphy, u32 dsi_ui)
+static void mipi_dsi_phy_config(struct dsi_dphy_s *dphy, u32 dsi_bitrate)
 {
 	u32 temp, t_ui, t_req_min, t_req_max;
 	u32 val;
+	u32 t_HS_TRAIL, t_HS_ZERO, t_HS_PREPARE;
 
-	if (dsi_ui == 0) {
+	if (dsi_bitrate == 0) {
 		LCDERR("%s: DSI dphy t_UI is 0\n", __func__);
 		return;
 	}
 
-	t_ui = lcd_do_div(dsi_ui, 1000);
-	t_ui = (1000000 * 100) / t_ui; /*100*ns */
+	// t_ui = div_around(dsi_bitrate, 1000);
+	t_ui = div_around(1000000 * 100, dsi_bitrate / 1000); /*100*ns */
 	temp = t_ui * 8; /* lane_byte cycle time */
 
 	dphy->lp_tesc = ((DPHY_TIME_LP_TESC(t_ui) + temp - 1) / temp) & 0xff;
@@ -851,37 +852,36 @@ static void mipi_dsi_phy_config(struct dsi_dphy_s *dphy, u32 dsi_ui)
 	if ((dphy->hs_exit * temp) < t_req_min)
 		dphy->hs_exit += 1;
 
-	//t_req_max = 105 + (12 * t_ui) / 100;
-	// t_req_min = ((8 * t_ui) > (60 * 100 + 4 * t_ui)) ? (8 * t_ui) : (60 * 100 + 4 * t_ui);
-	t_req_min = 80 * 100 + 10 * t_ui;
-	//val = (t_req_max + t_req_min) / 2;
-	dphy->hs_trail = t_req_min / temp;
-	if ((dphy->hs_trail * temp) < t_req_min)
+	// tHS-TRAIL = (MAX(8*UI),(60+4UI)), 105+12UI)
+	t_HS_TRAIL = 80 * 100 + 10 * t_ui;
+	dphy->hs_trail = t_HS_TRAIL / temp;
+	if ((dphy->hs_trail * temp) < t_HS_TRAIL)
 		dphy->hs_trail += 1;
 
-	t_req_min = 40 * 100 + 4 * t_ui;
-	t_req_max = 85 * 100 + 6 * t_ui;
-	val = (t_req_max + t_req_min) / 2;
-	dphy->hs_prepare = val / temp;
-	if ((dphy->hs_prepare * temp) < t_req_min)
+	// tHS-PREPARE = (40 + 4 * UI, 85 ns + 6*UI)
+	t_HS_PREPARE = 65 * 100 + 5 * t_ui;
+	dphy->hs_prepare = t_HS_PREPARE / temp;
+	if ((dphy->hs_prepare * temp) < t_HS_PREPARE)
 		dphy->hs_prepare += 1;
 
-	t_req_min = 145 * 100 + 10 * t_ui - dphy->hs_prepare * temp;
-	dphy->hs_zero = t_req_min / temp;
-	if ((dphy->hs_zero * temp) < t_req_min)
+	// tHS-PREPARE + tHS-ZERO > 145 ns + 10*UI
+	t_HS_ZERO = 145 * 100 + 10 * t_ui - dphy->hs_prepare * temp;
+	dphy->hs_zero = t_HS_ZERO / temp;
+	if ((dphy->hs_zero * temp) < t_HS_ZERO)
 		dphy->hs_zero += 1;
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 		LCDPR("%s:\n"
+			"  t-UI        = %u.%uns\n"
 			"  lp_tesc     = 0x%02x\n"
 			"  lp_lpx      = 0x%02x\n"
 			"  lp_ta_sure  = 0x%02x\n"
 			"  lp_ta_go    = 0x%02x\n"
 			"  lp_ta_get   = 0x%02x\n"
 			"  hs_exit     = 0x%02x\n"
-			"  hs_trail    = 0x%02x\n"
-			"  hs_zero     = 0x%02x\n"
-			"  hs_prepare  = 0x%02x\n"
+			"  hs_trail    = 0x%02x (%u.%uns)\n"
+			"  hs_zero     = 0x%02x (%u.%uns)\n"
+			"  hs_prepare  = 0x%02x (%u.%uns)\n"
 			"  clk_trail   = 0x%02x\n"
 			"  clk_post    = 0x%02x\n"
 			"  clk_zero    = 0x%02x\n"
@@ -889,10 +889,12 @@ static void mipi_dsi_phy_config(struct dsi_dphy_s *dphy, u32 dsi_ui)
 			"  clk_pre     = 0x%02x\n"
 			"  init        = 0x%02x\n"
 			"  wakeup      = 0x%02x\n",
-			__func__,
+			__func__, t_ui / 100, t_ui % 100,
 			dphy->lp_tesc, dphy->lp_lpx, dphy->lp_ta_sure,
 			dphy->lp_ta_go, dphy->lp_ta_get, dphy->hs_exit,
-			dphy->hs_trail, dphy->hs_zero, dphy->hs_prepare,
+			dphy->hs_trail, t_HS_TRAIL / 100, t_HS_TRAIL % 100,
+			dphy->hs_zero, t_HS_ZERO / 100, t_HS_ZERO % 100,
+			dphy->hs_prepare, t_HS_PREPARE / 100, t_HS_PREPARE % 100,
 			dphy->clk_trail, dphy->clk_post,
 			dphy->clk_zero, dphy->clk_prepare, dphy->clk_pre,
 			dphy->init, dphy->wakeup);
