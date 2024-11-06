@@ -10,6 +10,7 @@
 #define DDR_FUNC_CONFIG_RX_REPLICA_VT_ENABLE                   (0 + (1 << 17))
 #define DDR_FUNC_CONFIG_ENABLE_PZQ_DET_DRAM_TYPE_RETURN                   (0 + (1 << 20))
 #define DDR_FUNC_CONFIG_AUTO_DET_DQ_PINMUX_FUNCTION                   (0 + (1 << 21))
+#define DDR_FUNC_CONFIG_RD_ECC_FUNCTION                                        (0 + (1 << 22))
 #define DDR_FUNC_CONFIG_WR_ECC_FUNCTION                                        (0 + (1 << 17))
 //bit 6 adc_channel bit 0-5 adc value,chan 3 value 8 is layer 2
 #define DDR_ID_ACS_ADC   ((3 << 6) | (8))
@@ -147,12 +148,12 @@ uint32_t __ddr_parameter_reg_index[] __attribute__ ((section(".ddr_2acs_index"))
 ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 //ddr_set_ps0_only_t __attribute__ ((aligned(8))) ddr_set_t_default[] = {
 #if LPDDR5_SKT
-#define  CACLU_CLK_LP5   792 //1792//600 //1200 //(1900)// (1440)//(1008)
+#define  CACLU_CLK_LP5   687 //687--5500//600 //1200 //(1900)// (1440)//(1008)
 //ddr_set_ps0_only_t __attribute__ ((aligned(8))) ddr_set_t_default_lp5 = {
 	{
 		.cfg_board_common_setting.timming_magic = 0,
 		.cfg_board_common_setting.timming_max_valid_configs = 1,
-		.cfg_board_common_setting.timming_struct_version = 0,
+		.cfg_board_common_setting.timming_struct_version = 9304,
 		.cfg_board_common_setting.timming_struct_org_size =
 			sizeof(ddr_set_ps0_only_t),
 		.cfg_board_common_setting.timming_struct_real_size = 0,
@@ -165,7 +166,8 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 			0x0, 0, 0, 0
 		},
 #endif
-		.cfg_board_common_setting.ddr_func = DDR_FUNC_CONFIG_DFE_FUNCTION,
+		.cfg_board_common_setting.ddr_func = DDR_FUNC_CONFIG_DFE_FUNCTION |
+		DDR_FUNC_CONFIG_RD_ECC_FUNCTION,
 		.cfg_board_common_setting.board_id = CONFIG_BOARD_ID_MASK,
 		.cfg_board_common_setting.DramType = CONFIG_DDR_TYPE_LPDDR5,
 		.cfg_board_common_setting.enable_lpddr4x_mode = 0,
@@ -261,22 +263,22 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		.cfg_ddr_training_delay_ps.dac_offset[3] = (0 << 7) | 0x1,//1step 2mv
 		//.cfg_ddr_training_delay_ps.dac_offset[0] = (1 << 7) | 0x3,
 		//.cfg_ddr_training_delay_ps.dac_offset[1] = (0 << 7) | 0x3,
-		//.cfg_ddr_training_delay_ps.reserve_para[0] = (0 << 7) | 0x8,     //write dqs
-		//.cfg_ddr_training_delay_ps.reserve_para[1] = (0 << 7) | 0x8,     //write dqs
-		//.cfg_ddr_training_delay_ps.reserve_para[2] = (0 << 7) | 0x8,     //write dqs
-		//.cfg_ddr_training_delay_ps.reserve_para[3] = (0 << 7) | 0x8,     //write dqs
-		//.cfg_ddr_training_delay_ps.reserve_para[4] = (0 << 7) | 0x8,     //write dqs
-		//.cfg_ddr_training_delay_ps.reserve_para[5] = (0 << 7) | 0x8,     //write dqs
-		//.cfg_ddr_training_delay_ps.reserve_para[6] = (0 << 7) | 0x8,     //write dqs
-		//.cfg_ddr_training_delay_ps.reserve_para[7] = (0 << 7) | 0x8,     //write dqs
-		.cfg_ddr_training_delay_ps.reserve_para[8 + 0] = (1 << 7) | 0x4,//read dqs
-		.cfg_ddr_training_delay_ps.reserve_para[8 + 1] = (1 << 7) | 0x4,//read dqs
-		.cfg_ddr_training_delay_ps.reserve_para[8 + 2] = (1 << 7) | 0x4,//read dqs
-		.cfg_ddr_training_delay_ps.reserve_para[8 + 3] = (1 << 7) | 0x4,//read dqs
-		.cfg_ddr_training_delay_ps.reserve_para[8 + 4] = (1 << 7) | 0x4,//read dqs
-		.cfg_ddr_training_delay_ps.reserve_para[8 + 5] = (1 << 7) | 0x4,//read dqs
-		.cfg_ddr_training_delay_ps.reserve_para[8 + 6] = (1 << 7) | 0x4,//read dqs
-		.cfg_ddr_training_delay_ps.reserve_para[8 + 7] = (1 << 7) | 0x4,//read dqs
+		.cfg_ddr_training_delay_ps.reserve_para[0] = (0 << 7) | 0x5,     //write dqs
+		.cfg_ddr_training_delay_ps.reserve_para[1] = (0 << 7) | 0x5,     //write dqs
+		.cfg_ddr_training_delay_ps.reserve_para[2] = (0 << 7) | 0x5,     //write dqs
+		.cfg_ddr_training_delay_ps.reserve_para[3] = (0 << 7) | 0x5,     //write dqs
+		.cfg_ddr_training_delay_ps.reserve_para[4] = (0 << 7) | 0x5,     //write dqs
+		.cfg_ddr_training_delay_ps.reserve_para[5] = (0 << 7) | 0x5,     //write dqs
+		.cfg_ddr_training_delay_ps.reserve_para[6] = (0 << 7) | 0x5,     //write dqs
+		.cfg_ddr_training_delay_ps.reserve_para[7] = (0 << 7) | 0x5,     //write dqs
+		.cfg_ddr_training_delay_ps.reserve_para[8 + 0] = (1 << 7) | 0x2,//read dqs
+		.cfg_ddr_training_delay_ps.reserve_para[8 + 1] = (1 << 7) | 0x2,//read dqs
+		.cfg_ddr_training_delay_ps.reserve_para[8 + 2] = (1 << 7) | 0x2,//read dqs
+		.cfg_ddr_training_delay_ps.reserve_para[8 + 3] = (1 << 7) | 0x2,//read dqs
+		.cfg_ddr_training_delay_ps.reserve_para[8 + 4] = (1 << 7) | 0x2,//read dqs
+		.cfg_ddr_training_delay_ps.reserve_para[8 + 5] = (1 << 7) | 0x2,//read dqs
+		.cfg_ddr_training_delay_ps.reserve_para[8 + 6] = (1 << 7) | 0x2,//read dqs
+		.cfg_ddr_training_delay_ps.reserve_para[8 + 7] = (1 << 7) | 0x2,//read dqs
 		.cfg_ddr_training_delay_ps.ac_trace_delay[0] = 128 - 20, //0-11 cha,12-23 chb
 		.cfg_ddr_training_delay_ps.ac_trace_delay[1] = 128 - 20,//max511 1trip = 2wckUI =1Twck
 		.cfg_ddr_training_delay_ps.ac_trace_delay[2] = 128 - 20,
@@ -319,7 +321,7 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 	{
 		.cfg_board_common_setting.timming_magic = 0,
 		.cfg_board_common_setting.timming_max_valid_configs = 1,
-		.cfg_board_common_setting.timming_struct_version = 0,
+		.cfg_board_common_setting.timming_struct_version = 9196,
 		.cfg_board_common_setting.timming_struct_org_size =
 			sizeof(ddr_set_ps0_only_t),
 		.cfg_board_common_setting.timming_struct_real_size = 0,
