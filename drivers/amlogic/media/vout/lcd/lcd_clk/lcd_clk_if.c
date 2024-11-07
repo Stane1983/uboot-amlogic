@@ -33,6 +33,9 @@ struct lcd_clk_config_s *get_lcd_clk_config(struct aml_lcd_drv_s *pdrv)
 	struct lcd_clk_config_s *cconf;
 	int i;
 
+	if (!pdrv)
+		return NULL;
+
 	if (!pdrv->clk_conf) {
 		LCDERR("[%d]: %s: clk_config is null\n", pdrv->index, __func__);
 		return NULL;

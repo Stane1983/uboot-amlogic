@@ -682,7 +682,8 @@ static void vpu_support_overclock(void)
 	unsigned int cpu_type;
 
 	cpu_type = get_cpu_id().family_id;
-	if (cpu_type == MESON_CPU_MAJOR_ID_T5M) {
+	if (cpu_type == MESON_CPU_MAJOR_ID_T5M ||
+		cpu_type == MESON_CPU_MAJOR_ID_T3X) {
 		if (IS_FEAT_EN_VPU_OVER_SPEED()) {
 			env_set("vpu_overclock", "1");
 			VPUPR("vpu support overclock\n");

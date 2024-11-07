@@ -546,7 +546,7 @@ static void lcd_clk_config_print_g12a(struct aml_lcd_drv_s *pdrv)
 			cconf->pll_frac, cconf->pll_fvco,
 			cconf->pll_od1_sel, cconf->pll_od2_sel,
 			cconf->pll_od3_sel, cconf->pll_fout,
-			lcd_clk_div_sel_table[cconf->div_sel],
+			lcd_clk_div_table[cconf->div_sel].name,
 			cconf->div_sel, cconf->xd,
 			cconf->fout);
 	}
