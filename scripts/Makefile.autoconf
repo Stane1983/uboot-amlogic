@@ -119,9 +119,9 @@ define filechk_config_h
 	(echo "/* Automatically generated - do not edit */";		\
 	echo \#define CONFIG_BOARDDIR board/$(if $(VENDOR),$(VENDOR)/)$(BOARD);\
 	echo \#include \<config_uncmd_spl.h\>;				\
+	echo \#include \<linux/kconfig.h\>;				\
 	echo \#include \<$(config_file)\>;              		\
 	echo \#include \<asm/config.h\>;				\
-	echo \#include \<linux/kconfig.h\>;				\
 	echo \#include \<config_fallbacks.h\>;)
 endef
 
