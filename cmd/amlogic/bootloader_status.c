@@ -180,7 +180,11 @@ static void run_recovery_from_cache(void) {
 		"setenv bootconfig ${bootconfig} androidboot.quiescent=1; fi;", 0);
 	run_command("if test ${reboot_mode} = recovery_quiescent; then "\
 		"setenv bootconfig ${bootconfig} androidboot.quiescent=1; fi;", 0);
-	run_command("if ext4load mmc 1:2 ${dtb_mem_addr} /recovery/dtb.img; then echo cache dtb.img loaded; fi;", 0);
+	run_command("if ext4load mmc 1:2 ${dtb_mem_addr} /recovery/dtb.img; then "\
+		"echo cache dtb.img loaded;"\
+		"else "\
+		"imgread dtb recovery ${dtb_mem_addr};"\
+		"fi;", 0);
 
 	run_command("if test ${reboot_vendor_boot} = true; then "\
 		"setenv vendor_boot_mode true; fi;", 0);

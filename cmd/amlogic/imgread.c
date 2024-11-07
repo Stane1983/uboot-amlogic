@@ -222,7 +222,7 @@ bool is_android_image(void)
 static int do_image_read_dtb_from_knl(const char *partname,
 	unsigned char *loadaddr, uint64_t lflashreadinitoff)
 {
-	int ret = __LINE__;
+	int ret = 0;
 	unsigned int nflashloadlen = 0;
 	u64 lflashreadoff = 0;
 	const int preloadsz = 4096 * 2;
@@ -237,8 +237,8 @@ static int do_image_read_dtb_from_knl(const char *partname,
 	debugP("sizeof preloadsz=%u\n", nflashloadlen);
 
 	upgrade_step_s = env_get("upgrade_step");
-	if (upgrade_step_s && (strcmp(upgrade_step_s, "3") == 0) &&
-		(strcmp(partname, "recovery") == 0)) {
+
+	if (upgrade_step_s && (strcmp(upgrade_step_s, "3") == 0)) {
 		loff_t len_read;
 
 		MsgP("read recovery.img from cache\n");
@@ -425,9 +425,8 @@ static int do_image_read_dtb_from_knl(const char *partname,
 
 		if (is_android_r_image((void *)hdr_addr)) {
 			MsgP("try read vendor_boot.img from cache\n");
-			rc = fs_set_blk_dev("mmc", "1:2", FS_TYPE_EXT);
-			if (!rc) {
-				MsgP("read vendor_boot.img from cache\n");
+			ret = fs_set_blk_dev("mmc", "1:2", FS_TYPE_EXT);
+			if (!ret) {
 				fs_read("/recovery/vendor_boot.img", (unsigned long)wraddr,
 							wroff, wrsz, &len_read);
 				if (wrsz != len_read) {
@@ -437,8 +436,8 @@ static int do_image_read_dtb_from_knl(const char *partname,
 			}
 		} else {
 			MsgP("try read recovery.img from cache\n");
-			rc = fs_set_blk_dev("mmc", "1:2", FS_TYPE_EXT);
-			if (!rc) {
+			ret = fs_set_blk_dev("mmc", "1:2", FS_TYPE_EXT);
+			if (!ret) {
 				MsgP("read recovery.img from cache\n");
 				fs_read("/recovery/recovery.img", (unsigned long)wraddr,
 							wroff, wrsz, &len_read);
