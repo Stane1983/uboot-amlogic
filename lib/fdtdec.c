@@ -1222,7 +1222,11 @@ __weak void *board_fdt_blob_setup(void)
 		fdt_blob = (ulong *)&__bss_end;
 #else
 	/* FDT is at end of image */
+#ifdef CONFIG_FULL_RAMDUMP
+	fdt_blob = (ulong *)&__rel_dyn_end;
+#else
 	fdt_blob = (ulong *)&_end;
+#endif
 #endif
 	return fdt_blob;
 }
