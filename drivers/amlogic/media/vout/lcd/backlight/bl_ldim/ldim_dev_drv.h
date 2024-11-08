@@ -23,6 +23,7 @@ int ldim_spi_driver_remove(struct ldim_dev_driver_s *dev_drv);
 
 int handle_ldim_dev_zone_mapping_get(unsigned char *buf, unsigned int size,
 				     const char *path);
+int ldim_dev_get_config(char *dt_addr, struct aml_ldim_driver_s *ldim_drv);
 
 /* ldim device probe function */
 #ifdef CONFIG_AML_LCD_BL_LDIM_IW7027

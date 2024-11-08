@@ -1,5 +1,6 @@
 obj-$(CONFIG_AML_LCD) += lcd_vout.o
 obj-$(CONFIG_AML_LCD) += lcd_common.o
+obj-$(CONFIG_AML_LCD) += lcd_config.o
 obj-$(CONFIG_AML_LCD) += lcd_gpio.o
 obj-$(CONFIG_AML_LCD) += lcd_debug.o
 obj-$(CONFIG_AML_LCD) += lcd_unifykey.o
