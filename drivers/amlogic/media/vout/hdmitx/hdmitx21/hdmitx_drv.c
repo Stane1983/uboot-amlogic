@@ -135,6 +135,9 @@ static void hdmi_hwp_init(void)
 	hdmitx21_set_reg_bits(PCLK2TMDS_MISC0_IVCTX, 0, 0, 2);
 	/* Control signals for repeat count */
 	hdmitx21_set_reg_bits(HBLANK_REKEY_CONTROL_IVCTX, 1, 6, 1);
+
+	/* for 480/576 ddp case, Internal circuit detected Hsync polarity: Use legacy Tx logic */
+	hdmitx21_set_reg_bits(HDPLL_FIX0_IVCTX, 0, 0, 1);
 	hdmitx21_set_reg_bits(GCP_CNTL_IVCTX, 1, 0, 1);
 	/* clear avmute */
 	hdmitx21_set_reg_bits(GCP_AUTO_GEN_IVCTX, 2, 2, 2);
