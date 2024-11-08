@@ -377,20 +377,25 @@ static int do_update_env_part(cmd_tbl_t *cmdtp, int flag, int argc, char * const
 		//3.2> check if NOT need update flash, which is most used case
 		for (; current_kv < env_end; current_kv += strlen(current_kv) + 1) {
 			const char *s_env_v = strpbrk(current_kv, kvsep);//storage env value
+			int sz_flash_env =  0;
 
 			if (!s_env_v) {
 				errorP("err env in storage, not k=v fmt\n%s\n", current_kv);
 				ret = CMD_RET_FAILURE; goto _update_env_part_err;
 			}
 			++s_env_v;//skip '='
+			sz_flash_env =  s_env_v - current_kv - 1;
 			//case 1, usr val == storage env val, skip
 			//case 2, usr val empty, del it if exist in storage
 			//case 2, usr val not empty, del it if exist in storage, append new to end
 			for (i = 1; i < argc; ++i) {
 				const char *usr_env = argv[i];
 				const char *usr_env_val = env_get(usr_env);
+				const int sz_usr_env = strlen(usr_env);
 
-				if (strcmp(current_kv, usr_env))
+				if (sz_flash_env != sz_usr_env)
+					continue;
+				if (strncmp(current_kv, usr_env, sz_usr_env))
 					continue;
 				//Found key
 				++n_env_in_flash;
@@ -482,20 +487,26 @@ static int do_update_env_part(cmd_tbl_t *cmdtp, int flag, int argc, char * const
 			const char *next = NULL;//next k=v
 			int s_env_v_len = 1;
 			unsigned int kv_len = 0;
+			int sz_flash_env =  0;
 
 			if (!s_env_v) {
 				errorP("err env in flash, not k=v fmt\n%s\n", current_kv);
 				ret = CMD_RET_FAILURE; goto _update_env_part_err;
 			}
 			++s_env_v;//skip '='
+			sz_flash_env =  s_env_v - current_kv - 1;
 			s_env_v_len = strnlen(s_env_v, env_end - s_env_v);
 			next = s_env_v + s_env_v_len + 1;//next k=v\0
 			for (i = 1; i < argc; ++i) {
 				const char *usr_env = argv[i];
+				int sz_usr_env = 0;
 
 				if (!usr_env)
 					continue;//disposed
-				if (!strcmp(current_kv, usr_env))
+				sz_usr_env = strlen(usr_env);
+				if (sz_flash_env != sz_usr_env)
+					continue;
+				if (!strncmp(current_kv, usr_env, sz_usr_env))
 					break;
 			}
 			kv_len = (unsigned long)(next - current_kv);
