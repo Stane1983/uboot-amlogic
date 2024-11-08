@@ -1,4 +1,5 @@
 obj-$(CONFIG_AML_LCD_EXTERN) += lcd_extern.o
+obj-$(CONFIG_AML_LCD_EXTERN) += lcd_extern_config.o
 obj-$(CONFIG_AML_LCD_EXTERN) += ext_spi_dev.o
 obj-$(CONFIG_AML_LCD_EXTERN) += ext_func.o
 obj-$(CONFIG_AML_LCD_EXTERN) += ext_default.o

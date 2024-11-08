@@ -23,7 +23,8 @@
 /* 20240815: sync lcd multi-timing from 2019 */
 /* 20240909: update phy tuning: get real state from register */
 /* 20240923: support reserved memory to transmit panel parameter to kernel */
-#define LCD_DRV_VERSION    "20240923"
+/* 20241108: optimize config load flow */
+#define LCD_DRV_VERSION    "20241108"
 
 void mdelay(unsigned long n);
 
@@ -64,10 +65,14 @@ void lcd_display_init_reg_dump(struct aml_lcd_drv_s *pdrv);
 #define LCD_CMA_PAGE_SIZE_8K (8 * 1024)
 
 /* lcd common */
+int lcd_base_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv);
+int lcd_base_config_load_from_bsp(struct aml_lcd_drv_s *pdrv);
+void lcd_panel_config_load_to_drv(struct aml_lcd_drv_s *pdrv);
+int lcd_get_panel_config(char *dt_addr, int load_id, struct aml_lcd_drv_s *pdrv);
+
 unsigned int str_add_vmode(char *buf, struct lcd_vmode_info_s *vm_info, unsigned short framerate);
 void lcd_cma_pool_init(struct aml_lcd_cma_mem *cma,
 		phys_addr_t pa, unsigned long size, unsigned int page_size);
-int lcd_cma_delect_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv);
 void *lcd_cma_pool_simple_alloc(struct aml_lcd_cma_mem *cma, unsigned long size);
 void *lcd_alloc_dma_buffer(struct aml_lcd_drv_s *pdrv, unsigned long size);
 
@@ -81,10 +86,6 @@ unsigned char dtimg_info_add(char *c_buf, struct lcd_detail_timing_s *dtm, unsig
 void lcd_encl_on(struct aml_lcd_drv_s *pdrv);
 unsigned int lcd_config_timing_check(struct aml_lcd_drv_s *pdrv,
 				     struct lcd_detail_timing_s *ptiming);
-int lcd_base_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv);
-int lcd_base_config_load_from_bsp(struct aml_lcd_drv_s *pdrv);
-void lcd_panel_config_load_to_drv(struct aml_lcd_drv_s *pdrv);
-int lcd_get_panel_config(char *dt_addr, int load_id, struct aml_lcd_drv_s *pdrv);
 void lcd_clk_frame_rate_init(struct lcd_detail_timing_s *ptiming);
 void lcd_default_to_basic_timing_init_config(struct aml_lcd_drv_s *pdrv);
 void lcd_enc_timing_init_config(struct aml_lcd_drv_s *pdrv);

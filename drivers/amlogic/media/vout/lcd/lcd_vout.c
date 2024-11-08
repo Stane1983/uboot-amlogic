@@ -201,6 +201,8 @@ static void lcd_power_ctrl(struct aml_lcd_drv_s *pdrv, int status)
 	return;
 #endif
 
+	LCDPR("[%d]: %s: %d\n", pdrv->index, __func__, status);
+
 	i = 0;
 	lcd_power = &pdrv->config.power;
 	if (status) {
@@ -408,12 +410,14 @@ static void lcd_module_enable(struct aml_lcd_drv_s *pdrv, char *mode)
 
 	sync_duration = pconf->timing.act_timing.sync_duration_num;
 	sync_duration = (sync_duration * 100) / pconf->timing.act_timing.sync_duration_den;
-	LCDPR("[%d]: enable: %s, %s, %ux%u@%u.%02uHz\n",
+	LCDPR("[%d]: enable: %s, %s, %ux%u@%u.%02uHz, %s mode, ver %s\n",
 	      pdrv->index, pconf->basic.model_name,
 	      lcd_type_type_to_str(pconf->basic.lcd_type),
 	      pconf->timing.act_timing.h_active,
 	      pconf->timing.act_timing.v_active,
-	      (sync_duration / 100), (sync_duration % 100));
+	      (sync_duration / 100), (sync_duration % 100),
+	      lcd_type_type_to_str(pdrv->config.basic.lcd_type),
+	      LCD_DRV_VERSION);
 
 	if ((pdrv->status & LCD_STATUS_ENCL_ON) == 0)
 		lcd_encl_on(pdrv);

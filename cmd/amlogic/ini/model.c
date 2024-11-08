@@ -2481,6 +2481,7 @@ static int handle_ldim_dev_header(struct ldim_dev_attr_s *p_attr)
 	gldim_dev_dcnt += sizeof(struct ldim_dev_ctrl_s);
 	gldim_dev_dcnt += sizeof(struct ldim_dev_profile_s);
 	gldim_dev_dcnt += sizeof(struct ldim_dev_custom_s);
+	gldim_dev_dcnt += 1; //cmd_size
 	gldim_dev_dcnt += g_ldim_dev_init_on_cnt;
 	gldim_dev_dcnt += g_ldim_dev_init_off_cnt;
 	p_attr->head.data_len = gldim_dev_dcnt;

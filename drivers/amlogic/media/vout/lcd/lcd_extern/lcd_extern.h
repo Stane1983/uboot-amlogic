@@ -21,6 +21,8 @@ void mdelay(unsigned long msec);
 char *lcd_extern_get_dts_prop(int nodeoffset, char *propname);
 int lcd_extern_get_dts_child(char *dtaddr, char *snode, int index);
 #endif
+int lcd_extern_load_config(struct lcd_extern_driver_s *edrv, char *dtaddr, int load_id,
+			   int *ext_index_lut);
 
 void spi_gpio_init(struct lcd_extern_driver_s *edrv, struct lcd_extern_dev_s *edev);
 void spi_gpio_off(struct lcd_extern_driver_s *edrv, struct lcd_extern_dev_s *edev);

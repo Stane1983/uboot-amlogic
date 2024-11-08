@@ -63,8 +63,6 @@ void lcd_tablet_driver_init_pre(struct aml_lcd_drv_s *pdrv)
 {
 	int ret;
 
-	LCDPR("[%d]: tablet driver init(ver %s): %s\n", pdrv->index, LCD_DRV_VERSION,
-		lcd_type_type_to_str(pdrv->config.basic.lcd_type));
 	ret = lcd_type_supported(&pdrv->config);
 	if (ret)
 		return;
