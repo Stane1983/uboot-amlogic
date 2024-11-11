@@ -17,6 +17,8 @@ source "drivers/amlogic/provision/Kconfig"
 
 source "drivers/amlogic/leds/Kconfig"
 
+source "drivers/amlogic/watchkey/Kconfig"
+
 source "drivers/amlogic/ir/Kconfig"
 
 source "drivers/amlogic/tee/Kconfig"

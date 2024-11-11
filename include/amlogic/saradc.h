@@ -101,6 +101,7 @@ struct meson_saradc {
 	struct clk adc_div;
 	struct clk adc_gate;
 	struct meson_saradc_data *data;
+	bool wk_active;
 };
 
 extern const struct adc_ops meson_saradc_ops;

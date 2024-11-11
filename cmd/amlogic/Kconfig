@@ -115,6 +115,12 @@ config CMD_RMA
 	help
 	  Support rma cmd
 
+config CMD_WATCHKEY
+	bool "support watchkey command"
+	select AMLOGIC_WATCHKEY
+	help
+	  Support watchkey cmd.
+
 config MEASUREMENT_BOOT_TIME
 	bool "profile time cmd"
 	default n
