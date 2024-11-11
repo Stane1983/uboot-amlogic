@@ -13,6 +13,7 @@
 #include <amlogic/saradc.h>
 #include <clk.h>
 #include <asm/amlogic/arch/secure_apb.h>
+#include <amlogic/watchkey.h>
 
 #define MESON_SARADC_VDDA_VOLTAGE			(1800000)
 /* C2/A5 need more time to sample while decim filter is enable */
@@ -284,6 +285,9 @@ static int meson_saradc_set_mode(struct udevice *dev, int ch, unsigned int mode)
 	if (ret < 0)
 		return ret;
 
+	if (priv->wk_active)
+		amlogic_watchkey_disable(WATCHKEY_ID_ADCKEY);
+
 	if (mode & ADC_CAPACITY_AVERAGE) {
 		clrsetbits_le32(priv->base + SARADC_AVG_CNTL,
 			SARADC_AVG_CNTL_NUM_SAMPLES_MASK(ch),
@@ -341,6 +345,11 @@ static int meson_saradc_stop(struct udevice *dev)
 	 * continues sampling mode, we need to write REG0 bit[14] to
 	 * stop sampling.
 	 */
+
+	struct meson_saradc *priv = dev_get_priv(dev);
+
+	if (priv->wk_active)
+		amlogic_watchkey_enable(WATCHKEY_ID_ADCKEY);
 
 	return 0;
 }
@@ -512,9 +521,14 @@ int meson_saradc_probe(struct udevice *dev)
 		return -EINVAL;
 	}
 
+	priv->wk_active = amlogic_watchkey_state(WATCHKEY_ID_ADCKEY) == 1;
+	/* When ACPU is using SARADC, disable SARADC in AOCPU first to avoid conflicts. */
+	if (priv->wk_active)
+		amlogic_watchkey_disable(WATCHKEY_ID_ADCKEY);
+
 	ret = meson_saradc_clk_init(dev);
 	if (ret)
-		return ret;
+		goto out;
 
 	priv->active_channel = -1;
 
@@ -527,18 +541,28 @@ int meson_saradc_probe(struct udevice *dev)
 		if (ret) {
 			pr_err("%s: auto calibration initialization error\n", dev->name);
 			meson_saradc_hw_disable(priv);
-			return ret;
+			goto out;
 		}
 	}
 
-	return 0;
+out:
+	/* Return it to AOCPU after use. */
+	if (priv->wk_active)
+		amlogic_watchkey_enable(WATCHKEY_ID_ADCKEY);
+	return ret;
 }
 
 int meson_saradc_remove(struct udevice *dev)
 {
 	struct meson_saradc *priv = dev_get_priv(dev);
 
+	if (priv->wk_active)
+		amlogic_watchkey_disable(WATCHKEY_ID_ADCKEY);
+
 	meson_saradc_hw_disable(priv);
+
+	if (priv->wk_active)
+		amlogic_watchkey_enable(WATCHKEY_ID_ADCKEY);
 
 	return 0;
 }

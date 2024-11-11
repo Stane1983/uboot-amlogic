@@ -89,6 +89,17 @@ static int do_saradc_open(cmd_tbl_t *cmdtp, int flag, int argc,
 static int do_saradc_close(cmd_tbl_t *cmdtp, int flag, int argc,
 		char * const argv[])
 {
+	int ret;
+	struct udevice *dev;
+
+	ret = uclass_get_device_by_name(UCLASS_ADC, "adc", &dev);
+	if (ret)
+		return CMD_RET_FAILURE;
+
+	ret = adc_stop(dev);
+	if (ret)
+		return CMD_RET_FAILURE;
+
 	current_channel = -1;
 
 	printf("SARADC closed.\n");
@@ -166,6 +177,10 @@ static int do_saradc_test(cmd_tbl_t *cmdtp, int flag, int argc,
 
 		printf("%-7s : %d\n", test_voltage[i], val);
 	}
+
+	ret = adc_stop(dev);
+	if (ret)
+		return CMD_RET_FAILURE;
 
 	return 0;
 }

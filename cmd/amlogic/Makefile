@@ -174,3 +174,4 @@ obj-$(CONFIG_CMD_MEMTAG) += cmd_memtag.o
 obj-$(CONFIG_MEASUREMENT_BOOT_TIME) += profile.o
 obj-$(CONFIG_AMPK) += cmd_ampk.o
 obj-y += cmd_smc.o
+obj-$(CONFIG_CMD_WATCHKEY) += cmd_watchkey.o

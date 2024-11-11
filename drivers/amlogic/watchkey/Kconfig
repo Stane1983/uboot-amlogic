@@ -1,0 +1,6 @@
+config AMLOGIC_WATCHKEY
+	bool "Amlogic watch key device support"
+	default n
+	help
+	  Watch-Key driver can monitor the status of keys from
+	  the beginning of power-on.

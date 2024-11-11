@@ -110,6 +110,7 @@ struct meson_saradc {
 	struct meson_saradc_data *data;
 	int calibration_param[2];
 	bool param_valid;
+	bool wk_active;
 };
 
 extern const struct adc_ops meson_saradc_ops;

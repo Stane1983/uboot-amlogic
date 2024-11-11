@@ -19,6 +19,8 @@ obj-$(CONFIG_SECURE_POWER_CONTROL) += power/
 
 obj-$(CONFIG_MESON_LEDS_STATE_CONTROL) += leds/
 
+obj-$(CONFIG_AMLOGIC_WATCHKEY) += watchkey/
+
 obj-$(CONFIG_MESON_IR) += ir/
 
 obj-$(CONFIG_AMLOGIC_TEE) += tee/

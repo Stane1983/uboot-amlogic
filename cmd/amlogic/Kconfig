@@ -228,6 +228,12 @@ config CMD_KEYPAD
 	help
 	  Support keypad cmd.
 
+config CMD_WATCHKEY
+	bool "support watchkey command"
+	select AMLOGIC_WATCHKEY
+	help
+	  Support watchkey cmd.
+
 config CMD_IR
         bool "ir"
         help
