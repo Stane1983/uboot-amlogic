@@ -33,6 +33,7 @@
 #include <stdint.h>
 #include "platform_def.h"
 #include "regs.h"
+#include "register.h"
 
 static int g_serial_disable;
 
@@ -117,6 +118,9 @@ int serial_tstc(void)
 int serial_putc(int c)
 {
 	if (0)
+		return c;
+
+	if (readl(SYSCTRL_SEC_STATUS_REG4) & ACS_DIS_PRINT_FLAG)
 		return c;
 
 	if (c == '\n') {
