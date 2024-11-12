@@ -589,12 +589,12 @@ exit:
 static void set_ddr_size(void)
 {
 	char ddr_size_str[32];
-	unsigned int ddr_size = 0;
+	ulong ddr_size = (readl(SYSCTRL_SEC_STATUS_REG4) & ~0xfffffUL) << 4;
 
 	memset(ddr_size_str, 0, 32);
-	ddr_size = (readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4;
+	ddr_size = ddr_size / SZ_1M;
 
-	sprintf(ddr_size_str, "%u%c", ddr_size, 'B');
+	sprintf(ddr_size_str, "%lu%s", ddr_size, "MB");
 	printf("ddr_size_str = %s\n", ddr_size_str);
 	env_set("ddr_size", ddr_size_str);
 }
