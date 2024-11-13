@@ -915,12 +915,6 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 		return -1;
 	}
 
-	//unsupport update dt in boothal, update dt in uboot
-	if (gpt_flag != 0 && !strcmp(rebootstatus, "reboot_next")) {
-		printf("dts partition table mode, check partition changes\n");
-		run_command("update_dt;", 0);
-	}
-
 	char *update_dts_gpt = NULL;
 
 	if (write_boot && !strcmp(write_boot, "1")) {
@@ -1019,6 +1013,12 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 		}
 	}
 #endif
+
+	//unsupport update dt in boothal, update dt in uboot
+	if (gpt_flag != 0 && !strcmp(rebootstatus, "reboot_next")) {
+		printf("dts partition table mode, check partition changes\n");
+		run_command("update_dt;", 0);
+	}
 
 	char *fastboot_step = env_get("fastboot_step");
 
