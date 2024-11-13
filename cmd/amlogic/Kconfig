@@ -176,4 +176,11 @@ config AML_PRODUCT_MODE
 		recommend enable when product is ready for producing
 #prduct mode end<----
 
+config CMD_MBSPI
+	bool "enable mbox spi test"
+	default n
+	help
+	Enable mbox spi test
+	Send a SPI transferring request command to AOCPU
+
 endmenu
