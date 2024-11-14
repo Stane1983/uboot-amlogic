@@ -114,7 +114,7 @@
 	"hdmimode=none\0" \
 	"colorattribute=444,8bit\0"\
 	"cvbsmode=576cvbs\0" \
-	"vout_init=enable\0" \
+	"vout_init=disable\0" \
 	"display_width=1920\0" \
 	"display_height=1080\0" \
 	"display_layer=osd0\0" \

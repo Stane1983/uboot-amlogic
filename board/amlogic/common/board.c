@@ -274,6 +274,9 @@ int aml_board_late_init_front(void *arg)
 	run_command("keyman init 0x1234", 0);
 #endif//#ifndef CONFIG_SYSTEM_RTOS //prue rtos not need dtb
 
+	/* reset vout init state */
+	run_command("setenv vout_init disable", 0);
+
 	return 0;
 }
 

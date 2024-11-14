@@ -67,7 +67,7 @@
 	"hdmimode=none\0" \
         "hdmi_read_edid=0\0" \
         "cvbsmode=576cvbs\0" \
-	"vout_init=enable\0" \
+	"vout_init=disable\0" \
         "display_width=1920\0" \
         "display_height=1080\0" \
         "display_bpp=16\0" \

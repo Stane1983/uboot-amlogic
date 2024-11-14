@@ -182,8 +182,6 @@ int board_late_init(void)
 	board_set_boot_source();
 #endif
 
-	/* reset vout init state */
-	run_command("setenv vout_init disable", 0);
 	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_s);
 #ifdef CONFIG_AML_VPU
 	vpu_probe();
