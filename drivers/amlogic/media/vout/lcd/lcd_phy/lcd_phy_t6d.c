@@ -5,6 +5,7 @@
 
 #include <common.h>
 #include <amlogic/media/vout/lcd/aml_lcd.h>
+#include <amlogic/aml_efuse.h>
 #include "../lcd_reg.h"
 #include "lcd_phy_config.h"
 #include "../lcd_common.h"
@@ -23,6 +24,34 @@ static u32 chdig_reg[] = {
 	ANACTRL_DIF_PHY_CNTL10, ANACTRL_DIF_PHY_CNTL11,
 	ANACTRL_DIF_PHY_CNTL12,
 };
+
+static unsigned int lcd_phy_get_def_odt(void)
+{
+	int efuse_odt = 0;
+
+	efuse_odt = efuse_get_cali_item("p2p_vinlp");
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("efuse odt=%#x\n", efuse_odt);
+	if (efuse_odt < 0) {
+		efuse_odt = PHY_DEF_ODT;
+		LCDERR("odt uncalibrated, use odt=%#x\n", efuse_odt);
+	}
+	return (unsigned int)efuse_odt;
+}
+
+static unsigned int lcd_phy_get_def_bias(void)
+{
+	int efuse_bias = 0;
+
+	efuse_bias = efuse_get_cali_item("p2p_common");
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("efuse bias=%#x\n", efuse_bias);
+	if (efuse_bias < 0) {
+		efuse_bias = PHY_DEF_BIAS;
+		LCDERR("bias uncalibrated, use bias=%#x\n", efuse_bias);
+	}
+	return (unsigned int)efuse_bias;
+}
 
 static void lcd_phy_reg_dump(struct aml_lcd_drv_s *pdrv)
 {
@@ -325,8 +354,8 @@ static struct lcd_phy_ctrl_s lcd_phy_ctrl_t6d = {
 
 struct lcd_phy_ctrl_s *lcd_phy_config_init_t6d(struct aml_lcd_data_s *pdata)
 {
-	cali_odt = PHY_DEF_ODT;    //todo
-	cali_bias = PHY_DEF_BIAS;  //todo
+	cali_odt = lcd_phy_get_def_odt();
+	cali_bias = lcd_phy_get_def_bias();
 	return &lcd_phy_ctrl_t6d;
 }
 #endif
