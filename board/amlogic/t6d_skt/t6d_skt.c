@@ -27,25 +27,6 @@
 #include <command.h>
 #include <asm/amlogic/arch/stick_mem.h>
 
-<<<<<<< HEAD
-#ifdef CONFIG_AML_VPU
-#include <amlogic/media/vpu/vpu.h>
-#endif
-#ifdef CONFIG_AML_VPP
-#include <amlogic/media/vpp/vpp.h>
-#endif
-#ifdef CONFIG_AML_HDMITX20
-#include <amlogic/media/vout/hdmitx/hdmitx_module.h>
-#endif
-#ifdef CONFIG_AML_HDMITX21
-#include <amlogic/media/vout/hdmitx21/hdmitx_module.h>
-#endif
-#ifdef CONFIG_AML_CVBS
-#include <amlogic/media/vout/aml_cvbs.h>
-#endif
-
-=======
->>>>>>> a35829b0dab (lcd: enable display on smp for 2023 [1/1])
 DECLARE_GLOBAL_DATA_PTR;
 
 void sys_led_init(void)
@@ -155,20 +136,8 @@ int board_late_init(void)
 #endif
 	get_stick_reboot_flag_mbx();
 
-<<<<<<< HEAD
-#ifdef CONFIG_AML_VPU
-	vpu_probe();
-#endif
-#ifdef CONFIG_AML_VPP
-	vpp_init();
-#endif
-#ifdef CONFIG_AML_CVBS
-	cvbs_init();
-#endif
-=======
 	aml_board_display_init(0x01);
 
->>>>>>> a35829b0dab (lcd: enable display on smp for 2023 [1/1])
 	run_command("amlsecurecheck", 0);
 	run_command("update_tries", 0);
 
