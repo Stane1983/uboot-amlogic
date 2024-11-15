@@ -23,37 +23,38 @@ SECTIONS
 		*(.bss*)
     } > ROM
 
-	.dev_header 0x00000000 :
+	. = 0x00000000;
+	.dev_header :
 	{
 		*(.dev_header*)
 	}
 
-	.vendor_key 0x00000080 :
+	.vendor_key :
 	{
 		*(.vendor_key*)
 	}
 
-	.generic_param 0x00000100:
+	.generic_param :
 	{
 		*(.generic_param*)
 	}
 
-	.clk_param 0x0000170:
+	.clk_param :
 	{
 		*(.clk_param*)
 	}
 
-	.misc_param 0x00001F0:
+	.misc_param :
 	{
 		*(.misc_param*)
 	}
 
-	.store_param 0x000002F0:
+	.store_param :
 	{
 		*(.store_param*)
 	}
 
-	.ddr_param 0x00000600 - 0x40:
+	.ddr_param :
 	{
 		*(.ddr_param*)
 		*(.ddr_2acs_index*)

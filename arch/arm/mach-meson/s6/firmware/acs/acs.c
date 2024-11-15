@@ -15,20 +15,25 @@ dev_param_hdr_t __param_hdr __attribute__ ((section(".dev_header"))) = {
 
 	.bl2_regs_magic = "bl2r_",
 	.bl2_regs_length = sizeof(__bl2_reg),
+	.bl2_regs_sta = &__bl2_reg[0],
 
 	.board_clk_magic = "bclk_",
 	.board_clk_length = sizeof(__board_clk_setting),
+	.board_clk_sta = &__board_clk_setting,
 
 	.opt_reg_magic = "ops__",
 	.opt_reg_length = sizeof(__bl2_ops_reg),
+	.opt_reg_sta = &__bl2_ops_reg[0],
 
 	.sto_set_magic = "store",
 	.sto_set_length = sizeof(__store_para),
+	.sto_set_sta = &__store_para,
 
 	.ddr_set_magic = "ddrs_",
 	.ddr_set_length = sizeof(__ddr_setting),
 	.ddr_2acs_length = sizeof(__bl2_ddr_reg_data),
-	.ddr_2acs_data_p = (unsigned int *)__bl2_ddr_reg_data,
+	.ddr_set_sta = &__ddr_setting[0],
+	.ddr_2acs_sta = &__bl2_ddr_reg_data[0],
 };
 
 __attribute__ ((__weak__)) vendor_key_t __vendor_key __attribute__ ((section(".vendor_key"))) = {

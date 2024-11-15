@@ -15,8 +15,6 @@
 #define CHIP_PARAM_VERSION		0x1
 #define DEV_PARAM_VERSION		0x1
 
-#define MAX_REG_OPS_ENTRIES		(16)
-
 #ifndef __ASSEMBLY__
 #include <asm/amlogic/arch/acs_struct.h>
 #endif
