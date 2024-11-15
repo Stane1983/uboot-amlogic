@@ -115,17 +115,16 @@ static void earcrx_cmdc_init(int version)
 			   0x1 << 23 | /* earcrx_pll_dmacrx_sqout_rstn_sel */
 			   0x1 << 10,  /* earcrx_pll_n */
 			   EARCRX_PLL_CTRL0);
-
-		/* eARC_RX_CONN_START Max time 200ms */
-		update_bits(EARC_RX_CMDC_VSM_CTRL1,
-				 0xfffff << 12,
-				 200 << 12
-				);
-		update_bits(EARC_RX_CMDC_VSM_CTRL0,
-				 0x1 << 19,
-				 0x1 << 19
-				);
 	}
+	/* eARC_RX_CONN_START Max time 200ms */
+	update_bits(EARC_RX_CMDC_VSM_CTRL1,
+			 0xfffff << 12,
+			 0x80 << 12
+			);
+	update_bits(EARC_RX_CMDC_VSM_CTRL0,
+			 0x1 << 19,
+			 0x1 << 19
+			);
 }
 
 void earcrx_init(int version)

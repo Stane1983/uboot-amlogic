@@ -42,6 +42,9 @@
 #include <amlogic/amfc.h>
 #endif
 #include <amlogic/aml_profile.h>
+#ifdef CONFIG_CMD_SND
+#include "amlogic/auge_sound.h"
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -123,6 +126,11 @@ int board_init(void)
 	run_command("gpio set GPIOH_6", 0);
 	hdmitx21_chip_type_init(MESON_CPU_ID_S6);
 	hdmitx21_init();
+#endif
+#ifdef CONFIG_CMD_SND
+	/* pinmux HDMITX_HPD_IN: GPIOH_2,  */
+	update_bits(PADCTRL_PIN_MUX_REGB, 0xf << 8, 0x1 << 8);
+	earcrx_init(EARC_RX_ANA_V3);
 #endif
 
 #if 0
