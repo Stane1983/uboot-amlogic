@@ -924,8 +924,17 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 			printf("write boot0 fail, need to rollback!\n");
 			update_rollback();
 		} else {
-			update_flag = update_gpt(0);
+			update_gpt(0);
 			printf("write boot0 success, need to reset!\n");
+			env_set("write_boot", "0");
+			env_set("reboot_status", "reboot_next");
+			env_set("expect_index", "1");
+			env_set("update_env", "1");
+			run_command("saveenv", 0);
+			if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+				run_command("reboot quiescent", 0);
+			else
+				run_command("reboot", 0);
 		}
 	}
 
@@ -935,9 +944,18 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 		if (rc == 0 && update_dts_gpt && !strcmp(update_dts_gpt, "1")) {
 			printf("update from dts to gpt\n");
 			update_flag = update_gpt(1);
-			env_set("update_dts_gpt", "0");
-			env_set("dts_to_gpt", "1");
-			run_command("saveenv", 0);
+			if (update_flag != -1) {
+				env_set("update_dts_gpt", "0");
+				env_set("dts_to_gpt", "1");
+				env_set("reboot_status", "reboot_next");
+				env_set("expect_index", "1");
+				env_set("update_env", "1");
+				run_command("saveenv", 0);
+				if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+					run_command("reboot quiescent", 0);
+				else
+					run_command("reboot", 0);
+			}
 		} else {
 			printf("rebootstatus is %s\n", rebootstatus);
 			if (rc == 0 && !strcmp(rebootstatus, "reboot_next")) {
@@ -970,19 +988,6 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 				}
 			}
 		}
-	}
-
-	if ((write_boot && !strcmp(write_boot, "1")) || update_flag != -1) {
-		printf("reset......\n");
-		env_set("write_boot", "0");
-		env_set("reboot_status", "reboot_next");
-		env_set("expect_index", "1");
-		env_set("update_env", "1");
-		run_command("saveenv", 0);
-		if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
-			run_command("reboot quiescent", 0);
-		else
-			run_command("reboot", 0);
 	}
 
 #ifdef CONFIG_MMC_MESON_GX
