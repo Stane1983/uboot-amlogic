@@ -282,73 +282,59 @@
 			"run load_bmp_logo_base;"\
 			"\0"\
 	"init_display="\
-		"get_rebootmode;"\
-		"echo reboot_mode:::: ${reboot_mode};"\
+		"osd open;osd clear;run load_bmp_logo;bmp scale;"\
 		"if test ${reboot_mode} = quiescent; then "\
 			"setenv dolby_status 0;"\
 			"setenv dolby_vision_on 0;"\
 			"setenv bootconfig ${bootconfig} androidboot.quiescent=1;"\
-			"osd open;osd clear;"\
 		"else if test ${reboot_mode} = recovery_quiescent; then "\
 			"setenv dolby_status 0;"\
 			"setenv dolby_vision_on 0;"\
 			"setenv bootconfig ${bootconfig} androidboot.quiescent=1;"\
-			"osd open;osd clear;"\
-		"else "\
-			"osd open;osd clear;run load_bmp_logo;bmp scale;vout output ${outputmode};"\
 		"fi;fi;"\
+		VOUT_CMD \
 		"\0"\
 	"check_display="\
-		"echo check_display reboot_mode : ${reboot_mode} ,powermode : ${powermode};"\
+		"echo check_display reboot_mode: ${reboot_mode}, powermode: ${powermode};"\
+		"setenv ddr_resume 0; "\
+		"setenv bootup_display on; "\
 		"if test ${reboot_mode} = ffv_reboot; then "\
 			"if test ${ffv_wake} = on; then "\
 				"echo ffv reboot no display; "\
-			"else "\
-				"run init_display; "\
+				"setenv bootup_display off; "\
 			"fi; "\
 		"else if test ${reboot_mode} = cold_boot; then "\
 			"if test ${powermode} = standby; then "\
 				"setenv ddr_resume 1;"\
 			"else if test ${powermode} = last; then "\
 				"if test ${suspend} != off; then "\
+					"echo suspend: ${suspend};"\
 					"setenv ddr_resume 1;"\
 				"fi;"\
 			"fi;fi;"\
-			"if test ${powermode} = on; then "\
-				"echo powermode : ${powermode} ,need to init_display; "\
-				"run init_display; "\
-			"else if test ${powermode} = standby; then "\
-				"echo reboot: ${reboot_mode} suspend: ${suspend};"\
-				"run init_display; "\
-			"else if test ${powermode} = last; then "\
-				"if test ${suspend} = off; then "\
-					"echo suspend : ${suspend} ,need to init_display; "\
-					"run init_display; "\
-				"fi; "\
-			"fi;fi;fi; "\
-		"else "\
-			"echo reboot_mode is normal;"\
-			"run init_display; "\
-		"fi;fi; "\
+		"else if test ${reboot_mode} = quiescent; then "\
+			"echo quiescent reboot no display; "\
+			"setenv bootup_display off; "\
+		"else if test ${reboot_mode} = recovery_quiescent; then "\
+			"echo quiescent reboot no display; "\
+			"setenv bootup_display off; "\
+		"fi;fi;fi;fi; "\
 		"\0"\
-		"cmdline_keys="\
-			"setenv usid t950s${cpu_id};"\
-			"run cmdline_keys_base;"\
-			"\0"\
-		"upgrade_key="\
-			"run upgrade_key_base;"\
-			"echo usr key;"\
-			"\0"\
-
+	"cmdline_keys="\
+		"setenv usid t950s${cpu_id};"\
+		"run cmdline_keys_base;"\
+		"\0"\
+	"upgrade_key="\
+		"run upgrade_key_base;"\
+		"echo usr key;"\
+		"\0"\
 
 #define CONFIG_PREBOOT  \
-            "run upgrade_check;"\
-	/* "run init_display;"\ */\
-	"get_rebootmode;"\
-	"run check_display;"\
+	"run upgrade_check;"\
+	INIT_DISPLAY \
 	"run storeargs;"\
-            "run upgrade_key;" \
-            "bcb uboot-command;" \
+	"run upgrade_key;" \
+	"bcb uboot-command;" \
 	"run switch_bootmode;" \
 	"run reset_suspend;"
 

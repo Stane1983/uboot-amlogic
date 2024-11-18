@@ -90,18 +90,8 @@
 #define OSD_CMD	"osd open;osd clear;run load_bmp_logo;bmp scale; "
 #ifdef CONFIG_ARMV8_MULTIENTRY
 #define ENABLE_SMP	"display_on_smp=0\0"
-#define INIT_DISPLAY	"if test ${display_on_smp} = 0; then "\
-				"run init_display;" \
-			"fi; "
-#define VOUT_CMD	"if test ${display_on_smp} = 1; then "\
-				"vout prepare ${outputmode};"\
-			"else "\
-				"vout output ${outputmode};"\
-			"fi; "
 #else
 #define ENABLE_SMP	"display_on_smp=0\0"
-#define INIT_DISPLAY	"run init_display; "
-#define VOUT_CMD	"vout output ${outputmode}; "
 #endif
 
 /* args/envs */
@@ -307,33 +297,35 @@
 		VOUT_CMD \
 		"\0"\
 	"check_display="\
-		"echo check_display reboot_mode : ${reboot_mode} ,powermode : ${powermode};"\
+		"echo check_display reboot_mode: ${reboot_mode}, powermode: ${powermode};"\
+		"setenv ddr_resume 0; "\
+		"setenv bootup_display on; "\
 		"if test ${reboot_mode} = ffv_reboot; then "\
 			"if test ${ffv_wake} = on; then "\
 				"echo ffv reboot no display; "\
 				"setenv bootup_display off; "\
-			"else "\
-				"setenv bootup_display on; "\
 			"fi; "\
 		"else if test ${reboot_mode} = cold_boot; then "\
-			"if test ${powermode} = on; then "\
-				"echo powermode : ${powermode} ,bootup_display on; "\
-				"setenv bootup_display on; "\
+			"if test ${powermode} = standby; then "\
+				"setenv ddr_resume 1;"\
 			"else if test ${powermode} = last; then "\
-				"if test ${suspend} = off; then "\
-					"echo suspend : ${suspend} ,bootup_display on; "\
-					"setenv bootup_display on; "\
+				"if test ${suspend} != off; then "\
+					"echo suspend : ${suspend}; "\
+					"setenv ddr_resume 1;"\
 				"fi; "\
 			"fi;fi; "\
-		"else "\
-			"echo reboot_mode is normal;"\
-			"setenv bootup_display on; "\
-		"fi;fi; "\
+		"else if test ${reboot_mode} = quiescent; then "\
+			"echo quiescent reboot no display; "\
+			"setenv bootup_display off; "\
+		"else if test ${reboot_mode} = recovery_quiescent; then "\
+			"echo quiescent reboot no display; "\
+			"setenv bootup_display off; "\
+		"fi;fi;fi;fi; "\
 		"\0"\
-		"cmdline_keys="\
-			"setenv usid t965d4${cpu_id};"\
-			"run cmdline_keys_base;"\
-			"\0"\
+	"cmdline_keys="\
+		"setenv usid t968d4${cpu_id};"\
+		"run cmdline_keys_base;"\
+		"\0"\
 	"upgrade_key="\
 		"run upgrade_key_base;"\
 		"echo usr key;"\
@@ -341,12 +333,12 @@
 
 #ifndef CONFIG_PXP_EMULATOR
 #define CONFIG_PREBOOT  \
-            "run bcb_cmd; "\
-            "run upgrade_check;"\
+	"run bcb_cmd; "\
+	"run upgrade_check;"\
 	INIT_DISPLAY \
 	"run storeargs;"\
-            "run upgrade_key;" \
-            "bcb uboot-command;" \
+	"run upgrade_key;" \
+	"bcb uboot-command;" \
 	"run switch_bootmode;" \
 	"run reset_suspend;"
 #define CONFIG_BOOTCOMMAND "run storeboot"

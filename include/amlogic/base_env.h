@@ -48,6 +48,20 @@
 #define _AML_RUN_UPDATE_ENV  "echo aml_update;"
 #endif// #ifndef CONFIG_AML_PRODUCT_MODE
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#define INIT_DISPLAY	"if test ${display_on_smp} = 0; then "\
+				"run init_display;" \
+			"fi; "
+#define VOUT_CMD	"if test ${display_on_smp} = 1; then "\
+				"vout prepare ${outputmode};"\
+			"else "\
+				"vout output ${outputmode};"\
+			"fi; "
+#else
+#define INIT_DISPLAY	"run init_display; "
+#define VOUT_CMD	"vout output ${outputmode}; "
+#endif
+
 /* args/envs */
 #define CONFIG_SYS_MAXARGS  64
 #define CONFIG_EXTRA_ENV_SETTINGS_BASE \

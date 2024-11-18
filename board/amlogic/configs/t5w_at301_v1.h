@@ -169,267 +169,152 @@
                 "fi;"\
             "fi;"\
             "\0"\
-        "ffv_freeze_action="\
-            "run cec_init;"\
-            "setenv ffv_freeze on;"\
-            "setenv bootargs ${bootargs} ffv_freeze=on"\
-            "\0"\
-        "cold_boot_normal_check="\
-            "setenv bootargs ${bootargs} ffv_freeze=off; "\
-            /*"run try_auto_burn;uboot wake up "*/\
-            "if test ${powermode} = on; then "\
-                /*"run try_auto_burn; "*/\
-            "else if test ${powermode} = standby; then "\
-                "run cec_init;"\
-                "systemoff; "\
-            "else if test ${powermode} = last; then "\
-               "echo suspend=${suspend}; "\
-                "if test ${suspend} = off; then "\
-                    /*"run try_auto_burn; "*/\
-                "else if test ${suspend} = on; then "\
-                    "run cec_init;"\
-                    "systemoff; "\
-                "else if test ${suspend} = shutdown; then "\
-                    "run cec_init;"\
-                    "systemoff; "\
-                "fi; fi; fi; "\
-            "fi; fi; fi; "\
-            "\0"\
-        "switch_bootmode="\
-            "get_rebootmode;"\
-            "setenv ffv_freeze off;"\
-            "if test ${reboot_mode} = factory_reset; then "\
-                    "run recovery_from_flash;"\
-            "else if test ${reboot_mode} = update; then "\
-                    "run update;"\
-            "else if test ${reboot_mode} = quiescent; then "\
-                    "setenv bootargs ${bootargs} androidboot.quiescent=1;"\
-            "else if test ${reboot_mode} = recovery_quiescent; then "\
-                    "setenv bootargs ${bootargs} androidboot.quiescent=1;"\
-                    "run recovery_from_flash;"\
-            "else if test ${reboot_mode} = cold_boot; then "\
-                "echo cold boot: ffv_wake=${ffv_wake} powermode=${powermode} suspend=${suspend};"\
-                "if test ${ffv_wake} = on; then "\
-                    "if test ${powermode} = on; then "\
-                        "setenv bootargs ${bootargs} ffv_freeze=off; "\
-                    "else if test ${powermode} = standby; then "\
-                        "run ffv_freeze_action; "\
-                    "else if test ${powermode} = last; then "\
-                        "if test ${suspend} = off; then "\
-                            "setenv bootargs ${bootargs} ffv_freeze=off; "\
-                        "else if test ${suspend} = on; then "\
-                            "run ffv_freeze_action; "\
-                        "else if test ${suspend} = shutdown; then "\
-                            "run ffv_freeze_action; "\
-                        "fi; fi; fi; "\
-                    "fi; fi; fi; "\
-                "else "\
-                    "run cold_boot_normal_check;"\
-                "fi; "\
-            "else if test ${reboot_mode} = ffv_reboot; then "\
-                "if test ${ffv_wake} = on; then "\
-                    "run ffv_freeze_action; "\
-                "fi; "\
-            "else if test ${reboot_mode} = fastboot; then "\
-                "fastboot;"\
-            "fi;fi;fi;fi;fi;fi;fi;"\
-            "\0" \
-        "reset_suspend="\
-            "if test ${ffv_freeze} != on; then "\
-                "if test ${suspend} = on || test ${suspend} = shutdown; then "\
-                    "setenv ""suspend off"";"\
-                    "saveenv;"\
-                "fi;"\
-            "fi;"\
-            "\0" \
-        "enter_fastboot="\
-            "fastboot 0;"\
-            "\0"\
-        "storeboot="\
-            "if test ${reboot_mode} = normal; then "\
-            "else if test ${reboot_mode} = cold_boot; then "\
-            "else "\
-                "boot_cooling;"\
-            "fi;fi;"\
-            "get_system_as_root_mode;"\
-            "echo system_mode: ${system_mode};"\
-            "get_avb_mode;"\
-            "echo active_slot: ${active_slot};"\
-            "if test ${system_mode} = 1; then "\
-                "setenv bootargs ${bootargs} ro rootwait skip_initramfs;"\
-            "else "\
-                "setenv bootargs ${bootargs} androidboot.force_normal_boot=1;"\
-            "fi;"\
-            "if test ${active_slot} != normal; then "\
-                    "setenv bootargs ${bootargs} androidboot.slot_suffix=${active_slot};"\
-            "fi;"\
-            "if test ${avb2} = 0; then "\
-                "if test ${active_slot} = _a; then "\
-                    "setenv bootargs ${bootargs} root=/dev/mmcblk0p23;"\
-                "else if test ${active_slot} = _b; then "\
-                    "setenv bootargs ${bootargs} root=/dev/mmcblk0p24;"\
-                "fi;fi;"\
-            "fi;"\
-	    "setenv bootargs ${bootargs} androidboot.rollback=${rollback_flag};"\
-            "if imgread kernel ${boot_part} ${loadaddr}; then bootm ${loadaddr}; fi;"\
-            "run update;"\
-            "\0"\
-        "factory_reset_poweroff_protect="\
-            "echo wipe_data=${wipe_data}; echo wipe_cache=${wipe_cache};"\
-            "if test ${wipe_data} = failed; then "\
-                "run init_display; run storeargs;"\
-                "if mmcinfo; then "\
-                    "run recovery_from_sdcard;"\
-                "fi;"\
-                "if usb start 0; then "\
-                    "run recovery_from_udisk;"\
-                "fi;"\
-                "run recovery_from_flash;"\
-            "fi; "\
-            "if test ${wipe_cache} = failed; then "\
-                "run init_display; run storeargs;"\
-                "if mmcinfo; then "\
-                    "run recovery_from_sdcard;"\
-                "fi;"\
-                "if usb start 0; then "\
-                    "run recovery_from_udisk;"\
-                "fi;"\
-                "run recovery_from_flash;"\
-            "fi; \0" \
-         "update="\
-            /*first usb burning, second sdc_burn, third ext-sd autoscr/recovery, last udisk autoscr/recovery*/\
-            "run usb_burning; "\
-            "run sdc_burning; "\
-            "if mmcinfo; then "\
-                "run recovery_from_sdcard;"\
-            "fi;"\
-            "if usb start 0; then "\
-                "run recovery_from_udisk;"\
-            "fi;"\
-            "run recovery_from_flash;"\
-            "\0"\
-        "recovery_from_sdcard="\
-            "if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;"\
-            "if fatload mmc 0 ${loadaddr} recovery.img; then "\
-                    "if fatload mmc 0 ${dtb_mem_addr} dtb.img; then echo sd dtb.img loaded; fi;"\
-                    "wipeisb; "\
-                    "bootm ${loadaddr};fi;"\
-            "\0"\
-        "recovery_from_udisk="\
-            "if fatload usb 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;"\
-            "if fatload usb 0 ${loadaddr} recovery.img; then "\
-                "if fatload usb 0 ${dtb_mem_addr} dtb.img; then echo udisk dtb.img loaded; fi;"\
-                "wipeisb; "\
-                "bootm ${loadaddr};fi;"\
-            "\0"\
-        "recovery_from_flash="\
-            "echo active_slot: ${active_slot};"\
-            "if test ${active_slot} = normal; then "\
-                "setenv bootargs ${bootargs} ${fs_type} aml_dt=${aml_dt} recovery_part=${recovery_part} recovery_offset=${recovery_offset};"\
-				"if test ${upgrade_step} = 3; then "\
-                    "if ext4load mmc 1:2 ${dtb_mem_addr} /recovery/dtb.img; then echo cache dtb.img loaded; fi;"\
-					"if test ${vendor_boot_mode} = true; then "\
-						"if imgread kernel ${recovery_part} ${loadaddr} ${recovery_offset}; then bootm ${loadaddr}; fi;"\
-					"else "\
-                    "if ext4load mmc 1:2 ${loadaddr} /recovery/recovery.img; then echo cache recovery.img loaded; wipeisb; bootm ${loadaddr}; fi;"\
-					"fi;"\
-                "else fi;"\
-                "if imgread kernel ${recovery_part} ${loadaddr} ${recovery_offset}; then wipeisb; bootm ${loadaddr}; fi;"\
-            "else "\
-				"if test ${partition_mode} = normal; then "\
-                    "setenv bootargs ${bootargs} ${fs_type} aml_dt=${aml_dt} recovery_part=${boot_part} recovery_offset=${recovery_offset};"\
-                    "if imgread kernel ${boot_part} ${loadaddr}; then bootm ${loadaddr}; fi;"\
-                "else "\
-                    "if test ${vendor_boot_mode} = true; then "\
-                        "setenv bootargs ${bootargs} ${fs_type} aml_dt=${aml_dt} recovery_part=${boot_part} recovery_offset=${recovery_offset} androidboot.slot_suffix=${active_slot};"\
-                        "if imgread kernel ${boot_part} ${loadaddr}; then bootm ${loadaddr}; fi;"\
-                    "else "\
-                        "setenv bootargs ${bootargs} ${fs_type} aml_dt=${aml_dt} recovery_part=${recovery_part} recovery_offset=${recovery_offset} androidboot.slot_suffix=${active_slot};"\
-                    "if imgread kernel ${recovery_part} ${loadaddr} ${recovery_offset}; then wipeisb; bootm ${loadaddr}; fi;"\
-                    "fi;"\
-                "fi;"\
-            "fi;"\
-            "\0"\
-        "init_display="\
-		"get_rebootmode;"\
-		"echo reboot_mode:::: ${reboot_mode};"\
+	"ffv_freeze_action="\
+		"run cec_init;"\
+		"setenv ffv_freeze on;"\
+		"setenv bootargs ${bootargs} ffv_freeze=on"\
+		"\0"\
+	"cold_boot_normal_check="\
+		"setenv bootargs ${bootargs} ffv_freeze=off; "\
+		/*"run try_auto_burn;uboot wake up "*/\
+		"if test ${powermode} = on; then "\
+			/*"run try_auto_burn; "*/\
+		"else if test ${powermode} = standby; then "\
+			"run cec_init;"\
+			"if test ${systemsuspend_switch} = 0;then systemoff; fi;"\
+		"else if test ${powermode} = last; then "\
+			"echo suspend=${suspend}; "\
+			"if test ${suspend} = off; then "\
+				/*"run try_auto_burn; "*/\
+			"else if test ${suspend} = on; then "\
+				"run cec_init;"\
+				"if test ${systemsuspend_switch} = 0;then systemoff; fi;"\
+			"else if test ${suspend} = shutdown; then "\
+				"run cec_init;"\
+				"if test ${systemsuspend_switch} = 0;then systemoff; fi;"\
+			"fi; fi; fi; "\
+		"fi; fi; fi; "\
+		"\0"\
+	"switch_bootmode="\
+		"setenv ffv_freeze off;"\
+		"echo reboot_mode : ${reboot_mode};"\
+		"if test ${reboot_mode} = factory_reset; then "\
+				"run recovery_from_flash;"\
+		"else if test ${reboot_mode} = update; then "\
+				"run update;"\
+		"else if test ${reboot_mode} = quiescent; then "\
+				"setenv bootconfig ${bootconfig} androidboot.quiescent=1;"\
+		"else if test ${reboot_mode} = recovery_quiescent; then "\
+				"setenv bootconfig ${bootconfig} androidboot.quiescent=1;"\
+				"run recovery_from_flash;"\
+		"else if test ${reboot_mode} = cold_boot; then "\
+			"echo cold boot: ffv_wake=${ffv_wake} "\
+			"powermode=${powermode} suspend=${suspend};"\
+			"if test ${ffv_wake} = on; then "\
+				"if test ${powermode} = on; then "\
+					"setenv bootargs ${bootargs} ffv_freeze=off; "\
+				"else if test ${powermode} = standby; then "\
+					"run ffv_freeze_action; "\
+				"else if test ${powermode} = last; then "\
+					"if test ${suspend} = off; then "\
+						"setenv bootargs ${bootargs} ffv_freeze=off; "\
+					"else if test ${suspend} = on; then "\
+						"run ffv_freeze_action; "\
+					"else if test ${suspend} = shutdown; then "\
+						"run ffv_freeze_action; "\
+					"fi; fi; fi; "\
+				"fi; fi; fi; "\
+			"else "\
+				"run cold_boot_normal_check;"\
+			"fi; "\
+		"else if test ${reboot_mode} = ffv_reboot; then "\
+			"if test ${ffv_wake} = on; then "\
+				"run ffv_freeze_action; "\
+			"fi; "\
+		"else if test ${reboot_mode} = fastboot; then "\
+			"fastboot 1;"\
+		"fi;fi;fi;fi;fi;fi;fi;"\
+		"\0" \
+	"reset_suspend="\
+		"if test ${ffv_freeze} != on; then "\
+			"if test ${suspend} = on || test ${suspend} = shutdown; then "\
+				"setenv suspend off;"\
+				"saveenv;"\
+			"fi;"\
+		"fi;"\
+		"\0" \
+		"storeboot="\
+			"ddr_auto_fast_boot_check 6;run storeboot_base;"\
+			"\0"\
+		"update="\
+			"run update_base;"\
+			"\0"\
+		"enter_fastboot="\
+			"fastboot 1;"\
+			"\0"\
+		"recovery_from_fat_dev="\
+			"run recovery_from_fat_dev_base;"\
+			"\0"\
+		"recovery_from_udisk="\
+			"run recovery_from_udisk_base;"\
+			"\0"\
+		"recovery_from_sdcard="\
+			"run recovery_from_sdcard_base;"\
+			"\0"\
+		"recovery_from_flash="\
+			"run recovery_from_flash_base;"\
+			"\0"\
+		"bcb_cmd="\
+			"run bcb_cmd_base;"\
+			"\0"\
+		"load_bmp_logo="\
+			"run load_bmp_logo_base;"\
+			"\0"\
+	"init_display="\
+		"osd open;osd clear;run load_bmp_logo;bmp scale;"\
 		"if test ${reboot_mode} = quiescent; then "\
 			"setenv dolby_status 0;"\
 			"setenv dolby_vision_on 0;"\
 			"run storeargs;"\
 			"setenv bootconfig ${bootconfig} androidboot.quiescent=1;"\
-			"osd open;osd clear;"\
 		"else if test ${reboot_mode} = recovery_quiescent; then "\
 			"setenv dolby_status 0;"\
 			"setenv dolby_vision_on 0;"\
 			"run storeargs;"\
 			"setenv bootconfig ${bootconfig} androidboot.quiescent=1;"\
-			"osd open;osd clear;"\
-		"else "\
-			"run storeargs;"\
-			"watermark_init;osd open;osd clear;"\
-			"imgread pic logo bootup $loadaddr;bmp display $bootup_offset;"\
-			"bmp scale;vout output ${outputmode}"\
 		"fi;fi;"\
+		VOUT_CMD \
 		"\0"\
-        "check_display="\
-            "if test ${reboot_mode} = cold_boot; then "\
-                "if test ${powermode} = standby; then "\
-                    "echo not init_display; "\
-                "else if test ${powermode} = last; then "\
-                    "echo suspend=${suspend}; "\
-                    "if test ${suspend} = off; then "\
-                        "run init_display; "\
-                    "else if test ${suspend} = on; then "\
-                        "echo not init_display; "\
-                    "else if test ${suspend} = shutdown; then "\
-                        "echo not init_display; "\
-                    "fi; fi; fi; "\
-                "else "\
-                    "run init_display; "\
-                "fi; fi; "\
-            "else if test ${reboot_mode} = ffv_reboot; then "\
-                "if test ${ffv_wake} = on; then "\
-                    "echo ffv reboot no display; "\
-                "else "\
-                    "run init_display; "\
-                "fi; "\
-            "else "\
-                "run init_display; "\
-            "fi;fi; "\
-            "\0"\
-        "cmdline_keys="\
-            "if keyman init 0x1234; then "\
-                "if keyman read usid ${loadaddr} str; then "\
-                    "setenv bootargs ${bootargs} androidboot.serialno=${usid};"\
-                    "setenv serial ${usid};"\
-                "else "\
-                    "setenv bootargs ${bootargs} androidboot.serialno=at301${cpu_id};"\
-                    "setenv serial at301${cpu_id};"\
-                "fi;"\
-                "if keyman read mac ${loadaddr} str; then "\
-                    "setenv bootargs ${bootargs} mac=${mac} androidboot.mac=${mac};"\
-                "fi;"\
-                "if keyman read deviceid ${loadaddr} str; then "\
-                    "setenv bootargs ${bootargs} androidboot.deviceid=${deviceid};"\
-                "fi;"\
-                "if keyman read oemkey ${loadaddr} str; then "\
-                    "setenv bootargs ${bootargs} androidboot.oem.key1=${oemkey};"\
-                "fi;"\
-            "else "\
-                "setenv bootargs ${bootargs} androidboot.serialno=at301${cpu_id};"\
-                "setenv serial at301${cpu_id};"\
-            "fi;"\
-	    "factory_provision init;"\
-            "\0"\
-        "bcb_cmd="\
-            "get_rebootmode;"\
-            "get_valid_slot;"\
-            "if test ${vendor_boot_mode} = true; then "\
-		"setenv loadaddr 2080000;"\
-		"setenv dtb_mem_addr 0x1000000;"\
-            "fi;"\
-            "\0"\
+	"check_display="\
+		"echo check_display reboot_mode: ${reboot_mode}, powermode: ${powermode};"\
+		"setenv ddr_resume 0; "\
+		"setenv bootup_display on; "\
+		"if test ${reboot_mode} = ffv_reboot; then "\
+			"if test ${ffv_wake} = on; then "\
+				"echo ffv reboot no display; "\
+				"setenv bootup_display off; "\
+			"fi; "\
+		"else if test ${reboot_mode} = cold_boot; then "\
+			"if test ${powermode} = standby; then "\
+				"setenv ddr_resume 1;"\
+			"else if test ${powermode} = last; then "\
+				"if test ${suspend} != off; then "\
+					"echo suspend: ${suspend} "\
+					"setenv ddr_resume 1;"\
+				"fi;"\
+			"fi;fi;"\
+		"else if test ${reboot_mode} = quiescent; then "\
+			"echo quiescent reboot no display; "\
+			"setenv bootup_display off; "\
+		"else if test ${reboot_mode} = recovery_quiescent; then "\
+			"echo quiescent reboot no display; "\
+			"setenv bootup_display off; "\
+		"fi;fi;fi;fi; "\
+		"\0"\
+	"cmdline_keys="\
+		"setenv usid t962d4${cpu_id};"\
+		"run cmdline_keys_base;"\
+		"\0"\
         "upgrade_key="\
             "if gpio input GPIOAO_3; then "\
 			"echo detect upgrade key;"\
@@ -454,13 +339,12 @@
 
 #ifndef CONFIG_PXP_EMULATOR
 #define CONFIG_PREBOOT  \
-	"run factory_reset_poweroff_protect;"\
 	"run upgrade_check;"\
-	"run init_display;"\
-	"run check_display;"\
+	INIT_DISPLAY \
 	"run storeargs;"\
-	"bcb uboot-command;"\
-	"run switch_bootmode;"\
+	"run upgrade_key;" \
+	"bcb uboot-command;" \
+	"run switch_bootmode;" \
 	"run reset_suspend;"
 #define CONFIG_BOOTCOMMAND "run storeboot"
 #else

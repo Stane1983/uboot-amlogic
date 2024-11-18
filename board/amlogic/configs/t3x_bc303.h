@@ -283,35 +283,39 @@
 			"run load_bmp_logo_base;"\
 			"\0"\
 	"init_display="\
-		"osd open;osd clear;run load_bmp_logo;bmp scale;vout output ${outputmode}"\
+		"osd open;osd clear;run load_bmp_logo;bmp scale;"\
+		VOUT_CMD \
 		"\0"\
 	"check_display="\
-		"echo check_display reboot_mode : ${reboot_mode} ,powermode : ${powermode};"\
+		"echo check_display reboot_mode: ${reboot_mode}, powermode: ${powermode};"\
+		"setenv ddr_resume 0; "\
+		"setenv bootup_display on; "\
 		"if test ${reboot_mode} = ffv_reboot; then "\
 			"if test ${ffv_wake} = on; then "\
 				"echo ffv reboot no display; "\
-			"else "\
-				"run init_display; "\
+				"setenv bootup_display off; "\
 			"fi; "\
 		"else if test ${reboot_mode} = cold_boot; then "\
-			"if test ${powermode} = on; then "\
-				"echo powermode : ${powermode} ,need to init_display; "\
-				"run init_display; "\
+			"if test ${powermode} = standby; then "\
+				"setenv ddr_resume 1;"\
 			"else if test ${powermode} = last; then "\
-				"if test ${suspend} = off; then "\
-					"echo suspend : ${suspend} ,need to init_display; "\
-					"run init_display; "\
+				"if test ${suspend} != off; then "\
+					"echo suspend: ${suspend};"\
+					"setenv ddr_resume 1;"\
 				"fi; "\
 			"fi;fi; "\
-		"else "\
-			"echo reboot_mode is normal;"\
-			"run init_display; "\
-		"fi;fi; "\
+		"else if test ${reboot_mode} = quiescent; then "\
+			"echo quiescent reboot no display; "\
+			"setenv bootup_display off; "\
+		"else if test ${reboot_mode} = recovery_quiescent; then "\
+			"echo quiescent reboot no display; "\
+			"setenv bootup_display off; "\
+		"fi;fi;fi;fi; "\
 		"\0"\
-		"cmdline_keys="\
-			"setenv usid t968d4${cpu_id};"\
-			"run cmdline_keys_base;"\
-			"\0"\
+	"cmdline_keys="\
+		"setenv usid t968d4${cpu_id};"\
+		"run cmdline_keys_base;"\
+		"\0"\
 	"upgrade_key="\
 		"run upgrade_key_base;"\
 		"echo usr key;"\
@@ -320,14 +324,12 @@
 
 #ifndef CONFIG_PXP_EMULATOR
 #define CONFIG_PREBOOT  \
-            "run bcb_cmd; "\
-            "run upgrade_check;"\
-	/* "run init_display;"\ */\
-	"get_rebootmode;"\
-	"run check_display;"\
+	"run bcb_cmd; "\
+	"run upgrade_check;"\
+	INIT_DISPLAY \
 	"run storeargs;"\
-            "run upgrade_key;" \
-            "bcb uboot-command;" \
+	"run upgrade_key;" \
+	"bcb uboot-command;" \
 	"run switch_bootmode;" \
 	"run reset_suspend;"
 #define CONFIG_BOOTCOMMAND "run storeboot"
