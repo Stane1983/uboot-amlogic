@@ -642,6 +642,7 @@ int meson_pinctrl_probe(struct udevice *dev)
 #if defined(CONFIG_AMLOGIC_MODIFY)
 	int index;
 	int ret;
+	ofnode dummy_node;
 #endif
 
 	/* FIXME: Should use livetree */
@@ -723,6 +724,7 @@ int meson_pinctrl_probe(struct udevice *dev)
 	sprintf(name, "meson-gpio");
 
 #if defined(CONFIG_AMLOGIC_MODIFY)
+	memset(&dummy_node, 0, sizeof(dummy_node));
 	/* Search for every single pin */
 	for (index = 0; index < priv->data->num_banks; index++) {
 		if (!priv->data->banks[index].name)
@@ -730,7 +732,7 @@ int meson_pinctrl_probe(struct udevice *dev)
 
 		/* Create child device UCLASS_GPIO and bind it */
 		ret = device_bind(dev, priv->data->gpio_driver, name, NULL,
-					offset_to_ofnode(gpio), &gpio_dev);
+				  index ? dummy_node : offset_to_ofnode(gpio), &gpio_dev);
 
 		if (ret == 0)
 			dev_set_priv(gpio_dev, &priv->data->banks[index]);
