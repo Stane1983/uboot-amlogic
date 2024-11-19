@@ -237,6 +237,12 @@ config PARTITION_ENCRYPTION_LOCAL
 	help
 	  support partition local encryption
 
+config CMD_SCMI_SHMEM_ADDR
+        bool "support update address of shmem for SCMI"
+        help
+          When the address of shmem in DTB is inconsistent with BL31,
+          support updating the address of shmem in DTB.
+
 #prduct mode end<----
 
 endmenu

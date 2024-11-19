@@ -21,6 +21,8 @@ ifdef  CONFIG_AML_UPDATE_PDVFS
 obj-y += cmd_pdvfs.o
 endif
 
+obj-$(CONFIG_CMD_SCMI_SHMEM_ADDR) += cmd_scmi_shmem.o
+
 obj-$(CONFIG_CMD_DMCRW) += cmd_dmc.o
 
 obj-$(CONFIG_CMD_CAR_PARAMS) += cmd_car_param.o
