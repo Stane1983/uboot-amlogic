@@ -12,14 +12,17 @@
 #define CPU_CLK                                 2400
 
 /* board vmin_value defines */
-#define VMIN_FF_VALUE                           680
-#define VMIN_TT_VALUE                           710
-#define VMIN_SS_VALUE                           730
-/* board vddee_value defines */
-/* FF/TT/SS = 760/780/780 mv */
-#define VDDEE_FF_VALUE                          0x60007
-#define VDDEE_TT_VALUE                          0x40009
-#define VDDEE_SS_VALUE                          0x40009
+#define VMIN_FT_GROUP3							680
+#define VMIN_FT_GROUP2							710
+#define VMIN_FT_GROUP1							730
+/* board vddee_pwm_value defines */
+#define VDDEE_PWM_VAL_GROUP3					0x60007
+#define VDDEE_PWM_VAL_GROUP2					0x40009
+#define VDDEE_PWM_VAL_GROUP1					0x40009
+/* board vddddr_pwm_value defines */
+#define VDDDDR_PWM__VAL_GROUP3					0x60007
+#define VDDDDR_PWM__VAL_GROUP2					0x40009
+#define VDDDDR_PWM__VAL_GROUP1					0x40009
 
 board_clk_set_t __board_clk_setting
 __attribute__ ((section(".clk_param"))) = {
@@ -36,6 +39,7 @@ __attribute__ ((section(".clk_param"))) = {
 #define VCCK_VAL_1                              AML_VCCK_INIT_VOLTAGE_1
 #define VCCK_VAL_2                              AML_VCCK_INIT_VOLTAGE_2
 #define VDDEE_VAL                               AML_VDDEE_INIT_VOLTAGE
+#define VDDDDR_VAL                              AML_VDDDDR_INIT_VOLTAGE
 /* BOARD_1 VCCK PWM table */
 #if   (VCCK_VAL_1 == 979)
 #define VCCK_VAL_REG_1    0x00003e8
@@ -183,38 +187,75 @@ __attribute__ ((section(".clk_param"))) = {
 #endif
 
 /* VDDEE_VAL_REG */
-#if   (VDDEE_VAL == 679)
+#if   (VDDEE_VAL == 680)
 #define VDDEE_VAL_REG   0xf0000
-#elif (VDDEE_VAL == 689)
+#elif (VDDEE_VAL == 690)
 #define VDDEE_VAL_REG   0xd0000
-#elif (VDDEE_VAL == 699)
+#elif (VDDEE_VAL == 700)
 #define VDDEE_VAL_REG   0xc0001
-#elif (VDDEE_VAL == 709)
+#elif (VDDEE_VAL == 710)
 #define VDDEE_VAL_REG   0xb0002
-#elif (VDDEE_VAL == 719)
+#elif (VDDEE_VAL == 720)
 #define VDDEE_VAL_REG   0xa0003
-#elif (VDDEE_VAL == 729)
+#elif (VDDEE_VAL == 730)
 #define VDDEE_VAL_REG   0x90004
-#elif (VDDEE_VAL == 739)
+#elif (VDDEE_VAL == 740)
 #define VDDEE_VAL_REG   0x80005
-#elif (VDDEE_VAL == 749)
+#elif (VDDEE_VAL == 750)
 #define VDDEE_VAL_REG   0x70006
-#elif (VDDEE_VAL == 759)
+#elif (VDDEE_VAL == 760)
 #define VDDEE_VAL_REG   0x60007
-#elif (VDDEE_VAL == 769)
+#elif (VDDEE_VAL == 770)
 #define VDDEE_VAL_REG   0x50008
-#elif (VDDEE_VAL == 779)
+#elif (VDDEE_VAL == 780)
 #define VDDEE_VAL_REG   0x40009
-#elif (VDDEE_VAL == 789)
+#elif (VDDEE_VAL == 790)
 #define VDDEE_VAL_REG   0x3000a
-#elif (VDDEE_VAL == 799)
+#elif (VDDEE_VAL == 800)
 #define VDDEE_VAL_REG   0x2000b
-#elif (VDDEE_VAL == 809)
+#elif (VDDEE_VAL == 810)
 #define VDDEE_VAL_REG   0x1000c
-#elif (VDDEE_VAL == 819)
+#elif (VDDEE_VAL == 820)
 #define VDDEE_VAL_REG   0x0000d
-#elif (VDDEE_VAL == 829)
+#elif (VDDEE_VAL == 830)
 #define VDDEE_VAL_REG   0x0000f
+#else
+#error "VDDEE val out of range\n"
+#endif
+
+/* VDDDDR_VAL_REG */
+#if   (VDDDDR_VAL == 680)
+#define VDDDDR_VAL_REG   0xf0000
+#elif (VDDDDR_VAL == 690)
+#define VDDDDR_VAL_REG   0xd0000
+#elif (VDDDDR_VAL == 700)
+#define VDDDDR_VAL_REG   0xc0001
+#elif (VDDDDR_VAL == 710)
+#define VDDDDR_VAL_REG   0xb0002
+#elif (VDDDDR_VAL == 720)
+#define VDDDDR_VAL_REG   0xa0003
+#elif (VDDDDR_VAL == 730)
+#define VDDDDR_VAL_REG   0x90004
+#elif (VDDDDR_VAL == 740)
+#define VDDDDR_VAL_REG   0x80005
+#elif (VDDDDR_VAL == 750)
+#define VDDDDR_VAL_REG   0x70006
+#elif (VDDDDR_VAL == 760)
+#define VDDDDR_VAL_REG   0x60007
+#elif (VDDDDR_VAL == 770)
+#define VDDDDR_VAL_REG   0x50008
+#elif (VDDDDR_VAL == 780)
+#define VDDDDR_VAL_REG   0x40009
+#elif (VDDDDR_VAL == 790)
+#define VDDDDR_VAL_REG   0x3000a
+#elif (VDDDDR_VAL == 800)
+#define VDDDDR_VAL_REG   0x2000b
+#elif (VDDDDR_VAL == 810)
+#define VDDDDR_VAL_REG   0x1000c
+#elif (VDDDDR_VAL == 820)
+#define VDDDDR_VAL_REG   0x0000d
+#elif (VDDDDR_VAL == 830)
+#define VDDDDR_VAL_REG   0x0000f
 #else
 #error "VDDEE val out of range\n"
 #endif
@@ -228,19 +269,24 @@ bl2_reg_t __bl2_reg[] __attribute__ ((section(".generic_param"))) = {
 register_ops_t __bl2_ops_reg[MAX_REG_OPS_ENTRIES]
 __attribute__ ((section(".misc_param"))) = {
 	/* config vmin_ft value */
-	{ 0, VMIN_SS_VALUE, 0xffffffff, 0, BL2_INIT_STAGE_VMIN_FLAG_1, 0 },
-	{ 0, VMIN_TT_VALUE, 0xffffffff, 0, BL2_INIT_STAGE_VMIN_FLAG_2, 0 },
-	{ 0, VMIN_FF_VALUE, 0xffffffff, 0, BL2_INIT_STAGE_VMIN_FLAG_3, 0 },
+	/* config vmin_ft value */
+	{ 0, VMIN_FT_GROUP1, 0xffffffff, 0, BL2_VMIN_FT_FLAG_1, 0 },
+	{ 0, VMIN_FT_GROUP2, 0xffffffff, 0, BL2_VMIN_FT_FLAG_2, 0 },
+	{ 0, VMIN_FT_GROUP3, 0xffffffff, 0, BL2_VMIN_FT_FLAG_3, 0 },
 #ifdef CONFIG_PDVFS_ENABLE
-	{ PWM_PWM_D, VDDEE_SS_VALUE, 0xffffffff, 0, BL2_INIT_STAGE_VDDCORE_CONFIG_1, 0 },
-	{ PWM_PWM_D, VDDEE_TT_VALUE, 0xffffffff, 0, BL2_INIT_STAGE_VDDCORE_CONFIG_2, 0 },
-	{ PWM_PWM_D, VDDEE_FF_VALUE, 0xffffffff, 0, BL2_INIT_STAGE_VDDCORE_CONFIG_3, 0 },
+	{ PWM_PWM_D, VDDEE_PWM_VAL_GROUP1, 0xffffffff, 0, BL2_VDDEE_PWM_VAL_FLAG_1, 0 },
+	{ PWM_PWM_A, VDDDDR_PWM__VAL_GROUP1, 0xffffffff, 0, BL2_VDDDDR_PWM_VAL_FLAG_1, 0 },
+	{ PWM_PWM_D, VDDEE_PWM_VAL_GROUP2, 0xffffffff, 0, BL2_VDDEE_PWM_VAL_FLAG_2, 0 },
+	{ PWM_PWM_A, VDDDDR_PWM__VAL_GROUP2, 0xffffffff, 0, BL2_VDDDDR_PWM_VAL_FLAG_2, 0 },
+	{ PWM_PWM_D, VDDEE_PWM_VAL_GROUP3, 0xffffffff, 0, BL2_VDDEE_PWM_VAL_FLAG_3, 0 },
+	{ PWM_PWM_A, VDDDDR_PWM__VAL_GROUP3, 0xffffffff, 0, BL2_VDDDDR_PWM_VAL_FLAG_3, 0 },
 #else
 	{ PWM_PWM_D,		   VDDEE_VAL_REG, 0xffffffff, 0, 0, 0},
+	{ PWM_PWM_A,		   VDDDDR_VAL_REG, 0xffffffff, 0, 0, 0},
 #endif
 	/* DDR reg add multiplexing cpu macros by bl2_ops_reg size issue*/
-	{ PWM_PWM_F, VCCK_VAL_REG_1, 0xffffffff, 0, BL2_INIT_CPU_VDDCORE_CONFIG_1, 0 },
-	{ PWM_PWM_A, VCCK_VAL_REG_2, 0xffffffff, 0, BL2_INIT_CPU_VDDCORE_CONFIG_2, 0 },
+	{ PWM_PWM_F, VCCK_VAL_REG_1, 0xffffffff, 0, BL2_VDDCPU_PWM_VAL_FLAG_1, 0 },
+	{ PWM_PWM_F, VCCK_VAL_REG_2, 0xffffffff, 0, BL2_VDDCPU_PWM_VAL_FLAG_2, 0 },
 	{ PWM_MISC_REG_D,	   (0x1 << 0),	  (0x1 << 0), 0, 0, 0 },
 	{ PWM_MISC_REG_F,	   (0x1 << 0),	  (0x1 << 0), 0, 0, 0 },
 	{ PWM_MISC_REG_A,	   (0x1 << 0),	  (0x1 << 0), 0, 0, 0 },

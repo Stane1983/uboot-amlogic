@@ -14,7 +14,10 @@
 
 #define AML_VCCK_INIT_VOLTAGE_1	  919	    //VCCK power up voltage
 #define AML_VCCK_INIT_VOLTAGE_2	  1009	    //VCCK power up voltage
-#define AML_VDDEE_INIT_VOLTAGE    799       // VDDEE power up voltage
+/* default EE/DDR voltage for LPDDR5  */
+#define AML_VDDEE_INIT_VOLTAGE    800       // VDDEE power up voltage
+#define AML_VDDDDR_INIT_VOLTAGE   760       // VDDDDR power up voltage
+
 /*Distinguish whether to use efuse to adjust vddee*/
 #define CONFIG_PDVFS_ENABLE
 
