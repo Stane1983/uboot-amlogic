@@ -6,6 +6,7 @@
 #ifndef __PAEL_INI_H__
 #define __PAEL_INI_H__
 #include "ini_size_define.h"
+#include <amlogic/aml_model.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -637,10 +638,6 @@ int trans_buffer_data(const char *data_str, unsigned int data_buf[]);
 int handle_read_bin_file(const char *file_name, unsigned long max_len);
 
 #ifdef CONFIG_AML_LCD
-int panel_param_mem_put(unsigned char *mem, const char *name, u32 len);
-unsigned char *panel_param_mem_get(const char *name, u32 *len);
-int panel_param_mem_modify(unsigned char *mem, const char *name, u32 len);
-
 int check_param_valid(int mode, int parse_len, unsigned char parse_buf[],
 		      int ori_len, unsigned char ori_buf[]);
 

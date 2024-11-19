@@ -1234,36 +1234,264 @@ static int bl_pinmux_load_from_bsp(struct aml_bl_drv_s *bdrv)
 	return 0;
 }
 
+/* config from json =============================================================================*/
+#ifdef CONFIG_AML_LCD_JSON
+static struct num_str_s bl_ctrl_method[] = {
+	{BL_CTRL_GPIO,          "BL_CTRL_GPIO"},
+	{BL_CTRL_PWM,           "BL_CTRL_PWM"},
+	{BL_CTRL_PWM_COMBO,     "BL_CTRL_PWM_COMBO"},
+	{BL_CTRL_LOCAL_DIMMING, "BL_CTRL_LOCAL_DIMMING"},
+	{BL_CTRL_EXTERN,        "BL_CTRL_EXTERN"},
+	{BL_CTRL_MAX,           "BL_CTRL_MAX"},
+};
+
+static inline int bl_ctrl_method_str2num(const char *str)
+{
+	return strnum_get_num(str, bl_ctrl_method, ARRAY_SIZE(bl_ctrl_method), BL_CTRL_MAX);
+}
+
+static int bl_gpio_name_to_index(struct aml_bl_drv_s *bdrv, const char *name)
+{
+	int i = 0;
+
+	if (!bdrv || !name)
+		return LCD_GPIO_MAX;
+
+	for (i = 0; i < BL_GPIO_NUM_MAX; i++)
+		if (!strcmp(bdrv->config.gpio_name[i], name))
+			return i;
+	return LCD_GPIO_MAX;
+}
+
+int bl_config_load_from_json(struct aml_bl_drv_s *bdrv)
+{
+	int index = 0;
+	int cnt = 0, i = 0, ret = 0;
+	struct json_parse_s *jsp;
+	struct bl_config_s *bconf = &bdrv->config;
+	struct bl_pwm_config_s *bl_pwm, *pwms[3] = {NULL, NULL, NULL};
+	const char *str = NULL;
+	struct json_s *parent, *child, *child2, *child3;
+
+	index = bdrv->index;
+	jsp = get_panel_jsp(index);
+
+	if (!json_parse_ok(jsp)) {
+		ret = panel_json_parse(jsp, get_panel_file(index, NULL));
+		if (ret) {
+			rm_panel_file(index);
+			return -1;
+		}
+	}
+
+	parent = json_get_object_child(jsp, jsp->root, "backlight");
+	if (!parent) {
+		BLERR("failed find /backlight\n");
+		return -1;
+	}
+
+//basic
+	child = json_get_object_child(jsp, parent, "basic_info");
+	if (!child) {
+		BLERR("failed find basic_info\n");
+		return -1;
+	}
+
+	str = json_get_obj_str(jsp, child, "name", NULL);
+	if (str)
+		strncpy(bconf->name, str, BL_NAME_MAX - 1);
+
+//level setup
+	child = json_get_object_child(jsp, parent, "level_setup");
+	if (!child) {
+		BLERR("failed find level_setup\n");
+		return -1;
+	}
+
+	child2 = json_get_object_child(jsp, child, "range");
+	bconf->level_min         = json_get_arr_u32(jsp, child2, 0, BL_LEVEL_MIN);
+	bconf->level_max         = json_get_arr_u32(jsp, child2, 1, BL_LEVEL_MAX);
+	bconf->level_mid         = json_get_obj_u32(jsp, child, "mid", BL_LEVEL_MID);
+	bconf->level_mid_mapping = json_get_obj_u32(jsp, child, "mid_mapping", BL_LEVEL_MID_MAPPED);
+	bconf->level_default     = json_get_obj_u32(jsp, child, "uboot", BL_LEVEL_DEFAULT);
+
+//control method
+	child = json_get_object_child(jsp, parent, "control_method");
+	if (!child) {
+		BLERR("failed find control_method\n");
+		return -1;
+	}
+	bconf->method  = bl_ctrl_method_str2num(json_get_obj_str(jsp, child, "method", NULL));
+	bconf->en_gpio = bl_gpio_name_to_index(bdrv, json_get_obj_str(jsp, child, "en_gpio", NULL));
+	bconf->en_gpio_on          = json_get_obj_u32(jsp, child, "en_gpio_on", 1);
+	bconf->en_gpio_off         = json_get_obj_u32(jsp, child, "en_gpio_off", 0);
+	//bconf->power_on_delay    = json_get_obj_u32(jsp, child, "bl_on_delay_ms", 0);
+	//bconf->power_off_delay   = json_get_obj_u32(jsp, child, "bl_off_delay_ms", 0);
+	bconf->pwm_on_delay        = json_get_obj_u32(jsp, child, "pwm_on_delay_ms", 0);
+	bconf->pwm_off_delay       = json_get_obj_u32(jsp, child, "pwm_off_delay_ms", 0);
+	bconf->en_sequence_reverse = json_get_obj_u32(jsp, child, "en_sequence_reverse", 0);
+
+	if (bconf->method == BL_CTRL_LOCAL_DIMMING) {
+#ifdef CONFIG_AML_LCD_BL_LDIM
+		if (bdrv->index == 0)
+			return aml_ldim_probe(bdrv, lcd_get_dt_addr(), 0, NULL, LCD_CONFIG_FILE);
+		else
+			return -1;
+#else
+		BLERR("%s not support ldim\n", __func__);
+		return -1;
+#endif
+	}
+
+//pwms
+	if (bconf->method != BL_CTRL_PWM && bconf->method != BL_CTRL_PWM_COMBO)
+		return 0;
+
+	child = json_get_object_child(jsp, child, "pwms");
+	if (!child) {
+		BLERR("failed find pwms\n");
+		return -1;
+	}
+	cnt = json_get_array_size(jsp, child);
+	cnt = lcd_s32_constraint(cnt, 0, 2);
+	for (i = 0; i < cnt; i++) {
+		child2 = json_get_array_child(jsp, child, i);
+		if (!child2) {
+			BLPR("fail find pwm[%d]\n", i);
+			for (i--; i >= 0; i--) {
+				free(pwms[i]);
+				pwms[i] = NULL;
+			}
+			return -1;
+		}
+
+		pwms[i] = (struct bl_pwm_config_s *)malloc(sizeof(*bl_pwm));
+		if (!pwms[i]) {
+			BLPR("error malloc bl_pwm\n");
+			for (i--; i >= 0; i--) {
+				free(pwms[i]);
+				pwms[i] = NULL;
+			}
+			return -1;
+		}
+
+		bl_pwm = pwms[i];
+		bl_pwm->drv_index = bdrv->index;
+		bl_pwm->index = i;
+
+		str = json_get_obj_str(jsp, child2, "port", NULL);
+		bl_pwm->pwm_port      = bl_pwm_str_to_num(str ? str : "invalid");
+		bl_pwm->pwm_method    = json_get_obj_u32(jsp, child2, "polarity", 1);
+		bl_pwm->pwm_phase     = json_get_obj_u32(jsp, child2, "phase", 0);
+		bl_pwm->pwm_freq      = json_get_obj_u32(jsp, child2, "freq", 180);
+		str = json_get_obj_str(jsp, child2, "gpio", NULL);
+		bl_pwm->pwm_gpio      = bl_gpio_name_to_index(bdrv, str);
+		bl_pwm->pwm_gpio_off  = json_get_obj_u32(jsp, child2, "gpio_off", 0);
+
+		if (bl_pwm->pwm_freq > XTAL_HALF_FREQ_HZ)
+			bl_pwm->pwm_freq = XTAL_HALF_FREQ_HZ;
+
+		child3 = json_get_object_child(jsp, child2, "level_range");
+		if (!child3)
+			BLPR("failed find pwms[%d]/level_range\n", i);
+		bl_pwm->bl_level_min = json_get_arr_u32(jsp, child3, 0, bconf->level_min);
+		bl_pwm->bl_level_max = json_get_arr_u32(jsp, child3, 1, bconf->level_max);
+
+		child3 = json_get_object_child(jsp, child2, "duty_range");
+		if (!child3)
+			BLPR("failed find pwms[%d]/level_range\n", i);
+		bl_pwm->pwm_duty_min = json_get_arr_u32(jsp, child3, 0, 0);
+		bl_pwm->pwm_duty_max = json_get_arr_u32(jsp, child3, 1, 100);
+		bl_pwm->pwm_duty = json_get_obj_u32(jsp, child2, "duty", bl_pwm->pwm_duty_min);
+	}
+
+	bconf->bl_pwm = pwms[0];
+	bconf->bl_pwm_combo0 = pwms[0];
+	bconf->bl_pwm_combo1 = pwms[1];
+	return 0;
+}
+
+#else
+static int bl_config_load_from_json(struct aml_bl_drv_s *bdrv)
+{
+	return -1;
+}
+#endif
+
+static unsigned int lcd_bl_dt_valid(char *dt_addr, int index)
+{
+#ifdef CONFIG_OF_LIBFDT
+	int parent_offset;
+	char str[10];
+	char *propdata;
+
+	if (index == 0)
+		sprintf(str, "/backlight");
+	else
+		sprintf(str, "/backlight%d", index);
+
+	parent_offset = fdt_path_offset(dt_addr, str);
+	if (!parent_offset)
+		return 0;
+	/* check lcd status enable or not */
+	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "status", NULL);
+	if (propdata && strncmp(propdata, "okay", 2) == 0)
+		return 1;
+
+	LCDERR("[%d]: backlight disabled\n", index);
+#endif
+	return 0;
+}
+
+int bl_check_config_load(struct aml_bl_drv_s *bdrv)
+{
+	int ret = 0, dt_sta;
+
+	dt_sta = lcd_bl_dt_valid(lcd_get_dt_addr(), bdrv->index);
+	bdrv->config_load = lcd_panel_config_load_detect(bdrv->index, dt_sta, bdrv->key_valid);
+	if (bdrv->config_load == LCD_CONFIG_NONE) {
+		LCDERR("[%d] config_load_check error: config_load:%d, dt_status:%d, key:%d",
+			bdrv->index, bdrv->config_load, dt_sta, bdrv->key_valid);
+		return -1;
+	}
+
+	return ret;
+}
+
 static int bl_config_load(char *dt_addr, int load_id, struct aml_bl_drv_s *bdrv)
 {
 	char *bl_off_policy_str, str[30];
 	unsigned int temp;
-	int ret;
+	int ret = -1;
+	unsigned char file_type = PANEL_FILE_INVILD;
 
 	bdrv->state = 0;
 
-	/* load bl config */
-	if (load_id & 0x1) { /* dts */
-		if (load_id & 0x10) { /* unifykey */
-			ret = bl_config_load_from_ukey(dt_addr, bdrv);
-		} else { /* dts */
-#ifdef CONFIG_OF_LIBFDT
-			if (bdrv->config.index == 0xff) {
-				bdrv->config.method = BL_CTRL_MAX;
-				BLPR("[%d]: no backlight exist\n", bdrv->index);
-				return -1;
-			}
-			ret = bl_config_load_from_dts(dt_addr, bdrv);
-#endif
-		}
-	} else { /* bsp */
-		if (load_id & 0x10) { /* unifykey */
-			ret = bl_config_load_from_ukey(dt_addr, bdrv);
-		} else { /* bsp */
-			BLPR("[%d]: load config from bsp\n", bdrv->index);
-			ret = bl_config_load_from_bsp(bdrv);
-		}
+	if (bl_check_config_load(bdrv))
+		return -1;
+
+	switch (bdrv->config_load) {
+	case LCD_CONFIG_FILE:
+		file_type = get_lcd_panel_file_type(bdrv->index);
+		if (file_type == PANEL_FILE_JSON)
+			ret = bl_config_load_from_json(bdrv);
+		else if (file_type == PANEL_FILE_INI)
+			ret = -1; //todo
+		break;
+	case LCD_CONFIG_UKEY:
+		ret = bl_config_load_from_ukey(dt_addr, bdrv);
+		break;
+	case LCD_CONFIG_DTS:
+		ret = bl_config_load_from_dts(dt_addr, bdrv);
+		break;
+	case LCD_CONFIG_BSP:
+		ret = bl_config_load_from_bsp(bdrv);
+		break;
+	default:
+		ret = -1;
+		break;
 	}
+
 	if (ret) {
 		bdrv->config.method = BL_CTRL_MAX;
 		BLPR("[%d]: invalid backlight config\n", bdrv->index);
@@ -1394,7 +1622,7 @@ int aml_bl_load_config(struct aml_bl_drv_s *bdrv, char *dt_addr, int load_id)
 	if (!bdrv || !dt_addr)
 		return -1;
 
-	if (load_id & 0x1)
+	if (load_id != LCD_CONFIG_BSP)
 		ret = lcd_bl_init_load_from_dts(dt_addr, bdrv);
 	else
 		ret = lcd_bl_init_load_from_bsp(bdrv);

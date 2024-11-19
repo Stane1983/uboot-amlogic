@@ -365,24 +365,13 @@ static int do_lcd_prbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 	return 0;
 }
 
-static int do_lcd_key(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int do_lcd_panel_dump(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	int tmp = 0;
+	if (argc == 2)
+		aml_lcd_panel_dump(0, argv[1]);
+	else
+		aml_lcd_panel_dump(0, NULL);
 
-	if (argc == 1)
-		return -1;
-
-	if (strcmp(argv[1], "dump") == 0) {
-		if (argc == 3) {
-			if (strcmp(argv[2], "tcon") == 0)
-				tmp = (1 << 1);
-			else
-				tmp = (1 << 0);
-		} else {
-			tmp = (1 << 0);
-		}
-		aml_lcd_driver_unifykey_dump(0, tmp);
-	}
 	return 0;
 }
 
@@ -664,24 +653,13 @@ static int do_lcd1_prbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[
 	return 0;
 }
 
-static int do_lcd1_key(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int do_lcd1_panel_dump(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	int tmp = 0;
+	if (argc == 2)
+		aml_lcd_panel_dump(1, argv[1]);
+	else
+		aml_lcd_panel_dump(1, NULL);
 
-	if (argc == 1)
-		return -1;
-
-	if (strcmp(argv[1], "dump") == 0) {
-		if (argc == 3) {
-			if (strcmp(argv[2], "tcon") == 0)
-				tmp = (1 << 1);
-			else
-				tmp = (1 << 0);
-		} else {
-			tmp = (1 << 0);
-		}
-		aml_lcd_driver_unifykey_dump(1, tmp);
-	}
 	return 0;
 }
 
@@ -892,24 +870,13 @@ static int do_lcd2_prbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[
 	return 0;
 }
 
-static int do_lcd2_key(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int do_lcd2_panel_dump(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	int tmp = 0;
+	if (argc == 2)
+		aml_lcd_panel_dump(2, argv[1]);
+	else
+		aml_lcd_panel_dump(2, NULL);
 
-	if (argc == 1)
-		return -1;
-
-	if (strcmp(argv[1], "dump") == 0) {
-		if (argc == 3) {
-			if (strcmp(argv[2], "tcon") == 0)
-				tmp = (1 << 1);
-			else
-				tmp = (1 << 0);
-		} else {
-			tmp = (1 << 0);
-		}
-		aml_lcd_driver_unifykey_dump(2, tmp);
-	}
 	return 0;
 }
 
@@ -1092,7 +1059,7 @@ static cmd_tbl_t cmd_lcd_sub[] = {
 	U_BOOT_CMD_MKENT(test,    3, 0, do_lcd_test,     "", ""),
 	U_BOOT_CMD_MKENT(check,   2, 0, do_lcd_check,    "", ""),
 	U_BOOT_CMD_MKENT(prbs,    2, 0, do_lcd_prbs,     "", ""),
-	U_BOOT_CMD_MKENT(key,     4, 0, do_lcd_key,      "", ""),
+	U_BOOT_CMD_MKENT(panel_dump,    3, 0, do_lcd_panel_dump,      "", ""),
 	U_BOOT_CMD_MKENT(mem,     4, 0, do_lcd_mem,     "", ""),
 #ifdef CONFIG_AML_LCD_EXTERN
 	U_BOOT_CMD_MKENT(ext,     4, 0, do_lcd_ext,      "", ""),
@@ -1117,7 +1084,7 @@ static cmd_tbl_t cmd_lcd1_sub[] = {
 	U_BOOT_CMD_MKENT(test,    3, 0, do_lcd1_test,    "", ""),
 	U_BOOT_CMD_MKENT(check,   2, 0, do_lcd1_check,   "", ""),
 	U_BOOT_CMD_MKENT(prbs,    2, 0, do_lcd1_prbs,    "", ""),
-	U_BOOT_CMD_MKENT(key,     4, 0, do_lcd1_key,     "", ""),
+	U_BOOT_CMD_MKENT(panel_dump,    3, 0, do_lcd1_panel_dump,      "", ""),
 #ifdef CONFIG_AML_LCD_EXTERN
 	U_BOOT_CMD_MKENT(ext,     4, 0, do_lcd1_ext,     "", ""),
 #endif
@@ -1138,7 +1105,7 @@ static cmd_tbl_t cmd_lcd2_sub[] = {
 	U_BOOT_CMD_MKENT(test,    3, 0, do_lcd2_test,    "", ""),
 	U_BOOT_CMD_MKENT(check,   2, 0, do_lcd2_check,   "", ""),
 	U_BOOT_CMD_MKENT(prbs,    2, 0, do_lcd2_prbs,    "", ""),
-	U_BOOT_CMD_MKENT(key,     4, 0, do_lcd2_key,     "", ""),
+	U_BOOT_CMD_MKENT(panel_dump,    3, 0, do_lcd2_panel_dump,      "", ""),
 #ifdef CONFIG_AML_LCD_EXTERN
 	U_BOOT_CMD_MKENT(ext,     4, 0, do_lcd2_ext,     "", ""),
 #endif
@@ -1178,7 +1145,7 @@ U_BOOT_CMD(
 	"lcd reg          - dump lcd registers\n"
 	"lcd test         - show lcd bist pattern\n"
 	"lcd check        - show lcd bist pattern\n"
-	"lcd key          - show lcd unifykey test\n"
+	"lcd panel_dump   - show lcd panel config\n"
 	"lcd mem          - show lcd memory used\n"
 #ifdef CONFIG_AML_LCD_EXTERN
 	"lcd ext          - show lcd extern information\n"
@@ -1217,7 +1184,7 @@ U_BOOT_CMD(
 	"lcd1 vbyone       - show lcd vbyone debug\n"
 	"lcd1 reg          - dump lcd registers\n"
 	"lcd1 test         - show lcd bist pattern\n"
-	"lcd1 key          - show lcd unifykey test\n"
+	"lcd1 panel_dump   - show lcd panel config\n"
 #ifdef CONFIG_AML_LCD_EXTERN
 	"lcd1 ext          - show lcd extern information\n"
 #endif
@@ -1251,7 +1218,7 @@ U_BOOT_CMD(
 	"lcd2 info         - show lcd parameters\n"
 	"lcd2 reg          - dump lcd registers\n"
 	"lcd2 test         - show lcd bist pattern\n"
-	"lcd2 key          - show lcd unifykey test\n"
+	"lcd2 panel_dump   - show lcd panel config\n"
 #ifdef CONFIG_AML_LCD_EXTERN
 	"lcd2 ext          - show lcd extern information\n"
 #endif

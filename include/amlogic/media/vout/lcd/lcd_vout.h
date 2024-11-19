@@ -12,6 +12,8 @@
 #include <asm/gpio.h>
 #include <amlogic/media/vout/lcd/lcd_timing.h>
 #include <amlogic/media/vout/lcd/lcd_cus_ctrl.h>
+#include <amlogic/aml_model.h>
+
 #ifdef CONFIG_AML_LCD_TCON
 #include <amlogic/media/vout/lcd/lcd_tcon_data.h>
 #endif
@@ -736,11 +738,18 @@ struct aml_lcd_cma_mem {
 	unsigned char *bitmap;
 };
 
+#define LCD_CONFIG_NONE 0
+#define LCD_CONFIG_DTS  1
+#define LCD_CONFIG_UKEY 2
+#define LCD_CONFIG_FILE 3
+#define LCD_CONFIG_BSP  4
+
 struct aml_lcd_drv_s {
 	unsigned int index;
 	unsigned int status;
 	unsigned char mode;
 	unsigned char key_valid;
+	unsigned char config_load;
 	unsigned char probe_done;
 	unsigned char clk_path; /* 0=hpll, 1=gp0_pll */
 	char init_mode[64];
@@ -825,7 +834,7 @@ int aml_lcd_mipi_dsi_read(int index,
 		unsigned char *payload, unsigned char *rd_data, unsigned char rd_byte_len);
 void aml_lcd_driver_test(int index, int num);
 int aml_lcd_driver_prbs(int index, unsigned int s, unsigned int prbs_freq, unsigned int mode_flag);
-void aml_lcd_driver_unifykey_dump(int index, unsigned int flag);
+void aml_lcd_panel_dump(int index, const char *path);
 void aml_lcd_config_check(int index);
 
 void aml_lcd_driver_ext_info(int index);
@@ -841,43 +850,5 @@ void aml_lcd_driver_bl_config_print(int index);
 void aml_lcd_list(void);
 void aml_lcd_set(uint8_t drv_idx, char *lcd_type_name);
 
-#ifdef CONFIG_CMD_INI
-int is_panel_param_mem_ok(void);
-int is_ukey_in_param_mem(void);
-void panel_param_mem_dump(void);
-unsigned char *get_panel_param_mem(void);
-int panel_param_mem_put(unsigned char *mem, const char *name, u32 len);
-unsigned char *panel_param_mem_get(const char *name, u32 *len);
-int panel_param_mem_modify(unsigned char *mem, const char *name, u32 len);
-#else
-static inline int is_panel_param_mem_ok(void)
-{
-	return 0;
-}
-
-static inline int is_ukey_in_param_mem(void)
-{
-	return 0;
-}
-
-static inline void panel_param_mem_dump(void)
-{
-}
-
-static inline unsigned char *get_panel_param_mem(void)
-{
-	return NULL;
-}
-
-static inline unsigned char *panel_param_mem_get(const char *name, u32 *len)
-{
-	return NULL;
-}
-
-static inline int panel_param_mem_modify(unsigned char *mem, const char *name, u32 len)
-{
-	return -1;
-}
-#endif
 
 #endif /* INC_AML_LCD_VOUT_H */

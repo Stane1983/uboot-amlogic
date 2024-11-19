@@ -943,6 +943,276 @@ ldim_dev_get_config_from_ukey_err:
 	return -1;
 }
 
+/* config from json =============================================================================*/
+
+#ifdef CONFIG_AML_LCD_JSON
+struct num_str_s ldim_dev_type[] = {
+	{LDIM_DEV_TYPE_NORMAL, "NORMAL"},
+	{LDIM_DEV_TYPE_SPI, "SPI"},
+	{LDIM_DEV_TYPE_I2C, "I2C"},
+	{LDIM_DEV_TYPE_MAX, "MAX"}
+};
+
+static int ldim_gpio_name_to_index(struct ldim_dev_driver_s *drv, char *name)
+{
+	int i = 0;
+
+	if (!drv || !name)
+		return LCD_GPIO_MAX;
+
+	for (i = 0; i < BL_GPIO_NUM_MAX; i++)
+		if (!strcmp(drv->gpio_name[i], name))
+			return i;
+	return LCD_GPIO_MAX;
+}
+
+int ldim_dev_get_config_from_json(struct ldim_dev_driver_s *dev_drv)
+{
+	struct json_parse_s *jsp = get_panel_jsp(0);
+	struct json_s *parent, *child, *child2, *child3;
+	int ret = 0, i = 0, cnt, nums_size;
+	const char *str = NULL;
+	struct ldim_spi_dev_info_s *spi_info;
+	struct bl_pwm_config_s *bl_pwm, *pwms[3] = {NULL, NULL, NULL};
+	unsigned int *nums = NULL;
+
+	if (!json_parse_ok(jsp)) {
+		LDIMERR("panel0 jsp not ok\n");
+		return -1;
+	}
+
+	parent = json_path_to_node(jsp, jsp->root, "backlight/ldim_dev");
+	if (!parent) {
+		LDIMERR("failed find /backlight/ldim_dev\n");
+		return -1;
+	}
+
+//basic_info
+	child = json_get_object_child(jsp, parent, "basic_info");
+	if (!child) {
+		LDIMERR("fail to get basic_info\n");
+		return -1;
+	}
+
+	str = json_get_obj_str(jsp, child, "name", NULL);
+	strncpy(dev_drv->name, str, str ? LDIM_DEV_NAME_MAX - 1 : 0);
+	dev_drv->index    = 0;
+	dev_drv->chip_cnt = json_get_obj_u32(jsp, child, "chip_count", 1);
+	dev_drv->dim_min  = json_get_obj_u32(jsp, child, "dim_min", 0);
+	dev_drv->dim_max  = json_get_obj_u32(jsp, child, "dim_max", 4095);
+
+//interface
+	child = json_get_object_child(jsp, parent, "interface");
+	if (!child) {
+		LDIMERR("fail to get interface\n");
+		return -1;
+	}
+
+	str = json_get_obj_str(jsp, child, "type", NULL);
+	dev_drv->type = strnum_get_num(str, ldim_dev_type,
+				       ARRAY_SIZE(ldim_dev_type), LDIM_DEV_TYPE_MAX);
+	if (dev_drv->type == LDIM_DEV_TYPE_MAX) {
+		LDIMERR("invalid type:%d\n", dev_drv->type);
+		return -1;
+	}
+
+	switch (dev_drv->type) {
+	case LDIM_DEV_TYPE_SPI:
+		spi_info = &dev_drv->spi_info;
+		spi_info->bus_num = json_get_obj_u32(jsp, child, "bus_number", 2);
+		spi_info->chip_select = json_get_obj_u32(jsp, child, "chip_select", 0);
+		spi_info->max_speed_hz = json_get_obj_u32(jsp, child, "max_frequency_hz", 3000000);
+		spi_info->mode = json_get_obj_u32(jsp, child, "spi_mode", 0);
+		dev_drv->cs_hold_delay = json_get_obj_u32(jsp, child, "cs_hold_delay_ms", 0);
+		dev_drv->cs_clk_delay = json_get_obj_u32(jsp, child, "cs_clk_delay_ms", 0);
+
+		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
+			LDIMPR("spi bus: %d, cs:%d, max_freq:%d, mode: %d\n"
+			       "cs_hold_dly:%dms, cs_clk_dly:%dms\n",
+			       spi_info->bus_num, spi_info->chip_select, spi_info->max_speed_hz,
+			       spi_info->mode, dev_drv->cs_hold_delay, dev_drv->cs_clk_delay);
+		}
+		break;
+	default:
+		break;
+	}
+
+//pwms
+	child = json_get_object_child(jsp, parent, "pwms");
+	if (child) {
+		cnt = json_get_array_size(jsp, child);
+		cnt = lcd_s32_constraint(cnt, 0, 2);
+		pwms[0] = &dev_drv->ldim_pwm_config;
+		pwms[1] = &dev_drv->analog_pwm_config;
+		for (i = 0; i < cnt; i++) {
+			child2 = json_get_array_child(jsp, child, i);
+			if (!child2) {
+				BLPR("fail find pwm[%d]\n", i);
+				break;
+			}
+
+			bl_pwm = pwms[i];
+			bl_pwm->drv_index = 0;
+			str = json_get_obj_str(jsp, child2, "port", NULL);
+			bl_pwm->pwm_port = bl_pwm_str_to_num(str ? str : "Invalid");
+			if (bl_pwm->pwm_port >= BL_PWM_MAX ||
+			    (i == 1 && bl_pwm->pwm_port >= BL_PWM_VS))
+				continue;
+
+			bl_pwm->pwm_method = json_get_obj_u32(jsp, child2, "polarity", 1);
+			bl_pwm->pwm_phase  = json_get_obj_u32(jsp, child2, "phase", 0);
+			bl_pwm->pwm_freq   = json_get_obj_u32(jsp, child2, "freq", 300);
+			if (bl_pwm->pwm_freq > XTAL_HALF_FREQ_HZ)
+				bl_pwm->pwm_freq = XTAL_HALF_FREQ_HZ;
+
+			child3 = json_get_object_child(jsp, child2, "duty_range");
+			if (child3) {
+				bl_pwm->pwm_duty_min = json_get_arr_u32(jsp, child3, 0, 0);
+				bl_pwm->pwm_duty_max = json_get_arr_u32(jsp, child3, 1, 4095);
+			}
+			bl_pwm->pwm_duty = json_get_obj_u32(jsp, child2, "duty",
+							    bl_pwm->pwm_duty_min);
+
+			bl_pwm_config_init(bl_pwm);
+
+			LDIMPR("get pwm[%d] pol = %d, freq = %d, phase = %d, duty:%d(%d ~ %d)\n",
+				i, bl_pwm->pwm_method, bl_pwm->pwm_freq, bl_pwm->pwm_phase,
+				bl_pwm->pwm_duty, bl_pwm->pwm_duty_min, bl_pwm->pwm_duty_max);
+		}
+	}
+
+//ctrl
+	child = json_get_object_child(jsp, parent, "ctrl");
+	if (child) {
+		str = json_get_obj_str(jsp, child, "pinmux_name", NULL);
+		strncpy(dev_drv->pinmux_name, str ? str : "invalid", (LDIM_DEV_NAME_MAX - 1));
+
+		str = json_get_obj_str(jsp, child, "err_gpio", NULL);
+		dev_drv->lamp_err_gpio = ldim_gpio_name_to_index(dev_drv, (char *)str);
+		str = json_get_obj_str(jsp, child, "en_gpio", NULL);
+		dev_drv->en_gpio = ldim_gpio_name_to_index(dev_drv, (char *)str);
+		dev_drv->en_gpio_on = json_get_obj_u32(jsp, child, "en_gpio_on", 1);
+		dev_drv->en_gpio_off = json_get_obj_u32(jsp, child, "en_gpio_off", 0);
+
+		if (dev_drv->lamp_err_gpio < BL_GPIO_NUM_MAX)
+			dev_drv->fault_check = 1;
+
+		dev_drv->write_check = json_get_obj_u32(jsp, child, "write_check", 0);
+	}
+
+//packet_info
+	child = json_get_object_child(jsp, parent, "packet_info");
+	if (child) {
+		dev_drv->mcu_header = json_get_obj_u32(jsp, child, "header", 0x0);
+		dev_drv->mcu_dim = json_get_obj_u32(jsp, child, "mcu_dim", 0x0);
+	}
+
+//boost
+
+//profile & zone map
+	for (i = 0; i < dev_drv->zone_num; i++)
+		dev_drv->bl_mapping[i] = (unsigned short)i;
+
+	str = json_get_obj_str(jsp, parent, "zone_map_path", NULL);
+	if (str) {
+		LDIMPR("find custom ldim_zone_map_path:%s\n", str);
+		ldim_dev_zone_mapping_load(dev_drv, str);
+	}
+
+//custom_params
+
+//commands
+	child = json_get_object_child(jsp, parent, "commands");
+	if (child) {
+		dev_drv->cmd_size = LCD_EXT_CMD_SIZE_DYNAMIC;
+
+		str = json_get_obj_str(jsp, child, "init_on", NULL);
+		nums_size = (strlen(str)) * sizeof(unsigned int);
+		nums = malloc(nums_size);
+		if (!nums) {
+			LDIMPR("ldim find init_on: no memory to save nums\n");
+			goto parse_ldim_init_off;
+		}
+
+		memset(nums, 0, nums_size);
+		cnt = string_to_numbers(str, nums);
+		ldim_dev_init_dynamic_load_array(dev_drv, nums, cnt, 1);
+
+parse_ldim_init_off:
+		if (nums)
+			free(nums);
+		str = json_get_obj_str(jsp, child, "init_off", NULL);
+		nums_size = (strlen(str)) * sizeof(unsigned int);
+		nums = malloc(nums_size);
+		if (!nums) {
+			LDIMPR("ldim find init_on: no memory to save nums\n");
+			goto ldim_dev_get_config_from_json_end;
+		}
+
+		memset(nums, 0, nums_size);
+		cnt = string_to_numbers(str, nums);
+		ldim_dev_init_dynamic_load_array(dev_drv, nums, cnt, 0);
+
+		dev_drv->init_loaded = 1;
+	}
+
+ldim_dev_get_config_from_json_end:
+	if (nums)
+		free(nums);
+
+	return ret;
+}
+
+#else
+int ldim_dev_get_config_from_json(struct ldim_dev_driver_s *dev_drv)
+{
+	return -1;
+}
+#endif
+
+static unsigned int ldim_dt_valid(char *dt_addr)
+{
+#ifdef CONFIG_OF_LIBFDT
+
+	int parent_offset;
+	char *propdata;
+
+	parent_offset = fdt_path_offset(dt_addr, "/local_dimming_device");
+	if (parent_offset < 0) {
+		parent_offset = fdt_path_offset(dt_addr, "/local_diming_device");
+		if (parent_offset < 0) {
+			LDIMERR("not find /local_dimming_device node: %s\n",
+				fdt_strerror(parent_offset));
+			return 0;
+		}
+	}
+
+	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "status", NULL);
+	if (propdata && strncmp(propdata, "okay", 2) == 0)
+		return 1;
+
+	LDIMPR("local_dimming_device status disabled\n");
+	return 0;
+#else
+	return 0;
+#endif
+}
+
+static int ldim_check_config_load(struct ldim_dev_driver_s *dev_drv)
+{
+	int ret = 0, dt_sta;
+
+	dt_sta = ldim_dt_valid(lcd_get_dt_addr());
+	dev_drv->config_load = lcd_panel_config_load_detect(0, dt_sta, dev_drv->key_valid);
+	if (dev_drv->config_load == LCD_CONFIG_NONE) {
+		LDIMERR("config_load_check error: config_load:%d, dt_status:%d, key:%d\n",
+			dev_drv->config_load, dt_sta, dev_drv->key_valid);
+		return -1;
+	}
+
+	return ret;
+}
+
 int ldim_dev_get_config(char *dt_addr, struct aml_ldim_driver_s *ldim_drv)
 {
 	struct ldim_dev_driver_s *dev_drv = ldim_drv->dev_drv;
@@ -952,6 +1222,7 @@ int ldim_dev_get_config(char *dt_addr, struct aml_ldim_driver_s *ldim_drv)
 	const char *str;
 	unsigned int val;
 	int i, j, ret = 0;
+	unsigned char file_type = PANEL_FILE_INVILD;
 
 	if (!dt_addr) {
 		LDIMERR("%s: dt_addr is NULL\n", __func__);
@@ -1013,12 +1284,29 @@ int ldim_dev_get_config(char *dt_addr, struct aml_ldim_driver_s *ldim_drv)
 	for (j = i; j < BL_GPIO_NUM_MAX; j++)
 		strcpy(dev_drv->gpio_name[j], "invalid");
 
-	if (dev_drv->key_valid)
-		ret = ldim_dev_get_config_from_ukey(dev_drv);
-	else
-		ret = ldim_dev_get_config_from_dts(dev_drv, dt_addr, dev_drv->index);
+	ret = ldim_check_config_load(dev_drv);
 	if (ret)
-		return ret;
+		return -1;
+
+	switch (dev_drv->config_load) {
+	case LCD_CONFIG_FILE:
+		file_type = get_lcd_panel_file_type(0);
+		if (file_type == PANEL_FILE_JSON)
+			ret = ldim_dev_get_config_from_json(dev_drv);
+		else if (file_type == PANEL_FILE_INI)
+			ret = -1; //todo
+		break;
+	case LCD_CONFIG_UKEY:
+		ret = ldim_dev_get_config_from_ukey(dev_drv);
+		break;
+	case LCD_CONFIG_DTS:
+		ret = ldim_dev_get_config_from_dts(dev_drv, dt_addr, dev_drv->index);
+		break;
+
+	default:
+		ret = -1;
+		break;
+	}
 
 	ret = ldim_pinmux_load(dt_addr, ldim_drv);
 

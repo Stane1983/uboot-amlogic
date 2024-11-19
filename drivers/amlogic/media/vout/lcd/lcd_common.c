@@ -13,6 +13,142 @@
 #include "env.h"
 #include <command.h>
 
+int strnum_get_num(const char *str, struct num_str_s *arr, int size_arr, int dft)
+{
+	int i = 0;
+
+	if (!str || !arr)
+		return dft;
+
+	for (i = 0; i < size_arr; i++) {
+		if (strcmp(str, arr[i].str) == 0)
+			return arr[i].num;
+	}
+	return dft;
+}
+
+char *strnum_get_str(int num, struct num_str_s *arr, int size_arr, char *dft)
+{
+	int i = 0;
+
+	if (!arr)
+		return dft;
+
+	for (i = 0; i < size_arr; i++) {
+		if (num == arr[i].num)
+			return arr[i].str;
+	}
+	return dft;
+}
+
+void mem_dump(unsigned char *addr, int size)
+{
+	int i = 0, j = 0, len = 0;
+	char buf[128];
+
+	for (j = 0; j < (size >> 4); j++) {
+		for (i = 0, len = 0; i < 16; i++)
+			len += sprintf(buf + len, "%02x ", (unsigned int)addr[j * 16 + i]);
+		printf("0x%04x: %s\n", j * 16,  buf);
+	}
+	if (size & 0xf) {
+		for (i = 0, len = 0; i < (size & 0xf); i++)
+			len += sprintf(buf + len, "%02x ", (unsigned int)addr[j * 16 + i]);
+		printf("0x%04x: %s\n", j * 16,  buf);
+	}
+}
+
+__maybe_unused int string_to_numbers(const char *str, unsigned int nums[])
+{
+	int item_ind = 0, i = 0;
+	char *token = NULL;
+	char *tmp_buf = NULL;
+	int str_len = strlen(str);
+
+	if (!str) {
+		printf("%s : null str\n", __func__);
+		return 0;
+	}
+
+	tmp_buf = (char *)malloc(str_len + 1);
+	if (!tmp_buf) {
+		printf("%s, malloc buffer memory error!!!\n", __func__);
+		return -1;
+	}
+
+	strcpy(tmp_buf, str);
+	tmp_buf[str_len] = '\0';
+	token = tmp_buf;
+	while (i <= str_len) {
+		if (tmp_buf[i] == ',' || i == str_len) {
+			while (*token <= ' ')
+				token++;
+			tmp_buf[i] = '\0';
+			nums[item_ind++] = strtoul(token, NULL, 0);
+			token = tmp_buf + i + 1;
+		}
+		i++;
+	}
+	free(tmp_buf);
+	return item_ind;
+}
+
+int path_name_compose(const char *path, const char *name, char *path_name)
+{
+	char *p1;
+	const char *p2;
+	int len1, len2, len, back = 0, k;
+
+	if (!path || !name || !path_name)
+		return -1;
+
+	p2 = name;
+	len2 = strlen(name);
+	if (name[0] == '/') {//absolute path, ignore path
+		strcpy(path_name, name);
+		path_name[len2 + 1] = '\0';
+		return 0;
+	} else if (name[0] == '.' && name[1] == '/') {
+		back = 0;
+		p2 += 2;
+	} else if (p2[0] == '.' && p2[1] == '.' && p2[2] == '/') {
+		while (len2 > 0 && p2[0] == '.' && p2[1] == '.' && p2[2] == '/') {
+			p2 += 3;
+			len2 -= 3;
+			back++;
+		}
+	}
+
+	if (len2 <= 0) {
+		path_name[0] = '\0';
+		return -1;
+	}
+
+	p1 = path_name;
+	len1 = strlen(path);
+	len = len1;
+	memcpy(path_name, path, len);
+	path_name[len] = '\0';
+	if (path_name[len - 1] != '/') {
+		path_name[len] = '/';
+		len += 1;
+		path_name[len] = '\0';
+	}
+	back += 1;
+
+	for (k = len - 1; k > 0; k--) {
+		if (p1[k] == '/')
+			back--;
+		if (back == 0) {
+			memcpy(p1 + k + 1, p2, len2);
+			len = k + len2 + 1;
+			p1[len] = '\0';
+			return 0;
+		}
+	}
+	return -1;
+}
+
 void lcd_detail_timing_print(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timing_s *dt)
 {
 	s32 herr, verr;

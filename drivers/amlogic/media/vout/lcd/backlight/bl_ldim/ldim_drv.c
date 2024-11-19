@@ -179,8 +179,44 @@ static int ldim_config_load_from_unifykey(unsigned char *para, struct aml_ldim_d
 	return 0;
 }
 
+#ifdef CONFIG_AML_LCD_JSON
+static int ldim_config_load_from_json(struct aml_ldim_driver_s *ldim_drv)
+{
+	struct json_parse_s *jsp = get_panel_jsp(0);
+	struct json_s *parent;
+
+	if (!json_parse_ok(jsp)) {
+		BLPR("panel0 json not ready\n");
+		return -1;
+	}
+
+	parent = json_path_to_node(jsp, jsp->root,  "/backlight/basic_info");
+	if (!parent) {
+		BLPR("failed find /backlight/basic_info\n");
+		return -1;
+	}
+
+	parent = json_get_object_child(jsp, parent, "ldim_row_col");
+	if (!parent)
+		return -1;
+
+	ldim_drv->config.row = json_get_arr_u32(jsp, parent, 0, 0);
+	ldim_drv->config.col = json_get_arr_u32(jsp, parent, 1, 0);
+	ldim_drv->config.dev_index = 0;
+	LDIMPR("%s dev_index:%d,  row:%d, col: %d\n",
+	       __func__, ldim_drv->config.dev_index, ldim_drv->config.row, ldim_drv->config.col);
+
+	return 0;
+}
+#else
+static inline int ldim_config_load_from_json(struct aml_ldim_driver_s *ldim_drv)
+{
+	return -1;
+}
+#endif
+
 int aml_ldim_probe(struct aml_bl_drv_s *bdrv, char *dt_addr, int child_offset,
-		unsigned char *key_buf, int flag)
+		unsigned char *key_buf, int config_load)
 {
 	struct aml_lcd_data_s *pdata = aml_lcd_get_data();
 	unsigned int size;
@@ -198,20 +234,21 @@ int aml_ldim_probe(struct aml_bl_drv_s *bdrv, char *dt_addr, int child_offset,
 
 	ldim_driver->data = pdata;
 
-	switch (flag) {
-	case 0: /* dts */
+	switch (config_load) {
+	case LCD_CONFIG_DTS: /* dts */
 #ifdef CONFIG_OF_LIBFDT
 		ret = ldim_config_load_from_dts(dt_addr, child_offset, ldim_driver);
-		if (ret)
-			break;
 #endif
 		break;
-	case 2: /* unifykey */
+	case LCD_CONFIG_UKEY: /* unifykey */
 		ret = ldim_config_load_from_unifykey(key_buf, ldim_driver);
-		if (ret)
-			break;
 		break;
-	case 1: /* bsp */
+	case LCD_CONFIG_FILE:
+		if (get_lcd_panel_file_type(0) == PANEL_FILE_JSON)
+			ret = ldim_config_load_from_json(ldim_driver);
+		else if (get_lcd_panel_file_type(0) == PANEL_FILE_INI)
+			ret = -1;
+	case LCD_CONFIG_BSP: /* bsp */
 		LDIMPR("%s: not support bsp config\n", __func__);
 		break;
 	default:

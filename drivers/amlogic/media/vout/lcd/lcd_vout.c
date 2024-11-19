@@ -766,8 +766,7 @@ static void lcd_update_debug_bootargs(void)
 
 	/*
 	 *bit[31:30]: lcd mode(0=normal, 1=tv; 2=tablet, 3=TBD)
-	 *bit[29:28]: lcd debug para source(0=normal, 1=dts, 2=unifykey,
-	 *                                  3=bsp for uboot)
+	 *bit[29:28]: lcd debug para source(0=normal, 1=dts, 2=unifykey, 3=file)
 	 *bit[27:20]: reserved
 	 *bit[19:16]: lcd test pattern
 	 *bit[15:0]:  lcd debug print flag
@@ -794,12 +793,17 @@ char *lcd_get_dt_addr(void)
 	return g_dt_addr;
 }
 
+unsigned char lcd_get_dbg_source(void)
+{
+	return debug_ctrl.debug_para_source;
+}
+
 static int lcd_config_probe(void)
 {
-	int load_id = 0, load_id_lcd, load_id_temp;
 	struct aml_lcd_drv_s *pdrv;
 	unsigned int drv_cnt_flag;
 	int i, ret;
+	int init_load_id = LCD_CONFIG_DTS;
 
 #ifdef CONFIG_DTB_MEM_ADDR
 	g_dt_addr = (char *)CONFIG_DTB_MEM_ADDR;
@@ -808,45 +812,18 @@ static int lcd_config_probe(void)
 	g_dt_addr = (char *)0x06000000;
 #endif
 
-#ifdef CONFIG_OF_LIBFDT
-	if (fdt_check_header(g_dt_addr) < 0) {
-		LCDERR("check dts: %s, load default lcd parameters\n",
-			fdt_strerror(fdt_check_header(g_dt_addr)));
-	} else {
-		load_id = 0x1;
-	}
-#endif
-	/*load_id: bit[8]:debug_force, bit[4]:key, bit[0]:dts*/
-	switch (debug_ctrl.debug_para_source) {
-	case 1:
-		LCDPR("lcd_debug_para: 1,dts\n");
-		load_id = 0x101;
-		break;
-	case 2:
-		LCDPR("lcd_debug_para: 2,unifykey\n");
-		load_id = 0x111;
-		break;
-	case 3:
-		LCDPR("lcd_debug_para: 3,bsp\n");
-		load_id = 0x100;
-		break;
-	default:
-		break;
-	}
-	load_id_lcd = load_id;
-
 	lcd_reserved_memory_init(g_dt_addr);
 
-	if (load_id_lcd & 0x1) {
-		drv_cnt_flag = lcd_get_drv_cnt_flag_from_dts(g_dt_addr);
-		if (drv_cnt_flag == 0) {
-			LCDPR("not find /lcd node\n");
-			drv_cnt_flag = lcd_get_drv_cnt_flag_from_bsp();
-			load_id_lcd &= ~(1 << 0);
-		}
-	} else {
+	drv_cnt_flag = lcd_get_drv_cnt_flag_from_dts(g_dt_addr);
+	if (drv_cnt_flag == 0) {
+		LCDPR("not find /lcd node\n");
 		drv_cnt_flag = lcd_get_drv_cnt_flag_from_bsp();
+		init_load_id = LCD_CONFIG_BSP;
+	} else {
+		init_load_id = LCD_CONFIG_DTS;
 	}
+	if (drv_cnt_flag == 0)
+		return -1;
 
 	for (i = 0; i < lcd_data->drv_max; i++) {
 		if ((drv_cnt_flag & (1 << i)) == 0)
@@ -855,7 +832,7 @@ static int lcd_config_probe(void)
 		if (!pdrv)
 			continue;
 
-		if (load_id_lcd & 0x1)
+		if (init_load_id == LCD_CONFIG_DTS)
 			ret = lcd_base_config_load_from_dts(g_dt_addr, pdrv);
 		else
 			ret = lcd_base_config_load_from_bsp(pdrv);
@@ -864,26 +841,18 @@ static int lcd_config_probe(void)
 			lcd_driver_remove(i);
 			continue;
 		}
-		load_id_temp = load_id_lcd & 0xff;
-		if ((load_id_lcd & (1 << 8)) == 0) {
-			if (pdrv->key_valid)
-				load_id_temp |= (1 << 4);
-			else
-				load_id_temp &= ~(1 << 4);
-		}
 
-		if (lcd_get_panel_config(g_dt_addr, load_id_temp, pdrv)) {
+		if (lcd_get_panel_config(g_dt_addr, pdrv->config_load, pdrv)) {
 			lcd_driver_remove(pdrv->index);
 			continue;
 		}
 		lcd_panel_config_load_to_drv(pdrv);
 #ifdef CONFIG_AML_LCD_BACKLIGHT
-		aml_bl_probe_single(i, load_id_temp);
+		aml_bl_probe_single(i, init_load_id);
 #endif
 	}
-
 #ifdef CONFIG_AML_LCD_EXTERN
-	lcd_extern_probe(g_dt_addr, load_id);
+	lcd_extern_probe(g_dt_addr, init_load_id);
 #endif
 
 	return 0;
@@ -953,6 +922,17 @@ void lcd_handle_panel_param_to_kernel(void)
 		      (u64)paddr, head->_crc32, head->size, head->key_cnt, head->ukey_exist);
 	}
 #endif
+}
+
+void update_panel_param_to_kernel(void)
+{
+	u64 pa;
+	u32 size;
+
+	if (lrm_get_by_name("panel_config", &pa, &size))
+		return;
+	lrm_phys_free(pa);
+	lcd_handle_panel_param_to_kernel();
 }
 
 int lcd_probe(void)
@@ -1509,18 +1489,23 @@ int aml_lcd_driver_prbs(int index, unsigned int ms, unsigned int prbs_freq, unsi
 	return aml_lcd_prbs_test(pdrv, ms, mode_flag);
 }
 
-void aml_lcd_driver_unifykey_dump(int index, unsigned int flag)
+void aml_lcd_panel_dump(int index, const char *path)
 {
-	unsigned int key_flag = LCD_UKEY_DEBUG_NORMAL;
+	struct aml_lcd_drv_s *pdrv = lcd_driver_check_valid(index);
 
-	if (flag & (1 << 0)) {
-		key_flag = LCD_UKEY_DEBUG_NORMAL;
-	} else if (flag & (1 << 1)) {
-#ifdef CONFIG_AML_LCD_TCON
-		key_flag = (LCD_UKEY_DEBUG_TCON | LCD_UKEY_TCON_SIZE_NEW);
+	if (!pdrv)
+		return;
+
+	if (pdrv->config_load == LCD_CONFIG_FILE) {
+#ifdef CONFIG_AML_LCD_JSON
+		if (get_lcd_panel_file_type(index) == PANEL_FILE_JSON)
+			json_dump_path(get_panel_jsp(index), path);
+#else
+		return;
 #endif
+	} else if (pdrv->config_load == LCD_CONFIG_UKEY) {
+		lcd_unifykey_dump(index, LCD_UKEY_DEBUG_NORMAL);
 	}
-	lcd_unifykey_dump(index, key_flag);
 }
 
 int aml_lcd_driver_suspend(void *pm_ops)

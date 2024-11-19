@@ -94,6 +94,33 @@ static int lcd_tcon_spi_ext_update(struct lcd_extern_dev_s *ext_dev)
 	header->crc32 = crc;
 
 	lcd_unifykey_write("lcd_extern", buf, size);
+	if (is_ukey_in_param_mem())
+		update_panel_param_to_kernel();
+
+	return 0;
+}
+
+static int lcd_tcon_spi_ext_update_panel_param(struct lcd_extern_dev_s *ext_dev, int dev_index)
+{
+	unsigned char *vaddr, *p;
+	unsigned int size;
+	char name[32];
+
+	size = tcon_spi.ext_init_on_cnt + tcon_spi.ext_init_off_cnt;
+	sprintf(name, "panel%d_ext%d_init_table", 0, dev_index);
+	vaddr = (unsigned char *)malloc(size + 8);
+	if (vaddr) {
+		p = vaddr;
+		*(u32 *)(p + 0) = tcon_spi.ext_init_on_cnt;
+		*(u32 *)(p + 4) = tcon_spi.ext_init_off_cnt;
+		p += 8;
+		memcpy(p, &tcon_spi.ext_buf[LCD_UKEY_EXT_INIT], size);
+		panel_param_mem_modify(vaddr, name, size + 8);
+		update_panel_param_to_kernel();
+		memset(vaddr, 0, size + 8);
+		free(vaddr);
+		vaddr = NULL;
+	}
 
 	return 0;
 }
@@ -237,6 +264,7 @@ static int lcd_tcon_spi_data_load(void)
 	struct lcd_extern_dev_s *ext_dev = NULL;
 	unsigned int ext_index;
 	unsigned int ext_need_update = 0;
+	unsigned char *p;
 #endif
 	unsigned int i, j, size, new_size;
 	int ret;
@@ -358,6 +386,14 @@ static int lcd_tcon_spi_data_load(void)
 				if (!ext_dev)
 					break;
 			}
+			if (get_lcd_panel_file_type(0) == PANEL_FILE_JSON) {
+				p = tcon_spi.ext_buf + LCD_UKEY_EXT_INIT;
+				memcpy(p, ext_dev->config.table_init_on,
+				       ext_dev->config.table_init_on_cnt);
+				p += ext_dev->config.table_init_on_cnt;
+				memcpy(p, ext_dev->config.table_init_off,
+				       ext_dev->config.table_init_off_cnt);
+			}
 			tcon_spi.ext_init_on_cnt = ext_dev->config.table_init_on_cnt;
 			tcon_spi.ext_init_off_cnt = ext_dev->config.table_init_off_cnt;
 
@@ -383,8 +419,12 @@ static int lcd_tcon_spi_data_load(void)
 		}
 	}
 #ifdef CONFIG_AML_LCD_EXTERN
-	if (ext_need_update)
-		lcd_tcon_spi_ext_update(ext_dev);
+	if (ext_need_update) {
+		if (get_lcd_panel_file_type(0) == PANEL_FILE_JSON)
+			lcd_tcon_spi_ext_update_panel_param(ext_dev, ext_index);
+		else
+			lcd_tcon_spi_ext_update(ext_dev);
+	}
 #endif
 
 	for (i = 0; i < tcon_spi.block_cnt; i++) {
@@ -410,6 +450,157 @@ static int lcd_tcon_spi_data_load(void)
 		LCDPR("%s ok\n", __func__);
 	return 0;
 }
+
+#ifdef CONFIG_AML_LCD_JSON
+static int lcd_tcon_spi_data_parse_json(void)
+{
+#ifdef CONFIG_AML_LCD_EXTERN
+	unsigned int ext_size;
+#endif
+	unsigned int i, j,  block_size;
+	unsigned int size;
+	struct lcd_tcon_spi_block_s *blk;
+	__maybe_unused struct json_s *parent, *child, *child2 = NULL;
+	struct json_parse_s *jsp;
+
+	jsp = get_panel_jsp(0);
+	if (jsp->status != JSON_STATUS_OK) {
+		LCDPR("panel 0 json not ready\n");
+		return -1;
+	}
+
+	LCDPR("tcon spi parse from json\n");
+
+	if (tcon_spi.init_flag) /* already parsed */
+		return 0;
+
+	parent = json_path_to_node(jsp, jsp->root, "tcon/tcon_spi");
+	if (!parent) {
+		LCDPR("can't find /tcon/tcon_spi\n");
+		return 0;
+	}
+
+	tcon_spi.version = json_get_obj_u32(jsp, parent, "version", 1);
+
+	parent = json_get_object_child(jsp, parent, "block");
+	if (!parent)
+		return 0;
+	tcon_spi.block_cnt = json_get_array_size(jsp, parent);
+	if (tcon_spi.block_cnt <= 0) {
+		tcon_spi.block_cnt = 0;
+		LCDERR("%s: block_cnt 0, exit\n", __func__);
+		return 0;
+	}
+
+	if (tcon_spi.block_cnt > LCD_UKEY_TCON_SPI_BLOCK_CNT_MAX) {
+		LCDERR("%s: lcd_tcon_spi block_cnt %d out of support(max %d), limit to %d\n",
+		       __func__, tcon_spi.block_cnt,
+		       LCD_UKEY_TCON_SPI_BLOCK_CNT_MAX,
+		       LCD_UKEY_TCON_SPI_BLOCK_CNT_MAX);
+		tcon_spi.block_cnt = LCD_UKEY_TCON_SPI_BLOCK_CNT_MAX;
+	}
+
+	size = tcon_spi.block_cnt * sizeof(struct lcd_tcon_spi_block_s *);
+	tcon_spi.spi_block = (struct lcd_tcon_spi_block_s **)malloc(size);
+	if (!tcon_spi.spi_block) {
+		LCDERR("failed to alloc tcon_spi\n");
+		goto lcd_tcon_spi_data_parse_err0;
+	}
+	memset(tcon_spi.spi_block, 0, size);
+
+	block_size = sizeof(struct lcd_tcon_spi_block_s);
+	for (i = 0; i < tcon_spi.block_cnt; i++) {
+		child = json_get_array_child(jsp, parent, i);
+		if (!child)
+			return 0;
+
+		blk = (struct lcd_tcon_spi_block_s *)malloc(block_size);
+		if (!blk) {
+			LCDERR("failed to alloc tcon_spi_block\n");
+			for (j = 0; j < i; j++) {
+				free(tcon_spi.spi_block[j]);
+				tcon_spi.spi_block[j] = NULL;
+			}
+			goto lcd_tcon_spi_data_parse_err1;
+		}
+		tcon_spi.spi_block[i] = blk;
+
+		memset(blk, 0, block_size);
+
+		blk->data_type = json_get_obj_u32(jsp, child, "type", 0xff);
+		blk->data_index = json_get_obj_u32(jsp, child, "index", 0xff);
+		blk->data_flag = json_get_obj_u32(jsp, child, "flag", 0xff);
+		blk->spi_offset = json_get_obj_u32(jsp, child, "offset", 0xff);
+		blk->spi_size = json_get_obj_u32(jsp, child, "size", 0x0);
+		blk->param_cnt = 0;
+		child2 = json_get_object_child(jsp, child, "param");
+		if (child2)
+			blk->param_cnt = json_get_array_size(jsp, child2);
+
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+			LCDPR("lcd_tcon_spi block %d:\n", i);
+			LCDPR("data_type         = 0x%02x\n", blk->data_type);
+			LCDPR("data_index        = %d\n", blk->data_index);
+			LCDPR("data_flag         = %d\n", blk->data_flag);
+			LCDPR("spi_offset        = 0x%08x\n", blk->spi_offset);
+			LCDPR("spi_size          = 0x%08x\n", blk->spi_size);
+			LCDPR("param_cnt         = %d\n", blk->param_cnt);
+		}
+
+		if (blk->param_cnt > 0) {
+			blk->param = (u32 *)malloc(blk->param_cnt * sizeof(u32));
+			if (!blk->param) {
+				LCDERR("failed to alloc spi_block[%d] param\n", i);
+				for (j = 0; j <= i; j++) {
+					free(tcon_spi.spi_block[j]);
+					tcon_spi.spi_block[j] = NULL;
+				}
+				goto lcd_tcon_spi_data_parse_err1;
+			}
+			memset(blk->param, 0, blk->param_cnt * sizeof(u32));
+			for (j = 0; j < blk->param_cnt; j++)
+				blk->param[j] = json_get_arr_u32(jsp, child2, i, 0);
+		}
+
+#ifdef CONFIG_AML_LCD_EXTERN
+		ext_size = LCD_UKEY_EXT_INIT + LCD_EXTERN_INIT_ON_MAX + LCD_EXTERN_INIT_OFF_MAX;
+		if (blk->data_type == LCD_TCON_DATA_BLOCK_TYPE_EXT && !tcon_spi.ext_buf) {
+			tcon_spi.ext_buf = (unsigned char *)malloc(ext_size);
+			if (!tcon_spi.ext_buf) {
+				LCDERR("failed to alloc ext_buf\n");
+				for (j = 0; j <= i; j++) {
+					free(tcon_spi.spi_block[j]->raw_buf);
+					tcon_spi.spi_block[j]->raw_buf = NULL;
+					if (tcon_spi.spi_block[j]->param) {
+						free(tcon_spi.spi_block[j]->param);
+						tcon_spi.spi_block[j]->param = NULL;
+					}
+					free(tcon_spi.spi_block[j]);
+					tcon_spi.spi_block[j] = NULL;
+				}
+				goto lcd_tcon_spi_data_parse_err1;
+			}
+			memset(tcon_spi.ext_buf, 0, ext_size);
+		}
+#endif
+	}
+
+	tcon_spi.init_flag = 1;
+
+	return 0;
+
+lcd_tcon_spi_data_parse_err1:
+	free(tcon_spi.spi_block);
+	tcon_spi.spi_block = NULL;
+lcd_tcon_spi_data_parse_err0:
+	return -1;
+}
+#else
+static inline int lcd_tcon_spi_data_parse_json(void)
+{
+	return -1;
+}
+#endif
 
 static int lcd_tcon_spi_data_parse(void)
 {
@@ -618,7 +809,14 @@ int lcd_tcon_spi_data_probe(struct aml_lcd_drv_s *pdrv)
 {
 	int ret;
 
-	ret = lcd_tcon_spi_data_parse();
+	if (pdrv->config_load == LCD_CONFIG_FILE) {
+		if (get_lcd_panel_file_type(pdrv->index) == PANEL_FILE_JSON)
+			ret = lcd_tcon_spi_data_parse_json();
+		else
+			ret = -1;//PANEL_FILE_INI todo
+	} else {
+		ret = lcd_tcon_spi_data_parse();
+	}
 	if (ret)
 		return -1;
 

@@ -137,6 +137,7 @@ struct bl_config_s {
 struct aml_bl_drv_s {
 	unsigned int index;
 	unsigned int key_valid;
+	unsigned char config_load;
 	unsigned int state;
 	unsigned int level;
 	int bl_off_policy;

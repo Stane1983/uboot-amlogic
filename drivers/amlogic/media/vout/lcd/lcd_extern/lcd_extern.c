@@ -611,7 +611,7 @@ int lcd_extern_probe(char *dtaddr, int load_id)
 	unsigned int drv_cnt_flag;
 	int ret = 0, i;
 
-	if (load_id & 0x1)
+	if (load_id != LCD_CONFIG_BSP)
 		drv_cnt_flag = lcd_extern_get_drv_cnt_flag_from_dts(pdata, dtaddr);
 	else
 		drv_cnt_flag = lcd_extern_get_drv_cnt_flag_from_bsp(pdata);

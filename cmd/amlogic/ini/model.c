@@ -61,6 +61,10 @@ static struct lcd_ext_attr_s *lcd_ext_attr;
 static unsigned int g_lcd_if, g_lcd_tcon_valid;
 static struct dccd_info_s dccd_info;
 
+static unsigned char *glcd_panel_file[3] = {NULL, NULL, NULL};
+static int glcd_panel_file_size[3] = {0, 0, 0};
+static unsigned char glcd_panel_file_type[3] = {0, 0, 0};
+
 #define PANEL_PARAM_MEM_RSVD_SIZE CC_MAX_PANEL_ALL_DATA_SIZE
 #define PANEL_PARAM_KEY_NUM_MAX (64 - 1)
 #define PANEL_PARAM_KEY_SIZE (64)
@@ -281,6 +285,49 @@ int panel_param_mem_modify(unsigned char *mem, const char *name, u32 len)
 		panel_param_mem.head->_crc32 = _crc32;
 	}
 	return ret;
+}
+
+unsigned char get_lcd_panel_file_type(int index)
+{
+	return index < 3 ? glcd_panel_file_type[index] : 0;
+}
+
+void set_lcd_panel_file_type(int index, unsigned char type)
+{
+	glcd_panel_file_type[index] = type;
+}
+
+unsigned char *read_file_to_buffer(const char *filename, int *size);
+
+unsigned char *get_panel_file(int index, int *len)
+{
+	if (len)
+		*len = glcd_panel_file_size[index];
+
+	return glcd_panel_file[index];
+}
+
+int read_panel_file(int index, const char *filename)
+{
+	unsigned char *fil;
+	int size;
+
+	fil = read_file_to_buffer(filename, &size);
+	if (fil && size > 0) {
+		glcd_panel_file[index] = fil;
+		glcd_panel_file_size[index] = size;
+		return 0;
+	}
+	ALOGE("read panel file:%s fail", filename);
+	return -1;
+}
+
+void rm_panel_file(int index)
+{
+	if (glcd_panel_file[index])
+		free(glcd_panel_file[index]);
+	glcd_panel_file[index] = NULL;
+	glcd_panel_file_size[index] = 0;
 }
 
 int check_param_valid(int mode, int parse_len, unsigned char parse_buf[],
@@ -3586,9 +3633,36 @@ int handle_model_list(void)
 	return 0;
 }
 
+unsigned char *read_file_to_buffer(const char *filename, int *size)
+{
+	int rd_cnt = 0, file_size = 0;
+	unsigned char *buf = NULL;
+
+	file_size = ini_get_file_size(filename);
+	if (file_size <= 0)
+		return NULL;
+
+	buf = (unsigned char *)malloc(file_size * 2);
+	if (buf) {
+		memset((void *)buf, '\0', (file_size * 2) * sizeof(char));
+		rd_cnt = ini_read_file_to_buffer(filename, 0, file_size, buf);
+		if (rd_cnt > 0) {
+			*size = rd_cnt;
+			return buf;
+		}
+		free(buf);
+		buf = NULL;
+	}
+
+	return NULL;
+}
+
 int handle_model_sum(void)
 {
 	char *model, str[15];
+#ifdef CONFIG_AML_LCD
+	char *file_name, *p;
+#endif
 	int i, ret;
 
 	for (i = 0; i < 3; i++) {
@@ -3607,7 +3681,26 @@ int handle_model_sum(void)
 		if (ret < 0)
 			continue;
 #ifdef CONFIG_AML_LCD
-		handle_panel_ini(i);
+		if (i == 0)
+			sprintf(str, "model_panel");
+		else
+			sprintf(str, "model%d_panel", i);
+		file_name = env_get(str);
+		if (!file_name) {
+			ALOGE("%s, %s path error!!!\n", __func__, str);
+			return -1;
+		}
+		p = strrchr(file_name, '.');
+		if (p && (!strncmp(p + 1, "ini", 3) || !strncmp(p + 1, "INI", 3))) {
+			ret = handle_panel_ini(i);
+#ifdef CONFIG_CMD_AML_MODEL
+			//ret = read_panel_file(i, file_name);
+			//set_lcd_panel_file_type(i, PANEL_FILE_INI); // maybe support later
+#endif
+		} else { //regard as json file, will be parse later
+			ret = read_panel_file(i, file_name);
+			set_lcd_panel_file_type(i, PANEL_FILE_JSON);
+		}
 #endif
 	}
 
