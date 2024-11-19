@@ -380,7 +380,7 @@ static const u32 hdmi14_4k_vics[] = {
  */
 u32 hdmitx_edid_get_hdmi14_4k_vic(u32 vic)
 {
-	bool ret = 0;
+	u32 ret = 0;
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(hdmi14_4k_vics); i++) {
