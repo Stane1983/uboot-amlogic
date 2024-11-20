@@ -19,6 +19,7 @@ obj-$(CONFIG_CMD_RSVMEM) += cmd_rsvmem.o
 obj-y += cmd_version.o
 ifdef  CONFIG_AML_UPDATE_PDVFS
 obj-y += cmd_pdvfs.o
+obj-y += cmd_cooling.o
 endif
 
 obj-$(CONFIG_CMD_SCMI_SHMEM_ADDR) += cmd_scmi_shmem.o

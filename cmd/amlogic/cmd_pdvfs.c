@@ -15,7 +15,7 @@
 #define cmd_pdvfs_err(fmt...)	printf("[cmd_pdvfs] "fmt)
 #define GET_DVFS_TABLE_INDEX           0x82000088
 
-static int get_board_id(void)
+int get_board_id(void)
 {
 	int board_id = 0;
 
@@ -39,40 +39,40 @@ static int set_regulator_status(const char *node, const char *status) {
 	sprintf(cmdbuf, "fdt set %s status %s;", node, status);
 	ret = run_command(cmdbuf, 0);
 	if (ret != 0) {
-        cmd_pdvfs_err("Error: Failed to set regulator status\n");
-        return -EBADMSG;
-    }
+		cmd_pdvfs_err("Error: Failed to set regulator status\n");
+		return -EBADMSG;
+	}
 
-    return 0;
+	return 0;
 }
 
-static int get_phandle(const char *path) {
-    int ret = 0;
-    char cmdbuf[256] = {0};
+int get_phandle(const char *path) {
+	int ret = 0;
+	char cmdbuf[256] = {0};
 	char *phandle_str = NULL;
 	unsigned int phandle_val = 0;
 
-    memset(cmdbuf, 0, sizeof(cmdbuf));
-    sprintf(cmdbuf, "fdt get value phandle_value %s phandle", path);
-    ret = run_command(cmdbuf, 0);
-    if (ret != 0) {
-        cmd_pdvfs_err("Error: Failed to get phandle for %s\n", path);
-        return -EBADMSG;
-    }
+	memset(cmdbuf, 0, sizeof(cmdbuf));
+	sprintf(cmdbuf, "fdt get value phandle_value %s phandle", path);
+	ret = run_command(cmdbuf, 0);
+	if (ret != 0) {
+		cmd_pdvfs_err("Error: Failed to get phandle for %s\n", path);
+		return -EBADMSG;
+	}
 
-    phandle_str = env_get("phandle_value");
-    if (phandle_str == NULL) {
-        cmd_pdvfs_err("Error: Failed to retrieve phandle_value from environment\n");
-        return -EBADMSG;
-    }
+	phandle_str = env_get("phandle_value");
+	if (phandle_str == NULL) {
+		cmd_pdvfs_err("Error: Failed to retrieve phandle_value from environment\n");
+		return -EBADMSG;
+	}
 	phandle_val = strtoul(phandle_str, NULL, 16);
 
-    return phandle_val;
+	return phandle_val;
 }
 
 static int update_pwm_f_board_regulator(void) {
-    int ret = 0;
-    char cmdbuf[256] = {0};
+	int ret = 0;
+	char cmdbuf[256] = {0};
 	unsigned int pwm_f_board0_phandle = 0;
 
 	pwm_f_board0_phandle = get_phandle("/pwm_f_board0-regulator");
@@ -94,12 +94,12 @@ static int update_pwm_f_board_regulator(void) {
 		return -EBADMSG;
 	}
 
-    return 0;
+	return 0;
 }
 
 
-static unsigned int get_cpufreq_table_index(u64 function_id,
-					    u64 arg0, u64 arg1, u64 arg2)
+unsigned int get_cpufreq_table_index(u64 function_id,
+				     u64 arg0, u64 arg1, u64 arg2)
 {
 	struct arm_smccc_res res;
 
@@ -124,6 +124,7 @@ static int set_cpu_opp_tbl(void)
 	opp_table_1_phandle = get_phandle("/cpu_opp_table1");
 	opp_table_2_phandle = get_phandle("/cpu_opp_table2_2000");
 	opp_table_3_phandle = get_phandle("/cpu_opp_table3_2000");
+
 	memset(cmdbuf, 0, sizeof(cmdbuf));
 	sprintf(cmdbuf, "fdt set /cpus/cpu@0 operating-points-v2 <0x%x 0x%x 0x%x 0x%x>;", \
 		opp_table_0_phandle, opp_table_1_phandle, \
@@ -165,7 +166,7 @@ static int update_pdvfs_tbl(cmd_tbl_t *cmdtp, int flag, int argc,
 		}
 	}
 	else
-          cmd_pdvfs_err("get board_id  fail,board_id = %d\n", board_id);
+		cmd_pdvfs_err("get board_id  fail,board_id = %d\n", board_id);
 
 	return 0;
 }
