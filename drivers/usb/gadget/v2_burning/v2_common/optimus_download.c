@@ -109,33 +109,38 @@ COMPILE_TIME_ASSERT(IMG_BURN_INFO_SZ == sizeof(struct ImgBurnInfo));
 //nand often make mistake this size, emmc should always ok
 static int _assert_logic_partition_cap(const char* thePartName, const uint64_t nandPartCap)
 {
-    extern struct partitions * part_table;
+	int num_parts = 0;
+	int partIndex                   = 0;
+	struct partitions *thePart     = NULL;
 
-    int partIndex                   = 0;
-    struct partitions * thePart     = NULL;
-    if (NULL == part_table) return 0;
-    if (!strcmp("1", thePartName)) return 0;
-
-	for (thePart = part_table; partIndex < MAX_PART_NUM; ++thePart, ++partIndex)
-    {
-        if (memcmp(thePartName, thePart->name, strnlen(thePartName, MAX_PART_NAME_LEN))) continue;
-
-        const uint64_t dtsPartSz = thePart->size;
-        DWN_DBG("cfg dtsPartSz %llx for part(%s)\n", dtsPartSz, thePartName);
-        if (NAND_PART_SIZE_FULL == dtsPartSz) {return 0;}
-	if ((dtsPartSz >> 32) == 0xffffffffUL) //GPT mode last part
+	if (!part_table)
 		return 0;
-        if (dtsPartSz > nandPartCap) {
-            DWN_ERR("partSz of logic part(%s): sz dts %llx > Sz flash %llx\n",
-                    thePartName, dtsPartSz, nandPartCap);
-            return __LINE__;
-        }
+	if (!strcmp("1", thePartName))
+		return 0;
 
-        return 0;
-    }
+	num_parts = get_partition_count();
+	for (thePart = part_table; partIndex < num_parts; ++thePart, ++partIndex) {
+		const uint64_t dtsPartSz = thePart->size;
 
-    DWN_ERR("Can't find your download part(%s)\n", thePartName);
-    return __LINE__;
+		if (memcmp(thePartName, thePart->name, strnlen(thePartName, MAX_PART_NAME_LEN)))
+			continue;
+		DWN_DBG("cfg dtsPartSz %llx for part(%s)\n", dtsPartSz, thePartName);
+		DWN_MSG("part(%s)sz: cfg %llx , flash %llx\n", thePartName, dtsPartSz, nandPartCap);
+		if (partIndex + 1 == num_parts) {
+			DWN_MSG("last part not need check sz\n");
+			return 0;
+		}
+		if (dtsPartSz > nandPartCap) {
+			DWN_ERR("partSz of logic part(%s): sz dts %llx > Sz flash %llx\n",
+					thePartName, dtsPartSz, nandPartCap);
+			return __LINE__;
+		}
+
+		return 0;
+	}
+
+	DWN_ERR("Can't find your download part(%s)\n", thePartName);
+	return __LINE__;
 }
 #else
 #define _assert_logic_partition_cap(thePartName, nandPartCap) 0

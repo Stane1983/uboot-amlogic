@@ -30,6 +30,7 @@
 #include "v2_common/optimus_progress_ui.h"
 #include <amlogic/store_wrapper.h>
 
+extern struct partitions *part_table;
 struct partitions *get_partition_info_by_num(const int num);
 extern int cli_simple_parse_line(char *line, char *argv[]);
 #ifndef getenv
