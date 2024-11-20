@@ -950,6 +950,7 @@ int aml_phy_poweroff(void *pm_ops)
 	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
 
 	pr_info("power off  %s\n", pm->name);
+	aml_phy_suspend(pm_ops);
 	return 0;
 }
 #endif
