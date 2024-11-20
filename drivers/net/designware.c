@@ -1716,7 +1716,9 @@ static int eqos_remove(struct udevice *dev)
 	struct eqos_eth_dev *eqos = dev_get_priv(dev);
 
 	debug("%s(dev=%p):\n", __func__, dev);
-
+#ifdef CONFIG_DM_ETH
+	DM_network_interface_remove();
+#endif
 	free(eqos->phydev);
 	mdio_unregister(eqos->bus);
 	mdio_free(eqos->bus);

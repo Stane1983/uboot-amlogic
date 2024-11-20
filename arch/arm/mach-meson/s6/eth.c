@@ -26,15 +26,16 @@
 #include <asm/io.h>
 #include <power/regulator.h>
 
-
 #if defined(CONFIG_AMLOGIC_ETH)
 #ifdef CONFIG_DM_ETH
-
+#include <amlogic/pm.h>
+#include <linux/io.h>
 #include <command.h>
 #include <asm/amlogic/arch/secure_apb.h>
 #include <linux/ioport.h>
 #include <asm/amlogic/arch/pwr_ctrl.h>
 #include <asm/amlogic/arch/register.h>
+#include <asm/amlogic/arch/eth.h>
 #include <dm/pinctrl.h>
 #ifdef CONFIG_DM_GPIO
 #include <asm/gpio.h>
@@ -67,10 +68,22 @@ enum {
 	ETH_PHY_SC2	= 0x3,
 };
 
+struct aml_phy_dev {
+	void __iomem *phy_top;
+	void __iomem *phy_cfg;
+	struct dev_pm_ops *pm_ops;
+};
+struct aml_phy_dev aml_phy_dev;
+struct aml_phy_dev *p_aml_phy_dev = &aml_phy_dev;
+
+int aml_phy_suspend(void *pm_ops);
+int aml_phy_resume(void *pm_ops);
+int aml_phy_poweroff(void *pm_ops);
 
 int internal_phy;
 unsigned int setup_amp;
 extern int soc_num;
+extern struct phy_device *p_phydev;
 
 void setup_tx_amp(struct udevice *dev)
 {
@@ -105,6 +118,13 @@ static void setup_internal_phy(struct udevice *dev)
 		printf("can't get eth_cfg resource(ret = %d)\n", ret);
 	}
 
+	p_aml_phy_dev->phy_top = devm_ioremap(dev, eth_top.start, resource_size(&eth_top));
+	p_aml_phy_dev->phy_cfg = devm_ioremap(dev, eth_cfg.start, resource_size(&eth_cfg));
+	p_aml_phy_dev->pm_ops = dev_register_pm("eth ops",
+				&aml_phy_suspend,
+				&aml_phy_resume,
+				&aml_phy_poweroff);
+
 	setup_tx_amp(dev);
 
 	/* configure eth_top */
@@ -131,9 +151,9 @@ static void setup_internal_phy(struct udevice *dev)
 		printf("pll config failed\n");
 	}
 	writel(0x00007423, eth_cfg.start + AML_ETH_PLL_CTL7);
+	writel((readl(eth_cfg.start + AML_ETH_PLL_CTL3) & 0x00000003) | 0x85800000, eth_cfg.start + AML_ETH_PLL_CTL3);
 	writel(0x00004001, eth_cfg.start + AML_ETH_PLL_CTL6);
 	writel(0x84001580, eth_cfg.start + AML_ETH_PLL_CTL5);
-	writel((readl(eth_cfg.start + AML_ETH_PLL_CTL3) & 0x0000ffff) | 0x85800000, eth_cfg.start + AML_ETH_PLL_CTL3);
 
 	/* configure phy control */
 	/* config phyid should between  a 0~0xffffffff */
@@ -209,6 +229,51 @@ static void setup_external_phy(struct udevice *dev)
 	writel(0x0, eth_cfg.start + AML_ETH_PHY_CNTL2);
 }
 
+int aml_phy_suspend(void *pm_ops)
+{
+	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
+	unsigned int phy_setting;
+
+	printf("disable analog %s\n", pm->name);
+	writel(0x00000000, p_aml_phy_dev->phy_cfg + 0x0);
+	writel(0x003e0000, p_aml_phy_dev->phy_cfg + 0x4);
+	writel(0x12844008, p_aml_phy_dev->phy_cfg + 0x8);
+	writel(0x0800a40c, p_aml_phy_dev->phy_cfg + 0xc);
+	writel(0x00000000, p_aml_phy_dev->phy_cfg + 0x10);
+	writel(0x031d161c, p_aml_phy_dev->phy_cfg + 0x14);
+	writel(0x00001683, p_aml_phy_dev->phy_cfg + 0x18);
+	writel(readl(p_aml_phy_dev->phy_cfg + 0x50) & 0xfffffffc, p_aml_phy_dev->phy_cfg + 0x50);
+
+	phy_setting = phy_read(p_phydev, MDIO_DEVAD_NONE, 0);
+	phy_write(p_phydev, MDIO_DEVAD_NONE, 0, phy_setting | 0x800);
+
+	return 0;
+}
+
+int aml_phy_resume(void *pm_ops)
+{
+	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
+	unsigned int phy_setting;
+
+	printf("recover analog %s\n", pm->name);
+	writel(0x19c0040a, p_aml_phy_dev->phy_cfg + 0x44);
+	writel(0x0, p_aml_phy_dev->phy_cfg + 0x4);
+
+	phy_setting = phy_read(p_phydev, MDIO_DEVAD_NONE, 0);
+	phy_write(p_phydev, MDIO_DEVAD_NONE, 0, phy_setting & ~(0x800));
+
+	return 0;
+}
+
+int aml_phy_poweroff(void *pm_ops)
+{
+	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
+
+	printf("power off  %s\n", pm->name);
+	aml_phy_suspend(pm_ops);
+	return 0;
+}
+
 void __iomem *DM_network_interface_setup(struct udevice *dev)
 {
 	internal_phy = dev_read_u32_default(dev, "internal_phy", 1);
@@ -264,8 +329,6 @@ static unsigned int phy_tst_write(struct phy_device *phy_dev, unsigned int wr_ad
 	return 0;
 }
 
-
-
 static unsigned int phy_tst_read(struct phy_device *phy_dev, unsigned int rd_addr)
 {
 	unsigned int rd_data_hi;
@@ -315,6 +378,12 @@ void DM_network_interface_setup_final(struct phy_device *phydev)
 #endif
 }
 
+void __iomem *DM_network_interface_remove(void)
+{
+	if (p_aml_phy_dev->pm_ops)
+		dev_unregister_pm(p_aml_phy_dev->pm_ops);
+	return 0;
+}
 #endif
 #endif
 
