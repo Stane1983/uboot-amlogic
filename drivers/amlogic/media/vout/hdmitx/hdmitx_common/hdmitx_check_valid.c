@@ -335,9 +335,7 @@ static int hdmitx_edid_validate_format_para(struct tx_cap *hdmi_tx_cap,
 	calc_tmds_clk = para->tmds_clk / 1000;
 
 	/* more > 4k60 must use frl mode */
-	if (para->timing.h_active > 4096 || para->timing.v_active > 2160 ||
-	    para->timing.v_freq == 48000 || calc_tmds_clk > 594 ||
-	    para->timing.pixel_freq / 1000 > 600)
+	if (calc_tmds_clk > 594 || para->timing.pixel_freq / 1000 > 600)
 		must_frl_flag = true;
 
 	if (hdmi_tx_cap->tx_max_frl_rate == FRL_NONE) {

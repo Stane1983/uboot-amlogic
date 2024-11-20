@@ -208,6 +208,7 @@ void hdmitx21_read_dhdr_sram(void);
 void hdmitx21_send_sbtm_pkt(void);
 void vrr_init_qms_para(struct hdmitx_dev *hdev);
 enum hdmi_vic hdmitx_find_brr_vic(enum hdmi_vic vic);
+void hdmitx_qms_map_vic(struct hdmitx_dev *hdev);
 
 /* the hdmitx output limits to 1080p */
 bool is_hdmitx_limited_1080p(void);

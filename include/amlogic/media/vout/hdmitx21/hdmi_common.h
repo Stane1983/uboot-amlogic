@@ -317,6 +317,12 @@ enum vrr_type {
 	T_VRR_QMS,
 };
 
+enum vrr_types_e {
+	QMS_VRR_SUP = 1,
+	GAMING_VRR_SUP = 2,
+	UI_VRR_SUP = 4,
+};
+
 enum emp_type {
 	EMP_TYPE_NONE,
 	EMP_TYPE_VRR_GAME = T_VRR_GAME,
@@ -672,10 +678,11 @@ struct dv_vsif_para {
 	} vers;
 };
 
+#define MAX_VRR_MODE_GROUP 12
 #define DRM_DISPLAY_MODE_LEN     32
 #define MAX_QMS_GROUP_NUM 8
 
-struct drm_vrr_mode_group {
+struct hdmitx_vrr_mode_group {
 	__u32 brr_vic; /* brr vic for hdmitx */
 	__u32 width;
 	__u32 height;
@@ -691,6 +698,7 @@ struct drm_vrr_mode_group {
 
 	__u32 brr;
 	char modename[DRM_DISPLAY_MODE_LEN];
+	__u32 reserv[16];
 };
 
 enum color_attr_type {

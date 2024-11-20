@@ -1446,6 +1446,7 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 	memset(&output, 0, sizeof(struct meson_policy_out));
 
 	get_parse_edid_data(hdev);
+	hdmitx_qms_map_vic(hdev);
 	/*
 	 * QMS BRR selection
 	 * 120 or 60
