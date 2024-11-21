@@ -196,27 +196,10 @@ static void lcd_power_info_print(struct aml_lcd_drv_s *pdrv, int status)
 	while (i < LCD_PWR_STEP_MAX) {
 		if (power_step->type >= LCD_POWER_TYPE_MAX)
 			break;
-		switch (power_step->type) {
-		case LCD_POWER_TYPE_CPU:
-		case LCD_POWER_TYPE_PMU:
-		case LCD_POWER_TYPE_WAIT_GPIO:
-		case LCD_POWER_TYPE_CLK_SS:
-			printf("  %d: type=%d, index=%d, value=%d, delay=%d\n",
-				i, power_step->type, power_step->index,
-				power_step->value, power_step->delay);
-			break;
-		case LCD_POWER_TYPE_EXTERN:
-			printf("  %d: type=%d, index=%d, delay=%d\n",
-				i, power_step->type, power_step->index,
-				power_step->delay);
-			break;
-		case LCD_POWER_TYPE_SIGNAL:
-			printf("  %d: type=%d, delay=%d\n",
-				i, power_step->type, power_step->delay);
-			break;
-		default:
-			break;
-		}
+
+		printf("  %d: type=%d, index=%d, value=%d, delay=%d\n",
+		       i, power_step->type, power_step->index,
+		       power_step->value, power_step->delay);
 		i++;
 		power_step++;
 	}

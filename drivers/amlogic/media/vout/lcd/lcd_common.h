@@ -10,6 +10,7 @@
 #include "./lcd_clk/lcd_clk_config.h"
 #include "lcd_unifykey.h"
 #include "lcd_reg.h"
+#include "lcd_parser/json_parse.h"
 
 /* 20181106: init version */
 /* 20201211: support t5/t5d/t7 */
@@ -77,7 +78,29 @@
 /* 20240909: update phy tuning: get real state from register */
 /* 20240923: support reserved memory to transmit panel parameter to kernel */
 /* 20241108: optimize config load flow */
-#define LCD_DRV_VERSION    "20241108"
+/* 20241127: add lcd config json parse driver */
+#define LCD_DRV_VERSION    "20241127"
+
+#define CFMT_RGB565          0x05
+#define CFMT_RGB_6bit        0x06
+#define CFMT_RGB_8bit        0x08
+#define CFMT_RGB_10bit       0x0a
+#define CFMT_RGB_12bit       0x0c
+#define CFMT_YCbCr422_8bit   0x18
+#define CFMT_YCbCr422_10bit  0x1a
+#define CFMT_YCbCr422_12bit  0x1c
+#define CFMT_YCbCr444_8bit   0x28
+#define CFMT_YCbCr444_10bit  0x2a
+#define CFMT_YCbCr444_12bit  0x2c
+#define CFMT_YCbCr420_8bit   0x38
+#define CFMT_YCbCr420_10bit  0x3a
+#define CFMT_YCbCr420_12bit  0x3c
+
+struct color_fmt_info_s {
+	unsigned int cfmt;
+	unsigned char bits;
+	char name[32];
+};
 
 extern unsigned long clk_util_clk_msr(unsigned long clk_mux);
 
@@ -109,7 +132,17 @@ static inline unsigned long long lcd_diff(unsigned long long a, unsigned long lo
 	return (a >= b) ? (a - b) : (b - a);
 }
 
+static inline int lcd_s32_constraint(int v, int min, int max)
+{
+	return v > max ? max : v < min ? min : v;
+}
+
 extern unsigned int lcd_prbs_freq, lcd_prbs_performed, lcd_prbs_err;
+
+struct num_str_s {
+	int  num;
+	char str[32];
+};
 
 void lcd_display_init_test(struct aml_lcd_drv_s *pdrv);
 void lcd_display_init_reg_dump(struct aml_lcd_drv_s *pdrv);
@@ -120,6 +153,12 @@ void lcd_display_init_reg_dump(struct aml_lcd_drv_s *pdrv);
 #define LCD_CMA_PAGE_SIZE_8K (8 * 1024)
 
 /* lcd common */
+int strnum_get_num(const char *str, struct num_str_s *arr, int size_arr, int dft);
+char *strnum_get_str(int num, struct num_str_s *arr, int size_arr, char *dft);
+int path_name_compose(const char *path, const char *name, char *path_name);
+void mem_dump(unsigned char *addr, int size);
+int string_to_numbers(const char *str, unsigned int nums[]);
+
 int lcd_base_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv);
 int lcd_base_config_load_from_bsp(struct aml_lcd_drv_s *pdrv);
 void lcd_panel_config_load_to_drv(struct aml_lcd_drv_s *pdrv);
@@ -141,6 +180,12 @@ unsigned char dtimg_info_add(char *c_buf, struct lcd_detail_timing_s *dtm, unsig
 void lcd_encl_on(struct aml_lcd_drv_s *pdrv);
 unsigned int lcd_config_timing_check(struct aml_lcd_drv_s *pdrv,
 				     struct lcd_detail_timing_s *ptiming);
+
+void update_panel_param_to_kernel(void);
+unsigned char lcd_get_dbg_source(void);
+unsigned char lcd_panel_config_load_detect(int index, int dt_valid, int key_valid);
+int panel_json_parse(struct json_parse_s *jsp, unsigned char *input);
+
 void lcd_clk_frame_rate_init(struct lcd_detail_timing_s *ptiming);
 void lcd_default_to_basic_timing_init_config(struct aml_lcd_drv_s *pdrv);
 void lcd_enc_timing_init_config(struct aml_lcd_drv_s *pdrv);
@@ -316,6 +361,10 @@ void aml_bl_set_level(int index, unsigned int level);
 unsigned int aml_bl_get_level(int index);
 void aml_bl_config_print(int index);
 int aml_bl_pwm_reg_config_init(struct aml_lcd_data_s *pdata);
+
+#ifdef CONFIG_AML_LCD_JSON
+struct json_parse_s *get_panel_jsp(int index);
+#endif
 
 #endif
 

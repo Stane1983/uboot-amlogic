@@ -123,6 +123,7 @@ struct lcd_extern_dev_s {
 struct lcd_extern_driver_s {
 	int index;
 	unsigned char key_valid;
+	unsigned char config_load;
 	char gpio_name[LCD_EXTERN_GPIO_NUM_MAX][LCD_CPU_GPIO_NAME_MAX];
 	unsigned int dev_cnt;
 	struct lcd_extern_dev_s *dev[LCD_EXTERN_DEV_MAX];

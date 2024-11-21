@@ -11,6 +11,7 @@ obj-$(CONFIG_AML_LCD) += lcd_memory.o
 obj-$(CONFIG_AML_LCD) += lcd_vbyone.o
 obj-$(CONFIG_AML_LCD) += lcd_lvds.o
 
+obj-$(CONFIG_AML_LCD) += lcd_parser/
 obj-$(CONFIG_AML_LCD) += lcd_venc/
 obj-$(CONFIG_AML_LCD) += lcd_clk/
 obj-$(CONFIG_AML_LCD) += lcd_phy/

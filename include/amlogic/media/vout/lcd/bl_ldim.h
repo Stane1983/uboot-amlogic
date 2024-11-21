@@ -52,6 +52,7 @@ struct ldim_dev_driver_s {
 	char pinmux_name[LDIM_DEV_NAME_MAX];
 	char gpio_name[BL_GPIO_NUM_MAX][LCD_CPU_GPIO_NAME_MAX];
 	unsigned char key_valid;
+	unsigned char config_load;
 	unsigned char type;
 	unsigned char probe_flag;
 
@@ -123,8 +124,7 @@ struct aml_ldim_driver_s {
 
 struct aml_ldim_driver_s *aml_ldim_get_driver(void);
 
-/* flag: 0=dts, 1=bsp, 2=unifykey */
 int aml_ldim_probe(struct aml_bl_drv_s *bdrv, char *dt_addr, int child_offset,
-		unsigned char *key_buf, int flag);
+		unsigned char *key_buf, int config_load);
 
 #endif /* INC_AML_BL_LDIM_H */
