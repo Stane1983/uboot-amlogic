@@ -1166,7 +1166,7 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 	if (hdev->enc_idx == 2) {
 		set_hdmitx_enc_idx(2);
 		hd21_set_reg_bits(VPU_DISP_VIU2_CTRL, 1, 29, 1);
-		hd21_set_reg_bits(VPU_VIU_VENC_MUX_CTRL, 2, 2, 2);
+		//hd21_set_reg_bits(VPU_VIU_VENC_MUX_CTRL, 2, 2, 2);
 	}
 	/* dsc program step8.1: Make sure VENC timing gen is disabled. */
 	hdmitx21_venc_en(0, 0);

@@ -487,12 +487,31 @@ u32 osd_canvas_align(u32 x)
 		return (((x) + 31) & ~31);
 }
 
+bool is_keystone_enable_for_t6d(void)
+{
+	bool ret = false;
+	char *enable_flag;
+
+	if (osd_get_chip_type() == MESON_CPU_MAJOR_ID_T6D) {
+		enable_flag = env_get("vout_projector_mux");
+		if (!enable_flag)
+			return false;
+		if (!strcmp(enable_flag, "enable"))
+			ret = true;
+		else
+			ret = false;
+	}
+	return ret;
+}
+
 int get_osd_layer(void)
 {
 	char *layer_str;
 	int osd_index = 0;
 
 	layer_str = env_get("display_layer");
+	if (is_keystone_enable_for_t6d())
+		layer_str = "osd1";
 	if (strcmp(layer_str, "osd0") == 0)
 		osd_index = OSD1;
 	else if (strcmp(layer_str, "osd1") == 0)
@@ -1444,7 +1463,6 @@ static void vpp_post_blend_update_s5(void)
 #ifdef OSD_SCALE_ENABLE
 int video_scale_bitmap(void)
 {
-	char *layer_str = NULL;
 	int osd_index = -1;
 	int axis[4] = {};
 #ifdef AML_OSD_HIGH_VERSION
@@ -1459,25 +1477,17 @@ int video_scale_bitmap(void)
 		fb_gdev.fb_width, fb_gdev.fb_height, fb_gdev.winSizeX, fb_gdev.winSizeY);
 
 	vout_get_current_axis(axis);
-	layer_str = env_get("display_layer");
-	if (strcmp(layer_str, "osd0") == 0)
-		osd_index = OSD1;
-	else if (strcmp(layer_str, "osd1") == 0)
-		osd_index = OSD2;
-	else if (strcmp(layer_str, "osd2") == 0)
-		osd_index = OSD3;
-	else if (strcmp(layer_str, "viu2_osd0") == 0) {
-		osd_index = VIU2_OSD1;
-		if (!osd_hw.viux_scale_cap)
-			goto no_scale;
-	} else if (strcmp(layer_str, "viu3_osd0") == 0) {
-		osd_index = VIU3_OSD1;
-		if (!osd_hw.viux_scale_cap)
-			goto no_scale;
-	} else {
-		osd_logd2("video_scale_bitmap: invalid display_layer\n");
-		return (-1);
+	osd_index = get_osd_layer();
+	osd_logd2("osd%d axis(%d %d %d %d)\n", osd_index,
+			  axis[0], axis[1], axis[2], axis[3]);
+	if (osd_index < 0) {
+		osd_loge("%s: invalid display_layer\n", __func__);
+		return -1;
 	}
+
+	/* if viu2/viu3 has no scaler */
+	if (osd_index >= VIU2_OSD1 && !osd_hw.viux_scale_cap)
+		goto no_scale;
 
 #ifdef OSD_SUPERSCALE_ENABLE
 	if ((fb_gdev.fb_width * 2 != fb_gdev.winSizeX) ||

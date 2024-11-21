@@ -1473,6 +1473,8 @@ void osd_setting_default_hwc(u32 index, struct pandata_s *disp_data)
 		      (postbld_src3_sel & 0xf) << 0 |
 		      (postbld_osd1_premult & 0x1) << 4);
 #else
+	if (is_keystone_enable_for_t6d())
+		postbld_src3_sel = 0;
 	osd_reg_write(OSD1_BLEND_SRC_CTRL,
 		      (0 & 0xf) << 0 |
 		      (0 & 0x1) << 4 |
@@ -3042,7 +3044,10 @@ static void osd1_update_disp_freescale_enable(void)
 
 static void osd2_update_disp_freescale_enable(void)
 {
-	osd_update_disp_freescale_enable(OSD2, OSD1);
+	if (is_keystone_enable_for_t6d())
+		osd_update_disp_freescale_enable(OSD2, OSD2);
+	else
+		osd_update_disp_freescale_enable(OSD2, OSD1);
 }
 
 #if defined(AML_T7_DISPLAY) || defined(AML_S6_DISPLAY)
@@ -3386,7 +3391,10 @@ static void osd1_update_coef(void)
 
 static void osd2_update_coef(void)
 {
-	osd_update_coef(OSD1);
+	if (is_keystone_enable_for_t6d())
+		osd_update_coef(OSD2);
+	else
+		osd_update_coef(OSD1);
 	remove_from_update_list(OSD2, OSD_FREESCALE_COEF);
 }
 
@@ -4635,107 +4643,109 @@ void osd_init_hw_viux(u32 index)
 		return;
 	data32 = 1;
 
-	/* hold_fifo_lines */
-	if (index == VIU2_OSD1)
-		s = env_get("viu2_hold_line");
-	else if (index == VIU3_OSD1)
-		s = env_get("viu3_hold_line");
-	if (s) {
-		holdline = simple_strtoul(s, NULL, 10);
-		data32 |= holdline << 5;  /* hold_fifo_lines */
-	} else {
-		if (osd_hw.osd_ver == OSD_HIGH_ONE)
-			data32 |= 8 << 5;  /* hold_fifo_lines */
-		else
-			data32 |= 4 << 5;
-	}
-	/* burst_len_sel: 3=64 */
-	if (osd_hw.osd_ver == OSD_HIGH_ONE) {
-		data32 |= 1 << 10;
-		data32 |= 1 << 31;
-	} else {
-		data32 |= 3  << 10;
-	}
-
-	/*
-	 * bit 23:22, fifo_ctrl
-	 * 00 : for 1 word in 1 burst
-	 * 01 : for 2 words in 1 burst
-	 * 10 : for 4 words in 1 burst
-	 * 11 : reserved
-	 */
-	data32 |= 2 << 22;
-	/* bit 28:24, fifo_lim */
-	data32 |= 2 << 24;
-
-	/* fifo_depth_val: 32*8=256 */
-	data32 |= 64 << 12;
-	osd_reg_write(hw_osd_reg_array[index].osd_fifo_ctrl_stat, data32);
-
-	/* just disable osd to avoid booting hang up */
-	data32 = 0x0 << 0;
-	data32 |= OSD_GLOBAL_ALPHA_DEF << 12;
-	osd_reg_write(hw_osd_reg_array[index].osd_ctrl_stat, data32);
-
-	/* set replaced_alpha */
-	data32 = 0x1 << 14;
-	data32 |= 0xff << 6;
-	osd_reg_write(hw_osd_reg_array[index].osd_ctrl_stat2, data32);
-
-	if (osd_get_chip_type() == MESON_CPU_MAJOR_ID_T3 ||
-		osd_get_chip_type() == MESON_CPU_MAJOR_ID_T5M)
-		osd_hw.path_ctrl_independ = 1;
-
-	if (index == VIU2_OSD1) {
-		/* OSD3 -> VPP1 */
-		if (osd_hw.path_ctrl_independ) {
-			independ_path_default_regs();
-			/* osd byp osd_blend */
-			osd_reg_set_bits(VIU_OSD3_PATH_CTRL, 0x1, 4, 1);
+	if (!logo_loaded) {
+		/* hold_fifo_lines */
+		if (index == VIU2_OSD1)
+			s = env_get("viu2_hold_line");
+		else if (index == VIU3_OSD1)
+			s = env_get("viu3_hold_line");
+		if (s) {
+			holdline = simple_strtoul(s, NULL, 10);
+			data32 |= holdline << 5;  /* hold_fifo_lines */
 		} else {
-			fix_vpu_clk2_default_regs();
-			/* osd byp osd_blend */
-			osd_reg_set_bits(VPP_OSD3_SCALE_CTRL, 0x7, 0, 3);
+			if (osd_hw.osd_ver == OSD_HIGH_ONE)
+				data32 |= 8 << 5;  /* hold_fifo_lines */
+			else
+				data32 |= 4 << 5;
+		}
+		/* burst_len_sel: 3=64 */
+		if (osd_hw.osd_ver == OSD_HIGH_ONE) {
+			data32 |= 1 << 10;
+			data32 |= 1 << 31;
+		} else {
+			data32 |= 3  << 10;
 		}
 
-		/* vpp1 osd order, premult, blend_en */
-		osd_reg_set_bits(VPP1_BLD_CTRL, bld_src2_sel, 4, 4);
-		osd_reg_set_bits(VPP1_BLD_CTRL, osd_premult, 17, 1);
-		osd_reg_set_bits(VPP1_BLD_CTRL, blend_en, 31, 1);
+		/*
+		 * bit 23:22, fifo_ctrl
+		 * 00 : for 1 word in 1 burst
+		 * 01 : for 2 words in 1 burst
+		 * 10 : for 4 words in 1 burst
+		 * 11 : reserved
+		 */
+		data32 |= 2 << 22;
+		/* bit 28:24, fifo_lim */
+		data32 |= 2 << 24;
 
-		/* vpp_top input mux */
-		osd_reg_set_bits(OSD_PATH_MISC_CTRL, OSD3 + VPP_OSD1,
-				 OSD3 * 4 + 16, 4);
+		/* fifo_depth_val: 32*8=256 */
+		data32 |= 64 << 12;
+		osd_reg_write(hw_osd_reg_array[index].osd_fifo_ctrl_stat, data32);
 
-		/* to vpp_top1 */
-		osd_reg_set_bits(PATH_START_SEL, VPU_VPP1, 24, 2);
-	}
+		/* just disable osd to avoid booting hang up */
+		data32 = 0x0 << 0;
+		data32 |= OSD_GLOBAL_ALPHA_DEF << 12;
+		osd_reg_write(hw_osd_reg_array[index].osd_ctrl_stat, data32);
 
-	if (index == VIU3_OSD1) {
-		/* OSD4 -> VPP2 */
-		if (osd_hw.path_ctrl_independ) {
-			independ_path_default_regs();
-			/* osd byp osd_blend */
-			osd_reg_set_bits(VIU_OSD4_PATH_CTRL, 0x1, 4, 1);
-		} else {
-			fix_vpu_clk2_default_regs();
-			/* osd byp osd_blend */
-			osd_reg_set_bits(VPP_OSD4_SCALE_CTRL, 0x7, 0, 3);
+		/* set replaced_alpha */
+		data32 = 0x1 << 14;
+		data32 |= 0xff << 6;
+		osd_reg_write(hw_osd_reg_array[index].osd_ctrl_stat2, data32);
+
+		if (osd_get_chip_type() == MESON_CPU_MAJOR_ID_T3 ||
+			osd_get_chip_type() == MESON_CPU_MAJOR_ID_T5M)
+			osd_hw.path_ctrl_independ = 1;
+
+		if (index == VIU2_OSD1) {
+			/* OSD3 -> VPP1 */
+			if (osd_hw.path_ctrl_independ) {
+				independ_path_default_regs();
+				/* osd byp osd_blend */
+				osd_reg_set_bits(VIU_OSD3_PATH_CTRL, 0x1, 4, 1);
+			} else {
+				fix_vpu_clk2_default_regs();
+				/* osd byp osd_blend */
+				osd_reg_set_bits(VPP_OSD3_SCALE_CTRL, 0x7, 0, 3);
+			}
+
+			/* vpp1 osd order, premult, blend_en */
+			osd_reg_set_bits(VPP1_BLD_CTRL, bld_src2_sel, 4, 4);
+			osd_reg_set_bits(VPP1_BLD_CTRL, osd_premult, 17, 1);
+			osd_reg_set_bits(VPP1_BLD_CTRL, blend_en, 31, 1);
+
+			/* vpp_top input mux */
+			osd_reg_set_bits(OSD_PATH_MISC_CTRL, OSD3 + VPP_OSD1,
+					 OSD3 * 4 + 16, 4);
+
+			/* to vpp_top1 */
+			osd_reg_set_bits(PATH_START_SEL, VPU_VPP1, 24, 2);
 		}
 
-		/* vpp1 osd order, premult, blend_en */
-		osd_reg_set_bits(VPP2_BLD_CTRL, bld_src2_sel, 4, 4);
-		osd_reg_set_bits(VPP2_BLD_CTRL, osd_premult, 17, 1);
-		osd_reg_set_bits(VPP2_BLD_CTRL, blend_en, 31, 1);
+		if (index == VIU3_OSD1) {
+			/* OSD4 -> VPP2 */
+			if (osd_hw.path_ctrl_independ) {
+				independ_path_default_regs();
+				/* osd byp osd_blend */
+				osd_reg_set_bits(VIU_OSD4_PATH_CTRL, 0x1, 4, 1);
+			} else {
+				fix_vpu_clk2_default_regs();
+				/* osd byp osd_blend */
+				osd_reg_set_bits(VPP_OSD4_SCALE_CTRL, 0x7, 0, 3);
+			}
 
-		/* vpp_top input mux */
-		osd_reg_set_bits(OSD_PATH_MISC_CTRL, OSD4 + VPP_OSD1,
-				 OSD4 * 4 + 16, 4);
+			/* vpp1 osd order, premult, blend_en */
+			osd_reg_set_bits(VPP2_BLD_CTRL, bld_src2_sel, 4, 4);
+			osd_reg_set_bits(VPP2_BLD_CTRL, osd_premult, 17, 1);
+			osd_reg_set_bits(VPP2_BLD_CTRL, blend_en, 31, 1);
 
-		/* to vpp_top2 */
-		osd_reg_set_bits(PATH_START_SEL, VPU_VPP2, 28, 2);
+			/* vpp_top input mux */
+			osd_reg_set_bits(OSD_PATH_MISC_CTRL, OSD4 + VPP_OSD1,
+					 OSD4 * 4 + 16, 4);
+
+			/* to vpp_top2 */
+			osd_reg_set_bits(PATH_START_SEL, VPU_VPP2, 28, 2);
+		}
+		logo_loaded = 1;
 	}
-
 	/* init param */
 	osd_reverse = env_get("osd_reverse");
 	for (group = 0; group < HW_OSD_COUNT; group++)
@@ -5096,6 +5106,10 @@ void osd_init_hw(void)
 			independ_path_default_regs();
 		else
 			fix_vpu_clk2_default_regs();
+
+		/* t6d keystone need bypass osd blend */
+		if (is_keystone_enable_for_t6d())
+			osd_reg_set_bits(VIU_OSD2_PATH_CTRL, 0x1, 4, 1);
 #ifndef AML_C3_DISPLAY
 		/* init vpu fifo control register */
 		data32 = osd_reg_read(VPP_OFIFO_SIZE);

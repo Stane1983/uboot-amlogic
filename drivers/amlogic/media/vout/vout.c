@@ -285,14 +285,18 @@ static void vout_vmode_init(void)
 
 	index = get_osd_layer();
 
-	if (index < VIU2_OSD1)
-		check_connector_idx = 0;
-	else if (index == VIU2_OSD1)
+	if (index < VIU2_OSD1) {
+		if (is_keystone_enable_for_t6d())
+			check_connector_idx = 1;
+		else
+			check_connector_idx = 0;
+	} else if (index == VIU2_OSD1) {
 		check_connector_idx = 1;
-	else if (index == VIU3_OSD1)
+	} else if (index == VIU3_OSD1) {
 		check_connector_idx = 2;
-	else
+	} else {
 		vout_log("%s, layer%d is not supported\n", __func__, index);
+	}
 
 	vset = vout_find_mode_by_vout_idx(check_connector_idx);
 	if (!vset)
@@ -554,6 +558,7 @@ static void vout_viu_mux_default(int index, unsigned int mux_sel)
 	if (vout_projector_mux && get_cpu_id().family_id ==
 		MESON_CPU_MAJOR_ID_T6D) {
 		vout_reg_setb(VPP_MISC_T6D, 1, 27, 1);
+		vout_reg_setb(OSD2_HDR2_MATRIXI_EN_CTRL, 0, 0, 1);
 		vout_log("T6D: %s: vout_projector_mux %d\n", __func__, vout_projector_mux);
 	}
 }
