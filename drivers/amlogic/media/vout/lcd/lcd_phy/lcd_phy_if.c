@@ -58,6 +58,10 @@ int lcd_phy_param_preset(struct aml_lcd_drv_s *pdrv)
 	}
 	for (; i < CH_LANE_MAX; i++)
 		phy_cfg->ch_ctrl[i].sel = 0xff;
+	if (pdrv->config.basic.lcd_type == LCD_MLVDS) {
+		phy->clk_phase = pdrv->config.control.mlvds_cfg.clk_phase & 0xfff;
+		phy_cfg->bypass_resample = (pdrv->config.control.mlvds_cfg.clk_phase >> 12) & 1;
+	}
 
 	return 0;
 }

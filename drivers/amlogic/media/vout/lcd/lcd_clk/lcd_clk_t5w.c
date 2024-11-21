@@ -208,7 +208,7 @@ static void lcd_set_tcon_clk_t5w(struct aml_lcd_drv_s *pdrv)
 
 	switch (pconf->basic.lcd_type) {
 	case LCD_MLVDS:
-		val = pconf->control.mlvds_cfg.clk_phase & 0xfff;
+		val = pconf->phy_cfg.act_phy->clk_phase & 0xfff;
 		lcd_ana_setb(HHI_TCON_PLL_CNTL1, (val & 0xf), 24, 4);
 		lcd_ana_setb(HHI_TCON_PLL_CNTL4, ((val >> 4) & 0xf), 28, 4);
 		lcd_ana_setb(HHI_TCON_PLL_CNTL4, ((val >> 8) & 0xf), 24, 4);
