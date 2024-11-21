@@ -19,8 +19,8 @@
 
 /* Local Headers */
 #include "osd_log.h"
-#include "osd_io.h"
 #include "osd_hw.h"
+#include "osd_io.h"
 
 #define OSD_TEST_DURATION 500
 
@@ -210,10 +210,55 @@ static void dump_vpp_post_misc_reg(void)
 	}
 }
 
+static void dump_vpp1_blend_reg(void)
+{
+	u32 reg_addr, reg_val = 0;
+
+	pr_info("vpp1 blend regs:\n");
+	reg_addr = REG_INDEX_VCBUS(VPP1_OSD3_BLD_H_SCOPE);
+	reg_val = osd_reg_read(reg_addr);
+	pr_info("reg[0x%x]: 0x%08x [vpp_osd1_bld_h_scope]\n",
+		   reg_addr, reg_val);
+	reg_addr = REG_INDEX_VCBUS(VPP1_OSD3_BLD_V_SCOPE);
+	reg_val = osd_reg_read(reg_addr);
+	pr_info("reg[0x%x]: 0x%08x [vpp_osd1_bld_v_scope]\n",
+		   reg_addr, reg_val);
+	reg_addr = REG_INDEX_VCBUS(VPP_POSTBLEND_VD3_H_START_END);
+	reg_val = osd_reg_read(reg_addr);
+	pr_info("reg[0x%x]: 0x%08x [vpp_postblend_vd1_h_start_end]\n",
+		   reg_addr, reg_val);
+	reg_addr = REG_INDEX_VCBUS(VPP_POSTBLEND_VD3_V_START_END);
+	reg_val = osd_reg_read(reg_addr);
+	pr_info("reg[0x%x]: 0x%08x [vpp_postblend_vd1_v_start_end]\n",
+		   reg_addr, reg_val);
+	reg_addr = REG_INDEX_VCBUS(VPP1_BLEND_H_V_SIZE);
+	reg_val = osd_reg_read(reg_addr);
+	pr_info("reg[0x%x]: 0x%08x [vpp_postblend_h_v_size]\n",
+		   reg_addr, reg_val);
+	reg_addr = REG_INDEX_VCBUS(VPP1_BLEND_BLEND_DUMMY_DATA);
+	reg_val = osd_reg_read(reg_addr);
+	pr_info("reg[0x%x]: 0x%08x [vpp_post_blend_blend_dummy_data]\n",
+		   reg_addr, reg_val);
+	reg_addr = REG_INDEX_VCBUS(VPP1_BLEND_DUMMY_ALPHA);
+	reg_val = osd_reg_read(reg_addr);
+	pr_info("reg[0x%x]: 0x%08x [vpp_post_blend_dummy_alpha]\n",
+		   reg_addr, reg_val);
+	reg_addr = REG_INDEX_VCBUS(VPP1_BLEND_DUMMY_ALPHA1);
+	reg_val = osd_reg_read(reg_addr);
+	pr_info("reg[0x%x]: 0x%08x [vpp_post_blend_dummy_alpha1]\n",
+		   reg_addr, reg_val);
+	reg_addr = REG_INDEX_VCBUS(VPP1_BLD_CTRL);
+	reg_val = osd_reg_read(reg_addr);
+	pr_info("reg[0x%x]: 0x%08x [vpp_postblend_ctrl]\n",
+		   reg_addr, reg_val);
+}
+
 static void dump_vpp_post_reg(void)
 {
 	dump_vpp_blend_reg();
 	dump_vpp_post_misc_reg();
+	if (!strcmp(env_get("display_layer"), "viu2_osd0"))
+		dump_vpp1_blend_reg();
 }
 #endif
 
@@ -394,7 +439,6 @@ static void osd_debug_dump_register_all(void)
 	osd_logi("reg[0x%04x]: 0x%08x\n\n", REG_INDEX_VCBUS(reg), osd_reg_read(reg));
 #else
 	u32 index = 0;
-
 	reg = hw_osd_reg_array[0].osd_sc_ctrl0;
 	osd_logi("reg[0x%x]: 0x%08x\n", REG_INDEX_VCBUS(reg), osd_reg_read(reg));
 	reg = hw_osd_reg_array[0].osd_sci_wh_m1;
@@ -523,6 +567,23 @@ static void osd_debug_dump_register_all(void)
 
 	dump_vpp_post_reg();
 #endif
+
+#ifdef AML_C3_DISPLAY
+	reg = VPU_VOUT_BLEND_CTRL;
+	osd_logi("reg[0x%x]: 0x%08x\n", REG_INDEX_VCBUS(reg), osd_reg_read(reg));
+	reg = VPU_VOUT_BLEND_DUMDATA;
+	osd_logi("reg[0x%x]: 0x%08x\n", REG_INDEX_VCBUS(reg), osd_reg_read(reg));
+	reg = VPU_VOUT_BLEND_SIZE;
+	osd_logi("reg[0x%x]: 0x%08x\n", REG_INDEX_VCBUS(reg), osd_reg_read(reg));
+	reg = VPU_VOUT_BLD_SRC0_HPOS;
+	osd_logi("reg[0x%x]: 0x%08x\n", REG_INDEX_VCBUS(reg), osd_reg_read(reg));
+	reg = VPU_VOUT_BLD_SRC0_VPOS;
+	osd_logi("reg[0x%x]: 0x%08x\n", REG_INDEX_VCBUS(reg), osd_reg_read(reg));
+	reg = VPU_VOUT_BLD_SRC1_HPOS;
+	osd_logi("reg[0x%x]: 0x%08x\n", REG_INDEX_VCBUS(reg), osd_reg_read(reg));
+	reg = VPU_VOUT_BLD_SRC1_VPOS;
+	osd_logi("reg[0x%x]: 0x%08x\n", REG_INDEX_VCBUS(reg), osd_reg_read(reg));
+#endif
 }
 
 static void osd_test_colorbar(void)
@@ -611,7 +672,6 @@ static void osd_test_dummydata(void)
 static void osd_debug_auto_test(void)
 {
 	osd_test_colorbar();
-
 	osd_test_dummydata();
 }
 

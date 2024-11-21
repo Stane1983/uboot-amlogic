@@ -285,14 +285,15 @@ static void vout_vmode_init(void)
 
 	index = get_osd_layer();
 
-	if (index < VIU2_OSD1) {
-		if (is_keystone_enable_for_t6d())
+	if (is_vpp0(index)) {
+		if (is_keystone_enable_for_txhd2() ||
+		    is_keystone_enable_for_t6d())
 			check_connector_idx = 1;
 		else
 			check_connector_idx = 0;
-	} else if (index == VIU2_OSD1) {
+	} else if (is_vpp1(index)) {
 		check_connector_idx = 1;
-	} else if (index == VIU3_OSD1) {
+	} else if (is_vpp2(index)) {
 		check_connector_idx = 2;
 	} else {
 		vout_log("%s, layer%d is not supported\n", __func__, index);
@@ -334,14 +335,34 @@ static int getenv_int(char *env, int def)
 static int get_window_axis(int *axis)
 {
 	int ret = 0;
-	char *mode = env_get("outputmode");
+	char *mode = NULL;
 	int def_x, def_y, def_w, def_h;
+	uint index = 0;
+
+	index = get_osd_layer();
+	if (is_vpp0(index))
+		mode = env_get("outputmode");
+	else if (is_vpp1(index))
+		mode = env_get("outputmode2");
+	else if (is_vpp2(index))
+		mode = env_get("outputmode3");
+	else
+		vout_log("%s, osd%d is not supported\n", __func__, index);
 
 	def_x = 0;
 	def_y = 0;
 	def_w = vout_info.width;
 	def_h = vout_info.height;
 
+	if (!mode) {
+		axis[0] = def_x;
+		axis[1] = def_y;
+		axis[2] = def_w;
+		axis[3] = def_h;
+		vout_log("%s, osd%d cannot get env outputmode\n",
+			 __func__, index);
+		return -1;
+	}
 	/* adjust reproduction ratio */
 	if (strncmp(mode, "480i", 4) == 0) {
 		axis[0] = getenv_int("480i_x", def_x);
@@ -358,6 +379,11 @@ static int get_window_axis(int *axis)
 		axis[1] = getenv_int("480p_y", def_y);
 		axis[2] = getenv_int("480p_w", def_w);
 		axis[3] = getenv_int("480p_h", def_h);
+	} else if (strncmp(mode, "640x480p60hz", 12) == 0) {
+		axis[0] = getenv_int("640x480p60hz_x", def_x);
+		axis[1] = getenv_int("640x480p60hz_y", def_y);
+		axis[2] = getenv_int("640x480p60hz_w", def_w);
+		axis[3] = getenv_int("640x480p60hz_h", def_h);
 	} else if (strncmp(mode, "576i", 4) == 0) {
 		axis[0] = getenv_int("576i_x", def_x);
 		axis[1] = getenv_int("576i_y", def_y);
@@ -394,10 +420,10 @@ static int get_window_axis(int *axis)
 		axis[2] = getenv_int("1080p_w", def_w);
 		axis[3] = getenv_int("1080p_h", def_h);
 	} else if (strncmp(mode, "1920x1080p", 10) == 0) {
-		axis[0] = getenv_int("1920x1080p_x", def_x);
-		axis[1] = getenv_int("1920x1080p_y", def_y);
-		axis[2] = getenv_int("1920x1080p_w", def_w);
-		axis[3] = getenv_int("1920x1080p_h", def_h);
+		axis[0] = getenv_int("1080p_x", def_x);
+		axis[1] = getenv_int("1080p_y", def_y);
+		axis[2] = getenv_int("1080p_w", def_w);
+		axis[3] = getenv_int("1080p_h", def_h);
 	} else if (strncmp(mode, "2160p", 5) == 0) {
 		axis[0] = getenv_int("2160p_x", def_x);
 		axis[1] = getenv_int("2160p_y", def_y);
@@ -414,15 +440,15 @@ static int get_window_axis(int *axis)
 		axis[2] = getenv_int("3840x1080p_w", def_w);
 		axis[3] = getenv_int("3840x1080p_h", def_h);
 	} else if (strncmp(mode, "3840x2160p", 10) == 0) {
-		axis[0] = getenv_int("3840x2160p_x", def_x);
-		axis[1] = getenv_int("3840x2160p_y", def_y);
-		axis[2] = getenv_int("3840x2160p_w", def_w);
-		axis[3] = getenv_int("3840x2160p_h", def_h);
+		axis[0] = getenv_int("2160p_x", def_x);
+		axis[1] = getenv_int("2160p_y", def_y);
+		axis[2] = getenv_int("2160p_w", def_w);
+		axis[3] = getenv_int("2160p_h", def_h);
 	} else if (strncmp(mode, "7680x4320p", 10) == 0) {
-		axis[0] = getenv_int("7680x4320p_x", def_x);
-		axis[1] = getenv_int("7680x4320p_y", def_y);
-		axis[2] = getenv_int("7680x4320p_w", def_w);
-		axis[3] = getenv_int("7680x4320p_h", def_h);
+		axis[0] = getenv_int("4320p_x", def_x);
+		axis[1] = getenv_int("4320p_y", def_y);
+		axis[2] = getenv_int("4320p_w", def_w);
+		axis[3] = getenv_int("4320p_h", def_h);
 	} else if (strncmp(mode, "panel",5) == 0) {
 		axis[0] = getenv_int("panel_x", def_x);
 		axis[1] = getenv_int("panel_y", def_y);

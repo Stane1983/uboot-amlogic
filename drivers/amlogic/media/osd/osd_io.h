@@ -166,12 +166,52 @@
 #define VPP1_BLEND_DUMMY_ALPHA                     0x59aa
 #endif
 
+#ifndef VPP1_BLEND_DUMMY_ALPHA1
+#define VPP1_BLEND_DUMMY_ALPHA1                    0x1d54
+#endif
+
 #ifndef VPP2_BLEND_BLEND_DUMMY_DATA
 #define VPP2_BLEND_BLEND_DUMMY_DATA                0x59e9
 #endif
 
 #ifndef VPP2_BLEND_DUMMY_ALPHA
 #define VPP2_BLEND_DUMMY_ALPHA                     0x59ea
+#endif
+
+#ifndef VPP2_BLD_DIN1_HSCOPE
+#define VPP2_BLD_DIN1_HSCOPE                       0x59c9
+#endif
+
+#ifndef VPP2_BLD_DIN1_VSCOPE
+#define VPP2_BLD_DIN1_VSCOPE                       0x59ca
+#endif
+
+#ifndef VPP2_BLD_OUT_SIZE
+#define VPP2_BLD_OUT_SIZE                          0x59c6
+#endif
+
+#ifndef VPP1_OSD3_BLD_H_SCOPE
+#define VPP1_OSD3_BLD_H_SCOPE                      0x1d1c
+#endif
+
+#ifndef VPP1_OSD3_BLD_V_SCOPE
+#define VPP1_OSD3_BLD_V_SCOPE                      0x1d1d
+#endif
+
+#ifndef VPP1_BLEND_H_V_SIZE
+#define VPP1_BLEND_H_V_SIZE                        0x1d1a
+#endif
+
+#ifndef VIU_OSD3_MISC
+#define VIU_OSD3_MISC                              0x1a17
+#endif
+
+#ifndef OSD_PROC_1MUX3_SEL
+#define OSD_PROC_1MUX3_SEL                         0x6072
+#endif
+
+#ifndef OSD_SYS_5MUX4_SEL
+#define OSD_SYS_5MUX4_SEL                          0x6078
 #endif
 
 #ifndef VIU_OSD3_FIFO_CTRL_STAT
@@ -294,6 +334,10 @@
 #define VPU_RDARB_MODE_L2C1                        0x279d
 #endif
 
+#ifndef VIU_OSD2_DIMM_CTRL
+#define VIU_OSD2_DIMM_CTRL                         0x1acf
+#endif
+
 #define UBOOT_INFO_FLAG                VIU_OSD1_TCOLOR_AG1
 
 #define REG_OFFSET_VCBUS(reg)           ((reg << 2))
@@ -314,10 +358,17 @@ static inline u32 osd_reg_read(u32 reg)
 static inline void osd_reg_write(u32 reg,
 				 const u32 val)
 {
-	if (reg > 0x10000)
+	if (reg > 0x10000) {
 		*(volatile unsigned int *)REG_OSD_ADDR(reg) = (val);
-	else
+		if (osd_log_level == OSD_LOG_LEVEL_DEBUG4)
+			printf("reg:0x%08x 0x%08x-->0x%08x\n", reg,
+			       *(unsigned int *)REG_OSD_ADDR(reg), val);
+	} else {
 		*(volatile unsigned int *)REG_ADDR_VCBUS(reg) = (val);
+		if (osd_log_level == OSD_LOG_LEVEL_DEBUG4)
+			printf("reg:0x%x 0x%08x-->0x%08x\n", reg,
+			       *(unsigned int *)REG_ADDR_VCBUS(reg), val);
+	}
 }
 
 static inline void osd_reg_set_mask(u32 reg,

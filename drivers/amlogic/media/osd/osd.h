@@ -144,8 +144,14 @@ enum osd_dev_e {
 enum reverse_info_e {
 	REVERSE_NONE = 0,  /* no rotaion */
 	REVERSE_XY,        /* x+y rotation */
+	OSD1_REVERSE_XY,   /* osd1 x+y rotation */
+	OSD2_REVERSE_XY,   /* osd2 x+y rotation */
 	REVERSE_X,         /* x rotation */
+	OSD1_REVERSE_X,    /* osd1 x rotation */
+	OSD2_REVERSE_X,    /* osd2 x rotation */
 	REVERSE_Y,         /* y rotaion */
+	OSD1_REVERSE_Y,    /* osd1 y rotation */
+	OSD2_REVERSE_Y,    /* osd2 y rotation */
 	REVERSE_MAX
 };
 
@@ -184,6 +190,7 @@ enum vpp_vsync_type {
 	VPU_VPP0,
 	VPU_VPP1,
 	VPU_VPP2,
+	VPU_VPP_MAX
 };
 
 enum matrix_type_e {
@@ -271,6 +278,7 @@ struct hw_para_s {
 	u32 antiflicker_mode;
 	u32 angle[HW_OSD_COUNT];
 	u32 clone[HW_OSD_COUNT];
+	u32 vpp_index[HW_OSD_COUNT];
 	u32 bot_type;
 	u32 osd_ver;
 	u32 shift_line;
@@ -355,6 +363,20 @@ struct hw_osd_vout_csc_reg_s {
 #define VPP_POST_NUM (VPP_POST_VD_NUM + VPP_POST_OSD_NUM)
 
 #define POST_SLICE_NUM    4
+
+struct slice_info {
+	u32 hsize;     /*slice hsize*/
+	u32 vsize;     /*slice vsize*/
+};
+
+struct vpp_post_info_t {
+	u32 slice_num;   /*valid slice num*/
+	u32 overlap_hsize;
+	u32 vpp_post_blend_hsize;   /*blend out hsize*/
+	u32 vpp_post_blend_vsize;   /*blend out vsize*/
+	struct slice_info slice[POST_SLICE_NUM];
+};
+
 struct vpp_post_blend_s {
 	u32 bld_out_en;
 	u32 bld_out_w;
@@ -469,7 +491,7 @@ struct vpp_post_input_s {
 	u32 vd1_size_after_padding;
 };
 
-struct vpp_post_s {
+struct vpp0_post_s {
 	u32 slice_num;
 	u32 overlap_hsize;
 	struct vd1_hwin_s vd1_hwin;
@@ -478,8 +500,60 @@ struct vpp_post_s {
 	struct vpp_post_hwin_s vpp_post_hwin;
 	struct vpp_post_proc_s vpp_post_proc;
 };
+
+struct vpp1_post_blend_s {
+	u32 bld_out_en;
+	u32 bld_out_w;
+	u32 bld_out_h;
+	//0: vpp1 walk slice1 to venc1; 1: vpp1 bypass slice1 to venc1
+	u32 vpp1_dpath_sel;
+	//0:select postblend 1:select vpp1 blend
+	u32 vd3_dpath_sel;
+	u32 bld_out_premult;
+	u32 bld_dummy_data;
+
+	//usually the bottom layer set 1, for example postbld_src1_sel = 1,set 0x1
+	u32 bld_din0_premult_en;
+	u32 bld_din1_premult_en;
+
+	//VD3
+	u32 bld_din0_h_start;
+	u32 bld_din0_h_end;
+	u32 bld_din0_v_start;
+	u32 bld_din0_v_end;
+	u32 bld_din0_alpha;
+
+	//OSD3
+	u32 bld_din1_h_start;
+	u32 bld_din1_h_end;
+	u32 bld_din1_v_start;
+	u32 bld_din1_v_end;
+	u32 bld_din1_alpha;
+
+	//1:din0(vd3)  2:din1(osd3) 3:din2 4:din3 5:din4 else :close
+	u32 bld_src1_sel;
+	u32 bld_src2_sel;
+};
+
+struct vpp1_post_s {
+	bool vpp1_en;
+	bool vpp1_bypass_slice1;
+	u32 slice_num;
+	u32 overlap_hsize;
+	struct vpp1_post_blend_s vpp1_post_blend;
+};
+
+struct vpp_post_s {
+	struct vpp0_post_s vpp0_post;
+	struct vpp1_post_s vpp1_post;
+};
 #endif
 
+extern int rma_test;
+extern int rma_test_addr;
 extern struct hw_osd_reg_s hw_osd_reg_array[HW_OSD_COUNT];
+#ifdef AML_S5_DISPLAY
+struct vpp_post_info_t *get_vpp_post_amdv_info(void);
+#endif
 
 #endif /* _OSD_H_ */
