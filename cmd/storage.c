@@ -321,7 +321,7 @@ static int storage_boot_layout_general_setting(struct boot_layout *boot_layout,
 			boot_entry[BOOT_AREA_DEVFIP].size =
 				ssp->boot_entry[BOOT_AREA_DEVFIP].size;
 			storage_boot_layout_rebuild(boot_layout);
-			return 0;
+			goto out;
 		}
 		/* normal boot */
 		for (nIndex = 0;
@@ -332,6 +332,7 @@ static int storage_boot_layout_general_setting(struct boot_layout *boot_layout,
 		}
 	}
 
+out:
 	/* devfip size (BOARD_DEVFIP_SIZE) maybe not align block size,
 	 * so we need to resize.
 	 */
