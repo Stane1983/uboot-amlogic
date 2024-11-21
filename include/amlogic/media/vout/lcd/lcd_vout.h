@@ -488,6 +488,7 @@ struct phy_config_s {
 	unsigned int weakly_pull_down;
 	unsigned int low_common_mode;
 
+	unsigned int bypass_resample;
 	unsigned int state;
 	unsigned int flag;
 	unsigned int ckdi;

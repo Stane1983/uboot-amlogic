@@ -309,7 +309,7 @@ static int lcd_set_mlvds_clk_phase_t6d(struct aml_lcd_drv_s *pdrv)
 	struct lcd_config_s *pconf = &pdrv->config;
 	unsigned int val, p0, pa, pb;
 
-	val = pconf->control.mlvds_cfg.clk_phase & 0xfff;
+	val = pconf->phy_cfg.act_phy->clk_phase;
 	p0 = val & 0xf;
 	pa = (val >> 8) & 0xf;
 	pb = (val >> 4) & 0xf;

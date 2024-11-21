@@ -259,7 +259,7 @@ static void lcd_set_tcon_clk_txhd2(struct aml_lcd_drv_s *pdrv)
 
 	switch (pconf->basic.lcd_type) {
 	case LCD_MLVDS:
-		val = pconf->control.mlvds_cfg.clk_phase & 0xfff;
+		val = pconf->phy_cfg.act_phy->clk_phase;
 		lcd_set_clk_phase_txhd2(val);
 
 		/* tcon_clk */
