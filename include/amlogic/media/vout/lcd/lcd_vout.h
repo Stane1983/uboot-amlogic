@@ -838,11 +838,6 @@ void aml_lcd_driver_set_bl_level(int index, int level);
 unsigned int aml_lcd_driver_get_bl_level(int index);
 void aml_lcd_driver_bl_config_print(int index);
 
-int aml_lcd_driver_suspend(void *pm_ops);
-int aml_lcd_driver_resume(void *pm_ops);
-int aml_lcd_driver_poweroff(void *pm_ops);
-void aml_lcd_set_poweron_suspend_sta(int state);
-
 void aml_lcd_list(void);
 void aml_lcd_set(uint8_t drv_idx, char *lcd_type_name);
 
