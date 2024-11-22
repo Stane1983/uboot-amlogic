@@ -177,6 +177,7 @@ void lcd_set_venc(struct aml_lcd_drv_s *pdrv);
 void lcd_venc_enable(struct aml_lcd_drv_s *pdrv, int flag);
 void lcd_mute_set(struct aml_lcd_drv_s *pdrv,  unsigned char flag);
 void lcd_venc_reg_print(struct aml_lcd_drv_s *pdrv);
+void lcd_venc_save_bootctrl_to_regs(struct aml_lcd_drv_s *pdrv);
 int lcd_venc_probe(struct aml_lcd_data_s *pdata);
 
 /* lcd clk*/

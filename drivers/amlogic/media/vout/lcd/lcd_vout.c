@@ -475,6 +475,7 @@ static void lcd_module_disable(struct aml_lcd_drv_s *pdrv)
 	lcd_venc_enable(pdrv, 0);
 	lcd_disable_clk(pdrv);
 	pdrv->status = 0;
+	lcd_update_ctrl_bootargs(pdrv);
 }
 
 static void lcd_module_prepare(struct aml_lcd_drv_s *pdrv, char *mode)
@@ -720,6 +721,7 @@ static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 	val |= (pdrv->boot_ctrl.ppc & 0x3) << 20;
 	val |= (pdrv->boot_ctrl.clk_mode & 0x3) << 22;
 	val |= (pdrv->boot_ctrl.base_frame_rate & 0xff) << 24;
+	lcd_venc_save_bootctrl_to_regs(pdrv);
 
 	if (pdrv->index == 0) {
 		sprintf(type_str, "panel_type");

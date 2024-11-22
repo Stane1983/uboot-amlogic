@@ -443,6 +443,27 @@ static void lcd_venc_reg_dump(struct aml_lcd_drv_s *pdrv)
 		printf("vcbus [0x%04x] = 0x%08x\n", reg_table[i], lcd_vcbus_read(reg_table[i]));
 }
 
+static void lcd_venc_save_bootctrl_to_reg(struct aml_lcd_drv_s *pdrv)
+{
+	unsigned int val = 0;
+	unsigned int offset = pdrv->data->offset_venc[pdrv->index];
+
+	val = (pdrv->boot_ctrl.init_level & 0xf) | (!!(pdrv->status & LCD_STATUS_IF_ON) << 4)
+		| ((pdrv->boot_ctrl.dccd_flag & 0x1) << 5) | (0xa << 9);
+	lcd_vcbus_write(L_STH1_HS_ADDR + offset, val);
+
+	val = pdrv->boot_ctrl.base_frame_rate & 0x1fff;
+		lcd_vcbus_write(L_STH1_HS_ADDR + offset + 4, val);
+
+	val = (pdrv->boot_ctrl.lcd_type & 0xf) | ((pdrv->boot_ctrl.clk_mode & 0xf) << 4)
+		| ((pdrv->boot_ctrl.ppc & 0x3) << 8)
+		| ((pdrv->boot_ctrl.custom_pinmux & 0x1) << 10);
+	lcd_vcbus_write(L_STH1_HS_ADDR + offset + 8, val);
+
+	val = pdrv->boot_ctrl.advanced_flag & 0xff;
+	lcd_vcbus_write(L_STH1_HS_ADDR + offset + 12, val);
+}
+
 int lcd_venc_op_init_t5m(struct lcd_venc_op_s *venc_op)
 {
 	if (!venc_op)
@@ -457,6 +478,7 @@ int lcd_venc_op_init_t5m(struct lcd_venc_op_s *venc_op)
 	venc_op->mute_set = lcd_venc_mute_set;
 	venc_op->get_encl_line_cnt = lcd_venc_get_encl_line_cnt;
 	venc_op->venc_reg_dump = lcd_venc_reg_dump;
+	venc_op->bootctrl_to_regs = lcd_venc_save_bootctrl_to_reg;
 
 	return 0;
 };
