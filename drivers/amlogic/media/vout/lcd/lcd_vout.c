@@ -34,6 +34,8 @@ char *lcd_pm_name[LCD_MAX_DRV] = {"lcd_drv0_pm", "lcd_drv1_pm", "lcd_drv2_pm"};
 
 unsigned int lcd_prbs_freq = 0, lcd_prbs_performed = 0, lcd_prbs_err = 0;
 
+static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv);
+
 static int aml_lcd_driver_suspend(void *pm_ops);
 static int aml_lcd_driver_resume(void *pm_ops);
 static int aml_lcd_driver_poweroff(void *pm_ops);
@@ -507,6 +509,8 @@ static void lcd_module_enable(struct aml_lcd_drv_s *pdrv, char *mode)
 			      pdrv->index, pdrv->boot_ctrl.init_level);
 		}
 	}
+
+	lcd_update_ctrl_bootargs(pdrv);
 }
 
 static void lcd_module_disable(struct aml_lcd_drv_s *pdrv)
@@ -525,6 +529,7 @@ static void lcd_module_disable(struct aml_lcd_drv_s *pdrv)
 	lcd_venc_enable(pdrv, 0);
 	lcd_disable_clk(pdrv);
 	pdrv->status = 0;
+	lcd_update_ctrl_bootargs(pdrv);
 }
 
 static void lcd_module_prepare(struct aml_lcd_drv_s *pdrv, char *mode)
@@ -542,6 +547,8 @@ static void lcd_module_prepare(struct aml_lcd_drv_s *pdrv, char *mode)
 
 	if ((pdrv->status & LCD_STATUS_ENCL_ON) == 0)
 		lcd_encl_on(pdrv);
+
+	lcd_update_ctrl_bootargs(pdrv);
 }
 
 static int lcd_mode_init(struct aml_lcd_drv_s *pdrv)
@@ -758,6 +765,7 @@ static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 	val |= (pdrv->boot_ctrl.ppc & 0x3) << 20;
 	val |= (pdrv->boot_ctrl.clk_mode & 0x3) << 22;
 	val |= (pdrv->boot_ctrl.base_frame_rate & 0xff) << 24;
+	lcd_venc_save_bootctrl_to_regs(pdrv);
 
 	if (pdrv->index == 0) {
 		sprintf(type_str, "panel_type");

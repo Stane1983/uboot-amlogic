@@ -22,6 +22,7 @@ static struct lcd_venc_op_s lcd_venc_op = {
 	.venc_set = NULL,
 	.venc_enable = NULL,
 	.mute_set = NULL,
+	.bootctrl_to_regs = NULL,
 };
 
 void lcd_wait_vsync(struct aml_lcd_drv_s *pdrv)
@@ -169,6 +170,19 @@ void lcd_venc_reg_print(struct aml_lcd_drv_s *pdrv)
 
 	printf("\nencl regs:\n");
 	lcd_venc_op.venc_reg_dump(pdrv);
+}
+
+void lcd_venc_save_bootctrl_to_regs(struct aml_lcd_drv_s *pdrv)
+{
+	if (!pdrv)
+		return;
+	if (!lcd_venc_op.bootctrl_to_regs) {
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDPR("[%d]: %s: no spare regs for bootctrl\n", pdrv->index, __func__);
+		return;
+	}
+
+	lcd_venc_op.bootctrl_to_regs(pdrv);
 }
 
 int lcd_venc_probe(struct aml_lcd_data_s *pdata)
