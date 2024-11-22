@@ -1217,11 +1217,13 @@ static void flashing(char *cmd_parameter, char *response)
 	u64 rc;
 	int debug_flag = 0;
 
+#ifndef CONFIG_REFERENCE
 	if (IS_FEAT_BOOT_VERIFY()) {
 		printf("device is secure mode, can not run this cmd.\n");
 		fastboot_fail("secure boot device", response);
 		return;
 	}
+#endif
 
 	lock_s = env_get("lock");
 	if (!lock_s) {
@@ -1556,11 +1558,13 @@ static void oem_format(char *cmd_parameter, char *response)
 	char cmdbuf[32];
 
 #ifdef CONFIG_AMLOGIC_MODIFY
+#ifndef CONFIG_REFERENCE
 	if (IS_FEAT_BOOT_VERIFY()) {
 		printf("device is secure mode, can not run this cmd.\n");
 		fastboot_fail("secure boot device", response);
 		return;
 	}
+#endif
 
 	if (check_lock() == 1) {
 		printf("device is locked, can not run this cmd.Please flashing unlock & flashing unlock_critical\n");

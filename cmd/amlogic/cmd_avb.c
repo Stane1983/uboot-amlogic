@@ -483,6 +483,34 @@ static AvbIOResult validate_vbmeta_public_key(AvbOps *ops, const uint8_t *public
 #endif
 	int i = 0;
 
+#ifdef CONFIG_AVB2_KPUB_VENDOR
+	printf("AVB2 verifying with vendor kpub\n");
+	printf("avb2_kpub_vendor_len = %d\n", avb2_kpub_vendor_len);
+	if (avb2_kpub_vendor_len == public_key_length &&
+		!avb_safe_memcmp(public_key_data,
+		avb2_kpub_vendor, avb2_kpub_vendor_len)) {
+		*out_is_trusted = true;
+		ret = AVB_IO_RESULT_OK;
+	}
+	if (is_device_unlocked())
+		ret = AVB_IO_RESULT_OK;
+
+#ifdef CONFIG_TESTKEY
+	if (ret != AVB_IO_RESULT_OK) {
+		printf("AVB2 re-verify with default kpub\n");
+		if (avb2_kpub_default_len == public_key_length &&
+				!avb_safe_memcmp(public_key_data,
+				avb2_kpub_default, public_key_length)) {
+			*out_is_trusted = true;
+			ret = AVB_IO_RESULT_OK;
+		}
+	}
+#endif
+	if (ret != AVB_IO_RESULT_OK)
+		printf("AVB2 key in bootloader does not match with the key in vbmeta\n");
+	return ret;
+#endif
+
 #if CONFIG_AVB2_KPUB_FROM_FIP
 	printf("AVB2 verifying with fip key\n");
 	result = compare_avbkey_with_fipkey(public_key_data, public_key_length);
