@@ -27,6 +27,7 @@
 #define CC_MAX_LDIM_DEV_ZONE_MAP_SIZE    (0x2ee0)
 #define CC_ONE_SECTION_SIZE              (0x10000)
 
+#define PANEL_PARAM_KEY_NAME_SIZE        (32)
 
 #ifdef CONFIG_INI_MAX_LINE
 #define MAX_LINE CONFIG_INI_MAX_LINE

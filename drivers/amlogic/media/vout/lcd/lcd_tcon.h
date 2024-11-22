@@ -71,8 +71,6 @@ struct lcd_tcon_config_s {
 	int (*tcon_forbidden_check)(void);
 	int (*tcon_check)(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timing_s *ptiming,
 			unsigned char *core_reg_table, char *ferr_str, char *warn_str);
-	void (*lut_dma_data_init_trans)(struct aml_lcd_drv_s *pdrv);
-
 };
 
 struct tcon_rmem_config_s {
@@ -204,16 +202,6 @@ struct lcd_tcon_local_cfg_s {
 
 #ifdef CONFIG_CMD_INI
 void *handle_lcd_ext_buf_get(void);
-void *handle_tcon_path_mem_get(unsigned int size);
-void *handle_tcon_path_resv_mem_get(unsigned int size);
-int handle_tcon_vac(unsigned char *vac_data, unsigned int vac_mem_size);
-int handle_tcon_demura_set(unsigned char *demura_set_data,
-			   unsigned int demura_set_size);
-int handle_tcon_demura_lut(unsigned char *demura_lut_data,
-			   unsigned int demura_lut_size);
-int handle_tcon_acc_lut(unsigned char *acc_lut_data,
-			unsigned int acc_lut_size);
-int handle_tcon_data_load(unsigned char **buf, unsigned int index);
 #endif
 
 #define TCON_VAC_SET_PARAM_NUM    3

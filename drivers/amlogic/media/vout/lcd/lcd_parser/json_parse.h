@@ -160,6 +160,8 @@ struct json_s *json_parse(struct json_parse_s *jsp, char *input, s32 limit);
 
 static inline int json_parse_ok(struct json_parse_s *jsp)
 {
+	if (!jsp)
+		return 0;
 	return jsp->status == JSON_STATUS_OK;
 }
 

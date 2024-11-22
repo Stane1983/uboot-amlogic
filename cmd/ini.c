@@ -16,7 +16,7 @@
 #include <environment.h>
 #include <linux/ctype.h>
 #include <linux/string.h>
-#include "amlogic/ini/model.h"
+#include <amlogic/aml_model.h>
 #include "amlogic/ini/ini_size_define.h"
 
 /* Strip whitespace chars off end of given string, in place. Return s. */
@@ -245,10 +245,12 @@ static int do_ini_model_list(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
 		ret = handle_model_list();
 		return ret;
 	}
+#ifdef CONFIG_AML_LCD
 	if (strcmp(argv[1], "lcd") == 0 || strcmp(argv[1], "panel") == 0) {
-		handle_model_list_panel_key();
+		handle_model_list_panel_key(0);
 		return 0;
 	}
+#endif
 
 	return CMD_RET_USAGE;
 }

@@ -13,6 +13,15 @@ obj-$(CONFIG_AML_OSD) += cmd_osd.o
 obj-$(CONFIG_AML_DOLBY) += cmd_dolbyvision.o
 obj-$(CONFIG_CMD_PLLTEST) += cmd_plltest.o
 
+ifdef CONFIG_CMD_AML_MODEL
+obj-y += model/model.o
+obj-y += model/ini_handle.o
+obj-y += model/ini_parser.o
+obj-y += model/model_fs.o
+obj-y += model/model_unifykey.o
+obj-y += model/model_log.o
+endif
+
 obj-$(CONFIG_AML_STORE_WRAPPER) += store_wrapper.o
 obj-$(CONFIG_AML_IMG_READ) += imgread.o
 obj-$(CONFIG_AML_DEFENV) += defenv_without.o

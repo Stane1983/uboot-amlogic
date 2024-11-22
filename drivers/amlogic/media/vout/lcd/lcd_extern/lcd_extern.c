@@ -646,6 +646,8 @@ int lcd_extern_probe(char *dtaddr, int load_id)
 
 		for (i = 0; i < edrv->dev_cnt; i++) {
 			edev = edrv->dev[i];
+			if (!edev)
+				continue;
 			lcd_extern_config_update(edev);
 			ret = lcd_extern_add_dev(edrv, edev);
 			if (ret) {
@@ -678,7 +680,7 @@ int lcd_extern_remove(void)
 	return 0;
 }
 
-int lcd_extern_drv_index_add(int drv_index, int dev_index)
+int lcd_extern_dev_index_add(int drv_index, int dev_index)
 {
 	int dev_cnt, i;
 
@@ -715,7 +717,7 @@ int lcd_extern_drv_index_add(int drv_index, int dev_index)
 	return 0;
 }
 
-int lcd_extern_drv_index_remove(int drv_index, int dev_index)
+int lcd_extern_dev_index_remove(int drv_index, int dev_index)
 {
 	int find, i;
 

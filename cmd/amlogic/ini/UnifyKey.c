@@ -425,8 +425,9 @@ int writeUKeyData(const char *key_name, unsigned char data_buf[], int wr_size) {
 
 #include "ini_io.h"
 
-unsigned int crc32(unsigned int crc, const unsigned char *ptr, int buf_len) {
-    return CalCRC32(crc, ptr, buf_len);
+static unsigned int crc32(unsigned int crc, const unsigned char *ptr, int buf_len)
+{
+	return CalCRC32(crc, ptr, buf_len);
 }
 
 static unsigned char gTempBuf[0x400000];

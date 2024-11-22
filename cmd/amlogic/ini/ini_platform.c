@@ -248,4 +248,42 @@ int iniReadFileToBuffer(const char *file_path, int offset, int rd_size, unsigned
 #endif
 }
 
+int model_file_is_exist(const char *file_path)
+{
+	return iniIsFileExist(file_path);
+}
 
+int model_get_file_size(const char *file_path)
+{
+	return iniGetFileSize(file_path);
+}
+
+int model_read_file(const char *file_path, unsigned char *data_buf, int buf_size)
+{
+	return iniReadFileToBuffer(file_path, 0, buf_size, data_buf);
+}
+
+unsigned char *model_read_file_to_buffer(const char *file_path, int *buf_size)
+{
+	unsigned char *tmp_buf = NULL;
+	int rd_size = 0, file_size = 0;
+
+	file_size = model_get_file_size(file_path);
+	if (file_size <= 0)
+		return NULL;
+
+	tmp_buf = (unsigned char *)malloc(file_size);
+	if (!tmp_buf)
+		return NULL;
+	memset(tmp_buf, 0, file_size);
+
+	rd_size = model_read_file(file_path, tmp_buf, file_size);
+	if (rd_size <= 0 || rd_size > file_size) {
+		memset(tmp_buf, 0, file_size);
+		free(tmp_buf);
+		return NULL;
+	}
+
+	*buf_size = file_size;
+	return tmp_buf;
+}

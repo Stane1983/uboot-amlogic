@@ -185,9 +185,9 @@ void lcd_extern_check_handler(struct lcd_extern_driver_s *edrv, struct lcd_exter
 
 	edev->check_execute = 1;
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-		EXTERR("%s: read_start: 0x%x, data_len: %d, read_buf_offset: %d, read_len: %d\n",
-			__func__, read_start, data_len, read_buf_offset, read_len);
-		EXTERR("%s: raw_table data:", __func__);
+		EXTPR("%s: read_start: 0x%x, data_len: %d, read_buf_offset: %d, read_len: %d\n",
+		      __func__, read_start, data_len, read_buf_offset, read_len);
+		EXTPR("%s: raw_table data:", __func__);
 		for (i = 0; i < data_len; i++)
 			printf(" 0x%02x", raw_table[i]);
 		printf("\n");
@@ -205,7 +205,7 @@ void lcd_extern_check_handler(struct lcd_extern_driver_s *edrv, struct lcd_exter
 
 	chk_table = read_buf + read_buf_offset;
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-		EXTERR("%s: chk_table data:", __func__);
+		EXTPR("%s: chk_table data:", __func__);
 		for (i = 0; i < data_len; i++)
 			printf(" 0x%02x", chk_table[i]);
 		printf("\n");
@@ -366,9 +366,9 @@ int lcd_extern_cmd_wait_gpio(struct lcd_extern_driver_s *edrv, struct lcd_extern
 		mdelay(1);
 	}
 	if (done == 0) {
-		EXTPR("[%d]: step[%d]: wait for gpio[%d] %s to %d timeout: %dms\n",
-			edrv->index, cmd_step, data_buf[0], edrv->gpio_name[data_buf[0]],
-			data_buf[1], delay_ms);
+		EXTPR("[%d]: dev[%d] step[%d]: wait for gpio[%d] %s to %d timeout: %dms\n",
+		      edrv->index, edev->dev_index, cmd_step, data_buf[0],
+		      edrv->gpio_name[data_buf[0]], data_buf[1], delay_ms);
 	}
 
 	return 0;
