@@ -191,6 +191,12 @@ config CMD_PMU
 	help
 	"enable pmu test"
 
+config CMD_AML_MODEL
+	bool "enable amlogic model management"
+	default n
+	help
+	"enable amlogic model management, new version for panel ini parse"
+
 config AML_PRODUCT_MODE
 	bool "amlogic product/security mode"
 	default n

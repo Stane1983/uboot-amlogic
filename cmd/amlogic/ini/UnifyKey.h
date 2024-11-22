@@ -18,7 +18,6 @@ int write_ukey_data(const char *key_name, unsigned char data_buf[], int wr_size)
 
 #if (defined CC_UBOOT_RW_SIMULATE)
 
-unsigned int crc32(unsigned int crc, const unsigned char *ptr, int buf_len);
 int key_unify_write(const char* keyname, const void* keydata, const unsigned datalen);
 int key_unify_read(const char* keyname, void* keydata, const unsigned bufLen);
 int key_unify_query_size(const char* keyname, ssize_t* keysize);

@@ -19,577 +19,8 @@
 #ifdef CONFIG_AML_LCD
 #ifdef CONFIG_AML_LCD_TCON
 static int g_lcd_tcon_spi_cnt;
-static unsigned int g_lcd_tcon_bin_block_cnt;
-static unsigned char *g_lcd_tcon_bin_path_mem, *g_lcd_tcon_bin_path_resv_mem;
 
-static unsigned int handle_tcon_char_data_size_align(unsigned int size)
-{
-	unsigned int new_size;
-
-	if (size % 4)
-		new_size = (size / 4 + 1) * 4;
-	else
-		new_size = size;
-
-	return new_size;
-}
-
-void *handle_tcon_path_mem_get(unsigned int size)
-{
-	unsigned int data_size = 0;
-
-	if (!g_lcd_tcon_bin_path_mem) {
-		ALOGE("%s, buf is null\n", __func__);
-		return NULL;
-	}
-
-	data_size = g_lcd_tcon_bin_path_mem[4] |
-		(g_lcd_tcon_bin_path_mem[5] << 8) |
-		(g_lcd_tcon_bin_path_mem[6] << 16) |
-		(g_lcd_tcon_bin_path_mem[7] << 24);
-	if (data_size > size) {
-		ALOGE("%s, buf size invalid\n", __func__);
-		return NULL;
-	}
-
-	return g_lcd_tcon_bin_path_mem;
-}
-
-void *handle_tcon_path_resv_mem_get(unsigned int size)
-{
-	unsigned int data_size = 0;
-
-	if (!g_lcd_tcon_bin_path_resv_mem) {
-		ALOGE("%s, buf is null\n", __func__);
-		return NULL;
-	}
-
-	data_size = g_lcd_tcon_bin_path_resv_mem[4] |
-		(g_lcd_tcon_bin_path_resv_mem[5] << 8) |
-		(g_lcd_tcon_bin_path_resv_mem[6] << 16) |
-		(g_lcd_tcon_bin_path_resv_mem[7] << 24);
-	if (data_size > size) {
-		ALOGE("%s, buf size invalid\n", __func__);
-		return NULL;
-	}
-
-	return g_lcd_tcon_bin_path_resv_mem;
-}
-
-static char *handle_tcon_path_file_name_get(unsigned int index)
-{
-	unsigned int n;
-	char *str;
-
-	if (!g_lcd_tcon_bin_path_mem) {
-		ALOGE("%s, tcon_path buf is null\n", __func__);
-		return NULL;
-	}
-
-	if (index >= g_lcd_tcon_bin_block_cnt) {
-		ALOGE("%s, invalid index %d\n", __func__, index);
-		return NULL;
-	}
-
-	n = 32 + (index * 256) + 4;
-	str = (char *)&g_lcd_tcon_bin_path_mem[n];
-	return str;
-}
-
-#define TCON_VAC_SET_PARAM_NUM    3
-#define TCON_VAC_LUT_PARAM_NUM    256
-int handle_tcon_vac(unsigned char *vac_data, unsigned int vac_mem_size)
-{
-	int i, n, tmp_cnt, len;
-	char *file_name;
-	const char *ini_value = NULL;
-	unsigned int tmp_buf[512];
-	unsigned int data_cnt = 0;
-
-	file_name = env_get("model_tcon_vac");
-	if (!file_name) {
-		if (model_debug_flag & DEBUG_NORMAL)
-			ALOGD("%s, no model_tcon_vac path\n", __func__);
-		return -1;
-	}
-
-	if (model_debug_flag & DEBUG_NORMAL)
-		ALOGD("%s: model_tcon_vac: %s\n", __func__, file_name);
-	if (!vac_data || !vac_mem_size) {
-		ALOGE("%s, buffer memory or data size error!!!\n", __func__);
-		return -1;
-	}
-
-	ini_parser_init();
-
-	if (ini_parse_file(file_name) < 0) {
-		ALOGE("%s, ini load file error!\n", __func__);
-		ini_parser_uninit();
-		free(vac_data);
-		vac_data = NULL;
-		return -1;
-	}
-	if (model_debug_flag & DEBUG_TCON)
-		ALOGD("vac_data addr: 0x%p\n", vac_data);
-
-	n = 8;
-	len = TCON_VAC_SET_PARAM_NUM;
-
-	ini_value = ini_get_string("lcd_tcon_vac", "vac_set", "null");
-	tmp_cnt = trans_buffer_data(ini_value, tmp_buf);
-	data_cnt = tmp_cnt;
-
-	if (tmp_cnt > CC_MAX_TCON_VAC_SIZE || tmp_cnt < len) {
-		ALOGE("%s: invalid vac_set data cnt %d\n", __func__, tmp_cnt);
-		return -1;
-	}
-	if ((data_cnt * 2) > vac_mem_size) {
-		ALOGE("data size %d is out of memory size %d (data_cnt=%d)\n",
-		      (data_cnt * 2), vac_mem_size, data_cnt);
-		return -1;
-	}
-	for (i = 0; i < len; i++) {
-		vac_data[n + i * 2] = tmp_buf[i] & 0xff;
-		vac_data[n + i * 2 + 1] = (tmp_buf[i] >> 8) & 0xff;
-		if (model_debug_flag & DEBUG_TCON) {
-			ALOGD("vac_set: 0x%02x, 0x%02x; tmp_buf: 0x%04x\n",
-			      vac_data[n + i * 2], vac_data[n + i * 2 + 1],
-			      tmp_buf[i]);
-		}
-	}
-
-	len = TCON_VAC_LUT_PARAM_NUM;
-
-	ini_value = ini_get_string("lcd_tcon_vac", "vac_ramt1", "null");
-		tmp_cnt = trans_buffer_data(ini_value, tmp_buf);
-	data_cnt += tmp_cnt;
-	if (tmp_cnt > CC_MAX_TCON_VAC_SIZE || tmp_cnt < len) {
-		ALOGE("%s: invalid vac_ramt1 data cnt %d\n", __func__, tmp_cnt);
-		return -1;
-	}
-	if ((data_cnt * 2) > vac_mem_size) {
-		ALOGE("data size %d is out of memory size %d (data_cnt=%d)\n",
-		      (data_cnt * 2), vac_mem_size, data_cnt);
-		return -1;
-	}
-	n += (TCON_VAC_SET_PARAM_NUM * 2);
-	for (i = 0; i < len; i++) {
-		vac_data[n + i * 2] = tmp_buf[i] & 0xff;
-		vac_data[n + i * 2 + 1] = (tmp_buf[i] >> 8) & 0xff;
-		if ((model_debug_flag & DEBUG_TCON) && i < 30) {
-			ALOGD("vac_ramt1_data: 0x%02x, 0x%02x; tmp_buf: 0x%04x\n",
-			      vac_data[n + i * 2], vac_data[n + i * 2 + 1], tmp_buf[i]);
-		}
-	}
-
-	ini_value = ini_get_string("lcd_tcon_vac", "vac_ramt2", "null");
-		tmp_cnt = trans_buffer_data(ini_value, tmp_buf);
-	data_cnt += tmp_cnt;
-	if (tmp_cnt > CC_MAX_TCON_VAC_SIZE || tmp_cnt < len) {
-		ALOGE("%s: invalid vac_ramt2 data cnt %d\n", __func__, tmp_cnt);
-		return -1;
-	}
-	if ((data_cnt * 2) > vac_mem_size) {
-		ALOGE("data size %d is out of memory size %d (data_cnt=%d)\n",
-		      (data_cnt * 2), vac_mem_size, data_cnt);
-		return -1;
-	}
-	n += (len * 2);
-	for (i = 0; i < len; i++) {
-		vac_data[n + i * 2] = tmp_buf[i] & 0xff;
-		vac_data[n + i * 2 + 1] = (tmp_buf[i] >> 8) & 0xff;
-		if ((model_debug_flag & DEBUG_TCON) && i < 30) {
-			ALOGD("vac_ramt2_data: 0x%02x, 0x%02x; tmp_buf: 0x%04x\n",
-			      vac_data[n + i * 2], vac_data[n + i * 2 + 1], tmp_buf[i]);
-		}
-	}
-
-	ini_value = ini_get_string("lcd_tcon_vac", "vac_ramt3_1", "null");
-	tmp_cnt = trans_buffer_data(ini_value, tmp_buf);
-	data_cnt += tmp_cnt;
-	if (tmp_cnt > CC_MAX_TCON_VAC_SIZE || tmp_cnt < len) {
-		ALOGE("%s: invalid vac_ramt3_1 data cnt %d\n", __func__, tmp_cnt);
-		return -1;
-	}
-	if ((data_cnt * 2) > vac_mem_size) {
-		ALOGE("data size %d is out of memory size %d (data_cnt=%d)\n",
-		      (data_cnt * 2), vac_mem_size, data_cnt);
-		return -1;
-	}
-	n += (len * 2);
-	for (i = 0; i < len; i++) {
-		vac_data[n + i * 2] = tmp_buf[i] & 0xff;
-		vac_data[n + i * 2 + 1] = (tmp_buf[i] >> 8) & 0xff;
-		if ((model_debug_flag & DEBUG_TCON) && i < 30) {
-			ALOGD("vac_ramt3_1_data: 0x%02x, 0x%02x; tmp_buf: 0x%04x\n",
-			      vac_data[n + i * 2], vac_data[n + i * 2 + 1], tmp_buf[i]);
-		}
-	}
-
-	ini_value = ini_get_string("lcd_tcon_vac", "vac_ramt3_2", "null");
-	tmp_cnt = trans_buffer_data(ini_value, tmp_buf);
-	data_cnt += tmp_cnt;
-	if (tmp_cnt > CC_MAX_TCON_VAC_SIZE || tmp_cnt < len) {
-		ALOGE("%s: invalid vac_ramt3_2 data cnt %d\n", __func__, tmp_cnt);
-		return -1;
-	}
-	if ((data_cnt * 2) > vac_mem_size) {
-		ALOGE("data size %d is out of memory size %d (data_cnt=%d)\n",
-		      (data_cnt * 2), vac_mem_size, data_cnt);
-		return -1;
-	}
-	n += (len * 2);
-	for (i = 0; i < len; i++) {
-		vac_data[n + i * 2] = tmp_buf[i] & 0xff;
-		vac_data[n + i * 2 + 1] = (tmp_buf[i] >> 8) & 0xff;
-		if ((model_debug_flag & DEBUG_TCON) && i < 30) {
-			ALOGD("vac_ramt3_2_data: 0x%02x, 0x%02x; tmp_buf: 0x%04x\n",
-			      vac_data[n + i * 2], vac_data[n + i * 2 + 1], tmp_buf[i]);
-		}
-	}
-
-	ini_value = ini_get_string("lcd_tcon_vac", "vac_ramt3_3", "null");
-	tmp_cnt = trans_buffer_data(ini_value, tmp_buf);
-	data_cnt += tmp_cnt;
-	if (data_cnt > CC_MAX_TCON_VAC_SIZE || tmp_cnt < len) {
-		ALOGE("%s: invalid vac_ramt3_3 data cnt %d\n", __func__, tmp_cnt);
-		return -1;
-	}
-	if (data_cnt > vac_mem_size) {
-		ALOGE("data size %d is out of memory size %d (data_cnt=%d)\n",
-		      (data_cnt * 2), vac_mem_size, data_cnt);
-		return -1;
-	}
-	n += (len * 2);
-	for (i = 0; i < len; i++) {
-		vac_data[n + i * 2] = tmp_buf[i] & 0xff;
-		vac_data[n + i * 2 + 1] = (tmp_buf[i] >> 8) & 0xff;
-		if ((model_debug_flag & DEBUG_TCON) && i < 30) {
-			ALOGD("vac_ramt3_3_data: 0x%02x, 0x%02x; tmp_buf: 0x%04x\n",
-			      vac_data[n + i * 2], vac_data[n + i * 2 + 1], tmp_buf[i]);
-		}
-	}
-
-	ini_value = ini_get_string("lcd_tcon_vac", "vac_ramt3_4", "null");
-	tmp_cnt = trans_buffer_data(ini_value, tmp_buf);
-	data_cnt += tmp_cnt;
-	if (tmp_cnt > CC_MAX_TCON_VAC_SIZE || tmp_cnt < len) {
-		ALOGE("%s: invalid vac_ramt3_4 data cnt %d\n", __func__, tmp_cnt);
-		return -1;
-	}
-	if (data_cnt > vac_mem_size) {
-		ALOGE("data size %d is out of memory size %d (data_cnt=%d)\n",
-		      (data_cnt * 2), vac_mem_size, data_cnt);
-		return -1;
-	}
-	n += (len * 2);
-	for (i = 0; i < len; i++) {
-		vac_data[n + i * 2] = tmp_buf[i] & 0xff;
-		vac_data[n + i * 2 + 1] = (tmp_buf[i] >> 8) & 0xff;
-		if ((model_debug_flag & DEBUG_TCON) && i < 30) {
-			ALOGD("vac_ramt3_4_data: 0x%02x, 0x%02x; tmp_buf: 0x%04x\n",
-			      vac_data[n + i * 2], vac_data[n + i * 2 + 1], tmp_buf[i]);
-		}
-	}
-
-	ini_value = ini_get_string("lcd_tcon_vac", "vac_ramt3_5", "null");
-	tmp_cnt = trans_buffer_data(ini_value, tmp_buf);
-	data_cnt += tmp_cnt;
-	if (tmp_cnt > CC_MAX_TCON_VAC_SIZE || tmp_cnt < len) {
-		ALOGE("%s: invalid vac_ramt3_5 data cnt %d\n", __func__, tmp_cnt);
-		return -1;
-	}
-	if (data_cnt > vac_mem_size) {
-		ALOGE("data size %d is out of memory size %d (data_cnt=%d)\n",
-		      (data_cnt * 2), vac_mem_size, data_cnt);
-		return -1;
-	}
-	n += (len * 2);
-	for (i = 0; i < len; i++) {
-		vac_data[n + i * 2] = tmp_buf[i] & 0xff;
-		vac_data[n + i * 2 + 1] = (tmp_buf[i] >> 8) & 0xff;
-		if ((model_debug_flag & DEBUG_TCON) && i < 30) {
-			ALOGD("vac_ramt3_5_data: 0x%02x, 0x%02x; tmp_buf: 0x%04x\n",
-			      vac_data[n + i * 2], vac_data[n + i * 2 + 1], tmp_buf[i]);
-		}
-	}
-
-	ini_value = ini_get_string("lcd_tcon_vac", "vac_ramt3_6", "null");
-	tmp_cnt = trans_buffer_data(ini_value, tmp_buf);
-	data_cnt += tmp_cnt;
-	if (tmp_cnt > CC_MAX_TCON_VAC_SIZE || tmp_cnt < len) {
-		ALOGE("%s: invalid vac_ramt3_6 data cnt %d\n", __func__, tmp_cnt);
-		return -1;
-	}
-	if (data_cnt > vac_mem_size) {
-		ALOGE("data size %d is out of memory size %d (data_cnt=%d)\n",
-		      (data_cnt * 2), vac_mem_size, data_cnt);
-		return -1;
-	}
-	n += (len * 2);
-	for (i = 0; i < len; i++) {
-		vac_data[n + i * 2] = tmp_buf[i] & 0xff;
-		vac_data[n + i * 2 + 1] = (tmp_buf[i] >> 8) & 0xff;
-		if ((model_debug_flag & DEBUG_TCON) && i < 30) {
-			ALOGD("vac_ramt3_6_data: 0x%02x, 0x%02x; tmp_buf: 0x%04x\n",
-			      vac_data[n + i * 2], vac_data[n + i * 2 + 1], tmp_buf[i]);
-		}
-	}
-
-	/*add check data: total_size(4byte) + crc(4byte) +
-	 *crc todo
-	 */
-	vac_data[0] = data_cnt & 0xff;
-	vac_data[1] = (data_cnt >> 8) & 0xff;
-	vac_data[2] = (data_cnt >> 16) & 0xff;
-	vac_data[3] = (data_cnt >> 24) & 0xff;
-
-	vac_data[4] = model_data_checksum(&vac_data[8], data_cnt);
-	vac_data[5] = model_data_lrc(&vac_data[8], data_cnt);
-	vac_data[6] = 0x55;
-	vac_data[7] = 0xaa;
-
-	if (model_debug_flag & DEBUG_NORMAL)
-		ALOGD("%s finish\n", __func__);
-
-	ini_parser_uninit();
-	return 0;
-}
-
-int handle_tcon_demura_set(unsigned char *demura_set_data, unsigned int demura_set_size)
-{
-	unsigned long bin_size;
-	char *file_name;
-	int n;
-
-	file_name = env_get("model_tcon_demura_set");
-	if (!file_name) {
-		if (model_debug_flag & DEBUG_NORMAL)
-			ALOGD("%s, no model_tcon_demura_set path\n", __func__);
-		return -1;
-	}
-
-	if (!demura_set_data || !demura_set_size) {
-		ALOGE("%s, buffer or size error!!!\n", __func__);
-		return -1;
-	}
-
-	if (model_debug_flag & DEBUG_NORMAL)
-		ALOGD("%s: model_tcon_demura_set: %s\n", __func__, file_name);
-	bin_size = handle_read_bin_file(file_name, CC_MAX_TCON_DEMURA_SET_SIZE);
-	if (!bin_size || bin_size > demura_set_size) {
-		ALOGE("%s, bin_size 0x%lx error!(memory_size 0x%x)\n",
-		      __func__, bin_size, demura_set_size);
-		return -1;
-	}
-
-	n = 8;
-	get_bin_data(&demura_set_data[n], bin_size);
-
-	demura_set_data[0] = bin_size & 0xff;
-	demura_set_data[1] = (bin_size >> 8) & 0xff;
-	demura_set_data[2] = (bin_size >> 16) & 0xff;
-	demura_set_data[3] = (bin_size >> 24) & 0xff;
-
-	demura_set_data[4] = model_data_checksum(&demura_set_data[8], bin_size);
-	demura_set_data[5] = model_data_lrc(&demura_set_data[8], bin_size);
-	demura_set_data[6] = 0x55;
-	demura_set_data[7] = 0xaa;
-
-	if (model_debug_flag & DEBUG_NORMAL)
-		ALOGD("%s finish\n", __func__);
-
-	bin_file_uninit();
-
-	return 0;
-}
-
-int handle_tcon_demura_lut(unsigned char *demura_lut_data, unsigned int demura_lut_size)
-{
-	unsigned long bin_size;
-	char *file_name;
-	int n;
-
-	file_name = env_get("model_tcon_demura_lut");
-	if (!file_name) {
-		if (model_debug_flag & DEBUG_NORMAL)
-			ALOGD("%s, no model_tcon_demura_lut path\n", __func__);
-		return -1;
-	}
-
-	if (!demura_lut_data || !demura_lut_size) {
-		ALOGE("%s, buffer memory or size error!!!\n", __func__);
-		return -1;
-	}
-
-	if (model_debug_flag & DEBUG_NORMAL)
-		ALOGD("%s: model_tcon_demura_lut: %s\n", __func__, file_name);
-	bin_size = handle_read_bin_file(file_name, CC_MAX_TCON_DEMURA_LUT_SIZE);
-	if (!bin_size || bin_size > demura_lut_size) {
-		ALOGE("%s, bin_size 0x%lx error!(memory_size 0x%x)\n",
-		      __func__, bin_size, demura_lut_size);
-		return -1;
-	}
-
-	n = 8;
-	get_bin_data(&demura_lut_data[n], bin_size);
-
-	demura_lut_data[0] = bin_size & 0xff;
-	demura_lut_data[1] = (bin_size >> 8) & 0xff;
-	demura_lut_data[2] = (bin_size >> 16) & 0xff;
-	demura_lut_data[3] = (bin_size >> 24) & 0xff;
-
-	demura_lut_data[4] = model_data_checksum(&demura_lut_data[8], bin_size);
-	demura_lut_data[5] = model_data_lrc(&demura_lut_data[8], bin_size);
-	demura_lut_data[6] = 0x55;
-	demura_lut_data[7] = 0xaa;
-
-	if (model_debug_flag)
-		ALOGD("%s finish, bin_size = 0x%lx\n", __func__, bin_size);
-
-	bin_file_uninit();
-
-	return 0;
-}
-
-int handle_tcon_acc_lut(unsigned char *acc_lut_data, unsigned int acc_lut_size)
-{
-	unsigned long bin_size;
-	char *file_name;
-	int n;
-
-	file_name = env_get("model_tcon_acc_lut");
-	if (!file_name) {
-		if (model_debug_flag & DEBUG_NORMAL)
-			ALOGD("%s, no model_tcon_acc_lut path\n", __func__);
-		return -1;
-	}
-
-	if (!acc_lut_data || acc_lut_size == 0) {
-		ALOGE("%s, buffer memory or size error!!!\n", __func__);
-		return -1;
-	}
-
-	if (model_debug_flag & DEBUG_NORMAL)
-		ALOGD("%s: model_tcon_acc_lut: %s\n", __func__, file_name);
-	bin_size = handle_read_bin_file(file_name, CC_MAX_TCON_ACC_LUT_SIZE);
-	if (!bin_size || bin_size > acc_lut_size) {
-		ALOGE("%s, bin_size 0x%lx error!(memory_size 0x%x)\n",
-		      __func__, bin_size, acc_lut_size);
-		return -1;
-	}
-
-	n = 8;
-	get_bin_data(&acc_lut_data[n], bin_size);
-
-	acc_lut_data[0] = bin_size & 0xff;
-	acc_lut_data[1] = (bin_size >> 8) & 0xff;
-	acc_lut_data[2] = (bin_size >> 16) & 0xff;
-	acc_lut_data[3] = (bin_size >> 24) & 0xff;
-
-	acc_lut_data[4] = model_data_checksum(&acc_lut_data[8], bin_size);
-	acc_lut_data[5] = model_data_lrc(&acc_lut_data[8], bin_size);
-	acc_lut_data[6] = 0x55;
-	acc_lut_data[7] = 0xaa;
-
-	if (model_debug_flag)
-		ALOGD("%s finish, bin_size = 0x%lx\n", __func__, bin_size);
-
-	bin_file_uninit();
-
-	return 0;
-}
-
-int handle_tcon_data_load(unsigned char **buf, unsigned int index)
-{
-	unsigned char *data_buf;
-	unsigned long bin_size, new_size;
-	unsigned int data_size;
-	unsigned int data_crc32, temp_crc32;
-	char *file_name;
-
-	if (!buf) {
-		ALOGE("%s, buf is null\n", __func__);
-		return -1;
-	}
-
-	file_name = handle_tcon_path_file_name_get(index);
-	if (!file_name)
-		return -1;
-
-	if (model_debug_flag & DEBUG_TCON)
-		ALOGD("%s: tcon_data[%d] file name: %s\n", __func__, index, file_name);
-
-	bin_size = handle_read_bin_file(file_name, CC_MAX_DATA_SIZE);
-	if (bin_size == 0) {
-		ALOGE("%s, bin_size 0x%lx error!\n", __func__, bin_size);
-		return -1;
-	}
-
-	data_buf = buf[index];
-	if (data_buf) { /* already exist for reload */
-		data_size = data_buf[8] |
-			(data_buf[9] << 8) |
-			(data_buf[10] << 16) |
-			(data_buf[11] << 24);
-		if (data_size >= bin_size) {
-			memset(data_buf, 0, data_size);
-			goto handle_tcon_data_load_next;
-		}
-		free(data_buf);
-		buf[index] = NULL;
-	}
-	/* note: all the tcon data buf size must align to 32byte */
-	new_size = handle_tcon_char_data_size_align(bin_size);
-	data_buf = (unsigned char *)malloc(new_size);
-	if (!data_buf) {
-		ALOGE("%s: Not enough memory\n", __func__);
-		return -1;
-	}
-	memset(data_buf, 0, new_size);
-	buf[index] = data_buf;
-
-handle_tcon_data_load_next:
-	get_bin_data(data_buf, bin_size);
-	data_size = data_buf[8] |
-		(data_buf[9] << 8) |
-		(data_buf[10] << 16) |
-		(data_buf[11] << 24);
-	if (data_size > bin_size || data_size == 0) {
-		ALOGE("%s: data_size 0x%x invalid, bin_size 0x%lx\n",
-		      __func__, data_size, bin_size);
-		free(data_buf);
-		buf[index] = NULL;
-		return -1;
-	}
-
-	/* data check */
-	data_crc32 = data_buf[0] |
-		(data_buf[1] << 8) |
-		(data_buf[2] << 16) |
-		(data_buf[3] << 24);
-	temp_crc32 = cal_CRC32(0, &data_buf[4], (data_size - 4));
-
-	if (model_debug_flag & DEBUG_TCON) {
-		ALOGD("%s: tcon_data[%d] crc32=0x%08x(0x%02x)\n",
-		      __func__, index, temp_crc32, data_crc32);
-	}
-	if (data_crc32 != temp_crc32) {
-		ALOGE("%s: tcon_data[%d] crc32 check error\n", __func__, index);
-		free(data_buf);
-		buf[index] = NULL;
-		return -1;
-	}
-
-	if (model_debug_flag & DEBUG_TCON)
-		ALOGD("%s %d finish, bin_size = 0x%lx\n", __func__, index, bin_size);
-
-	bin_file_uninit();
-
-	return 0;
-}
-
-static int handle_tcon_path_default(unsigned int version)
+static int handle_tcon_path_default(void)
 {
 	struct lcd_tcon_bin_path_header_s *header;
 	unsigned char *buf;
@@ -597,17 +28,13 @@ static int handle_tcon_path_default(unsigned int version)
 	const char *ini_value = NULL;
 	unsigned int i, n, block_cnt, data_size, crc32;
 
-	/* tcon data bin path */
-	g_lcd_tcon_bin_path_mem = (unsigned char *)malloc(CC_MAX_TCON_BIN_PATH_SIZE);
-	if (!g_lcd_tcon_bin_path_mem) {
-		ALOGE("%s, malloc buffer memory error!!!\n", __func__);
+	buf = get_tcon_bin_path_mem();
+	if (!buf)
 		return -1;
-	}
-	memset(g_lcd_tcon_bin_path_mem, 0, CC_MAX_TCON_BIN_PATH_SIZE);
-	buf = g_lcd_tcon_bin_path_mem;
+
 	header = (struct lcd_tcon_bin_path_header_s *)buf;
 
-	header->version = version;
+	header->version = 1;
 
 	/* data_load_level */
 	ini_value = ini_get_string("tcon_Path", "data_load_level", "0");
@@ -623,65 +50,21 @@ static int handle_tcon_path_default(unsigned int version)
 	block_cnt = 0;
 	n = 32;
 
-	if (version == 0) {/* tcon data bin: old data format */
-		ini_value = ini_get_string("tcon_Path", "TCON_VAC_PATH", "null");
-		if (!strcmp(ini_value, "null")) {
-			if (model_debug_flag & DEBUG_TCON)
-				ALOGD("%s, no vac ini file\n", __func__);
-		}
-		env_set("model_tcon_vac", ini_value);
-		strlcpy((char *)&buf[n + 4], ini_value, 256);
+	for (i = 0; i < 32; i++) {
+		snprintf(str, 30, "TCON_DATA_%d_BIN_PATH", i);
+		ini_value = ini_get_string("tcon_Path", str, "null");
+		if (strcmp(ini_value, "null") == 0)
+			break;
+
+		if (model_debug_flag & DEBUG_TCON)
+			ALOGD("%s, tcon_path %d is (%s)\n", __func__, i, ini_value);
+		strncpy((char *)&buf[n + 4], ini_value, 252);
+		block_cnt++;
 		n += 256;
-
-		ini_value = ini_get_string("tcon_Path", "TCON_DEMURA_SET_PATH", "null");
-		if (!strcmp(ini_value, "null")) {
-			if (model_debug_flag & DEBUG_TCON)
-				ALOGD("%s, no demura_set file\n", __func__);
-		}
-		env_set("model_tcon_demura_set", ini_value);
-		strlcpy((char *)&buf[n + 4], ini_value, 256);
-		n += 256;
-
-		ini_value = ini_get_string("tcon_Path", "TCON_DEMURA_LUT_PATH", "null");
-		if (!strcmp(ini_value, "null")) {
-			if (model_debug_flag & DEBUG_TCON)
-				ALOGD("%s, no demura_lut file\n", __func__);
-		}
-		env_set("model_tcon_demura_lut", ini_value);
-		strlcpy((char *)&buf[n + 4], ini_value, 256);
-		n += 256;
-
-		ini_value = ini_get_string("tcon_Path", "TCON_ACC_LUT_PATH", "null");
-		if (!strcmp(ini_value, "null")) {
-			if (model_debug_flag & DEBUG_TCON)
-				ALOGD("%s, no acc_lut file\n", __func__);
-		}
-		env_set("model_tcon_acc_lut", ini_value);
-		strlcpy((char *)&buf[n + 4], ini_value, 256);
-
-		/* block cnt */
-		block_cnt = 4;
-	} else {/* tcon data bin: new data format */
-		for (i = 0; i < 32; i++) {
-			snprintf(str, 30, "TCON_DATA_%d_BIN_PATH", i);
-			ini_value = ini_get_string("tcon_Path", str, "null");
-			if (strcmp(ini_value, "null") == 0)
-				break;
-
-			if (model_debug_flag & DEBUG_TCON)
-				ALOGD("%s, tcon_path %d is (%s)\n", __func__, i, ini_value);
-			strlcpy((char *)&buf[n + 4], ini_value, 252);
-			block_cnt++;
-			n += 256;
-		}
 	}
 	header->block_cnt = block_cnt;
 	header->ready = 1;
 
-	/* g_lcd_tcon_bin_block_cnt default for uboot load */
-	g_lcd_tcon_bin_block_cnt = block_cnt;
-
-	/* data size */
 	data_size = 32 + block_cnt * 256;
 	header->data_size = data_size;
 
@@ -692,21 +75,17 @@ static int handle_tcon_path_default(unsigned int version)
 	return 0;
 }
 
-static int handle_tcon_path_resv_for_kernel(unsigned int version)
+int handle_tcon_path_resv_for_kernel(void)
 {
 	struct lcd_tcon_bin_path_header_s *header;
-	unsigned char *buf;
+	unsigned char *buf, *buf_dft;
 	char str[30];
 	const char *ini_value = NULL;
 	unsigned int i, n, block_cnt, data_size, crc32;
 
-	g_lcd_tcon_bin_path_resv_mem = (unsigned char *)malloc(CC_MAX_TCON_BIN_PATH_SIZE);
-	if (!g_lcd_tcon_bin_path_resv_mem) {
-		ALOGE("%s, malloc buffer memory error!!!\n", __func__);
+	buf = get_tcon_bin_path_k_mem();
+	if (!buf)
 		return -1;
-	}
-	memset(g_lcd_tcon_bin_path_resv_mem, 0, CC_MAX_TCON_BIN_PATH_SIZE);
-	buf = g_lcd_tcon_bin_path_resv_mem;
 	header = (struct lcd_tcon_bin_path_header_s *)buf;
 
 	/* detect tcon_path resv_for_kernel exist or not */
@@ -714,10 +93,21 @@ static int handle_tcon_path_resv_for_kernel(unsigned int version)
 	if (!strcmp(ini_value, "null")) {
 		if (model_debug_flag & DEBUG_TCON)
 			ALOGD("%s, PATH_K not exist, use default path\n", __func__);
-		return -1;
+
+		buf_dft = get_tcon_bin_path_mem();
+		if (!buf_dft) {
+			ALOGE("%s, default path is NULL\n", __func__);
+			return -1;
+		}
+		header = (struct lcd_tcon_bin_path_header_s *)buf_dft;
+		memcpy(buf, buf_dft, header->data_size);
+		if (model_debug_flag & DEBUG_TCON)
+			ALOGD("%s, tcon bin path kernel same as uboot\n", __func__);
+		return 0;
 	}
 
-	header->version = version;
+	header->version = 1;
+	header->ready = 1;
 
 	/* data_load_level */
 	ini_value = ini_get_string("tcon_Path", "data_load_level", "0");
@@ -733,58 +123,25 @@ static int handle_tcon_path_resv_for_kernel(unsigned int version)
 	block_cnt = 0;
 	n = 32;
 
-	if (version == 0) {/* tcon data bin: old data format */
-		ini_value = ini_get_string("tcon_Path", "TCON_VAC_PATH_K", "null");
-		if (!strcmp(ini_value, "null")) {
-			if (model_debug_flag & DEBUG_TCON)
-				ALOGD("%s, no vac ini file\n", __func__);
+	for (i = 0; i < 32; i++) {
+		snprintf(str, 30, "TCON_DATA_%d_BIN_PATH_K", i);
+		ini_value = ini_get_string("tcon_Path", str, "null");
+		if (strcmp(ini_value, "null") == 0)
+			break;
+
+		if (model_debug_flag & DEBUG_TCON)
+			ALOGD("%s, tcon_path %d is (%s)\n", __func__, i, ini_value);
+		if (n + 256 > header->mem_total_size) {
+			ALOGE("%s, tcon_path_resv mem out of size %d\n",
+				__func__, header->mem_total_size);
+			break;
 		}
-		strlcpy((char *)&buf[n + 4], ini_value, 256);
+		strncpy((char *)&buf[n + 4], ini_value, 252);
+		block_cnt++;
 		n += 256;
-
-		ini_value = ini_get_string("tcon_Path", "TCON_DEMURA_SET_PATH_K", "null");
-		if (!strcmp(ini_value, "null")) {
-			if (model_debug_flag & DEBUG_TCON)
-				ALOGD("%s, no demura_set file\n", __func__);
-		}
-		strlcpy((char *)&buf[n + 4], ini_value, 256);
-		n += 256;
-
-		ini_value = ini_get_string("tcon_Path", "TCON_DEMURA_LUT_PATH_K", "null");
-		if (!strcmp(ini_value, "null")) {
-			if (model_debug_flag & DEBUG_TCON)
-				ALOGD("%s, no demura_lut file\n", __func__);
-		}
-		strlcpy((char *)&buf[n + 4], ini_value, 256);
-		n += 256;
-
-		ini_value = ini_get_string("tcon_Path", "TCON_ACC_LUT_PATH_K", "null");
-		if (!strcmp(ini_value, "null")) {
-			if (model_debug_flag & DEBUG_TCON)
-				ALOGD("%s, no acc_lut file\n", __func__);
-		}
-		strlcpy((char *)&buf[n + 4], ini_value, 256);
-
-		/* block cnt */
-		block_cnt = 4;
-	} else {/* tcon data bin: new data format */
-		for (i = 0; i < 32; i++) {
-			snprintf(str, 30, "TCON_DATA_%d_BIN_PATH_K", i);
-			ini_value = ini_get_string("tcon_Path", str, "null");
-			if (strcmp(ini_value, "null") == 0)
-				break;
-
-			if (model_debug_flag & DEBUG_TCON)
-				ALOGD("%s, tcon_path %d is (%s)\n", __func__, i, ini_value);
-			strlcpy((char *)&buf[n + 4], ini_value, 252);
-			block_cnt++;
-			n += 256;
-		}
 	}
 	header->block_cnt = block_cnt;
-	header->ready = 1;
 
-	/* data size */
 	data_size = 32 + block_cnt * 256;
 	header->data_size = data_size;
 
@@ -797,18 +154,14 @@ static int handle_tcon_path_resv_for_kernel(unsigned int version)
 
 static int handle_tcon_spi_v0(unsigned char *buff)
 {
+	struct lcd_tcon_spi_header_s *header;
 	const char *ini_value = NULL;
 	char str[30];
 	unsigned int null_cnt = 0, block_cnt = 4;
 	unsigned int temp, i, j, n;
 
-	/* header */
-	/* version */
-	temp = 0;
-	buff[8] = temp & 0xff;
-	buff[9] = (temp >> 8) & 0xff;
-	buff[10] = (temp >> 16) & 0xff;
-	buff[11] = (temp >> 24) & 0xff;
+	header = (struct lcd_tcon_spi_header_s *)buff;
+	header->version = 0;
 
 	/* block 0: demura_lut */
 	n = 16;
@@ -968,58 +321,43 @@ handle_tcon_spi_v0_next:
 	}
 
 	/* block cnt */
-	buff[12] = block_cnt & 0xff;
-	buff[13] = (block_cnt >> 8) & 0xff;
-	buff[14] = (block_cnt >> 16) & 0xff;
-	buff[15] = (block_cnt >> 24) & 0xff;
-
-	/* data size */
-	buff[4] = g_lcd_tcon_spi_cnt & 0xff;
-	buff[5] = (g_lcd_tcon_spi_cnt >> 8) & 0xff;
-	buff[6] = (g_lcd_tcon_spi_cnt >> 16) & 0xff;
-	buff[7] = (g_lcd_tcon_spi_cnt >> 24) & 0xff;
-
+	header->block_cnt = block_cnt;
+	header->block_cnt = g_lcd_tcon_spi_cnt;
 	/* crc */
-	temp = cal_CRC32(0, (buff + 4), g_lcd_tcon_spi_cnt - 4);
-	buff[0] = temp & 0xff;
-	buff[1] = (temp >> 8) & 0xff;
-	buff[2] = (temp >> 16) & 0xff;
-	buff[3] = (temp >> 24) & 0xff;
+	header->crc32 = cal_CRC32(0, (buff + 4), g_lcd_tcon_spi_cnt - 4);
 
 	return 0;
 }
 
 static int handle_tcon_spi(unsigned char *buff)
 {
+	struct lcd_tcon_spi_header_s *header;
 	unsigned char *p;
 	const char *ini_value = NULL;
 	char str[30];
 	unsigned int data_size, block_cnt, param_cnt;
 	unsigned int temp, i, j, k, n;
 
+	header = (struct lcd_tcon_spi_header_s *)buff;
+
 	/* header */
 	/* version */
 	ini_value = ini_get_string("tcon_spi_Attr", "version", "0");
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s, version is (%s)\n", __func__, ini_value);
-	temp = strtoul(ini_value, NULL, 0);
-	if (temp == 0) {
+	header->version = strtoul(ini_value, NULL, 0);
+	if (header->version == 0) {
 		handle_tcon_spi_v0(buff);
 		return 0;
 	}
 
 	/* new data format */
-	/* version */
-	buff[8] = temp & 0xff;
-	buff[9] = (temp >> 8) & 0xff;
-
 	/* block cnt */
 	ini_value = ini_get_string("tcon_spi_Attr", "block_cnt", "0");
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s, block_cnt is (%s)\n", __func__, ini_value);
 	block_cnt = strtoul(ini_value, NULL, 0);
-	buff[14] = block_cnt & 0xff;
-	buff[15] = (block_cnt >> 8) & 0xff;
+	header->block_cnt = block_cnt;
 
 	p = &buff[16];
 	n = 0;
@@ -1099,18 +437,11 @@ static int handle_tcon_spi(unsigned char *buff)
 
 	/* data size */
 	data_size = 16 + n;
-	buff[4] = data_size & 0xff;
-	buff[5] = (data_size >> 8) & 0xff;
-	buff[6] = (data_size >> 16) & 0xff;
-	buff[7] = (data_size >> 24) & 0xff;
 	g_lcd_tcon_spi_cnt = data_size;
+	header->data_size = data_size;
 
 	/* crc */
-	temp = cal_CRC32(0, (buff + 4), g_lcd_tcon_spi_cnt - 4);
-	buff[0] = temp & 0xff;
-	buff[1] = (temp >> 8) & 0xff;
-	buff[2] = (temp >> 16) & 0xff;
-	buff[3] = (temp >> 24) & 0xff;
+	header->crc32 = cal_CRC32(0, (buff + 4), g_lcd_tcon_spi_cnt - 4);
 
 	return 0;
 }
@@ -1183,14 +514,8 @@ int handle_tcon_path(void)
 	unsigned char *tmp_buf = NULL;
 	unsigned char *tcon_spi = NULL;
 	unsigned int tmp_buf_size = CC_MAX_TCON_BIN_SIZE;
-	unsigned int version, header;
-	int tmp_len, i, j, ret;
-
-	/* version */
-	ini_value = ini_get_string("tcon_Path", "version", "0");
-	if (model_debug_flag & DEBUG_TCON)
-		ALOGD("%s, version is (%s)\n", __func__, ini_value);
-	version = strtoul(ini_value, NULL, 0);
+	unsigned int header;
+	int tmp_len, i, j;
 
 	/* tcon_bin_header */
 	ini_value = ini_get_string("tcon_Path", "header", "0");
@@ -1208,17 +533,8 @@ int handle_tcon_path(void)
 	}
 	env_set("model_tcon", ini_value);
 
-	handle_tcon_path_default(version);
-	ret = handle_tcon_path_resv_for_kernel(version);
-	if (ret) {
-		if (g_lcd_tcon_bin_path_resv_mem && g_lcd_tcon_bin_path_mem) {
-			memcpy(g_lcd_tcon_bin_path_resv_mem,
-			       g_lcd_tcon_bin_path_mem,
-			       CC_MAX_TCON_BIN_PATH_SIZE);
-			if (model_debug_flag & DEBUG_TCON)
-				ALOGD("%s, tcon bin path kernel same as uboot\n", __func__);
-		}
-	}
+	handle_tcon_path_default();
+	handle_tcon_path_resv_for_kernel();
 
 	handle_tcon_dccd_path();
 

@@ -230,16 +230,16 @@ static void ldim_device_config_print(struct ldim_dev_driver_s *dev_drv)
 		return;
 	}
 
-	printf("\ndev_name               = %s\n"
-		"key_valid              = %d\n"
-		"index                  = %d\n"
-		"dim_min                = 0x%03x\n"
-		"dim_max                = 0x%03x\n"
-		"bl_zone                = %d\n\n"
-		"sub_cnt                = %d\n"
-		"en_gpio                = %d\n"
-		"en_gpio_on             = %d\n"
-		"en_gpio_off            = %d\n\n",
+	printf("\ndev_name          = %s\n"
+		"key_valid         = %d\n"
+		"index             = %d\n"
+		"dim_min           = 0x%03x\n"
+		"dim_max           = 0x%03x\n"
+		"bl_zone           = %d\n\n"
+		"sub_cnt           = %d\n"
+		"en_gpio           = %d\n"
+		"en_gpio_on        = %d\n"
+		"en_gpio_off       = %d\n\n",
 		dev_drv->name,
 		dev_drv->key_valid,
 		dev_drv->index,
@@ -283,11 +283,11 @@ static void ldim_device_config_print(struct ldim_dev_driver_s *dev_drv)
 
 	bl_pwm = &dev_drv->ldim_pwm_config;
 	if (bl_pwm->pwm_port < BL_PWM_MAX) {
-		printf("ldim_pwm_port          = 0x%x\n"
-			"ldim_pwm_pol           = %d\n"
-			"ldim_pwm_freq          = %d\n"
-			"ldim_pwm_duty          = %d%%\n"
-			"ldim_pwm_pinmux_flag   = %d\n\n",
+		printf("ldim_pwm_port     = 0x%x\n"
+			"ldim_pwm_pol      = %d\n"
+			"ldim_pwm_freq     = %d\n"
+			"ldim_pwm_duty     = %d%%\n"
+			"ldim_pwm_pinmux_flag = %d\n\n",
 			bl_pwm->pwm_port, bl_pwm->pwm_method,
 			bl_pwm->pwm_freq, bl_pwm->pwm_duty,
 			bl_pwm->pinmux_flag);
@@ -295,12 +295,12 @@ static void ldim_device_config_print(struct ldim_dev_driver_s *dev_drv)
 
 	bl_pwm = &dev_drv->analog_pwm_config;
 	if (bl_pwm->pwm_port < BL_PWM_VS) {
-		printf("analog_pwm_port        = 0x%x\n"
-			"analog_pwm_pol         = %d\n"
-			"analog_pwm_freq        = %d\n"
-			"analog_pwm_duty        = %d%%\n"
-			"analog_pwm_duty_max    = %d%%\n"
-			"analog_pwm_duty_min    = %d%%\n"
+		printf("analog_pwm_port     = 0x%x\n"
+			"analog_pwm_pol      = %d\n"
+			"analog_pwm_freq     = %d\n"
+			"analog_pwm_duty     = %d%%\n"
+			"analog_pwm_duty_max = %d%%\n"
+			"analog_pwm_duty_min = %d%%\n"
 			"analog_pwm_pinmux_flag = %d\n\n",
 			bl_pwm->pwm_port, bl_pwm->pwm_method,
 			bl_pwm->pwm_freq, bl_pwm->pwm_duty,
@@ -309,10 +309,10 @@ static void ldim_device_config_print(struct ldim_dev_driver_s *dev_drv)
 	}
 
 	if (dev_drv->cmd_size > 0) {
-		printf("init_loaded            = %d\n"
-			"cmd_size               = %d\n"
-			"init_on_cnt            = %d\n"
-			"init_off_cnt           = %d\n",
+		printf("init_loaded       = %d\n"
+			"cmd_size          = %d\n"
+			"init_on_cnt       = %d\n"
+			"init_off_cnt      = %d\n",
 			dev_drv->init_loaded,
 			dev_drv->cmd_size,
 			dev_drv->init_on_cnt,

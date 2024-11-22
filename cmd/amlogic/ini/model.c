@@ -16,6 +16,7 @@
 #include "ini_io.h"
 #include "model.h"
 #include <amlogic/partition_table.h>
+#include <amlogic/aml_model.h>
 
 #ifndef CONFIG_YOCTO
 #define DEFAULT_MODEL_SUM_PATH1 "/odm/etc/tvconfig/model/model_sum.ini"
@@ -60,43 +61,6 @@ static int glcd_ext_init_on_cnt, glcd_ext_init_off_cnt, glcd_ext_cmd_size;
 static struct lcd_ext_attr_s *lcd_ext_attr;
 static unsigned int g_lcd_if, g_lcd_tcon_valid;
 static struct dccd_info_s dccd_info;
-
-static unsigned char *glcd_panel_file[3] = {NULL, NULL, NULL};
-static int glcd_panel_file_size[3] = {0, 0, 0};
-static unsigned char glcd_panel_file_type[3] = {0, 0, 0};
-
-#define PANEL_PARAM_MEM_RSVD_SIZE CC_MAX_PANEL_ALL_DATA_SIZE
-#define PANEL_PARAM_KEY_NUM_MAX (64 - 1)
-#define PANEL_PARAM_KEY_SIZE (64)
-#define PANEL_PARAM_HEAD_SIZE PANEL_PARAM_KEY_SIZE
-#define PANEL_PARAM_KEY_NAME_SIZE (PANEL_PARAM_KEY_SIZE - 8)
-
-#define PANEL_PARAM_KEY_MEM_OFST (PANEL_PARAM_KEY_NUM_MAX * PANEL_PARAM_KEY_SIZE +\
-	PANEL_PARAM_HEAD_SIZE)
-
-struct panel_param_key_s {
-	unsigned int size;
-	unsigned int mem_pos;
-	char name[PANEL_PARAM_KEY_NAME_SIZE];
-};
-
-struct panel_param_head_s {
-	unsigned int _crc32;
-	unsigned int size;
-	unsigned short key_cnt;
-	unsigned short ukey_exist;
-	unsigned char rsvd[PANEL_PARAM_HEAD_SIZE - 12];
-};
-
-struct panel_param_mem_s {
-	unsigned int key_mem_pos;
-	struct panel_param_head_s *head;
-	unsigned char *mem;
-	unsigned char *key_mem;
-	struct panel_param_key_s *keys;
-};
-
-static struct panel_param_mem_s panel_param_mem = {0, NULL, NULL, NULL, NULL};
 #endif
 
 int trans_buffer_data(const char *data_str, unsigned int data_buf[])
@@ -131,205 +95,6 @@ int trans_buffer_data(const char *data_str, unsigned int data_buf[])
 }
 
 #ifdef CONFIG_AML_LCD
-static void mem_dump(unsigned char *addr, int size)
-{
-	int i = 0, j = 0, len = 0;
-	char buf[128];
-
-	for (j = 0; j < (size >> 4); j++) {
-		for (i = 0, len = 0; i < 16; i++)
-			len += sprintf(buf + len, "%02x ", (unsigned int)addr[j * 16 + i]);
-		printf("0x%04x: %s\n", j * 16,  buf);
-	}
-	if (size & 0xf) {
-		for (i = 0, len = 0; i < (size & 0xf); i++)
-			len += sprintf(buf + len, "%02x ", (unsigned int)addr[j * 16 + i]);
-		printf("0x%04x: %s\n", j * 16,  buf);
-	}
-}
-
-void panel_param_mem_dump(void)
-{
-	int i = 0;
-	struct panel_param_key_s *key;
-
-	if (!panel_param_mem.mem || !panel_param_mem.head->key_cnt)
-		return;
-
-	printf("\npanel param dump: key_cnt:%d\n", panel_param_mem.head->key_cnt);
-	for (i = 0; i < panel_param_mem.head->key_cnt; i++) {
-		key = &panel_param_mem.keys[i];
-		printf("[%02d]: size:0x%x, mem_ofst:0x%x, name:%s\n",
-		       i, key->size, key->mem_pos, key->name);
-
-		mem_dump(panel_param_mem.key_mem + key->mem_pos, key->size);
-		printf("\n");
-	}
-}
-
-unsigned char *get_panel_param_mem(void)
-{
-	if (panel_param_mem.mem && panel_param_mem.head->key_cnt)
-		return panel_param_mem.mem;
-
-	return NULL;
-}
-
-int is_panel_param_mem_ok(void)
-{
-	return (panel_param_mem.mem && panel_param_mem.head->key_cnt) ? 1 : 0;
-}
-
-int is_ukey_in_param_mem(void)
-{
-	return (panel_param_mem.head && panel_param_mem.head->ukey_exist) ? 1 : 0;
-}
-
-void panel_param_mem_set_ukey_flag(void)
-{
-	panel_param_mem.head->ukey_exist = 1;
-}
-
-/*head(64byte)|keys(64 * N)......|key_mems......*/
-int panel_param_mem_put(unsigned char *mem, const char *name, u32 len)
-{
-	struct panel_param_key_s *key;
-
-	if (!panel_param_mem.mem) {
-		panel_param_mem.mem = (unsigned char *)malloc(PANEL_PARAM_MEM_RSVD_SIZE);
-		if (panel_param_mem.mem) {
-			memset(panel_param_mem.mem, 0, PANEL_PARAM_MEM_RSVD_SIZE);
-			panel_param_mem.head = (struct panel_param_head_s *)panel_param_mem.mem;
-			panel_param_mem.keys = (struct panel_param_key_s *)(panel_param_mem.mem +
-				PANEL_PARAM_HEAD_SIZE);
-			panel_param_mem.key_mem = (unsigned char *)(panel_param_mem.mem +
-				PANEL_PARAM_KEY_MEM_OFST);
-			panel_param_mem.head->size = PANEL_PARAM_KEY_MEM_OFST;
-			panel_param_mem.key_mem_pos = 0;
-		} else {
-			printf("%s, no memory alloc\n", __func__);
-			return -1;
-		}
-	}
-
-	key = &panel_param_mem.keys[panel_param_mem.head->key_cnt];
-	key->size = len;
-	key->mem_pos = panel_param_mem.key_mem_pos;
-	if (key->mem_pos + key->size > PANEL_PARAM_MEM_RSVD_SIZE - PANEL_PARAM_KEY_MEM_OFST) {
-		printf("%s, memory not enough\n", __func__);
-		return -1;
-	}
-	strlcpy(key->name, name, sizeof(key->name));
-	memcpy(panel_param_mem.key_mem + key->mem_pos, mem, len);
-	panel_param_mem.key_mem_pos += len;
-	panel_param_mem.key_mem_pos = ALIGN(panel_param_mem.key_mem_pos, 16);
-	panel_param_mem.head->key_cnt++;
-	panel_param_mem.head->size = panel_param_mem.key_mem_pos + PANEL_PARAM_KEY_MEM_OFST;
-
-	return 0;
-}
-
-unsigned char *panel_param_mem_get(const char *name, u32 *len)
-{
-	int i = 0;
-	struct panel_param_key_s *key;
-
-	if (!panel_param_mem.key_mem || !panel_param_mem.head->key_cnt)
-		return NULL;
-
-	for (i = 0; i < panel_param_mem.head->key_cnt; i++) {
-		key = &panel_param_mem.keys[i];
-		if (strncmp(key->name, name, sizeof(key->name)) == 0) {
-			*len = key->size;
-			return panel_param_mem.key_mem + key->mem_pos;
-		}
-	}
-
-	return NULL;
-}
-
-int panel_param_mem_modify(unsigned char *mem, const char *name, u32 len)
-{
-	struct panel_param_key_s *key;
-	unsigned int _crc32;
-	int ret = 0, i = 0;
-
-	if (!mem || !panel_param_mem.mem || !panel_param_mem.head->key_cnt)
-		return -1;
-
-	for (i = 0; i < panel_param_mem.head->key_cnt; i++) {
-		key = &panel_param_mem.keys[i];
-		if (strncmp(key->name, name, sizeof(key->name)) == 0) {
-			if (len < key->size) {
-				memset(panel_param_mem.key_mem + key->mem_pos, 0, key->size);
-				memcpy(panel_param_mem.key_mem + key->mem_pos, mem, len);
-				key->size = len;
-			} else {
-				//once for all, we don't care about this memory
-				memset(panel_param_mem.key_mem + key->mem_pos, 0, key->size);
-				memset(key, 0, PANEL_PARAM_KEY_SIZE);
-				ret = panel_param_mem_put(mem, name, len);
-			}
-			if (ret == 0) {
-				_crc32 = cal_CRC32(0, panel_param_mem.mem + 4,
-						   panel_param_mem.head->size - 4);
-				panel_param_mem.head->_crc32 = _crc32;
-			}
-			return ret;
-		}
-	}
-
-	ret = panel_param_mem_put(mem, name, len);
-	if (ret == 0) {
-		_crc32 = cal_CRC32(0, panel_param_mem.mem + 4, panel_param_mem.head->size - 4);
-		panel_param_mem.head->_crc32 = _crc32;
-	}
-	return ret;
-}
-
-unsigned char get_lcd_panel_file_type(int index)
-{
-	return index < 3 ? glcd_panel_file_type[index] : 0;
-}
-
-void set_lcd_panel_file_type(int index, unsigned char type)
-{
-	glcd_panel_file_type[index] = type;
-}
-
-unsigned char *read_file_to_buffer(const char *filename, int *size);
-
-unsigned char *get_panel_file(int index, int *len)
-{
-	if (len)
-		*len = glcd_panel_file_size[index];
-
-	return glcd_panel_file[index];
-}
-
-int read_panel_file(int index, const char *filename)
-{
-	unsigned char *fil;
-	int size;
-
-	fil = read_file_to_buffer(filename, &size);
-	if (fil && size > 0) {
-		glcd_panel_file[index] = fil;
-		glcd_panel_file_size[index] = size;
-		return 0;
-	}
-	ALOGE("read panel file:%s fail", filename);
-	return -1;
-}
-
-void rm_panel_file(int index)
-{
-	if (glcd_panel_file[index])
-		free(glcd_panel_file[index]);
-	glcd_panel_file[index] = NULL;
-	glcd_panel_file_size[index] = 0;
-}
-
 int check_param_valid(int mode, int parse_len, unsigned char parse_buf[],
 		      int ori_len, unsigned char ori_buf[])
 {
@@ -2541,136 +2306,90 @@ static int handle_ldim_dev_header(struct ldim_dev_attr_s *p_attr)
 }
 #endif
 
-static int handle_panel_misc(struct panel_misc_s *p_misc)
+int model_set_panel_misc(struct panel_misc_s *misc_attr)
 {
 	int tmp_val = 0;
-	const char *ini_value = NULL;
-	const char *display_layer = NULL;
 	char *rev_ctrl = NULL;
 	char *ret = NULL;
-	char buf[64] = {0};
-	unsigned char connector_idx;
+	char param[32], buf[64] = {0};
+	unsigned int panel_reverse = 0, display_layer = 0, n;
 
-	ini_value = ini_get_string("panel_misc", "panel_misc_version", "null");
-	if (model_debug_flag & DEBUG_MISC)
-		ALOGD("%s, panel_misc_version is (%s)\n", __func__, ini_value);
-	if (strcmp(ini_value, "null") == 0) {
-		strcpy(p_misc->version, "V001");
-	} else {
-		tmp_val = strtol(ini_value, NULL, 0);
-		if (tmp_val < 1)
-			tmp_val = 1;
 
-		sprintf(p_misc->version, "V%03d", tmp_val);
-	}
+	if (!misc_attr)
+		return -1;
+
+	if (misc_attr->disp_idx == 0xff)
+		return -1;
 
 	tmp_val = env_get_ulong("model_outputmode_bypass", 10, 0);
 	if (tmp_val) {
 		ALOGI("model_outputmode_bypass\n");
-		goto handle_panel_misc_next;
-	}
-	ini_value = ini_get_string("panel_misc", "outputmode2", "null");
-	if (model_debug_flag & DEBUG_MISC)
-		ALOGD("%s, outputmode2 is (%s)\n", __func__, ini_value);
-	if (strcmp(ini_value, "null") == 0) {
-		ini_value = ini_get_string("panel_misc", "outputmode", "null");
-		if (model_debug_flag & DEBUG_MISC)
-			ALOGD("%s, outputmode is (%s)\n", __func__, ini_value);
-		if (strcmp(ini_value, "null")) {
-			strlcpy(p_misc->outputmode, ini_value,
-				sizeof(p_misc->outputmode) - 1);
-			p_misc->outputmode[sizeof(p_misc->outputmode) - 1]
-				= '\0';
-			snprintf(buf, 63, "setenv outputmode %s", p_misc->outputmode);
-			run_command(buf, 0);
-		}
-	} else {
-		strlcpy(p_misc->outputmode, ini_value, 63);
-		snprintf(buf, 63, "setenv outputmode2 %s", p_misc->outputmode);
-		run_command(buf, 0);
+		goto model_set_panel_misc_next;
 	}
 
-handle_panel_misc_next:
+	if (misc_attr->disp_idx == 0)
+		sprintf(param, "outputmode");
+	else
+		sprintf(param, "outputmode%d", misc_attr->disp_idx + 1);
+	ALOGD("%s: %s is (%s)\n", __func__, param, misc_attr->outputmode);
+	snprintf(buf, 63, "setenv %s %s", param, misc_attr->outputmode);
+	run_command(buf, 0);
+
+model_set_panel_misc_next:
 	tmp_val = env_get_ulong("model_connector_bypass", 10, 0);
 	if (tmp_val) {
 		ALOGI("model_connector_bypass\n");
-		goto handle_panel_misc_next2;
+		goto model_set_panel_misc_next2;
 	}
 
-	ini_value = ini_get_string("panel_misc", "connector2_type", "null");
-	if (!strcmp(ini_value, "null")) {
-		connector_idx = 2;
-		goto handle_panel_misc_set_connector;
-	}
-
-	ini_value = ini_get_string("panel_misc", "connector1_type", "null");
-	if (!strcmp(ini_value, "null")) {
-		connector_idx = 1;
-		goto handle_panel_misc_set_connector;
-	}
-
-	ini_value = ini_get_string("panel_misc", "connector0_type", "null");
-	if (!strcmp(ini_value, "null")) {
-		connector_idx = 0;
-		goto handle_panel_misc_set_connector;
-	} else {
-		ini_value = ini_get_string("panel_misc", "connector_type", "null");
-		if (!strcmp(ini_value, "null")) {
-			connector_idx = 0;
-			goto handle_panel_misc_set_connector;
-		}
-	}
-
-	ALOGD("%s: connector not assigned\n", __func__);
-	goto handle_panel_misc_next2;
-
-handle_panel_misc_set_connector:
-	if (model_debug_flag & DEBUG_MISC)
-		ALOGD("%s, connector%u_type is (%s)\n", __func__, connector_idx, ini_value);
-	strncpy(p_misc->connector_type, ini_value, sizeof(p_misc->connector_type) - 1);
-	p_misc->connector_type[sizeof(p_misc->connector_type) - 1] = '\0';
-	ret = strstr(p_misc->connector_type, "_");
+	sprintf(param, "connector%d_type", misc_attr->disp_idx);
+	misc_attr->connector_type[sizeof(misc_attr->connector_type) - 1] = '\0';
+	ret = strstr(misc_attr->connector_type, "_");
 	if (ret)
-		p_misc->connector_type[ret - p_misc->connector_type] = '-';
-	snprintf(buf, 63, "setenv connector%u_type %s", connector_idx, p_misc->connector_type);
+		misc_attr->connector_type[ret - misc_attr->connector_type] = '-';
+	ALOGD("%s: %s is (%s)\n", __func__, param, misc_attr->connector_type);
+	snprintf(buf, 63, "setenv %s %s", param, misc_attr->connector_type);
 	run_command(buf, 0);
 
-handle_panel_misc_next2:
+model_set_panel_misc_next2:
+	if (misc_attr->version > 1)
+		goto model_set_panel_misc_next3;
 	rev_ctrl = env_get("reverse_ctrl");
 	if (!rev_ctrl || strcmp(rev_ctrl, "0") == 0) {
-		ini_value = ini_get_string("panel_misc", "panel_reverse", "null");
-		if (model_debug_flag & DEBUG_MISC)
-			ALOGD("%s, panel_reverse is (%s)\n", __func__, ini_value);
-		if (strcmp(ini_value, "null") == 0 || strcmp(ini_value, "0") == 0 ||
-			strcmp(ini_value, "false") == 0 || strcmp(ini_value, "no_rev") == 0) {
-			p_misc->panel_reverse = 0;
-		} else if (strcmp(ini_value, "true") == 0 || strcmp(ini_value, "1") == 0 ||
-			strcmp(ini_value, "have_rev") == 0) {
-			p_misc->panel_reverse = 1;
-		} else if (strcmp(ini_value, "x_rev") == 0 || strcmp(ini_value, "2") == 0) {
-			p_misc->panel_reverse = 2;
-		} else if (strcmp(ini_value, "y_rev") == 0 || strcmp(ini_value, "3") == 0) {
-			p_misc->panel_reverse = 3;
+		ALOGD("%s: panel_reverse is (%s)\n", __func__, misc_attr->panel_reverse);
+		if (strcmp(misc_attr->panel_reverse, "null") == 0 ||
+		    strcmp(misc_attr->panel_reverse, "0") == 0 ||
+		    strcmp(misc_attr->panel_reverse, "false") == 0 ||
+		    strcmp(misc_attr->panel_reverse, "no_rev") == 0) {
+			panel_reverse = 0;
+		} else if (strcmp(misc_attr->panel_reverse, "true") == 0 ||
+			   strcmp(misc_attr->panel_reverse, "1") == 0 ||
+			   strcmp(misc_attr->panel_reverse, "have_rev") == 0) {
+			panel_reverse = 1;
+		} else if (strcmp(misc_attr->panel_reverse, "x_rev") == 0 ||
+			   strcmp(misc_attr->panel_reverse, "2") == 0) {
+			panel_reverse = 2;
+		} else if (strcmp(misc_attr->panel_reverse, "y_rev") == 0 ||
+			   strcmp(misc_attr->panel_reverse, "3") == 0) {
+			panel_reverse = 3;
 		} else {
-			p_misc->panel_reverse = 0;
+			panel_reverse = 0;
 		}
-		if (p_misc->panel_reverse) {
-			display_layer = ini_get_string("panel_misc", "display_layer", "null");
-			if (!display_layer)
-				p_misc->display_layer = 4;
-			else if (strcmp(display_layer, "osd0") == 0 ||
-					strcmp(display_layer, "0") == 0)
-				p_misc->display_layer = 0;
-			else if (strcmp(display_layer, "osd1") == 0 ||
-					strcmp(display_layer, "1") == 0)
-				p_misc->display_layer = 1;
+
+		if (panel_reverse) {
+			if (strcmp(misc_attr->display_layer, "osd0") == 0 ||
+			    strcmp(misc_attr->display_layer, "0") == 0)
+				display_layer = 0;
+			else if (strcmp(misc_attr->display_layer, "osd1") == 0 ||
+				 strcmp(misc_attr->display_layer, "1") == 0)
+				display_layer = 1;
 			else
-				p_misc->display_layer = 4;
+				display_layer = 4;
 		}
-		switch (p_misc->panel_reverse) {
+		switch (panel_reverse) {
 		case 1:
 			run_command("setenv panel_reverse 1", 0);
-			switch (p_misc->display_layer) {
+			switch (display_layer) {
 			case 0:
 				run_command("setenv osd_reverse osd0,true", 0);
 				break;
@@ -2685,7 +2404,7 @@ handle_panel_misc_next2:
 			break;
 		case 2:
 			run_command("setenv panel_reverse 2", 0);
-			switch (p_misc->display_layer) {
+			switch (display_layer) {
 			case 0:
 				run_command("setenv osd_reverse osd0,x_rev", 0);
 				break;
@@ -2700,7 +2419,7 @@ handle_panel_misc_next2:
 			break;
 		case 3:
 			run_command("setenv panel_reverse 3", 0);
-			switch (p_misc->display_layer) {
+			switch (display_layer) {
 			case 0:
 				run_command("setenv osd_reverse osd0,y_rev", 0);
 				break;
@@ -2720,6 +2439,91 @@ handle_panel_misc_next2:
 			break;
 		}
 	}
+	return 0;
+
+model_set_panel_misc_next3:
+	n = misc_attr->hmirror_val << 1 | misc_attr->vmirror_val;
+	snprintf(buf, 64, "setenv osd_reverse %s%s",
+		misc_attr->disp_layer_val == 0 ?
+			"osd0," : misc_attr->disp_layer_val == 1 ? "osd1," : "all,",
+		n == 0 ? "n" : n == 1 ? "y_rev" : n == 2 ? "x_rev" : "true");
+	run_command(buf, 0);
+
+	snprintf(buf, 64, "setenv video_reverse %c",
+		n == 0 ? '0' : n == 1 ? '3' : n == 2 ? '2' : '1');
+	run_command(buf, 0);
+
+	snprintf(buf, 64, "setenv panel_reverse %c",
+		n == 0 ? '0' : n == 1 ? '3' : n == 2 ? '2' : '1');
+	run_command(buf, 0);
+
+	return 0;
+}
+
+static int handle_panel_misc(void)
+{
+	struct panel_misc_s misc_attr;
+	int tmp_val = 0;
+	const char *ini_value = NULL;
+	const char *outputmode[3] = {"outputmode", "outputmode2", "outputmode3"};
+	const char *connector[3] = {"connector0_type", "connector1_type", "connector2_type"};
+	int i;
+
+	//init misc attr as default
+	memset(&misc_attr, 0, sizeof(struct panel_misc_s));
+	misc_attr.version = 1;
+	misc_attr.disp_idx = 0xff;
+	strlcpy(misc_attr.outputmode, "null", sizeof(misc_attr.outputmode));
+	strlcpy(misc_attr.connector_type, "null", sizeof(misc_attr.connector_type));
+
+	ini_value = ini_get_string("panel_misc", "panel_misc_version", "null");
+	if (model_debug_flag & DEBUG_MISC)
+		ALOGD("%s, panel_misc_version is (%s)\n", __func__, ini_value);
+	if (strcmp(ini_value, "null")) {
+		tmp_val = strtol(ini_value, NULL, 0);
+		if (tmp_val < 1)
+			tmp_val = 1;
+		misc_attr.version = tmp_val;
+	}
+
+	for (i = 0; i < 3; i++) {
+		ini_value = ini_get_string("panel_misc", outputmode[i], "null");
+		if (strcmp(ini_value, "null")) {
+			misc_attr.disp_idx = i;
+			strlcpy(misc_attr.outputmode, ini_value, sizeof(misc_attr.outputmode));
+			break;
+		}
+	}
+
+	ini_value = ini_get_string("panel_misc", "connector_type", "null");
+	if (strcmp(ini_value, "null")) {
+		strlcpy(misc_attr.connector_type, ini_value, sizeof(misc_attr.connector_type));
+		goto handle_panel_misc_next;
+	}
+
+	for (i = 0; i < 3; i++) {
+		ini_value = ini_get_string("panel_misc", connector[i], "null");
+		if (strcmp(ini_value, "null")) {
+			misc_attr.disp_idx = i;
+			strlcpy(misc_attr.connector_type, ini_value,
+				sizeof(misc_attr.connector_type));
+			goto handle_panel_misc_next;
+		}
+	}
+
+	ALOGD("%s: connector not assigned\n", __func__);
+
+handle_panel_misc_next:
+	ini_value = ini_get_string("panel_misc", "panel_reverse", "null");
+	if (model_debug_flag & DEBUG_MISC)
+		ALOGD("%s, panel_reverse is (%s)\n", __func__, ini_value);
+	strlcpy(misc_attr.panel_reverse, ini_value, sizeof(misc_attr.panel_reverse));
+
+	ini_value = ini_get_string("panel_misc", "display_layer", "null");
+	strlcpy(misc_attr.display_layer, ini_value, sizeof(misc_attr.display_layer));
+
+	model_set_panel_misc(&misc_attr);
+
 	return 0;
 }
 
@@ -3108,7 +2912,6 @@ static int parse_panel_ini(const char *file_name, unsigned char *lcd_buf,
 			   struct lcd_ext_attr_s *ext_attr,
 			   struct bl_attr_s *bl_attr,
 			   struct ldim_dev_attr_s *ldim_dev_attr,
-			   struct panel_misc_s *misc_attr,
 			   struct lcd_optical_attr_s *optical_attr)
 {
 	struct lcd_attr_s *lcd_attr;
@@ -3208,7 +3011,7 @@ static int parse_panel_ini(const char *file_name, unsigned char *lcd_buf,
 	}
 #endif
 
-	handle_panel_misc(misc_attr);
+	handle_panel_misc();
 
 	// handle lcd optical attr
 	ret = handle_lcd_optical_attr(optical_attr);
@@ -3220,37 +3023,6 @@ static int parse_panel_ini(const char *file_name, unsigned char *lcd_buf,
 	return 0;
 }
 
-#ifdef CONFIG_AML_LCD_BL_LDIM
-int handle_ldim_dev_zone_mapping_get(unsigned char *buf, unsigned int size,
-				     const char *path)
-{
-	unsigned int bin_size = 0;
-
-	if (model_debug_flag & DEBUG_BACKLIGHT)
-		ALOGD("%s: %s\n", __func__, path);
-
-	if (!buf) {
-		ALOGE("%s, buf is null\n", __func__);
-		return -1;
-	}
-
-	bin_size = handle_read_bin_file(path, CC_MAX_LDIM_DEV_ZONE_MAP_SIZE);
-	if (bin_size == 0)
-		return -1;
-	if (bin_size > size) {
-		ALOGE("%s, file \"%s\" size 0x%x bigger than buf size 0x%x\n",
-		      __func__, path, bin_size, size);
-		return -1;
-	}
-
-	get_bin_data(buf, size);
-	if (model_debug_flag & DEBUG_BACKLIGHT)
-		ALOGD("%s: load ldim zone_mapping bin\n", __func__);
-
-	return 0;
-}
-#endif
-
 int handle_panel_ini(int index)
 {
 	int tmp_len = 0;
@@ -3258,7 +3030,6 @@ int handle_panel_ini(int index)
 	unsigned char *lcd_buf = NULL;
 	struct bl_attr_s *bl_attr = NULL;
 	struct ldim_dev_attr_s *ldim_dev_attr = NULL;
-	struct panel_misc_s misc_attr;
 	struct lcd_optical_attr_s *optical_attr = NULL;
 	char *file_name;
 	char str[15];
@@ -3321,17 +3092,11 @@ int handle_panel_ini(int index)
 	}
 	memset((void *)optical_attr, 0, sizeof(struct lcd_optical_attr_s));
 
-	//init misc attr as default
-	memset((void *)&misc_attr, 0, sizeof(struct panel_misc_s));
-	strcpy(misc_attr.version, "V001");
-	strcpy(misc_attr.outputmode, "1080p60hz");
-	misc_attr.panel_reverse = 0;
-
 	// start handle panel ini name
 	if (model_debug_flag & DEBUG_NORMAL)
 		ALOGD("%s: %s: %s\n", __func__, str, file_name);
 	if (parse_panel_ini(file_name, lcd_buf, lcd_ext_attr,
-		bl_attr, ldim_dev_attr, &misc_attr, optical_attr) < 0) {
+		bl_attr, ldim_dev_attr, optical_attr) < 0) {
 		ALOGE("%s, parse_panel_ini file name \"%s\" fail.\n",
 		      __func__, file_name);
 		goto handle_panel_ini_err4;
@@ -3484,7 +3249,7 @@ static void model_list_panel_path(int index)
 }
 #endif
 
-int parse_model_sum(int index, const char *file_name, char *model_name)
+static int parse_model_sum(int index, const char *file_name, char *model_name)
 {
 	const char *ini_value = NULL;
 #ifdef CONFIG_AML_LCD
@@ -3531,7 +3296,7 @@ int parse_model_sum(int index, const char *file_name, char *model_name)
 	return 0;
 }
 
-const char *get_model_sum_path(int index)
+static const char *get_model_sum_path(int index)
 {
 	char *model_path, str[15];
 
@@ -3563,11 +3328,16 @@ const char *get_model_sum_path(int index)
 	return model_path;
 }
 
-int handle_model_list_panel_key(void)
+int handle_model_list_panel_key(int index)
 {
+	char str[16];
 	char *path_path;
 
-	path_path = env_get("model_panel");
+	if (index == 0)
+		sprintf(str, "model_panel");
+	else
+		sprintf(str, "model%d_panel", index);
+	path_path = env_get(str);
 	if (!path_path)
 		return -1;
 
@@ -3629,30 +3399,6 @@ int handle_model_list(void)
 	}
 
 	return 0;
-}
-
-unsigned char *read_file_to_buffer(const char *filename, int *size)
-{
-	int rd_cnt = 0, file_size = 0;
-	unsigned char *buf = NULL;
-
-	file_size = ini_get_file_size(filename);
-	if (file_size <= 0)
-		return NULL;
-
-	buf = (unsigned char *)malloc(file_size * 2);
-	if (buf) {
-		memset((void *)buf, '\0', (file_size * 2) * sizeof(char));
-		rd_cnt = ini_read_file_to_buffer(filename, 0, file_size, buf);
-		if (rd_cnt > 0) {
-			*size = rd_cnt;
-			return buf;
-		}
-		free(buf);
-		buf = NULL;
-	}
-
-	return NULL;
 }
 
 int handle_model_get(const char *model, char buf[])
@@ -3789,17 +3535,13 @@ int handle_model_sum(void)
 			ALOGE("%s, %s path error!!!\n", __func__, str);
 			return -1;
 		}
+		set_panel_file_path(i, file_name);
+
 		p = strrchr(file_name, '.');
-		if (p && (!strncmp(p + 1, "ini", 3) || !strncmp(p + 1, "INI", 3))) {
-			ret = handle_panel_ini(i);
-#ifdef CONFIG_CMD_AML_MODEL
-			//ret = read_panel_file(i, file_name);
-			//set_lcd_panel_file_type(i, PANEL_FILE_INI); // maybe support later
-#endif
-		} else { //regard as json file, will be parse later
-			ret = read_panel_file(i, file_name);
+		if (p && (!strncmp(p + 1, "ini", 3) || !strncmp(p + 1, "INI", 3)))
+			handle_panel_ini(i);
+		else //regard as json file, will be parse later
 			set_lcd_panel_file_type(i, PANEL_FILE_JSON);
-		}
 #endif
 	}
 

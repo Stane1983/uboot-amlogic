@@ -1,0 +1,524 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ */
+
+#include <common.h>
+#include <malloc.h>
+#include <command.h>
+#include <linux/ctype.h>
+#include <linux/string.h>
+#include <amlogic/partition_table.h>
+#include <amlogic/aml_model.h>
+#include "model_log.h"
+#include "model_size.h"
+#include "model.h"
+
+#define LOG_TAG     "model"
+#define LOG_NDEBUG  0
+
+#ifndef CONFIG_YOCTO
+#define DEFAULT_MODEL_SUM_PATH1 "/odm/etc/tvconfig/model/model_sum.ini"
+#define DEFAULT_MODEL1_SUM_PATH1 "/odm/etc/tvconfig/model/model1_sum.ini"
+#define DEFAULT_MODEL2_SUM_PATH1 "/odm/etc/tvconfig/model/model2_sum.ini"
+#else
+#define DEFAULT_MODEL_SUM_PATH1 "/vendor/etc/tvconfig/model/model_sum.ini"
+#define DEFAULT_MODEL1_SUM_PATH1 "/vendor/etc/tvconfig/model/model1_sum.ini"
+#define DEFAULT_MODEL2_SUM_PATH1 "/vendor/etc/tvconfig/model/model2_sum.ini"
+#endif
+#define DEFAULT_MODEL_SUM_PATH2 "/odm_ext/etc/tvconfig/model/model_sum.ini"
+#define DEFAULT_MODEL1_SUM_PATH2 "/odm_ext/etc/tvconfig/model/model1_sum.ini"
+#define DEFAULT_MODEL2_SUM_PATH2 "/odm_ext/etc/tvconfig/model/model2_sum.ini"
+
+/*********************************  common api  *************************************/
+int model_set_panel_misc(struct panel_misc_s *misc_attr)
+{
+	int tmp_val = 0;
+	char *rev_ctrl = NULL;
+	char *ret = NULL;
+	char param[32], buf[64] = {0};
+	unsigned int panel_reverse = 0, display_layer = 0, n;
+
+	if (!misc_attr)
+		return -1;
+
+	if (misc_attr->disp_idx == 0xff)
+		return -1;
+
+	tmp_val = env_get_ulong("model_outputmode_bypass", 10, 0);
+	if (tmp_val) {
+		ALOGI("model_outputmode_bypass\n");
+		goto model_set_panel_misc_next;
+	}
+
+	if (misc_attr->disp_idx == 0)
+		sprintf(param, "outputmode");
+	else
+		sprintf(param, "outputmode%d", misc_attr->disp_idx + 1);
+	ALOGD("%s: %s is (%s)\n", __func__, param, misc_attr->outputmode);
+	snprintf(buf, 63, "setenv %s %s", param, misc_attr->outputmode);
+	run_command(buf, 0);
+
+model_set_panel_misc_next:
+	tmp_val = env_get_ulong("model_connector_bypass", 10, 0);
+	if (tmp_val) {
+		ALOGI("model_connector_bypass\n");
+		goto model_set_panel_misc_next2;
+	}
+
+	sprintf(param, "connector%d_type", misc_attr->disp_idx);
+	misc_attr->connector_type[sizeof(misc_attr->connector_type) - 1] = '\0';
+	ret = strstr(misc_attr->connector_type, "_");
+	if (ret)
+		misc_attr->connector_type[ret - misc_attr->connector_type] = '-';
+	ALOGD("%s: %s is (%s)\n", __func__, param, misc_attr->connector_type);
+	snprintf(buf, 63, "setenv %s %s", param, misc_attr->connector_type);
+	run_command(buf, 0);
+
+model_set_panel_misc_next2:
+	if (misc_attr->version >= 2)
+		goto model_set_panel_misc_next3;
+	rev_ctrl = env_get("reverse_ctrl");
+	if (!rev_ctrl || strcmp(rev_ctrl, "0") == 0) {
+		ALOGD("%s: panel_reverse is (%s)\n", __func__, misc_attr->panel_reverse);
+		if (strcmp(misc_attr->panel_reverse, "null") == 0 ||
+		    strcmp(misc_attr->panel_reverse, "0") == 0 ||
+		    strcmp(misc_attr->panel_reverse, "false") == 0 ||
+		    strcmp(misc_attr->panel_reverse, "no_rev") == 0) {
+			panel_reverse = 0;
+		} else if (strcmp(misc_attr->panel_reverse, "true") == 0 ||
+			   strcmp(misc_attr->panel_reverse, "1") == 0 ||
+			   strcmp(misc_attr->panel_reverse, "have_rev") == 0) {
+			panel_reverse = 1;
+		} else if (strcmp(misc_attr->panel_reverse, "x_rev") == 0 ||
+			   strcmp(misc_attr->panel_reverse, "2") == 0) {
+			panel_reverse = 2;
+		} else if (strcmp(misc_attr->panel_reverse, "y_rev") == 0 ||
+			   strcmp(misc_attr->panel_reverse, "3") == 0) {
+			panel_reverse = 3;
+		} else {
+			panel_reverse = 0;
+		}
+		if (panel_reverse) {
+			if (strcmp(misc_attr->display_layer, "osd0") == 0 ||
+			    strcmp(misc_attr->display_layer, "0") == 0)
+				display_layer = 0;
+			else if (strcmp(misc_attr->display_layer, "osd1") == 0 ||
+				 strcmp(misc_attr->display_layer, "1") == 0)
+				display_layer = 1;
+			else
+				display_layer = 4;
+		}
+		switch (panel_reverse) {
+		case 1:
+			run_command("setenv panel_reverse 1", 0);
+			switch (display_layer) {
+			case 0:
+				run_command("setenv osd_reverse osd0,true", 0);
+				break;
+			case 1:
+				run_command("setenv osd_reverse osd1,true", 0);
+				break;
+			default:
+				run_command("setenv osd_reverse all,true", 0);
+				break;
+			}
+			run_command("setenv video_reverse 1", 0);
+			break;
+		case 2:
+			run_command("setenv panel_reverse 2", 0);
+			switch (display_layer) {
+			case 0:
+				run_command("setenv osd_reverse osd0,x_rev", 0);
+				break;
+			case 1:
+				run_command("setenv osd_reverse osd1,x_rev", 0);
+				break;
+			default:
+				run_command("setenv osd_reverse all,x_rev", 0);
+				break;
+			}
+			run_command("setenv video_reverse 2", 0);
+			break;
+		case 3:
+			run_command("setenv panel_reverse 3", 0);
+			switch (display_layer) {
+			case 0:
+				run_command("setenv osd_reverse osd0,y_rev", 0);
+				break;
+			case 1:
+				run_command("setenv osd_reverse osd1,y_rev", 0);
+				break;
+			default:
+				run_command("setenv osd_reverse all,y_rev", 0);
+				break;
+			}
+			run_command("setenv video_reverse 3", 0);
+			break;
+		default:
+			run_command("setenv panel_reverse 0", 0);
+			run_command("setenv osd_reverse n", 0);
+			run_command("setenv video_reverse 0", 0);
+			break;
+		}
+	}
+	return 0;
+
+model_set_panel_misc_next3:
+	n = misc_attr->hmirror_val << 1 | misc_attr->vmirror_val;
+	snprintf(buf, 64, "setenv osd_reverse %s%s",
+		misc_attr->disp_layer_val == 0 ?
+			"osd0," : misc_attr->disp_layer_val == 1 ? "osd1," : "all,",
+		n == 0 ? "n" : n == 1 ? "y_rev" : n == 2 ? "x_rev" : "true");
+	ALOGD("%s: %s\n", __func__, buf);
+	run_command(buf, 0);
+
+	snprintf(buf, 64, "setenv video_reverse %c",
+		n == 0 ? '0' : n == 1 ? '3' : n == 2 ? '2' : '1');
+	ALOGD("%s: %s\n", __func__, buf);
+	run_command(buf, 0);
+
+	snprintf(buf, 64, "setenv panel_reverse %c",
+		n == 0 ? '0' : n == 1 ? '3' : n == 2 ? '2' : '1');
+	ALOGD("%s: %s\n", __func__, buf);
+	run_command(buf, 0);
+
+	return 0;
+}
+
+/*********************************  cmd api *************************************/
+static int parse_model_sum(int index, const char *file_name, char *model_name)
+{
+	void *local_ini_mem, *psec;
+	const char *str = NULL;
+#ifdef CONFIG_AML_LCD
+	char model_panel[16], *p;
+#endif
+
+	local_ini_mem = handle_ini_file_parse(file_name, 0);
+	if (!local_ini_mem) {
+		ALOGE("%s: error: %s\n", __func__, file_name);
+		return -1;
+	}
+
+	psec = handle_ini_get_section(local_ini_mem, model_name);
+	if (!psec) {
+		ALOGE("%s: section %s: error: %s\n", __func__, model_name, file_name);
+		return -1;
+	}
+
+#ifdef CONFIG_AML_LCD
+	str = handle_ini_get_str(local_ini_mem, psec, "PANELINI_PATH", "null");
+	if (strcmp(str, "null") == 0)
+		ALOGE("%s: %s: invalid PANELINI_PATH!\n", __func__, model_name);
+	if (index == 0)
+		sprintf(model_panel, "model_panel");
+	else
+		sprintf(model_panel, "model%d_panel", index);
+	env_set(model_panel, str);
+	set_panel_file_path(index, str);
+
+	p = strrchr(str, '.');
+	if (p && (!strncmp(p + 1, "ini", 3) || !strncmp(p + 1, "INI", 3)))
+		set_lcd_panel_file_type(index, PANEL_FILE_INI);
+	else //regard as json file, will be parse later
+		set_lcd_panel_file_type(index, PANEL_FILE_JSON);
+#endif
+
+	str = handle_ini_get_str(local_ini_mem, psec, "EDID_14_FILE_PATH", "null");
+	if (strcmp(str, "null") == 0)
+		ALOGD("%s: %s: invalid EDID_14_FILE_PATH!\n", __func__, model_name);
+	env_set("model_edid", str);
+
+	/*
+	 *str = handle_ini_get_str(local_ini_mem, psec, "PQINI_PATH", "null");
+	 *env_set("model_pq", str);
+	 *
+	 *str = handle_ini_get_str(local_ini_mem, psec, "AMLOGIC_AUDIO_EFFECT_INI_PATH", "null");
+	 *env_set("model_audio", str);
+	 */
+
+	handle_ini_parser_uninit(local_ini_mem);
+
+	return 0;
+}
+
+static const char *get_model_sum_path(int index)
+{
+	char *model_path, str[15];
+
+	if (index == 0)
+		sprintf(str, "model_path");
+	else
+		sprintf(str, "model%d_path", index);
+
+	model_path = env_get(str);
+	if (!model_path) {
+		if (dynamic_partition) {
+			if (index == 2)
+				return DEFAULT_MODEL2_SUM_PATH2;
+			else if (index == 1)
+				return DEFAULT_MODEL1_SUM_PATH2;
+			else
+				return DEFAULT_MODEL_SUM_PATH2;
+		} else {
+			if (index == 2)
+				return DEFAULT_MODEL2_SUM_PATH1;
+			else if (index == 1)
+				return DEFAULT_MODEL1_SUM_PATH1;
+			else
+				return DEFAULT_MODEL_SUM_PATH1;
+		}
+	}
+
+	printf("%s: %s\n", __func__, model_path);
+	return model_path;
+}
+
+#ifdef CONFIG_AML_LCD
+static char *model_list_panel_path(int index)
+{
+	char *path_str, str[15];
+
+	if (index == 0)
+		sprintf(str, "model_panel");
+	else
+		sprintf(str, "model%d_panel", index);
+
+	path_str = env_get(str);
+	if (path_str)
+		printf("current %s: %s\n", str, path_str);
+
+	return path_str;
+}
+#endif
+
+static int handle_model_list(void)
+{
+	void *local_ini_mem;
+	const char *model, *model_path;
+	char str[15];
+	int i;
+
+	for (i = 0; i < 3; i++) {
+		if (i == 0)
+			sprintf(str, "model_name");
+		else
+			sprintf(str, "model%d_name", i);
+
+		model = env_get(str);
+		if (!model) {
+			ALOGD("%s: no %s\n", __func__, str);
+			continue;
+		}
+		printf("current %s: %s\n", str, model);
+#ifdef CONFIG_AML_LCD
+		model_list_panel_path(i);
+#endif
+
+		model_path = get_model_sum_path(i);
+		local_ini_mem = handle_ini_file_parse(model_path, 0);
+		if (!local_ini_mem) {
+			ALOGE("%s: error: %s\n", __func__, model_path);
+			return -1;
+		}
+
+		printf("%s list:\n", str);
+		handle_ini_list_section(local_ini_mem);
+		printf("\n");
+		handle_ini_parser_uninit(local_ini_mem);
+	}
+
+	return 0;
+}
+
+int handle_model_sum(void)
+{
+	char *model, str[15];
+	unsigned int print_flag;
+	int i;
+
+	print_flag = env_get_ulong("model_debug_print", 10, 0xffff);
+	if (print_flag != 0xffff) {
+		model_set_log_level(print_flag);
+		printf("model_debug_flag: %d\n", print_flag);
+	}
+
+	for (i = 0; i < 3; i++) {
+		if (i == 0)
+			sprintf(str, "model_name");
+		else
+			sprintf(str, "model%d_name", i);
+
+		model = env_get(str);
+		if (!model) {
+			ALOGD("%s: no %s\n", __func__, str);
+			continue;
+		}
+		ALOGI("%s: %s: %s\n", __func__, str, model);
+		parse_model_sum(i, get_model_sum_path(i), model);
+	}
+
+	return 0;
+}
+
+static int read_model_name_param(int index, unsigned char data_buf[])
+{
+	int rd_size = 0;
+	const char *item_name = CS_MODEL_NAME_ITEM_NAME;
+	unsigned char *read_buf;
+
+	if (!data_buf)
+		return -1;
+
+	if (index == 1)
+		item_name = CS_MODEL1_NAME_ITEM_NAME;
+	else if (index == 2)
+		item_name = CS_MODEL2_NAME_ITEM_NAME;
+
+	read_buf = model_read_ukey_data(item_name, &rd_size);
+	strlcpy(data_buf, read_buf, rd_size);
+
+	return rd_size;
+}
+
+static int save_model_name_param(int index, int wr_size, unsigned char data_buf[])
+{
+	int tmp_ret = 0;
+	const char *item_name = CS_MODEL_NAME_ITEM_NAME;
+
+	if (!data_buf)
+		return -1;
+
+	if (index == 1)
+		item_name = CS_MODEL1_NAME_ITEM_NAME;
+	else if (index == 2)
+		item_name = CS_MODEL2_NAME_ITEM_NAME;
+
+	tmp_ret = model_write_ukey_data(item_name, data_buf, wr_size);
+
+	return tmp_ret;
+}
+
+int handle_model_get(const char *model, char buf[])
+{
+	const char *model_name = model;
+	char *str = NULL;
+	int index = 0, ret = -1;
+
+	if (!model || !buf)
+		goto __model_get_exit;
+
+	if (!model_name || !strcmp(model, "model_name") ||
+	    !strcmp(model, "0")) {
+		index = 0;
+		model_name = "model_name";
+	} else if (!strcmp(model, "model1_name") ||
+		   !strcmp(model, "1")) {
+		index = 1;
+		model_name = "model1_name";
+	} else if (!strcmp(model, "model2_name") ||
+			!strcmp(model, "2")) {
+		index = 2;
+		model_name = "model2_name";
+	}
+
+	ret = read_model_name_param(index, buf);
+	if (ret <= 0) {
+		str = env_get(model_name);
+		if (!str) {
+			ALOGD("%s, no %s\n", __func__, model);
+			goto __model_get_exit;
+		}
+		strcpy(buf, str);
+	}
+
+	ret = 0;
+
+__model_get_exit:
+	return ret;
+}
+
+int handle_model_set(const char *model, const char *val)
+{
+	const char *name = model;
+	int index = 0, ukey_ok = 0, env_ok = 0;
+
+	if (!val)
+		return -1;
+
+	if (!name || !strcmp(name, "model_name") ||
+	    !strcmp(name, "0")) {
+		index = 0;
+		name = "model_name";
+	} else if (!strcmp(name, "model1_name") ||
+		   !strcmp(name, "1")) {
+		index = 1;
+		name = "model1_name";
+	} else if (!strcmp(name, "model2_name") ||
+		   !strcmp(name, "2")) {
+		index = 2;
+		name = "model2_name";
+	}
+
+	if (!save_model_name_param(index, strlen(val) + 1,
+	    (char *)val)) {
+		ukey_ok = 1;
+	}
+	env_set(name, val);
+	env_ok = !env_save();
+
+	if (!ukey_ok || !env_ok) {
+		ALOGE("%s, [%d](%s): set %s=%s fail\n", __func__, index,
+		       (ukey_ok ? (env_ok ? "unknown" : "env") : "ukey"),
+		       name, val);
+	} else {
+		ALOGD("%s, [%d]: set %s=%s ok\n", __func__, index,
+			name, val);
+	}
+	return 0;
+}
+
+/*********************************  cmd  *************************************/
+static int do_ini_model_list(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+{
+	int ret;
+
+	if (argc == 1) {
+		ret = handle_model_list();
+		return ret;
+	}
+	if (strcmp(argv[1], "lcd") == 0 || strcmp(argv[1], "panel") == 0) {
+		aml_lcd_panel_dump(0, NULL);
+		return 0;
+	} else if (strcmp(argv[1], "lcd1") == 0 || strcmp(argv[1], "panel1") == 0) {
+		aml_lcd_panel_dump(1, NULL);
+		return 0;
+	} else if (strcmp(argv[1], "lcd2") == 0 || strcmp(argv[1], "panel2") == 0) {
+		aml_lcd_panel_dump(2, NULL);
+		return 0;
+	}
+
+	return CMD_RET_USAGE;
+}
+
+U_BOOT_CMD(model_list, 4, 0, do_ini_model_list,
+	"list ini model name",
+	" "
+);
+
+static int do_ini_model(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+{
+	int ret;
+
+	if (argc > 1)
+		return CMD_RET_USAGE;
+
+	ret = handle_model_sum();
+	return ret;
+}
+
+U_BOOT_CMD(ini_model, 4, 0, do_ini_model,
+	"parse ini file by env model_name",
+	" "
+);

@@ -345,15 +345,6 @@ struct lcd_unifykey_header_s {
 
 #define LCD_UKEY_TCON_SPI_BLOCK_CNT_MAX           32
 
-struct lcd_tcon_spi_unifykey_header_s {
-	unsigned int crc32;
-	unsigned int data_size;
-	unsigned short version;
-	unsigned short load_level;
-	unsigned short reserved;
-	unsigned short block_cnt;
-};
-
 /* ********************************
  * lcd optical
  * *********************************
@@ -410,6 +401,7 @@ int lcd_unifykey_get(const char *key_name, unsigned char *buf, int len);
 int lcd_unifykey_get_tcon(const char *key_name, unsigned char *buf, int len);
 int lcd_unifykey_get_no_header(const char *key_name, unsigned char *buf, int len);
 int lcd_unifykey_write(const char *key_name, unsigned char *buf, int len);
+int lcd_unifykey_write_force(const char *key_name, unsigned char *buf, int len);
 void lcd_unifykey_dump(int index, unsigned int flag);
 
 #endif

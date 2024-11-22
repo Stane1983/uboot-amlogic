@@ -389,7 +389,7 @@ unifykey_read:
 		}
 	}
 
-	key_crc = cal_CRC32(0, &data_buf[4], (key_len - 4)); // except crc32
+	key_crc = CalCRC32(0, &data_buf[4], (key_len - 4)); // except crc32
 	key_crc32 = (unsigned int)key_crc;
 	if (key_crc32 != tmp_crc) {
 		ALOGE("%s, %s crc32 0x%08x is not match 0x%08x\n", __func__,
@@ -433,9 +433,9 @@ int write_ukey_data(const char *key_name, unsigned char data_buf[], int wr_size)
 
 #include "ini_io.h"
 
-unsigned int crc32(unsigned int crc, const unsigned char *ptr, int buf_len)
+static unsigned int crc32(unsigned int crc, const unsigned char *ptr, int buf_len)
 {
-	return cal_CRC32(crc, ptr, buf_len);
+	return CalCRC32(crc, ptr, buf_len);
 }
 
 static unsigned char gTempBuf[0x400000];

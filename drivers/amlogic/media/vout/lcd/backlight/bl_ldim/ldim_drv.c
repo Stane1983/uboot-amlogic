@@ -99,11 +99,11 @@ static void ldim_config_print(struct aml_ldim_driver_s *ldim_drv)
 	struct ldim_dev_driver_s *dev_drv = ldim_drv->dev_drv;
 
 	LDIMPR("%s:\n", __func__);
-	printf("valid_flag            = %d\n"
-		"ldim_on_flag          = %d\n"
-		"bl_row                = %d\n"
-		"bl_col                = %d\n"
-		"dev_index             = %d\n",
+	printf("valid_flag     = %d\n"
+		"ldim_on_flag  = %d\n"
+		"bl_row        = %d\n"
+		"bl_col        = %d\n"
+		"dev_index     = %d\n",
 		ldim_drv->valid_flag,
 		ldim_drv->ldim_on_flag,
 		ldim_drv->config.row,
@@ -186,13 +186,13 @@ static int ldim_config_load_from_json(struct aml_ldim_driver_s *ldim_drv)
 	struct json_s *parent;
 
 	if (!json_parse_ok(jsp)) {
-		BLPR("panel0 json not ready\n");
+		LDIMERR("panel0 json not ready\n");
 		return -1;
 	}
 
 	parent = json_path_to_node(jsp, jsp->root,  "/backlight/basic_info");
 	if (!parent) {
-		BLPR("failed find /backlight/basic_info\n");
+		LDIMERR("failed find /backlight/basic_info\n");
 		return -1;
 	}
 
@@ -210,6 +210,36 @@ static int ldim_config_load_from_json(struct aml_ldim_driver_s *ldim_drv)
 }
 #else
 static inline int ldim_config_load_from_json(struct aml_ldim_driver_s *ldim_drv)
+{
+	return -1;
+}
+#endif
+
+#ifdef CONFIG_CMD_AML_MODEL
+static int ldim_config_load_from_ini(struct aml_ldim_driver_s *ldim_drv)
+{
+	void *inip, *psec;
+
+	inip = get_lcd_ini_parse_mem(0);
+	if (!inip)
+		return -1;
+
+	psec = lcd_ini_get_section(inip, "Backlight_Attr");
+	if (!psec) {
+		LDIMERR("%s: not find Backlight_Attr\n", __func__);
+		return -1;
+	}
+
+	ldim_drv->config.row = lcd_ini_get_val(inip, psec, "bl_ldim_row", 0);
+	ldim_drv->config.col = lcd_ini_get_val(inip, psec, "bl_ldim_col", 0);
+	ldim_drv->config.dev_index = lcd_ini_get_val(inip, psec, "bl_ldim_dev_index", 0xff);
+	LDIMPR("%s dev_index:%d,  row:%d, col: %d\n",
+	       __func__, ldim_drv->config.dev_index, ldim_drv->config.row, ldim_drv->config.col);
+
+	return 0;
+}
+#else
+static inline int ldim_config_load_from_ini(struct aml_ldim_driver_s *ldim_drv)
 {
 	return -1;
 }
@@ -247,7 +277,8 @@ int aml_ldim_probe(struct aml_bl_drv_s *bdrv, char *dt_addr, int child_offset,
 		if (get_lcd_panel_file_type(0) == PANEL_FILE_JSON)
 			ret = ldim_config_load_from_json(ldim_driver);
 		else if (get_lcd_panel_file_type(0) == PANEL_FILE_INI)
-			ret = -1;
+			ret = ldim_config_load_from_ini(ldim_driver);
+		break;
 	case LCD_CONFIG_BSP: /* bsp */
 		LDIMPR("%s: not support bsp config\n", __func__);
 		break;

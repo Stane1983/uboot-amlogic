@@ -10,7 +10,12 @@
 #include "./lcd_clk/lcd_clk_config.h"
 #include "lcd_unifykey.h"
 #include "lcd_reg.h"
+#ifdef CONFIG_AML_LCD_JSON
 #include "lcd_parser/json_parse.h"
+#endif
+#ifdef CONFIG_CMD_AML_MODEL
+#include "lcd_parser/lcd_ini.h"
+#endif
 
 /* 20240314: sync from uboot2019 (3fb59b45dc4) + 405906/5 + 407129/6 */
 /* 20240318: optimize tcon reserved memory */
@@ -57,6 +62,9 @@ static inline unsigned long long lcd_do_div(unsigned long long num, unsigned int
 {
 	unsigned long long ret = num;
 
+	if (den == 0)
+		return 0;
+
 	do_div(ret, den);
 
 	return ret;
@@ -66,6 +74,8 @@ static inline unsigned long long div_around(unsigned long long num, unsigned int
 {
 	unsigned long long ret = num + den / 2;
 
+	if (den == 0)
+		return 0;
 	if (den == 1)
 		return num;
 
@@ -102,9 +112,9 @@ void lcd_display_init_reg_dump(struct aml_lcd_drv_s *pdrv);
 /* lcd common */
 int strnum_get_num(const char *str, struct num_str_s *arr, int size_arr, int dft);
 char *strnum_get_str(int num, struct num_str_s *arr, int size_arr, char *dft);
-int path_name_compose(const char *path, const char *name, char *path_name);
-void mem_dump(unsigned char *addr, int size);
-int string_to_numbers(const char *str, unsigned int nums[]);
+unsigned char *lcd_init_table_load_array(char *name, unsigned char cmd_size,
+					 unsigned int *buf, int buf_len,
+					 int tbl_max, int *tbl_cnt);
 
 int lcd_base_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv);
 int lcd_base_config_load_from_bsp(struct aml_lcd_drv_s *pdrv);
@@ -130,8 +140,8 @@ unsigned int lcd_config_timing_check(struct aml_lcd_drv_s *pdrv,
 
 void update_panel_param_to_kernel(void);
 unsigned char lcd_get_dbg_source(void);
-unsigned char lcd_panel_config_load_detect(int index, int dt_valid, int key_valid);
-int panel_json_parse(struct json_parse_s *jsp, unsigned char *input);
+unsigned char lcd_panel_config_load_detect(int index, int dt_sta, int key_valid,
+		const char *func_name);
 
 void lcd_clk_frame_rate_init(struct lcd_detail_timing_s *ptiming);
 void lcd_default_to_basic_timing_init_config(struct aml_lcd_drv_s *pdrv);
@@ -156,17 +166,38 @@ void lcd_phy_cfg_print(struct phy_config_s *cfg);
 void lcd_phy_attr_print(struct phy_attr_s *phy, u32 lane_num);
 
 /* lcd cus_ctrl */
-void lcd_cus_ctrl_dump_raw_data(struct aml_lcd_drv_s *pdrv);
-void lcd_cus_ctrl_dump_info(struct aml_lcd_drv_s *pdrv);
 int lcd_cus_ctrl_load_from_dts(struct aml_lcd_drv_s *pdrv);
 int lcd_cus_ctrl_load_from_unifykey(struct aml_lcd_drv_s *pdrv, unsigned char *buf,
 		unsigned int max_size, unsigned char version);
-void lcd_cus_ctrl_config_remove(struct aml_lcd_drv_s *pdrv);
-int lcd_cus_ctrl_config_update(struct aml_lcd_drv_s *pdrv, void *param, unsigned int mask_sel);
-void lcd_cus_ctrl_state_clear(struct aml_lcd_drv_s *pdrv, unsigned int mask_sel);
-int lcd_cus_ctrl_timing_is_valid(struct aml_lcd_drv_s *pdrv);
-int lcd_cus_ctrl_timing_is_activated(struct aml_lcd_drv_s *pdrv);
-struct lcd_detail_timing_s **lcd_cus_ctrl_timing_match_get(struct aml_lcd_drv_s *pdrv);
+int lcd_cus_ctrl_load_from_ini(struct aml_lcd_drv_s *pdrv, void *inip, void *psec,
+			       unsigned char version);
+
+/* lcd model */
+const char *get_lcd_config_load(unsigned char type);
+int lcd_get_str_array_cnt(const char *data_str);
+int lcd_trans_str_array(const char *data_str, unsigned int *data_buf, int cnt_max);
+unsigned int lcd_get_str_array_index(const char *data_str, unsigned int index,
+				     unsigned int def_val);
+
+void mem_dump(unsigned char *addr, int size);
+void panel_param_mem_dump(void);
+int is_panel_param_mem_ok(void);
+int is_ukey_in_param_mem(void);
+void update_panel_param_to_kernel(void);
+
+int path_name_compose(const char *path, const char *name, char *path_name);
+int set_panel_file_parse_mem(int index, void *parse_mem, int size, unsigned char type);
+void *get_panel_file_parse_mem(int index);
+void rm_panel_file_parse_mem(int index);
+int panel_file_parse_mem_save(void);
+
+#ifdef CONFIG_AML_LCD_JSON
+struct json_parse_s *get_panel_jsp(int index);
+struct json_parse_s *get_panel_jsp(int index);
+struct json_parse_s *panel_json_parse(int index);
+int panel_json_mem_save(void *parse_mem, int index);
+void panel_json_mem_free(void *parse_mem);
+#endif
 
 /* lcd venc */
 void lcd_wait_vsync(struct aml_lcd_drv_s *pdrv);
@@ -313,9 +344,5 @@ void aml_bl_config_print(int index);
 int aml_bl_pwm_reg_config_init(struct aml_lcd_data_s *pdata);
 
 unsigned int lcd_crc32(unsigned int seed, const unsigned char *ptr, int buf_len);
-#ifdef CONFIG_AML_LCD_JSON
-struct json_parse_s *get_panel_jsp(int index);
-#endif
-
 #endif
 

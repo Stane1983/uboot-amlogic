@@ -8,6 +8,7 @@
 #include <asm/amlogic/arch/gpio.h>
 #include <fdtdec.h>
 #include <amlogic/keyunify.h>
+#include <amlogic/aml_model.h>
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include "lcd_reg.h"
 #include "lcd_common.h"
@@ -170,7 +171,7 @@ lcd_unifykey_get_retry:
 		LCDUKEYERR("%s: %s failed\n", __func__, key_name);
 		return -1;
 	}
-	key_crc = lcd_crc32(0, &buf[4], (len - 4)); //except crc32
+	key_crc = cal_CRC32(0, &buf[4], (len - 4)); //except crc32
 	key_crc32 = (unsigned int)key_crc;
 	if (key_crc32 != key_header->crc32) {  //crc32 check
 		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
@@ -237,7 +238,7 @@ lcd_unifykey_get_tcon_retry:
 		LCDUKEYERR("%s: %s failed\n", __func__, key_name);
 		return -1;
 	}
-	key_crc32 = lcd_crc32(0, &buf[4], (len - 4)); //except crc32
+	key_crc32 = cal_CRC32(0, &buf[4], (len - 4)); //except crc32
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 		LCDUKEY("%s: %s crc32: 0x%08x, header_crc32: 0x%08x\n",
 			__func__, key_name, key_crc32, init_header->crc32);
@@ -296,6 +297,12 @@ int lcd_unifykey_write(const char *key_name, unsigned char *buf, int len)
 	if (is_ukey_in_param_mem())
 		return panel_param_mem_modify(buf, key_name, len);
 
+	key_unify_write(key_name, buf, len);
+	return 0;
+}
+
+int lcd_unifykey_write_force(const char *key_name, unsigned char *buf, int len)
+{
 	key_unify_write(key_name, buf, len);
 	return 0;
 }
@@ -415,6 +422,11 @@ int lcd_unifykey_write(const char *key_name, unsigned char *buf, int len)
 	if (is_ukey_in_param_mem())
 		return panel_param_mem_modify(buf, key_name, len);
 
+	return -1;
+}
+
+int lcd_unifykey_write_force(const char *key_name, unsigned char *buf, int len)
+{
 	return -1;
 }
 

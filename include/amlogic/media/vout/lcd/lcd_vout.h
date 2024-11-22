@@ -529,7 +529,7 @@ union lcd_ctrl_config_u {
  * power control define
  * ********************************** */
 enum lcd_power_type_e {
-	LCD_POWER_TYPE_CPU = 0,
+	LCD_POWER_TYPE_GPIO = 0,
 	LCD_POWER_TYPE_PMU,                 /* 1 */
 	LCD_POWER_TYPE_SIGNAL,              /* 2 */
 	LCD_POWER_TYPE_EXTERN,              /* 3 */
@@ -540,6 +540,7 @@ enum lcd_power_type_e {
 	LCD_POWER_TYPE_MUTE,                /* 8 */
 	LCD_POWER_TYPE_MAX,
 };
+#define LCD_POWER_TYPE_CPU           LCD_POWER_TYPE_GPIO
 
 enum lcd_pmu_gpio_e {
 	LCD_PMU_GPIO0 = 0,
@@ -608,6 +609,7 @@ struct lcd_config_s {
 	unsigned char fr_auto_cus;  //0=follow global setting, 0xff=disable
 	unsigned char fr_auto_flag; //final fr_auto policy
 	unsigned int backlight_index;
+
 	struct lcd_basic_s basic;
 	struct lcd_timing_s timing;
 	union lcd_ctrl_config_u control;
@@ -755,6 +757,7 @@ struct aml_lcd_cma_mem {
 #define LCD_CONFIG_UKEY 2
 #define LCD_CONFIG_FILE 3
 #define LCD_CONFIG_BSP  4
+#define LCD_CONFIG_ERR  0xff
 
 struct aml_lcd_drv_s {
 	unsigned int index;
@@ -772,12 +775,12 @@ struct aml_lcd_drv_s {
 	unsigned char viu_sel; // 1=vout; 2=vou2; 3=vout3
 
 	struct lcd_config_s config;
+	struct lcd_vmode_mgr_s vmode_mgr;
+	struct lcd_disp_tmg_req_s disp_req;
 	struct aml_lcd_data_s *data;
 	struct lcd_boot_ctrl_s boot_ctrl;
 	struct lcd_duration_s *std_duration;
-	struct lcd_vmode_mgr_s vmode_mgr;
 	void *clk_conf;
-	struct lcd_disp_tmg_req_s disp_req;
 
 	int  (*outputmode_check)(struct aml_lcd_drv_s *pdrv, char *mode);
 	int  (*config_valid)(struct aml_lcd_drv_s *pdrv, char *mode);
@@ -790,7 +793,7 @@ struct aml_lcd_drv_s {
 	void (*tcon_table_print)(void);
 	void (*tcon_data_print)(unsigned char index);
 	void (*tcon_spi_print)(void);
-	int (*tcon_spi_data_load)(void);
+	int (*tcon_spi_data_load)(struct aml_lcd_drv_s *pdrv);
 	unsigned int (*tcon_reg_read)(unsigned int addr, unsigned int flag);
 	void (*tcon_reg_write)(unsigned int addr, unsigned int val,
 			       unsigned int flag);

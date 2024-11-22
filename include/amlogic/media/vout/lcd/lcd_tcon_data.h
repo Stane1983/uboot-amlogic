@@ -255,6 +255,15 @@ struct lcd_tcon_bin_path_header_s {
 	unsigned char reserved[12];
 };
 
+struct lcd_tcon_spi_header_s {
+	unsigned int crc32;
+	unsigned int data_size;
+	unsigned short version;
+	unsigned short load_level;
+	unsigned short reserved;
+	unsigned short block_cnt;
+};
+
 #define LCD_UKEY_TCON_SPI_BLOCK_SIZE_PRE          20
 struct lcd_tcon_spi_block_s {
 	unsigned short data_type;
@@ -279,10 +288,6 @@ struct lcd_tcon_spi_s {
 	unsigned int block_cnt;
 	unsigned int init_flag;
 	struct lcd_tcon_spi_block_s **spi_block;
-
-	unsigned char *ext_buf;
-	unsigned int ext_init_on_cnt;
-	unsigned int ext_init_off_cnt;
 
 	int (*data_read)(struct lcd_tcon_spi_block_s *spi_block);
 	int (*data_conv)(struct lcd_tcon_spi_block_s *spi_block);

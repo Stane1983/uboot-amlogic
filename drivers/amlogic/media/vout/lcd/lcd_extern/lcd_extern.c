@@ -677,7 +677,7 @@ int lcd_extern_remove(void)
 	return 0;
 }
 
-int lcd_extern_drv_index_add(int drv_index, int dev_index)
+int lcd_extern_dev_index_add(int drv_index, int dev_index)
 {
 	int dev_cnt, i;
 
@@ -714,7 +714,7 @@ int lcd_extern_drv_index_add(int drv_index, int dev_index)
 	return 0;
 }
 
-int lcd_extern_drv_index_remove(int drv_index, int dev_index)
+int lcd_extern_dev_index_remove(int drv_index, int dev_index)
 {
 	int find, i;
 

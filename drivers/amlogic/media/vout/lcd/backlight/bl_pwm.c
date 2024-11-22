@@ -396,6 +396,16 @@ char *bl_pwm_num_to_str(unsigned int num)
 	return bl_pwm_invalid_name;
 }
 
+int bl_str_to_pwm_method(const char *str, int def_val)
+{
+	if (strcmp(str, "BL_PWM_NEGATIVE") == 0)
+		return BL_PWM_NEGATIVE;
+	else if (strcmp(str, "BL_PWM_POSITIVE") == 0)
+		return BL_PWM_POSITIVE;
+	else
+		return def_val;
+}
+
 static void bl_pwm_set_duty(struct bl_pwm_config_s *bl_pwm)
 {
 	unsigned int *pwm_reg;

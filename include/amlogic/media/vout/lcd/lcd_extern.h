@@ -150,8 +150,8 @@ struct lcd_extern_driver_s *lcd_extern_get_driver(int drv_index);
 struct lcd_extern_dev_s *lcd_extern_get_dev(struct lcd_extern_driver_s *edrv, int dev_index);
 int lcd_extern_probe(char *dtaddr, int load_id);
 int lcd_extern_remove(void);
-int lcd_extern_drv_index_add(int drv_index, int dev_index);
-int lcd_extern_drv_index_remove(int drv_index, int dev_index);
+int lcd_extern_dev_index_add(int drv_index, int dev_index);
+int lcd_extern_dev_index_remove(int drv_index, int dev_index);
 int lcd_extern_init(void);
 
 #endif

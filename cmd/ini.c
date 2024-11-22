@@ -16,25 +16,9 @@
 #include <env.h>
 #include <linux/ctype.h>
 #include <linux/string.h>
-#include <amlogic/ini.h>
 
-#ifdef CONFIG_INI_MAX_LINE
-#define MAX_LINE CONFIG_INI_MAX_LINE
-#else
-#define MAX_LINE 200
-#endif
-
-#ifdef CONFIG_INI_MAX_SECTION
-#define MAX_SECTION CONFIG_INI_MAX_SECTION
-#else
-#define MAX_SECTION 50
-#endif
-
-#ifdef CONFIG_INI_MAX_NAME
-#define MAX_NAME CONFIG_INI_MAX_NAME
-#else
-#define MAX_NAME 50
-#endif
+#include <amlogic/aml_model.h>
+#include "amlogic/ini/ini_size_define.h"
 
 /* Strip whitespace chars off end of given string, in place. Return s. */
 static char *rstrip(char *s)
@@ -263,10 +247,12 @@ static int do_ini_model_list(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
 		ret = handle_model_list();
 		return ret;
 	}
+#ifdef CONFIG_AML_LCD
 	if (strcmp(argv[1], "lcd") == 0 || strcmp(argv[1], "panel") == 0) {
-		handle_model_list_panel_key();
+		handle_model_list_panel_key(0);
 		return 0;
 	}
+#endif
 
 	return CMD_RET_USAGE;
 }

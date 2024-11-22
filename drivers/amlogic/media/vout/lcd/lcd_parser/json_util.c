@@ -348,4 +348,3 @@ u32 json_get_arr_u32(struct json_parse_s *jsp, struct json_s *json, s32 id, u32 
 
 	return num;
 }
-

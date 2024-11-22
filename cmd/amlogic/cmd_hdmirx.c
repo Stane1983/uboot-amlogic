@@ -11,7 +11,7 @@
 #include <malloc.h>
 #include <asm/amlogic/arch/io.h>
 #include <amlogic/aml_hdmirx.h>
-#include "../cmd/amlogic/ini/ini_platform.h"
+#include <amlogic/aml_model.h>
 
 #define HDMIRX_VERSION "Ver 2022/03/21\n"
 
@@ -27,29 +27,16 @@ int hdmirx_read_edid(const char *filename,
 					unsigned char **pedid_buf,
 					int *pedid_size)
 {
-	int rd_cnt = 0, tmp_size = 0;
+	int tmp_size = 0;
 	unsigned char *tmp_buf = NULL;
 
 	if (!filename || !pedid_buf || !pedid_size)
 		return -1;
-	if (!ini_is_file_exist(filename)) {
-		printf("%s, file \"%s\" is not exist!\n", __func__, filename);
-		return -1;
-	}
 
-	tmp_size = ini_get_file_size(filename);
-	if (tmp_size <= 0) {
-		printf("%s, file \"%s\" size error!\n", __func__, filename);
+	tmp_buf = model_read_file_to_buffer(filename, &tmp_size);
+	if (!tmp_buf)
 		return -1;
-	}
-	tmp_buf = (unsigned char *)malloc(tmp_size);
-	if (tmp_buf) {
-		rd_cnt = ini_read_file_to_buffer(filename, 0,  tmp_size, tmp_buf);
-		if (rd_cnt <= 0) {
-			free(tmp_buf);
-				return -1;
-		}
-	}
+
 	*pedid_size = tmp_size;
 	*pedid_buf = tmp_buf;
 

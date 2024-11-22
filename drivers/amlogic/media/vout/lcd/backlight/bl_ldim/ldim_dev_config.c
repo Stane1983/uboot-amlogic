@@ -127,22 +127,21 @@ static int ldim_pinmux_load(char *dt_addr, struct aml_ldim_driver_s *ldim_drv)
 
 static int ldim_dev_zone_mapping_load(struct ldim_dev_driver_s *dev_drv, const char *path)
 {
-	unsigned int size = 0;
+	int bin_size = 0, map_size;
 	unsigned char *buf;
-	int i, j, ret;
+	int i, j;
 
 	/* 2byte per zone */
-	size = dev_drv->zone_num * 2;
-	buf = (unsigned char *)malloc(size);
+	map_size = dev_drv->zone_num * 2;
+
+	//ret = handle_ldim_dev_zone_mapping_get(buf, size, path);
+	buf = model_read_file_to_buffer(path, &bin_size);
 	if (!buf) {
-		LDIMERR("%s: zone_mapping buf invalid\n", __func__);
+		LDIMERR("%s: load bin: %s error\n", __func__, path);
 		return -1;
 	}
-	memset(buf, 0, size);
-
-	ret = handle_ldim_dev_zone_mapping_get(buf, size, path);
-	if (ret) {
-		LDIMERR("%s: load zone_mapping path: %s error\n", __func__, path);
+	if (bin_size > map_size) {
+		memset(buf, 0, bin_size);
 		free(buf);
 		return -1;
 	}
@@ -152,150 +151,21 @@ static int ldim_dev_zone_mapping_load(struct ldim_dev_driver_s *dev_drv, const c
 		dev_drv->bl_mapping[i] = buf[j] | (buf[j + 1] << 8);
 	}
 
-	LDIMPR("%s: load zone_mapping path: %s finish\n", __func__, path);
+	LDIMPR("%s: load bin: %s finish\n", __func__, path);
+	memset(buf, 0, bin_size);
 	free(buf);
 	return 0;
 }
 
-static int ldim_dev_init_table_save(struct ldim_dev_driver_s *dev_drv, int flag,
-				    unsigned char *table)
-{
-	if (!dev_drv || !table) {
-		LDIMERR("%s: resource error\n", __func__);
-		return -1;
-	}
-
-	if (flag) {
-		if (dev_drv->init_on) {
-			free(dev_drv->init_on);
-			dev_drv->init_on = NULL;
-		}
-		dev_drv->init_on = (unsigned char *)malloc(dev_drv->init_on_cnt);
-		if (!dev_drv->init_on) {
-			LDIMERR("%s: Not enough memory\n", __func__);
-			return -1;
-		}
-		memcpy(dev_drv->init_on, table, dev_drv->init_on_cnt);
-	} else {
-		if (dev_drv->init_off) {
-			free(dev_drv->init_off);
-			dev_drv->init_off = NULL;
-		}
-		dev_drv->init_off = (unsigned char *)malloc(dev_drv->init_off_cnt);
-		if (!dev_drv->init_off) {
-			LDIMERR("%s: Not enough memory\n", __func__);
-			return -1;
-		}
-		memcpy(dev_drv->init_off, table, dev_drv->init_off_cnt);
-	}
-
-	return 0;
-}
-
 #ifdef CONFIG_OF_LIBFDT
-static int ldim_dev_init_dynamic_load_array(struct ldim_dev_driver_s *dev_drv,
-					    unsigned int *buf, int max_len, int flag)
-{
-	unsigned char type, size = 0;
-	int i = 0, j, tbl_max, step = 0, ret = 0;
-	unsigned char *table;
-	char propname[20];
-
-	if (flag) {
-		dev_drv->init_on_cnt = 0;
-		tbl_max = LDIM_INIT_ON_MAX;
-		sprintf(propname, "init_on");
-	} else {
-		dev_drv->init_off_cnt = 0;
-		tbl_max = LDIM_INIT_OFF_MAX;
-		sprintf(propname, "init_off");
-	}
-	if (max_len == 0)
-		return 0;
-
-	table = (unsigned char *)malloc(tbl_max);
-	if (!table) {
-		LDIMERR("%s: Not enough memory\n", __func__);
-		return -1;
-	}
-	memset(table, 0, tbl_max);
-
-	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-		LDIMPR("%s: %d: max_len=%d, tbl_max=%d\n",
-		       __func__, flag, max_len, tbl_max);
-	}
-
-	while (1) {
-		if ((i + 2) > max_len) {
-			LDIMERR("%s: %s: %s: no ending error\n",
-				__func__, dev_drv->name, propname);
-			goto init_table_dynamic_array_err;
-		}
-		if ((i + 2) > tbl_max) {
-			LDIMERR("%s: %s: %s: size out of support (max %d)\n",
-				__func__, dev_drv->name, propname, tbl_max);
-			goto init_table_dynamic_array_err;
-		}
-		/* type */
-		table[i] = buf[i];
-		/* size */
-		table[i + 1] = buf[i + 1];
-		type = table[i];
-		size = table[i + 1];
-		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-			LDIMPR("%s: %s: %s, step[%d]: type=0x%x, size=%d, i=%d\n",
-			       __func__, dev_drv->name, propname, step, type, size, i);
-		}
-		i += 2;
-
-		if (type == LCD_EXT_CMD_TYPE_END)
-			break;
-		if (size == 0)
-			goto init_table_dynamic_array_next;
-		if ((i + size) > max_len) {
-			LDIMERR("%s: %s: %s: size out of data buffer (max %d)\n",
-				__func__, dev_drv->name, propname, max_len);
-			goto init_table_dynamic_array_err;
-		}
-		if ((i + size) > tbl_max) {
-			LDIMERR("%s: %s: %s: size out of support (max %d)\n",
-				__func__, dev_drv->name, propname, tbl_max);
-			goto init_table_dynamic_array_err;
-		}
-
-		/* step3: data */
-		for (j = 0; j < size; j++)
-			table[i + j] = buf[i + j];
-		i += size;
-
-init_table_dynamic_array_next:
-		step++;
-	}
-	if (flag)
-		dev_drv->init_on_cnt = i;
-	else
-		dev_drv->init_off_cnt = i;
-
-	ret = ldim_dev_init_table_save(dev_drv, flag, table);
-	if (ret)
-		goto init_table_dynamic_array_err;
-	memset(table, 0, tbl_max);
-	free(table);
-	return 0;
-
-init_table_dynamic_array_err:
-	memset(table, 0, tbl_max);
-	free(table);
-	return -1;
-}
-
 static int ldim_dev_init_table_handle_dts(char *dtaddr, int nodeoffset,
 					  struct ldim_dev_driver_s *dev_drv)
 {
-	int len_on, len_off, init_max, init_buf_size;
+	int len_on, len_off, init_len, init_buf_size;
 	unsigned int *init_buf;
 	char *init_on, *init_off;
-	int i = 0, ret;
+	unsigned char *table;
+	int i = 0;
 
 	init_on = (char *)fdt_getprop(dtaddr, nodeoffset, "init_on", &len_on);
 	if (!init_on) {
@@ -309,11 +179,11 @@ static int ldim_dev_init_table_handle_dts(char *dtaddr, int nodeoffset,
 	}
 	len_on /= 4;
 	len_off /= 4;
-	init_max = len_on >= len_off ? len_on : len_off;
-	if (init_max <= 0)
+	init_len = len_on >= len_off ? len_on : len_off;
+	if (init_len <= 0)
 		return 0;
 
-	init_buf_size = init_max * sizeof(unsigned int);
+	init_buf_size = init_len * sizeof(unsigned int);
 	init_buf = (unsigned int *)malloc(init_buf_size);
 	if (!init_buf) {
 		LDIMERR("%s: alloc memory error\n", __func__);
@@ -323,16 +193,22 @@ static int ldim_dev_init_table_handle_dts(char *dtaddr, int nodeoffset,
 	//init_on
 	for (i = 0; i < len_on; i++)
 		init_buf[i] = be32_to_cpup((((u32 *)init_on) + i));
-	ret = ldim_dev_init_dynamic_load_array(dev_drv, init_buf, len_on, 1);
-	if (ret)
+	table = lcd_init_table_load_array("ldim_dev_init_on", LCD_EXT_CMD_SIZE_DYNAMIC,
+				init_buf, len_on, LDIM_INIT_ON_MAX, &init_len);
+	if (!table)
 		goto ldim_dev_init_table_handle_dts_err;
+	dev_drv->init_on = table;
+	dev_drv->init_on_cnt = init_len;
 
 	//init_on
 	for (i = 0; i < len_off; i++)
 		init_buf[i] = be32_to_cpup((((u32 *)init_off) + i));
-	ret = ldim_dev_init_dynamic_load_array(dev_drv, init_buf, len_off, 0);
-	if (ret)
+	table = lcd_init_table_load_array("ldim_dev_init_off", LCD_EXT_CMD_SIZE_DYNAMIC,
+				init_buf, len_off, LDIM_INIT_OFF_MAX, &init_len);
+	if (!table)
 		goto ldim_dev_init_table_handle_dts_err;
+	dev_drv->init_off = table;
+	dev_drv->init_off_cnt = init_len;
 
 	dev_drv->init_loaded = 1;
 
@@ -652,37 +528,44 @@ ldim_dev_get_config_from_dts_end:
 }
 
 static int ldim_dev_init_table_handle_ukey(struct ldim_dev_driver_s *dev_drv,
-					   unsigned char *p, int key_len)
+					   unsigned char *p, int len)
 {
 	unsigned int *init_buf;
-	int init_buf_size, init_offset, init_max;
-	int i, ret;
+	unsigned char *table;
+	int init_buf_size, init_offset, init_len, data_cnt;
+	int i;
 
 	init_offset = LCD_UKEY_LDIM_DEV_INIT;
-	init_max = key_len - LCD_UKEY_LDIM_DEV_INIT;
-	if (init_max <= 0)
+	data_cnt = len - LCD_UKEY_LDIM_DEV_INIT;
+	if (data_cnt <= 0)
 		return 0;
 
-	init_buf_size = init_max * sizeof(unsigned int);
+	init_buf_size = data_cnt * sizeof(unsigned int);
 	init_buf = (unsigned int *)malloc(init_buf_size);
 	if (!init_buf) {
 		LDIMERR("%s: alloc memory error\n", __func__);
 		return -1;
 	}
-	for (i = 0; i < init_max; i++)
+	for (i = 0; i < data_cnt; i++)
 		init_buf[i] = *(p + init_offset + i);
-	ret = ldim_dev_init_dynamic_load_array(dev_drv, init_buf, init_max, 1);
-	if (ret)
+	table = lcd_init_table_load_array("ldim_dev_init_on", LCD_EXT_CMD_SIZE_DYNAMIC,
+				init_buf, data_cnt, LDIM_INIT_ON_MAX, &init_len);
+	if (!table)
 		goto ldim_dev_init_table_handle_ukey_err;
+	dev_drv->init_on = table;
+	dev_drv->init_on_cnt = init_len;
 
 	init_offset += dev_drv->init_on_cnt;
-	init_max -= dev_drv->init_on_cnt;
-	if (init_max > 0) {
-		for (i = 0; i < init_max; i++)
+	data_cnt -= dev_drv->init_on_cnt;
+	if (data_cnt > 0) {
+		for (i = 0; i < data_cnt; i++)
 			init_buf[i] = *(p + init_offset + i);
-		ret = ldim_dev_init_dynamic_load_array(dev_drv, init_buf, init_max, 0);
-		if (ret)
+		table = lcd_init_table_load_array("ldim_dev_init_off", LCD_EXT_CMD_SIZE_DYNAMIC,
+					init_buf, data_cnt, LDIM_INIT_OFF_MAX, &init_len);
+		if (!table)
 			goto ldim_dev_init_table_handle_ukey_err;
+		dev_drv->init_off = table;
+		dev_drv->init_off_cnt = init_len;
 	} else {
 		dev_drv->init_off_cnt = 0;
 	}
@@ -737,6 +620,8 @@ static int ldim_dev_get_config_from_ukey(struct ldim_dev_driver_s *dev_drv)
 	p = para;
 	str = (const char *)(p + LCD_UKEY_HEAD_SIZE);
 	strlcpy(dev_drv->name, str, LDIM_DEV_NAME_MAX);
+
+	dev_drv->index = 0;
 
 	/* interface (25Byte) */
 	dev_drv->type = *(p + LCD_UKEY_LDIM_DEV_IF_TYPE);
@@ -943,16 +828,18 @@ ldim_dev_get_config_from_ukey_err:
 	return -1;
 }
 
+#if defined(CONFIG_AML_LCD_JSON) || defined(CONFIG_CMD_AML_MODEL)
+static struct num_str_s ldim_dev_type_match[] = {
+	{LDIM_DEV_TYPE_NORMAL, "NORMAL"},
+	{LDIM_DEV_TYPE_SPI,    "SPI"},
+	{LDIM_DEV_TYPE_I2C,    "I2C"},
+	{LDIM_DEV_TYPE_MAX,    "MAX"}
+};
+#endif
+
 /* config from json =============================================================================*/
 
 #ifdef CONFIG_AML_LCD_JSON
-struct num_str_s ldim_dev_type[] = {
-	{LDIM_DEV_TYPE_NORMAL, "NORMAL"},
-	{LDIM_DEV_TYPE_SPI, "SPI"},
-	{LDIM_DEV_TYPE_I2C, "I2C"},
-	{LDIM_DEV_TYPE_MAX, "MAX"}
-};
-
 static int ldim_gpio_name_to_index(struct ldim_dev_driver_s *drv, char *name)
 {
 	int i = 0;
@@ -970,11 +857,12 @@ int ldim_dev_get_config_from_json(struct ldim_dev_driver_s *dev_drv)
 {
 	struct json_parse_s *jsp = get_panel_jsp(0);
 	struct json_s *parent, *child, *child2, *child3;
-	int ret = 0, i = 0, cnt, nums_size;
+	int i = 0, cnt, cnt_max, nums_size, data_cnt;
 	const char *str = NULL;
 	struct ldim_spi_dev_info_s *spi_info;
 	struct bl_pwm_config_s *bl_pwm, *pwms[3] = {NULL, NULL, NULL};
 	unsigned int *nums = NULL;
+	unsigned char *table;
 
 	if (!json_parse_ok(jsp)) {
 		LDIMERR("panel0 jsp not ok\n");
@@ -1009,8 +897,8 @@ int ldim_dev_get_config_from_json(struct ldim_dev_driver_s *dev_drv)
 	}
 
 	str = json_get_obj_str(jsp, child, "type", NULL);
-	dev_drv->type = strnum_get_num(str, ldim_dev_type,
-				       ARRAY_SIZE(ldim_dev_type), LDIM_DEV_TYPE_MAX);
+	dev_drv->type = strnum_get_num(str, ldim_dev_type_match,
+				       ARRAY_SIZE(ldim_dev_type_match), LDIM_DEV_TYPE_MAX);
 	if (dev_drv->type == LDIM_DEV_TYPE_MAX) {
 		LDIMERR("invalid type:%d\n", dev_drv->type);
 		return -1;
@@ -1128,41 +1016,59 @@ int ldim_dev_get_config_from_json(struct ldim_dev_driver_s *dev_drv)
 
 		str = json_get_obj_str(jsp, child, "init_on", NULL);
 		if (str) {
-			nums_size = (strlen(str)) * sizeof(unsigned int);
+			cnt_max = lcd_get_str_array_cnt(str);
+			nums_size = cnt_max * sizeof(unsigned int);
 			nums = malloc(nums_size);
 			if (!nums) {
-				LDIMPR("ldim find init_on: no memory to save nums\n");
+				LDIMERR("init_on: no memory to save nums\n");
 				goto parse_ldim_init_off;
 			}
 
 			memset(nums, 0, nums_size);
-			cnt = string_to_numbers(str, nums);
-			ldim_dev_init_dynamic_load_array(dev_drv, nums, cnt, 1);
+			cnt = lcd_trans_str_array(str, nums, cnt_max);
+			table = lcd_init_table_load_array("ldim_dev_init_on",
+							  LCD_EXT_CMD_SIZE_DYNAMIC,
+							  nums, cnt_max, LDIM_INIT_ON_MAX,
+							  &data_cnt);
+			if (!table) {
+				free(nums);
+				goto ldim_dev_get_config_from_json_end;
+			}
+			dev_drv->init_on = table;
+			dev_drv->init_on_cnt = data_cnt;
+			memset(nums, 0, nums_size);
 			free(nums);
-			nums = NULL;
 		}
 parse_ldim_init_off:
 		str = json_get_obj_str(jsp, child, "init_off", NULL);
 		if (str) {
-			nums_size = (strlen(str)) * sizeof(unsigned int);
+			cnt_max = lcd_get_str_array_cnt(str);
+			nums_size = cnt_max * sizeof(unsigned int);
 			nums = malloc(nums_size);
 			if (!nums) {
-				LDIMPR("ldim find init_on: no memory to save nums\n");
+				LDIMERR("init_off: no memory to save nums\n");
 				goto ldim_dev_get_config_from_json_end;
 			}
 
 			memset(nums, 0, nums_size);
-			cnt = string_to_numbers(str, nums);
-			ldim_dev_init_dynamic_load_array(dev_drv, nums, cnt, 0);
+			cnt = lcd_trans_str_array(str, nums, cnt_max);
+			table = lcd_init_table_load_array("ldim_dev_init_off",
+							  LCD_EXT_CMD_SIZE_DYNAMIC,
+							  nums, cnt_max, LDIM_INIT_OFF_MAX,
+							  &data_cnt);
+			if (!table) {
+				free(nums);
+				goto ldim_dev_get_config_from_json_end;
+			}
+			dev_drv->init_off = table;
+			dev_drv->init_off_cnt = data_cnt;
 			free(nums);
-			nums = NULL;
 		}
 		dev_drv->init_loaded = 1;
 	}
 
 ldim_dev_get_config_from_json_end:
-
-	return ret;
+	return 0;
 }
 
 #else
@@ -1172,7 +1078,265 @@ int ldim_dev_get_config_from_json(struct ldim_dev_driver_s *dev_drv)
 }
 #endif
 
-static unsigned int ldim_dt_valid(char *dt_addr)
+#if defined(CONFIG_CMD_AML_MODEL)
+static inline int ldim_dev_type_str2num(const char *str)
+{
+	const char *start;
+
+	start = strchr(str, 'V');
+	if (start)
+		start += 2;
+	else
+		start = str;
+
+	return strnum_get_num(start, ldim_dev_type_match, ARRAY_SIZE(ldim_dev_type_match),
+			      LDIM_DEV_TYPE_MAX);
+}
+
+static int ldim_dev_pwm_port_str2num(const char *str)
+{
+	char *start;
+
+	start = strchr(str, 'P');
+	if (!start)
+		return BL_PWM_MAX;
+
+	return bl_pwm_str_to_num(start);
+}
+
+int ldim_dev_get_config_from_ini(struct ldim_dev_driver_s *dev_drv)
+{
+	void *inip, *psec;
+	const char *str = NULL;
+	struct bl_pwm_config_s *bl_pwm;
+	unsigned int val, *init_buf;
+	unsigned char *table;
+	int init_len, data_cnt, buf_size;
+	char dbg_str[160];
+	int i, dbg_str_len = 0, ret = 0;
+
+	inip = get_lcd_ini_parse_mem(0);
+	if (!inip)
+		return -1;
+
+	psec = lcd_ini_get_section(inip, "Ldim_dev_Attr");
+	if (!psec) {
+		LDIMERR("%s: not find Ldim_dev_Attr\n", __func__);
+		return -1;
+	}
+
+	dev_drv->index = 0;
+	str = lcd_ini_get_str(inip, psec, "dev_name", "null");
+	strlcpy(dev_drv->name, str, LDIM_DEV_NAME_MAX);
+
+	str = lcd_ini_get_str(inip, psec, "if_type", "null");
+	dev_drv->type = ldim_dev_type_str2num(str);
+	if (dev_drv->type == LDIM_DEV_TYPE_MAX)
+		return -1;
+
+	switch (dev_drv->type) {
+	case LDIM_DEV_TYPE_SPI:
+		dev_drv->spi_info.max_speed_hz = lcd_ini_get_val(inip, psec, "if_freq", 0);
+		val = lcd_ini_get_val(inip, psec, "if_attr_0", 0);
+		dev_drv->spi_info.bus_num[0] = val & 0xf;
+		dev_drv->spi_info.bus_num[1] = (val >> 4) & 0xf;
+		if (dev_drv->spi_info.bus_num[1])
+			dev_drv->spi_info.spi_dev_num = 2;
+
+		val = lcd_ini_get_val(inip, psec, "if_attr_1", 0);
+		dev_drv->spi_info.chip_select[0] = val & 0xf;
+		dev_drv->spi_info.chip_select[1] = (val >> 4) & 0xf;
+
+		dev_drv->spi_info.mode = lcd_ini_get_val(inip, psec, "if_attr_2", 0);
+		dev_drv->cs_hold_delay = lcd_ini_get_val(inip, psec, "if_attr_4", 0);
+		dev_drv->cs_clk_delay = lcd_ini_get_val(inip, psec, "if_attr_5", 0);
+		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
+			LDIMPR("spi bus_num: %d:%d, chip_select: %d:%d, max_speed_hz: %d\n",
+				dev_drv->spi_info.bus_num[0], dev_drv->spi_info.bus_num[1],
+				dev_drv->spi_info.chip_select[0], dev_drv->spi_info.chip_select[1],
+				dev_drv->spi_info.max_speed_hz);
+			LDIMPR("spi_dev_num:%d, spi mode:%d, cs_hold_delay=%d, cs_clk_delay=%d\n",
+			       dev_drv->spi_info.spi_dev_num, dev_drv->spi_info.mode,
+				   dev_drv->cs_hold_delay, dev_drv->cs_clk_delay);
+		}
+		break;
+	default:
+		break;
+	}
+
+	/* pwm (48Byte) */
+	bl_pwm = &dev_drv->ldim_pwm_config;
+	bl_pwm->drv_index = 0; /* only venc0 support ldim */
+	str = lcd_ini_get_str(inip, psec, "pwm_vs_port", "null");
+	bl_pwm->pwm_port = ldim_dev_pwm_port_str2num(str);
+	if (bl_pwm->pwm_port < BL_PWM_MAX) {
+		str = lcd_ini_get_str(inip, psec, "pwm_vs_pol", "null");
+		bl_pwm->pwm_method = bl_str_to_pwm_method(str, BL_PWM_POSITIVE);
+		if (bl_pwm->pwm_port == BL_PWM_VS) {
+			val = lcd_ini_get_val(inip, psec, "pwm_vs_freq", 0);
+			bl_pwm->pwm_freq = (val & 0xff);
+			bl_pwm->pwm_phase = (val >> 8) & 0xffffff;
+
+		} else {
+			bl_pwm->pwm_freq = lcd_ini_get_val(inip, psec, "pwm_vs_freq", 0);
+			bl_pwm->pwm_phase = 0;
+		}
+		bl_pwm->pwm_duty = lcd_ini_get_val(inip, psec, "pwm_vs_duty", 0);
+
+		if (bl_pwm->pwm_port == BL_PWM_VS) {
+			if (bl_pwm->pwm_freq > 4) {
+				LDIMERR("pwm_vs wrong freq %d\n", bl_pwm->pwm_freq);
+				bl_pwm->pwm_freq = BL_FREQ_VS_DEFAULT;
+			}
+		} else {
+			if (bl_pwm->pwm_freq > XTAL_HALF_FREQ_HZ)
+				bl_pwm->pwm_freq = XTAL_HALF_FREQ_HZ;
+		}
+		LDIMPR("get ldim_pwm pol = %d, freq = %d, dft duty = %d%%, phase=%d\n",
+		       bl_pwm->pwm_method, bl_pwm->pwm_freq, bl_pwm->pwm_duty, bl_pwm->pwm_phase);
+	}
+
+	bl_pwm = &dev_drv->analog_pwm_config;
+	bl_pwm->drv_index = 0; /* only venc0 support ldim */
+	str = lcd_ini_get_str(inip, psec, "pwm_adj_port", "null");
+	bl_pwm->pwm_port = bl_pwm_str_to_num(str);
+	if (bl_pwm->pwm_port < BL_PWM_VS) {
+		str = lcd_ini_get_str(inip, psec, "pwm_adj_pol", "BL_PWM_POSITIVE");
+		bl_pwm->pwm_method = bl_str_to_pwm_method(str, BL_PWM_POSITIVE);
+		if (bl_pwm->pwm_port == BL_PWM_VS) {
+			val = lcd_ini_get_val(inip, psec, "pwm_adj_freq", 0);
+			bl_pwm->pwm_freq = (val & 0xff);
+			bl_pwm->pwm_phase = (val >> 8) & 0xffffff;
+		} else {
+			bl_pwm->pwm_freq = lcd_ini_get_val(inip, psec, "pwm_adj_freq", 0);
+			bl_pwm->pwm_phase = 0;
+		}
+		bl_pwm->pwm_duty = lcd_ini_get_val(inip, psec, "pwm_adj_duty", 0);
+		bl_pwm->pwm_duty_max = lcd_ini_get_val(inip, psec, "pwm_adj_attr_0", 0);
+		bl_pwm->pwm_duty_min = lcd_ini_get_val(inip, psec, "pwm_adj_attr_1", 0);
+
+		if (bl_pwm->pwm_freq > XTAL_HALF_FREQ_HZ)
+			bl_pwm->pwm_freq = XTAL_HALF_FREQ_HZ;
+		LDIMPR("get analog_pwm pol = %d, freq = %d\n",
+			bl_pwm->pwm_method, bl_pwm->pwm_freq);
+		LDIMPR("duty max = %d%%, min = %d%%, default = %d%%, phase=%d\n",
+			bl_pwm->pwm_duty_max,
+			bl_pwm->pwm_duty_min, bl_pwm->pwm_duty, bl_pwm->pwm_phase);
+	}
+
+	str = lcd_ini_get_str(inip, psec, "pinmux_sel", "invalid");
+	strlcpy(dev_drv->pinmux_name, str, LDIM_DEV_NAME_MAX);
+
+	/* ctrl (271Byte) */
+	dev_drv->en_gpio = lcd_ini_get_val(inip, psec, "en_gpio", LCD_GPIO_MAX);
+	dev_drv->en_gpio_on = lcd_ini_get_val(inip, psec, "en_gpio_on", 0);
+	dev_drv->en_gpio_off = lcd_ini_get_val(inip, psec, "en_gpio_off", 0);
+
+	dev_drv->lamp_err_gpio = lcd_ini_get_val(inip, psec, "err_gpio", LCD_GPIO_MAX);
+	if (dev_drv->lamp_err_gpio >= BL_GPIO_NUM_MAX) {
+		dev_drv->fault_check = 0;
+	} else {
+		dev_drv->fault_check = 1;
+		ldim_gpio_set(dev_drv, dev_drv->lamp_err_gpio, LCD_GPIO_INPUT);
+	}
+
+	dev_drv->write_check = lcd_ini_get_val(inip, psec, "write_check", 0);
+
+	dev_drv->dim_max = lcd_ini_get_val(inip, psec, "dim_max", 0);
+	dev_drv->dim_min = lcd_ini_get_val(inip, psec, "dim_min", 0);
+
+	dev_drv->mcu_header = lcd_ini_get_val(inip, psec, "custome_attr_0", 0);
+	dev_drv->mcu_dim = lcd_ini_get_val(inip, psec, "custome_attr_1", 0);
+
+	dev_drv->chip_cnt = lcd_ini_get_val(inip, psec, "chip_count", 0);
+
+	str = lcd_ini_get_str(inip, psec, "zone_mapping_path", NULL);
+	if (!str) {
+		for (i = 0; i < dev_drv->zone_num; i++)
+			dev_drv->bl_mapping[i] = (unsigned short)i;
+	} else {
+		LDIMPR("find custom zone_mapping: %s\n", str);
+		ret = ldim_dev_zone_mapping_load(dev_drv, str);
+		if (ret) {
+			for (i = 0; i < dev_drv->zone_num; i++)
+				dev_drv->bl_mapping[i] = (unsigned short)i;
+		}
+	}
+
+	dbg_str_len += sprintf(dbg_str + dbg_str_len, "mcu_header=0x%08x, mcu_dim=0x%08x, ",
+		dev_drv->mcu_header, dev_drv->mcu_dim);
+	sprintf(dbg_str + dbg_str_len, "chip_cnt:%d, cus pwm_pinmux_sel:%s",
+		dev_drv->chip_cnt, dev_drv->pinmux_name);
+	LDIMPR("load ukey config: %s: type:%d, %s\n", dev_drv->name, dev_drv->type, dbg_str);
+
+	dev_drv->cmd_size = lcd_ini_get_val(inip, psec, "cmd_size", 0);
+	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
+		LDIMPR("%s: cmd_size = %d\n", dev_drv->name, dev_drv->cmd_size);
+	if (dev_drv->cmd_size != LCD_EXT_CMD_SIZE_DYNAMIC)
+		return -1;
+
+	init_len = lcd_ini_get_array_cnt(inip, psec, "init_on");
+	if (init_len < 0) {
+		LDIMPR("%s: not find init_on\n", dev_drv->name);
+		return 0;
+	}
+	buf_size = init_len * sizeof(unsigned int);
+	init_buf = malloc(buf_size);
+	if (!init_buf) {
+		LDIMERR("malloc init_on buf failed\n");
+		return -1;
+	}
+	memset(init_buf, 0, buf_size);
+	data_cnt = lcd_ini_get_array(inip, psec, "init_on", init_buf, init_len);
+	table = lcd_init_table_load_array("ldim_dev_init_on", LCD_EXT_CMD_SIZE_DYNAMIC,
+					  init_buf, data_cnt, LDIM_INIT_ON_MAX, &init_len);
+	if (!table)
+		goto ldim_dev_get_config_from_ini_err;
+	dev_drv->init_on = table;
+	dev_drv->init_on_cnt = init_len;
+	memset(init_buf, 0, buf_size);
+	free(init_buf);
+
+	init_len = lcd_ini_get_array_cnt(inip, psec, "init_off");
+	if (init_len < 0) {
+		LDIMERR("%s: not find init_on\n", dev_drv->name);
+		return -1;
+	}
+	buf_size = init_len * sizeof(unsigned int);
+	init_buf = malloc(buf_size);
+	if (!init_buf) {
+		LDIMERR("malloc init_off buf failed\n");
+		return -1;
+	}
+	memset(init_buf, 0, buf_size);
+	data_cnt = lcd_ini_get_array(inip, psec, "init_off", init_buf, init_len);
+	table = lcd_init_table_load_array("ldim_dev_init_off", LCD_EXT_CMD_SIZE_DYNAMIC,
+					  init_buf, data_cnt, LDIM_INIT_OFF_MAX, &init_len);
+	if (!table)
+		goto ldim_dev_get_config_from_ini_err;
+	dev_drv->init_off = table;
+	dev_drv->init_off_cnt = init_len;
+	memset(init_buf, 0, buf_size);
+	free(init_buf);
+
+	dev_drv->init_loaded = 1;
+
+	return 0;
+
+ldim_dev_get_config_from_ini_err:
+	memset(init_buf, 0, buf_size);
+	free(init_buf);
+	return -1;
+}
+
+#else
+int ldim_dev_get_config_from_ini(struct ldim_dev_driver_s *dev_drv)
+{
+	return -1;
+}
+#endif
+
+static int ldim_dt_valid(char *dt_addr)
 {
 #ifdef CONFIG_OF_LIBFDT
 
@@ -1185,7 +1349,7 @@ static unsigned int ldim_dt_valid(char *dt_addr)
 		if (parent_offset < 0) {
 			LDIMERR("not find /local_dimming_device node: %s\n",
 				fdt_strerror(parent_offset));
-			return 0;
+			return -1;
 		}
 	}
 
@@ -1205,12 +1369,10 @@ static int ldim_check_config_load(struct ldim_dev_driver_s *dev_drv)
 	int ret = 0, dt_sta;
 
 	dt_sta = ldim_dt_valid(lcd_get_dt_addr());
-	dev_drv->config_load = lcd_panel_config_load_detect(0, dt_sta, dev_drv->key_valid);
-	if (dev_drv->config_load == LCD_CONFIG_NONE) {
-		LDIMERR("config_load_check error: config_load:%d, dt_status:%d, key:%d\n",
-			dev_drv->config_load, dt_sta, dev_drv->key_valid);
+	dev_drv->config_load =
+		lcd_panel_config_load_detect(0, dt_sta, dev_drv->key_valid, __func__);
+	if (dev_drv->config_load == LCD_CONFIG_NONE || dev_drv->config_load == LCD_CONFIG_ERR)
 		return -1;
-	}
 
 	return ret;
 }
@@ -1296,7 +1458,7 @@ int ldim_dev_get_config(char *dt_addr, struct aml_ldim_driver_s *ldim_drv)
 		if (file_type == PANEL_FILE_JSON)
 			ret = ldim_dev_get_config_from_json(dev_drv);
 		else if (file_type == PANEL_FILE_INI)
-			ret = -1; //todo
+			ret = ldim_dev_get_config_from_ini(dev_drv);
 		break;
 	case LCD_CONFIG_UKEY:
 		ret = ldim_dev_get_config_from_ukey(dev_drv);

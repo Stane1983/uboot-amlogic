@@ -41,110 +41,124 @@ char *strnum_get_str(int num, struct num_str_s *arr, int size_arr, char *dft)
 	return dft;
 }
 
-void mem_dump(unsigned char *addr, int size)
+unsigned char *lcd_init_table_dynamic_load_array(char *name, unsigned int *buf, int buf_len,
+						 int tbl_max, int *tbl_cnt)
 {
-	int i = 0, j = 0, len = 0;
-	char buf[128];
+	unsigned char *table, type, size;
+	int data_cnt, step = 0, i = 0;
 
-	for (j = 0; j < (size >> 4); j++) {
-		for (i = 0, len = 0; i < 16; i++)
-			len += sprintf(buf + len, "%02x ", (unsigned int)addr[j * 16 + i]);
-		printf("0x%04x: %s\n", j * 16,  buf);
+	if (!buf || buf_len == 0 || tbl_max == 0 || !tbl_cnt)
+		return NULL;
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("%s: %s: buf_len=%d, tbl_max=%d\n", __func__, name, buf_len, tbl_max);
+
+	while (1) {
+		if ((i + 2) > buf_len) {
+			LCDERR("%s: %s: step[%d]: no ending error\n", __func__, name, step);
+			return NULL;
+		}
+		if ((i + 2) > tbl_max) {
+			LCDERR("%s: %s: step[%d]: size out of support (max %d)\n",
+			       __func__, name, step, tbl_max);
+			return NULL;
+		}
+		type = buf[i];
+		size = buf[i + 1];
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+			LCDPR("%s: %s: step[%d]: type=0x%x, size=%d, i=%d\n",
+			      __func__, name, step, type, size, i);
+		}
+		i += 2;
+
+		if (type == LCD_EXT_CMD_TYPE_END)
+			break;
+		if (size == 0)
+			goto init_dynamic_array_next;
+		if ((i + size) > buf_len) {
+			LCDERR("%s: %s: step[%d]: size out of support (buf_len %d)\n",
+			       __func__, name, step, buf_len);
+			return NULL;
+		}
+		if ((i + size) > tbl_max) {
+			LCDERR("%s: %s: step[%d]: size out of support (max %d)\n",
+				__func__, name, step, tbl_max);
+			return NULL;
+		}
+
+		i += size;
+
+init_dynamic_array_next:
+		step++;
 	}
-	if (size & 0xf) {
-		for (i = 0, len = 0; i < (size & 0xf); i++)
-			len += sprintf(buf + len, "%02x ", (unsigned int)addr[j * 16 + i]);
-		printf("0x%04x: %s\n", j * 16,  buf);
+	data_cnt = i;
+
+	table = (unsigned char *)malloc(data_cnt);
+	if (!table) {
+		LCDERR("%s: Not enough memory\n", __func__);
+		return NULL;
 	}
+	memset(table, 0, data_cnt);
+	for (i = 0; i < data_cnt; i++)
+		table[i] = buf[i];
+	*tbl_cnt = data_cnt;
+
+	return table;
 }
 
-__maybe_unused int string_to_numbers(const char *str, unsigned int nums[])
+unsigned char *lcd_init_table_fixed_load_array(char *name, unsigned char cmd_size,
+					       unsigned int *buf, int buf_len,
+					       int tbl_max, int *tbl_cnt)
 {
-	int item_ind = 0, i = 0;
-	char *token = NULL;
-	char *tmp_buf = NULL;
-	int str_len;
+	unsigned char *table, type;
+	int data_cnt, step = 0, i = 0;
 
-	if (!str)
-		return 0;
+	if (cmd_size == 0 || !buf || buf_len == 0 || tbl_max == 0 || !tbl_cnt)
+		return NULL;
 
-	str_len = strlen(str);
-	tmp_buf = (char *)malloc(str_len + 2);
-	if (!tmp_buf)
-		return 0;
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("%s: %s: buf_len=%d, tbl_max=%d\n", __func__, name, buf_len, tbl_max);
 
-	strcpy(tmp_buf, str);
-	tmp_buf[str_len] = '\0';
-	tmp_buf[str_len  + 1] = '\0';
-	token = tmp_buf;
-	while (i <= str_len) {
-		if (tmp_buf[i] == ',' || i == str_len) {
-			while (*token <= ' ')
-				token++;
-			tmp_buf[i] = '\0';
-			nums[item_ind++] = strtoul(token, NULL, 0);
-			token = tmp_buf + i + 1;
+	while (1) {
+		if ((i + cmd_size) > buf_len) {
+			LCDERR("%s: %s: step[%d]: no ending error\n", __func__, name, step);
+			return NULL;
 		}
-		i++;
+		if ((i + cmd_size) > tbl_max) {
+			LCDERR("%s: %s: step[%d]: size out of support (max %d)\n",
+			       __func__, name, step, tbl_max);
+			return NULL;
+		}
+		type = buf[i];
+		i += cmd_size;
+
+		if (type == LCD_EXT_CMD_TYPE_END)
+			break;
+		step++;
 	}
-	free(tmp_buf);
-	return item_ind;
+	data_cnt = i;
+
+	table = (unsigned char *)malloc(data_cnt);
+	if (!table) {
+		LCDERR("%s: Not enough memory\n", __func__);
+		return NULL;
+	}
+	memset(table, 0, data_cnt);
+	for (i = 0; i < data_cnt; i++)
+		table[i] = buf[i];
+	*tbl_cnt = data_cnt;
+
+	return table;
 }
 
-int path_name_compose(const char *path, const char *name, char *path_name)
+unsigned char *lcd_init_table_load_array(char *name, unsigned char cmd_size,
+					 unsigned int *buf, int buf_len,
+					 int tbl_max, int *tbl_cnt)
 {
-	char *p1;
-	const char *p2;
-	int len1, len2, len, back = 0, k;
+	if (cmd_size == LCD_EXT_CMD_SIZE_DYNAMIC)
+		return lcd_init_table_dynamic_load_array(name, buf, buf_len, tbl_max, tbl_cnt);
 
-	if (!path || !name || !path_name)
-		return -1;
-
-	p2 = name;
-	len2 = strlen(name);
-	if (name[0] == '/') {//absolute path, ignore path
-		strcpy(path_name, name);
-		path_name[len2 + 1] = '\0';
-		return 0;
-	} else if (name[0] == '.' && name[1] == '/') {
-		back = 0;
-		p2 += 2;
-	} else if (p2[0] == '.' && p2[1] == '.' && p2[2] == '/') {
-		while (len2 > 0 && p2[0] == '.' && p2[1] == '.' && p2[2] == '/') {
-			p2 += 3;
-			len2 -= 3;
-			back++;
-		}
-	}
-
-	if (len2 <= 0) {
-		path_name[0] = '\0';
-		return -1;
-	}
-
-	p1 = path_name;
-	len1 = strlen(path);
-	len = len1;
-	memcpy(path_name, path, len);
-	path_name[len] = '\0';
-	if (path_name[len - 1] != '/') {
-		path_name[len] = '/';
-		len += 1;
-		path_name[len] = '\0';
-	}
-	back += 1;
-
-	for (k = len - 1; k > 0; k--) {
-		if (p1[k] == '/')
-			back--;
-		if (back == 0) {
-			memcpy(p1 + k + 1, p2, len2);
-			len = k + len2 + 1;
-			p1[len] = '\0';
-			return 0;
-		}
-	}
-	return -1;
+	return lcd_init_table_fixed_load_array(name, cmd_size, buf, buf_len, tbl_max, tbl_cnt);
 }
 
 void lcd_detail_timing_print(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timing_s *dt)

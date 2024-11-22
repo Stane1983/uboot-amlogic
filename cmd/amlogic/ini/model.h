@@ -16,10 +16,6 @@ extern "C" {
 #define u32 unsigned int
 #endif
 
-int handle_model_list_panel_key(void);
-extern int handle_model_list(void);
-extern int handle_model_sum(void);
-
 #ifdef __cplusplus
 }
 #endif
@@ -564,12 +560,13 @@ struct lcd_tcon_bin_path_header_s {
 	unsigned char reserved[12];
 };
 
-struct panel_misc_s {
-	char version[8];
-	char outputmode[64];
-	char connector_type[64];
-	unsigned char panel_reverse;
-	unsigned char display_layer;
+struct lcd_tcon_spi_header_s {
+	unsigned int crc32;
+	unsigned int data_size;
+	unsigned short version;
+	unsigned short load_level;
+	unsigned short reserved;
+	unsigned short block_cnt;
 };
 
 struct lcd_tcon_spi_block_s {

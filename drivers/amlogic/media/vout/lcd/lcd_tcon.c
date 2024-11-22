@@ -33,11 +33,7 @@ static struct tcon_mem_map_table_s tcon_mm_table = {
 	.lut_valid_flag = 0,
 };
 static struct lcd_tcon_local_cfg_s tcon_local_cfg;
-__maybe_unused static char *g_tcon_data_path, *g_tcon_data_path_rsvd;
-__maybe_unused static int g_tcon_bin_cnt, g_tcon_bin_cnt_rsvd;
-#define TCON_BIN_PATH_MAX_SIZE        (0x2800)
-#define TCON_BIN_PATH_LEN 256
-#define TCON_BIN_PATH_HEAD_LEN 32
+static unsigned char *g_tcon_bin_path, *g_tcon_bin_path_k;
 
 int lcd_tcon_valid_check(void)
 {
@@ -138,6 +134,176 @@ unsigned char lcd_tcon_lrc(unsigned char *buf, unsigned int len)
 	return temp;
 }
 
+static unsigned char *init_tcon_bin_path_mem(void)
+{
+	struct lcd_tcon_bin_path_header_s *header;
+
+	if (!g_tcon_bin_path) {
+		g_tcon_bin_path = (unsigned char *)malloc(TCON_BIN_PATH_MAX_SIZE);
+		if (!g_tcon_bin_path) {
+			LCDERR("%s: malloc memory error!\n", __func__);
+			return NULL;
+		}
+	}
+	memset(g_tcon_bin_path, 0, TCON_BIN_PATH_MAX_SIZE);
+
+	header = (struct lcd_tcon_bin_path_header_s *)g_tcon_bin_path;
+	header->mem_total_size = TCON_BIN_PATH_MAX_SIZE;
+
+	return g_tcon_bin_path;
+}
+
+static unsigned char *init_tcon_bin_path_k_mem(void)
+{
+	struct lcd_tcon_bin_path_header_s *header;
+
+	if (!g_tcon_bin_path_k) {
+		g_tcon_bin_path_k = (unsigned char *)malloc(TCON_BIN_PATH_MAX_SIZE);
+		if (!g_tcon_bin_path_k) {
+			LCDERR("%s: malloc memory error!\n", __func__);
+			return NULL;
+		}
+	}
+	memset(g_tcon_bin_path_k, 0, TCON_BIN_PATH_MAX_SIZE);
+
+	header = (struct lcd_tcon_bin_path_header_s *)g_tcon_bin_path_k;
+	header->mem_total_size = TCON_BIN_PATH_MAX_SIZE;
+
+	return g_tcon_bin_path_k;
+}
+
+/* for uboot use */
+unsigned char *get_tcon_bin_path_mem(void)
+{
+	if (!g_tcon_bin_path) {
+		g_tcon_bin_path = init_tcon_bin_path_mem();
+		if (!g_tcon_bin_path)
+			return NULL;
+	}
+
+	return g_tcon_bin_path;
+}
+
+/* save to reserved memory for kernel */
+unsigned char *get_tcon_bin_path_k_mem(void)
+{
+	if (!g_tcon_bin_path_k) {
+		g_tcon_bin_path_k = init_tcon_bin_path_k_mem();
+		if (!g_tcon_bin_path_k)
+			return NULL;
+	}
+
+	return g_tcon_bin_path_k;
+}
+
+static int get_tcon_data_bin_by_id(unsigned char **buf, int id)
+{
+	unsigned char *bin_buf;
+	char *path;
+	int offset, bin_size;
+	unsigned int data_size, raw_crc32, temp_crc32;
+
+	if (!buf)
+		return -1;
+	if (buf[id]) //for reload
+		free(buf[id]);
+
+	offset = 32 + 256 * id + 4;
+	if (!g_tcon_bin_path || offset > TCON_BIN_PATH_MAX_SIZE - 256)
+		return -1;
+
+	path = (char *)(g_tcon_bin_path + offset);
+	bin_buf = model_read_file_to_buffer((const char *)path, &bin_size);
+	if (!bin_buf || bin_size <= 0) {
+		LCDPR("%s: read %s error, size:%d\n", __func__, path, bin_size);
+		return -1;
+	}
+
+	data_size = bin_buf[8] |
+		(bin_buf[9] << 8) |
+		(bin_buf[10] << 16) |
+		(bin_buf[11] << 24);
+	if (data_size > bin_size) {
+		memset(bin_buf, 0, bin_size);
+		free(bin_buf);
+		return -1;
+	}
+	raw_crc32 = bin_buf[0] |
+		(bin_buf[1] << 8) |
+		(bin_buf[2] << 16) |
+		(bin_buf[3] << 24);
+	temp_crc32 = cal_CRC32(0, &bin_buf[4], (data_size - 4));
+	if (raw_crc32 != temp_crc32) {
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+			LCDERR("%s: bin[%d] crc32 check error (raw=0x%08x, cal=0x%02x)\n",
+			       __func__, id, raw_crc32, temp_crc32);
+		} else {
+			LCDERR("%s: bin[%d] crc32 check error\n", __func__, id);
+		}
+		memset(bin_buf, 0, bin_size);
+		free(bin_buf);
+		return -1;
+	}
+
+	buf[id] = bin_buf;
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("%s: bin[%d] finish, bin_size = %d\n", __func__, id, bin_size);
+
+	return 0;
+}
+
+static int lcd_tcon_bin_path_resv_mem_set(void)
+{
+	struct lcd_tcon_bin_path_header_s *header;
+	unsigned char *buf, *mem_vaddr;
+	unsigned int block_size, temp_crc, n, i;
+
+	if (tcon_rmem.flag == 0)
+		return 0;
+
+	buf = get_tcon_bin_path_k_mem();
+	if (!buf) {
+		LCDERR("%s: bin_path buf invalid\n", __func__);
+		return -1;
+	}
+	header = (struct lcd_tcon_bin_path_header_s *)buf;
+	if (header->data_size > tcon_rmem.bin_path_rmem.mem_size ||
+	    header->data_size < sizeof(struct lcd_tcon_bin_path_header_s)) {
+		LCDERR("%s: bin_path data_size error\n", __func__);
+		return -1;
+	}
+	if (header->block_cnt > 32) {
+		LCDERR("%s: bin_path block_cnt error\n", __func__);
+		return -1;
+	}
+	temp_crc = cal_CRC32(0, &buf[4], (header->data_size - 4));
+	if (header->crc32 != temp_crc) {
+		LCDERR("%s: bin_path data crc error\n", __func__);
+		return -1;
+	}
+
+	if (tcon_mm_table.data_size) {
+		for (i = 0; i < tcon_mm_table.block_cnt; i++) {
+			block_size = tcon_mm_table.data_size[i];
+			if (block_size == 0)
+				continue;
+			n = 32 + (i * 256);
+			buf[n] = block_size & 0xff;
+			buf[n + 1] = (block_size >> 8) & 0xff;
+			buf[n + 2] = (block_size >> 16) & 0xff;
+			buf[n + 3] = (block_size >> 24) & 0xff;
+		}
+
+		/* update data check */
+		header->crc32 = cal_CRC32(0, &buf[4], (header->data_size - 4));
+	}
+
+	mem_vaddr = (unsigned char *)(unsigned long)(tcon_rmem.bin_path_rmem.mem_paddr);
+	memcpy(mem_vaddr, buf, header->data_size);
+
+	return 0;
+}
+
 /* **********************************
  * tcon function api
  * **********************************
@@ -193,119 +359,6 @@ int lcd_tcon_init_setting_check(struct aml_lcd_drv_s *pdrv, struct lcd_detail_ti
 
 	return ret;
 }
-
-/* for uboot use */
-void *get_tcon_data_path_mem(unsigned int size)
-{
-	unsigned data_size;
-
-	if (!g_tcon_data_path)
-		return NULL;
-
-	data_size = g_tcon_data_path[4] |
-		(g_tcon_data_path[5] << 8) |
-		(g_tcon_data_path[6] << 16) |
-		(g_tcon_data_path[7] << 24);
-	if (data_size > size)
-		return NULL;
-
-	return g_tcon_data_path;
-}
-
-/* save to reserved memory for kernel */
-void *get_tcon_data_rsvd_path_mem(unsigned int size)
-{
-	unsigned data_size;
-
-	if (!g_tcon_data_path_rsvd)
-		return NULL;
-
-	data_size = g_tcon_data_path_rsvd[4] |
-		(g_tcon_data_path_rsvd[5] << 8) |
-		(g_tcon_data_path_rsvd[6] << 16) |
-		(g_tcon_data_path_rsvd[7] << 24);
-	if (data_size > size)
-		return NULL;
-
-	return g_tcon_data_path_rsvd;
-}
-
-int get_tcon_data_bin_by_id(unsigned char **buf, int id)
-{
-	char *path;
-	int size;
-
-	if (*buf)
-		free(*buf);
-
-	size = 32 + 256 * id + 4;
-	if (!g_tcon_data_path || size > TCON_BIN_PATH_MAX_SIZE - 256)
-		return -1;
-
-	path = g_tcon_data_path + size;
-	*buf = read_file_to_buffer((const char *)path, &size);
-	if (*buf && size) {
-		LCDPR("find %s ok, size:%d\n", path, size);
-		return 0;
-	}
-
-	return -1;
-}
-
-#ifdef CONFIG_CMD_INI
-static void *lcd_tcon_path_rsvd_mem_get(unsigned int size)
-{
-	void *mem;
-
-	mem = get_tcon_data_rsvd_path_mem(size);
-	if (!mem)
-		mem = handle_tcon_path_resv_mem_get(size);
-
-	return mem;
-}
-
-static int lcd_tcon_bin_path_resv_mem_set(void)
-{
-	unsigned char *buf, *mem_vaddr;
-	unsigned int data_size, block_size, temp_crc, n, i;
-
-	if (tcon_rmem.flag == 0)
-		return 0;
-
-	buf = lcd_tcon_path_rsvd_mem_get(tcon_rmem.bin_path_rmem.mem_size);
-	if (!buf) {
-		LCDERR("%s: bin_path buf invalid\n", __func__);
-		return -1;
-	}
-
-	data_size = buf[4] | (buf[5] << 8) | (buf[6] << 16) | (buf[7] << 24);
-
-	if (tcon_mm_table.data_size) {
-		for (i = 0; i < tcon_mm_table.block_cnt; i++) {
-			block_size = tcon_mm_table.data_size[i];
-			if (block_size == 0)
-				continue;
-			n = 32 + (i * 256);
-			buf[n] = block_size & 0xff;
-			buf[n + 1] = (block_size >> 8) & 0xff;
-			buf[n + 2] = (block_size >> 16) & 0xff;
-			buf[n + 3] = (block_size >> 24) & 0xff;
-		}
-
-		/* update data check */
-		temp_crc = lcd_crc32(0, &buf[4], (data_size - 4));
-		buf[0] = temp_crc & 0xff;
-		buf[1] = (temp_crc >> 8) & 0xff;
-		buf[2] = (temp_crc >> 16) & 0xff;
-		buf[3] = (temp_crc >> 24) & 0xff;
-	}
-
-	mem_vaddr = (unsigned char *)(unsigned long)(tcon_rmem.bin_path_rmem.mem_paddr);
-	memcpy(mem_vaddr, buf, data_size);
-
-	return 0;
-}
-#endif
 
 int lcd_tcon_enable(struct aml_lcd_drv_s *pdrv)
 {
@@ -578,7 +631,7 @@ void lcd_tcon_data_block_regen_crc(unsigned char *data)
 	header = (struct lcd_tcon_data_block_header_s *)data;
 
 	raw_crc32 = (data[0] | (data[1] << 8) | (data[2] << 16) | (data[3] << 24));
-	new_crc32 = lcd_crc32(0, data + 4, header->block_size - 4);
+	new_crc32 = cal_CRC32(0, data + 4, header->block_size - 4);
 	if (raw_crc32 != new_crc32) {
 		data[0] = (unsigned char)(new_crc32 & 0xff);
 		data[1] = (unsigned char)((new_crc32 >> 8) & 0xff);
@@ -675,59 +728,45 @@ int get_lcd_tcon_data_size(unsigned char *data_buf)
 		return 0;
 }
 
-#ifdef CONFIG_AML_LCD_JSON
-static void lcd_tcon_data_path_head_add(unsigned char *p, u32 ver, u32 load_level, u32 cnt)
+#if defined(CONFIG_AML_LCD_JSON) || defined(CONFIG_CMD_AML_MODEL)
+static void lcd_tcon_data_path_head_add(unsigned char *p, u32 cnt)
 {
+	struct lcd_tcon_bin_path_header_s *header;
 	unsigned int temp;
 
-	/* version */
-	temp = ver;
-	p[8] = temp & 0xff;
-	p[9] = (temp >> 8) & 0xff;
-	p[10] = (temp >> 16) & 0xff;
-	p[11] = (temp >> 24) & 0xff;
+	header = (struct lcd_tcon_bin_path_header_s *)p;
+	header->version = 1;
+	header->data_load_level = 1;
+	header->init_load = 1;
+	header->ready = 1;
+	header->block_cnt = cnt;
 
-	/* data_load_level */
-	temp = load_level;
-	p[12] = temp & 0xff;
-	p[13] = (temp >> 8) & 0xff;
-	p[14] = (temp >> 16) & 0xff;
-	p[15] = (temp >> 24) & 0xff;
-
-	/* path cnt */
-	temp = cnt;
-	p[16] = temp & 0xff;
-	p[17] = (temp >> 8) & 0xff;
-	p[18] = (temp >> 16) & 0xff;
-	p[19] = (temp >> 24) & 0xff;
-
-	/* data size */
 	temp = 32 + cnt * 256;
-	p[4] = temp & 0xff;
-	p[5] = (temp >> 8) & 0xff;
-	p[6] = (temp >> 16) & 0xff;
-	p[7] = (temp >> 24) & 0xff;
+	header->data_size = temp;
 
-	/* data check */
-	temp = lcd_crc32(0, &p[4], (temp - 4));
-	p[0] = temp & 0xff;
-	p[1] = (temp >> 8) & 0xff;
-	p[2] = (temp >> 16) & 0xff;
-	p[3] = (temp >> 24) & 0xff;
+	temp = cal_CRC32(0, &p[4], (header->data_size - 4));
+	header->crc32 = temp;
 }
+#endif
 
+#ifdef CONFIG_AML_LCD_JSON
 static int lcd_panel_parse_tcon_from_json(struct aml_lcd_drv_s *pdrv)
 {
+	struct lcd_tcon_init_block_header_s *header;
+	unsigned char *bin_path, *bin_path_k;
 	const char *str, *dir_uboot, *dir_kernel;
-	char path[TCON_BIN_PATH_LEN], *data = NULL, *p0, *p1;
+	unsigned char *data = NULL;
+	char path[TCON_BIN_PATH_LEN], *p0, *p1;
 	int ret = 0, size, cnt = 0, i, index;
+	unsigned int temp_crc32;
+	int tcon_bin_cnt = 0, tcon_bin_cnt_rsvd = 0;
 	__maybe_unused struct json_s *parent, *child;
 	struct json_parse_s *jsp;
 
 	index = pdrv->index;
 	jsp = get_panel_jsp(index);
-	if (jsp->status != JSON_STATUS_OK) {
-		LCDPR("panel %d json not ready\n", index);
+	if (!json_parse_ok(jsp)) {
+		LCDPR("%s: lcd%d json not ready\n", __func__, index);
 		return -1;
 	}
 
@@ -750,7 +789,7 @@ static int lcd_panel_parse_tcon_from_json(struct aml_lcd_drv_s *pdrv)
 
 	str = json_get_obj_str(jsp, parent, "tcon_reg_path", NULL);
 	if (!str) {
-		LCDPR("can't find /data/tcon_reg_path\n");
+		LCDERR("can't find /data/tcon_reg_path\n");
 		return -1;
 	}
 
@@ -759,14 +798,26 @@ static int lcd_panel_parse_tcon_from_json(struct aml_lcd_drv_s *pdrv)
 		LCDPR("tcon_reg_path not right\n");
 		return -1;
 	}
-	data = (char *)read_file_to_buffer((const char *)path, &size);
+	data = model_read_file_to_buffer((const char *)path, &size);
 	if (!data || size <= 0) {
-		LCDPR("can't open file:%s\n", path);
+		LCDERR("can't open file:%s\n", path);
+		return -1;
+	}
+	header = (struct lcd_tcon_init_block_header_s *)data;
+	temp_crc32 = cal_CRC32(0, &data[4], (header->block_size - 4));
+	if (temp_crc32 != header->crc32) {
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+			LCDERR("%s: tcon_bin crc32 check error (raw=0x%08x, cal=0x%02x)\n",
+			       __func__, header->crc32, temp_crc32);
+		} else {
+			LCDERR("%s: tcon_bin crc32 check error\n", __func__);
+		}
 		return -1;
 	}
 	if (lcd_debug_print_flag)
 		LCDPR("tcon_reg size:%d path:%s\n", size, path);
-	panel_param_mem_put((unsigned char *)data, "tcon_core_reg", size);
+	panel_param_mem_put(data, "tcon_core_reg", header->block_size);
+	memset(data, 0, size);
 	free(data);
 	data = NULL;
 
@@ -774,39 +825,35 @@ static int lcd_panel_parse_tcon_from_json(struct aml_lcd_drv_s *pdrv)
 	cnt = json_get_array_size(jsp, child);
 	if (cnt <= 0) {
 		LCDPR("tcon_data_path error\n");
-		return -1;
+		return 0;
 	}
 
-	g_tcon_data_path = (char *)malloc(TCON_BIN_PATH_MAX_SIZE);
-	g_tcon_data_path_rsvd = (char *)malloc(TCON_BIN_PATH_MAX_SIZE);
-
-	if (!g_tcon_data_path || !g_tcon_data_path_rsvd) {
-		LCDPR("no memory to save tcon data path\n");
+	bin_path = get_tcon_bin_path_mem();
+	bin_path_k = get_tcon_bin_path_k_mem();
+	if (!bin_path || !bin_path_k) {
+		LCDERR("no memory to save tcon data path\n");
 		return -1;
 	}
-
-	memset(g_tcon_data_path, 0, TCON_BIN_PATH_MAX_SIZE);
-	memset(g_tcon_data_path_rsvd, 0, TCON_BIN_PATH_MAX_SIZE);
-	p0 = g_tcon_data_path + TCON_BIN_PATH_HEAD_LEN;
-	p1 = g_tcon_data_path_rsvd + TCON_BIN_PATH_HEAD_LEN;
+	p0 = (char *)(bin_path + sizeof(struct lcd_tcon_bin_path_header_s));
+	p1 = (char *)(bin_path_k + sizeof(struct lcd_tcon_bin_path_header_s));
 
 	for (i = 0; i < cnt; i++) {
 		str = json_get_arr_str(jsp, child, i, NULL);
 		if (!str)
 			continue;
 		if (path_name_compose(dir_uboot, str, path) == 0) {
-			strncpy(p0 + 4, path, TCON_BIN_PATH_LEN - 4);
-			g_tcon_bin_cnt++;
+			strlcpy(p0 + 4, path, TCON_BIN_PATH_LEN - 4);
+			tcon_bin_cnt++;
 			p0 += TCON_BIN_PATH_LEN;
 		}
 		if (path_name_compose(dir_kernel, str, path) == 0) {
-			strncpy(p1 + 4, path, TCON_BIN_PATH_LEN - 4);
-			g_tcon_bin_cnt_rsvd++;
+			strlcpy(p1 + 4, path, TCON_BIN_PATH_LEN - 4);
+			tcon_bin_cnt_rsvd++;
 			p1 += TCON_BIN_PATH_LEN;
 		}
 	}
-	lcd_tcon_data_path_head_add((u8 *)g_tcon_data_path, 1, 1, g_tcon_bin_cnt);
-	lcd_tcon_data_path_head_add((u8 *)g_tcon_data_path_rsvd, 1, 1, g_tcon_bin_cnt_rsvd);
+	lcd_tcon_data_path_head_add((u8 *)bin_path, tcon_bin_cnt);
+	lcd_tcon_data_path_head_add((u8 *)bin_path_k, tcon_bin_cnt_rsvd);
 
 	return 0;
 }
@@ -817,14 +864,116 @@ static inline int lcd_panel_parse_tcon_from_json(struct aml_lcd_drv_s *pdrv)
 }
 #endif
 
+#ifdef CONFIG_CMD_AML_MODEL
+static int lcd_panel_parse_tcon_from_ini(struct aml_lcd_drv_s *pdrv)
+{
+	void *inip, *psec;
+	const char *str;
+	struct lcd_tcon_init_block_header_s *init_header;
+	struct lcd_tcon_bin_path_header_s *path_header;
+	unsigned char *data = NULL, *bin_path, *bin_path_k;
+	char path[32], *p0, *p1;
+	int size, i;
+	unsigned int temp_crc32;
+	int tcon_bin_cnt = 0, tcon_bin_cnt_rsvd = 0;
+
+	inip = get_lcd_ini_parse_mem(pdrv->index);
+	if (!inip) {
+		LCDERR("%s: parse_mem not ready\n", __func__);
+		return -1;
+	}
+
+	psec = lcd_ini_get_section(inip, "tcon_Path");
+	if (!psec) {
+		LCDERR("%s: not find tcon_Path\n", __func__);
+		return -1;
+	}
+
+	str = lcd_ini_get_str(inip, psec, "TCON_BIN_PATH", NULL);
+	if (!str) {
+		LCDERR("%s: can't find TCON_BIN_PATH\n", __func__);
+		return -1;
+	}
+
+	data = model_read_file_to_buffer((const char *)str, &size);
+	if (!data || size <= 0) {
+		LCDERR("%s: read file error: %s\n", __func__, str);
+		return -1;
+	}
+	init_header = (struct lcd_tcon_init_block_header_s *)data;
+	temp_crc32 = cal_CRC32(0, &data[4], (init_header->block_size - 4));
+	if (temp_crc32 != init_header->crc32) {
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+			LCDERR("%s: tcon_bin crc32 check error (raw=0x%08x, cal=0x%02x)\n",
+			       __func__, init_header->crc32, temp_crc32);
+		} else {
+			LCDERR("%s: tcon_bin crc32 check error\n", __func__);
+		}
+		memset(data, 0, size);
+		free(data);
+		return -1;
+	}
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("%s: read tcon_reg bin ok:%s, size:%d\n", __func__, str, size);
+	panel_param_mem_put(data, "tcon_core_reg", init_header->block_size);
+	memset(data, 0, size);
+	free(data);
+	data = NULL;
+
+	bin_path = get_tcon_bin_path_mem();
+	bin_path_k = get_tcon_bin_path_k_mem();
+	if (!bin_path || !bin_path_k) {
+		LCDERR("no memory to save tcon data path\n");
+		return -1;
+	}
+	p0 = (char *)(bin_path + sizeof(struct lcd_tcon_bin_path_header_s));
+	p1 = (char *)(bin_path_k + sizeof(struct lcd_tcon_bin_path_header_s));
+
+	for (i = 0; i < 32; i++) {
+		snprintf(path, 31, "TCON_DATA_%d_BIN_PATH", i);
+		str = lcd_ini_get_str(inip, psec, path, NULL);
+		if (!str)
+			break;
+		strlcpy(p0 + 4, str, TCON_BIN_PATH_LEN - 4);
+		tcon_bin_cnt++;
+		p0 += TCON_BIN_PATH_LEN;
+	}
+	lcd_tcon_data_path_head_add((u8 *)bin_path, tcon_bin_cnt);
+
+	str = lcd_ini_get_str(inip, psec, "TCON_BIN_PATH_K", NULL);
+	if (str) {
+		for (i = 0; i < 32; i++) {
+			snprintf(path, 31, "TCON_DATA_%d_BIN_PATH_K", i);
+			str = lcd_ini_get_str(inip, psec, path, NULL);
+			if (!str)
+				break;
+			strlcpy(p1 + 4, str, TCON_BIN_PATH_LEN - 4);
+			tcon_bin_cnt_rsvd++;
+			p1 += TCON_BIN_PATH_LEN;
+		}
+		lcd_tcon_data_path_head_add((u8 *)bin_path_k, tcon_bin_cnt_rsvd);
+	} else { //no tcon_bin_path_k
+		path_header = (struct lcd_tcon_bin_path_header_s *)bin_path;
+		memcpy(bin_path_k, bin_path, path_header->data_size);
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDPR("%s: tcon bin_path_k same as uboot\n", __func__);
+	}
+
+	return 0;
+}
+#else
+static inline int lcd_panel_parse_tcon_from_ini(struct aml_lcd_drv_s *pdrv)
+{
+	return -1;
+}
+#endif
+
 static int lcd_tcon_reserved_mem_data_load(struct aml_lcd_drv_s *pdrv)
 {
-#ifdef CONFIG_CMD_INI
 	unsigned char *vaddr;
 	unsigned int size = 0;
 	int i, data_relocate = 0;
 	char name[32];
-#endif
 	int ret;
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
@@ -848,14 +997,8 @@ static int lcd_tcon_reserved_mem_data_load(struct aml_lcd_drv_s *pdrv)
 	if (pdrv->config_load != LCD_CONFIG_FILE && pdrv->config_load != LCD_CONFIG_UKEY)
 		return -1;
 
-#ifdef CONFIG_CMD_INI
 	for (i = 0; i < tcon_mm_table.block_cnt; i++) {
-		ret = -1;
-		if (pdrv->config_load == LCD_CONFIG_FILE)
-			ret = get_tcon_data_bin_by_id(&tcon_mm_table.data_mem_vaddr[i], i);
-		else
-			ret = handle_tcon_data_load(tcon_mm_table.data_mem_vaddr, i);
-
+		ret = get_tcon_data_bin_by_id(tcon_mm_table.data_mem_vaddr, i);
 		if (ret)
 			continue;
 
@@ -895,36 +1038,23 @@ static int lcd_tcon_reserved_mem_data_load(struct aml_lcd_drv_s *pdrv)
 		}
 		lcd_tcon_data_load(pdrv, tcon_mm_table.data_mem_vaddr[i], i);
 	}
-#endif
 
 	return 0;
 }
 
-static void *lcd_tcon_bin_path_mem_get(unsigned int size)
-{
-	void *mem;
-
-	mem = get_tcon_data_path_mem(size);
-	if (!mem)
-		mem = handle_tcon_path_mem_get(size);
-
-	return mem;
-}
-
 static int lcd_tcon_bin_path_update(unsigned int size)
 {
-#ifdef CONFIG_CMD_INI
 	struct lcd_tcon_bin_path_header_s *header;
 	unsigned char *mem_vaddr;
-	unsigned int temp_crc32;
+	unsigned int  temp_crc32;
 
 	/* notice: different with kernel flow: mem_vaddr is not mapping to mem_paddr */
-	tcon_rmem.bin_path_rmem.mem_vaddr = lcd_tcon_bin_path_mem_get(size);
-	if (!tcon_rmem.bin_path_rmem.mem_vaddr) {
+	mem_vaddr = get_tcon_bin_path_mem();
+	if (!mem_vaddr) {
 		LCDERR("%s: get mem error\n", __func__);
 		return -1;
 	}
-	mem_vaddr = tcon_rmem.bin_path_rmem.mem_vaddr;
+
 	header = (struct lcd_tcon_bin_path_header_s *)mem_vaddr;
 	if (header->data_size > size ||
 	    header->data_size < sizeof(struct lcd_tcon_bin_path_header_s)) {
@@ -935,12 +1065,14 @@ static int lcd_tcon_bin_path_update(unsigned int size)
 		LCDERR("%s: bin_path block_cnt error\n", __func__);
 		return -1;
 	}
-	temp_crc32 = lcd_crc32(0, &mem_vaddr[4], (header->data_size - 4));
+
+	temp_crc32 = cal_CRC32(0, &mem_vaddr[4], (header->data_size - 4));
 	if (header->crc32 != temp_crc32) {
-		LCDERR("%s: tcon_bin_path data crc error\n", __func__);
+		LCDERR("%s: bin_path data crc error\n", __func__);
 		return -1;
 	}
 
+	tcon_rmem.bin_path_rmem.mem_vaddr = mem_vaddr;
 	tcon_mm_table.version = header->version;
 	tcon_mm_table.data_load_level = header->data_load_level;
 	tcon_mm_table.block_cnt = header->block_cnt;
@@ -948,7 +1080,6 @@ static int lcd_tcon_bin_path_update(unsigned int size)
 	//LCDPR("%s: init_load: %d\n", __func__, tcon_mm_table.init_load);
 
 	tcon_mm_table.bin_path_valid = 1;
-#endif
 
 	return 0;
 }
@@ -1539,9 +1670,9 @@ int lcd_tcon_is_dccd_flow(void)
 	return tcon_local->is_dccd_flow;
 }
 
-#ifdef CONFIG_CMD_INI
 static void lcd_tcon_update_dccd_flow(void)
 {
+#ifdef CONFIG_CMD_INI
 	struct tcon_mem_map_table_s *mm_table = get_lcd_tcon_mm_table();
 	struct lcd_tcon_local_cfg_s *tcon_local = get_lcd_tcon_local_cfg();
 	struct lcd_tcon_init_block_header_s *header;
@@ -1589,8 +1720,8 @@ __is_dccd_flow_exit:
 	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
 		LCDPR("%s: dccd flow flag=%d\n", __func__, is_dccd_flow);
 	tcon_local->is_dccd_flow = is_dccd_flow;
-}
 #endif
+}
 
 static int lcd_tcon_get_config(char *dt_addr, struct aml_lcd_drv_s *pdrv, int load_id)
 {
@@ -1604,7 +1735,8 @@ static int lcd_tcon_get_config(char *dt_addr, struct aml_lcd_drv_s *pdrv, int lo
 	if (load_id == LCD_CONFIG_FILE) {
 		if (get_lcd_panel_file_type(pdrv->index) == PANEL_FILE_JSON)
 			lcd_panel_parse_tcon_from_json(pdrv);
-		//else if (get_lcd_panel_file_type(pdrv->index) == PANEL_FILE_INI)todo
+		else if (get_lcd_panel_file_type(pdrv->index) == PANEL_FILE_INI)
+			lcd_panel_parse_tcon_from_ini(pdrv);
 	}
 
 	if (tcon_rmem.rsv_mem_paddr) {
@@ -1626,10 +1758,9 @@ static int lcd_tcon_get_config(char *dt_addr, struct aml_lcd_drv_s *pdrv, int lo
 
 	lcd_tcon_reserved_mem_data_load(pdrv);
 
-#ifdef CONFIG_CMD_INI
 	lcd_tcon_update_dccd_flow();
 	lcd_tcon_bin_path_resv_mem_set();
-#endif
+
 #if (IS_ENABLED(CONFIG_AMLOGIC_TEE))
 	lcd_tcon_mem_tee_protect(1);
 #endif

@@ -11,6 +11,7 @@
 #include <asm/amlogic/arch/pwr_ctrl.h>
 #endif
 #include <amlogic/keyunify.h>
+#include <amlogic/aml_model.h>
 #include <amlogic/media/vout/aml_vout.h>
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include <amlogic/media/vout/lcd/lcd_memory.h>
@@ -231,7 +232,7 @@ static void lcd_power_ctrl(struct aml_lcd_drv_s *pdrv, int status)
 			      power_step->value, power_step->delay);
 		}
 		switch (power_step->type) {
-		case LCD_POWER_TYPE_CPU:
+		case LCD_POWER_TYPE_GPIO:
 			if (power_step->index < LCD_CPU_GPIO_NUM_MAX) {
 				str = lcd_power->cpu_gpio[power_step->index];
 				gpio = lcd_gpio_name_map_num(str);
@@ -311,7 +312,7 @@ static void lcd_power_ctrl(struct aml_lcd_drv_s *pdrv, int status)
 				       pdrv->index, __func__);
 				break;
 			}
-			pdrv->tcon_spi_data_load();
+			pdrv->tcon_spi_data_load(pdrv);
 			break;
 #endif
 #ifdef CONFIG_AML_LCD_BACKLIGHT
@@ -415,13 +416,12 @@ static void lcd_module_enable(struct aml_lcd_drv_s *pdrv, char *mode)
 
 	sync_duration = pconf->timing.act_timing.sync_duration_num;
 	sync_duration = (sync_duration * 100) / pconf->timing.act_timing.sync_duration_den;
-	LCDPR("[%d]: enable: %s, %s, %ux%u@%u.%02uHz, %s mode, ver %s\n",
+	LCDPR("[%d]: enable: %s, %s, %ux%u@%u.%02uHz, ver:%s\n",
 	      pdrv->index, pconf->basic.model_name,
 	      lcd_type_type_to_str(pconf->basic.lcd_type),
 	      pconf->timing.act_timing.h_active,
 	      pconf->timing.act_timing.v_active,
 	      (sync_duration / 100), (sync_duration % 100),
-	      lcd_type_type_to_str(pdrv->config.basic.lcd_type),
 	      LCD_DRV_VERSION);
 
 	if ((pdrv->status & LCD_STATUS_ENCL_ON) == 0)
@@ -904,65 +904,6 @@ void lcd_power_domain_off(struct aml_lcd_data_s *lcd_data_p)
 #endif
 }
 
-void lcd_handle_panel_param_to_kernel(void)
-{
-#ifdef CONFIG_CMD_INI
-#define PANEL_PARAM_KEY_NUM_MAX (64 - 1)
-#define PANEL_PARAM_KEY_SIZE 64
-#define PANEL_PARAM_HEAD_SIZE PANEL_PARAM_KEY_SIZE
-#define PANEL_PARAM_KEY_MEM_OFST (PANEL_PARAM_KEY_NUM_MAX * PANEL_PARAM_KEY_SIZE +\
-			PANEL_PARAM_HEAD_SIZE)
-	unsigned char *panel_param;
-	unsigned int size = 0, key_size = 0, key_mem_size = 0;
-	phys_addr_t paddr;
-	unsigned char *panel_rsvd;
-	struct panel_param_head_s {
-		unsigned int _crc32, size;
-		unsigned short key_cnt, ukey_exist;
-		unsigned char rsvd[PANEL_PARAM_HEAD_SIZE - 12];
-	} *head;
-
-	panel_param = get_panel_param_mem();
-	if (panel_param) {
-		head = (struct panel_param_head_s *)panel_param;
-		if (head->size <= PANEL_PARAM_KEY_MEM_OFST || head->key_cnt == 0) {
-			LCDPR("error panel_param header\n");
-			return;
-		}
-		key_size = head->key_cnt * PANEL_PARAM_KEY_SIZE + PANEL_PARAM_HEAD_SIZE;
-		key_mem_size = head->size - PANEL_PARAM_KEY_MEM_OFST;
-		size  = key_size + key_mem_size;
-
-		panel_rsvd = (unsigned char *)lrm_alloc_tail(size, &paddr, "panel_config");
-		if (!panel_rsvd) {
-			LCDPR("no rsvd mem to save panel_config\n");
-			return;
-		}
-		memcpy(panel_rsvd, panel_param, key_size);
-		memcpy(panel_rsvd + key_size, panel_param + PANEL_PARAM_KEY_MEM_OFST,
-		       key_mem_size);
-
-		head = (struct panel_param_head_s *)panel_rsvd;
-		head->size = size;
-		head->_crc32 = lcd_crc32(0, panel_rsvd + 4, size - 4);
-
-		LCDPR("%s, paddr:0x%llx crc:0x%x, size:%d, key_cnt:%d, ukey_exist:%d\n", __func__,
-		      (u64)paddr, head->_crc32, head->size, head->key_cnt, head->ukey_exist);
-	}
-#endif
-}
-
-void update_panel_param_to_kernel(void)
-{
-	u64 pa;
-	u32 size;
-
-	if (lrm_get_by_name("panel_config", &pa, &size))
-		return;
-	lrm_phys_free(pa);
-	lcd_handle_panel_param_to_kernel();
-}
-
 int lcd_probe(void)
 {
 	int ret = 0;
@@ -1003,7 +944,7 @@ int lcd_probe(void)
 
 	lcd_init_debug_bootargs();
 
-	lcd_handle_panel_param_to_kernel();
+	panel_file_parse_mem_save();
 	lrm_handle_mem_info_to_kernel();
 
 	return 0;
@@ -1519,20 +1460,25 @@ int aml_lcd_driver_prbs(int index, unsigned int ms, unsigned int prbs_freq, unsi
 
 void aml_lcd_panel_dump(int index, const char *path)
 {
-	struct aml_lcd_drv_s *pdrv = lcd_driver_check_valid(index);
+	unsigned char type;
 
-	if (!pdrv)
-		return;
-
-	if (pdrv->config_load == LCD_CONFIG_FILE) {
+	type = get_lcd_panel_file_type(index);
+	switch (type) {
+	case PANEL_FILE_JSON:
 #ifdef CONFIG_AML_LCD_JSON
-		if (get_lcd_panel_file_type(index) == PANEL_FILE_JSON)
-			json_dump_path(get_panel_jsp(index), path);
-#else
-		return;
+		json_dump_path(get_panel_jsp(index), path);
 #endif
-	} else if (pdrv->config_load == LCD_CONFIG_UKEY) {
-		lcd_unifykey_dump(index, LCD_UKEY_DEBUG_NORMAL);
+		break;
+	case PANEL_FILE_INI:
+#ifdef CONFIG_CMD_AML_MODEL
+		lcd_ini_list_key_value(index);
+#endif
+#ifdef CONFIG_CMD_INI
+		handle_model_list_panel_key(index);
+#endif
+		break;
+	default:
+		break;
 	}
 }
 
