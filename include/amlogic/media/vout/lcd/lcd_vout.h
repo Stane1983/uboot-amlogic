@@ -756,7 +756,6 @@ struct aml_lcd_drv_s {
 	struct lcd_duration_s *std_duration;
 	struct lcd_vmode_mgr_s vmode_mgr;
 	void *clk_conf;
-	struct aml_lcd_cma_mem cma_pool;
 	struct lcd_disp_tmg_req_s disp_req;
 
 	int  (*outputmode_check)(struct aml_lcd_drv_s *pdrv, char *mode);

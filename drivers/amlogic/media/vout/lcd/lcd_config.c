@@ -80,49 +80,6 @@ char *lcd_mode_mode_to_str(int mode)
 	return lcd_mode_table[mode];
 }
 
-static int lcd_cma_detect_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
-{
-	int parent_offset, cell_size;
-	char *propdata;
-	char name[128];
-
-	if (!dt_addr || !pdrv)
-		return 0;
-
-	parent_offset = fdt_path_offset(dt_addr, "/reserved-memory");
-	if (parent_offset < 0) {
-		LCDPR("can't find node: /reserved-memory\n");
-		return 0;
-	}
-	cell_size = fdt_address_cells(dt_addr, parent_offset);
-	if (pdrv->index == 0)
-		sprintf(name, "/reserved-memory/linux,lcd-reserved");
-	else
-		sprintf(name, "/reserved-memory/linux,lcd%d-reserved", pdrv->index);
-	parent_offset = fdt_path_offset(dt_addr, name);
-	if (parent_offset < 0) {
-		LCDPR("can't find node: %s\n", name);
-		return 0;
-	}
-	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "reg", NULL);
-	if (!propdata) {
-		LCDPR("warning: failed to get lcd-cma memory from dts\n");
-		return 0;
-	}
-
-	memset(&pdrv->cma_pool, 0, sizeof(struct aml_lcd_cma_mem));
-	if (cell_size == 2) {
-		pdrv->cma_pool.pbase = be32_to_cpup((((u32 *)propdata) + 1));
-		pdrv->cma_pool.size = be32_to_cpup((((u32 *)propdata) + 3));
-	} else {
-		pdrv->cma_pool.pbase = be32_to_cpup(((u32 *)propdata));
-		pdrv->cma_pool.size = be32_to_cpup((((u32 *)propdata) + 1));
-	}
-	pdrv->cma_pool.exist = 1;
-
-	return 1;
-}
-
 static void lcd_config_load_print(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_detail_timing_s *ptiming = pdrv->config.timing.dft_timing;
@@ -2365,7 +2322,6 @@ int lcd_get_panel_config(char *dt_addr, int load_id, struct aml_lcd_drv_s *pdrv)
 
 	lcd_lane_map_update(pdrv);
 
-	lcd_cma_detect_dts(dt_addr, pdrv);
 	lcd_config_load_init(pdrv);
 	lcd_config_load_print(pdrv);
 	lcd_pinmux_load_config(pdrv);

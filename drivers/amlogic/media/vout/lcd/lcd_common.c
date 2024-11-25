@@ -13,61 +13,6 @@
 #include "env.h"
 #include <command.h>
 
-void lcd_cma_pool_init(struct aml_lcd_cma_mem *cma,
-		phys_addr_t pa, unsigned long size, unsigned int page_size)
-{
-	LCDPR("%s pa:0x%llx, size:0x%lx, page_size:0x%x\n", __func__, pa, size, page_size);
-	cma->page_size = page_size;
-	cma->size = (size / page_size) * page_size;
-	cma->page_num = cma->size / cma->page_size;
-	cma->page_pos = 0;
-	cma->offset = 0;
-	cma->pbase = pa;
-	cma->vbase = (unsigned char *)cma->pbase;
-	cma->ready = 1;
-}
-
-//Its a one-time-deal for uboot, no free. think twice before use this
-void *lcd_cma_pool_simple_alloc(struct aml_lcd_cma_mem *cma, unsigned long size)
-{
-	unsigned int pages;
-	void *va = NULL;
-
-	if (!cma || !cma->vbase || cma->page_size == 0)
-		return NULL;
-
-	pages = (size + cma->page_size - 1) / cma->page_size;
-	if (pages > cma->page_num - cma->page_pos)
-		return NULL;
-
-	va = cma->vbase + cma->page_pos * cma->page_size;
-	cma->page_pos += pages;
-
-	return va;
-}
-
-void *lcd_alloc_dma_buffer(struct aml_lcd_drv_s *pdrv, unsigned long size)
-{
-	void *addr = NULL;
-	struct aml_lcd_cma_mem *cma;
-
-	if (!pdrv)
-		return NULL;
-
-	cma = &pdrv->cma_pool;
-
-	if (cma->ready) {
-		addr = lcd_cma_pool_simple_alloc(cma, size);
-	} else if (cma->exist) {
-		lcd_cma_pool_init(cma, cma->pbase, cma->size, LCD_CMA_PAGE_SIZE_4K);
-		addr = lcd_cma_pool_simple_alloc(cma, size);
-	} else {
-		addr = memalign(16, size);
-	}
-
-	return addr;
-}
-
 void lcd_detail_timing_print(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timing_s *dt)
 {
 	s32 herr, verr;
