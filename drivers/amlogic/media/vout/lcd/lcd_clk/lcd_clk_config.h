@@ -22,6 +22,10 @@
 #define LCD_CLK_CTRL_FRAC    2
 #define LCD_CLK_CTRL_END     0xffff
 
+#define LCD_SSC_LEVEL        BIT(0)
+#define LCD_SSC_FREQ         BIT(1)
+#define LCD_SSC_MODE         BIT(2)
+
 #define LCD_CLK_REG_END      0xffff
 #define LCD_CLK_CTRL_CNT_MAX 10
 struct lcd_clk_ctrl_s {
@@ -78,8 +82,7 @@ struct lcd_clk_data_s {
 	void (*clk_parameter_init)(struct aml_lcd_drv_s *pdrv);
 	void (*clk_generate_parameter)(struct aml_lcd_drv_s *pdrv);
 	void (*pll_frac_generate)(struct aml_lcd_drv_s *pdrv);
-	void (*set_ss_level)(struct aml_lcd_drv_s *pdrv);
-	void (*set_ss_advance)(struct aml_lcd_drv_s *pdrv);
+	void (*set_ss)(struct aml_lcd_drv_s *pdrv, unsigned int ss_flag);
 	void (*clk_ss_enable)(struct aml_lcd_drv_s *pdrv, int status);
 	void (*pll_frac_set)(struct aml_lcd_drv_s *pdrv, unsigned int frac);
 	void (*clk_set)(struct aml_lcd_drv_s *pdrv);

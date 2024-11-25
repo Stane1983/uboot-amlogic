@@ -48,11 +48,12 @@ static void lcd_pll_ss_enable(struct aml_lcd_drv_s *pdrv, int status)
 	lcd_ana_write(ANACTRL_TCON_PLL0_CNTL2 + offset, pll_ctrl2);
 }
 
-static void lcd_set_pll_ss_level(struct aml_lcd_drv_s *pdrv)
+static void lcd_set_pll_ss(struct aml_lcd_drv_s *pdrv, unsigned int ss_flag)
 {
 	struct lcd_clk_config_s *cconf;
 	unsigned int pll_ctrl2, offset;
-	int ret;
+	char prt_str[64];
+	int len = 0, ret;
 
 	cconf = get_lcd_clk_config(pdrv);
 	if (!cconf)
@@ -60,48 +61,40 @@ static void lcd_set_pll_ss_level(struct aml_lcd_drv_s *pdrv)
 
 	offset = cconf->pll_offset;
 	pll_ctrl2 = lcd_ana_read(ANACTRL_TCON_PLL0_CNTL2 + offset);
-	pll_ctrl2 &= ~((1 << 15) | (0xf << 16) | (0xf << 28));
 
-	if (cconf->ss_level > 0) {
-		ret = lcd_pll_ss_level_generate(cconf);
-		if (ret == 0) {
-			cconf->ss_en = 1;
-			pll_ctrl2 |= ((1 << 15) |
-				      (cconf->ss_dep_sel << 28) |
-				      (cconf->ss_str_m << 16));
-			LCDPR("[%d]: set pll spread spectrum: level %d, %dppm\n",
-				pdrv->index, cconf->ss_level, cconf->ss_ppm);
+	if (ss_flag & LCD_SSC_LEVEL) {
+		pll_ctrl2 &= ~((1 << 15) | (0xf << 16) | (0xf << 28));
+
+		if (cconf->ss_level > 0) {
+			ret = lcd_pll_ss_level_generate(cconf);
+			if (ret == 0) {
+				cconf->ss_en = 1;
+				pll_ctrl2 |= ((1 << 15) |
+					(cconf->ss_dep_sel << 28) |
+					(cconf->ss_str_m << 16));
+				len += sprintf(prt_str + len, "level %d, %dppm\n",
+					       cconf->ss_level, cconf->ss_ppm);
+			}
+		} else {
+			cconf->ss_en = 0;
+			len += sprintf(prt_str + len, "disable\n");
 		}
-	} else {
-		cconf->ss_en = 0;
-		LCDPR("[%d]: set pll spread spectrum: disable\n", pdrv->index);
+	}
+
+	if (ss_flag & LCD_SSC_FREQ) {
+		pll_ctrl2 &= ~(0x7 << 24); /* ss_freq */
+		pll_ctrl2 |= (cconf->ss_freq << 24);
+		len += sprintf(prt_str + len, "%sfreq=%d\n", len ? ", " : "", cconf->ss_freq);
+	}
+
+	if (ss_flag & LCD_SSC_MODE) {
+		pll_ctrl2 &= ~(0x3 << 22); /* ss_mode */
+		pll_ctrl2 |= (cconf->ss_mode << 22);
+		len += sprintf(prt_str + len, "%smode=%d\n", len ? ", " : "", cconf->ss_mode);
 	}
 
 	lcd_ana_write(ANACTRL_TCON_PLL0_CNTL2 + offset, pll_ctrl2);
-}
-
-static void lcd_set_pll_ss_advance(struct aml_lcd_drv_s *pdrv)
-{
-	struct lcd_clk_config_s *cconf;
-	unsigned int pll_ctrl2, offset;
-	unsigned int freq, mode;
-
-	cconf = get_lcd_clk_config(pdrv);
-	if (!cconf)
-		return;
-
-	freq = cconf->ss_freq;
-	mode = cconf->ss_mode;
-	offset = cconf->pll_offset;
-	pll_ctrl2 = lcd_ana_read(ANACTRL_TCON_PLL0_CNTL2 + offset);
-	pll_ctrl2 &= ~(0x7 << 24); /* ss_freq */
-	pll_ctrl2 |= (freq << 24);
-	pll_ctrl2 &= ~(0x3 << 22); /* ss_mode */
-	pll_ctrl2 |= (mode << 22);
-	lcd_ana_write(ANACTRL_TCON_PLL0_CNTL2 + offset, pll_ctrl2);
-
-	LCDPR("[%d]: set pll spread spectrum: freq=%d, mode=%d\n",
-	      pdrv->index, freq, mode);
+	LCDPR("[%d]: set ssc: %s\n", pdrv->index, prt_str);
 }
 
 static void lcd_pll_frac_set(struct aml_lcd_drv_s *pdrv, unsigned int frac)
@@ -232,10 +225,8 @@ static void lcd_set_pll_t3x(struct aml_lcd_drv_s *pdrv)
 	if (pdrv->config.timing.clk_mode == LCD_CLK_MODE_INDEPENDENCE)
 		_lcd_set_pll_by_cconf(pdrv, &cconf[1]);
 
-	if (cconf[0].ss_level > 0) {
-		lcd_set_pll_ss_level(pdrv);
-		lcd_set_pll_ss_advance(pdrv);
-	}
+	if (cconf[0].ss_level > 0)
+		lcd_set_pll_ss(pdrv, (LCD_SSC_LEVEL | LCD_SSC_FREQ | LCD_SSC_MODE));
 }
 
 static void lcd_set_phy_dig_div_t3x(struct aml_lcd_drv_s *pdrv)
@@ -844,8 +835,7 @@ static struct lcd_clk_data_s lcd_clk_data_t3x_0 = {
 	.clk_parameter_init = NULL,
 	.clk_generate_parameter = lcd_clk_generate_dft,
 	.pll_frac_generate = lcd_pll_frac_generate_dft,
-	.set_ss_level = lcd_set_pll_ss_level,
-	.set_ss_advance = lcd_set_pll_ss_advance,
+	.set_ss = lcd_set_pll_ss,
 	.clk_ss_enable = lcd_pll_ss_enable,
 	.pll_frac_set = lcd_pll_frac_set,
 	.clk_set = lcd_clk_set_t3x,
@@ -900,8 +890,7 @@ static struct lcd_clk_data_s lcd_clk_data_t3x_1 = {
 	.clk_parameter_init = NULL,
 	.clk_generate_parameter = lcd_clk_generate_dft,
 	.pll_frac_generate = lcd_pll_frac_generate_dft,
-	.set_ss_level = lcd_set_pll_ss_level,
-	.set_ss_advance = lcd_set_pll_ss_advance,
+	.set_ss = lcd_set_pll_ss,
 	.clk_ss_enable = lcd_pll_ss_enable,
 	.pll_frac_set = lcd_pll_frac_set,
 	.clk_set = lcd_clk_set_t3x,

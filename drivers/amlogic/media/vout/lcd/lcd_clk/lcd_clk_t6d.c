@@ -41,11 +41,12 @@ static void lcd_pll_frac_set_t6d(struct aml_lcd_drv_s *pdrv, unsigned int frac)
 	LCDPR("[%d]: %s: pll_frac=0x%x\n", pdrv->index, __func__, frac);
 }
 
-static void lcd_set_pll_ss_level_t6d(struct aml_lcd_drv_s *pdrv)
+static void lcd_set_pll_ss_t6d(struct aml_lcd_drv_s *pdrv, unsigned int ss_flag)
 {
 	struct lcd_clk_config_s *cconf;
 	unsigned int pll_ctrl0, pll_ctrl2;
-	int ret;
+	char prt_str[64];
+	int len = 0, ret;
 
 	cconf = get_lcd_clk_config(pdrv);
 	if (!cconf)
@@ -54,46 +55,40 @@ static void lcd_set_pll_ss_level_t6d(struct aml_lcd_drv_s *pdrv)
 	pll_ctrl0 = lcd_ana_read(ANACTRL_TCON_PLL0_CNTL0);
 	pll_ctrl2 = lcd_ana_read(ANACTRL_TCON_PLL0_CNTL2);
 
-	pll_ctrl0 &= ~(1 << 11);
-	pll_ctrl2 &= ~((0xf << 4) | (0xf << 16));
+	if (ss_flag & LCD_SSC_LEVEL) {
+		pll_ctrl0 &= ~(1 << 11);
+		pll_ctrl2 &= ~((0xf << 4) | (0xf << 16));
 
-	if (cconf->ss_level > 0) {
-		ret = lcd_pll_ss_level_generate(cconf);
-		if (ret == 0) {
-			cconf->ss_en = 1;
-			pll_ctrl0 |= (1 << 11);
-			pll_ctrl2 |= ((cconf->ss_dep_sel << 16) | (cconf->ss_str_m << 4));
-			LCDPR("[%d]: set pll spread spectrum: level: %d, %dppm\n",
-			      pdrv->index, cconf->ss_level, cconf->ss_ppm);
+		if (cconf->ss_level > 0) {
+			ret = lcd_pll_ss_level_generate(cconf);
+			if (ret == 0) {
+				cconf->ss_en = 1;
+				pll_ctrl0 |= (1 << 11);
+				pll_ctrl2 |= ((cconf->ss_dep_sel << 16) | (cconf->ss_str_m << 4));
+				len += sprintf(prt_str + len, "level: %d, %dppm\n",
+					       cconf->ss_level, cconf->ss_ppm);
+			}
+		} else {
+			cconf->ss_en = 0;
+			len += sprintf(prt_str + len, "disable\n");
 		}
-	} else {
-		cconf->ss_en = 0;
-		LCDPR("[%d]: set pll spread spectrum: disable\n", pdrv->index);
 	}
+
+	if (ss_flag & LCD_SSC_FREQ) {
+		pll_ctrl2 &= ~(0x7 << 8); /* ss_freq */
+		pll_ctrl2 |= (cconf->ss_freq << 8);
+		len += sprintf(prt_str + len, "%sfreq=%d\n", len ? ", " : "", cconf->ss_freq);
+	}
+
+	if (ss_flag & LCD_SSC_MODE) {
+		pll_ctrl2 &= ~(0x3 << 2); /* ss_mode */
+		pll_ctrl2 |= (cconf->ss_mode << 2);
+		len += sprintf(prt_str + len, "%smode=%d\n", len ? ", " : "", cconf->ss_mode);
+	}
+
 	lcd_ana_write(ANACTRL_TCON_PLL0_CNTL2, pll_ctrl2);
 	lcd_ana_write(ANACTRL_TCON_PLL0_CNTL0, pll_ctrl0);
-}
-
-static void lcd_set_pll_ss_advance_t6d(struct aml_lcd_drv_s *pdrv)
-{
-	struct lcd_clk_config_s *cconf;
-	unsigned int pll_ctrl2;
-	unsigned int freq, mode;
-
-	cconf = get_lcd_clk_config(pdrv);
-	if (!cconf)
-		return;
-
-	freq = cconf->ss_freq;
-	mode = cconf->ss_mode;
-	pll_ctrl2 = lcd_ana_read(ANACTRL_TCON_PLL0_CNTL2);
-	pll_ctrl2 &= ~(0x7 << 8); /* ss_freq */
-	pll_ctrl2 |= (freq << 8);
-	pll_ctrl2 &= ~(0x3 << 2); /* ss_mode */
-	pll_ctrl2 |= (mode << 2);
-	lcd_ana_write(ANACTRL_TCON_PLL0_CNTL2, pll_ctrl2);
-
-	LCDPR("set pll spread spectrum: freq=%d, mode=%d\n", freq, mode);
+	LCDPR("[%d]: set ssc: %s\n", pdrv->index, prt_str);
 }
 
 static void lcd_pll_ss_enable_t6d(struct aml_lcd_drv_s *pdrv, int status)
@@ -191,10 +186,8 @@ static void lcd_set_pll_t6d(struct aml_lcd_drv_s *pdrv)
 	if (ret)
 		LCDERR("[%d]: pll lock failed\n", pdrv->index);
 
-	if (cconf->ss_level > 0) {
-		lcd_set_pll_ss_level_t6d(pdrv);
-		lcd_set_pll_ss_advance_t6d(pdrv);
-	}
+	if (cconf->ss_level > 0)
+		lcd_set_pll_ss_t6d(pdrv, (LCD_SSC_LEVEL | LCD_SSC_FREQ | LCD_SSC_MODE));
 }
 
 static void lcd_set_vid_pll_div_t6d(struct aml_lcd_drv_s *pdrv)
@@ -607,8 +600,7 @@ static struct lcd_clk_data_s lcd_clk_data_t6d = {
 	.clk_parameter_init = NULL,
 	.clk_generate_parameter = lcd_clk_generate_dft,
 	.pll_frac_generate = lcd_pll_frac_generate_dft,
-	.set_ss_level = lcd_set_pll_ss_level_t6d,
-	.set_ss_advance = lcd_set_pll_ss_advance_t6d,
+	.set_ss = lcd_set_pll_ss_t6d,
 	.clk_ss_enable = lcd_pll_ss_enable_t6d,
 	.pll_frac_set = lcd_pll_frac_set_t6d,
 	.clk_set = lcd_clk_set_t6d,
