@@ -366,9 +366,9 @@ int checkhw(char *name)
 	ulong ddr_size = (readl(SYSCTRL_SEC_STATUS_REG4) & ~0xfffffUL) << 4;
 
 	switch (ddr_size) {
-		case 0x100000000UL:
-			strcpy(dtb_name, "s6_s905x5_bl201-4g\0");
-			break;
+		//case 0x100000000UL:
+		//	strcpy(dtb_name, "s6_s905x5_bl201-4g\0");
+		//	break;
 		case 0x200000000UL:
 			strcpy(dtb_name, "s6_s905x5_bl201-8g\0");
 			break;
@@ -376,7 +376,7 @@ int checkhw(char *name)
 			strcpy(dtb_name, "s6_s905x5_bl201-16g\0");
 			break;
 		default:
-			strcpy(dtb_name, "s6_s905x5_bl201\0");
+			strcpy(dtb_name, "s6_s905x5_bl201-2g\0");
 			break;
 	}
 

@@ -384,11 +384,11 @@ int checkhw(char *name)
 //			strcpy(dtb_name, "s6_s905x5_bl201-16g\0");
 //			break;
 //		default:
-//			strcpy(dtb_name, "s6_s905x5_bl201\0");
+//			strcpy(dtb_name, "s6_s905x5_bl201-2g\0");
 //			break;
 //	}
 
-	strcpy(dtb_name, "s6_s905x5_bl204-4g\0");
+	strcpy(dtb_name, "s6_s905x5_bl204-2g\0");
 	strcpy(name, dtb_name);
 	env_set("aml_dt", dtb_name);
 	return 0;
