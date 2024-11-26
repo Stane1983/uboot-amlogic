@@ -23,7 +23,7 @@
 
 struct iw7027_s {
 	unsigned int dev_on_flag;
-
+	struct spi_slave *spi;
 	unsigned int reg_buf_size;
 	unsigned int tbuf_size;
 	unsigned int rbuf_size;
@@ -263,7 +263,7 @@ static int iw7027_reg_write(struct ldim_dev_driver_s *dev_drv, unsigned char chi
 {
 	int ret;
 
-	ret = spi_wregs(dev_drv->spi_info.spi, chip_id, dev_drv->chip_cnt, reg, buf, len);
+	ret = spi_wregs(bl_iw7027->spi, chip_id, dev_drv->chip_cnt, reg, buf, len);
 	if (ret)
 		LDIMERR("%s: chip_id[%d] reg 0x%x error\n", __func__, chip_id, reg);
 
@@ -276,7 +276,7 @@ static int iw7027_reg_read(struct ldim_dev_driver_s *dev_drv, unsigned char chip
 	int ret;
 
 	memset(buf, 0, len);
-	ret = spi_rregs(dev_drv->spi_info.spi, chip_id, dev_drv->chip_cnt, reg, buf, len);
+	ret = spi_rregs(bl_iw7027->spi, chip_id, dev_drv->chip_cnt, reg, buf, len);
 	if (ret)
 		LDIMERR("%s: chip_id[%d] reg 0x%x error\n", __func__, chip_id, reg);
 
@@ -288,7 +288,7 @@ static int iw7027_reg_write_all(struct ldim_dev_driver_s *dev_drv,
 {
 	int ret;
 
-	ret = spi_wregs_all(dev_drv->spi_info.spi, dev_drv->chip_cnt, reg, buf, len);
+	ret = spi_wregs_all(bl_iw7027->spi, dev_drv->chip_cnt, reg, buf, len);
 	if (ret)
 		LDIMERR("%s: reg 0x%x, len %d error\n", __func__, reg, len);
 
@@ -300,7 +300,7 @@ static int iw7027_reg_write_diff(struct ldim_dev_driver_s *dev_drv,
 {
 	int ret;
 
-	ret = spi_wregs_diff(dev_drv->spi_info.spi, dev_drv->chip_cnt, reg, buf, len);
+	ret = spi_wregs_diff(bl_iw7027->spi, dev_drv->chip_cnt, reg, buf, len);
 	if (ret)
 		LDIMERR("%s: reg 0x%x, len %d error\n", __func__, reg, len);
 
@@ -592,7 +592,7 @@ int ldim_dev_iw7027_probe(struct aml_ldim_driver_s *ldim_drv)
 		LDIMERR("%s: dev_drv is null\n", __func__);
 		return -1;
 	}
-	if (!dev_drv->spi_info.spi) {
+	if (!dev_drv->spi_info.spi[0]) {
 		LDIMERR("%s: spi is null\n", __func__);
 		return -1;
 	}
@@ -605,6 +605,7 @@ int ldim_dev_iw7027_probe(struct aml_ldim_driver_s *ldim_drv)
 	memset(bl_iw7027, 0, sizeof(struct iw7027_s));
 
 	bl_iw7027->dev_on_flag = 0;
+	bl_iw7027->spi = dev_drv->spi_info.spi[0];
 
 	/* 16 each device, each zone 2 bytes */
 	bl_iw7027->reg_buf_size = 16 * 2 * dev_drv->chip_cnt;
