@@ -8,6 +8,18 @@ config HDMITX_ONLY
 	bool "hdmi tx only"
 	default y if ENV_HDMITX_ONLY="true"
 
+config ENV_BOARD_KERNEL_VERSION
+	string
+	option env="BOARD_KERNEL_VERSION"
+
+config BOARD_KERNEL_VERSION_5_4
+	bool "kernel version is 5.4"
+	default y if ENV_BOARD_KERNEL_VERSION="5.4"
+
+config BOARD_KERNEL_VERSION_5_15
+	bool "kernel version is 5.15"
+	default y if ENV_BOARD_KERNEL_VERSION="5.15
+
 config SYS_SOC
 	default "t7"
 

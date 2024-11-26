@@ -410,13 +410,24 @@ static int lcd_config_valid(struct aml_lcd_drv_s *pdrv, char *mode)
 	return 0;
 }
 
+static bool is_outputmode_autoset_enable(void)
+{
+	// outputmode auto-set is enabled by default
+	char env_ouputmode_autoset_name[33] = "lcd_disable_ouputmode_autoset\0";
+	char *env_ouputmode_autoset_value = env_get(env_ouputmode_autoset_name);
+
+	if (env_ouputmode_autoset_value && strcmp(env_ouputmode_autoset_value, "1") == 0)
+		return false;
+	return true;
+}
+
 static void lcd_config_init(struct aml_lcd_drv_s *pdrv)
 {
 	lcd_enc_timing_init_config(pdrv);
 	lcd_clk_generate_parameter(pdrv);
 	pdrv->config.timing.clk_change = 0; /* clear clk_change flag */
 	lcd_tablet_add_all_vmode(pdrv);
-	if (pdrv->key_valid == 0)
+	if (is_outputmode_autoset_enable() && pdrv->key_valid == 0)
 		lcd_update_outputmode(pdrv);
 }
 

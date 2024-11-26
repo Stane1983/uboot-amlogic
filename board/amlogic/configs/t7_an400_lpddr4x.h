@@ -87,6 +87,23 @@
 #include "t7_an400_lpddr4x_debian.h"
 #endif
 
+#ifdef CONFIG_BOARD_KERNEL_VERSION_5_4
+#define CONFIG_CONNECTOR_INFO \
+    "lcd_disable_ouputmode_autoset=1\0" \
+    "outputmode=panel1\0" \
+    "outputmode2=1080p60hz\0" \
+    "connector0_type=VBYONE-B\0" \
+    "connector1_type=HDMI-A-A\0" \
+    "connector2_type=NULL\0"
+#else
+#define CONFIG_CONNECTOR_INFO \
+    "outputmode=2160p60hz\0" \
+    "outputmode2=1080p60hz\0" \
+    "connector0_type=VBYONE-B\0" \
+    "connector1_type=HDMI-A-C\0" \
+    "connector2_type=NULL\0"
+#endif
+
 #ifdef CONFIG_HDMITX_ONLY
 #define CONFIG_EXTRA_HDMI_ENV_SETTINGS \
 	"panel_type=edp_0\0" \
@@ -110,12 +127,7 @@
 	"lcd1_attr=0x00000000,lvds_1\0" \
 	"lcd2_attr=0x00000000,lvds_1\0" \
 	"cvbsmode=576cvbs\0" \
-	"outputmode=2160p60hz\0" \
-	"outputmode2=1080p60hz\0" \
-	"cvbsmode=576cvbs\0" \
-	"connector0_type=VBYONE-B\0" \
-	"connector1_type=HDMI-A-C\0" \
-	"connector2_type=NULL\0" \
+	CONFIG_CONNECTOR_INFO \
 	"storeargs_hdmitx="\
 		"setenv bootargs ${bootargs} powermode=${powermode} "\
 		"lcd0=${lcd0_attr} lcd_debug=${lcd_debug} "\
