@@ -4,6 +4,8 @@
  */
 #include <common.h>
 #include <command.h>
+#include "../include/amlogic/ini.h"
+
 static int do_afm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	const char *str_cmd, *str_value = NULL;
@@ -14,8 +16,25 @@ static int do_afm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		char *powermode = env_get("powermode");
 		char *otg_device = env_get("otg_device");
 		char *selinux = env_get("EnableSelinux");
+		char model_name[50] = {0}, model1_name[50] = {0}, model2_name[50] = {0}, modelt_name[150] = {0};
+		handle_model_get("0", model_name);
+		handle_model_get("1", model1_name);
+		handle_model_get("2", model2_name);
+		if (strlen(model_name) != 0)
+		{
+			strcat(modelt_name, model_name);
+		}
+		if (strlen(model1_name) != 0) {
+			strcat(modelt_name, "|");
+			strcat(modelt_name, model1_name);
+		}
+		if (strlen(model2_name) !=0 ) {
+			strcat(modelt_name, "|");
+			strcat(modelt_name, model2_name);
+		}
+		//printf("current %s: %s\n", str, model_name);
 		printf("\n"
-			"model_name :     \n"
+			"model_name :     %s\n"
 			"serialno :       \n"
 			"mac :            %s\n"
 			"console :        \n"
@@ -23,6 +42,7 @@ static int do_afm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			"powermode :      %s\n"
 			"otg_device :     %s\n"
 			"selinux :        %s\n"
+			, strlen(modelt_name) != 0 ? modelt_name : ""
 			, mac != NULL? mac : ""
 			, silent != NULL? (!strcmp(silent, "0")? "on" : "off") : "on"
 			, powermode != NULL? powermode : ""
@@ -92,6 +112,15 @@ static int do_afm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			return CMD_RET_USAGE;
 		}
 		run_command("saveenv", 0);
+	} else if (!strcmp(str_cmd, "model_name")) {
+		handle_model_set("model_name", str_value);
+	} else if (!strcmp(str_cmd, "model1_name")) {
+		handle_model_set("model1_name", str_value);
+	} else if (!strcmp(str_cmd, "model2_name")) {
+		handle_model_set("model2_name", str_value);
+	} else {
+		printf("invalid value\n");
+		return CMD_RET_USAGE;
 	}
 	return 0;
 }
