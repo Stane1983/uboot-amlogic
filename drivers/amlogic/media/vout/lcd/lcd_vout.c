@@ -19,7 +19,7 @@
 #endif
 #include "lcd_reg.h"
 #include "lcd_common.h"
-// #include <amlogic/pm.h>
+#include <amlogic/pm.h>
 #include "env.h"
 #include "command.h"
 
@@ -31,10 +31,13 @@ struct aml_lcd_data_s *lcd_data;
 static struct aml_lcd_drv_s *lcd_driver[LCD_MAX_DRV];
 static struct lcd_debug_ctrl_s debug_ctrl;
 static char *g_dt_addr = (char *)0x01000000;
-//static int lcd_poweron_suspend = 1;
 char *lcd_pm_name[LCD_MAX_DRV] = {"lcd_drv0_pm", "lcd_drv1_pm", "lcd_drv2_pm"};
 
 unsigned int lcd_prbs_freq = 0, lcd_prbs_performed = 0, lcd_prbs_err = 0;
+
+static int aml_lcd_driver_suspend(void *pm_ops);
+static int aml_lcd_driver_resume(void *pm_ops);
+static int aml_lcd_driver_poweroff(void *pm_ops);
 
 static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv);
 
@@ -583,10 +586,8 @@ static unsigned int lcd_get_drv_cnt_flag_from_bsp(void)
 static struct aml_lcd_drv_s *lcd_driver_add(int index)
 {
 	struct aml_lcd_drv_s *pdrv;
-#if 0
 	struct dev_pm_ops *pm_ops = NULL;
 	char *ddr_resume = NULL;
-#endif
 
 	if (index >= lcd_data->drv_max) {
 		LCDERR("%s: invalid index: %d\n", __func__, index);
@@ -603,28 +604,22 @@ static struct aml_lcd_drv_s *lcd_driver_add(int index)
 			LCDERR("%s: Not enough memory\n", __func__);
 			return NULL;
 		}
-#if 0
 		pm_ops = dev_register_pm(lcd_pm_name[index],
 					 &aml_lcd_driver_suspend,
 					 &aml_lcd_driver_resume,
 					 &aml_lcd_driver_poweroff);
-#endif
 	} else {
-#if 0
 		pm_ops = lcd_driver[index]->dev_pm_ops;
-#endif
 	}
 
 	pdrv = lcd_driver[index];
 	memset(pdrv, 0, sizeof(struct aml_lcd_drv_s));
 	pdrv->index = index;
 
-#if 0
 	pdrv->dev_pm_ops = pm_ops;
 	ddr_resume = env_get("ddr_resume");
 	if (ddr_resume && ddr_resume[0] == '1')
 		pdrv->power_on_suspend = 1;
-#endif
 
 	/* default config */
 	pdrv->data = lcd_data;
@@ -652,10 +647,8 @@ static int lcd_driver_remove(int index)
 	if (!lcd_driver[index])
 		return 0;
 
-#if 0
 	if (lcd_driver[index]->dev_pm_ops)
 		dev_unregister_pm(lcd_driver[index]->dev_pm_ops);
-#endif
 
 	free(lcd_driver[index]);
 	lcd_driver[index] = NULL;
@@ -997,10 +990,8 @@ int lcd_remove(void)
 
 	for (i = 0; i < LCD_MAX_DRV; i++) {
 		if (lcd_driver[i]) {
-#if 0
 			if (lcd_driver[i]->dev_pm_ops)
 				dev_unregister_pm(lcd_driver[i]->dev_pm_ops);
-#endif
 			free(lcd_driver[i]);
 			lcd_driver[i] = NULL;
 		}
@@ -1510,9 +1501,8 @@ void aml_lcd_panel_dump(int index, const char *path)
 	}
 }
 
-int aml_lcd_driver_suspend(void *pm_ops)
+static int aml_lcd_driver_suspend(void *pm_ops)
 {
-#if 0
 	int i = 0;
 	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
 	struct aml_lcd_drv_s *pdrv;
@@ -1531,13 +1521,12 @@ int aml_lcd_driver_suspend(void *pm_ops)
 	pdrv->power_on_suspend = 1;
 	LCDPR("%s driver disabled\n", __func__);
 	LCDPR("[%d]: %s: driver disabled\n", pdrv->index, __func__);
-#endif
+
 	return 0;
 }
 
-int aml_lcd_driver_resume(void *pm_ops)
+static int aml_lcd_driver_resume(void *pm_ops)
 {
-#if 0
 	int i = 0;
 	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
 	struct aml_lcd_drv_s *pdrv;
@@ -1555,11 +1544,11 @@ int aml_lcd_driver_resume(void *pm_ops)
 	pdrv->power_on_suspend = 0;
 	aml_lcd_driver_enable(i, pdrv->init_mode);
 	LCDPR("[%d]: %s: driver enable\n", pdrv->index, __func__);
-#endif
+
 	return 0;
 }
 
-int aml_lcd_driver_poweroff(void *pm_ops)
+static int aml_lcd_driver_poweroff(void *pm_ops)
 {
 	aml_lcd_driver_suspend(pm_ops);
 
