@@ -20,7 +20,7 @@
 
 struct iw7039_s {
 	unsigned int dev_on_flag;
-
+	struct spi_slave *spi;
 	unsigned int reg_buf_size;
 	unsigned int tbuf_size;
 	unsigned int rbuf_size;
@@ -190,7 +190,7 @@ unsigned short reg, unsigned short *buf, unsigned int len)
 {
 	int ret;
 
-	ret = spi_wregs_all(dev_drv->spi_info.spi, dev_drv->chip_cnt, reg, buf, len);
+	ret = spi_wregs_all(bl_iw7039->spi, dev_drv->chip_cnt, reg, buf, len);
 	if (ret)
 		LDIMERR("%s: reg 0x%x, len %d error\n", __func__, reg, len);
 
@@ -202,7 +202,7 @@ unsigned short reg, unsigned short *buf, unsigned int len)
 {
 	int ret;
 
-	ret = spi_wregs_duty(dev_drv->spi_info.spi, dev_drv->chip_cnt, reg, buf, len);
+	ret = spi_wregs_duty(bl_iw7039->spi, dev_drv->chip_cnt, reg, buf, len);
 	if (ret)
 		LDIMERR("%s: reg 0x%x, len %d error\n", __func__, reg, len);
 
@@ -289,7 +289,7 @@ static int iw7039_hw_init_on(struct ldim_dev_driver_s *dev_drv)
 	/* step 2: delay for internal logic stable */
 	mdelay(10);
 
-	spi_device_number(dev_drv->spi_info.spi, dev_drv->chip_cnt);
+	spi_device_number(bl_iw7039->spi, dev_drv->chip_cnt);
 
 	iw7039_reg_write_all(dev_drv, 0x00, init_00, 0x20);
 
@@ -440,7 +440,7 @@ int ldim_dev_iw7039_probe(struct aml_ldim_driver_s *ldim_drv)
 		LDIMERR("%s: dev_drv is null\n", __func__);
 		return -1;
 	}
-	if (!dev_drv->spi_info.spi) {
+	if (!dev_drv->spi_info.spi[0]) {
 		LDIMERR("%s: spi is null\n", __func__);
 		return -1;
 	}
@@ -453,6 +453,7 @@ int ldim_dev_iw7039_probe(struct aml_ldim_driver_s *ldim_drv)
 	memset(bl_iw7039, 0, sizeof(struct iw7039_s));
 
 	bl_iw7039->dev_on_flag = 0;
+	bl_iw7039->spi = dev_drv->spi_info.spi[0];
 
 	/* 16 each device, each zone 2 bytes */
 	bl_iw7039->reg_buf_size = 32 * dev_drv->chip_cnt;

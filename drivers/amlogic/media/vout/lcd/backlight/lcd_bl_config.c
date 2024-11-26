@@ -796,7 +796,7 @@ static int bl_config_load_from_dts(char *dt_addr, struct aml_bl_drv_s *bdrv)
 			break;
 		}
 
-		aml_ldim_probe(bdrv, dt_addr, child_offset, NULL, 0);
+		aml_ldim_probe(bdrv, dt_addr, child_offset, NULL, LCD_CONFIG_DTS);
 		break;
 #endif
 #ifdef CONFIG_AML_LCD_BL_EXTERN
@@ -1039,7 +1039,7 @@ static int bl_config_load_from_ukey(char *dt_addr, struct aml_bl_drv_s *bdrv)
 			break;
 		}
 		if (bl_header->version == 2) {
-			aml_ldim_probe(bdrv, dt_addr, 0, para, 2);
+			aml_ldim_probe(bdrv, dt_addr, 0, para, LCD_CONFIG_UKEY);
 		} else {
 			BLERR("not support ldim for unifykey version: %d\n",
 			      bl_header->version);
@@ -1216,7 +1216,7 @@ static int bl_config_load_from_bsp(struct aml_bl_drv_s *bdrv)
 			BLERR("no ldim driver\n");
 			break;
 		}
-		aml_ldim_probe(bdrv, NULL, 0, NULL, 1);
+		aml_ldim_probe(bdrv, NULL, 0, NULL, LCD_CONFIG_BSP);
 		break;
 #endif
 #ifdef CONFIG_AML_LCD_BL_EXTERN

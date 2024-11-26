@@ -36,11 +36,12 @@ struct ldim_spi_dev_info_s {
 	char spi_name[LDIM_SPI_NAME_MAX];
 	int mode;
 	int max_speed_hz;
-	int bus_num;
-	int chip_select;
+	int spi_dev_num;
+	int bus_num[2];
+	int chip_select[2];
 	int wordlen;
 
-	struct spi_slave *spi;
+	struct spi_slave *spi[2];
 };
 
 #define LDIM_DEV_NAME_MAX    30

@@ -25,6 +25,8 @@
 struct blmcu_s {
 	unsigned int dev_on_flag;
 	unsigned short vsync_cnt;
+	unsigned int spi_dev_num;
+	struct spi_slave *spi;
 	unsigned int rbuf_size;
 	unsigned int tbuf_size;
 	unsigned int header;	/*command */
@@ -38,9 +40,14 @@ struct blmcu_s {
 
 	/* local dimming driver smr api usage */
 	unsigned char *rbuf;
-
-	/* spi api internal used, don't use outside!!! */
 	unsigned char *tbuf;
+
+	/*for 2nd spi*/
+	struct spi_slave *spi1;
+	unsigned int rbuf_size1;
+	unsigned int tbuf_size1;
+	unsigned char *rbuf1;
+	unsigned char *tbuf1;
 };
 
 struct blmcu_s *bl_mcu;
@@ -181,6 +188,12 @@ static inline void ldim_data_mapping(unsigned short *duty_buf,
 
 	for (i = k + bl_mcu->ext_len; i < bl_mcu->tbuf_size; i++)
 		bl_mcu->tbuf[i] = 0;
+
+	/*for 2nd spi*/
+	/* here For reference only, need to be set according to the actual device spec!!!*/
+	if (bl_mcu->spi_dev_num == 2)
+		memcpy(bl_mcu->tbuf1, bl_mcu->tbuf, bl_mcu->tbuf_size);
+
 }
 
 static int blmcu_smr(struct aml_ldim_driver_s *ldim_drv, unsigned short *buf,
@@ -219,7 +232,11 @@ static int blmcu_smr(struct aml_ldim_driver_s *ldim_drv, unsigned short *buf,
 	ldim_data_mapping(buf, dev_drv->dim_max, dev_drv->dim_min,
 				  dev_drv->zone_num);
 
-	ret = ldim_spi_write(dev_drv->spi_info.spi, bl_mcu->tbuf, bl_mcu->tbuf_size);
+	ret = ldim_spi_write(bl_mcu->spi, bl_mcu->tbuf, bl_mcu->tbuf_size);
+
+	/*for 2nd spi*/
+	if (bl_mcu->spi_dev_num == 2)
+		ret |= ldim_spi_write(bl_mcu->spi1, bl_mcu->tbuf1, bl_mcu->tbuf_size1);
 
 	return ret;
 }
@@ -281,6 +298,8 @@ int ldim_dev_blmcu_probe(struct aml_ldim_driver_s *ldim_drv)
 	}
 	memset(bl_mcu, 0, sizeof(struct blmcu_s));
 
+	bl_mcu->spi_dev_num = dev_drv->spi_info.spi_dev_num;
+	bl_mcu->spi = dev_drv->spi_info.spi[0];
 	bl_mcu->dev_on_flag = 0;
 	bl_mcu->vsync_cnt = 0;
 	LDIMPR("%s: mcu_header=0x%08x,mcu_dim=0x%08x\n",
@@ -339,11 +358,35 @@ int ldim_dev_blmcu_probe(struct aml_ldim_driver_s *ldim_drv)
 		goto ldim_dev_blmcu_probe_err1;
 	memset(bl_mcu->tbuf, 0, bl_mcu->tbuf_size);
 
+	/* for 2nd spi */
+	/* here For reference only, need to be set according to the actual device spec!!!*/
+	if (bl_mcu->spi_dev_num == 2) {
+		bl_mcu->spi1 = dev_drv->spi_info.spi[1];
+		bl_mcu->tbuf_size1 = bl_mcu->tbuf_size;
+		bl_mcu->rbuf_size1 = bl_mcu->rbuf_size;
+
+		bl_mcu->rbuf1 = (unsigned char *)malloc(bl_mcu->rbuf_size1);
+		if (!bl_mcu->rbuf1)
+			goto ldim_dev_blmcu_probe_err2;
+		memset(bl_mcu->rbuf1, 0, bl_mcu->rbuf_size1);
+
+		bl_mcu->tbuf1 = (unsigned char *)malloc(bl_mcu->tbuf_size1);
+		if (!bl_mcu->tbuf1)
+			goto ldim_dev_blmcu_probe_err3;
+		memset(bl_mcu->tbuf1, 0, bl_mcu->tbuf_size1);
+	}
+
 	blmcu_ldim_dev_update(dev_drv);
 
 	LDIMPR("%s ok\n", __func__);
 	return 0;
 
+ldim_dev_blmcu_probe_err3:
+	free(bl_mcu->rbuf1);
+	bl_mcu->rbuf_size1 = 0;
+ldim_dev_blmcu_probe_err2:
+	free(bl_mcu->tbuf);
+	bl_mcu->tbuf_size = 0;
 ldim_dev_blmcu_probe_err1:
 	free(bl_mcu->rbuf);
 	bl_mcu->rbuf_size = 0;

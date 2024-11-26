@@ -128,6 +128,7 @@ int ldim_spi_driver_add(struct ldim_dev_driver_s *dev_drv)
 {
 	struct udevice *dev;
 	int ret;
+	int i;
 
 	if (!dev_drv) {
 		LDIMERR("%s: dev_drv is null\n", __func__);
@@ -135,30 +136,35 @@ int ldim_spi_driver_add(struct ldim_dev_driver_s *dev_drv)
 	}
 
 	/* register spi */
-	snprintf(dev_drv->spi_info.spi_name, LDIM_SPI_NAME_MAX,
-		"generic_%d:%d",
-		dev_drv->spi_info.bus_num,
-		dev_drv->spi_info.chip_select);
-	ret = _spi_get_bus_and_cs(dev_drv->spi_info.bus_num,
-				dev_drv->spi_info.chip_select,
-				dev_drv->spi_info.max_speed_hz,
-				dev_drv->spi_info.mode,
-				"spi_generic_drv",
-				dev_drv->spi_info.spi_name,
-				&dev, &dev_drv->spi_info.spi);
-	if (ret) {
-		LDIMERR("%s: register spi driver failed\n", __func__);
-		return -1;
-	}
-	dev_drv->spi_info.spi->wordlen = dev_drv->spi_info.wordlen;
-	cs_hold_delay = dev_drv->cs_hold_delay;
+	for (i = 0; i < dev_drv->spi_info.spi_dev_num; i++) {
+		snprintf(dev_drv->spi_info.spi_name, LDIM_SPI_NAME_MAX,
+			"generic_%d:%d",
+			dev_drv->spi_info.bus_num[i],
+			dev_drv->spi_info.chip_select[i]);
+		ret = spi_get_bus_and_cs(dev_drv->spi_info.bus_num[i],
+					dev_drv->spi_info.chip_select[i],
+					dev_drv->spi_info.max_speed_hz,
+					dev_drv->spi_info.mode,
+					"spi_generic_drv",
+					dev_drv->spi_info.spi_name,
+					&dev, &dev_drv->spi_info.spi[i]);
+		if (ret) {
+			LDIMERR("%s: register spi[%d] driver failed\n", __func__, i);
+			return -1;
+		}
+		dev_drv->spi_info.spi[i]->wordlen = dev_drv->spi_info.wordlen;
+		dev_drv->spi_info.spi[i]->use_ctrl_cs = dev_drv->use_ctrl_cs;
+		dev_drv->spi_info.spi[i]->ss_leading_gap = dev_drv->cs_hold_delay;
+		dev_drv->spi_info.spi[i]->ss_trailing_gap = dev_drv->cs_clk_delay;
+
+		cs_hold_delay = dev_drv->cs_hold_delay;
 #ifdef LDIM_SPI_CUSTOM_DELAY
-	cs_clk_delay = dev_drv->cs_clk_delay;
+		cs_clk_delay = dev_drv->cs_clk_delay;
 
-	spi_cs_deactivate(dev_drv->spi_info.spi);
+		spi_cs_deactivate(dev_drv->spi_info.spi[i]);
 #endif
-	spi_release_bus(dev_drv->spi_info.spi);
-
+		spi_release_bus(dev_drv->spi_info.spi[i]);
+	}
 	return 0;
 }
 
@@ -169,7 +175,8 @@ int ldim_spi_driver_remove(struct ldim_dev_driver_s *dev_drv)
 		return -1;
 	}
 
-	dev_drv->spi_info.spi = NULL;
+	dev_drv->spi_info.spi[0] = NULL;
+	dev_drv->spi_info.spi[1] = NULL;
 
 	return 0;
 }

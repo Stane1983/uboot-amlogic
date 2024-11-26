@@ -258,21 +258,23 @@ static void ldim_device_config_print(struct ldim_dev_driver_s *dev_drv)
 
 	switch (dev_drv->type) {
 	case LDIM_DEV_TYPE_SPI:
-		printf("spi_dev                = 0x%p\n"
+		printf("spi_dev                = 0x%p : 0x%p\n"
 			"spi_modalias           = %s\n"
 			"spi_mode               = %d\n"
 			"spi_max_speed_hz       = %d\n"
-			"spi_bus_num            = %d\n"
-			"spi_chip_select        = %d\n"
+			"spi_dev_num       = %d\n"
+			"spi_bus_num            = %d : %d\n"
+			"spi_chip_select        = %d : %d\n"
 			"cs_hold_delay          = %d\n"
 			"cs_clk_delay           = %d\n"
 			"write_check            = %d\n\n",
-			dev_drv->spi_info.spi,
+			dev_drv->spi_info.spi[0], dev_drv->spi_info.spi[1],
 			dev_drv->spi_info.modalias,
 			dev_drv->spi_info.mode,
 			dev_drv->spi_info.max_speed_hz,
-			dev_drv->spi_info.bus_num,
-			dev_drv->spi_info.chip_select,
+			dev_drv->spi_info.spi_dev_num,
+			dev_drv->spi_info.bus_num[0], dev_drv->spi_info.bus_num[1],
+			dev_drv->spi_info.chip_select[0], dev_drv->spi_info.chip_select[1],
 			dev_drv->cs_hold_delay,
 			dev_drv->cs_clk_delay,
 			dev_drv->write_check);
@@ -452,10 +454,14 @@ int aml_ldim_device_probe(char *dt_addr, struct aml_ldim_driver_s *ldim_drv)
 	strcpy(dev_drv->spi_info.spi_name, "none");
 	dev_drv->spi_info.mode = SPI_MODE_0;
 	dev_drv->spi_info.max_speed_hz = 1000000; /* 1MHz */
-	dev_drv->spi_info.bus_num = 0; /* SPI bus No. */
-	dev_drv->spi_info.chip_select = 0; /* the device index on the spi bus */
+	dev_drv->spi_info.bus_num[0] = 0; /* SPI bus No. */
+	dev_drv->spi_info.bus_num[1] = 0; /* SPI bus No. */
+	dev_drv->spi_info.chip_select[0] = 0; /* the device index on the spi bus */
+	dev_drv->spi_info.chip_select[1] = 0; /* the device index on the spi bus */
 	dev_drv->spi_info.wordlen = 8;
-	dev_drv->spi_info.spi = NULL;
+	dev_drv->spi_info.spi_dev_num = 1; /*default 1 spi dev*/
+	dev_drv->spi_info.spi[0] = NULL;
+	dev_drv->spi_info.spi[1] = NULL;
 
 	dev_drv->index = ldim_drv->config.dev_index;
 	dev_drv->bl_row = ldim_drv->config.row;
