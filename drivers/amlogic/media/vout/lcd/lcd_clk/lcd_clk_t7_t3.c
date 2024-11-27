@@ -80,25 +80,25 @@ static void lcd_set_pll_ss(struct aml_lcd_drv_s *pdrv, unsigned int ss_flag)
 				pll_ctrl2 |= ((1 << 15) |
 					      (cconf->ss_dep_sel << 28) |
 					      (cconf->ss_str_m << 16));
-				len += sprintf(prt_str + len, "level %d, %dppm\n",
+				len += sprintf(prt_str + len, "level %d, %dppm",
 					cconf->ss_level, cconf->ss_ppm);
 			}
 		} else {
 			cconf->ss_en = 0;
-			len += sprintf(prt_str + len, "disable\n");
+			len += sprintf(prt_str + len, "disable");
 		}
 	}
 
 	if (ss_flag & LCD_SSC_FREQ) {
 		pll_ctrl2 &= ~(0x7 << 24); /* ss_freq */
 		pll_ctrl2 |= (cconf->ss_freq << 24);
-		len += sprintf(prt_str + len, "%sfreq=%d\n", len ? ", " : "", cconf->ss_freq);
+		len += sprintf(prt_str + len, "%sfreq=%d", len ? ", " : "", cconf->ss_freq);
 	}
 
 	if (ss_flag & LCD_SSC_MODE) {
 		pll_ctrl2 &= ~(0x3 << 22); /* ss_mode */
 		pll_ctrl2 |= (cconf->ss_mode << 22);
-		len += sprintf(prt_str + len, "%smode=%d\n", len ? ", " : "", cconf->ss_mode);
+		len += sprintf(prt_str + len, "%smode=%d", len ? ", " : "", cconf->ss_mode);
 	}
 
 	lcd_ana_write(ANACTRL_TCON_PLL0_CNTL2 + offset, pll_ctrl2);

@@ -94,25 +94,25 @@ static void lcd_set_pll_ss_txhd2(struct aml_lcd_drv_s *pdrv, unsigned int ss_fla
 			if (ret == 0) {
 				cconf->ss_en = 1;
 				pll_ctrl2 |= ((cconf->ss_dep_sel << 4) | (cconf->ss_str_m << 12));
-				len += sprintf(prt_str + len, "level %d, %dppm\n",
+				len += sprintf(prt_str + len, "level %d, %dppm",
 					cconf->ss_level, cconf->ss_ppm);
 			}
 		} else {
 			cconf->ss_en = 0;
-			len += sprintf(prt_str + len, "disable\n");
+			len += sprintf(prt_str + len, "disable");
 		}
 	}
 
 	if (ss_flag & LCD_SSC_FREQ) {
 		pll_ctrl2 &= ~(0x7 << 20); /* ss_freq */
 		pll_ctrl2 |= (cconf->ss_freq << 20);
-		len += sprintf(prt_str + len, "%sfreq=%d\n", len ? ", " : "", cconf->ss_freq);
+		len += sprintf(prt_str + len, "%sfreq=%d", len ? ", " : "", cconf->ss_freq);
 	}
 
 	if (ss_flag & LCD_SSC_MODE) {
 		pll_ctrl2 &= ~(0x3 << 0); /* ss_mode */
 		pll_ctrl2 |= (cconf->ss_mode << 0);
-		len += sprintf(prt_str + len, "%smode=%d\n", len ? ", " : "", cconf->ss_mode);
+		len += sprintf(prt_str + len, "%smode=%d", len ? ", " : "", cconf->ss_mode);
 	}
 
 	lcd_ana_write(HHI_TCON_PLL_CNTL2, pll_ctrl2);
