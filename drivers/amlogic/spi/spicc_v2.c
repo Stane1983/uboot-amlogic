@@ -20,6 +20,7 @@
 #include <asm/amlogic/arch/pwr_ctrl.h>
 #endif
 #include <mapmem.h>
+#include <display_options.h>
 
 /* Register Map */
 #define SPICC_REG_CFG_READY		0x00
@@ -64,6 +65,10 @@ union spicc_cfg_spi {
 		u32		flash_hold_pin_en:1;
 		u32		hw_pos:1; /* start on vsync rising */
 		u32		hw_neg:1; /* start on vsync falling */
+		u32		sclk_out_cnt:2;
+		u32		mosi_out_idle:2;
+		u32		ss_trailing_gap:15;
+		u32		ss_leading_gap_high:4;
 		u32		rsv:24;
 	} b;
 };
@@ -207,6 +212,10 @@ struct spicc_device {
 #define SPI_XFER_DUMMY_CTL	BIT(14)
 #define SPI_XFER_NO_TX	BIT(15)
 #define SPI_XFER_NO_RX	BIT(16)
+#define SPI_XFER_SCLK_OUT_CNT	GENMASK(18, 17)
+#define SPI_XFER_MOSI_OUT_IDLE	GENMASK(20, 19)
+#define SPI_XFER_LEADING_GAP	GENMASK(25, 21)
+#define SPI_XFER_TRAILING_GAP	GENMASK(30, 26)
 
 static inline void spicc_flush_dcache(u64 addr, int sz)
 {
@@ -393,14 +402,28 @@ static int spicc_set_mode(struct udevice *bus, uint mode)
 
 static void spicc_import_config(struct spicc_device *spicc, unsigned long flags)
 {
+	u32 time_us, rate, cycles;
+
 	spicc->cfg_start.b.dc_level = !!(flags & SPI_XFER_DC_LEVEL);
 	spicc->cfg_bus.b.dc_mode = !!(flags & SPI_XFER_DC_MODE);
 	spicc->cfg_bus.b.lane = FIELD_GET(SPI_XFER_LANE, flags);
 	spicc->cfg_bus.b.half_duplex_en = !!(flags & SPI_XFER_HALF_DUPLEX_EN);
 	spicc->cfg_bus.b.null_ctl = !!(flags & SPI_XFER_NULL_CTL);
 	spicc->cfg_bus.b.dummy_ctl = !!(flags & SPI_XFER_DUMMY_CTL);
-	spicc->cfg_bus.b.ss_leading_gap = 1;
 	spicc->cfg_bus.b.read_turn_around = 0;
+	spicc->cfg_spi.b.sclk_out_cnt = FIELD_GET(SPI_XFER_SCLK_OUT_CNT, flags);
+	spicc->cfg_spi.b.mosi_out_idle = FIELD_GET(SPI_XFER_MOSI_OUT_IDLE, flags);
+
+	time_us = FIELD_GET(SPI_XFER_LEADING_GAP, flags);
+	rate = DIV_ROUND_UP(spicc->real_speed_hz, 1000);
+	cycles = DIV_ROUND_UP(time_us * rate, 1000);
+	spicc->cfg_bus.b.ss_leading_gap = cycles & 0xF;
+	spicc->cfg_spi.b.ss_leading_gap_high = (cycles >> 4) & 0xF;
+
+	time_us = FIELD_GET(SPI_XFER_TRAILING_GAP, flags);
+	rate = DIV_ROUND_UP(clk_get_rate(&spicc->spi_clk), 1000);
+	cycles = DIV_ROUND_UP(time_us * rate, 1000);
+	spicc->cfg_spi.b.ss_trailing_gap = cycles & 0x7FFF;
 }
 
 static int spicc_xfer_pio(struct spicc_device *spicc, const void *tx_buf,
