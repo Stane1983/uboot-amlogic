@@ -436,8 +436,8 @@
 			status = "okay";
 			res_1080p = <0>;
 			/* below may re-defined in customer dts file */
-			vend_name = "Amlogic"; /* Max 8 bytes */
-			prod_desc = "MBox Meson Ref"; /* Max 16 bytes */
+			vendor_name = "CUS_NAME"; /* Max 8 bytes */
+			product_desc = "CUS_PRODUCT"; /* Max 16 bytes */
 		};
 
 		nand: nfc@fe08c800 {

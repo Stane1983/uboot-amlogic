@@ -69,6 +69,8 @@ struct hdmitx_dev {
 	unsigned int edid_check;
 	unsigned char limit_res_1080p;
 	unsigned char enc_idx;
+	char *vend_name;
+	char *prod_desc;
 	int dv_en;
 	int qms_en; /* qms function enable */
 	enum hdmi_vic brr_vic; /* qms BRR vic */
