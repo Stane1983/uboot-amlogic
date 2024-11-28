@@ -46,4 +46,8 @@ config AML_DT_OVERLAY
     bool "use dts overlay"
     default n if HDMITX_ONLY="true"
 
+config ENABLE_HIBERNATION
+    bool "enable hibernation feature"
+    default n
+
 endif

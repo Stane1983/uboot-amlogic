@@ -55,6 +55,13 @@
 
 #define CONFIG_SYS_MAXARGS  64
 
+#ifdef CONFIG_ENABLE_HIBERNATION
+#define HIBERNATION_COMMANDS \
+	"resumewait "
+#else
+#define HIBERNATION_COMMANDS ""
+#endif
+
 /* define for linux/android system */
 #define SYSTEM_PRI_ENV_SETTINGS \
 	"loadaddr_kernel=0x01080000\0"\
@@ -64,6 +71,7 @@
 	"initargs="\
 		"init=/init" CONFIG_KNL_LOG_LEVEL "console=ttyS0,921600 no_console_suspend "\
 		"earlycon=aml-uart,0xfe078000 ramoops.pstore_en=1 ramoops.record_size=0x8000 "\
+		HIBERNATION_COMMANDS \
 		"ramoops.console_size=0x4000 loop.max_part=4 scsi_mod.scan=async "\
 		"xhci_hcd.quirks=0x800000 scramble_reg=0xfe02e030 "\
 		"\0"

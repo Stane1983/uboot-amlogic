@@ -90,6 +90,25 @@
 #define ENABLE_SMP	"display_on_smp=0\0"
 #endif
 
+#ifdef CONFIG_VBYONE_OUTPUT
+#define CONFIG_EXTRA_OUTPUT_ENV_SETTINGS \
+	"panel_type=vbyone_2\0" \
+	"outputmode=2160p60hz\0" \
+	"model_name=UHD_1RG\0"
+#else
+#define CONFIG_EXTRA_OUTPUT_ENV_SETTINGS \
+	"panel_type=lvds_1\0" \
+	"outputmode=1080p60hz\0" \
+	"model_name=FHD2HDMI\0"
+#endif
+
+#ifdef CONFIG_ENABLE_HIBERNATION
+#define HIBERNATION_COMMANDS \
+	"resumewait "
+#else
+#define HIBERNATION_COMMANDS ""
+#endif
+
 /* args/envs */
 #define CONFIG_SYS_MAXARGS  64
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -147,6 +166,7 @@
         "initargs="\
 		"init=/init " CONFIG_KNL_LOG_LEVEL "console=ttyS0,115200 "\
 			"no_console_suspend earlycon=aml-uart,0xfe07a000 scramble_reg=0xfe02e030 "\
+			HIBERNATION_COMMANDS \
 			"ramoops.pstore_en=1 ramoops.record_size=0x8000 ramoops.console_size=0x4000 loop.max_part=4 "\
 			"scsi_mod.scan=async xhci_hcd.quirks=0x800000 " KERNL_LOGLEVEL \
             "\0"\

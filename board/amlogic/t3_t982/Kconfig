@@ -21,4 +21,13 @@ config AML_REBOOT
        default y
        help
          support uboot reboot cmd
+
+config VBYONE_OUTPUT
+    bool "set t982 output is vbyone"
+    default n
+
+config ENABLE_HIBERNATION
+    bool "enable hibernation feature"
+    default n
+
 endif
