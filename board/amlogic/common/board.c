@@ -398,12 +398,18 @@ const char * const _aml_env_reserv_array[] = {
 	"lock",
 	"upgrade_step",
 	"bootloader_version",
+	"hdmimode",
+	"is.bestmode",
 	"dts_to_gpt",
 	"fastboot_step",
 	"reboot_status",
 	"expect_index",
 	"recovery_check_part",
 	"defenv_para",	//set in board_late_init
+#ifndef CONFIG_CMD_CAR_PARAMS
+	"outputmode",
+	"connector0_type",
+#endif
 	NULL//Keep NULL be last to tell END
 };
 #endif//#ifdef CONFIG_AML_DEFENV
