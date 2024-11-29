@@ -31,8 +31,8 @@
 #define CSC_UPDATE_AVI_CS 0x10
 
 /* TODO */
-const static char *vend_name = "Amlogic"; /* Max 8 bytes */
-const static char *prod_desc = "MBox Meson Ref"; /* Max 16 bytes */
+static const char *vend_name = "CUS_NAME"; /* Max 8 bytes */
+static const char *prod_desc = "PRODUCT_NAME"; /* Max 16 bytes */
 
 static struct hdmitx_dev hdmitx_device;
 

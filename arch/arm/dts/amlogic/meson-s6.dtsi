@@ -101,6 +101,8 @@
 		compatible = "amlogic, amhdmitx-s6";
 		status = "okay";
 		max_refreshrate = <120>; /* the max freshrate of S6 is upto 120hz */
+		vendor_name = "CUS_NAME"; /* Max 8 bytes */
+		product_desc = "CUS_PRODUCT"; /* Max 16 bytes */
 	};
 	spdif@0 {
 		compatible = "amlogic,spdif";

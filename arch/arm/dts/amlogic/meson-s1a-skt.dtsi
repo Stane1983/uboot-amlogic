@@ -87,6 +87,8 @@
 		compatible = "amlogic, amhdmitx-s1a";
 		status = "okay";
 		res_1080p = <1>;
+		vendor_name = "CUS_NAME"; /* Max 8 bytes */
+		product_desc = "CUS_PRODUCT"; /* Max 16 bytes */
 	};
 };
 

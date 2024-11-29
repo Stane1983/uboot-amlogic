@@ -377,6 +377,9 @@ static void hdmitx_load_dts_config(struct hdmitx_dev *hdev)
 			hdev->tx_common.max_refreshrate = max_refreshrate;
 	}
 	printf("max_refreshrate: %d\n", hdev->tx_common.max_refreshrate);
+
+	hdev->vend_name = (char *)fdt_getprop(dt_blob, node, "vendor_name", NULL);
+	hdev->prod_desc = (char *)fdt_getprop(dt_blob, node, "product_desc", NULL);
 }
 
 static void amhdmitx_infoframe_init(struct hdmitx_dev *hdev)
@@ -387,12 +390,9 @@ static void amhdmitx_infoframe_init(struct hdmitx_dev *hdev)
 	if (ret)
 		pr_info("%s[%d] init vendor infoframe failed %d\n", __func__, __LINE__, ret);
 	hdmi_avi_infoframe_init(&hdev->infoframes.avi.avi);
-	/*
-	 * TODO, panic
-	 * hdmi_spd_infoframe_init(&hdev->infoframes.spd.spd,
-	 *      hdev->config_data.vend_data->vendor_name,
-	 *      hdev->config_data.vend_data->product_desc);
-	 */
+	if (hdev->vend_name && hdev->prod_desc)
+		hdmi_spd_infoframe_init(&hdev->infoframes.spd.spd, hdev->vend_name,
+					hdev->prod_desc);
 	hdmi_audio_infoframe_init(&hdev->infoframes.aud.audio);
 	hdmi_drm_infoframe_init(&hdev->infoframes.drm.drm);
 }
@@ -907,6 +907,14 @@ static void construct_avi_packet(struct hdmitx_dev *hdev)
 	hdmi_avi_infoframe_set(info);
 }
 
+static void construct_spd_packet(struct hdmitx_dev *hdev)
+{
+	struct hdmi_spd_infoframe *info = &hdev->infoframes.spd.spd;
+
+	if (hdev->vend_name && hdev->prod_desc)
+		hdmi_spd_infoframe_set(info);
+}
+
 static void construct_audio_packet(struct hdmitx_dev *hdev)
 {
 	struct hdmi_audio_infoframe *info = &hdev->infoframes.aud.audio;
@@ -1401,6 +1409,7 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 	/* else */
 		/* hdmitx21_venc_en(1, 1); */
 	construct_avi_packet(hdev);
+	construct_spd_packet(hdev);
 
 	videocode = para->timing.vic;
 	if (videocode == HDMI_95_3840x2160p30_16x9 ||

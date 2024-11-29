@@ -112,6 +112,8 @@ struct hdmitx_dev {
 	/* Add dongle_mode, clock, phy may be different from mbox */
 	unsigned int dongle_mode;
 	unsigned char enc_idx;
+	char *vend_name;
+	char *prod_desc;
 	int dv_en;
 	int qms_en; /* qms function enable */
 	enum hdmi_vic brr_vic; /* qms BRR vic */

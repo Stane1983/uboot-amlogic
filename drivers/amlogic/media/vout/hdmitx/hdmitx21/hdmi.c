@@ -216,14 +216,19 @@ ssize_t hdmi_avi_infoframe_pack(struct hdmi_avi_infoframe *frame,
 int hdmi_spd_infoframe_init(struct hdmi_spd_infoframe *frame,
 			    const char *vendor, const char *product)
 {
+	size_t len;
+
 	memset(frame, 0, sizeof(*frame));
 
 	frame->type = HDMI_INFOFRAME_TYPE_SPD;
 	frame->version = 1;
 	frame->length = HDMI_SPD_INFOFRAME_SIZE;
 
-	strncpy(frame->vendor, vendor, sizeof(frame->vendor) - 1);
-	strncpy(frame->product, product, sizeof(frame->product) - 1);
+	len = strlen(vendor);
+	memcpy(frame->vendor, vendor, min(len, sizeof(frame->vendor)));
+	len = strlen(product);
+	memcpy(frame->product, product, min(len, sizeof(frame->product)));
+	frame->sdi = HDMI_SPD_SDI_DSTB; /* fixed value for ott/stb */
 
 	return 0;
 }

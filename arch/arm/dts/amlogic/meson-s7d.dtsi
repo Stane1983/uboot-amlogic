@@ -102,6 +102,8 @@
 		compatible = "amlogic, amhdmitx-s7";
 		status = "okay";
 		max_refreshrate = <120>; /* the max freshrate of S7D is upto 120hz */
+		vendor_name = "CUS_NAME"; /* Max 8 bytes */
+		product_desc = "CUS_PRODUCT"; /* Max 16 bytes */
 	};
 
 	cvbsout: cvbsout {
