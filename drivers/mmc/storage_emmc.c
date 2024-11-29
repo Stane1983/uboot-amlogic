@@ -429,7 +429,6 @@ int mmc_storage_read(const char *part_name, loff_t off, size_t size, void *dest)
 		info_disprotect |= DISPROTECT_KEY;
 		ret = blk_dread(mmc_get_blk_desc(mmc), off, size, dest);
 		info_disprotect &= ~DISPROTECT_KEY;
-		printf("%d blocks read: %s\n", ret, (ret == size) ? "OK" : "ERROR");
 #ifdef CONFIG_ARMV8_MULTIENTRY
 		if (gd->flags & GD_FLG_SMP)
 			spin_unlock(&mmc->lock);
@@ -465,7 +464,7 @@ int mmc_storage_write(const char *part_name, loff_t off, size_t size, void *sour
 		info_disprotect |= DISPROTECT_KEY;
 		ret = blk_dwrite(mmc_get_blk_desc(mmc), off, size, source);
 		info_disprotect &= ~DISPROTECT_KEY;
-		printf("%d blocks written: %s\n", ret, (ret == size) ? "OK" : "ERROR");
+		printf("%d blocks written 0x%llx: %s\n", ret, off, (ret == size) ? "OK" : "ERROR");
 #ifdef CONFIG_ARMV8_MULTIENTRY
 		if (gd->flags & GD_FLG_SMP)
 			spin_unlock(&mmc->lock);

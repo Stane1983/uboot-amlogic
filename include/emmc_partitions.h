@@ -84,6 +84,10 @@
 #define MMC_GPT_ALT_OFFSET	(SZ_1M * 9)
 #define MMC_GPT_ALT_SIZE	    (512)
 
+#define MMC_TUN_PARA_NAME	"tuning_para"
+#define MMC_TUN_PARA_OFFSET	(SZ_1M * 10)
+#define MMC_TUN_PARA_SIZE	    (512)
+
 #define     MMC_MPT_VERSION_1               "01.00.00"
 #define     MMC_MPT_VERSION_2               "01.02.00"
 /* version in use, fixme when kernel driver is updated. */
@@ -314,6 +318,7 @@ bool aml_is_emmc_tsd (struct mmc *mmc);
 int check_gpt_change(struct blk_desc *dev_desc, void *buf);
 int mmc_device_init (struct mmc *mmc);
 int get_ept_from_gpt(struct mmc *mmc);
+int get_emmc_tuning_para_offset(void);
 
 #define PARTITION_ELEMENT(na, sz, flags) {.name = na, .size = sz, .mask_flags = flags,}
 

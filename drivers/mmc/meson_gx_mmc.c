@@ -9,6 +9,7 @@
 #include <malloc.h>
 #include <clk.h>
 #include <mmc.h>
+#include <emmc_partitions.h>
 #include <asm/io.h>
 #include <asm/gpio.h>
 #include <asm/arch/cpu_sdio.h>
@@ -18,10 +19,7 @@
 #include "mmc_private.h"
 #include <asm/arch/register.h>
 #include <asm/arch/timer.h>
-
-#define MMC_PATTERN_OFFSET ((SZ_1M * (36 + 3)) / 512)
-#define MMC_MAGIC_OFFSET ((SZ_1M * (36 + 3)) / 512)
-#define MMC_RANDOM_OFFSET ((SZ_1M * (36 + 3)) / 512)
+#include <amlogic/cpu_id.h>
 
 #ifdef EMMC_DEBUG_ENABLE
 	#define emmc_debug(a...) printf(a)
@@ -64,6 +62,14 @@ void mmc_reset_reg(struct mmc *mmc)
 	meson_write(mmc, 0x0, MESON_SD_EMMC_DELAY1);
 	meson_write(mmc, 0x0, MESON_SD_EMMC_DELAY2);
 	meson_write(mmc, 0x0, MESON_SD_EMMC_ADJUST);
+}
+
+void print_all_reg(struct mmc *mmc)
+{
+	int i = 0;
+
+	for (i = 0; i < 0x48; i += 4)
+		printf("i %d,  valud 0x%x\n", i, meson_read(mmc, i));
 }
 
 void mmc_print_reg(struct udevice *dev)
@@ -234,12 +240,17 @@ static int meson_dm_mmc_set_ios(struct udevice *dev)
 	struct meson_host *host = dev_get_priv(dev);
 	struct mmc *mmc = mmc_get_mmc_dev(dev);
 	uint32_t meson_mmc_cfg;
+	u32 val;
 
 	if (!mmc->clock) {
 		meson_write(mmc, 0, MESON_SD_EMMC_DELAY1);
 		meson_write(mmc, 0, MESON_SD_EMMC_DELAY2);
 		meson_write(mmc, 0, MESON_SD_EMMC_ADJUST);
 	}
+	//val = meson_read(mmc, MESON_SD_EMMC_IRQ_EN);
+	//val &= ~CFG_CMD_SETUP;
+	//meson_write(mmc, val, MESON_SD_EMMC_IRQ_EN);
+
 	meson_mmc_config_clock(host);
 	meson_mmc_cfg = meson_read(mmc, MESON_SD_EMMC_CFG);
 
@@ -255,6 +266,14 @@ static int meson_dm_mmc_set_ios(struct udevice *dev)
 
 	meson_write(mmc, meson_mmc_cfg, MESON_SD_EMMC_CFG);
 
+	if (mmc->selected_mode == MMC_HS_400) {
+		val = meson_read(mmc, MESON_SD_EMMC_IRQ_EN);
+		val &= ~CFG_CMD_SETUP;
+		meson_write(mmc, val, MESON_SD_EMMC_IRQ_EN);
+		val = meson_read(mmc, MESON_SD_EMMC_INTF3);
+		val |= SD_INTF3;
+		meson_write(mmc, val, MESON_SD_EMMC_INTF3);
+	}
 	return 0;
 }
 
@@ -790,6 +809,204 @@ __Retry:
 	return 0;
 }
 
+static long long para_checksum_calc(struct tuning_para *para)
+{
+	int i = 0;
+	int size = sizeof(struct tuning_para) - sizeof(u64) - sizeof(int);
+	unsigned int *buffer;
+	long long checksum = 0;
+
+	size = size >> 2;
+	buffer = (unsigned int *)para;
+	while (i < size)
+		checksum += buffer[i++];
+
+	return checksum;
+}
+
+/*
+ * check if tuning parameter is exist
+ * check if temperature is in the 0~69
+ * check if the parameter has been tuning
+ *      under the current temperature
+ * check if the data had been broken by  checksum
+ *
+ * if all four condition above is yes, the tuning parameter
+ *      could be use directly
+ * otherwise returning and save parameter
+ */
+static int aml_para_is_exist(struct mmc *mmc, int save)
+{
+	struct meson_mmc_platdata *pdata = mmc->priv;
+	struct tuning_para *para = &pdata->para;
+	int temperature;
+	int temp_index;
+	long long checksum;
+
+	if (!para || save == 0)
+		return 0;
+
+	temperature = r1p1_temp_read(1);
+	if (temperature == -1) {
+		printf("get temperature failed\n");
+		return 0;
+	}
+
+	checksum = para_checksum_calc(para);
+	if (checksum != para->checksum) {
+		printf("warning: checksum is not match\n");
+		return 0;
+	}
+
+	printf("current temperature is %d\n", temperature);
+	temp_index = temperature  / 10;
+	para->temp_index = temp_index;
+	/* temperature range is 0 ~ 89 */
+	if (temp_index < 0 || temp_index > 9) {
+		para->temp_index = 10;
+		printf("temperature %d is out of normal range\n", temp_index);
+		return 0;
+	}
+
+//	if (para->temp_index != temp_index) {
+//		para->temp_index = temp_index;
+		/*
+		 * Note: if temperature can get from kernel success,
+		 *           set save_para  to 0
+		 *       otherwise:
+		 *           set save_para to 1
+		 */
+//		*save_para = 1;
+//	}
+
+	if (para->hs4[temp_index].flag != TUNED_FLAG) {
+		printf("current temperature %d not tuning yet\n",
+				temperature);
+		return 0;
+	}
+
+	printf("the hs400 parameter is useful\n");
+	return 1;
+}
+
+static int mmc_read_single_block(struct mmc *mmc, void *dst, lbaint_t start)
+{
+	struct mmc_cmd cmd;
+	struct mmc_data data;
+	int ret = 0;
+
+	cmd.cmdidx = MMC_CMD_READ_SINGLE_BLOCK;
+
+	if (mmc->high_capacity)
+		cmd.cmdarg = start;
+	else
+		cmd.cmdarg = start * mmc->read_bl_len;
+
+	cmd.resp_type = MMC_RSP_R1;
+
+	data.dest = dst;
+	data.blocks = 1;
+	data.blocksize = mmc->read_bl_len;
+	data.flags = MMC_DATA_READ;
+
+	ret = mmc_send_cmd(mmc, &cmd, &data);
+
+	return ret;
+}
+
+/*
+ * read tuning para from reserved partition
+ * and copy it to pdata->para
+ */
+static int aml_read_tuning_para(struct mmc *mmc, int save)
+{
+	struct meson_mmc_platdata *pdata = mmc->priv;
+	struct tuning_para *para = &pdata->para;
+	int offset, blk = 1;
+	int ret;
+	int para_size;
+	void *addr;
+
+	if (!para || save == 0)
+		return -1;
+
+	para_size = sizeof(struct tuning_para);
+	offset =  get_emmc_tuning_para_offset() >> 9;
+	addr = malloc(blk * 512);
+	if (!addr)
+		return -1;
+
+	memset(addr, 0, blk * 512);
+	ret = mmc_read_single_block(mmc, addr, offset);
+	if (ret) {
+		printf("read tuning parameter failed\n");
+		free(addr);
+		return ret;
+	}
+	printf("read tuning para success\n");
+	memcpy(para, addr, para_size);
+	free(addr);
+	return ret;
+}
+
+/*save parameter on mmc_host pdata*/
+static int aml_save_tuning_para(struct mmc *mmc, int save)
+{
+	struct meson_mmc_platdata *pdata = mmc->priv;
+	struct tuning_para *para = &pdata->para;
+	long long checksum;
+	int temp_index;
+	u64 offset, size, blocks = 1;
+	void *buf;
+	uint8_t chip_id[16];
+	int ret;
+
+	if (!para || save == 0)
+		return -1;
+
+	memset(chip_id, 0, 16);
+	if (get_chip_id(chip_id, 16) != 0) {
+		printf("get chip id error\n");
+		return -1;
+	}
+
+	memcpy(para->chip_id, chip_id, 16);
+	para->clk_rate = mmc->clock;
+	para->magic = TUNED_MAGIC;
+	para->version = TUNED_VERSION;
+
+	checksum = para_checksum_calc(para);
+	para->checksum = checksum;
+
+	temp_index = para->temp_index;
+	if (temp_index < 0 || temp_index > 9) {
+		printf("temperature %d is out of index\n", temp_index);
+	} else {
+		para->hs4[temp_index].delay1 = meson_read(mmc, MESON_SD_EMMC_DELAY1);
+		para->hs4[temp_index].delay2 = meson_read(mmc, MESON_SD_EMMC_DELAY2);
+		para->hs4[temp_index].intf3 = meson_read(mmc, MESON_SD_EMMC_INTF3);
+		para->hs4[temp_index].flag = TUNED_FLAG;
+	}
+
+	offset =  get_emmc_tuning_para_offset() >> 9;
+	size = blocks << 9;
+
+	buf = (unsigned int *)malloc(size);
+	if (!buf) {
+		printf("malloc buf failed\n");
+		return -1;
+	}
+
+	memset(buf, 0, size);
+	memcpy(buf, para, sizeof(struct tuning_para));
+
+	ret = mmc_write_blocks(mmc, offset, blocks, buf);
+	printf("write tuning parameter %s\n", ret == blocks ? "success" : "failed");
+
+	free(buf);
+	return ret;
+}
+
 int meson_execute_tuning(struct udevice *dev, uint opcode)
 {
 	struct meson_mmc_platdata *pdata = dev_get_platdata(dev);
@@ -819,6 +1036,7 @@ int meson_execute_tuning(struct udevice *dev, uint opcode)
 
 	printf("%s: tuning start:\n", mmc->cfg->name);
 	meson_write(mmc, 0, MESON_SD_EMMC_ADJUST);
+	meson_write(mmc, 0, MESON_SD_EMMC_INTF3);
 	old_dly = meson_read(mmc, MESON_SD_EMMC_DELAY1);
 	d1_dly = (old_dly & DLY_D1_MASK) >> Dly_d1;
 	pr_debug("Data 1 aligned delay is %d\n", d1_dly);
@@ -993,6 +1211,8 @@ tuning:
 	if (0)
 		ret = sd_emmc_test_adj(dev);
 
+	if (host->save_para)
+		aml_read_tuning_para(mmc, host->save_para);
 	return ret;
 }
 
@@ -1091,86 +1311,74 @@ static int aml_sd_emmc_cmd_v3(struct mmc *mmc)
 	return ret;
 }
 
-static int mmc_read_single_block(struct mmc *mmc, void *dst, lbaint_t start)
+int emmc_test_bus(struct udevice *dev)
 {
-	struct mmc_cmd cmd;
-	struct mmc_data data;
-	int ret = 0;
+	struct meson_mmc_platdata *pdata = dev_get_platdata(dev);
+	struct mmc *mmc = &pdata->mmc;
+	struct meson_host *host = dev_get_priv(dev);
+	struct mmc_cmd stop = {0};
+	u32 curr_cmd_idx, next_cmd_idx;
+	loff_t blk;
+	int err = 0;
 
-	cmd.cmdidx = MMC_CMD_READ_SINGLE_BLOCK;
+	stop.cmdidx = MMC_CMD_STOP_TRANSMISSION;
+	stop.cmdarg = 0;
+	stop.resp_type = MMC_RSP_R1 | MMC_CMD_AC;
 
-	if (mmc->high_capacity)
-		cmd.cmdarg = start;
-	else
-		cmd.cmdarg = start * mmc->read_bl_len;
+	blk = (MMC_RESERVED_OFFSET + CALI_PATTERN_OFFSET) >> 9;
+	err = mmc_storage_read(NULL, blk, 40, host->blk_test);
+	if (err)
+		goto _out;
 
-	cmd.resp_type = MMC_RSP_R1;
+	blk = (MMC_RESERVED_OFFSET + MAGIC_OFFSET) >> 9;
+	err = mmc_storage_read(NULL, blk, 40, host->blk_test);
+	if (err)
+		goto _out;
 
-	data.dest = dst;
-	data.blocks = 1;
-	data.blocksize = mmc->read_bl_len;
-	data.flags = MMC_DATA_READ;
+	blk = (MMC_RESERVED_OFFSET + RANDOM_OFFSET) >> 9;
+	err = mmc_storage_read(NULL, blk, 40, host->blk_test);
+	if (err)
+		goto _out;
 
-	ret = mmc_send_cmd(mmc, &cmd, &data);
-
-	return ret;
+_out:
+	curr_cmd_idx = meson_read(mmc, MESON_SD_EMMC_CURR_CFG) &
+		CMD_CFG_CMD_INDEX_MASK;
+	next_cmd_idx = meson_read(mmc, MESON_SD_EMMC_NEXT_CFG) &
+		CMD_CFG_CMD_INDEX_MASK;
+	if (curr_cmd_idx != next_cmd_idx)
+		mmc_send_cmd(mmc, &stop, NULL);
+	return err;
 }
 
-int mmc_read(struct mmc *mmc, lbaint_t start, int blkcnt, void *dst)
+int emmc_ds_manual_sht(struct udevice *dev)
 {
-	int cur, blocks_todo = blkcnt;
-
-	if (blkcnt == 0)
-		return 0;
-
-#ifndef MMC_CMD23
-	if (mmc_set_blocklen(mmc, mmc->read_bl_len)) {
-		pr_debug("%s: Failed to set blocklen\n", __func__);
-		return 0;
-	}
-#endif
-
-	do {
-		cur = (blocks_todo > mmc->cfg->b_max) ?
-			mmc->cfg->b_max : blocks_todo;
-		if (mmc_read_blocks(mmc, dst, start, cur) != cur) {
-			pr_debug("%s: Failed to read blocks\n", __func__);
-			return 0;
-		}
-		blocks_todo -= cur;
-		start += cur;
-		dst += cur * mmc->read_bl_len;
-	} while (blocks_todo > 0);
-
-	return blkcnt;
-}
-
-int emmc_ds_manual_sht(struct mmc *mmc)
-{
+	struct meson_mmc_platdata *pdata = dev_get_platdata(dev);
+	struct mmc *mmc = &pdata->mmc;
 	u32 intf3 = meson_read(mmc, MESON_SD_EMMC_INTF3);
 	struct intf3 *gintf3 = (struct intf3 *)&(intf3);
-	int i, cnt = 0;
+	int i, err, size = 0;
 	int match[64];
 	int best_start = -1, best_size = -1;
 	int cur_start = -1, cur_size = 0;
-	unsigned long phy_addr = 0x1080000;
-	void *addr = (void *)phy_addr;
 	u32 begin_time, end_time;
-	u32 capacity = mmc->capacity >> 9;
-	u32 offset;
 
 	meson_write(mmc, 0, MESON_SD_EMMC_ADJUST);
+
+	memset(match, -1, sizeof(match));
 	begin_time = get_time();
 	gintf3->ds_sht_m = 0;
 	gintf3->sd_intf3 = 1;
 	meson_write(mmc, intf3, MESON_SD_EMMC_INTF3);
-	offset = (u32)rand_r(0) % capacity;
 	for (i = 0; i < 64; i++) {
-		cnt = mmc_read(mmc, offset, 200, addr);
-		if (cnt == 200)
+		err = emmc_test_bus(dev);
+		if (!err) {
 			match[i] = 0;
-		else
+			size++;
+		} else {
 			match[i] = 1;
+			if (size > DELAY_CELL_COUNTS)
+				break;
+		}
 		gintf3->ds_sht_m += 1;
 		meson_write(mmc, intf3, MESON_SD_EMMC_INTF3);
 	}
@@ -1335,14 +1543,14 @@ static void emmc_show_cmd_window(char *str, int repeat_times)
 
 		if (i != 0 && pre_status != status) {
 			if (pre_status == 1 && single == 1)
-				printf(">>cmd delay [ 0x%x ] is ok\n", i - 1);
+				printf(">>cmd delay [ %d ] is ok\n", i - 1);
 			else if (pre_status == 1 && single != 1)
-				printf(">>cmd delay [ 0x%x -- 0x%x ] is ok\n",
+				printf(">>cmd delay [ %d -- %d ] is ok\n",
 						start, i - 1);
 			else if (pre_status != 1 &&  single == 1)
-				printf(">>cmd delay [ 0x%x ] is nok\n", i - 1);
+				printf(">>cmd delay [ %d ] is nok\n", i - 1);
 			else if (pre_status != 1 && single != 1)
-				printf(">>cmd delay [ 0x%x -- 0x%x ] is nok\n",
+				printf(">>cmd delay [ %d -- %d ] is nok\n",
 						start, i - 1);
 			start = i;
 			single = 1;
@@ -1352,15 +1560,15 @@ static void emmc_show_cmd_window(char *str, int repeat_times)
 
 		if (i == 63) {
 			if (status == 1 && pre_status == 1)
-				printf(">>cmd delay [ 0x%x -- 0x%x ] is ok\n",
+				printf(">>cmd delay [ %d -- %d ] is ok\n",
 						start, i);
 			else if (status != 1 && pre_status == -1)
-				printf(">>cmd delay [ 0x%x -- 0x%x ] is nok\n",
+				printf(">>cmd delay [ %d -- %d ] is nok\n",
 						start, i);
 			else if (status == 1 && pre_status != 1)
-				printf(">>cmd delay [ 0x%x ] is ok\n", i);
+				printf(">>cmd delay [ %d ] is ok\n", i);
 			else if (status != 1 && pre_status == 1)
-				printf(">>cmd delay [ 0x%x ] is nok\n", i);
+				printf(">>cmd delay [ %d ] is nok\n", i);
 		}
 		pre_status = status;
 	}
@@ -1386,12 +1594,10 @@ static u32 scan_emmc_cmd_win(struct mmc *mmc, int send_status)
 		return -1;
 
 	delay2 &= ~(0xff << 24);
-
 	begin_time = get_time();
-
 	for (i = 0; i < 64; i++) {
 		meson_write(mmc, delay2, MESON_SD_EMMC_DELAY2);
-		offset = (u32)rand_r(0) % capacity;
+		offset = 1 % capacity;
 		for (j = 0; j < repeat_times; j++) {
 			if (send_status)
 				err = aml_sd_emmc_cmd_v3(mmc);
@@ -1430,9 +1636,9 @@ static void set_emmc_cmd_delay(struct mmc *mmc, int send_status)
 /* Insufficient number of NWR clocks in T7 EMMC Controller */
 static void set_emmc_nwr_clks(struct udevice *dev)
 {
+	struct meson_host *host = dev_get_priv(dev);
 	struct meson_mmc_platdata *pdata = dev_get_platdata(dev);
 	struct mmc *mmc = &pdata->mmc;
-	struct meson_host *host = dev_get_priv(dev);
 	u32 delay1 = 0, delay2 = 0, count = host->nwr_cnt;
 
 	delay1 = (count << 0) | (count << 6) | (count << 12) | (count << 18) | (count << 24);
@@ -1444,11 +1650,37 @@ static void set_emmc_nwr_clks(struct udevice *dev)
 			meson_read(mmc, MESON_SD_EMMC_DELAY2));
 }
 
-static void aml_emmc_hs400_tl1(struct mmc *mmc)
+/*set para on controller register*/
+static void aml_set_tuning_para(struct mmc *mmc)
 {
+	struct meson_mmc_platdata *pdata = mmc->priv;
+	struct tuning_para *para = &pdata->para;
+	int temp_index;
+	u32 delay1, delay2, intf3;
+
+	temp_index = para->temp_index;
+	if (temp_index < 0 || temp_index > 9) {
+		printf("code defect, temp_index %d out of range\n", temp_index);
+		return;
+	}
+
+	delay1 = para->hs4[temp_index].delay1;
+	delay2 = para->hs4[temp_index].delay2;
+	intf3 = para->hs4[temp_index].intf3;
+
+	meson_write(mmc, delay1, MESON_SD_EMMC_DELAY1);
+	meson_write(mmc, delay2, MESON_SD_EMMC_DELAY2);
+	meson_write(mmc, intf3, MESON_SD_EMMC_INTF3);
+}
+
+static void aml_emmc_hs400_tl1(struct udevice *dev)
+{
+	struct meson_mmc_platdata *pdata = dev_get_platdata(dev);
+	struct mmc *mmc = &pdata->mmc;
+
 	set_emmc_cmd_delay(mmc, 1);
 	tl1_emmc_line_timing(mmc);
-	emmc_ds_manual_sht(mmc);
+	emmc_ds_manual_sht(dev);
 	set_emmc_cmd_delay(mmc, 0);
 }
 
@@ -1459,19 +1691,17 @@ static void aml_emmc_hs400_v5(struct udevice *dev)
 
 	set_emmc_nwr_clks(dev);
 	set_emmc_cmd_delay(mmc, 1);
-	emmc_ds_manual_sht(mmc);
+	emmc_ds_manual_sht(dev);
 }
 
 static void aml_get_ctrl_ver(struct udevice *dev)
 {
-	struct meson_mmc_platdata *pdata = dev_get_platdata(dev);
-	struct mmc *mmc = &pdata->mmc;
 	struct meson_host *host = dev_get_priv(dev);
 
 	if (host->ignore_desc_busy)
 		aml_emmc_hs400_v5(dev);
 	else
-		aml_emmc_hs400_tl1(mmc);
+		aml_emmc_hs400_tl1(dev);
 }
 
 void meson_post_hs400_timming(struct udevice *dev)
@@ -1479,11 +1709,18 @@ void meson_post_hs400_timming(struct udevice *dev)
 	struct meson_mmc_platdata *pdata = dev_get_platdata(dev);
 	struct mmc *mmc = &pdata->mmc;
 	struct meson_host *host = dev_get_priv(dev);
+	int save = host->save_para;
 
-	host->is_tuning = 1;
-	aml_sd_emmc_clktest(mmc);
-	aml_get_ctrl_ver(dev);
-	host->is_tuning = 0;
+	if (aml_para_is_exist(mmc, save)) {
+		aml_set_tuning_para(mmc);
+	} else {
+		host->is_tuning = 1;
+		aml_sd_emmc_clktest(mmc);
+		aml_get_ctrl_ver(dev);
+		host->is_tuning = 0;
+		aml_save_tuning_para(mmc, save);
+	}
+
 }
 
 static const struct dm_mmc_ops meson_dm_mmc_ops = {
@@ -1491,7 +1728,9 @@ static const struct dm_mmc_ops meson_dm_mmc_ops = {
 	.set_ios = meson_dm_mmc_set_ios,
 	.send_init_stream = meson_hw_reset,
 	.get_cd = meson_get_cd,
+#if CONFIG_IS_ENABLED(MMC_HS400_SUPPORT)
 	.post_hs400_timming = meson_post_hs400_timming,
+#endif
 #ifdef MMC_SUPPORTS_TUNING
 	.execute_tuning = meson_execute_tuning,
 #endif
@@ -1526,6 +1765,9 @@ static int meson_mmc_ofdata_to_platdata(struct udevice *dev)
 
 	if (dev_read_u32(dev, "nwr_cnt", &host->nwr_cnt) < 0)
 		host->nwr_cnt = 0;
+
+	if (dev_read_u32(dev, "save_para", &host->save_para) < 0)
+		host->save_para = 0;
 
 	dev_read_u32(dev, "card_type", &host->card_type);
 	if (aml_card_type_non_sdio(host)) {

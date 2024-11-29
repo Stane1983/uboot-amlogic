@@ -135,7 +135,7 @@ ulong mmc_berase(struct blk_desc *block_dev, lbaint_t start, lbaint_t blkcnt)
 	return 0;
 }
 
-static ulong mmc_write_blocks(struct mmc *mmc, lbaint_t start,
+ulong mmc_write_blocks(struct mmc *mmc, lbaint_t start,
 		lbaint_t blkcnt, const void *src)
 {
 	struct mmc_cmd cmd;

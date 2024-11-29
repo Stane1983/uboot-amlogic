@@ -44,7 +44,11 @@
 #define MESON_SD_EMMC_EYETEST_OUT0 0x30
 #define MESON_SD_EMMC_EYETEST_OUT1 0x34
 #define MESON_SD_EMMC_INTF3   0x38
-#define MMC_CMD23
+#define MESON_SD_EMMC_CURR_CFG 0x70
+#define MESON_SD_EMMC_NEXT_CFG 0x80
+#define CMD_CFG_CMD_INDEX_MASK GENMASK(29, 24)
+#define MMC_CMD_AC              (0 << 5)
+#define DELAY_CELL_COUNTS 14
 
 /* SD/MMC version bits; 8 flags, 8 major, 8 minor, 8 change */
 #define SD_VERSION_SD	(1U << 31)
@@ -521,6 +525,30 @@ struct dm_mmc_ops {
 #endif
 };
 
+struct hs400_para {
+	unsigned int delay1;
+	unsigned int delay2;
+	unsigned int intf3;
+	unsigned int flag;
+};
+
+/* flag is "AML" */
+#define TUNED_FLAG            0x004C4D41
+/* version is "V4" */
+#define TUNED_VERSION         0x00003456
+/* magic is 0x00487e44 */
+#define TUNED_MAGIC           0x00487e44
+
+struct tuning_para {
+	uint8_t chip_id[16];              /*bind soc*/
+	unsigned int magic;               /*D~H*/
+	unsigned int  clk_rate;           /*clk freq*/
+	struct hs400_para hs4[10];         /*hs400 parameter*/
+	unsigned int version;             /*for update*/
+	int temp_index;                   /*record temp index in uboot ontime*/
+	u64 checksum;               /*include chip_id, magic, clk, hs4, version*/
+};
+
 #define mmc_get_ops(dev)        ((struct dm_mmc_ops *)(dev)->driver->ops)
 
 int dm_mmc_send_cmd(struct udevice *dev, struct mmc_cmd *cmd,
@@ -907,6 +935,7 @@ int board_mmc_init(bd_t *bis);
 int cpu_mmc_init(bd_t *bis);
 int mmc_get_env_addr(struct mmc *mmc, int copy, u32 *env_addr);
 int mmc_get_env_dev(void);
+int r1p1_temp_read(int type);
 #ifdef CONFIG_MMC_FBOOT
 void mmc_reset_reg(struct mmc *mmc, int reinit);
 #else

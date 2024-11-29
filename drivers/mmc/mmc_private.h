@@ -26,6 +26,13 @@
 #define MMC_MAX_DESC_NUM	512
 #define MAX_RESPONSE_BYTES	4
 
+#define DS_ENABLE               BIT(15)
+#define MESON_SD_EMMC_INTF3     0x38
+#define SD_INTF3                BIT(22)
+#define CFG_OUT_FAIL            BIT(16)
+#define CFG_STOP_CLK            BIT(22)
+#define CFG_CMD_SETUP            BIT(17)
+
 /* unknown */
 #define CARD_TYPE_UNKNOWN       0
 /* MMC card */
@@ -54,6 +61,7 @@ struct meson_host {
 	uint src_clk;
 	uint ignore_desc_busy;
 	uint nwr_cnt;
+	uint save_para;
 	struct clk core;
 	struct clk xtal;
 	struct clk div2;
@@ -71,6 +79,7 @@ struct meson_mmc_platdata {
 	struct mmc mmc;
 	void *regbase;
 	void *w_buf;
+	struct tuning_para para;
 };
 
 extern int mmc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd,
@@ -101,6 +110,9 @@ ulong mmc_bwrite(struct blk_desc *block_dev, lbaint_t start, lbaint_t blkcnt,
 		 const void *src);
 ulong mmc_berase(struct blk_desc *block_dev, lbaint_t start, lbaint_t blkcnt);
 #endif
+ulong mmc_write_blocks(struct mmc *mmc, lbaint_t start,
+		lbaint_t blkcnt, const void *src);
+
 
 #else /* CONFIG_SPL_MMC_WRITE is not defined */
 
