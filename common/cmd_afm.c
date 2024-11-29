@@ -11,6 +11,7 @@ static int do_afm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	const char *str_cmd, *str_value = NULL;
 	if (argc == 2 && !strcmp(argv[1], "print"))
 	{
+		char *serialno = env_get("usid");
 		char *mac = env_get("mac");
 		char *silent = env_get("silent");
 		char *powermode = env_get("powermode");
@@ -35,7 +36,7 @@ static int do_afm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		//printf("current %s: %s\n", str, model_name);
 		printf("\n"
 			"model_name :     %s\n"
-			"serialno :       \n"
+			"serialno :       %s\n"
 			"mac :            %s\n"
 			"console :        \n"
 			"silent :         %s\n"
@@ -43,6 +44,7 @@ static int do_afm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			"otg_device :     %s\n"
 			"selinux :        %s\n"
 			, strlen(modelt_name) != 0 ? modelt_name : ""
+			, serialno != NULL? serialno : ""
 			, mac != NULL? mac : ""
 			, silent != NULL? (!strcmp(silent, "0")? "on" : "off") : "on"
 			, powermode != NULL? powermode : ""
@@ -68,6 +70,16 @@ static int do_afm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			return CMD_RET_USAGE;
 		}
 		run_command("saveenv", 0);
+		return 0;
+	} else if (!strcmp(str_cmd, "serialno")) {
+		char result[50] = "keyman write usid str ";//size 21
+		if (strlen(str_value) > 17) {//str_value size 17
+			printf("invalid no\n");
+			return CMD_RET_USAGE;
+		}
+		strcat(result, str_value);
+		run_command(result, 0);
+		run_command("keyman read usid $loadaddr str; printenv usid", 0);
 		return 0;
 	} else if (!strcmp(str_cmd, "mac")) {
 		char result[50] = "keyman write mac str ";//size 21
