@@ -1261,13 +1261,15 @@ int lcd_extern_get_config_json(struct lcd_extern_driver_s *edrv,
 		return -1;
 	}
 	parent = json_get_array_child(jsp, parent, edev->dev_index);
-	if (!parent)
+	if (!parent) {
 		EXTERR("find /lcd_ext_dev[%d]\n", edev->dev_index);
+		return -1;
+	}
 
 	cfg = &edev->config;
 	cfg->index = edev->dev_index;
 	str = json_get_obj_str(jsp, parent, "name", "ext_default");
-	strcpy(cfg->name, str ? str : "ext_default");
+	strlcpy(cfg->name, str ? str : "ext_default", LCD_EXTERN_NAME_LEN_MAX);
 	str = json_get_obj_str(jsp, parent, "type", NULL);
 	cfg->type = strnum_get_num(str, ext_type_name, ARRAY_SIZE(ext_type_name), LCD_EXTERN_MAX);
 	cfg->status = json_get_obj_u32(jsp, parent, "status", 0);

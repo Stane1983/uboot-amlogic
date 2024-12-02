@@ -189,27 +189,27 @@ s32 json_get_u32(struct json_parse_s *jsp, struct json_s *json, u32 *num);
 /*=json util=====================================================================================*/
 static inline int __json_is_string(struct json_s *json)
 {
-	return (json->type == JSON_STRING);
+	return (json && json->type == JSON_STRING);
 }
 
 static inline int __json_is_number(struct json_s *json)
 {
-	return (json->type == JSON_NUMBER);
+	return (json && json->type == JSON_NUMBER);
 }
 
 static inline int __json_is_string_or_number(struct json_s *json)
 {
-	return ((json->type == JSON_STRING) || (json->type == JSON_NUMBER));
+	return (json && ((json->type == JSON_STRING) || (json->type == JSON_NUMBER)));
 }
 
 static inline int __json_is_object(struct json_s *json)
 {
-	return (json->type == JSON_OBJECT);
+	return (json && json->type == JSON_OBJECT);
 }
 
 static inline int __json_is_array(struct json_s *json)
 {
-	return (json->type == JSON_ARRAY);
+	return (json && json->type == JSON_ARRAY);
 }
 
 void json_obj_dump(char *js, struct json_s *json_array, struct json_s *json, s32 indent);
