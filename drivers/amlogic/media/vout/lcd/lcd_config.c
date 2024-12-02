@@ -2426,12 +2426,14 @@ static int lcd_panel_parse_timing(struct json_parse_s *jsp, struct aml_lcd_drv_s
 		dt->cfmt = CFMT_RGB_8bit;
 		bits = json_get_obj_u32(jsp, child, "lcd_bits", 8);
 		str = json_get_obj_str(jsp, child, "color_fmt", NULL);
-		if (strcmp(str, "RGB565"))
-			snprintf(strtmp, 63, "%s_%dbit", str, bits);
-		else
-			snprintf(strtmp, 63, "%s", str);
+		if (str) {
+			if (strcmp(str, "RGB565"))
+				snprintf(strtmp, 63, "%s_%dbit", str, bits);
+			else
+				snprintf(strtmp, 63, "%s", str);
 
-		panel_str2fmt(strtmp, &dt->cfmt, &dt->lcd_bits);
+			panel_str2fmt(strtmp, &dt->cfmt, &dt->lcd_bits);
+		}
 		str = json_get_obj_str(jsp, child, "mode_switch_type", NULL);
 		dt->switch_type = strnum_get_num(str, vmode_switch_name,
 						 ARRAY_SIZE(vmode_switch_name),
@@ -2762,6 +2764,9 @@ static int lcd_gpio_name_to_index(struct aml_lcd_drv_s *pdrv, const char *name)
 {
 	int i = 0;
 
+	if (!name)
+		return LCD_CPU_GPIO_NUM_MAX;
+
 	for (i = 0; i < LCD_CPU_GPIO_NUM_MAX; i++)
 		if (!strcmp(pdrv->config.power.cpu_gpio[i], name))
 			return i;
@@ -2784,7 +2789,7 @@ static int lcd_panel_parse_power(struct json_parse_s *jsp, struct aml_lcd_drv_s 
 		return -1;
 	}
 
-	cnt = lcd_s32_constraint(cnt, 0, LCD_PWR_STEP_MAX);
+	cnt = lcd_s32_constraint(cnt, 0, LCD_PWR_STEP_MAX - 1);
 	for (i = 0; i < cnt; i++) {
 		child = json_get_array_child(jsp, parent, i);
 		if (!child)
@@ -2838,7 +2843,7 @@ static int lcd_panel_parse_power(struct json_parse_s *jsp, struct aml_lcd_drv_s 
 		return -1;
 	}
 
-	cnt = lcd_s32_constraint(cnt, 0, LCD_PWR_STEP_MAX);
+	cnt = lcd_s32_constraint(cnt, 0, LCD_PWR_STEP_MAX - 1);
 	for (i = 0; i < cnt; i++) {
 		child = json_get_array_child(jsp, parent, i);
 		if (!child)

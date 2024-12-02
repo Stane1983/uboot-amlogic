@@ -63,21 +63,19 @@ __maybe_unused int string_to_numbers(const char *str, unsigned int nums[])
 	int item_ind = 0, i = 0;
 	char *token = NULL;
 	char *tmp_buf = NULL;
-	int str_len = strlen(str);
+	int str_len;
 
-	if (!str) {
-		printf("%s : null str\n", __func__);
+	if (!str)
 		return 0;
-	}
 
-	tmp_buf = (char *)malloc(str_len + 1);
-	if (!tmp_buf) {
-		printf("%s, malloc buffer memory error!!!\n", __func__);
-		return -1;
-	}
+	str_len = strlen(str);
+	tmp_buf = (char *)malloc(str_len + 2);
+	if (!tmp_buf)
+		return 0;
 
 	strcpy(tmp_buf, str);
 	tmp_buf[str_len] = '\0';
+	tmp_buf[str_len  + 1] = '\0';
 	token = tmp_buf;
 	while (i <= str_len) {
 		if (tmp_buf[i] == ',' || i == str_len) {

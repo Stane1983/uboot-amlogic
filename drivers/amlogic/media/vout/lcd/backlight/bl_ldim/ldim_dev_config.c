@@ -1127,38 +1127,40 @@ int ldim_dev_get_config_from_json(struct ldim_dev_driver_s *dev_drv)
 		dev_drv->cmd_size = LCD_EXT_CMD_SIZE_DYNAMIC;
 
 		str = json_get_obj_str(jsp, child, "init_on", NULL);
-		nums_size = (strlen(str)) * sizeof(unsigned int);
-		nums = malloc(nums_size);
-		if (!nums) {
-			LDIMPR("ldim find init_on: no memory to save nums\n");
-			goto parse_ldim_init_off;
-		}
+		if (str) {
+			nums_size = (strlen(str)) * sizeof(unsigned int);
+			nums = malloc(nums_size);
+			if (!nums) {
+				LDIMPR("ldim find init_on: no memory to save nums\n");
+				goto parse_ldim_init_off;
+			}
 
-		memset(nums, 0, nums_size);
-		cnt = string_to_numbers(str, nums);
-		ldim_dev_init_dynamic_load_array(dev_drv, nums, cnt, 1);
-
-parse_ldim_init_off:
-		if (nums)
+			memset(nums, 0, nums_size);
+			cnt = string_to_numbers(str, nums);
+			ldim_dev_init_dynamic_load_array(dev_drv, nums, cnt, 1);
 			free(nums);
-		str = json_get_obj_str(jsp, child, "init_off", NULL);
-		nums_size = (strlen(str)) * sizeof(unsigned int);
-		nums = malloc(nums_size);
-		if (!nums) {
-			LDIMPR("ldim find init_on: no memory to save nums\n");
-			goto ldim_dev_get_config_from_json_end;
+			nums = NULL;
 		}
+parse_ldim_init_off:
+		str = json_get_obj_str(jsp, child, "init_off", NULL);
+		if (str) {
+			nums_size = (strlen(str)) * sizeof(unsigned int);
+			nums = malloc(nums_size);
+			if (!nums) {
+				LDIMPR("ldim find init_on: no memory to save nums\n");
+				goto ldim_dev_get_config_from_json_end;
+			}
 
-		memset(nums, 0, nums_size);
-		cnt = string_to_numbers(str, nums);
-		ldim_dev_init_dynamic_load_array(dev_drv, nums, cnt, 0);
-
+			memset(nums, 0, nums_size);
+			cnt = string_to_numbers(str, nums);
+			ldim_dev_init_dynamic_load_array(dev_drv, nums, cnt, 0);
+			free(nums);
+			nums = NULL;
+		}
 		dev_drv->init_loaded = 1;
 	}
 
 ldim_dev_get_config_from_json_end:
-	if (nums)
-		free(nums);
 
 	return ret;
 }
