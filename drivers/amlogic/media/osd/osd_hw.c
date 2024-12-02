@@ -1515,8 +1515,9 @@ void osd_setting_default_hwc(u32 index, struct pandata_s *disp_data)
 		din_reoder_sel = 0x4443;
 	else if (index == OSD4)
 		din_reoder_sel = 0x4444;
-	/*s7d revB only osd blend din1/din3*/
-	if (osd_get_chip_type() == MESON_CPU_MAJOR_ID_S7D &&
+	/*s7d/s6 revB only osd blend din1/din3*/
+	if ((osd_get_chip_type() == MESON_CPU_MAJOR_ID_S7D ||
+	     osd_get_chip_type() == MESON_CPU_MAJOR_ID_S6) &&
 	    get_cpu_id().chip_rev == MESON_CPU_CHIP_REVISION_B) {
 		if (index == OSD1)
 			din_reoder_sel = 0x4414;
