@@ -247,6 +247,24 @@ static void lcd_phy_cntl_set(struct aml_lcd_drv_s *pdrv, int status)
 	}
 }
 
+static void lcd_phy_init_off(void)
+{
+	int i;
+
+	lcd_ana_write(ANACTRL_DIF_PHY_CNTL14, 0x1300d100);
+	if (phy_ctrl_bit_on)
+		lcd_ana_setb(ANACTRL_DIF_PHY_CNTL15, 0x10, 16, 8);
+	else
+		lcd_ana_setb(ANACTRL_DIF_PHY_CNTL15, 0x90, 16, 8);
+
+	for (i = 0; i < 5; i++) {
+		lcd_ana_write(chreg_reg[i], 0);
+		lcd_ana_write(chdig_reg[i], 0);
+	}
+
+	LCDPR("%s done\n", __func__);
+}
+
 static void lcd_lvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 {
 	unsigned int cntl14 = 0;
@@ -358,6 +376,10 @@ struct lcd_phy_ctrl_s *lcd_phy_config_init_t6d(struct aml_lcd_data_s *pdata)
 {
 	cali_odt = lcd_phy_get_def_odt();
 	cali_bias = lcd_phy_get_def_bias();
+	phy_ctrl_bit_on = (pdata->rev_type > 0xa) ? 1 : 0;
+
+	lcd_phy_init_off();
+
 	return &lcd_phy_ctrl_t6d;
 }
 #endif
