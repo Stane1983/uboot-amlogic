@@ -35,6 +35,9 @@ typedef boot_img_hdr_t boot_img_hdr;
 #define BOOTLOADER_OFFSET		512
 #define BOOTLOADER_MAX_SIZE		(4 * 1024 * 1024)
 #define MIB_SIZE                (1024 * 1024)
+#define GPT_OFFSET              0x3DFE00
+#define DTS_GPT_OFFSET          0x3E0000
+
 
 //check SWPL-31296 for details
 static int do_get_bootloader_status(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
@@ -449,6 +452,7 @@ static int update_gpt(int flag)
 	int iRet = 0;
 	struct mmc *mmc = NULL;
 	struct blk_desc *dev_desc;
+	int write_gpt = 0;
 
 	if (store_get_type() == BOOT_EMMC)
 		mmc = find_mmc_device(1);
@@ -502,13 +506,19 @@ static int update_gpt(int flag)
 			goto exit;
 		}
 
-		if (is_valid_gpt_buf(dev_desc, buffer + 0x3DFE00)) {
+		if (is_valid_gpt_buf(dev_desc, buffer + GPT_OFFSET) &&
+				is_valid_gpt_buf(dev_desc, buffer + DTS_GPT_OFFSET)) {
 			printf("printf normal bootloader.img, no gpt partition table\n");
 			ret = -1;
 			goto exit;
 		} else {
-			erase_flag = check_gpt_change(dev_desc, buffer + 0x3DFE00);
-
+			if (!is_valid_gpt_buf(dev_desc, buffer + GPT_OFFSET)) {
+				erase_flag = check_gpt_change(dev_desc, buffer + GPT_OFFSET);
+			} else if (!is_valid_gpt_buf(dev_desc, buffer + DTS_GPT_OFFSET)) {
+				erase_flag = check_gpt_change(dev_desc, buffer + DTS_GPT_OFFSET);
+			} else {
+				printf("printf normal bootloader.img, no gpt partition table\n");
+			}
 			if (erase_flag == 4 && has_boot_slot == 0) {
 				printf("null ab critical partition change, refused to upgrade\n");
 				ret = 5;
@@ -539,7 +549,17 @@ static int update_gpt(int flag)
 
 			run_command("store boot_erase bootloader 0;", 0);
 
-			if (write_mbr_and_gpt_partitions(dev_desc, buffer + 0x3DFE00)) {
+			if (!is_valid_gpt_buf(dev_desc, buffer + GPT_OFFSET)) {
+				write_gpt = write_mbr_and_gpt_partitions(dev_desc,
+									buffer + GPT_OFFSET);
+			} else if (!is_valid_gpt_buf(dev_desc, buffer + DTS_GPT_OFFSET)) {
+				write_gpt = write_mbr_and_gpt_partitions(dev_desc,
+									buffer + DTS_GPT_OFFSET);
+			} else {
+				printf("printf normal bootloader.img, no gpt partition table\n");
+			}
+
+			if (write_gpt) {
 				printf("%s: writing GPT partitions failed\n", __func__);
 				ret = 1;
 				goto exit;
@@ -560,7 +580,7 @@ static int update_gpt(int flag)
 	}
 
 	if (flag == 0) {
-		memset(buffer + 0x3DFE00, 0, capacity_boot - 0x3DFE00);
+		memset(buffer + GPT_OFFSET, 0, capacity_boot - GPT_OFFSET);
 		iRet = store_boot_write("bootloader", 1, 0, buffer);
 		if (iRet) {
 			printf("Failed to write boot0\n");
@@ -589,7 +609,7 @@ static int update_gpt(int flag)
 				goto exit;
 			}
 		}
-		memset(buffer + 0x3DFE00, 0, capacity_boot - 0x3DFE00);
+		memset(buffer + GPT_OFFSET, 0, capacity_boot - GPT_OFFSET);
 		iRet = store_boot_write("bootloader", 1, 0, buffer);
 		if (iRet) {
 			printf("Failed to write boot0\n");
