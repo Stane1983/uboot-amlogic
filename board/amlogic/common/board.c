@@ -503,6 +503,7 @@ const char * const _aml_env_reserv_array[] = {
 	"expect_index",
 	"recovery_check_part",
 	"defenv_para",	//set in board_late_init
+	"sw_version",	//linux swupdate version
 #ifndef CONFIG_CMD_CAR_PARAMS
 	"outputmode",
 	"connector_type",
