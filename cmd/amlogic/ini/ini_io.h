@@ -14,16 +14,19 @@
 #define CS_LCD_TCON_ITEM_NAME                     "lcd_tcon"
 #define CS_LCD_TCON_SPI_ITEM_NAME                 "lcd_tcon_spi"
 #define CS_LCD_OPTICAL_ITEM_NAME                  "lcd_optical"
+#define CS_MODEL_NAME_ITEM_NAME                   "model_name"
 
 #define CS_LCD1_ITEM_NAME                         "lcd1"
 #define CS_LCD1_EXT_ITEM_NAME                     "lcd1_extern"
 #define CS_BACKLIGHT1_ITEM_NAME                   "backlight1"
 #define CS_LCD1_OPTICAL_ITEM_NAME                 "lcd1_optical"
+#define CS_MODEL1_NAME_ITEM_NAME                  "model1_name"
 
 #define CS_LCD2_ITEM_NAME                         "lcd2"
 #define CS_LCD2_EXT_ITEM_NAME                     "lcd2_extern"
 #define CS_BACKLIGHT2_ITEM_NAME                   "backlight2"
 #define CS_LCD2_OPTICAL_ITEM_NAME                 "lcd2_optical"
+#define CS_MODEL2_NAME_ITEM_NAME                  "model2_name"
 
 #define CS_PANEL_INI_PATH_ITEM_NAME               "panel_ini_path"
 #define CS_PANEL_PQ_PATH_ITEM_NAME                "panel_pq_path"
@@ -45,6 +48,8 @@ int read_backlight_param(int index, unsigned char data_buf[]);
 int save_backlight_param(int index, int wr_size, unsigned char data_buf[]);
 int read_ldim_dev_param(unsigned char data_buf[]);
 int save_ldim_dev_param(int wr_size, unsigned char data_buf[]);
+int read_model_name_param(int index, unsigned char data_buf[]);
+int save_model_name_param(int index, int wr_size, unsigned char data_buf[]);
 int read_tcon_spi_param(unsigned char data_buf[]);
 int save_tcon_spi_param(int wr_size, unsigned char data_buf[]);
 int read_lcd_optical_param(int index, unsigned char data_buf[]);

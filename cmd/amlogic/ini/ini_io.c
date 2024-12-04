@@ -384,6 +384,44 @@ int save_ldim_dev_param(int wr_size, unsigned char data_buf[])
 	return tmp_ret;
 }
 
+int read_model_name_param(int index, unsigned char data_buf[])
+{
+	int rd_size = 0;
+	const char *item_name = CS_MODEL_NAME_ITEM_NAME;
+
+	if (!data_buf)
+		return -1;
+
+	if (index == 1)
+		item_name = CS_MODEL1_NAME_ITEM_NAME;
+	else if (index == 2)
+		item_name = CS_MODEL2_NAME_ITEM_NAME;
+
+	rd_size = read_bin_data(item_name, data_buf);
+
+	return rd_size;
+}
+
+int save_model_name_param(int index, int wr_size, unsigned char data_buf[])
+{
+	int tmp_ret = 0;
+	const char *item_name = CS_MODEL_NAME_ITEM_NAME;
+
+	if (!data_buf)
+		return -1;
+
+	if (index == 1)
+		item_name = CS_MODEL1_NAME_ITEM_NAME;
+	else if (index == 2)
+		item_name = CS_MODEL2_NAME_ITEM_NAME;
+
+	tmp_ret = write_bin_data(item_name, wr_size, data_buf);
+	if (tmp_ret != wr_size)
+		return -1;
+
+	return tmp_ret;
+}
+
 int read_tcon_spi_param(unsigned char data_buf[])
 {
 	int rd_size = 0;

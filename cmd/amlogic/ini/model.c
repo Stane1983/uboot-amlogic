@@ -3595,20 +3595,25 @@ int handle_model_list_panel_key(void)
 
 int handle_model_list(void)
 {
-	char *model, str[15];
+	char *model, str[15], model_val[50];
 	int i;
 
 	for (i = 0; i < 3; i++) {
+		memset(model_val, 0, sizeof(model_val));
 		if (i == 0)
 			sprintf(str, "model_name");
 		else
 			sprintf(str, "model%d_name", i);
 
-		model = env_get(str);
-		if (!model) {
-			if (model_debug_flag & DEBUG_NORMAL)
-				ALOGD("%s, no %s\n", __func__, str);
-			continue;
+		if (read_model_name_param(i, model_val) <= 0) {
+			model = env_get(str);
+			if (!model) {
+				if (model_debug_flag & DEBUG_NORMAL)
+					ALOGD("%s, no %s\n", __func__, str);
+				continue;
+			}
+		} else {
+			model = model_val;
 		}
 		printf("current %s: %s\n", str, model);
 #ifdef CONFIG_AML_LCD
@@ -3657,25 +3662,72 @@ unsigned char *read_file_to_buffer(const char *filename, int *size)
 	return NULL;
 }
 
+int handle_model_set(const char *model, const char *val)
+{
+	const char *name = model;
+	int index = 0, ukey_ok = 0, env_ok = 0;
+
+	if (!val)
+		return -1;
+
+	if (!name || !strcmp(name, "model_name") ||
+		    !strcmp(name, "0")) {
+		index = 0;
+		name = "model_name";
+	} else if (!strcmp(name, "model1_name") ||
+			!strcmp(name, "1")) {
+		index = 1;
+		name = "model1_name";
+	} else if (!strcmp(name, "model2_name") ||
+			!strcmp(name, "2")) {
+		index = 2;
+		name = "model2_name";
+	}
+
+	if (save_model_name_param(index, strlen(val) + 1,
+		    (char *)val) > 0) {
+		ukey_ok = 1;
+	}
+	env_set(name, val);
+	env_ok = !env_save();
+
+	if (!ukey_ok || !env_ok) {
+		ALOGE("%s, [%d](%s): set %s=%s fail\n", __func__, index,
+			(ukey_ok ? (env_ok ? "unknown" : "env") : "ukey"),
+			name, val);
+	} else {
+		if (model_debug_flag & DEBUG_NORMAL) {
+			ALOGD("%s, [%d]: set %s=%s ok\n", __func__, index,
+				name, val);
+		}
+	}
+	return 0;
+}
+
 int handle_model_sum(void)
 {
-	char *model, str[15];
+	char *model, str[15], model_val[50];
 #ifdef CONFIG_AML_LCD
 	char *file_name, *p;
 #endif
 	int i, ret;
 
 	for (i = 0; i < 3; i++) {
+		memset(model_val, 0, sizeof(model_val));
 		if (i == 0)
 			sprintf(str, "model_name");
 		else
 			sprintf(str, "model%d_name", i);
 
-		model = env_get(str);
-		if (!model) {
-			if (model_debug_flag & DEBUG_NORMAL)
-				ALOGD("%s, no %s\n", __func__, str);
-			continue;
+		if (read_model_name_param(i, model_val) <= 0) {
+			model = env_get(str);
+			if (!model) {
+				if (model_debug_flag & DEBUG_NORMAL)
+					ALOGD("%s, no %s\n", __func__, str);
+				continue;
+			}
+		} else {
+			model = model_val;
 		}
 		ret = parse_model_sum(i, get_model_sum_path(i), model);
 		if (ret < 0)
