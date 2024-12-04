@@ -410,6 +410,7 @@ const char * const _aml_env_reserv_array[] = {
 	"outputmode",
 	"connector0_type",
 #endif
+	"sw_version",	//linux swupdate version
 	NULL//Keep NULL be last to tell END
 };
 #endif//#ifdef CONFIG_AML_DEFENV
