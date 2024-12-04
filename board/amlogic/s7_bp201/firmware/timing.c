@@ -37,84 +37,79 @@ __attribute__ ((section(".clk_param"))) = {
 #define VCCK_VAL                                AML_VCCK_INIT_VOLTAGE
 #define VDDEE_VAL                               AML_VDDEE_INIT_VOLTAGE
 /* VCCK PWM table */
-#if   (VCCK_VAL == 1049)
-#define VCCK_VAL_REG    0x3e8
-#elif (VCCK_VAL == 1039)
-#define VCCK_VAL_REG    0x1D03C9
+#if   (VCCK_VAL == 1039)
+#define VCCK_VAL_REG  0x00000022
 #elif (VCCK_VAL == 1029)
-#define VCCK_VAL_REG    0x3B03AB
+#define VCCK_VAL_REG  0x00010021
 #elif (VCCK_VAL == 1019)
-#define VCCK_VAL_REG    0x59038D
+#define VCCK_VAL_REG  0x00020020
 #elif (VCCK_VAL == 1009)
-#define VCCK_VAL_REG    0x77036F
+#define VCCK_VAL_REG  0x0003001f
 #elif (VCCK_VAL == 999)
-#define VCCK_VAL_REG    0x8B035B
+#define VCCK_VAL_REG  0x0004001e
 #elif (VCCK_VAL == 989)
-#define VCCK_VAL_REG    0xA9033D
+#define VCCK_VAL_REG  0x0005001d
 #elif (VCCK_VAL == 979)
-#define VCCK_VAL_REG    0xC7031F
+#define VCCK_VAL_REG  0x0006001c
 #elif (VCCK_VAL == 969)
-#define VCCK_VAL_REG    0xE50301
+#define VCCK_VAL_REG  0x0007001b
 #elif (VCCK_VAL == 959)
-#define VCCK_VAL_REG    0xF902ED
+#define VCCK_VAL_REG  0x0008001a
 #elif (VCCK_VAL == 949)
-#define VCCK_VAL_REG    0x11702CF
+#define VCCK_VAL_REG  0x00090019
 #elif (VCCK_VAL == 939)
-#define VCCK_VAL_REG    0x13502B1
+#define VCCK_VAL_REG  0x000a0018
 #elif (VCCK_VAL == 929)
-#define VCCK_VAL_REG    0x1530293
+#define VCCK_VAL_REG  0x000b0017
 #elif (VCCK_VAL == 919)
-#define VCCK_VAL_REG    0x1710275
+#define VCCK_VAL_REG  0x000c0016
 #elif (VCCK_VAL == 909)
-#define VCCK_VAL_REG    0x1850261
+#define VCCK_VAL_REG  0x000d0015
 #elif (VCCK_VAL == 899)
-#define VCCK_VAL_REG    0x1A30243
+#define VCCK_VAL_REG  0x000e0014
 #elif (VCCK_VAL == 889)
-#define VCCK_VAL_REG    0x1C10225
+#define VCCK_VAL_REG  0x000f0013
 #elif (VCCK_VAL == 879)
-#define VCCK_VAL_REG    0x1DF0207
+#define VCCK_VAL_REG  0x00100012
 #elif (VCCK_VAL == 869)
-#define VCCK_VAL_REG    0x1F301F3
+#define VCCK_VAL_REG  0x00110011
 #elif (VCCK_VAL == 859)
-#define VCCK_VAL_REG    0x21101D5
+#define VCCK_VAL_REG  0x00120010
 #elif (VCCK_VAL == 849)
-#define VCCK_VAL_REG    0x22F01B7
+#define VCCK_VAL_REG  0x0013000f
 #elif (VCCK_VAL == 839)
-#define VCCK_VAL_REG    0x24D0199
+#define VCCK_VAL_REG  0x0014000e
 #elif (VCCK_VAL == 829)
-#define VCCK_VAL_REG    0x26B017B
+#define VCCK_VAL_REG  0x0015000d
 #elif (VCCK_VAL == 819)
-#define VCCK_VAL_REG    0x27F0167
+#define VCCK_VAL_REG  0x0016000c
 #elif (VCCK_VAL == 809)
-#define VCCK_VAL_REG    0x29D0149
+#define VCCK_VAL_REG  0x0017000b
 #elif (VCCK_VAL == 799)
-#define VCCK_VAL_REG    0x2BB012B
+#define VCCK_VAL_REG  0x0018000a
 #elif (VCCK_VAL == 789)
-#define VCCK_VAL_REG    0x2D9010D
+#define VCCK_VAL_REG  0x00190009
 #elif (VCCK_VAL == 779)
-#define VCCK_VAL_REG    0x2ED00F9
+#define VCCK_VAL_REG  0x001a0008
 #elif (VCCK_VAL == 769)
-#define VCCK_VAL_REG    0x30B00DB
+#define VCCK_VAL_REG  0x001b0007
 #elif (VCCK_VAL == 759)
-#define VCCK_VAL_REG    0x32900BD
+#define VCCK_VAL_REG  0x001c0006
 #elif (VCCK_VAL == 749)
-#define VCCK_VAL_REG    0x347009F
+#define VCCK_VAL_REG  0x001d0005
 #elif (VCCK_VAL == 739)
-#define VCCK_VAL_REG    0x3650081
+#define VCCK_VAL_REG  0x001e0004
 #elif (VCCK_VAL == 729)
-#define VCCK_VAL_REG    0x379006D
+#define VCCK_VAL_REG  0x001f0003
 #elif (VCCK_VAL == 719)
-#define VCCK_VAL_REG    0x397004F
+#define VCCK_VAL_REG  0x00200002
 #elif (VCCK_VAL == 709)
-#define VCCK_VAL_REG    0x3B50031
+#define VCCK_VAL_REG  0x00210001
 #elif (VCCK_VAL == 699)
-#define VCCK_VAL_REG    0x3D30013
-#elif (VCCK_VAL == 689)
-#define VCCK_VAL_REG    0x3E80000
+#define VCCK_VAL_REG  0x00220000
 #else
 #error "VCCK val out of range\n"
 #endif
-
 /* VDDEE_VAL_REG */
 #if    (VDDEE_VAL == 700)
 #define VDDEE_VAL_REG   0x120000
@@ -186,7 +181,7 @@ __attribute__ ((section(".misc_param"))) = {
 	{ PWM_MISC_REG_J,	   (0x1 << 0),	  (0x1 << 0), 0, 0, 0 },
 	/* set pwm j and pwm h clock rate to 24M 666M, enable them */
 	{ CLKCTRL_PWM_CLK_GH_CTRL, (0x1 << 24), 0xffffffff, 0, 0, 0 },
-	{ CLKCTRL_PWM_CLK_IJ_CTRL, (0x1 << 24) | (0x3 << 25), 0xffffffff, 0, 0, 0 },
+	{ CLKCTRL_PWM_CLK_IJ_CTRL, (0x1 << 24), 0xffffffff, 0, 0, 0 },
 	/* set GPIOE_0 GPIOE_1 drive strength to 2 ,already set by gpio owner on bl2*/
 	// { PADCTRL_GPIOE_DS,	   0xa,		  0xf,	      0, 0, 0 },
 	/* set GPIOE_0 GPIOE_1 mux to pwmh pwmj */
