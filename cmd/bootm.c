@@ -138,7 +138,7 @@ static void bootm_avb_bootctl_anti_rollback(int rc, AvbSlotVerifyData *out_data)
 		for (i = 0; i < AVB_MAX_NUMBER_OF_ROLLBACK_INDEX_LOCATIONS; i++) {
 			u64 rb_idx = out_data->rollback_indexes[i];
 
-			if (get_avb_antirollback(i, &version) &&
+			if (rb_idx != 0 && get_avb_antirollback(i, &version) &&
 			    version < (u32)rb_idx &&
 			    !set_avb_antirollback(i, (u32)rb_idx)) {
 				printf("rollback(%d) = %u failed\n",
