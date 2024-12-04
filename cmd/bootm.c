@@ -319,7 +319,7 @@ int do_bootm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 				for (i = 0; i < AVB_MAX_NUMBER_OF_ROLLBACK_INDEX_LOCATIONS; i++) {
 					uint64_t rb_idx = out_data->rollback_indexes[i];
 
-					if (get_avb_antirollback(i, &version) &&
+					if (rb_idx != 0 && get_avb_antirollback(i, &version) &&
 						version < (uint32_t)rb_idx &&
 						!set_avb_antirollback(i, (uint32_t)rb_idx)) {
 						printf("rollback(%d) = %u failed\n",
