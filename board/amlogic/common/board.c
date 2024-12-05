@@ -48,6 +48,20 @@
 #include <amlogic/aml_mmc.h>
 #endif
 
+#ifdef CONFIG_FACTORY_BURN_MODE
+#include <amlogic/aml_efuse.h>
+#include <amlogic/storage.h>
+#include <asm/amlogic/arch/efuse.h>
+#include <amlogic/emmc_partitions.h>
+extern efuse_obj_field_t efuse_field;
+#include <hexdump.h>
+#define MAX_LINE_LENGTH 256
+#define MAX_COMMAND_LENGTH 256
+#define HASH_LENGTH 64
+#define MAX_KEY_LENGTH 64
+char command[MAX_COMMAND_LENGTH];
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 #define UNUSED(x) (void)(x)
 
@@ -188,6 +202,399 @@ int aml_board_late_init_front(void *arg)
 #if !defined(SYSCTRL_SEC_STICKY_REG2) && defined(P_PREG_STICKY_REG2)
 #define SYSCTRL_SEC_STICKY_REG2 P_PREG_STICKY_REG2
 #endif//#if !defined(SYSCTRL_SEC_STICKY_REG2) && defined(P_PREG_STICKY_REG2)
+
+#ifdef CONFIG_FACTORY_BURN_MODE
+int extract_hash_from_memory(const char *loadaddr, const char *hash_type, char *hash_value)
+{
+	const char *current = loadaddr;
+	const char *line_start = loadaddr;
+	char search_pattern[64];
+
+	snprintf(search_pattern, sizeof(search_pattern), "HASH_%s_DEVICE_ROOTCERT", hash_type);
+
+	while (*current != '\0') {
+		if (*current == '\n' || *current == '\r') {
+			size_t line_length = current - line_start;
+
+			if (line_length > strlen(search_pattern) &&
+				strstr(line_start, search_pattern)) {
+				const char *hash_start = strstr(line_start, search_pattern);
+
+				if (hash_start) {
+					hash_start += strlen(search_pattern);
+
+					while (*hash_start != '\0' && isspace(*hash_start))
+						hash_start++;
+
+					if (strlen(hash_start) >= HASH_LENGTH) {
+						memcpy(hash_value, hash_start, HASH_LENGTH);
+						hash_value[HASH_LENGTH] = '\0';
+						return 1;
+					}
+				}
+			}
+
+			line_start = current + 1;
+
+			while (*line_start == '\n' || *line_start == '\r')
+				line_start++;
+			current = line_start;
+		} else {
+			current++;
+		}
+	}
+
+	return 0;
+}
+
+int extract_key_value(const char *loadaddr, char *value)
+{
+	const char *current = loadaddr;
+	int id_length = 0;
+
+	while (*current != '\0' && isspace(*current))
+		current++;
+
+	while (*current != '\0' && !isspace(*current) && id_length < MAX_KEY_LENGTH)
+		value[id_length++] = *current++;
+
+	value[id_length] = '\0';
+
+	return (id_length == MAX_KEY_LENGTH) ? 1 : 0;
+}
+
+int aml_factory_burn(void)
+{
+	int reboot_flag = 0;
+	char *rpmb_flag = env_get("rpmb_state");
+	char *factorytest = env_get("factorytest");
+	const int bootCpyIndex = store_bootup_bootidx("bootloader");
+	char *rebootmode = env_get("reboot_mode");
+	int ret = -1;
+	unsigned char *loadaddr = 0;
+	char hash_value[HASH_LENGTH + 1];
+
+	loadaddr = (unsigned char *)simple_strtoul(env_get("loadaddr"), NULL, 16);
+#ifdef CONFIG_READ_KEY_FROM_PARAM
+	const int partIndex = get_partition_num_by_name("param");
+
+	env_set_hex("paramPart", partIndex);
+	env_set_hex("paramLoadAddr", (ulong)loadaddr);
+#else
+#ifdef CONFIG_READ_KEY_FROM_UDISK
+	env_set_hex("udiskLoadAddr", (ulong)loadaddr);
+#endif
+#endif
+
+	printf("bootCpyIndex is %d\n", bootCpyIndex);
+	if (!rebootmode) {
+		run_command("get_rebootmode", 0);
+		rebootmode = env_get("reboot_mode");
+	}
+
+	if (bootCpyIndex == 2 &&
+		factorytest && (strcmp(factorytest, "1") == 0)) {
+		printf("bootup from boot1, copy boot1 to boot0\n");
+		run_command("copy_slot_bootable 2 1", 0);
+		env_set("factorytest", "0");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+		run_command("update_env_part -p factorytest;", 0);
+#else
+		run_command("defenv_reserv; saveenv;", 0);
+#endif
+		if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+			run_command("reboot quiescent", 0);
+		else
+			run_command("reboot", 0);
+	}
+
+	if ((!factorytest || (factorytest && strcmp(factorytest, "1"))) &&
+		!IS_FEAT_BOOT_VERIFY()) {
+		printf("normal mode, set factorytest 1\n");
+		factorytest = "1";
+		env_set("factorytest", "1");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+		run_command("update_env_part -p factorytest;", 0);
+#else
+		run_command("defenv_reserv; saveenv;", 0);
+#endif
+	}
+
+	if (factorytest)
+		printf("factorytest is %s\n", factorytest);
+
+	if (rebootmode && strcmp(rebootmode, "fastboot") &&
+		strcmp(rebootmode, "factory_reset")) {
+		if (factorytest && (strcmp(factorytest, "1") == 0) &&
+			!IS_FEAT_BOOT_VERIFY() &&
+			bootCpyIndex == 1) {
+			printf("need to enter factory burn mode\n");
+			if (rpmb_flag) {
+				if (!strcmp(rpmb_flag, "0")) {
+					printf("Do rpmb_init\n");
+					run_command("rpmb_init", 0);
+					reboot_flag = 1;
+				} else {
+					printf("RPMB already init\n");
+				}
+			} else {
+				printf("Get RPMB state failed\n");
+			}
+
+			run_command("efuse_obj get_lock HASH_NORMAL_DEVICE_ROOTCERT", 0);
+			if (*efuse_field.data == 0) {
+				printf("Need burn HASH_NORMAL_DEVICE_ROOTCERT\n");
+#ifdef CONFIG_READ_KEY_FROM_PARAM
+				env_set("ext4paramLoadCmd",
+						"ext4load mmc 1:${paramPart} ${paramLoadAddr} /pattern.efuse");
+				ret = run_command("run ext4paramLoadCmd", 0);
+#else
+#ifdef CONFIG_READ_KEY_FROM_UDISK
+				env_set("udiskparamLoadCmd",
+						"fatload usb 0 ${udiskLoadAddr} pattern.efuse");
+				ret = run_command("run udiskparamLoadCmd", 0);
+#endif
+#endif
+
+				if (extract_hash_from_memory(loadaddr, "NORMAL", hash_value)) {
+					snprintf(command, MAX_COMMAND_LENGTH,
+						"efuse_obj set HASH_NORMAL_DEVICE_ROOTCERT %s",
+						hash_value);
+					printf("command is %s\n", command);
+					ret = run_command(command, 0);
+					if (ret == 0)
+						ret = run_command("efuse_obj lock HASH_NORMAL_DEVICE_ROOTCERT", 0);
+					else
+						return -1;
+				} else {
+					printf("read HASH_NORMAL_DEVICE_ROOTCERT error\n");
+					return -1;
+				}
+			}
+
+			run_command("efuse_obj get_lock HASH_DFU_DEVICE_ROOTCERT", 0);
+			if (*efuse_field.data == 0) {
+				printf("Need burn HASH_DFU_DEVICE_ROOTCERT\n");
+#ifdef CONFIG_READ_KEY_FROM_PARAM
+				env_set("ext4paramLoadCmd",
+						"ext4load mmc 1:${paramPart} ${paramLoadAddr} /pattern.efuse");
+				ret = run_command("run ext4paramLoadCmd", 0);
+#else
+#ifdef CONFIG_READ_KEY_FROM_UDISK
+				env_set("udiskparamLoadCmd",
+						"fatload usb 0 ${udiskLoadAddr} pattern.efuse");
+				ret = run_command("run udiskparamLoadCmd", 0);
+#endif
+#endif
+
+				if (extract_hash_from_memory(loadaddr, "DFU", hash_value)) {
+					snprintf(command, MAX_COMMAND_LENGTH,
+						"efuse_obj set HASH_NORMAL_DEVICE_ROOTCERT %s",
+						hash_value);
+					printf("command is %s\n", command);
+					ret = run_command(command, 0);
+					if (ret == 0)
+						ret = run_command("efuse_obj lock HASH_DFU_DEVICE_ROOTCERT", 0);
+					else
+						return -1;
+				} else {
+					printf("read HASH_NORMAL_DEVICE_ROOTCERT error\n");
+					return -1;
+				}
+			}
+
+			ret = run_command("ampk regen_enc_key", 0);
+			printf("ampk regen_enc_key ret = %d\n", ret);
+
+			run_command("efuse_obj get_lock AUDIO_VENDOR_ID", 0);
+			if (*efuse_field.data == 0) {
+				printf("Need burn AUDIO_VENDOR_ID\n");
+				char audio_id[MAX_KEY_LENGTH + 1];
+#ifdef CONFIG_READ_KEY_FROM_PARAM
+				env_set("ext4paramLoadCmd",
+						"ext4load mmc 1:${paramPart} ${paramLoadAddr} /eaudio_id.txt");
+				ret = run_command("run ext4paramLoadCmd", 0);
+#else
+#ifdef CONFIG_READ_KEY_FROM_UDISK
+				env_set("udiskparamLoadCmd",
+						"fatload usb 0 ${udiskLoadAddr} eaudio_id.txt");
+				ret = run_command("run udiskparamLoadCmd", 0);
+#endif
+#endif
+
+				if (extract_key_value(loadaddr, audio_id)) {
+					snprintf(command, sizeof(command),
+						"efuse_obj set_enc AUDIO_VENDOR_ID %s", audio_id);
+					printf("command is %s\n", command);
+					ret = run_command(command, 0);
+					if (ret == 0) {
+						printf("Lock AUDIO_VENDOR_ID\n");
+						ret = run_command("efuse_obj lock AUDIO_VENDOR_ID", 0);
+						if (ret == 0) {
+							reboot_flag = 1;
+						} else {
+							printf("Lock AUDIO_VENDOR_ID error\n");
+							return -1;
+						}
+					} else {
+						printf("burn AUDIO_VENDOR_ID error\n");
+						return -1;
+					}
+				} else {
+						printf("read AUDIO_VENDOR_ID error\n");
+						return -1;
+				}
+			} else {
+				printf("AUDIO_VENDOR_ID already set\n");
+			}
+
+			run_command("efuse_obj get_lock DGPK1", 0);
+			if (*efuse_field.data == 0) {
+				printf("Need burn DGPK1\n");
+				char dgpk_value[MAX_KEY_LENGTH + 1];
+#ifdef CONFIG_READ_KEY_FROM_PARAM
+				env_set("ext4paramLoadCmd",
+						"ext4load mmc 1:${paramPart} ${paramLoadAddr} /edgpk1.txt");
+				ret = run_command("run ext4paramLoadCmd", 0);
+#else
+#ifdef CONFIG_READ_KEY_FROM_UDISK
+				env_set("udiskparamLoadCmd",
+						"fatload usb 0 ${udiskLoadAddr} edgpk1.txt");
+				ret = run_command("run udiskparamLoadCmd", 0);
+#endif
+#endif
+
+				if (extract_key_value(loadaddr, dgpk_value)) {
+					snprintf(command, sizeof(command),
+							"efuse_obj set_enc DGPK1 %s", dgpk_value);
+					printf("command is %s\n", command);
+					ret = run_command(command, 0);
+					if (ret == 0) {
+						printf("Lock DGPK1\n");
+						ret = run_command("efuse_obj lock DGPK1", 0);
+						if (ret == 0) {
+							reboot_flag = 1;
+						} else {
+							printf("Lock DGPK1 error\n");
+							return -1;
+						}
+					} else {
+						printf("burn DGPK1 error\n");
+						return -1;
+					}
+				} else {
+					printf("read DGPK1 error\n");
+					return -1;
+				}
+			} else {
+				printf("DGPK1 already set\n");
+			}
+
+			if (reboot_flag) {
+				printf("Need reboot\n");
+#ifdef CONFIG_FACTORY_BURN_MODE
+				run_command("bcb factory", 0);
+#else
+#ifdef CONFIG_DIAG_MODE
+				run_command("reboot", 0);
+#endif
+#endif
+			}
+		}
+		return 0;
+	} else {
+		return -1;
+	}
+}
+
+int hexstr_to_bin(const char *hexstr, u_char *bin, int bin_len)
+{
+	int i, len = strlen(hexstr);
+	int bytes = len / 2;
+
+	if (bytes > bin_len)
+		return -1;
+
+	for (i = 0; i < bytes; i++) {
+		char high = hexstr[2 * i];
+		char low = hexstr[2 * i + 1];
+
+		bin[i] = (hex_to_bin(high) << 4) | hex_to_bin(low);
+	}
+
+	return bytes;
+}
+
+int ascii_hex_to_bin(u_char *ascii_hex, u_char *bin, int max_len, int bin_len)
+{
+	if (bin_len > max_len) {
+		printf("Error: Binary buffer too small for data length\n");
+		return -1;
+	}
+
+	for (int i = 0; i < bin_len; i++) {
+		char high = ascii_hex[i * 2];
+		char low = ascii_hex[i * 2 + 1];
+
+		int high_val = hex_to_bin(high);
+		int low_val = hex_to_bin(low);
+
+		if (high_val < 0 || low_val < 0) {
+			printf("Error: Invalid hex character at position %d\n", i * 2);
+			return -1;
+		}
+
+		bin[i] = (high_val << 4) | low_val;
+	}
+
+	return bin_len;
+}
+
+int verify_loaded_data(ulong loadaddr, const char *expected_str)
+{
+	u_char expected_bin[256];
+	u_char loaded_bin[256];
+	u_char *loaded_ascii = (u_char *)loadaddr;
+	int expected_len, loaded_len;
+	int i;
+
+	expected_len = hexstr_to_bin(expected_str, expected_bin, sizeof(expected_bin));
+	if (expected_len < 0) {
+		printf("Invalid expected hex string\n");
+		return -1;
+	}
+
+	loaded_len = ascii_hex_to_bin(loaded_ascii, loaded_bin, sizeof(loaded_bin), expected_len);
+	if (loaded_len < 0) {
+		printf("Failed to convert loaded ASCII hex to binary\n");
+		return -1;
+	}
+
+	if (loaded_len != expected_len) {
+		printf("Data length mismatch: expected %d, loaded %d\n",
+			   expected_len, loaded_len);
+		return -1;
+	}
+
+	if (memcmp(loaded_bin, expected_bin, expected_len) == 0) {
+		printf("Data verification succeeded!\n");
+		return 0;
+	}
+
+	printf("Data verification failed!\n");
+
+	for (i = 0; i < loaded_len; i++) {
+		if (loaded_bin[i] != expected_bin[i]) {
+			printf("Mismatch at offset %d: loaded=0x%02x, expected=0x%02x\n",
+				i, loaded_bin[i], expected_bin[i]);
+			break;
+		}
+	}
+
+	return -1;
+}
+#endif
+
 int aml_board_late_init_tail(void *arg)
 {
 	unsigned char chipid[16];
@@ -198,6 +605,51 @@ int aml_board_late_init_tail(void *arg)
 	UNUSED(arg);
 	printf("init tail\n");
 	run_command("amlsecurecheck", 0);
+
+#ifdef CONFIG_FACTORY_BURN_MODE
+	char *rebootmode = env_get("reboot_mode");
+
+	if (rebootmode && strcmp(rebootmode, "fastboot") &&
+		strcmp(rebootmode, "factory_reset")) {
+		int rc = 0;
+#ifdef CONFIG_READ_KEY_FROM_UDISK
+		ulong loadaddr;
+		char cmd[128];
+
+		loadaddr = (ulong)env_get_hex("loadaddr", 0x4000);
+
+		run_command("usb start 0", 0);
+		sprintf(cmd, "fatload usb 0 %lx edgpk1.txt", loadaddr);
+		rc = run_command(cmd, 0);
+
+		if (rc) {
+			printf("Fail in read efuse file from udisk\n");
+		} else {
+			printf("read efuse file from udisk ok\n");
+			rc = aml_factory_burn();
+			/*rc = verify_loaded_data(loadaddr, AML_DGPK1);
+			if (rc == 0) {
+				printf("verify data ok\n");
+				rc = aml_factory_burn();
+			}*/
+		}
+#else
+#ifdef CONFIG_READ_KEY_FROM_PARAM
+		if (!IS_FEAT_BOOT_VERIFY())
+			rc = aml_factory_burn();
+#endif
+#endif
+		if (rc == 0) {
+			printf("enter factory_boot mode\n");
+			env_set("factory_mode", "1");
+			env_set("EnableSelinux", "permissive");
+			run_command("run init_display", 0);
+			run_command("run storeargs", 0);
+			run_command("run recovery_from_flash", 0);
+		}
+	}
+#endif
+
 	run_command("update_tries", 0);
 
 	//Need save outputmode/connector_type to flash if changed after display drv init
@@ -350,6 +802,7 @@ const char * const _aml_env_reserv_array[] = {
 	"reboot_status",
 	"expect_index",
 	"recovery_check_part",
+	"factorytest",
 	"defenv_para",	//set in board_late_init
 	"rollback_reason",
 #ifndef CONFIG_CMD_CAR_PARAMS

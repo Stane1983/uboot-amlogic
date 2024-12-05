@@ -1603,3 +1603,8 @@ F:	cmd/amlogic/cmd_multi_keypad.c
 F:	cmd/amlogic/cmd_multi_remote.c
 F:	cmd/amlogic/powerkey.c
 F:	cmd/amlogic/powerkey.h
+
+FACTORY:
+M:	Xindong Xu <xindong.xu@amlogic.com>
+S:	Maintained
+F:	board/amlogic/t6d_t335/firmware/vendor_pub.pem

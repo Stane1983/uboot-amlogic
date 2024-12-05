@@ -1255,6 +1255,16 @@ static int do_SetUpdateTries(
 			printf("current slot %d is successful_boot\n", slot);
 			bootloaderindex = env_get("forUpgrade_bootloaderIndex");
 			printf("bootloaderindex: %s\n", bootloaderindex);
+
+#ifdef CONFIG_FACTORY_BURN_MODE
+			char *factorytest = env_get("factorytest");
+
+			if (factorytest && (strcmp(factorytest, "1") == 0)) {
+				printf("factory burn mode, stop sync boot0 & boot1\n");
+				return 0;
+			}
+#endif
+
 			/*if boot from boot1, means boot0 is bab, don't need to copyback*/
 			if (bootloaderindex && strcmp(bootloaderindex, "2")) {
 				printf("check if boot0 = boot1\n");
@@ -1369,6 +1379,15 @@ static int do_CopySlot(
 		dest = 2;
 	else if (strcmp(argv[2], "0") == 0)
 		dest = 0;
+
+#ifdef CONFIG_FACTORY_BURN_MODE
+	char *factorytest = env_get("factorytest");
+
+	if (factorytest && (strcmp(factorytest, "1") == 0)) {
+		write_bootloader(copy, dest);
+		return 0;
+	}
+#endif
 
 	char *fastboot_step = env_get("fastboot_step");
 
