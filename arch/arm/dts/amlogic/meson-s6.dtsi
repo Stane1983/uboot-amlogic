@@ -561,6 +561,25 @@
 		};
 	};
 
+	spi_nfc_pins: spi_nfc_pins {
+		mux {
+			groups = "spinf_clk",
+						"spinf_d4",
+						"spinf_d5",
+						"spinf_d6",
+						"spinf_d7",
+						"spinf_cs1",
+						"spinf_cs0",
+						"spinf_mo_d0",
+						"spinf_mi_d1",
+						"spinf_wp_d2",
+						"spinf_rstgpio",
+						"spinf_hold_d3";
+			function = "spinf";
+			drive-strength = <3>;
+		};
+	};
+
 	sdcard_pins: sdcard {
 		mux {
 			groups = "sdcard_d0",
@@ -646,19 +665,6 @@
 				 "spi_a_ss0_x",
 				 "spi_a_clk_x";
 			function = "spi_a";
-		};
-	};
-
-	spifc_pins: spifc_pins {
-		mux {
-			groups = "spif_hold",
-				 "spif_mo",
-				 "spif_mi",
-				 //"spif_cs",
-				 "spif_clk",
-				 "spif_wp";
-			function = "spif";
-			drive-strength = <3>;
 		};
 	};
 

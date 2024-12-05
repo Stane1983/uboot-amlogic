@@ -105,6 +105,7 @@ int spi_nor_probe(u32 init_flag)
 	static int probe_flag;
 	struct storage_t *spi_nor = NULL;
 	struct spi_flash *flash = NULL;
+	struct dm_spi_ops *ops;
 	int ret;
 
 	flash = (struct spi_flash *)get_spi_flash();
@@ -120,6 +121,10 @@ int spi_nor_probe(u32 init_flag)
 		pr_err("select state %s failed\n", "default");
 		return 1;
 	}
+
+	/* set clock */
+	ops = spi_get_ops(flash->spi->dev->parent);
+	ops->set_mode(flash->spi->dev->parent, 0);
 
 	if (probe_flag)
 		return 0;
