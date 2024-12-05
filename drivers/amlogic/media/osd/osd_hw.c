@@ -2427,7 +2427,8 @@ void osd_set_window_axis_hw(u32 index, s32 x0, s32 y0, s32 x1, s32 y1)
 		u32 h = osd_hw.free_dst_data[index].y_end -
 				osd_hw.free_dst_data[index].y_start + 1;
 
-		if ((w > 3840 && h > 2160) || (w > 4096 && h > 2160))
+		/* 4096x2160p and 8k need use pi */
+		if (w > 3840 && h >= 2160)
 			pi_enable = 1;
 		else
 			pi_enable = 0;
