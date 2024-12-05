@@ -303,9 +303,9 @@ void set_usb_power_off(void)
 {
 	unsigned int val;
 	// only off the phy21 now.
-	printf("set s7 usb phy21 off.\n");
+	printf("set t6d usb phy off.\n");
 	val = readl(RESETCTRL_RESET0_LEVEL);
-	val &= ~(1 << PHY21_RESET_LEVEL_BIT);
+	val &= ~(7 << PHY20_RESET_LEVEL_BIT);
 	writel(val, RESETCTRL_RESET0_LEVEL);
 }
 
