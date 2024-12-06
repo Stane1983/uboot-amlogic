@@ -1,0 +1,260 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ */
+
+#include <asm/amlogic/arch/secure_apb.h>
+#include <asm/amlogic/arch/timing.h>
+#include <asm/amlogic/arch/ddr_define.h>
+#include <ddr_timing.c>
+
+/* board clk defines */
+#define CPU_CLK                                 1800
+
+/* board vmin_value defines */
+#define VMIN_FF_VALUE                           760
+#define VMIN_TT_VALUE                           790
+//#define VMIN_SS_VALUE                           830
+/* board vddee_value defines */
+/* SS/TT/FF = 0.87/0.87/0.85V */
+#define VDDEE_VALUE_GROUP3                          0x0007000b
+#define VDDEE_VALUE_GROUP2                          0x0005000d
+#define VDDEE_VALUE_GROUP1                          0x0005000d
+
+board_clk_set_t __board_clk_setting
+__attribute__ ((section(".clk_param"))) = {
+	/* clock settings for bl2 */
+	.cpu_clk	= CPU_CLK / 24 * 24,
+#ifdef CONFIG_PXP_DDR
+	.pxp = 1,
+#else
+	.pxp = 0,
+#endif
+	.low_console_baud = CONFIG_LOW_CONSOLE_BAUD,
+};
+
+#define VCCK_VAL                                AML_VCCK_INIT_VOLTAGE
+#define VDDEE_VAL                               AML_VDDEE_INIT_VOLTAGE
+/* VCCK PWM table */
+#if   (VCCK_VAL == 1039)
+#define VCCK_VAL_REG  0x00000022
+#elif (VCCK_VAL == 1029)
+#define VCCK_VAL_REG  0x00010021
+#elif (VCCK_VAL == 1019)
+#define VCCK_VAL_REG  0x00020020
+#elif (VCCK_VAL == 1009)
+#define VCCK_VAL_REG  0x0003001f
+#elif (VCCK_VAL == 999)
+#define VCCK_VAL_REG  0x0004001e
+#elif (VCCK_VAL == 989)
+#define VCCK_VAL_REG  0x0005001d
+#elif (VCCK_VAL == 979)
+#define VCCK_VAL_REG  0x0006001c
+#elif (VCCK_VAL == 969)
+#define VCCK_VAL_REG  0x0007001b
+#elif (VCCK_VAL == 959)
+#define VCCK_VAL_REG  0x0008001a
+#elif (VCCK_VAL == 949)
+#define VCCK_VAL_REG  0x00090019
+#elif (VCCK_VAL == 939)
+#define VCCK_VAL_REG  0x000a0018
+#elif (VCCK_VAL == 929)
+#define VCCK_VAL_REG  0x000b0017
+#elif (VCCK_VAL == 919)
+#define VCCK_VAL_REG  0x000c0016
+#elif (VCCK_VAL == 909)
+#define VCCK_VAL_REG  0x000d0015
+#elif (VCCK_VAL == 899)
+#define VCCK_VAL_REG  0x000e0014
+#elif (VCCK_VAL == 889)
+#define VCCK_VAL_REG  0x000f0013
+#elif (VCCK_VAL == 879)
+#define VCCK_VAL_REG  0x00100012
+#elif (VCCK_VAL == 869)
+#define VCCK_VAL_REG  0x00110011
+#elif (VCCK_VAL == 859)
+#define VCCK_VAL_REG  0x00120010
+#elif (VCCK_VAL == 849)
+#define VCCK_VAL_REG  0x0013000f
+#elif (VCCK_VAL == 839)
+#define VCCK_VAL_REG  0x0014000e
+#elif (VCCK_VAL == 829)
+#define VCCK_VAL_REG  0x0015000d
+#elif (VCCK_VAL == 819)
+#define VCCK_VAL_REG  0x0016000c
+#elif (VCCK_VAL == 809)
+#define VCCK_VAL_REG  0x0017000b
+#elif (VCCK_VAL == 799)
+#define VCCK_VAL_REG  0x0018000a
+#elif (VCCK_VAL == 789)
+#define VCCK_VAL_REG  0x00190009
+#elif (VCCK_VAL == 779)
+#define VCCK_VAL_REG  0x001a0008
+#elif (VCCK_VAL == 769)
+#define VCCK_VAL_REG  0x001b0007
+#elif (VCCK_VAL == 759)
+#define VCCK_VAL_REG  0x001c0006
+#elif (VCCK_VAL == 749)
+#define VCCK_VAL_REG  0x001d0005
+#elif (VCCK_VAL == 739)
+#define VCCK_VAL_REG  0x001e0004
+#elif (VCCK_VAL == 729)
+#define VCCK_VAL_REG  0x001f0003
+#elif (VCCK_VAL == 719)
+#define VCCK_VAL_REG  0x00200002
+#elif (VCCK_VAL == 709)
+#define VCCK_VAL_REG  0x00210001
+#elif (VCCK_VAL == 699)
+#define VCCK_VAL_REG  0x00220000
+#else
+#error "VCCK val out of range\n"
+#endif
+
+/* VDDEE PWM table */
+#if   (VDDEE_VAL == 730)
+#define PWM_CONSTANT_OUT
+#define VDDEE_VAL_REG	0x00140000
+#elif (VDDEE_VAL == 740)
+#define VDDEE_VAL_REG   0x00120000
+#elif (VDDEE_VAL == 750)
+#define VDDEE_VAL_REG   0x00110001
+#elif (VDDEE_VAL == 760)
+#define VDDEE_VAL_REG   0x00100002
+#elif (VDDEE_VAL == 770)
+#define VDDEE_VAL_REG   0x000f0003
+#elif (VDDEE_VAL == 780)
+#define VDDEE_VAL_REG   0x000e0004
+#elif (VDDEE_VAL == 790)
+#define VDDEE_VAL_REG   0x000d0005
+#elif (VDDEE_VAL == 800)
+#define VDDEE_VAL_REG   0x000c0006
+#elif (VDDEE_VAL == 810)
+#define VDDEE_VAL_REG   0x000b0007
+#elif (VDDEE_VAL == 820)
+#define VDDEE_VAL_REG   0x000a0008
+#elif (VDDEE_VAL == 830)
+#define VDDEE_VAL_REG   0x00090009
+#elif (VDDEE_VAL == 840)
+#define VDDEE_VAL_REG   0x0008000a
+#elif (VDDEE_VAL == 850)
+#define VDDEE_VAL_REG   0x0007000b
+#elif (VDDEE_VAL == 860)
+#define VDDEE_VAL_REG   0x0006000c
+#elif (VDDEE_VAL == 870)
+#define VDDEE_VAL_REG   0x0005000d
+#elif (VDDEE_VAL == 880)
+#define VDDEE_VAL_REG   0x0004000e
+#elif (VDDEE_VAL == 890)
+#define VDDEE_VAL_REG   0x0003000f
+#elif (VDDEE_VAL == 900)
+#define VDDEE_VAL_REG   0x00020010
+#elif (VDDEE_VAL == 910)
+#define VDDEE_VAL_REG   0x00010011
+#elif (VDDEE_VAL == 920)
+#define VDDEE_VAL_REG   0x00000012
+#elif (VDDEE_VAL == 930)
+#define PWM_CONSTANT_OUT
+#define VDDEE_VAL_REG	0x00000014
+#else
+#error "VDDEE val out of range\n"
+#endif
+
+bl2_reg_t __bl2_reg[] __attribute__ ((section(".generic_param"))) = {
+	//need fine tune
+	{ 0, 0, 0xffffffff, 0, 0, 0 },
+};
+
+/* gpio/pinmux/pwm init */
+register_ops_t __bl2_ops_reg[MAX_REG_OPS_ENTRIES]
+__attribute__ ((section(".misc_param"))) = {
+	/* config vmin_ft value */
+	//{ 0, VMIN_SS_VALUE, 0xffffffff, 0, BL2_INIT_STAGE_VMIN_FLAG_1, 0 },
+	{ 0, VMIN_TT_VALUE, 0xffffffff, 0, BL2_INIT_STAGE_VMIN_FLAG_2, 0 },
+	{ 0, VMIN_FF_VALUE, 0xffffffff, 0, BL2_INIT_STAGE_VMIN_FLAG_3, 0 },
+	/* config vddee and vcck pwm - pwm_e and pwm_f*/
+#ifdef CONFIG_PDVFS_ENABLE
+	{ PWM_PWM_A, VDDEE_VALUE_GROUP1, 0xffffffff, 0, BL2_INIT_STAGE_VDDCORE_CONFIG_1, 0 },
+	{ PWM_PWM_A, VDDEE_VALUE_GROUP2, 0xffffffff, 0, BL2_INIT_STAGE_VDDCORE_CONFIG_2, 0 },
+	{ PWM_PWM_A, VDDEE_VALUE_GROUP3, 0xffffffff, 0, BL2_INIT_STAGE_VDDCORE_CONFIG_3, 0 },
+#else
+	{ PWM_PWM_A,		   VDDEE_VAL_REG, 0xffffffff, 0, 0, 0},
+#endif
+	/* Push-pull the GPIOD_14 output high to make VDDCPU_EN more stable */
+	{ PADCTRL_GPIOD_O,         (0x1 << 14),  (0x1 << 14), 0, 0, 0 },
+	{ PADCTRL_GPIOD_OEN,       (0x0 << 14),  (0x1 << 14), 0, 0, 0 },
+	{ PADCTRL_PIN_MUX_REGC,    (0x0 << 24),  (0xf << 24), 0, 0, 0 },
+	{ PWM_PWM_B,		   VCCK_VAL_REG,  0xffffffff, 0, 0, 0 },
+	{ PWM_MISC_REG_A,	   (0x1 << 0),	  (0x1 << 0), 0, 0, 0 },
+	{ PWM_MISC_REG_B,	   (0x1 << 0),	  (0x1 << 0), 0, 0, 0 },
+	/* set pwm a and pwm b clock rate to 24M, enable them */
+	{ CLKCTRL_PWM_CLK_AB_CTRL, (0x1 << 24) | (0x1 << 8)   , 0xffffffff, 0, 0, 0 },
+	/* set GPIOE_0 GPIOE_1 drive strength to 2 ,already set by gpio owner on bl2*/
+	// { PADCTRL_GPIOE_DS,	   0xa,		  0xf,	      0, 0, 0 },
+	/* set GPIOE_0 GPIOE_1 mux to pwma pwmb */
+	{ PADCTRL_PIN_MUX_REGD,	   (0x11 << 0),	  (0xff << 0), 0, 0, 0 },
+	//{ PWM_TEE_ONLY_A,          (0x1 << 0),	  (0xffffffff << 0), 0, 0, 0 },
+	//{ PWM_TEE_ONLY_B,          (0x1 << 0),	  (0xffffffff << 0), 0, 0, 0 },
+	{ PADCTRL_GPIOD_PULL_UP,   (0x1 << 2),	  (0x1 << 2), 0, 0, 0 },
+	/* GPIOH_3 has an external pull-up, so disable the default internal pull-up */
+	{ PADCTRL_GPIOH_PULL_EN,   (0x0 << 3),	  (0x1 << 3), 0, 0, 0 },
+#ifdef CONFIG_NOVERBOSE_BUILD
+	/* use acs flag to disable uart print in each blx
+	 * reg must be UART_B_WFIFO, flags: 1 --> disable uart print, 0: enable
+	 */
+	{ UART_B_WFIFO, 0, 0xffffffff, 0, 1, 0 },
+#endif
+};
+
+#define __section(x)    __attribute__((__section__(x)))
+/* for all the storage parameter */
+#ifdef CONFIG_MTD_SPI_NAND
+/* for spinand storage parameter */
+storage_parameter_t __store_para __section(".store_param") = {
+	.common				= {
+		.version = 0x01,
+		.device_fip_container_size = CONFIG_TPL_SIZE_PER_COPY,
+		.device_fip_container_copies = ((CONFIG_NAND_TPL_COPY_NUM) |
+						   (CONFIG_BL2_COPY_NUM << 16) |
+						   (BOARD_CONFIG_BL2_LAYOUT_TYPE << 24)),
+		.ddr_fip_container_size = BOOTLOADER_DDR_FIP_SIZE,
+	},
+	.nand				= {
+		.version = 0x01,
+		.bbt_pages = 1, // TODO: BL2E BBT
+		.bbt_start_block = 20,
+		.discrete_mode = 1,
+		.setup_data.spi_nand_page_size = 2048,
+		.reserved.spi_nand_planes_per_lun = 1,
+		.reserved_area_blk_cnt = MTD_RSV_BLOCK_CNT,
+		.page_per_block = 64,
+		.use_param_page_list = 0,
+	},
+};
+#else
+storage_parameter_t __store_para __attribute__ ((section(".store_param"))) = {
+	.common					= {
+		.version			= 0x01,
+		.device_fip_container_size  = CONFIG_TPL_SIZE_PER_COPY,
+		.device_fip_container_copies    = ((CONFIG_NAND_TPL_COPY_NUM) |
+						   (CONFIG_BL2_COPY_NUM << 16) |
+						   (BOARD_CONFIG_BL2_LAYOUT_TYPE << 24)),
+		.ddr_fip_container_size		= BOOTLOADER_DDR_FIP_SIZE,
+	},
+	.nand					= {
+		.version			= 0x01,
+		.bbt_pages			= 0x1,
+		.bbt_start_block		= 20,
+		.discrete_mode			= 1,
+		.setup_data.nand_setup_data = (2 << 20) |		    \
+						  (0 << 19) |			  \
+						  (1 << 17) |			  \
+						  (1 << 14) |			  \
+						  (0 << 13) |			  \
+						  (64 << 6) |			  \
+						  (8 << 0),
+		.reserved_area_blk_cnt		= MTD_RSV_BLOCK_CNT,
+		.page_per_block			= 64,
+		.use_param_page_list		= 0,
+	},
+};
+#endif
