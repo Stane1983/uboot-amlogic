@@ -45,10 +45,13 @@
 #define AMLOGIC_KERNEL_PANIC		0x0c
 #define AMLOGIC_WATCHDOG_REBOOT		0x0d
 
-#define AMLOGIC_KERNEL_BOOTED		BIT(15)
-#define AMLOGIC_USERAM_MASK		    (0xffff7fff)
+#define AMLOGIC_KERNEL_BOOTED       BIT(15)
+#define AMLOGIC_USERAM_MASK         (0xffff7fff)
+#define RAMDUMP_STICKY_DMA_MASK     0x3F
+#define RAMDUMP_DDR_ALIGNED_64MB    0x04000000
+#define RAMDUMP_DMA_ALIGNED_4MB     0x00400000
 
-#define CONFIG_COMPRESS_SECTION		7
+#define CONFIG_COMPRESS_SECTION     7
 
 //typedef unsigned int   u32;
 //typedef unsigned short u16;

@@ -576,8 +576,8 @@ static void ramdump_env_setup(unsigned long addr, unsigned long size)
 		return;
 
 	memset(o, 0, i + 128);
-	sprintf(o, "%s=%s ramdump=%lx,%lx  %s\n",
-			(char *)data, (char *)(data + 6), addr, size, line);
+	snprintf(o, i + 128, "%s=%s ramdump=%lx,%lx  %s\n",
+		(char *)data, (char *)(data + 6), addr, size, line);
 	env_set("bootargs", o);
 	free(o);
 	line = NULL;
@@ -603,12 +603,13 @@ static int overwrite_bl33z_rsvmem_info(unsigned long addr, unsigned long size)
 
 	memset(cmd, 0, sizeof(cmd));
 	if (address_cells == 2)
-		sprintf(cmd,
+		snprintf(cmd, sizeof(cmd),
 			"fdt set /reserved-memory/ramdump_bl33z reg '<0x0 0x%08lx 0x0 0x%08lx>'",
 			addr, align_size);
 	else
-		sprintf(cmd, "fdt set /reserved-memory/ramdump_bl33z reg '<0x%08lx 0x%08lx>'",
-						addr, align_size);
+		snprintf(cmd, sizeof(cmd),
+			"fdt set /reserved-memory/ramdump_bl33z reg '<0x%08lx 0x%08lx>'",
+			addr, align_size);
 
 	printf("%s\n", cmd);
 	run_command(cmd, 0);
