@@ -371,6 +371,18 @@ unsigned long ram_compress_all(struct ram_compress_full *rcf,
 			serial_puts(" done!\n");
 		}
 
+		/* fix up DMA-copy on panic */
+		if (i == 1 && rcs->phy_addr != 0x0 &&
+			rcs->compress_type == RAM_COMPRESS_NORMAL &&
+			rcs->phy_addr < rcf->store_phy_addr) {
+			memset(rcs->phy_addr, 0, rcs->section_size);
+			serial_puts("memset Panic-DMA-copy area, addr=0x");
+			serial_put_hex((unsigned long)rcs->phy_addr, 32);
+			serial_puts(", size=0x");
+			serial_put_hex(rcs->section_size, 32);
+			serial_puts("\n");
+		}
+
 		/* update progress bar */
 		run_callback(rci.rcwi->progress_update,
 			     rci.total_processed,
@@ -468,9 +480,11 @@ int check_reboot_reason(unsigned long *mem_size)
 	if (!(cfg & AMLOGIC_KERNEL_BOOTED))
 		return 0;
 
-	unsigned long nTotal = cfg & AMLOGIC_USERAM_MASK;
+	unsigned long nTotal = cfg & (AMLOGIC_USERAM_MASK & ~RAMDUMP_STICKY_DMA_MASK);
 	*mem_size = (((nTotal - 1) / 64 + 1) * 64) << 20;
-	serial_puts("mem size:0x");
+	serial_puts("nTotal:0x");
+	serial_put_hex(nTotal, 16);
+	serial_puts(", mem size:0x");
 	serial_put_hex(*mem_size, 64);
 	serial_puts("\n");
 
@@ -570,15 +584,15 @@ static void fix_up_ddr_size(struct ram_compress_full *rcf,
 		rcf->full_memsize   = size + REG_SPACE_RANGE_SIZE;
 		rcf->sections[0].section_size = REG_SPACE_START_ADDR - CONFIG_SMALL_COMPRESS_ADDR;
 		rcf->sections[5].section_size = REG_SPACE_RANGE_SIZE;
-		rcf->sections[6].section_size = size - CONFIG_BIG_COMPRESS_ADDR;
+		rcf->sections[6].section_size = rcf->full_memsize - CONFIG_BIG_COMPRESS_ADDR;
 	} else {
-		/* > 7.0G ~, use 7 sections */
+		/* > 7.0G ~, use 7 sections. 8G DDR: 3.5G + 0.5G + 3.5G + 0.5G + 1G */
 		serial_puts("ddr size range 3: 7.0G ~\n");
 		rcf->store_phy_addr = (void *)CONFIG_BIG_COMPRESS_ADDR;
-		rcf->full_memsize   = size + REG_SPACE_RANGE_SIZE;
+		rcf->full_memsize   = size + REG_SPACE_RANGE_SIZE * 2;
 		rcf->sections[0].section_size = REG_SPACE_START_ADDR - CONFIG_SMALL_COMPRESS_ADDR;
 		rcf->sections[5].section_size = REG_SPACE_RANGE_SIZE;
-		rcf->sections[6].section_size = size - CONFIG_BIG_COMPRESS_ADDR;
+		rcf->sections[6].section_size = rcf->full_memsize - CONFIG_BIG_COMPRESS_ADDR;
 	}
 
 	if (debug_enable) {
@@ -641,6 +655,24 @@ static int fix_up_bl32_size(struct ram_compress_full *rcf)
 #else
 	serial_puts("REG_RSVMEM_SIZE is not defined. skip.\n");
 #endif
+	return 0;
+}
+
+static int fix_up_panic_dma_copy(struct ram_compress_full *rcf)
+{
+	unsigned long cfg;
+
+	cfg = readl(REG_MDUMP_CPUBOOT_STATUS) & RAMDUMP_STICKY_DMA_MASK;
+	if (cfg) {
+		serial_puts("Fix up DMA-copy sections[1].phy_addr: 0x");
+		serial_put_hex(cfg * RAMDUMP_DMA_ALIGNED_4MB, 32);
+		serial_puts(" (0x");
+		serial_put_hex(cfg, 8);
+		serial_puts(")\n");
+		rcf->sections[1].phy_addr = (void *)(cfg * RAMDUMP_DMA_ALIGNED_4MB);
+		rcf->sections[1].compress_type = RAM_COMPRESS_NORMAL;
+	}
+
 	return 0;
 }
 
@@ -724,6 +756,8 @@ unsigned long ramdump_compress_all(struct ram_compress_full *rcf,
 	}
 	/* update rcf with rsvmem bl31/bl32 */
 	fix_up_bl32_size(rcf);
+	/* update rcf 0-24MB area with DMA-copy addr. */
+	fix_up_panic_dma_copy(rcf);
 	/* these parameters are not configured by bl33 */
 	serial_puts("rcf->full_memsize: 0x");
 	serial_put_hex((unsigned long)(rcf->full_memsize), 64);

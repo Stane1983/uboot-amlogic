@@ -61,7 +61,8 @@ static void mmu_setup(unsigned long ddr_size)
 	}
 
 	/* Setup an identity-mapping for all RAM space */
-	unsigned long nTotal = readl(REG_MDUMP_CPUBOOT_STATUS) & AMLOGIC_USERAM_MASK;
+	unsigned long nTotal = readl(REG_MDUMP_CPUBOOT_STATUS) &
+				(AMLOGIC_USERAM_MASK & ~RAMDUMP_STICKY_DMA_MASK);
 	nTotal = ((nTotal - 1) / 64 + 1) * 64;	/* ddr size must big than 64MB */
 
 	serial_puts("\naml log : DDR size is ");
