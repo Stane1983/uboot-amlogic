@@ -798,7 +798,7 @@ static void setup_internal_phy(struct udevice *dev)
 	setbits_le32(eth_top.start, mc_val);
 	/*pll*/
 	if (phy_pll_mode) {
-		pr_info("wzh 22nm\n");
+		printf("wzh 22nm\n");
 		writel(0x608200a0, eth_cfg.start + AML_ETH_PLL_CTL0);
 		writel(0xea002000, eth_cfg.start + AML_ETH_PLL_CTL1);
 		writel(0x00000150, eth_cfg.start + AML_ETH_PLL_CTL2);
@@ -922,8 +922,9 @@ static void setup_external_phy(struct udevice *dev)
 int aml_phy_suspend(void *pm_ops)
 {
 	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
+	unsigned int phy_setting;
 
-	pr_info("disable analog %s\n", pm->name);
+	printf("disable analog %s\n", pm->name);
 	writel(0x00000000, p_aml_phy_dev->phy_cfg + 0x0);
 	writel(0x003e0000, p_aml_phy_dev->phy_cfg + 0x4);
 	writel(0x12844008, p_aml_phy_dev->phy_cfg + 0x8);
@@ -932,16 +933,25 @@ int aml_phy_suspend(void *pm_ops)
 	writel(0x031d161c, p_aml_phy_dev->phy_cfg + 0x14);
 	writel(0x00001683, p_aml_phy_dev->phy_cfg + 0x18);
 	writel(0x09c0040a, p_aml_phy_dev->phy_cfg + 0x44);
+
+	phy_setting = phy_read(p_phydev, MDIO_DEVAD_NONE, 0);
+	phy_write(p_phydev, MDIO_DEVAD_NONE, 0, phy_setting | 0x800);
+
 	return 0;
 }
 
 int aml_phy_resume(void *pm_ops)
 {
 	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
+	unsigned int phy_setting;
 
-	pr_info("recover analog %s\n", pm->name);
+	printf("recover analog %s\n", pm->name);
 	writel(0x19c0040a, p_aml_phy_dev->phy_cfg + 0x44);
 	writel(0x0, p_aml_phy_dev->phy_cfg + 0x4);
+
+	phy_setting = phy_read(p_phydev, MDIO_DEVAD_NONE, 0);
+	phy_write(p_phydev, MDIO_DEVAD_NONE, 0, phy_setting & ~(0x800));
+
 	return 0;
 }
 
@@ -949,7 +959,7 @@ int aml_phy_poweroff(void *pm_ops)
 {
 	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
 
-	pr_info("power off  %s\n", pm->name);
+	printf("power off  %s\n", pm->name);
 	aml_phy_suspend(pm_ops);
 	return 0;
 }
