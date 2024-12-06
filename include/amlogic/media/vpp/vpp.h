@@ -19,6 +19,8 @@ enum vpp_gamma_sel_e {
 	VPP_GAMMA_B
 };
 
+void set_vpp_mute(void);
+void set_vpp_unmute(void);
 extern void vpp_load_gamma_table(unsigned short *data, unsigned int len, enum vpp_gamma_sel_e flag);
 extern void vpp_init_lcd_gamma_table(int index);
 void vpp_enable_lcd_gamma_table(int index);

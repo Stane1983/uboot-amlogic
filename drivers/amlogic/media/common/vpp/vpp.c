@@ -2310,6 +2310,45 @@ static void vpp_wb_init_reg(void)
 	vpp_reg_write(0x2654, 0x00000000);
 }
 
+void set_vpp_mute(void)
+{
+	char *s = NULL;
+	u32 clip_max = 0x0;
+	u32 clip_min = 0x0;
+	u32 family_id = get_cpu_id().family_id;
+
+	if (family_id == MESON_CPU_MAJOR_ID_T3X ||
+	    family_id == MESON_CPU_MAJOR_ID_S5)
+		return;
+	s = env_get("connector0_type");
+	if (!s) {
+		VPP_PR("can not get connector0_type!\n");
+		return;
+	}
+	if (!strncmp(s, "HDMI", 4)) {
+		clip_max = (0x0 << 20) | (0x200 << 10) | 0x200;
+		clip_min = (0x0 << 20) | (0x200 << 10) | 0x200;
+	} else {
+		clip_max = (0x0 << 20) | (0x0 << 10) | 0;
+		clip_min = (0x0 << 20) | (0x0 << 10) | 0;
+	}
+	vpp_reg_write(VPP_CLIP_MISC0, clip_max);
+	vpp_reg_write(VPP_CLIP_MISC1, clip_min);
+}
+
+void set_vpp_unmute(void)
+{
+	u32 clip_max = 0x3fffffff;
+	u32 clip_min = 0x0;
+	u32 family_id = get_cpu_id().family_id;
+
+	if (family_id == MESON_CPU_MAJOR_ID_T3X ||
+	    family_id == MESON_CPU_MAJOR_ID_S5)
+		return;
+	vpp_reg_write(VPP_CLIP_MISC0, clip_max);
+	vpp_reg_write(VPP_CLIP_MISC1, clip_min);
+}
+
 void vpp_init(void)
 {
 	int chip_id;
