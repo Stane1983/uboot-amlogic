@@ -13,6 +13,7 @@ static int do_afm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	{
 		char *serialno = env_get("usid");
 		char *mac = env_get("mac");
+		char *console = env_get("console");
 		char *silent = env_get("silent");
 		char *powermode = env_get("powermode");
 		char *otg_device = env_get("otg_device");
@@ -38,7 +39,7 @@ static int do_afm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			"model_name :     %s\n"
 			"serialno :       %s\n"
 			"mac :            %s\n"
-			"console :        \n"
+			"console :        %s\n"
 			"silent :         %s\n"
 			"powermode :      %s\n"
 			"otg_device :     %s\n"
@@ -46,6 +47,7 @@ static int do_afm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			, strlen(modelt_name) != 0 ? modelt_name : ""
 			, serialno != NULL? serialno : ""
 			, mac != NULL? mac : ""
+			, console != NULL && !strcmp(console, "ttyS0,115200") ? "on" : "off"
 			, silent != NULL? (!strcmp(silent, "0")? "on" : "off") : "on"
 			, powermode != NULL? powermode : ""
 			, otg_device != NULL? otg_device : ""
@@ -130,6 +132,18 @@ static int do_afm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		handle_model_set("model1_name", str_value);
 	} else if (!strcmp(str_cmd, "model2_name")) {
 		handle_model_set("model2_name", str_value);
+	} else if (!strcmp(str_cmd, "console")) {
+		if (!strcmp(str_value, "on")) {
+			run_command("setenv console ttyS0,115200", 0);
+			run_command("setenv loglevel 7", 0);
+		} else if (!strcmp(str_value, "off")) {
+			run_command("setenv console off", 0);
+			run_command("setenv loglevel 0", 0);
+		} else {
+			printf("invalid value\n");
+			return CMD_RET_USAGE;
+		}
+		run_command("saveenv", 0);
 	} else {
 		printf("invalid value\n");
 		return CMD_RET_USAGE;
