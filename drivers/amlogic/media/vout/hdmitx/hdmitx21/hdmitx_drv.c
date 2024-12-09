@@ -1028,15 +1028,18 @@ static void vpu_hdmi_set_matrix_ycbcr2rgb(void)
 	hd21_set_reg_bits(VPU_HDMI_FMT_CTRL, 3, 0, 2);
 }
 
+/* need enable phy to digital and keep tmds clk */
 static void hdmitx_set_phy_todig(struct hdmitx_dev *hdev)
 {
 	switch (hdev->chip_type) {
 	case MESON_CPU_ID_S7:
+	case MESON_CPU_ID_S7D:
+	case MESON_CPU_ID_S6:
 		hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL3, 3, 0, 2);
 		hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL3, 1, 3, 1);
 		break;
 	default:
-		//pr_info("not match chip type to enable phy to dig\n");
+		/* pr_info("not match chip type to enable phy to dig\n"); */
 		return;
 	}
 	pr_info("enable phy to dig\n");
@@ -1574,8 +1577,7 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 
 	hdmitx_set_phy_todig(hdev);
 	/*
-	 * when in deep color, htotal is fractional value
-	 * here need check the phase is stable or not
+	 * when GCP phase is a fix value, here need check the phase is stable or not
 	 * otherwise it may cause display flash and abnormal issue
 	 */
 	{
@@ -1585,6 +1587,7 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 		bool h_unstable = 0;
 		int loop = 20;
 
+		/*check the GCP phase is a fix value*/
 		h_unstable = is_deep_htotal_frac(0, h_total, cs, cd);
 		pr_info("%s[%d] frl_rate %d htotal %d cs %d cd %d h_unstable %d\n",
 			__func__, __LINE__, get_current_frl_rate(), h_total, cs, cd, h_unstable);
