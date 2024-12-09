@@ -27,13 +27,11 @@ static void host_config_print(struct lcd_config_s *pconf)
 		return;
 
 	pr_info("MIPI DSI NON-BURST setting:\n"
-		" multi_pkt_en:     %d\n"
-		" vid_num_chunks:   %d\n"
-		" pixel_per_chunk:  %d\n"
-		" byte_per_chunk:   %d\n"
-		" vid_null_size:    %d\n\n",
-		pconf->control.mipi_cfg.multi_pkt_en, pconf->control.mipi_cfg.vid_num_chunks,
-		pconf->control.mipi_cfg.pixel_per_chunk, pconf->control.mipi_cfg.byte_per_chunk,
+		" vid_num_chunks: %d\n"
+		" vid_pkt_size:   %d\n"
+		" vid_null_size:  %d\n\n",
+		pconf->control.mipi_cfg.vid_num_chunks,
+		pconf->control.mipi_cfg.vid_pkt_size,
 		pconf->control.mipi_cfg.vid_null_size);
 }
 
@@ -249,7 +247,7 @@ static void set_mipi_dsi_host(struct aml_lcd_drv_s *pdrv,
 {
 	u32 dpi_data_format, venc_data_width;
 	u32 lane_num, vid_mode_type;
-	u32 h_act, v_act, v_sync, v_bp, v_fp;
+	u32 v_act, v_sync, v_bp, v_fp;
 	u32 temp;
 	struct dsi_config_s *dconf;
 
@@ -258,7 +256,6 @@ static void set_mipi_dsi_host(struct aml_lcd_drv_s *pdrv,
 	dpi_data_format = dconf->dpi_data_format;
 	lane_num        = (u32)(dconf->lane_num);
 	vid_mode_type   = (u32)(dconf->video_mode_type);
-	h_act           = pdrv->config.timing.act_timing.h_active;
 	v_act           = pdrv->config.timing.act_timing.v_active;
 	v_sync          = pdrv->config.timing.act_timing.vsync_width;
 	v_bp            = pdrv->config.timing.act_timing.vsync_bp;
@@ -280,7 +277,7 @@ static void set_mipi_dsi_host(struct aml_lcd_drv_s *pdrv,
 	dsi_host_write(pdrv, MIPI_DSI_DWC_DPI_VCID_OS, vcid);
 	/* 2.2,  Configure Color format */
 	dsi_host_write(pdrv, MIPI_DSI_DWC_DPI_COLOR_CODING_OS,
-		(((dpi_data_format == COLOR_18BIT_CFG_2) ? 1 : 0) << BIT_LOOSELY18_EN) |
+		(((dpi_data_format == DSI_DPI_COLOR_18BIT_CFG_2) ? 1 : 0) << BIT_LOOSELY18_EN) |
 		(dpi_data_format << BIT_DPI_COLOR_CODING));
 	/* 2.2.1 Configure Set color format for DPI register */
 	temp = (dsi_host_read(pdrv, MIPI_DSI_TOP_CNTL) &
@@ -305,25 +302,23 @@ static void set_mipi_dsi_host(struct aml_lcd_drv_s *pdrv,
 		dsi_host_write(pdrv, MIPI_DSI_DWC_VID_MODE_CFG_OS,
 			// (1 << BIT_LP_CMD_EN) |
 			(0 << BIT_FRAME_BTA_ACK_EN) | /* enable BTA after one frame, need check */
-			(1 << BIT_LP_HFP_EN)  | /* enable lp */
-			(1 << BIT_LP_HBP_EN)  | /* enable lp */
+			// (1 << BIT_LP_HFP_EN)  | /* enable lp */
+			// (1 << BIT_LP_HBP_EN)  | /* enable lp */
+			(0 << BIT_LP_HFP_EN)  | /* enable lp */
+			(0 << BIT_LP_HBP_EN)  | /* enable lp */
 			(1 << BIT_LP_VACT_EN) | /* enable lp */
 			(1 << BIT_LP_VFP_EN)  | /* enable lp */
 			(1 << BIT_LP_VBP_EN)  | /* enable lp */
 			(1 << BIT_LP_VSA_EN)  | /* enable lp */
-			(vid_mode_type << BIT_VID_MODE_TYPE)); /* burst non burst mode */
+			(vid_mode_type << BIT_VID_MODE_TYPE)); /* burst/non-burst mode */
 		/* [23:16]outvact, [7:0]invact */
 		dsi_host_write(pdrv, MIPI_DSI_DWC_DPI_LP_CMD_TIM_OS, (4 << 16) | (4 << 0));
 
 		/* 3.2 Configure video packet size settings */
 		/* 3.3 Configure number of chunks and null packet size for one line */
-		if (vid_mode_type == BURST_MODE) {
-			dsi_host_write(pdrv, MIPI_DSI_DWC_VID_PKT_SIZE_OS, h_act);
-		} else { // NON_BURST_SYNC_PULSE || NON_BURST_SYNC_EVENT
-			dsi_host_write(pdrv, MIPI_DSI_DWC_VID_PKT_SIZE_OS, dconf->pixel_per_chunk);
-			dsi_host_write(pdrv, MIPI_DSI_DWC_VID_NUM_CHUNKS_OS, dconf->vid_num_chunks);
-			dsi_host_write(pdrv, MIPI_DSI_DWC_VID_NULL_SIZE_OS, dconf->vid_null_size);
-		}
+		dsi_host_write(pdrv, MIPI_DSI_DWC_VID_PKT_SIZE_OS, dconf->vid_pkt_size);
+		dsi_host_write(pdrv, MIPI_DSI_DWC_VID_NUM_CHUNKS_OS, dconf->vid_num_chunks);
+		dsi_host_write(pdrv, MIPI_DSI_DWC_VID_NULL_SIZE_OS, dconf->vid_null_size);
 
 		/* 4 Configure the video relative parameters according to the output type */
 		/*   include horizontal timing and vertical line */
@@ -652,112 +647,9 @@ static void dsi0_DT_sink_turn_on(struct aml_lcd_drv_s *pdrv)
 	mdelay(20); /* wait for vsync trigger */
 }
 
-static void mipi_dsi_non_burst_packet_config(struct lcd_config_s *pconf)
-{
-	struct dsi_config_s *dconf = &pconf->control.mipi_cfg;
-	u32 lane_num, hactive, multi_pkt_en;
-	u64 bit_rate_required;
-	u32 pixel_per_chunk = 0, vid_num_chunks = 0;
-	u32 byte_per_chunk = 0, vid_pkt_byte_per_chunk = 0;
-	u32 total_bytes_per_chunk = 0;
-	u32 chunk_overhead = 0, vid_null_size = 0;
-	int i, done = 0;
-
-	lane_num = (int)(dconf->lane_num);
-	hactive = pconf->timing.act_timing.h_active;
-	bit_rate_required = pconf->timing.act_timing.pixel_clk;
-	bit_rate_required = bit_rate_required * pconf->timing.act_timing.lcd_bits;
-	bit_rate_required = lcd_do_div(bit_rate_required, lane_num);
-	if (pconf->timing.bit_rate > bit_rate_required)
-		multi_pkt_en = 1;
-	else
-		multi_pkt_en = 0;
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-		LCDPR("non-burst: bit_rate_required=%lld, bit_rate=%lld, multi_pkt_en=%d\n",
-		      bit_rate_required, pconf->timing.bit_rate, multi_pkt_en);
-	}
-
-	if (multi_pkt_en == 0) {
-		pixel_per_chunk = hactive;
-		if (dconf->dpi_data_format == COLOR_18BIT_CFG_1) {
-			/* 18bit (4*18/8=9byte) */
-			byte_per_chunk = pixel_per_chunk * (9 / 4);
-		} else {
-			/* 24bit or 18bit-loosely */
-			byte_per_chunk = pixel_per_chunk * 3;
-		}
-		vid_pkt_byte_per_chunk = 4 + byte_per_chunk + 2;
-		total_bytes_per_chunk = lane_num * pixel_per_chunk * dconf->factor_denominator;
-		total_bytes_per_chunk = total_bytes_per_chunk / (8 * dconf->factor_numerator);
-
-		vid_num_chunks = 0;
-		vid_null_size = 0;
-	} else {
-		i = 2;
-		while ((i < hactive) && (done == 0)) {
-			vid_num_chunks = i;
-			pixel_per_chunk = hactive / vid_num_chunks;
-
-			if (dconf->dpi_data_format == COLOR_18BIT_CFG_1) {
-				if ((pixel_per_chunk % 4) > 0)
-					continue;
-				/* 18bit (4*18/8=9byte) */
-				byte_per_chunk = pixel_per_chunk * (9 / 4);
-			} else {
-				/* 24bit or 18bit-loosely */
-				byte_per_chunk = pixel_per_chunk * 3;
-			}
-			vid_pkt_byte_per_chunk = 4 + byte_per_chunk + 2;
-			total_bytes_per_chunk = lane_num * pixel_per_chunk *
-				dconf->factor_denominator;
-			total_bytes_per_chunk = total_bytes_per_chunk /
-				(8 * dconf->factor_numerator);
-
-			chunk_overhead = total_bytes_per_chunk - vid_pkt_byte_per_chunk;
-			if (chunk_overhead >= 12) {
-				vid_null_size = chunk_overhead - 12;
-				done = 1;
-			} else if (chunk_overhead >= 6) {
-				vid_null_size = 0;
-				done = 1;
-			}
-			i += 2;
-		}
-		if (done == 0) {
-			LCDERR("Packet no room for chunk_overhead\n");
-			//pixel_per_chunk = hactive;
-			//vid_num_chunks = 0;
-			//vid_null_size = 0;
-		}
-	}
-
-	dconf->pixel_per_chunk = pixel_per_chunk;
-	dconf->vid_num_chunks = vid_num_chunks;
-	dconf->vid_null_size = vid_null_size;
-	dconf->byte_per_chunk = byte_per_chunk;
-	dconf->multi_pkt_en = multi_pkt_en;
-
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-		LCDPR("MIPI DSI NON-BURST setting:\n"
-			"  multi_pkt_en             = %d\n"
-			"  vid_num_chunks           = %d\n"
-			"  pixel_per_chunk          = %d\n"
-			"  byte_per_chunk           = %d\n"
-			"  vid_pkt_byte_per_chunk   = %d\n"
-			"  total_bytes_per_chunk    = %d\n"
-			"  chunk_overhead           = %d\n"
-			"  vid_null_size            = %d\n\n",
-			multi_pkt_en, vid_num_chunks,
-			pixel_per_chunk, byte_per_chunk,
-			vid_pkt_byte_per_chunk, total_bytes_per_chunk,
-			chunk_overhead, vid_null_size);
-	}
-}
-
-static void mipi_dsi_vid_mode_config(struct lcd_config_s *pconf)
+static void mipi_dsi_burst_packet_config(struct lcd_config_s *pconf)
 {
 	u64 h_period, hs_width, hs_bp;
-	u16 vfp;
 	u32 den, num;
 	struct dsi_config_s *dconf = &pconf->control.mipi_cfg;
 
@@ -771,10 +663,117 @@ static void mipi_dsi_vid_mode_config(struct lcd_config_s *pconf)
 	dconf->hsa   = (u16)div_around(hs_width * num, den);
 	dconf->hbp   = (u16)div_around(hs_bp    * num, den);
 
-	vfp = pconf->timing.act_timing.v_period
-		- pconf->timing.act_timing.vsync_width
-		- pconf->timing.act_timing.vsync_bp
-		- pconf->timing.act_timing.v_active;
+	dconf->vid_pkt_size = pconf->timing.act_timing.h_active;
+	dconf->vid_num_chunks = 0;
+	dconf->vid_null_size = 0;
+}
+
+static void mipi_dsi_non_burst_packet_config(struct lcd_config_s *pconf)
+{
+	struct dsi_config_s *dconf = &pconf->control.mipi_cfg;
+	u32 lane_num, hactive, multi_pkt_en;
+	u64 bit_rate_required;
+	u32 vid_num_chunks = 0, vid_pkt_size = 0;
+	u64 total_bytes_per_chunk = 0, vid_byte_per_chunk = 0;
+	u32 chunk_overhead = 0, vid_null_size = 0;
+	u64 h_period, hs_width, hs_bp;
+	u32 byte_pixel = 0, temp;
+	u32 den, num, i;
+
+	h_period = pconf->timing.act_timing.h_period;
+	hs_width = pconf->timing.act_timing.hsync_width;
+	hs_bp = pconf->timing.act_timing.hsync_bp;
+	den = pconf->control.mipi_cfg.factor_denominator;
+	num = pconf->control.mipi_cfg.factor_numerator;
+
+	hactive = pconf->timing.act_timing.h_active;
+
+	lane_num = dconf->lane_num;
+	bit_rate_required = pconf->timing.act_timing.pixel_clk;
+	bit_rate_required = bit_rate_required * pconf->timing.act_timing.lcd_bits; //18/24/30
+	bit_rate_required = div_around(bit_rate_required, lane_num);
+
+	if (pconf->timing.bit_rate > bit_rate_required) {
+		multi_pkt_en = 1;
+
+		switch (dconf->dpi_data_format) {
+		case DSI_DPI_COLOR_18BIT_CFG_1:
+		case DSI_DPI_COLOR_24BIT:
+			//bpc = 3
+			byte_pixel = 3;
+			break;
+		case DSI_DPI_COLOR_30BIT:
+			//bpc = 4
+			byte_pixel = 4;
+			break;
+		case DSI_DPI_COLOR_18BIT_CFG_2:
+		default:
+			byte_pixel = 3;
+			break;
+
+		}
+
+		i = dconf->user_pkt_size ? dconf->user_pkt_size : 1;
+		for (; i < hactive; i++) { //i == vid_pkt_size
+			if (i % (den / 8))
+				continue;
+			if (hactive % i)
+				continue;
+			temp = (num * lane_num - den * byte_pixel) * (i / (den / 8));
+			if ((temp % 8 == 0) && temp > 48)
+				break;
+		}
+		vid_pkt_size = i;
+		vid_num_chunks = (hactive + vid_pkt_size - 1) / vid_pkt_size;
+
+		vid_byte_per_chunk = vid_pkt_size * byte_pixel;
+		total_bytes_per_chunk = (num * lane_num * (vid_pkt_size / (den / 8))) / 8;
+		chunk_overhead = total_bytes_per_chunk - vid_byte_per_chunk;
+		if (chunk_overhead >= 12) {
+			vid_null_size = chunk_overhead - 12; //null_packet_overhead = 12
+		} else if (chunk_overhead >= 6) { //chunk: header=4, CRC=2
+			vid_null_size = 0;
+		} else { //should larger vid_pkt_size
+			vid_null_size = 0;
+			LCDERR("%s: wrong vid_pkt_size(overhead=%d)\n", __func__, chunk_overhead);
+		}
+	} else {
+		multi_pkt_en = 0;
+		vid_pkt_size = hactive;
+		vid_null_size = 0;
+		vid_num_chunks = 0;
+	}
+
+	dconf->hline = (u16)div_around(h_period * num, den);
+	dconf->hsa   = (u16)div_around(hs_width * num, den);
+	dconf->hbp   = (u16)div_around(hs_bp    * num, den);
+
+	dconf->vid_num_chunks = vid_num_chunks;
+	dconf->vid_null_size = vid_null_size;
+	dconf->vid_pkt_size = vid_pkt_size;
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+		LCDPR("MIPI DSI NON-BURST setting:\n"
+			"  multi_pkt_en = %d\n"
+			"  chunks_num = %d\n"
+			"  chunks[%lld] = vid_byte[%lld](byte_pix[%d] * vid_pkt_size[%d]) +"
+					" overhead[%d](vid_null_size[%d])\n",
+			multi_pkt_en,
+			vid_num_chunks,
+			total_bytes_per_chunk, vid_byte_per_chunk, byte_pixel, vid_pkt_size,
+			chunk_overhead, vid_null_size);
+	}
+}
+
+static void mipi_dsi_vid_mode_config(struct lcd_config_s *pconf)
+{
+	struct dsi_config_s *dconf = &pconf->control.mipi_cfg;
+
+	if (pconf->control.mipi_cfg.video_mode_type == BURST_MODE) {
+		mipi_dsi_burst_packet_config(pconf);
+	} else {
+		mipi_dsi_non_burst_packet_config(pconf);
+	}
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 		LCDPR("MIPI DSI video timing:\n"
@@ -788,15 +787,8 @@ static void mipi_dsi_vid_mode_config(struct lcd_config_s *pconf)
 			dconf->hline, dconf->hsa, dconf->hbp,
 			pconf->timing.act_timing.vsync_width,
 			pconf->timing.act_timing.vsync_bp,
-			vfp, pconf->timing.act_timing.v_active);
-	}
-
-	if (pconf->control.mipi_cfg.video_mode_type == BURST_MODE) {
-		dconf->pixel_per_chunk = pconf->timing.act_timing.h_active;
-		dconf->vid_num_chunks = 0;
-		dconf->vid_null_size = 0;
-	} else {
-		mipi_dsi_non_burst_packet_config(pconf);
+			pconf->timing.act_timing.vsync_fp,
+			pconf->timing.act_timing.v_active);
 	}
 }
 
@@ -980,10 +972,13 @@ static void mipi_dsi_color_format_config(struct aml_lcd_drv_s *pdrv)
 
 	if (pdrv->config.timing.base_timing->lcd_bits == 18) {
 		dconf->venc_data_width = MIPI_DSI_VENC_COLOR_18B;
-		dconf->dpi_data_format = MIPI_DSI_COLOR_18BIT;
-	} else {
+			dconf->dpi_data_format = DSI_DPI_COLOR_18BIT_CFG_1;
+	} else if (pdrv->config.timing.base_timing->lcd_bits == 24) {
 		dconf->venc_data_width = MIPI_DSI_VENC_COLOR_24B;
-		dconf->dpi_data_format  = MIPI_DSI_COLOR_24BIT;
+		dconf->dpi_data_format  = DSI_DPI_COLOR_24BIT;
+	} else if (pdrv->config.timing.base_timing->lcd_bits == 30) {
+		dconf->venc_data_width = MIPI_DSI_VENC_COLOR_30B;
+		dconf->dpi_data_format  = DSI_DPI_COLOR_30BIT;
 	}
 }
 

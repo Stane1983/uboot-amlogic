@@ -322,11 +322,10 @@ struct dsi_config_s {
 	unsigned int lane_byte_clk;
 
 	/* non_burst vid packet */
+	unsigned int user_pkt_size;
 	unsigned int vid_num_chunks;
-	unsigned int pixel_per_chunk; /* pkt_size */
 	unsigned int vid_null_size;
-	unsigned int byte_per_chunk; /* internal usage */
-	unsigned int multi_pkt_en;   /* internal usage */
+	unsigned int vid_pkt_size;
 
 	/* vid timing */
 	unsigned int hline;

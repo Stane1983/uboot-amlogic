@@ -12,21 +12,21 @@
 #define MIPI_DSI_VENC_COLOR_18B   0x2
 #define MIPI_DSI_VENC_COLOR_16B   0x3
 
-#define COLOR_16BIT_CFG_1         0x0
-#define COLOR_16BIT_CFG_2         0x1
-#define COLOR_16BIT_CFG_3         0x2
-#define COLOR_18BIT_CFG_1         0x3
-#define COLOR_18BIT_CFG_2         0x4
-#define COLOR_24BIT               0x5
-#define COLOR_20BIT_LOOSE         0x6
-#define COLOR_24_BIT_YCBCR        0x7
-#define COLOR_16BIT_YCBCR         0x8
-#define COLOR_30BIT               0x9
-#define COLOR_36BIT               0xa
-#define COLOR_12BIT               0xb
-#define COLOR_RGB_111             0xc
-#define COLOR_RGB_332             0xd
-#define COLOR_RGB_444             0xe
+#define DSI_DPI_COLOR_16BIT_CFG_1         0x0
+#define DSI_DPI_COLOR_16BIT_CFG_2         0x1
+#define DSI_DPI_COLOR_16BIT_CFG_3         0x2
+#define DSI_DPI_COLOR_18BIT_CFG_1         0x3
+#define DSI_DPI_COLOR_18BIT_CFG_2         0x4
+#define DSI_DPI_COLOR_24BIT               0x5
+#define DSI_DPI_COLOR_20BIT_LOOSE         0x6
+#define DSI_DPI_COLOR_24_BIT_YCBCR        0x7
+#define DSI_DPI_COLOR_16BIT_YCBCR         0x8
+#define DSI_DPI_COLOR_30BIT               0x9
+#define DSI_DPI_COLOR_36BIT               0xa
+#define DSI_DPI_COLOR_12BIT               0xb
+#define DSI_DPI_COLOR_RGB_111             0xc
+#define DSI_DPI_COLOR_RGB_332             0xd
+#define DSI_DPI_COLOR_RGB_444             0xe
 
 /*  MIPI DSI Relative REGISTERs Definitions */
 /* For MIPI_DSI_TOP_CNTL */

@@ -230,7 +230,4 @@ void dsi_panel_detect(struct aml_lcd_drv_s *pdrv);
 
 #define DSI_RD_MAX 4
 
-#define MIPI_DSI_COLOR_18BIT            COLOR_18BIT_CFG_2//COLOR_18BIT_CFG_1
-#define MIPI_DSI_COLOR_24BIT            COLOR_24BIT
-
 #endif

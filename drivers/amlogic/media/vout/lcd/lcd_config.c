@@ -1199,6 +1199,7 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 		pctrl->mipi_cfg.operation_mode_display = be32_to_cpup((((u32 *)propdata) + 4));
 		pctrl->mipi_cfg.video_mode_type = be32_to_cpup((((u32 *)propdata) + 5));
 		pctrl->mipi_cfg.clk_always_hs = be32_to_cpup((((u32 *)propdata) + 6));
+		pctrl->mipi_cfg.user_pkt_size = be32_to_cpup((((u32 *)propdata) + 7));
 
 		pctrl->mipi_cfg.check_en = 0;
 		pctrl->mipi_cfg.check_reg = 0xff;
