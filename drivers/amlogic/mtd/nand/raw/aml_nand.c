@@ -1382,12 +1382,9 @@ int aml_nand_write_oob(struct mtd_info *mtd, struct nand_chip *chip, int page)
 
 int aml_nand_block_bad(struct mtd_info *mtd, loff_t ofs)
 {
-	struct nand_chip *chip = mtd->priv;
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
 	struct aml_nand_platform *plat = aml_chip->platform;
-	struct mtd_oob_ops aml_oob_ops;
-	int32_t ret = 0, read_cnt, mtd_erase_shift, blk_addr, pages_per_blk;
-	loff_t addr;
+	int32_t mtd_erase_shift, blk_addr;
 
 	if ((!strncmp((char *)plat->name,
 		NAND_BOOT_NAME, strlen((const char *)NAND_BOOT_NAME))))
@@ -1402,54 +1399,16 @@ int aml_nand_block_bad(struct mtd_info *mtd, loff_t ofs)
 
 	blk_addr = (int)(ofs >> mtd_erase_shift);
 	if (aml_chip->block_status != NULL) {
-		if (aml_chip->block_status[blk_addr] == NAND_BLOCK_BAD) {
-			pr_info(" NAND bbt detect Bad block at %llx \n",
-				(u64)ofs);
-			return EFAULT;
-		}
-		if (aml_chip->block_status[blk_addr] == NAND_FACTORY_BAD) {
-			pr_info(" NAND bbt detect factory Bad block at %llx \n",
-				(u64)ofs);
-			return FACTORY_BAD_BLOCK_ERROR;//159 EFAULT
-		} else if (aml_chip->block_status[blk_addr] == NAND_BLOCK_GOOD)
-			return 0;
+		if (aml_chip->block_status[blk_addr] == NAND_BLOCK_BAD)
+			pr_info("NAND bbt detect Bad block at %llx\n", (u64)ofs);
+		else if (aml_chip->block_status[blk_addr] == NAND_FACTORY_BAD)
+			pr_info("NAND bbt detect factory Bad block at %llx\n",
+			        (u64)ofs);
+		return aml_chip->block_status[blk_addr];
 	}
-	chip->pagebuf = -1;
-	pages_per_blk = (1 << (chip->phys_erase_shift - chip->page_shift));
 
-		aml_oob_ops.mode = MTD_OPS_AUTO_OOB;
-		aml_oob_ops.len = mtd->writesize;
-		aml_oob_ops.ooblen = mtd->oobavail;
-		aml_oob_ops.ooboffs = chip->ecc.layout->oobfree[0].offset;
-		aml_oob_ops.datbuf = chip->buffers->databuf;
-		aml_oob_ops.oobbuf = chip->oob_poi;
-		for (read_cnt = 0; read_cnt < 2; read_cnt++) {
-			addr =
-			ofs + (pages_per_blk - 1) * read_cnt * mtd->writesize;
-			ret = mtd->_read_oob(mtd, addr, &aml_oob_ops);
-			if (ret == -EUCLEAN)
-				ret = 0;
-			if (ret < 0) {
-				pr_info("1 NAND detect Bad block:%llx\n",
-					(u64)addr);
-				return EFAULT;
-			}
-			if (aml_oob_ops.oobbuf[chip->badblockpos] == 0xFF)
-				continue;
-			if (aml_oob_ops.oobbuf[chip->badblockpos] == 0) {
-				memset(aml_chip->aml_nand_data_buf,
-					0, aml_oob_ops.ooblen);
-				if (!memcmp(aml_chip->aml_nand_data_buf,
-				aml_oob_ops.oobbuf, aml_oob_ops.ooblen)) {
-					pr_info("2 NAND detect Bad block:%llx\n",
-						(u64)addr);
-					return EFAULT;
-				}
-			}
-		}
-
-
-	return 0;
+	pr_err("BUG at %s:%d/%s() no rsv bbt!\n", __FILE__, __LINE__, __func__);
+	return -EFAULT;
 }
 
 extern int meson_rsv_bbt_write(u_char *source, size_t size);
