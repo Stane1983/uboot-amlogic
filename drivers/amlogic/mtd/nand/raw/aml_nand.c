@@ -1397,17 +1397,12 @@ int aml_nand_block_bad(struct mtd_info *mtd, loff_t ofs)
 
 	blk_addr = (int)(ofs >> mtd_erase_shift);
 	if (aml_chip->block_status != NULL) {
-		if (aml_chip->block_status[blk_addr] == NAND_BLOCK_BAD) {
-			printf(" NAND bbt detect Bad block at %llx \n",
-				(u64)ofs);
-			return EFAULT;
-		}
-		if (aml_chip->block_status[blk_addr] == NAND_FACTORY_BAD) {
-			printf(" NAND bbt detect factory Bad block at %llx \n",
-				(u64)ofs);
-			return FACTORY_BAD_BLOCK_ERROR;//159 EFAULT
-		} else if (aml_chip->block_status[blk_addr] == NAND_BLOCK_GOOD)
-			return 0;
+		if (aml_chip->block_status[blk_addr] == NAND_BLOCK_BAD)
+			printf("NAND bbt detect Bad block at %llx\n", (u64)ofs);
+		if (aml_chip->block_status[blk_addr] == NAND_FACTORY_BAD)
+			printf("NAND bbt detect factory Bad block at %llx\n",
+			       (u64)ofs);
+		return aml_chip->block_status[blk_addr];
 	}
 
 	pr_err("BUG at %s:%d/%s() no rsv bbt!\n", __FILE__, __LINE__, __func__);
