@@ -756,11 +756,11 @@ static int ldim_dev_get_config_from_ukey(struct ldim_dev_driver_s *dev_drv)
 			((*(p + LCD_UKEY_LDIM_DEV_IF_FREQ + 3)) << 24));
 		dev_drv->spi_info.mode = *(p + LCD_UKEY_LDIM_DEV_IF_ATTR_2);
 		dev_drv->cs_hold_delay =
-			(*(p + LCD_UKEY_LDIM_DEV_IF_ATTR_3) |
-			((*(p + LCD_UKEY_LDIM_DEV_IF_ATTR_3 + 1)) << 8));
-		dev_drv->cs_clk_delay =
 			(*(p + LCD_UKEY_LDIM_DEV_IF_ATTR_4) |
 			((*(p + LCD_UKEY_LDIM_DEV_IF_ATTR_4 + 1)) << 8));
+		dev_drv->cs_clk_delay =
+			(*(p + LCD_UKEY_LDIM_DEV_IF_ATTR_5) |
+			((*(p + LCD_UKEY_LDIM_DEV_IF_ATTR_5 + 1)) << 8));
 		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
 			LDIMPR("spi bus_num: %d, chip_select: %d, max_speed_hz: %d\n",
 			       dev_drv->spi_info.bus_num, dev_drv->spi_info.chip_select,
