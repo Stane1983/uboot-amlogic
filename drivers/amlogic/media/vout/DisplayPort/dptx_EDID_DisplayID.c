@@ -153,14 +153,14 @@ static char dptx_edid_base_block_parse(struct dptx_drv_s *dptx, unsigned char *_
 
 	if (memcmp(_buf, base_block_header, 8)) {
 		DPTXPR(dptx->idx, LOG_E, "%s: invalid EDID header", __func__);
-		return -1;
+		return 1;
 	}
 
 	for (i = 0; i < 128; i++)
 		checksum += _buf[i];
 	if ((checksum & 0xff)) {
 		DPTXPR(dptx->idx, LOG_E, "%s: EDID checksum Wrong", __func__);
-		// return -1;
+		return 1;
 	}
 
 	memset(&dptx->edid_info, 0, sizeof(struct dptx_edid_info_s));
@@ -286,7 +286,7 @@ static char dptx_edid_base_block_parse(struct dptx_drv_s *dptx, unsigned char *_
 			}
 		}
 	}
-	return _buf[126];
+	return 0;
 }
 
 static char dptx_edid_DisplayID_parse(struct dptx_drv_s *dptx, unsigned char *_buf)
@@ -301,8 +301,8 @@ static char dptx_edid_DisplayID_parse(struct dptx_drv_s *dptx, unsigned char *_b
 	for (i = 0; i < 128; i++)
 		checksum += _buf[i];
 	if ((checksum & 0xff)) {
-		DPTXPR(dptx->idx, LOG_E, "%s: DisplayID checksum Wrong\n", __func__);
-		// return -1;
+		DPTXPR(dptx->idx, LOG_E, "%s: DisplayID checksum Wrong", __func__);
+		return -1;
 	}
 
 	for (tag_ofst = 5; tag_ofst < 126;) {
@@ -410,13 +410,13 @@ static char dptx_edid_CEA_861_parse(struct dptx_drv_s *dptx, unsigned char *_buf
 	for (i = 0; i < 128; i++)
 		checksum += _buf[i];
 	if ((checksum & 0xff)) {
-		DPTXPR(dptx->idx, LOG_E, "%s: EDID checksum Wrong\n", __func__);
-		// return -1;
+		DPTXPR(dptx->idx, LOG_E, "%s: EDID_CEA_861 checksum Wrong", __func__);
+		return -1;
 	}
 
 	dtd_ofst = _buf[2];
 
-	for (j = 4; j < dtd_ofst;) { // from HDMI code
+	for (j = 4; j < dtd_ofst;) {
 		tag = _buf[j] >> 5;
 		count = _buf[j] & 0x1f;
 		switch (tag) {
@@ -464,7 +464,7 @@ static char dptx_edid_CEA_861_parse(struct dptx_drv_s *dptx, unsigned char *_buf
 		timing->v_bp = timing->v_blank - timing->v_fp - timing->v_pw;
 
 		temp1 = 1000ULL * timing->pclk;
-		temp  = timing->h_blank * timing->v_blank;
+		temp  = timing->h_period * timing->v_period;
 		timing->fr1000 = dptx_div_around(temp1, temp);
 
 		dptx->edid_info.dtd_cnt++;
@@ -472,31 +472,16 @@ static char dptx_edid_CEA_861_parse(struct dptx_drv_s *dptx, unsigned char *_buf
 	return 0;
 }
 
-static void dptx_edid_ext_block_parse(struct dptx_drv_s *dptx, unsigned char *_buf)
+static char dptx_edid_ext_block_parse(struct dptx_drv_s *dptx, unsigned char *_buf)
 {
 	if (_buf[0] == EXTENDED_HEADER_DisplayID)
-		dptx_edid_DisplayID_parse(dptx, _buf);
+		return dptx_edid_DisplayID_parse(dptx, _buf);
 	else if (_buf[0] == EXTENDED_HEADER_EDID_CEA_861)
-		dptx_edid_CEA_861_parse(dptx, _buf);
+		return dptx_edid_CEA_861_parse(dptx, _buf);
 	else if (_buf[0] == 0x0)
-		return;
+		return 0;
 
 	DPTXPR(dptx->idx, LOG_E, "%s: not a DisplayID or EDID CEA-861", __func__);
-}
-
-static char dptx_edid_parse(struct dptx_drv_s *dptx, unsigned char *_buf)
-{
-	int ret;
-	unsigned char i;//, ext_block;
-
-	memset(&dptx->edid_info, 0, sizeof(struct dptx_edid_info_s));
-
-	ret = dptx_edid_base_block_parse(dptx, _buf);
-	if (ret < 0)
-		return -1;
-
-	for (i = 1; i < 4; i++)
-		dptx_edid_ext_block_parse(dptx, _buf + (128 * i));
 	return 0;
 }
 
@@ -505,13 +490,15 @@ static int dptx_read_edid(struct dptx_drv_s *dptx, unsigned char *edid_buf)
 	int i, ret;
 	unsigned char aux_data;
 	unsigned char read_count = 128 / DPTX_AUX_I2C_READ_BYTES;
-	unsigned char ext_block_cnt = 0;
+	unsigned char ext_block_cnt = 0, retry_cnt;
 
 	if (!edid_buf) {
 		DPTXPR(dptx->idx, LOG_E, "%s: edid buf is null", __func__);
 		return -1;
 	}
 
+	retry_cnt = 0;
+edid_read_retry_p0:
 	aux_data = 0x00;
 	ret = dptx_aux_i2c_op(dptx, DPTX_AUX_CMD_I2C_WRITE_MOT, 0x50, 1, &aux_data);
 	for (i = 0; i < read_count; i++) {
@@ -519,15 +506,23 @@ static int dptx_read_edid(struct dptx_drv_s *dptx, unsigned char *edid_buf)
 			(i == (read_count - 1)) ?
 				DPTX_AUX_CMD_I2C_READ : DPTX_AUX_CMD_I2C_READ_MOT,
 			0x50, 16, &edid_buf[i * 16]);
-		if (ret)
-			return ret;
+		if (ret && (retry_cnt++ < 7))
+			goto edid_read_retry_p0;
 	}
-	if (!ret)
-		ext_block_cnt = edid_buf[126];
+	ret = dptx_edid_base_block_parse(dptx, edid_buf);
+	if (ret) {
+		if (retry_cnt++ < 7)
+			goto edid_read_retry_p0;
+		else
+			return -1;
+	}
 
+	ext_block_cnt = edid_buf[126];
 	if (ext_block_cnt > 8)
 		return -1;
 
+	retry_cnt = 0;
+edid_read_retry_p1:
 	if (ext_block_cnt >= 1) {
 		aux_data = 0x80; // read from 0x80
 		ret = dptx_aux_i2c_op(dptx, DPTX_AUX_CMD_I2C_WRITE_MOT, 0x50, 1, &aux_data);
@@ -536,11 +531,20 @@ static int dptx_read_edid(struct dptx_drv_s *dptx, unsigned char *edid_buf)
 				(i == (read_count - 1)) ?
 					DPTX_AUX_CMD_I2C_READ : DPTX_AUX_CMD_I2C_READ_MOT,
 				0x50, 16, &edid_buf[128 + i * 16]);
-			if (ret)
-				return ret;
+			if (ret && (retry_cnt++ < 7))
+				goto edid_read_retry_p1;
+		}
+		dptx_edid_ext_block_parse(dptx, edid_buf + 128);
+		if (ret) {
+			if (retry_cnt++ < 7)
+				goto edid_read_retry_p1;
+			else
+				return -1;
 		}
 	}
 
+	retry_cnt = 0;
+edid_read_retry_p2:
 	if (ext_block_cnt >= 2) {
 		aux_data = 0x01; //switch, do as Intel do.
 		ret = dptx_aux_i2c_op(dptx, DPTX_AUX_CMD_I2C_WRITE_MOT, 0x30, 1, &aux_data);
@@ -552,11 +556,20 @@ static int dptx_read_edid(struct dptx_drv_s *dptx, unsigned char *edid_buf)
 				(i == (read_count - 1)) ?
 					DPTX_AUX_CMD_I2C_READ : DPTX_AUX_CMD_I2C_READ_MOT,
 				0x50, 16, &edid_buf[256 + i * 16]);
-			if (ret)
-				return ret;
+			if (ret && (retry_cnt++ < 7))
+				goto edid_read_retry_p2;
+		}
+		dptx_edid_ext_block_parse(dptx, edid_buf + 256);
+		if (ret) {
+			if (retry_cnt++ < 7)
+				goto edid_read_retry_p2;
+			else
+				return -1;
 		}
 	}
 
+	retry_cnt = 0;
+edid_read_retry_p3:
 	if (ext_block_cnt >= 3) {
 		aux_data = 0x80; // read from 0x80
 		ret = dptx_aux_i2c_op(dptx, DPTX_AUX_CMD_I2C_WRITE_MOT, 0x50, 1, &aux_data);
@@ -565,8 +578,15 @@ static int dptx_read_edid(struct dptx_drv_s *dptx, unsigned char *edid_buf)
 				(i == (read_count - 1)) ?
 					DPTX_AUX_CMD_I2C_READ : DPTX_AUX_CMD_I2C_READ_MOT,
 				0x50, 16, &edid_buf[384 + i * 16]);
-			if (ret)
-				return ret;
+			if (ret && (retry_cnt++ < 7))
+				goto edid_read_retry_p3;
+		}
+		dptx_edid_ext_block_parse(dptx, edid_buf + 256);
+		if (ret) {
+			if (retry_cnt++ < 7)
+				goto edid_read_retry_p3;
+			else
+				return -1;
 		}
 	}
 
@@ -619,15 +639,6 @@ dptx_EDID_probe_retry:
 	if (ret) {
 		if (retry_cnt++ > DPTX_EDID_READ_RETRY_MAX) {
 			DPTXPR(dptx->idx, LOG_E, "%s: read fail @%d", __func__, retry_cnt);
-			goto dptx_EDID_probe_err;
-		}
-		goto dptx_EDID_probe_retry;
-	}
-
-	ret = dptx_edid_parse(dptx, edid_buf);
-	if (ret < 0) {
-		if (retry_cnt++ > DPTX_EDID_READ_RETRY_MAX) {
-			DPTXPR(dptx->idx, LOG_E, "%s: parse fail @%d", __func__, retry_cnt);
 			goto dptx_EDID_probe_err;
 		}
 		goto dptx_EDID_probe_retry;

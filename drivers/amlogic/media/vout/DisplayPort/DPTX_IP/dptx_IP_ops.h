@@ -11,10 +11,10 @@
 #include "../dptx_common.h"
 
 //Source: Table 2-58: uPacket TX AUX CH State and Event Descriptions
-#define DPTX_AUX_REPLY_WAIT_TIMEOUT 50   //times
-#define DPTX_AUX_REPLY_WAIT_TIMER   10 //us (protocol: 400us, check for each 10us, check 50 times)
+#define DPTX_AUX_REPLY_WAIT_TIMEOUT 120   //times
+#define DPTX_AUX_REPLY_WAIT_TIMER   5 //us (protocol: 400us, check for each 10us, check 50 times)
 #define DPTX_AUX_NO_REPLY_TIMEOUT   1   //ms
-#define DPTX_AUX_NO_REPLY_RETRY     5   //times
+#define DPTX_AUX_NO_REPLY_RETRY     10   //times
 // #define DPTX_AUX_NO_REPLY_RETRY     5   //times
 //AUX operation
 

@@ -40,7 +40,7 @@ static void dptx_aux_request(struct dptx_drv_s *dptx, struct dptx_aux_req_s *req
 
 static uint8_t dptx_aux_submit_cmd(struct dptx_drv_s *dptx, struct dptx_aux_req_s *req)
 {
-	unsigned int status = 0, reply = 0;
+	unsigned int status = 0, reply = 0, dc;
 	unsigned int retry_cnt = 0, timeout = 0;//, irq_status;//, i2c_read_timeout_ignore = 0;
 	char str[48];
 
@@ -80,6 +80,10 @@ static uint8_t dptx_aux_submit_cmd(struct dptx_drv_s *dptx, struct dptx_aux_req_
 		return 1;
 	}
 
+	// clean up reg
+	dptx_reg_read(dptx->idx, EDP_TX_AUX_TRANSFER_STATUS);
+	dptx_reg_read(dptx->idx, EDP_TX_AUX_REPLY_CODE);
+
 dptx_aux_submit_cmd_retry:
 	dptx_aux_request(dptx, req);
 
@@ -93,55 +97,89 @@ dptx_aux_submit_cmd_retry:
 		status = dptx_reg_read(dptx->idx, EDP_TX_AUX_TRANSFER_STATUS);
 		reply = dptx_reg_read(dptx->idx, EDP_TX_AUX_REPLY_CODE);
 
-		DPTXPR(dptx->idx, LOG_A, "%s, status=0x%x, reply=0x%x", str, status, reply);
-
-		if (status & AUX_STATUS_REQUEST_IN_PROGRESS) {
-			udelay(DPTX_AUX_REPLY_WAIT_TIMER);
+		if (status & AUX_STATUS_REQUEST_IN_PROGRESS ||
+		    status & AUX_STATUS_REPLY_IN_PROGRESS)
 			continue;
-		}
 
-		switch (req->cmd_code) {
-		case DPTX_AUX_CMD_I2C_WRITE:
-		case DPTX_AUX_CMD_I2C_WRITE_MOT:
-		case DPTX_AUX_CMD_I2C_WRITE_STATUS:
-		case DPTX_AUX_CMD_WRITE:
-			if (status & AUX_STATUS_REPLY_RECEIVED)
+		DPTXPR(dptx->idx, LOG_V, "%s, status=0x%x, reply=0x%x", str, status, reply);
+
+		if (status & AUX_STATUS_REPLY_ERROR || status & AUX_STATUS_REPLY_RECEIVED) {
+			switch (req->cmd_code) {
+			case DPTX_AUX_CMD_I2C_WRITE:
+			case DPTX_AUX_CMD_I2C_WRITE_MOT:
+			case DPTX_AUX_CMD_I2C_WRITE_STATUS:
+			case DPTX_AUX_CMD_WRITE:
+				if (status & AUX_STATUS_REPLY_RECEIVED)
+					return 0;
+				if (status & AUX_STATUS_REPLY_ERROR) {
+					DPTXPR(dptx->idx, LOG_E, "%s, status=0x%x, reply=0x%x",
+						str, status, reply);
+					return 0;
+				}
+				break;
+			case DPTX_AUX_CMD_READ:
+				if (status & AUX_STATUS_REPLY_ERROR) {
+					timeout = DPTX_AUX_REPLY_WAIT_TIMEOUT;
+					break;
+				}
+				if (!(status & AUX_STATUS_REPLY_RECEIVED))
+					break; // not in any state, loop to wait
+
+				if (reply & AUX_REPLY_CODE_AUX_Defer) {
+					DPTXPR(dptx->idx, LOG_V, "%s Defer", str);
+
+					if (retry_cnt++ < DPTX_AUX_NO_REPLY_RETRY) {
+						mdelay(DPTX_AUX_NO_REPLY_TIMEOUT);
+						goto dptx_aux_submit_cmd_retry;
+					}
+					break;
+				}
+				// DPCD addr not supported by DPRX, or invalid request
+				if (reply == AUX_REPLY_CODE_AUX_NACK) {
+					DPTXPR(dptx->idx, LOG_V, "%s NACK", str);
+					retry_cnt = DPTX_AUX_NO_REPLY_RETRY;
+					timeout = DPTX_AUX_REPLY_WAIT_TIMEOUT;
+					break;
+				}
 				return 0;
-			break;
-		case DPTX_AUX_CMD_I2C_READ:
-		case DPTX_AUX_CMD_I2C_READ_MOT:
-		case DPTX_AUX_CMD_READ:
-			if (status & AUX_STATUS_REPLY_IN_PROGRESS) {
-				udelay(DPTX_AUX_REPLY_WAIT_TIMER);
-				break;
-			}
-			if (status & AUX_STATUS_REPLY_ERROR) {
-				timeout = DPTX_AUX_REPLY_WAIT_TIMEOUT;
-				break;
-			}
-			if (status & AUX_STATUS_REPLY_RECEIVED) {
-				// DPRX not ready to response
+			case DPTX_AUX_CMD_I2C_READ:
+			case DPTX_AUX_CMD_I2C_READ_MOT:
+				if (status & AUX_STATUS_REPLY_ERROR) {
+					timeout = DPTX_AUX_REPLY_WAIT_TIMEOUT;
+					break;
+				}
+				if (!(status & AUX_STATUS_REPLY_RECEIVED))
+					break; // not in any state, loop to wait
+
 				if (reply & (AUX_REPLY_CODE_AUX_Defer | AUX_REPLY_CODE_I2C_Defer)) {
-					DPTXPR(dptx->idx, LOG_V, "%s %s Defer", str,
-						(reply & AUX_REPLY_CODE_I2C_Defer) ? "I2C" : "");
-					retry_cnt = DPTX_AUX_NO_REPLY_RETRY;
-					timeout = DPTX_AUX_REPLY_WAIT_TIMEOUT;
+					dc = dptx_reg_read(dptx->idx, EDP_TX_AUX_REPLY_DATA_COUNT);
+					DPTXPR(dptx->idx, LOG_V, "%s %s Defer dc:%d", str,
+						(reply & AUX_REPLY_CODE_I2C_Defer) ?
+							"I2C" : "", dc);
+
+					if (dc) // read with data error
+						return 1;
+
+					if (retry_cnt++ < DPTX_AUX_NO_REPLY_RETRY) {
+						mdelay(DPTX_AUX_NO_REPLY_TIMEOUT);
+						goto dptx_aux_submit_cmd_retry;
+					}
 					break;
 				}
-				// DPCD / I2C addr not supported by DPRX, or invalid request
-				if (reply & (AUX_REPLY_CODE_AUX_NACK | AUX_REPLY_CODE_I2C_NACK)) {
+				// DPCD / I2C addr not supported by DPRX, invalid request
+				if (reply == AUX_REPLY_CODE_AUX_NACK ||
+					reply == AUX_REPLY_CODE_I2C_NACK) {
 					DPTXPR(dptx->idx, LOG_V, "%s %s NACK", str,
-						(reply & AUX_REPLY_CODE_I2C_NACK) ? "I2C" : "");
+						(reply & AUX_REPLY_CODE_I2C_NACK) ?
+							"I2C" : "");
 					retry_cnt = DPTX_AUX_NO_REPLY_RETRY;
 					timeout = DPTX_AUX_REPLY_WAIT_TIMEOUT;
 					break;
 				}
-				// if (reply == AUX_REPLY_CODE_ACK)
+				return 0;
+			default:
 				return 0;
 			}
-			break;
-		default:
-			return 0;
 		}
 	}
 
@@ -231,15 +269,15 @@ uint8_t dptx_aux_i2c_op(struct dptx_drv_s *dptx, uint8_t cmd_type,
 	case DPTX_AUX_CMD_I2C_WRITE_STATUS:
 		aux_req.data = data;
 		ret = dptx_aux_submit_cmd(dptx, &aux_req);
-		udelay(500);
+		udelay(100);
 		break;
 	case DPTX_AUX_CMD_I2C_READ:
 	case DPTX_AUX_CMD_I2C_READ_MOT:
 		ret = dptx_aux_submit_cmd(dptx, &aux_req);
-		udelay(500);
+		udelay(100);
 		reply_count = dptx_reg_read(dptx->idx, EDP_TX_AUX_REPLY_DATA_COUNT);
 		if (reply_count != len) {
-			DPTXPR(dptx->idx, LOG_E, "DPtx Aux I2C cmd reply %d", reply_count);
+			DPTXPR(dptx->idx, LOG_E, "Aux I2C cmd reply %d", reply_count);
 			return -1;
 		}
 		for (i = 0; i < reply_count; i++) {
@@ -315,7 +353,8 @@ void dptx_set_MSA(struct dptx_drv_s *dptx)
 	vsw     = dptx->act_timing.v_pw;
 	vbp     = dptx->act_timing.v_fp;
 
-	m_vid = dptx->act_timing.pclk / 1000;
+	// m_vid = dptx->act_timing.pclk / 1000;
+	m_vid = dptx->vid_clk.fout / 1000;
 	if (dptx->link_cfg.link_rate == DP_LINK_RATE_HBR2)
 		n_vid = 540000;
 	else if (dptx->link_cfg.link_rate == DP_LINK_RATE_HBR)
