@@ -77,3 +77,11 @@
 		};
 	};
 }; /* end of pinctrl_periphs */
+
+&amhdmitx {
+	/*
+	 * 1: limit to 1080p60hz
+	 * 0: unlimited
+	 */
+	1080p_limit = <1>;
+};

@@ -316,7 +316,8 @@ static void hdmitx_load_dts_config(struct hdmitx_dev *hdev)
 
 	hdev->tx_common.res_1080p = 0;
 	hdev->enc_idx = 0;
-	hdev->tx_common.max_refreshrate = 60; /* default */
+	/* default */
+	hdev->tx_common.max_refreshrate = 60;
 	dt_blob = gd->fdt_blob;
 	if (!dt_blob) {
 		printf("ERR: hdmitx: dt_blob is null\n");
@@ -341,6 +342,28 @@ static void hdmitx_load_dts_config(struct hdmitx_dev *hdev)
 			hdev->tx_common.res_1080p = 1;
 	}
 	printf("res_1080p: %d\n", hdev->tx_common.res_1080p);
+
+	/*
+	 * bq201-s905d5 viu2 only has 250M
+	 * Maximum supported resolution: 1080p60hz
+	 */
+	if (env_get("connector1_type") && is_valid_hdmi(env_get("connector1_type"))) {
+		/*
+		 * 1080p_limit
+		 * 1: limit to 1080p60hz
+		 * 0: unlimited
+		 */
+		propdata = (char *)fdt_getprop(dt_blob, node, "1080p_limit", NULL);
+		if (propdata) {
+			if (be32_to_cpup((u32 *)propdata) == 1)
+				/*
+				 * If 1080p_limit is equal to 1, it means 4k
+				 * is not supported, and res_1080p needs to be written as 1
+				 */
+				hdev->tx_common.res_1080p = 1;
+		}
+		printf("1080p_limit: %d\n", hdev->tx_common.res_1080p);
+	}
 
 	/*
 	 * the max tmds cap is 600Mhz by default,
