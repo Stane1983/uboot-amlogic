@@ -79,6 +79,8 @@ void vpu_module_init_config(void)
 		vpu_conf.data->vpu_read_type == ONLY_READ0) {
 		/*ONLY VPU0 READ*/
 		init_arb_urgent_table();
+	} else if (vpu_conf.data->chip_type == VPU_CHIP_T6W) {
+		vpu_vcbus_write(VPU_RDARB_MODE_L2C1, 0);
 	} else {
 		vpu_vcbus_write(VPU_RDARB_MODE_L2C1, 0x900000);
 	}
