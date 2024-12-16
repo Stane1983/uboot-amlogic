@@ -610,12 +610,14 @@ static void flash(char *cmd_parameter, char *response)
 		char *slot_name = NULL;
 		char partname[32] = {0};
 
+#ifdef CONFIG_MESON_S7D
 		ret = update_boot_hdr_4_s7d_reva(fastboot_buf_addr, image_size, 0);
 		if (ret) {
 			printf("Failed to write s7d reva boot0\n");
 			fastboot_fail("Failed to write s7d reva boot0", response);
 			return;
 		}
+#endif//#ifdef CONFIG_MESON_S7D
 
 		slot_name = env_get("active_slot");
 		if (slot_name && (strcmp(slot_name, "_a") == 0))
@@ -807,12 +809,14 @@ static void flash(char *cmd_parameter, char *response)
 		strcpy(name, "dtb");
 	} else if (!strcmp(cmd_parameter, "bootloader-boot0") ||
 		!strcmp(cmd_parameter, "bootloader-boot1")) {
+#ifdef CONFIG_MESON_S7D
 		ret = update_boot_hdr_4_s7d_reva(fastboot_buf_addr, image_size, 0);
 		if (ret) {
 			printf("Failed to write s7d reva boot0\n");
 			fastboot_fail("Failed to write s7d reva boot0-1", response);
 			return;
 		}
+#endif//#ifdef CONFIG_MESON_S7D
 		strlcpy(name, cmd_parameter, 31);
 	} else {
 		strlcpy(name, cmd_parameter, 31);

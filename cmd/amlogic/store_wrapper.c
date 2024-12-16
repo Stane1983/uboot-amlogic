@@ -9,6 +9,7 @@
 #include <asm/amlogic/arch/cpu_config.h>
 #include <amlogic/store_wrapper.h>
 #include <u-boot/sha256.h>
+#include <amlogic/aml_mmc.h>
 
 #define debugP(fmt...) //printf("Dbg[WRP]L%d:", __LINE__),printf(fmt)
 #define errorP(fmt...) printf("Err[WRP]L%d:", __LINE__),printf(fmt)
@@ -146,6 +147,113 @@ int store_gpt_ops(size_t sz, void *buf, int is_wr)
 		ret = store_gpt_write(buf);
 	else
 		ret = store_gpt_read(buf);
+
+	return ret;
+}
+
+#ifdef CONFIG_CMD_MMC
+static int _amlmmc_rdwr_bootloader(int dev, int map, unsigned int size, void *src, int iswrite)
+{
+	int ret = 0, i, count = 3;
+	unsigned long n;
+	char *partname[3] = {"user", "boot0", "boot1"};
+	struct mmc *mmc = NULL;
+	lbaint_t start = 1, blkcnt;
+
+	mmc = find_mmc_device(dev);
+	if (!mmc) {
+		printf("%s() %d: not valid emmc %d\n", __func__, __LINE__, dev);
+		return -1;
+	}
+	/* make sure mmc is initialized! */
+	ret = mmc_init(mmc);
+	if (ret) {
+		printf("%s() %d: emmc %d init %d\n", __func__, __LINE__, dev, ret);
+		return -2;
+	}
+
+	blkcnt = (size + mmc->read_bl_len - 1) / mmc->read_bl_len;
+
+	/* erase bootloader in user/boot0/boot1 */
+	for (i = 0; i < count; i++) {
+		if (map & (1 << i)) {
+			if (blk_select_hwpart_devnum(UCLASS_MMC, 1, i)) {
+				printf("%s() %d: switch dev %d to %s fail\n",
+						__func__, __LINE__, dev, partname[i]);
+				ret = -3;
+				break;
+			}
+
+			printf("To %s " LBAFU " blocks at " LBAFU " @%s\n",
+				iswrite ? "Write" : "Read", blkcnt, start, partname[i]);
+			if (iswrite)
+				n = blk_dwrite(mmc_get_blk_desc(mmc), start, blkcnt, src);
+			else
+				n = blk_dread(mmc_get_blk_desc(mmc), start, blkcnt, src);
+			if (n != blkcnt) {
+				printf("mmc rd/wr %s failed\n", partname[i]);
+				ret = -4;
+				break;
+			}
+		}
+	}
+
+	/* try to switch back to user. */
+	if (blk_select_hwpart_devnum(UCLASS_MMC, 1, 0)) {
+		errorP("Fail switch to user\n");
+		return -5;
+	}
+	return ret;
+}
+#else
+static int _amlmmc_rdwr_bootloader(int dev, int map, unsigned int size, void *src, int iswrite)
+{
+	errorP("MMC not enable\n");
+	return -1;
+}
+#endif// #ifdef CONFIG_CMD_MMC
+
+static int _amlmmc_write_bootloader(int dev, int map, unsigned int size, void *src)
+{
+	return _amlmmc_rdwr_bootloader(dev, map, size, src, 1);
+}
+
+static int _amlmmc_read_bootloader(int dev, int map, unsigned int size, void *src)
+{
+	return _amlmmc_rdwr_bootloader(dev, map, size, src, 0);
+}
+
+int store_bootloader_ops(int ops, const char *name, void *pdata, unsigned int szdata)
+{
+	int map = 0;
+	int cpy = 0;
+	int ret = -1;
+	const int DEV = 1;
+	const char *_names[] = {"bootloader-user", "bootloader-boot0", "bootloader-boot1"};
+
+	for (; cpy < ARRAY_SIZE(_names); ++cpy) {
+		if (!strcmp(_names[cpy], name))
+			break;
+	}
+	if (cpy > 2) {
+		errorP("inval cpy %d\n", cpy);
+		return -__LINE__;
+	}
+	map = (1<<cpy);
+	switch (ops) {
+	case _STORE_BOOT_OP_WRITE: {
+		ret = _amlmmc_write_bootloader(DEV, map, szdata, pdata);
+		break;
+	}
+	case _STORE_BOOT_OP_READ: {
+		ret = _amlmmc_read_bootloader(DEV, map, szdata, pdata);
+		break;
+	}
+	case _STORE_BOOT_OP_ERASE:
+	default:
+		errorP("inval op:%d\n", ops);
+		return -__LINE__;
+	}
 
 	return ret;
 }

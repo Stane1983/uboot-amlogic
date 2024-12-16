@@ -82,6 +82,9 @@ int v3tool_buffman_img_verify_sha1sum(unsigned char *vrySum)
 	if (!strcmp("bootloader", part)) {
 		ret = bootloader_read(vryBuff, 0, imgTotalLen);
 		sha1_update(&ctx, vryBuff, imgTotalLen);
+	} else if (!strncmp("bootloader-", part, strnlen("bootloader-", 12))) {
+		ret = store_bootloader_ops(_STORE_BOOT_OP_READ, part, vryBuff, imgTotalLen);
+		sha1_update(&ctx, vryBuff, imgTotalLen);
 	} else if (!strcmp("_aml_dtb", part)) {
 		ret = store_dtb_rw(vryBuff, imgTotalLen, 2);
 		sha1_update(&ctx, vryBuff, imgTotalLen);
@@ -283,6 +286,7 @@ static int _v3tool_buffman_next_download_info_rawimg(ImgDownloadPara *imgPara)
 
 		if (strcmp("bootloader", cmnInf->partName) &&
 		    strcmp("_aml_dtb", cmnInf->partName) &&
+		    strncmp("bootloader-", cmnInf->partName, strnlen("bootloader-", 12)) &&
 		    strcmp("gpt", cmnInf->partName))
 			_usbDownInf.dataSize = _mymin(leftLen, _RAW_IMG_TRANSFER_LEN);
 		else
@@ -398,6 +402,9 @@ int v3tool_buffman_data_complete_download(const UsbDownInf *downloadInf)
 		case V3TOOL_MEDIA_TYPE_STORE: {
 			if (!strcmp("bootloader", partName)) {
 				ret = bootloader_write(dataBuf, 0, thisTransferLen);
+			} else if (!strncmp("bootloader-", partName, strnlen("bootloader-", 12))) {
+				FB_MSG("write %s \n", partName);
+				ret = store_bootloader_ops(_STORE_BOOT_OP_WRITE, partName, dataBuf, thisTransferLen);
 			} else if (!strcmp("_aml_dtb", partName)) {
 				ret = store_dtb_rw(dataBuf, thisTransferLen, 1);
 			} else if (!strcmp("gpt", partName)) {
@@ -483,12 +490,16 @@ int v3tool_buffman_next_upload_info(UsbUpInf **uploadInfo)
 	case V3TOOL_MEDIA_TYPE_STORE: {
 		if (!strcmp("bootloader", partName)  ||
 		    !strcmp("_aml_dtb", partName) ||
+		    !strncmp("bootloader-", partName, strnlen("bootloader-", 12)) ||
 		    !strcmp("gpt", partName)) {
 			_usbUpInf.dataSize = leftLen;
 			dataSize = leftLen;
 		}
 		if (!strcmp("bootloader", partName)) {
 			ret = bootloader_read(dataBuf, 0, dataSize);
+		} else if (!strncmp("bootloader-", partName, strnlen("bootloader-", 12))) {
+			FB_MSG("write %s \n", partName);
+			ret = store_bootloader_ops(_STORE_BOOT_OP_READ, partName, dataBuf, dataSize);
 		} else if (!strcmp("_aml_dtb", partName)) {
 			//'2' means using 'store dtb iread' rather than 'read'
 			ret = store_dtb_rw(dataBuf, dataSize, 2);

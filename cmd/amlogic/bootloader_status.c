@@ -364,12 +364,14 @@ static int write_bootloader(int i)
 		return -1;
 	}
 
+#ifdef CONFIG_MESON_S7D
 	iret = update_boot_hdr_4_s7d_reva(buffer, BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET, 0);
 	if (iret) {
 		printf("Failed to write s7d reva boot0\n");
 		free(buffer);
 		return -1;
 	}
+#endif//#ifdef CONFIG_MESON_S7D
 
 	iret = store_boot_write("bootloader", i, BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET, buffer);
 	if (iret) {

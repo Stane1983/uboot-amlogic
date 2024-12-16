@@ -19,6 +19,15 @@ int store_gpt_ops(size_t sz, void *buf, int is_wr);
 
 int store_boot_copy_enable(int id);
 
+enum {
+	_STORE_BOOT_OP_WRITE = 0,
+	_STORE_BOOT_OP_READ,
+	_STORE_BOOT_OP_ERASE,
+	_STORE_BOOT_OP_NUM
+};
+
+int store_bootloader_ops(int ops, const char *name, void *pdata, unsigned int szdata);
+
 int update_boot_hdr_4_s7d_reva(u8 *data_buf, unsigned int binsz, int isread);
 #ifdef CONFIG_CMD_MMC
 int usb_burn_erase_data(unsigned char init_flag);

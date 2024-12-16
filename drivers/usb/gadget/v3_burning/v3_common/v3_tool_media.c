@@ -340,6 +340,7 @@ static int _discrete_bootloader_write(u8 *dataBuf, unsigned int off, unsigned in
 	return 0;
 }
 
+#ifdef CONFIG_MESON_S7D
 int update_boot_hdr_4_s7d_reva(u8 *data_buf, unsigned int binsz, int isread)
 {
 	const cpu_id_t cpuid = get_cpu_id();
@@ -394,6 +395,7 @@ int update_boot_hdr_4_s7d_reva(u8 *data_buf, unsigned int binsz, int isread)
 	FB_MSG("boot hdr changed\n");
 	return 0;
 }
+#endif//#ifdef CONFIG_MESON_S7D
 
 int bootloader_write(u8 *dataBuf, unsigned off, unsigned binsz)
 {
@@ -403,10 +405,12 @@ int bootloader_write(u8 *dataBuf, unsigned off, unsigned binsz)
 	//_bl2x_mode_check_header(pInfo);
 	if (is_bootloader_discrte(&discreteMode))
 		return -__LINE__;
+#ifdef CONFIG_MESON_S7D
 	if (update_boot_hdr_4_s7d_reva(dataBuf, binsz, 0)) {
 		FB_ERR("Fail in update x5m inf\n");
 		return -__LINE__;
 	}
+#endif//#ifdef CONFIG_MESON_S7D
 	if (!discreteMode) {
 		return _bootloader_write(dataBuf, off, binsz, "bootloader");
 	} else {
@@ -569,10 +573,13 @@ int bootloader_read(u8 *pBuf, unsigned int off, unsigned int binsz)
 		memcpy(pBuf, src_data, binsz);
 	}
 #endif//#ifdef CONFIG_UPDATE_UBOOT_NOCS
+#ifdef CONFIG_MESON_S7D
 	if (update_boot_hdr_4_s7d_reva(pBuf, binsz, 1)) {
 		FB_ERR("Fail in update x5m inf\n");
 		return -__LINE__;
 	}
+#endif//#ifdef CONFIG_MESON_S7D
+
 	return 0;
 }
 
@@ -613,11 +620,14 @@ int store_dtb_rw(void *buf, unsigned int dtbsz, int rw)
 #endif// #if 1//storage wrapper
 
 
-int v3tool_media_check_image_size(int64_t imgsz, const char *part)
+int v3tool_media_check_image_size(int64_t imgsz, const char *_part)
 {
 	int ret = 0;
 	u64 partcap = 0;
+	const char *part = _part;
 
+	if (!strncmp("bootloader-", part, strnlen("bootloader-", 11)))
+		part = "bootloader";
 	if (!strcmp("bootloader", part)) {
 		const unsigned int bootSz = bootloader_copy_sz();
 		if (imgsz > bootSz)
@@ -800,7 +810,8 @@ int v3tool_storage_init(const int eraseFlash, unsigned int dtbImgSz, unsigned in
 			FB_MSG("remain bootloader as nocs scs chip\n");
 			ret = usb_burn_erase_data(1);
 		} else {
-			if (v3tool_work_mode_get() == V3TOOL_WORK_MODE_USB_PRODUCE) {
+			if (v3tool_work_mode_get() == V3TOOL_WORK_MODE_USB_PRODUCE ||
+				store_get_type() != BOOT_EMMC) {
 				ret = store_erase(NULL, 0, 0, 0);
 			} else {
 				FB_MSG("remain bootloader as not usb boot\n");
