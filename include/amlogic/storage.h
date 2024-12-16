@@ -138,6 +138,7 @@ struct storage_t {
 	int (*protect_rsv)(const char *rsv_name,
 			   bool ops);/*true:on false:off*/
 	int (*param_ops)(void);
+	int (*ffu_op)(u64 ffu_ver, void *addr, u64 cnt);
 };
 
 struct device_node_t {

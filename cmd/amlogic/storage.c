@@ -1054,6 +1054,26 @@ static int do_store_param_ops(cmd_tbl_t *cmdtp,
 	return 0;
 }
 
+static int do_store_ffu_op(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+{
+	struct storage_t *store = store_get_current();
+	u64 ver, cnt;
+	int ret = CMD_RET_FAILURE;
+	void *addr;
+
+	if (argc != 4)
+		return CMD_RET_USAGE;
+
+	ver = simple_strtoul(argv[1], NULL, 16);
+	addr = (void *)simple_strtoul(argv[2], NULL, 16);
+	cnt = simple_strtoul(argv[3], NULL, 16);
+
+	if (store->ffu_op)
+		ret = store->ffu_op(ver, addr, cnt);
+
+	return (ret == 0) ? CMD_RET_SUCCESS : CMD_RET_FAILURE;
+}
+
 static cmd_tbl_t cmd_store_sub[] = {
 	U_BOOT_CMD_MKENT(init, 4, 0, do_store_init, "", ""),
 	U_BOOT_CMD_MKENT(device, 4, 0, do_store_device, "", ""),
@@ -1071,6 +1091,7 @@ static cmd_tbl_t cmd_store_sub[] = {
 	U_BOOT_CMD_MKENT(rsv, 6, 0, do_store_rsv_ops, "", ""),
 	U_BOOT_CMD_MKENT(param, 2, 0, do_store_param_ops, "", ""),
 	U_BOOT_CMD_MKENT(boot_copy_enable, 3, 0, do_store_boot_copy_enable, "", ""),
+	U_BOOT_CMD_MKENT(ffu_op, 4, 0, do_store_ffu_op, "", ""),
 };
 
 static int do_store(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
@@ -1177,5 +1198,7 @@ U_BOOT_CMD(store, CONFIG_SYS_MAXARGS, 1, do_store,
 	"store param\n"
 	"	transfer bl2e/x ddrfip devfip size to kernel in such case like sc2\n"
 	"store boot_copy_enable [boot_index]\n"
-	"   check bootloader_x whether enable\n"
+	"	check bootloader_x whether enable\n"
+	"store ffu [version] [addr] [cnt]\n"
+	"	update ffu fw\n"
 );

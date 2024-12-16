@@ -56,15 +56,23 @@
 #define MMC_KEY_SIZE            (256*1024)
 #define EMMC_KEY_DEV            (1)
 
-#define EXT_CSD_CLASS_6_CTRL        59  /*R/W/E_P*/
-#define EXT_CSD_DRIVER_STRENGTH 197	/* RO */
+/* FFU operation */
+#define SAMSUNG_MID			0x15
+#define KINGSTON_MID			0x70
+#define BIWIN_MID			0xf4
+#define SAMSUNG_FFU_ADDR		0xc7810000
+#define KINGSTON_FFU_ADDR		0x0000ffff
+#define BIWIN_FFU_ADDR			0x0
+
+#define EXT_CSD_CLASS_6_CTRL		59  /*R/W/E_P*/
+#define EXT_CSD_DRIVER_STRENGTH		197	/* RO */
 #define EXT_CSD_DEV_LIFETIME_EST_TYP_A	268	/* RO */
 #define EXT_CSD_DEV_LIFETIME_EST_TYP_B	269	/* RO */
-#define EXT_CSD_SUPPORTED_MODES	493 /* RO */
-#define EXT_CSD_FW_VERSION	254 /* RO, 261:254 */
-#define EXT_CSD_FW_CFG	169 /* R/W */
-#define EXT_CSD_MODE_CFG	30 /* R/W */
-#define EXT_CSD_FFU_STATUS	26 /* RO */
+#define EXT_CSD_SUPPORTED_MODES		493 /* RO */
+#define EXT_CSD_FW_VERSION		254 /* RO, 261:254 */
+#define EXT_CSD_FW_CFG			169 /* R/W */
+#define EXT_CSD_MODE_CFG		30 /* R/W */
+#define EXT_CSD_FFU_STATUS		26 /* RO */
 
 #define US_PWR_WP_DIS_BIT      1<<3
 #define US_PERM_WP_DIS_BIT     1<<4

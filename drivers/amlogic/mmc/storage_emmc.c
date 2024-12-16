@@ -15,6 +15,7 @@
 #include <asm/global_data.h>
 #include <asm/amlogic/arch/efuse.h>
 #include "../../../cmd/amlogic/ini/ini_io.h"
+#include "../../drivers/mmc/mmc_private.h"
 
 #if IS_ENABLED(CONFIG_EFUSE_OBJ_API)
 extern efuse_obj_field_t efuse_field;
@@ -1119,7 +1120,116 @@ int mmc_protect_rsv(const char *rsv_name, bool ops) {
 		printf("Disprotect the key partition!\n");
 	}
 	return ret;
+}
 
+static int mmc_ffu_op(u64 ffu_ver, void *addr, u64 cnt)
+{
+	int err, i, supported_modes, fw_cfg, ffu_status;
+	u64 fw_ver = 0, n;
+	u8 ext_csd_ffu[512] = {0};
+	lbaint_t ffu_addr = 0;
+	struct mmc *mmc;
+
+	mmc = find_mmc_device(STORAGE_EMMC);
+	if (!mmc)
+		return -ENODEV;
+
+	printf("FFU update start\n");
+	/* check Manufacturer MID */
+	if ((mmc->cid[0] >> 24) == SAMSUNG_MID) {
+		ffu_addr = SAMSUNG_FFU_ADDR;
+	} else if ((mmc->cid[0] >> 24) == KINGSTON_MID) {
+		ffu_addr = KINGSTON_FFU_ADDR;
+	} else if ((mmc->cid[0] >> 24) == BIWIN_MID) {
+		ffu_addr = BIWIN_FFU_ADDR;
+	} else {
+		printf("FFU update for this manufacturer not support yet\n");
+		return -EOPNOTSUPP;
+	}
+
+	/*
+	 * check FFU Supportability
+	 * check FFU Prohibited or not
+	 * check current firmware version
+	 */
+	memset(ext_csd_ffu, 0, 512);
+	err = mmc_get_ext_csd(mmc, ext_csd_ffu);
+	if (err)
+		return err;
+
+	supported_modes = ext_csd_ffu[EXT_CSD_SUPPORTED_MODES] & 0x1;
+	fw_cfg = ext_csd_ffu[EXT_CSD_FW_CFG] & 0x1;
+	for (i = 0; i < 8; i++) {
+		fw_ver |= ext_csd_ffu[EXT_CSD_FW_VERSION + 7 - i];
+		if (i < 7)
+			fw_ver <<= 8;
+	}
+	if ((mmc->cid[0] >> 24) == BIWIN_MID)
+		fw_ver = ((fw_ver >> 16) & 0xffffffff);
+	printf("old fw_ver = %llx\n", fw_ver);
+	if (!supported_modes || fw_cfg || fw_ver >= ffu_ver)
+		return -EOPNOTSUPP;
+
+	/* Set FFU Mode */
+	err = mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL, EXT_CSD_MODE_CFG, 1);
+	if (err) {
+		printf("Failed: set FFU mode\n");
+		return err;
+	}
+
+	/* Write patch file at one write command */
+	n = blk_dwrite(mmc_get_blk_desc(mmc), ffu_addr, cnt, addr);
+	if (n != cnt) {
+		printf("target is %llx block, but only %llx block has been write\n", cnt, n);
+		return -1;
+	}
+
+	memset(ext_csd_ffu, 0, 512);
+	err = mmc_get_ext_csd(mmc, ext_csd_ffu);
+	if (err)
+		return err;
+
+	for (i = 0; i < 8; i++) {
+		fw_ver |= ext_csd_ffu[EXT_CSD_FW_VERSION + 7 - i];
+		if (i < 7)
+			fw_ver <<= 8;
+	}
+	if ((mmc->cid[0] >> 24) == BIWIN_MID)
+		fw_ver = ((fw_ver >> 16) & 0xffffffff);
+	printf("new fw_ver = %llx\n", fw_ver);
+	if ((mmc->cid[0] >> 24) == SAMSUNG_MID) {
+		/* Set Normal Mode */
+		err = mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL, EXT_CSD_MODE_CFG, 0);
+		if (err)
+			return err;
+	}
+
+	/* Initialization */
+	mmc->has_init = 0;
+	err = mmc_init(mmc);
+	if (err)
+		return err;
+
+	/* Read ffu_status, check ffu_version */
+	memset(ext_csd_ffu, 0, 512);
+	err = mmc_get_ext_csd(mmc, ext_csd_ffu);
+	if (err)
+		return err;
+	ffu_status = ext_csd_ffu[EXT_CSD_FFU_STATUS] & 0xff;
+	fw_ver = 0;
+	for (i = 0; i < 8; i++) {
+		fw_ver |= ext_csd_ffu[EXT_CSD_FW_VERSION + 7 - i];
+		if (i < 7)
+			fw_ver <<= 8;
+	}
+	if ((mmc->cid[0] >> 24) == BIWIN_MID)
+		fw_ver = ((fw_ver >> 16) & 0xffffffff);
+	printf("new fw_ver = %llx\n", fw_ver);
+	if (ffu_status || fw_ver != ffu_ver)
+		return ffu_status;
+
+	printf("FFU update ok!\n");
+	return 0;
 }
 
 void config_storage_dev_func(struct storage_t *dev, struct mmc* mmc)
@@ -1159,6 +1269,7 @@ void config_storage_dev_func(struct storage_t *dev, struct mmc* mmc)
 	dev->gpt_erase = mmc_gpt_erase;
 
 	dev->boot_copy_enable = mmc_boot_copy_enable;
+	dev->ffu_op = mmc_ffu_op;
 
 	return;
 }
