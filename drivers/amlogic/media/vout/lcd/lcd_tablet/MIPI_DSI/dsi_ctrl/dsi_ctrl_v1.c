@@ -300,7 +300,7 @@ static void set_mipi_dsi_host(struct aml_lcd_drv_s *pdrv,
 	if (operation_mode == OPERATION_VIDEO_MODE) {
 		/* 3.1   Configure Low power and video mode type settings */
 		dsi_host_write(pdrv, MIPI_DSI_DWC_VID_MODE_CFG_OS,
-			// (1 << BIT_LP_CMD_EN) |
+			(1 << BIT_LP_CMD_EN) |
 			(0 << BIT_FRAME_BTA_ACK_EN) | /* enable BTA after one frame, need check */
 			// (1 << BIT_LP_HFP_EN)  | /* enable lp */
 			// (1 << BIT_LP_HBP_EN)  | /* enable lp */
@@ -312,7 +312,7 @@ static void set_mipi_dsi_host(struct aml_lcd_drv_s *pdrv,
 			(1 << BIT_LP_VSA_EN)  | /* enable lp */
 			(vid_mode_type << BIT_VID_MODE_TYPE)); /* burst/non-burst mode */
 		/* [23:16]outvact, [7:0]invact */
-		dsi_host_write(pdrv, MIPI_DSI_DWC_DPI_LP_CMD_TIM_OS, (4 << 16) | (4 << 0));
+		dsi_host_write(pdrv, MIPI_DSI_DWC_DPI_LP_CMD_TIM_OS, (8 << 16) | (0 << 0));
 
 		/* 3.2 Configure video packet size settings */
 		/* 3.3 Configure number of chunks and null packet size for one line */
