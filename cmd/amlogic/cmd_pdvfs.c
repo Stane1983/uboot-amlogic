@@ -14,6 +14,8 @@
 #define cmd_pdvfs_info(fmt...)	printf("[cmd_pdvfs] "fmt)
 #define cmd_pdvfs_err(fmt...)	printf("[cmd_pdvfs] "fmt)
 #define GET_DVFS_TABLE_INDEX           0x82000088
+#define REVA	0xA
+#define REVB	0xB
 
 int get_board_id(void)
 {
@@ -143,11 +145,11 @@ static int update_pdvfs_tbl(cmd_tbl_t *cmdtp, int flag, int argc,
 {
 	unsigned int ret = 0;
 	unsigned int board_id = 0;
-	unsigned int board_rev = 0;
+	unsigned int chip_rev = 0;
 	unsigned int pdvfs_index = 0;
 
 	board_id = get_board_id();
-	board_rev = get_chip_rev();
+	chip_rev = get_chip_rev();
 	pdvfs_index = get_cpufreq_table_index(GET_DVFS_TABLE_INDEX, 0, 0, 0);
 	cmd_pdvfs_info("update_pdvfs dtb\n");
 	if (board_id < 2) {
@@ -157,16 +159,25 @@ static int update_pdvfs_tbl(cmd_tbl_t *cmdtp, int flag, int argc,
 		ret = set_cpu_opp_tbl();
 		if (ret != 0)
 			cmd_pdvfs_err("fix_cpu_opp_tbl fail\n");
-	}
-	else if (board_id == 2) {
+	} else {
 		if (pdvfs_index == 0 || pdvfs_index == 1) {
 			ret = set_cpu_opp_tbl();
 			if (ret != 0)
 				cmd_pdvfs_err("fix_cpu_opp_tbl fail\n");
 		}
 	}
-	else
-		cmd_pdvfs_err("get board_id  fail,board_id = %d\n", board_id);
+	if (chip_rev >= REVB) {
+		if (board_id < 2 && pdvfs_index) {
+			cmd_pdvfs_err("board_id is not correct, board_id = %d \n", board_id);
+			while (1)
+				; // software protect
+		}
+		if (board_id >= 2 && !pdvfs_index) {
+			cmd_pdvfs_err("pdvfs_index is conflict with board_id, pdvfs_index = %d \n", pdvfs_index);
+			while (1)
+				; // software protect
+		}
+	}
 
 	return 0;
 }
