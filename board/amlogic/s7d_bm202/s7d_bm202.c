@@ -199,6 +199,8 @@ int board_late_init(void)
 {
 	printf("board late init\n");
 	env_set("defenv_para", "-c");
+	if (env_get_ulong("default_env", 10, 0))
+		env_set("defenv_para", "-c0"); //andr factory reset or factory burn
 	aml_board_late_init_front(NULL);
 #ifdef CONFIG_PXP_EMULATOR
 	return 0;

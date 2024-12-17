@@ -19,6 +19,7 @@
 static const char*  const temp_for_compile[] = {"__test1","__test2","__test3",NULL};
 extern const char * const _env_args_reserve_[0] __attribute__((weak, alias("temp_for_compile")));
 extern const char * const _aml_env_reserv_array[0] __attribute__((weak, alias("temp_for_compile")));
+extern const char * const _aml_env_reserv_array1[0] __attribute__((weak, alias("temp_for_compile")));
 extern const char * const _board_env_reserv_array0[0] __attribute__((weak, alias("temp_for_compile")));
 extern const char * const _board_env_reserv_array1[0] __attribute__((weak, alias("temp_for_compile")));
 extern const char * const _board_env_reserv_array2[0] __attribute__((weak, alias("temp_for_compile")));
@@ -30,6 +31,7 @@ extern const char * const _board_env_reserv_array2[0] __attribute__((weak, alias
 
 enum DEF_ENV_RESERV_ARRAY {
 	BIT_ENV_RESERV_ARRAY_AML_COMMON,	//-c, common aml env array_aml_env_reserv_array
+	BIT_ENV_RESERV_ARRAY_AML_COMMON1,	//-c, common aml env array_aml_env_reserv_array
 	BIT_ENV_RESERV_ARRAY_USER_INPUT,	//input env1/env2/env3...
 	BIT_ENV_RESERV_ARRAY_BOARD_DEFINE0,	//-b0, board env array _board_env_reserv_array0
 	BIT_ENV_RESERV_ARRAY_BOARD_DEFINE1,	//-b1, board env array _board_env_reserv_array1
@@ -132,6 +134,7 @@ static int _do_defenv_reserv(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
 		const char * const*_aml_env_reserv_[DEF_ENV_RESERV_ARRAY_COUNT];
 
 		_aml_env_reserv_[BIT_ENV_RESERV_ARRAY_AML_COMMON] = _aml_env_reserv_array;
+		_aml_env_reserv_[BIT_ENV_RESERV_ARRAY_AML_COMMON1] = _aml_env_reserv_array1;
 		_aml_env_reserv_[BIT_ENV_RESERV_ARRAY_USER_INPUT] = temp_for_compile;
 		_aml_env_reserv_[BIT_ENV_RESERV_ARRAY_BOARD_DEFINE0] = _board_env_reserv_array0;
 		_aml_env_reserv_[BIT_ENV_RESERV_ARRAY_BOARD_DEFINE1] = _board_env_reserv_array1;
@@ -140,7 +143,7 @@ static int _do_defenv_reserv(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
 		while (argc > 1 && **(argv + 1) == '-') {
 			arg = *++argv;
 			--argc;
-			while (*++arg) {
+			if (*++arg) {
 				switch (*arg) {
 				case 'b':{//board env
 					const int bd = *++arg - '0';
@@ -152,10 +155,18 @@ static int _do_defenv_reserv(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
 					debugP("board reserv _board_env_reserv_array%d\n", bd);
 					rsv_flags |= 1 << (BIT_ENV_RESERV_ARRAY_BOARD_DEFINE0 + bd);
 				} break;
-				case 'c'://common env
-					MsgP("common reserv _aml_env_reserv_array\n");
-					rsv_flags |= 1 << BIT_ENV_RESERV_ARRAY_AML_COMMON;
-					break;
+				case 'c': {//common env
+					int icmn = arg[1];
+
+					if (icmn > '0') {
+						errorP("invalid cmn para %s\n", arg);
+						return CMD_RET_FAILURE;
+					}
+					if (icmn)
+						icmn = 1;
+					MsgP("common reserv para: %s\n", arg);
+					rsv_flags |= 1 << (BIT_ENV_RESERV_ARRAY_AML_COMMON + icmn);
+				} break;
 				default:
 					errorP("Invalid para -%s\n", arg);
 					return CMD_RET_USAGE;
