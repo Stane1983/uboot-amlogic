@@ -3662,6 +3662,46 @@ unsigned char *read_file_to_buffer(const char *filename, int *size)
 	return NULL;
 }
 
+int handle_model_get(const char *model, char buf[])
+{
+	const char *model_name = model;
+	char *str = NULL;
+	int index = 0, ret = -1;
+
+	if (!model || !buf)
+		goto __model_get_exit;
+
+	if (!model_name || !strcmp(model, "model_name") ||
+			!strcmp(model, "0")) {
+		index = 0;
+		model_name = "model_name";
+	} else if (!strcmp(model, "model1_name") ||
+			!strcmp(model, "1")) {
+		index = 1;
+		model_name = "model1_name";
+	} else if (!strcmp(model, "model2_name") ||
+			!strcmp(model, "2")) {
+		index = 2;
+		model_name = "model2_name";
+	}
+
+	ret = read_model_name_param(index, buf);
+	if (ret <= 0) {
+		str = env_get(model_name);
+		if (!str) {
+			if (model_debug_flag & DEBUG_NORMAL)
+				ALOGD("%s, no %s\n", __func__, model);
+			goto __model_get_exit;
+		}
+		strcpy(buf, str);
+	}
+
+	ret = 0;
+
+__model_get_exit:
+	return ret;
+}
+
 int handle_model_set(const char *model, const char *val)
 {
 	const char *name = model;
