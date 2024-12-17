@@ -766,7 +766,7 @@ void rx_set_phy_rterm(void)
 		/* rterm val */
 		data32 |= (rx_rterm_val << 12);
 		/* rterm flag */
-		data32 |= 0x1 << 0;
+		data32 |= (0x1 << 2);
 		hdmirx_wr_amlphy(HHI_RX_PHY_MISC_CNTL1, data32);
 		printf("rx trim:0x%x\n", data32);
 	} else {
