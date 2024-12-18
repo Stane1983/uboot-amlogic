@@ -309,5 +309,7 @@ void hdmitx_edid_print(u8 *edid_buf);
 void hdmitx_edid_buffer_clear(u8 *edid_buf, int size);
 void hdmitx_edid_rxcap_clear(struct rx_cap *prxcap);
 bool is_support_y422(struct rx_cap *prxcap);
+void hdmitx_cec_phy_addr_parse(struct rx_cap *prxcap, u8 *edid_buf);
+int hdmitx_audio_parse(struct rx_cap *prxcap, u8 *block_buf);
 
 #endif
