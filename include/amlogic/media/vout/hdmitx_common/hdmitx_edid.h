@@ -114,7 +114,6 @@ struct rx_cap {
 	/*vendor*/
 	u32 ieeeoui;
 	u8 Max_TMDS_Clock1; /* HDMI1.4b TMDS_CLK */
-	u16 physical_addr; /* CEC physical address */
 	u32 hf_ieeeoui;	/* For HDMI Forum */
 	u32 Max_TMDS_Clock2; /* HDMI2.0 TMDS_CLK */
 	/* CEA861-F, Table 56, Colorimetry Data Block */
@@ -289,5 +288,8 @@ void hdmitx_edid_print(u8 *edid_buf);
 void hdmitx_edid_buffer_clear(u8 *edid_buf, int size);
 void hdmitx_edid_rxcap_clear(struct rx_cap *prxcap);
 bool is_support_y422(struct rx_cap *prxcap);
+void hdmitx_cec_phy_addr_parse(struct vsdb_phyaddr *vsdb_phy_addr, const u8 *edid_buf);
+unsigned char hdmitx_edid_get_cta_block_count(const u8 *edid_buf);
+int hdmitx_edid_audio_block_parse(struct rx_cap *prxcap, u8 *block_buf);
 
 #endif
