@@ -65,17 +65,108 @@
 const struct hdmi_timing *hdmitx_mode_match_timing_name(const char *name);
 static void edid_dtd_parsing(struct rx_cap *prxcap, unsigned char *data);
 static void hdmitx_edid_set_default_aud(struct rx_cap *prxcap);
+static void edid_check_pcm_declare(struct rx_cap *prxcap);
 
-static void phy_addr_clear(struct vsdb_phyaddr *vsdb_phy_addr)
+/*
+ * cec_get_edid_spa_location() - find location of the Source Physical Address
+ *
+ * @edid: the EDID
+ * @size: the size of the EDID
+ *
+ * This EDID is expected to be a CEA-861 compliant, which means that there are
+ * at least two blocks and one or more of the extensions blocks are CEA-861
+ * blocks.
+ *
+ * The returned location is guaranteed to be <= size-2.
+ *
+ * This is an inline function since it is used by both CEC and V4L2.
+ * Ideally this would go in a module shared by both, but it is overkill to do
+ * that for just a single function.
+ */
+static unsigned int cec_get_edid_spa_location(const u8 *edid, unsigned int size)
 {
-	if (!vsdb_phy_addr)
+	unsigned int blocks = size / 128;
+	unsigned int block;
+	u8 d;
+
+	/* Sanity check: at least 2 blocks and a multiple of the block size */
+	if (blocks < 2 || size % 128)
+		return 0;
+
+	/*
+	 * If there are fewer extension blocks than the size, then update
+	 * 'blocks'. It is allowed to have more extension blocks than the size,
+	 * since some hardware can only read e.g. 256 bytes of the EDID, even
+	 * though more blocks are present. The first CEA-861 extension block
+	 * should normally be in block 1 anyway.
+	 */
+	if (edid[0x7e] + 1 < blocks)
+		blocks = edid[0x7e] + 1;
+
+	for (block = 1; block < blocks; block++) {
+		unsigned int offset = block * 128;
+
+		/* Skip any non-CEA-861 extension blocks */
+		if (edid[offset] != 0x02 || edid[offset + 1] != 0x03)
+			continue;
+
+		/* search Vendor Specific Data Block (tag 3) */
+		d = edid[offset + 2] & 0x7f;
+		/* Check if there are Data Blocks */
+		if (d <= 4)
+			continue;
+		if (d > 4) {
+			unsigned int i = offset + 4;
+			unsigned int end = offset + d;
+
+			/* Note: 'end' is always < 'size' */
+			do {
+				u8 tag = edid[i] >> 5;
+				u8 len = edid[i] & 0x1f;
+
+				if (tag == 3 && len >= 5 && i + len <= end &&
+				    edid[i + 1] == 0x03 &&
+				    edid[i + 2] == 0x0c &&
+				    edid[i + 3] == 0x00)
+					return i + 4;
+				i += len + 1;
+			} while (i < end);
+		}
+	}
+	return 0;
+}
+
+static u16 hdmitx_cec_get_edid_phys_addr(const u8 *edid, unsigned int size)
+{
+	unsigned int loc = cec_get_edid_spa_location(edid, size);
+
+	if (loc == 0)
+		return 0xffff;
+	return (edid[loc] << 8) | edid[loc + 1];
+}
+
+void hdmitx_cec_phy_addr_parse(struct rx_cap *prxcap, u8 *edid_buf)
+{
+	u16 pa = 0xffff;
+	unsigned char edid_check = 0;
+
+	if (!prxcap || !edid_buf)
 		return;
 
-	vsdb_phy_addr->a = 0;
-	vsdb_phy_addr->b = 0;
-	vsdb_phy_addr->c = 0;
-	vsdb_phy_addr->d = 0;
-	vsdb_phy_addr->valid = 0;
+	edid_check = prxcap->edid_check;
+	if (hdmitx_edid_check_data_valid(edid_check, edid_buf) == false)
+		return;
+
+	if (edid_buf && edid_buf[0x7e]) {
+		pa = hdmitx_cec_get_edid_phys_addr((const u8 *)edid_buf,
+				128 * (edid_buf[0x7e] + 1));
+		prxcap->vsdb_phy_addr.a = (pa >> 12) & 0xf;
+		prxcap->vsdb_phy_addr.b = (pa >> 8) & 0xf;
+		prxcap->vsdb_phy_addr.c = (pa >> 4) & 0xf;
+		prxcap->vsdb_phy_addr.d = (pa >> 0) & 0xf;
+		if (pa != 0xffff)
+			prxcap->vsdb_phy_addr.valid = 1;
+	}
 }
 
 static bool hdmitx_edid_header_invalid(u8 edid_check, const u8 *buf)
@@ -644,39 +735,6 @@ static void edid_parseceatiming(struct rx_cap *prxcap,
 	}
 }
 
-static struct vsdb_phyaddr vsdb_local = {0};
-int get_vsdb_phy_addr(struct vsdb_phyaddr *vsdb)
-{
-	if (!vsdb)
-		return -1;
-
-	vsdb = &vsdb_local;
-	return vsdb->valid;
-}
-
-static void set_vsdb_phy_addr(struct rx_cap *prxcap,
-	unsigned char *edid_offset)
-{
-	int phy_addr;
-	struct vsdb_phyaddr *vsdb;
-
-	if (!prxcap || !edid_offset)
-		return;
-	vsdb = &prxcap->vsdb_phy_addr;
-	vsdb->a = (edid_offset[0] >> 4) & 0xf;
-	vsdb->b = (edid_offset[0] >> 0) & 0xf;
-	vsdb->c = (edid_offset[1] >> 4) & 0xf;
-	vsdb->d = (edid_offset[1] >> 0) & 0xf;
-	vsdb_local = *vsdb;
-	vsdb->valid = 1;
-
-	phy_addr = ((vsdb->a & 0xf) << 12) |
-		   ((vsdb->b & 0xf) <<  8) |
-		   ((vsdb->c & 0xf) <<  4) |
-		   ((vsdb->d & 0xf) <<  0);
-	prxcap->physical_addr = phy_addr;
-}
-
 static void set_vsdb_dc_cap(struct rx_cap *prxcap)
 {
 	if (!prxcap)
@@ -1132,13 +1190,13 @@ static int edid_parsingvfpdb(struct rx_cap *prxcap, u8 *buf)
 	    (svr >= 193 && svr <= 253)) {
 		prxcap->flag_vfpdb = 1;
 		prxcap->preferred_mode = svr;
-		pr_debug("preferred mode 0 srv %d\n", prxcap->preferred_mode);
+		HDMITX_DEBUG("preferred mode 0 srv %d\n", prxcap->preferred_mode);
 		return 1;
 	}
 	if (svr >= 129 && svr <= 144) {
 		prxcap->flag_vfpdb = 1;
 		prxcap->preferred_mode = prxcap->dtd[svr - 129].vic;
-		pr_debug("preferred mode 0 dtd %d\n", prxcap->preferred_mode);
+		HDMITX_DEBUG("preferred mode 0 dtd %d\n", prxcap->preferred_mode);
 		return 1;
 	}
 	return 0;
@@ -1208,21 +1266,21 @@ static void edid_parsingdolbyvsadb(struct rx_cap *prxcap, unsigned char *buf)
 	pos = 0;
 	length = buf[pos] & 0x1f;
 	if (length != 0x06)
-		pr_debug("%s[%d]: the length is %d, should be 6 bytes\n",
+		HDMITX_DEBUG("%s[%d]: the length is %d, should be 6 bytes\n",
 			__func__, __LINE__, length);
 
 	cap->length = length;
 	pos += 2;
 	ieeeoui = buf[pos] + (buf[pos + 1] << 8) + (buf[pos + 2] << 16);
 	if (ieeeoui != DOVI_IEEEOUI)
-		pr_debug("%s[%d]: the ieeeoui is 0x%x, should be 0x%x\n",
+		HDMITX_DEBUG("%s[%d]: the ieeeoui is 0x%x, should be 0x%x\n",
 			__func__, __LINE__, ieeeoui, DOVI_IEEEOUI);
 	cap->ieeeoui = ieeeoui;
 
 	pos += 3;
 	cap->dolby_vsadb_ver = buf[pos] & 0x7;
 	if (cap->dolby_vsadb_ver)
-		pr_debug("%s[%d]: the version is 0x%x, should be 0x0\n",
+		HDMITX_DEBUG("%s[%d]: the version is 0x%x, should be 0x0\n",
 			__func__, __LINE__, cap->dolby_vsadb_ver);
 
 	cap->spk_center = (buf[pos] >> 4) & 1;
@@ -1418,7 +1476,7 @@ static void hdmitx_edid_4k2k_parse(struct rx_cap *prxcap, u8 *dat,
 		return;
 
 	if (size > 4 || size == 0) {
-		pr_debug(EDID "4k2k in edid out of range, SIZE = %d\n", size);
+		HDMITX_DEBUG("4k2k in edid out of range, SIZE = %d\n", size);
 		return;
 	}
 	while (size--) {
@@ -1430,8 +1488,6 @@ static void hdmitx_edid_4k2k_parse(struct rx_cap *prxcap, u8 *dat,
 			store_cea_idx(prxcap, HDMI_93_3840x2160p24_16x9);
 		else if (*dat == 4)
 			store_cea_idx(prxcap, HDMI_98_4096x2160p24_256x135);
-		else
-			;
 		dat++;
 	}
 }
@@ -1485,7 +1541,6 @@ static void hdmitx_edid_parse_hdmi14(struct rx_cap *prxcap,
 		return;
 
 	prxcap->ieeeoui = HDMI_IEEE_OUI;
-	set_vsdb_phy_addr(prxcap, &block_buf[offset + 3]);
 
 	prxcap->ColorDeepSupport = (count > 5) ? block_buf[offset + 5] : 0;
 	set_vsdb_dc_cap(prxcap);
@@ -1533,89 +1588,6 @@ static void hdmitx_edid_parse_hdmi14(struct rx_cap *prxcap,
 		}
 	}
 }
-
-/*
- * force_vsvdb
- *  0: no force, use TV's
- *  1~n: use preset vsvdb 0~n-1
- *  255: use current vsvdb_data
- *       update by module param vsvdb_data
- */
-static unsigned int force_vsvdb;
-static unsigned int vsvdb_size = 12;
-static unsigned char vsvdb_data[32] = {
-	0xeb, 0x01, 0x46, 0xd0, 0x00, 0x45, 0x0b, 0x90,
-	0x86, 0x60, 0x76, 0x8f, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
-#define PRESET_VSVDB_COUNT 4
-static unsigned char tv_vsvdb[PRESET_VSVDB_COUNT][32] = {
-	/* source-led */
-	{
-		0xeb, 0x01, 0x46, 0xd0,
-		0x00, 0x45, 0x0b, 0x90,
-		0x86, 0x60, 0x76, 0x8f
-	},
-	/* sink-led */
-	{
-		0xee, 0x01, 0x46, 0xd0,
-		0x00, 0x24, 0x0f, 0x8b,
-		0xa8, 0x53, 0x4b, 0x9d,
-		0x27, 0x0b, 0x00
-	},
-	/* sink-led & source-led */
-	{
-		0xeb, 0x01, 0x46, 0xd0,
-		0x00, 0x44, 0x4f, 0x42,
-		0x8c, 0x46, 0x56, 0x8e
-	},
-	/* hdr10+ */
-	{
-		0xe5, 0x01, 0x8b, 0x84,
-		0x90, 0x01
-	}
-};
-
-module_param(force_vsvdb, uint, 0664);
-MODULE_PARM_DESC(force_vsvdb, "\n force_vsvdb\n");
-module_param_array(vsvdb_data, byte, &vsvdb_size, 0664);
-MODULE_PARM_DESC(vsvdb_data, "\n vsvdb data\n");
-
-/*
- * force_hdr
- *  0: no force, use TV's
- *  1~n: use preset drm 0~n-1
- *  255: use current drm_data
- *       update by module param drm_data
- */
-static unsigned int force_hdr;
-static unsigned int drm_size = 4;
-static unsigned char drm_data[8] = {
-	0xe3, 0x06, 0x0d, 0x01, 0x00, 0x00, 0x00, 0x00
-};
-
-#define PRESET_DRM_COUNT 3
-static unsigned char tv_drm[PRESET_DRM_COUNT][32] = {
-	/* hdr10 + hlg */
-	{
-		0xe3, 0x06, 0x0d, 0x01
-	},
-	/* hdr10 */
-	{
-		0xe3, 0x06, 0x05, 0x01
-	},
-	/* hlg */
-	{
-		0xe3, 0x06, 0x09, 0x01
-	}
-};
-
-module_param(force_hdr, uint, 0664);
-MODULE_PARM_DESC(force_hdr, "\n force_drm\n");
-module_param_array(drm_data, byte, &drm_size, 0664);
-MODULE_PARM_DESC(drm_data, "\n drm data\n");
 
 static void hdmitx_edid_parse_ifdb(struct rx_cap *prxcap, u8 *blockbuf)
 {
@@ -1732,7 +1704,7 @@ static void hdmitx_edid_parse_hfscdb(struct rx_cap *prxcap,
 		prxcap->dsc_1p2 = 0;
 	if (prxcap->dsc_1p2) {
 		if (count < 13) {
-			pr_info(EDID "error: dsc_1p2 support, but dsc not complete\n");
+			HDMITX_INFO("error: dsc_1p2 support, but dsc not complete\n");
 			prxcap->dsc_1p2 = 0;
 			return;
 		}
@@ -1871,14 +1843,87 @@ static void _store_vics(struct rx_cap *prxcap, u8 vic_dat)
 	}
 }
 
-static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap, u8 *block_buf)
+static int hdmitx_edid_audio_block_parse(struct rx_cap *prxcap, u8 *block_buf)
 {
 	u8 offset, end;
 	u8 count;
 	u8 tag;
 	int i, tmp, idx;
+
+	if (!prxcap || !block_buf)
+		return -1;
+
+	/* CEA description */
+	end = block_buf[2];
+	/* Initialize SVD_VIC used for SVD storage in the video data block */
+	if (end > 127)
+		return 0;
+
+	/* this loop should be parsing when revision number is larger than 2 */
+	for (offset = 4 ; offset < end ; ) {
+		tag = block_buf[offset] >> 5;
+		count = block_buf[offset] & 0x1f;
+		switch (tag) {
+		case HDMI_EDID_BLOCK_TYPE_AUDIO:
+			tmp = count / 3;
+			idx = prxcap->AUD_count;
+			prxcap->AUD_count += tmp;
+			offset++;
+			for (i = 0; i < tmp; i++) {
+				prxcap->RxAudioCap[idx + i].audio_format_code =
+					(block_buf[offset + i * 3] >> 3) & 0xf;
+				prxcap->RxAudioCap[idx + i].channel_num_max =
+					block_buf[offset + i * 3] & 0x7;
+				prxcap->RxAudioCap[idx + i].freq_cc =
+					block_buf[offset + i * 3 + 1] & 0x7f;
+				prxcap->RxAudioCap[idx + i].cc3 =
+					block_buf[offset + i * 3 + 2];
+			}
+			offset += count;
+			break;
+		default:
+			offset++;
+			offset += count;
+			break;
+		}
+	}
+
+	return 0;
+}
+
+int hdmitx_audio_parse(struct rx_cap *prxcap, u8 *block_buf)
+{
+	int i;
+	unsigned char cta_block_count;
+	unsigned char edid_check = 0;
+
+	edid_check = prxcap->edid_check;
+	if (hdmitx_edid_check_data_valid(edid_check, block_buf) == false)
+		return 0;
+
+	cta_block_count = hdmitx_edid_get_cta_block_count(block_buf);
+	for (i = 1; i <= cta_block_count; i++) {
+		if (block_buf[i * 0x80] == 0x02 || edid_check & 0x01)
+			hdmitx_edid_audio_block_parse(prxcap, &block_buf[i * 0x80]);
+	}
+	/*
+	 * CEA-861F 7.5.2  If only Basic Audio is supported,
+	 * no Short Audio Descriptors are necessary.
+	 */
+	if (!prxcap->AUD_count)
+		hdmitx_edid_set_default_aud(prxcap);
+	edid_check_pcm_declare(prxcap);
+
+	return 0;
+}
+
+static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap, u8 *block_buf)
+{
+	u8 offset, end;
+	u8 count;
+	u8 tag;
+	int i;
 	u8 *vfpdb_offset = NULL;
-	u32 aud_flag = 0;
 
 	if (!prxcap || !block_buf)
 		return -1;
@@ -1913,25 +1958,6 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap, u8 *block_buf)
 		tag = block_buf[offset] >> 5;
 		count = block_buf[offset] & 0x1f;
 		switch (tag) {
-		case HDMI_EDID_BLOCK_TYPE_AUDIO:
-			aud_flag = 1;
-			tmp = count / 3;
-			idx = prxcap->AUD_count;
-			prxcap->AUD_count += tmp;
-			offset++;
-			for (i = 0; i < tmp; i++) {
-				prxcap->RxAudioCap[idx + i].audio_format_code =
-					(block_buf[offset + i * 3] >> 3) & 0xf;
-				prxcap->RxAudioCap[idx + i].channel_num_max =
-					block_buf[offset + i * 3] & 0x7;
-				prxcap->RxAudioCap[idx + i].freq_cc =
-					block_buf[offset + i * 3 + 1] & 0x7f;
-				prxcap->RxAudioCap[idx + i].cc3 =
-					block_buf[offset + i * 3 + 2];
-			}
-			offset += count;
-			break;
-
 		case HDMI_EDID_BLOCK_TYPE_VIDEO:
 			offset++;
 			for (i = 0; i < count ; i++) {
@@ -2049,30 +2075,12 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap, u8 *block_buf)
 			break;
 
 		default:
+			offset++;
+			offset += count;
 			break;
 		}
 	}
 next:
-	if (force_vsvdb) {
-		if (force_vsvdb <= PRESET_VSVDB_COUNT) {
-			vsvdb_size = (tv_vsvdb[force_vsvdb - 1][0] & 0x1f) + 1;
-			memcpy(vsvdb_data, tv_vsvdb[force_vsvdb - 1],
-				vsvdb_size);
-		}
-		edid_parsingvendspec(prxcap, vsvdb_data);
-	}
-	if (force_hdr) {
-		if (force_hdr <= PRESET_DRM_COUNT) {
-			drm_size = (tv_drm[force_hdr - 1][0] & 0x1f) + 1;
-			memcpy(drm_data, tv_drm[force_hdr - 1],
-				drm_size);
-		}
-		edid_parsedrmsb(prxcap, drm_data);
-	}
-
-	if (aud_flag == 0)
-		hdmitx_edid_set_default_aud(prxcap);
-
 	edid_y420cmdb_postprocess(prxcap);
 
 	/* dtds in extended blocks */
@@ -2224,15 +2232,15 @@ static void dump_dtd_info(struct dtd *t)
 		return;
 
 	if (0) {
-		pr_debug(EDID "%s[%d]\n", __func__, __LINE__);
-		pr_debug(EDID "pixel_clock: %d\n", t->pixel_clock);
-		pr_debug(EDID "h_active: %d\n", t->h_active);
-		pr_debug(EDID "v_active: %d\n", t->v_active);
-		pr_debug(EDID "v_blank: %d\n", t->v_blank);
-		pr_debug(EDID "h_sync_offset: %d\n", t->h_sync_offset);
-		pr_debug(EDID "h_sync: %d\n", t->h_sync);
-		pr_debug(EDID "v_sync_offset: %d\n", t->v_sync_offset);
-		pr_debug(EDID "v_sync: %d\n", t->v_sync);
+		HDMITX_DEBUG("%s[%d]\n", __func__, __LINE__);
+		HDMITX_DEBUG("pixel_clock: %d\n", t->pixel_clock);
+		HDMITX_DEBUG("h_active: %d\n", t->h_active);
+		HDMITX_DEBUG("v_active: %d\n", t->v_active);
+		HDMITX_DEBUG("v_blank: %d\n", t->v_blank);
+		HDMITX_DEBUG("h_sync_offset: %d\n", t->h_sync_offset);
+		HDMITX_DEBUG("h_sync: %d\n", t->h_sync);
+		HDMITX_DEBUG("v_sync_offset: %d\n", t->v_sync_offset);
+		HDMITX_DEBUG("v_sync: %d\n", t->v_sync);
 	}
 }
 
@@ -2303,7 +2311,7 @@ next:
 		}
 		/* Select dtd0 */
 		prxcap->preferred_mode = prxcap->dtd[0].vic;
-		pr_debug(EDID "get dtd%d vic: %d\n",
+		HDMITX_DEBUG("get dtd%d vic: %d\n",
 			prxcap->dtd_idx, t->vic);
 		prxcap->dtd_idx++;
 		if (t->vic < HDMITX_VESA_OFFSET)
@@ -2389,7 +2397,7 @@ static void edid_descriptor_pmt(struct rx_cap *prxcap,
 	timing = hdmitx_mode_match_vesa_timing(t);
 	if (timing && (timing->vic < (HDMI_107_3840x2160p60_64x27 + 1))) {
 		prxcap->native_vic = timing->vic;
-		pr_debug("hdmitx: get PMT vic: %d\n", timing->vic);
+		HDMITX_DEBUG("hdmitx: get PMT vic: %d\n", timing->vic);
 	}
 	if (timing && timing->vic >= HDMITX_VESA_OFFSET)
 		store_vesa_idx(prxcap, timing->vic);
@@ -2511,7 +2519,7 @@ static void check_dv_truly_support(struct rx_cap *prxcap, struct dv_info *dv)
 				/*
 				 * both standard and LL are supported. 4k60 LL
 				 * DV support should/can be determined using
-				 * video formats supported inthe E-EDID as flag
+				 * video formats supported in the E-EDID as flag
 				 * sup_2160p60hz might not be set.
 				 */
 				if ((dv->sup_2160p60hz ||
@@ -2567,7 +2575,6 @@ static void edid_set_fallback_mode(struct rx_cap *prxcap)
 	phyaddr->c = 0xf;
 	phyaddr->d = 0xf;
 	phyaddr->valid = 0;
-	prxcap->physical_addr = 0xffff;
 
 	/* 165MHZ / 5 */
 	prxcap->Max_TMDS_Clock1 = DEFAULT_MAX_TMDS_CLK;
@@ -2704,7 +2711,7 @@ int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf)
 		}
 	}
 
-	pr_debug(EDID "EDID Parser:\n");
+	HDMITX_DEBUG("EDID Parser:\n");
 
 	if (hdmitx_edid_check_data_valid(edid_check, edid_buf) == false) {
 		edid_set_fallback_mode(prxcap);
@@ -2719,7 +2726,6 @@ int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf)
 			hdmitx_edid_cta_block_parse(prxcap, &edid_buf[i * 0x80]);
 	}
 
-	edid_check_pcm_declare(prxcap);
 	/*
 	 * move parts that may contain cea timing parse behind
 	 * VDB parse, so that to not affect VDB index which
@@ -2738,7 +2744,7 @@ int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf)
 	if (!prxcap->flag_vfpdb &&
 	    prxcap->preferred_mode != prxcap->VIC[0] &&
 	    prxcap->number_of_dtd == 0) {
-		pr_debug(EDID "change preferred_mode from %d to %d\n",
+		HDMITX_DEBUG("change preferred_mode from %d to %d\n",
 			prxcap->preferred_mode,	prxcap->VIC[0]);
 		prxcap->preferred_mode = prxcap->VIC[0];
 	}
@@ -2780,10 +2786,10 @@ int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf)
 
 	if (hdmitx_edid_search_IEEEOUI(&edid_buf[128])) {
 		prxcap->ieeeoui = HDMI_IEEE_OUI;
-		pr_debug(EDID "find IEEEOUT\n");
+		HDMITX_DEBUG("find IEEEOUT\n");
 	} else {
 		prxcap->ieeeoui = 0x0;
-		pr_debug(EDID "not find IEEEOUT\n");
+		HDMITX_DEBUG("not find IEEEOUT\n");
 	}
 
 	/* strictly DVI device judgement */
@@ -2791,21 +2797,12 @@ int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf)
 	if (hdmitx_edid_check_data_valid(edid_check, &edid_buf[0]) &&
 		!hdmitx_edid_search_IEEEOUI(&edid_buf[128])) {
 		prxcap->ieeeoui = 0x0;
-		pr_debug(EDID "sink is DVI device\n");
+		HDMITX_DEBUG("sink is DVI device\n");
 	} else {
 		prxcap->ieeeoui = HDMI_IEEE_OUI;
 	}
 	if (edid_zero_data(edid_buf))
 		prxcap->ieeeoui = HDMI_IEEE_OUI;
-
-	if (!prxcap->AUD_count && !prxcap->ieeeoui)
-		hdmitx_edid_set_default_aud(prxcap);
-	/*
-	 * CEA-861F 7.5.2  If only Basic Audio is supported,
-	 * no Short Audio Descriptors are necessary.
-	 */
-	if (!prxcap->AUD_count)
-		hdmitx_edid_set_default_aud(prxcap);
 
 	update_edid_chksum(prxcap, edid_buf);
 
@@ -2834,11 +2831,9 @@ int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf)
 	if (edid_zero_data(edid_buf) || prxcap->VIC_count == 0)
 		hdmitx_edid_set_default_vic(prxcap);
 
-	if (prxcap->ieeeoui != HDMI_IEEE_OUI)
-		prxcap->physical_addr = 0xffff;
-
 	return 0;
 }
+EXPORT_SYMBOL(hdmitx_edid_parse);
 
 void hdmitx_edid_buffer_clear(u8 *edid_buf, int size)
 {
@@ -2868,10 +2863,8 @@ void hdmitx_edid_rxcap_clear(struct rx_cap *prxcap)
 	prxcap->ieeeoui = HDMI_IEEE_OUI;
 
 	prxcap->edid_parsing = 0;
-	hdmitx_edid_set_default_aud(prxcap);
 	rx_set_hdr_lumi(&tmp[0], 2);
 	/* rx_set_receiver_edid(&tmp[0], 2); */
-	phy_addr_clear(&prxcap->vsdb_phy_addr);
 }
 
 /*
@@ -2891,7 +2884,7 @@ static void hdmitx_edid_blk_print(unsigned char *blk, unsigned int blk_idx)
 		return;
 
 	memset(tmp_buf, 0, TMP_EDID_BUF_SIZE);
-	HDMITX_INFO("edid: blk%d raw data\n", blk_idx);
+	HDMITX_DEBUG_EDID("edid: blk%d raw data\n", blk_idx);
 	for (i = 0, pos = 0; i < 128; i++) {
 		pos += sprintf(tmp_buf + pos, "%02x", blk[i]);
 		/* print 64 bytes a line */
@@ -2920,9 +2913,9 @@ unsigned int hdmitx_edid_valid_block_num(unsigned char *edid_buf)
 		if (tmp_chksum != 0) {
 			valid_blk_no++;
 			if ((tmp_chksum & 0xff) == 0)
-				pr_debug(EDID "check sum valid\n");
+				HDMITX_DEBUG("check sum valid\n");
 			else
-				pr_warn(EDID "check sum invalid\n");
+				HDMITX_ERROR("check sum invalid\n");
 		}
 		tmp_chksum = 0;
 	}
@@ -2948,7 +2941,7 @@ void hdmitx_edid_print(u8 *edid_buf)
 	valid_blk_no = hdmitx_edid_valid_block_num(edid_buf);
 
 	if (valid_blk_no == 0) {
-		pr_debug(EDID "raw data are all zeroes\n");
+		HDMITX_DEBUG("raw data are all zeroes\n");
 	} else {
 		for (blk_idx = 0; blk_idx < valid_blk_no; blk_idx++)
 			hdmitx_edid_blk_print(&edid_buf[blk_idx * 128], blk_idx);
@@ -2991,6 +2984,7 @@ int hdmitx_edid_print_sink_cap(const struct rx_cap *prxcap,
  *	pos += snprintf(buffer + pos, buffer_len - pos,
  *		"EDID block number: 0x%x\n", tx_comm->EDID_buf[0x7e]);
  */
+
 	pos += snprintf(buffer + pos, buffer_len - pos,
 		"Source Physical Address[a.b.c.d]: %x.%x.%x.%x\n",
 		prxcap->vsdb_phy_addr.a,

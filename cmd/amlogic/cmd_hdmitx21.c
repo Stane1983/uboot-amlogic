@@ -850,6 +850,102 @@ static void dc_cap_show(struct hdmitx_dev *hdev)
 
 static void aud_cap_show(struct hdmitx_dev *hdev)
 {
+	struct rx_cap *prxcap = &hdev->RXCap;
+	int i, j;
+	struct dolby_vsadb_cap *cap = &prxcap->dolby_vsadb_cap;
+	static const char * const aud_ct[] =  {
+		"ReferToStreamHeader", "PCM", "AC-3", "MPEG1", "MP3",
+		"MPEG2", "AAC", "DTS", "ATRAC",	"OneBitAudio",
+		"Dolby_Digital+", "DTS-HD", "MAT", "DST", "WMA_Pro",
+		"Reserved", NULL};
+	static const char * const aud_sampling_frequency[] = {
+		"ReferToStreamHeader", "32", "44.1", "48", "88.2", "96",
+		"176.4", "192", NULL};
+	const char * const aud_sample_size[] = {"ReferToStreamHeader",
+		"16", "20", "24", NULL};
+
+	printf("\naud_cap\n");
+	printf("CodingType MaxChannels SamplingFreq SampleSize\n");
+	for (i = 0; i < prxcap->AUD_count; i++) {
+		if (prxcap->RxAudioCap[i].audio_format_code == CT_CXT) {
+			if ((prxcap->RxAudioCap[i].cc3 >> 3) == 0xb) {
+				printf("MPEG-H, 8ch, ");
+				for (j = 0; j < 7; j++) {
+					if (prxcap->RxAudioCap[i].freq_cc & (1 << j))
+						printf("%s/", aud_sampling_frequency[j + 1]);
+				}
+				printf(" kHz\n");
+			}
+			continue;
+		}
+		printf("%s", aud_ct[prxcap->RxAudioCap[i].audio_format_code]);
+		if (prxcap->RxAudioCap[i].audio_format_code == CT_DD_P &&
+		    (prxcap->RxAudioCap[i].cc3 & 1))
+			printf("/ATMOS");
+		if (prxcap->RxAudioCap[i].audio_format_code != CT_CXT)
+			printf(", %d ch, ", prxcap->RxAudioCap[i].channel_num_max + 1);
+		for (j = 0; j < 7; j++) {
+			if (prxcap->RxAudioCap[i].freq_cc & (1 << j))
+				printf("%s/", aud_sampling_frequency[j + 1]);
+		}
+		printf(" kHz, ");
+		switch (prxcap->RxAudioCap[i].audio_format_code) {
+		case CT_PCM:
+			for (j = 0; j < 3; j++) {
+				if (prxcap->RxAudioCap[i].cc3 & (1 << j))
+					printf("%s/", aud_sample_size[j + 1]);
+			}
+			printf(" bit\n");
+			break;
+		case CT_AC_3:
+		case CT_MPEG1:
+		case CT_MP3:
+		case CT_MPEG2:
+		case CT_AAC:
+		case CT_DTS:
+		case CT_ATRAC:
+		case CT_ONE_BIT_AUDIO:
+			printf("MaxBitRate %dkHz\n", prxcap->RxAudioCap[i].cc3 * 8);
+			break;
+		case CT_DD_P:
+		case CT_DTS_HD:
+		case CT_MAT:
+		case CT_DST:
+			printf("DepValue 0x%x\n", prxcap->RxAudioCap[i].cc3);
+			break;
+		case CT_WMA:
+		default:
+			break;
+		}
+	}
+
+	if (cap->ieeeoui == DOVI_IEEEOUI) {
+		/*
+		 * Dolby Vendor Specific:
+		 *  headphone_playback_only:0,
+		 *  center_speaker:1,
+		 *  surround_speaker:1,
+		 *  height_speaker:1,
+		 *  Ver:1.0,
+		 *  MAT_PCM_48kHz_only:1,
+		 *  e61146d0007001,
+		 */
+		printf("Dolby Vendor Specific:\n");
+		if (cap->dolby_vsadb_ver == 0)
+			printf("  Ver:1.0,\n");
+		else
+			printf("  Ver:Reversed,\n");
+		printf("  center_speaker:%d,\n", cap->spk_center);
+		printf("  surround_speaker:%d,\n", cap->spk_surround);
+		printf("  height_speaker:%d,\n", cap->spk_height);
+		printf("  headphone_playback_only:%d,\n", cap->headphone_only);
+		printf("  MAT_PCM_48kHz_only:%d,\n", cap->mat_48k_pcm_only);
+
+		printf("  ");
+		for (i = 0; i < 7; i++)
+			printf("%02x", cap->rawdata[i]);
+		printf(",\n");
+	}
 }
 
 static void hdr_cap_show(struct hdmitx_dev *hdev)
@@ -979,15 +1075,11 @@ static void edid_cap_show(struct hdmitx_dev *hdev)
 /*
  *	printf(
  *		"EDID block number: 0x%x\n", tx_comm->EDID_buf[0x7e]);
- *
- *
- *	printf(
- *		"Source Physical Address[a.b.c.d]: %x.%x.%x.%x\n",
- *		hdmitx_device->hdmi_info.vsdb_phy_addr.a,
- *		hdmitx_device->hdmi_info.vsdb_phy_addr.b,
- *		hdmitx_device->hdmi_info.vsdb_phy_addr.c,
- *		hdmitx_device->hdmi_info.vsdb_phy_addr.d);
  */
+
+	printf("Source Physical Address[a.b.c.d]: %x.%x.%x.%x\n",
+			prxcap->vsdb_phy_addr.a, prxcap->vsdb_phy_addr.b,
+			prxcap->vsdb_phy_addr.c, prxcap->vsdb_phy_addr.d);
 
 	/* TODO native_vic2 */
 	printf("native Mode %x, VIC (native %d):\n",
@@ -1367,6 +1459,8 @@ static void get_parse_edid_data(struct hdmitx_dev *hdev)
 
 	/* parse edid data */
 	hdmitx_edid_parse(&hdev->RXCap, hdev->rawedid);
+	hdmitx_cec_phy_addr_parse(&hdev->RXCap, hdev->rawedid);
+	hdmitx_audio_parse(&hdev->RXCap, hdev->rawedid);
 
 	/* Update the member variables used by the dv running strategy */
 	hdmitx_update_dv_strategy_info(&hdev->RXCap.dv_info);
