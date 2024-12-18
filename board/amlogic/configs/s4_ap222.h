@@ -341,5 +341,7 @@
 
 #define CONFIG_FULL_RAMDUMP
 
+#define CONFIG_AML_KASLR_SEED
+
 #endif
 

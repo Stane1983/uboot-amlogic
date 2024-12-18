@@ -330,5 +330,7 @@
 #define CONFIG_INITRD_FDT_HIGH_ADDR
 
 
+#define CONFIG_AML_KASLR_SEED
+
 #endif
 
