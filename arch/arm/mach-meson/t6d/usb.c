@@ -20,11 +20,19 @@
 #include <asm-generic/gpio.h>
 #include <asm/amlogic/arch/timer.h>
 
-#define PHY20_RESET_LEVEL_BIT	8
-#define PHY21_RESET_LEVEL_BIT	9
-#define USB_RESET_BIT		7
-#define USB_2_DRD_BIT	    5
-#define USB2H_BIT			4
+#include <amlogic/pm.h>
+
+#define PHY20_RESET_LEVEL_BIT	6
+#define PHY21_RESET_LEVEL_BIT	7
+#define PHY22_RESET_LEVEL_BIT	8
+
+#define USB20_RESET_BIT		0
+#define USB21_RESET_BIT		2
+#define USB22_RESET_BIT		4
+
+#define USB_20_DRD_BIT	    1
+#define USB21H_BIT			3
+#define USB22H_BIT			5
 
 #define USBPLL_LK_RST_BIT	28
 #define USBPLL_EN_BIT		11
@@ -299,14 +307,60 @@ int usb2_phy_tuning(uint32_t phy2_pll_base, int port)
 	return 0;
 }
 
+static unsigned int usb_powerctrl_reg = 0xffffffff;
+
 void set_usb_power_off(void)
 {
 	unsigned int val;
 	// only off the phy21 now.
 	printf("set t6d usb phy off.\n");
-	val = readl(RESETCTRL_RESET0_LEVEL);
+	usb_powerctrl_reg = readl(RESETCTRL_RESET0_LEVEL);
+	val = usb_powerctrl_reg;
 	val &= ~(7 << PHY20_RESET_LEVEL_BIT);
 	writel(val, RESETCTRL_RESET0_LEVEL);
+}
+
+void set_usb_power_on(void)
+{
+	// only on the phy21 now.
+	printf("set t6d usb phy on.\n");
+	writel(usb_powerctrl_reg, RESETCTRL_RESET0_LEVEL);
+}
+
+int aml_usb_suspend(void *pm_ops)
+{
+	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
+
+	printf("usb suspend: %s\n", pm->name);
+	set_usb_power_off();
+
+	return 0;
+}
+
+int aml_usb_resume(void *pm_ops)
+{
+	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
+
+	printf("usb resume: %s\n", pm->name);
+	set_usb_power_on();
+
+	return 0;
+}
+
+int aml_usb_poweroff(void *pm_ops)
+{
+	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
+
+	printf("usb poweroff: %s\n", pm->name);
+	aml_usb_suspend(pm_ops);
+	return 0;
+}
+
+void usb_power_init(void)
+{
+	struct dev_pm_ops *pm_ops = NULL;
+
+	pm_ops = dev_register_pm("usb_ops", &aml_usb_suspend, &aml_usb_resume, &aml_usb_poweroff);
 }
 
 /**************************************************************/

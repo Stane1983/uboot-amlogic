@@ -325,7 +325,6 @@ U_BOOT_CMD(
 
 int do_systemoff(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	//aml_system_off();
 	pm_poweroff();
 	return 0;
 }
