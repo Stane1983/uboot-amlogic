@@ -2283,6 +2283,35 @@ static void amvecm_cp_hdr_info(struct master_display_info_s *hdr_data,
 	hdr_data->luminance[0] = hdr_data->luminance[0] / 10000;
 	hdr_data->present_flag = 1;
 }
+
+static void amvecm_vd_tx_colorimetry(struct master_display_info_s *data)
+{
+	unsigned int hdr_transfer_feature = 0;
+	unsigned int hdr_color_feature = 0;
+	struct vinfo_s *vinfo = vout_get_current_vinfo();
+
+	if (data && vinfo) {
+		hdr_transfer_feature = (data->features >> 8) & 0xff;
+		hdr_color_feature = (data->features >> 16) & 0xff;
+
+		if ((hdr_transfer_feature == T_SMPTE_ST_2084 &&
+			hdr_color_feature == C_BT2020) ||
+			(hdr_transfer_feature == T_SMPTE_ST_2084 &&
+			hdr_color_feature != C_BT2020) ||
+			(hdr_color_feature == C_BT2020 &&
+			(hdr_transfer_feature == T_BT2020_10 ||
+			hdr_transfer_feature == T_HLG))) {
+			vinfo->vpp_post_out_colorimetry = 2;
+			vinfo->vpp_post_out_range = 0;
+		} else {
+			vinfo->vpp_post_out_colorimetry = 0;
+			vinfo->vpp_post_out_range = 0;
+		}
+#ifndef CONFIG_AML_HDMITX20
+		hdmitx_sync_input_vpp_info();
+#endif
+	}
+}
 #endif
 
 void hdr_tx_pkt_cb(void)
@@ -2364,6 +2393,8 @@ void hdr_tx_pkt_cb(void)
 		amvecm_cp_hdr_info(&hdr_data, BT2020_HLG);
 		hdmitx_set_drm_pkt(&hdr_data);
 	}
+
+	amvecm_vd_tx_colorimetry(&hdr_data);
 #endif
 #endif
 
