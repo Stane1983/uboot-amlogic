@@ -22,6 +22,9 @@
 #include <asm/unaligned.h>
 #include <part.h>
 #include <usb.h>
+#ifdef CONFIG_AML_USB_BT
+#include <aml_fw.h>
+#endif
 
 #ifdef CONFIG_USB_STORAGE
 static int usb_stor_curr_dev = -1; /* current device */
@@ -603,6 +606,37 @@ static void do_usb_start(void)
 #endif
 }
 
+#ifdef CONFIG_AML_USB_BT
+static void do_bt_usb_start(void)
+{
+	bootstage_mark_name(BOOTSTAGE_ID_USB_START, "usb_start");
+
+	if (usb_wifi_init() < 0)
+		return;
+
+	/* Driver model will probe the devices as they are found */
+# ifdef CONFIG_USB_STORAGE
+	/* try to recognize storage devices immediately */
+	usb_stor_curr_dev = usb_stor_scan(1);
+# endif
+#ifndef CONFIG_DM_USB
+# ifdef CONFIG_USB_KEYBOARD
+	drv_usb_kbd_init();
+# endif
+#endif /* !CONFIG_DM_USB */
+#ifdef CONFIG_USB_HOST_ETHER
+# ifdef CONFIG_DM_ETH
+#  ifndef CONFIG_DM_USB
+#   error "You must use CONFIG_DM_USB if you want to use CONFIG_USB_HOST_ETHER with CONFIG_DM_ETH"
+#  endif
+# else
+	/* try to recognize ethernet devices immediately */
+	usb_ether_curr_dev = usb_host_eth_scan(1);
+# endif
+#endif
+}
+#endif
+
 #ifdef CONFIG_DM_USB
 static void usb_show_info(struct usb_device *udev)
 {
@@ -642,6 +676,26 @@ static int do_usb(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 		do_usb_start();
 		return 0;
 	}
+
+#ifdef CONFIG_AML_USB_BT
+	if (strncmp(argv[1], "bt_start", 8) == 0) {
+		if (usb_started)
+			return 0; /* Already started */
+		printf("starting BT USB...\n");
+		do_bt_usb_start();
+
+		aml_chip_type *aml_dev;
+		printf("load aml usb bt\n");
+		aml_dev = get_aml_dev();
+		if (aml_dev) {
+			load_aml_firmware_dev(aml_dev);
+			amlbt_firmware_init();
+			udelay(100000);
+			aml_wakeup_set();
+		}
+		return 0;
+	}
+#endif
 
 	if (strncmp(argv[1], "reset", 5) == 0) {
 		printf("resetting USB...\n");

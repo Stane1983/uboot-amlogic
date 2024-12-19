@@ -256,6 +256,10 @@ int usb_kbd_deregister(int force);
 /* routines */
 int usb_init(void); /* initialize the USB Controller */
 int usb_stop(void); /* stop the USB Controller */
+#ifdef CONFIG_AML_USB_BT
+int usb_wifi_stop(void);
+int usb_wifi_init(void);
+#endif
 int usb_detect_change(void); /* detect if a USB device has been (un)plugged */
 
 

@@ -78,6 +78,12 @@ static int xhci_crg_probe(struct udevice *dev)
 		m31_phys++;
 	}
 
+#ifdef CONFIG_AML_USB_BT
+	if (dev_read_prop(dev, "wifi-bt-cn", NULL)) {
+		dev->seq_ = 0x81;
+	}
+#endif
+
 	ret = xhci_crg_setup_phy(dev, &plat->usb_phys);
 	if (ret)
 		return ret;

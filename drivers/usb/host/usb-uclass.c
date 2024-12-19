@@ -215,6 +215,47 @@ int usb_stop(void)
 	return err;
 }
 
+#ifdef CONFIG_AML_USB_BT
+int usb_wifi_stop(void)
+{
+	struct udevice *bus;
+	struct udevice *rh;
+	struct uclass *uc;
+	struct usb_uclass_priv *uc_priv;
+	int err = 0, ret;
+
+	/* De-activate any devices that have been activated */
+	ret = uclass_get(UCLASS_USB, &uc);
+	if (ret)
+		return ret;
+
+	uc_priv = uclass_get_priv(uc);
+
+	uclass_foreach_dev(bus, uc) {
+		if (bus->seq_ != 0x81)
+			continue;
+		ret = device_remove(bus, DM_REMOVE_NORMAL);
+		if (ret && !err)
+			err = ret;
+
+		/* Locate root hub device */
+		device_find_first_child(bus, &rh);
+		if (rh) {
+			/*
+			 * All USB devices are children of root hub.
+			 * Unbinding root hub will unbind all of its children.
+			 */
+			ret = device_unbind(rh);
+			if (ret && !err)
+				err = ret;
+		}
+	}
+
+	uc_priv->companion_device_count = 0;
+	return err;
+}
+#endif
+
 static void usb_scan_bus(struct udevice *bus, bool recurse)
 {
 	struct usb_bus_priv *priv;
@@ -345,6 +386,110 @@ int usb_init(void)
 
 	return usb_started ? 0 : -1;
 }
+
+#ifdef CONFIG_AML_USB_BT
+int usb_wifi_init(void)
+{
+	int controllers_initialized = 0;
+	struct usb_uclass_priv *uc_priv;
+	struct usb_bus_priv *priv;
+	struct udevice *bus;
+	struct uclass *uc;
+	int ret;
+
+	asynch_allowed = 1;
+
+	ret = uclass_get(UCLASS_USB, &uc);
+	if (ret)
+		return ret;
+
+	uc_priv = uclass_get_priv(uc);
+
+	uclass_foreach_dev(bus, uc) {
+		/* init low_level USB */
+		printf("Bus %s: ", bus->name);
+
+#ifdef CONFIG_SANDBOX
+		/*
+		 * For Sandbox, we need scan the device tree each time when we
+		 * start the USB stack, in order to re-create the emulated USB
+		 * devices and bind drivers for them before we actually do the
+		 * driver probe.
+		 */
+		ret = dm_scan_fdt_dev(bus);
+		if (ret) {
+			printf("Sandbox USB device scan failed (%d)\n", ret);
+			continue;
+		}
+#endif
+
+		ret = device_probe(bus);
+		if (ret == -ENODEV) {	/* No such device. */
+			puts("Port not available.\n");
+			controllers_initialized++;
+			continue;
+		}
+
+		if (ret) {		/* Other error. */
+			printf("probe failed, error %d\n", ret);
+			continue;
+		}
+		controllers_initialized++;
+		usb_started = true;
+	}
+
+	/*
+	 * lowlevel init done, now scan the bus for devices i.e. search HUBs
+	 * and configure them, first scan primary controllers.
+	 */
+	uclass_foreach_dev(bus, uc) {
+		if (bus->seq_ != 0x81)
+			continue;
+
+		if (!device_active(bus))
+			continue;
+
+		priv = dev_get_uclass_priv(bus);
+		if (!priv->companion)
+			usb_scan_bus(bus, true);
+	}
+
+	/*
+	 * Now that the primary controllers have been scanned and have handed
+	 * over any devices they do not understand to their companions, scan
+	 * the companions if necessary.
+	 */
+	if (uc_priv->companion_device_count) {
+		uclass_foreach_dev(bus, uc) {
+			if (bus->seq_ != 0x81)
+				continue;
+
+			if (!device_active(bus))
+				continue;
+
+			priv = dev_get_uclass_priv(bus);
+			if (priv->companion)
+				usb_scan_bus(bus, true);
+		}
+	}
+
+	debug("scan end\n");
+
+	/* Remove any devices that were not found on this scan */
+	remove_inactive_children(uc, bus);
+
+	ret = uclass_get(UCLASS_USB_HUB, &uc);
+	if (ret)
+		return ret;
+	remove_inactive_children(uc, bus);
+
+	/* if we were not able to find at least one working bus, bail out */
+	if (controllers_initialized == 0)
+		printf("No working controllers found\n");
+
+	return usb_started ? 0 : -1;
+}
+#endif
 
 /*
  * TODO(sjg@chromium.org): Remove this legacy function. At present it is needed

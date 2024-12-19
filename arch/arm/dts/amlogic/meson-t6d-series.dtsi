@@ -458,6 +458,7 @@
 			reg = <0x0 0xfe340000 0x0 0x100000>;
 			phys = <&usb22_phy_v2>, <&usb32_phy_v2>;
 			phy-names = "usb2-phy", "usb3-phy";
+			wifi-bt-cn = <1>;
 		};
 
 		usb22_phy_v2: usb21phy@fe348000 {
