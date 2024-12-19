@@ -448,5 +448,7 @@
 #undef CONFIG_BZIP2
 
 #define CONFIG_REDUCE_CODE_SIZE
+#define CONFIG_AML_KASLR_SEED
+
 #endif
 

@@ -392,4 +392,11 @@
 /* Unify key need flush cache for a1 */
 #define CONFIG_AML_FLUSH_CACHE 1
 
+/* config ramdump to debug kernel panic */
+#define CONFIG_FULL_RAMDUMP
+#define CONFIG_CMD_FAT   1
+#define CONFIG_FAT_WRITE  1
+#define CONFIG_AML_KASLR_SEED
+
+
 #endif

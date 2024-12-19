@@ -556,7 +556,6 @@ static void boot_jump_linux(bootm_headers_t *images, int flag)
 		if (!prop) {
 			printf("Can't find kaslr-seed property in chosen\n");
 		} else {
-			srand(timer_get_us());
 			/*
 			 * random() function use hardware RNG, not software, ignore
 			 * coverity weak cryptor report.
