@@ -9,7 +9,6 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#ifndef	CONFIG_AML_UASAN
 #ifdef __HAVE_ARCH_MEMSET
 /*memset_non_cache
  *function: for non-cache memory space
@@ -42,6 +41,7 @@ void *memset_non_cache(void *s, int c, size_t count)
 	return s;
 }
 
+#ifndef        CONFIG_AML_UASAN
 void *memset(void *s, int c, size_t count)
 {
 	unsigned long *sl = (unsigned long *) s;
