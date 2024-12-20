@@ -40,7 +40,7 @@ int amfc_init(void)
 	if (cpu_id.family_id == MESON_CPU_MAJOR_ID_S7D && cpu_id.chip_rev == 0x0A) {
 		writel(0 | (1 << 6) | (5 << 7), CLKCTRL_AMFC_CLK_CTRL);	// 500MHz
 	} else if (cpu_id.family_id == MESON_CPU_MAJOR_ID_T6D) {
-		writel(0 | (1 << 8) | (1 << 9), CLKCTRL_AMFC_CLK_CTRL);	// 666MHz
+		writel(1 | (1 << 8) | (6 << 9), CLKCTRL_AMFC_CLK_CTRL);	// 576MHz
 	} else { // s7d/s6
 		writel(0 | (1 << 6) | (4 << 7), CLKCTRL_AMFC_CLK_CTRL);	// 666MHz
 	}
