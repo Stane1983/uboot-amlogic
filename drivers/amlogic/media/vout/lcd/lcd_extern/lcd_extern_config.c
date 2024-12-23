@@ -1446,7 +1446,7 @@ static unsigned int lcd_extern_dt_valid(char *dt_addr, int index)
 {
 #ifdef CONFIG_OF_LIBFDT
 	int parent_offset;
-	char str[10];
+	char str[16];
 	char *propdata;
 
 	if (index == 0)
