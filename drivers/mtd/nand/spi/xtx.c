@@ -22,6 +22,15 @@
 #define ZETTA_STATUS_ECC_8_BITFLIPS		(0xc << 2)
 #define ZETTA_STATUS_ECC_MASK	GENMASK(5, 2)
 
+#define XTX_STATUS_ECC_MASK				GENMASK(7, 4)
+#define XTX_STATUS_ECC_NO_BITFLIPS		(0 << 4)
+#define XTX_STATUS_ECC_4_BITFLIPS		BIT(4)
+#define XTX_STATUS_ECC_5_BITFLIPS		(BIT(4) | BIT(6))
+#define XTX_STATUS_ECC_6_BITFLIPS		(BIT(4) | BIT(7))
+#define XTX_STATUS_ECC_7_BITFLIPS		(BIT(4) | BIT(6) | BIT(7))
+#define XTX_STATUS_ECC_8_BITFLIPS		(BIT(4) | BIT(5))
+#define XTX_STATUS_ECC_UNCOR_ERROR		BIT(5)
+
 static SPINAND_OP_VARIANTS(read_cache_variants,
 		SPINAND_PAGE_READ_FROM_CACHE_X4_OP(0, 1, NULL, 0),
 		SPINAND_PAGE_READ_FROM_CACHE_X2_OP(0, 1, NULL, 0),
@@ -108,6 +117,62 @@ static int ZXT26G01AWSEGA_ecc_get_status(struct spinand_device *spinand,
 	return -EINVAL;
 }
 
+static int xt26q1xd_ooblayout_ecc(struct mtd_info *mtd, int section,
+				   struct mtd_oob_region *region)
+{
+	/* Unable to know the layout of ECC */
+	return -ERANGE;
+}
+
+static int xt26q1xd_ooblayout_free(struct mtd_info *mtd, int section,
+				   struct mtd_oob_region *region)
+{
+	if (section)
+		return -ERANGE;
+
+	/* Reserve 2 bytes for the BBM. */
+	region->offset = 2;
+	region->length = 126;
+
+	return 0;
+}
+
+static const struct mtd_ooblayout_ops xt26q1xd_ooblayout = {
+	.ecc = xt26q1xd_ooblayout_ecc,
+	.free = xt26q1xd_ooblayout_free,
+};
+
+static int xt26q1xd_ecc_get_status(struct spinand_device *spinand,
+				   u8 status)
+{
+	switch (status & XTX_STATUS_ECC_MASK) {
+	case XTX_STATUS_ECC_NO_BITFLIPS:
+		return 0;
+	/*
+	 * We have no way to know exactly how many bitflips have been
+	 * fixed, so let's return the maximum possible value so that
+	 * wear-leveling layers move the data immediately.
+	 */
+	case XTX_STATUS_ECC_4_BITFLIPS:
+		return 4;
+	case XTX_STATUS_ECC_5_BITFLIPS:
+		return 5;
+	case XTX_STATUS_ECC_6_BITFLIPS:
+		return 6;
+	case XTX_STATUS_ECC_7_BITFLIPS:
+		return 7;
+	case XTX_STATUS_ECC_8_BITFLIPS:
+		return 8;
+	case XTX_STATUS_ECC_UNCOR_ERROR:
+		return -EBADMSG;
+
+	default:
+		break;
+	}
+
+	return -EINVAL;
+}
+
 static const struct spinand_info xtx_spinand_table[] = {
 	SPINAND_INFO("XT26G01AWSEGA 3.3V", 0xe1,
 		     NAND_MEMORG(1, 2048, 64, 64, 1024, 1, 1, 1),
@@ -128,6 +193,17 @@ static const struct spinand_info xtx_spinand_table[] = {
 		     SPINAND_HAS_QE_BIT,
 		     SPINAND_ECCINFO(&ZXT26G01AWSEGA_ooblayout,
 				     ZXT26G01AWSEGA_ecc_get_status)),
+
+	SPINAND_INFO("XT26Q18DWSIGA 1.8V", 0x58,
+		     NAND_MEMORG(1, 4096, 256, 64, 4096, 1, 1, 1),
+		     NAND_ECCREQ(8, 512),
+		     SPINAND_INFO_OP_VARIANTS(&read_cache_variants,
+					      &write_cache_variants,
+					      &update_cache_variants),
+		     SPINAND_HAS_QE_BIT,
+		     SPINAND_ECCINFO(&xt26q1xd_ooblayout,
+				     xt26q1xd_ecc_get_status)),
+
 };
 
 static int xtx_spinand_detect(struct spinand_device *spinand)
