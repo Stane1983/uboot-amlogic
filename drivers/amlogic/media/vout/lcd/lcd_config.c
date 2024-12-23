@@ -3086,7 +3086,7 @@ static inline int lcd_config_load_from_json(struct aml_lcd_drv_s *pdrv)
 static unsigned int lcd_dt_valid(char *dt_addr, int index)
 {
 	int parent_offset, ret = 0;
-	char str[10];
+	char str[16];
 	char *propdata;
 
 	if (index == 0)
