@@ -1175,6 +1175,8 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap,
 			break;
 
 		default:
+			offset++;
+			offset += count;
 			break;
 		}
 	}
