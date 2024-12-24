@@ -4,6 +4,7 @@
  */
 
 #include <common.h>
+#include <command.h>
 #include <mapmem.h>
 #include <tee.h>
 
