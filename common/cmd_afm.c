@@ -5,6 +5,40 @@
 #include <common.h>
 #include <command.h>
 #include "../include/amlogic/ini.h"
+#include <asm/gpio.h>
+#include <dm/uclass.h>
+#include <linux/err.h>
+#include <dm/device.h>
+
+static int get_gpio_status(int gpio_id)
+{
+	struct udevice *dev;
+	int ret = -1;
+	for (ret = uclass_first_device_check(UCLASS_GPIO, &dev);
+		dev;
+		ret = uclass_next_device_check(&dev)) {
+		int num_bits;
+		//printf("GPIO device %s probe error %i\n", dev->name, ret);
+		if (ret) {
+			continue;
+		}
+		gpio_get_bank_info(dev, &num_bits);
+		//printf("GPIO device %s num_bits = %d\n", dev->name, num_bits);
+		if (!num_bits) {
+			continue;
+		}
+		struct gpio_dev_priv *uc_priv = dev_get_uclass_priv(dev);
+		//printf("GPIO device base %d count = %d\n", uc_priv->gpio_base, uc_priv->gpio_count);
+		if (gpio_id < uc_priv->gpio_base ||
+		    gpio_id >= uc_priv->gpio_base + uc_priv->gpio_count) {
+			continue;
+		}
+		int offset = gpio_id - uc_priv->gpio_base;
+		ret = gpio_get_function(dev, offset, NULL);
+		break;
+	}
+	return ret;
+}
 
 static int do_afm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
@@ -53,6 +87,74 @@ static int do_afm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			, otg_device != NULL? otg_device : ""
 			, selinux != NULL? selinux : "");
 		return 0;
+	}
+	if (argc == 4) {
+		if (!strcmp(argv[1], "print")) {
+			int gpio_id = dectoul(argv[2], NULL);
+			char* printContent = argv[3];
+			if (gpio_id > 0
+				&&  (strcmp(printContent, "dir") == 0 || strcmp(printContent, "output") == 0)) {
+				/* grab the pin before we tweak it */
+				int ret = gpio_request(gpio_id, "cmd_gpio");
+				if (ret && ret != -EBUSY) {
+					printf("gpio: requesting pin %u failed\n", gpio_id);
+					return 0;
+				}
+				if (strcmp(printContent, "dir") == 0) {
+					printf("gpio %d direction state :     %d\n", gpio_id, get_gpio_status(gpio_id));
+				} else {
+					printf("gpio %d output vlaue :     %d\n", gpio_id, gpio_get_value(gpio_id));
+				}
+				if (ret != -EBUSY)
+					gpio_free(gpio_id);
+				return 0;
+			} else {
+				printf("input invalid \n");
+				return CMD_RET_USAGE;
+			}
+		}
+		int gpio_id = dectoul(argv[1], NULL);
+		char* setContent = argv[2];
+		char* setValue = argv[3];
+		int value = -1;
+		if (gpio_id > 0
+			&&  (strcmp(setContent, "dir") == 0 || strcmp(setContent, "output") == 0)) {
+			/* grab the pin before we tweak it */
+			int ret = gpio_request(gpio_id, "cmd_gpio");
+			if (ret && ret != -EBUSY) {
+				printf("gpio: requesting pin %u failed\n", gpio_id);
+				return 0;
+			}
+			if (strcmp(setContent, "dir") == 0) {
+				if (!strcmp(setValue, "0")) {
+					gpio_direction_input(gpio_id);
+				} else if (!strcmp(setValue, "1")) {
+					value = gpio_get_value(gpio_id);
+					gpio_direction_output(gpio_id, value);
+				} else {
+					printf("dir value invalid \n");
+				}
+			} else {
+				if (!strcmp(setValue, "0") || !strcmp(setValue, "1")) {
+					value = dectoul(setValue, NULL);
+					gpio_set_value(gpio_id, value);
+				} else {
+					printf("output value invalid \n");
+				}
+			}
+			/*printf("gpio: gpio %u value is ", gpio_id);
+			if (IS_ERR_VALUE(value)) {
+				printf("unknown (ret=%d)\n", value);
+			} else {
+				printf("%d\n", value);
+			}*/
+			if (ret != -EBUSY)
+				gpio_free(gpio_id);
+			return 0;
+		} else {
+			printf("input invalid \n");
+			return CMD_RET_USAGE;
+		}
 	}
 	if (argc != 3)
 		return CMD_RET_USAGE;
@@ -162,5 +264,7 @@ U_BOOT_CMD(afm, CONFIG_SYS_MAXARGS, 0, do_afm,
 	"afm powermode <on|standby> - modify power on mode\n"
 	"afm otg_device <1|0> - modify the USB host/device state\n"
 	"afm selinux <0|1|2(permissive|enforcing|disabled)> - modify the selinux mode\n"
+	"afm gpio_id <dir|output> <0|1> - modify the gpio direction state/output vlaue\n"
+	"afm print gpio_id <dir|output> - print the gpio direction state/output vlaue\n"
 	"afm print - Print the values of all parameters\n"
 );
