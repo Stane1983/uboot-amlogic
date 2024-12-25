@@ -65,6 +65,7 @@ static void reboot_recovery(char *, char *);
 #ifdef CONFIG_FASTBOOT_WRITING_CMD
 #ifdef CONFIG_AMLOGIC_MODIFY
 static void fetch(char *, char *);
+static void oem_cmd(char *, char *);
 #if !CONFIG_IS_ENABLED(NO_FASTBOOT_FLASHING)
 static void flashing(char *, char *);
 #endif
@@ -113,6 +114,10 @@ static const struct {
 	[FASTBOOT_COMMAND_FETCH] =  {
 		.command = "fetch",
 		.dispatch = fetch
+	},
+	[FASTBOOT_COMMAND_OEM] = {
+		.command = "oem",
+		.dispatch = oem_cmd,
 	},
 #endif
 #if CONFIG_IS_ENABLED(FASTBOOT_FLASH)
@@ -1109,6 +1114,43 @@ static void fetch(char *cmd_parameter, char *response)
 	fastboot_response("DATA", response, "%12llx", read_size);
 }
 
+static void oem_cmd(char *cmd_parameter, char *response)
+{
+	char *cmd;
+	int i = 0, len = 0, j = 0;
+	char cmd_str[FASTBOOT_RESPONSE_LEN];
+
+	printf("oem cmd_parameter: %s\n", cmd_parameter);
+
+	if (IS_FEAT_BOOT_VERIFY()) {
+		printf("device is secure mode, can not run this cmd.\n");
+		fastboot_fail("secure boot device", response);
+		return;
+	}
+
+	if (check_lock() == 1) {
+		printf("device is locked, can not run this cmd.Please flashing unlock & flashing unlock_critical\n");
+		fastboot_fail("locked device", response);
+		return;
+	}
+
+	cmd = cmd_parameter;
+	strsep(&cmd, " ");
+	printf("To run cmd[%s]\n", cmd);
+
+	len = strlen(cmd);
+	for (i = 0; i < len; i++) {
+		if (cmd[i] != '\'')
+			cmd_str[j++] = cmd[i];
+	}
+	cmd_str[j] = '\0';
+	printf("cmd_str2: %s\n", cmd_str);
+
+	run_command(cmd_str, 0);
+
+	fastboot_okay(NULL, response);
+}
+
 static void set_active_cmd(char *cmd_parameter, char *response)
 {
 	char *cmd;
@@ -1135,6 +1177,7 @@ static void set_active_cmd(char *cmd_parameter, char *response)
 }
 
 #if !CONFIG_IS_ENABLED(NO_FASTBOOT_FLASHING)
+#ifdef CONFIG_AVB2
 static void try_unlock_dev(u64 rc)
 {
 #if defined(CONFIG_AML_ANTIROLLBACK) || defined(CONFIG_AML_AVB2_ANTIROLLBACK)
@@ -1198,6 +1241,7 @@ static void try_lock_dev(u64 rc)
 	printf("locking device.  Erasing metadata partition!\n");
 	run_command("store erase metadata 0 0", 0);
 }
+#endif
 
 /**
  * flashing() - lock/unlock.
