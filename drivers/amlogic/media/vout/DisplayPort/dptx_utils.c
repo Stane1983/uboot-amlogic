@@ -8,7 +8,6 @@
 #include <amlogic/media/vout/DisplayPort/DPCD_REG.h>
 #include "dptx_regs.h"
 #include "dptx_common.h"
-#include "DPTX_IP/dptx_IP_ops.h"
 
 uint16_t dptx_training_rd_interval[5] = {400, 4000, 8000, 12000, 16000};
 
@@ -131,7 +130,7 @@ uint8_t dptx_DPCD_capability_to_link_cfg(struct dptx_drv_s *dptx)
 
 	// dptx_reg_print(dptx);
 
-	if (__dptx_aux_read(dptx, DPCD_DPCD_REV, 16, auxdata)) {
+	if (dptx_if_aux_read(dptx, DPCD_DPCD_REV, 16, auxdata)) {
 		DPTXPR(dptx->idx, LOG_I, "fail to get DPCD capability");
 		return 1;
 	}
@@ -157,7 +156,7 @@ uint8_t dptx_DPCD_capability_to_link_cfg(struct dptx_drv_s *dptx)
 		sink_eDP_DPCD_reg  = (auxdata[0] >> 3) & 0x1;
 
 		if (sink_eDP_DPCD_reg) {
-			if (!__dptx_aux_read(dptx, DPCD_EDP_DPCD_REV, 1, auxdata))
+			if (!dptx_if_aux_read(dptx, DPCD_EDP_DPCD_REV, 1, auxdata))
 				sink_eDP_ver = auxdata[0] > 5 ? 0 : auxdata[0];
 		}
 	}
@@ -231,23 +230,23 @@ uint8_t dptx_vid_band_width_check(uint8_t link_rate, uint8_t lane_cnt, uint32_t 
 }
 
 struct dptx_color_format_s dptx_cfmt_table[DPTX_COLOR_TYPE_MAX] = {
-	{CFMT_RGB_6bit,        18, "RGB-6b"},
-	{CFMT_RGB_8bit,        24, "RGB-8b"},
-	{CFMT_RGB_10bit,       30, "RGB-10b"},
-	{CFMT_RGB_12bit,       36, "RGB-12b"},
-	{CFMT_YCbCr422_8bit,   16, "YUV422-8b"},
-	{CFMT_YCbCr422_10bit,  20, "YUV422-10b"},
-	{CFMT_YCbCr422_12bit,  24, "YUV422-12b"},
-	{CFMT_YCbCr444_8bit,   24, "YUV444-8b"},
-	{CFMT_YCbCr444_10bit,  30, "YUV444-10b"},
-	{CFMT_YCbCr444_12bit,  36, "YUV444-12b"},
-	{CFMT_YCbCr420_8bit,   12, "YUV420-8b"},
-	{CFMT_YCbCr420_10bit,  15, "YUV420-10b"},
-	{CFMT_YCbCr420_12bit,  18, "YUV420-12b"},
-	{CFMT_Y_only_8bit,      8, "Y-8b"},
-	{CFMT_Y_only_10bit,    10, "Y-10b"},
-	{CFMT_Y_only_12bit,    12, "Y-12b"},
-	{CFMT_invalid,          1, "invalid"},
+	{DPTX_CFMT_RGB_6bit,        18, "RGB-6b"},
+	{DPTX_CFMT_RGB_8bit,        24, "RGB-8b"},
+	{DPTX_CFMT_RGB_10bit,       30, "RGB-10b"},
+	{DPTX_CFMT_RGB_12bit,       36, "RGB-12b"},
+	{DPTX_CFMT_YCbCr422_8bit,   16, "YUV422-8b"},
+	{DPTX_CFMT_YCbCr422_10bit,  20, "YUV422-10b"},
+	{DPTX_CFMT_YCbCr422_12bit,  24, "YUV422-12b"},
+	{DPTX_CFMT_YCbCr444_8bit,   24, "YUV444-8b"},
+	{DPTX_CFMT_YCbCr444_10bit,  30, "YUV444-10b"},
+	{DPTX_CFMT_YCbCr444_12bit,  36, "YUV444-12b"},
+	{DPTX_CFMT_YCbCr420_8bit,   12, "YUV420-8b"},
+	{DPTX_CFMT_YCbCr420_10bit,  15, "YUV420-10b"},
+	{DPTX_CFMT_YCbCr420_12bit,  18, "YUV420-12b"},
+	{DPTX_CFMT_Y_only_8bit,      8, "Y-8b"},
+	{DPTX_CFMT_Y_only_10bit,    10, "Y-10b"},
+	{DPTX_CFMT_Y_only_12bit,    12, "Y-12b"},
+	{DPTX_CFMT_invalid,          1, "invalid"},
 };
 
 struct dptx_detail_timing_s DPTX_SafeMode_640x480_timing = {
@@ -278,7 +277,7 @@ struct dptx_detail_timing_s DPTX_SafeMode_640x480_timing = {
 	.pclk = 25000000,
 	.fr1000 = 60000,
 
-	.cfmt = CFMT_RGB_6bit,
+	.cfmt = DPTX_CFMT_RGB_6bit,
 
 	.v_period_range = {0, 0},
 	.pclk_range = {0, 0},
@@ -293,7 +292,7 @@ struct dptx_vmode_s DPTX_SafeMode_640x480_vmode = {
 	.fr_adv = 0xff,
 	.base_dtd_idx = 0xff,
 	.flag = VMODE_FLAG_VALID,
-	.cfmt_support = 1 << CFMT_RGB_6bit,
+	.cfmt_support = 1 << DPTX_CFMT_RGB_6bit,
 };
 
 uint8_t __str_add_vmode(struct dptx_drv_s *dptx, char *buf, uint8_t vmd_idx, uint8_t fr)

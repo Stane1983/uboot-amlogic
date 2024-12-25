@@ -107,7 +107,7 @@ struct dptx_venc_cfg_s {
 struct dptx_phy_cfg_s {
 	u32 flag;
 	u32 vswing;
-	struct phy_lane_s {
+	struct dptx_phy_lane_s {
 		uint8_t status;
 		uint8_t amp;
 		uint8_t preem;
@@ -263,7 +263,7 @@ struct dptx_vmode_mgr_s {
 struct dptx_drv_s {
 	uint8_t idx;
 	uint8_t status;
-	// u8 mode; // 0=DP; 1=eDP
+	uint8_t mode; // 0=DP; 1=eDP
 	uint8_t viu_sel; // 1=vout; 2=vou2; 3=vout3
 
 	char dev_name[32];
@@ -292,6 +292,8 @@ struct dptx_drv_s {
 	struct dptx_link_cfg_s link_cfg;
 
 	struct dev_pm_ops *dev_pm_ops;
+
+	void *if_ctrls;
 };
 
 #endif

@@ -12,7 +12,6 @@
 #include <string.h>
 #include <amlogic/media/vout/DisplayPort/DPTX.h>
 #include <amlogic/media/vout/DisplayPort/DPCD_REG.h>
-#include "DPTX_IP/dptx_IP_ops.h"
 #include "dptx_common.h"
 
 #define VOUT_CONNECTOR_MAX 3
@@ -84,7 +83,7 @@ void __dptx_set_phy_config(struct dptx_drv_s *dptx, uint8_t use_preset)
 	for (i = 0; i < 4; i++)
 		data[i] = use_preset ? dptx->link_cfg.preset_ds[i] : dptx->link_cfg.curr_ds[i];
 
-	dptx_set_phy_config_to_IP(dptx, use_preset);
+	dptx_if_set_phy_cfg(dptx, use_preset);
 
 	dptx_phy_set_lane(dptx, 0xf);
 
@@ -93,7 +92,7 @@ void __dptx_set_phy_config(struct dptx_drv_s *dptx, uint8_t use_preset)
 	data[1] = ds_to_DPCD_LANESET(data[1]);
 	data[2] = ds_to_DPCD_LANESET(data[2]);
 	data[3] = ds_to_DPCD_LANESET(data[3]);
-	if (__dptx_aux_write(dptx, DPCD_TRAINING_LANE0_SET, 4, data))
+	if (dptx_if_aux_write(dptx, DPCD_TRAINING_LANE0_SET, 4, data))
 		DPTXPR(dptx->idx, LOG_E, "DP sink set phy failed");
 }
 
@@ -106,18 +105,18 @@ void __dptx_set_lane_config(struct dptx_drv_s *dptx)
 		(dptx->link_cfg.link_rate * 27) / 100, (dptx->link_cfg.link_rate * 27) % 100,
 		dptx->link_cfg.down_ss, dptx->link_cfg.enhanced_framing_en);
 
-	dptx_set_lane_config_to_IP(dptx);
+	dptx_if_set_lane_cfg(dptx);
 
 	// sink Link-rate and Lane_count
 	auxdata[0] = dptx->link_cfg.link_rate;  //DPCD_LINK_BANDWIDTH_SET
 	//DPCD_LANE_COUNT_SET
 	auxdata[1] = dptx->link_cfg.lane_count | dptx->link_cfg.enhanced_framing_en << 7;
 
-	if (__dptx_aux_write(dptx, DPCD_LINK_BW_SET, 2, auxdata))
+	if (dptx_if_aux_write(dptx, DPCD_LINK_BW_SET, 2, auxdata))
 		DPTXPR(dptx->idx, LOG_E, "sink set lane rate & count failed");
 
 	auxdata[0] = (dptx->link_cfg.down_ss << 4);
-	if (__dptx_aux_write(dptx, DPCD_DOWNSPREAD_CONTROL, 1, auxdata))
+	if (dptx_if_aux_write(dptx, DPCD_DOWNSPREAD_CONTROL, 1, auxdata))
 		DPTXPR(dptx->idx, LOG_E, "sink set down-spread failed.");
 }
 
@@ -148,9 +147,9 @@ void dptx_user_set_vmode(struct dptx_drv_s *dptx, uint8_t vmd_idx)
 
 	dptx_set_content_protection(dptx);
 
-	dptx_set_MSA(dptx);
+	dptx_if_set_MSA(dptx);
 
 	dptx_venc_enable(dptx, 1);
 
-	dptx_main_stream_enable(dptx);
+	dptx_if_transmitter_output(dptx, 1);
 }

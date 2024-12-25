@@ -179,23 +179,23 @@ static uint8_t dptx_module_prepare(struct dptx_drv_s *dptx, char *mode)
 
 	if (dptx->status & DPTX_STA_LINK_ON) {
 		switch (dptx->vmode_mgr.vmode_cfmt_sel) {
-		case CFMT_YCbCr422_8bit:
-		case CFMT_YCbCr422_10bit:
-		case CFMT_YCbCr422_12bit:
-		case CFMT_YCbCr444_8bit:
-		case CFMT_YCbCr444_10bit:
-		case CFMT_YCbCr444_12bit:
-		case CFMT_YCbCr420_8bit:
-		case CFMT_YCbCr420_10bit:
-		case CFMT_YCbCr420_12bit:
-		case CFMT_Y_only_8bit:
-		case CFMT_Y_only_10bit:
-		case CFMT_Y_only_12bit:
+		case DPTX_CFMT_YCbCr422_8bit:
+		case DPTX_CFMT_YCbCr422_10bit:
+		case DPTX_CFMT_YCbCr422_12bit:
+		case DPTX_CFMT_YCbCr444_8bit:
+		case DPTX_CFMT_YCbCr444_10bit:
+		case DPTX_CFMT_YCbCr444_12bit:
+		case DPTX_CFMT_YCbCr420_8bit:
+		case DPTX_CFMT_YCbCr420_10bit:
+		case DPTX_CFMT_YCbCr420_12bit:
+		case DPTX_CFMT_Y_only_8bit:
+		case DPTX_CFMT_Y_only_10bit:
+		case DPTX_CFMT_Y_only_12bit:
 			return 2; // YUV
-		case CFMT_RGB_6bit:
-		case CFMT_RGB_8bit:
-		case CFMT_RGB_10bit:
-		case CFMT_RGB_12bit:
+		case DPTX_CFMT_RGB_6bit:
+		case DPTX_CFMT_RGB_8bit:
+		case DPTX_CFMT_RGB_10bit:
+		case DPTX_CFMT_RGB_12bit:
 		default:
 			return 0; // RGB
 		}
@@ -222,23 +222,23 @@ static uint8_t dptx_module_enable(struct dptx_drv_s *dptx, char *mode)
 		dptx_drv_disp_on(dptx);
 
 		switch (dptx->vmode_mgr.vmode_cfmt_sel) {
-		case CFMT_YCbCr422_8bit:
-		case CFMT_YCbCr422_10bit:
-		case CFMT_YCbCr422_12bit:
-		case CFMT_YCbCr444_8bit:
-		case CFMT_YCbCr444_10bit:
-		case CFMT_YCbCr444_12bit:
-		case CFMT_YCbCr420_8bit:
-		case CFMT_YCbCr420_10bit:
-		case CFMT_YCbCr420_12bit:
-		case CFMT_Y_only_8bit:
-		case CFMT_Y_only_10bit:
-		case CFMT_Y_only_12bit:
+		case DPTX_CFMT_YCbCr422_8bit:
+		case DPTX_CFMT_YCbCr422_10bit:
+		case DPTX_CFMT_YCbCr422_12bit:
+		case DPTX_CFMT_YCbCr444_8bit:
+		case DPTX_CFMT_YCbCr444_10bit:
+		case DPTX_CFMT_YCbCr444_12bit:
+		case DPTX_CFMT_YCbCr420_8bit:
+		case DPTX_CFMT_YCbCr420_10bit:
+		case DPTX_CFMT_YCbCr420_12bit:
+		case DPTX_CFMT_Y_only_8bit:
+		case DPTX_CFMT_Y_only_10bit:
+		case DPTX_CFMT_Y_only_12bit:
 			return 2; // YUV
-		case CFMT_RGB_6bit:
-		case CFMT_RGB_8bit:
-		case CFMT_RGB_10bit:
-		case CFMT_RGB_12bit:
+		case DPTX_CFMT_RGB_6bit:
+		case DPTX_CFMT_RGB_8bit:
+		case DPTX_CFMT_RGB_10bit:
+		case DPTX_CFMT_RGB_12bit:
 		default:
 			return 0; // RGB
 		}
@@ -419,7 +419,7 @@ static void dptx_user_env_load(struct dptx_drv_s *dptx)
 	_str = env_get(env_str);
 	if (_str) {
 		for (temp = 0;; temp++) {
-			if (dptx_cfmt_table[temp].cfmt_id == CFMT_invalid)
+			if (dptx_cfmt_table[temp].cfmt_id == DPTX_CFMT_invalid)
 				break;
 			if (strcmp(_str, dptx_cfmt_table[temp].name) == 0) {
 				dptx->user_color_format = temp;
@@ -479,6 +479,7 @@ static int dptx_config_probe(void)
 
 		dptx_user_env_load(dptx);
 		dptx_clk_config_probe(dptx);
+		dptx_if_IP_probe(dptx);
 		ctrl_name[4] = '0' + dptx->idx;
 		env_set(ctrl_name, NULL);
 		dptx->status = DPTX_STA_PROBE_DONE;

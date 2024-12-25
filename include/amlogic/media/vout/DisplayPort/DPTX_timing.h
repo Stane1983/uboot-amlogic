@@ -6,23 +6,23 @@
 #ifndef _AMLOGIC_DisplayPort_TX_TIMING_H
 #define _AMLOGIC_DisplayPort_TX_TIMING_H
 
-#define CFMT_RGB_6bit             0
-#define CFMT_RGB_8bit             1
-#define CFMT_RGB_10bit            2
-#define CFMT_RGB_12bit            3
-#define CFMT_YCbCr422_8bit        4
-#define CFMT_YCbCr422_10bit       5
-#define CFMT_YCbCr422_12bit       6
-#define CFMT_YCbCr444_8bit        7
-#define CFMT_YCbCr444_10bit       8
-#define CFMT_YCbCr444_12bit       9
-#define CFMT_YCbCr420_8bit        10
-#define CFMT_YCbCr420_10bit       11
-#define CFMT_YCbCr420_12bit       12
-#define CFMT_Y_only_8bit          13
-#define CFMT_Y_only_10bit         14
-#define CFMT_Y_only_12bit         15
-#define CFMT_invalid              0xff
+#define DPTX_CFMT_RGB_6bit             0
+#define DPTX_CFMT_RGB_8bit             1
+#define DPTX_CFMT_RGB_10bit            2
+#define DPTX_CFMT_RGB_12bit            3
+#define DPTX_CFMT_YCbCr422_8bit        4
+#define DPTX_CFMT_YCbCr422_10bit       5
+#define DPTX_CFMT_YCbCr422_12bit       6
+#define DPTX_CFMT_YCbCr444_8bit        7
+#define DPTX_CFMT_YCbCr444_10bit       8
+#define DPTX_CFMT_YCbCr444_12bit       9
+#define DPTX_CFMT_YCbCr420_8bit        10
+#define DPTX_CFMT_YCbCr420_10bit       11
+#define DPTX_CFMT_YCbCr420_12bit       12
+#define DPTX_CFMT_Y_only_8bit          13
+#define DPTX_CFMT_Y_only_10bit         14
+#define DPTX_CFMT_Y_only_12bit         15
+#define DPTX_CFMT_invalid              0xff
 
 struct dptx_color_format_s {
 	unsigned char cfmt_id;

@@ -120,7 +120,7 @@ void dptx_print_vmode(struct dptx_drv_s *dptx, uint8_t print_flag)
 		v_a   = dptx->edid_info.dtd_timing[vmode_p->base_dtd_idx].v_act;
 		_pos = sprintf(pr_buf, " * %2d: %4d * %4d @%3u.%-2uhz : ",
 			idx, h_a, v_a, fr100 / 100, fr100 % 100);
-		for (i = 0; dptx_cfmt_table[i].cfmt_id != CFMT_invalid; i++) {
+		for (i = 0; dptx_cfmt_table[i].cfmt_id != DPTX_CFMT_invalid; i++) {
 			if ((1 << dptx_cfmt_table[i].cfmt_id) & vmode_p->cfmt_support)
 				_pos += sprintf(pr_buf + _pos, "%s ", dptx_cfmt_table[i].name);
 		}
@@ -183,7 +183,7 @@ static uint8_t dtd_add_vmode_list(struct dptx_drv_s *dptx,
 
 	temp_fr = pixel_cnt;
 	temp_fr = (temp_fr * dptx->vmode_mgr.vmodes[idx].fr100_int) / 100;
-	for (i = 0; dptx_cfmt_table[i].cfmt_id != CFMT_invalid; i++) {
+	for (i = 0; dptx_cfmt_table[i].cfmt_id != DPTX_CFMT_invalid; i++) {
 		if (!((1 << dptx_cfmt_table[i].cfmt_id) & dptx->edid_info.cfmt_support))
 			continue;
 		if (dptx_vid_band_width_check(dptx->link_cfg.link_rate, dptx->link_cfg.lane_count,
@@ -340,7 +340,7 @@ void dptx_vmode_manage(struct dptx_drv_s *dptx)
 }
 
 static uint8_t cfmt_priority[] = {
-	CFMT_RGB_10bit, CFMT_RGB_8bit, CFMT_RGB_6bit, CFMT_YCbCr420_8bit,
+	DPTX_CFMT_RGB_10bit, DPTX_CFMT_RGB_8bit, DPTX_CFMT_RGB_6bit, DPTX_CFMT_YCbCr420_8bit,
 };
 
 struct dptx_vmode_s *dptx_get_vmode(struct dptx_drv_s *dptx, uint8_t th)

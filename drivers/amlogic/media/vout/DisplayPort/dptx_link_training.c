@@ -5,7 +5,6 @@
 
 #include <amlogic/media/vout/DisplayPort/DPTX.h>
 #include <amlogic/media/vout/DisplayPort/DPCD_REG.h>
-#include "DPTX_IP/dptx_IP_ops.h"
 #include "dptx_common.h"
 
 #define DP_FULL_LINK_TRAINING_ATTEMPTS 3
@@ -43,7 +42,7 @@ static void dptx_training_status_print(struct dptx_drv_s *dptx)
 	unsigned char aux_data[3];
 	int ret;
 
-	ret = __dptx_aux_read(dptx, DPCD_LANE0_1_STATUS, 3, aux_data);
+	ret = dptx_if_aux_read(dptx, DPCD_LANE0_1_STATUS, 3, aux_data);
 	if (ret == 0) {
 		DPTXPR(dptx->idx, LOG_V, "%s: aux_data [0]=0x%x, [1]=0x%x, [2]=0x%x",
 			__func__, aux_data[0], aux_data[1], aux_data[2]);
@@ -90,7 +89,7 @@ static int dptx_training_phy_adj_req_process(struct dptx_drv_s *dptx)
 	struct dptx_link_cfg_s *link_s = &dptx->link_cfg;
 	unsigned char adj_req[2], i;
 
-	if (__dptx_aux_read(dptx, DPCD_ADJUST_REQUEST_LANE0_1, 2, adj_req)) {
+	if (dptx_if_aux_read(dptx, DPCD_ADJUST_REQUEST_LANE0_1, 2, adj_req)) {
 		DPTXPR(dptx->idx, LOG_E, "%s: aux read DPCD_ADJUST_REQUEST failed", __func__);
 		dptx->link_cfg.phy_update = 0;
 		return 0;
@@ -164,11 +163,11 @@ int dptx_set_pattern(struct dptx_drv_s *dptx, unsigned char pattern)
 	case DPTX_TPS1:
 	case DPTX_TPS2:
 	case DPTX_TPS3:
-		dptx_transmit_pattern(dptx, pattern, 0xf);
+		dptx_if_transmit_pattern(dptx, pattern, 0xf);
 		_data = (DP_test_pat[pattern].data & 0x3) |
 			(DP_test_pat[pattern].SR_disable << 5) |
 			(0x3 << 6);
-		ret = __dptx_aux_write_single(dptx, DPCD_TRAINING_PATTERN_SET, _data);
+		ret = dptx_if_aux_write_single(dptx, DPCD_TRAINING_PATTERN_SET, _data);
 		if (dptx_print_level >= LOG_I || ret)
 			DPTXPR(dptx->idx, LOG_I, "%s: %s %s", __func__,
 				DP_test_pat[pattern].name, ret ? "failed" : "");
@@ -178,16 +177,16 @@ int dptx_set_pattern(struct dptx_drv_s *dptx, unsigned char pattern)
 	case DPTX_SYMBOL_ERROR_MSR:
 	case DPTX_PRBS7:
 	case DPTX_HBR2_EYE:
-		dptx_transmit_pattern(dptx, pattern, 0xf);
+		dptx_if_transmit_pattern(dptx, pattern, 0xf);
 		_data = (DP_test_pat[pattern].SR_disable << 5) | (0x3 << 6);
-		ret = __dptx_aux_write_single(dptx, DPCD_TRAINING_PATTERN_SET, _data);
+		ret = dptx_if_aux_write_single(dptx, DPCD_TRAINING_PATTERN_SET, _data);
 		// ! DPCD1.0/1.1 should use DPCD_TRAINING_PATTERN_SET[2:3]
 		// in case of year 2024, no device using DPCD1.0/1.1? ignore
 		_data = (DP_test_pat[pattern].data & 0x7);
-		ret = __dptx_aux_write_single(dptx, DPCD_LINK_QUAL_LANE0_SET, _data);
-		ret = __dptx_aux_write_single(dptx, DPCD_LINK_QUAL_LANE1_SET, _data);
-		ret = __dptx_aux_write_single(dptx, DPCD_LINK_QUAL_LANE2_SET, _data);
-		ret = __dptx_aux_write_single(dptx, DPCD_LINK_QUAL_LANE3_SET, _data);
+		ret = dptx_if_aux_write_single(dptx, DPCD_LINK_QUAL_LANE0_SET, _data);
+		ret = dptx_if_aux_write_single(dptx, DPCD_LINK_QUAL_LANE1_SET, _data);
+		ret = dptx_if_aux_write_single(dptx, DPCD_LINK_QUAL_LANE2_SET, _data);
+		ret = dptx_if_aux_write_single(dptx, DPCD_LINK_QUAL_LANE3_SET, _data);
 		if (dptx_print_level >= LOG_I || ret)
 			DPTXPR(dptx->idx, LOG_I, "%s: %s %s", __func__,
 				DP_test_pat[pattern].name, ret ? "failed" : "");
@@ -222,7 +221,7 @@ static int dptx_check_channel_equalization(struct dptx_drv_s *dptx)
 
 	lane_cnt = dptx->link_cfg.lane_count;
 
-	ret = __dptx_aux_read(dptx, DPCD_LANE0_1_STATUS, 3, aux_data);
+	ret = dptx_if_aux_read(dptx, DPCD_LANE0_1_STATUS, 3, aux_data);
 	if (ret) {
 		DPTXPR(dptx->idx, LOG_E, "%s: aux read DPCD_LANE0_1_STATUS failed\n", __func__);
 		return -1;
@@ -300,7 +299,7 @@ static int dptx_check_clk_recovery(struct dptx_drv_s *dptx)
 
 	lane_cnt = dptx->link_cfg.lane_count;
 
-	ret = __dptx_aux_read(dptx, DPCD_LANE0_1_STATUS, 2, aux_data);
+	ret = dptx_if_aux_read(dptx, DPCD_LANE0_1_STATUS, 2, aux_data);
 	if (ret) { //clear cr_done flags on failure of AUX transaction
 		DPTXPR(dptx->idx, LOG_E, "%s: aux read failed", __func__);
 		return -1;
@@ -473,7 +472,7 @@ int __dptx_full_link_training(struct dptx_drv_s *dptx)
 		retry_cnt++;
 	}
 
-	ret = __dptx_aux_read(dptx, DPCD_TRAINING_SCORE_LANE0, 4, aux_data);
+	ret = dptx_if_aux_read(dptx, DPCD_TRAINING_SCORE_LANE0, 4, aux_data);
 	DPTXPR(dptx->idx, LOG_I, "%s: result: [0x%02x, 0x%02x, 0x%02x, 0x%02x]", __func__,
 		aux_data[0], aux_data[1], aux_data[2], aux_data[3]);
 

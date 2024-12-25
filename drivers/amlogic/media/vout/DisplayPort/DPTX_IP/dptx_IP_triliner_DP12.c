@@ -4,8 +4,9 @@
  */
 
 #include <amlogic/media/vout/DisplayPort/DPTX.h>
-#include "dptx_IP_ops.h"
+#include "dptx_IP_ctrls.h"
 #include "./dptx_IP_REG_T7.h"
+#include "../dptx_regs.h"
 #include "../dptx_common.h"
 
 static void dptx_aux_request(struct dptx_drv_s *dptx, struct dptx_aux_req_s *req)
@@ -47,7 +48,7 @@ static uint8_t dptx_aux_submit_cmd(struct dptx_drv_s *dptx, struct dptx_aux_req_
 	if (!dptx)
 		return 1;
 	if (!dptx_reg_read(dptx->idx, EDP_TX_TRANSMITTER_OUTPUT_ENABLE)) {
-		DPTXPR(dptx->idx, LOG_E, "%s: DPtx is not enabled\n", __func__);
+		DPTXPR(dptx->idx, LOG_E, "%s: DPtx is not enabled", __func__);
 		return 1;
 	}
 
@@ -193,7 +194,7 @@ dptx_aux_submit_cmd_retry:
 	return 1;
 }
 
-uint8_t __dptx_aux_write(struct dptx_drv_s *dptx, uint32_t addr, int len, uint8_t *buf)
+static uint8_t _aux_write(struct dptx_drv_s *dptx, uint32_t addr, int len, uint8_t *buf)
 {
 	struct dptx_aux_req_s aux_req;
 
@@ -209,7 +210,7 @@ uint8_t __dptx_aux_write(struct dptx_drv_s *dptx, uint32_t addr, int len, uint8_
 	return dptx_aux_submit_cmd(dptx, &aux_req);
 }
 
-uint8_t __dptx_aux_write_single(struct dptx_drv_s *dptx, uint32_t addr, uint8_t val)
+static uint8_t _aux_write_single(struct dptx_drv_s *dptx, uint32_t addr, uint8_t val)
 {
 	struct dptx_aux_req_s aux_req;
 	uint8_t auxdata = val;
@@ -225,7 +226,7 @@ uint8_t __dptx_aux_write_single(struct dptx_drv_s *dptx, uint32_t addr, uint8_t 
 	return ret;
 }
 
-uint8_t __dptx_aux_read(struct dptx_drv_s *dptx, uint32_t addr, int len, uint8_t *buf)
+static uint8_t _aux_read(struct dptx_drv_s *dptx, uint32_t addr, int len, uint8_t *buf)
 {
 	struct dptx_aux_req_s aux_req;
 	int i;//, reply_count;
@@ -250,7 +251,7 @@ uint8_t __dptx_aux_read(struct dptx_drv_s *dptx, uint32_t addr, int len, uint8_t
 	return 0;
 }
 
-uint8_t dptx_aux_i2c_op(struct dptx_drv_s *dptx, uint8_t cmd_type,
+static uint8_t _aux_i2c_op(struct dptx_drv_s *dptx, uint8_t cmd_type,
 		    uint32_t dev_addr, uint8_t len, uint8_t *data)
 {
 	struct dptx_aux_req_s aux_req;
@@ -296,7 +297,7 @@ uint8_t dptx_aux_i2c_op(struct dptx_drv_s *dptx, uint8_t cmd_type,
 	return ret;
 }
 
-void dptx_transmit_pattern(struct dptx_drv_s *dptx, unsigned char pattern, unsigned char lane)
+static void dptx_transmit_pattern(struct dptx_drv_s *dptx, uint8_t pattern, uint8_t lane_mask)
 {
 	unsigned char dptx_ip_pat_sets[11] = {
 		0x00, 0x01, 0x02, 0x03, 0xff, //TRAINING_PATTERN_SET: off, TPS1, TPS2, TPS3, TPS4
@@ -318,10 +319,10 @@ void dptx_transmit_pattern(struct dptx_drv_s *dptx, unsigned char pattern, unsig
 	case DPTX_SYMBOL_ERROR_MSR:
 	case DPTX_PRBS7:
 	case DPTX_HBR2_EYE:
-		reg_val = (lane & BIT(0) ? dptx_ip_pat_sets[pattern] << 0  : 0) |
-			  (lane & BIT(1) ? dptx_ip_pat_sets[pattern] << 8  : 0) |
-			  (lane & BIT(2) ? dptx_ip_pat_sets[pattern] << 16 : 0) |
-			  (lane & BIT(3) ? dptx_ip_pat_sets[pattern] << 24 : 0);
+		reg_val = (lane_mask & BIT(0) ? dptx_ip_pat_sets[pattern] << 0  : 0) |
+			  (lane_mask & BIT(1) ? dptx_ip_pat_sets[pattern] << 8  : 0) |
+			  (lane_mask & BIT(2) ? dptx_ip_pat_sets[pattern] << 16 : 0) |
+			  (lane_mask & BIT(3) ? dptx_ip_pat_sets[pattern] << 24 : 0);
 		dptx_reg_write(dptx->idx,
 			EDP_TX_SCRAMBLING_DISABLE, DP_test_pat[pattern].SR_disable);
 		dptx_reg_write(dptx->idx, EDP_TX_LINK_QUAL_PATTERN_SET, reg_val);
@@ -335,7 +336,7 @@ void dptx_transmit_pattern(struct dptx_drv_s *dptx, unsigned char pattern, unsig
 	}
 }
 
-void dptx_set_MSA(struct dptx_drv_s *dptx)
+static void dptx_set_MSA(struct dptx_drv_s *dptx)
 {
 	unsigned int hactive, vactive, htotal, vtotal, hsw, hbp, vsw, vbp;
 	unsigned int bpp, data_per_lane, misc0_data, bit_depth, sync_mode;
@@ -363,26 +364,26 @@ void dptx_set_MSA(struct dptx_drv_s *dptx)
 		n_vid = 162000;
 
 	switch (dptx->act_timing.cfmt) {
-	case CFMT_RGB_8bit:
+	case DPTX_CFMT_RGB_8bit:
 		bit_depth = 0x1; cfmt = 0; bpp = 24; break;
-	case CFMT_RGB_10bit:
+	case DPTX_CFMT_RGB_10bit:
 		bit_depth = 0x2; cfmt = 0; bpp = 30; break;
-	case CFMT_RGB_12bit:
+	case DPTX_CFMT_RGB_12bit:
 		bit_depth = 0x3; cfmt = 0; bpp = 36; break;
-	case CFMT_YCbCr422_8bit:
+	case DPTX_CFMT_YCbCr422_8bit:
 		bit_depth = 0x1; cfmt = 1; bpp = 16; break;
-	case CFMT_YCbCr422_10bit:
+	case DPTX_CFMT_YCbCr422_10bit:
 		bit_depth = 0x2; cfmt = 1; bpp = 20; break;
-	case CFMT_YCbCr422_12bit:
+	case DPTX_CFMT_YCbCr422_12bit:
 		bit_depth = 0x3; cfmt = 1; bpp = 24; break;
-	case CFMT_YCbCr444_8bit:
+	case DPTX_CFMT_YCbCr444_8bit:
 		bit_depth = 0x1; cfmt = 2; bpp = 24; break;
-	case CFMT_YCbCr444_10bit:
+	case DPTX_CFMT_YCbCr444_10bit:
 		bit_depth = 0x2; cfmt = 2; bpp = 30; break;
-	case CFMT_YCbCr444_12bit:
+	case DPTX_CFMT_YCbCr444_12bit:
 		bit_depth = 0x3; cfmt = 2; bpp = 36; break;
-	case CFMT_RGB_6bit:
-	case CFMT_invalid:
+	case DPTX_CFMT_RGB_6bit:
+	case DPTX_CFMT_invalid:
 	default:
 		bit_depth = 0x0; cfmt = 0; bpp = 18; break;
 	}
@@ -412,47 +413,58 @@ void dptx_set_MSA(struct dptx_drv_s *dptx)
 	dptx_reg_write(dptx->idx, EDP_TX_MAIN_STREAM_USER_PIXEL_WIDTH, ppc);
 }
 
-#define DPTX_RESET_COMBO_DPHY   0
-#define DPTX_RESET_eDP_PIPE     1
-#define DPTX_RESET_eDP_CTRL     2
-void __dptx_reset_part(struct dptx_drv_s *dptx, unsigned char part)
+static void dptx_reset_t7(struct dptx_drv_s *dptx, u8 mask)
 {
 	unsigned int bit;
 
-	if (part == 0)
+	if (mask & DPTX_RESET_PHY) {
+		dptx_reg_write(dptx->idx, EDP_TX_PHY_RESET, 0xf); //reset the PHY
+		mdelay(1);
+	}
+
+	if (mask & DPTX_RESET_COMBO_DPHY) {
 		bit = dptx->idx ? 18 : 17; //combo dphy
-	else if (part == 1)
+		dptx_reset_setb(RESETCTRL_RESET1_MASK, 0, bit, 1);
+		dptx_reset_setb(RESETCTRL_RESET1_LEVEL, 0, bit, 1);
+		udelay(1);
+		dptx_reset_setb(RESETCTRL_RESET1_LEVEL, 1, bit, 1);
+		udelay(5);
+	}
+
+	if (mask & DPTX_RESET_eDP_PIPE) {
 		bit = dptx->idx ? 26 : 27; //eDP pipeline
-	else
+		dptx_reset_setb(RESETCTRL_RESET1_MASK, 0, bit, 1);
+		dptx_reset_setb(RESETCTRL_RESET1_LEVEL, 0, bit, 1);
+		udelay(1);
+		dptx_reset_setb(RESETCTRL_RESET1_LEVEL, 1, bit, 1);
+		udelay(5);
+	}
+
+	if (mask & DPTX_RESET_eDP_CTRL) {
 		bit = dptx->idx ? 20 : 19; //eDP ctrl
+		dptx_reset_setb(RESETCTRL_RESET1_MASK, 0, bit, 1);
+		dptx_reset_setb(RESETCTRL_RESET1_LEVEL, 0, bit, 1);
+		udelay(1);
+		dptx_reset_setb(RESETCTRL_RESET1_LEVEL, 1, bit, 1);
+		udelay(5);
+	}
 
-	dptx_reset_setb(RESETCTRL_RESET1_MASK, 0, bit, 1);
-	dptx_reset_setb(RESETCTRL_RESET1_LEVEL, 0, bit, 1);
-	udelay(1);
-	dptx_reset_setb(RESETCTRL_RESET1_LEVEL, 1, bit, 1);
-	udelay(5);
+	if (mask & (DPTX_RESET_eDP_CTRL | DPTX_RESET_eDP_PIPE | DPTX_RESET_COMBO_DPHY))
+		mdelay(1);
+
+	if (mask & DPTX_RESET_AUX_CLK_DIVIDER) {
+		//Set Aux channel clk-div: 24MHz
+		dptx_reg_write(dptx->idx, EDP_TX_AUX_CLOCK_DIVIDER, 24);
+	}
+
+	if (mask & DPTX_RESET_PHY) {
+		//Enable the transmitter
+		//remove the reset on the PHY
+		dptx_reg_write(dptx->idx, EDP_TX_PHY_RESET, 0);
+	}
 }
 
-void dptx_reset_all(struct dptx_drv_s *dptx)
-{
-	dptx_reg_write(dptx->idx, EDP_TX_PHY_RESET, 0xf); //reset the PHY
-	mdelay(1);
-
-	__dptx_reset_part(dptx, DPTX_RESET_COMBO_DPHY);
-	__dptx_reset_part(dptx, DPTX_RESET_eDP_PIPE);
-	__dptx_reset_part(dptx, DPTX_RESET_eDP_CTRL);
-
-	mdelay(1);
-
-	// Set Aux channel clk-div: 24MHz
-	dptx_reg_write(dptx->idx, EDP_TX_AUX_CLOCK_DIVIDER, 24);
-
-	// Enable the transmitter
-	// remove the reset on the PHY
-	dptx_reg_write(dptx->idx, EDP_TX_PHY_RESET, 0);
-}
-
-void dptx_set_lane_config_to_IP(struct dptx_drv_s *dptx)
+static void dptx_set_lane_config_to_IP(struct dptx_drv_s *dptx)
 {
 	// tx Link-rate and Lane_count
 	dptx_reg_write(dptx->idx, EDP_TX_LINK_BW_SET, dptx->link_cfg.link_rate);
@@ -462,7 +474,7 @@ void dptx_set_lane_config_to_IP(struct dptx_drv_s *dptx)
 	dptx_reg_write(dptx->idx, EDP_TX_DOWNSPREAD_CTRL, dptx->link_cfg.down_ss);
 }
 
-void dptx_set_phy_config_to_IP(struct dptx_drv_s *dptx, uint8_t use_preset)
+static void dptx_set_phy_config_to_IP(struct dptx_drv_s *dptx, uint8_t use_preset)
 {
 	uint8_t i, ds_val[4];
 
@@ -481,8 +493,8 @@ void dptx_set_phy_config_to_IP(struct dptx_drv_s *dptx, uint8_t use_preset)
 
 static int dptx_wait_phy_ready(struct dptx_drv_s *dptx)
 {
-	unsigned int data = 0;
-	unsigned char done = 0;
+	uint32_t data = 0;
+	uint8_t done = 0;
 
 	do {
 		data = dptx_reg_read(dptx->idx, EDP_TX_PHY_STATUS);
@@ -499,42 +511,101 @@ static int dptx_wait_phy_ready(struct dptx_drv_s *dptx)
 	return -1;
 }
 
-void dptx_transmitter_init(struct dptx_drv_s *dptx)
+static void dptx_transmitter_init(struct dptx_drv_s *dptx)
 {
-	dptx_reset_all(dptx);
+	dptx_reset_t7(dptx, DPTX_RESET_ALL);
 	dptx_wait_phy_ready(dptx);
 	mdelay(1);
 
 	dptx_reg_write(dptx->idx, EDP_TX_TRANSMITTER_OUTPUT_ENABLE, 0x1);
-	dptx_reg_write(dptx->idx, EDP_TX_AUX_INTERRUPT_MASK, 0);	//turn off interrupt
+	//dptx_reg_write(dptx->idx, EDP_TX_AUX_INTERRUPT_MASK, 0);	//turn off interrupt
 
 	dptx_reg_write(dptx->idx, EDP_TX_MAIN_STREAM_ENABLE, 0x0);
 }
 
-void dptx_transmitter_shutdown(struct dptx_drv_s *dptx)
+static void dptx_transmitter_output_set(struct dptx_drv_s *dptx, u8 en)
 {
-	dptx_reg_write(dptx->idx, EDP_TX_TRANSMITTER_OUTPUT_ENABLE, 0);
-	dptx_reg_write(dptx->idx, EDP_TX_MAIN_STREAM_ENABLE, 0);
+	if (en)
+		dptx_reg_write(dptx->idx, EDP_TX_TRANSMITTER_OUTPUT_ENABLE, 1);
+	else
+		dptx_reg_write(dptx->idx, EDP_TX_FORCE_SCRAMBLER_RESET, 0x1);
+
+	dptx_reg_write(dptx->idx, EDP_TX_MAIN_STREAM_ENABLE, en ? 0x1 : 0);
 }
 
-void dptx_main_stream_enable(struct dptx_drv_s *dptx)
-{
-	dptx_reg_write(dptx->idx, EDP_TX_FORCE_SCRAMBLER_RESET, 0x1);
-	dptx_reg_write(dptx->idx, EDP_TX_MAIN_STREAM_ENABLE, 0x1);
-}
-
-unsigned short dptx_get_hpd_level(struct dptx_drv_s *dptx)
+static u8 dptx_get_hpd_level(struct dptx_drv_s *dptx)
 {
 	return dptx_reg_getb(dptx->idx, EDP_TX_AUX_STATE, 0, 1);
 }
 
-void dptx_set_scramble_reset(struct dptx_drv_s *dptx, uint8_t sr_type)
+static u16 dptx_get_hpd_irq(struct dptx_drv_s *dptx)
+{
+/* INTERRUPT_STATUS
+ * The transmitter core interrupt status register contains the cause of an interrupt asserted by
+ * the core. The specific events that can cause an interrupt and the associated status bits are
+ * shown below. A read from this register clears all values.
+ * bit[3] – REPLY_TIMEOUT: a reply timeout has occurred when the sink has not sent a response
+ * 400us after the transmitter has sent a request.
+ * bit[2] – REPLY_RECEIEVED: an AUX reply transaction has been detected. This value may be used
+ * to allow a system to process other events while waiting for a response from the sink device.
+ * bit[1] – HPD_EVENT: the core has detected the presence of the HPD signal. This interrupt
+ * asserts immediately after the detection of HPD and after the loss of HPD for 2 msec.
+ * bit[0] – HPD_IRQ: an IRQ framed with the proper timing on the HPD signal has been detected.
+ */
+	return dptx_reg_read(dptx->idx, EDP_TX_AUX_INTERRUPT_STATUS);
+}
+
+static void dptx_interrupt_mask_set(struct dptx_drv_s *dptx, u8 mask)
+{
+	//if (en) {
+	//	dptx_reg_write(dptx->idx, EDP_TX_AUX_INTERRUPT_MASK, 0xc);
+		// __dptx_reg_read(dptx, EDP_TX_AUX_INTERRUPT_STATUS);
+	//} else {
+	//	dptx_reg_write(dptx->idx, EDP_TX_AUX_INTERRUPT_MASK, 0xf);
+	//}
+
+	dptx_reg_write(dptx->idx, EDP_TX_AUX_INTERRUPT_MASK, 0xf & ~(mask));
+
+	if (mask)
+		dptx_reg_read(dptx->idx, EDP_TX_AUX_INTERRUPT_STATUS);
+}
+
+static void dptx_set_scramble_reset(struct dptx_drv_s *dptx, uint8_t sr_type)
 {
 	dptx_reg_write(dptx->idx, EDP_TX_SCRAMBLING_DISABLE,
 		sr_type == DPTX_SCRAMBLE_RESET_OFF ? 0x00 : 0x01);
 
 	dptx_reg_write(dptx->idx, EDP_TX_ALTERNATE_SCRAMBLER_RESET,
-		sr_type == DPTX_eDP_ALTERNATIVE_SCRAMBLE_RESRT ? 0x01 : 0x00);
+		sr_type == DPTX_eDP_ALTERNATIVE_SCRAMBLE_RESET ? 0x01 : 0x00);
 
 	dptx_reg_write(dptx->idx, EDP_TX_FORCE_SCRAMBLER_RESET, 0x1);
+}
+
+struct dptx_if_ctrl_s dptx_if_t7 = {
+	.aux_write = _aux_write,
+	.aux_write_single = _aux_write_single,
+	.aux_read = _aux_read,
+	.aux_i2c_op = _aux_i2c_op,
+
+	.transmit_pattern = dptx_transmit_pattern,
+	.set_MSA = dptx_set_MSA,
+
+	.path_reset = dptx_reset_t7,
+
+	.lane_cfg_to_IP = dptx_set_lane_config_to_IP,
+	.phy_cfg_to_IP = dptx_set_phy_config_to_IP,
+
+	.transmitter_init = dptx_transmitter_init,
+	.transmitter_output = dptx_transmitter_output_set,
+
+	.get_hpd_level = dptx_get_hpd_level,
+	.get_hpd_irq = dptx_get_hpd_irq,
+	.set_hpd_interrupt_mask = dptx_interrupt_mask_set,
+
+	.scramble_reset_set = dptx_set_scramble_reset,
+};
+
+struct dptx_if_ctrl_s *dptx_if_bind_t7(struct dptx_drv_s *dptx)
+{
+	return &dptx_if_t7;
 }

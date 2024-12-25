@@ -5,7 +5,6 @@
 
 #include <amlogic/media/vout/DisplayPort/DPTX.h>
 #include <amlogic/media/vout/DisplayPort/DPTX_timing.h>
-#include "DPTX_IP/dptx_IP_ops.h"
 #include "dptx_common.h"
 
 #define DPTX_EDID_READ_RETRY_MAX   5
@@ -182,29 +181,29 @@ static char dptx_edid_base_block_parse(struct dptx_drv_s *dptx, unsigned char *_
 	if (!(_buf[20] & 0x80) || ((_buf[20] & 0xf) != 0x5))
 		DPTXPR(dptx->idx, LOG_E, "non digital or not DP device [%2x]", _buf[20]);
 
-	dptx->edid_info.cfmt_support = 1 << CFMT_RGB_6bit;
+	dptx->edid_info.cfmt_support = 1 << DPTX_CFMT_RGB_6bit;
 	// [20]BIT[4:6]: bpc: 000=undefined, 001=6, 010=8, 011=10, 100=12, 101=14, 110=16
 	// [24]BIT[3:4]: RGB + BIT[0]=YUV444/BIT[1]=YUV422
 	if (((_buf[20] >> 4) & 0x7) >= 0x4) {
-		dptx->edid_info.cfmt_support |= 1 << CFMT_RGB_12bit;
+		dptx->edid_info.cfmt_support |= 1 << DPTX_CFMT_RGB_12bit;
 		if (_buf[24] & 0x08)
-			dptx->edid_info.cfmt_support |= 1 << CFMT_YCbCr444_12bit;
+			dptx->edid_info.cfmt_support |= 1 << DPTX_CFMT_YCbCr444_12bit;
 		if (_buf[24] & 0x10)
-			dptx->edid_info.cfmt_support |= 1 << CFMT_YCbCr422_12bit;
+			dptx->edid_info.cfmt_support |= 1 << DPTX_CFMT_YCbCr422_12bit;
 	}
 	if (((_buf[20] >> 4) & 0x7) >= 0x3) {
-		dptx->edid_info.cfmt_support |= 1 << CFMT_RGB_10bit;
+		dptx->edid_info.cfmt_support |= 1 << DPTX_CFMT_RGB_10bit;
 		if (_buf[24] & 0x08)
-			dptx->edid_info.cfmt_support |= 1 << CFMT_YCbCr444_10bit;
+			dptx->edid_info.cfmt_support |= 1 << DPTX_CFMT_YCbCr444_10bit;
 		if (_buf[24] & 0x10)
-			dptx->edid_info.cfmt_support |= 1 << CFMT_YCbCr422_10bit;
+			dptx->edid_info.cfmt_support |= 1 << DPTX_CFMT_YCbCr422_10bit;
 	}
 	if (((_buf[20] >> 4) & 0x7) >= 0x2) {
-		dptx->edid_info.cfmt_support |= 1 << CFMT_RGB_8bit;
+		dptx->edid_info.cfmt_support |= 1 << DPTX_CFMT_RGB_8bit;
 		if (_buf[24] & 0x08)
-			dptx->edid_info.cfmt_support |= 1 << CFMT_YCbCr444_8bit;
+			dptx->edid_info.cfmt_support |= 1 << DPTX_CFMT_YCbCr444_8bit;
 		if (_buf[24] & 0x10)
-			dptx->edid_info.cfmt_support |= 1 << CFMT_YCbCr422_8bit;
+			dptx->edid_info.cfmt_support |= 1 << DPTX_CFMT_YCbCr422_8bit;
 	}
 
 	for (i = 0; i < 4; i++) {
@@ -500,9 +499,9 @@ static int dptx_read_edid(struct dptx_drv_s *dptx, unsigned char *edid_buf)
 	retry_cnt = 0;
 edid_read_retry_p0:
 	aux_data = 0x00;
-	ret = dptx_aux_i2c_op(dptx, DPTX_AUX_CMD_I2C_WRITE_MOT, 0x50, 1, &aux_data);
+	ret = dptx_if_aux_i2c_op(dptx, DPTX_AUX_CMD_I2C_WRITE_MOT, 0x50, 1, &aux_data);
 	for (i = 0; i < read_count; i++) {
-		ret = dptx_aux_i2c_op(dptx,
+		ret = dptx_if_aux_i2c_op(dptx,
 			(i == (read_count - 1)) ?
 				DPTX_AUX_CMD_I2C_READ : DPTX_AUX_CMD_I2C_READ_MOT,
 			0x50, 16, &edid_buf[i * 16]);
@@ -525,9 +524,9 @@ edid_read_retry_p0:
 edid_read_retry_p1:
 	if (ext_block_cnt >= 1) {
 		aux_data = 0x80; // read from 0x80
-		ret = dptx_aux_i2c_op(dptx, DPTX_AUX_CMD_I2C_WRITE_MOT, 0x50, 1, &aux_data);
+		ret = dptx_if_aux_i2c_op(dptx, DPTX_AUX_CMD_I2C_WRITE_MOT, 0x50, 1, &aux_data);
 		for (i = 0; i < read_count; i++) {
-			ret = dptx_aux_i2c_op(dptx,
+			ret = dptx_if_aux_i2c_op(dptx,
 				(i == (read_count - 1)) ?
 					DPTX_AUX_CMD_I2C_READ : DPTX_AUX_CMD_I2C_READ_MOT,
 				0x50, 16, &edid_buf[128 + i * 16]);
@@ -547,12 +546,12 @@ edid_read_retry_p1:
 edid_read_retry_p2:
 	if (ext_block_cnt >= 2) {
 		aux_data = 0x01; //switch, do as Intel do.
-		ret = dptx_aux_i2c_op(dptx, DPTX_AUX_CMD_I2C_WRITE_MOT, 0x30, 1, &aux_data);
+		ret = dptx_if_aux_i2c_op(dptx, DPTX_AUX_CMD_I2C_WRITE_MOT, 0x30, 1, &aux_data);
 
 		aux_data = 0x00; // read from 0x80
-		ret = dptx_aux_i2c_op(dptx, DPTX_AUX_CMD_I2C_WRITE_MOT, 0x50, 1, &aux_data);
+		ret = dptx_if_aux_i2c_op(dptx, DPTX_AUX_CMD_I2C_WRITE_MOT, 0x50, 1, &aux_data);
 		for (i = 0; i < read_count; i++) {
-			ret = dptx_aux_i2c_op(dptx,
+			ret = dptx_if_aux_i2c_op(dptx,
 				(i == (read_count - 1)) ?
 					DPTX_AUX_CMD_I2C_READ : DPTX_AUX_CMD_I2C_READ_MOT,
 				0x50, 16, &edid_buf[256 + i * 16]);
@@ -572,9 +571,9 @@ edid_read_retry_p2:
 edid_read_retry_p3:
 	if (ext_block_cnt >= 3) {
 		aux_data = 0x80; // read from 0x80
-		ret = dptx_aux_i2c_op(dptx, DPTX_AUX_CMD_I2C_WRITE_MOT, 0x50, 1, &aux_data);
+		ret = dptx_if_aux_i2c_op(dptx, DPTX_AUX_CMD_I2C_WRITE_MOT, 0x50, 1, &aux_data);
 		for (i = 0; i < read_count; i++) {
-			ret = dptx_aux_i2c_op(dptx,
+			ret = dptx_if_aux_i2c_op(dptx,
 				(i == (read_count - 1)) ?
 					DPTX_AUX_CMD_I2C_READ : DPTX_AUX_CMD_I2C_READ_MOT,
 				0x50, 16, &edid_buf[384 + i * 16]);

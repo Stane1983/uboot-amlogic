@@ -7,7 +7,7 @@
 #include <malloc.h>
 #include <amlogic/clk_measure.h>
 #include <amlogic/media/vout/DisplayPort/DPTX.h>
-#include "dptx_clk_ctrl.h"
+#include "./dptx_clk_ctrl.h"
 #include "../dptx_common.h"
 #include "../dptx_regs.h"
 

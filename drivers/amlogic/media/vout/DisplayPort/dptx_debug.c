@@ -6,7 +6,6 @@
 #include <malloc.h>
 #include <amlogic/media/vout/DisplayPort/DPTX.h>
 #include <amlogic/media/vout/DisplayPort/DPCD_REG.h>
-#include "DPTX_IP/dptx_IP_ops.h"
 #include "dptx_regs.h"
 #include "dptx_common.h"
 #include "dptx_debug.h"
@@ -166,7 +165,7 @@ static void dptx_regs_pr(struct dptx_drv_s *dptx, uint8_t reg_t, struct reg_sets
 		case DPTC_REG_TYPE_DPCD_RECEIVER_CAP:
 		case DPTC_REG_TYPE_DPCD_LINK_CONFIG:
 		case DPTC_REG_TYPE_DPCD_LINK_STATUS:
-			if (__dptx_aux_read(dptx, reg_sets[idx].addr, 1, &reg_temp))
+			if (dptx_if_aux_read(dptx, reg_sets[idx].addr, 1, &reg_temp))
 				break;
 			reg_addr = reg_sets[idx].addr;
 			reg_val = reg_temp;

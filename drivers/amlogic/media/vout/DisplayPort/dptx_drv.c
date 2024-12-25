@@ -12,7 +12,6 @@
 #include <amlogic/media/vout/DisplayPort/DPCD_REG.h>
 #include "dptx_regs.h"
 #include "dptx_common.h"
-#include "DPTX_IP/dptx_IP_ops.h"
 
 #define DPTX_HPD_TIMEOUT        200
 #define DPTX_DELAY_AFTER_HPD    200
@@ -79,7 +78,7 @@ void dptx_driver_ready(struct dptx_drv_s *dptx)
 
 	dptx_venc_enable(dptx, 0);
 
-	dptx_transmitter_init(dptx);
+	dptx_if_transmitter_init(dptx);
 
 	dptx_gpio_set(dptx->PWR_gpio_name, 1); // gpio DP PWR
 	dptx_HPD_pinmux_set(dptx);
@@ -105,7 +104,7 @@ void dptx_drv_check_HPD(struct dptx_drv_s *dptx)
 	}
 
 	while (i < DPTX_HPD_TIMEOUT) {
-		data = dptx_get_hpd_level(dptx);
+		data = dptx_if_get_hpd_level(dptx);
 		if (data) {
 			dptx->status |= DPTX_STA_HPD_HIGH;
 			DPTXPR(dptx->idx, LOG_I, "HPD after %ums", i);
@@ -130,11 +129,11 @@ void dptx_drv_start(struct dptx_drv_s *dptx)
 
 	mdelay(DPTX_DELAY_AFTER_HPD);
 
-	dptx_transmitter_init(dptx);
+	dptx_if_transmitter_init(dptx);
 	__dptx_set_phy_config(dptx, 1); // ?
 
 	// Power up link
-	if (__dptx_aux_write_single(dptx, DPCD_SET_POWER, 0x1))
+	if (dptx_if_aux_write_single(dptx, DPCD_SET_POWER, 0x1))
 		DPTXPR(dptx->idx, LOG_E, "DPCD SET POWER ERROR");
 	mdelay(20);
 
@@ -168,11 +167,11 @@ void dptx_drv_start(struct dptx_drv_s *dptx)
 
 	dptx_set_content_protection(dptx);
 
-	dptx_set_MSA(dptx);
+	dptx_if_set_MSA(dptx);
 
 	dptx_venc_enable(dptx, 1);
 
-	dptx_main_stream_enable(dptx);
+	dptx_if_transmitter_output(dptx, 1);
 
 	dptx->status |= DPTX_STA_LINK_ON;
 	DPTXPR(dptx->idx, LOG_I, "%s enable main stream video finished", __func__);
@@ -220,12 +219,12 @@ void dptx_driver_close(struct dptx_drv_s *dptx)
 	// dptx_clear_timing(dptx);
 	// Power down link
 	auxdata = 0x2;
-	ret = __dptx_aux_write(dptx, DPCD_SET_POWER, 1, &auxdata);
+	ret = dptx_if_aux_write(dptx, DPCD_SET_POWER, 1, &auxdata);
 	if (ret)
 		DPTXPR(dptx->idx, LOG_V, "sink power down link failed");
 
 	DPTXPR(dptx->idx, LOG_I, "disable main stream video");
-	dptx_transmitter_shutdown(dptx);
+	dptx_if_transmitter_output(dptx, 0);
 
 	memset(&dptx->link_cfg, 0, sizeof(struct dptx_link_cfg_s));
 	dptx->status &= ~DPTX_STA_LINK_ON;

@@ -108,6 +108,41 @@ void dptx_clk_set_vid_clk(struct dptx_drv_s *dptx, uint32_t pixel_clk);
 void dptx_clk_set_ssc(struct dptx_drv_s *dptx, uint8_t status);
 void dptx_clk_config_probe(struct dptx_drv_s *dptx);
 
+/* IP-interface */
+uint8_t dptx_if_aux_write(struct dptx_drv_s *dptx, uint32_t addr, int len, uint8_t *buf);
+uint8_t dptx_if_aux_write_single(struct dptx_drv_s *dptx, uint32_t addr, uint8_t val);
+uint8_t dptx_if_aux_read(struct dptx_drv_s *dptx, uint32_t addr, int len, uint8_t *buf);
+uint8_t dptx_if_aux_i2c_op(struct dptx_drv_s *dptx, uint8_t cmd_type, uint32_t dev_addr,
+			uint8_t len, uint8_t *data);
+void dptx_if_transmit_pattern(struct dptx_drv_s *dptx, uint8_t pattern, uint8_t lane);
+void dptx_if_set_MSA(struct dptx_drv_s *dptx);
+#define DPTX_RESET_COMBO_DPHY          BIT(0)
+#define DPTX_RESET_eDP_PIPE            BIT(1)
+#define DPTX_RESET_eDP_CTRL            BIT(2)
+#define DPTX_RESET_AUX_CLK_DIVIDER     BIT(3)
+#define DPTX_RESET_PHY                 BIT(4)
+#define DPTX_RESET_ALL                 0xff
+void dptx_if_path_reset(struct dptx_drv_s *dptx, uint8_t mask);
+void dptx_if_set_lane_cfg(struct dptx_drv_s *dptx);
+void dptx_if_set_phy_cfg(struct dptx_drv_s *dptx, uint8_t lane_mask);
+void dptx_if_transmitter_init(struct dptx_drv_s *dptx);
+void dptx_if_transmitter_output(struct dptx_drv_s *dptx, uint8_t en);
+uint8_t dptx_if_get_hpd_level(struct dptx_drv_s *dptx);
+uint16_t dptx_if_get_hpd_irq(struct dptx_drv_s *dptx);
+
+#define DPTX_IRQ_REPLY_TIMEOUT_MASK    BIT(3)
+#define DPTX_IRQ_REPLY_RECEIVED_MASK   BIT(2)
+#define DPTX_IRQ_HPD_EVENT_MASK        BIT(1)
+#define DPTX_IRQ_HPD_IRQ_EVENT         BIT(0)
+void dptx_if_set_hpd_interrupt_mask(struct dptx_drv_s *dptx, u8 mask);
+
+#define DPTX_SCRAMBLE_RESET_OFF              0
+#define DPTX_SCRAMBLE_RESET_ON               1
+#define DPTX_eDP_ALTERNATIVE_SCRAMBLE_RESET  2
+void dptx_if_scramble_reset_set(struct dptx_drv_s *dptx, u8 sr_type);
+
+void dptx_if_IP_probe(struct dptx_drv_s *dptx);
+
 /* dptx_link_training.c */
 struct DPTX_test_pat_s {
 	char *name;

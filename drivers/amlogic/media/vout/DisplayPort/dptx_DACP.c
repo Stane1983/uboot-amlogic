@@ -3,10 +3,8 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
-#include <config.h>
 #include <amlogic/media/vout/DisplayPort/DPTX.h>
 #include <amlogic/media/vout/DisplayPort/DPCD_REG.h>
-#include "./DPTX_IP/dptx_IP_ops.h"
 #include "dptx_common.h"
 
 /* Display Authentication and Content Protection Support
@@ -19,10 +17,10 @@ static void dptx_set_eDP_ASSR(struct dptx_drv_s *dptx)
 {
 	uint8_t aux_data = 0x01;
 
-	dptx_set_scramble_reset(dptx, DPTX_eDP_ALTERNATIVE_SCRAMBLE_RESRT);
-	__dptx_aux_write(dptx, DPCD_eDP_CONFIGURATION_SET, 1, &aux_data);
+	dptx_if_scramble_reset_set(dptx, DPTX_eDP_ALTERNATIVE_SCRAMBLE_RESET);
+	dptx_if_aux_write(dptx, DPCD_eDP_CONFIGURATION_SET, 1, &aux_data);
 
-	DPTXPR(dptx->idx, LOG_I, "eDP ASSR en\n");
+	DPTXPR(dptx->idx, LOG_I, "eDP ASSR en");
 }
 
 void dptx_set_content_protection(struct dptx_drv_s *dptx)
