@@ -83,4 +83,7 @@
 
 #define CONFIG_KEY_PRESERVE		1
 
+/*rand*/
+#define        CONFIG_HW_RNG_OLD
+
 #endif /* _CPU_H */

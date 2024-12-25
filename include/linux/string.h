@@ -139,6 +139,19 @@ void *memchr_inv(const void *, int, size_t);
 #define memset(s, c, n) __memset(s, c, n)
 #endif
 
+/**
+ * memdup() - allocate a buffer and copy in the contents
+ *
+ * Note that this returns a valid pointer even if @len is 0
+ *
+ * @src: data to copy in
+ * @len: number of bytes to copy
+ * Return: allocated buffer with the copied contents, or NULL if not enough
+ *  memory is available
+ *
+ */
+char *memdup(const void *src, size_t len);
+
 #if defined(CONFIG_AML_UASAN)
 #define memset_non_cache(s, c, n) __memset(s, c, n)
 #endif

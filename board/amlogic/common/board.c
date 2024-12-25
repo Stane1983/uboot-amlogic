@@ -39,6 +39,7 @@
 #include <asm/arch-meson/smp.h>
 #endif
 #include <amlogic/aml_profile.h>
+#include <abuf.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 #define UNUSED(x) (void)(x)
@@ -511,4 +512,44 @@ const char * const _aml_env_reserv_array[] = {
 	NULL//Keep NULL be last to tell END
 };
 #endif//#ifdef CONFIG_AML_DEFENV
+
+#ifdef CONFIG_HW_RNG_OLD
+unsigned int rand(void)
+{
+	volatile unsigned int val;
+
+	val = readl(RNG_USR_DATA);
+	return val;
+}
+#endif
+
+void get_rng_hw(unsigned char *buf, unsigned int size)
+{
+	unsigned int *p = (unsigned int *)buf;
+	unsigned int cnt, ncnt;
+	unsigned int i;
+	unsigned int rng;
+
+	cnt = (size >> 2);
+	ncnt = size & 0x3;
+
+	for (i = 0; i < cnt; i++)
+		p[i] = rand();
+
+	if (ncnt) {
+		rng = rand();
+		for (i = 0; i < ncnt; i++)
+			buf[cnt * 4 + i] = ((rng >> (i * 8)) & 0xff);
+	}
+}
+
+int board_rng_seed(struct abuf *buf)
+{
+	abuf_init(buf);
+	abuf_realloc(buf, 128);
+	if (buf->data)
+		get_rng_hw(buf->data, buf->size);
+
+	return 0;
+}
 

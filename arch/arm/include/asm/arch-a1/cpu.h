@@ -87,4 +87,7 @@ like the AES key not ready when secure boot enabled for the first time.
 #define PSRAM_START 0XFFE00000
 #define PSRAM_SIZE  0x200000
 
+/*rand*/
+#define	CONFIG_HW_RNG_OLD
+
 #endif /* _CPU_H */

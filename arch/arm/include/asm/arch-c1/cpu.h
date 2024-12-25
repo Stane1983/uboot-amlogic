@@ -81,4 +81,7 @@ like the AES key not ready when secure boot enabled for the first time.
 */
 //#define CONFIG_AML_EFUSE_GEN_AES_ONLY 1
 
+/*rand*/
+#define        CONFIG_HW_RNG_OLD
+
 #endif /* _CPU_H */
