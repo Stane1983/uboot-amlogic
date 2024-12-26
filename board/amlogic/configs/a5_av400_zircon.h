@@ -234,7 +234,6 @@
 	"storage_param="\
 		"setenv bootargs ${bootargs} ${emmc_quirks}; "\
 		"store param;"\
-		"setenv bootargs ${bootargs} ${mtdbootparts}; "\
 		"\0"\
 	"cmdline_keys="\
 		"setenv region_code US;"\

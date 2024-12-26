@@ -285,7 +285,6 @@
 		"\0"\
 	"storage_param_base="\
 	    "store param;"\
-	    "setenv bootargs ${bootargs} ${mtdbootparts}; "\
 	    "\0"\
 	"cmdline_keys_base="\
 		"setenv region_code US;"\

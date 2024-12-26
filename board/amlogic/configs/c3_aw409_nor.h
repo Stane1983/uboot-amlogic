@@ -177,7 +177,6 @@
 		"\0"\
 	"storage_param="\
 		"store param;"\
-		"setenv bootargs ${bootargs} ${mtdbootparts}; "\
 		"\0"\
 	"\0"\
 

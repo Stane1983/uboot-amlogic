@@ -182,7 +182,6 @@
 		"\0"\
 	"recovery_from_flash="\
 		"store param;"\
-		"setenv bootargs ${bootargs} ${mtdbootparts}; "\
 		"run recovery_from_flash_base;"\
 		"\0"\
 	"bcb_cmd="\
