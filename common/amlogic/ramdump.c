@@ -12,11 +12,14 @@
 #include <asm/amlogic/arch/regs.h>
 #include <asm/global_data.h>
 #include <syscon.h>
+#include <cli.h>
+#include <console.h>
 
 #define DEBUG_RAMDUMP	0
 #define AMLOGIC_KERNEL_PANIC		0x0c
 #define AMLOGIC_WATCHDOG_REBOOT		0x0d
 #ifdef CONFIG_USB_STORAGE
+#define _AML_MISC_INTERRUPT_KEY     0x09
 static void wait_usb_dev(void);
 #endif
 unsigned long ramdump_base = 0;
@@ -366,9 +369,49 @@ void ramdump_init(void)
 }
 
 #ifdef CONFIG_USB_STORAGE
+static int wait_for_interrupt_key(const int tm/*timeout in ms*/)
+{
+	int i;
+	unsigned long ts;
+	char str_input[5];
+
+	ts = get_timer(0);
+	for (i = 0; i < sizeof(str_input) - 1;) {
+		int c = 0;
+
+		while (!tstc()) {
+			if (get_timer(ts) >= tm)
+				return 0;
+		}
+		c = getchar();
+		if (i == 0 && c == _AML_MISC_INTERRUPT_KEY) {//drop first duplicated ctrlI
+			printf("Wait y/yes input\n");
+			continue;
+		}
+		putc(c);
+		str_input[i++] = c;
+		if (c == '\r')
+			break;
+	}
+
+	str_input[i] = '\0';
+	putc('\n');
+	if (strcasecmp(str_input, "y\r") == 0 ||
+		strcasecmp(str_input, "yes\r") == 0) {
+		cli_init();
+		cli_loop();
+		panic("No CLI available");
+	}
+
+	return 0;
+}
+
 static void wait_usb_dev(void)
 {
 	int print_cnt = 0, ret;
+	const char *env = env_get("ramdump_usb_timeout");
+	int timeout_minutes = env ? simple_strtoul(env, NULL, 10) : 0;
+	int max_attempts = (timeout_minutes > 0) ? (timeout_minutes * 60 / 20) : 0;
 
 	while (1) {
 		run_command("usb start", 1);
@@ -377,14 +420,15 @@ static void wait_usb_dev(void)
 		ret = usb_stor_scan(1);
 		if (ret) {
 			print_cnt++;
-			if (print_cnt > 100) {
-				printf("ramdump: USB device not found after 100 attempts.");
-				printf(" Exiting...\n\n");
+			if (max_attempts > 0 && print_cnt > max_attempts) {
+				printf("ramdump: Udisk not found after %d minutes. Exiting...\n",
+					timeout_minutes);
 				return;
 			}
 			printf("ramdump: can't find USB device, attempt %d.", print_cnt);
-			printf(" Please insert FAT32 Udisk!\n\n");
-			mdelay(15000);
+			printf(" Please insert FAT32 Udisk!\n");
+			printf("Or you can input 'Ctrl I' to force stopped anyway ...\n\n\n");
+			wait_for_interrupt_key(18000);
 		} else {
 			run_command("usb dev", 1);
 			break;
@@ -405,9 +449,13 @@ static void wait_usb_dev(void)
  */
 __weak int ramdump_save_compress_data(void)
 {
-	char cmd[128] = {0};
 	char *env;
 	int ret = 0;
+#ifdef CONFIG_USB_STORAGE
+	char cmd[128] = {0};
+	char path[64] = "/";
+	int cnt = 0;
+#endif
 
 	env = env_get("ramdump_enable");
 	if (!env || strcmp(env, "1") != 0)
@@ -425,27 +473,67 @@ __weak int ramdump_save_compress_data(void)
 	}
 #ifdef CONFIG_USB_STORAGE
 	wait_usb_dev();
-#endif
-	printf("\nPrepare to save crash file: base=0x%08lx, size=0x%08lx (%ld MB)\n",
-			ramdump_base, ramdump_size, ramdump_size / 1024 / 1024);
-	sprintf(cmd, "fatwrite usb 0 %lx crashdump-1.bin %lx\n",
-		ramdump_base, ramdump_size);
-	printf("CMD:%s\n", cmd);
-#ifdef CONFIG_USB_STORAGE
-	printf("It may take about 3 minutes, please wait...\n");
-	ret = run_command(cmd, 0);
-	if (ret != 0) {
-		printf("run fatwrite usb ERROR!\n");
-		return -1;
+
+	env = env_get("ramdump_usb_path");
+	if (env) {
+		printf("ramdump_usb_path: %s\n", env);
+		snprintf(cmd, sizeof(cmd), "fatls usb 0 %s/", env);
+		ret = run_command(cmd, 0);
+		if (ret != 0)
+			printf("USB path '%s' does not exist, using default '/'.\n", env);
+		else
+			snprintf(path, sizeof(path), "%s/", env);
 	}
-	printf("run fatwrite usb OK!\n");
+	printf("\nPrepare to save crash file: base=0x%08lx, size=0x%08lx (%ld MB)\n",
+		ramdump_base, ramdump_size, ramdump_size / 1024 / 1024);
+	snprintf(cmd, sizeof(cmd), "fatwrite usb 0 %lx %scrashdump-1.bin %lx",
+		ramdump_base, path, ramdump_size);
+	printf("\nCMD: %s\n\n", cmd);
+
+	printf("It may take about 3 minutes, please wait...\n");
+	while (cnt < 3) {
+		ret = run_command(cmd, 0);
+		if (ret == 0) {
+			run_command("usb stop", 0);
+			printf("run fatwrite usb OK! (%scrashdump-1.bin)\n\n", path);
+			break;
+		}
+		printf("run fatwrite usb ERROR! Try again...\n");
+		cnt++;
+		run_command("usb stop", 0);
+		mdelay(1000);
+		run_command("usb start", 1);
+		mdelay(2000);
+		run_command("usb reset", 1);
+		run_command("usb dev", 1);
+		mdelay(1000);
+	}
+	if (cnt >= 3) {
+		printf("\n======================= fatwrite ERROR! (try 3 times) =============\n");
+		printf("=  1. Please check Udisk! (FAT32 type, and enough space.)\n");
+		printf("=  2. Try another Udisk! (Press Ctrl+i, then manually run fatwrite.)\n");
+		printf("====================================================================\n\n");
+	}
+
+	env = env_get("ramdump_usb_reboot");
+	if (env && strcmp(env, "1") == 0) {
+		printf("ramdump_usb_reboot: %s\n", env);
+		printf("Rebooting in 5 seconds ...\n\n\n");
+		mdelay(5000);
+		run_command("reboot", 1);
+	}
+
+	printf("\nRun fatwrite finished. Wait here forever!\n");
+	printf("\nAnd You can input 'Ctrl I' to force stopped anyway ...\n\n\n");
+	while (1) {
+		mdelay(1000);
+		wait_for_interrupt_key(100000);
+	}
 #else
 	printf("CONFIG_USB_STORAGE is not defined! Could it be in PRODUCT mode?\n");
 	printf("ERROR: The usb drv is not available!\n");
 #endif
-	printf("Rebooting in 5 seconds ...\n\n\n");
-	mdelay(5000);
-	run_command("reboot", 1);
+
 	return ret;
 }
 
@@ -585,8 +673,6 @@ void check_ramdump(void)
 	unsigned long addr = 0;
 	char *env;
 	int reboot_mode;
-	char str[128] = "";
-	unsigned int ddr_scramble_reg = 0xfe02e030;
 
 	env = env_get("ramdump_enable");
 	printf("%s, ramdump_enable = %s\n", __func__, env);
@@ -623,11 +709,6 @@ void check_ramdump(void)
 			printf("%s, fdt: rsvmem ramdump_bl33z enable.\n", __func__);
 			run_command("fdt set /reserved-memory/ramdump_bl33z status okay", 0);
 #endif
-			//ddr scramble
-			sprintf(str, "setenv initargs ${initargs} scramble_reg=0x%08x",
-						ddr_scramble_reg);
-			printf("set_scramble: %s\n", str);
-			run_command(str, 0);
 		}
 	}
 }
