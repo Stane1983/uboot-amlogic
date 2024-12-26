@@ -343,7 +343,6 @@ void aml_board_display_init(unsigned char vout_bit)
 #endif
 }
 
-#ifdef CONFIG_BOARD_RNG_SEED
 unsigned int random(void)
 {
 	volatile unsigned int val;
@@ -391,7 +390,6 @@ int board_rng_seed(struct abuf *buf)
 
 	return 0;
 }
-#endif
 
 #ifdef CONFIG_AML_DEFENV
 const char * const _aml_env_reserv_array[] = {

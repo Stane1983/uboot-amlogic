@@ -296,7 +296,11 @@ int fdt_chosen(void *fdt)
 	if (nodeoffset < 0)
 		return nodeoffset;
 
+#ifndef CONFIG_AMLOGIC_MODIFY
 	if (IS_ENABLED(CONFIG_BOARD_RNG_SEED) && !board_rng_seed(&buf)) {
+#else
+	if (!board_rng_seed(&buf)) {
+#endif
 		err = fdt_setprop(fdt, nodeoffset, "rng-seed",
 				  abuf_data(&buf), abuf_size(&buf));
 		abuf_uninit(&buf);
