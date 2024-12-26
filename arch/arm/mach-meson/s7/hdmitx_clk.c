@@ -144,22 +144,23 @@ void set21_s7_htxpll_clk_out(const u32 clk, u32 div)
 		pll_od21 = pll_od20 + 1;
 
 	pll_od2 = (pll_od20 << 2) | pll_od21;
-
 	pr_info("pll_od2 = %x\n", pll_od2);
-	//pll_od3
-	if (cd == COLORDEPTH_24B)
-		pll_od3 = 0;//pll_div3 = 5;
-	else if (cd == COLORDEPTH_30B)
-		pll_od3 = 1;//pll_div3 = 6.25;
-	else if (cd == COLORDEPTH_36B)
-		pll_od3 = 2;//pll_div3 = 7.5;
 
+	//pll_od3
+	if (cs != HDMI_COLORSPACE_YUV422) {
+		if (cd == COLORDEPTH_24B)
+			pll_od3 = 0;//pll_div3 = 5;
+		else if (cd == COLORDEPTH_30B)
+			pll_od3 = 1;//pll_div3 = 6.25;
+		else if (cd == COLORDEPTH_36B)
+			pll_od3 = 2;//pll_div3 = 7.5;
+	}
 
 	hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL0, 1, 19, 1);
 	pr_info("use new pll setting for hdmitx clk\n");
 	pr_info("pll_od1 = %d, pll_od2 = %d, pll_od3 = %d\n",
 		pll_od1, pll_od2, pll_od3);
-	if (hdev->s7_clk_config)
+	if (hdev->clk_analog_path)
 		hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL0, pll_od3, 9, 2);
 	hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL2, pll_od2, 15, 4);
 	hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL2, pll_od1, 19, 4);
@@ -472,7 +473,7 @@ static void set_hdmitx_htx_pll(struct hdmitx_dev *hdev)
 	sspll_dis = env_get("sspll_dis");
 	if ((!sspll_dis || !strcmp(sspll_dis, "0")) && cd == COLORDEPTH_24B)
 		set_hpll_sspll_s7(hdev->para->vic);
-	if (hdev->s7_clk_config) {
+	if (hdev->clk_analog_path) {
 		pr_info("select vid_pix_clk source for encp/pixel_clk\n");
 		return;
 	}

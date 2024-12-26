@@ -458,9 +458,11 @@ void hdmitx21_init(void)
 	hdev->para = &para;
 	hdev->dfm_type = -1;
 
-	/* enable analog frequency division by default on S6 */
-	if (hdev->chip_type == MESON_CPU_ID_S6)
-		hdev->s7_clk_config = 1;
+	/* enable analog frequency division by default on S7 & S7D & S6 */
+	if (hdev->chip_type == MESON_CPU_ID_S7 ||
+		hdev->chip_type == MESON_CPU_ID_S7D ||
+		hdev->chip_type == MESON_CPU_ID_S6)
+		hdev->clk_analog_path = 1;
 }
 
 /*
@@ -477,10 +479,11 @@ static void set_vid_clk_div(u32 div)
 	hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL, 0, 16, 3);
 	hd21_set_reg_bits(CLKCTRL_VID_CLK0_DIV, div - 1, 0, 8);
 	hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL, 7, 0, 3);
-	if (hdev->chip_type == MESON_CPU_ID_S7) {
+	if (hdev->chip_type == MESON_CPU_ID_S7||
+		hdev->chip_type == MESON_CPU_ID_S7D) {
 		/* bit[18:16]:sel clk source.3'h0:vid_pll_clk, 3'h3:vid_pix_clk */
 		/* [49]hdmi_vx1_pix_clk */
-		if (hdev->s7_clk_config)
+		if (hdev->clk_analog_path)
 			hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL, 3, 16, 3);
 	}
 }
@@ -739,7 +742,8 @@ void enable_crt_video_encp2(u32 enable, u32 in_sel)
 static void hdmitx_mux_vid_pll_clk(struct hdmitx_dev *hdev)
 {
 	/* RA bit[18:16] vid_pll_clk source: 0 vid_pll0_clk, 4 vid_pll1_clk */
-	hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL, hdev->para->frl_rate ? 4 : 0, 16, 3);
+	if (hdev->chip_type == MESON_CPU_ID_S5)
+		hd21_set_reg_bits(CLKCTRL_VID_CLK0_CTRL, hdev->para->frl_rate ? 4 : 0, 16, 3);
 }
 
 /*

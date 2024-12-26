@@ -653,16 +653,16 @@ static int do_pbist(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	return 1;
 }
 
-static int do_s7_clk_config(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+static int do_clk_path_config(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
 	if (strcmp(argv[1], "1") == 0) {
-		hdev->s7_clk_config = 1;
-		pr_info("s7_clk_config = %d\n",  hdev->s7_clk_config);
+		hdev->clk_analog_path = 1;
+		pr_info("clk_analog_path = %d\n",  hdev->clk_analog_path);
 	} if (strcmp(argv[1], "0") == 0) {
-		hdev->s7_clk_config = 0;
-		pr_info("s7_clk_config = %d\n",  hdev->s7_clk_config);
+		hdev->clk_analog_path = 0;
+		pr_info("clk_analog_path = %d\n",  hdev->clk_analog_path);
 	}
 	return 1;
 }
@@ -1788,7 +1788,7 @@ static cmd_tbl_t cmd_hdmi_sub[] = {
 #endif
 	U_BOOT_CMD_MKENT(pbist, 3, 1, do_pbist, "", ""),
 	U_BOOT_CMD_MKENT(debug, 3, 1, do_debug, "", ""),
-	U_BOOT_CMD_MKENT(s7_clk_config, 3, 1, do_s7_clk_config, "", ""),
+	U_BOOT_CMD_MKENT(clk_analog_path, 3, 1, do_clk_path_config, "", ""),
 	U_BOOT_CMD_MKENT(get_rterm, 3, 1, get_rterm, "", ""),
 };
 

@@ -160,7 +160,7 @@ void set21_s7_htxpll_clk_out(const u32 clk, u32 div)
 	pr_info("use new pll setting for hdmitx clk\n");
 	pr_info("pll_od1 = %d, pll_od2 = %d, pll_od3 = %d\n",
 		pll_od1, pll_od2, pll_od3);
-	if (hdev->s7_clk_config)
+	if (hdev->clk_analog_path)
 		hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL0, pll_od3, 9, 2);
 	hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL2, pll_od2, 15, 4);
 	hd21_set_reg_bits(ANACTRL_HDMIPLL_CTRL2, pll_od1, 19, 4);
@@ -470,7 +470,7 @@ static void set_hdmitx_htx_pll(struct hdmitx_dev *hdev)
 		return;
 
 	set_hdmitx_s7_htx_pll(hdev);
-	if (hdev->s7_clk_config) {
+	if (hdev->clk_analog_path) {
 		pr_info("select vid_pix_clk source for encp/pixel_clk\n");
 		return;
 	}

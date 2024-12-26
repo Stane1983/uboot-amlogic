@@ -86,12 +86,12 @@ struct hdmitx_dev {
 	struct rx_cap RXCap;
 	struct hdmi_format_para *para;
 	enum hdmi_vic vic; /* qms: tfr_vic  normal: vic */
-	/* for s7,s7d default 0
+	/* for s7,s7d,s6 default 1
 	 * 1: new clk config, encp/pixel clk is directly configured by the pll simulation part.
 	 * through [ 49]hdmi_vx1_pix_clk to encp/pixel clk
 	 * CLKCTRL_VID_CLK0_CTRL clk source should select vid_pix_clk.
 	 */
-	u8 s7_clk_config;
+	u8 clk_analog_path;
 	enum frl_rate_enum manual_frl_rate; /* for manual setting */
 	u8 tx_max_frl_rate; /* configure in dts file */
 	bool flt_train_st; /* 0 means FLT train failed */
