@@ -809,8 +809,18 @@ int hdmi_tx_set(struct hdmitx_dev *hdev)
 	/* add audio */
 	hdmitx_set_audmode(hdev);
 
-	/* null char needed to terminate the string
-	   otherwise garbage in checksum logopara */
+	/* if TV support traditional SDR, then enable hdr.sdr packet by default */
+	/*
+	 * if (hdev->RXCap.hdr_info.hdr_sup_eotf_sdr & 0x1) {
+	 *	struct master_display_info_s data = {0};
+	 * data.features = 0x00010100;
+	 * hdmitx_set_drm_pkt(&data);
+	 * }
+	 */
+	/*
+	 * null char needed to terminate the string
+	 * otherwise garbage in checksum logopara
+	 */
 	memcpy(checksum, hdev->RXCap.checksum, 10);
 	checksum[10] = '\0';
 	env_set("hdmichecksum", (const char*)checksum);
@@ -3165,7 +3175,9 @@ void hdmitx_set_drm_pkt(struct master_display_info_s *data)
 		break;
 	case 0:
 	default:
-		/*other case*/
+		/* other case, currently it's only for hdr.sdr sent by hdmitx driver iteslf */
+		/* DRM_DB[0] = 0x0; */
+		/* hdmitx_set_packet(HDMI_PACKET_DRM, DRM_DB, DRM_HB); */
 		hdmitx_set_packet(HDMI_PACKET_DRM, NULL, NULL);
 		hdmitx_cntl_config(hdev, CONF_AVI_BT2020, CLR_AVI_BT2020);
 		hdr_status = "SDR";
