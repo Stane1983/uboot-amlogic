@@ -856,6 +856,12 @@ config S6_BN201
 	help
 		Select S6 BN201 config
 
+config S6_BL215
+	bool "S6_BL215"
+	select TARGET_S6_BL215
+	help
+		Select S6 BL215 config
+
 endchoice
 
 config TARGET_S6_SKT
@@ -893,6 +899,10 @@ config TARGET_S6_BQ209
 config TARGET_S6_BN201
 	bool "S6 BN201 board"
 	depends on S6_BN201
+
+config TARGET_S6_BL215
+	bool "S6 BL215 board"
+	depends on S6_BL215
 endif
 
 # Amlogic boards
@@ -966,3 +976,5 @@ source "board/amlogic/s6_bq208/Kconfig"
 source "board/amlogic/s6_bq209/Kconfig"
 
 source "board/amlogic/s6_bn201/Kconfig"
+
+source "board/amlogic/s6_bl215/Kconfig"
