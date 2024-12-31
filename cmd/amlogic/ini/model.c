@@ -2498,7 +2498,7 @@ static int handle_panel_misc(void)
 
 	for (i = 0; i < 3; i++) {
 		ini_value = IniGetString("panel_misc", outputmode[i], "null");
-		if (strcmp(ini_value, "null") == 0) {
+		if (strcmp(ini_value, "null")) {
 			misc_attr.disp_idx = i;
 			strlcpy(misc_attr.outputmode, ini_value, sizeof(misc_attr.outputmode));
 			break;
