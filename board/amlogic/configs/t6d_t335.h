@@ -113,6 +113,27 @@
 	"hdr_policy=0\0"\
 	"board=daisy_c\0"\
 	"frac_rate_policy=1\0"\
+	"storeboot_t335="\
+		"run get_os_type;"\
+		"run storage_param;"\
+		"if test ${os_type} = rtos; then "\
+			"setenv loadaddr ${loadaddr_rtos};"\
+			"store read ${loadaddr} ${boot_part} 0 0x400000;"\
+			"bootm ${loadaddr};"\
+		"else if test ${os_type} = kernel; then "\
+			"get_avb_mode;"\
+			"echo active_slot in storeboot: ${active_slot};"\
+			"if fdt addr ${dtb_mem_addr}; then "\
+			"else echo retry common dtb; run common_dtb_load; fi;"\
+			"setenv bootconfig ${bootconfig} androidboot.force_normal_boot=1;"\
+			"if test ${active_slot} != normal; then "\
+			"setenv bootconfig ${bootconfig} androidboot.slot_suffix=${active_slot};"\
+			"fi;"\
+			"setenv bootconfig ${bootconfig} androidboot.rollback=${rollback_flag};"\
+			"setenv loadaddr ${loadaddr_kernel};"\
+			"if imgread kernel ${boot_part} ${loadaddr}; then bootm ${loadaddr}; fi;"\
+		"else echo wrong OS format ${os_type}; fi;fi;"\
+		"echo try upgrade as booting failure; check_ab; fastboot 0;"\
 
 #ifndef CONFIG_PXP_DDR
 #define CONFIG_PREBOOT  \

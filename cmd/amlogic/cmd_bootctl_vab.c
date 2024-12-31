@@ -186,7 +186,7 @@ typedef struct bootloader_control {
 #define MISC_VIRTUAL_AB_MESSAGE_VERSION 2
 #define MISC_VIRTUAL_AB_MAGIC_HEADER 0x56740AB0
 
-#define BOOT_ATTEMPTS 4
+#define BOOT_ATTEMPTS 6
 
 /* Magic for the A/B struct when serialized. */
 #define AVB_AB_MAGIC "\0AB0"
@@ -937,7 +937,8 @@ static int do_SetUpdateTries(
 	}
 
 	if (boot_ctrl.firstboot == 1) {
-		if (rebootmode && strcmp(rebootmode, "fastboot")) {
+		if (rebootmode && strcmp(rebootmode, "fastboot") &&
+			strcmp(rebootmode, "factory_reset")) {
 			boot_ctrl.boot_tries_remaining -= 1;
 			update_flag = 1;
 		}
