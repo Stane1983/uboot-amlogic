@@ -17,6 +17,8 @@
 #define REVA	0xA
 #define REVB	0xB
 
+int pdvfs_update_flag;
+
 int get_board_id(void)
 {
 	int board_id = 0;
@@ -48,7 +50,8 @@ static int set_regulator_status(const char *node, const char *status) {
 	return 0;
 }
 
-int get_phandle(const char *path) {
+static int get_phandle(const char *path)
+{
 	int ret = 0;
 	char cmdbuf[256] = {0};
 	char *phandle_str = NULL;
@@ -136,8 +139,14 @@ static int set_cpu_opp_tbl(void)
 		cmd_pdvfs_err("Error: Failed to update operating-points-v2/n");
 		return -EBADMSG;
 	}
+	pdvfs_update_flag = 1;
 
 	return 0;
+}
+
+int update_pdvfs_flag(void)
+{
+	return pdvfs_update_flag;
 }
 
 static int update_pdvfs_tbl(cmd_tbl_t *cmdtp, int flag, int argc,

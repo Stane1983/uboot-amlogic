@@ -3,11 +3,14 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
-#ifndef __DT_BINDINGS_THERMAL_S6_H
-#define __DT_BINDINGS_THERMAL_S6_H
+#ifndef __DT_BINDINGS_THERMAL_H
+#define __DT_BINDINGS_THERMAL_H
 
 /*update thermal cooling state*/
-#define CONFIG_CPU_OPP_TABLE   "/cpu_opp_table3_2400"
+#ifdef CONFIG_MESON_S6
+char *CONFIG_CPU_OPP_TABLE =  "/cpu_opp_table3_2400";
+#endif
+
 #define CONFIG_OPP_TABLE_667M_SIZE  2
 
-#endif /* __S6_THERMAL_H */
+#endif /* __THERMAL_H */

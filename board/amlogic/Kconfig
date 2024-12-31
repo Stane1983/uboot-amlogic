@@ -63,6 +63,13 @@ config AML_UPDATE_PDVFS
 		Update pdvfs Voltage and frequency tables to determine based on other qualifiers
 		For Amlogic boards
 
+config AML_UPDATE_COOLING_STATE
+	bool "Enable AML COOLING STATE Update"
+	default n
+	help
+		Update thermal cooling state when using a non-default pdvfs Voltage opp table
+		For Amlogic boards
+
 config AML_CS_SIGNING_SCHEME
 	string "Amlogic chipset signing scheme"
 	default "rsa-mldsa" if MESON_S6

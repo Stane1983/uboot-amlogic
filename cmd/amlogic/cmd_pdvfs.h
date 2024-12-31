@@ -6,9 +6,13 @@
 #ifndef __CMD_PDVFS_H
 #define __CMD_PDVFS_H
 
-int get_phandle(const char *path);
-int get_board_id(void);
-unsigned int get_cpufreq_table_index(u64 function_id,
-					    u64 arg0, u64 arg1, u64 arg2);
+#if (IS_ENABLED(CONFIG_AML_UPDATE_PDVFS))
+int update_pdvfs_flag(void);
+#else
+int update_pdvfs_flag(void)
+{
+	return -1;
+}
+#endif
 
 #endif
