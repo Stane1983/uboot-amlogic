@@ -20,6 +20,7 @@
 /* #include <asm/amlogic/arch/io.h> */
 /* #include <asm/amlogic/arch/secure_apb.h> */
 #include <asm/global_data.h>
+#include <amlogic/pm.h>
 
 #ifdef CONFIG_AML_VOUT
 #include <amlogic/media/vout/aml_vout.h>
@@ -36,6 +37,7 @@ static enum frl_rate_enum get_current_frl_rate(void);
 static void get_hdmi_efuse(struct hdmitx_dev *hdev);
 #endif
 static void hdmitx_set_frlrate_none(struct hdmitx_dev *hdev);
+static void hdmitx_power_init(void);
 
 struct hdmitx_dev *get_hdmitx21_device(void)
 {
@@ -457,12 +459,17 @@ void hdmitx21_init(void)
 #endif
 	hdev->para = &para;
 	hdev->dfm_type = -1;
-
 	/* enable analog frequency division by default on S7 & S7D & S6 */
 	if (hdev->chip_type == MESON_CPU_ID_S7 ||
 		hdev->chip_type == MESON_CPU_ID_S7D ||
 		hdev->chip_type == MESON_CPU_ID_S6)
 		hdev->clk_analog_path = 1;
+	/*
+	 * After the S7 chip, uboot introduced a standby solution,
+	 * and power consumption was reduced after standby.
+	 */
+	if (hdev->chip_type >= MESON_CPU_ID_S7)
+		hdmitx_power_init();
 }
 
 /*
@@ -1711,18 +1718,42 @@ static void hdmi_phy_suspend(void)
 	u32 phy_cntl5 = ANACTRL_HDMIPHY_CTRL5;
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
-	if (hdev->chip_type == MESON_CPU_ID_T7)
-		phy_cntl5 = ANACTRL_HDMIPHY_CTRL5;
-	else
+	if (hdev->chip_type == MESON_CPU_ID_S5)
 		phy_cntl5 = ANACTRL_HDMIPHY_CTRL6;
+	else
+		phy_cntl5 = ANACTRL_HDMIPHY_CTRL5;
 
 	hd21_write_reg(phy_cntl0, 0x0);
-	/*
-	 * keep PHY_CNTL3 bit[1:0] as 0b11,
+	/* keep PHY_CNTL3 bit[1:0] as 0b11,
 	 * otherwise may cause HDCP22 boot failed
 	 */
-	hd21_write_reg(phy_cntl3, 0x3);
-	hd21_write_reg(phy_cntl5, 0x800);
+	/* for s7 need keep PHY_CNTL3 bit[3:0] as 1011(B)
+	 * keep tmds_clk, because hdcp14 certification requires tmds_clk,
+	 * otherwise it may poll fail lead to crash.
+	 */
+	switch (hdev->chip_type) {
+	case MESON_CPU_ID_S7:
+		hd21_write_reg(phy_cntl3, 0xB);
+		hd21_write_reg(phy_cntl5, 0x800);
+		break;
+	case MESON_CPU_ID_S7D:
+		hd21_write_reg(phy_cntl3, 0xC1B);
+		hd21_write_reg(phy_cntl5, 0x0);
+		break;
+	case MESON_CPU_ID_S6:
+		/*
+		 * s6 needed to optimize power consumption at early suspend,
+		 * writing 0 to PHY_CNTL3 can optimize power consumption,
+		 * and disable tmds_clk
+		 */
+		hd21_write_reg(phy_cntl3, 0x0);
+		hd21_write_reg(phy_cntl5, 0x0);
+		break;
+	default:
+		hd21_write_reg(phy_cntl3, 0x3);
+		hd21_write_reg(phy_cntl5, 0x800);
+		break;
+	}
 }
 
 #ifdef CONFIG_AML_DSC_ENC
@@ -3167,4 +3198,47 @@ void hdmitx21_send_ake_init(void)
 
 	pr_info("hdmitx: send ake_init\n");
 	hdmitx_ddcm_write(0, 0x74, 0x60, ake_init_data, 12);
+}
+
+static int aml_hdmitx_suspend(void *pm_ops)
+{
+	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
+
+	printf("hdmitx suspend: %s\n", pm->name);
+	/* disable phy */
+	hdmi_phy_suspend();
+	/* disable PLL */
+	hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x0);
+
+	return 0;
+}
+
+/* resume needs to execute the complete uboot bootcmd */
+static int aml_hdmitx_resume(void *pm_ops)
+{
+	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
+
+	printf("hdmitx resume: %s\n", pm->name);
+	return 0;
+}
+
+/* power on will execute the complete boot process */
+static int aml_hdmitx_poweroff(void *pm_ops)
+{
+	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
+
+	printf("hdmitx poweroff: %s\n", pm->name);
+	/* disable phy */
+	hdmi_phy_suspend();
+	/* disable PLL */
+	hd21_write_reg(ANACTRL_HDMIPLL_CTRL0, 0x0);
+	return 0;
+}
+
+static void hdmitx_power_init(void)
+{
+	struct dev_pm_ops *pm_ops = NULL;
+
+	pm_ops = dev_register_pm("hdmitx_ops", &aml_hdmitx_suspend,
+		&aml_hdmitx_resume, &aml_hdmitx_poweroff);
 }
