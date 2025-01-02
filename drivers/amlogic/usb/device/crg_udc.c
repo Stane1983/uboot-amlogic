@@ -2103,7 +2103,7 @@ static int init_event_ring(struct crg_gadget_dev *crg_udc, int index)
 	reg_write(&uicr->erdphi, upper_32_bits(udc_event->event_ring.dma));
 
 	reg_write(&uicr->iman, (CRG_U3DC_IMAN_INT_EN | CRG_U3DC_IMAN_INT_PEND));
-	reg_write(&uicr->imod, (0L << 0) | (4000L  << 0));
+	reg_write(&uicr->imod, (0L << 0) | (500L  << 0));
 
 	return 0;
 }
