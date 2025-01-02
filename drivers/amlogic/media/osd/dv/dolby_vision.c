@@ -917,6 +917,12 @@ static int dolby_vision_parse(struct hdmitx_dev *hdmitx_device)
 		m_dovi_setting.set_graphic_max_lum = graphic_max * 10000;
 		m_dovi_setting.set_target_min_lum = dolby_vision_target_min;
 		m_dovi_setting.set_target_max_lum = target_max * 10000;
+		printf("set_graphic_min_lum %d %d %d %d, dst %d\n",
+		       m_dovi_setting.set_graphic_min_lum,
+		       m_dovi_setting.set_graphic_max_lum,
+		       m_dovi_setting.set_target_min_lum,
+		       m_dovi_setting.set_target_max_lum,
+		       m_dovi_setting.dst_format);
 		for (int i = 0; i < NUM_IPCORE1; i++) {
 			m_dovi_setting.input[i].video_width = 0;
 			m_dovi_setting.input[i].video_height = 0;
@@ -990,7 +996,7 @@ static int dolby_vision_parse(struct hdmitx_dev *hdmitx_device)
 		NULL, 0,
 		NULL, 0,
 		dv_graphics_priority,
-		12, 0, 0,
+		8, 3, 1,/*bitdepth=8,chrom fmt=444, range=full*/
 		graphic_min,
 		graphic_max * 10000,
 		dolby_vision_target_min,
@@ -1183,6 +1189,27 @@ static int dolby_core2_set(
 		if (vinfo_width <= 720)
 			g_htotal_add = 0x12c;
 		g_vwidth = 0x10;
+	}
+	if (is_meson_s7d()) {
+		printf("-vinfo %d %d %d\n", vinfo_width, vinfo_height, vinfo_duration_num);
+		if (vinfo_width < 1280 && vinfo_height < 720 && vinfo_field_height < 720)
+			g_vpotch = 0x60;
+		else if (vinfo_width == 1280 && vinfo_height == 720 && vinfo_field_height == 720)
+			g_vpotch = 0x60;
+		else if (vinfo_width <= 1920 && vinfo_height <= 1080 &&
+			 vinfo_field_height <= 1080 && vinfo_duration_num <= 25)
+			g_vpotch = 0x70;
+		else if (vinfo_width <= 1920 && vinfo_height <= 1080 &&
+			 vinfo_field_height <= 1080 && vinfo_duration_num <= 30)
+			g_vpotch = 0x68;
+		else if (vinfo_width <= 1920 && vinfo_height <= 1080 && vinfo_field_height <= 1080)
+			g_vpotch = 0x48;
+		else
+			g_vpotch = 0x20;
+
+		/* for 4k fb */
+		if (fb_height > 1440)
+			g_vpotch = 0x15;
 	}
 
 #ifdef AML_S5_DISPLAY
@@ -1403,8 +1430,9 @@ static int dolby_core3_set(
 #endif
 
 #ifdef AML_S5_DISPLAY
-	if (is_meson_s5()) {
-		WRITE_VPP_REG_BITS(VPU_DOLBY_GATE_CTRL, 1, 9, 1);
+	if (is_meson_box()) {
+		if (is_meson_s5())
+			WRITE_VPP_REG_BITS(VPU_DOLBY_GATE_CTRL, 1, 9, 1);
 		if (vinfo_width > 1920)
 			htotal_add = 0xc0;
 		else
