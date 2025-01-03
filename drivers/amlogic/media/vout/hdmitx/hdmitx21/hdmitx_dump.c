@@ -166,14 +166,12 @@ static int dump_hdmivpfdet_show(void)
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 
 	pr_info("\n--------vp fdet info--------\n");
-	if (hdev->chip_type == MESON_CPU_ID_S7 ||
-		hdev->chip_type == MESON_CPU_ID_S7D ||
-		hdev->chip_type == MESON_CPU_ID_S6)
+	if (hdev->chip_type >= MESON_CPU_ID_S7)
 		hdmitx21_set_reg_bits(HDMITX_TOP_CLK_GATE, 1, 1, 1);//enable fdet gate
 
 	hdmitx21_wr_reg(VP_FDET_CLEAR_IVCTX, 0);
 	hdmitx21_wr_reg(VP_FDET_STATUS_IVCTX, 0);
-	mdelay(50);  /* at least 1 frame? */
+	mdelay(100);  /* at least 2 frames */
 
 	reg = VP_FDET_FRAME_RATE_IVCTX;
 	val = CONNECT3REG(reg);
@@ -442,9 +440,7 @@ static int dump_hdmivpfdet_show(void)
 		PR_DETAIL(22, "frame_and_pixel_cnt_done");
 		pr_info("\n");
 	}
-	if (hdev->chip_type == MESON_CPU_ID_S7 ||
-		hdev->chip_type == MESON_CPU_ID_S7D ||
-		hdev->chip_type == MESON_CPU_ID_S6)
+	if (hdev->chip_type >= MESON_CPU_ID_S7)
 		hdmitx21_set_reg_bits(HDMITX_TOP_CLK_GATE, 0, 1, 1);//disable fdet gate
 	return 0;
 }
