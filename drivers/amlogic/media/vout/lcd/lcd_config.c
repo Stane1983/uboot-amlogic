@@ -3102,19 +3102,26 @@ static int lcd_config_load_from_ini_v3(struct aml_lcd_drv_s *pdrv, void *inip, v
 
 static int lcd_ini_str_to_type(const char *str)
 {
-	const char *p = str;
 	int type = LCD_TYPE_MAX;
-	int i;
 
-	if (strncasecmp("LCD_", str, 3) == 0)
-		p = str + 4;
-
-	for (i = 0; i < ARRAY_SIZE(lcd_type_match_table); i++) {
-		if (!strcasecmp(p, lcd_type_match_table[i].str)) {
-			type = lcd_type_match_table[i].num;
-			break;
-		}
-	}
+	if (strcmp(str, "LCD_RGB") == 0)
+		type = LCD_RGB;
+	else if (strcmp(str, "LCD_LVDS") == 0)
+		type = LCD_LVDS;
+	else if (strcmp(str, "LCD_VBYONE") == 0)
+		type = LCD_VBYONE;
+	else if (strcmp(str, "LCD_MIPI") == 0)
+		type = LCD_MIPI;
+	else if (strcmp(str, "LCD_MLVDS") == 0)
+		type = LCD_MLVDS;
+	else if (strcmp(str, "LCD_P2P") == 0)
+		type = LCD_P2P;
+	else if (strcmp(str, "LCD_EDP") == 0)
+		type = LCD_EDP;
+	else if (strcmp(str, "LCD_BT656") == 0)
+		type = LCD_BT656;
+	else if (strcmp(str, "LCD_BT1120") == 0)
+		type = LCD_BT1120;
 	return type;
 }
 
