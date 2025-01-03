@@ -525,7 +525,7 @@ static void boot_jump_linux(struct bootm_headers *images, int flag)
 
 #ifdef CONFIG_AML_KASLR_SEED
 	int node, ret, len;
-	char *prop, *bootargs;
+	char *bootargs;
 	uint64_t seed;
 
 	node = fdt_path_offset(images->ft_addr, "/chosen");
@@ -545,25 +545,20 @@ static void boot_jump_linux(struct bootm_headers *images, int flag)
 		else
 			printf("Fail to set nokaslr %s\n", fdt_strerror(ret));
 	} else {
-		prop = (char *)fdt_getprop(images->ft_addr, node, "kaslr-seed", NULL);
-		if (!prop) {
-			printf("Can't find kaslr-seed property in chosen\n");
-		} else {
-			srand(timer_get_us());
-			/*
-			 * random() function use hardware RNG, not software, ignore
-			 * coverity weak cryptor report.
-			 */
-			/* coverity[dont_call] */
-			seed = (uint64_t)rand();
-			//printf("--leo-- seed 0x%llx\n", seed);
+		srand(timer_get_us());
+		/*
+		 * random() function use hardware RNG, not software, ignore
+		 * coverity weak cryptor report.
+		 */
+		/* coverity[dont_call] */
+		seed = (uint64_t)rand();
+		//printf("--leo-- seed 0x%llx\n", seed);
 
-			ret = fdt_setprop(images->ft_addr, node, "kaslr-seed", &seed, sizeof(seed));
-			if (!ret)
-				printf("Enable kaslr\n");
-			else
-				printf("Can't set kaslr-seed value in chosen\n");
-		}
+		ret = fdt_setprop(images->ft_addr, node, "kaslr-seed", &seed, sizeof(seed));
+		if (!ret)
+			printf("Enable kaslr\n");
+		else
+			printf("Can't set kaslr-seed value in chosen\n");
 	}
 #endif
 
