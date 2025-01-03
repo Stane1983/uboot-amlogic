@@ -2244,6 +2244,10 @@ static void edid_dtd_parsing(struct rx_cap *prxcap, u8 *data)
 	if (!prxcap || !data)
 		return;
 
+	if (prxcap->dtd_idx >= MAX_DTD_COUNT) {
+		HDMITX_DEBUG_EDID("dtd_idx must be less than MAX_DTD_COUNT\n");
+		return;
+	}
 	t = &prxcap->dtd[prxcap->dtd_idx];
 	/* if data[0-2] are zeroes, no need parse, and skip */
 	if (data[0] == 0 && data[1] == 0 && data[2] == 0)

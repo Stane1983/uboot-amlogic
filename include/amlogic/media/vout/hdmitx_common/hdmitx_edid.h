@@ -17,6 +17,7 @@ struct hdmitx_common;
 #define VESA_MAX_TIMING		64
 #define AUD_MAX_NUM			60
 #define MAX_RAW_LEN			64
+#define MAX_DTD_COUNT		16
 
 #define Y420CMDB_MAX	32
 
@@ -202,7 +203,7 @@ struct rx_cap {
 	//enum hdmi_vic preferred_mode;
 	u32 preferred_mode;
 
-	struct dtd dtd[16];
+	struct dtd dtd[MAX_DTD_COUNT];
 	u8 dtd_idx;
 	u8 flag_vfpdb;
 	u8 number_of_dtd;

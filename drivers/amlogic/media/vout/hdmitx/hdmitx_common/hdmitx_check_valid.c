@@ -398,12 +398,12 @@ static int hdmitx_edid_validate_format_para(struct tx_cap *hdmi_tx_cap,
 			if (prxcap->dsc_1p2 == 0) {
 				/* RX not support DSC */
 				if (tx_frl_bandwidth > tx_frl_bandwidth_cap) {
-					HDMITX_DEBUG_EDID("frl bandwitch:%d exceed tx_cap:%d\n",
+					HDMITX_DEBUG_EDID("frl bandwidth:%d exceed tx_cap:%d\n",
 							  tx_frl_bandwidth, tx_frl_bandwidth_cap);
 					return -EPERM;
 				}
 				if (tx_frl_bandwidth > rx_frl_bandwidth_cap) {
-					HDMITX_DEBUG_EDID("frl bandwitch:%d exceed rx_cap:%d\n",
+					HDMITX_DEBUG_EDID("frl bandwidth:%d exceed rx_cap:%d\n",
 							  tx_frl_bandwidth, rx_frl_bandwidth_cap);
 					return -EPERM;
 				}
