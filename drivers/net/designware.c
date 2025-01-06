@@ -537,6 +537,9 @@ static int dw_phy_init(struct dw_eth_dev *priv, void *dev)
 	phydev->advertising = phydev->supported;
 
 	priv->phydev = phydev;
+#ifdef CONFIG_DM_ETH
+	p_phydev = phydev;
+#endif
 	phy_config(phydev);
 
 	return 0;
