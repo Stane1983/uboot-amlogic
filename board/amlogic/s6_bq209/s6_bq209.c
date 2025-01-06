@@ -117,6 +117,7 @@ void board_init_mem(void)
 }
 
 extern void usb_power_init(void);
+extern void pci_power_init(void);
 
 int board_init(void)
 {
@@ -159,7 +160,7 @@ int board_init(void)
 	amfc_init();
 #endif
 	usb_power_init();
-
+	pci_power_init();
 	return 0;
 }
 

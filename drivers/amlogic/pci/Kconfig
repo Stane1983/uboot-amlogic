@@ -1,0 +1,12 @@
+
+menu "AMLOGIC PCI POWER Support"
+
+config AMLOGIC_PCI_POWER
+	bool "Uboot standby Support"
+	help
+	  If need.
+	  Please set it to Y
+	  for
+	  amlogic chip.
+
+endmenu

@@ -264,6 +264,12 @@ defined(CONFIG_STORE_COMPATIBLE)
 #define OSD_SCALE_ENABLE
 #define AML_OSD_HIGH_VERSION
 
+/*
+ * PCI
+ * Enable uboot PCIE power for suspend
+ */
+#define CONFIG_AMLOGIC_PCI_POWER	1
+
 /* USB
  * Enable CONFIG_MUSB_HCD for Host functionalities MSC, keyboard
  * Enable CONFIG_MUSB_UDD for Device functionalities.

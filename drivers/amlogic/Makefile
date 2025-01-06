@@ -56,3 +56,5 @@ obj-$(CONFIG_AMLOGIC_AMFC) += amfc/
 obj-$(CONFIG_CPU_PM) += pm/
 
 obj-$(CONFIG_CMD_SND) += sound/
+
+obj-$(CONFIG_AMLOGIC_PCI_POWER) += pci/power/

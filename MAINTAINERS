@@ -152,6 +152,7 @@ F:	arch/arm/include/asm/arch-meson/
 F:	cmd/amlogic/cmd_clkmsr.c
 F:	cmd/amlogic/cmd_scmi_shmem.c
 F:	drivers/amlogic/mmc/meson_gx_mmc.c
+F:	drivers/amlogic/pci/power/pci-power.c
 F:	drivers/clk/meson/
 F:	drivers/serial/serial_meson.c
 F:	drivers/reset/reset-meson.c
