@@ -137,6 +137,7 @@ struct dev_pm_ops *dev_register_pm(char *name, FUNC_PTR suspend,
 {
 	struct dev_pm_ops *ops;
 
+	printf("[%s]:%s.\n", __func__, name);
 	if (!name || !suspend || !resume || !poweroff) {
 		printf("Invalid pass parameters\n");
 		return NULL;

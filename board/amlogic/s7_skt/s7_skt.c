@@ -108,6 +108,7 @@ void board_init_mem(void)
 	}
 }
 
+extern void usb_power_init(void);
 int board_init(void)
 {
 	printf("board init\n");
@@ -141,6 +142,7 @@ int board_init(void)
 	run_command("gpio set GPIOH_7", 0);
 #endif // #if !defined(CONFIG_PXP_DDR) //bypass below operations for pxp
 	pinctrl_devices_active(PIN_CONTROLLER_NUM);
+	usb_power_init();
 	return 0;
 }
 

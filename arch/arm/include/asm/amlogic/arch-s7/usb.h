@@ -268,7 +268,7 @@ int m31_phy_init(unsigned int phy_num);
 #define USB_CC_UFP_STATUS	0x20
 #define USB_CC_DFP_STATUS	0x24
 
-#define CC_RESET_BIT		10
+#define CC_RESET_BIT		BIT(10)
 
 #define UFP_CURRENT_TYPE_CHECK(x)	((x) & GENMASK(5, 3))
 #define VBUS_OK_P_CHECK(x)		((x) & BIT(15))
@@ -306,7 +306,7 @@ void print_aml_cc_ufp_current_type(void);
 
 #define BC_REG_BASE	0xfe35d000
 
-#define BC_RESET_BIT		11
+#define BC_RESET_BIT		BIT(11)
 
 #define BC_STATUS_DETACH	0
 #define BC_STATUS_SDP		1

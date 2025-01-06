@@ -27,6 +27,7 @@
 #define USB3H_BIT               5
 #define PHY21_RESET_LEVEL_BIT   4
 #define USB3_PHY3_BIT		3
+#define U3DRD_USB3PHY_APB	2
 
 #define USB2_MPPLL_EN_CTRL_BIT  27
 #define USBPLL_BIAS_EN_BIT      26
@@ -290,18 +291,23 @@ int usb2_phy_tuning(uint32_t phy2_pll_base, int port)
 	return 0;
 }
 
+static unsigned int usb_powerctrl_reg = 0xffffffff;
+
 void set_usb_power_off(void)
 {
 	unsigned int val;
-	// only off the phy21 now.
-	printf("set s6 usb phy off.\n");
-	val = readl(RESETCTRL_RESET0_LEVEL);
-	val &= ~(1 << PHY20_RESET_LEVEL_BIT);
-	writel(val, RESETCTRL_RESET0_LEVEL);
 
-	val = readl(RESETCTRL_RESET0_LEVEL);
-	val &= ~(1 << PHY21_RESET_LEVEL_BIT);
+	printf("set s6 usb phy off.\n");
+	usb_powerctrl_reg = readl(RESETCTRL_RESET0_LEVEL);
+	val = usb_powerctrl_reg;
+	val &= ~(0xff << U3DRD_USB3PHY_APB);
 	writel(val, RESETCTRL_RESET0_LEVEL);
+}
+
+void set_usb_power_on(void)
+{
+	printf("set s6 usb phy on.\n");
+	writel(usb_powerctrl_reg, RESETCTRL_RESET0_LEVEL);
 }
 
 /**************************************************************/
@@ -409,6 +415,16 @@ static void aml_bc_init(void)
 	writel(val, BC_REG_BASE + BC_CTRL);
 }
 
+static void aml_bc_deinit(void)
+{
+	u32 val;
+
+	/* disable BC */
+	val = readl(BC_REG_BASE + BC_CTRL);
+	val &= ~BC_ENABLE;
+	writel(val, BC_REG_BASE + BC_CTRL);
+}
+
 int aml_bc_get_port_status(u32 *val)
 {
 	u32 cnt = 0;
@@ -421,12 +437,13 @@ int aml_bc_get_port_status(u32 *val)
 
 		if (cnt > 10000) {
 			printf("BC port status detect timeout\n");
+			aml_bc_deinit();
 			return -EINVAL;
 		}
 	} while (!(readl(BC_REG_BASE + BC_CTRL) & BC_DETECT_END));
 
 	*val = readl(BC_REG_BASE + BC_DIG_STATUS);
-
+	aml_bc_deinit();
 	return 0;
 }
 
@@ -465,6 +482,7 @@ void print_aml_bc_port_status(void)
 
 		if (cnt > 10000) {
 			printf("BC port status detect timeout\n");
+			aml_bc_deinit();
 			return;
 		}
 	} while (!(readl(BC_REG_BASE + BC_CTRL) & BC_DETECT_END));
@@ -525,6 +543,7 @@ void print_aml_bc_port_status(void)
 		break;
 	}
 	printf("BC STATUS is : %s\n", bc_status_to_str[index]);
+	aml_bc_deinit();
 }
 
 static void aml_cc_ufp_init(void)
@@ -560,6 +579,16 @@ static void aml_cc_ufp_init(void)
 	writel(val, CC_REG_BASE + CC_OTP_REG);
 }
 
+static void aml_cc_ufp_deinit(void)
+{
+	u32 val;
+
+	/* disable CC */
+	val = readl(CC_REG_BASE + USB_CC_CTRL);
+	val &= ~CC_TOP_ENABLE;
+	writel(val, CC_REG_BASE + USB_CC_CTRL);
+}
+
 int aml_cc_get_ufp_status(u32 *val1, u32 *val2)
 {
 	u32 cnt = 0;
@@ -570,8 +599,10 @@ int aml_cc_get_ufp_status(u32 *val1, u32 *val2)
 		udelay(20);
 		cnt++;
 
-		if (cnt > 10000)
+		if (cnt > 10000) {
+			aml_cc_ufp_deinit();
 			return -EINVAL;
+		}
 
 	} while (!(readl(CC_REG_BASE + USB_CC_INT_STATUS) &
 		 (CC_UFP_CURRENT_INT | CC_UFP_PLUG_IN_INT | CC_UFP_DAM_PLUG_IN_INT)));
@@ -584,6 +615,7 @@ int aml_cc_get_ufp_status(u32 *val1, u32 *val2)
 	    (CC_UFP_PLUG_OUT_INT | CC_UFP_DAM_PLUG_OUT_INT))
 		writel(CC_INT_CLEAN, CC_REG_BASE + USB_CC_INT_CLR);
 
+	aml_cc_ufp_deinit();
 	return 0;
 }
 
@@ -679,4 +711,5 @@ void print_aml_cc_ufp_current_type(void)
 	}
 
 	printf("cc_statue = %d, reg_fsm = 0x%x, reg_ana = 0x%x\n", cc_statue, val, val1);
+	aml_cc_ufp_deinit();
 }

@@ -15,6 +15,13 @@ config USB_XHCI_CRG
           Say Y or if your system has a Dual Role SuperSpeed
           USB controller based on the Corgine USB3 IP Core.
 
+config AMLOGIC_USB_POWER
+        bool "Uboot USB Power Management Support"
+	default y
+        help
+          Default y for amlogic chip.
+	  It is called by board_init.
+
 config AMLOGIC_USB2_PHY
 	bool "amlogic PHY2 support"
 	depends on PHY

@@ -111,6 +111,7 @@ void board_init_mem(void)
 	}
 }
 
+extern void usb_power_init(void);
 int board_init(void)
 {
 	printf("board init\n");
@@ -148,6 +149,7 @@ int board_init(void)
 #ifdef CONFIG_AMLOGIC_AMFC
 	amfc_init();
 #endif
+	usb_power_init();
 	return 0;
 }
 
