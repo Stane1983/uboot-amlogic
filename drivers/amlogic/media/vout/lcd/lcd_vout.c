@@ -273,6 +273,8 @@ static void lcd_power_ctrl(struct aml_lcd_drv_s *pdrv, int status)
 				else
 					LCDERR("no ext power off\n");
 			}
+			if (edrv->exit_break)
+				return;
 			break;
 #endif
 		case LCD_POWER_TYPE_WAIT_GPIO:

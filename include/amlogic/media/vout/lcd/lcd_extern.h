@@ -89,7 +89,7 @@ struct lcd_extern_multi_list_s {
 	struct lcd_extern_multi_list_s *next;
 };
 
-struct lcd_extern_check_block_s {
+struct lcd_extern_check_section_s {
 	unsigned char offset;
 	unsigned char len;
 };
@@ -100,9 +100,11 @@ struct lcd_extern_dev_s {
 	unsigned char check_state;
 	unsigned char check_step;
 	unsigned char check_execute;
-	unsigned char check_block_cnt;
-	unsigned int check_block_size;
-	struct lcd_extern_check_block_s *check_block;
+	unsigned char check_retry_cnt;
+	unsigned char check_retry_delay;
+	unsigned char check_section_cnt;
+	unsigned int check_section_size;
+	struct lcd_extern_check_section_s *check_section;
 	struct lcd_extern_config_s config;
 	struct lcd_extern_multi_list_s *multi_list_header;
 	unsigned char i2c_addr[4];
@@ -124,6 +126,7 @@ struct lcd_extern_driver_s {
 	int index;
 	unsigned char key_valid;
 	unsigned char config_load;
+	unsigned char exit_break;
 	char gpio_name[LCD_EXTERN_GPIO_NUM_MAX][LCD_CPU_GPIO_NAME_MAX];
 	unsigned int dev_cnt;
 	struct lcd_extern_dev_s *dev[LCD_EXTERN_DEV_MAX];

@@ -96,51 +96,69 @@ void lcd_extern_pinmux_set(struct lcd_extern_driver_s *edrv, int status)
 }
 
 void lcd_extern_check_add(struct lcd_extern_driver_s *edrv, struct lcd_extern_dev_s *edev,
-			  int cmd_step, unsigned char *data_buf, unsigned char data_len)
+			  int cmd_step, unsigned char type,
+			  unsigned char *data_buf, unsigned char data_len)
 {
+	unsigned char check_len;
 	int i;
 
 	if (!edrv || !edev || !data_buf)
 		return;
-	if (data_len < 1 || ((data_len - 1) % 2)) {
-		edev->check_step = 0;
-		EXTERR("[%d]: %s: dev[%d]: step[%d]: data_len %d error\n",
-		       edrv->index, __func__, edev->dev_index, cmd_step, data_len);
-		return;
+	if (type == LCD_EXT_CMD_TYPE_CHECK_RETRY) {
+		if (data_len < 1 || ((data_len - 3) % 2))
+			goto lcd_extern_check_add_err;
+		edev->check_retry_cnt = data_buf[data_len - 2];
+		edev->check_retry_delay = data_buf[data_len - 1];
+		check_len = data_len - 2;
+	} else {
+		if (data_len < 1 || ((data_len - 1) % 2))
+			goto lcd_extern_check_add_err;
+		edev->check_retry_cnt = 1;
+		edev->check_retry_delay = 0;
+		check_len = data_len;
 	}
 
 	edev->check_step = data_buf[0];
 	edev->check_execute = 0;
-	if (data_len == 1) //special case for whole data check
-		edev->check_block_cnt = 1;
+	if (check_len == 1) //special case for whole data check
+		edev->check_section_cnt = 1;
 	else
-		edev->check_block_cnt = (data_len - 1) / 2;
+		edev->check_section_cnt = (check_len - 1) / 2;
 	edev->check_state = 1; //default execute
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-		EXTPR("[%d]: %s: dev[%d]: check_step=%d, check_block_cnt=%d, check_state=%d\n",
+		EXTPR("[%d]: %s: dev[%d]: chk step=%d, sec_cnt=%d, state=%d, retry=%d, dly=%d\n",
 		      edrv->index, __func__, edev->dev_index,
-		      edev->check_step, edev->check_block_cnt, edev->check_state);
+		      edev->check_step, edev->check_section_cnt, edev->check_state,
+		      edev->check_retry_cnt, edev->check_retry_delay);
 	}
 
-	if (edev->check_block) {
-		memset(edev->check_block, 0, edev->check_block_size);
-		free(edev->check_block);
+	if (edev->check_section) {
+		memset(edev->check_section, 0, edev->check_section_size);
+		free(edev->check_section);
 	}
-	edev->check_block_size = edev->check_block_cnt * sizeof(struct lcd_extern_check_block_s);
-	edev->check_block = malloc(edev->check_block_size);
-	if (!edev->check_block)
+	edev->check_section_size =
+		edev->check_section_cnt * sizeof(struct lcd_extern_check_section_s);
+	edev->check_section = malloc(edev->check_section_size);
+	if (!edev->check_section)
 		return;
-	memset(edev->check_block, 0, edev->check_block_size);
+	memset(edev->check_section, 0, edev->check_section_size);
 
-	if (data_len == 1) {//special case for whole data check
-		edev->check_block[0].offset = 0;
-		edev->check_block[0].len = 0;
+	if (check_len == 1) {//special case for whole data check
+		edev->check_section[0].offset = 0;
+		edev->check_section[0].len = 0;
 	} else {
-		for (i = 0; i < edev->check_block_cnt; i++) {
-			edev->check_block[i].offset = data_buf[1 + i * 2];
-			edev->check_block[i].len = data_buf[1 + i * 2 + 1];
+		for (i = 0; i < edev->check_section_cnt; i++) {
+			edev->check_section[i].offset = data_buf[1 + i * 2];
+			edev->check_section[i].len = data_buf[1 + i * 2 + 1];
 		}
 	}
+
+	return;
+
+lcd_extern_check_add_err:
+	edev->check_step = 0;
+	EXTERR("[%d]: %s: dev[%d]: step[%d]: data_len %d error\n",
+	       edrv->index, __func__, edev->dev_index, cmd_step, data_len);
 }
 
 void lcd_extern_check_handler(struct lcd_extern_driver_s *edrv, struct lcd_extern_dev_s *edev,
@@ -149,14 +167,14 @@ void lcd_extern_check_handler(struct lcd_extern_driver_s *edrv, struct lcd_exter
 			      unsigned char data_len)
 {
 	unsigned char *read_buf = NULL, *chk_buf = NULL, *chk_table = NULL, *raw_buf = NULL;
-	unsigned char read_buf_offset, read_start;
+	unsigned char read_buf_offset, read_start, retry_cnt = 0;
 	unsigned int read_len, cmp_len;
 	int i, check_fail = 0, ret = 0;
 
 	if (!edrv || !edev || !raw_table || data_len == 0)
 		return;
 
-	if (edev->check_step == 0 || !edev->check_block)
+	if (edev->check_step == 0 || !edev->check_section)
 		return;
 
 	switch (cmd_type & 0xf0) {
@@ -199,6 +217,7 @@ void lcd_extern_check_handler(struct lcd_extern_driver_s *edrv, struct lcd_exter
 		return;
 	memset(read_buf, 0, read_len);
 
+lcd_extern_check_handler_retry:
 	read_buf[0] = read_start;
 	ret = aml_lcd_i2c_read(i2c_bus, i2c_addr, read_buf, read_len);
 	if (ret < 0)
@@ -212,40 +231,47 @@ void lcd_extern_check_handler(struct lcd_extern_driver_s *edrv, struct lcd_exter
 		printf("\n");
 	}
 
-	for (i = 0; i < edev->check_block_cnt; i++) {
-		cmp_len = edev->check_block[i].len;
-		if (edev->check_block[i].len == 0) {
-			if (edev->check_block[i].offset) {
-				EXTERR("[%d]: %s: dev[%d]: check_block[%d] len is 0!\n",
+	for (i = 0; i < edev->check_section_cnt; i++) {
+		cmp_len = edev->check_section[i].len;
+		if (edev->check_section[i].len == 0) {
+			if (edev->check_section[i].offset) {
+				EXTERR("[%d]: %s: dev[%d]: check_section[%d] len is 0!\n",
 				       edrv->index, __func__, edev->dev_index, i);
 				continue;
 			}
 			cmp_len = data_len;//offset=0,len=0, special case for whole data check
 		}
-		if (edev->check_block[i].offset + cmp_len > data_len) {
-			EXTERR("[%d]: %s: dev[%d] : check_block[%d] offset+len %d oversize!\n",
+		if (edev->check_section[i].offset + cmp_len > data_len) {
+			EXTERR("[%d]: %s: dev[%d] : check_section[%d] offset+len %d oversize!\n",
 			       edrv->index, __func__, edev->dev_index, i,
-			       edev->check_block[i].offset + cmp_len);
+			       edev->check_section[i].offset + cmp_len);
 			continue;
 		}
 
-		chk_buf = chk_table + edev->check_block[i].offset;
-		raw_buf = raw_table + edev->check_block[i].offset;
+		chk_buf = chk_table + edev->check_section[i].offset;
+		raw_buf = raw_table + edev->check_section[i].offset;
 		ret = memcmp(chk_buf, raw_buf, cmp_len);
 		if (ret) {
 			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 				EXTPR("[%d]: %s: dev[%d]: offset:0x%x, len:%d not match!\n",
 				      edrv->index, __func__, edev->dev_index,
-				      edev->check_block[i].offset, cmp_len);
+				      edev->check_section[i].offset, cmp_len);
 			}
 			check_fail++;
 		}
 	}
 
-	if (check_fail)
+	if (check_fail) {
+		retry_cnt++;
+		if (retry_cnt < edev->check_retry_cnt) {
+			if (edev->check_retry_delay)
+				mdelay(edev->check_retry_delay);
+			goto lcd_extern_check_handler_retry;
+		}
 		edev->check_state = 1;
-	else
+	} else {
 		edev->check_state = 0;
+	}
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 		EXTPR("[%d]: %s: dev[%d]: check_state: %d\n",
 		      edrv->index, __func__, edev->dev_index, edev->check_state);
@@ -396,6 +422,23 @@ int lcd_extern_cmd_delay(struct lcd_extern_driver_s *edrv, struct lcd_extern_dev
 	return 0;
 }
 
+int lcd_extern_cmd_exit(struct lcd_extern_driver_s *edrv, struct lcd_extern_dev_s *edev,
+			int cmd_step, unsigned char break_flag)
+{
+	if (!edrv || !edev)
+		return -1;
+
+	if (edev->check_step) {
+		if (edev->check_state == 0)
+			return 0;
+	}
+
+	edrv->exit_break = break_flag ? 1 : 0;
+	EXTPR("[%d]: step[%d]: exit with break_flag: %d\n",
+	      edrv->index, cmd_step, edrv->exit_break);
+	return 1;
+}
+
 int lcd_extern_cmd_i2c(struct lcd_extern_driver_s *edrv, struct lcd_extern_dev_s *edev,
 		       int cmd_step, unsigned char cmd_type,
 		       unsigned char *data_buf, unsigned char data_len)
@@ -466,8 +509,14 @@ static int lcd_extern_power_cmd_dynamic_size_i2c(struct lcd_extern_driver_s *edr
 			lcd_extern_cmd_delay(edrv, edev, step, &table[i + 2], size);
 			break;
 		case LCD_EXT_CMD_TYPE_CHECK:
-			lcd_extern_check_add(edrv, edev, step, &table[i + 2], size);
+		case LCD_EXT_CMD_TYPE_CHECK_RETRY:
+			lcd_extern_check_add(edrv, edev, step, type, &table[i + 2], size);
 			goto power_cmd_dynamic_i2c_check_next;
+		case LCD_EXT_CMD_TYPE_EXIT:
+			ret = lcd_extern_cmd_exit(edrv, edev, step, table[i + 2]);
+			if (ret)
+				return 0;
+			break;
 		case LCD_EXT_CMD_TYPE_CMD:
 		case LCD_EXT_CMD_TYPE_CMD_BIN:
 		case LCD_EXT_CMD_TYPE_CMD_BIN_DATA:
@@ -941,6 +990,7 @@ int lcd_extern_power_cmd(struct lcd_extern_driver_s *edrv, struct lcd_extern_dev
 	edev->check_state = 0;
 	edev->check_step = 0;
 	edev->check_execute = 0;
+	edrv->exit_break = 0;
 	switch (edev->config.type) {
 	case LCD_EXTERN_I2C:
 		if (edev->config.cmd_size == LCD_EXT_CMD_SIZE_DYNAMIC)
