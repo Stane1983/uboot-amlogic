@@ -21,6 +21,7 @@
 #include <amlogic/emmc_partitions.h>
 #include <amlogic/aml_mmc.h>
 #include "meson_gx_mmc.h"
+#include <amlogic/pm.h>
 
 bool meson_gx_mmc_is_compatible(struct udevice *dev,
 				enum meson_gx_mmc_compatible family)
@@ -1150,6 +1151,69 @@ static const struct dm_mmc_ops meson_dm_mmc_ops = {
 #endif
 };
 
+static int meson_mmc_poweroff(void *pm_ops)
+{
+	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
+	struct meson_host *host = pm->private_data;
+
+	printf("mmc poweroff: %s\n", pm->name);
+	if (strcmp(pm->name, "meson_mmc_pm")) {
+		printf("%s is not allowed\n", pm->name);
+		return -1;
+	}
+	if (!host) {
+		printf("%s: Device does not exist\n", pm->name);
+		return -1;
+	}
+
+	clk_disable(&host->gate);
+	clk_disable(&host->div2);
+
+	return 0;
+}
+
+static int meson_mmc_suspend(void *pm_ops)
+{
+	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
+	struct meson_host *host = pm->private_data;
+
+	printf("mmc suspend: %s\n", pm->name);
+	if (strcmp(pm->name, "meson_mmc_pm")) {
+		printf("%s is not allowed\n", pm->name);
+		return -1;
+	}
+	if (!host) {
+		printf("%s: Device does not exist\n", pm->name);
+		return -1;
+	}
+
+	clk_disable(&host->gate);
+	clk_disable(&host->div2);
+
+	return 0;
+}
+
+static int meson_mmc_resume(void *pm_ops)
+{
+	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
+	struct meson_host *host = pm->private_data;
+
+	printf("mmc resume: %s\n", pm->name);
+	if (strcmp(pm->name, "meson_mmc_pm")) {
+		printf("%s is not allowed\n", pm->name);
+		return -1;
+	}
+	if (!host) {
+		printf("%s: Device does not exist\n", pm->name);
+		return -1;
+	}
+
+	clk_enable(&host->div2);
+	clk_enable(&host->gate);
+
+	return 0;
+}
+
 static int meson_mmc_of_to_plat(struct udevice *dev)
 {
 	struct meson_mmc_plat *pdata = dev_get_plat(dev);
@@ -1273,6 +1337,13 @@ static int meson_mmc_probe(struct udevice *dev)
 	val &= ~CFG_SDCLK_ALWAYS_ON;
 	val |= CFG_AUTO_CLK;
 	meson_write(mmc, val, MESON_SD_EMMC_CFG);
+
+	if (aml_card_type_mmc(host))
+		dev_register_pm("meson_mmc_pm",
+				&meson_mmc_suspend,
+				&meson_mmc_resume,
+				&meson_mmc_poweroff,
+				host);
 
 	printf("[%s]%s: Controller probe success!\n",
 	       __func__, mmc->cfg->name);
