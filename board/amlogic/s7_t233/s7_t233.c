@@ -142,7 +142,7 @@ int board_init(void)
 #if 0
 	active_clk();
 #endif
-	run_command("gpio set GPIOH_7", 0);
+
 #endif // #if !defined(CONFIG_PXP_DDR) //bypass below operations for pxp
 	pinctrl_devices_active(PIN_CONTROLLER_NUM);
 	usb_power_init();
