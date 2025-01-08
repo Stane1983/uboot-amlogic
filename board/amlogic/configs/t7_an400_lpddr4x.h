@@ -108,7 +108,7 @@
     "outputmode=2160p60hz\0" \
     "outputmode2=1080p60hz\0" \
     "connector0_type=VBYONE-B\0" \
-    "connector1_type=HDMI-A-C\0" \
+	"connector1_type=HDMI-A-A\0" \
     "connector2_type=NULL\0"
 #endif
 

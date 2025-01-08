@@ -43,6 +43,7 @@ struct hdmitx_dev {
 	 */
 	unsigned int edid_check;
 	unsigned char limit_res_1080p;
+	unsigned char enc_idx;
 	bool config_csc_en;
 	bool hpd_state;
 	/* efuse ctrl state

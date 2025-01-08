@@ -48,7 +48,7 @@ static struct cntor_name2val_s vout_supported_cnt_list[] = {
 	{.name = "HDMI-A-A", .val = 0x300},
 	{.name = "HDMI-A-B", .val = 0x301},
 	{.name = "HDMI-A-C", .val = 0x302},
-	{.name = "CVBS",     .val = 0x400},
+	{.name = "TV-1",     .val = 0x400},
 };
 
 unsigned short vout_connector_check(unsigned char vout_index)

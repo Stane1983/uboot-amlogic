@@ -127,7 +127,6 @@ static int do_rx_det(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	return st;
 }
 
-/* TODO: need to sync with uboot 2023 */
 static int is_valid_hdmi(const char *input)
 {
 	static const char * const valid_hdmi_modes[] = {

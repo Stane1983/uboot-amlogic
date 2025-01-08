@@ -49,25 +49,12 @@ static unsigned int vpp_viu1_cm_state = VPP_CM_INVALID;
 #endif
 
 #ifdef CONFIG_AML_HDMITX
-static int vout_hdmi_hpd(int hpd_st)
+static void vout_hdmi_hpd(struct hdmitx_dev *hdev, int hpd_st)
 {
-#ifdef CONFIG_AML_LCD
-	unsigned int venc_sel = VIU_MUX_MAX;
-	char *mode;
-#endif
 	char *hdmimode;
 	char *cvbsmode;
 	char *colorattribute;
 
-#ifdef CONFIG_AML_LCD
-	mode = env_get("outputmode");
-	venc_sel = aml_lcd_driver_outputmode_check(0, mode);
-
-	if (venc_sel == VIU_MUX_ENCL) {
-		printf("%s: lcd no need hpd detect\n", __func__);
-		return 0;
-	}
-#endif
 	/*get hdmi mode and colorattribute from env */
 	hdmimode = env_get("hdmimode");
 	if (hdmimode)
@@ -77,38 +64,40 @@ static int vout_hdmi_hpd(int hpd_st)
 	if (colorattribute)
 		printf("%s: colorattribute=%s\n", __func__, colorattribute);
 
-	/* if hpd_st high, output mode will be saved on hdmi side */
+	/*
+	 * set a new value for the outputmode based on the HPD status.
+	 * if hpd_st high, outputmode and connector0_type will be saved on hdmi side
+	 * if hpd_st low, outputmode and connector0_type will be saved on cvbs side
+	 */
 	if (!hpd_st) {
 		cvbsmode = env_get("cvbsmode");
 		if (cvbsmode)
 			env_set("outputmode", cvbsmode);
 		env_set("hdmichecksum", "0x00000000");
-		//run_command("saveenv", 0);
+		env_set("connector0_type", "TV-1");
 	} else {
 		if (!strstr(env_get("outputmode"), "hz"))
 			env_set("outputmode", "1080p60hz");
+		switch (hdev->enc_idx) {
+		case 0:
+			env_set("connector0_type", "HDMI-A-A");
+			break;
+		case 1:
+			env_set("connector0_type", "HDMI-A-B");
+			break;
+		case 2:
+			env_set("connector0_type", "HDMI-A-C");
+			break;
+		}
 	}
-
-	return 1;
 }
 
-static int vout2_hdmi_hpd(int hpd_st)
+static void vout2_hdmi_hpd(struct hdmitx_dev *hdev, int hpd_st)
 {
-#ifdef CONFIG_AML_LCD
-	unsigned int venc_sel = VIU_MUX_MAX;
-	char *mode;
-#endif
 	char *hdmimode;
 	char *cvbsmode;
 	char *colorattribute;
 
-#ifdef CONFIG_AML_LCD
-	mode = env_get("outputmode2");
-	venc_sel = aml_lcd_driver_outputmode_check(0, mode);
-	if (venc_sel == VIU_MUX_ENCL) {
-		return 0;
-	}
-#endif
 	/*get hdmi mode and colorattribute from env */
 	hdmimode = env_get("hdmimode");
 	if (hdmimode)
@@ -116,19 +105,22 @@ static int vout2_hdmi_hpd(int hpd_st)
 	colorattribute = env_get("colorattribute");
 	if (colorattribute)
 		printf("%s: colorattribute=%s\n", __func__, colorattribute);
-	/* if hpd_st high, output mode will be saved on hdmi side */
+
+	/*
+	 * set a new value for the outputmode2 based on the HPD status.
+	 * if hpd_st high, outputmode2 will be saved on hdmi side
+	 * if hpd_st low, outputmode2 will be saved on cvbs side
+	 * The connector1 cannot be modified because HWC cannot recognize TV-1.
+	 */
 	if (!hpd_st) {
 		cvbsmode = env_get("cvbsmode");
 		if (cvbsmode)
 			env_set("outputmode2", cvbsmode);
 		env_set("hdmichecksum", "0x00000000");
-		//run_command("saveenv", 0);
 	} else {
 		if (!strstr(env_get("outputmode2"), "hz"))
 			env_set("outputmode2", "1080p60hz");
 	}
-
-	return 0;
 }
 
 int do_hpd_detect(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
@@ -145,6 +137,7 @@ int do_hpd_detect(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 #endif
 	unsigned short on_connector_dev = vout_connector_check(0);
 
+	char *outputmode, *outputmode2, *connector0_type, *connector1_type;
 
 	st = env_get("hdmitx_hpd_bypass");
 	if (st && (strcmp((const char *)(uintptr_t)st[0], "1") == 0)) {
@@ -170,16 +163,41 @@ int do_hpd_detect(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	}
 	printf("%s, hpd_state=%d\n", __func__, hpd_st);
 
+	outputmode = env_get("outputmode");
+	outputmode2 = env_get("outputmode2");
+	connector0_type = env_get("connector0_type");
+	connector1_type = env_get("connector1_type");
+	printf("%s: outputmode=%s, outputmode2=%s, connector0_type=%s, connector1_type=%s\n",
+		__func__,
+		outputmode ? outputmode : "NULL",
+		outputmode2 ? outputmode2 : "NULL",
+		connector0_type ? connector0_type : "NULL",
+		connector1_type ? connector1_type : "NULL");
+
+	/*
+	 * lacks the both env "connector0_type" and "connector1_type"
+	 * set "HDMI-A-A" for "connector0_type", and notice to burn the whole image
+	 */
+	if (!connector0_type && !connector1_type) {
+		env_set("connector0_type", "HDMI-A-A");
+		printf("ERROR %s, miss env connectorX_type, must burn the whole image\n", __func__);
+		printf("%s:set default connector0_type=%s\n", __func__, env_get("connector0_type"));
+	}
+	/*
+	 * Check whether the current connector is HDMI or CVBS
+	 * In this way, the LCD will not be processed.
+	 */
 	for (i = 0; i < 3; i++) {
 		on_connector_dev = vout_connector_check(i);
-		if ((on_connector_dev & CONNECTOR_DEV_MASK) == CONNECTOR_DEV_HDMI) {
+		if ((on_connector_dev & CONNECTOR_DEV_MASK) == CONNECTOR_DEV_HDMI ||
+			(on_connector_dev & CONNECTOR_DEV_MASK) == CONNECTOR_DEV_CVBS) {
 			if (i == 0) {
-				vout_hdmi_hpd(hpd_st);
+				vout_hdmi_hpd(hdev, hpd_st);
 			} else if (i == 1) {
-				vout2_hdmi_hpd(hpd_st);
+				vout2_hdmi_hpd(hdev, hpd_st);
 			} else {
 				printf("warning unregistered connectorX_type\n");
-				vout_hdmi_hpd(hpd_st);
+				vout_hdmi_hpd(hdev, hpd_st);
 			}
 		}
 	}
@@ -342,21 +360,6 @@ static int do_vout_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv
 	if (argc != 2)
 		return CMD_RET_FAILURE;
 
-#ifdef CONFIG_AML_HDMITX
-	if (on_connector_dev == 0xffff) {
-		/* if current mode is HDMI mode, but lacks the environment
-		 * "HDMI-A-A" for "connector0_type", then assign the default
-		 * value for HDMI
-		 */
-		if (hdmi_outputmode_check(mode, 0) != VIU_MUX_MAX) {
-			env_set("connector0_type", "HDMI-A-A");
-			on_connector_dev = vout_connector_check(0);
-			printf("add default connector for HDMI mode %s", mode);
-		} else {
-			printf("error: invalid mode %s for hdmi or panel\n", mode);
-		}
-	}
-#endif
 	switch (on_connector_dev & CONNECTOR_DEV_MASK) {
 	case CONNECTOR_DEV_LCD:
 #ifdef CONFIG_AML_LCD
