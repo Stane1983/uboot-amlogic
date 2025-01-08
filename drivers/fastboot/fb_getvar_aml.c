@@ -15,6 +15,7 @@
 #include <amlogic/partition_table.h>
 #include <amlogic/storage.h>
 #include <amlogic/emmc_partitions.h>
+#include <amlogic/aml_efuse.h>
 
 u32 kMaxDownloadSizeDefault = 0x8000000;
 u32 kMaxFetchSizeDefault = 0x8000000;
@@ -232,7 +233,7 @@ static void getvar_block_size(char *var_parameter, char *response)
 
 static void getvar_secure(char *var_parameter, char *response)
 {
-	if (check_lock()) {
+	if (IS_FEAT_BOOT_VERIFY()) {
 		if (busy_flag == 1)
 			fastboot_busy("secure: yes", response);
 		else
