@@ -271,37 +271,6 @@ static void hdmitx21_output_blank(unsigned int blank)
 	/* TODO */
 }
 
-static int hdmitx_get_connector(void)
-{
-	int i = 0;
-	int j = 0;
-	static const char * const hdmi_types[] = {
-		"HDMI-A-A", /* venc0 */
-		"HDMI-A-B", /* venc1 */
-		"HDMI-A-C", /* venc2 */
-	};
-	static const char * const conn_types[] = {
-		"connector0_type",
-		"connector1_type",
-		"connector2_type",
-	};
-	char *type;
-
-	for (j = 0; j < ARRAY_SIZE(conn_types); j++) {
-		type = env_get(conn_types[j]);
-		if (!type)
-			continue;
-		for (i = 0; i < ARRAY_SIZE(hdmi_types); i++) {
-			if (strncmp(type, hdmi_types[i], strlen(hdmi_types[i])) == 0)
-				return i;
-		}
-	}
-	if (i < ARRAY_SIZE(hdmi_types))
-		return i;
-
-	return 0;
-}
-
 static void hdmitx_load_dts_config(struct hdmitx_dev *hdev)
 {
 	const void *dt_blob;
@@ -380,8 +349,11 @@ static void hdmitx_load_dts_config(struct hdmitx_dev *hdev)
 	else
 		txcap->dsc_capable = false;
 
-	/* add new connector0/1/2_type as "HDMI-A-A/B/C" for environment */
-	hdev->enc_idx = hdmitx_get_connector();
+	propdata = (char *)fdt_getprop(dt_blob, node, "enc_idx", NULL);
+	if (propdata) {
+		if (be32_to_cpup((u32 *)propdata) == 2)
+			hdev->enc_idx = 2;
+	}
 	printf("hdmitx enc_idx: %d\n", hdev->enc_idx);
 
 	hdev->tx_max_frl_rate = FRL_NONE; /* default */
