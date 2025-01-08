@@ -536,7 +536,6 @@
 #define CONFIG_FULL_RAMDUMP
 
 #define BL32_SHARE_MEM_SIZE  0x800000
-#define CONFIG_AML_KASLR_SEED
 
 #endif
 

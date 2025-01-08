@@ -409,7 +409,6 @@
 
 #define BL32_SHARE_MEM_SIZE  0x100000
 
-#define CONFIG_AML_KASLR_SEED
 
 #endif
 

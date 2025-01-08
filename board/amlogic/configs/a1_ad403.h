@@ -396,7 +396,6 @@
 #define CONFIG_FULL_RAMDUMP
 #define CONFIG_CMD_FAT   1
 #define CONFIG_FAT_WRITE  1
-#define CONFIG_AML_KASLR_SEED
 
 
 #endif

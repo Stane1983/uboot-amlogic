@@ -367,7 +367,6 @@
 
 /* Unify key need flush cache for a1 */
 #define CONFIG_AML_FLUSH_CACHE 1
-#define CONFIG_AML_KASLR_SEED
 
 
 #endif
