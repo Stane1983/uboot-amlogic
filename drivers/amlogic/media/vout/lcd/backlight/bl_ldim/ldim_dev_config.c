@@ -1020,14 +1020,14 @@ int ldim_dev_get_config_from_json(struct ldim_dev_driver_s *dev_drv)
 
 //boost
 
-//profile & zone map
-	for (i = 0; i < dev_drv->zone_num; i++)
-		dev_drv->bl_mapping[i] = (unsigned short)i;
-
-	str = json_get_obj_str(jsp, parent, "zone_map_path", NULL);
+//profile & zone mapping
+	str = json_get_obj_str(jsp, parent, "zone_mapping_path", NULL);
 	if (str) {
-		LDIMPR("find custom ldim_zone_map_path:%s\n", str);
+		LDIMPR("find custom ldim_zone_mapping_path:%s\n", str);
 		ldim_dev_zone_mapping_load(dev_drv, str);
+	} else {
+		for (i = 0; i < dev_drv->zone_num; i++)
+			dev_drv->bl_mapping[i] = (unsigned short)i;
 	}
 
 //custom_params
