@@ -151,6 +151,7 @@ F:	arch/arm/mach-meson/
 F:	arch/arm/include/asm/arch-meson/
 F:	cmd/amlogic/cmd_clkmsr.c
 F:	cmd/amlogic/cmd_scmi_shmem.c
+F:	drivers/amlogic/clock/clk-pll.c
 F:	drivers/amlogic/mmc/meson_gx_mmc.c
 F:	drivers/amlogic/pci/power/pci-power.c
 F:	drivers/clk/meson/
@@ -166,6 +167,7 @@ F:	drivers/pinctrl/meson/
 F:	drivers/power/domain/meson-gx-pwrc-vpu.c
 F:	drivers/video/meson/
 F:	drivers/watchdog/meson_gxbb_wdt.c
+F:	include/amlogic/clk-pll.h
 F:	include/configs/meson64.h
 F:	include/configs/meson64_android.h
 F:	doc/board/amlogic/

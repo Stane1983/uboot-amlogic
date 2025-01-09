@@ -23,7 +23,7 @@ config CLK_MESON_S1A
 
 config CLK_MESON_S7
 	bool "Enable clock support for Amlogic S7"
-	depends on CLK && ARCH_MESON
+	depends on CLK && ARCH_MESON && CLK_CCF
 	default MESON_S7
 	help
 	  Enable clock support for the Amlogic S7 SoC family, such as
@@ -31,7 +31,7 @@ config CLK_MESON_S7
 
 config CLK_MESON_T6D
 	bool "Enable clock support for Amlogic T6D"
-	depends on CLK && ARCH_MESON
+	depends on CLK && ARCH_MESON && CLK_CCF
 	default MESON_T6D
 	help
 	  Enable clock support for the Amlogic T6D SoC family
@@ -45,7 +45,7 @@ config CLK_MESON_T5M
 
 config CLK_MESON_S7D
 	bool "Enable clock support for Amlogic S7D"
-	depends on CLK && ARCH_MESON
+	depends on CLK && ARCH_MESON && CLK_CCF
 	default MESON_S7D
 	help
 	  Enable clock support for the Amlogic S7D SoC family, such as
@@ -53,7 +53,7 @@ config CLK_MESON_S7D
 
 config CLK_MESON_S6
 	bool "Enable clock support for Amlogic S6"
-	depends on CLK && ARCH_MESON
+	depends on CLK && ARCH_MESON && CLK_CCF
 	default MESON_S6
 	help
 	  Enable clock support for the Amlogic S6 SoC family, such as
