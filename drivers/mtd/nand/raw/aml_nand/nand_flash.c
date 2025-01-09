@@ -237,6 +237,18 @@ struct aml_nand_flash_dev aml_nand_flash_ids[] = {
 		0,
 		(NAND_TIMING_MODE5 | NAND_ECC_BCH8_MODE )},
 
+	{"S34ML04G3",
+		{NAND_MFR_AMD, 0xdc, 0x0, 0x5, 0x4},
+		2048,
+		512,
+		0x20000,
+		128,
+		1,
+		16,
+		15,
+		0,
+	(NAND_TIMING_MODE5 | NAND_ECC_BCH8_MODE)},
+
 	{"A revision NAND 1Gib W29N01HV ",
 		{NAND_ID_WINBOND, 0xf1, 0x00, 0x95, 0x00, 0x00},
 		2048,
