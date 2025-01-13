@@ -816,71 +816,84 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 	char *recovery_check = env_get("recovery_check_part");
 	int update_flag = -1;
 	int rc = 0;
+	char *recovery_prepare = env_get("recovery_prepare_ok");
 
-	if (has_boot_slot == 0 && recovery_check &&
-		(!strcmp(recovery_check, "1") || !strcmp(recovery_check, "4"))) {
-		printf("non ab for kernel 5.15, check part table\n");
-		if (!strcmp(recovery_check, "1")) {
-			printf("try write boot1\n");
-			rc = write_bootloader(1);
-			if (rc) {
-				printf("write boot1 fail, OTA error\n");
-				env_set("recovery_check_part", "3");
-			} else {
-				printf("check & update part\n");
-				update_flag = update_gpt(3);
-			}
-		} else if (!strcmp(recovery_check, "4")) {
-			printf("check & update part\n");
-			update_flag = update_gpt(1);
-		}
-
-		run_command("defenv_reserv; saveenv;", 0);
-		run_command("run bcb_cmd", 0);
-
-		if (update_flag < 1) {
-			printf("check & update part ok......\n");
-			env_set("recovery_check_part", "2");
-			printf("boot from boot0\n");
-			env_set("reboot_status", "reboot_next");
-			env_set("expect_index", "1");
-#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
-			run_command("update_env_part -p reboot_status;", 0);
-			run_command("update_env_part -p expect_index;", 0);
-#endif
-		} else {
-			printf("check & update part error\n");
+	if (recovery_prepare && !strcmp(recovery_prepare, "1")) {
+		if (has_boot_slot == 0 && recovery_check &&
+			(!strcmp(recovery_check, "1") || !strcmp(recovery_check, "4"))) {
+			printf("non ab for kernel 5.15, check part table\n");
 			if (!strcmp(recovery_check, "1")) {
-				printf("write boot0 back\n");
-				write_bootloader_back("2", 1);
+				printf("try write boot1\n");
+				rc = write_bootloader(1);
+				if (rc) {
+					printf("write boot1 fail, OTA error\n");
+					env_set("recovery_check_part", "3");
+				} else {
+					printf("check & update part\n");
+					update_flag = update_gpt(3);
+				}
 			} else if (!strcmp(recovery_check, "4")) {
-				printf("write bootloader back\n");
-				write_bootloader_back("2", 1);
-				write_bootloader_back("2", 0);
+				printf("check & update part\n");
+				update_flag = update_gpt(1);
 			}
-			env_set("recovery_check_part", "3");
-			env_set("upgrade_step", "4");
+
+			run_command("defenv_reserv; saveenv;", 0);
+			run_command("run bcb_cmd", 0);
+
+			if (update_flag < 1) {
+				printf("check & update part ok......\n");
+				env_set("recovery_check_part", "2");
+				printf("boot from boot0\n");
+				env_set("reboot_status", "reboot_next");
+				env_set("expect_index", "1");
 #if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
-			run_command("update_env_part -p upgrade_step;", 0);
+				run_command("update_env_part -p reboot_status;", 0);
+				run_command("update_env_part -p expect_index;", 0);
 #endif
-		}
+			} else {
+				printf("check & update part error\n");
+				if (!strcmp(recovery_check, "1")) {
+					printf("write boot0 back\n");
+					write_bootloader_back("2", 1);
+				} else if (!strcmp(recovery_check, "4")) {
+					printf("write bootloader back\n");
+					write_bootloader_back("2", 1);
+					write_bootloader_back("2", 0);
+				}
+				env_set("recovery_check_part", "3");
+				env_set("upgrade_step", "4");
 #if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
-		run_command("update_env_part -p recovery_check_part;", 0);
+				run_command("update_env_part -p upgrade_step;", 0);
+#endif
+			}
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+			run_command("update_env_part -p recovery_check_part;", 0);
 #else
-		run_command("saveenv", 0);
+			run_command("saveenv", 0);
 #endif
 
-		if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
-			run_command("reboot quiescent", 0);
-		else
-			run_command("reboot", 0);
-	}
+			if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+				run_command("reboot quiescent", 0);
+			else
+				run_command("reboot", 0);
+		}
 
-	if (has_boot_slot == 0 && recovery_check &&
-		(!strcmp(recovery_check, "3"))) {
-		printf("check part error, run_recovery_from_flash\n");
-		run_recovery_from_flash();
-		return 0;
+		if (has_boot_slot == 0 && recovery_check &&
+			(!strcmp(recovery_check, "3"))) {
+			printf("check part error, run_recovery_from_flash\n");
+			run_recovery_from_flash();
+			return 0;
+		}
+	} else {
+		if (has_boot_slot == 0 && recovery_check &&
+			!strcmp(recovery_check, "4")) {
+			printf("back to old bootloader\n");
+			write_bootloader_back("2", 0);
+			if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+				run_command("reboot quiescent", 0);
+			else
+				run_command("reboot", 0);
+		}
 	}
 
 	char *write_boot = env_get("write_boot");
