@@ -539,6 +539,7 @@ static void flash(char *cmd_parameter, char *response)
 		int erase_flag = 0;
 		char *bootloaderindex;
 		char *boardname;
+		char *robust;
 		char *slot_name = NULL;
 		char partname[32] = {0};
 
@@ -650,6 +651,7 @@ static void flash(char *cmd_parameter, char *response)
 
 		bootloaderindex = env_get("forUpgrade_bootloaderIndex");
 		boardname = env_get("board");
+		robust = env_get("forUpgrade_robustOta");
 
 		if (ret == 0) {
 			printf("gpt/nocs mode\n");
@@ -658,7 +660,8 @@ static void flash(char *cmd_parameter, char *response)
 			fastboot_mmc_flash_write("bootloader-boot1", fastboot_buf_addr, image_size,
 				 response);
 			if (strcmp(bootloaderindex, "1") != 0 ||
-				(boardname && (strcmp(boardname, "adt4") == 0))) {
+				(boardname && (strcmp(boardname, "adt4") == 0)) ||
+				(robust && (strcmp(robust, "false") == 0))) {
 				printf("boot from index %s, rewrite boot0\n", bootloaderindex);
 				printf("google device also write both boot0 and boot1\n");
 				fastboot_mmc_flash_write("bootloader-boot0",
@@ -680,7 +683,8 @@ static void flash(char *cmd_parameter, char *response)
 			fastboot_mmc_flash_write("bootloader-boot1", fastboot_buf_addr, image_size,
 				 response);
 			if (strcmp(bootloaderindex, "0") != 0 ||
-				(boardname && (strcmp(boardname, "adt4") == 0))) {
+				(boardname && (strcmp(boardname, "adt4") == 0)) ||
+				(robust && (strcmp(robust, "false") == 0))) {
 				printf("boot from index %s, rewrite bootloader\n", bootloaderindex);
 				printf("google device also write all bootloader\n");
 				fastboot_mmc_flash_write("bootloader",
