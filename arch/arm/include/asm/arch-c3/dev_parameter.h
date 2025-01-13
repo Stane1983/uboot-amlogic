@@ -36,8 +36,9 @@ typedef struct common_storage_parameter {
     uint32_t device_fip_container_copies;
     /*ddrfip size*/
     uint32_t ddr_fip_container_size;
-
-    uint8_t reserved[16];
+    /* bl2 waiting RTOS finish running */
+	uint32_t rtos_finish;
+	uint8_t reserved[12];
 }__attribute__ ((packed)) common_storage_parameter_t;
 
 

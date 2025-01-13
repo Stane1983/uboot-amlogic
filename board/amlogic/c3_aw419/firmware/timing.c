@@ -692,6 +692,7 @@ storage_parameter_t __store_para __attribute__ ((section(".store_param"))) = {
 		.device_fip_container_size = DEV_FIP_SIZE,
 		.device_fip_container_copies = BOARD_DEVFIP_BACKUPS,
 		.ddr_fip_container_size = DDR_FIP_SIZE,
+		.rtos_finish            = BL2_WAIT_RTOS_END,
 	},
 	.nand				= {
 		.version = 0x02,
@@ -715,6 +716,7 @@ storage_parameter_t __store_para __attribute__ ((section(".store_param"))) = {
 		.device_fip_container_size	= DEV_FIP_SIZE,
 		.device_fip_container_copies	= 4,
 		.ddr_fip_container_size		= DDR_FIP_SIZE,
+		.rtos_finish            = BL2_WAIT_RTOS_END,
 	},
 	.nand					= {
 		.version			= 0x01,
