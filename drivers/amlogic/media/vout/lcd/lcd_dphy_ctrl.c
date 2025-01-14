@@ -958,6 +958,7 @@ void lcd_p2p_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off)
 			lcd_ana_write(HHI_LVDS_TX_PHY_CNTL1, (1 << 30) | (1 << 24));
 			/* fifo write enable[31] */
 			lcd_ana_setb(HHI_LVDS_TX_PHY_CNTL1, 1, 31, 1);
+			lcd_lane_map_set(pdrv);
 		} else {
 			/* disable fifo */
 			lcd_ana_setb(HHI_LVDS_TX_PHY_CNTL1, 0, 30, 2);
