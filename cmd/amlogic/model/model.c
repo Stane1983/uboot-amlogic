@@ -243,6 +243,38 @@ static int parse_model_sum(int index, const char *file_name, char *model_name)
 	return 0;
 }
 
+int parse_model_logofile(int index, const char *file_name, char *model_name)
+{
+	void *local_ini_mem, *psec;
+	const char *logo_value = NULL;
+	int ret = 1;
+
+	local_ini_mem = handle_ini_file_parse(file_name, 0);
+	if (!local_ini_mem) {
+		ALOGE("%s: error: %s\n", __func__, file_name);
+		return -1;
+	}
+
+	psec = handle_ini_get_section(local_ini_mem, model_name);
+	if (!psec) {
+		ALOGE("%s: section %s: error: %s\n", __func__, model_name, file_name);
+		return -1;
+	}
+
+	logo_value = handle_ini_get_str(local_ini_mem, psec, "LOGO_FILE_NAME", "null");
+	if (strcmp(logo_value, "null") != 0) {
+		printf("logo_file_name is %s\n", logo_value);
+		env_set("logo_file_name", logo_value);
+		ret = 0;
+	} else {
+		printf("invalid LOGO_FILE_PATH\n");
+	}
+
+	handle_ini_parser_uninit(local_ini_mem);
+
+	return ret;
+}
+
 static const char *get_model_sum_path(int index)
 {
 	char *model_path, str[15];
@@ -330,6 +362,39 @@ static int handle_model_list(void)
 	}
 
 	return 0;
+}
+
+int handle_model_logofile(void)
+{
+	char *model, str[15];
+	unsigned int print_flag;
+	int i;
+	int ret = 1;
+
+	print_flag = env_get_ulong("model_debug_print", 10, 0xffff);
+	if (print_flag != 0xffff) {
+		model_set_log_level(print_flag);
+		printf("model_debug_flag: %d\n", print_flag);
+	}
+
+	for (i = 0; i < 3; i++) {
+		if (i == 0)
+			sprintf(str, "model_name");
+		else
+			sprintf(str, "model%d_name", i);
+
+		model = env_get(str);
+		if (!model) {
+			ALOGD("%s: no %s\n", __func__, str);
+			continue;
+		}
+		ALOGI("%s: %s: %s\n", __func__, str, model);
+		ret = parse_model_logofile(i, get_model_sum_path(i), model);
+		if (ret != 0)
+			continue;
+	}
+
+	return ret;
 }
 
 int handle_model_sum(void)
@@ -503,6 +568,23 @@ static int do_ini_model_list(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 }
 
 U_BOOT_CMD(model_list, 4, 0, do_ini_model_list,
+	"list ini model name",
+	" "
+);
+
+static int do_logo_display(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int ret;
+
+	if (argc > 1)
+		return CMD_RET_USAGE;
+
+	ret = handle_model_logofile();
+	return ret;
+}
+
+U_BOOT_CMD
+(logo_display, 4, 0, do_logo_display,
 	"list ini model name",
 	" "
 );

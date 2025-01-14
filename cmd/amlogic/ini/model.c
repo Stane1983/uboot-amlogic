@@ -3297,6 +3297,33 @@ static int parse_model_sum(int index, const char *file_name, char *model_name)
 	return 0;
 }
 
+int parse_model_logofile(int index, const char *file_name, char *model_name)
+{
+	const char *logo_value = NULL;
+	int ret = 1;
+
+	ini_parser_init();
+
+	if (ini_parse_file(file_name) < 0) {
+		printf("parse mode logofile %s error\n", file_name);
+		ini_parser_uninit();
+		return ret;
+	}
+
+	logo_value = ini_get_string(model_name, "LOGO_FILE_NAME", "null");
+	if (strcmp(logo_value, "null") != 0) {
+		printf("logo_file_name is %s\n", logo_value);
+		env_set("logo_file_name", logo_value);
+		ret = 0;
+	} else {
+		printf("invalid LOGO_FILE_PATH\n");
+	}
+
+	ini_parser_uninit();
+
+	return ret;
+}
+
 static const char *get_model_sum_path(int index)
 {
 	char *model_path, str[15];
@@ -3482,6 +3509,39 @@ int handle_model_set(const char *model, const char *val)
 		}
 	}
 	return 0;
+}
+
+int handle_model_logofile(void)
+{
+	char *model, str[15], model_val[50];
+	int i;
+	int ret = 1;
+
+	for (i = 0; i < 3; i++) {
+		memset(model_val, 0, sizeof(model_val));
+		if (i == 0)
+			sprintf(str, "model_name");
+		else
+			sprintf(str, "model%d_name", i);
+
+		if (read_model_name_param(i, model_val) <= 0) {
+			model = env_get(str);
+			if (!model) {
+				if (model_debug_flag & DEBUG_NORMAL)
+					ALOGD("%s, no %s\n", __func__, str);
+				continue;
+			}
+		} else {
+			model = model_val;
+		}
+		printf("current %s: %s\n", str, model);
+
+		ret = parse_model_logofile(i, get_model_sum_path(i), model);
+		if (ret != 0)
+			continue;
+	}
+
+	return ret;
 }
 
 int handle_model_sum(void)

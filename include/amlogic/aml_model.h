@@ -114,6 +114,7 @@ static inline unsigned char *model_read_file_to_buffer(const char *file_path, in
 int handle_model_list_panel_key(int index);
 int handle_model_list(void);
 int handle_model_sum(void);
+int handle_model_logofile(void);
 #endif
 
 #if defined(CONFIG_CMD_AML_MODEL)
