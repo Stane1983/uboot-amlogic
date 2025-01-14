@@ -37,6 +37,9 @@ int do_reset(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 {
 	puts ("resetting ...\n");
 
+#if	defined(CONFIG_AMLOGIC_MODIFY) && defined(CONFIG_AML_REBOOT)
+	run_command("reboot", 0);
+#else
 	mdelay(50);				/* wait 50 ms */
 
 	disable_interrupts();
@@ -44,7 +47,7 @@ int do_reset(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 	if (!IS_ENABLED(CONFIG_AMLOGIC_MODIFY))
 		reset_misc();
 	reset_cpu();
-
+#endif
 	/*NOTREACHED*/
 	return 0;
 }
