@@ -30,6 +30,10 @@ int do_reset(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	puts ("resetting ...\n");
 
+#if defined(CONFIG_AML_REBOOT)
+	run_command("reboot", 0);
+#else
+
 	udelay (50000);				/* wait 50 ms */
 
 	disable_interrupts();
@@ -38,6 +42,7 @@ int do_reset(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	//reset_misc(); /* a1 call this function here crash ? */
 	reset_cpu(0);
+#endif
 
 	/*NOTREACHED*/
 	return 0;
