@@ -882,6 +882,12 @@ uint32_t create_csrs(void)
 	char part_name[32] = {0};
 	char cmd[64] = {0};
 	uint8_t buf[1] = {0};
+	enum boot_type_e type = store_get_type();
+
+	if (type == BOOT_NAND_MTD || type == BOOT_SNAND) {
+		printf("NAND does not support creating csrs.\n");
+		return AVB_IO_RESULT_OK;
+	}
 
 	if (part_num >= 0)
 		strcpy(part_name, PART_NAME_FTY);
