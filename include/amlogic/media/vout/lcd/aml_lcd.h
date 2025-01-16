@@ -66,6 +66,7 @@
 						      */
 #define LCD_EXT_CMD_TYPE_GPIO                   0xf0
 #define LCD_EXT_CMD_TYPE_WAIT_GPIO              0xf4
+#define LCD_EXT_CMD_TYPE_SWITCH_PORT            0xf5
 #define LCD_EXT_CMD_TYPE_CHECK_RETRY            0xfb
 #define LCD_EXT_CMD_TYPE_CHECK                  0xfc
 #define LCD_EXT_CMD_TYPE_DELAY                  0xfd

@@ -62,18 +62,18 @@ void str_add_reg_sets(struct aml_lcd_drv_s *pdrv,
 		case LCD_REG_DBG_MIPIHOST_BUS:
 			reg_addr = reg_table[idx].reg + reg_offset;
 			if (pdrv->index)
-				reg_addr = REG_ADDR_DSI_B_HOST(reg_addr);
+				reg_addr = REG_ADDR_DSI_1_HOST_A(reg_addr);
 			else
-				reg_addr = REG_ADDR_DSI_HOST(reg_addr);
-			reg_val = dsi_host_read(pdrv, reg_addr);
+				reg_addr = REG_ADDR_DSI_0_HOST_A(reg_addr);
+			reg_val = dsi_host_read(pdrv, 0, reg_addr);
 			break;
 		case LCD_REG_DBG_MIPIPHY_BUS:
 			reg_addr = reg_table[idx].reg + reg_offset;
 			if (pdrv->index)
-				reg_addr = REG_ADDR_DSI_B_PHY(reg_addr);
+				reg_addr = REG_ADDR_DSI_1_PHY_A(reg_addr);
 			else
-				reg_addr = REG_ADDR_DSI_PHY(reg_addr);
-			reg_val = dsi_phy_read(pdrv, reg_addr);
+				reg_addr = REG_ADDR_DSI_0_PHY_A(reg_addr);
+			reg_val = dsi_phy_read(pdrv, 0, reg_addr);
 			break;
 		case LCD_REG_DBG_EDPHOST_BUS:
 			reg_addr = reg_table[idx].reg + reg_offset;

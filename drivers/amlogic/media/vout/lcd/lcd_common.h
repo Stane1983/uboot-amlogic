@@ -364,12 +364,11 @@ void lcd_dsi_tx_ctrl(struct aml_lcd_drv_s *pdrv, unsigned char en);
 unsigned long long lcd_dsi_get_min_bitrate(struct aml_lcd_drv_s *pdrv);
 /* @dsi_debug.c */
 void lcd_dsi_info_print(struct lcd_config_s *pconf);
-void lcd_dsi_set_operation_mode(struct aml_lcd_drv_s *pdrv, unsigned char op_mode);
-void lcd_dsi_write_cmd(struct aml_lcd_drv_s *pdrv, unsigned char *payload);
-unsigned char lcd_dsi_read(struct aml_lcd_drv_s *pdrv,
-			unsigned char *payload, unsigned char *rd_data, unsigned char rd_byte_len);
+void lcd_dsi_set_operation_mode(struct aml_lcd_drv_s *pdrv, u8 op_mode);
+void lcd_dsi_write_cmd(struct aml_lcd_drv_s *pdrv, u8 *payload);
+u8 lcd_dsi_read(struct aml_lcd_drv_s *pdrv, u8 *payload, u8 *rd_data, u8 rd_byte_len);
 /* @dsi_addons/dsi_check_panel.c */
-int mipi_dsi_check_state(struct aml_lcd_drv_s *pdrv, unsigned char reg, unsigned char cnt);
+int mipi_dsi_check_state(struct aml_lcd_drv_s *pdrv, u8 reg, u8 cnt);
 
 /* @lcd_eDP.c */
 void dptx_DPCD_dump(struct aml_lcd_drv_s *pdrv);

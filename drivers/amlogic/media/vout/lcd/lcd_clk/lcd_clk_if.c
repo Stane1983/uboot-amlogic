@@ -383,10 +383,13 @@ static int lcd_clk_config_chip_init(struct aml_lcd_drv_s *pdrv, struct lcd_clk_c
 		lcd_clk_config_chip_init_g12b(pdrv, cconf);
 		break;
 #endif
-#if defined(CONFIG_MESON_T7) || defined(CONFIG_MESON_T3) || defined(CONFIG_MESON_T5M)
+#ifdef CONFIG_MESON_T7
 	case LCD_CHIP_T7:
 		lcd_clk_config_chip_init_t7(pdrv, cconf);
 		break;
+#endif
+
+#if defined(CONFIG_MESON_T3) || defined(CONFIG_MESON_T5M)
 	case LCD_CHIP_T3: /* only one pll */
 	case LCD_CHIP_T5M: //the same as t3, but only support 1 driver
 		lcd_clk_config_chip_init_t3(pdrv, cconf);
@@ -439,6 +442,7 @@ void lcd_clk_config_probe(struct aml_lcd_drv_s *pdrv)
 		pdrv->clk_conf_num = 2;
 	else
 		pdrv->clk_conf_num = 1;
+
 	size = pdrv->clk_conf_num * sizeof(struct lcd_clk_config_s);
 
 	if (!pdrv->clk_conf) {

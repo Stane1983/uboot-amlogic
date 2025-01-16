@@ -52,8 +52,10 @@ void lcd_clk_config_chip_init_c3(struct aml_lcd_drv_s *pdrv, struct lcd_clk_conf
 void lcd_clk_config_chip_init_g12a(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
 void lcd_clk_config_chip_init_g12b(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
 #endif
-#if defined(CONFIG_MESON_T7) || defined(CONFIG_MESON_T3) || defined(CONFIG_MESON_T5M)
+#ifdef CONFIG_MESON_T7
 void lcd_clk_config_chip_init_t7(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
+#endif
+#if defined(CONFIG_MESON_T3) || defined(CONFIG_MESON_T5M)
 void lcd_clk_config_chip_init_t3(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
 #endif
 #ifdef CONFIG_MESON_T3X
