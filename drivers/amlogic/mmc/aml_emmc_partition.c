@@ -280,15 +280,11 @@ int fill_ept_by_gpt(struct mmc *mmc)
 	if (is_gpt_valid(dev_desc, (dev_desc->lba - 1), gpt_head, &gpt_pte) != 1) {
 		ret = gpt_repair_headers(dev_desc);
 		printf("Repaired Backup GPT %s\n", ret ? "failed" : "success");
-		if (ret)
-			return ret;
 	}
 
 	if (is_gpt_valid(dev_desc, GPT_PRIMARY_PARTITION_TABLE_LBA, gpt_head, &gpt_pte) != 1) {
 		ret = gpt_repair_headers(dev_desc);
 		printf("Repaired Primary GPT %s\n", ret ? "failed" : "success");
-		if (ret)
-			return ret;
 	}
 
 	if (resize_gpt(mmc)) {
