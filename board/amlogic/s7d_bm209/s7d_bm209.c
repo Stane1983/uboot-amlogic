@@ -109,7 +109,7 @@ void board_init_mem(void)
 	if (!env_tmp) {
 		ram_size =
 		    ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) >
-		    0xe0000000 ? 0xe0000000 : ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4);
+		    0xf0000000 ? 0xf0000000 : ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4);
 		env_set_hex("bootm_low", 0);
 		env_set_hex("bootm_size", ram_size);
 	}
@@ -230,10 +230,10 @@ phys_size_t get_effective_memsize(void)
 {
 	// >>16 -> MB, <<20 -> real size, so >>16<<20 = <<4
 #if defined(CONFIG_SYS_MEM_TOP_HIDE)
-	return ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) > 0xe0000000 ? 0xe0000000 :
-	    (((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) - CONFIG_SYS_MEM_TOP_HIDE);
+	return (((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) > 0xf0000000 ? 0xf0000000 :
+	    ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4)) - CONFIG_SYS_MEM_TOP_HIDE;
 #else
-	return ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) > 0xe0000000 ? 0xe0000000 :
+	return ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) > 0xf0000000 ? 0xf0000000 :
 	    ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4);
 #endif /* CONFIG_SYS_MEM_TOP_HIDE */
 }
@@ -408,9 +408,15 @@ const struct mtd_partition *get_spinand_partition_table(int *partitions)
 int checkhw(char *name)
 {
 	char dtb_name[64] = { 0 };
-	cpu_id_t cpu_id = get_cpu_id();
+	phys_size_t ddr_size = get_effective_memsize();
 
-	if (cpu_id.family_id == 0x47)
+#if defined(CONFIG_SYS_MEM_TOP_HIDE)
+	ddr_size += CONFIG_SYS_MEM_TOP_HIDE;
+#endif
+
+	if (ddr_size == 0xf0000000)
+		strcpy(dtb_name, "s7d_s905x5m_bm209-4g\0");
+	else
 		strcpy(dtb_name, "s7d_s905x5m_bm209\0");
 
 	strcpy(name, dtb_name);
