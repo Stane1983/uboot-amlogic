@@ -1243,7 +1243,7 @@ int ldim_dev_get_config_from_ini(struct ldim_dev_driver_s *dev_drv)
 	bl_pwm = &dev_drv->analog_pwm_config;
 	bl_pwm->drv_index = 0; /* only venc0 support ldim */
 	str = lcd_ini_get_str(inip, psec, "pwm_adj_port", "null");
-	bl_pwm->pwm_port = bl_pwm_str_to_num(str);
+	bl_pwm->pwm_port = ldim_dev_pwm_port_str2num(str);
 	if (bl_pwm->pwm_port < BL_PWM_VS) {
 		str = lcd_ini_get_str(inip, psec, "pwm_adj_pol", "BL_PWM_POSITIVE");
 		bl_pwm->pwm_method = bl_str_to_pwm_method(str, BL_PWM_POSITIVE);
