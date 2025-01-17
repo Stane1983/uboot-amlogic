@@ -223,6 +223,11 @@ config CMD_SARADC
 	help
 	  SARADC support.
 
+config CMD_KEYPAD
+	bool "support keypad command"
+	help
+	  Support keypad cmd.
+
 config CMD_IR
         bool "ir"
         help
