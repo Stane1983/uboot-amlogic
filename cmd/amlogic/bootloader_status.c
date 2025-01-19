@@ -17,13 +17,11 @@
 #include <part.h>
 #include <cli.h>
 #include <emmc_partitions.h>
+#include <amlogic/store_wrapper.h>
 
 #if defined(CONFIG_EFUSE_OBJ_API) && defined(CONFIG_CMD_EFUSE)
 extern efuse_obj_field_t efuse_field;
 #endif//#ifdef CONFIG_EFUSE_OBJ_API
-
-int __attribute__((weak)) store_logic_read(const char *name, loff_t off, size_t size, void *buf)
-{ return store_read(name, off, size, buf);}
 
 typedef boot_img_hdr_t boot_img_hdr;
 
@@ -359,6 +357,7 @@ void update_rollback(void)
 			env_set("expect_index", "0");
 		} else {
 			wrnP("gpt or disable user bootloader mode\n");
+			run_command("check_uboot_state 0", 0);
 			write_bootloader_back("2", 1);
 			env_set("expect_index", "1");
 		}
@@ -372,6 +371,7 @@ void update_rollback(void)
 			env_set("expect_index", "0");
 		} else {
 			wrnP("gpt or disable user bootloader mode\n");
+			run_command("check_uboot_state 1", 0);
 			write_bootloader_back("2", 1);
 			env_set("expect_index", "1");
 		}
@@ -389,6 +389,82 @@ void update_rollback(void)
 	else
 		run_command("reboot", 0);
 }
+
+#ifdef CONFIG_MMC_MESON_GX
+static int write_bootloader_to_logical(void)
+{
+	unsigned char *buffer = NULL;
+	int capacity_boot = 0x2000 * 512;
+	int iRet = 0;
+	char partname[32] = {0};
+	char back_partname[32] = {0};
+	char *slot_name = NULL;
+
+#ifdef CONFIG_MMC_MESON_GX
+	struct mmc *mmc = NULL;
+
+	if (store_get_type() == BOOT_EMMC)
+		mmc = find_mmc_device(1);
+
+	if (mmc)
+		capacity_boot = mmc->capacity_boot;
+#endif
+
+	printf("capacity_boot in write uboot to logical: 0x%x\n", capacity_boot);
+	buffer = (unsigned char *)malloc(capacity_boot);
+	if (!buffer) {
+		printf("ERROR! fail to allocate memory ...\n");
+		return -1;
+	}
+	memset(buffer, 0, capacity_boot);
+
+	slot_name = env_get("active_slot");
+	if (slot_name && (strcmp(slot_name, "_a") == 0)) {
+		strcpy((char *)partname, "bootloader_a");
+		strcpy((char *)back_partname, "bootloader_b");
+	} else if (slot_name && (strcmp(slot_name, "_b") == 0)) {
+		strcpy((char *)partname, "bootloader_b");
+		strcpy((char *)back_partname, "bootloader_a");
+	}
+
+	iRet = store_boot_read("bootloader", 1, 0, buffer);
+	if (iRet) {
+		printf("Failed to read bootloader\n");
+		free(buffer);
+		return -1;
+	}
+
+	printf("write boot0 to %s\n", partname);
+	iRet = store_logic_write(partname, 0,
+		BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET, buffer);
+	if (iRet) {
+		errorP("Fail to write 0x%xB to part[%s] at offset 0\n",
+					BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET, partname);
+		free(buffer);
+		return -1;
+	}
+
+	iRet = store_boot_read("bootloader", 2, 0, buffer);
+	if (iRet) {
+		printf("Failed to read boot1\n");
+		free(buffer);
+		return -1;
+	}
+
+	printf("write boot1 to %s\n", back_partname);
+	iRet = store_logic_write(back_partname, 0,
+		BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET, buffer);
+	if (iRet) {
+		errorP("Fail to write 0x%xB to part[%s] at offset 0\n",
+					BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET, back_partname);
+		free(buffer);
+		return -1;
+	}
+
+	free(buffer);
+	return 0;
+}
+#endif
 
 static int write_bootloader(int i)
 {
@@ -453,9 +529,13 @@ static int update_gpt(int flag)
 	struct mmc *mmc = NULL;
 	struct blk_desc *dev_desc;
 	int write_gpt = 0;
+	int gpt_flag = -1;
 
 	if (store_get_type() == BOOT_EMMC)
 		mmc = find_mmc_device(1);
+
+	if (mmc)
+		gpt_flag = aml_gpt_valid(mmc);
 
 	if (mmc)
 		capacity_boot = mmc->capacity_boot;
@@ -580,6 +660,9 @@ static int update_gpt(int flag)
 	}
 
 	if (flag == 0) {
+		if (has_boot_slot == 1 && gpt_flag != 0)
+			write_bootloader_to_logical();
+
 		memset(buffer + GPT_OFFSET, 0, capacity_boot - GPT_OFFSET);
 		iRet = store_boot_write("bootloader", 1, 0, buffer);
 		if (iRet) {
@@ -609,6 +692,17 @@ static int update_gpt(int flag)
 				goto exit;
 			}
 		}
+
+		iRet = store_boot_write("bootloader", 1, 0, buffer);
+		if (iRet) {
+			printf("Failed to write boot0\n");
+			ret = 4;
+			goto exit;
+		}
+
+		if (has_boot_slot == 1 && gpt_flag != 0)
+			write_bootloader_to_logical();
+
 		memset(buffer + GPT_OFFSET, 0, capacity_boot - GPT_OFFSET);
 		iRet = store_boot_write("bootloader", 1, 0, buffer);
 		if (iRet) {
