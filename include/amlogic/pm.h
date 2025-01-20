@@ -35,6 +35,7 @@ struct dev_pm_ops {
 	int (*suspend)(void *);
 	int (*resume)(void *);
 	int (*poweroff)(void *);
+	void *private_data;
 };
 
 typedef int (*FUNC_PTR) (void *);
@@ -43,7 +44,7 @@ void pm_initialize(void);
 void pm_suspend(void);
 void pm_poweroff(void);
 struct dev_pm_ops *dev_register_pm(char *name, FUNC_PTR suspend,
-			FUNC_PTR resume, FUNC_PTR poweroff);
+			FUNC_PTR resume, FUNC_PTR poweroff, ...);
 int dev_unregister_pm(struct dev_pm_ops *arg);
 
 #endif

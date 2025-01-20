@@ -32,6 +32,7 @@
 //#include <asm/arch/bl31_apis.h>
 #include <stdio.h>
 #include <malloc.h>
+#include <stdarg.h>
 
 #define PM_SUSPEND_ON		(0)
 #define PM_SUSPEND_TO_IDLE	(1)
@@ -66,7 +67,7 @@ static int test_pm_poweroff(void *dev_info)
 
 #ifdef PM_DEBUG
 struct dev_pm_ops *dev_register_pm(char *name, FUNC_PTR suspend,
-			FUNC_PTR resume, FUNC_PTR poweroff);
+			FUNC_PTR resume, FUNC_PTR poweroff, ...);
 char name[] = "test_pm_name";
 #endif
 
@@ -133,13 +134,16 @@ void pm_poweroff(void)
 }
 
 struct dev_pm_ops *dev_register_pm(char *name, FUNC_PTR suspend,
-			FUNC_PTR resume, FUNC_PTR poweroff)
+			FUNC_PTR resume, FUNC_PTR poweroff, ...)
 {
 	struct dev_pm_ops *ops;
+	va_list pargs;
 
 	printf("[%s]:%s.\n", __func__, name);
+	va_start(pargs, poweroff);
 	if (!name || !suspend || !resume || !poweroff) {
 		printf("Invalid pass parameters\n");
+		va_end(pargs);
 		return NULL;
 	}
 
@@ -147,6 +151,7 @@ struct dev_pm_ops *dev_register_pm(char *name, FUNC_PTR suspend,
 
 	if (!ops) {
 		printf("Wakeup source malloc fail!!\n");
+		va_end(pargs);
 		return NULL;
 	}
 
@@ -154,8 +159,10 @@ struct dev_pm_ops *dev_register_pm(char *name, FUNC_PTR suspend,
 	ops->suspend = suspend;
 	ops->resume = resume;
 	ops->poweroff = poweroff;
+	ops->private_data = va_arg(pargs, void *);
 
 	list_add_tail(&ops->link, &devices);
+	va_end(pargs);
 
 	return ops;
 }
