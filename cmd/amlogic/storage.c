@@ -396,8 +396,20 @@ static int _store_boot_read(const char *part_name, u8 cpy, size_t size, void *ad
 
 int store_boot_read(const char *name, u8 copy, size_t size, void *buf)
 {
-	return _store_boot_read(name, copy, size, buf);
+	struct storage_t *store = store_get_current();
 
+	if (!store) {
+		pr_info("%s %d please init storage device first\n",
+			__func__, __LINE__);
+		return 1;
+	}
+
+	if (!strcmp(name, "bootloader") &&
+	    (store->type == BOOT_SNAND ||
+	    store->type == BOOT_NAND_MTD))
+		return _store_boot_read(name, copy, size, buf);
+
+	return store->boot_read(name, copy, size, buf);
 }
 
 static int _store_boot_write(const char *part_name, u8 cpy, size_t size, void *addr)
