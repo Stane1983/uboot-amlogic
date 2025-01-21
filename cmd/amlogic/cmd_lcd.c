@@ -377,29 +377,115 @@ static int do_lcd_panel_dump(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
 
 static int do_lcd_mem(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	u32 size;
+	u32 size, i, j;
 	char *name;
 	phys_addr_t pa = 0;
+	unsigned char *vaddr = NULL;
+	int ret;
 
-	if (argc >= 4) {
-		if (strcmp(argv[1], "add") == 0) {
-			size = ustrtoul(argv[2], NULL, 10);
-			name = argv[3];
-			pa = lrm_phys_alloc(size, name);
-		} else if (strcmp(argv[1], "add_tail") == 0) {
-			size = ustrtoul(argv[2], NULL, 10);
-			name = argv[3];
-			pa = lrm_phys_alloc_tail(size, name);
+	if (argc == 1)
+		goto do_lcd_mem_err;
+
+	if (strcmp(argv[1], "add") == 0) {
+		if (argc < 4)
+			goto do_lcd_mem_err;
+		size = simple_strtoul(argv[2], NULL, 10);
+		name = argv[3];
+		pa = lrm_phys_alloc(size, name);
+	} else if (strcmp(argv[1], "add_tail") == 0) {
+		if (argc < 4)
+			goto do_lcd_mem_err;
+		size = simple_strtoul(argv[2], NULL, 10);
+		name = argv[3];
+		pa = lrm_phys_alloc_tail(size, name);
+	} else if (strcmp(argv[1], "rm") == 0) {
+		if (argc < 3)
+			goto do_lcd_mem_err;
+		name = argv[2];
+		ret = lrm_get_by_name(name, &pa, &size);
+		if (ret) {
+			printf("error: %s: not find\n", name);
+			return 0;
 		}
-	} else if (argc == 3) {
-		if (strcmp(argv[1], "rm") == 0) {
+		lrm_free(NULL, pa);
+	} else if (strcmp(argv[1], "get") == 0) {
+		if (argc < 3)
+			goto do_lcd_mem_err;
+		name = argv[2];
+		ret = lrm_get_by_name(name, &pa, &size);
+		if (ret) {
+			printf("error: %s: not find\n", name);
+			return 0;
+		}
+		vaddr = (unsigned char *)lrm_phys_to_virt(pa, size);
+		printf("data addr: 0x%x:", (unsigned int)pa);
+		for (i = 0; i < size; i += 16) {
+			printf("%04x:", i);
+			for (j = 0; j < 16; j++) {
+				if ((i + j) >= size)
+					break;
+				printf(" %02x", vaddr[i + j]);
+			}
+			printf("\n");
+		}
+	} else if (strcmp(argv[1], "show") == 0) {
+		lrm_show();
+	} else if (strcmp(argv[1], "param") == 0) {
+		if (argc < 3)
+			goto do_lcd_mem_err;
+		if (strcmp(argv[2], "show") == 0) { //read from param_mem
+			aml_lcd_panel_mem_debug(NULL);
+		} else if (strcmp(argv[2], "get") == 0) { //read from param_mem
+			if (argc < 4)
+				goto do_lcd_mem_err;
+			name = argv[3];
+			aml_lcd_panel_mem_debug(name);
+		} else if (strcmp(argv[2], "test") == 0) { //read from lrm
+			if (argc < 4) {
+				aml_lcd_panel_param_test(NULL);
+			} else {
+				name = argv[3];
+				aml_lcd_panel_param_test(name);
+			}
+		}
+	} else if (strcmp(argv[1], "bootargs") == 0) {
+		if (argc >= 3) {
 			name = argv[2];
-			lrm_get_by_name(name, &pa, &size);
-			lrm_free(NULL, pa);
+			vaddr = lrm_bootargs_get_data(name, &size);
+			if (vaddr) {
+				for (i = 0; i < size; i += 16) {
+					printf("%04x:", i);
+					for (j = 0; j < 16; j++) {
+						if ((i + j) >= size)
+							break;
+						printf(" %02x", vaddr[i + j]);
+					}
+					printf("\n");
+				}
+			}
 		}
+		lrm_bootargs_dump();
+	} else if (strcmp(argv[1], "update") == 0) {
+		lrm_handle_mem_info_to_kernel();
+	} else {
+		goto do_lcd_mem_err;
 	}
 
-	lrm_show();
+	return 0;
+
+do_lcd_mem_err:
+	printf("format: lcd mem [cmd] [param...]\n"
+		"help:\n"
+		"lcd mem update: save panel mem data to lrm\n"
+		"lcd mem show: dump lrm data info\n"
+		"lcd mem add size name: alloc lrm mem for param 'name'\n"
+		"lcd mem add_tail: alloc lrm tail_mem for param 'name'\n"
+		"lcd mem rm name: remove lrm mem for param 'name'\n"
+		"lcd mem get name: dump data of param 'name' in lrm\n"
+		"lcd mem param show: list param in panel param_mem\n"
+		"lcd mem param get name: dump data of param 'name' in panel param_mem\n"
+		"lcd mem bootargs: list bootargs in panel bootargs_mem\n"
+		"lcd mem bootargs name: dump data of bootargs 'name' in panel bootargs_mem\n");
 
 	return 0;
 }

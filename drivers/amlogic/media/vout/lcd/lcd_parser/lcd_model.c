@@ -183,22 +183,37 @@ void mem_dump(unsigned char *addr, int size)
 	}
 }
 
-void panel_param_mem_dump(void)
+void panel_param_mem_dump(const char *key_name)
 {
 	int i = 0;
 	struct panel_param_key_s *key;
+	unsigned char *p;
 
 	if (!panel_param_mem.mem || !panel_param_mem.head->key_cnt)
 		return;
 
-	printf("\npanel param dump: key_cnt:%d\n", panel_param_mem.head->key_cnt);
+	if (!key_name) {
+		printf("\npanel param dump: key_cnt:%d\n", panel_param_mem.head->key_cnt);
+		for (i = 0; i < panel_param_mem.head->key_cnt; i++) {
+			key = &panel_param_mem.keys[i];
+			p = panel_param_mem.key_mem + key->mem_pos;
+			printf("[%02d]: size:0x%x, mem_ofst:0x%x, vaddr:0x%p, name:%s\n",
+				i, key->size, key->mem_pos, p, key->name);
+		}
+		printf("\n");
+		return;
+	}
+
 	for (i = 0; i < panel_param_mem.head->key_cnt; i++) {
 		key = &panel_param_mem.keys[i];
-		printf("[%02d]: size:0x%x, mem_ofst:0x%x, name:%s\n",
-			i, key->size, key->mem_pos, key->name);
+		if (strcmp(key_name, key->name) == 0) {
+			p = panel_param_mem.key_mem + key->mem_pos;
+			printf("[%02d]: size:0x%x, mem_ofst:0x%x, vaddr:0x%p, name:%s\n",
+				i, key->size, key->mem_pos, p, key->name);
 
-		mem_dump(panel_param_mem.key_mem + key->mem_pos, key->size);
-		printf("\n");
+			mem_dump(p, key->size);
+			printf("\n");
+		}
 	}
 }
 
@@ -221,6 +236,9 @@ void panel_param_mem_set_ukey_flag(void)
 int panel_param_mem_put(unsigned char *mem, const char *name, u32 len)
 {
 	struct panel_param_key_s *key;
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_MEM)
+		LCDPR("%s: %s\n", __func__, name);
 
 	if (!panel_param_mem.mem) {
 		panel_param_mem.mem = (unsigned char *)malloc(PANEL_PARAM_MEM_RSVD_SIZE);
@@ -284,10 +302,13 @@ int panel_param_mem_modify(unsigned char *mem, const char *name, u32 len)
 	if (!mem || !panel_param_mem.mem || !panel_param_mem.head->key_cnt)
 		return -1;
 
+	if (lcd_debug_print_flag & LCD_DBG_PR_MEM)
+		LCDPR("%s: %s\n", __func__, name);
+
 	for (i = 0; i < panel_param_mem.head->key_cnt; i++) {
 		key = &panel_param_mem.keys[i];
 		if (strncmp(key->name, name, sizeof(key->name)) == 0) {
-			if (len < key->size) {
+			if (len <= key->size) {
 				memset(panel_param_mem.key_mem + key->mem_pos, 0, key->size);
 				memcpy(panel_param_mem.key_mem + key->mem_pos, mem, len);
 				key->size = len;
@@ -302,6 +323,8 @@ int panel_param_mem_modify(unsigned char *mem, const char *name, u32 len)
 						   panel_param_mem.head->size - 4);
 				panel_param_mem.head->_crc32 = _crc32;
 			}
+			if (lcd_debug_print_flag & LCD_DBG_PR_MEM)
+				LCDPR("%s: %s, overwrite mem\n", __func__, name);
 			return ret;
 		}
 	}
@@ -311,10 +334,12 @@ int panel_param_mem_modify(unsigned char *mem, const char *name, u32 len)
 		_crc32 = cal_CRC32(0, panel_param_mem.mem + 4, panel_param_mem.head->size - 4);
 		panel_param_mem.head->_crc32 = _crc32;
 	}
+	if (lcd_debug_print_flag & LCD_DBG_PR_MEM)
+		LCDPR("%s: %s, new mem\n", __func__, name);
 	return ret;
 }
 
-static void panel_param_mem_update(void)
+static void panel_param_mem_update_to_lrm(void)
 {
 	unsigned int size = 0, key_size = 0, key_mem_size = 0;
 	phys_addr_t paddr;
@@ -349,8 +374,11 @@ static void panel_param_mem_update(void)
 	head->size = size;
 	head->_crc32 = cal_CRC32(0, panel_rsvd + 4, size - 4);
 
-	LCDPR("%s, paddr:0x%llx crc:0x%x, size:%d, key_cnt:%d, ukey_exist:%d\n", __func__,
-		(u64)paddr, head->_crc32, head->size, head->key_cnt, head->ukey_exist);
+	if (lcd_debug_print_flag & LCD_DBG_PR_MEM) {
+		LCDPR("%s, paddr:0x%llx crc:0x%x, size:%d, key_cnt:%d, ukey_exist:%d\n",
+			__func__, (u64)paddr,
+			head->_crc32, head->size, head->key_cnt, head->ukey_exist);
+	}
 }
 
 void update_panel_param_to_kernel(void)
@@ -358,10 +386,76 @@ void update_panel_param_to_kernel(void)
 	u64 pa;
 	u32 size;
 
-	if (lrm_get_by_name("panel_config", &pa, &size))
+	if (lrm_get_by_name("panel_config", &pa, &size)) {
+		panel_param_mem_update_to_lrm(); //new
 		return;
+	}
+
+	//exist
 	lrm_phys_free(pa);
-	panel_param_mem_update();
+	panel_param_mem_update_to_lrm();
+}
+
+void lcd_panel_param_test(char *name)
+{
+	struct panel_param_mem_s local_param_mem;
+	unsigned char *mem, *p;
+	u64 pa;
+	unsigned int size, _crc32;
+	struct panel_param_head_s *head;
+	struct panel_param_key_s *key;
+	int i;
+
+	if (lrm_get_by_name("panel_config", &pa, &size)) {
+		LCDERR("panel_config get fail\n");
+		return;
+	}
+	mem = lrm_phys_to_virt(pa, size);
+	if (!mem) {
+		LCDERR("panel_config get fail\n");
+		return;
+	}
+
+	head = (struct panel_param_head_s *)mem;
+	_crc32 = cal_CRC32(0, mem + 4, head->size - 4);
+	if (_crc32 != head->_crc32) {
+		LCDERR("panel_config crc check fail:cal:0x%x-ori:0x%x\n", _crc32, head->_crc32);
+		return;
+	}
+
+	local_param_mem.mem = mem;
+	local_param_mem.head = (struct panel_param_head_s *)mem;
+	local_param_mem.keys = (struct panel_param_key_s *)(local_param_mem.mem +
+				PANEL_PARAM_HEAD_SIZE);
+	head = local_param_mem.head;
+	size = head->key_cnt * PANEL_PARAM_KEY_SIZE + PANEL_PARAM_HEAD_SIZE;
+	local_param_mem.key_mem = local_param_mem.mem + size;
+
+	if (!name) {
+		LCDPR("local_param_mem: paddr:0x%llx, size:0x%x, key_cnt:%d, ukey_exist:%d\n",
+			pa, head->size, head->key_cnt, head->ukey_exist);
+		for (i = 0; i < head->key_cnt; i++) {
+			key = &local_param_mem.keys[i];
+			p = local_param_mem.key_mem + key->mem_pos;
+			printf("[%02d]: size:0x%x, mem_ofst:0x%x, vaddr:0x%p, name:%s\n",
+				i, key->size, key->mem_pos, p, key->name);
+		}
+		printf("\n");
+		return;
+	}
+
+	for (i = 0; i < head->key_cnt; i++) {
+		key = &local_param_mem.keys[i];
+		if (strcmp(name, key->name))
+			continue;
+
+		p = local_param_mem.key_mem + key->mem_pos;
+		printf("[%02d]: size:0x%x, mem_ofst:0x%x, vaddr:0x%p, name:%s\n",
+			i, key->size, key->mem_pos, p, key->name);
+
+		mem_dump(p, key->size);
+		printf("\n");
+	}
 }
 
 int path_name_compose(const char *path, const char *name, char *path_name)
@@ -545,7 +639,7 @@ int panel_file_parse_mem_save(void)
 			LCDERR("%s: parse_mem[%d] exit\n", __func__, i);
 	}
 
-	panel_param_mem_update();
+	update_panel_param_to_kernel();
 
 	return 0;
 }

@@ -35,6 +35,16 @@ struct aml_bl_drv_s *aml_bl_get_driver(int index)
 	return bl_driver[index];
 }
 
+int aml_bl_get_state(int index)
+{
+	struct aml_bl_drv_s *bdrv = aml_bl_get_driver(index);
+
+	if (!bdrv)
+		return 0;
+
+	return bdrv->state;
+}
+
 static struct bl_config_s *bl_check_valid(struct aml_bl_drv_s *bdrv)
 {
 	struct bl_config_s *bconf;

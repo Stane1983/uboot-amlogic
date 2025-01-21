@@ -85,7 +85,8 @@
 /* 20241108: optimize config load flow */
 /* 20241127: add lcd config json parse driver */
 /* 20241210: update lcd config ini parse driver */
-#define LCD_DRV_VERSION    "20241210"
+/* 20250123: update lcd bootargs transfer by lrm */
+#define LCD_DRV_VERSION    "20250123"
 
 #define CFMT_RGB565          0x05
 #define CFMT_RGB_6bit        0x06
@@ -234,10 +235,11 @@ unsigned int lcd_get_str_array_index(const char *data_str, unsigned int index,
 				     unsigned int def_val);
 
 void mem_dump(unsigned char *addr, int size);
-void panel_param_mem_dump(void);
+void panel_param_mem_dump(const char *key_name);
 int is_panel_param_mem_ok(void);
 int is_ukey_in_param_mem(void);
 void update_panel_param_to_kernel(void);
+void lcd_panel_param_test(char *name);
 
 int path_name_compose(const char *path, const char *name, char *path_name);
 int set_panel_file_parse_mem(int index, void *parse_mem, int size, unsigned char type);
@@ -388,6 +390,7 @@ void aml_bl_remove_all(void);
 int aml_bl_index_add(int drv_index, int conf_index);
 int aml_bl_index_remove(int drv_index);
 int aml_bl_init(void);
+int aml_bl_get_state(int index);
 void aml_bl_driver_enable(int index);
 void aml_bl_driver_disable(int index);
 void aml_bl_set_level(int index, unsigned int level);
