@@ -62,15 +62,19 @@ int keymanage_secukey_write(const char *keyname, const void* keydata, unsigned i
             int index = 0;
             char origSum_str[SHA256_SUM_LEN * 2 + 2];
             char genSum_str[SHA256_SUM_LEN * 2 + 2];
-            int org_n = 0, gen_n = 0;
+            int64_t org_n = 0, gen_n = 0;
 
             origSum_str[0] = genSum_str[0] = '\0';
             for (index = 0; index < SHA256_SUM_LEN; ++index) {
 
                 //sprintf(origSum_str, "%s%02x", origSum_str, origSum[index]);
                 //sprintf(genSum_str, "%s%02x", genSum_str, genSum[index]);
-                org_n += sprintf(&origSum_str[org_n], "%02x", origSum[index]);
-                gen_n += sprintf(&genSum_str[gen_n], "%02x", genSum[index]);
+                org_n += snprintf(&origSum_str[org_n], 2, "%02x", origSum[index]);
+                gen_n += snprintf(&genSum_str[gen_n],  2, "%02x", genSum[index]);
+                if (org_n > SHA256_SUM_LEN * 2 || gen_n > SHA256_SUM_LEN * 2) {
+                        KM_ERR("Except, too large %lld, %lld\n", org_n, gen_n);
+                        return __LINE__;
+                }
             }
 
             KM_ERR("Failed in check hash, origSum[%s] != genSum[%s]\n", origSum_str, genSum_str);
@@ -183,7 +187,7 @@ int _burn_key_in_type_hdcp2(const char* keyname, void* databuf, const unsigned b
     pHdcp2RxKey = (Hdcp2RxKeyFmt_t*)decryptBuf;
 
     const uint8_t* tmpName      = (uint8_t*)HDCP2_RX_KEY_LC128_NAME;
-    unsigned        tmpLen      = HDCP2_RX_LC128_LEN;
+    int        tmpLen      = HDCP2_RX_LC128_LEN;
     unsigned        isSecure    = 0;
     ssize_t retLen = 0;
     retLen = amlkey_write(tmpName, (uint8_t*)&pHdcp2RxKey->lc128, tmpLen , isSecure);

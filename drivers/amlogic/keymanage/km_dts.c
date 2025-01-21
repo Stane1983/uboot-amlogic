@@ -229,7 +229,7 @@ static int unifykey_item_dt_parse(const void* dt_addr,int nodeoffset,int id,char
             KM_ERR("key[%s]cfg key-type[%s] sz %d > max %d\n", temp_item->name, propdata, keyTypeLen, KEY_UNIFY_TYPE_LEN_MAX);
             return __LINE__;
         }
-        strcpy(temp_item->keyType, propdata);
+        strncpy(temp_item->keyType, propdata, keyTypeLen + 1);
     }
 
 	prop = (struct fdt_property*)fdt_get_property((const void *)dt_addr,nodeoffset,"key-permit",NULL) ;

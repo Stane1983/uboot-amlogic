@@ -156,13 +156,13 @@ int _keyman_buf_to_hex_ascii(const uint8_t* pdata, const unsigned dataLen, char*
     else
     {
         int i = 0;
-        int n = 0;
+        int64_t n = 0;
 
         *fmtStr = '\0';
         for (; i < dataLen; ++i, ++pdata)
         {
             //sprintf(fmtStr, "%s%02x", fmtStr, *pdata);
-            n += sprintf(&fmtStr[n], "%02x",  *pdata);
+            n += snprintf(&fmtStr[n], 2, "%02x",  *pdata);
             if (n > fmtSize) {
                 printf("%s:%d mem is overflow!!!\n",__func__,__LINE__);
                 break;

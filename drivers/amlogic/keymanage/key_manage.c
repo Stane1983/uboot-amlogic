@@ -176,11 +176,11 @@ static int _read_key_in_type_mac(const char* keyname, char* databuf, const unsig
 {
     int ret = 0;
     int index = 0;
-    int n = 0;
+    int64_t n = 0;
     ssize_t keyDevSz = 0;
 
     if (_UsrMacKeyLen > bufLen) {
-        KM_ERR("mac len %d is invalid, must be %d\n", bufLen, _UsrMacKeyLen);
+        KM_ERR("mac len %u is invalid, must be %d\n", bufLen, _UsrMacKeyLen);
         return -__LINE__;
     }
 
@@ -208,7 +208,7 @@ static int _read_key_in_type_mac(const char* keyname, char* databuf, const unsig
         const unsigned byteSum = decryptBuf[index];
 
         //sprintf(databuf, "%s%02x:", databuf, byteSum);
-        n += sprintf(&databuf[n], "%02x:", byteSum);
+        n += snprintf(&databuf[n], 2, "%02x:", byteSum);
         if (n > bufLen) {
             break;
         }
@@ -244,7 +244,7 @@ static int _burn_key_in_type_sha1(const char* keyname, void* databuf, const unsi
         char org_sha1Str[fmtStrLen + 2];
         char gen_sha1Str[fmtStrLen + 2];
         int byteIndex = 0;
-        int gen_n,org_n;
+        int64_t gen_n,org_n;
 
         gen_n = org_n = 0;
         org_sha1Str[0] = gen_sha1Str[0] = '\0';
@@ -252,8 +252,8 @@ static int _burn_key_in_type_sha1(const char* keyname, void* databuf, const unsi
         {
             //sprintf(org_sha1Str, "%s%02x", org_sha1Str, orgSum[byteIndex]);
             //sprintf(gen_sha1Str, "%s%02x", gen_sha1Str, genSum[byteIndex]);
-            org_n += sprintf(&org_sha1Str[org_n], "%02x",  orgSum[byteIndex]);
-            gen_n += sprintf(&gen_sha1Str[gen_n], "%02x",  genSum[byteIndex]);
+            org_n += snprintf(&org_sha1Str[org_n], 2, "%02x",  orgSum[byteIndex]);
+            gen_n += snprintf(&gen_sha1Str[gen_n], 2, "%02x",  genSum[byteIndex]);
             if ((org_n > fmtStrLen+2) || (gen_n > fmtStrLen+2)) {
                 KM_ERR("%s:%d mem is overflow!!!n",__func__,__LINE__);
                 break;
@@ -350,7 +350,7 @@ int key_manage_read(const char* keyname, void* keydata, const unsigned bufLen)
         return __LINE__;
     }
     if (keysize > bufLen) {
-        KM_ERR ("keysize %zd > bufLen %d\n", keysize, bufLen) ;
+        KM_ERR ("keysize %zd > bufLen %u\n", keysize, bufLen) ;
         return __LINE__;
     }
 

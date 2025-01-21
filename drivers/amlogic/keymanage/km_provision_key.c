@@ -34,7 +34,7 @@ int keymanage_provision_write(const char *keyname, const void* keydata, unsigned
 ssize_t keymanage_provision_size(const char* keyname)
 {
 	KM_DBG("f(%s)L%d\n", __func__, __LINE__);
-	uint32_t retBuf[12] = {0};
+	ssize_t retBuf[12] = {0};
 	snprintf(_cmdBuf, _CMD_BUF_LEN, "factory_provision query %s 0x%p", keyname, retBuf);
 	int iRet = run_command(_cmdBuf, 0);
 	if (iRet) {

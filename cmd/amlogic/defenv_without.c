@@ -118,7 +118,7 @@ static int _do_defenv_reserv(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
 	const char **envListArr = (const char **)(argv + 1);
 	unsigned int rsv_flags = 0;
 	const int MAX_RSV_NUM = CONFIG_SYS_MAXARGS - 1;
-	const char *rsv_env_list[MAX_RSV_NUM];//store at most 64 envs
+	const char *rsv_env_list[MAX_RSV_NUM + 1];//store at most 64 envs
 	int rsv_env_num = 0;
 	int ret = 0, i = 0, k = 0;
 	const char *tmp = NULL;

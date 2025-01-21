@@ -90,9 +90,9 @@ ssize_t keymanage_efuse_size(const char* keyname)
 int keymanage_efuse_exist(const char* keyname)
 {
 	if (!strcmp(SECURE_BOOT_KEY_NAME, keyname)) {
-		const unsigned long cfg10 = IS_FEAT_BOOT_VERIFY();
+		const int cfg10 = IS_FEAT_BOOT_VERIFY();
 
-		KM_MSG("cfg10=0x%lX\n", cfg10);
+		KM_MSG("cfg10=0x%X\n", cfg10);
 		return cfg10;
 	} else if (!strcmp(EFUSE_KEY_DGPK1, keyname)) {
 		char *pattern = (char *)"dgpk1";
@@ -145,11 +145,11 @@ int keymanage_efuse_query_can_read(const char* keyname)
 int keymanage_efuse_read(const char *keyname, void* databuf, const unsigned bufSz)
 {
     int ret = 0;
-    unsigned cfgSz = 0;
+    ssize_t cfgSz = 0;
 
     cfgSz = keymanage_efuse_size(keyname);
-    if (cfgSz > bufSz) {
-        KM_ERR("buf sz 0x%x < dts cfg sz 0x%x\n", bufSz, cfgSz);
+    if (cfgSz > bufSz || cfgSz > 4096) {
+        KM_ERR("buf sz 0x%x < dts cfg sz 0x%zx\n", bufSz, cfgSz);
         return __LINE__;
     }
 
