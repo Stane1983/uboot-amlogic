@@ -443,7 +443,7 @@ static int do_fdt_overlay(void)
 	return 0;
 }
 #endif
-
+#ifdef CONFIG_AML_LCD_TV
 void check_powerkey(void)
 {
 	char *preboot_mode = env_get("preboot_mode");
@@ -476,6 +476,7 @@ void check_powerkey(void)
 		}
 	}
 }
+#endif
 
 /**
  * bootm_find_images - wrapper to find and locate various images
@@ -500,7 +501,9 @@ int bootm_find_images(int flag, int argc, char * const argv[])
 	u32 fdto_totalsize = 0;
 #endif
 
+#ifdef CONFIG_AML_LCD_TV
 	check_powerkey();
+#endif
 	/* find ramdisk */
 	ret = boot_get_ramdisk(argc, argv, &images, IH_INITRD_ARCH,
 			       &images.rd_start, &images.rd_end);
