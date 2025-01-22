@@ -26,12 +26,19 @@
 #endif
 #include "cmd_bootctl_utils.h"
 #include <amlogic/store_wrapper.h>
+#include <part_efi.h>
 
 #include <asm/amlogic/arch/secure_apb.h>
 
 #if defined(CONFIG_EFUSE_OBJ_API) && defined(CONFIG_CMD_EFUSE)
 extern efuse_obj_field_t efuse_field;
 #endif//#ifdef CONFIG_EFUSE_OBJ_API
+
+#define BOOTLOADER_OFFSET		512
+#define BOOTLOADER_MAX_SIZE		(4 * 1024 * 1024)
+#define MIB_SIZE                (1024 * 1024)
+#define GPT_OFFSET              0x3DFE00
+#define DTS_GPT_OFFSET          0x3E0000
 
 #ifdef CONFIG_BOOTLOADER_CONTROL_BLOCK
 
@@ -482,6 +489,119 @@ static bool boot_info_save(bootloader_control *info, char *miscbuf)
 	return true;
 }
 
+static int check_bootloader(int slot)
+{
+	int iRet = 0;
+	int ret = -1;
+	unsigned char *buffer_src = NULL;
+	unsigned char *buffer_dest = NULL;
+	const int SHA1SUMLEN = 20;
+	u8 gensum0[SHA1SUMLEN * 2];
+	u8 *gensum1 = gensum0 + SHA1SUMLEN;
+	int capacity_boot = 0;
+	char back_partname[32] = {0};
+	struct blk_desc *dev_desc;
+	gpt_header *gpt_h1;
+	gpt_header *gpt_h2;
+
+#ifdef CONFIG_MMC_MESON_GX
+	struct mmc *mmc = NULL;
+
+	if (store_get_type() == BOOT_EMMC)
+		mmc = find_mmc_device(1);
+
+	if (mmc)
+		capacity_boot = mmc->capacity_boot;
+#endif
+
+	printf("check_bootloader: %x\n", capacity_boot);
+
+	buffer_src = (unsigned char *)malloc(capacity_boot);
+	if (!buffer_src) {
+		printf("ERROR! fail to allocate memory ...\n");
+		goto exit;
+	}
+	memset(buffer_src, 0, capacity_boot);
+
+	if (slot == 0) {
+		strcpy((char *)back_partname, "bootloader_b");
+	} else if (slot == 1) {
+		strcpy((char *)back_partname, "bootloader_a");
+	}
+
+	iRet = store_boot_read("bootloader", 2, 0, buffer_src);
+	if (iRet) {
+		printf("Fail read boot1\n");
+		goto exit;
+	}
+	sha1_csum(buffer_src, capacity_boot, gensum0);
+
+	buffer_dest = buffer_src;
+	memset(buffer_dest, 0, capacity_boot);
+
+	iRet = store_logic_read(back_partname, 0,
+		BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET, buffer_dest);
+	if (iRet) {
+		printf("Fail read %s\n", back_partname);
+		goto exit;
+	}
+	sha1_csum(buffer_dest, capacity_boot, gensum1);
+
+	ret = memcmp(gensum0, gensum1, SHA1SUMLEN);
+	printf("boot1 & %s %s same\n", back_partname, ret ? "NOT" : "DO");
+
+	if (ret) {
+		printf("boot1 doesn't = %s, rewrite it\n", back_partname);
+		iRet = store_boot_write("bootloader", 2, 0, buffer_dest);
+		if (iRet) {
+			printf("Failed to write bootloader\n");
+			goto exit;
+		} else {
+			printf("write %s to boot1 ok\n", back_partname);
+			ret = 0;
+		}
+	}
+
+#ifdef CONFIG_MMC_MESON_GX
+	dev_desc = blk_get_dev("mmc", 1);
+	if (dev_desc && dev_desc->type != DEV_TYPE_UNKNOWN) {
+		printf("valid mmc device, check gpt\n");
+
+		gpt_h1 = (void *)buffer_dest + GPT_OFFSET +
+			(GPT_PRIMARY_PARTITION_TABLE_LBA *
+			dev_desc->blksz);
+
+		gpt_h2 = (void *)buffer_dest + DTS_GPT_OFFSET +
+			(GPT_PRIMARY_PARTITION_TABLE_LBA *
+			dev_desc->blksz);
+
+		printf("gpt_h1 signature is: 0x%llX\n",
+		       le64_to_cpu(gpt_h1->signature));
+
+		printf("gpt_h2 signature is: 0x%llX\n",
+		       le64_to_cpu(gpt_h2->signature));
+
+		if (le64_to_cpu(gpt_h1->signature) == GPT_HEADER_SIGNATURE_UBOOT ||
+			le64_to_cpu(gpt_h2->signature) == GPT_HEADER_SIGNATURE_UBOOT) {
+			printf("backup slot has gpt, set dts_to_gpt to 0\n");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+			env_set("dts_to_gpt", "0");
+			run_command("update_env_part -p dts_to_gpt;", 0);
+#else
+			run_command("defenv_reserve;setenv dts_to_gpt 0;saveenv;", 0);
+#endif
+		}
+	}
+#endif
+
+exit:
+	if (buffer_src) {
+		free(buffer_src);
+		buffer_src = NULL;
+	}
+	return ret;
+}
+
 static int is_BootSame(int srcindex, int dstindex)
 {
 	int iRet = 0;
@@ -695,6 +815,8 @@ static int do_GetValidSlot(
 			return 0;
 		} else if (bootable_b) {
 			printf("slot a is unbootable, back to b\n");
+			if (gpt_partition || nocs_mode)
+				check_bootloader(0);
 			boot_ctrl.roll_flag = 1;
 			boot_info_save(&boot_ctrl, miscbuf);
 			run_command("set_active_slot b", 0);
@@ -743,6 +865,8 @@ static int do_GetValidSlot(
 			return 0;
 		} else if (bootable_a) {
 			printf("slot b is unbootable, back to a\n");
+			if (gpt_partition || nocs_mode)
+				check_bootloader(1);
 			boot_ctrl.roll_flag = 1;
 			boot_info_save(&boot_ctrl, miscbuf);
 			run_command("set_active_slot a", 0);
@@ -877,6 +1001,39 @@ static int do_SetRollFlag
 	return 0;
 }
 
+static int do_CheckUbootState
+(cmd_tbl_t *cmdtp,
+	int flag,
+	int argc,
+	char * const argv[])
+{
+	char miscbuf[MISCBUF_SIZE] = {0};
+	bootloader_control info;
+
+	if (argc != 2)
+		return cmd_usage(cmdtp);
+
+	if (has_boot_slot == 0) {
+		printf("device is not ab mode\n");
+		return -1;
+	}
+
+	boot_info_open_partition(miscbuf);
+	boot_info_load(&info, miscbuf);
+
+	if (!boot_info_validate(&info)) {
+		printf("boot-info is invalid. Resetting.\n");
+		return 0;
+	}
+
+	if (strcmp(argv[1], "1") == 0)
+		check_bootloader(1);
+	else if (strcmp(argv[1], "0") == 0)
+		check_bootloader(0);
+
+	return 0;
+}
+
 static int do_SetUpdateTries(
 	cmd_tbl_t *cmdtp,
 	int flag,
@@ -954,7 +1111,8 @@ static int do_SetUpdateTries(
 		merge_ret = 1;
 	}
 
-	if (rebootmode && (!strcmp(rebootmode, "fastboot")) &&
+	if (rebootmode && (!strcmp(rebootmode, "fastboot") ||
+		!strcmp(rebootmode, "kernel_panic")) &&
 		success_flag == 0 &&
 		merge_ret == 1) {
 		printf("reboot bootloader during merge, rollback\n");
@@ -1210,6 +1368,13 @@ U_BOOT_CMD(
 	"set_roll_flag",
 	"\nThis command will set active slot\n"
 	"So you can execute command: set_active_slot a"
+);
+
+U_BOOT_CMD(
+	check_uboot_state, 2, 1, do_CheckUbootState,
+	"check_uboot_state",
+	"\nThis command will check_uboot_state\n"
+	"So you can execute command: check_uboot_state 0"
 );
 
 U_BOOT_CMD

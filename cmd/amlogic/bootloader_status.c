@@ -299,6 +299,7 @@ void update_rollback(void)
 			env_set("expect_index", "0");
 		} else {
 			wrnP("gpt or disable user bootloader mode\n");
+			run_command("check_uboot_state 0", 0);
 			write_bootloader_back("2", 1);
 			env_set("expect_index", "1");
 		}
@@ -312,6 +313,7 @@ void update_rollback(void)
 			env_set("expect_index", "0");
 		} else {
 			wrnP("gpt or disable user bootloader mode\n");
+			run_command("check_uboot_state 1", 0);
 			write_bootloader_back("2", 1);
 			env_set("expect_index", "1");
 		}
