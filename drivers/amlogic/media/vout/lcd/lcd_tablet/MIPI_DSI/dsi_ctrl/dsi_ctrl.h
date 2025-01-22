@@ -32,23 +32,27 @@ struct dsi_ctrl_s {
 	void (*fr_change_pre)(struct aml_lcd_drv_s *pdrv, u16 fr100);
 	void (*fr_change_post)(struct aml_lcd_drv_s *pdrv);
 
-	void (*host_config_print)(struct lcd_config_s *pconf);
-
 	/* Processor to Peripheral Direction (Processor-Sourced) Packet Data Types */
-	int (*DT_generic_short_write)(struct aml_lcd_drv_s *pdrv, struct dsi_cmd_req_s *req);
-	int (*DT_generic_read)(struct aml_lcd_drv_s *pdrv, struct dsi_cmd_req_s *req);
-	int (*DT_DCS_short_write)(struct aml_lcd_drv_s *pdrv, struct dsi_cmd_req_s *req);
-	int (*DT_DCS_read)(struct aml_lcd_drv_s *pdrv, struct dsi_cmd_req_s *req);
-	int (*DT_set_max_return_pkt_size)(struct aml_lcd_drv_s *pdrv, struct dsi_cmd_req_s *req);
-	int (*DT_generic_long_write)(struct aml_lcd_drv_s *pdrv, struct dsi_cmd_req_s *req);
-	int (*DT_DCS_long_write)(struct aml_lcd_drv_s *pdrv, struct dsi_cmd_req_s *req);
-	void (*DT_sink_shut_down)(struct aml_lcd_drv_s *pdrv);
-	void (*DT_sink_turn_on)(struct aml_lcd_drv_s *pdrv);
+	int (*DT_generic_short_write)(struct aml_lcd_drv_s *pdrv, uint8_t port,
+					struct dsi_cmd_req_s *req);
+	int (*DT_generic_read)(struct aml_lcd_drv_s *pdrv, uint8_t port,
+					struct dsi_cmd_req_s *req);
+	int (*DT_DCS_short_write)(struct aml_lcd_drv_s *pdrv, uint8_t port,
+					struct dsi_cmd_req_s *req);
+	int (*DT_DCS_read)(struct aml_lcd_drv_s *pdrv, uint8_t port, struct dsi_cmd_req_s *req);
+	int (*DT_set_max_return_pkt_size)(struct aml_lcd_drv_s *pdrv, u8 port,
+					struct dsi_cmd_req_s *req);
+	int (*DT_generic_long_write)(struct aml_lcd_drv_s *pdrv, uint8_t port,
+					struct dsi_cmd_req_s *req);
+	int (*DT_DCS_long_write)(struct aml_lcd_drv_s *pdrv, uint8_t port,
+					struct dsi_cmd_req_s *req);
+	void (*DT_sink_shut_down)(struct aml_lcd_drv_s *pdrv, uint8_t port);
+	void (*DT_sink_turn_on)(struct aml_lcd_drv_s *pdrv, uint8_t port);
 
 	/*debug purpose*/
-	void (*op_mode_switch)(struct aml_lcd_drv_s *pdrv, u8 op_mode);
-	void (*dphy_reset)(struct aml_lcd_drv_s *pdrv);
-	void (*host_reset)(struct aml_lcd_drv_s *pdrv);
+	void (*op_mode_switch)(struct aml_lcd_drv_s *pdrv, uint8_t port, uint8_t op_mode);
+	void (*dphy_reset)(struct aml_lcd_drv_s *pdrv, uint8_t port);
+	void (*host_reset)(struct aml_lcd_drv_s *pdrv, uint8_t port);
 };
 
 void dsi_tx_ready(struct aml_lcd_drv_s *pdrv);
@@ -59,21 +63,21 @@ void dsi_tx_close(struct aml_lcd_drv_s *pdrv);
 void dsi_fr_change_pre(struct aml_lcd_drv_s *pdrv, u16 fr100);
 void dsi_fr_change_post(struct aml_lcd_drv_s *pdrv);
 
-void dsi_host_config_print(struct lcd_config_s *pconf);
+int dsi_DT_generic_short_write(struct aml_lcd_drv_s *pdrv, uint8_t port,
+					struct dsi_cmd_req_s *req);
+int dsi_DT_generic_read(struct aml_lcd_drv_s *pdrv, uint8_t port, struct dsi_cmd_req_s *req);
+int dsi_DT_DCS_short_write(struct aml_lcd_drv_s *pdrv, uint8_t port, struct dsi_cmd_req_s *req);
+int dsi_DT_DCS_read(struct aml_lcd_drv_s *pdrv, uint8_t port, struct dsi_cmd_req_s *req);
+int dsi_DT_set_max_return_pkt_size(struct aml_lcd_drv_s *pdrv, uint8_t port,
+					struct dsi_cmd_req_s *req);
+int dsi_DT_generic_long_write(struct aml_lcd_drv_s *pdrv, uint8_t port, struct dsi_cmd_req_s *req);
+int dsi_DT_DCS_long_write(struct aml_lcd_drv_s *pdrv, uint8_t port, struct dsi_cmd_req_s *req);
+void dsi_DT_sink_shut_down(struct aml_lcd_drv_s *pdrv, uint8_t port);
+void dsi_DT_sink_turn_on(struct aml_lcd_drv_s *pdrv, uint8_t port);
 
-int dsi_DT_generic_short_write(struct aml_lcd_drv_s *pdrv, struct dsi_cmd_req_s *req);
-int dsi_DT_generic_read(struct aml_lcd_drv_s *pdrv, struct dsi_cmd_req_s *req);
-int dsi_DT_DCS_short_write(struct aml_lcd_drv_s *pdrv, struct dsi_cmd_req_s *req);
-int dsi_DT_DCS_read(struct aml_lcd_drv_s *pdrv, struct dsi_cmd_req_s *req);
-int dsi_DT_set_max_return_pkt_size(struct aml_lcd_drv_s *pdrv, struct dsi_cmd_req_s *req);
-int dsi_DT_generic_long_write(struct aml_lcd_drv_s *pdrv, struct dsi_cmd_req_s *req);
-int dsi_DT_DCS_long_write(struct aml_lcd_drv_s *pdrv, struct dsi_cmd_req_s *req);
-void dsi_DT_sink_shut_down(struct aml_lcd_drv_s *pdrv);
-void dsi_DT_sink_turn_on(struct aml_lcd_drv_s *pdrv);
-
-void dsi_op_mode_switch(struct aml_lcd_drv_s *pdrv, u8 op_mode);
-void dsi_dphy_reset(struct aml_lcd_drv_s *pdrv);
-void dsi_host_reset(struct aml_lcd_drv_s *pdrv);
+void dsi_op_mode_switch(struct aml_lcd_drv_s *pdrv, uint8_t port, uint8_t op_mode);
+void dsi_dphy_reset(struct aml_lcd_drv_s *pdrv, uint8_t port);
+void dsi_host_reset(struct aml_lcd_drv_s *pdrv, uint8_t port);
 
 struct dsi_ctrl_s *dsi_bind_v1(struct aml_lcd_drv_s *pdrv);
 struct dsi_ctrl_s *dsi_bind_v2(struct aml_lcd_drv_s *pdrv);

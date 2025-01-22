@@ -17,19 +17,21 @@ struct reg_name_set_s {
 	char *name;
 };
 
-#define LCD_REG_DBG_VC_BUS          0
-#define LCD_REG_DBG_ANA_BUS         1
-#define LCD_REG_DBG_CLK_BUS         2
-#define LCD_REG_DBG_PERIPHS_BUS     3
-#define LCD_REG_DBG_MIPIHOST_BUS    4
-#define LCD_REG_DBG_MIPIPHY_BUS     5
-#define LCD_REG_DBG_TCON_BUS        6
-#define LCD_REG_DBG_EDPHOST_BUS     7
-#define LCD_REG_DBG_EDPDPCD_BUS     8
-#define LCD_REG_DBG_COMBOPHY_BUS    9
-#define LCD_REG_DBG_RST_BUS         10
-#define LCD_REG_DBG_HHI_BUS         11
-#define LCD_REG_DBG_MAX_BUS         0xff
+#define LCD_REG_DBG_VC_BUS                0
+#define LCD_REG_DBG_ANA_BUS               1
+#define LCD_REG_DBG_CLK_BUS               2
+#define LCD_REG_DBG_PERIPHS_BUS           3
+#define LCD_REG_DBG_MIPIHOST_BUS          4
+#define LCD_REG_DBG_MIPIPHY_BUS           5
+#define LCD_REG_DBG_TCON_BUS              6
+#define LCD_REG_DBG_EDPHOST_BUS           7
+#define LCD_REG_DBG_EDPDPCD_BUS           8
+#define LCD_REG_DBG_COMBOPHY_BUS          9
+#define LCD_REG_DBG_RST_BUS               10
+#define LCD_REG_DBG_HHI_BUS               11
+#define LCD_REG_DBG_MIPIHOST_BUS_SUB_PORT 12
+#define LCD_REG_DBG_MIPIPHY_BUS_SUB_PORT  13
+#define LCD_REG_DBG_MAX_BUS               0xff
 
 void str_add_reg_sets(struct aml_lcd_drv_s *pdrv,
 		      unsigned char reg_bus, unsigned int reg_offset,
@@ -56,10 +58,44 @@ void str_add_reg_sets(struct aml_lcd_drv_s *pdrv,
 #define REG_ADDR_COMBO(reg)		(reg + 0L)
 #define REG_ADDR_VCBUS(reg)             ((reg > 0x10000) ? (reg + 0L) : \
 				(REG_BASE_VCBUS + REG_OFFSET_VCBUS(reg)))
-#define REG_ADDR_DSI_HOST(reg)          (MIPI_DSI_BASE + REG_OFFSET_DSI_HOST(reg))
-#define REG_ADDR_DSI_PHY(reg)           (MIPI_DSI_PHY_BASE + REG_OFFSET_DSI_PHY(reg))
-#define REG_ADDR_DSI_B_HOST(reg)        (MIPI_DSI_B_BASE + REG_OFFSET_DSI_HOST(reg))
-#define REG_ADDR_DSI_B_PHY(reg)         (MIPI_DSI_B_PHY_BASE + REG_OFFSET_DSI_PHY(reg))
+// #define REG_ADDR_DSI_HOST(reg)          (MIPI_DSI_BASE + REG_OFFSET_DSI_HOST(reg))
+// #define REG_ADDR_DSI_PHY(reg)           (MIPI_DSI_PHY_BASE + REG_OFFSET_DSI_PHY(reg))
+// #define REG_ADDR_DSI_B_HOST(reg)        (MIPI_DSI_B_BASE + REG_OFFSET_DSI_HOST(reg))
+// #define REG_ADDR_DSI_B_PHY(reg)         (MIPI_DSI_B_PHY_BASE + REG_OFFSET_DSI_PHY(reg))
+
+#ifndef MIPI_DSI_0_A_BASE
+#define MIPI_DSI_0_A_BASE          MIPI_DSI_BASE
+#endif
+#ifndef MIPI_DSI_0_A_PHY_BASE
+#define MIPI_DSI_0_A_PHY_BASE      MIPI_DSI_PHY_BASE
+#endif
+#ifndef MIPI_DSI_0_B_BASE
+#define MIPI_DSI_0_B_BASE          0
+#endif
+#ifndef MIPI_DSI_0_B_PHY_BASE
+#define MIPI_DSI_0_B_PHY_BASE      0
+#endif
+#ifndef MIPI_DSI_1_A_BASE
+#define MIPI_DSI_1_A_BASE          MIPI_DSI_B_BASE
+#endif
+#ifndef MIPI_DSI_1_A_PHY_BASE
+#define MIPI_DSI_1_A_PHY_BASE      MIPI_DSI_B_PHY_BASE
+#endif
+#ifndef MIPI_DSI_1_B_BASE
+#define MIPI_DSI_1_B_BASE          0
+#endif
+#ifndef MIPI_DSI_1_B_PHY_BASE
+#define MIPI_DSI_1_B_PHY_BASE      0
+#endif
+#define REG_ADDR_DSI_0_HOST_A(reg)      (MIPI_DSI_0_A_BASE     + REG_OFFSET_DSI_HOST(reg))
+#define REG_ADDR_DSI_0_PHY_A(reg)       (MIPI_DSI_0_A_PHY_BASE + REG_OFFSET_DSI_PHY(reg))
+#define REG_ADDR_DSI_0_HOST_B(reg)      (MIPI_DSI_0_B_BASE     + REG_OFFSET_DSI_HOST(reg))
+#define REG_ADDR_DSI_0_PHY_B(reg)       (MIPI_DSI_0_B_PHY_BASE + REG_OFFSET_DSI_PHY(reg))
+#define REG_ADDR_DSI_1_HOST_A(reg)      (MIPI_DSI_1_A_BASE     + REG_OFFSET_DSI_HOST(reg))
+#define REG_ADDR_DSI_1_PHY_A(reg)       (MIPI_DSI_1_A_PHY_BASE + REG_OFFSET_DSI_PHY(reg))
+#define REG_ADDR_DSI_1_HOST_B(reg)      (MIPI_DSI_1_B_BASE     + REG_OFFSET_DSI_HOST(reg))
+#define REG_ADDR_DSI_1_PHY_B(reg)       (MIPI_DSI_1_B_PHY_BASE + REG_OFFSET_DSI_PHY(reg))
+
 #define REG_ADDR_TCON_APB(reg)          (REG_TCON_APB_BASE + REG_OFFSET_TCON_APB(reg))
 #define REG_ADDR_TCON_APB_BYTE(reg)     (REG_TCON_APB_BASE + REG_OFFSET_TCON_APB_BYTE(reg))
 
@@ -468,15 +504,22 @@ static inline void lcd_pinmux_clr_mask(unsigned int n, unsigned int _mask)
 	lcd_periphs_write(reg, (lcd_periphs_read(reg) & (~(_mask))));
 }
 
-static inline unsigned int dsi_host_read(struct aml_lcd_drv_s *pdrv, unsigned int reg)
+static inline unsigned int dsi_host_read(struct aml_lcd_drv_s *pdrv, u8 port, unsigned int reg)
 {
 	unsigned long paddr;
 	unsigned int val;
 
-	if (pdrv->index)
-		paddr = (REG_ADDR_DSI_B_HOST(reg));
+	if      (pdrv->index == 0 && port == 0)
+		paddr = REG_ADDR_DSI_0_HOST_A(reg);
+	else if (pdrv->index == 0 && port == 1)
+		paddr = REG_ADDR_DSI_0_HOST_B(reg);
+	else if (pdrv->index == 1 && port == 0)
+		paddr = REG_ADDR_DSI_1_HOST_A(reg);
+	else if (pdrv->index == 1 && port == 1)
+		paddr = REG_ADDR_DSI_1_HOST_B(reg);
 	else
-		paddr = (REG_ADDR_DSI_HOST(reg));
+		return 0;
+
 	val = *(volatile unsigned int *)paddr;
 	if (lcd_debug_print_flag & LCD_DBG_PR_REG)
 		printf("%s: [0x%08lx]=0x%08x\n", __func__, paddr, val);
@@ -484,54 +527,57 @@ static inline unsigned int dsi_host_read(struct aml_lcd_drv_s *pdrv, unsigned in
 	return val;
 }
 
-static inline void dsi_host_write(struct aml_lcd_drv_s *pdrv, unsigned int reg, unsigned int val)
+static inline void dsi_host_write(struct aml_lcd_drv_s *pdrv, uint8_t port,
+		unsigned int reg, unsigned int val)
 {
 	unsigned long paddr;
 
-	if (pdrv->index)
-		paddr = REG_ADDR_DSI_B_HOST(reg);
+	if      (pdrv->index == 0 && port == 0)
+		paddr = REG_ADDR_DSI_0_HOST_A(reg);
+	else if (pdrv->index == 0 && port == 1)
+		paddr = REG_ADDR_DSI_0_HOST_B(reg);
+	else if (pdrv->index == 1 && port == 0)
+		paddr = REG_ADDR_DSI_1_HOST_A(reg);
+	else if (pdrv->index == 1 && port == 1)
+		paddr = REG_ADDR_DSI_1_HOST_B(reg);
 	else
-		paddr = REG_ADDR_DSI_HOST(reg);
+		return;
+
 	if (lcd_debug_print_flag & LCD_DBG_PR_REG)
 		printf("%s: [0x%08lx]=0x%08x\n", __func__, paddr, val);
 	*(volatile unsigned int *)paddr = (val);
 }
 
-static inline void dsi_host_setb(struct aml_lcd_drv_s *pdrv, unsigned int reg, unsigned int val,
-		unsigned int start, unsigned int len)
+static inline void dsi_host_setb(struct aml_lcd_drv_s *pdrv, uint8_t port,
+		unsigned int reg, unsigned int val, unsigned int start, unsigned int len)
 {
-	dsi_host_write(pdrv, reg, ((dsi_host_read(pdrv, reg) &
+	dsi_host_write(pdrv, port, reg, ((dsi_host_read(pdrv, port, reg) &
 			~(((1L << (len)) - 1) << (start))) |
 			(((val) & ((1L << (len)) - 1)) << (start))));
 }
 
-static inline unsigned int dsi_host_getb(struct aml_lcd_drv_s *pdrv, unsigned int reg,
-		unsigned int start, unsigned int len)
+static inline unsigned int dsi_host_getb(struct aml_lcd_drv_s *pdrv, uint8_t port,
+		unsigned int reg, unsigned int start, unsigned int len)
 {
-	return (dsi_host_read(pdrv, reg) >> (start)) & ((1L << (len)) - 1);
+	return (dsi_host_read(pdrv, port, reg) >> (start)) & ((1L << (len)) - 1);
 }
 
-static inline void dsi_host_set_mask(struct aml_lcd_drv_s *pdrv,
-		unsigned int reg, unsigned int _mask)
-{
-	dsi_host_write(pdrv, reg, (dsi_host_read(pdrv, reg) | (_mask)));
-}
-
-static inline void dsi_host_clr_mask(struct aml_lcd_drv_s *pdrv,
-		unsigned int reg, unsigned int _mask)
-{
-	dsi_host_write(pdrv, reg, (dsi_host_read(pdrv, reg) & (~(_mask))));
-}
-
-static inline unsigned int dsi_phy_read(struct aml_lcd_drv_s *pdrv, unsigned int reg)
+static inline unsigned int dsi_phy_read(struct aml_lcd_drv_s *pdrv, uint8_t port, unsigned int reg)
 {
 	unsigned long paddr;
 	unsigned int val;
 
-	if (pdrv->index)
-		paddr = (REG_ADDR_DSI_B_PHY(reg));
+	if      (pdrv->index == 0 && port == 0)
+		paddr = REG_ADDR_DSI_0_PHY_A(reg);
+	else if (pdrv->index == 0 && port == 1)
+		paddr = REG_ADDR_DSI_0_PHY_B(reg);
+	else if (pdrv->index == 1 && port == 0)
+		paddr = REG_ADDR_DSI_1_PHY_A(reg);
+	else if (pdrv->index == 1 && port == 1)
+		paddr = REG_ADDR_DSI_1_PHY_B(reg);
 	else
-		paddr = (REG_ADDR_DSI_PHY(reg));
+		return 0;
+
 	val = *(volatile unsigned int *)paddr;
 	if (lcd_debug_print_flag & LCD_DBG_PR_REG)
 		printf("%s: [0x%08lx]=0x%08x\n", __func__, paddr, val);
@@ -539,43 +585,39 @@ static inline unsigned int dsi_phy_read(struct aml_lcd_drv_s *pdrv, unsigned int
 	return val;
 };
 
-static inline void dsi_phy_write(struct aml_lcd_drv_s *pdrv, unsigned int reg, unsigned int val)
+static inline void dsi_phy_write(struct aml_lcd_drv_s *pdrv, uint8_t port,
+		unsigned int reg, unsigned int val)
 {
 	unsigned long paddr;
 
-	if (pdrv->index)
-		paddr = REG_ADDR_DSI_B_PHY(reg);
+	if      (pdrv->index == 0 && port == 0)
+		paddr = REG_ADDR_DSI_0_PHY_A(reg);
+	else if (pdrv->index == 0 && port == 1)
+		paddr = REG_ADDR_DSI_0_PHY_B(reg);
+	else if (pdrv->index == 1 && port == 0)
+		paddr = REG_ADDR_DSI_1_PHY_A(reg);
+	else if (pdrv->index == 1 && port == 1)
+		paddr = REG_ADDR_DSI_1_PHY_B(reg);
 	else
-		paddr = REG_ADDR_DSI_PHY(reg);
+		return;
+
 	if (lcd_debug_print_flag & LCD_DBG_PR_REG)
 		printf("%s: [0x%08lx]=0x%08x\n", __func__, paddr, val);
 	*(volatile unsigned int *)paddr = (val);
 };
 
-static inline void dsi_phy_setb(struct aml_lcd_drv_s *pdrv, unsigned int reg, unsigned int val,
-		unsigned int start, unsigned int len)
+static inline void dsi_phy_setb(struct aml_lcd_drv_s *pdrv, uint8_t port,
+		unsigned int reg, unsigned int val, unsigned int start, unsigned int len)
 {
-	dsi_phy_write(pdrv, reg, ((dsi_phy_read(pdrv, reg) &
+	dsi_phy_write(pdrv, port, reg, ((dsi_phy_read(pdrv, port, reg) &
 			~(((1L << (len)) - 1) << (start))) |
 			(((val) & ((1L << (len)) - 1)) << (start))));
 }
 
-static inline unsigned int dsi_phy_getb(struct aml_lcd_drv_s *pdrv, unsigned int reg,
-		unsigned int start, unsigned int len)
+static inline unsigned int dsi_phy_getb(struct aml_lcd_drv_s *pdrv, uint8_t port,
+		unsigned int reg, unsigned int start, unsigned int len)
 {
-	return (dsi_phy_read(pdrv, reg) >> (start)) & ((1L << (len)) - 1);
-}
-
-static inline void dsi_phy_set_mask(struct aml_lcd_drv_s *pdrv,
-		unsigned int reg, unsigned int _mask)
-{
-	dsi_phy_write(pdrv, reg, (dsi_phy_read(pdrv, reg) | (_mask)));
-}
-
-static inline void dsi_phy_clr_mask(struct aml_lcd_drv_s *pdrv,
-		unsigned int reg, unsigned int _mask)
-{
-	dsi_phy_write(pdrv, reg, (dsi_phy_read(pdrv, reg) & (~(_mask))));
+	return (dsi_phy_read(pdrv, port, reg) >> (start)) & ((1L << (len)) - 1);
 }
 
 static inline unsigned int lcd_tcon_read(unsigned int reg)

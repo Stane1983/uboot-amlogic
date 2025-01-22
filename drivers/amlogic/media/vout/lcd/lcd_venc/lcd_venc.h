@@ -9,6 +9,11 @@
 
 #define LCD_WAIT_VSYNC_TIMEOUT    50000
 
+#define LCD_DUAL_PORT_L_R        0
+#define LCD_DUAL_PORT_R_L        1
+#define LCD_DUAL_PORT_O_E        2
+#define LCD_DUAL_PORT_E_O        3
+
 struct lcd_venc_op_s {
 	int init_flag;
 	void (*wait_vsync)(struct aml_lcd_drv_s *pdrv);

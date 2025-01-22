@@ -1196,6 +1196,7 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 		pctrl->mipi_cfg.lane_num = be32_to_cpup((u32 *)propdata);
 		pctrl->mipi_cfg.bit_rate_max = be32_to_cpup((((u32 *)propdata) + 1));
 		pctrl->mipi_cfg.operation_mode_init = be32_to_cpup((((u32 *)propdata) + 3));
+		pctrl->mipi_cfg.multi_port_cfg = be32_to_cpup((((u32 *)propdata) + 2));
 		pctrl->mipi_cfg.operation_mode_display = be32_to_cpup((((u32 *)propdata) + 4));
 		pctrl->mipi_cfg.video_mode_type = be32_to_cpup((((u32 *)propdata) + 5));
 		pctrl->mipi_cfg.clk_always_hs = be32_to_cpup((((u32 *)propdata) + 6));

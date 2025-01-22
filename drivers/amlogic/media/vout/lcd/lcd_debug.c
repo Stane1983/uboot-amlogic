@@ -62,18 +62,18 @@ void str_add_reg_sets(struct aml_lcd_drv_s *pdrv,
 		case LCD_REG_DBG_MIPIHOST_BUS:
 			reg_addr = reg_table[idx].reg + reg_offset;
 			if (pdrv->index)
-				reg_addr = REG_ADDR_DSI_B_HOST(reg_addr);
+				reg_addr = REG_ADDR_DSI_1_HOST_A(reg_addr);
 			else
-				reg_addr = REG_ADDR_DSI_HOST(reg_addr);
-			reg_val = dsi_host_read(pdrv, reg_addr);
+				reg_addr = REG_ADDR_DSI_0_HOST_A(reg_addr);
+			reg_val = dsi_host_read(pdrv, 0, reg_addr);
 			break;
 		case LCD_REG_DBG_MIPIPHY_BUS:
 			reg_addr = reg_table[idx].reg + reg_offset;
 			if (pdrv->index)
-				reg_addr = REG_ADDR_DSI_B_PHY(reg_addr);
+				reg_addr = REG_ADDR_DSI_1_PHY_A(reg_addr);
 			else
-				reg_addr = REG_ADDR_DSI_PHY(reg_addr);
-			reg_val = dsi_phy_read(pdrv, reg_addr);
+				reg_addr = REG_ADDR_DSI_0_PHY_A(reg_addr);
+			reg_val = dsi_phy_read(pdrv, 0, reg_addr);
 			break;
 		case LCD_REG_DBG_EDPHOST_BUS:
 			reg_addr = reg_table[idx].reg + reg_offset;
@@ -709,6 +709,21 @@ static struct lcd_debug_info_s lcd_debug_info_c3 = {
 #endif
 };
 
+static struct lcd_debug_info_s lcd_debug_info_s6 = {
+	.reg_pinmux_table = NULL,
+
+	.reg_dump_lvds   = NULL,
+	.reg_dump_vbyone = NULL,
+#ifdef CONFIG_AML_LCD_TABLET
+	.reg_dump_mipi   = lcd_reg_print_mipi,
+	.reg_dump_edp    = NULL,
+#endif
+#ifdef CONFIG_AML_LCD_TCON
+	.reg_dump_mlvds  = NULL,
+	.reg_dump_p2p    = NULL,
+#endif
+};
+
 void lcd_debug_probe(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_debug_info_s *lcd_debug_info = NULL;
@@ -734,6 +749,9 @@ void lcd_debug_probe(struct aml_lcd_drv_s *pdrv)
 		break;
 	case LCD_CHIP_C3:
 		lcd_debug_info = &lcd_debug_info_c3;
+		break;
+	case LCD_CHIP_S6:
+		lcd_debug_info = &lcd_debug_info_s6;
 		break;
 	default:
 		lcd_debug_info = NULL;

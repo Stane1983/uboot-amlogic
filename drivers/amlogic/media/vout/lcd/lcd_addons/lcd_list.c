@@ -106,8 +106,12 @@ static unsigned char interface_info_add(char *str, int node_ofst, unsigned char 
 		propdata = (char *)fdt_getprop(dt_addr, node_ofst, "mipi_attr", NULL);
 		if (!propdata)
 			return 0;
+		tmp = (unsigned char)be32_to_cpup(((u32 *)propdata) + 2);
+		if (tmp)
+			c_pos = snprintf(str, IF_LEN, "2 port, ");
+
 		tmp = (unsigned char)be32_to_cpup((u32 *)propdata);
-		c_pos = snprintf(str, IF_LEN, "%1u lane", tmp);
+		c_pos += snprintf(str + c_pos, IF_LEN, "%1u lane", tmp);
 
 		tmp = (unsigned int)be32_to_cpup(((u32 *)propdata) + 1);
 		c_pos += snprintf(str + c_pos, IF_LEN, ", bitrate:%3uMHz", tmp);
@@ -247,12 +251,16 @@ static void lcd_list_dts(unsigned char drv_idx, int parent_ofst)
 		if (!propdata)
 			continue;
 
-		c_pos = snprintf(c_buf, 256, "%s %-10s| %-20s|",
-			strcmp(panel_type, node_name) ? " " : "*", node_name, propdata);
+		if (panel_type) {
+			c_pos = snprintf(c_buf, 256, "%c %-10s| %-20s|",
+				strcmp(panel_type, node_name) ? ' ' : '*', node_name, propdata);
+		} else {
+			c_pos = snprintf(c_buf, 256, "  %-10s| %-20s|", node_name, propdata);
+		}
 
 		propdata = (char *)fdt_getprop(dt_addr, node_ofst, "interface", NULL);
 		lcd_type = lcd_type_str_to_type(propdata);
-		if (!strcmp(panel_type, node_name))
+		if (panel_type && !strcmp(panel_type, node_name))
 			curr_port = lcd_type;
 
 		c_pos += snprintf(c_buf + c_pos, 256 - c_pos, " %-6s| ", propdata);

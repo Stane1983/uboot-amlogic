@@ -140,24 +140,20 @@ enum mipi_dsi_data_type_peripheral_e {
 #define OPERATION_VIDEO_MODE     0
 #define OPERATION_COMMAND_MODE   1
 
-#define SYNC_PULSE               0x0
-#define SYNC_EVENT               0x1
-#define BURST_MODE               0x2
-
 extern char *dsi_op_mode_table[];
 
 extern char *dsi_video_mode_type_table[];
 enum dsi_vid_type_e {
-	DSI_VID_SYNC_PULSE,
+	DSI_VID_SYNC_PULSE = 0,
 	DSI_VID_SYNC_EVENT,
 	DSI_VID_BURST
 };
 
 /* **** DPHY timing parameter     Value (unit: 0.01ns) **** */
-/* >100ns (4M) */
+/* >100ns (<10M) */
 #define DPHY_TIME_LP_TESC(ui)     (120 * 100)
 /* >50ns */
-#define DPHY_TIME_LP_LPX(ui)      (60 * 100)
+#define DPHY_TIME_LP_LPX(ui)      (DPHY_TIME_LP_TESC(ui) / 2)
 /* (lpx, 2*lpx) */
 #define DPHY_TIME_LP_TA_SURE(ui)  DPHY_TIME_LP_LPX(ui)
 /* 4*lpx */
@@ -165,43 +161,45 @@ enum dsi_vid_type_e {
 /* 5*lpx */
 #define DPHY_TIME_LP_TA_GETX(ui)  (5 * DPHY_TIME_LP_LPX(ui))
 /* >100ns */
-#define DPHY_TIME_HS_EXIT(ui)     (110 * 100)
-/* > max(8*ui, 60+4*ui), (test)<105+12*ui */
-static inline u32 DPHY_TIME_HS_TRAIL(u32 ui)
-{
-	return ui > (60 * 100 / 4) ? (8 * ui) : ((60 * 100) + 4 * ui);
-}
-
+#define DPHY_TIME_HS_EXIT(ui)     (120 * 100)
+/* > max(8*ui, 60+4*ui) */
+/* T-EOT < (105 + 12*UI) */
+#define DPHY_TIME_HS_TRAIL(ui)    (80 * 100 + 8 * (ui))
 /* (40+4*ui, 85+6*ui) */
-#define DPHY_TIME_HS_PREPARE(ui)  (50 * 100 + 4 * (ui))
+#define DPHY_TIME_HS_PREPARE(ui)  (65 * 100 + 5 * (ui))
 /* hs_prepare+hs_zero >145+10*ui */
-static inline u32 DPHY_TIME_HS_ZERO(u32 ui)
-{
-	return 160 * 100 + 10 * ui - DPHY_TIME_HS_PREPARE(ui);
-}
-
-/* >60ns, (test)<105+12*ui */
-#define DPHY_TIME_CLK_TRAIL(ui)   (70 * 100)
+#define DPHY_TIME_HS_ZERO(ui)     (120 * 100 + 5 * (ui))
+/* >60ns */
+/* T-EOT < (105 + 12*UI) */
+#define DPHY_TIME_CLK_TRAIL(ui)   (80 * 100)
 /* >60+52*ui */
-#define DPHY_TIME_CLK_POST(ui)    (2 * (60 * 100 + 52 * (ui)))
+#define DPHY_TIME_CLK_POST(ui)    (80 * 100 + 80 * (ui))
 /* (38, 95) */
-#define DPHY_TIME_CLK_PREPARE(ui) (50 * 100)
+#define DPHY_TIME_CLK_PREPARE(ui) (60 * 100)
 /* clk_prepare+clk_zero > 300 */
-#define DPHY_TIME_CLK_ZERO(ui)    (320 * 100 - DPHY_TIME_CLK_PREPARE(ui))
+#define DPHY_TIME_CLK_ZERO(ui)    (300 * 100)
 /* >8*ui */
-#define DPHY_TIME_CLK_PRE(ui)     (10 * (ui))
+#define DPHY_TIME_CLK_PRE(ui)     (12 * (ui))
 /* >100us */
 #define DPHY_TIME_INIT(ui)        (110 * 1000 * 100)
 /* >1ms */
 #define DPHY_TIME_WAKEUP(ui)      (1020 * 1000 * 100)
 
-void dsi_table_print(u8 *dsi_table, u16 n_max);
+#define DSI_HOST_CFG_PR_BASIC      BIT(0)
+#define DSI_HOST_CFG_PR_VID_TIMING BIT(1)
+#define DSI_HOST_CFG_PR_N_BURST_ST BIT(2)
+#define DSI_HOST_CFG_PR_CLK        BIT(3)
+#define DSI_HOST_CFG_PR_DPHY_TIM   BIT(4)
+void dsi_config_print_helper(struct lcd_config_s *pconf, uint8_t pr_flag);
+
+void dsi_table_print(uint8_t *dsi_table, u16 n_max);
 void dsi_init_table_print(struct dsi_config_s *dconf);
-int dsi_run_oneline_cmd(struct aml_lcd_drv_s *pdrv, u8 *payload, u8 *rd_back, u32 rd_back_len);
-u16 dsi_table_load_dts(char *propdata, u8 *table, u16 max_len);
-int dsi_read(struct aml_lcd_drv_s *pdrv, u8 *payload, u8 *rd_data, u8 rd_byte_len);
+int dsi_run_oneline_cmd(struct aml_lcd_drv_s *pdrv, uint8_t port, uint8_t *payload,
+			uint8_t *rd_back, uint32_t rd_back_len);
+u16 dsi_table_load_dts(char *propdata, uint8_t *table, u16 max_len);
+int dsi_read(struct aml_lcd_drv_s *pdrv, uint8_t *payload, uint8_t *rd_data, uint8_t rd_byte_len);
 int dsi_exec_init_table(struct aml_lcd_drv_s *pdrv,
-			u8 *payload, u32 pld_limit, u8 *rd_back, u32 rd_back_max);
+			uint8_t *payload, u32 pld_limit, uint8_t *rd_back, u32 rd_back_max);
 void dsi_panel_detect(struct aml_lcd_drv_s *pdrv);
 
 /* DSI setting */

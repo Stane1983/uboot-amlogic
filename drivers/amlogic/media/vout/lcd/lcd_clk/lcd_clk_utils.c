@@ -549,6 +549,7 @@ static unsigned char lcd_clk_generate_DSI_1PLL(struct aml_lcd_drv_s *pdrv)
 	struct dsi_clk_tb_s *clk_div_tb;
 
 	unsigned long long bitrate_min = 0, bitrate_max;
+	uint8_t port_cnt = dconf->multi_port_cfg & BIT(0) ? 2 : 1;
 
 #ifdef CONFIG_AML_LCD_TABLET
 	bitrate_min = lcd_dsi_get_min_bitrate(pdrv);
@@ -643,7 +644,7 @@ dsi_clk_tabel_buffer_full:
 	// should lane_byte_clk = (be phy_clk == phy_bitrate / 2) / 4
 	dconf->lane_byte_clk = div_around(clk_div_tb[x].phy_clk, 8);
 
-	dconf->factor_numerator = cconf->xd;
+	dconf->factor_numerator = cconf->xd * port_cnt;
 	dconf->factor_denominator = cconf->phy_div * 8;
 
 	free(clk_div_tb);

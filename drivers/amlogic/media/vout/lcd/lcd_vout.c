@@ -1054,8 +1054,10 @@ void aml_lcd_driver_list_support_mode(void)
 		if (!pdrv)
 			continue;
 
-		if (pdrv->list_support_mode)
+		if (pdrv->list_support_mode) {
+			printf("lcd%d supported mode:\n", index);
 			pdrv->list_support_mode(pdrv);
+		}
 	}
 }
 

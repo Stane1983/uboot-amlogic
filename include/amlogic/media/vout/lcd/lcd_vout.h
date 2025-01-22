@@ -284,20 +284,24 @@ struct vbyone_config_s {
 #define DSI_INIT_ON_MAX          2800
 #define DSI_INIT_OFF_MAX         30
 struct dsi_dphy_s {
-	unsigned int lp_tesc;
-	unsigned int lp_lpx;
-	unsigned int lp_ta_sure;
-	unsigned int lp_ta_go;
-	unsigned int lp_ta_get;
-	unsigned int hs_exit;
-	unsigned int hs_trail;
-	unsigned int hs_zero;
-	unsigned int hs_prepare;
-	unsigned int clk_trail;
-	unsigned int clk_post;
-	unsigned int clk_zero;
-	unsigned int clk_prepare;
-	unsigned int clk_pre;
+	unsigned int t_ui;
+
+	uint16_t lp_tesc[2];
+	uint16_t lp_lpx[2];
+	uint16_t lp_ta_sure[2];
+	uint16_t lp_ta_go[2];
+	uint16_t lp_ta_get[2];
+	uint16_t hs_exit[2];
+	uint16_t hs_trail[2];
+	uint16_t hs_zero[2];
+	uint16_t hs_prepare[2];
+	uint16_t clk_trail[2];
+	uint16_t clk_post[2];
+	uint16_t clk_zero[2];
+	uint16_t clk_prepare[2];
+
+	uint16_t clk_pre[2];
+	// unsigned int clk_pre;
 	unsigned int init;
 	unsigned int wakeup;
 };
@@ -313,6 +317,7 @@ struct dsi_config_s {
 	/* user config */
 	unsigned char lane_num;
 	unsigned int bit_rate_max; /* MHz */
+	unsigned char multi_port_cfg; /* bit[0:3]*/
 	unsigned char operation_mode_init; /* 0=video mode, 1=command mode */
 	unsigned char operation_mode_display; /* 0=video mode, 1=command mode */
 	unsigned char video_mode_type; /* 0=sync_pulse, 1=sync_event, 2=burst */

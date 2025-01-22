@@ -16,6 +16,151 @@
 #include "dsi_common.h"
 #include "dsi_ctrl/dsi_ctrl.h"
 
+char *dsi_op_mode_table[] = {
+	"Video",
+	"Command",
+};
+
+char *dsi_video_mode_type_table[] = {
+	"Non-Burst mode with sync pulse",
+	"Non-Burst mode with sync event",
+	"Burst mode",
+};
+
+char *dsi_video_data_type_table[] = {
+	"COLOR_16BIT_CFG_1",
+	"COLOR_16BIT_CFG_2",
+	"COLOR_16BIT_CFG_3",
+	"COLOR_18BIT_CFG_1",
+	"COLOR_18BIT_CFG_2(loosely)",
+	"COLOR_24BIT",
+	"COLOR_20BIT_LOOSE",
+	"COLOR_24_BIT_YCBCR",
+	"COLOR_16BIT_YCBCR",
+	"COLOR_30BIT",
+	"COLOR_36BIT",
+	"COLOR_12BIT",
+	"COLOR_RGB_111",
+	"COLOR_RGB_332",
+	"COLOR_RGB_444",
+	"un-support type",
+};
+
+char *dsi_phy_switch_table[] = {
+	"STANDARD",
+	"SLOW",
+};
+
+void dsi_config_print_helper(struct lcd_config_s *pconf, u8 pr_flag)
+{
+	struct dsi_config_s *dconf = &pconf->control.mipi_cfg;
+	u32 esc_clk;
+
+	if (pr_flag & DSI_HOST_CFG_PR_VID_TIMING) {
+		printf("MIPI DSI Config:\n"
+			"  %u-port, %u-lane\n"
+			"  bit rate = %lluHz (limit < %uMHz)\n"
+			"  lane_byte_clk:    %uhz\n"
+			"  operation mode:   init:%s(%u), display:%s(%u)\n"
+			"  video mode type:  %s(%d)\n"
+			"  clk always hs:    %u\n"
+			"  phy switch:       %s\n"
+			"  data format:      %s\n",
+			dconf->multi_port_cfg ? 2 : 1, dconf->lane_num,
+			pconf->timing.bit_rate, dconf->bit_rate_max,
+			dconf->lane_byte_clk,
+			dsi_op_mode_table[dconf->operation_mode_init],
+			dconf->operation_mode_init,
+			dsi_op_mode_table[dconf->operation_mode_display],
+			dconf->operation_mode_display,
+			dsi_video_mode_type_table[dconf->video_mode_type],
+			dconf->video_mode_type,
+			dconf->clk_always_hs,
+			dsi_phy_switch_table[STOP_STATE_TO_HS_WAIT_TIME],
+			dsi_video_data_type_table[dconf->dpi_data_format]);
+	}
+
+	if (pr_flag & DSI_HOST_CFG_PR_VID_TIMING) {
+		printf("MIPI DSI video timing:\n"
+			"  HLINE       = %hu\n"
+			"  HSA         = %hu\n"
+			"  HBP         = %hu\n"
+			"  VSA         = %hu\n"
+			"  VBP         = %hu\n"
+			"  VFP         = %hu\n"
+			"  VACT        = %hu\n",
+			dconf->hline, dconf->hsa, dconf->hbp,
+			pconf->timing.act_timing.vsync_width,
+			pconf->timing.act_timing.vsync_bp,
+			pconf->timing.act_timing.vsync_fp,
+			pconf->timing.act_timing.v_active);
+	}
+
+	if (pr_flag & DSI_HOST_CFG_PR_CLK) {
+		printf("MIPI DSI clk:\n"
+		      "  Pixel CLK   = %10uHz\n"
+		      "  bit_rate    = %10lluHz\n"
+		      "  lanebyteclk = %10uHz\n"
+		      "  PCLK_period/lanebyteclk_period = (num=%u/den=%u)\n",
+		      pconf->timing.act_timing.pixel_clk,
+		      pconf->timing.bit_rate,
+		      dconf->lane_byte_clk, dconf->factor_numerator, dconf->factor_denominator);
+	}
+
+	if (pr_flag & DSI_HOST_CFG_PR_DPHY_TIM) {
+		esc_clk = div_around(1000000, dconf->dphy.lp_tesc[1]);
+
+		printf("MIPI DSI DPHY setting:\n"
+			"  t-UI        = %u.%uns\n"
+			"  LP-ESC clk  = %d.%03dMHz\n"
+			"  LP-tesc     = 0x%02x (%uns)\n"
+			"  LP-lpx      = 0x%02x (%uns)\n"
+			"  LP-ta_sure  = 0x%02x (%uns)\n"
+			"  LP-ta_go    = 0x%02x (%uns)\n"
+			"  LP-ta_get   = 0x%02x (%uns)\n"
+			"  HS-exit     = 0x%02x (%uns)\n"
+			"  HS-trail    = 0x%02x (%uns)\n"
+			"  HS-zero     = 0x%02x (%uns)\n"
+			"  HS-prepare  = 0x%02x (%uns)\n"
+			"  clk_trail   = 0x%02x (%uns)\n"
+			"  clk_post    = 0x%02x (%uns)\n"
+			"  clk_zero    = 0x%02x (%uns)\n"
+			"  clk_prepare = 0x%02x (%uns)\n"
+			"  clk_pre     = 0x%02x (%uns)\n"
+			"  init        = 0x%02x\n"
+			"  wakeup      = 0x%02x\n",
+			dconf->dphy.t_ui / 100,     (dconf->dphy.t_ui + 50) % 100,
+			(esc_clk / 1000),           (esc_clk % 1000),
+			dconf->dphy.lp_tesc[0],     dconf->dphy.lp_tesc[1],
+			dconf->dphy.lp_lpx[0],      dconf->dphy.lp_lpx[1],
+			dconf->dphy.lp_ta_sure[0],  dconf->dphy.lp_ta_sure[1],
+			dconf->dphy.lp_ta_go[0],    dconf->dphy.lp_ta_go[1],
+			dconf->dphy.lp_ta_get[0],   dconf->dphy.lp_ta_get[1],
+			dconf->dphy.hs_exit[0],     dconf->dphy.hs_exit[1],
+			dconf->dphy.hs_trail[0],    dconf->dphy.hs_trail[1],
+			dconf->dphy.hs_zero[0],     dconf->dphy.hs_zero[1],
+			dconf->dphy.hs_prepare[0],  dconf->dphy.hs_prepare[1],
+			dconf->dphy.clk_trail[0],   dconf->dphy.clk_trail[1],
+			dconf->dphy.clk_post[0],    dconf->dphy.clk_post[1],
+			dconf->dphy.clk_zero[0],    dconf->dphy.clk_zero[1],
+			dconf->dphy.clk_prepare[0], dconf->dphy.clk_prepare[1],
+			dconf->dphy.clk_pre[0],     dconf->dphy.clk_pre[1],
+			dconf->dphy.init, dconf->dphy.wakeup);
+	}
+
+	if (pr_flag & DSI_HOST_CFG_PR_N_BURST_ST) {
+		if (dconf->video_mode_type != DSI_VID_BURST) {
+			printf("MIPI DSI NON-BURST setting:\n"
+				"  vid_num_chunks: %d\n"
+				"  vid_pkt_size:   %d\n"
+				"  vid_null_size:  %d\n\n",
+				dconf->vid_num_chunks,
+				dconf->vid_pkt_size,
+				dconf->vid_null_size);
+		}
+	}
+}
+
 u16 dsi_table_load_dts(char *propdata, u8 *table, u16 max_len)
 {
 	u8 cmd_size, type;
@@ -185,7 +330,7 @@ static void dsi_req_print(int ret, struct dsi_cmd_req_s *req)
 		for (k = 0; k < req->rd_out_len; k++)
 			n += snprintf(_str + n, PR_BUF_MAX - n, "0x%02x ", req->rd_data[k]);
 	}
-	pr_info("%s\n", _str);
+	printf("%s\n", _str);
 	free(_str);
 }
 
@@ -238,7 +383,8 @@ static u32 cmd_pld_cnt_check(struct aml_lcd_drv_s *pdrv, struct dsi_cmd_req_s *r
  * @rd_back_len: max this rd_back can contain
  * Return: -1:error; 0: Wr done; 0/>0: number of rdback
  */
-int dsi_run_oneline_cmd(struct aml_lcd_drv_s *pdrv, u8 *payload, u8 *rd_back, u32 rd_back_len)
+int dsi_run_oneline_cmd(struct aml_lcd_drv_s *pdrv, uint8_t port,
+			uint8_t *payload, uint8_t *rd_back, uint32_t rd_back_len)
 {
 	struct dsi_cmd_req_s dsi_cmd_req;
 	u8 is_rd = 0;
@@ -265,26 +411,26 @@ int dsi_run_oneline_cmd(struct aml_lcd_drv_s *pdrv, u8 *payload, u8 *rd_back, u3
 	case DT_GEN_SHORT_WR_1:
 	case DT_GEN_SHORT_WR_2:
 		dsi_cmd_req.req_ack = ACK_CTRL_GEN_SHORT_WR;
-		ret = dsi_DT_generic_short_write(pdrv, &dsi_cmd_req);
+		ret = dsi_DT_generic_short_write(pdrv, port, &dsi_cmd_req);
 		break;
 	case DT_DCS_SHORT_WR_0:
 	case DT_DCS_SHORT_WR_1:
 		dsi_cmd_req.req_ack = ACK_CTRL_DCS_SHORT_WR;
-		ret = dsi_DT_DCS_short_write(pdrv, &dsi_cmd_req);
+		ret = dsi_DT_DCS_short_write(pdrv, port, &dsi_cmd_req);
 		break;
 	case DT_DCS_LONG_WR:
 		dsi_cmd_req.req_ack = ACK_CTRL_GEN_LONG_WR;
-		ret = dsi_DT_DCS_long_write(pdrv, &dsi_cmd_req);
+		ret = dsi_DT_DCS_long_write(pdrv, port, &dsi_cmd_req);
 		break;
 	case DT_GEN_LONG_WR:
 		dsi_cmd_req.req_ack = ACK_CTRL_DCS_LONG_WR;
-		ret = dsi_DT_generic_long_write(pdrv, &dsi_cmd_req);
+		ret = dsi_DT_generic_long_write(pdrv, port, &dsi_cmd_req);
 		break;
 	case DT_TURN_ON:
-		dsi_DT_sink_turn_on(pdrv);
+		dsi_DT_sink_turn_on(pdrv, port);
 		break;
 	case DT_SHUT_DOWN:
-		dsi_DT_sink_shut_down(pdrv);
+		dsi_DT_sink_shut_down(pdrv, port);
 		break;
 	case DT_SET_MAX_RET_PKT_SIZE:
 		dsi_cmd_req.req_ack = ACK_CTRL_SET_MAX_RET_PKT_SIZE;
@@ -296,19 +442,19 @@ int dsi_run_oneline_cmd(struct aml_lcd_drv_s *pdrv, u8 *payload, u8 *rd_back, u3
 		if (dsi_rd_len > DSI_RD_MAX)
 			LCDPR("[%d]: set max rx %d bytes, need to enlarge DSI_RD_MAX (%d)\n",
 				pdrv->index, dsi_rd_len, DSI_RD_MAX);
-		ret = dsi_DT_set_max_return_pkt_size(pdrv, &dsi_cmd_req);
+		ret = dsi_DT_set_max_return_pkt_size(pdrv, port, &dsi_cmd_req);
 		return ret;
 	case DT_GEN_RD_0:
 	case DT_GEN_RD_1:
 	case DT_GEN_RD_2:
 		is_rd = 1;
 		dsi_cmd_req.req_ack = ACK_CTRL_GEN_RD; //need BTA ack
-		ret = dsi_DT_generic_read(pdrv, &dsi_cmd_req);
+		ret = dsi_DT_generic_read(pdrv, port, &dsi_cmd_req);
 		break;
 	case DT_DCS_RD_0:
 		is_rd = 1;
 		dsi_cmd_req.req_ack = ACK_CTRL_DCS_RD; //need BTA ack
-		ret = dsi_DT_DCS_read(pdrv, &dsi_cmd_req);
+		ret = dsi_DT_DCS_read(pdrv, port, &dsi_cmd_req);
 		break;
 	default:
 		LCDERR("[%d]: unsupport DSI cmd: 0x%02x\n", pdrv->index, dsi_cmd_req.data_type);
@@ -334,10 +480,10 @@ int dsi_exec_init_table(struct aml_lcd_drv_s *pdrv,
 			u8 *payload, u32 pld_limit, u8 *rd_back, u32 rd_back_max)
 {
 	u16 i = 0, j = 0, step = 0;
-	u8 cmd_size;
+	u8 cmd_size, k;
 	char *str;
 	u32 gpio, delay_ms;
-	u8 rd_cnt = 0, ret;
+	u8 rd_cnt = 0, ret, curr_port = 0x01;
 
 	/* mipi command(payload)
 	 * format:  data_type, cmd_size, data....
@@ -368,12 +514,14 @@ int dsi_exec_init_table(struct aml_lcd_drv_s *pdrv,
 			break;
 		}
 
-		if (payload[i] == LCD_EXT_CMD_TYPE_DELAY) { /* delay */
+		switch (payload[i]) {
+		case LCD_EXT_CMD_TYPE_DELAY:
 			delay_ms = 0;
 			for (j = 0; j < cmd_size; j++)
 				delay_ms += payload[i + 2 + j];
 			mdelay(delay_ms);
-		} else if (payload[i] == LCD_EXT_CMD_TYPE_GPIO) { /* gpio */
+			break;
+		case LCD_EXT_CMD_TYPE_GPIO:
 			if (cmd_size < 2) {
 				LCDERR("[%d]: step %d: invalid size %d for gpio\n",
 					pdrv->index, step, cmd_size);
@@ -384,22 +532,58 @@ int dsi_exec_init_table(struct aml_lcd_drv_s *pdrv,
 			lcd_gpio_set(gpio, payload[i + 3]);
 			if (cmd_size > 2)
 				mdelay(payload[i + 4]);
-		} else if (payload[i] == LCD_EXT_CMD_TYPE_CHECK) { /* check state */
+			break;
+		case LCD_EXT_CMD_TYPE_CHECK:
 			if (cmd_size < 3) {
 				LCDERR("[%d]: step %d: invalid size %d for check\n",
 					pdrv->index, step, cmd_size);
 				break;
 			}
 			mipi_dsi_check_state(pdrv, payload[i + 2], payload[i + 3]);
-		} else {
+			break;
+		case LCD_EXT_CMD_TYPE_SWITCH_PORT:
+			if (cmd_size != 1) {
+				LCDERR("[%d]: step %d: invalid size %d for switch port\n",
+					pdrv->index, step, cmd_size);
+				break;
+			}
+			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+				LCDPR("[%d]: step %d: following cmd will be on port-%c%c\n",
+					pdrv->index, step,
+					payload[i + 2] & 0x1 ? 'A' : ' ',
+					payload[i + 2] & 0x2 ? 'B' : ' ');
+			curr_port = payload[i + 2];
+			break;
+		case DT_GEN_SHORT_WR_0:
+		case DT_GEN_SHORT_WR_1:
+		case DT_GEN_SHORT_WR_2:
+		case DT_DCS_SHORT_WR_0:
+		case DT_DCS_SHORT_WR_1:
+		case DT_DCS_LONG_WR:
+		case DT_GEN_LONG_WR:
+		case DT_TURN_ON:
+		case DT_SHUT_DOWN:
+		case DT_SET_MAX_RET_PKT_SIZE:
+			for (k = 0; k < 4; k++) {
+				if (curr_port & (1 << k))
+					dsi_run_oneline_cmd(pdrv, k, &payload[i], NULL, 0);
+			}			break;
+		case DT_GEN_RD_0:
+		case DT_GEN_RD_1:
+		case DT_GEN_RD_2:
+		case DT_DCS_RD_0:
+			// ! read support on port A
 			if (!rd_back) {
-				dsi_run_oneline_cmd(pdrv, &payload[i], NULL, 0);
+				dsi_run_oneline_cmd(pdrv, 0, &payload[i], NULL, 0);
 			} else {
-				ret = dsi_run_oneline_cmd(pdrv, &payload[i],
+				ret = dsi_run_oneline_cmd(pdrv, 0, &payload[i],
 					&rd_back[rd_cnt], rd_back_max - rd_cnt);
 				if (ret > 0) //bypass wr or error
 					rd_cnt += ret;
 			}
+			break;
+		default:
+			break;
 		}
 		i += (cmd_size + 2);
 		step++;
@@ -430,11 +614,11 @@ int dsi_read(struct aml_lcd_drv_s *pdrv, u8 *payload, u8 *rd_data, u8 len)
 	case DT_GEN_RD_1:
 	case DT_GEN_RD_2:
 		dsi_cmd_req.req_ack = ACK_CTRL_GEN_RD; /* need BTA ack */
-		ret = dsi_DT_generic_read(pdrv, &dsi_cmd_req);
+		ret = dsi_DT_generic_read(pdrv, 0, &dsi_cmd_req);
 		break;
 	case DT_DCS_RD_0:
 		dsi_cmd_req.req_ack = ACK_CTRL_DCS_RD; /* need BTA ack */
-		ret = dsi_DT_DCS_read(pdrv, &dsi_cmd_req);
+		ret = dsi_DT_DCS_read(pdrv, 0, &dsi_cmd_req);
 		break;
 	default:
 		LCDPR("[%d]: unsupported data_type: 0x%02x\n", pdrv->index, dsi_cmd_req.data_type);
@@ -531,6 +715,7 @@ u64 lcd_dsi_get_min_bitrate(struct aml_lcd_drv_s *pdrv)
 {
 	struct dsi_config_s *dconf = &pdrv->config.control.mipi_cfg;
 	u64 bit_rate_min, band_width;
+	u8 port_cnt = dconf->multi_port_cfg & BIT(0) ? 2 : 1;
 
 	/* unit in kHz for calculation */
 	band_width = pdrv->config.timing.dft_timing->pixel_clk;
@@ -545,6 +730,7 @@ u64 lcd_dsi_get_min_bitrate(struct aml_lcd_drv_s *pdrv)
 		return 0;
 	}
 
-	bit_rate_min = lcd_do_div(band_width, dconf->lane_num);
+	bit_rate_min = lcd_do_div(band_width, port_cnt * dconf->lane_num);
+
 	return bit_rate_min;
 }
