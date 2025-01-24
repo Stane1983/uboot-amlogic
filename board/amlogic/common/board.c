@@ -388,7 +388,12 @@ static void aml_display_on_pre(unsigned char vout_idx)
 //param bit[0:7]:curr vout idx;
 static void aml_display_on_post_job(unsigned long param)
 {
-	aml_vout_output(env_get("outputmode"));
+	if ((param & 0xf) == 0)
+		aml_vout_output(0, env_get("outputmode"));
+	else if ((param & 0xf) == 1)
+		aml_vout_output(1, env_get("outputmode2"));
+	else if ((param & 0xf) == 2)
+		aml_vout_output(2, env_get("outputmode3"));
 
 	printf("display on post smp done\n");
 	secondary_off();
@@ -421,6 +426,7 @@ void aml_board_display_init(unsigned char vout_bit)
 #ifdef CONFIG_ARMV8_MULTIENTRY
 #ifdef CONFIG_AML_VOUT
 	int smp_ret;
+	unsigned char cpu_id = 1;
 
 	if (!(unsigned char)env_get_ulong("display_on_smp", 10, 0))
 		return;
@@ -428,9 +434,35 @@ void aml_board_display_init(unsigned char vout_bit)
 	aml_display_on_pre(vout_bit);
 	if (strcmp(env_get("bootup_display"), "on") == 0 ||
 		 strcmp(env_get("bootup_display"), "preboot") == 0) {
-		smp_ret = run_smp_function(1, &aml_display_on_post_job, vout_bit);
-		if (smp_ret)
-			printf("display smp failed\n");
+		if (vout_bit & BIT(0)) {
+			smp_ret = run_smp_function(cpu_id, &aml_display_on_post_job, 0);
+			if (smp_ret) {
+				printf("display smp failed\n");
+			} else {
+				run_command("setenv vout_init enable", 0);
+				cpu_id++;
+			}
+		}
+		if (vout_bit & BIT(1)) {
+			smp_ret = run_smp_function(cpu_id, &aml_display_on_post_job, 1);
+			if (smp_ret) {
+				printf("display2 smp failed\n");
+			} else {
+				run_command("setenv vout2_init enable", 0);
+				cpu_id++;
+			}
+
+			cpu_id++;
+		}
+		if (vout_bit & BIT(2)) {
+			smp_ret = run_smp_function(cpu_id, &aml_display_on_post_job, 2);
+			if (smp_ret) {
+				printf("display3 smp failed\n");
+			} else {
+				run_command("setenv vout2_init enable", 0);
+				cpu_id++;
+			}
+		}
 	}
 #endif
 #endif

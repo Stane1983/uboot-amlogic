@@ -116,10 +116,10 @@
 		"dv_fw_addr=0xa00000\0"\
 		"otg_device=1\0" \
 		"lcd_debug=0x00000000\0" \
-	    "hdmimode=1080p60hz\0" \
+		"hdmimode=1080p60hz\0" \
 		"cvbsmode=dummy_l\0" \
 		"colorattribute=444,8bit\0"\
-		"vout_init=enable\0" \
+		"vout_init=disable\0" \
 		"display_width=1280\0" \
 		"display_height=800\0" \
 		"hdmichecksum=0x00000000\0" \

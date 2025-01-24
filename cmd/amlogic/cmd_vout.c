@@ -219,9 +219,9 @@ static int do_vout_list(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv
 #endif
 
 #ifdef CONFIG_AML_DisplayPort_TX
-		printf("\nvalid DisplayPort mode:\n");
-		dptx_driver_list_vmode(0);
-		dptx_driver_list_vmode(1);
+	printf("\nvalid DisplayPort mode:\n");
+	dptx_driver_list_vmode(0);
+	dptx_driver_list_vmode(1);
 #endif
 
 	return CMD_RET_SUCCESS;
@@ -439,9 +439,9 @@ static int do_vout_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv
 	return CMD_RET_FAILURE;
 }
 
-int aml_vout_output(char *mode)
+int aml_vout_output(uint8_t vout_idx, char *mode)
 {
-	unsigned short on_connector_dev = vout_connector_check(0);
+	unsigned short on_connector_dev = vout_connector_check(vout_idx);
 #ifdef CONFIG_AML_LCD
 	unsigned int venc_index = on_connector_dev & 0xf;
 #endif
@@ -464,13 +464,24 @@ int aml_vout_output(char *mode)
 		ret = 0;
 #endif
 		break;
+	case CONNECTOR_DEV_DisplayPort:
+#ifdef CONFIG_AML_DisplayPort_TX
+		mux_sel = dptx_driver_outputmode_check(venc_index, mode);
+		venc_sel = mux_sel & 0xf;
+		if (venc_sel != VIU_MUX_ENCL)
+			break;
+		dptx_driver_enable(venc_index, mode);
+		ret = 0;
+		break;
+#endif
 	case CONNECTOR_DEV_HDMI:
 #ifdef CONFIG_AML_HDMITX
 		mux_sel = hdmi_outputmode_check(mode, 0);
 		venc_sel = mux_sel & 0xf;
 		if (venc_sel >= VIU_MUX_MAX)
 			break;
-		ret = aml_hdmitx_output(mode);
+		//ret = aml_hdmitx_output(mode);
+		printf("\nhdmi not support smp on yet\n");
 #endif
 		break;
 	case CONNECTOR_DEV_CVBS:
@@ -485,9 +496,6 @@ int aml_vout_output(char *mode)
 	default:
 		break;
 	}
-
-	if (ret == 0)
-		run_command("setenv vout_init enable", 0);
 
 	return ret;
 }
@@ -522,9 +530,9 @@ static int do_vout2_list(cmd_tbl_t * cmdtp, int flag, int argc, char * const arg
 #endif
 
 #ifdef CONFIG_AML_DisplayPort_TX
-		printf("\nvalid DisplayPort mode:\n");
-		dptx_driver_list_vmode(0);
-		dptx_driver_list_vmode(1);
+	printf("\nvalid DisplayPort mode:\n");
+	dptx_driver_list_vmode(0);
+	dptx_driver_list_vmode(1);
 #endif
 
 	return CMD_RET_SUCCESS;
@@ -719,9 +727,9 @@ static int do_vout3_list(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv
 #endif
 
 #ifdef CONFIG_AML_DisplayPort_TX
-		printf("\nvalid DisplayPort mode:\n");
-		dptx_driver_list_vmode(0);
-		dptx_driver_list_vmode(1);
+	printf("\nvalid DisplayPort mode:\n");
+	dptx_driver_list_vmode(0);
+	dptx_driver_list_vmode(1);
 #endif
 	return CMD_RET_SUCCESS;
 }

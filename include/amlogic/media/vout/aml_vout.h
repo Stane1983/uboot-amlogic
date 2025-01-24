@@ -58,6 +58,6 @@ extern unsigned long get_fb_addr(void);
 
 void vout_probe(void);
 
-int aml_vout_output(char *mode);
+int aml_vout_output(uint8_t vout_idx, char *mode);
 #endif
 
