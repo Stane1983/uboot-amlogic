@@ -452,7 +452,7 @@ static void lcd_venc_save_bootctrl_to_reg(struct aml_lcd_drv_s *pdrv)
 		| ((pdrv->boot_ctrl.dccd_flag & 0x1) << 5) | (0xa << 9);
 	lcd_vcbus_write(L_STH1_HS_ADDR + offset, val);
 
-	val = pdrv->boot_ctrl.base_frame_rate & 0x1fff;
+	val = pdrv->boot_ctrl.frame_rate & 0x1fff;
 		lcd_vcbus_write(L_STH1_HS_ADDR + offset + 4, val);
 
 	val = (pdrv->boot_ctrl.lcd_type & 0xf) | ((pdrv->boot_ctrl.clk_mode & 0xf) << 4)

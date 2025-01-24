@@ -27,7 +27,8 @@
 /* 20240923: support reserved memory to transmit panel parameter to kernel */
 /* 20241108: optimize config load flow */
 /* 20241127: add lcd config json parse driver */
-#define LCD_DRV_VERSION    "20241127"
+/* 20250123: update lcd bootargs transfer by lrm */
+#define LCD_DRV_VERSION    "20250123"
 
 #define CFMT_RGB565          0x05
 #define CFMT_RGB_6bit        0x06
@@ -303,6 +304,7 @@ void aml_bl_remove_all(void);
 int aml_bl_index_add(int drv_index, int conf_index);
 int aml_bl_index_remove(int drv_index);
 int aml_bl_init(void);
+int aml_bl_get_state(int index);
 void aml_bl_driver_enable(int index);
 void aml_bl_driver_disable(int index);
 void aml_bl_set_level(int index, unsigned int level);

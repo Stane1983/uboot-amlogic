@@ -11,6 +11,7 @@
 #endif
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include <amlogic/media/vout/lcd/lcd_memory.h>
+#include "lcd_common.h"
 
 #define LRMERR LCDERR
 #define LRMPR LCDPR
@@ -37,7 +38,8 @@
 #define LCD_ATTR_SEC     BIT(1) //secure memory
 #define LCD_ATTR_TAIL    BIT(31)
 
-#define LCD_RSVD_MEM_MAGIC "amlogic_lcd_reserved"
+#define LCD_RSVD_MEM_MAGIC       "amlogic_lcd_reserved"
+#define LCD_BOOTARGS_IDENTIFIER  "lcd_bootargs"
 
 #define LCD_MEM_MAGIC_LEN 32
 #define LCD_MEM_INFO_SIZE 64
@@ -57,6 +59,20 @@ struct lcd_mem_list_s {
 	struct lcd_mem_info_s info;
 };
 
+struct lcd_bootargs_head_s {
+	unsigned int crc32;
+	unsigned int total_size;
+	unsigned int args_num;
+	unsigned int cur_pos;
+	char identifier[16];
+};
+
+struct lcd_bootargs_item_s {
+	unsigned int data_size;
+	unsigned int attr;
+	char name[36];
+};
+
 struct lcd_rsvd_mem_s {
 	char magic[LCD_MEM_MAGIC_LEN];  //magic words fixed 'amlogic_lcd_reserved'
 	u32 size;              //total memory size
@@ -65,7 +81,7 @@ struct lcd_rsvd_mem_s {
 	u32 args_len;
 	u32 args_num;
 	u32 tcon_size;
-	char *bootargs;
+	unsigned char *bootargs;
 	struct list_head mem_list;
 };
 
@@ -410,33 +426,26 @@ void lrm_show(void)
 	struct lcd_mem_list_s *pos;
 	struct list_head *head;
 	u64 pa;
-	char *p;
-	u32 offset, size, total = 0, i;
+	u32 offset, size, total = 0;
 
 	if (!lrm)
 		return;
 
+	printf("mem alloc_num: %u\n", lrm->allocated_num);
 	head = &lrm->mem_list;
 	list_for_each_entry(pos, head, list) {
 		pa = lrm->pstart + pos->info.offset;
 		offset = pos->info.offset;
 		size = pos->info.size;
 		total += size;
-		LRMPR("pa:0x%llx offset:%08x, size:%08x attr:0x%08x, %s\n",
-		      pa, offset, size, pos->info.attr, pos->info.name);
+		printf("pa:0x%llx offset:0x%08x, size:0x%08x attr:0x%08x, %s\n",
+		       pa, offset, size, pos->info.attr, pos->info.name);
 	}
 
-	if (lrm->bootargs) {
-		LRMPR("bootargs: num:%u\n", lrm->args_num);
-		p = (char *)lrm->bootargs;
-		for (i = 0; i < lrm->args_num && p < lrm->bootargs + RSVD_MEM_BOOTARGS_SIZE; i++) {
-			printf("%u: %s\n", i, p);
-			p = p + strlen(p) + 1;
-		}
-	}
+	printf("\n%s pa:0x%llx, memory used: 0x%x/0x%x, tcon_size:0x%x\n\n",
+	       lrm->magic, lrm->pstart, total, lrm->size, lrm->tcon_size);
 
-	LRMPR("%s pa:0x%llx, alloc_num:%u, memory used: 0x%x/0x%x, tcon_size:0x%x\n\n",
-	      lrm->magic, lrm->pstart, lrm->allocated_num, total, lrm->size, lrm->tcon_size);
+	lrm_bootargs_dump();
 }
 
 /*==============================================================================================*/
@@ -473,30 +482,249 @@ void lrm_handle_mem_info_to_kernel(void)
 	}
 }
 
-void lrm_bootargs_put_string(char *name, char *value)
+static void lrm_handle_bootargs_info_update(void)
 {
 	struct lcd_rsvd_mem_s *lrm = lrm_get();
-	char fmt[128] = {0};
-	int fmt_len = 0;
+	void *p;
+	int len = 0;
 
-	if (!lrm || !lrm->bootargs || !name || !value)
+	if (!lrm || !lrm->pstart)
 		return;
 
-	fmt_len = sprintf(fmt, "%s=%s", name, value);
-	if (lrm->args_len + fmt_len + 1 > RSVD_MEM_BOOTARGS_SIZE)
-		return;
-
-	lrm->args_len += sprintf(lrm->bootargs + lrm->args_len, "%s", fmt);
-	lrm->args_len += 1;
-	lrm->args_num++;
+	p = (char *)lrm->pstart + lrm->size - RSVD_MEM_TAIL_SIZE;
+	len = sizeof(lrm->magic);
+	*(u32 *)(p + len + 16) = lrm->args_num;
 }
 
-void lrm_bootargs_put_number(char *name, u32 value)
+static int lrm_bootargs_check(unsigned char *bootargs_mem)
 {
-	char fmt[32] = {0};
+	struct lcd_bootargs_head_s *head;
+	unsigned int crc;
 
-	sprintf(fmt, "0x%x", value);
-	lrm_bootargs_put_string(name, fmt);
+	head = (struct lcd_bootargs_head_s *)bootargs_mem;
+	if (strcmp(head->identifier, LCD_BOOTARGS_IDENTIFIER)) {
+		LRMERR("%s: identifier error\n", __func__);
+		return -1;
+	}
+	if (head->args_num) {
+		crc = lcd_crc32(0, bootargs_mem + 4, head->total_size - 4);
+		if (crc != head->crc32) {
+			LRMERR("%s: crc error\n", __func__);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+static struct lcd_bootargs_item_s *lrm_bootargs_get_item(unsigned char *bootargs_mem,
+							 const char *name)
+{
+	struct lcd_bootargs_head_s *head;
+	struct lcd_bootargs_item_s *item = NULL;
+	unsigned char *p;
+	int mem_size = 0, item_size, i;
+
+	if (!bootargs_mem)
+		return NULL;
+
+	head = (struct lcd_bootargs_head_s *)bootargs_mem;
+	p = bootargs_mem + sizeof(struct lcd_bootargs_head_s);
+	for (i = 0; i < head->args_num; i++) {
+		item = (struct lcd_bootargs_item_s *)p;
+		item_size = (sizeof(struct lcd_bootargs_item_s) + item->data_size);
+		mem_size += item_size;
+		if (mem_size > head->cur_pos)
+			break;
+
+		if (strcmp(item->name, name) == 0)
+			return item;
+
+		p += item_size;
+	}
+
+	return NULL;
+}
+
+void lrm_bootargs_dump(void)
+{
+	struct lcd_rsvd_mem_s *lrm = lrm_get();
+	struct lcd_bootargs_head_s *head;
+	struct lcd_bootargs_item_s *item = NULL;
+	unsigned char *p;
+	int mem_size = 0, item_size, i;
+
+	if (!lrm || !lrm->bootargs)
+		return;
+
+	printf("\nbootargs num:%u\n", lrm->args_num);
+	if (lrm_bootargs_check(lrm->bootargs))
+		return;
+
+	head = (struct lcd_bootargs_head_s *)lrm->bootargs;
+	p = lrm->bootargs + sizeof(struct lcd_bootargs_head_s);
+	for (i = 0; i < head->args_num; i++) {
+		item = (struct lcd_bootargs_item_s *)p;
+		item_size = (sizeof(struct lcd_bootargs_item_s) + item->data_size);
+		mem_size += item_size;
+		if (mem_size > head->cur_pos)
+			break;
+
+		printf("pa:0x%llx offset:0x%08x, data_size:%d, attr:0x%x, %s\n",
+		       (unsigned long long)p, (unsigned int)(p - lrm->bootargs),
+		       item->data_size, item->attr, item->name);
+
+		p += item_size;
+	}
+
+	printf("\n%s: mem used:0x%x/0x%x\n", head->identifier, head->cur_pos, head->total_size);
+}
+
+static int lrm_bootargs_add_data(unsigned char *bootargs_mem,
+				 unsigned char *data, const char *name, u32 len)
+{
+	struct lcd_bootargs_head_s *head;
+	struct lcd_bootargs_item_s *item;
+	unsigned char *p;
+	int item_size;
+
+	if (!bootargs_mem || !name || !data || !len)
+		return -1;
+
+	head = (struct lcd_bootargs_head_s *)bootargs_mem;
+
+	item_size = sizeof(struct lcd_bootargs_item_s) + len;
+	if ((head->cur_pos + item_size) > head->total_size) {
+		LRMERR("%s: data_size overflow\n", __func__);
+		return -1;
+	}
+
+	item = (struct lcd_bootargs_item_s *)(bootargs_mem + head->cur_pos);
+	p = bootargs_mem + head->cur_pos + sizeof(struct lcd_bootargs_item_s);
+	item->data_size = len;
+	strlcpy(item->name, name, sizeof(item->name));
+	memcpy(p, data, len);
+	head->args_num++;
+	if (lcd_debug_print_flag & LCD_DBG_PR_MEM)
+		LRMPR("%s: %s, args_num:%d\n", __func__, name, head->args_num);
+
+	head->cur_pos += item_size;
+	head->crc32 = lcd_crc32(0, bootargs_mem + 4, head->total_size - 4);
+
+	return 0;
+}
+
+static int lrm_bootargs_modify_data(unsigned char *bootargs_mem,
+				    struct lcd_bootargs_item_s *target_item,
+				    unsigned char *data, const char *name, u32 len)
+{
+	struct lcd_bootargs_head_s *pre_head, *new_head;
+	struct lcd_bootargs_item_s *new_item;
+	unsigned char *pre_ptr, *new_ptr, *tmp_mem, *p;
+	int pre_pos, pre_item_size, new_item_size;
+	int remain_size;
+
+	if (!bootargs_mem || !name || !data || !len)
+		return -1;
+
+	pre_head = (struct lcd_bootargs_head_s *)bootargs_mem;
+	tmp_mem = malloc(pre_head->total_size);
+	if (!tmp_mem) {
+		LRMERR("%s: tmp_mem error\n", __func__);
+		return -1;
+	}
+	memset(tmp_mem, 0, pre_head->total_size);
+	new_head = (struct lcd_bootargs_head_s *)tmp_mem;
+
+	pre_ptr = (unsigned char *)target_item;
+	pre_pos = pre_ptr - bootargs_mem;
+	memcpy(tmp_mem, bootargs_mem, pre_pos);
+	new_head->cur_pos = pre_pos;
+
+	new_ptr = tmp_mem + new_head->cur_pos;
+	new_item = (struct lcd_bootargs_item_s *)new_ptr;
+	p = new_ptr + sizeof(struct lcd_bootargs_item_s);
+	new_item_size = sizeof(struct lcd_bootargs_item_s) + len;
+	if ((new_head->cur_pos + new_item_size) > new_head->total_size) {
+		LRMERR("%s: data_size overflow\n", __func__);
+		goto lrm_bootargs_put_data_err;
+	}
+	memcpy(new_ptr, pre_ptr, sizeof(struct lcd_bootargs_item_s));
+	new_item->data_size = len;
+	memcpy(p, data, len);
+
+	pre_item_size = (sizeof(struct lcd_bootargs_item_s) + target_item->data_size);
+	pre_pos += pre_item_size;
+	new_head->cur_pos += new_item_size;
+	pre_ptr += pre_item_size;
+	new_ptr += new_item_size;
+
+	remain_size = pre_head->cur_pos - pre_pos;
+	if ((new_head->cur_pos + remain_size) > new_head->total_size) {
+		LRMERR("%s: data_size overflow\n", __func__);
+		goto lrm_bootargs_put_data_err;
+	}
+	memcpy(new_ptr, pre_ptr, remain_size);
+	new_head->cur_pos += remain_size;
+
+	new_head->crc32 = lcd_crc32(0, tmp_mem + 4, new_head->total_size - 4);
+
+	memcpy(bootargs_mem, tmp_mem, new_head->total_size);
+	if (lcd_debug_print_flag & LCD_DBG_PR_MEM)
+		LRMPR("%s: %s, args_num:%d\n",	__func__, name, pre_head->args_num);
+
+	memset(tmp_mem, 0, pre_head->total_size);
+	free(tmp_mem);
+	return 0;
+
+lrm_bootargs_put_data_err:
+	memset(tmp_mem, 0, pre_head->total_size);
+	free(tmp_mem);
+	return -1;
+}
+
+void lrm_bootargs_put_data(unsigned char *data, const char *name, u32 len)
+{
+	struct lcd_rsvd_mem_s *lrm = lrm_get();
+	struct lcd_bootargs_head_s *head;
+	struct lcd_bootargs_item_s *item;
+	int ret;
+
+	if (!lrm || !lrm->bootargs || !name || !data || !len)
+		return;
+
+	item = lrm_bootargs_get_item(lrm->bootargs, name);
+	if (item) //bootargs exist
+		ret = lrm_bootargs_modify_data(lrm->bootargs, item, data, name, len);
+	else //new add
+		ret = lrm_bootargs_add_data(lrm->bootargs, data, name, len);
+	if (ret)
+		return;
+
+	head = (struct lcd_bootargs_head_s *)lrm->bootargs;
+	lrm->args_num = head->args_num;
+	lrm_handle_bootargs_info_update();
+}
+
+unsigned char *lrm_bootargs_get_data(const char *name, u32 *len)
+{
+	struct lcd_rsvd_mem_s *lrm = lrm_get();
+	struct lcd_bootargs_item_s *item = NULL;
+	unsigned char *data = NULL;
+
+	if (!lrm || !lrm->bootargs || !name || !len)
+		return NULL;
+
+	if (lrm_bootargs_check(lrm->bootargs))
+		return NULL;
+
+	item = lrm_bootargs_get_item(lrm->bootargs, name);
+	if (item) {
+		data = ((unsigned char *)item) + sizeof(struct lcd_bootargs_item_s);
+		*len = item->data_size;
+	}
+
+	return data;
 }
 
 int lcd_reserved_memory_init(char *dt_addr)
@@ -505,6 +733,7 @@ int lcd_reserved_memory_init(char *dt_addr)
 	char *propdata;
 	char name[128];
 	struct lcd_rsvd_mem_s *lrm;
+	struct lcd_bootargs_head_s *bootargs_head;
 	u64 paddr = 0;
 	u32 size = 0, tcon_size = 0;
 	int ret = -1;
@@ -575,8 +804,15 @@ int lcd_reserved_memory_init(char *dt_addr)
 	lrm->tcon_size = tcon_size;
 	memset((char *)lrm->pstart, 0, lrm->size);
 	INIT_LIST_HEAD(&lrm->mem_list);
-	strncpy(lrm->magic, LCD_RSVD_MEM_MAGIC, 32);
-	lrm->bootargs = (char *)lrm->pstart + lrm->size - RSVD_MEM_BOOTARGS_SIZE;
+	strlcpy(lrm->magic, LCD_RSVD_MEM_MAGIC, 32);
+
+	lrm->bootargs = (unsigned char *)lrm->pstart + lrm->size - RSVD_MEM_BOOTARGS_SIZE;
+	bootargs_head = (struct lcd_bootargs_head_s *)lrm->bootargs;
+	strlcpy(bootargs_head->identifier, LCD_BOOTARGS_IDENTIFIER, 16);
+	bootargs_head->total_size = RSVD_MEM_BOOTARGS_SIZE;
+	bootargs_head->args_num = 0;
+	bootargs_head->cur_pos = sizeof(struct lcd_bootargs_head_s);
+
 	ret = 0;
 	lrm_spin_unlock();
 

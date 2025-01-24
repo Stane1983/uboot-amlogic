@@ -658,15 +658,19 @@ static int lcd_driver_remove(int index)
 
 static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 {
-	unsigned int val = 0;
-	char env_str[12], type_str[12], ctrl_str[48];
+	unsigned int val = 0, debug_bypass, size;
+	char env_str[16], ctrl_str[48], *type_str;
 
 	if (!pdrv->config.timing.base_timing)
 		return;
 	pdrv->boot_ctrl.lcd_type = pdrv->config.basic.lcd_type;
 	pdrv->boot_ctrl.lcd_bits = pdrv->config.timing.base_timing->lcd_bits;
 	pdrv->boot_ctrl.clk_mode = pdrv->config.timing.clk_mode;
-	pdrv->boot_ctrl.base_frame_rate = pdrv->config.timing.base_timing->frame_rate;
+	pdrv->boot_ctrl.frame_rate = pdrv->config.timing.base_timing->frame_rate;
+	pdrv->boot_ctrl.if_state = (pdrv->status & LCD_STATUS_IF_ON) ? 1 : 0;
+#ifdef CONFIG_AML_LCD_BACKLIGHT
+	pdrv->boot_ctrl.bl_state = aml_bl_get_state(pdrv->index);
+#endif
 	switch (pdrv->config.timing.ppc) {
 	case 2:
 		pdrv->boot_ctrl.ppc = LCD_VENC_2PPC;
@@ -713,32 +717,20 @@ static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 	val |= (pdrv->boot_ctrl.init_level & 0x3) << 18;
 	val |= (pdrv->boot_ctrl.ppc & 0x3) << 20;
 	val |= (pdrv->boot_ctrl.clk_mode & 0x3) << 22;
-	val |= (pdrv->boot_ctrl.base_frame_rate & 0xff) << 24;
+	val |= (pdrv->boot_ctrl.frame_rate & 0xff) << 24;
 	lcd_venc_save_bootctrl_to_regs(pdrv);
 
-	if (pdrv->index == 0) {
-		sprintf(type_str, "panel_type");
-		//sprintf(env_str, "lcd_ctrl");
-	} else {
-		sprintf(type_str, "panel%d_type", pdrv->index);
-		//sprintf(env_str, "lcd%d_ctrl", pdrv->index);
-	}
-	//sprintf(ctrl_str, "0x%08x", val);
-	//env_set(env_str, ctrl_str);
+	if (pdrv->index == 0)
+		sprintf(env_str, "panel_type");
+	else
+		sprintf(env_str, "panel%d_type", pdrv->index);
+	type_str = env_get(env_str);
 
 	sprintf(env_str, "lcd%d_attr", pdrv->index);
 	sprintf(ctrl_str, "0x%08x,%s,%s", val,
 		pdrv->boot_ctrl.custom_pinmux ? pdrv->config.basic.model_name : "",
-		pdrv->key_valid ? "" : (env_get(type_str) ? env_get(type_str) : ""));
+		pdrv->key_valid ? "" : (type_str ? type_str : ""));
 	env_set(env_str, ctrl_str);
-
-	//if (strlen(pdrv->config.basic.model_name) > 0) {
-	//	if (pdrv->index == 0)
-	//		sprintf(env_str, "panel_name");
-	//	else
-	//		sprintf(env_str, "panel%d_name", pdrv->index);
-	//	env_set(env_str, pdrv->config.basic.model_name);
-	//}
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 		LCDPR("[%d]: %s: ppc=%d, clk_mode=%d, base_fr=%d, bootctrl=%s\n",
@@ -747,11 +739,47 @@ static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 			pdrv->config.timing.clk_mode,
 			pdrv->config.timing.base_timing->frame_rate, ctrl_str);
 	}
+
+	debug_bypass = env_get_ulong("lcd_bootargs_bypass", 10, 0);
+	if (debug_bypass == 0) {
+		//for lcd reserved memory transmit parameters
+		size = sizeof(struct lcd_boot_ctrl_s);
+		lrm_bootargs_put_data((unsigned char *)&pdrv->boot_ctrl, env_str, size);
+	}
 }
 
-static void lcd_update_debug_bootargs(void)
+static void lcd_init_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 {
-	unsigned int val = 0;
+	unsigned int debug_bypass, size;
+	char arg_name[16], *type_str;
+
+	lcd_update_ctrl_bootargs(pdrv);
+
+	debug_bypass = env_get_ulong("lcd_bootargs_bypass", 10, 0);
+	if (debug_bypass)
+		return;
+
+	//for lcd reserved memory transmit parameters
+	if (pdrv->config.custom_pinmux) {
+		size = strlen(pdrv->config.basic.model_name) + 1; //include '\0' for string
+		sprintf(arg_name, "panel%d_name", pdrv->index);
+		lrm_bootargs_put_data((unsigned char *)pdrv->config.basic.model_name,
+				      arg_name, size);
+	}
+
+	if (pdrv->index == 0)
+		sprintf(arg_name, "panel_type");
+	else
+		sprintf(arg_name, "panel%d_type", pdrv->index);
+	type_str = env_get(arg_name);
+	size = strlen(type_str) + 1; //include '\0' for string
+	sprintf(arg_name, "panel%d_type", pdrv->index);
+	lrm_bootargs_put_data((unsigned char *)type_str, arg_name, size);
+}
+
+static void lcd_init_debug_bootargs(void)
+{
+	unsigned int val = 0, size;
 	char dbg_str[20];
 
 	debug_ctrl.debug_print_flag = lcd_debug_print_flag;
@@ -772,6 +800,9 @@ static void lcd_update_debug_bootargs(void)
 	val |= (debug_ctrl.debug_lcd_mode & 0x3) << 30;
 	sprintf(dbg_str, "0x%08x", val);
 	env_set("lcd_debug", dbg_str);
+
+	size = sizeof(struct lcd_debug_ctrl_s);
+	lrm_bootargs_put_data((unsigned char *)&debug_ctrl, "lcd_debug", size);
 }
 
 void lcd_panel_config_load_to_drv(struct aml_lcd_drv_s *pdrv)
@@ -780,7 +811,7 @@ void lcd_panel_config_load_to_drv(struct aml_lcd_drv_s *pdrv)
 	lcd_phy_probe(pdrv);
 	lcd_debug_probe(pdrv);
 	lcd_mode_init(pdrv);
-	lcd_update_ctrl_bootargs(pdrv);
+	lcd_init_ctrl_bootargs(pdrv);
 }
 
 char *lcd_get_dt_addr(void)
@@ -968,7 +999,7 @@ int lcd_probe(void)
 
 	lcd_power_domain_off(lcd_data);
 
-	lcd_update_debug_bootargs();
+	lcd_init_debug_bootargs();
 
 	lcd_handle_panel_param_to_kernel();
 	lrm_handle_mem_info_to_kernel();

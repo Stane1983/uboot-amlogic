@@ -34,6 +34,7 @@ extern unsigned int lcd_debug_print_flag;
 #define LCD_DBG_PR_BL_ISR       BIT(7)
 #define LCD_DBG_PR_CLK          BIT(8)
 #define LCD_DBG_PR_TCON         BIT(9)
+#define LCD_DBG_PR_MEM          BIT(13)
 #define LCD_DBG_PR_TEST         BIT(14)
 #define LCD_DBG_PR_REG          BIT(15)
 
@@ -662,13 +663,16 @@ struct lcd_vmode_mgr_s {
 struct lcd_boot_ctrl_s {
 	unsigned char lcd_type;
 	unsigned char lcd_bits;
-	unsigned char advanced_flag;
 	unsigned char dccd_flag;
-	unsigned char custom_pinmux;
-	unsigned char init_level;
+	unsigned char mute_flag;
 	unsigned char ppc;
 	unsigned char clk_mode;
-	unsigned char base_frame_rate;
+	unsigned char custom_pinmux;
+	unsigned char init_level;
+	unsigned short advanced_flag;
+	unsigned short frame_rate;
+	unsigned char if_state;
+	unsigned char bl_state;
 };
 
 /*
@@ -834,6 +838,7 @@ int aml_lcd_mipi_dsi_read(int index,
 void aml_lcd_driver_test(int index, int num);
 int aml_lcd_driver_prbs(int index, unsigned int s, unsigned int prbs_freq, unsigned int mode_flag);
 void aml_lcd_panel_dump(int index, const char *path);
+void aml_lcd_param_mem_dump(void);
 void aml_lcd_config_check(int index);
 
 void aml_lcd_driver_ext_info(int index);
