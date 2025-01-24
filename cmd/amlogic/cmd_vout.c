@@ -299,6 +299,7 @@ int aml_vout_output(uint8_t vout_idx, char *mode)
 		if (venc_sel >= VIU_MUX_MAX)
 			break;
 		// ret = aml_hdmitx_output(mode);
+		printf("\nhdmi not support smp on yet\n");
 #endif
 		break;
 	case CONNECTOR_DEV_CVBS:
@@ -312,15 +313,6 @@ int aml_vout_output(uint8_t vout_idx, char *mode)
 		break;
 	default:
 		break;
-	}
-
-	if (ret == 0) {
-		if (vout_idx == 0)
-			run_command("setenv vout_init enable", 0);
-		else if (vout_idx == 1)
-			run_command("setenv vout2_init enable", 0);
-		else if (vout_idx == 2)
-			run_command("setenv vout3_init enable", 0);
 	}
 
 	return ret;

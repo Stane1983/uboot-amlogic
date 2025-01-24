@@ -321,22 +321,33 @@ void aml_board_display_init(unsigned char vout_bit)
 	aml_display_on_pre(vout_bit);
 	if (env_get("bootup_display") && (strcmp(env_get("bootup_display"), "on") == 0)) {
 		if (vout_bit & BIT(0)) {
-			smp_ret = run_smp_function(cpu_id, &aml_display_on_post_job, 0x0);
-			if (smp_ret)
+			smp_ret = run_smp_function(cpu_id, &aml_display_on_post_job, 0);
+			if (smp_ret) {
 				printf("display smp failed\n");
-			cpu_id++;
+			} else {
+				run_command("setenv vout_init enable", 0);
+				cpu_id++;
+			}
 		}
 		if (vout_bit & BIT(1)) {
-			smp_ret = run_smp_function(cpu_id, &aml_display_on_post_job, 0x1);
-			if (smp_ret)
+			smp_ret = run_smp_function(cpu_id, &aml_display_on_post_job, 1);
+			if (smp_ret) {
 				printf("display2 smp failed\n");
+			} else {
+				run_command("setenv vout2_init enable", 0);
+				cpu_id++;
+			}
+
 			cpu_id++;
 		}
 		if (vout_bit & BIT(2)) {
-			smp_ret = run_smp_function(cpu_id, &aml_display_on_post_job, 0x2);
-			if (smp_ret)
+			smp_ret = run_smp_function(cpu_id, &aml_display_on_post_job, 2);
+			if (smp_ret) {
 				printf("display3 smp failed\n");
-			cpu_id++;
+			} else {
+				run_command("setenv vout2_init enable", 0);
+				cpu_id++;
+			}
 		}
 	}
 #endif
