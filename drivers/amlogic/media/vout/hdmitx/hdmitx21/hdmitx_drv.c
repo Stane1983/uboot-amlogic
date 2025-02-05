@@ -1733,9 +1733,6 @@ static void hdmi_phy_suspend(void)
 	 */
 	switch (hdev->chip_type) {
 	case MESON_CPU_ID_S7:
-		hd21_write_reg(phy_cntl3, 0xB);
-		hd21_write_reg(phy_cntl5, 0x800);
-		break;
 	case MESON_CPU_ID_S7D:
 		hd21_write_reg(phy_cntl3, 0xC1B);
 		hd21_write_reg(phy_cntl5, 0x0);
