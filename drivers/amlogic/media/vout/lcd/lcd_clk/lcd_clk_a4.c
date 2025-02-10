@@ -140,10 +140,9 @@ static struct lcd_clk_data_s lcd_clk_data_a4 = {
 	.xd_out_fmax = 75000000,
 	.od_cnt = 1,
 	.have_tcon_div = 0,
-	.have_pll_div = 0,
 	.phy_clk_location = 1,
 
-	.div_sel_max = 0,
+	.div_sel_max = CLK_DIV_SEL_1,
 	.xd_max = 255,
 	.phy_div_max = 1,
 

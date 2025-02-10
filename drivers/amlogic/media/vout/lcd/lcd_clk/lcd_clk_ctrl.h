@@ -81,7 +81,7 @@
 #define CLK_DIV_I2O     0
 #define CLK_DIV_O2I     1
 enum div_sel_e {
-	CLK_DIV_SEL_1 = 0,
+	CLK_DIV_SEL_1 = 0,/* 0 */
 	CLK_DIV_SEL_2,    /* 1 */
 	CLK_DIV_SEL_3,    /* 2 */
 	CLK_DIV_SEL_3p5,  /* 3 */
@@ -98,18 +98,18 @@ enum div_sel_e {
 	CLK_DIV_SEL_2p5,  /* 14 */
 	CLK_DIV_SEL_4p67, /* 15 */
 	CLK_DIV_SEL_2p33, /* 16 */
-	CLK_DIV_SEL_MAX,
 };
+
+#define CLK_DIV_SEL_MAX  CLK_DIV_SEL_2p33  // ! MUST set to last one in div_sel_e
 
 struct lcd_clk_div_table_s {
 	char *name;
-	unsigned char divider;
 	unsigned char num;
 	unsigned char den;
 	unsigned char shift_sel;
 	unsigned short shift_val;
 };
 
-extern struct lcd_clk_div_table_s lcd_clk_div_table[];
+extern struct lcd_clk_div_table_s lcd_clk_div_table[CLK_DIV_SEL_MAX + 1];
 
 #endif

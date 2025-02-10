@@ -66,7 +66,7 @@ unsigned char lcd_dsi_generate_DSI_PLL_s6_model(struct aml_lcd_drv_s *pdrv)
 	cconf->pll_tcon_div_sel = 2;
 
 	for (enc_xd = 1; enc_xd < cconf->data->xd_max; enc_xd++) {
-		for (frac_sel = CLK_DIV_SEL_1; frac_sel < cconf->data->div_sel_max; frac_sel++) {
+		for (frac_sel = CLK_DIV_SEL_1; frac_sel <= cconf->data->div_sel_max; frac_sel++) {
 		// for (frac_sel = CLK_DIV_SEL_1; frac_sel <= CLK_DIV_SEL_1; frac_sel++) {
 			pll_out = enc_xd;
 			pll_out = pll_out * cconf->fout;
@@ -187,7 +187,6 @@ static void lcd_set_vid_pll_div_s6(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_clk_config_s *cconf;
 	unsigned int shift_val, shift_sel;
-	int i;
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_ADV2)
 		LCDPR("[%d]: %s\n", pdrv->index, __func__);
@@ -195,16 +194,15 @@ static void lcd_set_vid_pll_div_s6(struct aml_lcd_drv_s *pdrv)
 	if (!cconf)
 		return;
 
-	i = 0;
-	while (lcd_clk_div_table[i].divider < cconf->data->div_sel_max) {
-		if (cconf->div_sel == lcd_clk_div_table[i].divider)
-			break;
-		i++;
+	if (cconf->data->div_sel_max == CLK_DIV_SEL_1 ||
+	    cconf->div_sel > cconf->data->div_sel_max ||
+	    cconf->div_sel >= ARRAY_SIZE(lcd_clk_div_table)) {
+		LCDERR("[0]: invalid clk divider\n");
+		return;
 	}
-	if (lcd_clk_div_table[i].divider == cconf->data->div_sel_max)
-		LCDERR("[%d]: invalid clk divider\n", pdrv->index);
-	shift_val = lcd_clk_div_table[i].shift_val;
-	shift_sel = lcd_clk_div_table[i].shift_sel;
+
+	shift_val = lcd_clk_div_table[cconf->div_sel].shift_val;
+	shift_sel = lcd_clk_div_table[cconf->div_sel].shift_sel;
 
 	if (shift_val == 0xffff) { /* if divide by 1 */
 		lcd_combo_dphy_setb(CLKCTRL_DSI_PLL_CLK_DIV, 1, 18, 1);
@@ -431,7 +429,6 @@ static struct lcd_clk_data_s lcd_clk_data_s6 = {
 	.xd_out_fmax = 2800000000,
 	.od_cnt = 0,
 	.have_tcon_div = 0,
-	.have_pll_div = 0,
 	.phy_clk_location = 1,
 
 	.vclk_sel = 3, // dsi_pll_clk

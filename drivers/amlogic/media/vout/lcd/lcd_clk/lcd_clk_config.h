@@ -57,7 +57,6 @@ struct lcd_clk_data_s {
 	unsigned int xd_out_fmax;
 	unsigned int od_cnt;
 	unsigned int have_tcon_div;
-	unsigned int have_pll_div;
 	//0:pll_clk_phase, 1:pll_clk2, 2:vid_pll_clk
 	unsigned int phy_clk_location;
 

@@ -291,7 +291,6 @@ static void _lcd_set_vid_pll_div_by_cconf(struct aml_lcd_drv_s *pdrv,
 		struct lcd_clk_config_s *cconf)
 {
 	unsigned int reg_vid_pll_div, shift_val, shift_sel;
-	int i;
 
 	switch (cconf->pll_id) {
 	case 1:
@@ -307,14 +306,13 @@ static void _lcd_set_vid_pll_div_by_cconf(struct aml_lcd_drv_s *pdrv,
 	lcd_combo_dphy_setb(reg_vid_pll_div, 0, 19, 1);
 	lcd_combo_dphy_setb(reg_vid_pll_div, 0, 15, 1);
 
-	i = 0;
-	while (lcd_clk_div_table[i].divider < cconf->data->div_sel_max) {
-		if (cconf->div_sel == lcd_clk_div_table[i].divider)
-			break;
-		i++;
-	}
-	if (lcd_clk_div_table[i].divider == cconf->data->div_sel_max)
+	if (cconf->data->div_sel_max == CLK_DIV_SEL_1 ||
+	    cconf->div_sel > cconf->data->div_sel_max ||
+	    cconf->div_sel >= ARRAY_SIZE(lcd_clk_div_table)) {
 		LCDERR("[%d]: invalid clk divider\n", pdrv->index);
+		return;
+	}
+
 	shift_val = lcd_clk_div_table[i].shift_val;
 	shift_sel = lcd_clk_div_table[i].shift_sel;
 
@@ -813,7 +811,6 @@ static struct lcd_clk_data_s lcd_clk_data_t3x_0 = {
 	.xd_out_fmax = 820000000,
 	.od_cnt = 3,
 	.have_tcon_div = 0,
-	.have_pll_div = 1,
 	.phy_clk_location = 1,
 
 	.vclk_sel = 0,
@@ -868,7 +865,6 @@ static struct lcd_clk_data_s lcd_clk_data_t3x_1 = {
 	.xd_out_fmax = 820000000,
 	.od_cnt = 3,
 	.have_tcon_div = 0,
-	.have_pll_div = 1,
 	.phy_clk_location = 1,
 
 	.vclk_sel = 0,
