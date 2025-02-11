@@ -76,7 +76,7 @@ model_set_panel_misc_next:
 	run_command(buf, 0);
 
 model_set_panel_misc_next2:
-	if (misc_attr->version)
+	if (misc_attr->version >= 2)
 		goto model_set_panel_misc_next3;
 	rev_ctrl = env_get("reverse_ctrl");
 	if (!rev_ctrl || strcmp(rev_ctrl, "0") == 0) {
@@ -170,14 +170,17 @@ model_set_panel_misc_next3:
 		misc_attr->disp_layer_val == 0 ?
 			"osd0," : misc_attr->disp_layer_val == 1 ? "osd1," : "all,",
 		n == 0 ? "n" : n == 1 ? "y_rev" : n == 2 ? "x_rev" : "true");
+	ALOGD("%s: %s\n", __func__, buf);
 	run_command(buf, 0);
 
 	snprintf(buf, 64, "setenv video_reverse %c",
 		n == 0 ? '0' : n == 1 ? '3' : n == 2 ? '2' : '1');
+	ALOGD("%s: %s\n", __func__, buf);
 	run_command(buf, 0);
 
 	snprintf(buf, 64, "setenv panel_reverse %c",
 		n == 0 ? '0' : n == 1 ? '3' : n == 2 ? '2' : '1');
+	ALOGD("%s: %s\n", __func__, buf);
 	run_command(buf, 0);
 
 	return 0;
