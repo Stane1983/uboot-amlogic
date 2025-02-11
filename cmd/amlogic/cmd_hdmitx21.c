@@ -353,7 +353,7 @@ int aml_hdmitx_output(const char *mode)
 	return 0;
 }
 
-static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+static int _do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	int ret;
@@ -405,6 +405,15 @@ static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 			return CMD_RET_FAILURE;
 	}
 	return CMD_RET_SUCCESS;
+}
+
+static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+{
+	int ret;
+
+	ret = _do_output(cmdtp, flag, argc, argv);
+	hdmi_mode_frac_postprocess();
+	return ret;
 }
 
 static int do_clkmsr(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
@@ -1125,7 +1134,7 @@ void scene_process(struct hdmitx_dev *hdev,
 		strcpy(scene_output_info->final_deepcolor, DEFAULT_COLOR_FORMAT);
 }
 
-static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+static int _do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	unsigned char *edid = hdev->rawedid;
@@ -1165,6 +1174,7 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 	char *dongle_mode = env_get("dongle_mode");
 	char *dsc_policy = env_get("dsc_policy");
 	char *edid_check = env_get("edid_check");
+	char tmp_sel_hdmimode[MODE_LEN] = {0};
 
 	if (!hdev) {
 		printf("null hdmitx dev\n");
@@ -1403,7 +1413,12 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 	 */
 	if (get_hdr_policy() == 1)
 		env_set("dolby_status", 0);
-	hdev->para = hdmitx21_get_fmtpara(sel_hdmimode, env_get("colorattribute"));
+	hdmi_mode_frac_preprocess();
+	if (is_mode_name_frac(sel_hdmimode))
+		convert_name_frac2int(sel_hdmimode, tmp_sel_hdmimode);
+	else
+		memcpy(tmp_sel_hdmimode, sel_hdmimode, sizeof(tmp_sel_hdmimode));
+	hdev->para = hdmitx21_get_fmtpara(tmp_sel_hdmimode, env_get("colorattribute"));
 	hdev->vic = hdev->para->timing.vic;
 	/*
 	 * QMS BRR selection
@@ -1414,6 +1429,11 @@ static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 	hdmitx_mask_rx_info(hdev);
 	hdmitx21_select_frl(hdev);
 	return 0;
+}
+
+static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+{
+	return _do_get_parse_edid(cmdtp, flag, argc, argv);
 }
 
 static int do_dsc_policy(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])

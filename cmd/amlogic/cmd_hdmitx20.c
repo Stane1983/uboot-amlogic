@@ -299,7 +299,7 @@ int aml_hdmitx_output(const char *mode)
 	return 0;
 }
 
-static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+static int _do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {
 	struct hdmitx_dev *hdev = hdmitx_get_hdev();
 	int ret;
@@ -348,6 +348,15 @@ static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 			return CMD_RET_FAILURE;
 	}
 	return CMD_RET_SUCCESS;
+}
+
+static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+{
+	int ret;
+
+	ret = _do_output(cmdtp, flag, argc, argv);
+	hdmi_mode_frac_postprocess();
+	return ret;
 }
 
 static int do_blank(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
@@ -1003,7 +1012,7 @@ void scene_process(struct hdmitx_dev *hdev,
 		strcpy(scene_output_info->final_deepcolor, DEFAULT_COLOR_FORMAT);
 }
 
-static int do_get_parse_edid(cmd_tbl_t * cmdtp, int flag, int argc,
+static int _do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc,
 	char * const argv[])
 {
 	struct hdmitx_dev *hdev = hdmitx_get_hdev();
@@ -1226,10 +1235,16 @@ static int do_get_parse_edid(cmd_tbl_t * cmdtp, int flag, int argc,
 	 */
 	if (get_hdr_policy() == 1)
 		env_set("dolby_status", 0);
+	hdmi_mode_frac_preprocess();
 	hdev->vic = hdmi_get_fmt_vic(env_get("outputmode"));
 	hdev->para = hdmi_get_fmt_paras(hdev->vic);
 	hdmitx_mask_rx_info(hdev);
 	return 0;
+}
+
+static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+{
+	return _do_get_parse_edid(cmdtp, flag, argc, argv);
 }
 
 #ifdef CONFIG_EFUSE_OBJ_API
