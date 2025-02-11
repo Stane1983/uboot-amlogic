@@ -309,6 +309,21 @@ int hdmitx21_read_edid(u8 *_rx_edid)
 	return 1;
 }
 
+void config_i2c_rate(int rate)
+{
+	switch (rate) {
+	case DDC_I2C_38K:
+		/* config i2c 37.5k */
+		hdmitx21_set_reg_bits(AON_CYP_CTL_IVCTX, 3, 0, 2);
+		break;
+	case DDC_I2C_75K:
+	default:
+		/* config i2c 75k */
+		hdmitx21_set_reg_bits(AON_CYP_CTL_IVCTX, 2, 0, 2);
+		break;
+	}
+}
+
 static void ddc_tx_sequential_write(u8 *data, u16 len)
 {
 	int i;

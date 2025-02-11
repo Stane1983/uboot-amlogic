@@ -17,6 +17,11 @@
 
 #define HZ 100000000 // TODO
 
+enum i2c_rate {
+	DDC_I2C_38K,
+	DDC_I2C_75K,
+};
+
 struct tx_cap {
 	/* configure in dts file */
 	u8 tx_max_frl_rate;
@@ -128,6 +133,7 @@ enum frl_rate_enum get_dsc_frl_rate(enum dsc_encode_mode dsc_mode);
 
 bool hdmitx_frl_training_main(enum frl_rate_enum frl_rate);
 int hdmitx21_read_edid(u8 *_rx_edid);
+void config_i2c_rate(int rate);
 void scdc21_rd_sink(u8 adr, u8 *val);
 void scdc21_wr_sink(u8 adr, u8 val);
 struct hdmi_format_para *hdmitx21_get_fmt_paras(enum hdmi_vic vic);

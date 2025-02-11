@@ -22,6 +22,7 @@
 #include "../../drivers/amlogic/media/vout/hdmitx/hdmitx_common/hdmitx_policy_setting.h"
 #include "../../drivers/amlogic/media/vout/hdmitx/hdmitx_common/hdmitx_compliance.h"
 
+#define msleep(i) udelay((i) * 1000)
 static unsigned char edid_raw_buf[512] = {0};
 
 /*
@@ -1363,6 +1364,26 @@ static void get_parse_edid_data(struct hdmitx_dev *hdev)
 	int hdr_priority = get_hdr_strategy_priority();
 
 	hdev->hwop.read_edid(hdev->rawedid);
+	if (hdmitx_edid_is_all_zeros(hdev->rawedid)) {
+		pr_info("First read edid all 0 data\n");
+		hdev->hwop.read_edid(hdev->rawedid);
+	}
+
+	/* If EDID is not correct at first time, then retry */
+	if (hdmitx_edid_check_data_valid(hdev->RXCap.edid_check, hdev->rawedid) == false) {
+		config_i2c_rate(DDC_I2C_38K);
+		pr_info("config i2c 37.5k and read edid again\n");
+		msleep(20);
+
+		/* start reading edid second time */
+		hdev->hwop.read_edid(hdev->rawedid);
+		if (hdmitx_edid_is_all_zeros(hdev->rawedid))
+			hdev->hwop.read_edid(hdev->rawedid);
+
+		config_i2c_rate(DDC_I2C_75K);
+		pr_info("Recovery i2c 75k\n");
+		msleep(20);
+	}
 
 	/* dump edid raw data */
 	dump_full_edid(hdev->rawedid);
