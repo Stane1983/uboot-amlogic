@@ -262,7 +262,6 @@ int fill_ept_by_gpt(struct mmc *mmc)
 	size_t efiname_len, dosname_len;
 	struct _iptbl *ept = NULL;
 	struct partitions *partitions = NULL;
-	int ret = 0;
 
 	if (!p_iptbl_ept)
 		return 1;
@@ -275,21 +274,19 @@ int fill_ept_by_gpt(struct mmc *mmc)
 		return 1;
 	}
 
+	if (resize_gpt(mmc))
+		printf("resize gpt failed\n");
+
+	if (gpt_repair_headers(dev_desc))
+		printf("repair gpt failed\n");
+
 	ALLOC_CACHE_ALIGN_BUFFER_PAD(gpt_header, gpt_head, 1, dev_desc->blksz);
-
-	if (is_gpt_valid(dev_desc, (dev_desc->lba - 1), gpt_head, &gpt_pte) != 1) {
-		ret = gpt_repair_headers(dev_desc);
-		printf("Repaired Backup GPT %s\n", ret ? "failed" : "success");
-	}
-
 	if (is_gpt_valid(dev_desc, GPT_PRIMARY_PARTITION_TABLE_LBA, gpt_head, &gpt_pte) != 1) {
-		ret = gpt_repair_headers(dev_desc);
-		printf("Repaired Primary GPT %s\n", ret ? "failed" : "success");
-	}
-
-	if (resize_gpt(mmc)) {
-		ret = 1;
-		goto _out;
+		if (is_gpt_valid(dev_desc, (dev_desc->lba - 1), gpt_head, &gpt_pte) != 1) {
+			printf("%s: invalid gpt\n", __func__);
+			return 1;
+		}
+		printf("%s: *** Using Backup GPT ***\n", __func__);
 	}
 
 	for (i = 0; i < le32_to_cpu(gpt_head->num_partition_entries); i++) {
@@ -336,9 +333,8 @@ int fill_ept_by_gpt(struct mmc *mmc)
 		}
 	}
 	ept->count = i;
-_out:
 	free(gpt_pte);
-	return ret;
+	return 0;
 }
 
 /*
