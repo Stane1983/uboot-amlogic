@@ -89,7 +89,7 @@ static int hdmitx_edid_search_IEEEOUI(unsigned char *buf)
 }
 
 /* check EDID strictly */
-static int edid_check_valid(unsigned char *buf)
+int edid_check_valid(unsigned char *buf)
 {
 	unsigned int chksum = 0;
 	unsigned int i = 0;
@@ -302,7 +302,7 @@ static void _edid_parse_base_structure(struct rx_cap *prxcap,
 }
 
 /* if edid block 0 are all zeros, then consider RX as HDMI device */
-static int edid_zero_data(unsigned char *buf)
+int edid_zero_data(unsigned char *buf)
 {
 	int sum = 0;
 	int i = 0;
