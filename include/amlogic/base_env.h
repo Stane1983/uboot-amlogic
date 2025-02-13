@@ -60,7 +60,7 @@
 	"storeargs_base="\
 		"get_bootloaderversion;" \
 		"setenv bootargs ${initargs} otg_device=${otg_device} "\
-		"logo=${display_layer},loaded,${fb_addr} "\
+		"logo=${display_layer},loaded,${fb_addr} display_bpp=${display_bpp} "\
 		"vout=${outputmode},${vout_init} panel_type=${panel_type} "\
 		"hdmitx=${cecconfig},${colorattribute} hdmimode=${hdmimode} "\
 		"hdmichecksum=${hdmichecksum} dolby_vision_on=${dolby_vision_on} "\
