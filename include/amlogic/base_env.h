@@ -265,7 +265,7 @@
 			"setenv dolby_vision_on 0;"\
 			"setenv initconfig androidboot.quiescent=1 "\
 			"androidboot.bootreason=${reboot_mode};"\
-			"osd open;osd clear;"\
+			"osd open;osd clear;bmp scale;"\
 			"setenv vout_init enable;"\
 		"else if test ${reboot_mode} = recovery_quiescent; then "\
 			"setenv reboot_mode_android ""quiescent"";"\
@@ -273,7 +273,7 @@
 			"setenv dolby_vision_on 0;"\
 			"setenv initconfig androidboot.quiescent=1 "\
 			"androidboot.bootreason=recovery,quiescent;"\
-			"osd open;osd clear;"\
+			"osd open;osd clear;bmp scale;"\
 			"setenv vout_init enable;"\
 		"else "\
 			"setenv reboot_mode_android ""normal"";"\
