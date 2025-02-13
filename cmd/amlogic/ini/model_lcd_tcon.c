@@ -106,6 +106,7 @@ int handle_tcon_path_resv_for_kernel(void)
 	}
 
 	header->version = 1;
+	header->ready = 1;
 
 	/* data_load_level */
 	ini_value = IniGetString("tcon_Path", "data_load_level", "0");
