@@ -552,6 +552,18 @@ struct lcd_ext_attr_s {
 	unsigned char cmd_data[LCD_EXTERN_INIT_ON_MAX+LCD_EXTERN_INIT_OFF_MAX];
 };
 
+struct lcd_tcon_bin_path_header_s {
+	unsigned int crc32;
+	unsigned int data_size;
+	unsigned char version;
+	unsigned char data_load_level;
+	unsigned char init_load;
+	unsigned char ready;
+	unsigned int mem_total_size;
+	unsigned int block_cnt;
+	unsigned char reserved[12];
+};
+
 struct panel_misc_s {
 	char version[8];
 	char outputmode[64];

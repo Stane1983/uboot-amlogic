@@ -914,9 +914,9 @@ static void *lcd_tcon_bin_path_mem_get(unsigned int size)
 static int lcd_tcon_bin_path_update(unsigned int size)
 {
 #ifdef CONFIG_CMD_INI
+	struct lcd_tcon_bin_path_header_s *header;
 	unsigned char *mem_vaddr;
-	unsigned int data_size, block_cnt;
-	unsigned int data_crc32, temp_crc32;
+	unsigned int temp_crc32;
 
 	/* notice: different with kernel flow: mem_vaddr is not mapping to mem_paddr */
 	tcon_rmem.bin_path_rmem.mem_vaddr = lcd_tcon_bin_path_mem_get(size);
@@ -925,42 +925,26 @@ static int lcd_tcon_bin_path_update(unsigned int size)
 		return -1;
 	}
 	mem_vaddr = tcon_rmem.bin_path_rmem.mem_vaddr;
-	data_size = mem_vaddr[4] |
-		(mem_vaddr[5] << 8) |
-		(mem_vaddr[6] << 16) |
-		(mem_vaddr[7] << 24);
-	if (data_size < 32) { /* header size */
-		LCDERR("%s: tcon_bin_path data_size error\n", __func__);
+	header = (struct lcd_tcon_bin_path_header_s *)mem_vaddr;
+	if (header->data_size > size ||
+	    header->data_size < sizeof(struct lcd_tcon_bin_path_header_s)) {
+		LCDERR("%s: bin_path data_size error\n", __func__);
 		return -1;
 	}
-	block_cnt = mem_vaddr[16] |
-		(mem_vaddr[17] << 8) |
-		(mem_vaddr[18] << 16) |
-		(mem_vaddr[19] << 24);
-	if (block_cnt > 32) {
-		LCDERR("%s: tcon_bin_path block_cnt error\n", __func__);
+	if (header->block_cnt > 32) {
+		LCDERR("%s: bin_path block_cnt error\n", __func__);
 		return -1;
 	}
-	data_crc32 = mem_vaddr[0] |
-		(mem_vaddr[1] << 8) |
-		(mem_vaddr[2] << 16) |
-		(mem_vaddr[3] << 24);
-	temp_crc32 = lcd_crc32(0, &mem_vaddr[4], (data_size - 4));
-	if (data_crc32 != temp_crc32) {
+	temp_crc32 = lcd_crc32(0, &mem_vaddr[4], (header->data_size - 4));
+	if (header->crc32 != temp_crc32) {
 		LCDERR("%s: tcon_bin_path data crc error\n", __func__);
 		return -1;
 	}
 
-	tcon_mm_table.version = mem_vaddr[8] |
-		(mem_vaddr[9] << 8) |
-		(mem_vaddr[10] << 16) |
-		(mem_vaddr[11] << 24);
-	tcon_mm_table.data_load_level = mem_vaddr[12] |
-		(mem_vaddr[13] << 8) |
-		(mem_vaddr[14] << 16) |
-		(mem_vaddr[15] << 24);
-	tcon_mm_table.block_cnt = block_cnt;
-	//tcon_mm_table.init_load = mem_vaddr[20];
+	tcon_mm_table.version = header->version;
+	tcon_mm_table.data_load_level = header->data_load_level;
+	tcon_mm_table.block_cnt = header->block_cnt;
+	//tcon_mm_table.init_load = header->init_load;
 	//LCDPR("%s: init_load: %d\n", __func__, tcon_mm_table.init_load);
 
 	tcon_mm_table.bin_path_valid = 1;

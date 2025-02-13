@@ -241,6 +241,20 @@ union lcd_tcon_data_part_u {
 	struct lcd_tcon_data_part_dma_s *dma;
 };
 
+#define TCON_BIN_PATH_MAX_SIZE        (0x2800)
+#define TCON_BIN_PATH_LEN             256
+struct lcd_tcon_bin_path_header_s {
+	unsigned int crc32;
+	unsigned int data_size;
+	unsigned char version;
+	unsigned char data_load_level;
+	unsigned char init_load;
+	unsigned char ready;
+	unsigned int mem_total_size;
+	unsigned int block_cnt;
+	unsigned char reserved[12];
+};
+
 #define LCD_UKEY_TCON_SPI_BLOCK_SIZE_PRE          20
 struct lcd_tcon_spi_block_s {
 	unsigned short data_type;

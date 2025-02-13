@@ -591,10 +591,11 @@ handle_tcon_data_load_next:
 
 static int handle_tcon_path_default(unsigned int version)
 {
+	struct lcd_tcon_bin_path_header_s *header;
 	unsigned char *buf;
 	char str[30];
 	const char *ini_value = NULL;
-	unsigned int temp, i, n, block_cnt, data_size, crc32;
+	unsigned int i, n, block_cnt, data_size, crc32;
 
 	/* tcon data bin path */
 	g_lcd_tcon_bin_path_mem = (unsigned char *)malloc(CC_MAX_TCON_BIN_PATH_SIZE);
@@ -604,28 +605,20 @@ static int handle_tcon_path_default(unsigned int version)
 	}
 	memset(g_lcd_tcon_bin_path_mem, 0, CC_MAX_TCON_BIN_PATH_SIZE);
 	buf = g_lcd_tcon_bin_path_mem;
+	header = (struct lcd_tcon_bin_path_header_s *)buf;
 
-	/* version */
-	buf[8] = version & 0xff;
-	buf[9] = (version >> 8) & 0xff;
-	buf[10] = (version >> 16) & 0xff;
-	buf[11] = (version >> 24) & 0xff;
+	header->version = version;
 
 	/* data_load_level */
 	ini_value = ini_get_string("tcon_Path", "data_load_level", "0");
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s, data_load_level is (%s)\n", __func__, ini_value);
-	temp = strtoul(ini_value, NULL, 0);
-	buf[12] = temp & 0xff;
-	buf[13] = (temp >> 8) & 0xff;
-	buf[14] = (temp >> 16) & 0xff;
-	buf[15] = (temp >> 24) & 0xff;
+	header->data_load_level = strtoul(ini_value, NULL, 0);
 
 	ini_value = ini_get_string("tcon_Path", "init_load", "0");
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s, init_load is (%s)\n", __func__, ini_value);
-	temp = strtoul(ini_value, NULL, 0);
-	buf[20] = temp & 0xff;
+	header->init_load = strtoul(ini_value, NULL, 0);
 
 	block_cnt = 0;
 	n = 32;
@@ -668,10 +661,6 @@ static int handle_tcon_path_default(unsigned int version)
 
 		/* block cnt */
 		block_cnt = 4;
-		buf[16] = block_cnt & 0xff;
-		buf[17] = (block_cnt >> 8) & 0xff;
-		buf[18] = (block_cnt >> 16) & 0xff;
-		buf[19] = (block_cnt >> 24) & 0xff;
 	} else {/* tcon data bin: new data format */
 		for (i = 0; i < 32; i++) {
 			snprintf(str, 30, "TCON_DATA_%d_BIN_PATH", i);
@@ -685,40 +674,31 @@ static int handle_tcon_path_default(unsigned int version)
 			block_cnt++;
 			n += 256;
 		}
-
-		/* block cnt */
-		buf[16] = block_cnt & 0xff;
-		buf[17] = (block_cnt >> 8) & 0xff;
-		buf[18] = (block_cnt >> 16) & 0xff;
-		buf[19] = (block_cnt >> 24) & 0xff;
 	}
+	header->block_cnt = block_cnt;
+	header->ready = 1;
 
 	/* g_lcd_tcon_bin_block_cnt default for uboot load */
 	g_lcd_tcon_bin_block_cnt = block_cnt;
 
 	/* data size */
 	data_size = 32 + block_cnt * 256;
-	buf[4] = data_size & 0xff;
-	buf[5] = (data_size >> 8) & 0xff;
-	buf[6] = (data_size >> 16) & 0xff;
-	buf[7] = (data_size >> 24) & 0xff;
+	header->data_size = data_size;
 
 	/* data check */
 	crc32 = cal_CRC32(0, &buf[4], (data_size - 4));
-	buf[0] = crc32 & 0xff;
-	buf[1] = (crc32 >> 8) & 0xff;
-	buf[2] = (crc32 >> 16) & 0xff;
-	buf[3] = (crc32 >> 24) & 0xff;
+	header->crc32 = crc32;
 
 	return 0;
 }
 
 static int handle_tcon_path_resv_for_kernel(unsigned int version)
 {
+	struct lcd_tcon_bin_path_header_s *header;
 	unsigned char *buf;
 	char str[30];
 	const char *ini_value = NULL;
-	unsigned int temp, i, n, block_cnt, data_size, crc32;
+	unsigned int i, n, block_cnt, data_size, crc32;
 
 	g_lcd_tcon_bin_path_resv_mem = (unsigned char *)malloc(CC_MAX_TCON_BIN_PATH_SIZE);
 	if (!g_lcd_tcon_bin_path_resv_mem) {
@@ -727,6 +707,7 @@ static int handle_tcon_path_resv_for_kernel(unsigned int version)
 	}
 	memset(g_lcd_tcon_bin_path_resv_mem, 0, CC_MAX_TCON_BIN_PATH_SIZE);
 	buf = g_lcd_tcon_bin_path_resv_mem;
+	header = (struct lcd_tcon_bin_path_header_s *)buf;
 
 	/* detect tcon_path resv_for_kernel exist or not */
 	ini_value = ini_get_string("tcon_Path", "TCON_BIN_PATH_K", "null");
@@ -736,27 +717,18 @@ static int handle_tcon_path_resv_for_kernel(unsigned int version)
 		return -1;
 	}
 
-	/* version */
-	buf[8] = version & 0xff;
-	buf[9] = (version >> 8) & 0xff;
-	buf[10] = (version >> 16) & 0xff;
-	buf[11] = (version >> 24) & 0xff;
+	header->version = version;
 
 	/* data_load_level */
 	ini_value = ini_get_string("tcon_Path", "data_load_level", "0");
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s, data_load_level is (%s)\n", __func__, ini_value);
-	temp = strtoul(ini_value, NULL, 0);
-	buf[12] = temp & 0xff;
-	buf[13] = (temp >> 8) & 0xff;
-	buf[14] = (temp >> 16) & 0xff;
-	buf[15] = (temp >> 24) & 0xff;
+	header->data_load_level = strtoul(ini_value, NULL, 0);
 
 	ini_value = ini_get_string("tcon_Path", "init_load", "0");
 	if (model_debug_flag & DEBUG_TCON)
 		ALOGD("%s, init_load is (%s)\n", __func__, ini_value);
-	temp = strtoul(ini_value, NULL, 0);
-	buf[20] = temp & 0xff;
+	header->init_load = strtoul(ini_value, NULL, 0);
 
 	block_cnt = 0;
 	n = 32;
@@ -795,10 +767,6 @@ static int handle_tcon_path_resv_for_kernel(unsigned int version)
 
 		/* block cnt */
 		block_cnt = 4;
-		buf[16] = block_cnt & 0xff;
-		buf[17] = (block_cnt >> 8) & 0xff;
-		buf[18] = (block_cnt >> 16) & 0xff;
-		buf[19] = (block_cnt >> 24) & 0xff;
 	} else {/* tcon data bin: new data format */
 		for (i = 0; i < 32; i++) {
 			snprintf(str, 30, "TCON_DATA_%d_BIN_PATH_K", i);
@@ -812,27 +780,17 @@ static int handle_tcon_path_resv_for_kernel(unsigned int version)
 			block_cnt++;
 			n += 256;
 		}
-
-		/* block cnt */
-		buf[16] = block_cnt & 0xff;
-		buf[17] = (block_cnt >> 8) & 0xff;
-		buf[18] = (block_cnt >> 16) & 0xff;
-		buf[19] = (block_cnt >> 24) & 0xff;
 	}
+	header->block_cnt = block_cnt;
+	header->ready = 1;
 
 	/* data size */
 	data_size = 32 + block_cnt * 256;
-	buf[4] = data_size & 0xff;
-	buf[5] = (data_size >> 8) & 0xff;
-	buf[6] = (data_size >> 16) & 0xff;
-	buf[7] = (data_size >> 24) & 0xff;
+	header->data_size = data_size;
 
 	/* data check */
 	crc32 = cal_CRC32(0, &buf[4], (data_size - 4));
-	buf[0] = crc32 & 0xff;
-	buf[1] = (crc32 >> 8) & 0xff;
-	buf[2] = (crc32 >> 16) & 0xff;
-	buf[3] = (crc32 >> 24) & 0xff;
+	header->crc32 = crc32;
 
 	return 0;
 }
