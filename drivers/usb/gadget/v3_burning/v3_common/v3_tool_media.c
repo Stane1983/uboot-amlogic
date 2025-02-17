@@ -175,6 +175,8 @@ static int _bootloader_write(u8* dataBuf, unsigned off, unsigned binSz, const ch
 				FB_MSG("skip not EN cpy%d\n", iCopy);
 				continue;
 			}
+		FB_MSG("erase %s[%d] before write\n", bootName, iCopy);
+		store_boot_erase(bootName, iCopy);
 		ret = store_boot_write(bootName, iCopy, binSz, flash_boot ? flash_boot : dataBuf);
 		if (ret) FBS_EXIT(_ACK, "FAil in program[%s] at copy[%d]\n", bootName, iCopy);
 	}
@@ -682,6 +684,9 @@ int v3tool_storage_init(const int eraseFlash, unsigned int dtbImgSz, unsigned in
 		if (store_get_type() == BOOT_EMMC) {
 			if (gptImgSz) {//gpt first if both exist gpt/dtb
 				FB_MSG("To erase dtb && update gpt for gpt from dtb\n");
+				run_command("store erase_gpt", 0);
+				FB_MSG("clear all user bootloader\n");
+				run_command("store boot_erase bootloader 0", 0);
 				ret = store_rsv_erase("dtb");
 				if (ret)
 					FB_WRN("Fail in erase dtb\n");
