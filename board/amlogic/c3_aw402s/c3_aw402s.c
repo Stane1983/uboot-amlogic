@@ -158,6 +158,30 @@ int board_init(void)
 	return 0;
 }
 
+#ifdef CONFIG_AB_BOOT
+static void update_ab_part(void)
+{
+	unsigned int reg = readl(SYSCTRL_STICKY_REG4);
+	char boot_part[]   = "kernel_a";
+	char system_part[] = "system_a";
+	int ab;
+	char buf[128] = {};
+
+	ab = (reg >> 28 & 0xf);
+	if (ab > 1) {
+		printf("Wrong a/b, use default\n");
+	} else {
+		boot_part[7] += ab;
+		system_part[7] += ab;
+	}
+	env_set("boot_part", boot_part);
+	env_set("system_part", system_part);
+	printf("set boot part to %s\n", boot_part);
+	sprintf(buf, "setenv initargs  $initargs boot_slot=%d", ab);
+	run_command(buf, 0);
+}
+#endif
+
 int board_late_init(void)
 {
 	printf("board late init\n");
@@ -242,7 +266,10 @@ int board_late_init(void)
 	} else {
 		env_set("cpu_id", "1234567890");
 	}
-	//emmc_quirks();
+
+#ifdef CONFIG_AB_BOOT
+	update_ab_part();
+#endif
 	return 0;
 }
 

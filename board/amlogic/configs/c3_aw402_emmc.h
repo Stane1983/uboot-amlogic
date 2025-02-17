@@ -57,6 +57,8 @@
 //#define CONFIG_BOOTLOADER_CONTROL_BLOCK
 #endif// #ifndef CONFIG_PXP_DDR
 
+#define CONFIG_AB_BOOT	1
+
 #define CONFIG_DTB_BIND_KERNEL
 #ifdef CONFIG_DTB_BIND_KERNEL	//load dtb from kernel, such as boot partition
 #define CONFIG_DTB_LOAD  "imgread dtb ${boot_part} ${dtb_mem_addr}"
@@ -97,6 +99,7 @@
 	"recovery_offset=0\0"\
 	"active_slot=normal\0"\
 	"boot_part=boot\0"\
+	"system_part=system\0"\
 	"Irq_check_en=0\0"\
 	"common_dtb_load=" CONFIG_DTB_LOAD "\0"\
 	"fatload_dev=usb\0"\
@@ -139,12 +142,12 @@
 	"storeboot="\
 		"run common_dtb_load;"\
 		"imgread kernel ${boot_part} ${loadaddr_kernel};"\
-		"store read 0x01a80000 system 0 0x300000;bootm ${loadaddr_kernel};"\
+		"store read 0x01a80000 ${system_part} 0 0x300000;bootm ${loadaddr_kernel};"\
 		"\0" \
 	"storeboot_ramdisk="\
 		"run common_dtb_load;"\
 		"imgread kernel ${boot_part} ${loadaddr_kernel};"\
-		"store read 0x01a80000 system 0 0x300000;bootm ${loadaddr_kernel};"\
+		"store read 0x01a80000 ${system_part} 0 0x300000;bootm ${loadaddr_kernel};"\
 		"\0" \
 	 "update="\
 		/*first usb burning, second sdc_burn, third ext-sd autoscr/recovery, last udisk autoscr/recovery*/\

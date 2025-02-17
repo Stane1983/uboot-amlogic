@@ -588,6 +588,26 @@ static void switch_to_el1(void)
 #endif
 #endif
 
+#ifdef CONFIG_AB_BOOT
+#include <asm/io.h>
+void update_boot_success(void)
+{
+	unsigned int sticky_reg0_val, sticky_reg1_val, cur_slot_index;
+
+	sticky_reg0_val = readl(SYSCTRL_STICKY_REG3);
+	sticky_reg1_val = readl(SYSCTRL_STICKY_REG4);
+	cur_slot_index = (sticky_reg1_val >> 28) & 0xf;
+
+	if (cur_slot_index) {
+		sticky_reg1_val |= (1 << 16);
+		writel(sticky_reg1_val, SYSCTRL_STICKY_REG4);
+	} else {
+		sticky_reg0_val |= (1 << 16);
+		writel(sticky_reg0_val, SYSCTRL_STICKY_REG3);
+	}
+}
+#endif
+
 /* Subcommand: GO */
 extern void jump_to_a32_kernel(unsigned long, unsigned long, unsigned long);
 static void boot_jump_linux(bootm_headers_t *images, int flag)
@@ -702,6 +722,9 @@ static void boot_jump_linux(bootm_headers_t *images, int flag)
 	#ifdef CONFIG_AMLOGIC_TIME_PROFILE
 		if (gd->time_print_flag)
 			dump_initcall_time();
+	#endif
+	#ifdef CONFIG_AB_BOOT
+		update_boot_success();
 	#endif
 		if (images->os.arch == IH_ARCH_ARM) {
 			pr_info("boot 32bit kernel\n");
