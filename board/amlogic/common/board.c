@@ -200,12 +200,15 @@ int aml_board_late_init_tail(void *arg)
 	env_set("cpu_id", "1234567890");
 	if (get_chip_id(chipid, 16) != -1) {
 		char chipid_str[32];
+		char chipid_env[32];
 		int i, j;
 		char buf_tmp[4];
 
 		memset(chipid_str, 0, 32);
+		memset(chipid_env, 0, 32);
 
 		char *buff = &chipid_str[0];
+		char *buff2 = &chipid_env[0];
 
 		for (i = 0, j = 0; i < 12; ++i) {
 			sprintf(&buf_tmp[0], "%02x", chipid[15 - i]);
@@ -214,6 +217,13 @@ int aml_board_late_init_tail(void *arg)
 				j = j + 2;
 			}
 		}
+
+		for (i = 0, j = 0; i < 12; ++i) {
+			sprintf(buff2 + j, "%02x", chipid[15 - i]);
+			j = j + 2;
+		}
+
+		env_set("cpuid_env", chipid_env);
 		env_set("cpu_id", chipid_str);
 		printf("buff: %s\n", buff);
 	}
