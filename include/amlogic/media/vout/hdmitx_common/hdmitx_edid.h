@@ -97,15 +97,18 @@ struct rx_cap {
 	u32 native_Mode;
 	/*video*/
 	u32 VIC[VIC_MAX_NUM];
-	u32 SVD_VIC[SVD_VIC_MAX_NUM]; /* used to store SVD in VDB */
+	/* used to store SVD in VDB */
+	u32 SVD_VIC[SVD_VIC_MAX_NUM];
 	u32 y420_vic[Y420_VIC_MAX_NUM];
 	u32 VIC_count;
 	u32 SVD_VIC_count;
 	u32 native_vic;
-	u32 native_vic2; /* some Rx has two native mode, normally only one */
+	/* some Rx has two native mode, normally only one */
+	u32 native_vic2;
 
 	/*hdmi_vic have different define for tx20&tx21,use u32 instead here.*/
-	u32 vesa_timing[VESA_MAX_TIMING]; /* Max 64 */
+	/* Max 64 */
+	u32 vesa_timing[VESA_MAX_TIMING];
 
 	/*audio*/
 	struct rx_audiocap RxAudioCap[AUD_MAX_NUM];
@@ -114,15 +117,20 @@ struct rx_cap {
 	struct dolby_vsadb_cap dolby_vsadb_cap;
 	/*vendor*/
 	u32 ieeeoui;
-	u8 Max_TMDS_Clock1; /* HDMI1.4b TMDS_CLK */
-	u16 physical_addr; /* CEC physical address */
-	u32 hf_ieeeoui;	/* For HDMI Forum */
-	u32 Max_TMDS_Clock2; /* HDMI2.0 TMDS_CLK */
+	/* HDMI1.4b TMDS_CLK */
+	u8 Max_TMDS_Clock1;
+	/* For HDMI Forum */
+	u32 hf_ieeeoui;
+	/* HDMI2.0 TMDS_CLK */
+	u32 Max_TMDS_Clock2;
+	/* CTA-861-I, Table 85 Video Capability Data Block */
+	u8 video_capability_data;
 	/* CEA861-F, Table 56, Colorimetry Data Block */
 	u32 colorimetry_data;
 	u32 colorimetry_data2;
 	u32 scdc_present:1;
-	u32 scdc_rr_capable:1; /* SCDC read request */
+	/* SCDC read request */
+	u32 scdc_rr_capable:1;
 	u32 lte_340mcsc_scramble:1;
 	u32 dc_y444:1;
 	u32 dc_30bit:1;

@@ -1059,6 +1059,8 @@ static void edid_cap_show(struct hdmitx_dev *hdev)
 	else
 		printf(" %d\n", prxcap->i_aLatency);
 
+	if (prxcap->video_capability_data)
+		printf("Video_Capability_Data: 0x%x\n", prxcap->video_capability_data);
 	if (prxcap->colorimetry_data)
 		printf("ColorMetry: 0x%x\n", prxcap->colorimetry_data);
 

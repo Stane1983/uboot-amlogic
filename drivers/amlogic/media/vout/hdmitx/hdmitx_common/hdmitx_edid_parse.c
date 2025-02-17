@@ -22,7 +22,8 @@
 #define HDMI_EDID_BLOCK_TYPE_RESERVED2	        6
 #define HDMI_EDID_BLOCK_TYPE_EXTENDED_TAG       7
 
-#define EXTENSION_VENDOR_SPECIFIC 0x1
+#define EXTENSION_VIDEO_CAPABILITY_TAG 0x0
+#define EXTENSION_VENDOR_SPECIFIC_TAG 0x1
 #define EXTENSION_COLORMETRY_TAG 0x5
 /* DRM stands for "Dynamic Range and Mastering " */
 #define EXTENSION_DRM_STATIC_TAG    0x6
@@ -1982,7 +1983,10 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap, u8 *block_buf)
 
 				ext_tag = block_buf[offset + 1];
 				switch (ext_tag) {
-				case EXTENSION_VENDOR_SPECIFIC:
+				case EXTENSION_VIDEO_CAPABILITY_TAG:
+					prxcap->video_capability_data = block_buf[offset + 2];
+					break;
+				case EXTENSION_VENDOR_SPECIFIC_TAG:
 					edid_parsingvendspec(prxcap, &block_buf[offset]);
 					break;
 				case EXTENSION_COLORMETRY_TAG:
@@ -3095,6 +3099,9 @@ int hdmitx_edid_print_sink_cap(const struct rx_cap *prxcap,
 		pos += snprintf(buffer + pos, buffer_len - pos, " %d\n",
 			prxcap->i_aLatency);
 
+	if (prxcap->video_capability_data)
+		pos += snprintf(buffer + pos, buffer_len - pos,
+				"Video_Capability_Data: 0x%x\n", prxcap->video_capability_data);
 	if (prxcap->colorimetry_data)
 		pos += snprintf(buffer + pos, buffer_len - pos,
 			"ColorMetry: 0x%x\n", prxcap->colorimetry_data);
