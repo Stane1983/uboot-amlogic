@@ -253,6 +253,9 @@ static int bootm_avb_bootctl(void)
 			avb_cmdline, bootstate);
 		env_set("bootconfig", newbootargs);
 		free(newbootargs);
+#if defined(CONFIG_AML_RPMB)
+		run_command("rpmb_state", 0);
+#endif
 
 out:
 	if (out_data)
@@ -293,6 +296,9 @@ int do_bootm(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 				env_set("bootargs", pnewargs);
 				free(pnewargs);
 				pnewargs = NULL;
+#if defined(CONFIG_AML_RPMB)
+				run_command("rpmb_state", 0);
+#endif
 			} else {
 				puts("Error: malloc in pnewbootargs failed!\n");
 			}
