@@ -236,14 +236,66 @@ static void do_nonsec_virt_switch(void)
  *
  */
  #ifdef CONFIG_AMLOGIC_MODIFY
+#define isspace(c)        ((c) == ' ')
+/*
+ * Parse a string to get a param value pair.
+ * You can use " around spaces, but can't escape ".
+ * Hyphens and underscores equivalent in parameter names.
+ */
+char *next_arg(char *args, char **param, char **val)
+{
+	unsigned int i, equals = 0;
+	int in_quote = 0, quoted = 0;
+	char *next;
+
+	if (*args == '"') {
+		args++;
+		in_quote = 1;
+		quoted = 1;
+	}
+
+	for (i = 0; args[i]; i++) {
+		if (isspace(args[i]) && !in_quote)
+			break;
+		if (equals == 0) {
+			if (args[i] == '=')
+				equals = i;
+		}
+		if (args[i] == '"')
+			in_quote = !in_quote;
+	}
+
+	*param = args;
+	if (!equals) {
+		*val = NULL;
+	} else {
+		args[equals] = '\0';
+		*val = args + equals + 1;
+	}
+	if (quoted && args[i - 1] == '"')
+		args[i - 1] = '\0';
+
+	if (args[i]) {
+		args[i] = '\0';
+		next = args + i + 1;
+	} else {
+		next = args + i;
+	}
+	/* Chew up trailing spaces. */
+	return skip_spaces(next);
+}
 static void add_kernel_bootargs(struct bootm_headers *images)
 {
 	int node, len_args_uboot, len_args_dts, len;
 	char *bootargs_dts, *bootargs_uboot;
 	char *bootargs_new;
-	char  *p, *q, *t, *z, *s;
+	char  *p;
 	static char kerenl_dts_update;
-	char buf[256];
+	char *param;
+	char *value;
+	char *params[128];
+	char *vals[128];
+	unsigned char count = 0, i, j;
 
 	if (kerenl_dts_update)
 		return;
@@ -278,41 +330,68 @@ static void add_kernel_bootargs(struct bootm_headers *images)
 	memcpy(bootargs_new + len_args_uboot + 1, bootargs_dts, len_args_dts);
 	bootargs_new[len - 1] = '\0';
 	p = bootargs_new;
-	while ((q = strchr(p, ' '))) {
-		if (q == p) {
-			p = q + 1;
-			continue;
+
+	while (*p) {
+		p = next_arg(p, &param, &value);
+		if (param) {
+			len = strlen(param);
+			params[count] = (char *)malloc(len + 1);
+			memcpy(params[count], param, len);
+			params[count][len] = '\0';
+		} else {
+			params[count] = NULL;
 		}
-		memset(buf, 0, sizeof(buf));
-		if ((q - p) > sizeof(buf)) {
-			memcpy(buf, p, sizeof(buf));
-			printf("%s is oversized\n", buf);
-			p = q + 1;
-			continue;
+		if (value) {
+			len = strlen(value);
+			vals[count] = (char *)malloc(len + 1);
+			memcpy(vals[count], value, len);
+			vals[count][len] = '\0';
+		} else {
+			vals[count] = NULL;
 		}
-		memcpy(buf, p, q - p);
-		len = strlen(buf);
-		p = q + 1;
-		z = p;
-		while (z) {
-			t = strstr(z, buf);
-			if (t) {
-				s = t;
-				if (strchr(s, ' ') && (*(t + len) == ' ')) {
-					memmove(t, t + len, z + strlen(z) - t - len + 1);
-					z = t;
-				} else {
-					if (strlen(t) == len) {
-						memmove(t, t + len, z + strlen(z) - t - len + 1);
-						break;
-					} else {
-						z = t + len;
-					}
-				}
-			} else {
+		count++;
+		if (count > 128) {
+			printf("number of bootargs overflowed\n");
+			break;
+		}
+	}
+
+	if (count <= 1)
+		goto create_bootargs;
+
+	for (i = 0; i < count - 1; i++) { //delete the same items
+		if (params[i] == NULL)
+			continue;
+		for (j = i + 1; j < count; j++) {
+			if (params[j] == NULL)
+				continue;
+			if (!strcmp(params[i], params[j])) {
+				params[i] = NULL;
 				break;
 			}
 		}
+	}
+
+create_bootargs:
+	memset(bootargs_new, 0, len_args_uboot + len_args_dts + 2);
+	len = 0;
+	for (i = 0; i < count; i++) {   //copy params to bootargs
+		if (params[i] == NULL)
+			continue;
+		memcpy(bootargs_new + len, params[i], strlen(params[i]));
+		len += strlen(params[i]);
+		if (vals[i]) {
+			bootargs_new[len] = '=';
+			len += 1;
+			memcpy(bootargs_new + len, vals[i], strlen(vals[i]));
+			len += strlen(vals[i]);
+			free(vals[i]);
+		}
+		if (i != (count - 1)) {
+			bootargs_new[len] = ' ';
+			len += 1;
+		}
+		free(params[i]);
 	}
 
 	env_set("bootargs", bootargs_new);
