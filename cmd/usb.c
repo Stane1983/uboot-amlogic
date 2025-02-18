@@ -613,27 +613,18 @@ static void do_bt_usb_start(void)
 
 	if (usb_wifi_init() < 0)
 		return;
+}
 
-	/* Driver model will probe the devices as they are found */
-# ifdef CONFIG_USB_STORAGE
-	/* try to recognize storage devices immediately */
-	usb_stor_curr_dev = usb_stor_scan(1);
-# endif
-#ifndef CONFIG_DM_USB
-# ifdef CONFIG_USB_KEYBOARD
-	drv_usb_kbd_init();
-# endif
-#endif /* !CONFIG_DM_USB */
-#ifdef CONFIG_USB_HOST_ETHER
-# ifdef CONFIG_DM_ETH
-#  ifndef CONFIG_DM_USB
-#   error "You must use CONFIG_DM_USB if you want to use CONFIG_USB_HOST_ETHER with CONFIG_DM_ETH"
-#  endif
-# else
-	/* try to recognize ethernet devices immediately */
-	usb_ether_curr_dev = usb_host_eth_scan(1);
-# endif
-#endif
+static void bt_usb_power_ctrl(void)
+{
+	char cmd1[20], cmd2[20];
+
+	snprintf(cmd1, sizeof(cmd1), "gpio c %s", BT_EN);
+	snprintf(cmd2, sizeof(cmd2), "gpio s %s", BT_EN);
+
+	run_command(cmd1, 0);
+	udelay(100000);
+	run_command(cmd2, 0);
 }
 #endif
 
@@ -679,9 +670,13 @@ static int do_usb(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 
 #ifdef CONFIG_AML_USB_BT
 	if (strncmp(argv[1], "bt_start", 8) == 0) {
-		if (usb_started)
-			return 0; /* Already started */
+		if (usb_started) {
+			printf("Already started\n");
+			usb_stop(); /* Already started */
+		}
+
 		printf("starting BT USB...\n");
+		bt_usb_power_ctrl();
 		do_bt_usb_start();
 
 		aml_chip_type *aml_dev;
@@ -693,6 +688,8 @@ static int do_usb(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 			udelay(100000);
 			aml_wakeup_set();
 		}
+
+		usb_wifi_stop();
 		return 0;
 	}
 #endif

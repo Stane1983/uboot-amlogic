@@ -252,6 +252,8 @@ int usb_wifi_stop(void)
 	}
 
 	uc_priv->companion_device_count = 0;
+	usb_started = 0;
+
 	return err;
 }
 #endif
