@@ -14,6 +14,11 @@
 #include <malloc.h>
 #include <usb.h>
 #include <aml_fw.h>
+#include <env.h>
+#ifndef getenv
+#define getenv env_get
+#endif
+
 
 #define USB_BEGIN_LOCK()
 
@@ -33,6 +38,16 @@ static gdsl_fifo_t *g_event_fifo;
 static gdsl_fifo_t *g_hci_type_fifo;
 static unsigned char usb_buf[4096];
 static unsigned char evt_buf[1024];
+
+#define MAC_ADDR_LEN 6
+#define MAX_MAC_LIST 8
+#define MAX_USER_BUF_LEN MAX_MAC_LIST*(17+1)
+typedef struct _rc_list_t
+{
+    char mac[MAC_ADDR_LEN];
+    char used;
+} rc_list_t;
+static rc_list_t rc_list[MAX_MAC_LIST] = {0};
 
 static const unsigned char w2u_iccm[] = {
 #include CHIP_TYPE_W2U_ICCM
@@ -716,6 +731,7 @@ hci set bluetooth address
 |opcode|length|bluetooth address|
 |0xfc1a|0x06  |address		  |
 */
+/*
 static void aml_hci_set_bluetooth_address(void)
 {
 	unsigned char cmd[] = {0x1a, 0xfc, 0x06, 0x58, 0xeb, 0xa4, 0x63, 0x87, 0x44};
@@ -725,7 +741,7 @@ static void aml_hci_set_bluetooth_address(void)
 	aml_hci_cmd_process(cmd, sizeof(cmd));
 	debug("<---------------------------------------------------\n");
 }
-
+*/
 static void aml_hci_reset(void)
 {
 	unsigned char cmd[] = {0x03, 0x0c, 0x00};
@@ -748,21 +764,117 @@ static void aml_hci_read_bt_addr(void)
 
 static void aml_hci_set_vsc_wake_write_data(void)
 {
+	// b12 g20 RCU
 	unsigned char cmd[] = {0x22, 0xfc, 0x05, 0x19, 0xff, 0x01, 0x0a, 0x0b};
 	debug("--------------------------------------------------->\n");
 	printk("hci send cmd:[set vsc wake write data]\n");
 	aml_hci_cmd_process(cmd, sizeof(cmd));
 	debug("<---------------------------------------------------\n");
+
+	//google RCU
+	unsigned char cmd2[] = {0x22, 0xfc, 0x05, 0x13, 0x16, 0x01, 0x04, 0x06};
+	debug("--------------------------------------------------->\n");
+	printk("hci send cmd2:[set vsc wake write data]2\n");
+	aml_hci_cmd_process(cmd2, sizeof(cmd2));
 }
+
+static int amlbt_add_rc_list(char *mac)
+{
+	unsigned int i = 0;
+
+	for (i = 0; i < MAX_MAC_LIST; i++)
+	{
+		if (!rc_list[i].used)
+		{
+			printk("amlbt_add_rc_list %d\n", i);
+			rc_list[i].used = 1;
+			memcpy(rc_list[i].mac, mac, MAC_ADDR_LEN);
+			printk("mac:[%#x,%#x,%#x,%#x,%#x,%#x]\n", rc_list[i].mac[0], rc_list[i].mac[1], rc_list[i].mac[2],
+			rc_list[i].mac[3],rc_list[i].mac[4],rc_list[i].mac[5]);
+			return 1;
+		}
+	}
+	printk("%s list full!!\n", __func__);
+	return 0;
+}
+
+static ssize_t rc_list_analyze(const char *buf)
+{
+	char *mac_str = NULL;
+	char *mac_token = NULL;
+	char *mac_byte_str = NULL;
+	char mac[MAC_ADDR_LEN] = {0};
+	int i = 0, j = 0;
+	int count = strlen(buf);
+
+	printk("rc_list write count:%d\n", count);
+	if (count > MAX_USER_BUF_LEN)
+	{
+		printk("rc_list too long!:%d, %d\n", count, MAX_USER_BUF_LEN);
+		return -ENOMEM;
+	}
+
+	memset(rc_list, 0, sizeof(rc_list));
+	mac_str = (char *)buf;
+	while ((mac_token = strsep(&mac_str, ";")) != NULL)
+	{
+		printk("mac_token length: %d\n", (int)strlen(mac_token));
+
+		if (strlen(mac_token) == 0)
+		{
+			printk("NULL str\n");
+			continue;
+		}
+
+		if (strlen(mac_token) != MAC_ADDR_LEN * 2 + 5)
+		{
+			printk("Invalid MAC address length: %s\n", mac_token);
+			break;
+		}
+
+		for (i = MAC_ADDR_LEN - 1, j = 0; i >= 0; i--, j += 3)
+		{
+			mac_byte_str = &mac_token[j];
+			if (mac_token[j + 2] != ':' && j != 15)
+			{
+				printk("Invalid MAC address format: %s i=%d j=%d\n", mac_token, i, j);
+				return -EINVAL;
+			}
+			mac[i] = simple_strtoul(mac_byte_str, NULL, 16);
+		}
+		printk("parsed mac: [%#x,%#x,%#x,%#x,%#x,%#x]\n",
+		mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+		amlbt_add_rc_list(mac);
+	}
+
+	return count;
+}
+
 
 static void aml_hci_set_remote_address(void)
 {
-	unsigned char cmd[] = {0x55, 0xfc, 0x0};
+	char *temp_env = NULL;
+	int i,j;
+	temp_env = getenv("remotebtmac");
+	printk("hci remotebtmac env:%s \n",temp_env);
 
-	debug("--------------------------------------------------->\n");
-	printk("hci send cmd:[set bluetooth address]\n");
-	aml_hci_cmd_process(cmd, sizeof(cmd));
-	debug("<---------------------------------------------------\n");
+	if (temp_env  == NULL) {
+		return ;
+	}
+	rc_list_analyze(temp_env);
+	unsigned char cmd[9] = {0x55, 0xfc, 0x06};
+	for (i = 0; i < MAX_MAC_LIST; i++) {
+		if (rc_list[i].used) {
+			for (j = 0; j < MAC_ADDR_LEN; j++) {
+				cmd[j+3] = rc_list[i].mac[j];
+			}
+			printk("rc_list mac: [%#x,%#x,%#x,%#x,%#x,%#x]\n",rc_list[i].mac[0], rc_list[i].mac[1], rc_list[i].mac[2], rc_list[i].mac[3], rc_list[i].mac[4], rc_list[i].mac[5]);
+			debug("--------------------------------------------------->\n");
+			printk("hci send cmd:[set bluetooth address]\n");
+			aml_hci_cmd_process(cmd, sizeof(cmd));
+			debug("<---------------------------------------------------\n");
+		}
+	}
 }
 
 static void aml_hci_set_suspend_reg(void)
@@ -785,9 +897,9 @@ void aml_wakeup_set(void)
 {
 	aml_hci_reset();
 	aml_hci_read_bt_addr();
-	aml_hci_set_bluetooth_address();
-	aml_hci_set_remote_address();
+	//aml_hci_set_bluetooth_address();
 	aml_hci_set_vsc_wake_write_data();
+	aml_hci_set_remote_address();
 	aml_hci_set_suspend_reg();
 	printk("aml_wakeup_set end\n");
 }
