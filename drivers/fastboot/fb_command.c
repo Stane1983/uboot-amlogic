@@ -202,6 +202,9 @@ static int strcmp_l1(const char *s1, const char *s2)
 {
 	if (!s1 || !s2)
 		return -1;
+	if (strlen(s2) < strlen(s1))
+		return -2;
+
 	return strncmp(s1, s2, strlen(s1));
 }
 #endif
@@ -221,6 +224,12 @@ int fastboot_handle_command(char *cmd_string, char *response)
 
 	cmd_parameter = cmd_string;
 	strsep(&cmd_parameter, ":");
+
+	if (CONFIG_IS_ENABLED(NO_FASTBOOT_FLASHING) && !strcmp_l1("flashing", cmd_string)) {
+		pr_err("For product mode, command: %s is not supported.\n", cmd_string);
+		fastboot_fail("For product mode, flashing lock/unlock is not supported.", response);
+		return -1;
+	}
 
 	for (i = 0; i < FASTBOOT_COMMAND_COUNT; i++) {
 #ifdef CONFIG_AMLOGIC_MODIFY
