@@ -1661,9 +1661,6 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 	memcpy(checksum, hdev->RXCap.hdmichecksum, 10);
 	checksum[10] = '\0';
 	env_set("hdmichecksum", (const char *)checksum);
-	printf("hdmi_tx_set: mode: %s, attr: %s, save hdmichecksum: %s\n",
-	       env_get("outputmode"), env_get("colorattribute"), env_get("hdmichecksum"));
-	run_command("saveenv", 0);
 }
 
 static void hdmitx_set_frlrate_none(struct hdmitx_dev *hdev)
@@ -3121,7 +3118,6 @@ u32 hdmitx_check_frac_rate(struct hdmitx_dev *hdev)
 {
 	struct hdmi_format_para *para = hdev->para;
 	char *frac_rate_str = NULL;
-	char *user_hdmimode = NULL;
 	u32 frac_rate = 0;
 	char ext_name[32];
 
@@ -3132,18 +3128,9 @@ u32 hdmitx_check_frac_rate(struct hdmitx_dev *hdev)
 		memcpy(ext_name, para->timing.sname, sizeof(ext_name));
 	else if (para->timing.name)
 		memcpy(ext_name, para->timing.name, sizeof(ext_name));
-	user_hdmimode = env_get("hdmimode");
-	/*
-	 * If the user-selected hdmimode differs from the currently output hdmimode,
-	 * indicating that the best policy for output should be executed,
-	 * the default frac_rate_policy value of 1 should be used for the output.
-	 */
-	if (user_hdmimode && !strstr(user_hdmimode, ext_name) &&
-	    hdmitx_likely_frac_rate_mode(ext_name)) {
-		frac_rate = 1;
-	} else {
-		frac_rate_str = env_get("frac_rate_policy");
-		if (frac_rate_str && (frac_rate_str[0] == '0'))
+	frac_rate_str = env_get("frac_rate_policy");
+	if (frac_rate_str) {
+		if (frac_rate_str[0] == '0')
 			frac_rate = 0;
 		else if (hdmitx_likely_frac_rate_mode(ext_name))
 			frac_rate = 1;

@@ -224,7 +224,7 @@ static void hdmitx_config_csc_en(struct hdmitx_dev *hdev)
 	}
 }
 
-static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+static int _do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {
 	struct hdmitx_dev *hdev = hdmitx_get_hdev();
 	int ret;
@@ -359,6 +359,15 @@ static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 			return CMD_RET_FAILURE;
 	}
 	return CMD_RET_SUCCESS;
+}
+
+static int do_output(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+{
+	int ret;
+
+	ret = _do_output(cmdtp, flag, argc, argv);
+	hdmi_mode_frac_postprocess();
+	return ret;
 }
 
 static int do_blank(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
@@ -962,8 +971,8 @@ void scene_process(struct hdmitx_dev *hdev,
 	hdmitx_get_policy_output(output);
 }
 
-static int do_get_parse_edid(cmd_tbl_t * cmdtp, int flag, int argc,
-	char * const argv[])
+static int _do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc,
+			      char * const argv[])
 {
 	struct hdmitx_dev *hdev = hdmitx_get_hdev();
 	unsigned char *store_checkvalue;
@@ -1197,6 +1206,12 @@ static int do_get_parse_edid(cmd_tbl_t * cmdtp, int flag, int argc,
 
 	hdmitx_mask_rx_info(hdev);
 	return 0;
+}
+
+static int do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+{
+	hdmi_mode_frac_preprocess();
+	return _do_get_parse_edid(cmdtp, flag, argc, argv);
 }
 
 #ifdef CONFIG_EFUSE_OBJ_API

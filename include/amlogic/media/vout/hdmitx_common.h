@@ -26,5 +26,22 @@ enum amhdmitx_chip_e {
 };
 
 int get_hdr_strategy_priority(void);
+/*
+ * old processing of 1080p59 and 1080p60
+ *                modename      frac_rate_policy
+ * 1080p59.94hz   1080p60hz     1
+ * 1080p60hz      1080p60hz     0
+ *
+ * new processing of 1080p59 and 1080p60
+ *                modename      frac_rate_policy
+ * 1080p59.94hz   1080p59hz     X(ignore)
+ * 1080p60hz      1080p60hz     0
+ * when do_edid, call hdmi_mode_frac_preprocess() firstly
+ * when do_output, call hdmi_mode_frac_postprocess() lastly
+ */
+void hdmi_mode_frac_preprocess(void);
+void hdmi_mode_frac_postprocess(void);
+void convert_name_frac2int(const char *name, char *conv_name);
+bool is_mode_name_frac(const char *name);
 
 #endif
