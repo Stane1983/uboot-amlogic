@@ -829,13 +829,13 @@ static void construct_avi_packet(struct hdmitx_dev *hdev)
 {
 	struct hdmi_avi_infoframe *info = &hdev->infoframes.avi.avi;
 	struct hdmi_format_para *para = hdev->para;
+	struct rx_cap *prxcap = &hdev->RXCap;
+	enum hdmi_scan_mode scan_mode = HDMI_SCAN_MODE_UNDERSCAN;
 
 	hdmi_avi_infoframe_init(info);
 
 	info->version = 2;
 	info->colorspace = para->cs;
-	/* underscan */
-	info->scan_mode = HDMI_SCAN_MODE_UNDERSCAN;
 	if (para->timing.v_active <= 576)
 		info->colorimetry = HDMI_COLORIMETRY_ITU_601;
 	else
@@ -870,6 +870,9 @@ static void construct_avi_packet(struct hdmitx_dev *hdev)
 	info->bottom_bar = 0;
 	info->left_bar = 0;
 	info->right_bar = 0;
+	/* underscan */
+	info->scan_mode = hdmitx_check_scan_info(prxcap, scan_mode, para->timing.vic);
+
 	hdmi_avi_infoframe_set(info);
 }
 

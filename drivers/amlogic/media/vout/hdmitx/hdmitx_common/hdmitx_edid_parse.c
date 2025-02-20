@@ -1972,6 +1972,7 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap, u8 *block_buf)
 	/* CEA description */
 	end = block_buf[2];
 	prxcap->native_Mode = block_buf[1] >= 2 ? block_buf[3] : 0;
+	prxcap->underscan = (prxcap->native_Mode & 0x80) >> 7;
 	prxcap->number_of_dtd += block_buf[1] >= 2 ? (block_buf[3] & 0xf) : 0;
 	/* Initialize SVD_VIC used for SVD storage in the video data block */
 	prxcap->SVD_VIC_count = 0;
@@ -2975,6 +2976,87 @@ unsigned int hdmitx_edid_valid_block_num(unsigned char *edid_buf)
 }
 
 /*
+ * CE Video Format: Any Video Format listed in Table 1, or listed in
+ * Table 11 and Table 12, except the 640x480p Video Format
+ *
+ * From CTA-861-I Page 26
+ */
+static bool is_ce_video_format(enum hdmi_vic vic)
+{
+	bool ret = false;
+
+	if ((vic > HDMI_1_640x480p60_4x3 && vic <= HDMI_127_5120x2160p100_64x27) ||
+		(vic >= HDMI_193_5120x2160p120_64x27 && vic <= HDMI_219_4096x2160p120_256x135))
+		ret = true;
+
+	/* TODO: RID is also CE video format, need to add in the future */
+	return ret;
+}
+
+enum hdmi_scan_mode hdmitx_check_scan_info(struct rx_cap *prxcap,
+		enum hdmi_scan_mode val, enum hdmi_vic vic)
+{
+	enum hdmi_scan_mode scan_mode = val;
+	u8 vcdb = 0;
+
+	if (!prxcap)
+		return scan_mode;
+
+	vcdb = prxcap->video_capability_data;
+	/*
+	 * If the display does not provide a VCDB then the Source should assume that
+	 * CE Video Formats are overscanned by the display and that IT Video Format
+	 * behavior is indicated by CEA Extension byte 3 bit 7 (underscan).
+	 * If underscan=1 then the Source should assume that IT Video Formats are
+	 * underscanned and if underscan=0, that IT Video Formats are overscanned
+	 */
+	if (!vcdb && !is_ce_video_format(vic)) {
+		if (prxcap->underscan)
+			scan_mode = HDMI_SCAN_MODE_UNDERSCAN;
+		else
+			scan_mode = HDMI_SCAN_MODE_OVERSCAN;
+	}
+
+	if (vcdb) {
+		/*
+		 * If the display declares a non-zero value for the S_PT (preferred timing
+		 * overscan/underscan behavior) field, and the Source outputs that Video
+		 * Format, then the S_PT declaration shall take precedence over both S_CE
+		 * and S_IT declarations
+		 */
+		if (((vcdb & 0x30) != PT_VIDEO_FORMAT_NO_DATA) &&
+				prxcap->flag_vfpdb && vic == prxcap->preferred_mode) {
+			if ((vcdb & 0x30) == PT_VIDEO_FORMAT_ALWAYS_OVERSCAN)
+				scan_mode = HDMI_SCAN_MODE_OVERSCAN;
+			if ((vcdb & 0x30) == PT_VIDEO_FORMAT_ALWAYS_UNDERSCANSCAN)
+				scan_mode = HDMI_SCAN_MODE_UNDERSCAN;
+		} else {
+			/*
+			 * If the S_PT field is 0 then the overscan/underscan behavior of this
+			 * format is indicated by either the S_CE or S_IT fields, depending on
+			 * whether the Preferred Video Format is a CE or IT Video Format
+			 */
+			if (is_ce_video_format(vic)) {
+				if ((vcdb & 0x3) == CE_VIDEO_FORMAT_NOT_SUPPORT)
+					scan_mode = HDMI_SCAN_MODE_NONE;
+				else if ((vcdb & 0x3) == CE_VIDEO_FORMAT_ALWAYS_OVERSCAN)
+					scan_mode = HDMI_SCAN_MODE_OVERSCAN;
+				else if ((vcdb & 0x3) == CE_VIDEO_FORMAT_ALWAYS_UNDERSCANSCAN)
+					scan_mode = HDMI_SCAN_MODE_UNDERSCAN;
+			} else {
+				if ((vcdb & 0xC) == IT_VIDEO_FORMAT_NOT_SUPPORT)
+					scan_mode = HDMI_SCAN_MODE_NONE;
+				else if ((vcdb & 0xC) == IT_VIDEO_FORMAT_ALWAYS_OVERSCAN)
+					scan_mode = HDMI_SCAN_MODE_OVERSCAN;
+				else if ((vcdb & 0xC) == IT_VIDEO_FORMAT_ALWAYS_UNDERSCANSCAN)
+					scan_mode = HDMI_SCAN_MODE_UNDERSCAN;
+			}
+		}
+	}
+	return scan_mode;
+}
+
+/*
  * print out EDID_buf
  */
 void hdmitx_edid_print(u8 *edid_buf)
@@ -3133,9 +3215,44 @@ int hdmitx_edid_print_sink_cap(const struct rx_cap *prxcap,
 		pos += snprintf(buffer + pos, buffer_len - pos, " %d\n",
 			prxcap->i_aLatency);
 
-	if (prxcap->video_capability_data)
+	if (prxcap->video_capability_data) {
 		pos += snprintf(buffer + pos, buffer_len - pos,
 				"Video_Capability_Data: 0x%x\n", prxcap->video_capability_data);
+
+		pos += snprintf(buffer + pos, buffer_len - pos, "PT over/underscan\n");
+		if ((prxcap->video_capability_data & 0x30) == PT_VIDEO_FORMAT_NO_DATA)
+			pos += snprintf(buffer + pos, buffer_len - pos, " refer to S_CE or S_IT\n");
+		if ((prxcap->video_capability_data & 0x30) == PT_VIDEO_FORMAT_ALWAYS_OVERSCAN)
+			pos += snprintf(buffer + pos, buffer_len - pos, " always overscan\n");
+		if ((prxcap->video_capability_data & 0x30) == PT_VIDEO_FORMAT_ALWAYS_UNDERSCANSCAN)
+			pos += snprintf(buffer + pos, buffer_len - pos, " always underscan\n");
+		if ((prxcap->video_capability_data & 0x30) == PT_VIDEO_FORMAT_BOTH_OVER_UNDERSCAN)
+			pos += snprintf(buffer + pos, buffer_len - pos,
+					" both over-and underscan\n");
+
+		pos += snprintf(buffer + pos, buffer_len - pos, "IT over/underscan\n");
+		if ((prxcap->video_capability_data & 0xC) == IT_VIDEO_FORMAT_NOT_SUPPORT)
+			pos += snprintf(buffer + pos, buffer_len - pos, " IT not support\n");
+		if ((prxcap->video_capability_data & 0xC) == IT_VIDEO_FORMAT_ALWAYS_OVERSCAN)
+			pos += snprintf(buffer + pos, buffer_len - pos, " always overscan\n");
+		if ((prxcap->video_capability_data & 0xC) == IT_VIDEO_FORMAT_ALWAYS_UNDERSCANSCAN)
+			pos += snprintf(buffer + pos, buffer_len - pos, " always underscan\n");
+		if ((prxcap->video_capability_data & 0xC) == IT_VIDEO_FORMAT_BOTH_OVER_UNDERSCAN)
+			pos += snprintf(buffer + pos, buffer_len - pos,
+					" both over-and underscan\n");
+
+		pos += snprintf(buffer + pos, buffer_len - pos, "CT over/underscan\n");
+		if ((prxcap->video_capability_data & 0x3) == CE_VIDEO_FORMAT_NOT_SUPPORT)
+			pos += snprintf(buffer + pos, buffer_len - pos, " CE not support\n");
+		if ((prxcap->video_capability_data & 0x3) == CE_VIDEO_FORMAT_ALWAYS_OVERSCAN)
+			pos += snprintf(buffer + pos, buffer_len - pos, " always overscan\n");
+		if ((prxcap->video_capability_data & 0x3) == CE_VIDEO_FORMAT_ALWAYS_UNDERSCANSCAN)
+			pos += snprintf(buffer + pos, buffer_len - pos, " always underscan\n");
+		if ((prxcap->video_capability_data & 0x3) == CE_VIDEO_FORMAT_BOTH_OVER_UNDERSCAN)
+			pos += snprintf(buffer + pos, buffer_len - pos,
+					" both over-and underscan\n");
+	}
+
 	if (prxcap->colorimetry_data)
 		pos += snprintf(buffer + pos, buffer_len - pos,
 			"ColorMetry: 0x%x\n", prxcap->colorimetry_data);
