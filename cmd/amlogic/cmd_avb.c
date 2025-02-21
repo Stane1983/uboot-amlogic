@@ -697,7 +697,7 @@ static AvbIOResult read_is_device_unlocked(AvbOps* ops, bool* out_is_unlocked)
 	return result;
 }
 
-#if defined(CONFIG_MMC_MESON_GX)
+#if defined(CONFIG_MMC_MESON_GX) && defined(CONFIG_AML_FACTORY_PROVISION)
 /* 4K bytes are allocated to store persistent value
  * The first 4B is the persistent store magic word "@AVB"
  * It is further divided into 132B slots
@@ -848,7 +848,7 @@ static AvbIOResult persistent_test(AvbOps *ops)
 }
 #endif
 
-#if defined(CONFIG_MMC_MESON_GX)
+#if defined(CONFIG_MMC_MESON_GX) && defined(CONFIG_AML_FACTORY_PROVISION)
 uint32_t create_csrs(void)
 {
 	int part_num = get_partition_num_by_name(PART_NAME_FTY);
@@ -892,7 +892,7 @@ uint32_t create_csrs(void)
 }
 #endif
 
-#if defined(CONFIG_MMC_MESON_GX)
+#if defined(CONFIG_MMC_MESON_GX) && defined(CONFIG_AML_FACTORY_PROVISION)
 static AvbIOResult write_persistent_to_factory(uint8_t *buf, uint32_t size)
 {
 	int part_num = get_partition_num_by_name(PART_NAME_FTY);
@@ -1105,7 +1105,7 @@ out:
 static int avb_init(void)
 {
 	int factory_part_num = -1;
-#if defined(CONFIG_MMC_MESON_GX)
+#if defined(CONFIG_MMC_MESON_GX) && defined(CONFIG_AML_FACTORY_PROVISION)
 	/* partition name is valid */
 	if (find_mmc_partition_by_name(PART_NAME_FTY))
 		factory_part_num = get_partition_num_by_name(PART_NAME_FTY);
@@ -1128,7 +1128,7 @@ static int avb_init(void)
 		avb_ops_.read_persistent_value = NULL;
 		avb_ops_.write_persistent_value = NULL;
 	} else {
-#if defined(CONFIG_MMC_MESON_GX)
+#if defined(CONFIG_MMC_MESON_GX) && defined(CONFIG_AML_FACTORY_PROVISION)
 		avb_ops_.read_persistent_value = read_persistent_value;
 		avb_ops_.write_persistent_value = write_persistent_value;
 #else
@@ -1164,7 +1164,7 @@ int avb_verify(AvbSlotVerifyData** out_data)
 
 	AvbHashtreeErrorMode hashtree_error_mode =
 		AVB_HASHTREE_ERROR_MODE_RESTART_AND_INVALIDATE;
-#if defined(CONFIG_MMC_MESON_GX)
+#if defined(CONFIG_MMC_MESON_GX) && defined(CONFIG_AML_FACTORY_PROVISION)
 	/* partition name is valid */
 	if (find_mmc_partition_by_name(PART_NAME_FTY))
 		factory_part_num = get_partition_num_by_name(PART_NAME_FTY);
@@ -1269,7 +1269,7 @@ static int do_avb_verify(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv
 	return result;
 }
 
-#if defined(CONFIG_MMC_MESON_GX)
+#if defined(CONFIG_MMC_MESON_GX) && defined(CONFIG_AML_FACTORY_PROVISION)
 static int do_avb_persist(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	int result = 0;
@@ -1435,7 +1435,7 @@ uint32_t avb_get_boot_patchlevel_from_vbmeta(AvbSlotVerifyData *data)
 
 static cmd_tbl_t cmd_avb_sub[] = {
 	U_BOOT_CMD_MKENT(verify, 0, 0, do_avb_verify, "", ""),
-#if defined(CONFIG_MMC_MESON_GX)
+#if defined(CONFIG_MMC_MESON_GX) && defined(CONFIG_AML_FACTORY_PROVISION)
 	U_BOOT_CMD_MKENT(persist, 2, 0, do_avb_persist, "avb persist test/wipe/dump",
 			"avb persist test/wipe/dump"),
 #endif
