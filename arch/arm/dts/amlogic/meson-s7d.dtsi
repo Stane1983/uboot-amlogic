@@ -144,6 +144,11 @@
 			0xff007164  0xf35a  /* 0x1c59 */
 			0xffff  0x0>;
 	};
+	spdif: spdif@0 {
+		compatible = "amlogic,spdif";
+		clocks = <&clkc CLKID_HIFI_PLL>;
+		clock-names = "clk_srcpll";
+	};
 };
 
 &ethmac {

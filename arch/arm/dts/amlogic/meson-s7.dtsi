@@ -133,6 +133,11 @@
 			0xff007164  0xf850 /* 0x1c59 */
 			0xffff  0x0>; /* ending flag */
 	};
+	spdif: spdif@0 {
+		compatible = "amlogic,spdif";
+		clocks = <&clkc CLKID_HIFI_PLL>;
+		clock-names = "clk_srcpll";
+	};
 };
 
 &ethmac {

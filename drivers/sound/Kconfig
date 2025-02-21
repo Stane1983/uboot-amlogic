@@ -148,4 +148,8 @@ config SOUND_WM8994
 	  audio data and I2C for codec control. At present it only works
 	  with the Samsung I2S driver.
 
+config SOUND_AMLOGIC_SPDIF
+	bool "support amlogic spdif "
+	help
+	  Enable Amlogic spdif, if no audio paly, spdif will send zero data
 endmenu

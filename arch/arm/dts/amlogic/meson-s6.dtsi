@@ -102,6 +102,13 @@
 		status = "okay";
 		max_refreshrate = <120>; /* the max freshrate of S6 is upto 120hz */
 	};
+	spdif@0 {
+		compatible = "amlogic,spdif";
+		clocks = <&clkc CLKID_HIFI_PLL>;
+		clock-names = "clk_srcpll";
+		//assigned-clocks = <&clkc CLKID_HIFI_PLL>;
+		//assigned-clock-rates = <49152000>;
+	};
 };
 
 &ethmac {
