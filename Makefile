@@ -435,6 +435,15 @@ CFLAGS += -DCONFIG_NOVERBOSE_BUILD
 export CFLAGS
 endif
 
+ifndef CONFIG_DDRFIP_SIZE_INDEX
+CONFIG_DDRFIP_SIZE_INDEX := 1
+endif
+ifeq ("$(CONFIG_DDRFIP_SIZE_INDEX)", "1")
+KBUILD_CFLAGS += -D"CONFIG_DDRFIP_SIZE_INDEX"
+CFLAGS += -D"CONFIG_DDRFIP_SIZE_INDEX"
+export CFLAGS
+endif
+
 # Don't generate position independent code
 KBUILD_CFLAGS	+= $(call cc-option,-fno-PIE)
 KBUILD_AFLAGS	+= $(call cc-option,-fno-PIE)
