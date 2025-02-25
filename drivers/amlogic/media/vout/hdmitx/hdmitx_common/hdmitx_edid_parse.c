@@ -4,7 +4,47 @@
  */
 
 /* #define DEBUG */
-#include "hdmitx_edid_parse_header.h"
+/*
+ * uboot has __UBOOT__ macro and __KERNEL__ macro.
+ * kernel only has __KERNEL__ macro
+ */
+#ifdef __UBOOT__
+#include <linux/kernel.h>
+#include <linux/compat.h>
+#include <linux/types.h>
+#include <common.h>
+#include <linux/stddef.h>
+#include <amlogic/media/vout/aml_vinfo.h>
+#include <amlogic/media/vout/hdmitx_common/hdmitx_edid.h>
+#include "hdmitx_log.h"
+#include <amlogic/media/vout/dsc.h>
+#include "hdmitx_check_valid.h"
+#elif __KERNEL__
+#include <linux/version.h>
+#include <linux/module.h>
+#include <linux/errno.h>
+#include <linux/types.h>
+#include <linux/kernel.h>
+#include <linux/interrupt.h>
+#include <linux/fs.h>
+#include <linux/init.h>
+#include <linux/device.h>
+#include <linux/mm.h>
+#include <linux/major.h>
+#include <linux/platform_device.h>
+#include <linux/mutex.h>
+#include <linux/cdev.h>
+#include <linux/uaccess.h>
+#include <linux/crypto.h>
+#include <linux/scatterlist.h>
+#include <linux/delay.h>
+#include <linux/amlogic/media/vout/vinfo.h>
+#include <linux/amlogic/media/vout/vout_notify.h>
+#include <linux/amlogic/media/vout/hdmi_tx_repeater.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_edid.h>
+#include "hdmitx_log.h"
+#include "hdmitx_check_valid.h"
+#endif
 
 #define CEA_DATA_BLOCK_COLLECTION_ADDR_1STP 0x04
 #define VIDEO_TAG 0x40

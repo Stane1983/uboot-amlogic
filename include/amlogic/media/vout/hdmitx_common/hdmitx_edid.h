@@ -5,7 +5,18 @@
 #ifndef __HDMITX_EDID_H_
 #define __HDMITX_EDID_H_
 
-#include "hdmitx_edid_header.h"
+#ifdef __UBOOT__
+#include <linux/types.h>
+#include <amlogic/media/vout/aml_vinfo.h>
+#include <amlogic/media/vout/hdmitx21/hdmitx_ext.h>
+#include <amlogic/media/vout/hdmitx21/hdmi_common.h>
+#elif __KERNEL__
+#include <linux/types.h>
+#include <linux/amlogic/media/vout/vinfo.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_mode.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_format_para.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_hw_common.h>
+#endif
 
 struct hdmitx_common;
 

@@ -6,7 +6,18 @@
 #ifndef __HDMITX_CHECK_VALID_H_
 #define __HDMITX_CHECK_VALID_H_
 
-#include "hdmitx_check_valid_header.h"
+#ifdef __UBOOT__
+#include <linux/stddef.h>
+#include "../hdmitx21/hdmitx_drv.h"
+#include <linux/compat.h>
+#include <linux/types.h>
+#include "hdmitx_log.h"
+#elif __KERNEL__
+#include <linux/amlogic/media/vout/vinfo.h>
+#include <linux/amlogic/media/vout/hdmitx_common/hdmitx_common.h>
+#include <linux/types.h>
+#include "hdmitx_log.h"
+#endif
 
 /*check valid mode api*/
 
