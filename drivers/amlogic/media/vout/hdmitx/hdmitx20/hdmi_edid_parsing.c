@@ -120,7 +120,7 @@ static int hdmitx_edid_search_IEEEOUI(unsigned char *buf)
 {
 	int i;
 
-	for (i = 0; i < 0x180 - 2; i++) {
+	for (i = 0; i < (EDID_MAX_BLOCK - 1) * EDID_BLK_SIZE - 2; i++) {
 		if (buf[i] == 0x03 && buf[i + 1] == 0x0c &&
 		    buf[i + 2] == 0x00)
 			return 1;
@@ -243,30 +243,6 @@ static int check_dvi_hdmi_edid_valid(unsigned char *buf)
 	}
 
 	return 1;
-}
-
-/*
- * check EDID buf contains valid block numbers
- */
-static unsigned int hdmitx_edid_check_valid_blocks(unsigned char *buf)
-{
-	unsigned int valid_blk_no = 0;
-	unsigned int i = 0, j = 0;
-	unsigned int tmp_chksum = 0;
-
-	for (j = 0; j < EDID_MAX_BLOCK; j++) {
-		for (i = 0; i < 128; i++)
-			tmp_chksum += buf[i + j * 128];
-		if (tmp_chksum != 0) {
-			valid_blk_no++;
-			if ((tmp_chksum & 0xff) == 0)
-				printf("check sum valid\n");
-			else
-				printf("check sum invalid\n");
-		}
-		tmp_chksum = 0;
-	}
-	return valid_blk_no;
 }
 
 /*
@@ -1241,6 +1217,24 @@ static void check_dv_truly_support(struct rx_cap *prxcap, struct dv_info *dv)
 	}
 }
 
+static int hdmitx_edid_parse_ieeeoui(u8 *edid_buf)
+{
+	u32 ieeeoui;
+
+	/* strictly DVI device judgement */
+	/* valid EDID & no audio tag & no IEEEOUI */
+	if (edid_check_valid(edid_buf) &&
+		check_dvi_hdmi_edid_valid(edid_buf) &&
+		!hdmitx_edid_search_IEEEOUI(&edid_buf[128])) {
+		ieeeoui = 0x0;
+		printf("sink is DVI device\n");
+	} else {
+		ieeeoui = HDMI_IEEEOUI;
+	}
+
+	return ieeeoui;
+}
+
 /*
  * Parsing RAW EDID data from edid to prxcap
  */
@@ -1300,31 +1294,7 @@ unsigned int hdmi_edid_parsing(unsigned char *EDID_buf, struct rx_cap *prxcap)
 			edid_dtd_parsing(prxcap, &EDID_buf[idx[i]]);
 	}
 
-	if (hdmitx_edid_search_IEEEOUI(&EDID_buf[128])) {
-		prxcap->IEEEOUI = HDMI_IEEEOUI;
-		printf("find IEEEOUT\n");
-	} else {
-		prxcap->IEEEOUI = 0x0;
-		printf("not find IEEEOUT\n");
-	}
-
-	/* strictly DVI device judgement */
-	/* valid EDID & no audio tag & no IEEEOUI */
-	if (edid_check_valid(&EDID_buf[0]) &&
-		!hdmitx_edid_search_IEEEOUI(&EDID_buf[128])) {
-		prxcap->IEEEOUI = 0x0;
-		printf("sink is DVI device\n");
-	} else {
-		prxcap->IEEEOUI = HDMI_IEEEOUI;
-	}
-	if (edid_zero_data(EDID_buf))
-		prxcap->IEEEOUI = HDMI_IEEEOUI;
-
-	if (!hdmitx_edid_check_valid_blocks(&EDID_buf[0])) {
-		prxcap->IEEEOUI = HDMI_IEEEOUI;
-		printf("Invalid edid, consider RX as HDMI device\n");
-	}
-
+	prxcap->IEEEOUI = hdmitx_edid_parse_ieeeoui(EDID_buf);
 	/* if edid block0 are all zeroes, or no VIC, set default vic */
 	if (edid_zero_data(EDID_buf) || prxcap->VIC_count == 0)
 		hdmitx_edid_set_default_vic(prxcap);
