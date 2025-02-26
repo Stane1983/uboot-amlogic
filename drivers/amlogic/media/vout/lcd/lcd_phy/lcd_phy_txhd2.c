@@ -151,7 +151,7 @@ static void lcd_lvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 		lcd_ana_write(HHI_DIF_CSI_PHY_CNTL14, 0x0);
 
 	lcd_phy_cntl_lvds_set(pdrv, status);
-	lcd_combo_dphy_write(COMBO_DPHY_CNTL0, status ? 0x55555 : 0xaaaaa);
+	lcd_combo_dphy_write(COMBO_DPHY_CNTL0, status ? 0x55555 : 0x0);
 }
 
 static void lcd_mlvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
@@ -163,7 +163,7 @@ static void lcd_mlvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 	} else {
 		lcd_ana_write(HHI_DIF_CSI_PHY_CNTL14, 0x0);
 		lcd_phy_cntl_lvds_set(pdrv, status);
-		lcd_combo_dphy_write(COMBO_DPHY_CNTL0, 0xaaaaa);
+		lcd_combo_dphy_write(COMBO_DPHY_CNTL0, 0x0);
 	}
 }
 
