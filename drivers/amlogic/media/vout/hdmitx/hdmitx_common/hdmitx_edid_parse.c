@@ -2185,7 +2185,7 @@ static bool hdmitx_edid_search_IEEEOUI(char *buf)
 	if (!buf)
 		return false;
 
-	for (i = 0; i < 0x180 - 2; i++) {
+	for (i = 0; i < (EDID_MAX_BLOCK - 1) * EDID_BLK_SIZE - 2; i++) {
 		if (buf[i] == 0x03 && buf[i + 1] == 0x0c &&
 		    buf[i + 2] == 0x00)
 			return true;
@@ -2734,6 +2734,23 @@ static int update_edid_chksum(struct rx_cap *prxcap, u8 *edid_buf)
 	return 0;
 }
 
+static int hdmitx_edid_parse_ieeeoui(u8 *edid_buf)
+{
+	u32 ieeeoui;
+
+	/* strictly DVI device judgement */
+	/* valid EDID & no audio tag & no IEEEOUI */
+	if (hdmitx_edid_check_data_valid(0, &edid_buf[0]) &&
+	    !hdmitx_edid_search_IEEEOUI(&edid_buf[128])) {
+		ieeeoui = 0x0;
+		HDMITX_INFO(EDID "sink is DVI device\n");
+	} else {
+		ieeeoui = HDMI_IEEE_OUI;
+	}
+
+	return ieeeoui;
+}
+
 int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf)
 {
 	unsigned char cta_block_count;
@@ -2833,32 +2850,9 @@ int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf)
 		}
 	}
 
-	if (hdmitx_edid_search_IEEEOUI(&edid_buf[128])) {
-		prxcap->ieeeoui = HDMI_IEEE_OUI;
-		HDMITX_DEBUG("find IEEEOUT\n");
-	} else {
-		prxcap->ieeeoui = 0x0;
-		HDMITX_DEBUG("not find IEEEOUT\n");
-	}
-
-	/* strictly DVI device judgement */
-	/* valid EDID & no audio tag & no IEEEOUI */
-	if (hdmitx_edid_check_data_valid(edid_check, &edid_buf[0]) &&
-		!hdmitx_edid_search_IEEEOUI(&edid_buf[128])) {
-		prxcap->ieeeoui = 0x0;
-		HDMITX_DEBUG("sink is DVI device\n");
-	} else {
-		prxcap->ieeeoui = HDMI_IEEE_OUI;
-	}
-	if (edid_zero_data(edid_buf))
-		prxcap->ieeeoui = HDMI_IEEE_OUI;
-
+	prxcap->ieeeoui = hdmitx_edid_parse_ieeeoui(edid_buf);
 	update_edid_chksum(prxcap, edid_buf);
 
-	if (!hdmitx_edid_valid_block_num(&edid_buf[0])) {
-		prxcap->ieeeoui = HDMI_IEEE_OUI;
-		HDMITX_INFO("Invalid edid, consider RX as HDMI device\n");
-	}
 	/* EDID parsing complete - check if 4k60/50 DV can be truly supported */
 	dv = &prxcap->dv_info;
 	check_dv_truly_support(prxcap, dv);
