@@ -246,31 +246,31 @@ static int do_RunBcbCommand(
 		}
 	}
 
-	char *retry_times;
-
-	retry_times = env_get("retry_recovery_times");
-	if (retry_times) {
-		printf("retry_time: %s\n", retry_times);
-		remain_time = my_atoi(retry_times);
-		printf("retry_time remain_time = %d\n", remain_time);
-	}
-
-	if (remain_time == 0) {
-		printf("clear recovery cmds in misc\n");
-		if (clear_misc_partition(clearbuf, sizeof(clearbuf)) < 0) {
-			printf("clear misc partition failed.\n");
-			goto ERR;
-		}
-		env_set("retry_recovery_times", "7");
-#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
-		run_command("update_env_part -p retry_recovery_times;", 0);
-#else
-		run_command("saveenv;", 0);
-#endif
-		run_command("run enter_fastboot", 0);
-	}
-
 	if (!memcmp(command, CMD_RUN_RECOVERY, strlen(CMD_RUN_RECOVERY))) {
+		char *retry_times;
+
+		retry_times = env_get("retry_recovery_times");
+		if (retry_times) {
+			printf("retry_time: %s\n", retry_times);
+			remain_time = my_atoi(retry_times);
+			printf("retry_time remain_time = %d\n", remain_time);
+		}
+
+		if (remain_time == 0) {
+			printf("clear recovery cmds in misc\n");
+			if (clear_misc_partition(clearbuf, sizeof(clearbuf)) < 0) {
+				printf("clear misc partition failed.\n");
+				goto ERR;
+			}
+			env_set("retry_recovery_times", "7");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+			run_command("update_env_part -p retry_recovery_times;", 0);
+#else
+			run_command("saveenv;", 0);
+#endif
+			run_command("run enter_fastboot", 0);
+		}
+
 		if (retry_times && remain_time > 0) {
 			sprintf(retry_times, "%d", remain_time - 1);
 			printf("retry_time: %s\n", retry_times);
