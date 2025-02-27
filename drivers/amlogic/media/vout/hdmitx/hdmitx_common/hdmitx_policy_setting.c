@@ -370,6 +370,7 @@ void get_hdmi_input(struct hdmitx_dev *hdev, struct meson_policy_in *input)
 	input->con_info.is_support4k = is_support_4k();
 	input->con_info.is_deepcolor = is_support_deepcolor();
 	input->con_info.isframeratepriority = is_framerate_priority();
+	input->con_info.is_preferred_frac_mode = get_kernel_dtb_info();
 	input->con_info.sink_type = MESON_SINK_TYPE_SINK;
 
 	/* 1."hdmimode" is used to save user manually selected mode,

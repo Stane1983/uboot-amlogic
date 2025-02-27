@@ -29,17 +29,15 @@ static bool is_support_420_mode(const char *mode) {
     }
 
     if (!strcmp(mode, MODE_4K2K60HZ) ||
+        !strcmp(mode, MODE_4K2K59HZ) ||
         !strcmp(mode, MODE_4K2K50HZ) ||
         !strcmp(mode, MODE_4K2KSMPTE60HZ) ||
+        !strcmp(mode, MODE_4K2KSMPTE59HZ) ||
         !strcmp(mode, MODE_4K2KSMPTE50HZ) ||
         !strcmp(mode, MODE_4K2K100HZ) ||
+        !strcmp(mode, MODE_4K2K119HZ) ||
         !strcmp(mode, MODE_4K2K120HZ) ||
-        !strcmp(mode, MODE_8K4K60HZ) ||
-        !strcmp(mode, MODE_8K4K50HZ) ||
-        !strcmp(mode, MODE_8K4K48HZ) ||
-        !strcmp(mode, MODE_8K4K30HZ) ||
-        !strcmp(mode, MODE_8K4K25HZ) ||
-        !strcmp(mode, MODE_8K4K24HZ))
+        strstr(mode, MODE_8K4K))
         return true;
     return false;
 }
@@ -265,6 +263,28 @@ static int32_t find_resolution_index(const char *mode, int flag) {
     return -1;
 }
 
+static const char* find_frac_preferred_mode(bool preferred_frac, char *mode) {
+    if (!preferred_frac)
+        return mode;
+
+    for (int i = 0; i < ARRAY_SIZE(FRAC_MODE_LIST_MAP); i++) {
+        if (!strcmp(FRAC_MODE_LIST_MAP[i].non_frac_mode, mode)) {
+            return FRAC_MODE_LIST_MAP[i].frac_mode;
+        }
+    }
+
+    return mode;
+}
+
+const char* find_non_frac_preferred_mode(const char *mode) {
+    for (int i = 0; i < ARRAY_SIZE(FRAC_MODE_LIST_MAP); i++) {
+        if (!strcmp(FRAC_MODE_LIST_MAP[i].frac_mode, mode)) {
+            return FRAC_MODE_LIST_MAP[i].non_frac_mode;
+        }
+    }
+    return mode;
+}
+
 static bool is_dv_support_mode(struct meson_policy_in *input, const char *mode) {
     bool validMode = false;
 
@@ -300,8 +320,10 @@ static bool is_dv_support_mode(struct meson_policy_in *input, const char *mode) 
      * need to check the flag of Parity for high frame rate
      */
     if (!strcmp(mode, MODE_1080P100HZ) ||
+        !strcmp(mode, MODE_1080P119HZ) ||
         !strcmp(mode, MODE_1080P120HZ) ||
         !strcmp(mode, MODE_720P100HZ) ||
+        !strcmp(mode, MODE_720P119HZ) ||
         !strcmp(mode, MODE_720P120HZ)) {
         if (support_DV_VSVDB_PARITY(&input->hdr_info)) {
             validMode = true;
@@ -357,6 +379,7 @@ static int32_t amdv_update_mode(struct meson_policy_in *input,
         policy = MESON_POLICY_BEST;
     }
 
+    bool preferred_frac = input->con_info.is_preferred_frac_mode;
     if (policy == MESON_POLICY_BEST
         || policy == MESON_POLICY_RESOLUTION
         || policy == MESON_POLICY_FRAMERATE) {
@@ -365,10 +388,10 @@ static int32_t amdv_update_mode(struct meson_policy_in *input,
             /* TV support amdolby vision 2160p60hz case */
             if (amdv_type == DOLBY_VISION_LL_RGB) {
                 /* amdolby vision LL RGB(rgb 10/12bit) only support 1080p60hz */
-                strcpy(final_displaymode, MODE_1080P);
+                strcpy(final_displaymode, preferred_frac ? MODE_1080P59HZ : MODE_1080P);
             } else {
                 /* other amdolby visin mode,use 2160p60hz */
-                strcpy(final_displaymode, MODE_4K2K60HZ);
+                strcpy(final_displaymode, preferred_frac ? MODE_4K2K59HZ : MODE_4K2K60HZ);
             }
         } else {
             /* TV support amdolby vision non 2160p60hz case */
@@ -379,13 +402,14 @@ static int32_t amdv_update_mode(struct meson_policy_in *input,
                  * TV support amdolby vision support 2160p30hz or 2160p25hz or 2160p24hz
                  * 1080p60hz prefer to 2160p30hz 2160p25hz 2160p24hz
                  */
-                strcpy(final_displaymode, MODE_1080P);
+                strcpy(final_displaymode, preferred_frac ? MODE_1080P59HZ : MODE_1080P);
             } else {
                 /*
                  * TV support amdolby vision non 2160p30hz 2160p25hz 2160p24hz
                  * use tv support amdolby vision resolution
                  */
-                strcpy(final_displaymode, dv_displaymode);
+                const char * mode_result = find_frac_preferred_mode(preferred_frac, dv_displaymode);
+                strcpy(final_displaymode, mode_result);
             }
         }
     } else {
@@ -721,7 +745,10 @@ static bool hdr_scene_process(struct meson_policy_in *input,
         SYS_LOGI("Do not output 8bit hdr. Change to auto color space");
     }
 
-    SYS_LOGI("policy:%d is_bestcolorspace:%d state:%d\n", policy, input->con_info.is_bestcolorspace, input->state);
+    bool preferred_frac = input->con_info.is_preferred_frac_mode;
+    bool need_frac_check = true;
+    SYS_LOGI("policy:%d is_bestcolorspace:%d state:%d preferred_frac:%d\n",
+            policy, input->con_info.is_bestcolorspace, input->state, preferred_frac);
 
     /*
      * boot/hdmiplug/suspend/resume case
@@ -865,6 +892,7 @@ static bool hdr_scene_process(struct meson_policy_in *input,
                     }
                 }
             }
+            need_frac_check = !find;
         } else {
             /*
              * best resolution policy disable and best color space disable case
@@ -889,6 +917,7 @@ static bool hdr_scene_process(struct meson_policy_in *input,
                 strlcpy(output->displaymode, input->cur_displaymode, sizeof(output->displaymode));
                 find = true;
             }
+            need_frac_check = !find;
         }
 
         /*
@@ -912,6 +941,7 @@ static bool hdr_scene_process(struct meson_policy_in *input,
             strlcpy(output->deepcolor, input->con_info.ubootenv_colorattr, sizeof(output->deepcolor));
             strlcpy(output->displaymode, input->cur_displaymode, sizeof(output->displaymode));
             find = true;
+            need_frac_check = false;
         } else if (is_support_hdmimode(input, input->cur_displaymode)) {
             /*
              * 2.check cur_displaymode support or not
@@ -922,12 +952,18 @@ static bool hdr_scene_process(struct meson_policy_in *input,
             strlcpy(output->deepcolor, color_attribute, sizeof(output->deepcolor));
             strlcpy(output->displaymode, input->cur_displaymode, sizeof(output->displaymode));
             find = true;
+            need_frac_check = false;
         } else {
             /*
              * 3.find best hdr prefer mode
              */
             find = find_hdr_prefer_mode(input, output);
         }
+    }
+
+    if (need_frac_check) {
+        const char * mode_result = find_frac_preferred_mode(preferred_frac, output->displaymode);
+        strlcpy(output->displaymode, mode_result, sizeof(output->displaymode));
     }
 
     return find;
@@ -1000,21 +1036,29 @@ static void get_hdmi_outputmode(struct meson_policy_in *input,
         return;
     }
 
+    bool preferred_frac = input->con_info.is_preferred_frac_mode;
+    bool need_frac_check = true;
     if (policy == MESON_POLICY_INVALID) {
         /*
          * if current mode support, use current mode
          */
-        if (is_support_hdmimode(input, input->cur_displaymode))
+        if (is_support_hdmimode(input, input->cur_displaymode)) {
             strcpy(mode, input->cur_displaymode);
-        else
+            need_frac_check = false;
+        } else {
         /*
          * if current mode not support, find best prefer resolution base driver edid
          */
             get_highest_mode_by_policy(input, mode, MESON_POLICY_BEST);
+        }
     } else {
         get_highest_mode_by_policy(input, mode, policy);
     }
 
+    if (need_frac_check) {
+        const char * mode_result = find_frac_preferred_mode(preferred_frac, mode);
+        strcpy(mode, mode_result);
+    }
     SYS_LOGI("%s mode:%s\n", __FUNCTION__, mode);
 }
 

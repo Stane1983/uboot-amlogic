@@ -137,10 +137,10 @@ typedef struct meson_connector_info {
     bool is_support4k30HZ;                  /* soc max support 4k30hz or not */
     bool is_deepcolor;                      /* deepcolor feature enable or not */
     bool isframeratepriority;               /* frame priority feature enable or not, false:disable true:enable */
+    bool is_preferred_frac_mode;            /* preferred frac mode or not*/
     enum meson_sink_type sink_type;         /* 0: not hdmi sink; 1: hdmi sink; 2: repeater sink; */
     char edid_parsing[MESON_MODE_LEN];      /* edid parse ok or not, ok:parse ok,ng:parse ng */
     char dc_cap[MESON_MAX_STR_LEN];         /* device colorspace cap */
-//    char disp_cap[MESON_MAX_STR_LEN];       /* device resolution cap */
     char ubootenv_cvbsmode[MESON_MODE_LEN];     /* the env of cvbsmode */
     char ubootenv_hdmimode[MESON_MODE_LEN];     /* the env of hdmimode */
     char ubootenv_colorattr[MESON_MODE_LEN];    /* the env of colospace for UI change colorspace or boot */

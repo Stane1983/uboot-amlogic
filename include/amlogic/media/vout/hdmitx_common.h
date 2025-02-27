@@ -43,5 +43,6 @@ void hdmi_mode_frac_preprocess(void);
 void hdmi_mode_frac_postprocess(void);
 void convert_name_frac2int(const char *name, char *conv_name);
 bool is_mode_name_frac(const char *name);
+bool get_kernel_dtb_info(void);
 
 #endif

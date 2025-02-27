@@ -23,6 +23,7 @@ bool is_hdmi_edid_parserok(struct meson_policy_in *input);
 bool is_hdmi_dc_cap_ok(struct meson_policy_in *input);
 bool mode_support_check(const char *mode, const char * color, struct meson_policy_in *input);
 bool find_brr_mode(const char *mode, struct meson_policy_in *input, char* outputmode);
+const char* find_non_frac_preferred_mode(const char *mode);
 /*
  * for unit test mode
  */

@@ -237,6 +237,14 @@ bool mode_support_check(const char *mode, const char * color, struct meson_polic
      * find brr mode base mode
      */
     find_brr_mode(mode, input, outputmode);
+
+    /* valid mode check now only support non frac mode */
+    for (int i = 0; i < ARRAY_SIZE(FRAC_MODE_LIST_MAP); i++) {
+        if (!strcmp(FRAC_MODE_LIST_MAP[i].frac_mode, outputmode)) {
+            strcpy(outputmode, FRAC_MODE_LIST_MAP[i].non_frac_mode);
+        }
+    }
+
     strlcat(outputmode, color, sizeof(outputmode));
 
     /*
@@ -305,6 +313,7 @@ bool support_DV_VSVDB_PARITY(struct meson_hdr_info *info) {
 /* check if the edid support current hdmi mode */
 bool is_support_hdmimode(struct meson_policy_in *input, const char *mode)
 {
+    const char *tmp_mode = NULL;
 #ifdef CONFIG_AML_HDMITX20
     struct hdmitx_dev *hdev = hdmitx_get_hdev();
 #else
@@ -314,7 +323,8 @@ bool is_support_hdmimode(struct meson_policy_in *input, const char *mode)
     if (!input || !mode)
         return false;
 
-    if (!hdmi_sink_disp_mode_sup(hdev, mode))
+    tmp_mode = find_non_frac_preferred_mode(mode);
+    if (!hdmi_sink_disp_mode_sup(hdev, tmp_mode))
         return false;
     return true;
 }
@@ -450,6 +460,7 @@ struct hdmi_format_para *para = NULL;
 #else
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	char brr_mode[32] = {0};
+	const char *tmp_mode = NULL;
 #endif
 
 	if (!mode || !color || !input)
@@ -461,7 +472,9 @@ struct hdmi_format_para *para = NULL;
 #else
 	if (find_brr_mode(mode, input, brr_mode))
 		mode = &brr_mode[0];
-	para = hdmitx21_tst_fmt_name(mode, color);
+	 /* valid mode check now only support non frac mode */
+	tmp_mode = find_non_frac_preferred_mode(mode);
+	para = hdmitx21_tst_fmt_name(tmp_mode, color);
 	return hdmitx21_validate_mode(hdev, para);
 #endif
 }

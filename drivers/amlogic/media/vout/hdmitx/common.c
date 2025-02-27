@@ -107,7 +107,7 @@ static bool _get_kernel_dtb_info(void)
 	return 0;
 }
 
-static bool get_kernel_dtb_info(void)
+bool get_kernel_dtb_info(void)
 {
 	bool ret = _get_kernel_dtb_info();
 

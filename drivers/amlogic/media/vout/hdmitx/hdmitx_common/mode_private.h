@@ -50,52 +50,78 @@ extern "C" {
  * define mode name
  */
 #define MODE_480I                       "480i60hz"
+#define MODE_480I59HZ                   "480i59hz"
 #define MODE_480P                       "480p60hz"
+#define MODE_480P59HZ                   "480p59hz"
 #define MODE_640x480P                   "640x480p60hz"
 #define MODE_576I                       "576i50hz"
 #define MODE_576P                       "576p50hz"
+#define MODE_720P23HZ                   "720p23hz"
 #define MODE_720P24HZ                   "720p24hz"
 #define MODE_720P25HZ                   "720p25hz"
+#define MODE_720P29HZ                   "720p29hz"
 #define MODE_720P30HZ                   "720p30hz"
 #define MODE_720P48HZ                   "720p48hz"
 #define MODE_720P50HZ                   "720p50hz"
+#define MODE_720P59HZ                   "720p59hz"
 #define MODE_720P                       "720p60hz"
 #define MODE_720P100HZ                  "1280x720p100hz"
+#define MODE_720P119HZ                  "1280x720p119hz"
 #define MODE_720P120HZ                  "1280x720p120hz"
+#define MODE_1080P23HZ                  "1080p23hz"
 #define MODE_1080P24HZ                  "1080p24hz"
 #define MODE_1080P25HZ                  "1080p25hz"
+#define MODE_1080P29HZ                  "1080p29hz"
 #define MODE_1080P30HZ                  "1080p30hz"
 #define MODE_1080P48HZ                  "1080p48hz"
 #define MODE_1080I50HZ                  "1080i50hz"
 #define MODE_1080P50HZ                  "1080p50hz"
+#define MODE_1080I59HZ                  "1080i59hz"
 #define MODE_1080I                      "1080i60hz"
+#define MODE_1080P59HZ                  "1080p59hz"
 #define MODE_1080P                      "1080p60hz"
 #define MODE_1080P100HZ                 "1920x1080p100hz"
+#define MODE_1080P119HZ                 "1920x1080p119hz"
 #define MODE_1080P120HZ                 "1920x1080p120hz"
 #define MODE_1440P50HZ                  "2560x1440p50hz"
+#define MODE_1440P59HZ                  "2560x1440p59hz"
 #define MODE_1440P60HZ                  "2560x1440p60hz"
 #define MODE_1440P100HZ                 "2560x1440p100hz"
+#define MODE_1440P119HZ                 "2560x1440p119hz"
 #define MODE_1440P120HZ                 "2560x1440p120hz"
+#define MODE_4K2K23HZ                   "2160p23hz"
 #define MODE_4K2K24HZ                   "2160p24hz"
 #define MODE_4K2K25HZ                   "2160p25hz"
+#define MODE_4K2K29HZ                   "2160p29hz"
 #define MODE_4K2K30HZ                   "2160p30hz"
 #define MODE_4K2K48HZ                   "2160p48hz"
 #define MODE_4K2K50HZ                   "2160p50hz"
+#define MODE_4K2K59HZ                   "2160p59hz"
 #define MODE_4K2K60HZ                   "2160p60hz"
 #define MODE_4K2K100HZ                  "3840x2160p100hz"
+#define MODE_4K2K119HZ                  "3840x2160p119hz"
 #define MODE_4K2K120HZ                  "3840x2160p120hz"
+#define MODE_4K2KSMPTE23HZ              "smpte23hz"
 #define MODE_4K2KSMPTE24HZ              "smpte24hz"
+#define MODE_4K2KSMPTE29HZ              "smpte29hz"
 #define MODE_4K2KSMPTE30HZ              "smpte30hz"
 #define MODE_4K2KSMPTE50HZ              "smpte50hz"
+#define MODE_4K2KSMPTE59HZ              "smpte59hz"
 #define MODE_4K2KSMPTE60HZ              "smpte60hz"
 #define MODE_4K2KSMPTE100HZ             "smpte100hz"
+#define MODE_4K2KSMPTE119HZ             "smpte119hz"
 #define MODE_4K2KSMPTE120HZ             "smpte120hz"
+#define MODE_8K4K23HZ                   "7680x4320p23hz"
 #define MODE_8K4K24HZ                   "7680x4320p24hz"
 #define MODE_8K4K25HZ                   "7680x4320p25hz"
+#define MODE_8K4K29HZ                   "7680x4320p29hz"
 #define MODE_8K4K30HZ                   "7680x4320p30hz"
 #define MODE_8K4K48HZ                   "7680x4320p48hz"
 #define MODE_8K4K50HZ                   "7680x4320p50hz"
+#define MODE_8K4K59HZ                   "7680x4320p59hz"
 #define MODE_8K4K60HZ                   "7680x4320p60hz"
+#define MODE_8K4K                       "7680x4320p"
+
 /*
  * lcd mode
  */
@@ -133,52 +159,76 @@ extern "C" {
  */
 static const char* DISPLAY_MODE_LIST[] = {
     MODE_8K4K60HZ,
+    MODE_8K4K59HZ,
     MODE_8K4K50HZ,
     MODE_8K4K48HZ,
     MODE_8K4K30HZ,
+    MODE_8K4K29HZ,
     MODE_8K4K25HZ,
     MODE_8K4K24HZ,
+    MODE_8K4K23HZ,
     MODE_4K2KSMPTE120HZ,
+    MODE_4K2KSMPTE119HZ,
     MODE_4K2KSMPTE100HZ,
     MODE_4K2KSMPTE60HZ,
+    MODE_4K2KSMPTE59HZ,
     MODE_4K2KSMPTE50HZ,
     MODE_4K2KSMPTE30HZ,
+    MODE_4K2KSMPTE29HZ,
     MODE_4K2KSMPTE24HZ,
+    MODE_4K2KSMPTE23HZ,
     MODE_4K2K120HZ,
+    MODE_4K2K119HZ,
     MODE_4K2K100HZ,
     MODE_4K2K60HZ,
+    MODE_4K2K59HZ,
     MODE_4K2K50HZ,
     MODE_4K2K48HZ,
     MODE_4K2K30HZ,
+    MODE_4K2K29HZ,
     MODE_4K2K25HZ,
     MODE_4K2K24HZ,
+    MODE_4K2K23HZ,
     MODE_1440P120HZ,
+    MODE_1440P119HZ,
     MODE_1440P100HZ,
     MODE_1440P60HZ,
+    MODE_1440P59HZ,
     MODE_1440P50HZ,
     MODE_1080P120HZ,
+    MODE_1080P119HZ,
     MODE_1080P100HZ,
     MODE_1080P,
+    MODE_1080P59HZ,
     MODE_1080I,
+    MODE_1080I59HZ,
     MODE_1080P50HZ,
     MODE_1080I50HZ,
     MODE_1080P48HZ,
     MODE_1080P30HZ,
+    MODE_1080P29HZ,
     MODE_1080P25HZ,
     MODE_1080P24HZ,
+    MODE_1080P23HZ,
     MODE_720P120HZ,
+    MODE_720P119HZ,
     MODE_720P100HZ,
     MODE_720P,
+    MODE_720P59HZ,
     MODE_720P50HZ,
     MODE_720P48HZ,
     MODE_720P30HZ,
+    MODE_720P29HZ,
     MODE_720P25HZ,
     MODE_720P24HZ,
+    MODE_720P23HZ,
     MODE_576P,
     MODE_480P,
+    MODE_480P59HZ,
     MODE_640x480P,
     MODE_576I,
     MODE_480I,
+    MODE_480I59HZ,
     /*
      * non hdmi solution
      */
@@ -366,6 +416,38 @@ static const char* HDR_NON4K_COLOR_ATTRIBUTE_LIST[] = {
 static const char* HDR_4K_COLOR_ATTRIBUTE_LIST[] = {
     COLOR_YCBCR420_10BIT,
     COLOR_YCBCR422_12BIT,
+};
+
+struct frac_mode_list_map {
+    const char *frac_mode;
+    const char *non_frac_mode;
+};
+
+static struct frac_mode_list_map FRAC_MODE_LIST_MAP[] = {
+    {MODE_480I59HZ, MODE_480I},
+    {MODE_480P59HZ, MODE_480P},
+    {MODE_720P23HZ, MODE_720P24HZ},
+    {MODE_720P29HZ, MODE_720P30HZ},
+    {MODE_720P59HZ, MODE_720P},
+    {MODE_720P119HZ, MODE_720P120HZ},
+    {MODE_1080P23HZ, MODE_1080P24HZ},
+    {MODE_1080P29HZ, MODE_1080P30HZ},
+    {MODE_1080I59HZ, MODE_1080I},
+    {MODE_1080P59HZ, MODE_1080P},
+    {MODE_1080P119HZ, MODE_1080P120HZ},
+    {MODE_1440P59HZ, MODE_1440P60HZ},
+    {MODE_1440P119HZ, MODE_1440P120HZ},
+    {MODE_4K2K23HZ, MODE_4K2K24HZ},
+    {MODE_4K2K29HZ, MODE_4K2K30HZ},
+    {MODE_4K2K59HZ, MODE_4K2K60HZ},
+    {MODE_4K2K119HZ, MODE_4K2K120HZ},
+    {MODE_4K2KSMPTE23HZ, MODE_4K2KSMPTE24HZ},
+    {MODE_4K2KSMPTE29HZ, MODE_4K2KSMPTE30HZ},
+    {MODE_4K2KSMPTE59HZ, MODE_4K2KSMPTE60HZ},
+    {MODE_4K2KSMPTE119HZ, MODE_4K2KSMPTE120HZ},
+    {MODE_8K4K23HZ, MODE_8K4K24HZ},
+    {MODE_8K4K29HZ, MODE_8K4K30HZ},
+    {MODE_8K4K59HZ, MODE_8K4K60HZ},
 };
 
 #ifdef __cplusplus
