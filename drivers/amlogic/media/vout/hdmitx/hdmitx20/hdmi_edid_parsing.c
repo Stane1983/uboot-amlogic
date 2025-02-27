@@ -1697,6 +1697,23 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 	return valid;
 }
 
+bool mode_support_check(const char *mode, const char *color, hdmi_data_t *hdmi_data)
+{
+	struct hdmitx_dev *hdev = NULL;
+	struct hdmi_format_para *para = NULL;
+	const char *tmp_mode = NULL;
+
+	if (!hdmi_data || !mode || !color)
+		return false;
+	hdev = container_of(hdmi_data->prxcap,
+			struct hdmitx_dev, RXCap);
+
+	/* valid mode check now only support non frac mode */
+	tmp_mode = find_non_frac_preferred_mode(mode);
+	para = hdmi_tst_fmt_name(tmp_mode, color);
+	return hdmitx_edid_check_valid_mode(hdev, para);
+}
+
 bool is_supported_mode_attr(hdmi_data_t *hdmi_data, char *mode_attr)
 {
 	struct hdmi_format_para *para = NULL;
@@ -1706,7 +1723,6 @@ bool is_supported_mode_attr(hdmi_data_t *hdmi_data, char *mode_attr)
 		return false;
 	hdev = container_of(hdmi_data->prxcap,
 			struct hdmitx_dev, RXCap);
-
 	if (mode_attr[0]) {
 		if (!pre_process_str(mode_attr))
 			return false;

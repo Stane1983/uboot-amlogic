@@ -941,6 +941,8 @@ typedef struct input_hdmi_data {
 	hdr_policy_e hdr_policy;
 	/* save user force hdr mode 1 :force sdr, 2: force dv, 3: force hdr10, 5:force hlg */
 	hdr_force_mode_e hdr_force_mode;
+	/* preferred frac mode or not*/
+	bool is_preferred_frac_mode;
 	struct rx_cap *prxcap;
 } hdmi_data_t;
 

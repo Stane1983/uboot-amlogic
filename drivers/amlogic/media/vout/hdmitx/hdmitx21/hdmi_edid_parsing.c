@@ -2037,6 +2037,23 @@ static bool pre_process_str(const char *name)
 		return true;
 }
 
+bool mode_support_check(const char *mode, const char *color, hdmi_data_t *hdmi_data)
+{
+	struct hdmitx_dev *hdev = NULL;
+	struct hdmi_format_para *para = NULL;
+	const char *tmp_mode = NULL;
+
+	if (!hdmi_data || !mode || !color)
+		return false;
+	hdev = container_of(hdmi_data->prxcap,
+			struct hdmitx_dev, RXCap);
+
+	/* valid mode check now only support non frac mode */
+	tmp_mode = find_non_frac_preferred_mode(mode);
+	para = hdmitx21_tst_fmt_name(tmp_mode, color);
+	return hdmitx_edid_check_valid_mode(hdev, para);
+}
+
 bool is_supported_mode_attr(hdmi_data_t *hdmi_data, char *mode_attr)
 {
 	struct hdmi_format_para *para = NULL;

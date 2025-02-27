@@ -86,6 +86,7 @@ bool pre_process_str(const char *name);
 struct hdmi_format_para *hdmi_tst_fmt_name(char const *name, char const *attr);
 bool is_support_4k(void);
 bool is_supported_mode_attr(hdmi_data_t *hdmi_data, char *mode_attr);
+bool mode_support_check(const char *mode, const char *color, hdmi_data_t *hdmi_data);
 bool hdmitx_chk_mode_attr_sup(hdmi_data_t *hdmi_data, const char *mode, const char *attr);
 int get_ubootenv_dv_type(void);
 int get_ubootenv_dv_status(void);
