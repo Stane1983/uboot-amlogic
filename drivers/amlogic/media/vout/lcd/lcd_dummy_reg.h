@@ -63,15 +63,18 @@
 #define MIPI_DSI_TOP_SUSPEND_PIX               (0x18f5)
 #define MIPI_DSI_TOP_MEAS_CNTL                 (0x18f6)
 #define MIPI_DSI_TOP_STAT                      (0x18f7)
-#define MIPI_DSI_TOP_MEAS_STAT_TE0             (0x18f8)
-#define MIPI_DSI_TOP_MEAS_STAT_TE1             (0x18f9)
 #define MIPI_DSI_TOP_MEAS_STAT_VS0             (0x18fa)
 #define MIPI_DSI_TOP_MEAS_STAT_VS1             (0x18fb)
 #define MIPI_DSI_TOP_INTR_CNTL_STAT            (0x18fc)
 #define MIPI_DSI_TOP_MEM_PD                    (0x18fd)
 /* #ifndef MIPI_DSI_REGISTER */
 #endif
-
+#ifndef MIPI_DSI_TOP_MEAS_STAT_TE0
+#define MIPI_DSI_TOP_MEAS_STAT_TE0             (0x18f8)
+#endif
+#ifndef MIPI_DSI_TOP_MEAS_STAT_TE1
+#define MIPI_DSI_TOP_MEAS_STAT_TE1             (0x18f9)
+#endif
 /*=============    MIPI_DSI_PHY   ********* */
 #ifndef MIPI_DSI_PHY_CTRL
 #define MIPI_DSI_PHY_CTRL                                  (0xff640000 + (0x000 << 2))
