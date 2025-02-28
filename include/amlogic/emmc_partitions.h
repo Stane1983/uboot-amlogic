@@ -304,6 +304,8 @@ int mmc_key_write_backup(const char *name,
 			      unsigned char *addr, unsigned int size);
 int mmc_key_read_backup(const char *name,
 			      unsigned char *addr, unsigned int size);
+u64 map_last_gap(struct mmc *mmc, const char *name);
+struct partitions *find_ept_partition_by_name(char const *name);
 
 #define PARTITION_ELEMENT(na, sz, flags) {.name = na, .size = sz, .mask_flags = flags,}
 

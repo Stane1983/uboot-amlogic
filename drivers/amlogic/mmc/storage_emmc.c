@@ -441,8 +441,20 @@ int mmc_pattern_check(struct mmc *mmc, struct aml_pattern *table)
 		printf("%s malloc failed\n", table->name);
 		return 1;
 	}
-	part = aml_get_partition_by_name(MMC_RESERVED_NAME);
-	blk = (part->offset + vpart->offset) / mmc->read_bl_len;
+
+	part = find_ept_partition_by_name(MMC_RESERVED_NAME);
+	if (!part) {
+		blk = map_last_gap(mmc, table->name);
+		blk = blk / mmc->read_bl_len;
+		if (blk == 0) {
+			printf("get pattern offset failed\n");
+			free(addr);
+			return 1;
+		}
+	} else {
+		blk = (part->offset + vpart->offset) / mmc->read_bl_len;
+	}
+
 	cnt = vpart->size / mmc->read_bl_len;
 	n = blk_dread(mmc_get_blk_desc(mmc), blk, cnt, addr);
 	if (n != cnt) {
