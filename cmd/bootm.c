@@ -150,11 +150,16 @@ static void bootm_avb_bootctl_anti_rollback(int rc, AvbSlotVerifyData *out_data)
 	if (is_avb_arb_available() &&
 	    rc == AVB_SLOT_VERIFY_RESULT_ERROR_ROLLBACK_INDEX &&
 	    has_boot_slot == 1) {
+		char *rebootmode = env_get("reboot_mode");
+
 		printf("ab mode\n");
 		update_rollback();
 		env_set("write_boot", "0");
 		run_command("saveenv", 0);
-		run_command("reset", 0);
+		if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+			run_command("reboot quiescent", 0);
+		else
+			run_command("reboot", 0);
 	}
 }
 #endif
