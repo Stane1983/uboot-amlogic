@@ -157,12 +157,10 @@ static void lcd_config_load_print(struct aml_lcd_drv_s *pdrv)
 		}
 		LCDPR("lane_num = %d\n", pctrl->mipi_cfg.lane_num);
 		LCDPR("bit_rate_max = %d\n", pctrl->mipi_cfg.bit_rate_max);
-		// LCDPR("pclk_lanebyteclk_factor = %d\n", pctrl->mipi_cfg.factor_numerator);
 		LCDPR("operation_mode_init = %d\n", pctrl->mipi_cfg.operation_mode_init);
 		LCDPR("operation_mode_disp = %d\n", pctrl->mipi_cfg.operation_mode_display);
 		LCDPR("video_mode_type = %d\n", pctrl->mipi_cfg.video_mode_type);
 		LCDPR("clk_always_hs = %d\n", pctrl->mipi_cfg.clk_always_hs);
-		// LCDPR("phy_switch = %d\n", pctrl->mipi_cfg.phy_switch);
 		LCDPR("extern_init = %d\n", pctrl->mipi_cfg.extern_init);
 	} else if (pconf->basic.lcd_type == LCD_EDP) {
 		LCDPR("max_lane_count = %d\n", pctrl->edp_cfg.max_lane_count);

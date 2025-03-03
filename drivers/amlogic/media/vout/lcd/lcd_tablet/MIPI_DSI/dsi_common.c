@@ -16,39 +16,28 @@
 #include "dsi_common.h"
 #include "dsi_ctrl/dsi_ctrl.h"
 
-char *dsi_op_mode_table[] = {
-	"Video",
-	"Command",
-};
+char *dsi_op_mode_table[] = {"Video", "Command"};
 
 char *dsi_video_mode_type_table[] = {
-	"Non-Burst mode with sync pulse",
-	"Non-Burst mode with sync event",
-	"Burst mode",
+	"Non-Burst (sync pulse)",
+	"Non-Burst (sync event)",
+	"Burst",
 };
 
 char *dsi_video_data_type_table[] = {
-	"COLOR_16BIT_CFG_1",
-	"COLOR_16BIT_CFG_2",
-	"COLOR_16BIT_CFG_3",
-	"COLOR_18BIT_CFG_1",
-	"COLOR_18BIT_CFG_2(loosely)",
-	"COLOR_24BIT",
-	"COLOR_20BIT_LOOSE",
-	"COLOR_24_BIT_YCBCR",
-	"COLOR_16BIT_YCBCR",
-	"COLOR_30BIT",
-	"COLOR_36BIT",
-	"COLOR_12BIT",
-	"COLOR_RGB_111",
-	"COLOR_RGB_332",
-	"COLOR_RGB_444",
+	"16bit CFG-1",
+	"16bit CFG-2",
+	"16bit CFG-3",
+	"18bit CFG-1",
+	"18bit CFG-2",
+	"24bit",
+	"20bit YCbCr 4:2:2 (loosely)",
+	"24bit YCbCr 4:2:2",
+	"16bit YCbCr 4:2:2",
+	"30bit",
+	"36bit",
+	"12bit YCbCr 4:2:0",
 	"un-support type",
-};
-
-char *dsi_phy_switch_table[] = {
-	"STANDARD",
-	"SLOW",
 };
 
 void dsi_config_print_helper(struct lcd_config_s *pconf, u8 pr_flag)
@@ -64,7 +53,6 @@ void dsi_config_print_helper(struct lcd_config_s *pconf, u8 pr_flag)
 			"  operation mode:   init:%s(%u), display:%s(%u)\n"
 			"  video mode type:  %s(%d)\n"
 			"  clk always hs:    %u\n"
-			"  phy switch:       %s\n"
 			"  data format:      %s\n",
 			dconf->multi_port_cfg ? 2 : 1, dconf->lane_num,
 			pconf->timing.bit_rate, dconf->bit_rate_max,
@@ -76,7 +64,6 @@ void dsi_config_print_helper(struct lcd_config_s *pconf, u8 pr_flag)
 			dsi_video_mode_type_table[dconf->video_mode_type],
 			dconf->video_mode_type,
 			dconf->clk_always_hs,
-			dsi_phy_switch_table[STOP_STATE_TO_HS_WAIT_TIME],
 			dsi_video_data_type_table[dconf->dpi_data_format]);
 	}
 
@@ -111,7 +98,7 @@ void dsi_config_print_helper(struct lcd_config_s *pconf, u8 pr_flag)
 		esc_clk = div_around(1000000, dconf->dphy.lp_tesc[1]);
 
 		printf("MIPI DSI DPHY setting:\n"
-			"  t-UI        = %u.%uns\n"
+			"  t-UI        = %u.%02uns\n"
 			"  LP-ESC clk  = %d.%03dMHz\n"
 			"  LP-tesc     = 0x%02x (%uns)\n"
 			"  LP-lpx      = 0x%02x (%uns)\n"
@@ -122,14 +109,14 @@ void dsi_config_print_helper(struct lcd_config_s *pconf, u8 pr_flag)
 			"  HS-trail    = 0x%02x (%uns)\n"
 			"  HS-zero     = 0x%02x (%uns)\n"
 			"  HS-prepare  = 0x%02x (%uns)\n"
-			"  clk_trail   = 0x%02x (%uns)\n"
-			"  clk_post    = 0x%02x (%uns)\n"
-			"  clk_zero    = 0x%02x (%uns)\n"
-			"  clk_prepare = 0x%02x (%uns)\n"
-			"  clk_pre     = 0x%02x (%uns)\n"
+			"  CLK-trail   = 0x%02x (%uns)\n"
+			"  CLK-post    = 0x%02x (%uns)\n"
+			"  CLK-zero    = 0x%02x (%uns)\n"
+			"  CLK-prepare = 0x%02x (%uns)\n"
+			"  CLK-pre     = 0x%02x (%uns)\n"
 			"  init        = 0x%02x\n"
 			"  wakeup      = 0x%02x\n",
-			dconf->dphy.t_ui / 100,     (dconf->dphy.t_ui + 50) % 100,
+			dconf->dphy.t_ui / 100,     dconf->dphy.t_ui % 100,
 			(esc_clk / 1000),           (esc_clk % 1000),
 			dconf->dphy.lp_tesc[0],     dconf->dphy.lp_tesc[1],
 			dconf->dphy.lp_lpx[0],      dconf->dphy.lp_lpx[1],
@@ -146,6 +133,14 @@ void dsi_config_print_helper(struct lcd_config_s *pconf, u8 pr_flag)
 			dconf->dphy.clk_prepare[0], dconf->dphy.clk_prepare[1],
 			dconf->dphy.clk_pre[0],     dconf->dphy.clk_pre[1],
 			dconf->dphy.init, dconf->dphy.wakeup);
+
+		pr_info("MIPI DSI HOST setting:\n"
+			"  phy_hs2lp   = 0x%02x (%uns)\n"
+			"  phy_hs2lp   = 0x%02x (%uns)\n"
+			"  max_rd_time = 0x%02x (%uns)\n",
+			dconf->dphy.phy_hs2lp_time[0], dconf->dphy.phy_hs2lp_time[1],
+			dconf->dphy.phy_lp2hs_time[0], dconf->dphy.phy_lp2hs_time[1],
+			dconf->dphy.max_rd_time[0], dconf->dphy.max_rd_time[1]);
 	}
 
 	if (pr_flag & DSI_HOST_CFG_PR_N_BURST_ST) {

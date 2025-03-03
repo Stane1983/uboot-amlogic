@@ -222,9 +222,6 @@
 #define MIPI_DCS_ENABLE_TEAR        1
 #define MIPI_DCS_DISABLE_TEAR       0
 
-/* Pixel FIFO Depth */
-#define PIXEL_FIFO_DEPTH                    1440
-
 #define BYTE_PER_PIXEL_COLOR_16BIT_CFG_1    2
 #define BYTE_PER_PIXEL_COLOR_16BIT_CFG_2    2
 #define BYTE_PER_PIXEL_COLOR_16BIT_CFG_3    2

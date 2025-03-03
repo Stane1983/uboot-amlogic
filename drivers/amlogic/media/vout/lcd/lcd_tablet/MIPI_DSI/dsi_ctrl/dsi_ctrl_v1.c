@@ -219,17 +219,14 @@ static void mipi_dsi_lpclk_ctrl(struct aml_lcd_drv_s *pdrv, u8 port)
 
 /* Function: set_mipi_dsi_host
  * Parameters: vcid, // virtual id
- *		chroma_subsample, // chroma_subsample for YUV422 or YUV420 only
  *		operation_mode,   // video mode/command mode
  *		p,                //lcd config
  */
-static void set_mipi_dsi_host(struct aml_lcd_drv_s *pdrv, u8 port,
-		u8 vcid, u8 chroma_subsample, u8 operation_mode)
+static void set_mipi_dsi_host(struct aml_lcd_drv_s *pdrv, u8 port, u8 vcid, u8 operation_mode)
 {
 	u32 dpi_data_format, venc_data_width;
 	u32 lane_num, vid_mode_type;
 	u32 v_act, v_sync, v_bp, v_fp;
-	u32 temp;
 	struct dsi_config_s *dconf;
 
 	dconf = &pdrv->config.control.mipi_cfg;
@@ -246,30 +243,34 @@ static void set_mipi_dsi_host(struct aml_lcd_drv_s *pdrv, u8 port,
 	/* Standard Configuration for Video Mode Operation */
 	/* ----------------------------------------------------- */
 	/* 1,    Configure Lane number and phy stop wait time */
-	if (STOP_STATE_TO_HS_WAIT_TIME) {
-		dsi_host_write(pdrv, port, MIPI_DSI_DWC_PHY_IF_CFG_OS,
-			(0x28 << BIT_PHY_STOP_WAIT_TIME) | ((lane_num - 1) << BIT_N_LANES));
-	} else {
-		dsi_host_write(pdrv, port, MIPI_DSI_DWC_PHY_IF_CFG_OS,
-			(1 << BIT_PHY_STOP_WAIT_TIME) | ((lane_num - 1) << BIT_N_LANES));
-	}
+	//phy_stop_wait_time[15:8]: 0x1/0x28
+	//    minimum wait period to request a HS transmission after the Stop state
+	dsi_host_write(pdrv, port, MIPI_DSI_DWC_PHY_IF_CFG_OS,
+		(0x8 << BIT_PHY_STOP_WAIT_TIME) |
+		((lane_num - 1) << BIT_N_LANES));
 
 	/* 2.1,  Configure Virtual channel settings */
 	dsi_host_write(pdrv, port, MIPI_DSI_DWC_DPI_VCID_OS, vcid);
 	/* 2.2,  Configure Color format */
 	dsi_host_write(pdrv, port, MIPI_DSI_DWC_DPI_COLOR_CODING_OS,
-		(((dpi_data_format == DSI_DPI_COLOR_18BIT_CFG_2) ? 1 : 0) << BIT_LOOSELY18_EN) |
+		(0 << 8) | //loosely18_en
 		(dpi_data_format << BIT_DPI_COLOR_CODING));
 	/* 2.2.1 Configure Set color format for DPI register */
-	temp = (dsi_host_read(pdrv, port, MIPI_DSI_TOP_CNTL) &
-		~(0xf << BIT_DPI_COLOR_MODE) &
-		~(0x7 << BIT_IN_COLOR_MODE) &
-		~(0x3 << BIT_CHROMA_SUBSAMPLE));
 	dsi_host_write(pdrv, port, MIPI_DSI_TOP_CNTL,
-		(temp |
-		(dpi_data_format  << BIT_DPI_COLOR_MODE)  |
-		(venc_data_width  << BIT_IN_COLOR_MODE)   |
-		(chroma_subsample << BIT_CHROMA_SUBSAMPLE)));
+		(0 << 26) | // 1= Invert DE polarity from mipi_dsi_host_dpi.
+		(0 << 25) | // 1= Invert HS polarity from mipi_dsi_host_dpi.
+		(0 << 24) | // 1= Invert VS polarity from mipi_dsi_host_dpi.
+		((dpi_data_format & 0xf) << BIT_DPI_COLOR_MODE) | // DPI pixel format.
+		((venc_data_width & 0x7) << BIT_IN_COLOR_MODE) |
+		((0 & 0x3) << BIT_CHROMA_SUBSAMPLE) |
+		((2 & 0x3) << 12) | //which component to be Cr or B: 0=comp0; 1=comp1; 2=comp2.
+		((1 & 0x3) << 10) | //which component to be Cb or G: 0=comp0; 1=comp1; 2=comp2.
+		((0 & 0x3) << 8)  | //which component to be Y  or R: 0=comp0; 1=comp1; 2=comp2.
+		(0 << 6)  | //de_venc_pol
+		(1 << 5)  | //hsync_venc_pol
+		(1 << 4)  | //vsync_venc_pol
+		(0 << 3)  | //dpicolorm
+		(0 << 2));  //dpishutdn
 	/* 2.3   Configure Signal polarity */
 	dsi_host_write(pdrv, port, MIPI_DSI_DWC_DPI_CFG_POL_OS,
 		(0x0 << BIT_COLORM_ACTIVE_LOW) |
@@ -281,7 +282,7 @@ static void set_mipi_dsi_host(struct aml_lcd_drv_s *pdrv, u8 port,
 	if (operation_mode == OPERATION_VIDEO_MODE) {
 		/* 3.1   Configure Low power and video mode type settings */
 		dsi_host_write(pdrv, port, MIPI_DSI_DWC_VID_MODE_CFG_OS,
-			(1 << BIT_LP_CMD_EN) |
+			(1 << BIT_LP_CMD_EN) | /* command transmission only in low power mode */
 			(0 << BIT_FRAME_BTA_ACK_EN) | /* enable BTA after one frame, need check */
 			// (1 << BIT_LP_HFP_EN)  | /* enable lp */
 			// (1 << BIT_LP_HBP_EN)  | /* enable lp */
@@ -293,7 +294,7 @@ static void set_mipi_dsi_host(struct aml_lcd_drv_s *pdrv, u8 port,
 			(1 << BIT_LP_VSA_EN)  | /* enable lp */
 			(vid_mode_type << BIT_VID_MODE_TYPE)); /* burst/non-burst mode */
 		/* [23:16]outvact, [7:0]invact */
-		dsi_host_write(pdrv, port, MIPI_DSI_DWC_DPI_LP_CMD_TIM_OS, (8 << 16) | (0 << 0));
+		dsi_host_write(pdrv, port, MIPI_DSI_DWC_DPI_LP_CMD_TIM_OS, (16 << 16) | (0 << 0));
 
 		/* 3.2 Configure video packet size settings */
 		/* 3.3 Configure number of chunks and null packet size for one line */
@@ -332,13 +333,20 @@ static void set_mipi_dsi_host(struct aml_lcd_drv_s *pdrv, u8 port,
 	dsi_host_write(pdrv, port, MIPI_DSI_DWC_MODE_CFG_OS, operation_mode);
 
 	/* Phy Timer */
-	if (STOP_STATE_TO_HS_WAIT_TIME) {
-		dsi_host_write(pdrv, port, MIPI_DSI_DWC_PHY_TMR_CFG_OS, 0x03320000);
-		dsi_host_write(pdrv, port, MIPI_DSI_DWC_PHY_TMR_LPCLK_CFG_OS, 0x870025);
-	} else {
-		dsi_host_write(pdrv, port, MIPI_DSI_DWC_PHY_TMR_CFG_OS, 0x090f0000);
-		dsi_host_write(pdrv, port, MIPI_DSI_DWC_PHY_TMR_LPCLK_CFG_OS, 0x260017);
-	}
+	//if (STOP_STATE_TO_HS_WAIT_TIME) {
+	//	dsi_host_write(pdrv, port, MIPI_DSI_DWC_PHY_TMR_CFG_OS, 0x03320000);
+	//	dsi_host_write(pdrv, port, MIPI_DSI_DWC_PHY_TMR_LPCLK_CFG_OS, 0x870025);
+	//} else {
+	//	dsi_host_write(pdrv, port, MIPI_DSI_DWC_PHY_TMR_CFG_OS, 0x090f0000);
+	//	dsi_host_write(pdrv, port, MIPI_DSI_DWC_PHY_TMR_LPCLK_CFG_OS, 0x260017);
+	//}
+	dsi_host_write(pdrv, port, MIPI_DSI_DWC_PHY_TMR_CFG_OS, //lane byte clock cycles
+		((dconf->dphy.phy_hs2lp_time[0] & 0xff) << 24) | //maximum time HS to LP
+		((dconf->dphy.phy_lp2hs_time[0] & 0xff) << 16) | //maximum time LP to HS
+		(dconf->dphy.max_rd_time[0] & 0x3fff));       //maximum time read command
+	dsi_host_write(pdrv, port, MIPI_DSI_DWC_PHY_TMR_LPCLK_CFG_OS, //lane byte clock cycles
+		((0x0026 & 0x1ff) << 16) | //maximum time D-PHY clock HS to LP
+		(0x0017 & 0x1ff));         //maximum time D-PHY clock LP to HS
 }
 
 /* mipi dsi command support
@@ -685,20 +693,19 @@ static void mipi_dsi_non_burst_packet_config(struct lcd_config_s *pconf)
 		multi_pkt_en = 1;
 
 		switch (dconf->dpi_data_format) {
+		case DSI_DPI_COLOR_16BIT_CFG_1:
+			byte_pixel = 2;
+			break;
 		case DSI_DPI_COLOR_18BIT_CFG_1:
-		case DSI_DPI_COLOR_24BIT:
-			//bpc = 3
-			byte_pixel = 3;
+			byte_pixel = 3; //need check
 			break;
 		case DSI_DPI_COLOR_30BIT:
-			//bpc = 4
 			byte_pixel = 4;
 			break;
-		case DSI_DPI_COLOR_18BIT_CFG_2:
+		case DSI_DPI_COLOR_24BIT:
 		default:
 			byte_pixel = 3;
 			break;
-
 		}
 
 		i = dconf->user_pkt_size ? dconf->user_pkt_size : 1;
@@ -858,6 +865,18 @@ static void mipi_dsi_phy_config(struct aml_lcd_drv_s *pdrv, uint32_t dsi_bitrate
 		break;
 	}
 
+	// dphy->phy_hs2lp_time[1] = dphy->hs_exit[1];
+	// dphy->phy_hs2lp_time[0] = div_around(dphy->hs_exit[1] * 100, t_ui);
+	dphy->phy_hs2lp_time[1] = 100;
+	dphy->phy_hs2lp_time[0] = 0x08;
+	// dphy->phy_lp2hs_time[1] = dphy->lp_lpx[1] + dphy->hs_prepare[1];
+	// dphy->phy_lp2hs_time[0] = div_around(dphy->phy_lp2hs_time[1] * 100, t_ui);
+	dphy->phy_lp2hs_time[1] = 100;
+	dphy->phy_lp2hs_time[0] = 0x08;
+	//max_rd_time = (tHS-LP + tLP-HS + tLPDT + t-lprd + tread + 2 x tBTA) / lanebyteclk period
+	dphy->max_rd_time[0] = 10000;
+	dphy->max_rd_time[1] = dphy->max_rd_time[0];
+
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		dsi_config_print_helper(&pdrv->config, DSI_HOST_CFG_PR_DPHY_TIM);
 }
@@ -866,16 +885,16 @@ static void mipi_dsi_color_format_config(struct aml_lcd_drv_s *pdrv)
 {
 	struct dsi_config_s *dconf = &pdrv->config.control.mipi_cfg;
 
-	if (pdrv->config.timing.base_timing->lcd_bits == 18) {
-		dconf->venc_data_width = MIPI_DSI_VENC_COLOR_18B;
-			dconf->dpi_data_format = DSI_DPI_COLOR_18BIT_CFG_1;
-	} else if (pdrv->config.timing.base_timing->lcd_bits == 24) {
-		dconf->venc_data_width = MIPI_DSI_VENC_COLOR_24B;
-		dconf->dpi_data_format  = DSI_DPI_COLOR_24BIT;
-	} else if (pdrv->config.timing.base_timing->lcd_bits == 30) {
-		dconf->venc_data_width = MIPI_DSI_VENC_COLOR_30B;
+	dconf->venc_data_width = MIPI_DSI_VENC_COLOR_30B;
+
+	if (pdrv->config.timing.base_timing->lcd_bits == 30)
 		dconf->dpi_data_format  = DSI_DPI_COLOR_30BIT;
-	}
+	else if (pdrv->config.timing.base_timing->lcd_bits == 18)
+		dconf->dpi_data_format  = DSI_DPI_COLOR_18BIT_CFG_1;
+	else if (pdrv->config.timing.base_timing->lcd_bits == 16)
+		dconf->dpi_data_format  = DSI_DPI_COLOR_16BIT_CFG_1;
+	else
+		dconf->dpi_data_format  = DSI_DPI_COLOR_24BIT;
 }
 
 /* bit_rate is confirm by clk_generate, so internal clk config must after that */
@@ -932,7 +951,6 @@ static void dsi_host_on_pre(struct aml_lcd_drv_s *pdrv)
 
 		set_mipi_dsi_host(pdrv, i,
 			MIPI_DSI_VIRTUAL_CHAN_ID, //Virtual channel id
-			0, //Chroma sub sample, only for YUV 422 or 420, even or odd
 			dconf->operation_mode_init); //DSI operation mode, video or command
 
 		/* Startup transfer */
@@ -964,13 +982,9 @@ static void dsi_host_on_post(struct aml_lcd_drv_s *pdrv)
 
 	if (op_mode_disp != op_mode_init) {
 		if (port_mask & BIT(0))
-			set_mipi_dsi_host(pdrv, 0, MIPI_DSI_VIRTUAL_CHAN_ID,
-				0, //Chroma sub sample, only for YUV 422 or 420, even or odd
-				op_mode_disp); //DSI operation mode, video or command
+			set_mipi_dsi_host(pdrv, 0, MIPI_DSI_VIRTUAL_CHAN_ID, op_mode_disp);
 		if (port_mask & BIT(1))
-			set_mipi_dsi_host(pdrv, 1, MIPI_DSI_VIRTUAL_CHAN_ID,
-				0, //Chroma sub sample, only for YUV 422 or 420, even or odd
-				op_mode_disp); //DSI operation mode, video or command
+			set_mipi_dsi_host(pdrv, 1, MIPI_DSI_VIRTUAL_CHAN_ID, op_mode_disp);
 	}
 	if (op_mode_disp == MIPI_DSI_OPERATION_MODE_VIDEO)
 		lcd_venc_enable(pdrv, 1);
@@ -992,18 +1006,16 @@ static void dsi_host_off_pre(struct aml_lcd_drv_s *pdrv)
 	if (dconf->operation_mode_init != dconf->operation_mode_display) {
 		if (port_mask & BIT(0))
 			set_mipi_dsi_host(pdrv, 0, MIPI_DSI_VIRTUAL_CHAN_ID,
-				0, //Chroma sub sample, only for YUV 422 or 420, even or odd
 				dconf->operation_mode_init); //DSI operation mode, video or command
 		if (port_mask & BIT(1))
 			set_mipi_dsi_host(pdrv, 1, MIPI_DSI_VIRTUAL_CHAN_ID,
-				0, //Chroma sub sample, only for YUV 422 or 420, even or odd
 				dconf->operation_mode_init); //DSI operation mode, video or command
 	}
 }
 
 static void dsi_switch_operation_mode(struct aml_lcd_drv_s *pdrv, uint8_t port, uint8_t op_mode)
 {
-	set_mipi_dsi_host(pdrv, port, MIPI_DSI_VIRTUAL_CHAN_ID, 0, op_mode);
+	set_mipi_dsi_host(pdrv, port, MIPI_DSI_VIRTUAL_CHAN_ID, op_mode);
 }
 
 static void dsi_host_off_post(struct aml_lcd_drv_s *pdrv)

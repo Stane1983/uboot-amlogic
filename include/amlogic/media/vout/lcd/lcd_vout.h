@@ -301,7 +301,11 @@ struct dsi_dphy_s {
 	uint16_t clk_prepare[2];
 
 	uint16_t clk_pre[2];
-	// unsigned int clk_pre;
+
+	uint16_t phy_hs2lp_time[2];
+	uint16_t phy_lp2hs_time[2];
+	uint16_t max_rd_time[2];
+
 	unsigned int init;
 	unsigned int wakeup;
 };
