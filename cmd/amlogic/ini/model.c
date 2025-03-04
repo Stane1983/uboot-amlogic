@@ -3261,7 +3261,6 @@ int handle_panel_ini(int index)
 	struct panel_misc_s misc_attr;
 	struct lcd_optical_attr_s *optical_attr = NULL;
 	char *file_name;
-	int print_flag;
 	char str[15];
 	char key_name[PANEL_PARAM_KEY_NAME_SIZE];
 
@@ -3269,12 +3268,6 @@ int handle_panel_ini(int index)
 		sprintf(str, "model_panel");
 	else
 		sprintf(str, "model%d_panel", index);
-
-	print_flag = env_get_ulong("model_debug_print", 16, 0xffff);
-	if (print_flag != 0xffff) {
-		model_debug_flag = print_flag;
-		ALOGD("model_debug_flag: 0x%x\n", model_debug_flag);
-	}
 
 	file_name = env_get(str);
 	if (!file_name) {
@@ -3746,11 +3739,17 @@ int handle_model_set(const char *model, const char *val)
 
 int handle_model_sum(void)
 {
-	char *model, str[15], model_val[50];
+	char *model, str[15], model_val[50], env_str[64];
 #ifdef CONFIG_AML_LCD
 	char *file_name, *p;
 #endif
-	int i, ret;
+	int i, ret, dbg_env_flag = 1, print_flag;
+
+	print_flag = env_get_ulong("model_debug_print", 16, 0xffff);
+	if (print_flag != 0xffff) {
+		model_debug_flag = print_flag;
+		ALOGD("model_debug_flag: 0x%x\n", model_debug_flag);
+	}
 
 	for (i = 0; i < 3; i++) {
 		memset(model_val, 0, sizeof(model_val));
@@ -3768,6 +3767,14 @@ int handle_model_sum(void)
 			}
 		} else {
 			model = model_val;
+			dbg_env_flag = env_get_ulong("model_env_flag", 16, 0x1);
+			if (dbg_env_flag) {
+				env_set(str, model);
+				sprintf(env_str, "update_env_part -p -f %s", str);
+				run_command(env_str, 0);
+				if (model_debug_flag & DEBUG_NORMAL)
+					ALOGD("%s, update env[%s]=%s\n", __func__, str, model);
+			}
 		}
 		ret = parse_model_sum(i, get_model_sum_path(i), model);
 		if (ret < 0)
