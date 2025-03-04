@@ -139,6 +139,10 @@ int board_init(void)
 
 int board_late_init(void)
 {
+#ifdef CONFIG_AML_USB_BT
+	char *ddr_resume = NULL;
+#endif
+
 	printf("board late init\n");
 	env_set("defenv_para", "-c");
 	aml_board_late_init_front(NULL);
@@ -160,7 +164,10 @@ int board_late_init(void)
 
 #ifdef CONFIG_AML_USB_BT
 	// bt download firmware
-	run_command("usb bt_start", 0);
+	ddr_resume = env_get("ddr_resume");
+
+	if (ddr_resume && ddr_resume[0] == '1')
+		run_command("usb bt_start", 0);
 #endif
 	aml_board_late_init_tail(NULL);
 
