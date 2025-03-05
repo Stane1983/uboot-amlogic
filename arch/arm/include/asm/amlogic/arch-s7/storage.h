@@ -41,6 +41,8 @@
 #define BOOTLOADER_MODE_ADVANCE_INIT		0
 #endif
 
+#define BOOTINFO_PROGRAMMER_SUPPORT		1
+
 #define SPINOR_HAS_BOOTINFO	1
 /*
  * TODO: This is the attribute of nand, it will be moved to the
