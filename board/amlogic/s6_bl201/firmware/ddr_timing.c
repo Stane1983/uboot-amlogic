@@ -114,10 +114,15 @@ DDR_TIMMING_OFFSET(PARA)) << 16) | ((DDR_TIMMING_OFFSET_SIZE(PARA)) << 28) | (VA
 #if 1
 uint32_t __bl2_ddr_reg_data[] __attribute__ ((section(".ddr_2acs_data"))) = {
 	DDR_ID_START_MASK,
-	//DDR_TIMMING_TUNE_ADC_MULT_START(DDR_ID_FROM_ADC_MULT, V4, VX, VX, VX, VX, VX),
+	DDR_TIMMING_TUNE_ADC_MULT_START(DDR_ID_FROM_ADC_MULT, V1, VX, VX, VX, VX, VX),
 	//data start
-	//DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_common_setting.Is2Ttiming, CONFIG_USE_DDR_2T_MODE),
-	//DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_SI_setting_ps.DRAMFreq, 1320),
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_SI_setting_ps.DRAMFreq, 2112),
+	DDR_TIMMING_TUNE_ADC_MULT_START(DDR_ID_FROM_ADC_MULT, V2, VX, VX, VX, VX, VX),
+	//data start
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_SI_setting_ps.DRAMFreq, 2112),
+	DDR_TIMMING_TUNE_ADC_MULT_START(DDR_ID_FROM_ADC_MULT, V3, VX, VX, VX, VX, VX),
+	//data start
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_SI_setting_ps.DRAMFreq, 1848),
 };
 
 ////_ddr_para_2nd_setting
@@ -185,6 +190,7 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		//	(DRAM_SIZE_ID_512MBX0 << CONFIG_CS0_BYTE_23_SIZE_512_ID_OFFSET) +
 		//	(DRAM_SIZE_ID_512MBX0 << CONFIG_CS1_BYTE_01_SIZE_512_ID_OFFSET) +
 		//	(DRAM_SIZE_ID_512MBX0 << CONFIG_CS1_BYTE_23_SIZE_512_ID_OFFSET),
+		.cfg_board_common_setting.rsv_char0 = 0,//use for VDDDDR training voltage offset
 		.cfg_board_common_setting.dram_ch0_size_MB = 0xffff,
 		.cfg_board_common_setting.DisabledDbyte[0] = 0x00,
 		//bit 0 -3 ch0 cs0 ,bit 4-7 ch0 cs1,
@@ -341,6 +347,7 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		//0  force lp4x   1 force lp4
 		//2 auto 4x use nn 4 use pn drivere
 		//3 auto + force 4 4x both use nn driver
+		.cfg_board_common_setting.rsv_char0 = 20,//use for VDDDDR training voltage offset
 		.cfg_board_common_setting.dram_rank_config = CONFIG_DDR0_32BIT_RANK0_CH0,
 		//.cfg_board_common_setting.dram_cs0_base_add = 0,
 		//.cfg_board_common_setting.dram_cs1_base_add = 0,

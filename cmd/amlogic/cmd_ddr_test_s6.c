@@ -1704,6 +1704,12 @@ uint32_t ddr_cacl_phy_over_ride_back_reg(char test_index, uint32_t value)
 		if (value > ((7 << 6) + 63))
 			value = ((7 << 6) + 63);
 		result = (value & 0x3f) + ((value >> 6) << 16);
+		//if (value < 128) {
+		//	result = (value & 0x7f);
+		//} else {
+		//	result = 64 + (value & 0x3f) + (((value >> 6) - 1) << 16);
+		//}
+		// result = (value & 0x7f) + ((value >> 7) << 17);
 	} else if (test_index == DMC_TEST_WINDOW_INDEX_RXENDLY) {
 		if (value > ((31 << 6) + 63))
 			value = ((31 << 6) + 63);
@@ -8977,7 +8983,13 @@ int do_ddr_s5_offset_data(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv
 	check_base_address();
 
 	uint32_t dmc_retraining_ctrl = 0;
+	uint32_t dmc_refresh_ctrl_vt = 0;
 
+	if (p_ddr_base->ddr_dmc_refresh_ctrl_address) {
+		dmc_refresh_ctrl_vt = rd_reg((p_ddr_base->ddr_dmc_refresh_ctrl_address));
+		wr_reg((p_ddr_base->ddr_dmc_refresh_ctrl_address),
+		dmc_refresh_ctrl_vt & (~(1 << 3)));
+	}
 	if (p_ddr_base->ddr_dmc_lpdd4_retraining_address) {
 		dmc_retraining_ctrl = rd_reg((p_ddr_base->ddr_dmc_lpdd4_retraining_address));
 		wr_reg((p_ddr_base->ddr_dmc_lpdd4_retraining_address),
@@ -9150,22 +9162,31 @@ int do_ddr_s5_offset_data(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv
 		if (count > 63)
 			if (test_dq_mask_3 & (1 << (count % 32)))
 				continue;
-		{
+		for (int sub_offset = 0;sub_offset < offset_value; sub_offset++) {
+			if (p_ddr_base->ddr_dmc_refresh_ctrl_address) {
+				wr_reg((p_ddr_base->ddr_dmc_refresh_ctrl_address),
+				dmc_refresh_ctrl_vt & (~(1 << 3)));
+			}
 			if (left_right_flag == DDR_PARAMETER_RIGHT)
 				ddr_reg_increase(test_index,
 						 count,
-						 0, offset_value);
+						 0, 1);
 			if (left_right_flag == DDR_PARAMETER_LEFT)
 				ddr_reg_increase(test_index,
 						 count,
-						 1, offset_value);
+						 1, 1);
+			if (p_ddr_base->ddr_dmc_refresh_ctrl_address) {
+				wr_reg((p_ddr_base->ddr_dmc_refresh_ctrl_address),
+				dmc_refresh_ctrl_vt);
+			}
 		}
 	}
 	writel(ddr_dmc_apd_temp_save, p_ddr_base->ddr_dmc_apd_address);
 	writel(ddr_dmc_asr_temp_save, p_ddr_base->ddr_dmc_asr_address);
 	if (p_ddr_base->ddr_dmc_lpdd4_retraining_address)
-		wr_reg((p_ddr_base->ddr_dmc_lpdd4_retraining_address), dmc_retraining_ctrl);
-
+		wr_reg(p_ddr_base->ddr_dmc_lpdd4_retraining_address, dmc_retraining_ctrl);
+	if (p_ddr_base->ddr_dmc_refresh_ctrl_address)
+		wr_reg(p_ddr_base->ddr_dmc_refresh_ctrl_address, dmc_refresh_ctrl_vt);
 	//if ((p_ddr_base->chip_id == MESON_CPU_MAJOR_ID_T3)) {
 	dmc_ddr_config_channel_id = 0;
 	dmc_change_channel(dmc_ddr_config_channel_id);
