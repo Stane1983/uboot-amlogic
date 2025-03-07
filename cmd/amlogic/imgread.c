@@ -1609,7 +1609,11 @@ static int do_load_logo_from_ext4(cmd_tbl_t *cmdtp, int flag, int argc, char * c
 			cc_enable && strcmp("1", cc_enable) == 0) {
 			env_set("ext4LogoPath", "/logo_files/bootup_lowcurrent.bmp");
 		} else {
-			env_set("ext4LogoPath", "/logo_files/bootup.bmp");
+			tmp = env_get("jpg_logo");
+			if (tmp && strcmp("true", tmp) == 0)
+				env_set("ext4LogoPath", "/logo_files/bootup.jpg");
+			else
+				env_set("ext4LogoPath", "/logo_files/bootup.bmp");
 		}
 	}
 	if (argc > 4) {

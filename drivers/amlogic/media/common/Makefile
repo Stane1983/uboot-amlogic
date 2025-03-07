@@ -2,3 +2,4 @@
 
 obj-$(CONFIG_AML_VPU) += vpu/
 obj-$(CONFIG_AML_VPP) += vpp/
+obj-$(CONFIG_AML_JPEG) += jpeg/

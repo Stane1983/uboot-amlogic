@@ -1,0 +1,4 @@
+config AML_JPEG
+	bool "AML JPEG drivers Support"
+	help
+	  Enable support for the Amlogic JPEG drivers.
