@@ -304,6 +304,16 @@ static void qms_scene_pre_process(struct hdmitx_dev *hdev)
 	};
 	char *mode;
 	int i;
+	char *reboot_mode = NULL;
+	bool recovery_mode = 0;
+
+	reboot_mode = env_get("reboot_mode");
+	if (!reboot_mode) {
+		recovery_mode = false;
+	} else {
+		if ((!strcmp(reboot_mode, "factory_reset")) || (!strcmp(reboot_mode, "update")))
+			recovery_mode = true;
+	}
 
 	/* default as 0 */
 	hdev->qms_en = 0;
@@ -318,7 +328,8 @@ static void qms_scene_pre_process(struct hdmitx_dev *hdev)
 		return;
 
 	/* check uboot environment */
-	if (env_get("qms_en") && (env_get_ulong("qms_en", 10, 0) == 1))
+	/* recovery mode not support qms */
+	if (env_get("qms_en") && (env_get_ulong("qms_en", 10, 0) == 1) && !recovery_mode)
 		env_qms_en = 1;
 	else
 		return;
