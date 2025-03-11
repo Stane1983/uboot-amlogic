@@ -157,6 +157,12 @@ config MEASUREMENT_BOOT_TIME
 	  support print profile time command,
 	  It will display in detail the time nodes of the bootloader phase.
 
+config ENABLE_CC_CONFIG
+	bool "check usb power status"
+	default n
+	help
+	 support get usb power status
+
 #prduct mode start---->
 config NO_FASTBOOT_FLASHING
 	depends on FASTBOOT

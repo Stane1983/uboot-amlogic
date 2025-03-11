@@ -219,7 +219,9 @@ int board_late_init(void)
 	cvbs_init();
 #endif
 	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_e);
+#ifdef CONFIG_ENABLE_CC_CONFIG
 	set_usb_status();
+#endif
 	aml_board_late_init_tail(NULL);
 	return 0;
 }
