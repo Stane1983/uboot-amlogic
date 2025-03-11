@@ -270,30 +270,36 @@ int meson_gpio_direction_output(struct udevice *dev,
 	int ret;
 
 #if defined(CONFIG_AMLOGIC_MODIFY)
+	ret = meson_gpio_calc_reg_and_bit(dev, offset, REG_OUT, &reg, &bit);
+	if (ret)
+		return ret;
+
+	pinctrl_smp_lock();
+	clrsetbits_le32(priv->reg_gpio + reg, BIT(bit), value ? BIT(bit) : 0);
+	pinctrl_smp_unlock();
+
 	ret = meson_gpio_calc_reg_and_bit(dev, offset, REG_DIR, &reg, &bit);
-#else
-	ret = meson_gpio_calc_reg_and_bit(dev->parent, offset, REG_DIR, &reg,
-					  &bit);
-#endif
 	if (ret)
 		return ret;
 
 	pinctrl_smp_lock();
 	clrbits_le32(priv->reg_gpio + reg, BIT(bit));
 	pinctrl_smp_unlock();
-
-#if defined(CONFIG_AMLOGIC_MODIFY)
-	ret = meson_gpio_calc_reg_and_bit(dev, offset, REG_OUT, &reg, &bit);
 #else
-	ret = meson_gpio_calc_reg_and_bit(dev->parent, offset, REG_OUT, &reg,
+	ret = meson_gpio_calc_reg_and_bit(dev->parent, offset, REG_DIR, &reg,
 					  &bit);
-#endif
 	if (ret)
 		return ret;
-	pinctrl_smp_lock();
-	clrsetbits_le32(priv->reg_gpio + reg, BIT(bit), value ? BIT(bit) : 0);
-	pinctrl_smp_unlock();
 
+	clrbits_le32(priv->reg_gpio + reg, BIT(bit));
+
+	ret = meson_gpio_calc_reg_and_bit(dev->parent, offset, REG_OUT, &reg,
+					  &bit);
+	if (ret)
+		return ret;
+
+	clrsetbits_le32(priv->reg_gpio + reg, BIT(bit), value ? BIT(bit) : 0);
+#endif
 	return 0;
 }
 
