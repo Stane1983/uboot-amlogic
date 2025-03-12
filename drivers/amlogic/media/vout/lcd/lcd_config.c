@@ -10,6 +10,7 @@
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include "lcd_reg.h"
 #include "lcd_common.h"
+#include "./connectors/lcd_connector.h"
 #include "env.h"
 #include <command.h>
 
@@ -131,14 +132,16 @@ static void lcd_config_load_print(struct aml_lcd_drv_s *pdrv)
 	}
 
 	pctrl = &pconf->control;
-	if (pconf->basic.lcd_type == LCD_RGB) {
+	switch (pconf->basic.lcd_type) {
+	case LCD_RGB:
 		LCDPR("type = %d\n", pctrl->rgb_cfg.type);
 		LCDPR("clk_pol = %d\n", pctrl->rgb_cfg.clk_pol);
 		LCDPR("de_valid = %d\n", pctrl->rgb_cfg.de_valid);
 		LCDPR("sync_valid = %d\n", pctrl->rgb_cfg.sync_valid);
 		LCDPR("rb_swap = %d\n", pctrl->rgb_cfg.rb_swap);
 		LCDPR("bit_swap = %d\n", pctrl->rgb_cfg.bit_swap);
-	} else if (pconf->basic.lcd_type == LCD_LVDS) {
+		break;
+	case LCD_LVDS:
 		LCDPR("lvds_repack = %d\n", pctrl->lvds_cfg.lvds_repack);
 		LCDPR("pn_swap = %d\n", pctrl->lvds_cfg.pn_swap);
 		LCDPR("dual_port = %d\n", pctrl->lvds_cfg.dual_port);
@@ -146,28 +149,37 @@ static void lcd_config_load_print(struct aml_lcd_drv_s *pdrv)
 		LCDPR("lane_reverse = %d\n", pctrl->lvds_cfg.lane_reverse);
 		LCDPR("phy_vswing = 0x%x\n", pctrl->lvds_cfg.phy_vswing);
 		LCDPR("phy_preem = 0x%x\n", pctrl->lvds_cfg.phy_preem);
-	} else if (pconf->basic.lcd_type == LCD_VBYONE) {
+		break;
+#ifdef CONFIG_AML_LCD_VBYONE
+	case LCD_VBYONE:
 		LCDPR("lane_count = %d\n", pctrl->vbyone_cfg.lane_count);
 		LCDPR("byte_mode = %d\n", pctrl->vbyone_cfg.byte_mode);
 		LCDPR("region_num = %d\n", pctrl->vbyone_cfg.region_num);
 		LCDPR("color_fmt = %d\n", pctrl->vbyone_cfg.color_fmt);
 		LCDPR("phy_vswing = 0x%x\n", pctrl->vbyone_cfg.phy_vswing);
 		LCDPR("phy_preem = 0x%x\n", pctrl->vbyone_cfg.phy_preem);
-	} else if (pconf->basic.lcd_type == LCD_MLVDS) {
+		break;
+#endif
+#ifdef CONFIG_AML_LCD_TCON
+	case LCD_MLVDS:
 		LCDPR("channel_num = %d\n", pctrl->mlvds_cfg.channel_num);
 		LCDPR("channel_sel0 = 0x%x\n", pctrl->mlvds_cfg.channel_sel0);
 		LCDPR("channel_sel1 = 0x%x\n", pctrl->mlvds_cfg.channel_sel1);
 		LCDPR("clk_phase = 0x%x\n", pctrl->mlvds_cfg.clk_phase);
 		LCDPR("phy_vswing = 0x%x\n", pctrl->mlvds_cfg.phy_vswing);
 		LCDPR("phy_preem = 0x%x\n", pctrl->mlvds_cfg.phy_preem);
-	} else if (pconf->basic.lcd_type == LCD_P2P) {
+		break;
+	case LCD_P2P:
 		LCDPR("p2p_type = %d\n", pctrl->p2p_cfg.p2p_type);
 		LCDPR("lane_num = %d\n", pctrl->p2p_cfg.lane_num);
 		LCDPR("channel_sel0 = 0x%x\n", pctrl->p2p_cfg.channel_sel0);
 		LCDPR("channel_sel1 = 0x%x\n", pctrl->p2p_cfg.channel_sel1);
 		LCDPR("phy_vswing = 0x%x\n", pctrl->p2p_cfg.phy_vswing);
 		LCDPR("phy_preem = 0x%x\n", pctrl->p2p_cfg.phy_preem);
-	} else if (pconf->basic.lcd_type == LCD_MIPI) {
+		break;
+#endif
+#ifdef CONFIG_AML_LCD_MIPI_DSI
+	case LCD_MIPI:
 		if (pctrl->mipi_cfg.check_en) {
 			LCDPR("check_reg = 0x%02x\n", pctrl->mipi_cfg.check_reg);
 			LCDPR("check_cnt = %d\n", pctrl->mipi_cfg.check_cnt);
@@ -179,16 +191,10 @@ static void lcd_config_load_print(struct aml_lcd_drv_s *pdrv)
 		LCDPR("video_mode_type = %d\n", pctrl->mipi_cfg.video_mode_type);
 		LCDPR("clk_always_hs = %d\n", pctrl->mipi_cfg.clk_always_hs);
 		LCDPR("extern_init = %d\n", pctrl->mipi_cfg.extern_init);
-	} else if (pconf->basic.lcd_type == LCD_EDP) {
-		LCDPR("max_lane_count = %d\n", pctrl->edp_cfg.max_lane_count);
-		LCDPR("max_link_rate  = %d\n", pctrl->edp_cfg.max_link_rate);
-		LCDPR("training_mode  = %d\n", pctrl->edp_cfg.training_mode);
-		LCDPR("edid_en        = %d\n", pctrl->edp_cfg.edid_en);
-		// LCDPR("sync_clk_mode  = %d\n", pctrl->edp_cfg.sync_clk_mode);
-		LCDPR("lane_count     = %d\n", pctrl->edp_cfg.lane_count);
-		LCDPR("link_rate      = %d\n", pctrl->edp_cfg.link_rate);
-		LCDPR("phy_vswing = 0x%x\n", pctrl->edp_cfg.phy_vswing_preset);
-		LCDPR("phy_preem  = 0x%x\n", pctrl->edp_cfg.phy_preem_preset);
+		break;
+#endif
+	default:
+		break;
 	}
 }
 
@@ -944,6 +950,32 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 	lcd_default_to_basic_timing_init_config(pdrv);
 
 	switch (pconf->basic.lcd_type) {
+	case LCD_RGB:
+		propdata = (char *)fdt_getprop(dt_addr, child_offset, "rgb_attr", NULL);
+		if (!propdata) {
+			LCDERR("[%d]: failed to get rgb_attr\n", pdrv->index);
+			return -1;
+		}
+		pctrl->rgb_cfg.type = be32_to_cpup((u32 *)propdata);
+		pctrl->rgb_cfg.clk_pol = be32_to_cpup((((u32 *)propdata) + 1));
+		pctrl->rgb_cfg.de_valid = be32_to_cpup((((u32 *)propdata) + 2));
+		pctrl->rgb_cfg.sync_valid = be32_to_cpup((((u32 *)propdata) + 3));
+		pctrl->rgb_cfg.rb_swap = be32_to_cpup((((u32 *)propdata) + 4));
+		pctrl->rgb_cfg.bit_swap = be32_to_cpup((((u32 *)propdata) + 5));
+		break;
+	case LCD_BT656:
+	case LCD_BT1120:
+		propdata = (char *)fdt_getprop(dt_addr, child_offset, "bt_attr", NULL);
+		if (!propdata) {
+			LCDERR("[%d]: failed to get bt_attr\n", pdrv->index);
+			return -1;
+		}
+		pctrl->bt_cfg.clk_phase = be32_to_cpup((u32 *)propdata);
+		pctrl->bt_cfg.field_type = be32_to_cpup((((u32 *)propdata) + 1));
+		pctrl->bt_cfg.mode_422 = be32_to_cpup((((u32 *)propdata) + 2));
+		pctrl->bt_cfg.yc_swap = be32_to_cpup((((u32 *)propdata) + 3));
+		pctrl->bt_cfg.cbcr_swap = be32_to_cpup((((u32 *)propdata) + 4));
+		break;
 	case LCD_LVDS:
 		propdata = (char *)fdt_getprop(dt_addr, child_offset, "lvds_attr", &len);
 		if (!propdata) {
@@ -989,6 +1021,7 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 		phy_cfg->ext_pullup = (pctrl->lvds_cfg.phy_vswing >> 4) & 0x3;
 		phy_cfg->preem_level = pctrl->lvds_cfg.phy_preem;
 		break;
+#ifdef CONFIG_AML_LCD_VBYONE
 	case LCD_VBYONE:
 		propdata = (char *)fdt_getprop(dt_addr, child_offset, "vbyone_attr", NULL);
 		if (!propdata) {
@@ -1077,6 +1110,8 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 			}
 		}
 		break;
+#endif
+#ifdef CONFIG_AML_LCD_TCON
 	case LCD_MLVDS:
 		propdata = (char *)fdt_getprop(dt_addr, child_offset, "minilvds_attr", &len);
 		if (!propdata) {
@@ -1145,33 +1180,8 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 		phy_cfg->ext_pullup = (pctrl->p2p_cfg.phy_vswing >> 4) & 0x3;
 		phy_cfg->preem_level = pctrl->p2p_cfg.phy_preem;
 		break;
-#ifdef CONFIG_AML_LCD_TABLET
-	case LCD_RGB:
-		propdata = (char *)fdt_getprop(dt_addr, child_offset, "rgb_attr", NULL);
-		if (!propdata) {
-			LCDERR("[%d]: failed to get rgb_attr\n", pdrv->index);
-			return -1;
-		}
-		pctrl->rgb_cfg.type = be32_to_cpup((u32 *)propdata);
-		pctrl->rgb_cfg.clk_pol = be32_to_cpup((((u32 *)propdata) + 1));
-		pctrl->rgb_cfg.de_valid = be32_to_cpup((((u32 *)propdata) + 2));
-		pctrl->rgb_cfg.sync_valid = be32_to_cpup((((u32 *)propdata) + 3));
-		pctrl->rgb_cfg.rb_swap = be32_to_cpup((((u32 *)propdata) + 4));
-		pctrl->rgb_cfg.bit_swap = be32_to_cpup((((u32 *)propdata) + 5));
-		break;
-	case LCD_BT656:
-	case LCD_BT1120:
-		propdata = (char *)fdt_getprop(dt_addr, child_offset, "bt_attr", NULL);
-		if (!propdata) {
-			LCDERR("[%d]: failed to get bt_attr\n", pdrv->index);
-			return -1;
-		}
-		pctrl->bt_cfg.clk_phase = be32_to_cpup((u32 *)propdata);
-		pctrl->bt_cfg.field_type = be32_to_cpup((((u32 *)propdata) + 1));
-		pctrl->bt_cfg.mode_422 = be32_to_cpup((((u32 *)propdata) + 2));
-		pctrl->bt_cfg.yc_swap = be32_to_cpup((((u32 *)propdata) + 3));
-		pctrl->bt_cfg.cbcr_swap = be32_to_cpup((((u32 *)propdata) + 4));
-		break;
+#endif
+#ifdef CONFIG_AML_LCD_MIPI_DSI
 	case LCD_MIPI:
 		propdata = (char *)fdt_getprop(dt_addr, child_offset, "mipi_attr", NULL);
 		if (!propdata) {
@@ -1214,38 +1224,6 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 
 		phy_cfg->vswing_level = 0;
 		phy_cfg->preem_level = 0;
-		break;
-	case LCD_EDP:
-		propdata = (char *)fdt_getprop(dt_addr, child_offset, "edp_attr", NULL);
-		if (!propdata) {
-			LCDERR("[%d]: failed to get edp_attr\n", pdrv->index);
-			return -1;
-		}
-		pctrl->edp_cfg.max_lane_count = (u8)be32_to_cpup((u32 *)propdata);
-		pctrl->edp_cfg.max_link_rate = (u8)be32_to_cpup((((u32 *)propdata) + 1));
-		pctrl->edp_cfg.max_link_rate =
-			pctrl->edp_cfg.max_link_rate < 0x6 ? 0 : pctrl->edp_cfg.max_link_rate;
-		pctrl->edp_cfg.training_mode = (u8)be32_to_cpup((((u32 *)propdata) + 2));
-		pctrl->edp_cfg.edid_en = (u8)be32_to_cpup((((u32 *)propdata) + 3));
-
-		propdata = (char *)fdt_getprop(dt_addr, child_offset, "phy_attr", NULL);
-		if (!propdata) {
-			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-				LCDPR("[%d]: failed to get phy_attr\n", pdrv->index);
-			pctrl->edp_cfg.phy_vswing_preset = 0x5;
-			pctrl->edp_cfg.phy_preem_preset  = 0x1;
-		} else {
-			pctrl->edp_cfg.phy_vswing_preset = be32_to_cpup((u32 *)propdata);
-			pctrl->edp_cfg.phy_preem_preset  = be32_to_cpup((((u32 *)propdata) + 1));
-			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-				LCDPR("[%d]: set phy vswing=0x%x, preem=0x%x\n",
-				      pdrv->index,
-				      pctrl->edp_cfg.phy_vswing_preset,
-				      pctrl->edp_cfg.phy_preem_preset);
-			}
-		}
-		phy_cfg->vswing_level = pctrl->edp_cfg.phy_vswing_preset & 0xf;
-		phy_cfg->preem_level = pctrl->edp_cfg.phy_preem_preset;
 		break;
 #endif
 	default:
@@ -2044,6 +2022,14 @@ static int lcd_config_load_from_bsp(struct aml_lcd_drv_s *pdrv)
 	lcd_default_to_basic_timing_init_config(pdrv);
 
 	switch (pconf->basic.lcd_type) {
+	case LCD_RGB:
+		pctrl->rgb_cfg.type = ext_lcd->lcd_spc_val0;
+		pctrl->rgb_cfg.clk_pol = ext_lcd->lcd_spc_val1;
+		pctrl->rgb_cfg.de_valid = ext_lcd->lcd_spc_val2;
+		pctrl->rgb_cfg.sync_valid = ext_lcd->lcd_spc_val3;
+		pctrl->rgb_cfg.rb_swap = ext_lcd->lcd_spc_val4;
+		pctrl->rgb_cfg.bit_swap = ext_lcd->lcd_spc_val5;
+		break;
 	case LCD_LVDS:
 		pctrl->lvds_cfg.lvds_repack = ext_lcd->lcd_spc_val0;
 		pctrl->lvds_cfg.dual_port   = ext_lcd->lcd_spc_val1;
@@ -2059,6 +2045,7 @@ static int lcd_config_load_from_bsp(struct aml_lcd_drv_s *pdrv)
 		phy_cfg->ext_pullup = (pctrl->lvds_cfg.phy_vswing >> 4) & 0x3;
 		phy_cfg->preem_level = pctrl->lvds_cfg.phy_preem;
 		break;
+#ifdef CONFIG_AML_LCD_VBYONE
 	case LCD_VBYONE:
 		pctrl->vbyone_cfg.lane_count = ext_lcd->lcd_spc_val0;
 		pctrl->vbyone_cfg.region_num = ext_lcd->lcd_spc_val1;
@@ -2085,6 +2072,8 @@ static int lcd_config_load_from_bsp(struct aml_lcd_drv_s *pdrv)
 		phy_cfg->ext_pullup = (pctrl->vbyone_cfg.phy_vswing >> 4) & 0x3;
 		phy_cfg->preem_level = pctrl->vbyone_cfg.phy_preem;
 		break;
+#endif
+#ifdef CONFIG_AML_LCD_TCON
 	case LCD_MLVDS:
 		pctrl->mlvds_cfg.channel_num = ext_lcd->lcd_spc_val0;
 		pctrl->mlvds_cfg.channel_sel0 = ext_lcd->lcd_spc_val1;
@@ -2113,15 +2102,8 @@ static int lcd_config_load_from_bsp(struct aml_lcd_drv_s *pdrv)
 		phy_cfg->ext_pullup = (pctrl->p2p_cfg.phy_vswing >> 4) & 0x3;
 		phy_cfg->preem_level = pctrl->p2p_cfg.phy_preem;
 		break;
-#ifdef CONFIG_AML_LCD_TABLET
-	case LCD_RGB:
-		pctrl->rgb_cfg.type = ext_lcd->lcd_spc_val0;
-		pctrl->rgb_cfg.clk_pol = ext_lcd->lcd_spc_val1;
-		pctrl->rgb_cfg.de_valid = ext_lcd->lcd_spc_val2;
-		pctrl->rgb_cfg.sync_valid = ext_lcd->lcd_spc_val3;
-		pctrl->rgb_cfg.rb_swap = ext_lcd->lcd_spc_val4;
-		pctrl->rgb_cfg.bit_swap = ext_lcd->lcd_spc_val5;
-		break;
+#endif
+#ifdef CONFIG_AML_LCD_MIPI_DSI
 	case LCD_MIPI:
 		pctrl->mipi_cfg.lane_num = ext_lcd->lcd_spc_val0;
 		pctrl->mipi_cfg.bit_rate_max   = ext_lcd->lcd_spc_val1;
@@ -2153,16 +2135,6 @@ static int lcd_config_load_from_bsp(struct aml_lcd_drv_s *pdrv)
 
 		phy_cfg->vswing_level = 0;
 		phy_cfg->preem_level = 0;
-		break;
-	case LCD_EDP:
-		pctrl->edp_cfg.max_lane_count = ext_lcd->lcd_spc_val0;
-		pctrl->edp_cfg.max_link_rate =
-			ext_lcd->lcd_spc_val1 < 0x6 ? 0 : ext_lcd->lcd_spc_val1;
-		pctrl->edp_cfg.training_mode = ext_lcd->lcd_spc_val2;
-		pctrl->edp_cfg.edid_en = ext_lcd->lcd_spc_val3;
-
-		phy_cfg->vswing_level = pctrl->edp_cfg.phy_vswing_preset;
-		phy_cfg->preem_level = pctrl->edp_cfg.phy_preem_preset;
 		break;
 #endif
 	default:

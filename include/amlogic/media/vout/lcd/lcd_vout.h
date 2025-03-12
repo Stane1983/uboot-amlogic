@@ -785,7 +785,7 @@ struct aml_lcd_drv_s {
 	int  (*outputmode_check)(struct aml_lcd_drv_s *pdrv, char *mode);
 	int  (*config_valid)(struct aml_lcd_drv_s *pdrv, char *mode);
 	void (*driver_init_pre)(struct aml_lcd_drv_s *pdrv);
-	int  (*driver_init)(struct aml_lcd_drv_s *pdrv);
+	void  (*driver_init)(struct aml_lcd_drv_s *pdrv);
 	void (*driver_disable)(struct aml_lcd_drv_s *pdrv);
 	void (*list_support_mode)(struct aml_lcd_drv_s *pdrv);
 #ifdef CONFIG_AML_LCD_TCON
@@ -833,7 +833,7 @@ void aml_lcd_driver_reg_info(int index);
 void aml_lcd_vbyone_rst(int index);
 int aml_lcd_vbyone_cdr(int index);
 int aml_lcd_vbyone_lock(int index);
-int aml_lcd_edp_debug(int index, char *str, int num);
+// int aml_lcd_edp_debug(int index, char *str, int num);
 
 // switch MIPI DSI mode: 0:display, 1:command
 void aml_lcd_mipi_dsi_mode(int index, unsigned char mode);

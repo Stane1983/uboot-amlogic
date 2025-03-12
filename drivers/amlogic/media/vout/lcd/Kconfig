@@ -6,15 +6,25 @@ config AML_LCD
 	help
 	  Support for lcd video output
 
+config AML_LCD_VBYONE
+	bool "V-BY-ONE output for lcd"
+	depends on AML_LCD
+	help
+	  Support for lcd V-BY-ONE output
+
 config AML_LCD_TCON
 	bool "tcon output for lcd"
 	depends on AML_LCD
 	help
 	  Support for lcd tcon output
 
+config AML_LCD_MIPI_DSI
+	bool "MIPI-DSI output for lcd"
+	depends on AML_LCD
+	help
+	  Support for lcd MIPI-DSI output
+
 source "drivers/amlogic/media/vout/lcd/lcd_parser/Kconfig"
-source "drivers/amlogic/media/vout/lcd/lcd_tv/Kconfig"
-source "drivers/amlogic/media/vout/lcd/lcd_tablet/Kconfig"
 source "drivers/amlogic/media/vout/lcd/lcd_extern/Kconfig"
 source "drivers/amlogic/media/vout/lcd/backlight/Kconfig"
 

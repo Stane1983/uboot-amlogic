@@ -8,6 +8,7 @@
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include "../lcd_reg.h"
 #include "../lcd_common.h"
+#include "../connectors/lcd_connector.h"
 #include "lcd_clk_config.h"
 #include "lcd_clk_ctrl.h"
 #include "lcd_clk_utils.h"

@@ -37,7 +37,7 @@ static int mipi_lt070me05_set_level(unsigned int level)
 	level &= 0xff;
 
 	payload[3] = level;
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_MIPI_DSI
 	dsi_write_cmd(&payload[0]);
 #endif
 

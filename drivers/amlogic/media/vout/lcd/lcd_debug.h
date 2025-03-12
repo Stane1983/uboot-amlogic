@@ -15,10 +15,11 @@ struct lcd_debug_info_s {
 	unsigned int *reg_pinmux_table;
 
 	void (*reg_dump_lvds)(struct aml_lcd_drv_s *pdrv);
+#ifdef CONFIG_AML_LCD_VBYONE
 	void (*reg_dump_vbyone)(struct aml_lcd_drv_s *pdrv);
-#ifdef CONFIG_AML_LCD_TABLET
+#endif
+#ifdef CONFIG_AML_LCD_MIPI_DSI
 	void (*reg_dump_mipi)(struct aml_lcd_drv_s *pdrv);
-	void (*reg_dump_edp)(struct aml_lcd_drv_s *pdrv);
 #endif
 #ifdef CONFIG_AML_LCD_TCON
 	void (*reg_dump_mlvds)(struct aml_lcd_drv_s *pdrv);

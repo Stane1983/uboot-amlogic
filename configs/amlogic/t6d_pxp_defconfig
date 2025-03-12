@@ -103,7 +103,5 @@ CONFIG_OF_LIBFDT_OVERLAY=y
 <<<<<<< HEAD
 =======
 CONFIG_AML_LCD=y
-CONFIG_AML_LCD_TV=y
-CONFIG_AML_LCD_TABLET=y
 CONFIG_CMD_SCMI_SHMEM_ADDR=y
 >>>>>>> 554bb33e410 (clk: Update the shared memory address of the SCMI in the DTB [2/3])

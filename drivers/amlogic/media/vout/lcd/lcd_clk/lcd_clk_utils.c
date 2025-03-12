@@ -11,6 +11,7 @@
 #include "lcd_clk_config.h"
 #include "lcd_clk_ctrl.h"
 #include "lcd_clk_utils.h"
+#include "../connectors/lcd_connector.h"
 #include <amlogic/clk_measure.h>
 
 static unsigned int edp_div0_table[15] = {1, 2, 3, 4, 5, 7, 8, 9, 11, 13, 17, 19, 23, 29, 31};
@@ -340,8 +341,8 @@ static int pll_od_setting_generate(struct lcd_clk_config_s *cconf, unsigned long
 		return generate_pll_1od_setting(cconf, pll_fout);
 }
 
+#ifdef CONFIG_AML_LCD_TCON
 /***** calculate 1od and 3od setting @pll_od_setting_generate Done *****/
-
 static int check_vco(struct lcd_clk_config_s *cconf, unsigned long long pll_fvco)
 {
 	struct lcd_clk_data_s *data = cconf->data;
@@ -520,7 +521,9 @@ static int lcd_clk_generate_p2p_without_tcon_div(struct lcd_clk_config_s *cconf,
 p2p_clk_without_tcon_div_done:
 	return done;
 }
+#endif
 
+#ifdef CONFIG_AML_LCD_MIPI_DSI
 #define DSI_CLK_TB_SIZE 32
 /********************** DSI 1PLL model **********************/
 /* PLL_VCO / OD[1/3] / PLL_CLK_DIV(optional) == VID_PLL_CLK */
@@ -551,7 +554,7 @@ static unsigned char lcd_clk_generate_DSI_1PLL(struct aml_lcd_drv_s *pdrv)
 	unsigned long long bitrate_min = 0, bitrate_max;
 	uint8_t port_cnt = dconf->multi_port_cfg & BIT(0) ? 2 : 1;
 
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_MIPI_DSI
 	bitrate_min = lcd_dsi_get_min_bitrate(pdrv);
 #endif
 	bitrate_max = dconf->bit_rate_max;
@@ -650,73 +653,7 @@ dsi_clk_tabel_buffer_full:
 	free(clk_div_tb);
 	return 1;
 }
-
-/* Func: lcd_DP_1PLL_clk_para_cal, strategy: keep phy clk, find the closest pclk */
-/************************* eDP 1PLL model T7 ***********************/
-/* PLL_VCO / tcon_div / edp_div0&1 / PLL_CLK_DIV == VID_PLL_CLK */
-/*              '--> eDP_PHY_clk   .---------------------'      */
-/*                                 '--> / enc_xd == ENCL_clk    */
-/****************************************************************/
-static int lcd_clk_generate_DP_1PLL(struct aml_lcd_drv_s *pdrv)
-{
-	struct lcd_clk_config_s *cconf = get_lcd_clk_config(pdrv);
-	unsigned char clk_level_sel = 0;
-	unsigned int edp_div0, edp_div1, tmp_div;
-	unsigned int min_err_div0 = 0, min_err_div1 = 0, min_err_div = 0;
-	unsigned long long tmp_fout, error, min_err = 1000000000;
-	unsigned long long eDP_PLL_setting_t7[2][3] = {
-		{135, 3240000000ULL, 1620000000ULL},
-		{225, 5400000000ULL, 2700000000ULL},
-	};
-
-	if (!cconf)
-		return 0;
-
-	if (pdrv->config.control.edp_cfg.link_rate == 0x0a) //2.7G
-		clk_level_sel = 1;
-	else
-		clk_level_sel = 0;
-
-	cconf->pll_m    = eDP_PLL_setting_t7[clk_level_sel][0];
-	cconf->pll_fvco = eDP_PLL_setting_t7[clk_level_sel][1];
-	cconf->pll_fout = eDP_PLL_setting_t7[clk_level_sel][2];
-	cconf->phy_clk  = eDP_PLL_setting_t7[clk_level_sel][2];
-	cconf->pll_n    = 1;
-	cconf->pll_frac = 0;
-	cconf->pll_od1_sel = 1;
-	cconf->pll_od2_sel = 0;
-	cconf->pll_od3_sel = 0;
-	cconf->pll_tcon_div_sel = 1;
-	cconf->pll_frac_half_shift = 0;
-	cconf->div_sel = CLK_DIV_SEL_1;
-	cconf->xd = 1;
-
-	for (edp_div0 = 0; edp_div0 < 15; edp_div0++) {
-		for (edp_div1 = 0; edp_div1 < 10; edp_div1++) {
-			tmp_div = edp_div0_table[edp_div0] * edp_div1_table[edp_div1];
-			tmp_fout = lcd_do_div(cconf->pll_fout, tmp_div);
-			error = lcd_diff(tmp_fout, cconf->fout);
-			if (error >= min_err)
-				continue;
-
-			min_err = error;
-			min_err_div0 = edp_div0;
-			min_err_div1 = edp_div1;
-			min_err_div = tmp_div;
-		}
-	}
-	cconf->err_fmin = min_err;
-	cconf->edp_div0 = min_err_div0;
-	cconf->edp_div1 = min_err_div1;
-
-	cconf->fout = lcd_do_div(cconf->pll_fout, min_err_div);
-	pdrv->config.timing.enc_clk = cconf->fout;
-
-	LCDPR("[%d]: PLL_out=%llu div=%u [%u, %u] fout:%u enc_clk=%u error=%llu\n",
-		pdrv->index, cconf->pll_fout, min_err_div, edp_div0_table[min_err_div0],
-		edp_div1_table[min_err_div1], cconf->fout, cconf->fout, min_err);
-	return 1;
-}
+#endif
 
 static int lcd_pll_frac_generate_dependence(struct aml_lcd_drv_s *pdrv)
 {
@@ -966,10 +903,16 @@ void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_clk_config_s *cconf, *phyconf = NULL, *pixconf = NULL;
 	struct lcd_config_s *pconf = &pdrv->config;
-	unsigned long long pll_fout, pll_fvco, bit_rate = 0, clk_div_in;
+	unsigned long long pll_fout, clk_div_in;
 	unsigned int clk_div_out, clk_div_sel, xd, tcon_div_sel = 0, phy_div = 1;
-	unsigned int od1, od2, od3, tmp_clk;
+	unsigned int od1, od2, od3;
 	int done = 0;
+#ifdef CONFIG_AML_LCD_VBYONE
+	unsigned int tmp_clk;
+#endif
+#ifdef CONFIG_AML_LCD_TCON
+	unsigned long long pll_fvco, bit_rate = pconf->timing.bit_rate;
+#endif
 
 	cconf = get_lcd_clk_config(pdrv);
 	if (!cconf)
@@ -986,7 +929,6 @@ void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 			goto generate_clk_dft_done;
 		}
 	}
-	bit_rate = pconf->timing.bit_rate;
 
 	switch (pconf->basic.lcd_type) {
 	case LCD_RGB:
@@ -1079,8 +1021,9 @@ void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 			cconf->phy_clk = cconf->pll_fout;
 		}
 		break;
+#ifdef CONFIG_AML_LCD_VBYONE
 	case LCD_VBYONE:
-		pll_fout = bit_rate;
+		pll_fout = pconf->timing.bit_rate;
 		clk_div_in = pll_fout;
 		if (clk_div_in > cconf->data->div_in_fmax)
 			goto generate_clk_dft_done;
@@ -1148,6 +1091,8 @@ void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 			cconf->phy_clk = cconf->pll_fout;
 		}
 		break;
+#endif
+#ifdef CONFIG_AML_LCD_TCON
 	case LCD_MLVDS:
 		/* must go through div4 for clk phase */
 		if (cconf->data->have_tcon_div == 0) {
@@ -1275,6 +1220,8 @@ void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 				done = lcd_clk_generate_p2p_without_tcon_div(cconf, bit_rate);
 		}
 		break;
+#endif
+#ifdef CONFIG_AML_LCD_MIPI_DSI
 	case LCD_MIPI:
 		if (pdrv->data->chip_type == LCD_CHIP_S6) {
 #ifdef CONFIG_MESON_S6
@@ -1287,9 +1234,7 @@ void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 			// common DSI PLL model already had pll_od_setting_generate
 		}
 		break;
-	case LCD_EDP:
-		done = lcd_clk_generate_DP_1PLL(pdrv);
-		break;
+#endif
 	default:
 		break;
 	}

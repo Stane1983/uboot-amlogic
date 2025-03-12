@@ -804,7 +804,7 @@ static void mipi_dsi_tx_init(struct aml_lcd_drv_s *pdrv)
 
 	pdrv->config.timing.bit_rate = 283500000; //378000000;
 	// pdrv->config.control.mipi_cfg.clk_factor = 6;//8;
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_MIPI_DSI
 	lcd_dsi_tx_ctrl(pdrv, 1);
 #endif
 }
@@ -1137,7 +1137,7 @@ static void vx1_sw_reset(void)
 	lcd_combo_dphy_setb(COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0, 3, 8, 2);
 	lcd_vcbus_write(VBO_SOFT_RST, 0x1ff);
 	udelay(5);
-	/* realease PHY */
+	/* release PHY */
 	lcd_combo_dphy_setb(COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0, 0, 8, 2);
 	lcd_vcbus_write(VBO_SOFT_RST, 0);
 }

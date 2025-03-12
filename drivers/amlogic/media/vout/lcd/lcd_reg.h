@@ -9,7 +9,6 @@
 #include <asm/amlogic/arch/io.h>
 #include <asm/amlogic/arch/secure_apb.h>
 #include <asm/amlogic/arch/vpu_regs.h>
-#include "edp_tx_reg.h"
 #include "lcd_dummy_reg.h"
 
 struct reg_name_set_s {
@@ -744,52 +743,5 @@ static inline int lcd_tcon_check_bits_byte(unsigned int reg,
 
 	return 0;
 }
-
-static inline unsigned int dptx_reg_read(int index, unsigned int reg)
-{
-	unsigned long paddr;
-	unsigned int val;
-
-	if (index)
-		paddr = EDPTX1_BASE + reg;
-	else
-		paddr = EDPTX0_BASE + reg;
-	val = *(volatile unsigned int *)paddr;
-	if (lcd_debug_print_flag & LCD_DBG_PR_REG)
-		printf("%s: [%d][0x%04x]=0x%08x\n", __func__, index, reg, val);
-
-	return val;
-}
-
-static inline void dptx_reg_write(int index, unsigned int reg, unsigned int val)
-{
-	unsigned long paddr;
-
-	if (index)
-		paddr = EDPTX1_BASE + reg;
-	else
-		paddr = EDPTX0_BASE + reg;
-	*(volatile unsigned int *)paddr = (val);
-	if (lcd_debug_print_flag & LCD_DBG_PR_REG)
-		printf("%s: [%d][0x%04x]=0x%08x\n", __func__, index, reg, val);
-}
-
-static inline void dptx_reg_setb(int index, unsigned int reg,
-		unsigned int val, unsigned int start, unsigned int len)
-{
-	dptx_reg_write(index, reg,
-		((dptx_reg_read(index, reg) & ~(((1L << (len)) - 1) << (start))) |
-		(((val) & ((1L << (len)) - 1)) << (start))));
-}
-
-static inline unsigned int dptx_reg_getb(int index, unsigned int reg,
-		unsigned int start, unsigned int len)
-{
-	return (dptx_reg_read(index, reg) >> (start)) & ((1L << (len)) - 1);
-}
-
-#ifdef CONFIG_AML_LCD_TABLET
-int dptx_aux_read(struct aml_lcd_drv_s *pdrv, unsigned int addr, int len, unsigned char *buf);
-#endif
 
 #endif

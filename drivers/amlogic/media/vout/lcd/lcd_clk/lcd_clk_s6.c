@@ -11,6 +11,7 @@
 #include "lcd_clk_config.h"
 #include "lcd_clk_ctrl.h"
 #include "lcd_clk_utils.h"
+#include "../connectors/lcd_connector.h"
 #include <amlogic/clk_measure.h>
 
 #ifdef CONFIG_MESON_S6
@@ -50,7 +51,7 @@ unsigned char lcd_dsi_generate_DSI_PLL_s6_model(struct aml_lcd_drv_s *pdrv)
 
 	unsigned long long bitrate_min = 0, bitrate_max;
 
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_MIPI_DSI
 	bitrate_min = lcd_dsi_get_min_bitrate(pdrv);
 #endif
 	bitrate_max = dconf->bit_rate_max;

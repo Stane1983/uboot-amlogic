@@ -20,6 +20,7 @@
 #endif
 #include "lcd_reg.h"
 #include "lcd_common.h"
+#include "./connectors/lcd_connector.h"
 #include <amlogic/pm.h>
 #include "env.h"
 #include "command.h"
@@ -443,7 +444,7 @@ static void lcd_module_enable(struct aml_lcd_drv_s *pdrv, char *mode)
 		return;
 	}
 	if ((pdrv->status & LCD_STATUS_IF_ON) == 0) {
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_MIPI_DSI
 		if (unlikely(pdrv->mode == LCD_MODE_TABLET &&
 			     pdrv->config.control.mipi_cfg.panel_det_attr & 0x01))
 			lcd_power_ctrl(pdrv, 1);
@@ -515,16 +516,12 @@ static int lcd_mode_init(struct aml_lcd_drv_s *pdrv)
 	}
 
 	switch (pdrv->mode) {
-#ifdef CONFIG_AML_LCD_TV
 	case LCD_MODE_TV:
 		ret = lcd_mode_tv_init(pdrv);
 		break;
-#endif
-#ifdef CONFIG_AML_LCD_TABLET
 	case LCD_MODE_TABLET:
 		ret = lcd_mode_tablet_init(pdrv);
 		break;
-#endif
 	default:
 		LCDERR("[%d]: invalid lcd mode: %d\n", pdrv->index, pdrv->mode);
 		break;
@@ -1230,6 +1227,7 @@ void aml_lcd_config_check(int index)
 
 void aml_lcd_vbyone_rst(int index)
 {
+#ifdef CONFIG_AML_LCD_VBYONE
 	struct aml_lcd_drv_s *pdrv;
 
 	pdrv = lcd_driver_check_valid(index);
@@ -1237,10 +1235,12 @@ void aml_lcd_vbyone_rst(int index)
 		return;
 
 	lcd_vbyone_rst(pdrv);
+#endif
 }
 
 int aml_lcd_vbyone_cdr(int index)
 {
+#ifdef CONFIG_AML_LCD_VBYONE
 	struct aml_lcd_drv_s *pdrv;
 
 	pdrv = lcd_driver_check_valid(index);
@@ -1248,10 +1248,14 @@ int aml_lcd_vbyone_cdr(int index)
 		return -1;
 
 	return lcd_vbyone_cdr(pdrv);
+#else
+	return -1;
+#endif
 }
 
 int aml_lcd_vbyone_lock(int index)
 {
+#ifdef CONFIG_AML_LCD_VBYONE
 	struct aml_lcd_drv_s *pdrv;
 
 	pdrv = lcd_driver_check_valid(index);
@@ -1259,25 +1263,14 @@ int aml_lcd_vbyone_lock(int index)
 		return -1;
 
 	return lcd_vbyone_lock(pdrv);
-}
-
-int aml_lcd_edp_debug(int index, char *str, int num)
-{
-#ifdef CONFIG_AML_LCD_TABLET
-	struct aml_lcd_drv_s *pdrv;
-
-	pdrv = lcd_driver_check_valid(index);
-	if (!pdrv)
-		return -1;
-
-	return eDP_debug_test(pdrv, str, num);
-#endif
+#else
 	return -1;
+#endif
 }
 
 void aml_lcd_mipi_dsi_mode(int index, u8 mode)
 {
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_MIPI_DSI
 	struct aml_lcd_drv_s *pdrv;
 
 	pdrv = lcd_driver_check_valid(index);
@@ -1290,7 +1283,7 @@ void aml_lcd_mipi_dsi_mode(int index, u8 mode)
 
 void aml_lcd_mipi_dsi_dphy_test(int index, unsigned char mode)
 {
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_MIPI_DSI
 	struct aml_lcd_drv_s *pdrv;
 
 	pdrv = lcd_driver_check_valid(index);
@@ -1303,7 +1296,7 @@ void aml_lcd_mipi_dsi_dphy_test(int index, unsigned char mode)
 
 void aml_lcd_mipi_dsi_cmd(int index, u8 *payload)
 {
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_MIPI_DSI
 	struct aml_lcd_drv_s *pdrv;
 
 	pdrv = lcd_driver_check_valid(index);
@@ -1316,7 +1309,7 @@ void aml_lcd_mipi_dsi_cmd(int index, u8 *payload)
 
 int aml_lcd_mipi_dsi_read(int index, u8 *payload, u8 *rd_data, u8 rd_byte_len)
 {
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_MIPI_DSI
 	struct aml_lcd_drv_s *pdrv;
 
 	pdrv = lcd_driver_check_valid(index);
