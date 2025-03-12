@@ -19,6 +19,7 @@ int handle_ini_mem_check(void *inip)
 	char *identifier;
 	unsigned char *p;
 	unsigned int crc32;
+	unsigned char *local_ini_mem = inip;
 
 	//check identifier
 	p = (unsigned char *)inip;
@@ -29,7 +30,12 @@ int handle_ini_mem_check(void *inip)
 	}
 
 	ini_buf = (struct ini_s *)inip;
-	crc32 = cal_CRC32(0, ini_buf->mem, ini_buf->mem_cur_pos);
+	if (ini_buf->mem_start_pos != sizeof(struct ini_s)) {
+		//mem start position not correct
+		return -1;
+	}
+
+	crc32 = cal_CRC32(0, local_ini_mem + ini_buf->mem_start_pos, ini_buf->mem_cur_pos);
 	if (ini_buf->crc32 != crc32) {
 		//not sure ini mem
 		return -1;
@@ -87,11 +93,8 @@ static unsigned char *handle_ini_parser_init(int mem_size)
 	ini_buf->mem_size = total_size - sizeof(struct ini_s);
 	ini_buf->mem_start_pos = sizeof(struct ini_s);
 
-	//init mem pointer
-	ini_buf->mem = local_ini_mem + ini_buf->mem_start_pos;
-
 	//init identifier:
-	identifier = (char *)ini_buf->mem;
+	identifier = (char *)(local_ini_mem + ini_buf->mem_start_pos);
 	strlcpy(identifier, INI_IDENTIFIER_STR, INI_MEM_DATA_OFFSET);
 
 	//init parser data offset
@@ -125,7 +128,8 @@ void *handle_ini_file_parse(const char *filename, int mem_size)
 	if (ret)
 		handle_ini_parser_uninit(local_ini_mem);
 	else
-		ini_buf->crc32 = cal_CRC32(0, ini_buf->mem, ini_buf->mem_cur_pos);
+		ini_buf->crc32 = cal_CRC32(0, local_ini_mem + ini_buf->mem_start_pos,
+						ini_buf->mem_cur_pos);
 
 handle_ini_file_parse_end:
 	memset((void *)tmp_buf, 0, file_size);
@@ -161,7 +165,6 @@ void *handle_ini_parser_dupmem(void *inip, int *buf_size)
 {
 	void *local_ini_mem;
 	struct ini_s *ini_buf;
-	unsigned char *p;
 	int size;
 
 	if (!inip) {
@@ -182,9 +185,7 @@ void *handle_ini_parser_dupmem(void *inip, int *buf_size)
 	ini_buf = (struct ini_s *)local_ini_mem;
 	ini_buf->total_size = size;
 	ini_buf->mem_size = ini_buf->mem_cur_pos;
-	p = (unsigned char *)local_ini_mem;
-	ini_buf->mem = p + ini_buf->mem_start_pos;
-	ini_buf->crc32 = cal_CRC32(0, ini_buf->mem, ini_buf->mem_cur_pos);
+	ini_buf->crc32 = cal_CRC32(0, local_ini_mem + ini_buf->mem_start_pos, ini_buf->mem_cur_pos);
 	*buf_size = size;
 
 	return local_ini_mem;
