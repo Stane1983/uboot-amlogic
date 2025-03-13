@@ -719,7 +719,6 @@ RE_RSV_INFO:
 				pr_info("%s %d blk good but read failed:%llx, %d\n",
 					__func__, __LINE__, (u64)offset, error);
 				rsv_info->nvalid->status |= ECC_ABNORMAL_FLAG;
-				ret = -1;
 				continue;
 			}
 			/* Do not use strlen ,Use ARRAY_SIZE to make the length 4 */
