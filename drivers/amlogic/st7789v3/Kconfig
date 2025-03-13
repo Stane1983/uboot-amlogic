@@ -1,0 +1,4 @@
+config ST7789V3_SPI_LCD
+    bool "ST7789V3_SPI_LCD"
+    help
+        Enable support for st7789v3 spi lcd driver.

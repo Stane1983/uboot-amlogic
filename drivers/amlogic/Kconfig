@@ -53,6 +53,8 @@ source "drivers/amlogic/pm/Kconfig"
 
 source "drivers/amlogic/wifi/Kconfig"
 
+source "drivers/amlogic/st7789v3/Kconfig"
+
 source "drivers/amlogic/efuse/Kconfig"
 
 source "drivers/amlogic/pci/Kconfig"

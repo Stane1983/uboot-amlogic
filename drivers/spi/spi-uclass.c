@@ -657,3 +657,8 @@ U_BOOT_DRIVER(spi_generic_drv) = {
 	.name		= "spi_generic_drv",
 	.id		= UCLASS_SPI_GENERIC,
 };
+
+UCLASS_DRIVER(st7789v3_spi_lcd) ={
+	.id= UCLASS_ST7789V3_SPI_LCD,
+	.name ="st7789v3_spi_lcd",
+};

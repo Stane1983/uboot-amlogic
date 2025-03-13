@@ -1465,6 +1465,12 @@ config CMD_SF_TEST
 	  equal the SPI bus speed for a single-bit-wide SPI bus, assuming
 	  everything is working properly.
 
+config CMD_SPI_LCD_ST7789V3_TEST
+	bool "st7789v3_test - Command to test spi lcd device"
+	depends on SPI
+	help
+	  SPI lcd test command.
+
 config CMD_SPI
 	bool "sspi - Command to access spi device"
 	depends on SPI

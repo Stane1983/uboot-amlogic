@@ -143,6 +143,7 @@ enum uclass_id {
 	UCLASS_W1_EEPROM,	/* one-wire EEPROMs */
 	UCLASS_WDT,		/* Watchdog Timer driver */
 	UCLASS_PVBLOCK,		/* Xen virtual block device */
+	UCLASS_ST7789V3_SPI_LCD,
 
 	UCLASS_COUNT,
 	UCLASS_INVALID = -1,
