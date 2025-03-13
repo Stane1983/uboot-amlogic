@@ -97,7 +97,7 @@
 
 #ifdef CONFIG_BOARD_KERNEL_VERSION_5_4
 #define CONFIG_CONNECTOR_INFO \
-    "lcd_disable_ouputmode_autoset=1\0" \
+    "lcd_disable_outputmode_autoset=1\0" \
     "outputmode=panel1\0" \
     "outputmode2=1080p60hz\0" \
     "connector0_type=VBYONE-B\0" \

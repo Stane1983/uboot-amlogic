@@ -4,17 +4,38 @@ config AML_LCD
 	bool "lcd output for video"
 	depends on AML_VOUT
 	help
-	  Support for lcd video output
+		Support for lcd video output
+		Include LVDS, MIPI-DPI
+
+config AML_LCD_VBYONE
+	bool "V-BY-ONE output for lcd"
+	depends on AML_LCD
+	help
+		Support for lcd V-BY-ONE output
+		Disable to reduce size on chip without V-BY-ONE
 
 config AML_LCD_TCON
 	bool "tcon output for lcd"
 	depends on AML_LCD
 	help
-	  Support for lcd tcon output
+		Support for lcd tcon output
+		Disable to reduce size on chip without tcon
+
+config AML_LCD_MIPI_DSI
+	bool "MIPI-DSI output for lcd"
+	depends on AML_LCD
+	help
+		Support for lcd MIPI-DSI output
+		Disable to reduce size on chip without MIPI-DSI
+
+config AML_LCD_TABLET
+	bool "eDP output for lcd"
+	depends on AML_LCD
+	help
+		Support for lcd eDP output
+		Disable to reduce size on chip without eDP
 
 source "drivers/amlogic/media/vout/lcd/lcd_parser/Kconfig"
-source "drivers/amlogic/media/vout/lcd/lcd_tv/Kconfig"
-source "drivers/amlogic/media/vout/lcd/lcd_tablet/Kconfig"
 source "drivers/amlogic/media/vout/lcd/lcd_extern/Kconfig"
 source "drivers/amlogic/media/vout/lcd/backlight/Kconfig"
 

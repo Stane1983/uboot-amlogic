@@ -11,6 +11,7 @@
 #include "lcd_clk_config.h"
 #include "lcd_clk_ctrl.h"
 #include "lcd_clk_utils.h"
+#include "../connectors/lcd_connector.h"
 
 #ifdef CONFIG_MESON_T3X
 static void lcd_pll_ss_enable(struct aml_lcd_drv_s *pdrv, int status)
@@ -52,7 +53,7 @@ static void lcd_set_pll_ss(struct aml_lcd_drv_s *pdrv, unsigned int ss_flag)
 {
 	struct lcd_clk_config_s *cconf;
 	unsigned int pll_ctrl2, offset;
-	char prt_str[64];
+	char prt_str[64] = "\0";
 	int len = 0, ret;
 
 	cconf = get_lcd_clk_config(pdrv);

@@ -746,6 +746,7 @@ static inline int lcd_tcon_check_bits_byte(unsigned int reg,
 	return 0;
 }
 
+#ifdef CONFIG_AML_LCD_TABLET
 static inline unsigned int dptx_reg_read(int index, unsigned int reg)
 {
 	unsigned long paddr;
@@ -789,7 +790,6 @@ static inline unsigned int dptx_reg_getb(int index, unsigned int reg,
 	return (dptx_reg_read(index, reg) >> (start)) & ((1L << (len)) - 1);
 }
 
-#ifdef CONFIG_AML_LCD_TABLET
 int dptx_aux_read(struct aml_lcd_drv_s *pdrv, unsigned int addr, int len, unsigned char *buf);
 #endif
 

@@ -1134,7 +1134,7 @@ static void vx1_sw_reset(void)
 	lcd_combo_dphy_setb(COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0, 3, 8, 2);
 	lcd_vcbus_write(VBO_SOFT_RST, 0x1ff);
 	udelay(5);
-	/* realease PHY */
+	/* release PHY */
 	lcd_combo_dphy_setb(COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0, 0, 8, 2);
 	lcd_vcbus_write(VBO_SOFT_RST, 0);
 }
@@ -1274,8 +1274,7 @@ static void vx1_control_set(unsigned int lane_count, unsigned int region_num)
 	lcd_vcbus_setb(VBO_VIN_CTRL, vin_bpp, 11, 2);
 
 	vx1_lanes_set(lane_count, region_num);
-	/*set hsync/vsync polarity to let the polarity is low active
-	inside the VbyOne */
+	/*set hsync/vsync polarity to let the polarity is low active inside the VbyOne */
 	vx1_sync_pol(0, 0);
 
 	/* below line copy from simulation */
