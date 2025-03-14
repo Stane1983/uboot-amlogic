@@ -123,7 +123,7 @@ struct json_parse_s *panel_json_parse(int index)
 	/*misc*/
 	panel_json_parse_misc(jsp);
 
-	return 0;
+	return jsp;
 
 panel_json_parse_err2:
 	memset((void *)tmp_buf, 0, file_size);
