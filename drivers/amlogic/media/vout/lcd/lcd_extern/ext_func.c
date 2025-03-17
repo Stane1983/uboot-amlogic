@@ -124,7 +124,7 @@ void lcd_extern_check_add(struct lcd_extern_driver_s *edrv, struct lcd_extern_de
 		edev->check_section_cnt = 1;
 	else
 		edev->check_section_cnt = (check_len - 1) / 2;
-	edev->check_state = 1; //default execute
+	edev->check_state = 0; //default not execution, compatible with multi list case
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 		EXTPR("[%d]: %s: dev[%d]: chk step=%d, sec_cnt=%d, state=%d, retry=%d, dly=%d\n",
 		      edrv->index, __func__, edev->dev_index,
@@ -220,8 +220,10 @@ void lcd_extern_check_handler(struct lcd_extern_driver_s *edrv, struct lcd_exter
 lcd_extern_check_handler_retry:
 	read_buf[0] = read_start;
 	ret = aml_lcd_i2c_read(i2c_bus, i2c_addr, read_buf, read_len);
-	if (ret < 0)
+	if (ret < 0) {
+		edev->check_state = 1;
 		goto lcd_extern_check_handler_end;
+	}
 
 	chk_table = read_buf + read_buf_offset;
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
