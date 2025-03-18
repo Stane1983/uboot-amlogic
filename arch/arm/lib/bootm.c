@@ -706,6 +706,13 @@ static void boot_jump_linux(struct bootm_headers *images, int flag)
 #endif
 
 		DUMP_TE();
+
+	#ifdef CONFIG_SAVE_UBOOT_LOG
+		*((uint32_t *)CONFIG_SAVE_UBOOT_LOG_ADDR) = PERSISTENT_RAM_SIG;
+		*((uint32_t *)(CONFIG_SAVE_UBOOT_LOG_ADDR + offsetof(struct persistent_ram_buffer, data))) =
+			CONFIG_SAVE_UBOOT_LOG_ADDR + offsetof(struct persistent_ram_buffer, data);
+	#endif
+
 		if (images->os.arch == IH_ARCH_ARM) {
 			printf("boot 32bit kernel\n");
 			jump_to_a32_kernel(images->ep, machid, (unsigned long)images->ft_addr);
