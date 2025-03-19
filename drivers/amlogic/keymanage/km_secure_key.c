@@ -120,6 +120,12 @@ int keymanage_secukey_read(const char* keyname, void* databuf,  unsigned buflen)
     return 0;
 }
 
+int keymanage_secukey_total_size(u32 *retval)
+{
+    get_total_size(retval);
+    return 0;
+}
+
 #if 1//hdcp2 rx start
 #define HDCP2_RX_LC128_LEN         (36)
 #define HDCP2_RX_KEY_LEN           (862)

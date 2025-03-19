@@ -468,6 +468,12 @@ int key_manage_query_secure(const char* keyname, int* isSecure)
     return ret;
 }
 
+int key_manage_total_size(u32 *retval)
+{
+    key_unify_total_size(retval);
+    return 0;
+}
+
 int key_manage_query_canOverWrite(const char* keyname, int* canOverWrite)
 {
     return key_unify_query_canOverWrite(keyname, canOverWrite);
@@ -656,39 +662,53 @@ static int do_keyman_query(cmd_tbl_t *cmdtp, int flag, int argc, char * const ar
     return ret;
 }
 
+static int do_keyman_total_size(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+    u32 totalsize;
+
+    if (argc < 1) return CMD_RET_USAGE;
+
+    key_manage_total_size(&totalsize);
+    KM_MSG("key total size is %d\n", totalsize);
+
+    return 0;
+}
+
 static cmd_tbl_t cmd_keyman_sub[] = {
     U_BOOT_CMD_MKENT(init,          3, 0, do_keyman_init, "", ""),
     U_BOOT_CMD_MKENT(exit,          2, 0, do_keyman_exit, "", ""),
     U_BOOT_CMD_MKENT(read,          4, 0, do_keyman_read, "", ""),
     U_BOOT_CMD_MKENT(write,         4, 0, do_keyman_write, "", ""),
     U_BOOT_CMD_MKENT(query,         3, 0, do_keyman_query, "", ""),
+    U_BOOT_CMD_MKENT(totalsize,     1, 0, do_keyman_total_size, "", ""),
 };
 
 static int do_keymanage(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 {
     cmd_tbl_t *c;
 
-    if (argc < 2) return CMD_RET_USAGE;
+    if (argc < 1) return CMD_RET_USAGE;
 
     c = find_cmd_tbl(argv[1], cmd_keyman_sub, ARRAY_SIZE(cmd_keyman_sub));
 
-	if (!c) { return CMD_RET_USAGE;}
+    if (!c) { return CMD_RET_USAGE;}
 
     return	c->cmd(cmdtp, flag, --argc, ++argv);
 }
 
 U_BOOT_CMD(
-   keyman,           //command name
-   5,                   //maxargs
-   0,                   //repeatable
-   do_keymanage,   //command function
-   "Unify key ops interfaces based dts cfg",           //description
-   "    argv:  \n"   //usage
-   "    init seedNum <dtbAddr>\n"
-   "    read keyname addr <hex/str>\n"
-   "    write keyname size addr \n"
-   "    write keyname hex/str value\n"
-   "    query exist/secure/size keyname\n"
-   "    exit \n"
+    keyman,           //command name
+    5,                   //maxargs
+    0,                   //repeatable
+    do_keymanage,   //command function
+    "Unify key ops interfaces based dts cfg",           //description
+    "argv:\n"   //usage
+    "init seedNum <dtbAddr>\n"
+    "read keyname addr <hex/str>\n"
+    "write keyname size addr\n"
+    "write keyname hex/str value\n"
+    "query exist/secure/size keyname\n"
+    "totalsize\n"
+    "exit\n"
 );
 

@@ -58,6 +58,8 @@ static inline ssize_t amlkey_read(const uint8_t *name, uint8_t *buffer, uint32_t
 	return amlkey_if->read(name, buffer, len);
 }
 
+int get_total_size(u32 *retval);
+
 //6.write key with attribute in bytes , return byets readback actually
 	//attr: bit0: secure/non-secure;
 	//		bit8: encrypt/non-encrypt

@@ -46,6 +46,7 @@ ssize_t keymanage_secukey_size(const char* keyname);
 int keymanage_secukey_exist(const char* keyname);
 int keymanage_secukey_can_read(const char* keyname);
 int keymanage_secukey_read(const char* keyname, void* databuf,  unsigned buflen);
+int keymanage_secukey_total_size(u32 *retval);
 
 //provision key ops
 int keymanage_provision_init(const char *buf, int len);

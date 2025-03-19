@@ -33,5 +33,6 @@ int normalkey_add(const u8 *name, u8 *buffer, u32 len, u32 attr);
 int normalkey_del(const u8 *name);
 int normalkey_readfromblock(void *block, unsigned long size);
 int normalkey_writetoblock(void *block, unsigned long size);
+u32 get_normalkey_total_size(void);
 
 #endif

@@ -441,6 +441,12 @@ int key_unify_query_secure(const char* keyname, int* isSecure)
 	return 0;
 }
 
+int key_unify_total_size(u32 *retval)
+{
+	keymanage_secukey_total_size(retval);
+	return 0;
+}
+
 int key_unify_query_canOverWrite(const char* keyname, int* canOverWrite)
 {
     const KmDevKeyOps* theDevOps  = NULL;
@@ -613,6 +619,7 @@ ssize_t keymanage_secukey_size(const char* keyname){ return 0; }
 int keymanage_secukey_exist(const char* keyname){ return 0; }
 int keymanage_secukey_can_read(const char* keyname){ return 0; }
 int keymanage_secukey_read(const char* keyname, void* dataBuf,  unsigned buflen){ return -EINVAL; }
+int keymanage_secukey_total_size(u32 *retval) { return -EINVAL; }
 #endif// #if CONFIG_AML_SECURITY_KEY
 
 #if !defined(CONFIG_EFUSE)
