@@ -34,6 +34,7 @@ extern spin_lock_t unify_lock;
 #define SECUESTORAGE_HEAD_SIZE		(256)
 #define SECUESTORAGE_WHOLE_SIZE		(0x40000)
 
+u32 storagekey_size;
 struct storagekey_info_t {
 	uint8_t * buffer;
 	uint32_t size;
@@ -394,6 +395,7 @@ static int32_t _amlkey_init_normal(uint8_t *seed, uint32_t len, int encrypt_type
 		pr_err("init block key fail\n");
 		goto finish;
 	}
+	storagekey_size = get_normalkey_total_size();
 
 #ifdef CONFIG_STORE_COMPATIBLE
 	info_disprotect &= ~DISPROTECT_KEY;  //protect
@@ -504,6 +506,7 @@ static ssize_t _amlkey_write_normal(const uint8_t *name, uint8_t *buffer,
 		ret = 0;
 		goto unlock;
 	}
+	storagekey_size = get_normalkey_total_size();
 
 	ret = _store_key_write(normal_block,
 			      normal_flashsize,
@@ -610,6 +613,7 @@ int amlkey_if_init(const void* dt_addr)
 	if (inited)
 		return 0;
 	inited = 1;
+	storagekey_size = 0;
 
 	if (secure_storage_getbuffer(&buffer_size)) {
 		amlkey_if = &amlkey_ifs[IFTYPE_SECURE_STORAGE];
@@ -621,4 +625,14 @@ int amlkey_if_init(const void* dt_addr)
 	amlkey_if = &amlkey_ifs[IFTYPE_NORMAL_STORAGE];
 
 	return ret;
+}
+
+int get_total_size(u32 *retval)
+{
+	if (storagekey_size == 0) {
+		pr_err("keysize get fail\n");
+		return -EINVAL;
+	}
+	*retval = storagekey_size;
+	return 0;
 }

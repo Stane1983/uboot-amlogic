@@ -81,6 +81,7 @@ static int blockinited;
 static struct storage_block_raw_head rawhead;
 static struct storage_block_enc_head enchead;
 static char *blockmark = "AMLNORMAL";
+u32 total_size;
 
 #if DBG
 static void dump_mem(const u8 *p, int len);
@@ -511,6 +512,7 @@ int normalkey_readfromblock(void *block, unsigned long size)
 	if (blockinited != 1)
 		return -1;
 
+	total_size = 0;
 	prawhead = (struct storage_block_raw_head *)block;
 	penchead = (u8 *)block + STORAGE_BLOCK_RAW_HEAD_SIZE;
 	pdata = penchead + STORAGE_BLOCK_ENC_HEAD_SIZE;
@@ -581,7 +583,8 @@ int normalkey_readfromblock(void *block, unsigned long size)
 		rawhead.flags |= ERR_DATASZ;
 		return 0;
 	}
-
+	total_size = enchead.blocksize + STORAGE_BLOCK_ENC_HEAD_SIZE +
+	    STORAGE_BLOCK_RAW_HEAD_SIZE;
 	idx = 0;
 	while (idx < enchead.blocksize) {
 		struct storage_object *obj = NULL;
@@ -601,7 +604,6 @@ int normalkey_readfromblock(void *block, unsigned long size)
 			break;
 		}
 		idx += ret;
-
 		normalkey_hash(obj->dataptr, obj->datasize, hash);
 		if (memcmp(hash, obj->hashptr, 32)) {
 			free(obj->dataptr);
@@ -652,6 +654,8 @@ int normalkey_writetoblock(void *block, unsigned long size)
 		rawhead.keycnt++;
 	}
 	enchead.blocksize = idx;
+	total_size = enchead.blocksize + STORAGE_BLOCK_ENC_HEAD_SIZE +
+	    STORAGE_BLOCK_RAW_HEAD_SIZE;
 
 	ret = Tlv_WriteHead(&enchead, penchead, STORAGE_BLOCK_ENC_HEAD_SIZE);
 	if (!ret)
@@ -674,4 +678,9 @@ int normalkey_writetoblock(void *block, unsigned long size)
 #endif
 
 	return 0;
+}
+
+u32 get_normalkey_total_size(void)
+{
+	return total_size;
 }

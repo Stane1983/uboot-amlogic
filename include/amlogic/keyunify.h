@@ -25,6 +25,8 @@ int key_unify_query_secure(const char* keyname, int* isSecure);
 
 int key_unify_query_canOverWrite(const char* keyname, int* canOverWrite);
 
+int key_unify_total_size(u32 *retval);
+
 //Does the key configured in dts
 int key_unify_query_key_has_configure(const char* keyname);
 
@@ -45,6 +47,8 @@ int key_manage_query_exist(const char* keyname, int* exist);
 int key_manage_query_secure(const char* keyname, int* isSecure);
 
 int key_manage_query_canOverWrite(const char* keyname, int* canOverWrite);
+
+int key_manage_total_size(u32 *retval);
 
 #endif// #ifndef __KEYUNIFY_H__
 
