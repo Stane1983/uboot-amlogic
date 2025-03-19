@@ -134,6 +134,7 @@ uint32_t __ddr_parameter_reg_index[] __attribute__ ((section(".ddr_2acs_index"))
 //default 1RANK 16BIT X2 DDR4
 //#define USE_2RANK_16BIT_X2_DDR4 1 //use ap222 board
 //#define ENABLE_8BIT_DDR4_CS0_CS1_SAME_PHASE 1 //t233
+#define ENABLE_8BIT_DDR3 1
 
 ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 #if LPDDR4_SKT
@@ -586,7 +587,7 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 	{
 		.cfg_board_common_setting.timming_magic = 0,
 		.cfg_board_common_setting.timming_max_valid_configs = 1,
-		.cfg_board_common_setting.timming_struct_version = 9215,
+		.cfg_board_common_setting.timming_struct_version = 9469,
 		.cfg_board_common_setting.timming_struct_org_size =
 			sizeof(ddr_set_ps0_only_t),
 		.cfg_board_common_setting.timming_struct_real_size = 0,
@@ -654,7 +655,12 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 			23,	27,	21,	16,	18,	17,	20,	12,	14,	8,	11,
 			4,	1,	2,	13,	9,	24,	25,	28,	29,
 			},
-
+		.cfg_board_common_setting.ddr_dq_remap = {
+			7, 1, 6, 4, 2, 5, 0, 3, 32, 12,
+			14, 8, 10, 33, 15, 13, 9, 11, 20, 22, 23,
+			18, 34, 16, 21, 19, 17, 30, 35, 26, 29, 25,
+			27, 28, 31, 24,
+		},
 		//.cfg_ddr_training_delay_ps.tx_offset[0] = (0 << 7) | 0x0,
 		//.cfg_ddr_training_delay_ps.rx_offset[0] = (0 << 7) | 0x0,
 		.cfg_ddr_training_delay_ps.reserve_para[0] = (1 << 7) | 0x8,     //write dqs
@@ -705,6 +711,11 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		.cfg_ddr_training_delay_ps.ac_trace_delay[29] = 256 + AC_OFF_D3,
 
 		.cfg_ddr_training_delay_ps.ac_trace_delay[7] = 128 - 20 + AC_OFF_D3,
+
+		#ifdef ENABLE_8BIT_DDR3
+		.cfg_ddr_training_delay_ps.ac_trace_delay[7] = 128 - 56 + AC_OFF_D3,
+		#endif
+
 		//.cfg_ddr_training_delay_ps.ac_trace_delay[11] = 90 + AC_OFF_D3,
 		.cfg_ddr_training_delay_ps.ac_trace_delay[9] = 128 + AC_OFF_D3,
 		.cfg_ddr_training_delay_ps.ac_trace_delay[10] = 128 + AC_OFF_D3,
