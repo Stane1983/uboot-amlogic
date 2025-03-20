@@ -44,7 +44,5 @@ int cpu_suspend(unsigned long arg)
 			ret = -EOPNOTSUPP;
 	}
 
-	extern void enable_caches(void);
-	enable_caches();
 	return ret;
 }
