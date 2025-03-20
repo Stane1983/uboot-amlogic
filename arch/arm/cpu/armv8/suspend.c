@@ -12,13 +12,6 @@
  */
 
 unsigned long sleep_save_stash;
-int icache_flag;
-int dcache_flag;
-
-extern int dcache_status(void);
-extern void dcache_enable(void);
-extern void icache_enable(void);
-extern int icache_status(void);
 
 /*
  * cpu_suspend
@@ -34,8 +27,7 @@ int cpu_suspend(unsigned long arg)
 	struct sleep_stack_data state;
 
 	printf("enter %s %d\n", __func__, __LINE__);
-	icache_flag = icache_status();
-	dcache_flag = dcache_status();
+
 	if (__cpu_suspend_enter(&state)) {
 		printf("enter %s %d\n", __func__, __LINE__);
 		/* Call the suspend finisher */
@@ -51,12 +43,6 @@ int cpu_suspend(unsigned long arg)
 		if (!ret)
 			ret = -EOPNOTSUPP;
 	}
-
-	if (icache_flag)
-		icache_enable();
-
-	if (dcache_flag)
-		dcache_enable();
 
 	return ret;
 }

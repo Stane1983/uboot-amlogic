@@ -32,6 +32,8 @@ SYM_FUNC_START(cpu_do_suspend)
 	mrs	x11, sctlr_el1
 	mrs	x12, tpidr_el2
 	mrs	x13, sp_el1
+	mrs	x14, ttbr0_el2
+	mrs	x15, mair_el2
 
 	stp	x2, x3, [x0]
 	stp	x4, x5, [x0, #16]
@@ -39,12 +41,13 @@ SYM_FUNC_START(cpu_do_suspend)
 	stp	x8, x9, [x0, #48]
 	stp	x10, x11, [x0, #64]
 	stp	x12, x13, [x0, #80]
+	stp	x14, x15, [x0, #96]
 
 	/*
 	 * Save x18 as it may be used as a platform register, e.g. by shadow
 	 * call stack.
 	 */
-	str	x18, [x0, #96]
+	str	x18, [x0, #112]
 	ret
 SYM_FUNC_END(cpu_do_suspend)
 
@@ -62,15 +65,22 @@ SYM_FUNC_START(cpu_do_resume)
 	ldp	x9, x10, [x0, #48]
 	ldp	x11, x12, [x0, #64]
 	ldp	x13, x14, [x0, #80]
+	ldp	x15, x16, [x0, #96]
 
 	/*
 	 * Restore x18, as it may be used as a platform register, and clear
 	 * the buffer to minimize the risk of exposure when used for shadow
 	 * call stack.
 	 */
-	ldr	x18, [x0, #96]
-	str	xzr, [x0, #96]
+	ldr	x18, [x0, #112]
+	str	xzr, [x0, #112]
 
+	/* restore mmu registers */
+	msr	ttbr0_el2, x15
+	msr	tcr_el2, x3
+	msr	mair_el2, x16
+
+	msr	sctlr_el2, x2
 	msr	tcr_el2, x3
 	msr	vbar_el2, x4
 	msr	cpacr_el1, x6
@@ -141,6 +151,10 @@ SYM_FUNC_START(__cpu_suspend_enter)
 SYM_FUNC_END(__cpu_suspend_enter)
 
 SYM_CODE_START(cpu_resume)
+	/* invalidate el2 tlb entries. */
+	tlbi	alle2
+	dsb	sy
+	isb
 
 	ldr	x8, =_cpu_resume
 	br	x8

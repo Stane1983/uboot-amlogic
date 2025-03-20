@@ -62,11 +62,11 @@
 #define CPU_BOOT_STACK 0 /* offsetof(struct secondary_data, stack) */
 #define CPU_BOOT_TASK 8 /* offsetof(struct secondary_data, task) */
 
-#define CPU_CTX_SP 104 /* offsetof(struct cpu_suspend_ctx, sp) */
+#define CPU_CTX_SP 120 /* offsetof(struct cpu_suspend_ctx, sp) */
 #define MPIDR_HASH_MASK 0 /* offsetof(struct mpidr_hash, mask) */
 #define MPIDR_HASH_SHIFTS 8 /* offsetof(struct mpidr_hash, shift_aff) */
 #define SLEEP_STACK_DATA_SYSTEM_REGS 0 /* offsetof(struct sleep_stack_data, system_regs) */
-#define SLEEP_STACK_DATA_CALLEE_REGS 112 /* offsetof(struct sleep_stack_data, callee_saved_regs) */
+#define SLEEP_STACK_DATA_CALLEE_REGS 128 /* offsetof(struct sleep_stack_data, callee_saved_regs) */
 #define ARM_SMCCC_RES_X0_OFFS 0 /* offsetof(struct arm_smccc_res, a0) */
 #define ARM_SMCCC_RES_X2_OFFS 16 /* offsetof(struct arm_smccc_res, a2) */
 #define ARM_SMCCC_QUIRK_ID_OFFS 0 /* offsetof(struct arm_smccc_quirk, id) */
