@@ -587,7 +587,8 @@ void fastboot_mmc_erase(const char *cmd, char *response)
 #else
 	fastboot_fail("dtb is bind in kernel, return", response);
 #endif
-	} else if (!strncmp(cmd, "bootloader", strlen("bootloader"))) {
+	} else if (strcmp(cmd, "bootloader") == 0 ||
+		strcmp(cmd, "bootloader-boot0") == 0 || strcmp(cmd, "bootloader-boot1") == 0) {
 		fb_mmc_erase_bootloader(cmd, dev_desc, response);
 		return;
 	} else {
