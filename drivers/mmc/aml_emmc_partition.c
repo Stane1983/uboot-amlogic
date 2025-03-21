@@ -2112,6 +2112,22 @@ _out:
 	return partition;
 }
 
+struct partitions *find_ept_partition_by_name(char const *name)
+{
+	struct partitions *partition = NULL;
+
+	apt_info("p_iptbl_ept %p\n", p_iptbl_ept);
+	if (!p_iptbl_ept)
+		goto _out;
+
+	partition = p_iptbl_ept->partitions;
+	partition = _find_partition_by_name(partition,
+			p_iptbl_ept->count, name);
+	apt_info("partition %p\n", partition);
+_out:
+	return partition;
+}
+
 /*
  find virtual partition in inherent table.
 */
@@ -2310,4 +2326,32 @@ __weak struct partitions *get_partition_info_by_num(const int num)
 
 _out:
 	return partition;
+}
+
+u64 map_last_gap(struct mmc *mmc, const char *name)
+{
+	u64 lubyte;
+	u64 last_byte;
+	struct blk_desc *dev_desc = mmc_get_blk_desc(mmc);
+	int count = p_iptbl_ept->count;
+	struct partitions *partitions = p_iptbl_ept->partitions;
+
+	lubyte = partitions[count - 1].offset + partitions[count - 1].size;
+	last_byte = dev_desc->lba << 9ULL;
+
+	if (lubyte >  last_byte)
+		return 0;
+	else if (last_byte - lubyte < SZ_1M)
+		return 0;
+
+	if (!strcmp(name, MMC_PATTERN_NAME))
+		return lubyte;
+	else if (!strcmp(name, MMC_MAGIC_NAME))
+		return lubyte + CALI_PATTERN_SIZE;
+	else if (!strcmp(name, MMC_RANDOM_NAME))
+		return lubyte + CALI_PATTERN_SIZE + MAGIC_SIZE;
+	else if (!strcmp(name, MMC_DDR_PARAMETER_NAME))
+		return lubyte + CALI_PATTERN_SIZE +  MAGIC_SIZE + RANDOM_SIZE;
+	else
+		return 0;
 }

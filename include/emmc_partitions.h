@@ -320,6 +320,9 @@ int mmc_device_init (struct mmc *mmc);
 int get_ept_from_gpt(struct mmc *mmc);
 int get_emmc_tuning_para_offset(void);
 
+u64 map_last_gap(struct mmc *mmc, const char *name);
+struct partitions *find_ept_partition_by_name(char const *name);
+
 #define PARTITION_ELEMENT(na, sz, flags) {.name = na, .size = sz, .mask_flags = flags,}
 
 #endif
