@@ -104,8 +104,12 @@ void str_add_reg_sets(struct aml_lcd_drv_s *pdrv,
 static void lcd_timing_info_print(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_config_s *pconf = &pdrv->config;
+	struct lcd_clk_config_s *cconf = get_lcd_clk_config(pdrv);
 	int i = 0, base_id = 0;
 	struct lcd_detail_timing_s *dt, *base, *dft;
+
+	if (!cconf)
+		return;
 
 	base = pconf->timing.base_timing;
 	dft = pconf->timing.dft_timing;
@@ -136,7 +140,7 @@ static void lcd_timing_info_print(struct aml_lcd_drv_s *pdrv)
 		pconf->timing.pll_ctrl, pconf->timing.div_ctrl,
 		pconf->timing.clk_ctrl);
 
-	if (pconf->timing.clk_mode == LCD_CLK_MODE_INDEPENDENCE) {
+	if (cconf->pll_mode & LCD_PLL_MODE_DUAL_PLL) {
 		printf("pll_ctrl2      0x%08x\n"
 			"div_ctrl2      0x%08x\n"
 			"clk_ctrl2      0x%08x\n",
@@ -508,7 +512,7 @@ void lcd_info_print(struct aml_lcd_drv_s *pdrv)
 		pconf->timing.act_timing.h_active, pconf->timing.act_timing.v_active,
 		(sync_duration / 100), (sync_duration % 100),
 		pconf->timing.act_timing.pixel_clk, pconf->timing.enc_clk,
-		(pconf->timing.clk_mode ? "independence" : "dependence"),
+		(pconf->timing.clk_mode ? "adaptive" : "fixed"),
 		pconf->timing.clk_mode, pconf->timing.ss_level,
 		pconf->timing.ss_freq, pconf->timing.ss_mode,
 		pconf->timing.act_timing.fr_adjust_type);

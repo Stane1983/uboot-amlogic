@@ -365,87 +365,58 @@ int aml_lcd_prbs_test(struct aml_lcd_drv_s *pdrv, unsigned int ms, unsigned int 
 	return 0;
 }
 
-static int lcd_clk_config_chip_init(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf)
+void lcd_clk_config_probe(struct aml_lcd_drv_s *pdrv)
 {
+	struct lcd_clk_config_s *cconf;
 	unsigned int i;
+
+
+	switch (pdrv->data->chip_type) {
+#ifdef CONFIG_MESON_T5M
+	case LCD_CHIP_T5M: //same as t3, but only support 1 driver
+		cconf = lcd_clk_config_chip_init_t5m(pdrv);
+		break;
+#endif
+#ifdef CONFIG_MESON_T3X
+	case LCD_CHIP_T3X:
+		cconf = lcd_clk_config_chip_init_t3x(pdrv);
+		break;
+#endif
+#ifdef CONFIG_MESON_A4
+	case LCD_CHIP_A4:
+		cconf = lcd_clk_config_chip_init_a4(pdrv);
+		break;
+#endif
+#ifdef CONFIG_MESON_TXHD2
+	case LCD_CHIP_TXHD2:
+		cconf = lcd_clk_config_chip_init_txhd2(pdrv);
+		break;
+#endif
+#ifdef CONFIG_MESON_S6
+	case LCD_CHIP_S6:
+		cconf = lcd_clk_config_chip_init_s6(pdrv);
+		break;
+#endif
+#if (IS_ENABLED(CONFIG_MESON_T6D)) || (IS_ENABLED(CONFIG_MESON_T6W))
+	case LCD_CHIP_T6D:
+		cconf = lcd_clk_config_chip_init_t6d_t6w(pdrv);
+		break;
+#endif
+	default:
+		LCDPR("[%d]: %s: invalid chip type\n", pdrv->index, __func__);
+		return;
+	}
+
+	if (!cconf || !pdrv->clk_conf_num)
+		return;
 
 	for (i = 0; i < pdrv->clk_conf_num; i++) {
 		cconf[i].pll_id = pdrv->index + i;
 		cconf[i].fin = FIN_FREQ;
 	}
 
-	switch (pdrv->data->chip_type) {
-#ifdef CONFIG_MESON_T5M
-	case LCD_CHIP_T5M: //same as t3, but only support 1 driver
-		lcd_clk_config_chip_init_t5m(pdrv, cconf);
-		break;
-#endif
-#ifdef CONFIG_MESON_T3X
-	case LCD_CHIP_T3X:
-		lcd_clk_config_chip_init_t3x(pdrv, cconf);
-		break;
-#endif
-#ifdef CONFIG_MESON_A4
-	case LCD_CHIP_A4:
-		lcd_clk_config_chip_init_a4(pdrv, cconf);
-		break;
-#endif
-#ifdef CONFIG_MESON_TXHD2
-	case LCD_CHIP_TXHD2:
-		lcd_clk_config_chip_init_txhd2(pdrv, cconf);
-		break;
-#endif
-#ifdef CONFIG_MESON_S6
-	case LCD_CHIP_S6:
-		lcd_clk_config_chip_init_s6(pdrv, cconf);
-		break;
-#endif
-#if (IS_ENABLED(CONFIG_MESON_T6D))
-	case LCD_CHIP_T6D:
-		lcd_clk_config_chip_init_t6d(pdrv, cconf);
-		break;
-#endif
-#if (IS_ENABLED(CONFIG_MESON_T6W))
-	case LCD_CHIP_T6W:
-		lcd_clk_config_chip_init_t6d(pdrv, cconf);
-		break;
-#endif
-
-	default:
-		LCDPR("[%d]: %s: invalid chip type\n", pdrv->index, __func__);
-		return -1;
-	}
-
 	if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
 		if (cconf->data->clk_config_init_print)
 			cconf->data->clk_config_init_print(pdrv);
 	}
-
-	return 0;
-}
-
-void lcd_clk_config_probe(struct aml_lcd_drv_s *pdrv)
-{
-	struct lcd_clk_config_s *cconf;
-	unsigned int size;
-
-	if (pdrv->config.timing.clk_mode == LCD_CLK_MODE_INDEPENDENCE)
-		pdrv->clk_conf_num = 2;
-	else
-		pdrv->clk_conf_num = 1;
-	size = pdrv->clk_conf_num * sizeof(struct lcd_clk_config_s);
-
-	if (!pdrv->clk_conf) {
-		cconf = (struct lcd_clk_config_s *)malloc(size);
-		if (!cconf) {
-			LCDERR("[%d]: %s: Not enough memory\n", pdrv->index, __func__);
-			return;
-		}
-		pdrv->clk_conf = (void *)cconf;
-	} else {
-		cconf = (struct lcd_clk_config_s *)pdrv->clk_conf;
-	}
-	memset(cconf, 0, size);
-
-	lcd_clk_config_chip_init(pdrv, cconf);
 }

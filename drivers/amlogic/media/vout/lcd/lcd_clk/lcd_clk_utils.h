@@ -45,28 +45,29 @@ void lcd_set_vclk_crt_dft(struct aml_lcd_drv_s *pdrv);
 #ifdef CONFIG_MESON_S6
 unsigned char lcd_dsi_generate_DSI_PLL_s6_model(struct aml_lcd_drv_s *pdrv);
 #endif
+int pll_od_setting_generate(struct lcd_clk_config_s *cconf, unsigned long long pll_fout);
 
 /* ****************************************************
  * lcd clk chip init help func
  * ****************************************************
  */
 #ifdef CONFIG_MESON_T5M
-void lcd_clk_config_chip_init_t5m(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
+struct lcd_clk_config_s *lcd_clk_config_chip_init_t5m(struct aml_lcd_drv_s *pdrv);
 #endif
 #ifdef CONFIG_MESON_T3X
-void lcd_clk_config_chip_init_t3x(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
+struct lcd_clk_config_s *lcd_clk_config_s *lcd_clk_config_chip_init_t3x(struct aml_lcd_drv_s *pdrv);
 #endif
 #ifdef CONFIG_MESON_A4
-void lcd_clk_config_chip_init_a4(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
+struct lcd_clk_config_s *lcd_clk_config_chip_init_a4(struct aml_lcd_drv_s *pdrv);
 #endif
 #ifdef CONFIG_MESON_TXHD2
-void lcd_clk_config_chip_init_txhd2(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
+struct lcd_clk_config_s *lcd_clk_config_chip_init_txhd2(struct aml_lcd_drv_s *pdrv);
 #endif
 #ifdef CONFIG_MESON_S6
-void lcd_clk_config_chip_init_s6(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
+struct lcd_clk_config_s *lcd_clk_config_chip_init_s6(struct aml_lcd_drv_s *pdrv);
 #endif
 #if defined(CONFIG_MESON_T6D) || defined(CONFIG_MESON_T6W)
-void lcd_clk_config_chip_init_t6d(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
+struct lcd_clk_config_s *lcd_clk_config_chip_init_t6d_t6w(struct aml_lcd_drv_s *pdrv);
 #endif
 
 unsigned long long lcd_abs(unsigned long long a, unsigned long long b);

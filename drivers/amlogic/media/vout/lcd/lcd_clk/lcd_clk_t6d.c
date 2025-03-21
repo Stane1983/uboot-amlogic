@@ -614,10 +614,92 @@ static struct lcd_clk_data_s lcd_clk_data_t6d = {
 	.prbs_test = lcd_clk_prbs_test_t6d,
 };
 
-void lcd_clk_config_chip_init_t6d(struct aml_lcd_drv_s *pdrv,
-				  struct lcd_clk_config_s *cconf)
+static struct lcd_clk_data_s lcd_clk_data_gp2_t6w = {
+	.pll_od_fb = 0,
+	.pll_m_max = 511,
+	.pll_m_min = 2,
+	.pll_n_max = 1,
+	.pll_n_min = 1,
+	.pll_frac_range = (1 << 17),
+	.pll_frac_sign_bit = 18,
+	.pll_od_sel_max = 3,
+	.pll_ref_fmax = 25000000,
+	.pll_ref_fmin = 5000000,
+	.pll_vco_fmax = 6000000000ULL,
+	.pll_vco_fmin = 3000000000ULL,
+	.pll_out_fmax = 3100000000ULL,
+	.pll_out_fmin = 187500000,
+	.div_in_fmax = 3100000000ULL,
+	.div_out_fmax = 820000000,
+	.xd_out_fmax = 820000000,
+	.od_cnt = 1,
+	.have_tcon_div = 0,
+	.phy_clk_location = 0,
+
+	.vclk_sel = 3,
+	.enc_clk_msr_id = 222,
+	.fifo_clk_msr_id = 86,
+
+	.div_sel_max = CLK_DIV_SEL_MAX,
+	.xd_max = 256,
+	.phy_div_max = 256,
+
+	.ss_support = 1,
+	.ss_level_max = 60,
+	.ss_freq_max = 6,
+	.ss_mode_max = 2,
+	.ss_dep_base = 500, //ppm
+	.ss_dep_sel_max = 12,
+	.ss_str_m_max = 10,
+
+	.clk_parameter_init = NULL,
+	.clk_generate_parameter = lcd_clk_generate_dft,
+	.pll_frac_generate = lcd_pll_frac_generate_dft,
+	.set_ss = lcd_set_pll_ss_t6d,
+	.clk_ss_enable = lcd_pll_ss_enable_t6d,
+	.pll_frac_set = lcd_pll_frac_set_t6d,
+	.clk_set = lcd_clk_set_t6d,
+	.vclk_crt_set = lcd_set_vclk_crt_t6d,
+	.clk_disable = lcd_clk_disable_t6d,
+	.clktree_set = lcd_clktree_set_t6d,
+	.clk_config_init_print = lcd_clk_config_init_print_dft,
+	.clk_config_print = lcd_clk_config_print_dft,
+	.clk_reg_print = lcd_clk_reg_dump,
+	.prbs_test = lcd_clk_prbs_test_t6d,
+};
+
+struct lcd_clk_config_s *lcd_clk_config_chip_init_t6d_t6w(struct aml_lcd_drv_s *pdrv)
 {
-	cconf->data = &lcd_clk_data_t6d;
-	cconf->pll_od_fb = lcd_clk_data_t6d.pll_od_fb;
+	struct lcd_clk_config_s *cconf;
+	unsigned int size;
+
+	if (!pdrv)
+		return NULL;
+
+	if (!pdrv->clk_conf) {
+		if (pdrv->data->chip_type == LCD_CHIP_T6D)
+			pdrv->clk_conf_num = 1;
+		else
+			pdrv->clk_conf_num = 2;
+		size = pdrv->clk_conf_num * sizeof(struct lcd_clk_config_s);
+		cconf = (struct lcd_clk_config_s *)malloc(size);
+		if (!cconf) {
+			LCDERR("[%d]: %s: Not enough memory\n", pdrv->index, __func__);
+			return NULL;
+		}
+		pdrv->clk_conf = (void *)cconf;
+	} else {
+		size = pdrv->clk_conf_num * sizeof(struct lcd_clk_config_s);
+		cconf = (struct lcd_clk_config_s *)pdrv->clk_conf;
+	}
+	memset(cconf, 0, size);
+	cconf[0].data = &lcd_clk_data_t6d;
+	cconf[0].pll_od_fb = lcd_clk_data_t6d.pll_od_fb;
+	if (pdrv->data->chip_type == LCD_CHIP_T6W) {
+		cconf[1].data = &lcd_clk_data_gp2_t6w;
+		cconf[1].pll_od_fb = lcd_clk_data_gp2_t6w.pll_od_fb;
+	}
+	return cconf;
 }
+
 #endif
