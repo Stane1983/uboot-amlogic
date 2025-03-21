@@ -783,7 +783,9 @@ void fastboot_mmc_erase(const char *cmd, char *response)
 		}
 #endif
 
-	if (!strncmp(cmd, "bootloader", strlen("bootloader"))) {
+	if (strcmp(cmd, "bootloader") == 0 ||
+	    strcmp(cmd, "bootloader-boot0") == 0 ||
+	    strcmp(cmd, "bootloader-boot1") == 0) {
 		dev_desc = fastboot_mmc_get_dev(response);
 		if (!dev_desc)
 			return;
