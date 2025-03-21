@@ -46,29 +46,29 @@ void lcd_set_vclk_crt_dft(struct aml_lcd_drv_s *pdrv);
  * ****************************************************
  */
 #ifdef CONFIG_MESON_C3
-void lcd_clk_config_chip_init_c3(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
+struct lcd_clk_config_s *lcd_clk_config_chip_init_c3(struct aml_lcd_drv_s *pdrv);
 #endif
 #if defined(CONFIG_MESON_G12A) || defined(CONFIG_MESON_G12B) || defined(CONFIG_MESON_SM1)
-void lcd_clk_config_chip_init_g12a(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
-void lcd_clk_config_chip_init_g12b(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
+struct lcd_clk_config_s *lcd_clk_config_chip_init_g12a(struct aml_lcd_drv_s *pdrv);
+struct lcd_clk_config_s *lcd_clk_config_chip_init_g12b(struct aml_lcd_drv_s *pdrv);
 #endif
 #ifdef CONFIG_MESON_T7
-void lcd_clk_config_chip_init_t7(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
+struct lcd_clk_config_s *lcd_clk_config_chip_init_t7(struct aml_lcd_drv_s *pdrv);
 #endif
 #if defined(CONFIG_MESON_T3) || defined(CONFIG_MESON_T5M)
-void lcd_clk_config_chip_init_t3(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
+struct lcd_clk_config_s *lcd_clk_config_chip_init_t3(struct aml_lcd_drv_s *pdrv);
 #endif
 #ifdef CONFIG_MESON_T3X
-void lcd_clk_config_chip_init_t3x(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
+struct lcd_clk_config_s *lcd_clk_config_chip_init_t3x(struct aml_lcd_drv_s *pdrv);
 #endif
 #ifdef CONFIG_MESON_T5W
-void lcd_clk_config_chip_init_t5w(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
+struct lcd_clk_config_s *lcd_clk_config_chip_init_t5w(struct aml_lcd_drv_s *pdrv);
 #endif
 #ifdef CONFIG_MESON_A4
-void lcd_clk_config_chip_init_a4(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
+struct lcd_clk_config_s *lcd_clk_config_chip_init_a4(struct aml_lcd_drv_s *pdrv);
 #endif
 #ifdef CONFIG_MESON_TXHD2
-void lcd_clk_config_chip_init_txhd2(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf);
+struct lcd_clk_config_s *lcd_clk_config_chip_init_txhd2(struct aml_lcd_drv_s *pdrv);
 #endif
 
 unsigned long long lcd_abs(unsigned long long a, unsigned long long b);

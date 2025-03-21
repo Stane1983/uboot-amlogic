@@ -787,8 +787,27 @@ static struct lcd_clk_data_s lcd_clk_data_g12b_path1 = { //GP0
 	.prbs_test = NULL,
 };
 
-void lcd_clk_config_chip_init_g12a(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf)
+struct lcd_clk_config_s *lcd_clk_config_chip_init_g12a(struct aml_lcd_drv_s *pdrv)
 {
+	struct lcd_clk_config_s *cconf;
+	unsigned int size;
+
+	if (!pdrv)
+		return NULL;
+
+	pdrv->clk_conf_num = 1;
+	if (!pdrv->clk_conf) {
+		size = pdrv->clk_conf_num * sizeof(struct lcd_clk_config_s);
+		cconf = (struct lcd_clk_config_s *)malloc(size);
+		if (!cconf) {
+			LCDERR("[%d]: %s: Not enough memory\n", pdrv->index, __func__);
+			return NULL;
+		}
+	} else {
+		size = pdrv->clk_conf_num * sizeof(struct lcd_clk_config_s);
+		cconf = (struct lcd_clk_config_s *)pdrv->clk_conf;
+	}
+	memset(cconf, 0, size);
 	if (pdrv->clk_path) {
 		cconf->data = &lcd_clk_data_g12a_path1;
 		cconf->pll_od_fb = lcd_clk_data_g12a_path1.pll_od_fb;
@@ -796,10 +815,30 @@ void lcd_clk_config_chip_init_g12a(struct aml_lcd_drv_s *pdrv, struct lcd_clk_co
 		cconf->data = &lcd_clk_data_g12a_path0;
 		cconf->pll_od_fb = lcd_clk_data_g12a_path0.pll_od_fb;
 	}
+	return cconf;
 }
 
-void lcd_clk_config_chip_init_g12b(struct aml_lcd_drv_s *pdrv, struct lcd_clk_config_s *cconf)
+struct lcd_clk_config_s *lcd_clk_config_chip_init_g12b(struct aml_lcd_drv_s *pdrv)
 {
+	struct lcd_clk_config_s *cconf;
+	unsigned int size;
+
+	if (!pdrv)
+		return NULL;
+
+	pdrv->clk_conf_num = 1;
+	if (!pdrv->clk_conf) {
+		size = pdrv->clk_conf_num * sizeof(struct lcd_clk_config_s);
+		cconf = (struct lcd_clk_config_s *)malloc(size);
+		if (!cconf) {
+			LCDERR("[%d]: %s: Not enough memory\n", pdrv->index, __func__);
+			return NULL;
+		}
+	} else {
+		size = pdrv->clk_conf_num * sizeof(struct lcd_clk_config_s);
+		cconf = (struct lcd_clk_config_s *)pdrv->clk_conf;
+	}
+	memset(cconf, 0, size);
 	if (pdrv->clk_path) {
 		cconf->data = &lcd_clk_data_g12b_path1;
 		cconf->pll_od_fb = lcd_clk_data_g12b_path1.pll_od_fb;
@@ -807,5 +846,6 @@ void lcd_clk_config_chip_init_g12b(struct aml_lcd_drv_s *pdrv, struct lcd_clk_co
 		cconf->data = &lcd_clk_data_g12b_path0;
 		cconf->pll_od_fb = lcd_clk_data_g12b_path0.pll_od_fb;
 	}
+	return cconf;
 }
 #endif

@@ -12,9 +12,12 @@
 /* **********************************
  * clk config
  * **********************************/
+/*bit7:0 from panel parameter pll_flag*/
 #define LCD_PLL_MODE_DEFAULT         BIT(0)
 #define LCD_PLL_MODE_SPECIAL_CNTL    BIT(1)
 #define LCD_PLL_MODE_FRAC_SHIFT      BIT(2)
+/*pll control*/
+#define LCD_PLL_MODE_DUAL_PLL        BIT(8)
 
 #define PLL_RETRY_MAX		20
 #define LCD_CLK_CTRL_EN      0
@@ -103,7 +106,7 @@ struct lcd_clk_config_s { /* unit: Hz */
 	/* pll parameters */
 	unsigned int pll_id;
 	unsigned int pll_offset;
-	unsigned int pll_mode; /* txl */
+	unsigned int pll_mode;
 	unsigned int pll_od_fb;
 	unsigned int pll_m;
 	unsigned int pll_n;
@@ -138,9 +141,8 @@ struct lcd_clk_config_s { /* unit: Hz */
 };
 
 enum lcd_clk_mode_e {
-	LCD_CLK_MODE_DEPENDENCE = 0,  /* pclk and phy use same pll */
-	LCD_CLK_MODE_INDEPENDENCE,    /* pclk and phy use different pll */
-	LCD_CLK_MODE_DEPENDENCE_ADAPT, /* pclk and phy use same pll, and bit_rate adapt to pclk */
+	LCD_BIT_RATE_FIXED = 0,	/* pclk and phy use same pll */
+	LCD_BIT_RATE_ADAPT,	/* pclk and phy use different pll */
 	LCD_CLK_MODE_MAX,
 };
 

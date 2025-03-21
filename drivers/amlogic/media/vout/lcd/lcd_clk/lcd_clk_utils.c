@@ -422,6 +422,7 @@ static int lcd_clk_generate_p2p_with_tcon_div(struct lcd_clk_config_s *cconf,
 				cconf->div_sel = clk_div_sel;
 				cconf->pll_div_fout = clk_div_out;
 				cconf->pll_tcon_div_sel = tcon_div_sel;
+				cconf->phy_clk = bit_rate;
 				pll_fout = clk_div_in;
 				if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
 					LCDPR("clk_div_sel=%s(%d), pll_fout=%lld\n",
@@ -446,36 +447,61 @@ static int lcd_clk_generate_p2p_without_tcon_div(struct lcd_clk_config_s *cconf,
 	unsigned int clk_div_out, clk_div_sel, xd;
 	int done = 0;
 
-	for (xd = 1; xd <= cconf->data->xd_max; xd++) {
-		clk_div_out = cconf->fout * xd;
-		if (clk_div_out > cconf->data->div_out_fmax)
-			continue;
+	if (cconf->pll_mode & LCD_PLL_MODE_DUAL_PLL) {
+		cconf->phy_clk = bit_rate;
+		cconf->pll_fout = cconf->phy_clk;
+		//fix phy pll_div for clkmsr phy_clk
+		cconf->div_sel = CLK_DIV_SEL_5;
+		clk_div_in = cconf->pll_fout;
+		clk_div_out = clk_vid_pll_div_calc(clk_div_in,
+					cconf->div_sel, CLK_DIV_I2O);
+		cconf->pll_div_fout = clk_div_out;
+		//store final encl_clk for clkmsr check
 		if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
-			LCDPR("fout=%d, xd=%d, clk_div_out=%d\n",
-				cconf->fout, xd, clk_div_out);
+			LCDPR("cconf: clk_div_sel=%s(%d), phy_clk=%lld, clk_div_out=%u\n",
+				lcd_clk_div_table[cconf->div_sel].name,
+				cconf->div_sel, cconf->phy_clk,
+				cconf->pll_div_fout);
 		}
-		for (clk_div_sel = CLK_DIV_SEL_1; clk_div_sel <= cconf->data->div_sel_max;
-			clk_div_sel++) {
-			clk_div_in = clk_vid_pll_div_calc(clk_div_out,
-					clk_div_sel, CLK_DIV_O2I);
-			if (clk_div_in > cconf->data->div_in_fmax)
+
+		done = pll_od_setting_generate(cconf, cconf->phy_clk);
+		if (done == 0) {
+			LCDERR("%s: wrong phy_clk %lldHz\n", __func__, cconf->phy_clk);
+			goto p2p_clk_without_tcon_div_done;
+		}
+	} else {
+		for (xd = 1; xd <= cconf->data->xd_max; xd++) {
+			clk_div_out = cconf->fout * xd;
+			if (clk_div_out > cconf->data->div_out_fmax)
 				continue;
 			if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
-				LCDPR("clk_div_sel=%s(%d), clk_div_in=%lld, bit_rate=%lld\n",
-					lcd_clk_div_table[clk_div_sel].name,
-					clk_div_sel, clk_div_in, bit_rate);
+				LCDPR("fout=%d, xd=%d, clk_div_out=%d\n",
+					cconf->fout, xd, clk_div_out);
 			}
-			if (clk_div_in == bit_rate) {
-				cconf->xd = xd;
-				cconf->div_sel = clk_div_sel;
-				cconf->pll_div_fout = clk_div_out;
-				pll_fout = clk_div_in;
-				if (lcd_debug_print_flag & LCD_DBG_PR_CLK)
-					LCDPR("pll_fout=%lld\n", pll_fout);
+			for (clk_div_sel = CLK_DIV_SEL_1; clk_div_sel <= cconf->data->div_sel_max;
+				clk_div_sel++) {
+				clk_div_in = clk_vid_pll_div_calc(clk_div_out,
+						clk_div_sel, CLK_DIV_O2I);
+				if (clk_div_in > cconf->data->div_in_fmax)
+					continue;
+				if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
+					LCDPR("clk_div_sel=%s(%d), clk_div_in=%lld,bit_rate=%lld\n",
+						lcd_clk_div_table[clk_div_sel].name,
+						clk_div_sel, clk_div_in, bit_rate);
+				}
+				if (clk_div_in == bit_rate) {
+					cconf->xd = xd;
+					cconf->div_sel = clk_div_sel;
+					cconf->pll_div_fout = clk_div_out;
+					cconf->phy_clk = bit_rate;
+					pll_fout = clk_div_in;
+					if (lcd_debug_print_flag & LCD_DBG_PR_CLK)
+						LCDPR("pll_fout=%lld\n", pll_fout);
 
-				done = pll_od_setting_generate(cconf, pll_fout);
-				if (done)
-					goto p2p_clk_without_tcon_div_done;
+					done = pll_od_setting_generate(cconf, pll_fout);
+					if (done)
+						goto p2p_clk_without_tcon_div_done;
+				}
 			}
 		}
 	}
@@ -684,7 +710,7 @@ static int lcd_clk_generate_DP_1PLL(struct aml_lcd_drv_s *pdrv)
 }
 #endif
 
-static int lcd_pll_frac_generate_dependence(struct aml_lcd_drv_s *pdrv)
+static int lcd_pll_frac_generate_phy(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_clk_config_s *cconf;
 	struct lcd_config_s *pconf = &pdrv->config;
@@ -774,9 +800,9 @@ static int lcd_pll_frac_generate_dependence(struct aml_lcd_drv_s *pdrv)
 	return ret;
 }
 
-static int lcd_pll_frac_generate_independence(struct aml_lcd_drv_s *pdrv)
+static int lcd_pll_frac_generate_pix(struct aml_lcd_drv_s *pdrv)
 {
-	struct lcd_clk_config_s *cconf, *phyconf = NULL, *pixconf = NULL;
+	struct lcd_clk_config_s *cconf;
 	struct lcd_config_s *pconf = &pdrv->config;
 	unsigned long long pll_fout, pll_fvco, clk_div_in;
 	unsigned int enc_clk, clk_div_out, clk_div_sel;
@@ -787,132 +813,92 @@ static int lcd_pll_frac_generate_independence(struct aml_lcd_drv_s *pdrv)
 	if (!cconf)
 		return -1;
 
-	phyconf = &cconf[0];
-	pixconf = &cconf[1];
+	if (!(cconf->pll_mode & LCD_PLL_MODE_DUAL_PLL)) {
+		if (lcd_debug_print_flag & LCD_DBG_PR_CLK)
+			LCDPR("%s: no need to generate pix pll\n", __func__);
+		return 0;
+	}
+
+	cconf = &cconf[1];
 	enc_clk = pconf->timing.enc_clk;
-	if (enc_clk > pixconf->data->xd_out_fmax) {
+	clk_div_sel = cconf->div_sel;
+	if (cconf->data->od_cnt == 3) {
+		od1 = od_table[cconf->pll_od1_sel];
+		od2 = od_table[cconf->pll_od2_sel];
+		od3 = od_table[cconf->pll_od3_sel];
+		if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
+			LCDPR("cconf m=%d, od1=%d, od2=%d, od3=%d, clk_div_sel=%s(%d), xd=%d\n",
+				cconf->pll_m, cconf->pll_od1_sel,
+				cconf->pll_od2_sel, cconf->pll_od3_sel,
+				lcd_clk_div_table[clk_div_sel].name,
+				clk_div_sel, cconf->xd);
+		}
+	} else {
+		od1 = od_table[cconf->pll_od1_sel];
+		if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
+			LCDPR("cconf m=%d, od=%d, clk_div_sel=%s(%d), xd=%d\n",
+				cconf->pll_m, cconf->pll_od1_sel,
+				lcd_clk_div_table[clk_div_sel].name,
+				clk_div_sel, cconf->xd);
+		}
+	}
+	if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
+		LCDPR("m=%d, od=%d, clk_div_sel=%s(%d), xd=%d\n",
+			cconf->pll_m, cconf->pll_od1_sel,
+			lcd_clk_div_table[clk_div_sel].name,
+			clk_div_sel, cconf->xd);
+	}
+	if (enc_clk > cconf->data->xd_out_fmax) {
 		LCDERR("%s: wrong enc_clk value %uHz\n", __func__, enc_clk);
 		return -1;
 	}
 	if (lcd_debug_print_flag & LCD_DBG_PR_CLK)
-		LCDPR("%s enc_clk=%u\n", __func__, enc_clk);
+		LCDPR("%s enc_clk=%d\n", __func__, enc_clk);
 
-	//handle phyconf
-	if (phyconf->data->od_cnt == 3) {
-		od1 = od_table[phyconf->pll_od1_sel];
-		od2 = od_table[phyconf->pll_od2_sel];
-		od3 = od_table[phyconf->pll_od3_sel];
-		if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
-			LCDPR("phyconf m=%d, od1=%d, od2=%d, od3=%d\n",
-				phyconf->pll_m, phyconf->pll_od1_sel,
-				phyconf->pll_od2_sel, phyconf->pll_od3_sel);
-		}
-	} else {
-		od1 = od_table[phyconf->pll_od1_sel];
-		if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
-			LCDPR("phyconf m=%d, od=%d\n",
-				phyconf->pll_m, phyconf->pll_od1_sel);
-		}
-	}
-	pll_fout = pconf->timing.bit_rate;
-	if (phyconf->data->od_cnt == 3)
-		pll_fvco = pll_fout * od1 * od2 * od3;
-	else
-		pll_fvco = pll_fout * od1;
-	if (pll_fvco < phyconf->data->pll_vco_fmin ||
-	    pll_fvco > phyconf->data->pll_vco_fmax) {
-		LCDERR("%s: wrong phy pll_fvco value %lldHz\n", __func__, pll_fvco);
-		return -1;
-	}
-	if (lcd_debug_print_flag & LCD_DBG_PR_CLK)
-		LCDPR("%s: phy pll_fvco=%lld\n", __func__, pll_fvco);
-
-	clk_div_in = pll_fout;
-	clk_div_sel = phyconf->div_sel;
-	clk_div_out = clk_vid_pll_div_calc(clk_div_in, clk_div_sel, CLK_DIV_I2O);
-
-	ret = lcd_pll_get_frac(phyconf, pll_fvco);
-	if (ret == 0) {
-		pixconf->pll_div_fout = clk_div_out;
-		phyconf->fout = enc_clk;
-		phyconf->pll_fout = pll_fout;
-		phyconf->pll_fvco = pll_fvco;
-		pconf->timing.clk_ctrl &= ~(0x1ffffff);
-		pconf->timing.clk_ctrl |=
-			(phyconf->pll_frac << CLK_CTRL_FRAC) |
-			(phyconf->pll_frac_half_shift << CLK_CTRL_FRAC_SHIFT);
-	} else {
-		return ret;
-	}
-
-	//handle pixconf
-	clk_div_sel = pixconf->div_sel;
-	if (pixconf->data->od_cnt == 3) {
-		od1 = od_table[pixconf->pll_od1_sel];
-		od2 = od_table[pixconf->pll_od2_sel];
-		od3 = od_table[pixconf->pll_od3_sel];
-		if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
-			LCDPR("pixconf m=%d, od1=%d, od2=%d, od3=%d, clk_div_sel=%s(%d), xd=%d\n",
-				pixconf->pll_m, pixconf->pll_od1_sel,
-				pixconf->pll_od2_sel, pixconf->pll_od3_sel,
-				lcd_clk_div_table[clk_div_sel].name,
-				clk_div_sel, pixconf->xd);
-		}
-	} else {
-		od1 = od_table[pixconf->pll_od1_sel];
-		if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
-			LCDPR("pixconf m=%d, od=%d, clk_div_sel=%s(%d), xd=%d\n",
-				pixconf->pll_m, pixconf->pll_od1_sel,
-				lcd_clk_div_table[clk_div_sel].name,
-				clk_div_sel, pixconf->xd);
-		}
-	}
-	clk_div_out = enc_clk * pixconf->xd;
-	if (clk_div_out > pixconf->data->div_out_fmax) {
-		LCDERR("%s: wrong pix clk_div_out value %uHz\n", __func__, clk_div_out);
+	clk_div_out = enc_clk * cconf->xd;
+	if (clk_div_out > cconf->data->div_out_fmax) {
+		LCDERR("%s: wrong clk_div_out value %uHz\n", __func__, clk_div_out);
 		return -1;
 	}
 
 	clk_div_in = clk_vid_pll_div_calc(clk_div_out, clk_div_sel, CLK_DIV_O2I);
-	if (clk_div_in > pixconf->data->div_in_fmax) {
-		LCDERR("%s: wrong pix clk_div_in value %lldHz\n", __func__, clk_div_in);
+	if (clk_div_in > cconf->data->div_in_fmax) {
+		LCDERR("%s: wrong clk_div_in value %lldHz\n", __func__, clk_div_in);
 		return -1;
 	}
 
 	pll_fout = clk_div_in;
-	if (pll_fout > pixconf->data->pll_out_fmax ||
-	pll_fout < pixconf->data->pll_out_fmin) {
-		LCDERR("%s: wrong pix pll_fout value %lldHz\n", __func__, pll_fout);
+	if (pll_fout > cconf->data->pll_out_fmax ||
+	    pll_fout < cconf->data->pll_out_fmin) {
+		LCDERR("%s: wrong pll_fout value %lldHz\n", __func__, pll_fout);
 		return -1;
 	}
 	if (lcd_debug_print_flag & LCD_DBG_PR_CLK)
-		LCDPR("%s: pix pll_fout=%lld\n", __func__, pll_fout);
+		LCDPR("%s pll_fout=%lld\n", __func__, pll_fout);
 
-	if (pixconf->data->od_cnt == 3)
+	if (cconf->data->od_cnt == 3)
 		pll_fvco = pll_fout * od1 * od2 * od3;
 	else
 		pll_fvco = pll_fout * od1;
-	if (pll_fvco < pixconf->data->pll_vco_fmin ||
-	pll_fvco > pixconf->data->pll_vco_fmax) {
-		LCDERR("%s: wrong pix pll_fvco value %lldHz\n", __func__, pll_fvco);
+	if (pll_fvco < cconf->data->pll_vco_fmin ||
+	    pll_fvco > cconf->data->pll_vco_fmax) {
+		LCDERR("%s: wrong pll_fvco value %lldHz\n", __func__, pll_fvco);
 		return -1;
 	}
 	if (lcd_debug_print_flag & LCD_DBG_PR_CLK)
-		LCDPR("%s: pix pll_fvco=%lld\n", __func__, pll_fvco);
+		LCDPR("%s pll_fvco=%lld\n", __func__, pll_fvco);
 
-	ret = lcd_pll_get_frac(pixconf, pll_fvco);
+	ret = lcd_pll_get_frac(cconf, pll_fvco);
 	if (ret == 0) {
-		pixconf->fout = enc_clk;
-		phyconf->fout = enc_clk; //restore pixconf val to phyconf for enc0_clk
-		pixconf->pll_fout = pll_fout;
-		pixconf->pll_fvco = pll_fvco;
-		pixconf->pll_div_fout = clk_div_out;
-		pconf->timing.clk_ctrl2 &= ~(0x1ffffff);
-		pconf->timing.clk_ctrl2 |=
-			(pixconf->pll_frac << CLK_CTRL_FRAC) |
-			(pixconf->pll_frac_half_shift << CLK_CTRL_FRAC_SHIFT);
+		cconf->fout = enc_clk;
+		cconf->pll_div_fout = clk_div_out;
+		cconf->pll_fout = pll_fout;
+		cconf->pll_fvco = pll_fvco;
+		pconf->timing.clk_ctrl &= ~(0x1ffffff);
+		pconf->timing.clk_ctrl |=
+			(cconf->pll_frac << CLK_CTRL_FRAC) |
+			(cconf->pll_frac_half_shift << CLK_CTRL_FRAC_SHIFT);
 	}
-
 	return ret;
 }
 
@@ -920,17 +906,61 @@ void lcd_pll_frac_generate_dft(struct aml_lcd_drv_s *pdrv)
 {
 	int ret;
 
-	if (pdrv->config.timing.clk_mode == LCD_CLK_MODE_INDEPENDENCE)
-		ret = lcd_pll_frac_generate_independence(pdrv);
-	else
-		ret = lcd_pll_frac_generate_dependence(pdrv);
+	ret = lcd_pll_frac_generate_phy(pdrv);
 	if (ret)
-		LCDERR("%s: failed\n", __func__);
+		LCDERR("%s: phy generate failed\n", __func__);
+
+	ret = lcd_pll_frac_generate_pix(pdrv);
+	if (ret)
+		LCDERR("%s: pix generate failed\n", __func__);
+}
+
+static int lcd_clk_generate_pix_clk(struct lcd_clk_config_s *cconf)
+{
+	unsigned long long pll_fout, clk_div_in;
+	unsigned int clk_div_out, clk_div_sel, xd;
+	int done = 0;
+
+	for (xd = 1; xd <= cconf->data->xd_max; xd++) {
+		clk_div_out = cconf->fout * xd;
+		if (clk_div_out > cconf->data->div_out_fmax)
+			continue;
+		if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
+			LCDPR("fout=%d, xd=%d, clk_div_out=%d\n",
+				cconf->fout, xd, clk_div_out);
+		}
+
+		for (clk_div_sel = CLK_DIV_SEL_1; clk_div_sel <= cconf->data->div_sel_max;
+			clk_div_sel++) {
+			clk_div_in = clk_vid_pll_div_calc(clk_div_out,
+					clk_div_sel, CLK_DIV_O2I);
+			if (clk_div_in > cconf->data->div_in_fmax)
+				continue;
+			if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
+				LCDPR("clk_div_sel=%s(%d), clk_div_in=%lld\n",
+					lcd_clk_div_table[clk_div_sel].name,
+					clk_div_sel, clk_div_in);
+			}
+			cconf->xd = xd;
+			cconf->div_sel = clk_div_sel;
+			cconf->pll_div_fout = clk_div_out;
+			pll_fout = clk_div_in;
+			if (lcd_debug_print_flag & LCD_DBG_PR_CLK)
+				LCDPR("pll_fout=%lld\n", pll_fout);
+
+			done = pll_od_setting_generate(cconf, pll_fout);
+			if (done)
+				goto clk_generate_pix_clk_done;
+		}
+	}
+
+clk_generate_pix_clk_done:
+	return done;
 }
 
 void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 {
-	struct lcd_clk_config_s *cconf, *phyconf = NULL, *pixconf = NULL;
+	struct lcd_clk_config_s *cconf;
 	struct lcd_config_s *pconf = &pdrv->config;
 	unsigned long long pll_fout, clk_div_in;
 	unsigned int clk_div_out, clk_div_sel, xd, tcon_div_sel = 0, phy_div = 1;
@@ -942,21 +972,18 @@ void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 #ifdef CONFIG_AML_LCD_TCON
 	unsigned long long pll_fvco, bit_rate = pconf->timing.bit_rate;
 #endif
+	int done_pix = 0;
 
 	cconf = get_lcd_clk_config(pdrv);
 	if (!cconf)
 		return;
-	phyconf = cconf;
-	pixconf = cconf;
 
-	if (pdrv->config.timing.clk_mode != LCD_CLK_MODE_INDEPENDENCE) {
-		cconf->pll_mode = pconf->timing.pll_flag;
-		cconf->fout = pconf->timing.enc_clk;
-		if (cconf->fout > cconf->data->xd_out_fmax) {
-			LCDERR("%s: enc_clk %uHz out of %uHz\n",
-				__func__, cconf->fout, cconf->data->xd_out_fmax);
-			goto generate_clk_dft_done;
-		}
+	cconf->pll_mode |= pconf->timing.pll_flag;
+	cconf->fout = pconf->timing.enc_clk;
+	if (cconf->fout > cconf->data->xd_out_fmax) {
+		LCDERR("%s: enc_clk %uHz out of %uHz\n",
+		       __func__, cconf->fout, cconf->data->xd_out_fmax);
+		goto generate_clk_dft_done;
 	}
 
 	switch (pconf->basic.lcd_type) {
@@ -1169,85 +1196,10 @@ void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 		}
 		break;
 	case LCD_P2P:
-		if (pdrv->config.timing.clk_mode == LCD_CLK_MODE_INDEPENDENCE) {
-			phyconf = &cconf[0];
-			pixconf = &cconf[1];
-
-			pixconf->fout = pconf->timing.enc_clk;
-			pixconf->pll_mode = pconf->timing.pll_flag;
-			if (pixconf->fout > pixconf->data->xd_out_fmax) {
-				LCDERR("%s: enc_clk %uHzout of %uHz, pll_id:%d\n",
-					__func__, pixconf->fout, pixconf->data->xd_out_fmax,
-					pixconf->pll_id);
-				goto generate_clk_dft_done;
-			}
-
-			//handle phyconf
-			phyconf->pll_mode = pconf->timing.pll_flag;
-			phyconf->phy_clk = pconf->timing.bit_rate;
-			phyconf->pll_fout = phyconf->phy_clk;
-			//fix phy pll_div for clkmsr phy_clk
-			phyconf->div_sel = CLK_DIV_SEL_5;
-			clk_div_in = phyconf->pll_fout;
-			clk_div_out = clk_vid_pll_div_calc(clk_div_in,
-						phyconf->div_sel, CLK_DIV_I2O);
-			phyconf->pll_div_fout = clk_div_out;
-			//store final encl_clk for clkmsr check
-			phyconf->fout = pconf->timing.enc_clk;
-			if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
-				LCDPR("phyconf: clk_div_sel=%s(%d), phy_clk=%lld, clk_div_out=%u\n",
-					lcd_clk_div_table[phyconf->div_sel].name,
-					phyconf->div_sel, phyconf->phy_clk,
-					phyconf->pll_div_fout);
-			}
-
-			done = pll_od_setting_generate(phyconf, phyconf->phy_clk);
-			if (done == 0) {
-				LCDERR("%s: wrong phy_clk %lldHz\n", __func__, phyconf->phy_clk);
-				goto generate_clk_dft_done;
-			}
-
-			//handle pixconf
-			pixconf->data->xd_max = cconf->data->xd_max;
-			for (xd = 1; xd <= pixconf->data->xd_max; xd++) {
-				clk_div_out = pixconf->fout * xd;
-				if (clk_div_out > pixconf->data->div_out_fmax)
-					continue;
-				if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
-					LCDPR("fout=%u, xd=%d, clk_div_out=%u\n",
-						pixconf->fout, xd, clk_div_out);
-				}
-				for (clk_div_sel = CLK_DIV_SEL_1;
-					clk_div_sel <= cconf->data->div_sel_max; clk_div_sel++) {
-					clk_div_in = clk_vid_pll_div_calc(clk_div_out,
-							clk_div_sel, CLK_DIV_O2I);
-					if (clk_div_in > pixconf->data->div_in_fmax)
-						continue;
-					pixconf->xd = xd;
-					pixconf->div_sel = clk_div_sel;
-					pixconf->pll_div_fout = clk_div_out;
-					pll_fout = clk_div_in;
-					if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
-						LCDPR("clk_div_sel=%s(%d), pll_fout=%lld\n",
-							lcd_clk_div_table[clk_div_sel].name,
-							clk_div_sel, pll_fout);
-					}
-
-					//restore pixconf val to phyconf for enc0_clk
-					phyconf->xd = pixconf->xd;
-					phyconf->fout = pixconf->fout;
-
-					done = pll_od_setting_generate(pixconf, pll_fout);
-					if (done)
-						goto generate_clk_dft_done;
-				}
-			}
-		} else {
-			if (cconf->data->have_tcon_div)
-				done = lcd_clk_generate_p2p_with_tcon_div(cconf, bit_rate);
-			else
-				done = lcd_clk_generate_p2p_without_tcon_div(cconf, bit_rate);
-		}
+		if (cconf->data->have_tcon_div)
+			done = lcd_clk_generate_p2p_with_tcon_div(cconf, bit_rate);
+		else
+			done = lcd_clk_generate_p2p_without_tcon_div(cconf, bit_rate);
 		break;
 #endif
 #ifdef CONFIG_AML_LCD_MIPI_DSI
@@ -1263,70 +1215,55 @@ void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 	default:
 		break;
 	}
+	if (cconf->pll_mode & LCD_PLL_MODE_DUAL_PLL) {
+		cconf[1].fout = cconf->fout;
+		done_pix = lcd_clk_generate_pix_clk(&cconf[1]);
+	}
 
 generate_clk_dft_done:
 	if (done) {
-		if (pdrv->config.timing.clk_mode == LCD_CLK_MODE_INDEPENDENCE) {
-			pconf->timing.pll_ctrl =
-				(phyconf->pll_od1_sel << PLL_CTRL_OD1) |
-				(phyconf->pll_od2_sel << PLL_CTRL_OD2) |
-				(phyconf->pll_od3_sel << PLL_CTRL_OD3) |
-				(phyconf->pll_n << PLL_CTRL_N)         |
-				(phyconf->pll_m << PLL_CTRL_M);
-			pconf->timing.div_ctrl =
-				(phyconf->div_sel << DIV_CTRL_DIV_SEL) |
-				(phyconf->xd << DIV_CTRL_XD);
-			pconf->timing.clk_ctrl =
-				(phyconf->pll_frac << CLK_CTRL_FRAC) |
-				(phyconf->pll_frac_half_shift << CLK_CTRL_FRAC_SHIFT);
-			phyconf->done = 1;
-
-			pconf->timing.pll_ctrl2 =
-				(pixconf->pll_od1_sel << PLL_CTRL_OD1) |
-				(pixconf->pll_od2_sel << PLL_CTRL_OD2) |
-				(pixconf->pll_od3_sel << PLL_CTRL_OD3) |
-				(pixconf->pll_n << PLL_CTRL_N)         |
-				(pixconf->pll_m << PLL_CTRL_M);
-			pconf->timing.div_ctrl2 =
-				(pixconf->div_sel << DIV_CTRL_DIV_SEL) |
-				(pixconf->xd << DIV_CTRL_XD);
-			pconf->timing.clk_ctrl2 =
-				(pixconf->pll_frac << CLK_CTRL_FRAC) |
-				(pixconf->pll_frac_half_shift << CLK_CTRL_FRAC_SHIFT);
-			pixconf->done = 1;
-		} else {
-			pconf->timing.pll_ctrl =
-				(cconf->pll_od1_sel << PLL_CTRL_OD1) |
-				(cconf->pll_od2_sel << PLL_CTRL_OD2) |
-				(cconf->pll_od3_sel << PLL_CTRL_OD3) |
-				(cconf->pll_n << PLL_CTRL_N)         |
-				(cconf->pll_m << PLL_CTRL_M);
-			pconf->timing.div_ctrl =
-				(cconf->div_sel << DIV_CTRL_DIV_SEL) |
-				(cconf->xd << DIV_CTRL_XD);
-			pconf->timing.clk_ctrl =
-				(cconf->pll_frac << CLK_CTRL_FRAC) |
-				(cconf->pll_frac_half_shift << CLK_CTRL_FRAC_SHIFT);
-			cconf->done = 1;
-		}
+		pconf->timing.pll_ctrl =
+			(cconf->pll_od1_sel << PLL_CTRL_OD1) |
+			(cconf->pll_od2_sel << PLL_CTRL_OD2) |
+			(cconf->pll_od3_sel << PLL_CTRL_OD3) |
+			(cconf->pll_n << PLL_CTRL_N)         |
+			(cconf->pll_m << PLL_CTRL_M);
+		pconf->timing.div_ctrl =
+			(cconf->div_sel << DIV_CTRL_DIV_SEL) |
+			(cconf->xd << DIV_CTRL_XD);
+		pconf->timing.clk_ctrl =
+			(cconf->pll_frac << CLK_CTRL_FRAC) |
+			(cconf->pll_frac_half_shift << CLK_CTRL_FRAC_SHIFT);
+		cconf->done = 1;
 	} else {
-		if (pdrv->config.timing.clk_mode == LCD_CLK_MODE_INDEPENDENCE) {
-			pconf->timing.pll_ctrl = 0;
-			pconf->timing.div_ctrl = 0;
-			pconf->timing.clk_ctrl = 0;
-			phyconf->done = 0;
-
-			pconf->timing.pll_ctrl2 = 0;
-			pconf->timing.div_ctrl2 = 0;
-			pconf->timing.clk_ctrl2 = 0;
-			pixconf->done = 0;
-		} else {
-			pconf->timing.pll_ctrl = 0;
-			pconf->timing.div_ctrl = 0;
-			pconf->timing.clk_ctrl = 0;
-			cconf->done = 0;
-		}
+		pconf->timing.pll_ctrl = 0;
+		pconf->timing.div_ctrl = 0;
+		pconf->timing.clk_ctrl = 0;
+		cconf->done = 0;
 		LCDERR("[%d]: %s: Out of clock range\n", pdrv->index, __func__);
+	}
+	if (done_pix && pdrv->clk_conf_num > 1) {
+		pconf->timing.pll_ctrl2 =
+			(cconf[1].pll_od1_sel << PLL_CTRL_OD1) |
+			(cconf[1].pll_od2_sel << PLL_CTRL_OD2) |
+			(cconf[1].pll_od3_sel << PLL_CTRL_OD3) |
+			(cconf[1].pll_n << PLL_CTRL_N)         |
+			(cconf[1].pll_m << PLL_CTRL_M);
+		pconf->timing.div_ctrl2 =
+			(cconf[1].div_sel << DIV_CTRL_DIV_SEL) |
+			(cconf[1].xd << DIV_CTRL_XD);
+		pconf->timing.clk_ctrl2 =
+			(cconf[1].pll_frac << CLK_CTRL_FRAC) |
+			(cconf[1].pll_frac_half_shift << CLK_CTRL_FRAC_SHIFT);
+		cconf[1].done = 1;
+	} else {
+		pconf->timing.pll_ctrl = 0;
+		pconf->timing.div_ctrl = 0;
+		pconf->timing.clk_ctrl = 0;
+		if (pdrv->clk_conf_num > 1)
+			cconf[1].done = 0;
+		if (cconf->pll_mode & LCD_PLL_MODE_DUAL_PLL)
+			LCDERR("[%d]: %s: Out of clock range\n", pdrv->index, __func__);
 	}
 }
 
@@ -1614,7 +1551,7 @@ void lcd_clk_config_print_dft(struct aml_lcd_drv_s *pdrv)
 		LCDPR("[%d]: clk[%d] config:\n"
 			"  pll_id:     %d\n"
 			"  pll_offset: 0x%x\n"
-			"  pll_mode:   %d\n"
+			"  pll_mode:   0x%x\n"
 			"  pll_m:      %d\n"
 			"  pll_n:      %d\n"
 			"  pll_frac:   0x%x\n"
