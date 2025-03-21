@@ -26,30 +26,17 @@
 #define BL2_INIT_STAGE_7			7
 #define BL2_INIT_STAGE_8			8
 #define BL2_INIT_STAGE_9			9
-
-/* BL2_VMIN_FT FLAG */
-#define BL2_VMIN_FT_FLAG_1			0x41
-#define BL2_VMIN_FT_FLAG_2			0x42
-#define BL2_VMIN_FT_FLAG_3			0x43
-/* BL2_VDDEE_VOL FLAG */
-#define BL2_VDDEE_VOL_FLAG_1			0x51
-#define BL2_VDDEE_VOL_FLAG_2			0x52
-#define BL2_VDDEE_VOL_FLAG_3			0x53
-/* BL2_VDDEE_PWM_VAL FLAG */
-#define BL2_VDDEE_PWM_VAL_FLAG_1		0x54
-#define BL2_VDDEE_PWM_VAL_FLAG_2		0x55
-#define BL2_VDDEE_PWM_VAL_FLAG_3		0x56
-/* BL2_VDDDDR_VOL FLAG */
-#define BL2_VDDDDR_VOL_FLAG_1			0x61
-#define BL2_VDDDDR_VOL_FLAG_2			0x62
-#define BL2_VDDDDR_VOL_FLAG_3			0x63
-/* BL2_VDDDDR_PWM_VAL FLAG */
-#define BL2_VDDDDR_PWM_VAL_FLAG_1		0x64
-#define BL2_VDDDDR_PWM_VAL_FLAG_2		0x65
-#define BL2_VDDDDR_PWM_VAL_FLAG_3		0x66
-/* BL2_VDDCPU_VOL FLAG */
-#define BL2_VDDCPU_PWM_VAL_FLAG_1		0x71
-#define BL2_VDDCPU_PWM_VAL_FLAG_2		0x72
+/*bl2 efuse val flag*/
+#define BL2_INIT_STAGE_VDDCORE_CONFIG_1		0x84
+#define BL2_INIT_STAGE_VDDCORE_CONFIG_2		0x85
+#define BL2_INIT_STAGE_VDDCORE_CONFIG_3		0x86
+/* board EE vmin_flag */
+#define BL2_INIT_STAGE_VMIN_FLAG_1     0x87
+#define BL2_INIT_STAGE_VMIN_FLAG_2     0x88
+#define BL2_INIT_STAGE_VMIN_FLAG_3     0x89
+/* board CPU vmin_flag */
+#define BL2_INIT_CPU_VDDCORE_CONFIG_1     0x91
+#define BL2_INIT_CPU_VDDCORE_CONFIG_2     0x92
 
 typedef struct ddr_mrs_reg {
 	unsigned int cfg_ddr_mr[8];
