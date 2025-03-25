@@ -229,10 +229,11 @@ void lcd_phy_attr_print(struct phy_attr_s *phy, u32 lane_num)
 	n = m;
 	lane = phy->lane;
 
-	printf("lane  amp   preem     lane  amp   preem\n");
+	printf("lane  amp   preem rterm      lane  amp   preem rterm\n");
 	for (i = 0; i < m; i++, n++) {
-		printf("[%2d]  0x%02x  0x%02x      [%2d]  0x%02x  0x%02x\n",
-		       i, lane[i].amp, lane[i].preem, n, lane[n].amp, lane[n].preem);
+		printf("[%2d]  0x%02x  0x%02x  0x%02x     [%2d]  0x%02x  0x%02x  0x%02x\n",
+		       i, lane[i].amp, lane[i].preem, lane[i].rterm,
+		       n, lane[n].amp, lane[n].preem, lane[n].rterm);
 	}
 
 	printf("\n");

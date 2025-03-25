@@ -12,10 +12,11 @@ struct lcd_phy_ctrl_s {
 	unsigned int lane_lock_total;
 	unsigned int lane_lock[LCD_MAX_DRV];
 	unsigned int (*phy_vswing_level_to_val)(struct aml_lcd_drv_s *pdrv, unsigned int level);
-	unsigned int (*phy_amp_dft_val)(struct aml_lcd_drv_s *pdrv);
 	unsigned int (*phy_preem_level_to_val)(struct aml_lcd_drv_s *pdrv, unsigned int level);
 	unsigned char (*phy_lane_phase_sel_def)(struct aml_lcd_drv_s *pdrv, unsigned int lane);
 	void (*phy_glb_param_dft_val)(struct aml_lcd_drv_s *pdrv);
+	unsigned int (*phy_amp_dft_val)(struct aml_lcd_drv_s *pdrv);
+	unsigned int (*phy_rterm_dft_val)(struct aml_lcd_drv_s *pdrv);
 	int (*phy_param_get)(struct aml_lcd_drv_s *pdrv,
 			     struct phy_config_s *phy_cfg, struct phy_attr_s *phy);
 	void (*phy_reg_dump)(struct aml_lcd_drv_s *pdrv);
@@ -42,6 +43,9 @@ struct lcd_phy_ctrl_s *lcd_phy_config_init_s6(struct aml_lcd_data_s *pdata);
 #endif
 #ifdef CONFIG_MESON_T6D
 struct lcd_phy_ctrl_s *lcd_phy_config_init_t6d(struct aml_lcd_data_s *pdata);
+#endif
+#ifdef CONFIG_MESON_T6W
+struct lcd_phy_ctrl_s *lcd_phy_config_init_t6w(struct aml_lcd_data_s *pdata);
 #endif
 
 unsigned int lcd_phy_vswing_level_to_value_dft(struct aml_lcd_drv_s *pdrv, unsigned int level);

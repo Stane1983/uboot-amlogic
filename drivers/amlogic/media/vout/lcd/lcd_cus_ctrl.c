@@ -558,13 +558,16 @@ static int lcd_cus_ctrl_attr_parse_tuning_attr_ukey(struct aml_lcd_drv_s *pdrv,
 		}
 
 		for (j = 0; j < lane_cnt; j++) {
-			phy->lane[j].preem = *(unsigned short *)(p + offset);
+			phy->lane[j].preem = *(p + offset);
 			offset += 2;
-			phy->lane[j].amp = *(unsigned short *)(p + offset);
-			offset += 2;
+			phy->lane[j].amp = *(p + offset);
+			offset += 1;
+			phy->lane[j].rterm = *(p + offset);
+			offset += 1;
 			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-				LCDPR("%s: lane[%d]: preem=0x%x, amp=0x%x\n",
-					TUNING_ATTR_PARSE, i, phy->lane[j].preem, phy->lane[j].amp);
+				LCDPR("%s: lane[%d]: preem=0x%x, amp=0x%x, rterm=0x%x\n",
+				      TUNING_ATTR_PARSE, i, phy->lane[j].preem,
+				      phy->lane[j].amp, phy->lane[j].rterm);
 			}
 		}
 		if (attr_conf->param_size < offset) {
@@ -1105,10 +1108,13 @@ static int lcd_cus_ctrl_attr_parse_tuning_attr_ini(struct aml_lcd_drv_s *pdrv,
 			sprintf(key_str, "ch%u_preem", i);
 			tmp_phy.lane[j].preem =
 				lcd_ini_get_val(inip, tuning_sec, key_str, tmp_phy.lane[j].preem);
+			sprintf(key_str, "ch%u_rterm", i);
+			tmp_phy.lane[j].rterm =
+				lcd_ini_get_val(inip, tuning_sec, key_str, tmp_phy.lane[j].rterm);
 			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-				LCDPR("%s: lane[%d]: preem=0x%x, amp=0x%x\n",
-					TUNING_ATTR_PARSE, i,
-					tmp_phy.lane[j].preem, tmp_phy.lane[j].amp);
+				LCDPR("%s: lane[%d]: preem=0x%x, amp=0x%x, rterm=%x\n",
+				      TUNING_ATTR_PARSE, i, tmp_phy.lane[j].preem,
+				      tmp_phy.lane[j].amp, tmp_phy.lane[j].rterm);
 			}
 		}
 

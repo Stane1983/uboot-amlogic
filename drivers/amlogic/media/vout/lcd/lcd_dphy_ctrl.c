@@ -252,6 +252,7 @@ static void lcd_lvds_lane_swap(struct aml_lcd_drv_s *pdrv, unsigned int *map0, u
 	/* lvds swap */
 	switch (pdrv->data->chip_type) {
 	case LCD_CHIP_T5M:
+	case LCD_CHIP_T6W:
 		*map0 = ch_map_6lane[ch_reg_idx];
 		*map1 = ch_map_6lane[ch_reg_idx + 1];
 		break;
@@ -665,8 +666,9 @@ void lcd_lvds_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off)
 		}
 		break;
 	case LCD_CHIP_T6D:
+	case LCD_CHIP_T6W:
 		if (on_off) {
-			lcd_ana_write(ANACTRL_LVDS_TX_PHY_CNTL1, 0xc3000000);
+			lcd_ana_write(ANACTRL_LVDS_TX_PHY_CNTL1, 0x03000000);
 			lcd_lane_map_set(pdrv);
 		} else {
 			lcd_ana_write(ANACTRL_LVDS_TX_PHY_CNTL1, 0);
@@ -779,6 +781,15 @@ void lcd_vbyone_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off)
 			lcd_ana_setb(ANACTRL_LVDS_TX_PHY_CNTL0, 0, 16, 12);
 		}
 		break;
+	case LCD_CHIP_T6W:
+		if (on_off) {
+			lcd_ana_write(ANACTRL_LVDS_TX_PHY_CNTL1, 0x03000000);
+			// lane_swap_set
+			lcd_lane_map_set(pdrv);
+		} else {
+			lcd_ana_write(ANACTRL_LVDS_TX_PHY_CNTL1, 0);
+		}
+		break;
 	default:
 		if (on_off) {
 			/* set fifo_clk_sel: div 7 */
@@ -861,8 +872,9 @@ void lcd_mlvds_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off)
 		}
 		break;
 	case LCD_CHIP_T6D:
+	case LCD_CHIP_T6W:
 		if (on_off) {
-			lcd_ana_write(ANACTRL_LVDS_TX_PHY_CNTL1, 0xc3000000);
+			lcd_ana_write(ANACTRL_LVDS_TX_PHY_CNTL1, 0x03000000);
 			// lane_swap_set
 			lcd_lane_map_set(pdrv);
 		} else {
@@ -913,6 +925,15 @@ void lcd_p2p_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off)
 	}
 
 	switch (pdrv->data->chip_type) {
+	case LCD_CHIP_T6W:
+		if (on_off) {
+			lcd_ana_write(ANACTRL_LVDS_TX_PHY_CNTL1, 0x03000000);
+			// lane_swap_set
+			lcd_lane_map_set(pdrv);
+		} else {
+			lcd_ana_write(ANACTRL_LVDS_TX_PHY_CNTL1, 0);
+		}
+		break;
 	case LCD_CHIP_T5M:
 		if (on_off) {
 			/* fifo_clk_sel[7:6]: 0=div6, 1=div 7, 2=div8, 3=div10 */
@@ -1030,6 +1051,7 @@ void lcd_dphy_reg_print(struct aml_lcd_drv_s *pdrv)
 	switch (pdrv->data->chip_type) {
 	case LCD_CHIP_T5M:
 	case LCD_CHIP_T6D:
+	case LCD_CHIP_T6W:
 		reg_ch_swap = ch_swap_reg_dft;
 		size_ch_swap = ARRAY_SIZE(ch_swap_reg_dft);
 		reg_dphy_table = &dphy_reg_t5m[0];

@@ -451,7 +451,8 @@ struct p2p_config_s {
 #define PHY_BIT_CV_MODE     BIT(4)
 #define PHY_BIT_LANE_PREEM  BIT(12)
 #define PHY_BIT_LANE_AMP    BIT(13)
-#define PHY_BIT_LANE_SEL    BIT(14)
+#define PHY_BIT_LANE_RTERM  BIT(14)
+#define PHY_BIT_LANE_SEL    BIT(15)
 
 #define PHY_PHASE_0 0
 #define PHY_PHASE_A 1
@@ -460,6 +461,7 @@ struct p2p_config_s {
 struct phy_lane_s {
 	unsigned int preem; //flag bit[12]
 	unsigned int amp; //flag bit[13]
+	unsigned int rterm;
 };
 
 struct ss_config_s {

@@ -1258,31 +1258,27 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 		}
 		propdata = (char *)fdt_getprop(dt_addr, child_offset, "phy_lane_ctrl", &len);
 
-		if (phy_cfg->flag & (0x3 << 12) && len > 0 && propdata) {
+		if (len > 0 && propdata) {
 			for (i = 0; i < phy_cfg->lane_num; i++) {
 				if (i >= (len / 4))
 					break;
 
-				if (phy_cfg->flag & (1 << 12))
+				if (phy_cfg->flag & PHY_BIT_LANE_PREEM)
 					phy->lane[i].preem =
-						be32_to_cpup(((u32 *)propdata) + i) & 0xffff;
+						be32_to_cpup(((u32 *)propdata) + i) & 0xff;
 
-				if (phy_cfg->flag & (1 << 13))
+				if (phy_cfg->flag & PHY_BIT_LANE_AMP)
 					phy->lane[i].amp =
-						be32_to_cpup(((u32 *)propdata) + i) >> 16;
+						(be32_to_cpup(((u32 *)propdata) + i) >> 16) & 0xff;
+
+				if (phy_cfg->flag & PHY_BIT_LANE_RTERM)
+					phy->lane[i].rterm =
+						(be32_to_cpup(((u32 *)propdata) + i) >> 24) & 0xff;
 
 				if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-					if ((phy_cfg->flag >> 12 & 0x3) == 0x3) {
-						LCDPR("%s: lane[%d]: preem=0x%x amp=0x%x\n",
-						      __func__, i, phy->lane[i].preem,
-						      phy->lane[i].amp);
-					} else if ((phy_cfg->flag >> 12 & 0x3) == 0x1) {
-						LCDPR("%s: lane[%d]: preem=0x%x\n",
-						      __func__, i, phy->lane[i].preem);
-					} else if ((phy_cfg->flag >> 12 & 0x3) == 0x2) {
-						LCDPR("%s: lane[%d]: amp=0x%x\n",
-						      __func__, i, phy->lane[i].amp);
-					}
+					LCDPR("%s: lane[%d]: preem=0x%x amp=0x%x, rterm=0x%x\n",
+					      __func__, i, phy->lane[i].preem,
+					      phy->lane[i].amp, phy->lane[i].rterm);
 				}
 			}
 		}
@@ -1474,9 +1470,7 @@ static int lcd_config_load_from_unifykey_v2(struct aml_lcd_drv_s *pdrv,
 
 	if (phy_cfg->flag & PHY_BIT_LANE_PREEM) {
 		for (i = 0; i < phy_cfg->lane_num; i++) {
-			phy->lane[i].preem =
-				*(p + LCD_UKEY_PHY_LANE_CTRL + 4 * i) |
-				(*(p + LCD_UKEY_PHY_LANE_CTRL + 4 * i + 1) << 8);
+			phy->lane[i].preem = *(p + LCD_UKEY_PHY_LANE_CTRL + 4 * i);
 			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 				LCDPR("%s: lane[%d]: preem=0x%x\n",
 				      __func__, i, phy->lane[i].preem);
@@ -1484,14 +1478,24 @@ static int lcd_config_load_from_unifykey_v2(struct aml_lcd_drv_s *pdrv,
 		}
 	}
 
+	/*LCD_UKEY_PHY_LANE_CTRL + 4 * i + 1, reserved*/
+
 	if (phy_cfg->flag & PHY_BIT_LANE_AMP) {
 		for (i = 0; i < phy_cfg->lane_num; i++) {
-			phy->lane[i].amp =
-				*(p + LCD_UKEY_PHY_LANE_CTRL + 4 * i + 2) |
-				(*(p + LCD_UKEY_PHY_LANE_CTRL + 4 * i + 3) << 8);
+			phy->lane[i].amp = *(p + LCD_UKEY_PHY_LANE_CTRL + 4 * i + 2);
 			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 				LCDPR("%s: lane[%d]: amp=0x%x\n",
 				      __func__, i, phy->lane[i].amp);
+			}
+		}
+	}
+
+	if (phy_cfg->flag & PHY_BIT_LANE_RTERM) {
+		for (i = 0; i < phy_cfg->lane_num; i++) {
+			phy->lane[i].rterm = *(p + LCD_UKEY_PHY_LANE_CTRL + 4 * i + 3);
+			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+				LCDPR("%s: lane[%d]: rterm=0x%x\n",
+				      __func__, i, phy->lane[i].rterm);
 			}
 		}
 	}
@@ -2518,6 +2522,15 @@ static int lcd_panel_parse_phy(struct json_parse_s *jsp, struct aml_lcd_drv_s *p
 			for (k = 0; k < cnt2; k++)
 				phy->lane[k].amp = json_get_arr_u32(jsp, child2, k,
 								     phy->lane[k].amp);
+		}
+
+		child2 = json_get_object_child(jsp, child, "ch_rterm");
+		if (child2) {
+			cnt2 = json_get_array_size(jsp, child2);
+			cnt2 = lcd_s32_constraint(cnt2, 0, phy_cfg->lane_num);
+			for (k = 0; k < cnt2; k++)
+				phy->lane[k].rterm = json_get_arr_u32(jsp, child2, k,
+								      phy->lane[k].rterm);
 		}
 	}
 

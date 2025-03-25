@@ -399,6 +399,7 @@ void lcd_clk_config_probe(struct aml_lcd_drv_s *pdrv)
 #endif
 #if (IS_ENABLED(CONFIG_MESON_T6D)) || (IS_ENABLED(CONFIG_MESON_T6W))
 	case LCD_CHIP_T6D:
+	case LCD_CHIP_T6W:
 		cconf = lcd_clk_config_chip_init_t6d_t6w(pdrv);
 		break;
 #endif

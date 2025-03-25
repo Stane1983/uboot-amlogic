@@ -681,6 +681,7 @@ void lcd_debug_probe(struct aml_lcd_drv_s *pdrv)
 	switch (pdrv->data->chip_type) {
 	case LCD_CHIP_T5M:
 	case LCD_CHIP_T6D:
+	case LCD_CHIP_T6W:
 		lcd_debug_info = &lcd_debug_info_t5m;
 		break;
 	case LCD_CHIP_T3X:

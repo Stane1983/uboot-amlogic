@@ -212,6 +212,9 @@ void lcd_vbyone_enable(struct aml_lcd_drv_s *pdrv)
 	lcd_vbyone_hw_filter(pdrv, 1);
 	lcd_vcbus_setb(VBO_INSGN_CTRL + offset, 0, 2, 2);
 
+	if (pdrv->data->chip_type == LCD_CHIP_T6W)
+		lcd_vcbus_setb(VBO_LANE_OUTPUT + offset, 0xff, 0, 8);
+
 	lcd_vcbus_setb(VBO_CTRL_L + offset, 1, 0, 1);
 
 	lcd_vbyone_wait_timing_stable(pdrv);
