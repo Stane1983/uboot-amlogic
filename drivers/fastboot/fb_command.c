@@ -1108,6 +1108,7 @@ static void snapshot_update_cmd(char *cmd_parameter, char *response)
 }
 
 #if !CONFIG_IS_ENABLED(NO_FASTBOOT_FLASHING)
+#ifdef CONFIG_AVB2
 static void try_unlock_dev(u64 rc)
 {
 #if defined(CONFIG_AML_ANTIROLLBACK) || defined(CONFIG_AML_AVB2_ANTIROLLBACK)
@@ -1171,6 +1172,7 @@ static void try_lock_dev(u64 rc)
 	printf("locking device.  Erasing metadata partition!\n");
 	run_command("store erase metadata 0 0", 0);
 }
+#endif
 
 /**
  * flashing() - lock/unlock.
