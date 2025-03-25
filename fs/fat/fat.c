@@ -424,13 +424,19 @@ static int get_contents(fsdata *mydata, dir_entry *dentptr, loff_t pos,
 	__u32 curclust = START(dentptr);
 	__u32 endclust, newclust;
 	loff_t actsize;
+	loff_t fSize;
 
 	*gotsize = 0;
 	debug("Filesize: %llu bytes\n", filesize);
 
-	if (filesize >= (gd->relocaddr + (gd->mon_len >> 10) - (loff_t)buffer)) {
-		printf("img size 0x%llx exceed maximum available space 0x%llx\n",
-		filesize, gd->relocaddr + (gd->mon_len >> 10) - (loff_t)buffer);
+	if (maxsize)
+		fSize = maxsize;
+	else
+		fSize = filesize;
+
+	if (fSize >= (gd->relocaddr + (gd->mon_len >> 10) - (loff_t)buffer)) {
+		printf("file size: 0x%llx exceed maximum available space: 0x%llx\n",
+		fSize, gd->relocaddr + (gd->mon_len >> 10) - (loff_t)buffer);
 		return -1;
 	}
 
