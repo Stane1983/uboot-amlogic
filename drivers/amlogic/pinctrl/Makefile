@@ -7,3 +7,6 @@ obj-$(CONFIG_PINCTRL_MESON_S7)		+= pinctrl-meson-s7.o
 obj-$(CONFIG_PINCTRL_MESON_T5M)		+= pinctrl-meson-t5m.o
 obj-$(CONFIG_PINCTRL_MESON_S7D)		+= pinctrl-meson-s7d.o
 obj-$(CONFIG_PINCTRL_MESON_S6)		+= pinctrl-meson-s6.o
+obj-$(CONFIG_PINCTRL_MESON_T6D)		+= pinctrl-meson-t6d.o
+obj-$(CONFIG_PINCTRL_MESON_T6W)		+= pinctrl-meson-t6w.o
+obj-$(CONFIG_PINCTRL_MESON_T6X)		+= pinctrl-meson-t6x.o

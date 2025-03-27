@@ -1025,7 +1025,43 @@ config TARGET_T6W_BS311
 config TARGET_T6W_BS319
 	bool "T6W BS319 board"
 	depends on T6W_BS319
+endif
 
+if MESON_T6X
+
+config SYS_SOC
+	default "t6x"
+
+config DDRFW_TYPE
+	string "t6x DDR FW Type"
+	default "ddr4"
+
+config CHIPSET_NAME
+	string "T6X CHIPSET NAME"
+	default ""
+
+config CHIPSET_VARIANT
+	string "T6X CHIPSET VARIANT"
+	default ""
+
+config AMLOGIC_KEY_TYPE
+	string "T6X AMLOGIC KEY TYPE"
+	default "dev-keys"
+
+choice
+	prompt "t6x Board"
+
+config T6X_SKT
+	bool "T6X_SKT"
+	select TARGET_T6X_SKT
+	help
+		Select T6X SKT config
+
+endchoice
+
+config TARGET_T6X_SKT
+	bool "T6X SKT board"
+	depends on T6X_SKT
 endif
 
 # Amlogic boards
@@ -1107,4 +1143,3 @@ source "board/amlogic/s6_bq209/Kconfig"
 source "board/amlogic/s6_bn201/Kconfig"
 
 source "board/amlogic/s6_bl215/Kconfig"
-

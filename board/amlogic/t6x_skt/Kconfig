@@ -1,0 +1,31 @@
+if TARGET_T6X_SKT
+
+config SYS_SOC
+	default "t6x"
+
+config SYS_BOARD
+	default "t6x_skt"
+
+config SYS_CONFIG_NAME
+	default "t6x_skt"
+
+config DTB_BIND_KERNEL
+    bool "load dtb from boot part but not flash rsv"
+    default n
+
+config BL30_SELECT
+	string "t6d BL30 board config"
+		default "t6d_pxp"
+
+config CMD_PLLTEST
+        bool "support plltest command"
+        default n
+		help
+			support plltest command
+
+config AML_REBOOT
+		bool "reboot cmd"
+		default y
+		help
+			support uboot reboot cmd
+endif

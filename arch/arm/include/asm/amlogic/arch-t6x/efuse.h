@@ -1,0 +1,154 @@
+/* SPDX-License-Identifier: (GPL-2.0+ OR MIT) */
+/*
+ * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ */
+
+#ifndef __EFUSE_H
+#define __EFUSE_H
+
+#include <config.h>
+#include <common.h>
+
+/* efuse HAL_API arg */
+struct efuse_hal_api_arg {
+	unsigned int cmd;		/* R/W */
+	unsigned int offset;
+	unsigned int size;
+	unsigned long buffer_phy;
+	unsigned long retcnt_phy;
+};
+
+typedef struct efuse_cali {
+	unsigned long long who_burn:4;
+	unsigned long long cali_version:4;
+	unsigned long long tsensor0_data:15;
+	unsigned long long tsensor0_flag:1;
+	unsigned long long tsensor1_data:15;
+	unsigned long long tsensor1_flag:1;
+	unsigned long long hdmirx20_data:4;
+	unsigned long long hdmirx20_flag:1;
+	unsigned long long reserved0:1;
+	unsigned long long usbphy_data:6;
+	unsigned long long usbphy_flag:1;
+	unsigned long long odio33_data:2;
+	unsigned long long odio33_flag:1;
+	unsigned long long cvbs_data:7;
+	unsigned long long cvbs_flag:1;
+	//Cali info2
+	unsigned long long saradc_vref_data:6;
+	unsigned long long saradc_vref_flag:1;
+	unsigned long long reserved1:1;
+	unsigned long long saradc_min_data:11;
+	unsigned long long saradc_min_flag:1;
+	unsigned long long saradc_max_data:11;
+	unsigned long long saradc_max_flag:1;
+	unsigned long long eth_txamp_data:5;
+	unsigned long long eth_txamp_flag:1;
+	unsigned long long eth_resctl_data:8;
+	unsigned long long eth_resctl_flag:1;
+	unsigned long long miscpzq_data:8;
+	unsigned long long miscpzq_flag:1;
+	unsigned long long p2p_vinlp_data:5;
+	unsigned long long p2p_vinlp_flag:1;
+	unsigned long long p2p_common_data:5;
+	unsigned long long p2p_common_flag:1;
+	unsigned long long reserved2:4;
+} efuse_cali_t;
+
+#define EFUSE_CALI_SIZE			17
+#define EFUSE_CALI_CVBS
+
+#define EFUSE_BYTES				512   /* (EFUSE_BITS/8) */
+
+#define EFUSE_HAL_API_READ	0
+#define EFUSE_HAL_API_WRITE 1
+#define EFUSE_HAL_API_WRITE_PATTERN 2
+#define EFUSE_HAL_API_USER_MAX 3
+#define EFUSE_HAL_API_READ_CALI 4
+#define EFUSE_HAL_API_READ_CALI_ITEM 5
+#define EFUSE_HAL_API_CHECKPATTERN_ITEM  6
+#define CONFIG_EFUSE_OBJ_API 1
+
+#define EFUSE_USER_MASK            (0x1 << 16)
+#define EFUSE_THERMAL_MASK         (0x1 << 17)
+#define EFUSE_THERMAL_VERFLAG_MASK (0x1 << 18)
+#define EFUSE_ENCRYPT_MASK         (0x1 << 19)
+
+//#define ASSIST_HW_REV                              0x1f53
+
+typedef enum efuse_obj_status_s {
+	EFUSE_OBJ_SUCCESS		= 0,
+
+	EFUSE_OBJ_ERR_OTHER_INTERNAL	= 1,
+
+	EFUSE_OBJ_ERR_INVALID_DATA	= 100,
+	EFUSE_OBJ_ERR_NOT_FOUND,
+	EFUSE_OBJ_ERR_DEPENDENCY,
+	EFUSE_OBJ_ERR_SIZE,
+	EFUSE_OBJ_ERR_NOT_SUPPORT,
+
+	EFUSE_OBJ_ERR_ACCESS		= 200,
+	EFUSE_OBJ_ERR_WRITE_PROTECTED = 201,
+
+	EFUSE_OBJ_ERR_TAG = 220,
+
+	EFUSE_OBJ_ERR_UNKNOWN		= 300,
+	EFUSE_OBJ_ERR_INTERNAL,
+} efuse_obj_status_e;
+
+typedef enum efuse_obj_info_s {
+	EFUSE_OBJ_EFUSE_DATA	= 0,
+	EFUSE_OBJ_LOCK_STATUS,
+	EFUSE_OBJ_EFUSE_ENC_DATA,
+} efuse_obj_info_e;
+
+typedef struct {
+	char name[48];
+	unsigned char data[32];
+	unsigned int size;
+} efuse_obj_field_t;
+
+typedef struct {
+	char name[48];
+	unsigned char data[32];
+	unsigned int size;
+	unsigned char iv[12];
+	unsigned char tag[16];
+} efuse_obj_enc_field_t;
+
+int efuse_read_usr(char *buf, size_t count, loff_t *ppos);
+int efuse_write_usr(char *buf, size_t count, loff_t *ppos);
+uint32_t efuse_get_max(void);
+ssize_t efuse_read(char *buf, size_t count, loff_t *ppos);
+ssize_t efuse_write(const char *buf, size_t count, loff_t *ppos);
+
+int32_t meson_trustzone_efuse(struct efuse_hal_api_arg *arg);
+int32_t meson_trustzone_efuse_get_max(struct efuse_hal_api_arg *arg);
+int64_t meson_trustzone_efuse_lockitem(const char *str);
+
+#ifdef CONFIG_EFUSE_OBJ_API
+uint32_t meson_efuse_obj_write(uint32_t obj_id, uint8_t *buff, uint32_t size);
+uint32_t meson_efuse_obj_read(uint32_t obj_id, uint8_t *buff, uint32_t *size);
+uint32_t efuse_obj_write(uint32_t obj_id, char *name, uint8_t *buff, uint32_t size);
+uint32_t efuse_obj_read(uint32_t obj_id, char *name, uint8_t *buff, uint32_t *size);
+uint32_t efuse_obj_set_data(char *name, char *data);
+uint32_t efuse_obj_set_enc_data(char *name, char *data);
+uint32_t efuse_obj_set_license(char *name);
+uint32_t efuse_obj_lock(char *name);
+uint32_t efuse_obj_get_data(char *name);
+uint32_t efuse_obj_get_lock(char *name);
+extern efuse_obj_field_t efuse_field;
+#endif /* CONFIG_EFUSE_OBJ_API */
+#ifdef CONFIG_EFUSE_MRK_GET_CHECKNUM
+typedef enum efuse_mrk_checknum_status_s {
+	EFUSE_MRK_CHECKNUM_SUCCESS             = 0,
+
+	EFUSE_MRK_CHECKNUM_NOT_SUPPORTED       = 1,
+	EFUSE_MRK_CHECKNUM_INVALID_ARGUMENT    = 2,
+} efuse_mrk_checknum_status_e;
+
+uint32_t efuse_mrk_get_checknum(char *name, uint32_t longmrk, uint32_t *checknum);
+uint32_t meson_efuse_mrk_get_checknum(char *name, uint32_t longmrk, uint32_t *checknum);
+#endif
+#endif
+
