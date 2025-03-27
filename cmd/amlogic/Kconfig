@@ -260,6 +260,13 @@ config CMD_SCMI_SHMEM_ADDR
           When the address of shmem in DTB is inconsistent with BL31,
           support updating the address of shmem in DTB.
 
+config CMD_MUITI_REMOTE_KEYPAD
+	bool "config multi remote and keypad"
+	depends on CMD_AML_MODEL || CMD_INI
+	default y if CMD_AML_MODEL || CMD_INI
+	help
+	  we can config multi remote and keypad by model_sum.ini
+
 #prduct mode end<----
 
 endmenu

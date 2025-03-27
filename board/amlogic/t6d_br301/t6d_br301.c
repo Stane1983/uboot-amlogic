@@ -171,35 +171,8 @@ int board_late_init(void)
 #endif
 	aml_board_late_init_tail(NULL);
 
-	run_command("amlsecurecheck", 0);
-	run_command("update_tries", 0);
-
-	unsigned char chipid[16];
-
-	memset(chipid, 0, 16);
-
-	if (get_chip_id(chipid, 16) != -1) {
-		char chipid_str[32];
-		int i, j;
-		char buf_tmp[4];
-
-		memset(chipid_str, 0, 32);
-
-		char *buff = &chipid_str[0];
-
-		for (i = 0, j = 0; i < 12; ++i) {
-			sprintf(&buf_tmp[0], "%02x", chipid[15 - i]);
-			if (strcmp(buf_tmp, "00") != 0) {
-				sprintf(buff + j, "%02x", chipid[15 - i]);
-				j = j + 2;
-			}
-		}
-		env_set("cpu_id", chipid_str);
-		printf("buff: %s\n", buff);
-	} else {
-		env_set("cpu_id", "1234567890");
-	}
-//	emmc_quirks();
+	run_command("multi_remote", 0);
+	run_command("multi_keypad", 0);
 	return 0;
 }
 

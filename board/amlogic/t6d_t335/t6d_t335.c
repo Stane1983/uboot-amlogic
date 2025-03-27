@@ -153,6 +153,9 @@ int board_late_init(void)
 	wifi_init();
 #endif
 	aml_board_late_init_tail(NULL);
+
+	run_command("multi_remote", 0);
+	run_command("multi_keypad", 0);
 	return 0;
 }
 
