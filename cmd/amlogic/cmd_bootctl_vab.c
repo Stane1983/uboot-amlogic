@@ -550,18 +550,6 @@ static int check_bootloader(int slot)
 	ret = memcmp(gensum0, gensum1, SHA1SUMLEN);
 	printf("boot1 & %s %s same\n", back_partname, ret ? "NOT" : "DO");
 
-	if (ret) {
-		printf("boot1 doesn't = %s, rewrite it\n", back_partname);
-		iRet = store_boot_write("bootloader", 2, 0, buffer_dest);
-		if (iRet) {
-			printf("Failed to write bootloader\n");
-			goto exit;
-		} else {
-			printf("write %s to boot1 ok\n", back_partname);
-			ret = 0;
-		}
-	}
-
 #ifdef CONFIG_MMC_MESON_GX
 	dev_desc = blk_get_dev("mmc", 1);
 	if (dev_desc && dev_desc->type != DEV_TYPE_UNKNOWN) {
@@ -590,6 +578,17 @@ static int check_bootloader(int slot)
 #else
 			run_command("defenv_reserve;setenv dts_to_gpt 0;saveenv;", 0);
 #endif
+			if (ret) {
+				printf("boot1 doesn't = %s, rewrite it\n", back_partname);
+				iRet = store_boot_write("bootloader", 2, 0, buffer_dest);
+				if (iRet) {
+					printf("Failed to write bootloader\n");
+					goto exit;
+				} else {
+					printf("write %s to boot1 ok\n", back_partname);
+					ret = 0;
+				}
+			}
 		}
 	}
 #endif
