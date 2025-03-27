@@ -718,7 +718,8 @@ int v3tool_storage_init(const int eraseFlash, unsigned int dtbImgSz, unsigned in
 			FB_MSG("remain bootloader as nocs scs chip\n");
 			ret = usb_burn_erase_data(1);
 		} else {
-			if (v3tool_work_mode_get() == V3TOOL_WORK_MODE_USB_PRODUCE) {
+			if (v3tool_work_mode_get() == V3TOOL_WORK_MODE_USB_PRODUCE ||
+					store_get_type() == BOOT_EMMC) {
 				ret = store_erase(NULL, 0, 0, 0);
 			} else {
 				FB_MSG("remain bootloader as not usb boot\n");
@@ -739,6 +740,10 @@ int v3tool_storage_init(const int eraseFlash, unsigned int dtbImgSz, unsigned in
 		if (!_disk_intialed_ok) {//last disk_initial also okay
 			initr_env();//can only be called once
 		}
+	}
+	if (initFlag > 1) {
+		FB_MSG("defenv in usb burning mode\n");
+		run_command("env default -a; env set upgrade_step 3; saveenv", 0);
 	}
 	_disk_intialed_ok  = 1;
 	if (eraseFlash && eraseFlash < 5) _disk_intialed_ok += (1 <<16);
