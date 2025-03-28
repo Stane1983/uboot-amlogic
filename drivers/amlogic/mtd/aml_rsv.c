@@ -1060,8 +1060,8 @@ static int meson_rsv_add_node(void *blob, int parent_offset, int index,
 	int err = 0, node_offset = 0;
 	char buf[64];
 
-	pr_debug("%s : add node%d %s block start %u block cnt %u size %u\n",
-			__func__, index, name, block_start, block_cnt, size);
+	pr_info("%s : add node%d %s block start %u block cnt %u size %u\n",
+		__func__, index, name, block_start, block_cnt, size);
 add_node:
 	memset(buf, 0, sizeof(buf));
 	sprintf(buf, "node%d", index);
@@ -1073,10 +1073,10 @@ add_node:
 		else
 			goto err_size;
 	} else if (node_offset == -FDT_ERR_EXISTS) {
-		return 0;
+		node_offset = fdt_subnode_offset(blob, parent_offset, buf);
 	} else if (node_offset < 0) {
-		printf("Can't add mtdrsvpart node: %s\n",
-				fdt_strerror(node_offset));
+		pr_err("Can't add mtdrsvpart node: %s\n",
+		       fdt_strerror(node_offset));
 		return node_offset;
 	}
 
@@ -1115,6 +1115,7 @@ int meson_rsv_add_dtb(void *blob, int parent_offset)
 	char buf[64];
 
 	sprintf(buf, "rsv_partition");
+
 add_rsvparts:
 	rsvparts_offset = fdt_add_subnode(blob, parent_offset, buf);
 	if (rsvparts_offset == -FDT_ERR_NOSPACE) {
@@ -1126,7 +1127,10 @@ add_rsvparts:
 			return ret;
 		}
 	} else if (rsvparts_offset == -FDT_ERR_EXISTS) {
-		return 0;
+		rsvparts_offset = fdt_subnode_offset(blob, parent_offset, buf);
+		fdt_del_node(blob, rsvparts_offset);
+		pr_err("mtdrsvpart node already exists, overwrite it!\n");
+		goto add_rsvparts;
 	} else if (rsvparts_offset < 0) {
 		pr_err("Can't add mtdrsvpart node: %s\n",
 				fdt_strerror(rsvparts_offset));

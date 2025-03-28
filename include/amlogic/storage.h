@@ -487,5 +487,6 @@ int check_valid_dts(unsigned char *buffer);
 int store_boot_copy_enable(int index);
 
 u8 mtd_store_boot_copy_num(const char *part_name);
+int store_send_param(void);
 
 #endif/* __STORAGE_H__ */

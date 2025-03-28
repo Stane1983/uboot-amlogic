@@ -331,6 +331,10 @@ int do_bootm(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 	}
 #endif
 
+#if CONFIG_IS_ENABLED(AML_MTD)
+	/* send store param by dtb or env */
+	store_send_param();
+#endif
 	/* determine if we have a sub command */
 	argc--; argv++;
 	if (argc > 0) {

@@ -375,6 +375,13 @@ u64 store_boot_copy_size(const char *name)
 	return store->get_copy_size(name);
 }
 
+int store_send_param(void)
+{
+	struct storage_t *store = store_get_current();
+
+	return store->param_ops ? store->param_ops() : 0;
+}
+
 static int _store_boot_read(const char *part_name, u8 cpy, size_t size, void *addr)
 {
 	struct storage_t *store = store_get_current();

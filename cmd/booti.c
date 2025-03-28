@@ -15,6 +15,9 @@
 #include <asm/global_data.h>
 #include <linux/kernel.h>
 #include <linux/sizes.h>
+#if CONFIG_IS_ENABLED(AML_MTD)
+#include <amlogic/storage.h>
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 /*
@@ -105,6 +108,10 @@ int do_booti(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 {
 	int ret;
 
+#if CONFIG_IS_ENABLED(AML_MTD)
+	/* send store param by dtb or env */
+	store_send_param();
+#endif
 	/* Consume 'booti' */
 	argc--; argv++;
 

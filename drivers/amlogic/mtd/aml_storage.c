@@ -1295,8 +1295,8 @@ static int mtd_store_get_fdt_node_offset(enum boot_type_e medium_type)
 	int node_offset;
 
 	if (!working_fdt) {
-		pr_debug("%s: working_fdt is set, fdt add to set working_fdt\n",
-				__FILE__);
+		pr_err("%s: working_fdt not set, fdt add to set working_fdt\n",
+		       __FILE__);
 		fdtaddr = env_get("dtb_mem_addr");
 		if (!fdtaddr) {
 			pr_err("get dtb_mem_addr NULL\n");
@@ -1304,7 +1304,7 @@ static int mtd_store_get_fdt_node_offset(enum boot_type_e medium_type)
 		}
 		mem_dtb = simple_strtoul(fdtaddr, NULL, 16);
 		sprintf(buf, "fdt addr 0x%x", mem_dtb);
-		pr_debug("fdt addr 0x%x\n", mem_dtb);
+		pr_err("fdt addr 0x%x\n", mem_dtb);
 		if (run_command(buf, 0)) {
 			pr_err("fdt addr 0x%x error.\n", mem_dtb);
 			return -EBADMSG;
@@ -1347,8 +1347,8 @@ static int mtd_store_param_bl2_partition(void)
 	struct part_info *bl2 = NULL;
 
 	if (!working_fdt) {
-		pr_debug("%s: working_fdt is set, fdt add to set working_fdt\n",
-				__FILE__);
+		pr_err("%s: working_fdt is set, fdt add to set working_fdt\n",
+		       __FILE__);
 		fdtaddr = env_get("dtb_mem_addr");
 		if (!fdtaddr) {
 			pr_err("get dtb_mem_addr NULL\n");
@@ -1356,7 +1356,7 @@ static int mtd_store_param_bl2_partition(void)
 		}
 		mem_dtb = simple_strtoul(fdtaddr, NULL, 16);
 		sprintf(buf, "fdt addr 0x%x", mem_dtb);
-		pr_debug("fdt addr 0x%x\n", mem_dtb);
+		pr_err("fdt addr 0x%x\n", mem_dtb);
 		if (run_command(buf, 0)) {
 			pr_err("fdt addr 0x%x error.\n", mem_dtb);
 			return -EBADMSG;
@@ -1459,17 +1459,22 @@ int mtd_store_param_partition(void)
 	char *p = buf;
 	enum boot_type_e medium_type = store_get_type();
 
-	count = mtd_store_count();
-	lenvir = snprintf(buf, sizeof(buf), "%s", "mtdparts=aml-mtd:");
-	p += lenvir;
-	re = sizeof(buf) - lenvir;
-
 	i = 0;
 	/* slcnand bl2 pass to kernel still by dtb, other partitions by cmdline */
 	if (medium_type == BOOT_NAND_MTD) {
 		mtd_store_param_bl2_partition();
 		i = 1;
 	}
+
+	if (strstr(env_get("bootargs"), "mtdparts")) {
+		pr_info("mtdparts already exit in bootargs!\n");
+		return 0;
+	}
+
+	count = mtd_store_count();
+	lenvir = snprintf(buf, sizeof(buf), "%s", "mtdparts=aml-mtd:");
+	p += lenvir;
+	re = sizeof(buf) - lenvir;
 
 	for (; i < count; i++) {
 		temp = get_aml_mtdpart_by_index(NULL, i);
@@ -1496,17 +1501,18 @@ int mtd_store_param_partition(void)
 
 int mtd_store_param_ops(void)
 {
-	static int init;
+	int ret = 0;
 
-	if (init)
-		return 0;
+	ret = mtd_store_param_partition();
+	if (ret)
+		goto error;
+	ret = mtd_store_param_rsv_partition();
+	if (ret)
+		goto error;
+	ret = mtd_store_param_boot_layout();
 
-	mtd_store_param_partition();
-	mtd_store_param_rsv_partition();
-	mtd_store_param_boot_layout();
-	init = 1;
-
-	return 0;
+error:
+	return ret;
 }
 
 void mtd_store_mount_ops(struct storage_t *store)
