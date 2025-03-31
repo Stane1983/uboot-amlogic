@@ -1075,7 +1075,9 @@ static int do_SetUpdateTries(
 		if (bootable_a) {
 			if (boot_ctrl.slot_info[0].successful_boot == 0) {
 				success_flag = 0;
-				if (rebootmode && strcmp(rebootmode, "fastboot")) {
+				if (rebootmode && strcmp(rebootmode, "fastboot") &&
+					strcmp(rebootmode, "factory_reboot") &&
+					strcmp(rebootmode, "bist_reboot")) {
 					boot_ctrl.slot_info[0].tries_remaining -= 1;
 					update_flag = 1;
 				}
@@ -1087,7 +1089,9 @@ static int do_SetUpdateTries(
 		if (bootable_b) {
 			if (boot_ctrl.slot_info[1].successful_boot == 0) {
 				success_flag = 0;
-				if (rebootmode && strcmp(rebootmode, "fastboot")) {
+				if (rebootmode && strcmp(rebootmode, "fastboot") &&
+					strcmp(rebootmode, "factory_reboot") &&
+					strcmp(rebootmode, "bist_reboot")) {
 					boot_ctrl.slot_info[1].tries_remaining -= 1;
 					update_flag = 1;
 				}
@@ -1097,7 +1101,9 @@ static int do_SetUpdateTries(
 
 	if (boot_ctrl.firstboot == 1) {
 		if (rebootmode && strcmp(rebootmode, "fastboot") &&
-			strcmp(rebootmode, "factory_reset")) {
+			strcmp(rebootmode, "factory_reset") &&
+			strcmp(rebootmode, "factory_reboot") &&
+			strcmp(rebootmode, "bist_reboot")) {
 			boot_ctrl.boot_tries_remaining -= 1;
 			update_flag = 1;
 		}

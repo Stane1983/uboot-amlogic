@@ -305,6 +305,7 @@ static void getvar_is_logical(char *var_parameter, char *response)
 			(strcmp(var_parameter, "freertos") == 0) ||
 			(strcmp(var_parameter, "init_boot") == 0) ||
 			(strcmp(var_parameter, "vendor_boot") == 0) ||
+			(strcmp(var_parameter, "bist") == 0) ||
 			(strcmp(var_parameter, "vbmeta") == 0)) {
 			if (strcmp(slot_name, "0") == 0) {
 				strcat(name, "_a");
@@ -502,6 +503,7 @@ static void getvar_has_slot(char *part_name, char *response)
 			(strcmp(part_name, "boot") == 0) ||
 			(strcmp(part_name, "recovery") == 0) ||
 			(strcmp(part_name, "vendor_boot") == 0) ||
+			(strcmp(part_name, "bist") == 0) ||
 			(strcmp(part_name, "vbmeta") == 0) ||
 			(strcmp(part_name, "vbmeta_system") == 0) ||
 			(strcmp(part_name, "freertos") == 0) ||

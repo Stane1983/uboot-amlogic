@@ -313,11 +313,59 @@ bool copy_bootconfig_to_cmdline(void)
 	return true;
 }
 
+int get_extra_ramdisk_size(const char *partname)
+{
+	u64 rc = -1;
+	const int preloadsz = 0x1000 * 2;
+	unsigned char *pbuffpreload = 0;
+	int ramdisk_size = 0;
+
+	printf("get ramdisk size from %s\n", partname);
+
+	rc = store_part_size(partname);
+	if (rc == -1) {
+		printf("part %s not exist\n", partname);
+		goto exit;
+	}
+
+	pbuffpreload = malloc(preloadsz);
+	if (!pbuffpreload) {
+		printf("Fail to allocate memory for %s\n", partname);
+		goto exit;
+	}
+	memset((void *)pbuffpreload, 0, preloadsz);
+
+	p_boot_img_hdr_v3_t pimghdr =
+		(p_boot_img_hdr_v3_t)pbuffpreload;
+
+	rc = store_logic_read(partname, 0,
+		preloadsz, pbuffpreload);
+	if (rc) {
+		printf("Fail to read 0x%xB from %s\n",
+			preloadsz, partname);
+		goto exit;
+	}
+
+	printf("ramdisk_size 0x%x\n",
+		pimghdr->ramdisk_size);
+	printf("factory_boot header_version = %d\n",
+		pimghdr->header_version);
+
+	ramdisk_size = pimghdr->ramdisk_size;
+exit:
+	if (pbuffpreload) {
+		free(pbuffpreload);
+		pbuffpreload = 0;
+	}
+	return ramdisk_size;
+}
+
 int android_image_get_ramdisk_v3(const boot_img_hdr_v3_t *hdr,
 			      ulong *rd_data, ulong *rd_len)
 {
 	/*boot image must contain ramdisk*/
 	unsigned ramdisksize;
+	int normal_recovery = 1;
 
 	if ((!hdr->ramdisk_size && init_boot_ramdisk_size == 0) || !p_vender_boot_img)
 	{
@@ -370,6 +418,8 @@ int android_image_get_ramdisk_v3(const boot_img_hdr_v3_t *hdr,
 		int ramdisk_offset, ramdisk_size;
 		char *recovery_mode;
 		int flag = 0;
+		int normal_ramdisk_offset = 0;
+		int normal_ramdisk_size = 0;
 
 		debug("vendor_ramdisk_table_size: 0x%x\n",
 			vb_hdr->vendor_ramdisk_table_size);
@@ -416,6 +466,8 @@ int android_image_get_ramdisk_v3(const boot_img_hdr_v3_t *hdr,
 					continue;
 				}
 			} else {
+				normal_ramdisk_offset = ramdisk_table->ramdisk_offset;
+				normal_ramdisk_size = ramdisk_table->ramdisk_size;
 				ramdisk_offset = ramdisk_table->ramdisk_offset;
 				ramdisk_size = ramdisk_table->ramdisk_size;
 			}
@@ -423,28 +475,164 @@ int android_image_get_ramdisk_v3(const boot_img_hdr_v3_t *hdr,
 
 		printf("ramdisk_size: 0x%x\n", ramdisk_size);
 		printf("ramdisk_offset: 0x%x\n", ramdisk_offset);
+		printf("normal_ramdisk_size: 0x%x\n", normal_ramdisk_size);
+		printf("normal_ramdisk_offset: 0x%x\n", normal_ramdisk_offset);
 
 		printf("flag = %d\n", flag);
-		if (flag == 0) {
-			memmove(pRAMdisk, (char *)(unsigned long)(simple_strtoul
-				(env_get("loadaddr"), NULL, 16)
-				+ nOffset), ramdisksize);
-			memmove(pRAMdisk + ramdisksize,
-				p_vender_boot_img->szData + ramdisk_offset,
-				ramdisk_size);
-			_read_in_bootconfig(vb_hdr, ramdisksize + ramdisk_size);
 
-			if (rd_len)
-				*rd_len  = ramdisksize + ramdisk_size
-					+ vb_hdr->vendor_bootconfig_size;
-		} else {
-			printf("vendor_ramdisk_size: 0x%x\n", vb_hdr->vendor_ramdisk_size);
-			memmove(pRAMdisk, p_vender_boot_img->szData, vb_hdr->vendor_ramdisk_size);
-			_read_in_bootconfig(vb_hdr, vb_hdr->vendor_ramdisk_size);
+		if (IS_ENABLED(CONFIG_FACTORY_BURN_MODE)) {
+			char *factory_mode = NULL;
+			int factory_ramdisk_size = 0;
 
-			if (rd_len)
-				*rd_len  = vb_hdr->vendor_ramdisk_size
-					+ vb_hdr->vendor_bootconfig_size;
+			factory_mode = env_get("factory_mode");
+			factory_ramdisk_size = get_extra_ramdisk_size("factory_boot");
+			if (factory_mode && (strcmp(factory_mode, "1") == 0) &&
+				factory_ramdisk_size != 0) {
+				printf("factory burn mode\n");
+				unsigned char *pbuffpreload_factory = 0;
+				int rc_f = 0;
+
+				pbuffpreload_factory = malloc(factory_ramdisk_size);
+				if (!pbuffpreload_factory) {
+					free(pbuffpreload);
+					printf("Fail to allocate memory for factory_boot\n");
+					return __LINE__;
+				}
+
+				rc_f = store_logic_read("factory_boot", BOOT_IMG_V3_HDR_SIZE,
+					factory_ramdisk_size, pbuffpreload_factory);
+				if (rc_f) {
+					printf("Fail to read 0x%xB from factory_boot\n",
+						factory_ramdisk_size);
+					free(pbuffpreload_factory);
+					pbuffpreload_factory = 0;
+					free(pbuffpreload);
+					return __LINE__;
+				}
+
+				printf("Factory RAM disk size 0x%x\n", factory_ramdisk_size);
+				printf("vendor_ramdisk_size: 0x%x\n", normal_ramdisk_size);
+
+				env_set("factory_mode", "0");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+				run_command("update_env_part -p factory_mode;", 0);
+#else
+				run_command("saveenv;", 0);
+#endif
+				normal_recovery = 0;
+
+				memmove(pRAMdisk,
+					p_vender_boot_img->szData + normal_ramdisk_offset,
+					normal_ramdisk_size);
+
+				memmove(pRAMdisk + normal_ramdisk_size,
+					pbuffpreload_factory,
+					factory_ramdisk_size);
+
+				_read_in_bootconfig(vb_hdr,
+					normal_ramdisk_size + factory_ramdisk_size);
+
+				if (rd_len)
+					*rd_len  = normal_ramdisk_size + factory_ramdisk_size
+						+ vb_hdr->vendor_bootconfig_size;
+
+				free(pbuffpreload_factory);
+			}
+		} else if (IS_ENABLED(CONFIG_BIST_MODE)) {
+			char *bist_mode = NULL;
+			char partname_bist[32] = {0};
+			char *slot_name;
+			int bist_ramdisk_size = 0;
+
+			bist_mode = env_get("bist_mode");
+			slot_name = env_get("slot-suffixes");
+			if (slot_name && (strcmp(slot_name, "0") == 0))
+				strcpy((char *)partname_bist, "bist_a");
+			else if (slot_name && (strcmp(slot_name, "1") == 0))
+				strcpy((char *)partname_bist, "bist_b");
+			else
+				strcpy((char *)partname_bist, "bist");
+
+			bist_ramdisk_size = get_extra_ramdisk_size(partname_bist);
+
+			if (bist_mode && (strcmp(bist_mode, "1") == 0) &&
+				bist_ramdisk_size != 0) {
+				printf("bist mode\n");
+				unsigned char *pbuffpreload_bist = 0;
+				int rc_b = 0;
+
+				pbuffpreload_bist = malloc(bist_ramdisk_size);
+				if (!pbuffpreload_bist) {
+					free(pbuffpreload);
+					printf("Fail to allocate memory for %s\n", partname_bist);
+					return __LINE__;
+				}
+				memset((void *)pbuffpreload_bist, 0, bist_ramdisk_size);
+
+				rc_b = store_logic_read(partname_bist, BOOT_IMG_V3_HDR_SIZE,
+					bist_ramdisk_size, pbuffpreload_bist);
+				if (rc_b) {
+					printf("Fail to read 0x%xB from %s\n",
+						bist_ramdisk_size, partname_bist);
+					free(pbuffpreload_bist);
+					pbuffpreload_bist = 0;
+					free(pbuffpreload);
+					return __LINE__;
+				}
+
+				printf("Factory RAM disk size 0x%x\n", bist_ramdisk_size);
+				printf("vendor_ramdisk_size: 0x%x\n", normal_ramdisk_size);
+
+				env_set("bist_mode", "0");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+				run_command("update_env_part -p bist_mode;", 0);
+#else
+				run_command("saveenv;", 0);
+#endif
+				normal_recovery = 0;
+
+				memmove(pRAMdisk,
+					p_vender_boot_img->szData + normal_ramdisk_offset,
+					normal_ramdisk_size);
+
+				memmove(pRAMdisk + normal_ramdisk_size,
+					pbuffpreload_bist,
+					bist_ramdisk_size);
+
+				_read_in_bootconfig(vb_hdr,
+					normal_ramdisk_size + bist_ramdisk_size);
+
+				if (rd_len)
+					*rd_len  = normal_ramdisk_size + bist_ramdisk_size
+						+ vb_hdr->vendor_bootconfig_size;
+
+				free(pbuffpreload_bist);
+			}
+		}
+
+		if (normal_recovery == 1) {
+			if (flag == 0) {
+				memmove(pRAMdisk, (char *)(unsigned long)(simple_strtoul
+					(env_get("loadaddr"), NULL, 16)
+					+ nOffset), ramdisksize);
+				memmove(pRAMdisk + ramdisksize,
+					p_vender_boot_img->szData + ramdisk_offset,
+					ramdisk_size);
+				_read_in_bootconfig(vb_hdr, ramdisksize + ramdisk_size);
+
+				if (rd_len)
+					*rd_len  = ramdisksize + ramdisk_size
+						+ vb_hdr->vendor_bootconfig_size;
+			} else {
+				printf("vendor_ramdisk_size: 0x%x\n", vb_hdr->vendor_ramdisk_size);
+				memmove(pRAMdisk, p_vender_boot_img->szData,
+					vb_hdr->vendor_ramdisk_size);
+				_read_in_bootconfig(vb_hdr, vb_hdr->vendor_ramdisk_size);
+
+				if (rd_len)
+					*rd_len  = vb_hdr->vendor_ramdisk_size
+						+ vb_hdr->vendor_bootconfig_size;
+			}
 		}
 		free(pbuffpreload);
 	}

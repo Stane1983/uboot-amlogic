@@ -139,6 +139,20 @@ int do_get_rebootmode (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 			break;
 		}
 #endif
+#ifdef AMLOGIC_FACTORY_MODE_REBOOT
+		case AMLOGIC_FACTORY_MODE_REBOOT:
+		{
+			env_set("reboot_mode", "factory_reboot");
+			break;
+		}
+#endif
+#ifdef AMLOGIC_BIST_MODE_REBOOT
+		case AMLOGIC_BIST_MODE_REBOOT:
+		{
+			env_set("reboot_mode", "bist_reboot");
+			break;
+		}
+#endif
 		default:
 		{
 			env_set("reboot_mode","charging");
@@ -243,6 +257,14 @@ int do_reboot (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			reboot_mode_val = AMLOGIC_KERNEL_PANIC;
 		else if (strcmp(mode, "rpmbp") == 0)
 			reboot_mode_val = AMLOGIC_RPMBP_REBOOT;
+#ifdef AMLOGIC_FACTORY_MODE_REBOOT
+		else if (strcmp(mode, "factory") == 0)
+			reboot_mode_val = AMLOGIC_FACTORY_MODE_REBOOT;
+#endif
+#ifdef AMLOGIC_BIST_MODE_REBOOT
+		else if (strcmp(mode, "Diagnostic") == 0)
+			reboot_mode_val = AMLOGIC_BIST_MODE_REBOOT;
+#endif
 #ifdef AMLOGIC_FFV_REBOOT
 		else if (strcmp(mode, "ffv_reboot") == 0)
 			reboot_mode_val = AMLOGIC_FFV_REBOOT;

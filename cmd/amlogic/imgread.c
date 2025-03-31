@@ -39,7 +39,7 @@ int __attribute__((weak)) store_logic_read(const char *name, loff_t off, size_t 
 #define debugP(fmt...) //printf("[Dbg imgread]L%d:", __LINE__),printf(fmt)
 #define errorP(fmt...) do {pr_err("Err imgread(L%d):", __LINE__); pr_err(fmt); } while (0)
 #define wrnP(fmt...)   pr_warn("wrn:" fmt)
-#define MsgP(fmt...)   pr_info("[imgread]" fmt)
+#define MsgP(fmt...)   printf("[imgread]" fmt)
 
 #define IMG_PRELOAD_SZ  (1U<<20) //Total read 1M at first to read the image header
 #define PIC_PRELOAD_SZ  (8U<<10) //Total read 4k at first to read the image header
