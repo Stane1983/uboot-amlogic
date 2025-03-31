@@ -985,7 +985,7 @@ static void cb_oem_cmd(struct usb_ep *ep, struct usb_request *req)
 		if (argc != 2) {
 			FBS_ERR(ack, "env_get only support one para now\n");
 		} else if (env_get(argv[1])) {
-			memcpy(ack, env_get(argv[1]), RESPONSE_LEN - 4);
+			strlcpy(ack, env_get(argv[1]), RESPONSE_LEN - 4);
 			ret = 0;
 		} else {
 			FBS_ERR(ack, "env %s not exist", argv[1]);
