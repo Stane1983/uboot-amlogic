@@ -173,7 +173,7 @@ int check_dovi_sha256(unsigned char* dovi_body, int size) {
 	char dovi_expect_hash[SHA256_SUM_LEN * 2 + 1] = {0};
 
 	/*step 2: avb_verify */
-	nRet = avb_verify(&out_data);
+	nRet = avb_verify_no_partitions(&out_data);
 	printf("check_dovi_sha256: locked=%d, result=%d\n", !is_device_unlocked(), nRet);
 	if (is_device_unlocked()) {
 		if(nRet != AVB_SLOT_VERIFY_RESULT_OK &&
