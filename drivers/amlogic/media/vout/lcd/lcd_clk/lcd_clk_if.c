@@ -92,21 +92,23 @@ static void lcd_bit_rate_match_phy(struct aml_lcd_drv_s *pdrv)
 	struct phy_config_s *phy_cfg = &pdrv->config.phy_cfg;
 	struct phy_attr_s *phy;
 	int i = 0;
-	unsigned int phy_clk;
+	unsigned int bit_rate;
 
 	phy_cfg->act_phy = phy_cfg->phys[0];// if not matched, use default
-	phy_clk = lcd_do_div(pdrv->config.timing.bit_rate, 1000000);
+	bit_rate = lcd_do_div(pdrv->config.timing.bit_rate, 1000000);
 	for (i = 0; i < phy_cfg->group_num; i++) {
 		phy = phy_cfg->phys[i];
-		if (phy->phy_clk < phy_clk - 20 || phy->phy_clk > phy_clk + 20)
+		if (phy->phy_clk < bit_rate - 20 || phy->phy_clk > bit_rate + 20)
 			continue;
 
 		phy_cfg->act_phy = phy_cfg->phys[i];
-		LCDPR("phy_clk=%d, match phy[%d]=%d\n", phy_clk, i, phy->phy_clk);
+		LCDPR("bit_rate=%d, match phy[%d]=%d\n", bit_rate, i, phy->phy_clk);
 		return;
 	}
-	if (phy_cfg->phys[0]->phy_clk)
-		LCDPR("no phy_clk matched, use default(phy[0])\n");
+	if (phy_cfg->phys[0]->phy_clk) {
+		LCDPR("bit_rate=%d, no phy_clk matched, use default(phy[0]=%d)\n",
+		      bit_rate, phy_cfg->phys[0]->phy_clk);
+	}
 }
 
 static void lcd_phy_match_ss(struct aml_lcd_drv_s *pdrv)
@@ -132,15 +134,14 @@ static void lcd_phy_match_ss(struct aml_lcd_drv_s *pdrv)
 		tim->ss_mode = phy->ss.mode;
 	}
 
-	cconf->ss_level = (tim->ss_level >= cconf->data->ss_level_max) ?
+	cconf->ss_level = (tim->ss_level > cconf->data->ss_level_max) ?
 				cconf->data->ss_level_max : tim->ss_level;
 
-	cconf->ss_freq = (tim->ss_freq >= cconf->data->ss_freq_max) ?
+	cconf->ss_freq = (tim->ss_freq > cconf->data->ss_freq_max) ?
 				cconf->data->ss_freq_max : tim->ss_freq;
 
-	cconf->ss_mode = (tim->ss_mode >= cconf->data->ss_mode_max) ? 0 :
-				tim->ss_mode;
-	if (lcd_debug_print_flag & LCD_DBG_PR_ADV2) {
+	cconf->ss_mode = (tim->ss_mode > cconf->data->ss_mode_max) ? 0 : tim->ss_mode;
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 		LCDPR("[%d]: %s: ss_level=%d, ss_freq=%d, ss_mode=%d\n",
 		      pdrv->index, __func__,
 		      cconf->ss_level, cconf->ss_freq, cconf->ss_mode);
