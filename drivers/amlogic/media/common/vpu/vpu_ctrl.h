@@ -69,7 +69,7 @@ static struct fclk_div_s fclk_div_table_t6w[] = {
 	/* id,         mux,  div */
 	{FCLK_DIV3,    0,    3},
 	{FCLK_DIV4,    1,    4},
-	{GPLL_CLK1,    2,    0},
+	{GPLL_CLK1,    2,    1},
 	{FCLK_DIV2P5,  3,    0},
 	{GPLL_CLK,     4,    0},
 	{VID_PLL_CLK,  5,    0},
@@ -126,8 +126,8 @@ static struct vpu_clk_s vpu_clk_table_t6w[] = {
 	{666667000,    FCLK_DIV3,    0}, /* 7 */
 	{800000000,    FCLK_DIV2P5,  0}, /* 8 */
 	{696000000,    GPLL_CLK,     0}, /* 9 */  /* invalid */
-	{840000000,    GPLL_CLK1,    0}, /* 10 */ /* for t6w gp1*/
-	{808000000,    GPLL_CLK2,    0}, /* 11 */ /* for t6w gp2*/
+	{840000000,    GPLL_CLK1,    1}, /* 10 */ /* for t6w gp1 div2 to 840M*/
+	{808000000,    GPLL_CLK2,    0}, /* 11 */ /* for t6w gp2 808M*/
 	{850000000,    GPLL_CLK,     0}, /* 12 */ /* invalid */
 };
 

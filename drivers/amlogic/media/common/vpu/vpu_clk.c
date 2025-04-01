@@ -47,13 +47,14 @@ static unsigned long get_fclk_div_freq(struct vpu_conf_s *vconf, unsigned int mu
 static unsigned long get_gp_pll_freq(struct vpu_conf_s *vconf, unsigned int mux_id)
 {
 	struct vpu_clk_s *gp_pll;
-	unsigned long clk_source = 0;
+	unsigned long div, clk_source = 0;
 	unsigned int i;
 
 	for (i = 0; i < FCLK_DIV_MAX; i++ ) {
 		gp_pll = vconf->data->vpu_clk_table + i;
 		if (gp_pll->mux == mux_id) {
-			clk_source = gp_pll->freq;
+			div = gp_pll->div + 1;
+			clk_source = gp_pll->freq * div;
 		}
 	}
 	return clk_source;
@@ -113,6 +114,8 @@ unsigned int get_vpu_clk(struct vpu_conf_s *vconf)
 		clk_source = get_fclk_div_freq(vconf, mux_id);
 		break;
 	case GPLL_CLK:
+	case GPLL_CLK1:
+	case GPLL_CLK2:
 		clk_source = get_gp_pll_freq(vconf, mux_id);
 		break;
 	default:
