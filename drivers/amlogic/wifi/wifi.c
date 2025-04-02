@@ -528,7 +528,7 @@ void wifi_init(void)
 
 		if (!start_wifi()) {
 			// set usb mode env to kernel when download fw success
-			env_set_hex("usb2t_mode", 1);
+			env_set("usb_mode", "2t");
 			//run_command("print usb2t_mode", 0);
 		}
 	}
