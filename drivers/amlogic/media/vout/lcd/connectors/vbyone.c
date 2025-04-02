@@ -239,7 +239,7 @@ void lcd_vbyone_disable(struct aml_lcd_drv_s *pdrv)
 
 static void lcd_vbyone_sw_reset(struct aml_lcd_drv_s *pdrv)
 {
-	unsigned int reg_phy_tx_ctrl0, offset;
+	unsigned int reg_phy_tx_ctrl0, reg_phy_tx_ctrl1, offset;
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("[%d]: %s\n", pdrv->index, __func__);
@@ -286,6 +286,27 @@ static void lcd_vbyone_sw_reset(struct aml_lcd_drv_s *pdrv)
 		udelay(5);
 		/* release PHY */
 		lcd_ana_setb(reg_phy_tx_ctrl0, 0, 8, 2);
+		lcd_vcbus_write(VBO_SOFT_RST + offset, 0);
+	} else if (pdrv->data->chip_type == LCD_CHIP_T6W) {
+		offset = pdrv->data->offset_venc_if[pdrv->index];
+		switch (pdrv->index) {
+		case 0:
+			reg_phy_tx_ctrl1 = ANACTRL_LVDS_TX_PHY_CNTL1;
+			break;
+		case 1:
+			reg_phy_tx_ctrl1 = ANACTRL_LVDS_TX_PHY_CNTL3;
+			break;
+		default:
+			LCDERR("[%d]: %s: invalid drv_index\n", pdrv->index, __func__);
+			return;
+		}
+
+		/* force PHY to 0 */
+		lcd_ana_write(reg_phy_tx_ctrl1, 0);
+		lcd_vcbus_write(VBO_SOFT_RST + offset, 0x1ff);
+		udelay(5);
+		/* release PHY */
+		lcd_ana_write(reg_phy_tx_ctrl1, 0x03000000);
 		lcd_vcbus_write(VBO_SOFT_RST + offset, 0);
 	} else {
 		/* force PHY to 0 */
