@@ -323,27 +323,29 @@ void boot_info_reset(bootloader_control* boot_ctrl)
 
 static void dump_boot_info(bootloader_control *boot_ctrl)
 {
-#if 0
-	int slot;
+	int loglevel = env_get_ulong("loglevel", 10, 0);
 
-	printf("boot_ctrl->slot_suffix = %s\n", boot_ctrl->slot_suffix);
-	printf("boot_ctrl->magic = 0x%x\n", boot_ctrl->magic);
-	printf("boot_ctrl->version = %d\n", boot_ctrl->version);
-	printf("boot_ctrl->nb_slot = %d\n", boot_ctrl->nb_slot);
-	printf("boot_ctrl->firstboot = %d\n", boot_ctrl->firstboot);
-	printf("boot_ctrl->boot_tries_remaining = %d\n",
-		boot_ctrl->boot_tries_remaining);
-	for (slot = 0; slot < 4; ++slot) {
-		printf("boot_ctrl->slot_info[%d].priority = %d\n",
-				slot, boot_ctrl->slot_info[slot].priority);
-		printf("boot_ctrl->slot_info[%d].tries_remaining = %d\n",
-				slot, boot_ctrl->slot_info[slot].tries_remaining);
-		printf("boot_ctrl->slot_info[%d].successful_boot = %d\n",
-				slot, boot_ctrl->slot_info[slot].successful_boot);
+	if (loglevel >= 5) {
+		int slot;
+
+		printf("boot_ctrl->slot_suffix = %s\n", boot_ctrl->slot_suffix);
+		printf("boot_ctrl->magic = 0x%x\n", boot_ctrl->magic);
+		printf("boot_ctrl->version = %d\n", boot_ctrl->version);
+		printf("boot_ctrl->nb_slot = %d\n", boot_ctrl->nb_slot);
+		printf("boot_ctrl->firstboot = %d\n", boot_ctrl->firstboot);
+		printf("boot_ctrl->boot_tries_remaining = %d\n",
+			boot_ctrl->boot_tries_remaining);
+		for (slot = 0; slot < 4; ++slot) {
+			printf("boot_ctrl->slot_info[%d].priority = %d\n",
+					slot, boot_ctrl->slot_info[slot].priority);
+			printf("boot_ctrl->slot_info[%d].tries_remaining = %d\n",
+					slot, boot_ctrl->slot_info[slot].tries_remaining);
+			printf("boot_ctrl->slot_info[%d].successful_boot = %d\n",
+					slot, boot_ctrl->slot_info[slot].successful_boot);
+		}
+		printf("boot_ctrl->recovery_tries_remaining = %d\n",
+				boot_ctrl->recovery_tries_remaining);
 	}
-	printf("boot_ctrl->recovery_tries_remaining = %d\n",
-			boot_ctrl->recovery_tries_remaining);
-#endif
 }
 
 static bool slot_is_bootable(slot_metadata* slot) {
@@ -550,6 +552,18 @@ static int check_bootloader(int slot)
 	ret = memcmp(gensum0, gensum1, SHA1SUMLEN);
 	printf("boot1 & %s %s same\n", back_partname, ret ? "NOT" : "DO");
 
+	if (ret) {
+		printf("boot1 doesn't = %s, rewrite it\n", back_partname);
+		iRet = store_boot_write("bootloader", 2, 0, buffer_dest);
+		if (iRet) {
+			printf("Failed to write bootloader\n");
+			goto exit;
+		} else {
+			printf("write %s to boot1 ok\n", back_partname);
+			ret = 0;
+		}
+	}
+
 #ifdef CONFIG_MMC_MESON_GX
 	dev_desc = blk_get_dev("mmc", 1);
 	if (dev_desc && dev_desc->type != DEV_TYPE_UNKNOWN) {
@@ -578,17 +592,6 @@ static int check_bootloader(int slot)
 #else
 			run_command("defenv_reserve;setenv dts_to_gpt 0;saveenv;", 0);
 #endif
-			if (ret) {
-				printf("boot1 doesn't = %s, rewrite it\n", back_partname);
-				iRet = store_boot_write("bootloader", 2, 0, buffer_dest);
-				if (iRet) {
-					printf("Failed to write bootloader\n");
-					goto exit;
-				} else {
-					printf("write %s to boot1 ok\n", back_partname);
-					ret = 0;
-				}
-			}
 		}
 	}
 #endif

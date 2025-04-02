@@ -284,19 +284,21 @@ static void boot_info_reset(AvbABData *info)
 
 static void dump_boot_info(AvbABData *info)
 {
-#if 0
-	printf("info->magic = %s\n", info->magic);
-	printf("info->version_major = %d\n", info->version_major);
-	printf("info->version_minor = %d\n", info->version_minor);
-	printf("info->slots[0].priority = %d\n", info->slots[0].priority);
-	printf("info->slots[0].tries_remaining = %d\n", info->slots[0].tries_remaining);
-	printf("info->slots[0].successful_boot = %d\n", info->slots[0].successful_boot);
-	printf("info->slots[1].priority = %d\n", info->slots[1].priority);
-	printf("info->slots[1].tries_remaining = %d\n", info->slots[1].tries_remaining);
-	printf("info->slots[1].successful_boot = %d\n", info->slots[1].successful_boot);
+	int loglevel = env_get_ulong("loglevel", 10, 0);
 
-	printf("info->crc32 = %d\n", info->crc32);
-#endif
+	if (loglevel >= 5) {
+		printf("info->magic = %s\n", info->magic);
+		printf("info->version_major = %d\n", info->version_major);
+		printf("info->version_minor = %d\n", info->version_minor);
+		printf("info->slots[0].priority = %d\n", info->slots[0].priority);
+		printf("info->slots[0].tries_remaining = %d\n", info->slots[0].tries_remaining);
+		printf("info->slots[0].successful_boot = %d\n", info->slots[0].successful_boot);
+		printf("info->slots[1].priority = %d\n", info->slots[1].priority);
+		printf("info->slots[1].tries_remaining = %d\n", info->slots[1].tries_remaining);
+		printf("info->slots[1].successful_boot = %d\n", info->slots[1].successful_boot);
+
+		printf("info->crc32 = %d\n", info->crc32);
+	}
 }
 
 void dump_boot_info_VAB(bootloader_control *boot_ctrl)
