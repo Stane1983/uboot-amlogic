@@ -1877,8 +1877,6 @@ void vpp_load_gamma_table(unsigned short *data, unsigned int len, enum vpp_gamma
 void vpp_enable_lcd_gamma_table(int index)
 {
 	unsigned int reg;
-	if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T6D)
-		return;
 
 	if (get_cpu_id().family_id >= MESON_CPU_MAJOR_ID_T7) {
 		switch (index) {
@@ -1903,8 +1901,6 @@ void vpp_enable_lcd_gamma_table(int index)
 void vpp_disable_lcd_gamma_table(int index)
 {
 	unsigned int reg;
-	if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T6D)
-		return;
 
 	if (get_cpu_id().family_id >= MESON_CPU_MAJOR_ID_T7) {
 		switch (index) {
@@ -1931,8 +1927,6 @@ static void vpp_set_lcd_gamma_table(int index, u16 *data, u32 rgb_mask)
 	unsigned int reg_encl_en, reg_cntl_port, reg_data_port, reg_addr_port;
 	int i;
 	int cnt = 0;
-	if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T6D)
-		return;
 
 	if (get_cpu_id().family_id >= MESON_CPU_MAJOR_ID_T7) {
 		switch (index) {
@@ -1964,7 +1958,7 @@ static void vpp_set_lcd_gamma_table(int index, u16 *data, u32 rgb_mask)
 	}
 
 	if (get_cpu_id().family_id >= MESON_CPU_MAJOR_ID_T7) {
-		if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T5M) {
+		if (get_cpu_id().family_id >= MESON_CPU_MAJOR_ID_T5M) {
 			vpp_reg_write(reg_addr_port, (1 << 9));
 			for (i = 0; i < 256; i++)
 				vpp_reg_write(reg_data_port,
@@ -2023,8 +2017,6 @@ static void vpp_set_lcd_gamma_table(int index, u16 *data, u32 rgb_mask)
 void vpp_init_lcd_gamma_table(int index)
 {
 	VPP_PR("%s\n", __func__);
-	if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T6D)
-		return;
 
 	vpp_disable_lcd_gamma_table(index);
 
