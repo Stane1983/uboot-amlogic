@@ -13639,6 +13639,7 @@ struct st7789v3_priv {
 	struct spi_slave *spi;
 	struct gpio_desc gpio_rs_pin;
 	struct gpio_desc gpio_rst_pin;
+	struct gpio_desc gpio_pwm_pin;
 };
 
 static int st7789v3_ofdata_to_platdata(struct udevice *dev)
@@ -13873,7 +13874,15 @@ static int st7789v3_probe(struct udevice *dev)
 		printf("%s: Warning: cannot get enable gpio_rs-gpios: ret=%d\n", __func__, ret);
 	}
 
+	ret = gpio_request_by_name(dev, "gpio_pwm-gpios", 0, &priv->gpio_pwm_pin, GPIOD_IS_OUT);
+	if (ret) {
+		printf("%s: Warning: cannot get enable gpio_pwm-gpios: ret=%d\n", __func__, ret);
+	}
+
 	st7789v3_data_init(priv);
+
+	dm_gpio_set_value(&priv->gpio_pwm_pin, 1);  //enable backlight
+	mdelay(5);
 
 	printf("st7789v3_probe Exit\n");
 	return 0;

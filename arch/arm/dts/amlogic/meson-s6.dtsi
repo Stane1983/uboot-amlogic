@@ -687,6 +687,16 @@
 		};
 	};
 
+	spicc0_pins_f_1: spicc0_pins_f_1 {
+		mux {
+			groups = "spi_a_mosi_f",
+				"spi_a_ss0_f",
+				 "spi_a_clk_f";
+			function = "spi_a";
+			drive-strength-microamp = <3000>;
+		};
+	};
+
 	pwm_a_pins1: pwm_a_pins1 {
 		mux {
 			groups = "pwm_a_hiz";

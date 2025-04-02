@@ -274,16 +274,16 @@
 &spicc0 {
 	status = "okay";
 	pinctrl-names = "default";
-	pinctrl-0 = <&spicc0_pins_x_1>;
+	pinctrl-0 = <&spicc0_pins_f_1>;
 	st7789v3@00 {
 		compatible = "st7789v3";
 		dev_name = "st7789v3";
 		status = "okay";
 		reg = <0>;
 		spi-max-frequency = <30000000>;
-		gpio_rs-gpios = <&gpio GPIOX_9 GPIO_ACTIVE_HIGH>;
-		gpio_rst-gpios = <&gpio GPIOC_0 GPIO_ACTIVE_HIGH>;
-		gpio_fmark-gpios = <&gpio GPIOC_1 GPIO_ACTIVE_LOW>;
-		// gpio_pwm = <&gpio_ao GPIOAO_4 GPIO_ACTIVE_LOW>;
+		gpio_rs-gpios = <&gpio GPIOF_1 GPIO_ACTIVE_HIGH>;
+		gpio_rst-gpios = <&gpio GPIOC_4 GPIO_ACTIVE_HIGH>;
+		//gpio_fmark-gpios = <&gpio GPIOC_5 GPIO_ACTIVE_LOW>;
+		gpio_pwm-gpios = <&gpio GPIOF_4 GPIO_ACTIVE_HIGH>;
 	};
 };
