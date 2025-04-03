@@ -848,6 +848,7 @@ static struct num_str_s ldim_dev_type_match[] = {
 	{LDIM_DEV_TYPE_NORMAL, "NORMAL"},
 	{LDIM_DEV_TYPE_SPI,    "SPI"},
 	{LDIM_DEV_TYPE_I2C,    "I2C"},
+	{LDIM_DEV_TYPE_ABCON,    "ABCON"},
 	{LDIM_DEV_TYPE_MAX,    "MAX"}
 };
 #endif
@@ -875,6 +876,7 @@ int ldim_dev_get_config_from_json(struct ldim_dev_driver_s *dev_drv)
 	int i = 0, cnt, cnt_max, nums_size, data_cnt;
 	const char *str = NULL;
 	struct ldim_spi_dev_info_s *spi_info;
+	struct abcon_conf_s *abcon_conf;
 	struct bl_pwm_config_s *bl_pwm, *pwms[3] = {NULL, NULL, NULL};
 	unsigned int *nums = NULL;
 	unsigned char *table;
@@ -943,6 +945,53 @@ int ldim_dev_get_config_from_json(struct ldim_dev_driver_s *dev_drv)
 				   spi_info->chip_select[0],  spi_info->chip_select[1],
 				   spi_info->max_speed_hz,
 			       spi_info->mode, dev_drv->cs_hold_delay, dev_drv->cs_clk_delay);
+		}
+		break;
+
+	case LDIM_DEV_TYPE_ABCON:
+		abcon_conf = &dev_drv->abcon_conf;
+		abcon_conf->tx_clk = json_get_obj_u32(jsp, child, "tx_clk", 1000);
+		abcon_conf->rx_clk = json_get_obj_u32(jsp, child, "rx_clk", 1000);
+		child2 = json_get_object_child(jsp, child, "gpio_o");
+		if (child2) {
+			for (i = 0; i < 2; i++)
+				abcon_conf->gpio_o[i] = json_get_arr_u32(jsp, child2, i, 0);
+		}
+		child2 = json_get_object_child(jsp, child, "gpio_i");
+		if (child2) {
+			for (i = 0; i < 2; i++)
+				abcon_conf->gpio_i[i] = json_get_arr_u32(jsp, child2, i, 0);
+		}
+		abcon_conf->gpio_en = json_get_obj_u32(jsp, child, "gpio_en", 0);
+		abcon_conf->gpio_pu_en = json_get_obj_u32(jsp, child, "gpio_pu_en", 0);
+		abcon_conf->gpio_pu_up = json_get_obj_u32(jsp, child, "gpio_pu_up", 0);
+		abcon_conf->dev_type = json_get_obj_u32(jsp, child, "dev_type", 0);
+		child2 = json_get_object_child(jsp, child, "chip_num");
+		if (child2) {
+			for (i = 0; i < 4; i++)
+				abcon_conf->chip_num[i] = json_get_arr_u32(jsp, child2, i, 0);
+		}
+		abcon_conf->ch_num = json_get_obj_u32(jsp, child, "ch_num", 4);
+		abcon_conf->dimming_mode = json_get_obj_u32(jsp, child, "dimming_mode", 4);
+		abcon_conf->fb_en = json_get_obj_u32(jsp, child, "fb_en", 0);
+		abcon_conf->fb_det_int = json_get_obj_u32(jsp, child, "fb_det_int", 300);
+		abcon_conf->fb_adj_th = json_get_obj_u32(jsp, child, "fb_adj_th", 5);
+		abcon_conf->fb_pwm_dir = json_get_obj_u32(jsp, child, "fb_pwm_dir", 1);
+		abcon_conf->fb_pwm_step = json_get_obj_u32(jsp, child, "fb_pwm_step", 1);
+		abcon_conf->ctrl = json_get_obj_u32(jsp, child, "ctrl", 0x2);
+
+		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
+			LDIMPR("clk:%d:%d, gpio_o: 0x%x:0x%x, gpio_i:0x%x:0x%x, gpio_en:0x%x, gpio_pu_en:0x%x\n"
+			       "gpio_pu_up:0x%x, dev_type:%d, chip_num:%d:%d:%d:%d, ch_num:%d\n"
+				   "dimming_mode:%d, fb_en:%d\n"
+				   "fb_det_int:%d, fb_adj_th:%d, fb_pwm_dir:%d, fb_pwm_step:%d, ctrl:0x%x\n",
+			       abcon_conf->tx_clk, abcon_conf->rx_clk, abcon_conf->gpio_o[0], abcon_conf->gpio_o[1],
+				   abcon_conf->gpio_i[0], abcon_conf->gpio_i[1], abcon_conf->gpio_en, abcon_conf->gpio_pu_en,
+				   abcon_conf->gpio_pu_up, abcon_conf->dev_type, abcon_conf->chip_num[0], abcon_conf->chip_num[1],
+				   abcon_conf->chip_num[2], abcon_conf->chip_num[3],
+				   abcon_conf->ch_num, abcon_conf->dimming_mode,
+			       abcon_conf->fb_en, abcon_conf->fb_det_int, abcon_conf->fb_adj_th,
+				   abcon_conf->fb_pwm_dir, abcon_conf->fb_pwm_step, abcon_conf->ctrl);
 		}
 		break;
 	default:

@@ -49,4 +49,9 @@ int ldim_dev_ob3350_remove(struct aml_ldim_driver_s *ldim_drv);
 int ldim_dev_global_probe(struct aml_ldim_driver_s *ldim_drv);
 int ldim_dev_global_remove(struct aml_ldim_driver_s *ldim_drv);
 
+#ifdef CONFIG_AML_LCD_BL_LDIM_ABCON
+int ldim_abcon_dev_probe(struct ldim_dev_driver_s *dev_drv);
+int ldim_dev_abcon_hyasic_probe(struct aml_ldim_driver_s *ldim_drv);
+int ldim_dev_abcon_hyasic_remove(struct aml_ldim_driver_s *ldim_drv);
+#endif
 #endif

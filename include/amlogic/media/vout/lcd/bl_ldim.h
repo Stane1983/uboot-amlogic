@@ -21,6 +21,7 @@ enum ldim_dev_type_e {
 	LDIM_DEV_TYPE_NORMAL = 0,
 	LDIM_DEV_TYPE_SPI,
 	LDIM_DEV_TYPE_I2C,
+	LDIM_DEV_TYPE_ABCON,
 	LDIM_DEV_TYPE_MAX,
 };
 
@@ -42,6 +43,26 @@ struct ldim_spi_dev_info_s {
 	int wordlen;
 
 	struct spi_slave *spi[2];
+};
+
+struct abcon_conf_s {
+	unsigned int tx_clk;
+	unsigned int rx_clk;
+	unsigned char dev_type;
+	unsigned int chip_num[4];
+	unsigned char ch_num;
+	unsigned char dimming_mode;
+	unsigned int gpio_o[2];
+	unsigned int gpio_i[2];
+	unsigned int gpio_en;
+	unsigned int gpio_pu_en;
+	unsigned int gpio_pu_up;
+	unsigned char fb_en;
+	unsigned int fb_det_int;
+	unsigned char fb_adj_th;
+	unsigned char fb_pwm_dir;
+	unsigned char fb_pwm_step;
+	unsigned int ctrl;
 };
 
 #define LDIM_DEV_NAME_MAX    30
@@ -88,6 +109,7 @@ struct ldim_dev_driver_s {
 	struct bl_pwm_config_s ldim_pwm_config;
 	struct bl_pwm_config_s analog_pwm_config;
 	struct ldim_spi_dev_info_s spi_info;
+	struct abcon_conf_s abcon_conf;
 
 	void (*dim_range_update)(struct ldim_dev_driver_s *dev_drv);
 	int (*pinmux_ctrl)(struct ldim_dev_driver_s *dev_drv, int status);

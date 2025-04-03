@@ -8,6 +8,7 @@
 #include <asm/amlogic/arch/gpio.h>
 #include <fdtdec.h>
 #include <amlogic/media/vout/lcd/aml_lcd.h>
+#include <amlogic/media/vout/lcd/lcd_memory.h>
 #include <amlogic/media/vout/lcd/bl_ldim.h>
 #include "../../lcd_common.h"
 #include "ldim_drv.h"
@@ -74,7 +75,7 @@ static int ldim_power_on(struct aml_ldim_driver_s *ldim_drv)
 	ldim_drv->ldim_on_flag = 1;
 
 	//mcu_dim bit31 = 1,means need set brightness_level after power on
-	if (dev_drv->mcu_dim & 0x80000000) {
+	if (dev_drv->mcu_dim & 0x80000000 || dev_drv->type == LDIM_DEV_TYPE_ABCON) {
 		if (ldim_drv->brightness_level > 0)
 			ldim_set_level(ldim_drv, ldim_drv->brightness_level);
 	}

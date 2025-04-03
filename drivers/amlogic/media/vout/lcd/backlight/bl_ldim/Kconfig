@@ -30,3 +30,10 @@ config AML_LCD_BL_LDIM_BLMCU
 	depends on AML_LCD_BL_LDIM
 	help
 	  Support for blmcu local dimming device
+
+config AML_LCD_BL_LDIM_ABCON
+	bool "abcon local dimming driver"
+	depends on AML_LCD_BL_LDIM
+	help
+	  Support for abcon local dimming device
+

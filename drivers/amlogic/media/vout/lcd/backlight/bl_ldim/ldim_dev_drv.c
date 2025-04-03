@@ -329,7 +329,7 @@ static void ldim_device_config_print(struct ldim_dev_driver_s *dev_drv)
 static int ldim_dev_add_driver(struct aml_ldim_driver_s *ldim_drv)
 {
 	struct ldim_dev_driver_s *dev_drv = ldim_drv->dev_drv;
-	int ret = 0;
+	int ret = -1;
 
 	if (!dev_drv) {
 		LDIMERR("%s: dev_drv is null\n", __func__);
@@ -340,6 +340,11 @@ static int ldim_dev_add_driver(struct aml_ldim_driver_s *ldim_drv)
 	case LDIM_DEV_TYPE_SPI:
 		ret = ldim_spi_driver_add(dev_drv);
 		break;
+#ifdef CONFIG_AML_LCD_BL_LDIM_ABCON
+	case LDIM_DEV_TYPE_ABCON:
+		ret = ldim_abcon_dev_probe(dev_drv);
+		break;
+#endif
 	default:
 		break;
 	}
@@ -362,6 +367,10 @@ static int ldim_dev_add_driver(struct aml_ldim_driver_s *ldim_drv)
 	} else if (strcmp(dev_drv->name, "ob3350") == 0) {
 #ifdef CONFIG_AML_LCD_BL_LDIM_OB3350
 		ret = ldim_dev_ob3350_probe(ldim_drv);
+#endif
+	} else if (strcmp(dev_drv->name, "abcon_hyasic") == 0) {
+#ifdef CONFIG_AML_LCD_BL_LDIM_ABCON
+		ret = ldim_dev_abcon_hyasic_probe(ldim_drv);
 #endif
 	} else if (strcmp(dev_drv->name, "global") == 0) {
 		ret = ldim_dev_global_probe(ldim_drv);
@@ -408,6 +417,10 @@ static int ldim_dev_remove_driver(struct aml_ldim_driver_s *ldim_drv)
 	} else if (strcmp(dev_drv->name, "ob3350") == 0) {
 #ifdef CONFIG_AML_LCD_BL_LDIM_OB3350
 		ldim_dev_ob3350_remove(ldim_drv);
+#endif
+	} else if (strcmp(dev_drv->name, "abcon_hyasic") == 0) {
+#ifdef CONFIG_AML_LCD_BL_LDIM_ABCON
+		ldim_dev_abcon_hyasic_remove(ldim_drv);
 #endif
 	} else if (strcmp(dev_drv->name, "global") == 0) {
 		ldim_dev_global_remove(ldim_drv);
