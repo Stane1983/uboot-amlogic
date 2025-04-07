@@ -199,7 +199,7 @@ static struct bl_pwm_misc_s pwm_misc_s6[] = {
 };
 #endif
 
-#if (IS_ENABLED(CONFIG_MESON_T6D))
+#if (IS_ENABLED(CONFIG_MESON_T6D) || IS_ENABLED(CONFIG_MESON_T6W))
 static struct bl_pwm_misc_s pwm_misc_t6d[] = {
 	/* pwm_reg,      bit_pre_div, bit_clk_sel, bit_clk_en, bit_pwm_en, val_en*/
 	{PWM_MISC_REG_A, 8,           4,           15,         0,          1,},
@@ -295,7 +295,7 @@ static struct bl_pwm_ctrl_config_s bl_pwm_ctrl_conf_s6 = {
 };
 #endif
 
-#if (IS_ENABLED(CONFIG_MESON_T6D))
+#if (IS_ENABLED(CONFIG_MESON_T6D) || IS_ENABLED(CONFIG_MESON_T6W))
 static struct bl_pwm_ctrl_config_s bl_pwm_ctrl_conf_t6d = {
 	.pwm_div_flag = 1,
 	.pwm_vs_flag = 1,
@@ -861,8 +861,9 @@ int aml_bl_pwm_reg_config_init(struct aml_lcd_data_s *pdata)
 		bl_pwm_ctrl_conf = &bl_pwm_ctrl_conf_s6;
 		break;
 #endif
-#if (IS_ENABLED(CONFIG_MESON_T6D))
+#if (IS_ENABLED(CONFIG_MESON_T6D) || IS_ENABLED(CONFIG_MESON_T6W))
 	case LCD_CHIP_T6D:
+	case LCD_CHIP_T6W:
 		bl_pwm_ctrl_conf = &bl_pwm_ctrl_conf_t6d;
 		break;
 #endif
