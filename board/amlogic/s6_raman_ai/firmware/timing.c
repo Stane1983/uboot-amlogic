@@ -238,7 +238,7 @@ __attribute__ ((section(".misc_param"))) = {
 	{ PWM_MISC_REG_A,	   (0x1 << 0),	  (0x1 << 0), 0, 0, 0 },
 	/* set pwm a, pwm d and pwm f clock rate to 24M, 24M,24M, enable them */
 	{ CLKCTRL_PWM_CLK_AB_CTRL, (0x1 << 8), (0x1 << 8), 0, 0, 0 },
-	{ CLKCTRL_PWM_CLK_CD_CTRL, (0x1 << 24), (0x1 << 24), 0, 0, 0 },
+	{ CLKCTRL_PWM_CLK_CD_CTRL, (0x1 << 24) | (0x1 << 8), (0x1 << 8) | (0x1 << 24), 0, 0, 0 },
 	{ CLKCTRL_PWM_CLK_EF_CTRL, (0x1 << 24), (0x1 << 24), 0, 0, 0 },
 	/* set GPIOE_0 GPIOE_1 drive strength to 3 */
 	{ PADCTRL_GPIOE_DS,	   0xf,		  0xf,	      0, 0, 0 },

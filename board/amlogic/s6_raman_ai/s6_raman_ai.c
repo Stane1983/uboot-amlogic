@@ -44,11 +44,17 @@
 #include <amlogic/aml_profile.h>
 
 DECLARE_GLOBAL_DATA_PTR;
+void init_lcd_pwm(void)
+{
+	writel((0x1 << 0) | (0x1 << 28), PWM_MISC_REG_C);
+	writel(0xff0000, PWM_PWM_C);
+}
 
 #ifdef CONFIG_SPI_LCD
 #include <spi.h>
 int spi_lcd_init(void)
 {
+	init_lcd_pwm();
 #if CONFIG_IS_ENABLED(DM_SPI)
 	int ret = 0;
 	char name[30], *str;
