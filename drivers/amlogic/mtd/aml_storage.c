@@ -793,9 +793,17 @@ int is_mtd_store_boot_area(const char *part_name)
 static u64 mtd_store_boot_copy_size(const char *part_name)
 {
 	struct mtd_info *mtd = mtd_store_get(0);
+#if defined(CONFIG_BOOTLOADER_SIZE)
+	enum boot_type_e medium_type = store_get_type();
+
+	if (medium_type == BOOT_SNOR)
+		return CONFIG_BOOTLOADER_SIZE;
+#endif
 
 	if (!strcmp(part_name, BOOT_BL2) || !strcmp(part_name, BOOT_SPL))
 		return meson_rsv_part_get_bl2_copy_size(mtd);
+	else if (!strcmp(part_name, BOOT_LOADER))
+		return meson_rsv_part_get_bl2_copy_size(mtd) + CONFIG_TPL_SIZE_PER_COPY;
 
 	return CONFIG_TPL_SIZE_PER_COPY;
 }

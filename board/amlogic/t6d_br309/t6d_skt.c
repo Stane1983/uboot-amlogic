@@ -260,7 +260,7 @@ struct rsv_part *get_mtd_rsv_partition(void)
 
 int get_mtd_rsv_partition_count(void)
 {
-	/* bbt is madatory, so add one  */
+	/* bbt is mandatory, so add one  */
 	return ARRAY_SIZE(rsv_partitions) + 1;
 }
 
