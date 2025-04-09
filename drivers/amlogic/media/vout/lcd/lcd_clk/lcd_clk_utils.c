@@ -753,7 +753,7 @@ static int lcd_pll_frac_generate_pix(struct aml_lcd_drv_s *pdrv)
 	struct lcd_config_s *pconf = &pdrv->config;
 	unsigned long long pll_fout, pll_fvco, clk_div_in;
 	unsigned int enc_clk, clk_div_out, clk_div_sel;
-	unsigned int od1 = 1;
+	unsigned int od1 = 1, od2 = 1, od3 = 1;
 	int ret;
 
 	cconf = get_lcd_clk_config(pdrv);
@@ -769,7 +769,26 @@ static int lcd_pll_frac_generate_pix(struct aml_lcd_drv_s *pdrv)
 	cconf = &cconf[1];
 	enc_clk = pconf->timing.enc_clk;
 	clk_div_sel = cconf->div_sel;
-	od1 = od_table[cconf->pll_od1_sel];
+	if (cconf->data->od_cnt == 3) {
+		od1 = od_table[cconf->pll_od1_sel];
+		od2 = od_table[cconf->pll_od2_sel];
+		od3 = od_table[cconf->pll_od3_sel];
+		if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
+			LCDPR("cconf m=%d, od1=%d, od2=%d, od3=%d, clk_div_sel=%s(%d), xd=%d\n",
+				cconf->pll_m, cconf->pll_od1_sel,
+				cconf->pll_od2_sel, cconf->pll_od3_sel,
+				lcd_clk_div_table[clk_div_sel].name,
+				clk_div_sel, cconf->xd);
+		}
+	} else {
+		od1 = od_table[cconf->pll_od1_sel];
+		if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
+			LCDPR("cconf m=%d, od=%d, clk_div_sel=%s(%d), xd=%d\n",
+				cconf->pll_m, cconf->pll_od1_sel,
+				lcd_clk_div_table[clk_div_sel].name,
+				clk_div_sel, cconf->xd);
+		}
+	}
 	if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
 		LCDPR("m=%d, od=%d, clk_div_sel=%s(%d), xd=%d\n",
 			cconf->pll_m, cconf->pll_od1_sel,
@@ -804,7 +823,10 @@ static int lcd_pll_frac_generate_pix(struct aml_lcd_drv_s *pdrv)
 	if (lcd_debug_print_flag & LCD_DBG_PR_CLK)
 		LCDPR("%s pll_fout=%lld\n", __func__, pll_fout);
 
-	pll_fvco = pll_fout * od1;
+	if (cconf->data->od_cnt == 3)
+		pll_fvco = pll_fout * od1 * od2 * od3;
+	else
+		pll_fvco = pll_fout * od1;
 	if (pll_fvco < cconf->data->pll_vco_fmin ||
 	    pll_fvco > cconf->data->pll_vco_fmax) {
 		LCDERR("%s: wrong pll_fvco value %lldHz\n", __func__, pll_fvco);
@@ -1478,7 +1500,7 @@ void lcd_clk_config_print_dft(struct aml_lcd_drv_s *pdrv)
 		LCDPR("[%d]: clk[%d] config:\n"
 			"  pll_id:     %d\n"
 			"  pll_offset: 0x%x\n"
-			"  pll_mode:   %d\n"
+			"  pll_mode:   0x%x\n"
 			"  pll_m:      %d\n"
 			"  pll_n:      %d\n"
 			"  pll_frac:   0x%x\n"

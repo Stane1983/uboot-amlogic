@@ -367,7 +367,7 @@ int aml_lcd_prbs_test(struct aml_lcd_drv_s *pdrv, unsigned int ms, unsigned int 
 
 void lcd_clk_config_probe(struct aml_lcd_drv_s *pdrv)
 {
-	struct lcd_clk_config_s *cconf;
+	struct lcd_clk_config_s *cconf = NULL;
 	unsigned int i;
 
 
@@ -408,14 +408,13 @@ void lcd_clk_config_probe(struct aml_lcd_drv_s *pdrv)
 		return;
 	}
 
-	if (!cconf || !pdrv->clk_conf_num)
+	if (!cconf)
 		return;
 
-	for (i = 0; i < pdrv->clk_conf_num; i++) {
-		cconf[i].pll_id = pdrv->index + i;
+	for (i = 0; i < pdrv->clk_conf_num; i++)
 		cconf[i].fin = FIN_FREQ;
-	}
 
+	pdrv->clk_conf = (void *)cconf;
 	if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
 		if (cconf->data->clk_config_init_print)
 			cconf->data->clk_config_init_print(pdrv);

@@ -765,27 +765,25 @@ static struct lcd_clk_data_s lcd_clk_data_gp2_t6w = {
 
 struct lcd_clk_config_s *lcd_clk_config_chip_init_t6d_t6w(struct aml_lcd_drv_s *pdrv)
 {
-	struct lcd_clk_config_s *cconf;
+	struct lcd_clk_config_s *cconf = NULL;
 	unsigned int size;
 	struct lcd_config_s *pconf = &pdrv->config;
 
 	if (!pdrv)
 		return NULL;
-
+	if (pdrv->data->chip_type == LCD_CHIP_T6W &&
+		pconf->basic.lcd_type == LCD_P2P &&
+		pconf->timing.clk_mode == LCD_BIT_RATE_ADAPT)
+		pdrv->clk_conf_num = 2;
+	else
+		pdrv->clk_conf_num = 1;
 	if (!pdrv->clk_conf) {
-		if (pdrv->data->chip_type == LCD_CHIP_T6W &&
-			pconf->basic.lcd_type == LCD_P2P &&
-			pconf->timing.clk_mode == LCD_BIT_RATE_ADAPT)
-			pdrv->clk_conf_num = 2;
-		else
-			pdrv->clk_conf_num = 1;
 		size = pdrv->clk_conf_num * sizeof(struct lcd_clk_config_s);
 		cconf = (struct lcd_clk_config_s *)malloc(size);
 		if (!cconf) {
 			LCDERR("[%d]: %s: Not enough memory\n", pdrv->index, __func__);
 			return NULL;
 		}
-		pdrv->clk_conf = (void *)cconf;
 	} else {
 		size = pdrv->clk_conf_num * sizeof(struct lcd_clk_config_s);
 		cconf = (struct lcd_clk_config_s *)pdrv->clk_conf;
@@ -798,10 +796,12 @@ struct lcd_clk_config_s *lcd_clk_config_chip_init_t6d_t6w(struct aml_lcd_drv_s *
 		cconf[0].data = &lcd_clk_data_t6d;
 		cconf[0].pll_od_fb = lcd_clk_data_t6d.pll_od_fb;
 	}
+	cconf[0].pll_id = 0;
 	if (pdrv->clk_conf_num > 1) {
 		cconf[0].pll_mode |= LCD_PLL_MODE_DUAL_PLL;
 		cconf[1].pll_mode |= LCD_PLL_MODE_DUAL_PLL;
 		cconf[1].data = &lcd_clk_data_gp2_t6w;
+		cconf[1].pll_id = 1;
 		cconf[1].pll_od_fb = lcd_clk_data_gp2_t6w.pll_od_fb;
 	}
 	return cconf;
