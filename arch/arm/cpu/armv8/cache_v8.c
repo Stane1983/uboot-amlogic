@@ -15,6 +15,7 @@
 #include <asm/arch/register.h>
 #include <asm/io.h>
 #include <asm/arch/cpu.h>
+#include <linux/sizes.h>
 
 #ifdef CONFIG_MULTI_DTB_FIT
 #include <fdtdec.h>
@@ -372,9 +373,11 @@ static int count_required_pts(u64 addr, int level, u64 maxaddr)
 /* update mmu map from bl2 ddr auto detect size */
 int mmu_map_update(void)
 {
-	ulong ddr_size =
-	    ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0x7ffffUL) << 4) >
-	    0xe0000000 ? 0xe0000000 : ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0x7ffffUL) << 4);
+	ulong ddr_size = get_effective_memsize();
+
+#ifdef CONFIG_SYS_MEM_TOP_HIDE
+	ddr_size += CONFIG_SYS_MEM_TOP_HIDE;
+#endif
 
 	u32 rsv_addr;
 	u32 reg_size;
@@ -391,8 +394,8 @@ int mmu_map_update(void)
 	else
 		rsv_size = (((reg_size & ~0xffff) >> 16) << 10) + ((reg_size & 0xffff) << 10);
 
-	rsv_addr += (1 << 20);
-	rsv_size -= (1 << 20);
+	rsv_addr += SZ_1M;
+	rsv_size -= SZ_1M;
 
 	bd_mem_map[0].size = rsv_addr;
 
@@ -407,6 +410,13 @@ int mmu_map_update(void)
 	bd_mem_map[1].size = PSRAM_SIZE;
 	bd_mem_map[2].size = SZ_4G - bd_mem_map[2].virt - bd_mem_map[1].size;
 #endif
+
+	if (ddr_size == 0xf0000000) {
+		bd_mem_map[2].virt = ddr_size;
+		bd_mem_map[2].phys = ddr_size;
+		bd_mem_map[2].size = SZ_4G - ddr_size;
+	}
+
 	return 0;
 }
 #endif
