@@ -141,7 +141,7 @@ int ldim_spi_driver_add(struct ldim_dev_driver_s *dev_drv)
 			"generic_%d:%d",
 			dev_drv->spi_info.bus_num[i],
 			dev_drv->spi_info.chip_select[i]);
-		ret = spi_get_bus_and_cs(dev_drv->spi_info.bus_num[i],
+		ret = _spi_get_bus_and_cs(dev_drv->spi_info.bus_num[i],
 					dev_drv->spi_info.chip_select[i],
 					dev_drv->spi_info.max_speed_hz,
 					dev_drv->spi_info.mode,

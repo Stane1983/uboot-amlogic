@@ -146,6 +146,13 @@ struct spi_slave {
 	unsigned int bus;
 	unsigned int cs;
 #endif
+
+#ifdef CONFIG_DM_SPI
+	u32	use_ctrl_cs:1;
+	u32	ss_leading_gap:16;
+	u32	ss_trailing_gap:15;
+#endif
+
 	uint mode;
 	unsigned int wordlen;
 	unsigned int max_read_size;
