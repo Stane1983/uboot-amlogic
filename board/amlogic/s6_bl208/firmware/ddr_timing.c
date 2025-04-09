@@ -396,7 +396,7 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		.cfg_board_SI_setting_ps.dram_data_drv_ohm = 40,
 		.cfg_board_SI_setting_ps.dram_data_odt_ohm = 60,
 		.cfg_board_SI_setting_ps.dram_data_wr_odt_ohm = 0,
-		.cfg_board_SI_setting_ps.dram_ac_odt_ohm = 240,//240,//120,
+		.cfg_board_SI_setting_ps.dram_ac_odt_ohm = 0,//240,//use 0 for cxmt 8die DRAM
 		.cfg_board_SI_setting_ps.dram_drv_pull_up_cal_ohm =
 			DDR_DRAM_LPDDR4_ODT_40_OHM,
 		.cfg_board_SI_setting_ps.lpddr4_dram_vout_range =
