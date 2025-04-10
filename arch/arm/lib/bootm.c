@@ -415,7 +415,9 @@ static void fix_bootargs(void)
 		"hdmi_read_edid=",
 		"ramoops.pstore_en=",
 		"ramoops.record_size=",
-		"ramoops.console_size="
+		"ramoops.console_size=",
+		"aml_isolcpus=",
+		"isolcpus_speedup_boot="
 	};
 	int i, len, rlen, find;
 	char *cmdline, *p, *q;
