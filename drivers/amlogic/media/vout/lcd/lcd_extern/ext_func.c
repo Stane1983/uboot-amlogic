@@ -582,6 +582,15 @@ static int lcd_extern_power_cmd_dynamic_size_i2c(struct lcd_extern_driver_s *edr
 							 &table[i + 4], (size - 2));
 			} else if (next_cmd == LCD_EXT_CMD_TYPE_DELAY) {
 				lcd_extern_cmd_delay(edrv, edev, step, &table[i + 4], (size - 2));
+			} else if (next_cmd == LCD_EXT_CMD_TYPE_CHECK ||
+				   next_cmd == LCD_EXT_CMD_TYPE_CHECK_RETRY) {
+				lcd_extern_check_add(edrv, edev, step, next_cmd,
+						     &table[i + 4], (size - 2));
+				goto power_cmd_dynamic_i2c_check_next;
+			} else if (next_cmd == LCD_EXT_CMD_TYPE_EXIT) {
+				ret = lcd_extern_cmd_exit(edrv, edev, step, table[i + 4]);
+				if (ret)
+					return 0;
 			}
 			break;
 		case LCD_EXT_CMD_TYPE_CMD_MULTI:
