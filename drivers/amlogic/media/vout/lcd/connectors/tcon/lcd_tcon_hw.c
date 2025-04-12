@@ -22,6 +22,12 @@ int tcon_lut_dma_get_frame_cnt(struct aml_lcd_drv_s *pdrv)
 	return lcd_vcbus_getb(VPU_DMA_RDMIF7_CTRL, 28, 2);
 }
 
+int tcon_lut_dma_get_frame_cnt_t6w(struct aml_lcd_drv_s *pdrv)
+{
+	lcd_wait_vsync(pdrv);
+	return lcd_tcon_getb(0x5d3, 6, 1);
+}
+
 void tcon_lut_dma_start(struct aml_lcd_drv_s *pdrv)
 {
 	lcd_tcon_setb(0x207, 1, 31, 1); //enable dma clk
@@ -51,6 +57,12 @@ void tcon_lut_dma_init_t5m(struct aml_lcd_drv_s *pdrv, struct lcd_tcon_dma_ops_s
 	ops->status = 0;
 	ops->addr_list = NULL;
 	lcd_vcbus_write(VPU_LUT_DMA_INTR_SEL, 0);//0:sel tcon 1:sel venc2
+}
+
+void tcon_lut_dma_init_t6w(struct aml_lcd_drv_s *pdrv, struct lcd_tcon_dma_ops_s *ops)
+{
+	ops->status = 0;
+	ops->addr_list = NULL;
 }
 
 void tcon_lut_dma_init_t3x(struct aml_lcd_drv_s *pdrv, struct lcd_tcon_dma_ops_s *ops)
@@ -124,6 +136,23 @@ void tcon_lut_dma_mif_set(struct aml_lcd_drv_s *pdrv, phys_addr_t paddr, unsigne
 					cmd_cnt);//lut_reg_stride
 }
 
+void tcon_lut_dma_mif_set_t6w(struct aml_lcd_drv_s *pdrv, phys_addr_t paddr, unsigned int size)
+{
+	unsigned int stride;
+
+	if (paddr % 16 || size % 16) {
+		LCDERR("%s: paddr or size should be 16 byte aligned\n", __func__);
+		return;
+	}
+	stride = size / 16;
+	lcd_tcon_write(0x5d0, 0x00000040);
+	lcd_tcon_write(0x5d6, paddr);
+	lcd_tcon_setb(0x5d9, stride, 0, 13);
+	lcd_tcon_setb(0x5dc, 0, 0, 13);
+	lcd_tcon_setb(0x5dc, (stride - 1), 16, 13);
+}
+
+
 static void lcd_tcon_dma_addr_add(struct lcd_tcon_dma_ops_s *ops,
 				  phys_addr_t paddr, unsigned int size)
 {
@@ -165,7 +194,6 @@ void lcd_tcon_dma_data_init_trans(struct aml_lcd_drv_s *pdrv, struct lcd_tcon_dm
 			}
 			mdelay(2);
 		}
-
 		ops->stop(pdrv);
 		ops->status = 0;
 		if (ops->addr_list->next != ops->addr_list) {
