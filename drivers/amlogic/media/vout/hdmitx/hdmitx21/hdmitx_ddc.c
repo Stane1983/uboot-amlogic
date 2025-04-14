@@ -310,17 +310,34 @@ int hdmitx21_read_edid(u8 *_rx_edid)
 	return 1;
 }
 
-void config_i2c_rate(int rate)
+/*
+ * AON_CYP_CTL_IVCTX: i2c clk div, default value = 0x2, means 75k
+ * DDC_DELAY_CNT_IVCTX: DDC I2C delay counter, defalut 0x26
+ * config i2c 50k: AON_CYP_CTL_IVCTX as default, DDC_DELAY_CNT_IVCTX as 0x3d
+ */
+void hdmitx_config_i2c_rate(int rate)
 {
 	switch (rate) {
+	case DDC_I2C_25K:
+		/* config i2c 25k */
+		hdmitx21_set_reg_bits(AON_CYP_CTL_IVCTX, 3, 0, 2);
+		hdmitx21_wr_reg(DDC_DELAY_CNT_IVCTX, 0x3d);
+		break;
 	case DDC_I2C_38K:
 		/* config i2c 37.5k */
 		hdmitx21_set_reg_bits(AON_CYP_CTL_IVCTX, 3, 0, 2);
+		hdmitx21_wr_reg(DDC_DELAY_CNT_IVCTX, 0x26);
 		break;
 	case DDC_I2C_75K:
-	default:
 		/* config i2c 75k */
 		hdmitx21_set_reg_bits(AON_CYP_CTL_IVCTX, 2, 0, 2);
+		hdmitx21_wr_reg(DDC_DELAY_CNT_IVCTX, 0x26);
+		break;
+	case DDC_I2C_50K:
+	default:
+		/* config i2c 50k */
+		hdmitx21_set_reg_bits(AON_CYP_CTL_IVCTX, 2, 0, 2);
+		hdmitx21_wr_reg(DDC_DELAY_CNT_IVCTX, 0x3d);
 		break;
 	}
 }
