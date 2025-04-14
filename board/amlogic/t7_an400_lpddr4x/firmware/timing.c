@@ -42,6 +42,7 @@
  *
  */
 
+#define			PSEUDO_DISABLE					0
 #define         ENABLE_LPDDR4X_MODE             1
 
 #define         AN_408_DDR0_1G_DDR1_0G          0
@@ -465,32 +466,9 @@ ddr_set_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		  1, 3,	5, 2, 4, 0, 0, 0, 0 },
 
 		.dfi_pinmux = {
-		1,
-		2,
-		3,
-		4,
-		5,
-		6,
-		7,
-		8,
-		0,
-		10,
-		11,
-		12,
-		13,
-		14,
-		15,
-		16,
-		17,
-		18,
-		19,
-		20,
-		21,
-		22,
-		23,
-		0,
-		0,
-		0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 		},
 		},
 
@@ -695,32 +673,9 @@ ddr_set_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		  1, 3,	5, 2, 4, 0, 0, 0, 0 },
 
 		.dfi_pinmux = {
-		1,
-		2,
-		3,
-		4,
-		5,
-		6,
-		7,
-		8,
-		0,
-		10,
-		11,
-		12,
-		13,
-		14,
-		15,
-		16,
-		17,
-		18,
-		19,
-		20,
-		21,
-		22,
-		23,
-		0,
-		0,
-		0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 		},
 		},
 #endif
@@ -784,6 +739,230 @@ bl2_reg_t __bl2_reg[] __attribute__ ((section(".generic_param"))) = {
 				(DRAM_SIZE_ID_256MBX0 << CONFIG_CS1_BYTE_01_SIZE_256_ID_OFFSET) +
 				(DRAM_SIZE_ID_256MBX0 << CONFIG_CS1_BYTE_23_SIZE_256_ID_OFFSET)),
 
+//		DDR_TIMMING_TUNE_TIMMING0
+//				(DDR0_2G_DDR1_2G_DDR_ID,
+//				bitTimeControl_2d,
+//				5),
+//		DDR_TIMMING_TUNE_TIMMING1
+//				(DDR0_2G_DDR1_2G_DDR_ID,
+//				bitTimeControl_2d,
+//				5),
+
+#if PSEUDO_DISABLE
+//		DDR_TIMMING_TUNE_TIMMING0
+//				(DDR0_2G_DDR1_2G_DDR_ID,
+//				training_offset,
+//				(0<<7) | (0<<4) | (0<<3) | (0<<0)),
+//		DDR_TIMMING_TUNE_TIMMING1
+//				(DDR0_2G_DDR1_2G_DDR_ID,
+//				training_offset,
+//				(0<<7) | (0<<4) | (0<<3) | (0<<0)),
+
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				ddr_func,
+				DDR_FUNC | DDR_FUNC_CONFIG_DFE_FUNCTION
+				| DDR_FUNC_ENABLE_PER_BYTE_FINE_TUNE),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				ddr_func,
+				DDR_FUNC | DDR_FUNC_CONFIG_DFE_FUNCTION
+				| DDR_FUNC_ENABLE_PER_BYTE_FINE_TUNE),
+		//dfi_pinmux[26]
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[0],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[1],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[2],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[3],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[4],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[5],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[6],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[7],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[8],
+				(0 << 7) | (0 << 0))),
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[9],
+				(0 << 7) | (0 << 0))),
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[10],
+				(0 << 7) | (0 << 0))),
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[11],
+				(0 << 7) | (0 << 0))),
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[12],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[13],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[14],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[15],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[16],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[17],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[18],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[19],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[20],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[21],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[22],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[23],
+				(0 << 7) | (0 << 0)),
+
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[0],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[1],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[2],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[3],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[4],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[5],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[6],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[7],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[8],
+				(0 << 7) | (0 << 0))),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[9],
+				(0 << 7) | (0 << 0))),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[10],
+				(0 << 7) | (0 << 0))),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[11],
+				(0 << 7) | (0 << 0))),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[12],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[13],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[14],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[15],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[16],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[17],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[18],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[19],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[20],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[21],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[22],
+				(0 << 7) | (0 << 0)),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_2G_DDR1_2G_DDR_ID,
+				dfi_pinmux[23],
+				(0 << 7) | (0 << 0)),
+#endif
 		DDR_TIMMING_TUNE_TIMMING0
 				(DDR0_3G_DDR1_3G_RANK01_DDR_ID,
 				dram_ch0_size_MB,
@@ -924,12 +1103,12 @@ bl2_reg_t __bl2_reg[] __attribute__ ((section(".generic_param"))) = {
 		DDR_TIMMING_TUNE_TIMMING0
 				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
 				cfg_ddr_training_delay_ps[0].dram_bit_vref[0],
-				12),
+				0x8),
 
 		DDR_TIMMING_TUNE_TIMMING1
 				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
 				cfg_ddr_training_delay_ps[0].dram_bit_vref[0],
-				12),
+				0x8),
 
 		DDR_TIMMING_TUNE_TIMMING0
 				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
@@ -942,15 +1121,15 @@ bl2_reg_t __bl2_reg[] __attribute__ ((section(".generic_param"))) = {
 				60),
 
 		DDR_TIMMING_TUNE_TIMMING0
-				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
-				training_offset,
-				((0x1 << 7) | (0 << 4))),
-
-		DDR_TIMMING_TUNE_TIMMING1
 				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
 				training_offset,
 				((0x1 << 7) | (2 << 4))),
 
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+				training_offset,
+				((0x1 << 7) | (3 << 4))),
+
 		DDR_TIMMING_TUNE_TIMMING0
 				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
 				DisabledDbyte[0],
@@ -993,13 +1172,41 @@ bl2_reg_t __bl2_reg[] __attribute__ ((section(".generic_param"))) = {
 
 		DDR_TIMMING_TUNE_TIMMING0
 				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
-				lpddr4_x8_mode,
-				1),
+				bitTimeControl_2d,
+				5),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+				bitTimeControl_2d,
+				5),
+
+		DDR_TIMMING_TUNE_TIMMING0
+			(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+			ddr_func,
+			DDR_FUNC | DDR_FUNC_CONFIG_DFE_FUNCTION
+			| DDR_FUNC_ENABLE_PER_BYTE_FINE_TUNE),
+		DDR_TIMMING_TUNE_TIMMING1
+			(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+			ddr_func,
+			DDR_FUNC | DDR_FUNC_CONFIG_DFE_FUNCTION
+			| DDR_FUNC_ENABLE_PER_BYTE_FINE_TUNE),
+		//dfi_pinmux[26]
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+				dfi_pinmux[0],
+				(0 << 7) | (1 << 0)),
+		DDR_TIMMING_TUNE_TIMMING0
+				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+				dfi_pinmux[1],
+				(0 << 7) | (1 << 0)),
 
 		DDR_TIMMING_TUNE_TIMMING1
 				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
-				lpddr4_x8_mode,
-				1)
+				dfi_pinmux[0],
+				(0 << 7) | (2 << 0)),
+		DDR_TIMMING_TUNE_TIMMING1
+				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
+				dfi_pinmux[1],
+				(0 << 7) | (2 << 0))
 };
 
 board_clk_set_t __board_clk_setting
