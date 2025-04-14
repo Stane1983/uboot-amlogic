@@ -869,7 +869,6 @@ bool hdmitx_frl_training_main(enum frl_rate_enum frl_rate)
 		hdmitx_frl_config(0, frl_rate);
 		return 1;
 	}
-	hdmitx21_wr_reg(AON_CYP_CTL_IVCTX, 2); // 70kHz
 
 	hdmitx21_set_reg_bits(PWD_SRST_IVCTX, 1, 2, 1);
 	hdmitx21_set_reg_bits(PWD_SRST_IVCTX, 0, 2, 1);

@@ -18,7 +18,9 @@
 #define HZ 100000000 // TODO
 
 enum i2c_rate {
+	DDC_I2C_25K,
 	DDC_I2C_38K,
+	DDC_I2C_50K,
 	DDC_I2C_75K,
 };
 
@@ -230,7 +232,7 @@ int hdmitx_common_build_format_para(struct hdmitx_common *tx_comm, struct hdmi_f
 int hdmitx_hw_validate_mode(struct hdmitx_hw_common *tx_hw, u32 vic, u32 max_refreshrate);
 
 /* DDC */
-void config_i2c_rate(int rate);
+void hdmitx_config_i2c_rate(int rate);
 int hdmitx21_read_edid(u8 *_rx_edid);
 void scdc21_rd_sink(u8 adr, u8 *val);
 void scdc21_wr_sink(u8 adr, u8 val, u16 len);

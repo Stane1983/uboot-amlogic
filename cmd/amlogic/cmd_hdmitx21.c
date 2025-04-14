@@ -1463,6 +1463,7 @@ static void get_parse_edid_data(struct hdmitx_dev *hdev)
 {
 	int hdr_priority = get_hdr_strategy_priority();
 
+	hdmitx_config_i2c_rate(DDC_I2C_50K);
 	hdev->hwop.read_edid(hdev->rawedid);
 	if (hdmitx_edid_is_all_zeros(hdev->rawedid)) {
 		pr_info("First read edid all 0 data\n");
@@ -1471,8 +1472,8 @@ static void get_parse_edid_data(struct hdmitx_dev *hdev)
 
 	/* If EDID is not correct at first time, then retry */
 	if (hdmitx_edid_check_data_valid(hdev->RXCap.edid_check, hdev->rawedid) == false) {
-		config_i2c_rate(DDC_I2C_38K);
-		pr_info("config i2c 37.5k and read edid again\n");
+		hdmitx_config_i2c_rate(DDC_I2C_25K);
+		pr_info("config i2c 25k and read edid again\n");
 		msleep(20);
 
 		/* start reading edid second time */
@@ -1480,8 +1481,8 @@ static void get_parse_edid_data(struct hdmitx_dev *hdev)
 		if (hdmitx_edid_is_all_zeros(hdev->rawedid))
 			hdev->hwop.read_edid(hdev->rawedid);
 
-		config_i2c_rate(DDC_I2C_75K);
-		pr_info("Recovery i2c 75k\n");
+		hdmitx_config_i2c_rate(DDC_I2C_50K);
+		pr_info("Recovery i2c 50k\n");
 		msleep(20);
 	}
 
