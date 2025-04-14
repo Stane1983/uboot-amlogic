@@ -1794,6 +1794,11 @@ static struct lcd_tcon_axi_mem_cfg_s axi_mem_cfg_tbl_t6d[] = {
 	{ TCON_AXI_MEM_TYPE_DEMURA, 0x00100000, 0x19b, 0 },  /* 1M */
 };
 
+static struct lcd_tcon_reg_skip_s tcon_skip_reg_tbl_t6w[] = {
+	{ 0x0040, 0x00ff },
+	{ 0x1200, 0x12ff },
+};
+
 static struct lcd_tcon_dma_ops_s lcd_tcon_dma_ops_t5m = {
 	.status = 0,
 	.addr_list = NULL,
@@ -2002,6 +2007,51 @@ static struct lcd_tcon_config_s tcon_data_t6d = {
 	.tcon_check = lcd_tcon_setting_check_txhd2,
 };
 
+static struct lcd_tcon_config_s tcon_data_t6w = {
+	.tcon_valid = 0,
+
+	.core_reg_ver = 1, /* new version with header */
+	.core_reg_width = LCD_TCON_CORE_REG_WIDTH_T5,
+	.reg_table_width = LCD_TCON_TABLE_WIDTH_T5,
+	.reg_table_len = LCD_TCON_TABLE_LEN_T6W,
+	.core_reg_start = TCON_CORE_REG_START_T6W,
+	.reg_skip_tbl = tcon_skip_reg_tbl_t6w,
+	.reg_skip_tbl_len = ARRAY_SIZE(tcon_skip_reg_tbl_t6w),
+
+	.reg_top_ctrl = REG_LCD_TCON_MAX,
+	.bit_en = BIT_TOP_EN_T5,
+
+	.reg_core_od = REG_CORE_OD_T5,
+	.bit_od_en = BIT_OD_EN_T5,
+
+	.reg_ctrl_timing_base = REG_LCD_TCON_MAX,
+	.ctrl_timing_offset = CTRL_TIMING_OFFSET_T5,
+	.ctrl_timing_cnt = CTRL_TIMING_CNT_T5,
+
+	.axi_bank = LCD_TCON_AXI_BANK_T6W,
+
+	.rsv_mem_size    = 0x00a02840,
+	.axi_size        = 0x00a00000, /* 10M */
+	.bin_path_size   = 0x00002800, /* 10K */
+	.secure_cfg_size = 0x00000040, /* 64byte */
+	.vac_size        = 0,
+	.demura_set_size = 0,
+	.demura_lut_size = 0,
+	.acc_lut_size    = 0,
+
+	.axi_tbl_len = ARRAY_SIZE(axi_mem_cfg_tbl_t5m),
+	.axi_mem_cfg_tbl = axi_mem_cfg_tbl_t5m,
+	.lut_dma_ops = &lcd_tcon_dma_ops_t5m,
+
+	.tcon_init_table_pre_proc = lcd_tcon_init_table_pre_proc,
+	.tcon_global_reset = lcd_tcon_global_reset_t5m,
+	.tcon_top_init = lcd_tcon_top_set_t6d,
+	.tcon_enable = lcd_tcon_enable_t5m,
+	.tcon_disable = lcd_tcon_disable_t5m,
+	.tcon_forbidden_check = lcd_tcon_forbidden_check_4k,
+	.tcon_check = lcd_tcon_setting_check_t5m,
+};
+
 int lcd_tcon_probe(char *dt_addr, struct aml_lcd_drv_s *pdrv, int load_id)
 {
 	int ret = 0;
@@ -2020,6 +2070,9 @@ int lcd_tcon_probe(char *dt_addr, struct aml_lcd_drv_s *pdrv, int load_id)
 		break;
 	case LCD_CHIP_T6D:
 		lcd_tcon_conf = &tcon_data_t6d;
+		break;
+	case LCD_CHIP_T6W:
+		lcd_tcon_conf = &tcon_data_t6w;
 		break;
 	default:
 		break;

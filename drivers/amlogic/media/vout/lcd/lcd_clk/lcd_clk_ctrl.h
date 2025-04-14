@@ -98,16 +98,18 @@ enum div_sel_e {
 	CLK_DIV_SEL_2p5,  /* 14 */
 	CLK_DIV_SEL_4p67, /* 15 */
 	CLK_DIV_SEL_2p33, /* 16 */
+	CLK_DIV_SEL_2p22, /* 17 */
+	CLK_DIV_SEL_2p25, /* 18 */
 };
 
-#define CLK_DIV_SEL_MAX  CLK_DIV_SEL_2p33  // ! MUST set to last one in div_sel_e
+#define CLK_DIV_SEL_MAX  CLK_DIV_SEL_2p25  // ! MUST set to last one in div_sel_e
 
 struct lcd_clk_div_table_s {
 	char *name;
 	unsigned char num;
 	unsigned char den;
 	unsigned char shift_sel;
-	unsigned short shift_val;
+	unsigned int shift_val;
 };
 
 extern struct lcd_clk_div_table_s lcd_clk_div_table[CLK_DIV_SEL_MAX + 1];

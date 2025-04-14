@@ -36,6 +36,8 @@ struct lcd_clk_div_table_s lcd_clk_div_table[] = {
 	{"2.5",   2,   5,    2,       0x5294},  //CLK_DIV_SEL_2p5,
 	{"4.67",  3,   14,   1,       0x0ccc},  //CLK_DIV_SEL_4p67,
 	{"2.33",  3,   7,    1,       0x1aaa},  //CLK_DIV_SEL_2p33,
+	{"2.22",  9,   20,   4,       0xa554a}, //CLK_DIV_SEL_2p22,
+	{"2.25",  4,   9,    5,       0x2aa5549},  //CLK_DIV_SEL_2p25,
 };
 
 static const unsigned int od_fb_table[2] = {1, 2};
@@ -1166,8 +1168,10 @@ void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 	default:
 		break;
 	}
-	if (cconf->pll_mode & LCD_PLL_MODE_DUAL_PLL)
+	if (cconf->pll_mode & LCD_PLL_MODE_DUAL_PLL) {
+		cconf[1].fout = cconf->fout;
 		done_pix = lcd_clk_generate_pix_clk(&cconf[1]);
+	}
 
 generate_clk_dft_done:
 	if (done) {

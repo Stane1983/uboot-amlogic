@@ -281,9 +281,11 @@ static void lcd_set_vid_pll_div_t6d_t6w(struct aml_lcd_drv_s *pdrv)
 		lcd_ana_setb(ANACTRL_VID_PLL_CLK_DIV, 0, 15, 1);
 		lcd_ana_setb(ANACTRL_VID_PLL_CLK_DIV, 0, 0, 15);
 
+		lcd_ana_setb(ANACTRL_VID_PLL_CLK_DIV, (shift_sel >> 2), 20, 1);
 		lcd_ana_setb(ANACTRL_VID_PLL_CLK_DIV, shift_sel, 16, 2);
 		lcd_ana_setb(ANACTRL_VID_PLL_CLK_DIV, 1, 15, 1);
-		lcd_ana_setb(ANACTRL_VID_PLL_CLK_DIV, shift_val, 0, 15);
+		lcd_ana_setb(ANACTRL_VID_PLL_CLK_DIV, (shift_val & 0x7fff), 0, 15);
+		lcd_ana_setb(ANACTRL_VID_PLL_CLK_DIV, (shift_val >> 15), 21, 11);
 		lcd_ana_setb(ANACTRL_VID_PLL_CLK_DIV, 0, 15, 1);
 	}
 	/* Enable the final output clock */
@@ -386,9 +388,6 @@ static void lcd_set_tcon_clk_t6d_t6w(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_config_s *pconf = &pdrv->config;
 
-	if (pconf->basic.lcd_type != LCD_MLVDS)
-		return;
-
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("[%d]: %s\n", pdrv->index, __func__);
 
@@ -401,6 +400,10 @@ static void lcd_set_tcon_clk_t6d_t6w(struct aml_lcd_drv_s *pdrv)
 			lcd_clk_write(CLKCTRL_TCON_CLK_CNTL, (1 << 7) | (1 << 6) | (0xf << 0));
 		else /* 12.5M */
 			lcd_clk_write(CLKCTRL_TCON_CLK_CNTL, (1 << 7) | (1 << 6) | (0x1f << 0));
+		break;
+	case LCD_P2P:
+		/* tcon_clk 50M */
+		lcd_clk_write(CLKCTRL_TCON_CLK_CNTL, (1 << 7) | (1 << 6) | (7 << 0));
 		break;
 	default:
 		break;
@@ -664,7 +667,7 @@ static struct lcd_clk_data_s lcd_clk_data_t6d = {
 	.enc_clk_msr_id = 222,
 	.fifo_clk_msr_id = 86,
 
-	.div_sel_max = CLK_DIV_SEL_MAX,
+	.div_sel_max = CLK_DIV_SEL_2p33,
 	.xd_max = 256,
 	.phy_div_max = 256,
 
@@ -718,7 +721,7 @@ static struct lcd_clk_data_s lcd_clk_data_t6w = {
 	.enc_clk_msr_id = 222,
 	.fifo_clk_msr_id = 86,
 
-	.div_sel_max = CLK_DIV_SEL_MAX,
+	.div_sel_max = CLK_DIV_SEL_2p25,
 	.xd_max = 256,
 	.phy_div_max = 256,
 

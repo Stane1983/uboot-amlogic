@@ -28,6 +28,11 @@ struct lcd_tcon_dma_ops_s {
 	void (*init_trans)(struct aml_lcd_drv_s *pdrv, struct lcd_tcon_dma_ops_s *ops);
 };
 
+struct lcd_tcon_reg_skip_s {
+	unsigned int start_reg;
+	unsigned int end_reg;
+};
+
 struct lcd_tcon_config_s {
 	unsigned char tcon_valid;
 
@@ -36,6 +41,8 @@ struct lcd_tcon_config_s {
 	unsigned int reg_table_width;
 	unsigned int reg_table_len;
 	unsigned int core_reg_start;
+	struct lcd_tcon_reg_skip_s *reg_skip_tbl;  //skip flush core reg range
+	unsigned int reg_skip_tbl_len;
 
 	unsigned int reg_top_ctrl;
 	unsigned int bit_en;
@@ -200,6 +207,11 @@ struct lcd_tcon_local_cfg_s {
 /* T6D */
 #define LCD_TCON_TABLE_LEN_T6D            0x1668 /* 0x59a*4 */
 #define LCD_TCON_AXI_BANK_T6D             2
+
+/* T6W */
+#define TCON_CORE_REG_START_T6W           0x0
+#define LCD_TCON_TABLE_LEN_T6W            0x57ac /* 0x15eb*4 */
+#define LCD_TCON_AXI_BANK_T6W             2
 
 #ifdef CONFIG_CMD_INI
 void *handle_lcd_ext_buf_get(void);

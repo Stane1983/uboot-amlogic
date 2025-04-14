@@ -809,7 +809,7 @@ static struct lcd_clk_data_s lcd_clk_data_t3x_0 = {
 	.enc_clk_msr_id = 62,
 	.fifo_clk_msr_id = -1,
 
-	.div_sel_max = CLK_DIV_SEL_MAX,
+	.div_sel_max = CLK_DIV_SEL_2p33,
 	.xd_max = 256,
 	.phy_div_max = 256,
 
@@ -863,7 +863,7 @@ static struct lcd_clk_data_s lcd_clk_data_t3x_1 = {
 	.enc_clk_msr_id = 60,
 	.fifo_clk_msr_id = -1,
 
-	.div_sel_max = CLK_DIV_SEL_MAX,
+	.div_sel_max = CLK_DIV_SEL_2p33,
 	.xd_max = 256,
 	.phy_div_max = 256,
 

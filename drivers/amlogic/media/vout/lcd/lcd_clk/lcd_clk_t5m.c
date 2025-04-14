@@ -620,7 +620,7 @@ static struct lcd_clk_data_s lcd_clk_data_t5m = {
 	.enc_clk_msr_id = 222,
 	.fifo_clk_msr_id = -1,
 
-	.div_sel_max = CLK_DIV_SEL_MAX,
+	.div_sel_max = CLK_DIV_SEL_2p33,
 	.xd_max = 128,
 	.phy_div_max = 128,
 

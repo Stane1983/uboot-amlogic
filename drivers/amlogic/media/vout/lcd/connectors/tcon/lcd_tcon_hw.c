@@ -71,6 +71,7 @@ void tcon_lut_dma_deinit(struct aml_lcd_drv_s *pdrv, struct lcd_tcon_dma_ops_s *
 	switch (pdrv->data->chip_type) {
 	case LCD_CHIP_T5M:
 	case LCD_CHIP_T3X:
+	case LCD_CHIP_T6W:
 		lcd_tcon_setb(0x367, 0, 16, 1); // disable tcon intr
 		lcd_tcon_setb(0x207, 0, 31, 1); // disable dma clk
 		break;
@@ -217,10 +218,11 @@ static void lcd_tcon_core_reg_set(struct aml_lcd_drv_s *pdrv,
 				  struct tcon_mem_map_table_s *mm_table,
 				  unsigned char *core_reg_table)
 {
+	struct lcd_tcon_reg_skip_s *skip_range = NULL;
 	unsigned char *table8;
 	unsigned int *table32;
 	unsigned int len, offset;
-	int i, ret;
+	int i, j, ret;
 
 	if (!tcon_conf || !mm_table || !core_reg_table) {
 		LCDERR("%s: table is NULL\n", __func__);
@@ -249,8 +251,19 @@ static void lcd_tcon_core_reg_set(struct aml_lcd_drv_s *pdrv,
 		if (tcon_conf->reg_table_width == 32) {
 			len /= 4;
 			table32 = (unsigned int *)core_reg_table;
-			for (i = offset; i < len; i++)
-				lcd_tcon_write(i, table32[i]);
+			if (tcon_conf->reg_skip_tbl_len) {  //have skip reg table
+				for (j = 0; j < tcon_conf->reg_skip_tbl_len; j++) {
+					skip_range = &tcon_conf->reg_skip_tbl[j];
+					for (i = offset; i < skip_range->start_reg
+							&& i < len; i++) {
+						lcd_tcon_write(i, table32[i]);
+					}
+					offset = skip_range->end_reg + 1;
+				}
+			} else {
+				for (i = offset; i < len; i++)
+					lcd_tcon_write(i, table32[i]);
+			}
 		} else {
 			table8 = core_reg_table;
 			for (i = offset; i < len; i++)
