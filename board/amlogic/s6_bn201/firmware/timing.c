@@ -243,6 +243,12 @@ __attribute__ ((section(".misc_param"))) = {
 	{ PADCTRL_GPIOE_DS,	   0xf,		  0xf,	      0, 0, 0 },
 	/* set GPIOE_0 GPIOE_1 GPIOE_2 mux to pwmd pwmf pwma */
 	{ PADCTRL_PIN_MUX_REGI,	   (0x3 << 0) | (0x3 << 4) | (0x2 << 8) ,	  (0xf << 0) | (0xf << 4) | (0xf << 4), 0, 0, 0 },
+#ifdef CONFIG_NOVERBOSE_BUILD
+	/* use acs flag to disable uart print in each blx
+	 * reg must be UART_B_WFIFO, flags: 1 --> disable uart print, 0: enable
+	 */
+	{ UART_B_WFIFO, 0, 0xffffffff, 0, 1, 0 }
+#endif
 };
 
 #define __section(x)    __attribute__((__section__(x)))
