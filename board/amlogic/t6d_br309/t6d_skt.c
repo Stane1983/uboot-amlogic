@@ -92,7 +92,7 @@ void board_init_mem(void)
 	env_tmp = env_get("bootm_size");
 	if (!env_tmp) {
 		ram_size =
-		    ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) >
+		    ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) >=
 		    0xe0000000 ? 0xe0000000 : ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4);
 		env_set_hex("bootm_low", 0);
 		env_set_hex("bootm_size", ram_size);
@@ -190,11 +190,19 @@ phys_size_t get_effective_memsize(void)
 {
 	// >>16 -> MB, <<20 -> real size, so >>16<<20 = <<4
 #if defined(CONFIG_SYS_MEM_TOP_HIDE)
+<<<<<<< HEAD:board/amlogic/t6d_br309/t6d_skt.c
 	return ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) > 0xe0000000 ? 0xe0000000 :
 	    ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) - CONFIG_SYS_MEM_TOP_HIDE;
 #else
 	return ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) > 0xe0000000 ? 0xe0000000 :
 	    ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4);
+=======
+	return ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000UL) << 4) >= 0xe0000000 ? 0xe0000000 :
+	    ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000UL) << 4) - CONFIG_SYS_MEM_TOP_HIDE;
+#else
+	return ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000UL) << 4) >= 0xe0000000 ? 0xe0000000 :
+	    ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000UL) << 4);
+>>>>>>> 0d73e9a79ff (bl33: uboot need support sip and nonsip board boot [2/2]):board/amlogic/t6w_bs309/t6w_bs309.c
 #endif /* CONFIG_SYS_MEM_TOP_HIDE */
 }
 
@@ -369,12 +377,29 @@ const struct mtd_partition *get_spinand_partition_table(int *partitions)
 int checkhw(char *name)
 {
 	char dtb_name[64] = { 0 };
-	cpu_id_t cpu_id = get_cpu_id();
+	ulong ddr_size = ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xfffffUL) << 4) >= 0xe0000000 ? 0xe0000000 :
+					((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xfffffUL) << 4);
 
-	if (cpu_id.family_id == 0x3A)
-		strcpy(dtb_name, "s4d_s905y4_ap222\0");
-	else if (cpu_id.family_id == 0x37)
-		strcpy(dtb_name, "s4_s905y4_ap222\0");
+	switch (ddr_size) {
+	case 0x40000000UL:
+		strcpy(dtb_name, "t6w_t963d5_bs309-1g\0");
+		break;
+	case 0x60000000UL:
+		strcpy(dtb_name, "t6w_t963d5_bs309-1.5g\0");
+		break;
+	case 0x80000000UL:
+		strcpy(dtb_name, "t6w_t963d5_bs309-2g\0");
+		break;
+	case 0xc0000000UL:
+		strcpy(dtb_name, "t6w_t963d5_bs309-3g\0");
+		break;
+	case 0xe0000000UL:
+		strcpy(dtb_name, "t6w_t963d5_bs309-4g\0");
+		break;
+	default:
+		strcpy(dtb_name, "t6w_t963d5_bs309-unsupport\0");
+		break;
+	}
 
 	strcpy(name, dtb_name);
 	env_set("aml_dt", dtb_name);

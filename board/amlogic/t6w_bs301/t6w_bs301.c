@@ -87,7 +87,7 @@ void board_init_mem(void)
 	env_tmp = env_get("bootm_size");
 	if (!env_tmp) {
 		ram_size =
-		    ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) >
+		    ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) >=
 		    0xe0000000 ? 0xe0000000 : ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4);
 		env_set_hex("bootm_low", 0);
 		env_set_hex("bootm_size", ram_size);
@@ -183,10 +183,10 @@ phys_size_t get_effective_memsize(void)
 {
 	// >>16 -> MB, <<20 -> real size, so >>16<<20 = <<4
 #if defined(CONFIG_SYS_MEM_TOP_HIDE)
-	return ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000UL) << 4) > 0xe0000000 ? 0xe0000000 :
-	    (((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000UL) << 4) - CONFIG_SYS_MEM_TOP_HIDE);
+	return ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000UL) << 4) >= 0xe0000000 ? 0xe0000000 :
+	    ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000UL) << 4) - CONFIG_SYS_MEM_TOP_HIDE;
 #else
-	return ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000UL) << 4) > 0xe0000000 ? 0xe0000000 :
+	return ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000UL) << 4) >= 0xe0000000 ? 0xe0000000 :
 	    ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000UL) << 4);
 #endif /* CONFIG_SYS_MEM_TOP_HIDE */
 }
@@ -362,24 +362,44 @@ const struct mtd_partition *get_spinand_partition_table(int *partitions)
 int checkhw(char *name)
 {
 	char dtb_name[64] = { 0 };
-//cpu_id_t cpu_id = get_cpu_id();
-	ulong ddr_size = (readl(SYSCTRL_SEC_STATUS_REG4) & ~0xfffffUL) << 4;
-#if 0
-	if (cpu_id.family_id == 0x3A)
-		strcpy(dtb_name, "s4d_s905y4_ap222\0");
-	else if (cpu_id.family_id == 0x37)
-		strcpy(dtb_name, "s4_s905y4_ap222\0");
-#endif
+	ulong ddr_size = ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xfffffUL) << 4) >= 0xe0000000 ? 0xe0000000 :
+					((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xfffffUL) << 4);
+	u8 sip_info = (readl(SYSCTRL_SEC_STATUS_REG4) >> 19) & 0x1;
 
 	switch (ddr_size) {
-		case 0xc0000000UL:
+	case 0x40000000UL:
+		if (sip_info == 0x0)
+			strcpy(dtb_name, "t6w_t963d5_bs301-1g\0");
+		else
+			strcpy(dtb_name, "t6w_t963d5_bs311-1g\0");
+		break;
+	case 0x60000000UL:
+		if (sip_info == 0x0)
+			strcpy(dtb_name, "t6w_t963d5_bs301-1.5g\0");
+		else
+			strcpy(dtb_name, "t6w_t963d5_bs311-1.5g\0");
+		break;
+	case 0x80000000UL:
+		if (sip_info == 0x0)
+			strcpy(dtb_name, "t6w_t963d5_bs301-2g\0");
+		else
+			strcpy(dtb_name, "t6w_t963d5_bs311-2g\0");
+		break;
+	case 0xc0000000UL:
+		if (sip_info == 0x0)
 			strcpy(dtb_name, "t6w_t963d5_bs301-3g\0");
-			break;
-		case 0x100000000UL:
+		else
+			strcpy(dtb_name, "t6w_t963d5_bs311-3g\0");
+		break;
+	case 0xe0000000UL:
+		if (sip_info == 0x0)
 			strcpy(dtb_name, "t6w_t963d5_bs301-4g\0");
-			break;
-		default:
-			break;
+		else
+			strcpy(dtb_name, "t6w_t963d5_bs311-4g\0");
+		break;
+	default:
+		strcpy(dtb_name, "t6w_t963d5_bs301-unsupport\0");
+		break;
 	}
 
 
