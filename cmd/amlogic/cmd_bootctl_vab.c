@@ -198,7 +198,8 @@ typedef struct bootloader_control {
 	uint8_t merge_flag;
 	u8 firstboot;
 	u8 boot_tries_remaining;
-	u8 reserved1[5];
+	u8 retest_times;
+	u8 reserved1[4];
 	// CRC32 of all 28 bytes preceding this field (little endian
 	// format).
 	uint32_t crc32_le;
@@ -313,6 +314,7 @@ void boot_info_reset(bootloader_control* boot_ctrl)
 	boot_ctrl->merge_flag = -1;
 	boot_ctrl->firstboot = 1;
 	boot_ctrl->boot_tries_remaining = BOOT_ATTEMPTS;
+	boot_ctrl->retest_times = 0;
 
 	for (slot = 0; slot < 4; ++slot) {
 		slot_metadata entry = {};
@@ -349,6 +351,8 @@ static void dump_boot_info(bootloader_control *boot_ctrl)
 		printf("boot_ctrl->firstboot = %d\n", boot_ctrl->firstboot);
 		printf("boot_ctrl->boot_tries_remaining = %d\n",
 			boot_ctrl->boot_tries_remaining);
+		printf("boot_ctrl->retest_times = %d\n",
+			boot_ctrl->retest_times);
 		for (slot = 0; slot < 4; ++slot) {
 			printf("boot_ctrl->slot_info[%d].priority = %d\n",
 					slot, boot_ctrl->slot_info[slot].priority);
@@ -821,6 +825,7 @@ static int do_GetValidSlot(
 	bool bootable_a, bootable_b;
 	bool nocs_mode = false;
 	char *dts_flag2 = NULL;
+	char retest_times[128] = {0};
 	char *rebootmode = env_get("reboot_mode");
 
 	if (argc != 1)
@@ -882,6 +887,9 @@ static int do_GetValidSlot(
 	}
 
 	dts_flag2 = env_get("dts_to_gpt");
+
+	sprintf(retest_times, "%d", boot_ctrl.retest_times);
+	env_set("retest_times", retest_times);
 
 	if (slot == 0) {
 		if (bootable_a) {
@@ -1089,6 +1097,43 @@ static int do_SetActiveSlot(
 			}
 		}
 	}
+
+	return 0;
+}
+
+static int do_SetRetestTimes
+(cmd_tbl_t *cmdtp,
+	int flag,
+	int argc,
+	char * const argv[])
+{
+	char miscbuf[MISCBUF_SIZE] = {0};
+	bootloader_control info;
+
+	if (argc != 2)
+		return cmd_usage(cmdtp);
+
+	if (has_boot_slot == 0) {
+		printf("device is not ab mode\n");
+		return -1;
+	}
+
+	boot_info_open_partition(miscbuf);
+	boot_info_load(&info, miscbuf);
+
+	if (!boot_info_validate(&info)) {
+		printf("boot-info is invalid. Resetting.\n");
+		return 0;
+	}
+
+	if (strcmp(argv[1], "1") == 0)
+		info.retest_times = 1;
+	else
+		info.retest_times = 0;
+
+	boot_info_save(&info, miscbuf);
+
+	printf("set info.retest_times = %d\n", info.retest_times);
 
 	return 0;
 }
@@ -1504,6 +1549,13 @@ U_BOOT_CMD
 	"check_uboot_state",
 	"\nThis command will check_uboot_state\n"
 	"So you can execute command: check_uboot_state 0"
+);
+
+U_BOOT_CMD
+(set_retest_times, 2, 1, do_SetRetestTimes,
+	"set_retest_times",
+	"\nThis command will set retest_times\n"
+	"So you can execute command: set_retest_times"
 );
 
 U_BOOT_CMD

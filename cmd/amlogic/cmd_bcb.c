@@ -359,6 +359,7 @@ static int do_RunBcbCommand(
 
 	if (!memcmp(command, CMD_RUN_RECOVERY, strlen(CMD_RUN_RECOVERY))) {
 		char *retry_times;
+		char *retest_times;
 
 		retry_times = env_get("retry_recovery_times");
 		if (retry_times) {
@@ -393,8 +394,10 @@ static int do_RunBcbCommand(
 #endif
 		}
 
+		retest_times = env_get("retest_times");
+
 		if (strstr(recovery, CMD_RECOVERY_WIPE) &&
-			remain_time == 7) {
+			retest_times && (strcmp(retest_times, "2") == 0)) {
 			char *rebootmode = env_get("reboot_mode");
 
 			printf("enter recovery first time, try again\n");
@@ -402,6 +405,8 @@ static int do_RunBcbCommand(
 				printf("clear misc partition failed.\n");
 				goto ERR;
 			}
+
+			run_command("set_retest_times 1;", 0);
 
 			if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
 				run_command("reboot quiescent", 0);
