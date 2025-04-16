@@ -541,7 +541,6 @@
 /* other functions */
 
 #define CONFIG_FIP_IMG_SUPPORT  1
-#define CONFIG_CMD_INI 1
 #define CONFIG_CMD_CEC 1
 #define CONFIG_CMD_HDMIRX 1
 //#define CONFIG_RX_RTERM		1

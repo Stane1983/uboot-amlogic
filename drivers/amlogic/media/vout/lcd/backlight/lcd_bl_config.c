@@ -1452,8 +1452,10 @@ static int bl_config_load_from_ini(char *dt_addr, struct aml_bl_drv_s *bdrv)
 	struct bl_pwm_config_s *pwm_combo0, *pwm_combo1;
 	void *inip, *psec;
 	const char *str;
-	unsigned int val, version;
-
+	unsigned int val;
+#ifdef CONFIG_AML_LCD_BL_LDIM
+	unsigned int version;
+#endif
 	inip = get_lcd_ini_parse_mem(bdrv->index);
 	if (!inip)
 		return -1;
@@ -1463,8 +1465,9 @@ static int bl_config_load_from_ini(char *dt_addr, struct aml_bl_drv_s *bdrv)
 		BLERR("[%d]: %s: not find Backlight_Attr\n", bdrv->index, __func__);
 		return -1;
 	}
+#ifdef CONFIG_AML_LCD_BL_LDIM
 	version = lcd_ini_get_val(inip, psec, "version", 0);
-
+#endif
 	str = lcd_ini_get_str(inip, psec, "bl_name", "null");
 	strlcpy(bconf->name, str, sizeof(bconf->name));
 

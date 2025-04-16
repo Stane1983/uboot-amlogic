@@ -599,7 +599,7 @@ void rm_panel_file_parse_mem(int index)
 		return;
 
 	switch (glcd_file_parse_mem[index].type) {
-#ifdef CONFIG_CMD_AML_MODEL
+#ifdef CONFIG_AML_LCD_JSON
 	case PANEL_FILE_JSON:
 		panel_json_mem_free(glcd_file_parse_mem[index].mem);
 		break;
