@@ -93,7 +93,7 @@ void optee_suppl_cmd(struct udevice *dev, struct tee_shm *shm_arg,
 		optee_suppl_cmd_i2c_transfer(arg);
 		break;
 	default:
-		arg->ret = TEE_ERROR_NOT_IMPLEMENTED;
+		arg->ret = TEE_ERROR_NOT_SUPPORTED;
 	}
 
 	arg->ret_origin = TEE_ORIGIN_COMMS;
