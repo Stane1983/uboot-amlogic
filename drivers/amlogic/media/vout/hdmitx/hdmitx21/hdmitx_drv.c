@@ -989,6 +989,26 @@ void hdmitx_soft_reset(u32 bits_nr)
 	}
 }
 
+static void hdmitx_check_18or10to20_fifo(void)
+{
+	int i;
+	int ret;
+
+	for (i = 0; i < 10; i++) {
+		hdmitx21_set_reg_bits(INTR5_SW_TPI_IVCTX, 1, 3, 1);
+		mdelay(1);
+		ret = hdmitx21_rd_reg(INTR5_SW_TPI_IVCTX);
+
+		if (ret & BIT(3))
+			hdmitx_soft_reset(BIT(0));
+		else
+			break;
+		mdelay(1);
+	}
+	if (i > 0)
+		pr_info("18or10to20 fifo reset %d times\n", i);
+}
+
 void hdmitx21_set(struct hdmitx_dev *hdev)
 {
 	struct hdmi_format_para *para = hdev->para;
@@ -1406,14 +1426,6 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 
 			pr_info("%s hc_active: %d, need full_bw: %d, tri_bytes_per_line: %d, dfm_type: %d\n",
 				__func__, hc_active, ret, tri_bytes_per_line, hdev->dfm_type);
-		} else {
-			hdmitx21_set_reg_bits(PWD_SRST_IVCTX, 1, 2, 1);
-			hdmitx21_set_reg_bits(PWD_SRST_IVCTX, 0, 2, 1);
-			mdelay(2);
-			/* clear pfifo intr twice */
-			hdmitx21_set_reg_bits(INTR5_SW_TPI_IVCTX, 1, 3, 1);
-			hdmitx21_set_reg_bits(INTR5_SW_TPI_IVCTX, 1, 3, 1);
-			pr_info("reset 10to20 fifo\n");
 		}
 
 		/* fix dsc snow screen issue and dsc cts HFR1-85,Iter-04 snow screen:
@@ -1426,6 +1438,8 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 		}
 		if (hdev->RXCap.max_frl_rate && hdev->frl_rate)
 			hdev->flt_train_st = hdmitx_frl_training_main(hdev->frl_rate);
+
+		hdmitx_check_18or10to20_fifo();
 	}
 	if (hdev->pxp_mode)
 		return; /* skip in pxp */
