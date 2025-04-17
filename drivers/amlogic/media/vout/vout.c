@@ -570,10 +570,10 @@ static void vout_viu_mux_default(int index, unsigned int mux_sel)
 		break;
 	}
 
-	if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T6D) {
+	if ((get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T6D) || (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T6W)) {
 		vout_reg_setb(VPU_VIU_VENC_MUX_CTRL, 0, 0, 4);
 		vout_reg_setb(VPU_VENCX_CLK_CTRL, 0, 0, 3);
-		vout_log("T6D:%s\n", __func__);
+		vout_log("T6D/T6W:%s\n", __func__);
 	} else {
 		vout_reg_setb(VPU_VIU_VENC_MUX_CTRL, vout_viu_sel, 0, 4);
 		if (vout_conf->viu_valid[1]) {
@@ -814,6 +814,7 @@ void vout_probe(void)
 	case MESON_CPU_MAJOR_ID_T5:
 	case MESON_CPU_MAJOR_ID_T5D:
 	case MESON_CPU_MAJOR_ID_T6D:
+	case MESON_CPU_MAJOR_ID_T6W:
 		vout_conf = &vout_config_dual;
 		break;
 	case MESON_CPU_MAJOR_ID_T7:

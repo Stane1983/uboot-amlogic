@@ -78,6 +78,7 @@
 	"hdmimode=1080p60hz\0"\
 	"colorattribute=444,8bit\0"\
 	"cvbsmode=576cvbs\0"\
+	"vout_projector_mux=disable\0" \
 	"cvbs_drv=0\0"\
 	"display_width=1920\0"\
 	"display_height=1080\0"\
