@@ -36,7 +36,9 @@
 #define OSD2_HDR2_MATRIXI_EN_CTRL                  ((0x5b3b << 2) + 0xff800000L)
 #endif
 
-#define VPP_MISC_T6D                       ((0x1d26  << 2) + 0xff800000L)
+#ifndef VPP_MISC
+#define VPP_MISC                      ((0x1d26  << 2) + 0xff800000L)
+#endif
 
 static inline unsigned int vout_reg_read(u32 reg)
 {

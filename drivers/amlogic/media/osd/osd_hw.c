@@ -1546,8 +1546,7 @@ void osd_setting_default_hwc(u32 index, struct pandata_s *disp_data)
 		      (postbld_src3_sel & 0xf) << 0 |
 		      (postbld_osd1_premult & 0x1) << 4);
 #else
-	if (is_keystone_enable_for_txhd2() ||
-		is_keystone_enable_for_t6d())
+	if (is_keystone_enable_for_osd2())
 		postbld_src3_sel = 0;
 	osd_reg_write(OSD1_BLEND_SRC_CTRL,
 		      (0 & 0xf) << 0 |
@@ -3180,8 +3179,7 @@ static void osd1_update_disp_freescale_enable(void)
 
 static void osd2_update_disp_freescale_enable(void)
 {
-	if (is_keystone_enable_for_txhd2() ||
-		is_keystone_enable_for_t6d())
+	if (is_keystone_enable_for_osd2())
 		osd_update_disp_freescale_enable(OSD2, OSD2);
 	else
 		osd_update_disp_freescale_enable(OSD2, OSD1);
@@ -3544,8 +3542,7 @@ static void osd1_update_coef(void)
 
 static void osd2_update_coef(void)
 {
-	if (is_keystone_enable_for_txhd2() ||
-		is_keystone_enable_for_t6d())
+	if (is_keystone_enable_for_osd2())
 		osd_update_coef(OSD2);
 	else
 		osd_update_coef(OSD1);
@@ -5337,7 +5334,7 @@ void osd_init_hw(u32 index)
 			fix_vpu_clk2_default_regs();
 
 		/* t6d keystone need bypass osd blend */
-		if (is_keystone_enable_for_t6d())
+		if (is_keystone_enable_for_osd2())
 			osd_reg_set_bits(VIU_OSD2_PATH_CTRL, 0x1, 4, 1);
 #ifndef AML_C3_DISPLAY
 		/* init vpu fifo control register */

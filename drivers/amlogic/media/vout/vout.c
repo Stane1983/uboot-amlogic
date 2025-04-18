@@ -286,10 +286,11 @@ static void vout_vmode_init(void)
 	index = get_osd_layer();
 
 	if (is_vpp0(index)) {
-		if (is_keystone_enable_for_txhd2() ||
-		    is_keystone_enable_for_t6d())
+#ifdef CONFIG_AML_OSD
+		if (is_keystone_enable_for_osd2())
 			check_connector_idx = 1;
 		else
+#endif
 			check_connector_idx = 0;
 	} else if (is_vpp1(index)) {
 		check_connector_idx = 1;
@@ -580,13 +581,13 @@ static void vout_viu_mux_default(int index, unsigned int mux_sel)
 				vout_reg_setb(VPU_VENCX_CLK_CTRL, clk_sel, clk_bit, 1);
 		}
 	}
-
-	if (vout_projector_mux && get_cpu_id().family_id ==
-		MESON_CPU_MAJOR_ID_T6D) {
-		vout_reg_setb(VPP_MISC_T6D, 1, 27, 1);
+#ifdef CONFIG_AML_OSD
+	if (is_keystone_enable_for_osd2()) {
+		vout_reg_setb(VPP_MISC, 1, 27, 1);
 		vout_reg_setb(OSD2_HDR2_MATRIXI_EN_CTRL, 0, 0, 1);
 		vout_log("T6D: %s: vout_projector_mux %d\n", __func__, vout_projector_mux);
 	}
+#endif
 }
 
 static void vout_viu_mux_s6(int index, unsigned int mux_sel)
