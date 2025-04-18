@@ -31,6 +31,8 @@
 #define CMD_FOR_RECOVERY "recovery_"
 #define CMD_FASTBOOTD          "fastbootd"
 #define CMD_RECOVERY_WIPE      "prompt_and_wipe_data"
+#define CMD_FACTORY          "factory"
+#define CMD_BIST             "bist"
 
 static const char *  const temp_for_compile[] = {"__test1", "__test2", "__test3", NULL};
 extern const char * const _env_list_execute_[0] __attribute__((weak, alias("temp_for_compile")));
@@ -308,6 +310,50 @@ static int do_RunBcbCommand(
 							(unsigned char *)miscbuf);
 		}
         return 0;
+	} else if (IS_ENABLED(CONFIG_FACTORY_BURN_MODE) &&
+		!memcmp(command_mark, CMD_FACTORY, strlen(command_mark))) {
+		printf("write cmd to enter factory mode\n");
+		memcpy(miscbuf, CMD_RUN_RECOVERY, sizeof(CMD_RUN_RECOVERY));
+		memcpy(miscbuf + sizeof(command) + sizeof(status),
+			"recovery\n--factory", sizeof("recovery\n--factory"));
+
+		if (store_get_type() == BOOT_SNAND || store_get_type() == BOOT_NAND_MTD) {
+			nand_store_write((const char *)partition, 0, sizeof(miscbuf),
+								(unsigned char *)miscbuf);
+		} else {
+			store_write((const char *)partition, 0, sizeof(miscbuf),
+							(unsigned char *)miscbuf);
+		}
+
+		env_set("factory_mode", "1");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+		run_command("update_env_part -p factory_mode;", 0);
+#else
+		run_command("saveenv;", 0);
+#endif
+		run_command("reboot factory;", 0);
+	} else if (IS_ENABLED(CONFIG_BIST_MODE) &&
+		!memcmp(command_mark, CMD_BIST, strlen(command_mark))) {
+		printf("write cmd to enter bist mode\n");
+		memcpy(miscbuf, CMD_RUN_RECOVERY, sizeof(CMD_RUN_RECOVERY));
+		memcpy(miscbuf + sizeof(command) + sizeof(status),
+			"recovery\n--bist", sizeof("recovery\n--bist"));
+
+		if (store_get_type() == BOOT_SNAND || store_get_type() == BOOT_NAND_MTD) {
+			nand_store_write((const char *)partition, 0, sizeof(miscbuf),
+								(unsigned char *)miscbuf);
+		} else {
+			store_write((const char *)partition, 0, sizeof(miscbuf),
+							(unsigned char *)miscbuf);
+		}
+
+		env_set("bist_mode", "1");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+		run_command("update_env_part -p bist_mode;", 0);
+#else
+		run_command("saveenv;", 0);
+#endif
+		run_command("reboot Diagnostic;", 0);
     }
 
     printf("Start read %s partition datas!\n", partition);
@@ -380,6 +426,31 @@ static int do_RunBcbCommand(
 			run_command("saveenv;", 0);
 #endif
 			run_command("run enter_fastboot", 0);
+		}
+
+		if (IS_ENABLED(CONFIG_FACTORY_BURN_MODE)) {
+			char *factory_mode;
+
+			factory_mode = env_get("factory_mode");
+			if (factory_mode && !strcmp(factory_mode, "1")) {
+				printf("clear recovery cmds for factory mode\n");
+				if (clear_misc_partition(clearbuf, sizeof(clearbuf)) < 0) {
+					printf("clear misc partition failed.\n");
+					goto ERR;
+				}
+			}
+		}
+		if (IS_ENABLED(CONFIG_BIST_MODE)) {
+			char *bist_mode;
+
+			bist_mode = env_get("bist_mode");
+			if (bist_mode && !strcmp(bist_mode, "1")) {
+				printf("clear recovery cmds for bist mode\n");
+				if (clear_misc_partition(clearbuf, sizeof(clearbuf)) < 0) {
+					printf("clear misc partition failed.\n");
+					goto ERR;
+				}
+			}
 		}
 
 		if (retry_times && remain_time > 0) {
