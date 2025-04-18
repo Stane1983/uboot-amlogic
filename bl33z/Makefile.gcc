@@ -430,6 +430,8 @@ define MAKE_BL
 	$(eval DUMP       := $(BUILD_DIR)/bl$(1).dump)
 	$(eval BIN        := $(BUILD_PLAT)/bl$(1).bin)
 
+	$(shell mkdir -p $(sort $(dir $(OBJS) $(LINKERFILE) $(MAPFILE) $(DUMP))))
+
 	$(eval $(call MAKE_OBJS,$(BUILD_DIR),$(SOURCES)))
 	$(eval $(call MAKE_LD,$(LINKERFILE),$(BL33Z_LINKERFILE)))
 
@@ -438,6 +440,7 @@ $(BUILD_DIR) :
 
 $(ELF) : $(OBJS) $(LINKERFILE)
 	@echo "  LD      $$@"
+	@mkdir -p $(dir $$@)
 	@echo 'const char build_message[] = "Built : "${BUILD_MESSAGE_TIMESTAMP}". ${PLAT} ${GIT_BRANCH} g${GIT_VERSION}${GIT_DIRTY} - ${BUILDER}";' | \
 		$$(CC) $$(CFLAGS) -xc - -o $(BUILD_DIR)/build_message.o
 	$$(Q)$$(LD) -o $$@ $$(LDFLAGS) -Map=$(MAPFILE) --script $(LINKERFILE) \
@@ -445,10 +448,12 @@ $(ELF) : $(OBJS) $(LINKERFILE)
 
 $(DUMP) : $(ELF)
 	@echo "  OD      $$@"
+	@mkdir -p $(dir $$@)
 	$${Q}$${OD} -dxS $$< > $$@
 
 $(BIN) : $(ELF)
 	@echo "  BIN     $$@"
+	@mkdir -p $(dir $$@)
 	$$(Q)$$(OC) -O binary $$< $$@
 	@echo
 	@echo "Built $$@ successfully."
