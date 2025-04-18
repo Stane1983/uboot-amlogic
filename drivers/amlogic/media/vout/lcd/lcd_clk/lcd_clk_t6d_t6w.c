@@ -43,6 +43,18 @@ static void lcd_pll_frac_set_t6d_t6w(struct aml_lcd_drv_s *pdrv, unsigned int fr
 		      pdrv->index, __func__, reg, val, lcd_ana_read(reg));
 	}
 	LCDPR("[%d]: %s: pll_frac=0x%x\n", pdrv->index, __func__, frac);
+#if IS_ENABLED(CONFIG_MESON_T6W)
+	if (cconf->pll_mode & LCD_PLL_MODE_DUAL_PLL) {
+		reg = ANACTRL_GP2PLL_CTRL2;
+		val = lcd_ana_read(reg);
+		lcd_ana_setb(reg, cconf[1].pll_frac, 0, 19);
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+			LCDPR("[%d]: %s: reg 0x%x: 0x%08x->0x%08x\n",
+				pdrv->index, __func__, reg, val, lcd_ana_read(reg));
+		}
+		LCDPR("[%d]: %s: gp2 pll_frac=0x%x\n", pdrv->index, __func__, cconf[1].pll_frac);
+	}
+#endif
 }
 
 static void lcd_set_pll_ss_t6d_t6w(struct aml_lcd_drv_s *pdrv, unsigned int ss_flag)
@@ -577,6 +589,9 @@ static void lcd_clk_reg_dump(struct aml_lcd_drv_s *pdrv)
 {
 	int i;
 	unsigned int *table = NULL, size = 0;
+#if IS_ENABLED(CONFIG_MESON_T6W)
+	struct lcd_clk_config_s *cconf = get_lcd_clk_config(pdrv);
+#endif
 	unsigned int pll_reg_table[] = {
 		ANACTRL_TCON_PLL0_CNTL0,
 		ANACTRL_TCON_PLL0_CNTL1,
@@ -586,6 +601,14 @@ static void lcd_clk_reg_dump(struct aml_lcd_drv_s *pdrv)
 		ANACTRL_TCON_PLL0_STS,
 		ANACTRL_VID_PLL_CLK_DIV
 	};
+#if IS_ENABLED(CONFIG_MESON_T6W)
+	unsigned int gp2_pll_reg_table[] = {
+		ANACTRL_GP2PLL_CTRL0,
+		ANACTRL_GP2PLL_CTRL1,
+		ANACTRL_GP2PLL_CTRL2,
+		ANACTRL_GP2PLL_CTRL3,
+	};
+#endif
 	unsigned int clk_reg_table[] = {
 		CLKCTRL_VIID_CLK0_DIV,
 		CLKCTRL_VIID_CLK0_CTRL,
@@ -601,7 +624,14 @@ static void lcd_clk_reg_dump(struct aml_lcd_drv_s *pdrv)
 	size = ARRAY_SIZE(pll_reg_table);
 	for (i = 0; i < size; i++)
 		printf("pll [0x%08x] = 0x%08x\n", table[i], lcd_ana_read(table[i]));
-
+#if IS_ENABLED(CONFIG_MESON_T6W)
+	if (cconf && (cconf[0].pll_mode & LCD_PLL_MODE_DUAL_PLL)) {
+		table = gp2_pll_reg_table;
+		size = ARRAY_SIZE(gp2_pll_reg_table);
+		for (i = 0; i < size; i++)
+			printf("pll [0x%08x] = 0x%08x\n", table[i], lcd_ana_read(table[i]));
+	}
+#endif
 	table = clk_reg_table;
 	size = ARRAY_SIZE(clk_reg_table);
 	for (i = 0; i < size; i++)
