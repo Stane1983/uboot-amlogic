@@ -15,6 +15,11 @@
 #ifdef CONFIG_AML_HDMITX
 #include <amlogic/media/vout/hdmitx21/hdmitx_ext.h>
 #endif
+#if defined(CONFIG_MDUMP_COMPRESS) || \
+	((defined CONFIG_SUPPORT_BL33Z) && \
+	(defined CONFIG_FULL_RAMDUMP))
+#include <ramdump.h>
+#endif
 
 int osd_enabled = 0;
 /* Graphic Device */
@@ -316,6 +321,15 @@ static cmd_tbl_t cmd_osd_sub[] = {
 static int do_osd(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {
 	cmd_tbl_t *c;
+
+#if defined(CONFIG_MDUMP_COMPRESS) || \
+	((defined CONFIG_SUPPORT_BL33Z) && \
+	(defined CONFIG_FULL_RAMDUMP))
+	if (g_ramdump_skip_osd_lcd) {
+		printf("ramdump: save to data, skip osd display.\n");
+		return 0;
+	}
+#endif
 
 	/* Strip off leading 'osd' command argument */
 	argc--;
