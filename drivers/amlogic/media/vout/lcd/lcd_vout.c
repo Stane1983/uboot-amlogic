@@ -24,6 +24,12 @@
 #include <amlogic/pm.h>
 #include "env.h"
 #include "command.h"
+#include <version.h>
+#if defined(CONFIG_MDUMP_COMPRESS) || \
+	((defined CONFIG_SUPPORT_BL33Z) && \
+	(defined CONFIG_FULL_RAMDUMP))
+#include <amlogic/ramdump.h>
+#endif
 
 //DECLARE_GLOBAL_DATA_PTR;
 
@@ -918,6 +924,15 @@ void lcd_power_domain_off(struct aml_lcd_data_s *lcd_data_p)
 int lcd_probe(void)
 {
 	int ret = 0;
+
+#if defined(CONFIG_MDUMP_COMPRESS) || \
+	((defined CONFIG_SUPPORT_BL33Z) && \
+	(defined CONFIG_FULL_RAMDUMP))
+	if (g_ramdump_skip_osd_lcd) {
+		printf("ramdump: save to data, skip %s.\n", __func__);
+		return 0;
+	}
+#endif
 
 	lcd_debug_print_flag = env_get_ulong("lcd_debug_print", 16, 0);
 	if (lcd_debug_print_flag)

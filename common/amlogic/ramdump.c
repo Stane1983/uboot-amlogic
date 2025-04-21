@@ -14,8 +14,16 @@
 #include <syscon.h>
 #include <cli.h>
 #include <console.h>
+#include <u-boot/md5.h>
+#include <image.h>
+#include <fdt_support.h>
+#include <linux/libfdt.h>
+#include <asm/global_data.h>
+
+extern struct bootm_headers images;
 
 #define DEBUG_RAMDUMP	0
+#define PAGE_SIZE                   ((1) << PAGE_SHIFT)
 #define AMLOGIC_KERNEL_PANIC		0x0c
 #define AMLOGIC_WATCHDOG_REBOOT		0x0d
 #ifdef CONFIG_USB_STORAGE
@@ -24,6 +32,12 @@ static void wait_usb_dev(void);
 #endif
 unsigned long ramdump_base = 0;
 unsigned long ramdump_size = 0;
+
+#define MD5_DIGEST_LENGTH 16
+static unsigned char md5_hex[MD5_DIGEST_LENGTH + 1] = {0};
+static char md5_str1[MD5_DIGEST_LENGTH * 2 + 1] = {0};
+static char md5_str2[MD5_DIGEST_LENGTH * 2 + 1] = {0};
+int g_ramdump_skip_osd_lcd;
 
 #undef CONFIG_DUMP_COMPRESS_HEAD
 #ifdef CONFIG_DUMP_COMPRESS_HEAD
@@ -121,6 +135,17 @@ int parse_dump_file_v2(const char *base, unsigned long size)
 	return 0;
 }
 #endif
+
+static char *md5sum_hex2str(unsigned char *in_md5_hex, char *out_md5_str)
+{
+	int i = 0;
+
+	for (i = 0; i < MD5_DIGEST_LENGTH; ++i)
+		sprintf(out_md5_str + i * 2, "%.2x", in_md5_hex[i]);
+
+	out_md5_str[MD5_DIGEST_LENGTH * 2] = '\0';
+	return out_md5_str;
+}
 
 static int compare_memory_regions(unsigned int *addr1,
 					unsigned int *addr2,
@@ -465,10 +490,31 @@ __weak int ramdump_save_compress_data(void)
 	if (!env)
 		return 0;
 
+	/* calculate ramdump md5sum */
+	md5((unsigned char *)ramdump_base, ramdump_size, md5_hex);
+	md5_hex[MD5_DIGEST_LENGTH] = '\0';
+	md5sum_hex2str(md5_hex, md5_str1);
+	printf("ramdump: get md5sum: %s\n", md5_str1);
+
 	printf("ramdump_location:%s\n", env);
-	/* currently we only support write to usb disk */
-	if (strncmp(env, "usb", 3)) {
-		printf("not supported location\n");
+	if (!strncmp(env, "data", 4)) {
+		env = env_get("ramdump_jump");
+		if (!env || strcmp(env, "1") != 0) {
+			printf("ramdump: save to Android /data/.\n");
+			g_ramdump_skip_osd_lcd = 1;
+			printf("ramdump: Set the flag skip_osd_lcd.\n");
+			return 0;
+		}
+		printf("ramdump: jump directly to main_loop.\n");
+		run_command("run storeargs;run storeboot", 1);
+		printf("ramdump: run storeboot Error! Rebooting in 5 seconds ...\n\n");
+		mdelay(5000);
+		run_command("reboot", 1);
+	} else if (!strncmp(env, "usb", 3)) {
+		printf("ramdump: save to Udisk. (cmd: fatwrite usb 0 %lx /crashdump-1.bin %lx\n",
+				ramdump_base, ramdump_size);
+	} else {
+		printf("Error: not supported location: %s\n", env);
 		return 0;
 	}
 #ifdef CONFIG_USB_STORAGE
@@ -495,7 +541,9 @@ __weak int ramdump_save_compress_data(void)
 		ret = run_command(cmd, 0);
 		if (ret == 0) {
 			run_command("usb stop", 0);
-			printf("run fatwrite usb OK! (%scrashdump-1.bin)\n\n", path);
+			printf("run fatwrite usb OK! (%scrashdump-1.bin, md5sum=0x%s)\n",
+					path, md5_str1);
+			printf("Please check file md5sum on PC with: md5sum ./crashdump-1.bin\n\n");
 			break;
 		}
 		printf("run fatwrite usb ERROR! Try again...\n");
@@ -523,8 +571,8 @@ __weak int ramdump_save_compress_data(void)
 		run_command("reboot", 1);
 	}
 
-	printf("\nRun fatwrite finished. Wait here forever!\n");
-	printf("\nAnd You can input 'Ctrl I' to force stopped anyway ...\n\n\n");
+	printf("\nRun fatwrite finished. Stop here and wait for manual reboot!\n");
+	printf("\nAnd You can input 'Ctrl I' to enter the U-Boot console...\n\n\n");
 	while (1) {
 		mdelay(1000);
 		wait_for_interrupt_key(100000);
@@ -571,13 +619,13 @@ static void ramdump_env_setup(unsigned long addr, unsigned long size)
 		return;
 
 	i = strlen(line);
-	o = malloc(i + 128);
+	o = malloc(i + 256);
 	if (!o)
 		return;
 
-	memset(o, 0, i + 128);
-	snprintf(o, i + 128, "%s=%s ramdump=%lx,%lx  %s\n",
-		(char *)data, (char *)(data + 6), addr, size, line);
+	memset(o, 0, i + 256);
+	snprintf(o, i + 256, "%s=%s ramdump=%lx,%lx androidboot.ramdumpmd5=%s %s\n",
+		(char *)data, (char *)(data + 6), addr, size, md5_str1, line);
 	env_set("bootargs", o);
 	free(o);
 	line = NULL;
@@ -588,13 +636,168 @@ static void ramdump_env_setup(unsigned long addr, unsigned long size)
 #endif
 }
 
+static int ramdump_check_kernel_dts_rsvmem(u64 addr, u64 size)
+{
+	int count;
+	void *fdt = images.ft_addr;
+	int node, subnode;
+	int addr_cells, size_cells;
+	const fdt32_t *prop;
+	int len, i, conflict_count = 0;
+	const char *status;
+	const char *name;
+	u64 r_addr, r_size, alloc_size;
+	fdt32_t zero_reg[4] = {0};
+	fdt32_t new_size[2];
+	u64 max_cma = 48 * 1024 * 1024;
+
+	printf("\n[ramdump rsvmem] check kernel dts conflict for [0x%llx ~ 0x%llx]\n",
+		addr, addr + size);
+
+	node = fdt_path_offset(fdt, "/aml_frc");
+	if (node >= 0) {
+		status = fdt_getprop(fdt, node, "status", NULL);
+		if (!status || strcmp(status, "disabled")) {
+			printf("[ramdump rsvmem] Disable Node: /aml_frc\n");
+			fdt_setprop_string(fdt, node, "status", "disabled");
+		}
+	}
+
+	node = fdt_path_offset(fdt, "/reserved-memory");
+	if (node < 0) {
+		printf("[ramdump rsvmem] No /reserved-memory node found.\n");
+		return -1;
+	}
+
+	addr_cells = fdt_address_cells(fdt, node);
+	if (addr_cells < 0)
+		addr_cells = fdt_address_cells(fdt, 0);
+
+	size_cells = fdt_size_cells(fdt, node);
+	if (size_cells < 0)
+		size_cells = fdt_size_cells(fdt, 0);
+
+	if (size_cells == 2) {
+		new_size[0] = cpu_to_fdt32((u32)(max_cma >> 32));
+		new_size[1] = cpu_to_fdt32((u32)(max_cma & 0xFFFFFFFF));
+	} else {
+		new_size[0] = cpu_to_fdt32((u32)(max_cma));
+	}
+
+	fdt_for_each_subnode(subnode, fdt, node) {
+		name = fdt_get_name(fdt, subnode, NULL);
+		status = fdt_getprop(fdt, subnode, "status", NULL);
+		if (status && !strcmp(status, "disabled"))
+			continue;
+
+		// reg
+		prop = fdt_getprop(fdt, subnode, "reg", &len);
+		if (prop && len >= (addr_cells + size_cells) * sizeof(fdt32_t)) {
+			count = len / ((addr_cells + size_cells) * sizeof(fdt32_t));
+			const fdt32_t *p = prop;
+
+			for (i = 0; i < count; i++) {
+				r_addr = fdt_read_number(p, addr_cells);
+				p += addr_cells;
+				r_size = fdt_read_number(p, size_cells);
+				p += size_cells;
+				if (!r_size)
+					break;
+
+				if ((addr + size > r_addr) && (addr < r_addr + r_size)) {
+					conflict_count++;
+					printf("[ramdump rsvmem] Conflict Node:%s", name);
+					printf("  Type:reg  [0x%08llx ~ 0x%08llx] -> 0MB\n",
+						r_addr, r_addr + r_size);
+					fdt_setprop(fdt, subnode, "reg", zero_reg,
+						(addr_cells + size_cells) * sizeof(fdt32_t));
+				}
+			}
+			continue;
+		}
+
+		// alloc-ranges
+		prop = fdt_getprop(fdt, subnode, "alloc-ranges", &len);
+		if (prop && len >= (addr_cells + size_cells) * sizeof(fdt32_t)) {
+			count = len / ((addr_cells + size_cells) * sizeof(fdt32_t));
+			const fdt32_t *p = prop;
+
+			for (i = 0; i < count; i++) {
+				r_addr = fdt_read_number(p, addr_cells);
+				p += addr_cells;
+				r_size = fdt_read_number(p, size_cells);
+				p += size_cells;
+				if (!r_size)
+					break;
+
+				prop = fdt_getprop(fdt, subnode, "size", &len);
+				if (!prop)
+					break;
+
+				alloc_size = fdt_read_number(prop, size_cells);
+				if (!alloc_size)
+					break;
+
+				if ((addr + size > (r_addr + r_size - alloc_size)) &&
+					(addr < r_addr + r_size)) {
+					conflict_count++;
+					printf("[ramdump rsvmem] Conflict Node:%s", name);
+					printf("  Type:alloc  [0x%08llx ~ 0x%08llx] %lldMB -> 0MB\n",
+						r_addr, r_addr + r_size, alloc_size / 1024 / 1024);
+					fdt_setprop(fdt, subnode, "size", zero_reg,
+						size_cells * sizeof(fdt32_t));
+				} else if (alloc_size > max_cma) {
+					printf("[ramdump rsvmem] Adjust Node:%s", name);
+					printf("  Type:CMApool  size:%lldMB -> 48MB\n",
+							alloc_size / 1024 / 1024);
+					fdt_setprop(fdt, subnode, "size", new_size,
+							size_cells * sizeof(fdt32_t));
+				}
+			}
+			continue;
+		}
+
+		// CMA pool
+		prop = fdt_getprop(fdt, subnode, "size", &len);
+		if (prop && len >= size_cells * sizeof(fdt32_t)) {
+			count = len / (size_cells * sizeof(fdt32_t));
+			const fdt32_t *p = prop;
+
+			for (i = 0; i < count; i++) {
+				r_size = fdt_read_number(p, size_cells);
+				p += size_cells;
+				if (!r_size)
+					break;
+
+				if (r_size > max_cma) {
+					printf("[ramdump rsvmem] Adjust Node:%s", name);
+					printf("  Type:CMApool  size:%lldMB -> 48MB\n",
+						r_size / 1024 / 1024);
+					fdt_setprop(fdt, subnode, "size", new_size,
+						size_cells * sizeof(fdt32_t));
+				}
+			}
+			continue;
+		}
+	}
+
+	if (conflict_count > 0) {
+		printf("[ramdump rsvmem] Found %d conflict(s) dts node. (Modified)\n\n",
+			conflict_count);
+		return -1;
+	}
+
+	printf("[ramdump rsvmem] Check OK. No conflicts found.\n\n");
+	return 0;
+}
+
 static int overwrite_bl33z_rsvmem_info(unsigned long addr, unsigned long size)
 {
 	int address_cells = 0;
 	unsigned long align_size = PAGE_ALIGN(size);
 	char cmd[0x80];
 
-	address_cells = fdt_address_cells(gd->fdt_blob, 0);
+	address_cells = fdt_address_cells(images.ft_addr, 0);
 	if (address_cells < 1) {
 		printf("%s, bad #address-cells !\n", __func__);
 		return -1;
@@ -602,69 +805,23 @@ static int overwrite_bl33z_rsvmem_info(unsigned long addr, unsigned long size)
 	printf("%s, get fdt #address-cells = %d\n", __func__, address_cells);
 
 	memset(cmd, 0, sizeof(cmd));
-	if (address_cells == 2)
+	if (address_cells == 2) {
+		printf("fdt set /reserved-memory/ramdump_bl33z status okay\n");
+		run_command("fdt set /reserved-memory/ramdump_bl33z status okay", 0);
 		snprintf(cmd, sizeof(cmd),
 			"fdt set /reserved-memory/ramdump_bl33z reg '<0x0 0x%08lx 0x0 0x%08lx>'",
 			addr, align_size);
-	else
+	} else {
+		printf("fdt set /reserved-memory/ramdump_data status okay\n");
+		run_command("fdt set /reserved-memory/ramdump_data status okay", 0);
 		snprintf(cmd, sizeof(cmd),
-			"fdt set /reserved-memory/ramdump_bl33z reg '<0x%08lx 0x%08lx>'",
+			"fdt set /reserved-memory/ramdump_data reg '<0x%08lx 0x%08lx>'",
 			addr, align_size);
+	}
 
-	printf("%s\n", cmd);
+	printf("%s\n\n", cmd);
 	run_command(cmd, 0);
 
-	printf("fdt set /reserved-memory/ramdump_bl33z status okay\n");
-	run_command("fdt set /reserved-memory/ramdump_bl33z status okay", 0);
-
-	return 0;
-}
-
-static int reduce_dts_reserved_memory(void)
-{
-	int address_cells = 0;
-
-	address_cells = fdt_address_cells(gd->fdt_blob, 0);
-	if (address_cells < 1) {
-		printf("%s, bad #address-cells !\n", __func__);
-		return -1;
-	}
-	printf("%s, get fdt #address-cells = %d\n", __func__, address_cells);
-	if (address_cells == 2) {
-		printf("\nReduce dts reserved memory:\n");
-		printf("   * disabled logo_reserved\n");
-		run_command("fdt set /reserved-memory/linux,meson-fb  reg '<0x0 0x0 0x0 0x0>'", 0);
-		printf("   * disabled vdin1_cma_reserved\n");
-		run_command("fdt set /reserved-memory/linux,vdin1_cma reg '<0x0 0x0 0x0 0x0>'", 0);
-		printf("   * disabled ion_cma_reserved\n");
-		run_command("fdt set /reserved-memory/linux,ion-dev   size '<0 0>'", 0);
-		printf("   * disabled dsp_fw_reserved\n");
-		run_command("fdt set /reserved-memory/linux,dsp_fw    size '<0 0>'", 0);
-		printf("   * disabled lcd_tcon_reserved\n");
-		run_command("fdt set /reserved-memory/linux,lcd_tcon  reg '<0x0 0x0 0x0 0x0>'", 0);
-		printf("   * reduce codec_mm_cma_reserved\n");
-		run_command("fdt set /reserved-memory/linux,codec_mm_cma size '<0x0 0x5000000>'", 0);
-		printf("   * reduce ion_fb_reserved, display\n");
-		run_command("fdt set /reserved-memory/linux,ion-fb    size '<0x0 0x1000000>'", 0);
-	} else {
-		printf("\nReduce dts reserved memory:\n");
-		printf("   * disabled logo_reserved\n");
-		run_command("fdt set /reserved-memory/linux,meson-fb  reg '<0x0 0x0>'", 0);
-		printf("   * disabled vdin1_cma_reserved\n");
-		run_command("fdt set /reserved-memory/linux,vdin1_cma reg '<0x0 0x0>'", 0);
-		printf("   * disabled ion_cma_reserved\n");
-		run_command("fdt set /reserved-memory/linux,ion-dev   size '<0>'", 0);
-		printf("   * disabled dsp_fw_reserved\n");
-		run_command("fdt set /reserved-memory/linux,dsp_fw    size '<0>'", 0);
-		printf("   * disabled lcd_tcon_reserved\n");
-		run_command("fdt set /reserved-memory/linux,lcd_tcon  reg '<0x0 0x0>'", 0);
-		printf("   * reduce codec_mm_cma_reserved\n");
-		run_command("fdt set /reserved-memory/linux,codec_mm_cma size '<0x5000000>'", 0);
-		printf("   * reduce ion_fb_reserved, display\n");
-		run_command("fdt set /reserved-memory/linux,ion-fb    size '<0x1000000>'", 0);
-	}
-
-	//run_command("fdt print /reserved-memory", 0);
 	return 0;
 }
 
@@ -687,6 +844,21 @@ void check_ramdump(void)
 				printf("%s, addr:%lx, size:%lx\n",
 					__func__, addr, size);
 				if (addr && size) {
+					/* calculate ramdump md5sum */
+					md5((unsigned char *)ramdump_base, ramdump_size, md5_hex);
+					md5_hex[MD5_DIGEST_LENGTH] = '\0';
+					md5sum_hex2str(md5_hex, md5_str2);
+					printf("ramdump: get md5sum again: %s\n", md5_str2);
+					if (strcmp(md5_str1, md5_str2)) {
+						printf("=====================================\n");
+						printf("ramdump md5sum check err! Rebooting ...\n");
+						printf("=====================================\n\n");
+						mdelay(5000);
+						run_command("reboot", 1);
+					} else {
+						printf("ramdump md5sum check OK. init vs bootm.\n");
+					}
+
 					ramdump_env_setup(addr, size);
 #ifdef CONFIG_DUMP_COMPRESS_HEAD
 					dump_info((unsigned int)ramdump_base, 0x80, "bl33 check COMPRESS DATA 2");
@@ -694,7 +866,7 @@ void check_ramdump(void)
 					env = env_get("ramdump_location");
 					if (!strncmp(env, "data", 4)) {
 						printf("Crash file will save to Android /data.\n");
-						reduce_dts_reserved_memory();
+						ramdump_check_kernel_dts_rsvmem(addr, size);
 						overwrite_bl33z_rsvmem_info(addr, size);
 						env_set("initrd_high", "0x0BB00000");
 						env_set("fdt_high",    "0x0BE00000");
@@ -704,12 +876,12 @@ void check_ramdump(void)
 				}
 			} else {
 				ramdump_env_setup(0, 0);
-			}
 #ifndef	CONFIG_MDUMP_COMPRESS
-			//ramdump bl33z
-			printf("%s, fdt: rsvmem ramdump_bl33z enable.\n", __func__);
-			run_command("fdt set /reserved-memory/ramdump_bl33z status okay", 0);
+				//ramdump bl33z
+				printf("%s, fdt: rsvmem ramdump_bl33z enable.\n", __func__);
+				run_command("fdt set /reserved-memory/ramdump_bl33z status okay", 0);
 #endif
+			}
 		}
 	}
 }

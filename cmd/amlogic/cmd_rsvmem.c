@@ -7,6 +7,9 @@
 #include <command.h>
 #include <asm/io.h>
 #include <asm/amlogic/arch/secure_apb.h>
+#include <fdt_support.h>
+#include <linux/libfdt.h>
+#include <asm/global_data.h>
 
 #ifdef CONFIG_CMD_RSVMEM
 
@@ -33,6 +36,167 @@
 
 #define RAMOOP_MEM_SIZE      0x100000
 #define RSV_MEM_ALIGNMENT    0x400000
+
+static int do_rsvmem_kernel_dts_check(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+{
+	int ret = 0;
+	char *fdt_str = NULL;
+	void *fdt = NULL;
+	int node, subnode;
+	int addr_cells, size_cells;
+	u64 r_addr, r_size, alloc_size;
+	const fdt32_t *prop;
+	int len, i, conflict_count = 0;
+	u64 addr, size;
+	const char *status;
+	char cmdbuf[128];
+	const char *name;
+	int count, conflict_flag = 0;
+	ulong fdt_addr;
+
+	if (argc < 3)
+		return CMD_RET_USAGE;
+
+	addr = simple_strtoull(argv[1], NULL, 16);
+	size = simple_strtoull(argv[2], NULL, 16);
+
+	printf("\n[rsvmem] Check reserved-memory conflict for [0x%llx ~ 0x%llx]\n",
+		addr, addr + size);
+
+	fdt_str = env_get("fdtaddr");
+	if (!fdt_str) {
+		printf("[rsvmem] Error! get fdtaddr NULL!\n");
+		return -1;
+	}
+
+	fdt_addr = simple_strtoul(fdt_str, NULL, 16);
+	fdt = (void *)fdt_addr;
+
+	sprintf(cmdbuf, "fdt addr %s;", fdt_str);
+	rsvmem_dbg("CMD: %s\n", cmdbuf);
+	ret = run_command(cmdbuf, 0);
+	if (ret != 0) {
+		printf("[rsvmem] Error! fdt addr error.\n");
+		return -2;
+	}
+
+	node = fdt_path_offset(fdt, "/reserved-memory");
+	if (node < 0) {
+		printf("[rsvmem] No /reserved-memory node found.\n");
+		return CMD_RET_FAILURE;
+	}
+
+	addr_cells = fdt_address_cells(fdt, node);
+	if (addr_cells < 0)
+		addr_cells = fdt_address_cells(fdt, 0);
+
+	size_cells = fdt_size_cells(fdt, node);
+	if (size_cells < 0)
+		size_cells = fdt_size_cells(fdt, 0);
+
+	printf("-----------------------------------------------");
+	printf("----------------------------------------------\n");
+	printf("| %-28s | %-8s | %-25s | %-8s | %-8s |\n",
+		"Node", "Type", "Mem Range", "Size(MB)", "Conflict");
+	printf("-----------------------------------------------");
+	printf("----------------------------------------------\n");
+
+	fdt_for_each_subnode(subnode, fdt, node) {
+		name = fdt_get_name(fdt, subnode, NULL);
+		conflict_flag = 0;
+
+		// disabled
+		status = fdt_getprop(fdt, subnode, "status", NULL);
+		if (status && !strcmp(status, "disabled"))
+			continue;
+
+		// reg
+		prop = fdt_getprop(fdt, subnode, "reg", &len);
+		if (prop && len >= (addr_cells + size_cells) * sizeof(fdt32_t)) {
+			count = len / ((addr_cells + size_cells) * sizeof(fdt32_t));
+			for (i = 0; i < count; i++) {
+				r_addr = fdt_read_number(prop, addr_cells);
+				prop += addr_cells;
+				r_size = fdt_read_number(prop, size_cells);
+				prop += size_cells;
+				if (!r_size)
+					break;
+
+				if ((addr + size > r_addr) && (addr < r_addr + r_size)) {
+					conflict_count++;
+					conflict_flag = 1;
+				}
+
+				printf("| %-28s | %-8s | [0x%08llx ~ 0x%08llx] | %-8lld | %-8s |\n",
+					name, "reg", r_addr, r_addr + r_size,
+					r_size / 1024 / 1024,
+					conflict_flag ? "Y" : "N");
+			}
+			continue;
+		}
+
+		// alloc-ranges
+		prop = fdt_getprop(fdt, subnode, "alloc-ranges", &len);
+		if (prop && len >= (addr_cells + size_cells) * sizeof(fdt32_t)) {
+			count = len / ((addr_cells + size_cells) * sizeof(fdt32_t));
+			for (i = 0; i < count; i++) {
+				r_addr = fdt_read_number(prop, addr_cells);
+				prop += addr_cells;
+				r_size = fdt_read_number(prop, size_cells);
+				prop += size_cells;
+				if (!r_size)
+					break;
+
+				prop = fdt_getprop(fdt, subnode, "size", &len);
+				if (!prop)
+					break;
+
+				alloc_size = fdt_read_number(prop, size_cells);
+				if (!alloc_size)
+					break;
+
+				if ((addr + size > (r_addr + r_size - alloc_size)) &&
+					(addr < r_addr + r_size)) {
+					conflict_count++;
+					conflict_flag = 1;
+				}
+
+				printf("| %-28s | %-8s | [0x%08llx ~ 0x%08llx] | %-8lld | %-8s |\n",
+					name, "alloc", r_addr, r_addr + r_size,
+					alloc_size / 1024 / 1024,
+					conflict_flag ? "Y" : "N");
+			}
+			continue;
+		}
+
+		// cma-size
+		prop = fdt_getprop(fdt, subnode, "size", &len);
+		if (prop && len >= size_cells * sizeof(fdt32_t)) {
+			count = len / (size_cells * sizeof(fdt32_t));
+			for (i = 0; i < count; i++) {
+				r_size = fdt_read_number(prop, size_cells);
+				if (!r_size)
+					break;
+
+				prop += size_cells;
+				printf("| %-28s | %-8s | [  %-8s - 0x%08llx] | %-8lld | %-8s |\n",
+					name, "CMApool", "ddr_end", r_size,
+					r_size / 1024 / 1024, "-");
+			}
+			continue;
+		}
+	}
+
+	printf("-----------------------------------------------");
+	printf("----------------------------------------------\n");
+
+	if (conflict_count > 0) {
+		printf("[rsvmem] Error! Found %d conflict(s) dts node.\n\n", conflict_count);
+		return CMD_RET_FAILURE;
+	}
+
+	return CMD_RET_SUCCESS;
+}
 
 static int fdt_config_rsv_mem(unsigned int aarch32, unsigned int alignment,
 			      unsigned int bl31_start, unsigned int rsv_sz)
@@ -290,6 +454,7 @@ static int do_rsvmem_dump(cmd_tbl_t *cmdtp, int flag, int argc,
 static cmd_tbl_t cmd_rsvmem_sub[] = {
 	U_BOOT_CMD_MKENT(check, 2, 0, do_rsvmem_check, "", ""),
 	U_BOOT_CMD_MKENT(dump, 2, 0, do_rsvmem_dump, "", ""),
+	U_BOOT_CMD_MKENT(kernel, 4, 0, do_rsvmem_kernel_dts_check, "", ""),
 };
 #endif
 
@@ -315,9 +480,10 @@ static int do_rsvmem(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 }
 
 U_BOOT_CMD(
-	rsvmem, 2, 0,	do_rsvmem,
+	rsvmem, 4, 0,	do_rsvmem,
 	"reserve memory",
 	"check                   - check reserved memory\n"
 	"rsvmem dump                    - dump reserved memory\n"
+	"rsvmem kernel <addr> <size>    - check if region conflicts (kernel dts)\n"
 );
 #endif
