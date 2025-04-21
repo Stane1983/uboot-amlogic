@@ -64,8 +64,13 @@ static void vout_hdmi_hpd(struct hdmitx_dev *hdev, int hpd_st)
 		env_set("hdmichecksum", "0x00000000");
 		env_set("connector0_type", "TV-1");
 	} else {
-		if (!strstr(env_get("outputmode"), "hz"))
+		if (env_get("outputmode")) {
+			if (!strstr(env_get("outputmode"), "hz"))
+				env_set("outputmode", "1080p60hz");
+		} else {
+			printf("ERROR %s: outputmode env is NULL\n", __func__);
 			env_set("outputmode", "1080p60hz");
+		}
 		switch (hdev->enc_idx) {
 		case 0:
 			env_set("connector0_type", "HDMI-A-A");
@@ -106,8 +111,13 @@ static void vout2_hdmi_hpd(struct hdmitx_dev *hdev, int hpd_st)
 			env_set("outputmode2", cvbsmode);
 		env_set("hdmichecksum", "0x00000000");
 	} else {
-		if (!strstr(env_get("outputmode2"), "hz"))
+		if (env_get("outputmode2")) {
+			if (!strstr(env_get("outputmode2"), "hz"))
+				env_set("outputmode2", "1080p60hz");
+		} else {
+			printf("ERROR %s: outputmode2 env is NULL\n", __func__);
 			env_set("outputmode2", "1080p60hz");
+		}
 	}
 }
 
