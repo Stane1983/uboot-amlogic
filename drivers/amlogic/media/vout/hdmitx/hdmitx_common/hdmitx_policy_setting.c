@@ -261,6 +261,15 @@ static bool is_framerate_priority(void)
 	return !framerate_priority || (strcmp(framerate_priority, "true") == 0);
 }
 
+static bool is_preferred_50hz(void)
+{
+	char *preferred_50hz = env_get("preferred50hz");
+
+	if (!preferred_50hz)
+		return false;
+	return strcmp(preferred_50hz, "true") == 0;
+}
+
 /* import from kernel */
 static inline bool package_id_is(unsigned int id)
 {
@@ -388,6 +397,7 @@ void get_hdmi_input(struct hdmitx_dev *hdev, struct meson_policy_in *input)
 	input->con_info.is_deepcolor = is_support_deepcolor();
 	input->con_info.isframeratepriority = is_framerate_priority();
 	input->con_info.is_preferred_frac_mode = get_preferred_frac_mode();
+	input->con_info.is_preferred_50hz = is_preferred_50hz();
 	input->con_info.sink_type = MESON_SINK_TYPE_SINK;
 
 	/* 1."hdmimode" is used to save user manually selected mode,
@@ -443,6 +453,9 @@ void get_hdmi_input(struct hdmitx_dev *hdev, struct meson_policy_in *input)
 		input->con_info.is_bestcolorspace,
 		is_framerate_priority(),
 		input->hdr_info.hdr_force_mode);
+	printf("ubootenv preferred_frac_mode: %d, preferred_50hz:%d\n",
+		input->con_info.is_preferred_frac_mode,
+		input->con_info.is_preferred_50hz);
 
 	meson_mode_set_policy_input(MESON_MODE_HDMI, input);
 }
