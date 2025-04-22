@@ -128,15 +128,18 @@ bool get_kernel_dtb_info(void)
 #define MAX_NAME_LENGTH 32
 static char tmp_hdmimode[MAX_NAME_LENGTH];
 static char tmp_outputmode[MAX_NAME_LENGTH];
+static char tmp_outputmode2[MAX_NAME_LENGTH];
 static char tmp_frac_rate_policy[2];
 
 void hdmi_mode_frac_preprocess(void)
 {
 	char *hdmimode = env_get("hdmimode");
 	char *outputmode = env_get("outputmode");
+	char *outputmode2 = env_get("outputmode2");
 	char *frac_rate_policy = env_get("frac_rate_policy");
 	char conv_hdmimode[MAX_NAME_LENGTH] = {0};
 	char conv_outputmode[MAX_NAME_LENGTH] = {0};
+	char conv_outputmode2[MAX_NAME_LENGTH] = {0};
 
 	/* kernel should have /amhdmitx/frac_enable node as 1; otherwise return */
 	if (!get_kernel_dtb_info())
@@ -145,11 +148,14 @@ void hdmi_mode_frac_preprocess(void)
 	/* if frac_rate_policy is NULL, or hdmimode/outputmode is frac name, backup the names */
 	if (!frac_rate_policy ||
 		(hdmimode && is_mode_name_frac(hdmimode)) ||
-		(outputmode && is_mode_name_frac(outputmode))) {
+		(outputmode && is_mode_name_frac(outputmode)) ||
+		(outputmode2 && is_mode_name_frac(outputmode2))) {
 		if (hdmimode && is_mode_name_frac(hdmimode))
 			strncpy(tmp_hdmimode, hdmimode, sizeof(tmp_hdmimode));
 		if (outputmode && is_mode_name_frac(outputmode))
 			strncpy(tmp_outputmode, outputmode, sizeof(tmp_outputmode));
+		if (outputmode2 && is_mode_name_frac(outputmode2))
+			strncpy(tmp_outputmode2, outputmode2, sizeof(tmp_outputmode2));
 		if (frac_rate_policy)
 			strncpy(tmp_frac_rate_policy, frac_rate_policy,
 				sizeof(tmp_frac_rate_policy));
@@ -159,7 +165,7 @@ void hdmi_mode_frac_preprocess(void)
 				sizeof(tmp_frac_rate_policy));
 	}
 
-	if (!tmp_hdmimode[0] && !tmp_outputmode[0]) {
+	if (!tmp_hdmimode[0] && !tmp_outputmode[0] && !tmp_outputmode2[0]) {
 		/* no frac name and return*/
 		return;
 	}
@@ -184,6 +190,16 @@ void hdmi_mode_frac_preprocess(void)
 			env_set("frac_rate_policy", "1");
 		} else {
 			env_set("outputmode", outputmode);
+			env_set("frac_rate_policy", "0");
+		}
+	}
+	if (tmp_outputmode2[0]) {
+		if (outputmode2 && is_mode_name_frac(outputmode2)) {
+			convert_name_frac2int(tmp_outputmode2, conv_outputmode2);
+			env_set("outputmode2", conv_outputmode2);
+			env_set("frac_rate_policy", "1");
+		} else {
+			env_set("outputmode2", outputmode2);
 			env_set("frac_rate_policy", "0");
 		}
 	}
