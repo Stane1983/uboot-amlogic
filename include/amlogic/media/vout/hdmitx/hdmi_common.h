@@ -696,6 +696,8 @@ typedef struct input_hdmi_data {
 	hdr_force_mode_e hdr_force_mode;
 	/* preferred frac mode or not*/
 	bool is_preferred_frac_mode;
+	/* 50hz resolution priority enabled or not, false:disable true:enable */
+	bool is_preferred_50hz;
 	#if 0
 	bool isbestpolicy;
 	bool isSupport4K30Hz;

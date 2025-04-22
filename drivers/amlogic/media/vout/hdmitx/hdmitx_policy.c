@@ -204,10 +204,47 @@ static const char *DISPLAY_MODE_LIST[] = {
 	/* MODE_NTSC_M, */
 };
 
-/* for check hdr 4k support or not */
-static const char * const MODE_4K_LIST[] = {
+static const char *MODE_FRAMERATE_FIRST_50HZ[] = {
+	MODE_480I,
+	MODE_576I,
+	MODE_1080I,
+	MODE_1080I50HZ,
+	MODE_640x480p,
+	MODE_480P,
+	MODE_576P,
+	MODE_720P,
+	MODE_720P50HZ,
+	MODE_4K2K24HZ,
+	MODE_4K2K25HZ,
+	MODE_4K2K30HZ,
+	MODE_1080P,
+	MODE_1080P50HZ,
 	MODE_4K2K60HZ,
 	MODE_4K2K50HZ,
+	/*
+	 * for hdmi compatibility not choose 8k as preferred mode
+	 */
+	/*
+	MODE_4K2K100HZ,
+	MODE_4K2K120HZ,
+	MODE_8K4K24HZ,
+	MODE_8K4K25HZ,
+	MODE_8K4K30HZ,
+	MODE_8K4K48HZ,
+	MODE_8K4K60HZ,
+	MODE_8K4K50HZ,
+	*/
+};
+
+/* for check hdr 4k support or not */
+static const char *MODE_4K_LIST[] = {
+	MODE_4K2K60HZ,
+	MODE_4K2K50HZ,
+};
+
+static const char *MODE_4K_LIST_50HZ[] = {
+	MODE_4K2K50HZ,
+	MODE_4K2K60HZ,
 };
 
 /* for check hdr non-4k support or not
@@ -215,7 +252,7 @@ static const char * const MODE_4K_LIST[] = {
  * version may removed interlace mode.
  * descending order
  */
-static const char * const MODE_NON4K_LIST[] = {
+static const char *MODE_NON4K_LIST[] = {
 	MODE_1080P,
 	MODE_1080P50HZ,
 	MODE_720P,
@@ -224,6 +261,19 @@ static const char * const MODE_NON4K_LIST[] = {
 	MODE_480P,
 	MODE_1080I,
 	MODE_1080I50HZ,
+	MODE_576I,
+	MODE_480I,
+};
+
+static const char *MODE_NON4K_LIST_50HZ[] = {
+	MODE_1080P50HZ,
+	MODE_1080P,
+	MODE_720P50HZ,
+	MODE_720P,
+	MODE_576P,
+	MODE_480P,
+	MODE_1080I50HZ,
+	MODE_1080I,
 	MODE_576I,
 	MODE_480I,
 };
@@ -257,6 +307,38 @@ static const char *MODE_RESOLUTION_FIRST[] = {
 	/* MODE_8K4K48HZ, */
 	/* MODE_8K4K50HZ, */
 	/* MODE_8K4K60HZ, */
+};
+
+static const char *MODE_RESOLUTION_FIRST_50HZ[] = {
+	MODE_480I,
+	MODE_576I,
+	MODE_1080I,
+	MODE_1080I50HZ,
+	MODE_640x480p,
+	MODE_480P,
+	MODE_576P,
+	MODE_720P,
+	MODE_720P50HZ,
+	MODE_1080P,
+	MODE_1080P50HZ,
+	MODE_4K2K24HZ,
+	MODE_4K2K25HZ,
+	MODE_4K2K30HZ,
+	MODE_4K2K60HZ,
+	MODE_4K2K50HZ,
+	/*
+	 * for hdmi compatibility not choose 8k as preferred mode
+	 */
+	/*
+	MODE_4K2K100HZ,
+	MODE_4K2K120HZ,
+	MODE_8K4K24HZ,
+	MODE_8K4K25HZ,
+	MODE_8K4K30HZ,
+	MODE_8K4K48HZ,
+	MODE_8K4K60HZ,
+	MODE_8K4K50HZ,
+	*/
 };
 
 /* ascending order for HDR/SDR policy */
@@ -385,8 +467,8 @@ static const char *HDR_4K_COLOR_ATTRIBUTE_LIST[] = {
 };
 
 struct frac_mode_list_map {
-    const char *frac_mode;
-    const char *non_frac_mode;
+	const char *frac_mode;
+	const char *non_frac_mode;
 };
 
 struct frac_mode_list_map FRAC_MODE_LIST_MAP[] = {
@@ -595,6 +677,15 @@ static hdr_force_mode_e get_hdr_force_mode(void)
 		force_mode = FORCE_DV;
 
 	return (hdr_force_mode_e)force_mode;
+}
+
+static bool is_preferred_50hz(void)
+{
+	char *preferred_50hz = env_get("preferred50hz");
+
+	if (!preferred_50hz)
+		return false;
+	return strcmp(preferred_50hz, "true") == 0;
 }
 
 bool is_tv_support_hdr(struct hdmitx_dev *hdev)
@@ -963,12 +1054,14 @@ static int update_dv_displaymode(struct input_hdmi_data *hdmi_data,
 	int ret = 0;
 	bool need_best_mode_policy = false;
 	bool preferred_frac = false;
+	bool is_preferred_50hz = false;
 	const char *mode_result;
 
 	if (!hdmi_data || !final_displaymode)
 		return ret;
 	dv_type = hdmi_data->ubootenv_dv_type;
 	preferred_frac = hdmi_data->is_preferred_frac_mode;
+	is_preferred_50hz = hdmi_data->is_preferred_50hz;
 
 	strcpy(cur_outputmode, hdmi_data->ubootenv_hdmimode);
 	dv = &hdmi_data->prxcap->dv_info;
@@ -986,25 +1079,55 @@ static int update_dv_displaymode(struct input_hdmi_data *hdmi_data,
 		if (dv->parity) {
 			/* TV support dolby vision 2160p60hz case */
 			if (!strcmp(dv_displaymode, MODE_4K2K60HZ)) {
-				if (dv_type == DOLBY_VISION_LL_RGB)
-					strcpy(final_displaymode, preferred_frac ? MODE_1080P59HZ : MODE_1080P);
-				else
-					strcpy(final_displaymode, preferred_frac ? MODE_4K2K59HZ : MODE_4K2K60HZ);
+				if (dv_type == DOLBY_VISION_LL_RGB) {
+					if (is_preferred_50hz)
+						strcpy(final_displaymode, MODE_1080P50HZ);
+					else
+						strcpy(final_displaymode, preferred_frac ? MODE_1080P59HZ : MODE_1080P);
+				} else {
+					if (is_preferred_50hz)
+						strcpy(final_displaymode, MODE_4K2K50HZ);
+					else
+						strcpy(final_displaymode, preferred_frac ? MODE_4K2K59HZ : MODE_4K2K60HZ);
+				}
 			} else {
-				strcpy(final_displaymode, preferred_frac ? MODE_1080P59HZ : MODE_1080P);
+				if (is_preferred_50hz)
+					strcpy(final_displaymode, MODE_1080P50HZ);
+				else
+					strcpy(final_displaymode, preferred_frac ? MODE_1080P59HZ : MODE_1080P);
 			}
 		} else if (!strcmp(dv_displaymode, MODE_4K2K60HZ)) {
-			if (dv_type == DOLBY_VISION_LL_RGB)
-				strcpy(final_displaymode, preferred_frac ? MODE_1080P59HZ : MODE_1080P);
-			 else
-				strcpy(final_displaymode, preferred_frac ? MODE_4K2K59HZ : MODE_4K2K60HZ);
+			if (dv_type == DOLBY_VISION_LL_RGB) {
+				if (is_preferred_50hz)
+					strcpy(final_displaymode, MODE_1080P50HZ);
+				else
+					strcpy(final_displaymode, preferred_frac ? MODE_1080P59HZ : MODE_1080P);
+			} else {
+				if (is_preferred_50hz)
+					strcpy(final_displaymode, MODE_4K2K50HZ);
+				else
+					strcpy(final_displaymode, preferred_frac ? MODE_4K2K59HZ : MODE_4K2K60HZ);
+			}
 		} else {
 			if (!strcmp(dv_displaymode, MODE_4K2K30HZ) ||
 			    !strcmp(dv_displaymode, MODE_4K2K25HZ) ||
-			    !strcmp(dv_displaymode, MODE_4K2K24HZ))
-				strcpy(final_displaymode, preferred_frac ? MODE_1080P59HZ : MODE_1080P);
-			else
-				strcpy(final_displaymode, dv_displaymode);
+			    !strcmp(dv_displaymode, MODE_4K2K24HZ)) {
+				if (is_preferred_50hz)
+					strcpy(final_displaymode, MODE_1080P50HZ);
+				else
+					strcpy(final_displaymode, preferred_frac ? MODE_1080P59HZ : MODE_1080P);
+			} else {
+				if (is_preferred_50hz) {
+					if (!strcmp(dv_displaymode, MODE_1080P)) {
+						strcpy(final_displaymode, MODE_1080P50HZ);
+					} else if (!strcmp(dv_displaymode, MODE_720P) || !strcmp(dv_displaymode, MODE_1080P24HZ) ||
+						!strcmp(dv_displaymode, MODE_1080P25HZ) || !strcmp(dv_displaymode, MODE_1080P30HZ)) {
+						strcpy(final_displaymode, MODE_720P50HZ);
+					} else {
+						strcpy(final_displaymode, dv_displaymode);
+					}
+				}
+			}
 		}
 	} else {
 		/* if current disp_mode is outside of maximum dv disp_mode */
@@ -1018,7 +1141,10 @@ static int update_dv_displaymode(struct input_hdmi_data *hdmi_data,
 				/* TV support dolby vision support 2160p30/25/24hz
 				 * prefer 1080p
 				 */
-				strcpy(final_displaymode, preferred_frac ? MODE_1080P59HZ : MODE_1080P);
+				if (is_preferred_50hz)
+					strcpy(final_displaymode, MODE_1080P50HZ);
+				else
+					strcpy(final_displaymode, preferred_frac ? MODE_1080P59HZ : MODE_1080P);
 			} else {
 				/* use maximum DV mode */
 				mode_result = find_frac_preferred_mode(preferred_frac, dv_displaymode);
@@ -1083,11 +1209,21 @@ static void get_highest_hdmimode(struct input_hdmi_data *hdmi_data, char *mode)
 
 	//choose base table
 	if (is_framerate_priority()) {
-		resolution_list = MODE_FRAMERATE_FIRST;
-		resolution_list_length = ARRAY_SIZE(MODE_FRAMERATE_FIRST);
+		if (hdmi_data->is_preferred_50hz) {
+			resolution_list = MODE_FRAMERATE_FIRST_50HZ;
+			resolution_list_length = ARRAY_SIZE(MODE_FRAMERATE_FIRST_50HZ);
+		} else {
+			resolution_list = MODE_FRAMERATE_FIRST;
+			resolution_list_length = ARRAY_SIZE(MODE_FRAMERATE_FIRST);
+		}
 	} else {
-		resolution_list = MODE_RESOLUTION_FIRST;
-		resolution_list_length = ARRAY_SIZE(MODE_RESOLUTION_FIRST);
+		if (hdmi_data->is_preferred_50hz) {
+			resolution_list = MODE_RESOLUTION_FIRST_50HZ;
+			resolution_list_length = ARRAY_SIZE(MODE_RESOLUTION_FIRST_50HZ);
+		} else {
+			resolution_list = MODE_RESOLUTION_FIRST;
+			resolution_list_length = ARRAY_SIZE(MODE_RESOLUTION_FIRST);
+		}
 	}
 
 	//find preferred mode
@@ -1312,6 +1448,7 @@ static bool is_support_4k60hdr(struct input_hdmi_data *hdmi_data,
 {
 	int colorList_length = 0;
 	int resolutionList_length	= 0;
+	const char **resolution_list = NULL;
 	int i = 0;
 	int j = 0;
 
@@ -1319,18 +1456,28 @@ static bool is_support_4k60hdr(struct input_hdmi_data *hdmi_data,
 		return false;
 
 	colorList_length = ARRAY_SIZE(HDR_4K_COLOR_ATTRIBUTE_LIST);
-	resolutionList_length = ARRAY_SIZE(MODE_4K_LIST);
+
+	/*
+	 * use 4k hdr resolution table
+	 */
+	if (hdmi_data->is_preferred_50hz) {
+		resolution_list = MODE_4K_LIST_50HZ;
+		resolutionList_length = ARRAY_SIZE(MODE_4K_LIST_50HZ);
+	} else {
+		resolution_list = MODE_4K_LIST;
+		resolutionList_length = ARRAY_SIZE(MODE_4K_LIST);
+	}
 
 	for (i = 0; i < colorList_length; i++) {
 		for (j = 0; j < resolutionList_length; j++) {
-			if (mode_support_check(MODE_4K_LIST[j], HDR_4K_COLOR_ATTRIBUTE_LIST[i],
+			if (mode_support_check(resolution_list[j], HDR_4K_COLOR_ATTRIBUTE_LIST[i],
 				hdmi_data)) {
 				printf("%s mode:[%s], deep color:[%s]\n",
-					__func__, MODE_4K_LIST[j], HDR_4K_COLOR_ATTRIBUTE_LIST[i]);
+					__func__, resolution_list[j], HDR_4K_COLOR_ATTRIBUTE_LIST[i]);
 				strcpy(output_info->final_deepcolor,
 					HDR_4K_COLOR_ATTRIBUTE_LIST[i]);
 				strcpy(output_info->final_displaymode,
-					MODE_4K_LIST[j]);
+					resolution_list[j]);
 				return true;
 			}
 		}
@@ -1345,6 +1492,7 @@ static bool is_support_non4k_hdr(struct input_hdmi_data *hdmi_data,
 {
 	int colorList_length = 0;
 	int resolutionList_length   = 0;
+	const char **resolution_list = NULL;
 	int i = 0;
 	int j = 0;
 
@@ -1352,20 +1500,29 @@ static bool is_support_non4k_hdr(struct input_hdmi_data *hdmi_data,
 		return false;
 
 	colorList_length = ARRAY_SIZE(HDR_NON4K_COLOR_ATTRIBUTE_LIST);
-	resolutionList_length = ARRAY_SIZE(MODE_NON4K_LIST);
+	/*
+	 * use non 4k hdr resolution table
+	 */
+	if (hdmi_data->is_preferred_50hz) {
+		resolution_list = MODE_NON4K_LIST_50HZ;
+		resolutionList_length = ARRAY_SIZE(MODE_NON4K_LIST_50HZ);
+	} else {
+		resolution_list = MODE_NON4K_LIST;
+		resolutionList_length = ARRAY_SIZE(MODE_NON4K_LIST);
+	}
 
 	for (i = 0; i < colorList_length; i++) {
 		for (j = 0; j < resolutionList_length; j++) {
-			if (mode_support_check(MODE_NON4K_LIST[j],
+			if (mode_support_check(resolution_list[j],
 				HDR_NON4K_COLOR_ATTRIBUTE_LIST[i],
 				hdmi_data)) {
 				printf("%s mode:[%s], deep color:[%s]\n",
-				__func__, MODE_NON4K_LIST[j],
+				__func__, resolution_list[j],
 				HDR_NON4K_COLOR_ATTRIBUTE_LIST[i]);
 				strcpy(output_info->final_deepcolor,
 					HDR_NON4K_COLOR_ATTRIBUTE_LIST[i]);
 				strcpy(output_info->final_displaymode,
-					MODE_NON4K_LIST[j]);
+					resolution_list[j]);
 				return true;
 			}
 		}
@@ -1516,11 +1673,21 @@ void hdr_scene_process(struct input_hdmi_data *hdmi_data,
 		/* case2: best_color_space is disabled, use user selected color */
 
 		if (is_framerate_priority()) {
-			resolutionList = MODE_FRAMERATE_FIRST;
-			resolutionList_length = ARRAY_SIZE(MODE_FRAMERATE_FIRST);
+			if (hdmi_data->is_preferred_50hz) {
+				resolutionList = MODE_FRAMERATE_FIRST_50HZ;
+				resolutionList_length = ARRAY_SIZE(MODE_FRAMERATE_FIRST_50HZ);
+			} else {
+				resolutionList = MODE_FRAMERATE_FIRST;
+				resolutionList_length = ARRAY_SIZE(MODE_FRAMERATE_FIRST);
+			}
 		} else {
-			resolutionList = MODE_RESOLUTION_FIRST;
-			resolutionList_length = ARRAY_SIZE(MODE_RESOLUTION_FIRST);
+			if (hdmi_data->is_preferred_50hz) {
+				resolutionList = MODE_RESOLUTION_FIRST_50HZ;
+				resolutionList_length = ARRAY_SIZE(MODE_RESOLUTION_FIRST_50HZ);
+			} else {
+				resolutionList = MODE_RESOLUTION_FIRST;
+				resolutionList_length = ARRAY_SIZE(MODE_RESOLUTION_FIRST);
+			}
 		}
 
 		/* choose prefer resolution for hdr */
@@ -1699,6 +1866,7 @@ void get_hdmi_data(struct hdmitx_dev *hdev, struct input_hdmi_data *data)
 	data->hdr_policy = get_hdr_policy();
 	data->hdr_force_mode = get_hdr_force_mode();
 	data->is_preferred_frac_mode = get_preferred_frac_mode();
+	data->is_preferred_50hz = is_preferred_50hz();
 	#if 0
 	data->isbestpolicy = is_best_outputmode();
 	data->isSupport4K30Hz = is_support_4k30hz();
@@ -1719,4 +1887,7 @@ void get_hdmi_data(struct hdmitx_dev *hdev, struct input_hdmi_data *data)
 	       is_best_color_space(),
 	       is_framerate_priority(),
 	       data->hdr_force_mode);
+	printf("ubootenv preferred_frac_mode: %d, preferred_50hz:%d\n",
+			data->is_preferred_frac_mode,
+			data->is_preferred_50hz);
 }
