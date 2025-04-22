@@ -18,6 +18,7 @@
 #include <amlogic/aml_rollback.h>
 #include <cli.h>
 #include <amlogic/store_wrapper.h>
+#include <android_bootloader_message.h>
 
 
 #if defined(CONFIG_EFUSE_OBJ_API) && defined(CONFIG_CMD_EFUSE)
@@ -35,7 +36,9 @@ int __attribute__((weak)) store_logic_read(const char *name, loff_t off, size_t 
 #define BOOTLOADER_OFFSET		512
 #define BOOTLOADER_MAX_SIZE		(4 * 1024 * 1024)
 #define MIB_SIZE                (1024 * 1024)
+#define MAX_VBMETA_SIZE         (8 * 1024)
 
+#define BOOT_CTRL_MAGIC   0x42414342 /* Bootloader Control AB */
 
 //check SWPL-31296 for details
 static int do_get_bootloader_status(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
@@ -391,23 +394,48 @@ static int write_bootloader(int i)
 */
 int set_mergestatus_cancel(struct misc_virtual_ab_message *message)
 {
-        char *partition = "misc";
-        char vab_buf[1024] = {0};
+	char *partition = "misc";
+	char vab_buf[1024] = {0};
 
-        if (store_read((const char *)partition,
-                SYSTEM_SPACE_OFFSET_IN_MISC, 1024, (unsigned char *)vab_buf) < 0) {
-                printf("failed to store read %s.\n", partition);
-                return -1;
-        }
+	if (store_read((const char *)partition,
+		       SYSTEM_SPACE_OFFSET_IN_MISC, 1024, (unsigned char *)vab_buf) < 0) {
+		printf("failed to store read %s.\n", partition);
+		return -1;
+	}
 
-        memcpy(message, vab_buf, sizeof(struct misc_virtual_ab_message));
-        printf("message.merge_status: %d\n", message->merge_status);
-        if (message->merge_status == SNAPSHOTTED || message->merge_status == MERGING) {
-                message->merge_status = CANCELLED;
-                printf("set message.merge_status CANCELLED\n");
-        }
-        store_write((const char *)partition, SYSTEM_SPACE_OFFSET_IN_MISC, 1024, (unsigned char *)vab_buf);
-        return 0;
+	memcpy(message, vab_buf, sizeof(struct misc_virtual_ab_message));
+	printf("message.merge_status: %d\n", message->merge_status);
+	if (message->merge_status == SNAPSHOTTED || message->merge_status == MERGING) {
+		message->merge_status = CANCELLED;
+		printf("set message.merge_status CANCELLED\n");
+	}
+	store_write((const char *)partition, SYSTEM_SPACE_OFFSET_IN_MISC, 1024,
+		    (unsigned char *)vab_buf);
+	return 0;
+}
+
+char *get_vbmeta_slot(void)
+{
+	char *partition = "misc";
+	struct bootloader_control boot_ctrl;
+	char vab_buf[64] = {0};
+
+	if (store_read((const char *)partition, 2048, 32, (unsigned char *)vab_buf) < 0) {
+		printf("failed to store read %s.\n", partition);
+		return "_a";
+	}
+
+	memcpy(&boot_ctrl, vab_buf, sizeof(struct bootloader_control));
+
+	if (boot_ctrl.magic != BOOT_CTRL_MAGIC) {
+		//first bootup default slot a
+		return "_a";
+	}
+
+	if (boot_ctrl.slot_info[0].priority > boot_ctrl.slot_info[1].priority)
+		return "_a";
+	else
+		return "_b";
 }
 
 // according to the value of the board,
@@ -994,6 +1022,41 @@ int ab_update_rollback(char *rebootmode, int gpt_flag)
 	return 0;
 }
 
+static int build_userdebug(void)
+{
+	int i = 0;
+	int ret = 0;
+	char *vbmeta_slot = NULL;
+	int userdebug = 0;
+	char vbmeta_name[16] = {0};
+	char vbuf[MAX_VBMETA_SIZE] = {0};
+	//"userdebug" 0x75 0x73 0x65 0x72 0x64 0x65 0x62 0x75 0x67
+	const unsigned char buildtype[] = { 0x75, 0x73, 0x65, 0x72, 0x64, 0x65, 0x62, 0x75, 0x67 };
+
+	vbmeta_slot = get_vbmeta_slot();
+	if (has_boot_slot == 0)
+		strcpy(vbmeta_name, "vbmeta");
+	else
+		sprintf(vbmeta_name, "vbmeta%s", vbmeta_slot);
+
+	ret = store_read(vbmeta_name, 0, MAX_VBMETA_SIZE, vbuf);
+	if (ret)  {
+		printf("store read %s failed, skip!\n", vbmeta_name);
+		return 0;
+	}
+
+	for (i = 0; i < MAX_VBMETA_SIZE - 10; i++) {
+		if (vbuf[i] == 0x75) {
+			if (!memcmp(vbuf + i, buildtype, 9)) {
+				printf("find userdebug flag\n");
+				userdebug = 1;
+				break;
+			}
+		}
+	}
+	return userdebug;
+}
+
 static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	char *rebootmode = NULL;
@@ -1068,6 +1131,9 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 
 static int do_update_uboot_env(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
+	char *silent_build = NULL;
+	int userdebug = 0;
+
 	const int write_boot = env_get_ulong("write_boot", 10, 0);
 	const int update_dts_gpt = env_get_ulong("update_dts_gpt", 10, 0);
 
@@ -1098,6 +1164,15 @@ static int do_update_uboot_env(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 	if (upgrade_step && (strcmp(upgrade_step, "1") == 0)) {
 		printf("after recovery update, need update uboot env\n");
 		run_command("defenv_reserv; setenv upgrade_step 2; saveenv;", 0);
+	}
+
+	silent_build = env_get("silent_build");
+	if (silent_build && !strcmp(silent_build, "1")) {
+		userdebug = build_userdebug();
+		if (!userdebug) {
+			run_command("setenv silent 1", 0);
+			env_set("loglevel", "2");
+		}
 	}
 
 	return 0;
