@@ -220,9 +220,9 @@
 &pinctrl_periphs {
 	i2c0_pins1:i2c0_pins1 {
 		mux {
-			groups = "i2c0_scl",
-				"i2c0_sda";
-			function = "i2c0";
+			groups = "i2c_a_scl",
+				"i2c_a_sda";
+			function = "i2c_a";
 			drive-strength = <3>;
 			bias-disable;
 		};
@@ -230,9 +230,9 @@
 
 	i2c1_pins1:i2c1_pins1 {
 		mux {
-			groups = "i2c1_scl_d2",
-				"i2c1_sda_d3";
-			function = "i2c1";
+			groups = "i2c_b_scl",
+				"i2c_b_sda";
+			function = "i2c_b";
 			drive-strength = <3>;
 			bias-disable;
 		};
@@ -240,9 +240,19 @@
 
 	i2c1_pins2:i2c1_pins2 {
 		mux {
-			groups = "i2c1_scl_d14",
-				"i2c1_sda_d13";
-			function = "i2c1";
+			groups = "i2c_b_scl_d",
+				"i2c_b_sda_d";
+			function = "i2c_b";
+			drive-strength = <3>;
+			bias-disable;
+		};
+	};
+
+	i2c1_pins3:i2c1_pins3 {
+		mux {
+			groups = "i2c_b_scl_h",
+				"i2c_b_sda_h";
+			function = "i2c_b";
 			drive-strength = <3>;
 			bias-disable;
 		};
@@ -250,9 +260,9 @@
 
 	i2c2_pins1:i2c2_pins1 {
 		mux {
-			groups = "i2c2_sda_e1",
-				"i2c2_scl_e0";
-			function = "i2c2";
+			groups = "i2c_c_scl",
+				"i2c_c_sda";
+			function = "i2c_c";
 			drive-strength = <3>;
 			bias-disable;
 		};
@@ -260,9 +270,9 @@
 
 	i2c2_pins2:i2c2_pins2 {
 		mux {
-			groups = "i2c2_sda_h21",
-				"i2c2_scl_h20";
-			function = "i2c2";
+			groups = "i2c_c_scl_e",
+				"i2c_c_sda_e";
+			function = "i2c_c";
 			drive-strength = <3>;
 			bias-disable;
 		};
@@ -270,9 +280,9 @@
 
 	i2c2_pins3:i2c2_pins3 {
 		mux {
-			groups = "i2c2_sda_h11",
-				"i2c2_scl_h10";
-			function = "i2c2";
+			groups = "i2c_c_scl_h",
+				"i2c_c_sda_h";
+			function = "i2c_c";
 			drive-strength = <3>;
 			bias-disable;
 		};
@@ -280,19 +290,9 @@
 
 	i2c2_pins4:i2c2_pins4 {
 		mux {
-			groups = "i2c2_sda_h3",
-				"i2c2_scl_h2";
-			function = "i2c2";
-			drive-strength = <3>;
-			bias-disable;
-		};
-	};
-
-	i2c2_pins5:i2c2_pins5 {
-		mux {
-			groups = "i2c2_sda_m26",
-				"i2c2_scl_m25";
-			function = "i2c2";
+			groups = "i2c_c_scl_m",
+				"i2c_c_sda_m";
+			function = "i2c_c";
 			drive-strength = <3>;
 			bias-disable;
 		};
@@ -300,9 +300,9 @@
 
 	i2c3_pins1:i2c3_pins1 {
 		mux {
-			groups = "i2c3_sda_d7",
-				"i2c3_scl_d6";
-			function = "i2c3";
+			groups = "i2c_d_sda",
+				"i2c_d_scl";
+			function = "i2c_d";
 			drive-strength = <3>;
 			bias-disable;
 		};
@@ -310,9 +310,9 @@
 
 	i2c3_pins2:i2c3_pins2 {
 		mux {
-			groups = "i2c3_sda_c1",
-				"i2c3_scl_c0";
-			function = "i2c3";
+			groups = "i2c_d_scl_h",
+				"i2c_d_sda_h";
+			function = "i2c_d";
 			drive-strength = <3>;
 			bias-disable;
 		};
@@ -320,9 +320,79 @@
 
 	i2c3_pins3:i2c3_pins3 {
 		mux {
-			groups = "i2c3_scl_m27",
-				"i2c3_sda_m28";
-			function = "i2c3";
+			groups = "i2c_d_scl_m",
+				"i2c_d_sda_m";
+			function = "i2c_d";
+			drive-strength = <3>;
+			bias-disable;
+		};
+	};
+
+	i2c3_pins4:i2c3_pins4 {
+		mux {
+			groups = "i2c_d_scl_p",
+				"i2c_d_sda_p";
+			function = "i2c_d";
+			drive-strength = <3>;
+			bias-disable;
+		};
+	};
+
+	i2c3_pins5:i2c3_pins5 {
+		mux {
+			groups = "i2c_d_scl_h20",
+				"i2c_d_sda_h21";
+			function = "i2c_d";
+			drive-strength = <3>;
+			bias-disable;
+		};
+	};
+
+	i2c3_pins6:i2c3_pins6 {
+		mux {
+			groups = "i2c_d_scl_m25",
+				"i2c_d_sda_m26";
+			function = "i2c_d";
+			drive-strength = <3>;
+			bias-disable;
+		};
+	};
+
+	i2c4_pins1:i2c4_pins1 {
+		mux {
+			groups = "i2c_tcon_scl",
+				"i2c_tcon_sda";
+			function = "i2c_tcon";
+			drive-strength = <3>;
+			bias-disable;
+		};
+	};
+
+	i2c4_pins2:i2c4_pins2 {
+		mux {
+			groups = "i2c_tcon_scl_h",
+				"i2c_tcon_sda_h";
+			function = "i2c_tcon";
+			drive-strength = <3>;
+			bias-disable;
+		};
+	};
+
+	i2c4_pins3:i2c4_pins3 {
+		mux {
+			groups = "i2c_tcon_scl_h2",
+				"i2c_tcon_sda_h3";
+			function = "i2c_tcon";
+			drive-strength = <3>;
+			bias-disable;
+		};
+	};
+
+	i2c4_pins4:i2c4_pins4 {
+		mux {
+			groups = "i2c_tcon_scl_h10",
+				"i2c_tcon_sda_h11";
+			function = "i2c_tcon";
 			drive-strength = <3>;
 			bias-disable;
 		};
