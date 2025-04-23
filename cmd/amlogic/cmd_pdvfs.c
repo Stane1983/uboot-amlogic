@@ -126,7 +126,7 @@ static int set_cpu_opp_tbl(void)
 	char cmdbuf[256] = {0};
 
 	opp_table_0_phandle = get_phandle("/cpu_opp_table0");
-	opp_table_1_phandle = get_phandle("/cpu_opp_table1");
+	opp_table_1_phandle = get_phandle("/cpu_opp_table1_2000");
 	opp_table_2_phandle = get_phandle("/cpu_opp_table2_2000");
 	opp_table_3_phandle = get_phandle("/cpu_opp_table3_2000");
 
@@ -169,7 +169,7 @@ static int update_pdvfs_tbl(cmd_tbl_t *cmdtp, int flag, int argc,
 		if (ret != 0)
 			cmd_pdvfs_err("fix_cpu_opp_tbl fail\n");
 	} else {
-		if (pdvfs_index == 0 || pdvfs_index == 1) {
+		if (pdvfs_index == 0) {
 			ret = set_cpu_opp_tbl();
 			if (ret != 0)
 				cmd_pdvfs_err("fix_cpu_opp_tbl fail\n");
