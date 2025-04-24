@@ -303,6 +303,7 @@ int ldim_dev_blmcu_probe(struct aml_ldim_driver_s *ldim_drv)
 	bl_mcu->dev_on_flag = 0;
 	bl_mcu->vsync_cnt = 0;
 
+	bl_mcu->header = dev_drv->mcu_header;
 	bl_mcu->adim = (dev_drv->mcu_dim >> 8) & 0xff;
 	bl_mcu->pdim = dev_drv->mcu_dim & 0xff;
 	bl_mcu->type = (dev_drv->mcu_dim >> 16) & 0xf;
@@ -311,7 +312,6 @@ int ldim_dev_blmcu_probe(struct aml_ldim_driver_s *ldim_drv)
 	else
 		bl_mcu->datawidth = (bl_mcu->header >> 3) & 0x03;
 	bl_mcu->bl_pwm_en = (dev_drv->mcu_dim >> 20) & 0x1;
-	bl_mcu->header = dev_drv->mcu_header;
 
 	/* header + data + suffix */
 	/* according custom backlight mcu spi spec to set tbuf_size */
