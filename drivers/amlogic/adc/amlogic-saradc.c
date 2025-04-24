@@ -78,6 +78,7 @@
 
 #define SARADC_CHANNEL_MAX			8
 #define SARADC_MAX_FIFO_SIZE			16
+#define SARADC_SOFT_AVG_NUM			8
 
 #define SARADC_DEFAULT_CLOCK_FREQUENCY		1200000
 #define SARADC_DEFAULT_TEST_CHANNEL		7
@@ -237,8 +238,14 @@ static void amlogic_saradc_hw_init(struct udevice *dev)
 	clrsetbits_le32(priv->base + SARADC_REG0,
 			SARADC_REG0_ADC_EN, 0);
 
-	/* Configure the averaging mode of the channels we use */
-	amlogic_saradc_set_averaging(priv, 0, MEDIAN_AVERAGING, EIGHT_SAMPLES);
+	/* Configure the averaging mode for all channels */
+	if (priv->apply_workaround) {
+		for (index = 0; index < SARADC_CHANNEL_MAX; index++)
+			amlogic_saradc_set_averaging(priv, index, NO_AVERAGING, ONE_SAMPLE);
+	} else {
+		for (index = 0; index < SARADC_CHANNEL_MAX; index++)
+			amlogic_saradc_set_averaging(priv, index, MEDIAN_AVERAGING, EIGHT_SAMPLES);
+	}
 }
 
 static void amlogic_saradc_clear_fifo(struct amlogic_saradc *priv)
@@ -439,8 +446,8 @@ static int amlogic_saradc_read_raw_data(struct udevice *dev, int channel,
 	return 0;
 }
 
-static int amlogic_saradc_channel_data(struct udevice *dev, int channel,
-				       unsigned int *data)
+static int amlogic_saradc_channel_data_once(struct udevice *dev, int channel,
+					    unsigned int *data)
 {
 	struct amlogic_saradc *priv = dev_get_priv(dev);
 	int ret;
@@ -460,6 +467,30 @@ static int amlogic_saradc_channel_data(struct udevice *dev, int channel,
 	mask = BIT(priv->out_data_width) - 1;
 	signed_data = signed_data > mask ? mask : signed_data;
 	*data = signed_data;
+
+	return 0;
+}
+
+static int amlogic_saradc_channel_data(struct udevice *dev, int channel,
+				       unsigned int *data)
+{
+	struct amlogic_saradc *priv = dev_get_priv(dev);
+	int sum = 0;
+	int ret;
+	int count;
+	unsigned int tmp;
+
+	if (!priv->apply_workaround)
+		return amlogic_saradc_channel_data_once(dev, channel, data);
+
+	for (count = 0; count < SARADC_SOFT_AVG_NUM; count++) {
+		ret = amlogic_saradc_channel_data_once(dev, channel, &tmp);
+		if (ret)
+			return ret;
+		sum += (int)(short)tmp;
+	}
+
+	*data = (short)(sum / SARADC_SOFT_AVG_NUM);
 
 	return 0;
 }

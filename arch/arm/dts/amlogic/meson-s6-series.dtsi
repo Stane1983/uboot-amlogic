@@ -353,10 +353,10 @@
 			/* Delay configure */
 			amlogic,reg3-init = <0x10a02403>;
 			amlogic,reg4-init = <0x001dd080>;
-			/* Set aux and extern vref */
-			amlogic,reg9-init = <0x0000e4e4>;
-			amlogic,reg10-init = <0x74543414>;
-			amlogic,reg11-init = <0xf4d4b494>;
+			/* Set aux and external vref */
+			amlogic,reg9-init = <0x0000f0f0>;
+			amlogic,reg10-init = <0x70503010>;
+			amlogic,reg11-init = <0xf0d0b090>;
 			status = "disabled";
 		};
 
