@@ -241,7 +241,6 @@ static int do_RunBcbCommand(
 	if (RebootMode && !strcmp(RebootMode, "cold_boot")) {
 		if (powermode && !strcmp(powermode, "standby")) {
 			printf("cold_boot default standby, ignore recovery mode\n");
-			clear_misc_partition(clearbuf, sizeof(clearbuf));
 			return 0;
 		}
 	}
