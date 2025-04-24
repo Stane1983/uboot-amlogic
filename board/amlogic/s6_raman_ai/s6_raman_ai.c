@@ -20,6 +20,7 @@
 #include <amlogic/aml_v2_burning.h>
 #include <linux/mtd/partitions.h>
 #include <asm/amlogic/arch/bl31_apis.h>
+#include <asm/amlogic/arch/ddr_define.h>
 #include <amlogic/aml_mtd.h>
 #include <asm/amlogic/arch/stick_mem.h>
 #include <amlogic/board.h>
@@ -417,20 +418,22 @@ const struct mtd_partition *get_spinand_partition_table(int *partitions)
 int checkhw(char *name)
 {
 	char dtb_name[64] = { 0 };
-	ulong ddr_size = (readl(SYSCTRL_SEC_STATUS_REG4) & ~0xfffffUL) << 4;
-
-	switch (ddr_size) {
-		case 0x100000000UL:
-			strcpy(dtb_name, "s6_s905x5_bl201-4g\0");
+	ulong board_id = ((readl(SYSCTRL_SEC_STATUS_REG4) >> 8) & 0xffUL);
+	ulong ddr_type = (((readl(SYSCTRL_SEC_STATUS_REG4)) & 0x00070000) >> 16);
+	printf("board_id: %0lx  %0lx", board_id, ddr_type);
+	switch (board_id) {
+		case 0x1UL:
+			strcpy(dtb_name, "s6_s905x5_ramanai-p0\0");
 			break;
-		case 0x200000000UL:
-			strcpy(dtb_name, "s6_s905x5_bl201-8g\0");
-			break;
-		case 0x400000000UL:
-			strcpy(dtb_name, "s6_s905x5_raman_ai\0");
+		case 0x2UL:
+			// revB old hw board use different ddr type
+			if (ddr_type == CONFIG_DDR_TYPE_LPDDR5)
+				strcpy(dtb_name, "s6_s905x5_ramanai-p0\0");
+			else
+				strcpy(dtb_name, "s6_s905x5_ramanai\0");
 			break;
 		default:
-			strcpy(dtb_name, "s6_s905x5_bl201\0");
+			strcpy(dtb_name, "s6_s905x5_ramanai\0");
 			break;
 	}
 
