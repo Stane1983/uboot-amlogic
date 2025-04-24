@@ -305,6 +305,7 @@ int ldim_dev_blmcu_probe(struct aml_ldim_driver_s *ldim_drv)
 	LDIMPR("%s: mcu_header=0x%08x,mcu_dim=0x%08x\n",
 		__func__, dev_drv->mcu_header, dev_drv->mcu_dim);
 
+	bl_mcu->header = dev_drv->mcu_header;
 	bl_mcu->adim = (dev_drv->mcu_dim >> 8) & 0xff;
 	bl_mcu->pdim = dev_drv->mcu_dim & 0xff;
 	bl_mcu->type = (dev_drv->mcu_dim >> 16) & 0xf;
@@ -313,7 +314,6 @@ int ldim_dev_blmcu_probe(struct aml_ldim_driver_s *ldim_drv)
 	else
 		bl_mcu->datawidth = (bl_mcu->header >> 3) & 0x03;
 	bl_mcu->bl_pwm_en = (dev_drv->mcu_dim >> 20) & 0x1;
-	bl_mcu->header = dev_drv->mcu_header;
 
 	/* header + data + suffix */
 	/* according custom backlight mcu spi spec to set tbuf_size */

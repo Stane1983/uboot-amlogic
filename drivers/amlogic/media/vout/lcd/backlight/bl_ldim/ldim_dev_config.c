@@ -878,6 +878,7 @@ int ldim_dev_get_config_from_json(struct ldim_dev_driver_s *dev_drv)
 	struct bl_pwm_config_s *bl_pwm, *pwms[3] = {NULL, NULL, NULL};
 	unsigned int *nums = NULL;
 	unsigned char *table;
+	int ret = 0;
 
 	if (!json_parse_ok(jsp)) {
 		LDIMERR("panel0 jsp not ok\n");
@@ -1024,7 +1025,11 @@ int ldim_dev_get_config_from_json(struct ldim_dev_driver_s *dev_drv)
 	str = json_get_obj_str(jsp, parent, "zone_mapping_path", NULL);
 	if (str) {
 		LDIMPR("find custom ldim_zone_mapping_path:%s\n", str);
-		ldim_dev_zone_mapping_load(dev_drv, str);
+		ret = ldim_dev_zone_mapping_load(dev_drv, str);
+		if (ret) {
+			for (i = 0; i < dev_drv->zone_num; i++)
+				dev_drv->bl_mapping[i] = (unsigned short)i;
+		}
 	} else {
 		for (i = 0; i < dev_drv->zone_num; i++)
 			dev_drv->bl_mapping[i] = (unsigned short)i;
