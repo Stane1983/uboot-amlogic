@@ -336,9 +336,13 @@
 			"else "\
 				"run init_display; "\
 			"fi; "\
+		"else if test ${reboot_mode} = quiescent; then "\
+			"echo ffv reboot no display; "\
+		"else if test ${reboot_mode} = recovery_quiescent; then "\
+			"echo ffv reboot no display; "\
 		"else "\
 			"run init_display; "\
-		"fi;fi; "\
+		"fi;fi;fi;fi; "\
 		"\0"\
 	"cmdline_keys="\
 		"setenv usid an400${cpu_id};"\
