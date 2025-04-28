@@ -157,6 +157,7 @@ struct vpu_data_s {
 
 	unsigned int module_init_table_cnt;
 	struct vpu_ctrl_s *module_init_table;
+	struct dev_pm_ops *dev_pm_ops;
 
 	void (*power_on)(void);
 	void (*power_off)(void);

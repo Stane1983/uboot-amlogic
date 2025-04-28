@@ -43,6 +43,7 @@
 #define CLK_LEVEL_DFT_S7D      8
 #define CLK_LEVEL_MAX_S7D      9
 
+#define SUSPEND_CLK       25000000
 
 /* vpu clk setting */
 #if 0
@@ -88,7 +89,7 @@ static struct fclk_div_s fclk_div_table_c3[] = {
 
 static struct vpu_clk_s vpu_clk_table[] = {
 	/* frequency   clk_mux       div */
-	{100000000,    FCLK_DIV5,    3}, /* 0 */
+	{25000000,     FCLK_DIV4,   19}, /* 0 */ /* for suspend to 25M */
 	{166667000,    FCLK_DIV3,    3}, /* 1 */
 	{200000000,    FCLK_DIV5,    1}, /* 2 */
 	{250000000,    FCLK_DIV4,    1}, /* 3 */
@@ -102,7 +103,7 @@ static struct vpu_clk_s vpu_clk_table[] = {
 
 static struct vpu_clk_s vpu_clk_table_s7d[] = {
 	/* frequency   clk_mux       div */
-	{100000000,    FCLK_DIV5,    3}, /* 0 */
+	{25000000,     FCLK_DIV4,   19}, /* 0 */ /* for suspend to 25M */
 	{166667000,    FCLK_DIV3,    3}, /* 1 */
 	{200000000,    FCLK_DIV5,    1}, /* 2 */
 	{250000000,    FCLK_DIV4,    1}, /* 3 */
@@ -116,7 +117,7 @@ static struct vpu_clk_s vpu_clk_table_s7d[] = {
 
 static struct vpu_clk_s vpu_clk_table_t6w[] = {
 	/* frequency   clk_mux       div */
-	{100000000,    FCLK_DIV5,    3}, /* 0 */
+	{25000000,     FCLK_DIV4,   19}, /* 0 */ /* for suspend to 25M */
 	{166667000,    FCLK_DIV3,    3}, /* 1 */
 	{200000000,    FCLK_DIV5,    1}, /* 2 */
 	{250000000,    FCLK_DIV4,    1}, /* 3 */
