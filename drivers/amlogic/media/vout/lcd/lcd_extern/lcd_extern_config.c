@@ -1130,7 +1130,7 @@ static int lcd_extern_get_config_json(struct lcd_extern_driver_s *edrv,
 	if (init_bin_valid) {
 		init_data = lcd_extern_data_init_load(nums, cnt, &n);
 	} else {
-		init_data = lcd_init_table_load_array("ext_init_off", LCD_EXT_CMD_SIZE_DYNAMIC,
+		init_data = lcd_init_table_load_array("ext_init_on", LCD_EXT_CMD_SIZE_DYNAMIC,
 						      nums, cnt, LCD_EXTERN_INIT_ON_MAX, &n);
 	}
 	if (!init_data) {
@@ -1181,24 +1181,22 @@ static int lcd_extern_get_config_json(struct lcd_extern_driver_s *edrv,
 	}
 
 parse_init_next:
-/* save for kernel use */
-	if (init_bin_valid) {
-		size = cfg->table_init_on_cnt + cfg->table_init_off_cnt + 8;
-		sprintf(tag_name, "panel%d_ext%d_init_table", edrv->index, edev->dev_index);
-		vaddr = (unsigned char *)malloc(size);
-		if (vaddr) {
-			p = vaddr;
-			*(u32 *)(p + 0) = cfg->table_init_on_cnt;
-			*(u32 *)(p + 4) = cfg->table_init_off_cnt;
-			p += 8;
-			memcpy(p, cfg->table_init_on, cfg->table_init_on_cnt);
-			p += cfg->table_init_on_cnt;
-			memcpy(p, cfg->table_init_off, cfg->table_init_off_cnt);
-			panel_param_mem_put(vaddr, tag_name, size);
-			memset(vaddr, 0, size);
-			free(vaddr);
-			vaddr = NULL;
-		}
+	/* save for kernel use */
+	size = cfg->table_init_on_cnt + cfg->table_init_off_cnt + 8;
+	sprintf(tag_name, "panel%d_ext%d_init_table", edrv->index, edev->dev_index);
+	vaddr = (unsigned char *)malloc(size);
+	if (vaddr) {
+		p = vaddr;
+		*(u32 *)(p + 0) = cfg->table_init_on_cnt;
+		*(u32 *)(p + 4) = cfg->table_init_off_cnt;
+		p += 8;
+		memcpy(p, cfg->table_init_on, cfg->table_init_on_cnt);
+		p += cfg->table_init_on_cnt;
+		memcpy(p, cfg->table_init_off, cfg->table_init_off_cnt);
+		panel_param_mem_put(vaddr, tag_name, size);
+		memset(vaddr, 0, size);
+		free(vaddr);
+		vaddr = NULL;
 	}
 
 	if (nums) {
