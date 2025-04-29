@@ -260,10 +260,9 @@ static void lcd_tcon_core_reg_set(struct aml_lcd_drv_s *pdrv,
 					}
 					offset = skip_range->end_reg + 1;
 				}
-			} else {
-				for (i = offset; i < len; i++)
-					lcd_tcon_write(i, table32[i]);
 			}
+			for (i = offset; i < len; i++)
+				lcd_tcon_write(i, table32[i]);
 		} else {
 			table8 = core_reg_table;
 			for (i = offset; i < len; i++)
