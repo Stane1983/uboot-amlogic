@@ -87,6 +87,9 @@
 #define KERNL_LOGLEVEL	"loglevel=7 "
 #endif
 
+#define VOUT_OSD_LOGO_CMD  "osd open; osd clear; run load_bmp_logo; bmp scale;"
+#define VOUT_DISPLAY_CMD   "vout boot_display; "
+
 /* args/envs */
 #define CONFIG_SYS_MAXARGS  64
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -283,8 +286,6 @@
 			"run load_bmp_logo_base;"\
 			"\0"\
 	"init_display="\
-		"osd open;osd clear;run load_bmp_logo;bmp scale;"\
-		VOUT_CMD \
 		"\0"\
 	"check_display="\
 		"echo check_display reboot_mode: ${reboot_mode}, powermode: ${powermode};"\
@@ -326,7 +327,6 @@
 #define CONFIG_PREBOOT  \
 	"run bcb_cmd; "\
 	"run upgrade_check;"\
-	INIT_DISPLAY \
 	"run storeargs;"\
 	"run upgrade_key;" \
 	"bcb uboot-command;" \

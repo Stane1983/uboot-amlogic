@@ -520,8 +520,8 @@ int board_late_init(void)
 #ifdef CONFIG_AML_VPP
 	vpp_init();
 #endif
-
 	run_command("ini_model", 0);
+	aml_board_display_env_handler();
 #ifdef CONFIG_AML_HDMITX20
 	hdmi_tx_set_hdmi_5v();
 	hdmi_tx_init();
@@ -534,6 +534,9 @@ int board_late_init(void)
 #endif
 #ifdef CONFIG_AML_LCD
 	lcd_probe();
+#endif
+#ifdef VOUT_DISPLAY_CMD
+	run_command(VOUT_DISPLAY_CMD, 0);
 #endif
 	aml_board_late_init_tail(NULL);
 

@@ -64,7 +64,6 @@
 
 /* args/envs */
 #define CONFIG_SYS_MAXARGS  64
-#ifdef CONFIG_HDMITX_ONLY
 #define CONFIG_EXTRA_HDMI_ENV_SETTINGS \
 	"panel_type=edp_0\0" \
 	"outputmode=1080p60hz\0" \
@@ -79,34 +78,7 @@
 		"osd open;osd clear;run load_bmp_logo;bmp scale;vout output ${outputmode};"\
 		"dovi set;dovi pkg;vpp hdrpkt;"\
 		"\0"
-#else
-#define CONFIG_EXTRA_HDMI_ENV_SETTINGS \
-	"panel_type=vbyone_0\0" \
-	"panel1_type=vbyone_2\0" \
-	"panel2_type=lvds_1\0" \
-	"lcd1_attr=0x00000000,lvds_1\0" \
-	"lcd2_attr=0x00000000,lvds_1\0" \
-	"outputmode=1080p60hz\0" \
-	"outputmode2=1080p60hz\0" \
-	"cvbsmode=576cvbs\0" \
-	"connector0_type=NULL\0" \
-	"connector1_type=HDMI-A-A\0" \
-	"connector2_type=NULL\0" \
-	"storeargs_hdmitx="\
-		"setenv bootargs ${bootargs} powermode=${powermode} "\
-			"lcd0=${lcd0_attr} lcd_debug=${lcd_debug} "\
-			"outputmode=${outputmode} hdmitx=${cecconfig},${colorattribute} "\
-			"vout2=${outputmode2},enable "\
-			"lcd1=${lcd1_attr} panel2_type=${panel2_type} lcd2=${lcd2_attr} "\
-			"connector0_type=${connector0_type} connector1_type=${connector1_type} connector2_type=${connector2_type} "\
-			"dptx0=${dptx0_ctrl} dptx1=${dptx1_ctrl} dptx_dbg=${dptx_debug} "\
-			"hdr_policy=${hdr_policy} hdr_priority=${hdr_priority};"\
-		"\0"\
-	"init_display_hdmitx="\
-		"hdmitx hpd;hdmitx get_parse_edid;dovi process;"\
-		"osd dual_logo;"\
-		"\0"
-#endif
+
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	CONFIG_EXTRA_ENV_SETTINGS_BASE \
         "silent=1\0"\

@@ -83,6 +83,9 @@
 #define KERNL_LOGLEVEL	"loglevel=4 "
 #endif
 
+#define VOUT_OSD_LOGO_CMD  "osd open; osd clear; run load_bmp_logo; bmp scale;"
+#define VOUT_DISPLAY_CMD   "vout boot_display; "
+
 /* args/envs */
 #define CONFIG_SYS_MAXARGS  64
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -264,7 +267,6 @@
 			"run load_bmp_logo_base;"\
 			"\0"\
 	"init_display="\
-		"osd open;osd clear;run load_bmp_logo;bmp scale;"\
 		"if test ${reboot_mode} = quiescent; then "\
 			"setenv dolby_status 0;"\
 			"setenv dolby_vision_on 0;"\
@@ -274,7 +276,6 @@
 			"setenv dolby_vision_on 0;"\
 			"setenv bootconfig ${bootconfig} androidboot.quiescent=1;"\
 		"fi;fi;"\
-		VOUT_CMD \
 		"\0"\
 	"check_display="\
 		"echo check_display reboot_mode: ${reboot_mode}, powermode: ${powermode};"\
@@ -313,7 +314,6 @@
 
 #define CONFIG_PREBOOT  \
 	"run upgrade_check;"\
-	INIT_DISPLAY \
 	"run storeargs;"\
 	"run upgrade_key;" \
 	"bcb uboot-command;" \

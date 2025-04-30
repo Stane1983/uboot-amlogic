@@ -79,6 +79,9 @@
 #define CONFIG_DTB_LOAD  "imgread dtb _aml_dtb ${dtb_mem_addr}"
 #endif//#ifdef CONFIG_DTB_BIND_KERNEL	//load dtb from kernel, such as boot partition
 
+#define VOUT_OSD_LOGO_CMD  "osd open; osd clear; run load_bmp_logo; bmp scale;"
+#define VOUT_DISPLAY_CMD   "vout boot_display; "
+
 /* args/envs */
 #define CONFIG_SYS_MAXARGS  64
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -276,13 +279,6 @@
 			"run load_bmp_logo_base;"\
 			"\0"\
 	"init_display="\
-		/* logo1 */\
-		"setenv display_layer osd0;"\
-		"osd open;osd clear;run load_bmp_logo;bmp scale;vout output ${outputmode};"\
-		/* logo2 */\
-		"setenv display_layer viu2_osd0;"\
-		"osd open;osd clear;run load_bmp_logo;bmp scale;vout2 prepare ${outputmode2};"\
-		"vout2 output ${outputmode2};"\
 		"\0"\
 	"check_display="\
 		"echo check_display reboot_mode : ${reboot_mode} ,powermode : ${powermode};"\
@@ -321,9 +317,7 @@
 #define CONFIG_PREBOOT  \
 	"run bcb_cmd; "\
 	"run upgrade_check;"\
-	/* "run init_display;"\ */\
 	"get_rebootmode;"\
-	"run check_display;"\
 	"run storeargs;"\
     "run upgrade_key;" \
     "bcb uboot-command;" \

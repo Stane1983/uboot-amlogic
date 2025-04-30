@@ -83,7 +83,7 @@
 		"setenv bootargs ${bootargs} kvm-arm.mode=none init_on_alloc=0 "\
 		"connector0_type=${connector0_type} connector1_type=${connector1_type} connector2_type=${connector2_type} "\
 		"nn_adj_vol=${nn_adj_vol};"\
-		"run storeargs_hdmitx;"\
+		"run storeargs_display;"\
 		"run cmdline_keys;"\
 		"\0"\
 	"load_bmp_logo=" \
@@ -97,32 +97,38 @@
 
 #ifdef CONFIG_BOARD_KERNEL_VERSION_5_4
 #define CONFIG_CONNECTOR_INFO \
-    "lcd_disable_outputmode_autoset=1\0" \
-    "outputmode=panel1\0" \
-    "outputmode2=1080p60hz\0" \
-    "connector0_type=VBYONE-B\0" \
-    "connector1_type=HDMI-A-A\0" \
-    "connector2_type=NULL\0"
+	"lcd_disable_outputmode_autoset=1\0" \
+	"outputmode=panel1\0" \
+	"outputmode2=1080p60hz\0" \
+	"connector0_type=VBYONE-B\0" \
+	"connector1_type=HDMI-A-A\0" \
+	"connector2_type=NULL\0"
 #else
 #define CONFIG_CONNECTOR_INFO \
-    "outputmode=2160p60hz\0" \
-    "outputmode2=1080p60hz\0" \
-    "connector0_type=VBYONE-B\0" \
+	"outputmode=2160p60hz\0" \
+	"outputmode2=1080p60hz\0" \
+	"connector0_type=VBYONE-B\0" \
 	"connector1_type=HDMI-A-A\0" \
-    "connector2_type=NULL\0"
+	"connector2_type=NULL\0"
 #endif
+
+#define VOUT_HDMITX_HPD_CHECK_CMD "hdmitx hpd; hdmitx get_parse_edid; dovi process;"
+#define VOUT_OSD_LOGO_CMD         "osd open; osd clear; run load_bmp_logo; bmp scale;"
+#define VOUT_HDMITX_HDMI_CMD2     "dovi set; dovi pkg; vpp hdrpkt;"
+
+#define VOUT_DISPLAY_CMD          "vout boot_display; "
 
 #ifdef CONFIG_HDMITX_ONLY
 #define CONFIG_EXTRA_HDMI_ENV_SETTINGS \
 	"panel_type=edp_0\0" \
 	"outputmode=1080p60hz\0" \
-	"storeargs_hdmitx="\
+	"storeargs_display="\
 		"setenv bootargs ${bootargs} powermode=${powermode} "\
 		"lcd0=${lcd0_attr} lcd_debug=${lcd_debug} "\
 		"dptx0=${dptx0_ctrl} dptx1=${dptx1_ctrl} dptx_dbg=${dptx_debug} "\
 		"outputmode=${outputmode} hdmitx=${cecconfig},${colorattribute};"\
 		"\0"\
-	"init_display_hdmitx="\
+	"init_display="\
 		"hdmitx hpd;hdmitx get_parse_edid;dovi process;"\
 		"osd open;osd clear;run load_bmp_logo;bmp scale;vout output ${outputmode};"\
 		"dovi set;dovi pkg;vpp hdrpkt;"\
@@ -136,7 +142,7 @@
 	"lcd2_attr=0x00000000,lvds_1\0" \
 	"cvbsmode=576cvbs\0" \
 	CONFIG_CONNECTOR_INFO \
-	"storeargs_hdmitx="\
+	"storeargs_display="\
 		"setenv bootargs ${bootargs} powermode=${powermode} "\
 		"lcd0=${lcd0_attr} lcd_debug=${lcd_debug} "\
 		"outputmode=${outputmode} hdmitx=${cecconfig},${colorattribute} "\
@@ -145,9 +151,8 @@
 		"dptx0=${dptx0_ctrl} dptx1=${dptx1_ctrl} dptx_dbg=${dptx_debug} "\
 		"hdr_policy=${hdr_policy} hdr_priority=${hdr_priority};"\
 		"\0"\
-	"init_display_hdmitx="\
-		"hdmitx hpd;hdmitx get_parse_edid;dovi process;"\
-		"osd dual_logo;"\
+	"init_display="\
+		"vout boot_display;"\
 		"\0"
 #endif
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -311,9 +316,6 @@
 	"bcb_cmd="\
 		"run bcb_cmd_base;"\
 		"\0"\
-	"init_display="\
-		"run init_display_hdmitx;"\
-		"\0"\
 	"check_display="\
 		"if test ${reboot_mode} = cold_boot; then "\
 			"if test ${powermode} = standby; then "\
@@ -362,45 +364,6 @@
 	"bcb uboot-command;" \
 	"run switch_bootmode;" \
 	"run reset_suspend;"
-
-#ifndef CONFIG_HDMITX_ONLY
-/* dual logo, normal boot */
-#define CONFIG_DUAL_LOGO \
-	"setenv display_layer viu2_osd0;vout2 prepare ${outputmode2};"\
-	"osd open;osd clear;run load_bmp_logo;vout2 output ${outputmode2};bmp scale;"\
-	"if test ${outputmode2} = ${save_outputmode}; then "\
-		"dovi set;dovi pkg;vpp hdrpkt;"\
-	"fi; "\
-	"setenv display_layer osd0;osd open;osd clear;"\
-	"run load_bmp_logo;bmp scale;vout output ${outputmode};"\
-	"if test ${outputmode} = ${save_outputmode}; then "\
-		"dovi set;dovi pkg;vpp hdrpkt;"\
-	"fi; "\
-	"\0"\
-
-/* dual logo, factory_reset boot, recovery always displays on panel */
-#define CONFIG_RECOVERY_DUAL_LOGO \
-	"setenv display_layer viu2_osd0;vout2 prepare ${outputmode2};"\
-	"osd open;osd clear;run load_bmp_logo;vout2 output ${outputmode2};bmp scale;"\
-	"if test ${outputmode2} = ${save_outputmode}; then "\
-		"dovi set;dovi pkg;vpp hdrpkt;"\
-	"fi; "\
-	"setenv display_layer osd0;osd open;osd clear;"\
-	"run load_bmp_logo;bmp scale;vout output ${outputmode};"\
-	"if test ${outputmode} = ${save_outputmode}; then "\
-		"dovi set;dovi pkg;vpp hdrpkt;"\
-	"fi; "\
-	"\0"\
-
-/* single logo */
-#define CONFIG_SINGLE_LOGO \
-	"setenv display_layer osd0;osd open;osd clear;"\
-	"run load_bmp_logo;bmp scale;vout output ${outputmode};"\
-	"if test ${outputmode} = ${save_outputmode}; then "\
-		"dovi set;dovi pkg;vpp hdrpkt;"\
-	"fi; "\
-	"\0"
-#endif
 
 /* #define CONFIG_ENV_IS_NOWHERE  1 */
 #define CONFIG_ENV_SIZE   (64 * 1024)

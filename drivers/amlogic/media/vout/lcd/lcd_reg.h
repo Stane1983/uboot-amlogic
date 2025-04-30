@@ -37,6 +37,16 @@ void str_add_reg_sets(struct aml_lcd_drv_s *pdrv,
 		      unsigned char reg_bus, unsigned int reg_offset,
 		      struct reg_name_set_s *reg_table, unsigned char reg_cnt);
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#undef spin_lock_init
+#undef spin_lock
+#undef spin_unlock
+#include <spinlock.h>
+
+extern spin_lock_t lcd_reg_lock;
+
+#endif
+
 /* ********************************
  * register define
  * ********************************* */
@@ -155,12 +165,25 @@ void str_add_reg_sets(struct aml_lcd_drv_s *pdrv,
 /* ********************************
  * register access api
  * ********************************* */
+
+static inline void lcd_reg_spin_lock_init(void)
+{
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock_init(&lcd_reg_lock);
+#endif
+}
+
 /* use offset address */
 static inline unsigned int lcd_combo_dphy_read(unsigned int reg)
 {
 	unsigned int val;
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
 	val = *(volatile unsigned int *)(REG_ADDR_COMBO(reg));
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 	if (lcd_debug_print_flag & LCD_DBG_PR_REG)
 		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
 
@@ -171,39 +194,58 @@ static inline void lcd_combo_dphy_write(unsigned int reg, unsigned int val)
 {
 	if (lcd_debug_print_flag & LCD_DBG_PR_REG)
 		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
 	*(volatile unsigned int *)REG_ADDR_COMBO(reg) = (val);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 };
 
 static inline void lcd_combo_dphy_setb(unsigned int reg, unsigned int val,
 				   unsigned int start, unsigned int len)
 {
-	lcd_combo_dphy_write(reg, ((lcd_combo_dphy_read(reg) &
-			~(((1L << (len))-1) << (start))) |
-			(((val)&((1L<<(len))-1)) << (start))));
+	unsigned int val_base;
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
+	val_base = *(volatile unsigned int *)(REG_ADDR_COMBO(reg));
+	*(volatile unsigned int *)REG_ADDR_COMBO(reg) =
+		((val_base & ~(((1L << len) - 1) << start)) | ((val & ((1L << len) - 1)) << start));
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 }
 
 static inline unsigned int lcd_combo_dphy_getb(unsigned int reg,
 					   unsigned int start,
 					   unsigned int len)
 {
-	return (lcd_combo_dphy_read(reg) >> (start)) & ((1L << (len)) - 1);
-}
+	unsigned int val;
 
-static inline void lcd_combo_dphy_set_mask(unsigned int reg, unsigned int _mask)
-{
-	lcd_combo_dphy_write(reg, (lcd_combo_dphy_read(reg) | (_mask)));
-}
-
-static inline void lcd_combo_dphy_clr_mask(unsigned int reg, unsigned int _mask)
-{
-	lcd_combo_dphy_write(reg, (lcd_combo_dphy_read(reg) & (~(_mask))));
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
+	val = ((*(volatile unsigned int *)(REG_ADDR_COMBO(reg))) >> (start)) & ((1L << (len)) - 1);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
+	return val;
 }
 
 static inline unsigned int lcd_clk_read(unsigned int reg)
 {
 	unsigned int val;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
 	val = *(volatile unsigned int *)(REG_ADDR_HIU(reg));
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 	if (lcd_debug_print_flag & LCD_DBG_PR_REG)
 		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
 
@@ -214,38 +256,56 @@ static inline void lcd_clk_write(unsigned int reg, unsigned int val)
 {
 	if (lcd_debug_print_flag & LCD_DBG_PR_REG)
 		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
 	*(volatile unsigned int *)REG_ADDR_HIU(reg) = (val);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 };
 
 static inline void lcd_clk_setb(unsigned int reg, unsigned int val,
 		unsigned int start, unsigned int len)
 {
-	lcd_clk_write(reg, ((lcd_clk_read(reg) &
-			~(((1L << (len))-1) << (start))) |
-			(((val)&((1L<<(len))-1)) << (start))));
+	unsigned int val_base;
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
+	val_base = *(volatile unsigned int *)(REG_ADDR_HIU(reg));
+	*(volatile unsigned int *)REG_ADDR_HIU(reg) =
+		((val_base & ~(((1L << len) - 1) << start)) | ((val & ((1L << len) - 1)) << start));
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 }
 
 static inline unsigned int lcd_clk_getb(unsigned int reg,
 		unsigned int start, unsigned int len)
 {
-	return (lcd_clk_read(reg) >> (start)) & ((1L << (len)) - 1);
-}
-
-static inline void lcd_clk_set_mask(unsigned int reg, unsigned int _mask)
-{
-	lcd_clk_write(reg, (lcd_clk_read(reg) | (_mask)));
-}
-
-static inline void lcd_clk_clr_mask(unsigned int reg, unsigned int _mask)
-{
-	lcd_clk_write(reg, (lcd_clk_read(reg) & (~(_mask))));
+	unsigned int val;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
+	val = ((*(volatile unsigned int *)(REG_ADDR_HIU(reg))) >> (start)) & ((1L << (len)) - 1);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
+	return val;
 }
 
 static inline unsigned int lcd_ana_read(unsigned int reg)
 {
 	unsigned int val;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
 	val = *(volatile unsigned int *)(REG_ADDR_HIU(reg));
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 	if (lcd_debug_print_flag & LCD_DBG_PR_REG)
 		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
 
@@ -256,38 +316,57 @@ static inline void lcd_ana_write(unsigned int reg, unsigned int val)
 {
 	if (lcd_debug_print_flag & LCD_DBG_PR_REG)
 		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
 	*(volatile unsigned int *)REG_ADDR_HIU(reg) = (val);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 };
 
 static inline void lcd_ana_setb(unsigned int reg, unsigned int val,
 		unsigned int start, unsigned int len)
 {
-	lcd_ana_write(reg, ((lcd_ana_read(reg) &
-			~(((1L << (len))-1) << (start))) |
-			(((val)&((1L<<(len))-1)) << (start))));
+	unsigned int val_base;
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
+	val_base = *(volatile unsigned int *)(REG_ADDR_HIU(reg));
+	*(volatile unsigned int *)REG_ADDR_HIU(reg) =
+		((val_base & ~(((1L << len) - 1) << start)) | ((val & ((1L << len) - 1)) << start));
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 }
 
 static inline unsigned int lcd_ana_getb(unsigned int reg,
 		unsigned int start, unsigned int len)
 {
-	return (lcd_ana_read(reg) >> (start)) & ((1L << (len)) - 1);
-}
+	unsigned int val;
 
-static inline void lcd_ana_set_mask(unsigned int reg, unsigned int _mask)
-{
-	lcd_ana_write(reg, (lcd_ana_read(reg) | (_mask)));
-}
-
-static inline void lcd_ana_clr_mask(unsigned int reg, unsigned int _mask)
-{
-	lcd_ana_write(reg, (lcd_ana_read(reg) & (~(_mask))));
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
+	val = ((*(volatile unsigned int *)(REG_ADDR_HIU(reg))) >> (start)) & ((1L << (len)) - 1);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
+	return val;
 }
 
 static inline unsigned int lcd_hiu_read(unsigned int reg)
 {
 	unsigned int val;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
 	val = *(volatile unsigned int *)(REG_ADDR_HIU(reg));
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 	if (lcd_debug_print_flag & LCD_DBG_PR_REG)
 		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
 
@@ -298,28 +377,56 @@ static inline void lcd_hiu_write(unsigned int reg, unsigned int val)
 {
 	if (lcd_debug_print_flag & LCD_DBG_PR_REG)
 		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
 	*(volatile unsigned int *)REG_ADDR_HIU(reg) = (val);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 };
 
 static inline void lcd_hiu_setb(unsigned int reg, unsigned int val,
 		unsigned int start, unsigned int len)
 {
-	lcd_hiu_write(reg, ((lcd_hiu_read(reg) &
-			~(((1L << (len)) - 1) << (start))) |
-			(((val) & ((1L << (len)) - 1)) << (start))));
+	unsigned int val_base;
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
+	val_base = *(volatile unsigned int *)(REG_ADDR_HIU(reg));
+	*(volatile unsigned int *)REG_ADDR_HIU(reg) =
+		((val_base & ~(((1L << len) - 1) << start)) | ((val & ((1L << len) - 1)) << start));
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 }
 
 static inline unsigned int lcd_hiu_getb(unsigned int reg,
 		unsigned int start, unsigned int len)
 {
-	return (lcd_hiu_read(reg) >> (start)) & ((1L << (len)) - 1);
+	unsigned int val;
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
+	val = ((*(volatile unsigned int *)(REG_ADDR_HIU(reg))) >> (start)) & ((1L << (len)) - 1);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
+	return val;
 }
 
 static inline unsigned int lcd_cbus_read(unsigned int reg)
 {
 	unsigned int val;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
 	val = (*(volatile unsigned int *)REG_ADDR_CBUS(reg));
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 	if (lcd_debug_print_flag & LCD_DBG_PR_REG)
 		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
 
@@ -330,38 +437,57 @@ static inline void lcd_cbus_write(unsigned int reg, unsigned int val)
 {
 	if (lcd_debug_print_flag & LCD_DBG_PR_REG)
 		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
 	*(volatile unsigned int *)REG_ADDR_CBUS(reg) = (val);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 };
 
 static inline void lcd_cbus_setb(unsigned int reg, unsigned int val,
 		unsigned int start, unsigned int len)
 {
-	lcd_cbus_write(reg, ((lcd_cbus_read(reg) &
-			~(((1L << (len))-1) << (start))) |
-			(((val)&((1L<<(len))-1)) << (start))));
+	unsigned int val_base;
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
+	val_base = *(volatile unsigned int *)(REG_ADDR_CBUS(reg));
+	*(volatile unsigned int *)REG_ADDR_CBUS(reg) =
+		((val_base & ~(((1L << len) - 1) << start)) | ((val & ((1L << len) - 1)) << start));
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 }
 
 static inline unsigned int lcd_cbus_getb(unsigned int reg,
 		unsigned int start, unsigned int len)
 {
-	return (lcd_cbus_read(reg) >> (start)) & ((1L << (len)) - 1);
-}
+	unsigned int val;
 
-static inline void lcd_cbus_set_mask(unsigned int reg, unsigned int _mask)
-{
-	lcd_cbus_write(reg, (lcd_cbus_read(reg) | (_mask)));
-}
-
-static inline void lcd_cbus_clr_mask(unsigned int reg, unsigned int _mask)
-{
-	lcd_cbus_write(reg, (lcd_cbus_read(reg) & (~(_mask))));
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
+	val = ((*(volatile unsigned int *)(REG_ADDR_CBUS(reg))) >> (start)) & ((1L << (len)) - 1);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
+	return val;
 }
 
 static inline unsigned int lcd_reset_read(unsigned int reg)
 {
 	unsigned int val;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
 	val = (*(volatile unsigned int *)REG_ADDR_RESET(reg));
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 	if (lcd_debug_print_flag & LCD_DBG_PR_REG)
 		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
 
@@ -372,22 +498,42 @@ static inline void lcd_reset_write(unsigned int reg, unsigned int val)
 {
 	if (lcd_debug_print_flag & LCD_DBG_PR_REG)
 		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
 	*(volatile unsigned int *)REG_ADDR_RESET(reg) = (val);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 };
 
 static inline void lcd_reset_setb(unsigned int reg, unsigned int val,
 		unsigned int start, unsigned int len)
 {
-	lcd_reset_write(reg, ((lcd_reset_read(reg) &
-			~(((1L << (len))-1) << (start))) |
-			(((val)&((1L<<(len))-1)) << (start))));
+	unsigned int val_base;
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
+	val_base = *(volatile unsigned int *)(REG_ADDR_RESET(reg));
+	*(volatile unsigned int *)REG_ADDR_RESET(reg) =
+		((val_base & ~(((1L << len) - 1) << start)) | ((val & ((1L << len) - 1)) << start));
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 }
 
 static inline unsigned int lcd_vcbus_read(unsigned int reg)
 {
 	unsigned int val;
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
 	val = (*(volatile unsigned int *)REG_ADDR_VCBUS(reg));
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 	if (lcd_debug_print_flag & LCD_DBG_PR_REG)
 		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
 
@@ -398,63 +544,89 @@ static inline void lcd_vcbus_write(unsigned int reg, unsigned int val)
 {
 	if (lcd_debug_print_flag & LCD_DBG_PR_REG)
 		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
 	(*(volatile unsigned int *)REG_ADDR_VCBUS(reg)) = (val);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 }
 
 static inline void lcd_vcbus_setb(unsigned int reg, unsigned int val,
 		unsigned int start, unsigned int len)
 {
-	lcd_vcbus_write(reg, ((lcd_vcbus_read(reg) &
-			~(((1L << (len))-1) << (start))) |
-			(((val)&((1L<<(len))-1)) << (start))));
+	unsigned int val_base;
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
+	val_base = *(volatile unsigned int *)(REG_ADDR_VCBUS(reg));
+	*(volatile unsigned int *)REG_ADDR_VCBUS(reg) =
+		((val_base & ~(((1L << len) - 1) << start)) | ((val & ((1L << len) - 1)) << start));
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 }
 
 static inline unsigned int lcd_vcbus_getb(unsigned int reg,
 		unsigned int start, unsigned int len)
 {
-	return (lcd_vcbus_read(reg) >> (start)) & ((1L << (len)) - 1);
-}
-
-static inline void lcd_vcbus_set_mask(unsigned int reg, unsigned int _mask)
-{
-	lcd_vcbus_write(reg, (lcd_vcbus_read(reg) | (_mask)));
-}
-
-static inline void lcd_vcbus_clr_mask(unsigned int reg, unsigned int _mask)
-{
-	lcd_vcbus_write(reg, (lcd_vcbus_read(reg) & (~(_mask))));
-}
-
-static inline unsigned int lcd_aobus_read(unsigned int reg)
-{
 	unsigned int val;
 
-	val = (*(volatile unsigned int *)REG_ADDR_AOBUS(reg));
-	if (lcd_debug_print_flag & LCD_DBG_PR_REG)
-		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
-
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
+	val = ((*(volatile unsigned int *)(REG_ADDR_VCBUS(reg))) >> (start)) & ((1L << (len)) - 1);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 	return val;
-};
+}
 
 static inline void lcd_aobus_write(unsigned int reg, unsigned int val)
 {
 	if (lcd_debug_print_flag & LCD_DBG_PR_REG)
 		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
 	*(volatile unsigned int *)REG_ADDR_AOBUS(reg) = (val);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 };
 
 static inline void lcd_aobus_setb(unsigned int reg, unsigned int val,
 		unsigned int start, unsigned int len)
 {
-	lcd_aobus_write(reg, ((lcd_aobus_read(reg) &
-			~(((1L << (len))-1) << (start))) |
-			(((val)&((1L<<(len))-1)) << (start))));
+	unsigned int val_base;
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
+	val_base = *(volatile unsigned int *)(REG_ADDR_AOBUS(reg));
+	*(volatile unsigned int *)REG_ADDR_AOBUS(reg) =
+		((val_base & ~(((1L << len) - 1) << start)) | ((val & ((1L << len) - 1)) << start));
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 }
 
 static inline unsigned int lcd_aobus_getb(unsigned int reg,
 		unsigned int start, unsigned int len)
 {
-	return (lcd_aobus_read(reg) & (((1L << (len)) - 1) << (start)));
+	unsigned int val;
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
+	val = ((*(volatile unsigned int *)(REG_ADDR_AOBUS(reg))) >> (start)) & ((1L << (len)) - 1);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
+	return val;
 }
 
 static inline unsigned int lcd_periphs_read(unsigned int reg)
@@ -494,7 +666,13 @@ static inline void lcd_pinmux_set_mask(unsigned int n, unsigned int _mask)
 	unsigned int reg = PERIPHS_PIN_MUX_0;
 
 	reg += (n << 2);
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
 	lcd_periphs_write(reg, (lcd_periphs_read(reg) | (_mask)));
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 }
 
 static inline void lcd_pinmux_clr_mask(unsigned int n, unsigned int _mask)
@@ -502,7 +680,14 @@ static inline void lcd_pinmux_clr_mask(unsigned int n, unsigned int _mask)
 	unsigned int reg = PERIPHS_PIN_MUX_0;
 
 	reg += (n << 2);
+
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&lcd_reg_lock);
+#endif
 	lcd_periphs_write(reg, (lcd_periphs_read(reg) & (~(_mask))));
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_unlock(&lcd_reg_lock);
+#endif
 }
 
 static inline unsigned int dsi_host_read(struct aml_lcd_drv_s *pdrv, u8 port, unsigned int reg)

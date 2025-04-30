@@ -37,6 +37,21 @@
 #include <amlogic/aml_mtd.h>
 #include <asm/arch/stick_mem.h>
 #include <amlogic/board.h>
+#ifdef CONFIG_AML_VPU
+#include <amlogic/media/vpu/vpu.h>
+#endif
+#ifdef CONFIG_AML_VPP
+#include <amlogic/media/vpp/vpp.h>
+#endif
+#ifdef CONFIG_AML_VOUT
+#include <amlogic/media/vout/aml_vout.h>
+#endif
+#ifdef CONFIG_AML_LCD
+#include <amlogic/media/vout/lcd/lcd_vout.h>
+#endif
+#ifdef CONFIG_RX_RTERM
+#include <amlogic/aml_hdmirx.h>
+#endif
 
 #include <amlogic/aml_profile.h>
 DECLARE_GLOBAL_DATA_PTR;
@@ -166,9 +181,28 @@ int board_late_init(void)
 	get_stick_reboot_flag_mbx();
 
 	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_s);
-	aml_board_display_init(0x01);
-
+#ifdef CONFIG_AML_VPU
+	vpu_probe();
+#endif
+#ifdef CONFIG_AML_VPP
+	vpp_init();
+#endif
+	run_command("ini_model", 0);
+	aml_board_display_env_handler();
+#ifdef CONFIG_RX_RTERM
+	rx_set_phy_rterm();
+#endif
+#ifdef CONFIG_AML_CVBS
+	run_command("cvbs init", 0);
+#endif
+#ifdef CONFIG_AML_LCD
+	lcd_probe();
+#endif
+#ifdef VOUT_DISPLAY_CMD
+	run_command(VOUT_DISPLAY_CMD, 0);
+#endif
 	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_e);
+
 	aml_board_late_init_tail(NULL);
 	return 0;
 }

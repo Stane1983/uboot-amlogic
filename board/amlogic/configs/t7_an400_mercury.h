@@ -68,13 +68,13 @@
 #define CONFIG_EXTRA_HDMI_ENV_SETTINGS \
 	"panel_type=edp_0\0" \
 	"outputmode=1080p60hz\0" \
-	"storeargs_hdmitx="\
+	"storeargs_display="\
 		"setenv bootargs ${bootargs} powermode=${powermode} "\
 		"lcd0=${lcd0_attr} lcd_debug=${lcd_debug} "\
 		"dptx0=${dptx0_ctrl} dptx1=${dptx1_ctrl} dptx_dbg=${dptx_debug} "\
 		"outputmode=${outputmode} hdmitx=${cecconfig},${colorattribute};"\
 		"\0"\
-	"init_display_hdmitx="\
+	"init_display="\
 		"hdmitx hpd;hdmitx get_parse_edid;dovi process;"\
 		"osd open;osd clear;run load_bmp_logo;bmp scale;vout output ${outputmode};"\
 		"dovi set;dovi pkg;vpp hdrpkt;"\
@@ -93,7 +93,7 @@
 	"hdmitx_hpd_wait_cnt=0\0" \
 	"viu2_hold_line=4\0" \
 	"cvbsmode=576cvbs\0" \
-	"storeargs_hdmitx="\
+	"storeargs_display="\
 		"setenv bootargs ${bootargs} powermode=${powermode} "\
 		"lcd=${lcd0_attr} lcd_debug=${lcd_debug} "\
 		"outputmode=${outputmode} hdmitx=${cecconfig},${colorattribute} "\
@@ -103,9 +103,8 @@
 		"dptx0=${dptx0_ctrl} dptx1=${dptx1_ctrl} dptx_dbg=${dptx_debug} "\
 		"hdr_policy=${hdr_policy} hdr_priority=${hdr_priority};"\
 		"\0"\
-	"init_display_hdmitx="\
-		"hdmitx hpd;hdmitx get_parse_edid;dovi process;"\
-		"osd dual_logo;"\
+	"init_display="\
+		"vout boot_display;" \
 		"\0"
 #endif
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -294,9 +293,6 @@
 			"\0"\
 		"load_bmp_logo="\
 			"run load_bmp_logo_base;"\
-			"\0"\
-		"init_display="\
-			"run init_display_hdmitx;"\
 			"\0"\
 		"check_display="\
 			"if test ${reboot_mode} = cold_boot; then "\

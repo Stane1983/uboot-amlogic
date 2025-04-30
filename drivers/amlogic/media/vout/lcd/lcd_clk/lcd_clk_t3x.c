@@ -892,7 +892,7 @@ static struct lcd_clk_data_s lcd_clk_data_t3x_1 = {
 	.have_tcon_div = 0,
 	.phy_clk_location = 1,
 
-	.vclk_sel = 4,
+	.vclk_sel = 0,
 	.enc_clk_msr_id = 60,
 
 	.div_sel_max = CLK_DIV_SEL_MAX,

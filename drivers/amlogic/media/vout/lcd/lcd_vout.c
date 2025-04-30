@@ -28,6 +28,10 @@
 #endif
 #include <amlogic/pm.h>
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#include <spinlock.h>
+spin_lock_t lcd_reg_lock;
+#endif
 //DECLARE_GLOBAL_DATA_PTR;
 
 unsigned int lcd_debug_print_flag;
@@ -1016,6 +1020,7 @@ int lcd_probe(void)
 
 	lcd_phy_config_init(lcd_data);
 	lcd_venc_probe(lcd_data);
+	lcd_reg_spin_lock_init();
 	ret = lcd_config_probe();
 	if (ret)
 		return -1;

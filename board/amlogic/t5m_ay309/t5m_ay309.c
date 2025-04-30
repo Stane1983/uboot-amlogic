@@ -178,11 +178,15 @@ int board_late_init(void)
 	rx_set_phy_rterm();
 #endif
 	run_command("ini_model", 0);
+	aml_board_display_env_handler();
 #ifdef CONFIG_AML_VOUT
 	vout_probe();
 #endif
 #ifdef CONFIG_AML_LCD
 	lcd_probe();
+#endif
+#ifdef VOUT_DISPLAY_CMD
+	run_command(VOUT_DISPLAY_CMD, 0);
 #endif
 	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_e);
 
