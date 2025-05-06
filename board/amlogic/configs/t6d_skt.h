@@ -31,12 +31,6 @@
 #undef CONFIG_SILENT_CONSOLE_UPDATE_ON_RELOC
 #endif
 
-#ifdef CONFIG_ARMV8_MULTIENTRY
-#define INIT_DISPLAY "if test ${display_on_smp} = 0; then run init_display; fi;"
-#else
-#define INIT_DISPLAY "run init_display;"
-#endif
-
 /*low console baudrate*/
 #define CONFIG_LOW_CONSOLE_BAUD			0
 
@@ -106,7 +100,6 @@
 #define CONFIG_PREBOOT  \
 		"run bcb_cmd; "\
 		"run upgrade_check;"\
-		INIT_DISPLAY \
 		"run storeargs;"\
 		"run upgrade_key;" \
 		"bcb uboot-command;"\

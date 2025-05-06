@@ -29,9 +29,35 @@
 #ifdef CONFIG_AMLOGIC_AMFC
 #include <amlogic/amfc.h>
 #endif
-
+#ifdef CONFIG_AML_CVBS
+#include <amlogic/media/vout/aml_cvbs.h>
+#endif
+#ifdef CONFIG_AML_VPU
+#include <amlogic/media/vpu/vpu.h>
+#endif
+#ifdef CONFIG_AML_VPP
+#include <amlogic/media/vpp/vpp.h>
+#endif
+#ifdef CONFIG_AML_LCD
+#include <amlogic/media/vout/lcd/lcd_vout.h>
+#endif
+#ifdef CONFIG_RX_RTERM
+#include <amlogic/aml_hdmirx.h>
+#endif
+#ifdef CONFIG_AML_VOUT
+#include <amlogic/media/vout/aml_vout.h>
+#endif
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#include <asm/arch-meson/smp.h>
+#endif
 #ifdef CONFIG_AMLOGIC_AMFC
 #include <amlogic/amfc.h>
+#endif
+#ifdef CONFIG_CEC_TRIM_VAL
+#include <amlogic/aml_cec.h>
+#endif
+#ifdef CONFIG_CVBS_CALI
+#include <amlogic/aml_tvafe.h>
 #endif
 #include <amlogic/aml_profile.h>
 
@@ -147,13 +173,32 @@ int board_late_init(void)
 #endif
 	get_stick_reboot_flag_mbx();
 
-	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_s);
-
-	aml_board_display_init(0x01);
-
-	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_e);
-
-	aml_board_late_init_tail(NULL);
+#ifdef CONFIG_AML_VPU
+	vpu_probe();
+#endif
+#ifdef CONFIG_AML_VPP
+	vpp_init();
+#endif
+#ifdef CONFIG_RX_RTERM
+	rx_set_phy_rterm();
+#endif
+#ifdef CONFIG_AML_CVBS
+	cvbs_init();
+#endif
+#ifdef CONFIG_CVBS_CALI
+	cvbs_dac_cfg();
+#endif
+#ifdef CONFIG_CEC_TRIM_VAL
+	cec_get_trim_val();
+#endif
+	run_command("ini_model", 0);
+	aml_board_display_env_handler();
+#ifdef CONFIG_AML_LCD
+	lcd_probe();
+#endif
+#ifdef VOUT_DISPLAY_CMD
+	run_command(VOUT_DISPLAY_CMD, 0);
+#endif
 	run_command("amlsecurecheck", 0);
 	run_command("update_tries", 0);
 
@@ -190,19 +235,11 @@ phys_size_t get_effective_memsize(void)
 {
 	// >>16 -> MB, <<20 -> real size, so >>16<<20 = <<4
 #if defined(CONFIG_SYS_MEM_TOP_HIDE)
-<<<<<<< HEAD:board/amlogic/t6d_br309/t6d_skt.c
-	return ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) > 0xe0000000 ? 0xe0000000 :
-	    ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) - CONFIG_SYS_MEM_TOP_HIDE;
-#else
-	return ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4) > 0xe0000000 ? 0xe0000000 :
-	    ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000) << 4);
-=======
 	return ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000UL) << 4) >= 0xe0000000 ? 0xe0000000 :
 	    ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000UL) << 4) - CONFIG_SYS_MEM_TOP_HIDE;
 #else
 	return ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000UL) << 4) >= 0xe0000000 ? 0xe0000000 :
 	    ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xFFF00000UL) << 4);
->>>>>>> 0d73e9a79ff (bl33: uboot need support sip and nonsip board boot [2/2]):board/amlogic/t6w_bs309/t6w_bs309.c
 #endif /* CONFIG_SYS_MEM_TOP_HIDE */
 }
 

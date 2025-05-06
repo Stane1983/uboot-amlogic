@@ -9,6 +9,7 @@ int aml_board_late_init_front(void *arg);
 
 int aml_board_late_init_tail(void *arg);
 
-void aml_board_display_init(unsigned char vout_bit);
+void aml_board_display_env_handler(void);
+// void aml_board_display_init(unsigned char vout_bit);
 
 void board_set_boot_source(void);

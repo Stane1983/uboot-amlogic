@@ -189,6 +189,9 @@ int board_late_init(void)
 #ifdef CONFIG_AML_CVBS
 	cvbs_init();
 #endif
+#ifdef VOUT_DISPLAY_CMD
+	run_command(VOUT_DISPLAY_CMD, 0);
+#endif
 	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_e);
 
 	aml_board_late_init_tail(NULL);

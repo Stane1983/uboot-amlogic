@@ -30,6 +30,7 @@ enum viu_mux_e {
 #define CONNECTOR_DEV_RESERVED 0x0200
 #define CONNECTOR_DEV_HDMI     0x0300
 #define CONNECTOR_DEV_CVBS     0x0400
+#define CONNECTOR_DEV_DUMMY          0x0500
 
 #define CONNECTOR_SUB_DEV_INVALID    0x0f00
 #define CONNECTOR_SUB_DEV_LCD_LVDS   0x0000
@@ -38,6 +39,16 @@ enum viu_mux_e {
 #define CONNECTOR_SUB_DEV_LCD_EDP    0x0030
 #define CONNECTOR_SUB_DEV_HDMI       0x0000
 #define CONNECTOR_SUB_DEV_CVBS       0x0000
+
+#ifndef CONNECTOR0_OSD
+#define CONNECTOR0_OSD "osd0"
+#endif
+#ifndef CONNECTOR1_OSD
+#define CONNECTOR1_OSD "viu2_osd0"
+#endif
+#ifndef CONNECTOR2_OSD
+#define CONNECTOR2_OSD "viu3_osd0"
+#endif
 
 unsigned short vout_connector_check(unsigned char vout_index);
 void vout_pr_connector_and_vmode(void);
@@ -51,7 +62,9 @@ void vout_viu_mux(int index, unsigned int mux_sel);
 extern unsigned long get_fb_addr(void);
 
 void vout_probe(void);
-int aml_vout_prepare(uint8_t vout_idx, char *mode);
+// int aml_vout_prepare(uint8_t vout_idx, char *mode);
 int aml_vout_output(uint8_t vout_idx, char *mode);
+int aml_display_process(unsigned char vout_idx);
+
 #endif
 

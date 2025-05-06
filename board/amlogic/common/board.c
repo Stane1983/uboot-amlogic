@@ -242,7 +242,7 @@ int aml_board_late_init_tail(void *arg)
 }
 #endif//#ifdef CONFIG_BOARD_LATE_INIT
 
-static void aml_board_display_env_handler(void)
+void aml_board_display_env_handler(void)
 {
 	char *bootup_display;
 #ifdef CONFIG_AML_LCD
@@ -265,102 +265,6 @@ static void aml_board_display_env_handler(void)
 
 	env_set("lcd_init_level", lcd_init_str);
 	//printf("lcd_init_level: %s\n", env_get("lcd_init_level"));
-#endif
-}
-
-#ifdef CONFIG_AML_VOUT
-#ifdef CONFIG_ARMV8_MULTIENTRY
-static void aml_display_on_pre(unsigned char vout_bit)
-{
-	run_command("run init_display", 0);
-
-	printf("display[0x%x] on pre done\n", vout_bit);
-}
-
-//param bit[0:7]:curr vout idx;
-static void aml_display_on_post_job(unsigned long param)
-{
-	if ((param & 0xf) == 0)
-		aml_vout_output(0, env_get("outputmode"));
-	else if ((param & 0xf) == 1)
-		aml_vout_output(1, env_get("outputmode2"));
-	else if ((param & 0xf) == 2)
-		aml_vout_output(2, env_get("outputmode3"));
-
-	printf("display[%lu] on post done\n", param);
-	secondary_off();
-}
-#endif
-#endif
-
-// each bit refers to vout index, eg. 0x5=(vout+vout3)
-void aml_board_display_init(unsigned char vout_bit)
-{
-#ifdef CONFIG_AML_VPU
-	vpu_probe();
-#endif
-#ifdef CONFIG_AML_VPP
-	vpp_init();
-#endif
-#ifdef CONFIG_RX_RTERM
-	rx_set_phy_rterm();
-#endif
-#ifdef CONFIG_AML_CVBS
-	cvbs_init();
-#endif
-#ifdef CONFIG_CVBS_CALI
-	cvbs_dac_cfg();
-#endif
-#ifdef CONFIG_CEC_TRIM_VAL
-	cec_get_trim_val();
-#endif
-	run_command("ini_model", 0);
-	aml_board_display_env_handler();
-#ifdef CONFIG_AML_LCD
-	lcd_probe();
-#endif
-
-#ifdef CONFIG_AML_VOUT
-#ifdef CONFIG_ARMV8_MULTIENTRY
-	int smp_ret = 0;
-	unsigned char cpu_id = 1;
-
-	if (!(unsigned char)env_get_ulong("display_on_smp", 10, 0))
-		return;
-
-	aml_display_on_pre(vout_bit);
-	if (env_get("bootup_display") && (strcmp(env_get("bootup_display"), "on") == 0)) {
-		if (vout_bit & BIT(0)) {
-			smp_ret = run_smp_function(cpu_id, &aml_display_on_post_job, 0);
-			if (smp_ret) {
-				printf("display smp failed\n");
-			} else {
-				run_command("setenv vout_init enable", 0);
-				cpu_id++;
-			}
-		}
-		if (vout_bit & BIT(1)) {
-			smp_ret = run_smp_function(cpu_id, &aml_display_on_post_job, 1);
-			if (smp_ret) {
-				printf("display2 smp failed\n");
-			} else {
-				run_command("setenv vout2_init enable", 0);
-				cpu_id++;
-			}
-
-			cpu_id++;
-		}
-		if (vout_bit & BIT(2)) {
-			smp_ret = run_smp_function(cpu_id, &aml_display_on_post_job, 2);
-			if (smp_ret) {
-				printf("display3 smp failed\n");
-			} else {
-				run_command("setenv vout2_init enable", 0);
-				cpu_id++;
-			}
-		}
-	}
-#endif
 #endif
 }
 

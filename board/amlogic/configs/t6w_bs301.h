@@ -31,11 +31,9 @@
 #undef CONFIG_SILENT_CONSOLE_UPDATE_ON_RELOC
 #endif
 
-#ifdef CONFIG_ARMV8_MULTIENTRY
-#define INIT_DISPLAY "if test ${display_on_smp} = 0; then run init_display; fi;"
-#else
-#define INIT_DISPLAY "run init_display;"
-#endif
+#define VOUT_OSD_LOGO_CMD  "osd open; osd clear; run load_bmp_logo; bmp scale;"
+
+#define VOUT_DISPLAY_CMD   "vout boot_display; "
 
 /*low console baudrate*/
 #define CONFIG_LOW_CONSOLE_BAUD			0
@@ -72,6 +70,10 @@
 #else
 #define CONFIG_KERNEL_LOGLEVEL "loglevel=7"
 #endif
+
+#define VOUT_OSD_LOGO_CMD  "osd open; osd clear; run load_bmp_logo; bmp scale;"
+
+#define VOUT_DISPLAY_CMD   "vout boot_display; "
 
 //for common env list, please maintain it in board/amlogic/env/linux.env
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -116,7 +118,6 @@
 #define CONFIG_PREBOOT  \
 		"run bcb_cmd; "\
 		"run upgrade_check;"\
-		INIT_DISPLAY \
 		"run storeargs;"\
 		"run upgrade_key;" \
 		"bcb uboot-command;"\

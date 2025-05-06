@@ -29,6 +29,24 @@
 #ifdef CONFIG_AMLOGIC_AMFC
 #include <amlogic/amfc.h>
 #endif
+#ifdef CONFIG_CVBS_CALI
+#include <amlogic/aml_tvafe.h>
+#endif
+#ifdef CONFIG_AML_VPU
+#include <amlogic/media/vpu/vpu.h>
+#endif
+#ifdef CONFIG_AML_VPP
+#include <amlogic/media/vpp/vpp.h>
+#endif
+#ifdef CONFIG_AML_VOUT
+#include <amlogic/media/vout/aml_vout.h>
+#endif
+#ifdef CONFIG_AML_LCD
+#include <amlogic/media/vout/lcd/lcd_vout.h>
+#endif
+#ifdef CONFIG_RX_RTERM
+#include <amlogic/aml_hdmirx.h>
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -144,8 +162,32 @@ int board_late_init(void)
 #endif
 	get_stick_reboot_flag_mbx();
 
-	aml_board_display_init(0x01);
-
+#ifdef CONFIG_AML_VPU
+	vpu_probe();
+#endif
+#ifdef CONFIG_AML_VPP
+	vpp_init();
+#endif
+#ifdef CONFIG_RX_RTERM
+	rx_set_phy_rterm();
+#endif
+#ifdef CONFIG_AML_CVBS
+	cvbs_init();
+#endif
+#ifdef CONFIG_CVBS_CALI
+	cvbs_dac_cfg();
+#endif
+#ifdef CONFIG_CEC_TRIM_VAL
+	cec_get_trim_val();
+#endif
+	run_command("ini_model", 0);
+	aml_board_display_env_handler();
+#ifdef CONFIG_AML_LCD
+	lcd_probe();
+#endif
+#ifdef VOUT_DISPLAY_CMD
+	run_command(VOUT_DISPLAY_CMD, 0);
+#endif
 	run_command("amlsecurecheck", 0);
 	run_command("update_tries", 0);
 

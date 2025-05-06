@@ -36,21 +36,23 @@ struct cntor_name2val_s {
 };
 
 static struct cntor_name2val_s vout_supported_cnt_list[] = {
-	{.name = "LVDS-A",    .val = 0x100},
-	{.name = "LVDS-B",    .val = 0x101},
-	{.name = "LVDS-C",    .val = 0x102},
-	{.name = "VBYONE-A",  .val = 0x110},
-	{.name = "VBYONE-B",  .val = 0x111},
-	{.name = "MIPI-A",    .val = 0x120},
-	{.name = "MIPI-B",    .val = 0x121},
-	{.name = "EDP-A",     .val = 0x130},
-	{.name = "EDP-B",     .val = 0x131},
-	{.name = "LCD-A",     .val = 0x1f0},
-	{.name = "HDMI-A-A",  .val = 0x300},
-	{.name = "HDMI-A-B",  .val = 0x301},
-	{.name = "HDMI-A-C",  .val = 0x302},
+	{.name = "LVDS-A",       .val = 0x100},
+	{.name = "LVDS-B",       .val = 0x101},
+	{.name = "LVDS-C",       .val = 0x102},
+	{.name = "VBYONE-A",     .val = 0x110},
+	{.name = "VBYONE-B",     .val = 0x111},
+	{.name = "MIPI-A",       .val = 0x120},
+	{.name = "MIPI-B",       .val = 0x121},
+	{.name = "EDP-A",        .val = 0x130},
+	{.name = "EDP-B",        .val = 0x131},
+	{.name = "LCD-A",        .val = 0x1f0},
+	{.name = "HDMI-A-A",     .val = 0x300},
+	{.name = "HDMI-A-B",     .val = 0x301},
+	{.name = "HDMI-A-C",     .val = 0x302},
 	/* Follow SWPL-177195, change CVBS's name to TV-1, matching the DRM framework. */
-	{.name = "TV-1",      .val = 0x400},
+	{.name = "TV-1",         .val = 0x400},
+	{.name = "MESON-DUMMYP", .val = 0x500},
+	{.name = "MESON-DUMMYL", .val = 0x510},
 };
 
 unsigned short vout_connector_check(unsigned char vout_index)
