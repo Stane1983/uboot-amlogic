@@ -355,6 +355,23 @@ bool hdmi_sink_disp_mode_sup(struct hdmitx_dev *hdev, const char *disp_mode)
 	return false;
 }
 
+/* for kernel 6.12 59hz/23hz mode */
+static bool get_preferred_frac_mode(void)
+{
+	char *frac_mdoe = NULL;
+	bool kernel_6_12 = false;
+	bool preferred_frac_mode = false;
+
+	frac_mdoe = env_get("frac_rate_policy");
+	kernel_6_12 = get_kernel_dtb_info();
+	if (frac_mdoe) {
+		if (frac_mdoe[0] == '1' && kernel_6_12)
+			preferred_frac_mode = true;
+	}
+	printf("preferred frac mode: %d\n", preferred_frac_mode);
+	return preferred_frac_mode;
+}
+
 void get_hdmi_input(struct hdmitx_dev *hdev, struct meson_policy_in *input)
 {
 	struct dv_info *dv_info = &hdev->RXCap.dv_info;
@@ -370,7 +387,7 @@ void get_hdmi_input(struct hdmitx_dev *hdev, struct meson_policy_in *input)
 	input->con_info.is_support4k = is_support_4k();
 	input->con_info.is_deepcolor = is_support_deepcolor();
 	input->con_info.isframeratepriority = is_framerate_priority();
-	input->con_info.is_preferred_frac_mode = get_kernel_dtb_info();
+	input->con_info.is_preferred_frac_mode = get_preferred_frac_mode();
 	input->con_info.sink_type = MESON_SINK_TYPE_SINK;
 
 	/* 1."hdmimode" is used to save user manually selected mode,

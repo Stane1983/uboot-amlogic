@@ -129,13 +129,11 @@ bool get_kernel_dtb_info(void)
 #define MAX_NAME_LENGTH 32
 static char tmp_hdmimode[MAX_NAME_LENGTH];
 static char tmp_outputmode[MAX_NAME_LENGTH];
-static char tmp_frac_rate_policy[2];
 
 void hdmi_mode_frac_preprocess(void)
 {
 	char *hdmimode = env_get("hdmimode");
 	char *outputmode = env_get("outputmode");
-	char *frac_rate_policy = env_get("frac_rate_policy");
 	char conv_hdmimode[MAX_NAME_LENGTH] = {0};
 	char conv_outputmode[MAX_NAME_LENGTH] = {0};
 
@@ -144,20 +142,12 @@ void hdmi_mode_frac_preprocess(void)
 		return;
 
 	/* if frac_rate_policy is NULL, or hdmimode/outputmode is frac name, backup the names */
-	if (!frac_rate_policy ||
-	    (hdmimode && is_mode_name_frac(hdmimode)) ||
+	if ((hdmimode && is_mode_name_frac(hdmimode)) ||
 		(outputmode && is_mode_name_frac(outputmode))) {
 		if (hdmimode && is_mode_name_frac(hdmimode))
 			strlcpy(tmp_hdmimode, hdmimode, sizeof(tmp_hdmimode));
 		if (outputmode && is_mode_name_frac(outputmode))
 			strlcpy(tmp_outputmode, outputmode, sizeof(tmp_outputmode));
-		if (frac_rate_policy)
-			strlcpy(tmp_frac_rate_policy, frac_rate_policy,
-				sizeof(tmp_frac_rate_policy));
-	} else {
-		if (frac_rate_policy)
-			strlcpy(tmp_frac_rate_policy, frac_rate_policy,
-				sizeof(tmp_frac_rate_policy));
 	}
 
 	if (!tmp_hdmimode[0] && !tmp_outputmode[0]) {
@@ -172,20 +162,16 @@ void hdmi_mode_frac_preprocess(void)
 		if (hdmimode && is_mode_name_frac(hdmimode)) {
 			convert_name_frac2int(tmp_hdmimode, conv_hdmimode);
 			env_set("hdmimode", conv_hdmimode);
-			env_set("frac_rate_policy", "1");
 		} else {
 			env_set("hdmimode", hdmimode);
-			env_set("frac_rate_policy", "0");
 		}
 	}
 	if (tmp_outputmode[0]) {
 		if (outputmode && is_mode_name_frac(outputmode)) {
 			convert_name_frac2int(tmp_outputmode, conv_outputmode);
 			env_set("outputmode", conv_outputmode);
-			env_set("frac_rate_policy", "1");
 		} else {
 			env_set("outputmode", outputmode);
-			env_set("frac_rate_policy", "0");
 		}
 	}
 }
@@ -205,10 +191,6 @@ static void _hdmi_mode_frac_postprocess(void)
 		env_set("hdmimode", tmp_hdmimode);
 	if (tmp_outputmode[0])
 		env_set("outputmode", tmp_outputmode);
-	if (tmp_frac_rate_policy[0])
-		env_set("frac_rate_policy", tmp_frac_rate_policy);
-	else
-		env_set("frac_rate_policy", NULL);
 }
 
 void hdmi_mode_frac_postprocess(void)
