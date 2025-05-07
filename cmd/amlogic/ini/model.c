@@ -1652,12 +1652,12 @@ static int handle_bl_ldim(struct bl_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
 
-	ini_value = ini_get_string("Backlight_Attr", "bl_ldim_row", "1");
+	ini_value = ini_get_string("Backlight_Attr", "bl_ldim_row", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, bl_ldim_row is (%s)\n", __func__, ini_value);
 	p_attr->ldim.ldim_row = strtoul(ini_value, NULL, 0);
 
-	ini_value = ini_get_string("Backlight_Attr", "bl_ldim_col", "1");
+	ini_value = ini_get_string("Backlight_Attr", "bl_ldim_col", "0");
 	if (model_debug_flag & DEBUG_BACKLIGHT)
 		ALOGD("%s, bl_ldim_col is (%s)\n", __func__, ini_value);
 	p_attr->ldim.ldim_col = strtoul(ini_value, NULL, 0);
