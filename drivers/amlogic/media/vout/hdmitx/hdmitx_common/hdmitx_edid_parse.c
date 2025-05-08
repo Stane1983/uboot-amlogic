@@ -608,6 +608,12 @@ static void store_cea_idx(struct rx_cap *prxcap, enum hdmi_vic vic)
 	if (!prxcap)
 		return;
 
+	/* don't support 64:27 aspect ratio */
+	if (hdmitx_mode_aspect_ratio_is_64_27_vic(vic)) {
+		HDMITX_DEBUG_EDID("aspect ratio is 64:27, vic=%d bypass\n", vic);
+		return;
+	}
+
 	for (i = 0; (i < VIC_MAX_NUM) && (i < prxcap->VIC_count); i++) {
 		if (vic == prxcap->VIC[i]) {
 			already = 1;
@@ -627,6 +633,12 @@ static void store_y420_idx(struct rx_cap *prxcap, enum hdmi_vic vic)
 
 	if (!prxcap)
 		return;
+
+	/* don't support 64:27 aspect ratio */
+	if (hdmitx_mode_aspect_ratio_is_64_27_vic(vic)) {
+		HDMITX_DEBUG_EDID("aspect ratio is 64:27, vic=%d bypass\n", vic);
+		return;
+	}
 
 	/* Y420 is claimed in Y420VDB, y420_vic[] will list in dc_cap */
 	for (i = 0; i < Y420_VIC_MAX_NUM; i++) {
