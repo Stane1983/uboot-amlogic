@@ -4,6 +4,7 @@
  */
 
 #include <version.h>
+#include <asm/arch/types.h>
 #include <asm/arch/acs.h>
 #include <asm/arch/timing.h>
 #include "timing.c"
@@ -32,3 +33,8 @@ dev_param_hdr_t __param_hdr __attribute__ ((section(".dev_header"))) = {
 	}
 };
 
+__attribute__ ((__weak__)) vendor_key_t __vendor_key __attribute__ ((section(".vendor_key"))) = {
+	.magic = 0x6b706d61,
+	.flags = 0x0,
+	.pubkey = {0},
+};

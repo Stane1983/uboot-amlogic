@@ -213,6 +213,8 @@ obj-$(CONFIG_AML_DRIVER) += amlogic/
 obj-$(CONFIG_AML_TSENSOR) += amlogic/cmd_tsensor.o
 obj-$(CONFIG_AML_OSCRING) += amlogic/cmd_ringmsr.o
 
+obj-$(CONFIG_AMPK) += cmd_ampk.o
+
 
 filechk_data_gz = (echo "static const char data_gz[] ="; cat $< | scripts/bin2c; echo ";")
 

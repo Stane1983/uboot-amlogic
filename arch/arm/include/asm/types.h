@@ -5,6 +5,16 @@
 
 typedef unsigned short umode_t;
 
+#ifndef _UINT8_T_DECLARED
+typedef	unsigned char		uint8_t;
+#define	_UINT8_T_DECLARED
+#endif
+
+#ifndef _UINT32_T_DECLARED
+typedef	unsigned int		uint32_t;
+#define	_UINT32_T_DECLARED
+#endif
+
 /*
  * These aren't exported outside the kernel to avoid name space clashes
  */

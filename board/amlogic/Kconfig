@@ -167,6 +167,14 @@ config DDR_FULL_FW
 		Support full ddr fw for soc using advanced boot loader as
 		bl2, such as sc2/t7/s4/t3/p1/s5....
 
+config AMPK
+	bool "Amlogic AMPK and efuse_obj set_enc"
+	default n
+	help
+		"Embed vendor public key into ACS for AMPK
+		and enables efuse_obj set_enc command
+		"
+
 choice
 	prompt "BL2E size"
 	default BL2E_64K

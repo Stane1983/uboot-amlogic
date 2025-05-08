@@ -7,6 +7,7 @@
 
 acs_entry:
 	.word	__param_hdr
+	.word	__vendor_key
 	.word	__bl2_reg
 	.word	__board_clk_setting
 	.word	__bl2_ops_reg
