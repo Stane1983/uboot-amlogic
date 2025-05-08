@@ -2468,3 +2468,46 @@ struct hdmi_format_para *hdmi_tst_fmt_name(char const *name, char const *attr)
 	return &tst_para;
 }
 
+bool hdmitx_aspect_ratio_is_64_27_vic(enum hdmi_vic vic)
+{
+	switch (vic) {
+	case HDMI_1280x720p24_64x27:
+	case HDMI_1280x720p25_64x27:
+	case HDMI_1280x720p30_64x27:
+	case HDMI_1280x720p50_64x27:
+	case HDMI_1280x720p60_64x27:
+	case HDMI_1280x720p100_64x27:
+	case HDMI_1280x720p120_64x27:
+	case HDMI_1920x1080p24_64x27:
+	case HDMI_1920x1080p25_64x27:
+	case HDMI_1920x1080p30_64x27:
+	case HDMI_1920x1080p50_64x27:
+	case HDMI_1920x1080p60_64x27:
+	case HDMI_1920x1080p100_64x27:
+	case HDMI_1920x1080p120_64x27:
+	case HDMI_1680x720p24_64x27:
+	case HDMI_1680x720p25_64x27:
+	case HDMI_1680x720p30_64x27:
+	case HDMI_1680x720p50_64x27:
+	case HDMI_1680x720p60_64x27:
+	case HDMI_1680x720p100_64x27:
+	case HDMI_1680x720p120_64x27:
+	case HDMI_2560x1080p24_64x27:
+	case HDMI_2560x1080p25_64x27:
+	case HDMI_2560x1080p30_64x27:
+	case HDMI_2560x1080p50_64x27:
+	case HDMI_2560x1080p60_64x27:
+	case HDMI_2560x1080p100_64x27:
+	case HDMI_2560x1080p120_64x27:
+	case HDMI_3840x2160p24_64x27:
+	case HDMI_3840x2160p25_64x27:
+	case HDMI_3840x2160p30_64x27:
+	case HDMI_3840x2160p50_64x27:
+	case HDMI_3840x2160p60_64x27:
+		return true;
+	default:
+		break;
+	}
+	return false;
+}
+

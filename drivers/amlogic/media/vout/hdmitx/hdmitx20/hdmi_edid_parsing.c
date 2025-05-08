@@ -356,6 +356,12 @@ static void store_cea_idx(struct rx_cap *prxcap, enum hdmi_vic vic)
 	if (!prxcap || !vic)
 		return;
 
+	/* don't support 64:27 aspect ratio */
+	if (hdmitx_aspect_ratio_is_64_27_vic(vic)) {
+		pr_info("aspect ratio is 64:27, vic = %d bypass\n", vic);
+		return;
+	}
+
 	for (i = 0; (i < VIC_MAX_NUM) && (i < prxcap->VIC_count); i++) {
 		if (vic == prxcap->VIC[i]) {
 			already = 1;
@@ -760,9 +766,10 @@ static int edid_parsingy420vdbblock(struct rx_cap *prxcap,
 		if (prxcap->VIC_count < VIC_MAX_NUM) {
 			for (i = 0; i < prxcap->VIC_count; i++) {
 				if (prxcap->VIC[i] == buf[pos] &&
-				    y420vicright(buf[pos])) {
+				    y420vicright(buf[pos]) &&
+					!hdmitx_aspect_ratio_is_64_27_vic(buf[pos])) {
 					prxcap->VIC[i] =
-					HDMITX_VIC420_OFFSET + buf[pos];
+						HDMITX_VIC420_OFFSET + buf[pos];
 					found = 1;
 					/* Here we do not break,because
 						some EDID may have the same
@@ -771,9 +778,11 @@ static int edid_parsingy420vdbblock(struct rx_cap *prxcap,
 				}
 			}
 			if (0 == found) {
-				prxcap->VIC[prxcap->VIC_count] =
-				HDMITX_VIC420_OFFSET + buf[pos];
-				prxcap->VIC_count++;
+				if (!hdmitx_aspect_ratio_is_64_27_vic(buf[pos])) {
+					prxcap->VIC[prxcap->VIC_count] =
+						HDMITX_VIC420_OFFSET + buf[pos];
+					prxcap->VIC_count++;
+				}
 			}
 		}
 		pos++;
@@ -871,9 +880,10 @@ static int edid_y420cmdb_postprocess(struct rx_cap *prxcap)
 		for (j = 0; j < 8; j++) {
 			valid = ((*p >> j) & 0x1);
 			vic = prxcap->SVD_VIC[i * 8 + j];
-			if (valid != 0 && y420vicright(vic)) {
+			if (valid != 0 && y420vicright(vic) &&
+					!hdmitx_aspect_ratio_is_64_27_vic(vic)) {
 				prxcap->VIC[prxcap->VIC_count] =
-				HDMITX_VIC420_OFFSET + vic;
+					HDMITX_VIC420_OFFSET + vic;
 				prxcap->VIC_count++;
 			}
 		}

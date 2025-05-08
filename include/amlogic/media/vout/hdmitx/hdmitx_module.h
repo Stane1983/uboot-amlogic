@@ -124,6 +124,9 @@ bool is_hdmi_mode(char *mode);
 bool is_hdmitx_limited_1080p(void);
 bool is_vic_over_limited_1080p(enum hdmi_vic vic);
 
+/* if vic is an aspect ratio of 64:27, return true */
+bool hdmitx_aspect_ratio_is_64_27_vic(enum hdmi_vic vic);
+
 #ifndef printk
 #define printk printf
 #endif

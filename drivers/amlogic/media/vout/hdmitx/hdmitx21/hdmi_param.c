@@ -724,3 +724,18 @@ bool _is_hdmi4k_420(enum hdmi_vic vic)
 	return 0;
 }
 
+bool hdmitx21_aspect_ratio_is_64_27_vic(enum hdmi_vic vic)
+{
+	const struct hdmi_timing *timing;
+
+	/* don't support 64:27 aspect ratio */
+	timing = hdmitx21_gettiming_from_vic(vic);
+	if (!timing)
+		return false;
+
+	if (timing->h_pict == 64 && timing->v_pict == 27)
+		return true;
+
+	return false;
+}
+
