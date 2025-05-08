@@ -128,6 +128,20 @@ int mmc_execute_tuning(struct mmc *mmc, uint opcode)
 }
 #endif
 
+#if CONFIG_IS_ENABLED(AMLOGIC_MODIFY) && CONFIG_IS_ENABLED(MMC_HS400_SUPPORT)
+void dm_mmc_post_hs400_timming(struct udevice *dev)
+{
+	struct dm_mmc_ops *ops = mmc_get_ops(dev);
+
+	ops->post_hs400_timming(dev);
+}
+
+void mmc_hs400_timming(struct mmc *mmc)
+{
+	dm_mmc_post_hs400_timming(mmc->dev);
+}
+#endif
+
 #if CONFIG_IS_ENABLED(MMC_HS400_ES_SUPPORT)
 static int dm_mmc_set_enhanced_strobe(struct udevice *dev)
 {

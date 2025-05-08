@@ -95,6 +95,14 @@
 #define MAX_RESPONSE_BYTES	4
 #define SD_EMMC_DESC_MAX_BLKS	511
 
+#define EMMC_CMD_WIN_MAX_SIZE	50
+#define EMMC_CMD_WIN_FULL_SIZE	64
+#define CMD_TUNING_RETRIES	6
+#define EMMC_CMD_FALLING_SML	BIT(0)
+#define EMMC_CMD_RISING_SML	BIT(1)
+#define EMMC_CMD_CORE_CLK_SML	BIT(2)
+#define EMMC_CMD_SD_CLK_SML	BIT(3)
+
 #ifndef CONFIG_SYS_MMC_MAX_BLK_COUNT
 #define CONFIG_SYS_MMC_MAX_BLK_COUNT (MMC_MAX_DESC_NUM * SD_EMMC_DESC_MAX_BLKS)
 #endif
@@ -110,6 +118,30 @@
 /* delay_cell=70ps, 1ns/delay_cell */
 #define DELAY_CELL_COUNTS 14
 
+/* flag is "AML" */
+#define TUNED_FLAG            0x004C4D41
+/* version is "V4" */
+#define TUNED_VERSION         0x00003456
+/* magic is 0x00487e44 */
+#define TUNED_MAGIC           0x00487e44
+
+struct hs400_para {
+	unsigned int delay1;
+	unsigned int delay2;
+	unsigned int intf3;
+	unsigned int flag;
+};
+
+struct tuning_para {
+	u8 chip_id[16];			/*bind soc*/
+	unsigned int magic;		/*D~H*/
+	unsigned int  clk_rate;		/*clk freq*/
+	struct hs400_para hs4[10];	/*hs400 parameter*/
+	unsigned int version;		/*for update*/
+	int temp_index;			/*record temp index in uboot ontime*/
+	u64 checksum;			/*include chip_id, magic, clk, hs4, version*/
+};
+
 /** For actually partitions with mask 8 store into bootinfo
  * name: partition name.
  * addr: sector addr of the partition
@@ -124,7 +156,6 @@ struct part_property
 #define PART_PROPERTY_SIZE sizeof(struct part_property)
 #define BOOTINFO_MAX_PARTITIONS (4)
 #define BOOTINFO_PARTITIONS_SIZE (PART_PROPERTY_SIZE * BOOTINFO_MAX_PARTITIONS)
-
 
 #define VPART_PROPERTY_SIZE sizeof(struct vpart_property)
 struct vpart_property {
@@ -187,6 +218,12 @@ int mmc_set_ext_csd(struct mmc *mmc, u8 index, u8 value);
 /* emmv write rsv */
 int mmc_write_rsv(const char *rsv_name, size_t size, void *buf);
 
+int mmc_pattern_check(struct mmc *mmc, struct aml_pattern *table);
+
+#if CONFIG_IS_ENABLED(MMC_HS400_SUPPORT)
+int mmc_read_blocks(struct mmc *mmc, void *dst, lbaint_t start, lbaint_t blkcnt);
+int r1p1_temp_read(int type);
+#endif
 /* mmc caps quirks */
 int emmc_quirks(void);
 #endif /* __AML_MMC_H__ */

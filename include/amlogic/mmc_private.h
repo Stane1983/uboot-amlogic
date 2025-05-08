@@ -45,37 +45,8 @@
 #define aml_card_type_sdio(c)      ((c)->card_type == CARD_TYPE_SDIO)
 #define aml_card_type_non_sdio(c)   ((c)->card_type == CARD_TYPE_NON_SDIO)
 
-struct meson_host {
-	struct mmc *mmc;
-	uint is_in;
-	uint is_sduart;
-	uint is_tuning;
-	uint card_type;
-	uint src_clk;
-	uint ignore_desc_busy;
-	uint nwr_cnt;
-	struct clk core;
-	struct clk xtal;
-	struct clk div2;
-	struct clk mux;
-	struct clk div;
-	struct clk gate;
-	struct gpio_desc gpio_cd;
-	struct gpio_desc gpio_reset;
-	char *blk_test;
-	char* desc_buf;
-};
-
-struct meson_mmc_platdata {
-	struct mmc_config cfg;
-	struct mmc mmc;
-	void *regbase;
-	void *w_buf;
-};
-
 extern int mmc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd,
 			struct mmc_data *data);
-extern int mmc_send_status(struct mmc *mmc, int timeout);
 extern int mmc_set_blocklen(struct mmc *mmc, int len);
 #ifdef CONFIG_FSL_ESDHC_ADAPTER_IDENT
 void mmc_adapter_card_type_ident(void);

@@ -138,7 +138,16 @@ struct virtual_partition virtual_partition_table[] = {
 	VIRTUAL_PARTITION_ELEMENT(MMC_FASTBOOT_CONTEXT_NAME,
 			FASTBOOT_CONTEXT_OFFSET, FASTBOOT_CONTEXT_SIZE),
 	VIRTUAL_PARTITION_ELEMENT(MMC_DDR_PARAMETER_NAME,DDR_PARAMETER_OFFSET, DDR_PARAMETER_SIZE),
+	VIRTUAL_PARTITION_ELEMENT(MMC_TUN_PARA_NAME, MMC_TUN_PARA_OFFSET, MMC_TUN_PARA_SIZE),
 };
+
+int get_emmc_tuning_para_offset(void)
+{
+	int off;
+
+	off = RESERVED_GPT_OFFSET + MMC_TUN_PARA_OFFSET;
+	return off;
+}
 
 int get_emmc_partition_arraysize(void)
 {

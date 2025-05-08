@@ -100,6 +100,7 @@
 #define   STATUS_DATA_0			BIT(16)
 
 #define MESON_SD_EMMC_IRQ_EN		0x4c
+#define   CFG_CMD_SETUP			BIT(17)
 
 #define MESON_SD_EMMC_CMD_CFG		0x50
 #define   CMD_CFG_LENGTH_MASK		GENMASK(8, 0)
@@ -126,6 +127,8 @@
 #define MESON_SD_EMMC_CMD_RSP1		0x60
 #define MESON_SD_EMMC_CMD_RSP2		0x64
 #define MESON_SD_EMMC_CMD_RSP3		0x68
+#define MESON_SD_EMMC_CURR_CFG		0x70
+#define MESON_SD_EMMC_NEXT_CFG		0x80
 
 #define SD_EMMC_RXD_ERROR               (1 << 0)
 #define SD_EMMC_TXD_ERROR               (1 << 1)

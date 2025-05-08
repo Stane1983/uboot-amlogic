@@ -1022,4 +1022,8 @@ static inline enum dma_data_direction mmc_get_dma_dir(struct mmc_data *data)
 	return data->flags & MMC_DATA_WRITE ? DMA_TO_DEVICE : DMA_FROM_DEVICE;
 }
 
+#if CONFIG_IS_ENABLED(AMLOGIC_MODIFY) && CONFIG_IS_ENABLED(MMC_HS400_SUPPORT)
+void mmc_hs400_timming(struct mmc *mmc);
+#endif
+
 #endif /* _MMC_H_ */

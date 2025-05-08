@@ -69,6 +69,10 @@
 #define DDR_PARAMETER_OFFSET	(SZ_1M * 8)
 #define DDR_PARAMETER_SIZE	(8 * 512)
 
+#define MMC_TUN_PARA_NAME	"tuning_para"
+#define MMC_TUN_PARA_OFFSET	(SZ_1M * 10)
+#define MMC_TUN_PARA_SIZE	(512)
+
 #define     MMC_MPT_VERSION_1               "01.00.00"
 #define     MMC_MPT_VERSION_2               "01.02.00"
 /* version in use, fixme when kernel driver is updated. */
@@ -306,6 +310,7 @@ int mmc_key_read_backup(const char *name,
 			      unsigned char *addr, unsigned int size);
 u64 map_last_gap(struct mmc *mmc, const char *name);
 struct partitions *find_ept_partition_by_name(char const *name);
+int get_emmc_tuning_para_offset(void);
 
 #define PARTITION_ELEMENT(na, sz, flags) {.name = na, .size = sz, .mask_flags = flags,}
 

@@ -29,8 +29,8 @@ struct meson_host {
 	uint is_tuning;
 	uint card_type;
 	uint src_clk;
-	uint ignore_desc_busy;
 	uint nwr_cnt;
+	uint save_para;
 	struct clk core;
 	struct clk xtal;
 	struct clk div2;
@@ -76,6 +76,7 @@ struct meson_mmc_plat {
 	struct mmc_config cfg;
 	struct mmc mmc;
 	void *regbase;
+	struct tuning_para para;
 };
 
 #endif

@@ -22,6 +22,14 @@
 #include <amlogic/aml_mmc.h>
 #include "meson_gx_mmc.h"
 #include <amlogic/pm.h>
+#include <amlogic/cpu_id.h>
+#include "../drivers/mmc/mmc_private.h"
+
+struct aml_pattern aml_pattern_table[] = {
+	AML_PATTERN_ELEMENT(MMC_PATTERN_NAME, CALI_PATTERN),
+	AML_PATTERN_ELEMENT(MMC_MAGIC_NAME, MAGIC_PATTERN),
+	AML_PATTERN_ELEMENT(MMC_RANDOM_NAME, RANDOM_PATTERN),
+};
 
 bool meson_gx_mmc_is_compatible(struct udevice *dev,
 				enum meson_gx_mmc_compatible family)
@@ -193,13 +201,15 @@ static void meson_mmc_check_resampling(struct udevice *dev)
 
 	meson_write(mmc, 0, MESON_SD_EMMC_INTF3);
 	switch (mmc->selected_mode) {
+	case MMC_HS_400:
 	case MMC_HS_400_ES:
-		val = meson_read(mmc, MESON_SD_EMMC_ADJUST);
-		val |= (1 << CFG_DS_EN);
-		meson_write(mmc, val, MESON_SD_EMMC_ADJUST);
+		val = meson_read(mmc, MESON_SD_EMMC_IRQ_EN);
+		val |= CFG_CMD_SETUP;
+		meson_write(mmc, val, MESON_SD_EMMC_IRQ_EN);
 		val = meson_read(mmc, MESON_SD_EMMC_INTF3);
 		val |= SD_INTF3;
-		val |= RESP_DS;
+		if (mmc->selected_mode == MMC_HS_400_ES)
+			val |= RESP_DS;
 		meson_write(mmc, val, MESON_SD_EMMC_INTF3);
 		break;
 	case MMC_LEGACY:
@@ -210,6 +220,9 @@ static void meson_mmc_check_resampling(struct udevice *dev)
 		val &= ~CFG_ADJ_DLY;
 		val |= 0 << __ffs(CFG_ADJ_DLY);
 		meson_write(mmc, val, MESON_SD_EMMC_ADJUST);
+		val = meson_read(mmc, MESON_SD_EMMC_IRQ_EN);
+		val &= ~CFG_CMD_SETUP;
+		meson_write(mmc, val, MESON_SD_EMMC_IRQ_EN);
 		val = meson_read(mmc, MESON_SD_EMMC_INTF3);
 		val &= ~SD_INTF3;
 		val &= ~RESP_DS;
@@ -775,6 +788,220 @@ u32 meson_tuning_transfer(struct udevice *dev, u32 opcode)
 	return nmatch;
 }
 
+#if CONFIG_IS_ENABLED(MMC_HS400_SUPPORT)
+static long long para_checksum_calc(struct tuning_para *para)
+{
+	int i = 0;
+	int size = sizeof(struct tuning_para) - sizeof(u64) - sizeof(int);
+	unsigned int *buffer;
+	long long checksum = 0;
+
+	size = size >> 2;
+	buffer = (unsigned int *)para;
+	while (i < size)
+		checksum += buffer[i++];
+
+	return checksum;
+}
+
+/*
+ * check if tuning parameter is exist
+ * check if temperature is in the 0~69
+ * check if the parameter has been tuning
+ *      under the current temperature
+ * check if the data had been broken by  checksum
+ *
+ * if all four condition above is yes, the tuning parameter
+ *      could be use directly
+ * otherwise returning and save parameter
+ */
+static int aml_para_is_exist(struct mmc *mmc, int save)
+{
+	struct meson_mmc_plat *pdata = mmc->priv;
+	struct tuning_para *para = &pdata->para;
+	int temperature;
+	int temp_index;
+	long long checksum;
+
+	if (!para || save == 0)
+		return 0;
+
+	temperature = r1p1_temp_read(1);
+	if (temperature == -1) {
+		printf("get temperature failed\n");
+		return 0;
+	}
+
+	checksum = para_checksum_calc(para);
+	if (checksum != para->checksum) {
+		printf("warning: checksum is not match\n");
+		return 0;
+	}
+
+	printf("current temperature is %d\n", temperature);
+	temp_index = temperature  / 10;
+	para->temp_index = temp_index;
+	/* temperature range is 0 ~ 89 */
+	if (temp_index < 0 || temp_index > 9) {
+		para->temp_index = 10;
+		printf("temperature %d is out of normal range\n", temp_index);
+		return 0;
+	}
+
+	if (para->hs4[temp_index].flag != TUNED_FLAG) {
+		printf("current temperature %d not tuning yet\n", temperature);
+		return 0;
+	}
+
+	printf("the hs400 parameter is useful\n");
+	return 1;
+}
+
+/*
+ * read tuning para from reserved partition
+ * and copy it to pdata->para
+ */
+static int aml_read_tuning_para(struct mmc *mmc, int save)
+{
+	struct meson_mmc_plat *pdata = mmc->priv;
+	struct tuning_para *para = &pdata->para;
+	int offset, blk = 1, n;
+	int para_size;
+	void *buf;
+
+	if (!para || save == 0)
+		return -1;
+
+	para_size = sizeof(struct tuning_para);
+	offset =  get_emmc_tuning_para_offset() >> 9;
+	buf = malloc(blk * 512);
+	if (!buf)
+		return -1;
+
+	memset(buf, 0, blk * 512);
+	n = blk_dread(mmc_get_blk_desc(mmc), offset, blk, buf);
+	printf("read tuning parameter %s\n", (n == blk) ? "success" : "failed");
+	if (n == blk)
+		memcpy(para, buf, para_size);
+	free(buf);
+
+	return (n == blk) ? 0 : -1;
+}
+
+static ulong aml_mmc_write_blocks(struct mmc *mmc, lbaint_t start, lbaint_t blkcnt, const void *src)
+{
+	struct mmc_cmd cmd;
+	struct mmc_data data;
+	int timeout_ms = 1000;
+
+	if ((start + blkcnt) > mmc_get_blk_desc(mmc)->lba) {
+		printf("MMC: block number 0x" LBAF " exceeds max(0x" LBAF ")\n",
+		       start + blkcnt, mmc_get_blk_desc(mmc)->lba);
+		return 0;
+	}
+
+	if (blkcnt == 0)
+		return 0;
+	else if (blkcnt == 1)
+		cmd.cmdidx = MMC_CMD_WRITE_SINGLE_BLOCK;
+	else
+		cmd.cmdidx = MMC_CMD_WRITE_MULTIPLE_BLOCK;
+
+	if (mmc->high_capacity)
+		cmd.cmdarg = start;
+	else
+		cmd.cmdarg = start * mmc->write_bl_len;
+
+	cmd.resp_type = MMC_RSP_R1;
+
+	data.src = src;
+	data.blocks = blkcnt;
+	data.blocksize = mmc->write_bl_len;
+	data.flags = MMC_DATA_WRITE;
+
+	if (mmc_send_cmd(mmc, &cmd, &data)) {
+		printf("mmc write failed\n");
+		return 0;
+	}
+
+	/* SPI multiblock writes terminate using a special
+	 * token, not a STOP_TRANSMISSION request.
+	 */
+	if (!mmc_host_is_spi(mmc) && blkcnt > 1) {
+		cmd.cmdidx = MMC_CMD_STOP_TRANSMISSION;
+		cmd.cmdarg = 0;
+		cmd.resp_type = MMC_RSP_R1b;
+		if (mmc_send_cmd(mmc, &cmd, NULL)) {
+			printf("mmc fail to send stop cmd\n");
+			return 0;
+		}
+	}
+
+	/* Waiting for the ready status */
+	if (mmc_poll_for_busy(mmc, timeout_ms))
+		return 0;
+
+	return blkcnt;
+}
+
+/*save parameter on mmc_host pdata*/
+static int aml_save_tuning_para(struct mmc *mmc, int save)
+{
+	struct meson_mmc_plat *pdata = mmc->priv;
+	struct tuning_para *para = &pdata->para;
+	long long checksum;
+	int temp_index, n;
+	u64 offset, size, blk = 1;
+	void *buf;
+	u8 chip_id[16];
+
+	if (!para || save == 0)
+		return -1;
+
+	memset(chip_id, 0, 16);
+	if (get_chip_id(chip_id, 16) != 0) {
+		printf("get chip id error\n");
+		return -1;
+	}
+
+	memcpy(para->chip_id, chip_id, 16);
+	para->clk_rate = mmc->clock;
+	para->magic = TUNED_MAGIC;
+	para->version = TUNED_VERSION;
+
+	temp_index = para->temp_index;
+	if (temp_index < 0 || temp_index > 9) {
+		printf("temperature %d is out of index\n", temp_index);
+	} else {
+		para->hs4[temp_index].delay1 = meson_read(mmc, MESON_SD_EMMC_DELAY1);
+		para->hs4[temp_index].delay2 = meson_read(mmc, MESON_SD_EMMC_DELAY2);
+		para->hs4[temp_index].intf3 = meson_read(mmc, MESON_SD_EMMC_INTF3);
+		para->hs4[temp_index].flag = TUNED_FLAG;
+	}
+
+	checksum = para_checksum_calc(para);
+	para->checksum = checksum;
+
+	offset = get_emmc_tuning_para_offset() >> 9;
+	size = blk << 9;
+
+	buf = (unsigned int *)malloc(size);
+	if (!buf) {
+		printf("malloc buf failed\n");
+		return -1;
+	}
+
+	memset(buf, 0, size);
+	memcpy(buf, para, sizeof(struct tuning_para));
+
+	n = aml_mmc_write_blocks(mmc, offset, blk, buf);
+	printf("write tuning parameter %s\n", (n == blk) ? "success" : "failed");
+
+	free(buf);
+	return (n == blk) ? 0 : -1;
+}
+#endif
+
 int meson_execute_tuning(struct udevice *dev, uint opcode)
 {
 	struct meson_mmc_plat *pdata = dev_get_plat(dev);
@@ -968,27 +1195,52 @@ tuning:
 #endif
 	host->is_tuning = 0;
 
+	if (aml_card_type_mmc(host)) {
+		if (!mmc_partition_init()) {
+			printf("eMMC/TSD partition table have been checked OK!\n");
+
+			for (int i = 0; i < ARRAY_SIZE(aml_pattern_table); i++)
+				mmc_pattern_check(mmc, &aml_pattern_table[i]);
+#if CONFIG_IS_ENABLED(MMC_HS400_SUPPORT)
+			if (host->save_para)
+				aml_read_tuning_para(mmc, host->save_para);
+#endif
+		}
+	}
+
 	return ret;
 }
 
-#ifdef CONFIG_MMC_HS400_ES_SUPPORT
+#if CONFIG_IS_ENABLED(MMC_HS400_SUPPORT) || CONFIG_IS_ENABLED(MMC_HS400_ES_SUPPORT)
 static int emmc_test_bus(struct udevice *dev)
 {
+	struct meson_mmc_plat *pdata = dev_get_plat(dev);
+	struct mmc *mmc = &pdata->mmc;
 	struct meson_host *host = dev_get_priv(dev);
+	struct mmc_cmd stop = {0};
 	int err = 0;
+	u32 curr_cmd_idx, next_cmd_idx;
 	u32 opcode = MMC_CMD_READ_MULTIPLE_BLOCK;
 
 	err = meson_send_cali_blks(dev, opcode, host->blk_test, 40, MMC_PATTERN_NAME);
 	if (err)
-		return err;
+		goto _out;
 
 	err = meson_send_cali_blks(dev, opcode, host->blk_test, 40, MMC_RANDOM_NAME);
 	if (err)
-		return err;
+		goto _out;
 
 	err = meson_send_cali_blks(dev, opcode, host->blk_test, 40, MMC_MAGIC_NAME);
-	if (err)
-		return err;
+
+_out:
+	curr_cmd_idx = meson_read(mmc, MESON_SD_EMMC_CURR_CFG) & CMD_CFG_CMD_INDEX_MASK;
+	next_cmd_idx = meson_read(mmc, MESON_SD_EMMC_NEXT_CFG) & CMD_CFG_CMD_INDEX_MASK;
+	if (curr_cmd_idx != next_cmd_idx) {
+		stop.cmdidx = MMC_CMD_STOP_TRANSMISSION;
+		stop.cmdarg = 0;
+		stop.resp_type = MMC_RSP_R1;
+		mmc_send_cmd(mmc, &stop, NULL);
+	}
 
 	return err;
 }
@@ -996,21 +1248,19 @@ static int emmc_test_bus(struct udevice *dev)
 static int emmc_ds_manual_sht(struct udevice *dev)
 {
 	struct meson_mmc_plat *pdata = dev_get_plat(dev);
-	struct meson_host *host = dev_get_priv(dev);
 	struct mmc *mmc = &pdata->mmc;
-	u32 val, intf3 = meson_read(mmc, MESON_SD_EMMC_INTF3);
+	u32 val = 0, intf3 = meson_read(mmc, MESON_SD_EMMC_INTF3);
 	int i, err = 0;
 	int match[64], size = 0;
 	int best_start = -1, best_size = -1;
 	int cur_start = -1, cur_size = 0;
 
+	intf3 &= ~DS_SHT_M_MASK;
+	meson_write(mmc, intf3, MESON_SD_EMMC_INTF3);
 	memset(match, -1, sizeof(match));
 	for (i = 0; i < 64; i++) {
-		host->is_tuning = 1;
 		err = emmc_test_bus(dev);
-		host->is_tuning = 0;
-		pr_debug("intf3: 0x%x, err[%d]: %d\n",
-			 meson_read(mmc, MESON_SD_EMMC_INTF3), i, err);
+		debug("intf3: 0x%x, err[%d]: %d\n", meson_read(mmc, MESON_SD_EMMC_INTF3), i, err);
 		if (!err) {
 			match[i] = 0;
 			++size;
@@ -1019,7 +1269,6 @@ static int emmc_ds_manual_sht(struct udevice *dev)
 			if (size > DELAY_CELL_COUNTS)
 				break;
 		}
-		val = intf3 & DS_SHT_M_MASK;
 		val += 1 << __ffs(DS_SHT_M_MASK);
 		intf3 &= ~DS_SHT_M_MASK;
 		intf3 |= val;
@@ -1058,11 +1307,10 @@ static int emmc_ds_manual_sht(struct udevice *dev)
 		cur_size = -1;
 	}
 	intf3 &= ~DS_SHT_M_MASK;
-	intf3 &= ~DS_SHT_EXP_MASK;
 	intf3 |= (best_start + best_size / 2) << __ffs(DS_SHT_M_MASK);
 	meson_write(mmc, intf3, MESON_SD_EMMC_INTF3);
-	pr_info("ds_sht:%lu, window:%d, intf3:0x%x, clock:0x%x, adjust:0x%x\n",
-		(intf3 & DS_SHT_M_MASK) >> __ffs(DS_SHT_M_MASK), best_size,
+	printf("ds_sht:%lu, window:%d, intf3:0x%x, clock:0x%x, adjust:0x%x\n",
+	       (intf3 & DS_SHT_M_MASK) >> __ffs(DS_SHT_M_MASK), best_size,
 		meson_read(mmc, MESON_SD_EMMC_INTF3),
 		meson_read(mmc, MESON_SD_EMMC_CLOCK),
 		meson_read(mmc, MESON_SD_EMMC_ADJUST));
@@ -1110,7 +1358,7 @@ static int aml_mmc_clktest(struct udevice *dev)
 		else
 			delay_cell = (cycle / count);
 	}
-	pr_info("clktest: %u, delay_cell: %d, count: %u\n", clktest, delay_cell, count);
+	printf("clktest: %u, delay_cell: %d, count: %u\n", clktest, delay_cell, count);
 	intf3 = meson_read(mmc, MESON_SD_EMMC_INTF3);
 	intf3 &= ~CLKTEST_ON_M;
 	meson_write(mmc, intf3, MESON_SD_EMMC_INTF3);
@@ -1120,20 +1368,265 @@ static int aml_mmc_clktest(struct udevice *dev)
 
 	return ret;
 }
+#endif
 
+#if CONFIG_IS_ENABLED(MMC_HS400_ES_SUPPORT)
 /* disable enhanced_strobe mode when initialization
  * enable enhanced_strobe mode and tuning intf3 when mmc_select_hs400es
  */
 static int meson_set_enhanced_strobe(struct udevice *dev)
 {
+	struct meson_host *host = dev_get_priv(dev);
 	int ret = 0;
 
 	ret = aml_mmc_clktest(dev);
-	if (ret)
-		return 0;
+	if (!ret) {
+		host->is_tuning = 1;
+		ret = emmc_ds_manual_sht(dev);
+		host->is_tuning = 0;
+	}
 
-	ret = emmc_ds_manual_sht(dev);
 	return ret;
+}
+#endif
+
+#if CONFIG_IS_ENABLED(MMC_HS400_SUPPORT)
+static u32 emmc_search_cmd_delay(char *str, int repeat_times, u32 *p_size)
+{
+	int best_start = -1, best_size = -1;
+	int cur_start = -1, cur_size = 0;
+	u32 cmd_delay;
+	int i;
+
+	for (i = 0; i < 64; i++) {
+		if (str[i] == repeat_times) {
+			cur_size += 1;
+			if (cur_start == -1)
+				cur_start = i;
+		} else {
+			cur_size = 0;
+			cur_start = -1;
+		}
+
+		if (cur_size > best_size) {
+			best_size = cur_size;
+			best_start = cur_start;
+		}
+	}
+
+	cmd_delay = best_start + best_size / 2;
+	if (p_size)
+		*p_size = best_size;
+	printf("cmd-best-c:%d, cmd-best-size:%d\n", cmd_delay, best_size);
+	return cmd_delay;
+}
+
+static void emmc_show_cmd_window(char *str, int repeat_times)
+{
+	int pre_status = 0;
+	int status = 0;
+	int single = 0;
+	int start = 0;
+	int i;
+
+	printf(">>>>>>>>>>>>>>scan command window>>>>>>>>>>>>>>>\n");
+	for (i = 0; i < 64; i++) {
+		if (str[i] == repeat_times)
+			status = 1;
+		else
+			status = -1;
+
+		if (i != 0 && pre_status != status) {
+			if (pre_status == 1 && single == 1)
+				printf(">>cmd delay [ %d ] is ok\n", i - 1);
+			else if (pre_status == 1 && single != 1)
+				printf(">>cmd delay [ %d -- %d ] is ok\n", start, i - 1);
+			else if (pre_status != 1 &&  single == 1)
+				printf(">>cmd delay [ %d ] is nok\n", i - 1);
+			else if (pre_status != 1 && single != 1)
+				printf(">>cmd delay [ %d -- %d ] is nok\n", start, i - 1);
+			start = i;
+			single = 1;
+		} else {
+			single++;
+		}
+
+		if (i == 63) {
+			if (status == 1 && pre_status == 1)
+				printf(">>cmd delay [ %d -- %d ] is ok\n", start, i);
+			else if (status != 1 && pre_status == -1)
+				printf(">>cmd delay [ %d -- %d ] is nok\n", start, i);
+			else if (status == 1 && pre_status != 1)
+				printf(">>cmd delay [ %d ] is ok\n", i);
+			else if (status != 1 && pre_status == 1)
+				printf(">>cmd delay [ %d ] is nok\n", i);
+		}
+		pre_status = status;
+	}
+	printf("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
+}
+
+static u32 scan_emmc_cmd_win(struct mmc *mmc, int send_status, u32 *pcmd_size)
+{
+	u32 delay2 = meson_read(mmc, MESON_SD_EMMC_DELAY2);
+	u32 cmd_delay = 0, delay2_bak = delay2;
+	u32 i, j, err;
+	int repeat_times = 100;
+	char str[64] = {0};
+	unsigned long phy_addr = 0x1080000;
+	void *addr = (void *)phy_addr;
+	unsigned int status;
+
+	addr = (void *)malloc(512 * sizeof(char));
+	if (!addr)
+		return -1;
+
+	delay2 &= ~DLY_D9_MASK;
+	for (i = 0; i < 64; i++) {
+		meson_write(mmc, delay2, MESON_SD_EMMC_DELAY2);
+		for (j = 0; j < repeat_times; j++) {
+			if (send_status)
+				err = mmc_send_status(mmc, &status);
+			else
+				err = mmc_read_blocks(mmc, addr, 1, 1);
+			if (!err)
+				str[i]++;
+			else
+				break;
+		}
+		delay2 += (1 << DLY_d9);
+	}
+
+	meson_write(mmc, delay2_bak, MESON_SD_EMMC_DELAY2);
+	cmd_delay = emmc_search_cmd_delay(str, repeat_times, pcmd_size);
+	if (0)
+		emmc_show_cmd_window(str, repeat_times);
+
+	free(addr);
+	return cmd_delay;
+}
+
+static u32 set_emmc_cmd_delay(struct mmc *mmc, int send_status)
+{
+	u32 delay2 = meson_read(mmc, MESON_SD_EMMC_DELAY2);
+	u32 cmd_delay = 0, cmd_size = 0;
+
+	delay2 &= ~DLY_D9_MASK;
+	cmd_delay = scan_emmc_cmd_win(mmc, send_status, &cmd_size);
+	delay2 |= (cmd_delay << DLY_d9);
+	meson_write(mmc, delay2, MESON_SD_EMMC_DELAY2);
+
+	return cmd_size;
+}
+
+/* Insufficient number of NWR clocks in T7 EMMC Controller */
+static void set_emmc_nwr_clks(struct udevice *dev)
+{
+	struct meson_mmc_plat *pdata = dev_get_plat(dev);
+	struct mmc *mmc = &pdata->mmc;
+	struct meson_host *host = dev_get_priv(dev);
+	u32 delay1 = 0, delay2 = 0, count = host->nwr_cnt;
+
+	delay1 = (count << 0) | (count << 6) | (count << 12) | (count << 18) | (count << 24);
+	delay2 = (count << 0) | (count << 6) | (count << 12) | (count << 18);
+	meson_write(mmc, delay1, MESON_SD_EMMC_DELAY1);
+	meson_write(mmc, delay2, MESON_SD_EMMC_DELAY2);
+	printf("[%s], delay1: 0x%x, delay2: 0x%x\n", __func__,
+	       meson_read(mmc, MESON_SD_EMMC_DELAY1),
+	       meson_read(mmc, MESON_SD_EMMC_DELAY2));
+}
+
+/*set para on controller register*/
+static void aml_set_tuning_para(struct mmc *mmc)
+{
+	struct meson_mmc_plat *pdata = mmc->priv;
+	struct tuning_para *para = &pdata->para;
+	int temp_index;
+	u32 delay1, delay2, intf3;
+
+	temp_index = para->temp_index;
+	if (temp_index < 0 || temp_index > 9) {
+		printf("code defect, temp_index %d out of range\n", temp_index);
+		return;
+	}
+
+	delay1 = para->hs4[temp_index].delay1;
+	delay2 = para->hs4[temp_index].delay2;
+	intf3 = para->hs4[temp_index].intf3;
+
+	meson_write(mmc, delay1, MESON_SD_EMMC_DELAY1);
+	meson_write(mmc, delay2, MESON_SD_EMMC_DELAY2);
+	meson_write(mmc, intf3, MESON_SD_EMMC_INTF3);
+
+	printf("cmd-best-c:%ld, ds_sht:%lu, intf3:0x%x, clock:0x%x\n",
+	       (intf3 & DS_SHT_M_MASK) >> __ffs(DS_SHT_M_MASK),
+	       (delay2 & DLY_D9_MASK) >> __ffs(DLY_D9_MASK),
+	       intf3, meson_read(mmc, MESON_SD_EMMC_CLOCK));
+}
+
+static void set_emmc_cmd_sample(struct mmc *mmc, char mode)
+{
+	u32 intf3 = meson_read(mmc, MESON_SD_EMMC_INTF3);
+
+	if (mode == EMMC_CMD_FALLING_SML)
+		intf3 |= CFG_RX_PN;
+	if (mode == EMMC_CMD_RISING_SML)
+		intf3 &= ~CFG_RX_PN;
+	if (mode == EMMC_CMD_CORE_CLK_SML)
+		intf3 &= ~CFG_RX_SEL;
+	if (mode == EMMC_CMD_SD_CLK_SML)
+		intf3 |= CFG_RX_SEL;
+	meson_write(mmc, intf3, MESON_SD_EMMC_INTF3);
+}
+
+static void aml_emmc_hs400_v5(struct udevice *dev)
+{
+	struct mmc *mmc = mmc_get_mmc_dev(dev);
+	u32 cmd_size = 0, cmd_min = EMMC_CMD_WIN_FULL_SIZE;
+	u32 temp[CMD_TUNING_RETRIES] = {0};
+	int index = -1, i;
+
+	set_emmc_nwr_clks(dev);
+	for (i = 0; i < CMD_TUNING_RETRIES; i++) {
+		if (i < 3)
+			set_emmc_cmd_sample(mmc, EMMC_CMD_RISING_SML);
+		else
+			set_emmc_cmd_sample(mmc, EMMC_CMD_FALLING_SML);
+
+		cmd_size = set_emmc_cmd_delay(mmc, 1);
+		if (cmd_size < EMMC_CMD_WIN_MAX_SIZE)
+			break;
+		if (cmd_min > cmd_size) {
+			cmd_min = cmd_size;
+			index = i;
+			temp[i] = meson_read(mmc, MESON_SD_EMMC_DELAY2);
+		}
+	}
+	if (i == CMD_TUNING_RETRIES && index != -1) {
+		if (index < 3)
+			set_emmc_cmd_sample(mmc, EMMC_CMD_RISING_SML);
+		else
+			set_emmc_cmd_sample(mmc, EMMC_CMD_FALLING_SML);
+		meson_write(mmc, temp[index], MESON_SD_EMMC_DELAY2);
+	}
+	emmc_ds_manual_sht(dev);
+}
+
+void meson_post_hs400_timming(struct udevice *dev)
+{
+	struct mmc *mmc = mmc_get_mmc_dev(dev);
+	struct meson_host *host = dev_get_priv(dev);
+	int save = host->save_para;
+
+	if (aml_para_is_exist(mmc, save)) {
+		aml_set_tuning_para(mmc);
+	} else {
+		host->is_tuning = 1;
+		aml_mmc_clktest(dev);
+		aml_emmc_hs400_v5(dev);
+		host->is_tuning = 0;
+		aml_save_tuning_para(mmc, save);
+	}
 }
 #endif
 
@@ -1144,6 +1637,9 @@ static const struct dm_mmc_ops meson_dm_mmc_ops = {
 	.wait_dat0 = meson_wait_dat0,
 #ifdef MMC_SUPPORTS_TUNING
 	.execute_tuning = meson_execute_tuning,
+#endif
+#ifdef CONFIG_MMC_HS400_SUPPORT
+	.post_hs400_timming = meson_post_hs400_timming,
 #endif
 #ifdef CONFIG_MMC_HS400_ES_SUPPORT
 	.set_enhanced_strobe = meson_set_enhanced_strobe,
@@ -1237,11 +1733,11 @@ static int meson_mmc_of_to_plat(struct udevice *dev)
 	if (dev_read_bool(dev, "non-removable"))
 		host->is_in = 1;
 
-	if (dev_read_bool(dev, "ignore_desc_busy"))
-		host->ignore_desc_busy = 1;
-
 	if (dev_read_u32(dev, "nwr_cnt", &host->nwr_cnt) < 0)
 		host->nwr_cnt = 0;
+
+	if (dev_read_u32(dev, "save_para", &host->save_para) < 0)
+		host->save_para = 0;
 
 	dev_read_u32(dev, "card_type", &host->card_type);
 	if (aml_card_type_non_sdio(host)) {

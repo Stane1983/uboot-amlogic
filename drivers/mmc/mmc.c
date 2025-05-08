@@ -427,7 +427,6 @@ static int mmc_read_blocks(struct mmc *mmc, void *dst, lbaint_t start,
 
 	if (mmc_send_cmd(mmc, &cmd, &data))
 		return 0;
-
 	if (blkcnt > 1) {
 		cmd.cmdidx = MMC_CMD_STOP_TRANSMISSION;
 		cmd.cmdarg = 0;
@@ -979,6 +978,10 @@ static int mmc_set_card_speed(struct mmc *mmc, enum bus_mode mode,
 	if (hsdowngrade) {
 		mmc_select_mode(mmc, MMC_HS);
 		mmc_set_clock(mmc, mmc_mode2freq(mmc, MMC_HS), false);
+		err = __mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL, EXT_CSD_BUS_WIDTH,
+				   EXT_CSD_BUS_WIDTH_8, !hsdowngrade);
+		if (err)
+			return err;
 	}
 #endif
 
@@ -2201,6 +2204,9 @@ static int mmc_select_mode_and_width(struct mmc *mmc, uint card_caps)
 					printf("Select HS400 failed %d\n", err);
 					goto error;
 				}
+#if CONFIG_IS_ENABLED(AMLOGIC_MODIFY) && CONFIG_IS_ENABLED(MMC_HS400_SUPPORT)
+				mmc_hs400_timming(mmc);
+#endif
 			} else if (mwt->mode == MMC_HS_400_ES) {
 				err = mmc_select_hs400es(mmc);
 				if (err) {
