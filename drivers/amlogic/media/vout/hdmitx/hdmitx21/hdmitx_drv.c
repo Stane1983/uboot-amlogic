@@ -2591,6 +2591,8 @@ u32 hdmitx21_check_frac_rate(struct hdmitx_dev *hdev)
 	char *frac_rate_str = NULL;
 	u32 frac_rate = 0;
 	char ext_name[32];
+	char *user_hdmimode = NULL;
+	char *user_frac_rate_str = NULL;
 
 	if (!para)
 		return 0;
@@ -2600,11 +2602,36 @@ u32 hdmitx21_check_frac_rate(struct hdmitx_dev *hdev)
 	else if (para->timing.name)
 		memcpy(ext_name, para->timing.name, sizeof(ext_name));
 	frac_rate_str = env_get("frac_rate_policy");
-	if (frac_rate_str) {
-		if (frac_rate_str[0] == '0')
+	user_hdmimode = env_get("hdmimode");
+	/*
+	 * If the user-selected hdmimode differs from the currently output hdmimode,
+	 * indicating that the best policy for output should be executed,
+	 * the default frac_rate_policy value of 1 should be used for the output.
+	 */
+	if (user_hdmimode && !strstr(user_hdmimode, ext_name)) {
+		if (frac_rate_str) {
+			if (frac_rate_str[0] == '1' && hdmitx_likely_frac_rate_mode(ext_name))
+				frac_rate = 1;
+			else
+				frac_rate = 0;
+		} else {
 			frac_rate = 0;
-		else if (hdmitx_likely_frac_rate_mode(ext_name))
-			frac_rate = 1;
+		}
+	} else {
+		user_frac_rate_str = env_get("user_frac_rate");
+		if (user_frac_rate_str) {
+			if (user_frac_rate_str[0] == '0')
+				frac_rate = 0;
+			else if (hdmitx_likely_frac_rate_mode(ext_name))
+				frac_rate = 1;
+		} else if (frac_rate_str) {
+			if (frac_rate_str[0] == '0')
+				frac_rate = 0;
+			else if (hdmitx_likely_frac_rate_mode(ext_name))
+				frac_rate = 1;
+		} else {
+			frac_rate = 0;
+		}
 	}
 
 	/* when QMS is en, no need frac_rate */
