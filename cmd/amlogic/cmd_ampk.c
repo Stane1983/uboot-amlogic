@@ -13,6 +13,7 @@
 
 #define PROVISION_PTA_CMD_AMPK_GET_DEVICE_PUBLIC_KEY   (1)
 #define PROVISION_PTA_CMD_AMPK_REGEN_ENC_KEY           (2)
+#define PROVISION_PTA_CMD_AMPK_INIT                    (3)
 #define TEE_PARAM_NUM                                  (4)
 
 static int get_device_pub_key(u8 *public_key, u32 public_key_size)
@@ -160,7 +161,7 @@ exit:
 	return ret;
 }
 
-static int do_apmk(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int do_ampk(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	u8 public_key[64];
 	u32 public_key_size = sizeof(public_key);
@@ -184,7 +185,7 @@ static int do_apmk(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	return CMD_RET_USAGE;
 }
 
-U_BOOT_CMD(ampk, 2, 0, do_apmk,
+U_BOOT_CMD(ampk, 2, 0, do_ampk,
 	   "AMPK cmds",
 	   "ampk get_device_pub_key\n"
 	   "ampk regen_enc_key\n"

@@ -11,6 +11,20 @@
 
 char efuse_buf[EFUSE_BYTES] = {0};
 
+#if (IS_ENABLED(CONFIG_AMPK))
+#include <tee.h>
+
+#define PROVISION_PTA_UUID \
+		{ 0x24b17b16, 0x89d1, 0x43a3, \
+		{ 0x95, 0xed, 0x19, 0x3c, 0xe1, 0xed, 0xa7, 0x15 } }
+#define PROVISION_PTA_CMD_AMPK_GET_DEVICE_PUBLIC_KEY   (1)
+#define PROVISION_PTA_CMD_AMPK_REGEN_ENC_KEY           (2)
+#define PROVISION_PTA_CMD_AMPK_INIT                    (3)
+#define TEE_PARAM_NUM                                  (4)
+
+static int g_init_ampk;
+#endif
+
 ssize_t efuse_read(char *buf, size_t count, loff_t *ppos)
 {
 	unsigned int pos = *ppos;
@@ -211,6 +225,67 @@ uint32_t efuse_obj_write(uint32_t obj_id, char *name, uint8_t *buff, uint32_t si
 }
 
 #if (IS_ENABLED(CONFIG_AMPK))
+static uint32_t init_ampk(void)
+{
+	int ret = CMD_RET_FAILURE;
+	struct udevice *dev = NULL;
+	struct tee_open_session_arg open_arg = { 0 };
+	struct tee_invoke_arg invoke_arg = { 0 };
+	struct tee_param param[TEE_PARAM_NUM] = { 0 };
+	const struct tee_optee_ta_uuid uuid = PROVISION_PTA_UUID;
+
+	if (g_init_ampk)
+		return 0;
+
+	dev = tee_find_device(NULL, NULL, NULL, NULL);
+	if (!dev) {
+		printf("tee find device failed\n");
+		return EFUSE_OBJ_ERR_OTHER_INTERNAL;
+	}
+
+	memset(&open_arg, 0, sizeof(open_arg));
+	tee_optee_ta_uuid_to_octets(open_arg.uuid, &uuid);
+	ret = tee_open_session(dev, &open_arg, 0, NULL);
+	if (ret) {
+		printf("open session failed, ret = 0x%x\n", ret);
+		return EFUSE_OBJ_ERR_OTHER_INTERNAL;
+	}
+
+	if (open_arg.ret) {
+		printf("open session failed, ret = 0x%x, ret_origin = 0x%x\n",
+		       open_arg.ret, open_arg.ret_origin);
+		return EFUSE_OBJ_ERR_OTHER_INTERNAL;
+	}
+
+	param[0].attr = TEE_PARAM_ATTR_TYPE_VALUE_INPUT;
+	param[0].u.value.a = 0;
+	param[0].u.value.b = 0;
+	param[0].u.value.c = 0;
+
+	memset(&invoke_arg, 0, sizeof(invoke_arg));
+	invoke_arg.session = open_arg.session;
+	invoke_arg.func = PROVISION_PTA_CMD_AMPK_INIT;
+
+	ret = tee_invoke_func(dev, &invoke_arg, TEE_PARAM_NUM, param);
+	if (ret) {
+		printf("invoke failed, cmd = 0x%x, ret = 0x%x\n", invoke_arg.func, ret);
+		ret = EFUSE_OBJ_ERR_OTHER_INTERNAL;
+		goto exit;
+	}
+
+	if (invoke_arg.ret) {
+		printf("invoke failed, cmd = 0x%x, ret = 0x%x, origin = 0x%x\n",
+		       invoke_arg.func, invoke_arg.ret, invoke_arg.ret_origin);
+		ret = EFUSE_OBJ_ERR_OTHER_INTERNAL;
+		goto exit;
+	}
+	g_init_ampk = 1;
+
+exit:
+	tee_close_session(dev, open_arg.session);
+	return ret;
+}
+
 uint32_t efuse_obj_enc_write(uint32_t obj_id, char *name, uint8_t *buff, uint32_t size)
 {
 	uint32_t ret;
@@ -224,6 +299,10 @@ uint32_t efuse_obj_enc_write(uint32_t obj_id, char *name, uint8_t *buff, uint32_
 	data_len = size - IV_LEN - TAG_LEN;
 	if (data_len > sizeof(efuseinfo.data))
 		return EFUSE_OBJ_ERR_SIZE;
+
+	ret = init_ampk();
+	if (ret != EFUSE_OBJ_SUCCESS)
+		return ret;
 
 	memset(&efuseinfo, 0, sizeof(efuseinfo));
 	strncpy(efuseinfo.name, name, sizeof(efuseinfo.name) - 1);
