@@ -491,7 +491,8 @@ static void lcd_venc_save_bootctrl_to_reg(struct aml_lcd_drv_s *pdrv)
 
 	val = (pdrv->boot_ctrl.lcd_type & 0xf) | ((pdrv->boot_ctrl.clk_mode & 0xf) << 4)
 		| ((pdrv->boot_ctrl.ppc & 0x3) << 8)
-		| ((pdrv->boot_ctrl.custom_pinmux & 0x1) << 10);
+		| ((pdrv->boot_ctrl.custom_pinmux & 0x1) << 10)
+		| ((pdrv->boot_ctrl.bl_state & 0x1) << 11);
 	lcd_vcbus_write(L_STH1_HS_ADDR + offset + 8, val);
 
 	val = pdrv->boot_ctrl.advanced_flag & 0xff;
