@@ -114,10 +114,14 @@ static int fdt_config_rsv_mem(unsigned int aarch32, unsigned int alignment,
 	ret = run_command(cmdbuf, 0);
 	if (ret == 0) {
 		memset(cmdbuf, 0, sizeof(cmdbuf));
+		//only use 32bits fdt value format for reserve_mem_size
+		sprintf(cmdbuf, "fdt set /secmon reserve_mem_size <0x%x>;", rsv_sz);
+		/*
 		if (aarch32)
 			sprintf(cmdbuf, "fdt set /secmon reserve_mem_size <0x%x>;", rsv_sz);
 		else
 			sprintf(cmdbuf, "fdt set /secmon reserve_mem_size <0x0 0x%x>;", rsv_sz);
+		*/
 		rsvmem_dbg("CMD: %s\n", cmdbuf);
 		ret = run_command(cmdbuf, 0);
 		if (ret != 0) {
