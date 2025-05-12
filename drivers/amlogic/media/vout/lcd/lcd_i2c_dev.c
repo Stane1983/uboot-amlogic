@@ -27,21 +27,7 @@ static struct lcd_i2c_match_s lcd_i2c_match_table[] = {
 	{LCD_EXT_I2C_BUS_2,   "i2c_2"},
 	{LCD_EXT_I2C_BUS_3,   "i2c_3"},
 	{LCD_EXT_I2C_BUS_4,   "i2c_4"},
-	{LCD_EXT_I2C_BUS_0,   "i2c_a"},
-	{LCD_EXT_I2C_BUS_1,   "i2c_b"},
-	{LCD_EXT_I2C_BUS_2,   "i2c_c"},
-	{LCD_EXT_I2C_BUS_3,   "i2c_d"},
-	{LCD_EXT_I2C_BUS_4,   "i2c_ao"},
-	{LCD_EXT_I2C_BUS_0,   "i2c_bus_0"},
-	{LCD_EXT_I2C_BUS_1,   "i2c_bus_1"},
-	{LCD_EXT_I2C_BUS_2,   "i2c_bus_2"},
-	{LCD_EXT_I2C_BUS_3,   "i2c_bus_3"},
-	{LCD_EXT_I2C_BUS_4,   "i2c_bus_4"},
-	{LCD_EXT_I2C_BUS_0,   "i2c_bus_a"},
-	{LCD_EXT_I2C_BUS_1,   "i2c_bus_b"},
-	{LCD_EXT_I2C_BUS_2,   "i2c_bus_c"},
-	{LCD_EXT_I2C_BUS_3,   "i2c_bus_d"},
-	{LCD_EXT_I2C_BUS_4,   "i2c_bus_ao"},
+	{LCD_EXT_I2C_BUS_5,   "i2c_5"},
 	{LCD_EXT_I2C_BUS_MAX, "invalid"}
 };
 

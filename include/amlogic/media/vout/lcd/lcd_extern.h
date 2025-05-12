@@ -10,24 +10,9 @@
 enum lcd_extern_type_e {
 	LCD_EXTERN_I2C = 0,
 	LCD_EXTERN_SPI,
-	LCD_EXTERN_MIPI,
 	LCD_EXTERN_SIMPLE,
 	LCD_EXTERN_MAX,
 };
-
-#define LCD_EXTERN_I2C_BUS_A          0
-#define LCD_EXTERN_I2C_BUS_B          1
-#define LCD_EXTERN_I2C_BUS_C          2
-#define LCD_EXTERN_I2C_BUS_D          3
-#define LCD_EXTERN_I2C_BUS_AO         4
-
-#define LCD_EXTERN_I2C_BUS_0          LCD_EXTERN_I2C_BUS_A
-#define LCD_EXTERN_I2C_BUS_1          LCD_EXTERN_I2C_BUS_B
-#define LCD_EXTERN_I2C_BUS_2          LCD_EXTERN_I2C_BUS_C
-#define LCD_EXTERN_I2C_BUS_3          LCD_EXTERN_I2C_BUS_D
-#define LCD_EXTERN_I2C_BUS_4          LCD_EXTERN_I2C_BUS_AO
-#define LCD_EXTERN_I2C_BUS_MAX        5
-
 
 #define LCD_EXTERN_INIT_ON_MAX        3000
 #define LCD_EXTERN_INIT_OFF_MAX       100

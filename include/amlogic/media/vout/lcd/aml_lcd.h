@@ -22,7 +22,8 @@
 #define LCD_EXT_I2C_BUS_2     2  //C
 #define LCD_EXT_I2C_BUS_3     3  //D
 #define LCD_EXT_I2C_BUS_4     4  //AO
-#define LCD_EXT_I2C_BUS_MAX   0xff
+#define LCD_EXT_I2C_BUS_5     5
+#define LCD_EXT_I2C_BUS_MAX   6
 
 #define LCD_EXT_I2C_BUS_INVALID        0xff
 #define LCD_EXT_I2C_ADDR_INVALID       0xff

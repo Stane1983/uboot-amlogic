@@ -60,9 +60,6 @@ int lcd_extern_power_cmd(struct lcd_extern_driver_s *edrv,
 /* specific API */
 int lcd_extern_default_probe(struct lcd_extern_driver_s *edrv,
 			     struct lcd_extern_dev_s *ext_dev);
-int lcd_extern_mipi_default_probe(struct lcd_extern_driver_s *edrv,
-				  struct lcd_extern_dev_s *ext_dev);
-
 #ifdef CONFIG_AML_LCD_EXTERN_I2C_RT6947
 int lcd_extern_i2c_RT6947_probe(struct lcd_extern_driver_s *edrv,
 				struct lcd_extern_dev_s *ext_dev);

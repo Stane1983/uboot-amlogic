@@ -16,6 +16,9 @@
 #include "../lcd_connector.h"
 #include "./dsi_common.h"
 #include "./dsi_ctrl/dsi_ctrl.h"
+#ifdef CONFIG_AML_LCD_EXTERN
+#include <amlogic/media/vout/lcd/lcd_extern.h>
+#endif
 
 char *dsi_op_mode_table[] = {"Video", "Command"};
 
@@ -632,16 +635,11 @@ static void dsi_panel_init(struct aml_lcd_drv_s *pdrv)
 {
 	struct dsi_config_s *dconf = &pdrv->config.control.mipi_cfg;
 
-	if (dconf->dsi_init_on) {
-		dsi_exec_init_table(pdrv, dconf->dsi_init_on, DSI_INIT_ON_MAX, NULL, 0);
-		LCDPR("[%d]: %s table\n", pdrv->index, __func__);
-	}
-
 #ifdef CONFIG_AML_LCD_EXTERN
 	struct lcd_extern_driver_s *edrv;
 	struct lcd_extern_dev_s *edev;
 
-	if (dconf->extern_init >= LCD_EXTERN_INDEX_INVALID) {
+	if (dconf->extern_init == LCD_EXTERN_INDEX_INVALID) {
 		LCDPR("[%d]: %s extern [%d] invalid\n", pdrv->index, __func__, dconf->extern_init);
 		return;
 	}
@@ -651,11 +649,17 @@ static void dsi_panel_init(struct aml_lcd_drv_s *pdrv)
 		LCDPR("[%d]: no lcd_extern dev\n", pdrv->index);
 		return;
 	}
-	if (edev->config.table_init_on) {
-		dsi_exec_init_table(pdrv, edev->config.table_init_on, DSI_INIT_ON_MAX, NULL, 0);
+	// remove support on dsi cmd on extern driver
+	if (edev->config.table_init_on && edev->power_on) {
+		edev->power_on(edrv, edev);
 		LCDPR("[%d]: [extern]%s dsi init on\n", pdrv->index, edev->config.name);
 	}
 #endif
+
+	if (dconf->dsi_init_on) {
+		dsi_exec_init_table(pdrv, dconf->dsi_init_on, DSI_INIT_ON_MAX, NULL, 0);
+		LCDPR("[%d]: %s table\n", pdrv->index, __func__);
+	}
 }
 
 static void dsi_panel_deinit(struct aml_lcd_drv_s *pdrv)
@@ -671,7 +675,7 @@ static void dsi_panel_deinit(struct aml_lcd_drv_s *pdrv)
 	struct lcd_extern_driver_s *edrv;
 	struct lcd_extern_dev_s *edev;
 
-	if (dconf->extern_init >= LCD_EXTERN_INDEX_INVALID) {
+	if (dconf->extern_init == LCD_EXTERN_INDEX_INVALID) {
 		LCDPR("[%d]: %s extern [%d] invalid\n", pdrv->index, __func__, dconf->extern_init);
 		return;
 	}
@@ -681,8 +685,8 @@ static void dsi_panel_deinit(struct aml_lcd_drv_s *pdrv)
 		LCDPR("[%d]: no lcd_extern dev\n", pdrv->index);
 		return;
 	}
-	if (edev->config.table_init_off) {
-		dsi_exec_init_table(pdrv, edev->config.table_init_off, DSI_INIT_OFF_MAX, NULL, 0);
+	if (edev->config.table_init_off && edev->power_off) {
+		edev->power_off(edrv, edev);
 		LCDPR("[%d]: [extern]%s dsi init off\n", pdrv->index, edev->config.name);
 	}
 #endif

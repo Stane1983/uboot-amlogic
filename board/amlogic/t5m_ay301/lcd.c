@@ -317,7 +317,7 @@ static struct lcd_extern_common_s ext_common_dft = {
 	.ext_num = 1,
 	.ext_gpio = lcd_ext_gpio,
 
-	.i2c_bus = LCD_EXTERN_I2C_BUS_2,
+	.i2c_bus = LCD_EXT_I2C_BUS_2,
 	.i2c_sck_gpio = 0xff,
 	.i2c_sck_gpio_off = 0,
 	.i2c_sda_gpio = 0xff,
