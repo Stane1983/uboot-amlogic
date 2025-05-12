@@ -21,8 +21,8 @@ enum {
 	WAKEUP_LEVEL,
 };
 
-int tab_mem_parse(unsigned char *file_buf);
-int keymap_mem_parse(char *file_buf);
+int tab_mem_parse(unsigned char *file_buf, int file_size);
+int keymap_mem_parse(char *file_buf, int file_size);
 int parse_tab_file(const char *file_path, unsigned char type);
 int parse_key_map(const char *file_path);
 

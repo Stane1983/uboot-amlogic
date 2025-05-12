@@ -19,7 +19,7 @@
 #define LOG_TAG "ini_powerkey"
 #define LOG_NDEBUG 0
 
-#define INI_MAX_LINE 20000
+#define INI_MAX_LINE 2048
 #define MAX_LINE_LEN 1024
 #define DEFAULT_MODEL_SUM_PATH "/odm_ext/etc/tvconfig/model/model_sum.ini"
 #define CS_BLOCK_DEV_INTERFACE "mmc"
@@ -306,7 +306,7 @@ int powerkey_read_file_to_buffer(const char *file_path,
 	if (set_block_device(part_name) < 0)
 		return -1;
 
-	tmp_ret = fs_read(file_name, (unsigned long)data_buf, 0, 0, &rd_cnt);
+	tmp_ret = fs_read(file_name, (unsigned long)data_buf, 0, rd_size, &rd_cnt);
 	if (tmp_ret < 0)
 		return -1;
 
@@ -344,11 +344,11 @@ int parse_tab_file(const char *file_path, unsigned char type)
 	if (tmp_buf) {
 		rd_cnt = powerkey_read_file_to_buffer(dest_file_path, 0, file_size, tmp_buf);
 		//printf("%s, dest_file_path= %s\n", __func__, dest_file_path);
-		if (rd_cnt > 0) {
+		if (rd_cnt == file_size) {
 			if (type == PARSE_TAB_TYPE_REMOTE)
-				tmp_ret = tab_mem_parse(tmp_buf);
+				tmp_ret = tab_mem_parse(tmp_buf, file_size);
 			else if (type == PARSE_TAB_TYPE_KEYPAD)
-				tmp_ret = keymap_mem_parse(tmp_buf);
+				tmp_ret = keymap_mem_parse(tmp_buf, file_size);
 		}
 
 		free(tmp_buf);
@@ -358,7 +358,7 @@ int parse_tab_file(const char *file_path, unsigned char type)
 	return tmp_ret;
 }
 
-int tab_parse_mem(const char *buf)
+int tab_parse_mem(const char *buf, int file_size)
 {
 	char *bufptr = (char *)buf;
 	char *line;
@@ -367,6 +367,7 @@ int tab_parse_mem(const char *buf)
 	bool is_mr = false;
 	char *str_p = NULL;
 	int ir_cnt = 1;
+	int lineno = 0;
 
 	line = (char *)malloc(INI_MAX_LINE);
 	if (!line)
@@ -380,18 +381,21 @@ int tab_parse_mem(const char *buf)
 		}
 	}
 
-	while (1) {
+	while (lineno <= file_size) {
 		int ncount = 0;
 
-		while (*bufptr != '\0') {
+		while (*bufptr != '\0' && ncount < (INI_MAX_LINE - 2) && lineno < file_size) {
 			if (*bufptr == '\r' || *bufptr == '\n')
 				break;
 
 			line[ncount] = *bufptr++;
 			ncount++;
+			lineno++;
 		}
-		while (*bufptr == '\r' || *bufptr == '\n')
+		while ((*bufptr == '\r' || *bufptr == '\n') && lineno < file_size) {
 			bufptr++;
+			lineno++;
+		}
 		line[ncount] = 0;
 
 		if (ncount == 0)
@@ -441,7 +445,6 @@ int tab_parse_mem(const char *buf)
 			break;
 		}
 	}
-
 exit:
 	if (line)
 		free(line);
@@ -477,8 +480,8 @@ int parse_key_map(const char *file_path)
 	if (tmp_buf) {
 		//printf("%s, dest_file_path= %s\n", __func__, dest_file_path);
 		rd_cnt = powerkey_read_file_to_buffer(dest_file_path, 0, file_size, tmp_buf);
-		if (rd_cnt > 0)
-			tmp_ret = tab_parse_mem(tmp_buf);
+		if (rd_cnt == file_size)
+			tmp_ret = tab_parse_mem(tmp_buf, file_size);
 
 		free(tmp_buf);
 		tmp_buf = NULL;
@@ -487,7 +490,7 @@ int parse_key_map(const char *file_path)
 	return tmp_ret;
 }
 
-int tab_mem_parse(unsigned char *file_buf)
+int tab_mem_parse(unsigned char *file_buf, int file_size)
 {
 	int ret = -1;
 	char *p = " ";
@@ -495,7 +498,7 @@ int tab_mem_parse(unsigned char *file_buf)
 	int len = 0;
 
 	//printf("%s, entering...\n", __func__);
-	ret = tab_parse_mem((char *)file_buf);
+	ret = tab_parse_mem((char *)file_buf, file_size);
 	if (ret < 0) {
 		printf("%s, tab_parse_mem failed.\n", __func__);
 		return ret;
@@ -522,7 +525,7 @@ int tab_mem_parse(unsigned char *file_buf)
 	return ret;
 }
 
-int keymap_mem_parse(char *file_buf)
+int keymap_mem_parse(char *file_buf, int file_size)
 {
 	char *bufptr = (char *)file_buf;
 	char *line;
@@ -530,23 +533,27 @@ int keymap_mem_parse(char *file_buf)
 	char key_name[32], key_code[32], channel[32], value[32], tolerance[32];
 	char keypap_str[128] = { 0 };
 	int adc_power_key_num = 0;
+	int lineno = 0;
 
 	line = (char *)malloc(INI_MAX_LINE);
 	if (!line)
 		return -2;
 
-	while (1) {
+	while (lineno <= file_size) {
 		int ncount = 0;
 
-		while (*bufptr != '\0') {
+		while (*bufptr != '\0' && ncount < (INI_MAX_LINE - 2) && lineno < file_size) {
 			if (*bufptr == '\r' || *bufptr == '\n')
 				break;
 
 			line[ncount] = *bufptr++;
 			ncount++;
+			lineno++;
 		}
-		while (*bufptr == '\r' || *bufptr == '\n')
+		while ((*bufptr == '\r' || *bufptr == '\n') && lineno < file_size) {
 			bufptr++;
+			lineno++;
+		}
 		line[ncount] = 0;
 
 		if (ncount == 0)
@@ -632,11 +639,15 @@ int keymap_mem_parse(char *file_buf)
 			break;
 		}
 	}
-	free(line);
+
+	if (line)
+		free(line);
 	return 0;
 }
 
-int powerkey_mem_parse(const char *buf, char *model, char *model_type, char *keymap_path)
+int powerkey_mem_parse(const char *buf,
+	int file_size, char *model,
+	char *model_type, char *keymap_path)
 {
 	char *bufptr = (char *)buf;
 	char *line;
@@ -652,18 +663,22 @@ int powerkey_mem_parse(const char *buf, char *model, char *model_type, char *key
 
 	sprintf(model_name, "[%s]", model);
 
-	while (1) {
+	while (lineno <= file_size) {
 		int ncount = 0;
 
-		while (*bufptr != '\0') {
+		while (*bufptr != '\0' && ncount < (INI_MAX_LINE - 2) && lineno < file_size) {
 			if (*bufptr == '\r' || *bufptr == '\n')
 				break;
 
 			line[ncount] = *bufptr++;
 			ncount++;
+			lineno++;
 		}
-		while (*bufptr == '\r' || *bufptr == '\n')
+
+		while ((*bufptr == '\r' || *bufptr == '\n') && lineno < file_size) {
 			bufptr++;
+			lineno++;
+		}
 		line[ncount] = 0;
 
 		if (ncount == 0)
@@ -671,12 +686,11 @@ int powerkey_mem_parse(const char *buf, char *model, char *model_type, char *key
 
 		/* Scan through file line by line */
 		// while (fgets(line, INI_MAX_LINE, file) != NULL) {
-		lineno++;
 
 		start = line;
 		start = lskip(rstrip(start));
 
-		StrLineTrim(line, MAX_LINE_LEN); /*jump comment*/
+		StrLineTrim(line, strlen(line)); /*jump comment*/
 		StrTrim(&line);
 
 		if (model_flag) {
@@ -723,8 +737,9 @@ int parse_model_file(const char *file_path, char *model, char *model_type, char 
 
 	if (tmp_buf) {
 		rd_cnt = powerkey_read_file_to_buffer(file_path, 0, file_size, tmp_buf);
-		if (rd_cnt > 0)
-			tmp_ret = powerkey_mem_parse(tmp_buf, model, model_type, keymap_path);
+		if (rd_cnt == file_size)
+			tmp_ret = powerkey_mem_parse(tmp_buf, file_size, model,
+				model_type, keymap_path);
 
 		free(tmp_buf);
 		tmp_buf = NULL;
@@ -735,7 +750,7 @@ int parse_model_file(const char *file_path, char *model, char *model_type, char 
 
 int parse_multi_remote(const char *file_name, char *model_name)
 {
-	char remote_path[128];
+	char remote_path[128] = {0};
 	int ret = 1;
 
 	if (parse_model_file(file_name, model_name, "REMOTE_PATH", remote_path) < 0) {
@@ -743,7 +758,7 @@ int parse_multi_remote(const char *file_name, char *model_name)
 		return ret;
 	}
 
-	if (strcmp(remote_path, "null") != 0) {
+	if (remote_path[0] != '\0') {
 		printf("remote_path is %s\n", remote_path);
 		parse_tab_file(remote_path, PARSE_TAB_TYPE_REMOTE);
 		ret = 0;
@@ -756,7 +771,7 @@ int parse_multi_remote(const char *file_name, char *model_name)
 
 int parse_multi_keypad(const char *file_name, char *model_name)
 {
-	char keypad_path[128];
+	char keypad_path[128] = {0};
 	int ret = 1;
 
 	if (parse_model_file(file_name, model_name, "KEYPAD_PATH", keypad_path) < 0) {
@@ -764,7 +779,7 @@ int parse_multi_keypad(const char *file_name, char *model_name)
 		return ret;
 	}
 
-	if (strcmp(keypad_path, "null") != 0) {
+	if (keypad_path[0] != '\0') {
 		printf("keypad_path is %s\n", keypad_path);
 		parse_tab_file(keypad_path, PARSE_TAB_TYPE_KEYPAD);
 		ret = 0;
@@ -783,15 +798,17 @@ int handle_multi_remote(void)
 
 	power_key_num = 0;
 
-	if (key_unify_read("model_name", modelname_buf, sizeof(modelname_buf)) < 0) {
+	if (key_unify_read("model_name", modelname_buf, sizeof(modelname_buf)) != 0) {
 		printf("key_unify_read failed!!!\n");
 		model = env_get("model_name");
 	} else {
 		model = modelname_buf;
 	}
-	printf("model is %s\n", model);
 
-	ret = parse_multi_remote(DEFAULT_MODEL_SUM_PATH, model);
+	if (model) {
+		printf("model is %s\n", model);
+		ret = parse_multi_remote(DEFAULT_MODEL_SUM_PATH, model);
+	}
 
 	return ret;
 }
@@ -804,15 +821,17 @@ int handle_multi_keypad(void)
 
 	power_key_num = 0;
 
-	if (key_unify_read("model_name", modelname_buf, sizeof(modelname_buf)) < 0) {
-		printf(" key_unify_read failed!!!\n");
+	if (key_unify_read("model_name", modelname_buf, sizeof(modelname_buf)) != 0) {
+		printf("key_unify_read failed!!!\n");
 		model = env_get("model_name");
 	} else {
 		model = modelname_buf;
 	}
-	printf("model is %s\n", model);
 
-	ret = parse_multi_keypad(DEFAULT_MODEL_SUM_PATH, model);
+	if (model) {
+		printf("model is %s\n", model);
+		ret = parse_multi_keypad(DEFAULT_MODEL_SUM_PATH, model);
+	}
 
 	return ret;
 }
