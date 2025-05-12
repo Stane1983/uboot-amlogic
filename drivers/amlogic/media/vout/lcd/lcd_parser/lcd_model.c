@@ -113,6 +113,10 @@ int lcd_trans_str_array(const char *data_str, unsigned int *data_buf, int cnt_ma
 		end = strchr(token, ',');
 		if (end)
 			*end = '\0';
+		while (*token <= ' ' && *token != '\0') // Eliminate Spaces for this case: " 0x12"
+			token++;
+		if (*token == '\0') // for this case: "0x12,  "
+			break;
 		data_buf[i] = strtoul(token, NULL, 0);
 		i++;
 		if (!end)
@@ -150,6 +154,10 @@ unsigned int lcd_get_str_array_index(const char *data_str, unsigned int index, u
 		end = strchr(token, ',');
 		if (end)
 			*end = '\0';
+		while (*token <= ' ' && *token != '\0') // Eliminate Spaces for this case: " 0x12"
+			token++;
+		if (*token == '\0') // for this case: "0x12,  "
+			break;
 		if (i == index) {
 			val = strtoul(token, NULL, 0);
 			break;
