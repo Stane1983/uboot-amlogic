@@ -22,6 +22,7 @@ struct lcd_detail_timing_s {
 	unsigned char vsync_pol;
 	unsigned char fr_adjust_type; /* 0=clock, 1=htotal, 2=vtotal */
 	unsigned char switch_type;
+	unsigned char clk_mode;
 	unsigned char lcd_bits;
 	unsigned char cfmt;
 	unsigned char ss_level;

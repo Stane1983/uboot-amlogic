@@ -793,6 +793,29 @@ static int lcd_clk_prbs_test(struct aml_lcd_drv_s *pdrv, unsigned int ms, unsign
 	return 0;
 }
 
+static void lcd_clk_generate_t3x(struct aml_lcd_drv_s *pdrv)
+{
+	struct lcd_clk_config_s *cconf;
+
+	cconf = get_lcd_clk_config(pdrv);
+	if (!cconf)
+		return;
+	if (pdrv->config.basic.lcd_type == LCD_P2P &&
+	    pdrv->config.timing.act_timing.clk_mode == LCD_BIT_RATE_ADAPT) {
+		LCDPR("[%d]: %s: dual pll config\n", pdrv->index, __func__);
+		if (pdrv->clk_conf_num < 2) {
+			LCDERR("[%d]: %s: clk_conf_num %d error\n",
+				pdrv->index, __func__, pdrv->clk_conf_num);
+			return;
+		}
+		cconf->pll_mode |= LCD_PLL_MODE_DUAL_PLL;
+	} else {
+		cconf->pll_mode &= ~LCD_PLL_MODE_DUAL_PLL;
+	}
+
+	lcd_clk_generate_dft(pdrv);
+}
+
 static struct lcd_clk_data_s lcd_clk_data_t3x_0 = {
 	.pll_od_fb = 0,
 	.pll_m_max = 511,
@@ -832,7 +855,7 @@ static struct lcd_clk_data_s lcd_clk_data_t3x_0 = {
 	.ss_str_m_max = 10,
 
 	.clk_parameter_init = NULL,
-	.clk_generate_parameter = lcd_clk_generate_dft,
+	.clk_generate_parameter = lcd_clk_generate_t3x,
 	.pll_frac_generate = lcd_pll_frac_generate_dft,
 	.set_ss = lcd_set_pll_ss,
 	.clk_ss_enable = lcd_pll_ss_enable,
@@ -910,21 +933,19 @@ struct lcd_clk_config_s *lcd_clk_config_chip_init_t3x(struct aml_lcd_drv_s *pdrv
 		return NULL;
 
 	pconf = &pdrv->config;
-	if (pdrv->index == 0 && pconf->basic.lcd_type == LCD_P2P &&
-		pconf->timing.clk_mode == LCD_BIT_RATE_ADAPT)
+	if (pdrv->index == 0 && pconf->basic.lcd_type == LCD_P2P)
 		pdrv->clk_conf_num = 2;
 	else
 		pdrv->clk_conf_num = 1;
 
+	size = pdrv->clk_conf_num * sizeof(struct lcd_clk_config_s);
 	if (!pdrv->clk_conf) {
-		size = pdrv->clk_conf_num * sizeof(struct lcd_clk_config_s);
 		cconf = (struct lcd_clk_config_s *)malloc(size);
 		if (!cconf) {
 			LCDERR("[%d]: %s: Not enough memory\n", pdrv->index, __func__);
 			return NULL;
 		}
 	} else {
-		size = pdrv->clk_conf_num * sizeof(struct lcd_clk_config_s);
 		cconf = (struct lcd_clk_config_s *)pdrv->clk_conf;
 	}
 	memset(cconf, 0, size);
@@ -941,7 +962,6 @@ struct lcd_clk_config_s *lcd_clk_config_chip_init_t3x(struct aml_lcd_drv_s *pdrv
 		cconf[0].pll_od_fb = cconf[0].data->pll_od_fb;
 		if (pdrv->clk_conf_num > 1) {
 			// pll1 as pixel clock, mux to venc0_clk
-			cconf[0].pll_mode |= LCD_PLL_MODE_DUAL_PLL;
 			cconf[1].pll_id = 1;
 			cconf[1].data = &lcd_clk_data_t3x_1;
 			cconf[1].data->vclk_sel = 4;
