@@ -335,7 +335,7 @@ void ramdump_init(void)
 	unsigned int data, reboot_mode;
 	char *env;
 
-	printf("%s, base reg:0x%08x, size reg:0x%08x\n", __func__,
+	debug("%s, base reg:0x%08x, size reg:0x%08x\n", __func__,
 				REG_MDUMP_COMPRESS_BASE, REG_MDUMP_COMPRESS_SIZE);
 	ramdump_base = readl(REG_MDUMP_COMPRESS_BASE);
 	ramdump_size = readl(REG_MDUMP_COMPRESS_SIZE);

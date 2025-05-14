@@ -126,7 +126,8 @@ static int do_get_bootloader_status(cmd_tbl_t *cmdtp, int flag, int argc, char *
 	const int firstBootCpyIndex = store_boot_copy_start();
 	env_set_ulong("forUpgrade_1stBootIndex", firstBootCpyIndex);
 
-	if (printStat) run_command("printenv forUpgrade_socType forUpgrade_secureBoot "
+	if (env_get_ulong("loglevel", 10, 0) >= 9 && printStat)
+			run_command("printenv forUpgrade_socType forUpgrade_secureBoot "
 			" forUpgrade_robustOta forUpgrade_flashType forUpgrade_bootloaderCopies "
 			" forUpgrade_bootloaderIndex forUpgrade_1stBootIndex", 0);
 

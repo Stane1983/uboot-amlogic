@@ -1248,7 +1248,7 @@ int avb_verify(AvbSlotVerifyData** out_data)
 
 	if (!ab_suffix)
 		ab_suffix = "";
-	printf("ab_suffix is %s\n", ab_suffix);
+	debug("ab_suffix is %s\n", ab_suffix);
 
 	AvbSlotVerifyFlags flags = AVB_SLOT_VERIFY_FLAGS_NONE;
 
@@ -1313,7 +1313,7 @@ int avb_verify_no_partitions(AvbSlotVerifyData **out_data)
 
 	if (!ab_suffix)
 		ab_suffix = "";
-	printf("ab_suffix is %s\n", ab_suffix);
+	debug("ab_suffix is %s\n", ab_suffix);
 
 	AvbSlotVerifyFlags flags = AVB_SLOT_VERIFY_FLAGS_NONE;
 

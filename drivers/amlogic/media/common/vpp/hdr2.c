@@ -1329,7 +1329,7 @@ void hdr_func(enum hdr_module_sel module_sel,
 		return;
 	}
 
-	printf("hdr_process_select0\n");
+	debug("hdr_process_select0\n");
 	if ((get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S7D ||
 		get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S6 ||
 		get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T6D) &&
@@ -1487,7 +1487,7 @@ void hdr_func(enum hdr_module_sel module_sel,
 		return;
 	}
 	/*mtx parameters*/
-	printf("hdr_process_select1\n");
+	debug("hdr_process_select1\n");
 	if ((module_sel & (OSD1_HDR | OSD2_HDR | OSD3_HDR)) &&
 		(hdr_process_select & HDR_BYPASS)) {
 		/* sdr process, always rgb osd here*/
@@ -1878,7 +1878,7 @@ void hdr_func(enum hdr_module_sel module_sel,
 		}
 	}
 
-	printf("hdr_process_select2\n");
+	debug("hdr_process_select2\n");
 	if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T3 &&
 		(module_sel == OSD2_HDR ||
 		module_sel == OSD3_HDR)) {
@@ -1895,10 +1895,10 @@ void hdr_func(enum hdr_module_sel module_sel,
 		return;
 	}
 
-	printf("hdr_process_select3\n");
+	debug("hdr_process_select3\n");
 
 	set_hdr_matrix(module_sel, HDR_IN_MTX, &hdr_mtx_param);
-	printf("hdr_process_select4\n");
+	debug("hdr_process_select4\n");
 
 	set_eotf_lut(module_sel, &hdr_lut_param);
 

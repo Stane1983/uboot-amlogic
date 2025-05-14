@@ -731,7 +731,7 @@ static void set_ddr_size(void)
 	ddr_size = ddr_size / SZ_1M;
 
 	sprintf(ddr_size_str, "%lu%s", ddr_size, "MB");
-	printf("ddr_size_str = %s\n", ddr_size_str);
+	debug("ddr_size_str = %s\n", ddr_size_str);
 	env_set("ddr_size", ddr_size_str);
 }
 
@@ -1172,14 +1172,14 @@ static int do_SetUpdateTries(
 		}
 	}
 
-	printf("boot_ctrl.merge_flag = %d\n", boot_ctrl.merge_flag);
+	debug("boot_ctrl.merge_flag = %d\n", boot_ctrl.merge_flag);
 
 	if (update_flag == 1)
 		boot_info_save(&boot_ctrl, miscbuf);
 
 	char *insufficient_data = env_get("insufficient_data");
 
-	printf("insufficient_data : %s\n", insufficient_data);
+	debug("insufficient_data : %s\n", insufficient_data);
 	if (insufficient_data && !strcmp(insufficient_data, "1") &&
 	    !strcmp(rebootmode, "kernel_panic")) {
 		printf("Insufficient data space, rollback\n");
@@ -1236,7 +1236,7 @@ static int do_SetUpdateTries(
 			run_command("reboot", 0);
 	}
 
-	printf("do_SetUpdateTries boot_ctrl.roll_flag = %d\n", boot_ctrl.roll_flag);
+	debug("do_SetUpdateTries boot_ctrl.roll_flag = %d\n", boot_ctrl.roll_flag);
 	if (boot_ctrl.roll_flag == 1) {
 		env_set("rollback_flag", "1");
 	}

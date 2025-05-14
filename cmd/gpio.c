@@ -260,7 +260,7 @@ static int do_gpio(struct cmd_tbl *cmdtp, int flag, int argc,
 		}
 		gpio_direction_output(gpio, value);
 	}
-	printf("gpio: pin %s (gpio %u) value is ", str_gpio, gpio);
+	debug("gpio: pin %s (gpio %u) value is ", str_gpio, gpio);
 
 	if (IS_ERR_VALUE(value)) {
 		printf("unknown (ret=%d)\n", value);

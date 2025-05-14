@@ -235,11 +235,11 @@ static int get_dtb_index(const char aml_dt_buf[128],unsigned long fdt_addr)
 				}
 			}
 			if (pDTBHdr->nVersion == 1)
-				printf("      dtb %d soc: %.4s	plat: %.4s   vari: %.4s\n",
+				debug("      dtb %d soc: %.4s	plat: %.4s   vari: %.4s\n",
 						i, (char *)(dt_name[0]), (char *)(dt_name[1]),
 						(char *)(dt_name[2]));
 			else if (pDTBHdr->nVersion == 2)
-				printf("      dtb %d soc: %.16s   plat: %.16s	vari: %.16s\n",
+				debug("      dtb %d soc: %.16s   plat: %.16s	vari: %.16s\n",
 						i, (char *)(dt_name[0]), (char *)(dt_name[1]),
 						(char *)(dt_name[2]));
 		}

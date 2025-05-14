@@ -186,7 +186,7 @@ int parse_gpt(struct blk_desc *dev_desc, void *buf)
 		if (strncmp(part_table[i].name, "vendor_boot", 11) == 0) {
 			vendor_boot_partition = true;
 			env_set("vendor_boot_mode", "true");
-			printf("enable vendor_boot\n");
+			debug("enable vendor_boot\n");
 		}
 	}
 

@@ -471,7 +471,7 @@ int mmc_pattern_check(struct mmc *mmc, struct aml_pattern *table)
 		printf("several 0x%x pattern blocks write %s\n",
 		       table->pattern, (n == cnt) ? "OK" : "ERROR");
 	}
-	printf("crc32_s:0x%x == storage crc_pattern:0x%x!!!\n", crc32_s, buf[vpart->size / 4 - 1]);
+	debug("crc32_s:0x%x == storage crc_pattern:0x%x!!!\n", crc32_s, buf[vpart->size / 4 - 1]);
 	free(addr);
 	return (n == cnt) ? 0 : 1;
 }

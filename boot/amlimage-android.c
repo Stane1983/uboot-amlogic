@@ -381,7 +381,7 @@ int android_image_get_ramdisk_v3(const boot_img_hdr_v3_t *hdr,
 	vb_hdr->ramdisk_addr = CONFIG_RAMDISK_MEM_ADDR;
 #endif
 
-	printf("RAM disk load addr 0x%08x size %u KiB\n",
+	debug("RAM disk load addr 0x%08x size %u KiB\n",
 	       vb_hdr->ramdisk_addr, DIV_ROUND_UP(hdr->ramdisk_size, 1024));
 
 	/*ramdisk offset of android R boot image*/
@@ -396,7 +396,7 @@ int android_image_get_ramdisk_v3(const boot_img_hdr_v3_t *hdr,
 
 	/* copy ramdisk to ramdisk_addr */
 	if (init_boot_ramdisk_size != 0) {
-		printf("use init_boot.img\n");
+		debug("use init_boot.img\n");
 		debug("RAM disk load addr 0x%08x size %u KiB\n",
 		vb_hdr->ramdisk_addr, DIV_ROUND_UP(init_boot_ramdisk_size, 1024));
 	}
@@ -453,7 +453,7 @@ int android_image_get_ramdisk_v3(const boot_img_hdr_v3_t *hdr,
 			p_vendor_ramdisk_table_entry_v4_t ramdisk_table =
 				(p_vendor_ramdisk_table_entry_v4_t)(pbuffpreload +
 				i * vb_hdr->vendor_ramdisk_table_entry_size);
-			printf("ramdisk_entry_name: %s\n", ramdisk_table->ramdisk_name);
+			debug("ramdisk_entry_name: %s\n", ramdisk_table->ramdisk_name);
 
 			if (strcmp((char *)ramdisk_table->ramdisk_name, "recovery") == 0) {
 				if (recovery_mode && (strcmp(recovery_mode, "true") == 0)) {
@@ -462,7 +462,7 @@ int android_image_get_ramdisk_v3(const boot_img_hdr_v3_t *hdr,
 					printf("use recovery ramdisk\n");
 					flag = 1;
 				} else {
-					printf("skip\n");
+					debug("skip\n");
 					continue;
 				}
 			} else {
@@ -473,12 +473,12 @@ int android_image_get_ramdisk_v3(const boot_img_hdr_v3_t *hdr,
 			}
 		}
 
-		printf("ramdisk_size: 0x%x\n", ramdisk_size);
-		printf("ramdisk_offset: 0x%x\n", ramdisk_offset);
-		printf("normal_ramdisk_size: 0x%x\n", normal_ramdisk_size);
-		printf("normal_ramdisk_offset: 0x%x\n", normal_ramdisk_offset);
+		debug("ramdisk_size: 0x%x\n", ramdisk_size);
+		debug("ramdisk_offset: 0x%x\n", ramdisk_offset);
+		debug("normal_ramdisk_size: 0x%x\n", normal_ramdisk_size);
+		debug("normal_ramdisk_offset: 0x%x\n", normal_ramdisk_offset);
 
-		printf("flag = %d\n", flag);
+		debug("flag = %d\n", flag);
 
 		if (IS_ENABLED(CONFIG_FACTORY_BURN_MODE)) {
 			char *factory_mode = NULL;
@@ -510,8 +510,8 @@ int android_image_get_ramdisk_v3(const boot_img_hdr_v3_t *hdr,
 					return __LINE__;
 				}
 
-				printf("Factory RAM disk size 0x%x\n", factory_ramdisk_size);
-				printf("vendor_ramdisk_size: 0x%x\n", normal_ramdisk_size);
+				debug("Factory RAM disk size 0x%x\n", factory_ramdisk_size);
+				debug("vendor_ramdisk_size: 0x%x\n", normal_ramdisk_size);
 
 				env_set("factory_mode", "0");
 #if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
@@ -580,8 +580,8 @@ int android_image_get_ramdisk_v3(const boot_img_hdr_v3_t *hdr,
 					return __LINE__;
 				}
 
-				printf("Factory RAM disk size 0x%x\n", bist_ramdisk_size);
-				printf("vendor_ramdisk_size: 0x%x\n", normal_ramdisk_size);
+				debug("Factory RAM disk size 0x%x\n", bist_ramdisk_size);
+				debug("vendor_ramdisk_size: 0x%x\n", normal_ramdisk_size);
 
 				env_set("bist_mode", "0");
 #if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
@@ -624,7 +624,7 @@ int android_image_get_ramdisk_v3(const boot_img_hdr_v3_t *hdr,
 					*rd_len  = ramdisksize + ramdisk_size
 						+ vb_hdr->vendor_bootconfig_size;
 			} else {
-				printf("vendor_ramdisk_size: 0x%x\n", vb_hdr->vendor_ramdisk_size);
+				debug("vendor_ramdisk_size: 0x%x\n", vb_hdr->vendor_ramdisk_size);
 				memmove(pRAMdisk, p_vender_boot_img->szData,
 					vb_hdr->vendor_ramdisk_size);
 				_read_in_bootconfig(vb_hdr, vb_hdr->vendor_ramdisk_size);
@@ -923,7 +923,7 @@ static bool _read_in_bootconfig(struct vendor_boot_img_hdr *boot_info, uint32_t 
 
 	unsigned char *pRAMdisk = (unsigned char *)(unsigned long)boot_info->ramdisk_addr;
 
-	printf("bootconfig_size: 0x%x\n", boot_info->vendor_bootconfig_size);
+	debug("bootconfig_size: 0x%x\n", boot_info->vendor_bootconfig_size);
 
 	if (boot_info->vendor_bootconfig_size > 0) {
 		u32 vramdisk_size_page_aligned =
@@ -937,7 +937,7 @@ static bool _read_in_bootconfig(struct vendor_boot_img_hdr *boot_info, uint32_t 
 				+ vdtb_size_page_aligned
 				+ vramdisk_table_size_page_aligned;
 
-		printf("bootconfig offset 0x%x\n", offset);
+		debug("bootconfig offset 0x%x\n", offset);
 
 		ret = store_logic_read(partname, offset, boot_info->vendor_bootconfig_size,
 			(void *)(pRAMdisk + ramdisk_size));
@@ -1000,7 +1000,7 @@ static bool _read_in_bootconfig(struct vendor_boot_img_hdr *boot_info, uint32_t 
 				}
 				result = strtok(NULL, " ");
 			}
-			printf("bootconfig_size: 0x%x\n", bootconfig_size);
+			debug("bootconfig_size: 0x%x\n", bootconfig_size);
 			free(pnewbootargs);
 			pnewbootargs = NULL;
 		}
@@ -1012,7 +1012,7 @@ static bool _read_in_bootconfig(struct vendor_boot_img_hdr *boot_info, uint32_t 
 	if (ret > 0)
 		bootconfig_size += ret;
 
-	printf("bootconfig_size: 0x%x\n", bootconfig_size);
+	debug("bootconfig_size: 0x%x\n", bootconfig_size);
 
 	// Need to update the size after adding parameters
 	boot_info->vendor_bootconfig_size = bootconfig_size;
