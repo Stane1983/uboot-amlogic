@@ -680,12 +680,10 @@ static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 	unsigned int val = 0, debug_bypass, size;
 	char env_str[16], ctrl_str[48], *type_str;
 
-	if (!pdrv->config.timing.base_timing)
-		return;
 	pdrv->boot_ctrl.lcd_type = pdrv->config.basic.lcd_type;
-	pdrv->boot_ctrl.lcd_bits = pdrv->config.timing.base_timing->lcd_bits;
-	pdrv->boot_ctrl.clk_mode = pdrv->config.timing.clk_mode;
-	pdrv->boot_ctrl.frame_rate = pdrv->config.timing.base_timing->frame_rate;
+	pdrv->boot_ctrl.lcd_bits = pdrv->config.timing.act_timing.lcd_bits;
+	pdrv->boot_ctrl.clk_mode = pdrv->config.timing.act_timing.clk_mode;
+	pdrv->boot_ctrl.frame_rate = pdrv->config.timing.act_timing.frame_rate;
 	pdrv->boot_ctrl.if_state = (pdrv->status & LCD_STATUS_IF_ON) ? 1 : 0;
 #ifdef CONFIG_AML_LCD_BACKLIGHT
 	pdrv->boot_ctrl.bl_state = aml_bl_get_state(pdrv->index);
@@ -755,8 +753,8 @@ static void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 		LCDPR("[%d]: %s: ppc=%d, clk_mode=%d, base_fr=%d, bootctrl=%s\n",
 			pdrv->index, __func__,
 			pdrv->config.timing.ppc,
-			pdrv->config.timing.clk_mode,
-			pdrv->config.timing.base_timing->frame_rate, ctrl_str);
+			pdrv->config.timing.act_timing.clk_mode,
+			pdrv->config.timing.act_timing.frame_rate, ctrl_str);
 	}
 
 	debug_bypass = env_get_ulong("lcd_bootargs_bypass", 10, 0);
@@ -791,9 +789,11 @@ static void lcd_init_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 	else
 		sprintf(arg_name, "panel%d_type", pdrv->index);
 	type_str = env_get(arg_name);
-	size = strlen(type_str) + 1; //include '\0' for string
-	sprintf(arg_name, "panel%d_type", pdrv->index);
-	lrm_bootargs_put_data((unsigned char *)type_str, arg_name, size);
+	if (type_str) {
+		size = strlen(type_str) + 1; //include '\0' for string
+		sprintf(arg_name, "panel%d_type", pdrv->index);
+		lrm_bootargs_put_data((unsigned char *)type_str, arg_name, size);
+	}
 }
 
 static void lcd_init_debug_bootargs(void)

@@ -60,6 +60,7 @@ static unsigned int g_ldim_dev_valid;
 static int glcd_ext_init_on_cnt, glcd_ext_init_off_cnt, glcd_ext_cmd_size;
 static struct lcd_ext_attr_s *lcd_ext_attr;
 static unsigned int g_lcd_if, g_lcd_tcon_valid;
+unsigned int g_clk_mode;
 static struct dccd_info_s dccd_info;
 #endif
 
@@ -381,7 +382,7 @@ static int handle_lcd_timming(struct lcd_attr_s *p_attr)
 static int handle_lcd_customer(struct lcd_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
-	unsigned char clk_auto, clk_mode, ppc, custom_pinmux;
+	unsigned char clk_auto, ppc, custom_pinmux;
 
 	ini_value = ini_get_string("lcd_Attr", "fr_adjust_type", "0");
 	if (model_debug_flag & DEBUG_LCD)
@@ -401,8 +402,8 @@ static int handle_lcd_customer(struct lcd_attr_s *p_attr)
 	ini_value = ini_get_string("lcd_Attr", "clk_mode", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, clk_mode is (%s)\n", __func__, ini_value);
-	clk_mode = strtoul(ini_value, NULL, 0);
-	p_attr->customer.custom_val0 = ((clk_mode & 0xf) << 4) | (clk_auto & 0xf);
+	g_clk_mode = strtoul(ini_value, NULL, 0);
+	p_attr->customer.custom_val0 = ((g_clk_mode & 0xf) << 4) | (clk_auto & 0xf);
 
 	ini_value = ini_get_string("lcd_Attr", "pixel_clk", "0");
 	if (model_debug_flag & DEBUG_LCD)

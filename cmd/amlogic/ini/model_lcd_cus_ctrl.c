@@ -196,10 +196,19 @@ static unsigned short handle_lcd_cus_ctrl_extend_tmg(unsigned char *p, unsigned 
 	char str[30];
 	unsigned short offset = 0, tmg_size;
 	unsigned int tmg_group_cnt = 0;
-	int spw, spol, i;
+	int clk_mode, spw, sbp, spol, i;
 
 	tmg_size = sizeof(struct lcd_cus_ctrl_extend_tmg_s);
 	for (i = 0; i < 15; i++) {
+		sprintf(str, "extend_tmg_%d_clk_mode", i);
+		ini_value = ini_get_string("lcd_Attr", str, "none");
+		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
+			ALOGD("%s, %s is (%s)\n", __func__, str, ini_value);
+		if (strcmp(ini_value, "none") == 0)
+			clk_mode = g_clk_mode;
+		else
+			clk_mode = strtoul(ini_value, NULL, 0);
+
 		sprintf(str, "extend_tmg_%d_hactive", i);
 		ini_value = ini_get_string("lcd_Attr", str, "none");
 		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
@@ -271,7 +280,8 @@ static unsigned short handle_lcd_cus_ctrl_extend_tmg(unsigned char *p, unsigned 
 			ALOGD("%s, %s is (%s)\n", __func__, str, ini_value);
 		if (strcmp(ini_value, "none") == 0)
 			break;
-		extend_tmg.vbp = strtoul(ini_value, NULL, 0);
+		sbp = strtoul(ini_value, NULL, 0);
+		extend_tmg.vbp_clk_mode = ((clk_mode & 0xf) << 12) | (sbp & 0xfff);
 
 		sprintf(str, "extend_tmg_%d_vs_pol", i);
 		ini_value = ini_get_string("lcd_Attr", str, "none");

@@ -240,6 +240,7 @@ struct lcd_cus_ctrl_extend_tmg_s {
 	unsigned short hpw_pol;//[15:12]hs_pol, [11:0]hpw
 	unsigned short hbp;
 	unsigned short vpw_pol;//[15:12]vs_pol, [11:0]vpw
+	unsigned short vbp_clk_mode;//[15:12]clk_mode, [11:0]vbp
 	unsigned short vbp;
 	unsigned char fr_adjust_type;
 	unsigned int pixel_clk;
@@ -629,6 +630,7 @@ struct all_info_header_s {
 #define CC_MAX_PANEL_ALL_ONE_SEC_TAG_CONTENT     "panel_all_data0"
 
 extern int model_debug_flag;
+extern unsigned int g_clk_mode;
 
 struct dccd_info_s {
 	unsigned char *data_buf;

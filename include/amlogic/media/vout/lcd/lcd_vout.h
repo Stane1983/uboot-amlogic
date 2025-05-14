@@ -143,7 +143,6 @@ struct lcd_timing_s {
 	unsigned char num_timings;
 
 	unsigned char pll_flag;
-	unsigned char clk_mode;
 	unsigned char ppc;
 	unsigned char clk_change; /* internal used */
 	unsigned char ss_level;

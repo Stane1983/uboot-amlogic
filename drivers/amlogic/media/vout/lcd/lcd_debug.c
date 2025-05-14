@@ -512,8 +512,8 @@ void lcd_info_print(struct aml_lcd_drv_s *pdrv)
 		pconf->timing.act_timing.h_active, pconf->timing.act_timing.v_active,
 		(sync_duration / 100), (sync_duration % 100),
 		pconf->timing.act_timing.pixel_clk, pconf->timing.enc_clk,
-		(pconf->timing.clk_mode ? "adaptive" : "fixed"),
-		pconf->timing.clk_mode, pconf->timing.ss_level,
+		(pconf->timing.act_timing.clk_mode ? "adaptive" : "fixed"),
+		pconf->timing.act_timing.clk_mode, pconf->timing.ss_level,
 		pconf->timing.ss_freq, pconf->timing.ss_mode,
 		pconf->timing.act_timing.fr_adjust_type);
 

@@ -55,7 +55,7 @@ int pll_od_setting_generate(struct lcd_clk_config_s *cconf, unsigned long long p
 struct lcd_clk_config_s *lcd_clk_config_chip_init_t5m(struct aml_lcd_drv_s *pdrv);
 #endif
 #ifdef CONFIG_MESON_T3X
-struct lcd_clk_config_s *lcd_clk_config_s *lcd_clk_config_chip_init_t3x(struct aml_lcd_drv_s *pdrv);
+struct lcd_clk_config_s *lcd_clk_config_chip_init_t3x(struct aml_lcd_drv_s *pdrv);
 #endif
 #ifdef CONFIG_MESON_A4
 struct lcd_clk_config_s *lcd_clk_config_chip_init_a4(struct aml_lcd_drv_s *pdrv);
@@ -67,7 +67,8 @@ struct lcd_clk_config_s *lcd_clk_config_chip_init_txhd2(struct aml_lcd_drv_s *pd
 struct lcd_clk_config_s *lcd_clk_config_chip_init_s6(struct aml_lcd_drv_s *pdrv);
 #endif
 #if defined(CONFIG_MESON_T6D) || defined(CONFIG_MESON_T6W)
-struct lcd_clk_config_s *lcd_clk_config_chip_init_t6d_t6w(struct aml_lcd_drv_s *pdrv);
+struct lcd_clk_config_s *lcd_clk_config_chip_init_t6d(struct aml_lcd_drv_s *pdrv);
+struct lcd_clk_config_s *lcd_clk_config_chip_init_t6w(struct aml_lcd_drv_s *pdrv);
 #endif
 
 unsigned long long lcd_abs(unsigned long long a, unsigned long long b);

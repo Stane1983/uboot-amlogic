@@ -89,7 +89,7 @@ static void lcd_config_load_print(struct aml_lcd_drv_s *pdrv)
 
 	if ((lcd_debug_print_flag & LCD_DBG_PR_NORMAL) == 0) {
 		i = snprintf(pr_buf + i, 128 - i, "ppc:%d, clk_mode:%d, ",
-				pconf->timing.ppc, pconf->timing.clk_mode);
+				pconf->timing.ppc, ptiming->clk_mode);
 		if (pconf->timing.pre_de_h || pconf->timing.pre_de_v) {
 			i += snprintf(pr_buf + i, 128 - i, "pre_de:%d,%d, ",
 					pconf->timing.pre_de_h, pconf->timing.pre_de_v);
@@ -117,7 +117,7 @@ static void lcd_config_load_print(struct aml_lcd_drv_s *pdrv)
 
 	ptiming = pdrv->config.timing.dft_timing;
 	LCDPR("pll_flag = %d\n", pconf->timing.pll_flag);
-	LCDPR("clk_mode = %d\n", pconf->timing.clk_mode);
+	LCDPR("clk_mode = %d\n", ptiming->clk_mode);
 	LCDPR("pixel_clk = %d\n", ptiming->pixel_clk);
 	LCDPR("custom_pinmux = %d\n", pconf->custom_pinmux);
 
@@ -230,7 +230,8 @@ int lcd_base_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 
 	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "key_valid", NULL);
 	if (!propdata) {
-		LCDERR("[%d]: failed to get key_valid\n", pdrv->index);
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDPR("[%d]: not find key_valid\n", pdrv->index);
 		pdrv->key_valid = 0;
 	} else {
 		pdrv->key_valid = (unsigned char)(be32_to_cpup((u32 *)propdata));
@@ -934,9 +935,9 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 	if (!propdata) {
 		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 			LCDERR("[%d]: no clk_mode\n", pdrv->index);
-		pconf->timing.clk_mode = 0;
+		ptiming->clk_mode = 0;
 	} else {
-		pconf->timing.clk_mode = (unsigned char)(be32_to_cpup((u32 *)propdata));
+		ptiming->clk_mode = (unsigned char)(be32_to_cpup((u32 *)propdata));
 	}
 	ptiming->lcd_bits = lcd_bits;
 	ptiming->switch_type = LCD_VMODE_SWITCH_NONE;
@@ -1647,7 +1648,7 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv)
 	ptiming->fr_adjust_type = *(p + LCD_UKEY_FR_ADJ_TYPE);
 	pconf->timing.ss_level = *(p + LCD_UKEY_SS_LEVEL);
 	val = *(p + LCD_UKEY_CUST_VAL0);
-	pconf->timing.clk_mode = (val >> 4) & 0xf;
+	ptiming->clk_mode = (val >> 4) & 0xf;
 	pconf->timing.pll_flag = val & 0xf;
 	ptiming->pixel_clk = (*(p + LCD_UKEY_PCLK) |
 		((*(p + LCD_UKEY_PCLK + 1)) << 8) |
@@ -1996,10 +1997,10 @@ static int lcd_config_load_from_bsp(struct aml_lcd_drv_s *pdrv)
 	temp = ext_lcd->customer_val_2;
 	if (temp == Rsv_val) {
 		pconf->timing.pll_flag = 1;
-		pconf->timing.clk_mode = 0;
+		ptiming->clk_mode = 0;
 	} else {
 		pconf->timing.pll_flag = temp & 0xf;
-		pconf->timing.clk_mode = (temp >> 4) & 0xf;
+		ptiming->clk_mode = (temp >> 4) & 0xf;
 	}
 	/* lcd_clk */
 	temp = ext_lcd->customer_val_3;
@@ -2305,7 +2306,6 @@ static int lcd_panel_parse_timing(struct json_parse_s *jsp, struct aml_lcd_drv_s
 		return -1;
 	}
 	tims->ppc      = json_get_obj_u32(jsp, parent, "ppc_mode", 1);
-	tims->clk_mode = json_get_obj_u32(jsp, parent, "clk_mode", LCD_BIT_RATE_FIXED);
 	tims->pll_flag = json_get_obj_u32(jsp, parent, "pll_flag", 1);
 
 	parent         = json_get_object_child(jsp, parent, "pre_de");
@@ -2354,6 +2354,7 @@ static int lcd_panel_parse_timing(struct json_parse_s *jsp, struct aml_lcd_drv_s
 		dt->switch_type = strnum_get_num(str, vmode_switch_name,
 						 ARRAY_SIZE(vmode_switch_name),
 						 LCD_VMODE_SWITCH_NONE);
+		dt->clk_mode = json_get_obj_u32(jsp, child, "clk_mode", LCD_BIT_RATE_FIXED);
 
 		child2 = json_get_object_child(jsp, child, "timing");
 		if (!child2 && dt == tims->timings[0]) {
@@ -3170,7 +3171,7 @@ static int lcd_config_load_from_ini(struct aml_lcd_drv_s *pdrv)
 	/* customer: 31byte */
 	ptiming->fr_adjust_type = lcd_ini_get_val(inip, psec, "fr_adjust_type", 0);
 	pconf->timing.ss_level = lcd_ini_get_val(inip, psec, "ss_level", 0);
-	pconf->timing.clk_mode = lcd_ini_get_val(inip, psec, "clk_mode", 0);
+	ptiming->clk_mode = lcd_ini_get_val(inip, psec, "clk_mode", 0);
 	pconf->timing.pll_flag = lcd_ini_get_val(inip, psec, "clk_auto_gen", 1);
 	ptiming->pixel_clk = lcd_ini_get_val(inip, psec, "pixel_clk", 0);
 	ptiming->h_period_min = lcd_ini_get_val(inip, psec, "h_period_min", 0);
