@@ -419,6 +419,7 @@
 
 /* config ramdump to debug kernel panic */
 #define CONFIG_FULL_RAMDUMP
+#define CONFIG_COMPRESSED_ADDR  (0x10000000)
 
 #define BL32_SHARE_MEM_SIZE  0x800000
 #define CONFIG_AML_KASLR_SEED
