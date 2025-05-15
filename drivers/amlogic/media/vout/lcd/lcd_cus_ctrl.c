@@ -735,6 +735,7 @@ static int lcd_cus_ctrl_attr_parse_ufr_ini(struct aml_lcd_drv_s *pdrv,
 
 	memcpy((void *)ptiming, (void *)tims->timings[0], sizeof(*ptiming));
 	ptiming->ss_force = 0;
+	ptiming->ufr_mode = 1;
 
 	temp = lcd_ini_get_val(inip, psec, "ufr_vtotal_min", 0);
 	if (temp == 0)
@@ -970,6 +971,10 @@ static int lcd_cus_ctrl_attr_parse_extend_tmg_ini(struct aml_lcd_drv_s *pdrv,
 		tmg_temp.pclk_min = lcd_ini_get_val(inip, psec, str, 0);
 		sprintf(str, "extend_tmg_%d_pclk_max", i);
 		tmg_temp.pclk_max = lcd_ini_get_val(inip, psec, str, 0);
+		sprintf(str, "extend_tmg_%d_asf_mode", i);
+		tmg_temp.asf_mode = lcd_ini_get_val(inip, psec, str, 0);
+		sprintf(str, "extend_tmg_%d_ufr_mode", i);
+		tmg_temp.ufr_mode = lcd_ini_get_val(inip, psec, str, 0);
 
 		ptiming = lcd_timing_alloc(pdrv);
 		if (!ptiming) {

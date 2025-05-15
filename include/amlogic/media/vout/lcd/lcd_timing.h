@@ -29,6 +29,8 @@ struct lcd_detail_timing_s {
 	unsigned char ss_freq;
 	unsigned char ss_mode;
 	unsigned char ss_force;
+	unsigned char asf_mode;
+	unsigned char ufr_mode;  //current timing is ufr mode, like 3840x1080p@120hz
 	unsigned int pixel_clk;
 
 	unsigned short h_period_min;

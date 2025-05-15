@@ -202,7 +202,6 @@ int panel_file_parse_mem_save(void);
 
 #ifdef CONFIG_AML_LCD_JSON
 struct json_parse_s *get_panel_jsp(int index);
-struct json_parse_s *get_panel_jsp(int index);
 struct json_parse_s *panel_json_parse(int index);
 int panel_json_mem_save(void *parse_mem, int index);
 void panel_json_mem_free(void *parse_mem);
