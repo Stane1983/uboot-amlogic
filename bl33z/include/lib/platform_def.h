@@ -166,12 +166,13 @@
  * --> 0x00000000  --> code start
  * --> 0x00004000  --> code end
  * --> 0x005F0000  --> stack bottom
- * --> 0x00600000  --> stack top / mmu base
- * --> 0x00620000  --> mmu end / compress scrach buffer
+ * --> 0x00600000  --> stack top
+ * --> 0x00620000  --> compress scrach buffer
  * --> 0x00680000  --> compress scrach end / first compress out buffer
  * --> 0x006E0000  --> first compress out end
  * --> 0x00B00000  --> ramdump md5sum info start. bl2e1/ble2/bl33z/bl33x
  * --> 0x00B60000  --> ramdump md5sum info end.
+ * --> 0x00C00000  --> mmu base ~. Reuse the storage_init region from BL2E.
  */
 
 /* CODE space */
@@ -182,7 +183,7 @@
 /* STACK space */
 #define PLATFORM_STACK_BOTTOM		(PLATFORM_STACK_POSI - PLATFORM_STACK_SIZE)
 #define PLATFORM_STACK_SIZE			0x00010000	/* 64KB stack size */
-#define PLATFORM_STACK_POSI			0x00600000	/* skip bl2e area 0x00880000 */
+#define PLATFORM_STACK_POSI			0x00C00000	/* skip bl2e mmu area 0x00880000 */
 
 /* MMU space */
 #define CONFIG_AML_MMU_ADDR			(PLATFORM_STACK_POSI)

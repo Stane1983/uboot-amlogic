@@ -358,11 +358,24 @@ void ramdump_init(void)
 				REG_MDUMP_COMPRESS_BASE, REG_MDUMP_COMPRESS_SIZE);
 	ramdump_base = readl(REG_MDUMP_COMPRESS_BASE);
 	ramdump_size = readl(REG_MDUMP_COMPRESS_SIZE);
-#if defined(CONFIG_MDUMP_COMPRESS) && defined(CONFIG_COMPRESSED_ADDR)
-	printf("%s, ramdump_base(0x%08lx) is overwritten as 0x%08x\n",
-			__func__, ramdump_base, CONFIG_COMPRESSED_ADDR);
-	ramdump_base = (unsigned long)CONFIG_COMPRESSED_ADDR;
+	if (ramdump_base && ramdump_size) {
+		if (ramdump_check_ddr_md5_info() < 0)
+			printf("%s, The core-dump is polluted !!!\n\n", __func__);
+	}
+
+#if defined(CONFIG_COMPRESSED_ADDR)
+	printf("%s: Original ramdump_base=0x%08lx\n", __func__, ramdump_base);
+
+#if !defined(CONFIG_MDUMP_COMPRESS)
+		printf("%s: Moving ramdump from 0x%08lx to 0x%08x, size=0x%lx\n",
+			__func__, ramdump_base, CONFIG_COMPRESSED_ADDR, ramdump_size);
+		memmove((void *)CONFIG_COMPRESSED_ADDR, (void *)ramdump_base, ramdump_size);
 #endif
+
+	ramdump_base = (unsigned long)CONFIG_COMPRESSED_ADDR;
+	printf("%s: ramdump_base update to 0x%08x\n", __func__, CONFIG_COMPRESSED_ADDR);
+#endif
+
 	if (ramdump_base & 0x80) {
 		/* 0x80: The flag indicates that the addr exceeds 4G. */
 		/* real size = size[31:0] + addr[6:0]<<32 */
@@ -386,8 +399,6 @@ void ramdump_init(void)
 #ifdef CONFIG_DUMP_COMPRESS_HEAD
 			parse_dump_file_v2((char *)ramdump_base, ramdump_size);
 #endif
-			if (ramdump_check_ddr_md5_info() < 0)
-				printf("%s, The core-dump is polluted !!!\n\n", __func__);
 			ramdump_save_compress_data();
 		}
 	}
