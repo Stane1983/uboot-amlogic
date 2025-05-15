@@ -30,6 +30,8 @@ ifdef  CONFIG_AML_UPDATE_PDVFS
 obj-y += cmd_pdvfs.o
 endif
 
+obj-$(CONFIG_AML_SUSPEND_DEBUG) += cmd_suspend_debug.o
+
 ifdef  CONFIG_AML_UPDATE_COOLING_STATE
 obj-y += cmd_cooling.o
 endif

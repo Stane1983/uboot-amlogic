@@ -63,6 +63,13 @@ config AML_UPDATE_PDVFS
 		Update pdvfs Voltage and frequency tables to determine based on other qualifiers
 		For Amlogic boards
 
+config AML_SUSPEND_DEBUG
+        bool "Enable AML SUSPEND DEBUG"
+        default n
+        help
+                Write different values to suspend register to debug
+                For Amlogic boards
+
 config AML_UPDATE_COOLING_STATE
 	bool "Enable AML COOLING STATE Update"
 	default n
