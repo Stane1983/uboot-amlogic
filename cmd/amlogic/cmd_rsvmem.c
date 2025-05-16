@@ -34,7 +34,6 @@
 
 #ifndef DTB_BIND_KERNEL
 
-#define RAMOOP_MEM_SIZE      0x100000
 #define RSV_MEM_ALIGNMENT    0x400000
 
 static int do_rsvmem_kernel_dts_check(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
@@ -205,6 +204,8 @@ static int fdt_config_rsv_mem(unsigned int aarch32, unsigned int alignment,
 	char cmdbuf[128] = { 0 };
 	unsigned int ramoops_start = 0;
 	unsigned int rsv_sz_align = 0;
+	unsigned int ramoops_tmp = 0, ramoops_size = 0;
+	char *tmp_env = NULL;
 
 	if (bl31_start == 0 || rsv_sz == 0) {
 		rsvmem_err("Bad args secure monitor start: %u, sz: %u.\n", bl31_start, rsv_sz);
@@ -298,13 +299,21 @@ static int fdt_config_rsv_mem(unsigned int aarch32, unsigned int alignment,
 	sprintf(cmdbuf, "fdt get value ramoops_reg /reserved-memory/ramoops reg;");
 	if (run_command(cmdbuf, 0) == 0) {
 		memset(cmdbuf, 0, sizeof(cmdbuf));
+
+		tmp_env = env_get("ramoops_reg");
+		ramoops_tmp = simple_strtoul(tmp_env + strlen(tmp_env) / 2, NULL, 16);
+		ramoops_size = (ramoops_tmp & 0xff) << 24;
+		ramoops_size |= (ramoops_tmp & 0xff00) << 8;
+		ramoops_size |= (ramoops_tmp & 0xff0000) >> 8;
+		ramoops_size |= (ramoops_tmp & 0xff000000) >> 24;
+
 		if (aarch32)
 			sprintf(cmdbuf, "fdt set /reserved-memory/ramoops reg <0x%x 0x%x>;",
-				ramoops_start, RAMOOP_MEM_SIZE);
+				ramoops_start, ramoops_size);
 		else
 			sprintf(cmdbuf,
 				"fdt set /reserved-memory/ramoops reg <0x0 0x%x 0x0 0x%x>;",
-				ramoops_start, RAMOOP_MEM_SIZE);
+				ramoops_start, ramoops_size);
 
 		rsvmem_dbg("CMD: %s\n", cmdbuf);
 		ret = run_command(cmdbuf, 0);
