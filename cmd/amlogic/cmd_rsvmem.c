@@ -217,6 +217,7 @@ static int do_rsvmem_check(cmd_tbl_t *cmdtp, int flag, int argc,
 	unsigned int secure_monitor_size = 0;
 	unsigned int secure_monitor_size_final = 0;
 	unsigned int ramoops_start = 0;
+	unsigned int ramoops_tmp = 0, ramoops_size = 0;
 	int reg_flag = 0;
 	char cmdbuf[128];
 	char *fdtaddr = NULL;
@@ -521,12 +522,21 @@ static int do_rsvmem_check(cmd_tbl_t *cmdtp, int flag, int argc,
 				sprintf(cmdbuf, "fdt get value ramoops_reg /reserved-memory/ramoops reg;");
 				if (run_command(cmdbuf, 0) == 0) {
 					memset(cmdbuf, 0, sizeof(cmdbuf));
+
+					temp_env = env_get("ramoops_reg");
+					ramoops_tmp = simple_strtoul(temp_env
+							+ strlen(temp_env) / 2, NULL, 16);
+					ramoops_size = (ramoops_tmp & 0xff) << 24;
+					ramoops_size |= (ramoops_tmp & 0xff00) << 8;
+					ramoops_size |= (ramoops_tmp & 0xff0000) >> 8;
+					ramoops_size |= (ramoops_tmp & 0xff000000) >> 24;
+
 					if (aarch32)
 						sprintf(cmdbuf, "fdt set /reserved-memory/ramoops reg <0x%x 0x%x>;",
-								ramoops_start, 0x100000);
+								ramoops_start, ramoops_size);
 					else
 						sprintf(cmdbuf, "fdt set /reserved-memory/ramoops reg <0x0 0x%x 0x0 0x%x>;",
-								ramoops_start, 0x100000);
+								ramoops_start, ramoops_size);
 
 					rsvmem_dbg("CMD: %s\n", cmdbuf);
 					ret = run_command(cmdbuf, 0);
