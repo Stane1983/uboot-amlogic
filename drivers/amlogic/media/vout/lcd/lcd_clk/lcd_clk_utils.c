@@ -343,9 +343,8 @@ int pll_od_setting_generate(struct lcd_clk_config_s *cconf, unsigned long long p
 		return generate_pll_1od_setting(cconf, pll_fout);
 }
 
-#ifdef CONFIG_AML_LCD_TCON
 /***** calculate 1od and 3od setting @pll_od_setting_generate Done *****/
-static int check_vco(struct lcd_clk_config_s *cconf, unsigned long long pll_fvco)
+int check_vco(struct lcd_clk_config_s *cconf, unsigned long long pll_fvco)
 {
 	struct lcd_clk_data_s *data = cconf->data;
 	unsigned int m, n;
@@ -390,6 +389,7 @@ static int check_vco(struct lcd_clk_config_s *cconf, unsigned long long pll_fvco
 	return done;
 }
 
+#ifdef CONFIG_AML_LCD_TCON
 static int check_3od(struct lcd_clk_config_s *cconf, unsigned long long pll_fout)
 {
 	struct lcd_clk_data_s *data = cconf->data;

@@ -594,6 +594,79 @@ lcd_prbs_test_t5m_err:
 	return 0;
 }
 
+static const unsigned int tcon_div_table[5] = {1, 2, 4, 8, 16};
+
+static int lcd_clk_generate_p2p_with_tcon_div_t5m(struct lcd_clk_config_s *cconf,
+						  unsigned long long bit_rate)
+{
+	unsigned long long pll_fvco;
+	unsigned int tcon_div_sel = 0;
+	int done = 0;
+
+	for (tcon_div_sel = 0; tcon_div_sel < 5; tcon_div_sel++) {
+		pll_fvco = bit_rate * tcon_div_table[tcon_div_sel];
+		done = check_vco(cconf, pll_fvco);
+		if (done) {
+			cconf->pll_tcon_div_sel = tcon_div_sel;
+			cconf->phy_clk = bit_rate;
+			break;
+		}
+	}
+
+	return done;
+}
+
+static void lcd_clk_generate_t5m(struct aml_lcd_drv_s *pdrv)
+{
+	struct lcd_clk_config_s *cconf;
+	unsigned long long bit_rate;
+	int done = 0;
+
+	if (pdrv->config.basic.lcd_type != LCD_P2P) {
+		lcd_clk_generate_dft(pdrv);
+		return;
+	}
+
+	cconf = get_lcd_clk_config(pdrv);
+	if (!cconf)
+		return;
+	if (pdrv->config.timing.act_timing.clk_mode == 2) { //165hz
+		//gp0 pll fixed clk: 1544.4MHz
+		LCDPR("%s: dual pll config\n", __func__);
+		cconf->pll_mode |= LCD_PLL_MODE_DUAL_PLL;
+
+		cconf->fout = pdrv->config.timing.enc_clk;
+		cconf->data->vclk_sel = 1; //gp0
+		cconf->xd = 2;
+
+		bit_rate = pdrv->config.timing.bit_rate;
+		done = lcd_clk_generate_p2p_with_tcon_div_t5m(cconf, bit_rate);
+		if (done) {
+			pdrv->config.timing.pll_ctrl =
+				(cconf->pll_od1_sel << PLL_CTRL_OD1) |
+				(cconf->pll_od2_sel << PLL_CTRL_OD2) |
+				(cconf->pll_od3_sel << PLL_CTRL_OD3) |
+				(cconf->pll_n << PLL_CTRL_N)         |
+				(cconf->pll_m << PLL_CTRL_M);
+			pdrv->config.timing.div_ctrl = (cconf->xd << DIV_CTRL_XD);
+			pdrv->config.timing.clk_ctrl =
+				(cconf->pll_frac << CLK_CTRL_FRAC) |
+				(cconf->pll_frac_half_shift << CLK_CTRL_FRAC_SHIFT);
+			cconf->done = 1;
+		} else {
+			pdrv->config.timing.pll_ctrl = 0;
+			pdrv->config.timing.div_ctrl = 0;
+			pdrv->config.timing.clk_ctrl = 0;
+			cconf->done = 0;
+			LCDERR("[%d]: %s: Out of clock range\n", pdrv->index, __func__);
+		}
+	} else {
+		cconf->pll_mode &= ~LCD_PLL_MODE_DUAL_PLL;
+		cconf->data->vclk_sel = 0; //vid_pll
+		lcd_clk_generate_dft(pdrv);
+	}
+}
+
 static struct lcd_clk_data_s lcd_clk_data_t5m = {
 	.pll_od_fb = 0,
 	.pll_m_max = 511,
@@ -633,7 +706,7 @@ static struct lcd_clk_data_s lcd_clk_data_t5m = {
 	.ss_str_m_max = 10,
 
 	.clk_parameter_init = NULL,
-	.clk_generate_parameter = lcd_clk_generate_dft,
+	.clk_generate_parameter = lcd_clk_generate_t5m,
 	.pll_frac_generate = lcd_pll_frac_generate_dft,
 	.set_ss = lcd_set_pll_ss,
 	.clk_ss_enable = lcd_pll_ss_enable,
@@ -657,15 +730,14 @@ struct lcd_clk_config_s *lcd_clk_config_chip_init_t5m(struct aml_lcd_drv_s *pdrv
 		return NULL;
 
 	pdrv->clk_conf_num = 1;
+	size = pdrv->clk_conf_num * sizeof(struct lcd_clk_config_s);
 	if (!pdrv->clk_conf) {
-		size = pdrv->clk_conf_num * sizeof(struct lcd_clk_config_s);
 		cconf = (struct lcd_clk_config_s *)malloc(size);
 		if (!cconf) {
 			LCDERR("[%d]: %s: Not enough memory\n", pdrv->index, __func__);
 			return NULL;
 		}
 	} else {
-		size = pdrv->clk_conf_num * sizeof(struct lcd_clk_config_s);
 		cconf = (struct lcd_clk_config_s *)pdrv->clk_conf;
 	}
 	memset(cconf, 0, size);
