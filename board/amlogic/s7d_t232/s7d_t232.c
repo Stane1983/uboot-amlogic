@@ -61,8 +61,7 @@ int serial_set_pin_port(unsigned long port_base)
 
 int dram_init(void)
 {
-	gd->ram_size = ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xffffUL) << 4) >= 0xe0000000 ?
-		0xf0000000 : ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xffffUL) << 4);
+	gd->ram_size = (readl(SYSCTRL_SEC_STATUS_REG4) & ~0xfffffUL) << 4;
 	return 0;
 }
 
