@@ -1985,6 +1985,10 @@ void vpp_enable_lcd_gamma_table(int index)
 {
 	unsigned int reg;
 
+	if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T5 ||
+		get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T5D)
+		return;
+
 	if (get_cpu_id().family_id >= MESON_CPU_MAJOR_ID_T7) {
 		switch (index) {
 		case 1:
