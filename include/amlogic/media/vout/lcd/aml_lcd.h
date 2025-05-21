@@ -99,7 +99,7 @@ struct ext_lcd_config_s {
 	unsigned int customer_val_2; //clk_auto_generate
 	unsigned int customer_val_3; //pixel clock(unit in Hz)
 	unsigned int customer_val_4; //ppc mode
-	unsigned int customer_val_5;
+	unsigned int customer_val_5; //ufr mode
 	unsigned int customer_val_6;
 	unsigned int customer_val_7;
 	unsigned int customer_val_8;

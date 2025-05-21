@@ -115,6 +115,7 @@ static void lcd_config_load_print(struct aml_lcd_drv_s *pdrv)
 	ptiming = pdrv->config.timing.dft_timing;
 	LCDPR("pll_flag = %d\n", pconf->timing.pll_flag);
 	LCDPR("clk_mode = %d\n", ptiming->clk_mode);
+	LCDPR("ufr_mode = %d\n", ptiming->ufr_mode);
 	LCDPR("pixel_clk = %d\n", ptiming->pixel_clk);
 	LCDPR("custom_pinmux = %d\n", pconf->custom_pinmux);
 
@@ -952,6 +953,16 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 	} else {
 		ptiming->clk_mode = (unsigned char)(be32_to_cpup((u32 *)propdata));
 	}
+
+	propdata = (char *)fdt_getprop(dt_addr, child_offset, "ufr_mode", NULL);
+	if (!propdata) {
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDERR("[%d]: no ufr_mode\n", pdrv->index);
+		ptiming->ufr_mode = 0;
+	} else {
+		ptiming->ufr_mode = (unsigned char)(be32_to_cpup((u32 *)propdata));
+	}
+
 	ptiming->lcd_bits = lcd_bits;
 	ptiming->switch_type = LCD_VMODE_SWITCH_NONE;
 	ptiming->ss_force = 0;
@@ -2061,6 +2072,13 @@ static int lcd_config_load_from_bsp(struct aml_lcd_drv_s *pdrv)
 	else
 		pconf->timing.ppc = temp;
 
+	/* asf_mode & ufr_mode */
+	temp = ext_lcd->customer_val_5;
+	if (temp == Rsv_val)
+		ptiming->ufr_mode = 0;
+	else
+		ptiming->ufr_mode = temp & 0xf;
+
 	ptiming->switch_type = LCD_VMODE_SWITCH_NONE;
 	ptiming->ss_force = 0;
 	ptiming->ss_freq = 255;
@@ -2413,6 +2431,7 @@ static int lcd_panel_parse_timing(struct json_parse_s *jsp, struct aml_lcd_drv_s
 						 ARRAY_SIZE(vmode_switch_name),
 						 LCD_VMODE_SWITCH_NONE);
 		dt->clk_mode = json_get_obj_u32(jsp, child, "clk_mode", LCD_BIT_RATE_FIXED);
+		dt->ufr_mode = json_get_obj_u32(jsp, child, "ufr_mode", 0);
 
 		child2 = json_get_object_child(jsp, child, "timing");
 		if (!child2 && dt == tims->timings[0]) {
@@ -3221,6 +3240,7 @@ static int lcd_config_load_from_ini(struct aml_lcd_drv_s *pdrv)
 	ptiming->fr_adjust_type = lcd_ini_get_val(inip, psec, "fr_adjust_type", 0);
 	pconf->timing.ss_level = lcd_ini_get_val(inip, psec, "ss_level", 0);
 	ptiming->clk_mode = lcd_ini_get_val(inip, psec, "clk_mode", 0);
+	ptiming->ufr_mode = lcd_ini_get_val(inip, psec, "ufr_mode", 0);
 	pconf->timing.pll_flag = lcd_ini_get_val(inip, psec, "clk_auto_gen", 1);
 	ptiming->pixel_clk = lcd_ini_get_val(inip, psec, "pixel_clk", 0);
 	ptiming->h_period_min = lcd_ini_get_val(inip, psec, "h_period_min", 0);
