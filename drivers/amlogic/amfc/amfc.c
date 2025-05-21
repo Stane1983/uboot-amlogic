@@ -285,6 +285,9 @@ int amfc_decompress(void *src, void *dst, ssize_t src_size, ssize_t dst_size, in
 	}
 	cmd_time = get_time() - cmd_time;
 
+	invalidate_dcache_range((unsigned long)dst, inv_end);
+	invalidate_dcache_range((unsigned long)&acl, (unsigned long)&acl + sizeof(acl));
+
 	status = readl(AMFC_GL_CMD1_STATUS);
 	if (!(status & AMFC_ERROR_MASK)) {
 	#ifdef CONFIG_AMFC_TEST
@@ -413,6 +416,9 @@ int amfc_compress(void *src, void *dst, ssize_t src_size, ssize_t dst_size)
 		}
 	}
 	cmd_time = get_time() - cmd_time;
+
+	invalidate_dcache_range((unsigned long)dst, (unsigned long)dst + dst_size);
+	invalidate_dcache_range((unsigned long)&acl, (unsigned long)&acl + sizeof(acl));
 
 	status = readl(AMFC_GL_CMD0_STATUS);
 	if (!(status & AMFC_ERROR_MASK)) {
