@@ -1208,14 +1208,18 @@ void hdr_func(enum hdr_module_sel module_sel,
 	/* t7 have osd1/3 and vd1/2/3, no osd2 */
 	switch (module_sel) {
 	case OSD2_HDR:
-		if (get_cpu_id().family_id != MESON_CPU_MAJOR_ID_T3)
+		if (get_cpu_id().family_id != MESON_CPU_MAJOR_ID_T3 &&
+			get_cpu_id().family_id != MESON_CPU_MAJOR_ID_T5M &&
+			get_cpu_id().family_id != MESON_CPU_MAJOR_ID_T5W)
 			return;
 		break;
 	case OSD3_HDR:
 		if ((get_cpu_id().family_id != MESON_CPU_MAJOR_ID_T3) &&
 			(get_cpu_id().family_id != MESON_CPU_MAJOR_ID_T7) &&
 			(get_cpu_id().family_id != MESON_CPU_MAJOR_ID_S5) &&
-			(get_cpu_id().family_id != MESON_CPU_MAJOR_ID_T3X))
+			(get_cpu_id().family_id != MESON_CPU_MAJOR_ID_T3X) &&
+			(get_cpu_id().family_id != MESON_CPU_MAJOR_ID_T5M) &&
+			(get_cpu_id().family_id != MESON_CPU_MAJOR_ID_T5W))
 			return;
 		break;
 	case OSD4_HDR:
@@ -1259,6 +1263,8 @@ void hdr_func(enum hdr_module_sel module_sel,
 		OSD2_HDR | OSD3_HDR | OSD4_HDR)) {
 		if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_S4 ||
 			get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T3 ||
+			get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T5M ||
+			get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T5W ||
 			get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T3X)
 			bit_depth = 10;
 		else
@@ -1764,10 +1770,12 @@ void hdr_func(enum hdr_module_sel module_sel,
 		}
 	}
 
-	if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T3 &&
+	if ((get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T3 ||
+		get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T5M ||
+		get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T5W) &&
 		(module_sel == OSD2_HDR ||
 		module_sel == OSD3_HDR)) {
-		printf("%s: t3 osd3 only have matrix module_sel = 0x%x\n",
+		printf("%s: t3/t5m/t5w osd2/3 only have matrix module_sel = 0x%x\n",
 	       __func__, module_sel);
 		set_hdr_matrix(module_sel, HDR_IN_MTX, &hdr_mtx_param);
 		set_hdr_matrix(module_sel, HDR_OUT_MTX, &hdr_mtx_param);
