@@ -652,7 +652,7 @@ int powerkey_mem_parse(const char *buf,
 	char *bufptr = (char *)buf;
 	char *line;
 	char *start;
-	char model_name[16];
+	char model_name[128];
 	unsigned char model_flag = 0;
 	int lineno = 0;
 	char *key, *value;
