@@ -195,3 +195,4 @@ obj-$(CONFIG_ZAPPER_IRDETO_BOOT) += LoaderCore/Src/Shared/LoaderCoreSPI_Stdlib.o
 obj-$(CONFIG_ZAPPER_IRDETO_BOOT) += LoaderCore/Src/Shared/LoaderCoreSPI_Module.o
 obj-$(CONFIG_ZAPPER_IRDETO_BOOT) += LoaderCore/Src/Shared/LoaderCoreSPI_OS.o
 obj-$(CONFIG_ZAPPER_IRDETO_BOOT) += LoaderCore/Src/Shared/LoaderCoreSPI_Device.o
+obj-y += cmd_smc.o
