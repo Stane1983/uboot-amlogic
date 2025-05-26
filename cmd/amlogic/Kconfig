@@ -254,6 +254,19 @@ config PARTITION_ENCRYPTION_LOCAL
 	help
 	  support partition local encryption
 
+config INLINE_ENCRYPTION
+	bool "support inline encryption"
+	depends on AML_MKL
+	depends on AML_CRYPTO
+	default n
+	help
+	  This option enables hardware-accelerated inline encryption for storage devices
+	  compatible with Amlogic SoCs. It offloads encryption/decryption operations to
+	  dedicated hardware engines, reducing CPU overhead and improving I/O throughput.
+
+	  Enabling this is recommended for devices with hardware crypto engines (e.g., AES-NI).
+	  If unsure, say N.
+
 config CMD_SCMI_SHMEM_ADDR
         bool "support update address of shmem for SCMI"
         help
