@@ -41,8 +41,8 @@ struct lcd_clk_config_s *get_lcd_clk_config(struct aml_lcd_drv_s *pdrv)
 		return NULL;
 	}
 	cconf = (struct lcd_clk_config_s *)pdrv->clk_conf;
-	for (i = 0; i < pdrv->clk_conf_num; i++) {
-		if (!cconf[i].data) {
+	for (i = 0; i < cconf->pll_conf_num; i++) {
+		if (!cconf->data->pll_data[i]) {
 			LCDERR("[%d]: %s: clk config data is null\n",
 				pdrv->index, __func__);
 			return NULL;
@@ -265,7 +265,7 @@ void lcd_update_clk_frac(struct aml_lcd_drv_s *pdrv)
 		return;
 
 	if (cconf->data->pll_frac_set)
-		cconf->data->pll_frac_set(pdrv, cconf->pll_frac);
+		cconf->data->pll_frac_set(pdrv, cconf->pll_config[0].pll_frac);
 
 	pdrv->config.timing.clk_change = 0; /* clear clk_change flag */
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
@@ -368,8 +368,6 @@ int aml_lcd_prbs_test(struct aml_lcd_drv_s *pdrv, unsigned int ms, unsigned int 
 void lcd_clk_config_probe(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_clk_config_s *cconf = NULL;
-	unsigned int i;
-
 
 	switch (pdrv->data->chip_type) {
 #ifdef CONFIG_MESON_T5M
@@ -415,8 +413,7 @@ void lcd_clk_config_probe(struct aml_lcd_drv_s *pdrv)
 	if (!cconf)
 		return;
 
-	for (i = 0; i < pdrv->clk_conf_num; i++)
-		cconf[i].fin = FIN_FREQ;
+	cconf->fin = FIN_FREQ;
 
 	pdrv->clk_conf = (void *)cconf;
 	if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {

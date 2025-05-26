@@ -38,9 +38,8 @@ struct lcd_clk_ctrl_s {
 	unsigned int len;
 };
 
-// reference to: https://confluence.amlogic.com/display/SW/LCD+CLK+porting+note
-struct lcd_clk_data_s {
-	/* clk path node parameters */
+struct lcd_pll_data_s {
+	/*pll para limit*/
 	unsigned int pll_od_fb;
 	unsigned int pll_m_max;
 	unsigned int pll_m_min;
@@ -48,7 +47,13 @@ struct lcd_clk_data_s {
 	unsigned int pll_n_min;
 	unsigned int pll_frac_range;
 	unsigned int pll_frac_sign_bit;
+
+	/*od and tcon_div*/
+	unsigned int od_cnt;
 	unsigned int pll_od_sel_max;
+	unsigned int have_tcon_div;
+
+	/*pll freq limit*/
 	unsigned int pll_ref_fmax;
 	unsigned int pll_ref_fmin;
 	unsigned long long pll_vco_fmax;
@@ -57,16 +62,14 @@ struct lcd_clk_data_s {
 	unsigned long long pll_out_fmin;
 	unsigned long long div_in_fmax;
 	unsigned int div_out_fmax;
-	unsigned int xd_out_fmax;
-	unsigned int od_cnt;
-	unsigned int have_tcon_div;
-	//0:pll_clk_phase, 1:pll_clk2, 2:vid_pll_clk
-	unsigned int phy_clk_location;
-
 	unsigned int div_sel_max;
-	unsigned short xd_max;
-	unsigned short phy_div_max;
+};
 
+// reference to: https://confluence.amlogic.com/display/SW/LCD+CLK+porting+note
+struct lcd_clk_data_s {
+	/*pll data*/
+	struct lcd_pll_data_s *pll_data[2];
+	/*only pll for phy need ss, so put it here */
 	unsigned int ss_support;
 	unsigned int ss_level_max;
 	unsigned int ss_freq_max;
@@ -74,9 +77,17 @@ struct lcd_clk_data_s {
 	unsigned int ss_dep_base;
 	unsigned int ss_dep_sel_max;
 	unsigned int ss_str_m_max;
+	/* clk path node parameters */
+	unsigned int xd_out_fmax;
+	//0:pll_clk_phase, 1:pll_clk2, 2:vid_pll_clk
+	unsigned int phy_clk_location;
+
+	unsigned short xd_max;
+	unsigned short phy_div_max;
 
 	unsigned char vclk_sel;
 	unsigned char clk1_path_sel;//display 1 clk path sel tcon_pll0/1
+
 	short enc_clk_msr_id;
 	short fifo_clk_msr_id;
 
@@ -97,16 +108,10 @@ struct lcd_clk_data_s {
 	int (*prbs_test)(struct aml_lcd_drv_s *pdrv, unsigned int ms, unsigned int mode_flag);
 };
 
-struct lcd_clk_config_s { /* unit: Hz */
-	/* IN-OUT parameters */
-	unsigned int fin;
-	unsigned int fout;
-	unsigned int prbs_mode;
-
+struct lcd_pll_config_s {
 	/* pll parameters */
 	unsigned int pll_id;
 	unsigned int pll_offset;
-	unsigned int pll_mode;
 	unsigned int pll_od_fb;
 	unsigned int pll_m;
 	unsigned int pll_n;
@@ -114,13 +119,27 @@ struct lcd_clk_config_s { /* unit: Hz */
 	unsigned int pll_od1_sel;
 	unsigned int pll_od2_sel;
 	unsigned int pll_od3_sel;
-	unsigned int pll_tcon_div_sel;
 	unsigned int pll_level;
 	unsigned int pll_frac;
 	unsigned int pll_frac_half_shift;
 	unsigned long long pll_fout;
-	unsigned long long phy_clk;
 	unsigned int pll_div_fout;
+	unsigned int div_sel;
+	unsigned int done;
+};
+
+struct lcd_clk_config_s { /* unit: Hz */
+	/* IN-OUT parameters */
+	unsigned int fin;
+	unsigned int fout;
+	unsigned int prbs_mode;
+	unsigned int pll_mode;
+
+	struct lcd_pll_config_s *pll_config;
+	unsigned char pll_conf_num;
+
+	unsigned int pll_tcon_div_sel;
+	unsigned long long phy_clk;
 	unsigned int ss_level;
 	unsigned int ss_dep_sel;
 	unsigned int ss_str_m;
@@ -128,14 +147,13 @@ struct lcd_clk_config_s { /* unit: Hz */
 	unsigned int ss_freq;
 	unsigned int ss_mode;
 	unsigned int ss_en;
+
 	unsigned int edp_div0;
 	unsigned int edp_div1;
-	unsigned int div_sel;
 	unsigned int xd;
 	unsigned int phy_div;
 
 	unsigned int err_fmin;
-	unsigned int done;
 
 	struct lcd_clk_data_s *data;
 };

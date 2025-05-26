@@ -771,7 +771,6 @@ struct aml_lcd_drv_s {
 	unsigned char clk_path; /* 0=hpll, 1=gp0_pll */
 	char init_mode[64];
 	unsigned int power_on_suspend;
-	unsigned char clk_conf_num;
 	unsigned char config_check_glb;
 	unsigned char config_check_en;
 	unsigned char viu_sel; // 1=vout; 2=vou2; 3=vout3

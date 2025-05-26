@@ -26,8 +26,7 @@ int lcd_pll_wait_lock(int id, unsigned int reg, unsigned int lock_bit);
  */
 #define PLL_FVCO_ERR_MAX    2000 /* Hz */
 unsigned long long clk_vid_pll_div_calc(unsigned long long clk, unsigned int div_sel, int dir);
-int lcd_pll_get_frac(struct lcd_clk_config_s *cconf, unsigned long long pll_fvco);
-int check_vco(struct lcd_clk_config_s *cconf, unsigned long long pll_fvco);
+int check_vco(struct lcd_clk_config_s *cconf, int pll_sel, unsigned long long pll_fvco);
 
 /* ****************************************************
  * lcd clk chip default func
@@ -46,7 +45,8 @@ void lcd_set_vclk_crt_dft(struct aml_lcd_drv_s *pdrv);
 #ifdef CONFIG_MESON_S6
 unsigned char lcd_dsi_generate_DSI_PLL_s6_model(struct aml_lcd_drv_s *pdrv);
 #endif
-int pll_od_setting_generate(struct lcd_clk_config_s *cconf, unsigned long long pll_fout);
+int pll_od_setting_generate(struct lcd_clk_config_s *cconf,
+				int pll_sel, unsigned long long pll_fout);
 
 /* ****************************************************
  * lcd clk chip init help func
