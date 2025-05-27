@@ -27,7 +27,7 @@ static bool _read_in_bootconfig(struct vendor_boot_img_hdr *boot_info, uint32_t 
 		(((val)  << 24) & 0xFF000000))
 
 #if (defined CONFIG_SUPPORT_BL33Z) && (defined CONFIG_FULL_RAMDUMP)
-#define KNLIMG_DEC_ADDR	0x1880000
+#define KNLIMG_DEC_ADDR	0x1A00000
 #else
 #define KNLIMG_DEC_ADDR	0x1800000
 #endif
