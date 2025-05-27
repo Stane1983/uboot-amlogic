@@ -14,6 +14,7 @@
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/rawnand.h>
 #include <linux/mtd/nand_ecc.h>
+#include <linux/dma-mapping.h>
 #include <dm/device-internal.h>
 #include <dm/uclass-internal.h>
 #include <dm/root.h>
@@ -596,6 +597,7 @@ static int m3_nand_dma_write(struct aml_nand_chip *aml_chip,
 	struct nand_chip *chip = &aml_chip->chip;
 	struct mtd_info *mtd = &chip->mtd;
 	uint32_t temp;
+	dma_addr_t dma_addr_data, dma_addr_info;
 
 	if (bch_mode == NAND_ECC_NONE) {
 		count = 1;
@@ -607,14 +609,13 @@ static int m3_nand_dma_write(struct aml_nand_chip *aml_chip,
 		count = len/chip->ecc.size;
 	}
 
-	flush_dcache_range((unsigned long)buf, (unsigned long)buf + len);
-	flush_dcache_range((unsigned long)aml_chip->user_info_buf,
-		(unsigned long)aml_chip->user_info_buf + count*PER_INFO_BYTE);
-
-	NFC_SEND_CMD_ADL(controller, (u32)(unsigned long)buf);
-	NFC_SEND_CMD_ADH(controller, (u32)(unsigned long)buf);
-	NFC_SEND_CMD_AIL(controller, (u32)(unsigned long)aml_chip->user_info_buf);
-	NFC_SEND_CMD_AIH(controller, (u32)(unsigned long)aml_chip->user_info_buf);
+	dma_addr_data = dma_map_single(buf, len, DMA_TO_DEVICE);
+	dma_addr_info = dma_map_single(aml_chip->user_info_buf,
+				       count * PER_INFO_BYTE, DMA_TO_DEVICE);
+	NFC_SEND_CMD_ADL(controller, (u32)(unsigned long)dma_addr_data);
+	NFC_SEND_CMD_ADH(controller, (u32)(unsigned long)dma_addr_data);
+	NFC_SEND_CMD_AIL(controller, (u32)(unsigned long)dma_addr_info);
+	NFC_SEND_CMD_AIH(controller, (u32)(unsigned long)dma_addr_info);
 
 	if (aml_chip->ran_mode) {
 		temp = mtd->writesize>>chip->page_shift;
@@ -638,6 +639,10 @@ static int m3_nand_dma_write(struct aml_nand_chip *aml_chip,
 			aml_chip->ran_mode, aml_chip->oob_fill_cnt);
 		ret = aml_platform_dma_waiting(aml_chip);
 	}
+
+	dma_unmap_single(dma_addr_data, len, DMA_TO_DEVICE);
+	dma_unmap_single(dma_addr_info, count * PER_INFO_BYTE, DMA_TO_DEVICE);
+
 	return ret;
 }
 
@@ -652,6 +657,7 @@ static int m3_nand_dma_read(struct aml_nand_chip *aml_chip,
 	int ret = 0;
 	struct mtd_info *mtd = &chip->mtd;
 	uint32_t temp;
+	dma_addr_t dma_addr_data, dma_addr_info;
 
 	info_times_int_len = PER_INFO_BYTE / sizeof(unsigned int);
 	if (bch_mode == NAND_ECC_NONE)
@@ -661,19 +667,18 @@ static int m3_nand_dma_read(struct aml_nand_chip *aml_chip,
 		count = len / chip->ecc.size;
 	} else
 		count = chip->ecc.steps;
-	/*printk("___count: %d, bch_mod:%d",count,bch_mode);*/
-	memset((unsigned char *)aml_chip->user_info_buf,
-		0, count * PER_INFO_BYTE);
-	flush_dcache_range((unsigned long)aml_chip->user_info_buf,
-		(unsigned long)aml_chip->user_info_buf + count * PER_INFO_BYTE);
-	invalidate_dcache_range((unsigned long)buf, (unsigned long)buf + len);
 
-	NFC_SEND_CMD_ADL(controller, (u32)(unsigned long)buf);
-	NFC_SEND_CMD_ADH(controller, (u32)(unsigned long)buf);
-	NFC_SEND_CMD_AIL(controller,
-		(u32)(unsigned long)aml_chip->user_info_buf);
-	NFC_SEND_CMD_AIH(controller,
-		(u32)(unsigned long)aml_chip->user_info_buf);
+	memset((unsigned char *)aml_chip->user_info_buf,
+	       0, count * PER_INFO_BYTE);
+
+	dma_addr_data = dma_map_single(buf, len, DMA_FROM_DEVICE);
+	dma_addr_info = dma_map_single(aml_chip->user_info_buf,
+				       count * PER_INFO_BYTE, DMA_FROM_DEVICE);
+	NFC_SEND_CMD_ADL(controller, (u32)(unsigned long)dma_addr_data);
+	NFC_SEND_CMD_ADH(controller, (u32)(unsigned long)dma_addr_data);
+	NFC_SEND_CMD_AIL(controller, (u32)(unsigned long)dma_addr_info);
+	NFC_SEND_CMD_AIH(controller, (u32)(unsigned long)dma_addr_info);
+
 	if (aml_chip->ran_mode) {
 		temp = mtd->writesize >> chip->page_shift;
 		if (aml_chip->plane_num == 2)
@@ -695,12 +700,15 @@ static int m3_nand_dma_read(struct aml_nand_chip *aml_chip,
 	if (ret)
 		return ret;
 	do {
-		invalidate_dcache_range((unsigned long)aml_chip->user_info_buf,
-		(unsigned long)aml_chip->user_info_buf + count*PER_INFO_BYTE);
+		dma_unmap_single(dma_addr_info,
+				 count * PER_INFO_BYTE, DMA_FROM_DEVICE);
 		info_buf =
 (volatile unsigned *)&(aml_chip->user_info_buf[(count-1)*info_times_int_len]);
 		cmp = *info_buf;
 	} while ((cmp) == 0);/*judge DMA read over*/
+
+	dma_unmap_single(dma_addr_data, len, DMA_FROM_DEVICE);
+	dma_unmap_single(dma_addr_info, count * PER_INFO_BYTE, DMA_FROM_DEVICE);
 
 	return 0;
 }

@@ -737,7 +737,6 @@ static struct spicc_descriptor *spicc_create_desc_table
 	}
 
 	desc = kcalloc(desc_num, sizeof(*desc), GFP_KERNEL);
-	desc_bk = desc;
 	if (!desc_num || !desc)
 		return NULL;
 	desc_bk = desc;
