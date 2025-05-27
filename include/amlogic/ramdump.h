@@ -43,6 +43,12 @@ int ramdump_save_compress_data(void);
 #define MD5_BL33X_2_BASE_ADDR       (0x00B50000)
 #define MD5_MAGIC                   "RAMDUMPMD5"
 
+/* ramdump clean ddr */
+#define RAMDUMP_SKIP_BL31_START     (0x05000000)
+#define RAMDUMP_SKIP_BL32_END       (0x08400000)
+#define RAMDUMP_COMPRESS_START      (0x0C000000)
+#define RAMDUMP_ISOLATION_SIZE      (0x01000000)
+
 struct rammd5_info_t {
 	char magic[16];
 	char stage[16];

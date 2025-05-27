@@ -18,7 +18,10 @@
 #include <image.h>
 #include <fdt_support.h>
 #include <linux/libfdt.h>
-#include <asm/global_data.h>
+#include <asm/io.h>
+#include <linux/types.h>
+#include <mapmem.h>
+#include <asm/amlogic/arch/timer.h>
 
 extern struct bootm_headers images;
 
@@ -350,9 +353,68 @@ unsigned int get_reboot_mode(void)
 	return reboot_mode_val;
 }
 
+void ramdump_clean_ddr(void)
+{
+	const ulong skip_start = RAMDUMP_SKIP_BL31_START;
+	const ulong skip_end = RAMDUMP_SKIP_BL32_END;
+	ulong start = RAMDUMP_COMPRESS_START;
+	ulong end, addr, uboot_start;
+	ulong uboot_stack_size = CONFIG_STACK_SIZE;
+	void __iomem *p;
+	char *env;
+	ulong tick;
+
+	/* clean_end_addr = uboot_start - 16MB */
+	uboot_start = ((uintptr_t)map_sysmem(gd->start_addr_sp, 0) -
+		       uboot_stack_size) & ~EFI_PAGE_MASK;
+	end = uboot_start - RAMDUMP_ISOLATION_SIZE;
+
+	/* Retrieve cleaning start address from environment variable if set */
+	env = env_get("ramdump_clean_start");
+	if (env) {
+		start = simple_strtoul(env, NULL, 16);
+		printf("%s update start addr: 0x%08lx\n", __func__, start);
+	}
+
+	/* Retrieve cleaning end address from environment variable if set */
+	env = env_get("ramdump_clean_end");
+	if (env) {
+		end = simple_strtoul(env, NULL, 16);
+		printf("%s update end addr: 0x%08lx\n", __func__, end);
+	}
+
+	/* Check if end address exceeds gd->ram_top */
+	if (end > gd->ram_top) {
+		printf("%s err, end 0x%08lx > ram_top 0x%08llx\n", __func__, end, gd->ram_top);
+		return;
+	}
+
+	/* Verify that start is less than end */
+	if (start >= end) {
+		printf("%s err, start (0x%08lx) >= end (0x%08lx)\n", __func__, start, end);
+		return;
+	}
+
+	printf("ramdump cleaning DDR region: 0x%08lx ~ 0x%08lx\n", start, end);
+
+	tick = get_time();
+	/* Loop through the cleaning range, skipping the specified region */
+	for (addr = start; addr < end; addr += 4) {
+		if (addr >= skip_start && addr < skip_end)
+			continue;
+
+		p = (void __iomem *)addr;
+		writel(0, p);
+	}
+
+	tick = get_time() - tick;
+	printf("ramdump cleaning DDR done. took %lu ms.\n", tick / 1000);
+}
+
 void ramdump_init(void)
 {
 	unsigned int data, reboot_mode;
+	char *env;
 
 	printf("%s, base reg:0x%08x, size reg:0x%08x\n", __func__,
 				REG_MDUMP_COMPRESS_BASE, REG_MDUMP_COMPRESS_SIZE);
@@ -382,6 +444,13 @@ void ramdump_init(void)
 		ramdump_size += (ramdump_base & 0x7f) << 32;
 		/* real addr = addr[31:8] << 8 */
 		ramdump_base = (ramdump_base & 0xffffff00) << 8;
+	}
+
+	env = env_get("ramdump_enable");
+	if (env && !strcmp(env, "1") && !ramdump_base && !ramdump_size) {
+		env = env_get("ramdump_clean_skip");
+		if (!env || strcmp(env, "1"))
+			ramdump_clean_ddr();
 	}
 
 	data = readl(REG_MDUMP_CPUBOOT_STATUS);
