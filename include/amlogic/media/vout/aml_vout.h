@@ -27,7 +27,7 @@ enum viu_mux_e {
 
 #define CONNECTOR_DEV_INVALID        0x0f00
 #define CONNECTOR_DEV_LCD            0x0100
-#define CONNECTOR_DEV_DisplayPort    0x0200
+#define CONNECTOR_DEV_eDP            0x0200
 #define CONNECTOR_DEV_HDMI           0x0300
 #define CONNECTOR_DEV_CVBS           0x0400
 #define CONNECTOR_DEV_DUMMY          0x0500

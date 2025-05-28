@@ -18,7 +18,11 @@ config BOARD_KERNEL_VERSION_5_4
 
 config BOARD_KERNEL_VERSION_5_15
 	bool "kernel version is 5.15"
-	default y if ENV_BOARD_KERNEL_VERSION="5.15
+	default y if ENV_BOARD_KERNEL_VERSION="5.15"
+
+config BOARD_KERNEL_VERSION_6_12
+	bool "kernel version is 6.12"
+	default y if ENV_BOARD_KERNEL_VERSION="6.12"
 
 config SYS_SOC
 	default "t7"

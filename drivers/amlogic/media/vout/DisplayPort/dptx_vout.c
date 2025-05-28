@@ -130,7 +130,7 @@ static void dptx_update_outputmode(struct dptx_drv_s *dptx)
 {
 	char cnt_type_str[16] = "connectorX_type";
 	char mode_env_name[16] = "outputmode\0\0";
-	char temp_str[20] = "DP-X";
+	char temp_str[20] = "EDP-X";
 	uint8_t i;
 
 	if (!(dptx->status & DPTX_STA_LINK_ON)) {

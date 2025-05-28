@@ -79,16 +79,27 @@ int aml_vout_output(uint8_t vout_idx, char *mode)
 		ret = 0;
 #endif
 		break;
-	case CONNECTOR_DEV_DisplayPort:
-#ifdef CONFIG_AML_DisplayPort_TX
-		mux_sel = dptx_driver_outputmode_check(venc_index, mode);
-		venc_sel = mux_sel & 0xf;
-		if (venc_sel != VIU_MUX_ENCL)
-			break;
-		dptx_driver_enable(venc_index, mode);
-		ret = 0;
-		break;
+	case CONNECTOR_DEV_eDP:
+		if (env_get_ulong("eDP_use_legacy_lcd_driver", 10, 0)) {
+#ifdef CONFIG_AML_LCD
+			mux_sel = aml_lcd_driver_outputmode_check(venc_index, mode);
+			venc_sel = mux_sel & 0xf;
+			if (venc_sel != VIU_MUX_ENCL)
+				break;
+			aml_lcd_driver_enable(venc_index, mode);
+			ret = 0;
 #endif
+		} else {
+#ifdef CONFIG_AML_DisplayPort_TX
+			mux_sel = dptx_driver_outputmode_check(venc_index, mode);
+			venc_sel = mux_sel & 0xf;
+			if (venc_sel != VIU_MUX_ENCL)
+				break;
+			dptx_driver_enable(venc_index, mode);
+			ret = 0;
+#endif
+		}
+		break;
 	case CONNECTOR_DEV_HDMI:
 #ifdef CONFIG_AML_HDMITX
 		mux_sel = hdmi_outputmode_check(mode, 0);
@@ -241,8 +252,8 @@ int aml_display_process(unsigned char vout_idx)
 		}
 		break;
 #endif
-#if defined(CONFIG_AML_DisplayPort_TX)
-	case CONNECTOR_DEV_DisplayPort:
+#if defined(CONFIG_AML_DisplayPort_TX) ||  defined(CONFIG_AML_LCD)
+	case CONNECTOR_DEV_eDP:
 		run_command(vout_cmd, 0);
 		run_command(VOUT_OSD_LOGO_CMD, 0);
 		break;
@@ -273,9 +284,7 @@ static int do_vout_output_job(unsigned char vout_idx, char *mode_str)
 #endif
 #if defined(CONFIG_AML_LCD) || defined(CONFIG_AML_DisplayPort_TX)
 	unsigned int venc_index = on_connector_dev & 0xf;
-#endif
-#if defined(CONFIG_AML_DisplayPort_TX)
-	unsigned int dptx_color_type;
+	unsigned int dptx_color_type = 1;
 #endif
 
 #if defined(CONFIG_AML_CVBS) || defined(CONFIG_AML_HDMITX) || \
@@ -307,16 +316,31 @@ static int do_vout_output_job(unsigned char vout_idx, char *mode_str)
 		return 0;
 #endif
 		break;
-	case CONNECTOR_DEV_DisplayPort:
+	case CONNECTOR_DEV_eDP:
+#if defined(CONFIG_AML_LCD) || defined(CONFIG_AML_DisplayPort_TX)
+		if (env_get_ulong("eDP_use_legacy_lcd_driver", 10, 0)) {
+#ifdef CONFIG_AML_LCD
+			mux_sel = aml_lcd_driver_outputmode_check(venc_index, mode_str);
+#endif
+		} else {
 #ifdef CONFIG_AML_DisplayPort_TX
-		mux_sel = dptx_driver_outputmode_check(venc_index, mode_str);
+			mux_sel = dptx_driver_outputmode_check(venc_index, mode_str);
+#endif
+		}
+
 		venc_sel = mux_sel & 0xf;
 		if (venc_sel != VIU_MUX_ENCL)
 			break;
-		if (vout_idx == 0)
-			vout_viu_mux(VOUT_VIU1_SEL, VIU_MUX_ENCL | venc_index << 4);
-		dptx_color_type = dptx_driver_enable(venc_index, mode_str);
 
+		if (env_get_ulong("eDP_use_legacy_lcd_driver", 10, 0)) {
+#ifdef CONFIG_AML_LCD
+			aml_lcd_driver_enable(venc_index, mode_str);
+#endif
+		} else {
+#ifdef CONFIG_AML_DisplayPort_TX
+			dptx_color_type = dptx_driver_enable(venc_index, mode_str);
+#endif
+		}
 		if (vout_idx == 0) {
 			vout_viu_mux(VOUT_VIU1_SEL, mux_sel);
 			if (dptx_color_type)
@@ -411,15 +435,14 @@ static int do_vout_prepare_job(unsigned char vout_idx, char *mode_str)
 #endif
 #if defined(CONFIG_AML_LCD) || defined(CONFIG_AML_DisplayPort_TX)
 	unsigned int venc_index = on_connector_dev & 0xf;
+	unsigned int dptx_color_type = 1;
 #endif
 
 #ifdef CONFIG_AML_HDMITX
 	struct vinfo_s *vinfo  = vout_get_current_vinfo();
 	unsigned int fmt_mode = vinfo->vpp_post_out_color_fmt;
 #endif
-#if defined(CONFIG_AML_DisplayPort_TX)
-	unsigned int dptx_color_type;
-#endif
+
 	switch (on_connector_dev & CONNECTOR_DEV_MASK) {
 	case CONNECTOR_DEV_LCD:
 #ifdef CONFIG_AML_LCD
@@ -442,14 +465,33 @@ static int do_vout_prepare_job(unsigned char vout_idx, char *mode_str)
 		return 0;
 #endif
 		break;
-	case CONNECTOR_DEV_DisplayPort:
+	case CONNECTOR_DEV_eDP:
+#if defined(CONFIG_AML_LCD) || defined(CONFIG_AML_DisplayPort_TX)
+
+		if (env_get_ulong("eDP_use_legacy_lcd_driver", 10, 0)) {
+#ifdef CONFIG_AML_LCD
+			mux_sel = aml_lcd_driver_outputmode_check(venc_index, mode_str);
+#endif
+		} else {
 #ifdef CONFIG_AML_DisplayPort_TX
-		mux_sel = dptx_driver_outputmode_check(venc_index, mode_str);
+			mux_sel = dptx_driver_outputmode_check(venc_index, mode_str);
+#endif
+		}
+
 		venc_sel = mux_sel & 0xf;
 		if (venc_sel != VIU_MUX_ENCL)
 			break;
-		vout_viu_mux(VOUT_VIU1_SEL, VIU_MUX_ENCL | venc_index << 4);
-		dptx_color_type = dptx_driver_prepare(venc_index, mode_str);
+		// vout_viu_mux(VOUT_VIU1_SEL, VIU_MUX_ENCL | venc_index << 4);
+		if (env_get_ulong("eDP_use_legacy_lcd_driver", 10, 0)) {
+#ifdef CONFIG_AML_LCD
+			aml_lcd_driver_prepare(venc_index, mode_str);
+#endif
+		} else {
+#ifdef CONFIG_AML_DisplayPort_TX
+			dptx_color_type = dptx_driver_prepare(venc_index, mode_str);
+#endif
+		}
+
 		if (vout_idx == 0) {
 			vout_viu_mux(VOUT_VIU1_SEL, VIU_MUX_ENCL | venc_index << 4);
 			vpp_viu1_cm_state = dptx_color_type ? VPP_CM_CrYCb : VPP_CM_RGB;
