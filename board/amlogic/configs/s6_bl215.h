@@ -13,7 +13,7 @@
  */
 
 #define AML_VCCK_INIT_VOLTAGE_1	  919	    //VCCK power up voltage
-#define AML_VCCK_INIT_VOLTAGE_2	  1009	    //VCCK power up voltage
+#define AML_VCCK_INIT_VOLTAGE_2	  1019	    //VCCK power up voltage
 /* default EE/DDR voltage for LPDDR4  */
 #define AML_VDDEE_INIT_VOLTAGE    780       // VDDEE power up voltage
 #define AML_VDDDDR_INIT_VOLTAGE   780       // VDDDDR power up voltage
