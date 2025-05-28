@@ -12,6 +12,7 @@
 #include <asm/gpio.h>
 #include <asm/arch/secure_apb.h>
 #include <spi.h>
+#include <linux/dma-mapping.h>
 #include <dm/device-internal.h>
 #include <dm/uclass-internal.h>
 #include <dm/root.h>
@@ -871,6 +872,9 @@ static int spicc_xfer(struct udevice *dev,
 	struct udevice *bus = dev->parent;
 	struct meson_spicc_device *spicc = dev_get_priv(bus);
 	struct spi_slave *slave = dev_get_parent_priv(dev);
+#ifndef CONFIG_SPICC_DMA_SRAM
+	dma_addr_t dma_addr_dout, dma_addr_din = 0;
+#endif
 	bool first_burst;
 	int ret = 0;
 
@@ -890,10 +894,10 @@ static int spicc_xfer(struct udevice *dev,
 
 #ifndef CONFIG_SPICC_DMA_SRAM
 	if (spicc->using_dma) {
-		flush_dcache_range((unsigned long)dout,
-				   (unsigned long)dout + (bitlen >> 3));
-		flush_dcache_range((unsigned long)din,
-				   (unsigned long)din + (bitlen >> 3));
+		dma_addr_dout = dma_map_single((void *)dout, bitlen >> 3, DMA_TO_DEVICE);
+		dma_addr_din = dma_map_single(din, bitlen >> 3, DMA_FROM_DEVICE);
+		spicc->tx_buf = (u8 *)dma_addr_dout;
+		spicc->rx_buf = (u8 *)dma_addr_din;
 	}
 #endif
 
@@ -951,10 +955,8 @@ static int spicc_xfer(struct udevice *dev,
 
 #ifndef CONFIG_SPICC_DMA_SRAM
 	if (spicc->using_dma) {
-		invalidate_dcache_range((unsigned long)dout,
-					(unsigned long)dout + (bitlen >> 3));
-		invalidate_dcache_range((unsigned long)din,
-					(unsigned long)din + (bitlen >> 3));
+		dma_unmap_single(dma_addr_dout, bitlen >> 3, DMA_TO_DEVICE);
+		dma_unmap_single(dma_addr_din, bitlen >> 3, DMA_FROM_DEVICE);
 	}
 #endif
 

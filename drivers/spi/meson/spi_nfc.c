@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <clk.h>
 #include <asm/cache.h>
+#include <linux/dma-mapping.h>
 #include <dm/device-internal.h>
 #include <dm/uclass-internal.h>
 #include <dm/root.h>
@@ -227,6 +228,8 @@ static int spi_nfc_dma_xfer(struct spi_nfc_priv *priv,
 	bool raw, oob_only, auto_oob, oob_required;
 	u8 *buf, *oob_pos, ecc_steps;
 	int ret = 0;
+	enum dma_data_direction direction;
+	dma_addr_t dma_addr_data, dma_addr_info;
 
 	oob_only = ((flags & SPI_XFER_OOB_ONLY) != 0);
 	oob_required = ((flags & SPI_XFER_OOB) != 0);
@@ -275,15 +278,17 @@ static int spi_nfc_dma_xfer(struct spi_nfc_priv *priv,
 	if (ret)
 		return ret;
 
-	nfc_set_dma_mem_and_info((unsigned long)buf,
-				 (unsigned long)priv->info_buf);
+	direction = (read) ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
+	dma_addr_data = dma_map_single(buf, len, direction);
+	dma_addr_info = dma_map_single(priv->info_buf, 64, direction);
+
+	nfc_set_dma_mem_and_info((unsigned long)dma_addr_data,
+				 (unsigned long)dma_addr_info);
 
 	ret = nfc_start_dma_and_wait_done(n2m_cmd);
 	if (ret || !read)
 		return ret;
 
-	invalidate_dcache_range((unsigned long)priv->info_buf,
-				(unsigned long)priv->info_buf + OOB_BUF_SIZE);
 	ret = nfc_wait_data_and_ecc_engine_done((u64 *)priv->info_buf,
 		ecc_steps, raw);
 	if (ret) {
@@ -293,13 +298,14 @@ static int spi_nfc_dma_xfer(struct spi_nfc_priv *priv,
 		return ret;
 	}
 
+	dma_unmap_single(dma_addr_data, len, direction);
+	dma_unmap_single(dma_addr_info, 64, direction);
+
 	if (raw || disable_host_ecc) {
 		DUMP_BUFFER(buf, len, len / 16, 16);
 		return 0;
 	}
 
-	invalidate_dcache_range((unsigned long)buf,
-				(unsigned long)buf + len);
 	spi_nfc_covert_buf_to_user(priv, user_buf,
 				   oob_pos, ecc_steps,
 				   oob_only, auto_oob,
