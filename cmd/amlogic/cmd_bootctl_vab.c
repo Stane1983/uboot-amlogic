@@ -1630,7 +1630,7 @@ int set_successful_boot(void) {
 	if (AB_mode == 1) {
 		slot_num = get_active_slot_normalAB(&info);
 		printf("active slot = %d\n", slot_num);
-		bootable = slot_is_bootable_normalAB(&info.slots[slot_num]);
+		bootable = info.slots[slot_num].successful_boot;
 		//bootable_b = slot_is_bootable_normalAB(&info.slots[1]);
 		/*boot_info_reset(&boot_ctrl);
 		boot_ctrl.slot_info[0].successful_boot = info.slots[0].successful_boot;
@@ -1641,7 +1641,7 @@ int set_successful_boot(void) {
 	} else {
 		slot_num = get_active_slot(&boot_ctrl);
 		printf("active slot = %d\n", slot_num);
-		bootable = slot_is_bootable(&boot_ctrl.slot_info[slot_num]);
+		bootable = boot_ctrl.slot_info[slot_num].successful_boot;
 		//bootable_b = slot_is_bootable(&boot_ctrl.slot_info[1]);
 	}
 
