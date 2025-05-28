@@ -36,7 +36,14 @@ DDR_RESV_CHECK_ID_ENABLE)
 #define DDR_ID_FROM_ADC_F  (0Xfe << 0)
 #define DDR_ID_FROM_GPIO_CONFIG1_F  (0Xfd << 0)
 #define DDR_ID_FROM_ADC_MULT (0Xfc000000)
-#define DDR_ID_FROM_ADC_MULT_F   (0Xfc << 0)
+#define DDR_ID_FROM_ADC_MULT_F   (0Xfc000000)
+#define DDR_ID_FROM_ADC_MULT_F_LPDDR5 (0Xfb000000)
+#define DDR_ID_FROM_ADC_MULT_F_LPDDR4X (0Xfa000000)
+#define DDR_ID_FROM_ADC_MULT_F_LPDDR2 (0Xf9000000)
+#define DDR_ID_FROM_ADC_MULT_F_LPDDR3 (0Xf8000000)
+#define DDR_ID_FROM_ADC_MULT_F_LPDDR4 (0Xf7000000)
+#define DDR_ID_FROM_ADC_MULT_F_DDR4 (0Xf6000000)
+#define DDR_ID_FROM_ADC_MULT_F_DDR3 (0Xf5000000)
 #define DDR_ID_START_MASK  (0XFFDDCCBB)
 
 #define DDR_ADC_CH0 (0X0 << 5)
@@ -153,7 +160,7 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 	{
 		.cfg_board_common_setting.timming_magic = 0,
 		.cfg_board_common_setting.timming_max_valid_configs = 1,
-		.cfg_board_common_setting.timming_struct_version = 9304,
+		.cfg_board_common_setting.timming_struct_version = 9483,
 		.cfg_board_common_setting.timming_struct_org_size =
 			sizeof(ddr_set_ps0_only_t),
 		.cfg_board_common_setting.timming_struct_real_size = 0,
@@ -322,7 +329,7 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 	{
 		.cfg_board_common_setting.timming_magic = 0,
 		.cfg_board_common_setting.timming_max_valid_configs = 1,
-		.cfg_board_common_setting.timming_struct_version = 9196,
+		.cfg_board_common_setting.timming_struct_version = 9483,
 		.cfg_board_common_setting.timming_struct_org_size =
 			sizeof(ddr_set_ps0_only_t),
 		.cfg_board_common_setting.timming_struct_real_size = 0,
