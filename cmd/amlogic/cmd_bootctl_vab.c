@@ -21,6 +21,7 @@
 #include <u-boot/sha1.h>
 #include <asm/arch/efuse.h>
 #include <emmc_partitions.h>
+#include <fs.h>
 #ifdef CONFIG_UNIFY_BOOTLOADER
 #include "cmd_bootctl_wrapper.h"
 #endif
@@ -154,8 +155,10 @@ typedef struct slot_metadata {
 	// 1 if this slot is corrupted from a dm-verity corruption, 0
 	// otherwise.
 	uint8_t verity_corrupted : 1;
+	// 0 init after ota; 1 slot boot success; 2 update boot1 ok
+	uint8_t uboot_status : 2;
 	// Reserved for further use.
-	uint8_t reserved : 7;
+	uint8_t reserved : 5;
 } slot_metadata;
 
 enum UpdateState {
@@ -323,10 +326,12 @@ void boot_info_reset(bootloader_control* boot_ctrl)
 			entry.priority = 7;
 			entry.tries_remaining = 0;
 			entry.successful_boot = 0;
+			entry.uboot_status = 0;
 		} else {
 			entry.priority = 0;  // Unbootable
 			entry.tries_remaining = 0;
 			entry.successful_boot = 0;
+			entry.uboot_status = 0;
 		}
 
 		boot_ctrl->slot_info[slot] = entry;
@@ -334,6 +339,7 @@ void boot_info_reset(bootloader_control* boot_ctrl)
 	boot_ctrl->slot_info[0].priority = 15;
 	boot_ctrl->slot_info[0].tries_remaining = BOOT_ATTEMPTS;
 	boot_ctrl->slot_info[0].successful_boot = 1;
+	boot_ctrl->slot_info[0].uboot_status = 1;
 	boot_ctrl->recovery_tries_remaining = 0;
 }
 
@@ -360,6 +366,8 @@ static void dump_boot_info(bootloader_control *boot_ctrl)
 					slot, boot_ctrl->slot_info[slot].tries_remaining);
 			printf("boot_ctrl->slot_info[%d].successful_boot = %d\n",
 					slot, boot_ctrl->slot_info[slot].successful_boot);
+			printf("boot_ctrl->slot_info[%d].uboot_status = %d\n",
+					slot, boot_ctrl->slot_info[slot].uboot_status);
 		}
 		printf("boot_ctrl->recovery_tries_remaining = %d\n",
 				boot_ctrl->recovery_tries_remaining);
@@ -612,6 +620,69 @@ static int check_bootloader(int slot)
 #endif
 			if (ret) {
 				printf("boot1 doesn't = %s, rewrite it\n", back_partname);
+				iRet = store_boot_write("bootloader", 2, 0, buffer_dest);
+				if (iRet) {
+					printf("Failed to write bootloader\n");
+					goto exit;
+				} else {
+					printf("write %s to boot1 ok\n", back_partname);
+					ret = 0;
+				}
+			}
+		} else {
+			printf("%s is NULL, check odm_ext for backup\n", back_partname);
+			int part_no = 0;
+			char odm_ext_index[16];
+			loff_t len_read = 0;
+			int rc = 0;
+
+			memset(buffer_dest, 0, capacity_boot);
+
+			if (slot == 0)
+				part_no = get_partition_num_by_name("odm_ext_a");
+			else
+				part_no = get_partition_num_by_name("odm_ext_b");
+
+			if (part_no < 1) {
+				printf("can not find odm_ext a or b partition\n");
+				goto exit;
+			} else {
+				printf("find slot %d odm_ext num :%d\n", slot, part_no);
+			}
+
+			memset(odm_ext_index, 0, 16);
+			sprintf(odm_ext_index, "1:%x", part_no);
+			rc = fs_set_blk_dev("mmc", odm_ext_index, FS_TYPE_EXT);
+			if (rc) {
+				printf("fs_set_blk_dev failed\n");
+				goto exit;
+			}
+
+			rc = fs_read("/last_bootloader.img",
+					(unsigned long)buffer_dest, 0, capacity_boot, &len_read);
+			if (rc < 0 || len_read < 0) {
+				printf("fs_read U1 bootloader.img failed\n");
+				goto exit;
+			}
+			printf("bootloader.img len = %lld\n", len_read);
+
+			flush_dcache_range((unsigned long)buffer_dest,
+						(unsigned long)buffer_dest + len_read);
+
+			sha1_csum(buffer_dest, capacity_boot, gensum1);
+
+			ret = memcmp(gensum0, gensum1, SHA1SUMLEN);
+			printf("boot1 & odm_ext back uboot %s same\n", ret ? "NOT" : "DO");
+
+			if (ret) {
+				printf("backup slot has gpt, set dts_to_gpt to 0\n");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+				env_set("dts_to_gpt", "0");
+				run_command("update_env_part -p dts_to_gpt;", 0);
+#else
+				run_command("defenv_reserve;setenv dts_to_gpt 0;saveenv;", 0);
+#endif
+				printf("boot1 doesn't match, rewrite it\n");
 				iRet = store_boot_write("bootloader", 2, 0, buffer_dest);
 				if (iRet) {
 					printf("Failed to write bootloader\n");
@@ -1183,6 +1254,8 @@ static int do_CheckUbootState
 {
 	char miscbuf[MISCBUF_SIZE] = {0};
 	bootloader_control info;
+	int active_slot, backup_slot;
+	int ret = -1;
 
 	if (argc != 2)
 		return cmd_usage(cmdtp);
@@ -1200,10 +1273,31 @@ static int do_CheckUbootState
 		return 0;
 	}
 
-	if (strcmp(argv[1], "1") == 0)
+	if (strcmp(argv[1], "1") == 0) {
 		check_bootloader(1);
-	else if (strcmp(argv[1], "0") == 0)
+	} else if (strcmp(argv[1], "0") == 0) {
 		check_bootloader(0);
+	} else if (strcmp(argv[1], "boot1") == 0) {
+		active_slot = get_active_slot(&info);
+		if (active_slot == 1)
+			backup_slot = 0;
+		else
+			backup_slot = 1;
+		if (info.slot_info[backup_slot].successful_boot == 1 &&
+			info.slot_info[backup_slot].uboot_status != 2) {
+			if (gpt_partition) {
+				printf("check if boot0 = boot1\n");
+				ret = is_BootSame(1, 2);
+				if (ret) {
+					printf("boot0 doesn't = boot1, write boot0 to boot1\n");
+					write_bootloader(1, 2);
+					printf("after write boot0 to boot1\n");
+				}
+				info.slot_info[backup_slot].uboot_status = 2;
+				boot_info_save(&info, miscbuf);
+			}
+		}
+	}
 
 	return 0;
 }
@@ -1324,7 +1418,8 @@ static int do_SetUpdateTries(
 					nocs_mode = true;
 #endif//#ifdef CONFIG_EFUSE_OBJ_API
 
-	if (boot_ctrl.slot_info[slot].successful_boot == 1) {
+	if (boot_ctrl.slot_info[slot].successful_boot == 1 &&
+		boot_ctrl.slot_info[slot].uboot_status != 2) {
 		if (gpt_partition || nocs_mode) {
 			char *bootloaderindex = NULL;
 
@@ -1340,6 +1435,8 @@ static int do_SetUpdateTries(
 					write_bootloader(1, 2);
 					printf("after write boot0 to boot1\n");
 				}
+				boot_ctrl.slot_info[slot].uboot_status = 2;
+				boot_info_save(&boot_ctrl, miscbuf);
 			}
 		}
 	}

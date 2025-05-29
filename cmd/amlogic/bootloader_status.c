@@ -610,7 +610,7 @@ static int update_gpt(int flag)
 			} else if (erase_flag == 0) {
 				printf("partition doesn't change, needn't update\n");
 				ret = -1;
-				goto exit;
+				goto clean;
 			}
 
 			if (flag == 1 || flag == 2) {
@@ -659,6 +659,7 @@ static int update_gpt(int flag)
 		}
 	}
 
+clean:
 	if (flag == 0) {
 		if (has_boot_slot == 1 && gpt_flag != 0)
 			write_bootloader_to_logical();
@@ -1050,6 +1051,7 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 
 	if (write_boot && !strcmp(write_boot, "1")) {
 		printf("need to write boot0\n");
+		run_command("check_uboot_state boot1", 0);
 		rc = write_bootloader(1);
 		if (rc) {
 			printf("write boot0 fail, need to rollback!\n");
