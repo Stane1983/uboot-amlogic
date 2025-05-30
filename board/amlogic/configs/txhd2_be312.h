@@ -268,7 +268,7 @@
 			"setenv dolby_vision_on 0;"\
 			"setenv bootconfig ${bootconfig} androidboot.quiescent=1;"\
 		"fi;fi;"\
-		VOUT_CMD \
+		"vout boot_display;"\
 		"\0"\
 	"check_display="\
 		"echo check_display reboot_mode: ${reboot_mode}, powermode: ${powermode};"\

@@ -725,8 +725,6 @@ static int do_vout_display(cmd_tbl_t *cmdtp, int flag, int argc, char * const ar
 {
 	unsigned short on_connector_dev;
 
-	run_command("init_display", 0);
-
 	on_connector_dev = vout_connector_check(0);
 	if (on_connector_dev < 0xffff) {
 		run_command("setenv display_layer " CONNECTOR0_OSD ";", 0);

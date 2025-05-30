@@ -90,7 +90,6 @@
 #endif
 
 #define VOUT_OSD_LOGO_CMD  "osd open; osd clear; run load_bmp_logo; bmp scale;"
-#define VOUT_DISPLAY_CMD   "vout boot_display; "
 
 #ifdef CONFIG_VBYONE_OUTPUT
 #define CONFIG_EXTRA_OUTPUT_ENV_SETTINGS \
@@ -310,6 +309,7 @@
 			"run storeargs;"\
 			"setenv bootconfig ${bootconfig} androidboot.quiescent=1;"\
 		"fi;fi;"\
+		"vout boot_display;"\
 		"\0"\
 	"check_display="\
 		"echo check_display reboot_mode: ${reboot_mode}, powermode: ${powermode};"\

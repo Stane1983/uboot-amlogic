@@ -534,10 +534,8 @@ int board_late_init(void)
 #ifdef CONFIG_AML_LCD
 	lcd_probe();
 #endif
-	// aml_board_display_init(0x01);
-#ifdef VOUT_DISPLAY_CMD
-	run_command(VOUT_DISPLAY_CMD, 0);
-#endif
+	run_command("run init_display", 0);
+
 	aml_board_late_init_tail(NULL);
 
 	return 0;

@@ -96,7 +96,6 @@
 #endif
 
 #define VOUT_OSD_LOGO_CMD         "osd open; osd clear; run load_bmp_logo; bmp scale;"
-#define VOUT_DISPLAY_CMD          "vout boot_display; "
 
 /* args/envs */
 #define CONFIG_SYS_MAXARGS  64
@@ -303,6 +302,7 @@
 			"setenv dolby_vision_on 0;"\
 			"setenv bootconfig ${bootconfig} androidboot.quiescent=1;"\
 		"fi;fi;"\
+		"vout boot_display;"\
 		"\0"\
 	"check_display="\
 		"echo check_display reboot_mode: ${reboot_mode}, powermode: ${powermode};"\

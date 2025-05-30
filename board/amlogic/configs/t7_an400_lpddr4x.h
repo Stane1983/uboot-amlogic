@@ -125,8 +125,6 @@
 #define VOUT_OSD_LOGO_CMD         "osd open; osd clear; run load_bmp_logo; bmp scale;"
 #define VOUT_HDMITX_HDMI_CMD2     "dovi set; dovi pkg; vpp hdrpkt;"
 
-#define VOUT_DISPLAY_CMD          "vout boot_display; "
-
 #ifdef CONFIG_HDMITX_ONLY
 #define CONFIG_EXTRA_HDMI_ENV_SETTINGS \
 	"panel_type=edp_0\0" \
@@ -367,7 +365,6 @@
 
 #define CONFIG_PREBOOT  \
 	"run upgrade_check;"\
-	"run check_display;"\
 	"run storeargs;"\
 	"run upgrade_key;" \
 	"bcb uboot-command;" \

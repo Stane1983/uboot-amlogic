@@ -283,9 +283,8 @@ int board_late_init(void)
 #ifdef CONFIG_AML_DisplayPort_TX
 	dptx_probe();
 #endif
-#ifdef VOUT_DISPLAY_CMD
-	run_command(VOUT_DISPLAY_CMD, 0);
-#endif
+	run_command("run check_display", 0);
+
 	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_e);
 
 	/* The board id is used to determine if the NN needs to adjust voltage */
