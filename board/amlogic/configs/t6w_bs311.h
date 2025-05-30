@@ -114,7 +114,6 @@
 #define CONFIG_PREBOOT  \
 		"run bcb_cmd; "\
 		"run upgrade_check;"\
-		"run init_display;"\
 		"run storeargs;"\
 		"run upgrade_key;" \
 		"bcb uboot-command;"\

@@ -197,11 +197,7 @@ int board_late_init(void)
 #ifdef CONFIG_AML_LCD
 	lcd_probe();
 #endif
-#ifdef VOUT_DISPLAY_CMD
-	run_command(VOUT_DISPLAY_CMD, 0);
-#endif
-	run_command("amlsecurecheck", 0);
-	run_command("update_tries", 0);
+	run_command("run init_display", 0);
 
 	unsigned char chipid[16];
 
