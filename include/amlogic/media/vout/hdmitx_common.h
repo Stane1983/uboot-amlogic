@@ -77,6 +77,7 @@ void convert_name_frac2int(const char *name, char *conv_name);
 bool is_mode_name_frac(const char *name);
 bool get_kernel_dtb_info(void);
 const char *find_non_frac_preferred_mode(const char *mode);
+int is_valid_hdmi(const char *input);
 
 /* audio api */
 u32 hdmitx_hw_get_audio_n_paras(enum hdmi_audio_fs fs,

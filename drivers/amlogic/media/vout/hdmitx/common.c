@@ -11,6 +11,26 @@
 #endif
 #include <amlogic/media/vout/hdmitx_common.h>
 
+int is_valid_hdmi(const char *input)
+{
+	static const char * const valid_hdmi_modes[] = {
+			"HDMI-A-A", /* venc0 */
+			"HDMI-A-B", /* venc1 */
+			"HDMI-A-C"  /* venc2 */
+	};
+
+	int num_modes = sizeof(valid_hdmi_modes) / sizeof(valid_hdmi_modes[0]);
+	int i;
+
+	for (i = 0; i < num_modes; i++) {
+		/* Found a match */
+		if (strcmp(input, valid_hdmi_modes[i]) == 0)
+			return 1;
+	}
+	/* No match found */
+	return 0;
+}
+
 int hdmitx_likely_frac_rate_mode(char *m)
 {
 	if (strstr(m, "24hz") || strstr(m, "30hz") || strstr(m, "48hz") ||
@@ -129,15 +149,18 @@ bool get_kernel_dtb_info(void)
 static char tmp_hdmimode[MAX_NAME_LENGTH];
 static char tmp_outputmode[MAX_NAME_LENGTH];
 static char tmp_outputmode2[MAX_NAME_LENGTH];
+static char tmp_outputmode3[MAX_NAME_LENGTH];
 
 void hdmi_mode_frac_preprocess(void)
 {
 	char *hdmimode = env_get("hdmimode");
 	char *outputmode = env_get("outputmode");
 	char *outputmode2 = env_get("outputmode2");
+	char *outputmode3 = env_get("outputmode3");
 	char conv_hdmimode[MAX_NAME_LENGTH] = {0};
 	char conv_outputmode[MAX_NAME_LENGTH] = {0};
 	char conv_outputmode2[MAX_NAME_LENGTH] = {0};
+	char conv_outputmode3[MAX_NAME_LENGTH] = {0};
 
 	/* kernel should have /amhdmitx/frac_enable node as 1; otherwise return */
 	if (!get_kernel_dtb_info())
@@ -146,16 +169,31 @@ void hdmi_mode_frac_preprocess(void)
 	/* if frac_rate_policy is NULL, or hdmimode/outputmode is frac name, backup the names */
 	if ((hdmimode && is_mode_name_frac(hdmimode)) ||
 		(outputmode && is_mode_name_frac(outputmode)) ||
-		(outputmode2 && is_mode_name_frac(outputmode2))) {
+		(outputmode2 && is_mode_name_frac(outputmode2)) ||
+		(outputmode3 && is_mode_name_frac(outputmode3))) {
 		if (hdmimode && is_mode_name_frac(hdmimode))
 			strncpy(tmp_hdmimode, hdmimode, sizeof(tmp_hdmimode));
-		if (outputmode && is_mode_name_frac(outputmode))
-			strncpy(tmp_outputmode, outputmode, sizeof(tmp_outputmode));
-		if (outputmode2 && is_mode_name_frac(outputmode2))
-			strncpy(tmp_outputmode2, outputmode2, sizeof(tmp_outputmode2));
+
+		/* The outputmode must be saved based on the value of connectorX_type */
+		if (env_get("connector0_type") &&
+			is_valid_hdmi(env_get("connector0_type"))) {
+			if (outputmode && is_mode_name_frac(outputmode))
+				strncpy(tmp_outputmode, outputmode, sizeof(tmp_outputmode));
+		} else if (env_get("connector1_type") &&
+			is_valid_hdmi(env_get("connector1_type"))) {
+			if (outputmode2 && is_mode_name_frac(outputmode2))
+				strncpy(tmp_outputmode2, outputmode2, sizeof(tmp_outputmode2));
+		} else if (env_get("connector2_type") &&
+			is_valid_hdmi(env_get("connector2_type"))) {
+			if (outputmode3 && is_mode_name_frac(outputmode3))
+				strncpy(tmp_outputmode3, outputmode3, sizeof(tmp_outputmode3));
+		} else {
+			pr_info("no config connectorX_type, no check frac\n");
+		}
 	}
 
-	if (!tmp_hdmimode[0] && !tmp_outputmode[0] && !tmp_outputmode2[0]) {
+	if (!tmp_hdmimode[0] && !tmp_outputmode[0] && !tmp_outputmode2[0] &&
+		!tmp_outputmode3[0]) {
 		/* no frac name and return*/
 		return;
 	}
@@ -163,6 +201,8 @@ void hdmi_mode_frac_preprocess(void)
 	/* rename 59hz to 60hz for compatible old name */
 	memset(conv_hdmimode, 0, sizeof(conv_hdmimode));
 	memset(conv_outputmode, 0, sizeof(conv_outputmode));
+	memset(conv_outputmode2, 0, sizeof(conv_outputmode2));
+	memset(conv_outputmode3, 0, sizeof(conv_outputmode3));
 	if (tmp_hdmimode[0]) {
 		if (hdmimode && is_mode_name_frac(hdmimode)) {
 			convert_name_frac2int(tmp_hdmimode, conv_hdmimode);
@@ -187,11 +227,20 @@ void hdmi_mode_frac_preprocess(void)
 			env_set("outputmode2", outputmode2);
 		}
 	}
+	if (tmp_outputmode3[0]) {
+		if (outputmode3 && is_mode_name_frac(outputmode3)) {
+			convert_name_frac2int(tmp_outputmode3, conv_outputmode3);
+			env_set("outputmode3", conv_outputmode3);
+		} else {
+			env_set("outputmode3", outputmode3);
+		}
+	}
 }
 
 static void _hdmi_mode_frac_postprocess(void)
 {
-	if (!tmp_hdmimode[0] && !tmp_outputmode[0]) {
+	if (!tmp_hdmimode[0] && !tmp_outputmode[0] && !tmp_outputmode2[0] &&
+		!tmp_outputmode3[0]) {
 		/* no frac name and return*/
 		return;
 	}
@@ -204,6 +253,10 @@ static void _hdmi_mode_frac_postprocess(void)
 		env_set("hdmimode", tmp_hdmimode);
 	if (tmp_outputmode[0])
 		env_set("outputmode", tmp_outputmode);
+	if (tmp_outputmode2[0])
+		env_set("outputmode2", tmp_outputmode2);
+	if (tmp_outputmode3[0])
+		env_set("outputmode3", tmp_outputmode3);
 }
 
 void hdmi_mode_frac_postprocess(void)
