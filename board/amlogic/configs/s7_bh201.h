@@ -69,6 +69,7 @@
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"scramble_reg=0xfe02e030\0"\
 	"uart_base=0xfe07a000\0"\
+	"baudrate=921600\0"\
 	"usb_burning=" CONFIG_USB_TOOL_ENTRY "\0"\
 	"outputmode=1080p60hz\0"\
 	"connector0_type=HDMI-A-A\0" \
@@ -110,6 +111,7 @@
 		"run bcb_cmd; "\
 		"run upgrade_check;"\
 		"run init_display;"\
+		"run check_console_onoff;"\
 		"run storeargs;"\
 		"run upgrade_key;" \
 		"bcb uboot-command;"\
