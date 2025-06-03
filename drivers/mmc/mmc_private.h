@@ -11,6 +11,7 @@
 
 #include <clk.h>
 #include <mmc.h>
+#include <linux/dma-mapping.h>
 
 #define SAMSUNG_MID			0x15
 #define KINGSTON_MID		0x70
@@ -72,6 +73,8 @@ struct meson_host {
 	struct gpio_desc gpio_reset;
 	char *blk_test;
 	char* desc_buf;
+	dma_addr_t dma_addr_data;
+	dma_addr_t dma_addr_info;
 };
 
 struct meson_mmc_platdata {
