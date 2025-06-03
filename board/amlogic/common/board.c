@@ -43,15 +43,7 @@
 #ifdef CONFIG_AMLOGIC_AMFC
 #include <amlogic/amfc.h>
 #endif
-#ifdef CONFIG_RX_RTERM
-#include <amlogic/aml_hdmirx.h>
-#endif
-#ifdef CONFIG_CEC_TRIM_VAL
-#include <amlogic/aml_cec.h>
-#endif
-#ifdef CONFIG_CVBS_CALI
-#include <amlogic/aml_tvafe.h>
-#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 #define UNUSED(x) (void)(x)
 

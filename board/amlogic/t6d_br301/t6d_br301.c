@@ -214,7 +214,7 @@ int board_late_init(void)
 	cvbs_dac_cfg();
 #endif
 #ifdef CONFIG_CEC_TRIM_VAL
-	cec_get_trim_val();
+	cec_get_efuse_val();
 #endif
 	run_command("ini_model", 0);
 	aml_board_display_env_handler();

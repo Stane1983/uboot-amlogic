@@ -47,6 +47,9 @@
 #ifdef CONFIG_RX_RTERM
 #include <amlogic/aml_hdmirx.h>
 #endif
+#ifdef CONFIG_CEC_TRIM_VAL
+#include <amlogic/aml_cec.h>
+#endif
 #ifdef CONFIG_AMLOGIC_WIFI_USB2T
 #include "wifi.h"
 #endif
@@ -193,7 +196,7 @@ int board_late_init(void)
 	cvbs_dac_cfg();
 #endif
 #ifdef CONFIG_CEC_TRIM_VAL
-	cec_get_trim_val();
+	cec_get_efuse_val();
 #endif
 	run_command("ini_model", 0);
 	aml_board_display_env_handler();
