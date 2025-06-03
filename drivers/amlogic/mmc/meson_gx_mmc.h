@@ -8,6 +8,7 @@
 
 #include <mmc.h>
 #include <linux/bitops.h>
+#include <linux/dma-mapping.h>
 
 enum meson_gx_mmc_compatible {
 	MMC_COMPATIBLE_GX,
@@ -41,6 +42,8 @@ struct meson_host {
 	char *blk_test;
 	char *desc_buf;
 	unsigned char timing;
+	dma_addr_t dma_addr_data;
+	dma_addr_t dma_addr_info;
 };
 
 struct sd_emmc_desc_info {
