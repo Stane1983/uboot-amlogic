@@ -33,7 +33,7 @@
 #include <bootm.h>
 #include <image.h>
 #include <version.h>
-
+#include <linux/sizes.h>
 #include <amlogic/unlz4_android.h>
 
 #ifdef CONFIG_OF_LIBFDT_OVERLAY
@@ -115,6 +115,30 @@ static int bootm_start(cmd_tbl_t *cmdtp, int flag, int argc,
 	return 0;
 }
 
+#if defined(CONFIG_IMAGE_FORMAT_LEGACY)
+static void set_rootfs_dtb_high_addr(void)
+{
+	ulong ddr_size = get_effective_memsize();
+	const char *high_addr = NULL;
+
+#if defined(CONFIG_SYS_MEM_TOP_HIDE)
+	ddr_size += CONFIG_SYS_MEM_TOP_HIDE;
+#endif
+
+	if (ddr_size <= SZ_128M) {
+		if (env_get("reset_high_addr"))
+			high_addr = env_get("reset_high_addr");
+		else
+			high_addr = "4000000";
+	} else {
+		high_addr = "A000000";
+	}
+
+	env_set("initrd_high", high_addr);
+	env_set("fdt_high", high_addr);
+}
+#endif
+
 static int bootm_find_os(cmd_tbl_t *cmdtp, int flag, int argc,
 			 char * const argv[])
 {
@@ -141,10 +165,8 @@ static int bootm_find_os(cmd_tbl_t *cmdtp, int flag, int argc,
 		images.os.end = image_get_image_end(os_hdr);
 		images.os.load = image_get_load(os_hdr);
 		images.os.arch = image_get_arch(os_hdr);
-		if (images.os.arch == IH_ARCH_ARM) {
-			env_set("initrd_high", "0A000000");
-			env_set("fdt_high", "0A000000");
-		}
+		if (images.os.arch == IH_ARCH_ARM)
+			set_rootfs_dtb_high_addr();
 		break;
 #endif
 #if IMAGE_ENABLE_FIT
