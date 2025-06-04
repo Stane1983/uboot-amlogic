@@ -495,7 +495,8 @@ void wifi_init(void)
 	udelay(200000);
 	dm_gpio_set_value(&desc, 1); //output high
 
-	usb_init();
+	if (usb_wifi_init() < 0)
+		return;
 
 	g_udev = get_aml_dev();
 	if (!g_udev) {

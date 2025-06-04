@@ -115,7 +115,8 @@
 		"run storeargs;"\
 		"run upgrade_key;" \
 		"bcb uboot-command;"\
-		"run switch_bootmode;"
+		"run switch_bootmode;"\
+		"run switch_usbmode;"
 #else
 #define CONFIG_PREBOOT  "echo preboot"
 #define CONFIG_ENV_IS_NOWHERE  1
@@ -301,6 +302,10 @@ defined(CONFIG_STORE_COMPATIBLE)
 	#define CONFIG_SERVERIP        10.18.9.113         /* Tftp server ip address */
 	#define CONFIG_NETMASK         255.255.255.0
 #endif /* (CONFIG_CMD_NET) */
+
+#define CONFIG_AML_USB_BT 1
+#define BT_EN "GPIOD_11"
+#define WIFI_POWER_PIN "gpiod_11"
 
 #define MAC_ADDR_NEW  1
 
