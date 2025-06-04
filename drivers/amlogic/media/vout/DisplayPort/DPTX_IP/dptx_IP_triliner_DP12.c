@@ -573,7 +573,7 @@ static void dptx_interrupt_mask_set(struct dptx_drv_s *dptx, u8 mask)
 static void dptx_set_scramble_reset(struct dptx_drv_s *dptx, uint8_t sr_type)
 {
 	dptx_reg_write(dptx->idx, EDP_TX_SCRAMBLING_DISABLE,
-		sr_type == DPTX_SCRAMBLE_RESET_OFF ? 0x00 : 0x01);
+		sr_type == DPTX_SCRAMBLE_RESET_OFF ? 0x01 : 0x00);
 
 	dptx_reg_write(dptx->idx, EDP_TX_ALTERNATE_SCRAMBLER_RESET,
 		sr_type == DPTX_eDP_ALTERNATIVE_SCRAMBLE_RESET ? 0x01 : 0x00);

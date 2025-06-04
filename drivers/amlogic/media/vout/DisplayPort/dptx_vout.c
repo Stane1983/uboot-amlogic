@@ -64,7 +64,7 @@ static struct dptx_drv_s *dptx_driver_check_valid(u8 index)
 		return NULL;
 
 	if (!dptx_drivers[index] || !(dptx_drivers[index]->status & DPTX_STA_PROBE_DONE)) {
-		DPTXPR(0, LOG_E, "invalid DPTX%d config\n", index);
+		DPTXPR(0, LOG_E, "invalid DPTX%d config", index);
 		return NULL;
 	}
 	return dptx_drivers[index];
@@ -116,13 +116,13 @@ int dptx_outputmode_check(struct dptx_drv_s *dptx, char *mode)
 		// printf("%s\n", vmd_name);
 		if (strcmp(mode, vmd_name)) {
 			dptx->vmode_mgr.vmode_sel_idx = i;
-			DPTXPR(dptx->idx, LOG_I, "%s: timing: %u, %s\n", __func__, i, mode);
+			DPTXPR(dptx->idx, LOG_I, "%s: timing: %u, %s", __func__, i, mode);
 			return 0;
 		}
 	}
 
 	dptx->vmode_mgr.vmode_sel_idx = U8_MAX;
-	DPTXPR(dptx->idx, LOG_I, "%s: timing: %s (not match)\n", __func__, mode);
+	DPTXPR(dptx->idx, LOG_I, "%s: timing: %s (not match)", __func__, mode);
 	return 0;
 }
 
@@ -138,7 +138,7 @@ static void dptx_update_outputmode(struct dptx_drv_s *dptx)
 		dptx->vmode_mgr.vmode_sel_idx = U8_MAX;
 	}
 
-	temp_str[3] = 'A' + dptx->idx;
+	temp_str[4] = 'A' + dptx->idx;
 
 	for (i = 0; i < DPTX_MAX_VOUT; i++) {
 		cnt_type_str[9] = '0' + i;

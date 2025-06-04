@@ -122,7 +122,7 @@ uint8_t dptx_ds_to_preem(uint8_t ds)
 
 uint8_t dptx_DPCD_capability_to_link_cfg(struct dptx_drv_s *dptx)
 {
-	uint8_t auxdata[16];
+	uint8_t auxdata[16], auxdata2;
 	uint8_t sink_DPCD_ver, sink_max_lkr, sink_lane_cnt, sink_enhanced_frame, sink_TPS_support,
 		sink_down_spread, sink_coding_support, sink_msa_timing_par_ignored,
 		sink_train_aux_rd_interval, sink_extended_receiver_cap, sink_DACP_support = 0,
@@ -150,19 +150,20 @@ uint8_t dptx_DPCD_capability_to_link_cfg(struct dptx_drv_s *dptx)
 	//DOWN_STREAM_PORT_COUNT: 0x0007
 	sink_msa_timing_par_ignored = (auxdata[7] >> 6) & 0x1;
 
+	DPTXPR(dptx->idx, LOG_I, "sink DPCD auxdata[0xd] = %0x", auxdata[0xd]);
 	if (auxdata[0xd]) {
 		//eDP_CONFIGURATION_CAP: 0x000d
-		sink_DACP_support  = (auxdata[0] & 0x1) << 2; //eDP ASSR
-		sink_eDP_DPCD_reg  = (auxdata[0] >> 3) & 0x1;
+		sink_DACP_support  = (auxdata[0xd] & 0x1) << 2; //eDP ASSR
+		sink_eDP_DPCD_reg  = (auxdata[0xd] >> 3) & 0x1;
 
 		if (sink_eDP_DPCD_reg) {
-			if (!dptx_if_aux_read(dptx, DPCD_EDP_DPCD_REV, 1, auxdata))
-				sink_eDP_ver = auxdata[0] > 5 ? 0 : auxdata[0];
+			if (!dptx_if_aux_read(dptx, DPCD_EDP_DPCD_REV, 1, &auxdata2))
+				sink_eDP_ver = auxdata2 > 5 ? 0 : auxdata2;
 		}
 	}
 	//8b/10b_TRAINING_AUX_RD_INTERVAL: 0x000e
 	sink_train_aux_rd_interval = auxdata[0xe] & 0x7f;
-	sink_extended_receiver_cap = (auxdata[1] >> 7) & 0x1;
+	sink_extended_receiver_cap = (auxdata[0xe] >> 7) & 0x1;
 
 	//limit to prevent out of bound
 	// dptx->link_cfg.train_aux_rd_interval = CAP_COMP(sink_sp.train_aux_rd_interval, 4);
@@ -177,8 +178,8 @@ uint8_t dptx_DPCD_capability_to_link_cfg(struct dptx_drv_s *dptx)
 	dptx->link_cfg.down_ss               = sink_down_spread;
 	dptx->link_cfg.train_aux_rd_interval = sink_train_aux_rd_interval;
 	dptx->link_cfg.dev_type              = auxdata[0xd] ? 1 : 0;
-	dptx->link_cfg.DPCD_reg_func         = sink_extended_receiver_cap ? BIT(0) : 0 |
-					       sink_eDP_DPCD_reg          ? BIT(1) : 0;
+	dptx->link_cfg.DPCD_reg_func         = (sink_extended_receiver_cap ? BIT(0) : 0) |
+					       (sink_eDP_DPCD_reg          ? BIT(1) : 0);
 	dptx->link_cfg.enhanced_framing_en   = sink_enhanced_frame;
 
 	DPTXPR(dptx->idx, LOG_I, "sink DPCD Capability:\n"

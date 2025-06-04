@@ -333,6 +333,22 @@ void dptx_vmode_manage(struct dptx_drv_s *dptx)
 		}
 	}
 
+	// eDP and all mode bw not enough
+	if (dptx->link_cfg.DPCD_reg_func & BIT(1) && !dptx_get_optimum_vmode(dptx)) {
+		for (i = DPTX_DRV_VMODE_MAX - 2; i > 0; i--) {
+			if (dptx->vmode_mgr.vmodes[i].flag & VMODE_FLAG_VALID) {
+				memcpy(&dptx->vmode_mgr.vmodes[i + 1],
+					&dptx->vmode_mgr.vmodes[i], sizeof(struct dptx_vmode_s));
+				dptx->vmode_mgr.vmodes[i + 1].fr100_int = 4800;
+				dptx->vmode_mgr.vmodes[i + 1].fr_adv = 0;
+				dptx->vmode_mgr.vmodes[i + 1].cfmt_support =
+					1 << DPTX_CFMT_RGB_6bit;
+				DPTXPR(dptx->idx, LOG_I, "add force 48hz");
+				break;
+			}
+		}
+	}
+
 	dptx_vmodes_reorder(dptx);
 
 	if (dptx_print_level >= LOG_V)
