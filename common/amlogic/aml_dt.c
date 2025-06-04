@@ -28,7 +28,7 @@
 #ifdef AML_MULTI_DTB_API_NEW
 
 /*for multi-dtb gzip buffer*/
-#define GUNZIP_BUF_SIZE         BIT(20)     /*1MB  is enough?*/
+#define GUNZIP_BUF_SIZE         BIT(22)     /*4MB  is enough?*/
 #define BZIP2_BUF_SIZE          BIT(23)     /*8MB  is enough?*/
 
 /*magic for multi-dtb*/
