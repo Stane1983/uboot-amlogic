@@ -154,7 +154,8 @@ static int unwrap_key(u8 *in, u32 in_sz, u8 *out, u32 *out_sz)
 		0x55, 0x2b, 0x60, 0xd5, 0x95, 0x60, 0xcf, 0xcc
 	};
 #endif
-	u32 key_slot = 31; //only test slot
+	// Per request of KT/KL owner, modify slot to 32.
+	u32 key_slot = 32;
 	u8 dst[AES_KEY_SIZE_128] = {0};
 
 	if (!in || !out) {
