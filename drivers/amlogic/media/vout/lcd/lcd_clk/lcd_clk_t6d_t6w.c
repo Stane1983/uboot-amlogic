@@ -852,10 +852,12 @@ struct lcd_clk_config_s *lcd_clk_config_chip_init_t6w(struct aml_lcd_drv_s *pdrv
 {
 	struct lcd_clk_config_s *cconf = NULL;
 	unsigned int size;
-	struct lcd_config_s *pconf = &pdrv->config;
+	struct lcd_config_s *pconf;
 
 	if (!pdrv)
 		return NULL;
+
+	pconf = &pdrv->config;
 
 	if (!pdrv->clk_conf) {
 		cconf = (struct lcd_clk_config_s *)malloc(sizeof(struct lcd_clk_config_s));

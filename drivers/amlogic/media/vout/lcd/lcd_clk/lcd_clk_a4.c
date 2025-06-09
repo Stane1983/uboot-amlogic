@@ -194,6 +194,7 @@ struct lcd_clk_config_s *lcd_clk_config_chip_init_a4(struct aml_lcd_drv_s *pdrv)
 	memset(cconf, 0, sizeof(struct lcd_clk_config_s));
 
 	cconf->pll_conf_num = 1;
+	size = cconf->pll_conf_num * sizeof(struct lcd_pll_config_s);
 	cconf->pll_config = (struct lcd_pll_config_s *)malloc(size);
 	if (!cconf->pll_config) {
 		LCDERR("[%d]: %s: Not enough memory for pll config\n", pdrv->index, __func__);

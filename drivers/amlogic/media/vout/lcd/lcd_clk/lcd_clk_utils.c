@@ -1545,7 +1545,7 @@ void lcd_clk_config_print_dft(struct aml_lcd_drv_s *pdrv)
 	int i = 0;
 
 	cconf = get_lcd_clk_config(pdrv);
-	if (!cconf)
+	if (!cconf || !cconf->data)
 		return;
 
 	LCDPR("[%d]: clk config:\n"
@@ -1562,7 +1562,7 @@ void lcd_clk_config_print_dft(struct aml_lcd_drv_s *pdrv)
 		cconf->xd, cconf->fout, cconf->pll_mode,
 		cconf->pll_tcon_div_sel,
 		cconf->data->vclk_sel);
-	if (cconf->data && cconf->data->ss_support) {
+	if (cconf->data->ss_support) {
 		LCDPR("  ss_level:   %d\n"
 			"  ss_dep_sel: %d\n"
 			"  ss_str_m:   %d\n"

@@ -669,7 +669,7 @@ static void mipi_dsi_non_burst_packet_config(struct lcd_config_s *pconf)
 	u32 lane_num, hactive, multi_pkt_en;
 	u64 bit_rate_required;
 	u32 vid_num_chunks = 0, vid_pkt_size = 0;
-	u64 total_bytes_per_chunk = 0, vid_byte_per_chunk = 0;
+	u32 total_bytes_per_chunk = 0, vid_byte_per_chunk = 0;
 	u32 chunk_overhead = 0, vid_null_size = 0;
 	u64 h_period, hs_width, hs_bp;
 	u32 byte_pixel = 0, temp;
@@ -750,8 +750,8 @@ static void mipi_dsi_non_burst_packet_config(struct lcd_config_s *pconf)
 		LCDPR("MIPI DSI NON-BURST setting:\n"
 			"  multi_pkt_en = %u\n"
 			"  chunks_num   = %u\n"
-			"  chunks       = %llu\n"
-			"  vid_byte[%llu] = byte_pix[%u] * vid_pkt_size[%u]\n"
+			"  chunks       = %u\n"
+			"  vid_byte[%u] = byte_pix[%u] * vid_pkt_size[%u]\n"
 			"  overhead[%u](vid_null_size[%u])\n",
 			multi_pkt_en, vid_num_chunks, total_bytes_per_chunk, vid_byte_per_chunk,
 			byte_pixel, vid_pkt_size, chunk_overhead, vid_null_size);

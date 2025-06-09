@@ -278,16 +278,14 @@ static void lcd_venc_set(struct aml_lcd_drv_s *pdrv)
 	unsigned int reg_disp_viu_ctrl, offset, offset1;
 	unsigned int frm_hsize, reg_data;//, vpp0_ppc_num;
 	//unsigned int ppc;
-	struct lcd_config_s *pconf = &pdrv->config;
+	struct lcd_config_s *pconf;
 
-	if (!pconf) {
-		LCDERR("null pconf\n");
-		return;
-	}
+
 	if (!pdrv || !pdrv->data) {
 		LCDERR("null pdrv\n");
 		return;
 	}
+	pconf = &pdrv->config;
 	//ppc = pconf->timing.ppc;
 	offset = pdrv->data->offset_venc[pdrv->index];
 

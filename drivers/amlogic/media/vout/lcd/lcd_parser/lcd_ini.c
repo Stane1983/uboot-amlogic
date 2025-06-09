@@ -238,7 +238,7 @@ int lcd_ini_param_mem_save_update(void *parse_mem, int index)
 
 	/* save to reserved memory for kernel use */
 	sprintf(name, "panel%d_ini", index);
-	panel_param_mem_modify(parse_mem, name, buf_size);
+	ret = panel_param_mem_modify(parse_mem, name, buf_size);
 	update_panel_param_to_kernel();
 
 	return ret;
