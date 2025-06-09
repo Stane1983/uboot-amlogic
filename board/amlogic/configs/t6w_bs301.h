@@ -111,8 +111,6 @@
 	"dv_fw_dir=/reserved/firmware/dovi_fw.bin\0"\
 	"hdr_policy=0\0"\
 	"frac_rate_policy=1\0"\
-	"aml_isolcpus=4\0"\
-	"isolcpus_speedup_boot=1\0"\
 
 #ifndef CONFIG_PXP_DDR
 #define CONFIG_PREBOOT  \

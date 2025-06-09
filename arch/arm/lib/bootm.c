@@ -417,7 +417,8 @@ static void fix_bootargs(void)
 		"ramoops.record_size=",
 		"ramoops.console_size=",
 		"aml_isolcpus=",
-		"isolcpus_speedup_boot="
+		"isolcpus_speedup_boot=",
+		"apu_enable="
 	};
 	int i, len, rlen, find;
 	char *cmdline, *p, *q;
