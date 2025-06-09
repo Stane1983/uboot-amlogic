@@ -29,32 +29,33 @@ SECTIONS
 		*(.dev_header*)
 	}
 
-	.vendor_key :
+	. = 0x00000080;
+	.vendor_key . :
 	{
 		*(.vendor_key*)
 	}
 
-	.generic_param :
+	.generic_param . :
 	{
 		*(.generic_param*)
 	}
 
-	.clk_param :
+	.clk_param . :
 	{
 		*(.clk_param*)
 	}
 
-	.misc_param :
+	.misc_param . :
 	{
 		*(.misc_param*)
 	}
 
-	.store_param :
+	.store_param . :
 	{
 		*(.store_param*)
 	}
 
-	.ddr_param :
+	.ddr_param . :
 	{
 		*(.ddr_param*)
 		*(.ddr_2acs_index*)
