@@ -612,7 +612,7 @@ static void *contain_zstd_page(void *src, int cluster)
 	int i = 0;
 
 	/* skip leading zero */
-	while (p[i] == 0 && i < cluster) {
+	while ((i < cluster) && (p[i] == 0)) {
 		i++;
 	}
 	if (i >= cluster)
@@ -731,7 +731,7 @@ static void *get_zstd_addr(void *src, int cluster, int *c_size)
 	unsigned long addr, remain;
 
 	/* skip leading zero */
-	while (p[i] == 0 && i < cluster) {
+	while ((i < cluster) && (p[i] == 0)) {
 		i++;
 	}
 	if (i >= cluster)
