@@ -279,7 +279,7 @@ static AvbSlotVerifyResult load_and_verify_hash_partition(
 	uint8_t* digest;
 	size_t digest_len;
 	const char* found;
-	uint64_t image_size;
+	uint64_t image_size = 0;
 	size_t expected_digest_len = 0;
 	uint8_t expected_digest_buf[AVB_SHA512_DIGEST_SIZE];
 	const uint8_t* expected_digest = NULL;
@@ -996,6 +996,10 @@ static AvbSlotVerifyResult load_and_verify_vbmeta(
 	 */
 	descriptors =
 			avb_descriptor_get_all(vbmeta_buf, vbmeta_num_read, &num_descriptors);
+	if (!descriptors) {
+		ret = AVB_SLOT_VERIFY_RESULT_ERROR_INVALID_METADATA;
+		goto out;
+	}
 	for (n = 0; n < num_descriptors; n++) {
 		AvbDescriptor desc;
 
