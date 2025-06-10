@@ -696,13 +696,13 @@ static inline unsigned int dsi_host_read(struct aml_lcd_drv_s *pdrv, u8 port, un
 	unsigned int val;
 
 	if      (pdrv->index == 0 && port == 0)
-		paddr = REG_ADDR_DSI_0_HOST_A(reg);
+		paddr = REG_ADDR_DSI_0_HOST_A((unsigned long)reg);
 	else if (pdrv->index == 0 && port == 1)
-		paddr = REG_ADDR_DSI_0_HOST_B(reg);
+		paddr = REG_ADDR_DSI_0_HOST_B((unsigned long)reg);
 	else if (pdrv->index == 1 && port == 0)
-		paddr = REG_ADDR_DSI_1_HOST_A(reg);
+		paddr = REG_ADDR_DSI_1_HOST_A((unsigned long)reg);
 	else if (pdrv->index == 1 && port == 1)
-		paddr = REG_ADDR_DSI_1_HOST_B(reg);
+		paddr = REG_ADDR_DSI_1_HOST_B((unsigned long)reg);
 	else
 		return 0;
 
@@ -719,13 +719,13 @@ static inline void dsi_host_write(struct aml_lcd_drv_s *pdrv, uint8_t port,
 	unsigned long paddr;
 
 	if      (pdrv->index == 0 && port == 0)
-		paddr = REG_ADDR_DSI_0_HOST_A(reg);
+		paddr = REG_ADDR_DSI_0_HOST_A((unsigned long)reg);
 	else if (pdrv->index == 0 && port == 1)
-		paddr = REG_ADDR_DSI_0_HOST_B(reg);
+		paddr = REG_ADDR_DSI_0_HOST_B((unsigned long)reg);
 	else if (pdrv->index == 1 && port == 0)
-		paddr = REG_ADDR_DSI_1_HOST_A(reg);
+		paddr = REG_ADDR_DSI_1_HOST_A((unsigned long)reg);
 	else if (pdrv->index == 1 && port == 1)
-		paddr = REG_ADDR_DSI_1_HOST_B(reg);
+		paddr = REG_ADDR_DSI_1_HOST_B((unsigned long)reg);
 	else
 		return;
 

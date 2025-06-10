@@ -115,13 +115,13 @@ enum DP_TIMING_RES DP_timing_detect(int ha, int va)
 unsigned char DPtx_check_timing(struct aml_lcd_drv_s *pdrv, struct dptx_detail_timing_s *timing)
 {
 	struct DP_dev_support_s *source_sp;
-	struct edp_config_s *DP_cfg = &pdrv->config.control.edp_cfg;
+	struct edp_config_s *DP_cfg;
 	int ret_code = 0;
 	unsigned int frame_rate;
 
 	if (!pdrv || !timing)
 		return 0xff;
-
+	DP_cfg = &pdrv->config.control.edp_cfg;
 	if (!(timing->pclk && timing->h_a && timing->v_a)) { //invalid timing
 		ret_code = 1 << 7;
 		return ret_code;

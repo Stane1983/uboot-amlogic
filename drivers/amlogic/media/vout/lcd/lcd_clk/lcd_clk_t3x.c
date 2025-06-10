@@ -140,6 +140,8 @@ static int _lcd_set_pll_by_cconf(struct aml_lcd_drv_s *pdrv, int pll_sel)
 	int ret, cnt = 0, done = 0;
 	struct lcd_clk_config_s *cconf = get_lcd_clk_config(pdrv);
 
+	if (!cconf)
+		return done;
 	pll_ctrl = ((0x3 << 17) | /* gate ctrl */
 		(cconf->pll_config[pll_sel].pll_n << LCD_PLL_N_TL1) |
 		(cconf->pll_config[pll_sel].pll_m << LCD_PLL_M_TL1) |

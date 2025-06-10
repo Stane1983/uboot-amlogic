@@ -21,12 +21,13 @@ void edp_tx_init(struct aml_lcd_drv_s *pdrv)
 	unsigned char auxdata;
 	uint16_t i = 0;
 	int ret;
-	struct edp_config_s *eDP_cfg = &pdrv->config.control.edp_cfg;
+	struct edp_config_s *eDP_cfg;
 	struct dptx_EDID_s edp_edid1;
 	struct dptx_detail_timing_s *tm;
 
 	if (!pdrv)
 		return;
+	eDP_cfg = &pdrv->config.control.edp_cfg;
 	if (pdrv->index > 1) {
 		LCDERR("[%d]: %s: invalid drv_index\n", pdrv->index, __func__);
 		return;
