@@ -454,7 +454,7 @@ static int do_image_read_dtb(cmd_tbl_t *cmdtp, int flag, int argc, char * const 
 
 uint32_t get_rsv_mem_size(void)
 {
-	uint32_t rsv_start, reg_size, rsv_size;
+	uint32_t rsv_start = 0, reg_size = 0, rsv_size = 0;
 #if defined(P_AO_SEC_GP_CFG3)
 	rsv_start = *((volatile uint32_t *)((uintptr_t)(P_AO_SEC_GP_CFG5)));
 	reg_size = *((volatile uint32_t *)((uintptr_t)(P_AO_SEC_GP_CFG3)));
@@ -903,6 +903,10 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 								ramdisk_size, partname_init);
 							free(pbuffpreload_init);
 							pbuffpreload_init = 0;
+#ifdef CONFIG_AVB2
+							free(init_boot_buf);
+							init_boot_buf = 0;
+#endif
 							return __LINE__;
 						}
 #if CONFIG_PARTITION_ENCRYPTION_LOCAL
@@ -953,9 +957,9 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 		u64 vendorboot_part_sz = 0;
 		int rc_r = 0;
 
-		if (strcmp(slot_name, "0") == 0)
+		if (slot_name && (strcmp(slot_name, "0")) == 0)
 			strcpy((char *)partname_r, "vendor_boot_a");
-		else if (strcmp(slot_name, "1") == 0)
+		else if (slot_name && (strcmp(slot_name, "1")) == 0)
 			strcpy((char *)partname_r, "vendor_boot_b");
 		else
 			strcpy((char *)partname_r, "vendor_boot");
