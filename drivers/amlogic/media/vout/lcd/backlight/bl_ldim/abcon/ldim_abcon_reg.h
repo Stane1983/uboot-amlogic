@@ -24,8 +24,8 @@
 #define GPIOH_PULL_UP 0xfe004130	//set pull up
 
 //bcon base addr
-#define BCON_APB_BASE_ADDR 0xfe014000
-#define BCON_APB_BASE_ADDR_END 0xfe015fff
+#define BCON_APB_BASE_ADDR 0xfe014000UL
+#define BCON_APB_BASE_ADDR_END 0xfe015fffUL
 
 #define ABCON_REG_OFFSET(reg)                   (((reg) << 2))
 #define ABCON_REG_OFFSET_BYTE(reg)              ((reg))

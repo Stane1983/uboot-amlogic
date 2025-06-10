@@ -41,6 +41,25 @@ struct bcon_gpio_s bgpio[12] = {
 	{11, 0xfe004018, 8, 6, 0xfe00410c, 0xfe004110, 18},
 };
 
+void ldim_abcon_swrst(void)
+{
+	//sw reset
+	abcon_wr_reg_bits(0x00, 1, 5, 1);
+	abcon_wr_reg_bits(0x00, 0, 5, 1);
+	//clr done flag
+	abcon_wr_reg_bits(0x00, 1, 4, 1);
+	abcon_wr_reg_bits(0x00, 0, 4, 1);
+}
+
+void ldim_abcon_hw_reset(void)
+{
+	lcd_reset_setb(RESETCTRL_RESET2_MASK, 0, 6, 1);
+	lcd_reset_setb(RESETCTRL_RESET2_LEVEL, 0, 6, 1);
+	udelay(1);
+	lcd_reset_setb(RESETCTRL_RESET2_LEVEL, 1, 6, 1);
+	udelay(2);
+}
+
 //todo: consider boost mode, glb cur or local cur
 void ldim_abcon_swduty_set(struct aml_ldim_driver_s *ldim_drv)
 {
@@ -70,6 +89,8 @@ void ldim_abcon_swduty_set(struct aml_ldim_driver_s *ldim_drv)
 	abcon_mem.swduty_fid = 0;//always set 0 for test
 	fid = abcon_mem.swduty_fid;
 	buf = (unsigned char *)(abcon_mem.swduty + (LDC_DUTY_SIZE * fid >> 2));
+	invalidate_dcache_range((unsigned long)buf,
+		(unsigned long)(buf + LDC_DUTY_SIZE));
 
 	row = dev_drv->bl_row;
 	col = dev_drv->bl_col;
@@ -97,10 +118,9 @@ void ldim_abcon_swduty_set(struct aml_ldim_driver_s *ldim_drv)
 	abcon_wr_reg_bits(0x2c, fid, 30, 2);
 	flush_cache((unsigned long)abcon_mem.swduty, LDC_DUTY_SIZE);
 
-	temp = (ldim_drv->brightness_level << 1) & 0x3ff; //test first, use 50% dc   << 2
+	temp = abcon->conf.init_dc & 0x3ff;
 	//reg_abcon_dc_ldc_glb_apl
 	abcon_wr_reg_bits(0x11, temp, 0, 10);
-	mdelay(2);
 }
 
 int ldim_abcon_mem_init(void)
@@ -149,7 +169,7 @@ int ldim_abcon_mem_init(void)
 	return 0;
 }
 
-void ldim_abcon_set_txrx_clk(struct abcon_s *abcon)
+void ldim_abcon_set_txrx_clk(unsigned int txclk, unsigned int rxclk)
 {
 	unsigned char bmc_enc;
 	unsigned char enc_bit_num;
@@ -162,6 +182,7 @@ void ldim_abcon_set_txrx_clk(struct abcon_s *abcon)
 		break;
 	case 1:
 	case 2://xsignal
+	case 3://xianxin
 		bmc_enc = 0;
 		enc_bit_num = 4;
 		break;
@@ -171,15 +192,17 @@ void ldim_abcon_set_txrx_clk(struct abcon_s *abcon)
 		break;
 	}
 
-	if (abcon->conf.tx_clk == 0)
-		abcon->conf.tx_clk = 1000; //default 1Mhz
-	if (abcon->conf.rx_clk == 0)
-		abcon->conf.rx_clk = 1000; //default 1Mhz
-	txscale = 1000000 / (abcon->conf.tx_clk * enc_bit_num * 6);
-	rxscale = 1000000 / (abcon->conf.rx_clk * enc_bit_num * 6);
+	if (txclk == 0)
+		txclk = 1000; //default 1Mhz
+	if (rxclk == 0)
+		rxclk = 1000; //default 1Mhz
+	txscale = 1000000 / (txclk * enc_bit_num * 6);
+	rxscale = 1000000 / (rxclk * enc_bit_num * 6);
 
 	abcon_wr_reg_bits(0x05, bmc_enc, 31, 1);//reg_abcon_bmc_enc
 	abcon_wr_reg_bits(0x05, bmc_enc, 13, 1);//reg_abcon_bmc_dec
+
+	abcon_wr_reg_bits(0x16, enc_bit_num, 13, 3);//reg_abcon_enc_bit_num
 
 	abcon_wr_reg_bits(0x01, txscale, 0, 10);//reg_abcon_tx_scale
 	abcon_wr_reg_bits(0x01, txscale, 20, 10);//reg_abcon_tx_scale0
@@ -237,17 +260,23 @@ void ldim_abcon_set_channel(struct abcon_s *abcon)
 	abcon_wr_reg_bits(0x13, abcon->lane_ch[3], 16, 11);
 
 	//reg_abcon_max_lane_chnl_num
-	abcon_wr_reg_bits(0x18, abcon->max_lane_ch, 0, 11);
+	if (abcon->conf.dev_type == 3)
+		abcon_wr_reg_bits(0x18, abcon->conf.ch_num, 0, 11);//xianxin special
+	else
+		abcon_wr_reg_bits(0x18, abcon->max_lane_ch, 0, 11);
 }
 
-void ldim_abcon_dev_init_registers(struct abcon_s *abcon)
+void ldim_abcon_init_common_registers(struct abcon_s *abcon)
 {
 	ABCONPR("begin init bcon common registers\n");
 	//rdmif little endian
 	abcon_wr_reg(0x20, 0x00000040);
 
+	//reg_abcon_manu_num
+	abcon_wr_reg_bits(0x03, abcon->conf.dev_type, 14, 4);
+
 	//set txrx clk
-	ldim_abcon_set_txrx_clk(abcon);
+	ldim_abcon_set_txrx_clk(abcon->conf.tx_clk, abcon->conf.rx_clk);
 
 	//reg_abcon_mapping_table_baddr
 	abcon_wr_reg(0x0a, abcon_mem.ch_mapping_paddr / 4);
@@ -296,16 +325,17 @@ void ldim_abcon_load_ch_mapping(struct ldim_dev_driver_s *dev_drv, unsigned int 
 {
 	if (dev_drv->bl_mapping && abcon_mem.ch_mapping) {
 		//copy mapping data to ch_mapping buf
+		invalidate_dcache_range((unsigned long)abcon_mem.ch_mapping,
+			(unsigned long)(abcon_mem.ch_mapping + len));
 		memcpy(abcon_mem.ch_mapping, dev_drv->bl_mapping, len);
 		flush_cache((unsigned long)abcon_mem.ch_mapping, len);
-		mdelay(2);
+
+		udelay(1);
 
 		//reg_abcon_load_mapping_start
 		abcon_wr_reg_bits(0x00, 1, 2, 1);
-		mdelay(1);
 		abcon_wr_reg_bits(0x00, 0, 2, 1);
 		ABCONPR("abcon load ch mapping done, total size=0x%x\n", len);
-		mdelay(2);
 	}
 }
 
@@ -333,11 +363,15 @@ int ldim_abcon_dev_probe(struct ldim_dev_driver_s *dev_drv)
 		if (abcon->lane_ch[i])
 			abcon->act_lane += 1;
 	}
+	abcon->max_lane_dim = abcon->max_lane_ch / abcon->conf.ch_num;
 
-	ABCONPR("lane_ch:%d:%d:%d:%d, tot_ch_num:%d, act_lane:%d,max_lane_ch:%d\n",
+	ABCONPR("lane_ch:%d:%d:%d:%d, tot_ch_num:%d, act_lane:%d,max_lane_ch:%d,max_lane_dim=%d\n",
 		abcon->lane_ch[0], abcon->lane_ch[1],
 		abcon->lane_ch[2], abcon->lane_ch[3],
-		abcon->tot_ch_num, abcon->act_lane, abcon->max_lane_ch);
+		abcon->tot_ch_num, abcon->act_lane, abcon->max_lane_ch, abcon->max_lane_dim);
+
+	ldim_abcon_hw_reset();
+	udelay(5);
 
 	//set abcon clk ctrl
 	temp = (1 << 7) |	/*bcon clk_sel*/
@@ -347,12 +381,7 @@ int ldim_abcon_dev_probe(struct ldim_dev_driver_s *dev_drv)
 	i = abcon_rd_reg(CLKCTRL_BCON_CLK_CNTL);
 	ABCONPR("CLKCTRL_BCON_CLK_CNTL:0x%08x\n", i);
 
-	//sw rst
-	abcon_wr_reg_bits(0x00, 1, 5, 1);
-	abcon_wr_reg_bits(0x00, 0, 5, 1);
-	//clr done flag
-	abcon_wr_reg_bits(0x00, 1, 4, 1);
-	abcon_wr_reg_bits(0x00, 0, 4, 1);
+	ldim_abcon_swrst();
 
 	//memory init
 	ret =  ldim_abcon_mem_init();
@@ -360,7 +389,7 @@ int ldim_abcon_dev_probe(struct ldim_dev_driver_s *dev_drv)
 		return -1;
 
 	/*init register*/
-	ldim_abcon_dev_init_registers(abcon);
+	ldim_abcon_init_common_registers(abcon);
 
 	/*load ch mapping*/
 	temp = abcon->tot_ch_num * 2;

@@ -74,7 +74,7 @@ void ldim_abcon_hyasic_write_packet(void)
 	unsigned int len = 0;
 	unsigned int *buf;// = abcon_mem.wseg;
 	unsigned char i = 0;
-	unsigned char act_lane_num = 1; //abcon->lane_num;
+	unsigned char act_lane_num = abcon->act_lane;
 
 	if (bl_abcon_hyasic->sop_type == sop_dimming)
 		buf = abcon_mem.ldc_seg;
@@ -134,6 +134,7 @@ void ldim_abcon_hyasic_write_packet(void)
 		abcon_wr_reg_bits(0x04, len, 16, 13);//reg_abcon_ldc_seg_max_num
 		abcon_wr_reg_bits(0x00, 1, 1, 1);//reg_abcon_ldc_mod_start
 		abcon_wr_reg_bits(0x00, 0, 1, 1);//reg_abcon_ldc_mod_start
+		mdelay(15);
 	} else {
 		abcon_wr_reg_bits(0x04, len, 0, 13);//reg_abcon_sw_wseg_max_num
 		abcon_wr_reg_bits(0x00, 1, 0, 1);//reg_abcon_sw_mod_start
@@ -236,7 +237,7 @@ void ldim_abcon_hyasic_broadcast(unsigned int regaddr, unsigned int value)
 	hyasic_packet.eop_data = 0x0000000d;
 
 	ldim_abcon_hyasic_write_packet();
-	mdelay(1);
+	udelay(500);
 }
 
 void ldim_abcon_hyasic_address(void)
@@ -300,7 +301,7 @@ void ldim_abcon_hyasic_address(void)
 	hyasic_packet.eop_data = 0x0000000d;
 
 	ldim_abcon_hyasic_write_packet();
-	mdelay(1);
+	udelay(500);
 }
 
 void ldim_abcon_hyasic_dimming(void)
@@ -534,12 +535,10 @@ static int abcon_hyasic_hw_init_on(struct ldim_dev_driver_s *dev_drv)
 	dev_drv->pinmux_ctrl(dev_drv, 1);
 
 	//init abcon common
-	ldim_abcon_dev_init_registers(abcon);
+	ldim_abcon_init_common_registers(abcon);
 
 	//init abcon register for hyasic
 	ldim_abcon_init_registers();
-
-	mdelay(10);
 
 	//init hyasic registers
 	ldim_abcon_init_hyasic();
@@ -549,17 +548,22 @@ static int abcon_hyasic_hw_init_on(struct ldim_dev_driver_s *dev_drv)
 
 static int abcon_hyasic_hw_init_off(struct ldim_dev_driver_s *dev_drv)
 {
+	struct aml_ldim_driver_s *ldim_drv = aml_ldim_get_driver();
+
 	ldim_gpio_set(dev_drv, dev_drv->en_gpio, dev_drv->en_gpio_off);
 	dev_drv->pinmux_ctrl(dev_drv, 0);
 	ldim_pwm_off(&dev_drv->ldim_pwm_config);
 	ldim_pwm_off(&dev_drv->analog_pwm_config);
 
+	//set duty as 0
+	memset(ldim_drv->bl_matrix, 0,
+		(dev_drv->bl_col * dev_drv->bl_row * sizeof(unsigned short)));
+	ldim_abcon_swduty_set(ldim_drv);
+	abcon_wr_reg_bits(0x2c, 0, 29, 1);//sw control id
+	ldim_abcon_hyasic_dimming();
+
 	//sw reset
-	abcon_wr_reg_bits(0x00, 1, 5, 1);
-	abcon_wr_reg_bits(0x00, 0, 5, 1);
-	//clr done flag
-	abcon_wr_reg_bits(0x00, 1, 4, 1);
-	abcon_wr_reg_bits(0x00, 0, 4, 1);
+	ldim_abcon_swrst();
 
 	return 0;
 }

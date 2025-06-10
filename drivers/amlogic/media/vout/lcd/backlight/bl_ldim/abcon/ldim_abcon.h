@@ -75,6 +75,7 @@ struct abcon_s {
 	struct abcon_conf_s conf;
 	unsigned char act_lane;
 	unsigned int lane_ch[4];
+	unsigned int max_lane_dim;
 	unsigned int max_lane_ch;
 	unsigned int tot_ch_num;
 };
@@ -82,9 +83,10 @@ struct abcon_s {
 extern struct abcon_mem_s abcon_mem;
 extern struct abcon_s *abcon;
 
-void ldim_abcon_dev_init_registers(struct abcon_s *abcon);
+void ldim_abcon_swrst(void);
+void ldim_abcon_init_common_registers(struct abcon_s *abcon);
 void ldim_abcon_set_gpio(struct abcon_s *abcon);
-void ldim_abcon_set_txrx_clk(struct abcon_s *abcon);
+void ldim_abcon_set_txrx_clk(unsigned int txclk, unsigned int rxclk);
 void ldim_abcon_fb_pwm(struct aml_ldim_driver_s *ldim_drv);
 
 void ldim_abcon_load_ch_mapping(struct ldim_dev_driver_s *dev_drv, unsigned int len);

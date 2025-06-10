@@ -132,7 +132,7 @@ static int ldim_dev_zone_mapping_load(struct ldim_dev_driver_s *dev_drv, const c
 	int i, j;
 
 	/* 2byte per zone */
-	map_size = dev_drv->zone_num * 2;
+	map_size = dev_drv->zone_num * 2 + 8;
 
 	//ret = handle_ldim_dev_zone_mapping_get(buf, size, path);
 	buf = model_read_file_to_buffer(path, &bin_size);
@@ -143,6 +143,7 @@ static int ldim_dev_zone_mapping_load(struct ldim_dev_driver_s *dev_drv, const c
 	if (bin_size > map_size) {
 		memset(buf, 0, bin_size);
 		free(buf);
+		LDIMERR("%s: bin_size(%d) > map_size(%d), error,exit!\n", __func__, bin_size, map_size);
 		return -1;
 	}
 
@@ -973,6 +974,8 @@ int ldim_dev_get_config_from_json(struct ldim_dev_driver_s *dev_drv)
 		}
 		abcon_conf->ch_num = json_get_obj_u32(jsp, child, "ch_num", 4);
 		abcon_conf->dimming_mode = json_get_obj_u32(jsp, child, "dimming_mode", 4);
+		abcon_conf->init_pwm = json_get_obj_u32(jsp, child, "init_pwm", 0);
+		abcon_conf->init_dc = json_get_obj_u32(jsp, child, "init_dc", 0);
 		abcon_conf->fb_en = json_get_obj_u32(jsp, child, "fb_en", 0);
 		abcon_conf->fb_det_int = json_get_obj_u32(jsp, child, "fb_det_int", 300);
 		abcon_conf->fb_adj_th = json_get_obj_u32(jsp, child, "fb_adj_th", 5);
@@ -983,13 +986,13 @@ int ldim_dev_get_config_from_json(struct ldim_dev_driver_s *dev_drv)
 		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
 			LDIMPR("clk:%d:%d, gpio_o: 0x%x:0x%x, gpio_i:0x%x:0x%x, gpio_en:0x%x, gpio_pu_en:0x%x\n"
 			       "gpio_pu_up:0x%x, dev_type:%d, chip_num:%d:%d:%d:%d, ch_num:%d\n"
-				   "dimming_mode:%d, fb_en:%d\n"
+				   "dimming_mode:%d, init_pwm:0x%x, init_dc:0x%x, fb_en:%d\n"
 				   "fb_det_int:%d, fb_adj_th:%d, fb_pwm_dir:%d, fb_pwm_step:%d, ctrl:0x%x\n",
 			       abcon_conf->tx_clk, abcon_conf->rx_clk, abcon_conf->gpio_o[0], abcon_conf->gpio_o[1],
 				   abcon_conf->gpio_i[0], abcon_conf->gpio_i[1], abcon_conf->gpio_en, abcon_conf->gpio_pu_en,
 				   abcon_conf->gpio_pu_up, abcon_conf->dev_type, abcon_conf->chip_num[0], abcon_conf->chip_num[1],
 				   abcon_conf->chip_num[2], abcon_conf->chip_num[3],
-				   abcon_conf->ch_num, abcon_conf->dimming_mode,
+				   abcon_conf->ch_num, abcon_conf->dimming_mode, abcon_conf->init_pwm, abcon_conf->init_dc,
 			       abcon_conf->fb_en, abcon_conf->fb_det_int, abcon_conf->fb_adj_th,
 				   abcon_conf->fb_pwm_dir, abcon_conf->fb_pwm_step, abcon_conf->ctrl);
 		}

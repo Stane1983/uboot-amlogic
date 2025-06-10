@@ -53,5 +53,7 @@ int ldim_dev_global_remove(struct aml_ldim_driver_s *ldim_drv);
 int ldim_abcon_dev_probe(struct ldim_dev_driver_s *dev_drv);
 int ldim_dev_abcon_hyasic_probe(struct aml_ldim_driver_s *ldim_drv);
 int ldim_dev_abcon_hyasic_remove(struct aml_ldim_driver_s *ldim_drv);
+int ldim_dev_abcon_xianxin_probe(struct aml_ldim_driver_s *ldim_drv);
+int ldim_dev_abcon_xianxin_remove(struct aml_ldim_driver_s *ldim_drv);
 #endif
 #endif
