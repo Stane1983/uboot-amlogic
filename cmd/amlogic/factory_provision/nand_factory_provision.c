@@ -138,7 +138,7 @@ static int nand_factory_mount(void)
 {
 	struct yaffs_dev *dev = yaffs_getdev(NAND_FTY_MOUNT_PT);
 
-	if (!dev || (dev && dev->is_mounted == 0)) {
+	if (!dev || dev->is_mounted == 0) {
 		if (meson_yaffs2_mount(NAND_FTY_MOUNT_PT, PART_NAME_FTY)) {
 			LOGE("nand mount '%s' partition failed\n", PART_NAME_FTY);
 			return CMD_RET_UNKNOWN_ERROR;
