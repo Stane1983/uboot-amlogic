@@ -816,11 +816,11 @@ static int m3_nand_probe(struct aml_nand_platform *plat, unsigned dev_num)
 		chip->ecc.read_page = m3_nand_boot_read_page_hwecc;
 		chip->ecc.write_page = m3_nand_boot_write_page_hwecc;
 		chip->write_page = m3_nand_boot_write_page;
-		oobfree = chip->ecc.layout->oobfree;
-		array_length = ARRAY_SIZE(chip->ecc.layout->oobfree);
 		if (chip->ecc.layout) {
+			oobfree = chip->ecc.layout->oobfree;
+			array_length = ARRAY_SIZE(chip->ecc.layout->oobfree);
 			oobfree[0].length =
-			(mtd->writesize / 512) * aml_chip->user_byte_mode;//这里变更了
+			(mtd->writesize / 512) * aml_chip->user_byte_mode;
 			chip->ecc.layout->oobavail = 0;
 			for (i = 0; oobfree[i].length && i < array_length; i++) {
 				chip->ecc.layout->oobavail += oobfree[i].length;
