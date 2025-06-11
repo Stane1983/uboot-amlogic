@@ -329,29 +329,26 @@ int get_partition_from_dts(unsigned char *buffer)
 		part_table[index].mask_flags = be32_to_cpup((u32*)umask);
 		printf("%02d:%10s\t%016llx %01x\n", index, uname, part_table[index].size, part_table[index].mask_flags);
 
-		if (strcmp(uname, "boot_a") == 0) {
-			has_boot_slot = 1;
-			printf("set has_boot_slot = 1\n");
-		}
-		else if (strcmp(uname, "boot") == 0) {
-			has_boot_slot = 0;
-			printf("set has_boot_slot = 0\n");
-		}
-		if (strcmp(uname, "system_a") == 0)
-			has_system_slot = 1;
-		else if (strcmp(uname, "system") == 0)
-			has_system_slot = 0;
-
-		if (strcmp(uname, "super") == 0) {
-			dynamic_partition = true;
-			env_set("partition_mode","dynamic");
-			printf("enable dynamic_partition\n");
-		}
-
-		if (strncmp(uname, "vendor_boot", 11) == 0) {
-			vendor_boot_partition = true;
-			env_set("vendor_boot_mode","true");
-			printf("enable vendor_boot\n");
+		if (uname) {
+			if (strcmp(uname, "boot_a") == 0) {
+				has_boot_slot = 1;
+				printf("set has_boot_slot = 1\n");
+			} else if (strcmp(uname, "boot") == 0) {
+				has_boot_slot = 0;
+				printf("set has_boot_slot = 0\n");
+			} else if (strcmp(uname, "system_a") == 0)
+				has_system_slot = 1;
+			else if (strcmp(uname, "system") == 0)
+				has_system_slot = 0;
+			else if (strcmp(uname, "super") == 0) {
+				dynamic_partition = true;
+				env_set("partition_mode", "dynamic");
+				printf("enable dynamic_partition\n");
+			} else if (strncmp(uname, "vendor_boot", 11) == 0) {
+				vendor_boot_partition = true;
+				env_set("vendor_boot_mode", "true");
+				printf("enable vendor_boot\n");
+			}
 		}
 	}
 	return 0;
