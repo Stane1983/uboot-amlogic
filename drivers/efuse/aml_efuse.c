@@ -106,3 +106,8 @@ int  __attribute__((weak)) IS_FEAT_EN_VPU_OVER_SPEED(void)
 {
 	return 0;
 }
+
+int __attribute__((weak)) IS_FEAT_EN_VPU_ULTRA_SPEED(void)
+{
+	return 0;
+}

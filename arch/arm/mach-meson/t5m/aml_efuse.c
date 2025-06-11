@@ -61,6 +61,7 @@
 /* OTP_LIC block#3 ...*/
 #define FEAT_DISABLE_DTS_AUDIO                   (80)
 #define FEAT_DISABLE_DB_AUDIO                    (81)
+#define FEAT_ENABLE_VPU_ULTRA_SPEED              (94)
 #define FEAT_ENABLE_VPU_OVER_SPEED               (95)
 #define FEAT_DISABLE_NBL2_SNOR                   (384+44)
 #define FEAT_DISABLE_NBL2_SNAND                  (384+45)
@@ -141,4 +142,9 @@ int IS_FEAT_DTS_ENABLE(void)
 int IS_FEAT_EN_VPU_OVER_SPEED(void)
 {
 	return OTP_BIT_CHECK(FEAT_ENABLE_VPU_OVER_SPEED);
+}
+
+int IS_FEAT_EN_VPU_ULTRA_SPEED(void)
+{
+	return OTP_BIT_CHECK(FEAT_ENABLE_VPU_ULTRA_SPEED);
 }
