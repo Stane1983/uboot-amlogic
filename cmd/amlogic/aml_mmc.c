@@ -152,7 +152,7 @@ static int get_off_size(struct mmc * mmc, char * name, uint64_t offset, uint64_t
 		        return 0;
 		}
 		// printf("blk_shift:%d , off:0x%llx , size:0x%llx.\n ",blk_shift,off,size );
-		part_info = find_mmc_partition_by_name(name);
+		part_info = find_ept_partition_by_name(name);
 		if (part_info == NULL) {
 				printf("get partition info failed !!\n");
 				return -1;
@@ -172,7 +172,7 @@ static int get_off_size(struct mmc * mmc, char * name, uint64_t offset, uint64_t
 static int get_partition_size(unsigned char* name, uint64_t* addr)
 {
 		struct partitions *part_info = NULL;
-		part_info = find_mmc_partition_by_name((char *)name);
+		part_info = find_ept_partition_by_name((char *)name);
 		if (part_info == NULL) {
 				printf("get partition info failed !!\n");
 				return -1;
@@ -245,10 +245,8 @@ int amlmmc_erase_bootloader(int dev, int map)
 					blkcnt = mmc->capacity >> blk_shift;
 					struct partitions *part_info;
 					/* get info by partition */
-					part_info = find_mmc_partition_by_name(MMC_BOOT_NAME);
+					part_info = find_ept_partition_by_name(MMC_BOOT_NAME);
 					if (part_info == NULL) {
-						printf("%s() %d: error!!\n", __func__, __LINE__);
-						/* fixme, do somthing! */
 						continue;
 					} else {
 						start = part_info->offset >> blk_shift;
@@ -468,7 +466,7 @@ static int amlmmc_erase_in_part(int argc, char *const argv[])
 	}
 	offset_addr = simple_strtoull(argv[3], NULL, 16);
 	size = simple_strtoull(argv[4], NULL, 16);
-	part_info = find_mmc_partition_by_name(name);
+	part_info = find_ept_partition_by_name(name);
 	if (part_info == NULL) {
 		printf("Bad part_info\n");
 		return 1;
@@ -524,7 +522,7 @@ static int amlmmc_erase_by_add(int argc, char *const argv[])
 static int amlmmc_erase_non_loader(int argc, char *const argv[])
 {
 	int dev;
-	u32 n = 0;
+	u64 n = 0;
 	int blk_shift;
 	u64 blk = 0, start_blk = 0;
 	struct partitions *part_info;
@@ -544,7 +542,7 @@ static int amlmmc_erase_non_loader(int argc, char *const argv[])
 		printf("bad shift.\n");
 		return 1;
 	}
-	part_info = find_mmc_partition_by_name(MMC_BOOT_NAME);
+	part_info = find_ept_partition_by_name(MMC_BOOT_NAME);
 
 	if (part_info == NULL) {
 		start_blk = 0;
@@ -554,10 +552,13 @@ static int amlmmc_erase_non_loader(int argc, char *const argv[])
 		start_blk = (part_info->offset + part_info->size) >> blk_shift;
 
 	if (!emmckey_is_protected(mmc)) {
-		n = blk_derase(mmc_get_blk_desc(mmc), start_blk, 0); // erase the whole card
-		return (n == 0) ? 0 : 1;
+		blk = (mmc->capacity >> blk_shift) -
+			((mmc->capacity >> blk_shift) % mmc->erase_grp_size);
+		blk -= start_blk;
+		n = blk_derase(mmc_get_blk_desc(mmc), start_blk, blk); // erase the whole card
+		return (n == blk) ? 0 : 1;
 	}
-	part_info = find_mmc_partition_by_name(MMC_RESERVED_NAME);
+	part_info = find_ept_partition_by_name(MMC_RESERVED_NAME);
 	if (part_info == NULL)
 		return 1;
 
@@ -615,7 +616,7 @@ static int amlmmc_erase_single_part(int argc, char *const argv[])
 		return 1;
 	}
 
-	part_info = find_mmc_partition_by_name(name);
+	part_info = find_ept_partition_by_name(name);
 	if (part_info == NULL)
 		return 1;
 
@@ -631,25 +632,18 @@ static int amlmmc_erase_single_part(int argc, char *const argv[])
 
 static int amlmmc_erase_whole(int argc, char *const argv[])
 {
-	char *name = NULL;
-	int dev;
-	u32 n = 0;
+	int dev = 1;
+	u64 n = 0;
 	int blk_shift;
-	//u64 cnt = 0,
 	u64 blk = 0, start_blk = 0;
 	struct partitions *part_info;
 	struct mmc *mmc;
 	int map;
 
-	name = "logo";
-	dev = find_dev_num_by_partition_name(name);
-	if (dev < 0) {
-		printf("Cannot find dev.\n");
-		return 1;
-	}
 	mmc = find_mmc_device(dev);
 	if (!mmc)
 		return 1;
+
 	mmc_init(mmc);
 	blk_shift = ffs(mmc->read_bl_len) -1;
 	if (blk_shift < 0) {
@@ -659,7 +653,7 @@ static int amlmmc_erase_whole(int argc, char *const argv[])
 	start_blk = 0;
 
 	if (emmckey_is_protected(mmc)) {
-		part_info = find_mmc_partition_by_name(MMC_RESERVED_NAME);
+		part_info = find_ept_partition_by_name(MMC_RESERVED_NAME);
 		if (part_info == NULL)
 			return 1;
 
@@ -682,8 +676,11 @@ static int amlmmc_erase_whole(int argc, char *const argv[])
 		if (n != erase_cnt)
 			return 1;
 	} else {
-		n = blk_derase(mmc_get_blk_desc(mmc), start_blk, 0); // erase the whole card
-		if (n != 0)
+		blk = (mmc->capacity >> blk_shift) -
+			((mmc->capacity >> blk_shift) % mmc->erase_grp_size);
+		blk -= start_blk;
+		n = blk_derase(mmc_get_blk_desc(mmc), start_blk, blk); // erase the whole card
+		if (n != blk)
 			return 1;
 	}
 	map = AML_BL_BOOT;
@@ -695,8 +692,7 @@ static int amlmmc_erase_whole(int argc, char *const argv[])
 
 static int amlmmc_erase_non_cache(int arc, char *const argv[])
 {
-	char *name = NULL;
-	int dev;
+	int dev = 1;
 	u32 n = 0;
 	int blk_shift;
 	u64 blk = 0, start_blk = 0;
@@ -704,12 +700,6 @@ static int amlmmc_erase_non_cache(int arc, char *const argv[])
 	struct mmc *mmc;
 	int map;
 
-	name = "logo";
-	dev = find_dev_num_by_partition_name(name);
-	if (dev < 0) {
-		printf("Cannot find dev.\n");
-		return 1;
-	}
 	mmc = find_mmc_device(dev);
 	if (!mmc)
 		return 1;
@@ -720,7 +710,7 @@ static int amlmmc_erase_non_cache(int arc, char *const argv[])
 	return 1;
 	}
 	if (emmckey_is_protected(mmc)) {
-		part_info = find_mmc_partition_by_name(MMC_RESERVED_NAME);
+		part_info = find_ept_partition_by_name(MMC_RESERVED_NAME);
 		if (part_info == NULL) {
 			return 1;
 		}
@@ -738,7 +728,7 @@ static int amlmmc_erase_non_cache(int arc, char *const argv[])
 		if (n == 0)
 			return 1;
 		// (2) erase all the area after reserve-partition
-		part_info = find_mmc_partition_by_name(MMC_CACHE_NAME);
+		part_info = find_ept_partition_by_name(MMC_CACHE_NAME);
 		if (part_info == NULL) {
 			return 1;
 		}
@@ -749,8 +739,11 @@ static int amlmmc_erase_non_cache(int arc, char *const argv[])
 		if (n != erase_cnt)
 			return 1;
 	} else {
-		n = blk_derase(mmc_get_blk_desc(mmc), start_blk, 0); // erase the whole card
-		if (n != 0)
+		blk = (mmc->capacity >> blk_shift) -
+			((mmc->capacity >> blk_shift) % mmc->erase_grp_size);
+		blk -= start_blk;
+		n = blk_derase(mmc_get_blk_desc(mmc), start_blk, blk); // erase the whole card
+		if (n != blk)
 			return 1;
 	}
 	map = AML_BL_BOOT;
@@ -1481,7 +1474,6 @@ static int do_amlmmc_key(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[
 	struct mmc *mmc;
 	int dev;
 
-	//char *name = "logo";
 	dev = CONFIG_SYS_MMC_BOOT_DEV;
 	mmc = find_mmc_device(dev);
 	if (!mmc) {
@@ -1696,7 +1688,7 @@ static int compute_write_protect_range(struct mmc *mmc, char *name,
 		return 1;
 	}
 
-	part_info = find_mmc_partition_by_name(name);
+	part_info = find_ept_partition_by_name(name);
 	if (part_info == NULL)
 		return 1;
 
@@ -2080,7 +2072,7 @@ static int do_amlmmc_write_protect(cmd_tbl_t *cmdtp, int flag, int argc, char *c
 {
 	int ret = CMD_RET_USAGE;
 	struct mmc *mmc;
-	int dev = 1;
+	int dev = CONFIG_SYS_MMC_BOOT_DEV;
 	char *name = NULL;
 	char *wp_type_str = NULL;
 	u8 write_protect_type;
