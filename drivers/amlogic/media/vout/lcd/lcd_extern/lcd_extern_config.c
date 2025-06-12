@@ -1064,23 +1064,25 @@ static int lcd_extern_get_config_json(struct lcd_extern_driver_s *edrv,
 	dir_uboot = json_get_obj_str(jsp, data_json, "panel_dir_uboot", NULL);
 
 	cnt = json_get_object_size(jsp, pmu_json);
-	ext_pmu_bins.name = (char *)malloc(cnt * ext_pmu_bins.name_len);
-	ext_pmu_bins.path = (char *)malloc(cnt *  ext_pmu_bins.path_len);
-	memset(ext_pmu_bins.name, 0, cnt * ext_pmu_bins.name_len);
-	memset(ext_pmu_bins.path, 0, cnt * ext_pmu_bins.path_len);
-	for (i = 0; i < cnt; i++) {
-		json = json_get_object_child_by_id(jsp, pmu_json, i);
-		if (!json)
-			break;
+	if (cnt > 0) {
+		ext_pmu_bins.name = (char *)malloc(cnt * ext_pmu_bins.name_len);
+		ext_pmu_bins.path = (char *)malloc(cnt *  ext_pmu_bins.path_len);
+		memset(ext_pmu_bins.name, 0, cnt * ext_pmu_bins.name_len);
+		memset(ext_pmu_bins.path, 0, cnt * ext_pmu_bins.path_len);
+		for (i = 0; i < cnt; i++) {
+			json = json_get_object_child_by_id(jsp, pmu_json, i);
+			if (!json)
+				break;
 
-		snprintf(tag_name, MAX_STR_LEN, "%s", json_get_key(jsp, json));
-		str = json_get_str(jsp, json);
-		ret = path_name_compose(dir_uboot, str, path);
-		if (ret)
-			continue;
-		strcpy(ext_pmu_bins.name + ext_pmu_bins.cnt * ext_pmu_bins.name_len, tag_name);
-		strcpy(ext_pmu_bins.path + ext_pmu_bins.cnt * ext_pmu_bins.path_len, path);
-		ext_pmu_bins.cnt++;
+			snprintf(tag_name, MAX_STR_LEN, "%s", json_get_key(jsp, json));
+			str = json_get_str(jsp, json);
+			ret = path_name_compose(dir_uboot, str, path);
+			if (ret)
+				continue;
+			strcpy(ext_pmu_bins.name + ext_pmu_bins.cnt * ext_pmu_bins.name_len, tag_name);
+			strcpy(ext_pmu_bins.path + ext_pmu_bins.cnt * ext_pmu_bins.path_len, path);
+			ext_pmu_bins.cnt++;
+		}
 	}
 	if (ext_pmu_bins.cnt)
 		init_bin_valid = 1;

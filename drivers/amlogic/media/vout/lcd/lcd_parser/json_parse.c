@@ -496,11 +496,12 @@ s32 json_init(struct json_parse_s *jsp, s32 js_max, s32 json_max)
 	jsp->pos = 0;
 	jsp->root = (struct json_s *)malloc(json_max * sizeof(*jsp->root));
 
+	if (!jsp->root || !jsp->js)
+		return -1;
+
 	memset(jsp->js, 0, js_max);
 	memset(jsp->root, 0, json_max * sizeof(*jsp->root));
 
-	if (!jsp->root || !jsp->js)
-		return -1;
 	return 0;
 }
 
