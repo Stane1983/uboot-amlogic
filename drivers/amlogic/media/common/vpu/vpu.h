@@ -104,6 +104,7 @@ enum vpu_mux_e {
 enum vpu_read_type_e {
 	READ0_2 = 0,
 	ONLY_READ0,
+	READ0_2_SEPARATE,
 };
 
 struct fclk_div_s {
