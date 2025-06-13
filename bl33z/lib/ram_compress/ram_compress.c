@@ -278,7 +278,10 @@ unsigned long ram_compress_all(struct ram_compress_full *rcf,
 			 * Can memcpy handle mem overlay case???
 			 */
 			//memcpy((current_fp + sz_rcsh), rcs->phy_addr,rcs->section_size);
-			memcpy((current_fp + sz_rcsh), rcs->copy_dest_addr, rcs->section_size);
+			if (rcs->copy_dest_addr != 0) {
+				serial_puts(" type: RAM_COMPRESS_COPY");
+				memcpy((current_fp + sz_rcsh), rcs->copy_dest_addr, rcs->section_size);
+			}
 			rcsh->section_index   = rcs->section_index;
 			rcsh->raw_size        = rcs->section_size;
 			rcsh->compress_type   = rcs->compress_type;
