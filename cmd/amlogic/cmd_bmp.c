@@ -256,6 +256,8 @@ static int bmp_info(ulong addr)
 	void *bmp_alloc_addr = NULL;
 	unsigned long len;
 
+	if (!bmp)
+		return 1;
 	if (!((bmp->header.signature[0] == 'B') &&
 	      (bmp->header.signature[1] == 'M')))
 		bmp = gunzip_bmp(addr, &len, &bmp_alloc_addr);
@@ -288,11 +290,13 @@ static int bmp_info(ulong addr)
  */
 int bmp_display(ulong addr, int x, int y)
 {
-	int ret;
+	int ret = 0;
 	bmp_image_t *bmp = (bmp_image_t *)addr;
 	void *bmp_alloc_addr = NULL;
 	unsigned long len;
 
+	if (!bmp)
+		return 1;
 	if (!((bmp->header.signature[0] == 'B') &&
 	      (bmp->header.signature[1] == 'M')))
 		bmp = gunzip_bmp(addr, &len, &bmp_alloc_addr);
@@ -349,8 +353,10 @@ static int bmp_scale(ulong src_addr, ulong dst_addr, unsigned int new_width,
 	bmp_image_t *bmp_dst = (bmp_image_t *)dst_addr;
 	unsigned long len;
 	void *bmp_alloc_addr = NULL;
-	char *pBuf = (char *)bmp + bmp->header.data_offset;
 
+	if (!bmp)
+		return 1;
+	char *pBuf = (char *)bmp + bmp->header.data_offset;
 	printf("Begin bmp scale ...\n");
 	if (!((bmp->header.signature[0] == 'B') &&
 	      (bmp->header.signature[1] == 'M')))
