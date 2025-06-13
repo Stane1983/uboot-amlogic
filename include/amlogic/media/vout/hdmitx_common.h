@@ -166,5 +166,11 @@ void hdmi_mode_frac_postprocess(void);
 void convert_name_frac2int(const char *name, char *conv_name);
 bool is_mode_name_frac(const char *name);
 bool get_kernel_dtb_info(void);
+/*
+ * sync with uboot 2019 follow SWPL-166617
+ * When updating outputmodeX env, check whether the connectorX is HDMI
+ * to avoid affecting the MIPI screen
+ */
+int is_valid_hdmi(const char *input);
 
 #endif

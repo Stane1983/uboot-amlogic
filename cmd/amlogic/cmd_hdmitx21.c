@@ -140,24 +140,6 @@ static int do_rx_det(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	return st;
 }
 
-int is_valid_hdmi(const char *input)
-{
-	static const char * const valid_hdmi_modes[] = {
-			"HDMI-A-A", /* venc0 */
-			"HDMI-A-B", /* venc1 */
-			"HDMI-A-C"  /* venc2 */
-	};
-
-	int num_modes = ARRAY_SIZE(valid_hdmi_modes);
-	int i;
-
-	for (i = 0; i < num_modes; i++) {
-		if (strcmp(input, valid_hdmi_modes[i]) == 0)
-			return 1;
-	}
-	return 0;
-}
-
 static void save_default_720p(void)
 {
 	memcpy(sel_hdmimode, DEFAULT_HDMI_MODE, sizeof(DEFAULT_HDMI_MODE));
@@ -1695,7 +1677,11 @@ static int _do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const 
 
 	if (!no_manual_output) {
 		/* check current user selected mode + color support or not */
-		para = hdmitx21_get_fmtpara(hdmimode, colorattribute);
+		if (is_mode_name_frac(hdmimode))
+			convert_name_frac2int(hdmimode, tmp_sel_hdmimode);
+		else
+			memcpy(tmp_sel_hdmimode, hdmimode, sizeof(hdmimode));
+		para = hdmitx21_get_fmtpara(tmp_sel_hdmimode, colorattribute);
 		if (!hdmitx_common_validate_format_para(&hdev->tx_common, para)) {
 			mode_support = true;
 		} else {
@@ -1823,12 +1809,21 @@ static int _do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const 
 	} else {
 		memset(sel_hdmimode, 0, sizeof(sel_hdmimode));
 		memcpy(sel_hdmimode, hdmimode, strlen(hdmimode));
-		if (is_hdmi_mode(env_get("outputmode")))
+		/* The outputmode must be saved based on the value of connectorX_type */
+		if (env_get("connector0_type") &&
+		    is_valid_hdmi(env_get("connector0_type"))) {
 			env_set("outputmode", hdmimode);
-		else if (is_hdmi_mode(env_get("outputmode2")))
+		} else if (env_get("connector1_type") &&
+			is_valid_hdmi(env_get("connector1_type"))) {
 			env_set("outputmode2", hdmimode);
-		else if (is_hdmi_mode(env_get("outputmode3")))
+		} else if (env_get("connector2_type") &&
+			is_valid_hdmi(env_get("connector2_type"))) {
 			env_set("outputmode3", hdmimode);
+		} else {
+			pr_info("no config connectorX_type, save default %s outputmode\n",
+				hdmimode);
+			env_set("outputmode", hdmimode);
+		}
 		env_set("colorattribute", colorattribute);
 	}
 	env_set("save_outputmode", sel_hdmimode);
@@ -1843,6 +1838,7 @@ static int _do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const 
 		env_set("dolby_status", 0);
 
 	hdmi_mode_frac_preprocess();
+	memset(tmp_sel_hdmimode, 0, ARRAY_SIZE(tmp_sel_hdmimode));
 	if (is_mode_name_frac(sel_hdmimode))
 		convert_name_frac2int(sel_hdmimode, tmp_sel_hdmimode);
 	else
