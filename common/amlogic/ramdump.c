@@ -56,87 +56,6 @@ static void dump_info(unsigned int addr, unsigned int size, const char *info)
 	}
 	printf("\n\n");
 }
-
-int parse_dump_file_v2(const char *base, unsigned long size)
-{
-	struct ram_compress_file_header_v2 *fhead;
-	struct ram_compress_section_header_v2 csh;
-	struct section_info *seg_tbl;
-	unsigned long seg_offset;
-	unsigned int idx;
-	int cnt = 0, csh_size = 0;
-
-	// check ramdump version >= v2.0
-	if ((!strncmp(base, COMPRESS_TAG_HEAD, COMPRESS_TAG_SIZE - 1)) &&
-		(!strncmp(base, COMPRESS_TAG_BL3Z, COMPRESS_TAG_SIZE - 1))) {
-		printf("# Check the crash file head error, exit.\n");
-		return -1;
-	}
-
-	// dump crash section head
-	fhead = (struct ram_compress_file_header_v2 *)base;
-	printf("# total number  of segment is %d\n", fhead->section_count);
-	if (fhead->section_count > 10) {
-		printf("# crash file head error. exit.\n");
-		return -1;
-	}
-
-	seg_tbl = malloc(sizeof(struct section_info) * fhead->section_count);
-	printf("# total compress file size is 0x%08lx\n", fhead->file_size);
-	csh_size = sizeof(struct ram_compress_section_header_v2);
-	seg_offset = (unsigned long)fhead + sizeof(struct ram_compress_file_header_v2);
-	printf("# crash file fhead  offset is 0x%08lx\n", seg_offset);
-
-	for (cnt = 0; cnt < fhead->section_count; cnt++) {
-		memset(&csh, 0, sizeof(csh));
-		if (seg_offset > ((unsigned long)base + size))
-			continue;
-
-		memcpy((void *)&csh, (char *)seg_offset, sizeof(csh));
-		if (csh.section_index > fhead->section_count) {
-			printf("csh.section_index(%d) >  fhead->section_count(%d), error, exit.\n",
-					csh.section_index, fhead->section_count);
-			return -1;
-		}
-
-		if (csh.compress_type == RAM_COMPRESS_ERROR ||
-			csh.compress_type > RAM_COMPRESS_MAX)
-			continue;
-
-		idx = csh.section_index - 1;
-		seg_tbl[idx].offset   = seg_offset + sizeof(csh);
-		seg_tbl[idx].type     = csh.compress_type;
-		seg_tbl[idx].raw_size = csh.raw_size;
-		seg_tbl[idx].zip_size = csh.zip_size;
-		seg_tbl[idx].val      = csh.set_value;
-		seg_offset           += csh.zip_size;
-	}
-
-	// dump section table
-	printf("\n-----------------------------------------------------------\n");
-	printf("idx      offset  type    orig size     zip size    val\n");
-	printf("-----------------------------------------------------------\n");
-	for (cnt = 0; cnt < fhead->section_count; cnt++) {
-		if (seg_tbl[cnt].type == RAM_COMPRESS_ERROR ||
-			seg_tbl[cnt].type > RAM_COMPRESS_MAX)
-			continue;
-		printf(" %2d, 0x%08lx,   %2u,  0x%08lx,  0x%08lx,  0x%02x\n",
-		       cnt + 1, seg_tbl[cnt].offset,
-		       seg_tbl[cnt].type, seg_tbl[cnt].raw_size,
-		       seg_tbl[cnt].zip_size, seg_tbl[cnt].val);
-	}
-	printf("-----------------------------------------------------------\n");
-
-	// printf section table
-	for (cnt = 0; cnt < fhead->section_count; cnt++) {
-		if (seg_tbl[cnt].type == RAM_COMPRESS_ERROR ||
-			seg_tbl[cnt].type > RAM_COMPRESS_MAX)
-			continue;
-		dump_info((unsigned int)seg_tbl[cnt].offset - csh_size, csh_size, "crash section head");
-	}
-
-	return 0;
-}
 #endif
 
 static char *md5sum_hex2str(unsigned char *in_md5_hex, char *out_md5_str)
@@ -465,9 +384,6 @@ void ramdump_init(void)
 	if ((reboot_mode == AMLOGIC_WATCHDOG_REBOOT ||
 			reboot_mode == AMLOGIC_KERNEL_PANIC)) {
 		if (ramdump_base && ramdump_size) {
-#ifdef CONFIG_DUMP_COMPRESS_HEAD
-			parse_dump_file_v2((char *)ramdump_base, ramdump_size);
-#endif
 			ramdump_save_compress_data();
 		}
 	}
