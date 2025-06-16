@@ -159,7 +159,9 @@
 		"hdr_policy=${hdr_policy} hdr_priority=${hdr_priority};"\
 		"\0"\
 	"init_display="\
-		"vout boot_display;"\
+		"if test ${bootup_display} = on; then "\
+			"vout boot_display;"\
+		"fi; " \
 		"\0"
 #endif
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -324,33 +326,32 @@
 		"run bcb_cmd_base;"\
 		"\0"\
 	"check_display="\
+		"setenv bootup_display on; "\
 		"if test ${reboot_mode} = cold_boot; then "\
 			"if test ${powermode} = standby; then "\
 				"echo not init_display; "\
+				"setenv bootup_display off; "\
 			"else if test ${powermode} = last; then "\
 				"echo suspend=${suspend}; "\
-				"if test ${suspend} = off; then "\
-					"run init_display; "\
-				"else if test ${suspend} = on; then "\
+				"if test ${suspend} = on; then "\
 					"echo not init_display; "\
+					"setenv bootup_display off; "\
 				"else if test ${suspend} = shutdown; then "\
 					"echo not init_display; "\
+					"setenv bootup_display off; "\
 				"fi; fi; fi; "\
-			"else "\
-				"run init_display; "\
 			"fi; fi; "\
 		"else if test ${reboot_mode} = ffv_reboot; then "\
 			"if test ${ffv_wake} = on; then "\
 				"echo ffv reboot no display; "\
-			"else "\
-				"run init_display; "\
+				"setenv bootup_display off; "\
 			"fi; "\
 		"else if test ${reboot_mode} = quiescent; then "\
 			"echo ffv reboot no display; "\
+			"setenv bootup_display off; "\
 		"else if test ${reboot_mode} = recovery_quiescent; then "\
 			"echo ffv reboot no display; "\
-		"else "\
-			"run init_display; "\
+			"setenv bootup_display off; "\
 		"fi;fi;fi;fi; "\
 		"\0"\
 	"cmdline_keys="\
