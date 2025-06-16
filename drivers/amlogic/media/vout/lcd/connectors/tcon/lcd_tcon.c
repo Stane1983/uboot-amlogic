@@ -15,6 +15,7 @@
 #include "../../lcd_common.h"
 #include "../lcd_connector.h"
 #include "./lcd_tcon.h"
+#include "lcd_tcon_dccd.h"
 #include "env.h"
 
 enum {
@@ -1674,27 +1675,33 @@ int lcd_tcon_is_dccd_flow(void)
 
 static void lcd_tcon_update_dccd_flow(void)
 {
-#ifdef CONFIG_CMD_INI
 	struct tcon_mem_map_table_s *mm_table = get_lcd_tcon_mm_table();
 	struct lcd_tcon_local_cfg_s *tcon_local = get_lcd_tcon_local_cfg();
 	struct lcd_tcon_init_block_header_s *header;
-	unsigned int crc;
+	unsigned int crc = 0, support_dccd = 0, has_tcon_file = 0;
 	unsigned char *data_buf;
 	int i, is_dccd_flow = 0;
 
-	if (!is_support_dccd())
+#ifdef CONFIG_CMD_INI
+	support_dccd = is_support_dccd();
+	has_tcon_file = dccd_has_tcon_file();
+	crc = get_dccd_crc();
+#else
+	support_dccd = lcd_tcon_is_support_dccd();
+	has_tcon_file = lcd_tcon_dccd_has_tcon_file();
+	crc = lcd_tcon_dccd_get_crc();
+#endif
+	if (!support_dccd)
 		goto __is_dccd_flow_exit;
 
-	if (!dccd_has_tcon_file()) {
+	if (!has_tcon_file) {
 		is_dccd_flow = 1;
 		goto __is_dccd_flow_exit;
 	}
 
 	if (!tcon_local || !mm_table || !mm_table->core_reg_header ||
-			!mm_table->data_mem_vaddr || mm_table->version == 0)
+			mm_table->version == 0)
 		goto __is_dccd_flow_exit;
-
-	crc = get_dccd_crc();
 
 	//check tcon bin
 	if (!mm_table->core_reg_header->dccd_flag ||
@@ -1719,10 +1726,9 @@ static void lcd_tcon_update_dccd_flow(void)
 	}
 
 __is_dccd_flow_exit:
-	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("%s: dccd flow flag=%d\n", __func__, is_dccd_flow);
 	tcon_local->is_dccd_flow = is_dccd_flow;
-#endif
 }
 
 static int lcd_tcon_get_config(char *dt_addr, struct aml_lcd_drv_s *pdrv, int load_id)
@@ -1739,6 +1745,7 @@ static int lcd_tcon_get_config(char *dt_addr, struct aml_lcd_drv_s *pdrv, int lo
 			lcd_panel_parse_tcon_from_json(pdrv);
 		else if (get_lcd_panel_file_type(pdrv->index) == PANEL_FILE_INI)
 			lcd_panel_parse_tcon_from_ini(pdrv);
+		lcd_tcon_load_dccd(pdrv);
 	}
 
 	if (tcon_rmem.rsv_mem_paddr) {

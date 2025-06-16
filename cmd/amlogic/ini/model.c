@@ -2856,7 +2856,7 @@ static int update_dccd_load(struct lcd_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
 	unsigned char *tmp_buf = NULL;
-	unsigned int size = 0, temp = 0;
+	unsigned int size = 0, temp = 0, dccd_timing = 0;
 
 	ini_value = ini_get_string("lcd_Attr", "dccd_flag", "0");
 	if (model_debug_flag & DEBUG_LCD)
@@ -2868,9 +2868,7 @@ static int update_dccd_load(struct lcd_attr_s *p_attr)
 	ini_value = ini_get_string("lcd_Attr", "dccd_timing", "0");
 	if (model_debug_flag & DEBUG_LCD)
 		ALOGD("%s, dccd_timing is (%s)\n", __func__, ini_value);
-	temp = strtoul(ini_value, NULL, 0);
-	if (!temp)
-		return 0;
+	dccd_timing = strtoul(ini_value, NULL, 0);
 
 	//check dccd bin
 	ini_value = ini_get_string("tcon_Path", "DCCD_BIN_PATH", "null");
@@ -2902,7 +2900,7 @@ static int update_dccd_load(struct lcd_attr_s *p_attr)
 	dccd_info.is_dccd = 0;
 	dccd_check_update(&dccd_info);
 
-	if (dccd_info.is_dccd)
+	if (dccd_info.is_dccd && dccd_timing)
 		dccd_update_lcd_attr(p_attr, tmp_buf);
 	bin_file_uninit();
 
