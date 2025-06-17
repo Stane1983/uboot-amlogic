@@ -119,9 +119,9 @@ unsigned int r1p1_temptocode(unsigned long value, int tempbase)
 	unsigned long tmp1, tmp2, u_efuse, signbit;
 
 	printf("a b m n: %d, %d, %d, %d\n", ts_a, ts_b, ts_m, ts_n);
-	tmp1 = ((tempbase * 10 + ts_b) * (1 << 16)) / ts_a;	/*ideal u */
+	tmp1 = (((int64_t)tempbase * 10 + ts_b) * (1 << 16)) / ts_a;	/*ideal u */
 	printf("%s : tmp1: 0x%lx\n", __func__, tmp1);
-	tmp2 = (ts_m * value * (1 << 16)) / ((1 << 16) * 100 + ts_n * value);
+	tmp2 = (ts_m * (int64_t)value * (1 << 16)) / ((1 << 16) * 100 + ts_n * value);
 	printf("%s : tmp2: 0x%lx\n", __func__, tmp2);
 	signbit = ((tmp1 > tmp2) ? 0 : 1);
 	u_efuse = (tmp1 > tmp2) ? (tmp1 - tmp2) : (tmp2 - tmp1);
