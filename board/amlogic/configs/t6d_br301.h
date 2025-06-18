@@ -76,6 +76,8 @@
 
 #define VOUT_DISPLAY_CMD   "vout boot_display; "
 
+#define CONFIG_SUPPORT_PREBOOT
+
 //for common env list, please maintain it in board/amlogic/env/linux.env
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"scramble_reg=0xfe02e030\0"\

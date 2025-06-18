@@ -71,6 +71,8 @@
 #define CONFIG_KERNEL_LOGLEVEL "loglevel=7"
 #endif
 
+#define CONFIG_SUPPORT_PREBOOT
+
 //for common env list, please maintain it in board/amlogic/env/linux.env
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"uart_base=0xfe078400\0"\
