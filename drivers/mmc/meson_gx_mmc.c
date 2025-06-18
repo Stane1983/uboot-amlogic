@@ -268,7 +268,7 @@ static int meson_dm_mmc_set_ios(struct udevice *dev)
 
 	if (mmc->selected_mode == MMC_HS_400) {
 		val = meson_read(mmc, MESON_SD_EMMC_IRQ_EN);
-		val &= ~CFG_CMD_SETUP;
+		val |= CFG_CMD_SETUP;
 		meson_write(mmc, val, MESON_SD_EMMC_IRQ_EN);
 		val = meson_read(mmc, MESON_SD_EMMC_INTF3);
 		val |= SD_INTF3;
@@ -972,9 +972,6 @@ static int aml_save_tuning_para(struct mmc *mmc, int save)
 	para->magic = TUNED_MAGIC;
 	para->version = TUNED_VERSION;
 
-	checksum = para_checksum_calc(para);
-	para->checksum = checksum;
-
 	temp_index = para->temp_index;
 	if (temp_index < 0 || temp_index > 9) {
 		printf("temperature %d is out of index\n", temp_index);
@@ -984,6 +981,9 @@ static int aml_save_tuning_para(struct mmc *mmc, int save)
 		para->hs4[temp_index].intf3 = meson_read(mmc, MESON_SD_EMMC_INTF3);
 		para->hs4[temp_index].flag = TUNED_FLAG;
 	}
+
+	checksum = para_checksum_calc(para);
+	para->checksum = checksum;
 
 	offset =  get_emmc_tuning_para_offset() >> 9;
 	size = blocks << 9;
