@@ -98,7 +98,6 @@ int aml_v3_factory_usb_burning(int flag, bd_t *bis)
 	if (!is_bl1_usb_protocol_DNL())
 		return 1;
 
-	bis = bis;//avoid compiling warning
 	if (!flag) {
 		serial_initialize();//init for write memory
 		if (IS_ENABLED(CONFIG_MMC)) {

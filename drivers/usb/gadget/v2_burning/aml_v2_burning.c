@@ -15,6 +15,7 @@ DECLARE_GLOBAL_DATA_PTR;
 #define BOOT_DEVICE_SD                  4
 #define BOOT_DEVICE_USB                 5
 #endif// #ifndef BOOT_DEVICE_USB
+#define UNUSED(x) ((void)(x))
 
 extern int v2_usbburning(unsigned int timeout);
 extern int optimus_burn_package_in_sdmmc(const char *sdc_cfg_file);
@@ -118,8 +119,8 @@ int aml_burn_sdc_producing(int flag, bd_t *bis)
 //producing mode means boot from raw flash, i.e, uboot is loaded from usb
 static int aml_burn_usb_producing(int flag, bd_t *bis)
 {
-	flag = flag; bis = bis;//avoid compile warning
-
+	UNUSED(flag);
+	UNUSED(bis);
 	set_usb_boot_function(CLEAR_USB_BOOT);
 #if (defined AML_USB_BURN_TOOL)
 	optimus_work_mode_set(OPTIMUS_WORK_MODE_USB_PRODUCE);

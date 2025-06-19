@@ -8,6 +8,7 @@
 #include <asm/amlogic/arch/secure_apb.h>
 #include <asm/amlogic/arch/usb.h>
 #include <command.h>
+#define UNUSED(x) ((void)(x))
 
 #ifndef CONFIG_USB_GADGET_CRG
 void dwc_write_reg32(unsigned int x, unsigned int v)
@@ -60,8 +61,7 @@ void set_usb_phy_config(int cfg)
 extern void dwc_otg_pullup(int is_on);
 void close_usb_phy_clock(int cfg)
 {
-    cfg = cfg;//avoid compiler warning
-
+	UNUSED(cfg);
     run_command("sleep 1", 0);//improve pc compatibility!!
     dwc_otg_pullup(0);//disconnect
     __udelay(20);

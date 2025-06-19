@@ -546,9 +546,6 @@ static int do_progress_bar_test(cmd_tbl_t *cmdtp, int flag, int argc, char *cons
 		unsigned int display_width = simple_strtoul(getenv("fb_width"), NULL, 0);
 		unsigned int display_height = simple_strtoul(getenv("fb_height"), NULL, 0);
 		bmp_header_t *upgrading  = (bmp_header_t *)simple_strtoul(getenv("upgrade_upgrading_offset"), NULL, 0);
-		const unsigned int loadingHeight = upgrading->height;
-		const unsigned int barYCor       =
-			(3*display_height + loadingHeight)/4;//display_height - (display_height/2 - loadingHeight/2)/2;
 		unsigned int unfocusBmpAddr = simple_strtoul(getenv("upgrade_unfocus_offset"), NULL, 0);
 
 		if (!barAddr) {
@@ -572,6 +569,9 @@ static int do_progress_bar_test(cmd_tbl_t *cmdtp, int flag, int argc, char *cons
 					"upgrade_unfocus_offset", getenv("upgrade_unfocus_offset")); return __LINE__;
 		}
 
+		const unsigned int loadingHeight = upgrading->height;
+		const unsigned int barYCor       =
+			(3*display_height + loadingHeight)/4;//display_height - (display_height/2 - loadingHeight/2)/2;
 		hProgressBar = optimus_progress_ui_request(100, 0, barAddr, display_width, barYCor);
 		if (!hProgressBar) {
 			DWN_ERR("Fail to request progress bar\n");
