@@ -21,6 +21,14 @@
 #define IS_FEAT_EN_DEVICE_SCS_SIG()			        \
 	((OTP_BIT_LOAD(FEAT_ENABLE_DEVICE_SCS_SIG_0) ||		\
 	  OTP_BIT_LOAD(FEAT_ENABLE_DEVICE_SCS_SIG_1)) ? 1 : 0)
+
+#define FEAT_ENABLE_DEVICE_VENDOR_SIG_0          (20)
+#define FEAT_ENABLE_DEVICE_VENDOR_SIG_1          (21)
+
+#define IS_FEAT_EN_DEVICE_VENDOR_SIG()			        \
+	((OTP_BIT_LOAD(FEAT_ENABLE_DEVICE_VENDOR_SIG_0) ||		\
+	  OTP_BIT_LOAD(FEAT_ENABLE_DEVICE_VENDOR_SIG_1)) ? 1 : 0)
+
 #define FEAT_ENABLE_DEVICE_PROT_0                (22)
 #define FEAT_ENABLE_DEVICE_PROT_1                (23)
 #define IS_FEAT_EN_DEVICE_PROT()			        \
@@ -44,7 +52,7 @@
 //function for EFUSE license query
 int  IS_FEAT_BOOT_VERIFY(void)
 {
-	return IS_FEAT_EN_DEVICE_SCS_SIG();
+	return IS_FEAT_EN_DEVICE_SCS_SIG() | IS_FEAT_EN_DEVICE_VENDOR_SIG();
 }
 
 int  IS_FEAT_BOOT_ENCRYPT(void)
