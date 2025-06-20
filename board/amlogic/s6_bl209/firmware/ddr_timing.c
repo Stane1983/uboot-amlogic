@@ -121,10 +121,33 @@ DDR_TIMMING_OFFSET(PARA)) << 16) | ((DDR_TIMMING_OFFSET_SIZE(PARA)) << 28) | (VA
 #if 1
 uint32_t __bl2_ddr_reg_data[] __attribute__ ((section(".ddr_2acs_data"))) = {
 	DDR_ID_START_MASK,
-	//DDR_TIMMING_TUNE_ADC_MULT_START(DDR_ID_FROM_ADC_MULT, V5, VX, VX, VX, VX, VX),
-	//data start// ref board V5
-	//DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_common_setting.Is2Ttiming, CONFIG_USE_DDR_2T_MODE),
-	//DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_SI_setting_ps.DRAMFreq, 687),
+	DDR_TIMMING_TUNE_ADC_MULT_START(DDR_ID_FROM_ADC_MULT_F_LPDDR4, VX, VX, V0, VX, VX, VX),
+	//data start
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_SI_setting_ps.DRAMFreq, 2112),
+	DDR_TIMMING_TUNE_ADC_MULT_START(DDR_ID_FROM_ADC_MULT_F_LPDDR4, VX, VX, V1, VX, VX, VX),
+	//data start
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_SI_setting_ps.DRAMFreq, 2016),
+	DDR_TIMMING_TUNE_ADC_MULT_START(DDR_ID_FROM_ADC_MULT_F_LPDDR4, VX, VX, V2, VX, VX, VX),
+	//data start
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_SI_setting_ps.DRAMFreq, 2016),
+	DDR_TIMMING_TUNE_ADC_MULT_START(DDR_ID_FROM_ADC_MULT_F_LPDDR4, VX, VX, V3, VX, VX, VX),
+	//data start
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_SI_setting_ps.DRAMFreq, 1848),
+	DDR_TIMMING_TUNE_ADC_MULT_START(DDR_ID_FROM_ADC_MULT_F_LPDDR4, VX, VX, V4, VX, VX, VX),
+	//data start
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_SI_setting_ps.DRAMFreq, 1848),
+	DDR_TIMMING_TUNE_ADC_MULT_START(DDR_ID_FROM_ADC_MULT_F_LPDDR5, VX, VX, V5, VX, VX, VX),
+	//data start
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_SI_setting_ps.DRAMFreq, 687),//lp5-5500
+	DDR_TIMMING_TUNE_ADC_MULT_START(DDR_ID_FROM_ADC_MULT_F_LPDDR5, VX, VX, V6, VX, VX, VX),
+	//data start
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_SI_setting_ps.DRAMFreq, 687),//lp5-5500
+	DDR_TIMMING_TUNE_ADC_MULT_START(DDR_ID_FROM_ADC_MULT_F_LPDDR5, VX, VX, V7, VX, VX, VX),
+	//data start
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_SI_setting_ps.DRAMFreq, 528),//lp5-4226
+	DDR_TIMMING_TUNE_ADC_MULT_START(DDR_ID_FROM_ADC_MULT_F_LPDDR5, VX, VX, V8, VX, VX, VX),
+	//data start
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_SI_setting_ps.DRAMFreq, 600),//lp5-4800
 };
 
 ////_ddr_para_2nd_setting
@@ -155,7 +178,7 @@ uint32_t __ddr_parameter_reg_index[] __attribute__ ((section(".ddr_2acs_index"))
 ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 //ddr_set_ps0_only_t __attribute__ ((aligned(8))) ddr_set_t_default[] = {
 #if LPDDR5_SKT
-#define  CACLU_CLK_LP5   687 //687--5500//600 //1200 //(1900)// (1440)//(1008)
+#define  CACLU_CLK_LP5   528 //687--5500//600 //1200 //(1900)// (1440)//(1008)
 //ddr_set_ps0_only_t __attribute__ ((aligned(8))) ddr_set_t_default_lp5 = {
 	{
 		.cfg_board_common_setting.timming_magic = 0,
@@ -324,7 +347,7 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 	},
 #endif
 #if LPDDR4_SKT
-#define  CACLU_CLK_LP4   2112 //1584 //1792//600 //1200 //(1900)// (1440)//(1008)
+#define  CACLU_CLK_LP4   1848 //up to 2112 from ddr id
 //ddr_set_ps0_only_t __attribute__ ((aligned(8))) ddr_set_t_default_lp4 = {
 	{
 		.cfg_board_common_setting.timming_magic = 0,
