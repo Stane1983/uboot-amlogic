@@ -872,11 +872,67 @@ bool is_hdmi_mode(char *mode)
 	return ret;
 }
 
+static void set_aud_acr_pkt(struct hdmitx_dev *hdev)
+{
+	unsigned int data32;
+	unsigned int aud_n_para;
+	u32 char_rate = 0;
+	struct hdmi_format_para *para = hdev->para;
+	int cd = 4;
+
+	if (!hdev)
+		return;
+	para = hdev->para;
+	if (!para)
+		return;
+
+	/* if current mode is 59.94hz not 60hz, char_rate will shift down 0.1% */
+	char_rate = para->timing.pixel_freq;
+	if (hdmitx_check_frac_rate(hdev) == 1)
+		char_rate = char_rate - char_rate / 1001;
+	if (para->cs == HDMI_COLOR_FORMAT_422)
+		cd = 4;
+	else
+		cd = para->cd;
+	if (para->cs == HDMI_COLOR_FORMAT_420)
+		char_rate = char_rate / 2;
+	aud_n_para = hdmitx_hw_get_audio_n_paras(FS_48K,
+						  cd, char_rate);
+
+	/* audio packetizer config */
+	hdmitx_wr_reg(HDMITX_DWC_AUD_INPUTCLKFS, 0);
+	/* ACR packet configuration */
+	data32 = 0;
+	data32 |= (1 << 7);  /* [  7] ncts_atomic_write */
+	data32 |= (0 << 0);  /* [3:0] AudN[19:16] */
+	hdmitx_wr_reg(HDMITX_DWC_AUD_N3, data32);
+
+	data32 = 0;
+	data32 |= (0 << 7);  /* [7:5] N_shift */
+	data32 |= (0 << 4);  /* [  4] CTS_manual */
+	data32 |= (0 << 0);  /* [3:0] manual AudCTS[19:16] */
+	hdmitx_wr_reg(HDMITX_DWC_AUD_CTS3, data32);
+
+	hdmitx_wr_reg(HDMITX_DWC_AUD_CTS2, 0); /* manual AudCTS[15:8] */
+	hdmitx_wr_reg(HDMITX_DWC_AUD_CTS1, 0); /* manual AudCTS[7:0] */
+
+	data32 = 0;
+	data32 |= (1 << 7);  /* [  7] ncts_atomic_write */
+	data32 |= (((aud_n_para >> 16) & 0xf) << 0);  /* [3:0] AudN[19:16] */
+
+	/* update audio_n_para */
+	hdmitx_wr_reg(HDMITX_DWC_AUD_N3, data32);
+	hdmitx_wr_reg(HDMITX_DWC_AUD_N2,
+		      (aud_n_para >> 8) & 0xff); /* AudN[15:8] */
+	hdmitx_wr_reg(HDMITX_DWC_AUD_N1, aud_n_para & 0xff); /* AudN[7:0] */
+	pr_info("audio: update audio N %d", aud_n_para);
+}
+
+/* in uboot, the audio is fixed as 48k, 2ch, PCM */
 static int hdmitx_set_audmode(struct hdmitx_dev *hdev)
 {
 	int i;
 	unsigned int data32;
-	unsigned int aud_n_para;
 
 	pr_info("hdmitx: set audio\n");
 	hdmitx_set_reg_bits(HDMITX_TOP_CLK_CNTL, 3, 2, 2);
@@ -948,26 +1004,7 @@ static int hdmitx_set_audmode(struct hdmitx_dev *hdev)
 	hdmitx_wr_reg(HDMITX_DWC_AUD_INPUTCLKFS, 0);
 
 	/* 48kHz 2ch PCM as default */
-	aud_n_para = 6144;
-	switch (hdev->vic) {
-	case HDMI_3840x2160p24_16x9:
-	case HDMI_3840x2160p25_16x9:
-	case HDMI_3840x2160p30_16x9:
-	case HDMI_4096x2160p24_256x135:
-	case HDMI_4096x2160p25_256x135:
-	case HDMI_4096x2160p30_256x135:
-		aud_n_para = 5120;
-		break;
-	case HDMI_3840x2160p50_16x9:
-	case HDMI_3840x2160p60_16x9:
-	case HDMI_3840x2160p50_64x27:
-	case HDMI_3840x2160p60_64x27:
-		if (hdev->para->cs == HDMI_COLOR_FORMAT_420)
-			aud_n_para = 5120;
-		break;
-	default:
-		break;
-	}
+	set_aud_acr_pkt(hdev);
 
 	/* ACR packet configuration */
 	data32 = 0;
@@ -980,16 +1017,9 @@ static int hdmitx_set_audmode(struct hdmitx_dev *hdev)
 	data32 |= (0 << 4);  /* [  4] CTS_manual */
 	data32 |= (0 << 0);  /* [3:0] manual AudCTS[19:16] */
 	hdmitx_wr_reg(HDMITX_DWC_AUD_CTS3, data32);
-
 	hdmitx_wr_reg(HDMITX_DWC_AUD_CTS2, 0); /* manual AudCTS[15:8] */
 	hdmitx_wr_reg(HDMITX_DWC_AUD_CTS1, 0); /* manual AudCTS[7:0] */
 
-	data32 = 0;
-	data32 |= (1 << 7);  /* [  7] ncts_atomic_write */
-	data32 |= (((aud_n_para>>16)&0xf) << 0);  /* [3:0] AudN[19:16] */
-	hdmitx_wr_reg(HDMITX_DWC_AUD_N3, data32);
-	hdmitx_wr_reg(HDMITX_DWC_AUD_N2, (aud_n_para>>8)&0xff); /* AudN[15:8] */
-	hdmitx_wr_reg(HDMITX_DWC_AUD_N1, aud_n_para&0xff); /* AudN[7:0] */
 	for (i = 0; i < 9; i++)
 		hdmitx_wr_reg(HDMITX_DWC_FC_AUDSCHNLS0+i, 0x00);
 	hdmitx_wr_reg(HDMITX_DWC_FC_AUDSV, 0x11);
@@ -1005,6 +1035,7 @@ static int hdmitx_set_audmode(struct hdmitx_dev *hdev)
 	hdmitx_set_reg_bits(HDMITX_DWC_FC_AUDSCHNLS8,  /* CSB 39:36 */
 		0xd, 4, 4);
 
+	/* select spdif */
 	hdmitx_set_reg_bits(HDMITX_DWC_AUD_CONF0, 0, 5, 1);
 	/* reset audio fifo */
 	hdmitx_set_reg_bits(HDMITX_DWC_AUD_CONF0, 1, 7, 1);

@@ -825,40 +825,6 @@ struct hdmi_format_para {
 	struct hdmi_timing timing;
 };
 
-#define AUDIO_PARA_MAX_NUM       14
-struct hdmi_audio_fs_ncts {
-	struct {
-		u32 tmds_clk;
-		u32 n; /* 24 or 30 bit */
-		u32 cts; /* 24 or 30 bit */
-		u32 n_36bit;
-		u32 cts_36bit;
-		u32 n_48bit;
-		u32 cts_48bit;
-	} array[AUDIO_PARA_MAX_NUM];
-	u32 def_n;
-};
-
-/* Sampling Freq Fs:
- * 0 - Refer to Stream Header;
- * 1 - 32KHz;
- * 2 - 44.1KHz;
- * 3 - 48KHz;
- * 4 - 88.2KHz...
- */
-enum hdmi_audio_fs {
-	FS_REFER_TO_STREAM = 0,
-	FS_32K = 1,
-	FS_44K1 = 2,
-	FS_48K = 3,
-	FS_88K2 = 4,
-	FS_96K = 5,
-	FS_176K4 = 6,
-	FS_192K = 7,
-	FS_768K = 8,
-	FS_MAX,
-};
-
 enum hdmi_audio_chnnum {
 	CC_REFER_TO_STREAM = 0,
 	CC_2CH,
