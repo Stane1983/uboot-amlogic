@@ -215,7 +215,7 @@ static void lcd_power_ctrl(struct aml_lcd_drv_s *pdrv, int status)
 	struct lcd_power_ctrl_s *lcd_power;
 	struct lcd_power_step_s *power_step;
 	char *str;
-	unsigned int i, wait, gpio;
+	unsigned int i, wait, gpio, delay;
 	int value = LCD_PMU_GPIO_NUM_MAX;
 #ifdef CONFIG_AML_LCD_EXTERN
 	struct lcd_extern_driver_s *edrv;
@@ -253,6 +253,7 @@ static void lcd_power_ctrl(struct aml_lcd_drv_s *pdrv, int status)
 			      power_step->type, power_step->index,
 			      power_step->value, power_step->delay);
 		}
+		delay = power_step->delay;
 		switch (power_step->type) {
 		case LCD_POWER_TYPE_GPIO:
 			if (power_step->index < LCD_CPU_GPIO_NUM_MAX) {
@@ -263,13 +264,6 @@ static void lcd_power_ctrl(struct aml_lcd_drv_s *pdrv, int status)
 				LCDERR("[%d]: invalid cpu_gpio index: %d\n",
 				       pdrv->index, power_step->index);
 			}
-			break;
-		case LCD_POWER_TYPE_PMU:
-			if (power_step->index < LCD_PMU_GPIO_NUM_MAX)
-				LCDPR("to do\n");
-			else
-				LCDERR("pmu_gpio invalid index: %d\n",
-				       power_step->index);
 			break;
 		case LCD_POWER_TYPE_SIGNAL:
 			if (status)
@@ -301,6 +295,7 @@ static void lcd_power_ctrl(struct aml_lcd_drv_s *pdrv, int status)
 			break;
 #endif
 		case LCD_POWER_TYPE_WAIT_GPIO:
+			delay = 0;
 			if (power_step->index < LCD_CPU_GPIO_NUM_MAX) {
 				str = lcd_power->cpu_gpio[power_step->index];
 				gpio = lcd_gpio_name_map_num(str);
@@ -326,6 +321,7 @@ static void lcd_power_ctrl(struct aml_lcd_drv_s *pdrv, int status)
 			}
 			break;
 		case LCD_POWER_TYPE_CLK_SS:
+			delay = 0;
 			break;
 #ifdef CONFIG_AML_LCD_TCON
 		case LCD_POWER_TYPE_TCON_SPI_DATA_LOAD:
@@ -346,18 +342,20 @@ static void lcd_power_ctrl(struct aml_lcd_drv_s *pdrv, int status)
 			break;
 #endif
 		case LCD_POWER_TYPE_MUTE:
-				lcd_mute_set(pdrv, power_step->value);
+			lcd_mute_set(pdrv, power_step->value);
+			break;
+		case LCD_POWER_TYPE_OFF_DELAY:
 			break;
 		default:
 			break;
 		}
 
-		if (power_step->type != LCD_POWER_TYPE_WAIT_GPIO) {
-#ifndef CONFIG_AML_LCD_PXP
-			if (power_step->delay > 0)
-				mdelay(power_step->delay);
+#ifdef CONFIG_AML_LCD_PXP
+		delay = 0;
 #endif
-		}
+
+		if (delay > 0)
+			mdelay(delay);
 		i++;
 		power_step++;
 	}

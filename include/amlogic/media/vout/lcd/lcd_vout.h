@@ -540,9 +540,11 @@ enum lcd_power_type_e {
 	LCD_POWER_TYPE_TCON_SPI_DATA_LOAD,  /* 6 */
 	LCD_POWER_TYPE_BACKLIGHT,           /* 7 */
 	LCD_POWER_TYPE_MUTE,                /* 8 */
+	LCD_POWER_TYPE_OFF_DELAY = 0xfd,
 	LCD_POWER_TYPE_MAX,
 };
 #define LCD_POWER_TYPE_CPU           LCD_POWER_TYPE_GPIO
+#define LCD_POWER_TYPE_END           0xff
 
 enum lcd_pmu_gpio_e {
 	LCD_PMU_GPIO0 = 0,
