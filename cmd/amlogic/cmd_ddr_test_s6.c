@@ -3233,7 +3233,7 @@ int do_ddr_test_copy(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	p_dest = (void *)(int_convert_p(dec_addr));
 	m_len = test_size / 4; //assume it's multiple of 4
 	counter = (unsigned int)test_loops;
-	size_count = counter * test_size;
+	size_count = (uint64_t)counter * test_size;
 	time_start = get_us_time(); //us
 	do {
 		loop = 1;
@@ -3260,7 +3260,7 @@ int do_ddr_test_copy(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	unsigned int temp0 = 0;
 
 	counter = (unsigned int)test_loops;
-	size_count = counter * test_size;
+	size_count = (uint64_t)counter * test_size;
 
 	time_start = get_us_time(); //us
 	do {
@@ -8752,7 +8752,7 @@ void dwc_window_reg_after_training_update_increase_dq(char	over_ride_index,
 	uint32_t delay_old_value = 0;
 	uint32_t delay_reg_value = 0;
 
-	uint64_t reg_add = 0;
+	uint32_t reg_add = 0;
 
 	if (!over_ride_index)
 		return;
@@ -10512,8 +10512,8 @@ int do_ddr_dfs_test(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	unsigned int dfs_new_value = 0;
 	unsigned int error_cur = 0;
 	unsigned int error_total = 0;
-	int argc2 = 0;
-	char *argv2[30];
+	//int argc2 = 0;
+	//char *argv2[30];
 
 	dfs_old_value = rd_reg(dfs_address);
 	dfs_cur_fre_sel = (dfs_old_value >> 30) & 1;
@@ -10539,7 +10539,7 @@ int do_ddr_dfs_test(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 			dfs_new_value = 0xc0000000 | (dfs_old_value & 0x0fffffff);
 		wr_reg(dfs_address, dfs_new_value);
 		//run_command("ddrtest 3", 0);
-		error_cur = do_ddr_test((cmd_tbl_t *)cmdtp, 1, (int)argc2, (argv2));
+		error_cur = do_ddr_test((cmd_tbl_t *)cmdtp, 1, (int)argc, (argv));
 		error_total = error_total + error_cur;
 		printf("\nddr dfs %d to %d,times %d,reg_val %x to %x,err_cur %d total %d\n",
 		dfs_cur_fre_sel, (~dfs_cur_fre_sel) & 1,
@@ -10595,8 +10595,8 @@ int do_ddr_asr_test(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	unsigned int asr_new_value = 0;
 	unsigned int error_cur = 0;
 	unsigned int error_total = 0;
-	int argc2 = 0;
-	char *argv2[30];
+	//int argc2 = 0;
+	//char *argv2[30];
 
 	if (asr_override_value)
 		asr_enable_value = asr_override_value;
@@ -10636,7 +10636,7 @@ int do_ddr_asr_test(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 		wr_reg(asr_address, asr_new_value);
 		wr_reg(asr_address1, asr_new_value);
 		//run_command("ddrtest 3", 0);
-		error_cur = do_ddr_test((cmd_tbl_t *)cmdtp, 1, (int)argc2, (argv2));
+		error_cur = do_ddr_test((cmd_tbl_t *)cmdtp, 1, (int)argc, (argv));
 		error_total = error_total + error_cur;
 		printf("\nddr asr %d to %d,times %d,reg_value %x  %x,err_cur %d total %d\n",
 		asr_cur_fre_sel, (~asr_cur_fre_sel) & 1,

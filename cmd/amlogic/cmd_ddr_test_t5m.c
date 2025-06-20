@@ -2889,7 +2889,7 @@ int do_ddr_test_copy(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	p_dest = (void *)(int_convert_p(dec_addr));
 	m_len = test_size / 4; //assume it's multiple of 4
 	counter = (unsigned int)test_loops;
-	size_count = counter * test_size;
+	size_count = (uint64_t)counter * test_size;
 	time_start = get_us_time(); //us
 	do {
 		loop = 1;
@@ -2916,7 +2916,7 @@ int do_ddr_test_copy(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	unsigned int temp0 = 0;
 
 	counter = (unsigned int)test_loops;
-	size_count = counter * test_size;
+	size_count = (uint64_t)counter * test_size;
 
 	time_start = get_us_time(); //us
 	do {
@@ -8103,11 +8103,12 @@ int do_ddr_fastboot_config(cmd_tbl_t *cmdtp, int flag, int argc, char *const arg
 
 	uint32_t dmc_retraining_ctrl = 0;
 
-	dmc_retraining_ctrl = rd_reg(p_ddr_base->ddr_dmc_lpdd4_retraining_address);
+	if (p_ddr_base && p_ddr_base->ddr_dmc_lpdd4_retraining_address) {
+		dmc_retraining_ctrl = rd_reg(p_ddr_base->ddr_dmc_lpdd4_retraining_address);
+		wr_reg(p_ddr_base->ddr_dmc_lpdd4_retraining_address,
+		   dmc_retraining_ctrl & (~(1 << 31)));
+	}
 
-	if (p_ddr_base->ddr_dmc_lpdd4_retraining_address)
-		wr_reg((p_ddr_base->ddr_dmc_lpdd4_retraining_address),
-		       dmc_retraining_ctrl & (~(1 << 31)));
 	//ddr_set_t *ddr_set_t_p = NULL;
 
 	//ddr_set_t_p = (ddr_set_t *)(ddr_set_t_p_array);
@@ -8232,7 +8233,7 @@ void dwc_window_reg_after_training_update_increase_dq(char	over_ride_index,
 	uint32_t delay_old_value = 0;
 	uint32_t delay_reg_value = 0;
 
-	uint64_t reg_add = 0;
+	uint32_t reg_add = 0;
 
 	if (!over_ride_index)
 		return;

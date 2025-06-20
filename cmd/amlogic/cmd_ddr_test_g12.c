@@ -2576,7 +2576,7 @@ int do_ddr_test_copy(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	p_dest = (void *)(int_convter_p(dec_addr));
 	m_len = test_size / 4; //assume it's multiple of 4
 	counter = (unsigned int)test_loops;
-	size_count = counter * test_size;
+	size_count=(uint64_t)counter*test_size;
 	time_start = get_us_time(); //us
 	do {
 		loop = 1;
@@ -2599,7 +2599,7 @@ int do_ddr_test_copy(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	m_len = test_size / 4; //assume it's multiple of 4
 	unsigned int temp0 = 0;
 	counter = (unsigned int)test_loops;
-	size_count = counter * test_size;
+	size_count = (uint64_t)counter * test_size;
 
 	time_start = get_us_time(); //us
 	do {
@@ -7670,10 +7670,12 @@ int do_ddr_fastboot_config(cmd_tbl_t *cmdtp, int flag, int argc, char *const arg
 		return 1;
 
 	uint32_t dmc_retraining_ctrl = 0;
-	dmc_retraining_ctrl = rd_reg((p_ddr_base->ddr_dmc_lpdd4_retraining_address));
 
-	if ((p_ddr_base->ddr_dmc_lpdd4_retraining_address))
-		wr_reg((p_ddr_base->ddr_dmc_lpdd4_retraining_address), dmc_retraining_ctrl & (~(1 << 31)));
+	if (p_ddr_base && p_ddr_base->ddr_dmc_lpdd4_retraining_address) {
+		dmc_retraining_ctrl = rd_reg(p_ddr_base->ddr_dmc_lpdd4_retraining_address);
+		wr_reg(p_ddr_base->ddr_dmc_lpdd4_retraining_address,
+		dmc_retraining_ctrl & (~(1 << 31)));
+	}
 	ddr_set_t *ddr_set_t_p = NULL;
 	ddr_set_t_p = (ddr_set_t *)(ddr_set_t_p_array);
 	uint32_t ddr_set_add = 0;
@@ -8116,23 +8118,26 @@ int do_ddr_test_dqs_window_sticky(cmd_tbl_t *cmdtp, int flag, int argc, char *co
 				num_arry[TEST_ARG_NIBBLE_SAVE_OFFSET_BYTE + (nibble_step * TEST_ARG_NIBBLE_WIDTH_BYTE) + LCD_BDLR_MAX] = test_right_max_init_value;
 				num_arry[TEST_ARG_NIBBLE_SAVE_OFFSET_BYTE + (nibble_step * TEST_ARG_NIBBLE_WIDTH_BYTE) + LCD_BDLR_STATUS] = 0; //0
 			}
-
-			{
-				if (nibble_step < 32) {
-					if (((nibble_mask[0]) >> nibble_step) & 1)
-						num_arry[TEST_ARG_NIBBLE_SAVE_OFFSET_BYTE + nibble_step * TEST_ARG_NIBBLE_WIDTH_BYTE + LCD_BDLR_STATUS] = 4;
-				} else if (nibble_step < 64) {
-					if (((nibble_mask[1]) >> (nibble_step - 32)) & 1)
-						num_arry[TEST_ARG_NIBBLE_SAVE_OFFSET_BYTE + nibble_step * TEST_ARG_NIBBLE_WIDTH_BYTE + LCD_BDLR_STATUS] = 4;
-				} else if (nibble_step < 96) {
-					if (((nibble_mask[2]) >> (nibble_step - 64)) & 1)
-						num_arry[TEST_ARG_NIBBLE_SAVE_OFFSET_BYTE + nibble_step * TEST_ARG_NIBBLE_WIDTH_BYTE + LCD_BDLR_STATUS] = 4;
+			if (nibble_step < 32) {
+				if (((nibble_mask[0]) >> nibble_step) & 1) {
+					int index = TEST_ARG_NIBBLE_SAVE_OFFSET_BYTE + nibble_step * TEST_ARG_NIBBLE_WIDTH_BYTE + LCD_BDLR_STATUS;
+					if (index >= 0 && index < 256) {  // 假设num_arry长度为256
+						num_arry[index] = 4;
+					}
 				}
-				if (all_tighter_enable) {
-					if ((nibble_step == 0) || (nibble_step == 10) || (nibble_step == (10 + 16)))
-						num_arry[TEST_ARG_NIBBLE_SAVE_OFFSET_BYTE + nibble_step * TEST_ARG_NIBBLE_WIDTH_BYTE + LCD_BDLR_STATUS] = 0;
-					else
-						num_arry[TEST_ARG_NIBBLE_SAVE_OFFSET_BYTE + nibble_step * TEST_ARG_NIBBLE_WIDTH_BYTE + LCD_BDLR_STATUS] = 4;
+			} else if (nibble_step < 64) {
+				if (((nibble_mask[1]) >> (nibble_step - 32)) & 1) {
+					int index = TEST_ARG_NIBBLE_SAVE_OFFSET_BYTE + nibble_step * TEST_ARG_NIBBLE_WIDTH_BYTE + LCD_BDLR_STATUS;
+					if (index >= 0 && index < 256) {
+						num_arry[index] = 4;
+					}
+				}
+			} else if (nibble_step < 96) {
+				if (((nibble_mask[2]) >> (nibble_step - 64)) & 1) {
+					int index = TEST_ARG_NIBBLE_SAVE_OFFSET_BYTE + nibble_step * TEST_ARG_NIBBLE_WIDTH_BYTE + LCD_BDLR_STATUS;
+					if (index >= 0 && index < 256) {
+						num_arry[index] = 4;
+					}
 				}
 			}
 		}
@@ -8426,11 +8431,18 @@ int do_ddr_test_dqs_window_sticky(cmd_tbl_t *cmdtp, int flag, int argc, char *co
 												TEST_ARG_ERROR_FLAG,
 												num_arry[TEST_ARG_ERROR_FLAG]);
 								}
-								sprintf(buf, "0x%08x", (num_arry[(TEST_ARG_NIBBLE_SAVE_OFFSET_BYTE + ((nibble_step + nibble_save_offset) * TEST_ARG_NIBBLE_WIDTH_BYTE) + LCD_BDLR_MIN)]));
-								printf("%s", buf);
-								sprintf(str, "ddr_g12_offset_data  %d  0x%08x 0x%08x  0x%08x  %d %d", test_index, nibble_mask[0], nibble_mask[1], nibble_mask[2], DDR_PARAMETER_LEFT,
-									(num_arry[(TEST_ARG_NIBBLE_SAVE_OFFSET_BYTE + ((nibble_step + nibble_save_offset) * TEST_ARG_NIBBLE_WIDTH_BYTE) + LCD_BDLR_MIN)]));
-								printf("\nstr=%s\n", str);
+				int index_min = TEST_ARG_NIBBLE_SAVE_OFFSET_BYTE + ((nibble_step + nibble_save_offset) * TEST_ARG_NIBBLE_WIDTH_BYTE) + LCD_BDLR_MIN;
+				unsigned int safe_value_min = 0;
+				if (index_min >= 0 && index_min < 256) {  // 假设num_arry长度为256
+					safe_value_min = num_arry[index_min];
+				} else {
+					printf("index_min out of range: %d\n", index_min);
+				}
+				char buf[16];  // 确保buf长度足够
+				snprintf(buf, sizeof(buf), "0x%08x", safe_value_min);
+				printf("%s", buf);
+				sprintf(str, "ddr_g12_offset_data  %d  0x%08x 0x%08x  0x%08x  %d %d", test_index, nibble_mask[0], nibble_mask[1], nibble_mask[2], DDR_PARAMETER_LEFT, safe_value_min);
+
 								ddr_test_watchdog_clear();
 								run_command(str, 0);
 								temp_test_error = ddr_test_s_cross_talk_pattern(ddr_test_size);
@@ -8558,11 +8570,18 @@ int do_ddr_test_dqs_window_sticky(cmd_tbl_t *cmdtp, int flag, int argc, char *co
 												TEST_ARG_ERROR_FLAG,
 												num_arry[TEST_ARG_ERROR_FLAG]);
 								}
-								sprintf(buf, "0x%08x", (num_arry[(TEST_ARG_NIBBLE_SAVE_OFFSET_BYTE + ((nibble_step + nibble_save_offset) * TEST_ARG_NIBBLE_WIDTH_BYTE) + LCD_BDLR_MAX)]));
+								int index_max = TEST_ARG_NIBBLE_SAVE_OFFSET_BYTE + ((nibble_step + nibble_save_offset) * TEST_ARG_NIBBLE_WIDTH_BYTE) + LCD_BDLR_MAX;
+								unsigned int safe_value_max = 0;
+								if (index_max >= 0 && index_max < 256) {  // 假设num_arry长度为256
+									safe_value_max = num_arry[index_max];
+								} else {
+									printf("index_max out of range: %d\n", index_max);
+								}
+								char buf[16];  // 确保buf长度足够
+								snprintf(buf, sizeof(buf), "0x%08x", safe_value_max);
 								printf("%s", buf);
-								sprintf(str, "ddr_g12_offset_data  %d  0x%08x 0x%08x  0x%08x  %d %d", test_index, nibble_mask[0], nibble_mask[1], nibble_mask[2], DDR_PARAMETER_RIGHT,
-									(num_arry[(TEST_ARG_NIBBLE_SAVE_OFFSET_BYTE + ((nibble_step + nibble_save_offset) * TEST_ARG_NIBBLE_WIDTH_BYTE) + LCD_BDLR_MAX)]));
-								printf("\nstr=%s\n", str);
+								sprintf(str, "ddr_g12_offset_data  %d  0x%08x 0x%08x  0x%08x  %d %d", test_index, nibble_mask[0], nibble_mask[1], nibble_mask[2], DDR_PARAMETER_RIGHT, safe_value_max);
+
 								ddr_test_watchdog_clear();
 								run_command(str, 0);
 								temp_test_error = ddr_test_s_cross_talk_pattern(ddr_test_size);
@@ -8791,7 +8810,7 @@ void dwc_window_reg_after_training_update_increas_dq(char over_ride_index, uint3
 	uint32_t delay_old_value = 0;
 	uint32_t delay_reg_value = 0;
 
-	uint64_t reg_add = 0;
+	uint32_t reg_add = 0;
 
 	if (!over_ride_index)
 		return;
@@ -8824,7 +8843,7 @@ void dwc_window_reg_after_training_update(char over_ride_index, uint32_t over_ri
 {
 	uint32_t delay_old_value = 0;
 	uint32_t delay_reg_value = 0;
-	uint64_t reg_add = 0;
+	uint32_t reg_add = 0;
 
 	if (!over_ride_index)
 		return;
@@ -8879,7 +8898,7 @@ void dwc_window_reg_after_training_update_increas_sub(char over_ride_index, uint
 	uint32_t delay_old_value = 0;
 	uint32_t delay_reg_value = 0;
 
-	uint64_t reg_add = 0;
+	uint32_t reg_add = 0;
 
 	if (!over_ride_index)
 		return;
@@ -9016,7 +9035,7 @@ void dwc_window_reg_after_training_update_increas(char over_ride_index, uint32_t
 {
 	uint32_t delay_old_value = 0;
 	uint32_t temp_count_3 = 0;
-	uint64_t reg_add = 0;
+	uint32_t reg_add = 0;
 
 	if (!over_ride_index)
 		return;

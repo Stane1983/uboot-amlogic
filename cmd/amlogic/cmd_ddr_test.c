@@ -3009,7 +3009,7 @@ static void ddr_test_copy(void *addr_dest,void *addr_src,unsigned int memcpy_siz
 //*/
 int do_ddr_test_copy(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	char *endp;
+	char *endp = NULL; // 声明时初始化
 	unsigned long   loop = 1;
 	unsigned int   print_flag =1;
 	// unsigned int  start_addr = DDR_TEST_START_ADDR;
@@ -3033,7 +3033,7 @@ int do_ddr_test_copy(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		loop = 1;
 	}
 	if (argc > 2) {
-		//    start_addr = simple_strtoull_ddr(argv[2], &endp, 16);
+		start_addr = simple_strtoull_ddr(argv[2], &endp, 16);
 		if (*argv[2] == 0 || *endp != 0)
 			src_addr = DDR_TEST_START_ADDR;
 	}
@@ -3090,7 +3090,7 @@ int do_ddr_test_copy(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	p_dest=  (void *)(int_convter_p(dec_addr));
 	m_len = test_size/4; //assume it's multiple of 4
 	counter=(unsigned int)test_loops;
-	size_count=counter*test_size;
+	size_count=(uint64_t)counter*test_size;
 	time_start = get_us_time();//us
 	do {
 		loop = 1;
@@ -3116,7 +3116,7 @@ int do_ddr_test_copy(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	//unsigned int temp2=0;
 	//unsigned int temp3=0;
 	counter=(unsigned int)test_loops;
-	size_count=counter*test_size;
+	size_count=(uint64_t)counter*test_size;
 
 	//  #define OPEN_CHANNEL_A_PHY_CLK()      (writel((0), 0xc8836c00))
 	//writel((1000000<<0), DMC_MON_CTRL1);
@@ -7341,8 +7341,8 @@ int do_ddr_test_dqs_window_step(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 
 	const char *temp_s;
 	char *env_lcdlr_temp_count;
-	char *buf;
-	buf="";
+	char buf[16];
+	buf[0] = '\0';
 	unsigned int lcdlr_temp_count=0;
 	env_lcdlr_temp_count="lcdlr_temp_count";
 
@@ -23331,8 +23331,8 @@ int do_ddr_test_dqs_window_sticky(cmd_tbl_t *cmdtp, int flag, int argc, char * c
 	//int argc2;
 	//char     *  argv2[30];
 	char *endp;
-	char *buf;
-	buf="";
+	char buf[16];
+	buf[0]='\0';
 
 	unsigned int   cs0_test_start= 0x1080000;
 	unsigned int   cs0_test_size= DDR_CROSS_TALK_TEST_SIZE;
@@ -23983,14 +23983,22 @@ for (test_index=num_arry[TEST_ARG_2_STEP];test_index<test_index_max ;test_index+
 						TEST_ARG_ERROR_FLAG,
 						num_arry[TEST_ARG_ERROR_FLAG]);
 					}
-					sprintf(buf, "0x%08x", ( num_arry[(TEST_ARG_NIBBLE_SAVE_OFFSET_BYTE+((nibble_step+nibble_save_offset)*TEST_ARG_NIBBLE_WIDTH_BYTE)+LCD_BDLR_MIN)]));
-					printf( "%s", buf);
-					if (all_tighter_enable)
-						sprintf(str,"ddr_g12_offset_data  %d  0x%08x 0x%08x  0x%08x  %d %d",test_index,0,0,0,DDR_PARAMETER_LEFT,
-						( num_arry[(TEST_ARG_NIBBLE_SAVE_OFFSET_BYTE+((nibble_step+nibble_save_offset)*TEST_ARG_NIBBLE_WIDTH_BYTE)+LCD_BDLR_MIN)]));
-					else
-						sprintf(str,"ddr_g12_offset_data  %d  0x%08x 0x%08x  0x%08x  %d %d",test_index,nibble_mask[0],nibble_mask[1],nibble_mask[2],DDR_PARAMETER_LEFT,
-						( num_arry[(TEST_ARG_NIBBLE_SAVE_OFFSET_BYTE+((nibble_step+nibble_save_offset)*TEST_ARG_NIBBLE_WIDTH_BYTE)+LCD_BDLR_MIN)]));
+					int index_min = TEST_ARG_NIBBLE_SAVE_OFFSET_BYTE+((nibble_step+nibble_save_offset)*TEST_ARG_NIBBLE_WIDTH_BYTE)+LCD_BDLR_MIN;
+					unsigned int safe_value_min = 0;
+					if (index_min >= 0 && index_min < 48) {
+						safe_value_min = num_arry[index_min];
+					} else {
+						printf("index_min out of range: %d\n", index_min);
+					}
+					sprintf(buf, "0x%08x", safe_value_min);
+					printf("%s", buf);
+					if (all_tighter_enable) {
+						sprintf(str,"ddr_g12_offset_data  %d  0x%08x 0x%08x  0x%08x  %d %d",
+							test_index,0,0,0,DDR_PARAMETER_LEFT, safe_value_min);
+					} else {
+						sprintf(str,"ddr_g12_offset_data  %d  0x%08x 0x%08x  0x%08x  %d %d",
+							test_index,nibble_mask[0],nibble_mask[1],nibble_mask[2],DDR_PARAMETER_LEFT, safe_value_min);
+					}
 					printf("\nstr=%s\n",str);
 					ddr_test_watchdog_clear();
 					run_command(str,0);
@@ -24141,10 +24149,17 @@ for (test_index=num_arry[TEST_ARG_2_STEP];test_index<test_index_max ;test_index+
 						TEST_ARG_ERROR_FLAG,
 						num_arry[TEST_ARG_ERROR_FLAG]);
 					}
-					sprintf(buf, "0x%08x", ( num_arry[(TEST_ARG_NIBBLE_SAVE_OFFSET_BYTE+((nibble_step+nibble_save_offset)*TEST_ARG_NIBBLE_WIDTH_BYTE)+LCD_BDLR_MAX)]));
-					printf( "%s", buf);
-					sprintf(str,"ddr_g12_offset_data  %d  0x%08x 0x%08x  0x%08x  %d %d",test_index,nibble_mask[0],nibble_mask[1],nibble_mask[2],DDR_PARAMETER_RIGHT,
-					( num_arry[(TEST_ARG_NIBBLE_SAVE_OFFSET_BYTE+((nibble_step+nibble_save_offset)*TEST_ARG_NIBBLE_WIDTH_BYTE)+LCD_BDLR_MAX)]));
+					int index_max = TEST_ARG_NIBBLE_SAVE_OFFSET_BYTE+((nibble_step+nibble_save_offset)*TEST_ARG_NIBBLE_WIDTH_BYTE)+LCD_BDLR_MAX;
+					unsigned int safe_value_max = 0;
+					if (index_max >= 0 && index_max < 48) {
+						safe_value_max = num_arry[index_max];
+					} else {
+						printf("index_max out of range: %d\n", index_max);
+					}
+					sprintf(buf, "0x%08x", safe_value_max);
+					printf("%s", buf);
+					sprintf(str,"ddr_g12_offset_data  %d  0x%08x 0x%08x  0x%08x  %d %d",
+						test_index,nibble_mask[0],nibble_mask[1],nibble_mask[2],DDR_PARAMETER_RIGHT, safe_value_max);
 					printf("\nstr=%s\n",str);
 					ddr_test_watchdog_clear();
 					run_command(str,0);
@@ -32951,7 +32966,7 @@ void dwc_window_reg_after_training_update(char over_ride_index,uint32_t over_rid
 {
 	uint32_t delay_old_value=0;
 	uint32_t delay_reg_value=0;
-	uint64_t reg_add=0;
+	uint32_t reg_add=0;
 	//	if (over_ride_index == DMC_TEST_WINDOW_INDEX_ATXDLY)
 	//p_dev->ddr_global_message.stick_ddr_log_level=0;
 	//serial_puts("\nstick_test_ddr_window_delay_override_before_after_training_setting==");
@@ -33029,7 +33044,7 @@ void dwc_window_reg_after_training_update_increas_sub(char over_ride_index,uint3
 	uint32_t delay_old_value=0;
 	uint32_t delay_reg_value=0;
 
-	uint64_t reg_add=0;
+	uint32_t reg_add=0;
 	if (!over_ride_index)
 		return;
 	if (over_ride_index == DMC_TEST_WINDOW_INDEX_ATXDLY) {
@@ -33205,7 +33220,7 @@ void dwc_window_reg_after_training_update_increas(char over_ride_index,uint32_t 
 	//serial_puts("\nstick_test_ddr_window_delay_override_before_after_training_setting==");
 	//serial_put_dec(p_dev->ddr_global_message.stick_test_ddr_window_delay_override_before_after_training_setting);
 	//serial_puts("\n");
-	uint64_t reg_add=0;
+	uint32_t reg_add=0;
 	if (!over_ride_index) {
 		return;
 	}
