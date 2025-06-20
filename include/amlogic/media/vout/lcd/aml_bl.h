@@ -15,6 +15,7 @@ enum bl_ctrl_method_e {
 	BL_CTRL_GPIO = 0,
 	BL_CTRL_PWM,
 	BL_CTRL_PWM_COMBO,
+	BL_CTRL_PWM_ARRAY,
 	BL_CTRL_LOCAL_DIMMING,
 	BL_CTRL_EXTERN,
 	BL_CTRL_MAX,
@@ -70,7 +71,7 @@ enum bl_off_policy_e {
 #define BL_LEVEL_MID_MAPPED	BL_LEVEL_MID //102
 #define BL_LEVEL_DEFAULT	BL_LEVEL_MID
 
-#define BL_GPIO_NUM_MAX		5
+#define BL_GPIO_NUM_MAX		6
 #define BL_INDEX_INVALID        0xff
 
 struct bl_pwm_config_s {
@@ -124,6 +125,7 @@ struct bl_config_s {
 	struct bl_pwm_config_s *bl_pwm;
 	struct bl_pwm_config_s *bl_pwm_combo0;
 	struct bl_pwm_config_s *bl_pwm_combo1;
+	struct bl_pwm_config_s *bl_pwm_array[4];
 	unsigned int pwm_on_delay;
 	unsigned int pwm_off_delay;
 	unsigned int bl_hold_on;

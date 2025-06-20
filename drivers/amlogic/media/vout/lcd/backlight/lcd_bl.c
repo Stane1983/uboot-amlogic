@@ -56,6 +56,7 @@ static struct bl_config_s *bl_check_valid(struct aml_bl_drv_s *bdrv)
 #ifdef CONFIG_AML_LCD_BL_LDIM
 	struct aml_ldim_driver_s *ldim_drv;
 #endif
+	int i;
 
 	if (!bdrv)
 		return NULL;
@@ -76,6 +77,14 @@ static struct bl_config_s *bl_check_valid(struct aml_bl_drv_s *bdrv)
 		if (!bconf->bl_pwm_combo1) {
 			BLERR("no bl_pwm_combo_1 struct\n");
 			bconf_flag = 0;
+		}
+		break;
+	case BL_CTRL_PWM_ARRAY:
+		for (i = 0; i < 4; i++) {
+			if (!bconf->bl_pwm_array[i]) {
+				BLERR("no bl_pwm_array_%d struct\n", i);
+				bconf_flag = 0;
+			}
 		}
 		break;
 	case BL_CTRL_GPIO:
@@ -138,6 +147,10 @@ static void bl_pwm_pinmux_gpio_set(struct aml_bl_drv_s *bdrv, int pwm_index, int
 		else
 			bl_pwm = bconf->bl_pwm_combo1;
 		break;
+	case BL_CTRL_PWM_ARRAY:
+		if (pwm_index < 4)
+			bl_pwm = bconf->bl_pwm_array[pwm_index];
+		break;
 	default:
 		BLERR("%s: invalid method %d\n", __func__, bconf->method);
 		break;
@@ -194,6 +207,10 @@ static void bl_pwm_pinmux_gpio_clr(struct aml_bl_drv_s *bdrv, unsigned int pwm_i
 			bl_pwm = bconf->bl_pwm_combo0;
 		else
 			bl_pwm = bconf->bl_pwm_combo1;
+		break;
+	case BL_CTRL_PWM_ARRAY:
+		if (pwm_index < 4)
+			bl_pwm = bconf->bl_pwm_array[pwm_index];
 		break;
 	default:
 		BLERR("%s: invalid method %d\n", __func__, bconf->method);
@@ -280,17 +297,46 @@ void bl_set_pwm_gpio_check(struct aml_bl_drv_s *bdrv, struct bl_pwm_config_s *bl
 	}
 }
 
+static void bl_pwm_clr_pinmux(struct bl_pwm_config_s *pwm,
+			char gpio_names[][LCD_CPU_GPIO_NAME_MAX])
+{
+	int i, gpio;
+	char *str;
+
+	for (i = 0; i < LCD_PINMUX_NUM; i++) {
+		if (pwm->pinmux_clr[i][0] == LCD_PINMUX_END)
+			break;
+
+		lcd_pinmux_clr_mask(pwm->pinmux_clr[i][0], pwm->pinmux_clr[i][1]);
+
+		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
+			BLPR("%s: port=0x%x, pinmux_clr=0x%x, 0x%08x\n",
+				__func__, pwm->pwm_port,
+				pwm->pinmux_clr[i][0], pwm->pinmux_clr[i][1]);
+		}
+	}
+	pwm->pinmux_flag = 0;
+
+	if (pwm->pwm_gpio >= BL_GPIO_NUM_MAX) {
+		gpio = LCD_GPIO_MAX;
+	} else {
+		str = gpio_names[pwm->pwm_gpio];
+		gpio = lcd_gpio_name_map_num(str);
+	}
+
+	if (gpio < LCD_GPIO_MAX)
+		lcd_gpio_set(gpio, pwm->pwm_gpio_off);
+}
+
 static void bl_pwm_pinmux_ctrl(struct aml_bl_drv_s *bdrv, int status)
 {
 	struct bl_config_s *bconf = &bdrv->config;
-	int gpio;
-	char *str;
 	int i;
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
 		BLPR("%s: %d\n", __func__, status);
+
 	if (status) {
-		/* set pinmux */
 		switch (bconf->method) {
 		case BL_CTRL_PWM:
 			bl_set_pwm_gpio_check(bdrv, bconf->bl_pwm);
@@ -299,85 +345,29 @@ static void bl_pwm_pinmux_ctrl(struct aml_bl_drv_s *bdrv, int status)
 			bl_set_pwm_gpio_check(bdrv, bconf->bl_pwm_combo0);
 			bl_set_pwm_gpio_check(bdrv, bconf->bl_pwm_combo1);
 			break;
+		case BL_CTRL_PWM_ARRAY:
+			for (i = 0; i < 4; i++) {
+				if (bconf->bl_pwm_array[i])
+					bl_set_pwm_gpio_check(bdrv, bconf->bl_pwm_array[i]);
+			}
+			break;
 		default:
 			break;
 		}
 	} else {
 		switch (bconf->method) {
 		case BL_CTRL_PWM:
-			i = 0;
-			while (i < LCD_PINMUX_NUM) {
-				if (bconf->bl_pwm->pinmux_clr[i][0] == LCD_PINMUX_END)
-					break;
-				lcd_pinmux_clr_mask(bconf->bl_pwm->pinmux_clr[i][0],
-						    bconf->bl_pwm->pinmux_clr[i][1]);
-				if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-					BLPR("%s: port=0x%x, pinmux_clr=0x%x,0x%08x\n",
-					     __func__, bconf->bl_pwm->pwm_port,
-					     bconf->bl_pwm->pinmux_clr[i][0],
-					     bconf->bl_pwm->pinmux_clr[i][1]);
-				}
-				i++;
-			}
-			bconf->bl_pwm->pinmux_flag = 0;
-
-			if (bconf->bl_pwm->pwm_gpio >= BL_GPIO_NUM_MAX) {
-				gpio = LCD_GPIO_MAX;
-			} else {
-				str = bconf->gpio_name[bconf->bl_pwm->pwm_gpio];
-				gpio = lcd_gpio_name_map_num(str);
-			}
-			if (gpio < LCD_GPIO_MAX)
-				lcd_gpio_set(gpio, bconf->bl_pwm->pwm_gpio_off);
+			bl_pwm_clr_pinmux(bconf->bl_pwm, bconf->gpio_name);
 			break;
 		case BL_CTRL_PWM_COMBO:
-			i = 0;
-			while (i < LCD_PINMUX_NUM) {
-				if (bconf->bl_pwm_combo0->pinmux_clr[i][0] == LCD_PINMUX_END)
-					break;
-				lcd_pinmux_clr_mask(bconf->bl_pwm_combo0->pinmux_clr[i][0],
-						    bconf->bl_pwm_combo0->pinmux_clr[i][1]);
-				if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-					BLPR("%s: port=0x%x, pinmux_clr=0x%x,0x%08x\n",
-					     __func__, bconf->bl_pwm_combo0->pwm_port,
-					     bconf->bl_pwm_combo0->pinmux_clr[i][0],
-					     bconf->bl_pwm_combo0->pinmux_clr[i][1]);
-				}
-				i++;
+			bl_pwm_clr_pinmux(bconf->bl_pwm_combo0, bconf->gpio_name);
+			bl_pwm_clr_pinmux(bconf->bl_pwm_combo1, bconf->gpio_name);
+			break;
+		case BL_CTRL_PWM_ARRAY:
+			for (i = 0; i < 4; i++) {
+				if (bconf->bl_pwm_array[i])
+					bl_pwm_clr_pinmux(bconf->bl_pwm_array[i], bconf->gpio_name);
 			}
-			i = 0;
-			while (i < LCD_PINMUX_NUM) {
-				if (bconf->bl_pwm_combo1->pinmux_clr[i][0] == LCD_PINMUX_END)
-					break;
-				lcd_pinmux_clr_mask(bconf->bl_pwm_combo1->pinmux_clr[i][0],
-						    bconf->bl_pwm_combo1->pinmux_clr[i][1]);
-				if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-					BLPR("%s: port=0x%x, pinmux_clr=0x%x,0x%08x\n",
-					     __func__, bconf->bl_pwm_combo1->pwm_port,
-					     bconf->bl_pwm_combo1->pinmux_clr[i][0],
-					     bconf->bl_pwm_combo1->pinmux_clr[i][1]);
-				}
-				i++;
-			}
-			bconf->bl_pwm_combo0->pinmux_flag = 0;
-			bconf->bl_pwm_combo1->pinmux_flag = 0;
-
-			if (bconf->bl_pwm_combo0->pwm_gpio >= BL_GPIO_NUM_MAX) {
-				gpio = LCD_GPIO_MAX;
-			} else {
-				str = bconf->gpio_name[bconf->bl_pwm_combo0->pwm_gpio];
-				gpio = lcd_gpio_name_map_num(str);
-			}
-			if (gpio < LCD_GPIO_MAX)
-				lcd_gpio_set(gpio, bconf->bl_pwm_combo0->pwm_gpio_off);
-			if (bconf->bl_pwm_combo1->pwm_gpio >= BL_GPIO_NUM_MAX) {
-				gpio = LCD_GPIO_MAX;
-			} else {
-				str = bconf->gpio_name[bconf->bl_pwm_combo1->pwm_gpio];
-				gpio = lcd_gpio_name_map_num(str);
-			}
-			if (gpio < LCD_GPIO_MAX)
-				lcd_gpio_set(gpio, bconf->bl_pwm_combo1->pwm_gpio_off);
 			break;
 		default:
 			break;
@@ -390,6 +380,7 @@ static void bl_pwm_config_update(struct aml_bl_drv_s *bdrv)
 #ifdef CONFIG_AML_LCD_BL_LDIM
 	struct aml_ldim_driver_s *ldim_drv;
 #endif
+	int i;
 
 	switch (bdrv->config.method) {
 	case BL_CTRL_PWM:
@@ -399,6 +390,12 @@ static void bl_pwm_config_update(struct aml_bl_drv_s *bdrv)
 		bl_pwm_config_init(bdrv->config.bl_pwm_combo0);
 		bl_pwm_config_init(bdrv->config.bl_pwm_combo1);
 		break;
+	case BL_CTRL_PWM_ARRAY:
+		for (i = 0; i < 4; i++) {
+			if (bdrv->config.bl_pwm_array[i])
+				bl_pwm_config_init(bdrv->config.bl_pwm_array[i]);
+		}
+	break;
 #ifdef CONFIG_AML_LCD_BL_LDIM
 	case BL_CTRL_LOCAL_DIMMING:
 		if (bdrv->index > 0) {
@@ -453,6 +450,7 @@ static void bl_set_level(struct aml_bl_drv_s *bdrv, unsigned int level)
 #ifdef CONFIG_AML_LCD_BL_LDIM
 	struct aml_ldim_driver_s *ldim_drv;
 #endif
+	int i;
 
 	bconf = bl_check_valid(bdrv);
 	if (!bconf)
@@ -493,6 +491,24 @@ static void bl_set_level(struct aml_bl_drv_s *bdrv, unsigned int level)
 			bl_pwm_set_level(bdrv, pwm1, level);
 		} else {
 			bl_pwm_set_level(bdrv, pwm1, pwm1->bl_level_min);
+		}
+		break;
+	case BL_CTRL_PWM_ARRAY:
+		for (i = 0; i < 4; i++) {
+			if (!bconf->bl_pwm_array[i])
+				continue;
+			if (level >= bconf->bl_pwm_array[i]->bl_level_max) {
+				bl_pwm_set_level(bdrv, bconf->bl_pwm_array[i],
+					bconf->bl_pwm_array[i]->bl_level_max);
+			} else if ((level > bconf->bl_pwm_array[i]->bl_level_min) &&
+				(level < bconf->bl_pwm_array[i]->bl_level_max)) {
+				if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
+					BLPR("pwm_array[%d] region, level=%u\n", i, level);
+				bl_pwm_set_level(bdrv, bconf->bl_pwm_array[i], level);
+			} else {
+				bl_pwm_set_level(bdrv, bconf->bl_pwm_array[i],
+					bconf->bl_pwm_array[i]->bl_level_min);
+			}
 		}
 		break;
 #ifdef CONFIG_AML_LCD_BL_LDIM
@@ -546,6 +562,7 @@ static void bl_power_en_ctrl(struct bl_config_s *bconf, int status)
 
 static void bl_pwm_en_ctrl(struct bl_config_s *bconf, int status)
 {
+	int i;
 	switch (bconf->method) {
 	case BL_CTRL_PWM:
 		bl_pwm_en(bconf->bl_pwm, status);
@@ -553,6 +570,13 @@ static void bl_pwm_en_ctrl(struct bl_config_s *bconf, int status)
 	case BL_CTRL_PWM_COMBO:
 		bl_pwm_en(bconf->bl_pwm_combo0, status);
 		bl_pwm_en(bconf->bl_pwm_combo1, status);
+		break;
+	case BL_CTRL_PWM_ARRAY:
+		for (i = 0; i < 4; i++) {
+			if (!bconf->bl_pwm_array[i])
+				continue;
+			bl_pwm_en(bconf->bl_pwm_array[i], status);
+		}
 		break;
 	default:
 		break;
@@ -569,6 +593,7 @@ static void bl_power_ctrl(struct aml_bl_drv_s *bdrv, int status)
 #ifdef CONFIG_AML_LCD_BL_LDIM
 	struct aml_ldim_driver_s *ldim_drv;
 #endif
+	int i;
 
 	bconf = bl_check_valid(bdrv);
 	if (!bconf)
@@ -634,6 +659,27 @@ static void bl_power_ctrl(struct aml_bl_drv_s *bdrv, int status)
 					mdelay(bconf->pwm_on_delay);
 				/* step 2: power on enable */
 				bl_power_en_ctrl(bconf, 1);
+			}
+			break;
+		case BL_CTRL_PWM_ARRAY:
+			for (i = 0; i < 4; i++) {
+				if (!bconf->bl_pwm_array[i])
+					continue;
+				if (bconf->en_sequence_reverse) {
+					/* step 1: power on enable */
+					bl_power_en_ctrl(bconf, 1);
+					if (bconf->pwm_on_delay > 0)
+						mdelay(bconf->pwm_on_delay);
+					/* step 2: power on pwm_array */
+					bl_pwm_pinmux_ctrl(bdrv, 1);
+				} else {
+					/* step 1: power on pwm_array */
+					bl_pwm_pinmux_ctrl(bdrv, 1);
+					if (bconf->pwm_on_delay > 0)
+						mdelay(bconf->pwm_on_delay);
+					/* step 2: power on enable */
+					bl_power_en_ctrl(bconf, 1);
+				}
 			}
 			break;
 #ifdef CONFIG_AML_LCD_BL_LDIM
@@ -735,6 +781,29 @@ static void bl_power_ctrl(struct aml_bl_drv_s *bdrv, int status)
 				bl_pwm_en(bconf->bl_pwm_combo1, 0);
 			}
 			break;
+		case BL_CTRL_PWM_ARRAY:
+			for (i = 0; i < 4; i++) {
+				if (!bconf->bl_pwm_array[i])
+					continue;
+				if (bconf->en_sequence_reverse == 1) {
+					/* step 1: power off pwm_array */
+					bl_pwm_pinmux_ctrl(bdrv, 0);
+					bl_pwm_en(bconf->bl_pwm_array[i], 0);
+					if (bconf->pwm_off_delay > 0)
+						mdelay(bconf->pwm_off_delay);
+					/* step 2: power off enable */
+					bl_power_en_ctrl(bconf, 0);
+				} else {
+					/* step 1: power off enable */
+					bl_power_en_ctrl(bconf, 0);
+					/* step 2: power off pwm_array */
+					if (bconf->pwm_off_delay > 0)
+						mdelay(bconf->pwm_off_delay);
+					bl_pwm_pinmux_ctrl(bdrv, 0);
+					bl_pwm_en(bconf->bl_pwm_array[i], 0);
+				}
+			}
+			break;
 #ifdef CONFIG_AML_LCD_BL_LDIM
 		case BL_CTRL_LOCAL_DIMMING:
 			if (bdrv->index > 0) {
@@ -815,6 +884,7 @@ static void bl_power_init_off(struct aml_bl_drv_s *bdrv)
 	switch (bconf->method) {
 	case BL_CTRL_PWM:
 	case BL_CTRL_PWM_COMBO:
+	case BL_CTRL_PWM_ARRAY:
 		bl_power_en_ctrl(bconf, 0);
 		bl_pwm_pinmux_ctrl(bdrv, 0);
 		break;

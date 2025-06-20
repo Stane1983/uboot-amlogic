@@ -204,7 +204,7 @@ static int get_tcon_data_bin_by_id(unsigned char **buf, int id)
 {
 	unsigned char *bin_buf;
 	char *path;
-	int offset, bin_size;
+	int offset, bin_size = 0;
 	unsigned int data_size, raw_crc32, temp_crc32;
 
 	if (!buf)
@@ -545,6 +545,10 @@ int lcd_tcon_data_multi_init_check(struct aml_lcd_drv_s *pdrv,
 				bl_pwm = bldrv->config.bl_pwm_combo0;
 			else
 				bl_pwm = bldrv->config.bl_pwm_combo1;
+			break;
+		case BL_CTRL_PWM_ARRAY:
+			if (data < 4)
+				bl_pwm = bldrv->config.bl_pwm_array[data];
 			break;
 		default:
 			break;

@@ -52,6 +52,7 @@ enum bl_ctrl_method_e {
 	BL_CTRL_GPIO = 0,
 	BL_CTRL_PWM,
 	BL_CTRL_PWM_COMBO,
+	BL_CTRL_PWM_ARRAY,
 	BL_CTRL_LOCAL_DIMMING,
 	BL_CTRL_EXTERN,
 	BL_CTRL_MAX,
@@ -325,6 +326,19 @@ struct bl_method_s {
 	unsigned short bl_off_delay;
 };
 
+struct bl_pwm_array_s { // 24 bytes
+	unsigned char pwm_method;
+	unsigned char pwm_port;
+	unsigned int pwm_freq;
+	unsigned int pwm_duty_max;
+	unsigned int pwm_duty_min;
+	unsigned char pwm_gpio;
+	unsigned char pwm_gpio_off;
+
+	unsigned int pwm_level_max;
+	unsigned int pwm_level_min;
+};
+
 struct bl_pwm_s {
 	unsigned short pwm_on_delay;
 	unsigned short pwm_off_delay;
@@ -384,6 +398,7 @@ struct bl_attr_s {
 	struct bl_pwm_s pwm;
 	struct bl_ldim_s ldim;         //v2
 	struct bl_custome_s custome;   //v2
+	struct bl_pwm_array_s pwm_array[4]; //v2, for BL_CTRL_PWM_ARRAY
 };
 
 #define CC_LDIM_DEV_NAME_LEN_MAX        (30)
