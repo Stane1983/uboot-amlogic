@@ -164,6 +164,8 @@ void lcd_mute_set(struct aml_lcd_drv_s *pdrv,  unsigned char flag)
 		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 			LCDPR("[%d]: %s, vpp mute\n", pdrv->index, __func__);
 	}
+	pdrv->boot_ctrl.mute_flag = flag ?  1 : 0;
+	lcd_update_ctrl_bootargs(pdrv);
 }
 
 void lcd_venc_reg_print(struct aml_lcd_drv_s *pdrv)

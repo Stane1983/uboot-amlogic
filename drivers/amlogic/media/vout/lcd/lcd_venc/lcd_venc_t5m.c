@@ -483,7 +483,9 @@ static void lcd_venc_save_bootctrl_to_reg(struct aml_lcd_drv_s *pdrv)
 	unsigned int offset = pdrv->data->offset_venc[pdrv->index];
 
 	val = (pdrv->boot_ctrl.init_level & 0xf) | (!!(pdrv->status & LCD_STATUS_IF_ON) << 4)
-		| ((pdrv->boot_ctrl.dccd_flag & 0x1) << 5) | (0xa << 9);
+		| ((pdrv->boot_ctrl.dccd_flag & 0x1) << 5)
+		| ((pdrv->boot_ctrl.mute_flag & 0x1) << 6)
+		| (0xa << 9);
 	lcd_vcbus_write(L_STH1_HS_ADDR + offset, val);
 
 	val = pdrv->boot_ctrl.frame_rate & 0x1fff;
