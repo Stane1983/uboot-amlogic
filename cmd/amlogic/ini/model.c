@@ -108,7 +108,6 @@ int check_param_valid(int mode, int parse_len, unsigned char parse_buf[],
 		//ALOGD("%s, start check parse data valid\n", __func__);
 		if (check_hex_data_have_header_valid(&parse_cal_crc32, CC_MAX_DATA_SIZE, parse_len, parse_buf) < 0)
 			return CC_PARAM_CHECK_ERROR_NOT_NEED_UPDATE_PARAM;
-
 		// start check flash key data valid
 		//ALOGD("%s, start check flash key data valid\n", __func__);
 		if (check_hex_data_have_header_valid(&ori_cal_crc32, CC_MAX_DATA_SIZE, ori_len, ori_buf) < 0)
@@ -1442,8 +1441,8 @@ static int handle_bl_method(struct bl_attr_s *p_attr)
 		p_attr->method.bl_method = BL_CTRL_PWM;
 	else if (strcmp(ini_value, "BL_CTRL_PWM_COMBO") == 0)
 		p_attr->method.bl_method = BL_CTRL_PWM_COMBO;
-	else if (strcmp(ini_value, "BL_CTRL_LOCAL_DIMING") == 0)
-		p_attr->method.bl_method = BL_CTRL_LOCAL_DIMMING;
+	else if (strcmp(ini_value, "BL_CTRL_PWM_ARRAY") == 0)
+		p_attr->method.bl_method = BL_CTRL_PWM_ARRAY;
 	else if (strcmp(ini_value, "BL_CTRL_LOCAL_DIMMING") == 0)
 		p_attr->method.bl_method = BL_CTRL_LOCAL_DIMMING;
 	else if (strcmp(ini_value, "BL_CTRL_EXTERN") == 0)
@@ -1682,16 +1681,6 @@ static int handle_bl_ldim(struct bl_attr_s *p_attr)
 		ALOGD("%s, bl_ldim_dev_index is (%s)\n", __func__, ini_value);
 	p_attr->ldim.ldim_dev_index = strtoul(ini_value, NULL, 0);
 
-	ini_value = IniGetString("Backlight_Attr", "on_delay", "0");
-	if (model_debug_flag & DEBUG_BACKLIGHT)
-		ALOGD("%s, on_delay is (%s)\n", __func__, ini_value);
-	p_attr->ldim.hw_on_delay = strtoul(ini_value, NULL, 0);
-
-	ini_value = IniGetString("Backlight_Attr", "off_delay", "0");
-	if (model_debug_flag & DEBUG_BACKLIGHT)
-		ALOGD("%s, off_delay is (%s)\n", __func__, ini_value);
-	p_attr->ldim.hw_off_delay = strtoul(ini_value, NULL, 0);
-
 	p_attr->ldim.ldim_attr_4 = 0;
 	p_attr->ldim.ldim_attr_5 = 0;
 	p_attr->ldim.ldim_attr_6 = 0;
@@ -1734,6 +1723,74 @@ static int handle_bl_custome(struct bl_attr_s *p_attr)
 	return 0;
 }
 
+static int handle_bl_pwm_array(struct bl_attr_s *p_attr)
+{
+	const char *ini_value = NULL;
+	char key_name[64];
+	int i;
+
+	if (p_attr->method.bl_method == BL_CTRL_PWM_ARRAY) {
+		for (i = 0; i < 4; i++) {
+			snprintf(key_name, sizeof(key_name), "pwm_array%d_method", i);
+			ini_value = IniGetString("Backlight_Attr", key_name, "BL_PWM_POSITIVE");
+			if (model_debug_flag & DEBUG_BACKLIGHT)
+				ALOGD("%s, %s is (%s)\n", __func__, key_name, ini_value);
+			p_attr->pwm_array[i].pwm_method =
+				get_pwm_method(ini_value, BL_PWM_POSITIVE);
+
+			snprintf(key_name, sizeof(key_name), "pwm_array%d_port", i);
+			ini_value = IniGetString("Backlight_Attr", key_name, "null");
+			if (model_debug_flag & DEBUG_BACKLIGHT)
+				ALOGD("%s, %s is (%s)\n", __func__, key_name, ini_value);
+			p_attr->pwm_array[i].pwm_port = get_pwm_port_index(ini_value);
+
+			snprintf(key_name, sizeof(key_name), "pwm_array%d_freq", i);
+			ini_value = IniGetString("Backlight_Attr", key_name, "0");
+			if (model_debug_flag & DEBUG_BACKLIGHT)
+				ALOGD("%s, %s is (%s)\n", __func__, key_name, ini_value);
+			p_attr->pwm_array[i].pwm_freq = strtoul(ini_value, NULL, 0);
+
+			snprintf(key_name, sizeof(key_name), "pwm_array%d_duty_max", i);
+			ini_value = IniGetString("Backlight_Attr", key_name, "0");
+			if (model_debug_flag & DEBUG_BACKLIGHT)
+				ALOGD("%s, %s is (%s)\n", __func__, key_name, ini_value);
+			p_attr->pwm_array[i].pwm_duty_max = strtoul(ini_value, NULL, 0);
+
+			snprintf(key_name, sizeof(key_name), "pwm_array%d_duty_min", i);
+			ini_value = IniGetString("Backlight_Attr", key_name, "0");
+			if (model_debug_flag & DEBUG_BACKLIGHT)
+				ALOGD("%s, %s is (%s)\n", __func__, key_name, ini_value);
+			p_attr->pwm_array[i].pwm_duty_min = strtoul(ini_value, NULL, 0);
+
+			snprintf(key_name, sizeof(key_name), "pwm_array%d_gpio", i);
+			ini_value = IniGetString("Backlight_Attr", key_name, "0");
+			if (model_debug_flag & DEBUG_BACKLIGHT)
+				ALOGD("%s, %s is (%s)\n", __func__, key_name, ini_value);
+			p_attr->pwm_array[i].pwm_gpio = strtoul(ini_value, NULL, 0);
+
+			snprintf(key_name, sizeof(key_name), "pwm_array%d_gpio_off", i);
+			ini_value = IniGetString("Backlight_Attr", key_name, "0");
+			if (model_debug_flag & DEBUG_BACKLIGHT)
+				ALOGD("%s, %s is (%s)\n", __func__, key_name, ini_value);
+			p_attr->pwm_array[i].pwm_gpio_off = strtoul(ini_value, NULL, 0);
+
+			snprintf(key_name, sizeof(key_name), "pwm_array%d_level_max", i);
+			ini_value = IniGetString("Backlight_Attr", key_name, "0");
+			if (model_debug_flag & DEBUG_BACKLIGHT)
+				ALOGD("%s, %s is (%s)\n", __func__, key_name, ini_value);
+			p_attr->pwm_array[i].pwm_level_max = strtoul(ini_value, NULL, 0);
+
+			snprintf(key_name, sizeof(key_name), "pwm_array%d_level_min", i);
+			ini_value = IniGetString("Backlight_Attr", key_name, "0");
+			if (model_debug_flag & DEBUG_BACKLIGHT)
+				ALOGD("%s, %s is (%s)\n", __func__, key_name, ini_value);
+			p_attr->pwm_array[i].pwm_level_min = strtoul(ini_value, NULL, 0);
+		}
+	}
+
+	return 0;
+}
+
 static int handle_bl_header(struct bl_attr_s *p_attr)
 {
 	const char *ini_value = NULL;
@@ -1755,6 +1812,7 @@ static int handle_bl_header(struct bl_attr_s *p_attr)
 	if (p_attr->head.version == 2) {
 		gbl_dcnt += sizeof(struct bl_ldim_s);
 		gbl_dcnt += sizeof(struct bl_custome_s);
+		gbl_dcnt += sizeof(struct bl_pwm_array_s) * 4;
 	}
 	p_attr->head.data_len = gbl_dcnt;
 
@@ -2999,6 +3057,7 @@ static int parse_panel_ini(const char *file_name, unsigned char *lcd_buf,
 	handle_bl_pwm(bl_attr);
 	handle_bl_ldim(bl_attr);
 	handle_bl_custome(bl_attr);
+	handle_bl_pwm_array(bl_attr);
 	handle_bl_header(bl_attr);
 
 #ifdef CONFIG_AML_LCD_BL_LDIM
