@@ -112,9 +112,6 @@ void board_init_mem(void) {
 int board_init(void)
 {
 	printf("board init\n");
-#ifdef CONFIG_ZAPPER_IRDETO_BOOT
-	run_command("zapper_board_init_led_set", 0);
-#endif
 
 #ifdef CONFIG_AML_HDMITX21
 		hdmitx21_chip_type_init(MESON_CPU_ID_S1A);
@@ -146,14 +143,8 @@ int board_init(void)
 int board_late_init(void)
 {
 	printf("board late init\n");
-#ifdef CONFIG_ZAPPER_IRDETO_BOOT
-	run_command("zapper_led_init_led_set", 0);
-#endif
 	env_set("defenv_para", "-c");
 #ifdef CONFIG_PXP_EMULATOR
-#ifdef CONFIG_ZAPPER_IRDETO_BOOT
-	run_command("zapper_board_late_init_led_set", 0);
-#endif
 	return 0;
 #else
 	get_stick_reboot_flag_mbx();
@@ -209,9 +200,6 @@ int board_late_init(void)
 	//run_command("amlsecurecheck", 0);
 	run_command("update_tries", 0);
 	run_command("get_cpuid", 0);
-#ifdef CONFIG_ZAPPER_IRDETO_BOOT
-	run_command("zapper_board_late_init_led_set", 0);
-#endif
 	return 0;
 #endif
 }

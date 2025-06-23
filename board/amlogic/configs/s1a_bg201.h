@@ -58,53 +58,6 @@
 
 /* args/envs */
 //#define CONFIG_SYS_MAXARGS  64
-#ifdef CONFIG_ZAPPER_IRDETO_BOOT
-#define CONFIG_EXTRA_ENV_SETTINGS \
-	"scramble_reg=0xfe02e030\0"\
-	"uart_base=0xfe07a000\0"\
-	"silent=1\0"\
-	"usb_burning=" CONFIG_USB_TOOL_ENTRY "\0"\
-	"board=bg201\0"\
-	"otg_device=0\0" \
-	"boot_part=boot\0"\
-	"connector0_type=HDMI-A-A\0" \
-	"recovery_part=recovery\0"\
-	"outputmode=1080p60hz\0" \
-	"hdmimode=none\0" \
-	"colorattribute=444,8bit\0"\
-	"cvbsmode=576cvbs\0" \
-	"vout_init=enable\0" \
-		"display_width=1920\0" \
-		"display_height=1080\0" \
-		"display_bpp=16\0" \
-		"display_color_index=16\0" \
-		"display_layer=osd0\0" \
-		"display_color_fg=0xffff\0" \
-		"display_color_bg=0\0" \
-		"fb_width=1280\0" \
-		"fb_height=720\0" \
-		"hdmichecksum=0x00000000\0" \
-		"frac_rate_policy=1\0" \
-		"hdr_policy=0\0" \
-		"cvbs_drv=0\0"\
-		"osd_reverse=0\0"\
-		"video_reverse=0\0"\
-	"scramble_reg=0xfe02e030\0"\
-		"upgrade_key="\
-		"gpio set GPIOZ_6;"\
-		"if gpio input GPIOD_2; then "\
-			"echo detect upgrade key;"\
-			"if test ${boot_flag} = 0; then "\
-				"echo enter fastboot; setenv boot_flag 1; saveenv; fastboot 0;"\
-			"else if test ${boot_flag} = 1; then "\
-				"echo enter update; setenv boot_flag 2; saveenv; run update;"\
-			"else "\
-				"echo enter recovery; setenv boot_flag 0; saveenv; run recovery_from_flash;"\
-			"fi;fi;"\
-		"fi;"\
-		"\0"\
-
-#else
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"scramble_reg=0xfe02e030\0"\
 	"uart_base=0xfe07a000\0"\
@@ -149,8 +102,6 @@
 			"fi;fi;"\
 		"fi;"\
 		"\0"\
-
-#endif
 
 #ifndef CONFIG_PXP_EMULATOR
 #define CONFIG_PREBOOT  \

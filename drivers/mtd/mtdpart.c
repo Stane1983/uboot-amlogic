@@ -38,11 +38,6 @@
 #include <amlogic/storage.h>
 #endif
 
-#ifdef CONFIG_ZAPPER_IRDETO_BOOT
-#include <amlogic/zapper_boot.h>
-#endif
-
-
 #ifndef __UBOOT__
 static DEFINE_MUTEX(mtd_partitions_mutex);
 #else
@@ -704,30 +699,6 @@ static struct mtd_info *allocate_partition(struct mtd_info *master,
 
 	debug("0x%012llx-0x%012llx : \"%s\"\n", (unsigned long long)slave->offset,
 		(unsigned long long)(slave->offset + slave->size), slave->name);
-#ifdef CONFIG_ZAPPER_IRDETO_BOOT
-	if (strstr(slave->name, "ldflag") != NULL) {
-		printf("[ZAPPER] know ldflag partition begin at %llx\n",slave->offset);
-		printf("[ZAPPER] know ldflag partition end at %llx\n",slave->offset + slave->size);
-		if (Zapper_get_nand_ldflag_partition_address(slave->offset, slave->offset + slave->size))
-			printf("[ZAPPER] fail to know ldflag partition address\n");
-	} else if (strstr(slave->name, "hwconfig") != NULL) { /* BBCB */
-		printf("[ZAPPER] know hwconfig partition begin at %llx\n",slave->offset);
-		printf("[ZAPPER] know hwconfig partition end at %llx\n",slave->offset + slave->size);
-		if (Zapper_get_nand_hwconfig_partition_address(slave->offset, slave->offset + slave->size))
-			printf("[ZAPPER] fail to know hwconfig partition address\n");
-	} else if (strstr(slave->name, "ldsec") != NULL) { /* UK */
-		printf("[ZAPPER] know ldsec partition begin at %llx\n",slave->offset);
-		printf("[ZAPPER] know ldsec partition end at %llx\n",slave->offset + slave->size);
-		if (Zapper_get_nand_ldsec_partition_address(slave->offset, slave->offset + slave->size))
-			printf("[ZAPPER] fail to know ldsec partition address\n");
-	} else if (strstr(slave->name, "boot") != NULL) {
-		printf("[ZAPPER] know boot partition begin at %llx\n",slave->offset);
-		printf("[ZAPPER] know boot partition end at %llx\n",slave->offset + slave->size);
-		if (Zapper_get_nand_kernel_partition_address(slave->offset, slave->offset + slave->size))
-			printf("[ZAPPER] fail to know kernel partition address\n");
-	}
-
-#endif
 	/* let's do some sanity checks */
 	if (slave->offset >= master->size) {
 		/* let's register it anyway to preserve ordering */

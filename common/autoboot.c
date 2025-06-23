@@ -417,20 +417,6 @@ static int abortboot_single_key(int bootdelay)
 	}
 
 	putc('\n');
-#ifdef CONFIG_ZAPPER_IRDETO_BOOT
-	if (!abort) {
-		//run_command("zapper_usb_detect", 0);
-		//run_command("zapper_flash_read", 0);
-		//run_command("zapper_key_detect", 0);
-		run_command("zapper_boot", 0);
-#ifdef SECUREBOOT_ENABLE
-		run_command("zapper_verify", 0);
-#endif
-		run_command("zapper_boot_error_process", 0);
-		run_command("zapper_flash_write", 0);
-		run_command("zapper_jump_recovery", 0);
-	}
-#endif
 
 	return abort;
 }
