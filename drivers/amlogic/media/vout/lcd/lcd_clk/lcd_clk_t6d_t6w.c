@@ -175,17 +175,20 @@ static void lcd_set_pll_t6d_t6w(struct aml_lcd_drv_s *pdrv)
 
 	tcon_div_sel = cconf->pll_tcon_div_sel;
 	pll_ctrl0 = 0x22000 | (cconf->pll_config[0].pll_m << 0);
-	if (cconf->pll_config[0].pll_fvco < 4750000000ULL &&
-			cconf->pll_config[0].pll_fvco > 4250000000ULL)
-		pll_ctrl1 = 0x12301635;
-	else
+	if (cconf->pll_config[0].pll_fvco <= 4750000000ULL &&
+			cconf->pll_config[0].pll_fvco >= 3750000000ULL)
 		pll_ctrl1 = 0x12301535;
-	pll_ctrl3 = 0x280 |
+	else if (cconf->pll_config[0].pll_fvco < 3750000000ULL)
+		pll_ctrl1 = 0x12301335;
+	else
+		pll_ctrl1 = 0x12301435;
+
+	pll_ctrl3 = 0x180 |
 		(cconf->pll_config[0].pll_od1_sel << 10) |
 		(cconf->pll_config[0].pll_od2_sel << 14) |
 		(cconf->pll_config[0].pll_od3_sel << 12) |
-		(tcon_div_sel << 24) |
-		(0x1 << 31);
+		(tcon_div_sel << 24) | /*tcon_div without phase*/
+		(1 << 9); /*tcon_od_en*/
 	if (pconf->basic.lcd_type != LCD_MLVDS) {
 		pll_ctrl3 &= ~(1 << 27);
 	} else {
@@ -214,6 +217,11 @@ static void lcd_set_pll_t6d_t6w(struct aml_lcd_drv_s *pdrv)
 		lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL0, 1, 29, 1);
 		ret = lcd_pll_wait_lock(cconf->pll_config[0].pll_id, ANACTRL_TCON_PLL0_STS, 31);
 	} while (ret && ++cnt < PLL_RETRY_MAX);
+
+	//set phase load sequence
+	lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL3, 0, 31, 1);
+	udelay(10);
+	lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL3, 1, 31, 1);
 
 	if (ret)
 		LCDERR("[%d]: vx1 pll lock failed\n", pdrv->index);
