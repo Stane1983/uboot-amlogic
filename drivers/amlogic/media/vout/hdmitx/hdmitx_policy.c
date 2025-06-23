@@ -1169,11 +1169,17 @@ static int update_dv_displaymode(struct input_hdmi_data *hdmi_data,
 static bool hdmi_sink_disp_mode_sup(struct input_hdmi_data *hdmi_data, const char *disp_mode)
 {
 	enum hdmi_vic vic = HDMI_UNKNOWN;
+	char tmp_mode[MODE_LEN] = {0};
 
 	if (!hdmi_data || !disp_mode)
 		return false;
 
-	vic = hdmitx_edid_vic_tab_map_vic(disp_mode);
+	if (is_mode_name_frac(disp_mode))
+		convert_name_frac2int(disp_mode, tmp_mode);
+	else
+		memcpy(tmp_mode, disp_mode, sizeof(disp_mode));
+
+	vic = hdmitx_edid_vic_tab_map_vic(tmp_mode);
 
 	if (_is_y420_vic(vic)) {
 		if (hdmitx_chk_mode_attr_sup(hdmi_data, disp_mode, "420,8bit"))

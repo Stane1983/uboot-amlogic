@@ -1274,7 +1274,7 @@ static int _do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const 
 		if (is_mode_name_frac(hdmimode))
 			convert_name_frac2int(hdmimode, tmp_sel_hdmimode);
 		else
-			memcpy(tmp_sel_hdmimode, hdmimode, sizeof(hdmimode));
+			memcpy(tmp_sel_hdmimode, hdmimode, sizeof(tmp_sel_hdmimode));
 		para = hdmitx21_get_fmtpara(tmp_sel_hdmimode, colorattribute);
 		if (hdmitx_edid_check_valid_mode(hdev, para)) {
 			mode_support = true;

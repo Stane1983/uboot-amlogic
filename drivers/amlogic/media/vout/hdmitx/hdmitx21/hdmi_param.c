@@ -122,12 +122,20 @@ static bool _tst_fmt_name(struct hdmi_format_para *para,
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	const struct hdmi_timing *timing = hdmitx21_get_timing_para0();
 	enum hdmi_vic prefer_vic = HDMI_0_UNKNOWN;
+	char tmp_mode[MODE_LEN] = {0};
 
 	if (!para || !name || !attr)
 		return 0;
+
+	if (is_mode_name_frac(name))
+		convert_name_frac2int(name, tmp_mode);
+	else
+		memcpy(tmp_mode, name, sizeof(tmp_mode));
+
 	/* check sname first */
 	for (i = 0; i < hdmitx21_timing_size(); i++) {
-		if (timing->sname && (strncmp(name, timing->sname, strlen(timing->sname)) == 0)) {
+		if (timing->sname && (strncmp(tmp_mode, timing->sname,
+			strlen(timing->sname)) == 0)) {
 			para->timing = *timing;
 			goto next;
 		}
@@ -137,7 +145,7 @@ static bool _tst_fmt_name(struct hdmi_format_para *para,
 	/* check name */
 	timing = hdmitx21_get_timing_para0();
 	for (i = 0; i < hdmitx21_timing_size(); i++) {
-		if (strncmp(name, timing->name, strlen(timing->name)) == 0) {
+		if (strncmp(tmp_mode, timing->name, strlen(timing->name)) == 0) {
 			para->timing = *timing;
 			break;
 		}
