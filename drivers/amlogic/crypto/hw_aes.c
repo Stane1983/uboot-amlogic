@@ -8,8 +8,27 @@
 #include <crypto_internal.h>
 #include <amlogic/aml_crypto.h>
 #include <uboot_aes.h>
+#include <stdlib.h>
 
-//#define AES_TEST_CASE
+#ifdef AES_TEST_CASE
+extern uint32_t aes_dma_time;
+uint32_t total_aes_dma_time;
+
+uint32_t test_size[] = {
+	1024,
+	1024 * 2,
+	1024 * 4,
+	1024 * 8,
+	1024 * 16,
+	1024 * 32,
+	1024 * 64,
+	1024 * 128,
+	1024 * 256,
+	1024 * 512,
+	1024 * 1024,
+};
+const uint32_t test_num = sizeof(test_size) / sizeof(uint32_t);
+#endif
 
 static int32_t aes_ecb_encrypt(void *key, uint32_t keylen,
 		const void *pt, void *ct, size_t size)
@@ -588,6 +607,133 @@ static int aes_test_256CTR(void)
 	return 0;
 }
 
+static int aes_test_HW_perf(void)
+{
+	uint32_t i = 0;
+	uint8_t *buf = NULL;
+
+	printf("AES 128 ECB ENC Perf:\n");
+	printf("SIZE        |DMA TIME             |TOTAL TIME\n");
+	printf("------------|---------------------|---------------------\n");
+	for (i = 0; i < test_num; i++) {
+		buf = malloc(test_size[i]);
+		if (!buf) {
+			printf("test size %d malloc failed\n", test_size[i]);
+			return 1;
+		}
+		total_aes_dma_time = get_time();
+		aes_ecb_encrypt(aes128ecb_key, sizeof(aes128ecb_key), buf,
+				buf, test_size[i]);
+		total_aes_dma_time = get_time() - total_aes_dma_time;
+		free(buf);
+		printf("%-10dKB|%-17dMB/s|%-17dMB/s\n", test_size[i] / 1024,
+		       (test_size[i] / aes_dma_time) * 95 / 100,
+		       (test_size[i] / total_aes_dma_time) * 95 / 100);
+	}
+
+	printf("AES 128 CBC ENC Perf:\n");
+	printf("SIZE        |DMA TIME             |TOTAL TIME\n");
+	printf("------------|---------------------|---------------------\n");
+	for (i = 0; i < test_num; i++) {
+		buf = malloc(test_size[i]);
+		if (!buf) {
+			printf("test size %d malloc failed\n", test_size[i]);
+			return 1;
+		}
+		total_aes_dma_time = get_time();
+		aes_cbc_encrypt(aes128cbc_key, sizeof(aes128cbc_key), aes128cbc_iv,
+				buf,
+				buf, test_size[i]);
+		total_aes_dma_time = get_time() - total_aes_dma_time;
+		free(buf);
+		printf("%-10dKB|%-17dMB/s|%-17dMB/s\n", test_size[i] / 1024,
+		       (test_size[i] / aes_dma_time) * 95 / 100,
+		       (test_size[i] / total_aes_dma_time) * 95 / 100);
+	}
+
+	printf("AES 128 CTR ENC Perf:\n");
+	printf("SIZE        |DMA TIME             |TOTAL TIME\n");
+	printf("------------|---------------------|---------------------\n");
+	for (i = 0; i < test_num; i++) {
+		buf = malloc(test_size[i]);
+		if (!buf) {
+			printf("test size %d malloc failed\n", test_size[i]);
+			return 1;
+		}
+		total_aes_dma_time = get_time();
+		aes_ctr_encrypt(aes128ctr_key, sizeof(aes128ctr_key), aes128ctr_iv,
+				buf,
+				buf, test_size[i]);
+		total_aes_dma_time = get_time() - total_aes_dma_time;
+		free(buf);
+		printf("%-10dKB|%-17dMB/s|%-17dMB/s\n", test_size[i] / 1024,
+		       (test_size[i] / aes_dma_time) * 95 / 100,
+		       (test_size[i] / total_aes_dma_time) * 95 / 100);
+	}
+
+	printf("AES 256 ECB ENC Perf:\n");
+	printf("SIZE        |DMA TIME             |TOTAL TIME\n");
+	printf("------------|---------------------|---------------------\n");
+	for (i = 0; i < test_num; i++) {
+		buf = malloc(test_size[i]);
+		if (!buf) {
+			printf("test size %d malloc failed\n", test_size[i]);
+			return 1;
+		}
+		total_aes_dma_time = get_time();
+		aes_ecb_encrypt(aes256ecb_key, sizeof(aes256ecb_key), buf,
+				buf, test_size[i]);
+		total_aes_dma_time = get_time() - total_aes_dma_time;
+		free(buf);
+		printf("%-10dKB|%-17dMB/s|%-17dMB/s\n", test_size[i] / 1024,
+		       (test_size[i] / aes_dma_time) * 95 / 100,
+		       (test_size[i] / total_aes_dma_time) * 95 / 100);
+	}
+
+	printf("AES 256 CBC ENC Perf:\n");
+	printf("SIZE        |DMA TIME             |TOTAL TIME\n");
+	printf("------------|---------------------|---------------------\n");
+	for (i = 0; i < test_num; i++) {
+		buf = malloc(test_size[i]);
+		if (!buf) {
+			printf("test size %d malloc failed\n", test_size[i]);
+			return 1;
+		}
+		total_aes_dma_time = get_time();
+		aes_cbc_encrypt(aes256cbc_key, sizeof(aes256cbc_key), aes256cbc_iv,
+				buf,
+				buf, test_size[i]);
+		total_aes_dma_time = get_time() - total_aes_dma_time;
+		free(buf);
+		/* 1000000 / 1024 * 1024 ~= 0.95 */
+		printf("%-10dKB|%-17dMB/s|%-17dMB/s\n", test_size[i] / 1024,
+		       (test_size[i] / aes_dma_time) * 95 / 100,
+		       (test_size[i] / total_aes_dma_time) * 95 / 100);
+	}
+
+	printf("AES 256 CTR ENC Perf:\n");
+	printf("SIZE        |DMA TIME             |TOTAL TIME\n");
+	printf("------------|---------------------|---------------------\n");
+	for (i = 0; i < test_num; i++) {
+		buf = malloc(test_size[i]);
+		if (!buf) {
+			printf("test size %d malloc failed\n", test_size[i]);
+			return 1;
+		}
+		total_aes_dma_time = get_time();
+		aes_ctr_encrypt(aes256ctr_key, sizeof(aes256ctr_key), aes256ctr_iv,
+				buf,
+				buf, test_size[i]);
+		total_aes_dma_time = get_time() - total_aes_dma_time;
+		free(buf);
+		printf("%-10dKB|%-17dMB/s|%-17dMB/s\n", test_size[i] / 1024,
+		       (test_size[i] / aes_dma_time) * 95 / 100,
+		       (test_size[i] / total_aes_dma_time) * 95 / 100);
+	}
+
+	return 0;
+}
+
 static int do_aes_test(uint32_t test_case)
 {
 	switch (test_case) {
@@ -619,6 +765,8 @@ static int do_aes_test(uint32_t test_case)
 		aes_test_256CBC_SW();
 		return 0;
 #endif
+	case 8:
+		return aes_test_HW_perf();
 	default:
 		printf("Unknown test case\n");
 		return 0;

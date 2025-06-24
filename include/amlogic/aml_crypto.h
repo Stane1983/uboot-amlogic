@@ -8,6 +8,8 @@
 
 #include <u-boot/sha256.h>
 
+//#define AES_TEST_CASE
+
 #define CRYPTO_ERROR_NO_ERROR       (0)
 #define CRYPTO_ERROR_BAD_PARAMETERS (-1)
 #define CRYPTO_ERROR_BAD_PROCESS    (-2)

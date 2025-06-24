@@ -20,6 +20,7 @@
 
 /* lock for crypto T0 if needed in the future */
 DEFINE_MUTEX(&crypto_lock);
+uint32_t aes_dma_time;
 
 s8 hw_dma_inited;
 
@@ -154,8 +155,14 @@ static int32_t cipher_core(void *key, uint32_t keylen, uint8_t *iv, uint32_t ivl
 #else
 	*P_DMA_T0 = (uintptr_t)dsc | 2;
 #endif
+#ifdef AES_TEST_CASE
+	aes_dma_time = get_time();
+#endif
 	while (*P_DMA_STS0 == 0)
 		;
+#ifdef AES_TEST_CASE
+	aes_dma_time = get_time() - aes_dma_time;
+#endif
 
 	if (*P_DMA_STS0 & 0x2)
 		ret = CRYPTO_ERROR_BAD_PROCESS;
