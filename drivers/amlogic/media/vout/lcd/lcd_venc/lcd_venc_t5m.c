@@ -334,9 +334,10 @@ static void lcd_venc_set(struct aml_lcd_drv_s *pdrv)
 	lcd_vcbus_write(ENCL_VIDEO_MODE + offset, 0x8000); /* bit[15] shadown en */
 	lcd_vcbus_write(ENCL_VIDEO_MODE_ADV + offset, 0x0418); /* Sampling rate: 1 */
 	lcd_vcbus_write(ENCL_VIDEO_FILT_CTRL + offset, 0x1000); /* bypass filter */
-	if (pdrv->data->chip_type >= LCD_CHIP_T6D)
+	if (pdrv->data->chip_type >= LCD_CHIP_T6D) {
 		lcd_vcbus_setb(ENCL_TST_EN + offset, 3, 1, 2); /*vsync latch enable*/
-
+		lcd_vcbus_setb(ENCL_VIDEO_MODE_ADV + offset, 1, 8, 1); /*vfifo_en latch enable*/
+	}
 	lcd_venc_set_timing(pdrv);
 
 	lcd_vcbus_write(ENCL_VIDEO_RGBIN_CTRL + offset, 3);
