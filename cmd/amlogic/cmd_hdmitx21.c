@@ -10,6 +10,7 @@
 #include <asm/byteorder.h>
 #include <amlogic/clk_measure.h>
 #include <amlogic/media/vout/hdmitx21/hdmitx.h>
+#include <amlogic/media/vout/hdmitx_common.h>
 #include <linux/delay.h>
 #include <image.h>
 #include <amlogic/media/dv/dolby_vision.h>

@@ -817,20 +817,6 @@ struct hdmi_format_para {
 	/*hw related information end*/
 };
 
-#define AUDIO_PARA_MAX_NUM       14
-struct hdmi_audio_fs_ncts {
-	struct {
-		u32 tmds_clk;
-		u32 n; /* 24 or 30 bit */
-		u32 cts; /* 24 or 30 bit */
-		u32 n_36bit;
-		u32 cts_36bit;
-		u32 n_48bit;
-		u32 cts_48bit;
-	} array[AUDIO_PARA_MAX_NUM];
-	u32 def_n;
-};
-
 struct hdmi_support_mode {
 	enum hdmi_vic vic;
 	char *sname;

@@ -8,6 +8,7 @@
 #include <linux/delay.h>
 #include <amlogic/media/vout/aml_vout.h>
 #include <amlogic/media/vout/hdmitx21/hdmitx.h>
+#include <amlogic/media/vout/hdmitx_common.h>
 #include <amlogic/auge_sound.h>
 #include <linux/arm-smccc.h>
 #include "hdmitx_drv.h"
@@ -1824,25 +1825,49 @@ bool is_hdmi_mode(char *mode)
 	return ret;
 }
 
+static void set_aud_acr_pkt(struct hdmitx_dev *hdev)
+{
+	u32 aud_n_para = 0;
+	u32 char_rate = 0;
+	struct hdmi_format_para *para = NULL;
+	int cd = 4;
+
+	if (!hdev)
+		return;
+	para = hdev->para;
+	if (!para)
+		return;
+
+	/* if current mode is 59.94hz not 60hz, char_rate will shift down 0.1% */
+	char_rate = para->timing.pixel_freq;
+	if (hdmitx_check_frac_rate(hdev) == 1)
+		char_rate = char_rate - char_rate / 1001;
+	if (para->cs == HDMI_COLORSPACE_YUV422)
+		cd = 4;
+	else
+		cd = para->cd;
+	if (para->cs == HDMI_COLORSPACE_YUV420)
+		char_rate = char_rate / 2;
+	aud_n_para = hdmitx_hw_get_audio_n_paras(FS_48K,
+						 cd, char_rate);
+
+	if (hdev->para->frl_rate)
+		aud_n_para = hdmi21_get_frl_aud_n_paras(FS_48K, hdev->para->frl_rate);
+	hdmitx21_set_reg_bits(ACR_CTS_CLK_DIV_IVCTX, hdev->para->frl_rate ? 1 : 0, 4, 1);
+
+	pr_info("audio: aud_n_para = %d\n", aud_n_para);
+	hdmitx21_wr_reg(N_SVAL1_IVCTX, (aud_n_para >> 0) & 0xff); //N_SVAL1
+	hdmitx21_wr_reg(N_SVAL2_IVCTX, (aud_n_para >> 8) & 0xff); //N_SVAL2
+	hdmitx21_wr_reg(N_SVAL3_IVCTX, (aud_n_para >> 16) & 0xff); //N_SVAL3
+}
+
+/* in uboot, the audio is fixed as 48k, 2ch, PCM */
 static int hdmitx_set_audmode(struct hdmitx_dev *hdev)
 {
 	u32 data32;
-	struct hdmi_format_para *para = hdev->para;
-	u32 aud_n = 6144; // ACR N
-	static const u32 frl_aud_n[] = {0, 5760, 6048, 6048, 6048, 5184, 4752};
-	/* 0=I2S 2-channel; 1=I2S 4 x 2-channel; 2=channel 0/1, 4/5 valid. */
-	/* 2=audio sample packet; 7=one bit audio; 8=DST audio packet; 9=HBR audio packet. */
-	u8 audio_packet_type = 2;
-	u8 vic = 16; // Video format identification code
 
-	vic = para->timing.vic;
-	if (vic)
-		audio_packet_type = 2;
-	else
-		audio_packet_type = 9;
 	hdmitx21_set_reg_bits(AIP_RST_IVCTX, 1, 0, 1);
 	hdmitx21_set_audioclk(1);
-	/* me common register config,why config this value ?? TODO*/
 	hdmitx21_wr_reg(AIP_HDMI2MHL_IVCTX, 0x00); //AIP
 	hdmitx21_wr_reg(PKT_FILTER_0_IVCTX, 0x02); //PKT FILTER
 	hdmitx21_wr_reg(ASRC_IVCTX, 0x00); //ASRC
@@ -1853,13 +1878,8 @@ static int hdmitx_set_audmode(struct hdmitx_dev *hdev)
 	hdmitx21_wr_reg(AUDP_TXCTRL_IVCTX, data32 & 0xff);
 	/* R_CTRL  bit[3]:reg_no_mclk_ctsgen_sel_pclk. bit[0]: make hw_cts_hw_sw_sel = 0 */
 	hdmitx21_wr_reg(ACR_CTRL_IVCTX, 0x02);
-	hdmitx21_set_reg_bits(ACR_CTS_CLK_DIV_IVCTX, para->frl_rate ? 1 : 0, 4, 1);
-	/* in uboot, the audio is fixed as 48k, 2ch, PCM */
-	if (para->frl_rate && para->frl_rate < FRL_RATE_MAX)
-		aud_n = frl_aud_n[para->frl_rate];
-	hdmitx21_wr_reg(N_SVAL1_IVCTX, (aud_n >> 0) & 0xff); //N_SVAL1
-	hdmitx21_wr_reg(N_SVAL2_IVCTX, (aud_n >> 8) & 0xff); //N_SVAL2
-	hdmitx21_wr_reg(N_SVAL3_IVCTX, (aud_n >> 16) & 0xff); //N_SVAL3
+
+	set_aud_acr_pkt(hdev);
 
 	/* FREQ 00:mclk=128*Fs;01:mclk=256*Fs;10:mclk=384*Fs;11:mclk=512*Fs;...*/
 	hdmitx21_wr_reg(FREQ_SVAL_IVCTX, 0);
@@ -1896,7 +1916,7 @@ static int hdmitx_set_audmode(struct hdmitx_dev *hdev)
 	data32 = 0;
 	data32 |= (0 << 4);
 	data32 |= (0 << 3);
-	data32 |= ((audio_packet_type == HDMI_AUDIO_PACKET_HBR) << 2);
+	data32 |= (0 << 2);
 	data32 |= (0 << 1);
 	data32 |= (0 << 0);
 	hdmitx21_wr_reg(AUD_MODE_IVCTX, 0x2);  /* AUD_MOD */
