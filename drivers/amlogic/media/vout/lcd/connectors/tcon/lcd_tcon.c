@@ -2024,11 +2024,11 @@ static struct lcd_tcon_config_s tcon_data_txhd2 = {
 	.axi_mem_cfg_tbl = axi_mem_cfg_tbl_txhd2,
 	.lut_dma_ops = NULL,
 
-	.tcon_init_table_pre_proc = lcd_tcon_init_table_pre_proc,
+	.tcon_init_table_pre_proc = lcd_tcon_init_table_pre_proc_txhd2,
 	.tcon_global_reset = lcd_tcon_global_reset_t5,
 	.tcon_top_init = lcd_tcon_top_set_t5,
 	.tcon_enable = lcd_tcon_enable_txhd2,
-	.tcon_disable = lcd_tcon_disable_t5,
+	.tcon_disable = lcd_tcon_disable_txhd2,
 	.tcon_forbidden_check = lcd_tcon_forbidden_check_fhd,
 	.tcon_check = lcd_tcon_setting_check_txhd2,
 };
