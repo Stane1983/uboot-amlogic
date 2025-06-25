@@ -241,6 +241,38 @@ void lcd_tcon_init_table_pre_proc(unsigned char *table)
 	}
 }
 
+void lcd_tcon_init_table_pre_proc_t6d(unsigned char *table)
+{
+	struct tcon_rmem_s *tcon_rmem = get_lcd_tcon_rmem();
+	unsigned int reg = 0, paddr, i;
+	unsigned int *table32;
+
+	if (!table || !tcon_rmem)
+		return;
+	table32 = (unsigned int *)table;
+
+	//pre_proc_clk disable
+	table32[0x207] &= ~(1 << 4);
+
+	//od ddrif disable
+	table32[0x263] &= ~(1 << 31);
+	//demura ddrif disable
+	table32[0x198] &= ~(1 << 31);
+
+	//update axi paddr
+	if (tcon_rmem->flag == 0 || !tcon_rmem->axi_rmem || !tcon_rmem->axi_reg) {
+		LCDPR("%s: invalid axi_rmem\n", __func__);
+		return;
+	}
+	for (i = 0; i < tcon_rmem->axi_bank; i++) {
+		reg = tcon_rmem->axi_reg[i];
+		paddr = tcon_rmem->axi_rmem[i].mem_paddr;
+		table32[reg] = paddr;
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDPR("%s: axi[%d] reg: 0x%08x, paddr: 0x%08x\n", __func__, i, reg, paddr);
+	}
+}
+
 static void lcd_tcon_core_reg_set(struct aml_lcd_drv_s *pdrv,
 				  struct lcd_tcon_config_s *tcon_conf,
 				  struct tcon_mem_map_table_s *mm_table,
@@ -1044,6 +1076,10 @@ int lcd_tcon_enable_txhd2(struct aml_lcd_drv_s *pdrv)
 int lcd_tcon_disable_t5m(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_tcon_config_s *tcon_conf = get_lcd_tcon_config();
+
+	if (tcon_conf && tcon_conf->lut_dma_ops && tcon_conf->lut_dma_ops->deinit)
+		tcon_conf->lut_dma_ops->deinit(pdrv, tcon_conf->lut_dma_ops);
+
 	/* disable unit(reg_func_enable) timing signal */
 	lcd_tcon_write(0x30e, 0);
 
@@ -1052,8 +1088,32 @@ int lcd_tcon_disable_t5m(struct aml_lcd_drv_s *pdrv)
 	/* disable demura ddr_if */
 	lcd_tcon_setb(0x1a3, 0, 31, 1);
 	mdelay(100);
+
+	/* top reset */
+	lcd_tcon_write(TCON_RST_CTRL, 0x003f);
+
+	//move to tcon_disable api for common flow
+	//lcd_tcon_global_reset_t5(pdrv);
+
+	return 0;
+}
+
+int lcd_tcon_disable_t6d(struct aml_lcd_drv_s *pdrv)
+{
+	struct lcd_tcon_config_s *tcon_conf = get_lcd_tcon_config();
+
 	if (tcon_conf && tcon_conf->lut_dma_ops && tcon_conf->lut_dma_ops->deinit)
 		tcon_conf->lut_dma_ops->deinit(pdrv, tcon_conf->lut_dma_ops);
+
+	/* disable unit(reg_func_enable) timing signal */
+	lcd_tcon_write(0x30e, 0);
+
+	/* disable od ddr_if */
+	lcd_tcon_setb(0x263, 0, 31, 1);
+	/* disable demura ddr_if */
+	lcd_tcon_setb(0x198, 0, 31, 1);
+	mdelay(100);
+
 	/* top reset */
 	lcd_tcon_write(TCON_RST_CTRL, 0x003f);
 
