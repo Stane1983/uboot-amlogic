@@ -641,21 +641,21 @@ static void dsi_panel_init(struct aml_lcd_drv_s *pdrv)
 
 	if (dconf->extern_init == LCD_EXTERN_INDEX_INVALID) {
 		LCDPR("[%d]: %s extern [%d] invalid\n", pdrv->index, __func__, dconf->extern_init);
-		return;
+		goto dsi_panel_init_main;
 	}
 	edrv = lcd_extern_get_driver(pdrv->index);
 	edev = lcd_extern_get_dev(edrv, dconf->extern_init);
 	if (!edrv || !edev) {
 		LCDPR("[%d]: no lcd_extern dev\n", pdrv->index);
-		return;
+		goto dsi_panel_init_main;
 	}
 	// remove support on dsi cmd on extern driver
 	if (edev->config.table_init_on && edev->power_on) {
 		edev->power_on(edrv, edev);
 		LCDPR("[%d]: [extern]%s dsi init on\n", pdrv->index, edev->config.name);
 	}
+dsi_panel_init_main:
 #endif
-
 	if (dconf->dsi_init_on) {
 		dsi_exec_init_table(pdrv, dconf->dsi_init_on, DSI_INIT_ON_MAX, NULL, 0);
 		LCDPR("[%d]: %s table\n", pdrv->index, __func__);
