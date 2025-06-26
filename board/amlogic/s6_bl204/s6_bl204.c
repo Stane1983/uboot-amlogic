@@ -378,6 +378,8 @@ const struct mtd_partition *get_spinand_partition_table(int *partitions)
 int checkhw(char *name)
 {
 	char dtb_name[64] = { 0 };
+	ulong board_id = 0;
+	board_id = ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xff00) >> 8);
 //	ulong ddr_size = (readl(SYSCTRL_SEC_STATUS_REG4) & ~0xfffffUL) << 4;
 
 //	switch (ddr_size) {
@@ -394,8 +396,11 @@ int checkhw(char *name)
 //			strcpy(dtb_name, "s6_s905x5_bl201-2g\0");
 //			break;
 //	}
-
-	strcpy(dtb_name, "s6_s905x5_bl204-2g\0");
+	if (board_id == 12) {
+		strcpy(dtb_name, "s6_s905x5_bl204h1-2g\0");
+	} else {
+		strcpy(dtb_name, "s6_s905x5_bl204-2g\0");
+	}
 	strcpy(name, dtb_name);
 	env_set("aml_dt", dtb_name);
 	return 0;
