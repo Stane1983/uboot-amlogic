@@ -851,7 +851,7 @@ int optimus_burn_with_cfg_file(const char *cfgFile)
 			}
 			setenv("usbDiskNewBoot", "1");
 			setenv("sdcburncfg", cfgFile);
-			setenv("usbDiskUpgrade", "run init_display; usb_burn $sdcburncfg");
+			setenv("usbDiskUpgrade", "run init_display; setenv display_layer osd0; osd clear; usb_burn $sdcburncfg");
 			setenv("preboot", "printenv usbDiskUpgrade; run usbDiskUpgrade");
 			run_command("saveenv", 0);
 			run_command("echo Resetting boot-info;store erase misc 0 0", 0);

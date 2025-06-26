@@ -54,6 +54,8 @@ int do_usb_burn(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	setenv("usb_update", "1");
 	optimus_work_mode_set(OPTIMUS_WORK_MODE_UDISK_PRODUCE);
+	run_command("setenv display_layer osd0", 0);
+	run_command("osd clear", 0);
 	show_logo_to_report_burning();//indicate enter flow of burning! when 'run update'
 	if (optimus_led_open(LED_TYPE_PWM)) {
 		DWN_ERR("Fail to open led for burn\n");
