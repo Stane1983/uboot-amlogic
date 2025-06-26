@@ -1114,6 +1114,33 @@ static int do_SetUpdateTries(
 	if (update_flag == 1)
 		boot_info_save(&boot_ctrl, miscbuf);
 
+	char *insufficient_data = env_get("insufficient_data");
+
+	printf("insufficient_data : %s\n", insufficient_data);
+	if (insufficient_data && !strcmp(insufficient_data, "1") &&
+	    !strcmp(rebootmode, "kernel_panic")) {
+		printf("Insufficient data space, rollback\n");
+		env_set("insufficient_data", "0");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+		run_command("update_env_part -p insufficient_data;", 0);
+#else
+		run_command("saveenv", 0);
+#endif
+
+		if (slot == 0 && bootable_a) {
+			if (boot_ctrl.slot_info[0].successful_boot == 0)
+				boot_ctrl.slot_info[0].tries_remaining = 0;
+		} else if (slot == 1 && bootable_b) {
+			if (boot_ctrl.slot_info[1].successful_boot == 0)
+				boot_ctrl.slot_info[1].tries_remaining = 0;
+		}
+		boot_info_save(&boot_ctrl, miscbuf);
+		if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
+			run_command("reboot quiescent", 0);
+		else
+			run_command("reboot", 0);
+	}
+
 	if (boot_ctrl.merge_flag == SNAPSHOTTED) {
 		printf("merge_flag is SNAPSHOTTED\n");
 		merge_ret = 1;
