@@ -115,6 +115,26 @@ static int bootm_pre_load(struct cmd_tbl *cmdtp, int flag, int argc,
 	return ret;
 }
 
+#if CONFIG_IS_ENABLED(AMLOGIC_MODIFY) && CONFIG_IS_ENABLED(LEGACY_IMAGE_FORMAT)
+static void set_rootfs_dtb_high_addr(void)
+{
+	phys_size_t ddr_size = env_get_bootm_size();
+	const char *high_addr = NULL;
+
+	if (ddr_size <= SZ_128M) {
+		if (env_get("reset_high_addr"))
+			high_addr = env_get("reset_high_addr");
+		else
+			high_addr = "4000000";
+	} else {
+		high_addr = "D000000";
+	}
+
+	env_set("initrd_high", high_addr);
+	env_set("fdt_high", high_addr);
+}
+#endif
+
 static int bootm_find_os(struct cmd_tbl *cmdtp, int flag, int argc,
 			 char *const argv[])
 {
@@ -142,10 +162,8 @@ static int bootm_find_os(struct cmd_tbl *cmdtp, int flag, int argc,
 		images.os.load = image_get_load(os_hdr);
 		images.os.arch = image_get_arch(os_hdr);
 #ifdef CONFIG_AMLOGIC_MODIFY
-		if (images.os.arch == IH_ARCH_ARM) {
-			env_set("initrd_high", "0D000000");
-			env_set("fdt_high", "0D000000");
-		}
+		if (images.os.arch == IH_ARCH_ARM)
+			set_rootfs_dtb_high_addr();
 #endif
 		break;
 #endif
