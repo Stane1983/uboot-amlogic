@@ -331,7 +331,7 @@ static void dptx_transmit_pattern(struct dptx_drv_s *dptx, uint8_t pattern, uint
 		DPTXPR(dptx->idx, LOG_E, "%s: %s unsupported", __func__, DP_test_pat[pattern].name);
 		break;
 	default:
-		DPTXPR(dptx->idx, LOG_E, "%s: %s invalid", __func__, DP_test_pat[pattern].name);
+		DPTXPR(dptx->idx, LOG_E, "%s: %d invalid", __func__, pattern);
 		break;
 	}
 }

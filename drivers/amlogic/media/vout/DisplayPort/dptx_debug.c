@@ -116,7 +116,7 @@ static struct dptx_debug_info_reg_s dptx_debug_info_reg_t7_1 = {
 
 static void dptx_regs_pr(struct dptx_drv_s *dptx, uint8_t reg_t, struct reg_sets_s *reg_sets)
 {
-	uint8_t idx, str_pos = 0, reg_temp;
+	uint8_t idx, str_pos = 0, reg_temp = 0;
 	uint32_t reg_addr = 0, reg_val = 0;
 
 	for (idx = 0; reg_sets[idx].addr != DPTX_REG_END; idx++) {
