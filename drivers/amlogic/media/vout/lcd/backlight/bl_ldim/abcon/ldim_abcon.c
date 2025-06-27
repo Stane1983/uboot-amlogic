@@ -43,12 +43,10 @@ struct bcon_gpio_s bgpio[12] = {
 
 void ldim_abcon_swrst(void)
 {
-	//sw reset
-	abcon_wr_reg_bits(0x00, 1, 5, 1);
-	abcon_wr_reg_bits(0x00, 0, 5, 1);
-	//clr done flag
-	abcon_wr_reg_bits(0x00, 1, 4, 1);
-	abcon_wr_reg_bits(0x00, 0, 4, 1);
+	abcon_wr_reg(0x00, 0x30);
+	udelay(1);
+	abcon_wr_reg(0x00, 0x00);
+	udelay(1);
 }
 
 void ldim_abcon_hw_reset(void)
@@ -89,8 +87,6 @@ void ldim_abcon_swduty_set(struct aml_ldim_driver_s *ldim_drv)
 	abcon_mem.swduty_fid = 0;//always set 0 for test
 	fid = abcon_mem.swduty_fid;
 	buf = (unsigned char *)(abcon_mem.swduty + (LDC_DUTY_SIZE * fid >> 2));
-	invalidate_dcache_range((unsigned long)buf,
-		(unsigned long)(buf + LDC_DUTY_SIZE));
 
 	row = dev_drv->bl_row;
 	col = dev_drv->bl_col;
@@ -116,7 +112,11 @@ void ldim_abcon_swduty_set(struct aml_ldim_driver_s *ldim_drv)
 
 	//reg_abcon_ldc_gen_duty_zone
 	abcon_wr_reg_bits(0x2c, fid, 30, 2);
-	flush_cache((unsigned long)abcon_mem.swduty, LDC_DUTY_SIZE);
+	//invalidate_dcache_range((unsigned long)buf,
+	//	(unsigned long)(buf + LDC_DUTY_SIZE));
+	//flush_cache((unsigned long)abcon_mem.swduty, LDC_DUTY_SIZE);
+	flush_dcache_range((unsigned long)abcon_mem.swduty,
+		(unsigned long)(abcon_mem.swduty + LDC_DUTY_SIZE));
 
 	temp = abcon->conf.init_dc & 0x3ff;
 	//reg_abcon_dc_ldc_glb_apl
@@ -129,12 +129,14 @@ int ldim_abcon_mem_init(void)
 	unsigned int *vaddr;
 	phys_addr_t paddr;
 
-	vaddr = dma_alloc_coherent(size, (unsigned long *)&paddr);
+	//vaddr = dma_alloc_coherent(size, (unsigned long *)&paddr);
+	vaddr = (unsigned int *)malloc(size);
+	paddr = (phys_addr_t)vaddr;
 	if (!vaddr) {
 		ABCONERR("no rsvd mem to save abcon_base\n");
 		return -1;
 	} else {
-		ABCONPR("dma_alloc_coherent paddr=0x%x, vaddr=0x%p, size = 0x%x\n", (unsigned int)paddr, vaddr, size);
+		ABCONPR("malloc buf, paddr=0x%x, vaddr=0x%p, size = 0x%x\n", (unsigned int)paddr, vaddr, size);
 	}
 
 	abcon_mem.base_paddr = paddr;
@@ -325,10 +327,12 @@ void ldim_abcon_load_ch_mapping(struct ldim_dev_driver_s *dev_drv, unsigned int 
 {
 	if (dev_drv->bl_mapping && abcon_mem.ch_mapping) {
 		//copy mapping data to ch_mapping buf
-		invalidate_dcache_range((unsigned long)abcon_mem.ch_mapping,
-			(unsigned long)(abcon_mem.ch_mapping + len));
 		memcpy(abcon_mem.ch_mapping, dev_drv->bl_mapping, len);
-		flush_cache((unsigned long)abcon_mem.ch_mapping, len);
+		//invalidate_dcache_range((unsigned long)abcon_mem.ch_mapping,
+		//	(unsigned long)(abcon_mem.ch_mapping + len));
+		//flush_cache((unsigned long)abcon_mem.ch_mapping, len);
+		flush_dcache_range((unsigned long)abcon_mem.ch_mapping,
+			(unsigned long)(abcon_mem.ch_mapping + len));
 
 		udelay(1);
 

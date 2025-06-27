@@ -124,7 +124,8 @@ void ldim_abcon_hyasic_write_packet(void)
 	for (i = 0; i < act_lane_num; i++)
 		buf[len++] = hyasic_packet.eop_data;
 
-	flush_cache((unsigned long)buf, len);
+	flush_dcache_range((unsigned long)buf,
+		(unsigned long)(buf + len));
 
 	//clr done flag
 	abcon_wr_reg_bits(0x00, 1, 4, 1);
@@ -170,7 +171,8 @@ void ldim_abcon_hyasic_read_packet(void)
 	buf[len++] = hyasic_packet.eop_header;
 	buf[len++] = hyasic_packet.eop_data;
 
-	flush_cache((unsigned long)buf, len);
+	flush_dcache_range((unsigned long)buf,
+		(unsigned long)(buf + len));
 
 	abcon_wr_reg_bits(0x05, len, 16, 13);//reg_abcon_sw_rseg_max_num
 }

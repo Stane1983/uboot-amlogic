@@ -101,15 +101,10 @@ void ldim_abcon_xianxin_write_packet(void)
 	unsigned char i = 0;
 	unsigned char act_lane_num = abcon->act_lane;
 
-	if (bl_abcon_xianxin->sop_type == sop_dimming) {
+	if (bl_abcon_xianxin->sop_type == sop_dimming)
 		buf = abcon_mem.ldc_seg;
-		invalidate_dcache_range((unsigned long)buf,
-			(unsigned long)(buf + LDC_SEG_SIZE));
-	} else {
+	else
 		buf = abcon_mem.wseg;
-		invalidate_dcache_range((unsigned long)buf,
-			(unsigned long)(buf + WSEG_SIZE));
-	}
 
 	if (!buf)
 		return;
@@ -140,6 +135,8 @@ void ldim_abcon_xianxin_write_packet(void)
 			buf[len++] = xianxin_packet.eop_data;
 	}
 
+	invalidate_dcache_range((unsigned long)buf,
+			(unsigned long)(buf + len));
 	flush_cache((unsigned long)buf, len);
 
 	//clr done flag
@@ -174,6 +171,8 @@ unsigned char ldim_abcon_xianxin_readback(unsigned char reg, unsigned char dim, 
 
 	//step1, prepare read packet first
 	abcon_mem.rseg[0] = 0x40000112;
+	flush_dcache_range((unsigned long)abcon_mem.rseg,
+		(unsigned long)(abcon_mem.rseg + 4));
 	abcon_wr_reg_bits(0x05, 1, 16, 13);//reg_abcon_sw_rseg_max_num
 
 	//step2, select read which lane
@@ -197,9 +196,6 @@ unsigned char ldim_abcon_xianxin_readback(unsigned char reg, unsigned char dim, 
 	}
 	abcon_wr_reg_bits(0x2a, temp, 22, 4);//reg_abcon_act_lane
 
-	invalidate_dcache_range((unsigned long)abcon_mem.wseg,
-		(unsigned long)(abcon_mem.wseg + 4));
-
 	//step3, set write packet
 	cmd_data = (5 << 14) | (bl_abcon_xianxin->regmap->read_reg_addr << 9) | (reg << 1);
 	abcon_mem.wseg[0] = 0x44000090;
@@ -209,7 +205,8 @@ unsigned char ldim_abcon_xianxin_readback(unsigned char reg, unsigned char dim, 
 	abcon_mem.wseg[2] = 0x44000088;
 	abcon_mem.wseg[3] = cmd_data;
 
-	flush_cache((unsigned long)abcon_mem.wseg, 4);
+	flush_dcache_range((unsigned long)abcon_mem.wseg,
+		(unsigned long)(abcon_mem.wseg + 4));
 
 	abcon_wr_reg_bits(0x04, 4, 0, 13);//reg_abcon_sw_wseg_max_num
 	abcon_wr_reg_bits(0x00, 1, 0, 1);//reg_abcon_sw_mod_start
@@ -415,8 +412,6 @@ void ldim_abcon_init_xianxin(void)
 
 static int abcon_xianxin_hw_init_on(struct ldim_dev_driver_s *dev_drv)
 {
-	struct aml_ldim_driver_s *ldim_drv = aml_ldim_get_driver();
-
 	/* step 1: system power_on */
 	ldim_gpio_set(dev_drv, dev_drv->en_gpio, dev_drv->en_gpio_on);
 
@@ -436,23 +431,6 @@ static int abcon_xianxin_hw_init_on(struct ldim_dev_driver_s *dev_drv)
 
 	//init xianxin registers
 	ldim_abcon_init_xianxin();
-
-	mdelay(1);
-	ldim_abcon_swrst();
-
-	//set duty as 0
-	memset(ldim_drv->bl_matrix, 0,
-		(dev_drv->bl_col * dev_drv->bl_row * sizeof(unsigned short)));
-	ldim_abcon_swduty_set(ldim_drv);
-
-	//reg_abcon_duty_zone_src_sel
-	abcon_wr_reg_bits(0x2c, 0, 29, 1);//sw control id
-
-	abcon_wr_reg_bits(0x00, 1, 4, 1);
-	abcon_wr_reg_bits(0x00, 0, 4, 1);
-
-	ldim_abcon_xianxin_dimming();
-
 	return 0;
 }
 
@@ -498,8 +476,7 @@ static int abcon_xianxin_smr(struct aml_ldim_driver_s *ldim_drv, unsigned short 
 	//reg_abcon_duty_zone_src_sel
 	abcon_wr_reg_bits(0x2c, 0, 29, 1);//sw control id
 
-	abcon_wr_reg_bits(0x00, 1, 4, 1);
-	abcon_wr_reg_bits(0x00, 0, 4, 1);
+	ldim_abcon_swrst();
 
 	ldim_abcon_xianxin_dimming();
 
