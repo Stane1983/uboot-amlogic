@@ -273,8 +273,7 @@ static const struct mtd_partition spiflash_partitions[] = {
 	 .offset = 0,
 	 .size = 1 * SZ_64K,
 	  },
-	/***
-	 * {
+	{
 	 .name = "dtb",
 	 .offset = 0,
 	 .size = 1 * SZ_256K,
@@ -283,7 +282,7 @@ static const struct mtd_partition spiflash_partitions[] = {
 	 .name = "boot",
 	 .offset = 0,
 	 .size = 2 * SZ_1M,
-	  },**/
+	  },
 	/* last partition get the rest capacity */
 	{
 	 .name = "user",

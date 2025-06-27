@@ -48,83 +48,74 @@ static inline void set_part_info(struct mtd_partition *part,
 
 uint64_t mtd_get_normal_part_offset(struct mtd_info *mtd)
 {
-	return meson_rsv_part_get_tpl_start(mtd) + meson_rsv_part_get_tpl_size(mtd);
+	if (mtd->type == MTD_NORFLASH)
+		return mtd_spinor_get_bootpart_size();
+	else
+		return meson_rsv_part_get_tpl_start(mtd) + meson_rsv_part_get_tpl_size(mtd);
 }
 
-int mtd_add_partitions(struct mtd_info *mtd, const struct mtd_partition *parts,
-		       int nbparts, bool bl2_part_only, bool slc_nand)
+int mtd_register_partitions(struct mtd_info *mtd,
+                            const struct mtd_partition *parts,
+                            int nbparts, bool nand)
 {
-	struct mtd_partition *new_part, *p, bl2_part[1] = { 0 };
+	struct mtd_partition *new_part, *p, *normal, bl2_part[1] = { 0 };
 	u64 normal_offset;
-	int i, n = nbparts + 2, ret;
+	int i, n = nbparts, ret;
 
-	if (bl2_part_only) {
-		if (!slc_nand)
-			return -1;
+	if (!nbparts && nand) {
 		set_part_info(&bl2_part[0], BOOT_BL2, 0,
 			      meson_rsv_part_get_bl2_part_size(mtd));
-		ret = add_mtd_partitions(mtd, &bl2_part[0], 1);
-		return ret;
+		return add_mtd_partitions(mtd, &bl2_part[0], 1);
 	}
 
-	new_part = kcalloc(n, sizeof(*new_part), GFP_KERNEL);
+	/* Maybe need extra two more parts <bl2 and tpl> */
+	new_part = kcalloc(n + 2, sizeof(*new_part), GFP_KERNEL);
 	if (IS_ERR_OR_NULL(new_part))
 		return -ENOMEM;
 
-	/* simplify that bootloader only has BL2 + TPL */
-	set_part_info(&new_part[0], BOOT_BL2, 0,
-		      meson_rsv_part_get_bl2_part_size(mtd));
-	set_part_info(&new_part[1], BOOT_TPL,
-		      meson_rsv_part_get_tpl_start(mtd),
-		      meson_rsv_part_get_tpl_size(mtd));
+	p = new_part;
+	if (mtd->type == MTD_NORFLASH) {
+		set_part_info(p++, BOOT_LOADER, 0,
+			      mtd_spinor_get_bootpart_size());
+	} else {
+		/* simplify that bootloader only has BL2 + TPL */
+		if (!nand)
+			set_part_info(p++, BOOT_BL2, 0,
+				      meson_rsv_part_get_bl2_part_size(mtd));
+
+		set_part_info(p++, BOOT_TPL,
+			      meson_rsv_part_get_tpl_start(mtd),
+			      meson_rsv_part_get_tpl_size(mtd));
+	}
+
+	normal = p;
 
 	/* filter out these partitions with wrong size ZERO  */
-	for (i = 0, p = new_part + 2; i < nbparts; i++) {
+	for (i = 0; i < nbparts; i++) {
 		if (!parts[i].size && !parts[i].offset)
 			continue;
 		*p++ = parts[i];
 	}
 
 	normal_offset = mtd_get_normal_part_offset(mtd);
-	n = p - new_part - 2;
-	for (i = 0, p = new_part + 2; i < n; i++, p++) {
+	nbparts = p - new_part;
+	n = p - normal;
+	for (i = 0, p = normal; i < n; i++, p++) {
 		if ((normal_offset + p->size) > mtd->size) {
-			pr_err("over nand size!\n");
+			pr_err("over flash size!\n");
 			kfree(new_part);
 			return -1;
 		}
 		p->offset = normal_offset;
-		mtd_get_logic_part_info(mtd, p);
+		if (mtd->type != MTD_NORFLASH)
+			mtd_get_logic_part_info(mtd, p);
 		if (i == (n - 1))
 			p->size = mtd->size - normal_offset;
 		normal_offset += p->size;
 	}
 
-	p = (slc_nand) ? new_part + 1 : new_part;
-	nbparts = (slc_nand) ? n + 1 : n + 2;
-	ret = add_mtd_partitions(mtd, p, nbparts);
+	ret = add_mtd_partitions(mtd, new_part, nbparts);
 	kfree(new_part);
 
 	return ret;
 }
-
-int mtd_raw_nand_add_boot_partitions(struct mtd_info *mtd)
-{
-	return mtd_add_partitions(mtd, NULL, 0, true, true);
-}
-
-int mtd_raw_nand_add_normal_partitions(struct mtd_info *mtd,
-				       const struct mtd_partition *parts,
-				       int nbparts)
-{
-	return mtd_add_partitions(mtd, parts, nbparts, false, true);
-}
-
-int mtd_spi_nand_add_partitions(struct mtd_info *mtd,
-				const struct mtd_partition *parts,
-				int nbparts)
-{
-	return mtd_add_partitions(mtd, parts, nbparts, false, false);
-}
-
-

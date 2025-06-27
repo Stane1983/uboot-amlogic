@@ -20,101 +20,33 @@
 #include <amlogic/storage.h>
 #include <amlogic/cpu_id.h>
 
-/* Hard code, all partitions are aligned in block size, fast erasing */
-#define SPINOR_ALIGNED_SIZE		(64 * 1024)
-
-uint64_t spiflash_bootloader_size(void)
-{
-#if defined(CONFIG_BOOTLOADER_SIZE)
-	return (((DIV_ROUND_UP((CONFIG_BOOTLOADER_SIZE + 0x200), 0x1000)) << 12) *
-		CONFIG_NOR_TPL_COPY_NUM);
-#else
-	return SZ_2M;
-#endif
-}
-
-uint32_t __weak spiflash_rsv_block_num(void)
-{
-	return 0;
-}
-
-extern boot_area_entry_t general_boot_part_entry[MAX_BOOT_AREA_ENTRIES];
-/* The size of the partition must be block aligned */
-static int _spinor_add_partitions(struct mtd_info *mtd,
-				  const struct mtd_partition *parts,
-				  int nbparts)
-{
-	int part_num = 0, i = 0;
-	struct mtd_partition *temp, *parts_nm;
-	loff_t off;
-	int ret = 1;
-
-	part_num = nbparts + 1;
-
-	temp = kzalloc(sizeof(*temp) * part_num, GFP_KERNEL);
-	if (store_get_device_bootloader_mode() == COMPACT_BOOTLOADER) {
-		temp[0].name = BOOT_LOADER;
-		temp[0].offset = 0;
-		temp[0].size = spiflash_bootloader_size();
-		temp[0].size = ALIGN(temp[0].size, SPINOR_ALIGNED_SIZE);
-		off = temp[0].size + temp[0].offset;
-		parts_nm = &temp[1];
-
-	} else {
-		temp[0].name = BOOT_LOADER;
-		temp[0].offset = 0;
-		temp[0].size = spiflash_bootloader_size();
-		if (temp[0].size % SPINOR_ALIGNED_SIZE)
-			WARN_ON(1);
-		/* rsv size is aligned with blocksize(64K) */
-		off = temp[0].size + spiflash_rsv_block_num() * SPINOR_ALIGNED_SIZE;
-		parts_nm = &temp[1];
-	}
-
-	for (i = 0; i < nbparts; i++) {
-		if (!parts[i].name) {
-			pr_err("name can't be null! ");
-			pr_err("please check your %d th partition name!\n",
-				 i + 1);
-			goto _out;
-		}
-		if ((off + parts[i].size) > mtd->size) {
-			pr_err("%s %d over nand size!\n",
-				__func__, __LINE__);
-			goto _out;
-		}
-		parts_nm[i].name = parts[i].name;
-		parts_nm[i].offset = off;
-		if (parts[i].size % SPINOR_ALIGNED_SIZE) {
-			pr_err("%s %d \"%s\" size auto align to block size\n",
-				__func__, __LINE__, parts[i].name);
-			parts_nm[i].size += parts[i].size % SPINOR_ALIGNED_SIZE;
-		}
-		/* it's ok "+=" here because size has been set to 0 */
-		parts_nm[i].size += parts[i].size;
-		off += parts_nm[i].size;
-		if (i == (nbparts - 1))
-			parts_nm[i].size = mtd->size - off;
-	}
-	ret = add_mtd_partitions(mtd, temp, part_num);
-_out:
-	kfree(temp);
-	return ret;
-}
+/* use STORAGE_ROUND_UP, y must be power of 2 */
+#define SPINOR_ROUND_UP_IF_UNALIGN(x, y) ((x) = (((x) + (y) - 1) & (~(y - 1))))
 
 extern struct mtd_partition *get_spiflash_partition_table(int *partitions);
 int spinor_add_partitions(struct mtd_info *mtd)
 {
 	struct mtd_partition *spiflash_partitions;
-	int partition_count;
+	int i, partition_count;
+	uint64_t size;
 
 	spiflash_partitions = get_spiflash_partition_table(&partition_count);
 
-	return _spinor_add_partitions(mtd, spiflash_partitions,
-			       partition_count);
+	for (i = 0; i < partition_count; i++) {
+		size = spiflash_partitions[i].size;
+		if (size % SPINOR_ALIGNED_SIZE)
+			spiflash_partitions[i].size =
+				SPINOR_ROUND_UP_IF_UNALIGN(size, SPINOR_ALIGNED_SIZE);
+	}
+
+	return mtd_register_partitions(mtd, spiflash_partitions,
+			partition_count, false);
 }
 
+extern void mtdparts_deinit(void);
 int spinor_del_partitions(struct mtd_info *mtd)
 {
+	mtdparts_deinit();
+
 	return del_mtd_partitions(mtd);
 }

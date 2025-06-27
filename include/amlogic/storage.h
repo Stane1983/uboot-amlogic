@@ -16,6 +16,15 @@
 /* storage plat data */
 #include <asm/amlogic/arch/storage.h>
 
+#if defined(CONFIG_NOR_TPL_COPY_NUM)
+#define CONFIG_NOR_BOOT_COPY_NUM			CONFIG_NOR_TPL_COPY_NUM
+#else
+#define CONFIG_NOR_BOOT_COPY_NUM			2
+#endif
+
+/* Hard code, all partitions are aligned in block size, fast erasing */
+#define SPINOR_ALIGNED_SIZE		(64 * 1024)
+
 #define RSV_INVALID	140	/* rsv invalid error */
 
 #define DISPROTECT_KEY			BIT(0)
@@ -83,8 +92,8 @@ typedef struct boot_area_entry {
     char name[11];
     /* index */
     uint8_t idx;
-    uint64_t offset;
-    uint64_t size;
+	uint64_t offset;
+	uint64_t size;
 } boot_area_entry_t;
 
 struct boot_layout {
@@ -487,6 +496,7 @@ int check_valid_dts(unsigned char *buffer);
 int store_boot_copy_enable(int index);
 
 u8 mtd_store_boot_copy_num(const char *part_name);
+int mtd_store_get_page_info_size(enum boot_type_e medium_type);
 int store_send_param(void);
 
 #endif/* __STORAGE_H__ */

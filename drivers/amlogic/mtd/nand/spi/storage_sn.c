@@ -124,8 +124,8 @@ int spi_nand_probe(u32 init_flag)
 #ifdef CONFIG_AML_MTDPART
 	extern const struct mtd_partition *get_spinand_partition_table(int *partitions);
 	spinand_partitions = get_spinand_partition_table(&partition_count);
-	ret = mtd_spi_nand_add_partitions(mtd, spinand_partitions,
-					  partition_count);
+	ret = mtd_register_partitions(mtd, spinand_partitions,
+				      partition_count, false);
 	if (ret) {
 		printf("%s %d can not add spinand partition!\n",
 		       __func__, __LINE__);

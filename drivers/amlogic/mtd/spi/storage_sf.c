@@ -129,12 +129,6 @@ int spi_nor_probe(u32 init_flag)
 	if (probe_flag)
 		return 0;
 
-	ret = spi_flash_mtd_register(flash);
-	if (ret) {
-		printf("spi flash mtd register fail!\n");
-		return 1;
-	}
-
 	spi_nor = get_snor_storage();
 	if (!spi_nor) {
 		printf("can not get spi nor!\n");

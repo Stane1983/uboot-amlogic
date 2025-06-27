@@ -1889,11 +1889,10 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 		}
 
 		meson_rsv_check_all_except_bbt();
-		err = mtd_raw_nand_add_normal_partitions(mtd,
-							 get_aml_mtd_partition(),
-							 get_aml_partition_count());
+		err = mtd_register_partitions(mtd, get_aml_mtd_partition(),
+					      get_aml_partition_count(), true);
 	} else
-		err = mtd_raw_nand_add_boot_partitions(mtd);
+		err = mtd_register_partitions(mtd, NULL, 0, true);
 
 	if (!err)
 		return 0;

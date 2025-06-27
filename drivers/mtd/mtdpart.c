@@ -862,7 +862,7 @@ EXPORT_SYMBOL_GPL(mtd_del_partition);
  * for reasons of data integrity.
  */
 #ifdef CONFIG_AML_MTDPART
-struct list_head aml_device;
+LIST_HEAD(aml_device);
 static int aml_nbparts;
 int get_aml_mtdpart_count(void)
 {
@@ -1149,6 +1149,27 @@ EXPORT_SYMBOL_GPL(mtd_get_device_size);
 #ifdef CONFIG_AML_MTDPART
 extern struct mtd_info *mtd_store_get(int dev);
 
+void mtdparts_deinit(void)
+{
+	struct part_info *pentry, *ptemp;
+	struct mtd_device *dentry, *dtmp;
+
+	if (list_empty(&aml_device))
+		return;
+
+	aml_nbparts = 0;
+	list_for_each_entry_safe(dentry, dtmp, &aml_device, link) {
+		list_for_each_entry_safe(pentry, ptemp, &dentry->parts, link) {
+			list_del(&pentry->link);
+			kfree(pentry);
+		}
+		kfree(dentry->id);
+		list_del(&dentry->link);
+		kfree(dentry);
+	}
+	INIT_LIST_HEAD(&aml_device);
+}
+
 int mtdparts_init(void)
 {
 	static int init_flag;
@@ -1169,12 +1190,12 @@ int mtdparts_init(void)
 		return 1;
 	}
 
-	if (init_flag) {
+	if (init_flag && !list_empty(&aml_device)) {
 		pr_debug("%s %d part already init\n", __func__, __LINE__);
 		return 0;
 	}
-	INIT_LIST_HEAD(&aml_device);
 
+	INIT_LIST_HEAD(&aml_device);
 	for (i = 0; i < cnt; i++) {
 		mtd = mtd_store_get(i);
 		pr_err("%s, %d,mtd->partition: 0x%p, mtd: 0x%p\n",
