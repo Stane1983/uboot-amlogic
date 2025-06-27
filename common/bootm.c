@@ -821,10 +821,6 @@ static int bootm_load_os(bootm_headers_t *images, int boot_progress)
 		return err;
 	}
 
-	extern uint32_t get_rsv_mem_size(void);
-	if (load_end >= IOTRACE_LOAD_ADDR && load < get_rsv_mem_size())
-		printf("[Warning] kernel overlap iotrace, please reset decompress addr\n");
-
 	flush_len = load_end - load;
 	if (flush_start < load)
 		flush_len += load - flush_start;

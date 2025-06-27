@@ -240,10 +240,6 @@
 	"bcb_cmd_base="\
 		"get_avb_mode;"\
 		"get_valid_slot;"\
-		"if test ${vendor_boot_mode} = true; then "\
-			"setenv loadaddr_kernel 0x3000000;"\
-			"setenv dtb_mem_addr 0x1000000;"\
-		"fi;"\
 		"if test ${active_slot} != normal; then "\
 			"echo ab mode, read dtb from kernel;"\
 			"setenv common_dtb_load ""imgread dtb ${boot_part} ${dtb_mem_addr}"";"\
