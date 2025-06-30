@@ -111,9 +111,32 @@ DDR_TIMMING_OFFSET(PARA)) << 16) | ((DDR_TIMMING_OFFSET_SIZE(PARA)) << 28) | (VA
 (ch0) | ((ch1) << 4) | ((ch2) << 8) | ((ch3) << 12) | ((ch4) << 16) | ((ch5) << 20)
 #define DDR_TIMMING_TUNE_STRUCT_SIZE(a)  sizeof(a)
 
+#define DDR_EFUSE_ID_0   0
+#define DDR_EFUSE_ID_NTC_LP4_512M_X2   1
+#define DDR_EFUSE_ID_NTC_LP4_1G_X2   2
+
 #if 1
 uint32_t __bl2_ddr_reg_data[] __attribute__ ((section(".ddr_2acs_data"))) = {
 	DDR_ID_START_MASK,
+
+	DDR_TIMMING_TUNE_START(DDR_ID_FROM_EFUSE, 0, DDR_EFUSE_ID_NTC_LP4_1G_X2),
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.reserve_para[0],
+				    (1 << 7) | 0xc),//write dqs
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.reserve_para[1],
+				    (1 << 7) | 0xc),//write dqs
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.reserve_para[2],
+				    (1 << 7) | 0xc),//write dqs
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.reserve_para[3],
+				    (1 << 7) | 0xc),//write dqs
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.reserve_para[8 + 0],
+				    (1 << 7) | 0xa),//read dqs
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.reserve_para[8 + 1],
+				    (1 << 7) | 0xa),//read dqs
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.reserve_para[8 + 2],
+				    (1 << 7) | 0xa),//read dqs
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.reserve_para[8 + 3],
+				    (1 << 7) | 0xa),//read dqs
+
 	//DDR_TIMMING_TUNE_ADC_MULT_START(DDR_ID_FROM_ADC_MULT, V4, VX, VX, VX, VX, VX),
 	//data start
 	//DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_common_setting.Is2Ttiming, CONFIG_USE_DDR_2T_MODE),
