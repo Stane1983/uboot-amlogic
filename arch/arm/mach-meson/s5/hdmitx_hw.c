@@ -140,7 +140,7 @@ void hd21_write_reg(u32 vaddr, u32 val)
 		pr_info("Wr32[0x%08x] 0x%08x\n", paddr, val);
 }
 
-void hdmitx21_reset_reg_bit(u32 addr, u32 bit_nr)
+void hdmitx21_set_reset_reg_bit(u32 addr, u32 bit_nr)
 {
 	if (bit_nr > 31)
 		return;

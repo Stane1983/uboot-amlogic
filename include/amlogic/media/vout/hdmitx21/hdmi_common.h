@@ -33,6 +33,14 @@
 /* refer to hdmi2.1 table 7-36, 32 VIC support y420 */
 #define Y420_VIC_MAX_NUM 32
 
+/* hdmitx soft reset */
+#define RESET_18OR10TO20		0x01
+#define RESET_SOFTWARE_LOGIC	0x02
+#define RESET_CIPHER_ENGINE		0x04
+#define RESET_HW_TPI			0x08
+#define RESET_HDCP2X_LOGIC		0x10
+#define RESET_PFIFO				0x20
+
 #define HDMITX_VESA_OFFSET 0x300
 /* Little-Endian format */
 enum scdc_addr {
