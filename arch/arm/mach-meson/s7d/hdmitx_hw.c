@@ -360,13 +360,13 @@ do { \
 	case HDMI_PHYPARA_3p7G:
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, (0x3cafb | val));
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x2555);
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x4ef001);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x4ef00b);
 		break;
 	/* 2.97Gbps */
 	case HDMI_PHYPARA_3G:
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, (0x380dd | val));
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x2555);
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x4ef001);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x4ef00b);
 		break;
 	/* 1.485Gbps, and below */
 	case HDMI_PHYPARA_270M:
@@ -374,15 +374,14 @@ do { \
 	default:
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL0, (0x2038088 | val));
 		hd21_write_reg(ANACTRL_HDMIPHY_CTRL5, 0x2555);
-		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x4ef001);
+		hd21_write_reg(ANACTRL_HDMIPHY_CTRL3, 0x4ef00b);
 		break;
 	}
 
 	/* The bit with resetn is configured later than other bits. */
 	usleep_range(100, 110);
 	hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL3, 3, 10, 2);
-	hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL3, 3, 3, 2);
-	hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL3, 1, 1, 1);
+	hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL3, 1, 4, 1);
 	/* finally config bit[29:28] */
 	usleep_range(1000, 1010);
 	hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL3, 3, 28, 2);

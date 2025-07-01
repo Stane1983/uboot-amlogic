@@ -27,6 +27,7 @@
 #include <amlogic/media/vout/aml_vout.h>
 #endif
 #include <amlogic/media/vout/dsc.h>
+#define usleep_range(a, b) udelay(a)
 
 static struct hdmitx_dev hdmitx_device;
 
@@ -1019,6 +1020,9 @@ static void hdmitx_set_phy_todig(struct hdmitx_dev *hdev)
 	case MESON_CPU_ID_S7:
 	case MESON_CPU_ID_S7D:
 	case MESON_CPU_ID_S6:
+		hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL3, 0, 1, 1);
+		hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL3, 0, 3, 1);
+		usleep_range(100, 110);
 		hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL3, 3, 0, 2);
 		hd21_set_reg_bits(ANACTRL_HDMIPHY_CTRL3, 1, 3, 1);
 		break;
@@ -1033,7 +1037,7 @@ static void hdmitx_set_clkdiv(struct hdmitx_dev *hdev)
 {
 }
 
-static void hdmitx21_reset_reg_bit(u32 addr, u32 bit_nr)
+static void hdmitx21_set_reset_reg_bit(u32 addr, u32 bit_nr)
 {
 	if (bit_nr > 31)
 		return;
@@ -1058,27 +1062,29 @@ void hdmitx_soft_reset(u32 bits_nr)
 	pr_info("%s[%d]\n", __func__, __LINE__);
 	if (bits_nr & BIT(0)) {
 		/* 18or10to20 fifos Software reset */
-		hdmitx21_reset_reg_bit(PWD_SRST_IVCTX, 2);
+		hdmitx21_set_reset_reg_bit(PWD_SRST_IVCTX, 2);
 	}
 	if (bits_nr & BIT(1)) {
 		/* Software Reset. Reset all internal logic */
-		hdmitx21_reset_reg_bit(PWD_SRST_IVCTX, 0);
+		hdmitx21_set_reset_reg_bit(PWD_SRST_IVCTX, 0);
 	}
 	if (bits_nr & BIT(2)) {
 		/* reset for the cipher engine */
-		hdmitx21_reset_reg_bit(HDCP_CTRL_IVCTX, 2);
+		hdmitx21_set_reset_reg_bit(HDCP_CTRL_IVCTX, 2);
 	}
 	if (bits_nr & BIT(3)) {
 		/* HW TPI State Machine Reset */
-		hdmitx21_reset_reg_bit(AON_CYP_CTL_IVCTX, 3);
+		hdmitx21_set_reset_reg_bit(AON_CYP_CTL_IVCTX, 3);
 	}
 	if (bits_nr & BIT(4)) {
 		/* Software Reset for hdcp2x logic only */
-		hdmitx21_reset_reg_bit(HDCP2X_TX_SRST_IVCTX, 5);
+		hdmitx21_set_reset_reg_bit(HDCP2X_TX_SRST_IVCTX, 5);
 	}
 	if (bits_nr & BIT(5)) {
 		/* PCLK to TCLK Video FIFO Software reset */
-		hdmitx21_reset_reg_bit(PWD_SRST_IVCTX, 1);
+		hdmitx21_set_reset_reg_bit(PWD_SRST_IVCTX, 1);
+		/* clear pfifo intr */
+		hdmitx21_set_reg_bits(INTR2_SW_TPI_IVCTX, 1, 1, 1);
 	}
 }
 
@@ -1350,7 +1356,8 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 	data32 |= (1920 << 0);  /* [13: 0] cntl_hdcp22_min_size_h */
 	hdmitx21_wr_reg(HDMITX_TOP_HDCP22_MIN_SIZE, data32);
 
-	hdmitx_soft_reset(BIT(1) | BIT(2) | BIT(3) | BIT(4));
+	hdmitx_soft_reset(RESET_SOFTWARE_LOGIC | RESET_CIPHER_ENGINE |
+		RESET_HW_TPI | RESET_HDCP2X_LOGIC);
 
 	if (para->dsc_en)
 		hdmitx21_set_reg_bits(PCLK2TMDS_MISC1_IVCTX, 1, 4, 1);
@@ -1581,13 +1588,15 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 				hdmitx21_poll_reg(SYS_STAT_IVCTX, 1 << 0, ~(1 << 0), HZ / 100);
 				if (is_deep_phase_unstable(cs, cd)) {
 					/* reset pfifo */
-					hdmitx21_set_reg_bits(PWD_SRST_IVCTX, 1, 1, 1);
-					hdmitx21_set_reg_bits(PWD_SRST_IVCTX, 0, 1, 1);
+					hdmitx_soft_reset(RESET_PFIFO);
 					continue;
 				} else {
 					break;
 				}
 			}
+			if (loop < 0)
+				pr_err("%s[%d] phase is still unstable\n", __func__,
+				__LINE__);
 		}
 	}
 
@@ -1645,7 +1654,7 @@ void hdmitx21_set(struct hdmitx_dev *hdev)
 		 * reset pfifo before training
 		 */
 		if (para->dsc_en) {
-			hdmitx_soft_reset(BIT(5));
+			hdmitx_soft_reset(RESET_PFIFO);
 			/* clear pfifo intr */
 			hdmitx21_set_reg_bits(INTR2_SW_TPI_IVCTX, 0, 1, 1);
 		}
@@ -2172,8 +2181,7 @@ static void config_hdmi21_tx(struct hdmitx_dev *hdev)
 	hdmi_drm_infoframe_set(NULL);
 	hdmi_vend_infoframe_rawset(NULL, NULL);
 
-	hdmitx21_set_reg_bits(PWD_SRST_IVCTX, 1, 0, 1);
-	hdmitx21_set_reg_bits(PWD_SRST_IVCTX, 0, 0, 1);
+	hdmitx_soft_reset(RESET_SOFTWARE_LOGIC);
 	data8 = 0;
 	/* [1:0]color depth. 00:8bpp;01:10bpp;10:12bpp;11:16bpp */
 	data8 |= (dp_color_depth & 0x03);
@@ -2333,8 +2341,7 @@ static void config_hdmi21_tx(struct hdmitx_dev *hdev)
 	data32 |= (active_lines << 16); /* [30:16] cntl_vactive */
 	data32 |= (active_pixels << 0); /* [14: 0] cntl_hactive */
 	hdmitx21_wr_reg(HDMITX_TOP_HV_ACTIVE, data32);
-	hdmitx21_set_reg_bits(PWD_SRST_IVCTX, 3, 1, 2);
-	hdmitx21_set_reg_bits(PWD_SRST_IVCTX, 0, 1, 2);
+	hdmitx_soft_reset(RESET_18OR10TO20 | RESET_PFIFO);
 	hdmitx21_set_reg_bits(TPI_SC_IVCTX, 1, 0, 1);
 	/*
 	 * On Huawei TVs, HDR will cause a flickering screen,

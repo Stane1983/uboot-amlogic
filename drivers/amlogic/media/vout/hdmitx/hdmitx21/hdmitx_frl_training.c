@@ -870,8 +870,7 @@ bool hdmitx_frl_training_main(enum frl_rate_enum frl_rate)
 		return 1;
 	}
 
-	hdmitx21_set_reg_bits(PWD_SRST_IVCTX, 1, 2, 1);
-	hdmitx21_set_reg_bits(PWD_SRST_IVCTX, 0, 2, 1);
+	hdmitx_soft_reset(RESET_18OR10TO20);
 
 	scdc21_rd_sink(0x10, &data8);
 	scdc21_rd_sink(0x01, &data8);
@@ -890,7 +889,7 @@ bool hdmitx_frl_training_main(enum frl_rate_enum frl_rate)
 	if (frl_rate == FRL_NONE)
 		return 1;
 
-	hdmitx_soft_reset(BIT(0));
+	hdmitx_soft_reset(RESET_18OR10TO20);
 	while (ltp0123 != 0 && time_after(tmo, get_timer(0))) {
 		pr_info("[FRL TRAINING] ************** TX_LTS_3_POLL_FLT_UPDATE************\n");
 		ret = TX_LTS_3_POLL_FLT_UPDATE();
