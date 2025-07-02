@@ -858,6 +858,12 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 	printf("rebootmode is %s\n", rebootmode);
 	if (rebootmode && (strcmp(rebootmode, "rescueparty") == 0)) {
 		printf("rebootmode is rescueparty, need rollback\n");
+		env_set("rollback_reason", "rescueparty");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+		run_command("update_env_part -p rollback_reason;", 0);
+#else
+		run_command("saveenv", 0);
+#endif
 		char *slot;
 
 #ifdef CONFIG_FASTBOOT
@@ -1055,6 +1061,12 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 		rc = write_bootloader(1);
 		if (rc) {
 			printf("write boot0 fail, need to rollback!\n");
+			env_set("rollback_reason", "boot0_update_fail");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+			run_command("update_env_part -p rollback_reason;", 0);
+#else
+			run_command("saveenv", 0);
+#endif
 			update_rollback();
 		} else {
 			update_gpt(0);
