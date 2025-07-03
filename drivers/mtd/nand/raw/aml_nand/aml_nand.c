@@ -1522,7 +1522,7 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 	aml_chip->toggle_mode =0;
 #ifdef NAND_ECC_ONLY_BCH8_1K
 	aml_chip->bch_info = NAND_ECC_BCH8_1K;
-	printf("Currently only supports BCH8 1K!\n");
+	pr_info("Currently only supports BCH8 1K!\n");
 #else
 	aml_chip->bch_info = NAND_ECC_BCH60_1K;
 #endif
