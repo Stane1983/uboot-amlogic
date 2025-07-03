@@ -862,6 +862,12 @@ int ab_update_rollback(char *rebootmode, int gpt_flag)
 		printf("need to write boot0\n");
 		if (write_bootloader(1)) {
 			printf("write boot0 fail, need to rollback!\n");
+			env_set("rollback_reason", "boot0_update_fail");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+			run_command("update_env_part -p rollback_reason;", 0);
+#else
+			run_command("saveenv", 0);
+#endif
 			update_rollback();
 		} else {
 			update_gpt(0);
@@ -882,6 +888,12 @@ int ab_update_rollback(char *rebootmode, int gpt_flag)
 	//check rescueparty and rollback
 	if (rebootmode && (strcmp(rebootmode, "rescueparty") == 0)) {
 		printf("rebootmode is rescueparty, need rollback\n");
+		env_set("rollback_reason", "rescueparty");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+		run_command("update_env_part -p rollback_reason;", 0);
+#else
+		run_command("saveenv", 0);
+#endif
 		char *slot;
 
 #ifdef CONFIG_FASTBOOT

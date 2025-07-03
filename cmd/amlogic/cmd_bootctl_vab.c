@@ -817,6 +817,17 @@ static int do_GetValidSlot(
 			return 0;
 		} else if (bootable_b) {
 			printf("slot a is unbootable, back to b\n");
+			char *reason = env_get("rollback_reason");
+
+			if (reason && (strcmp(reason, "kernel_panic") == 0))
+				env_set("rollback_reason", "kernel_panic");
+			else
+				env_set("rollback_reason", "boot_failure");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+			run_command("update_env_part -p rollback_reason;", 0);
+#else
+			run_command("saveenv", 0);
+#endif
 			if (gpt_partition || nocs_mode)
 				check_bootloader(0);
 			boot_ctrl.roll_flag = 1;
@@ -867,6 +878,17 @@ static int do_GetValidSlot(
 			return 0;
 		} else if (bootable_a) {
 			printf("slot b is unbootable, back to a\n");
+			char *reason = env_get("rollback_reason");
+
+			if (reason && (strcmp(reason, "kernel_panic") == 0))
+				env_set("rollback_reason", "kernel_panic");
+			else
+				env_set("rollback_reason", "boot_failure");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+			run_command("update_env_part -p rollback_reason;", 0);
+#else
+			run_command("saveenv", 0);
+#endif
 			if (gpt_partition || nocs_mode)
 				check_bootloader(1);
 			boot_ctrl.roll_flag = 1;
@@ -1121,8 +1143,9 @@ static int do_SetUpdateTries(
 	    !strcmp(rebootmode, "kernel_panic")) {
 		printf("Insufficient data space, rollback\n");
 		env_set("insufficient_data", "0");
+		env_set("rollback_reason", "insufficient_data");
 #if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
-		run_command("update_env_part -p insufficient_data;", 0);
+		run_command("update_env_part -p insufficient_data rollback_reason;", 0);
 #else
 		run_command("saveenv", 0);
 #endif
@@ -1151,6 +1174,13 @@ static int do_SetUpdateTries(
 		success_flag == 0 &&
 		merge_ret == 1) {
 		printf("reboot bootloader during merge, rollback\n");
+
+		env_set("rollback_reason", "kernel_panic");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+		run_command("update_env_part -p rollback_reason;", 0);
+#else
+		run_command("saveenv", 0);
+#endif
 		if (slot == 0 && bootable_a) {
 			if (boot_ctrl.slot_info[0].successful_boot == 0)
 				boot_ctrl.slot_info[0].tries_remaining = 0;
