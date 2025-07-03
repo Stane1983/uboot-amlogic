@@ -44,8 +44,8 @@ typedef struct _customPara{
 
 typedef struct _burnParts{
 	int         burn_num;
+	uint64_t    bitsMap4BurnParts;
 	char        burnParts[MAX_BURN_PARTS][PART_NAME_LEN_MAX];
-	unsigned int    bitsMap4BurnParts;
 } BurnParts_t;
 
 typedef struct _burnDisplay{

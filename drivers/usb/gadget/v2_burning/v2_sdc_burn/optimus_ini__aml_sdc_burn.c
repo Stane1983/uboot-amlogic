@@ -318,13 +318,13 @@ int check_cfg_burn_parts(const ConfigPara_t *burnPara)
 {
 	const BurnParts_t *pBurnParts = &burnPara->burnParts;
 	const int cfgBurnNum    = pBurnParts->burn_num;
-	const unsigned int bitsMap  = pBurnParts->bitsMap4BurnParts;
+	const uint64_t bitsMap  = pBurnParts->bitsMap4BurnParts;
 	int mediaPathHasCfg = burnPara->burnEx.bitsMap.mediaPath;
 	int i = 0;
 
-
+	DWN_MSG("cfg burn num %d\n", cfgBurnNum);
 	for (i = 0; i < cfgBurnNum; i++) {
-		int b = bitsMap & (1U << i);
+		uint64_t b = bitsMap & (1U << i);
 
 		if (!b) {
 			err("Please cfg burn_part%d\n", i);
