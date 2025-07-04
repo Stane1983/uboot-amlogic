@@ -1113,16 +1113,19 @@ void aml_nand_set_onfi_features(struct aml_nand_chip *aml_chip,
 
 extern struct aml_pre_scan *pre_scan;
 static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
-	struct nand_chip *chip,
-	int busw, int *maf_id)
+	struct nand_chip *chip)
 {
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
-	struct aml_nand_platform *plat = aml_chip->platform;
-	struct aml_nand_flash_dev *type = NULL;
-	int i, maf_idx;
-	u8 id_len;
+	static struct aml_nand_flash_dev *type;
 	u8 dev_id[MAX_ID_LEN] = {0};
+	int i, id_len;
 
+	if (type)
+		return type;
+
+	/*reset chip for some nand need reset after power up*/
+	chip->cmdfunc(mtd, NAND_CMD_RESET, -1, -1);
+	aml_chip->aml_nand_wait_devready(aml_chip, 0);
 
 	/* Send the command for reading device ID */
 	chip->cmdfunc(mtd, NAND_CMD_READID, 0x00, -1);
@@ -1132,9 +1135,8 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 		dev_id[i] = chip->read_byte(mtd);
 	}
 
-	*maf_id = dev_id[0];
-	printk("NAND device id: %x %x %x %x %x %x \n",
-	dev_id[0], dev_id[1], dev_id[2], dev_id[3], dev_id[4], dev_id[5]);
+	printf("NAND device id: %x %x %x %x %x %x\n",
+	       dev_id[0], dev_id[1], dev_id[2], dev_id[3], dev_id[4], dev_id[5]);
 
 	/* Lookup the flash id */
 	for (i = 0; aml_nand_flash_ids[i].name != NULL; i++) {
@@ -1147,124 +1149,13 @@ static struct aml_nand_flash_dev *aml_nand_get_flash_type(struct mtd_info *mtd,
 		}
 	}
 
-	if (!type) {
-		if (plat->nand_flash_dev) {
-			if (!strncmp((char *) plat->nand_flash_dev->id,
-	(char *)dev_id, strlen((const char *)plat->nand_flash_dev->id)))
-				type = plat->nand_flash_dev;
-		}
-
-		if (!type) {
-			pre_scan->is_nand = 0;
-			return type;
-		}
-	}
-	aml_nand_check_fbb_issue(dev_id);
-	if (NAND_MFR_SAMSUNG == dev_id[0])
-		aml_nand_check_samsung_fbbt_flag(dev_id);
-
-	plat->nand_flash_dev = type;
-
-	if (pre_scan->pre_scan_flag) {
-		if (type)
-			pre_scan->is_nand = 1;
-		return type;
-	}
-#ifdef CONFIG_MTD_DEVICE
-		mtd->name = type->name;
-#else
-	if (!mtd->name)
-		mtd->name = type->name;
-#endif
-
-	chip->chipsize = type->chipsize;
-	chip->chipsize = chip->chipsize << 20;
-
-	/* Newer devices have all the information in additional id bytes */
-	if (!type->pagesize) {
-		int extid;
-		/* The 3rd id byte holds MLC / multichip data */
-		/*chip->cellinfo = chip->read_byte(mtd);*/
-		/* The 4th id byte is the important one */
-		extid = chip->read_byte(mtd);
-		/* Calc pagesize */
-		mtd->writesize = 1024 << (extid & 0x3);
-		extid >>= 2;
-		/* Calc oobsize */
-		mtd->oobsize = (8 << (extid & 0x01)) * (mtd->writesize >> 9);
-		extid >>= 2;
-		/* Calc blocksize. Blocksize is multiples of 64KiB */
-		mtd->erasesize = (64 * 1024) << (extid & 0x03);
-		extid >>= 2;
-		/* Get buswidth information */
-		busw = (extid & 0x01) ? NAND_BUSWIDTH_16 : 0;
-
-	} else {
-		/*Old devices have chip data hardcoded in the device id table*/
-		mtd->erasesize = type->erasesize;
-		mtd->writesize = type->pagesize;
-		mtd->oobsize = type->oobsize;
-		busw = type->options & NAND_BUSW_OPTIONS_MASK;
-	}
-
-	/* Try to identify manufacturer */
-	for (maf_idx = 0; nand_manuf_ids[maf_idx].id != 0x0; maf_idx++) {
-		if (nand_manuf_ids[maf_idx].id == *maf_id)
-			break;
-	}
-
-	/*Check, if buswidth is correct. Hardware drivers should set
-	 * chip correct !*/
-	if (busw != (chip->options & NAND_BUSWIDTH_16)) {
-		printk(KERN_INFO "NAND device: Manufacturer ID:"
-		       " 0x%02x, Chip ID: 0x%02x (%s %s)\n", *maf_id,
-		       dev_id[0], nand_manuf_ids[maf_idx].name, mtd->name);
-		printk(KERN_WARNING "NAND bus width %d instead %d bit\n",
-		       (chip->options & NAND_BUSWIDTH_16) ? 16 : 8,
-		       busw ? 16 : 8);
-		return ERR_PTR(-EINVAL);
-	}
-
-	/* Calculate the address shift from the page size */
-	chip->page_shift = ffs(mtd->writesize) - 1;
-	if (chip->page_shift < 0) {
-		pr_info("%s %d can not get page shift\n",
-		__func__, __LINE__);
-		return ERR_PTR(-EINVAL);
-	}
-	/* Convert chipsize to number of pages per chip -1. */
-	chip->pagemask = (chip->chipsize >> chip->page_shift) - 1;
-
-	chip->bbt_erase_shift = chip->phys_erase_shift = ffs(mtd->erasesize) - 1;
-	chip->chip_shift = ffs(chip->chipsize) - 1;
-
-	/* Set the bad block position */
-	chip->badblockpos = AML_BADBLK_POS;
-
-	/* Get chip options, preserve non chip based options */
-	/*chip->options &= ~NAND_CHIPOPTIONS_MSK;*/
-	/*chip->options |= type->options & NAND_CHIPOPTIONS_MSK;*/
-
-	/*Set chip as a default. Board drivers can override it, if necessary*/
-	/*chip->options |= NAND_NO_AUTOINCR;*/
-
-	/* Check if chip is a not a samsung device. Do not clear the
-	 * options for chips which are not having an extended id.
-	 */
-	/*if (*maf_id != NAND_MFR_SAMSUNG && !type->pagesize)
-		chip->options &= ~NAND_SAMSUNG_LP_OPTIONS;*/
-
-	printk(KERN_INFO "NAND device: Manufacturer ID:"
-	       " 0x%02x, Chip ID: 0x%02x (%s %s)\n", *maf_id, dev_id[0],
-	       nand_manuf_ids[maf_idx].name, type->name);
-
 	return type;
 }
 
 u8 recovery_flag;
 static int aml_nand_scan_ident(struct mtd_info *mtd, int maxchips)
 {
-	int i, busw, nand_maf_id, valid_chip_num = 1;
+	int i, maf_idx, busw, valid_chip_num = 1;
 	struct nand_chip *chip = mtd->priv;
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(mtd);
 	struct aml_nand_flash_dev *aml_type = NULL;
@@ -1283,25 +1174,64 @@ static int aml_nand_scan_ident(struct mtd_info *mtd, int maxchips)
 	/* Select the device */
 	chip->select_chip(mtd, 0);
 
-	/*reset chip for some nand need reset after power up*/
-	chip->cmdfunc(mtd, NAND_CMD_RESET, -1, -1);
-	aml_chip->aml_nand_wait_devready(aml_chip, 0);
-
 	/* Read the flash type */
-	aml_type = aml_nand_get_flash_type(mtd, chip, busw, &nand_maf_id);
+	aml_type = aml_nand_get_flash_type(mtd, chip);
+	if (!aml_type) {
+		pre_scan->is_nand = 0;
+		pr_warn("No NAND device found!!!\n");
+		chip->select_chip(mtd, -1);
+		return -ENODEV;
+	}
+
+	/* Try to identify manufacturer */
+	for (maf_idx = 0; nand_manuf_ids[maf_idx].id != 0x0; maf_idx++) {
+		if (nand_manuf_ids[maf_idx].id == aml_type->id[0])
+			break;
+	}
+
+	/*Check, if buswidth is correct. Hardware drivers should set
+	 * chip correct !
+	 */
+	busw = aml_type->options & NAND_BUSW_OPTIONS_MASK;
+	if (busw != (chip->options & NAND_BUSWIDTH_16)) {
+		pr_info("NAND device, Manufacturer ID: 0x%02x, Chip ID: 0x%02x\n",
+			aml_type->id[0], aml_type->id[1]);
+		pr_info("NAND bus width %d instead %d bit\n",
+			(chip->options & NAND_BUSWIDTH_16) ? 16 : 8,
+			busw ? 16 : 8);
+		return -EINVAL;
+	}
+
+	plat->nand_flash_dev = aml_type;
+
 	if (pre_scan->pre_scan_flag) {
-		if (!aml_type) {
-			chip->select_chip(mtd, -1);
-			return -ENODEV;
-		}
+		pre_scan->is_nand = 1;
 		return 0;
 	}
 
-	if (IS_ERR(aml_type)) {
-		printk(KERN_WARNING "No NAND device found!!!\n");
-		chip->select_chip(mtd, -1);
-		return PTR_ERR(aml_type);
+	if (IS_ENABLED(CONFIG_MTD_DEVICE))
+		mtd->name = aml_type->name;
+	else if (!mtd->name)
+		mtd->name = aml_type->name;
+
+	chip->chipsize = aml_type->chipsize << 20;
+	/* Calculate the address shift from the page size */
+	chip->page_shift = ffs(aml_type->pagesize) - 1;
+	if (chip->page_shift < 0) {
+		pr_info("%s %d can not get page shift\n", __func__, __LINE__);
+		return -EINVAL;
 	}
+
+	/* Convert chipsize to number of pages per chip -1. */
+	chip->pagemask = (chip->chipsize >> chip->page_shift) - 1;
+
+	chip->bbt_erase_shift = ffs(aml_type->erasesize) - 1;
+	chip->phys_erase_shift = ffs(aml_type->erasesize) - 1;
+	chip->chip_shift = ffs(chip->chipsize) - 1;
+
+	/* Set the bad block position */
+	chip->badblockpos = AML_BADBLK_POS;
+
 	chip->cmdfunc(mtd, NAND_CMD_READID, 0x20, -1);
 	for (i = 0; i < MAX_ID_LEN; i++) {
 		dev_id[i] = chip->read_byte(mtd);
@@ -1312,6 +1242,11 @@ static int aml_nand_scan_ident(struct mtd_info *mtd, int maxchips)
 	aml_chip->T_REA = aml_type->T_REA;
 	aml_chip->T_RHOH = aml_type->T_RHOH;
 	aml_chip->mfr_type = aml_type->id[0];
+
+	aml_nand_check_fbb_issue(aml_type->id);
+	if (aml_chip->mfr_type == NAND_MFR_SAMSUNG)
+		aml_nand_check_samsung_fbbt_flag(dev_id);
+
 	for (i = 0; i < ARRAY_SIZE(support_data_rcy_id); i++) {
 		if (aml_chip->mfr_type == support_data_rcy_id[i][0] &&
 			aml_type->id[1] == support_data_rcy_id[i][1]) {
@@ -1332,7 +1267,7 @@ static int aml_nand_scan_ident(struct mtd_info *mtd, int maxchips)
 		chip->cmdfunc(mtd, NAND_CMD_READID, 0x00, -1);
 		/* Read manufacturer and device IDs */
 
-		if (nand_maf_id != chip->read_byte(mtd)
+		if (aml_type->id[0] != chip->read_byte(mtd)
 			|| aml_type->id[1] != chip->read_byte(mtd))
 		/*if (nand_maf_id != dev_id[0] || aml_type->id[1] != dev_id[1])*/
 			aml_chip->valid_chip[i] = 0;
@@ -1403,6 +1338,10 @@ static int aml_nand_scan_ident(struct mtd_info *mtd, int maxchips)
 	if (!strncmp((char *)plat->name,
 		NAND_BOOT_NAME, strlen((const char *)NAND_BOOT_NAME)))
 		mtd->size = meson_rsv_part_get_bl2_part_size(mtd);
+
+	pr_debug("NAND device: Manufacturer ID: 0x%02x, Chip ID: 0x%02x (%s %s)\n",
+		 aml_chip->mfr_type, aml_type->id[1],
+		 nand_manuf_ids[maf_idx].name, aml_type->name);
 
 	return 0;
 }

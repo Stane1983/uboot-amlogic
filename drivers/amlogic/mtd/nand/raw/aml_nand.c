@@ -1755,7 +1755,7 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 	aml_chip->toggle_mode = 0;
 #ifdef NAND_ECC_ONLY_BCH8_1K
 	aml_chip->bch_info = NAND_ECC_BCH8_1K;
-	printf("Currently only supports BCH8 1K!\n");
+	pr_debug("Currently only supports BCH8 1K!\n");
 #else
 	aml_chip->bch_info = NAND_ECC_BCH60_1K;
 #endif
@@ -1816,7 +1816,7 @@ int aml_nand_init(struct aml_nand_chip *aml_chip)
 	oobfree = chip->ecc.layout->oobfree;
 	for (i = 0; oobfree[i].length && i < ARRAY_SIZE(chip->ecc.layout->oobfree); i++)
 		chip->ecc.layout->oobavail += oobfree[i].length;
-	printf("oob avail size %d\n", chip->ecc.layout->oobavail);
+	pr_debug("oob avail size %d\n", chip->ecc.layout->oobavail);
 	mtd->oobavail = chip->ecc.layout->oobavail;
 	mtd->ecclayout = chip->ecc.layout;
 

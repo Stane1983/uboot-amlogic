@@ -30,24 +30,24 @@ int nand_pre(void)
 extern struct mtd_info *nand_info[CONFIG_SYS_MAX_NAND_DEVICE];
 int slcnand_fit_storage(void)
 {
-	struct storage_t *slc_nand = NULL;
+	static struct storage_t *slc_nand;
 
 	struct aml_nand_chip *aml_chip = mtd_to_nand_chip(nand_info[0]);
 	struct aml_nand_flash_dev *type = NULL;
 
+	if (slc_nand)
+		return 0;
+
 	type = aml_chip->platform->nand_flash_dev;
 
-	if (slc_nand == NULL) {
-		slc_nand = kzalloc(sizeof(struct storage_t), GFP_KERNEL);
-		if (!slc_nand) {
-		debug("%s %d no enough memory!\n", __func__, __LINE__);
+	slc_nand = kzalloc(sizeof(*slc_nand), GFP_KERNEL);
+	if (!slc_nand)
 		return -ENOMEM;
-		}
-	}
 
 	slc_nand->type = BOOT_NAND_MTD;
 	slc_nand->init_flag = 0;
-	printf("storage dev type: 0x%x, storage device is slc NAND\n", slc_nand->type);
+	pr_debug("storage dev type: 0x%x, storage device is slc NAND\n",
+		 slc_nand->type);
 
 	memcpy(slc_nand->info.name, type->name, 32 * sizeof(char));
 	memcpy(slc_nand->info.id, type->id, 8);

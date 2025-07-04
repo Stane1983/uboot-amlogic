@@ -288,13 +288,13 @@ void get_sys_clk_rate_mtd(struct hw_controller *controller, int *rate)
 __NAND_CLK_CFG__:
 	AMLNF_WRITE_REG(controller->nand_clk_reg,
 		      (clk_src << 6) | clk_div | always_on | (1 << 31) | (2 << 8));
-	printf("%s:gclock=%x\n", __func__,
-	       AMLNF_READ_REG(controller->nand_clk_reg));
+	pr_debug("%s:gclock=%x\n", __func__,
+		 AMLNF_READ_REG(controller->nand_clk_reg));
 	NFC_SET_CFG(controller, 0);
 	NFC_SET_TIMING_ASYC(controller, bus_timing, (bus_cycle - 1));
 	NFC_SEND_CMD(controller, 1<<31);
-	printf("%s:P_NAND_CFG=%x\n", __func__,
-	       AMLNF_READ_REG(controller->reg_base + P_NAND_CFG));
+	pr_debug("%s:P_NAND_CFG=%x\n", __func__,
+		 AMLNF_READ_REG(controller->reg_base + P_NAND_CFG));
 }
 
 static void m3_nand_hw_init(struct aml_nand_chip *aml_chip)
@@ -364,15 +364,15 @@ static int m3_nand_options_confirm(struct aml_nand_chip *aml_chip)
 	}
 	/**aml_chip->oob_size equal nand oobsize**/
 	aml_chip->oob_fill_cnt =
-		aml_chip->oob_size - eep_need_oobsize * ecc_page_num;
-	printk("oob_fill_cnt =%d oob_size =%d, bch_bytes =%d\n",
-		aml_chip->oob_fill_cnt,
-		aml_chip->oob_size,
-		ecc_supports[i].bch_bytes);
-	printk("ecc mode:%d ecc_page_num=%d eep_need_oobsize=%d\n",
-		options_support, ecc_page_num, eep_need_oobsize);
+		 aml_chip->oob_size - eep_need_oobsize * ecc_page_num;
+	pr_debug("oob_fill_cnt =%d oob_size =%d, bch_bytes =%d\n",
+		 aml_chip->oob_fill_cnt,
+		 aml_chip->oob_size,
+		 ecc_supports[i].bch_bytes);
+	pr_debug("ecc mode:%d ecc_page_num=%d eep_need_oobsize=%d\n",
+		 options_support, ecc_page_num, eep_need_oobsize);
 
-	printk("options_support :%d\n", options_support);
+	pr_debug("options_support :%d\n", options_support);
 	if (options_support != NAND_ECC_SOFT_MODE) {
 		chip->ecc.read_page_raw = aml_nand_read_page_raw;
 		chip->ecc.write_page_raw = aml_nand_write_page_raw;
@@ -393,7 +393,7 @@ static int m3_nand_options_confirm(struct aml_nand_chip *aml_chip)
 
 #ifdef NAND_ECC_ONLY_BCH8_1K
 	options_support = NAND_ECC_BCH8_MODE;
-	printf("Currently only supports BCH8 1K!\n");
+	pr_debug("Currently only supports BCH8 1K!\n");
 	chip->ecc.strength = 8;
 	chip->ecc.size = NAND_ECC_UNIT_SIZE;
 	chip->ecc.bytes = NAND_BCH8_ECC_SIZE;
@@ -530,8 +530,8 @@ static int m3_nand_options_confirm(struct aml_nand_chip *aml_chip)
 	options_selected =
 		plat->platform_nand_data.chip.options & NAND_PLANE_OPTIONS_MASK;
 	options_define = (aml_chip->options & NAND_PLANE_OPTIONS_MASK);
-	printf("options_selected: 0x%x, options_define:0x%x\n", options_selected,
-		options_define);
+	pr_debug("options_selected: 0x%x, options_define:0x%x\n", options_selected,
+		 options_define);
 	if (options_selected > options_define) {
 		printk("PLANE change!\n");
 		options_selected = options_define;
