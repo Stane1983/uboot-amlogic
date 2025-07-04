@@ -104,6 +104,8 @@ int check_valid_dts(unsigned char *buffer)
 	ret = fdt_check_header(dt_addr);
 	if ( ret < 0 )
 		printf("%s: %s\n",__func__,fdt_strerror(ret));
+	env_set_hex("dt_addr", (unsigned long)dt_addr);
+	env_set_hex("dt_sz", fdt_totalsize(dt_addr));
 	/* fixme, is it 0 when ok? */
 	return ret;
 }

@@ -660,7 +660,6 @@ int optimus_storage_init(int toErase)
 {
 	int ret = 0;
 	char *cmd = NULL;
-	unsigned char *dtbLoadedAddr = (unsigned char *)OPTIMUS_DTB_LOAD_ADDR;
 	const int is_gpt = _gpt_is_loaded;
 
 	if (_disk_intialed_ok) {//To assert only actual disk intialed once
@@ -675,14 +674,6 @@ int optimus_storage_init(int toErase)
 
 	if (!_dtb_is_loaded) {
 		DWN_WRN("dtb is not loaded yet\n");
-	}
-
-	if (_dtb_is_loaded && is_gpt) {
-		DWN_MSG("to check dtb\n");
-		if (check_valid_dts(dtbLoadedAddr) < 0) {
-			DWN_ERR("Fail in check dtb valid\n");
-			return -__LINE__;
-		}
 	}
 
 	ret = store_init(1);
@@ -736,26 +727,6 @@ int optimus_storage_init(int toErase)
 	if (OPTIMUS_WORK_MODE_USB_PRODUCE == optimus_work_mode_get()) {//env not relocated in this case
 		DWN_MSG("usb producing env_relocate\n");
 		env_relocate();
-	}
-
-	if (_dtb_is_loaded) {//for key init, or fail when get /unifykey
-		unsigned int long fdtAddr = (unsigned int long)dtbLoadedAddr;
-
-#ifdef CONFIG_MULTI_DTB
-		fdtAddr = get_multi_dt_entry(fdtAddr);
-#endif// #ifdef CONFIG_MULTI_DTB
-	if (!fdtAddr) {
-		//0 address is invalid
-		return __LINE__;
-	}
-		ret = fdt_check_header((char *)fdtAddr);
-		unsigned int fdtsz    = fdt_totalsize((char *)fdtAddr);
-		if (ret || !fdtsz) {
-			DWN_ERR("Fail in fdt check header\n");
-			return __LINE__;
-		}
-		// if (fdtsz < _dtb_is_loaded)
-		memmove((char *)dtbLoadedAddr, (char *)fdtAddr, fdtsz);
 	}
 
 	return 0;

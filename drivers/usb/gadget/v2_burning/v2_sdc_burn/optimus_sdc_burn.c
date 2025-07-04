@@ -479,7 +479,11 @@ static int _optimus_sdc_burn_dtb_load(HIMAGE hImg, int is_gpt)
 			DWN_ERR("Err dt sz 0x%llx\n", itemSz);
 			return __LINE__;
 		}
-		memmove((char *)OPTIMUS_DTB_LOAD_ADDR, dtbTransferBuf, itemSz);
+		if (!check_valid_dts(dtbTransferBuf)) {
+			env_set_hex("dtb_mem_addr", OPTIMUS_DTB_LOAD_ADDR);
+			memmove((char *)OPTIMUS_DTB_LOAD_ADDR, (char *)env_get_hex("dt_addr",
+				(long)dtbTransferBuf), itemSz);
+		}
 	} else if (is_gpt) {
 		memmove((char *)V2_GPT_LOAD_ADDR, dtbTransferBuf, itemSz);
 	}

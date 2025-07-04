@@ -27,7 +27,7 @@ typedef struct _ImgSrcIf{
 } ImgSrcIf_t;
 
 COMPILE_TYPE_CHK(512  == sizeof(ImgSrcIf_t), bb);
-#define MAX_ITEM_NUM 48
+#define MAX_ITEM_NUM 72
 
 typedef struct _ImgInfo_s {
 	ImgSrcIf_t          imgSrcIf;
