@@ -65,7 +65,7 @@
 #define is_block_ctrl_multi(block_ctrl) ((block_ctrl) & LCD_TCON_DATA_CTRL_FLAG_MULTI)
 #define is_block_ctrl_dma(block_ctrl) ((block_ctrl) & LCD_TCON_DATA_CTRL_FLAG_DMA)
 
-/* block_ctrl for basic init data,  */
+/* block_ctrl for basic init data */
 #define LCD_TCON_DATA_CTRL_FLAG_UFR             0xd0
 #define is_block_ctrl_ufr(block_ctrl) ((block_ctrl) == LCD_TCON_DATA_CTRL_FLAG_UFR)
 
@@ -95,10 +95,19 @@ struct lcd_tcon_init_block_header_s {
 	char version[LCD_TCON_INIT_BIN_VERSION_SIZE];
 };
 
+struct lcd_tcon_reg_block_info_s {
+	unsigned int start;
+	unsigned short len;
+} __packed;
+
+#define TCON_EXT_BLK_INFO_PRE_OFFSET (LCD_TCON_DATA_BLOCK_HEADER_SIZE + 5)  //offset of bin
 struct lcd_tcon_init_block_ext_header_s {
 	unsigned short framerate_min;
 	unsigned short framerate_max;
-};
+
+	unsigned char reg_blk_num;
+	struct lcd_tcon_reg_block_info_s *reg_blk_info;
+} __packed;
 
 struct lcd_tcon_data_block_header_s {
 	unsigned int crc32;
