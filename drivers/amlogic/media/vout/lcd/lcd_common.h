@@ -35,7 +35,8 @@
 /* 20250123: update lcd bootargs transfer by lrm */
 /* 20250422: t6x pxp bringup */
 /* 20250828: update preboot support */
-#define LCD_DRV_VERSION    "20250828"
+/* 20250917: tcon support discontinued bin */
+#define LCD_DRV_VERSION    "20250917"
 
 #define CFMT_RGB565          0x05
 #define CFMT_RGB_6bit        0x06
