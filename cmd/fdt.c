@@ -458,7 +458,7 @@ static int do_fdt(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 						return ret;
 				} else if (subcmd[0] == 'a') {
 					/* Get address */
-					char buf[11];
+					char buf[19];
 
 					sprintf(buf, "0x%p", nodep);
 					env_set(var, buf);
