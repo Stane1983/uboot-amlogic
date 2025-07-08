@@ -981,6 +981,8 @@ static int do_GetValidSlot(
 
 			if (reason && (strcmp(reason, "kernel_panic") == 0))
 				env_set("rollback_reason", "kernel_panic");
+			else if (reason && (strcmp(reason, "insufficient_data") == 0))
+				env_set("rollback_reason", "insufficient_data");
 			else
 				env_set("rollback_reason", "boot_failure");
 #if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
@@ -1054,6 +1056,8 @@ static int do_GetValidSlot(
 
 			if (reason && (strcmp(reason, "kernel_panic") == 0))
 				env_set("rollback_reason", "kernel_panic");
+			else if (reason && (strcmp(reason, "insufficient_data") == 0))
+				env_set("rollback_reason", "insufficient_data");
 			else
 				env_set("rollback_reason", "boot_failure");
 #if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
