@@ -38,22 +38,21 @@
 #endif
 #include <asm/setup.h>
 
-#if defined(CONFIG_KEY_PRESERVE)
-#include <asm/amlogic/arch/cpu.h>
-#include <asm/amlogic/arch/register.h>
-#endif
 
 #ifdef CONFIG_AMLOGIC_MODIFY
+#include <asm/amlogic/arch/cpu.h>
+#include <asm/amlogic/arch/register.h>
+#include <amlogic/aml_profile.h>
 #include <stdlib.h>
 #ifdef CONFIG_AMLOGIC_TIME_PROFILE
 #include <initcall.h>
 #endif
 #endif
+
 #ifdef CONFIG_ARMV8_MULTIENTRY
 #include <asm/arch-meson/smp.h>
 #include <cli.h>
 #endif
-#include <amlogic/aml_profile.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -689,6 +688,13 @@ static void boot_jump_linux(struct bootm_headers *images, int flag)
 		PUSH_TIME_TE(__func__, BL33_BOOT_KERNEL_s);
 		extern uint32_t get_time(void);
 		printf("uboot time: %u us\n", get_time());
+
+#ifdef CONFIG_MAX_BOOT_TIME
+		if (get_time() > CONFIG_MAX_BOOT_TIME)
+			printf("WARNING: boot time over maximum limit! limit time: %u us\n",
+					CONFIG_MAX_BOOT_TIME);
+#endif
+
 		DUMP_TE();
 		if (images->os.arch == IH_ARCH_ARM) {
 			printf("boot 32bit kernel\n");

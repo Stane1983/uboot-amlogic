@@ -84,4 +84,6 @@
 /*improve eth performance*/
 #define CONFIG_SYS_NONCACHED_MEMORY     (1 << 20)       /* 1 MiB */
 
+#define CONFIG_MAX_BOOT_TIME   2500000
+
 #endif /* _CPU_H */
