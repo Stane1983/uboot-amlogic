@@ -62,6 +62,12 @@
 #define VOUT_CMD	"vout output ${outputmode}; "
 #endif
 
+#ifdef CONFIG_YOCTO
+#define IR_WAKEUP "irkey_wakeup 0 2 0x0 0xef10fe01 0xac53fe01"
+#else
+#define IR_WAKEUP  "echo ir wakeup"
+#endif
+
 /* args/envs */
 #define CONFIG_SYS_MAXARGS  64
 #define CONFIG_EXTRA_ENV_SETTINGS_BASE \
@@ -98,6 +104,7 @@
 	"disable_ir=0\0"\
 	"cpuid_env=0\0"\
 	"default_governor=performance\0"\
+	"init_ir_wakeup=" IR_WAKEUP "\0"\
 	"upgrade_check_base="\
 		"echo recovery_status=${recovery_status};"\
 		"if itest.s \"${recovery_status}\" == \"in_progress\"; then "\

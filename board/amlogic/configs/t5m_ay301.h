@@ -195,6 +195,7 @@
 	"cold_boot_normal_check="\
 		"setenv bootargs ${bootargs} ffv_freeze=off; "\
 		/*"run try_auto_burn;uboot wake up "*/\
+		"run init_ir_wakeup;" \
 		"if test ${powermode} = on; then "\
 			/*"run try_auto_burn; "*/\
 		"else if test ${powermode} = standby; then "\
