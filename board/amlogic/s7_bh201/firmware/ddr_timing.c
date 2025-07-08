@@ -130,6 +130,9 @@ uint32_t __ddr_parameter_reg_index[] __attribute__ ((section(".ddr_2acs_index"))
 #define LPDDR4_SKT 1
 #define DDR4_SKT 1
 #define DDR3_SKT 1
+
+#define ENABLE_DDR_WINDOW_FAST_BOOT 1
+
 //#define LPDDR4_USE_2LAYER_BOARD 1
 //default 1RANK 16BIT X2 DDR4
 //#define USE_2RANK_16BIT_X2_DDR4 1 //use ap222 board
@@ -143,13 +146,19 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 	{
 		.cfg_board_common_setting.timming_magic = 0,
 		.cfg_board_common_setting.timming_max_valid_configs = 1,
-		.cfg_board_common_setting.timming_struct_version = 9215,
+		.cfg_board_common_setting.timming_struct_version = 0x2384,
 		.cfg_board_common_setting.timming_struct_org_size =
 			sizeof(ddr_set_ps0_only_t),
 		.cfg_board_common_setting.timming_struct_real_size = 0,
+#if ENABLE_DDR_WINDOW_FAST_BOOT
+		.cfg_board_common_setting.fast_boot = {
+			0x1, 0, 0, 0xc6
+		},
+#else
 		.cfg_board_common_setting.fast_boot = {
 			0x0, 0, 0, 0
 		},
+#endif
 		.cfg_board_common_setting.ddr_func = DDR_FUNC_CONFIG_DFE_FUNCTION |
 		DDR_FUNC_CONFIG_DISABLE_DDR_DVFS_FUNCTION,
 		//DDR_FUNC_CONFIG_ENABLE_PZQ_DET_DRAM_TYPE_RETURN,
@@ -319,13 +328,23 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 	{
 		.cfg_board_common_setting.timming_magic = 0,
 		.cfg_board_common_setting.timming_max_valid_configs = 1,
-		.cfg_board_common_setting.timming_struct_version = 9215,
+		.cfg_board_common_setting.timming_struct_version = 0,
 		.cfg_board_common_setting.timming_struct_org_size =
 			sizeof(ddr_set_ps0_only_t),
 		.cfg_board_common_setting.timming_struct_real_size = 0,
+#if ENABLE_DDR_WINDOW_FAST_BOOT
+		.cfg_board_common_setting.fast_boot = {
+			0x1, 0, 0x00, 0xc6
+			//fast_boot[0]  enable
+			//fast_boot[1]  margin bit 0-3 read 4-7 write
+			//fast_boot[2]  offset bit 0-3 read 4-7 write
+			//fast_boot[3]  test index
+		},
+#else
 		.cfg_board_common_setting.fast_boot = {
 			0, 0, 0, 0
 		},
+#endif
 		.cfg_board_common_setting.ddr_func = DDR_FUNC_CONFIG_DFE_FUNCTION |
 		DDR_FUNC_CONFIG_DISABLE_DDR_DVFS_FUNCTION,
 		//DDR_FUNC_CONFIG_ENABLE_PZQ_DET_DRAM_TYPE_RETURN,
@@ -587,13 +606,23 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 	{
 		.cfg_board_common_setting.timming_magic = 0,
 		.cfg_board_common_setting.timming_max_valid_configs = 1,
-		.cfg_board_common_setting.timming_struct_version = 9469,
+		.cfg_board_common_setting.timming_struct_version = 0,
 		.cfg_board_common_setting.timming_struct_org_size =
 			sizeof(ddr_set_ps0_only_t),
 		.cfg_board_common_setting.timming_struct_real_size = 0,
+#if ENABLE_DDR_WINDOW_FAST_BOOT
+		.cfg_board_common_setting.fast_boot = {
+			0x1, 0, 0x00, 0xc6
+			//fast_boot[0]  enable
+			//fast_boot[1]  margin bit 0-3 read 4-7 write
+			//fast_boot[2]  offset bit 0-3 read 4-7 write
+			//fast_boot[3]  test index
+		},
+#else
 		.cfg_board_common_setting.fast_boot = {
 			0, 0, 0, 0
 		},
+#endif
 		.cfg_board_common_setting.ddr_func =
 		DDR_FUNC_CONFIG_DISABLE_DDR_DVFS_FUNCTION,
 		//DDR_FUNC_CONFIG_ENABLE_PZQ_DET_DRAM_TYPE_RETURN,

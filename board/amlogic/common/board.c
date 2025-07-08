@@ -44,6 +44,10 @@
 #include <amlogic/amfc.h>
 #endif
 
+#ifdef CONFIG_DDR_FASTBOOT
+#include <amlogic/aml_mmc.h>
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 #define UNUSED(x) (void)(x)
 
@@ -127,6 +131,25 @@ int misc_init_r(void)
 }
 #endif // #ifdef CONFIG_MISC_INIT_R
 
+#ifdef CONFIG_DDR_FASTBOOT
+typedef struct __ddr_savedparams {
+	uint8_t d1[16];
+	uint32_t data[2048 / 4 - 16 / 4 - 32 / 4];
+	uint8_t d2[32];
+} ddr_savedparams_t;
+
+static void ddr_save_fastboot_para(void)
+{
+	unsigned long addr = 0x2000000UL;
+
+	if (!memcmp((void *)addr, "DDRPARAMS", 8)) { // match tag
+		mmc_write_rsv(MMC_DDR_PARAMETER_NAME, sizeof(ddr_savedparams_t),
+				(void *)(addr + 8));
+		printf("Saved ddr fastboot\n");
+	}
+}
+#endif //CONFIG_DDR_FASTBOOT
+
 #ifdef CONFIG_BOARD_LATE_INIT
 int aml_board_late_init_front(void *arg)
 {
@@ -137,6 +160,11 @@ int aml_board_late_init_front(void *arg)
 	 * 1.setup bootup resource
 	 * ****************************************************
 	 */
+
+#ifdef CONFIG_DDR_FASTBOOT
+	ddr_save_fastboot_para();
+#endif
+
 	board_init_mem();
 	run_command("run bcb_cmd", 0);
 

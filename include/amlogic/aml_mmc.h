@@ -184,6 +184,9 @@ int emmc_update_mbr(unsigned char *buffer);
 int mmc_get_ext_csd(struct mmc *mmc, u8 *ext_csd);
 int mmc_set_ext_csd(struct mmc *mmc, u8 index, u8 value);
 
+/* emmv write rsv */
+int mmc_write_rsv(const char *rsv_name, size_t size, void *buf);
+
 /* mmc caps quirks */
 int emmc_quirks(void);
 #endif /* __AML_MMC_H__ */

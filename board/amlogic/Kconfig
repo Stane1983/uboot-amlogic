@@ -101,6 +101,13 @@ config AML_UPDATE_COOLING_STATE
 		Update thermal cooling state when using a non-default pdvfs Voltage opp table
 		For Amlogic boards
 
+config DDR_FASTBOOT
+	bool "Amlogic ddr fastboot"
+	default n
+	help
+		Support Amlogic ddr fastboot
+
+
 config AML_CS_SIGNING_SCHEME
 	string "Amlogic chipset signing scheme"
 	default "rsa-mldsa" if MESON_S6
