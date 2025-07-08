@@ -82,4 +82,6 @@
 
 #define SBOOT_KEYSLOT_BASE		32
 
+#define CONFIG_MAX_BOOT_TIME   1500000
+
 #endif /* _CPU_H */

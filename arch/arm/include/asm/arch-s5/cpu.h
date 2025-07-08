@@ -101,4 +101,7 @@ like the AES key not ready when secure boot enabled for the first time.
 #define CONFIG_KEY_PRESERVE
 
 #define CONFIG_AVB2_KPUB_FROM_FIP 1
+
+#define CONFIG_MAX_BOOT_TIME    2800000
+
 #endif /* _CPU_H */

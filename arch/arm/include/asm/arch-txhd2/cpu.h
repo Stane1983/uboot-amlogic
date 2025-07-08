@@ -90,4 +90,6 @@
 /*rand*/
 #define        CONFIG_HW_RNG_OLD
 
+#define CONFIG_MAX_BOOT_TIME   2500000
+
 #endif /* _CPU_H */

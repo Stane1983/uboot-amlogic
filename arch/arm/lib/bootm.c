@@ -36,11 +36,9 @@
 #include <zircon/zircon.h>
 #endif
 
-#if defined(CONFIG_KEY_PRESERVE)
 #include <asm/arch/cpu.h>
 #include <asm/arch/secure_apb.h>
 #include <asm/arch/register.h>
-#endif
 
 #ifdef CONFIG_AMLOGIC_TIME_PROFILE
 #include <initcall.h>
@@ -718,6 +716,13 @@ static void boot_jump_linux(bootm_headers_t *images, int flag)
 		PUSH_TIME_TE(__func__, BL33_BOOT_KERNEL_s);
 		extern uint32_t get_time(void);
 		printf("uboot time: %u us\n", get_time());
+
+#ifdef	CONFIG_MAX_BOOT_TIME
+		if (get_time() > CONFIG_MAX_BOOT_TIME)
+			printf("WARNING: boot time over maximum limit! limit time: %u us\n",
+					CONFIG_MAX_BOOT_TIME);
+#endif
+
 		DUMP_TE();
 	#ifdef CONFIG_AMLOGIC_TIME_PROFILE
 		if (gd->time_print_flag)

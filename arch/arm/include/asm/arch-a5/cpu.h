@@ -81,4 +81,6 @@ like the AES key not ready when secure boot enabled for the first time.
 
 #define CONFIG_KEY_PRESERVE
 
+#define CONFIG_MAX_BOOT_TIME   3500000
+
 #endif /* _CPU_H */
