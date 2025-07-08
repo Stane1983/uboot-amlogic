@@ -2414,19 +2414,25 @@ struct hdmi_format_para *hdmi_tst_fmt_name(char const *name, char const *attr)
 	char *lname;
 	enum hdmi_vic vic = HDMI_unknown;
 	unsigned int copy_len;
+	char tmp_name[MODE_LEN] = {0};
 
 	copy_para(&tst_para, &fmt_para_non_hdmi_fmt);
 	if (!name || !attr)
 		return &tst_para;
 
+	if (is_mode_name_frac(name))
+		convert_name_frac2int(name, tmp_name);
+	else
+		memcpy(tmp_name, name, sizeof(tmp_name));
+
 	for (i = 0; all_fmt_paras[i]; i++) {
 		lname = all_fmt_paras[i]->name;
-		if (lname && (strncmp(name, lname, strlen(lname)) == 0)) {
+		if (lname && (strncmp(tmp_name, lname, strlen(lname)) == 0)) {
 			vic = all_fmt_paras[i]->vic;
 			break;
 		}
 		lname = all_fmt_paras[i]->sname;
-		if (lname && (strncmp(name, lname, strlen(lname)) == 0)) {
+		if (lname && (strncmp(tmp_name, lname, strlen(lname)) == 0)) {
 			vic = all_fmt_paras[i]->vic;
 			break;
 		}
@@ -2435,15 +2441,15 @@ struct hdmi_format_para *hdmi_tst_fmt_name(char const *name, char const *attr)
 		sizeof(struct hdmi_format_para *))) {
 		copy_para(&tst_para, all_fmt_paras[i]);
 		memset(&tst_para.ext_name[0], 0, sizeof(tst_para.ext_name));
-		copy_len = strlen(name);
+		copy_len = strlen(tmp_name);
 		if (copy_len >= sizeof(tst_para.ext_name))
 			copy_len = sizeof(tst_para.ext_name) - 1;
-		memcpy(&tst_para.ext_name[0], name, copy_len);
-		hdmi_parse_attr(&tst_para, name);
+		memcpy(&tst_para.ext_name[0], tmp_name, copy_len);
+		hdmi_parse_attr(&tst_para, tmp_name);
 		hdmi_parse_attr(&tst_para, attr);
 	} else {
 		copy_para(&tst_para, &fmt_para_non_hdmi_fmt);
-		hdmi_parse_attr(&tst_para, name);
+		hdmi_parse_attr(&tst_para, tmp_name);
 		hdmi_parse_attr(&tst_para, attr);
 	}
 	if (strstr(name, "420"))
