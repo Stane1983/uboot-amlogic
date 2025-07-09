@@ -14,6 +14,7 @@
 #include "../../lcd_reg.h"
 #include "../../lcd_common.h"
 #include "lcd_tcon.h"
+#include "lcd_tcon_init.h"
 #include "lcd_tcon_dccd.h"
 #include "../lcd_connector.h"
 
@@ -586,7 +587,6 @@ lcd_tcon_data_multi_init_check_err_type:
  */
 static void lcd_tcon_data_complete_check(struct aml_lcd_drv_s *pdrv, int index)
 {
-	unsigned char *table = tcon_mm_table.core_reg_table;
 	int i, n = 0;
 
 	if (tcon_mm_table.data_complete)
@@ -605,19 +605,49 @@ static void lcd_tcon_data_complete_check(struct aml_lcd_drv_s *pdrv, int index)
 
 	tcon_mm_table.data_complete = 1;
 	LCDPR("%s: data_complete: %d\n", __func__, tcon_mm_table.data_complete);
+}
 
-	/* specially check demura setting */
-	if (pdrv->data->chip_type == LCD_CHIP_TL1 ||
-		pdrv->data->chip_type == LCD_CHIP_TM2) {
-		if (tcon_mm_table.demura_cnt < 2) {
-			tcon_mm_table.lut_valid_flag &= ~LCD_TCON_DATA_VALID_DEMURA;
-			if (table) {
-				/* disable demura */
-				table[0x178] = 0x38;
-				table[0x17c] = 0x20;
-				table[0x181] = 0x00;
-				table[0x23d] &= ~(1 << 0);
+static void lcd_tcon_init_table_pre_proc(unsigned char *table)
+{
+	struct lcd_tcon_config_s *tcon_conf = get_lcd_tcon_config();
+	struct tcon_rmem_s *tcon_rmem = get_lcd_tcon_rmem();
+	unsigned int reg = 0, val, bit, len, mask, paddr, i = 0;
+	unsigned int *table32;
+
+	if (!table || !tcon_rmem)
+		return;
+	table32 = (unsigned int *)table;
+
+	if (tcon_conf && tcon_conf->init_pre_setting) {
+		while (1) {
+			reg = tcon_conf->init_pre_setting[i].reg;
+			if (reg == REG_LCD_TCON_MAX)
+				break;
+			val = tcon_conf->init_pre_setting[i].val;
+			bit = tcon_conf->init_pre_setting[i].bit;
+			len = tcon_conf->init_pre_setting[i].len;
+			mask = (1 << len) - 1;
+			table32[reg] = (table32[reg] & ~(mask << bit)) | ((val & mask) << bit);
+			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+				LCDPR("%s: reg: 0x%08x[%d:%d] = 0x%x\n",
+					__func__, reg, (bit + len - 1), bit, val);
 			}
+			i++;
+		}
+	}
+
+	//update axi paddr
+	if (tcon_rmem->flag == 0 || !tcon_rmem->axi_rmem || !tcon_rmem->axi_reg) {
+		LCDPR("%s: invalid axi_rmem\n", __func__);
+		return;
+	}
+	for (i = 0; i < tcon_rmem->axi_bank; i++) {
+		reg = tcon_rmem->axi_reg[i];
+		paddr = tcon_rmem->axi_rmem[i].mem_paddr;
+		table32[reg] = paddr;
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+			LCDPR("%s: axi[%d] reg: 0x%08x, paddr: 0x%08x\n",
+				__func__, i, reg, paddr);
 		}
 	}
 }
@@ -1827,38 +1857,26 @@ static struct lcd_tcon_config_s tcon_data_t3 = {
 	.reg_table_len = LCD_TCON_TABLE_LEN_T5,
 	.core_reg_start = TCON_CORE_REG_START_T5,
 
-	.reg_top_ctrl = REG_LCD_TCON_MAX,
-	.bit_en = BIT_TOP_EN_T5,
-
-	.reg_core_od = REG_CORE_OD_T5,
-	.bit_od_en = BIT_OD_EN_T5,
-
-	.reg_ctrl_timing_base = REG_LCD_TCON_MAX,
-	.ctrl_timing_offset = CTRL_TIMING_OFFSET_T5,
-	.ctrl_timing_cnt = CTRL_TIMING_CNT_T5,
-
 	.axi_bank = LCD_TCON_AXI_BANK_T5,
 
 	.rsv_mem_size    = 0x00a02840,
 	.axi_size        = 0x00a00000, /* 10M */
 	.bin_path_size   = 0x00002800, /* 10K */
 	.secure_cfg_size = 0x00000040, /* 64byte */
-	.vac_size        = 0,
-	.demura_set_size = 0,
-	.demura_lut_size = 0,
-	.acc_lut_size    = 0,
 
+	.init_pre_setting = lcd_tcon_init_pre_setting_uhd,
 	.axi_tbl_len = ARRAY_SIZE(axi_mem_cfg_tbl_t5),
 	.axi_mem_cfg_tbl = axi_mem_cfg_tbl_t5,
+	.lut_dma_ops = NULL,
 
 	.tcon_init_table_pre_proc = lcd_tcon_init_table_pre_proc,
+	.tcon_lut_post_proc = lcd_tcon_lut_post_proc,
 	.tcon_global_reset = lcd_tcon_global_reset_t3,
 	.tcon_top_init = lcd_tcon_top_set_t5,
 	.tcon_enable = lcd_tcon_enable_t5,
 	.tcon_disable = lcd_tcon_disable_t5,
 	.tcon_forbidden_check = lcd_tcon_forbidden_check_4k,
 	.tcon_check = lcd_tcon_setting_check_t5,
-	.lut_dma_ops = NULL,
 };
 
 static struct lcd_tcon_config_s tcon_data_t5m = {
@@ -1870,32 +1888,20 @@ static struct lcd_tcon_config_s tcon_data_t5m = {
 	.reg_table_len = LCD_TCON_TABLE_LEN_T5,
 	.core_reg_start = TCON_CORE_REG_START_T5,
 
-	.reg_top_ctrl = REG_LCD_TCON_MAX,
-	.bit_en = BIT_TOP_EN_T5,
-
-	.reg_core_od = REG_CORE_OD_T5,
-	.bit_od_en = BIT_OD_EN_T5,
-
-	.reg_ctrl_timing_base = REG_LCD_TCON_MAX,
-	.ctrl_timing_offset = CTRL_TIMING_OFFSET_T5,
-	.ctrl_timing_cnt = CTRL_TIMING_CNT_T5,
-
 	.axi_bank = LCD_TCON_AXI_BANK_T5,
 
 	.rsv_mem_size    = 0x00a02840,
 	.axi_size        = 0x00a00000, /* 10M */
 	.bin_path_size   = 0x00002800, /* 10K */
 	.secure_cfg_size = 0x00000040, /* 64byte */
-	.vac_size        = 0,
-	.demura_set_size = 0,
-	.demura_lut_size = 0,
-	.acc_lut_size    = 0,
 
+	.init_pre_setting = lcd_tcon_init_pre_setting_uhd,
 	.axi_tbl_len = ARRAY_SIZE(axi_mem_cfg_tbl_t5),
 	.axi_mem_cfg_tbl = axi_mem_cfg_tbl_t5,
 	.lut_dma_ops = &lcd_tcon_dma_ops_t5m,
 
 	.tcon_init_table_pre_proc = lcd_tcon_init_table_pre_proc,
+	.tcon_lut_post_proc = lcd_tcon_lut_post_proc,
 	.tcon_global_reset = lcd_tcon_global_reset_t3,
 	.tcon_top_init = lcd_tcon_top_set_t5,
 	.tcon_enable = lcd_tcon_enable_t5,
@@ -1913,32 +1919,20 @@ static struct lcd_tcon_config_s tcon_data_t5w = {
 	.reg_table_len = LCD_TCON_TABLE_LEN_T5,
 	.core_reg_start = TCON_CORE_REG_START_T5,
 
-	.reg_top_ctrl = REG_LCD_TCON_MAX,
-	.bit_en = BIT_TOP_EN_T5,
-
-	.reg_core_od = REG_CORE_OD_T5,
-	.bit_od_en = BIT_OD_EN_T5,
-
-	.reg_ctrl_timing_base = REG_LCD_TCON_MAX,
-	.ctrl_timing_offset = CTRL_TIMING_OFFSET_T5,
-	.ctrl_timing_cnt = CTRL_TIMING_CNT_T5,
-
 	.axi_bank = LCD_TCON_AXI_BANK_T5,
 
 	.rsv_mem_size    = 0x00a02840,
 	.axi_size        = 0x00a00000, /* 10M */
 	.bin_path_size   = 0x00002800, /* 10K */
 	.secure_cfg_size = 0x00000040, /* 64byte */
-	.vac_size        = 0,
-	.demura_set_size = 0,
-	.demura_lut_size = 0,
-	.acc_lut_size    = 0,
 
+	.init_pre_setting = lcd_tcon_init_pre_setting_uhd,
 	.axi_tbl_len = ARRAY_SIZE(axi_mem_cfg_tbl_t5),
 	.axi_mem_cfg_tbl = axi_mem_cfg_tbl_t5,
 	.lut_dma_ops = NULL,
 
 	.tcon_init_table_pre_proc = lcd_tcon_init_table_pre_proc,
+	.tcon_lut_post_proc = lcd_tcon_lut_post_proc,
 	.tcon_global_reset = lcd_tcon_global_reset_t3,
 	.tcon_top_init = lcd_tcon_top_set_t5,
 	.tcon_enable = lcd_tcon_enable_t5,
@@ -1956,32 +1950,20 @@ static struct lcd_tcon_config_s tcon_data_t3x = {
 	.reg_table_len = LCD_TCON_TABLE_LEN_T3X,
 	.core_reg_start = TCON_CORE_REG_START_T5,
 
-	.reg_top_ctrl = REG_LCD_TCON_MAX,
-	.bit_en = BIT_TOP_EN_T5,
-
-	.reg_core_od = REG_CORE_OD_T5,
-	.bit_od_en = BIT_OD_EN_T5,
-
-	.reg_ctrl_timing_base = REG_LCD_TCON_MAX,
-	.ctrl_timing_offset = CTRL_TIMING_OFFSET_T5,
-	.ctrl_timing_cnt = CTRL_TIMING_CNT_T5,
-
 	.axi_bank = LCD_TCON_AXI_BANK_T3X,
 
 	.rsv_mem_size    = 0x00a02840, /* 10M10k */
 	.axi_size        = 0x00a00000, /* 10M */
 	.bin_path_size   = 0x00002800, /* 10K */
 	.secure_cfg_size = 0x00000040, /* 64byte */
-	.vac_size        = 0,
-	.demura_set_size = 0,
-	.demura_lut_size = 0,
-	.acc_lut_size    = 0,
 
+	.init_pre_setting = lcd_tcon_init_pre_setting_uhd,
 	.axi_tbl_len = ARRAY_SIZE(axi_mem_cfg_tbl_t3x),
 	.axi_mem_cfg_tbl = (axi_mem_cfg_tbl_t3x),
 	.lut_dma_ops = &lcd_tcon_dma_ops_t3x,
 
 	.tcon_init_table_pre_proc = lcd_tcon_init_table_pre_proc,
+	.tcon_lut_post_proc = lcd_tcon_lut_post_proc,
 	.tcon_global_reset = lcd_tcon_global_reset_t3x,
 	.tcon_top_init = lcd_tcon_top_set_t5,
 	.tcon_enable = lcd_tcon_enable_t5,
@@ -1999,32 +1981,20 @@ static struct lcd_tcon_config_s tcon_data_txhd2 = {
 	.reg_table_len = LCD_TCON_TABLE_LEN_TXHD2,
 	.core_reg_start = TCON_CORE_REG_START_T5D,
 
-	.reg_top_ctrl = REG_LCD_TCON_MAX,
-	.bit_en = BIT_TOP_EN_T5D,
-
-	.reg_core_od = REG_CORE_OD_T5D,
-	.bit_od_en = BIT_OD_EN_T5D,
-
-	.reg_ctrl_timing_base = REG_LCD_TCON_MAX,
-	.ctrl_timing_offset = CTRL_TIMING_OFFSET_T5D,
-	.ctrl_timing_cnt = CTRL_TIMING_CNT_T5D,
-
 	.axi_bank = LCD_TCON_AXI_BANK_TXHD2,
 
 	.rsv_mem_size    = 0x00502840,
 	.axi_size        = 0x00500000, /* 5M*/
 	.bin_path_size   = 0x00002800, /* 10K */
 	.secure_cfg_size = 0x00000040, /* 64byte */
-	.vac_size        = 0,
-	.demura_set_size = 0,
-	.demura_lut_size = 0,
-	.acc_lut_size    = 0,
 
+	.init_pre_setting = lcd_tcon_init_pre_setting_fhd,
 	.axi_tbl_len = ARRAY_SIZE(axi_mem_cfg_tbl_txhd2),
 	.axi_mem_cfg_tbl = axi_mem_cfg_tbl_txhd2,
 	.lut_dma_ops = NULL,
 
-	.tcon_init_table_pre_proc = lcd_tcon_init_table_pre_proc_txhd2,
+	.tcon_init_table_pre_proc = lcd_tcon_init_table_pre_proc,
+	.tcon_lut_post_proc = lcd_tcon_lut_post_proc,
 	.tcon_global_reset = lcd_tcon_global_reset_t5,
 	.tcon_top_init = lcd_tcon_top_set_t5,
 	.tcon_enable = lcd_tcon_enable_txhd2,
