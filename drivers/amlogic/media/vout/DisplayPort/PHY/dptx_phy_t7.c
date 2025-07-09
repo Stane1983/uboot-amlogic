@@ -10,23 +10,25 @@
 #include "../dptx_common.h"
 #include "../dptx_regs.h"
 
-static void dptx_dphy_set(struct dptx_drv_s *dptx, u8 on_off)
+static void dptx_dphy_set(struct dptx_drv_s *dptx, uint8_t port, u8 on_off)
 {
 	unsigned int reg_dphy_tx_ctrl0, reg_dphy_tx_ctrl1;
 	unsigned int bit_data_in_lvds, bit_data_in_edp, bit_lane_sel;
 
-	if (dptx->idx == 0) {
+	if (dptx->idx == 0 && port == 0) {
 		reg_dphy_tx_ctrl0 = COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0;
 		reg_dphy_tx_ctrl1 = COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL1;
 		bit_data_in_lvds = 0;
 		bit_data_in_edp = 1;
 		bit_lane_sel = 0;
-	} else { //dptx->idx == 1
+	} else if (dptx->idx == 1 || (dptx->idx == 0 && port == 1)) { //dptx->idx == 1
 		reg_dphy_tx_ctrl0 = COMBO_DPHY_EDP_LVDS_TX_PHY1_CNTL0;
 		reg_dphy_tx_ctrl1 = COMBO_DPHY_EDP_LVDS_TX_PHY1_CNTL1;
 		bit_data_in_lvds = 2;
 		bit_data_in_edp = 3;
 		bit_lane_sel = 16;
+	} else {
+		return;
 	}
 
 	if (on_off) {
@@ -87,45 +89,48 @@ static void dptx1_ana_phy_cntl_set(struct dptx_drv_s *dptx, uint8_t status)
 	// dptx_ana_write(ANACTRL_DIF_PHY_CNTL18, data_lane);
 }
 
-static void dptx_ana_phy_set(struct dptx_drv_s *dptx, u8 status)
+static void dptx_ana_phy_set(struct dptx_drv_s *dptx, uint8_t port, u8 status)
 {
 	// uint32_t flag, data_lane0_aux, data_lane1_aux, data_lane;
 	struct dptx_phy_cfg_s *phy = &dptx->phy_cfg;
 	uint32_t vswing;
 
-	DPTXPR(dptx->idx, LOG_I, "%s: %u", __func__, status);
+	DPTX_P_PR(dptx, port, "%s: %u", __func__, status);
 
-	if (dptx->idx == 0)
-		dptx0_ana_phy_cntl_set(dptx, status);
-	else
+	if (dptx->idx == 0) {
+		if (port == 0)
+			dptx0_ana_phy_cntl_set(dptx, status);
+		else if (port == 1)
+			dptx1_ana_phy_cntl_set(dptx, status);
+	} else {
 		dptx1_ana_phy_cntl_set(dptx, status);
-
+	}
 	if (status) {
 		vswing = phy->vswing >= 0x3 ? phy->vswing : 0x3;
 		dptx_ana_write(ANACTRL_DIF_PHY_CNTL19, 0x00406240 | vswing);
 	}
 
-	// DPTXPR(dptx->idx, LOG_I, "phy lane_lock: 0x%x\n", phy_ctrl_p->lane_lock);
+	// DPTX_PR(dptx, "phy lane_lock: 0x%x\n", phy_ctrl_p->lane_lock);
 }
 
-static void dptx_phy_enable_t7(struct dptx_drv_s *dptx)
+static void dptx_phy_enable_t7(struct dptx_drv_s *dptx, uint8_t port)
 {
-	dptx->phy_cfg.vswing = 0x3;
-	dptx_ana_phy_set(dptx, 1);
-	dptx_dphy_set(dptx, 1);
+	dptx->phy_cfg.vswing = 0x3; //enabled with a low vsw to make aux ok
+	dptx_ana_phy_set(dptx, port, 1);
+	dptx_dphy_set(dptx, port, 1);
 }
 
-static void dptx_phy_disable_t7(struct dptx_drv_s *dptx)
+static void dptx_phy_disable_t7(struct dptx_drv_s *dptx, uint8_t port)
 {
-	dptx_dphy_set(dptx, 0);
-	dptx_ana_phy_set(dptx, 0);
+	dptx_dphy_set(dptx, port, 0);
+	dptx_ana_phy_set(dptx, port, 0);
 }
 
-static void dptx_phy_set_lane_t7(struct dptx_drv_s *dptx, uint8_t lane_mask)
+static void dptx_phy_set_lane_t7(struct dptx_drv_s *dptx, uint8_t port, uint8_t lane_mask)
 {
 	// !!!!!!!!!!!!!!!!!!!
-	dptx_ana_phy_set(dptx, 1);
-	dptx_dphy_set(dptx, 1);
+	dptx_ana_phy_set(dptx, port, 1);
+	dptx_dphy_set(dptx, port, 1);
 }
 
 static struct dptx_phy_ctrl_s dptx_phy_ctrl_t7 = {

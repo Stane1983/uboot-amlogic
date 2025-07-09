@@ -10,9 +10,9 @@
 
 struct dptx_phy_ctrl_s {
 	unsigned int lane_lock;
-	void (*phy_enable)(struct dptx_drv_s *dptx);
-	void (*phy_disable)(struct dptx_drv_s *dptx);
-	void (*phy_set_lane)(struct dptx_drv_s *dptx, uint8_t lane_mask);
+	void (*phy_enable)(struct dptx_drv_s *dptx, uint8_t port);
+	void (*phy_disable)(struct dptx_drv_s *dptx, uint8_t port);
+	void (*phy_set_lane)(struct dptx_drv_s *dptx, uint8_t port, uint8_t lane_mask);
 };
 
 struct dptx_phy_ctrl_s *dptx_phy_config_init_t7(void);

@@ -10,37 +10,37 @@
 
 static struct dptx_phy_ctrl_s *dptx_phy_ctrl;
 
-void dptx_phy_enable(struct dptx_drv_s *dptx)
+void dptx_phy_enable(struct dptx_drv_s *dptx, uint8_t port)
 {
 	if (!dptx_phy_ctrl->phy_enable) {
-		DPTXPR(dptx->idx, LOG_I, "%s: phy_enable is null", __func__);
+		DPTX_P_PR(dptx, port, "%s: phy_enable is null", __func__);
 		return;
 	}
 
-	DPTXPR(dptx->idx, LOG_V, "%s", __func__);
-	dptx_phy_ctrl->phy_enable(dptx);
+	DPTX_P_DBG(dptx, port, "%s", __func__);
+	dptx_phy_ctrl->phy_enable(dptx, port);
 }
 
-void dptx_phy_disable(struct dptx_drv_s *dptx)
+void dptx_phy_disable(struct dptx_drv_s *dptx, uint8_t port)
 {
 	if (!dptx_phy_ctrl->phy_disable) {
-		DPTXPR(dptx->idx, LOG_I, "%s: phy_disable is null", __func__);
+		DPTX_P_PR(dptx, port, "%s: phy_disable is null", __func__);
 		return;
 	}
 
-	DPTXPR(dptx->idx, LOG_V, "%s", __func__);
-	dptx_phy_ctrl->phy_enable(dptx);
+	DPTX_P_DBG(dptx, port, "%s", __func__);
+	dptx_phy_ctrl->phy_disable(dptx, port);
 }
 
-void dptx_phy_set_lane(struct dptx_drv_s *dptx, uint8_t lane_mask)
+void dptx_phy_set_lane(struct dptx_drv_s *dptx, uint8_t port, uint8_t lane_mask)
 {
 	if (!dptx_phy_ctrl->phy_disable) {
-		DPTXPR(dptx->idx, LOG_I, "%s: phy_disable is null", __func__);
+		DPTX_P_PR(dptx, port, "%s: phy_disable is null", __func__);
 		return;
 	}
 
-	DPTXPR(dptx->idx, LOG_V, "%s", __func__);
-	dptx_phy_ctrl->phy_set_lane(dptx, lane_mask);
+	DPTX_P_DBG(dptx, port, "%s", __func__);
+	dptx_phy_ctrl->phy_set_lane(dptx, port, lane_mask);
 }
 
 void dptx_phy_probe(struct dptx_chip_data_s *dptx_chip_data)

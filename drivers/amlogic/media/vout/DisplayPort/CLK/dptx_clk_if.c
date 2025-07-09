@@ -24,22 +24,22 @@ void dptx_clk_set_vid_clk(struct dptx_drv_s *dptx, uint32_t pixel_clk)
 
 	while (dptx_clk_msr_check(dptx->data->venc_clk_msr_id[dptx->idx], pixel_clk)) {
 		if (cnt++ >= 10) {
-			DPTXPR(dptx->idx, LOG_E, "%s timeout", __func__);
+			DPTX_ERR(dptx, "%s timeout", __func__);
 			break;
 		}
 	}
 }
 
-void dptx_clk_set_link_clk(struct dptx_drv_s *dptx, uint8_t dptx_link_rate)
+void dptx_clk_set_link_clk(struct dptx_drv_s *dptx, uint8_t port, uint8_t dptx_link_rate)
 {
 	if (dptx_clk_op_s->link_clk_config)
-		dptx_clk_op_s->link_clk_config(dptx, dptx_link_rate);
+		dptx_clk_op_s->link_clk_config(dptx, port, dptx_link_rate);
 
 	if (dptx_clk_op_s->clktree_set)
 		dptx_clk_op_s->clktree_set(dptx);
 
 	if (dptx_clk_op_s->link_clk_set)
-		dptx_clk_op_s->link_clk_set(dptx);
+		dptx_clk_op_s->link_clk_set(dptx, port);
 }
 
 void dptx_clk_config_print(struct dptx_drv_s *dptx)
@@ -59,7 +59,7 @@ void dptx_clk_config_probe(struct dptx_drv_s *dptx)
 		dptx_clk_op_s = dptx_clk_op_init_t7(dptx);
 		break;
 	default:
-		DPTXPR(dptx->idx, LOG_E, "%s: invalid chip type", __func__);
+		DPTX_ERR(dptx, "%s: invalid chip type", __func__);
 		return;
 	}
 }

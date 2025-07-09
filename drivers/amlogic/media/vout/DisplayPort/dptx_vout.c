@@ -32,11 +32,13 @@ static struct dptx_chip_data_s dptx_data_t7 = {
 	.offset_venc      = {0x0, (0x600 << 2)},
 	.offset_venc_if   = {0x0, (0x500 << 2)},
 	.offset_venc_data = {0x0, (0x100 << 2)},
+	.venc_clk_msr_id  = {222, 221},
 
-	.link_rate    = DP_LINK_RATE_HBR,
+	.link_rate    = {{DP_LINK_RATE_HBR, DP_LINK_RATE_HBR}, {DP_LINK_RATE_HBR, 0}},
+	.lane_count   = {{4, 4}, {4, 0}},
 	.TPS_support  = BIT(0),
 	.DACP_support = BIT(2),
-	.venc_clk_msr_id = {222, 221},
+	.pixel_clk_limit = 667,
 };
 
 static void dptx_chip_detect(void)
@@ -95,11 +97,11 @@ int dptx_connector_check(struct dptx_drv_s *dptx)
 			continue;
 
 		dptx->viu_sel = i + 1;
-		DPTXPR(dptx->idx, LOG_I, "%s: connector[%hu] - (%s)\n", __func__, i, cnt_type_name);
+		DPTX_PR(dptx, "%s: connector[%hu] - (%s)\n", __func__, i, cnt_type_name);
 		return 0;
 	}
 
-	DPTXPR(dptx->idx, LOG_E, "%s: no connector to DisplayPort TX: %s", __func__, dptx_cnt_name);
+	DPTX_ERR(dptx, "%s: no connector to DisplayPort TX: %s", __func__, dptx_cnt_name);
 	return -1;
 }
 
@@ -116,13 +118,13 @@ int dptx_outputmode_check(struct dptx_drv_s *dptx, char *mode)
 		// printf("%s\n", vmd_name);
 		if (strcmp(mode, vmd_name)) {
 			dptx->vmode_mgr.vmode_sel_idx = i;
-			DPTXPR(dptx->idx, LOG_I, "%s: timing: %u, %s", __func__, i, mode);
+			DPTX_PR(dptx, "%s: timing: %u, %s", __func__, i, mode);
 			return 0;
 		}
 	}
 
 	dptx->vmode_mgr.vmode_sel_idx = U8_MAX;
-	DPTXPR(dptx->idx, LOG_I, "%s: timing: %s (not match)", __func__, mode);
+	DPTX_PR(dptx, "%s: timing: %s (not match)", __func__, mode);
 	return 0;
 }
 
@@ -134,7 +136,7 @@ static void dptx_update_outputmode(struct dptx_drv_s *dptx)
 	uint8_t i;
 
 	if (!(dptx->status & DPTX_STA_LINK_ON)) {
-		DPTXPR(dptx->idx, LOG_E, "curr link not on");
+		DPTX_ERR(dptx, "curr link not on");
 		dptx->vmode_mgr.vmode_sel_idx = U8_MAX;
 	}
 
@@ -157,7 +159,7 @@ static void dptx_update_outputmode(struct dptx_drv_s *dptx)
 
 	env_set(mode_env_name, temp_str);
 
-	DPTXPR(dptx->idx, LOG_I, "%s=%s: set %s=%s",
+	DPTX_PR(dptx, "%s=%s: set %s=%s",
 		cnt_type_str, (char *)env_get(cnt_type_str), mode_env_name, temp_str);
 }
 
@@ -304,57 +306,44 @@ static uint8_t dptx_config_load_from_dts(char *dt_addr, struct dptx_drv_s *dptx)
 	sprintf(snode, "/DisplayPort_TX_%u", dptx->idx);
 	parent_offset = fdt_path_offset(dt_addr, snode);
 	if (parent_offset < 0) {
-		DPTXPR(dptx->idx, LOG_E, "load %s node: %s", snode, fdt_strerror(parent_offset));
+		DPTX_ERR(dptx, "load %s node: %s", snode, fdt_strerror(parent_offset));
 		return -1;
 	}
 
-	DPTXPR(dptx->idx, LOG_V, "load %s node", snode);
+	DPTX_DBG(dptx, "load %s node", snode);
 
 	/* check lcd status enable or not */
 	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "status", NULL);
 	if (!propdata) {
-		DPTXPR(dptx->idx, LOG_E, "failed to get status, default disable");
+		DPTX_ERR(dptx, "failed to get status, default disable");
 		return -1;
 	}
 	if (strcmp(propdata, "okay")) {
-		DPTXPR(dptx->idx, LOG_I, "status disabled, exit");
+		DPTX_PR(dptx, "status disabled, exit");
 		return -1;
 	}
 
 	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "device_name", NULL);
 	if (propdata && (strlen(propdata) != 0)) {
-		strncpy(dptx->dev_name, propdata, 31);
-		DPTXPR(dptx->idx, LOG_I, "device name: %s", dptx->dev_name);
+		strncpy(dptx->setting.dev_name, propdata, 31);
+		DPTX_PR(dptx, "device name: %s", dptx->setting.dev_name);
 	} else {
-		strcpy(dptx->dev_name, "Amlogic DisplayPort TX");
+		strcpy(dptx->setting.dev_name, "Amlogic DisplayPort TX");
 	}
 
 	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "HPD-ignore", NULL);
 	if (propdata) {
-		dptx->hpd_ignore = (u16)be32_to_cpup((u32 *)propdata);
-		DPTXPR(dptx->idx, LOG_I, "HPD ignore: %ums", dptx->hpd_ignore);
+		dptx->setting.user_hpd_ignore = (u16)be32_to_cpup((u32 *)propdata);
+		if (dptx->setting.user_hpd_ignore)
+			DPTX_PR(dptx, "HPD ignore: %ums", dptx->setting.user_hpd_ignore);
 	}
 
-	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "dptx-gpio-PWR-name", NULL);
+	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "edptx_vcc-gpio-name", NULL);
 	if (propdata && (strlen(propdata) != 0)) {
 		strncpy(dptx->PWR_gpio_name, propdata, (DPTX_GPIO_NAME_MAX - 1));
-		DPTXPR(dptx->idx, LOG_I, "PWR GPIO: %s", dptx->PWR_gpio_name);
+		DPTX_PR(dptx, "PWR GPIO: %s", dptx->PWR_gpio_name);
 	} else {
 		strcpy(dptx->PWR_gpio_name, "invalid");
-	}
-	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "dptx-gpio-CFG1-name", NULL);
-	if (propdata && (strlen(propdata) != 0)) {
-		strncpy(dptx->CFG1_gpio_name, propdata, (DPTX_GPIO_NAME_MAX - 1));
-		DPTXPR(dptx->idx, LOG_I, "CFG1 GPIO: %s", dptx->CFG1_gpio_name);
-	} else {
-		strcpy(dptx->CFG1_gpio_name, "invalid");
-	}
-	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "dptx-gpio-CFG2-name", NULL);
-	if (propdata && (strlen(propdata) != 0)) {
-		strncpy(dptx->CFG2_gpio_name, propdata, (DPTX_GPIO_NAME_MAX - 1));
-		DPTXPR(dptx->idx, LOG_I, "CFG2 GPIO: %s", dptx->CFG2_gpio_name);
-	} else {
-		strcpy(dptx->CFG2_gpio_name, "invalid");
 	}
 
 	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "drive-strength-lut", NULL);
@@ -364,26 +353,70 @@ static uint8_t dptx_config_load_from_dts(char *dt_addr, struct dptx_drv_s *dptx)
 				(u16)be32_to_cpup(((u32 *)propdata) + i);
 		}
 	} else {
-		DPTXPR(dptx->idx, LOG_E, "DPCD level to PHY LUT not set");
+		DPTX_ERR(dptx, "DPCD level to PHY LUT not set");
 	}
 
 	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "assigned-link-rate", NULL);
 	if (propdata) {
-		dptx->user_link_rate = (u16)be32_to_cpup((u32 *)propdata);
-		DPTXPR(dptx->idx, LOG_I, "assigned link rate: %u", dptx->user_link_rate);
+		dptx->setting.user_link_rate = (u16)be32_to_cpup((u32 *)propdata);
+		if (dptx->setting.user_link_rate)
+			DPTX_PR(dptx, "assigned link rate: %u", dptx->setting.user_link_rate);
 	} else {
-		dptx->user_link_rate = 0;
+		dptx->setting.user_link_rate = 0;
 	}
 
 	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "assigned-lane-count", NULL);
 	if (propdata) {
-		dptx->user_lane_count = (u16)be32_to_cpup((u32 *)propdata);
-		DPTXPR(dptx->idx, LOG_I, "assigned lane count: %u", dptx->user_lane_count);
+		dptx->setting.user_lane_count = (u16)be32_to_cpup((u32 *)propdata);
+		if (dptx->setting.user_lane_count)
+			DPTX_PR(dptx, "assigned lane count: %u", dptx->setting.user_lane_count);
 	} else {
-		dptx->user_lane_count = 0xff;
+		dptx->setting.user_lane_count = 0;
 	}
 
-	dptx->user_color_format = 0xff;
+	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "assigned-port-count", NULL);
+	if (propdata) {
+		i = (u16)be32_to_cpup((u32 *)propdata);
+		if (i == 4)
+			dptx->sink.port_mask = 0xf;
+		else if (i == 2)
+			dptx->sink.port_mask = 0x3;
+		else
+			dptx->sink.port_mask = 0x1;
+		if (i)
+			DPTX_PR(dptx, "assigned port mask: %u", dptx->setting.user_port_mask);
+	} else {
+		dptx->sink.port_mask = 0x1;
+	}
+
+	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "assigned-vmode", NULL);
+	if (propdata) {
+		dptx->setting.user_vmode_sel = (u16)be32_to_cpup((u32 *)propdata);
+		if (dptx->setting.user_vmode_sel)
+			DPTX_PR(dptx, "assigned vmode idx: %u", dptx->setting.user_vmode_sel);
+	} else {
+		dptx->setting.user_vmode_sel = 0;
+	}
+
+	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "assigned-disable-PSR", NULL);
+	if (propdata) {
+		dptx->setting.user_disable_PSR = (u16)be32_to_cpup((u32 *)propdata);
+		if (dptx->setting.user_disable_PSR)
+			DPTX_PR(dptx, "assigned disable PSR: %u", dptx->setting.user_disable_PSR);
+	} else {
+		dptx->setting.user_disable_PSR = 0;
+	}
+
+	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "assigned-preset-timing", NULL);
+	if (propdata) {
+		dptx->setting.user_disable_PSR = (u16)be32_to_cpup((u32 *)propdata);
+		if (dptx->setting.user_disable_PSR)
+			DPTX_PR(dptx, "assigned preset timing: %u", dptx->setting.user_disable_PSR);
+	} else {
+		dptx->setting.user_disable_PSR = 0;
+	}
+
+	dptx->setting.user_color_format = 0xff;
 #endif
 	return 0;
 }
@@ -397,22 +430,51 @@ static void dptx_user_env_load(struct dptx_drv_s *dptx)
 	sprintf(env_str, "dptx%u_link_rate", dptx->idx);
 	temp = env_get_ulong(env_str, 10, 0);
 	if (temp) {
-		dptx->user_link_rate = temp;
-		DPTXPR(dptx->idx, LOG_I, "user env: %s: %u", env_str, temp);
+		dptx->setting.user_link_rate = temp;
+		DPTX_PR(dptx, "user env: %s: %u", env_str, temp);
 	}
 
 	sprintf(env_str, "dptx%u_lane_count", dptx->idx);
 	temp = env_get_ulong(env_str, 10, 0);
 	if (temp) {
-		dptx->user_lane_count = temp;
-		DPTXPR(dptx->idx, LOG_I, "user env %s: %u", env_str, temp);
+		dptx->setting.user_lane_count = temp;
+		DPTX_PR(dptx, "user env %s: %u", env_str, temp);
 	}
 
 	sprintf(env_str, "dptx%u_hpd_ignore", dptx->idx);
 	temp = env_get_ulong(env_str, 10, 0);
 	if (temp) {
-		dptx->hpd_ignore = temp;
-		DPTXPR(dptx->idx, LOG_I, "user env: %s: %u", env_str, temp);
+		dptx->setting.user_hpd_ignore = temp;
+		DPTX_PR(dptx, "user env: %s: %u", env_str, temp);
+	}
+
+	sprintf(env_str, "dptx%u_vmode", dptx->idx);
+	temp = env_get_ulong(env_str, 10, 0);
+	if (temp) {
+		dptx->setting.user_vmode_sel = temp;
+		DPTX_PR(dptx, "user env: %s: %u", env_str, temp);
+	}
+
+	sprintf(env_str, "dptx%u_port_count", dptx->idx);
+	temp = env_get_ulong(env_str, 10, 0);
+	if (temp) {
+		if (temp == 4)
+			dptx->setting.user_port_mask = 0xf;
+		else if (temp == 2)
+			dptx->setting.user_port_mask = 0x3;
+		else
+			dptx->setting.user_port_mask = 0x1;
+		DPTX_PR(dptx, "user env: %s: %u", env_str, temp);
+		dptx->sink.port_mask = dptx->setting.user_port_mask;
+	} else {
+		dptx->setting.user_port_mask = 0x1;
+	}
+
+	sprintf(env_str, "dptx%u_psr_disable", dptx->idx);
+	temp = env_get_ulong(env_str, 10, 0);
+	if (temp) {
+		dptx->setting.user_disable_PSR = 1;
+		DPTX_PR(dptx, "user env: %s: %u", env_str, temp);
 	}
 
 	sprintf(env_str, "dptx%u_color_format", dptx->idx);
@@ -422,8 +484,8 @@ static void dptx_user_env_load(struct dptx_drv_s *dptx)
 			if (dptx_cfmt_table[temp].cfmt_id == DPTX_CFMT_invalid)
 				break;
 			if (strcmp(_str, dptx_cfmt_table[temp].name) == 0) {
-				dptx->user_color_format = temp;
-				DPTXPR(dptx->idx, LOG_I, "user env: %s: %s", env_str, _str);
+				dptx->setting.user_color_format = temp;
+				DPTX_PR(dptx, "user env: %s: %s", env_str, _str);
 				break;
 			}
 		}
@@ -500,7 +562,7 @@ static void dptx_power_domain_off(struct dptx_chip_data_s *dptx_data_p)
 		return;
 	}
 	if (dptx_print_level >= LOG_I)
-		DPTXPR(0, LOG_I, "power domain off\n");
+		DPTXPR(0, LOG_I, "power domain off");
 #endif
 }
 
@@ -549,6 +611,7 @@ void dptx_driver_probe(void)
 uint8_t dptx_driver_prepare(u8 index, char *mode)
 {
 	struct dptx_drv_s *dptx;
+	uint8_t port;
 
 	if (!mode) {
 		DPTXPR(index, LOG_E, "%s: mode is NULL", __func__);
@@ -559,8 +622,30 @@ uint8_t dptx_driver_prepare(u8 index, char *mode)
 	if (!dptx)
 		return 0;
 
+	for (port = 0; port < 4; port++) {
+		if (dptx->sink.port_mask & BIT(port)) {
+			if (dptx->sink.link[port]) {
+				memset(dptx->sink.link[port], 0, sizeof(struct dptx_link_cfg_s));
+				continue;
+			}
+			dptx->sink.link[port] = malloc(sizeof(struct dptx_link_cfg_s));
+			if (!dptx->sink.link[port]) {
+				DPTX_ERR(dptx, "link[%d] malloc failed", port);
+				continue;
+			}
+			memset(dptx->sink.link[port], 0, sizeof(struct dptx_link_cfg_s));
+		} else {
+			if (!dptx->sink.link[port])
+				continue;
+			free(dptx->sink.link[port]);
+			dptx->sink.link[port] = NULL;
+			DPTX_PR(dptx, "clean unused link[%d]", port);
+		}
+	}
+
+	dptx->sink.hpd_mask   = 0x1;
 	if (dptx->status & DPTX_STA_DRV_READY) {
-		DPTXPR(dptx->idx, LOG_I, "already prepared");
+		DPTX_PR(dptx, "already prepared");
 		return 0;
 	}
 
@@ -570,6 +655,7 @@ uint8_t dptx_driver_prepare(u8 index, char *mode)
 uint8_t dptx_driver_enable(u8 index, char *mode)
 {
 	struct dptx_drv_s *dptx;
+	uint8_t port;
 
 	if (!mode) {
 		DPTXPR(index, LOG_E, "%s: mode is NULL", __func__);
@@ -580,8 +666,27 @@ uint8_t dptx_driver_enable(u8 index, char *mode)
 	if (!dptx)
 		return 0;
 
+	for (port = 0; port < 4; port++) {
+		if (dptx->sink.port_mask & BIT(port)) {
+			if (dptx->sink.link[port])
+				continue;
+			dptx->sink.link[port] = malloc(sizeof(struct dptx_link_cfg_s));
+			if (!dptx->sink.link[port]) {
+				DPTX_ERR(dptx, "link[%d] malloc failed", port);
+				continue;
+			}
+			memset(dptx->sink.link[port], 0, sizeof(struct dptx_link_cfg_s));
+		} else {
+			if (!dptx->sink.link[port])
+				continue;
+			free(dptx->sink.link[port]);
+			dptx->sink.link[port] = NULL;
+			DPTX_PR(dptx, "clean unused link[%d]", port);
+		}
+	}
+
 	if (dptx->status & DPTX_STA_DISP_ON) {
-		DPTXPR(dptx->idx, LOG_I, "already enabled");
+		DPTX_PR(dptx, "already enabled");
 		return 0;
 	}
 
@@ -591,17 +696,24 @@ uint8_t dptx_driver_enable(u8 index, char *mode)
 void dptx_driver_disable(u8 index)
 {
 	struct dptx_drv_s *dptx;
+	uint8_t port;
 
 	dptx = dptx_driver_check_valid(index);
 	if (!dptx)
 		return;
 
 	if ((dptx->status & DPTX_STA_LINK_ON) == 0) {
-		DPTXPR(dptx->idx, LOG_I, "already disabled");
+		DPTX_PR(dptx, "already disabled");
 		return;
 	}
 
 	dptx_module_disable(dptx);
+
+	for (port = 0; port < 4; port++) {
+		if (dptx->sink.link[port])
+			free(dptx->sink.link[port]);
+		dptx->sink.link[port] = NULL;
+	}
 }
 
 void dptx_driver_info(u8 index)
@@ -670,4 +782,37 @@ void dptx_driver_set_vmode(u8 index, u8 num)
 		return;
 
 	dptx_user_set_vmode(dptx, num);
+}
+
+void dptx_driver_reset(u8 index, u8 num)
+{
+	struct dptx_drv_s *dptx;
+
+	dptx = dptx_driver_check_valid(index);
+	if (!dptx)
+		return;
+
+	dptx_debug_reset(dptx, 0xf, num);
+}
+
+void dptx_driver_PSR1_en(u8 index, u8 num)
+{
+	struct dptx_drv_s *dptx;
+
+	dptx = dptx_driver_check_valid(index);
+	if (!dptx)
+		return;
+
+	dptx_drv_eDP_PSR1_en(dptx, 0xf, num);
+}
+
+void dptx_driver_PSR2_en(u8 index, u8 num)
+{
+	struct dptx_drv_s *dptx;
+
+	dptx = dptx_driver_check_valid(index);
+	if (!dptx)
+		return;
+
+	dptx_drv_eDP_PSR2_en(dptx, 0xf, num);
 }

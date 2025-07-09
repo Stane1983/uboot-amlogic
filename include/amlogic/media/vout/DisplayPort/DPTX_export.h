@@ -27,6 +27,9 @@ void dptx_driver_reg_print(u8 index);
 void dptx_driver_test(u8 index, u8 num);
 void dptx_driver_list_vmode(u8 index);
 void dptx_driver_set_vmode(u8 index, u8 num);
+void dptx_driver_reset(u8 index, u8 num);
+void dptx_driver_PSR1_en(u8 index, u8 num);
+void dptx_driver_PSR2_en(u8 index, u8 num);
 
 // void dptx_driver_clk_info(u8 index);
 // void dptx_driver_debug_print(u8 index, unsigned int val);

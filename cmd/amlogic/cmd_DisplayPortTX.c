@@ -67,6 +67,42 @@ static int do_dptx0_set_vmode(cmd_tbl_t *cmdtp, int flag, int argc, char * const
 	return 0;
 }
 
+static int do_dptx0_reset(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	unsigned char num;
+
+	if (argc == 1)
+		return -1;
+
+	num = (unsigned char)simple_strtoul(argv[1], NULL, 10);
+	dptx_driver_reset(0, num);
+	return 0;
+}
+
+static int do_dptx0_PSR1(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	unsigned char num;
+
+	if (argc == 1)
+		return -1;
+
+	num = (unsigned char)simple_strtoul(argv[1], NULL, 10);
+	dptx_driver_PSR1_en(0, num);
+	return 0;
+}
+
+static int do_dptx0_PSR2(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	unsigned char num;
+
+	if (argc == 1)
+		return -1;
+
+	num = (unsigned char)simple_strtoul(argv[1], NULL, 10);
+	dptx_driver_PSR2_en(0, num);
+	return 0;
+}
+
 static int do_dptx1_enable(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	dptx_driver_enable(1, "NULL");
@@ -121,6 +157,42 @@ static int do_dptx1_set_vmode(cmd_tbl_t *cmdtp, int flag, int argc, char * const
 	return 0;
 }
 
+static int do_dptx1_reset(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	unsigned char num;
+
+	if (argc == 1)
+		return -1;
+
+	num = (unsigned char)simple_strtoul(argv[1], NULL, 10);
+	dptx_driver_reset(1, num);
+	return 0;
+}
+
+static int do_dptx1_PSR1(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	unsigned char num;
+
+	if (argc == 1)
+		return -1;
+
+	num = (unsigned char)simple_strtoul(argv[1], NULL, 10);
+	dptx_driver_PSR1_en(1, num);
+	return 0;
+}
+
+static int do_dptx1_PSR2(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	unsigned char num;
+
+	if (argc == 1)
+		return -1;
+
+	num = (unsigned char)simple_strtoul(argv[1], NULL, 10);
+	dptx_driver_PSR2_en(1, num);
+	return 0;
+}
+
 static cmd_tbl_t cmd_dptx0_sub[] = {
 	U_BOOT_CMD_MKENT(probe,   2, 0, do_dptx_probe,       "", ""),
 	U_BOOT_CMD_MKENT(enable,  2, 0, do_dptx0_enable,     "", ""),
@@ -130,6 +202,9 @@ static cmd_tbl_t cmd_dptx0_sub[] = {
 	U_BOOT_CMD_MKENT(reg,     2, 0, do_dptx0_reg,        "", ""),
 	U_BOOT_CMD_MKENT(list,    2, 0, do_dptx0_list_vmode, "", ""),
 	U_BOOT_CMD_MKENT(set,     2, 0, do_dptx0_set_vmode,  "", ""),
+	U_BOOT_CMD_MKENT(rst,     2, 0, do_dptx0_reset,      "", ""),
+	U_BOOT_CMD_MKENT(psr1,    2, 0, do_dptx0_PSR1,       "", ""),
+	U_BOOT_CMD_MKENT(psr2,    2, 0, do_dptx0_PSR2,       "", ""),
 };
 
 static cmd_tbl_t cmd_dptx1_sub[] = {
@@ -141,6 +216,9 @@ static cmd_tbl_t cmd_dptx1_sub[] = {
 	U_BOOT_CMD_MKENT(reg,     2, 0, do_dptx1_reg,        "", ""),
 	U_BOOT_CMD_MKENT(list,    2, 0, do_dptx1_list_vmode, "", ""),
 	U_BOOT_CMD_MKENT(set,     2, 0, do_dptx1_set_vmode,  "", ""),
+	U_BOOT_CMD_MKENT(rst,     2, 0, do_dptx1_reset,      "", ""),
+	U_BOOT_CMD_MKENT(psr1,    2, 0, do_dptx1_PSR1,       "", ""),
+	U_BOOT_CMD_MKENT(psr2,    2, 0, do_dptx1_PSR2,       "", ""),
 };
 
 static int do_dptx0(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])

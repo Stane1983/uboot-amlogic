@@ -9,9 +9,12 @@
 #include "dptx_regs.h"
 #include "dptx_common.h"
 
-uint16_t dptx_training_rd_interval[5] = {400, 4000, 8000, 12000, 16000};
+uint16_t dptx_train_rd_intv[5] = {400, 4000, 8000, 12000, 16000};
+uint16_t dptx_PSR_setup_time[8] = {330, 275, 220, 165, 110, 55, 0, 0};
 
 static char *eDP_ver_str[6] = {"1.1", "1.2", "1.3", "1.4a", "1.4b", "1.5"};
+static char *eDP_PSR_str[5] = {
+	"0", "PSR1", "PSR1+PSR2(SU)", "PSR1+PSR2(SU+Y-coor)", "PSR1+PSR2(SU+Y_coor+Early_trans)"};
 
 u16 std_level_to_phy_dft_lut[10][3] = {
 /*Vswing|Pre-emphasis: 0,               1,               2,               3 */
@@ -25,7 +28,7 @@ u16 std_level_to_phy_dft_lut[10][3] = {
 uint8_t dptx_vswing_ds_to_phy(struct dptx_drv_s *dptx, uint8_t ds_level)
 {
 	if (ds_level > 9) {
-		DPTXPR(dptx->idx, LOG_E, "%s level %u out of protocal limit", __func__, ds_level);
+		DPTX_ERR(dptx, "%s level %u out of protocal limit", __func__, ds_level);
 		return 0;
 	}
 
@@ -38,7 +41,7 @@ uint8_t dptx_vswing_ds_to_phy(struct dptx_drv_s *dptx, uint8_t ds_level)
 uint8_t dptx_preem_ds_to_phy(struct dptx_drv_s *dptx, uint8_t ds_level)
 {
 	if (ds_level > 9) {
-		DPTXPR(dptx->idx, LOG_E, "%s level %u out of protocal limit", __func__, ds_level);
+		DPTX_ERR(dptx, "%s level %u out of protocal limit", __func__, ds_level);
 		return 0;
 	}
 
@@ -120,111 +123,300 @@ uint8_t dptx_ds_to_preem(uint8_t ds)
 	return 0;
 }
 
-uint8_t dptx_DPCD_capability_to_link_cfg(struct dptx_drv_s *dptx)
+void dptx_link_cfg_dft(struct dptx_drv_s *dptx, uint8_t port)
 {
-	uint8_t auxdata[16], auxdata2;
-	uint8_t sink_DPCD_ver, sink_max_lkr, sink_lane_cnt, sink_enhanced_frame, sink_TPS_support,
-		sink_down_spread, sink_coding_support, sink_msa_timing_par_ignored,
-		sink_train_aux_rd_interval, sink_extended_receiver_cap, sink_DACP_support = 0,
-		sink_eDP_ver = 0, sink_eDP_DPCD_reg = 0;
+	// dptx->sink.link[port]->max_lane_count        = dptx->setting.user_lane_count;
+	// dptx->sink.link[port]->max_link_rate         = dptx->setting.user_link_rate;
+	// dptx->sink.link[port]->TPS_support           = 0; // TPS2
+	// dptx->sink.link[port]->DACP_support          = 0;
+	// dptx->sink.link[port]->link_cap               = 0;
+	// dptx->sink.link[port]->train_rd_interval = 4; // 4ms
+	// dptx->sink.link[port]->dev_type              = 1; // eDP
+	// dptx->sink.link[port]->DPCD_reg_func         = 0;
+	// dptx->sink.link[port]->enhanced_framing_en   = 1;
+}
 
-	// dptx_reg_print(dptx);
+uint8_t dptx_DPCD_capability_to_link_cfg(struct dptx_drv_s *dptx, uint8_t port)
+{
+	uint8_t ad[16];
 
-	if (dptx_if_aux_read(dptx, DPCD_DPCD_REV, 16, auxdata)) {
-		DPTXPR(dptx->idx, LOG_I, "fail to get DPCD capability");
+	if (!dptx->sink.link[port]) {
+		DPTX_P_ERR(dptx, port, "sink cfg port [%d] invalid", port);
 		return 1;
 	}
-	//DPCD_REVISION: 0x0000
-	sink_DPCD_ver       = auxdata[0];
-	//DPCD_MAX_LINK_RATE: 0x0001
-	sink_max_lkr        = auxdata[1];
-	//DPCD_MAX_LANE_COUNT: 0x0002
-	sink_lane_cnt       = auxdata[2] & 0xf;
-	sink_TPS_support    = (auxdata[2] >> 6) & 0x1;
-	sink_enhanced_frame = (auxdata[2] >> 7) & 0x1;
-	//DPCD_MAX_DOWNSPREAD: 0x0003
-	sink_down_spread    = auxdata[3] & 0x1;
-	sink_TPS_support   |= ((auxdata[3] >> 7) & 0x1) << 1;
-	//MAIN_LINK_CHANNEL_CODING_CAP: 0x0006
-	sink_coding_support = auxdata[6] & 0x3;
-	//DOWN_STREAM_PORT_COUNT: 0x0007
-	sink_msa_timing_par_ignored = (auxdata[7] >> 6) & 0x1;
 
-	DPTXPR(dptx->idx, LOG_I, "sink DPCD auxdata[0xd] = %0x", auxdata[0xd]);
-	if (auxdata[0xd]) {
-		//eDP_CONFIGURATION_CAP: 0x000d
-		sink_DACP_support  = (auxdata[0xd] & 0x1) << 2; //eDP ASSR
-		sink_eDP_DPCD_reg  = (auxdata[0xd] >> 3) & 0x1;
+	if (dptx_if_aux_read(dptx, port, DPCD_DPCD_REV, 16, ad)) {
+		DPTX_P_ERR(dptx, port, "fail to get DPCD capability");
+		return 1;
+	}
 
-		if (sink_eDP_DPCD_reg) {
-			if (!dptx_if_aux_read(dptx, DPCD_EDP_DPCD_REV, 1, &auxdata2))
-				sink_eDP_ver = auxdata2 > 5 ? 0 : auxdata2;
+	dptx->sink.link[port]->DPCD_reg_func = ad[0xe] & BIT(7) ? BIT(0) : 0;
+	if (dptx->sink.link[port]->DPCD_reg_func & BIT(0)) {
+		DPTX_P_DBG(dptx, port, "extend receiver cap exist");
+		if (dptx_if_aux_read(dptx, port, DPCD_EXD_DPCD_REV, 16, ad)) {
+			DPTX_P_ERR(dptx, port, "fail to get exd-DPCD capability");
+			dptx->sink.link[port]->DPCD_reg_func = 0;
 		}
 	}
+	//DPCD_REVISION: 0x0000
+	dptx->sink.link[port]->DPCD_ver        = ad[0];
+	//DPCD_MAX_LINK_RATE: 0x0001
+	dptx->sink.link[port]->max_link_rate   = ad[1];
+	//DPCD_MAX_LANE_COUNT: 0x0002
+	dptx->sink.link[port]->max_lane_count = ad[2] & 0xf;
+	dptx->sink.link[port]->link_cap       = ad[2] & BIT(5) ? BIT(7) : 0; //POST_LT_ADJ_REQ
+	dptx->sink.link[port]->link_cap      |= ad[2] & BIT(6) ? BIT(0) : 0; //TPS3
+	dptx->sink.link[port]->enh_frame_en   = ad[2] & BIT(6) ? 0x1 : 0;
+	//DPCD_MAX_DOWNSPREAD: 0x0003
+	dptx->sink.link[port]->link_cap      |= ad[3] & BIT(0) ? BIT(5) : 0; // down ss
+	dptx->sink.link[port]->link_cap      |= ad[3] & BIT(7) ? BIT(1) : 0; // TPS4
+	dptx->sink.link[port]->link_cap      |= ad[3] & BIT(6) ? BIT(6) : 0; // no AUX LT
+	//NORP & DP_PWR_VOLTAGE_CAP: 0x0004
+	dptx->sink.link[port]->NORP           = (ad[4] & BIT(0)) + 1;
+	//MAIN_LINK_CHANNEL_CODING_CAP: 0x0006
+	dptx->sink.link[port]->coding_cap = ad[6] & 0x3;
+	//DOWN_STREAM_PORT_COUNT: 0x0007
+	dptx->sink.link[port]->msa_ignore     = ad[7] & BIT(6) ? BIT(0) : 0; // MSA_PAR
+	//RECEIVE_PORT0_CAP_0: 0x0008
+	//eDP_CONFIGURATION_CAP: 0x000d
+	if (ad[0xd]) {
+		dptx->sink.link[port]->DACP_support   = ad[0xd] & BIT(0) ? BIT(2) : 0; //ASSR
+		dptx->sink.link[port]->DPCD_reg_func |= ad[0xd] & BIT(3) ? BIT(1) : 0; //eDP
+		dptx->sink.link[port]->dev_type = 1;
+	}
 	//8b/10b_TRAINING_AUX_RD_INTERVAL: 0x000e
-	sink_train_aux_rd_interval = auxdata[0xe] & 0x7f;
-	sink_extended_receiver_cap = (auxdata[0xe] >> 7) & 0x1;
+	dptx->sink.link[port]->train_rd_interval = ad[0xe] & 0x7f;
 
-	//limit to prevent out of bound
-	// dptx->link_cfg.train_aux_rd_interval = CAP_COMP(sink_sp.train_aux_rd_interval, 4);
-	// DP_cfg->max_link_rate = CAP_COMP(source_sp->link_rate, sink_sp.link_rate);
+	if (dptx->sink.link[port]->DPCD_reg_func & BIT(0)) {
+		if (dptx_if_aux_read(dptx, port, DPCD_EXD_DPRX_FEATURE_ENUMERATION_LIST, 6, ad)) {
+			DPTX_P_ERR(dptx, port, "fail to get exd-DPCD+ capability");
+		} else {
+			dptx->sink.link[port]->msa_ignore |= ad[4] & BIT(0) ? BIT(1) : 0;//adptsync
+			dptx->sink.link[port]->max_link_rate_UHBR = ad[5];
+		}
+	}
 
-	dptx->link_cfg.max_lane_count        =
-		dptx->user_lane_count == 0xff ? sink_lane_cnt : dptx->user_lane_count;
-	dptx->link_cfg.max_link_rate         = dptx->user_link_rate ?
-		dptx->user_link_rate : CAP_COMP(sink_max_lkr, dptx->data->link_rate);
-	dptx->link_cfg.TPS_support           = sink_TPS_support & dptx->data->TPS_support;
-	dptx->link_cfg.DACP_support          = sink_DACP_support & dptx->data->DACP_support;
-	dptx->link_cfg.down_ss               = sink_down_spread;
-	dptx->link_cfg.train_aux_rd_interval = sink_train_aux_rd_interval;
-	dptx->link_cfg.dev_type              = auxdata[0xd] ? 1 : 0;
-	dptx->link_cfg.DPCD_reg_func         = (sink_extended_receiver_cap ? BIT(0) : 0) |
-					       (sink_eDP_DPCD_reg          ? BIT(1) : 0);
-	dptx->link_cfg.enhanced_framing_en   = sink_enhanced_frame;
+	if (dptx->sink.link[port]->DPCD_reg_func & BIT(1)) { //eDP DPCD
+		if (dptx_if_aux_read(dptx, port, DPCD_eDP_DPCD_REV, 5, ad)) {
+			DPTX_P_ERR(dptx, port, "fail to get eDP-DPCD capability");
+			dptx->sink.link[port]->DPCD_reg_func &= ~BIT(1);
+			goto eDP_DPCD_CAP_GET_DONE;
+		}
 
-	DPTXPR(dptx->idx, LOG_I, "sink DPCD Capability:\n"
-		" - DPCD reversion:  %01x.%01x\n"
-		" - sink capability: %u lane, %u.%u GHz\n"
-		" - enhanced frame:  %u\n"
-		" - TPS support:     [TPS3:%u, TPS4:%u]\n"
-		" - clk down spread: %u\n"
-		" - coding support:  [8b/10b:%u, 128b/132b:%u]\n"
-		" - MSA ignore:      %u\n"
-		" - train aux rd:    %uus\n"
-		" - HDCP:            %u\n"
-		" - ext DPCD cap:    %u",
-		sink_DPCD_ver >> 4, sink_DPCD_ver & 0xf,
-		sink_lane_cnt, (sink_max_lkr * 27) / 100, (sink_max_lkr * 27) % 100,
-		sink_enhanced_frame, sink_TPS_support & 0x1, (sink_TPS_support >> 1) & 0x1,
-		sink_down_spread,
-		sink_coding_support & 0x1, (sink_coding_support >> 1) & 0x1,
-		sink_msa_timing_par_ignored,
-		dptx_training_rd_interval[sink_train_aux_rd_interval],
-		sink_DACP_support & 0x1, sink_extended_receiver_cap);
-	if (sink_eDP_DPCD_reg) {
-		pr_info(" - eDP version:     eDP %s\n"
-			" - eDP ASSR:        %u\n"
-			" - eDP DPCD:        %u\n",
-			eDP_ver_str[sink_eDP_ver],
-			(sink_DACP_support & 0x4) >> 2,
-			sink_eDP_DPCD_reg);
+		dptx->sink.link[port]->eDP_cap.ver = ad[0];
+		dptx->sink.link[port]->eDP_cap.bl_ctrl_cap |= ad[1] & BIT(0) ? BIT(0) : 0;//TCON
+		dptx->sink.link[port]->eDP_cap.bl_ctrl_cap |= ad[1] & BIT(1) ? BIT(1) : 0;//pin en
+		dptx->sink.link[port]->eDP_cap.bl_ctrl_cap |= ad[1] & BIT(2) ? BIT(2) : 0;//aux en
+		dptx->sink.link[port]->eDP_cap.test_cap    |= ad[1] & BIT(3) ? BIT(0) : 0;//pin en
+		dptx->sink.link[port]->eDP_cap.test_cap    |= ad[1] & BIT(4) ? BIT(1) : 0;//aux en
+		dptx->sink.link[port]->eDP_cap.ctrl_cap    |= ad[1] & BIT(5) ? BIT(0) : 0;//frc
+		dptx->sink.link[port]->eDP_cap.ctrl_cap    |= ad[1] & BIT(6) ? BIT(1) : 0;//color
+		dptx->sink.link[port]->eDP_cap.ctrl_cap    |= ad[1] & BIT(7) ? BIT(2) : 0;//power
+		dptx->sink.link[port]->eDP_cap.bl_adj_cap   = ad[2];
+		dptx->sink.link[port]->eDP_cap.od_cap      |= ad[3] & BIT(0) ? BIT(0) : 0;//od
+		dptx->sink.link[port]->eDP_cap.od_cap      |= ad[3] & BIT(3) ? BIT(1) : 0;//od-aux
+		dptx->sink.link[port]->eDP_cap.bl_ctrl_cap |= ((ad[3] >> 1) & 0x3) << 4;// bl_reg
+		dptx->sink.link[port]->eDP_cap.bl_ctrl_cap |= ad[3] & BIT(4) ? BIT(3) : 0;//lm-c
+		dptx->sink.link[port]->eDP_cap.bl_rgn_y     = (ad[4] >> 4)  + 1;
+		dptx->sink.link[port]->eDP_cap.bl_rgn_x     = (ad[4] & 0xf) + 1;
+	}
+eDP_DPCD_CAP_GET_DONE:
+
+	if (!dptx_if_aux_read(dptx, port, DPCD_DSC_SUPPORT, 16, ad)) {
+		DPTX_P_DBG(dptx, port, "get DSC capability %x,%x", ad[0], ad[1]);
+		dptx->sink.link[port]->dsc_cap.cap                  = ad[0];
+		dptx->sink.link[port]->dsc_cap.algm_ver             = ad[1];
+		dptx->sink.link[port]->dsc_cap.buf_block_size       = ad[2];
+		dptx->sink.link[port]->dsc_cap.slice_cap1           = ad[3];
+		dptx->sink.link[port]->dsc_cap.buf_bit_depth        = ad[4];
+		dptx->sink.link[port]->dsc_cap.feature_spt          = ad[5];
+		dptx->sink.link[port]->dsc_cap.max_bpp_0            = ad[6];
+		dptx->sink.link[port]->dsc_cap.max_bpp_1            = ad[7];
+		dptx->sink.link[port]->dsc_cap.color_fmt_cap        = ad[8];
+		dptx->sink.link[port]->dsc_cap.color_dep_cap        = ad[9];
+		dptx->sink.link[port]->dsc_cap.peak_throughput      = ad[0xa];
+		dptx->sink.link[port]->dsc_cap.max_slice_width      = ad[0xb];
+		dptx->sink.link[port]->dsc_cap.slice_cap2           = ad[0xc];
+		dptx->sink.link[port]->dsc_cap.bpp_delta_increment0 = ad[0xd];
+		dptx->sink.link[port]->dsc_cap.bpp_delta_increment1 = ad[0xf];
+	}
+
+	if (!dptx_if_aux_read(dptx, port, DPCD_eDP_PSR_CAP_SUPPORT_and_VERSION, 16, ad)) {
+		DPTX_P_DBG(dptx, port, "get eDP PSR capability %x-%x-%x", ad[0], ad[1], ad[2]);
+		dptx->sink.link[port]->eDP_cap.PSR_cap        = ad[0];
+		dptx->sink.link[port]->eDP_cap.PSR_setup_time = (ad[1] >> 1) & 0x7;
+		dptx->sink.link[port]->eDP_cap.PSR_req       |= ad[1] & BIT(0) ? BIT(0) : 0;
+		dptx->sink.link[port]->eDP_cap.PSR_req       |= ad[1] & BIT(4) ? BIT(1) : 0;
+		dptx->sink.link[port]->eDP_cap.PSR_req       |= ad[1] & BIT(5) ? BIT(2) : 0;
+		dptx->sink.link[port]->eDP_cap.PSR_req       |= ad[1] & BIT(6) ? BIT(3) : 0;
+
+		dptx->sink.link[port]->eDP_cap.PSR2_SU_X_GRANULARITY  = ad[3];
+		dptx->sink.link[port]->eDP_cap.PSR2_SU_X_GRANULARITY  =
+			dptx->sink.link[port]->eDP_cap.PSR2_SU_X_GRANULARITY << 8;
+		dptx->sink.link[port]->eDP_cap.PSR2_SU_X_GRANULARITY |= ad[2];
+		dptx->sink.link[port]->eDP_cap.PSR2_SU_Y_GRANULARITY  = ad[4];
+	}
+
+	if (dptx_print_level <= LOG_I) {
+		DPTX_P_PR(dptx, port,
+			"sink DPCD[%01x.%01x] Cap: %u lane - %u.%uGHz MSA-ign:%u Adpt-Sync:%u",
+			dptx->sink.link[port]->DPCD_ver >> 4,
+			dptx->sink.link[port]->DPCD_ver & 0xf,
+			dptx->sink.link[port]->max_lane_count,
+			(dptx->sink.link[port]->max_link_rate * 27) / 100,
+			(dptx->sink.link[port]->max_link_rate * 27) % 100,
+			dptx->sink.link[port]->msa_ignore & BIT(0) ? 1 : 0,
+			dptx->sink.link[port]->msa_ignore & BIT(1) ? 1 : 0);
+		return 0;
+	}
+
+	DPTX_P_PR(dptx, port, "sink link DPCD Capability:\n"
+		" - DPCD ver: %01x.%01x (exd DPCD = %u)\n"
+		" - link:     %u lane, %u.%uGHz (NORP=%u)\n"
+		" - LT:       [TPS3:%u, TPS4:%u, ss:%u, post_cur:%u, no_train:%u EQ-LT_rd:%uus]\n"
+		" - coding:   [8b/10b:%u, 128b/132b:%u]\n"
+		" - feature:  enh-frame:%u, MSA-ign:%u Adpt-Sync:%u\n"
+		" - DACP:     HDCP = %u, eDP-ASSR = %u",
+		dptx->sink.link[port]->DPCD_ver >> 4, dptx->sink.link[port]->DPCD_ver & 0xf,
+		dptx->sink.link[port]->DPCD_reg_func & BIT(0) ? 1 : 0,
+		dptx->sink.link[port]->max_lane_count,
+		(dptx->sink.link[port]->max_link_rate * 27) / 100,
+		(dptx->sink.link[port]->max_link_rate * 27) % 100,
+		dptx->sink.link[port]->NORP,
+		dptx->sink.link[port]->link_cap & BIT(0) ? 1 : 0,
+		dptx->sink.link[port]->link_cap & BIT(1) ? 1 : 0,
+		dptx->sink.link[port]->link_cap & BIT(5) ? 1 : 0,
+		dptx->sink.link[port]->link_cap & BIT(7) ? 1 : 0,
+		dptx->sink.link[port]->link_cap & BIT(6) ? 1 : 0,
+		dptx_train_rd_intv[dptx->sink.link[port]->train_rd_interval],
+		dptx->sink.link[port]->coding_cap & BIT(0) ? 1 : 0,
+		dptx->sink.link[port]->coding_cap & BIT(1) ? 1 : 0,
+		dptx->sink.link[port]->enh_frame_en,
+		dptx->sink.link[port]->msa_ignore & BIT(0) ? 1 : 0,
+		dptx->sink.link[port]->msa_ignore & BIT(1) ? 1 : 0,
+		dptx->sink.link[port]->DACP_support & BIT(0) ? 1 : 0,
+		dptx->sink.link[port]->DACP_support & BIT(2) ? 1 : 0);
+	if (dptx->sink.link[port]->DPCD_reg_func & BIT(1)) {
+		pr_info(" - eDP DPCD: %u (eDP %s)\n"
+			"   - BL:     TCON-bl:%u aux:%u dynamic:%u bl-vsync:%u\n"
+			"   - OD:     %u (aux ctrl: %u)\n"
+			"   - PSR:    %s\n",
+			dptx->sink.link[port]->DPCD_reg_func & BIT(1) ? 1 : 0,
+			eDP_ver_str[dptx->sink.link[port]->eDP_cap.ver],
+			dptx->sink.link[port]->eDP_cap.bl_ctrl_cap & BIT(0) ? 1 : 0,
+			dptx->sink.link[port]->eDP_cap.bl_ctrl_cap & BIT(1) ? 1 : 0,
+			dptx->sink.link[port]->eDP_cap.bl_ctrl_cap & BIT(6) ? 1 : 0,
+			dptx->sink.link[port]->eDP_cap.bl_ctrl_cap & BIT(7) ? 1 : 0,
+			dptx->sink.link[port]->eDP_cap.od_cap & BIT(0) ? 1 : 0,
+			dptx->sink.link[port]->eDP_cap.od_cap & BIT(1) ? 1 : 0,
+			eDP_PSR_str[dptx->sink.link[port]->eDP_cap.PSR_cap]
+		);
+		if (dptx->sink.link[port]->eDP_cap.PSR_cap) {
+			pr_info("     - setup: %uus\n"
+				"     - req:   [LT_on_exit:%u Y-coor:%u non-FS:%u]\n"
+				"     - GRANULARITY: req=%u [%u, %u]\n",
+				dptx_PSR_setup_time[dptx->sink.link[port]->eDP_cap.PSR_setup_time],
+				dptx->sink.link[port]->eDP_cap.PSR_req & BIT(0) ? 1 : 0,
+				dptx->sink.link[port]->eDP_cap.PSR_req & BIT(1) ? 1 : 0,
+				dptx->sink.link[port]->eDP_cap.PSR_req & BIT(3) ? 1 : 0,
+				dptx->sink.link[port]->eDP_cap.PSR_req & BIT(2) ? 1 : 0,
+				dptx->sink.link[port]->eDP_cap.PSR2_SU_X_GRANULARITY,
+				dptx->sink.link[port]->eDP_cap.PSR2_SU_Y_GRANULARITY
+			);
+		}
+	}
+	if (dptx->sink.link[port]->dsc_cap.cap) {
+		pr_info(" - DSC:      %lu (%u.%u)\n"
+			"   - Slice:  1:%c 2:%c 4:%c 6:%c 8:%c 10:%c 12:%c\n"
+			"   - CFmt:   RGB:%c YUV444:%c YUV422(Sim):%c YUV422(Nat):%c YUV420:%c\n"
+			"   - Cbit:   8b:%c 10b:%c 12b:%c\n", // new to DP2.0/eDP1.5
+			dptx->sink.link[port]->dsc_cap.cap & BIT(0),
+			dptx->sink.link[port]->dsc_cap.algm_ver & 0xf,
+			dptx->sink.link[port]->dsc_cap.algm_ver >> 4,
+			dptx->sink.link[port]->dsc_cap.slice_cap1 & BIT(0) ? 'Y' : 'N',
+			dptx->sink.link[port]->dsc_cap.slice_cap1 & BIT(1) ? 'Y' : 'N',
+			dptx->sink.link[port]->dsc_cap.slice_cap1 & BIT(3) ? 'Y' : 'N',
+			dptx->sink.link[port]->dsc_cap.slice_cap1 & BIT(4) ? 'Y' : 'N',
+			dptx->sink.link[port]->dsc_cap.slice_cap1 & BIT(5) ? 'Y' : 'N',
+			dptx->sink.link[port]->dsc_cap.slice_cap1 & BIT(6) ? 'Y' : 'N',
+			dptx->sink.link[port]->dsc_cap.slice_cap1 & BIT(7) ? 'Y' : 'N',
+			dptx->sink.link[port]->dsc_cap.color_fmt_cap & BIT(0) ? 'Y' : 'N',
+			dptx->sink.link[port]->dsc_cap.color_fmt_cap & BIT(1) ? 'Y' : 'N',
+			dptx->sink.link[port]->dsc_cap.color_fmt_cap & BIT(2) ? 'Y' : 'N',
+			dptx->sink.link[port]->dsc_cap.color_fmt_cap & BIT(3) ? 'Y' : 'N',
+			dptx->sink.link[port]->dsc_cap.color_fmt_cap & BIT(4) ? 'Y' : 'N',
+			dptx->sink.link[port]->dsc_cap.color_dep_cap & BIT(1) ? 'Y' : 'N',
+			dptx->sink.link[port]->dsc_cap.color_dep_cap & BIT(2) ? 'Y' : 'N',
+			dptx->sink.link[port]->dsc_cap.color_dep_cap & BIT(3) ? 'Y' : 'N'
+		);
 	}
 	return 0;
 }
 
-#define DPTX_BW_CHECK_LIMIT_PERCENT       95 //95%
-uint8_t dptx_vid_band_width_check(uint8_t link_rate, uint8_t lane_cnt, uint32_t pclk, uint8_t bpp)
+void dptx_link_policy_maker(struct dptx_drv_s *dptx, uint8_t port)
 {
-	uint32_t bw_req, bw_cal, bw_load;
+	if (port > 3 || !dptx->sink.link[port])
+		return;
 
-	bw_cal = 270 * link_rate * lane_cnt * 8 / 10;
+	dptx->sink.link[port]->lane_count =
+			CAP_COMP(dptx->data->lane_count[dptx->idx][port],
+				 dptx->sink.link[port]->max_lane_count);
+	if (dptx->setting.user_lane_count) {
+		dptx->sink.link[port]->lane_count =
+				CAP_COMP(dptx->setting.user_lane_count,
+					 dptx->sink.link[port]->lane_count);
+	}
+
+	dptx->sink.link[port]->link_rate =
+			CAP_COMP(dptx->data->link_rate[dptx->idx][port],
+				 dptx->sink.link[port]->max_link_rate);
+	if (dptx->setting.user_link_rate) {
+		dptx->sink.link[port]->link_rate =
+				CAP_COMP(dptx->setting.user_link_rate,
+					 dptx->sink.link[port]->link_rate);
+	}
+}
+
+#define DPTX_BW_CHECK_LIMIT_PERCENT       95 //95%
+uint8_t dptx_vid_band_width_check(struct dptx_drv_s *dptx, uint32_t pclk, uint8_t bpp)
+{
+	uint32_t bw_req, bw_cal, bw_load, min_bw_per_port = U32_MAX;
+	uint8_t port;
+
+	bw_req = pclk / 1000000 + 1;
+
+	if (bw_req > dptx->data->pixel_clk_limit) {
+		DPTX_DBG(dptx, "%s: vid(%uMHz) over chip limit (%u)",
+			__func__, bw_req, dptx->data->pixel_clk_limit);
+		return 0;
+	}
+
+	for (port = 0; port < 4; port++) {
+		if (!dptx->sink.link[port])
+			continue;
+		if (dptx->sink.link[port]->link_rate == DP_LINK_RATE_UBR10)
+			bw_cal = 10000;
+		else if (dptx->sink.link[port]->link_rate == DP_LINK_RATE_UBR135)
+			bw_cal = 13500;
+		else if (dptx->sink.link[port]->link_rate == DP_LINK_RATE_UBR20)
+			bw_cal = 20000;
+		else
+			bw_cal = dptx->sink.link[port]->link_rate * 270;
+		bw_cal *= dptx->sink.link[port]->lane_count;
+		bw_cal = bw_cal * 8 / 10; // assume 8b10b
+		if (bw_cal < min_bw_per_port)
+			min_bw_per_port = bw_cal;
+	}
+
+	port = __builtin_popcount(dptx->sink.port_mask);
+
 	bw_req = (pclk / 1000000 + 1) * bpp;
 
-	bw_load = bw_req * 100 / bw_cal;
+	bw_load = bw_req * 100 / (min_bw_per_port * port);
 
 	if (bw_load > DPTX_BW_CHECK_LIMIT_PERCENT) {
-		DPTXPR(0, LOG_V, "%s: vid(%uMHz) / link(%uMHz) = bw_load(%u%%), over limit",
-			__func__, bw_req, bw_cal, bw_load);
+		DPTX_DBG(dptx, "%s: vid(%uMHz) / %u link (min %uMHz) = bw_load(%u%%), over limit",
+			__func__, bw_req, port, min_bw_per_port, bw_load);
 		return 0;
 	}
 	return 1;
@@ -314,7 +506,7 @@ uint8_t __str_add_vmode(struct dptx_drv_s *dptx, char *buf, uint8_t vmd_idx, uin
 		vmd_timing = &DPTX_SafeMode_640x480_timing;
 	} else {
 		vmd = &dptx->vmode_mgr.vmodes[vmd_idx];
-		vmd_timing = &dptx->edid_info.dtd_timing[vmd->base_dtd_idx];
+		vmd_timing = &dptx->sink.exp_edid.dtd_timing[vmd->base_dtd_idx];
 	}
 
 	vmd_h = vmd_timing->h_act;

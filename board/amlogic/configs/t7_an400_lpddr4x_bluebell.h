@@ -70,7 +70,7 @@
 	"storeargs_hdmitx="\
 		"setenv bootargs ${bootargs} powermode=${powermode} "\
 		"lcd0=${lcd0_attr} lcd_debug=${lcd_debug} "\
-		"dptx0=${dptx0_ctrl} dptx1=${dptx1_ctrl} dptx_dbg=${dptx_debug} "\
+		"dptx0=${dptx0_ctrl} dptx1=${dptx1_ctrl} dptx_dbg=${dptx_dbg} "\
 		"outputmode=${outputmode} hdmitx=${cecconfig},${colorattribute};"\
 		"\0"\
 	"init_display_hdmitx="\

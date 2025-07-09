@@ -14,7 +14,7 @@
 #include <amlogic/media/vout/DisplayPort/DPTX_timing.h>
 
 //#define LCD_DEBUG_INFO
-extern u8 dptx_print_level;
+extern uint8_t dptx_print_level;
 //bit[15:0]
 #define LOG_E      0 // log level ERROR & Key
 #define LOG_I      1 // log level Informative
@@ -24,14 +24,49 @@ extern u8 dptx_print_level;
 #define DPTXPR(idx, level, fmt, args...) \
 	do { \
 		if (!level) \
-			pr_err("[DPTX-%u]E: " fmt "\n", idx, ## args); \
+			pr_err("[DPTX-%u](err): " fmt "\n", idx, ## args); \
 		else if (dptx_print_level >= level) \
 			pr_info("[DPTX-%u]: " fmt "\n", idx, ## args); \
+	} while (0)
+
+#define DPTX_ERR(dptx, fmt, ...)   pr_err("[DPTX-%u](err): " fmt "\n", (dptx)->idx, ##__VA_ARGS__)
+#define DPTX_PR(dptx, fmt, ...)           \
+	do { \
+		if (dptx_print_level >= LOG_I) \
+			pr_info("[DPTX-%u]: " fmt "\n", (dptx)->idx, ##__VA_ARGS__); \
+	} while (0)
+#define DPTX_DBG(dptx, fmt, ...)          \
+	do { \
+		if (dptx_print_level >= LOG_V) \
+			pr_info("[DPTX-%u]: " fmt "\n", (dptx)->idx, ##__VA_ARGS__); \
+	} while (0)
+#define DPTX_DBG2(dptx, fmt, ...)         \
+	do { \
+		if (dptx_print_level >= LOG_A) \
+			pr_info("[DPTX-%u]: " fmt "\n", (dptx)->idx, ##__VA_ARGS__); \
+	} while (0)
+#define DPTX_P_ERR(dptx, port, fmt, ...)  \
+			pr_err("[DPTX-%u]-%u(err): " fmt "\n", (dptx)->idx, port, ##__VA_ARGS__)
+#define DPTX_P_PR(dptx, port, fmt, ...)   \
+	do { \
+		if (dptx_print_level >= LOG_I) \
+			pr_info("[DPTX-%u]-%u: " fmt "\n", (dptx)->idx, port, ##__VA_ARGS__); \
+	} while (0)
+#define DPTX_P_DBG(dptx, port, fmt, ...)   \
+	do { \
+		if (dptx_print_level >= LOG_V) \
+			pr_info("[DPTX-%u]-%u: " fmt "\n", (dptx)->idx, port, ##__VA_ARGS__); \
+	} while (0)
+#define DPTX_P_DBG2(dptx, port, fmt, ...)   \
+	do { \
+		if (dptx_print_level >= LOG_A) \
+			pr_info("[DPTX-%u]-%u: " fmt "\n", (dptx)->idx, port, ##__VA_ARGS__); \
 	} while (0)
 
 #define PR_BUF_MAX              (4 * 1024)
 
 #define DPTX_MAX_DRV              2
+#define DPTX_MAX_PORT             2
 #define DPTX_MAX_VOUT             3
 
 #define RGB_DELAY                   13
@@ -49,11 +84,13 @@ struct dptx_chip_data_s {
 	uint32_t offset_venc[DPTX_MAX_DRV];     // 0x600
 	uint32_t offset_venc_if[DPTX_MAX_DRV];  // 0x500
 	uint32_t offset_venc_data[DPTX_MAX_DRV];// 0x100
+	uint8_t venc_clk_msr_id[DPTX_MAX_DRV];
 
-	uint32_t link_rate;
+	uint32_t link_rate[DPTX_MAX_DRV][DPTX_MAX_PORT];
+	uint32_t lane_count[DPTX_MAX_DRV][DPTX_MAX_PORT];
 	uint8_t  TPS_support;
 	uint8_t  DACP_support;
-	uint8_t venc_clk_msr_id[DPTX_MAX_DRV];
+	uint32_t pixel_clk_limit;
 };
 
 #define MOD_LEN_MAX        30
@@ -105,33 +142,109 @@ struct dptx_venc_cfg_s {
 };
 
 struct dptx_phy_cfg_s {
-	u32 flag;
-	u32 vswing;
+	uint32_t flag;
+	uint32_t vswing;
 	struct dptx_phy_lane_s {
 		uint8_t status;
 		uint8_t amp;
 		uint8_t preem;
 		uint8_t post_cur;
 	} lane[4];
-	u16 level_to_phy_lut[10][3];
+	uint16_t level_to_phy_lut[10][3];
 };
 
 #define DPTX_TYPE_DP          0
 #define DPTX_TYPE_eDP         1
 
+#define DPTX_DRV_TIMING_MAX  8
+struct dptx_edid_info_s {
+	uint8_t manufacturer_id[4];  //[8:9]2byte
+	uint16_t product_id;         //[10:11]2byte
+	uint32_t product_sn;         //[12:15]4byte
+	uint8_t week;                //[16]1byte
+	uint8_t year;                //[17]1byte + 1990
+	uint16_t version;            //[18:19]2byte
+	uint32_t established_timing; //[35:37]3byte
+	// uint32_t standard_timing1;   //[38:45]4byte
+	// uint32_t standard_timing2;   //[46:53]4byte
+	uint16_t cfmt_support;       // each bit to CFMT
+
+	char name[14];
+	char serial_num[14];
+	char asc_string[14];
+	// unsigned int VIC_val[8];
+	struct dptx_edid_range_limit_s {
+		uint16_t vfreq[2];
+		uint16_t hfreq[2];
+		uint32_t pclk[2];
+		uint16_t h_blank_min, v_blank_min;
+	} range;
+
+	uint8_t dtd_cnt;
+
+	struct dptx_detail_timing_s dtd_timing[DPTX_DRV_TIMING_MAX];
+
+	uint8_t ext_flag;  //[126]1byte
+	uint8_t did_version;
+
+	uint8_t edid_crc;
+};
+
 struct dptx_link_cfg_s {
+	uint8_t DPCD_ver;
 	uint8_t max_lane_count;
 	uint8_t max_link_rate;
-	uint8_t TPS_support;   // bit[0]=TPS3;bit[1]=TPS4;
-	uint8_t DACP_support;  // bit[0]=M1(HDCP);bit[1]=M2(Panel Limit);bit[1]=M3a(eDP ASSR);
-	uint8_t down_ss;
-	uint8_t train_aux_rd_interval;
-	uint8_t dev_type;      // 0=DP;1=eDP
-	uint8_t DPCD_reg_func; // bit[0]=extend DPCD;bit[1]=eDP_DPCD;bit[2]=eDP_DPCD_BL;
+	uint8_t max_link_rate_UHBR; // [0]=10G [1]=20G [2]=13.5G
+	uint8_t link_cap;          // [0]=TPS3 [1]=TPS4 [7]=POST_LT_ADJ_REQ [6]=no-train [5]=ss
+	uint8_t DACP_support;      // [0]=M1(HDCP) [1]=M2(Panel Limit) [2]=M3a(eDP ASSR)
+	uint8_t train_rd_interval;
+	uint8_t NORP;              //Number of Receiver Ports
+	uint8_t dev_type;          // 0=DP; 1=eDP
+	uint8_t DPCD_reg_func;     // [0]=ext-DPCD [1]=eDP-PCD //[2]=DPCD_BL [3]=DPCD_TOUCH
+	uint8_t coding_cap;        // [0]=8b/10b [0]=128b/132b
+	uint8_t msa_ignore;        // [0]=msa [1]=adpt-sync_SDP
+	uint8_t enh_frame_en;
 
-	uint8_t enhanced_framing_en;
+	struct eDP_cap_s {
+		uint8_t ver;
+		uint8_t bl_ctrl_cap; // [0]=TCON_bl [1]=pin_en [2]=aux_en [3]=lm_cap [4:5]=bl_reg
+		uint8_t bl_adj_cap;  // as 00702h
+			// [0]=bl_pwm [1]=bl_aux [2]=bl-2byte [3]=aux-pwm_combo
+			// [4]=bl_pwm_freq_pass-thru [5]=aux_pwm_freq [6]=dynamic_bl [7]=bl-vsync
+		uint8_t bl_rgn_x;
+		uint8_t bl_rgn_y;
+		uint8_t od_cap;    // [0]=od_cap [1]=od_aux
+		uint8_t test_cap;  // [0]=pin [1]=aux
+		uint8_t ctrl_cap;  // [0]=frc [1]=color_eng [2]=set_power
+
+		uint8_t PSR_cap;   // as 00702h
+			// 0=n 1=PSR1 2=1+PSR2(SU) 3=2+PSR2(Y-coor) 4=3+PSR2(early_transport)
+		uint8_t PSR_setup_time; // as 00071h
+		uint8_t PSR_req; // [0]=LT_need_when_1_exit
+			// [1]Y-coor need on SU [2]=Update Granularity [3]=no_fr_sync on SU
+		uint16_t PSR2_SU_X_GRANULARITY;
+		uint8_t PSR2_SU_Y_GRANULARITY;
+	} eDP_cap;
+
+	struct DSC_cap_s {
+		uint8_t cap;            // as 00060h
+		uint8_t algm_ver;       // as 00061h
+		uint8_t buf_block_size; // as 00062h
+		uint8_t slice_cap1;     // as 00064h
+		uint8_t buf_bit_depth;  // as 00065h
+		uint8_t feature_spt;    // as 00066h
+		uint8_t max_bpp_0;      // as 00067h
+		uint8_t max_bpp_1;      // as 00068h
+		uint8_t color_fmt_cap;  // as 00069h
+		uint8_t color_dep_cap;  // as 0006ah
+		uint8_t peak_throughput;// as 0006bh
+		uint8_t max_slice_width;// as 0006ch
+		uint8_t slice_cap2;     // as 0006dh
+		uint8_t bpp_delta_increment0;// as 0006eh
+		uint8_t bpp_delta_increment1;// as 0006fh
+	} dsc_cap;
+
 	uint8_t sync_clk_mode;
-	// u8 EDID_en;
 
 	/* internal used */
 	// unsigned char coding_support;
@@ -148,6 +261,8 @@ struct dptx_link_cfg_s {
 	uint8_t phy_update;
 	uint8_t curr_ds[4];
 	uint8_t adj_req_ds[4];
+
+	struct dptx_edid_info_s int_edid;
 };
 
 #define LCD_CLK_SS_BIT_FREQ             0
@@ -201,40 +316,6 @@ struct dptx_clk_cfg_s {
 	unsigned int done;
 };
 
-#define DPTX_DRV_TIMING_MAX  8
-struct dptx_edid_info_s {
-	uint8_t manufacturer_id[4];  //[8:9]2byte
-	uint16_t product_id;         //[10:11]2byte
-	uint32_t product_sn;         //[12:15]4byte
-	uint8_t week;                //[16]1byte
-	uint8_t year;                //[17]1byte + 1990
-	uint16_t version;            //[18:19]2byte
-	uint32_t established_timing; //[35:37]3byte
-	// uint32_t standard_timing1;   //[38:45]4byte
-	// uint32_t standard_timing2;   //[46:53]4byte
-	uint16_t cfmt_support;       // each bit to CFMT
-
-	char name[14];
-	char serial_num[14];
-	char asc_string[14];
-	// unsigned int VIC_val[8];
-	struct dptx_edid_range_limit_s {
-		uint16_t vfreq[2];
-		uint16_t hfreq[2];
-		uint32_t pclk[2];
-		uint16_t h_blank_min, v_blank_min;
-	} range;
-
-	uint8_t dtd_cnt;
-
-	struct dptx_detail_timing_s dtd_timing[DPTX_DRV_TIMING_MAX];
-
-	uint8_t ext_flag;  //[126]1byte
-	uint8_t did_version;
-
-	uint8_t edid_crc;
-};
-
 #define DPTX_DRV_VMODE_MAX   64
 #define VMODE_FLAG_VALID     BIT(0)
 #define VMODE_FLAG_FR_RANGE  BIT(1)
@@ -266,30 +347,40 @@ struct dptx_drv_s {
 	uint8_t mode; // 0=DP; 1=eDP
 	uint8_t viu_sel; // 1=vout; 2=vou2; 3=vout3
 
-	char dev_name[32];
-	uint8_t user_link_rate;  //dft: 4
-	uint8_t user_lane_count; //dft: 0xfff
-	uint8_t user_color_format;
-	uint16_t hpd_ignore;
+	struct dptx_user_set_s {
+		char dev_name[32];
+		uint8_t user_port_mask;  //dft: 0
+		uint8_t dual_port_type;  //dft: 0
+		uint8_t user_link_rate;  //dft: 0
+		uint8_t user_lane_count; //dft: 0
+		uint8_t user_panel_config;
+		uint8_t user_color_format;
+		uint16_t user_hpd_ignore;
+		uint16_t user_vmode_sel;
+		uint16_t user_disable_PSR;
+	} setting;
 
 	char PWR_gpio_name[DPTX_GPIO_NAME_MAX];
-	char CFG1_gpio_name[DPTX_GPIO_NAME_MAX];
-	char CFG2_gpio_name[DPTX_GPIO_NAME_MAX];
 
 	struct dptx_chip_data_s *data;
 
-	struct dptx_phy_cfg_s phy_cfg;
+	struct dptx_phy_cfg_s phy_cfg;  // !move to link
 	struct dptx_clk_cfg_s vid_clk;
-	struct dptx_clk_cfg_s link_clk;
+	struct dptx_clk_cfg_s link_clk; // !move to link
 	struct dptx_venc_cfg_s venc_cfg;
 
-	struct dptx_edid_info_s edid_info;
-
 	struct dptx_vmode_mgr_s vmode_mgr;
-
 	struct dptx_detail_timing_s act_timing;
 
-	struct dptx_link_cfg_s link_cfg;
+	struct dptx_sink_dev_s {
+		char sink_name[32];
+		uint8_t port_mask;
+		uint8_t dual_port_type;
+		uint8_t hpd_mask;
+		uint8_t pwr_gpio_mask;
+		struct dptx_edid_info_s exp_edid;
+		struct dptx_link_cfg_s *link[4];
+	} sink;
 
 	struct dev_pm_ops *dev_pm_ops;
 

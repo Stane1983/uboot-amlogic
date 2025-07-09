@@ -73,10 +73,14 @@ void dptx_HPD_pinmux_set(struct dptx_drv_s *dptx)
 {
 	switch (dptx->data->chip_type) {
 	case DPTX_CHIP_T7:
-		if (dptx->idx == 0)
-			dptx_periphs_setb(PADCTRL_PIN_MUX_REGK, 4, 8, 4);
-		else if (dptx->idx == 1)
+		if (dptx->idx == 0) {
+			if (dptx->sink.hpd_mask & BIT(0))
+				dptx_periphs_setb(PADCTRL_PIN_MUX_REGK, 4, 8, 4);
+			if (dptx->sink.hpd_mask & BIT(1))
+				dptx_periphs_setb(PADCTRL_PIN_MUX_REGK, 4, 12, 4);
+		} else if (dptx->idx == 1) {
 			dptx_periphs_setb(PADCTRL_PIN_MUX_REGK, 4, 12, 4);
+		}
 		break;
 	case DPTX_CHIP_MAX:
 	default:

@@ -19,4 +19,6 @@
 #define EDPTX0_BASE          0xfe0b0000L
 #define EDPTX1_BASE          0xfe0b2000L
 
+#define EDPTX0_B_BASE        EDPTX1_BASE
+
 #endif /* __INC_AML_VPU_REG_H__ */

@@ -13,18 +13,18 @@
  * Method 3a: eDP Alternate Scrambler Seed Reset (ASSR)
  */
 
-static void dptx_set_eDP_ASSR(struct dptx_drv_s *dptx)
+static void dptx_set_eDP_ASSR(struct dptx_drv_s *dptx, uint8_t port)
 {
 	uint8_t aux_data = 0x01;
 
-	dptx_if_scramble_reset_set(dptx, DPTX_eDP_ALTERNATIVE_SCRAMBLE_RESET);
-	dptx_if_aux_write(dptx, DPCD_eDP_CONFIGURATION_SET, 1, &aux_data);
+	dptx_if_scramble_reset_set(dptx, port, DPTX_eDP_ALTERNATIVE_SCRAMBLE_RESET);
+	dptx_if_aux_write(dptx, port, DPCD_eDP_CONFIGURATION_SET, 1, &aux_data);
 
-	DPTXPR(dptx->idx, LOG_I, "eDP ASSR en");
+	DPTX_P_DBG(dptx, port, "eDP ASSR en");
 }
 
-void dptx_set_content_protection(struct dptx_drv_s *dptx)
+void dptx_set_content_protection(struct dptx_drv_s *dptx, uint8_t port)
 {
-	if (dptx->link_cfg.DACP_support & 0x4)
-		dptx_set_eDP_ASSR(dptx);
+	if (dptx->sink.link[port]->DACP_support & 0x4)
+		dptx_set_eDP_ASSR(dptx, port);
 }

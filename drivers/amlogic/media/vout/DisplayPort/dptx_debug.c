@@ -33,30 +33,24 @@ static void dptx_act_timing_info_print(struct dptx_drv_s *dptx)
 	printf("\n");
 }
 
-static void dptx_link_cfg_info_print(struct dptx_drv_s *dptx)
+static void dptx_link_cfg_info_print(struct dptx_drv_s *dptx, uint8_t port)
 {
-	printf("max_lane_count        %u\n"
-		"max_link_rate         %u\n"
-		"TPS_support           %u\n"
-		"DACP_support           %u\n"
-		"training_mode         %u\n"
-		"sync_clk_mode         %u\n"
-		"lane_count            %u\n"
-		"link_rate             %u\n",
-		dptx->link_cfg.max_lane_count,
-		dptx->link_cfg.max_link_rate,
-		dptx->link_cfg.TPS_support,
-		dptx->link_cfg.DACP_support,
-		dptx->link_cfg.training_mode,
-		dptx->link_cfg.sync_clk_mode,
-		dptx->link_cfg.lane_count,
-		dptx->link_cfg.link_rate);
+	printf("max_link        %u lane %u MHz\n"
+		"act_link        %u lane %u MHz\n"
+		"DACP_support    %u\n"
+		"training_mode   %u\n"
+		"sync_clk_mode   %u\n",
+		dptx->sink.link[port]->max_lane_count, dptx->sink.link[port]->max_link_rate * 270,
+		dptx->sink.link[port]->lane_count,     dptx->sink.link[port]->link_rate * 270,
+		dptx->sink.link[port]->DACP_support,
+		dptx->sink.link[port]->training_mode,
+		dptx->sink.link[port]->sync_clk_mode);
 }
 
 static void dptx_phy_cfg_info_print(struct dptx_drv_s *dptx)
 {
 	printf("PHY status:\n"
-		"  vswing:         0x%x\n"
+		"  vswing:  0x%x\n"
 		"  Lane[0]: sta:%u, amp:%u, preem:%u, post_cur:%u\n"
 		"  Lane[1]: sta:%u, amp:%u, preem:%u, post_cur:%u\n"
 		"  Lane[2]: sta:%u, amp:%u, preem:%u, post_cur:%u\n"
@@ -75,7 +69,7 @@ static void dptx_phy_cfg_info_print(struct dptx_drv_s *dptx)
 
 void dptx_info_print(struct dptx_drv_s *dptx)
 {
-	DPTXPR(dptx->idx, LOG_I, "DisplayPort TX driver version: %s", DPTX_DRV_VERSION);
+	DPTX_PR(dptx, "DisplayPort TX driver version: %s", DPTX_DRV_VERSION);
 
 	dptx_phy_cfg_info_print(dptx);
 
@@ -87,7 +81,7 @@ void dptx_info_print(struct dptx_drv_s *dptx)
 
 	dptx_act_timing_info_print(dptx);
 
-	dptx_link_cfg_info_print(dptx);
+	dptx_link_cfg_info_print(dptx, 0);
 }
 
 static struct dptx_debug_info_reg_s dptx_debug_info_reg_t7_0 = {
@@ -114,7 +108,8 @@ static struct dptx_debug_info_reg_s dptx_debug_info_reg_t7_1 = {
 	.reg_dptx_IP    = dptx_reg_dptx_IP,
 };
 
-static void dptx_regs_pr(struct dptx_drv_s *dptx, uint8_t reg_t, struct reg_sets_s *reg_sets)
+static void dptx_regs_pr(struct dptx_drv_s *dptx, uint8_t port,
+			uint8_t reg_t, struct reg_sets_s *reg_sets)
 {
 	uint8_t idx, str_pos = 0, reg_temp = 0;
 	uint32_t reg_addr = 0, reg_val = 0;
@@ -156,7 +151,7 @@ static void dptx_regs_pr(struct dptx_drv_s *dptx, uint8_t reg_t, struct reg_sets
 			break;
 		case DPTC_REG_TYPE_DP_IP:
 			reg_addr = reg_sets[idx].addr;
-			reg_val  = dptx_reg_read(dptx->idx, reg_addr);
+			reg_val  = dptx_reg_read(dptx, port, reg_addr);
 			break;
 		case DPTC_REG_TYPE_COMBO_DPHY:
 			reg_addr = reg_sets[idx].addr;
@@ -165,7 +160,7 @@ static void dptx_regs_pr(struct dptx_drv_s *dptx, uint8_t reg_t, struct reg_sets
 		case DPTC_REG_TYPE_DPCD_RECEIVER_CAP:
 		case DPTC_REG_TYPE_DPCD_LINK_CONFIG:
 		case DPTC_REG_TYPE_DPCD_LINK_STATUS:
-			if (dptx_if_aux_read(dptx, reg_sets[idx].addr, 1, &reg_temp))
+			if (dptx_if_aux_read(dptx, port, reg_sets[idx].addr, 1, &reg_temp))
 				break;
 			reg_addr = reg_sets[idx].addr;
 			reg_val = reg_temp;
@@ -182,6 +177,7 @@ static void dptx_regs_pr(struct dptx_drv_s *dptx, uint8_t reg_t, struct reg_sets
 void dptx_reg_print(struct dptx_drv_s *dptx)
 {
 	struct dptx_debug_info_reg_s *debug_info_reg = NULL;
+	uint8_t port = 0;
 
 	switch (dptx->data->chip_type) {
 	case DPTX_CHIP_T7:
@@ -196,38 +192,55 @@ void dptx_reg_print(struct dptx_drv_s *dptx)
 		return;
 	}
 
-	DPTXPR(dptx->idx, LOG_I, "DisplayPort TX driver regs:");
+	DPTX_PR(dptx, "DisplayPort TX driver regs:");
 
 	if (debug_info_reg->reg_pll)
-		dptx_regs_pr(dptx, DPTC_REG_TYPE_PLL, debug_info_reg->reg_pll);
+		dptx_regs_pr(dptx, port, DPTC_REG_TYPE_PLL, debug_info_reg->reg_pll);
 
 	if (debug_info_reg->reg_clk)
-		dptx_regs_pr(dptx, DPTC_REG_TYPE_CLK, debug_info_reg->reg_clk);
+		dptx_regs_pr(dptx, port, DPTC_REG_TYPE_CLK, debug_info_reg->reg_clk);
 
 	if (debug_info_reg->reg_combo_dphy)
-		dptx_regs_pr(dptx, DPTC_REG_TYPE_COMBO_DPHY, debug_info_reg->reg_combo_dphy);
+		dptx_regs_pr(dptx, port, DPTC_REG_TYPE_COMBO_DPHY, debug_info_reg->reg_combo_dphy);
 
 	if (debug_info_reg->reg_encl)
-		dptx_regs_pr(dptx, DPTC_REG_TYPE_VENC, debug_info_reg->reg_encl);
+		dptx_regs_pr(dptx, port, DPTC_REG_TYPE_VENC, debug_info_reg->reg_encl);
 
 	if (debug_info_reg->reg_encl_if)
-		dptx_regs_pr(dptx, DPTC_REG_TYPE_VENC_IF, debug_info_reg->reg_encl_if);
+		dptx_regs_pr(dptx, port, DPTC_REG_TYPE_VENC_IF, debug_info_reg->reg_encl_if);
 
 	if (debug_info_reg->reg_encl_data)
-		dptx_regs_pr(dptx, DPTC_REG_TYPE_VENC_DATA, debug_info_reg->reg_encl_data);
+		dptx_regs_pr(dptx, port, DPTC_REG_TYPE_VENC_DATA, debug_info_reg->reg_encl_data);
 
 	if (debug_info_reg->reg_vpu)
-		dptx_regs_pr(dptx, DPTC_REG_TYPE_VPU, debug_info_reg->reg_vpu);
+		dptx_regs_pr(dptx, port, DPTC_REG_TYPE_VPU, debug_info_reg->reg_vpu);
 
 	if (debug_info_reg->reg_analog_phy)
-		dptx_regs_pr(dptx, DPTC_REG_TYPE_PHY, debug_info_reg->reg_analog_phy);
+		dptx_regs_pr(dptx, port, DPTC_REG_TYPE_PHY, debug_info_reg->reg_analog_phy);
 
-	if (debug_info_reg->reg_dptx_IP)
-		dptx_regs_pr(dptx, DPTC_REG_TYPE_DP_IP, debug_info_reg->reg_dptx_IP);
+	if (debug_info_reg->reg_dptx_IP) {
+		dptx_regs_pr(dptx, 0, DPTC_REG_TYPE_DP_IP, debug_info_reg->reg_dptx_IP);
+		if (dptx->sink.port_mask == 0x3)
+			dptx_regs_pr(dptx, 1, DPTC_REG_TYPE_DP_IP, debug_info_reg->reg_dptx_IP);
+	}
 
 	if (dptx->status & DPTX_STA_LINK_ON) {
-		dptx_regs_pr(dptx, DPTC_REG_TYPE_DPCD_RECEIVER_CAP, dptx_reg_DPCD_receiver_cap);
-		dptx_regs_pr(dptx, DPTC_REG_TYPE_DPCD_LINK_CONFIG, dptx_reg_DPCD_link_config);
-		dptx_regs_pr(dptx, DPTC_REG_TYPE_DPCD_LINK_STATUS, dptx_reg_DPCD_link_status);
+		dptx_regs_pr(dptx, port,
+			DPTC_REG_TYPE_DPCD_RECEIVER_CAP, dptx_reg_DPCD_receiver_cap);
+		dptx_regs_pr(dptx, port,
+			DPTC_REG_TYPE_DPCD_LINK_CONFIG, dptx_reg_DPCD_link_config);
+		dptx_regs_pr(dptx, port,
+			DPTC_REG_TYPE_DPCD_LINK_STATUS, dptx_reg_DPCD_link_status);
+	}
+}
+
+void dptx_debug_reset(struct dptx_drv_s *dptx, uint8_t port_mask, uint8_t reset_part)
+{
+	uint8_t port;
+
+	for (port = 0; port < 4; port++) {
+		if (!dptx->sink.link[port])
+			continue;
+		dptx_if_path_reset(dptx, port, reset_part);
 	}
 }

@@ -414,7 +414,7 @@ static int dptx_run_training_loop(struct aml_lcd_drv_s *pdrv, unsigned int retry
 			if (ret == 0) {
 				state = DP_TRAINING_CHANNEL_EQ;
 				break;
-			} else if (ret < 0) {
+			} else {
 				state = DP_TRAINING_FAILED;
 				break;
 			}
@@ -435,8 +435,7 @@ static int dptx_run_training_loop(struct aml_lcd_drv_s *pdrv, unsigned int retry
 			if (ret == 0) {
 				state = DP_TRAINING_SUCCESS;
 				break;
-			}
-			if (ret < 0) {
+			} else {
 				state = DP_TRAINING_FAILED;
 				break;
 			}

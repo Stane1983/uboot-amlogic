@@ -116,11 +116,14 @@ static struct reg_sets_s dptx_regs_analog_phy_t7[] = {
 };
 
 static struct reg_sets_s dptx_reg_vpu_t7[] = {
-	{"VPU_VIU_VENC_MUX_CTRL", VPU_VIU_VENC_MUX_CTRL},
-	{"VPU_DISP_VIU0_CTRL",    VPU_DISP_VIU0_CTRL},
-	{"VPU_DISP_VIU1_CTRL",    VPU_DISP_VIU1_CTRL},
-	{"VPU_DISP_VIU2_CTRL",    VPU_DISP_VIU2_CTRL},
-	{"",                      DPTX_REG_END},
+	{"VENC_MUX_CTRL",  VPU_VIU_VENC_MUX_CTRL},
+	{"DISP_VIU0_CTRL", VPU_DISP_VIU0_CTRL},
+	{"DISP_VIU1_CTRL", VPU_DISP_VIU1_CTRL},
+	{"DISP_VIU2_CTRL", VPU_DISP_VIU2_CTRL},
+	{"VENC_RGN_CTRL",  VPU_VENC_RGN_CTRL},
+	{"VENC_RGN_RSIZE", VPU_VENC_RGN_RSIZE},
+	{"DISP_WRAP_CTRL", VPU_DISP_WRAP_CTRL},
+	{"",               DPTX_REG_END},
 };
 
 static struct reg_sets_s dptx_reg_venc_if_t7[] = {
@@ -176,6 +179,22 @@ static struct reg_sets_s dptx_reg_dptx_IP[] = {
 	{"AUX_REPLY_COUNT",           EDP_TX_AUX_REPLY_COUNT},
 	{"AUX_REPLY_DATA_COUNT",      EDP_TX_AUX_REPLY_DATA_COUNT},
 	{"AUX_TRANSFER_STATUS",       EDP_TX_AUX_TRANSFER_STATUS},
+	{"MSA-HTOTAL",                EDP_TX_MAIN_STREAM_HTOTAL},
+	{"MSA-VTOTAL",                EDP_TX_MAIN_STREAM_VTOTAL},
+	{"MSA-POLARITY",              EDP_TX_MAIN_STREAM_POLARITY},
+	{"MSA-HSWIDTH",               EDP_TX_MAIN_STREAM_HSWIDTH},
+	{"MSA-VSWIDTH",               EDP_TX_MAIN_STREAM_VSWIDTH},
+	{"MSA-HRES",                  EDP_TX_MAIN_STREAM_HRES},
+	{"MSA-VRES",                  EDP_TX_MAIN_STREAM_VRES},
+	{"MSA-HSTART",                EDP_TX_MAIN_STREAM_HSTART},
+	{"MSA-VSTART",                EDP_TX_MAIN_STREAM_VSTART},
+	{"MSA-MISC0",                 EDP_TX_MAIN_STREAM_MISC0},
+	{"MSA-MISC1",                 EDP_TX_MAIN_STREAM_MISC1},
+	{"MSA-M_VID",                 EDP_TX_MAIN_STREAM_M_VID},
+	{"MSA-TU",                    EDP_TX_MAIN_STREAM_TRANSFER_UNIT_SIZE},
+	{"MSA-N_VID",                 EDP_TX_MAIN_STREAM_N_VID},
+	{"MSA-USER_PIXEL_WIDTH",      EDP_TX_MAIN_STREAM_USER_PIXEL_WIDTH},
+	{"MSA-DATA_COUNT_PER_LANE",   EDP_TX_MAIN_STREAM_DATA_COUNT_PER_LANE},
 	{"",                          DPTX_REG_END},
 };
 
@@ -195,12 +214,10 @@ static struct reg_sets_s dptx_reg_DPCD_receiver_cap[] = {
 	{"I2C_SPEED_CAP",               DPCD_I2C_SPEED_CAP},
 	{"eDP_CONFIGURATION_CAP",       DPCD_eDP_CONFIGURATION_CAP},
 	{"TRAINING_AUX_RD_INTERVAL",    DPCD_TRAINING_AUX_RD_INTERVAL},
-	{"FAUX_CAP",                    DPCD_FAUX_CAP},
 	{"MSTM_CAP",                    DPCD_MSTM_CAP},
 	{"NUMBER_OF_AUDIO_ENDPOINTS",   DPCD_NUMBER_OF_AUDIO_ENDPOINTS},
-	{"PSR_SUPPORT",                 DPCD_PSR_SUPPORT},
-	{"PSR_CAPS",                    DPCD_PSR_CAPS},
-	{"DETAILED_CAP_INFO_AVAILABLE", DPCD_DETAILED_CAP_INFO_AVAILABLE},
+	{"PSR_SUPPORT",                 DPCD_eDP_PSR_CAP_SUPPORT_and_VERSION},
+	{"PSR_CAPS",                    DPCD_eDP_PSR_CAP},
 	{"",                            DPTX_REG_END},
 };
 
@@ -220,8 +237,6 @@ static struct reg_sets_s dptx_reg_DPCD_link_config[] = {
 	{"LINK_QUAL_LANE1_SET",              DPCD_LINK_QUAL_LANE1_SET},
 	{"LINK_QUAL_LANE2_SET",              DPCD_LINK_QUAL_LANE2_SET},
 	{"LINK_QUAL_LANE3_SET",              DPCD_LINK_QUAL_LANE3_SET},
-	{"TRAINING_LANE0_1_SET2",            DPCD_TRAINING_LANE0_1_SET2},
-	{"TRAINING_LANE2_3_SET2",            DPCD_TRAINING_LANE2_3_SET2},
 	{"",                                 DPTX_REG_END},
 };
 

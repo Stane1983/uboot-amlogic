@@ -8,7 +8,12 @@
 #include <amlogic/media/vout/DisplayPort/DPTX.h>
 #include <linux/types.h>
 
-#define LCD_WAIT_VSYNC_TIMEOUT    50000
+#define DPTX_DUAL_PORT_L_R        0
+#define DPTX_DUAL_PORT_R_L        1
+#define DPTX_DUAL_PORT_O_E        2
+#define DPTX_DUAL_PORT_E_O        3
+
+#define DPTX_WAIT_VSYNC_TIMEOUT    50000
 
 struct dptx_venc_op_s {
 	void (*wait_vsync)(struct dptx_drv_s *dptx);

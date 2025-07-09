@@ -24,6 +24,22 @@
 #define REG_ADDR_COMBO(reg)   ((reg) + 0L)
 #define REG_ADDR_VCBUS(reg)   (((reg) > 0x10000) ? (reg) : (REG_BASE_VCBUS + REG_OFFSET_VCBUS(reg)))
 
+#ifndef EDPTX0_A_BASE
+#define EDPTX0_A_BASE          EDPTX0_BASE
+#endif
+
+#ifndef EDPTX0_B_BASE
+#define EDPTX0_B_BASE          0
+#endif
+
+#ifndef EDPTX1_A_BASE
+#define EDPTX1_A_BASE          EDPTX1_BASE
+#endif
+
+#ifndef EDPTX1_B_BASE
+#define EDPTX1_B_BASE          0
+#endif
+
 //#define HHI_VIID_CLK_DIV     0x4a
 #define DAC0_CLK_SEL           28
 #define DAC1_CLK_SEL           24
@@ -74,185 +90,202 @@
 #define ENCT_GATE_VCLK           1
 #define ENCI_GATE_VCLK           0
 
-static inline u32 dptx_combo_dphy_read(u32 reg)
+static inline uint32_t dptx_combo_dphy_read(uint32_t reg)
 {
-	u32 val;
+	uint32_t val;
 
-	val = *(volatile u32 *)(REG_ADDR_COMBO(reg));
+	val = *(volatile uint32_t *)(REG_ADDR_COMBO(reg));
 	if (dptx_print_level >= LOG_A)
 		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
 
 	return val;
 };
 
-static inline void dptx_combo_dphy_write(u32 reg, u32 val)
+static inline void dptx_combo_dphy_write(uint32_t reg, uint32_t val)
 {
 	if (dptx_print_level >= LOG_A)
 		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
-	*(volatile u32 *)REG_ADDR_COMBO(reg) = (val);
+	*(volatile uint32_t *)REG_ADDR_COMBO(reg) = (val);
 };
 
-static inline void dptx_combo_dphy_setb(u32 reg, u32 val, u8 start, u8 len)
+static inline void dptx_combo_dphy_setb(uint32_t reg, uint32_t val, uint8_t start, uint8_t len)
 {
 	dptx_combo_dphy_write(reg, ((dptx_combo_dphy_read(reg) &
 		~(((1L << (len)) - 1) << (start))) | (((val) & ((1L << (len)) - 1)) << (start))));
 }
 
-static inline u32 dptx_combo_dphy_getb(u32 reg, u8 start, u8 len)
+static inline uint32_t dptx_combo_dphy_getb(uint32_t reg, uint8_t start, uint8_t len)
 {
 	return (dptx_combo_dphy_read(reg) >> (start)) & ((1L << (len)) - 1);
 }
 
-static inline u32 dptx_clk_read(u32 reg)
+static inline uint32_t dptx_clk_read(uint32_t reg)
 {
-	u32 val;
+	uint32_t val;
 
-	val = *(volatile u32 *)(REG_ADDR_HIU(reg));
+	val = *(volatile uint32_t *)(REG_ADDR_HIU(reg));
 	if (dptx_print_level >= LOG_A)
 		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
 
 	return val;
 };
 
-static inline void dptx_clk_write(u32 reg, u32 val)
+static inline void dptx_clk_write(uint32_t reg, uint32_t val)
 {
 	if (dptx_print_level >= LOG_A)
 		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
-	*(volatile u32 *)REG_ADDR_HIU(reg) = (val);
+	*(volatile uint32_t *)REG_ADDR_HIU(reg) = (val);
 };
 
-static inline void dptx_clk_setb(u32 reg, u32 val, u8 start, u8 len)
+static inline void dptx_clk_setb(uint32_t reg, uint32_t val, uint8_t start, uint8_t len)
 {
 	dptx_clk_write(reg, ((dptx_clk_read(reg) &
 		~(((1L << (len)) - 1) << (start))) | (((val) & ((1L << (len)) - 1)) << (start))));
 }
 
-static inline u32 dptx_clk_getb(u32 reg, u8 start, u8 len)
+static inline uint32_t dptx_clk_getb(uint32_t reg, uint8_t start, uint8_t len)
 {
 	return (dptx_clk_read(reg) >> (start)) & ((1L << (len)) - 1);
 }
 
-static inline u32 dptx_ana_read(u32 reg)
+static inline uint32_t dptx_ana_read(uint32_t reg)
 {
-	u32 val;
+	uint32_t val;
 
-	val = *(volatile u32 *)(REG_ADDR_HIU(reg));
+	val = *(volatile uint32_t *)(REG_ADDR_HIU(reg));
 	if (dptx_print_level >= LOG_A)
 		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
 
 	return val;
 };
 
-static inline void dptx_ana_write(u32 reg, u32 val)
+static inline void dptx_ana_write(uint32_t reg, uint32_t val)
 {
 	if (dptx_print_level >= LOG_A)
 		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
-	*(volatile u32 *)REG_ADDR_HIU(reg) = (val);
+	*(volatile uint32_t *)REG_ADDR_HIU(reg) = (val);
 };
 
-static inline void dptx_ana_setb(u32 reg, u32 val, u8 start, u8 len)
+static inline void dptx_ana_setb(uint32_t reg, uint32_t val, uint8_t start, uint8_t len)
 {
 	dptx_ana_write(reg, ((dptx_ana_read(reg) &
 		~(((1L << (len)) - 1) << (start))) | (((val) & ((1L << (len)) - 1)) << (start))));
 }
 
-static inline u32 dptx_ana_getb(u32 reg, u8 start, u8 len)
+static inline uint32_t dptx_ana_getb(uint32_t reg, uint8_t start, uint8_t len)
 {
 	return (dptx_ana_read(reg) >> (start)) & ((1L << (len)) - 1);
 }
 
-static inline u32 dptx_reset_read(u32 reg)
+static inline uint32_t dptx_reset_read(uint32_t reg)
 {
-	u32 val;
+	uint32_t val;
 
-	val = (*(volatile u32 *)REG_ADDR_RESET(reg));
+	val = (*(volatile uint32_t *)REG_ADDR_RESET(reg));
 	if (dptx_print_level >= LOG_A)
 		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
 
 	return val;
 };
 
-static inline void dptx_reset_write(u32 reg, u32 val)
+static inline void dptx_reset_write(uint32_t reg, uint32_t val)
 {
 	if (dptx_print_level >= LOG_A)
 		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
-	*(volatile u32 *)REG_ADDR_RESET(reg) = (val);
+	*(volatile uint32_t *)REG_ADDR_RESET(reg) = (val);
 };
 
-static inline void dptx_reset_setb(u32 reg, u32 val, u8 start, u8 len)
+static inline void dptx_reset_setb(uint32_t reg, uint32_t val, uint8_t start, uint8_t len)
 {
 	dptx_reset_write(reg, ((dptx_reset_read(reg) &
 		~(((1L << (len)) - 1) << (start))) | (((val) & ((1L << (len)) - 1)) << (start))));
 }
 
-static inline u32 dptx_vcbus_read(u32 reg)
+static inline uint32_t dptx_vcbus_read(uint32_t reg)
 {
-	u32 val;
+	uint32_t val;
 
-	val = (*(volatile u32 *)REG_ADDR_VCBUS(reg));
+	val = (*(volatile uint32_t *)REG_ADDR_VCBUS(reg));
 	if (dptx_print_level >= LOG_A)
 		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
 
 	return val;
 }
 
-static inline void dptx_vcbus_write(u32 reg, u32 val)
+static inline void dptx_vcbus_write(uint32_t reg, uint32_t val)
 {
 	if (dptx_print_level >= LOG_A)
 		printf("%s: [0x%08x]=0x%08x\n", __func__, reg, val);
-	(*(volatile u32 *)REG_ADDR_VCBUS(reg)) = (val);
+	(*(volatile uint32_t *)REG_ADDR_VCBUS(reg)) = (val);
 }
 
-static inline void dptx_vcbus_setb(u32 reg, u32 val, u8 start, u8 len)
+static inline void dptx_vcbus_setb(uint32_t reg, uint32_t val, uint8_t start, uint8_t len)
 {
 	dptx_vcbus_write(reg, ((dptx_vcbus_read(reg) &
 		~(((1L << (len)) - 1) << (start))) | (((val) & ((1L << (len)) - 1)) << (start))));
 }
 
-static inline u32 dptx_vcbus_getb(u32 reg, u8 start, u8 len)
+static inline uint32_t dptx_vcbus_getb(uint32_t reg, uint8_t start, uint8_t len)
 {
 	return (dptx_vcbus_read(reg) >> (start)) & ((1L << (len)) - 1);
 }
 
-static inline u32 dptx_reg_read(u8 idx, u32 reg)
+static inline uint32_t dptx_reg_read(struct dptx_drv_s *dptx, uint8_t port, uint32_t reg)
 {
 	unsigned long paddr;
 	unsigned int val;
 
-	if (idx)
-		paddr = EDPTX1_BASE + reg;
+	if (dptx->idx == 0 && port == 0)
+		paddr = EDPTX0_A_BASE + reg;
+	else if (dptx->idx == 0 && port == 1)
+		paddr = EDPTX0_B_BASE + reg;
+	else if (dptx->idx == 1 && port == 0)
+		paddr = EDPTX1_A_BASE + reg;
+	else if (dptx->idx == 1 && port == 1)
+		paddr = EDPTX1_B_BASE + reg;
 	else
-		paddr = EDPTX0_BASE + reg;
+		return 0;
+
 	val = *(volatile unsigned int *)paddr;
 	if (dptx_print_level >= LOG_A)
-		printf("%s: [%d][0x%04x]=0x%08x\n", __func__, idx, reg, val);
+		printf("%s: [%d][0x%04x]=0x%08x\n", __func__, dptx->idx, reg, val);
 
 	return val;
 }
 
-static inline void dptx_reg_write(u8 idx, u32 reg, u32 val)
+static inline void dptx_reg_write(struct dptx_drv_s *dptx, uint8_t port,
+					uint32_t reg, uint32_t val)
 {
 	unsigned long paddr;
 
-	if (idx)
-		paddr = EDPTX1_BASE + reg;
+	if (dptx->idx == 0 && port == 0)
+		paddr = EDPTX0_A_BASE + reg;
+	else if (dptx->idx == 0 && port == 1)
+		paddr = EDPTX0_B_BASE + reg;
+	else if (dptx->idx == 1 && port == 0)
+		paddr = EDPTX1_A_BASE + reg;
+	else if (dptx->idx == 1 && port == 1)
+		paddr = EDPTX1_B_BASE + reg;
 	else
-		paddr = EDPTX0_BASE + reg;
-	*(volatile u32 *)paddr = (val);
+		return;
+
+	*(volatile uint32_t *)paddr = (val);
 	if (dptx_print_level >= LOG_A)
-		printf("%s: [%d][0x%04x]=0x%08x\n", __func__, idx, reg, val);
+		printf("%s: [%d][0x%04x]=0x%08x\n", __func__, dptx->idx, reg, val);
 }
 
-static inline void dptx_reg_setb(u8 idx, u32 reg, u32 val, u8 start, u8 len)
+static inline void dptx_reg_setb(struct dptx_drv_s *dptx, uint8_t port,
+				uint32_t reg, uint32_t val, uint8_t start, uint8_t len)
 {
-	dptx_reg_write(idx, reg,
-		((dptx_reg_read(idx, reg) & ~(((1L << (len)) - 1) << (start))) |
+	dptx_reg_write(dptx, port, reg,
+		((dptx_reg_read(dptx, port, reg) & ~(((1L << (len)) - 1) << (start))) |
 		(((val) & ((1L << (len)) - 1)) << (start))));
 }
 
-static inline u32 dptx_reg_getb(u8 idx, u32 reg, u8 start, u8 len)
+static inline uint32_t dptx_reg_getb(struct dptx_drv_s *dptx, uint8_t port,
+				uint32_t reg, uint8_t start, uint8_t len)
 {
-	return (dptx_reg_read(idx, reg) >> (start)) & ((1L << (len)) - 1);
+	return (dptx_reg_read(dptx, port, reg) >> (start)) & ((1L << (len)) - 1);
 }
 
 static inline unsigned int dptx_periphs_read(unsigned int reg)

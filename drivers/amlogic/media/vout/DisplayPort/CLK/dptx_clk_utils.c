@@ -48,7 +48,7 @@ uint8_t dptx_clk_msr_check(uint32_t msr_id, uint32_t freq)
 
 	clk_msrd = clk_util_clk_msr(msr_id) * 1000000;
 	if (dptx_diff(freq, clk_msrd) >= PLL_CLK_CHECK_MAX) {
-		DPTXPR(0, LOG_E, "%s[%d]: exp:%d, msr:%d\n", __func__, msr_id, freq, clk_msrd);
+		DPTXPR(0, LOG_E, "%s[%d]: exp:%d, msr:%d", __func__, msr_id, freq, clk_msrd);
 		return 1;
 	}
 

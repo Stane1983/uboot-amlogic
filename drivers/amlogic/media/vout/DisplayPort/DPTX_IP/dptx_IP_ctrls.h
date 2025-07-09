@@ -28,28 +28,36 @@
 #define AUX_REPLY_CODE_I2C_Defer 0x8
 
 struct dptx_if_ctrl_s {
-	uint8_t (*aux_write)(struct dptx_drv_s *dptx, uint32_t addr, int len, uint8_t *buf);
-	uint8_t (*aux_write_single)(struct dptx_drv_s *dptx, uint32_t addr, uint8_t val);
-	uint8_t (*aux_read)(struct dptx_drv_s *dptx, uint32_t addr, int len, uint8_t *buf);
-	uint8_t (*aux_i2c_op)(struct dptx_drv_s *dptx, uint8_t cmd_type, uint32_t dev_addr,
-				uint8_t len, uint8_t *data);
+	uint8_t (*aux_write)(struct dptx_drv_s *dptx, uint8_t port,
+				uint32_t addr, int len, uint8_t *buf);
+	uint8_t (*aux_write_single)(struct dptx_drv_s *dptx, uint8_t port,
+				uint32_t addr, uint8_t val);
+	uint8_t (*aux_read)(struct dptx_drv_s *dptx, uint8_t port,
+				uint32_t addr, int len, uint8_t *buf);
+	uint8_t (*aux_i2c_op)(struct dptx_drv_s *dptx, uint8_t port,
+				uint8_t cmd_type, uint32_t dev_addr, uint8_t len, uint8_t *data);
 
-	void (*transmit_pattern)(struct dptx_drv_s *dptx, uint8_t pattern, uint8_t lane_mask);
-	void (*set_MSA)(struct dptx_drv_s *dptx);
+	void (*transmit_pattern)(struct dptx_drv_s *dptx, uint8_t port,
+				uint8_t pattern, uint8_t lane_mask);
+	void (*set_MSA)(struct dptx_drv_s *dptx, uint8_t port);
 
-	void (*path_reset)(struct dptx_drv_s *dptx, uint8_t mask);
+	void (*path_reset)(struct dptx_drv_s *dptx, uint8_t port, uint8_t mask);
 
-	void (*lane_cfg_to_IP)(struct dptx_drv_s *dptx);
-	void (*phy_cfg_to_IP)(struct dptx_drv_s *dptx, uint8_t lane_mask);
+	void (*lane_cfg_to_IP)(struct dptx_drv_s *dptx, uint8_t port);
+	void (*phy_cfg_to_IP)(struct dptx_drv_s *dptx, uint8_t port, uint8_t lane_mask);
 
-	void (*transmitter_init)(struct dptx_drv_s *dptx);
-	void (*transmitter_output)(struct dptx_drv_s *dptx, uint8_t en);
+	void (*transmitter_init)(struct dptx_drv_s *dptx, uint8_t port);
+	// use port_mask to reduce port enabling interval
+	void (*transmitter_output)(struct dptx_drv_s *dptx, uint8_t port, uint8_t en);
 
-	uint8_t (*get_hpd_level)(struct dptx_drv_s *dptx);
-	uint16_t (*get_hpd_irq)(struct dptx_drv_s *dptx);
-	void (*set_hpd_interrupt_mask)(struct dptx_drv_s *dptx, uint8_t mask);
+	uint8_t (*get_hpd_level)(struct dptx_drv_s *dptx, uint8_t port);
+	uint16_t (*get_hpd_irq)(struct dptx_drv_s *dptx, uint8_t port);
+	void (*set_hpd_interrupt_mask)(struct dptx_drv_s *dptx, uint8_t port, uint8_t mask);
 
-	void (*scramble_reset_set)(struct dptx_drv_s *dptx, uint8_t sr_type);
+	void (*scramble_reset_set)(struct dptx_drv_s *dptx, uint8_t port, uint8_t sr_type);
+
+	void (*PSR1_SDP_ctrl)(struct dptx_drv_s *dptx, uint8_t port, uint8_t flag);
+	void (*PSR2_SDP_en)(struct dptx_drv_s *dptx, uint8_t port, uint8_t flag);
 };
 
 struct dptx_if_ctrl_s *dptx_if_bind_t7(struct dptx_drv_s *dptx);

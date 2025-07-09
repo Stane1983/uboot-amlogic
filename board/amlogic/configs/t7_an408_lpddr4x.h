@@ -130,7 +130,7 @@
 		"setenv bootargs ${bootargs} lcd0=${lcd0_attr} lcd_debug=${lcd_debug} "\
 		"nn_adj_vol=${nn_adj_vol} "\
 		"lcd1=${lcd1_attr} "\
-		"dptx0=${dptx0_ctrl} dptx1=${dptx1_ctrl} dptx_dbg=${dptx_debug} "\
+		"dptx0=${dptx0_ctrl} dptx1=${dptx1_ctrl} dptx_dbg=${dptx_dbg} "\
 		"connector0_type=${connector0_type} connector1_type=${connector1_type} connector2_type=${connector2_type} "\
 		"lcd2=${lcd2_attr} outputmode=${outputmode};"\
 		"run cmdline_keys;"\
