@@ -9,6 +9,13 @@
 
 #define REG_LCD_TCON_MAX    0xffff
 
+struct lcd_tcon_init_setting_s {
+	unsigned int reg;
+	unsigned int val;
+	unsigned int bit;
+	unsigned int len;
+};
+
 struct lcd_tcon_axi_mem_cfg_s {
 	unsigned int mem_type;
 	unsigned int mem_size;
@@ -44,33 +51,21 @@ struct lcd_tcon_config_s {
 	struct lcd_tcon_reg_skip_s *reg_skip_tbl;  //skip flush core reg range
 	unsigned int reg_skip_tbl_len;
 
-	unsigned int reg_top_ctrl;
-	unsigned int bit_en;
-
-	unsigned int reg_core_od;
-	unsigned int bit_od_en;
-
-	unsigned int reg_ctrl_timing_base;
-	unsigned int ctrl_timing_offset;
-	unsigned int ctrl_timing_cnt;
-
 	unsigned int axi_bank;
 
 	unsigned int rsv_mem_size;
 	unsigned int axi_size;
 	unsigned int bin_path_size;
 	unsigned int secure_cfg_size;
-	unsigned int vac_size;
-	unsigned int demura_set_size;
-	unsigned int demura_lut_size;
-	unsigned int acc_lut_size;
 
+	struct lcd_tcon_init_setting_s *init_pre_setting;
 	unsigned int axi_tbl_len;
 	struct lcd_tcon_axi_mem_cfg_s *axi_mem_cfg_tbl;
 	struct lcd_tcon_dma_ops_s *lut_dma_ops;
 
 	void (*tcon_axi_mem_config)(void);
 	void (*tcon_init_table_pre_proc)(unsigned char *table);
+	void (*tcon_lut_post_proc)(struct aml_lcd_drv_s *pdrv, unsigned int lut_type);
 	void (*tcon_global_reset)(struct aml_lcd_drv_s *pdrv);
 	int (*tcon_top_init)(struct aml_lcd_drv_s *pdrv);
 	int (*tcon_enable)(struct aml_lcd_drv_s *pdrv);
@@ -151,35 +146,13 @@ struct lcd_tcon_local_cfg_s {
 };
 
 /* *** tcon config *** */
-/* TL1 */
-#define LCD_TCON_CORE_REG_WIDTH_TL1      8
-#define LCD_TCON_TABLE_WIDTH_TL1         8
-#define LCD_TCON_TABLE_LEN_TL1           24000
-#define LCD_TCON_AXI_BANK_TL1            3
-
-#define BIT_TOP_EN_TL1                   4
-
-#define TCON_CORE_REG_START_TL1          0x0000
-#define REG_CORE_OD_TL1                  0x247
-#define BIT_OD_EN_TL1                    0
-#define REG_CTRL_TIMING_BASE_TL1         0x1b
-#define CTRL_TIMING_OFFSET_TL1           12
-#define CTRL_TIMING_CNT_TL1              0
-
 /* T5 */
 #define LCD_TCON_CORE_REG_WIDTH_T5       32
 #define LCD_TCON_TABLE_WIDTH_T5          32
 #define LCD_TCON_TABLE_LEN_T5            0x18d4 /* 0x635*4 */
 #define LCD_TCON_AXI_BANK_T5             2
 
-#define BIT_TOP_EN_T5                    4
-
 #define TCON_CORE_REG_START_T5           0x0100
-#define REG_CORE_OD_T5                   0x263
-#define BIT_OD_EN_T5                     31
-#define REG_CTRL_TIMING_BASE_T5          0x300
-#define CTRL_TIMING_OFFSET_T5            12
-#define CTRL_TIMING_CNT_T5               0
 
 /* T5D */
 #define LCD_TCON_CORE_REG_WIDTH_T5D       32
@@ -187,14 +160,7 @@ struct lcd_tcon_local_cfg_s {
 #define LCD_TCON_TABLE_LEN_T5D            0x102c /* 0x40b*4 */
 #define LCD_TCON_AXI_BANK_T5D             1
 
-#define BIT_TOP_EN_T5D                    4
-
 #define TCON_CORE_REG_START_T5D           0x0100
-#define REG_CORE_OD_T5D                   0x263
-#define BIT_OD_EN_T5D                     31
-#define REG_CTRL_TIMING_BASE_T5D          0x1b
-#define CTRL_TIMING_OFFSET_T5D            12
-#define CTRL_TIMING_CNT_T5D               0
 
 /* T3X */
 #define LCD_TCON_TABLE_LEN_T3X            0x1478 /* 0x51e*4 */
@@ -232,7 +198,6 @@ void tcon_lut_dma_init_t5m(struct aml_lcd_drv_s *pdrv, struct lcd_tcon_dma_ops_s
 void tcon_lut_dma_init_t3x(struct aml_lcd_drv_s *pdrv, struct lcd_tcon_dma_ops_s *ops);
 void tcon_lut_dma_init_t6w(struct aml_lcd_drv_s *pdrv, struct lcd_tcon_dma_ops_s *ops);
 void tcon_lut_dma_deinit(struct aml_lcd_drv_s *pdrv, struct lcd_tcon_dma_ops_s *ops);
-void lcd_tcon_lut_dma_update(struct aml_lcd_drv_s *pdrv, struct lcd_tcon_dma_ops_s *ops);
 void lcd_tcon_dma_data_init_trans(struct aml_lcd_drv_s *pdrv, struct lcd_tcon_dma_ops_s *ops);
 
 void lcd_tcon_init_data_version_update(char *data_buf);
@@ -247,8 +212,7 @@ struct tcon_rmem_s *get_lcd_tcon_rmem(void);
 struct tcon_mem_map_table_s *get_lcd_tcon_mm_table(void);
 struct lcd_tcon_local_cfg_s *get_lcd_tcon_local_cfg(void);
 
-void lcd_tcon_init_table_pre_proc(unsigned char *table);
-void lcd_tcon_init_table_pre_proc_t6d(unsigned char *table);
+void lcd_tcon_lut_post_proc(struct aml_lcd_drv_s *pdrv, unsigned int lut_type);
 void lcd_tcon_global_reset_txhd2(struct aml_lcd_drv_s *pdrv);
 void lcd_tcon_global_reset_t5m(struct aml_lcd_drv_s *pdrv);
 void lcd_tcon_global_reset_t3x(struct aml_lcd_drv_s *pdrv);
