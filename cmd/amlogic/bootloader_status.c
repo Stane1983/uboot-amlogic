@@ -1420,6 +1420,34 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 	return 0;
 }
 
+//usb_burn check for env and display
+static void factory_usb_burn_status_check(void)
+{
+	if (env_get_hex("usbDiskNewBoot", 0) && env_get_hex("usbDiskBootCpy", 0xff) != 0xff) {
+		const int want_cpy = env_get_ulong("usbDiskBootCpy", 10, 0xff);
+		const int boot_cpy = store_bootup_bootidx("bootloader");
+
+		if (want_cpy != boot_cpy) {
+			pr_err("Fail check boot index, want %d but %d\n", want_cpy, boot_cpy);
+			env_set_ulong("usbDiskChkOk", 0);
+			//delete usbDiskBootCpy to avoid always enter check
+			run_command("env set usbDiskBootCpy", 0);
+			run_command("env set usbDiskNewBoot", 0);
+			run_command("env default preboot; saveenv", 0);
+			printf("USB_BURN img bootloader cannot bootup, so END upgrade\n");
+			return;
+		}
+
+		printf("okay check img bootloader for usb_burn\n");
+		printf("update env for usb_burn\n");
+		run_command("printenv usbDiskNewBoot sdcburncfg usbDiskUpgrade preboot", 0);
+		run_command("defenv_reserve usbDiskNewBoot sdcburncfg usbDiskUpgrade preboot", 0);
+		run_command("printenv usbDiskNewBoot sdcburncfg usbDiskUpgrade preboot", 0);
+		run_command("env set usbDiskBootCpy ff", 0);
+		run_command("env set usbDiskChkOk 1;saveenv", 0);
+		return;
+	}
+}
 
 static int do_update_uboot_env(cmd_tbl_t *cmdtp,
 	int flag,
@@ -1457,6 +1485,8 @@ static int do_update_uboot_env(cmd_tbl_t *cmdtp,
 		printf("after recovery update, need update uboot env\n");
 		run_command("defenv_reserv; setenv upgrade_step 2; saveenv;", 0);
 	}
+
+	factory_usb_burn_status_check();
 
 	return 0;
 }

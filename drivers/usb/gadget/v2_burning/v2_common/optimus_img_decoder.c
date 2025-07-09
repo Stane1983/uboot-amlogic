@@ -671,8 +671,13 @@ int get_subtype_nm_by_index(HIMAGE hImg, const char* main_type, const char** sub
 int optimus_img_secureboot_signed(HIMAGE hImg)
 {
 	const int n_usb_bootloader = get_subtype_nr(hImg, "USB");
+	HIMAGEITEM hItem = NULL;
 
-	DWN_MSG("USB item num %d\n", n_usb_bootloader);
+	if (n_usb_bootloader < 4) {
+		hItem = image_item_open(hImg, "USB", "DDR_ENC");
+		if (hItem)
+			return 1;
+	}
 	return n_usb_bootloader == 4;
 }
 

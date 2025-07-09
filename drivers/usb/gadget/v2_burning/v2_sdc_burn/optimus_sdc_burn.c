@@ -366,6 +366,15 @@ static int optimus_burn_1st_bootloader(HIMAGE hImg)
 		DWN_ERR("Fail in burn boot at cpy %d\n", target_cpy);
 		return -__LINE__;
 	}
+
+#ifdef AML_BOOTLOADER_TPL_COPY0
+	DWN_MSG("burn tpl cpy0\n");
+	ret = optimus_burn_one_partition(AML_BOOTLOADER_TPL_COPY0, hImg, NULL, 0);
+	if (ret) {
+		DWN_ERR("Fail in burn TPL copy0\n");
+		return -__LINE__;
+	}
+#endif
 	env_set_ulong("usbDiskBootCpy", target_cpy);
 	return 0;
 }
@@ -852,6 +861,7 @@ int optimus_burn_with_cfg_file(const char* cfgFile)
             setenv("usbDiskUpgrade", "run init_display; setenv display_layer osd0; osd clear; usb_burn $sdcburncfg");
             setenv("preboot", "printenv usbDiskUpgrade; run usbDiskUpgrade");
             run_command("saveenv", 0);
+	    run_command("echo Resetting boot-info;store erase misc 0 0", 0);
         } else
         {//sdc_burn
             DWN_MSG("To erase OLD bootloader !\n");
@@ -886,17 +896,6 @@ int optimus_burn_with_cfg_file(const char* cfgFile)
         optimus_led_show_in_process_of_burning();
     }
 
-	if (usbDiskUpgrade && env_get("usbDiskBootCpy")) {
-		const int want_cpy = env_get_ulong("usbDiskBootCpy", 10, 0xff);
-		const int boot_cpy = store_bootup_bootidx("bootloader");
-
-		if (want_cpy != boot_cpy) {
-			DWN_ERR("Fail check boot index, want %d but %d\n", want_cpy, boot_cpy);
-			run_command("env default preboot; saveenv", 0);
-			return __LINE__;
-		}
-		DWN_MSG("okay check img bootloader\n");
-	}
 
     //update dtb for burning drivers
     ret = optimus_sdc_burn_dtb_load(hImg);
