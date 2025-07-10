@@ -28,6 +28,10 @@
 
 uint8_t boot_key_hash[AVB_SHA256_DIGEST_SIZE];
 
+#ifdef CONFIG_BOOTLOADER_SHOW_ERRCODE
+char err_part_name[AVB_PART_NAME_MAX_SIZE];
+#endif
+
 static AvbSlotVerifyResult initialize_persistent_digest(
     AvbOps* ops,
     const char* part_name,
@@ -473,6 +477,10 @@ out:
   }
 
 fail:
+#ifdef CONFIG_BOOTLOADER_SHOW_ERRCODE
+	if (ret != AVB_SLOT_VERIFY_RESULT_OK)
+		memcpy(err_part_name, part_name, strlen(part_name));
+#endif
   if (image_buf != NULL && !image_preloaded) {
     avb_free(image_buf);
   }
@@ -1290,6 +1298,11 @@ out:
   if (descriptors != NULL) {
     avb_free(descriptors);
   }
+
+#ifdef CONFIG_BOOTLOADER_SHOW_ERRCODE
+	if (ret != AVB_SLOT_VERIFY_RESULT_OK && strlen(err_part_name) == 0)
+		memcpy(err_part_name, partition_name, strlen(partition_name));
+#endif
   return ret;
 }
 
@@ -1431,6 +1444,9 @@ AvbSlotVerifyResult avb_slot_verify(AvbOps* ops,
   bool allow_verification_error =
       (flags & AVB_SLOT_VERIFY_FLAGS_ALLOW_VERIFICATION_ERROR);
   AvbCmdlineSubstList* additional_cmdline_subst = NULL;
+#ifdef CONFIG_BOOTLOADER_SHOW_ERRCODE
+	char cmdbuf[32];
+#endif
 
   /* Fail early if we're missing the AvbOps needed for slot verification. */
   avb_assert(ops->read_is_device_unlocked != NULL);
@@ -1442,6 +1458,10 @@ AvbSlotVerifyResult avb_slot_verify(AvbOps* ops,
   if (out_data != NULL) {
     *out_data = NULL;
   }
+
+#ifdef CONFIG_BOOTLOADER_SHOW_ERRCODE
+	memset(err_part_name, 0, AVB_PART_NAME_MAX_SIZE);
+#endif
 
   /* Allowing dm-verity errors defeats the purpose of verified boot so
    * only allow this if set up to allow verification errors
@@ -1680,6 +1700,11 @@ fail:
   if (additional_cmdline_subst != NULL) {
     avb_free_cmdline_subst_list(additional_cmdline_subst);
   }
+
+#ifdef CONFIG_BOOTLOADER_SHOW_ERRCODE
+	sprintf(cmdbuf, "errcode avb2 %s %d", err_part_name, ret);
+	run_command(cmdbuf, 0);
+#endif
   return ret;
 }
 

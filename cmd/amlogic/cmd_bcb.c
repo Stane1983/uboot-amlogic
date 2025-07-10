@@ -21,6 +21,7 @@
 #define RECOVERYBUF_SIZE 768
 
 #define BOOTINFO_OFFSET 864
+#define RESERVED_OFFSET 896
 #define SLOTBUF_SIZE    32
 #define MISCBUF_SIZE  1088
 
@@ -363,6 +364,21 @@ static int do_RunBcbCommand(
         goto ERR;
     }
 
+#ifdef CONFIG_BOOTLOADER_SHOW_ERRCODE
+	char rsvbuf[64];
+
+	memset(rsvbuf, 0, 64);
+	strncpy(rsvbuf, miscbuf + RESERVED_OFFSET, 63);
+
+	if (strlen(rsvbuf)) {
+		char cmdbuf[256];
+
+		sprintf(cmdbuf, "errcode mode '%s'", rsvbuf);
+		printf("cmdbuf:%s\n", cmdbuf);
+		run_command(cmdbuf, 0);
+	}
+#endif
+
     // judge misc partition whether has datas
     char tmpbuf[MISCBUF_SIZE];
     memset(tmpbuf, 0, sizeof(tmpbuf));
@@ -484,6 +500,16 @@ static int do_RunBcbCommand(
 				run_command("reboot", 0);
 			return 0;
 		}
+
+#ifdef CONFIG_BOOTLOADER_SHOW_ERRCODE
+		char cmdbuf[256];
+		char *reason = strstr(recovery, "reason");
+
+		if (reason) {
+			sprintf(cmdbuf, "errcode misc %s", reason);
+			run_command(cmdbuf, 0);
+		}
+#endif
 
         if (run_command("run recovery_from_flash", 0) < 0) {
             printf("run_command for cmd:run recovery_from_flash failed.\n");
