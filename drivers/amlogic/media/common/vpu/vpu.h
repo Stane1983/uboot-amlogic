@@ -162,6 +162,7 @@ struct vpu_data_s {
 
 	void (*power_on)(void);
 	void (*power_off)(void);
+	void (*clk_gate_ctrl)(void);
 	void (*mem_pd_init_off)(void);
 	void (*module_init_config)(void);
 	int (*change_clk)(struct vpu_conf_s *vconf, unsigned int vclk);
@@ -197,6 +198,7 @@ void vpu_module_init_config(void);
 
 void vpu_power_on(void);
 void vpu_power_off(void);
+void vpu_clk_gate_ctrl(void);
 void vpu_power_on_new(void);
 void vpu_power_off_new(void);
 void vpu_power_off_c3(void);

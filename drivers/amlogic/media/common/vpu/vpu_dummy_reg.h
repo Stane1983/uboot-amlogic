@@ -269,4 +269,8 @@
 #define HHI_VPU_CLKB_CNTL                          (0xff63c000 + (0x083 << 2))
 #endif
 
+#ifndef VPU_CLK_GATE
+#define VPU_CLK_GATE								0x2723
+#endif
+
 #endif

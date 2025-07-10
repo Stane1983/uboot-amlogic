@@ -66,6 +66,7 @@ static struct vpu_data_s vpu_data_g12a = {
 
 	.power_on = vpu_power_on,
 	.power_off = vpu_power_off,
+	.clk_gate_ctrl = NULL,
 	.mem_pd_init_off = vpu_mem_pd_init_off,
 	.module_init_config = vpu_module_init_config,
 	.change_clk = change_vpu_clk,
@@ -101,6 +102,7 @@ static struct vpu_data_s vpu_data_g12b = {
 
 	.power_on = vpu_power_on,
 	.power_off = vpu_power_off,
+	.clk_gate_ctrl = NULL,
 	.mem_pd_init_off = vpu_mem_pd_init_off,
 	.module_init_config = vpu_module_init_config,
 	.change_clk = change_vpu_clk,
@@ -136,6 +138,7 @@ static struct vpu_data_s vpu_data_tl1 = {
 
 	.power_on = vpu_power_on,
 	.power_off = vpu_power_off,
+	.clk_gate_ctrl = NULL,
 	.mem_pd_init_off = vpu_mem_pd_init_off,
 	.module_init_config = vpu_module_init_config,
 	.change_clk = change_vpu_clk,
@@ -205,6 +208,7 @@ static struct vpu_data_s vpu_data_tm2 = {
 
 	.power_on = vpu_power_on,
 	.power_off = vpu_power_off,
+	.clk_gate_ctrl = NULL,
 	.mem_pd_init_off = vpu_mem_pd_init_off,
 	.module_init_config = vpu_module_init_config,
 	.change_clk = change_vpu_clk,
@@ -240,6 +244,7 @@ static struct vpu_data_s vpu_data_sc2 = {
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
+	.clk_gate_ctrl = NULL,
 	.mem_pd_init_off = vpu_mem_pd_init_off,
 	.module_init_config = vpu_module_init_config,
 	.change_clk = change_vpu_clk,
@@ -275,6 +280,7 @@ static struct vpu_data_s vpu_data_t5 = {
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
+	.clk_gate_ctrl = NULL,
 	.mem_pd_init_off = vpu_mem_pd_init_off,
 	.module_init_config = vpu_module_init_config,
 	.change_clk = change_vpu_clk,
@@ -310,6 +316,7 @@ static struct vpu_data_s vpu_data_t5d = {
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
+	.clk_gate_ctrl = NULL,
 	.mem_pd_init_off = vpu_mem_pd_init_off,
 	.module_init_config = vpu_module_init_config,
 	.change_clk = change_vpu_clk,
@@ -345,6 +352,7 @@ static struct vpu_data_s vpu_data_t5w = {
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
+	.clk_gate_ctrl = NULL,
 	.mem_pd_init_off = vpu_mem_pd_init_off,
 	.module_init_config = vpu_module_init_config,
 	.change_clk = change_vpu_clk,
@@ -380,6 +388,7 @@ static struct vpu_data_s vpu_data_t7 = {
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
+	.clk_gate_ctrl = NULL,
 	.mem_pd_init_off = vpu_mem_pd_init_off,
 	.module_init_config = vpu_module_init_config,
 	.change_clk = change_vpu_clk,
@@ -415,6 +424,7 @@ static struct vpu_data_s vpu_data_s4 = {
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
+	.clk_gate_ctrl = NULL,
 	.mem_pd_init_off = vpu_mem_pd_init_off,
 	.module_init_config = vpu_module_init_config,
 	.change_clk = change_vpu_clk,
@@ -450,6 +460,7 @@ static struct vpu_data_s vpu_data_t3 = {
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
+	.clk_gate_ctrl = NULL,
 	.mem_pd_init_off = vpu_mem_pd_init_off,
 	.module_init_config = vpu_module_init_config,
 	.change_clk = change_vpu_clk,
@@ -485,6 +496,7 @@ static struct vpu_data_s vpu_data_s4d = {
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
+	.clk_gate_ctrl = NULL,
 	.mem_pd_init_off = vpu_mem_pd_init_off,
 	.module_init_config = vpu_module_init_config,
 	.change_clk = change_vpu_clk,
@@ -520,6 +532,7 @@ static struct vpu_data_s vpu_data_c3 = {
 
 	.power_on = NULL,
 	.power_off = vpu_power_off_c3,
+	.clk_gate_ctrl = NULL,
 	.mem_pd_init_off = NULL,
 	.module_init_config = NULL,
 	.change_clk = NULL,
@@ -555,6 +568,7 @@ static struct vpu_data_s vpu_data_s5 = {
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
+	.clk_gate_ctrl = NULL,
 	.module_init_config = vpu_module_init_config,
 };
 
@@ -588,6 +602,7 @@ static struct vpu_data_s vpu_data_t5m = {
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
+	.clk_gate_ctrl = NULL,
 	.mem_pd_init_off = vpu_mem_pd_init_off,
 	.module_init_config = vpu_module_init_config,
 	.change_clk = change_vpu_clk,
@@ -623,6 +638,7 @@ static struct vpu_data_s vpu_data_a4 = {
 
 	.power_on = NULL,
 	.power_off = vpu_power_off_c3,
+	.clk_gate_ctrl = NULL,
 	.mem_pd_init_off = NULL,
 	.module_init_config = NULL,
 	.change_clk = NULL,
@@ -658,6 +674,7 @@ static struct vpu_data_s vpu_data_s1a = {
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
+	.clk_gate_ctrl = NULL,
 	.mem_pd_init_off = vpu_mem_pd_init_off,
 	.module_init_config = vpu_module_init_config,
 	.change_clk = change_vpu_clk,
@@ -693,6 +710,7 @@ static struct vpu_data_s vpu_data_s7 = {
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
+	.clk_gate_ctrl = NULL,
 	.mem_pd_init_off = vpu_mem_pd_init_off,
 	.module_init_config = vpu_module_init_config,
 	.change_clk = change_vpu_clk,
@@ -728,6 +746,7 @@ static struct vpu_data_s vpu_data_s7d = {
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
+	.clk_gate_ctrl = NULL,
 	.mem_pd_init_off = vpu_mem_pd_init_off,
 	.module_init_config = vpu_module_init_config,
 	.change_clk = change_vpu_clk,
@@ -766,6 +785,7 @@ static struct vpu_data_s vpu_data_s7d_revb = {
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
+	.clk_gate_ctrl = NULL,
 	.mem_pd_init_off = vpu_mem_pd_init_off,
 	.module_init_config = vpu_module_init_config,
 	.change_clk = change_vpu_clk,
@@ -800,6 +820,7 @@ static struct vpu_data_s vpu_data_s6 = {
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
+	.clk_gate_ctrl = NULL,
 	.mem_pd_init_off = vpu_mem_pd_init_off,
 	.module_init_config = vpu_module_init_config,
 	.change_clk = change_vpu_clk,
@@ -835,6 +856,7 @@ static struct vpu_data_s vpu_data_t6d = {
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
+	.clk_gate_ctrl = NULL,
 	.mem_pd_init_off = vpu_mem_pd_init_off,
 	.module_init_config = vpu_module_init_config,
 	.change_clk = change_vpu_clk,
@@ -871,6 +893,7 @@ static struct vpu_data_s vpu_data_t6w = {
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
+	.clk_gate_ctrl = vpu_clk_gate_ctrl,
 	.mem_pd_init_off = vpu_mem_pd_init_off,
 	.module_init_config = vpu_module_init_config,
 	.change_clk = change_vpu_clk,
@@ -1129,6 +1152,8 @@ int vpu_probe(void)
 		vpu_conf.data->mem_pd_init_off();
 	if (vpu_conf.data->module_init_config)
 		vpu_conf.data->module_init_config();
+	if (vpu_conf.data->clk_gate_ctrl)
+		vpu_conf.data->clk_gate_ctrl();
 	vpu_conf.data->dev_pm_ops = dev_register_pm("vpu_drv_pm",
 						&aml_vpu_suspend,
 						&aml_vpu_resume,
