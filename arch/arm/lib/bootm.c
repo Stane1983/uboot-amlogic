@@ -410,6 +410,7 @@ static void fix_bootargs(void)
 		"osd_reverse=",
 		"disable_ir=",
 		"lcd_debug=",
+		"video_reverse=",
 		"recovery_offset=",
 		"hdmi_read_edid=",
 		"colorattribute=",
