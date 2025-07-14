@@ -13,7 +13,7 @@
 //Partition table defines
 #define NAND_PART_SIZE_FULL		-1
 #define MAX_PART_NUM			40
-#define	 MAX_PART_NAME_LEN		16
+#define	 MAX_PART_NAME_LEN		32
 //#define 	SZ_1M 					0x100000
 
 #define STORE_CODE		1
