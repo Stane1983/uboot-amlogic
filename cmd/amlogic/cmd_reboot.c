@@ -22,8 +22,10 @@ int do_get_rebootmode (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 {
 	uint32_t reboot_mode_val;
 	char *quiescent_env_bk;
-	uint32_t stick_reboot_flag;
 	uint32_t bit_mask;
+#ifdef CONFIG_REBOOT_VIA_RESET_PIN_STICKY
+	uint32_t stick_reboot_flag;
+#endif
 
 #ifdef NO_EXTEND_REBOOT_MODE
 	bit_mask = 0xf;
@@ -31,15 +33,18 @@ int do_get_rebootmode (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 	bit_mask = 0x7f;
 #endif
 	reboot_mode_val = ((readl(AO_SEC_SD_CFG15) >> 12) & bit_mask);
+
+#ifdef CONFIG_REBOOT_VIA_RESET_PIN_STICKY
 	//this step prevent the reboot mode val stored in sticky register lost
 	//during the exceptional reset, such as reset pin disturbance
-	stick_reboot_flag = get_stick_reboot_flag();
+	stick_reboot_flag = get_stick_reboot_flag_mbx();
 	if (reboot_mode_val == AMLOGIC_COLD_BOOT &&
 			stick_reboot_flag == AMLOGIC_WATCHDOG_REBOOT) {
 		printf("Warning: system is reset abnormally!\n");
 		printf("Set reboot_mode to watchdog reboot\n");
 		reboot_mode_val = AMLOGIC_WATCHDOG_REBOOT;
 	}
+#endif
 
 	debug("reboot_mode(0x%x)=0x%x\n", AO_SEC_SD_CFG15, reboot_mode_val);
 

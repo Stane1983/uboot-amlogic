@@ -173,7 +173,6 @@ int board_late_init(void)
 	printf("board late init\n");
 	env_set("defenv_para", "-c");
 	aml_board_late_init_front(NULL);
-	get_stick_reboot_flag_mbx();
 
 #ifdef CONFIG_AML_HDMITX21
 	printf("hdmitx21_init\n");

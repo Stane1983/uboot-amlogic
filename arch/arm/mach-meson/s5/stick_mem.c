@@ -32,7 +32,7 @@ uint32_t wdt_status_check(uint32_t *p_stick_mem)
 	return wdt_flag;
 }
 
-void get_stick_reboot_flag_mbx(void)
+uint32_t get_stick_reboot_flag_mbx(void)
 {
 	uint32_t ret;
 
@@ -42,9 +42,6 @@ void get_stick_reboot_flag_mbx(void)
 		printf("stick_reboot_flag communication failed\n");
 	else
 		printf("stick_reboot_flag = 0x%x\n", stick_reboot_flag);
-}
 
-uint32_t get_stick_reboot_flag(void)
-{
 	return stick_reboot_flag;
 }

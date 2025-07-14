@@ -168,4 +168,7 @@ typedef struct build_messages {
 #endif /* ! CONFIG_MALLOC */
 #endif /* CONFIG_POLARSSL_RSA */
 
+/* Reset Pin Support */
+#define CONFIG_REBOOT_VIA_RESET_PIN_STICKY
+
 #endif /* _BOOT_ROM_CONFIG_H_ */

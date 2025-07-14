@@ -151,7 +151,6 @@ int board_late_init(void)
 	printf("board late init\n");
 	env_set("defenv_para", "-c -b0");
 	aml_board_late_init_front(NULL);
-	get_stick_reboot_flag_mbx();
 
 	//board_boot_freertos();
 	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_s);
