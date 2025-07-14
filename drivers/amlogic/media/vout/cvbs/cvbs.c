@@ -7,6 +7,7 @@
 #include <malloc.h>
 #include <fdtdec.h>
 #include <dm.h>
+#include <env.h>
 #include <amlogic/cpu_id.h>
 #include <amlogic/media/vout/aml_vout.h>
 #include <amlogic/media/vout/aml_cvbs.h>
@@ -849,11 +850,44 @@ static int cvbs_config_enci(int vmode)
 	return 0;
 }
 
+/* The status of the kernel soundbar's dts cvbs should be set to disabled */
+static int cvbs_get_kernel_dtb_status(void)
+{
+	char *dt_addr = NULL;
+	int nodeoffset;
+	char *propdata;
+	int len;
+
+	dt_addr = (char *)env_get_ulong("dtb_mem_addr", 16, 0x1000000);
+	if (!dt_addr)
+		return 0;
+
+	if (fdt_check_header(dt_addr) != 0)
+		return 0;
+	nodeoffset = fdt_path_offset(dt_addr, "/cvbsout");
+	if (nodeoffset < 0)
+		return 0;
+	propdata = (char *)fdt_getprop((const void *)dt_addr, nodeoffset, "status", &len);
+	if (!propdata)
+		return 0;
+
+	if (strncmp(propdata, "okay", len) == 0)
+		return 1;
+	else if (strncmp(propdata, "disabled", len) == 0)
+		return 0;
+
+	return 0;
+}
+
 /*----------------------------------------------------------------------------*/
 // configuration for output
 // output vmode: 576cvbs, 480cvbs
 int cvbs_set_vmode(char* vmode_name)
 {
+	/* if kernel's cvbs is disabled, uboot cannot set cvbs mode */
+	if (!cvbs_get_kernel_dtb_status())
+		return -1;
+
 	if (!strncmp(vmode_name, "576cvbs", strlen("576cvbs"))) {
 		cvbs_mode = VMODE_PAL;
 		cvbs_config_enci(0);
