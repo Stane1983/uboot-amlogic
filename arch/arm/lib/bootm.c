@@ -687,7 +687,17 @@ static void boot_jump_linux(struct bootm_headers *images, int flag)
 
 		PUSH_TIME_TE(__func__, BL33_BOOT_KERNEL_s);
 		extern uint32_t get_time(void);
-		printf("uboot time: %u us\n", get_time());
+		unsigned int uboot_time = get_time();
+
+		printf("uboot time: %u us\n", uboot_time);
+	#ifdef CONFIG_AML_KASLR_SEED
+		if (bootargs) {
+			char tmp_buf[64] = {};
+
+			sprintf(tmp_buf, " uboot_time=%d", uboot_time);
+			fdt_appendprop_string(images->ft_addr, node, "bootargs", tmp_buf);
+		}
+	#endif
 
 #ifdef CONFIG_MAX_BOOT_TIME
 		if (get_time() > CONFIG_MAX_BOOT_TIME)

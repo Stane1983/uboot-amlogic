@@ -316,6 +316,36 @@ int fdt_appendprop(void *fdt, int nodeoffset, const char *name,
 	return 0;
 }
 
+/* for string append */
+int fdt_appendprop_string(void *fdt, int nodeoffset, const char *name,
+		   const char *val)
+{
+	struct fdt_property *prop;
+	int err, oldlen, newlen;
+	int len = strlen(val) + 1;
+
+	FDT_RW_PROBE(fdt);
+
+	prop = fdt_get_property_w(fdt, nodeoffset, name, &oldlen);
+	if (prop) {
+		newlen = len + oldlen;
+		err = fdt_splice_struct_(fdt, prop->data,
+					 FDT_TAGALIGN(oldlen),
+					 FDT_TAGALIGN(newlen));
+		if (err)
+			return err;
+		prop->len = cpu_to_fdt32(newlen);
+		/* previos data is a string */
+		memcpy(prop->data + oldlen - 1, val, len);
+	} else {
+		err = fdt_add_property_(fdt, nodeoffset, name, len, &prop);
+		if (err)
+			return err;
+		memcpy(prop->data, val, len);
+	}
+	return 0;
+}
+
 int fdt_delprop(void *fdt, int nodeoffset, const char *name)
 {
 	struct fdt_property *prop;
