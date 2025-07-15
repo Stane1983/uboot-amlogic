@@ -205,8 +205,6 @@ int board_late_init(void)
 #ifdef CONFIG_PXP_EMULATOR
 	return 0;
 #endif
-	get_stick_reboot_flag_mbx();
-
 	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_s);
 #ifdef CONFIG_AML_VPU
 	vpu_probe();

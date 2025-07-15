@@ -19,6 +19,5 @@ enum stick_mem_idx {
 };
 
 uint32_t wdt_status_check(uint32_t *p_stick_mem);
-void get_stick_reboot_flag_mbx(void);
-uint32_t get_stick_reboot_flag(void);
+u32 get_stick_reboot_flag_mbx(void);
 #endif

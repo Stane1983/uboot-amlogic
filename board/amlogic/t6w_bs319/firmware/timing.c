@@ -17,9 +17,9 @@
 #define VMIN_SS_VALUE                           810
 /* board vddee_value defines */
 /* SS/TT/FF = 0.87V */
-#define VDDEE_FF_VALUE                          0x0005000d
-#define VDDEE_TT_VALUE                          0x0005000d
-#define VDDEE_SS_VALUE                          0x0005000d
+#define VDDEE_FF_VALUE                          0x000c0006
+#define VDDEE_TT_VALUE                          0x000c0006
+#define VDDEE_SS_VALUE                          0x000c0006
 
 board_clk_set_t __board_clk_setting
 __attribute__ ((section(".clk_param"))) = {

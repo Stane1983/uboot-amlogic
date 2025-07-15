@@ -18,6 +18,5 @@ enum stick_mem_idx {
 	STICK_MAX = 32
 };
 
-void get_stick_reboot_flag_mbx(void);
-u32 get_stick_reboot_flag(void);
+u32 get_stick_reboot_flag_mbx(void);
 #endif

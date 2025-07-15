@@ -17,7 +17,7 @@
 //be fetched from mailbox
 static u32 stick_reboot_flag = INVALID_FLAG;
 
-void get_stick_reboot_flag_mbx(void)
+u32 get_stick_reboot_flag_mbx(void)
 {
 	uint32_t ret;
 
@@ -26,11 +26,8 @@ void get_stick_reboot_flag_mbx(void)
 	if (ret != 0)
 		printf("\r\nstick_reboot_flag communication failed\n");
 	else
-		printf("\r\nstick_reboot_flag = 0x%x\n", stick_reboot_flag);
-}
+		printf("stick_reboot_flag = 0x%x\n", stick_reboot_flag);
 
-u32 get_stick_reboot_flag(void)
-{
 	return stick_reboot_flag;
 }
 

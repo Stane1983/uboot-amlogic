@@ -178,7 +178,6 @@ int board_late_init(void)
 #ifdef CONFIG_PXP_EMULATOR
 	return 0;
 #endif
-	get_stick_reboot_flag_mbx();
 
 #ifdef CONFIG_AML_VPU
 	vpu_probe();

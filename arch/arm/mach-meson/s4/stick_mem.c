@@ -32,19 +32,16 @@ uint32_t wdt_status_check(uint32_t *p_stick_mem)
 	return wdt_flag;
 }
 
-void get_stick_reboot_flag_mbx(void)
+u32 get_stick_reboot_flag_mbx(void)
 {
 	u32 ret;
 
 	ret = scpi_send_data(AOCPU_REE_CHANNEL, CMD_GET_STICK_REBOOT_FLAG, NULL, 0,
 			     &stick_reboot_flag, 4);
 	if (ret != 0)
-		printf("\r\nstick_reboot_flag communication failed\n");
+		printf("stick_reboot_flag communication failed\n");
 	else
-		printf("\r\nstick_reboot_flag = 0x%x\n", stick_reboot_flag);
-}
+		printf("stick_reboot_flag = 0x%x\n", stick_reboot_flag);
 
-u32 get_stick_reboot_flag(void)
-{
 	return stick_reboot_flag;
 }
