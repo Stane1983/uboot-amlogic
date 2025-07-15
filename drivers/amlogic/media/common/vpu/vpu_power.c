@@ -104,8 +104,8 @@ void vpu_module_init_config(void)
 
 void vpu_clk_gate_ctrl(void)
 {
-	if (vpu_conf.data->chip_type == VPU_CHIP_T6W)
-		vpu_vcbus_setb(VPU_CLK_GATE, 0, 7, 1);
+	//if (vpu_conf.data->chip_type == VPU_CHIP_T6W)
+		//vpu_vcbus_setb(VPU_CLK_GATE, 0, 7, 1);
 }
 
 void vpu_power_on(void)
