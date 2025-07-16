@@ -11,6 +11,8 @@
 #include "vpu.h"
 #include "vpu_ctrl.h"
 #include "amlogic/aml_efuse.h"
+#include <amlogic/pm.h>
+
 
 /* v20181009: init version */
 /* v20190313: add sm1 support */
@@ -61,6 +63,7 @@ static struct vpu_data_s vpu_data_g12a = {
 
 	.module_init_table_cnt = 0,
 	.module_init_table = NULL,
+	.dev_pm_ops = NULL,
 
 	.power_on = vpu_power_on,
 	.power_off = vpu_power_off,
@@ -95,6 +98,7 @@ static struct vpu_data_s vpu_data_g12b = {
 
 	.module_init_table_cnt = 0,
 	.module_init_table = NULL,
+	.dev_pm_ops = NULL,
 
 	.power_on = vpu_power_on,
 	.power_off = vpu_power_off,
@@ -129,6 +133,7 @@ static struct vpu_data_s vpu_data_tl1 = {
 
 	.module_init_table_cnt = 0,
 	.module_init_table = NULL,
+	.dev_pm_ops = NULL,
 
 	.power_on = vpu_power_on,
 	.power_off = vpu_power_off,
@@ -162,6 +167,8 @@ static struct vpu_data_s vpu_data_tl1 = {
 
 	.module_init_table_cnt = 0,
 	.module_init_table = NULL,
+	.dev_pm_ops = NULL,
+
 
 	.power_on = vpu_power_on,
 	.power_off = vpu_power_off,
@@ -197,6 +204,7 @@ static struct vpu_data_s vpu_data_tm2 = {
 
 	.module_init_table_cnt = 0,
 	.module_init_table = NULL,
+	.dev_pm_ops = NULL,
 
 	.power_on = vpu_power_on,
 	.power_off = vpu_power_off,
@@ -231,6 +239,7 @@ static struct vpu_data_s vpu_data_sc2 = {
 
 	.module_init_table_cnt = 0,
 	.module_init_table = NULL,
+	.dev_pm_ops = NULL,
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
@@ -265,6 +274,7 @@ static struct vpu_data_s vpu_data_t5 = {
 
 	.module_init_table_cnt = 0,
 	.module_init_table = NULL,
+	.dev_pm_ops = NULL,
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
@@ -299,6 +309,7 @@ static struct vpu_data_s vpu_data_t5d = {
 
 	.module_init_table_cnt = 0,
 	.module_init_table = NULL,
+	.dev_pm_ops = NULL,
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
@@ -333,6 +344,7 @@ static struct vpu_data_s vpu_data_t5w = {
 
 	.module_init_table_cnt = 0,
 	.module_init_table = NULL,
+	.dev_pm_ops = NULL,
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
@@ -367,6 +379,7 @@ static struct vpu_data_s vpu_data_t7 = {
 
 	.module_init_table_cnt = 0,
 	.module_init_table = NULL,
+	.dev_pm_ops = NULL,
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
@@ -401,6 +414,7 @@ static struct vpu_data_s vpu_data_s4 = {
 
 	.module_init_table_cnt = 0,
 	.module_init_table = NULL,
+	.dev_pm_ops = NULL,
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
@@ -435,6 +449,7 @@ static struct vpu_data_s vpu_data_t3 = {
 
 	.module_init_table_cnt = 0,
 	.module_init_table = NULL,
+	.dev_pm_ops = NULL,
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
@@ -469,6 +484,7 @@ static struct vpu_data_s vpu_data_s4d = {
 
 	.module_init_table_cnt = 0,
 	.module_init_table = NULL,
+	.dev_pm_ops = NULL,
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
@@ -503,6 +519,7 @@ static struct vpu_data_s vpu_data_c3 = {
 
 	.module_init_table_cnt = 0,
 	.module_init_table = NULL,
+	.dev_pm_ops = NULL,
 
 	.power_on = NULL,
 	.power_off = vpu_power_off_c3,
@@ -537,6 +554,7 @@ static struct vpu_data_s vpu_data_s5 = {
 
 	.module_init_table_cnt = 0,
 	.module_init_table = NULL,
+	.dev_pm_ops = NULL,
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
@@ -569,6 +587,7 @@ static struct vpu_data_s vpu_data_t5m = {
 
 	.module_init_table_cnt = 0,
 	.module_init_table = NULL,
+	.dev_pm_ops = NULL,
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
@@ -603,6 +622,7 @@ static struct vpu_data_s vpu_data_a4 = {
 
 	.module_init_table_cnt = 0,
 	.module_init_table = NULL,
+	.dev_pm_ops = NULL,
 
 	.power_on = NULL,
 	.power_off = vpu_power_off_c3,
@@ -637,6 +657,7 @@ static struct vpu_data_s vpu_data_t3x = {
 
 	.module_init_table_cnt = 0,
 	.module_init_table = NULL,
+	.dev_pm_ops = NULL,
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
@@ -669,6 +690,7 @@ static struct vpu_data_s vpu_data_txhd2 = {
 
 	.module_init_table_cnt = 0,
 	.module_init_table = NULL,
+	.dev_pm_ops = NULL,
 
 	.power_on = vpu_power_on_new,
 	.power_off = vpu_power_off_new,
@@ -869,6 +891,30 @@ get_vpu_config_dft:
 	return 0;
 }
 
+static int aml_vpu_suspend(void *pm_ops)
+{
+	VPUPR("%s driver disabled\n", __func__);
+
+	return 0;
+}
+
+static int aml_vpu_resume(void *pm_ops)
+{
+	if (vpu_conf.data->mem_pd_init_off)
+		vpu_conf.data->mem_pd_init_off();
+	if (vpu_conf.data->module_init_config)
+		vpu_conf.data->module_init_config();
+	VPUPR("%s driver enable\n", __func__);
+
+	return 0;
+}
+
+static int aml_vpu_poweroff(void *pm_ops)
+{
+	VPUPR("%s driver disabled\n", __func__);
+	return 0;
+}
+
 int vpu_probe(void)
 {
 	int ret;
@@ -888,6 +934,11 @@ int vpu_probe(void)
 		vpu_conf.data->mem_pd_init_off();
 	if (vpu_conf.data->module_init_config)
 		vpu_conf.data->module_init_config();
+	vpu_conf.data->dev_pm_ops = dev_register_pm("vpu_drv_pm",
+					&aml_vpu_suspend,
+					&aml_vpu_resume,
+					&aml_vpu_poweroff,
+					1);
 	VPUPR("%s\n", __func__);
 
 	return ret;
@@ -901,6 +952,8 @@ int vpu_remove(void)
 	VPUPR("vpu remove\n");
 	if (vpu_conf.data->power_off)
 		vpu_conf.data->power_off();
+	if (vpu_conf.data->dev_pm_ops)
+		dev_unregister_pm(vpu_conf.data->dev_pm_ops);
 
 	return 0;
 }
