@@ -1119,8 +1119,12 @@ static int aml_vpu_suspend(void *pm_ops)
 
 static int aml_vpu_resume(void *pm_ops)
 {
-	set_vpu_clk(&vpu_conf, vpu_conf.clk_level);
-	set_vpu_clkb(&vpu_conf, vpu_conf.clk_level);
+	set_vpu_clk(&vpu_conf, vpu_conf.data->clk_level_dft);
+	set_vpu_clkb(&vpu_conf, vpu_conf.data->clk_level_dft);
+	if (vpu_conf.data->mem_pd_init_off)
+		vpu_conf.data->mem_pd_init_off();
+	if (vpu_conf.data->module_init_config)
+		vpu_conf.data->module_init_config();
 
 	VPUPR("%s driver enable\n", __func__);
 

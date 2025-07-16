@@ -33,6 +33,8 @@
 #include "osd_fb.h"
 #include "vpp.h"
 #include <amlogic/media/dv/dolby_vision.h>
+#include <amlogic/pm.h>
+
 
 static bool vsync_hit;
 static bool osd_vf_need_update;
@@ -2037,9 +2039,10 @@ void osd_setup_hw(u32 index,
 		update_color_mode = 1;
 		osd_hw.color_info[index] = color;
 	}
-	if (osd_hw.fb_gem[index].addr != fbmem
-	    || osd_hw.fb_gem[index].width != w
-	    ||  osd_hw.fb_gem[index].height != yres_virtual) {
+	if (osd_hw.fb_gem[index].addr != fbmem ||
+	    osd_hw.fb_gem[index].width != w ||
+		osd_hw.fb_gem[index].height != yres_virtual ||
+		get_resume_state()) {
 		osd_hw.fb_gem[index].addr = fbmem;
 		osd_hw.fb_gem[index].width = w;
 		osd_hw.fb_gem[index].height = yres_virtual;
@@ -2122,7 +2125,7 @@ void osd_setup_hw(u32 index,
 #ifdef AML_OSD_HIGH_VERSION
 	static int is_blend_set;
 
-	if (rma_test || rma_test_addr)
+	if (rma_test || rma_test_addr || get_resume_state())
 		is_blend_set = 0;
 
 	if (osd_hw.osd_ver == OSD_HIGH_ONE && is_vpp0(index) && !is_blend_set) {
@@ -3509,7 +3512,7 @@ static void osd_update_coef(u32 index)
 		} else
 			need_update_coef = false;
 	}
-	if (need_update_coef) {
+	if (need_update_coef || get_resume_state()) {
 		vf_coef = filter_table[use_v_filter_mode];
 		if (vf_coef_wren) {
 			osd_reg_set_bits(hw_osd_reg_array[index].osd_scale_coef_idx,
@@ -3524,7 +3527,7 @@ static void osd_update_coef(u32 index)
 		need_update_coef = true;
 	}
 	hf_coef = filter_table[use_h_filter_mode];
-	if (need_update_coef) {
+	if (need_update_coef || get_resume_state()) {
 		if (hf_coef_wren) {
 			osd_reg_set_bits(hw_osd_reg_array[index].osd_scale_coef_idx,
 				0x0100, 0, 9);
@@ -5238,7 +5241,7 @@ static void independ_path_default_regs(void)
 #ifndef AML_C3_DISPLAY
 	static int init_done;
 
-	if (init_done) {
+	if (init_done  && !get_resume_state()) {
 		osd_logd("%s, has been initialized, skip.\n", __func__);
 		return;
 	}
@@ -5327,7 +5330,7 @@ void osd_init_hw(u32 index)
 #endif
 
 	/* here we will init default value ,these value only set once . */
-	if (!logo_loaded[index]) {
+	if (!logo_loaded[index] || get_resume_state()) {
 		if (osd_hw.path_ctrl_independ)
 			independ_path_default_regs();
 		else

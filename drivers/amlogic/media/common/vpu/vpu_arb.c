@@ -383,8 +383,7 @@ int vpu_rdarb_bind_l2(enum vpu_arb_mod_e level2_module, u32 vpu_read_port)
 	struct vpu_arb_table_s *vpu0_2_level2_module =
 						vpu_rdarb_vpu0_2_level2_tables;
 
-	if (!vpu0_2_level2_module ||
-		level2_module < VPU_ARB_VPP_ARB0) {
+	if (!vpu0_2_level2_module) {
 		VPUERR("%s table or module err\n", __func__);
 		return -1;
 	}
@@ -598,8 +597,7 @@ int vpu_urgent_set(u32 vmod, u32 urgent_value)
 	else if (vmod >= VPU_ARB_VDIN_WR &&
 		vmod <= VPU_ARB_VPU_DMA_WR)
 		ret = vpu_write0_urgent_set(vmod, urgent_value);
-	else
-		VPUERR("module error\n");
+
 	return ret;
 }
 
