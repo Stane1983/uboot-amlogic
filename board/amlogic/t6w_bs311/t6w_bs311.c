@@ -174,6 +174,9 @@ int board_late_init(void)
 	printf("board late init\n");
 	env_set("defenv_para", "-c");
 	aml_board_late_init_front(NULL);
+#ifdef CONFIG_SAVE_UBOOT_LOG
+	uboot_log_replace_addr_with_fdt();
+#endif
 
 #ifdef CONFIG_PXP_EMULATOR
 	return 0;

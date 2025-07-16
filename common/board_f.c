@@ -204,7 +204,8 @@ static int print_cpuinfo(void)
 
 static int announce_dram_init(void)
 {
-	puts("DRAM:  ");
+	//puts("DRAM:  ");
+	printf("DRAM:  ");
 	return 0;
 }
 
@@ -260,7 +261,7 @@ static int show_dram_config(void)
 		print_size(size, ")");
 	}
 	board_add_ram_info(0);
-	putc('\n');
+	printf("\n");
 
 	return 0;
 }

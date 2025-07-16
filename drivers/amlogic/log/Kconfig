@@ -1,0 +1,9 @@
+config SAVE_UBOOT_LOG
+	tristate "save log support for Amlogic"
+	default n
+	help
+	  Amlogic save log driver
+
+	  Provide save log in ddr and kernel get log from ddr,
+	  log buffer is loop.
+

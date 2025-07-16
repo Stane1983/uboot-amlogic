@@ -19,30 +19,6 @@ config PXP_DDR
 		as real SOC. This config must be closed if running on real
 		chips.
 
-config SAVE_UBOOT_LOG
-	bool "Amlogic support save uboot log"
-	default n
-	help
-	  Support save uboot log
-
-config UBOOT_LOG_ADDR
-	hex "uboot log start addr"
-	depends on SAVE_UBOOT_LOG
-	default 0
-	help
-	  this addr store uboot log for kernel get
-	  the addr should be match with kernel. kernel
-	  can not get right data if not match.
-
-config UBOOT_LOG_SIZE
-	hex "uboot log size"
-	depends on SAVE_UBOOT_LOG
-	default 0
-	help
-	  this size is for uboot log space for kenel get
-	  the size should be match with kernel. kernel
-	  can not get integrity log if not match
-
 config PXP_STO
 	bool "Amlogic Pxp storage flag"
 	help

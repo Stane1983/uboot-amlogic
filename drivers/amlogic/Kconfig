@@ -61,4 +61,6 @@ source "drivers/amlogic/efuse/Kconfig"
 
 source "drivers/amlogic/pci/Kconfig"
 
+source "drivers/amlogic/log/Kconfig"
+
 endmenu

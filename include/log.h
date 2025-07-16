@@ -684,17 +684,9 @@ static inline int log_get_default_format(void)
 	       (IS_ENABLED(CONFIG_LOGF_FUNC) ? BIT(LOGF_FUNC) : 0);
 }
 #ifdef CONFIG_SAVE_UBOOT_LOG
-#include <asm/atomic.h>
-struct persistent_ram_buffer {
-	uint32_t    sig;
-	atomic_t    start;
-	atomic_t    size;
-	uint8_t     data[];
-};
-#define PERSISTENT_RAM_SIG (0x43474244) /* DBGC */
-/* define save boot log addr and max save size */
-#define	CONFIG_SAVE_UBOOT_LOG_ADDR	CONFIG_UBOOT_LOG_ADDR
-#define	CONFIG_SAVE_UBOOT_LOG_SIZE	CONFIG_UBOOT_LOG_SIZE
+int blx_init_uboot_log(void);
+void uboot_log_use_new_addr(unsigned long addr, unsigned int size);
+unsigned int write_ring_buffer(unsigned char *buffer, unsigned int size);
 #endif /* CONFIG_SAVE_UBOOT_LOG */
 
 #endif

@@ -62,3 +62,5 @@ obj-$(CONFIG_ST7789V3_SPI_LCD) += st7789v3/
 obj-$(CONFIG_CMD_SND) += sound/
 
 obj-$(CONFIG_AMLOGIC_PCI_POWER) += pci/power/
+
+obj-$(CONFIG_SAVE_UBOOT_LOG) += log/

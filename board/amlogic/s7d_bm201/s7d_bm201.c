@@ -209,6 +209,9 @@ int board_late_init(void)
 	if (env_get_ulong("default_env", 10, 0))
 		env_set("defenv_para", "-c0"); //andr factory reset or factory burn
 	aml_board_late_init_front(NULL);
+#ifdef CONFIG_SAVE_UBOOT_LOG
+	uboot_log_replace_addr_with_fdt();
+#endif
 #ifdef CONFIG_PXP_EMULATOR
 	return 0;
 #endif

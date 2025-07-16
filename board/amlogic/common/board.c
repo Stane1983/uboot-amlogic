@@ -714,6 +714,49 @@ int aml_board_late_init_tail(void *arg)
 }
 #endif//#ifdef CONFIG_BOARD_LATE_INIT
 
+#ifdef CONFIG_DEBUG_UART_BOARD_INIT
+void board_debug_uart_init(void)
+{
+#ifdef CONFIG_SAVE_UBOOT_LOG
+	blx_init_uboot_log();
+#endif
+}
+#endif
+
+#ifdef CONFIG_SAVE_UBOOT_LOG
+int uboot_log_replace_addr_with_fdt(void)
+{
+	int nodeoffset, err;
+	char *pfdtaddr = env_get("fdtaddr");
+	long fdt_addr;
+	struct fdt_resource res;
+	long addr, size;
+	int subnode;
+
+	char *blob;
+
+	fdt_addr = 0x1000000;
+	if (pfdtaddr)
+		fdt_addr = simple_strtoul(pfdtaddr, NULL, 16);
+
+	blob = (char *)fdt_addr;
+	nodeoffset = fdt_path_offset(blob, "/reserved-memory/linux,log");
+	if (nodeoffset > 0) {
+		subnode = nodeoffset;
+		err = fdt_get_resource(blob, subnode, "reg", 0, &res);
+		if (err >= 0) {
+			addr = res.start;
+			size = res.end - res.start + 1;
+			uboot_log_use_new_addr(addr, size);
+		} else {
+			printf("%s:%d, %s nodeoffset=%x\n", __func__, __LINE__,
+			       "/reserved-memory/linux,log", nodeoffset);
+		}
+	}
+	return 0;
+}
+#endif
+
 void aml_board_display_env_handler(void)
 {
 	char *bootup_display;

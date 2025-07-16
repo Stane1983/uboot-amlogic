@@ -708,6 +708,9 @@ static init_fnc_t init_sequence_r[] = {
 	initr_barrier,
 	initr_malloc,
 	log_init,
+#ifdef CONFIG_SAVE_UBOOT_LOG
+	blx_init_uboot_log,
+#endif
 #ifdef CONFIG_AMLOGIC_MODIFY
 	initr_pm,
 #endif

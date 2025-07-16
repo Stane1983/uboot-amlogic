@@ -797,30 +797,6 @@ int sprintf(char *buf, const char *fmt, ...)
 	return i;
 }
 
-#ifdef CONFIG_SAVE_UBOOT_LOG
-void save_uboot_log(char *buffer, int i)
-{
-	static uint32_t len = sizeof(uint32_t) + sizeof(atomic_t) * 2;
-
-	char *log = (char *)(CONFIG_SAVE_UBOOT_LOG_ADDR);
-
-	if ((len + i + 1) > CONFIG_SAVE_UBOOT_LOG_SIZE) {
-		printf("set save log too small!\n");
-		return;
-	}
-
-	log += len;
-	memcpy(log, buffer, i);
-
-	log[i] = '\0';
-
-	len += (i + 1);
-
-	*((uint32_t *)(CONFIG_SAVE_UBOOT_LOG_ADDR + sizeof(uint32_t) + sizeof(atomic_t))) = len;
-
-}
-#endif
-
 #if CONFIG_IS_ENABLED(PRINTF)
 int printf(const char *fmt, ...)
 {
@@ -850,7 +826,7 @@ int vprintf(const char *fmt, va_list args)
 		return i;
 
 #ifdef CONFIG_SAVE_UBOOT_LOG
-	save_uboot_log(printbuffer, i);
+	write_ring_buffer(printbuffer, i);
 #endif
 
 	/* Print the string */
