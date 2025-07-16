@@ -192,17 +192,23 @@
 			/*"run try_auto_burn; "*/\
 		"else if test ${powermode} = standby; then "\
 			"run cec_init;"\
-			"if test ${systemsuspend_switch} = 0;then systemoff; fi;"\
+			"if test ${systemsuspend_switch} = 0;then systemoff; "\
+			"else systemsuspend;vpp init;run init_display;"\
+			"fi; "\
 		"else if test ${powermode} = last; then "\
 			"echo suspend=${suspend}; "\
 			"if test ${suspend} = off; then "\
 				/*"run try_auto_burn; "*/\
 			"else if test ${suspend} = on; then "\
 				"run cec_init;"\
-				"if test ${systemsuspend_switch} = 0;then systemoff; fi;"\
+				"if test ${systemsuspend_switch} = 0;then systemoff; "\
+				"else systemsuspend;vpp init;run init_display;"\
+				"fi; "\
 			"else if test ${suspend} = shutdown; then "\
 				"run cec_init;"\
-				"if test ${systemsuspend_switch} = 0;then systemoff; fi;"\
+				"if test ${systemsuspend_switch} = 0;then systemoff; "\
+				"else systemsuspend;vpp init;run init_display;"\
+				"fi; "\
 			"fi; fi; fi; "\
 		"fi; fi; fi; "\
 		"\0"\

@@ -202,7 +202,9 @@
 			"run cec_init;"\
 			"if test ${systemsuspend_switch} = 0"\
 			" && test ${preboot_mode} = 0;then "\
-				"irkey_wakeup 3 0; systemoff; fi;"\
+				"irkey_wakeup 3 0; systemoff; "\
+			"else systemsuspend;vpp init;run init_display;"\
+			" fi; "\
 		"else if test ${powermode} = last; then "\
 			"echo suspend=${suspend}; "\
 			"if test ${suspend} = off; then "\
@@ -211,12 +213,16 @@
 				"run cec_init;"\
 				"if test ${systemsuspend_switch} = 0 "\
 					"&& test ${preboot_mode} = 0;then "\
-					"irkey_wakeup 3 0; systemoff; fi;"\
+					"irkey_wakeup 3 0; systemoff; "\
+				"else systemsuspend;vpp init;run init_display;"\
+				" fi; "\
 			"else if test ${suspend} = shutdown; then "\
 				"run cec_init;"\
 				"if test ${systemsuspend_switch} = 0 "\
 					"&& test ${preboot_mode} = 0;then "\
-				"irkey_wakeup 3 0; systemoff; fi;"\
+					"irkey_wakeup 3 0; systemoff; "\
+				"else systemsuspend;vpp init;run init_display;"\
+				" fi; "\
 			"fi; fi; fi; "\
 		"fi; fi; fi; "\
 		"\0"\

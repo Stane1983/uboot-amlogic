@@ -22,6 +22,7 @@
 #include <linux/compat.h>
 #include <linux/ioport.h>
 #include <asm-generic/gpio.h>
+#include <amlogic/pm.h>
 
 #define PHY23_RESET_LEVEL_BIT	2
 #define PHY22_RESET_LEVEL_BIT	3
@@ -405,7 +406,6 @@ void usb_device_mode_init(void){
 	// ------------- usb phy21 initial end ----------
 
 	//--------------------------------------------------
-
 }
 
 void set_usb_power_off(void)
@@ -423,3 +423,42 @@ void set_usb_power_off(void)
 //	*((volatile uint32_t *)0xfe002044) &= ~(1 << 13);
 }
 
+void set_usb_power_on(void)
+{
+	unsigned int val;
+
+	val = readl(RESETCTRL_RESET0_LEVEL);
+	val |= ((1 << 2) | (1 << 3) | (1 << 9));
+	writel(val, RESETCTRL_RESET0_LEVEL);
+
+	val = readl(RESETCTRL_RESET1_LEVEL);
+	val |= (1 << 13);
+	writel(val, RESETCTRL_RESET1_LEVEL);
+}
+
+int aml_usb_suspend(void *pm_ops)
+{
+	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
+
+	printf("power off  %s\n", pm->name);
+	set_usb_power_off();
+	return 0;
+}
+
+int aml_usb_resume(void *pm_ops)
+{
+	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
+
+	printf("power off  %s\n", pm->name);
+	set_usb_power_on();
+	return 0;
+}
+
+int aml_usb_poweroff(void *pm_ops)
+{
+	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
+
+	printf("power off  %s\n", pm->name);
+	set_usb_power_off();
+	return 0;
+}

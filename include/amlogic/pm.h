@@ -32,6 +32,7 @@
 struct dev_pm_ops {
 	struct list_head link;
 	char *name;
+	int level;
 	int (*suspend)(void *);
 	int (*resume)(void *);
 	int (*poweroff)(void *);
@@ -43,7 +44,14 @@ void pm_initialize(void);
 void pm_suspend(void);
 void pm_poweroff(void);
 struct dev_pm_ops *dev_register_pm(char *name, FUNC_PTR suspend,
-			FUNC_PTR resume, FUNC_PTR poweroff);
+			FUNC_PTR resume, FUNC_PTR poweroff, int level);
 int dev_unregister_pm(struct dev_pm_ops *arg);
+bool get_resume_state(void);
+
+#if CONFIG_IS_ENABLED(AMLOGIC_USB_POWER)
+int aml_usb_suspend(void *pm_ops);
+int aml_usb_resume(void *pm_ops);
+int aml_usb_poweroff(void *pm_ops);
+#endif
 
 #endif

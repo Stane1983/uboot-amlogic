@@ -793,7 +793,8 @@ static void setup_internal_phy(struct udevice *dev)
 	p_aml_phy_dev->pm_ops = dev_register_pm("eth ops",
 				&aml_phy_suspend,
 				&aml_phy_resume,
-				&aml_phy_poweroff);
+				&aml_phy_poweroff,
+				0);
 //	writel(0x00000012, p_aml_phy_dev->phy_cfg->start + 0x0);
 	setup_tx_amp(dev);
 	/*top*/

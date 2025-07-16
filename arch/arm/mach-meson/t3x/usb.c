@@ -22,6 +22,7 @@
 #include <linux/compat.h>
 #include <linux/ioport.h>
 #include <asm-generic/gpio.h>
+#include <amlogic/pm.h>
 
 #define USB_NONE		0
 #define USB_NOVALID		1
@@ -416,6 +417,7 @@ static int set_usb3_phy_config(void)
 void usb_device_mode_init(int phy_num)
 {
 	set_usb3_phy_config();
+	//dev_register_pm("usb_ops", &aml_usb_suspend, &aml_usb_resume, &aml_usb_poweroff, 0);
 }
 
 void set_usb_power_off(void)
@@ -425,4 +427,40 @@ void set_usb_power_off(void)
 	val = readl(USB_RESET_LEVEL_REGISTER);
 	val &= ~(0xf << 7);
 	writel(val, USB_RESET_LEVEL_REGISTER);
+}
+
+void set_usb_power_on(void)
+{
+	unsigned int val;
+
+	val = readl(USB_RESET_LEVEL_REGISTER);
+	val |= (0xf << 7);
+	writel(val, USB_RESET_LEVEL_REGISTER);
+}
+
+int aml_usb_suspend(void *pm_ops)
+{
+	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
+
+	printf("power off  %s\n", pm->name);
+	set_usb_power_off();
+	return 0;
+}
+
+int aml_usb_resume(void *pm_ops)
+{
+	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
+
+	printf("power off  %s\n", pm->name);
+	set_usb_power_on();
+	return 0;
+}
+
+int aml_usb_poweroff(void *pm_ops)
+{
+	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
+
+	printf("power off  %s\n", pm->name);
+	set_usb_power_off();
+	return 0;
 }

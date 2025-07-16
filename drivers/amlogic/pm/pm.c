@@ -49,7 +49,7 @@
 #endif /* PM_DEBUG */
 
 static struct list_head devices;
-
+bool pm_resume_done;
 #ifdef PM_DEBUG
 static int test_pm_suspend(void *dev_info)
 {
@@ -71,8 +71,9 @@ static int test_pm_poweroff(void *dev_info)
 #endif
 
 #ifdef PM_DEBUG
+
 struct dev_pm_ops *dev_register_pm(char *name, FUNC_PTR suspend,
-			FUNC_PTR resume, FUNC_PTR poweroff);
+			FUNC_PTR resume, FUNC_PTR poweroff, int level);
 char name[] = "test_pm_name";
 #endif
 
@@ -80,7 +81,10 @@ void pm_initialize(void)
 {
 	INIT_LIST_HEAD(&devices);
 #ifdef PM_DEBUG
-	dev_register_pm(name, test_pm_suspend, test_pm_resume, test_pm_poweroff);
+	dev_register_pm(name, test_pm_suspend, test_pm_resume, test_pm_poweroff, 0);
+#endif
+#if CONFIG_IS_ENABLED(AMLOGIC_USB_POWER)
+	dev_register_pm("usb_ops", &aml_usb_suspend, &aml_usb_resume, &aml_usb_poweroff, 0);
 #endif
 }
 
@@ -106,6 +110,7 @@ void pm_suspend(void)
 
 	cpu_suspend(0);
 
+	pm_resume_done = true;
 	list_for_each_prev(dentry, &devices) {
 		pm_ops = list_entry(dentry, struct dev_pm_ops, link);
 		if (pm_ops->resume) {
@@ -115,7 +120,12 @@ void pm_suspend(void)
 			printf("suspend is not illeage!\n");
 		}
 	}
-	printf("uboot str resume done!\n");
+	printf("uboot str resume done! pm_resume_done is %d\n", pm_resume_done);
+}
+
+bool get_resume_state(void)
+{
+	return pm_resume_done;
 }
 
 void pm_poweroff(void)
@@ -139,9 +149,10 @@ void pm_poweroff(void)
 }
 
 struct dev_pm_ops *dev_register_pm(char *name, FUNC_PTR suspend,
-			FUNC_PTR resume, FUNC_PTR poweroff)
+			FUNC_PTR resume, FUNC_PTR poweroff, int level)
 {
 	struct dev_pm_ops *ops;
+	struct list_head *pos;
 
 	if (!name || !suspend || !resume || !poweroff) {
 		printf("Invalid pass parameters\n");
@@ -159,8 +170,16 @@ struct dev_pm_ops *dev_register_pm(char *name, FUNC_PTR suspend,
 	ops->suspend = suspend;
 	ops->resume = resume;
 	ops->poweroff = poweroff;
+	ops->level = level;
 
-	list_add_tail(&ops->link, &devices);
+	list_for_each(pos, &devices) {
+		struct dev_pm_ops *pm_ops;
+
+		pm_ops = list_entry(pos, struct dev_pm_ops, link);
+		if (pm_ops->level > ops->level)
+			break;
+	}
+	list_add_tail(&ops->link, pos);
 
 	return ops;
 }

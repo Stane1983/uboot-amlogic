@@ -22,6 +22,7 @@
 #include <linux/compat.h>
 #include <linux/ioport.h>
 #include <asm-generic/gpio.h>
+#include <amlogic/pm.h>
 
 #define USB_POC7(poc)       ((poc) >> 7 & 1)
 #define POC_USB_CHANNEL_C(poc)  (!USB_POC7(poc))
@@ -534,6 +535,7 @@ void usb_device_mode_init(int phy_num)
 		set_usb_phy2x_config();
 	else
 		set_usb3_phy_config();
+	//dev_register_pm("usb_ops", &aml_usb_suspend, &aml_usb_resume, &aml_usb_poweroff, 0);
 }
 
 void set_usb_power_off(void)
@@ -547,4 +549,44 @@ void set_usb_power_off(void)
 	val = readl(RESETCTRL_RESET1_LEVEL);
 	val &= ~(1 << 13);
 	writel(val, RESETCTRL_RESET1_LEVEL);
+}
+
+void set_usb_power_on(void)
+{
+	unsigned int val;
+
+	val = readl(RESETCTRL_RESET0_LEVEL);
+	val |= ((1 << 8) | (1 << 3) | (1 << 9));
+	writel(val, RESETCTRL_RESET0_LEVEL);
+
+	val = readl(RESETCTRL_RESET1_LEVEL);
+	val |= (1 << 13);
+	writel(val, RESETCTRL_RESET1_LEVEL);
+}
+
+int aml_usb_suspend(void *pm_ops)
+{
+	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
+
+	printf("power off  %s\n", pm->name);
+	set_usb_power_off();
+	return 0;
+}
+
+int aml_usb_resume(void *pm_ops)
+{
+	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
+
+	printf("power off  %s\n", pm->name);
+	set_usb_power_on();
+	return 0;
+}
+
+int aml_usb_poweroff(void *pm_ops)
+{
+	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
+
+	printf("power off  %s\n", pm->name);
+	set_usb_power_off();
+	return 0;
 }

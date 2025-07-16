@@ -1088,6 +1088,13 @@ config CMD_USB
 	help
 	  USB support.
 
+config AMLOGIC_USB_POWER
+	bool "Uboot USB Power Management Support"
+	default n
+	help
+	  Default n for amlogic chip.
+	  This option enables the USB power management support in U-Boot.
+
 config CMD_USB_SDP
 	bool "sdp"
 	select USB_FUNCTION_SDP
