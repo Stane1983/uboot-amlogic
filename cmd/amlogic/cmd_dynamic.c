@@ -402,7 +402,7 @@ void printlist(void)
 	PartitionList *node = part_list;
 
 	while (node) {
-		printf("name: %s\n", node->name);
+		//printf("name: %s\n", node->name);
 		node = node->next;
 	}
 }
@@ -577,7 +577,7 @@ int ReadMetadataHeader(char *superbuf, LpMetadataHeader *header,
 		memcpy(&partition, superbuf + cursor, sizeof(partition));
 		cursor += header->partitions.entry_size;
 
-		printf("partition name : %s\n", partition.name);
+		//printf("partition name : %s\n", partition.name);
 
 		if (partition.attributes & ~valid_attributes) {
 			printf("Logical partition has invalid attribute set.\n");

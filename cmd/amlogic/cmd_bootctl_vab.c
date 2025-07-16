@@ -324,8 +324,10 @@ void boot_info_reset(bootloader_control* boot_ctrl)
 static void dump_boot_info(bootloader_control *boot_ctrl)
 {
 	int loglevel = env_get_ulong("loglevel", 10, 0);
+	char *rebootmode = env_get("reboot_mode");
 
-	if (loglevel >= 5) {
+	if (loglevel >= 5 &&
+		(rebootmode && strcmp(rebootmode, "fastboot"))) {
 		int slot;
 
 		printf("boot_ctrl->slot_suffix = %s\n", boot_ctrl->slot_suffix);

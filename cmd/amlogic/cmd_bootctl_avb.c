@@ -285,8 +285,10 @@ static void boot_info_reset(AvbABData *info)
 static void dump_boot_info(AvbABData *info)
 {
 	int loglevel = env_get_ulong("loglevel", 10, 0);
+	char *rebootmode = env_get("reboot_mode");
 
-	if (loglevel >= 5) {
+	if (loglevel >= 5 &&
+		(rebootmode && strcmp(rebootmode, "fastboot"))) {
 		printf("info->magic = %s\n", info->magic);
 		printf("info->version_major = %d\n", info->version_major);
 		printf("info->version_minor = %d\n", info->version_minor);
