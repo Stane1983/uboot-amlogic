@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <stdarg.h>
+#include <spinlock.h>
 
 #define PM_SUSPEND_ON		(0)
 #define PM_SUSPEND_TO_IDLE	(1)
@@ -44,6 +45,8 @@ extern void aml_system_off(void);
 #define PM_DEBUG
 
 static struct list_head devices;
+bool pm_resume_done;
+static spin_lock_t pm_suspend_lock;
 
 #ifdef PM_DEBUG
 static int test_pm_suspend(void *dev_info)
@@ -67,15 +70,16 @@ static int test_pm_poweroff(void *dev_info)
 
 #ifdef PM_DEBUG
 struct dev_pm_ops *dev_register_pm(char *name, FUNC_PTR suspend,
-			FUNC_PTR resume, FUNC_PTR poweroff, ...);
+			FUNC_PTR resume, FUNC_PTR poweroff, int level, ...);
 char name[] = "test_pm_name";
 #endif
 
 void pm_initialize(void)
 {
 	INIT_LIST_HEAD(&devices);
+	spin_lock_init(&pm_suspend_lock);
 #ifdef PM_DEBUG
-	dev_register_pm(name, test_pm_suspend, test_pm_resume, test_pm_poweroff);
+	dev_register_pm(name, test_pm_suspend, test_pm_resume, test_pm_poweroff, 0);
 #endif
 }
 
@@ -101,6 +105,7 @@ void pm_suspend(void)
 
 	cpu_suspend(0);
 
+	pm_resume_done = true;
 	list_for_each_prev(dentry, &devices) {
 		pm_ops = list_entry(dentry, struct dev_pm_ops, link);
 		if (pm_ops->resume) {
@@ -111,6 +116,11 @@ void pm_suspend(void)
 		}
 	}
 	printf("uboot str resume done!\n");
+}
+
+bool get_resume_state(void)
+{
+	return pm_resume_done;
 }
 
 void pm_poweroff(void)
@@ -134,13 +144,14 @@ void pm_poweroff(void)
 }
 
 struct dev_pm_ops *dev_register_pm(char *name, FUNC_PTR suspend,
-			FUNC_PTR resume, FUNC_PTR poweroff, ...)
+			FUNC_PTR resume, FUNC_PTR poweroff, int level, ...)
 {
 	struct dev_pm_ops *ops;
+	struct list_head *pos;
 	va_list pargs;
 
 	printf("[%s]:%s.\n", __func__, name);
-	va_start(pargs, poweroff);
+	va_start(pargs, level);
 	if (!name || !suspend || !resume || !poweroff) {
 		printf("Invalid pass parameters\n");
 		va_end(pargs);
@@ -159,9 +170,20 @@ struct dev_pm_ops *dev_register_pm(char *name, FUNC_PTR suspend,
 	ops->suspend = suspend;
 	ops->resume = resume;
 	ops->poweroff = poweroff;
+	ops->level = level;
 	ops->private_data = va_arg(pargs, void *);
 
-	list_add_tail(&ops->link, &devices);
+	spin_lock(&pm_suspend_lock);
+	list_for_each(pos, &devices) {
+		struct dev_pm_ops *pm_ops;
+
+		pm_ops = list_entry(pos, struct dev_pm_ops, link);
+		if (pm_ops->level > ops->level)
+			break;
+	}
+	list_add_tail(&ops->link, pos);
+	spin_unlock(&pm_suspend_lock);
+
 	va_end(pargs);
 
 	return ops;

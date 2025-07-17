@@ -1157,7 +1157,8 @@ int vpu_probe(void)
 	vpu_conf.data->dev_pm_ops = dev_register_pm("vpu_drv_pm",
 						&aml_vpu_suspend,
 						&aml_vpu_resume,
-						&aml_vpu_poweroff);
+						&aml_vpu_poweroff,
+						1);
 	VPUPR("%s\n", __func__);
 
 	return ret;

@@ -630,7 +630,8 @@ static struct aml_lcd_drv_s *lcd_driver_add(int index)
 		pm_ops = dev_register_pm(lcd_pm_name[index],
 					 &aml_lcd_driver_suspend,
 					 &aml_lcd_driver_resume,
-					 &aml_lcd_driver_poweroff);
+					 &aml_lcd_driver_poweroff,
+					 0);
 	} else {
 		pm_ops = lcd_driver[index]->dev_pm_ops;
 	}

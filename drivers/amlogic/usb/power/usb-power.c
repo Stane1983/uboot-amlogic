@@ -49,5 +49,5 @@ void usb_power_init(void)
 {
 	struct dev_pm_ops *pm_ops = NULL;
 
-	pm_ops = dev_register_pm("usb_ops", &aml_usb_suspend, &aml_usb_resume, &aml_usb_poweroff);
+	pm_ops = dev_register_pm("usb_ops", &aml_usb_suspend, &aml_usb_resume, &aml_usb_poweroff, 0);
 }

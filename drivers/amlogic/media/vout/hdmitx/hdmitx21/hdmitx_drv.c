@@ -3254,5 +3254,5 @@ static void hdmitx_power_init(void)
 	struct dev_pm_ops *pm_ops = NULL;
 
 	pm_ops = dev_register_pm("hdmitx_ops", &aml_hdmitx_suspend,
-		&aml_hdmitx_resume, &aml_hdmitx_poweroff);
+		&aml_hdmitx_resume, &aml_hdmitx_poweroff, 0);
 }

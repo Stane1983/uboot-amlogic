@@ -253,7 +253,7 @@ static int amlogic_spdif_probe(struct udevice *dev)
 	clk_enable(&spdif_p->clk_parenet);
 	aml_audio_init();
 	spdif_p->pm_ops = dev_register_pm("spdif_ops",
-		&aml_spdif_suspend, &aml_spdif_resume, &aml_spdif_poweroff, spdif_p);
+		&aml_spdif_suspend, &aml_spdif_resume, &aml_spdif_poweroff, 0, spdif_p);
 	return 0;
 }
 

@@ -1080,7 +1080,6 @@ int do_bootm_states(struct cmd_tbl *cmdtp, int flag, int argc,
 			ret = run_command_list(cmd_list, -1, flag);
 	}
 #endif
-
 	/* Check for unsupported subcommand. */
 	if (ret) {
 		printf("subcommand failed (err=%d)\n", ret);

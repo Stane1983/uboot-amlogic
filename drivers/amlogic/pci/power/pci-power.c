@@ -45,5 +45,5 @@ void pci_power_init(void)
 {
 	struct dev_pm_ops *pm_ops = NULL;
 
-	pm_ops = dev_register_pm("pci_ops", &aml_pci_suspend, &aml_pci_resume, &aml_pci_poweroff);
+	pm_ops = dev_register_pm("pci_ops", &aml_pci_suspend, &aml_pci_resume, &aml_pci_poweroff, 0);
 }
