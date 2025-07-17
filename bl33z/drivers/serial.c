@@ -33,6 +33,7 @@
 #include <stdint.h>
 #include "platform_def.h"
 #include "regs.h"
+#include "register.h"
 
 static int g_serial_disable;
 
@@ -140,6 +141,10 @@ int serial_getc(void)
 
 	if (g_serial_disable)
 		return ch;
+
+	if (readl(SYSCTRL_SEC_STATUS_REG4) & ACS_DIS_PRINT_FLAG)
+		return ch;
+
 
 	/* Wait till character is placed in fifo */
 	while ((readl(P_UART_STATUS(UART_PORT_CONS)) & UART_STAT_MASK_RFIFO_CNT) == 0) {

@@ -119,6 +119,8 @@
 #define VALUE_DEC   1
 #define VALUE_HEX   0
 
+#define ACS_DIS_PRINT_FLAG      BIT(7)
+
 void serial_init(unsigned set);
 int serial_tstc(void);
 int serial_putc(int c);

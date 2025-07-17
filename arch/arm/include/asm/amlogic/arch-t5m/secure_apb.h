@@ -11,7 +11,7 @@
 // ----------------------------------------------------------------------
 //
 //#include <asm/arch/regs.h>
-#include <asm/amlogic/arch/register.h>
+#include "register.h"
 
 #define DMA_BASE (uint32_t)(0xfe440400)
 
