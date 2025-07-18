@@ -120,6 +120,38 @@ uint32_t __bl2_ddr_reg_data[] __attribute__ ((section(".ddr_2acs_data"))) = {
 	DDR_ID_START_MASK,
 
 	DDR_TIMMING_TUNE_START(DDR_ID_FROM_EFUSE, 0, DDR_EFUSE_ID_NTC_LP4_1G_X2),
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.ac_trace_delay[4], (256 + 40)),
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.ac_trace_delay[5], (256 + 40)),
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.ac_trace_delay[6], (256 + 80)),
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.ac_trace_delay[7], (256 + 40)),
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.ac_trace_delay[8], (256 + 40)),
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.ac_trace_delay[9], (256 + 40)),
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.ac_trace_delay[10], (256 + 32)),
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.ac_trace_delay[18], (256 + 32)),
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.ac_trace_delay[19], (256 + 32)),
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.ac_trace_delay[21], (256 + 32)),
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.ac_trace_delay[22], (256 + 32)),
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.ac_trace_delay[23], (256 + 32)),
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.ac_trace_delay[24], (256 + 32)),
+
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.reserve_para[0],
+				    (1 << 7) | 0xc),//write dqs
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.reserve_para[1],
+				    (1 << 7) | 0xc),//write dqs
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.reserve_para[2],
+				    (1 << 7) | 0xc),//write dqs
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.reserve_para[3],
+				    (1 << 7) | 0xc),//write dqs
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.reserve_para[8 + 0],
+				    (1 << 7) | 0xa),//read dqs
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.reserve_para[8 + 1],
+				    (1 << 7) | 0xa),//read dqs
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.reserve_para[8 + 2],
+				    (1 << 7) | 0xa),//read dqs
+	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.reserve_para[8 + 3],
+				    (1 << 7) | 0x6),//read dqs
+
+	DDR_TIMMING_TUNE_START(DDR_ID_FROM_EFUSE, 0, DDR_EFUSE_ID_NTC_LP4_512M_X2),
 	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.reserve_para[0],
 				    (1 << 7) | 0xc),//write dqs
 	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.reserve_para[1],
@@ -136,7 +168,6 @@ uint32_t __bl2_ddr_reg_data[] __attribute__ ((section(".ddr_2acs_data"))) = {
 				    (1 << 7) | 0xa),//read dqs
 	DDR_TIMMING_TUNE_TIMMING0_F(cfg_ddr_training_delay_ps.reserve_para[8 + 3],
 				    (1 << 7) | 0xa),//read dqs
-
 	//DDR_TIMMING_TUNE_ADC_MULT_START(DDR_ID_FROM_ADC_MULT, V4, VX, VX, VX, VX, VX),
 	//data start
 	//DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_common_setting.Is2Ttiming, CONFIG_USE_DDR_2T_MODE),
@@ -247,7 +278,7 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 
 		//.cfg_ddr_training_delay_ps.rx_offset[0] = (1 << 7) | 0x10,
 		//.cfg_ddr_training_delay_ps.tx_offset[0] = (1 << 7) | 0x8,
-		.cfg_ddr_training_delay_ps.dac_offset[0] = (1 << 7) | 0x3,
+		.cfg_ddr_training_delay_ps.dac_offset[0] = (1 << 7) | 0x0,
 		.cfg_ddr_training_delay_ps.dac_offset[1] = (0 << 7) | 0x3,
 		.cfg_ddr_training_delay_ps.reserve_para[0] = (1 << 7) | 0x8,     //write dqs
 		.cfg_ddr_training_delay_ps.reserve_para[1] = (1 << 7) | 0x8,     //write dqs
