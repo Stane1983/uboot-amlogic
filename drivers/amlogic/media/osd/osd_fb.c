@@ -509,6 +509,21 @@ bool is_keystone_enable_for_osd2(void)
 	return ret;
 }
 
+bool is_jpg_logo(void)
+{
+	bool ret = false;
+	char *jpg_flag;
+
+	jpg_flag = env_get("jpg_logo");
+	if (!jpg_flag)
+		return false;
+	if (!strcmp(jpg_flag, "true"))
+		ret = true;
+	else
+		ret = false;
+	return ret;
+}
+
 int get_osd_layer(void)
 {
 	char *layer_str;
@@ -567,7 +582,10 @@ static void *osd_hw_init(void)
 	int osd_index = -1;
 	u32 color_index = 0;
 
-	color_index = env_strtoul("display_color_index", 10);
+	if (!is_jpg_logo())
+		color_index = env_strtoul("display_color_index", 10);
+	else
+		color_index = 32;
 
 	if ((color_index < ARRAY_SIZE(default_color_format_array))
 	    && (default_color_format_array[color_index].color_index !=
@@ -633,7 +651,11 @@ void *video_hw_init(int display_mode)
 		fb_width = env_strtoul("fb_width", 10);
 		fb_height = env_strtoul("fb_height", 10);
 #endif
-		display_bpp = env_strtoul("display_bpp", 10);
+		/*jpg after decoder bitdepth is 32*/
+		if (!is_jpg_logo())
+			display_bpp = env_strtoul("display_bpp", 10);
+		else
+			display_bpp = 32;
 		break;
 	case FULL_SCREEN_MODE:
 		fb_width = g_pic_info.pic_width;
@@ -1883,8 +1905,13 @@ static int _osd_hw_init(bool env_used)
 #endif
 		display_width = env_strtoul("display_width", 10);
 		display_height = env_strtoul("display_height", 10);
-		display_bpp = env_strtoul("display_bpp", 10);
-		color_index = env_strtoul("display_color_index", 10);
+		if (!is_jpg_logo()) {
+			display_bpp = env_strtoul("display_bpp", 10);
+			color_index = env_strtoul("display_color_index", 10);
+		} else {
+			display_bpp = 32;
+			color_index = 32;
+		}
 		fg = env_strtoul("display_color_fg", 16);
 		bg = env_strtoul("display_color_bg", 16);
 

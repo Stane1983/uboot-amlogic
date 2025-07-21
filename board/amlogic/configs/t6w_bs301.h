@@ -31,8 +31,6 @@
 #undef CONFIG_SILENT_CONSOLE_UPDATE_ON_RELOC
 #endif
 
-#define VOUT_OSD_LOGO_CMD  "osd open; osd clear; run load_bmp_logo; bmp scale;"
-
 #define VOUT_DISPLAY_CMD   "vout boot_display; "
 
 /*low console baudrate*/
@@ -70,10 +68,6 @@
 #else
 #define CONFIG_KERNEL_LOGLEVEL "loglevel=7"
 #endif
-
-#define VOUT_OSD_LOGO_CMD  "osd open; osd clear; run load_bmp_logo; bmp scale;"
-
-#define VOUT_DISPLAY_CMD   "vout boot_display; "
 
 #define CONFIG_SUPPORT_PREBOOT
 

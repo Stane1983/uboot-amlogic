@@ -256,7 +256,10 @@ static void vout_vinfo_init(ulong width, ulong height, ulong field_height)
 	vout_info.height = height;
 	vout_info.field_height = field_height;
 	vout_info.vd_base = (void *)get_fb_addr();
-	vout_info.vl_bpix = (unsigned char)vout_env2uint("display_bpp", 10);
+	if (!is_jpg_logo())
+		vout_info.vl_bpix = (unsigned char)vout_env2uint("display_bpp", 10);
+	else
+		vout_info.vl_bpix = 32;
 	vout_info.vd_color_fg = vout_env2uint("display_color_fg", 0);
 	vout_info.vd_color_bg = vout_env2uint("display_color_bg", 0);
 }
