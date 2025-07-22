@@ -47,6 +47,18 @@ static const unsigned int od_fb_table[2] = {1, 2};
 static const unsigned int od_table[6] = {1, 2, 4, 8, 16, 32};
 static const unsigned int tcon_div_table[5] = {1, 2, 4, 8, 16};
 
+static unsigned char lcd_ss_freq_dep_opt[] = {
+/*             freq, cnt, dep values       */
+/* 0-29.5k */	0,    3,   4, 7, 10,
+/* 1-31.5k */	1,    3,   3, 8, 11,
+/* 2-50.0k */	2,    3,   5, 6, 11,
+/* 3-75.0k */	3,    3,   4, 7, 11,
+/* 4-100k  */	4,    5,   3, 5, 6, 8, 11,
+/* 5-150k  */	5,    5,   2, 4, 7, 9, 11,
+/* 6-200k  */	6,    12,  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+/* 7-0 end */   7,    0,
+};
+
 /* **********************************
  * lcd controller operation
  * **********************************/
@@ -67,13 +79,61 @@ int lcd_clk_msr_check(int msr_id, unsigned int freq)
 	return 0;
 }
 
+int lcd_pll_ss_level_generate_optimized(struct lcd_clk_config_s *cconf)
+{
+	int dep_sel, str_m, target, ss_ppm, dep_base, err = 0, done = 0;
+	unsigned int freq, dep_cnt = 0, i = 0;
+	unsigned char *freq_dep = lcd_ss_freq_dep_opt;
+
+	if (!cconf)
+		return -1;
+
+	if (cconf->data->ss_freq_dep_opt)
+		freq_dep = cconf->data->ss_freq_dep_opt;
+
+	target = cconf->ss_level;
+	target *= 1000;
+	dep_base = cconf->data->ss_dep_base;
+	freq = cconf->ss_freq;
+	for (; freq != (unsigned int)freq_dep[0]; freq_dep += (freq_dep[1] + 2)) {
+		if (freq_dep[1] == 0) {
+			LCDPR("no optimized ssc freq matched\n");
+			return 0;
+		}
+	}
+	dep_cnt = freq_dep[1];
+	freq_dep += 2;
+	for (i = 0; i < dep_cnt; i++) {
+		dep_sel = freq_dep[i];
+		for (str_m = 1; str_m <= cconf->data->ss_str_m_max; str_m++) {
+			ss_ppm = dep_sel * str_m * dep_base;
+
+			err = target - ss_ppm;
+			if (err <= dep_base && err >= -dep_base) {
+				cconf->ss_dep_sel = dep_sel;
+				cconf->ss_str_m = str_m;
+				cconf->ss_ppm = ss_ppm;
+				cconf->ss_freq_stable = 1;
+				done = 1;
+				if (err == 0)
+					return 1;
+			}
+		}
+	}
+
+	return done;
+}
+
 int lcd_pll_ss_level_generate(struct lcd_clk_config_s *cconf)
 {
-	unsigned int dep_sel, str_m, err, min, done = 0;
+	unsigned int dep_sel, str_m, err = 0, min = 0, done = 0;
 	unsigned long long target, ss_ppm, dep_base;
 
 	if (!cconf)
 		return -1;
+
+	if (lcd_pll_ss_level_generate_optimized(cconf) > 0)
+		goto lcd_pll_ss_level_generate_exit;
 
 	target = cconf->ss_level;
 	target *= 1000;
@@ -98,7 +158,9 @@ int lcd_pll_ss_level_generate(struct lcd_clk_config_s *cconf)
 		LCDERR("%s: invalid ss_level %d\n", __func__, cconf->ss_level);
 		return -1;
 	}
+	cconf->ss_freq_stable = 0;
 
+lcd_pll_ss_level_generate_exit:
 	if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
 		LCDPR("%s: dep_sel=%d, str_m=%d, error=%d\n",
 			__func__, cconf->ss_dep_sel, cconf->ss_str_m, min);

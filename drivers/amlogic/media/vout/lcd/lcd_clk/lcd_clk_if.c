@@ -20,6 +20,7 @@ static char *lcd_ss_freq_table_dft[] = {
 	"4, 100KHz",
 	"5, 150KHz",
 	"6, 200KHz",
+	"3, 29.5KHz",
 };
 
 static char *lcd_ss_mode_table_dft[] = {
@@ -189,6 +190,7 @@ void lcd_clk_generate_parameter(struct aml_lcd_drv_s *pdrv)
 void lcd_get_ss(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_clk_config_s *cconf;
+	int freq_id = 0;
 
 	cconf = get_lcd_clk_config(pdrv);
 	if (!cconf || !cconf->data)
@@ -198,10 +200,11 @@ void lcd_get_ss(struct aml_lcd_drv_s *pdrv)
 		return;
 	}
 
-	printf("ss_level: %d, %dppm, dep_sel=%d, str_m=%d\n",
-		cconf->ss_level, cconf->ss_ppm,
-		cconf->ss_dep_sel, cconf->ss_str_m);
-	printf("ss_freq: %d, %s\n", cconf->ss_freq, lcd_ss_freq_table_dft[cconf->ss_freq]);
+	printf("ss_level: %d, %dppm, dep_sel=%d, str_m=%d, stable=%d\n",
+	       cconf->ss_level, cconf->ss_ppm,
+	       cconf->ss_dep_sel, cconf->ss_str_m, cconf->ss_freq_stable);
+	freq_id = pdrv->data->chip_type == LCD_CHIP_T6W && cconf->ss_freq == 3 ? 7 : cconf->ss_freq;
+	printf("ss_freq: %d, %s\n", cconf->ss_freq, lcd_ss_freq_table_dft[freq_id]);
 	printf("ss_mode: %d, %s\n", cconf->ss_mode, lcd_ss_mode_table_dft[cconf->ss_mode]);
 }
 

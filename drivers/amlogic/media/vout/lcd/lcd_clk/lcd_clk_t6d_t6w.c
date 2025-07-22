@@ -26,6 +26,18 @@ static unsigned int tcon_div[][3] = {
 	{1, 1, 0},  /* div16 */
 };
 
+static unsigned char lcd_ss_freq_dep_opt_t6w[] = {
+/*             freq, cnt, dep values       */
+/* 0-29.5k */	0,    3,   4, 7, 10,
+/* 1-31.5k */	1,    3,   3, 8, 11,
+/* 2-50.0k */	2,    3,   5, 6, 11,
+/* 3-29.5k */	3,    12,  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+/* 4-100k  */	4,    5,   3, 5, 6, 8, 11,
+/* 5-150k       5,    12,  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, */
+/* 6-200k  */	6,    12,  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+/* 7-0 end */   7,    0,
+};
+
 static void lcd_pll_frac_set_t6d_t6w(struct aml_lcd_drv_s *pdrv, unsigned int frac)
 {
 	struct lcd_clk_config_s *cconf;
@@ -803,6 +815,7 @@ static struct lcd_clk_data_s lcd_clk_data_t6w = {
 	.ss_dep_base = 500, //ppm
 	.ss_dep_sel_max = 12,
 	.ss_str_m_max = 10,
+	.ss_freq_dep_opt = lcd_ss_freq_dep_opt_t6w,
 
 	.clk_parameter_init = NULL,
 	.clk_generate_parameter = lcd_clk_generate_t6w,

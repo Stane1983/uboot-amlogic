@@ -77,6 +77,7 @@ struct lcd_clk_data_s {
 	unsigned int ss_dep_base;
 	unsigned int ss_dep_sel_max;
 	unsigned int ss_str_m_max;
+	unsigned char *ss_freq_dep_opt;
 	/* clk path node parameters */
 	unsigned int xd_out_fmax;
 	//0:pll_clk_phase, 1:pll_clk2, 2:vid_pll_clk
@@ -147,6 +148,7 @@ struct lcd_clk_config_s { /* unit: Hz */
 	unsigned int ss_freq;
 	unsigned int ss_mode;
 	unsigned int ss_en;
+	unsigned int ss_freq_stable;
 
 	unsigned int edp_div0;
 	unsigned int edp_div1;
