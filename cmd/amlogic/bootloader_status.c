@@ -860,6 +860,7 @@ int ab_update_rollback(char *rebootmode, int gpt_flag)
 
 	if (write_boot && !strcmp(write_boot, "1")) {
 		printf("need to write boot0\n");
+		run_command("check_uboot_state boot1", 0);
 		if (write_bootloader(1)) {
 			printf("write boot0 fail, need to rollback!\n");
 			env_set("rollback_reason", "boot0_update_fail");
