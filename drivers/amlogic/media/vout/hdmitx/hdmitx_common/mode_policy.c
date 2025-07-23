@@ -319,7 +319,10 @@ static bool is_dv_support_mode(struct meson_policy_in *input, const char *mode) 
     /*
      * need to check the flag of Parity for high frame rate
      */
-    if (!strcmp(mode, MODE_1080P100HZ) ||
+    if (!strcmp(mode, MODE_4K2K100HZ) ||
+        !strcmp(mode, MODE_4K2K119HZ) ||
+        !strcmp(mode, MODE_4K2K120HZ) ||
+        !strcmp(mode, MODE_1080P100HZ) ||
         !strcmp(mode, MODE_1080P119HZ) ||
         !strcmp(mode, MODE_1080P120HZ) ||
         !strcmp(mode, MODE_720P100HZ) ||
@@ -361,6 +364,7 @@ static int32_t amdv_update_mode(struct meson_policy_in *input,
     }
 
     is_preferred_50hz = input->con_info.is_preferred_50hz;
+
     /*
      * 1. update tv support amdolby vision resolution
      */
@@ -390,14 +394,14 @@ static int32_t amdv_update_mode(struct meson_policy_in *input,
             /* TV support amdolby vision 2160p60hz case */
             if (amdv_type == DOLBY_VISION_LL_RGB) {
                 /* amdolby vision LL RGB(rgb 10/12bit) only support 1080p60hz */
-                if (is_preferred_50hz) {
+                if (is_preferred_50hz && is_support_hdmimode(input, MODE_1080P50HZ)) {
                     strcpy(final_displaymode, MODE_1080P50HZ);
                 } else {
                     strcpy(final_displaymode, preferred_frac ? MODE_1080P59HZ : MODE_1080P);
                 }
             } else {
                 /* other amdolby visin mode,use 2160p60hz */
-                if (is_preferred_50hz) {
+                if (is_preferred_50hz && is_support_hdmimode(input, MODE_4K2K50HZ)) {
                     strcpy(final_displaymode, MODE_4K2K50HZ);
                 } else {
                     strcpy(final_displaymode, preferred_frac ? MODE_4K2K59HZ : MODE_4K2K60HZ);
@@ -412,7 +416,7 @@ static int32_t amdv_update_mode(struct meson_policy_in *input,
                  * TV support amdolby vision support 2160p30hz or 2160p25hz or 2160p24hz
                  * 1080p60hz prefer to 2160p30hz 2160p25hz 2160p24hz
                  */
-                if (is_preferred_50hz) {
+                if (is_preferred_50hz && is_support_hdmimode(input, MODE_1080P50HZ)) {
                     strcpy(final_displaymode, MODE_1080P50HZ);
                 } else {
                     strcpy(final_displaymode, preferred_frac ? MODE_1080P59HZ : MODE_1080P);
@@ -423,17 +427,19 @@ static int32_t amdv_update_mode(struct meson_policy_in *input,
                  * use tv support amdolby vision resolution
                  */
                 if (is_preferred_50hz) {
-                    if (!strcmp(dv_displaymode, MODE_1080P)) {
+                    if (!strcmp(dv_displaymode, MODE_1080P)  && is_support_hdmimode(input, MODE_1080P50HZ)) {
                         strcpy(final_displaymode, MODE_1080P50HZ);
-                    } else if (!strcmp(dv_displaymode, MODE_720P) || !strcmp(dv_displaymode, MODE_1080P24HZ) ||
-                        !strcmp(dv_displaymode, MODE_1080P25HZ) || !strcmp(dv_displaymode, MODE_1080P30HZ)) {
+                    } else if ((!strcmp(dv_displaymode, MODE_720P) || !strcmp(dv_displaymode, MODE_1080P24HZ) ||
+                                !strcmp(dv_displaymode, MODE_1080P25HZ) || !strcmp(dv_displaymode, MODE_1080P30HZ))
+                                && is_support_hdmimode(input, MODE_720P50HZ)) {
                         strcpy(final_displaymode, MODE_720P50HZ);
                     } else {
-                        strcpy(final_displaymode, dv_displaymode);
+                        const char * mode_result = find_frac_preferred_mode(preferred_frac, dv_displaymode);
+                        strcpy(final_displaymode, mode_result);
                     }
                 } else {
-                    const char * mode_result = find_frac_preferred_mode(preferred_frac, dv_displaymode);
-                    strcpy(final_displaymode, mode_result);
+                        const char * mode_result = find_frac_preferred_mode(preferred_frac, dv_displaymode);
+                        strcpy(final_displaymode, mode_result);
                 }
             }
         }
@@ -527,16 +533,11 @@ static bool is_support_4kHDR(struct meson_policy_in *input,
     color_list_length = ARRAY_SIZE(HDR_4K_COLOR_ATTRIBUTE_LIST);
 
     /*
-     * choose prefer color format and resolution for 4k hdr
-     * modes_ptr:the list of TV support resolution from connector
-     * dc_cap:the list of TV support color format from driver parse edid
-     */
-
-    const char **resolution_list = NULL;
-    int resolution_list_length   = 0;
-    /*
      * use 4k hdr resolution table
      */
+    const char **resolution_list = NULL;
+    int resolution_list_length   = 0;
+
     if (input->con_info.is_preferred_50hz) {
         resolution_list = MODE_4K_LIST_50HZ;
         resolution_list_length = ARRAY_SIZE(MODE_4K_LIST_50HZ);
@@ -545,6 +546,11 @@ static bool is_support_4kHDR(struct meson_policy_in *input,
         resolution_list_length = ARRAY_SIZE(MODE_4K_LIST);
     }
 
+    /*
+     * choose prefer color format and resolution for 4k hdr
+     * modes_ptr:the list of TV support resolution from connector
+     * dc_cap:the list of TV support color format from driver parse edid
+     */
     for (int i = 0; i < color_list_length; i++) {
         if (is_support_color_format(input, color_list[i])) {
             for (int j = 0; j < resolution_list_length; j++) {
@@ -587,33 +593,26 @@ static bool is_support_non4kHDR(struct meson_policy_in *input,
     color_list_length = ARRAY_SIZE(HDR_NON4K_COLOR_ATTRIBUTE_LIST);
 
     /*
+     * use non 4k hdr resolution table
+     */
+    const char **resolution_list = NULL;
+    int resolution_list_length = 0;
+
+   if (input->con_info.is_preferred_50hz) {
+       resolution_list = MODE_NON4K_LIST_50HZ;
+       resolution_list_length = ARRAY_SIZE(MODE_NON4K_LIST_50HZ);
+   } else {
+       resolution_list = MODE_NON4K_LIST;
+       resolution_list_length = ARRAY_SIZE(MODE_NON4K_LIST);
+   }
+
+    /*
      * choose prefer color format and resolution for non 4k hdr
      * modes_ptr:the list of TV support resolution from connector
      * dc_cap:the list of TV support color format from driver parse edid
      */
-
-    const char **resolution_list = NULL;
-    int resolution_list_length = 0;
-    /*
-     * use non 4k hdr resolution table
-     */
-    if (input->con_info.is_preferred_50hz) {
-        resolution_list = MODE_NON4K_LIST_50HZ;
-        resolution_list_length = ARRAY_SIZE(MODE_NON4K_LIST_50HZ);
-    } else {
-        resolution_list = MODE_NON4K_LIST;
-        resolution_list_length = ARRAY_SIZE(MODE_NON4K_LIST);
-    }
-
     for (int i = 0; i < color_list_length; i++) {
         if (is_support_color_format(input, color_list[i])) {
-            const char **resolution_list = NULL;
-            int resolution_list_length = 0;
-            /*
-             * use non 4k hdr resolution table
-             */
-            resolution_list = MODE_NON4K_LIST;
-            resolution_list_length = ARRAY_SIZE(MODE_NON4K_LIST);
             for (int j = 0; j < resolution_list_length; j++) {
                 if (is_support_hdmimode(input, resolution_list[j])) {
                     if (mode_support_check(resolution_list[j], color_list[i], input)) {

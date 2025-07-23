@@ -15,17 +15,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/*
- * RX support deep color
- */
-#define DISPLAY_HDMI_DEEP_COLOR         "/sys/class/amhdmitx/amhdmitx0/dc_cap"
-/*
- * testing if tv support this displaymode and deepcolor combination
- * then if cat result is 1: support, 0: not
- */
-#define DISPLAY_HDMI_VALID_MODE         "/sys/class/amhdmitx/amhdmitx0/valid_mode"
-
 /*
  * default value
  */
@@ -188,8 +177,8 @@ static const char* DISPLAY_MODE_LIST[] = {
     MODE_4K2K60HZ,
     MODE_4K2K59HZ,
     MODE_4K2K50HZ,
-    MODE_4K2K47HZ,
     MODE_4K2K48HZ,
+    MODE_4K2K47HZ,
     MODE_4K2K30HZ,
     MODE_4K2K29HZ,
     MODE_4K2K25HZ,
@@ -293,6 +282,13 @@ static const char* MODE_RESOLUTION_FIRST_50HZ[] = {
     MODE_640x480P,
     MODE_480P,
     MODE_576P,
+    /*
+     * for hdmi1.4 certification 7-16/7-17/7-18
+     * edid only support 1080p30hz/25hz/24hz
+     */
+    MODE_1080P24HZ,
+    MODE_1080P25HZ,
+    MODE_1080P30HZ,
     MODE_720P,
     MODE_720P50HZ,
     MODE_1080P,
@@ -361,6 +357,13 @@ static const char* MODE_FRAMERATE_FIRST_50HZ[] = {
     MODE_640x480P,
     MODE_480P,
     MODE_576P,
+    /*
+     * for hdmi1.4 certification 7-16/7-17/7-18
+     * edid only support 1080p30hz/25hz/24hz
+     */
+    MODE_1080P24HZ,
+    MODE_1080P25HZ,
+    MODE_1080P30HZ,
     MODE_720P,
     MODE_720P50HZ,
     MODE_4K2K24HZ,

@@ -16,7 +16,6 @@
 #include <linux/stddef.h>
 #include <amlogic/media/vout/aml_vinfo.h>
 #include <amlogic/media/vout/hdmitx_common/hdmitx_edid.h>
-#include <amlogic/media/vout/hdmitx_common.h>
 #include "hdmitx_log.h"
 #include <amlogic/media/vout/dsc.h>
 #include "hdmitx_check_valid.h"
@@ -766,7 +765,7 @@ static void edid_receiverproductnameparse(struct rx_cap *prxcap,
 	if (!prxcap || !data)
 		return;
 	/* some Display Product name end with 0x20, not 0x0a */
-	while ((data[i] != 0x0a) && (data[i] != 0x20) && (i < 13)) {
+	while ((i < 13) && (data[i] != 0x0a) && (data[i] != 0x20)) {
 		prxcap->ReceiverProductName[i] = data[i];
 		i++;
 	}
@@ -1026,18 +1025,24 @@ static void _edid_parsingvendspec(struct dv_info *dv,
 
 static void edid_parsingvendspec(struct rx_cap *prxcap, u8 *buf)
 {
-	struct dv_info *dv = &prxcap->dv_info;
-	struct dv_info *dv2 = &prxcap->dv_info2;
-	struct hdr10_plus_info *hdr10_plus = &prxcap->hdr_info.hdr10plus_info;
-	struct hdr10_plus_info *hdr10_plus2 = &prxcap->hdr_info2.hdr10plus_info;
-	struct cuva_info *cuva = &prxcap->hdr_info.cuva_info;
-	struct cuva_info *cuva2 = &prxcap->hdr_info2.cuva_info;
-
+	struct dv_info *dv;
+	struct dv_info *dv2;
+	struct hdr10_plus_info *hdr10_plus;
+	struct hdr10_plus_info *hdr10_plus2;
+	struct cuva_info *cuva;
+	struct cuva_info *cuva2;
 	u8 pos = 0;
 	u32 ieeeoui = 0;
 
 	if (!prxcap || !buf)
 		return;
+
+	dv = &prxcap->dv_info;
+	dv2 = &prxcap->dv_info2;
+	hdr10_plus = &prxcap->hdr_info.hdr10plus_info;
+	hdr10_plus2 = &prxcap->hdr_info2.hdr10plus_info;
+	cuva = &prxcap->hdr_info.cuva_info;
+	cuva2 = &prxcap->hdr_info2.cuva_info;
 
 	pos++;
 
@@ -1587,7 +1592,7 @@ static void get_ilatency(struct rx_cap *prxcap, u8 *val)
 }
 
 static void hdmitx_edid_parse_hdmi14(struct rx_cap *prxcap,
-	u8 offset, u8 *block_buf, u8 count)
+	u8 *block_buf, u8 count)
 {
 	int idx = 0, tmp = 0;
 
@@ -1596,13 +1601,13 @@ static void hdmitx_edid_parse_hdmi14(struct rx_cap *prxcap,
 
 	prxcap->ieeeoui = HDMI_IEEE_OUI;
 
-	prxcap->ColorDeepSupport = (count > 5) ? block_buf[offset + 5] : 0;
+	prxcap->ColorDeepSupport = (count > 5) ? block_buf[5] : 0;
 	set_vsdb_dc_cap(prxcap);
 	prxcap->Max_TMDS_Clock1 =
-		(count > 6) ? block_buf[offset + 6] : DEFAULT_MAX_TMDS_CLK;
+		(count > 6) ? block_buf[6] : DEFAULT_MAX_TMDS_CLK;
 	if (count > 7) {
-		tmp = block_buf[offset + 7];
-		idx = offset + 8;
+		tmp = block_buf[7];
+		idx = 8;
 		if (tmp & (1 << 6)) {
 			u8 val[2];
 
@@ -1636,7 +1641,7 @@ static void hdmitx_edid_parse_hdmi14(struct rx_cap *prxcap,
 			}
 			/* valid 3D */
 			if (block_buf[idx - 1] & 0xe0) {
-				hdmitx_edid_3d_parse(prxcap, &block_buf[offset + 7],
+				hdmitx_edid_3d_parse(prxcap, &block_buf[7],
 				count - 7);
 			}
 		}
@@ -1695,27 +1700,27 @@ static void hdmitx_edid_parse_ifdb(struct rx_cap *prxcap, u8 *blockbuf)
 }
 
 static void hdmitx_edid_parse_hfscdb(struct rx_cap *prxcap,
-	u8 offset, u8 *blockbuf, u8 count)
+	u8 *blockbuf, u8 count)
 {
 	if (!prxcap || !blockbuf)
 		return;
 
 	prxcap->hf_ieeeoui = HDMI_FORUM_IEEE_OUI;
-	prxcap->Max_TMDS_Clock2 = blockbuf[offset + 4];
-	prxcap->scdc_present = !!(blockbuf[offset + 5] & (1 << 7));
-	prxcap->scdc_rr_capable = !!(blockbuf[offset + 5] & (1 << 6));
-	prxcap->lte_340mcsc_scramble = !!(blockbuf[offset + 5] & (1 << 3));
-	prxcap->max_frl_rate = (blockbuf[offset + 6] & 0xf0) >> 4;
-	set_vsdb_dc_420_cap(prxcap, &blockbuf[offset]);
+	prxcap->Max_TMDS_Clock2 = blockbuf[4];
+	prxcap->scdc_present = !!(blockbuf[5] & (1 << 7));
+	prxcap->scdc_rr_capable = !!(blockbuf[5] & (1 << 6));
+	prxcap->lte_340mcsc_scramble = !!(blockbuf[5] & (1 << 3));
+	prxcap->max_frl_rate = (blockbuf[6] & 0xf0) >> 4;
+	set_vsdb_dc_420_cap(prxcap, &blockbuf[0]);
 
 	if (count < 8)
 		return;
-	prxcap->allm = !!(blockbuf[offset + 7] & (1 << 1));
-	prxcap->fva = !!(blockbuf[offset + 7] & (1 << 2));
-	prxcap->neg_mvrr = !!(blockbuf[offset + 7] & (1 << 3));
-	prxcap->mdelta = !!(blockbuf[offset + 7] & (1 << 5));
-	prxcap->qms = !!(blockbuf[offset + 7] & (1 << 6));
-	prxcap->fapa_end_extended = !!(blockbuf[offset + 7] & (1 << 7));
+	prxcap->allm = !!(blockbuf[7] & (1 << 1));
+	prxcap->fva = !!(blockbuf[7] & (1 << 2));
+	prxcap->neg_mvrr = !!(blockbuf[7] & (1 << 3));
+	prxcap->mdelta = !!(blockbuf[7] & (1 << 5));
+	prxcap->qms = !!(blockbuf[7] & (1 << 6));
+	prxcap->fapa_end_extended = !!(blockbuf[7] & (1 << 7));
 
 	if (count < 9)
 		return;
@@ -1729,7 +1734,7 @@ static void hdmitx_edid_parse_hfscdb(struct rx_cap *prxcap,
 	 * BVRR50-60:Bad VRRMIN; VRR disabled.
 	 * The HDMI_Spec_V2.1b standard is used here
 	 */
-	prxcap->vrr_min = (blockbuf[offset + 8] & 0x3f);
+	prxcap->vrr_min = (blockbuf[8] & 0x3f);
 	if (prxcap->vrr_min > 48) {
 		HDMITX_INFO("edid: vrr_min is reserved value %d\n", prxcap->vrr_min);
 		prxcap->vrr_min = 48;
@@ -1737,8 +1742,8 @@ static void hdmitx_edid_parse_hfscdb(struct rx_cap *prxcap,
 
 	if (count < 10)
 		return;
-	prxcap->vrr_max = (((blockbuf[offset + 8] & 0xc0) >> 6) << 8) +
-				blockbuf[offset + 9];
+	prxcap->vrr_max = (((blockbuf[8] & 0xc0) >> 6) << 8) +
+				blockbuf[9];
 	/*
 	 * HDMI_Spec_V2.1b. Chapter 6.5.1.4.5
 	 * Values of 1~99 are reserved.
@@ -1753,18 +1758,18 @@ static void hdmitx_edid_parse_hfscdb(struct rx_cap *prxcap,
 		HDMITX_INFO("edid: vrr_max is reserved value %d\n", prxcap->vrr_max);
 		prxcap->vrr_max = 100;
 	}
-	prxcap->fapa_start_loc = !!(blockbuf[offset + 7] & (1 << 0));
+	prxcap->fapa_start_loc = !!(blockbuf[7] & (1 << 0));
 
 	if (count < 11)
 		return;
-	prxcap->dsc_10bpc = !!(blockbuf[offset + 10] & (1 << 0));
-	prxcap->dsc_12bpc = !!(blockbuf[offset + 10] & (1 << 1));
-	prxcap->dsc_16bpc = !!(blockbuf[offset + 10] & (1 << 2));
-	prxcap->dsc_all_bpp = !!(blockbuf[offset + 10] & (1 << 3));
-	prxcap->qms_tfr_min = !!(blockbuf[offset + 10] & (1 << 4));
-	prxcap->qms_tfr_max = !!(blockbuf[offset + 10] & (1 << 5));
-	prxcap->dsc_native_420 = !!(blockbuf[offset + 10] & (1 << 6));
-	prxcap->dsc_1p2 = !!(blockbuf[offset + 10] & (1 << 7));
+	prxcap->dsc_10bpc = !!(blockbuf[10] & (1 << 0));
+	prxcap->dsc_12bpc = !!(blockbuf[10] & (1 << 1));
+	prxcap->dsc_16bpc = !!(blockbuf[10] & (1 << 2));
+	prxcap->dsc_all_bpp = !!(blockbuf[10] & (1 << 3));
+	prxcap->qms_tfr_min = !!(blockbuf[10] & (1 << 4));
+	prxcap->qms_tfr_max = !!(blockbuf[10] & (1 << 5));
+	prxcap->dsc_native_420 = !!(blockbuf[10] & (1 << 6));
+	prxcap->dsc_1p2 = !!(blockbuf[10] & (1 << 7));
 	/*
 	 * dsc_1p2 shall be cleared (=0) for devices that
 	 * do not support FRL (i.e. Max_FRL_Rate=0).
@@ -1783,18 +1788,18 @@ static void hdmitx_edid_parse_hfscdb(struct rx_cap *prxcap,
 		 * 4: up to 8 slices and up to (340 MHz/K SliceAdjust)
 		 * pixel clock per slice
 		 */
-		prxcap->dsc_max_slices = blockbuf[offset + 11] & 0xf;
+		prxcap->dsc_max_slices = blockbuf[11] & 0xf;
 		/*
 		 * This is value shall be the same or lower than
 		 * the physical maximum rate specified by the
 		 * Max_FRL_Rate field.
 		 */
-		prxcap->dsc_max_frl_rate = (blockbuf[offset + 11] >> 4) & 0xf;
+		prxcap->dsc_max_frl_rate = (blockbuf[11] >> 4) & 0xf;
 		/*
 		 * The number of bytes is computed as:
 		 * 1024 x (1+DSC_ TotalChunkKBytes)
 		 */
-		prxcap->dsc_total_chunk_bytes = blockbuf[offset + 12] & 0x3f;
+		prxcap->dsc_total_chunk_bytes = blockbuf[12] & 0x3f;
 	}
 }
 
@@ -2045,13 +2050,13 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap, u8 *block_buf)
 			if (block_buf[offset] == 0x03 &&
 			    block_buf[offset + 1] == 0x0c &&
 			    block_buf[offset + 2] == 0x00) {
-				hdmitx_edid_parse_hdmi14(prxcap, offset,
-							 block_buf, count);
+				hdmitx_edid_parse_hdmi14(prxcap,
+					&block_buf[offset], count);
 			} else if ((block_buf[offset] == 0xd8) &&
 				(block_buf[offset + 1] == 0x5d) &&
 				(block_buf[offset + 2] == 0xc4))
-				hdmitx_edid_parse_hfscdb(prxcap, offset,
-							 block_buf, count);
+				hdmitx_edid_parse_hfscdb(prxcap,
+					&block_buf[offset], count);
 			if (prxcap->qms)
 				HDMITX_INFO("qms: qms/tfr_min/max/vrr_min/max %d %d %d %d %d\n",
 					prxcap->qms,
@@ -2116,8 +2121,8 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap, u8 *block_buf)
 					edid_parsingy420cmdb(prxcap, &block_buf[offset]);
 					break;
 				case EXTENSION_SCDB_EXT_TAG:
-					hdmitx_edid_parse_hfscdb(prxcap, offset + 1,
-							 block_buf, count);
+					hdmitx_edid_parse_hfscdb(prxcap,
+						&block_buf[offset + 1], count);
 					break;
 				case EXTENSION_SBTM_EXT_TAG:
 					hdmitx21_edid_parse_sbtmdb(prxcap, offset + 1,

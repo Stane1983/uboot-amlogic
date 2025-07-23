@@ -250,7 +250,10 @@ bool mode_support_check(const char *mode, const char * color, struct meson_polic
     /*
      * check mode and color format support or not
      */
-    validmode = meson_write_valid_mode_sys(DISPLAY_HDMI_VALID_MODE, outputmode);
+    int valid = 0;
+    meson_valid_mode_by_drm(&valid, outputmode);
+    if (valid == 1)
+        validmode = true;
 
     if (test_mode)
         return true;
@@ -472,7 +475,7 @@ struct hdmi_format_para *para = NULL;
 #else
 	if (find_brr_mode(mode, input, brr_mode))
 		mode = &brr_mode[0];
-	 /* valid mode check now only support non frac mode */
+	/* valid mode check now only support non frac mode */
 	tmp_mode = find_non_frac_preferred_mode(mode);
 	para = hdmitx21_tst_fmt_name(tmp_mode, color);
 	return hdmitx21_validate_mode(hdev, para);
