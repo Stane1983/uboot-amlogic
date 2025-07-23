@@ -243,6 +243,11 @@ static int parse_model_sum(int index, const char *file_name, char *model_name)
 	return 0;
 }
 
+bool is_jpg_file(const char *path) {
+	size_t len = strlen(path);
+	return len > 4 && strcmp(path + len - 4, ".jpg") == 0;
+}
+
 int parse_model_logofile(int index, const char *file_name, char *model_name)
 {
 	void *local_ini_mem, *psec;
@@ -263,10 +268,17 @@ int parse_model_logofile(int index, const char *file_name, char *model_name)
 
 	logo_value = handle_ini_get_str(local_ini_mem, psec, "LOGO_FILE_NAME", "null");
 	if (strcmp(logo_value, "null") != 0) {
+		env_set("logo_path", "exist");
 		printf("logo_file_name is %s\n", logo_value);
 		env_set("logo_file_name", logo_value);
+		if (is_jpg_file(logo_value))
+			env_set("jpg_logo", "true");
+		else
+			env_set("jpg_logo", "false");
 		ret = 0;
 	} else {
+		env_set("logo_path", "invalid");
+		env_set("jpg_logo", "false");
 		printf("invalid LOGO_FILE_PATH\n");
 	}
 
