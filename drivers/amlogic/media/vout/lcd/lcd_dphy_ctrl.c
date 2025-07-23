@@ -1013,6 +1013,168 @@ void lcd_p2p_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off)
 }
 #endif
 
+//0=low, 1=high, 2=prbs, 0xff=clean
+void lcd_dphy_set_data(struct aml_lcd_drv_s *pdrv, int data)
+{
+	unsigned int reg_phy_tx_ctrl0;
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("[%d]: %s\n", pdrv->index, __func__);
+
+	switch (pdrv->data->chip_type) {
+	case LCD_CHIP_T5M:
+		switch (pdrv->index) {
+		case 1:
+			reg_phy_tx_ctrl0 = ANACTRL_LVDS_TX_PHY_CNTL2;
+			break;
+		default:
+			reg_phy_tx_ctrl0 = ANACTRL_LVDS_TX_PHY_CNTL0;
+			break;
+		}
+		switch (data) {
+		case 0:
+			lcd_ana_setb(reg_phy_tx_ctrl0, 3, 8, 2);
+			lcd_ana_setb(reg_phy_tx_ctrl0, 0, 10, 2);
+			lcd_ana_setb(reg_phy_tx_ctrl0, 0, 12, 2);
+			break;
+		case 1:
+			lcd_ana_setb(reg_phy_tx_ctrl0, 0, 8, 2);
+			lcd_ana_setb(reg_phy_tx_ctrl0, 3, 10, 2);
+			lcd_ana_setb(reg_phy_tx_ctrl0, 0, 12, 2);
+			break;
+		case 2:
+			lcd_ana_setb(reg_phy_tx_ctrl0, 0, 8, 4);
+			lcd_ana_setb(reg_phy_tx_ctrl0, 1, 13, 1);
+			lcd_ana_setb(reg_phy_tx_ctrl0, 1, 12, 1);
+			break;
+		default:
+			lcd_ana_setb(reg_phy_tx_ctrl0, 0, 8, 4);
+			lcd_ana_setb(reg_phy_tx_ctrl0, 0, 12, 2);
+			break;
+		}
+		break;
+	case LCD_CHIP_T3X:
+		switch (pdrv->index) {
+		case 1:
+			reg_phy_tx_ctrl0 = COMBO_DPHY_EDP_LVDS_TX_PHY1_CNTL0;
+			break;
+		default:
+			reg_phy_tx_ctrl0 = COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0;
+			break;
+		}
+		switch (data) {
+		case 0:
+			lcd_combo_dphy_setb(reg_phy_tx_ctrl0, 3, 8, 2);
+			lcd_combo_dphy_setb(reg_phy_tx_ctrl0, 0, 10, 2);
+			lcd_combo_dphy_setb(reg_phy_tx_ctrl0, 0, 12, 2);
+			break;
+		case 1:
+			lcd_combo_dphy_setb(reg_phy_tx_ctrl0, 0, 8, 2);
+			lcd_combo_dphy_setb(reg_phy_tx_ctrl0, 3, 10, 2);
+			lcd_combo_dphy_setb(reg_phy_tx_ctrl0, 0, 12, 2);
+			break;
+		case 2:
+			lcd_combo_dphy_setb(reg_phy_tx_ctrl0, 0, 8, 4);
+			lcd_combo_dphy_setb(reg_phy_tx_ctrl0, 1, 13, 1);
+			lcd_combo_dphy_setb(reg_phy_tx_ctrl0, 1, 12, 1);
+			break;
+		default:
+			lcd_combo_dphy_setb(reg_phy_tx_ctrl0, 0, 8, 4);
+			lcd_combo_dphy_setb(reg_phy_tx_ctrl0, 0, 12, 2);
+			break;
+		}
+		break;
+	case LCD_CHIP_TXHD2:
+		reg_phy_tx_ctrl0 = COMBO_DPHY_EDP_LVDS_TX_PHY0_CNTL0;
+		switch (data) {
+		case 0:
+			lcd_combo_dphy_setb(reg_phy_tx_ctrl0, 3, 8, 2);
+			lcd_combo_dphy_setb(reg_phy_tx_ctrl0, 0, 10, 2);
+			lcd_combo_dphy_setb(reg_phy_tx_ctrl0, 0, 12, 2);
+			break;
+		case 1:
+			lcd_combo_dphy_setb(reg_phy_tx_ctrl0, 0, 8, 2);
+			lcd_combo_dphy_setb(reg_phy_tx_ctrl0, 3, 10, 2);
+			lcd_combo_dphy_setb(reg_phy_tx_ctrl0, 0, 12, 2);
+			break;
+		case 2:
+			lcd_combo_dphy_setb(reg_phy_tx_ctrl0, 0, 8, 4);
+			lcd_combo_dphy_setb(reg_phy_tx_ctrl0, 1, 13, 1);
+			lcd_combo_dphy_setb(reg_phy_tx_ctrl0, 1, 12, 1);
+			break;
+		default:
+			lcd_combo_dphy_setb(reg_phy_tx_ctrl0, 0, 8, 4);
+			lcd_combo_dphy_setb(reg_phy_tx_ctrl0, 0, 12, 2);
+			break;
+		}
+		break;
+	case LCD_CHIP_T6D:
+		switch (data) {
+		case 0:
+			lcd_ana_setb(ANACTRL_LVDS_TX_PHY_CNTL1, 3, 26, 2);
+			lcd_ana_setb(ANACTRL_LVDS_TX_PHY_CNTL1, 0, 28, 2);
+			break;
+		case 1:
+			lcd_ana_setb(ANACTRL_LVDS_TX_PHY_CNTL1, 0, 26, 2);
+			lcd_ana_setb(ANACTRL_LVDS_TX_PHY_CNTL1, 3, 28, 2);
+			break;
+		case 2:
+			LCDPR("not support\n");
+			break;
+		default:
+			lcd_ana_setb(ANACTRL_LVDS_TX_PHY_CNTL1, 0, 26, 4);
+			break;
+		}
+		break;
+	case LCD_CHIP_T6W:
+		switch (data) {
+		case 0:
+			lcd_ana_setb(ANACTRL_LVDS_TX_PHY_CNTL1, 3, 26, 2);
+			lcd_ana_setb(ANACTRL_LVDS_TX_PHY_CNTL1, 0, 28, 2);
+			lcd_ana_setb(ANACTRL_LVDS_TX_PHY_CNTL1, 0, 30, 2);
+			break;
+		case 1:
+			lcd_ana_setb(ANACTRL_LVDS_TX_PHY_CNTL1, 0, 26, 2);
+			lcd_ana_setb(ANACTRL_LVDS_TX_PHY_CNTL1, 3, 28, 2);
+			lcd_ana_setb(ANACTRL_LVDS_TX_PHY_CNTL1, 0, 30, 2);
+			break;
+		case 2:
+			lcd_ana_setb(ANACTRL_LVDS_TX_PHY_CNTL1, 0, 26, 4);
+			lcd_ana_setb(ANACTRL_LVDS_TX_PHY_CNTL1, 1, 30, 1);
+			lcd_ana_setb(ANACTRL_LVDS_TX_PHY_CNTL1, 1, 31, 1);
+			break;
+		default:
+			lcd_ana_setb(ANACTRL_LVDS_TX_PHY_CNTL1, 0, 26, 4);
+			lcd_ana_setb(ANACTRL_LVDS_TX_PHY_CNTL1, 0, 30, 2);
+			break;
+		}
+		break;
+	default:
+		switch (data) {
+		case 0:
+			lcd_ana_setb(HHI_LVDS_TX_PHY_CNTL0, 3, 8, 2);
+			lcd_ana_setb(HHI_LVDS_TX_PHY_CNTL0, 0, 10, 2);
+			lcd_ana_setb(HHI_LVDS_TX_PHY_CNTL0, 0, 12, 2);
+			break;
+		case 1:
+			lcd_ana_setb(HHI_LVDS_TX_PHY_CNTL0, 0, 8, 2);
+			lcd_ana_setb(HHI_LVDS_TX_PHY_CNTL0, 3, 10, 2);
+			lcd_ana_setb(HHI_LVDS_TX_PHY_CNTL0, 0, 12, 2);
+			break;
+		case 2:
+			lcd_ana_setb(HHI_LVDS_TX_PHY_CNTL0, 0, 8, 4);
+			lcd_ana_setb(HHI_LVDS_TX_PHY_CNTL0, 1, 13, 1);
+			lcd_ana_setb(HHI_LVDS_TX_PHY_CNTL0, 1, 12, 1);
+			break;
+		default:
+			lcd_ana_setb(HHI_LVDS_TX_PHY_CNTL0, 0, 8, 4);
+			lcd_ana_setb(HHI_LVDS_TX_PHY_CNTL0, 0, 12, 2);
+			break;
+		}
+		break;
+	}
+}
+
 void lcd_dphy_reg_print(struct aml_lcd_drv_s *pdrv)
 {
 	struct reg_name_set_s *reg_dphy_table = NULL, *reg_ctrl_table = NULL, *reg_ch_swap = NULL;
