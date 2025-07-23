@@ -219,9 +219,11 @@ void lcd_phy_attr_print(struct phy_attr_s *phy, u32 lane_num)
 	struct phy_lane_s *lane;
 
 	printf("cv_mode:%d, vswing:0x%x, vcm:0x%x, odt:0x%x, ref_bias:0x%x\n"
-	       "phy_clk:%d, clk_phase:%d, ss_level:%d, ss_freq:%d, ss_mode:%d\n",
-	       phy->cv_mode, phy->vswing, phy->vcm, phy->odt, phy->ref_bias,
-	       phy->phy_clk, phy->clk_phase, phy->ss.level, phy->ss.freq, phy->ss.mode);
+	       "phy_clk:%d, clk_phase:%d, ss_level:%d, ss_freq:%d, ss_mode:%d\n"
+	       "phy_clk_min:%d, phy_clk_max:%d\n",
+	       phy->cv_mode, phy->vswing, phy->vcm, phy->odt, phy->ref_bias, phy->phy_clk,
+	       phy->clk_phase, phy->ss.level, phy->ss.freq, phy->ss.mode,
+	       phy->phy_clk_min, phy->phy_clk_max);
 
 	m = (lane_num + 1) / 2;
 	n = m;

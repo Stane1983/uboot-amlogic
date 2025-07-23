@@ -23,6 +23,7 @@ int IniSetSaveFileName(const char* filename);
 void IniParserFree(void);
 void IniPrintAll(void);
 void IniListSection(void);
+int IniSectionExist(const char *section);
 const char* IniGetString(const char* section, const char* key, const char* def_value);
 int IniSetString(const char *section, const char *key, const char *value);
 int IniSaveToFile(const char *filename);

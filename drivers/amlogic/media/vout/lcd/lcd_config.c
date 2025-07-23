@@ -2606,7 +2606,6 @@ static int lcd_panel_parse_phy(struct json_parse_s *jsp, struct aml_lcd_drv_s *p
 		LCDPR("not find phy attr, use dft\n");
 		return 0;
 	}
-
 	for (i = 0; i < cnt; i++) {
 		child = json_get_array_child(jsp, parent, i);
 		if (!child) {
@@ -2624,7 +2623,19 @@ static int lcd_panel_parse_phy(struct json_parse_s *jsp, struct aml_lcd_drv_s *p
 
 		str = json_get_obj_str(jsp, child, "mode", NULL);
 		phy->cv_mode   = (str && (strcmp(str, "voltage") == 0)) ? PHY_VMODE : PHY_CMODE;
-		phy->phy_clk   = json_get_obj_u32(jsp, child, "phy_clk", 0);
+		phy->phy_clk_min = json_get_obj_u32(jsp, child, "phy_clk_min", 0);
+		phy->phy_clk_max = json_get_obj_u32(jsp, child, "phy_clk_max", 0);
+		if ((!phy->phy_clk_min && !phy->phy_clk_min) ||
+			phy->phy_clk_min > phy->phy_clk_max) {
+			phy->phy_clk = json_get_obj_u32(jsp, child, "phy_clk", 0);
+			if (phy->phy_clk) {
+				phy->phy_clk_min = phy->phy_clk - 20;
+				phy->phy_clk_max = phy->phy_clk + 20;
+			} else {
+				phy->phy_clk_min = 0;
+				phy->phy_clk_max = 0;
+			}
+		}
 		phy->vcm       = json_get_obj_u32(jsp, child, "vcm", phy->vcm);
 		phy->odt       = json_get_obj_u32(jsp, child, "odt", phy->odt);
 		phy->ref_bias  = json_get_obj_u32(jsp, child, "bias", phy->ref_bias);

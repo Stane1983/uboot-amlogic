@@ -474,6 +474,8 @@ struct phy_attr_s {
 	unsigned int odt;        //flag bit[3]
 	unsigned int cv_mode;    //flag bit[4] //val:0=cm,1=vm
 	unsigned short phy_clk;
+	unsigned short phy_clk_min;
+	unsigned short phy_clk_max;
 	unsigned short clk_phase;
 	struct phy_lane_s lane[CH_LANE_MAX];
 	struct ss_config_s ss;

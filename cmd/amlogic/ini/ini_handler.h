@@ -40,6 +40,7 @@ int ini_set_save_file_name(const char* filename, INI_HANDLER_DATA *pHandlerData)
 void ini_free_mem(INI_HANDLER_DATA *pHandlerData);
 void ini_print_all(INI_HANDLER_DATA *pHandlerData);
 void ini_list_section(INI_HANDLER_DATA *pHandlerData);
+int _ini_section_exist(const char *section, INI_HANDLER_DATA *pHandlerData);
 const char* ini_get_string(const char* section, const char* key, const char* def_value, INI_HANDLER_DATA *pHandlerData);
 int ini_set_string(const char *section, const char *key, const char *value, INI_HANDLER_DATA *pHandlerData);
 int ini_save_to_file(const char *filename, INI_HANDLER_DATA *pHandlerData);

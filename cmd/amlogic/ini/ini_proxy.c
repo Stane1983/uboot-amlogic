@@ -110,6 +110,15 @@ void IniListSection(void) {
     ini_list_section(gHandlerData);
 }
 
+int IniSectionExist(const char *section)
+{
+	if (!gHandlerData) {
+		ALOGE("%s, ini load file error!\n", __func__);
+		return 0;
+	}
+	return _ini_section_exist(section, gHandlerData);
+}
+
 const char* IniGetString(const char* section, const char* key,
         const char* def_value) {
     if (gHandlerData == NULL) {

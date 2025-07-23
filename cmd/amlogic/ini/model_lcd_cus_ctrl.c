@@ -476,16 +476,28 @@ static unsigned short handle_lcd_cus_ctrl_tuning_attr(unsigned char *p, unsigned
 		else
 			sprintf(sec_str, "tuning_Attr%d", n);
 
-		//phy_clk match
+		if (!IniSectionExist(sec_str))
+			continue;
+		memset(&lcd_tuning, 0, sizeof(struct lcd_tuning_s));
+
+		// phy_clk and phy_clk_range
 		ini_value = IniGetString(sec_str, "phy_clk", "null");
 		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
 			ALOGD("%s, phy_clk is (%s)\n", __func__, ini_value);
-		if (strcmp(ini_value, "null") == 0)
-			break;
-		lcd_tuning.phy_clk = strtoul(ini_value, NULL, 0);
+		if (strcmp(ini_value, "null"))
+			lcd_tuning.phy_clk = strtoul(ini_value, NULL, 0);
 
-		lcd_tuning.phy_clk_min = 0;
-		lcd_tuning.phy_clk_max = 0;
+		ini_value = IniGetString(sec_str, "phy_clk_min", "null");
+		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
+			ALOGD("%s, phy_clk_min is (%s)\n", __func__, ini_value);
+		if (strcmp(ini_value, "null"))
+			lcd_tuning.phy_clk_min = strtoul(ini_value, NULL, 0);
+
+		ini_value = IniGetString(sec_str, "phy_clk_max", "null");
+		if (model_debug_flag & DEBUG_LCD_CUS_CTRL)
+			ALOGD("%s, phy_clk_max is (%s)\n", __func__, ini_value);
+		if (strcmp(ini_value, "null"))
+			lcd_tuning.phy_clk_max = strtoul(ini_value, NULL, 0);
 
 		//ssc
 		ini_value = IniGetString(sec_str, "ss_level", "null");
