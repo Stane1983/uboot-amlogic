@@ -44,6 +44,9 @@ DDR_RESV_CHECK_ID_ENABLE)
 #define DDR_ID_FROM_ADC_MULT_F_LPDDR4 (0Xf7000000)
 #define DDR_ID_FROM_ADC_MULT_F_DDR4 (0Xf6000000)
 #define DDR_ID_FROM_ADC_MULT_F_DDR3 (0Xf5000000)
+#define DDR_ID_SET_DDRID_TO_SPEED_TABLE_PRE_LP5 (0Xf1000000)
+#define DDR_ID_SET_DDRID_TO_SPEED_TABLE_PRE_LP4 (0Xf0000000)
+//#define DDR_ID_SET_DDRID_TO_SPEED_TABLE (0Xf0000000)
 #define DDR_ID_START_MASK  (0XFFDDCCBB)
 
 #define DDR_ADC_CH0 (0X0 << 5)
@@ -84,6 +87,47 @@ DDR_RESV_CHECK_ID_ENABLE)
 
 #define VX  (0Xf << 0)
 
+#define SPEED_0  0
+#define SPEED_1  1
+#define SPEED_2  2
+#define SPEED_3  3
+#define SPEED_4  4
+#define SPEED_5  5
+
+#define SPEED_3733_INDEX 1
+#define SPEED_4032_INDEX 2
+#define SPEED_4266_INDEX 3
+#define SPEED_4800_INDEX 4
+#define SPEED_RESERVE_INDEX 5 //just for reserve
+
+#define SPEED_3733  77 //(3733 / 48)
+#define SPEED_4032  84 //(4032 / 48)
+#define SPEED_4266  88 //(4266 / 48)
+#define SPEED_4800 100 //(4800 / 48)
+#define SPEED_4032_X5_3733_X5L  84 //(4032 / 48)
+#define SPEED_4266_X5_4032_X5L  88 //(4266 / 48)
+
+#define SPEED_LP4_3733_X5  77 //(3733 / 48)
+#define SPEED_LP4_4032_X5  84 //(4032 / 48)
+#define SPEED_LP4_4266_X5  88 //(4266 / 48)
+
+#define SPEED_LP4_3733_X5L  84 //(4032 / 48)
+#define SPEED_LP4_4032_X5L  88 //(4266 / 48)
+
+#define SPEED_LP4_3733  77 //(3733 / 48)
+#define SPEED_LP5_4266  88 //(4266 / 48)
+#define SPEED_LP5_4800 100 //(4800 / 48)
+
+#define SPEED_RESERVE (9999 / 48) //just for test, special value,do not modify
+
+#define CHIP_S905X5 1
+#define CHIP_S905X5L 5
+
+#define CHIP_S905X5_LPDDR4 1
+#define CHIP_S905X5_LPDDR5 2
+#define CHIP_S905X5L_LPDDR4 3
+#define CHIP_S905X5L_LPDDR5 4
+
 typedef struct ddr_para_data {
 	// start from	DDR_ID_START_MASK,ddr_id;//bit0-23
 	// ddr_id value,bit 24-31 ddr_id source  ,0xfe source
@@ -118,9 +162,33 @@ DDR_TIMMING_OFFSET(PARA)) << 16) | ((DDR_TIMMING_OFFSET_SIZE(PARA)) << 28) | (VA
 (ch0) | ((ch1) << 4) | ((ch2) << 8) | ((ch3) << 12) | ((ch4) << 16) | ((ch5) << 20)
 #define DDR_TIMMING_TUNE_STRUCT_SIZE(a)  sizeof(a)
 
+#define DDR_ID_SET_DDRID_TO_SPEED_TABLE_LP4(speed, ch0, ch1, ch2, ch3) (ch0) |\
+((ch1) << 4) | ((ch2) << 8) | ((ch3) << 12) | (speed << 16) |\
+(DDR_ID_SET_DDRID_TO_SPEED_TABLE_PRE_LP4)
+#define DDR_ID_SET_DDRID_TO_SPEED_TABLE_LP5(speed, ch0, ch1, ch2, ch3) (ch0) |\
+((ch1) << 4) | ((ch2) << 8) | ((ch3) << 12) | (speed << 16) |\
+(DDR_ID_SET_DDRID_TO_SPEED_TABLE_PRE_LP5)
+
 #if 1
 uint32_t __bl2_ddr_reg_data[] __attribute__ ((section(".ddr_2acs_data"))) = {
 	DDR_ID_START_MASK,
+	//ADC2 DDR_ID VALUE 0 -----> SPEED_4266 ADC2 DDR_ID VALUE 1 -----> SPEED_4032
+	DDR_ID_SET_DDRID_TO_SPEED_TABLE_LP4(SPEED_LP4_4266_X5, VX, VX, V0, VX),
+	DDR_ID_SET_DDRID_TO_SPEED_TABLE_LP4(SPEED_LP4_4032_X5, VX, VX, V2, VX),
+
+	DDR_ID_SET_DDRID_TO_SPEED_TABLE_LP4(SPEED_LP4_4032_X5L, VX, VX, V0, VX),
+	DDR_ID_SET_DDRID_TO_SPEED_TABLE_LP4(SPEED_LP4_3733_X5L, VX, VX, V2, VX),
+
+	//not match id ,will use default speed bin
+	DDR_ID_SET_DDRID_TO_SPEED_TABLE_LP5(SPEED_LP5_4266, VX, VX, VX, VX),
+	DDR_ID_SET_DDRID_TO_SPEED_TABLE_LP4(SPEED_LP4_3733, VX, VX, VX, VX),
+
+	DDR_ID_SET_DDRID_TO_SPEED_TABLE_LP5(SPEED_RESERVE, V5, VX, V5, VX),//reserve for test
+	DDR_ID_SET_DDRID_TO_SPEED_TABLE_LP5(SPEED_RESERVE, V5, VX, V6, VX),//reserve for test
+	DDR_ID_SET_DDRID_TO_SPEED_TABLE_LP5(SPEED_RESERVE, V6, VX, V5, VX),//reserve for test
+	DDR_ID_SET_DDRID_TO_SPEED_TABLE_LP5(SPEED_RESERVE, V6, VX, V6, VX),//reserve for test
+
+#if 0
 	DDR_TIMMING_TUNE_ADC_MULT_START(DDR_ID_FROM_ADC_MULT_F_LPDDR4, VX, VX, V0, VX, VX, VX),
 	//data start
 	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_SI_setting_ps.DRAMFreq, 2112),
@@ -148,6 +216,7 @@ uint32_t __bl2_ddr_reg_data[] __attribute__ ((section(".ddr_2acs_data"))) = {
 	DDR_TIMMING_TUNE_ADC_MULT_START(DDR_ID_FROM_ADC_MULT_F_LPDDR5, VX, VX, V8, VX, VX, VX),
 	//data start
 	DDR_TIMMING_TUNE_TIMMING0_F(cfg_board_SI_setting_ps.DRAMFreq, 600),//lp5-4800
+#endif
 };
 
 ////_ddr_para_2nd_setting
@@ -178,7 +247,7 @@ uint32_t __ddr_parameter_reg_index[] __attribute__ ((section(".ddr_2acs_index"))
 ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 //ddr_set_ps0_only_t __attribute__ ((aligned(8))) ddr_set_t_default[] = {
 #if LPDDR5_SKT
-#define  CACLU_CLK_LP5   528 //687--5500//600 //1200 //(1900)// (1440)//(1008)
+#define  CACLU_CLK_LP5   687 //freq will be limit by ddr id speed bin
 //ddr_set_ps0_only_t __attribute__ ((aligned(8))) ddr_set_t_default_lp5 = {
 	{
 		.cfg_board_common_setting.timming_magic = 0,
@@ -347,7 +416,7 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 	},
 #endif
 #if LPDDR4_SKT
-#define  CACLU_CLK_LP4   1848 //up to 2112 from ddr id
+#define  CACLU_CLK_LP4   2112 //freq will be limited by ddr id speed bin
 //ddr_set_ps0_only_t __attribute__ ((aligned(8))) ddr_set_t_default_lp4 = {
 	{
 		.cfg_board_common_setting.timming_magic = 0,
