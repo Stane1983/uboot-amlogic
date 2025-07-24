@@ -1162,7 +1162,7 @@ int vpu_probe(void)
 						&aml_vpu_suspend,
 						&aml_vpu_resume,
 						&aml_vpu_poweroff,
-						1);
+						3);
 	VPUPR("%s\n", __func__);
 
 	return ret;
