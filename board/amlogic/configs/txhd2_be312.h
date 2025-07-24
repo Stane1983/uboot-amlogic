@@ -193,7 +193,7 @@
 		"else if test ${powermode} = standby; then "\
 			"run cec_init;"\
 			"if test ${systemsuspend_switch} = 0;then systemoff; "\
-			"else systemsuspend;vpp init;run init_display;"\
+			"else systemsuspend;" \
 			"fi; "\
 		"else if test ${powermode} = last; then "\
 			"echo suspend=${suspend}; "\
@@ -202,12 +202,12 @@
 			"else if test ${suspend} = on; then "\
 				"run cec_init;"\
 				"if test ${systemsuspend_switch} = 0;then systemoff; "\
-				"else systemsuspend;vpp init;run init_display;"\
+				"else systemsuspend;" \
 				"fi; "\
 			"else if test ${suspend} = shutdown; then "\
 				"run cec_init;"\
 				"if test ${systemsuspend_switch} = 0;then systemoff; "\
-				"else systemsuspend;vpp init;run init_display;"\
+				"else systemsuspend;" \
 				"fi; "\
 			"fi; fi; fi; "\
 		"fi; fi; fi; "\

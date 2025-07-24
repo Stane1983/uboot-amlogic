@@ -24,7 +24,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
+#include <common.h>
 #include <command.h>
 #include <linux/list.h>
 #include <linux/kernel.h>
@@ -32,6 +32,9 @@
 #include <asm/arch/bl31_apis.h>
 #include <stdio.h>
 #include <malloc.h>
+#if CONFIG_IS_ENABLED(CONFIG_AML_VPP)
+#include <amlogic/media/vpp/vpp.h>
+#endif
 
 #define PM_SUSPEND_ON		(0)
 #define PM_SUSPEND_TO_IDLE	(1)
@@ -42,11 +45,11 @@
 
 #define PM_DEBUG
 
-#ifdef PM_DEBUG
-#define debug(fmt, args...)	printf(fmt, ##args)
-#else
-#define debug(fmt, args...)
-#endif /* PM_DEBUG */
+//#ifdef PM_DEBUG
+//#define debug(fmt, args...)	printf(fmt, ##args)
+//#else
+//#define debug(fmt, args...)
+//#endif /* PM_DEBUG */
 
 static struct list_head devices;
 bool pm_resume_done;
@@ -70,6 +73,28 @@ static int test_pm_poweroff(void *dev_info)
 }
 #endif
 
+#if CONFIG_IS_ENABLED(CONFIG_AML_VPP)
+static int vpp_suspend(void *dev_info)
+{
+	printf("%s\n", __func__);
+	return 0;
+}
+
+static int vpp_resume(void *dev_info)
+{
+	printf("%s\n", __func__);
+	vpp_init();
+	run_command("run init_display", 0);
+	return 0;
+}
+
+static int vpp_poweroff(void *dev_info)
+{
+	printf("%s\n", __func__);
+	return 0;
+}
+#endif
+
 #ifdef PM_DEBUG
 
 struct dev_pm_ops *dev_register_pm(char *name, FUNC_PTR suspend,
@@ -80,6 +105,10 @@ char name[] = "test_pm_name";
 void pm_initialize(void)
 {
 	INIT_LIST_HEAD(&devices);
+#if CONFIG_IS_ENABLED(CONFIG_AML_VPP)
+	dev_register_pm(name, vpp_suspend, vpp_resume, vpp_poweroff, 2);
+#endif
+
 #ifdef PM_DEBUG
 	dev_register_pm(name, test_pm_suspend, test_pm_resume, test_pm_poweroff, 0);
 #endif
