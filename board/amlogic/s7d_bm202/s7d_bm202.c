@@ -140,12 +140,9 @@ void set_usb_status(void) {
 		env_set("usb_status", "0.5a@5v");
 		break;
 	case 5:
-		printf("CC_STATUS_TYPEA_DCP\n");
-		env_set("usb_status", "1.5a@5v");
-		break;
 	case 6:
-		printf("CC_STATUS_TYPEA_CDP\n");
-		env_set("usb_status", "3a@5v");
+		printf("CC_STATUS_TYPEA is DCP/CDP\n");
+		env_set("usb_status", "dcp_cdp");
 		break;
 	default:
 		printf("error status %s:%d\n", __func__, __LINE__);
