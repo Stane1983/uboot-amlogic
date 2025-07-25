@@ -369,12 +369,14 @@ static int ldim_dev_add_driver(struct aml_ldim_driver_s *ldim_drv)
 		ret = ldim_dev_ob3350_probe(ldim_drv);
 #endif
 #ifdef CONFIG_AML_LCD_BL_LDIM_ABCON
-	} else if (strcmp(dev_drv->name, "abcon_hyasic") == 0) {
-		ret = ldim_dev_abcon_hyasic_probe(ldim_drv);
+	} else if (strcmp(dev_drv->name, "abcon_spb") == 0) {
+		ret = ldim_dev_abcon_spb_probe(ldim_drv);
 	} else if (strcmp(dev_drv->name, "abcon_ospb") == 0) {
-		ret = ldim_dev_abcon_hy_ospb_probe(ldim_drv);
-	} else if (strcmp(dev_drv->name, "abcon_xianxin") == 0) {
-		ret = ldim_dev_abcon_xianxin_probe(ldim_drv);
+		ret = ldim_dev_abcon_ospb_probe(ldim_drv);
+	} else if (strcmp(dev_drv->name, "abcon_xwire") == 0) {
+		ret = ldim_dev_abcon_xwire_probe(ldim_drv);
+	} else if (strcmp(dev_drv->name, "abcon_owc") == 0) {
+		ret = ldim_dev_abcon_owc_probe(ldim_drv);
 #endif
 	} else if (strcmp(dev_drv->name, "global") == 0) {
 		ret = ldim_dev_global_probe(ldim_drv);
@@ -423,12 +425,14 @@ static int ldim_dev_remove_driver(struct aml_ldim_driver_s *ldim_drv)
 		ldim_dev_ob3350_remove(ldim_drv);
 #endif
 #ifdef CONFIG_AML_LCD_BL_LDIM_ABCON
-	} else if (strcmp(dev_drv->name, "abcon_hyasic") == 0) {
-		ldim_dev_abcon_hyasic_remove(ldim_drv);
+	} else if (strcmp(dev_drv->name, "abcon_spb") == 0) {
+		ldim_dev_abcon_spb_remove(ldim_drv);
 	} else if (strcmp(dev_drv->name, "abcon_ospb") == 0) {
-		ldim_dev_abcon_hy_ospb_remove(ldim_drv);
-	} else if (strcmp(dev_drv->name, "abcon_xianxin") == 0) {
-		ldim_dev_abcon_hyasic_remove(ldim_drv);
+		ldim_dev_abcon_ospb_remove(ldim_drv);
+	} else if (strcmp(dev_drv->name, "abcon_xwire") == 0) {
+		ldim_dev_abcon_xwire_remove(ldim_drv);
+	} else if (strcmp(dev_drv->name, "abcon_owc") == 0) {
+		ldim_dev_abcon_owc_remove(ldim_drv);
 #endif
 	} else if (strcmp(dev_drv->name, "global") == 0) {
 		ldim_dev_global_remove(ldim_drv);

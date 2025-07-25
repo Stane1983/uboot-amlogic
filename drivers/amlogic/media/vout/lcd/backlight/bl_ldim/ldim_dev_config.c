@@ -1007,15 +1007,19 @@ int ldim_dev_get_config_from_json(struct ldim_dev_driver_s *dev_drv)
 		abcon_conf->ctrl = json_get_obj_u32(jsp, child, "ctrl", 0x2);
 
 		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-			LDIMPR("clk:%d:%d, gpio_o: 0x%x:0x%x, gpio_i:0x%x:0x%x,\n"
-			       "dev_type:%d, chip_num:%d:%d:%d:%d, idle_level:%d, ch_num:%d\n"
-				   "dimming_mode:%d, init_pwm:0x%x, init_dc:0x%x, fb_en:%d\n"
+			LDIMPR("clk:%d:%d, gpio_o: 0x%x:0x%x:0x%x, gpio_i:0x%x:0x%x:0x%x,\n"
+			       "dev_type:%d, chip_num:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d, idle_level:%d\n"
+				   "ch_num:%d, dimming_mode:%d, init_pwm:0x%x, init_dc:0x%x, fb_en:%d\n"
 				   "fb_det_int:%d, fb_adj_th:%d, fb_pwm_dir:%d, fb_pwm_step:%d, ctrl:0x%x\n",
 			       abcon_conf->tx_clk, abcon_conf->rx_clk, abcon_conf->gpio_o[0], abcon_conf->gpio_o[1],
-				   abcon_conf->gpio_i[0], abcon_conf->gpio_i[1],
-				   abcon_conf->dev_type, abcon_conf->chip_num[0], abcon_conf->chip_num[1],
-				   abcon_conf->chip_num[2], abcon_conf->chip_num[3],abcon_conf->idle_level,
-				   abcon_conf->ch_num, abcon_conf->dimming_mode, abcon_conf->init_pwm, abcon_conf->init_dc,
+				   abcon_conf->gpio_o[2], abcon_conf->gpio_i[0], abcon_conf->gpio_i[1],
+				   abcon_conf->gpio_i[2], abcon_conf->dev_type,
+				   abcon_conf->chip_num[0], abcon_conf->chip_num[1],abcon_conf->chip_num[2],
+				   abcon_conf->chip_num[3], abcon_conf->chip_num[4],abcon_conf->chip_num[5],
+				   abcon_conf->chip_num[6], abcon_conf->chip_num[7],abcon_conf->chip_num[8],
+				   abcon_conf->chip_num[9], abcon_conf->chip_num[10],abcon_conf->chip_num[11],
+				   abcon_conf->idle_level, abcon_conf->ch_num,
+				   abcon_conf->dimming_mode, abcon_conf->init_pwm, abcon_conf->init_dc,
 			       abcon_conf->fb_en, abcon_conf->fb_det_int, abcon_conf->fb_adj_th,
 				   abcon_conf->fb_pwm_dir, abcon_conf->fb_pwm_step, abcon_conf->ctrl);
 		}

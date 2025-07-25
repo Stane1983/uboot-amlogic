@@ -56,7 +56,7 @@ struct regmap_s regmap_conf_852 = {
 	.read_reg_addr = 0x02,
 };
 
-struct abcon_xianxin_s {
+struct abcon_xwire_s {
 	struct regmap_s *regmap;
 	unsigned char dev_type;
 	unsigned int dev_on_flag;
@@ -73,9 +73,9 @@ struct abcon_xianxin_s {
 	unsigned char samplepoint;
 };
 
-struct abcon_xianxin_s *bl_abcon_xianxin;
+struct abcon_xwire_s *bl_xwire;
 
-struct xianxin_packet_s {
+struct xwire_packet_s {
 	//unsigned int packet_header_len;
 	//unsigned int packet_header[6];
 
@@ -92,16 +92,25 @@ struct xianxin_packet_s {
 	unsigned int eop_data;
 };
 
-struct xianxin_packet_s xianxin_packet;
+struct xwire_packet_s xwire_packet;
 
-void ldim_abcon_xianxin_write_packet(void)
+void ldim_abcon_xwire_write_packet(void)
 {
 	unsigned int len = 0;
 	unsigned int *buf;
 	unsigned char i = 0;
-	unsigned char act_lane_num = abcon->act_lane;
+	unsigned char act_lane_num = abcon->act_lane_num;
+	unsigned int ldc_seg_size, wseg_size;
 
-	if (bl_abcon_xianxin->sop_type == sop_dimming)
+	if (abcon->chip_type == ABCON_CHIP_T6W) {
+		ldc_seg_size = LDC_SEG_SIZE_T6W;
+		wseg_size = WSEG_SIZE_T6W;
+	} else {
+		ldc_seg_size = LDC_SEG_SIZE_T6X;
+		wseg_size = WSEG_SIZE_T6X;
+	}
+
+	if (bl_xwire->sop_type == sop_dimming) {
 		buf = abcon_mem.ldc_seg;
 	else
 		buf = abcon_mem.wseg;
@@ -110,29 +119,29 @@ void ldim_abcon_xianxin_write_packet(void)
 		return;
 
 	for (i = 0; i < act_lane_num; i++)
-		buf[len++] = xianxin_packet.cmd_header;
+		buf[len++] = xwire_packet.cmd_header;
 
 	for (i = 0; i < act_lane_num; i++)
-		buf[len++] = xianxin_packet.cmd_data;
+		buf[len++] = xwire_packet.cmd_data;
 
-	if (bl_abcon_xianxin->sop_type == sop_dimming) {
+	if (bl_xwire->sop_type == sop_dimming) {
 		for (i = 0; i < act_lane_num; i++)
-			buf[len++] = xianxin_packet.addr_header;
-
-		for (i = 0; i < act_lane_num; i++)
-			buf[len++] = xianxin_packet.addr_data;
+			buf[len++] = xwire_packet.addr_header;
 
 		for (i = 0; i < act_lane_num; i++)
-			buf[len++] = xianxin_packet.data_header;
+			buf[len++] = xwire_packet.addr_data;
+
+		for (i = 0; i < act_lane_num; i++)
+			buf[len++] = xwire_packet.data_header;
 
 		//for (i = 0; i < act_lane_num; i++)
-		//	buf[len++] = xianxin_packet.data_data;
+		//	buf[len++] = xwire_packet.data_data;
 
 		for (i = 0; i < act_lane_num; i++)
-			buf[len++] = xianxin_packet.eop_header;
+			buf[len++] = xwire_packet.eop_header;
 
 		for (i = 0; i < act_lane_num; i++)
-			buf[len++] = xianxin_packet.eop_data;
+			buf[len++] = xwire_packet.eop_data;
 	}
 
 	invalidate_dcache_range((unsigned long)buf,
@@ -142,7 +151,7 @@ void ldim_abcon_xianxin_write_packet(void)
 	//clr done flag
 	ldim_abcon_swrst();
 
-	if (bl_abcon_xianxin->sop_type == sop_dimming) {
+	if (bl_xwire->sop_type == sop_dimming) {
 		abcon_wr_reg_bits(0x04, len, 16, 13);//reg_abcon_ldc_seg_max_num
 		udelay(10);
 		abcon_wr_reg_bits(0x00, 1, 1, 1);//reg_abcon_ldc_mod_start
@@ -153,10 +162,11 @@ void ldim_abcon_xianxin_write_packet(void)
 		udelay(10);
 		abcon_wr_reg_bits(0x00, 1, 0, 1);//reg_abcon_sw_mod_start
 		abcon_wr_reg_bits(0x00, 0, 0, 1);//reg_abcon_sw_mod_start
+		udelay(10);
 	}
 }
 
-unsigned char ldim_abcon_xianxin_readback(unsigned char reg, unsigned char dim, unsigned char lane)
+unsigned char ldim_abcon_xwire_readback(unsigned char reg, unsigned char dim, unsigned char lane)
 {
 	unsigned int readback_val = 0;
 	unsigned int cmd_data = 0;
@@ -167,7 +177,7 @@ unsigned char ldim_abcon_xianxin_readback(unsigned char reg, unsigned char dim, 
 		return -1;
 	}
 
-	bl_abcon_xianxin->sop_type = sop_readback;
+	bl_xwire->sop_type = sop_readback;
 
 	//step1, prepare read packet first
 	abcon_mem.rseg[0] = 0x40000112;
@@ -176,32 +186,22 @@ unsigned char ldim_abcon_xianxin_readback(unsigned char reg, unsigned char dim, 
 	abcon_wr_reg_bits(0x05, 1, 16, 13);//reg_abcon_sw_rseg_max_num
 
 	//step2, select read which lane
-	abcon_wr_reg_bits(0x03, 1, 10, 4);//reg_abcon_act_lane_num
-	switch (lane) {
-	case 0:
-		temp = 0x1;
-		break;
-	case 1:
-		temp = 0x2;
-		break;
-	case 2:
-		temp = 0x4;
-		break;
-	case 3:
-		temp = 0x8;
-		break;
-	default:
-		temp = 0x1;
-		break;
-	}
-	abcon_wr_reg_bits(0x2a, temp, 22, 4);//reg_abcon_act_lane
+	//reg_abcon_act_lane_num
+	abcon_wr_reg_bits(0x03, 1, 10, 4);//always read one lane
+
+	//reg_abcon_act_lane
+	temp = 1 << lane;
+	if (abcon->chip_type == ABCON_CHIP_T6W)
+		abcon_wr_reg_bits(0x2a, temp, 22, 4);
+	else
+		abcon_wr_reg_bits(0x29, temp, 0, 12);
 
 	//step3, set write packet
-	cmd_data = (5 << 14) | (bl_abcon_xianxin->regmap->read_reg_addr << 9) | (reg << 1);
+	cmd_data = (5 << 14) | (bl_xwire->regmap->read_reg_addr << 9) | (reg << 1);
 	abcon_mem.wseg[0] = 0x44000090;
 	abcon_mem.wseg[1] = cmd_data;
 
-	cmd_data = (4 << 14) | (bl_abcon_xianxin->regmap->read_dim_addr << 9) | (dim << 1);
+	cmd_data = (4 << 14) | (bl_xwire->regmap->read_dim_addr << 9) | (dim << 1);
 	abcon_mem.wseg[2] = 0x44000088;
 	abcon_mem.wseg[3] = cmd_data;
 
@@ -218,98 +218,68 @@ unsigned char ldim_abcon_xianxin_readback(unsigned char reg, unsigned char dim, 
 	return readback_val;
 }
 
-void ldim_abcon_write_xianxin_register(unsigned char regaddr, unsigned char value)
+void ldim_abcon_write_xwire_register(unsigned char regaddr, unsigned char value)
 {
-	unsigned int temp = 0;
 	unsigned int cmd_data = 0;
 
-	ABCONPR("write cmd reg:0x%x val:0x%08x, ln=%d\n", regaddr, value, abcon->act_lane);
-	bl_abcon_xianxin->sop_type = sop_cmd;
+	//ABCONPR("write cmd reg:0x%x val:0x%08x, ln=%d\n", regaddr, value, abcon->act_lane);
+	bl_xwire->sop_type = sop_cmd;
 
 	//clr done flag
 	abcon_wr_reg_bits(0x00, 1, 4, 1);
 	abcon_wr_reg_bits(0x00, 0, 4, 1);
 
 	//reg_abcon_act_lane_num
-	abcon_wr_reg_bits(0x03, abcon->act_lane, 10, 4);
-	switch (abcon->act_lane) {
-	case 1:
-		temp = 0x1;
-		break;
-	case 2:
-		temp = 0x3;
-		break;
-	case 3:
-		temp = 0x7;
-		break;
-	case 4:
-		temp = 0xf;
-		break;
-	default:
-		temp = 0x01;
-		break;
-	}
+	abcon_wr_reg_bits(0x03, abcon->act_lane_num, 10, 4);
+
 	//reg_abcon_act_lane
-	abcon_wr_reg_bits(0x2a, temp, 22, 4);
+	if (abcon->chip_type == ABCON_CHIP_T6W)
+		abcon_wr_reg_bits(0x2a, abcon->act_lane, 22, 4);
+	else
+		abcon_wr_reg_bits(0x29, abcon->act_lane, 0, 12);
 
 	cmd_data = (5 << 14) | ((regaddr & 0x1f) << 9) | (value << 1);
-	xianxin_packet.cmd_header = 0x44000088;
-	xianxin_packet.cmd_data = cmd_data;
+	xwire_packet.cmd_header = 0x44000088;
+	xwire_packet.cmd_data = cmd_data;
 
-	ldim_abcon_xianxin_write_packet();
-	udelay(10);
+	ldim_abcon_xwire_write_packet();
+	udelay(100);
 }
 
-void ldim_abcon_xianxin_dimming(void)
+void ldim_abcon_xwire_dimming(void)
 {
-	unsigned int temp = 0;
-
-	ABCONPR("%s: set duty command, act_lane=%d\n", __func__, abcon->act_lane);
-	bl_abcon_xianxin->sop_type = sop_dimming;
+	bl_xwire->sop_type = sop_dimming;
 
 	//reg_abcon_pin_dir_del_start
-	abcon_wr_reg_bits(0x00, 1, 8, 1);
-	abcon_wr_reg_bits(0x00, 0, 8, 1);
-	udelay(50);
+	//abcon_wr_reg_bits(0x00, 1, 8, 1);
+	//abcon_wr_reg_bits(0x00, 0, 8, 1);
+	//udelay(50);
 
 	//reg_abcon_act_lane_num
-	abcon_wr_reg_bits(0x03, abcon->act_lane, 10, 4);
-	switch (abcon->act_lane) {
-	case 1:
-		temp = 0x1;
-		break;
-	case 2:
-		temp = 0x3;
-		break;
-	case 3:
-		temp = 0x7;
-		break;
-	case 4:
-		temp = 0xf;
-		break;
-	default:
-		temp = 0x01;
-		break;
-	}
+	abcon_wr_reg_bits(0x03, abcon->act_lane_num, 10, 4);
+
 	//reg_abcon_act_lane
-	abcon_wr_reg_bits(0x2a, temp, 22, 4);
+	if (abcon->chip_type == ABCON_CHIP_T6W)
+		abcon_wr_reg_bits(0x2a, abcon->act_lane, 22, 4);
+	else
+		abcon_wr_reg_bits(0x29, abcon->act_lane, 0, 12);
 
-	xianxin_packet.cmd_header = 0x20000080;
-	xianxin_packet.cmd_data = 0xa0 | (bl_abcon_xianxin->regmap->duty_data & 0x1f);
+	xwire_packet.cmd_header = 0x20000080;
+	xwire_packet.cmd_data = 0xa0 | (bl_xwire->regmap->duty_data & 0x1f);
 
-	xianxin_packet.addr_header = 0x20000080;
-	xianxin_packet.addr_data = 0x01;
+	xwire_packet.addr_header = 0x20000080;
+	xwire_packet.addr_data = 0x01;
 
-	xianxin_packet.data_header = 0x1081 | (abcon->conf.ch_num << 14);
-	//xianxin_packet.data_data = value;
+	xwire_packet.data_header = 0x1081 | (abcon->conf.ch_num << 14);
+	//xwire_packet.data_data = value;
 
-	xianxin_packet.eop_header = 0x04000088;
-	xianxin_packet.eop_data = 0x00000000;
+	xwire_packet.eop_header = 0x04000088;
+	xwire_packet.eop_data = 0x00000000;
 
-	ldim_abcon_xianxin_write_packet();
+	ldim_abcon_xwire_write_packet();
 }
 
-void ldim_abcon_init_registers_for_xianxin(void)
+void ldim_abcon_init_registers_for_xwire(void)
 {
 	//reg_abcon_clr_done_flag
 	abcon_wr_reg_bits(0x00, 1, 4, 1);
@@ -341,76 +311,106 @@ void ldim_abcon_init_registers_for_xianxin(void)
 	//reg_abcon_ldc_pkt_num_lane3
 	abcon_wr_reg_bits(0x3b, abcon->conf.chip_num[3], 24, 8);
 
+	if (abcon->chip_type == ABCON_CHIP_DEF) {
+		//reg_abcon_ldc_pkt_num_lane4
+		abcon_wr_reg_bits(0x45, abcon->conf.chip_num[4], 0, 8);
+		//reg_abcon_ldc_pkt_num_lane5
+		abcon_wr_reg_bits(0x45, abcon->conf.chip_num[5], 8, 8);
+		//reg_abcon_ldc_pkt_num_lane6
+		abcon_wr_reg_bits(0x45, abcon->conf.chip_num[6], 16, 8);
+		//reg_abcon_ldc_pkt_num_lane7
+		abcon_wr_reg_bits(0x45, abcon->conf.chip_num[7], 24, 8);
+		//reg_abcon_ldc_pkt_num_lane8
+		abcon_wr_reg_bits(0x46, abcon->conf.chip_num[8], 0, 8);
+		//reg_abcon_ldc_pkt_num_lane9
+		abcon_wr_reg_bits(0x46, abcon->conf.chip_num[9], 8, 8);
+		//reg_abcon_ldc_pkt_num_lane10
+		abcon_wr_reg_bits(0x46, abcon->conf.chip_num[10], 16, 8);
+		//reg_abcon_ldc_pkt_num_lane11
+		abcon_wr_reg_bits(0x46, abcon->conf.chip_num[11], 24, 8);
+	}
+
 	//reg_abcon_rx_wait_tx
 	abcon_wr_reg_bits(0x40, 1, 30, 1);
 
+	//reg_abcon_act_lane_num
+	abcon_wr_reg_bits(0x03, abcon->act_lane_num, 10, 4);
+
+	//reg_abcon_act_lane
+	if (abcon->chip_type == ABCON_CHIP_T6W)
+		abcon_wr_reg_bits(0x2a, abcon->act_lane, 22, 4);
+	else
+		abcon_wr_reg_bits(0x29, abcon->act_lane, 0, 12);
+
 	//reg_abcon_pin_dir_sel_time
-	abcon_wr_reg_bits(0x43, abcon->max_lane_dim * 10000 / 6, 0, 20);//9000
+	//abcon_wr_reg_bits(0x43, abcon->max_lane_dim * 10000 / 6, 0, 20);//9000
+	abcon_wr_reg_bits(0x43, 0xfffff, 0, 20);//set maximum
 	//reg_abcon_pin_dir_del_start
 	abcon_wr_reg_bits(0x00, 1, 8, 1);
 	abcon_wr_reg_bits(0x00, 0, 8, 1);
 
 	abcon_wr_reg(0x1a, 0x7f000000);
 	abcon_wr_reg(0x1b, 0x20c32940);//6dc+10pwm	//todo
+	mdelay(8);
 }
 
-void ldim_abcon_init_xianxin(void)
+void ldim_abcon_init_xwire(void)
 {
 	char i;
 
-	if (bl_abcon_xianxin->dev_type) {//871
-		if (bl_abcon_xianxin->init_sampletime == 0) {
+	if (bl_xwire->dev_type) {//871
+		if (bl_xwire->init_sampletime == 0) {
 			//set txrx clk as 500Khz, due to dimmer default set is 500Khz
-			ldim_abcon_set_txrx_clk(500, 500);
+			ldim_abcon_set_txrx_clk(500, 500);//330//500
 			//set sample point
-			ldim_abcon_write_xianxin_register(0x01, 0x1b);
-			bl_abcon_xianxin->init_sampletime = 1;
+			ldim_abcon_write_xwire_register(0x01, 0x0b);//0x17//0x0b
+			bl_xwire->init_sampletime = 1;
 		}
 
 		//set data format
-		ldim_abcon_write_xianxin_register(0x02, 0xa4);
+		ldim_abcon_write_xwire_register(0x02, 0xa4);
 
 		//command set
-		ldim_abcon_write_xianxin_register(0x03, 0x01);
+		ldim_abcon_write_xwire_register(0x03, 0x01);
 
 		//send address command
 		for (i = 0; i < abcon->max_lane_dim; i++)
-			ldim_abcon_write_xianxin_register(bl_abcon_xianxin->regmap->dim_addr, 1 + i);
+			ldim_abcon_write_xwire_register(bl_xwire->regmap->dim_addr, 1 + i);
 
 		//set sample point
-		//ldim_abcon_write_xianxin_register(0x01, bl_abcon_xianxin->samplepoint);
+		//ldim_abcon_write_xwire_register(0x01, bl_xwire->samplepoint);
 		//set txrx clk
 		//ldim_abcon_set_txrx_clk(abcon->conf.tx_clk, abcon->conf.rx_clk);
 	} else {//852
-		if (bl_abcon_xianxin->init_sampletime == 0) {
+		if (bl_xwire->init_sampletime == 0) {
 			//set txrx clk as 500Khz, due to dimmer default set is 500Khz
 			ldim_abcon_set_txrx_clk(330, 330);
 			//set sample point
-			ldim_abcon_write_xianxin_register(0x12, 0x17);
-			bl_abcon_xianxin->init_sampletime = 1;
+			ldim_abcon_write_xwire_register(0x12, 0x17);
+			bl_xwire->init_sampletime = 1;
 		}
 
 		//set data format
-		ldim_abcon_write_xianxin_register(0x1d, 0xa5);
+		ldim_abcon_write_xwire_register(0x1d, 0xa5);
 
 		//set pwm en
-		ldim_abcon_write_xianxin_register(0x03, 0x0f);
+		ldim_abcon_write_xwire_register(0x03, 0x0f);
 
 		//command set
-		ldim_abcon_write_xianxin_register(0x00, 0x01);
+		ldim_abcon_write_xwire_register(0x00, 0x01);
 
 		//send address command
 		for (i = 0; i < abcon->max_lane_dim; i++)
-			ldim_abcon_write_xianxin_register(bl_abcon_xianxin->regmap->dim_addr, 1 + i);
+			ldim_abcon_write_xwire_register(bl_xwire->regmap->dim_addr, 1 + i);
 
 		//set sample point
-		//ldim_abcon_write_xianxin_register(0x12, bl_abcon_xianxin->samplepoint);
+		//ldim_abcon_write_xwire_register(0x12, bl_xwire->samplepoint);
 		//set txrx clk
 		//ldim_abcon_set_txrx_clk(abcon->conf.tx_clk, abcon->conf.rx_clk);
 	}
 }
 
-static int abcon_xianxin_hw_init_on(struct ldim_dev_driver_s *dev_drv)
+static int abcon_xwire_hw_init_on(struct ldim_dev_driver_s *dev_drv)
 {
 	/* step 1: system power_on */
 	ldim_gpio_set(dev_drv, dev_drv->en_gpio, dev_drv->en_gpio_on);
@@ -423,18 +423,19 @@ static int abcon_xianxin_hw_init_on(struct ldim_dev_driver_s *dev_drv)
 	ldim_set_duty_pwm(&dev_drv->analog_pwm_config);
 	dev_drv->pinmux_ctrl(dev_drv, 1);
 
+	mdelay(10);
 	//init abcon common
 	ldim_abcon_init_common_registers(abcon);
 
-	//init abcon register for xianxin
-	ldim_abcon_init_registers_for_xianxin();
+	//init abcon register for xwire
+	ldim_abcon_init_registers_for_xwire();
 
-	//init xianxin registers
-	ldim_abcon_init_xianxin();
+	//init xwire registers
+	ldim_abcon_init_xwire();
 	return 0;
 }
 
-static int abcon_xianxin_hw_init_off(struct ldim_dev_driver_s *dev_drv)
+static int abcon_xwire_hw_init_off(struct ldim_dev_driver_s *dev_drv)
 {
 	struct aml_ldim_driver_s *ldim_drv = aml_ldim_get_driver();
 
@@ -451,7 +452,7 @@ static int abcon_xianxin_hw_init_off(struct ldim_dev_driver_s *dev_drv)
 		(dev_drv->bl_col * dev_drv->bl_row * sizeof(unsigned short)));
 	ldim_abcon_swduty_set(ldim_drv);
 	abcon_wr_reg_bits(0x2c, 0, 29, 1);//sw control id
-	ldim_abcon_xianxin_dimming();
+	ldim_abcon_xwire_dimming();
 
 	//sw reset
 	ldim_abcon_swrst();
@@ -459,15 +460,15 @@ static int abcon_xianxin_hw_init_off(struct ldim_dev_driver_s *dev_drv)
 	return 0;
 }
 
-static int abcon_xianxin_smr(struct aml_ldim_driver_s *ldim_drv, unsigned short *buf, unsigned int len)
+static int abcon_xwire_smr(struct aml_ldim_driver_s *ldim_drv, unsigned short *buf, unsigned int len)
 {
 	int ret = 0;
 
-	if (!bl_abcon_xianxin)
+	if (!bl_xwire)
 		return -1;
 
-	if (bl_abcon_xianxin->dev_on_flag == 0) {
-		ABCONPR("%s: on_flag=%d\n", __func__, bl_abcon_xianxin->dev_on_flag);
+	if (bl_xwire->dev_on_flag == 0) {
+		ABCONPR("%s: on_flag=%d\n", __func__, bl_xwire->dev_on_flag);
 		return 0;
 	}
 
@@ -478,41 +479,41 @@ static int abcon_xianxin_smr(struct aml_ldim_driver_s *ldim_drv, unsigned short 
 
 	ldim_abcon_swrst();
 
-	ldim_abcon_xianxin_dimming();
+	ldim_abcon_xwire_dimming();
 
 	return ret;
 }
 
-static int abcon_xianxin_power_on(struct aml_ldim_driver_s *ldim_drv)
+static int abcon_xwire_power_on(struct aml_ldim_driver_s *ldim_drv)
 {
-	if (!bl_abcon_xianxin)
+	if (!bl_xwire)
 		return -1;
-	if (bl_abcon_xianxin->dev_on_flag) {
-		ABCONPR("%s: abcon_xianxin is already on, exit\n", __func__);
+	if (bl_xwire->dev_on_flag) {
+		ABCONPR("%s: abcon_xwire is already on, exit\n", __func__);
 		return 0;
 	}
 
-	abcon_xianxin_hw_init_on(ldim_drv->dev_drv);
-	bl_abcon_xianxin->dev_on_flag = 1;
-	bl_abcon_xianxin->vsync_cnt = 0;
+	abcon_xwire_hw_init_on(ldim_drv->dev_drv);
+	bl_xwire->dev_on_flag = 1;
+	bl_xwire->vsync_cnt = 0;
 
 	ABCONPR("%s: ok\n", __func__);
 	return 0;
 }
 
-static int abcon_xianxin_power_off(struct aml_ldim_driver_s *ldim_drv)
+static int abcon_xwire_power_off(struct aml_ldim_driver_s *ldim_drv)
 {
-	if (!bl_abcon_xianxin)
+	if (!bl_xwire)
 		return -1;
 
-	bl_abcon_xianxin->dev_on_flag = 0;
-	abcon_xianxin_hw_init_off(ldim_drv->dev_drv);
+	bl_xwire->dev_on_flag = 0;
+	abcon_xwire_hw_init_off(ldim_drv->dev_drv);
 
 	ABCONPR("%s: ok\n", __func__);
 	return 0;
 }
 
-static int abcon_xianxin_ldim_dev_update(struct ldim_dev_driver_s *dev_drv)
+static int abcon_xwire_dev_update(struct ldim_dev_driver_s *dev_drv)
 {
 
 	if (!dev_drv) {
@@ -520,16 +521,16 @@ static int abcon_xianxin_ldim_dev_update(struct ldim_dev_driver_s *dev_drv)
 		return -1;
 	}
 
-	dev_drv->power_on = abcon_xianxin_power_on;
-	dev_drv->power_off = abcon_xianxin_power_off;
-	dev_drv->dev_smr = abcon_xianxin_smr;
+	dev_drv->power_on = abcon_xwire_power_on;
+	dev_drv->power_off = abcon_xwire_power_off;
+	dev_drv->dev_smr = abcon_xwire_smr;
 
 	dev_drv->reg_write = NULL;
 	dev_drv->reg_read = NULL;
 	return 0;
 }
 
-int ldim_dev_abcon_xianxin_probe(struct aml_ldim_driver_s *ldim_drv)
+int ldim_dev_abcon_xwire_probe(struct aml_ldim_driver_s *ldim_drv)
 {
 	struct ldim_dev_driver_s *dev_drv = ldim_drv->dev_drv;
 
@@ -538,54 +539,57 @@ int ldim_dev_abcon_xianxin_probe(struct aml_ldim_driver_s *ldim_drv)
 		return -1;
 	}
 
-	bl_abcon_xianxin = (struct abcon_xianxin_s *)malloc(sizeof(struct abcon_xianxin_s));
-	if (!bl_abcon_xianxin) {
-		ABCONERR("%s: bl_abcon_xianxin is error\n", __func__);
+	bl_xwire = (struct abcon_xwire_s *)malloc(sizeof(struct abcon_xwire_s));
+	if (!bl_xwire) {
+		ABCONERR("%s: bl_xwire is error\n", __func__);
 		return -1;
 	}
 
-	bl_abcon_xianxin->dev_type = abcon->conf.ctrl & 0x1;
+	bl_xwire->dev_type = abcon->conf.ctrl & 0x1;
 
-	if (bl_abcon_xianxin->dev_type) {
-		bl_abcon_xianxin->regmap = &regmap_conf_871;
+	if (bl_xwire->dev_type) {
+		bl_xwire->regmap = &regmap_conf_871;
 		//samplepoint is about ((1000000/txclk)/2)/31.79
-		bl_abcon_xianxin->samplepoint = (1000000 / abcon->conf.tx_clk) >> 6;
-	} else {
-		bl_abcon_xianxin->regmap = &regmap_conf_852;
+		//bl_xwire->samplepoint = (1000000 / abcon->conf.tx_clk) >> 6;
 		//samplepoint is about ((1000000/txclk)/2)/63.581
-		bl_abcon_xianxin->samplepoint = (1000000 / abcon->conf.tx_clk) >> 7;
+		bl_xwire->samplepoint = (1000000 / abcon->conf.tx_clk) >> 7;
+	} else {
+		bl_xwire->regmap = &regmap_conf_852;
+		//samplepoint is about ((1000000/txclk)/2)/63.581
+		bl_xwire->samplepoint = (1000000 / abcon->conf.tx_clk) >> 7;
 	}
 
-	bl_abcon_xianxin->dev_on_flag = 0;
-	bl_abcon_xianxin->vsync_cnt = 0;
-	bl_abcon_xianxin->dataformat = 0;//to do
-	bl_abcon_xianxin->init_sampletime = 0;
+	bl_xwire->dev_on_flag = 0;
+	bl_xwire->vsync_cnt = 0;
+	bl_xwire->dataformat = 0;//to do
+	bl_xwire->init_sampletime = 0;
 
-	ABCONPR("samplepoint=%d\n", bl_abcon_xianxin->samplepoint);
+	ABCONPR("dev_type = %d, samplepoint=%d\n",
+		bl_xwire->dev_type, bl_xwire->samplepoint);
 
-	//init abcon register for xianxin
-	ldim_abcon_init_registers_for_xianxin();
+	//init abcon register for xwire
+	ldim_abcon_init_registers_for_xwire();
 
-	if (bl_abcon_xianxin->bl_pwm_en) {
+	if (bl_xwire->bl_pwm_en) {
 		/* Generate external VSYNC to VSYNC/PWM pin */
 		ldim_set_duty_pwm(&dev_drv->ldim_pwm_config);
 		ldim_set_duty_pwm(&dev_drv->analog_pwm_config);
 		dev_drv->pinmux_ctrl(dev_drv, 1);
 	}
 
-	abcon_xianxin_ldim_dev_update(dev_drv);
+	abcon_xwire_dev_update(dev_drv);
 
 	ABCONPR("%s ok\n", __func__);
 	return 0;
 }
 
-int ldim_dev_abcon_xianxin_remove(struct aml_ldim_driver_s *ldim_drv)
+int ldim_dev_abcon_xwire_remove(struct aml_ldim_driver_s *ldim_drv)
 {
-	if (!bl_abcon_xianxin)
+	if (!bl_xwire)
 		return 0;
 
-	free(bl_abcon_xianxin);
-	bl_abcon_xianxin = NULL;
+	free(bl_xwire);
+	bl_xwire = NULL;
 
 	return 0;
 }

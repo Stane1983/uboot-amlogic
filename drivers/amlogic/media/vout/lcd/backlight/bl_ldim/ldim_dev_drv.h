@@ -51,11 +51,13 @@ int ldim_dev_global_remove(struct aml_ldim_driver_s *ldim_drv);
 
 #ifdef CONFIG_AML_LCD_BL_LDIM_ABCON
 int ldim_abcon_dev_probe(struct ldim_dev_driver_s *dev_drv);
-int ldim_dev_abcon_hyasic_probe(struct aml_ldim_driver_s *ldim_drv);
-int ldim_dev_abcon_hyasic_remove(struct aml_ldim_driver_s *ldim_drv);
-int ldim_dev_abcon_hy_ospb_probe(struct aml_ldim_driver_s *ldim_drv);
-int ldim_dev_abcon_hy_ospb_remove(struct aml_ldim_driver_s *ldim_drv);
-int ldim_dev_abcon_xianxin_probe(struct aml_ldim_driver_s *ldim_drv);
-int ldim_dev_abcon_xianxin_remove(struct aml_ldim_driver_s *ldim_drv);
+int ldim_dev_abcon_spb_probe(struct aml_ldim_driver_s *ldim_drv);
+int ldim_dev_abcon_spb_remove(struct aml_ldim_driver_s *ldim_drv);
+int ldim_dev_abcon_ospb_probe(struct aml_ldim_driver_s *ldim_drv);
+int ldim_dev_abcon_ospb_remove(struct aml_ldim_driver_s *ldim_drv);
+int ldim_dev_abcon_xwire_probe(struct aml_ldim_driver_s *ldim_drv);
+int ldim_dev_abcon_xwire_remove(struct aml_ldim_driver_s *ldim_drv);
+int ldim_dev_abcon_owc_probe(struct aml_ldim_driver_s *ldim_drv);
+int ldim_dev_abcon_owc_remove(struct aml_ldim_driver_s *ldim_drv);
 #endif
 #endif
