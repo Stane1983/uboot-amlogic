@@ -358,7 +358,7 @@ static void lcd_vmode_update(struct aml_lcd_drv_s *pdrv)
 		//update base_timing to act_timing
 		lcd_enc_timing_init_config(pdrv);
 		if (pdrv->config.timing.base_timing->pixel_clk != pre_pclk)
-			pdrv->config.timing.clk_change |= LCD_CLK_PLL_RESET;
+			pdrv->config.timing.clk_change |= (LCD_CLK_PLL_RESET | LCD_CLK_PLL_CHANGE);
 	}
 
 	if (!pdrv->vmode_mgr.cur_vmode_info || !pdrv->std_duration) {
