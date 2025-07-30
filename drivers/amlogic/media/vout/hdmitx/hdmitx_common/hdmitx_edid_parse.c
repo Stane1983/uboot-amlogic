@@ -1810,20 +1810,15 @@ static inline unsigned short get_2_bytes(u8 *addr)
 	return addr[0] | (addr[1] << 8);
 }
 
-static void hdmitx21_edid_parse_sbtmdb(struct rx_cap *prxcap,
-	u8 offset, u8 *blockbuf, u8 len)
+static void _edid_parse_sbtmdb(struct sbtm_info *info, u8 *blockbuf, u8 len)
 {
-	struct sbtm_info *info;
-
-	if (!prxcap || !blockbuf || !len)
+	if (!info  || !blockbuf || !len)
 		return;
 	if (len < 2)
 		return;
-	blockbuf = blockbuf + offset;
 	/* length should be 2, 3, 5, 7, ... or 29 */
 	if (!(len == 2 || (len <= 29 && ((len % 2) == 1))))
 		HDMITX_INFO("%s[%d] len is %d\n", __func__, __LINE__, len);
-	info = &prxcap->hdr_info.sbtm_info;
 
 	blockbuf++;
 	len--;
@@ -1887,6 +1882,21 @@ static void hdmitx21_edid_parse_sbtmdb(struct rx_cap *prxcap,
 			/* end parsing */
 		}
 	}
+}
+
+static int edid_parse_sbtmdb(struct rx_cap *prxcap, u8 *buf, u8 len)
+{
+	struct sbtm_info *sbtm;
+	struct sbtm_info *sbtm2;
+
+	if (!prxcap || !buf)
+		return -1;
+
+	sbtm = &prxcap->hdr_info.sbtm_info;
+	sbtm2 = &prxcap->hdr_info2.sbtm_info;
+	_edid_parse_sbtmdb(sbtm, buf, len);
+	_edid_parse_sbtmdb(sbtm2, buf, len);
+	return 0;
 }
 
 /* refer to CEA-861-G 7.5.1 video data block */
@@ -2125,8 +2135,7 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap, u8 *block_buf)
 						&block_buf[offset + 1], count);
 					break;
 				case EXTENSION_SBTM_EXT_TAG:
-					hdmitx21_edid_parse_sbtmdb(prxcap, offset + 1,
-							 block_buf, count);
+					edid_parse_sbtmdb(prxcap, &block_buf[offset + 1], count);
 					break;
 				case EXTENSION_DOLBY_VSADB:
 					edid_parsingdolbyvsadb(prxcap, &block_buf[offset]);
