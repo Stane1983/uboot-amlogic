@@ -811,10 +811,10 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 
 			if (kernelEndAddr > IOTRACE_LOAD_ADDR) {
 				if (ALIGN(actualbootimgsz, LOAD_ADDR_ALIGN_LENGTH) >=
-					(IOTRACE_LOAD_ADDR - dtbLoadAddr - ALIGN(dtbsz, LOAD_ADDR_ALIGN_LENGTH)))
+					(IOTRACE_LOAD_ADDR - dtbLoadAddr - LOAD_ADDR_ALIGN_LENGTH))
 					kernelLoadAddr = KERNEL_LOAD_HIGH_ADDR;
 				else
-					kernelLoadAddr = dtbLoadAddr + ALIGN(dtbsz, LOAD_ADDR_ALIGN_LENGTH);
+					kernelLoadAddr = dtbLoadAddr + LOAD_ADDR_ALIGN_LENGTH;
 
 				sprintf(strAddr, "%lx", kernelLoadAddr);
 				memmove((void *)kernelLoadAddr, (void *)loadaddr, IMG_PRELOAD_SZ);

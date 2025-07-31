@@ -115,19 +115,27 @@ static int bootm_pre_load(struct cmd_tbl *cmdtp, int flag, int argc,
 	return ret;
 }
 
-#if CONFIG_IS_ENABLED(AMLOGIC_MODIFY) && CONFIG_IS_ENABLED(LEGACY_IMAGE_FORMAT)
+#if CONFIG_IS_ENABLED(AMLOGIC_MODIFY)
 static void set_rootfs_dtb_high_addr(void)
 {
 	phys_size_t ddr_size = env_get_bootm_size();
 	const char *high_addr = NULL;
 
-	if (ddr_size <= SZ_128M) {
-		if (env_get("reset_high_addr"))
-			high_addr = env_get("reset_high_addr");
-		else
-			high_addr = "4000000";
+	if (env_get("reset_high_addr")) {
+		high_addr = env_get("reset_high_addr");
 	} else {
-		high_addr = "D000000";
+		switch (ddr_size) {
+		case 0x8000000:
+			high_addr = "6000000";
+			break;
+		case 0x10000000:
+		case 0x20000000:
+			high_addr = "F400000";
+			break;
+		default:
+			high_addr = "D000000";
+			break;
+		}
 	}
 
 	env_set("initrd_high", high_addr);
@@ -212,30 +220,8 @@ static int bootm_find_os(struct cmd_tbl *cmdtp, int flag, int argc,
 #ifdef CONFIG_ANDROID_BOOT_IMAGE
 	case IMAGE_FORMAT_ANDROID:
 #ifdef CONFIG_AMLOGIC_MODIFY
-		#ifdef CONFIG_MODIFY_INITRD_HIGH
-		env_set("initrd_high", "0D000000");
-		#endif
 		if (image_get_magic((image_header_t *)images.os.image_start) == IH_MAGIC) {
-			#ifdef CONFIG_INITRD_FDT_HIGH_ADDR
-			switch (env_get_bootm_size()) {
-			case 0x8000000:
-				env_set("initrd_high", "06000000");
-				env_set("fdt_high", "06000000");
-				break;
-			case 0x10000000:
-			case 0x20000000:
-				env_set("initrd_high", "0F400000");
-				env_set("fdt_high", "0F400000");
-				break;
-			default:
-				env_set("initrd_high", "0D000000");
-				env_set("fdt_high", "0D000000");
-				break;
-			}
-			#else
-			env_set("initrd_high", "0D000000");
-			env_set("fdt_high", "0D000000");
-			#endif
+			set_rootfs_dtb_high_addr();
 
 			images.os.arch = ((image_header_t *)(images.os.image_start))->ih_arch;
 			images.os.image_start += sizeof(image_header_t);
