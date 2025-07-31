@@ -1590,6 +1590,114 @@ U_BOOT_CMD
 "So you can execute command: get_avb_mode"
 );
 
+static int do_check_avb_key(
+	cmd_tbl_t *cmdtp,
+	int flag,
+	int argc,
+	char * const argv[])
+{
+	int ret = -1;
+	int rc = 0;
+#if CONFIG_AVB2_KPUB_FROM_FIP
+	int result = 0;
+#endif
+	const uint8_t *public_key_data;
+	size_t public_key_length;
+	size_t vbmeta_size = 64 * 1024;
+	AvbVBMetaVerifyResult vbmeta_ret;
+	unsigned char *loadaddr = 0;
+
+	loadaddr = (unsigned char *)simple_strtoul(env_get("loadaddr"), NULL, 16);
+	env_set_hex("udiskLoadAddr", (ulong)loadaddr);
+	env_set("udiskvbmetaLoadCmd",
+			"fatload usb 0 ${udiskLoadAddr} vbmeta.img");
+	run_command("usb start 0", 0);
+	rc = run_command("run udiskvbmetaLoadCmd", 0);
+	if (rc) {
+		printf("Fail in read vbmeta.img from udisk\n");
+		env_set("keymatch", "false");
+		return -1;
+	}
+
+	vbmeta_ret = avb_vbmeta_image_verify(loadaddr,
+		vbmeta_size, &public_key_data, &public_key_length);
+
+#ifdef CONFIG_AVB2_KPUB_VENDOR
+	printf("check vendor kpub\n");
+	printf("avb2_kpub_vendor_len = %d\n", avb2_kpub_vendor_len);
+	if (avb2_kpub_vendor_len == public_key_length &&
+		!avb_safe_memcmp(public_key_data,
+		avb2_kpub_vendor, avb2_kpub_vendor_len)) {
+		printf("udisk key match vendor kpub\n");
+		env_set("keymatch", "true");
+		ret = 0;
+	}
+
+#ifdef CONFIG_TESTKEY
+	if (ret != AVB_IO_RESULT_OK) {
+		printf("re-verify with default kpub\n");
+		if (avb2_kpub_default_len == public_key_length &&
+				!avb_safe_memcmp(public_key_data,
+				avb2_kpub_default, public_key_length)) {
+			env_set("keymatch", "true");
+			printf("udisk key match default kpub\n");
+			ret = 0;
+		}
+	}
+#endif
+	return ret;
+#endif
+
+#if CONFIG_AVB2_KPUB_FROM_FIP
+	printf("verifying with fip key\n");
+	result = compare_avbkey_with_fipkey(public_key_data, public_key_length);
+	if (result == -2) {
+		printf("udisk key not match fip key\n");
+		env_set("keymatch", "false");
+		ret = -1;
+		return ret;
+	} else if (result == -1) {
+		printf("cannot find fip key\n");
+	} else if (result == 0) {
+		printf("udisk key match fip key\n");
+		env_set("keymatch", "true");
+		ret = 0;
+		return ret;
+	}
+#endif
+
+	if (!IS_FEAT_BOOT_VERIFY()) {
+		printf("verify with default kpub:%d, vbmeta kpub:%ld\n",
+				avb2_kpub_default_len, public_key_length);
+		if (avb2_kpub_default_len == public_key_length &&
+				!avb_safe_memcmp(public_key_data,
+					avb2_kpub_default, public_key_length)) {
+			printf("udisk key match default key\n");
+			env_set("keymatch", "true");
+			ret = 0;
+		}
+	} else {
+		printf("verify with production kpub:%d, vbmeta kpub:%ld\n",
+				avb2_kpub_production_len, public_key_length);
+		if (avb2_kpub_production_len == public_key_length &&
+				!avb_safe_memcmp(public_key_data,
+					avb2_kpub_production, public_key_length)) {
+			printf("udisk key match production key\n");
+			env_set("keymatch", "true");
+			ret = 0;
+		}
+	}
+
+	return ret;
+}
+
+U_BOOT_CMD
+(check_avb_key, 2, 0, do_check_avb_key,
+	"check_avb_key",
+	"\nThis command will check_avb_key in udisk\n"
+	"So you can execute command: check_avb_key"
+);
+
 U_BOOT_CMD(
 		avb, 4, 0, do_avb_ops,
 		"avb",

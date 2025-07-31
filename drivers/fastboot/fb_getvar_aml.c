@@ -583,6 +583,7 @@ static void getvar_partition_type(char *part_name, char *response)
 			(strcmp_l1(part_name, "super") == 0) ||
 			(strcmp_l1(part_name, "car_param") == 0) ||
 			(strcmp_l1(part_name, "odm_ext") == 0) ||
+			(strcmp_l1(part_name, "production_ext") == 0) ||
 			(strcmp_l1(part_name, "oem") == 0)) {
 		partition_type_reply(part_name, response, "ext4");
 	} else if ((strcmp(part_name, "data") == 0) || (strcmp(part_name, "userdata") == 0)) {
