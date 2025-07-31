@@ -125,13 +125,14 @@ static void set_rootfs_dtb_high_addr(void)
 	ddr_size += CONFIG_SYS_MEM_TOP_HIDE;
 #endif
 
-	if (ddr_size <= SZ_128M) {
-		if (env_get("reset_high_addr"))
-			high_addr = env_get("reset_high_addr");
-		else
-			high_addr = "4000000";
+	if (env_get("reset_high_addr")) {
+		high_addr = env_get("reset_high_addr");
 	} else {
-		high_addr = "A000000";
+		if (ddr_size <= SZ_128M) {
+			high_addr = "4000000";
+		} else {
+			high_addr = "A000000";
+		}
 	}
 
 	env_set("initrd_high", high_addr);
