@@ -49,6 +49,7 @@ static int aml_lcd_driver_suspend(void *pm_ops);
 static int aml_lcd_driver_resume(void *pm_ops);
 static int aml_lcd_driver_poweroff(void *pm_ops);
 
+#if defined(CONFIG_MESON_G12A)
 static struct aml_lcd_data_s lcd_data_g12a = {
 	.chip_type = LCD_CHIP_G12A,
 	.chip_name = "g12a",
@@ -59,7 +60,9 @@ static struct aml_lcd_data_s lcd_data_g12a = {
 	.offset_venc_data = {0},
 	.dft_conf = {NULL, NULL, NULL},
 };
+#endif
 
+#if defined(CONFIG_MESON_G12B)
 static struct aml_lcd_data_s lcd_data_g12b = {
 	.chip_type = LCD_CHIP_G12B,
 	.chip_name = "g12b",
@@ -70,7 +73,9 @@ static struct aml_lcd_data_s lcd_data_g12b = {
 	.offset_venc_data = {0},
 	.dft_conf = {NULL, NULL, NULL},
 };
+#endif
 
+#if defined(CONFIG_MESON_SM1)
 static struct aml_lcd_data_s lcd_data_sm1 = {
 	.chip_type = LCD_CHIP_SM1,
 	.chip_name = "sm1",
@@ -81,7 +86,9 @@ static struct aml_lcd_data_s lcd_data_sm1 = {
 	.offset_venc_data = {0},
 	.dft_conf = {NULL, NULL, NULL},
 };
+#endif
 
+#if defined(CONFIG_MESON_T5W)
 static struct aml_lcd_data_s lcd_data_t5w = {
 	.chip_type = LCD_CHIP_T5W,
 	.chip_name = "t5w",
@@ -92,7 +99,9 @@ static struct aml_lcd_data_s lcd_data_t5w = {
 	.offset_venc_data = {0},
 	.dft_conf = {NULL, NULL, NULL},
 };
+#endif
 
+#if defined(CONFIG_MESON_T7)
 static struct aml_lcd_data_s lcd_data_t7 = {
 	.chip_type = LCD_CHIP_T7,
 	.chip_name = "t7",
@@ -103,7 +112,9 @@ static struct aml_lcd_data_s lcd_data_t7 = {
 	.offset_venc_data = {0x0, (0x100 << 2), (0x200 << 2)},
 	.dft_conf = {NULL, NULL, NULL},
 };
+#endif
 
+#if defined(CONFIG_MESON_T3)
 static struct aml_lcd_data_s lcd_data_t3 = {
 	.chip_type = LCD_CHIP_T3,
 	.chip_name = "t3",
@@ -114,7 +125,9 @@ static struct aml_lcd_data_s lcd_data_t3 = {
 	.offset_venc_data = {0x0, (0x100 << 2), 0},
 	.dft_conf = {NULL, NULL, NULL},
 };
+#endif
 
+#if defined(CONFIG_MESON_C3)
 static struct aml_lcd_data_s lcd_data_c3 = {
 	.chip_type = LCD_CHIP_C3,
 	.chip_name = "c3",
@@ -125,7 +138,9 @@ static struct aml_lcd_data_s lcd_data_c3 = {
 	.offset_venc_data = {0},
 	.dft_conf = {NULL, NULL, NULL},
 };
+#endif
 
+#if defined(CONFIG_MESON_T5M)
 static struct aml_lcd_data_s lcd_data_t5m = {
 	.chip_type = LCD_CHIP_T5M,
 	.chip_name = "t5m",
@@ -136,7 +151,9 @@ static struct aml_lcd_data_s lcd_data_t5m = {
 	.offset_venc_data = {0x0},
 	.dft_conf = {NULL, NULL, NULL},
 };
+#endif
 
+#if defined(CONFIG_MESON_T3X)
 static struct aml_lcd_data_s lcd_data_t3x = {
 	.chip_type = LCD_CHIP_T3X,
 	.chip_name = "t3x",
@@ -146,8 +163,10 @@ static struct aml_lcd_data_s lcd_data_t3x = {
 	.offset_venc_if = {0x0, (0x500 << 2), 0},
 	.offset_venc_data = {0x0, (0x100 << 2), 0},
 };
+#endif
 
-static __maybe_unused struct aml_lcd_data_s lcd_data_a4 = {
+#if defined(CONFIG_MESON_A4)
+static struct aml_lcd_data_s lcd_data_a4 = {
 	.chip_type = LCD_CHIP_A4,
 	.chip_name = "a4",
 	.rev_type = 0,
@@ -157,7 +176,9 @@ static __maybe_unused struct aml_lcd_data_s lcd_data_a4 = {
 	.offset_venc_data = {0},
 	.dft_conf = {NULL, NULL, NULL},
 };
+#endif
 
+#if defined(CONFIG_MESON_TXHD2)
 static struct aml_lcd_data_s lcd_data_txhd2 = {
 	.chip_type = LCD_CHIP_TXHD2,
 	.chip_name = "txhd2",
@@ -168,6 +189,7 @@ static struct aml_lcd_data_s lcd_data_txhd2 = {
 	.offset_venc_data = {0x0},
 	.dft_conf = {NULL, NULL, NULL},
 };
+#endif
 
 static void lcd_chip_detect(void)
 {
@@ -178,39 +200,62 @@ static void lcd_chip_detect(void)
 	cpu_type = get_cpu_id().family_id;
 	rev_type = get_cpu_id().chip_rev;
 	switch (cpu_type) {
+#if defined(CONFIG_MESON_G12A)
 	case MESON_CPU_MAJOR_ID_G12A:
 		lcd_data = &lcd_data_g12a;
 		break;
+#endif
+#if defined(CONFIG_MESON_G12B)
 	case MESON_CPU_MAJOR_ID_G12B:
 		lcd_data = &lcd_data_g12b;
 		break;
+#endif
+#if defined(CONFIG_MESON_SM1)
 	case MESON_CPU_MAJOR_ID_SM1:
 		lcd_data = &lcd_data_sm1;
 		break;
+#endif
+#if defined(CONFIG_MESON_T5W)
 	case MESON_CPU_MAJOR_ID_T5W:
 		lcd_data = &lcd_data_t5w;
 		break;
+#endif
+#if defined(CONFIG_MESON_T7)
 	case MESON_CPU_MAJOR_ID_T7:
 		lcd_data = &lcd_data_t7;
 		break;
+#endif
+#if defined(CONFIG_MESON_T3)
+
 	case MESON_CPU_MAJOR_ID_T3:
 		lcd_data = &lcd_data_t3;
 		break;
+#endif
+#if defined(CONFIG_MESON_C3)
 	case MESON_CPU_MAJOR_ID_C3:
 		lcd_data = &lcd_data_c3;
 		break;
+#endif
+#if defined(CONFIG_MESON_T5M)
 	case MESON_CPU_MAJOR_ID_T5M:
 		lcd_data = &lcd_data_t5m;
 		break;
+#endif
+#if defined(CONFIG_MESON_T3X)
 	case MESON_CPU_MAJOR_ID_T3X:
 		lcd_data = &lcd_data_t3x;
 		break;
+#endif
+#if defined(CONFIG_MESON_A4)
 	case MESON_CPU_MAJOR_ID_A4:
 		lcd_data = &lcd_data_a4;
 		break;
+#endif
+#if defined(CONFIG_MESON_TXHD2)
 	case MESON_CPU_MAJOR_ID_TXHD2:
 		lcd_data = &lcd_data_txhd2;
 		break;
+#endif
 	default:
 		lcd_data = NULL;
 		return;
@@ -220,8 +265,7 @@ static void lcd_chip_detect(void)
 	lcd_data = &lcd_data_txhd2;
 #endif
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-		LCDPR("check chip: %d %s\n",
-			lcd_data->chip_type, lcd_data->chip_name);
+		LCDPR("check chip: %d %s\n", lcd_data->chip_type, lcd_data->chip_name);
 	}
 }
 
@@ -742,10 +786,12 @@ void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 		break;
 	}
 	switch (pdrv->config.basic.lcd_type) {
+#if defined(CONFIG_AML_LCD_TCON)
 	case LCD_P2P:
 		pdrv->boot_ctrl.advanced_flag =
 			pdrv->config.control.p2p_cfg.p2p_type;
 		break;
+#endif
 	default:
 		break;
 	}
@@ -1356,7 +1402,7 @@ int aml_lcd_vbyone_lock(int index)
 
 int aml_lcd_edp_debug(int index, char *str, int num)
 {
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_EDP
 	struct aml_lcd_drv_s *pdrv;
 
 	pdrv = lcd_driver_check_valid(index);

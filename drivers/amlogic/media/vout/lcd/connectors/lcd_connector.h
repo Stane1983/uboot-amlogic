@@ -9,12 +9,16 @@
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 
 /* MIPI_DPI */
+#ifdef CONFIG_AML_LCD_DPI
 void lcd_rgb_control_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off);
 void lcd_bt_control_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off);
+#endif
 
 /* lvds */
+#ifdef CONFIG_AML_LCD_LVDS
 void lcd_lvds_enable(struct aml_lcd_drv_s *pdrv);
 void lcd_lvds_disable(struct aml_lcd_drv_s *pdrv);
+#endif
 
 /* vbyone */
 #ifdef CONFIG_AML_LCD_VBYONE
@@ -56,7 +60,7 @@ int mipi_dsi_check_state(struct aml_lcd_drv_s *pdrv, u8 reg, u8 cnt);
 
 #endif
 
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_EDP
 /* @lcd_eDP.c */
 void dptx_DPCD_dump(struct aml_lcd_drv_s *pdrv);
 int eDP_debug_test(struct aml_lcd_drv_s *pdrv, char *str, int num);

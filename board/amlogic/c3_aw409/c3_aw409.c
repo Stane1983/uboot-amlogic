@@ -35,6 +35,9 @@
 #ifdef CONFIG_AML_CVBS
 #include <amlogic/media/vout/aml_cvbs.h>
 #endif
+#ifdef CONFIG_AML_LCD
+#include <amlogic/media/vout/lcd/lcd_vout.h>
+#endif
 
 #ifdef CONFIG_AML_LCD
 #include <amlogic/media/vout/lcd/aml_lcd.h>

@@ -30,7 +30,7 @@ void str_add_reg_sets(struct aml_lcd_drv_s *pdrv,
 		      struct reg_name_set_s *reg_table, unsigned char reg_cnt)
 {
 	unsigned char idx, str_pos = 0;
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_EDP
 	unsigned char reg_temp;
 #endif
 	unsigned int reg_addr = 0, reg_val = 0;
@@ -77,7 +77,7 @@ void str_add_reg_sets(struct aml_lcd_drv_s *pdrv,
 			reg_val = dsi_phy_read(pdrv, 0, reg_addr);
 			break;
 #endif
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_EDP
 		case LCD_REG_DBG_EDPHOST_BUS:
 			reg_addr = reg_table[idx].reg + reg_offset;
 			reg_val = dptx_reg_read(pdrv->index, reg_addr);
@@ -212,6 +212,7 @@ static void lcd_power_info_print(struct aml_lcd_drv_s *pdrv, int status)
 	}
 }
 
+#if defined(CONFIG_AML_LCD_VBYONE) || defined(CONFIG_AML_LCD_EDP) || defined(CONFIG_AML_LCD_TCON)
 static void lcd_pinmux_info_print(struct lcd_config_s *pconf)
 {
 	int i;
@@ -237,7 +238,9 @@ static void lcd_pinmux_info_print(struct lcd_config_s *pconf)
 
 	printf("\n");
 }
+#endif
 
+#ifdef CONFIG_AML_LCD_LVDS
 static void lcd_info_print_lvds(struct aml_lcd_drv_s *pdrv)
 {
 	printf("lvds_repack       %u\n"
@@ -254,8 +257,8 @@ static void lcd_info_print_lvds(struct aml_lcd_drv_s *pdrv)
 		pdrv->config.control.lvds_cfg.lane_reverse,
 		pdrv->config.control.lvds_cfg.phy_vswing,
 		pdrv->config.control.lvds_cfg.phy_preem);
-	lcd_pinmux_info_print(&pdrv->config);
 }
+#endif
 
 #ifdef CONFIG_AML_LCD_VBYONE
 static void lcd_info_print_vbyone(struct aml_lcd_drv_s *pdrv)
@@ -307,7 +310,7 @@ static void lcd_info_print_mipi(struct aml_lcd_drv_s *pdrv)
 }
 #endif
 
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_EDP
 static void lcd_info_print_edp(struct aml_lcd_drv_s *pdrv)
 {
 	printf("max_lane_count        %u\n"
@@ -386,11 +389,16 @@ static void lcd_info_print_p2p(struct aml_lcd_drv_s *pdrv)
 
 static void lcd_phy_print(struct aml_lcd_drv_s *pdrv)
 {
+#if defined(CONFIG_AML_LCD_LVDS) || defined(CONFIG_AML_LCD_VBYONE) || \
+		defined(CONFIG_AML_LCD_TCON) || defined(CONFIG_AML_LCD_EDP)
 	struct phy_attr_s *phy;
 	struct phy_config_s *phy_cfg = &pdrv->config.phy_cfg;
 	int base_id = 0, i;
+#endif
 
 	switch (pdrv->config.basic.lcd_type) {
+#if defined(CONFIG_AML_LCD_LVDS) || defined(CONFIG_AML_LCD_VBYONE) || \
+		defined(CONFIG_AML_LCD_TCON) || defined(CONFIG_AML_LCD_EDP)
 	case LCD_LVDS:
 	case LCD_VBYONE:
 	case LCD_MLVDS:
@@ -411,11 +419,13 @@ static void lcd_phy_print(struct aml_lcd_drv_s *pdrv)
 		lcd_phy_param_print(pdrv);
 		printf("\n");
 		break;
+#endif
 	default:
 		break;
 	}
 }
 
+#ifdef CONFIG_AML_LCD_LVDS
 static void lcd_reg_print_lvds(struct aml_lcd_drv_s *pdrv)
 {
 	unsigned int reg, offset;
@@ -430,6 +440,7 @@ static void lcd_reg_print_lvds(struct aml_lcd_drv_s *pdrv)
 	printf("LVDS_GEN_CNTL       [0x%04x] = 0x%08x\n",
 	       reg, lcd_vcbus_read(reg));
 }
+#endif
 
 #ifdef CONFIG_AML_LCD_VBYONE
 static void lcd_reg_print_vbyone(struct aml_lcd_drv_s *pdrv)
@@ -523,7 +534,7 @@ static void lcd_reg_print_mipi(struct aml_lcd_drv_s *pdrv)
 }
 #endif
 
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_EDP
 static void lcd_reg_print_edp(struct aml_lcd_drv_s *pdrv)
 {
 	unsigned int reg;
@@ -685,17 +696,20 @@ void lcd_reg_print(struct aml_lcd_drv_s *pdrv)
  * lcd debug match data
  * **********************************
  */
+#if defined(CONFIG_MESON_G12A) || defined(CONFIG_MESON_G12B) || defined(CONFIG_MESON_SM1)
 static struct lcd_debug_info_s lcd_debug_info_g12a = {
 	.reg_pinmux_table = NULL,
 
+#ifdef CONFIG_AML_LCD_LVDS
 	.reg_dump_lvds   = NULL,
+#endif
 #ifdef CONFIG_AML_LCD_VBYONE
 	.reg_dump_vbyone = NULL,
 #endif
 #ifdef CONFIG_AML_LCD_MIPI_DSI
 	.reg_dump_mipi   = lcd_reg_print_mipi,
 #endif
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_EDP
 	.reg_dump_edp    = NULL,
 #endif
 #ifdef CONFIG_AML_LCD_TCON
@@ -703,18 +717,22 @@ static struct lcd_debug_info_s lcd_debug_info_g12a = {
 	.reg_dump_p2p    = NULL,
 #endif
 };
+#endif
 
+#if defined(CONFIG_MESON_T7)
 static struct lcd_debug_info_s lcd_debug_info_t7_0 = {
 	.reg_pinmux_table = lcd_reg_dump_pinmux_t7,
 
+#ifdef CONFIG_AML_LCD_LVDS
 	.reg_dump_lvds   = lcd_reg_print_lvds,
+#endif
 #ifdef CONFIG_AML_LCD_VBYONE
 	.reg_dump_vbyone = lcd_reg_print_vbyone,
 #endif
 #ifdef CONFIG_AML_LCD_MIPI_DSI
 	.reg_dump_mipi   = lcd_reg_print_mipi,
 #endif
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_EDP
 	.reg_dump_edp    = lcd_reg_print_edp,
 #endif
 #ifdef CONFIG_AML_LCD_TCON
@@ -726,14 +744,16 @@ static struct lcd_debug_info_s lcd_debug_info_t7_0 = {
 static struct lcd_debug_info_s lcd_debug_info_t7_1 = {
 	.reg_pinmux_table = lcd_reg_dump_pinmux_t7,
 
+#ifdef CONFIG_AML_LCD_LVDS
 	.reg_dump_lvds   = lcd_reg_print_lvds,
+#endif
 #ifdef CONFIG_AML_LCD_VBYONE
 	.reg_dump_vbyone = lcd_reg_print_vbyone,
 #endif
 #ifdef CONFIG_AML_LCD_MIPI_DSI
 	.reg_dump_mipi   = lcd_reg_print_mipi,
 #endif
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_EDP
 	.reg_dump_edp    = lcd_reg_print_edp,
 #endif
 #ifdef CONFIG_AML_LCD_TCON
@@ -745,14 +765,16 @@ static struct lcd_debug_info_s lcd_debug_info_t7_1 = {
 static struct lcd_debug_info_s lcd_debug_info_t7_2 = {
 	.reg_pinmux_table = lcd_reg_dump_pinmux_t7,
 
+#ifdef CONFIG_AML_LCD_LVDS
 	.reg_dump_lvds   = lcd_reg_print_lvds,
+#endif
 #ifdef CONFIG_AML_LCD_VBYONE
 	.reg_dump_vbyone = NULL,
 #endif
 #ifdef CONFIG_AML_LCD_MIPI_DSI
 	.reg_dump_mipi   = NULL,
 #endif
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_EDP
 	.reg_dump_edp    = NULL,
 #endif
 #ifdef CONFIG_AML_LCD_TCON
@@ -760,18 +782,22 @@ static struct lcd_debug_info_s lcd_debug_info_t7_2 = {
 	.reg_dump_p2p    = NULL,
 #endif
 };
+#endif
 
+#if defined(CONFIG_MESON_T5M) || defined(CONFIG_MESON_T3)
 static struct lcd_debug_info_s lcd_debug_info_t3_0 = {
 	.reg_pinmux_table = lcd_reg_dump_pinmux_t3,
 
+#ifdef CONFIG_AML_LCD_LVDS
 	.reg_dump_lvds   = lcd_reg_print_lvds,
+#endif
 #ifdef CONFIG_AML_LCD_VBYONE
 	.reg_dump_vbyone = lcd_reg_print_vbyone,
 #endif
 #ifdef CONFIG_AML_LCD_MIPI_DSI
 	.reg_dump_mipi   = NULL,
 #endif
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_EDP
 	.reg_dump_edp    = NULL,
 #endif
 #ifdef CONFIG_AML_LCD_TCON
@@ -783,14 +809,16 @@ static struct lcd_debug_info_s lcd_debug_info_t3_0 = {
 static struct lcd_debug_info_s lcd_debug_info_t3_1 = {
 	.reg_pinmux_table = lcd_reg_dump_pinmux_t3,
 
+#ifdef CONFIG_AML_LCD_LVDS
 	.reg_dump_lvds   = NULL,
+#endif
 #ifdef CONFIG_AML_LCD_VBYONE
 	.reg_dump_vbyone = lcd_reg_print_vbyone,
 #endif
 #ifdef CONFIG_AML_LCD_MIPI_DSI
 	.reg_dump_mipi   = NULL,
 #endif
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_EDP
 	.reg_dump_edp    = NULL,
 #endif
 #ifdef CONFIG_AML_LCD_TCON
@@ -798,18 +826,22 @@ static struct lcd_debug_info_s lcd_debug_info_t3_1 = {
 	.reg_dump_p2p    = NULL,
 #endif
 };
+#endif
 
+#if defined(CONFIG_MESON_T5W)
 static struct lcd_debug_info_s lcd_debug_info_t5w = {
 	.reg_pinmux_table = lcd_reg_dump_pinmux_t5w,
 
+#ifdef CONFIG_AML_LCD_LVDS
 	.reg_dump_lvds   = lcd_reg_print_lvds,
+#endif
 #ifdef CONFIG_AML_LCD_VBYONE
 	.reg_dump_vbyone = lcd_reg_print_vbyone,
 #endif
 #ifdef CONFIG_AML_LCD_MIPI_DSI
 	.reg_dump_mipi   = NULL,
 #endif
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_EDP
 	.reg_dump_edp    = NULL,
 #endif
 #ifdef CONFIG_AML_LCD_TCON
@@ -817,18 +849,22 @@ static struct lcd_debug_info_s lcd_debug_info_t5w = {
 	.reg_dump_p2p    = lcd_reg_print_tcon,
 #endif
 };
+#endif
 
+#if defined(CONFIG_MESON_TXHD2)
 static struct lcd_debug_info_s lcd_debug_info_txhd2 = {
 	.reg_pinmux_table = lcd_reg_dump_pinmux_t5w,
 
+#ifdef CONFIG_AML_LCD_LVDS
 	.reg_dump_lvds   = lcd_reg_print_lvds,
+#endif
 #ifdef CONFIG_AML_LCD_VBYONE
 	.reg_dump_vbyone = NULL,
 #endif
 #ifdef CONFIG_AML_LCD_MIPI_DSI
-	.reg_dump_mipi   = NULL,
+	.reg_dump_mipi   = lcd_reg_print_mipi,
 #endif
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_EDP
 	.reg_dump_edp    = NULL,
 #endif
 #ifdef CONFIG_AML_LCD_TCON
@@ -836,18 +872,22 @@ static struct lcd_debug_info_s lcd_debug_info_txhd2 = {
 	.reg_dump_p2p    = NULL,
 #endif
 };
+#endif
 
+#if defined(CONFIG_MESON_T3X)
 static struct lcd_debug_info_s lcd_debug_info_t3x_0 = {
 	.reg_pinmux_table = lcd_reg_dump_pinmux_t3,
 
+#ifdef CONFIG_AML_LCD_LVDS
 	.reg_dump_lvds   = lcd_reg_print_lvds,
+#endif
 #ifdef CONFIG_AML_LCD_VBYONE
 	.reg_dump_vbyone = lcd_reg_print_vbyone,
 #endif
 #ifdef CONFIG_AML_LCD_MIPI_DSI
 	.reg_dump_mipi   = NULL,
 #endif
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_EDP
 	.reg_dump_edp    = NULL,
 #endif
 #ifdef CONFIG_AML_LCD_TCON
@@ -859,14 +899,16 @@ static struct lcd_debug_info_s lcd_debug_info_t3x_0 = {
 static struct lcd_debug_info_s lcd_debug_info_t3x_1 = {
 	.reg_pinmux_table = lcd_reg_dump_pinmux_t3,
 
-	.reg_dump_lvds   = NULL,
+#ifdef CONFIG_AML_LCD_LVDS
+	.reg_dump_lvds   = lcd_reg_print_lvds,
+#endif
 #ifdef CONFIG_AML_LCD_VBYONE
 	.reg_dump_vbyone = lcd_reg_print_vbyone,
 #endif
 #ifdef CONFIG_AML_LCD_MIPI_DSI
 	.reg_dump_mipi   = NULL,
 #endif
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_EDP
 	.reg_dump_edp    = NULL,
 #endif
 #ifdef CONFIG_AML_LCD_TCON
@@ -874,18 +916,22 @@ static struct lcd_debug_info_s lcd_debug_info_t3x_1 = {
 	.reg_dump_p2p    = NULL,
 #endif
 };
+#endif
 
+#if defined(CONFIG_MESON_C3)
 static struct lcd_debug_info_s lcd_debug_info_c3 = {
 	.reg_pinmux_table = lcd_reg_dump_pinmux_c3,
 
+#ifdef CONFIG_AML_LCD_LVDS
 	.reg_dump_lvds   = NULL,
+#endif
 #ifdef CONFIG_AML_LCD_VBYONE
 	.reg_dump_vbyone = NULL,
 #endif
 #ifdef CONFIG_AML_LCD_MIPI_DSI
 	.reg_dump_mipi   = lcd_reg_print_mipi,
 #endif
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_EDP
 	.reg_dump_edp    = NULL,
 #endif
 #ifdef CONFIG_AML_LCD_TCON
@@ -893,12 +939,14 @@ static struct lcd_debug_info_s lcd_debug_info_c3 = {
 	.reg_dump_p2p    = NULL,
 #endif
 };
+#endif
 
 void lcd_debug_probe(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_debug_info_s *lcd_debug_info = NULL;
 
 	switch (pdrv->data->chip_type) {
+#if defined(CONFIG_MESON_T7)
 	case LCD_CHIP_T7:
 		switch (pdrv->index) {
 		case 2:
@@ -912,6 +960,8 @@ void lcd_debug_probe(struct aml_lcd_drv_s *pdrv)
 			break;
 		}
 		break;
+#endif
+#if defined(CONFIG_MESON_T5M) || defined(CONFIG_MESON_T3)
 	case LCD_CHIP_T5M:
 	case LCD_CHIP_T3:
 		switch (pdrv->index) {
@@ -923,6 +973,8 @@ void lcd_debug_probe(struct aml_lcd_drv_s *pdrv)
 			break;
 		}
 		break;
+#endif
+#if defined(CONFIG_MESON_T3X)
 	case LCD_CHIP_T3X:
 		switch (pdrv->index) {
 		case 1:
@@ -933,50 +985,60 @@ void lcd_debug_probe(struct aml_lcd_drv_s *pdrv)
 			break;
 		}
 		break;
-
+#endif
+#if defined(CONFIG_MESON_T5W)
 	case LCD_CHIP_T5W:
 		lcd_debug_info = &lcd_debug_info_t5w;
 		break;
+#endif
+#if defined(CONFIG_MESON_TXHD2)
 	case LCD_CHIP_TXHD2:
 		lcd_debug_info = &lcd_debug_info_txhd2;
 		break;
+#endif
+#if defined(CONFIG_MESON_G12A) || defined(CONFIG_MESON_G12B) || defined(CONFIG_MESON_SM1)
 	case LCD_CHIP_G12A:
 	case LCD_CHIP_G12B:
 	case LCD_CHIP_SM1:
 		lcd_debug_info = &lcd_debug_info_g12a;
 		break;
+#endif
+#if defined(CONFIG_MESON_C3)
 	case LCD_CHIP_C3:
 		lcd_debug_info = &lcd_debug_info_c3;
 		break;
+#endif
 	default:
 		lcd_debug_info = NULL;
 		return;
 	}
 
 	switch (pdrv->config.basic.lcd_type) {
+#if defined(CONFIG_AML_LCD_LVDS)
 	case LCD_LVDS:
 		lcd_debug_info->interface_print = lcd_info_print_lvds;
 		lcd_debug_info->reg_dump_interface = lcd_debug_info->reg_dump_lvds;
 		break;
-#ifdef CONFIG_AML_LCD_VBYONE
+#endif
+#if defined(CONFIG_AML_LCD_VBYONE)
 	case LCD_VBYONE:
 		lcd_debug_info->interface_print = lcd_info_print_vbyone;
 		lcd_debug_info->reg_dump_interface = lcd_debug_info->reg_dump_vbyone;
 		break;
 #endif
-#ifdef CONFIG_AML_LCD_MIPI_DSI
+#if defined(CONFIG_AML_LCD_MIPI_DSI)
 	case LCD_MIPI:
 		lcd_debug_info->interface_print = lcd_info_print_mipi;
 		lcd_debug_info->reg_dump_interface = lcd_debug_info->reg_dump_mipi;
 		break;
 #endif
-#ifdef CONFIG_AML_LCD_TABLET
+#if defined(CONFIG_AML_LCD_EDP)
 	case LCD_EDP:
 		lcd_debug_info->interface_print = lcd_info_print_edp;
 		lcd_debug_info->reg_dump_interface = lcd_debug_info->reg_dump_edp;
 		break;
 #endif
-#ifdef CONFIG_AML_LCD_TCON
+#if defined(CONFIG_AML_LCD_TCON)
 	case LCD_MLVDS:
 		lcd_debug_info->interface_print = lcd_info_print_mlvds;
 		lcd_debug_info->reg_dump_interface = lcd_debug_info->reg_dump_mlvds;

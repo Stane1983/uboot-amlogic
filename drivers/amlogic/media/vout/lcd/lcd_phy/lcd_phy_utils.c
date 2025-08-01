@@ -52,11 +52,14 @@ void lcd_phy_glb_param_dft(struct aml_lcd_drv_s *pdrv)
 
 	phy->ref_bias = 0;
 	switch (pdrv->config.basic.lcd_type) {
+#if defined(CONFIG_AML_LCD_LVDS)
 	case LCD_LVDS:
 		phy->vcm = 0x27e;
 		phy->odt = 0xff;
 		phy->cv_mode = PHY_CMODE;
 		break;
+#endif
+#if defined(CONFIG_AML_LCD_VBYONE)
 	case LCD_VBYONE:
 		if (phy_cfg->ext_pullup) {
 			phy->vcm = 0x27e;
@@ -67,6 +70,8 @@ void lcd_phy_glb_param_dft(struct aml_lcd_drv_s *pdrv)
 		}
 		phy->cv_mode = PHY_CMODE;
 		break;
+#endif
+#if defined(CONFIG_AML_LCD_TCON)
 	case LCD_MLVDS:
 		phy->vcm = 0x27e;
 		phy->odt = 0xff;
@@ -96,6 +101,7 @@ void lcd_phy_glb_param_dft(struct aml_lcd_drv_s *pdrv)
 			return;
 		}
 		break;
+#endif
 	default:
 		break;
 	}

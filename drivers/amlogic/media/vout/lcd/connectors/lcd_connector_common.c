@@ -14,11 +14,16 @@
 static int lcd_type_supported(struct aml_lcd_drv_s *pdrv)
 {
 	switch (pdrv->config.basic.lcd_type) {
+#ifdef CONFIG_AML_LCD_LVDS
 	case LCD_LVDS:
+		return 0;
+#endif
+#ifdef CONFIG_AML_LCD_DPI
 	case LCD_RGB:
 	case LCD_BT656:
 	case LCD_BT1120:
 		return 0;
+#endif
 #ifdef CONFIG_AML_LCD_VBYONE
 	case LCD_VBYONE:
 		return 0;
@@ -36,7 +41,7 @@ static int lcd_type_supported(struct aml_lcd_drv_s *pdrv)
 			return 0;
 		break;
 #endif
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_EDP
 	case LCD_EDP:
 		if (pdrv->mode == LCD_MODE_TABLET)
 			return 0;
@@ -70,6 +75,7 @@ void lcd_connector_driver_init(struct aml_lcd_drv_s *pdrv)
 
 	/* init driver */
 	switch (pdrv->config.basic.lcd_type) {
+#ifdef CONFIG_AML_LCD_DPI
 	case LCD_RGB:
 		lcd_rgb_control_set(pdrv, 1);
 		lcd_pinmux_set(pdrv, 1);
@@ -79,12 +85,15 @@ void lcd_connector_driver_init(struct aml_lcd_drv_s *pdrv)
 		lcd_bt_control_set(pdrv, 1);
 		lcd_pinmux_set(pdrv, 1);
 		break;
+#endif
+#if defined(CONFIG_AML_LCD_LVDS)
 	case LCD_LVDS:
 		lcd_lvds_dphy_set(pdrv, 1);
 		lcd_lvds_enable(pdrv);
 		lcd_phy_set(pdrv, 1);
 		break;
-#ifdef CONFIG_AML_LCD_VBYONE
+#endif
+#if defined(CONFIG_AML_LCD_VBYONE)
 	case LCD_VBYONE:
 		lcd_pinmux_set(pdrv, 1);
 		lcd_vbyone_dphy_set(pdrv, 1);
@@ -110,14 +119,14 @@ void lcd_connector_driver_init(struct aml_lcd_drv_s *pdrv)
 		lcd_tcon_enable(pdrv);
 		break;
 #endif
-#ifdef CONFIG_AML_LCD_MIPI_DSI
+#if defined(CONFIG_AML_LCD_MIPI_DSI)
 	case LCD_MIPI:
 		lcd_phy_set(pdrv, 1);
 		lcd_mipi_dphy_set(pdrv, 1);
 		lcd_dsi_tx_ctrl(pdrv, 1);
 		break;
 #endif
-#ifdef CONFIG_AML_LCD_TABLET
+#if defined(CONFIG_AML_LCD_EDP)
 	case LCD_EDP:
 		lcd_pinmux_set(pdrv, 1);
 		lcd_phy_set(pdrv, 1);
@@ -146,6 +155,7 @@ void lcd_connector_driver_disable(struct aml_lcd_drv_s *pdrv)
 		return;
 
 	switch (pdrv->config.basic.lcd_type) {
+#ifdef CONFIG_AML_LCD_DPI
 	case LCD_RGB:
 		lcd_pinmux_set(pdrv, 0);
 		lcd_rgb_control_set(pdrv, 0);
@@ -155,12 +165,15 @@ void lcd_connector_driver_disable(struct aml_lcd_drv_s *pdrv)
 		lcd_pinmux_set(pdrv, 0);
 		lcd_bt_control_set(pdrv, 0);
 		break;
+#endif
+#if defined(CONFIG_AML_LCD_LVDS)
 	case LCD_LVDS:
 		lcd_phy_set(pdrv, 0);
 		lcd_lvds_disable(pdrv);
 		lcd_lvds_dphy_set(pdrv, 0);
 		break;
-#ifdef CONFIG_AML_LCD_VBYONE
+#endif
+#if defined(CONFIG_AML_LCD_VBYONE)
 	case LCD_VBYONE:
 		lcd_phy_set(pdrv, 0);
 		lcd_pinmux_set(pdrv, 0);
@@ -168,14 +181,14 @@ void lcd_connector_driver_disable(struct aml_lcd_drv_s *pdrv)
 		lcd_vbyone_dphy_set(pdrv, 0);
 		break;
 #endif
-#ifdef CONFIG_AML_LCD_MIPI_DSI
+#if defined(CONFIG_AML_LCD_MIPI_DSI)
 	case LCD_MIPI:
 		lcd_dsi_tx_ctrl(pdrv, 0);
 		lcd_phy_set(pdrv, 0);
 		lcd_mipi_dphy_set(pdrv, 0);
 		break;
 #endif
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_EDP
 	case LCD_EDP:
 		edp_tx_ctrl(pdrv, 0);
 		lcd_edp_dphy_set(pdrv, 0);

@@ -588,6 +588,45 @@ p2p_clk_without_tcon_div_done:
 }
 #endif
 
+#ifdef CONFIG_AML_LCD_DPI
+static unsigned char lcd_clk_generate_DPI(struct aml_lcd_drv_s *pdrv)
+{
+	struct lcd_clk_config_s *cconf;
+	unsigned long long pll_fout, clk_div_in;
+	unsigned int clk_div_out, clk_div_sel, xd;
+	int done = 0;
+
+	cconf = get_lcd_clk_config(pdrv);
+	if (!cconf)
+		return 0;
+
+	clk_div_sel = CLK_DIV_SEL_1;
+	for (xd = 1; xd <= cconf->data->xd_max; xd++) {
+		clk_div_out = cconf->fout * xd;
+		if (clk_div_out > cconf->data->pll_data[0]->div_out_fmax)
+			continue;
+		if (lcd_debug_print_flag & LCD_DBG_PR_CLK)
+			LCDPR("fout=%u, xd=%d, clk_div_out=%u\n", cconf->fout, xd, clk_div_out);
+		clk_div_in = clk_vid_pll_div_calc(clk_div_out, clk_div_sel, CLK_DIV_O2I);
+		if (clk_div_in > cconf->data->pll_data[0]->div_in_fmax)
+			continue;
+		cconf->xd = xd;
+		cconf->pll_config[0].div_sel = clk_div_sel;
+		cconf->pll_config[0].pll_div_fout = clk_div_out;
+		pll_fout = clk_div_in;
+		if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
+			LCDPR("clk_div_sel=%s(index %d), pll_fout=%lld\n",
+				lcd_clk_div_table[clk_div_sel].name, clk_div_sel, pll_fout);
+		}
+
+		done = pll_od_setting_generate(cconf, LCD_PLL_SEL_PHY, pll_fout);
+		if (done)
+			return 1;
+	}
+	return 0;
+}
+#endif
+
 #ifdef CONFIG_AML_LCD_MIPI_DSI
 #define DSI_CLK_TB_SIZE 32
 /******************* DSI 1PLL model ********** **********/
@@ -719,7 +758,7 @@ dsi_clk_tabel_buffer_full:
 }
 #endif
 
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_EDP
 /* Func: lcd_DP_1PLL_clk_para_cal, strategy: keep phy clk, find the closest pclk */
 /************************* eDP 1PLL model T7 ***********************/
 /* PLL_VCO / tcon_div / edp_div0&1 / PLL_CLK_DIV == VID_PLL_CLK */
@@ -1039,9 +1078,16 @@ void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_clk_config_s *cconf;
 	struct lcd_config_s *pconf = &pdrv->config;
+#if defined(CONFIG_AML_LCD_VBYONE) || defined(CONFIG_AML_LCD_LVDS) || defined(CONFIG_AML_LCD_TCON)
 	unsigned long long pll_fout, clk_div_in;
-	unsigned int clk_div_out, clk_div_sel, xd, tcon_div_sel = 0, phy_div = 1;
+	unsigned int clk_div_out, clk_div_sel, xd, tcon_div_sel = 0;
+#endif
+#if defined(CONFIG_AML_LCD_VBYONE) || defined(CONFIG_AML_LCD_LVDS)
 	unsigned int od1, od2, od3;
+#endif
+#if defined(CONFIG_AML_LCD_LVDS)
+	unsigned int phy_div = 1;
+#endif
 	int done = 0;
 #ifdef CONFIG_AML_LCD_VBYONE
 	unsigned int tmp_clk;
@@ -1064,34 +1110,12 @@ void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 	}
 
 	switch (pconf->basic.lcd_type) {
+#ifdef CONFIG_AML_LCD_DPI
 	case LCD_RGB:
-		clk_div_sel = CLK_DIV_SEL_1;
-		for (xd = 1; xd <= cconf->data->xd_max; xd++) {
-			clk_div_out = cconf->fout * xd;
-			if (clk_div_out > cconf->data->pll_data[0]->div_out_fmax)
-				continue;
-			if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
-				LCDPR("fout=%u, xd=%d, clk_div_out=%u\n",
-				      cconf->fout, xd, clk_div_out);
-			}
-			clk_div_in = clk_vid_pll_div_calc(clk_div_out, clk_div_sel, CLK_DIV_O2I);
-			if (clk_div_in > cconf->data->pll_data[0]->div_in_fmax)
-				continue;
-			cconf->xd = xd;
-			cconf->pll_config[0].div_sel = clk_div_sel;
-			cconf->pll_config[0].pll_div_fout = clk_div_out;
-			pll_fout = clk_div_in;
-			if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
-				LCDPR("clk_div_sel=%s(index %d), pll_fout=%lld\n",
-				      lcd_clk_div_table[clk_div_sel].name,
-				      clk_div_sel, pll_fout);
-			}
-
-			done = pll_od_setting_generate(cconf, LCD_PLL_SEL_PHY, pll_fout);
-			if (done)
-				goto generate_clk_dft_done;
-		}
+		done = lcd_clk_generate_DPI(pdrv);
 		break;
+#endif
+#ifdef CONFIG_AML_LCD_LVDS
 	case LCD_LVDS:
 		if (pdrv->data->chip_type == LCD_CHIP_T3X) {
 			if (pconf->control.lvds_cfg.dual_port)
@@ -1154,6 +1178,7 @@ void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 			cconf->phy_clk = cconf->pll_config[0].pll_fout;
 		}
 		break;
+#endif
 #ifdef CONFIG_AML_LCD_VBYONE
 	case LCD_VBYONE:
 		pll_fout = pconf->timing.bit_rate;
@@ -1287,7 +1312,7 @@ void lcd_clk_generate_dft(struct aml_lcd_drv_s *pdrv)
 		done = lcd_clk_generate_DSI_1PLL(pdrv);
 		break;
 #endif
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_EDP
 	case LCD_EDP:
 		done = lcd_clk_generate_DP_1PLL(pdrv);
 		break;

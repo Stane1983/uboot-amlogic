@@ -931,7 +931,7 @@ static inline int lcd_tcon_check_bits_byte(unsigned int reg,
 	return 0;
 }
 
-#ifdef CONFIG_AML_LCD_TABLET
+#ifdef CONFIG_AML_LCD_EDP
 static inline unsigned int dptx_reg_read(int index, unsigned int reg)
 {
 	unsigned long paddr;

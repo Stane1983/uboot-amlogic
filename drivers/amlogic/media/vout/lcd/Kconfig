@@ -7,6 +7,20 @@ config AML_LCD
 		Support for lcd video output
 		Include LVDS, MIPI-DPI
 
+config AML_LCD_DPI
+	bool "DPI output for lcd"
+	depends on AML_LCD
+	help
+		Support for lcd DPI output (rgb, bt656, bt2020)
+		Disable to reduce size on chip without DPI
+
+config AML_LCD_LVDS
+	bool "LVDS output for lcd"
+	depends on AML_LCD
+	help
+		Support for lcd LVDS output
+		Disable to reduce size on chip without LVDS
+
 config AML_LCD_VBYONE
 	bool "V-BY-ONE output for lcd"
 	depends on AML_LCD
@@ -28,7 +42,7 @@ config AML_LCD_MIPI_DSI
 		Support for lcd MIPI-DSI output
 		Disable to reduce size on chip without MIPI-DSI
 
-config AML_LCD_TABLET
+config AML_LCD_EDP
 	bool "eDP output for lcd"
 	depends on AML_LCD
 	help
