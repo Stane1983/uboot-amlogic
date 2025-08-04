@@ -512,7 +512,7 @@ void wifi_init(void)
 	1、bbpll init & start
 	2、cpu clock set
 	3、download fw
-	4、write value 0x00141832 to 0x40000 reg addr ---fw enter point
+	4、write value 0x00141788 to 0x40000 reg addr ---fw enter point
 	5、start wifi
 	*/
 
@@ -524,7 +524,7 @@ void wifi_init(void)
 	// printf("read reg 0x00a0d090: %x\n",wifi_read_reg(0x00a0d090, 4));
 
 	if (!wifi_fw_download()) {
-		wifi_write_reg(0x40000, 0x0014183c, 4);
+		wifi_write_reg(0x40000, 0x00141788, 4);
 		//printf("read reg 0x40000:%x\n", wifi_read_reg(0x40000, 4));
 
 		if (!start_wifi()) {
