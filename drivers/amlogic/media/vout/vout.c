@@ -461,10 +461,10 @@ static int get_window_axis(int *axis)
 		axis[2] = getenv_int("panel_w", def_w);
 		axis[3] = getenv_int("panel_h", def_h);
 	} else {
-		axis[0] = getenv_int("1080p_x", def_x);
-		axis[1] = getenv_int("1080p_y", def_y);
-		axis[2] = getenv_int("1080p_w", def_w);
-		axis[3] = getenv_int("1080p_h", def_h);
+		axis[0] = def_x;
+		axis[1] = def_y;
+		axis[2] = def_w;
+		axis[3] = def_h;
 	}
 
 	return ret;
