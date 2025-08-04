@@ -373,11 +373,15 @@ static int count_required_pts(u64 addr, int level, u64 maxaddr)
 /* update mmu map from bl2 ddr auto detect size */
 int mmu_map_update(void)
 {
+#ifndef CONFIG_UBOOT_RUN_IN_SRAM
 	ulong ddr_size = get_effective_memsize();
 
 #ifdef CONFIG_SYS_MEM_TOP_HIDE
 	ddr_size += CONFIG_SYS_MEM_TOP_HIDE;
 #endif
+#else
+	ulong ddr_size = (((readl(SYSCTRL_SEC_STATUS_REG4)) & 0xFFFF0000) << 4);
+#endif /* CONFIG_UBOOT_RUN_IN_SRAM */
 
 	u32 rsv_addr;
 	u32 reg_size;
