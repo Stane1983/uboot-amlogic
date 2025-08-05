@@ -362,17 +362,23 @@ int aml_board_late_init_tail(void *arg)
 void aml_board_display_env_handler(void)
 {
 	char *bootup_display;
+	char *write_boot;
 #ifdef CONFIG_AML_LCD
 	char lcd_init_str[8];
 #endif
 
+	write_boot = env_get("write_boot");
 	run_command("get_rebootmode", 0);
 	printf("reboot_mode: %s\n", env_get("reboot_mode"));
 	run_command("run check_display", 0);
 	bootup_display = env_get("bootup_display");
 	if (!bootup_display)
 		return;
-
+	if (write_boot && !strcmp(write_boot, "1")) {
+		printf("write_boot is %s, set display to off\n", write_boot);
+		env_set("bootup_display", "off");
+		return;
+	}
 	printf("bootup_display: %s\n", bootup_display);
 #ifdef CONFIG_AML_LCD
 	if (strcmp(bootup_display, "on") == 0)
