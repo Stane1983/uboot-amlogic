@@ -449,6 +449,7 @@ void sprintf_lcd_connector(char *buf, unsigned char lcd_idx, unsigned char lcd_t
 	sprintf(buf, "%s-%c", connector_name_list[name_idx], 'A' + lcd_idx);
 }
 
+#if defined(CONFIG_AML_LCD_VBYONE)
 static unsigned int vbyone_lane_num[] = {
 	1,
 	2,
@@ -514,7 +515,9 @@ void lcd_vbyone_bit_rate_config(struct aml_lcd_drv_s *pdrv)
 			lane_count, bit_rate, pconf->timing.act_timing.pixel_clk);
 	}
 }
+#endif
 
+#if defined(CONFIG_AML_LCD_TCON)
 void lcd_mlvds_bit_rate_config(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_config_s *pconf = &pdrv->config;
@@ -595,16 +598,14 @@ void lcd_p2p_bit_rate_config(struct aml_lcd_drv_s *pdrv)
 		      bit_rate, pconf->timing.act_timing.pixel_clk);
 	}
 }
+#endif
 
+#if defined(CONFIG_AML_LCD_MIPI_DSI)
 void lcd_mipi_dsi_bit_rate_config(struct aml_lcd_drv_s *pdrv)
 {
 	// none
 }
-
-void lcd_edp_bit_rate_config(struct aml_lcd_drv_s *pdrv)
-{
-	//todo
-}
+#endif
 
 struct lcd_detail_timing_s *lcd_timing_alloc(struct aml_lcd_drv_s *pdrv)
 {
@@ -767,9 +768,11 @@ void lcd_enc_timing_init_config(struct aml_lcd_drv_s *pdrv)
 	unsigned short h_delay = 0;
 
 	switch (pconf->basic.lcd_type) {
+#if defined(CONFIG_AML_LCD_DPI)
 	case LCD_RGB:
 		h_delay = RGB_DELAY;
 		break;
+#endif
 	default:
 		h_delay = 0;
 		break;

@@ -2,15 +2,17 @@ define config_status
 $(if $(value $1),y,n)
 endef
 
+DPI_info       = DPI[$(call config_status,CONFIG_AML_LCD_DPI)]
+lvds_info      = LVDS[$(call config_status,CONFIG_AML_LCD_LVDS)]
 tcon_info      = Tcon[$(call config_status,CONFIG_AML_LCD_TCON)]
 vbyone_info    = VbyOne[$(call config_status,CONFIG_AML_LCD_VBYONE)]
 dsi_info       = MIPI-DSI[$(call config_status,CONFIG_AML_LCD_MIPI_DSI)]
-# eDP_info       = eDP[$(call config_status,CONFIG_AMLOGIC_LCD_TABLET)]
-connector_info = connector($(tcon_info) $(vbyone_info) $(dsi_info))
+connector_info = connector($(DPI_info) $(lvds_info) $(tcon_info) $(vbyone_info) $(dsi_info))
 
+feature_lcd_cus_ctrl = Cus_Ctrl[$(call config_status,CONFIG_AML_LCD_CUSTOM_CTRL)]
 feature_lcd_extern = Extern[$(call config_status,CONFIG_AML_LCD_EXTERN)]
 feature_ambilight  = ambilight[$(call config_status,CONFIG_AMLOGIC_AMBILIGHT)]
-feature_info       = feature($(feature_lcd_extern) $(feature_ambilight))
+feature_info       = feature($(feature_lcd_cus_ctrl) $(feature_lcd_extern) $(feature_ambilight))
 
 bl         = Backlight[$(call config_status,CONFIG_AML_LCD_BACKLIGHT)]
 bl_extern  = Extern[$(call config_status,CONFIG_AML_LCD_BL_EXTERN)]

@@ -566,7 +566,6 @@ static struct lcd_phy_ctrl_s lcd_phy_ctrl_t6w = {
 	.phy_set_mlvds = lcd_mlvds_phy_set,
 	.phy_set_p2p = lcd_p2p_phy_set,
 	.phy_set_mipi = NULL,
-	.phy_set_edp = NULL,
 };
 
 struct lcd_phy_ctrl_s *lcd_phy_config_init_t6w(struct aml_lcd_data_s *pdata)

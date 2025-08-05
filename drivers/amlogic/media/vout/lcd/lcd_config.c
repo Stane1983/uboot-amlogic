@@ -15,15 +15,24 @@
 #include <command.h>
 
 static struct num_str_s lcd_type_match_table[] = {
-	{LCD_RGB,      "rgb"},
-	{LCD_LVDS,     "lvds"},
-	{LCD_VBYONE,   "vbyone"},
-	{LCD_MIPI,     "mipi"},
-	{LCD_MLVDS,    "minilvds"},
-	{LCD_P2P,      "p2p"},
-	{LCD_EDP,      "edp"},
-	{LCD_BT656,    "bt656"},
-	{LCD_BT1120,   "bt1120"},
+#ifdef CONFIG_AML_LCD_DPI
+	{LCD_RGB,      "rgb"},      {LCD_RGB,      "LCD_RGB"},
+	{LCD_BT656,    "bt656"},    {LCD_BT656,    "LCD_BT656"},
+	{LCD_BT1120,   "bt1120"},   {LCD_BT1120,   "LCD_BT1120"},
+#endif
+#ifdef CONFIG_AML_LCD_LVDS
+	{LCD_LVDS,     "lvds"},     {LCD_LVDS,     "LCD_LVDS"},
+#endif
+#ifdef CONFIG_AML_LCD_VBYONE
+	{LCD_VBYONE,   "vbyone"},   {LCD_VBYONE,   "LCD_VBYONE"},
+#endif
+#ifdef CONFIG_AML_LCD_MIPI_DSI
+	{LCD_MIPI,     "mipi"},     {LCD_MIPI,     "LCD_MIPI"},
+#endif
+#ifdef CONFIG_AML_LCD_TCON
+	{LCD_MLVDS,    "minilvds"}, {LCD_MLVDS,    "LCD_MLVDS"},
+	{LCD_P2P,      "p2p"},      {LCD_P2P,      "LCD_P2P"},
+#endif
 	{LCD_TYPE_MAX, "invalid"},
 };
 
@@ -135,6 +144,7 @@ static void lcd_config_load_print(struct aml_lcd_drv_s *pdrv)
 
 	pctrl = &pconf->control;
 	switch (pconf->basic.lcd_type) {
+#if defined(CONFIG_AML_LCD_DPI)
 	case LCD_RGB:
 		LCDPR("type = %d\n", pctrl->rgb_cfg.type);
 		LCDPR("clk_pol = %d\n", pctrl->rgb_cfg.clk_pol);
@@ -143,6 +153,8 @@ static void lcd_config_load_print(struct aml_lcd_drv_s *pdrv)
 		LCDPR("rb_swap = %d\n", pctrl->rgb_cfg.rb_swap);
 		LCDPR("bit_swap = %d\n", pctrl->rgb_cfg.bit_swap);
 		break;
+#endif
+#if defined(CONFIG_AML_LCD_LVDS)
 	case LCD_LVDS:
 		LCDPR("lvds_repack = %d\n", pctrl->lvds_cfg.lvds_repack);
 		LCDPR("pn_swap = %d\n", pctrl->lvds_cfg.pn_swap);
@@ -152,6 +164,7 @@ static void lcd_config_load_print(struct aml_lcd_drv_s *pdrv)
 		LCDPR("phy_vswing = 0x%x\n", pctrl->lvds_cfg.phy_vswing);
 		LCDPR("phy_preem = 0x%x\n", pctrl->lvds_cfg.phy_preem);
 		break;
+#endif
 #ifdef CONFIG_AML_LCD_VBYONE
 	case LCD_VBYONE:
 		LCDPR("lane_count = %d\n", pctrl->vbyone_cfg.lane_count);
@@ -367,6 +380,7 @@ int lcd_base_config_load_from_bsp(struct aml_lcd_drv_s *pdrv)
 	return 0;
 }
 
+#if defined(CONFIG_AML_LCD_DPI)
 static char *lcd_rgb_pinmux_str[] = {
 	"lcd_rgb_on_pin",         /* 0 */
 	"lcd_rgb_de_on_pin",      /* 1 */
@@ -484,6 +498,7 @@ static int lcd_pinmux_load_rgb(struct lcd_pinmux_ctrl_s *pinmux, struct lcd_conf
 
 	return 0;
 }
+#endif
 
 static int lcd_custom_pinmux_load_config(struct lcd_pinmux_ctrl_s *pinmux,
 					 struct lcd_config_s *pconf)
@@ -553,12 +568,14 @@ static int lcd_pinmux_load_config(struct aml_lcd_drv_s *pdrv)
 		return -1;
 	}
 
+#if defined(CONFIG_AML_LCD_DPI)
 	if (pconf->basic.lcd_type == LCD_RGB) {
 		ret = lcd_pinmux_load_rgb(pinmux, pconf);
 		if (ret)
 			return -1;
 		goto lcd_pinmux_load_config_next;
 	}
+#endif
 
 	if (pconf->custom_pinmux) {
 		ret = lcd_custom_pinmux_load_config(pinmux, pconf);
@@ -568,9 +585,12 @@ static int lcd_pinmux_load_config(struct aml_lcd_drv_s *pdrv)
 	}
 
 	switch (pconf->basic.lcd_type) {
+#if defined(CONFIG_AML_LCD_VBYONE)
 	case LCD_VBYONE:
 		sprintf(propname, "lcd_vbyone_pin");
 		break;
+#endif
+#if defined(CONFIG_AML_LCD_TCON)
 	case LCD_MLVDS:
 		sprintf(propname, "lcd_minilvds_pin");
 		break;
@@ -580,9 +600,7 @@ static int lcd_pinmux_load_config(struct aml_lcd_drv_s *pdrv)
 		else
 			sprintf(propname, "lcd_p2p_pin");
 		break;
-	case LCD_EDP:
-		sprintf(propname, "lcd_edp_pin");
-		break;
+#endif
 	default:
 		pconf->pinmux_set[0][0] = LCD_PINMUX_END;
 		pconf->pinmux_set[0][1] = 0x0;
@@ -782,7 +800,10 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 #ifdef CONFIG_OF_LIBFDT
 	struct lcd_config_s *pconf = &pdrv->config;
 	struct lcd_detail_timing_s *ptiming;
+#if defined(CONFIG_AML_LCD_DPI) || defined(CONFIG_AML_LCD_LVDS) || defined(CONFIG_AML_LCD_TCON) || \
+		defined(CONFIG_AML_LCD_VBYONE) || defined(CONFIG_AML_LCD_MIPI_DSI)
 	union lcd_ctrl_config_u *pctrl = &pdrv->config.control;
+#endif
 	struct phy_config_s *phy_cfg = &pdrv->config.phy_cfg;
 	struct phy_attr_s *phy = NULL;
 	int child_offset;
@@ -972,6 +993,7 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 	lcd_default_to_basic_timing_init_config(pdrv);
 
 	switch (pconf->basic.lcd_type) {
+#if defined(CONFIG_AML_LCD_DPI)
 	case LCD_RGB:
 		propdata = (char *)fdt_getprop(dt_addr, child_offset, "rgb_attr", NULL);
 		if (!propdata) {
@@ -998,6 +1020,8 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 		pctrl->bt_cfg.yc_swap = be32_to_cpup((((u32 *)propdata) + 3));
 		pctrl->bt_cfg.cbcr_swap = be32_to_cpup((((u32 *)propdata) + 4));
 		break;
+#endif
+#if defined(CONFIG_AML_LCD_LVDS)
 	case LCD_LVDS:
 		propdata = (char *)fdt_getprop(dt_addr, child_offset, "lvds_attr", &len);
 		if (!propdata) {
@@ -1043,6 +1067,7 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 		phy_cfg->ext_pullup = (pctrl->lvds_cfg.phy_vswing >> 4) & 0x3;
 		phy_cfg->preem_level = pctrl->lvds_cfg.phy_preem;
 		break;
+#endif
 #ifdef CONFIG_AML_LCD_VBYONE
 	case LCD_VBYONE:
 		propdata = (char *)fdt_getprop(dt_addr, child_offset, "vbyone_attr", NULL);
@@ -1105,14 +1130,11 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 					be32_to_cpup((((u32 *)propdata) + 2));
 			}
 			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-				LCDPR("[%d]: power_on_reset_delay: %d\n",
-				      pdrv->index,
+				LCDPR("[%d]: power_on_reset_delay: %d\n", pdrv->index,
 				      pctrl->vbyone_cfg.power_on_reset_delay);
-				LCDPR("[%d]: hpd_data_delay: %d\n",
-				      pdrv->index,
+				LCDPR("[%d]: hpd_data_delay: %d\n", pdrv->index,
 				      pctrl->vbyone_cfg.hpd_data_delay);
-				LCDPR("[%d]: cdr_training_hold: %d\n",
-				      pdrv->index,
+				LCDPR("[%d]: cdr_training_hold: %d\n", pdrv->index,
 				      pctrl->vbyone_cfg.cdr_training_hold);
 			}
 		}
@@ -1572,7 +1594,10 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_config_s *pconf = &pdrv->config;
 	struct lcd_detail_timing_s *ptiming;
+#if defined(CONFIG_AML_LCD_DPI) || defined(CONFIG_AML_LCD_LVDS) || \
+		defined(CONFIG_AML_LCD_TCON) || defined(CONFIG_AML_LCD_VBYONE)
 	union lcd_ctrl_config_u *pctrl = &pdrv->config.control;
+#endif
 	struct phy_config_s *phy_cfg = &pdrv->config.phy_cfg;
 	struct phy_attr_s *phy = NULL;
 	struct lcd_unifykey_header_s *lcd_header;
@@ -1713,6 +1738,7 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv)
 
 	/* interface: 20byte */
 	switch (pconf->basic.lcd_type) {
+#if defined(CONFIG_AML_LCD_DPI)
 	case LCD_RGB:
 		pctrl->rgb_cfg.type =
 			(*(p + LCD_UKEY_IF_ATTR_0) |
@@ -1733,6 +1759,8 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv)
 			(*(p + LCD_UKEY_IF_ATTR_5) |
 			 ((*(p + LCD_UKEY_IF_ATTR_5 + 1)) << 8));
 		break;
+#endif
+#if defined(CONFIG_AML_LCD_LVDS)
 	case LCD_LVDS:
 		pctrl->lvds_cfg.lvds_repack =
 			*(p + LCD_UKEY_IF_ATTR_0) |
@@ -1760,6 +1788,8 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv)
 		phy_cfg->ext_pullup = (pctrl->lvds_cfg.phy_vswing >> 4) & 0x3;
 		phy_cfg->preem_level = pctrl->lvds_cfg.phy_preem;
 		break;
+#endif
+#if defined(CONFIG_AML_LCD_VBYONE)
 	case LCD_VBYONE:
 		pctrl->vbyone_cfg.lane_count =
 			*(p + LCD_UKEY_IF_ATTR_0) |
@@ -1795,6 +1825,8 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv)
 		phy_cfg->ext_pullup = (pctrl->vbyone_cfg.phy_vswing >> 4) & 0x3;
 		phy_cfg->preem_level = pctrl->vbyone_cfg.phy_preem;
 		break;
+#endif
+#if defined(CONFIG_AML_LCD_TCON)
 	case LCD_MLVDS:
 		pctrl->mlvds_cfg.channel_num =
 			*(p + LCD_UKEY_IF_ATTR_0) |
@@ -1863,9 +1895,9 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv)
 		phy_cfg->ext_pullup = (pctrl->p2p_cfg.phy_vswing >> 4) & 0x3;
 		phy_cfg->preem_level = pctrl->p2p_cfg.phy_preem;
 		break;
+#endif
 	default:
-		LCDERR("[%d]: unsupport lcd_type: %d\n",
-		       pdrv->index, pconf->basic.lcd_type);
+		LCDERR("[%d]: unsupport lcd_type: %d\n", pdrv->index, pconf->basic.lcd_type);
 		break;
 	}
 
@@ -1916,7 +1948,10 @@ static int lcd_config_load_from_bsp(struct aml_lcd_drv_s *pdrv)
 	struct ext_lcd_config_s *ext_lcd;
 	struct lcd_config_s *pconf = &pdrv->config;
 	struct lcd_detail_timing_s *ptiming;
+#if defined(CONFIG_AML_LCD_DPI) || defined(CONFIG_AML_LCD_LVDS) || defined(CONFIG_AML_LCD_TCON) || \
+		defined(CONFIG_AML_LCD_VBYONE) || defined(CONFIG_AML_LCD_MIPI_DSI)
 	union lcd_ctrl_config_u *pctrl = &pdrv->config.control;
+#endif
 	struct phy_config_s *phy_cfg = &pdrv->config.phy_cfg;
 	struct phy_attr_s *phy = NULL;
 	struct lcd_power_step_s *power_step;
@@ -2058,6 +2093,7 @@ static int lcd_config_load_from_bsp(struct aml_lcd_drv_s *pdrv)
 	lcd_default_to_basic_timing_init_config(pdrv);
 
 	switch (pconf->basic.lcd_type) {
+#if defined(CONFIG_AML_LCD_DPI)
 	case LCD_RGB:
 		pctrl->rgb_cfg.type = ext_lcd->lcd_spc_val0;
 		pctrl->rgb_cfg.clk_pol = ext_lcd->lcd_spc_val1;
@@ -2066,6 +2102,8 @@ static int lcd_config_load_from_bsp(struct aml_lcd_drv_s *pdrv)
 		pctrl->rgb_cfg.rb_swap = ext_lcd->lcd_spc_val4;
 		pctrl->rgb_cfg.bit_swap = ext_lcd->lcd_spc_val5;
 		break;
+#endif
+#if defined(CONFIG_AML_LCD_LVDS)
 	case LCD_LVDS:
 		pctrl->lvds_cfg.lvds_repack = ext_lcd->lcd_spc_val0;
 		pctrl->lvds_cfg.dual_port   = ext_lcd->lcd_spc_val1;
@@ -2081,6 +2119,7 @@ static int lcd_config_load_from_bsp(struct aml_lcd_drv_s *pdrv)
 		phy_cfg->ext_pullup = (pctrl->lvds_cfg.phy_vswing >> 4) & 0x3;
 		phy_cfg->preem_level = pctrl->lvds_cfg.phy_preem;
 		break;
+#endif
 #ifdef CONFIG_AML_LCD_VBYONE
 	case LCD_VBYONE:
 		pctrl->vbyone_cfg.lane_count = ext_lcd->lcd_spc_val0;
@@ -3114,36 +3153,13 @@ static int lcd_config_load_from_ini_v3(struct aml_lcd_drv_s *pdrv, void *inip, v
 	return ret;
 }
 
-static int lcd_ini_str_to_type(const char *str)
-{
-	int type = LCD_TYPE_MAX;
-
-	if (strcmp(str, "LCD_RGB") == 0)
-		type = LCD_RGB;
-	else if (strcmp(str, "LCD_LVDS") == 0)
-		type = LCD_LVDS;
-	else if (strcmp(str, "LCD_VBYONE") == 0)
-		type = LCD_VBYONE;
-	else if (strcmp(str, "LCD_MIPI") == 0)
-		type = LCD_MIPI;
-	else if (strcmp(str, "LCD_MLVDS") == 0)
-		type = LCD_MLVDS;
-	else if (strcmp(str, "LCD_P2P") == 0)
-		type = LCD_P2P;
-	else if (strcmp(str, "LCD_EDP") == 0)
-		type = LCD_EDP;
-	else if (strcmp(str, "LCD_BT656") == 0)
-		type = LCD_BT656;
-	else if (strcmp(str, "LCD_BT1120") == 0)
-		type = LCD_BT1120;
-	return type;
-}
-
 static int lcd_config_load_from_ini(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_config_s *pconf = &pdrv->config;
 	struct lcd_detail_timing_s *ptiming;
+#if defined(CONFIG_AML_LCD_LVDS) || defined(CONFIG_AML_LCD_TCON) || defined(CONFIG_AML_LCD_VBYONE)
 	union lcd_ctrl_config_u *pctrl = &pdrv->config.control;
+#endif
 	struct phy_config_s *phy_cfg = &pdrv->config.phy_cfg;
 	struct phy_attr_s *phy = NULL;
 	void *inip, *psec;
@@ -3168,7 +3184,7 @@ static int lcd_config_load_from_ini(struct aml_lcd_drv_s *pdrv)
 	strlcpy(pconf->basic.model_name, str, MOD_LEN_MAX);
 
 	str = lcd_ini_get_str(inip, psec, "interface", "null");
-	pconf->basic.lcd_type = lcd_ini_str_to_type(str);
+	pconf->basic.lcd_type = lcd_type_str_to_type(str);
 
 	temp = lcd_ini_get_val(inip, psec, "config_check", 0);
 	pconf->basic.config_check = temp ? 0x3 : 0x2;
@@ -3236,6 +3252,7 @@ static int lcd_config_load_from_ini(struct aml_lcd_drv_s *pdrv)
 
 	/* interface: 20byte */
 	switch (pconf->basic.lcd_type) {
+#if defined(CONFIG_AML_LCD_LVDS)
 	case LCD_LVDS:
 		str = lcd_ini_get_str(inip, psec, "lvds_fmt", NULL);
 		if (!str) {
@@ -3263,6 +3280,8 @@ static int lcd_config_load_from_ini(struct aml_lcd_drv_s *pdrv)
 		phy_cfg->ext_pullup = (pctrl->lvds_cfg.phy_vswing >> 4) & 0x3;
 		phy_cfg->preem_level = pctrl->lvds_cfg.phy_preem;
 		break;
+#endif
+#if defined(CONFIG_AML_LCD_VBYONE)
 	case LCD_VBYONE:
 		pctrl->vbyone_cfg.lane_count = lcd_ini_get_val(inip, psec, "if_attr_0", 0);
 		pctrl->vbyone_cfg.region_num = lcd_ini_get_val(inip, psec, "if_attr_1", 0);
@@ -3282,6 +3301,8 @@ static int lcd_config_load_from_ini(struct aml_lcd_drv_s *pdrv)
 		phy_cfg->ext_pullup = (pctrl->vbyone_cfg.phy_vswing >> 4) & 0x3;
 		phy_cfg->preem_level = pctrl->vbyone_cfg.phy_preem;
 		break;
+#endif
+#if defined(CONFIG_AML_LCD_TCON)
 	case LCD_MLVDS:
 		pctrl->mlvds_cfg.channel_num = lcd_ini_get_val(inip, psec, "if_attr_0", 0);
 		pctrl->mlvds_cfg.channel_sel0 =
@@ -3318,6 +3339,7 @@ static int lcd_config_load_from_ini(struct aml_lcd_drv_s *pdrv)
 		phy_cfg->ext_pullup = (pctrl->p2p_cfg.phy_vswing >> 4) & 0x3;
 		phy_cfg->preem_level = pctrl->p2p_cfg.phy_preem;
 		break;
+#endif
 	default:
 		LCDERR("[%d]: unsupport lcd_type: %d\n",
 		       pdrv->index, pconf->basic.lcd_type);

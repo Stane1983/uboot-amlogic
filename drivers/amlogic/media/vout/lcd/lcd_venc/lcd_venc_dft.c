@@ -126,18 +126,23 @@ static void lcd_venc_set_tcon(struct aml_lcd_drv_s *pdrv)
 	}
 
 	switch (pconf->basic.lcd_type) {
+#if defined(CONFIG_AML_LCD_LVDS)
 	case LCD_LVDS:
 		lcd_vcbus_setb(L_POL_CNTL_ADDR, 1, 0, 3);
 		// refs to lcd_lvds.c@lcd_lvds_enable
 		if (pconf->timing.act_timing.vsync_pol == pconf->timing.act_timing.hsync_pol)
 			lcd_vcbus_setb(L_POL_CNTL_ADDR, 1, 1, 1);
 		break;
+#endif
+#if defined(CONFIG_AML_LCD_VBYONE)
 	case LCD_VBYONE:
 		if (pconf->timing.act_timing.hsync_pol)
 			lcd_vcbus_setb(L_POL_CNTL_ADDR, 1, 0, 1);
 		if (pconf->timing.act_timing.vsync_pol)
 			lcd_vcbus_setb(L_POL_CNTL_ADDR, 1, 1, 1);
 		break;
+#endif
+#if defined(CONFIG_AML_LCD_MIPI_DSI)
 	case LCD_MIPI:
 		//lcd_vcbus_setb(L_POL_CNTL_ADDR, 0x3, 0, 2);
 		/*lcd_vcbus_write(L_POL_CNTL_ADDR,
@@ -149,9 +154,7 @@ static void lcd_venc_set_tcon(struct aml_lcd_drv_s *pdrv)
 		 *	  (1 << LCD_TCON_HS_SEL))));
 		 */
 		break;
-	case LCD_EDP:
-		lcd_vcbus_setb(L_POL_CNTL_ADDR, 1, 0, 1);
-		break;
+#endif
 	default:
 		break;
 	}
@@ -308,18 +311,22 @@ static void lcd_venc_reg_dump(struct aml_lcd_drv_s *pdrv)
 		L_POL_CNTL_ADDR,
 		L_DITH_CNTL_ADDR
 	};
+#ifdef CONFIG_MESON_TXHD2
 	static unsigned int ctrl_reg_table[] = {
 		ENCL_INBUF_CNTL0,
 		ENCL_INBUF_CNTL1,
 	};
+#endif
 
 	switch (pdrv->data->chip_type) {
+#ifdef CONFIG_MESON_TXHD2
 	case LCD_CHIP_TXHD2:
 		reg_table = encl_reg_dft;
 		size_encl = ARRAY_SIZE(encl_reg_dft);
 		reg_ctrl = ctrl_reg_table;
 		size_ctrl = ARRAY_SIZE(ctrl_reg_table);
 		break;
+#endif
 	default:
 		reg_table = encl_reg_dft;
 		size_encl = ARRAY_SIZE(encl_reg_dft);

@@ -41,7 +41,7 @@ char *dsi_video_data_type_table[] = {
 	"30bit",
 	"36bit",
 	"12bit YCbCr 4:2:0",
-	"un-support type",
+	"unsupport type",
 };
 
 void dsi_config_print_helper(struct lcd_config_s *pconf, u8 pr_flag)
@@ -53,11 +53,11 @@ void dsi_config_print_helper(struct lcd_config_s *pconf, u8 pr_flag)
 		printf("MIPI DSI Config:\n"
 			"  %u-port, %u-lane\n"
 			"  bit rate = %lluHz (limit < %uMHz)\n"
-			"  lane_byte_clk:    %uhz\n"
-			"  operation mode:   init:%s(%u), display:%s(%u)\n"
-			"  video mode type:  %s(%d)\n"
-			"  clk always hs:    %u\n"
-			"  data format:      %s\n",
+			"  LaneByteClk:   %uhz\n"
+			"  dsi mode:      init:%s(%u), disp:%s(%u)\n"
+			"  video mode:    %s(%d)\n"
+			"  clk always hs: %u\n"
+			"  data format:   %s\n",
 			dconf->multi_port_cfg ? 2 : 1, dconf->lane_num,
 			pconf->timing.bit_rate, dconf->bit_rate_max,
 			dconf->lane_byte_clk,
@@ -509,7 +509,7 @@ int dsi_exec_init_table(struct aml_lcd_drv_s *pdrv,
 			continue;
 		}
 		if (i + 2 + cmd_size > pld_limit) {
-			LCDERR("[%d]: step %d: cmd_size out of support\n", pdrv->index, step);
+			LCDERR("[%d]: (%d): cmd_size out of support\n", pdrv->index, step);
 			break;
 		}
 
@@ -522,7 +522,7 @@ int dsi_exec_init_table(struct aml_lcd_drv_s *pdrv,
 			break;
 		case LCD_EXT_CMD_TYPE_GPIO:
 			if (cmd_size < 2) {
-				LCDERR("[%d]: step %d: invalid size %d for gpio\n",
+				LCDERR("[%d]: (%d): invalid size %d for gpio\n",
 					pdrv->index, step, cmd_size);
 				break;
 			}
@@ -534,7 +534,7 @@ int dsi_exec_init_table(struct aml_lcd_drv_s *pdrv,
 			break;
 		case LCD_EXT_CMD_TYPE_CHECK:
 			if (cmd_size < 3) {
-				LCDERR("[%d]: step %d: invalid size %d for check\n",
+				LCDERR("[%d]: (%d): invalid size %d for check\n",
 					pdrv->index, step, cmd_size);
 				break;
 			}
@@ -542,12 +542,12 @@ int dsi_exec_init_table(struct aml_lcd_drv_s *pdrv,
 			break;
 		case LCD_EXT_CMD_TYPE_SWITCH_PORT:
 			if (cmd_size != 1) {
-				LCDERR("[%d]: step %d: invalid size %d for switch port\n",
+				LCDERR("[%d]: (%d): invalid size %d for switch port\n",
 					pdrv->index, step, cmd_size);
 				break;
 			}
 			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-				LCDPR("[%d]: step %d: following cmd will be on port-%c%c\n",
+				LCDPR("[%d]: (%d): following cmd will be on port-%c%c\n",
 					pdrv->index, step,
 					payload[i + 2] & 0x1 ? 'A' : ' ',
 					payload[i + 2] & 0x2 ? 'B' : ' ');
@@ -620,7 +620,7 @@ int dsi_read(struct aml_lcd_drv_s *pdrv, u8 *payload, u8 *rd_data, u8 len)
 		ret = dsi_DT_DCS_read(pdrv, 0, &dsi_cmd_req);
 		break;
 	default:
-		LCDPR("[%d]: unsupported data_type: 0x%02x\n", pdrv->index, dsi_cmd_req.data_type);
+		LCDPR("[%d]: invalid data_type: 0x%02x\n", pdrv->index, dsi_cmd_req.data_type);
 		break;
 	}
 

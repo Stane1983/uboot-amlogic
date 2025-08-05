@@ -67,20 +67,24 @@ void lcd_clk_frac_generate(struct aml_lcd_drv_s *pdrv)
 
 	/* update bit_rate by interface */
 	switch (pdrv->config.basic.lcd_type) {
+#if defined(CONFIG_AML_LCD_VBYONE)
 	case LCD_VBYONE:
 		lcd_vbyone_bit_rate_config(pdrv);
 		break;
+#endif
+#if defined(CONFIG_AML_LCD_TCON)
 	case LCD_MLVDS:
 		lcd_mlvds_bit_rate_config(pdrv);
 		break;
 	case LCD_P2P:
 		lcd_p2p_bit_rate_config(pdrv);
 		break;
+#endif
+#if defined(CONFIG_AML_LCD_MIPI_DSI)
 	case LCD_MIPI:
 		lcd_mipi_dsi_bit_rate_config(pdrv);
 		break;
-	case LCD_EDP:
-		lcd_edp_bit_rate_config(pdrv);
+#endif
 	default:
 		break;
 	}
@@ -159,20 +163,24 @@ void lcd_clk_generate_parameter(struct aml_lcd_drv_s *pdrv)
 
 	/* update bit_rate by interface */
 	switch (pdrv->config.basic.lcd_type) {
+#if defined(CONFIG_AML_LCD_VBYONE)
 	case LCD_VBYONE:
 		lcd_vbyone_bit_rate_config(pdrv);
 		break;
+#endif
+#if defined(CONFIG_AML_LCD_TCON)
 	case LCD_MLVDS:
 		lcd_mlvds_bit_rate_config(pdrv);
 		break;
 	case LCD_P2P:
 		lcd_p2p_bit_rate_config(pdrv);
 		break;
+#endif
+#if defined(CONFIG_AML_LCD_MIPI_DSI)
 	case LCD_MIPI:
 		lcd_mipi_dsi_bit_rate_config(pdrv);
 		break;
-	case LCD_EDP:
-		lcd_edp_bit_rate_config(pdrv);
+#endif
 	default:
 		break;
 	}

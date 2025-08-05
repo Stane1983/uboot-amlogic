@@ -26,7 +26,6 @@ struct lcd_phy_ctrl_s {
 	void (*phy_set_mlvds)(struct aml_lcd_drv_s *pdrv, int status);
 	void (*phy_set_p2p)(struct aml_lcd_drv_s *pdrv, int status);
 	void (*phy_set_mipi)(struct aml_lcd_drv_s *pdrv, int status);
-	void (*phy_set_edp)(struct aml_lcd_drv_s *pdrv, int status);
 };
 
 #ifdef CONFIG_MESON_T5M

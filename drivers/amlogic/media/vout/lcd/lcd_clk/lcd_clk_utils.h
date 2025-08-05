@@ -42,9 +42,7 @@ int lcd_prbs_clk_check(unsigned int encl_clk, int encl_msr_id, unsigned int fifo
 		       int fifo_msr_id, unsigned int c);
 void lcd_set_vid_pll_div_dft(struct lcd_clk_config_s *cconf);
 void lcd_set_vclk_crt_dft(struct aml_lcd_drv_s *pdrv);
-#ifdef CONFIG_MESON_S6
-unsigned char lcd_dsi_generate_DSI_PLL_s6_model(struct aml_lcd_drv_s *pdrv);
-#endif
+
 int pll_od_setting_generate(struct lcd_clk_config_s *cconf,
 				int pll_sel, unsigned long long pll_fout);
 

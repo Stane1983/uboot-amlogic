@@ -62,10 +62,13 @@ int lcd_phy_param_preset(struct aml_lcd_drv_s *pdrv)
 	}
 	for (; i < CH_LANE_MAX; i++)
 		phy_cfg->ch_ctrl[i].sel = 0xff;
+
+#if defined(CONFIG_AML_LCD_TCON)
 	if (pdrv->config.basic.lcd_type == LCD_MLVDS) {
 		phy->clk_phase = pdrv->config.control.mlvds_cfg.clk_phase & 0xfff;
 		phy_cfg->bypass_resample = (pdrv->config.control.mlvds_cfg.clk_phase >> 12) & 1;
 	}
+#endif
 
 	return 0;
 }
@@ -215,24 +218,29 @@ int lcd_phy_probe(struct aml_lcd_drv_s *pdrv)
 
 	lcd_phy_ctrl->lane_lock[pdrv->index] = 0;
 	switch (pdrv->config.basic.lcd_type) {
+#if defined(CONFIG_AML_LCD_LVDS)
 	case LCD_LVDS:
 		pdrv->phy_set = lcd_phy_ctrl->phy_set_lvds;
 		break;
+#endif
+#if defined(CONFIG_AML_LCD_VBYONE)
 	case LCD_VBYONE:
 		pdrv->phy_set = lcd_phy_ctrl->phy_set_vx1;
 		break;
+#endif
+#if defined(CONFIG_AML_LCD_TCON)
 	case LCD_MLVDS:
 		pdrv->phy_set = lcd_phy_ctrl->phy_set_mlvds;
 		break;
 	case LCD_P2P:
 		pdrv->phy_set = lcd_phy_ctrl->phy_set_p2p;
 		break;
+#endif
+#if defined(CONFIG_AML_LCD_MIPI_DSI)
 	case LCD_MIPI:
 		pdrv->phy_set = lcd_phy_ctrl->phy_set_mipi;
 		break;
-	case LCD_EDP:
-		pdrv->phy_set = lcd_phy_ctrl->phy_set_edp;
-		break;
+#endif
 	default:
 		pdrv->phy_set = NULL;
 		break;

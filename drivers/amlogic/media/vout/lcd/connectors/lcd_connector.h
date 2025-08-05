@@ -9,12 +9,16 @@
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 
 /* MIPI_DPI */
+#ifdef CONFIG_AML_LCD_DPI
 void lcd_rgb_control_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off);
 void lcd_bt_control_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off);
+#endif
 
 /* lvds */
+#ifdef CONFIG_AML_LCD_LVDS
 void lcd_lvds_enable(struct aml_lcd_drv_s *pdrv);
 void lcd_lvds_disable(struct aml_lcd_drv_s *pdrv);
+#endif
 
 /* vbyone */
 #ifdef CONFIG_AML_LCD_VBYONE

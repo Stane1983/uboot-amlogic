@@ -255,7 +255,6 @@ static struct lcd_phy_ctrl_s lcd_phy_ctrl_t3x = {
 	.phy_set_mlvds = NULL,
 	.phy_set_p2p = lcd_p2p_phy_set,
 	.phy_set_mipi = NULL,
-	.phy_set_edp = NULL,
 };
 
 struct lcd_phy_ctrl_s *lcd_phy_config_init_t3x(struct aml_lcd_data_s *pdata)

@@ -14,7 +14,9 @@
 struct lcd_debug_info_s {
 	unsigned int *reg_pinmux_table;
 
+#ifdef CONFIG_AML_LCD_LVDS
 	void (*reg_dump_lvds)(struct aml_lcd_drv_s *pdrv);
+#endif
 #ifdef CONFIG_AML_LCD_VBYONE
 	void (*reg_dump_vbyone)(struct aml_lcd_drv_s *pdrv);
 #endif
@@ -37,18 +39,24 @@ struct reg_info_t {
 
 #define MK_REG_INFO(REG_NAME)({.name = #REG_NAME, .reg_offst = REG_NAME})
 
+#if defined(CONFIG_MESON_TXHD2)
 static unsigned int lcd_reg_dump_pinmux_txdh2[] = {
 	PERIPHS_PIN_MUX_5,
 	PERIPHS_PIN_MUX_6,
 	LCD_DEBUG_REG_END
 };
+#endif
 
+#if defined(CONFIG_MESON_T5M) || defined(CONFIG_MESON_T6D) || defined(CONFIG_MESON_T6W) || \
+	defined(CONFIG_MESON_T5M)
 static unsigned int lcd_reg_dump_pinmux_t3[] = {
 	PADCTRL_PIN_MUX_REG7,
 	PADCTRL_PIN_MUX_REG8,
 	LCD_DEBUG_REG_END
 };
+#endif
 
+#if defined(CONFIG_MESON_C3)
 static unsigned int lcd_reg_dump_pinmux_c3[] = {
 	PADCTRL_PIN_MUX_REG0,
 	PADCTRL_PIN_MUX_REG1,
@@ -59,6 +67,6 @@ static unsigned int lcd_reg_dump_pinmux_c3[] = {
 	PADCTRL_PIN_MUX_REGK,
 	LCD_DEBUG_REG_END
 };
-
 #endif
 
+#endif
