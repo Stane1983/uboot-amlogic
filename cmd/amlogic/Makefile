@@ -4,7 +4,7 @@
 obj-$(CONFIG_AML_VPU) += cmd_vpu.o
 obj-$(CONFIG_AML_VPP) += cmd_vpp.o
 obj-$(CONFIG_AML_VOUT) += cmd_vout.o
-obj-$(CONFIG_AML_DisplayPort_TX) += cmd_DisplayPortTX.o
+obj-$(CONFIG_AML_eDPTX) += cmd_eDPTX.o
 obj-$(CONFIG_AML_LCD) += cmd_lcd.o
 obj-$(CONFIG_AML_CVBS) += cmd_cvbs.o
 obj-$(CONFIG_AML_HDMITX20) += cmd_hdmitx20.o

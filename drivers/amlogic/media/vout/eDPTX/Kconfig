@@ -1,0 +1,10 @@
+menu "AMLOGIC eDP TX Drivers"
+
+config AML_eDPTX
+	bool "eDP tx output"
+	depends on AML_VOUT
+	help
+	  Support for eDP output
+	  need lcd backlight support
+
+endmenu

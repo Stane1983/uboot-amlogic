@@ -1,0 +1,30 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ */
+
+#include <amlogic/media/vout/eDPTX/DPTX.h>
+#include <amlogic/media/vout/eDPTX/DPCD_REG.h>
+#include "dptx_common.h"
+
+/* Display Authentication and Content Protection Support
+ * Method 1 : HDCP
+ * Method 2 : eDP panel limit
+ * Method 3a: eDP Alternate Scrambler Seed Reset (ASSR)
+ */
+
+static void dptx_set_eDP_ASSR(struct dptx_drv_s *dptx, uint8_t port)
+{
+	uint8_t aux_data = 0x01;
+
+	dptx_if_scramble_reset_set(dptx, port, DPTX_eDP_ALTERNATIVE_SCRAMBLE_RESET);
+	dptx_if_aux_write(dptx, port, DPCD_eDP_CONFIGURATION_SET, 1, &aux_data);
+
+	DPTX_P_DBG(dptx, port, "eDP ASSR en");
+}
+
+void dptx_set_content_protection(struct dptx_drv_s *dptx, uint8_t port)
+{
+	if (dptx->sink.link[port]->DACP_support & 0x4)
+		dptx_set_eDP_ASSR(dptx, port);
+}

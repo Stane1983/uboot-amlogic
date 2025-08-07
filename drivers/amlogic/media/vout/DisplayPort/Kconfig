@@ -1,9 +1,0 @@
-menu "AMLOGIC DisplayPort Drivers"
-
-config AML_DisplayPort_TX
-	bool "DisplayPort/eDP output"
-	depends on AML_VOUT
-	help
-	  Support for DisplayPort/eDP output
-
-endmenu

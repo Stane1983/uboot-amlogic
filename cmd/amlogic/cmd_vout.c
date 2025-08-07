@@ -30,8 +30,8 @@ __weak void vpp_viu3_matrix_update(int cfmt) {}
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #endif
 
-#ifdef CONFIG_AML_DisplayPort_TX
-#include <amlogic/media/vout/DisplayPort/DPTX_export.h>
+#ifdef CONFIG_AML_eDPTX
+#include <amlogic/media/vout/eDPTX/DPTX_export.h>
 #endif
 
 #ifdef CONFIG_AML_HDMITX
@@ -60,7 +60,7 @@ int aml_vout_output(uint8_t vout_idx, char *mode)
 	unsigned int venc_index = on_connector_dev & 0xf;
 #endif
 #if defined(CONFIG_AML_CVBS) || defined(CONFIG_AML_HDMITX) || \
-	defined(CONFIG_AML_LCD) || defined(CONFIG_AML_DisplayPort_TX)
+	defined(CONFIG_AML_LCD) || defined(CONFIG_AML_eDPTX)
 	unsigned int mux_sel = VIU_MUX_MAX, venc_sel = VIU_MUX_MAX;
 #endif
 	int ret = -1;
@@ -90,7 +90,7 @@ int aml_vout_output(uint8_t vout_idx, char *mode)
 			ret = 0;
 #endif
 		} else {
-#ifdef CONFIG_AML_DisplayPort_TX
+#ifdef CONFIG_AML_eDPTX
 			mux_sel = dptx_driver_outputmode_check(venc_index, mode);
 			venc_sel = mux_sel & 0xf;
 			if (venc_sel != VIU_MUX_ENCL)
@@ -250,7 +250,7 @@ int aml_display_process(unsigned char vout_idx)
 		}
 		break;
 #endif
-#if defined(CONFIG_AML_DisplayPort_TX) ||  defined(CONFIG_AML_LCD)
+#if defined(CONFIG_AML_eDPTX) ||  defined(CONFIG_AML_LCD)
 	case CONNECTOR_DEV_eDP:
 		run_command(vout_cmd, 0);
 		run_command(VOUT_OSD_LOGO_CMD, 0);
@@ -271,7 +271,7 @@ static int do_vout_output_job(unsigned char vout_idx, char *mode_str)
 {
 	unsigned short on_connector_dev = vout_connector_check(vout_idx);
 #if defined(CONFIG_AML_CVBS) || defined(CONFIG_AML_HDMITX) || \
-	defined(CONFIG_AML_LCD)  || defined(CONFIG_AML_DisplayPort_TX)
+	defined(CONFIG_AML_LCD)  || defined(CONFIG_AML_eDPTX)
 	unsigned int mux_sel = VIU_MUX_MAX, venc_sel = VIU_MUX_MAX;
 	char vout_init_str[64];
 #endif
@@ -280,13 +280,13 @@ static int do_vout_output_job(unsigned char vout_idx, char *mode_str)
 	unsigned int fmt_mode = vinfo->vpp_post_out_color_fmt;
 	char str[64];
 #endif
-#if defined(CONFIG_AML_LCD) || defined(CONFIG_AML_DisplayPort_TX)
+#if defined(CONFIG_AML_LCD) || defined(CONFIG_AML_eDPTX)
 	unsigned int venc_index = on_connector_dev & 0xf;
 	unsigned int dptx_color_type = 1;
 #endif
 
 #if defined(CONFIG_AML_CVBS) || defined(CONFIG_AML_HDMITX) || \
-	defined(CONFIG_AML_LCD)  || defined(CONFIG_AML_DisplayPort_TX)
+	defined(CONFIG_AML_LCD)  || defined(CONFIG_AML_eDPTX)
 	if (vout_idx)
 		sprintf(vout_init_str, "setenv vout%u_init enable", vout_idx);
 	else
@@ -315,13 +315,13 @@ static int do_vout_output_job(unsigned char vout_idx, char *mode_str)
 #endif
 		break;
 	case CONNECTOR_DEV_eDP:
-#if defined(CONFIG_AML_LCD) || defined(CONFIG_AML_DisplayPort_TX)
+#if defined(CONFIG_AML_LCD) || defined(CONFIG_AML_eDPTX)
 		if (env_get_ulong("eDP_use_legacy_lcd_driver", 10, 0)) {
 #ifdef CONFIG_AML_LCD
 			mux_sel = aml_lcd_driver_outputmode_check(venc_index, mode_str);
 #endif
 		} else {
-#ifdef CONFIG_AML_DisplayPort_TX
+#ifdef CONFIG_AML_eDPTX
 			mux_sel = dptx_driver_outputmode_check(venc_index, mode_str);
 #endif
 		}
@@ -335,28 +335,19 @@ static int do_vout_output_job(unsigned char vout_idx, char *mode_str)
 			aml_lcd_driver_enable(venc_index, mode_str);
 #endif
 		} else {
-#ifdef CONFIG_AML_DisplayPort_TX
+#ifdef CONFIG_AML_eDPTX
 			dptx_color_type = dptx_driver_enable(venc_index, mode_str);
 #endif
 		}
 		if (vout_idx == 0) {
-			vout_viu_mux(VOUT_VIU1_SEL, mux_sel);
-			if (dptx_color_type)
-				vpp_matrix_update(VPP_CM_RGB);
-			else
-				vpp_matrix_update(VPP_CM_YUV);
+			vout_viu_mux(VOUT_VIU1_SEL, mux_sel | venc_index << 4);
+			vpp_matrix_update(dptx_color_type ? VPP_CM_YUV : VPP_CM_RGB);
 		} else if (vout_idx == 1) {
-			vout_viu_mux(VOUT_VIU2_SEL, mux_sel);
-			if (dptx_color_type)
-				vpp_viu2_matrix_update(VPP_CM_RGB);
-			else
-				vpp_viu2_matrix_update(VPP_CM_YUV);
+			vout_viu_mux(VOUT_VIU2_SEL, mux_sel | venc_index << 4);
+			vpp_viu2_matrix_update(dptx_color_type ? VPP_CM_YUV : VPP_CM_RGB);
 		} else if (vout_idx == 2) {
-			vout_viu_mux(VOUT_VIU3_SEL, mux_sel);
-			if (dptx_color_type)
-				vpp_viu3_matrix_update(VPP_CM_RGB);
-			else
-				vpp_viu3_matrix_update(VPP_CM_YUV);
+			vout_viu_mux(VOUT_VIU3_SEL, mux_sel | venc_index << 4);
+			vpp_viu3_matrix_update(dptx_color_type ? VPP_CM_YUV : VPP_CM_RGB);
 		}
 
 		run_command(vout_init_str, 0);
@@ -428,10 +419,10 @@ static int do_vout_prepare_job(unsigned char vout_idx, char *mode_str)
 {
 	unsigned short on_connector_dev = vout_connector_check(vout_idx);
 #if defined(CONFIG_AML_CVBS) || defined(CONFIG_AML_HDMITX) || \
-	defined(CONFIG_AML_LCD)  || defined(CONFIG_AML_DisplayPort_TX)
+	defined(CONFIG_AML_LCD)  || defined(CONFIG_AML_eDPTX)
 	unsigned int mux_sel = VIU_MUX_MAX, venc_sel = VIU_MUX_MAX;
 #endif
-#if defined(CONFIG_AML_LCD) || defined(CONFIG_AML_DisplayPort_TX)
+#if defined(CONFIG_AML_LCD) || defined(CONFIG_AML_eDPTX)
 	unsigned int venc_index = on_connector_dev & 0xf;
 	unsigned int dptx_color_type = 1;
 #endif
@@ -464,14 +455,14 @@ static int do_vout_prepare_job(unsigned char vout_idx, char *mode_str)
 #endif
 		break;
 	case CONNECTOR_DEV_eDP:
-#if defined(CONFIG_AML_LCD) || defined(CONFIG_AML_DisplayPort_TX)
+#if defined(CONFIG_AML_LCD) || defined(CONFIG_AML_eDPTX)
 
 		if (env_get_ulong("eDP_use_legacy_lcd_driver", 10, 0)) {
 #ifdef CONFIG_AML_LCD
 			mux_sel = aml_lcd_driver_outputmode_check(venc_index, mode_str);
 #endif
 		} else {
-#ifdef CONFIG_AML_DisplayPort_TX
+#ifdef CONFIG_AML_eDPTX
 			mux_sel = dptx_driver_outputmode_check(venc_index, mode_str);
 #endif
 		}
@@ -485,7 +476,7 @@ static int do_vout_prepare_job(unsigned char vout_idx, char *mode_str)
 			aml_lcd_driver_prepare(venc_index, mode_str);
 #endif
 		} else {
-#ifdef CONFIG_AML_DisplayPort_TX
+#ifdef CONFIG_AML_eDPTX
 			dptx_color_type = dptx_driver_prepare(venc_index, mode_str);
 #endif
 		}
@@ -710,7 +701,7 @@ static int do_vout_list(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[
 	aml_lcd_driver_list_support_mode();
 #endif
 
-#ifdef CONFIG_AML_DisplayPort_TX
+#ifdef CONFIG_AML_eDPTX
 	printf("\nvalid DisplayPort mode:\n");
 	dptx_driver_list_vmode(0);
 	dptx_driver_list_vmode(1);

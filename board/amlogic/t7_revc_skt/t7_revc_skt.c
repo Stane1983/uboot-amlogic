@@ -36,8 +36,8 @@
 #ifdef CONFIG_AML_LCD
 #include <amlogic/media/vout/lcd/lcd_vout.h>
 #endif
-#ifdef CONFIG_AML_DisplayPort_TX
-#include <amlogic/media/vout/DisplayPort/DPTX_export.h>
+#ifdef CONFIG_AML_eDPTX
+#include <amlogic/media/vout/eDPTX/DPTX_export.h>
 #endif
 #ifdef CONFIG_RX_RTERM
 #include <amlogic/aml_hdmirx.h>
@@ -168,7 +168,7 @@ int board_late_init(void)
 #ifdef CONFIG_AML_LCD
 	lcd_probe();
 #endif
-#ifdef CONFIG_AML_DisplayPort_TX
+#ifdef CONFIG_AML_eDPTX
 	dptx_probe();
 #endif
 	/* The board id is used to determine if the NN needs to adjust voltage */

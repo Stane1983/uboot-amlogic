@@ -1,6 +1,6 @@
 source "drivers/amlogic/media/vout/cvbs/Kconfig"
 
-source "drivers/amlogic/media/vout/DisplayPort/Kconfig"
+source "drivers/amlogic/media/vout/eDPTX/Kconfig"
 
 source "drivers/amlogic/media/vout/lcd/Kconfig"
 
