@@ -203,12 +203,17 @@ config CMD_AML_MODEL
 	help
 	"enable amlogic model management, new version for panel ini parse"
 
+config NOVERBOSE_BUILD
+	bool "no verbose log build"
+	default n
+
 config AML_PRODUCT_MODE
 	bool "amlogic product/security mode"
 	default n
 	imply NO_FASTBOOT_FLASHING
 	imply DISABLE_AML_SERIAL
 	imply AML_DISABLE_DEV_CMDS
+	select NOVERBOSE_BUILD
 	help
 		recommend enable when product is ready for producing
 

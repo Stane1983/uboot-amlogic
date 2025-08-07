@@ -950,11 +950,16 @@ static void cb_oem_cmd(struct usb_ep *ep, struct usb_request *req)
 #if defined(CONFIG_AML_ANTIROLLBACK) || defined(CONFIG_AML_AVB2_ANTIROLLBACK)
 		if (!ret && toErase > 0) {
 			if (is_avb_arb_available()) {
+				avb_unlock();
 				ret = !avb_lock();
 				if (ret)
 					printf("lock failed!\n");
 				else
 					printf("lock success!\n");
+				if (!ret) {
+					printf("env lock default\n");
+					run_command("env default lock; printenv lock", 0);
+				}
 			}
 		}
 #endif
