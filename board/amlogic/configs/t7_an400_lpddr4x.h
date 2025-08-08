@@ -339,7 +339,7 @@
 				"else if test ${suspend} = shutdown; then "\
 					"echo not init_display; "\
 					"setenv bootup_display off; "\
-				"fi; fi; fi; "\
+				"fi; fi; "\
 			"fi; fi; "\
 		"else if test ${reboot_mode} = ffv_reboot; then "\
 			"if test ${ffv_wake} = on; then "\
