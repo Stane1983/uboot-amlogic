@@ -709,6 +709,7 @@ int meson_send_cali_blks(struct udevice *dev, char *buffer, u32 start_blk, u32 c
 	return 0;
 }
 
+static int emmc_send_stop(struct mmc *mmc);
 u32 meson_tuning_transfer(struct udevice *dev, u32 opcode)
 {
 	struct meson_mmc_platdata *pdata = dev_get_platdata(dev);
@@ -737,6 +738,7 @@ u32 meson_tuning_transfer(struct udevice *dev, u32 opcode)
 			 * only this model has this problem. THGBMJG6C1LBAIL
 			 * by adding ndelay(20000) to resolve
 			 */
+			emmc_send_stop(mmc);
 			ndelay(20000);
 			break;
 		}
@@ -1269,6 +1271,19 @@ static int emmc_send_select(struct mmc *mmc)
 	cmd.resp_type = MMC_RSP_R1;
 	cmd.cmdarg = 1 << 16;
 	err = mmc_send_cmd(mmc, &cmd, NULL);
+
+	return err;
+}
+
+static int emmc_send_stop(struct mmc *mmc)
+{
+	struct mmc_cmd stop = {0};
+	u32 err = 0;
+
+	stop.cmdidx = MMC_CMD_STOP_TRANSMISSION;
+	stop.cmdarg = 0;
+	stop.resp_type = MMC_RSP_R1;
+	err = mmc_send_cmd(mmc, &stop, NULL);
 
 	return err;
 }
