@@ -1767,6 +1767,7 @@ int aml_nand_scan_shipped_bbt(struct mtd_info *mtd)
 				if ((aml_chip->mfr_type == NAND_MFR_SANDISK) ||
 					(aml_chip->mfr_type == NAND_ID_ESMT) ||
 					(aml_chip->mfr_type == NAND_MFR_MACRONIX) ||
+					(aml_chip->mfr_type  == NAND_MFR_FORESEE) ||
 					aml_get_samsung_fbbt_flag()) {
 					addr = offset + read_cnt*mtd->writesize;
 				} else
@@ -1891,6 +1892,7 @@ int aml_nand_scan_shipped_bbt(struct mtd_info *mtd)
 		    aml_chip->mfr_type == NAND_ID_ESMT ||
 		    aml_chip->mfr_type == NAND_MFR_MACRONIX ||
 		    aml_chip->mfr_type  == NAND_MFR_AMD ||
+		    aml_chip->mfr_type  == NAND_MFR_FORESEE ||
 		    aml_get_samsung_fbbt_flag()) {
 			pr_info("col0_data =%x col0_oob =%x\n",col0_data,col0_oob);
 			pr_info("detect a fbb:%llx blk=%d chip=%d\n",
@@ -1947,6 +1949,10 @@ int aml_nand_scan_shipped_bbt(struct mtd_info *mtd)
 				break;
 			}
 		}
+
+		pr_err("%s %d Unsupport mfr types!\n",
+				__func__, __LINE__);
+		return -EINVAL;
 	}
 		}
 	}
@@ -1980,7 +1986,7 @@ int aml_nand_bbt_check(struct mtd_info *mtd)
 	} else {
 		pr_info("%s %d bbt is invalid, scanning.\n", __func__, __LINE__);
 		/*no bbt haven't been found, abnormal or clean nand! rebuild*/
-		aml_nand_scan_shipped_bbt(mtd);
+		ret = aml_nand_scan_shipped_bbt(mtd);
 		meson_rsv_bbt_write((u_char *)buf, aml_chip->rsv->bbt->size);
 	}
 
