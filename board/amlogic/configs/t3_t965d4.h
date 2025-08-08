@@ -83,6 +83,16 @@
 #define KERNL_LOGLEVEL	"loglevel=4 "
 #endif
 
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	#ifdef CONFIG_T3_BSP_SMP
+		#define ENABLE_SMP "display_on_smp=1\0"
+	#else
+		#define ENABLE_SMP "display_on_smp=0\0"
+	#endif
+#else
+	#define ENABLE_SMP "display_on_smp=0\0"
+#endif
+
 #define VOUT_OSD_LOGO_CMD  "osd open; osd clear; run load_bmp_logo; bmp scale;"
 
 /* args/envs */
@@ -90,6 +100,7 @@
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	CONFIG_EXTRA_ENV_SETTINGS_BASE \
 	SILENT \
+	ENABLE_SMP \
 	"systemsuspend_switch=0\0"\
 	"ddr_resume=0\0"\
 	"otg_device=1\0" \

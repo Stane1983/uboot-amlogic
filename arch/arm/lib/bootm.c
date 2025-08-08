@@ -737,7 +737,13 @@ static void boot_jump_linux(bootm_headers_t *images, int flag)
 	#endif
 
 #ifdef	CONFIG_MAX_BOOT_TIME
-		if (get_time() > CONFIG_MAX_BOOT_TIME)
+		ulong delay = env_get_ulong("hpd_detect", 10, 0) +
+			env_get_ulong("vbyone_wait_hpd", 10, 0) +
+			env_get_ulong("vbyone_wait_lock", 10, 0);
+
+		uboot_time -= delay;
+
+		if (uboot_time > CONFIG_MAX_BOOT_TIME)
 			printf("WARNING: boot time over maximum limit! limit time: %u us\n",
 					CONFIG_MAX_BOOT_TIME);
 #endif
