@@ -2084,6 +2084,11 @@ int do_hpd_detect(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	}
 	printf("%s, hpd_state=%d\n", __func__, hpd_st);
 
+#ifdef	CONFIG_MAX_BOOT_TIME
+	if (!hpd_st)
+		env_set_ulong("hpd_detect", i * 100 * 1000);
+#endif
+
 	outputmode = env_get("outputmode");
 	outputmode2 = env_get("outputmode2");
 	connector0_type = env_get("connector0_type");

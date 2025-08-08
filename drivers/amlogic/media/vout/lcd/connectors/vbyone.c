@@ -10,6 +10,7 @@
 #include "./lcd_connector.h"
 #include "../lcd_reg.h"
 #include "../lcd_common.h"
+#include <env.h>
 
 static void lcd_vbyone_sw_reset(struct aml_lcd_drv_s *pdrv);
 static void lcd_vbyone_wait_timing_stable(struct aml_lcd_drv_s *pdrv);
@@ -384,6 +385,10 @@ void lcd_vbyone_wait_hpd(struct aml_lcd_drv_s *pdrv)
 		udelay(100);
 	}
 
+#ifdef CONFIG_MAX_BOOT_TIME
+	env_set_ulong("vbyone_wait_hpd", 100 * (i - 1));
+#endif
+
 	val = lcd_vcbus_getb(reg, 6, 1);
 	if (val) {
 		printf("hpd=%d\n", val);
@@ -439,6 +444,10 @@ static void lcd_vbyone_wait_lock(struct aml_lcd_drv_s *pdrv)
 	LCDPR("%s status: 0x%x, time=%dus\n",
 	      __func__, lcd_vcbus_read(reg),
 	      (VX1_LOCKN_WAIT_TIMEOUT - i) * VX1_LOCKN_INTERVAL);
+
+#ifdef CONFIG_MAX_BOOT_TIME
+	env_set_ulong("vbyone_wait_lock", (VX1_LOCKN_WAIT_TIMEOUT - i) * VX1_LOCKN_INTERVAL);
+#endif
 }
 
 void lcd_vbyone_wait_stable(struct aml_lcd_drv_s *pdrv)
