@@ -101,6 +101,7 @@
 		"connector0_type=VBYONE-A\0" \
 		"outputmode=2160p60hz\0" \
 		"connector1_type=VBYONE-B\0" \
+		"display_on_smp=1\0"\
 		"outputmode2=2160p60hz\0" \
 		"vout_init=disable\0" \
 		"gamma=0\0" \

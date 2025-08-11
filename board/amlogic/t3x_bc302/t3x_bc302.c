@@ -52,6 +52,9 @@
 #ifdef CONFIG_RX_RTERM
 #include <amlogic/aml_hdmirx.h>
 #endif
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#include <asm/arch-meson/smp.h>
+#endif
 
 #include <amlogic/aml_profile.h>
 DECLARE_GLOBAL_DATA_PTR;

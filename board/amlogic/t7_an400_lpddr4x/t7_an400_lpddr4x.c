@@ -46,6 +46,9 @@
 #ifdef CONFIG_CMD_SND
 #include "amlogic/auge_sound.h"
 #endif
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#include <asm/arch-meson/smp.h>
+#endif
 #include <amlogic/board.h>
 #include <amlogic/aml_profile.h>
 
@@ -69,7 +72,7 @@ int dram_init(void)
 /* secondary_boot_func
  * this function should be write with asm, here, is is only for compiling pass
  * */
-void secondary_boot_func(void)
+__weak void secondary_boot_func(void)
 {
 }
 
