@@ -45,6 +45,9 @@
 #include <amlogic/amfc.h>
 #endif
 #include <amlogic/aml_profile.h>
+#ifdef CONFIG_ARMV8_MULTIENTRY
+#include <asm/arch-meson/smp.h>
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -66,7 +69,7 @@ int dram_init(void)
 /* secondary_boot_func
  * this function should be write with asm, here, is only for compiling pass
  */
-void secondary_boot_func(void)
+__weak void secondary_boot_func(void)
 {
 }
 
@@ -179,6 +182,7 @@ int board_late_init(void)
 #ifdef CONFIG_AML_VPU
 	vpu_probe();
 #endif
+	aml_board_display_env_handler();
 #ifdef CONFIG_AML_LCD
 	lcd_probe();
 #endif
@@ -188,7 +192,7 @@ int board_late_init(void)
 #ifdef CONFIG_AML_CVBS
 	cvbs_init();
 #endif
-	run_command("run init_display", 0);
+	run_command(VOUT_DISPLAY_CMD, 0);
 
 	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_e);
 

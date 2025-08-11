@@ -150,14 +150,12 @@ int aml_display_process(unsigned char vout_idx)
 					env_get("bootup_display"));
 				break;
 			}
-			smp_ret = run_smp_function(cpu_id,
+			smp_ret = run_smp_function(cpu_id + vout_idx,
 				&aml_display_on_post_job, 0x100 + vout_idx);
-			if (smp_ret) {
+			if (smp_ret)
 				printf("display smp failed\n");
-			} else {
+			else
 				run_command(vout_init_str, 0);
-				cpu_id++;
-			}
 #endif
 		} else {
 			run_command(VOUT_OSD_LOGO_CMD, 0);

@@ -22,7 +22,7 @@
 #define CONFIG_PDVFS_ENABLE
 
 /* SMP definitions */
-#define CPU_RELEASE_ADDR		secondary_boot_func
+// #define CPU_RELEASE_ADDR		secondary_boot_func
 
 /* Serial config */
 #define CONFIG_CONS_INDEX 2
@@ -89,6 +89,7 @@
 	"outputmode=1024x600p60hz\0"\
 	"outputmode2=1080p60hz\0"\
 	"hdmimode=none\0"\
+	"display_on_smp=1\0"\
 	"qms_en=1\0"\
 	"colorattribute=444,8bit\0"\
 	"cvbsmode=576cvbs\0"\
