@@ -34,6 +34,15 @@ static int do_memtag_check(cmd_tbl_t *cmdtp, int flag, int argc,
 		printf("no memtag node in dtb\n");
 		return 0;
 	}
+
+	propdata = (char *)fdt_getprop(fdtaddr, nodeoffset, "status", NULL);
+	if (propdata) {
+		if (strcmp(propdata, "ok") && strcmp(propdata, "okay")) {
+			printf("%s, mte is not enabled, status:%s\n", __func__, propdata);
+			return __LINE__;
+		}
+	}
+
 	propdata = (char *)fdt_getprop(fdtaddr, nodeoffset, "reg", NULL);
 	if (!propdata) {
 		printf("can't find reg property\n");
