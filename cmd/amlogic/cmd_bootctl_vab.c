@@ -401,11 +401,6 @@ static int get_active_slot(bootloader_control *info)
 	}
 }
 
-static bool slot_is_bootable_normalAB(AvbABSlotData* slot) {
-  return slot->priority > 0 &&
-		 (slot->successful_boot || (slot->tries_remaining > 0));
-}
-
 int get_active_slot_normalAB(AvbABData* info) {
 	if (info->slots[0].priority > info->slots[1].priority)
 		return 0;
@@ -472,8 +467,6 @@ static int boot_info_set_active_slot(bootloader_control *bootctrl, int slot)
 	// slot would be flip.
 	if (slot != get_active_slot(bootctrl))
 		bootctrl->slot_info[slot].verity_corrupted = 0;
-
-	dump_boot_info(bootctrl);
 
 	return 0;
 }
@@ -764,17 +757,53 @@ static void update_after_failed_rollback(void)
 
 void rollback_failure_handler(void) __attribute__((weak, alias("update_after_failed_rollback")));
 
+static void boot_ctrl_init_once(void)
+{
+	if (s_boot_ctrl_initialized)
+		return;
+
+	boot_info_open_partition(s_miscbuf_cache);
+	boot_info_load(&s_boot_ctrl_cache, s_miscbuf_cache);
+
+	if (!boot_info_validate(&s_boot_ctrl_cache)) {
+		printf("boot-info virtual ab is invalid. Try normal ab.\n");
+		AvbABData info;
+
+		boot_info_load_normalAB(&info, s_miscbuf_cache);
+		if (!boot_info_validate_normalAB(&info)) {
+			printf("boot-info is invalid. Resetting.\n");
+			boot_info_reset(&s_boot_ctrl_cache);
+			boot_info_save(&s_boot_ctrl_cache, s_miscbuf_cache);
+		} else {
+			printf("update from normal ab to virtual ab\n");
+			env_set("normal_to_virtual", "1");
+
+			boot_info_reset(&s_boot_ctrl_cache);
+			s_boot_ctrl_cache.slot_info[0].successful_boot =
+				info.slots[0].successful_boot;
+			s_boot_ctrl_cache.slot_info[1].successful_boot =
+				info.slots[1].successful_boot;
+			int slot = get_active_slot_normalAB(&info);
+
+			boot_info_set_active_slot(&s_boot_ctrl_cache, slot);
+			boot_info_save(&s_boot_ctrl_cache, s_miscbuf_cache);
+		}
+	}
+
+	s_boot_ctrl_initialized = true;
+}
+
 static int do_GetValidSlot(
 	cmd_tbl_t *cmdtp,
 	int flag,
 	int argc,
 	char * const argv[])
 {
-	char miscbuf[MISCBUF_SIZE] = {0};
-	bootloader_control boot_ctrl;
-	AvbABData info;
+	boot_ctrl_init_once();
+
+	bootloader_control *boot_ctrl = &s_boot_ctrl_cache;
+	char *miscbuf = s_miscbuf_cache;
 	int slot;
-	int AB_mode = 0;
 	bool bootable_a, bootable_b;
 	bool nocs_mode = false;
 	char *rebootmode = env_get("reboot_mode");
@@ -784,40 +813,10 @@ static int do_GetValidSlot(
 
 	set_ddr_size();
 
-	boot_info_open_partition(miscbuf);
-	boot_info_load(&boot_ctrl, miscbuf);
-
-	if (!boot_info_validate(&boot_ctrl)) {
-		printf("boot-info virtual ab is invalid. Try normal ab.\n");
-		boot_info_load_normalAB(&info, miscbuf);
-		if (!boot_info_validate_normalAB(&info)) {
-			printf("boot-info is invalid. Resetting.\n");
-			boot_info_reset(&boot_ctrl);
-			boot_info_save(&boot_ctrl, miscbuf);
-		} else {
-			printf("update from normal ab to virtual ab\n");
-			env_set("normal_to_virtual", "1");
-			AB_mode = 1;
-		}
-	}
-
-	if (AB_mode == 1) {
-		slot = get_active_slot_normalAB(&info);
-		printf("active slot = %d\n", slot);
-		bootable_a = slot_is_bootable_normalAB(&info.slots[0]);
-		bootable_b = slot_is_bootable_normalAB(&info.slots[1]);
-		boot_info_reset(&boot_ctrl);
-		boot_ctrl.slot_info[0].successful_boot = info.slots[0].successful_boot;
-		boot_ctrl.slot_info[1].successful_boot = info.slots[1].successful_boot;
-		boot_info_set_active_slot(&boot_ctrl, slot);
-		boot_info_save(&boot_ctrl, miscbuf);
-		slot = get_active_slot(&boot_ctrl);
-	} else {
-		slot = get_active_slot(&boot_ctrl);
-		printf("active slot = %d\n", slot);
-		bootable_a = slot_is_bootable(&boot_ctrl.slot_info[0]);
-		bootable_b = slot_is_bootable(&boot_ctrl.slot_info[1]);
-	}
+	slot = get_active_slot(boot_ctrl);
+	printf("active slot = %d\n", slot);
+	bootable_a = slot_is_bootable(&boot_ctrl->slot_info[0]);
+	bootable_b = slot_is_bootable(&boot_ctrl->slot_info[1]);
 
 	if (dynamic_partition)
 		env_set("partition_mode", "dynamic");
@@ -868,8 +867,8 @@ static int do_GetValidSlot(
 #endif
 			if (gpt_partition || nocs_mode)
 				check_bootloader(0);
-			boot_ctrl.roll_flag = 1;
-			boot_info_save(&boot_ctrl, miscbuf);
+			boot_ctrl->roll_flag = 1;
+			boot_info_save(boot_ctrl, miscbuf);
 			run_command("set_active_slot b", 0);
 			env_set("update_env", "1");
 			env_set("reboot_status", "reboot_next");
@@ -894,8 +893,8 @@ static int do_GetValidSlot(
 			else
 				reboot_by_reason(AMLOGIC_NORMAL_BOOT);
 		} else {
-			boot_info_reset(&boot_ctrl);
-			boot_info_save(&boot_ctrl, miscbuf);
+			boot_info_reset(boot_ctrl);
+			boot_info_save(boot_ctrl, miscbuf);
 			rollback_failure_handler();
 		}
 	}
@@ -931,8 +930,8 @@ static int do_GetValidSlot(
 #endif
 			if (gpt_partition || nocs_mode)
 				check_bootloader(1);
-			boot_ctrl.roll_flag = 1;
-			boot_info_save(&boot_ctrl, miscbuf);
+			boot_ctrl->roll_flag = 1;
+			boot_info_save(boot_ctrl, miscbuf);
 			run_command("set_active_slot a", 0);
 			env_set("update_env", "1");
 			env_set("reboot_status", "reboot_next");
@@ -957,8 +956,8 @@ static int do_GetValidSlot(
 			else
 				reboot_by_reason(AMLOGIC_NORMAL_BOOT);
 		} else {
-			boot_info_reset(&boot_ctrl);
-			boot_info_save(&boot_ctrl, miscbuf);
+			boot_info_reset(boot_ctrl);
+			boot_info_save(boot_ctrl, miscbuf);
 			rollback_failure_handler();
 		}
 	}
@@ -972,8 +971,10 @@ static int do_SetActiveSlot(
 	int argc,
 	char * const argv[])
 {
-	char miscbuf[MISCBUF_SIZE] = {0};
-	bootloader_control info;
+	boot_ctrl_init_once();
+
+	bootloader_control *info = &s_boot_ctrl_cache;
+	char *miscbuf = s_miscbuf_cache;
 
 	if (argc != 2)
 		return cmd_usage(cmdtp);
@@ -983,39 +984,30 @@ static int do_SetActiveSlot(
 		return -1;
 	}
 
-	boot_info_open_partition(miscbuf);
-	boot_info_load(&info, miscbuf);
-
-	if (!boot_info_validate(&info)) {
-		printf("boot-info is invalid. Resetting.\n");
-		boot_info_reset(&info);
-		boot_info_save(&info, miscbuf);
-	}
-
 	if (strcmp(argv[1], "a") == 0) {
 		env_set("active_slot", "_a");
 		env_set("slot-suffixes", "0");
 		env_set("boot_part", "boot_a");
 		env_set("recovery_part", "recovery_a");
 		printf("set active slot a\n");
-		boot_info_set_active_slot(&info, 0);
+		boot_info_set_active_slot(info, 0);
 	} else if (strcmp(argv[1], "b") == 0) {
 		env_set("active_slot", "_b");
 		env_set("slot-suffixes", "1");
 		env_set("boot_part", "boot_b");
 		env_set("recovery_part", "recovery_b");
 		printf("set active slot b\n");
-		boot_info_set_active_slot(&info, 1);
+		boot_info_set_active_slot(info, 1);
 	} else {
 		printf("error input slot\n");
 		return -1;
 	}
 
-	boot_info_save(&info, miscbuf);
+	boot_info_save(info, miscbuf);
 
-	printf("info.roll_flag = %d\n", info.roll_flag);
+	printf("info.roll_flag = %d\n", info->roll_flag);
 
-	if (!gpt_partition && info.roll_flag == 1) {
+	if (!gpt_partition && info->roll_flag == 1) {
 		printf("if null gpt, write dtb back when rollback\n");
 		if (run_command("imgread dtb ${boot_part} ${dtb_mem_addr}", 0)) {
 			printf("Fail in load dtb\n");
@@ -1034,8 +1026,10 @@ static int do_SetRollFlag
 	int argc,
 	char * const argv[])
 {
-	char miscbuf[MISCBUF_SIZE] = {0};
-	bootloader_control info;
+	boot_ctrl_init_once();
+
+	bootloader_control *info = &s_boot_ctrl_cache;
+	char *miscbuf = s_miscbuf_cache;
 
 	if (argc != 2)
 		return cmd_usage(cmdtp);
@@ -1045,22 +1039,14 @@ static int do_SetRollFlag
 		return -1;
 	}
 
-	boot_info_open_partition(miscbuf);
-	boot_info_load(&info, miscbuf);
-
-	if (!boot_info_validate(&info)) {
-		printf("boot-info is invalid. Resetting.\n");
-		return 0;
-	}
-
 	if (strcmp(argv[1], "1") == 0)
-		info.roll_flag = 1;
+		info->roll_flag = 1;
 	else
-		info.roll_flag = 0;
+		info->roll_flag = 0;
 
-	boot_info_save(&info, miscbuf);
+	boot_info_save(info, miscbuf);
 
-	printf("set info.roll_flag = %d\n", info.roll_flag);
+	printf("set info.roll_flag = %d\n", info->roll_flag);
 
 	return 0;
 }
@@ -1071,8 +1057,10 @@ static int do_CheckUbootState
 	int argc,
 	char * const argv[])
 {
-	char miscbuf[MISCBUF_SIZE] = {0};
-	bootloader_control info;
+	boot_ctrl_init_once();
+
+	bootloader_control *info = &s_boot_ctrl_cache;
+	char *miscbuf = s_miscbuf_cache;
 	int active_slot, backup_slot;
 	int ret = -1;
 
@@ -1084,26 +1072,18 @@ static int do_CheckUbootState
 		return -1;
 	}
 
-	boot_info_open_partition(miscbuf);
-	boot_info_load(&info, miscbuf);
-
-	if (!boot_info_validate(&info)) {
-		printf("boot-info is invalid. Resetting.\n");
-		return 0;
-	}
-
 	if (strcmp(argv[1], "1") == 0) {
 		check_bootloader(1);
 	} else if (strcmp(argv[1], "0") == 0) {
 		check_bootloader(0);
 	} else if (strcmp(argv[1], "boot1") == 0) {
-		active_slot = get_active_slot(&info);
+		active_slot = get_active_slot(info);
 		if (active_slot == 1)
 			backup_slot = 0;
 		else
 			backup_slot = 1;
-		if (info.slot_info[backup_slot].successful_boot == 1 &&
-			info.slot_info[backup_slot].uboot_status != 2) {
+		if (info->slot_info[backup_slot].successful_boot == 1 &&
+			info->slot_info[backup_slot].uboot_status != 2) {
 			if (gpt_partition) {
 				printf("check if boot0 = boot1\n");
 				ret = is_BootSame(1, 2);
@@ -1112,8 +1092,8 @@ static int do_CheckUbootState
 					write_bootloader(1, 2);
 					printf("after write boot0 to boot1\n");
 				}
-				info.slot_info[backup_slot].uboot_status = 2;
-				boot_info_save(&info, miscbuf);
+				info->slot_info[backup_slot].uboot_status = 2;
+				boot_info_save(info, miscbuf);
 			}
 		}
 	}
@@ -1127,8 +1107,10 @@ static int do_SetUpdateTries(
 	int argc,
 	char * const argv[])
 {
-	char miscbuf[MISCBUF_SIZE] = {0};
-	bootloader_control boot_ctrl;
+	boot_ctrl_init_once();
+
+	bootloader_control *boot_ctrl = &s_boot_ctrl_cache;
+	char *miscbuf = s_miscbuf_cache;
 	bool bootable_a, bootable_b;
 	int slot;
 	int ret = -1;
@@ -1143,27 +1125,18 @@ static int do_SetUpdateTries(
 		return -1;
 	}
 
-	boot_info_open_partition(miscbuf);
-	boot_info_load(&boot_ctrl, miscbuf);
-
-	if (!boot_info_validate(&boot_ctrl)) {
-		printf("boot-info is invalid. Resetting\n");
-		boot_info_reset(&boot_ctrl);
-		boot_info_save(&boot_ctrl, miscbuf);
-	}
-
-	slot = get_active_slot(&boot_ctrl);
-	bootable_a = slot_is_bootable(&boot_ctrl.slot_info[0]);
-	bootable_b = slot_is_bootable(&boot_ctrl.slot_info[1]);
+	slot = get_active_slot(boot_ctrl);
+	bootable_a = slot_is_bootable(&boot_ctrl->slot_info[0]);
+	bootable_b = slot_is_bootable(&boot_ctrl->slot_info[1]);
 
 	if (slot == 0) {
 		if (bootable_a) {
-			if (boot_ctrl.slot_info[0].successful_boot == 0) {
+			if (boot_ctrl->slot_info[0].successful_boot == 0) {
 				success_flag = 0;
 				if (rebootmode && strcmp(rebootmode, "fastboot") &&
 					strcmp(rebootmode, "factory_reboot") &&
 					strcmp(rebootmode, "bist_reboot")) {
-					boot_ctrl.slot_info[0].tries_remaining -= 1;
+					boot_ctrl->slot_info[0].tries_remaining -= 1;
 					update_flag = 1;
 				}
 			}
@@ -1172,32 +1145,32 @@ static int do_SetUpdateTries(
 
 	if (slot == 1) {
 		if (bootable_b) {
-			if (boot_ctrl.slot_info[1].successful_boot == 0) {
+			if (boot_ctrl->slot_info[1].successful_boot == 0) {
 				success_flag = 0;
 				if (rebootmode && strcmp(rebootmode, "fastboot") &&
 					strcmp(rebootmode, "factory_reboot") &&
 					strcmp(rebootmode, "bist_reboot")) {
-					boot_ctrl.slot_info[1].tries_remaining -= 1;
+					boot_ctrl->slot_info[1].tries_remaining -= 1;
 					update_flag = 1;
 				}
 			}
 		}
 	}
 
-	if (boot_ctrl.firstboot == 1) {
+	if (boot_ctrl->firstboot == 1) {
 		if (rebootmode && strcmp(rebootmode, "fastboot") &&
 			strcmp(rebootmode, "factory_reset") &&
 			strcmp(rebootmode, "factory_reboot") &&
 			strcmp(rebootmode, "bist_reboot")) {
-			boot_ctrl.boot_tries_remaining -= 1;
+			boot_ctrl->boot_tries_remaining -= 1;
 			update_flag = 1;
 		}
 	}
 
-	debug("boot_ctrl.merge_flag = %d\n", boot_ctrl.merge_flag);
+	debug("boot_ctrl->merge_flag = %d\n", boot_ctrl->merge_flag);
 
 	if (update_flag == 1)
-		boot_info_save(&boot_ctrl, miscbuf);
+		boot_info_save(boot_ctrl, miscbuf);
 
 	char *insufficient_data = env_get("insufficient_data");
 
@@ -1214,20 +1187,20 @@ static int do_SetUpdateTries(
 #endif
 
 		if (slot == 0 && bootable_a) {
-			if (boot_ctrl.slot_info[0].successful_boot == 0)
-				boot_ctrl.slot_info[0].tries_remaining = 0;
+			if (boot_ctrl->slot_info[0].successful_boot == 0)
+				boot_ctrl->slot_info[0].tries_remaining = 0;
 		} else if (slot == 1 && bootable_b) {
-			if (boot_ctrl.slot_info[1].successful_boot == 0)
-				boot_ctrl.slot_info[1].tries_remaining = 0;
+			if (boot_ctrl->slot_info[1].successful_boot == 0)
+				boot_ctrl->slot_info[1].tries_remaining = 0;
 		}
-		boot_info_save(&boot_ctrl, miscbuf);
+		boot_info_save(boot_ctrl, miscbuf);
 		if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
 			reboot_by_reason(AMLOGIC_QUIESCENT_REBOOT);
 		else
 			reboot_by_reason(AMLOGIC_NORMAL_BOOT);
 	}
 
-	if (boot_ctrl.merge_flag == SNAPSHOTTED) {
+	if (boot_ctrl->merge_flag == SNAPSHOTTED) {
 		printf("merge_flag is SNAPSHOTTED\n");
 		merge_ret = 1;
 	}
@@ -1245,23 +1218,22 @@ static int do_SetUpdateTries(
 		run_command("saveenv", 0);
 #endif
 		if (slot == 0 && bootable_a) {
-			if (boot_ctrl.slot_info[0].successful_boot == 0)
-				boot_ctrl.slot_info[0].tries_remaining = 0;
+			if (boot_ctrl->slot_info[0].successful_boot == 0)
+				boot_ctrl->slot_info[0].tries_remaining = 0;
 		} else if (slot == 1 && bootable_b) {
-			if (boot_ctrl.slot_info[1].successful_boot == 0)
-				boot_ctrl.slot_info[1].tries_remaining = 0;
+			if (boot_ctrl->slot_info[1].successful_boot == 0)
+				boot_ctrl->slot_info[1].tries_remaining = 0;
 		}
-		boot_info_save(&boot_ctrl, miscbuf);
+		boot_info_save(boot_ctrl, miscbuf);
 		if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
 			reboot_by_reason(AMLOGIC_QUIESCENT_REBOOT);
 		else
 			reboot_by_reason(AMLOGIC_NORMAL_BOOT);
 	}
 
-	debug("do_SetUpdateTries boot_ctrl.roll_flag = %d\n", boot_ctrl.roll_flag);
-	if (boot_ctrl.roll_flag == 1) {
+	debug("boot_ctrl->roll_flag = %d\n", boot_ctrl->roll_flag);
+	if (boot_ctrl->roll_flag == 1)
 		env_set("rollback_flag", "1");
-	}
 
 #if defined(CONFIG_EFUSE_OBJ_API) && defined(CONFIG_CMD_EFUSE)
 				run_command("efuse_obj get FEAT_DISABLE_EMMC_USER", 0);
@@ -1269,8 +1241,8 @@ static int do_SetUpdateTries(
 					nocs_mode = true;
 #endif//#ifdef CONFIG_EFUSE_OBJ_API
 
-	if (boot_ctrl.slot_info[slot].successful_boot == 1 &&
-		boot_ctrl.slot_info[slot].uboot_status != 2) {
+	if (boot_ctrl->slot_info[slot].successful_boot == 1 &&
+		boot_ctrl->slot_info[slot].uboot_status != 2) {
 		if (gpt_partition || nocs_mode) {
 			char *bootloaderindex = NULL;
 
@@ -1296,19 +1268,19 @@ static int do_SetUpdateTries(
 					write_bootloader(1, 2);
 					printf("after write boot0 to boot1\n");
 				}
-				boot_ctrl.slot_info[slot].uboot_status = 2;
-				boot_info_save(&boot_ctrl, miscbuf);
+				boot_ctrl->slot_info[slot].uboot_status = 2;
+				boot_info_save(boot_ctrl, miscbuf);
 			}
 		}
 	}
 
-	bootable_a = slot_is_bootable(&boot_ctrl.slot_info[0]);
-	bootable_b = slot_is_bootable(&boot_ctrl.slot_info[1]);
+	bootable_a = slot_is_bootable(&boot_ctrl->slot_info[0]);
+	bootable_b = slot_is_bootable(&boot_ctrl->slot_info[1]);
 	if ((!bootable_a && !bootable_b) ||
-		(boot_ctrl.firstboot == 1 && boot_ctrl.boot_tries_remaining <= 0)) {
+		(boot_ctrl->firstboot == 1 && boot_ctrl->boot_tries_remaining <= 0)) {
 		printf("both a & b can't bootup, enter fastboot\n");
-		boot_info_reset(&boot_ctrl);
-		boot_info_save(&boot_ctrl, miscbuf);
+		boot_info_reset(boot_ctrl);
+		boot_info_save(boot_ctrl, miscbuf);
 		run_command("run init_display; run storeargs; run enter_fastboot;", 0);
 	}
 
@@ -1320,8 +1292,9 @@ static int do_CheckABState(cmd_tbl_t *cmdtp,
 	int argc,
 	char * const argv[])
 {
-	char miscbuf[MISCBUF_SIZE] = {0};
-	bootloader_control boot_ctrl;
+	boot_ctrl_init_once();
+
+	bootloader_control *boot_ctrl = &s_boot_ctrl_cache;
 	bool bootable_a, bootable_b;
 	int slot;
 	int retry_times = 0;
@@ -1332,33 +1305,24 @@ static int do_CheckABState(cmd_tbl_t *cmdtp,
 		return -1;
 	}
 
-	boot_info_open_partition(miscbuf);
-	boot_info_load(&boot_ctrl, miscbuf);
-
-	if (!boot_info_validate(&boot_ctrl)) {
-		printf("boot-info is invalid. Resetting\n");
-		boot_info_reset(&boot_ctrl);
-		boot_info_save(&boot_ctrl, miscbuf);
-	}
-
-	slot = get_active_slot(&boot_ctrl);
-	bootable_a = slot_is_bootable(&boot_ctrl.slot_info[0]);
-	bootable_b = slot_is_bootable(&boot_ctrl.slot_info[1]);
+	slot = get_active_slot(boot_ctrl);
+	bootable_a = slot_is_bootable(&boot_ctrl->slot_info[0]);
+	bootable_b = slot_is_bootable(&boot_ctrl->slot_info[1]);
 
 	if ((slot == 0 && bootable_a &&
-		boot_ctrl.slot_info[0].successful_boot == 1) ||
+		boot_ctrl->slot_info[0].successful_boot == 1) ||
 		(slot == 1 && bootable_b &&
-		boot_ctrl.slot_info[1].successful_boot == 1) ||
+		boot_ctrl->slot_info[1].successful_boot == 1) ||
 		(!bootable_a && !bootable_b))
 		return 0;
 
 	if (slot == 0 && bootable_a &&
-		boot_ctrl.slot_info[0].successful_boot == 0)
-		retry_times = boot_ctrl.slot_info[0].tries_remaining;
+		boot_ctrl->slot_info[0].successful_boot == 0)
+		retry_times = boot_ctrl->slot_info[0].tries_remaining;
 
 	if (slot == 1 && bootable_b &&
-		boot_ctrl.slot_info[1].successful_boot == 0)
-		retry_times = boot_ctrl.slot_info[1].tries_remaining;
+		boot_ctrl->slot_info[1].successful_boot == 0)
+		retry_times = boot_ctrl->slot_info[1].tries_remaining;
 
 	printf("ab update mode, try %d times again\n", retry_times + 1);
 	if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
@@ -1374,19 +1338,11 @@ static int do_CopySlot(
 	int argc,
 	char * const argv[])
 {
-	char miscbuf[MISCBUF_SIZE] = {0};
-	bootloader_control boot_ctrl;
+	boot_ctrl_init_once();
+
+	bootloader_control *boot_ctrl = &s_boot_ctrl_cache;
 	int copy = -1;
 	int dest = -1;
-
-	boot_info_open_partition(miscbuf);
-	boot_info_load(&boot_ctrl, miscbuf);
-
-	if (!boot_info_validate(&boot_ctrl)) {
-		printf("boot-info is invalid. Resetting\n");
-		boot_info_reset(&boot_ctrl);
-		boot_info_save(&boot_ctrl, miscbuf);
-	}
 
 	if (strcmp(argv[1], "1") == 0)
 		copy = 1;
@@ -1415,11 +1371,11 @@ static int do_CopySlot(
 
 	if (copy == 1) {
 		if ((fastboot_step && (strcmp(fastboot_step, "2") == 0)) ||
-				boot_ctrl.slot_info[0].successful_boot == 1)
+				boot_ctrl->slot_info[0].successful_boot == 1)
 			write_bootloader(copy, dest);
 	} else if (copy == 2) {
 		if ((fastboot_step && (strcmp(fastboot_step, "2") == 0)) ||
-				boot_ctrl.slot_info[1].successful_boot == 1) {
+				boot_ctrl->slot_info[1].successful_boot == 1) {
 			write_bootloader(copy, dest);
 		} else {
 			env_set("update_env", "1");
