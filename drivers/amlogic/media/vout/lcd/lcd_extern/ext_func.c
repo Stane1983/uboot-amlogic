@@ -54,6 +54,9 @@ void lcd_extern_pinmux_set(struct lcd_extern_driver_s *edrv, int status)
 {
 	int i;
 
+	if (edrv->pinmux_valid == 0)
+		return;
+
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		EXTPR("[%d]: %s: %d\n", edrv->index, __func__, status);
 
