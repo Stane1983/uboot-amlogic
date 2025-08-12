@@ -166,6 +166,7 @@ static int lcd_extern_get_init_bsp(struct lcd_extern_driver_s *edrv)
 
 static int lcd_extern_pinmux_load_from_bsp(struct lcd_extern_driver_s *edrv)
 {
+	struct lcd_dft_config_s *ext_dft_conf;
 	struct lcd_pinmux_ctrl_s *pinmux;
 	char propname[20];
 	unsigned int i, j;
@@ -174,14 +175,17 @@ static int lcd_extern_pinmux_load_from_bsp(struct lcd_extern_driver_s *edrv)
 	if (!edrv->data)
 		return -1;
 	if (!edrv->data->dft_conf[edrv->index]) {
-		EXTERR("[%d]: %s: dft_conf is NULL\n", edrv->index, __func__);
-		return -1;
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			EXTPR("[%d]: %s: dft_conf is NULL\n", edrv->index, __func__);
+		return 0;
 	}
-	pinmux = edrv->data->dft_conf[edrv->index]->ext_common->ext_pinmux;
-	if (!pinmux) {
-		EXTERR("[%d]: %s: ext_pinmux is NULL\n", edrv->index, __func__);
-		return -1;
+	ext_dft_conf = edrv->data->dft_conf[edrv->index];
+	if (!ext_dft_conf->ext_common || !ext_dft_conf->ext_common->ext_pinmux) {
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			EXTPR("[%d]: %s: ext_pinmux is NULL\n", edrv->index, __func__);
+		return 0;
 	}
+	pinmux = ext_dft_conf->ext_common->ext_pinmux;
 
 	sprintf(propname, "extern_on");
 	for (i = 0; i < LCD_PINMX_MAX; i++) {
@@ -216,6 +220,7 @@ static int lcd_extern_pinmux_load_from_bsp(struct lcd_extern_driver_s *edrv)
 		edrv->pinmux_clr[clr_cnt][0] = LCD_PINMUX_END;
 		edrv->pinmux_clr[clr_cnt][1] = 0x0;
 	}
+	edrv->pinmux_valid = 1;
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 		i = 0;
@@ -1552,8 +1557,7 @@ int lcd_extern_load_config(struct lcd_extern_driver_s *edrv, char *dtaddr, int l
 	if (lcd_ext_check_config_load(edrv))
 		return -1;
 
-	if (0)
-		lcd_extern_pinmux_load_from_bsp(edrv);
+	lcd_extern_pinmux_load_from_bsp(edrv);
 
 	for (i = 0; i < edrv->dev_cnt; i++) {
 		dev_index = ext_index_lut[i];

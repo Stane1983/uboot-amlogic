@@ -246,6 +246,12 @@ static struct lcd_dft_config_s lcd_dft_conf[] = {
 		.mode = LCD_MODE_TABLET,
 		.ext_lcd = ext_lcd0_config,
 		.lcd_pinmux = lcd0_pinmux_ctrl,
+
+#ifdef CONFIG_AML_LCD_EXTERN
+		.ext_common = NULL,
+		.ext_conf = NULL,
+#endif
+
 		.bl_gpio = lcd0_bl_gpio,
 		.bl_pinmux = lcd0_bl_pinmux_ctrl,
 	},
