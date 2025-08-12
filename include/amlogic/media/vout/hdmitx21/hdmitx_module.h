@@ -187,6 +187,7 @@ void hdmitx_sync_input_vpp_info(void);
 bool is_hdmi_mode(char *mode);
 void vrr_init_qms_para(struct hdmitx_dev *hdev);
 enum hdmi_vic hdmitx_find_brr_vic(enum hdmi_vic vic);
+bool hdmitx21_find_vendor_shield_hdr(unsigned char *edid_buf);
 
 /* the hdmitx output limits to 1080p */
 bool is_hdmitx_limited_1080p(void);

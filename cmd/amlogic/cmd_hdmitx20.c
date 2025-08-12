@@ -188,6 +188,14 @@ static void hdmitx_mask_rx_info(struct hdmitx_dev *hdev)
 	/* refer to SWPL-44445 for more detail */
 	if (hdev->para->cd == HDMI_COLOR_DEPTH_24B)
 		memset(&hdev->RXCap.hdr_info, 0, sizeof(struct hdr_info));
+	/* special tv 422,12bit not support hdr10 */
+	if (hdmitx_find_vendor_shield_hdr(hdev)) {
+		if (hdev->para->cd == HDMI_COLOR_DEPTH_36B &&
+			hdev->para->cs == HDMI_COLOR_FORMAT_422) {
+			pr_info("no hdr support, disable hdr\n");
+			memset(&hdev->RXCap.hdr_info, 0, sizeof(struct hdr_info));
+		}
+	}
 }
 
 static void hdmitx_config_csc_en(struct hdmitx_dev *hdev)

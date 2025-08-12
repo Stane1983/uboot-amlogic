@@ -27,6 +27,12 @@ static struct edid_venddat_t vendor_null_pkt[] = {
 	/* Add new vendor data here */
 };
 
+static struct edid_venddat_t vendor_shield_hdr[] = {
+	/* BLACKLINK */
+	{ {0x63, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x21} }
+	/* Add new vendor data here */
+};
+
 bool hdmitx_find_vendor(struct hdmitx_dev *hdev)
 {
 	int i;
@@ -54,3 +60,20 @@ bool hdmitx_find_vendor_null_pkt(struct hdmitx_dev *hdev)
 	return false;
 }
 
+/*
+ * special TV to mask the HDR capabilities at 422,12bit.
+ */
+bool hdmitx_find_vendor_shield_hdr(struct hdmitx_dev *hdev)
+{
+	int i;
+
+	if (!hdev)
+		return false;
+
+	for (i = 0; i < ARRAY_SIZE(vendor_shield_hdr); i++) {
+		if (memcmp(&hdev->rawedid[8], vendor_shield_hdr[i].data,
+			sizeof(vendor_shield_hdr[i].data)) == 0)
+			return true;
+	}
+	return false;
+}
