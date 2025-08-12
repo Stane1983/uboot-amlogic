@@ -34,7 +34,7 @@
 #include <malloc.h>
 #include <stdarg.h>
 #include <spinlock.h>
-#if CONFIG_IS_ENABLED(CONFIG_AML_VPP)
+#if CONFIG_IS_ENABLED(AML_VPP)
 #include <amlogic/media/vpp/vpp.h>
 #endif
 
@@ -71,7 +71,7 @@ static int test_pm_poweroff(void *dev_info)
 }
 #endif
 
-#if CONFIG_IS_ENABLED(CONFIG_AML_VPP)
+#if CONFIG_IS_ENABLED(AML_VPP)
 static int vpp_suspend(void *dev_info)
 {
 	printf("%s\n", __func__);
@@ -103,7 +103,7 @@ void pm_initialize(void)
 {
 	INIT_LIST_HEAD(&devices);
 	spin_lock_init(&pm_suspend_lock);
-#if CONFIG_IS_ENABLED(CONFIG_AML_VPP)
+#if CONFIG_IS_ENABLED(AML_VPP)
 	dev_register_pm(name, vpp_suspend, vpp_resume, vpp_poweroff, 2);
 #endif
 #ifdef PM_DEBUG
