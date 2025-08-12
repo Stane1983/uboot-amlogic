@@ -18,6 +18,19 @@
 
 #define MREG_END_MARKER 0xFFFF
 
+/* for 576i, according to <ETSI EN 300294 V1.4.1> */
+
+#define WSS_576I_LINE							23
+#define WSS_576I_CGMS_A_START					0xc
+#define WSS_576I_CGMS_A_LENGTH					0x2
+#define WSS_576I_CGMS_A_MASK					0x3
+
+/* for 480i, according to <IEC 61880:1998> */
+#define WSS_480I_LINE							20
+#define WSS_480I_CGMS_A_START					0x6
+#define WSS_480I_CGMS_A_LENGTH					0x2
+#define WSS_480I_CGMS_A_MASK					0x3
+
 enum cvbs_chip_e {
 	CVBS_CHIP_G12A = 0,
 	CVBS_CHIP_G12B, /* 1 */
@@ -55,6 +68,14 @@ struct cvbs_data_s {
 	unsigned int sva_val;
 	/* for NTSC, 1: use TTC performance config, 0: use domestic */
 	unsigned int ntsc_ttc;
+	/*
+	 * 0: no copy right asserted or status unknown / copying not restricted
+	 * 1: no copy right asserted or status unknown / copying not restricted
+	 * 2: copy right asserted / copying not restricted
+	 * 3: no copy right asserted or status unknown / copying restricted
+	 * 0xff: CGMS disabled, default
+	 */
+	unsigned int cgms_level;
 };
 
 struct reg_s {

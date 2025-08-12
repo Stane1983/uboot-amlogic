@@ -815,6 +815,45 @@ static void cvbs_performance_enhancement(int mode)
 	printf("%s\n", __func__);
 }
 
+static void wss_set_cgms(int vmode, unsigned int param)
+{
+	unsigned int value;
+	unsigned int cgms_ntsc_crc[] = {0x0, 0x5, 0xa, 0xf};
+
+	if (vmode == VMODE_NTSC || vmode == VMODE_NTSC_M) {
+		if (param == 0xFF) {
+			cvbs_set_vcbus_bits(ENCI_VBI_SETTING, 0x0, 4, 2);
+			return;
+		}
+		param = (param > 3) ? 0 : param;
+		value = ((param << WSS_480I_CGMS_A_START) | (cgms_ntsc_crc[param] << 14));
+
+		cvbs_write_vcbus(ENCI_VBI_CGMSDT_L, (value & 0xffff));
+		cvbs_write_vcbus(ENCI_VBI_CGMSDT_H, ((value >> 16) & 0xff));
+		/* bit[7:0] even, bit[15:8] odd */
+		cvbs_write_vcbus(ENCI_VBI_CGMS_LN, (WSS_480I_LINE - 4) | (WSS_480I_LINE - 3) << 8);
+		cvbs_set_vcbus_bits(ENCI_VBI_SETTING, 0x3, 4, 2);
+		/*480i, enable even field for line 20*/
+		/*enable odd field for line 283 */
+	} else if (vmode == VMODE_PAL) {
+		if (param == 0xFF) {
+			cvbs_set_vcbus_bits(ENCI_VBI_SETTING, 0x0, 2, 2);
+			return;
+		}
+		cvbs_set_vcbus_bits(ENCI_VBI_WSSDT, param,
+				    WSS_576I_CGMS_A_START, WSS_576I_CGMS_A_LENGTH);
+		value = cvbs_read_vcbus(ENCI_VBI_WSSDT);
+		/* correct the bit3: odd_parity_bit */
+		if ((value & 0xf) == 0x0)
+			cvbs_set_vcbus_bits(ENCI_VBI_WSSDT, 1, 3, 1);
+		cvbs_write_vcbus(ENCI_VBI_WSS_LN, WSS_576I_LINE - 1);
+		/* 576i, should enable odd field for line 23 */
+		cvbs_set_vcbus_bits(ENCI_VBI_SETTING, 0x1, 2, 2);
+	}
+
+	printf("[%s] vmode: 0x%x, cgms_level: 0x%x\n", __func__, vmode, param);
+}
+
 static int cvbs_config_enci(int vmode)
 {
 	const struct reg_s *s = NULL;
@@ -846,6 +885,7 @@ static int cvbs_config_enci(int vmode)
 	}
 
 	cvbs_performance_enhancement(vmode);
+	wss_set_cgms(vmode, cvbs_drv.data->cgms_level);
 
 	return 0;
 }
@@ -1009,6 +1049,16 @@ static void cvbs_get_config(void)
 	if (propdata) {
 		s_enci_clk_path = be32_to_cpup((u32*)propdata);
 		printf("cvbs: find clk_path: 0x%x\n", s_enci_clk_path);
+	}
+
+	/* cgms_level */
+	propdata = (char *)fdt_getprop(dt_blob, node, "cgms_level", NULL);
+	if (propdata) {
+		cvbs_drv.data->cgms_level = be32_to_cpup((u32 *)propdata);
+		printf("cvbs: find cgms_level: 0x%x\n", cvbs_drv.data->cgms_level);
+	} else {
+		/* disable CGMS by default */
+		cvbs_drv.data->cgms_level = 0xFF;
 	}
 
 	propdata = (char *)fdt_getprop(dt_blob, node, "sva_std", NULL);
