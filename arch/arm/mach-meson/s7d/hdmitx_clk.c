@@ -23,8 +23,8 @@
 				break; \
 			else { \
 				/* reset hpll */ \
-				hd21_set_reg_bits(reg, 1, 30, 1); \
 				hd21_set_reg_bits(reg, 0, 30, 1); \
+				hd21_set_reg_bits(reg, 1, 30, 1); \
 			} \
 		} \
 		if (cnt < 9) \
