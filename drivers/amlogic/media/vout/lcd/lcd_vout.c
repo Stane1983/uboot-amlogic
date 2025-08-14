@@ -201,6 +201,9 @@ static void lcd_chip_detect(void)
 	case MESON_CPU_MAJOR_ID_T6W:
 		lcd_data = &lcd_data_t6w;
 		break;
+	case MESON_CPU_MAJOR_ID_T6X:
+		lcd_data = &lcd_data_t6x;
+		break;
 #endif
 	default:
 		lcd_data = NULL;
