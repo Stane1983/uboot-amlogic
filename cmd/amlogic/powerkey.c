@@ -24,6 +24,8 @@
 #define DEFAULT_MODEL_SUM_PATH "/odm_ext/etc/tvconfig/model/model_sum.ini"
 #define CS_BLOCK_DEV_INTERFACE "mmc"
 #define CS_BLOCK_DEV_MARJOR_NUM "1"
+#define DEFAULT_MODEL_PATH      "/odm_ext/etc/tvconfig/model"
+#define DEFAULT_SECTION "GENERAL_CONFIG_FROM_MODEL_SUM"
 
 unsigned int power_key[MAX_KEY_SUPPORT];
 int power_key_num;
@@ -795,6 +797,7 @@ int handle_multi_remote(void)
 	char *model;
 	int ret = 1;
 	unsigned char modelname_buf[200] = {0x0};
+	char model_path[128];
 
 	power_key_num = 0;
 
@@ -808,6 +811,12 @@ int handle_multi_remote(void)
 	if (model) {
 		printf("model is %s\n", model);
 		ret = parse_multi_remote(DEFAULT_MODEL_SUM_PATH, model);
+		if (ret != 0) {
+			snprintf(model_path, 127, "%s/Project_index_%s.ini",
+				DEFAULT_MODEL_PATH, model);
+			printf("try model_path is %s\n", model_path);
+			ret = parse_multi_remote(model_path, DEFAULT_SECTION);
+		}
 	}
 
 	return ret;
@@ -818,6 +827,7 @@ int handle_multi_keypad(void)
 	char *model;
 	int ret = 1;
 	unsigned char modelname_buf[200] = {0x0};
+	char model_path[128];
 
 	power_key_num = 0;
 
@@ -831,6 +841,12 @@ int handle_multi_keypad(void)
 	if (model) {
 		printf("model is %s\n", model);
 		ret = parse_multi_keypad(DEFAULT_MODEL_SUM_PATH, model);
+		if (ret != 0) {
+			snprintf(model_path, 127, "%s/Project_index_%s.ini",
+				DEFAULT_MODEL_PATH, model);
+			printf("try model_path is %s\n", model_path);
+			ret = parse_multi_keypad(model_path, DEFAULT_SECTION);
+		}
 	}
 
 	return ret;

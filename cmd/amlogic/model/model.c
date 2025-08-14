@@ -18,17 +18,21 @@
 #define LOG_NDEBUG  0
 
 #ifndef CONFIG_YOCTO
+#define DEFAULT_MODEL_PATH1      "/odm/etc/tvconfig/model"
 #define DEFAULT_MODEL_SUM_PATH1 "/odm/etc/tvconfig/model/model_sum.ini"
 #define DEFAULT_MODEL1_SUM_PATH1 "/odm/etc/tvconfig/model/model1_sum.ini"
 #define DEFAULT_MODEL2_SUM_PATH1 "/odm/etc/tvconfig/model/model2_sum.ini"
 #else
+#define DEFAULT_MODEL_PATH1      "/vendor/etc/tvconfig/model"
 #define DEFAULT_MODEL_SUM_PATH1 "/vendor/etc/tvconfig/model/model_sum.ini"
 #define DEFAULT_MODEL1_SUM_PATH1 "/vendor/etc/tvconfig/model/model1_sum.ini"
 #define DEFAULT_MODEL2_SUM_PATH1 "/vendor/etc/tvconfig/model/model2_sum.ini"
 #endif
+#define DEFAULT_MODEL_PATH2      "/odm_ext/etc/tvconfig/model"
 #define DEFAULT_MODEL_SUM_PATH2 "/odm_ext/etc/tvconfig/model/model_sum.ini"
 #define DEFAULT_MODEL1_SUM_PATH2 "/odm_ext/etc/tvconfig/model/model1_sum.ini"
 #define DEFAULT_MODEL2_SUM_PATH2 "/odm_ext/etc/tvconfig/model/model2_sum.ini"
+#define DEFAULT_SECTION "GENERAL_CONFIG_FROM_MODEL_SUM"
 
 /*********************************  common api  *************************************/
 int model_set_panel_misc(struct panel_misc_s *misc_attr)
@@ -441,6 +445,27 @@ static char *model_list_panel_path(int index)
 
 	return path_str;
 }
+
+static const char *get_model_path(int index)
+{
+	char *model_path, str[15];
+
+	if (index == 0)
+		sprintf(str, "model_path");
+	else
+		sprintf(str, "model%d_path", index);
+
+	model_path = env_get(str);
+	if (!model_path) {
+		if (dynamic_partition)
+			return DEFAULT_MODEL_PATH2;
+		else
+			return DEFAULT_MODEL_PATH1;
+	}
+
+	printf("%s: %s\n", __func__, model_path);
+	return model_path;
+}
 #endif
 
 static int handle_model_list(void)
@@ -521,6 +546,7 @@ int handle_model_logofile(void)
 	unsigned int print_flag;
 	int i;
 	int ret = 1;
+	char model_path[128];
 
 	print_flag = env_get_ulong("model_debug_print", 10, 0xffff);
 	if (print_flag != 0xffff) {
@@ -539,10 +565,16 @@ int handle_model_logofile(void)
 			ALOGD("%s: no %s\n", __func__, str);
 			continue;
 		}
-		ALOGI("%s: %s: %s\n", __func__, str, model);
+		ALOGD("%s: %s: %s\n", __func__, str, model);
 		ret = parse_model_logofile(i, get_model_sum_path(i), model);
-		if (ret != 0)
-			continue;
+		if (ret != 0) {
+			snprintf(model_path, 127, "%s/Project_index_%s.ini",
+				get_model_path(i), model);
+			printf("try to read from model_path: %s\n", model_path);
+			ret = parse_model_logofile(i, model_path, DEFAULT_SECTION);
+		}
+		if (ret == 0)
+			break;
 	}
 
 	return ret;
@@ -553,6 +585,8 @@ int handle_model_sum(void)
 	char *model, str[15];
 	unsigned int print_flag;
 	int i;
+	char model_path[128];
+	int ret = 0;
 
 	print_flag = env_get_ulong("model_debug_print", 10, 0xffff);
 	if (print_flag != 0xffff) {
@@ -572,7 +606,12 @@ int handle_model_sum(void)
 			continue;
 		}
 		ALOGI("%s: %s: %s\n", __func__, str, model);
-		parse_model_sum(i, get_model_sum_path(i), model);
+		ret = parse_model_sum(i, get_model_sum_path(i), model);
+		if (ret < 0) {
+			snprintf(model_path, 127, "%s/Project_index_%s.ini",
+				get_model_path(i), model);
+			ret = parse_model_sum(i, model_path, DEFAULT_SECTION);
+		}
 	}
 
 	return 0;

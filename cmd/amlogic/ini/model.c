@@ -19,19 +19,23 @@
 #include <amlogic/aml_model.h>
 
 #ifndef CONFIG_YOCTO
+#define DEFAULT_MODEL_PATH1      "/odm/etc/tvconfig/model"
 #define DEFAULT_MODEL_SUM_PATH1 "/odm/etc/tvconfig/model/model_sum.ini"
 #define DEFAULT_MODEL1_SUM_PATH1 "/odm/etc/tvconfig/model/model1_sum.ini"
 #define DEFAULT_MODEL2_SUM_PATH1 "/odm/etc/tvconfig/model/model2_sum.ini"
 #else
+#define DEFAULT_MODEL_PATH1      "/vendor/etc/tvconfig/model"
 #define DEFAULT_MODEL_SUM_PATH1 "/vendor/etc/tvconfig/model/model_sum.ini"
 #define DEFAULT_MODEL1_SUM_PATH1 "/vendor/etc/tvconfig/model/model1_sum.ini"
 #define DEFAULT_MODEL2_SUM_PATH1 "/vendor/etc/tvconfig/model/model2_sum.ini"
 #endif
+#define DEFAULT_MODEL_PATH2      "/odm_ext/etc/tvconfig/model"
 #define DEFAULT_MODEL_SUM_PATH2 "/odm_ext/etc/tvconfig/model/model_sum.ini"
 #define DEFAULT_MODEL1_SUM_PATH2 "/odm_ext/etc/tvconfig/model/model1_sum.ini"
 #define DEFAULT_MODEL2_SUM_PATH2 "/odm_ext/etc/tvconfig/model/model2_sum.ini"
 #define AML_START		"amlogic_start"
 #define AML_END			"amlogic_end"
+#define DEFAULT_SECTION "GENERAL_CONFIG_FROM_MODEL_SUM"
 
 int model_debug_flag;
 
@@ -3503,6 +3507,27 @@ int handle_model_list_panel_key(int index)
 	return 0;
 }
 
+static const char *get_model_path(int index)
+{
+	char *model_path, str[15];
+
+	if (index == 0)
+		sprintf(str, "model_path");
+	else
+		sprintf(str, "model%d_path", index);
+
+	model_path = env_get(str);
+	if (!model_path) {
+		if (dynamic_partition)
+			return DEFAULT_MODEL_PATH2;
+		else
+			return DEFAULT_MODEL_PATH1;
+	}
+
+	printf("%s: %s\n", __func__, model_path);
+	return model_path;
+}
+
 int handle_model_list(void)
 {
 	char *model, str[15], model_val[50];
@@ -3668,6 +3693,7 @@ int handle_model_logofile(void)
 	char *model, str[15], model_val[50];
 	int i;
 	int ret = 1;
+	char model_path[128];
 
 	for (i = 0; i < 3; i++) {
 		memset(model_val, 0, sizeof(model_val));
@@ -3689,8 +3715,14 @@ int handle_model_logofile(void)
 		printf("current %s: %s\n", str, model);
 
 		ret = parse_model_logofile(i, get_model_sum_path(i), model);
-		if (ret != 0)
-			continue;
+		if (ret != 0) {
+			snprintf(model_path, 127, "%s/Project_index_%s.ini",
+				get_model_path(i), model);
+			printf("try to read from model_path: %s\n", model_path);
+			ret = parse_model_logofile(i, model_path, DEFAULT_SECTION);
+		}
+		if (ret == 0)
+			break;
 	}
 
 	return ret;
@@ -3699,6 +3731,7 @@ int handle_model_logofile(void)
 int handle_model_sum(void)
 {
 	char *model, str[15], model_val[50], env_str[64];
+	char model_path[128];
 #ifdef CONFIG_AML_LCD
 	char *file_name, *p;
 #endif
@@ -3736,6 +3769,11 @@ int handle_model_sum(void)
 			}
 		}
 		ret = parse_model_sum(i, get_model_sum_path(i), model);
+		if (ret < 0) {
+			snprintf(model_path, 127, "%s/Project_index_%s.ini",
+				get_model_path(i), model);
+			ret = parse_model_sum(i, model_path, DEFAULT_SECTION);
+		}
 		if (ret < 0)
 			continue;
 #ifdef CONFIG_AML_LCD
