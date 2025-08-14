@@ -334,7 +334,7 @@ static void dump_boot_info(bootloader_control *boot_ctrl)
 	int loglevel = env_get_ulong("loglevel", 10, 0);
 	char *rebootmode = env_get("reboot_mode");
 
-	if (loglevel >= 5 &&
+	if (loglevel >= 9 &&
 		(rebootmode && strcmp(rebootmode, "fastboot"))) {
 		int slot;
 
