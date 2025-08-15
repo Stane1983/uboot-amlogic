@@ -171,7 +171,7 @@ bool is_hdmi_dc_cap_ok(struct meson_policy_in *input) {
 /*
  * we need find the brr mode and check it with cs/cd.
  */
-bool find_brr_mode(const char *mode, struct meson_policy_in *input, char* outputmode) {
+bool find_brr_mode(const char *mode, struct meson_policy_in *input, char* outputmode, int outputmode_size) {
     /*
      * check input param
      */
@@ -180,7 +180,7 @@ bool find_brr_mode(const char *mode, struct meson_policy_in *input, char* output
         return false;
     }
 
-    strcpy(outputmode, mode);
+    strlcpy(outputmode, mode, outputmode_size);
 
     meson_mode_info_t *config_ptr = NULL;
     meson_mode_info_t *modes_ptr = input->con_info.modes;
@@ -213,7 +213,7 @@ bool find_brr_mode(const char *mode, struct meson_policy_in *input, char* output
         }
     }
 
-    strcpy(outputmode, config_ptr->name);
+    strlcpy(outputmode, config_ptr->name, outputmode_size);
 
     return true;
 }
@@ -236,12 +236,12 @@ bool mode_support_check(const char *mode, const char * color, struct meson_polic
     /*
      * find brr mode base mode
      */
-    find_brr_mode(mode, input, outputmode);
+    find_brr_mode(mode, input, outputmode, sizeof(outputmode));
 
     /* valid mode check now only support non frac mode */
     for (int i = 0; i < ARRAY_SIZE(FRAC_MODE_LIST_MAP); i++) {
         if (!strcmp(FRAC_MODE_LIST_MAP[i].frac_mode, outputmode)) {
-            strcpy(outputmode, FRAC_MODE_LIST_MAP[i].non_frac_mode);
+            strlcpy(outputmode, FRAC_MODE_LIST_MAP[i].non_frac_mode, sizeof(outputmode));
         }
     }
 
@@ -251,7 +251,7 @@ bool mode_support_check(const char *mode, const char * color, struct meson_polic
      * check mode and color format support or not
      */
     int valid = 0;
-    meson_valid_mode_by_drm(&valid, outputmode);
+    meson_valid_mode_by_drm(&valid, outputmode, input->con_info.conn_id);
     if (valid == 1)
         validmode = true;
 
@@ -386,7 +386,7 @@ bool is_hdmi_dc_cap_ok(struct meson_policy_in *input) {
  * uboot cannot be executed temporarily, it is just to synchronize the code
  * compilation pass, and then make modifications when it is used later.
  */
-bool find_brr_mode(const char *mode, struct meson_policy_in *input, char* outputmode) {
+bool find_brr_mode(const char *mode, struct meson_policy_in *input, char* outputmode, int outputmode_size) {
 #ifdef CONFIG_AML_HDMITX21
 	struct hdmitx_dev *hdev = get_hdmitx21_device();
 	bool rx_qms_cap = 0;
@@ -407,9 +407,11 @@ bool find_brr_mode(const char *mode, struct meson_policy_in *input, char* output
 		SYS_LOGE("%s input or mode or outputmode is null\n", __func__);
 		return false;
 	}
+	if (outputmode_size - 1 <= 0)
+		outputmode_size = 1;
 /* QMS is not applied for hdmi20 devices */
 #ifdef CONFIG_AML_HDMITX20
-	strcpy(outputmode, mode);
+	strncpy(outputmode, mode, outputmode_size - 1);
 	return false;
 #endif
 #ifdef CONFIG_AML_HDMITX21
@@ -426,14 +428,14 @@ bool find_brr_mode(const char *mode, struct meson_policy_in *input, char* output
 	}
 
 	if (!(env_qms_en && progressive_mode && rx_qms_cap)) {
-		strcpy(outputmode, mode);
+		strncpy(outputmode, mode, outputmode_size - 1);
 		SYS_LOGE("hdmitx: qms: env %d mode %d rx_qms %d\n",
 			env_qms_en, progressive_mode, rx_qms_cap);
 		return false;
 	}
 	tfr_timing = hdmitx21_gettiming_from_name(mode);
 	if (!tfr_timing) {
-		strcpy(outputmode, mode);
+		strncpy(outputmode, mode, outputmode_size - 1);
 		SYS_LOGE("hdmitx: qms: not find timing of %s\n", mode);
 		return false;
 	}
@@ -441,13 +443,13 @@ bool find_brr_mode(const char *mode, struct meson_policy_in *input, char* output
 	brr_timing = hdmitx21_gettiming_from_vic(qms_brr_vic);
 	brr_mode = brr_timing->sname ? brr_timing->sname : brr_timing->name;
 	if (brr_timing->v_freq < tfr_timing->v_freq) {
-		strcpy(outputmode, mode);
+		strncpy(outputmode, mode, outputmode_size - 1);
 		SYS_LOGE("hdmitx: qms: tfr %s larger than brr %s\n",
 			tfr_timing->sname ? tfr_timing->sname : tfr_timing->name, brr_mode);
 		return false;
 	}
 	SYS_LOGE("hdmitx: qms: the brr mode of %s is %s\n", mode, brr_mode);
-	strcpy(outputmode, brr_mode);
+	strncpy(outputmode, brr_mode, outputmode_size - 1);
 	return true;
 #endif
 	return false;
@@ -473,7 +475,7 @@ struct hdmi_format_para *para = NULL;
 	para = hdmi_tst_fmt_name(mode, color);
 	return hdmitx_edid_check_valid_mode(hdev, para);
 #else
-	if (find_brr_mode(mode, input, brr_mode))
+	if (find_brr_mode(mode, input, brr_mode, sizeof(brr_mode)))
 		mode = &brr_mode[0];
 	/* valid mode check now only support non frac mode */
 	tmp_mode = find_non_frac_preferred_mode(mode);

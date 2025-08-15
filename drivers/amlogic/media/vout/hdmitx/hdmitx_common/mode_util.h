@@ -69,6 +69,10 @@ extern "C" {
  * Linux
  */
 
+#include <linux/amlogic/amvideo.h>
+#include <linux/amlogic/amvecm_ext.h>
+#include <linux/amlogic/amdv_ioc.h>
+
 #ifndef LOG_TAG
 #define LOG_TAG "Westeros"
 #endif
@@ -89,11 +93,21 @@ extern "C" {
 #endif
 
 #include <linux/amlogic/drm/meson_drm.h>
+
+enum IOCTL_TYPE {
+  IOCTL_INVALID = -1,
+  IOCTL_AMVIDEO,
+  IOCTL_AMVECM,
+  IOCTL_AMDB,
+};
+
+int meson_mode_ioctl(enum IOCTL_TYPE type, int request, ...);
 #endif
+
 
 int32_t meson_mode_write_sys(const char *path, const char *val);
 int32_t meson_mode_read_sys(const char *path, char *val, bool original, int valSize);
-bool meson_valid_mode_by_drm(int *valid, const char *outputmode);
+bool meson_valid_mode_by_drm(int *valid, const char *outputmode, [[maybe_unused]] const uint32_t conn_id);
 
 #ifdef __cplusplus
 }

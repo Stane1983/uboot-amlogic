@@ -150,6 +150,7 @@ typedef struct meson_connector_info {
     meson_mode_info_t *modes;               /* for display modes */
     int32_t modes_size;                     /* the number of modes */
     int32_t modes_capacity;                 /* the memory capacity */
+    uint32_t conn_id;                       /* connector id */
 } meson_connector_info_t;
 
 typedef struct meson_policy_in {
