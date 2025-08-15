@@ -605,6 +605,19 @@ static int reserve_uboot(void)
 	return 0;
 }
 
+#ifdef CONFIG_SYS_NONCACHED_MEMORY
+static int reserve_noncached(void)
+{
+	/* round down to SECTION SIZE (typicaly 1MB) limit */
+	gd->start_addr_sp &= ~(MMU_SECTION_SIZE - 1);
+	gd->start_addr_sp -= CONFIG_SYS_NONCACHED_MEMORY;
+	debug("Reserving %dM for noncached_alloc() at: %08lx\n",
+	      CONFIG_SYS_NONCACHED_MEMORY >> 20, gd->start_addr_sp);
+
+	return 0;
+}
+#endif
+
 /* reserve memory for malloc() area */
 static int reserve_malloc(void)
 {
@@ -618,6 +631,11 @@ static int reserve_malloc(void)
 	gd->start_addr_sp -= MEM_SECTION_RED_ZONE_SIZE;
 	record_section_red_zone(gd->start_addr_sp);
 #endif
+
+#ifdef CONFIG_SYS_NONCACHED_MEMORY
+	reserve_noncached();
+#endif
+
 	return 0;
 }
 
@@ -880,13 +898,6 @@ static int setup_reloc(void)
 #endif
 #endif
 	memcpy(gd->new_gd, (char *)gd, sizeof(gd_t));
-
-#ifdef CONFIG_SYS_NONCACHED_MEMORY
-	gd->start_addr_sp = ALIGN(gd->start_addr_sp, MMU_SECTION_SIZE);
-	gd->start_addr_sp -= MMU_SECTION_SIZE;
-	gd->start_addr_sp -= ALIGN(CONFIG_SYS_NONCACHED_MEMORY, MMU_SECTION_SIZE);
-	gd->start_addr_sp -= (SZ_2M);
-#endif
 
 	printf("Relocation Offset is: %08lx\n", gd->reloc_off);
 	printf("Relocating to %08lx, new gd at %08lx, sp at %08lx\n",
