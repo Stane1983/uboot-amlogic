@@ -3300,6 +3300,105 @@ bool is_jpg_file(const char *path) {
 	return len > 4 && strcmp(path + len - 4, ".jpg") == 0;
 }
 
+bool validate_oemkey(const char *value)
+{
+	// Length check (11~32)
+	int len = strlen(value);
+
+	if (len < 11 || len > 32) {
+		printf("Invalid length: %d (must be 11~32)\n", len);
+		return false;
+	}
+
+	// 1.Check ATV prefix
+	if (strncmp(value, "ATV", 3) != 0) {
+		printf("Invalid prefix: must start with 'ATV'\n");
+		return false;
+	}
+
+	// 2.Verify Schema version 00
+	if (value[3] != '0' || value[4] != '0') {
+		printf("Invalid schema version: must be '00'\n");
+		return false;
+	}
+
+	// 3.Verify the voice remote control ID
+	if (value[5] != '0' && value[5] != '1') {
+		printf("Invalid voice flag: must be '0' or '1'\n");
+		return false;
+	}
+
+	// 4.Verify PSZ panel size (must be 3 digits)
+	for (int i = 6; i <= 8; ++i) {
+		if (!isdigit(value[i])) {
+			printf("Invalid PSZ: must be 3 digits\n");
+			return false;
+		}
+	}
+
+	// 5.Verify the year YR (must be 2 digits)
+	for (int i = 9; i <= 10; ++i) {
+		if (!isdigit(value[i])) {
+			printf("Invalid YR: must be 2 digits\n");
+			return false;
+		}
+	}
+	return true;
+}
+
+int parse_model_oemkey(int index, const char *file_name, char *model_name)
+{
+	const char *oemkey_value = NULL;
+	int ret = 1;
+
+	ini_parser_init();
+
+	if (ini_parse_file(file_name) < 0) {
+		printf("parse mode oemkey %s error\n", file_name);
+		ini_parser_uninit();
+		return ret;
+	}
+	run_command("keyman read oemkey ${loadaddr} str", 0);
+	char *oemkey = env_get("oemkey");
+
+	oemkey_value = ini_get_string(model_name, "OEMKEY_NAME", "null");
+	if (oemkey_value && strcmp(oemkey_value, "null") != 0) {
+		if (validate_oemkey(oemkey_value)) {
+			printf("oemkey_name is valid: %s\n", oemkey_value);
+			env_set("oemkey_name", oemkey_value);
+			ret = 0;
+			if (oemkey && strncmp(oemkey, oemkey_value, strlen(oemkey)) != 0) {
+				char result[65] = "keyman write oemkey str ";//size 23
+
+				if (strlen(oemkey_value) > 32) {//str_value size 32
+					printf("invalid oemkey\n");
+					return ret;
+				}
+				strcat(result, oemkey_value);
+				run_command(result, 0);
+			}
+		} else {
+			printf("Invalid OEMKEY_NAME format\n");
+			if (oemkey && strcmp(oemkey, "null") != 0) {
+				env_set("oemkey_name", oemkey);
+				ret = 0;
+			} else {
+				printf("no oemkey in unifykey\n");
+			}
+		}
+	} else {
+		printf("no oemkey in model_ini\n");
+		if (oemkey && strcmp(oemkey, "null") != 0) {
+			printf("use oemkey in unifykey\n");
+			env_set("oemkey_name", oemkey);
+			ret = 0;
+		}
+	}
+
+	ini_parser_uninit();
+	return ret;
+}
+
 int parse_model_logofile(int index, const char *file_name, char *model_name)
 {
 	const char *logo_value = NULL;
@@ -3519,6 +3618,39 @@ int handle_model_set(const char *model, const char *val)
 		}
 	}
 	return 0;
+}
+
+int handle_model_oemkey(void)
+{
+	char *model, str[15], model_val[50];
+	int i;
+	int ret = 1;
+
+	for (i = 0; i < 3; i++) {
+		memset(model_val, 0, sizeof(model_val));
+		if (i == 0)
+			sprintf(str, "model_name");
+		else
+			sprintf(str, "model%d_name", i);
+
+		if (read_model_name_param(i, model_val) <= 0) {
+			model = env_get(str);
+			if (!model) {
+				if (model_debug_flag & DEBUG_NORMAL)
+					ALOGD("%s, no %s\n", __func__, str);
+				continue;
+			}
+		} else {
+			model = model_val;
+		}
+		printf("current %s: %s\n", str, model);
+
+		ret = parse_model_oemkey(i, get_model_sum_path(i), model);
+		if (ret != 0)
+			continue;
+	}
+
+	return ret;
 }
 
 int handle_model_logofile(void)

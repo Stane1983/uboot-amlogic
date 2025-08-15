@@ -248,6 +248,112 @@ bool is_jpg_file(const char *path) {
 	return len > 4 && strcmp(path + len - 4, ".jpg") == 0;
 }
 
+bool validate_oemkey(const char *value)
+{
+	// Length check (11~32)
+	int len = strlen(value);
+
+	if (len < 11 || len > 32) {
+		printf("Invalid length: %d (must be 11~32)\n", len);
+		return false;
+	}
+
+	// 1.Check ATV prefix
+	if (strncmp(value, "ATV", 3) != 0) {
+		printf("Invalid prefix: must start with 'ATV'\n");
+		return false;
+	}
+
+	// 2.Verify Schema version 00
+	if (value[3] != '0' || value[4] != '0') {
+		printf("Invalid schema version: must be '00'\n");
+		return false;
+	}
+
+	// 3.Verify the voice remote control ID
+	if (value[5] != '0' && value[5] != '1') {
+		printf("Invalid voice flag: must be '0' or '1'\n");
+		return false;
+	}
+
+	// 4.Verify PSZ panel size (must be 3 digits)
+	for (int i = 6; i <= 8; ++i) {
+		if (!isdigit(value[i])) {
+			printf("Invalid PSZ: must be 3 digits\n");
+			return false;
+		}
+	}
+
+	// 5.Verify the year YR (must be 2 digits)
+	for (int i = 9; i <= 10; ++i) {
+		if (!isdigit(value[i])) {
+			printf("Invalid YR: must be 2 digits\n");
+			return false;
+		}
+	}
+	return true;
+}
+
+int parse_model_oemkey(int index, const char *file_name, char *model_name)
+{
+	void *local_ini_mem, *psec;
+	const char *oemkey_value = NULL;
+	int ret = 1;
+
+	local_ini_mem = handle_ini_file_parse(file_name, 0);
+
+	if (!local_ini_mem) {
+		ALOGE("%s: error: %s\n", __func__, file_name);
+		return -1;
+	}
+	//read unkfykey first
+	run_command("keyman read oemkey ${loadaddr} str", 0);
+	char *oemkey = env_get("oemkey");
+
+	psec =  handle_ini_get_section(local_ini_mem, model_name);
+	if (!psec) {
+		ALOGE("%s: section %s: error: %s\n", __func__, model_name, file_name);
+		return -1;
+	}
+
+	oemkey_value = handle_ini_get_str(local_ini_mem, psec, "OEMKEY_NAME", "null");
+	if (oemkey_value && strcmp(oemkey_value, "null") != 0) {
+		if (validate_oemkey(oemkey_value)) {
+			printf("oemkey_name is valid: %s\n", oemkey_value);
+			env_set("oemkey_name", oemkey_value);
+			ret = 0;
+			if (oemkey && strncmp(oemkey, oemkey_value, strlen(oemkey)) != 0) {
+				char result[65] = "keyman write oemkey str ";//size 23
+
+				if (strlen(oemkey_value) > 32) {//str_value size 32
+					printf("invalid oemkey\n");
+					return ret;
+				}
+				strcat(result, oemkey_value);
+				run_command(result, 0);
+			}
+		} else {
+			printf("Invalid OEMKEY_NAME format\n");
+			if (oemkey && strcmp(oemkey, "null") != 0) {
+				env_set("oemkey_name", oemkey);
+				ret = 0;
+			} else {
+				printf("no oemkey in unifykey\n");
+			}
+		}
+	} else {
+		printf("no oemkey in model_ini\n");
+		if (oemkey && strcmp(oemkey, "null") != 0) {
+			printf("use oemkey in unifykey\n");
+			env_set("oemkey_name", oemkey);
+			ret = 0;
+		}
+	}
+
+	handle_ini_parser_uninit(local_ini_mem);
+	return ret;
+}
+
 int parse_model_logofile(int index, const char *file_name, char *model_name)
 {
 	void *local_ini_mem, *psec;
@@ -374,6 +480,39 @@ static int handle_model_list(void)
 	}
 
 	return 0;
+}
+
+int handle_model_oemkey(void)
+{
+	char *model, str[15];
+	unsigned int print_flag;
+	int i;
+	int ret = 1;
+
+	print_flag = env_get_ulong("model_debug_print", 10, 0xffff);
+	if (print_flag != 0xffff) {
+		model_set_log_level(print_flag);
+		printf("model_debug_flag: %d\n", print_flag);
+	}
+
+	for (i = 0; i < 3; i++) {
+		if (i == 0)
+			sprintf(str, "model_name");
+		else
+			sprintf(str, "model%d_name", i);
+
+		model = env_get(str);
+		if (!model) {
+			ALOGD("%s: no %s\n", __func__, str);
+			continue;
+		}
+		ALOGI("%s: %s: %s\n", __func__, str, model);
+		ret = parse_model_oemkey(i, get_model_sum_path(i), model);
+		if (ret != 0)
+			continue;
+	}
+
+	return ret;
 }
 
 int handle_model_logofile(void)
@@ -580,6 +719,23 @@ static int do_ini_model_list(cmd_tbl_t *cmdtp, int flag, int argc, char *const a
 }
 
 U_BOOT_CMD(model_list, 4, 0, do_ini_model_list,
+	"list ini model name",
+	" "
+);
+
+static int do_oemkey_read(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int ret;
+
+	if (argc > 1)
+		return CMD_RET_USAGE;
+
+	ret = handle_model_oemkey();
+	return ret;
+}
+
+U_BOOT_CMD
+(oemkey_read, 4, 0, do_oemkey_read,
 	"list ini model name",
 	" "
 );

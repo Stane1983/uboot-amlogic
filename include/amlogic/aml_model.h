@@ -115,6 +115,7 @@ int handle_model_list_panel_key(int index);
 int handle_model_list(void);
 int handle_model_sum(void);
 int handle_model_logofile(void);
+int handle_model_oemkey(void);
 #endif
 
 #if defined(CONFIG_CMD_AML_MODEL)

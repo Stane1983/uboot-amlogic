@@ -280,6 +280,23 @@ U_BOOT_CMD
 	" "
 );
 
+static int do_oemkey_read(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int ret;
+
+	if (argc > 1)
+		return CMD_RET_USAGE;
+
+	ret = handle_model_oemkey();
+	return ret;
+}
+
+U_BOOT_CMD
+(oemkey_read, 4, 0, do_oemkey_read,
+	"list ini model name",
+	" "
+);
+
 static int do_ini_model(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	int ret;

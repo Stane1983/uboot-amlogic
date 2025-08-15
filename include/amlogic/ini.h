@@ -14,5 +14,6 @@ int handle_model_set(const char *model, const char *val);
 int handle_multi_remote(void);
 int handle_multi_keypad(void);
 int handle_model_logofile(void);
+int handle_model_oemkey(void);
 
 #endif /* __AML_INI_H__ */
