@@ -497,7 +497,8 @@ bool is_keystone_enable_for_osd2(void)
 
 	if (osd_get_chip_type() == MESON_CPU_MAJOR_ID_TXHD2 ||
 		osd_get_chip_type() == MESON_CPU_MAJOR_ID_T6D ||
-		osd_get_chip_type() == MESON_CPU_MAJOR_ID_T6W) {
+		osd_get_chip_type() == MESON_CPU_MAJOR_ID_T6W ||
+		osd_get_chip_type() == MESON_CPU_MAJOR_ID_T6X) {
 		enable_flag = env_get("vout_projector_mux");
 		if (!enable_flag)
 			return false;
