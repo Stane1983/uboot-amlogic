@@ -700,6 +700,26 @@ static struct lcd_debug_info_s lcd_debug_info_s6 = {
 };
 #endif
 
+#if defined(CONFIG_MESON_T6X)
+static struct lcd_debug_info_s lcd_debug_info_t6x = {
+	.reg_pinmux_table = lcd_reg_dump_pinmux_t3,
+
+#ifdef CONFIG_AML_LCD_LVDS
+	.reg_dump_lvds   = lcd_reg_print_lvds,
+#endif
+#ifdef CONFIG_AML_LCD_VBYONE
+	.reg_dump_vbyone = lcd_reg_print_vbyone,
+#endif
+#ifdef CONFIG_AML_LCD_MIPI_DSI
+	.reg_dump_mipi   = NULL,
+#endif
+#ifdef CONFIG_AML_LCD_TCON
+	.reg_dump_mlvds  = lcd_reg_print_tcon,
+	.reg_dump_p2p    = lcd_reg_print_tcon,
+#endif
+};
+#endif
+
 void lcd_debug_probe(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_debug_info_s *lcd_debug_info = NULL;
@@ -722,6 +742,11 @@ void lcd_debug_probe(struct aml_lcd_drv_s *pdrv)
 			lcd_debug_info = &lcd_debug_info_t3x_0;
 			break;
 		}
+		break;
+#endif
+#if defined(CONFIG_MESON_T6X)
+	case LCD_CHIP_T6X:
+		lcd_debug_info = &lcd_debug_info_t6x;
 		break;
 #endif
 #if defined(CONFIG_MESON_TXHD2)

@@ -153,6 +153,19 @@ static struct aml_lcd_data_s lcd_data_t6w = {
 };
 #endif
 
+#if defined(CONFIG_MESON_T6X)
+static struct aml_lcd_data_s lcd_data_t6x = {
+	.chip_type = LCD_CHIP_T6X,
+	.chip_name = "t6x",
+	.rev_type = 0,
+	.drv_max = 1,
+	.offset_venc = {0x0},
+	.offset_venc_if = {0x0},
+	.offset_venc_data = {0x0},
+	.dft_conf = {NULL, NULL, NULL},
+};
+#endif
+
 static void lcd_chip_detect(void)
 {
 #if 1
@@ -201,6 +214,8 @@ static void lcd_chip_detect(void)
 	case MESON_CPU_MAJOR_ID_T6W:
 		lcd_data = &lcd_data_t6w;
 		break;
+#endif
+#if defined(CONFIG_MESON_T6X)
 	case MESON_CPU_MAJOR_ID_T6X:
 		lcd_data = &lcd_data_t6x;
 		break;

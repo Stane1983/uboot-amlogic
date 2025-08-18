@@ -479,7 +479,7 @@ __maybe_unused static void lcd_lane_map_set(struct aml_lcd_drv_s *pdrv)
 
 	offset = pdrv->data->offset_venc_if[pdrv->index];
 	switch (pdrv->data->chip_type) {
-#if defined(CONFIG_MESON_T3X)
+#if defined(CONFIG_MESON_T3X) || defined(CONFIG_MESON_T6X)
 	case LCD_CHIP_T3X: /* reg P2P_CH_SWAP can't readback, so print value when write reg */
 		lcd_vcbus_write(P2P_CH_SWAP0 + offset, pdrv->config.phy_cfg.ch_swap0);
 		lcd_vcbus_write(P2P_CH_SWAP1 + offset, pdrv->config.phy_cfg.ch_swap1);
@@ -779,7 +779,7 @@ void lcd_vbyone_dphy_set(struct aml_lcd_drv_s *pdrv, unsigned char on_off)
 		}
 		break;
 #endif
-#if defined(CONFIG_MESON_T6W)
+#if defined(CONFIG_MESON_T6W) || defined(CONFIG_MESON_T6X)
 	case LCD_CHIP_T6W:
 		if (on_off) {
 			lcd_ana_write(ANACTRL_LVDS_TX_PHY_CNTL1, 0x03000000);
@@ -1193,7 +1193,8 @@ void lcd_dphy_reg_print(struct aml_lcd_drv_s *pdrv)
 	unsigned int size_dphy = 0, size_ctrl = 0, size_ch_swap = 0, reg_bus, reg_offset;
 
 #if defined(CONFIG_MESON_T5M) || defined(CONFIG_MESON_T6D) || defined(CONFIG_MESON_T6W) || \
-		defined(CONFIG_MESON_T3X) || defined(CONFIG_MESON_TXHD2)
+		defined(CONFIG_MESON_T3X) || defined(CONFIG_MESON_TXHD2) || \
+		defined(CONFIG_MESON_T6X)
 	struct reg_name_set_s ch_swap_reg_dft[] = {
 		{P2P_CH_SWAP0, "P2P_CH_SWAP0"},
 		{P2P_CH_SWAP1, "P2P_CH_SWAP1"}
@@ -1213,7 +1214,8 @@ void lcd_dphy_reg_print(struct aml_lcd_drv_s *pdrv)
 		{COMBO_DPHY_EDP_LVDS_TX_PHY2_CNTL1, "COMBO_DPHY_EDP_LVDS_TX_PHY2_CNTL1"}
 	};
 #endif
-#if defined(CONFIG_MESON_T5M) || defined(CONFIG_MESON_T6D) || defined(CONFIG_MESON_T6W)
+#if defined(CONFIG_MESON_T5M) || defined(CONFIG_MESON_T6D) || defined(CONFIG_MESON_T6W) || \
+		defined(CONFIG_MESON_T6X)
 	struct reg_name_set_s dphy_reg_t5m[] = {
 		{ANACTRL_LVDS_TX_PHY_CNTL0, "ANACTRL_LVDS_TX_PHY_CNTL0"},
 		{ANACTRL_LVDS_TX_PHY_CNTL1, "ANACTRL_LVDS_TX_PHY_CNTL1"},
@@ -1233,7 +1235,8 @@ void lcd_dphy_reg_print(struct aml_lcd_drv_s *pdrv)
 		return;
 
 	switch (pdrv->data->chip_type) {
-#if defined(CONFIG_MESON_T5M) || defined(CONFIG_MESON_T6D) || defined(CONFIG_MESON_T6W)
+#if defined(CONFIG_MESON_T5M) || defined(CONFIG_MESON_T6D) || defined(CONFIG_MESON_T6W) || \
+		defined(CONFIG_MESON_T6X)
 	case LCD_CHIP_T5M:
 	case LCD_CHIP_T6D:
 	case LCD_CHIP_T6W:

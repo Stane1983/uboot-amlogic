@@ -48,7 +48,7 @@ static unsigned int lcd_reg_dump_pinmux_txdh2[] = {
 #endif
 
 #if defined(CONFIG_MESON_T5M) || defined(CONFIG_MESON_T6D) || defined(CONFIG_MESON_T6W) || \
-	defined(CONFIG_MESON_T5M)
+	defined(CONFIG_MESON_T5M) || defined(CONFIG_MESON_T6X)
 static unsigned int lcd_reg_dump_pinmux_t3[] = {
 	PADCTRL_PIN_MUX_REG7,
 	PADCTRL_PIN_MUX_REG8,
