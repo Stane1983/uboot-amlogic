@@ -408,7 +408,9 @@ const char *const _env_args_reserve_[] = {
 	"lock",
 	"upgrade_step",
 	"bootloader_version",
-
+	"panel_type",
+	"connector0_type",
+	"connector1_type",
 	NULL			//Keep NULL be last to tell END
 };
 
