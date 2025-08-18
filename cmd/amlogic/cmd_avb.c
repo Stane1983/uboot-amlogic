@@ -68,12 +68,17 @@ struct avb_part {
 struct avb_part parts[AVB_NUM_SLOT];
 u32 avb_part_num;
 bool avb_preload = true;
+static bool status_set;
+static bool unlock_state;
 
 void set_avb_parts(const char *partname, uint8_t *addr, size_t length)
 {
 	struct avb_part *part = NULL;
+	bool unlocked;
 
-	if (!is_device_unlocked() && avb_preload) {
+	unlocked = is_device_unlocked();
+
+	if (!unlocked && avb_preload) {
 		assert(avb_part_num < AVB_NUM_SLOT);
 
 		part = &parts[avb_part_num];
@@ -92,8 +97,10 @@ void clear_avb_parts(void)
 {
 	struct avb_part *part = NULL;
 	u32 i = 0;
+	bool unlocked;
 
-	if (!is_device_unlocked()) {
+	unlocked = is_device_unlocked();
+	if (!unlocked) {
 		for (i = 0; i < avb_part_num; i++) {
 			part = &parts[i];
 			memset(part->name, 0, sizeof(part->name));
@@ -693,6 +700,10 @@ static AvbIOResult read_is_device_unlocked(AvbOps* ops, bool* out_is_unlocked)
 	if (!lock_s)
 		return AVB_IO_RESULT_ERROR_IO;
 
+	if (status_set) {
+		*out_is_unlocked = unlock_state;
+		return result;
+	}
 #if defined(CONFIG_AML_ANTIROLLBACK) || defined(CONFIG_AML_AVB2_ANTIROLLBACK)
 	if (is_avb_arb_available()) {
 		if (get_avb_lock_state(&lock_state)) {
@@ -701,6 +712,8 @@ static AvbIOResult read_is_device_unlocked(AvbOps* ops, bool* out_is_unlocked)
 				lock_s[4] = '0';
 			else
 				lock_s[4] = '1';
+			unlock_state = *out_is_unlocked;
+			status_set = true;
 		} else {
 			printf("failed to read device lock status from rpmb\n");
 			result = AVB_IO_RESULT_ERROR_IO;
@@ -721,6 +734,8 @@ static AvbIOResult read_is_device_unlocked(AvbOps* ops, bool* out_is_unlocked)
 	else
 		*out_is_unlocked = true;
 
+	unlock_state = *out_is_unlocked;
+	status_set = true;
 	return result;
 }
 
@@ -1139,6 +1154,7 @@ static int avb_init(void)
 #endif
 	enum boot_type_e type = store_get_type();
 
+	status_set = false;
 	memset(&avb_ops_, 0, sizeof(AvbOps));
 	avb_ops_.read_from_partition = read_from_partition;
 	avb_ops_.get_preloaded_partition = get_preloaded_partition;
@@ -1197,6 +1213,7 @@ int avb_verify(AvbSlotVerifyData** out_data)
 		factory_part_num = get_partition_num_by_name(PART_NAME_FTY);
 #endif
 	enum boot_type_e type = store_get_type();
+	bool unlocked;
 
 	s1 = env_get("active_slot");
 	if (!s1) {
@@ -1219,7 +1236,8 @@ int avb_verify(AvbSlotVerifyData** out_data)
 
 	avb_init();
 
-	if (is_device_unlocked())
+	unlocked = is_device_unlocked();
+	if (unlocked)
 		flags |= AVB_SLOT_VERIFY_FLAGS_ALLOW_VERIFICATION_ERROR;
 
 	if (!strcmp(ab_suffix, "")) {

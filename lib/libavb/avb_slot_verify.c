@@ -598,6 +598,10 @@ static AvbSlotVerifyResult load_and_verify_vbmeta(
 
 	avb_assert(slot_data != NULL);
 
+	io_ret = ops->read_is_device_unlocked(ops, &is_device_unlocked);
+	if (io_ret != AVB_IO_RESULT_OK)
+		goto out;
+
 	/* Since we allow top-level vbmeta in 'boot', use
 	 * rollback_index_location to determine whether we're the main
 	 * vbmeta struct.
@@ -754,14 +758,11 @@ static AvbSlotVerifyResult load_and_verify_vbmeta(
 	switch (vbmeta_ret) {
 		case AVB_VBMETA_VERIFY_RESULT_OK:
 	{
-		bool is_device_unlocked;
-
 		avb_assert(pk_data && pk_len > 0);
-		io_ret = ops->read_is_device_unlocked(ops, &is_device_unlocked);
 		if (!strcmp(full_partition_name, "vbmeta") ||
 				!strcmp(full_partition_name, "vbmeta_a") ||
 				!strcmp(full_partition_name, "vbmeta_b")) {
-			if (io_ret == AVB_IO_RESULT_OK && !is_device_unlocked) {
+			if (!is_device_unlocked) {
 #ifdef CONFIG_AVB2_UBOOT_SHA256
 				sha256_context boot_key_sha256_ctx;
 				uint8_t sha256_output[AVB_SHA256_DIGEST_SIZE];
@@ -1013,8 +1014,7 @@ static AvbSlotVerifyResult load_and_verify_vbmeta(
 			case AVB_DESCRIPTOR_TAG_HASH: {
 				AvbSlotVerifyResult sub_ret;
 				//Amlogic modify for unlock device get boot patchlevel
-				if ((ops->read_is_device_unlocked(ops, &is_device_unlocked) == AVB_IO_RESULT_OK &&
-							!is_device_unlocked)) {
+				if (!is_device_unlocked) {
 					sub_ret = load_and_verify_hash_partition(ops,
 										 requested_partitions,
 										 ab_suffix,

@@ -178,9 +178,10 @@ static int bootm_avb_bootctl(void)
 		const char *bootstate_g = "androidboot.verifiedbootstate=green";
 		const char *bootstate = "\0";
 		u8 vbmeta_digest[AVB_SHA256_DIGEST_SIZE];
-		const int is_dev_unlocked = is_device_unlocked();
+		int is_dev_unlocked;
 
 		rc = avb_verify(&out_data);
+		is_dev_unlocked = is_device_unlocked();
 		if (is_dev_unlocked) {
 			printf("unlock state, ignore the avb check\n");
 			bootstate = bootstate_o;

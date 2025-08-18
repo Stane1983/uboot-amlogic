@@ -15,6 +15,7 @@
 static struct AvbOps *g_avb_ops;
 static struct udevice *g_dev;
 static struct tee_open_session_arg g_open_arg;
+static uint32_t antirollback_index_cache[AVB_MAX_NUMBER_OF_ROLLBACK_INDEX_LOCATIONS];
 
 #define TA_RPMB_UUID { 0x0ab5a718, 0xee63, 0x4115, \
 	{ 0xa0, 0xad, 0xef, 0x6e, 0xe9, 0x8f, 0xcb, 0xc7 } }
@@ -31,22 +32,30 @@ static bool is_rpmb_available(void)
 	const struct tee_optee_ta_uuid uuid = TA_RPMB_UUID;
 	struct tee_param param = { .attr = TEE_PARAM_ATTR_TYPE_VALUE_OUTPUT };
 	struct mmc *mmc = NULL;
+	static bool status_set;
+	static bool rpmb_available;
+
+	if (status_set)
+		goto exit;
 
 	if (store_get_type() != BOOT_EMMC) {
 		printf("Storage Medium isn't EMMC\n");
-		return false;
+		rpmb_available = false;
+		goto exit;
 	}
 
 	mmc = find_mmc_device(1);
 	if (!mmc) {
 		printf("Not find EMMC\n");
-		return false;
+		rpmb_available = false;
+		goto exit;
 	}
 
 	dev = tee_find_device(NULL, NULL, NULL, NULL);
 	if (!dev) {
 		printf("tee_find_device() failed\n");
-		return false;
+		rpmb_available = false;
+		goto exit;
 	}
 
 	memset(&open_arg, 0, sizeof(open_arg));
@@ -54,13 +63,15 @@ static bool is_rpmb_available(void)
 	ret = tee_open_session(dev, &open_arg, 0, NULL);
 	if (ret) {
 		printf("tee_open_session() failed, return 0x%x\n", ret);
-		return false;
+		rpmb_available = false;
+		goto exit;
 	}
 
 	if (open_arg.ret) {
 		printf("tee_open_session() failed, return 0x%x, origin 0x%x\n",
 				open_arg.ret, open_arg.ret_origin);
-		return false;
+		rpmb_available = false;
+		goto exit;
 	}
 
 	memset(&invoke_arg, 0, sizeof(invoke_arg));
@@ -72,15 +83,21 @@ static bool is_rpmb_available(void)
 
 	if (ret) {
 		printf("tee_invoke_func() failed, return 0x%x\n", ret);
-		return false;
+		rpmb_available = false;
+		goto exit;
 	}
 	if (invoke_arg.ret) {
 		printf("tee_invoke_func() failed, return 0x%x, origin 0x%x\n",
 				invoke_arg.ret, invoke_arg.ret_origin);
-		return false;
+		rpmb_available = false;
+		goto exit;
 	}
 
-	return param.u.value.a ? true : false;
+	rpmb_available = param.u.value.a ? true : false;
+
+exit:
+	status_set = true;
+	return rpmb_available;
 }
 
 static bool avb2_init(void)
@@ -181,6 +198,9 @@ bool set_avb_antirollback(uint32_t index, uint32_t version)
 				== AVB_IO_RESULT_OK) {
 			printf("Set avb2 rollback index(loc = %d, idx = %d) success\n",
 					index, version);
+			/* reset corresponding index */
+			if (index < AVB_MAX_NUMBER_OF_ROLLBACK_INDEX_LOCATIONS)
+				antirollback_index_cache[index] = 0;
 			return true;
 		}
 		printf("Set avb2 rollback index failed\n");
@@ -198,11 +218,18 @@ bool get_avb_antirollback(uint32_t index, uint32_t *version)
 	if (avb2_init()) {
 		uint64_t tmp_version = 0;
 
+		if (index < AVB_MAX_NUMBER_OF_ROLLBACK_INDEX_LOCATIONS &&
+		    antirollback_index_cache[index]) {
+			*version = antirollback_index_cache[index];
+			return true;
+		}
 		if (g_avb_ops->read_rollback_index(g_avb_ops, index, &tmp_version)
 				== AVB_IO_RESULT_OK) {
 			*version = tmp_version;
 			printf("Get avb2 rollback index(loc = %d, idx = %d) success\n",
 					index, *version);
+			if (index < AVB_MAX_NUMBER_OF_ROLLBACK_INDEX_LOCATIONS)
+				antirollback_index_cache[index] = tmp_version;
 			return true;
 		}
 		printf("Get avb2 rollback index failed\n");
