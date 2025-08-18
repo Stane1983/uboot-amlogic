@@ -3303,7 +3303,7 @@ static int lcd_config_load_from_ini(struct aml_lcd_drv_s *pdrv)
 
 	/* interface: 20byte */
 	switch (pconf->basic.lcd_type) {
-#ifdef CONFIG_AML_LCD_DPI
+#ifdef CONFIG_AML_LCD_LVDS
 	case LCD_LVDS:
 		str = lcd_ini_get_str(inip, psec, "lvds_fmt", NULL);
 		if (!str) {

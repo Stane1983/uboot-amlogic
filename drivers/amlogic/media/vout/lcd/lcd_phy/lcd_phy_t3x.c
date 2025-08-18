@@ -156,7 +156,6 @@ static void lcd_phy_cntl_set(struct aml_lcd_drv_s *pdrv, int status, int bypass)
 	}
 }
 
-#if defined(CONFIG_AML_LCD_LVDS)
 static void lcd_lvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 {
 	unsigned int com_data = 0;
@@ -172,9 +171,7 @@ static void lcd_lvds_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 	}
 	lcd_phy_cntl_set(pdrv, status, 1);
 }
-#endif
 
-#if defined(CONFIG_AML_LCD_VBYONE)
 static void lcd_vbyone_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 {
 	struct phy_config_s *phy_cfg = &pdrv->config.phy_cfg;
@@ -189,9 +186,7 @@ static void lcd_vbyone_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 	}
 	lcd_phy_cntl_set(pdrv, status, 1);
 }
-#endif
 
-#if defined(CONFIG_AML_LCD_TCON)
 static void lcd_p2p_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 {
 	unsigned int p2p_type, vcm_flag;
@@ -230,7 +225,6 @@ static void lcd_p2p_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 	}
 	lcd_phy_cntl_set(pdrv, status, 1);
 }
-#endif
 
 static void lcd_phy_glb_param_dft_t3x(struct aml_lcd_drv_s *pdrv)
 {
