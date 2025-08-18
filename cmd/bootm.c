@@ -304,17 +304,18 @@ int do_bootm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		const char *bootstate_g = "androidboot.verifiedbootstate=green";
 		const char *bootstate = NULL;
 		uint8_t vbmeta_digest[AVB_SHA256_DIGEST_SIZE];
+		int is_dev_unlocked;
 
-		if (is_device_unlocked()) {
+		rc = avb_verify(&out_data);
+		is_dev_unlocked = is_device_unlocked();
+		if (is_dev_unlocked) {
 			printf("unlock state, ignore the avb check\n");
-			rc = avb_verify(&out_data);
 			run_command("setenv bootconfig ${bootconfig} "\
 			"androidboot.verifiedbootstate=orange", 0);
 		} else {
 			printf("lock state, need avb check\n");
-			rc = avb_verify(&out_data);
 			printf("avb verification: locked = %d, result = %d\n",
-						!is_device_unlocked(), rc);
+						!is_dev_unlocked, rc);
 #if defined(CONFIG_AML_ANTIROLLBACK) || defined(CONFIG_AML_AVB2_ANTIROLLBACK)
 			if (rc == AVB_SLOT_VERIFY_RESULT_OK && is_avb_arb_available() &&
 					!set_successful_boot()) {
@@ -362,7 +363,6 @@ int do_bootm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 		if (out_data) {
 			keymaster_boot_params boot_params;
-			const int is_dev_unlocked = is_device_unlocked();
 			AvbVBMetaImageHeader toplevel_vbmeta;
 
 			avb_vbmeta_image_header_to_host_byte_order
