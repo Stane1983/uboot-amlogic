@@ -3429,6 +3429,9 @@ static void osdx_update_disp_freescale_enable(u32 index)
 	}
 	if (is_vpp1(index)) {
 #ifdef AML_T7_DISPLAY
+		struct vinfo_s *vinfo = NULL;
+
+		vinfo = vout_get_current_vinfo();
 		/* hdr in size */
 		VSYNCOSD_WR_MPEG_REG(OSD3_HDR_IN_SIZE, dst_h << 16 | dst_w);
 		/* vpp_top1 scope */
@@ -3442,7 +3445,7 @@ static void osdx_update_disp_freescale_enable(u32 index)
 			 (osd_hw.free_dst_data[index].y_start << 16) |
 			 osd_hw.free_dst_data[index].y_end);
 
-		VSYNCOSD_WR_MPEG_REG(VPP1_BLD_OUT_SIZE, dst_h << 16 | dst_w);
+		VSYNCOSD_WR_MPEG_REG(VPP1_BLD_OUT_SIZE, vinfo->height << 16 | vinfo->width);
 #endif
 #ifdef AML_S5_DISPLAY
 		/* vpp1 scope */
