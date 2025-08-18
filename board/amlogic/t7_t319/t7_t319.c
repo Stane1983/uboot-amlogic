@@ -380,8 +380,12 @@ int checkhw(char * name)
 #endif
 
 const char * const _board_env_reserv_array0[] = {
-	"model_name",
-	"connector_type",
+	"connector0_type",
+	"connector1_type",
+	"connector2_type",
+	"panel_type",
+	"panel1_type",
+	"panel2_type",
 	NULL//Keep NULL be last to tell END
 };
 

@@ -349,7 +349,7 @@ const struct mtd_partition *get_spinand_partition_table(int *partitions)
 
 const char * const _board_env_reserv_array0[] = {
 	"model_name",
-	"connector_type",
+	"connector0_type",
 	NULL//Keep NULL be last to tell END
 };
 int __attribute__((weak)) mmc_initialize(bd_t *bis){ return 0;}
