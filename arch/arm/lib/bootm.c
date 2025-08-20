@@ -70,6 +70,9 @@ __weak void board_quiesce_devices(void)
  */
 static void announce_and_cleanup(int fake)
 {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	int waitcount = 0;
+#endif
 	bootstage_mark_name(BOOTSTAGE_ID_BOOTM_HANDOFF, "start_kernel");
 #ifdef CONFIG_BOOTSTAGE_FDT
 	bootstage_fdt_add_report();
@@ -112,10 +115,24 @@ static void announce_and_cleanup(int fake)
 	dm_remove_devices_flags(DM_REMOVE_ACTIVE_ALL);
 
 #ifdef CONFIG_ARMV8_MULTIENTRY
-	gd->flags &= ~GD_FLG_SMP;
 	cli_release_lock(0);
+	while (cpu_online_status() & 0xfffffffe) {
+		waitcount++;
+		if (waitcount >= timeout_cout) {
+			if (!is_secondary_core_power_on())
+				break;
+			else {
+				waitcount = 0;
+			}
+		} else {
+			mdelay(1);
+		}
+	}
 #endif
 	cleanup_before_linux();
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	gd->flags &= ~GD_FLG_SMP;
+#endif
 }
 
 static void setup_start_tag (struct bd_info *bd)
@@ -602,9 +619,6 @@ static void boot_jump_linux(struct bootm_headers *images, int flag)
 #ifdef CONFIG_AMLOGIC_MODIFY
 	unsigned long machid = 0xf81;
 #endif
-#ifdef CONFIG_ARMV8_MULTIENTRY
-	int waitcount = 0;
-#endif
 	kernel_entry = (void (*)(void *fdt_addr, void *res0, void *res1,
 				void *res2))images->ep;
 
@@ -678,20 +692,6 @@ static void boot_jump_linux(struct bootm_headers *images, int flag)
 					    ES_TO_AARCH64);
 #endif
 #else
-#ifdef CONFIG_ARMV8_MULTIENTRY
-		while (cpu_online_status() & 0xfffffffe) {
-			waitcount++;
-			if (waitcount >= timeout_cout) {
-				if (!is_secondary_core_power_on())
-					break;
-				else
-					waitcount = 0;
-			} else {
-				mdelay(1);
-			}
-		}
-#endif
-
 		PUSH_TIME_TE(__func__, BL33_BOOT_KERNEL_s);
 		extern uint32_t get_time(void);
 		unsigned int uboot_time = get_time();
