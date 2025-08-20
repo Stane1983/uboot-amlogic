@@ -251,13 +251,13 @@ static void ldim_device_config_print(struct ldim_dev_driver_s *dev_drv)
 		dev_drv->en_gpio_on,
 		dev_drv->en_gpio_off);
 
-	printf("zone_mapping:\n");
-	for (i = 0; i < dev_drv->zone_num; i++)
-		printf("%d,", dev_drv->bl_mapping[i]);
-	printf("\n\n");
-
 	switch (dev_drv->type) {
 	case LDIM_DEV_TYPE_SPI:
+		printf("zone_mapping:\n");
+		for (i = 0; i < dev_drv->zone_num; i++)
+			printf("%d,", dev_drv->bl_mapping[i]);
+		printf("\n\n");
+
 		printf("spi_dev                = 0x%p : 0x%p\n"
 			"spi_modalias           = %s\n"
 			"spi_mode               = %d\n"
@@ -492,10 +492,10 @@ int aml_ldim_device_probe(char *dt_addr, struct aml_ldim_driver_s *ldim_drv)
 	dev_drv->bl_row = ldim_drv->config.row;
 	dev_drv->bl_col = ldim_drv->config.col;
 	dev_drv->zone_num = dev_drv->bl_row * dev_drv->bl_col;
-	dev_drv->bl_mapping = malloc(dev_drv->zone_num * sizeof(unsigned short));
+	dev_drv->bl_mapping = malloc(dev_drv->zone_num * 2 * sizeof(unsigned short));
 	if (!dev_drv->bl_mapping)
 		goto ldim_dev_probe_func_fail0;
-	memset(dev_drv->bl_mapping, 0, dev_drv->zone_num * sizeof(unsigned short));
+	memset(dev_drv->bl_mapping, 0, dev_drv->zone_num * 2 * sizeof(unsigned short));
 
 #ifdef CONFIG_OF_LIBFDT
 	if (!dt_addr) {
