@@ -498,6 +498,9 @@ struct hdmi_timing {
 	unsigned short v_pict;
 	unsigned short h_pixel;
 	unsigned short v_pixel;
+
+	/*Same as DRM_MODE_FLAG_DBLCLK, only for 480i&576i*/
+	u32 pixel_repetition_factor:1;
 };
 
 /* Refer CEA861-D Page 116 Table 55 */

@@ -2756,7 +2756,8 @@ void hdmitx21_dither_config(struct hdmitx_dev *hdev)
 {
 	struct hdmi_format_para *para = hdev->para;
 
-	if (para->cd == COLORDEPTH_24B && hdmitx_dv_en(hdev) == 0)
+	if (para->cd == COLORDEPTH_24B && !para->timing.pixel_repetition_factor &&
+	    hdmitx_dv_en(hdev) == 0)
 		hd21_set_reg_bits(VPU_HDMI_DITH_CNTL, 1, 4, 1);
 	else
 		hd21_set_reg_bits(VPU_HDMI_DITH_CNTL, 0, 4, 1);
