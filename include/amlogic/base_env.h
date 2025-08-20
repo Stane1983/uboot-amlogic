@@ -143,8 +143,6 @@
 			"bootm ${loadaddr};"\
 		"else if test ${os_type} = kernel; then "\
 			"get_system_as_root_mode;"\
-			"echo system_mode in storeboot: ${system_mode};"\
-			"echo active_slot in storeboot: ${active_slot};"\
 			"if test ${system_mode} = 1; then "\
 				"setenv bootargs \"${bootargs} ro rootwait skip_initramfs\";"\
 			"else "\

@@ -1660,7 +1660,7 @@ int do_hpd_detect(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	outputmode2 = env_get("outputmode2");
 	connector0_type = env_get("connector0_type");
 	connector1_type = env_get("connector1_type");
-	printf("%s: outputmode=%s, outputmode2=%s, connector0_type=%s, connector1_type=%s\n",
+	debug("%s: outputmode=%s, outputmode2=%s, connector0_type=%s, connector1_type=%s\n",
 		__func__,
 		outputmode ? outputmode : "NULL",
 		outputmode2 ? outputmode2 : "NULL",
