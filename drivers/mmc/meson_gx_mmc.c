@@ -154,12 +154,11 @@ static void meson_mmc_config_clock(struct meson_host *host)
 		clk = 1000000000;
 		clk_src = 1;
 		if (host->src_clk != 0) {
-			clk = host->src_clk;
+			clk = clk_get_rate(&host->div2);
 			clk_src = 0;
 		}
 		clk_disable(&host->xtal);
 		clk_set_parent(&host->mux, &host->div2);
-		clk_set_rate(&host->div, clk);
 		cfg = meson_read(mmc, MESON_SD_EMMC_CFG);
 		cfg |= CFG_AUTO_CLK;
 		meson_write(mmc, cfg, MESON_SD_EMMC_CFG);
@@ -1009,7 +1008,6 @@ int meson_execute_tuning(struct udevice *dev, uint opcode)
 	struct meson_mmc_platdata *pdata = dev_get_platdata(dev);
 	struct meson_host *host = dev_get_priv(dev);
 	struct mmc *mmc = &pdata->mmc;
-	u32 clk_src, clock;
 	u32 vclk = 0, clk_div = 0, adj = 0, dly = 0, d1_dly, old_dly;
 	int ret = 0, adj_delay = 0;
 	int tuning_num = 0;
@@ -1048,12 +1046,7 @@ tuning:
 
 	vclk = meson_read(mmc, MESON_SD_EMMC_CLOCK);
 	clk_div = vclk & CLK_MAX_DIV;
-	if (!(vclk & CLK_MAX_SRC))
-		clk_src = 24000000;
-	else
-		clk_src = 1000000000;
-	clock = (clk_src / clk_div);
-	pr_debug("%s: clk %d tuning start:\n", mmc->cfg->name, clock);
+	pr_debug("%s: clk %d tuning start:\n", mmc->cfg->name, mmc->clock);
 
 	host->is_tuning = 1;
 	for (adj_delay = 0; adj_delay < clk_div; adj_delay++) {
