@@ -1136,8 +1136,9 @@ void lcd_dphy_set_data(struct aml_lcd_drv_s *pdrv, int data)
 		}
 		break;
 #endif
-#if defined(CONFIG_MESON_T6W)
+#if defined(CONFIG_MESON_T6W) || defined(CONFIG_MESON_T6X)
 	case LCD_CHIP_T6W:
+	case LCD_CHIP_T6X:
 		switch (data) {
 		case 0:
 			lcd_ana_setb(ANACTRL_LVDS_TX_PHY_CNTL1, 3, 26, 2);
