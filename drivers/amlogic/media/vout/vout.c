@@ -575,10 +575,10 @@ static void vout_viu_mux_default(int index, unsigned int mux_sel)
 		break;
 	}
 
-	if ((get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T6D) || (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_T6W)) {
+	if (get_cpu_id().family_id == MESON_CPU_MAJOR_ID_TXHD2) {
 		vout_reg_setb(VPU_VIU_VENC_MUX_CTRL, 0, 0, 4);
 		vout_reg_setb(VPU_VENCX_CLK_CTRL, 0, 0, 3);
-		vout_log("T6D/T6W:%s\n", __func__);
+		vout_log("TXHD2:%s\n", __func__);
 	} else {
 		vout_reg_setb(VPU_VIU_VENC_MUX_CTRL, vout_viu_sel, 0, 4);
 		if (vout_conf->viu_valid[1]) {
@@ -586,6 +586,28 @@ static void vout_viu_mux_default(int index, unsigned int mux_sel)
 				vout_reg_setb(VPU_VENCX_CLK_CTRL, clk_sel, clk_bit, 1);
 		}
 	}
+#ifdef CONFIG_AML_OSD
+	if (is_keystone_enable_for_osd2()) {
+		vout_reg_setb(VPP_MISC, 1, 27, 1);
+		vout_reg_setb(OSD2_HDR2_MATRIXI_EN_CTRL, 0, 0, 1);
+		vout_log("TXHD2: %s: vout_projector_mux %d\n", __func__, vout_projector_mux);
+	}
+#endif
+}
+
+static void vout_viu_mux_t6d(int index, unsigned int mux_sel)
+{
+	char *projector_mux = env_get("vout_projector_mux");
+	int vout_projector_mux = 0;
+
+	if (projector_mux) {
+		if (strncmp(projector_mux, "en", 2) == 0)
+			vout_projector_mux = 1;
+	}
+
+	vout_reg_setb(VPU_VIU_VENC_MUX_CTRL, 0, 0, 4);
+	vout_reg_setb(VPU_VENCX_CLK_CTRL, 0, 0, 3);
+
 #ifdef CONFIG_AML_OSD
 	if (is_keystone_enable_for_osd2()) {
 		vout_reg_setb(VPP_MISC, 1, 27, 1);
@@ -753,6 +775,17 @@ static struct vout_conf_s vout_config_dual = {
 	.reg_dump = vout_reg_dump,
 };
 
+static struct vout_conf_s vout_config_dual_t6d = {
+	.viu_valid[0] = 1,
+	.viu_valid[1] = 1,
+	.viu_valid[2] = 0,
+
+	.viu_mux_reg = VPU_VIU_VENC_MUX_CTRL,
+
+	.viu_mux = vout_viu_mux_t6d,
+	.reg_dump = vout_reg_dump,
+};
+
 static struct vout_conf_s vout_config_triple = {
 	.viu_valid[0] = 1,
 	.viu_valid[1] = 1,
@@ -818,8 +851,6 @@ void vout_probe(void)
 	case MESON_CPU_MAJOR_ID_SM1:
 	case MESON_CPU_MAJOR_ID_T5:
 	case MESON_CPU_MAJOR_ID_T5D:
-	case MESON_CPU_MAJOR_ID_T6D:
-	case MESON_CPU_MAJOR_ID_T6W:
 		vout_conf = &vout_config_dual;
 		break;
 	case MESON_CPU_MAJOR_ID_T7:
@@ -840,6 +871,11 @@ void vout_probe(void)
 		break;
 	case MESON_CPU_MAJOR_ID_S6:
 		vout_conf = &vout_config_dual_s6;
+		break;
+	case MESON_CPU_MAJOR_ID_T6D:
+	case MESON_CPU_MAJOR_ID_T6W:
+	case MESON_CPU_MAJOR_ID_T6X:
+		vout_conf = &vout_config_dual_t6d;
 		break;
 	default:
 		vout_conf = &vout_config_single;
