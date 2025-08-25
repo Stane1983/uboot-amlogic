@@ -384,7 +384,11 @@ int checkhw(char *name)
 
 //	switch (ddr_size) {
 //		case 0x100000000UL:
-//			strcpy(dtb_name, "s6_s905x5_bl201-4g\0");
+//			if (board_id == 12) {
+//				strcpy(dtb_name, "s6_s905x5_bl204h1-4g\0");
+//			} else {
+//				strcpy(dtb_name, "s6_s905x5_bl204-4g\0");
+//			}
 //			break;
 //		case 0x200000000UL:
 //			strcpy(dtb_name, "s6_s905x5_bl201-8g\0");
