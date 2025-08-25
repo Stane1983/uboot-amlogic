@@ -59,6 +59,7 @@ void vrr_init_qms_para(struct hdmitx_dev *hdev)
 	u32 tfr_vsync = 0;
 	bool frac_rate = 0;
 	char *mode = NULL;
+	char *best_mode = NULL;
 
 	if (!hdev->qms_en)
 		return;
@@ -74,7 +75,13 @@ void vrr_init_qms_para(struct hdmitx_dev *hdev)
 		pr_info("hdmitx: qms: failed to init para %s", mode);
 		return;
 	}
-	frac_rate = env_get_ulong("frac_rate_policy", 10, 0);
+	/*
+	 * if the user does not switch the resolution, qms under uboot
+	 * needs to output the brr maximum frame rate
+	 */
+	best_mode = env_get("is.bestmode");
+	if (best_mode != NULL && strcmp(best_mode, "false") == 0)
+		frac_rate = env_get_ulong("user_frac_rate", 10, 0);
 	pr_info("hdmitx: qms: set tfr %s parameters\n", mode);
 	brr_rate = timing->v_freq / 1000;
 

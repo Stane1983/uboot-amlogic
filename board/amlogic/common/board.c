@@ -1183,6 +1183,7 @@ const char * const _aml_env_reserv_array[] = {
 	"bootloader_version",
 	"hdmimode",
 	"is.bestmode",
+	"user_frac_rate",
 	"dts_to_gpt",
 	"fastboot_step",
 	"reboot_status",
