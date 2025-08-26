@@ -46,6 +46,7 @@ Reboot reason AND corresponding env setting:
 #define AMLOGIC_FFV_REBOOT			15
 #define AMLOGIC_FACTORY_MODE_REBOOT		16
 #define AMLOGIC_BIST_MODE_REBOOT		17
+#define AMLOIGC_AOCPU_WATCHDOG_REBOOT	        19
 
 /*
 old version env
