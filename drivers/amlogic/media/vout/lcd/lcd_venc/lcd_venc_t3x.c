@@ -152,7 +152,7 @@ static void lcd_venc_set_timing(struct aml_lcd_drv_s *pdrv)
 	unsigned int h_period, v_period, hstart, hend, vstart, vend;
 	unsigned int hs_hs_addr, hs_he_addr, vs_hs_addr, vs_he_addr, vs_vs_addr, vs_ve_addr;
 	unsigned int offset;
-	unsigned int pre_vde, pre_de_vs, pre_de_ve, pre_de_hs, pre_de_he;
+	unsigned int pre_hde, pre_vde, pre_de_vs, pre_de_ve, pre_de_hs, pre_de_he;
 	unsigned int ppc, slice, p2s_px_dly;
 	unsigned int hde_px_bgn, hde_px_end;
 	unsigned int vde_ln_bgn, vde_ln_end;
@@ -223,9 +223,10 @@ static void lcd_venc_set_timing(struct aml_lcd_drv_s *pdrv)
 	if (pconf->basic.lcd_type == LCD_P2P ||
 	    pconf->basic.lcd_type == LCD_MLVDS) {
 		pre_vde = pconf->timing.pre_de_v ? pconf->timing.pre_de_v : 16;
-		pre_de_vs = vstart - pre_vde;
+		pre_hde = pconf->timing.pre_de_h ? pconf->timing.pre_de_h : 6;
+		pre_de_vs = pconf->timing.vstart - pre_vde;
 		pre_de_ve = pconf->timing.act_timing.v_active + pre_de_vs;
-		pre_de_hs = hstart + 6;
+		pre_de_hs = pconf->timing.hstart + pre_hde;
 		pre_de_he = pconf->timing.act_timing.h_active + pre_de_hs;
 
 		lcd_vcbus_setb(ENCL_VIDEO_V_PRE_DE_LN_RNG + offset, pre_de_vs, 16, 16);
@@ -392,6 +393,8 @@ static void lcd_venc_reg_dump(struct aml_lcd_drv_s *pdrv)
 		ENCL_VIDEO_HSO_PX_RNG,
 		ENCL_VIDEO_VSO_PX_RNG,
 		ENCL_VIDEO_VSO_LN_RNG,
+		ENCL_VIDEO_H_PRE_DE_PX_RNG,
+		ENCL_VIDEO_V_PRE_DE_LN_RNG,
 		ENCL_VIDEO_GAIN_RGB_CTRL,
 		VPU_DISP_VIU0_CTRL,
 		LCD_GAMMA_CNTL_PORT0,
