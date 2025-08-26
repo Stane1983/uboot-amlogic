@@ -214,6 +214,7 @@ config AML_PRODUCT_MODE
 	imply DISABLE_AML_SERIAL
 	imply AML_DISABLE_DEV_CMDS
 	select NOVERBOSE_BUILD
+	select SILENT_CONSOLE
 	help
 		recommend enable when product is ready for producing
 
