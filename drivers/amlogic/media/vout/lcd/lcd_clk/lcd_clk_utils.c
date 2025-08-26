@@ -1762,39 +1762,15 @@ void lcd_clk_config_print_dft(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_clk_config_s *cconf = NULL;
 	struct lcd_pll_config_s *pll_config = NULL;
-	int i = 0;
+	int pll_num = 1, i = 0;
 
 	cconf = get_lcd_clk_config(pdrv);
 	if (!cconf || !cconf->data)
 		return;
 
-	LCDPR("[%d]: clk config:\n"
-		"  phy_clk:    %lldHz\n"
-		"  edp_div0:   %d\n"
-		"  edp_div1:   %d\n"
-		"  xd:         %d\n"
-		"  fout:       %uHz\n"
-		"  pll_mode:   0x%x\n"
-		"  pll_tcon_div_sel: %d\n"
-		"  vclk_sel:         %d\n",
-		pdrv->index, cconf->phy_clk,
-		edp_div0_table[cconf->edp_div0], edp_div1_table[cconf->edp_div1],
-		cconf->xd, cconf->fout, cconf->pll_mode,
-		cconf->pll_tcon_div_sel,
-		cconf->data->vclk_sel);
-	if (cconf->data->ss_support) {
-		LCDPR("  ss_level:   %d\n"
-			"  ss_dep_sel: %d\n"
-			"  ss_str_m:   %d\n"
-			"  ss_ppm:     %d\n"
-			"  ss_freq:    %d\n"
-			"  ss_mode:    %d\n"
-			"  ss_en:      %d\n\n",
-			cconf->ss_level, cconf->ss_dep_sel,
-			cconf->ss_str_m, cconf->ss_ppm,
-			cconf->ss_freq, cconf->ss_mode, cconf->ss_en);
-	}
-	for (i = 0; i < cconf->pll_conf_num; i++) {
+	if (cconf->pll_mode & LCD_PLL_MODE_DUAL_PLL)
+		pll_num = cconf->pll_conf_num;
+	for (i = 0; i < pll_num; i++) {
 		pll_config = &cconf->pll_config[i];
 		LCDPR("[%d]: pll[%d] config:\n"
 			"  pll_offset: 0x%x\n"
@@ -1818,5 +1794,31 @@ void lcd_clk_config_print_dft(struct aml_lcd_drv_s *pdrv)
 			pll_config->pll_od3_sel, pll_config->pll_fout,
 			lcd_clk_div_table[pll_config->div_sel].name,
 			pll_config->div_sel, pll_config->pll_div_fout);
+	}
+
+	LCDPR("[%d]: clk config:\n"
+		"  pll_mode:   0x%x\n"
+		"  pll_tcon_div_sel: %d\n"
+		"  phy_clk:    %lldHz\n"
+		"  edp_div0:   %d\n"
+		"  edp_div1:   %d\n"
+		"  xd:         %d\n"
+		"  fout:       %uHz\n"
+		"  vclk_sel:   %d\n",
+		pdrv->index, cconf->pll_mode,
+		cconf->pll_tcon_div_sel, cconf->phy_clk,
+		edp_div0_table[cconf->edp_div0], edp_div1_table[cconf->edp_div1],
+		cconf->xd, cconf->fout, cconf->data->vclk_sel);
+	if (cconf->data->ss_support) {
+		LCDPR("  ss_level:   %d\n"
+			"  ss_dep_sel: %d\n"
+			"  ss_str_m:   %d\n"
+			"  ss_ppm:     %d\n"
+			"  ss_freq:    %d\n"
+			"  ss_mode:    %d\n"
+			"  ss_en:      %d\n\n",
+			cconf->ss_level, cconf->ss_dep_sel,
+			cconf->ss_str_m, cconf->ss_ppm,
+			cconf->ss_freq, cconf->ss_mode, cconf->ss_en);
 	}
 }
