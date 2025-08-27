@@ -930,54 +930,76 @@ int aml_bl_init(void)
 	return 0;
 }
 
-void init_level_sync_with_preboot(int index)
+static void bl_state_sync_with_bootctrl(int index, int state)
 {
 	struct aml_lcd_drv_s *pdrv = aml_lcd_get_driver(index);
 
-	pdrv->boot_ctrl.init_level = LCD_INIT_LEVEL_NORMAL;
-	env_set("lcd_init_level", LCD_INIT_LEVEL_NORMAL);
-	pdrv->boot_ctrl.mute_flag = 0; // clear mute flag
+	if (pdrv->boot_ctrl.init_level == LCD_INIT_LEVEL_PREBOOT && state) {
+		pdrv->boot_ctrl.init_level = LCD_INIT_LEVEL_NORMAL;
+		env_set("lcd_init_level", LCD_INIT_LEVEL_NORMAL);
+	}
 	lcd_update_ctrl_bootargs(pdrv);
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
-		BLPR("%s: index=%d, init_level=%d, mute_flag=%d\n",
-			__func__, index, pdrv->boot_ctrl.init_level,
-			pdrv->boot_ctrl.mute_flag);
+		BLPR("%s: index=%d, init_level=%d, bl_state=%d, state=%d\n",
+		     __func__, index, pdrv->boot_ctrl.init_level, pdrv->boot_ctrl.bl_state, state);
 }
 
+static void bl_driver_enable_ctrl(int index, int state)
+{
+	struct aml_bl_drv_s *bdrv;
+
+	bdrv = aml_bl_get_driver(index);
+	if (!bdrv)
+		return;
+
+	if (state) {
+		if (bdrv->state) {
+			BLPR("already enabled\n");
+			return;
+		}
+		bl_pwm_config_update(bdrv);
+		bl_set_level(bdrv, bdrv->config.level_default);
+		bl_power_ctrl(bdrv, 1);
+	} else {
+		if (!bdrv->state) {
+			BLPR("already disabled\n");
+			return;
+		}
+		bl_power_ctrl(bdrv, 0);
+	}
+}
+
+/* manual cmd api, need sync bootctrl */
 void aml_bl_driver_enable(int index)
 {
-	struct aml_bl_drv_s *bdrv;
-
-	bdrv = aml_bl_get_driver(index);
-	if (!bdrv)
-		return;
-
-	if (bdrv->state) {
-		BLPR("already enabled\n");
-		return;
-	}
-	bl_pwm_config_update(bdrv);
-	bl_set_level(bdrv, bdrv->config.level_default);
-	bl_power_ctrl(bdrv, 1);
-	init_level_sync_with_preboot(index);
-
+	bl_driver_enable_ctrl(index, 1);
+	bl_state_sync_with_bootctrl(index, 1);
 }
 
+/* manual cmd api, need sync bootctrl */
 void aml_bl_driver_disable(int index)
 {
-	struct aml_bl_drv_s *bdrv;
+	bl_driver_enable_ctrl(index, 0);
+	bl_state_sync_with_bootctrl(index, 0);
+}
 
-	bdrv = aml_bl_get_driver(index);
-	if (!bdrv)
-		return;
+/* driver flow api, no need sync bootctrl */
+void aml_bl_lcd_on_ctrl(int index)
+{
+	struct aml_lcd_drv_s *pdrv = aml_lcd_get_driver(index);
 
-	if (!bdrv->state) {
-		BLPR("already disabled\n");
+	if (pdrv->boot_ctrl.init_level == LCD_INIT_LEVEL_PREBOOT) {
+		BLPR("[%d]: preboot bypass backlight on\n", index);
 		return;
 	}
+	bl_driver_enable_ctrl(index, 1);
+}
 
-	bl_power_ctrl(bdrv, 0);
+/* driver flow api, no need sync bootctrl */
+void aml_bl_lcd_off_ctrl(int index)
+{
+	bl_driver_enable_ctrl(index, 0);
 }
 
 void aml_bl_set_level(int index, unsigned int level)

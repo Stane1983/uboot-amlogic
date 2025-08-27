@@ -33,7 +33,9 @@
 /* 20241108: optimize config load flow */
 /* 20241127: add lcd config json parse driver */
 /* 20250123: update lcd bootargs transfer by lrm */
-#define LCD_DRV_VERSION    "20250123"
+/* 20250422: t6x pxp bringup */
+/* 20250828: update preboot support */
+#define LCD_DRV_VERSION    "20250828"
 
 #define CFMT_RGB565          0x05
 #define CFMT_RGB_6bit        0x06
@@ -221,6 +223,7 @@ void lcd_set_venc_timing(struct aml_lcd_drv_s *pdrv);
 void lcd_set_venc(struct aml_lcd_drv_s *pdrv);
 void lcd_venc_enable(struct aml_lcd_drv_s *pdrv, int flag);
 void lcd_mute_set(struct aml_lcd_drv_s *pdrv,  unsigned char flag);
+void lcd_on_off_mute_ctrl(struct aml_lcd_drv_s *pdrv,  unsigned char flag);
 void lcd_venc_reg_print(struct aml_lcd_drv_s *pdrv);
 void lcd_venc_save_bootctrl_to_regs(struct aml_lcd_drv_s *pdrv);
 int lcd_venc_probe(struct aml_lcd_data_s *pdata);
@@ -308,6 +311,8 @@ int aml_bl_init(void);
 int aml_bl_get_state(int index);
 void aml_bl_driver_enable(int index);
 void aml_bl_driver_disable(int index);
+void aml_bl_lcd_on_ctrl(int index);
+void aml_bl_lcd_off_ctrl(int index);
 void aml_bl_set_level(int index, unsigned int level);
 unsigned int aml_bl_get_level(int index);
 void aml_bl_config_print(int index);

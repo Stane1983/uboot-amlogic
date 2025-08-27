@@ -660,7 +660,7 @@ struct lcd_vmode_mgr_s {
 #define LCD_INIT_LEVEL_PWR_OFF        1
 #define LCD_INIT_LEVEL_KERNEL_ON      2
 #define LCD_INIT_LEVEL_KERNEL_OFF     3
-#define LCD_INIT_LEVEL_PRBOOT         4  // lcd on, bl off
+#define LCD_INIT_LEVEL_PREBOOT        4  // lcd on, bl off
 
 #define LCD_VENC_1PPC                 0
 #define LCD_VENC_2PPC                 1

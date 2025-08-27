@@ -380,13 +380,13 @@ static void lcd_power_ctrl(struct aml_lcd_drv_s *pdrv, int status)
 #ifdef CONFIG_AML_LCD_BACKLIGHT
 		case LCD_POWER_TYPE_BACKLIGHT:
 			if (power_step->value)
-				aml_bl_driver_enable(pdrv->index);
+				aml_bl_lcd_on_ctrl(pdrv->index);
 			else
-				aml_bl_driver_disable(pdrv->index);
+				aml_bl_lcd_off_ctrl(pdrv->index);
 			break;
 #endif
 		case LCD_POWER_TYPE_MUTE:
-			lcd_mute_set(pdrv, power_step->value);
+			lcd_on_off_mute_ctrl(pdrv, power_step->value);
 			break;
 		case LCD_POWER_TYPE_OFF_DELAY:
 			break;
@@ -512,21 +512,15 @@ static void lcd_module_enable(struct aml_lcd_drv_s *pdrv, char *mode)
 			     pdrv->config.control.mipi_cfg.panel_det_attr & 0x01))
 			lcd_power_ctrl(pdrv, 1);
 #endif
-		if (pdrv->boot_ctrl.init_level == LCD_INIT_LEVEL_NORMAL) {
+		switch (pdrv->boot_ctrl.init_level) {
+		case LCD_INIT_LEVEL_NORMAL:
+		case LCD_INIT_LEVEL_PREBOOT:
 			lcd_interface_on(pdrv);
-#ifdef CONFIG_AML_LCD_BACKLIGHT
-#ifndef CONFIG_AML_LCD_PXP
-			aml_bl_driver_enable(pdrv->index);
-#endif
-#endif
-		} else if (pdrv->boot_ctrl.init_level == LCD_INIT_LEVEL_PRBOOT) {
-			LCDPR("[%d]: preboot bypass backlight for init_level %d\n",
-			      pdrv->index, pdrv->boot_ctrl.init_level);
-			lcd_interface_on(pdrv);
-			lcd_mute_set(pdrv, 1);
-		} else {
+			break;
+		default:
 			LCDPR("[%d]: bypass interface for init_level %d\n",
 			      pdrv->index, pdrv->boot_ctrl.init_level);
+			break;
 		}
 	}
 
@@ -537,14 +531,8 @@ static void lcd_module_disable(struct aml_lcd_drv_s *pdrv)
 {
 	LCDPR("[%d]: disable: %s\n", pdrv->index, pdrv->config.basic.model_name);
 
-	if (pdrv->status & LCD_STATUS_IF_ON) {
-#ifdef CONFIG_AML_LCD_BACKLIGHT
-#ifndef CONFIG_AML_LCD_PXP
-		aml_bl_driver_disable(pdrv->index);
-#endif
-#endif
+	if (pdrv->status & LCD_STATUS_IF_ON)
 		lcd_power_ctrl(pdrv, 0);
-	}
 
 	lcd_venc_enable(pdrv, 0);
 	lcd_disable_clk(pdrv);
