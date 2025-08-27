@@ -16,7 +16,7 @@
 #define STATUS_BUSY			1
 #define STATUS_MASK			1
 
-#define IRQ_MASK			(0x03 << 24)
+#define AMFC_IRQ_MASK			(0x03 << 24)
 #define IRQ_DONE			(0x01 << 24)
 #define IRQ_ERR				(0x02 << 24)
 
