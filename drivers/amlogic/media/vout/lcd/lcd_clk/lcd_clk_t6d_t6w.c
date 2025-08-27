@@ -186,6 +186,21 @@ static void lcd_set_pll_t6d_t6w(struct aml_lcd_drv_s *pdrv)
 		return;
 
 	tcon_div_sel = cconf->pll_tcon_div_sel;
+#if IS_ENABLED(CONFIG_MESON_T6X)
+	lcd_ana_setb(ANACTRL_TCON_PLL_VLOCK, 1, 3, 1);
+	pll_ctrl0 = 0x8023000 | (cconf->pll_config[0].pll_m << 0);
+	pll_ctrl1 = 0x1030600c;
+	pll_ctrl2 = 0x32000000 |
+		(tcon_div_t6x[tcon_div_sel][0] << 30) | /*div2_4_sel*/
+		(tcon_div_t6x[tcon_div_sel][2] << 31); /*clk1x_sel*/
+	pll_ctrl3 = 0x180 |
+		(cconf->pll_config[0].pll_od1_sel << 10) |
+		(cconf->pll_config[0].pll_od2_sel << 14) |
+		(cconf->pll_config[0].pll_od3_sel << 12) |
+		(1 << 9) | /*tcon_od_en*/
+		(tcon_div_t6x[tcon_div_sel][1] << 30); /*tcon_bypass_en*/
+	pll_ctrl4 = cconf->pll_config[0].pll_frac | (tcon_div_t6x[tcon_div_sel][3] << 20);
+#else
 	pll_ctrl0 = 0x22000 | (cconf->pll_config[0].pll_m << 0);
 	if (cconf->pll_config[0].pll_fvco <= 4750000000ULL &&
 			cconf->pll_config[0].pll_fvco >= 3750000000ULL)
@@ -768,7 +783,7 @@ static struct lcd_pll_data_s lcd_tcon_pll_data_t6w = {
 	.od_cnt = 3,
 	.have_tcon_div = 1,
 	.div_in_fmax = 4250000000ULL,
-	.div_out_fmax = 820000000,
+	.div_out_fmax = 840000000,
 	.div_sel_max = CLK_DIV_SEL_2p25,
 };
 
@@ -790,7 +805,7 @@ static struct lcd_pll_data_s lcd_gp2_pll_data_t6w = {
 	.od_cnt = 1,
 	.have_tcon_div = 0,
 	.div_in_fmax = 3200000000ULL,
-	.div_out_fmax = 820000000,
+	.div_out_fmax = 840000000,
 	.div_sel_max = CLK_DIV_SEL_1,
 };
 

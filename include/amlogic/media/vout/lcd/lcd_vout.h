@@ -133,7 +133,7 @@ struct lcd_basic_s {
 #define LCD_CLK_FRAC_UPDATE     BIT(0)
 #define LCD_CLK_PLL_CHANGE      BIT(1)
 #define LCD_CLK_PLL_RESET       BIT(2)
-#define LCD_MAX_NUM_TIMINGS     10
+#define LCD_MAX_NUM_TIMINGS     15
 
 struct lcd_timing_s {
 	struct lcd_detail_timing_s *dft_timing; //panel parameter probe stage
