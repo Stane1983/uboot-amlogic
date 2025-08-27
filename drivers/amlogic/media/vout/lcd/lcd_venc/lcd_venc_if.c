@@ -146,25 +146,45 @@ void lcd_venc_enable(struct aml_lcd_drv_s *pdrv, int flag)
 	lcd_venc_op.venc_enable(pdrv, flag);
 }
 
-void lcd_mute_set(struct aml_lcd_drv_s *pdrv,  unsigned char flag)
+static void lcd_venc_mute_ctrl(struct aml_lcd_drv_s *pdrv,  unsigned char flag)
 {
-	if (!pdrv)
-		return;
-	if (!lcd_venc_op.mute_set) {
+	if (lcd_venc_op.mute_set) {
+		lcd_venc_op.mute_set(pdrv, flag);
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDPR("[%d]: %s, venc mute %d\n", pdrv->index, __func__, flag);
+	} else {
 #ifdef CONFIG_AML_VPP
 		if (flag)
 			set_vpp_mute();
 		else
 			set_vpp_unmute();
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDPR("[%d]: %s, vpp mute %d\n", pdrv->index, __func__, flag);
 #endif
-		LCDPR("[%d]: %s: set vpp mute: %d\n", pdrv->index, __func__, flag);
-	} else {
-		lcd_venc_op.mute_set(pdrv, flag);
-		LCDPR("[%d]: %s: set venc mute: %d\n", pdrv->index, __func__, flag);
 	}
-
 	pdrv->boot_ctrl.mute_flag = flag ?  1 : 0;
+}
+
+/* manual cmd api, need sync bootctrl */
+void lcd_mute_set(struct aml_lcd_drv_s *pdrv,  unsigned char flag)
+{
+	if (!pdrv)
+		return;
+	lcd_venc_mute_ctrl(pdrv, flag);
 	lcd_update_ctrl_bootargs(pdrv);
+}
+
+/* driver flow api, no need sync bootctrl */
+void lcd_on_off_mute_ctrl(struct aml_lcd_drv_s *pdrv,  unsigned char flag)
+{
+	if (!pdrv)
+		return;
+	if (pdrv->boot_ctrl.init_level == LCD_INIT_LEVEL_PREBOOT && flag == 0) {
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDPR("[%d]: preboot bypass unmute\n", pdrv->index);
+		return;
+	}
+	lcd_venc_mute_ctrl(pdrv, flag);
 }
 
 void lcd_venc_reg_print(struct aml_lcd_drv_s *pdrv)
