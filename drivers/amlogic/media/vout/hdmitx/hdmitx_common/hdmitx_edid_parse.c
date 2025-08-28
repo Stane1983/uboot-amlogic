@@ -1987,7 +1987,8 @@ int hdmitx_audio_parse(struct rx_cap *prxcap, u8 *block_buf)
 
 	cta_block_count = hdmitx_edid_get_cta_block_count(block_buf);
 	for (i = 1; i <= cta_block_count; i++) {
-		if (block_buf[i * 0x80] == 0x02 || edid_check & 0x01)
+		if (block_buf[i * 0x80] == 0x02 || (edid_check & 0x01 &&
+			block_buf[i * 0x80] != 0x70))
 			hdmitx_edid_audio_block_parse(prxcap, &block_buf[i * 0x80]);
 	}
 	/*
@@ -2831,7 +2832,8 @@ int hdmitx_edid_parse(struct rx_cap *prxcap, u8 *edid_buf)
 		_edid_parse_base_structure(prxcap, edid_buf);
 
 	for (i = 1; i <= cta_block_count; i++) {
-		if (edid_buf[i * 0x80] == 0x02 || edid_check & 0x01)
+		if (edid_buf[i * 0x80] == 0x02 || (edid_check & 0x01 &&
+			edid_buf[i * 0x80] != 0x70))
 			hdmitx_edid_cta_block_parse(prxcap, &edid_buf[i * 0x80]);
 	}
 
