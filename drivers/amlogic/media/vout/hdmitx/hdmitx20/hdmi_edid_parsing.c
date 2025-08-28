@@ -1277,7 +1277,8 @@ unsigned int hdmi_edid_parsing(unsigned char *EDID_buf, struct rx_cap *prxcap)
 	if (cta_block_count > EDID_MAX_BLOCK - 1)
 		cta_block_count = EDID_MAX_BLOCK - 1;
 	for (i = 1; i <= cta_block_count; i++) {
-		if (EDID_buf[i * 0x80] == 0x02 || hdev->edid_check & 0x01)
+		if (EDID_buf[i * 0x80] == 0x02 || (hdev->edid_check & 0x01 &&
+			EDID_buf[i * 0x80] != 0x70))
 			hdmitx_edid_cta_block_parse(prxcap, &EDID_buf[i * 0x80]);
 	}
 /*
