@@ -1256,7 +1256,7 @@ static int do_SetUpdateTries(
 			bootloaderindex = env_get("forUpgrade_bootloaderIndex");
 			printf("bootloaderindex: %s\n", bootloaderindex);
 
-#ifdef CONFIG_FACTORY_BURN_MODE
+#ifdef CONFIG_BURN_KEY
 			char *factorytest = env_get("factorytest");
 
 			if (factorytest && (strcmp(factorytest, "1") == 0)) {
@@ -1380,7 +1380,7 @@ static int do_CopySlot(
 	else if (strcmp(argv[2], "0") == 0)
 		dest = 0;
 
-#ifdef CONFIG_FACTORY_BURN_MODE
+#ifdef CONFIG_BURN_KEY
 	char *factorytest = env_get("factorytest");
 
 	if (factorytest && (strcmp(factorytest, "1") == 0)) {

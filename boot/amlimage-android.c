@@ -12,6 +12,7 @@
 #include <xbc.h>
 #include <amlogic/emmc_partitions.h>
 #include <amlogic/store_wrapper.h>
+#include <amlogic/keyunify.h>
 
 static const unsigned char lzop_magic[] = {
 	0x89, 0x4c, 0x5a, 0x4f, 0x00, 0x0d, 0x0a, 0x1a, 0x0a
@@ -899,12 +900,136 @@ static  ulong android_image_get_kload_v3(const boot_img_hdr_v3_t *hdr)
 		return 0;
 }
 
+#ifdef CONFIG_DIAG_MODE
+/* strtok_r is the reentrant version of strtok().
+ * @s: The pointer to the source string
+ * @token: The pointer to the token string
+ * @save_ptr: The pointer used internally by strtok_r
+ * Return: Return the first substring encountered the token
+ * strtok_r() uses the internal pointer for thread save.
+ *
+ */
+char *strtok_r(char *s, const char *token, char **save_ptr)
+{
+	char *end;
 
+	if (s == NULL)
+		s = *save_ptr;
+	if (*s == '\0') {
+		*save_ptr = s;
+		return NULL;
+	}
+
+	/* Scan leading delimiters.  */
+	s += strspn(s, token);
+	if (*s == '\0') {
+		*save_ptr = s;
+		return NULL;
+	}
+
+	/* Find the end of the token.  */
+	end = s + strcspn(s, token);
+	if (*end == '\0') {
+		*save_ptr = end;
+		return s;
+	}
+
+	/* Terminate the token and make *SAVE_PTR point past it.  */
+	*end = '\0';
+	*save_ptr = end + 1;
+	return s;
+}
+
+/*
+ * load_dvb_bootconfig - Load bootconfig from diag vendor boot partition.
+ *
+ * @dvb_bootconfig: The pointer to the bootconfig in diag vendor boot.
+ * @dvb_bootconfig_size: The size of the bootconfig in diag vendor boot.
+ * @param_list: A list stores the command in bootconfig.
+ * @param_len: The max length for each command.
+ * @params_num: The max number of commands.
+ *
+ * load_dvb_bootconfig() - This function splits the bootconfig command into param_list and
+ * return the number of command stored. Skip the duplicated command if any.
+ *
+ * Returns: Return the number of commands loaded from the bootconfig in diag vendor boot.
+ *
+ */
+int load_dvb_bootconfig(char *dvb_bootconfig, int dvb_bootconfig_size,
+		char (*param_list)[128], int param_len, int params_num)
+{
+	if (!dvb_bootconfig || !param_list || param_len <= 0 || params_num <= 0) {
+		pr_err("ERROR: %s: invalid input\n", __func__);
+		return -1;
+	}
+
+	if (params_num > 64) {
+		pr_err("ERROR: %s: the bootconfigover the maximum(128).\n", __func__);
+		return -1;
+	}
+
+	for (int i = 0; i < params_num; i++)
+		memset(param_list[i], 0, param_len);
+
+	char *temp_buf = malloc(dvb_bootconfig_size + 1);
+
+	if (!temp_buf) {
+		pr_err("ERROR: %s: failed to allocate memory\n", __func__);
+		return -1;
+	}
+	memcpy(temp_buf, dvb_bootconfig, dvb_bootconfig_size);
+	temp_buf[dvb_bootconfig_size] = '\0';
+
+	char *saveptr;
+	char *param = strtok_r(temp_buf, "\n", &saveptr);
+	int param_count = 0;
+
+	pr_debug("param_len = %d, params_num = %d\n", param_len, params_num);
+
+	while (param && param_count < params_num) {
+		while (*param == ' ')
+			param++;
+		if (*param == '\0') {
+			param = strtok_r(NULL, "\n", &saveptr);
+			continue;
+		}
+
+		size_t len = strlen(param);
+
+		if (len >= (size_t)param_len - 1) {
+			pr_debug("%s: bootconfigis too long(max:%d), SKIP.\n",
+				__func__, param_len);
+			param = strtok_r(NULL, "\n", &saveptr);
+			continue;
+		}
+
+		bool existed = false;
+
+		for (int i = 0; i < param_count; i++) {
+			if (strcmp(param, param_list[i]) == 0) {
+				existed = true;
+				break;
+			}
+		}
+		if (!existed) {
+			if (snprintf(param_list[param_count], param_len,
+				"%s\n", param) >= param_len) {
+				pr_err("ERROR: %s: param Overflow\n", __func__);
+				return -1;
+			}
+
+			param_count++;
+		}
+		param = strtok_r(NULL, "\n", &saveptr);
+	}
+	free(temp_buf);
+	return param_count;
+}
+#endif
 
 static bool _read_in_bootconfig(struct vendor_boot_img_hdr *boot_info, uint32_t ramdisk_size)
 {
 #ifdef CONFIG_XBC
-	char *bootconfig = env_get("bootconfig");
 	char *avb_bootargs = env_get("avb_bootargs");
 
 	char partname[32] = {0};
@@ -912,6 +1037,13 @@ static bool _read_in_bootconfig(struct vendor_boot_img_hdr *boot_info, uint32_t 
 	unsigned int offset = 0;
 	int bootconfig_size = 0;
 	int ret = 0;
+#ifdef CONFIG_DIAG_MODE
+	char diag_state_buf[200] = {0x0};
+	u64 rc_diag = -1;
+	int diag_flag = 0;
+
+	ret = key_unify_read("diag_state", diag_state_buf, sizeof(diag_state_buf));
+#endif
 
 	slot_name = env_get("slot-suffixes");
 	if (slot_name && (strcmp(slot_name, "0") == 0))
@@ -921,6 +1053,21 @@ static bool _read_in_bootconfig(struct vendor_boot_img_hdr *boot_info, uint32_t 
 	else
 		strcpy((char *)partname, "vendor_boot");
 
+#ifdef CONFIG_DIAG_MODE
+	rc_diag = store_part_size("diag_vendor_boot");
+	if (ret == 0 &&
+		(strcmp(diag_state_buf, "Test") == 0) &&
+		(rc_diag != -1)) {
+		printf("diag mode, read from diag_vendor_boot\n");
+		diag_flag = 1;
+		strcpy((char *)partname, "diag_vendor_boot");
+		run_command(
+			"setenv bootconfig ${bootconfig} androidboot.force_super_partition=diag_super;",
+			0);
+	}
+#endif
+
+	char *bootconfig = env_get("bootconfig");
 	unsigned char *pRAMdisk = (unsigned char *)(unsigned long)boot_info->ramdisk_addr;
 
 	debug("bootconfig_size: 0x%x\n", boot_info->vendor_bootconfig_size);
@@ -980,8 +1127,27 @@ static bool _read_in_bootconfig(struct vendor_boot_img_hdr *boot_info, uint32_t 
 
 			result = strtok(pnewbootargs, " ");
 
+#ifdef CONFIG_DIAG_MODE
+			if (diag_flag == 1) {
+				j = load_dvb_bootconfig(
+					(char *)((uintptr_t)boot_info->ramdisk_addr +
+					ramdisk_size),
+					bootconfig_size, param_list,
+					sizeof(param_list[0]),
+					ARRAY_SIZE(param_list));
+			}
+#endif
 			while (result != NULL) {
 				sprintf(params, "%s\n", result);
+#ifdef CONFIG_DIAG_MODE
+#define ANDROIDBOOT_SELINUX_ENFORCING  "androidboot.selinux=enforcing\n"
+#define ANDROIDBOOT_SELINUX_PERMISSIVE "androidboot.selinux=permissive\n"
+				if (strcmp(params, ANDROIDBOOT_SELINUX_ENFORCING) == 0 &&
+					diag_flag == 1) {
+					sprintf(params, "%s", ANDROIDBOOT_SELINUX_PERMISSIVE);
+					printf("Device is in diag mode, set the selinux to permissive.\n");
+				}
+#endif
 				for (i = 0; i < j; i++) {
 					if (strcmp(params, param_list[i]) == 0)
 						flag = 1;

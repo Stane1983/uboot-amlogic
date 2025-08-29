@@ -29,6 +29,7 @@
 #include <amlogic/libavb/libavb.h>
 #endif
 #include <amlogic/aml_profile.h>
+#include <amlogic/keyunify.h>
 
 #ifndef IS_FEAT_BOOT_VERIFY
 //#define IS_FEAT_BOOT_VERIFY() 0 //always undefined as IS_FEAT_BOOT_VERIFY is function not marco
@@ -50,14 +51,14 @@ int __attribute__((weak)) store_logic_read(const char *name, loff_t off, size_t 
 #define MAX_DTB_SIZE		SZ_16M
 
 typedef struct __aml_enc_blk{
-        unsigned int  nOffset;
-        unsigned int  nRawLength;
-        unsigned int  nSigLength;
-        unsigned int  nAlignment;
-        unsigned int  nTotalLength;
-        unsigned char szPad[12];
-        unsigned char szSHA2IMG[32];
-        unsigned char szSHA2KeyID[32];
+	unsigned int  nOffset;
+	unsigned int  nRawLength;
+	unsigned int  nSigLength;
+	unsigned int  nAlignment;
+	unsigned int  nTotalLength;
+	unsigned char szPad[12];
+	unsigned char szSHA2IMG[32];
+	unsigned char szSHA2KeyID[32];
 }t_aml_enc_blk;
 
 #define AML_SECU_BOOT_IMG_HDR_MAGIC        "AMLSECU!"
@@ -65,30 +66,29 @@ typedef struct __aml_enc_blk{
 #define AML_SECU_BOOT_IMG_HDR_VESRION      (0x0905)
 
 typedef struct {
+	unsigned char magic[AML_SECU_BOOT_IMG_HDR_MAGIC_SIZE];
+	//magic to identify whether it is a encrypted boot image
 
-        unsigned char magic[AML_SECU_BOOT_IMG_HDR_MAGIC_SIZE];//magic to identify whether it is a encrypted boot image
+	unsigned int  version; //version for this header struct
+	unsigned int  nBlkCnt;
 
-        unsigned int  version;                  //version for this header struct
-        unsigned int  nBlkCnt;
+	unsigned char szTimeStamp[16];
 
-        unsigned char szTimeStamp[16];
-
-        t_aml_enc_blk   amlKernel;
-        t_aml_enc_blk   amlRamdisk;
-        t_aml_enc_blk   amlDTB;
-
+	t_aml_enc_blk   amlKernel;
+	t_aml_enc_blk   amlRamdisk;
+	t_aml_enc_blk   amlDTB;
 } amlencryptbootimginfo;
 
 typedef struct _boot_img_hdr_secure_boot
 {
-    unsigned char           reserve4ImgHdr[1024];
+	unsigned char           reserve4ImgHdr[1024];
 
 	amlencryptbootimginfo   encrypteImgInfo;
 
 }AmlSecureBootImgHeader;
 
 typedef struct{
-    unsigned char           reserve4ImgHdr[2048];
+	unsigned char           reserve4ImgHdr[2048];
 
 	amlencryptbootimginfo   encrypteImgInfo;
 
@@ -101,17 +101,17 @@ COMPILE_TYPE_ASSERT(2048 >= sizeof(AmlSecureBootImgHeader), _cc);
 static int is_andr_9_image(void* pBuffer)
 {
 	boot_img_hdr_t *pAHdr = (boot_img_hdr_t *)(unsigned long)pBuffer;
-    int nReturn = 0;
+	int nReturn = 0;
 
-    if (!pBuffer)
-        goto exit;
+	if (!pBuffer)
+		goto exit;
 
-    if (pAHdr->header_version)
-        nReturn = 1;
+	if (pAHdr->header_version)
+		nReturn = 1;
 
 exit:
 
-    return nReturn;
+	return nReturn;
 
 }
 
@@ -232,6 +232,21 @@ static int do_image_read_dtb_from_knl(const char *partname,
 			strcpy((char *)partname, "vendor_boot_b");
 		else
 			strcpy((char *)partname, "vendor_boot");
+
+#ifdef CONFIG_DIAG_MODE
+		char diag_state_buf[200] = {0x0};
+		u64 rc_diag = -1;
+
+		rc_diag = store_part_size("diag_vendor_boot");
+
+		if ((key_unify_read("diag_state", diag_state_buf,
+			sizeof(diag_state_buf)) == 0) &&
+			(strcmp(diag_state_buf, "Test") == 0) &&
+			(rc_diag != -1)) {
+			printf("read dtb from diag_vendor_boot\n");
+			strcpy((char *)partname, "diag_vendor_boot");
+		}
+#endif
 
 		MsgP("partname = %s\n", partname);
 		nflashloadlen = preloadsz_r;//head info is one page size == 4k
@@ -401,55 +416,71 @@ static int do_image_read_dtb_from_rsv(unsigned char* loadaddr)
 //imgread dtb rsv ${dtb_mem_addr}
 static int do_image_read_dtb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-    int iRet = 0;
-    const char partName[64] = {0};
-    unsigned char* loadaddr = 0;
-    uint64_t lflashReadOff = 0;
+	int iRet = 0;
+	const char partName[64] = {0};
+	unsigned char *loadaddr = 0;
+	u64 lflashReadOff = 0;
 
-    strlcpy((char *)partName, argv[1], 64);
-    if (2 < argc) {
-        loadaddr = (unsigned char*)simple_strtoul(argv[2], NULL, 16);
-    } else{
-        loadaddr = (unsigned char*)simple_strtoul(env_get("loadaddr"), NULL, 16);
-    }
+	strlcpy((char *)partName, argv[1], 64);
 
-    if (3 < argc) lflashReadOff = simple_strtoull(argv[3], NULL, 0) ;
+#ifdef CONFIG_DIAG_MODE
+	char diag_state_buf[200] = {0x0};
+	u64 rc_diag = -1;
 
-    const int fromRsv = !strcmp("_aml_dtb", argv[1]);
-    if ( fromRsv ) {
-        iRet = do_image_read_dtb_from_rsv(loadaddr);
-    } else {
-        iRet = do_image_read_dtb_from_knl(partName, loadaddr, lflashReadOff);
-    }
+	rc_diag = store_part_size("diag_boot");
+	if ((key_unify_read("diag_state", diag_state_buf,
+			sizeof(diag_state_buf)) == 0) &&
+			(strcmp(diag_state_buf, "Test") == 0) &&
+			(rc_diag != -1)) {
+		printf("%s: %d: read from diag_boot\n", __func__, __LINE__);
+		strcpy((char *)partName, "diag_boot");
+	}
+#endif
+
+	if (argc > 2)
+		loadaddr = (unsigned char *)simple_strtoul(argv[2], NULL, 16);
+	else
+		loadaddr = (unsigned char *)simple_strtoul(env_get("loadaddr"), NULL, 16);
+
+	if (argc > 3)
+		lflashReadOff = simple_strtoull(argv[3], NULL, 0);
+
+	const int fromRsv = !strcmp("_aml_dtb", argv[1]);
+
+	if (fromRsv)
+		iRet = do_image_read_dtb_from_rsv(loadaddr);
+	else
+		iRet = do_image_read_dtb_from_knl(partName, loadaddr, lflashReadOff);
+
 	if (iRet) {
 		errorP("Fail read dtb from %s, ret %d\n", partName, iRet);
 		return CMD_RET_FAILURE;
 	}
 
-    unsigned long fdtAddr = (unsigned long)loadaddr;
+	unsigned long fdtAddr = (unsigned long)loadaddr;
 #ifdef CONFIG_MULTI_DTB
-    extern unsigned long get_multi_dt_entry(unsigned long fdt_addr);
-    fdtAddr = get_multi_dt_entry((unsigned long)fdtAddr);
-    if (!fdtAddr) {
-        errorP("Fail in get_multi_dt_entry\n");
-        return __LINE__;
-    }
+	extern unsigned long get_multi_dt_entry(unsigned long fdt_addr);
+	fdtAddr = get_multi_dt_entry((unsigned long)fdtAddr);
+	if (!fdtAddr) {
+		errorP("Fail in get_multi_dt_entry\n");
+		return __LINE__;
+	}
 #endif// #ifdef CONFIG_MULTI_DTB
-    iRet = fdt_check_header((char*)fdtAddr);
-    if (iRet) {
-        errorP("Fail in fdt check header\n");
-        return CMD_RET_FAILURE;
-    }
-    const unsigned fdtsz    = fdt_totalsize((char*)fdtAddr);
+	iRet = fdt_check_header((char *)fdtAddr);
+	if (iRet) {
+		errorP("Fail in fdt check header\n");
+		return CMD_RET_FAILURE;
+	}
+	const unsigned int fdtsz = fdt_totalsize((char *)fdtAddr);
 
-    if (fdtsz >= SZ_1M) {
-        errorP("bad fdt size:%d\n", fdtsz);
-        return CMD_RET_FAILURE;
-    }
+	if (fdtsz >= SZ_1M) {
+		errorP("bad fdt size:%d\n", fdtsz);
+		return CMD_RET_FAILURE;
+	}
 
-    memmove(loadaddr, (char*)fdtAddr, fdtsz);
+	memmove(loadaddr, (char *)fdtAddr, fdtsz);
 
-    return iRet;
+	return iRet;
 }
 
 static int do_image_read_part(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
@@ -489,15 +520,15 @@ out:
 }
 static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-    unsigned    kernel_size;
-    unsigned    ramdisk_size;
-    boot_img_hdr_t *hdr_addr = NULL;
-    int genFmt = 0;
+	unsigned int kernel_size;
+	unsigned int ramdisk_size;
+	boot_img_hdr_t *hdr_addr = NULL;
+	int genFmt = 0;
 	u32 actualbootimgsz = 0;
 	u32 dtbsz = 0;
 	const char *const partname = argv[1];
-    unsigned char* loadaddr = 0;
-    int rc = 0;
+	unsigned char *loadaddr = 0;
+	int rc = 0;
 	u64 flashreadoff = 0;
 	u32 securekernelimgsz = 0;
 	char *upgrade_step_s = NULL;
@@ -509,6 +540,12 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 #ifdef CONFIG_AVB2
 	u64 original_size = 0;
 #endif
+#ifdef CONFIG_DIAG_MODE
+	char diag_state_buf[200] = {0x0};
+	u64 rc_diag = -1;
+	int diag_flag = 0;
+#endif
+
 
 	if (argc > 2) {
 		loadaddr = (unsigned char *)simple_strtoul(argv[2], NULL, 16);
@@ -521,6 +558,20 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 
 	if (argc > 3)
 		flashreadoff = simple_strtoull(argv[3], NULL, 0);
+
+#ifdef CONFIG_DIAG_MODE
+	rc_diag = store_part_size("diag_vendor_boot");
+
+	if ((key_unify_read("diag_state", diag_state_buf,
+		sizeof(diag_state_buf)) == 0) &&
+		(strcmp(diag_state_buf, "Test") == 0) &&
+		(rc_diag != -1) &&
+		!IS_FEAT_BOOT_VERIFY()) {
+		printf("diag mode\n");
+		strcpy((char *)partname, "diag_boot");
+		diag_flag = 1;
+	}
+#endif
 
 	upgrade_step_s = env_get("upgrade_step");
 	if (upgrade_step_s && (strcmp(upgrade_step_s, "3") == 0) &&
@@ -565,36 +616,42 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 			free(p_vender_boot_img);
 			p_vender_boot_img = 0;
 		}
-        genFmt = genimg_get_format(hdr_addr);
+		genFmt = genimg_get_format(hdr_addr);
 #if defined(CONFIG_ZIRCON_BOOT_IMAGE)
 	if (IMAGE_FORMAT_ANDROID != genFmt && IMAGE_FORMAT_ZIRCON != genFmt) {
-		errorP("Fmt 0x%x unsupported!, supported genFmt 0x%x or 0x%x\n", genFmt,
-				IMAGE_FORMAT_ANDROID, IMAGE_FORMAT_ZIRCON);
+		errorP("Fmt 0x%x unsupported!, supported genFmt 0x%x or 0x%x\n",
+			genFmt,
+			IMAGE_FORMAT_ANDROID, IMAGE_FORMAT_ZIRCON);
 #else
-        if (IMAGE_FORMAT_ANDROID != genFmt) {
-            errorP("Fmt unsupported!genFmt 0x%x != 0x%x\n", genFmt, IMAGE_FORMAT_ANDROID);
+		if (genFmt != IMAGE_FORMAT_ANDROID) {
+			errorP("Fmt unsupported!genFmt 0x%x != 0x%x\n", genFmt,
+				IMAGE_FORMAT_ANDROID);
 #endif
-            return __LINE__;
-        }
+			return __LINE__;
+		}
 
 		//Check if encrypted image
 		rc = _aml_get_secure_boot_kernel_size(loadaddr, &securekernelimgsz);
-        if (rc) {
-            errorP("Fail in _aml_get_secure_boot_kernel_size, rc=%d\n", rc);
-            return __LINE__;
-        }
+		if (rc) {
+			errorP("Fail in _aml_get_secure_boot_kernel_size, rc=%d\n", rc);
+			return __LINE__;
+		}
 		if (securekernelimgsz) {
 			actualbootimgsz = securekernelimgsz;
 			MsgP("securekernelimgsz=0x%x\n", actualbootimgsz);
-		}
-        else {
-            kernel_size     =(hdr_addr->kernel_size + (hdr_addr->page_size-1)+hdr_addr->page_size)&(~(hdr_addr->page_size -1));
-            ramdisk_size    =(hdr_addr->ramdisk_size + (hdr_addr->page_size-1))&(~(hdr_addr->page_size -1));
-			dtbsz           = hdr_addr->second_size;
+		} else {
+			kernel_size = (hdr_addr->kernel_size + (hdr_addr->page_size - 1) +
+				hdr_addr->page_size) & (~(hdr_addr->page_size - 1));
+			ramdisk_size = (hdr_addr->ramdisk_size +
+				(hdr_addr->page_size - 1)) & (~(hdr_addr->page_size - 1));
+			dtbsz = hdr_addr->second_size;
 			actualbootimgsz = kernel_size + ramdisk_size + dtbsz;
-            debugP("kernel_size 0x%x, page_size 0x%x, totalSz 0x%x\n", hdr_addr->kernel_size, hdr_addr->page_size, kernel_size);
-            debugP("ramdisk_size 0x%x, totalSz 0x%x\n", hdr_addr->ramdisk_size, ramdisk_size);
-			debugP("dtbSz 0x%x, Total actualbootimgsz 0x%x\n", dtbsz, actualbootimgsz);
+			debugP("kernel_size 0x%x, page_size 0x%x, totalSz 0x%x\n",
+				hdr_addr->kernel_size, hdr_addr->page_size, kernel_size);
+			debugP("ramdisk_size 0x%x, totalSz 0x%x\n",
+				hdr_addr->ramdisk_size, ramdisk_size);
+			debugP("dtbSz 0x%x, Total actualbootimgsz 0x%x\n",
+				dtbsz, actualbootimgsz);
 			if (kernel_size > MAX_KERNEL_SIZE) {
 				errorP("kernel size limit 0x%x,0x%x\n", kernel_size,
 				       MAX_KERNEL_SIZE);
@@ -609,7 +666,7 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 				errorP("dtb size limit 0x%x,0x%x\n", dtbsz, MAX_DTB_SIZE);
 				return __LINE__;
 			}
-        }
+		}
 
 #if defined(CONFIG_ZIRCON_BOOT_IMAGE)
 	if (genFmt == IMAGE_FORMAT_ZIRCON) {
@@ -665,42 +722,42 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 		//because secure boot will use DMA which need disable MMU temp
 		//here must update the cache, otherwise nand will fail (eMMC is OK)
 		flush_cache((unsigned long)loadaddr, (unsigned long)actualbootimgsz);
-    }
-    else {
-	char partname_init[32] = {0};
-	u64 rc_init;
-	char *slot_name;
-	p_boot_img_hdr_v3_t hdr_addr_v3 = NULL;
+	} else {
+		char partname_init[32] = {0};
+		u64 rc_init;
+		char *slot_name;
+		p_boot_img_hdr_v3_t hdr_addr_v3 = NULL;
 #ifdef CONFIG_AVB2
-	bool kernel_preload = true;
-	bool init_boot_preload = true;
-	bool vendor_boot_preload = true;
+		bool kernel_preload = true;
+		bool init_boot_preload = true;
+		bool vendor_boot_preload = true;
 #endif
 
-	init_boot_ramdisk_size = 0;
-	slot_name = env_get("slot-suffixes");
-	if (slot_name && (strcmp(slot_name, "0") == 0))
-		strcpy((char *)partname_init, "init_boot_a");
-	else if (slot_name && (strcmp(slot_name, "1") == 0))
-		strcpy((char *)partname_init, "init_boot_b");
-	else
-		strcpy((char *)partname_init, "init_boot");
+		init_boot_ramdisk_size = 0;
+		slot_name = env_get("slot-suffixes");
+		if (slot_name && (strcmp(slot_name, "0") == 0))
+			strcpy((char *)partname_init, "init_boot_a");
+		else if (slot_name && (strcmp(slot_name, "1") == 0))
+			strcpy((char *)partname_init, "init_boot_b");
+		else
+			strcpy((char *)partname_init, "init_boot");
 
-	rc_init = store_part_size(partname_init);
+		rc_init = store_part_size(partname_init);
 
-        /*free vendor buffer first*/
-	 if (p_vender_boot_img) {
-            free(p_vender_boot_img);
-            p_vender_boot_img = 0;
-        }
+		/*free vendor buffer first*/
+		if (p_vender_boot_img) {
+			free(p_vender_boot_img);
+			p_vender_boot_img = 0;
+		}
 
-        genFmt = genimg_get_format(hdr_addr);
-	 if (IMAGE_FORMAT_ANDROID != genFmt) {
-            errorP("Fmt unsupported!genFmt 0x%x != 0x%x\n", genFmt, IMAGE_FORMAT_ANDROID);
-            return __LINE__;
-        }
+		genFmt = genimg_get_format(hdr_addr);
+		if (genFmt != IMAGE_FORMAT_ANDROID) {
+			errorP("Fmt unsupported!genFmt 0x%x != 0x%x\n",
+				genFmt, IMAGE_FORMAT_ANDROID);
+			return __LINE__;
+		}
 
-        //Check if encrypted image
+		//Check if encrypted image
 		rc = _aml_get_secure_boot_kernel_size(loadaddr, &securekernelimgsz);
 		if (rc) {
 			errorP("Fail in _aml_get_secure_boot_kernel_size, rc=%d\n", rc);
@@ -950,6 +1007,14 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 		else
 			strcpy((char *)partname_r, "vendor_boot");
 
+#ifdef CONFIG_DIAG_MODE
+		if (diag_flag == 1 &&
+			(strcmp(diag_state_buf, "Test") == 0) &&
+			(rc_diag != -1)) {
+			printf("read from diag_vendor_boot\n");
+			strcpy((char *)partname_r, "diag_vendor_boot");
+		}
+#endif
 		MsgP("partname_r = %s\n", partname_r);
 		vendorboot_part_sz = store_part_size(partname_r);
 
@@ -1163,7 +1228,7 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 		env_set("decaddr_kernel", strAddr);
 	}
 
-    return 0;
+	return 0;
 }
 
 #define AML_RES_IMG_VERSION_V1      (0x01)
@@ -1177,16 +1242,16 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 //typedef for amlogic resource image
 #pragma pack(push, 4)
 typedef struct {
-    __u32   crc;    //crc32 value for the resouces image
-    __s32   version;//current version is 0x01
+	__u32   crc;    //crc32 value for the resources image
+	__s32   version;//current version is 0x01
 
-    __u8    magic[AML_RES_IMG_V1_MAGIC_LEN];  //resources images magic
+	__u8    magic[AML_RES_IMG_V1_MAGIC_LEN];  //resources images magic
 
-    __u32   imgSz;  //total image size in byte
-    __u32   imgItemNum;//total item packed in the image
+	__u32   imgSz;  //total image size in byte
+	__u32   imgItemNum;//total item packed in the image
 
-    __u32   alignSz;//AML_RES_IMG_ITEM_ALIGN_SZ
-    __u8    reserv[AML_RES_IMG_HEAD_SZ - 8 * 3 - 4];
+	__u32   alignSz;//AML_RES_IMG_ITEM_ALIGN_SZ
+	__u8    reserv[AML_RES_IMG_HEAD_SZ - 8 * 3 - 4];
 
 }AmlResImgHead_t;
 #pragma pack(pop)
@@ -1196,76 +1261,77 @@ typedef struct {
 
 static int img_res_check_log_header(const AmlResImgHead_t* pResImgHead)
 {
-    int rc = 0;
+	int rc = 0;
 
-    rc = memcmp(pResImgHead->magic, AML_RES_IMG_V1_MAGIC, AML_RES_IMG_V1_MAGIC_LEN);
-    if (rc) {
-        debugP("Magic error for res\n");
-        return 1;
-    }
-    if (AML_RES_IMG_VERSION_V2 != pResImgHead->version) {
-        errorP("res version 0x%x != 0x%x\n", pResImgHead->version, AML_RES_IMG_VERSION_V2);
-        return 2;
-    }
+	rc = memcmp(pResImgHead->magic, AML_RES_IMG_V1_MAGIC, AML_RES_IMG_V1_MAGIC_LEN);
+	if (rc) {
+		debugP("Magic error for res\n");
+		return 1;
+	}
+	if (pResImgHead->version != AML_RES_IMG_VERSION_V2) {
+		errorP("res version 0x%x != 0x%x\n", pResImgHead->version, AML_RES_IMG_VERSION_V2);
+		return 2;
+	}
 	if (pResImgHead->imgItemNum > LOGO_TOTAL_ITEM) {
 		errorP("logo size err 0x%x != 0x%x\n", pResImgHead->imgItemNum, LOGO_TOTAL_ITEM);
 		return 3;
 	}
 
-    return 0;
+	return 0;
 }
 
 static int do_image_read_res(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-    const char* const partName = argv[1];
-    unsigned char* loadaddr = 0;
-    int rc = 0;
-    AmlResImgHead_t* pResImgHead = NULL;
-    unsigned totalSz    = 0;
-    uint64_t flashReadOff = 0;
+	const char * const partName = argv[1];
+	unsigned char *loadaddr = 0;
+	int rc = 0;
+	AmlResImgHead_t *pResImgHead = NULL;
+	unsigned int totalSz    = 0;
+	u64 flashReadOff = 0;
 
-    if (2 < argc) {
-        loadaddr = (unsigned char*)simple_strtoul(argv[2], NULL, 16);
-    }
-    else{
-        loadaddr = (unsigned char*)simple_strtoul(env_get("loadaddr"), NULL, 16);
-    }
-    pResImgHead = (AmlResImgHead_t*)loadaddr;
+	if (argc > 2)
+		loadaddr = (unsigned char *)simple_strtoul(argv[2], NULL, 16);
+	else
+		loadaddr = (unsigned char *)simple_strtoul(env_get("loadaddr"), NULL, 16);
 
-    rc = store_logic_read(partName, flashReadOff, IMG_PRELOAD_SZ, loadaddr);
-    if (rc) {
-        errorP("Fail to read 0x%xB from part[%s] at offset 0\n", IMG_PRELOAD_SZ, partName);
-        return __LINE__;
-    }
+	pResImgHead = (AmlResImgHead_t *)loadaddr;
+
+	rc = store_logic_read(partName, flashReadOff, IMG_PRELOAD_SZ, loadaddr);
+	if (rc) {
+		errorP("Fail to read 0x%xB from part[%s] at offset 0\n", IMG_PRELOAD_SZ, partName);
+		return __LINE__;
+	}
 #if CONFIG_PARTITION_ENCRYPTION_LOCAL
-    part_dec(partName, (u8*)loadaddr, IMG_PRELOAD_SZ, (u8*)loadaddr, IMG_PRELOAD_SZ, flashReadOff);
+	part_dec(partName, (u8 *)loadaddr, IMG_PRELOAD_SZ,
+		(u8 *)loadaddr, IMG_PRELOAD_SZ, flashReadOff);
 #endif
-    flashReadOff = IMG_PRELOAD_SZ;
+	flashReadOff = IMG_PRELOAD_SZ;
 
-    if (img_res_check_log_header(pResImgHead)) {
-        errorP("Logo header err.\n");
-        return __LINE__;
-    }
+	if (img_res_check_log_header(pResImgHead)) {
+		errorP("Logo header err.\n");
+		return __LINE__;
+	}
 
-    //Read the actual size of the new version res image
-    totalSz = pResImgHead->imgSz;
-    if (totalSz > IMG_PRELOAD_SZ )
-    {
-        const unsigned leftSz = totalSz - flashReadOff;
+	//Read the actual size of the new version res image
+	totalSz = pResImgHead->imgSz;
+	if (totalSz > IMG_PRELOAD_SZ) {
+		const unsigned int leftSz = totalSz - flashReadOff;
 
-        rc = store_logic_read(partName, flashReadOff, leftSz, loadaddr + (unsigned)flashReadOff);
-        if (rc) {
-            errorP("Fail to read 0x%xB from part[%s] at offset 0x%x\n", leftSz, partName, IMG_PRELOAD_SZ);
-            return __LINE__;
-        }
+		rc = store_logic_read(partName, flashReadOff, leftSz,
+			loadaddr + (unsigned int)flashReadOff);
+		if (rc) {
+			errorP("Fail to read 0x%xB from part[%s] at offset 0x%x\n",
+				leftSz, partName, IMG_PRELOAD_SZ);
+			return __LINE__;
+		}
 #if CONFIG_PARTITION_ENCRYPTION_LOCAL
-        part_dec(partName, (u8*)(loadaddr + (unsigned)flashReadOff), leftSz,
-                (u8*)(loadaddr + (unsigned)flashReadOff), leftSz, flashReadOff);
+		part_dec(partName, (u8 *)(loadaddr + (unsigned int)flashReadOff), leftSz,
+			(u8 *)(loadaddr + (unsigned int)flashReadOff), leftSz, flashReadOff);
 #endif
-    }
-    debugP("totalSz=0x%x\n", totalSz);
+	}
+	debugP("totalSz=0x%x\n", totalSz);
 
-    return 0;
+	return 0;
 }
 
 #define IH_MAGIC	0x27051956	/* Image Magic Number		*/
@@ -1293,146 +1359,155 @@ static const unsigned char gzip_magic[] = { 0x1f, 0x8b };
 
 //uncompress known format for 'imgread pic'
 static int imgread_uncomp_pic(unsigned char* srcAddr, const unsigned srcSz,
-        unsigned char* dstAddr, const unsigned dstBufSz, unsigned long* dstDatSz)
+	unsigned char *dstAddr, const unsigned int dstBufSz, unsigned long *dstDatSz)
 {
-    /*debugP("srcAddr[%x, %x]\n", srcAddr[0], srcAddr[1]);*/
-    if (!memcmp(srcAddr, gzip_magic, sizeof(gzip_magic)))
-    {
-        *dstDatSz = srcSz;
-        return gunzip(dstAddr, dstBufSz, srcAddr, dstDatSz);
-    }
+	/*debugP("srcAddr[%x, %x]\n", srcAddr[0], srcAddr[1]);*/
+	if (!memcmp(srcAddr, gzip_magic, sizeof(gzip_magic))) {
+		*dstDatSz = srcSz;
+		return gunzip(dstAddr, dstBufSz, srcAddr, dstDatSz);
+	}
 
-    return 0;
+	return 0;
 }
 
 //[imgread pic] logo bootup $loadaddr_misc
 static int do_image_read_pic(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-    const char* const partName = argv[1];
-    unsigned char* loadaddr = 0;
-    int rc = 0;
-    const AmlResImgHead_t* pResImgHead = NULL;
-    //unsigned totalSz    = 0;
-    uint64_t flashReadOff = 0;
-    const unsigned PreloadSz = PIC_PRELOAD_SZ;//preload 8k, 124-1 pic header, If you need pack more than 123 items,  fix this
-    unsigned itemIndex = 0;
-    const AmlResItemHead_t* pItem = NULL;
-    const char* picName = argv[2];
+	const char * const partName = argv[1];
+	unsigned char *loadaddr = 0;
+	int rc = 0;
+	const AmlResImgHead_t *pResImgHead = NULL;
+	//unsigned totalSz    = 0;
+	u64 flashReadOff = 0;
+	const unsigned int PreloadSz = PIC_PRELOAD_SZ;
+	unsigned int itemIndex = 0;
+	const AmlResItemHead_t *pItem = NULL;
+	const char *picName = argv[2];
 
-    loadaddr = (unsigned char*)simple_strtoul(argc > 3 ? argv[3] : env_get("loadaddr_misc"), NULL, 16);
+	loadaddr = (unsigned char *)simple_strtoul(argc > 3 ? argv[3] :
+		env_get("loadaddr_misc"), NULL, 16);
 
-    pResImgHead = (AmlResImgHead_t*)loadaddr;
+	pResImgHead = (AmlResImgHead_t *)loadaddr;
 
-    debugP("to read pic (%s)\n", picName);
-    rc = store_logic_read(partName, flashReadOff, PreloadSz, loadaddr);
-    if (rc) {
-        errorP("Fail to read 0x%xB from part[%s] at offset 0\n", PreloadSz, partName);
-        return __LINE__;
-    }
+	debugP("to read pic (%s)\n", picName);
+	rc = store_logic_read(partName, flashReadOff, PreloadSz, loadaddr);
+	if (rc) {
+		errorP("Fail to read 0x%xB from part[%s] at offset 0\n", PreloadSz, partName);
+		return __LINE__;
+	}
 #if CONFIG_PARTITION_ENCRYPTION_LOCAL
-    part_dec(partName, (u8*)loadaddr, PreloadSz, (u8*)loadaddr, PreloadSz, flashReadOff);
+	part_dec(partName, (u8 *)loadaddr, PreloadSz,
+		(u8 *)loadaddr, PreloadSz, flashReadOff);
 #endif
-    flashReadOff = PreloadSz;
-    debugP("end read pic sz %d\n", PreloadSz);
+	flashReadOff = PreloadSz;
+	debugP("end read pic sz %d\n", PreloadSz);
 
-    if (img_res_check_log_header(pResImgHead)) {
-        errorP("Logo header err.\n");
-        return __LINE__;
-    }
+	if (img_res_check_log_header(pResImgHead)) {
+		errorP("Logo header err.\n");
+		return __LINE__;
+	}
 
-    //correct bootup for mbox
-    while (!strcmp("bootup", picName))
-    {
-            char* outputmode = env_get("outputmode");
-            if (!outputmode)break;//not env outputmode
+	//correct bootup for mbox
+	while (!strcmp("bootup", picName)) {
+		char *outputmode = env_get("outputmode");
 
-            rc = !strncmp("720", outputmode, 3) || !strncmp("576", outputmode, 3) || !strncmp("480", outputmode, 3);
-            if (rc) {
-                    picName = "bootup_720";
-                    break;
-            }
+		if (!outputmode)
+			break;//not env outputmode
 
-            picName = "bootup_1080";
-            break;
-    }
+		rc = !strncmp("720", outputmode, 3) ||
+			!strncmp("576", outputmode, 3) ||
+			!strncmp("480", outputmode, 3);
+		if (rc) {
+			picName = "bootup_720";
+			break;
+		}
 
-    pItem = (AmlResItemHead_t*)(pResImgHead + 1);
-    for (itemIndex = 0; itemIndex < pResImgHead->imgItemNum; ++itemIndex, ++pItem)
-    {
-            if (IH_MAGIC != pItem->magic) {
-                    errorP("item magic 0x%x != 0x%x\n", pItem->magic, IH_MAGIC);
-                    return __LINE__;
-            }
-			if (pItem->start > CONFIG_MAX_PIC_LEN) {
-				errorP("item data offset err 0x%x != 0x%x\n", pItem->start,
-				       CONFIG_MAX_PIC_LEN);
-				return __LINE__;
-			}
-			if (pItem->size > CONFIG_MAX_PIC_LEN) {
-				errorP("item data size err 0x%x != 0x%x\n", pItem->size,
-				       CONFIG_MAX_PIC_LEN);
-				return __LINE__;
-			}
-            if (!strcmp(picName, pItem->name) || !strcmp(argv[2], pItem->name))
-            {
-                    char env_name[IH_NMLEN*2];
-                    char env_data[IH_NMLEN*2];
-                    unsigned long picLoadAddr = (unsigned long)loadaddr + (unsigned)pItem->start;
-			unsigned int  itemSz      = pItem->size;
-			unsigned long uncompSz    = 0;
+		picName = "bootup_1080";
+		break;
+	}
 
-                    if (pItem->start + itemSz > flashReadOff)
-                    {
-                        unsigned long rdOff = pItem->start;
-                        unsigned long rdOffAlign = (rdOff >> 11) << 11;//align 2k page for mtd nand, 512 for emmc
-                        rc = store_logic_read(partName, rdOffAlign, itemSz + (rdOff & 0x7ff),(char*)((picLoadAddr>>11)<<11));
-                        if (rc) {
-                            errorP("Fail to read pic at offset 0x%x\n", pItem->start);
-                            return __LINE__;
-                        }
+	pItem = (AmlResItemHead_t *)(pResImgHead + 1);
+	for (itemIndex = 0; itemIndex < pResImgHead->imgItemNum; ++itemIndex, ++pItem) {
+		if (pItem->magic != IH_MAGIC) {
+			errorP("item magic 0x%x != 0x%x\n", pItem->magic, IH_MAGIC);
+			return __LINE__;
+		}
+		if (pItem->start > CONFIG_MAX_PIC_LEN) {
+			errorP("item data offset err 0x%x != 0x%x\n", pItem->start,
+				CONFIG_MAX_PIC_LEN);
+			return __LINE__;
+		}
+		if (pItem->size > CONFIG_MAX_PIC_LEN) {
+			errorP("item data size err 0x%x != 0x%x\n", pItem->size,
+				CONFIG_MAX_PIC_LEN);
+			return __LINE__;
+		}
+		if (!strcmp(picName, pItem->name) || !strcmp(argv[2], pItem->name)) {
+			char env_name[IH_NMLEN * 2];
+			char env_data[IH_NMLEN * 2];
+			unsigned long picLoadAddr = (unsigned long)loadaddr +
+				(unsigned int)pItem->start;
+			unsigned int  itemSz = pItem->size;
+			unsigned long uncompSz = 0;
+
+			if (pItem->start + itemSz > flashReadOff) {
+				unsigned long rdOff = pItem->start;
+				//align 2k page for mtd nand, 512 for emmc
+				unsigned long rdOffAlign = (rdOff >> 11) << 11;
+
+				rc = store_logic_read(partName, rdOffAlign,
+					itemSz + (rdOff & 0x7ff),
+					(char *)((picLoadAddr >> 11) << 11));
+				if (rc) {
+					errorP("Fail to read pic at offset 0x%x\n", pItem->start);
+					return __LINE__;
+				}
 #if CONFIG_PARTITION_ENCRYPTION_LOCAL
-                        part_dec(partName, (u8*)((picLoadAddr>>11)<<11), itemSz + (rdOff & 0x7ff),
-                                (u8*)((picLoadAddr>>11)<<11), itemSz + (rdOff & 0x7ff), rdOffAlign);
+				part_dec(partName, (u8 *)((picLoadAddr >> 11) << 11),
+					itemSz + (rdOff & 0x7ff),
+					(u8 *)((picLoadAddr >> 11) << 11),
+					itemSz + (rdOff & 0x7ff), rdOffAlign);
 #endif
-                        debugP("pic sz 0x%x\n", itemSz);
-                    }
+				debugP("pic sz 0x%x\n", itemSz);
+			}
 
-                    //uncompress supported format
-                    unsigned long uncompLoadaddr = picLoadAddr + itemSz + 7;
-                    uncompLoadaddr &= ~(0x7U);
+			//uncompress supported format
+			unsigned long uncompLoadaddr = picLoadAddr + itemSz + 7;
+
+			uncompLoadaddr &= ~(0x7U);
 			rc = imgread_uncomp_pic((unsigned char *)picLoadAddr, itemSz,
 				(unsigned char *)uncompLoadaddr, CONFIG_MAX_PIC_LEN, &uncompSz);
-                    if (rc) {
-                        errorP("Fail in uncomp pic,rc[%d]\n", rc);
-                        return __LINE__;
-                    }
+			if (rc) {
+				errorP("Fail in uncomp pic,rc[%d]\n", rc);
+				return __LINE__;
+			}
 			if (uncompSz) {
-				itemSz      = uncompSz;
-                        picLoadAddr = uncompLoadaddr;
-                    }
+				itemSz = uncompSz;
+				picLoadAddr = uncompLoadaddr;
+			}
 
-                    sprintf(env_name, "%s_offset", argv[2]);//be bootup_offset ,not bootup_720_offset
-                    sprintf(env_data, "0x%lx", picLoadAddr);
-                    env_set(env_name, env_data);
+			sprintf(env_name, "%s_offset", argv[2]);
+			sprintf(env_data, "0x%lx", picLoadAddr);
+			env_set(env_name, env_data);
 
-                    sprintf(env_name, "%s_size", argv[2]);
-                    sprintf(env_data, "0x%x", itemSz);
-                    env_set(env_name, env_data);
+			sprintf(env_name, "%s_size", argv[2]);
+			sprintf(env_data, "0x%x", itemSz);
+			env_set(env_name, env_data);
 
-                    debugP("end read pic[%s]\n", picName);
-                    return 0;//success
-            }
-    }
+			debugP("end read pic[%s]\n", picName);
+			return 0;//success
+		}
+	}
 
-    return __LINE__;//fail
+	return __LINE__;//fail
 }
 
 static cmd_tbl_t cmd_imgread_sub[] = {
-    U_BOOT_CMD_MKENT(kernel, 4, 0, do_image_read_kernel, "", ""),
-    U_BOOT_CMD_MKENT(dtb,    4, 0, do_image_read_dtb, "", ""),
-    U_BOOT_CMD_MKENT(res,    3, 0, do_image_read_res, "", ""),
-    U_BOOT_CMD_MKENT(pic,    4, 0, do_image_read_pic, "", ""),
-    U_BOOT_CMD_MKENT(part,   5, 0, do_image_read_part, "", ""),
+	U_BOOT_CMD_MKENT(kernel, 4, 0, do_image_read_kernel, "", ""),
+	U_BOOT_CMD_MKENT(dtb,    4, 0, do_image_read_dtb, "", ""),
+	U_BOOT_CMD_MKENT(res,    3, 0, do_image_read_res, "", ""),
+	U_BOOT_CMD_MKENT(pic,    4, 0, do_image_read_pic, "", ""),
+	U_BOOT_CMD_MKENT(part,   5, 0, do_image_read_part, "", ""),
 };
 
 static int do_image_read(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
@@ -1489,32 +1564,33 @@ U_BOOT_CMD(
 //[imgread pic] logo bootup $loadaddr_misc
 static int do_unpackimg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-    unsigned char* loadaddr = 0;
-    const AmlResImgHead_t* pResImgHead = NULL;
-    unsigned itemIndex = 0;
-    const AmlResItemHead_t* pItem = NULL;
+	unsigned char *loadaddr = 0;
+	const AmlResImgHead_t *pResImgHead = NULL;
+	unsigned int itemIndex = 0;
+	const AmlResItemHead_t *pItem = NULL;
 
-    loadaddr = (unsigned char*)simple_strtoul(argc > 1 ? argv[1] : env_get("loadaddr_misc"), NULL, 16);
+	loadaddr = (unsigned char *)simple_strtoul(argc > 1 ? argv[1] :
+		env_get("loadaddr_misc"), NULL, 16);
 
-    pResImgHead = (AmlResImgHead_t*)loadaddr;
+	pResImgHead = (AmlResImgHead_t *)loadaddr;
 	const int totalSz = pResImgHead->imgSz;
 	unsigned long unCompressBuf = (long)loadaddr + totalSz;
 
-    if (img_res_check_log_header(pResImgHead)) {
-        errorP("Logo header err.\n");
-        return __LINE__;
-    }
+	if (img_res_check_log_header(pResImgHead)) {
+		errorP("Logo header err.\n");
+		return __LINE__;
+	}
 
-    pItem = (AmlResItemHead_t*)(pResImgHead + 1);
-    for (itemIndex = 0; itemIndex < pResImgHead->imgItemNum; ++itemIndex, ++pItem)
-    {
-        if (IH_MAGIC != pItem->magic) {
-            errorP("item magic 0x%x != 0x%x\n", pItem->magic, IH_MAGIC);
-            return __LINE__;
-        }
-        char env_name[IH_NMLEN*2];
-        char env_data[IH_NMLEN*2];
-        unsigned long picLoadAddr = (unsigned long)loadaddr + (unsigned)pItem->start;
+	pItem = (AmlResItemHead_t *)(pResImgHead + 1);
+	for (itemIndex = 0; itemIndex < pResImgHead->imgItemNum; ++itemIndex, ++pItem) {
+		if (pItem->magic != IH_MAGIC) {
+			errorP("item magic 0x%x != 0x%x\n", pItem->magic, IH_MAGIC);
+			return __LINE__;
+		}
+		char env_name[IH_NMLEN * 2];
+		char env_data[IH_NMLEN * 2];
+		unsigned long picLoadAddr = (unsigned long)loadaddr +
+			(unsigned int)pItem->start;
 
 		int itemSz = pItem->size;
 		unsigned long uncompSz = 0;
@@ -1528,16 +1604,16 @@ static int do_unpackimg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[
 			itemSz      = uncompSz;
 			unCompressBuf += uncompSz;
 		}
-        sprintf(env_name, "%s_offset", pItem->name);//be bootup_offset ,not bootup_720_offset
-        sprintf(env_data, "0x%lx", picLoadAddr);
-        env_set(env_name, env_data);
+		sprintf(env_name, "%s_offset", pItem->name);
+		sprintf(env_data, "0x%lx", picLoadAddr);
+		env_set(env_name, env_data);
 
-        sprintf(env_name, "%s_size", pItem->name);
+		sprintf(env_name, "%s_size", pItem->name);
 		sprintf(env_data, "0x%x", itemSz);
-        env_set(env_name, env_data);
-    }
+		env_set(env_name, env_data);
+	}
 
-    return 0;//success
+	return 0;//success
 }
 
 U_BOOT_CMD(
@@ -1580,13 +1656,13 @@ U_BOOT_CMD_COMPLETE(
 /*"if ext4load mmc 1:x ${dtb_mem_addr} /recovery/dtb.img; then echo cache dtb.img loaded; fi;"\*/
 static int do_load_logo_from_ext4(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-    if (3 > argc) {
-        errorP("argc(%d) < 3 illegal\n", argc);
-        return CMD_RET_USAGE;
-    }
-    int iRet = 0;
-    const char* ext4Part = argv[1];
-    void* loadaddr = (void*)simple_strtoul(argv[2], NULL, 16);
+	if (argc < 3) {
+		errorP("argc(%d) < 3 illegal\n", argc);
+		return CMD_RET_USAGE;
+	}
+	int iRet = 0;
+	const char *ext4Part = argv[1];
+	void *loadaddr = (void *)simple_strtoul(argv[2], NULL, 16);
 	int autoSelectSlot = 1;//auto detect if need add _a/_b
 
 	if (argc > 3) {
@@ -1616,57 +1692,66 @@ static int do_load_logo_from_ext4(cmd_tbl_t *cmdtp, int flag, int argc, char * c
 		}
 	}
 
-    if (!loadaddr) {
-        errorP("illegal loadaddr %s\n", argv[2]);
-        return CMD_RET_FAILURE;
-    }
+	if (!loadaddr) {
+		errorP("illegal loadaddr %s\n", argv[2]);
+		return CMD_RET_FAILURE;
+	}
 
-    if (BOOT_EMMC != store_get_type() ) {
-        errorP("only support emmc, but store type %d\n", store_get_type() );
-        return CMD_RET_FAILURE;
-    }
+	if (store_get_type() != BOOT_EMMC) {
+		errorP("only support emmc, but store type %d\n", store_get_type());
+		return CMD_RET_FAILURE;
+	}
 
-    env_set("bootLogoPart", ext4Part);
+	env_set("bootLogoPart", ext4Part);
 	if (autoSelectSlot)
 		run_command("if test ${active_slot} != normal; then setenv bootLogoPart ${bootLogoPart}${active_slot}; printenv bootLogoPart; fi", 0);
-    const int partIndex = get_partition_num_by_name(env_get("bootLogoPart"));
-    if (partIndex < 0) {
-        errorP("fail find part index for name(%s)\n", env_get("bootLogoPart")); return CMD_RET_FAILURE;
-    }
-    env_set_hex("logoPart", partIndex);
-    env_set_hex("logoLoadAddr", (ulong)loadaddr);
-    env_set("ext4logoLoadCmd", "ext4load mmc 1:${logoPart} ${logoLoadAddr} ${ext4LogoPath}");
-    iRet = run_command("printenv ext4logoLoadCmd; run ext4logoLoadCmd", 0);
-    if (iRet) {
-        errorP("Fail in load logo cmd\n"); return CMD_RET_FAILURE;
-    }
-    MsgP("load bmp from ext4 part okay\n");
-    run_command("setenv ext4LogoSz ${filesize}", 0);
-    const int bmpSz = env_get_hex("filesize", 0);
-    if (bmpSz <= 0) {
-        errorP("err bmp sz\n"); return CMD_RET_FAILURE;
-    }
+	const int partIndex = get_partition_num_by_name(env_get("bootLogoPart"));
+
+	if (partIndex < 0) {
+		errorP("fail find part index for name(%s)\n", env_get("bootLogoPart"));
+		return CMD_RET_FAILURE;
+	}
+	env_set_hex("logoPart", partIndex);
+	env_set_hex("logoLoadAddr", (ulong)loadaddr);
+	env_set("ext4logoLoadCmd", "ext4load mmc 1:${logoPart} ${logoLoadAddr} ${ext4LogoPath}");
+	iRet = run_command("printenv ext4logoLoadCmd; run ext4logoLoadCmd", 0);
+	if (iRet) {
+		errorP("Fail in load logo cmd\n");
+		return CMD_RET_FAILURE;
+	}
+	MsgP("load bmp from ext4 part okay\n");
+	run_command("setenv ext4LogoSz ${filesize}", 0);
+	const int bmpSz = env_get_hex("filesize", 0);
+
+	if (bmpSz <= 0) {
+		errorP("err bmp sz\n");
+		return CMD_RET_FAILURE;
+	}
 
 #if defined(CONFIG_GZIP)
-    if (memcmp(loadaddr, gzip_magic, sizeof(gzip_magic))) {
-        return CMD_RET_SUCCESS;
-    }
-    MsgP("gunzip bmp logo\n");
-    void* uncompress = (char*)loadaddr + (((bmpSz + 0xf)>>4)<<4);
-    unsigned long uncompSz = 0;
-    iRet = imgread_uncomp_pic((unsigned char*)loadaddr, bmpSz, (unsigned char*)uncompress,
-            CONFIG_MAX_PIC_LEN, (unsigned long*)&uncompSz);
-    if (iRet) {
-        errorP("Fail in uncomp pic,rc[%d]\n", iRet); return __LINE__;
-    }
-    if (uncompSz <= 0) {
-        errorP("Fail uncompress logo bmp\n"); return CMD_RET_FAILURE;
-    }
-    memmove(loadaddr, uncompress, uncompSz);
-    env_set_hex("ext4LogoSz", uncompSz);
+	if (memcmp(loadaddr, gzip_magic, sizeof(gzip_magic)))
+		return CMD_RET_SUCCESS;
+
+	MsgP("gunzip bmp logo\n");
+	void *uncompress = (char *)loadaddr + (((bmpSz + 0xf) >> 4) << 4);
+	unsigned long uncompSz = 0;
+
+	iRet = imgread_uncomp_pic((unsigned char *)loadaddr, bmpSz,
+			(unsigned char *)uncompress,
+			CONFIG_MAX_PIC_LEN, (unsigned long *)&uncompSz);
+	if (iRet) {
+		errorP("Fail in uncomp pic,rc[%d]\n", iRet);
+		return __LINE__;
+	}
+	if (uncompSz <= 0) {
+		errorP("Fail uncompress logo bmp\n");
+		return CMD_RET_FAILURE;
+	}
+	memmove(loadaddr, uncompress, uncompSz);
+	env_set_hex("ext4LogoSz", uncompSz);
 #endif//#if defined(CONFIG_GZIP)
 
-    return CMD_RET_SUCCESS;
+	return CMD_RET_SUCCESS;
 }
 
 U_BOOT_CMD_COMPLETE(
