@@ -103,6 +103,7 @@
 	"fs_type=""rootfstype=ramfs""\0"\
 	"disable_ir=0\0"\
 	"cpuid_env=0\0"\
+	"rc_level=3\0"\
 	"default_governor=performance\0"\
 	"init_ir_wakeup=" IR_WAKEUP "\0"\
 	"upgrade_check_base="\
@@ -132,7 +133,8 @@
 		"androidboot.hardware=amlogic "\
 		"androidboot.production_mode=${production_mode} "\
 		"androidboot.chipid=${cpuid_env} "\
-		"androidboot.ddr_size=${ddr_size} ;"\
+		"androidboot.ddr_size=${ddr_size} "\
+		"androidboot.rc_level=${rc_level} ;"\
 		"\0"\
 	"storeboot_base="\
 		"run get_os_type;"\
