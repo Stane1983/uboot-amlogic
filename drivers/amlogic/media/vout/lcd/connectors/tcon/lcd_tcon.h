@@ -59,12 +59,14 @@ struct lcd_tcon_config_s {
 	unsigned int secure_cfg_size;
 
 	struct lcd_tcon_init_setting_s *init_pre_setting;
+	struct lcd_tcon_init_setting_s *init_post_setting;
 	unsigned int axi_tbl_len;
 	struct lcd_tcon_axi_mem_cfg_s *axi_mem_cfg_tbl;
 	struct lcd_tcon_dma_ops_s *lut_dma_ops;
 
 	void (*tcon_axi_mem_config)(void);
 	void (*tcon_init_table_pre_proc)(unsigned char *table);
+	void (*tcon_init_table_post_proc)(struct aml_lcd_drv_s *pdrv);
 	void (*tcon_lut_post_proc)(struct aml_lcd_drv_s *pdrv, unsigned int lut_type);
 	void (*tcon_global_reset)(struct aml_lcd_drv_s *pdrv);
 	int (*tcon_top_init)(struct aml_lcd_drv_s *pdrv);

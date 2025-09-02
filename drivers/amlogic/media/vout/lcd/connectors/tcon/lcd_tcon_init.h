@@ -48,5 +48,11 @@ static struct lcd_tcon_init_setting_s lcd_tcon_init_pre_setting_fhd[] = {
 	{REG_LCD_TCON_MAX, 0, 0, 0}
 };
 
+static struct lcd_tcon_init_setting_s lcd_tcon_init_post_setting[] = {
+	//addr, val, bit, len
+	{0x207, 1,    4,   1},  //pre_proc_clk enable
+	{REG_LCD_TCON_MAX, 0, 0, 0}
+};
+
 #endif
 
