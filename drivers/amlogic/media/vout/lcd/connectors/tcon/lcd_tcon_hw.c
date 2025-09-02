@@ -230,6 +230,9 @@ static void lcd_tcon_core_reg_set(struct aml_lcd_drv_s *pdrv,
 		}
 	}
 
+	if (tcon_conf && tcon_conf->tcon_init_table_post_proc)
+		tcon_conf->tcon_init_table_post_proc(pdrv);
+
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("%s finish\n", __func__);
 }
@@ -911,7 +914,7 @@ int lcd_tcon_enable_t5(struct aml_lcd_drv_s *pdrv)
 	lcd_tcon_write(TCON_OUT_CH_SEL1, 0xba98);
 
 	//lcd_venc_enable(pdrv, 1);
-	lcd_tcon_setb(0x207, 1, 4, 1);//enable pre_proc_clk
+	//lcd_tcon_setb(0x207, 1, 4, 1);//enable pre_proc_clk, move to init_post_proc
 
 	if (tcon_conf->lut_dma_ops && tcon_conf->lut_dma_ops->init_trans)
 		tcon_conf->lut_dma_ops->init_trans(pdrv, tcon_conf->lut_dma_ops);
@@ -961,7 +964,7 @@ int lcd_tcon_enable_txhd2(struct aml_lcd_drv_s *pdrv)
 	lcd_tcon_write(TCON_OUT_CH_SEL1, 0xba98);
 
 	//lcd_venc_enable(pdrv, 1);
-	lcd_tcon_setb(0x207, 1, 4, 1);//enable pre_proc_clk
+	//lcd_tcon_setb(0x207, 1, 4, 1);//enable pre_proc_clk, move to init_post_proc
 
 	return 0;
 }
