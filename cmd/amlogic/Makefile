@@ -21,6 +21,7 @@ obj-$(CONFIG_AML_STORE_WRAPPER) += store_wrapper.o
 obj-$(CONFIG_AML_IMG_READ) += imgread.o
 obj-$(CONFIG_AML_DEFENV) += defenv_without.o
 obj-$(CONFIG_AML_ROBUST) += bootloader_status.o
+obj-$(CONFIG_AML_PROVISION_UBOOT) += efuse_provision.o
 
 obj-$(CONFIG_AML_REBOOT) += cmd_reboot.o
 obj-$(CONFIG_CMD_RSVMEM) += cmd_rsvmem.o

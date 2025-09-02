@@ -105,6 +105,27 @@ config AML_ROBUST
 	help
 		"envs for robust upgrade like defendkey"
 
+config AML_PROVISION_UBOOT
+	bool "support provision root keys"
+	depends on CMD_EFUSE
+	default n
+	help
+		"support provision root keys in uboot for factory"
+
+config AML_PROVISION_UBOOT_NUM
+	int "which boot parititon will be used to store keys"
+	depends on AML_PROVISION_UBOOT
+	default 2
+	help
+		To select which boot partition to store keys, 1--BOOT0;2--BOOT1
+
+config AML_PROVISION_UBOOT_OFFSET
+	int "offset(in 512 bytes) in boot partition to store keys"
+	depends on AML_PROVISION_UBOOT
+	default 300
+	help
+		Keys will be stored starting with offset Capacity - (offset + 8)*512 (in byte)
+		offset range is between 5 and 504
 config CMD_AUTOSCR
 	bool "legacy autoscr cmd"
 	default y
