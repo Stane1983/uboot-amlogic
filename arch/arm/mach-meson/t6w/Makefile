@@ -20,3 +20,4 @@ obj-$(CONFIG_CMD_HDMIRX) += hdmirx/
 obj-y += avb2_fip_key.o
 obj-y += tvafe.o
 obj-$(CONFIG_CEC_TRIM_VAL) += cec.o
+obj-$(CONFIG_AML_VPP) +=vpp.o

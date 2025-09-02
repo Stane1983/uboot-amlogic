@@ -34,9 +34,6 @@
 #include <malloc.h>
 #include <stdarg.h>
 #include <spinlock.h>
-#if CONFIG_IS_ENABLED(AML_VPP)
-#include <amlogic/media/vpp/vpp.h>
-#endif
 
 #define PM_SUSPEND_ON		(0)
 #define PM_SUSPEND_TO_IDLE	(1)
@@ -48,7 +45,7 @@ extern void aml_system_off(void);
 #define PM_DEBUG
 
 static struct list_head devices;
-bool pm_resume_done;
+bool pm_resume_start;
 static spin_lock_t pm_suspend_lock;
 
 #ifdef PM_DEBUG
@@ -71,27 +68,23 @@ static int test_pm_poweroff(void *dev_info)
 }
 #endif
 
-#if CONFIG_IS_ENABLED(AML_VPP)
-static int vpp_suspend(void *dev_info)
+__weak int vpp_suspend(void *dev_info)
 {
-	printf("%s\n", __func__);
+	printf("[pm]%s\n", __func__);
 	return 0;
 }
 
-static int vpp_resume(void *dev_info)
+__weak int vpp_resume(void *dev_info)
 {
-	printf("%s\n", __func__);
-	vpp_init();
-	run_command("run init_display", 0);
+	printf("[pm] %s\n", __func__);
 	return 0;
 }
 
-static int vpp_poweroff(void *dev_info)
+__weak int vpp_poweroff(void *dev_info)
 {
-	printf("%s\n", __func__);
+	printf("[pm] %s\n", __func__);
 	return 0;
 }
-#endif
 
 #ifdef PM_DEBUG
 struct dev_pm_ops *dev_register_pm(char *name, FUNC_PTR suspend,
@@ -103,9 +96,7 @@ void pm_initialize(void)
 {
 	INIT_LIST_HEAD(&devices);
 	spin_lock_init(&pm_suspend_lock);
-#if CONFIG_IS_ENABLED(AML_VPP)
-	dev_register_pm(name, vpp_suspend, vpp_resume, vpp_poweroff, 2);
-#endif
+	dev_register_pm("vpp_pm", vpp_suspend, vpp_resume, vpp_poweroff, 2);
 #ifdef PM_DEBUG
 	dev_register_pm(name, test_pm_suspend, test_pm_resume, test_pm_poweroff, 0);
 #endif
@@ -133,7 +124,7 @@ void pm_suspend(void)
 
 	cpu_suspend(0);
 
-	pm_resume_done = true;
+	pm_resume_start = true;
 	list_for_each_prev(dentry, &devices) {
 		pm_ops = list_entry(dentry, struct dev_pm_ops, link);
 		if (pm_ops->resume) {
@@ -148,7 +139,7 @@ void pm_suspend(void)
 
 bool get_resume_state(void)
 {
-	return pm_resume_done;
+	return pm_resume_start;
 }
 
 void pm_poweroff(void)
@@ -171,6 +162,16 @@ void pm_poweroff(void)
 	aml_system_off();
 }
 
+/** level (0~99), The smaller the value, means earlier suspend, later resume.
+* vpu vpp lcd , need resume in sequence,or else maybe flashing green screen.
+* vpp mmc , vpp need resume later than mmc.
+*
+* eth/usb/...		0
+* lcd_drv0_pm		1
+* vpp_pm		2
+* vpu_drv_pm		3
+* meson_mmc_pm		99
+**/
 struct dev_pm_ops *dev_register_pm(char *name, FUNC_PTR suspend,
 			FUNC_PTR resume, FUNC_PTR poweroff, int level, ...)
 {

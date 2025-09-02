@@ -15,3 +15,4 @@ obj-y += aml_efuse.o
 obj-$(CONFIG_SECURE_POWER_CONTROL) += pwrc.o
 obj-$(CONFIG_CMD_HDMIRX) += hdmirx/
 obj-y += avb2_fip_key.o
+obj-$(CONFIG_AML_VPP) +=vpp.o

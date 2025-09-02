@@ -1838,7 +1838,7 @@ static int meson_mmc_probe(struct udevice *dev)
 				&meson_mmc_suspend,
 				&meson_mmc_resume,
 				&meson_mmc_poweroff,
-				0,
+				99,
 				host);
 
 	printf("[%s]%s: Controller probe success!\n",
