@@ -16,6 +16,15 @@
 
 void mdelay(unsigned long n);
 
+static inline uint32_t count_bit(uint32_t n)
+{
+	uint32_t c = 0;
+
+	for (; n; ++c)
+		n &= n - 1;
+	return c;
+}
+
 static inline unsigned long long dptx_div(unsigned long long num, uint32_t den)
 {
 	unsigned long long ret = num;
@@ -133,6 +142,10 @@ void dptx_if_path_reset(struct dptx_drv_s *dptx, uint8_t port, uint8_t mask);
 void dptx_if_set_lane_cfg(struct dptx_drv_s *dptx, uint8_t port);
 void dptx_if_set_phy_cfg(struct dptx_drv_s *dptx, uint8_t port, uint8_t lane_mask);
 void dptx_if_transmitter_init(struct dptx_drv_s *dptx, uint8_t port);
+
+#define DPTX_IP_TRANSMITTER_OUTPUT_OFF              0
+#define DPTX_IP_TRANSMITTER_OUTPUT_MAIN_STREAM_OFF  1
+#define DPTX_IP_TRANSMITTER_OUTPUT_ON               2
 void dptx_if_transmitter_output(struct dptx_drv_s *dptx, uint8_t port, uint8_t en);
 uint8_t dptx_if_get_hpd_level(struct dptx_drv_s *dptx, uint8_t port);
 uint16_t dptx_if_get_hpd_irq(struct dptx_drv_s *dptx, uint8_t port);
@@ -149,6 +162,8 @@ void dptx_if_set_hpd_interrupt_mask(struct dptx_drv_s *dptx, uint8_t port, u8 ma
 void dptx_if_scramble_reset_set(struct dptx_drv_s *dptx, uint8_t port, u8 sr_type);
 void dptx_if_PSR1_ctrl(struct dptx_drv_s *dptx, uint8_t port, uint8_t flag);
 void dptx_if_PSR2_ctrl(struct dptx_drv_s *dptx, uint8_t port, uint8_t flag);
+void dptx_if_reg_store(struct dptx_drv_s *dptx, uint8_t port, uint32_t d0, uint32_t d1);
+void dptx_if_reg_store_get(struct dptx_drv_s *dptx, uint8_t port, uint32_t *d0, uint32_t *d1);
 
 void dptx_if_IP_probe(struct dptx_drv_s *dptx);
 /* IP-interface END */
@@ -210,7 +225,7 @@ void dptx_user_set_vmode(struct dptx_drv_s *dptx, uint8_t vmd_idx);
 extern struct dptx_detail_timing_s DPTX_SafeMode_640x480_timing;
 extern struct dptx_vmode_s DPTX_SafeMode_640x480_vmode;
 
-void __dptx_update_ctrl_bootargs(struct dptx_drv_s *dptx);
+void __dptx_update_ctrl_store_args(struct dptx_drv_s *dptx);
 
 void dptx_act_timing_to_venc_config(struct dptx_drv_s *dptx);
 

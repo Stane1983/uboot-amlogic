@@ -78,6 +78,7 @@ struct dptx_detail_timing_s {
 
 	unsigned int sync_duration_num;  //driver calculate for internal usage
 	unsigned int sync_duration_den;  //driver calculate for internal usage
+	unsigned short vmode_add_fr[8];
 };
 
 #endif /* AMLOGIC_DISPLAYPORT_TX_TIMING_H */

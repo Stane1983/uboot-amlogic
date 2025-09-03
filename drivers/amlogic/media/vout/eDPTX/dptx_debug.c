@@ -25,9 +25,9 @@ static void dptx_act_timing_info_print(struct dptx_drv_s *dptx)
 		dptx->act_timing.v_period,
 		dptx->act_timing.v_act,
 		dptx->act_timing.v_blank,
-		dptx->act_timing.v_fp,
-		dptx->act_timing.v_pw,
 		dptx->act_timing.v_bp,
+		dptx->act_timing.v_pw,
+		dptx->act_timing.v_fp,
 		dptx->act_timing.pclk,
 		dptx->act_timing.fr1000 / 1000, dptx->act_timing.fr1000 % 1000);
 	printf("\n");

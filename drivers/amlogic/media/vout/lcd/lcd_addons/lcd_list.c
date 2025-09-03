@@ -70,10 +70,48 @@ static unsigned char interface_info_add(char *str, int node_ofst, unsigned char 
 {
 	char *propdata;
 	unsigned char c_pos = 0;
-	unsigned short tmp;
+	unsigned short tmp = 0;
 
 	switch (port_type) {
 	case LCD_EDP:
+#ifdef CONFIG_AML_eDPTX
+		propdata = (char *)fdt_getprop(dt_addr, node_ofst, "HPD-ignore", NULL);
+		if (propdata)
+			tmp = (unsigned char)be32_to_cpup((u32 *)propdata);
+		if (tmp)
+			c_pos = snprintf(str, IF_LEN, "HPD-dy:%hums, ", tmp);
+		else
+			c_pos = snprintf(str, IF_LEN, "HPD en, ");
+
+		propdata = (char *)fdt_getprop(dt_addr, node_ofst, "assigned-port-count", NULL);
+		if (propdata) {
+			tmp = (unsigned char)be32_to_cpup((u32 *)propdata);
+			if (tmp)
+				c_pos = snprintf(str, IF_LEN, "%u port, ", tmp);
+		}
+
+		propdata = (char *)fdt_getprop(dt_addr, node_ofst, "assigned-lane-count", NULL);
+		if (propdata) {
+			tmp = (unsigned char)be32_to_cpup((u32 *)propdata);
+			if (tmp)
+				c_pos = snprintf(str, IF_LEN, "%u lane, ", tmp);
+		}
+
+		propdata = (char *)fdt_getprop(dt_addr, node_ofst, "assigned-link-rate", NULL);
+		if (propdata) {
+			tmp = (unsigned char)be32_to_cpup((u32 *)propdata);
+			if (tmp)
+				c_pos += snprintf(str + c_pos, IF_LEN - c_pos, "%u.%-2uG, ",
+					tmp * 27 / 10, tmp * 27 % 10);
+		}
+
+		propdata = (char *)fdt_getprop(dt_addr, node_ofst, "od", NULL);
+		if (propdata) {
+			tmp = (unsigned char)be32_to_cpup((u32 *)propdata);
+			if (tmp)
+				c_pos += snprintf(str + c_pos, IF_LEN - c_pos, "OD-GPIO, ");
+		}
+#else
 		propdata = (char *)fdt_getprop(dt_addr, node_ofst, "edp_attr", NULL);
 		if (!propdata)
 			return 0;
@@ -99,6 +137,7 @@ static unsigned char interface_info_add(char *str, int node_ofst, unsigned char 
 
 		tmp = (unsigned char)be32_to_cpup(((u32 *)propdata) + 3);
 		c_pos += snprintf(str + c_pos, IF_LEN - c_pos, "EDID en:%d", tmp);
+#endif
 		break;
 	case LCD_MIPI:
 		propdata = (char *)fdt_getprop(dt_addr, node_ofst, "mipi_attr", NULL);
@@ -235,8 +274,8 @@ static void lcd_list_dts(unsigned char drv_idx, int parent_ofst)
 	panel_type = env_get(snode);
 
 	// printf("\n%s panel list:\n", snode);
-	printf("\nlcd%u_type   | %-*s| port  | %-*s| resolution\n",
-		drv_idx, 20, "name", 56, "interface info");
+	printf("\nlcd%u type   | %-*s| Port  | %-*s| Resolution\n",
+		drv_idx, 20, "name", 56, "Interface Info");
 
 	fdt_for_each_subnode(node_ofst, dt_addr, parent_ofst) {
 		c_pos = 0;
@@ -328,6 +367,106 @@ static void lcd_list_dts(unsigned char drv_idx, int parent_ofst)
 	printf("lcd%u as connector %s\n", drv_idx, line_buf);
 }
 
+static void eDPTX_dtimg_info_add(char *dt_addr, int node_ofst)
+{
+	unsigned char etmg_idx, c_bit;//, tmp;
+	char *propdata, snode[20];
+	unsigned int h_active, v_active, dft_fr;//, frame_rate_max, frame_rate_min;
+	char cstr[128];
+	// unsigned char c_pos = 0;
+
+	for (etmg_idx = 1; etmg_idx < 4; etmg_idx++) {
+		memset(snode, 0, 32 * sizeof(char));
+		sprintf(snode, "timing-%hu", etmg_idx);
+		propdata = (char *)fdt_getprop(dt_addr, node_ofst, snode, NULL);
+		if (!propdata)
+			break;
+		memset(cstr, 0, 128 * sizeof(char));
+
+		h_active = be32_to_cpup(((u32 *)propdata) + 1);
+		v_active = be32_to_cpup(((u32 *)propdata) + 6);
+		c_bit = be32_to_cpup(((u32 *)propdata) + 10);
+		dft_fr = be32_to_cpup(((u32 *)propdata) + 11);
+
+		//c_pos = snprintf(cstr, 128,
+		//	"%-4hu*%-4hu@%3uHz %ubit ", h_active, v_active, dft_fr, c_bit);
+		snprintf(cstr, 128,
+			"%-4hu*%-4hu@%3uHz %ubit ", h_active, v_active, dft_fr, c_bit);
+		/*
+		 *memset(snode, 0, 32 * sizeof(char));
+		 *sprintf(snode, "timing-%hu-range", etmg_idx);
+		 *propdata = (char *)fdt_getprop(dt_addr, node_ofst, snode, NULL);
+		 *if (propdata) {
+		 *	frame_rate_min = be32_to_cpup(((u32 *)propdata) + 0);
+		 *	frame_rate_max = be32_to_cpup(((u32 *)propdata) + 1);
+		 *	c_pos += snprintf(cstr + c_pos, 128, "(%hu~%huHz)",
+		 *		frame_rate_min, frame_rate_max);
+		 *}
+		 */
+		printf("%102s%s\n", "", cstr);
+	}
+}
+
+static void eDP_list_dts(int parent_ofst)
+{
+	int node_ofst;
+	char *propdata, *node_name, *panel_type, *panel1_type, c_buf[256], line_buf[256];
+	unsigned char c_pos, c_bit;
+	unsigned int h_active, v_active, dft_fr, frame_rate_max, frame_rate_min;
+
+	panel_type = env_get("panel_type");
+	panel1_type = env_get("panel1_type");
+
+	// printf("\n%s panel list:\n", snode);
+	printf("\neDP type    | %-*s| Port  | %-*s| Resolution\n",
+		20, "name", 56, "Interface Info");
+
+	fdt_for_each_subnode(node_ofst, dt_addr, parent_ofst) {
+		c_pos = 0;
+		memset(c_buf, 0, 256 * sizeof(char));
+
+		node_name = (char *)fdt_get_name(dt_addr, node_ofst, NULL);
+
+		propdata = (char *)fdt_getprop(dt_addr, node_ofst, "model_name", NULL);
+		if (!propdata)
+			continue;
+
+		if (panel_type && !strcmp(panel_type, node_name))
+			c_pos = snprintf(c_buf, 256, "* %-10s| %-20s|", node_name, propdata);
+		else if (panel1_type && !strcmp(panel1_type, node_name))
+			c_pos = snprintf(c_buf, 256, "* %-10s| %-20s|", node_name, propdata);
+		else
+			c_pos = snprintf(c_buf, 256, "  %-10s| %-20s|", node_name, propdata);
+
+		c_pos += snprintf(c_buf + c_pos, 256 - c_pos, " eDP   | ");
+
+		c_pos += interface_info_add(c_buf + c_pos, node_ofst, LCD_EDP);
+		memset(line_buf, 0, 256 * sizeof(char));
+		c_pos = snprintf(line_buf, 256, "%-100s| ", c_buf);
+
+		propdata = (char *)fdt_getprop(dt_addr, node_ofst, "timing-0", NULL);
+		if (propdata) {
+			h_active = be32_to_cpup(((u32 *)propdata) + 1);
+			v_active = be32_to_cpup(((u32 *)propdata) + 6);
+			c_bit = be32_to_cpup(((u32 *)propdata) + 10);
+			dft_fr = be32_to_cpup(((u32 *)propdata) + 11);
+			c_pos += snprintf(line_buf + c_pos, 256 - c_pos, "%-4hu*%-4hu@%3uHz %ubit ",
+				h_active, v_active, dft_fr, c_bit);
+			propdata = (char *)fdt_getprop(dt_addr, node_ofst, "timing-0-range", NULL);
+			if (propdata) {
+				frame_rate_min = be32_to_cpup(((u32 *)propdata) + 0);
+				frame_rate_max = be32_to_cpup(((u32 *)propdata) + 1);
+				c_pos += snprintf(line_buf + c_pos, 256 - c_pos, "(%hu~%huHz)",
+					frame_rate_min, frame_rate_max);
+			}
+		}
+
+		printf("%s\n", line_buf);
+
+		eDPTX_dtimg_info_add(dt_addr, node_ofst);
+	}
+}
+
 void aml_lcd_list(void)
 {
 #ifndef CONFIG_OF_LIBFDT
@@ -359,12 +498,16 @@ void aml_lcd_list(void)
 			lcd_list_dts(i, parent_ofst);
 		}
 	}
+	sprintf(snode, "/eDP_Groups");
+	parent_ofst = fdt_path_offset(dt_addr, snode);
+	eDP_list_dts(parent_ofst);
+	printf("\n");
 #endif
 }
 
 static unsigned char lcd_set_dts(uint8_t drv_idx, char *lcd_type_name)
 {
-	char snode[8] = "/lcd\0\0";
+	char snode[12] = "/lcd\0\0";
 	char *propdata, *node_name, target_connector[12], *env_connector;
 	int node_ofst;
 	uint8_t i, lcd_type = LCD_TYPE_MAX;
@@ -382,6 +525,19 @@ static unsigned char lcd_set_dts(uint8_t drv_idx, char *lcd_type_name)
 			continue;
 		lcd_type = lcd_type_str_to_type(propdata);
 		break;
+	}
+
+	sprintf(snode, "/eDP_Groups");
+
+	if (lcd_type == LCD_TYPE_MAX) {
+		fdt_for_each_subnode(node_ofst, dt_addr, fdt_path_offset(dt_addr, snode)) {
+			node_name = (char *)fdt_get_name(dt_addr, node_ofst, NULL);
+
+			if (strcmp(node_name, lcd_type_name))
+				continue;
+			lcd_type = LCD_EDP;
+			break;
+		}
 	}
 
 	if (lcd_type == LCD_TYPE_MAX) {
@@ -413,10 +569,12 @@ void aml_lcd_set(uint8_t drv_idx, char *lcd_type_name)
 #ifndef CONFIG_OF_LIBFDT
 	printf("LIBFDT not available\n");
 #else
-	int parent_ofst;
-	char *propdata, cmd[64], snode[16] = "/lcd\0\0";
-	unsigned char key_valid;
+	//int parent_ofst;
+	// char *propdata;
+	char cmd[64], snode[16] = "/lcd\0\0";
+	//unsigned char key_valid;
 
+	/*
 	if (drv_idx)
 		snode[4] = '0' + drv_idx;
 
@@ -443,6 +601,15 @@ void aml_lcd_set(uint8_t drv_idx, char *lcd_type_name)
 		else
 			sprintf(snode, "panel%d_type", drv_idx);
 	}
+	*/
+
+	if (lcd_set_dts(drv_idx, lcd_type_name))
+		return;
+
+	if (drv_idx == 0)
+		sprintf(snode, "panel_type");
+	else
+		sprintf(snode, "panel%d_type", drv_idx);
 	sprintf(cmd, "setenv %s %s", snode, lcd_type_name);
 	run_command(cmd, 0);
 	sprintf(cmd, "update_env_part -p -f %s", snode);

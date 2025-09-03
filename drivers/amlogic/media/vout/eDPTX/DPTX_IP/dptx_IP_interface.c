@@ -123,6 +123,18 @@ void dptx_if_PSR2_ctrl(struct dptx_drv_s *dptx, uint8_t port, uint8_t flag)
 		((struct dptx_if_ctrl_s *)dptx->if_ctrls)->PSR2_SDP_en(dptx, port, flag);
 }
 
+void dptx_if_reg_store(struct dptx_drv_s *dptx, uint8_t port, uint32_t d0, uint32_t d1)
+{
+	if (likely(((struct dptx_if_ctrl_s *)dptx->if_ctrls)->reg_store))
+		((struct dptx_if_ctrl_s *)dptx->if_ctrls)->reg_store(dptx, port, d0, d1);
+}
+
+void dptx_if_reg_store_get(struct dptx_drv_s *dptx, uint8_t port, uint32_t *d0, uint32_t *d1)
+{
+	if (likely(((struct dptx_if_ctrl_s *)dptx->if_ctrls)->reg_store_get))
+		((struct dptx_if_ctrl_s *)dptx->if_ctrls)->reg_store_get(dptx, port, d0, d1);
+}
+
 void dptx_if_IP_probe(struct dptx_drv_s *dptx)
 {
 	switch (dptx->data->chip_type) {

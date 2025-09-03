@@ -172,6 +172,8 @@ static uint8_t dptx_module_prepare(struct dptx_drv_s *dptx, char *mode)
 	if ((dptx->status & DPTX_STA_DRV_READY) == 0)
 		dptx_driver_ready(dptx);
 
+	return 0; // RGB
+	/*
 	dptx_drv_check_HPD(dptx);
 
 	if (dptx->status & DPTX_STA_HPD_HIGH)
@@ -203,6 +205,7 @@ static uint8_t dptx_module_prepare(struct dptx_drv_s *dptx, char *mode)
 		}
 	}
 	return 0;
+	*/
 }
 
 static uint8_t dptx_module_enable(struct dptx_drv_s *dptx, char *mode)
@@ -296,39 +299,143 @@ static struct dptx_drv_s *dptx_driver_add(u8 index)
 	return dptx;
 }
 
-static uint8_t dptx_config_load_from_dts(char *dt_addr, struct dptx_drv_s *dptx)
+static uint8_t dptx_panel_config_load_timing(char *dt_addr,
+				int parent_offset, struct dptx_drv_s *dptx)
+{
+	char snode[24];
+	unsigned char i, j;
+	unsigned int tmp;
+	int lenp;
+	char *propdata;
+
+	for (i = 0; i < DPTX_DRV_TIMING_MAX; i++) {
+		memset(snode, 0, 24 * sizeof(char));
+		sprintf(snode, "timing-%u", i);
+		propdata = (char *)fdt_getprop(dt_addr, parent_offset, snode, NULL);
+		if (!propdata)
+			break;
+
+		dptx->sink.timing[i].h_period = (u16)be32_to_cpup(((u32 *)propdata) + 0);
+		dptx->sink.timing[i].h_act    = (u16)be32_to_cpup(((u32 *)propdata) + 1);
+		dptx->sink.timing[i].h_pw     = (u16)be32_to_cpup(((u32 *)propdata) + 2);
+		dptx->sink.timing[i].h_bp     = (u16)be32_to_cpup(((u32 *)propdata) + 3);
+		dptx->sink.timing[i].ctrl    |= (u16)be32_to_cpup(((u32 *)propdata) + 4) ?
+							CTRL_HSYNC_POS : 0;
+		dptx->sink.timing[i].v_period = (u16)be32_to_cpup(((u32 *)propdata) + 5);
+		dptx->sink.timing[i].v_act    = (u16)be32_to_cpup(((u32 *)propdata) + 6);
+		dptx->sink.timing[i].v_pw     = (u16)be32_to_cpup(((u32 *)propdata) + 7);
+		dptx->sink.timing[i].v_bp     = (u16)be32_to_cpup(((u32 *)propdata) + 8);
+		dptx->sink.timing[i].ctrl    |= (u16)be32_to_cpup(((u32 *)propdata) + 9) ?
+							CTRL_VSYNC_POS : 0;
+		dptx->sink.timing[i].h_blank  =
+			dptx->sink.timing[i].h_period - dptx->sink.timing[i].h_act;
+		dptx->sink.timing[i].v_blank  =
+			dptx->sink.timing[i].v_period - dptx->sink.timing[i].v_act;
+		dptx->sink.timing[i].h_fp = dptx->sink.timing[i].h_blank -
+			(dptx->sink.timing[i].h_pw + dptx->sink.timing[i].h_bp);
+		dptx->sink.timing[i].v_fp = dptx->sink.timing[i].v_blank -
+			(dptx->sink.timing[i].v_pw + dptx->sink.timing[i].v_bp);
+
+		tmp = (u16)be32_to_cpup(((u32 *)propdata) + 10);
+		if (tmp == 30)
+			dptx->sink.timing[i].cfmt = DPTX_CFMT_RGB_10bit;
+		else if (tmp == 18)
+			dptx->sink.timing[i].cfmt = DPTX_CFMT_RGB_6bit;
+		else if (tmp == 12)
+			dptx->sink.timing[i].cfmt = DPTX_CFMT_Y_only_12bit;
+		else if (tmp == 10)
+			dptx->sink.timing[i].cfmt = DPTX_CFMT_Y_only_10bit;
+		else if (tmp == 8)
+			dptx->sink.timing[i].cfmt = DPTX_CFMT_Y_only_8bit;
+		else
+			dptx->sink.timing[i].cfmt = DPTX_CFMT_RGB_8bit;
+
+		tmp = (u16)be32_to_cpup(((u32 *)propdata) + 11);
+		dptx->sink.timing[i].fr1000 =  tmp * 1000L;
+
+		tmp = dptx->sink.timing[i].v_period * dptx->sink.timing[i].h_period * tmp;
+		dptx->sink.timing[i].pclk = tmp;
+
+		DPTX_PR(dptx, "Panel Config add Timing[%u]: %ux%u@%uhz", i,
+			dptx->sink.timing[i].h_act, dptx->sink.timing[i].v_act,
+			dptx->sink.timing[i].fr1000 / 1000);
+		dptx->sink.dt_cnt++;
+
+		memset(snode, 0, 24 * sizeof(char));
+		sprintf(snode, "timing-%u-fr", i);
+		propdata = (char *)fdt_getprop(dt_addr, parent_offset, snode, &lenp);
+		if (propdata) {
+			// DPTX_PR(dptx, "lenp=%d", lenp);
+			for (j = 0; j < (lenp / sizeof(u32)); j++) {
+				if (dptx->sink.timing[i].vmode_add_fr[j] == 0) {
+					dptx->sink.timing[i].vmode_add_fr[j] =
+						(u16)be32_to_cpup(((u32 *)propdata) + j);
+					DPTX_DBG(dptx, "Panel Config Timing[%u] add fr[%u]=%u",
+						i, j, dptx->sink.timing[i].vmode_add_fr[j]);
+					break;
+				}
+			}
+		}
+		memset(snode, 0, 24 * sizeof(char));
+		sprintf(snode, "timing-%u-range", i);
+		propdata = (char *)fdt_getprop(dt_addr, parent_offset, snode, NULL);
+		if (propdata) {
+			dptx->sink.timing[i].frame_rate_range[0] =
+				(u16)be32_to_cpup(((u32 *)propdata) + 0);
+			dptx->sink.timing[i].frame_rate_range[1] =
+				(u16)be32_to_cpup(((u32 *)propdata) + 1);
+			DPTX_DBG(dptx, "Panel Config Timing[%u] range=[%u~%u]", i,
+				dptx->sink.timing[i].frame_rate_range[0],
+				dptx->sink.timing[i].frame_rate_range[1]);
+		}
+
+		memset(snode, 0, 24 * sizeof(char));
+		sprintf(snode, "timing-%u-range-limit", i);
+		propdata = (char *)fdt_getprop(dt_addr, parent_offset, snode, &lenp);
+		if (propdata) {
+			// DPTX_PR(dptx, "lenp=%d", lenp);
+			dptx->sink.timing[i].v_period_range[0] =
+				(u16)be32_to_cpup(((u32 *)propdata) + 2);
+			dptx->sink.timing[i].v_period_range[1] =
+				(u16)be32_to_cpup(((u32 *)propdata) + 3);
+			dptx->sink.timing[i].pclk_range[0] =
+				(u16)be32_to_cpup(((u32 *)propdata) + 4);
+			dptx->sink.timing[i].pclk_range[1] =
+				(u16)be32_to_cpup(((u32 *)propdata) + 5);
+			DPTX_DBG(dptx, "Panel Config Timing[%u] limit vl=[%u~%u] pclk=[%u~%u]", i,
+				dptx->sink.timing[i].v_period_range[0],
+				dptx->sink.timing[i].v_period_range[1],
+				dptx->sink.timing[i].pclk_range[0],
+				dptx->sink.timing[i].pclk_range[1]);
+		}
+	}
+	return i;
+}
+
+static uint8_t dptx_panel_config_load_from_dts(char *dt_addr, struct dptx_drv_s *dptx)
 {
 #ifdef CONFIG_OF_LIBFDT
 	int parent_offset;
-	char *propdata, snode[20];
+	char *propdata;
 	uint8_t i;
+	char *panel_type, str[15],  propname[30];
 
-	sprintf(snode, "/eDPTX%u", dptx->idx);
-	parent_offset = fdt_path_offset(dt_addr, snode);
+	if (dptx->idx == 0)
+		sprintf(str, "panel_type");
+	else
+		sprintf(str, "panel%d_type", dptx->idx);
+	panel_type = env_get(str);
+	if (!panel_type) {
+		DPTX_PR(dptx, "no %s exist", str);
+		return 1;
+	}
+
+	snprintf(propname, 30, "/eDP_Groups/%s", panel_type);
+	parent_offset = fdt_path_offset(dt_addr, propname);
 	if (parent_offset < 0) {
-		DPTX_ERR(dptx, "load %s node: %s", snode, fdt_strerror(parent_offset));
-		return -1;
-	}
-
-	DPTX_DBG(dptx, "load %s node", snode);
-
-	/* check lcd status enable or not */
-	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "status", NULL);
-	if (!propdata) {
-		DPTX_ERR(dptx, "failed to get status, default disable");
-		return -1;
-	}
-	if (strcmp(propdata, "okay")) {
-		DPTX_PR(dptx, "status disabled, exit");
-		return -1;
-	}
-
-	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "device_name", NULL);
-	if (propdata && (strlen(propdata) != 0)) {
-		strncpy(dptx->setting.dev_name, propdata, 31);
-		DPTX_PR(dptx, "device name: %s", dptx->setting.dev_name);
-	} else {
-		strcpy(dptx->setting.dev_name, "Amlogic eDPTX");
+		DPTX_PR(dptx, "%s: not find %s node: %s",
+			__func__, propname, fdt_strerror(parent_offset));
+		return 1;
 	}
 
 	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "HPD-ignore", NULL);
@@ -336,24 +443,6 @@ static uint8_t dptx_config_load_from_dts(char *dt_addr, struct dptx_drv_s *dptx)
 		dptx->setting.user_hpd_ignore = (u16)be32_to_cpup((u32 *)propdata);
 		if (dptx->setting.user_hpd_ignore)
 			DPTX_PR(dptx, "HPD ignore: %ums", dptx->setting.user_hpd_ignore);
-	}
-
-	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "edptx_vcc-gpio-name", NULL);
-	if (propdata && (strlen(propdata) != 0)) {
-		strncpy(dptx->PWR_gpio_name, propdata, (DPTX_GPIO_NAME_MAX - 1));
-		DPTX_PR(dptx, "PWR GPIO: %s", dptx->PWR_gpio_name);
-	} else {
-		strcpy(dptx->PWR_gpio_name, "invalid");
-	}
-
-	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "drive-strength-lut", NULL);
-	if (propdata) {
-		for (i = 0; i < 30; i++) {
-			dptx->phy_cfg.level_to_phy_lut[i / 10][i % 3] =
-				(u16)be32_to_cpup(((u32 *)propdata) + i);
-		}
-	} else {
-		DPTX_ERR(dptx, "DPCD level to PHY LUT not set");
 	}
 
 	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "assigned-link-rate", NULL);
@@ -416,7 +505,84 @@ static uint8_t dptx_config_load_from_dts(char *dt_addr, struct dptx_drv_s *dptx)
 		dptx->setting.user_disable_PSR = 0;
 	}
 
-	dptx->setting.user_color_format = 0xff;
+	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "assigned-preset-timing", NULL);
+	if (propdata) {
+		dptx->setting.user_disable_PSR = (u16)be32_to_cpup((u32 *)propdata);
+		if (dptx->setting.user_disable_PSR)
+			DPTX_PR(dptx, "assigned preset timing: %u", dptx->setting.user_disable_PSR);
+	} else {
+		dptx->setting.user_disable_PSR = 0;
+	}
+	dptx_panel_config_load_timing(dt_addr, parent_offset, dptx);
+
+	return 0;
+#endif
+	return 1;
+}
+
+static uint8_t dptx_config_load_from_dts(char *dt_addr, struct dptx_drv_s *dptx)
+{
+#ifdef CONFIG_OF_LIBFDT
+	int parent_offset;
+	char *propdata, snode[20];
+	uint8_t i;
+
+	sprintf(snode, "/eDPTX%u", dptx->idx);
+	parent_offset = fdt_path_offset(dt_addr, snode);
+	if (parent_offset < 0) {
+		DPTX_ERR(dptx, "load %s node: %s", snode, fdt_strerror(parent_offset));
+		return -1;
+	}
+
+	DPTX_DBG(dptx, "load %s node", snode);
+
+	/* check lcd status enable or not */
+	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "status", NULL);
+	if (!propdata) {
+		DPTX_ERR(dptx, "failed to get status, default disable");
+		return -1;
+	}
+	if (strcmp(propdata, "okay")) {
+		DPTX_PR(dptx, "status disabled, exit");
+		return -1;
+	}
+
+	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "device_name", NULL);
+	if (propdata && (strlen(propdata) != 0)) {
+		strncpy(dptx->setting.dev_name, propdata, 31);
+		DPTX_PR(dptx, "device name: %s", dptx->setting.dev_name);
+	} else {
+		strcpy(dptx->setting.dev_name, "Amlogic eDPTX");
+	}
+
+	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "edptx_vcc-gpio-name", NULL);
+	if (propdata && (strlen(propdata) != 0)) {
+		strncpy(dptx->PWR_gpio_name, propdata, (DPTX_GPIO_NAME_MAX - 1));
+		DPTX_PR(dptx, "PWR GPIO: %s", dptx->PWR_gpio_name);
+	} else {
+		strcpy(dptx->PWR_gpio_name, "invalid");
+	}
+
+	propdata = (char *)fdt_getprop(dt_addr, parent_offset, "drive-strength-lut", NULL);
+	if (propdata) {
+		for (i = 0; i < 30; i++) {
+			dptx->phy_cfg.level_to_phy_lut[i / 10][i % 3] =
+				(u16)be32_to_cpup(((u32 *)propdata) + i);
+		}
+	} else {
+		DPTX_ERR(dptx, "DPCD level to PHY LUT not set");
+	}
+
+	i = dptx_panel_config_load_from_dts(dt_addr, dptx);
+	if (i) {
+		DPTX_PR(dptx, "not loading panel config");
+		dptx->setting.user_link_rate = 0;
+		dptx->setting.user_lane_count = 0;
+		dptx->sink.port_mask = 0x1;
+		dptx->setting.user_vmode_sel = 0;
+		dptx->setting.user_disable_PSR = 0;
+		dptx->setting.user_color_format = 0xff;
+	}
 #endif
 	return 0;
 }
@@ -514,7 +680,7 @@ static int dptx_config_probe(void)
 	struct dptx_drv_s *dptx;
 	unsigned char i;
 	int ret;
-	char ctrl_name[] = "dptx0_ctrl";
+	// char ctrl_name[] = "dptx0_ctrl";
 
 #ifdef CONFIG_DTB_MEM_ADDR
 	g_dt_addr = (char *)CONFIG_DTB_MEM_ADDR;
@@ -542,8 +708,8 @@ static int dptx_config_probe(void)
 		dptx_user_env_load(dptx);
 		dptx_clk_config_probe(dptx);
 		dptx_if_IP_probe(dptx);
-		ctrl_name[4] = '0' + dptx->idx;
-		env_set(ctrl_name, NULL);
+		// ctrl_name[4] = '0' + dptx->idx;
+		// env_set(ctrl_name, NULL);
 		dptx->status = DPTX_STA_PROBE_DONE;
 	}
 
@@ -564,6 +730,36 @@ static void dptx_power_domain_off(struct dptx_chip_data_s *dptx_data_p)
 	if (dptx_print_level >= LOG_I)
 		DPTXPR(0, LOG_I, "power domain off");
 #endif
+}
+
+static void __dptx_update_ctrl_bootargs(void)
+{
+	uint32_t val2 = 0, i, temp;
+	char env_str[24];
+	char ctrl_str[64];
+
+	val2 |= dptx_print_level & 0x3;
+
+	for (i = 0; i < DPTX_MAX_DRV; i++) {
+		sprintf(env_str, "dptx%u_hpd_ignore", i);
+		val2 |= env_get_ulong(env_str, 10, 0) ? (1 << (28 + i)) : 0;
+	}
+
+	for (i = 0; i < DPTX_MAX_DRV; i++) {
+		sprintf(env_str, "dptx%u_port_count", i);
+		if (env_get_ulong(env_str, 10, 0) == 4)
+			temp = 3;
+		else if (env_get_ulong(env_str, 10, 0) == 2)
+			temp = 2;
+		else if (env_get_ulong(env_str, 10, 0) == 1)
+			temp = 1;
+		else
+			temp = 0;
+		val2 |= temp << (20 + 2 * i);
+	}
+
+	sprintf(ctrl_str, "0x%x,%s,%s", val2, env_get("panel_type"), env_get("panel1_type"));
+	env_set("eDP_ctrl", ctrl_str);
 }
 
 int dptx_probe(void)
@@ -587,6 +783,7 @@ int dptx_probe(void)
 
 	dptx_power_domain_off(dptx_dev_data);
 
+	__dptx_update_ctrl_bootargs();
 	return 0;
 }
 

@@ -153,7 +153,7 @@ void dptx_user_set_vmode(struct dptx_drv_s *dptx, uint8_t vmd_idx)
 	dptx_vmode_apply_to_act_timing(dptx, dp_vmode);
 	dptx_act_timing_apply(dptx);
 
-	__dptx_update_ctrl_bootargs(dptx);
+	__dptx_update_ctrl_store_args(dptx);
 
 	for (port = 0; port < 4; port++) {
 		if (!dptx->sink.link[port])

@@ -174,7 +174,7 @@ int aml_display_process(unsigned char vout_idx)
 		return 0;
 	}
 
-#ifdef CONFIG_AML_LCD
+#if defined(CONFIG_AML_LCD) || defined(CONFIG_AML_eDPTX)
 	unsigned int smp_flow = 0;
 #ifdef CONFIG_ARMV8_MULTIENTRY
 	int smp_ret;
@@ -250,7 +250,37 @@ int aml_display_process(unsigned char vout_idx)
 		}
 		break;
 #endif
-#if defined(CONFIG_AML_eDPTX) ||  defined(CONFIG_AML_LCD)
+#if defined(CONFIG_AML_eDPTX)
+	case CONNECTOR_DEV_eDP:
+		// run_command(vout_cmd, 0);
+		// run_command(VOUT_OSD_LOGO_CMD, 0);
+		printf("eDPTX run case: smp_flow=%u\n", smp_flow);
+		if (smp_flow) {
+#ifdef CONFIG_ARMV8_MULTIENTRY
+			if (vout_idx == 0)
+				run_command("vout prepare ${outputmode};", 0);
+
+			run_command(VOUT_OSD_LOGO_CMD, 0);
+
+			if (env_get("bootup_display") &&
+			    strcmp(env_get("bootup_display"), "off") == 0) {
+				printf("%s: bootup_display=%s, stop\n", __func__,
+					env_get("bootup_display"));
+				break;
+			}
+			smp_ret = run_smp_function(cpu_id + vout_idx,
+				&aml_display_on_post_job, 0x100 + vout_idx);
+			if (smp_ret)
+				printf("display smp failed\n");
+			else
+				run_command(vout_init_str, 0);
+#endif
+		} else {
+			run_command(VOUT_OSD_LOGO_CMD, 0);
+			do_vout_output_job(vout_idx, env_get(outputmode));
+		}
+		break;
+#elif defined(CONFIG_AML_LCD)
 	case CONNECTOR_DEV_eDP:
 		run_command(vout_cmd, 0);
 		run_command(VOUT_OSD_LOGO_CMD, 0);

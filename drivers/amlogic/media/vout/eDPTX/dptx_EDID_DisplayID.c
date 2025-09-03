@@ -90,14 +90,7 @@ void dptx_edid_print_parsed(struct dptx_drv_s *dptx, uint8_t port)
 	unsigned char i;
 	struct dptx_edid_info_s *edid;
 
-	if (port == 0xff) {
-		edid = &dptx->sink.exp_edid;
-	} else {
-		if (port < 4 && dptx->sink.link[port])
-			edid = &dptx->sink.link[port]->int_edid;
-		else
-			return;
-	}
+	edid = &dptx->sink.edid;
 
 	pr_info("Manufacturer: %s\n"
 		"Product ID:   0x%04x\n"
@@ -121,24 +114,24 @@ void dptx_edid_print_parsed(struct dptx_drv_s *dptx, uint8_t port)
 			edid->range.hfreq[0], edid->range.hfreq[1], edid->range.h_blank_min,
 			edid->range.pclk[0] / 1000, edid->range.pclk[1] / 1000);
 	}
-	for (i = 0; i < edid->dtd_cnt; i++) {
+	for (i = 0; i < dptx->sink.dt_cnt; i++) {
 		pr_info("Detail Timing Desctipter[%d]:\n"
 			"  Pixel Clock: %u.%u MHz\n"
 			"  H: Active:%4u Blank:%4u FP:%3u PW:%2u %s Size:%4umm Border:%u\n"
 			"  V: Active:%4u Blank:%4u FP:%3u PW:%2u %s Size:%4umm Border:%u\n",
-			i, edid->dtd_timing[i].pclk / 1000000,
-			(edid->dtd_timing[i].pclk % 1000000) / 1000,
-			edid->dtd_timing[i].h_act, edid->dtd_timing[i].h_blank,
-			edid->dtd_timing[i].h_fp, edid->dtd_timing[i].h_pw,
-			edid->dtd_timing[i].ctrl & 0x1 ? "P" : "N",
-			edid->dtd_timing[i].h_size,
-			// dptx->sink.exp_edid.dtd_timing[i].h_border,
+			i, dptx->sink.timing[i].pclk / 1000000,
+			(dptx->sink.timing[i].pclk % 1000000) / 1000,
+			dptx->sink.timing[i].h_act, dptx->sink.timing[i].h_blank,
+			dptx->sink.timing[i].h_fp, dptx->sink.timing[i].h_pw,
+			dptx->sink.timing[i].ctrl & 0x1 ? "P" : "N",
+			dptx->sink.timing[i].h_size,
+			// dptx->sink.edid.dtd_timing[i].h_border,
 			0,
-			edid->dtd_timing[i].v_act, edid->dtd_timing[i].v_blank,
-			edid->dtd_timing[i].v_fp, edid->dtd_timing[i].v_pw,
-			edid->dtd_timing[i].ctrl & 0x2 ? "P" : "N",
-			edid->dtd_timing[i].v_size,
-			// dptx->sink.exp_edid.dtd_timing[i].v_border);
+			dptx->sink.timing[i].v_act, dptx->sink.timing[i].v_blank,
+			dptx->sink.timing[i].v_fp, dptx->sink.timing[i].v_pw,
+			dptx->sink.timing[i].ctrl & 0x2 ? "P" : "N",
+			dptx->sink.timing[i].v_size,
+			// dptx->sink.edid.dtd_timing[i].v_border);
 			0);
 	}
 }
@@ -235,16 +228,83 @@ static uint8_t dptx_edid_dtd_complete(struct dptx_drv_s *dptx, struct dptx_detai
 	return ret;
 }
 
+void temp_timing_add_to_timing_list(struct dptx_drv_s *dptx, struct dptx_detail_timing_s *timing)
+{
+	uint16_t h_period, h_active, hsync_width, hsync_bp;//, hsync_fp;//, h_blank;//, hsync_pol;
+	uint16_t v_period, v_active, vsync_width, vsync_bp;//, vsync_fp;//, v_blank;//, vsync_pol;
+	uint64_t fr_temp;
+	uint8_t port_cnt, i, k;
+
+	port_cnt = count_bit(dptx->sink.port_mask);
+	timing->h_period *= port_cnt;
+	timing->h_act    *= port_cnt;
+	timing->h_bp     *= port_cnt;
+	timing->h_pw     *= port_cnt;
+	timing->h_fp     *= port_cnt;
+	timing->h_blank  *= port_cnt;
+	timing->pclk     *= port_cnt;
+
+	for (i = 0; i < dptx->sink.dt_cnt; i++) {
+		h_period    = dptx->sink.timing[i].h_period;
+		h_active    = dptx->sink.timing[i].h_act;
+		hsync_bp    = dptx->sink.timing[i].h_bp;
+		hsync_width = dptx->sink.timing[i].h_bp;
+		// hsync_fp    = dptx->sink.timing[i].h_fp;
+		// h_blank     = dptx->sink.timing[i].h_blank;
+		// hsync_pol   = dptx->sink.timing[i].hsync_pol;
+
+		v_period    = dptx->sink.timing[i].v_period;
+		v_active    = dptx->sink.timing[i].v_act;
+		vsync_bp    = dptx->sink.timing[i].v_bp;
+		vsync_width = dptx->sink.timing[i].v_pw;
+		// vsync_fp    = dptx->sink.timing[i].v_fp;
+		// v_blank     = dptx->sink.timing[i].v_blank;
+		// vsync_pol   = dptx->sink.timing[i].vsync_pol;
+
+		// pclk        = dptx->sink.timing[i].pclk;
+
+		if (timing->h_period == h_period && timing->h_act == h_active &&
+		    timing->h_bp == hsync_bp && timing->h_pw  == hsync_width &&
+		    timing->v_period == v_period && timing->v_act == v_active &&
+		    timing->v_bp == vsync_bp && timing->v_pw  == vsync_width) {
+			fr_temp = 1000U;
+			fr_temp = fr_temp * timing->pclk;
+			fr_temp = dptx_div_around(fr_temp, timing->h_period);
+			fr_temp = dptx_div_around(fr_temp, timing->v_period);
+			fr_temp = dptx_div_around(fr_temp, 1000);
+
+			for (k = 0; k < 8; k++) {
+				if (dptx->sink.timing[i].vmode_add_fr[k] == fr_temp)
+					return;
+				if (dptx->sink.timing[i].vmode_add_fr[k] == 0) {
+					dptx->sink.timing[i].vmode_add_fr[k] = fr_temp;
+					DPTX_DBG(dptx, "%s: EDID timing[%u] add fr[%u]=%llu",
+						__func__, i, k, fr_temp);
+					return;
+				}
+			}
+		}
+	}
+	//add new timing
+	if (dptx->sink.dt_cnt == DPTX_DRV_TIMING_MAX) {
+		DPTX_ERR(dptx, "%s: EDID timing full", __func__);
+		return;
+	}
+
+	memcpy(&dptx->sink.timing[i], timing, sizeof(struct dptx_detail_timing_s));
+	DPTX_DBG(dptx, "%s: EDID add timing[%u]", __func__, dptx->sink.dt_cnt);
+	dptx->sink.dt_cnt++;
+}
+
 static char dptx_edid_base_block_parse(struct dptx_drv_s *dptx, uint8_t port, unsigned char *_buf)
 {
-	struct dptx_link_cfg_s *link = dptx->sink.link[port];
-	struct dptx_edid_range_limit_s *range = &link->int_edid.range;
-	struct dptx_detail_timing_s *timing;
-	u64 temp1;
+	struct dptx_edid_range_limit_s *range = &dptx->sink.edid.range;
+	uint64_t temp1;
 	unsigned int temp;
 	unsigned int checksum = 0;
 	unsigned short i, j;
 	char *ret;
+	struct dptx_detail_timing_s tmg_t;
 
 	if (memcmp(_buf, base_block_header, 8)) {
 		DPTX_P_ERR(dptx, port, "%s: invalid EDID header", __func__);
@@ -258,84 +318,80 @@ static char dptx_edid_base_block_parse(struct dptx_drv_s *dptx, uint8_t port, un
 		return 1;
 	}
 
-	memset(&link->int_edid, 0, sizeof(struct dptx_edid_info_s));
+	memset(&dptx->sink.edid, 0, sizeof(struct dptx_edid_info_s));
 
 	temp = ((_buf[8] << 8) | _buf[9]);
 	for (i = 0; i < 3; i++)
-		link->int_edid.manufacturer_id[i] = (((temp >> ((2 - i) * 5)) & 0x1f) - 1) + 'A';
+		dptx->sink.edid.manufacturer_id[i] = (((temp >> ((2 - i) * 5)) & 0x1f) - 1) + 'A';
 
-	link->int_edid.manufacturer_id[3] = '\0';
+	dptx->sink.edid.manufacturer_id[3] = '\0';
 	temp = ((_buf[11] << 8) | _buf[10]);
-	link->int_edid.product_id = temp;
+	dptx->sink.edid.product_id = temp;
 	temp = ((_buf[12] << 24) | (_buf[13] << 16) | (_buf[14] << 8) | _buf[15]);
-	link->int_edid.product_sn = temp;
-	link->int_edid.week = _buf[16];
-	link->int_edid.year = _buf[17];
+	dptx->sink.edid.product_sn = temp;
+	dptx->sink.edid.week = _buf[16];
+	dptx->sink.edid.year = _buf[17];
 	temp = ((_buf[18] << 8) | _buf[19]);
-	link->int_edid.version = temp;
+	dptx->sink.edid.version = temp;
 
 	if (!(_buf[20] & 0x80) || ((_buf[20] & 0xf) != 0x5))
 		DPTX_P_ERR(dptx, port, "non digital or not DP device [%2x]", _buf[20]);
 
-	link->int_edid.cfmt_support = 1 << DPTX_CFMT_RGB_6bit;
+	dptx->sink.edid.cfmt_support = 1 << DPTX_CFMT_RGB_6bit;
 	// [20]BIT[4:6]: bpc: 000=undefined, 001=6, 010=8, 011=10, 100=12, 101=14, 110=16
 	// [24]BIT[3:4]: RGB + BIT[0]=YUV444/BIT[1]=YUV422
 	if (((_buf[20] >> 4) & 0x7) >= 0x4) {
-		link->int_edid.cfmt_support |= 1 << DPTX_CFMT_RGB_12bit;
+		dptx->sink.edid.cfmt_support |= 1 << DPTX_CFMT_RGB_12bit;
 		if (_buf[24] & 0x08)
-			link->int_edid.cfmt_support |= 1 << DPTX_CFMT_YCbCr444_12bit;
+			dptx->sink.edid.cfmt_support |= 1 << DPTX_CFMT_YCbCr444_12bit;
 		if (_buf[24] & 0x10)
-			link->int_edid.cfmt_support |= 1 << DPTX_CFMT_YCbCr422_12bit;
+			dptx->sink.edid.cfmt_support |= 1 << DPTX_CFMT_YCbCr422_12bit;
 	}
 	if (((_buf[20] >> 4) & 0x7) >= 0x3) {
-		link->int_edid.cfmt_support |= 1 << DPTX_CFMT_RGB_10bit;
+		dptx->sink.edid.cfmt_support |= 1 << DPTX_CFMT_RGB_10bit;
 		if (_buf[24] & 0x08)
-			link->int_edid.cfmt_support |= 1 << DPTX_CFMT_YCbCr444_10bit;
+			dptx->sink.edid.cfmt_support |= 1 << DPTX_CFMT_YCbCr444_10bit;
 		if (_buf[24] & 0x10)
-			link->int_edid.cfmt_support |= 1 << DPTX_CFMT_YCbCr422_10bit;
+			dptx->sink.edid.cfmt_support |= 1 << DPTX_CFMT_YCbCr422_10bit;
 	}
 	if (((_buf[20] >> 4) & 0x7) >= 0x2) {
-		link->int_edid.cfmt_support |= 1 << DPTX_CFMT_RGB_8bit;
+		dptx->sink.edid.cfmt_support |= 1 << DPTX_CFMT_RGB_8bit;
 		if (_buf[24] & 0x08)
-			link->int_edid.cfmt_support |= 1 << DPTX_CFMT_YCbCr444_8bit;
+			dptx->sink.edid.cfmt_support |= 1 << DPTX_CFMT_YCbCr444_8bit;
 		if (_buf[24] & 0x10)
-			link->int_edid.cfmt_support |= 1 << DPTX_CFMT_YCbCr422_8bit;
+			dptx->sink.edid.cfmt_support |= 1 << DPTX_CFMT_YCbCr422_8bit;
 	}
 
 	for (i = 0; i < 4; i++) {
 		j = 54 + i * 18;
 		if (_buf[j] || _buf[j + 1]) {//detail timing
-			if (link->int_edid.dtd_cnt >= DPTX_DRV_TIMING_MAX - 1)
-				continue;
+			memset(&tmg_t, 0, sizeof(struct dptx_detail_timing_s));
 
-			timing = &link->int_edid.dtd_timing[link->int_edid.dtd_cnt];
-
-			timing->pclk = ((_buf[j + 1] << 8) | (_buf[j])) * 10000;
-			timing->h_act   = (((_buf[j + 4] >> 4) & 0xf) << 8) | _buf[j + 2];
-			timing->h_blank = (((_buf[j + 4] >> 0) & 0xf) << 8) | _buf[j + 3];
-			timing->v_act   = (((_buf[j + 7] >> 4) & 0xf) << 8) | _buf[j + 5];
-			timing->v_blank = (((_buf[j + 7] >> 0) & 0xf) << 8) | _buf[j + 6];
-			timing->h_fp   = (((_buf[j + 11] >> 6) & 0x3) << 8) | _buf[j + 8];
-			timing->h_pw   = (((_buf[j + 11] >> 4) & 0x3) << 8) | _buf[j + 9];
-			timing->v_fp   = (((_buf[j + 11] >> 2) & 0x3) << 4) |
+			tmg_t.pclk    = ((_buf[j + 1] << 8) | (_buf[j])) * 10000;
+			tmg_t.h_act   = (((_buf[j + 4] >> 4) & 0xf) << 8) | _buf[j + 2];
+			tmg_t.h_blank = (((_buf[j + 4] >> 0) & 0xf) << 8) | _buf[j + 3];
+			tmg_t.v_act   = (((_buf[j + 7] >> 4) & 0xf) << 8) | _buf[j + 5];
+			tmg_t.v_blank = (((_buf[j + 7] >> 0) & 0xf) << 8) | _buf[j + 6];
+			tmg_t.h_fp    = (((_buf[j + 11] >> 6) & 0x3) << 8) | _buf[j + 8];
+			tmg_t.h_pw    = (((_buf[j + 11] >> 4) & 0x3) << 8) | _buf[j + 9];
+			tmg_t.v_fp    = (((_buf[j + 11] >> 2) & 0x3) << 4) |
 						((_buf[j + 10] >> 4) & 0xf);
-			timing->v_pw   = (((_buf[j + 11] >> 0) & 0x3) << 4) |
+			tmg_t.v_pw    = (((_buf[j + 11] >> 0) & 0x3) << 4) |
 						((_buf[j + 10] >> 0) & 0xf);
-			timing->h_size = (((_buf[j + 14] >> 4) & 0xf) << 8) | _buf[j + 12];
-			timing->v_size = (((_buf[j + 14] >> 0) & 0xf) << 8) | _buf[j + 13];
-			// timing->h_border = _buf[j + 15];
-			// timing->v_border = _buf[j + 16];
-			timing->ctrl |= _buf[j + 17] & 0x1 ? CTRL_HSYNC_POS : 0;
-			timing->ctrl |= _buf[j + 17] & 0x2 ? CTRL_VSYNC_POS : 0;
+			tmg_t.h_size  = (((_buf[j + 14] >> 4) & 0xf) << 8) | _buf[j + 12];
+			tmg_t.v_size  = (((_buf[j + 14] >> 0) & 0xf) << 8) | _buf[j + 13];
+			// tmg_t.h_border = _buf[j + 15];
+			// tmg_t.v_border = _buf[j + 16];
+			tmg_t.ctrl |= _buf[j + 17] & 0x1 ? CTRL_HSYNC_POS : 0;
+			tmg_t.ctrl |= _buf[j + 17] & 0x2 ? CTRL_VSYNC_POS : 0;
 
-			dptx_edid_dtd_complete(dptx, timing);
+			dptx_edid_dtd_complete(dptx, &tmg_t);
 
-			temp1 = timing->pclk;
-			temp1 *= 1000;
-			temp  = timing->h_period * timing->v_period;
-			timing->fr1000 = dptx_div_around(temp1, temp);
+			temp1 = 1000ULL * tmg_t.pclk;
+			temp  = tmg_t.h_period * tmg_t.v_period;
+			tmg_t.fr1000 = dptx_div_around(temp1, temp);
 
-			link->int_edid.dtd_cnt++;
+			temp_timing_add_to_timing_list(dptx, &tmg_t);
 		}
 
 		// some panel didn`t follow spec, keep compatibility
@@ -343,11 +399,11 @@ static char dptx_edid_base_block_parse(struct dptx_drv_s *dptx, uint8_t port, un
 		if (!(_buf[j] || _buf[j + 1] || _buf[j + 2])) {
 			switch (_buf[j + 3]) {
 			case EDID_BASE_BLOCK_ID_PRODUCT_NAME: //monitor name
-				memcpy(link->int_edid.name, &_buf[j + 5], 13);
-				ret = strstr(link->int_edid.name, "\n");
+				memcpy(dptx->sink.edid.name, &_buf[j + 5], 13);
+				ret = strstr(dptx->sink.edid.name, "\n");
 				if (ret)
-					link->int_edid.name[ret - link->int_edid.name] = '\0';
-				link->int_edid.name[13] = '\0';
+					dptx->sink.edid.name[ret - dptx->sink.edid.name] = '\0';
+				dptx->sink.edid.name[13] = '\0';
 				break;
 			case EDID_BASE_BLOCK_ID_RANGE_TIMING: //monitor range limits
 				range->vfreq[0] = _buf[j + 5] + (_buf[j + 4] & 0x1 ? 255 : 0);
@@ -358,20 +414,20 @@ static char dptx_edid_base_block_parse(struct dptx_drv_s *dptx, uint8_t port, un
 				range->pclk[0]  = 0; // Hz
 				break;
 			case EDID_BASE_BLOCK_ID_ASCII_STR: //ascii string
-				memcpy(link->int_edid.asc_string, &_buf[j + 5], 13);
-				ret = strstr(link->int_edid.asc_string, "\n");
+				memcpy(dptx->sink.edid.asc_string, &_buf[j + 5], 13);
+				ret = strstr(dptx->sink.edid.asc_string, "\n");
 				if (ret)
-					link->int_edid.asc_string
-						[ret - link->int_edid.asc_string] = '\0';
-				link->int_edid.asc_string[13] = '\0';
+					dptx->sink.edid.asc_string
+						[ret - dptx->sink.edid.asc_string] = '\0';
+				dptx->sink.edid.asc_string[13] = '\0';
 				break;
 			case EDID_BASE_BLOCK_ID_SN: //monitor serial num
-				memcpy(link->int_edid.serial_num, &_buf[j + 5], 13);
-				ret = strstr(link->int_edid.serial_num, "\n");
+				memcpy(dptx->sink.edid.serial_num, &_buf[j + 5], 13);
+				ret = strstr(dptx->sink.edid.serial_num, "\n");
 				if (ret)
-					link->int_edid.serial_num
-						[ret - link->int_edid.serial_num] = '\0';
-				link->int_edid.serial_num[13] = '\0';
+					dptx->sink.edid.serial_num
+						[ret - dptx->sink.edid.serial_num] = '\0';
+				dptx->sink.edid.serial_num[13] = '\0';
 				break;
 			default:
 				break;
@@ -383,9 +439,7 @@ static char dptx_edid_base_block_parse(struct dptx_drv_s *dptx, uint8_t port, un
 
 static char dptx_edid_DisplayID_parse(struct dptx_drv_s *dptx, uint8_t port, unsigned char *_buf)
 {
-	// struct dptx_edid_range_limit_s *range = &dptx->sink.exp_edid.range;
-	struct dptx_detail_timing_s *timing;
-	struct dptx_link_cfg_s *link = dptx->sink.link[port];
+	struct dptx_detail_timing_s tmg_t;
 	unsigned int checksum = 0, temp;
 	u64 temp1;
 	int i;
@@ -405,46 +459,41 @@ static char dptx_edid_DisplayID_parse(struct dptx_drv_s *dptx, uint8_t port, uns
 			dtd_cnt = _buf[tag_ofst + 2] / 20;
 
 			for (i = 0; i < dtd_cnt; i++) { //Type I Detailed Timing Descriptor
-				if (link->int_edid.dtd_cnt >= 7)
-					break;
-
 				d_pos = tag_ofst + 3 + 20 * i;
-				timing = &link->int_edid.dtd_timing[link->int_edid.dtd_cnt];
+				memset(&tmg_t, 0, sizeof(struct dptx_detail_timing_s));
 
-				timing->pclk = ((_buf[d_pos + 2] << 16) | (_buf[d_pos + 1] << 8)  |
+				tmg_t.pclk = ((_buf[d_pos + 2] << 16) | (_buf[d_pos + 1] << 8)  |
 						(_buf[d_pos + 0] << 0)) * 10000;
-				timing->ctrl |= _buf[d_pos + 3] & 0x80 ? CTRL_PREFERRED_TIMING : 0;
-				timing->h_act   = 1 +  (_buf[d_pos + 4] | (_buf[d_pos + 5] << 8));
-				timing->h_blank = 1 +  (_buf[d_pos + 6] | (_buf[d_pos + 7] << 8));
-				timing->h_fp    = 1 +  (_buf[d_pos + 8] |
+				tmg_t.ctrl |= _buf[d_pos + 3] & 0x80 ? CTRL_PREFERRED_TIMING : 0;
+				tmg_t.h_act   = 1 +  (_buf[d_pos + 4] | (_buf[d_pos + 5] << 8));
+				tmg_t.h_blank = 1 +  (_buf[d_pos + 6] | (_buf[d_pos + 7] << 8));
+				tmg_t.h_fp    = 1 +  (_buf[d_pos + 8] |
 								((_buf[d_pos + 9] & 0x7f) << 8));
-				timing->h_pw    = 1 + (_buf[d_pos + 10] | (_buf[d_pos + 11] << 8));
-				timing->v_act   = 1 + (_buf[d_pos + 12] | (_buf[d_pos + 13] << 8));
-				timing->v_blank = 1 + (_buf[d_pos + 14] | (_buf[d_pos + 15] << 8));
-				timing->v_fp    = 1 + (_buf[d_pos + 16] |
+				tmg_t.h_pw    = 1 + (_buf[d_pos + 10] | (_buf[d_pos + 11] << 8));
+				tmg_t.v_act   = 1 + (_buf[d_pos + 12] | (_buf[d_pos + 13] << 8));
+				tmg_t.v_blank = 1 + (_buf[d_pos + 14] | (_buf[d_pos + 15] << 8));
+				tmg_t.v_fp    = 1 + (_buf[d_pos + 16] |
 								((_buf[d_pos + 17] & 0x7f) << 8));
-				timing->v_pw    = 1 + (_buf[d_pos + 18] |
+				tmg_t.v_pw    = 1 + (_buf[d_pos + 18] |
 								((_buf[d_pos + 19] & 0x7f) << 8));
-				timing->ctrl |=  (_buf[d_pos + 9] & 0x80) ? CTRL_HSYNC_POS : 0;
-				timing->ctrl |= (_buf[d_pos + 17] & 0x80) ? CTRL_VSYNC_POS : 0;
+				tmg_t.ctrl |=  (_buf[d_pos + 9] & 0x80) ? CTRL_HSYNC_POS : 0;
+				tmg_t.ctrl |= (_buf[d_pos + 17] & 0x80) ? CTRL_VSYNC_POS : 0;
 
-				timing->h_size = timing->h_act;
-				timing->v_size = timing->v_act;
+				tmg_t.h_size = tmg_t.h_act;
+				tmg_t.v_size = tmg_t.v_act;
 
-				dptx_edid_dtd_complete(dptx, timing);
+				dptx_edid_dtd_complete(dptx, &tmg_t);
 
-				temp1 = timing->pclk;
-				temp1 *= 1000;
-				temp  = timing->h_period * timing->v_period;
-				timing->fr1000 = dptx_div_around(temp1, temp);
+				temp1 = 1000ULL * tmg_t.pclk;
+				temp  = tmg_t.h_period * tmg_t.v_period;
+				tmg_t.fr1000 = dptx_div_around(temp1, temp);
 
-				link->int_edid.dtd_cnt++;
+				temp_timing_add_to_timing_list(dptx, &tmg_t);
 			}
 			break;
 		case DisplayID_Video_Timing_Range: //09h
 			//range->pclk[0] = ((_buf[tag_ofst + 5] << 16) |
 			//		  (_buf[tag_ofst + 4] << 8)  |
-
 			break;
 		case DisplayID_Type_II_Timing:
 		case DisplayID_Type_IV_Timing:
@@ -491,12 +540,11 @@ static char dptx_edid_DisplayID_parse(struct dptx_drv_s *dptx, uint8_t port, uns
 
 static char dptx_edid_CEA_861_parse(struct dptx_drv_s *dptx, uint8_t port, unsigned char *_buf)
 {
-	struct dptx_detail_timing_s *timing;
-	struct dptx_link_cfg_s *link = dptx->sink.link[port];
 	u32 temp, checksum = 0;
 	u64 temp1;
 	u8 i, j;
 	unsigned char dtd_ofst, tag, count;//, native_dtd_cnt;
+	struct dptx_detail_timing_s tmg_t;
 
 	for (i = 0; i < 128; i++)
 		checksum += _buf[i];
@@ -528,34 +576,34 @@ static char dptx_edid_CEA_861_parse(struct dptx_drv_s *dptx, uint8_t port, unsig
 	for (i = 0; i < 8; i++) {
 		j = dtd_ofst + 18 * i;
 
-		if (j > 128 || link->int_edid.dtd_cnt >= 7 || !_buf[j])
+		if (j > 128 || !_buf[j])
 			break;
 
-		timing = &link->int_edid.dtd_timing[link->int_edid.dtd_cnt];
+		memset(&tmg_t, 0, sizeof(struct dptx_detail_timing_s));
 
-		timing->pclk    =                ((_buf[j + 1] << 8) | _buf[j]) * 10000;
-		timing->h_act   =  (((_buf[j + 4] >> 4) & 0xf) << 8) | _buf[j + 2];
-		timing->h_blank =  (((_buf[j + 4] >> 0) & 0xf) << 8) | _buf[j + 3];
-		timing->v_act   =  (((_buf[j + 7] >> 4) & 0xf) << 8) | _buf[j + 5];
-		timing->v_blank =  (((_buf[j + 7] >> 0) & 0xf) << 8) | _buf[j + 6];
-		timing->h_fp    = (((_buf[j + 11] >> 6) & 0x3) << 8) | _buf[j + 8];
-		timing->h_pw    = (((_buf[j + 11] >> 4) & 0x3) << 8) | _buf[j + 9];
-		timing->v_fp    = (((_buf[j + 11] >> 2) & 0x3) << 4) | ((_buf[j + 10] >> 4) & 0xf);
-		timing->v_pw    = (((_buf[j + 11] >> 0) & 0x3) << 4) | ((_buf[j + 10] >> 0) & 0xf);
-		timing->h_size  = (((_buf[j + 14] >> 4) & 0xf) << 8) | _buf[j + 12];
-		timing->v_size  = (((_buf[j + 14] >> 0) & 0xf) << 8) | _buf[j + 13];
+		tmg_t.pclk    =                ((_buf[j + 1] << 8) | _buf[j]) * 10000;
+		tmg_t.h_act   =  (((_buf[j + 4] >> 4) & 0xf) << 8) | _buf[j + 2];
+		tmg_t.h_blank =  (((_buf[j + 4] >> 0) & 0xf) << 8) | _buf[j + 3];
+		tmg_t.v_act   =  (((_buf[j + 7] >> 4) & 0xf) << 8) | _buf[j + 5];
+		tmg_t.v_blank =  (((_buf[j + 7] >> 0) & 0xf) << 8) | _buf[j + 6];
+		tmg_t.h_fp    = (((_buf[j + 11] >> 6) & 0x3) << 8) | _buf[j + 8];
+		tmg_t.h_pw    = (((_buf[j + 11] >> 4) & 0x3) << 8) | _buf[j + 9];
+		tmg_t.v_fp    = (((_buf[j + 11] >> 2) & 0x3) << 4) | ((_buf[j + 10] >> 4) & 0xf);
+		tmg_t.v_pw    = (((_buf[j + 11] >> 0) & 0x3) << 4) | ((_buf[j + 10] >> 0) & 0xf);
+		tmg_t.h_size  = (((_buf[j + 14] >> 4) & 0xf) << 8) | _buf[j + 12];
+		tmg_t.v_size  = (((_buf[j + 14] >> 0) & 0xf) << 8) | _buf[j + 13];
 		// timing->h_border = _buf[j + 15];
 		// timing->v_border = _buf[j + 16];
-		timing->ctrl = (_buf[j + 17] & 0x1 ? CTRL_HSYNC_POS : 0) |
+		tmg_t.ctrl = (_buf[j + 17] & 0x1 ? CTRL_HSYNC_POS : 0) |
 				(_buf[j + 17] & 0x2 ? CTRL_VSYNC_POS : 0);
 
-		dptx_edid_dtd_complete(dptx, timing);
+		dptx_edid_dtd_complete(dptx, &tmg_t);
 
-		temp1 = 1000ULL * timing->pclk;
-		temp  = timing->h_period * timing->v_period;
-		timing->fr1000 = dptx_div_around(temp1, temp);
+		temp1 = 1000ULL * tmg_t.pclk;
+		temp  = tmg_t.h_period * tmg_t.v_period;
+		tmg_t.fr1000 = dptx_div_around(temp1, temp);
 
-		link->int_edid.dtd_cnt++;
+		temp_timing_add_to_timing_list(dptx, &tmg_t);
 	}
 	return 0;
 }
@@ -685,101 +733,67 @@ edid_read_retry_p3:
 	return ret;
 }
 
+/*
 static void dptx_edid_crc_cal(struct dptx_drv_s *dptx)
 {
 	uint8_t i, crc = 0;
 
 	for (i = 0; i < 14; i++)
-		crc += dptx->sink.exp_edid.name[i];
+		crc += dptx->sink.edid.name[i];
 
-	crc += dptx->sink.exp_edid.range.vfreq[0];
-	crc += dptx->sink.exp_edid.range.vfreq[1];
+	crc += dptx->sink.edid.range.vfreq[0];
+	crc += dptx->sink.edid.range.vfreq[1];
 
-	crc += dptx->sink.exp_edid.dtd_cnt;
+	crc += dptx->sink.edid.dtd_cnt;
 
-	for (i = 0; i < dptx->sink.exp_edid.dtd_cnt; i++) {
-		crc += dptx->sink.exp_edid.dtd_timing[i].h_period;
-		crc += dptx->sink.exp_edid.dtd_timing[i].h_act;
-		crc += dptx->sink.exp_edid.dtd_timing[i].v_period;
-		crc += dptx->sink.exp_edid.dtd_timing[i].v_act;
-		crc += dptx->sink.exp_edid.dtd_timing[i].pclk;
+	for (i = 0; i < dptx->sink.edid.dtd_cnt; i++) {
+		crc += dptx->sink.edid.dtd_timing[i].h_period;
+		crc += dptx->sink.edid.dtd_timing[i].h_act;
+		crc += dptx->sink.edid.dtd_timing[i].v_period;
+		crc += dptx->sink.edid.dtd_timing[i].v_act;
+		crc += dptx->sink.edid.dtd_timing[i].pclk;
 	}
 	DPTX_DBG(dptx, "sink EDID crc: 0x%2x", crc);
-	dptx->sink.exp_edid.edid_crc = crc;
+	dptx->sink.edid.edid_crc = crc;
 }
-
+*/
 // read & parse EDID
 int __dptx_EDID_probe(struct dptx_drv_s *dptx)
 {
 	unsigned char *edid_buf;
 	int ret;
-	uint8_t retry_cnt, port, res = 0, i;
+	uint8_t retry_cnt, port = 0, res = 0;
 
 	if (!dptx)
 		return -1;
 
+	// read port 0 EDID only
 	edid_buf = malloc(512 * sizeof(unsigned char));
 	if (!edid_buf) {
 		DPTX_ERR(dptx, "EDID buffer malloc failed");
 		return -1;
 	}
 
-	for (port = 0; port < 4; port++) {
-		if (!dptx->sink.link[port])
-			continue;
-		retry_cnt = 0;
+	retry_cnt = 0;
 dptx_EDID_probe_retry:
-		memset(edid_buf, 0, 512 * sizeof(unsigned char));
-		ret = dptx_read_edid(dptx, port, edid_buf);
-		if (ret) {
-			if (retry_cnt++ > DPTX_EDID_READ_RETRY_MAX) {
-				DPTX_P_ERR(dptx, port, "%s: read fail @%d", __func__, retry_cnt);
-				continue;
-			}
+	memset(edid_buf, 0, 512 * sizeof(unsigned char));
+	ret = dptx_read_edid(dptx, port, edid_buf);
+	if (ret) {
+		DPTX_P_ERR(dptx, port, "%s: read fail @%d", __func__, retry_cnt);
+		if (retry_cnt++ < DPTX_EDID_READ_RETRY_MAX)
 			goto dptx_EDID_probe_retry;
-		}
-		if (dptx_print_level >= LOG_V) {
-			dptx_edid_print_raw(edid_buf);
-			dptx_edid_print_parsed(dptx, port);
-		}
-		res |= 1 << port;
 	}
 
-	if (res == dptx->sink.port_mask) {
-		port = 0;
-		DPTX_PR(dptx, "all port EDID read ok, using link 0`s as base");
-	} else if (res & dptx->sink.port_mask) {
-		port = __builtin_ffs(res & dptx->sink.port_mask) - 1;
-		DPTX_PR(dptx, "port [0x%x], edid result [0x%x], using link %u`s as base",
-			dptx->sink.port_mask, res, port);
-	} else {
+	if (dptx_print_level >= LOG_V) {
+		dptx_edid_print_raw(edid_buf);
+		dptx_edid_print_parsed(dptx, port);
+	}
+
+	if (ret) {
 		DPTX_ERR(dptx, "%s failed, port result = 0x%x", __func__, res);
 		free(edid_buf);
 		return -1;
 	}
-
-	memcpy(&dptx->sink.exp_edid, &dptx->sink.link[port]->int_edid,
-		sizeof(struct dptx_edid_info_s));
-
-	port = __builtin_popcount(dptx->sink.port_mask);
-	for (i = 0; i < dptx->sink.exp_edid.dtd_cnt; i++) {
-		dptx->sink.exp_edid.dtd_timing[i].h_size *= port;
-		dptx->sink.exp_edid.dtd_timing[i].h_period *= port;
-		dptx->sink.exp_edid.dtd_timing[i].h_act *= port;
-		dptx->sink.exp_edid.dtd_timing[i].h_blank *= port;
-		dptx->sink.exp_edid.dtd_timing[i].h_bp *= port;
-		dptx->sink.exp_edid.dtd_timing[i].h_pw *= port;
-		dptx->sink.exp_edid.dtd_timing[i].h_fp *= port;
-		dptx->sink.exp_edid.dtd_timing[i].pclk *= port;
-		dptx->sink.exp_edid.dtd_timing[i].pclk_range[0] *= port;
-		dptx->sink.exp_edid.dtd_timing[i].pclk_range[1] *= port;
-	}
-
-	if (dptx_print_level >= LOG_V)
-		dptx_edid_print_parsed(dptx, 0xff);
-
-	dptx_edid_crc_cal(dptx);
-	// dptx_edid_store(dptx, edid_buf);
 
 	DPTX_DBG(dptx, "%s ok", __func__);
 	free(edid_buf);

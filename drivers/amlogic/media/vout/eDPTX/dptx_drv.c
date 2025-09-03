@@ -39,68 +39,20 @@ static void dptx_power_init(struct dptx_drv_s *dptx, uint8_t port, int flag)
 #endif
 }
 
-/* ! FOLLOW KERNEL
- *0:bit[ 7: 0], [ 9: 8]: A = [link rate], [lane count: 0=disabled, 1=1lane, 2=2lane, 3=4lane]
- *0:bit[17:10]: vmode_sel_idx, 0xff for non-edid or invalid
- *0:bit[21:18]: vmode_cfmt_sel, 0xf for invalid
- *0:bit[22]: dptx-ip enabled
- *0:bit[23]: dptx disp enabled
- *0:bit[31:24]: dptx edid_crc
- *1:bit[ 7: 0], [19:18]: B = [link rate], [lane count: 0=disabled, 1=1lane, 2=2lane, 3=4lane]
- *1:bit[17:10], [19:18]: C = [link rate], [lane count: 0=disabled, 1=1lane, 2=2lane, 3=4lane]
- *1:bit[27:20], [29:28]: D = [link rate], [lane count: 0=disabled, 1=1lane, 2=2lane, 3=4lane]
- *1:bit[31:30]: user_port_set: 0=user_default, 1=1port, 2=2port, 3=4port
- *
- * dptx_dbg
- *0:bit[ 2: 0]: print level
- *0:bit[31:28]: user_hpd_ignore: p3, p2, p1, p0
- *0:bit[37:24]: bist test      : p3, p2, p1, p0
- */
-void __dptx_update_ctrl_bootargs(struct dptx_drv_s *dptx)
+void __dptx_update_ctrl_store_args(struct dptx_drv_s *dptx)
 {
-	uint32_t val0 = 0, val1 = 0, val2 = 0;
-	char env_str[12], ctrl_str[24];
-	struct dptx_link_cfg_s *link;
+	uint32_t val0 = 0;
 
-	if (dptx->sink.link[0]) {
-		link  = dptx->sink.link[0];
-		val0 |= (link->link_rate & 0xff) << 0;
-		val0 |= ((link->lane_count == 4 ? 3 : link->lane_count) & 0x3) <<  8;
-	}
-	val0 |= (dptx->vmode_mgr.vmode_sel_idx & 0xff)  << 10;
-	val0 |= (dptx->vmode_mgr.vmode_cfmt_sel & 0xf)  << 18;
-	val0 |= (dptx->status & DPTX_STA_DRV_READY) ? 1 << 22 : 0;
-	val0 |= (dptx->status & DPTX_STA_DISP_ON) ? 1   << 23 : 0;
-	val0 |= (dptx->sink.exp_edid.edid_crc & 0xff)   << 24;
+	val0 |= (dptx->vmode_mgr.vmode_sel_idx & 0xff)  << 0;
+	val0 |= (dptx->vmode_mgr.vmode_cfmt_sel & 0xf)  << 8;
+	val0 |= (dptx->status & DPTX_STA_DISP_ON) ? 1 << 12 : 0;
+	val0 |= 1 << 15;
+	// val0 = 0xffff;
+	dptx_if_reg_store(dptx, 0, val0, 0);
 
-	if (dptx->sink.link[1]) {
-		link = dptx->sink.link[1];
-		val1 |= (link->link_rate & 0xff) << 0;
-		val1 |= ((link->lane_count == 4 ? 3 : link->lane_count) & 0x3) <<  8;
-	}
-	if (dptx->sink.link[2]) {
-		link = dptx->sink.link[1];
-		val1 |= (link->link_rate & 0xff) << 10;
-		val1 |= ((link->lane_count == 4 ? 3 : link->lane_count) & 0x3) << 18;
-	}
-	if (dptx->sink.link[3]) {
-		link = dptx->sink.link[1];
-		val1 |= (link->link_rate & 0xff) << 20;
-		val1 |= ((link->lane_count == 4 ? 3 : link->lane_count) & 0x3) << 28;
-	}
-	val1 |= __builtin_popcount(dptx->setting.user_port_mask & 0xf) << 30;
-
-	sprintf(ctrl_str, "0x%x,0x%x", val0, val1);
-	sprintf(env_str, "dptx%d_ctrl", dptx->idx);
-	env_set(env_str, ctrl_str);
-
-	val2 = env_get_ulong("dptx_dbg", 16, 0);
-	val2 &= ~0x3;
-	val2 |= dptx_print_level;
-	val2 &= ~BIT(dptx->idx + 28);
-	val2 |= dptx->setting.user_hpd_ignore ? BIT(dptx->idx + 28) : 0;
-	sprintf(ctrl_str, "0x%x", val2);
-	env_set("dptx_dbg", ctrl_str);
+	val0 = 0;
+	dptx_if_reg_store_get(dptx, 0, &val0, NULL);
+	DPTX_PR(dptx, "if_reg_store=0x%x", val0);
 }
 
 void dptx_driver_ready(struct dptx_drv_s *dptx)
@@ -112,7 +64,7 @@ void dptx_driver_ready(struct dptx_drv_s *dptx)
 		return;
 	}
 
-	DPTX_PR(dptx, "driver init(ver %s)", DPTX_DRV_VERSION);
+	DPTX_PR(dptx, "driver prepare(ver %s)", DPTX_DRV_VERSION);
 	for (port = 0; port < 4; port++) {
 		if (!dptx->sink.link[port])
 			continue;
@@ -133,6 +85,7 @@ void dptx_driver_ready(struct dptx_drv_s *dptx)
 	dptx_HPD_pinmux_set(dptx);
 
 	dptx->status |= DPTX_STA_DRV_READY;
+
 }
 
 void dptx_drv_check_HPD(struct dptx_drv_s *dptx)
@@ -167,10 +120,18 @@ void dptx_drv_check_HPD(struct dptx_drv_s *dptx)
 	dptx->status &= ~DPTX_STA_HPD_HIGH;
 }
 
+static void dptx_config_timing_probe(struct dptx_drv_s *dptx)
+{
+	DPTX_DBG(dptx, "%s ok", __func__);
+}
+
 void dptx_drv_start(struct dptx_drv_s *dptx)
 {
 	struct dptx_vmode_s *dp_vmode = NULL;
 	uint8_t port;
+	// uint32_t val0 = 0;
+
+	DPTX_PR(dptx, "driver start(ver %s)", DPTX_DRV_VERSION);
 
 	if (!(dptx->status & (DPTX_STA_PROBE_DONE | DPTX_STA_DRV_READY | DPTX_STA_HPD_HIGH))) {
 		DPTX_ERR(dptx, "DPTX sta=0x%x, not ready for %s", dptx->status, __func__);
@@ -200,8 +161,6 @@ void dptx_drv_start(struct dptx_drv_s *dptx)
 		dptx_link_policy_maker(dptx, port);
 	}
 
-	// multi port config check;
-
 	for (port = 0; port < 4; port++) {
 		if (!dptx->sink.link[port])
 			continue;
@@ -211,24 +170,22 @@ void dptx_drv_start(struct dptx_drv_s *dptx)
 
 	__dptx_link_training(dptx);
 
-	if (1) { // use EDID case
-		if (!__dptx_EDID_probe(dptx)) {
-			dptx_vmode_manage(dptx);
-			if (dptx->setting.user_vmode_sel)
-				dp_vmode = dptx_get_vmode(dptx, dptx->setting.user_vmode_sel);
-			if (!dp_vmode)
-				dp_vmode = dptx_get_optimum_vmode(dptx);
-		}
-		if (!dp_vmode) {
-			dp_vmode = &DPTX_SafeMode_640x480_vmode;
-			DPTX_ERR(dptx, "no vmode to satisfy BW, to safemode 480P");
-		}
-		dptx_vmode_apply_to_act_timing(dptx, dp_vmode);
-		dptx_act_timing_apply(dptx);
-	} else { // use preset panel_config
-		//TODO
+	if (dptx->sink.dt_cnt)
+		dptx_config_timing_probe(dptx);
+	else
+		__dptx_EDID_probe(dptx);
+
+	dptx_vmode_manage(dptx);
+	if (dptx->setting.user_vmode_sel)
+		dp_vmode = dptx_get_vmode(dptx, dptx->setting.user_vmode_sel);
+	if (!dp_vmode)
+		dp_vmode = dptx_get_optimum_vmode(dptx);
+	if (!dp_vmode) {
+		dp_vmode = &DPTX_SafeMode_640x480_vmode;
+		DPTX_ERR(dptx, "no vmode to satisfy BW, to safemode 480P");
 	}
-	__dptx_update_ctrl_bootargs(dptx);
+	dptx_vmode_apply_to_act_timing(dptx, dp_vmode);
+	dptx_act_timing_apply(dptx);
 
 	for (port = 0; port < 4; port++) {
 		if (!dptx->sink.link[port])
@@ -244,6 +201,9 @@ void dptx_drv_start(struct dptx_drv_s *dptx)
 			continue;
 		dptx_if_transmitter_output(dptx, port, 1);
 	}
+
+	__dptx_update_ctrl_store_args(dptx);
+
 	dptx_venc_enable(dptx, 1);
 	mdelay(1);
 
@@ -255,7 +215,7 @@ dptx_setup_link_fail:
 	dp_vmode = &DPTX_SafeMode_640x480_vmode;
 	dptx_vmode_apply_to_act_timing(dptx, dp_vmode);
 	dptx_act_timing_apply(dptx);
-	__dptx_update_ctrl_bootargs(dptx);
+	__dptx_update_ctrl_store_args(dptx);
 }
 
 void dptx_drv_disp_on(struct dptx_drv_s *dptx)

@@ -19,7 +19,7 @@ void dptx_vmode_apply_to_act_timing(struct dptx_drv_s *dptx, struct dptx_vmode_s
 	if (vmd->base_dtd_idx == 0xff)
 		vmd_dtd = &DPTX_SafeMode_640x480_timing;
 	else
-		vmd_dtd = &dptx->sink.exp_edid.dtd_timing[vmd->base_dtd_idx];
+		vmd_dtd = &dptx->sink.timing[vmd->base_dtd_idx];
 
 	dptx->act_timing.h_size   = vmd_dtd->h_size;
 	dptx->act_timing.v_size   = vmd_dtd->v_size;
@@ -116,8 +116,8 @@ void dptx_print_vmode(struct dptx_drv_s *dptx, uint8_t print_flag)
 		} else {
 			fr100 = vmode_p->fr100_int;
 		}
-		h_a   = dptx->sink.exp_edid.dtd_timing[vmode_p->base_dtd_idx].h_act;
-		v_a   = dptx->sink.exp_edid.dtd_timing[vmode_p->base_dtd_idx].v_act;
+		h_a   = dptx->sink.timing[vmode_p->base_dtd_idx].h_act;
+		v_a   = dptx->sink.timing[vmode_p->base_dtd_idx].v_act;
 		_pos = sprintf(pr_buf, " * %2d: %4d * %4d @%3u.%-2uhz : ",
 			idx, h_a, v_a, fr100 / 100, fr100 % 100);
 		for (i = 0; dptx_cfmt_table[i].cfmt_id != DPTX_CFMT_invalid; i++) {
@@ -149,15 +149,15 @@ static uint8_t dtd_add_vmode_list(struct dptx_drv_s *dptx,
 			break;
 
 		tmp_vmode = &dptx->vmode_mgr.vmodes[idx];
-		tmp_dtd = &dptx->sink.exp_edid.dtd_timing[tmp_vmode->base_dtd_idx];
+		tmp_dtd = &dptx->sink.timing[tmp_vmode->base_dtd_idx];
 		temp_fr = fr_int ? fr_int :
-			((dptx->sink.exp_edid.dtd_timing[dtd_idx].fr1000 + 5) / 10);
+			((dptx->sink.timing[dtd_idx].fr1000 + 5) / 10);
 
 		if (dtd_idx == tmp_vmode->base_dtd_idx ||
-		    (tmp_dtd->h_act    == dptx->sink.exp_edid.dtd_timing[dtd_idx].h_act &&
-		     tmp_dtd->v_act    == dptx->sink.exp_edid.dtd_timing[dtd_idx].v_act &&
-		     tmp_dtd->h_period == dptx->sink.exp_edid.dtd_timing[dtd_idx].h_period &&
-		     tmp_dtd->v_period == dptx->sink.exp_edid.dtd_timing[dtd_idx].v_period)) {
+		    (tmp_dtd->h_act    == dptx->sink.timing[dtd_idx].h_act &&
+		     tmp_dtd->v_act    == dptx->sink.timing[dtd_idx].v_act &&
+		     tmp_dtd->h_period == dptx->sink.timing[dtd_idx].h_period &&
+		     tmp_dtd->v_period == dptx->sink.timing[dtd_idx].v_period)) {
 			if ((fr_frac == tmp_vmode->fr_adv || tmp_vmode->fr_adv == 0xff) &&
 			    (dptx_diff(temp_fr, tmp_vmode->fr100_int) < 50))
 				return 0;
@@ -166,7 +166,7 @@ static uint8_t dtd_add_vmode_list(struct dptx_drv_s *dptx,
 	if (idx == DPTX_DRV_VMODE_MAX)
 		return 0;
 
-	tmp_dtd = &dptx->sink.exp_edid.dtd_timing[dtd_idx];
+	tmp_dtd = &dptx->sink.timing[dtd_idx];
 	pixel_cnt = tmp_dtd->h_period; pixel_cnt *= tmp_dtd->v_period;
 
 	dptx->vmode_mgr.vmodes[idx].base_dtd_idx = dtd_idx;
@@ -184,12 +184,20 @@ static uint8_t dtd_add_vmode_list(struct dptx_drv_s *dptx,
 
 	temp_fr = pixel_cnt;
 	temp_fr = (temp_fr * dptx->vmode_mgr.vmodes[idx].fr100_int) / 100;
-	for (i = 0; dptx_cfmt_table[i].cfmt_id != DPTX_CFMT_invalid; i++) {
-		if (!((1 << dptx_cfmt_table[i].cfmt_id) & dptx->sink.exp_edid.cfmt_support))
-			continue;
-		if (dptx_vid_band_width_check(dptx, temp_fr, dptx_cfmt_table[i].bpp)) {
+	if (dptx->sink.timing[dtd_idx].cfmt) { //panel config timing
+		if (dptx_vid_band_width_check(dptx, temp_fr,
+			dptx_cfmt_table[dptx->sink.timing[dtd_idx].cfmt].bpp)) {
 			dptx->vmode_mgr.vmodes[idx].cfmt_support |=
-				(1 << dptx_cfmt_table[i].cfmt_id);
+				(1 << dptx_cfmt_table[dptx->sink.timing[dtd_idx].cfmt].cfmt_id);
+		}
+	} else {
+		for (i = 0; dptx_cfmt_table[i].cfmt_id != DPTX_CFMT_invalid; i++) {
+			if (!((1 << dptx_cfmt_table[i].cfmt_id) & dptx->sink.edid.cfmt_support))
+				continue;
+			if (dptx_vid_band_width_check(dptx, temp_fr, dptx_cfmt_table[i].bpp)) {
+				dptx->vmode_mgr.vmodes[idx].cfmt_support |=
+					(1 << dptx_cfmt_table[i].cfmt_id);
+			}
 		}
 	}
 
@@ -221,10 +229,10 @@ static void dptx_vmodes_reorder(struct dptx_drv_s *dptx)
 			      (vmode_p1->flag & VMODE_FLAG_VALID)))
 				continue;
 
-			dtd0_v = dptx->sink.exp_edid.dtd_timing[vmode_p->base_dtd_idx].v_act;
-			dtd0_h = dptx->sink.exp_edid.dtd_timing[vmode_p->base_dtd_idx].h_act;
-			dtd1_v = dptx->sink.exp_edid.dtd_timing[vmode_p1->base_dtd_idx].v_act;
-			dtd1_h = dptx->sink.exp_edid.dtd_timing[vmode_p1->base_dtd_idx].h_act;
+			dtd0_v = dptx->sink.timing[vmode_p->base_dtd_idx].v_act;
+			dtd0_h = dptx->sink.timing[vmode_p->base_dtd_idx].h_act;
+			dtd1_v = dptx->sink.timing[vmode_p1->base_dtd_idx].v_act;
+			dtd1_h = dptx->sink.timing[vmode_p1->base_dtd_idx].h_act;
 			dtd0_fr = vmode_p->fr_adv == 1 ? (vmode_p->fr100_int * 10 / 1001) :
 							((vmode_p->fr100_int + 50) / 100);
 			dtd1_fr = vmode_p1->fr_adv == 1 ? (vmode_p1->fr100_int * 10 / 1001) :
@@ -252,8 +260,8 @@ void dptx_vmode_manage(struct dptx_drv_s *dptx)
 	memset(&dptx->vmode_mgr.vmodes[0], 0, 64 * sizeof(struct dptx_vmode_s));
 
 	for (i = 0; i < DPTX_DRV_TIMING_MAX; i++) {
-		if (i < dptx->sink.exp_edid.dtd_cnt) {
-			temp_dt_p = &dptx->sink.exp_edid.dtd_timing[i];
+		if (i < dptx->sink.dt_cnt) {
+			temp_dt_p = &dptx->sink.timing[i];
 			act_pix_cnt = temp_dt_p->h_act * temp_dt_p->v_act;
 			total_pix_cnt = temp_dt_p->h_period * temp_dt_p->v_period;
 			fr100 = dptx_div_around(temp_dt_p->pclk, total_pix_cnt);
@@ -274,38 +282,36 @@ void dptx_vmode_manage(struct dptx_drv_s *dptx)
 
 			if (dtd_pix_idx[i][0] == 0 || dtd_pix_idx[j][0] == 0)
 				continue;
-			if (dptx->sink.exp_edid.dtd_timing[i].ctrl & CTRL_DUPLICATED_TIMING ||
-			    dptx->sink.exp_edid.dtd_timing[j].ctrl & CTRL_DUPLICATED_TIMING)
+			if (dptx->sink.timing[i].ctrl & CTRL_DUPLICATED_TIMING ||
+			    dptx->sink.timing[j].ctrl & CTRL_DUPLICATED_TIMING)
 				continue;
 			if (dtd_pix_idx[i][0] != dtd_pix_idx[j][0]) //same act
 				continue;
 
-			if (dptx->sink.exp_edid.range.vfreq[1]) { // fr range
+			if (dptx->sink.edid.range.vfreq[1]) { // fr range
 				if (dtd_pix_idx[i][1] >= dtd_pix_idx[j][1]) {
 					if (dtd_pix_idx[i][2] >
-							dptx->sink.exp_edid.range.vfreq[1] ||
+							dptx->sink.edid.range.vfreq[1] ||
 					    dtd_pix_idx[i][2] <
-							dptx->sink.exp_edid.range.vfreq[0])
+							dptx->sink.edid.range.vfreq[0])
 						continue;
-					dptx->sink.exp_edid.dtd_timing[i].ctrl |=
-						CTRL_DUPLICATED_TIMING;
+					dptx->sink.timing[i].ctrl |= CTRL_DUPLICATED_TIMING;
 				} else {
 					if (dtd_pix_idx[j][2] >
-							dptx->sink.exp_edid.range.vfreq[1] ||
+							dptx->sink.edid.range.vfreq[1] ||
 					    dtd_pix_idx[j][2] <
-							dptx->sink.exp_edid.range.vfreq[0])
+							dptx->sink.edid.range.vfreq[0])
 						continue;
-					dptx->sink.exp_edid.dtd_timing[j].ctrl |=
-						CTRL_DUPLICATED_TIMING;
+					dptx->sink.timing[j].ctrl |= CTRL_DUPLICATED_TIMING;
 				}
 				continue;
 			} else {
 				if (dtd_pix_idx[i][2] == dtd_pix_idx[j][2]) { // same fr
 					if (dtd_pix_idx[i][1] >= dtd_pix_idx[j][1])
-						dptx->sink.exp_edid.dtd_timing[i].ctrl |=
+						dptx->sink.timing[i].ctrl |=
 							CTRL_DUPLICATED_TIMING;
 					else
-						dptx->sink.exp_edid.dtd_timing[j].ctrl |=
+						dptx->sink.timing[j].ctrl |=
 							CTRL_DUPLICATED_TIMING;
 					continue;
 				}
@@ -317,23 +323,23 @@ void dptx_vmode_manage(struct dptx_drv_s *dptx)
 		if (dtd_pix_idx[i][0] == 0)
 			continue;
 
-		if (dptx->sink.exp_edid.dtd_timing[i].ctrl & CTRL_DUPLICATED_TIMING)
+		if (dptx->sink.timing[i].ctrl & CTRL_DUPLICATED_TIMING)
 			continue;
 
 		dtd_add_vmode_list(dptx, i, 0, 0);
 
-		if (!dptx->sink.exp_edid.range.vfreq[1])
+		if (!dptx->sink.edid.range.vfreq[1])
 			continue;
 
-		if (dptx->sink.exp_edid.dtd_timing[i].fr1000 / 1000 >
-					dptx->sink.exp_edid.range.vfreq[1] ||
-		    dptx->sink.exp_edid.dtd_timing[i].fr1000 / 1000 <
-					dptx->sink.exp_edid.range.vfreq[0])
+		if (dptx->sink.timing[i].fr1000 / 1000 >
+					dptx->sink.edid.range.vfreq[1] ||
+		    dptx->sink.timing[i].fr1000 / 1000 <
+					dptx->sink.edid.range.vfreq[0])
 			continue;
 
 		for (j = 0; j < ARRAY_SIZE(dptx_fr_int); j++) {
-			if (dptx_fr_int[j] <= dptx->sink.exp_edid.range.vfreq[1] &&
-			    dptx_fr_int[j] >= dptx->sink.exp_edid.range.vfreq[0]) {
+			if (dptx_fr_int[j] <= dptx->sink.edid.range.vfreq[1] &&
+			    dptx_fr_int[j] >= dptx->sink.edid.range.vfreq[0]) {
 				dtd_add_vmode_list(dptx, i, dptx_fr_int[j], 0);
 			}
 		}

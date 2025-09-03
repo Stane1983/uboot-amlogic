@@ -180,10 +180,6 @@ struct dptx_edid_info_s {
 		uint16_t h_blank_min, v_blank_min;
 	} range;
 
-	uint8_t dtd_cnt;
-
-	struct dptx_detail_timing_s dtd_timing[DPTX_DRV_TIMING_MAX];
-
 	uint8_t ext_flag;  //[126]1byte
 	uint8_t did_version;
 
@@ -261,8 +257,6 @@ struct dptx_link_cfg_s {
 	uint8_t phy_update;
 	uint8_t curr_ds[4];
 	uint8_t adj_req_ds[4];
-
-	struct dptx_edid_info_s int_edid;
 };
 
 #define LCD_CLK_SS_BIT_FREQ             0
@@ -378,7 +372,9 @@ struct dptx_drv_s {
 		uint8_t dual_port_type;
 		uint8_t hpd_mask;
 		uint8_t pwr_gpio_mask;
-		struct dptx_edid_info_s exp_edid;
+		uint8_t dt_cnt;
+		struct dptx_detail_timing_s timing[DPTX_DRV_TIMING_MAX];
+		struct dptx_edid_info_s edid;
 		struct dptx_link_cfg_s *link[4];
 	} sink;
 

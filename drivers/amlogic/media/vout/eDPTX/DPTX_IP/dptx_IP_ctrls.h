@@ -58,6 +58,9 @@ struct dptx_if_ctrl_s {
 
 	void (*PSR1_SDP_ctrl)(struct dptx_drv_s *dptx, uint8_t port, uint8_t flag);
 	void (*PSR2_SDP_en)(struct dptx_drv_s *dptx, uint8_t port, uint8_t flag);
+
+	void (*reg_store)(struct dptx_drv_s *dptx, uint8_t port, uint32_t d0, uint32_t d1);
+	void (*reg_store_get)(struct dptx_drv_s *dptx, uint8_t port, uint32_t *d0, uint32_t *d1);
 };
 
 struct dptx_if_ctrl_s *dptx_if_bind_t7(struct dptx_drv_s *dptx);
