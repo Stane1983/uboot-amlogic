@@ -58,6 +58,7 @@ void *memory_addr;
 AvbOps avb_ops_;
 int run_in_recovery;
 int recovery_from_memory;
+int factory_partition_init;
 
 struct avb_part {
 	char name[16];
@@ -753,7 +754,7 @@ static AvbIOResult read_is_device_unlocked(AvbOps* ops, bool* out_is_unlocked)
 #define AVB_PERSISTENT_VERSION (0x0)
 #define PERSISTENT_NAME_MAX_LEN (64)
 #define PERSISTENT_VALUE_MAX_LEN (64)
-#define PERSISTENT_FILENAME "avb_persist"
+#define PERSISTENT_FILENAME "avb/avb_persist"
 
 #define DEV_NAME                "mmc"
 #define DEV_NO                  (1)
@@ -776,11 +777,14 @@ static uint8_t *persistent_store(int32_t *is_empty)
 	int rc = 0;
 	loff_t act_read = 0;
 
-	/* initialize factory partition */
-	rc = run_command("factory_provision init", 0);
-	if (rc) {
-		printf("init factory partition failed\n");
-		return NULL;
+	if (!factory_partition_init) {
+		/* initialize factory partition */
+		rc = run_command("factory_provision init", 0);
+		if (rc) {
+			printf("init factory partition failed\n");
+			return NULL;
+		}
+		factory_partition_init = 1;
 	}
 
 	buf = malloc(AVB_PERSISTENT_SIZE);
@@ -946,12 +950,26 @@ static AvbIOResult write_persistent_to_factory(uint8_t *buf, uint32_t size)
 	else
 		strcpy(part_name, PART_NAME_RSV);
 
+	/* assuming directory is already there */
 	sprintf(cmd, "fatwrite %s 0x%X:0x%X 0x%08X %s 0x%X", DEV_NAME, DEV_NO,
 			get_partition_num_by_name(part_name),
 			(uint32_t)virt_to_phys((void *)buf), PERSISTENT_FILENAME, size);
 	if (run_command(cmd, 0)) {
-		printf("command[%s] failed\n", cmd);
-		return AVB_IO_RESULT_ERROR_IO;
+		/* if write fails, let's try creating directory */
+		sprintf(cmd, "fatmkdir %s 0x%X:0x%X %s", DEV_NAME, DEV_NO,
+				get_partition_num_by_name(part_name), "avb");
+		if (run_command(cmd, 0)) {
+			printf("command[%s] failed\n", cmd);
+			return AVB_IO_RESULT_ERROR_IO;
+		}
+
+		sprintf(cmd, "fatwrite %s 0x%X:0x%X 0x%08X %s 0x%X", DEV_NAME, DEV_NO,
+				get_partition_num_by_name(part_name),
+				(uint32_t)virt_to_phys((void *)buf), PERSISTENT_FILENAME, size);
+		if (run_command(cmd, 0)) {
+			printf("command[%s] failed\n", cmd);
+			return AVB_IO_RESULT_ERROR_IO;
+		}
 	}
 
 	return AVB_IO_RESULT_OK;
