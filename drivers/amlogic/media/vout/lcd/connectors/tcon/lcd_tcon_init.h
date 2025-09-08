@@ -39,7 +39,7 @@ static struct lcd_tcon_init_setting_s lcd_tcon_init_pre_setting_fhd[] = {
 	//addr, val, bit, len
 	{0x207, 0,    4,   1},  //pre_proc_clk disable
 	{0x263, 0,   31,   1},  //od ddrif disable
-	{0x207, 0,   31,   1},   //demura ddrif disable
+	{0x198, 0,   31,   1},   //demura ddrif disable
 	{0x222, 1,   14,   1},   //demo acc
 	{0x222, 1,   15,   1},   //demo dither
 	{0x240, 1,    1,   1},   //demo od
