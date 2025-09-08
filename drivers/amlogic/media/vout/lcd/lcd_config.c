@@ -2351,7 +2351,8 @@ static int lcd_panel_parse_basic(struct json_parse_s *jsp, struct aml_lcd_drv_s 
 	str = json_get_obj_str(jsp, json, "interface", "invalid");
 	cfg->lcd_type = lcd_type_str_to_type(str);
 
-	cfg->config_check = json_get_obj_u32(jsp, json, "config_check", 1);
+	cfg->config_check = json_get_obj_u32(jsp, json, "config_check", 0xff);
+	cfg->config_check = cfg->config_check == 0xff ? 0x0 : cfg->config_check ? 0x3 : 0x2;
 	pdrv->config.custom_pinmux = json_get_obj_u32(jsp, json, "custom_pinmux", 0);
 
 	child = json_get_object_child(jsp, json, "screen_size");
