@@ -974,18 +974,20 @@ static int lcd_pll_frac_generate_phy(struct aml_lcd_drv_s *pdrv)
 	if (lcd_debug_print_flag & LCD_DBG_PR_CLK)
 		LCDPR("%s enc_clk=%d\n", __func__, enc_clk);
 
-	clk_div_out = enc_clk * cconf->xd;
-	if (clk_div_out > cconf->data->pll_data[0]->div_out_fmax) {
-		LCDERR("%s: wrong clk_div_out value %uHz\n", __func__, clk_div_out);
+	pll_fvco = pconf->timing.bit_rate * tcon_div_table[cconf->pll_tcon_div_sel];
+	if (pll_fvco < cconf->data->pll_data[0]->pll_vco_fmin ||
+	    pll_fvco > cconf->data->pll_data[0]->pll_vco_fmax) {
+		LCDERR("%s: wrong pll_fvco value %lldHz\n", __func__, pll_fvco);
 		return -1;
 	}
+	if (lcd_debug_print_flag & LCD_DBG_PR_CLK)
+		LCDPR("%s pll_fvco=%lld\n", __func__, pll_fvco);
 
-	clk_div_in = clk_vid_pll_div_calc(clk_div_out, clk_div_sel, CLK_DIV_O2I);
+	clk_div_in = lcd_do_div(pll_fvco, od1 * od2 * od3);
 	if (clk_div_in > cconf->data->pll_data[0]->div_in_fmax) {
 		LCDERR("%s: wrong clk_div_in value %lldHz\n", __func__, clk_div_in);
 		return -1;
 	}
-
 	pll_fout = clk_div_in;
 	if (pll_fout > cconf->data->pll_data[0]->pll_out_fmax ||
 	    pll_fout < cconf->data->pll_data[0]->pll_out_fmin) {
@@ -995,17 +997,11 @@ static int lcd_pll_frac_generate_phy(struct aml_lcd_drv_s *pdrv)
 	if (lcd_debug_print_flag & LCD_DBG_PR_CLK)
 		LCDPR("%s pll_fout=%lld\n", __func__, pll_fout);
 
-	if (cconf->data->pll_data[0]->od_cnt == 3)
-		pll_fvco = pll_fout * od1 * od2 * od3;
-	else
-		pll_fvco = pll_fout * od1;
-	if (pll_fvco < cconf->data->pll_data[0]->pll_vco_fmin ||
-	    pll_fvco > cconf->data->pll_data[0]->pll_vco_fmax) {
-		LCDERR("%s: wrong pll_fvco value %lldHz\n", __func__, pll_fvco);
+	clk_div_out = clk_vid_pll_div_calc(clk_div_in, clk_div_sel, CLK_DIV_I2O);
+	if (clk_div_out > cconf->data->pll_data[0]->div_out_fmax) {
+		LCDERR("%s: wrong clk_div_out value %uHz\n", __func__, clk_div_out);
 		return -1;
 	}
-	if (lcd_debug_print_flag & LCD_DBG_PR_CLK)
-		LCDPR("%s pll_fvco=%lld\n", __func__, pll_fvco);
 
 	ret = lcd_pll_get_frac(cconf, LCD_PLL_SEL_PHY, pll_fvco);
 	if (ret == 0) {
