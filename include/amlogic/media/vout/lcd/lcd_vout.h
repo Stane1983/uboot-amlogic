@@ -581,6 +581,8 @@ struct lcd_power_ctrl_s {
 	int *pmu_gpio;
 	struct lcd_power_step_s power_on_step[LCD_PWR_STEP_MAX];
 	struct lcd_power_step_s power_off_step[LCD_PWR_STEP_MAX];
+	int power_on_step_max; /*  internal use for debug */
+	int power_off_step_max; /* internal use for debug */
 };
 
 #define LCD_PINMX_MAX              10

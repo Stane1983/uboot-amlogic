@@ -722,9 +722,11 @@ int lcd_get_dts_panel_node_ofst(unsigned char drv_idx)
 
 static int lcd_power_load_from_dts(struct aml_lcd_drv_s *pdrv, char *dt_addr, int child_offset)
 {
+	struct lcd_power_ctrl_s *power_step = &pdrv->config.power;
 	struct lcd_power_step_s *pstep;
 	char *propdata;
 	unsigned int i, j, temp;
+	int append_more = 1;
 
 	pstep = pdrv->config.power.power_on_step;
 	propdata = (char *)fdt_getprop(dt_addr, child_offset, "power_on_step", NULL);
@@ -737,15 +739,20 @@ static int lcd_power_load_from_dts(struct aml_lcd_drv_s *pdrv, char *dt_addr, in
 		j = 4 * i;
 		temp = be32_to_cpup((((u32 *)propdata) + j));
 		pstep[i].type = temp;
-		if (temp == 0xff)
+		if (temp == 0xff) {
+			i++;
 			break;
+		}
 		temp = be32_to_cpup((((u32 *)propdata) + j + 1));
 		pstep[i].index = temp;
 		temp = be32_to_cpup((((u32 *)propdata) + j + 2));
 		pstep[i].value = temp;
 		temp = be32_to_cpup((((u32 *)propdata) + j + 3));
 		pstep[i].delay = temp;
-		if (pstep[i].type == LCD_POWER_TYPE_CLK_SS) {
+
+		/* gpio/extern probe */
+		switch (pstep[i].type) {
+		case LCD_POWER_TYPE_CLK_SS:
 			temp = pstep[i].value;
 			pdrv->config.timing.ss_freq = temp & 0xf;
 			pdrv->config.timing.ss_mode = (temp >> 4) & 0xf;
@@ -755,14 +762,41 @@ static int lcd_power_load_from_dts(struct aml_lcd_drv_s *pdrv, char *dt_addr, in
 				      pdrv->config.timing.ss_freq,
 				      pdrv->config.timing.ss_mode);
 			}
-		} else if (pstep[i].type == LCD_POWER_TYPE_EXTERN) {
+			break;
 #ifdef CONFIG_AML_LCD_EXTERN
+		case LCD_POWER_TYPE_EXTERN:
 			lcd_extern_dev_index_add(pdrv->index, pstep[i].index);
+			break;
 #endif
-		} else if (pstep[i].type == LCD_POWER_TYPE_MUTE) {
+		case LCD_POWER_TYPE_MUTE:
 			pdrv->status |= LCD_STATUS_PRE_MUTE;
+			break;
+		case LCD_POWER_TYPE_BACKLIGHT:
+			append_more = 0;
+			break;
+		default:
+			break;
 		}
 		i++;
+	}
+	power_step->power_on_step_max = i;
+
+	if (append_more && i + 2 < LCD_PWR_STEP_MAX) {
+		i--;
+		pstep[i].type = LCD_POWER_TYPE_BACKLIGHT;
+		pstep[i].index = 0;
+		pstep[i].value = 1; //bl on
+		pstep[i].delay = 0;
+		i++;
+
+		pstep[i].type = LCD_POWER_TYPE_MUTE;
+		pstep[i].index = 0;
+		pstep[i].value = 0;//unmute
+		pstep[i].delay = 4;
+		i++;
+		pstep[i].type = LCD_POWER_TYPE_MAX;
+		i++;
+		power_step->power_on_step_max = i;
 	}
 
 	pstep = pdrv->config.power.power_off_step;
@@ -771,25 +805,55 @@ static int lcd_power_load_from_dts(struct aml_lcd_drv_s *pdrv, char *dt_addr, in
 		LCDERR("[%d]: failed to get power_off_step\n", pdrv->index);
 		return 0;
 	}
+	append_more = 1;
 	i = 0;
 	while (i < LCD_PWR_STEP_MAX) {
 		j = 4 * i;
 		temp = be32_to_cpup((((u32 *)propdata) + j));
 		pstep[i].type = temp;
-		if (temp == 0xff)
+		if (temp == 0xff) {
+			i++;
 			break;
+		}
 		temp = be32_to_cpup((((u32 *)propdata) + j + 1));
 		pstep[i].index = temp;
 		temp = be32_to_cpup((((u32 *)propdata) + j + 2));
 		pstep[i].value = temp;
 		temp = be32_to_cpup((((u32 *)propdata) + j + 3));
 		pstep[i].delay = temp;
-		if (pstep[i].type == LCD_POWER_TYPE_EXTERN) {
+
+		/* gpio/extern probe */
+		switch (pstep[i].type) {
 #ifdef CONFIG_AML_LCD_EXTERN
+		case LCD_POWER_TYPE_EXTERN:
 			lcd_extern_dev_index_add(pdrv->index, pstep[i].index);
+			break;
 #endif
+		case LCD_POWER_TYPE_BACKLIGHT:
+		case LCD_POWER_TYPE_MUTE:
+			append_more = 0;
+			break;
+		default:
+			break;
 		}
 		i++;
+	}
+	power_step->power_off_step_max = i;
+
+	if (append_more && i + 2 < LCD_POWER_TYPE_MAX) {
+		i--;
+		for (j = i + 2; j >= 2; j--)
+			memcpy(&pstep[j], &pstep[j - 2], sizeof(struct lcd_power_step_s));
+		power_step->power_off_step_max += 2;
+		pstep[0].type  = LCD_POWER_TYPE_MUTE;
+		pstep[0].index = 0;
+		pstep[0].value = 1; //mute
+		pstep[0].delay = 3;
+
+		pstep[1].type = LCD_POWER_TYPE_BACKLIGHT;
+		pstep[1].index = 0;
+		pstep[1].value = 0;//bl off
+		pstep[1].delay = 0;
 	}
 
 	return 0;
@@ -1354,10 +1418,12 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 static int lcd_power_load_from_unifykey(struct aml_lcd_drv_s *pdrv,
 					unsigned char *buf, int key_len, int len)
 {
+	struct lcd_power_ctrl_s *power_step = &pdrv->config.power;
 	struct lcd_power_step_s *pstep;
 	int i, j, temp;
 	unsigned char *p;
 	int ret = 0;
+	int append_more = 1;
 
 	/* power: (5byte * n) */
 	pstep = pdrv->config.power.power_on_step;
@@ -1387,10 +1453,14 @@ static int lcd_power_load_from_unifykey(struct aml_lcd_drv_s *pdrv,
 			      i, pstep[i].type, pstep[i].index,
 			      pstep[i].value, pstep[i].delay);
 		}
-		if (pstep[i].type >= LCD_POWER_TYPE_MAX)
+		if (pstep[i].type >= LCD_POWER_TYPE_MAX) {
+			i++;
 			break;
+		}
 
-		if (pstep[i].type == LCD_POWER_TYPE_CLK_SS) {
+		/* gpio/extern probe */
+		switch (pstep[i].type) {
+		case LCD_POWER_TYPE_CLK_SS:
 			temp = pstep[i].value;
 			pdrv->config.timing.ss_freq = temp & 0xf;
 			pdrv->config.timing.ss_mode = (temp >> 4) & 0xf;
@@ -1400,16 +1470,43 @@ static int lcd_power_load_from_unifykey(struct aml_lcd_drv_s *pdrv,
 				      pdrv->config.timing.ss_freq,
 				      pdrv->config.timing.ss_mode);
 			}
-		} else if (pstep[i].type == LCD_POWER_TYPE_EXTERN) {
+			break;
 #ifdef CONFIG_AML_LCD_EXTERN
+		case LCD_POWER_TYPE_EXTERN:
 			lcd_extern_dev_index_add(pdrv->index, pstep[i].index);
+			break;
 #endif
-		} else if (pstep[i].type == LCD_POWER_TYPE_MUTE) {
+		case LCD_POWER_TYPE_MUTE:
 			pdrv->status |= LCD_STATUS_PRE_MUTE;
+			break;
+		case LCD_POWER_TYPE_BACKLIGHT:
+			append_more = 0;
+			break;
+		default:
+			break;
 		}
 		i++;
 	}
+	power_step->power_on_step_max = i;
 
+	if (append_more && i + 2 < LCD_PWR_STEP_MAX) {
+		i--;
+		pstep[i].type = LCD_POWER_TYPE_BACKLIGHT;
+		pstep[i].index = 0;
+		pstep[i].value = 1; //bl on
+		pstep[i].delay = 0;
+		i++;
+		pstep[i].type = LCD_POWER_TYPE_MUTE;
+		pstep[i].index = 0;
+		pstep[i].value = 0;//unmute
+		pstep[i].delay = 4;
+		i++;
+		pstep[i].type = LCD_POWER_TYPE_MAX;
+		i++;
+		power_step->power_on_step_max = i;
+	}
+
+	append_more = 1;
 	pstep = pdrv->config.power.power_off_step;
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("[%d]: power_off step:\n", pdrv->index);
@@ -1437,15 +1534,43 @@ static int lcd_power_load_from_unifykey(struct aml_lcd_drv_s *pdrv,
 			      j, pstep[j].type, pstep[j].index,
 			      pstep[j].value, pstep[j].delay);
 		}
-		if (pstep[j].type >= LCD_POWER_TYPE_MAX)
+		if (pstep[j].type >= LCD_POWER_TYPE_MAX) {
+			i++;
 			break;
+		}
 
-		if (pstep[j].type == LCD_POWER_TYPE_EXTERN) {
+		/* gpio/extern probe */
+		switch (pstep[j].type) {
 #ifdef CONFIG_AML_LCD_EXTERN
+		case LCD_POWER_TYPE_EXTERN:
 			lcd_extern_dev_index_add(pdrv->index, pstep[j].index);
+			break;
 #endif
+		case LCD_POWER_TYPE_BACKLIGHT:
+		case LCD_POWER_TYPE_MUTE:
+			append_more = 0;
+			break;
+		default:
+			break;
 		}
 		j++;
+	}
+	power_step->power_off_step_max = i;
+
+	if (append_more && i + 2 < LCD_POWER_TYPE_MAX) {
+		i--;
+		for (j = i + 2; j >= 2; j--)
+			memcpy(&pstep[j], &pstep[j - 2], sizeof(struct lcd_power_step_s));
+		power_step->power_off_step_max += 2;
+		pstep[0].type  = LCD_POWER_TYPE_MUTE;
+		pstep[0].index = 0;
+		pstep[0].value = 1; //mute
+		pstep[0].delay = 3;
+
+		pstep[1].type = LCD_POWER_TYPE_BACKLIGHT;
+		pstep[1].index = 0;
+		pstep[1].value = 0;//bl off
+		pstep[1].delay = 0;
 	}
 
 	return ret;
@@ -2979,11 +3104,13 @@ static inline int lcd_config_load_from_json(struct aml_lcd_drv_s *pdrv)
 #ifdef CONFIG_CMD_AML_MODEL
 static int lcd_power_load_from_ini(struct aml_lcd_drv_s *pdrv, void *inip, void *psec)
 {
+	struct lcd_power_ctrl_s *power_step = &pdrv->config.power;
 	struct lcd_power_step_s *pstep;
 	int on_cnt = 0, off_cnt = 0, tmp_cnt, tmp_buf_size, trans_cnt;
 	int power_on_step = 0, power_off_step = 0;
 	unsigned int *tmp_buf;
 	int i, j, temp;
+	int append_more = 1;
 
 	on_cnt = lcd_ini_get_array_cnt(inip, psec, "power_on_step");
 	off_cnt = lcd_ini_get_array_cnt(inip, psec, "power_off_step");
@@ -3017,10 +3144,14 @@ static int lcd_power_load_from_ini(struct aml_lcd_drv_s *pdrv, void *inip, void 
 					pstep[i].value, pstep[i].delay);
 			}
 
-			if (pstep[i].type >= LCD_POWER_TYPE_MAX)
+			if (pstep[i].type >= LCD_POWER_TYPE_MAX) {
+				i++;
 				break;
+			}
 
-			if (pstep[i].type == LCD_POWER_TYPE_CLK_SS) {
+			/* gpio/extern probe */
+			switch (pstep[i].type) {
+			case LCD_POWER_TYPE_CLK_SS:
 				temp = pstep[i].value;
 				pdrv->config.timing.ss_freq = temp & 0xf;
 				pdrv->config.timing.ss_mode = (temp >> 4) & 0xf;
@@ -3030,15 +3161,43 @@ static int lcd_power_load_from_ini(struct aml_lcd_drv_s *pdrv, void *inip, void 
 						pdrv->config.timing.ss_freq,
 						pdrv->config.timing.ss_mode);
 				}
-			} else if (pstep[i].type == LCD_POWER_TYPE_EXTERN) {
+				break;
 #ifdef CONFIG_AML_LCD_EXTERN
+			case LCD_POWER_TYPE_EXTERN:
 				lcd_extern_dev_index_add(pdrv->index, pstep[i].index);
+				break;
 #endif
-			} else if (pstep[i].type == LCD_POWER_TYPE_MUTE) {
+			case LCD_POWER_TYPE_MUTE:
 				pdrv->status |= LCD_STATUS_PRE_MUTE;
+				break;
+			case LCD_POWER_TYPE_BACKLIGHT:
+				append_more = 0;
+				break;
+			default:
+				break;
 			}
 		}
+		power_step->power_on_step_max = i;
+
+		if (append_more && i + 2 < LCD_PWR_STEP_MAX) {
+			i--;
+			pstep[i].type = LCD_POWER_TYPE_BACKLIGHT;
+			pstep[i].index = 0;
+			pstep[i].value = 1; //bl on
+			pstep[i].delay = 0;
+			i++;
+			pstep[i].type = LCD_POWER_TYPE_MUTE;
+			pstep[i].index = 0;
+			pstep[i].value = 0;//unmute
+			pstep[i].delay = 4;
+			i++;
+			pstep[i].type = LCD_POWER_TYPE_MAX;
+			i++;
+			power_step->power_on_step_max = i;
+		}
 	}
+
+	append_more = 1;
 
 	if (off_cnt > 0) {
 		pstep = pdrv->config.power.power_off_step;
@@ -3058,15 +3217,44 @@ static int lcd_power_load_from_ini(struct aml_lcd_drv_s *pdrv, void *inip, void 
 					i, pstep[i].type, pstep[i].index,
 					pstep[i].value, pstep[i].delay);
 			}
-			if (pstep[i].type >= LCD_POWER_TYPE_MAX)
+			if (pstep[i].type >= LCD_POWER_TYPE_MAX) {
+				i++;
 				break;
+			}
 
-			if (pstep[i].type == LCD_POWER_TYPE_EXTERN) {
+			switch (pstep[i].type) {
 #ifdef CONFIG_AML_LCD_EXTERN
+			case LCD_POWER_TYPE_EXTERN:
 				lcd_extern_dev_index_add(pdrv->index, pstep[i].index);
+				break;
 #endif
+			case LCD_POWER_TYPE_BACKLIGHT:
+			case LCD_POWER_TYPE_MUTE:
+				append_more = 0;
+				break;
+			default:
+				break;
 			}
 		}
+
+		power_step->power_off_step_max = i;
+
+		if (append_more && i + 2 < LCD_POWER_TYPE_MAX) {
+			i--;
+			for (j = i + 2; j >= 2; j--)
+				memcpy(&pstep[j], &pstep[j - 2], sizeof(struct lcd_power_step_s));
+			power_step->power_off_step_max += 2;
+			pstep[0].type  = LCD_POWER_TYPE_MUTE;
+			pstep[0].index = 0;
+			pstep[0].value = 1; //mute
+			pstep[0].delay = 3;
+
+			pstep[1].type = LCD_POWER_TYPE_BACKLIGHT;
+			pstep[1].index = 0;
+			pstep[1].value = 0;//bl off
+			pstep[1].delay = 0;
+		}
+
 	}
 	memset(tmp_buf, 0, tmp_buf_size);
 	free(tmp_buf);
