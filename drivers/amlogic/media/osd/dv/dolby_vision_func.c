@@ -6,7 +6,7 @@
 #include <linux/kernel.h>
 #include <common.h>
 #include "dv_func.h"
-#include "./../../../../../cmd/amlogic/ini/ini_platform.h"
+#include <amlogic/aml_model.h>
 #include <malloc.h>
 #include <u-boot/md5.h>
 #include <u-boot/sha256.h>
@@ -299,7 +299,7 @@ int load_dv_fw(char *fw_dir, void *cp_info)
 {
 	unsigned long addr = DV_FW_ADDR;
 	char *p[8] = {NULL};
-	int rd_cnt = 0, tmp_size = 0;
+	int tmp_size = 0;
 	char *fw_addr = NULL;
 	unsigned char *tmp_buf = NULL;
 
@@ -310,10 +310,16 @@ int load_dv_fw(char *fw_dir, void *cp_info)
 		return -1;
 	}
 
-	tmp_size = iniGetFileSize(fw_dir);
+	tmp_buf = model_read_bin_to_buffer(fw_dir, &tmp_size);
+	if (!tmp_buf) {
+		printf("%s, read %s fw_dir error\n", __func__, fw_dir);
+		return -1;
+	}
 
 	if (tmp_size <= HEADER_SIZE || tmp_size > DV_FW_MAX_SIZE) {
 		printf("%s, file \"%s\" size error!\n", __func__, fw_dir);
+		memset(tmp_buf, 0, tmp_size);
+		free(tmp_buf);
 		return -1;
 	}
 
@@ -323,21 +329,6 @@ int load_dv_fw(char *fw_dir, void *cp_info)
 	if (!fw_addr || addr == 0) {
 		printf("%s, not found dv_fw_addr %s!\n", __func__, fw_addr);
 		return -1;
-	}
-
-	tmp_buf = (unsigned char *)malloc(tmp_size);
-	if (!tmp_buf) {
-		printf("%s, malloc failed!\n", __func__);
-		return -1;
-	}
-
-	if (tmp_buf) {
-		rd_cnt = iniReadFileToBuffer(fw_dir, 0, tmp_size, (unsigned char *)tmp_buf);
-		if (rd_cnt <= 0) {
-			printf("%s, read %s fw_dir error\n", __func__, fw_dir);
-			free(tmp_buf);
-			return -1;
-		}
 	}
 
 	if (check_fw_valid(tmp_buf, tmp_size) == 1) {
@@ -404,11 +395,11 @@ int control_path(
 #if LOAD_FROM_ARRAY
     load_dv_func(&cp_info);// load dovi_func[] in dv_func.h and run
 #else
-	if (fw_dir_odm_ext && iniIsFileExist(fw_dir_odm_ext)) {
+	if (fw_dir_odm_ext && model_file_is_exist(fw_dir_odm_ext)) {
 		ret = load_dv_fw(fw_dir_odm_ext, &cp_info);
-	} else if (fw_dir_vendor && iniIsFileExist(fw_dir_vendor)) {
+	} else if (fw_dir_vendor && model_file_is_exist(fw_dir_vendor)) {
 		ret = load_dv_fw(fw_dir_vendor, &cp_info);
-	} else if (fw_dir && iniIsFileExist(fw_dir)) {
+	} else if (fw_dir && model_file_is_exist(fw_dir)) {
 		ret = load_dv_fw(fw_dir, &cp_info);
 	} else {
 		printf("load dv fw fail\n");
