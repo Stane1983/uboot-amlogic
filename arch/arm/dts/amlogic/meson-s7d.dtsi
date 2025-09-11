@@ -253,6 +253,14 @@
 };
 
 &pinctrl_periphs {
+	remote_input_ao_pins:remote_input_ao_pins {
+		mux {
+			groups = "ir_remote_input";
+			function = "ir_remote";
+			bias-disable;
+		};
+	};
+
 	i2c0_pins1:i2c0_pins1 {
 		mux {
 			groups = "i2cm_a_sda",

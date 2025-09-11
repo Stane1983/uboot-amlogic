@@ -185,6 +185,13 @@
 };
 
 &pinctrl_periphs {
+	remote_input_ao_pins:remote_input_ao_pins {
+		mux {
+			groups = "ir_remote_in_f3";
+			function = "ir_remote";
+		};
+	};
+
 	i2c0_pins1:i2c0_pins1 {
 		mux {
 			groups = "i2c0_sda_e",
