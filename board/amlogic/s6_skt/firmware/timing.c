@@ -15,14 +15,26 @@
 #define VMIN_FT_GROUP3							680
 #define VMIN_FT_GROUP2							710
 #define VMIN_FT_GROUP1							730
-/* board vddee_pwm_value defines */
-#define VDDEE_PWM_VAL_GROUP3					0x60007
-#define VDDEE_PWM_VAL_GROUP2					0x40009
-#define VDDEE_PWM_VAL_GROUP1					0x40009
+/* board vddee_pwm_value defines for lp4 */
+/* GROUP3/2/1 = 760/780/780 mv */
+#define VDDEE_PWM_VAL_GROUP3_LP4					0x60007
+#define VDDEE_PWM_VAL_GROUP2_LP4					0x40009
+#define VDDEE_PWM_VAL_GROUP1_LP4					0x40009
+/* board vddee_pwm_value defines for lp5*/
+/* GROUP3/2/1 = 790/810/810 mv */
+#define VDDEE_PWM_VAL_GROUP3					0x3000a
+#define VDDEE_PWM_VAL_GROUP2					0x1000c
+#define VDDEE_PWM_VAL_GROUP1					0x1000c
 /* board vddddr_pwm_value defines */
-#define VDDDDR_PWM__VAL_GROUP3					0x60007
-#define VDDDDR_PWM__VAL_GROUP2					0x40009
-#define VDDDDR_PWM__VAL_GROUP1					0x40009
+/* GROUP3/2/1 = 760/770/770 mv */
+#define VDDDDR_PWM__VAL_GROUP3					0x0e0010
+#define VDDDDR_PWM__VAL_GROUP2					0x0c0012
+#define VDDDDR_PWM__VAL_GROUP1					0x0c0012
+/* board EE_DDR_GAP defines */
+/* GROUP3/2/1 = 30/40/40 mv */
+#define EE_DDR_GAP_GROUP3					30
+#define EE_DDR_GAP_GROUP2					40
+#define EE_DDR_GAP_GROUP1					40
 
 board_clk_set_t __board_clk_setting
 __attribute__ ((section(".clk_param"))) = {
@@ -218,39 +230,69 @@ __attribute__ ((section(".clk_param"))) = {
 
 /* VDDDDR_VAL_REG */
 #if   (VDDDDR_VAL == 680)
-#define VDDDDR_VAL_REG   0xf0000
+#define VDDDDR_VAL_REG   0x1e0000
+#elif (VDDDDR_VAL == 685)
+#define VDDDDR_VAL_REG   0x1d0001
 #elif (VDDDDR_VAL == 690)
-#define VDDDDR_VAL_REG   0xd0000
+#define VDDDDR_VAL_REG   0x1c0002
+#elif (VDDDDR_VAL == 695)
+#define VDDDDR_VAL_REG   0x1b0003
 #elif (VDDDDR_VAL == 700)
-#define VDDDDR_VAL_REG   0xc0001
+#define VDDDDR_VAL_REG   0x1a0004
+#elif (VDDDDR_VAL == 705)
+#define VDDDDR_VAL_REG   0x190005
 #elif (VDDDDR_VAL == 710)
-#define VDDDDR_VAL_REG   0xb0002
+#define VDDDDR_VAL_REG   0x180006
+#elif (VDDDDR_VAL == 715)
+#define VDDDDR_VAL_REG   0x170007
 #elif (VDDDDR_VAL == 720)
-#define VDDDDR_VAL_REG   0xa0003
+#define VDDDDR_VAL_REG   0x160008
+#elif (VDDDDR_VAL == 725)
+#define VDDDDR_VAL_REG   0x150009
 #elif (VDDDDR_VAL == 730)
-#define VDDDDR_VAL_REG   0x90004
+#define VDDDDR_VAL_REG   0x14000a
+#elif (VDDDDR_VAL == 735)
+#define VDDDDR_VAL_REG   0x13000b
 #elif (VDDDDR_VAL == 740)
-#define VDDDDR_VAL_REG   0x80005
+#define VDDDDR_VAL_REG   0x12000c
+#elif (VDDDDR_VAL == 745)
+#define VDDDDR_VAL_REG   0x11000d
 #elif (VDDDDR_VAL == 750)
-#define VDDDDR_VAL_REG   0x70006
+#define VDDDDR_VAL_REG   0x10000e
+#elif (VDDDDR_VAL == 755)
+#define VDDDDR_VAL_REG   0x0f000f
 #elif (VDDDDR_VAL == 760)
-#define VDDDDR_VAL_REG   0x60007
+#define VDDDDR_VAL_REG   0x0e0010
+#elif (VDDDDR_VAL == 765)
+#define VDDDDR_VAL_REG   0x0d0011
 #elif (VDDDDR_VAL == 770)
-#define VDDDDR_VAL_REG   0x50008
+#define VDDDDR_VAL_REG   0x0c0012
+#elif (VDDDDR_VAL == 775)
+#define VDDDDR_VAL_REG   0x0b0013
 #elif (VDDDDR_VAL == 780)
-#define VDDDDR_VAL_REG   0x40009
+#define VDDDDR_VAL_REG   0x0a0014
+#elif (VDDDDR_VAL == 785)
+#define VDDDDR_VAL_REG   0x090015
 #elif (VDDDDR_VAL == 790)
-#define VDDDDR_VAL_REG   0x3000a
+#define VDDDDR_VAL_REG   0x080016
+#elif (VDDDDR_VAL == 795)
+#define VDDDDR_VAL_REG   0x070017
 #elif (VDDDDR_VAL == 800)
-#define VDDDDR_VAL_REG   0x2000b
+#define VDDDDR_VAL_REG   0x060018
+#elif (VDDDDR_VAL == 805)
+#define VDDDDR_VAL_REG   0x050019
 #elif (VDDDDR_VAL == 810)
-#define VDDDDR_VAL_REG   0x1000c
+#define VDDDDR_VAL_REG   0x04001a
+#elif (VDDDDR_VAL == 815)
+#define VDDDDR_VAL_REG   0x03001b
 #elif (VDDDDR_VAL == 820)
-#define VDDDDR_VAL_REG   0x0000d
+#define VDDDDR_VAL_REG   0x02001c
+#elif (VDDDDR_VAL == 825)
+#define VDDDDR_VAL_REG   0x01001d
 #elif (VDDDDR_VAL == 830)
-#define VDDDDR_VAL_REG   0x0000f
+#define VDDDDR_VAL_REG   0x00001e
 #else
-#error "VDDEE val out of range\n"
+#error "VDDDDR val out of range\n"
 #endif
 
 bl2_reg_t __bl2_reg[] __attribute__ ((section(".generic_param"))) = {
@@ -266,12 +308,17 @@ __attribute__ ((section(".misc_param"))) = {
 	{ 0, VMIN_FT_GROUP2, 0xffffffff, 0, BL2_VMIN_FT_FLAG_2, 0 },
 	{ 0, VMIN_FT_GROUP3, 0xffffffff, 0, BL2_VMIN_FT_FLAG_3, 0 },
 #ifdef CONFIG_PDVFS_ENABLE
-	{ PWM_PWM_D, VDDEE_PWM_VAL_GROUP1, 0xffffffff, 0, BL2_VDDEE_PWM_VAL_FLAG_1, 0 },
+	/* VDDEE FOR LP5*/
+	{ PWM_PWM_D, VDDEE_PWM_VAL_GROUP1, 0xffffffff, 0, BL2_VDDEE_PWM_VAL_FLAG_1, EE_DDR_GAP_GROUP1 },
 	{ PWM_PWM_A, VDDDDR_PWM__VAL_GROUP1, 0xffffffff, 0, BL2_VDDDDR_PWM_VAL_FLAG_1, 0 },
-	{ PWM_PWM_D, VDDEE_PWM_VAL_GROUP2, 0xffffffff, 0, BL2_VDDEE_PWM_VAL_FLAG_2, 0 },
+	{ PWM_PWM_D, VDDEE_PWM_VAL_GROUP2, 0xffffffff, 0, BL2_VDDEE_PWM_VAL_FLAG_2, EE_DDR_GAP_GROUP2 },
 	{ PWM_PWM_A, VDDDDR_PWM__VAL_GROUP2, 0xffffffff, 0, BL2_VDDDDR_PWM_VAL_FLAG_2, 0 },
-	{ PWM_PWM_D, VDDEE_PWM_VAL_GROUP3, 0xffffffff, 0, BL2_VDDEE_PWM_VAL_FLAG_3, 0 },
+	{ PWM_PWM_D, VDDEE_PWM_VAL_GROUP3, 0xffffffff, 0, BL2_VDDEE_PWM_VAL_FLAG_3, EE_DDR_GAP_GROUP3 },
 	{ PWM_PWM_A, VDDDDR_PWM__VAL_GROUP3, 0xffffffff, 0, BL2_VDDDDR_PWM_VAL_FLAG_3, 0 },
+	/* VDDEE FOR LP4*/
+	{ PWM_PWM_D, VDDEE_PWM_VAL_GROUP1_LP4, 0xffffffff, 0, BL2_VDDEE_PWM_VAL_FLAG_1_LP4, 0 },
+	{ PWM_PWM_D, VDDEE_PWM_VAL_GROUP2_LP4, 0xffffffff, 0, BL2_VDDEE_PWM_VAL_FLAG_2_LP4, 0 },
+	{ PWM_PWM_D, VDDEE_PWM_VAL_GROUP3_LP4, 0xffffffff, 0, BL2_VDDEE_PWM_VAL_FLAG_3_LP4, 0 },
 #else
 	{ PWM_PWM_D,		   VDDEE_VAL_REG, 0xffffffff, 0, 0, 0},
 	{ PWM_PWM_A,		   VDDDDR_VAL_REG, 0xffffffff, 0, 0, 0},

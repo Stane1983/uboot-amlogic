@@ -15,8 +15,12 @@
 #define VMIN_FT_GROUP3							680
 #define VMIN_FT_GROUP2							710
 #define VMIN_FT_GROUP1							730
-/* board vddee_pwm_value defines */
-/* board vddee_pwm_value defines */
+/* board vddee_pwm_value defines for lp4 */
+/* GROUP3/2/1 = 760/780/780 mv */
+#define VDDEE_PWM_VAL_GROUP3_LP4					0x60007
+#define VDDEE_PWM_VAL_GROUP2_LP4					0x40009
+#define VDDEE_PWM_VAL_GROUP1_LP4					0x40009
+/* board vddee_pwm_value defines for lp5*/
 /* GROUP3/2/1 = 790/810/810 mv */
 #define VDDEE_PWM_VAL_GROUP3					0x3000a
 #define VDDEE_PWM_VAL_GROUP2					0x1000c
@@ -26,7 +30,6 @@
 #define VDDDDR_PWM__VAL_GROUP3					0x0e0010
 #define VDDDDR_PWM__VAL_GROUP2					0x0c0012
 #define VDDDDR_PWM__VAL_GROUP1					0x0c0012
-
 /* board EE_DDR_GAP defines */
 /* GROUP3/2/1 = 30/40/40 mv */
 #define EE_DDR_GAP_GROUP3					30
@@ -305,12 +308,17 @@ __attribute__ ((section(".misc_param"))) = {
 	{ 0, VMIN_FT_GROUP2, 0xffffffff, 0, BL2_VMIN_FT_FLAG_2, 0 },
 	{ 0, VMIN_FT_GROUP3, 0xffffffff, 0, BL2_VMIN_FT_FLAG_3, 0 },
 #ifdef CONFIG_PDVFS_ENABLE
+	/* VDDEE FOR LP5*/
 	{ PWM_PWM_D, VDDEE_PWM_VAL_GROUP1, 0xffffffff, 0, BL2_VDDEE_PWM_VAL_FLAG_1, EE_DDR_GAP_GROUP1 },
 	{ PWM_PWM_A, VDDDDR_PWM__VAL_GROUP1, 0xffffffff, 0, BL2_VDDDDR_PWM_VAL_FLAG_1, 0 },
 	{ PWM_PWM_D, VDDEE_PWM_VAL_GROUP2, 0xffffffff, 0, BL2_VDDEE_PWM_VAL_FLAG_2, EE_DDR_GAP_GROUP2 },
 	{ PWM_PWM_A, VDDDDR_PWM__VAL_GROUP2, 0xffffffff, 0, BL2_VDDDDR_PWM_VAL_FLAG_2, 0 },
 	{ PWM_PWM_D, VDDEE_PWM_VAL_GROUP3, 0xffffffff, 0, BL2_VDDEE_PWM_VAL_FLAG_3, EE_DDR_GAP_GROUP3 },
 	{ PWM_PWM_A, VDDDDR_PWM__VAL_GROUP3, 0xffffffff, 0, BL2_VDDDDR_PWM_VAL_FLAG_3, 0 },
+	/* VDDEE FOR LP4*/
+	{ PWM_PWM_D, VDDEE_PWM_VAL_GROUP1_LP4, 0xffffffff, 0, BL2_VDDEE_PWM_VAL_FLAG_1_LP4, 0 },
+	{ PWM_PWM_D, VDDEE_PWM_VAL_GROUP2_LP4, 0xffffffff, 0, BL2_VDDEE_PWM_VAL_FLAG_2_LP4, 0 },
+	{ PWM_PWM_D, VDDEE_PWM_VAL_GROUP3_LP4, 0xffffffff, 0, BL2_VDDEE_PWM_VAL_FLAG_3_LP4, 0 },
 #else
 	{ PWM_PWM_D,		   VDDEE_VAL_REG, 0xffffffff, 0, 0, 0},
 	{ PWM_PWM_A,		   VDDDDR_VAL_REG, 0xffffffff, 0, 0, 0},
