@@ -91,7 +91,7 @@
 };
 
 &ir {
-	status = "okay";
+	status = "disabled";
 	pinctrl-0 = <&remote_input_ao_pins>;
 	pinctrl-names = "default";
 };
