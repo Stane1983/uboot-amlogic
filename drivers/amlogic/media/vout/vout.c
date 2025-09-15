@@ -743,6 +743,20 @@ void vout_viu_mux(int index, unsigned int mux_sel)
 		vout_conf->viu_mux(index, mux_sel);
 }
 
+void vout_set_clkc(int index)
+{
+	if (vout_conf_check())
+		return;
+
+	if (index == VOUT_VIU2_SEL &&
+			vout_conf->viu_valid[1]) {
+		/* set cts_vpu_clkc to 250MHz*/
+		vout_clk_setb(CLKCTRL_VPU_CLKC_CTRL, 4, 9, 3);
+		vout_clk_setb(CLKCTRL_VPU_CLKC_CTRL, 3, 0, 7);
+		vout_clk_setb(CLKCTRL_VPU_CLKC_CTRL, 1, 8, 1);
+	}
+}
+
 void vout_init(void)
 {
 	vout_logl();

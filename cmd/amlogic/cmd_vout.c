@@ -335,6 +335,8 @@ static int do_vout_prepare_job(unsigned char vout_idx, char *mode_str)
 #ifdef CONFIG_AML_HDMITX
 	struct vinfo_s *vinfo  = vout_get_current_vinfo();
 	unsigned int fmt_mode = vinfo->vpp_post_out_color_fmt;
+	int st;
+	char *connector1_type;
 #endif
 
 	switch (on_connector_dev & CONNECTOR_DEV_MASK) {
@@ -376,6 +378,15 @@ static int do_vout_prepare_job(unsigned char vout_idx, char *mode_str)
 				vout_viu_mux(VOUT_VIU3_SEL, mux_sel);
 				vpp_viu3_matrix_update(VPP_CM_YUV);
 			}
+		} else {
+			/*
+			 * for dual display, hdmitx in viu2, the clkc should always be enabled,
+			 * whether the hpd of hdmitx is high or low.
+			 */
+			st = hdmitx_get_hpd_state_ext();
+			connector1_type = env_get("connector1_type");
+			if (!st && !strcmp(connector1_type, "HDMI-A-A"))
+				vout_set_clkc(VOUT_VIU2_SEL);
 		}
 		return 0;
 #endif

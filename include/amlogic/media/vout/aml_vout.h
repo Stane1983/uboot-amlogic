@@ -60,6 +60,7 @@ void vout_set_current_vmode(int mode);
 struct vinfo_s *vout_get_current_vinfo(void);
 void vout_viu_mux(int index, unsigned int mux_sel);
 extern unsigned long get_fb_addr(void);
+void vout_set_clkc(int index);
 
 void vout_probe(void);
 // int aml_vout_prepare(uint8_t vout_idx, char *mode);
