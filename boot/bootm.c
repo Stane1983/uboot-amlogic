@@ -454,40 +454,11 @@ static int do_fdt_overlay(void)
 }
 #endif
 
-#ifdef CONFIG_SUPPORT_PREBOOT
-void check_powerkey(void)
+__weak void check_powerkey(void)
 {
-	char *preboot_mode = env_get("preboot_mode");
-	//char *bootup_display = env_get("bootup_display");
-
-	if (!preboot_mode || !strcmp(preboot_mode, "0"))
-		return;
-	//if (bootup_display && strcmp(bootup_display, "preboot"))
-	//	return;
-	run_command("irkey_wakeup 4", 0);
-
-	char *key_status = env_get("ir_preboot_key");
-
-	if (key_status && strcmp(key_status, "0x0")) {
-		run_command("lcd mute 0", 0);
-		run_command("lcd bl on", 0);
-		printf("%s : exec lcd bl power on\n", __func__);
-	} else {
-		char *prebootenv = "androidboot.preboot_mode=1";
-		char *bootargs = env_get("bootconfig");
-		int nlen = strlen(prebootenv) + strlen(bootargs) + 2;
-		char *pnewbootargs = malloc(nlen);
-
-		if (pnewbootargs) {
-			memset((void *)pnewbootargs, 0, nlen);
-			sprintf(pnewbootargs, "%s %s", bootargs, prebootenv);
-			env_set("bootconfig", pnewbootargs);
-			free(pnewbootargs);
-			pnewbootargs = NULL;
-		}
-	}
+	pr_info("[bootm]: check_powerkey\n");
 }
-#endif
+
 /**
  * bootm_find_images - wrapper to find and locate various images
  * @flag: Ignored Argument
@@ -515,9 +486,8 @@ int bootm_find_images(int flag, int argc, char *const argv[], ulong start,
 	u32 fdto_totalsize = 0;
 #endif
 
-#ifdef CONFIG_SUPPORT_PREBOOT
 	check_powerkey();
-#endif
+
 	/* find ramdisk */
 	ret = boot_get_ramdisk(argc, argv, &images, IH_INITRD_ARCH,
 			       &images.rd_start, &images.rd_end);
