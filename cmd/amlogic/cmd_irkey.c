@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <misc.h>
 #include <asm/amlogic/arch/mailbox.h>
+#include <linux/libfdt.h>
 
 #define KEY_PARAMS_NUM  10
 #define OTHER_PARAMS_NUM 1
@@ -25,6 +26,53 @@ enum IrMboxCmdType {
 };
 
 extern u32 get_time(void);
+
+int update_for_dtb_wakeup_key(void)
+{
+	const void *nodep;	/* property node pointer */
+	int  nodeoffset;	/* node offset from libfdt */
+	int  len, j, i;		/* length of the property */
+	const __be32 *p;
+	u32 framecode, ret;
+	u32 data[MAX_KEY_NUM + 3] = {IR_MBOX_CMD_SET_WAKEUP_LIST, 0, 0};
+
+	nodeoffset = fdt_path_offset(working_fdt, "/ir_wakeup_key");
+	if (nodeoffset < 0) {
+		printf("libfdt fdt_path_offset() returned %s\n",
+		       fdt_strerror(nodeoffset));
+		return 1;
+	}
+
+	nodep = fdt_getprop(working_fdt, nodeoffset, "wakeup_key", &len);
+	if (!nodep || len <= 0) {
+		printf("libfdt fdt_getprop(): %s\n", fdt_strerror(len));
+		return 1;
+	}
+
+	for (i = 0, j = 0, p = nodep; j < len / 4; j += 3) {
+		data[i + 3] = fdt32_to_cpu(p[j]);
+		i++;
+		if (i != MAX_KEY_NUM)
+			continue;
+
+		i = 0;
+		data[1] = 16;
+		ret = scpi_send_data(AOCPU_REE_CHANNEL, CMD_SET_IR_STATE, data,
+				     sizeof(data), &framecode, sizeof(framecode));
+		if (ret != 0)
+			printf("CMD_SET_IR_STATE failed\n");
+	}
+
+	data[1] = i;
+	ret = scpi_send_data(AOCPU_REE_CHANNEL, CMD_SET_IR_STATE, data,
+			     sizeof(data), &framecode, sizeof(framecode));
+	if (ret != 0)
+		printf("CMD_SET_IR_STATE failed\n");
+
+	printf("update bl30 wakeup key from DTB\n");
+
+	return 0;
+}
 
 static int do_irkey(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
@@ -90,6 +138,11 @@ static int do_irkey_wakeup(cmd_tbl_t *cmdtp, int flag, int argc, char * const ar
 	if (argc < 2)
 		return CMD_RET_USAGE;
 
+	if (strncmp(argv[1], "update4dtb", 8) == 0) {
+		update_for_dtb_wakeup_key();
+		return 0;
+	}
+
 	for (i = 1; i < argc; i++) {
 		data[i - 1] = simple_strtoul(argv[i], &endp, 0);
 		if (*argv[i] == 0 || *endp != 0)
@@ -124,4 +177,5 @@ U_BOOT_CMD(irkey_wakeup, (MAX_KEY_NUM + 3 + 1), 0, do_irkey_wakeup,
 	"irkey_wakeup 2		- get ir_wakeup_key\n"
 	"irkey_wakeup 3 <1|0>	- enable/disable bl30 ir\n"
 	"irkey_wakeup 4		- get ir_preboot_key\n"
+	"irkey_wakeup update4dtb	- update wakeup key for dtb\n"
 );
