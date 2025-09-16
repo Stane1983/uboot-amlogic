@@ -35,8 +35,7 @@ struct meson_serial_plat {
 #define AML_UART_TX_EMPTY		BIT(22)
 #define AML_UART_XMIT_BUSY		BIT(25)
 #define AML_UART_ERR			(AML_UART_PARITY_ERR | \
-					 AML_UART_FRAME_ERR  | \
-					 AML_UART_TX_FIFO_WERR)
+					 AML_UART_FRAME_ERR)
 
 /* AML_UART_CONTROL bits */
 #define AML_UART_TX_EN			BIT(12)
