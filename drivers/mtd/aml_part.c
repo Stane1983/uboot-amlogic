@@ -122,7 +122,7 @@ int mtd_get_boot_partition(struct mtd_info *mtd,
 				uint8_t cnt)
 {
 	struct mtd_partition boot_parts[MAX_BOOT_AREA_ENTRIES];
-	uint32_t page_size = g_ssp.sip.nsp.page_size;
+	uint32_t page_size = mtd->writesize;
 	uint64_t tpl_start, tpl_size;
 	int i, j;
 
