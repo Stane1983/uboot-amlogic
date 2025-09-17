@@ -895,8 +895,12 @@ static AvbSlotVerifyResult load_and_verify_vbmeta(
 				avb_errorv(full_partition_name,
 									 ": Error while checking public key used to sign data.\n",
 									 NULL);
-				ret = AVB_SLOT_VERIFY_RESULT_ERROR_IO;
-				goto out;
+				//Amlogic modify for unlock device get boot patchlevel
+				if ((ops->read_is_device_unlocked(ops, &is_device_unlocked) == AVB_IO_RESULT_OK &&
+				!is_device_unlocked)) {
+					ret = AVB_SLOT_VERIFY_RESULT_ERROR_IO;
+					goto out;
+				}
 			}
 			if (!key_is_trusted) {
 				avb_errorv(full_partition_name,
