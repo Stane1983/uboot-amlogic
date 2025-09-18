@@ -68,5 +68,6 @@
 #define W2L_U_ICCM_SIZE   0x38000
 
 void amlbt_start(void);
+int amlbt_should_start(void);
 
 #endif

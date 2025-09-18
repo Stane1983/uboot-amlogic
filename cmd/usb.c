@@ -668,26 +668,30 @@ static int do_usb(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 		return 0;
 	}
 
-#ifdef CONFIG_AML_USB_BT
-	if (strncmp(argv[1], "bt_start", 8) == 0) {
+#if CONFIG_IS_ENABLED(AMLOGIC_BT_USB) || CONFIG_IS_ENABLED(AMLOGIC_WIFI_USB2T)
+	if (strncmp(argv[1], "wifi_start", 8) == 0) {
+#if CONFIG_IS_ENABLED(AMLOGIC_BT_USB)
+		int ret = amlbt_should_start();
+#if !CONFIG_IS_ENABLED(AMLOGIC_WIFI_USB2T)
+		if (!ret) {
+			 printf("%s:not in suspend, exit\n", __func__);
+			 return 0;
+		}
+#endif
+#endif
 		if (usb_started) {
 			printf("Already started\n");
 			usb_stop(); /* Already started */
 		}
 
-		printf("starting BT USB...\n");
-		bt_usb_power_ctrl();
-		do_bt_usb_start();
+#if CONFIG_IS_ENABLED(AMLOGIC_BT_USB)
+		if (ret)
+			amlbt_start();
+#endif
 
-		aml_chip_type *aml_dev;
-		printf("load aml usb bt\n");
-		aml_dev = get_aml_dev();
-		if (aml_dev) {
-			load_aml_firmware_dev(aml_dev);
-			amlbt_firmware_init();
-			udelay(100000);
-			aml_wakeup_set();
-		}
+#if CONFIG_IS_ENABLED(AMLOGIC_WIFI_USB2T)
+		aml_wifi_set_usb2t_mode();
+#endif
 
 		usb_wifi_stop();
 		return 0;
