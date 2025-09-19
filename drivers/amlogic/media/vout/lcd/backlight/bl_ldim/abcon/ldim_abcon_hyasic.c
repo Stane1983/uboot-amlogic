@@ -239,7 +239,7 @@ void ldim_abcon_hyasic_broadcast(unsigned int regaddr, unsigned int value)
 	hyasic_packet.eop_data = 0x0000000d;
 
 	ldim_abcon_hyasic_write_packet();
-	udelay(500);
+	udelay(1500);
 }
 
 void ldim_abcon_hyasic_address(void)
@@ -303,7 +303,7 @@ void ldim_abcon_hyasic_address(void)
 	hyasic_packet.eop_data = 0x0000000d;
 
 	ldim_abcon_hyasic_write_packet();
-	udelay(500);
+	udelay(1500);
 }
 
 void ldim_abcon_hyasic_dimming(void)
