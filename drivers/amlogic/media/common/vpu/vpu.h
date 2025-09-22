@@ -8,6 +8,7 @@
 #ifdef CONFIG_SECURE_POWER_CONTROL
 #include <asm/amlogic/arch/pwr_ctrl.h>
 #endif
+#include <clk.h>
 
 //#define VPU_DEBUG_PRINT
 #define VPUPR(fmt, args...)     printf("vpu: "fmt"", ## args)
@@ -160,6 +161,7 @@ struct vpu_data_s {
 	unsigned int module_init_table_cnt;
 	struct vpu_ctrl_s *module_init_table;
 	struct dev_pm_ops *dev_pm_ops;
+	struct clk gpl_clk;
 
 	void (*power_on)(void);
 	void (*power_off)(void);

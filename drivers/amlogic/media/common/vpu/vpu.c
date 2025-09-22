@@ -11,6 +11,8 @@
 #include "vpu.h"
 #include "vpu_ctrl.h"
 #include <amlogic/pm.h>
+#include <dm.h>
+#include <clk.h>
 
 /* v20181009: init version */
 /* v20190313: add sm1 support */
@@ -1148,9 +1150,13 @@ get_vpu_config_dft:
 
 static int aml_vpu_suspend(void *pm_ops)
 {
+	unsigned int cpu_type;
+
+	cpu_type = get_cpu_id().family_id;
 	set_vpu_clk(&vpu_conf, SUSPEND_CLK);
 	set_vpu_clkb(&vpu_conf, SUSPEND_CLK);
-
+	if (cpu_type == MESON_CPU_MAJOR_ID_T6X)
+		clk_disable(&vpu_conf.data->gpl_clk);
 	VPUPR("%s driver disabled\n", __func__);
 
 	return 0;
@@ -1158,13 +1164,17 @@ static int aml_vpu_suspend(void *pm_ops)
 
 static int aml_vpu_resume(void *pm_ops)
 {
+	unsigned int cpu_type;
+
+	cpu_type = get_cpu_id().family_id;
+	if (cpu_type == MESON_CPU_MAJOR_ID_T6X)
+		clk_enable(&vpu_conf.data->gpl_clk);
 	set_vpu_clk(&vpu_conf, vpu_conf.data->clk_level_dft);
 	set_vpu_clkb(&vpu_conf, vpu_conf.data->clk_level_dft);
 	if (vpu_conf.data->mem_pd_init_off)
 		vpu_conf.data->mem_pd_init_off();
 	if (vpu_conf.data->module_init_config)
 		vpu_conf.data->module_init_config();
-
 	VPUPR("%s driver enable\n", __func__);
 
 	return 0;
@@ -1179,7 +1189,7 @@ static int aml_vpu_poweroff(void *pm_ops)
 
 int vpu_probe(void)
 {
-	int ret;
+	int ret = 0;
 	vpu_chip_detect();
 	if (vpu_check())
 		return -1;
@@ -1310,3 +1320,49 @@ void vpu_sec_debug(unsigned int flag)
 	VPUERR("%s: no CONFIG_AMLOGIC_TEE\n", __func__);
 #endif
 }
+
+static int vpu_dm_probe(struct udevice *dev)
+{
+	int ret = -1;
+	unsigned int clk_rate;
+	struct clk_bulk clocks;
+
+	VPUPR("vpu probe via DM: %s\n", dev->name);
+	ret =  vpu_probe();
+	if (ret < 0)
+		return ret;
+
+	if (vpu_conf.data->gp_pll_valid &&
+		vpu_conf.data->chip_type == VPU_CHIP_T6X) {
+		ret = clk_get_bulk(dev, &clocks);
+		if (ret) {
+			VPUERR("clk_get_bulk fail!\n");
+			return ret;
+		}
+
+		ret = clk_enable_bulk(&clocks);
+		if (ret) {
+			VPUERR("clk_get_bulk fail!\n");
+			return ret;
+		}
+		if (!clk_get_by_name(dev, "gpl_clk", &vpu_conf.data->gpl_clk))
+			clk_rate = clk_get_rate(&vpu_conf.data->gpl_clk);
+		VPUPR("gpl clk rate: %d\n", clk_rate);
+	}
+	return 0;
+}
+
+static const struct udevice_id vpu_ids[] = {
+	{
+		.compatible = "amlogic, vpu-t6x",
+	},
+	{}
+};
+
+U_BOOT_DRIVER(vpu) = {
+	.name           = "vpu",
+	.id             = UCLASS_MISC,
+	.of_match       = vpu_ids,
+	.probe          = vpu_dm_probe,
+};
+
