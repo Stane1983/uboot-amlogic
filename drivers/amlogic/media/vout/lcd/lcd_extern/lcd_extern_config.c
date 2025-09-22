@@ -1023,7 +1023,6 @@ static int lcd_extern_get_config_json(struct lcd_extern_driver_s *edrv,
 	int cnt = 1, cnt_max, i = 0, n = 0, nums_size = 0, ret;
 	unsigned int *nums = NULL;
 	unsigned char *init_data = NULL;
-	int init_bin_valid = 0;
 	int size, index = edrv->index;
 	char path[256], tag_name[MAX_STR_LEN];
 	struct lcd_extern_config_s *cfg;
@@ -1117,8 +1116,6 @@ static int lcd_extern_get_config_json(struct lcd_extern_driver_s *edrv,
 			ext_pmu_bins.cnt++;
 		}
 	}
-	if (ext_pmu_bins.cnt)
-		init_bin_valid = 1;
 
 	str = json_get_obj_str(jsp, parent, "init_on", NULL);
 	if (!str) {
@@ -1135,12 +1132,7 @@ static int lcd_extern_get_config_json(struct lcd_extern_driver_s *edrv,
 
 	memset(nums, 0, nums_size);
 	cnt = lcd_trans_str_array(str, nums, cnt_max);
-	if (init_bin_valid) {
-		init_data = lcd_extern_data_init_load(nums, cnt, &n);
-	} else {
-		init_data = lcd_init_table_load_array("ext_init_off", LCD_EXT_CMD_SIZE_DYNAMIC,
-						      nums, cnt, LCD_EXTERN_INIT_ON_MAX, &n);
-	}
+	init_data = lcd_extern_data_init_load(nums, cnt, &n);
 	if (!init_data) {
 		EXTERR("[%d]: dev[%d]: init_on err\n", edrv->index, edev->dev_index);
 		goto parse_init_err;
@@ -1170,8 +1162,7 @@ static int lcd_extern_get_config_json(struct lcd_extern_driver_s *edrv,
 	}
 
 	cnt = lcd_trans_str_array(str, nums, cnt_max);
-	init_data = lcd_init_table_load_array("ext_init_off", LCD_EXT_CMD_SIZE_DYNAMIC,
-					  nums, cnt, LCD_EXTERN_INIT_OFF_MAX, &n);
+	init_data = lcd_extern_data_init_load(nums, cnt, &n);
 	if (!init_data) {
 		EXTERR("[%d]: dev[%d]: init_off err\n", edrv->index, edev->dev_index);
 		goto parse_init_err;
@@ -1190,23 +1181,21 @@ static int lcd_extern_get_config_json(struct lcd_extern_driver_s *edrv,
 
 parse_init_next:
 /* save for kernel use */
-	if (init_bin_valid) {
-		size = cfg->table_init_on_cnt + cfg->table_init_off_cnt + 8;
-		sprintf(tag_name, "panel%d_ext%d_init_table", edrv->index, edev->dev_index);
-		vaddr = (unsigned char *)malloc(size);
-		if (vaddr) {
-			p = vaddr;
-			*(u32 *)(p + 0) = cfg->table_init_on_cnt;
-			*(u32 *)(p + 4) = cfg->table_init_off_cnt;
-			p += 8;
-			memcpy(p, cfg->table_init_on, cfg->table_init_on_cnt);
-			p += cfg->table_init_on_cnt;
-			memcpy(p, cfg->table_init_off, cfg->table_init_off_cnt);
-			panel_param_mem_put(vaddr, tag_name, size);
-			memset(vaddr, 0, size);
-			free(vaddr);
-			vaddr = NULL;
-		}
+	size = cfg->table_init_on_cnt + cfg->table_init_off_cnt + 8;
+	sprintf(tag_name, "panel%d_ext%d_init_table", edrv->index, edev->dev_index);
+	vaddr = (unsigned char *)malloc(size);
+	if (vaddr) {
+		p = vaddr;
+		*(u32 *)(p + 0) = cfg->table_init_on_cnt;
+		*(u32 *)(p + 4) = cfg->table_init_off_cnt;
+		p += 8;
+		memcpy(p, cfg->table_init_on, cfg->table_init_on_cnt);
+		p += cfg->table_init_on_cnt;
+		memcpy(p, cfg->table_init_off, cfg->table_init_off_cnt);
+		panel_param_mem_put(vaddr, tag_name, size);
+		memset(vaddr, 0, size);
+		free(vaddr);
+		vaddr = NULL;
 	}
 
 	if (nums) {
@@ -1242,7 +1231,7 @@ static int lcd_extern_get_config_ini(struct lcd_extern_driver_s *edrv,
 	unsigned char *init_data;
 	char *p_name, *p_path, *new_value;
 	int init_len, buf_size, data_cnt, bin_cnt = 0;
-	int init_cmd_valid = 1, init_bin_valid = 0;
+	int init_cmd_valid = 1;
 	char str_info[64] = {'\0'};
 	int str_info_len = 0, i, j, ret;
 
@@ -1388,8 +1377,6 @@ static int lcd_extern_get_config_ini(struct lcd_extern_driver_s *edrv,
 			p_path += ext_pmu_bins.path_len;
 		}
 	}
-	if (ext_pmu_bins.cnt)
-		init_bin_valid = 1;
 
 lcd_extern_get_config_ini_init_cmd:
 	init_len = lcd_ini_get_array_cnt(inip, psec, "init_on");
@@ -1405,13 +1392,7 @@ lcd_extern_get_config_ini_init_cmd:
 	}
 	memset(init_buf, 0, buf_size);
 	data_cnt = lcd_ini_get_array(inip, psec, "init_on", init_buf, init_len);
-	if (init_bin_valid) {
-		init_data = lcd_extern_data_init_load(init_buf, data_cnt, &init_len);
-	} else {
-		init_data = lcd_init_table_load_array("ext_init_off", edev->config.cmd_size,
-						      init_buf, data_cnt,
-						      LCD_EXTERN_INIT_ON_MAX, &init_len);
-	}
+	init_data = lcd_extern_data_init_load(init_buf, data_cnt, &init_len);
 	if (!init_data) {
 		EXTERR("[%d]: dev[%d]: init_on err\n", edrv->index, edev->dev_index);
 		goto lcd_extern_get_config_ini_init_err;
@@ -1434,9 +1415,7 @@ lcd_extern_get_config_ini_init_cmd:
 	}
 	memset(init_buf, 0, buf_size);
 	data_cnt = lcd_ini_get_array(inip, psec, "init_off", init_buf, init_len);
-	init_data = lcd_init_table_load_array("ext_init_off", edev->config.cmd_size,
-					      init_buf, data_cnt,
-					      LCD_EXTERN_INIT_OFF_MAX, &init_len);
+	init_data = lcd_extern_data_init_load(init_buf, data_cnt, &init_len);
 	if (!init_data) {
 		EXTERR("[%d]: dev[%d]: init_off err\n", edrv->index, edev->dev_index);
 		goto lcd_extern_get_config_ini_init_err;
@@ -1448,24 +1427,22 @@ lcd_extern_get_config_ini_init_cmd:
 
 	edev->config.table_init_loaded = 1;
 	/* update for ini parser */
-	if (init_bin_valid) {
-		buf_size = edev->config.table_init_on_cnt * 5 + 16;
-		new_value = (char *)malloc(buf_size);
-		if (new_value) {
-			memset(new_value, 0, buf_size);
-			j = 0;
-			for (i = 0; i < edev->config.table_init_on_cnt; i++) {
-				j += snprintf(new_value + j, (buf_size - j - 1),
-					      "0x%02x,", edev->config.table_init_on[i]);
-			}
-			ret = lcd_ini_set_exist_single_key(inip, psec, "init_on", new_value);
-			if (ret) {
-				EXTERR("[%d]: dev[%d]: init_on update ini parser failed\n",
-				       edrv->index, edev->dev_index);
-			}
-			memset(new_value, 0, buf_size);
-			free(new_value);
+	buf_size = edev->config.table_init_on_cnt * 5 + 16;
+	new_value = (char *)malloc(buf_size);
+	if (new_value) {
+		memset(new_value, 0, buf_size);
+		j = 0;
+		for (i = 0; i < edev->config.table_init_on_cnt; i++) {
+			j += snprintf(new_value + j, (buf_size - j - 1),
+				      "0x%02x,", edev->config.table_init_on[i]);
 		}
+		ret = lcd_ini_set_exist_single_key(inip, psec, "init_on", new_value);
+		if (ret) {
+			EXTERR("[%d]: dev[%d]: init_on update ini parser failed\n",
+			       edrv->index, edev->dev_index);
+		}
+		memset(new_value, 0, buf_size);
+		free(new_value);
 	}
 
 	return 0;
