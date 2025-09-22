@@ -520,10 +520,11 @@ int tab_mem_parse(unsigned char *file_buf, int file_size)
 		else
 			return -1;
 		sprintf(wakeup_cmd, "irkey_wakeup 0 %d 0x0%s", power_key_num, power_cmd);
-	    printf("wakeup_cmd is %s\n", wakeup_cmd);
-		run_command(wakeup_cmd, 0);
 		free(power_str[i]);
 	}
+
+	printf("wakeup_cmd is %s\n", wakeup_cmd);
+	run_command(wakeup_cmd, 0);
 	return ret;
 }
 
