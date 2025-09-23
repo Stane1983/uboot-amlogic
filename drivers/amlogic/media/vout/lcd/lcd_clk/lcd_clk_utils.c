@@ -137,7 +137,7 @@ int lcd_pll_ss_level_generate(struct lcd_clk_config_s *cconf)
 
 	target = cconf->ss_level;
 	target *= 1000;
-	min = cconf->data->ss_dep_base * 5;
+	min = cconf->data->ss_dep_base * 10;
 	dep_base = cconf->data->ss_dep_base;
 	for (str_m = 1; str_m <= cconf->data->ss_str_m_max; str_m++) { //str_m
 		for (dep_sel = 1; dep_sel <= cconf->data->ss_dep_sel_max; dep_sel++) { //dep_sel
@@ -254,172 +254,6 @@ int lcd_pll_get_frac(struct lcd_clk_config_s *cconf, int pll_sel, unsigned long 
 	return 0;
 }
 
-/******* calculate 1od and 3od setting @pll_od_setting_generate *******/
-static int generate_pll_3od_setting(struct lcd_clk_config_s *cconf,
-					int pll_sel, unsigned long long pll_fout)
-{
-	struct lcd_pll_config_s *pll_config = &cconf->pll_config[pll_sel];
-	struct lcd_pll_data_s *pll_data = cconf->data->pll_data[pll_sel];
-	unsigned int m, n;
-	unsigned int od1_sel, od2_sel, od3_sel, od1, od2, od3;
-	unsigned long long pll_fod2_in, pll_fod3_in, pll_fvco, temp;
-	unsigned int od_fb = 0, pll_frac, frac_range;
-	int done;
-
-	done = 0;
-	if (pll_fout > pll_data->pll_out_fmax || pll_fout < pll_data->pll_out_fmin)
-		return done;
-
-	frac_range =  pll_data->pll_frac_range;
-	for (od3_sel =  pll_data->pll_od_sel_max; od3_sel > 0; od3_sel--) {
-		od3 = od_table[od3_sel - 1];
-		pll_fod3_in = pll_fout * od3;
-		for (od2_sel = od3_sel; od2_sel > 0; od2_sel--) {
-			od2 = od_table[od2_sel - 1];
-			pll_fod2_in = pll_fod3_in * od2;
-			for (od1_sel = od2_sel; od1_sel > 0; od1_sel--) {
-				od1 = od_table[od1_sel - 1];
-				pll_fvco = pll_fod2_in * od1;
-				if (pll_fvco < pll_data->pll_vco_fmin ||
-					pll_fvco > pll_data->pll_vco_fmax) {
-					continue;
-				}
-				pll_config->pll_od1_sel = od1_sel - 1;
-				pll_config->pll_od2_sel = od2_sel - 1;
-				pll_config->pll_od3_sel = od3_sel - 1;
-				pll_config->pll_fout = pll_fout;
-				if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
-					LCDPR("od1=%d, od2=%d, od3=%d, pll_fvco=%lld\n",
-						(od1_sel - 1), (od2_sel - 1),
-						(od3_sel - 1), pll_fvco);
-				}
-				pll_config->pll_fvco = pll_fvco;
-				n = 1;
-				od_fb = pll_config->pll_od_fb;
-				pll_fvco = lcd_do_div(pll_fvco, od_fb_table[od_fb]);
-				m = lcd_do_div(pll_fvco, cconf->fin);
-				temp = cconf->fin;
-				temp *= m;
-				temp = pll_fvco - temp;
-				pll_frac = lcd_do_div((temp * frac_range * 10), cconf->fin) + 5;
-				pll_frac /= 10;
-				if (cconf->pll_mode & LCD_PLL_MODE_FRAC_SHIFT) {
-					if ((pll_frac == (frac_range >> 1)) ||
-					    (pll_frac == (frac_range >> 2))) {
-						pll_frac |= 0x66;
-						pll_config->pll_frac_half_shift = 1;
-					} else {
-						pll_config->pll_frac_half_shift = 0;
-					}
-				}
-				pll_config->pll_m = m;
-				pll_config->pll_n = n;
-				pll_config->pll_frac = pll_frac;
-				if (lcd_debug_print_flag & LCD_DBG_PR_CLK)
-					LCDPR("m=%d, n=%d, frac=0x%x\n", m, n, pll_frac);
-				done = 1;
-				break;
-			}
-		}
-	}
-	return done;
-}
-
-static int generate_pll_1od_setting(struct lcd_clk_config_s *cconf,
-					int pll_sel, unsigned long long pll_fout)
-{
-	struct lcd_pll_config_s *pll_config = &cconf->pll_config[pll_sel];
-	struct lcd_pll_data_s *pll_data = cconf->data->pll_data[pll_sel];
-	unsigned int m, n, od_sel, od;
-	unsigned long long pll_fvco, temp;
-	unsigned int od_fb = 0, pll_frac;
-	int done = 0;
-
-	if (pll_fout > pll_data->pll_out_fmax || pll_fout < pll_data->pll_out_fmin)
-		return done;
-
-	for (od_sel = pll_data->pll_od_sel_max; od_sel > 0; od_sel--) {
-		od = od_table[od_sel - 1];
-		pll_fvco = pll_fout * od;
-		if (pll_fvco < pll_data->pll_vco_fmin || pll_fvco > pll_data->pll_vco_fmax)
-			continue;
-		pll_config->pll_od1_sel = od_sel - 1;
-		pll_config->pll_fout = pll_fout;
-		if (lcd_debug_print_flag & LCD_DBG_PR_CLK)
-			LCDPR("od_sel=%d, pll_fvco=%lld\n", (od_sel - 1), pll_fvco);
-
-		pll_config->pll_fvco = pll_fvco;
-		n = 1;
-		od_fb = pll_config->pll_od_fb;
-		pll_fvco = lcd_do_div(pll_fvco, od_fb_table[od_fb]);
-		m = lcd_do_div(pll_fvco, cconf->fin);
-		temp = cconf->fin;
-		temp *= m;
-		temp = pll_fvco - temp;
-		pll_frac = lcd_do_div((temp * pll_data->pll_frac_range * 10), cconf->fin) + 5;
-		pll_frac /= 10;
-		pll_config->pll_m = m;
-		pll_config->pll_n = n;
-		pll_config->pll_frac = pll_frac;
-		if (lcd_debug_print_flag & LCD_DBG_PR_CLK)
-			LCDPR("pll_m=%d, pll_n=%d, pll_frac=0x%x\n", m, n, pll_frac);
-		done = 1;
-		break;
-	}
-	return done;
-}
-
-static int generate_pll_0od_setting(struct lcd_clk_config_s *cconf,
-					int pll_sel, unsigned long long pll_fout)
-{
-	struct lcd_pll_config_s *pll_config = &cconf->pll_config[pll_sel];
-	struct lcd_pll_data_s *pll_data = cconf->data->pll_data[pll_sel];
-	unsigned int m, n;
-	unsigned long long pll_fvco, temp;
-	unsigned int pll_frac;
-	int done = 0;
-
-	if (pll_fout > pll_data->pll_out_fmax || pll_fout < pll_data->pll_out_fmin)
-		return done;
-
-	pll_fvco = pll_fout;
-	if (pll_fvco < pll_data->pll_vco_fmin || pll_fvco > pll_data->pll_vco_fmax)
-		return done;
-
-	pll_config->pll_fout = pll_fout;
-	pll_config->pll_fvco = pll_fvco;
-
-	n = 1;
-	m = lcd_do_div(pll_fvco, cconf->fin);
-	temp = cconf->fin;
-	temp *= m;
-	temp = pll_fvco - temp;
-	pll_frac = lcd_do_div((temp * pll_data->pll_frac_range * 10), cconf->fin) + 5;
-	pll_frac /= 10;
-	pll_config->pll_m = m;
-	pll_config->pll_n = n;
-	pll_config->pll_frac = pll_frac;
-	if (lcd_debug_print_flag & LCD_DBG_PR_CLK)
-		LCDPR("pll_m=%d, pll_n=%d, pll_frac=0x%x\n", m, n, pll_frac);
-	done = 1;
-
-	return done;
-}
-
-int pll_od_setting_generate(struct lcd_clk_config_s *cconf,
-				int pll_sel, unsigned long long pll_fout)
-{
-	struct lcd_pll_data_s *pll_data = cconf->data->pll_data[pll_sel];
-
-	if (pll_data->od_cnt == 3)
-		return generate_pll_3od_setting(cconf, pll_sel, pll_fout);
-	else if (pll_data->od_cnt == 0)
-		return generate_pll_0od_setting(cconf, pll_sel, pll_fout);
-	else
-		return generate_pll_1od_setting(cconf, pll_sel, pll_fout);
-}
-
-/***** calculate 1od and 3od setting @pll_od_setting_generate Done *****/
 int check_vco(struct lcd_clk_config_s *cconf, int pll_sel, unsigned long long pll_fvco)
 {
 	struct lcd_pll_config_s *pll_config = &cconf->pll_config[pll_sel];
@@ -464,6 +298,104 @@ int check_vco(struct lcd_clk_config_s *cconf, int pll_sel, unsigned long long pl
 	done = 1;
 
 	return done;
+}
+
+/******* calculate 1od and 3od setting @pll_od_setting_generate *******/
+static int generate_pll_3od_setting(struct lcd_clk_config_s *cconf,
+					int pll_sel, unsigned long long pll_fout)
+{
+	struct lcd_pll_config_s *pll_config = &cconf->pll_config[pll_sel];
+	struct lcd_pll_data_s *pll_data = cconf->data->pll_data[pll_sel];
+	unsigned int od1_sel, od2_sel, od3_sel, od1, od2, od3;
+	unsigned long long pll_fod2_in, pll_fod3_in, pll_fvco;
+	int done;
+
+	done = 0;
+	if (pll_fout > pll_data->pll_out_fmax || pll_fout < pll_data->pll_out_fmin)
+		return done;
+
+	for (od3_sel =  pll_data->pll_od_sel_max; od3_sel > 0; od3_sel--) {
+		od3 = od_table[od3_sel - 1];
+		pll_fod3_in = pll_fout * od3;
+		for (od2_sel = od3_sel; od2_sel > 0; od2_sel--) {
+			od2 = od_table[od2_sel - 1];
+			pll_fod2_in = pll_fod3_in * od2;
+			for (od1_sel = od2_sel; od1_sel > 0; od1_sel--) {
+				od1 = od_table[od1_sel - 1];
+				pll_fvco = pll_fod2_in * od1;
+				pll_config->pll_od1_sel = od1_sel - 1;
+				pll_config->pll_od2_sel = od2_sel - 1;
+				pll_config->pll_od3_sel = od3_sel - 1;
+				pll_config->pll_fout = pll_fout;
+				if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
+					LCDPR("od1=%d, od2=%d, od3=%d, pll_fvco=%lld\n",
+						(od1_sel - 1), (od2_sel - 1),
+						(od3_sel - 1), pll_fvco);
+				}
+				done = check_vco(cconf, pll_sel, pll_fvco);
+				if (done)
+					break;
+			}
+		}
+	}
+	return done;
+}
+
+static int generate_pll_1od_setting(struct lcd_clk_config_s *cconf,
+					int pll_sel, unsigned long long pll_fout)
+{
+	struct lcd_pll_config_s *pll_config = &cconf->pll_config[pll_sel];
+	struct lcd_pll_data_s *pll_data = cconf->data->pll_data[pll_sel];
+	unsigned int od_sel, od;
+	unsigned long long pll_fvco;
+	int done = 0;
+
+	if (pll_fout > pll_data->pll_out_fmax || pll_fout < pll_data->pll_out_fmin)
+		return done;
+
+	for (od_sel = pll_data->pll_od_sel_max; od_sel > 0; od_sel--) {
+		od = od_table[od_sel - 1];
+		pll_fvco = pll_fout * od;
+		pll_config->pll_od1_sel = od_sel - 1;
+		pll_config->pll_fout = pll_fout;
+		if (lcd_debug_print_flag & LCD_DBG_PR_CLK)
+			LCDPR("od_sel=%d, pll_fvco=%lld\n", (od_sel - 1), pll_fvco);
+		done = check_vco(cconf, pll_sel, pll_fvco);
+		if (done)
+			break;
+	}
+	return done;
+}
+
+static int generate_pll_0od_setting(struct lcd_clk_config_s *cconf,
+					int pll_sel, unsigned long long pll_fout)
+{
+	struct lcd_pll_config_s *pll_config = &cconf->pll_config[pll_sel];
+	struct lcd_pll_data_s *pll_data = cconf->data->pll_data[pll_sel];
+	unsigned long long pll_fvco;
+	int done = 0;
+
+	if (pll_fout > pll_data->pll_out_fmax || pll_fout < pll_data->pll_out_fmin)
+		return done;
+
+	pll_config->pll_fout = pll_fout;
+	pll_fvco = pll_fout;
+	done = check_vco(cconf, pll_sel, pll_fvco);
+
+	return done;
+}
+
+int pll_od_setting_generate(struct lcd_clk_config_s *cconf,
+				int pll_sel, unsigned long long pll_fout)
+{
+	struct lcd_pll_data_s *pll_data = cconf->data->pll_data[pll_sel];
+
+	if (pll_data->od_cnt == 3)
+		return generate_pll_3od_setting(cconf, pll_sel, pll_fout);
+	else if (pll_data->od_cnt == 0)
+		return generate_pll_0od_setting(cconf, pll_sel, pll_fout);
+	else
+		return generate_pll_1od_setting(cconf, pll_sel, pll_fout);
 }
 
 #ifdef CONFIG_AML_LCD_TCON
