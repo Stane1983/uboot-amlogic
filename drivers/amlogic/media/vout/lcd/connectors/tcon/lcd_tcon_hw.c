@@ -362,6 +362,8 @@ static void lcd_tcon_data_init_set(struct aml_lcd_drv_s *pdrv, unsigned char *da
 static void lcd_tcon_axi_rmem_lut_load(unsigned int index, unsigned char *buf, unsigned int size)
 {
 	struct tcon_rmem_s *tcon_rmem = get_lcd_tcon_rmem();
+	unsigned int mem_paddr_min = 0, mem_paddr_max = 0;
+	unsigned int sec_paddr_min = 0, sec_paddr_max = 0;
 
 	if (!tcon_rmem || !tcon_rmem->axi_rmem || tcon_rmem->flag == 0) {
 		LCDERR("%s: no axi_rmem\n", __func__);
@@ -374,6 +376,19 @@ static void lcd_tcon_axi_rmem_lut_load(unsigned int index, unsigned char *buf, u
 	if (tcon_rmem->axi_rmem[index].mem_size < size) {
 		LCDERR("%s: axi_mem[%d] size 0x%x is not enough, need 0x%x\n",
 		       __func__, index, tcon_rmem->axi_rmem[index].mem_size, size);
+		return;
+	}
+
+	mem_paddr_min = tcon_rmem->axi_rmem[index].mem_paddr;
+	mem_paddr_max = tcon_rmem->axi_rmem[index].mem_paddr +
+		tcon_rmem->axi_rmem[index].mem_size - 1;
+	sec_paddr_min = tcon_rmem->secure_axi_rmem.mem_paddr;
+	sec_paddr_max = tcon_rmem->secure_axi_rmem.mem_paddr +
+		tcon_rmem->secure_axi_rmem.mem_size - 1;
+	if (tcon_rmem->secure_axi_rmem.sec_protect &&
+		!(mem_paddr_max < sec_paddr_min || sec_paddr_max < mem_paddr_min)) {
+		LCDERR("%s: axi_mem[%d] can't use secure memory\n",
+		       __func__, index);
 		return;
 	}
 
