@@ -30,11 +30,15 @@
 #define getenv env_get
 #endif
 
+unsigned int g_dbg_level = 0;
+#define BT_DEBUG(fmt, arg...) if (g_dbg_level) printf("AMLBT:" fmt, ## arg)
+
 #define USB_BEGIN_LOCK()
 #define USB_END_LOCK()
 
 #define CHIP_INTF_REG_BASE      (0xf00000)
-#define RG_AON_A52     (CHIP_INTF_REG_BASE + 0xd0)
+#define RG_AON_A16     (CHIP_INTF_REG_BASE + 0x40) //W2L
+#define RG_AON_A24     (CHIP_INTF_REG_BASE + 0x60) //W2
 
 #define MAC_ADDR_LEN 6
 #define MAX_MAC_LIST 8
@@ -54,13 +58,21 @@ typedef struct {
 	unsigned int dccm_base_addr;
 } fw_info;
 
+typedef struct {
+	unsigned char rc_manfdata[MANFDATA_LEN];
+	unsigned int manfdata_len;
+} manf_data;
+
+typedef struct {
+	unsigned char rc_manfdata_rclist[MAC_ADDR_LEN*MAX_MAC_LIST];
+	unsigned int rc_manfdata_rclist_len;
+} manfdata_rclist;
+
 static struct crg_msc_cbw g_cmd_buf;
 static gdsl_fifo_t *g_cmd_fifo;
 static gdsl_fifo_t *g_event_fifo;
 static gdsl_fifo_t *g_hci_type_fifo;
 static unsigned char usb_buf[4096];
-static unsigned char evt_buf[1024];
-
 static rc_list_t rc_list[MAX_MAC_LIST] = {0};
 
 static int auc_write_reg_by_ep(struct usb_device *udev, unsigned int addr, unsigned int value,
@@ -330,8 +342,8 @@ static int amlbt_read_fw_data(const aml_chip_type *chip_type, fw_info *info)
 		return -1;
 	}
 
-	//printf("%s: iccm_size:%#x,%#x,%#x,%#x\n", __func__, temp[0], temp[1], temp[2], temp[3]);
-	//printf("%s: dccm_size:%#x,%#x,%#x,%#x\n", __func__, temp[4], temp[5], temp[6], temp[7]);
+	BT_DEBUG("%s: iccm_size:%#x,%#x,%#x,%#x\n", __func__, temp[0], temp[1], temp[2], temp[3]);
+	BT_DEBUG("%s: dccm_size:%#x,%#x,%#x,%#x\n", __func__, temp[4], temp[5], temp[6], temp[7]);
 
 	temp_size =  UINT32_FROM_BYTES_LE(temp[0], temp[1], temp[2], temp[3]);
 
@@ -376,14 +388,14 @@ static int amlbt_load_firmware(const aml_chip_type *chip_type, struct usb_device
 				(unsigned char *)(unsigned long)temp_addr, remain_len, USB_EP2);
 			offset += remain_len;
 			temp_addr += remain_len;
-			//printf("bt_usb_download_firmware iccm1 offset %#x, write_len %#x\n", offset, remain_len);
+			BT_DEBUG("bt_usb_download_firmware iccm1 offset %#x, write_len %#x\n", offset, remain_len);
 		} else {
 			auc_write_sram_by_ep_for_bt(udev, &(aml_fw_info.iccm[offset]),
 				(unsigned char *)(unsigned long)temp_addr, USB_DOWNLOAD_LEN, USB_EP2);
 			offset += USB_DOWNLOAD_LEN;
 			remain_len -= USB_DOWNLOAD_LEN;
 			temp_addr += USB_DOWNLOAD_LEN;
-			//printf("bt_usb_download_firmware iccm2 offset %#x, write_len %#x\n", offset, USB_DOWNLOAD_LEN);
+			BT_DEBUG("bt_usb_download_firmware iccm2 offset %#x, write_len %#x\n", offset, USB_DOWNLOAD_LEN);
 		}
 	}
 /******************************iccm check*****************************************/
@@ -419,14 +431,14 @@ static int amlbt_load_firmware(const aml_chip_type *chip_type, struct usb_device
 				(unsigned char *)(unsigned long)temp_addr, remain_len, USB_EP2);
 			offset += remain_len;
 			temp_addr += remain_len;
-			//printf("bt_usb_download_firmware dccm1 offset %#x, write_len %#x\n", offset, remain_len);
+			BT_DEBUG("bt_usb_download_firmware dccm1 offset %#x, write_len %#x\n", offset, remain_len);
 		} else {
 			auc_write_sram_by_ep_for_bt(udev, &(aml_fw_info.dccm[offset]),
 				(unsigned char *)(unsigned long)temp_addr, USB_DOWNLOAD_LEN, USB_EP2);
 			offset += USB_DOWNLOAD_LEN;
 			remain_len -= USB_DOWNLOAD_LEN;
 			temp_addr += USB_DOWNLOAD_LEN;
-			//printf("bt_usb_download_firmware dccm2 offset %#x, write_len %#x\n", offset, USB_DOWNLOAD_LEN);
+			BT_DEBUG("bt_usb_download_firmware dccm2 offset %#x, write_len %#x\n", offset, USB_DOWNLOAD_LEN);
 		}
 	}
 /******************************dccm check*****************************************/
@@ -453,15 +465,13 @@ static int amlbt_load_firmware(const aml_chip_type *chip_type, struct usb_device
 	}
 /*********************************************************************************/
 
-	//printf("%s: end:%u\n", __func__, get_time());
+	BT_DEBUG("%s: end:%u\n", __func__, get_time());
 	return 0;
 }
 
 static gdsl_fifo_t *gdsl_fifo_init(unsigned int len, unsigned char *base_addr)
 {
 	gdsl_fifo_t *p_fifo = (gdsl_fifo_t *)kzalloc(sizeof(gdsl_fifo_t), GFP_ATOMIC);
-
-	//printf("%s \n", __func__);
 
 	if (p_fifo) {
 		memset(p_fifo, 0, sizeof(gdsl_fifo_t));
@@ -531,31 +541,6 @@ unsigned int gdsl_write_data_by_ep(struct usb_device *udev, gdsl_fifo_t *p_fifo,
 	return len;
 }
 
-static unsigned int gdsl_fifo_get_data(gdsl_fifo_t *p_fifo, unsigned char *buff,
-	unsigned int len)
-{
-	unsigned int used = gdsl_fifo_used(p_fifo);
-	unsigned int i = 0;
-	unsigned int get_len = (len >= used ? used : len);
-
-	debug("gdsl get data, len:%u, base_addr:%#lx, w:%#lx, r:%#lx\n", get_len,
-		(unsigned long)p_fifo->base_addr, (unsigned long)p_fifo->w, (unsigned long)p_fifo->r);
-	if (used == 0) {
-		printf("gdsl fifo used == 0\n");
-		return 0;
-	}
-
-	while (i < get_len) {
-		buff[i] = *(unsigned char *)((unsigned long)p_fifo->r + (unsigned long)p_fifo->base_addr);
-		p_fifo->r = (unsigned char *)(((unsigned long)p_fifo->r + 1) % p_fifo->size);
-		i++;
-	}
-
-	debug("gdsl get data, actual len %d \n", i);
-
-	return i;
-}
-
 static void amlbt_usb_hci_cmd_fifo_init(struct usb_device *udev)
 {
 	debug("cmd fifo init\n");
@@ -596,143 +581,6 @@ static void amlbt_usb_hci_type_fifo_init(struct usb_device *udev)
 	}
 }
 
-static void amlbt_usb_send_hci_cmd(struct usb_device *udev, unsigned char *data, unsigned int len)
-{
-	if (g_cmd_fifo == NULL) {
-		printf("bt_usb_hci_cmd_fifo NULL!!!!\n");
-		return ;
-	}
-
-	debug("hci cmd, len %d, payload:[%#x,%#x,%#x,%#x,%#x,%#x,%#x,%#x]\n", len,
-			data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
-	len = ((len + 3) & 0xFFFFFFFC);//Keep 4 bytes aligned
-	//printf("Actual length %d \n", len);
-
-	//step 1: Update the command FIFO read pointer
-	g_cmd_fifo->r = (unsigned char *)(unsigned long)auc_read_word_by_ep_for_bt(udev, W2_HCI_CMD_QUEUE_R, USB_EP2);
-	//printf("cmd r %#lx\n", (unsigned long)g_cmd_fifo->r);
-
-	//step 2: Write HCI commands to WiFi SRAM
-	gdsl_write_data_by_ep(udev, g_cmd_fifo, data, len, USB_EP2);
-
-	//step 3: Update the write pointer and write to WiFi SRAM
-	//printf("before write:r:%#lx, w:%#lx\n", (unsigned long)g_cmd_fifo->r, (unsigned long)g_cmd_fifo->w);
-	auc_write_word_by_ep_for_bt(udev, W2_HCI_CMD_QUEUE_W, (unsigned long)g_cmd_fifo->w & 0xfff, USB_EP2);
-
-	debug("hci cmd finished, len %#x:w %#lx, r %#lx\n", len, (unsigned long)g_cmd_fifo->w,
-		(unsigned long)g_cmd_fifo->r);
-}
-
-static int amlbt_usb_recv_event(const aml_chip_type *chip_type, struct usb_device *udev,
-	unsigned char *evt, unsigned int *len, unsigned int *cnt)
-{
-	gdsl_fifo_t read_fifo = {0};
-	unsigned int type_size = 0;
-	unsigned int evt_size = 0;
-	unsigned int i = 0;
-	unsigned int reg = 0;
-	unsigned int retry_cnt = 0;
-	unsigned int read_len = 0;
-	unsigned int evt_len = 0;
-	unsigned char type_buff[W2_HCI_TYPE_QUEUE_SIZE] = {0};
-	unsigned char read_reg[16] = {0};
-
-	debug("hci evt recv\n");
-
-	if (chip_type->family_id == AML_W2L) {
-		read_len = USB_POLL_TOTAL_LEN_W2L;
-		evt_len = W2l_HCI_EVT_QUEUE_SIZE;
-	} else {
-		read_len = USB_POLL_TOTAL_LEN;
-		evt_len = W2_HCI_EVT_QUEUE_SIZE;
-	}
-
-	auc_read_sram_by_ep_for_bt(udev, usb_buf, (unsigned char *)(unsigned long)W2_HCI_TYPE_QUEUE_R,
-		read_len, USB_EP2);
-
-	g_hci_type_fifo->w = (unsigned char *)(unsigned long)((usb_buf[35]<<24)|(usb_buf[34]<<16)|
-		(usb_buf[33]<<8)|usb_buf[32]);
-	g_event_fifo->w = (unsigned char *)(unsigned long)((usb_buf[39]<<24)|(usb_buf[38]<<16)|
-		(usb_buf[37]<<8)|usb_buf[36]);
-
-	while ((g_event_fifo->w == g_event_fifo->r) || (g_hci_type_fifo->w == g_hci_type_fifo->r)) {
-		udelay(50000);
-		auc_read_sram_by_ep_for_bt(udev, usb_buf, (unsigned char *)(unsigned long)W2_HCI_TYPE_QUEUE_R,
-			read_len, USB_EP2);
-		g_hci_type_fifo->w = (unsigned char *)(unsigned long)((usb_buf[35]<<24)|(usb_buf[34]<<16)|
-			(usb_buf[33]<<8)|usb_buf[32]);
-		g_event_fifo->w = (unsigned char *)(unsigned long)((usb_buf[39]<<24)|(usb_buf[38]<<16)|
-			(usb_buf[37]<<8)|usb_buf[36]);
-		debug("recv retry %d: w:%#lx, r:%#lx\n", retry_cnt, (unsigned long)g_hci_type_fifo->w,
-			(unsigned long)g_hci_type_fifo->r);
-		retry_cnt++;
-
-		if (retry_cnt > 10) {
-			printf("read event or data timeout!\n");
-			return -1;
-		}
-	}
-
-	debug("evt: w:%#lx, r:%#lx\n", (unsigned long)g_event_fifo->w, (unsigned long)g_event_fifo->r);
-	debug("type: w:%#lx, r:%#lx\n", (unsigned long)g_hci_type_fifo->w, (unsigned long)g_hci_type_fifo->r);
-
-	//get hci type
-	read_fifo.base_addr = &usb_buf[W2_HCI_TYPE_QUEUE_ADDR - W2_HCI_TYPE_QUEUE_R];
-	read_fifo.r = g_hci_type_fifo->r;
-	read_fifo.w = g_hci_type_fifo->w;
-	read_fifo.size = W2_HCI_TYPE_QUEUE_SIZE;
-
-	type_size = gdsl_fifo_get_data(&read_fifo, type_buff, sizeof(type_buff));
-	if (!type_size) {
-		printf("type queue fatal err\n");
-		*len = 0;
-		return -1;
-	}
-	debug("hci type size %d\n", type_size);
-
-	//check hci type
-	while (i < type_size) {
-		if (type_buff[i] != 0x4) {
-			printf("hci type err, i:%u, type:%#x\n", i, type_buff[i]);
-			*len = 0;
-			return -1;
-		}
-		i += 4;
-	}
-	*cnt = type_size/4;
-	g_hci_type_fifo->r = read_fifo.r;
-	reg = (((unsigned int)(unsigned long)read_fifo.r) & 0xff);
-	read_reg[0] = (reg & 0xff);
-	read_reg[1] = ((reg >> 8) & 0xff);
-	read_reg[2] = ((reg >> 16) & 0xff);
-	read_reg[3] = ((reg >> 24) & 0xff);
-
-	//get event
-	read_fifo.base_addr = &usb_buf[W2_HCI_EVT_QUEUE_ADDR - W2_HCI_TYPE_QUEUE_R];
-	read_fifo.r = g_event_fifo->r;
-	read_fifo.w = g_event_fifo->w;
-	read_fifo.size = evt_len;
-	evt_size = gdsl_fifo_get_data(&read_fifo, evt, evt_len);
-	if (!evt_size) {
-		printf("event queue fatal err!!!!\n");
-		*len = 0;
-		*cnt = 0;
-		return -1;
-	}
-	debug("event cnt %d, size %d\n", *cnt, evt_size);
-	g_event_fifo->r = read_fifo.r;
-	reg = (((unsigned int)(unsigned long)read_fifo.r) & 0x1fff);
-	read_reg[4] = (reg & 0xff);
-	read_reg[5] = ((reg >> 8) & 0xff);
-	read_reg[6] = ((reg >> 16) & 0xff);
-	read_reg[7] = ((reg >> 24) & 0xff);
-	auc_write_sram_by_ep_for_bt(udev, &read_reg[0],
-		(unsigned char *)(unsigned long)(W2_HCI_TYPE_QUEUE_R), 16, USB_EP2);
-	*len = evt_size;
-
-	return 0;
-}
-
 void amlbt_firmware_init(struct usb_device *udev)
 {
 	unsigned int st_reg = 0;
@@ -749,83 +597,139 @@ void amlbt_firmware_init(struct usb_device *udev)
 
 	st_reg &= ~(WF_SRAM_FD_INIT_FLAG);
 	auc_write_word_by_ep_for_bt(udev, W2_USB_STATUS_REG, st_reg, USB_EP2);
-
-	//start BT CPU
-	auc_write_word_by_ep_for_bt(udev, REG_DEV_RESET,
-		(unsigned int)((BIT_CPU | BIT_MAC | BIT_PHY) << DEV_RESET_SW), USB_EP2);
 }
 
-static void aml_hci_cmd_process(const aml_chip_type *chip_type, struct usb_device *udev,
-	unsigned char *cmd, unsigned int len)
+static unsigned char hex_char_to_val(char c)
 {
-	unsigned int evt_len = 0;
-	unsigned int evt_cnt = 0;
-	int ret;
+	if (c >= '0' && c <= '9')
+		return c - '0';
+	else if (c >= 'a' && c <= 'f')
+		return 10 + (c - 'a');
+	else if (c >= 'A' && c <= 'F')
+		return 10 + (c - 'A');
+	printf("%s: invalid hex char '%c' (0x%02x)\n", __func__, c, (unsigned char)c);
+	return 0;
+}
 
-	memset(evt_buf, 0, sizeof(evt_buf));
+static int amlbt_read_conf_data(manf_data *manf)
+{
+	unsigned char *file_buf = NULL;
+	char *manf_data_start = NULL;
+	char *line_end = NULL;
+	char *hex_clean = NULL;
+	char *file_path = AMLBT_CONF;
+	int file_size = 0;
+	int manf_line_len = 0;
+	int clean_idx = 0;
+	int i = 0;
 
-	amlbt_usb_send_hci_cmd(udev, cmd, len);
-	ret = amlbt_usb_recv_event(chip_type, udev, evt_buf, &evt_len, &evt_cnt);
-	if (ret != 0) {
-		printf("amlbt_usb_recv_event error!");
-		return ;
+	if (!manf) {
+		printf("%s: manf pointer is NULL!\n", __func__);
+		return -1;
 	}
 
-	debug("amlbt_usb_recv_event cnt:%d, payload:[%#x,%#x,%#x,%#x,%#x,%#x,%#x,%#x]\n", evt_cnt,
-		evt_buf[0], evt_buf[1], evt_buf[2], evt_buf[3],
-		evt_buf[4], evt_buf[5], evt_buf[6], evt_buf[7]);
+	memset(manf, 0, sizeof(manf_data));
+
+	file_size = model_get_file_size(file_path);
+	if (file_size <= 0) {
+		printf("%s: get file size fail (path: %s, size: %d)\n", __func__,
+			file_path, file_size);
+		return -1;
+	}
+	file_buf = (unsigned char *)malloc(file_size + 1);
+	if (file_buf == NULL) {
+		printf("%s: malloc file_buf fail (need %d bytes)\n", __func__, file_size + 1);
+		return -1;
+	}
+
+	memset(file_buf, 0, file_size + 1);
+	if (model_read_file(file_path, file_buf, file_size) <= 0) {
+		printf("%s: read file fail (path: %s)\n", __func__, file_path);
+		free(file_buf);
+		return -1;
+	}
+
+	manf_data_start = strstr((char *)file_buf, "ManfData=");
+	if (manf_data_start == NULL) {
+		printf("%s: 'ManfData=' not found in %s\n", __func__, file_path);
+		free(file_buf);
+		return -1;
+	}
+	manf_data_start += strlen("ManfData=");
+
+	line_end = manf_data_start;
+	while (*line_end != '\0' && *line_end != '\n' && *line_end != '\r')
+		line_end++;
+
+	manf_line_len = line_end - manf_data_start;
+	if (manf_line_len <= 0) {
+		printf("%s: ManfData is empty (line len: %d)\n", __func__, manf_line_len);
+		free(file_buf);
+		return -1;
+	}
+
+	hex_clean = (char *)malloc(manf_line_len + 1);
+	if (hex_clean == NULL) {
+		printf("%s: malloc hex_clean fail (need %d bytes)\n", __func__, manf_line_len + 1);
+		free(file_buf);
+		return -1;
+	}
+	memset(hex_clean, 0, manf_line_len + 1);
+
+	for (i = 0; i < manf_line_len; i++) {
+		if (manf_data_start[i] != ' ')
+			hex_clean[clean_idx++] = manf_data_start[i];
+	}
+
+	if (clean_idx == 0) {
+		printf("%s: no valid hex data after filtering\n", __func__);
+		free(hex_clean);
+		free(file_buf);
+		return -1;
+	}
+
+	manf->manfdata_len = clean_idx / 2;
+	if (manf->manfdata_len > sizeof(manf->rc_manfdata)) {
+		manf->manfdata_len = sizeof(manf->rc_manfdata);
+		printf("%s: ManfData too long (max %ld bytes), truncated\n",
+				__func__, sizeof(manf->rc_manfdata));
+	}
+
+	for (i = 0; i < manf->manfdata_len; i++) {
+		unsigned char high_nibble = hex_char_to_val(hex_clean[2*i]);
+		unsigned char low_nibble = hex_char_to_val(hex_clean[2*i + 1]);
+
+		manf->rc_manfdata[i] = (high_nibble << 4) | low_nibble;
+	}
+
+	free(hex_clean);
+	free(file_buf);
+	return 0;
 }
 
-/*
-hci set bluetooth address
-|opcode|length|bluetooth address|
-|0xfc1a|0x06  |address		  |
-*/
-/*
-static void aml_hci_set_bluetooth_address(void)
+static void amlbt_write_manfdata_to_firmware(struct usb_device *udev)
 {
-	unsigned char cmd[] = {0x1a, 0xfc, 0x06, 0x58, 0xeb, 0xa4, 0x63, 0x87, 0x44};
+	manf_data local_manf_data;
+	unsigned char manf_buf[6*8];
+	int i = 0;
 
-	debug("--------------------------------------------------->\n");
-	printf("hci send cmd:[set bluetooth address]\n");
-	aml_hci_cmd_process(chip_type, udev, cmd, sizeof(cmd));
-	debug("<---------------------------------------------------\n");
-}
-*/
-static void aml_hci_reset(const aml_chip_type *chip_type, struct usb_device *udev)
-{
-	unsigned char cmd[] = {0x03, 0x0c, 0x00};
+	if (amlbt_read_conf_data(&local_manf_data) != 0) {
+		printf("Failed to read manf data, aborting write\n");
+		return;
+	}
 
-	debug("--------------------------------------------------->\n");
-	printf("hci send cmd:[reset]\n");
-	aml_hci_cmd_process(chip_type, udev, cmd, sizeof(cmd));
-	debug("<---------------------------------------------------\n");
-}
+	BT_DEBUG("FW_MANFDATA_ADDR = %#x\n", FW_MANFDATA_ADDR);
+	memset(manf_buf, 0, sizeof(manf_buf));
+	auc_write_sram_by_ep_for_bt(udev, manf_buf, (unsigned char *)FW_MANFDATA_ADDR,
+		sizeof(manf_buf), USB_EP2);
 
-static void aml_hci_read_bt_addr(const aml_chip_type *chip_type, struct usb_device *udev)
-{
-	unsigned char cmd[] = {0x09, 0x10, 0x00};
-
-	debug("--------------------------------------------------->\n");
-	printf("hci send cmd:[read bt addr]\n");
-	aml_hci_cmd_process(chip_type, udev, cmd, sizeof(cmd));
-	debug("<---------------------------------------------------\n");
-}
-
-static void aml_hci_set_vsc_wake_write_data(const aml_chip_type *chip_type, struct usb_device *udev)
-{
-	// b12 g20 RCU
-	unsigned char cmd[] = {0x22, 0xfc, 0x05, 0x19, 0xff, 0x01, 0x0a, 0x0b};
-	debug("--------------------------------------------------->\n");
-	printf("hci send cmd:[set vsc wake write data]\n");
-	aml_hci_cmd_process(chip_type, udev, cmd, sizeof(cmd));
-	debug("<---------------------------------------------------\n");
-
-	//google RCU
-	unsigned char cmd2[] = {0x22, 0xfc, 0x05, 0x13, 0x16, 0x01, 0x04, 0x06};
-	debug("--------------------------------------------------->\n");
-	printf("hci send cmd2:[set vsc wake write data]2\n");
-	aml_hci_cmd_process(chip_type, udev, cmd2, sizeof(cmd2));
+	printf("ManfData len: %d\n", local_manf_data.manfdata_len);
+	printf("ManfData:[ ");
+	for (i = 0; i < local_manf_data.manfdata_len; i++)
+		printf("0x%02x ", local_manf_data.rc_manfdata[i]);
+	printf("]\n");
+	auc_write_sram_by_ep_for_bt(udev, local_manf_data.rc_manfdata,
+		(unsigned char *)FW_MANFDATA_ADDR, MANFDATA_LEN, USB_EP2);
 }
 
 static int amlbt_add_rc_list(char *mac)
@@ -834,10 +738,10 @@ static int amlbt_add_rc_list(char *mac)
 
 	for (i = 0; i < MAX_MAC_LIST; i++) {
 		if (!rc_list[i].used) {
-			printf("amlbt_add_rc_list %d\n", i);
+			BT_DEBUG("amlbt_add_rc_list %d\n", i);
 			rc_list[i].used = 1;
 			memcpy(rc_list[i].mac, mac, MAC_ADDR_LEN);
-			printf("mac:[%#x,%#x,%#x,%#x,%#x,%#x]\n",
+			BT_DEBUG("mac:[%#x,%#x,%#x,%#x,%#x,%#x]\n",
 				rc_list[i].mac[0], rc_list[i].mac[1], rc_list[i].mac[2],
 				rc_list[i].mac[3], rc_list[i].mac[4], rc_list[i].mac[5]);
 			return 1;
@@ -856,7 +760,7 @@ static ssize_t rc_list_analyze(const char *buf)
 	int i = 0, j = 0;
 	int count = strlen(buf);
 
-	printf("rc_list write count:%d\n", count);
+	BT_DEBUG("rc_list write count:%d\n", count);
 	if (count > MAX_USER_BUF_LEN) {
 		printf("rc_list too long!:%d, %d\n", count, MAX_USER_BUF_LEN);
 		return -ENOMEM;
@@ -865,7 +769,7 @@ static ssize_t rc_list_analyze(const char *buf)
 	memset(rc_list, 0, sizeof(rc_list));
 	mac_str = (char *)buf;
 	while ((mac_token = strsep(&mac_str, ";")) != NULL) {
-		printf("mac_token length: %d\n", (int)strlen(mac_token));
+		BT_DEBUG("mac_token length: %d\n", (int)strlen(mac_token));
 
 		if (strlen(mac_token) == 0) {
 			printf("NULL str\n");
@@ -885,7 +789,7 @@ static ssize_t rc_list_analyze(const char *buf)
 			}
 			mac[i] = simple_strtoul(mac_byte_str, NULL, 16);
 		}
-		printf("parsed mac: [%#x,%#x,%#x,%#x,%#x,%#x]\n",
+		BT_DEBUG("parsed mac: [%#x,%#x,%#x,%#x,%#x,%#x]\n",
 		mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 		amlbt_add_rc_list(mac);
 	}
@@ -893,60 +797,95 @@ static ssize_t rc_list_analyze(const char *buf)
 	return count;
 }
 
-static void aml_hci_set_remote_address(const aml_chip_type *chip_type, struct usb_device *udev)
+static int amlbt_get_remote_address(manfdata_rclist *rclist, struct usb_device *udev)
 {
 	char *temp_env = NULL;
 	int i, j;
 	temp_env = getenv("remotebtmac");
-	printf("hci remotebtmac env:%s \n", temp_env);
+	BT_DEBUG("hci remotebtmac env:%s \n", temp_env);
 
 	if (temp_env == NULL) {
-		return ;
+		return -1;
 	}
+
+	if (!rclist) {
+		printf("%s: manf pointer is NULL!\n", __func__);
+		return -1;
+	}
+
 	rc_list_analyze(temp_env);
-	unsigned char cmd[9] = {0x55, 0xfc, 0x06};
+	memset(rclist, 0, sizeof(manfdata_rclist));
 	for (i = 0; i < MAX_MAC_LIST; i++) {
 		if (rc_list[i].used) {
 			for (j = 0; j < MAC_ADDR_LEN; j++) {
-				cmd[j + 3] = rc_list[i].mac[j];
+				rclist->rc_manfdata_rclist[((i + 1)*6) - 1 - j] = rc_list[i].mac[j];
+				rclist->rc_manfdata_rclist_len++;
 			}
-			printf("rc_list mac: [%#x,%#x,%#x,%#x,%#x,%#x]\n",
-				rc_list[i].mac[0], rc_list[i].mac[1], rc_list[i].mac[2], rc_list[i].mac[3],
-				rc_list[i].mac[4], rc_list[i].mac[5]);
-			debug("--------------------------------------------------->\n");
-			printf("hci send cmd:[set bluetooth address]\n");
-			aml_hci_cmd_process(chip_type, udev, cmd, sizeof(cmd));
-			debug("<---------------------------------------------------\n");
 		}
 	}
+
+	return 0;
 }
 
-static void aml_hci_set_suspend_reg(const aml_chip_type *chip_type, struct usb_device *udev)
+static void amlbt_write_rclist_to_firmware(struct usb_device *udev)
+{
+	manfdata_rclist local_manfdata_rclist;
+	unsigned char manf_rclist_buf[6*8];
+	int i = 0;
+
+	if (amlbt_get_remote_address(&local_manfdata_rclist, udev) != 0) {
+		printf("Failed to read manfdata_rclist, aborting write\n");
+		return;
+	}
+
+	BT_DEBUG("FIFO_FW_RC_LIST_ADDR = %#x\n", FIFO_FW_RC_LIST_ADDR);
+	memset(manf_rclist_buf, 0, sizeof(manf_rclist_buf));
+	auc_write_sram_by_ep_for_bt(udev, manf_rclist_buf, (unsigned char *)FIFO_FW_RC_LIST_ADDR,
+		sizeof(manf_rclist_buf), USB_EP2);
+
+	printf("rclist len: %d\n", local_manfdata_rclist.rc_manfdata_rclist_len);
+	printf("rclist:[ ");
+	for (i = 0; i < local_manfdata_rclist.rc_manfdata_rclist_len; i++) {
+		printf("%#x ", local_manfdata_rclist.rc_manfdata_rclist[i]);
+	}
+	printf("]\n");
+	auc_write_sram_by_ep_for_bt(udev, local_manfdata_rclist.rc_manfdata_rclist,
+		(unsigned char *)FIFO_FW_RC_LIST_ADDR, MANFDATA_LEN, USB_EP2);
+}
+
+static void aml_hci_set_shutdown_reg(const aml_chip_type *chip_type, struct usb_device *udev)
 {
 	unsigned int reg_value = 0;
-		reg_value = auc_read_word_by_ep_for_bt(udev, RG_AON_A52, USB_EP2);
-		//printf("%s RG_AON_A52:%#x\n", __func__, reg_value);
-		reg_value |= (1 << 26);
-		auc_write_word_by_ep_for_bt(udev, RG_AON_A52, reg_value, USB_EP2);
-		debug("suspend bit26:%#x\n", auc_read_word_by_ep_for_bt(udev, RG_AON_A52, USB_EP2));
-
-		reg_value = auc_read_word_by_ep_for_bt(udev, RG_AON_A52, USB_EP2);
-		//printf("%s RG_AON_A52:%#x\n", __func__, reg_value);
-		reg_value &= ~(1 << 25);
-		auc_write_word_by_ep_for_bt(udev, RG_AON_A52, reg_value, USB_EP2);
-		debug("low power bit25:%#x\n", auc_read_word_by_ep_for_bt(udev, RG_AON_A52, USB_EP2));
+	if (chip_type->family_id == AML_W2) {
+		reg_value = auc_read_word_by_ep_for_bt(udev, RG_AON_A24, USB_EP2);
+		BT_DEBUG("%s RG_AON_A24 %#x :%#x\n", __func__, RG_AON_A24, reg_value);
+		reg_value |= (1 << 27);
+		auc_write_word_by_ep_for_bt(udev, RG_AON_A24, reg_value, USB_EP2);
+		BT_DEBUG("suspend bit27:%#x\n", auc_read_word_by_ep_for_bt(udev, RG_AON_A24, USB_EP2));
+	} else if (chip_type->family_id == AML_W2L) {
+		reg_value = auc_read_word_by_ep_for_bt(udev, RG_AON_A16, USB_EP2);
+		BT_DEBUG("%s RG_AON_A16 %#x :%#x\n", __func__, RG_AON_A16, reg_value);
+		reg_value |= (1 << 28);
+		auc_write_word_by_ep_for_bt(udev, RG_AON_A16, reg_value, USB_EP2);
+		BT_DEBUG("suspend bit28:%#x\n", auc_read_word_by_ep_for_bt(udev, RG_AON_A16, USB_EP2));
+	}
 }
 
 void amlbt_wakeup_set(const aml_chip_type *chip_type, struct usb_device *udev)
 {
-	//printf("%s: start %u\n", __func__, get_time());
+	BT_DEBUG("%s: start %u\n", __func__, get_time());
+	// write rclist for manfdata
+	amlbt_write_rclist_to_firmware(udev);
 
-	aml_hci_reset(chip_type, udev);
-	aml_hci_read_bt_addr(chip_type, udev);
-	//aml_hci_set_bluetooth_address();
-	aml_hci_set_vsc_wake_write_data(chip_type, udev);
-	aml_hci_set_remote_address(chip_type, udev);
-	aml_hci_set_suspend_reg(chip_type, udev);
+	// write wakeup parameters for manfdata
+	amlbt_write_manfdata_to_firmware(udev);
+
+	//start BT CPU
+	auc_write_word_by_ep_for_bt(udev, REG_DEV_RESET,
+		(unsigned int)((BIT_CPU | BIT_MAC | BIT_PHY) << DEV_RESET_SW), USB_EP2);
+
+	//set shutdown bit
+	aml_hci_set_shutdown_reg(chip_type, udev);
 
 	printf("%s: end %u\n", __func__, get_time());
 }

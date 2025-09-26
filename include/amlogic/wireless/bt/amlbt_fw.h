@@ -34,8 +34,7 @@
 #define W2_HCI_TYPE_QUEUE_R		0x00514000  //type queue read point address
 #define W2_HCI_TYPE_QUEUE_W		0x00514020  //type queue write point address
 
-#define W2_HCI_EVT_QUEUE_SIZE		1024
-#define W2l_HCI_EVT_QUEUE_SIZE		2048
+#define W2_HCI_EVT_QUEUE_SIZE		2048
 
 #define W2_HCI_EVT_QUEUE_ADDR		0x0051413c
 #define W2_HCI_EVT_QUEUE_R		(W2_HCI_TYPE_QUEUE_R + 0x04)  //event queue read point address
@@ -49,8 +48,12 @@
 #define W2_USB_STATUS_REG		0x005101fc
 #define WF_SRAM_FD_INIT_FLAG		(1 << 1)
 
-#define USB_POLL_TOTAL_LEN			(1340)    // event addr offset:0x13c+event size:1024
-#define USB_POLL_TOTAL_LEN_W2L		(2364)
+#define USB_POLL_TOTAL_LEN		(2364)  // event addr offset:0x13c+event size:2364
+
+#define MANFDATA_LEN			(6*8)
+#define FW_MANFDATA_ADDR		(W2_HCI_TYPE_QUEUE_R + USB_POLL_TOTAL_LEN + MANFDATA_LEN + 4) //0x514970
+#define FIFO_FW_RC_LIST_ADDR		(W2_HCI_TYPE_QUEUE_R + USB_POLL_TOTAL_LEN + 4) //0x514940
+
 
 #ifdef CONFIG_YOCTO
 	#define AML_FW_PATH "/vendor/firmware/wireless/"
@@ -60,6 +63,7 @@
 
 #define W2U_FW AML_FW_PATH "w2_bt_fw_usb.bin"
 #define W2L_U_FW  AML_FW_PATH "w2l_bt_15p4_fw_usb.bin"
+#define AMLBT_CONF AML_FW_PATH "aml_bt.conf"
 
 #define W2U_ICCM_BASE 256
 #define W2U_ICCM_SIZE   0x40000
