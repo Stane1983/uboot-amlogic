@@ -1057,6 +1057,12 @@ int lcd_tcon_disable_t5m(struct aml_lcd_drv_s *pdrv)
 	if (tcon_conf && tcon_conf->lut_dma_ops && tcon_conf->lut_dma_ops->deinit)
 		tcon_conf->lut_dma_ops->deinit(pdrv, tcon_conf->lut_dma_ops);
 
+	/* demo od */
+	lcd_tcon_setb(0x240, 1, 1, 1);
+	/* demo demura */
+	lcd_tcon_setb(0x190, 1, 30, 1);
+	mdelay(20);
+
 	/* disable unit(reg_func_enable) timing signal */
 	lcd_tcon_write(0x30e, 0);
 
@@ -1081,6 +1087,12 @@ int lcd_tcon_disable_t6d(struct aml_lcd_drv_s *pdrv)
 
 	if (tcon_conf && tcon_conf->lut_dma_ops && tcon_conf->lut_dma_ops->deinit)
 		tcon_conf->lut_dma_ops->deinit(pdrv, tcon_conf->lut_dma_ops);
+
+	/* demo od */
+	lcd_tcon_setb(0x240, 1, 1, 1);
+	/* demo demura */
+	lcd_tcon_setb(0x190, 1, 30, 1);
+	mdelay(20);
 
 	/* disable unit(reg_func_enable) timing signal */
 	lcd_tcon_write(0x30e, 0);
