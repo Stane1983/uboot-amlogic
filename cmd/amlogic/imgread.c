@@ -1110,6 +1110,22 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 
 					ramdisk_size = ALIGN(pinitbootimghdr->ramdisk_size,
 							0x1000);
+
+					// Security fix: validate ramdisk_size from untrusted input
+					#define RAMDISK_MIN_SIZE 0x1000  // Minimum 4KB
+
+					if (ramdisk_size < RAMDISK_MIN_SIZE ||
+						ramdisk_size > MAX_RAMDISK_SIZE ||
+						ramdisk_size > rc_init) {
+						errorP("Invalid ramdisk_size: 0x%x", ramdisk_size);
+						errorP(" (min: 0x%x,", RAMDISK_MIN_SIZE);
+						errorP(" max: 0x%x,", MAX_RAMDISK_SIZE);
+						errorP(" partition_size: 0x%llx)\n", rc_init);
+						free(pbuffpreload_init);
+						pbuffpreload_init = 0;
+						return __LINE__;
+					}
+
 					MsgP("ramdisk_size 0x%x, totalSz 0x%x\n",
 						pinitbootimghdr->ramdisk_size, ramdisk_size);
 					MsgP("init_boot header_version = %d\n",
@@ -1126,6 +1142,14 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 						     partname_init);
 					}
 					if (init_boot_preload) {
+						// Security fix: ensure buffer size sufficient
+						if (nflashloadlen_init > ramdisk_size) {
+							errorP("Buffer overflow risk\n");
+							free(pbuffpreload_init);
+							pbuffpreload_init = 0;
+							return __LINE__;
+						}
+
 						init_boot_buf = malloc(ramdisk_size);
 					if (!init_boot_buf) {
 						printf("Fail to allocate memory for %s!\n",
@@ -1136,11 +1160,37 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 					}
 						memcpy(init_boot_buf, pbuffpreload_init,
 						       nflashloadlen_init);
+
+						// Security fix: prevent integer underflow
+						if (ramdisk_size < BOOT_IMG_V3_HDR_SIZE) {
+							errorP("Integer underflow risk\n");
+							free(init_boot_buf);
+							init_boot_buf = 0;
+							free(pbuffpreload_init);
+							pbuffpreload_init = 0;
+							return __LINE__;
+						}
 						ramdisk_size -= BOOT_IMG_V3_HDR_SIZE;
 					}
 #endif
 					if (init_boot_ramdisk_size != 0) {
 						MsgP("read ramdisk from part: %s\n", partname_init);
+
+						// Security fix: additional validation
+						if (ramdisk_size > MAX_RAMDISK_SIZE ||
+							ramdisk_size > (rc_init - BOOT_IMG_V3_HDR_SIZE)) {
+							errorP("Invalid ramdisk_size\n");
+							free(pbuffpreload_init);
+							pbuffpreload_init = 0;
+#ifdef CONFIG_AVB2
+							if (init_boot_buf) {
+								free(init_boot_buf);
+								init_boot_buf = 0;
+							}
+#endif
+							return __LINE__;
+						}
+
 						rc = store_logic_read(partname_init,
 							BOOT_IMG_V3_HDR_SIZE,
 							ramdisk_size,
