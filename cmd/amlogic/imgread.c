@@ -98,6 +98,10 @@ typedef struct{
 #define COMPILE_TYPE_ASSERT(expr, t)       typedef char t[(expr) ? 1 : -1]
 COMPILE_TYPE_ASSERT(2048 >= sizeof(AmlSecureBootImgHeader), _cc);
 
+static const char * const white_list_boot_part[] = {
+	"boot", "boot_a", "boot_b", "recovery", "recovery_a", "recovery_b"
+};
+
 static int is_andr_9_image(void* pBuffer)
 {
 	boot_img_hdr_t *pAHdr = (boot_img_hdr_t *)(unsigned long)pBuffer;
@@ -707,6 +711,27 @@ static int do_image_read_part(cmd_tbl_t *cmdtp, int flag, int argc, char * const
 out:
 	return rc;
 }
+
+static bool is_valid_partition(const char *part_name)
+{
+	if (!part_name)
+		return false;
+
+	size_t part_len = strlen(part_name);
+
+	for (int i = 0; i < ARRAY_SIZE(white_list_boot_part); i++) {
+		const char *valid_part = white_list_boot_part[i];
+		size_t list_part_len = strlen(valid_part);
+		size_t cmp_len = part_len < list_part_len ? part_len : list_part_len;
+
+		if ((strncmp(part_name, valid_part, cmp_len) == 0) &&
+			part_len == list_part_len)
+			return true;
+	}
+
+	return false;
+}
+
 static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	unsigned int kernel_size;
@@ -746,6 +771,11 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 
 	if (argc > 3)
 		flashreadoff = simple_strtoull(argv[3], NULL, 0);
+
+	if (!is_valid_partition(partname)) {
+		errorP("is not valid partition [%s]\n", partname);
+		return __LINE__;
+	}
 
 #ifdef CONFIG_DIAG_MODE
 	rc_diag = store_part_size("diag_vendor_boot");
