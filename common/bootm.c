@@ -466,7 +466,7 @@ static int do_fdt_overlay(void)
 	return 0;
 }
 #endif
-#ifdef CONFIG_AML_LCD_TV
+#if CONFIG_IS_ENABLED(AML_VPP)
 void check_powerkey(void)
 {
 	char *preboot_mode = env_get("preboot_mode");
@@ -524,7 +524,7 @@ int bootm_find_images(int flag, int argc, char * const argv[])
 	u32 fdto_totalsize = 0;
 #endif
 
-#ifdef CONFIG_AML_LCD_TV
+#if CONFIG_IS_ENABLED(AML_VPP)
 	check_powerkey();
 #endif
 	/* find ramdisk */
