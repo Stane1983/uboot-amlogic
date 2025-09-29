@@ -91,6 +91,8 @@ static char *ldim_pinmux_str[] = {
 	"ldim_pwm_pin",        /* 0 */
 	"ldim_pwm_vs_pin",     /* 1 */
 	"analog_pwm_pin",      /* 2 */
+	"ldim_bcon_up_pin",        /* 3 */
+	"ldim_bcon_dn_pin",        /* 4 */
 	"none",
 };
 
@@ -103,23 +105,34 @@ static int ldim_pinmux_load(char *dt_addr, struct aml_ldim_driver_s *ldim_drv)
 	if (!ldim_drv->dev_drv)
 		return -1;
 
-	/* ldim_pwm */
-	bl_pwm = &ldim_drv->dev_drv->ldim_pwm_config;
-	if (bl_pwm->pwm_port < BL_PWM_MAX) {
-		if (bl_pwm->pwm_port == BL_PWM_VS)
-			str = ldim_pinmux_str[1];
+	if (ldim_drv->dev_drv->type == LDIM_DEV_TYPE_ABCON) {
+		bl_pwm = &ldim_drv->dev_drv->ldim_pwm_config;
+		if (ldim_drv->dev_drv->abcon_conf.idle_level)
+			str = ldim_pinmux_str[3];
 		else
-			str = ldim_pinmux_str[0];
+			str = ldim_pinmux_str[4];
 		ret = ldim_pinmux_load_from_bsp(ldim_drv, str, bl_pwm);
 		if (ret)
 			return ret;
-	}
+	} else {
+		/* ldim_pwm */
+		bl_pwm = &ldim_drv->dev_drv->ldim_pwm_config;
+		if (bl_pwm->pwm_port < BL_PWM_MAX) {
+			if (bl_pwm->pwm_port == BL_PWM_VS)
+				str = ldim_pinmux_str[1];
+			else
+				str = ldim_pinmux_str[0];
+			ret = ldim_pinmux_load_from_bsp(ldim_drv, str, bl_pwm);
+			if (ret)
+				return ret;
+		}
 
-	/* analog_pwm */
-	bl_pwm = &ldim_drv->dev_drv->analog_pwm_config;
-	if (bl_pwm->pwm_port < BL_PWM_VS) {
-		str = ldim_pinmux_str[2];
-		ret = ldim_pinmux_load_from_bsp(ldim_drv, str, bl_pwm);
+		/* analog_pwm */
+		bl_pwm = &ldim_drv->dev_drv->analog_pwm_config;
+		if (bl_pwm->pwm_port < BL_PWM_VS) {
+			str = ldim_pinmux_str[2];
+			ret = ldim_pinmux_load_from_bsp(ldim_drv, str, bl_pwm);
+		}
 	}
 
 	return ret;
@@ -975,15 +988,13 @@ int ldim_dev_get_config_from_json(struct ldim_dev_driver_s *dev_drv)
 			for (i = 0; i < 2; i++)
 				abcon_conf->gpio_i[i] = json_get_arr_u32(jsp, child2, i, 0);
 		}
-		abcon_conf->gpio_en = json_get_obj_u32(jsp, child, "gpio_en", 0);
-		abcon_conf->gpio_pu_en = json_get_obj_u32(jsp, child, "gpio_pu_en", 0);
-		abcon_conf->gpio_pu_up = json_get_obj_u32(jsp, child, "gpio_pu_up", 0);
 		abcon_conf->dev_type = json_get_obj_u32(jsp, child, "dev_type", 0);
 		child2 = json_get_object_child(jsp, child, "chip_num");
 		if (child2) {
 			for (i = 0; i < 4; i++)
 				abcon_conf->chip_num[i] = json_get_arr_u32(jsp, child2, i, 0);
 		}
+		abcon_conf->idle_level = json_get_obj_u32(jsp, child, "idle_level", 0);
 		abcon_conf->ch_num = json_get_obj_u32(jsp, child, "ch_num", 4);
 		abcon_conf->dimming_mode = json_get_obj_u32(jsp, child, "dimming_mode", 4);
 		abcon_conf->init_pwm = json_get_obj_u32(jsp, child, "init_pwm", 0);
@@ -996,14 +1007,14 @@ int ldim_dev_get_config_from_json(struct ldim_dev_driver_s *dev_drv)
 		abcon_conf->ctrl = json_get_obj_u32(jsp, child, "ctrl", 0x2);
 
 		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-			LDIMPR("clk:%d:%d, gpio_o: 0x%x:0x%x, gpio_i:0x%x:0x%x, gpio_en:0x%x, gpio_pu_en:0x%x\n"
-			       "gpio_pu_up:0x%x, dev_type:%d, chip_num:%d:%d:%d:%d, ch_num:%d\n"
+			LDIMPR("clk:%d:%d, gpio_o: 0x%x:0x%x, gpio_i:0x%x:0x%x,\n"
+			       "dev_type:%d, chip_num:%d:%d:%d:%d, idle_level:%d, ch_num:%d\n"
 				   "dimming_mode:%d, init_pwm:0x%x, init_dc:0x%x, fb_en:%d\n"
 				   "fb_det_int:%d, fb_adj_th:%d, fb_pwm_dir:%d, fb_pwm_step:%d, ctrl:0x%x\n",
 			       abcon_conf->tx_clk, abcon_conf->rx_clk, abcon_conf->gpio_o[0], abcon_conf->gpio_o[1],
-				   abcon_conf->gpio_i[0], abcon_conf->gpio_i[1], abcon_conf->gpio_en, abcon_conf->gpio_pu_en,
-				   abcon_conf->gpio_pu_up, abcon_conf->dev_type, abcon_conf->chip_num[0], abcon_conf->chip_num[1],
-				   abcon_conf->chip_num[2], abcon_conf->chip_num[3],
+				   abcon_conf->gpio_i[0], abcon_conf->gpio_i[1],
+				   abcon_conf->dev_type, abcon_conf->chip_num[0], abcon_conf->chip_num[1],
+				   abcon_conf->chip_num[2], abcon_conf->chip_num[3],abcon_conf->idle_level,
 				   abcon_conf->ch_num, abcon_conf->dimming_mode, abcon_conf->init_pwm, abcon_conf->init_dc,
 			       abcon_conf->fb_en, abcon_conf->fb_det_int, abcon_conf->fb_adj_th,
 				   abcon_conf->fb_pwm_dir, abcon_conf->fb_pwm_step, abcon_conf->ctrl);

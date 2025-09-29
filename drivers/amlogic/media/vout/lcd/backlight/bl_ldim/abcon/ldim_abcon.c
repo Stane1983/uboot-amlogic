@@ -25,22 +25,6 @@
 struct abcon_mem_s abcon_mem;
 struct abcon_s *abcon;
 
-struct bcon_gpio_s bgpio[12] = {
-	/*idx, pmx_reg, pmx_sbit, fun, pu_en, pu_up, pu_idx*/
-	{0, 0xfe004024, 24, 7, 0xfe00412c, 0xfe004130, 22},
-	{1, 0xfe004024, 28, 7, 0xfe00412c, 0xfe004130, 23},
-	{2, 0xfe004028, 0, 7, 0xfe00412c, 0xfe004130, 24},
-	{3, 0xfe004028, 4, 7, 0xfe00412c, 0xfe004130, 25},
-	{4, 0xfe004028, 8, 7, 0xfe00412c, 0xfe004130, 26},
-	{5, 0xfe004028, 12, 7, 0xfe00412c, 0xfe004130, 27},
-	{6, 0xfe004028, 16, 7, 0xfe00412c, 0xfe004130, 28},
-	{7, 0xfe004028, 20, 7, 0xfe00412c, 0xfe004130, 29},
-	{8, 0xfe004020, 20, 7, 0xfe00412c, 0xfe004130, 13},
-	{9, 0xfe004010, 4, 6, 0xfe00410c, 0xfe004110, 1},
-	{10, 0xfe004018, 12, 5, 0xfe00410c, 0xfe004110, 19},
-	{11, 0xfe004018, 8, 6, 0xfe00410c, 0xfe004110, 18},
-};
-
 void ldim_abcon_swrst(void)
 {
 	abcon_wr_reg(0x00, 0x30);
@@ -221,29 +205,30 @@ void ldim_abcon_set_txrx_clk(unsigned int txclk, unsigned int rxclk)
 
 void ldim_abcon_set_gpio(struct abcon_s *abcon)
 {
-	unsigned int val = 0;
-	unsigned int i = 0;
+	if (abcon->chip_type == ABCON_CHIP_T6W) {
+		//reg_abcon_gpio_o_sel0
+		abcon_wr_reg_bits(0x25, abcon->conf.gpio_o[0], 0, 32);
+		//reg_abcon_gpio_o_sel1
+		abcon_wr_reg_bits(0x26, abcon->conf.gpio_o[1], 0, 16);
 
-	//reg_abcon_gpio_o_sel0
-	abcon_wr_reg_bits(0x25, abcon->conf.gpio_o[0], 0, 32);
-	//reg_abcon_gpio_o_sel1
-	abcon_wr_reg_bits(0x26, abcon->conf.gpio_o[1], 0, 16);
+		//reg_abcon_gpio_i_sel0
+		abcon_wr_reg_bits(0x23, abcon->conf.gpio_i[0], 0, 32);
+		//reg_abcon_gpio_i_sel1
+		abcon_wr_reg_bits(0x24, abcon->conf.gpio_i[1], 0, 16);
+	} else {
+		//reg_abcon_gpio_o_sel0
+		abcon_wr_reg_bits(0x25, abcon->conf.gpio_o[0], 0, 29);
+		//reg_abcon_gpio_o_sel1
+		abcon_wr_reg_bits(0x26, abcon->conf.gpio_o[1], 0, 29);
+		//reg_abcon_gpio_o_sel2
+		abcon_wr_reg_bits(0x4a, abcon->conf.gpio_o[2], 0, 29);
 
-	//reg_abcon_gpio_i_sel0
-	abcon_wr_reg_bits(0x23, abcon->conf.gpio_i[0], 0, 32);
-	//reg_abcon_gpio_i_sel1
-	abcon_wr_reg_bits(0x24, abcon->conf.gpio_i[1], 0, 16);
-
-	for (i = 0; i < 12; i++) {
-		if (abcon->conf.gpio_en & (1 << i)) {
-			abcon_wr_reg_bits(bgpio[i].pmx_reg, bgpio[i].fun, bgpio[i].pmx_sbit, 4);
-
-			if (abcon->conf.gpio_pu_en & (1 << i)) {
-				abcon_wr_reg_bits(bgpio[i].pu_en, 1, bgpio[i].pu_idx, 1);
-				val = (abcon->conf.gpio_pu_up & (1 << i)) ? 1 : 0;
-				abcon_wr_reg_bits(bgpio[i].pu_up, val, bgpio[i].pu_idx, 1);
-			}
-		}
+		//reg_abcon_gpio_i_sel0
+		abcon_wr_reg_bits(0x23, abcon->conf.gpio_i[0], 0, 29);
+		//reg_abcon_gpio_i_sel1
+		abcon_wr_reg_bits(0x49, abcon->conf.gpio_i[1], 0, 29);
+		//reg_abcon_gpio_i_sel2
+		abcon_wr_reg_bits(0x4b, abcon->conf.gpio_i[2], 0, 29);
 	}
 }
 

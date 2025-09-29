@@ -45,16 +45,6 @@
 
 #define LDC_DUTY_SIZE 0x800 //t6w 2k
 
-struct bcon_gpio_s {
-	unsigned char idx;
-	unsigned int pmx_reg;
-	unsigned char pmx_sbit;
-	unsigned char fun;
-	unsigned int pu_en;
-	unsigned int pu_up;
-	unsigned char pu_idx;
-};
-
 struct abcon_mem_s {
 	unsigned int *base_vaddr;
 	phys_addr_t base_paddr;
