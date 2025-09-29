@@ -1201,12 +1201,18 @@ static int _edid_parsedrmdb(struct hdr_info *info, u8 *buf)
 		info->dynamic_info[num].type = type;
 		info->dynamic_info[num].support_flags = buf[pos];
 		pos++;
-		for (i = 0; i < type_length - 3; i++) {
-			info->dynamic_info[num].optional_fields[i] =
-			buf[pos];
-			pos++;
+		/* some type maybe no optional_fields */
+		if (type_length >= 3) {
+			for (i = 0; i < type_length - 3; i++) {
+				info->dynamic_info[num].optional_fields[i] =
+				buf[pos];
+				pos++;
+			}
 		}
-		data_end = data_end - (type_length + 1);
+		if (data_end >= (type_length + 1))
+			data_end = data_end - (type_length + 1);
+		else
+			data_end = 0;
 	}
 
 	return 0;
