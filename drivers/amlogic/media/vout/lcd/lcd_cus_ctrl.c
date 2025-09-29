@@ -1056,6 +1056,7 @@ static int lcd_cus_ctrl_attr_parse_tuning_attr_ini(struct aml_lcd_drv_s *pdrv,
 		if (temp == 0xffff)
 			goto lcd_cus_parse_phy_err;
 		phy_cfg->ch_ctrl[i].sel = temp;
+		phy_cfg->ch_ctrl[i].sel_dft = temp;
 
 		sprintf(key_str, "ch%u_phase", i);
 		phy_cfg->ch_ctrl[i].phase_sel = lcd_ini_get_val(inip, tuning_sec, key_str, 0xff);

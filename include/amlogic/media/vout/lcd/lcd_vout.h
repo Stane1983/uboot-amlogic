@@ -489,6 +489,7 @@ struct phy_ch_ctrl_s {
 	unsigned char phase_sel;
 	unsigned char pn_swap;
 	unsigned char sel;
+	unsigned char sel_dft;
 	unsigned char en;
 };
 

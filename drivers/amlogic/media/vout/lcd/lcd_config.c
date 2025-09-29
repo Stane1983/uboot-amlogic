@@ -1672,6 +1672,7 @@ static int lcd_config_load_from_unifykey_v2(struct aml_lcd_drv_s *pdrv,
 	if (phy_cfg->flag & PHY_BIT_LANE_SEL) {
 		for (i = 0; i < phy_cfg->lane_num; i++) {
 			phy_cfg->ch_ctrl[i].sel = *(p + LCD_UKEY_PHY_LANE_SEL + i);
+			phy_cfg->ch_ctrl[i].sel_dft = phy_cfg->ch_ctrl[i].sel;
 			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 				LCDPR("%s: lane[%d]: sel=0x%x\n",
 				      __func__, i, phy_cfg->ch_ctrl[i].sel);
@@ -2646,8 +2647,10 @@ static int lcd_panel_parse_phy(struct json_parse_s *jsp, struct aml_lcd_drv_s *p
 	if (child) {
 		cnt = json_get_array_size(jsp, child);
 		cnt = lcd_s32_constraint(cnt, 0, phy_cfg->lane_num);
-		for (i = 0; i < cnt; i++)
+		for (i = 0; i < cnt; i++) {
 			phy_cfg->ch_ctrl[i].sel = json_get_arr_u32(jsp, child, i, i);
+			phy_cfg->ch_ctrl[i].sel_dft = phy_cfg->ch_ctrl[i].sel;
+		}
 	}
 	phy_cfg->bypass_resample = json_get_obj_u32(jsp, child, "bypass_resample", 1);
 	child = json_get_object_child(jsp, parent, "pn_swap");
@@ -3054,14 +3057,14 @@ static int lcd_config_load_from_json(struct aml_lcd_drv_s *pdrv)
 		goto parse_panel_err_exit;
 	}
 
-	/*parse phy*/
-	if (lcd_panel_parse_phy(jsp, pdrv) < 0) {
+	/*parse interface*/
+	if (lcd_panel_parse_interface(jsp, pdrv) < 0) {
 		ret = -4;
 		goto parse_panel_err_exit;
 	}
 
-	/*parse interface*/
-	if (lcd_panel_parse_interface(jsp, pdrv) < 0) {
+	/*parse phy*/
+	if (lcd_panel_parse_phy(jsp, pdrv) < 0) {
 		ret = -5;
 		goto parse_panel_err_exit;
 	}
