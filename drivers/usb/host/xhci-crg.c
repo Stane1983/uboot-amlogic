@@ -145,6 +145,13 @@ static int xhci_crg_probe(struct udevice *dev)
 		m31_phys++;
 	}
 
+#if CONFIG_IS_ENABLED(AMLOGIC_BT_USB) || CONFIG_IS_ENABLED(AMLOGIC_WIFI_USB2T)
+	if (dev_read_prop(dev, "wifi-bt-cn", NULL)) {
+		dev->seq = 0x81;
+		printf("wifi-bt-cn:%#x\n", dev->seq);
+	}
+#endif
+
 	ret = xhci_crg_setup_phy(dev);
 	if (ret)
 		return ret;

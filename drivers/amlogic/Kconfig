@@ -27,4 +27,6 @@ source "drivers/amlogic/crypto/Kconfig"
 
 source "drivers/amlogic/mkl/Kconfig"
 source "drivers/amlogic/pm/Kconfig"
+
+source "drivers/amlogic/wireless/Kconfig"
 endmenu

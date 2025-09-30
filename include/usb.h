@@ -286,6 +286,10 @@ int usb_kbd_deregister(int force);
 /* routines */
 int usb_init(void); /* initialize the USB Controller */
 int usb_stop(void); /* stop the USB Controller */
+#if CONFIG_IS_ENABLED(AMLOGIC_BT_USB) || CONFIG_IS_ENABLED(AMLOGIC_WIFI_USB2T)
+int usb_wifi_init(void);
+int usb_wifi_stop(void);
+#endif
 int usb_detect_change(void); /* detect if a USB device has been (un)plugged */
 
 

@@ -22,3 +22,7 @@ obj-$(CONFIG_AML_MKL) += mkl/
 obj-$(CONFIG_CPU_PM) += pm/
 
 obj-$(CONFIG_CMD_SND) += sound/
+
+obj-$(CONFIG_AMLOGIC_BT_USB) += wireless/
+
+obj-$(CONFIG_AMLOGIC_WIFI_USB2T) += wireless/

@@ -1,0 +1,13 @@
+config AMLOGIC_WIFI_USB2T
+	bool "Support for Amlogic USB 2T WIFI"
+	default n
+	help
+	  Amlogic wifi usb 2t driver
+	  If usb wifi usb 2t driver, enable y
+
+config AMLOGIC_BT_USB
+	bool "Support for Amlogic usb bt init and config wakeup parameters"
+	default n
+	help
+	  Amlogic usb bt init and config wakeup parameters
+

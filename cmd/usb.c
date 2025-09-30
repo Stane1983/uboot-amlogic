@@ -23,7 +23,17 @@
 #ifdef CONFIG_RTK_USB_BT
 #include <rtk_fw.h>
 #endif
+#if CONFIG_IS_ENABLED(AMLOGIC_BT_USB) || CONFIG_IS_ENABLED(AMLOGIC_WIFI_USB2T)
+#include <amlogic/wireless/wifi_bt_comm.h>
+#endif
 
+#if CONFIG_IS_ENABLED(AMLOGIC_BT_USB)
+#include <amlogic/wireless/bt/amlbt_fw.h>
+#endif
+
+#if CONFIG_IS_ENABLED(AMLOGIC_WIFI_USB2T)
+#include <amlogic/wireless/wifi/aml_wifi.h>
+#endif
 
 #ifdef CONFIG_USB_STORAGE
 static int usb_stor_curr_dev = -1; /* current device */
@@ -660,6 +670,38 @@ static int do_usb(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 		return 0;
 	}
+
+#if CONFIG_IS_ENABLED(AMLOGIC_BT_USB) || CONFIG_IS_ENABLED(AMLOGIC_WIFI_USB2T)
+	if (strncmp(argv[1], "wifi_start", 8) == 0) {
+#if CONFIG_IS_ENABLED(AMLOGIC_BT_USB)
+		int ret = amlbt_should_start();
+#if !CONFIG_IS_ENABLED(AMLOGIC_WIFI_USB2T)
+		if (!ret) {
+			 printf("%s:not in suspend, exit\n", __func__);
+			 return 0;
+		}
+#endif
+#endif
+		if (usb_started) {
+			printf("Already started\n");
+			usb_stop(); /* Already started */
+		}
+		aml_mod_init();
+
+#if CONFIG_IS_ENABLED(AMLOGIC_BT_USB)
+		if (ret)
+			amlbt_start();
+#endif
+
+#if CONFIG_IS_ENABLED(AMLOGIC_WIFI_USB2T)
+		aml_wifi_set_usb2t_mode();
+#endif
+
+		usb_wifi_stop();
+
+		return 0;
+	}
+#endif
 
 	if (strncmp(argv[1], "reset", 5) == 0) {
 		printf("resetting USB...\n");
