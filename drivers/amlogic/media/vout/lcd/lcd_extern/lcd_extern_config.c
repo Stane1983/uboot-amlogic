@@ -455,7 +455,7 @@ static unsigned char *lcd_extern_data_init_load(unsigned int *nums, int num_cnt,
 		goto ext_bin_to_data_ok;
 
 ext_origin_data:
-		for (k = 0; k < size; k++)
+		for (k = 0; k < size + 2; k++)
 			init_data[n + k] = nums[i + k];
 
 ext_bin_to_data_ok:
