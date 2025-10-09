@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # SPDX-License-Identifier: GPL-2.0+
 #
 # Copyright (C) 2016 Google, Inc
@@ -84,7 +84,7 @@ def BytesToValue(data):
     else:
         is_string = False
     if is_string:
-        if count == 1: 
+        if count == 1:
             return Type.STRING, strings[0].decode()
         else:
             return Type.STRING, [s.decode() for s in strings[:-1]]
