@@ -19,6 +19,9 @@
 #ifdef CONFIG_AMLOGIC_MODIFY
 #include <amlogic/emmc_partitions.h>
 #include <amlogic/storage.h>
+#if defined(CONFIG_AML_ANTIROLLBACK) || defined(CONFIG_AML_AVB2_ANTIROLLBACK)
+#include <amlogic/anti-rollback.h>
+#endif
 
 #ifndef getenv
 #define getenv env_get
@@ -124,7 +127,21 @@ int check_lock(void)
 	info.version_major = (int)(lock_s[0] - '0');
 	info.version_minor = (int)(lock_s[1] - '0');
 	info.unlock_ability = (int)(lock_s[2] - '0');
+
+#if defined(CONFIG_AML_ANTIROLLBACK) || defined(CONFIG_AML_AVB2_ANTIROLLBACK)
+	u32 rpmb_lock_state = 0;
+	bool ret = get_avb_lock_state(&rpmb_lock_state);
+
+	if (ret) {
+		if ((int)(lock_s[4] - '0') == 1 || rpmb_lock_state == 1)
+			info.lock_state = 1;
+	} else {
+		info.lock_state = (int)(lock_s[4] - '0');
+	}
+#else
 	info.lock_state = (int)(lock_s[4] - '0');
+#endif
+
 	info.lock_critical_state = (int)(lock_s[5] - '0');
 	info.lock_bootloader = (int)(lock_s[6] - '0');
 

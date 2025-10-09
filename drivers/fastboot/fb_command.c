@@ -1304,7 +1304,21 @@ static void flashing(char *cmd_parameter, char *response)
 	info.version_major = (int)(lock_d[0] - '0');
 	info.version_minor = (int)(lock_d[1] - '0');
 	info.unlock_ability = (int)(lock_d[2] - '0');
+
+#if defined(CONFIG_AML_ANTIROLLBACK) || defined(CONFIG_AML_AVB2_ANTIROLLBACK)
+	u32 rpmb_lock_state = 0;
+	bool ret = get_avb_lock_state(&rpmb_lock_state);
+
+	if (ret) {
+		if ((int)(lock_d[4] - '0') == 1 || rpmb_lock_state == 1)
+			info.lock_state = 1;
+	} else {
+		info.lock_state = (int)(lock_d[4] - '0');
+	}
+#else
 	info.lock_state = (int)(lock_d[4] - '0');
+#endif
+
 	info.lock_critical_state = (int)(lock_d[5] - '0');
 	info.lock_bootloader = (int)(lock_d[6] - '0');
 	dump_lock_info(info);
