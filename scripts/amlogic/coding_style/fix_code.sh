@@ -21,10 +21,10 @@ PATCH_NAME=`cat $PATCH_FILE_NAME`
 #echo $PATCH_NAME
 
 # check patch and generate review summary
-python $CUR_P/checkpatch.py $PATCH_NAME > $REVIEW_OUTPUT
+python3 $CUR_P/checkpatch.py $PATCH_NAME > $REVIEW_OUTPUT
 
 # fix files by review summary
-python $CUR_P/auto_fix.py $REVIEW_OUTPUT
+python3 $CUR_P/auto_fix.py $REVIEW_OUTPUT
 
 # cleanup
 rm $PATCH_FILE_NAME
