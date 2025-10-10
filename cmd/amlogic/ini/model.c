@@ -3644,7 +3644,7 @@ int handle_model_list(void)
 	return 0;
 }
 
-int handle_model_get(const char *model, char buf[])
+int handle_model_get(const char *model, char *buf, int buf_size)
 {
 	const char *model_name = model;
 	char *str = NULL;

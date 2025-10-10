@@ -468,25 +468,113 @@ static const char *get_model_path(int index)
 }
 #endif
 
+static int read_model_name_param(int index, unsigned char *data_buf, int data_size)
+{
+	int rd_size = 0;
+	const char *item_name = CS_MODEL_NAME_ITEM_NAME;
+	unsigned char *read_buf;
+
+	if (!data_buf)
+		return -1;
+
+	if (index == 1)
+		item_name = CS_MODEL1_NAME_ITEM_NAME;
+	else if (index == 2)
+		item_name = CS_MODEL2_NAME_ITEM_NAME;
+
+	read_buf = model_read_ukey_data(item_name, &rd_size);
+	if (!read_buf)
+		return -1;
+	if (data_size < rd_size) {
+		ALOGE("%s: size error: %s\n", __func__, item_name);
+		memset(read_buf, 0, rd_size);
+		free(read_buf);
+		return -1;
+	}
+	strlcpy(data_buf, read_buf, rd_size);
+	memset(read_buf, 0, rd_size);
+	free(read_buf);
+
+	return rd_size;
+}
+
+static int save_model_name_param(int index, int wr_size, unsigned char *data_buf)
+{
+	int tmp_ret = 0;
+	const char *item_name = CS_MODEL_NAME_ITEM_NAME;
+
+	if (!data_buf)
+		return -1;
+
+	if (index == 1)
+		item_name = CS_MODEL1_NAME_ITEM_NAME;
+	else if (index == 2)
+		item_name = CS_MODEL2_NAME_ITEM_NAME;
+
+	tmp_ret = model_write_ukey_data(item_name, data_buf, wr_size);
+
+	return tmp_ret;
+}
+
+static int get_panel_model_name_param(int index, char *model_buf, int buf_size,
+				      char *key_buf, int key_size)
+{
+	char *model, env_str[64];
+	int dbg_env_flag = 1;
+
+	/****** factory mode *******/
+	if (index == 0)
+		snprintf(key_buf, key_size, "model_name_factory");
+	else
+		snprintf(key_buf, key_size, "model%d_name_factory", index);
+	model = env_get(key_buf);
+	if (model) {
+		if (strcmp(model, "none")) {
+			strlcpy(model_buf, model, buf_size);
+			return 0;
+		}
+	}
+	/***************************/
+
+	if (index == 0)
+		snprintf(key_buf, key_size, "model_name");
+	else
+		snprintf(key_buf, key_size, "model%d_name", index);
+	if (read_model_name_param(index, model_buf, buf_size) > 0) {
+		//find unifykey model_name
+		dbg_env_flag = env_get_ulong("model_env_flag", 16, 0x1);
+		if (dbg_env_flag) {
+			env_set(key_buf, model_buf);
+			sprintf(env_str, "update_env_part -p -f %s", key_buf);
+			run_command(env_str, 0);
+			ALOGD("%s: update env[%s]=%s\n", __func__, key_buf, model_buf);
+		}
+		return 0;
+	}
+
+	model = env_get(key_buf);
+	if (model) {
+		strlcpy(model_buf, model, buf_size);
+		return 0;
+	}
+
+	ALOGD("%s: no %s\n", __func__, key_buf);
+	return -1;
+}
+
 static int handle_model_list(void)
 {
 	void *local_ini_mem;
-	const char *model, *model_path;
-	char str[15];
-	int i;
+	const char *model_path;
+	char str[32], model_val[64];
+	int i, ret;
 
 	for (i = 0; i < 3; i++) {
-		if (i == 0)
-			sprintf(str, "model_name");
-		else
-			sprintf(str, "model%d_name", i);
-
-		model = env_get(str);
-		if (!model) {
-			ALOGD("%s: no %s\n", __func__, str);
+		ret = get_panel_model_name_param(i, model_val, 64, str, 32);
+		if (ret)
 			continue;
-		}
-		printf("current %s: %s\n", str, model);
+
+		printf("current %s: %s\n", str, model_val);
 #ifdef CONFIG_AML_LCD
 		model_list_panel_path(i);
 #endif
@@ -509,7 +597,7 @@ static int handle_model_list(void)
 
 int handle_model_oemkey(void)
 {
-	char *model, str[15];
+	char *model, str[32], model_val[64];
 	unsigned int print_flag;
 	int i;
 	int ret = 1;
@@ -526,10 +614,14 @@ int handle_model_oemkey(void)
 		else
 			sprintf(str, "model%d_name", i);
 
-		model = env_get(str);
-		if (!model) {
-			ALOGD("%s: no %s\n", __func__, str);
-			continue;
+		if (read_model_name_param(i, model_val, 64) <= 0) {
+			model = env_get(str);
+			if (!model) {
+				ALOGD("%s: no %s\n", __func__, str);
+				continue;
+			}
+		} else {
+			model = model_val;
 		}
 		ALOGI("%s: %s: %s\n", __func__, str, model);
 		ret = parse_model_oemkey(i, get_model_sum_path(i), model);
@@ -542,7 +634,7 @@ int handle_model_oemkey(void)
 
 int handle_model_logofile(void)
 {
-	char *model, str[15];
+	char *model, str[32], model_val[64];
 	unsigned int print_flag;
 	int i;
 	int ret = 1;
@@ -560,10 +652,14 @@ int handle_model_logofile(void)
 		else
 			sprintf(str, "model%d_name", i);
 
-		model = env_get(str);
-		if (!model) {
-			ALOGD("%s: no %s\n", __func__, str);
-			continue;
+		if (read_model_name_param(i, model_val, 64) <= 0) {
+			model = env_get(str);
+			if (!model) {
+				ALOGD("%s: no %s\n", __func__, str);
+				continue;
+			}
+		} else {
+			model = model_val;
 		}
 		ALOGD("%s: %s: %s\n", __func__, str, model);
 		ret = parse_model_logofile(i, get_model_sum_path(i), model);
@@ -582,11 +678,10 @@ int handle_model_logofile(void)
 
 int handle_model_sum(void)
 {
-	char *model, str[15];
+	char str[32], model_val[64];
 	unsigned int print_flag;
-	int i;
 	char model_path[128];
-	int ret = 0;
+	int i, ret = 0;
 
 	print_flag = env_get_ulong("model_debug_print", 10, 0xffff);
 	if (print_flag != 0xffff) {
@@ -595,21 +690,16 @@ int handle_model_sum(void)
 	}
 
 	for (i = 0; i < 3; i++) {
-		if (i == 0)
-			sprintf(str, "model_name");
-		else
-			sprintf(str, "model%d_name", i);
-
-		model = env_get(str);
-		if (!model) {
-			ALOGD("%s: no %s\n", __func__, str);
+		ret = get_panel_model_name_param(i, model_val, 64, str, 32);
+		if (ret)
 			continue;
-		}
-		ALOGI("%s: %s: %s\n", __func__, str, model);
-		ret = parse_model_sum(i, get_model_sum_path(i), model);
+
+		ALOGI("%s: %s: %s\n", __func__, str, model_val);
+		ret = parse_model_sum(i, get_model_sum_path(i), model_val);
 		if (ret < 0) {
 			snprintf(model_path, 127, "%s/Project_index_%s.ini",
-				get_model_path(i), model);
+				get_model_path(i), model_val);
+			debug("model_sum try to read from model_path: %s\n", model_path);
 			ret = parse_model_sum(i, model_path, DEFAULT_SECTION);
 		}
 	}
@@ -617,45 +707,7 @@ int handle_model_sum(void)
 	return 0;
 }
 
-static int read_model_name_param(int index, unsigned char data_buf[])
-{
-	int rd_size = 0;
-	const char *item_name = CS_MODEL_NAME_ITEM_NAME;
-	unsigned char *read_buf;
-
-	if (!data_buf)
-		return -1;
-
-	if (index == 1)
-		item_name = CS_MODEL1_NAME_ITEM_NAME;
-	else if (index == 2)
-		item_name = CS_MODEL2_NAME_ITEM_NAME;
-
-	read_buf = model_read_ukey_data(item_name, &rd_size);
-	strlcpy(data_buf, read_buf, rd_size);
-
-	return rd_size;
-}
-
-static int save_model_name_param(int index, int wr_size, unsigned char data_buf[])
-{
-	int tmp_ret = 0;
-	const char *item_name = CS_MODEL_NAME_ITEM_NAME;
-
-	if (!data_buf)
-		return -1;
-
-	if (index == 1)
-		item_name = CS_MODEL1_NAME_ITEM_NAME;
-	else if (index == 2)
-		item_name = CS_MODEL2_NAME_ITEM_NAME;
-
-	tmp_ret = model_write_ukey_data(item_name, data_buf, wr_size);
-
-	return tmp_ret;
-}
-
-int handle_model_get(const char *model, char buf[])
+int handle_model_get(const char *model, char *buf, int buf_size)
 {
 	const char *model_name = model;
 	char *str = NULL;
@@ -678,7 +730,7 @@ int handle_model_get(const char *model, char buf[])
 		model_name = "model2_name";
 	}
 
-	ret = read_model_name_param(index, buf);
+	ret = read_model_name_param(index, buf, buf_size);
 	if (ret <= 0) {
 		str = env_get(model_name);
 		if (!str) {
@@ -716,10 +768,8 @@ int handle_model_set(const char *model, const char *val)
 		name = "model2_name";
 	}
 
-	if (!save_model_name_param(index, strlen(val) + 1,
-	    (char *)val)) {
+	if (!save_model_name_param(index, strlen(val) + 1, (char *)val))
 		ukey_ok = 1;
-	}
 	env_set(name, val);
 	env_ok = !env_save();
 

@@ -4,7 +4,7 @@
  */
 #include <common.h>
 #include <command.h>
-#include "../include/amlogic/ini.h"
+#include <amlogic/aml_model.h>
 #include <asm/gpio.h>
 #include <dm/uclass.h>
 #include <linux/err.h>
@@ -52,10 +52,12 @@ static int do_afm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 		char *powermode = env_get("powermode");
 		char *otg_device = env_get("otg_device");
 		char *selinux = env_get("EnableSelinux");
-		char model_name[50] = {0}, model1_name[50] = {0}, model2_name[50] = {0}, modelt_name[150] = {0};
-		handle_model_get("0", model_name);
-		handle_model_get("1", model1_name);
-		handle_model_get("2", model2_name);
+		char model_name[64] = {0}, model1_name[64] = {0}, model2_name[64] = {0};
+		char modelt_name[150] = {0};
+
+		handle_model_get("0", model_name, 64);
+		handle_model_get("1", model1_name, 64);
+		handle_model_get("2", model2_name, 64);
 		if (strlen(model_name) != 0)
 		{
 			strcat(modelt_name, model_name);
