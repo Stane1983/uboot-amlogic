@@ -39,6 +39,7 @@ struct dev_pm_ops {
 };
 
 typedef int (*FUNC_PTR) (void *);
+#define AO_WDT_FLAG 0x1000
 
 void pm_initialize(void);
 void pm_suspend(void);
