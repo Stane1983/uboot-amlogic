@@ -259,17 +259,20 @@ int handle_ini_set_exist_single_key(void *inip, void *psec, const char *key, con
 	struct ini_s *ini_buf;
 	struct ini_section_s *ini_section;
 	struct ini_line_s *ini_line;
+	unsigned char *local_ini_mem = inip;
 	int ret;
 
 	if (!inip || !psec || !key)
 		return -1;
 	ini_buf = (struct ini_s *)inip;
-
 	ini_section = (struct ini_section_s *)psec;
 	ini_line = ini_get_key_line_at_sec(ini_buf, ini_section, key);
 
 	ret = ini_set_line_exist_key_val(ini_buf, ini_section, ini_line, str,
 					 INI_SET_KEY_VAL_MODE_OVERWRITE);
+	if (!ret)
+		ini_buf->crc32 = cal_CRC32(0,
+				local_ini_mem + ini_buf->mem_start_pos, ini_buf->mem_cur_pos);
 	return ret;
 }
 
@@ -278,6 +281,7 @@ int handle_ini_set_exist_keys(void *inip, void *psec,
 {
 	struct ini_s *ini_buf;
 	struct ini_section_s *ini_section;
+	unsigned char *local_ini_mem = inip;
 	int ret;
 
 	if (!inip || !psec || !new_line || !new_value)
@@ -287,6 +291,9 @@ int handle_ini_set_exist_keys(void *inip, void *psec,
 	ini_section = (struct ini_section_s *)psec;
 
 	ret = ini_set_line_exist_keys(ini_buf, ini_section, new_line, new_value, line_cnt);
+	if (!ret)
+		ini_buf->crc32 = cal_CRC32(0,
+				local_ini_mem + ini_buf->mem_start_pos, ini_buf->mem_cur_pos);
 	return ret;
 }
 
