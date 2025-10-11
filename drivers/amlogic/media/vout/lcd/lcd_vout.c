@@ -386,7 +386,8 @@ static void lcd_power_ctrl(struct aml_lcd_drv_s *pdrv, int status)
 			break;
 #endif
 		case LCD_POWER_TYPE_MUTE:
-			lcd_on_off_mute_ctrl(pdrv, power_step->value);
+			if (lcd_debug_test_flag == 0)
+				lcd_on_off_mute_ctrl(pdrv, power_step->value);
 			break;
 		case LCD_POWER_TYPE_OFF_DELAY:
 			break;
@@ -425,8 +426,12 @@ void lcd_encl_on(struct aml_lcd_drv_s *pdrv)
 	}
 
 	pdrv->driver_init_pre(pdrv);
-	if (lcd_debug_test_flag)
+	if (lcd_debug_test_flag) {
 		lcd_debug_test(pdrv, lcd_debug_test_flag);
+	} else {
+		if (pdrv->status & LCD_STATUS_PRE_MUTE)
+			lcd_on_off_mute_ctrl(pdrv, 1);
+	}
 
 	pdrv->status |= LCD_STATUS_ENCL_ON;
 }
