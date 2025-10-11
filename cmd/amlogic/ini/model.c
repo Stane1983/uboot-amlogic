@@ -3186,7 +3186,7 @@ int handle_panel_ini(int index)
 		panel_param_mem_set_ukey_flag();
 
 	memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
-	tmp_len = read_lcd_param(index, tmp_buf);
+	tmp_len = read_lcd_param(index, tmp_buf, CC_MAX_DATA_SIZE);
 	if (check_param_valid(0, glcd_dcnt, lcd_buf, tmp_len, tmp_buf) ==
 	    CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM) {
 		ALOGD("%s, check lcd param data diff (0x%x), save new param.\n",
@@ -3203,7 +3203,7 @@ int handle_panel_ini(int index)
 	panel_param_mem_put((u8 *)lcd_ext_attr, key_name, glcd_ext_dcnt);
 
 	memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
-	tmp_len = read_lcd_extern_param(index, tmp_buf);
+	tmp_len = read_lcd_extern_param(index, tmp_buf, CC_MAX_DATA_SIZE);
 	//ALOGD("%s, start check lcd extern param data (0x%x).\n", __func__, tmp_len);
 	if (check_param_valid(0, glcd_ext_dcnt, (unsigned char *)lcd_ext_attr, tmp_len, tmp_buf) ==
 	    CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM) {
@@ -3220,7 +3220,7 @@ int handle_panel_ini(int index)
 	panel_param_mem_put((u8 *)bl_attr, key_name, gbl_dcnt);
 
 	memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
-	tmp_len = read_backlight_param(index, tmp_buf);
+	tmp_len = read_backlight_param(index, tmp_buf, CC_MAX_DATA_SIZE);
 	if (check_param_valid(0, gbl_dcnt, (unsigned char *)bl_attr, tmp_len, tmp_buf) ==
 	    CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM) {
 		ALOGD("%s, check backlight param data diff (0x%x), save new param.\n",
@@ -3235,7 +3235,7 @@ int handle_panel_ini(int index)
 		panel_param_mem_put((u8 *)ldim_dev_attr, key_name, gldim_dev_dcnt);
 
 		memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
-		tmp_len = read_ldim_dev_param(tmp_buf);
+		tmp_len = read_ldim_dev_param(tmp_buf, CC_MAX_DATA_SIZE);
 		//ALOGD("%s, start check ldim_dev param data (0x%x).\n", __func__, tmp_len);
 		if (check_param_valid(0, gldim_dev_dcnt, (unsigned char *)ldim_dev_attr,
 			tmp_len, tmp_buf) == CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM) {
@@ -3256,7 +3256,7 @@ int handle_panel_ini(int index)
 		panel_param_mem_put((u8 *)optical_attr, key_name, glcd_optical_dcnt);
 
 		memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
-		tmp_len = ReadLcdOpticalParam(index, tmp_buf);
+		tmp_len = ReadLcdOpticalParam(index, tmp_buf, CC_MAX_DATA_SIZE);
 		//ALOGD("%s, start check lcd_tcon_spi param data (0x%x).\n", __func__, tmp_len);
 		if (check_param_valid(0, glcd_optical_dcnt, (unsigned char *)optical_attr,
 			tmp_len, tmp_buf) == CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM) {

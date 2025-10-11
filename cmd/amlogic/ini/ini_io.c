@@ -26,23 +26,26 @@
     #endif
 #endif
 
-static int ReadBinData(const char *item_name, unsigned char data_buf[]) {
-    return readUKeyData_no_header(item_name, data_buf, CC_ONE_SECTION_SIZE);
+static int ReadBinData(const char *item_name, unsigned char data_buf[], int buf_size)
+{
+	return readUKeyData_no_header(item_name, data_buf, buf_size, CC_ONE_SECTION_SIZE);
 }
 
 static int WriteBinData(const char *item_name, int wr_size, unsigned char data_buf[]) {
     return HandleWriteData(item_name, data_buf, wr_size);
 }
 
-static int ReadIniData(const char *item_name, unsigned char data_buf[]) {
-	return HandleReadData(item_name, data_buf, CC_ONE_SECTION_SIZE);
+static int ReadIniData(const char *item_name, unsigned char data_buf[], int buf_size)
+{
+	return HandleReadData(item_name, data_buf, buf_size, CC_ONE_SECTION_SIZE);
 }
 
 static int WriteIniData(const char *item_name, int wr_size, unsigned char data_buf[]) {
     return HandleWriteData(item_name, data_buf, wr_size);
 }
 
-static int ReadStringData(const char *item_name, int mode, char data_buf[]) {
+static int ReadStringData(const char *item_name, int mode, char data_buf[], int buf_size)
+{
     int rd_size = 0, skip_len = 0;
     unsigned char *tmp_buf = NULL;
 
@@ -57,9 +60,9 @@ static int ReadStringData(const char *item_name, int mode, char data_buf[]) {
     }
 
     memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
-    rd_size = ReadIniData(item_name, tmp_buf);
+	rd_size = ReadIniData(item_name, tmp_buf, CC_MAX_DATA_SIZE);
 
-	if (rd_size <= 0)
+	if (rd_size <= 0 || rd_size >= buf_size)
 		return -1;
 
     if (check_string_data_have_header_valid(NULL, (char *)tmp_buf, CC_HEAD_CHKSUM_LEN, CC_VERSION_LEN) < 0) {
@@ -249,7 +252,7 @@ int check_string_data_have_header_valid(unsigned int* tmp_crc32, char *data_str,
     return -1;
 }
 
-int read_lcd_param(int index, unsigned char data_buf[])
+int read_lcd_param(int index, unsigned char data_buf[], int buf_size)
 {
 	int rd_size = 0;
 
@@ -257,11 +260,11 @@ int read_lcd_param(int index, unsigned char data_buf[])
 		return -1;
 
 	if (index == 1)
-		rd_size = ReadIniData(CS_LCD1_ITEM_NAME, data_buf);
+		rd_size = ReadIniData(CS_LCD1_ITEM_NAME, data_buf, buf_size);
 	else if (index == 2)
-		rd_size = ReadIniData(CS_LCD2_ITEM_NAME, data_buf);
+		rd_size = ReadIniData(CS_LCD2_ITEM_NAME, data_buf, buf_size);
 	else
-		rd_size = ReadIniData(CS_LCD_ITEM_NAME, data_buf);
+		rd_size = ReadIniData(CS_LCD_ITEM_NAME, data_buf, buf_size);
 
 	return rd_size;
 }
@@ -285,7 +288,7 @@ int save_lcd_param(int index, int wr_size, unsigned char data_buf[])
 	return tmp_ret;
 }
 
-int read_lcd_extern_param(int index, unsigned char data_buf[])
+int read_lcd_extern_param(int index, unsigned char data_buf[], int buf_size)
 {
 	int rd_size = 0;
 
@@ -293,11 +296,11 @@ int read_lcd_extern_param(int index, unsigned char data_buf[])
 		return -1;
 
 	if (index == 1)
-		rd_size = ReadIniData(CS_LCD1_EXT_ITEM_NAME, data_buf);
+		rd_size = ReadIniData(CS_LCD1_EXT_ITEM_NAME, data_buf, buf_size);
 	else if (index == 2)
-		rd_size = ReadIniData(CS_LCD2_EXT_ITEM_NAME, data_buf);
+		rd_size = ReadIniData(CS_LCD2_EXT_ITEM_NAME, data_buf, buf_size);
 	else
-		rd_size = ReadIniData(CS_LCD_EXT_ITEM_NAME, data_buf);
+		rd_size = ReadIniData(CS_LCD_EXT_ITEM_NAME, data_buf, buf_size);
 
 	return rd_size;
 }
@@ -321,7 +324,7 @@ int save_lcd_extern_param(int index, int wr_size, unsigned char data_buf[])
 	return tmp_ret;
 }
 
-int read_backlight_param(int index, unsigned char data_buf[])
+int read_backlight_param(int index, unsigned char data_buf[], int buf_size)
 {
 	int rd_size = 0;
 
@@ -329,11 +332,11 @@ int read_backlight_param(int index, unsigned char data_buf[])
 		return -1;
 
 	if (index == 1)
-		rd_size = ReadIniData(CS_BACKLIGHT1_ITEM_NAME, data_buf);
+		rd_size = ReadIniData(CS_BACKLIGHT1_ITEM_NAME, data_buf, buf_size);
 	else if (index == 2)
-		rd_size = ReadIniData(CS_BACKLIGHT2_ITEM_NAME, data_buf);
+		rd_size = ReadIniData(CS_BACKLIGHT2_ITEM_NAME, data_buf, buf_size);
 	else
-		rd_size = ReadIniData(CS_BACKLIGHT_ITEM_NAME, data_buf);
+		rd_size = ReadIniData(CS_BACKLIGHT_ITEM_NAME, data_buf, buf_size);
 
 	return rd_size;
 }
@@ -357,14 +360,14 @@ int save_backlight_param(int index, int wr_size, unsigned char data_buf[])
 	return tmp_ret;
 }
 
-int read_ldim_dev_param(unsigned char data_buf[])
+int read_ldim_dev_param(unsigned char data_buf[], int buf_size)
 {
 	int rd_size = 0;
 
 	if (!data_buf)
 		return -1;
 
-	rd_size = ReadIniData(CS_LDIM_DEV_ITEM_NAME, data_buf);
+	rd_size = ReadIniData(CS_LDIM_DEV_ITEM_NAME, data_buf, buf_size);
 
 	return rd_size;
 }
@@ -383,14 +386,15 @@ int save_ldim_dev_param(int wr_size, unsigned char data_buf[])
 	return tmp_ret;
 }
 
-int ReadTconSpiParam(unsigned char data_buf[]) {
+int ReadTconSpiParam(unsigned char data_buf[], int buf_size)
+{
     int rd_size = 0;
 
     if (data_buf == NULL) {
         return -1;
     }
 
-    rd_size = ReadIniData(CS_LCD_TCON_SPI_ITEM_NAME, data_buf);
+	rd_size = ReadIniData(CS_LCD_TCON_SPI_ITEM_NAME, data_buf, buf_size);
 
     return rd_size;
 }
@@ -410,7 +414,7 @@ int SaveTconSpiParam(int wr_size, unsigned char data_buf[]) {
     return tmp_ret;
 }
 
-int ReadLcdOpticalParam(int index, unsigned char data_buf[])
+int ReadLcdOpticalParam(int index, unsigned char data_buf[], int buf_size)
 {
 	int rd_size = 0;
 
@@ -419,13 +423,13 @@ int ReadLcdOpticalParam(int index, unsigned char data_buf[])
 
 	switch (index) {
 	case 1:
-		rd_size = ReadIniData(CS_LCD1_OPTICAL_ITEM_NAME, data_buf);
+		rd_size = ReadIniData(CS_LCD1_OPTICAL_ITEM_NAME, data_buf, buf_size);
 		break;
 	case 2:
-		rd_size = ReadIniData(CS_LCD2_OPTICAL_ITEM_NAME, data_buf);
+		rd_size = ReadIniData(CS_LCD2_OPTICAL_ITEM_NAME, data_buf, buf_size);
 		break;
 	default:
-		rd_size = ReadIniData(CS_LCD_OPTICAL_ITEM_NAME, data_buf);
+		rd_size = ReadIniData(CS_LCD_OPTICAL_ITEM_NAME, data_buf, buf_size);
 		break;
 	}
 
@@ -456,14 +460,15 @@ int SaveLcdOpticalParam(int index, int wr_size, unsigned char data_buf[])
 	return tmp_ret;
 }
 
-int ReadTconBinParam(unsigned char data_buf[]) {
+int ReadTconBinParam(unsigned char data_buf[], int buf_size)
+{
     int rd_size = 0;
 
     if (data_buf == NULL) {
         return -1;
     }
 
-    rd_size = ReadBinData(CS_LCD_TCON_ITEM_NAME, data_buf);
+	rd_size = ReadBinData(CS_LCD_TCON_ITEM_NAME, data_buf, buf_size);
 
     return rd_size;
 }
@@ -483,30 +488,33 @@ int SaveTconBinParam(int wr_size, unsigned char data_buf[]) {
     return tmp_ret;
 }
 
-int ReadPanelIniName(char data_buf[]) {
-    return ReadStringData(CS_PANEL_INI_PATH_ITEM_NAME, 0, data_buf);
+int ReadPanelIniName(char data_buf[], int buf_size)
+{
+	return ReadStringData(CS_PANEL_INI_PATH_ITEM_NAME, 0, data_buf, buf_size);
 }
 
 int SavePanelIniName(char data_buf[]) {
     return SaveStringData(CS_PANEL_INI_PATH_ITEM_NAME, 0, data_buf);
 }
 
-int ReadPanelPQPath(char data_buf[]) {
-    return ReadStringData(CS_PANEL_PQ_PATH_ITEM_NAME, 0, data_buf);
+int ReadPanelPQPath(char data_buf[], int buf_size)
+{
+	return ReadStringData(CS_PANEL_PQ_PATH_ITEM_NAME, 0, data_buf, buf_size);
 }
 
 int SavePanelPQPath(char data_buf[]) {
     return SaveStringData(CS_PANEL_PQ_PATH_ITEM_NAME, 0, data_buf);
 }
 
-int ReadPanelAllInfoData(unsigned char data_buf[]) {
+int ReadPanelAllInfoData(unsigned char data_buf[], int buf_size)
+{
     int rd_size = 0;
 
     if (data_buf == NULL) {
         return -1;
     }
 
-    rd_size = ReadIniData(CS_PANEL_ALL_INFO_ITEM_NAME, data_buf);
+	rd_size = ReadIniData(CS_PANEL_ALL_INFO_ITEM_NAME, data_buf, buf_size);
 
     return rd_size;
 }
@@ -526,7 +534,8 @@ int SavePanelAllInfoData(int wr_size, unsigned char data_buf[]) {
     return tmp_ret;
 }
 
-int ReadPanelAllData(int sec_no, unsigned char data_buf[]) {
+int ReadPanelAllData(int sec_no, unsigned char data_buf[], int buf_size)
+{
     int rd_size = 0;
     char tmp_buf[128];
 
@@ -536,7 +545,7 @@ int ReadPanelAllData(int sec_no, unsigned char data_buf[]) {
 
     sprintf(tmp_buf, "%s_d%d", CS_PANEL_ALL_DATA_ITEM_NAME, sec_no);
 
-    rd_size = ReadIniData(tmp_buf, data_buf);
+	rd_size = ReadIniData(tmp_buf, data_buf, buf_size);
 
     return rd_size;
 }

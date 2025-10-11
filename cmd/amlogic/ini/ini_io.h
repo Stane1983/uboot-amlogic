@@ -37,27 +37,27 @@
 extern "C" {
 #endif
 
-int read_lcd_param(int index, unsigned char data_buf[]);
+int read_lcd_param(int index, unsigned char data_buf[], int buf_size);
 int save_lcd_param(int index, int wr_size, unsigned char data_buf[]);
-int read_lcd_extern_param(int index, unsigned char data_buf[]);
+int read_lcd_extern_param(int index, unsigned char data_buf[], int buf_size);
 int save_lcd_extern_param(int index, int wr_size, unsigned char data_buf[]);
-int read_backlight_param(int index, unsigned char data_buf[]);
+int read_backlight_param(int index, unsigned char data_buf[], int buf_size);
 int save_backlight_param(int index, int wr_size, unsigned char data_buf[]);
-int read_ldim_dev_param(unsigned char data_buf[]);
+int read_ldim_dev_param(unsigned char data_buf[], int buf_size);
 int save_ldim_dev_param(int wr_size, unsigned char data_buf[]);
-int ReadTconSpiParam(unsigned char data_buf[]);
+int ReadTconSpiParam(unsigned char data_buf[], int buf_size);
 int SaveTconSpiParam(int wr_size, unsigned char data_buf[]);
-int ReadLcdOpticalParam(int index, unsigned char data_buf[]);
+int ReadLcdOpticalParam(int index, unsigned char data_buf[], int buf_size);
 int SaveLcdOpticalParam(int index, int wr_size, unsigned char data_buf[]);
-int ReadTconBinParam(unsigned char data_buf[]);
+int ReadTconBinParam(unsigned char data_buf[], int buf_size);
 int SaveTconBinParam(int wr_size, unsigned char data_buf[]);
-int ReadPanelIniName(char data_buf[]);
+int ReadPanelIniName(char data_buf[], int buf_size);
 int SavePanelIniName(char data_buf[]);
-int ReadPanelPQPath(char data_buf[]);
+int ReadPanelPQPath(char data_buf[], int buf_size);
 int SavePanelPQPath(char data_buf[]);
-int ReadPanelAllInfoData(unsigned char data_buf[]);
+int ReadPanelAllInfoData(unsigned char data_buf[], int buf_size);
 int SavePanelAllInfoData(int wr_size, unsigned char data_buf[]);
-int ReadPanelAllData(int sec_no, unsigned char data_buf[]);
+int ReadPanelAllData(int sec_no, unsigned char data_buf[], int buf_size);
 int SavePanelAllData(int sec_no, int wr_size, unsigned char data_buf[]);
 
 int check_hex_data_no_header_valid(unsigned int* tmp_crc32, int max_len, int buf_len, unsigned char data_buf[]);
