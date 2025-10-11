@@ -42,7 +42,7 @@ extern "C"
 #define json_ssize_t int
 #define json_uint unsigned int
 #define json_size_t unsigned int
-#define JSON_STR_MAX (32 * 1024 - 1) //32K js buffer
+#define JSON_STR_MAX (32 * 1024 - 1) //32K js buffer, max 64k
 #define JSON_NODE_MAX (JSON_STR_MAX / sizeof(struct json_s)) //4095 node
 
 #else
@@ -50,7 +50,7 @@ extern "C"
 #define json_ssize_t short
 #define json_uint unsigned short
 #define json_size_t unsigned short
-#define JSON_STR_MAX (16 * 1024 - 1) //16K js buffer
+#define JSON_STR_MAX (16 * 1024 - 1) //16K js buffer, max 32k
 #define JSON_NODE_MAX (JSON_STR_MAX / sizeof(struct json_s)) //2047 node
 #endif
 
@@ -132,7 +132,7 @@ struct json_parse_s {
 	json_ssize_t json_cnt; //real json array used
 	json_ssize_t js_max;   //json string max, short for 32k, int for 2g
 	json_ssize_t js_len;   //real json string length
-	json_ssize_t pos;      //for parse time recording
+	s32 pos;      //for parse time recording file position
 	unsigned char status;
 	char *js;              //json string
 	struct json_s *root;   //json array

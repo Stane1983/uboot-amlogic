@@ -107,7 +107,7 @@ struct json_parse_s *panel_json_parse(int index)
 	if (!tmp_buf)
 		goto panel_json_parse_err;
 
-	if (!json_parse(jsp, (char *)tmp_buf, JSON_STR_MAX)) {
+	if (!json_parse(jsp, (char *)tmp_buf, file_size)) {
 		json_deinit(jsp);
 		jsp->status = JSON_STATUS_ERROR;
 		LCDERR("%s jsp parse failed\n", __func__);

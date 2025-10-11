@@ -695,6 +695,10 @@ static int lcd_tcon_spi_data_load_json(struct aml_lcd_drv_s *pdrv)
 		child2 = json_get_object_child(jsp, child, "param");
 		if (child2)
 			param_cnt = json_get_array_size(jsp, child2);
+		p[n + 16] = param_cnt & 0xff;
+		p[n + 17] = (param_cnt >> 8) & 0xff;
+		p[n + 18] = (param_cnt >> 16) & 0xff;
+		p[n + 19] = (param_cnt >> 24) & 0xff;
 
 		/* conversion parameters */
 		k = n + 20;
