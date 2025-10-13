@@ -484,6 +484,7 @@
 			reg = <0x0 0xfe300000 0x0 0x100000>;
 			phys = <&usb20_phy_v2>, <&usb30_phy_v2>;
 			phy-names = "usb2-phy", "usb3-phy";
+			wifi-bt-cn = <1>;
 		};
 
 		crg21: crg21@fe310000 {
@@ -492,7 +493,6 @@
 			reg = <0x0 0xfe310000 0x0 0x100000>;
 			phys = <&usb21_phy_v2>, <&usb31_phy_v2>;
 			phy-names = "usb2-phy", "usb3-phy";
-			wifi-bt-cn = <1>;
 		};
 
 		crg30: crg30@fe350000 {
