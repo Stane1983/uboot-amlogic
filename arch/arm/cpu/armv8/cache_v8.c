@@ -24,6 +24,10 @@
 #include <linux/sizes.h>
 #endif
 
+#ifdef CONFIG_MULTI_DTB_FIT
+#include <fdtdec.h>
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 #if !CONFIG_IS_ENABLED(SYS_DCACHE_OFF)
@@ -884,8 +888,26 @@ void __weak enable_caches(void)
 #ifdef CONFIG_FULL_RAMDUMP
 void load_bl33z(void)
 {
-	unsigned long bl33z_entry = (unsigned long)_end;
-	typedef unsigned long (*__FUNC_TPL)(void);
+	ulong bl33z_entry = (ulong)_end;
+#ifdef CONFIG_MULTI_DTB_FIT
+	/* calculate fit dtb size */
+	uint8_t *fit_blob = (uint8_t *)&__rel_dyn_end;
+	uint32_t fit_blob_size = ALIGN(fdt_totalsize(fit_blob), 4);
+
+	do {
+		fit_blob += ALIGN(fdt_totalsize(fit_blob), 4);
+		if (fdt_magic(fit_blob) == FDT_MAGIC)
+			fit_blob_size += ALIGN(fdt_totalsize(fit_blob), 4);
+		else
+			break;
+
+	} while (1);
+
+	bl33z_entry = ALIGN((ulong)__rel_dyn_end + (ulong)fit_blob_size, SZ_4K);
+
+	printf("bl33z_entry = 0x%lx\n", bl33z_entry);
+#endif
+	typedef ulong (*__FUNC_TPL)(void);
 	__FUNC_TPL func_tpl = (__FUNC_TPL)bl33z_entry;
 
 	func_tpl();

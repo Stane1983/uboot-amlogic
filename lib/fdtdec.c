@@ -1229,7 +1229,11 @@ static void *fdt_find_separate(void)
 		fdt_blob = (ulong *)&__bss_end;
 #else
 	/* FDT is at end of image */
+#ifdef CONFIG_FULL_RAMDUMP
+	fdt_blob = (ulong *)&__rel_dyn_end;
+#else
 	fdt_blob = (ulong *)&_end;
+#endif
 #endif
 
 	return fdt_blob;
