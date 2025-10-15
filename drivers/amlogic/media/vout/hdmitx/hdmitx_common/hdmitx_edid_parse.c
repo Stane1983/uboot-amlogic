@@ -151,11 +151,16 @@ static unsigned int cec_get_edid_spa_location(const u8 *edid, unsigned int size)
 		if (edid[offset] != 0x02 || edid[offset + 1] != 0x03)
 			continue;
 
-		/* search Vendor Specific Data Block (tag 3) */
-		d = edid[offset + 2] & 0x7f;
+		/*
+		 * When the descriptor offset is greater than 127,
+		 * the CTA block needs to parse 127 bytes of valid data
+		 */
+		d = (edid[offset + 2] > 0x7f) ? 0x7f : (edid[offset + 2] & 0x7f);
 		/* Check if there are Data Blocks */
 		if (d <= 4)
 			continue;
+
+		/* search Vendor Specific Data Block (tag 3) */
 		if (d > 4) {
 			unsigned int i = offset + 4;
 			unsigned int end = offset + d;
@@ -1943,16 +1948,21 @@ static int hdmitx_edid_audio_block_parse(struct rx_cap *prxcap, u8 *block_buf)
 	if (!prxcap || !block_buf)
 		return -1;
 
-	/* CEA description */
-	end = block_buf[2];
-	/* Initialize SVD_VIC used for SVD storage in the video data block */
-	if (end > 127)
-		return 0;
+	/*
+	 * CEA description
+	 * When the descriptor offset is greater than 127,
+	 * the CTA block needs to parse 127 bytes of valid data
+	 */
+	end = (block_buf[2] > 0x7f) ? 0x7f : (block_buf[2] & 0x7f);
 
 	/* this loop should be parsing when revision number is larger than 2 */
 	for (offset = 4 ; offset < end ; ) {
 		tag = block_buf[offset] >> 5;
 		count = block_buf[offset] & 0x1f;
+		/* The maximum offset address range of cta data blocks is 4~126 */
+		if (offset + count > 126)
+			break;
+
 		switch (tag) {
 		case HDMI_EDID_BLOCK_TYPE_AUDIO:
 			tmp = count / 3;
@@ -2019,8 +2029,12 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap, u8 *block_buf)
 	if (!prxcap || !block_buf)
 		return -1;
 
-	/* CEA description */
-	end = block_buf[2];
+	/*
+	 * CEA description
+	 * When the descriptor offset is greater than 127,
+	 * the CTA block needs to parse 127 bytes of valid data
+	 */
+	end = (block_buf[2] > 0x7f) ? 0x7f : (block_buf[2] & 0x7f);
 	prxcap->native_Mode = block_buf[1] >= 2 ? block_buf[3] : 0;
 	prxcap->underscan = (prxcap->native_Mode & 0x80) >> 7;
 	prxcap->number_of_dtd += block_buf[1] >= 2 ? (block_buf[3] & 0xf) : 0;
@@ -2038,8 +2052,6 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap, u8 *block_buf)
 	/* prxcap->AUD_count = 0;*/
 
 	edid_y420cmdb_reset(prxcap);
-	if (end > 127)
-		return 0;
 
 	if (block_buf[1] <= 2) {
 		/* skip below for loop */
@@ -2049,6 +2061,10 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap, u8 *block_buf)
 	for (offset = 4 ; offset < end ; ) {
 		tag = block_buf[offset] >> 5;
 		count = block_buf[offset] & 0x1f;
+		/* The maximum offset address range of cta data blocks is 4~126 */
+		if (offset + count > 126)
+			break;
+
 		switch (tag) {
 		case HDMI_EDID_BLOCK_TYPE_VIDEO:
 			offset++;
