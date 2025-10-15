@@ -1032,10 +1032,16 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap,
 	int i, idx;
 	unsigned char *vfpdb_offset = NULL;
 
-	end = blockbuf[2]; /* CEA description. */
+	/*
+	 * CEA description
+	 * When the descriptor offset is greater than 127,
+	 * the CTA block needs to parse 127 bytes of valid data
+	 */
+	end = (blockbuf[2] > 0x7f) ? 0x7f : (blockbuf[2] & 0x7f);
 	prxcap->native_Mode = blockbuf[1] >= 2 ? blockbuf[3] : 0;
 	prxcap->number_of_dtd += blockbuf[1] >= 2 ? (blockbuf[3] & 0xf) : 0;
-	/* bit 5 (YCBCR 4:4:4) = 1 if sink device supports YCBCR 4:4:4
+	/*
+	 * bit 5 (YCBCR 4:4:4) = 1 if sink device supports YCBCR 4:4:4
 	 * in addition to RGB;
 	 * bit 4 (YCBCR 4:2:2) = 1 if sink device supports YCBCR 4:2:2
 	 * in addition to RGB
@@ -1045,8 +1051,6 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap,
 	prxcap->SVD_VIC_count = 0;
 	memset(prxcap->SVD_VIC, 0, sizeof(prxcap->SVD_VIC));
 	/* prxcap->native_VIC = 0xff; */
-	if (end > 127)
-		return 0;
 	if (blockbuf[1] <= 2) {
 		/* skip below for loop */
 		goto next;
@@ -1055,6 +1059,10 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap,
 	for (offset = 4 ; offset < end ; ) {
 		tag = blockbuf[offset] >> 5;
 		count = blockbuf[offset] & 0x1f;
+		/* The maximum offset address range of cta data blocks is 4~126 */
+		if (offset + count > 126)
+			break;
+
 		switch (tag) {
 		case HDMI_EDID_BLOCK_TYPE_AUDIO:
 			offset++;
