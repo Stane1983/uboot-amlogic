@@ -223,7 +223,8 @@ static void lcd_set_pll_t6x(struct aml_lcd_drv_s *pdrv)
 
 	tcon_div_sel = cconf->pll_tcon_div_sel;
 	lcd_ana_setb(ANACTRL_TCON_PLL_VLOCK, 1, 3, 1);
-	pll_ctrl0 = 0x8023000 | (cconf->pll_config[0].pll_m << 0);
+	pll_ctrl0 = 0x8022000 | (cconf->pll_config[0].pll_m << 0) |
+			(cconf->data->pll_data[0]->pll_0_5_div_en << 12);
 	pll_ctrl1 = 0x1030600c;
 	pll_ctrl2 = 0x32000000 |
 		(1 << 24) |

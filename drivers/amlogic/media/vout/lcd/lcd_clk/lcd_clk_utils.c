@@ -323,18 +323,19 @@ static int generate_pll_3od_setting(struct lcd_clk_config_s *cconf,
 			for (od1_sel = od2_sel; od1_sel > 0; od1_sel--) {
 				od1 = od_table[od1_sel - 1];
 				pll_fvco = pll_fod2_in * od1;
-				pll_config->pll_od1_sel = od1_sel - 1;
-				pll_config->pll_od2_sel = od2_sel - 1;
-				pll_config->pll_od3_sel = od3_sel - 1;
-				pll_config->pll_fout = pll_fout;
 				if (lcd_debug_print_flag & LCD_DBG_PR_CLK) {
 					LCDPR("od1=%d, od2=%d, od3=%d, pll_fvco=%lld\n",
 						(od1_sel - 1), (od2_sel - 1),
 						(od3_sel - 1), pll_fvco);
 				}
 				done = check_vco(cconf, pll_sel, pll_fvco);
-				if (done)
-					break;
+				if (done) {
+					pll_config->pll_od1_sel = od1_sel - 1;
+					pll_config->pll_od2_sel = od2_sel - 1;
+					pll_config->pll_od3_sel = od3_sel - 1;
+					pll_config->pll_fout = pll_fout;
+					return done;
+				}
 			}
 		}
 	}
@@ -356,13 +357,14 @@ static int generate_pll_1od_setting(struct lcd_clk_config_s *cconf,
 	for (od_sel = pll_data->pll_od_sel_max; od_sel > 0; od_sel--) {
 		od = od_table[od_sel - 1];
 		pll_fvco = pll_fout * od;
-		pll_config->pll_od1_sel = od_sel - 1;
-		pll_config->pll_fout = pll_fout;
 		if (lcd_debug_print_flag & LCD_DBG_PR_CLK)
 			LCDPR("od_sel=%d, pll_fvco=%lld\n", (od_sel - 1), pll_fvco);
 		done = check_vco(cconf, pll_sel, pll_fvco);
-		if (done)
+		if (done) {
+			pll_config->pll_od1_sel = od_sel - 1;
+			pll_config->pll_fout = pll_fout;
 			break;
+		}
 	}
 	return done;
 }
@@ -378,9 +380,10 @@ static int generate_pll_0od_setting(struct lcd_clk_config_s *cconf,
 	if (pll_fout > pll_data->pll_out_fmax || pll_fout < pll_data->pll_out_fmin)
 		return done;
 
-	pll_config->pll_fout = pll_fout;
 	pll_fvco = pll_fout;
 	done = check_vco(cconf, pll_sel, pll_fvco);
+	if (done)
+		pll_config->pll_fout = pll_fout;
 
 	return done;
 }
