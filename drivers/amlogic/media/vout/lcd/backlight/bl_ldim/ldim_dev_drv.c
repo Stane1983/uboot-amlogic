@@ -250,13 +250,13 @@ static void ldim_device_config_print(struct ldim_dev_driver_s *dev_drv)
 		dev_drv->en_gpio_on,
 		dev_drv->en_gpio_off);
 
-	printf("zone_mapping:\n");
-	for (i = 0; i < dev_drv->zone_num; i++)
-		printf("%d,", dev_drv->bl_mapping[i]);
-	printf("\n\n");
-
 	switch (dev_drv->type) {
 	case LDIM_DEV_TYPE_SPI:
+		printf("zone_mapping:\n");
+		for (i = 0; i < dev_drv->zone_num; i++)
+			printf("%d,", dev_drv->bl_mapping[i]);
+		printf("\n\n");
+
 		printf("spi_dev           = 0x%p : 0x%p\n"
 			"spi_modalias      = %s\n"
 			"spi_mode          = %d\n"

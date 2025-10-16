@@ -81,6 +81,7 @@ int model_file_is_exist(const char *file_path);
 int model_get_file_size(const char *file_path);
 int model_read_file(const char *file_path, unsigned char *data_buf, int buf_size);
 unsigned char *model_read_file_to_buffer(const char *file_path, int *buf_size);
+unsigned char *model_read_bin_to_buffer(const char *file_path, int *buf_size);
 
 #else
 static inline int model_set_panel_misc(struct panel_misc_s *misc_attr)
@@ -104,6 +105,11 @@ static inline int model_read_file(const char *file_path, unsigned char *data_buf
 }
 
 static inline unsigned char *model_read_file_to_buffer(const char *file_path, int *buf_size)
+{
+	return NULL;
+}
+
+static inline unsigned char *model_read_bin_to_buffer(const char *file_path, int *buf_size)
 {
 	return NULL;
 }

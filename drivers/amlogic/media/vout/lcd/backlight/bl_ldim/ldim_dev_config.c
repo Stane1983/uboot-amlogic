@@ -134,14 +134,17 @@ static int ldim_dev_zone_mapping_load(struct ldim_dev_driver_s *dev_drv, const c
 	map_size = dev_drv->zone_num * 2;
 
 	//ret = handle_ldim_dev_zone_mapping_get(buf, size, path);
-	buf = model_read_file_to_buffer(path, &bin_size);
+	buf = model_read_bin_to_buffer(path, &bin_size);
 	if (!buf) {
 		LDIMERR("%s: load bin: %s error\n", __func__, path);
 		return -1;
 	}
-	if (bin_size > map_size) {
+	//only for spi
+	if (bin_size != map_size) {
 		memset(buf, 0, bin_size);
 		free(buf);
+		LDIMERR("%s: bin_size(%d) not match zone_num(%d), exit!\n",
+			__func__, bin_size, dev_drv->zone_num);
 		return -1;
 	}
 
@@ -150,7 +153,7 @@ static int ldim_dev_zone_mapping_load(struct ldim_dev_driver_s *dev_drv, const c
 		dev_drv->bl_mapping[i] = buf[j] | (buf[j + 1] << 8);
 	}
 
-	LDIMPR("%s: load bin: %s finish\n", __func__, path);
+	LDIMPR("%s: load bin: %s finish, size=%d\n", __func__, path, bin_size);
 	memset(buf, 0, bin_size);
 	free(buf);
 	return 0;
