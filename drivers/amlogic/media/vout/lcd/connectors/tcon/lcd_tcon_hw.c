@@ -313,14 +313,17 @@ static void lcd_tcon_data_init_set(struct aml_lcd_drv_s *pdrv, unsigned char *da
 	struct lcd_tcon_local_cfg_s *local_cfg = get_lcd_tcon_local_cfg();
 	struct lcd_tcon_init_block_header_s *init_header;
 	struct lcd_tcon_init_block_ext_header_s *init_ext_header = NULL;
-	struct lcd_detail_timing_s *act_timing = NULL;
+	struct lcd_detail_timing_s *timing = NULL;
 	unsigned char *core_reg_table;
 	unsigned int len = 0;  //header_size + ext_header_size + core_reg_size
 
 	if (!tcon_conf || !mm_table || !local_cfg)
 		return;
 
-	act_timing = &pdrv->config.timing.act_timing;
+	timing = pdrv->config.timing.base_timing;
+	if (!timing)
+		return;
+
 	init_header = (struct lcd_tcon_init_block_header_s *)data_buf;
 	core_reg_table = data_buf + init_header->header_size + init_header->ext_header_size;
 	init_ext_header = (struct lcd_tcon_init_block_ext_header_s *)
@@ -329,11 +332,11 @@ static void lcd_tcon_data_init_set(struct aml_lcd_drv_s *pdrv, unsigned char *da
 		init_header->ext_header_size;
 	switch (init_header->block_ctrl) {
 	case LCD_TCON_DATA_CTRL_FLAG_UFR:
-		if (act_timing->h_active == init_header->h_active &&
-		    act_timing->v_active == init_header->v_active) {
+		if (timing->h_active == init_header->h_active &&
+		    timing->v_active == init_header->v_active) {
 			if (init_ext_header) {
-				if (act_timing->frame_rate < init_ext_header->framerate_min ||
-				    act_timing->frame_rate > init_ext_header->framerate_max)
+				if (timing->frame_rate < init_ext_header->framerate_min ||
+				    timing->frame_rate > init_ext_header->framerate_max)
 					break;
 				if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 					LCDPR("%s: ufr match framerate range %d~%d\n", __func__,
@@ -350,7 +353,7 @@ static void lcd_tcon_data_init_set(struct aml_lcd_drv_s *pdrv, unsigned char *da
 			local_cfg->cur_core_reg_table = core_reg_table;
 			LCDPR("%s: ufr %dx%d@%dhz init, bin_ver:%s\n",
 				__func__, init_header->h_active,
-				init_header->v_active, act_timing->frame_rate, local_cfg->bin_ver);
+				init_header->v_active, timing->frame_rate, local_cfg->bin_ver);
 			lcd_tcon_core_reg_set(pdrv, tcon_conf, mm_table, core_reg_table);
 		}
 		break;
