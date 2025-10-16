@@ -253,6 +253,9 @@ int aml_board_late_init_front(void *arg)
 {
 	UNUSED(arg);
 	printf("init front\n");
+	if (env_get_ulong("default_env", 10, 0))
+		env_set("defenv_para", "-c0"); //andr factory reset or factory burn
+
 	run_command("aml_update_env", 0);
 	/* ****************************************************
 	 * 1.setup bootup resource
@@ -477,6 +480,20 @@ const char * const _aml_env_reserv_array[] = {
 #endif
 	NULL//Keep NULL be last to tell END
 };
+
+const char * const _aml_env_reserv_array1[] = {
+	"lock",
+	"upgrade_step",
+	"bootloader_version",
+	"dts_to_gpt",
+	"fastboot_step",
+	"reboot_status",
+	"expect_index",
+	"recovery_check_part",
+	"defenv_para",	//set in board_late_init
+	NULL//Keep NULL be last to tell END
+};
+
 #endif//#ifdef CONFIG_AML_DEFENV
 
 #ifdef CONFIG_HW_RNG_OLD

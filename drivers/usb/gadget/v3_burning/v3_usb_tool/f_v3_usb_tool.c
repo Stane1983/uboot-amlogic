@@ -952,7 +952,7 @@ static void cb_oem_cmd(struct usb_ep *ep, struct usb_request *req)
 	} else if( !strcmp("save_setting", argv[0]) ){
 #if defined(CONFIG_CMD_SAVEENV) && !defined(CONFIG_ENV_IS_NOWHERE)
 		env_set("firstboot", "1");
-		env_set("upgrade_step", "1");
+		env_set("default_env", "1");
 		ret = run_command("store rsv erase env", 0);
 		ret = run_command("saveenv", 0);
 #else
