@@ -80,9 +80,6 @@ void vpu_module_init_config(void)
 		vpu_conf.data->vpu_read_type == READ0_2_SEPARATE) {
 		/*ONLY VPU0 READ*/
 		init_arb_urgent_table();
-	} else if (vpu_conf.data->chip_type == VPU_CHIP_T6W ||
-		vpu_conf.data->chip_type == VPU_CHIP_T6X) {
-		vpu_vcbus_write(VPU_RDARB_MODE_L2C1, 0);
 	}
 
 	vpu_vcbus_write(VPU_WRARB_MODE_L2C1, 0x20000);
