@@ -611,7 +611,7 @@ static unsigned char hex_char_to_val(char c)
 	return 0;
 }
 
-static int amlbt_read_conf_data(manf_data *manf)
+static int amlbt_read_conf_data(const aml_chip_type *chip_type, manf_data *manf)
 {
 	unsigned char *file_buf = NULL;
 	char *manf_data_start = NULL;
@@ -649,13 +649,25 @@ static int amlbt_read_conf_data(manf_data *manf)
 		return -1;
 	}
 
-	manf_data_start = strstr((char *)file_buf, "ManfData=");
-	if (manf_data_start == NULL) {
-		printf("%s: 'ManfData=' not found in %s\n", __func__, file_path);
-		free(file_buf);
-		return -1;
+	if (chip_type->family_id == AML_W2) {
+		/* W2_USB wakeup config */
+		manf_data_start = strstr((char *)file_buf, "W1UManfData=");
+		if (manf_data_start == NULL) {
+			printf("%s: 'W2UManfData=' not found in %s\n", __func__, file_path);
+			free(file_buf);
+			return -1;
+		}
+		manf_data_start += strlen("W1UManfData=");
+	} else if (chip_type->family_id == AML_W2L) {
+		/* W2L_USB wakeup config */
+		manf_data_start = strstr((char *)file_buf, "ManfData=");
+		if (manf_data_start == NULL) {
+			printf("%s: 'ManfData=' not found in %s\n", __func__, file_path);
+			free(file_buf);
+			return -1;
+		}
+		manf_data_start += strlen("ManfData=");
 	}
-	manf_data_start += strlen("ManfData=");
 
 	line_end = manf_data_start;
 	while (*line_end != '\0' && *line_end != '\n' && *line_end != '\r')
@@ -707,13 +719,13 @@ static int amlbt_read_conf_data(manf_data *manf)
 	return 0;
 }
 
-static void amlbt_write_manfdata_to_firmware(struct usb_device *udev)
+static void amlbt_write_manfdata_to_firmware(const aml_chip_type *chip_type, struct usb_device *udev)
 {
 	manf_data local_manf_data;
-	unsigned char manf_buf[6*8];
+	unsigned char manf_buf[256];
 	int i = 0;
 
-	if (amlbt_read_conf_data(&local_manf_data) != 0) {
+	if (amlbt_read_conf_data(chip_type, &local_manf_data) != 0) {
 		printf("Failed to read manf data, aborting write\n");
 		return;
 	}
@@ -878,7 +890,7 @@ void amlbt_wakeup_set(const aml_chip_type *chip_type, struct usb_device *udev)
 	amlbt_write_rclist_to_firmware(udev);
 
 	// write wakeup parameters for manfdata
-	amlbt_write_manfdata_to_firmware(udev);
+	amlbt_write_manfdata_to_firmware(chip_type, udev);
 
 	//start BT CPU
 	auc_write_word_by_ep_for_bt(udev, REG_DEV_RESET,
