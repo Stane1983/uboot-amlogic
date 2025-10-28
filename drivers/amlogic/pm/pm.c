@@ -35,6 +35,7 @@
 #if CONFIG_IS_ENABLED(AML_VPP)
 #include <amlogic/media/vpp/vpp.h>
 #endif
+#include <amlogic/aml_ir.h>
 
 #define PM_SUSPEND_ON		(0)
 #define PM_SUSPEND_TO_IDLE	(1)
@@ -114,6 +115,10 @@ void pm_initialize(void)
 #endif
 #if CONFIG_IS_ENABLED(AMLOGIC_USB_POWER)
 	dev_register_pm("usb_ops", &aml_usb_suspend, &aml_usb_resume, &aml_usb_poweroff, 0);
+#endif
+#if IS_ENABLED(CONFIG_CMD_IR)
+	dev_register_pm("meson_ir_pm", meson_ir_suspend, meson_ir_resume,
+						meson_ir_poweroff, 2);
 #endif
 }
 
