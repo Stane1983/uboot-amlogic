@@ -1841,6 +1841,9 @@ static int meson_mmc_probe(struct udevice *dev)
 	/* disable interrupts */
 	meson_write(mmc, 0, MESON_SD_EMMC_IRQ_EN);
 
+	/* disable HW response mask */
+	meson_write(mmc, 0, CQHCI_RMEM);
+
 	/* enable auto clock mode */
 	val = meson_read(mmc, MESON_SD_EMMC_CFG);
 	val &= ~CFG_SDCLK_ALWAYS_ON;

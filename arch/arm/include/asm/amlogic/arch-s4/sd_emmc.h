@@ -130,6 +130,8 @@
 #define MESON_SD_EMMC_CURR_CFG		0x70
 #define MESON_SD_EMMC_NEXT_CFG		0x80
 
+#define CQHCI_RMEM			0x150
+
 #define SD_EMMC_RXD_ERROR               (1 << 0)
 #define SD_EMMC_TXD_ERROR               (1 << 1)
 #define SD_EMMC_DESC_ERROR              (1 << 2)
