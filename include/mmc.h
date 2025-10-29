@@ -50,6 +50,8 @@
 #define MMC_CMD_AC              (0 << 5)
 #define DELAY_CELL_COUNTS 14
 
+#define CQHCI_RMEM			0x150
+
 /* SD/MMC version bits; 8 flags, 8 major, 8 minor, 8 change */
 #define SD_VERSION_SD	(1U << 31)
 #define MMC_VERSION_MMC	(1U << 30)
