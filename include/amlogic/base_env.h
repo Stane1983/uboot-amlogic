@@ -68,10 +68,16 @@
 #define IR_WAKEUP  "echo ir wakeup"
 #endif
 
+#ifdef CONFIG_NOVERBOSE_BUILD
+#define PAGE_TRACE	"page_trace=off\0"
+#else
+#define PAGE_TRACE	"page_trace=on\0"
+#endif
 /* args/envs */
 #define CONFIG_SYS_MAXARGS  64
 #define CONFIG_EXTRA_ENV_SETTINGS_BASE \
 	"firstboot=1\0"\
+	PAGE_TRACE \
 	"upgrade_step=0\0"\
 	"loadaddr=0x00020000\0"\
 	"os_ident_addr=0x00500000\0"\
@@ -118,7 +124,7 @@
 	"storeargs_base="\
 		"setenv bootargs ${initargs} otg_device=${otg_device} "\
 		"logo=${display_layer},loaded,${fb_addr} display_bpp=${display_bpp} "\
-		"vout=${outputmode},${vout_init} "\
+		"vout=${outputmode},${vout_init} page_trace=${page_trace} "\
 		"hdmitx=${cecconfig},${colorattribute} hdmimode=${hdmimode} "\
 		"hdmichecksum=${hdmichecksum} dolby_vision_on=${dolby_vision_on} "\
 		"hdr_policy=${hdr_policy} hdr_priority=${hdr_priority} "\
