@@ -1645,22 +1645,16 @@ static int mtd_store_param_rsv_partition(void)
 		return -1;
 }
 
-static int mtd_store_param_boot_layout(void)
+static int mtd_store_get_fdt_node_offset(enum boot_type_e medium_type)
 {
-	enum boot_type_e medium_type;
 	char buf[128];
 	char *fdtaddr = NULL;
-	int err = 0;
 	u32 mem_dtb;
-	u32 boot_layout = g_ssp.sip.nsp.boot_layout_compat;
-
-	medium_type = store_get_type();
-	if (medium_type != BOOT_SNAND)
-		return 0;
+	int node_offset;
 
 	if (!working_fdt) {
-		pr_debug("%s: working_fdt is set, fdt add to set working_fdt\n",
-				__FILE__);
+		pr_err("%s: working_fdt not set, fdt add to set working_fdt\n",
+		       __FILE__);
 		fdtaddr = env_get("dtb_mem_addr");
 		if (!fdtaddr) {
 			pr_err("get dtb_mem_addr NULL\n");
@@ -1668,25 +1662,73 @@ static int mtd_store_param_boot_layout(void)
 		}
 		mem_dtb = simple_strtoul(fdtaddr, NULL, 16);
 		sprintf(buf, "fdt addr 0x%x", mem_dtb);
-		pr_debug("fdt addr 0x%x\n", mem_dtb);
+		pr_err("fdt addr 0x%x\n", mem_dtb);
 		if (run_command(buf, 0)) {
 			pr_err("fdt addr 0x%x error.\n", mem_dtb);
 			return -EBADMSG;
 		}
 	}
 
-add:
 	if (working_fdt) {
-		err = fdt_setprop_cell(working_fdt,
-				fdt_node_offset_by_compatible(working_fdt, -1, "spi-nand"),
-				"boot_layout", boot_layout);
+		if (medium_type == BOOT_SNAND)
+			node_offset = fdt_node_offset_by_compatible(working_fdt, -1, "spi-nand");
+		else if (medium_type == BOOT_NAND_MTD)
+			node_offset = fdt_path_offset(working_fdt, "/soc/nfc");
+		else
+			return 0;
+	} else {
+		return -1;
+	}
+
+	return node_offset;
+}
+
+static int mtd_store_param_boot_layout(void)
+{
+	struct mtd_info *mtd = mtd_store_get(0);
+	int node_offset, err = -1;
+	/* bit0:3 - boot layout
+	 * bit4:7 - bl2 layout
+	 * bit8:11 - bl2 copy number,
+	 * bit12:22 - page number per bl2 copy
+	 */
+	u32 boot_layout = (g_ssp.sip.nsp.boot_layout_compat & 0x0F);
+	u8 bl2_copy_number = mtd_store_boot_copy_num(BOOT_BL2);
+	u16 pages_per_copy =
+		mtd_store_boot_copy_size(BOOT_BL2) >> mtd->writesize_shift;
+	pr_debug("boot_layout = 0x%x\n", boot_layout);
+	pr_debug("bl2_copy_number = 0x%x\n", bl2_copy_number);
+	pr_debug("pages_per_copy = 0x%x\n", pages_per_copy);
+
+	/*
+	 * use BOARD_CONFIG_BL2_LAYOUT_TYPE to select the BL2 layout:
+	 * 0 : indicates bl2 is aligned with block size
+	 * 1 : indicates bl2 is fixed size with 512 pages
+	 * 2 : indicates bl2 is fixed size with 1024 pages
+	 * BOARD_CONFIG_BL2_LAYOUT_TYPE should be defined in platform header file.
+	 * but up to now since all platforms in v2019 use a fixed size of 1024 pages,
+	 * so we define it here to avoid modifying many files.
+	 */
+#ifdef BOARD_CONFIG_BL2_LAYOUT_TYPE
+	boot_layout |= (BOARD_CONFIG_BL2_LAYOUT_TYPE << 4);
+#else
+	boot_layout |= (2 << 4);
+#endif
+
+	boot_layout |= ((bl2_copy_number & 0x0F) << 8);
+	boot_layout |= ((pages_per_copy & 0x3FF) << 12);
+	pr_debug("boot_layout = 0x%x\n", boot_layout);
+
+add:
+	node_offset = mtd_store_get_fdt_node_offset(store_get_type());
+	if (node_offset > 0) {
+		err = fdt_setprop_cell(working_fdt, node_offset, "boot_layout",
+				       boot_layout);
 		if (err == -FDT_ERR_NOSPACE) {
 			err = fdt_increase_size(working_fdt, 512);
 			if (!err)
 				goto add;
 		}
-	} else {
-		err = -1;
 	}
 
 	return err;
