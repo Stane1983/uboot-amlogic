@@ -37,7 +37,6 @@ void lcd_tcon_info_print(struct aml_lcd_drv_s *pdrv);
 int lcd_tcon_top_init(struct aml_lcd_drv_s *pdrv);
 int lcd_tcon_enable(struct aml_lcd_drv_s *pdrv);
 void lcd_tcon_disable(struct aml_lcd_drv_s *pdrv);
-void lcd_tcon_global_reset(struct aml_lcd_drv_s *pdrv);
 void lcd_tcon_dbg_check(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timing_s *ptiming);
 int lcd_tcon_probe(char *dt_addr, struct aml_lcd_drv_s *pdrv, int load_id);
 int lcd_tcon_is_dccd_flow(void);
