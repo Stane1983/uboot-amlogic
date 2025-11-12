@@ -49,18 +49,16 @@ void dsi_config_print_helper(struct lcd_config_s *pconf, u8 pr_flag)
 	struct dsi_config_s *dconf = &pconf->control.mipi_cfg;
 	u32 esc_clk;
 
-	if (pr_flag & DSI_HOST_CFG_PR_VID_TIMING) {
-		pr_info("MIPI DSI Config:\n"
+	if (pr_flag & DSI_HOST_CFG_PR_BASIC) {
+		printf("MIPI DSI Config:\n"
 			"  %u-port, %u-lane\n"
 			"  bit rate = %lluHz (limit < %uMHz)\n"
-			"  LaneByteClk:   %uhz\n"
 			"  dsi mode:      init:%s(%u), disp:%s(%u)\n"
 			"  video mode:    %s(%d)\n"
 			"  clk always hs: %u\n"
 			"  data format:   %s\n",
 			dconf->multi_port_cfg ? 2 : 1, dconf->lane_num,
-			pconf->timing.bit_rate, dconf->bit_rate_max,
-			dconf->lane_byte_clk,
+			pconf->timing.bit_rate, dconf->bit_rate_target,
 			dsi_op_mode_table[dconf->operation_mode_init],
 			dconf->operation_mode_init,
 			dsi_op_mode_table[dconf->operation_mode_display],
@@ -72,7 +70,7 @@ void dsi_config_print_helper(struct lcd_config_s *pconf, u8 pr_flag)
 	}
 
 	if (pr_flag & DSI_HOST_CFG_PR_VID_TIMING) {
-		pr_info("MIPI DSI video timing:\n"
+		printf("MIPI DSI video timing:\n"
 			"  HLINE      = %hu\n"
 			"  HSA        = %hu\n"
 			"  HBP        = %hu\n"
@@ -88,10 +86,10 @@ void dsi_config_print_helper(struct lcd_config_s *pconf, u8 pr_flag)
 	}
 
 	if (pr_flag & DSI_HOST_CFG_PR_CLK) {
-		pr_info("MIPI DSI clk:\n"
+		printf("MIPI DSI clk:\n"
 		      "  Pixel CLK   = %10uHz\n"
 		      "  bit_rate    = %10lluHz\n"
-		      "  lanebyteclk = %10uHz\n"
+		      "  LaneByteClk = %10uHz\n"
 		      "  PCLK_period/lanebyteclk_period = (num=%u/den=%u)\n",
 		      pconf->timing.act_timing.pixel_clk,
 		      pconf->timing.bit_rate,
@@ -101,7 +99,7 @@ void dsi_config_print_helper(struct lcd_config_s *pconf, u8 pr_flag)
 	if (pr_flag & DSI_HOST_CFG_PR_DPHY_TIM) {
 		esc_clk = div_around(1000000, dconf->dphy.lp_tesc[1]);
 
-		pr_info("MIPI DSI DPHY setting:\n"
+		printf("MIPI DSI DPHY setting:\n"
 			"  t-UI        = %u.%02uns\n"
 			"  LP-ESC clk  = %d.%03dMHz\n"
 			"  LP-tesc     = 0x%02x (%uns)\n"
@@ -138,7 +136,7 @@ void dsi_config_print_helper(struct lcd_config_s *pconf, u8 pr_flag)
 			dconf->dphy.clk_pre[0],     dconf->dphy.clk_pre[1],
 			dconf->dphy.init, dconf->dphy.wakeup);
 
-		pr_info("MIPI DSI HOST setting:\n"
+		printf("MIPI DSI HOST setting:\n"
 			"  phy_hs2lp   = 0x%02x (%uns)\n"
 			"  phy_hs2lp   = 0x%02x (%uns)\n"
 			"  max_rd_time = 0x%02x (%uns)\n",
@@ -149,7 +147,7 @@ void dsi_config_print_helper(struct lcd_config_s *pconf, u8 pr_flag)
 
 	if (pr_flag & DSI_HOST_CFG_PR_N_BURST_ST) {
 		if (dconf->video_mode_type != DSI_VID_BURST) {
-			pr_info("MIPI DSI NON-BURST setting:\n"
+			printf("MIPI DSI NON-BURST setting:\n"
 				"  vid_num_chunks: %d\n"
 				"  vid_pkt_size:   %d\n"
 				"  vid_null_size:  %d\n\n",
@@ -160,48 +158,18 @@ void dsi_config_print_helper(struct lcd_config_s *pconf, u8 pr_flag)
 	}
 }
 
-u16 dsi_table_load_dts(char *propdata, u8 *table, u16 max_len)
+void dsi_table_load_dts(char *propdata, uint8_t *table, uint16_t max_len)
 {
-	u8 cmd_size, type;
-	u16 i = 0, j;
+	uint16_t i;
 
-	table[0] = LCD_EXT_CMD_TYPE_END;
-	table[1] = 0;
-
-	while ((i + 1) < max_len) {
+	for (i = 0; i < max_len; i++)
 		table[i] = (u8)(be32_to_cpup((((u32 *)propdata) + i)));
-		table[i + 1] = (u8)(be32_to_cpup((((u32 *)propdata) + i + 1)));
-		type = table[i];
-		cmd_size = table[i + 1];
-
-		if (type == LCD_EXT_CMD_TYPE_END) {
-			if (cmd_size == 0xff || cmd_size == 0) {
-				i += 2;
-				return i;
-			}
-			cmd_size = 0;
-		}
-		if ((i + 2 + cmd_size) > max_len) {
-			LCDERR("(%d): cmd_size out of limit\n", i);
-			table[i] = LCD_EXT_CMD_TYPE_END;
-			table[i + 1] = 0;
-			i += 2;
-			return i;
-		}
-
-		for (j = 0; j < cmd_size; j++) {
-			table[i + 2 + j] =
-				(u8)(be32_to_cpup((((u32 *)propdata) + i + 2 + j)));
-		}
-		i += (cmd_size + 2);
-	}
-	return i;
 }
 
-static u16 dsi_table_load_bsp(u8 *table, u16 max_len)
+static uint16_t dsi_table_load_bsp(uint8_t *table, uint16_t max_len)
 {
-	u8 cmd_size, type;
-	u16 i = 0;
+	uint8_t cmd_size, type;
+	uint16_t i = 0;
 
 	while ((i + 1) < max_len) {
 		type = table[i];
@@ -229,43 +197,49 @@ static u16 dsi_table_load_bsp(u8 *table, u16 max_len)
 void lcd_dsi_init_table_load_dts(char *dtaddr, int nodeoffset, struct dsi_config_s *dconf)
 {
 	char *propdata;
+	int node_len = 0;
+	uint8_t i;
+	struct dsi_table_s {
+		unsigned char **table_addr_addr; char *name; uint16_t size_limit;
+	} dsi_table[4] = {
+		{&dconf->dsi_init_on,  "dsi_init_on", DSI_INIT_ON_MAX},
+		{&dconf->dsi_init_off, "dsi_init_off", DSI_INIT_OFF_MAX},
+		{&dconf->dsi_suspend,  "dsi_suspend", DSI_SUSPEND_MAX},
+		{&dconf->dsi_resume,   "dsi_resume", DSI_RESUME_MAX},
+	};
 
-	free(dconf->dsi_init_on);
-	free(dconf->dsi_init_off);
-	dconf->dsi_init_on = NULL;
-	dconf->dsi_init_off = NULL;
+	for (i = 0; i < 4; i++) {
+		free(*dsi_table[i].table_addr_addr);
+		*dsi_table[i].table_addr_addr = NULL;
 
-	dconf->dsi_init_on = (u8 *)malloc(sizeof(u8) * DSI_INIT_ON_MAX);
-	dconf->dsi_init_off = (u8 *)malloc(sizeof(u8) * DSI_INIT_OFF_MAX);
-	if (!dconf->dsi_init_on || !dconf->dsi_init_off) {
-		LCDERR("[*]: %s: table malloc failed\n", __func__);
-		free(dconf->dsi_init_on);
-		free(dconf->dsi_init_off);
-		dconf->dsi_init_on = NULL;
-		dconf->dsi_init_off = NULL;
-		return;
+		propdata = (char *)fdt_getprop(dtaddr, nodeoffset, dsi_table[i].name, &node_len);
+		if (!propdata) {
+			LCDPR("[*]: %s: no %s table\n", __func__, dsi_table[i].name);
+			continue;
+		}
+		// should get sizeof by fdt feature
+		node_len = node_len / sizeof(unsigned int);
+
+		if (node_len <= 0 || node_len > dsi_table[i].size_limit) {
+			LCDERR("[*]: %s: get %s size [%d] (limit:%u) invalid\n",
+				__func__, dsi_table[i].name, node_len, dsi_table[i].size_limit);
+			continue;
+		}
+
+		*dsi_table[i].table_addr_addr = (u8 *)malloc(sizeof(u8) * node_len + 2);
+		if (!(*dsi_table[i].table_addr_addr)) {
+			LCDERR("[*]: %s: %s table[%d] malloc failed\n", __func__,
+				dsi_table[i].name, node_len);
+			free(*dsi_table[i].table_addr_addr);
+			*dsi_table[i].table_addr_addr = NULL;
+			continue;
+		}
+		LCDPR("[*]: %s: get %s [%d]\n", __func__, dsi_table[i].name, node_len);
+		dsi_table_load_dts(propdata, *dsi_table[i].table_addr_addr, node_len);
+
+		(*dsi_table[i].table_addr_addr)[node_len]     = 0xff;
+		(*dsi_table[i].table_addr_addr)[node_len + 1] = 0xff;
 	}
-
-	propdata = (char *)fdt_getprop(dtaddr, nodeoffset, "dsi_init_on", NULL);
-	if (!propdata) {
-		LCDERR("[*]: %s: fdt get dsi_init_on failed\n", __func__);
-		dconf->dsi_init_on[0] = 0xff;
-		dconf->dsi_init_on[1] = 0;
-	} else {
-		dsi_table_load_dts(propdata, dconf->dsi_init_on, DSI_INIT_ON_MAX);
-	}
-
-	propdata = (char *)fdt_getprop(dtaddr, nodeoffset, "dsi_init_off", NULL);
-	if (!propdata) {
-		LCDERR("[*]: %s: fdt get dsi_init_off failed\n", __func__);
-		dconf->dsi_init_off[0] = 0xff;
-		dconf->dsi_init_off[1] = 0;
-	} else {
-		dsi_table_load_dts(propdata, dconf->dsi_init_off, DSI_INIT_OFF_MAX);
-	}
-
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		dsi_init_table_print(dconf);
 }
 
 void lcd_dsi_init_table_load_bsp(struct dsi_config_s *dconf)
@@ -329,7 +303,7 @@ static void dsi_req_print(int ret, struct dsi_cmd_req_s *req)
 		for (k = 0; k < req->rd_out_len; k++)
 			n += snprintf(_str + n, PR_BUF_MAX - n, "0x%02x ", req->rd_data[k]);
 	}
-	pr_info("%s\n", _str);
+	printf("%s\n", _str);
 	free(_str);
 }
 

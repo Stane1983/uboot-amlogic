@@ -278,8 +278,10 @@ struct vbyone_config_s {
 #define DSI_CMD_SIZE_INDEX       1  /* byte[1] */
 #define DSI_GPIO_INDEX           2  /* byte[2] */
 
-#define DSI_INIT_ON_MAX          2800
-#define DSI_INIT_OFF_MAX         30
+#define DSI_INIT_ON_MAX          3600
+#define DSI_INIT_OFF_MAX         400
+#define DSI_SUSPEND_MAX          400
+#define DSI_RESUME_MAX           400
 struct dsi_dphy_s {
 	unsigned int t_ui;
 
@@ -316,7 +318,7 @@ struct dsi_panel_det_attr_s {
 struct dsi_config_s {
 	/* user config */
 	unsigned char lane_num;
-	unsigned int bit_rate_max; /* MHz */
+	unsigned int bit_rate_target; /* MHz */
 	unsigned char multi_port_cfg; /* bit[0:3]*/
 	unsigned char operation_mode_init; /* 0=video mode, 1=command mode */
 	unsigned char operation_mode_display; /* 0=video mode, 1=command mode */
@@ -343,6 +345,8 @@ struct dsi_config_s {
 
 	unsigned char *dsi_init_on;
 	unsigned char *dsi_init_off;
+	unsigned char *dsi_suspend;
+	unsigned char *dsi_resume;
 	unsigned char extern_init;
 
 	unsigned char dsi_rd_n;
