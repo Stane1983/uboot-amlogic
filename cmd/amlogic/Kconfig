@@ -49,6 +49,13 @@ config BOOTLOADER_CONTROL_BLOCK
 	help
 	  used for recovery and the bootloader to talk to each other
 
+config BOOTLOADER_SHOW_ERRCODE
+	bool "bootloader show error code support"
+	default n
+	help
+	  used for show error code when bootup failed
+	  errcode will display in the upper left corner of the screen
+
 config CMD_BCB
 	bool "bcd cmd"
 	depends on !AML_PRODUCT_MODE

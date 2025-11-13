@@ -49,6 +49,9 @@ obj-$(CONFIG_CMD_DDR_D2PLL) += cmd_d2pll.o
 
 ifdef CONFIG_BOOTLOADER_CONTROL_BLOCK
 obj-y += cmd_bcb.o
+ifdef CONFIG_BOOTLOADER_SHOW_ERRCODE
+obj-y += cmd_errcode.o
+endif
 obj-y += get_bcb_boot_part.o
 obj-y += cmd_dynamic.o
 obj-y += cmd_bootctl_utils.o

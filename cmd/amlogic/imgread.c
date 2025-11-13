@@ -1200,7 +1200,7 @@ typedef struct {
 #pragma pack(pop)
 
 #define LOGO_OLD_FMT_READ_SZ (8U<<20)//if logo format old, read 8M
-#define LOGO_TOTAL_ITEM		(16)
+#define LOGO_TOTAL_ITEM		(32)
 
 static int img_res_check_log_header(const AmlResImgHead_t* pResImgHead)
 {
