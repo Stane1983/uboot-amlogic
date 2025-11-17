@@ -190,6 +190,10 @@
 			"run upgrade_key_base;"\
 			"echo usr key;"\
 			"\0"\
+		"check_aocpu="\
+			"if test ${reboot_mode} = aocpu_watchdog; then "\
+			"systemsuspend; fi;"\
+			"\0"\
 
 #ifndef CONFIG_PXP_EMULATOR
 #define CONFIG_PREBOOT  \
@@ -198,7 +202,8 @@
             "run storeargs;"\
             "run upgrade_key;" \
             "bcb uboot-command;"\
-            "run switch_bootmode;"
+	    "run switch_bootmode;"\
+	    "run check_aocpu;"
 #else
 #define CONFIG_PREBOOT  "echo preboot"
 #define CONFIG_ENV_IS_NOWHERE  1

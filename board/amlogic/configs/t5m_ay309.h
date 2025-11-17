@@ -320,6 +320,10 @@
 		"run upgrade_key_base;"\
 		"echo usr key;"\
 		"\0"\
+	"check_aocpu="\
+		"if test ${reboot_mode} = aocpu_watchdog; then "\
+		"systemsuspend; fi;"\
+		"\0"\
 
 #define CONFIG_PREBOOT  \
 	"run upgrade_check;"\
@@ -327,7 +331,8 @@
 	"run upgrade_key;" \
 	"bcb uboot-command;" \
 	"run switch_bootmode;" \
-	"run reset_suspend;"
+	"run reset_suspend;"\
+	"run check_aocpu;"
 
 //#define CONFIG_ENV_IS_NOWHERE  1
 #define CONFIG_ENV_SIZE   (64*1024)
