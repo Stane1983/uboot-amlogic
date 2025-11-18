@@ -55,4 +55,5 @@ uint32_t create_csrs(void);
 int set_successful_boot(void);
 void set_avb_parts(const char *partname, uint8_t *addr, size_t length);
 u64 get_size_avb_footer(const char *partname);
+int avb_verify_single(const char *part_name);
 #endif /* LIBAVB_H_ */

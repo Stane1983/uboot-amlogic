@@ -1353,7 +1353,7 @@ static void flashing(char *cmd_parameter, char *response)
 		goto next;
 	}
 
-	if (is_android_r_image((void *)hdr_addr)) {
+	if (is_android_v3_header_image((void *)hdr_addr)) {
 		char partname_r[32] = {0};
 		const int preloadsz_r = 0x1000 * 2;//4k not enough for signed
 		unsigned char *pbuffpreload_r = 0;

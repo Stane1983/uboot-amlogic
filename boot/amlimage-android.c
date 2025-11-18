@@ -120,7 +120,7 @@ static int save_dtbo_idx(const char *cmdline)
 }
 #endif
 
-int is_android_r_image(void *img_addr)
+int is_android_v3_header_image(void *img_addr)
 {
 	/* check android version for R/S/etc */
 	p_boot_img_hdr_v3_t pHDR = (p_boot_img_hdr_v3_t)(img_addr);
@@ -189,7 +189,7 @@ static ulong android_image_get_kernel_addr(const  boot_img_hdr_t *hdr)
 int android_image_get_kernel(const  boot_img_hdr_t *hdr, int verify,
 			     ulong *os_data, ulong *os_len)
 {
-	if (is_android_r_image((void*)hdr))
+	if (is_android_v3_header_image((void *)hdr))
 		return android_image_get_kernel_v3((void*)hdr,verify,os_data,os_len);
 
 	u32 kernel_addr = android_image_get_kernel_addr(hdr);
@@ -269,7 +269,7 @@ int vendor_boot_image_check_header(const vendor_boot_img_hdr_t * hdr)
 
 ulong android_image_get_end(const  boot_img_hdr_t *hdr)
 {
-	if (is_android_r_image((void*)hdr))
+	if (is_android_v3_header_image((void *)hdr))
 		return android_image_get_end_v3((void*)hdr);
 
 	ulong end;
@@ -288,7 +288,7 @@ ulong android_image_get_end(const  boot_img_hdr_t *hdr)
 
 ulong android_image_get_kload(const  boot_img_hdr_t *hdr)
 {
-	if (is_android_r_image((void*)hdr))
+	if (is_android_v3_header_image((void *)hdr))
 		return android_image_get_kload_v3((void*)hdr);
 	else
 		return android_image_get_kernel_addr(hdr);
@@ -647,7 +647,7 @@ int android_image_get_ramdisk_v3(const boot_img_hdr_v3_t *hdr,
 int android_image_get_ramdisk(const  boot_img_hdr_t *hdr,
 			      ulong *rd_data, ulong *rd_len)
 {
-	if (is_android_r_image((void*)hdr))
+	if (is_android_v3_header_image((void *)hdr))
 		return android_image_get_ramdisk_v3((void*)hdr,rd_data,rd_len);
 	else
 		copy_bootconfig_to_cmdline();
@@ -671,7 +671,7 @@ int android_image_get_ramdisk(const  boot_img_hdr_t *hdr,
 int android_image_get_second(const  boot_img_hdr_t *hdr,
 			      ulong *second_data, ulong *second_len)
 {
-	if (is_android_r_image((void*)hdr))
+	if (is_android_v3_header_image((void *)hdr))
 		return 0;
 
 	if (!hdr->second_size) {
@@ -730,7 +730,7 @@ void android_print_contents(const  boot_img_hdr_t *hdr)
 
 ulong android_image_get_comp(const  boot_img_hdr_t *os_hdr)
 {
-	if (is_android_r_image((void*)os_hdr))
+	if (is_android_v3_header_image((void *)os_hdr))
 		return android_image_get_comp_v3((void*)os_hdr);
 
 	int i;
@@ -745,7 +745,7 @@ ulong android_image_get_comp(const  boot_img_hdr_t *os_hdr)
 }
 int android_image_need_move(ulong *img_addr, const  boot_img_hdr_t *hdr)
 {
-	if (is_android_r_image((void*)hdr))
+	if (is_android_v3_header_image((void *)hdr))
 		return android_image_need_move_v3(img_addr,(void*)hdr);
 
 	ulong kernel_load_addr = android_image_get_kload(hdr);

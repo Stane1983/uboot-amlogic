@@ -1213,6 +1213,55 @@ int is_device_unlocked(void)
 		return 0;
 }
 
+int avb_verify_single(const char *part_name)
+{
+	/* The last slot must be NULL */
+	const char *requested_partitions[2] = {NULL, NULL};
+	AvbSlotVerifyResult result = AVB_SLOT_VERIFY_RESULT_OK;
+	char *s1 = NULL;
+	char *ab_suffix = NULL;
+
+	AvbHashtreeErrorMode hashtree_error_mode =
+		AVB_HASHTREE_ERROR_MODE_RESTART_AND_INVALIDATE;
+	bool unlocked;
+
+	if (!part_name)
+		return -1;
+
+	unlocked = is_device_unlocked();
+	if (unlocked)
+		return 0;
+
+	s1 = env_get("active_slot");
+	if (!s1) {
+		run_command("get_valid_slot;", 0);
+		s1 = env_get("active_slot");
+	}
+	if (s1) {
+		printf("active_slot is %s\n", s1);
+		if (!strcmp(s1, "normal"))
+			ab_suffix = "";
+		else
+			ab_suffix = env_get("active_slot");
+	}
+
+	if (!ab_suffix)
+		ab_suffix = "";
+
+	AvbSlotVerifyFlags flags = AVB_SLOT_VERIFY_FLAGS_NONE;
+
+	avb_init();
+
+	requested_partitions[0] = part_name;
+	result = avb_slot_verify(&avb_ops_, requested_partitions, ab_suffix,
+				 flags, hashtree_error_mode, NULL);
+
+	if (result != AVB_SLOT_VERIFY_RESULT_OK)
+		return -1;
+	else
+		return 0;
+}
+
 int avb_verify(AvbSlotVerifyData** out_data)
 {
 	/* The last slot must be NULL */
