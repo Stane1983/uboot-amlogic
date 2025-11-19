@@ -180,10 +180,25 @@ static int aml_mod_get_dev(aml_chip_type *chip_type, struct usb_device **udev)
 	return -1;
 }
 
-static void aml_mod_mbox_name(void)
+static void aml_mod_mbox_name(aml_chip_type type)
 {
 	u32 ret;
-	char name[] = {"aml"};
+	char name[32] = {0};
+
+	switch (type.family_id) {
+	case 2:   // W1U
+		snprintf(name, sizeof(name), "aml_w1u");
+		break;
+	case 3:   // W2
+		snprintf(name, sizeof(name), "aml_w2_u");
+		break;
+	case 4:   // W2L
+		snprintf(name, sizeof(name), "aml_w2l_u");
+		break;
+	default:
+		snprintf(name, sizeof(name), "aml");
+		break;
+	}
 
 	ret = scpi_send_data(AOCPU_REE_CHANNEL, CMD_SET_MID, name, strlen(name), NULL, 0);
 	if (ret != 0)
@@ -221,6 +236,6 @@ void aml_mod_init(void)
 		return;
 	}
 
-	aml_mod_mbox_name();
+	aml_mod_mbox_name(aml_type);
 }
 
