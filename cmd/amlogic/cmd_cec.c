@@ -9,6 +9,55 @@
 #include <asm/arch/clock.h>
 #include <amlogic/aml_cec.h>
 #include <asm/arch/secure_apb.h>
+#include <amlogic/aml_hdmirx.h>
+
+static void cec_init(int logic_addr, unsigned char fun_cfg);
+
+int meson_cec_suspend(void *dev_info)
+{
+	char *str;
+	int logic_addr = 0;
+	int fun_cfg = 0x2f;
+	int phy_addr = 0;
+	unsigned int tmp;
+
+	str = env_get("reboot_mode");
+	if (str && !strcmp(str, "aocpu_watchdog")) {
+		str = env_get("cec_fun");
+		printf("env_get cec_fun: %s\n", str);
+		fun_cfg = simple_strtoul(str, NULL, 16);
+#if (CONFIG_MESON_T5W == 1 || CONFIG_MESON_TXHD2 == 1 || CONFIG_AML_HDMIRX == 1)
+		(void)tmp;
+		(void)phy_addr;
+		logic_addr = 0;
+		hdmirx_hw_init(0, NULL, 0);
+#else
+		logic_addr = 4;
+		str = env_get("phy_addr");
+		if (str) {
+			phy_addr = simple_strtoul(str, NULL, 16);
+			tmp = readl(SYSCTRL_STATUS_REG1);
+			tmp &= 0xf0000;
+			tmp |= phy_addr;
+			writel(tmp, SYSCTRL_STATUS_REG1);
+		}
+#endif
+		printf("logic_addr=0x%x, fun_cfg=0x%x\n", logic_addr, fun_cfg);
+		cec_init(logic_addr, (unsigned char)fun_cfg);
+	}
+
+	return 0;
+}
+
+int meson_cec_resume(void *dev_info)
+{
+	return 0;
+}
+
+int meson_cec_poweroff(void *dev_info)
+{
+	return 0;
+}
 
 static void cec_init(int logic_addr, unsigned char fun_cfg)
 {

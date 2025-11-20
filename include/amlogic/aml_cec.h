@@ -75,5 +75,9 @@
 
 int cec_hw_init(int logic_addr, unsigned char fun_cfg);
 
+int meson_cec_suspend(void *dev_info);
+int meson_cec_resume(void *dev_info);
+int meson_cec_poweroff(void *dev_info);
+
 #endif/*_AML_CEC_H*/
 

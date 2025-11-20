@@ -36,6 +36,7 @@
 #include <amlogic/media/vpp/vpp.h>
 #endif
 #include <amlogic/aml_ir.h>
+#include <amlogic/aml_cec.h>
 
 #define PM_SUSPEND_ON		(0)
 #define PM_SUSPEND_TO_IDLE	(1)
@@ -120,6 +121,10 @@ void pm_initialize(void)
 	dev_register_pm("meson_ir_pm", meson_ir_suspend, meson_ir_resume,
 						meson_ir_poweroff, 2);
 #endif
+	if (IS_ENABLED(CONFIG_CMD_CEC)) {
+		dev_register_pm("meson_cec_pm", meson_cec_suspend, meson_cec_resume,
+				meson_cec_poweroff, 2);
+	}
 }
 
 extern int cpu_suspend(unsigned long arg);

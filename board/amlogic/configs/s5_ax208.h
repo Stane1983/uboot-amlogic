@@ -73,6 +73,8 @@
 #define AML_ADC_POWER_KEY_CHAN   2  /*channel range: 0-7*/
 #define AML_ADC_POWER_KEY_VAL    0  /*sample value range: 0-1023*/
 
+#define CONFIG_CMD_CEC		1
+
 //#define CONFIG_BOOTLOADER_CONTROL_BLOCK
 
 /* args/envs */
@@ -111,6 +113,10 @@
         "cvbs_drv=0\0"\
         "osd_reverse=0\0"\
         "video_reverse=0\0"\
+		"cec_fun=0x2F\0" \
+		"cec_ac_wakeup=1\0" \
+		"logic_addr=0x4\0" \
+		"phy_addr=0x0000\0" \
 	"board=tyson_skt\0"\
 	"upgrade_key_flag=2\0"\
         "initargs="\
