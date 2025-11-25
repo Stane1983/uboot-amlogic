@@ -844,6 +844,10 @@ int v3tool_storage_init(const int eraseFlash, unsigned int dtbImgSz, unsigned in
 	_disk_intialed_ok  = 1;
 	if (eraseFlash && eraseFlash < 5)
 		_disk_intialed_ok += (1 << 16);
+	if (initFlag > 1) {
+		FB_MSG("defenv in usb burning mode\n");
+		run_command("env default -a; env set upgrade_step 3; saveenv", 0);
+	}
 
 	if (dtbImgSz) {//for key init, or fail when get /unifykey
 		unsigned long fdtAddr = (unsigned long)dtbLoadedAddr;
