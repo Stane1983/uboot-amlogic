@@ -20,6 +20,9 @@
 #include <asm/arch/register.h>
 #include <asm/arch/timer.h>
 #include <amlogic/cpu_id.h>
+#ifdef CONFIG_MESON_S5
+#include <amlogic/pm.h>
+#endif
 
 #ifdef EMMC_DEBUG_ENABLE
 	#define emmc_debug(a...) printf(a)
@@ -1741,6 +1744,36 @@ static const struct dm_mmc_ops meson_dm_mmc_ops = {
 #endif
 };
 
+#ifdef CONFIG_MESON_S5
+static int meson_mmc_poweroff(void *pm_ops)
+{
+	return 0;
+}
+
+static int meson_mmc_suspend(void *pm_ops)
+{
+	return 0;
+}
+
+static int meson_mmc_resume(void *pm_ops)
+{
+	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
+	int err = 0;
+
+	printf("mmc resume: %s\n", pm->name);
+	if (strcmp(pm->name, "meson_mmc_pm")) {
+		printf("%s is not allowed\n", pm->name);
+		return -1;
+	}
+
+	err = run_command("mmc dev 1", 0);
+	if (err)
+		printf("%s: mmc_init() failed (err=%d)\n", pm->name, err);
+
+	return err;
+}
+#endif
+
 static int meson_mmc_ofdata_to_platdata(struct udevice *dev)
 {
 	struct meson_mmc_platdata *pdata = dev_get_platdata(dev);
@@ -1878,6 +1911,15 @@ static int meson_mmc_probe(struct udevice *dev)
 	val &= ~CFG_RC_CC_MASK;
 	val |= CFG_RC_CC_16;
 	meson_write(mmc, val, MESON_SD_EMMC_CFG);
+
+#ifdef CONFIG_MESON_S5
+	if (aml_card_type_mmc(host))
+		dev_register_pm("meson_mmc_pm",
+				&meson_mmc_suspend,
+				&meson_mmc_resume,
+				&meson_mmc_poweroff,
+				99);
+#endif
 	printf("[%s]%s: Controller probe success!\n", __func__, mmc->cfg->name);
 
 	return 0;
