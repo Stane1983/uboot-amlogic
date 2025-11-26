@@ -189,7 +189,7 @@ int mtd_add_normal_partitions(struct mtd_info *mtd,
 	int normal_part_num = 0, i, ret;
 
 	new_part = kcalloc(nbparts, sizeof(*new_part), GFP_KERNEL);
-	if (IS_ERR_OR_NULL(new_part))
+	if (!new_part)
 		return -ENOMEM;
 
 	memcpy(new_part, parts, nbparts * sizeof(struct mtd_partition));

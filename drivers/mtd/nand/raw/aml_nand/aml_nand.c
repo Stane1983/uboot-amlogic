@@ -675,8 +675,9 @@ void aml_nand_command(struct mtd_info *mtd,
 			aml_chip->page_addr |=
 			(1 << aml_chip->internal_chip_shift) * aml_chip->internal_chipnr;
 		}
-	} else
-		aml_chip->page_addr = page_addr;
+	} else {
+		aml_chip->page_addr = (unsigned int)page_addr;
+	}
 
 	/* Emulate NAND_CMD_READOOB */
 	if (command == NAND_CMD_READOOB) {
