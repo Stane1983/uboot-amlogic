@@ -164,7 +164,7 @@ int board_late_init(void)
 	vpp_init();
 #endif
 #ifdef CONFIG_RX_RTERM
-	rx_set_phy_rterm();
+	rx_pre_init();
 #endif
 #ifdef CONFIG_AML_VOUT
 	vout_probe();

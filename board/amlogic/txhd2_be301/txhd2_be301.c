@@ -524,7 +524,7 @@ int board_late_init(void)
 	run_command("ini_model", 0);
 	aml_board_display_env_handler();
 #ifdef CONFIG_RX_RTERM
-	rx_set_phy_rterm();
+	rx_pre_init();
 #endif
 #ifdef CONFIG_AML_LCD
 	lcd_probe();

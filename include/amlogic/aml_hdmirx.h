@@ -10,5 +10,6 @@ void hdmirx_hw_init(unsigned int port_map,
 		unsigned char *pedid_data,
 		int edid_size);
 void rx_set_phy_rterm(void);
+void rx_pre_init(void);
 
 #endif /* _AML_HDMIRX_H */

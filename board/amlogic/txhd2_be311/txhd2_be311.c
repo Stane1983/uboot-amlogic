@@ -526,7 +526,7 @@ int board_late_init(void)
 	aml_board_display_env_handler();
 
 #ifdef CONFIG_RX_RTERM
-	rx_set_phy_rterm();
+	rx_pre_init();
 #endif
 #ifdef CONFIG_AML_CVBS
 	run_command("cvbs init", 0);
