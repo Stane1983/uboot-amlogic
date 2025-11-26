@@ -1343,7 +1343,7 @@ int android_image_need_move(ulong *img_addr,const boot_img_hdr_t *hdr);
 int android_image_get_second(const  boot_img_hdr_t *hdr,
 			      ulong *second_data, ulong *second_len);
 void android_print_contents(const  boot_img_hdr_t *hdr);
-int is_android_r_image(void *img_addr);
+int is_android_v3_header_image(void *img_addr);
 
 /*android R*/
 int android_image_get_ramdisk_v3(const boot_img_hdr_v3_t *hdr, ulong *rd_data, ulong *rd_len);
