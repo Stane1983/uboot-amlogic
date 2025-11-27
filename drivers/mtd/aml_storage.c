@@ -1610,41 +1610,6 @@ int mtd_store_param_partition(void)
 	return 0;
 }
 
-static int mtd_store_param_rsv_partition(void)
-{
-	enum boot_type_e medium_type;
-	char buf[128];
-	char *fdtaddr = NULL;
-	u32 mem_dtb;
-
-	medium_type = store_get_type();
-	if (medium_type != BOOT_SNAND)
-		return 0;
-
-	if (!working_fdt) {
-		pr_err("%s: working_fdt is set, fdt add to set working_fdt\n",
-				__FILE__);
-		fdtaddr = env_get("dtb_mem_addr");
-		if (!fdtaddr) {
-			pr_err("get dtb_mem_addr NULL\n");
-			return -EBADMSG;
-		}
-		mem_dtb = simple_strtoul(fdtaddr, NULL, 16);
-		sprintf(buf, "fdt addr 0x%x", mem_dtb);
-		pr_err("fdt addr 0x%x\n", mem_dtb);
-		if (run_command(buf, 0)) {
-			pr_err("fdt addr 0x%x error.\n", mem_dtb);
-			return -EBADMSG;
-		}
-	}
-
-	if (working_fdt)
-		return meson_rsv_add_dtb(working_fdt,
-			fdt_node_offset_by_compatible(working_fdt, -1, "spi-nand"));
-	else
-		return -1;
-}
-
 static int mtd_store_get_fdt_node_offset(enum boot_type_e medium_type)
 {
 	char buf[128];
@@ -1681,6 +1646,17 @@ static int mtd_store_get_fdt_node_offset(enum boot_type_e medium_type)
 	}
 
 	return node_offset;
+}
+
+static int mtd_store_param_rsv_partition(void)
+{
+	int parent_offset;
+
+	parent_offset = mtd_store_get_fdt_node_offset(store_get_type());
+	if (parent_offset > 0)
+		return meson_rsv_add_dtb(working_fdt, parent_offset);
+
+	return 0;
 }
 
 static int mtd_store_param_boot_layout(void)
