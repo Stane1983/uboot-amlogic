@@ -60,7 +60,7 @@ uint32_t meson_ledstate_set_breath(uint32_t led_id, uint32_t breath_id)
 
 /*to do:Five and six parameters are extended parameters*/
 uint32_t meson_ledstate_set_blink_times_on(uint32_t led_id, uint32_t blink_times,
-	uint32_t blink_high, uint32_t blink_low, uint32_t brightness_high, uint32_t brightness_low)
+	uint32_t blink_high, uint32_t blink_low)
 {
 	int32_t ret;
 	uint32_t data[5];
@@ -71,7 +71,6 @@ uint32_t meson_ledstate_set_blink_times_on(uint32_t led_id, uint32_t blink_times
 		return -EINVAL;
 	}
 
-	brightness_high = brightness_low =0;
 	data[0] = led_id;
 	data[1] = LED_STATE_BLINK_ON;
 	data[2] = blink_times;
@@ -87,7 +86,7 @@ uint32_t meson_ledstate_set_blink_times_on(uint32_t led_id, uint32_t blink_times
 }
 
 uint32_t meson_ledstate_set_blink_times_off(uint32_t led_id, uint32_t blink_times,
-	uint32_t blink_high, uint32_t blink_low, uint32_t brightness_high, uint32_t brightness_low)
+	uint32_t blink_high, uint32_t blink_low)
 {
 	int32_t ret;
 	uint32_t data[5];
@@ -98,7 +97,6 @@ uint32_t meson_ledstate_set_blink_times_off(uint32_t led_id, uint32_t blink_time
 		return -EINVAL;
 	}
 
-	brightness_high = brightness_low =0;
 	data[0] = led_id;
 	data[1] = LED_STATE_BLINK_OFF;
 	data[2] = blink_times;
