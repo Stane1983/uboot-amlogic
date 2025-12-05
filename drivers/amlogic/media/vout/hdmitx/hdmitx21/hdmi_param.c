@@ -666,18 +666,36 @@ bool _is_hdmi4k_420(enum hdmi_vic vic)
 	return 0;
 }
 
-bool hdmitx_mode_aspect_ratio_is_64_27_vic(enum hdmi_vic vic)
+/*
+ * From CTA-861 spec:
+ * Picture Aspect Ratio - ratio of width to height dimension
+ * of the Picture as delivered across the uncompressed digital
+ * interface, including any top, bottom, or side Bars. Only four
+ * Picture Aspect Ratios are specified for this interface:
+ * 4:3, 16:9, 64:27, and 256:135;
+ *
+ * for VESA modes with aspect ratio not in 4:3, 16:9, 64:27, 256:135,
+ * return HDMI_PICTURE_ASPECT_NONE
+ */
+enum hdmi_picture_aspect hdmitx_mode_get_vic_aspect_ratio(enum hdmi_vic vic)
 {
-	const struct hdmi_timing *timing;
+	const struct hdmi_timing *timing = hdmitx_mode_vic_to_hdmi_timing(vic);
+	enum hdmi_picture_aspect picture_ar = HDMI_PICTURE_ASPECT_NONE;
 
-	/* don't support 64:27 aspect ratio */
-	timing = hdmitx_mode_vic_to_hdmi_timing(vic);
-	if (!timing)
-		return false;
+	if (vic == HDMI_0_UNKNOWN || !timing)
+		return HDMI_PICTURE_ASPECT_NONE;
 
-	if (timing->h_pict == 64 && timing->v_pict == 27)
-		return true;
+	if (timing->h_pict == 4 && timing->v_pict == 3)
+		picture_ar = HDMI_PICTURE_ASPECT_4_3;
+	else if (timing->h_pict == 16 && timing->v_pict == 9)
+		picture_ar = HDMI_PICTURE_ASPECT_16_9;
+	else if (timing->h_pict == 64 && timing->v_pict == 27)
+		picture_ar = HDMI_PICTURE_ASPECT_64_27;
+	else if (timing->h_pict == 256 && timing->v_pict == 135)
+		picture_ar = HDMI_PICTURE_ASPECT_256_135;
+	else
+		picture_ar = HDMI_PICTURE_ASPECT_NONE;
 
-	return false;
+	return picture_ar;
 }
 

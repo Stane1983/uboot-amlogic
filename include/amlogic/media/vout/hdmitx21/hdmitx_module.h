@@ -239,8 +239,7 @@ void scdc21_wr_sink(u8 adr, u8 val, u16 len);
 bool hdmitx_ddcm_write(u8 seg_index, u8 slave_addr, u8 reg_addr, u8 *data, u16 len);
 void hdmitx21_send_ake_init(void);
 
-/* if vic is an aspect ratio of 64:27, return true */
-bool hdmitx_mode_aspect_ratio_is_64_27_vic(enum hdmi_vic vic);
+enum hdmi_picture_aspect hdmitx_mode_get_vic_aspect_ratio(enum hdmi_vic vic);
 
 #ifdef CONFIG_AML_DSC_ENC
 bool edid_check_dsc_support(struct tx_cap *hdmi_tx_cap,
