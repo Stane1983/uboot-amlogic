@@ -840,7 +840,7 @@ INVALID_Y420CMDB:
 
 static int edid_y420cmdb_fill_all_vic(struct rx_cap *prxcap)
 {
-	unsigned int count = prxcap->VIC_count;
+	unsigned int count = prxcap->SVD_VIC_count;
 	unsigned int a, b;
 
 	if (prxcap->y420_all_vic != 1)
