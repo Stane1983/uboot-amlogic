@@ -1370,7 +1370,7 @@ static bool edid_y420cmdb_fill_all_vic(struct rx_cap *rxcap)
 	if (!rxcap)
 		return false;
 
-	count = rxcap->VIC_count;
+	count = rxcap->SVD_VIC_count;
 
 	if (rxcap->y420_all_vic != 1)
 		return false;
