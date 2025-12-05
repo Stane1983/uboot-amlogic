@@ -319,12 +319,19 @@ static int amlbt_read_fw_data(const aml_chip_type *chip_type, fw_info *info)
 		file_path = W2L_U_FW;
 		iccm_base = W2L_U_ICCM_BASE;
 		info->iccm_size = W2L_U_ICCM_SIZE;
+	}
 
-	} else {
-		file_path = W2U_FW;
+	if (chip_type->family_id == AML_W2) {
+		if (chip_type->family_rev == AML_REV_B)
+			file_path = W2U_FW;
+		else
+			file_path = W2U_RevC_FW;
+
 		iccm_base = W2U_ICCM_BASE;
 		info->iccm_size = W2U_ICCM_SIZE;
 	}
+
+	printf("%s file_path: %s\n", __func__, file_path);
 
 	raw_size = model_get_file_size(file_path);
 	if (raw_size <= 0) {
@@ -376,7 +383,8 @@ static int amlbt_load_firmware(const aml_chip_type *chip_type, struct usb_device
 	fw_info aml_fw_info = {0};
 	int ret = -1;
 
-	printf("%s: start:%u family_id:%d\n", __func__, get_time(), chip_type->family_id);
+	printf("%s: start:%u\n", __func__, get_time());
+	printf("family_id:%d family_rev:%d\n", chip_type->family_id, chip_type->family_rev);
 
 	ret = amlbt_read_fw_data(chip_type, &aml_fw_info);
 	if (ret != 0 || !aml_fw_info.iccm || !aml_fw_info.dccm) {

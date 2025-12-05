@@ -61,6 +61,7 @@
 #endif
 
 #define W2U_FW AML_FW_PATH "w2_bt_fw_usb.bin"
+#define W2U_RevC_FW AML_FW_PATH "w2_bt_revC_fw_usb.bin"
 #define W2L_U_FW  AML_FW_PATH "w2l_bt_15p4_fw_usb.bin"
 #define AMLBT_CONF AML_FW_PATH "aml_bt.conf"
 
