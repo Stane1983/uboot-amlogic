@@ -127,12 +127,12 @@
 		"setenv bootargs ${initargs} otg_device=${otg_device} "\
 		"logo=${display_layer},loaded,${fb_addr} display_bpp=${display_bpp} "\
 		"vout=${outputmode},${vout_init} page_trace=${page_trace} "\
-		"hdmitx=${cecconfig},${colorattribute} hdmimode=${hdmimode} "\
-		"hdmichecksum=${hdmichecksum} dolby_vision_on=${dolby_vision_on} "\
+		"hdmitx=${cecconfig},${colorattribute} "\
+		"dolby_vision_on=${dolby_vision_on} "\
 		"hdr_policy=${hdr_policy} hdr_priority=${hdr_priority} "\
 		"dolby_status=${dolby_status} "\
-		"frac_rate_policy=${actual_frac_rate} hdmi_read_edid=${hdmi_read_edid} "\
-		"cvbsmode=${cvbsmode} cpufreq.default_governor=${default_governor} "\
+		"frac_rate_policy=${actual_frac_rate} "\
+		"cpufreq.default_governor=${default_governor} "\
 		"osd_reverse=${osd_reverse} video_reverse=${video_reverse} "\
 		"disable_ir=${disable_ir} kvm-arm.mode=none;"\
 		"setenv bootconfig ${initconfig} androidboot.selinux=${EnableSelinux} "\
