@@ -199,8 +199,7 @@ void hdmitx_dsc_cvtem_pkt_send(struct dsc_pps_data_s *pps,
 void hdmitx_dsc_cvtem_pkt_disable(void);
 enum hdmi_vic hdmitx21_get_prefer_vic(struct hdmitx_dev *hdev, enum hdmi_vic vic);
 
-/* if vic is an aspect ratio of 64:27, return true */
-bool hdmitx21_aspect_ratio_is_64_27_vic(enum hdmi_vic vic);
+enum hdmi_picture_aspect hdmitx_mode_get_vic_aspect_ratio(enum hdmi_vic vic);
 
 #undef printk
 #define printk printf

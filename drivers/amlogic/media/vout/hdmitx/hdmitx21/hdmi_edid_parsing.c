@@ -542,7 +542,7 @@ static void store_cea_idx(struct rx_cap *prxcap, enum hdmi_vic vic)
 		return;
 
 	/* don't support 64:27 aspect ratio */
-	if (hdmitx21_aspect_ratio_is_64_27_vic(vic)) {
+	if (hdmitx_mode_get_vic_aspect_ratio(vic) == HDMI_PICTURE_ASPECT_64_27) {
 		pr_info("aspect ratio is 64:27, vic = %d bypass\n", vic);
 		return;
 	}
@@ -676,7 +676,7 @@ static void store_y420_idx(struct rx_cap *prxcap, enum hdmi_vic vic)
 	int already = 0;
 
 	/* don't support 64:27 aspect ratio */
-	if (hdmitx21_aspect_ratio_is_64_27_vic(vic)) {
+	if (hdmitx_mode_get_vic_aspect_ratio(vic) == HDMI_PICTURE_ASPECT_64_27) {
 		pr_info("aspect ratio is 64:27, vic = %d bypass\n", vic);
 		return;
 	}
