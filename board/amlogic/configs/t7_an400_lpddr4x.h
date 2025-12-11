@@ -199,6 +199,7 @@
 	"video_reverse=0\0"\
 	"suspend=off\0"\
 	"powermode=on\0"\
+	"powermode_ini=0\0"\
 	"ffv_wake=off\0"\
 	"ffv_freeze=off\0"\
 	"edid_14_dir=/odm/etc/tvconfig/hdmi/port1_14.bin\0" \

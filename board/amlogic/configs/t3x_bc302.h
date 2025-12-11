@@ -149,6 +149,7 @@
 		"vendor_boot_part=vendor_boot\0"\
 		"suspend=off\0"\
 		"powermode=on\0"\
+		"powermode_ini=0\0"\
 		"ffv_wake=off\0"\
 		"ffv_freeze=off\0"\
 		"board_logo_part=odm_ext\0" \
