@@ -477,7 +477,7 @@ ddr_base_address_table_t __ddr_base_address_table[] = {
 	},
 	// force id use id mask
 	{
-		.soc_family_name = "UKNOWN",
+		.soc_family_name = "UNKNOWN",
 		.chip_id = CHIP_ID_MASK,
 		.preg_sticky_reg0 = (0xff634400 + (0x070 << 2)),        //PREG_STICKY_G12A_REG0
 		.ddr_phy_base_address = 0xfe000000,
@@ -1856,8 +1856,8 @@ unsigned int pre_fetch_enable = 0;
 #define DMC_TEST_WINDOW_INDEX_DFIMRL 8
 #define DMC_TEST_WINDOW_INDEX_VREF 9
 #define DMC_TEST_WINDOW_INDEX_RETRAINING 10
-#define DMC_TEST_WINDOW_INDEX_EXTERA_COMMON 11
-#define DMC_TEST_WINDOW_INDEX_EXTERA_PS 12
+#define DMC_TEST_WINDOW_INDEX_EXTRA_COMMON 11
+#define DMC_TEST_WINDOW_INDEX_EXTRA_PS 12
 
 #define DMC_TEST_WINDOW_INDEX_RXCLKDLY_DAC1  12
 #define DMC_TEST_WINDOW_INDEX_RXPBDLY_DAC1  13
@@ -5859,11 +5859,12 @@ void ddr_memcpy(void *dst, const void *src, uint32_t len)
 	const long long *s = src;
 	long long *d = dst;
 #ifdef TEST_L1_CACHE
-	void *bound = (void *)src + 16 * 1024; //debug for test L1 cache ,if only read write small aread
+	//debug for test L1 cache ,if only read write small area
+	void *bound = (void *)src + 16 * 1024;
 #endif
 	if (pre_fetch_enable) {
 		while (len) {
-			//for best test efficiency  not inclued much more code in the while loop
+			//for best test efficiency  not included much more code in the while loop
 			ddr_pld_cache(s);
 			///1 times   len==33554432   copy time==18192 us   1.2g  bandwidth 3688M/S
 			// 4times   len==33554432   copy time==11844 us   1.2g  bandwidth 5666M/S
@@ -5881,7 +5882,8 @@ void ddr_memcpy(void *dst, const void *src, uint32_t len)
 #endif
 		}
 	} else {
-		while (len) { //for best test efficiency  not inclued much more code in the while loop
+		while (len) {
+			//for best test efficiency  not included much more code in the while loop
 			///1 times   len==33554432   copy time==18192 us   1.2g  bandwidth 3688M/S
 			// 4times   len==33554432   copy time==11844 us   1.2g  bandwidth 5666M/S
 			// 8times   len==33554432   copy time==11844 us   1.2g  bandwidth 5666M/S
@@ -5904,7 +5906,7 @@ void ddr_memcpy(void *dst, const void *src, uint32_t len)
 #define PATTERN_MATRIX_Y  (32)
 #define PATTERN_MATRIX_LOOP_SIZE   ((PATTERN_MATRIX_X)*(PATTERN_MATRIX_Y) * 4)
 
-unsigned int cpu_ddr_test_init_pattern_generater(unsigned int add_offset)
+unsigned int cpu_ddr_test_init_pattern_generator(unsigned int add_offset)
 {
 	unsigned int pattern_select = 0;
 	unsigned int pattern_value = 0;
@@ -5945,30 +5947,42 @@ unsigned int cpu_ddr_test_init_pattern_generater(unsigned int add_offset)
 	return pattern_value;
 }
 
-void cpu_ddr_test_init_pattern_area(unsigned int test_init_start, unsigned int test_size, unsigned int parttern_frequency_setting)
+void cpu_ddr_test_init_pattern_area(unsigned int test_init_start,
+	unsigned int test_size,
+	unsigned int pattern_frequency_setting)
 {
-	if (parttern_frequency_setting == 0)
-		parttern_frequency_setting = 1;  //for different  frequency pattern
-	test_size = (test_size > ((PATTERN_MATRIX_LOOP_SIZE)*(parttern_frequency_setting))) ? test_size : ((PATTERN_MATRIX_LOOP_SIZE)*(parttern_frequency_setting));
+	if (pattern_frequency_setting == 0)
+		pattern_frequency_setting = 1;  //for different  frequency pattern
+	test_size = (test_size > ((PATTERN_MATRIX_LOOP_SIZE) * (pattern_frequency_setting))) ?
+		test_size : ((PATTERN_MATRIX_LOOP_SIZE) * (pattern_frequency_setting));
 	unsigned int write_add = test_init_start;
 	unsigned int size_loop = 0;
 	unsigned int size_loop_max = 0;
-	for (; (size_loop < ((PATTERN_MATRIX_LOOP_SIZE)*(parttern_frequency_setting))); ) {
+	for (; (size_loop < ((PATTERN_MATRIX_LOOP_SIZE) * (pattern_frequency_setting))); ) {
 		{
 			write_add = (uint32_t)(size_loop + test_init_start);
-			wr_reg((unsigned long)write_add, cpu_ddr_test_init_pattern_generater((size_loop >> 2) / parttern_frequency_setting));
+			wr_reg((unsigned long)write_add,
+	cpu_ddr_test_init_pattern_generator((size_loop >> 2) / pattern_frequency_setting));
 			size_loop = size_loop + 4;
 		}
 	}
 	size_loop = 1;
-	size_loop_max = ((test_size / (((PATTERN_MATRIX_LOOP_SIZE)*(parttern_frequency_setting)))) + 1);
+	size_loop_max = ((test_size / (((PATTERN_MATRIX_LOOP_SIZE) *
+		(pattern_frequency_setting)))) + 1);
 	for (; (size_loop < size_loop_max); ) {
-		ddr_memcpy((void *)(uint64_t)(test_init_start + ((PATTERN_MATRIX_LOOP_SIZE)*((uint64_t)parttern_frequency_setting)) * (size_loop)), (void *)(uint64_t)test_init_start, (uint32_t)((PATTERN_MATRIX_LOOP_SIZE)*(parttern_frequency_setting)));
+		ddr_memcpy((void *)(uint64_t)(test_init_start +
+	((PATTERN_MATRIX_LOOP_SIZE) * ((uint64_t)pattern_frequency_setting)) * (size_loop)),
+	(void *)(uint64_t)test_init_start,
+	(uint32_t)((PATTERN_MATRIX_LOOP_SIZE) * (pattern_frequency_setting)));
 		size_loop++;
 	}
 }
 
-unsigned int cpu_ddr_test(unsigned test_init_start, unsigned int start_add, unsigned int test_size, unsigned int test_data_bit_enable, unsigned int parttern_frequency_setting)
+unsigned int cpu_ddr_test(unsigned test_init_start,
+unsigned int start_add,
+unsigned int test_size,
+unsigned int test_data_bit_enable,
+unsigned int pattern_frequency_setting)
 {
 	unsigned int src_add = test_init_start;
 	unsigned int pattern_value = 0;
@@ -5986,7 +6000,8 @@ unsigned int cpu_ddr_test(unsigned test_init_start, unsigned int start_add, unsi
 	for (; size_loop < (test_size); ) {
 		read_add = (uint32_t)(size_loop + start_add);
 		read_value = (rd_reg((unsigned long)read_add));
-		pattern_value = (cpu_ddr_test_init_pattern_generater((size_loop >> 2) / parttern_frequency_setting));
+		pattern_value = (cpu_ddr_test_init_pattern_generator((size_loop >> 2) /
+			pattern_frequency_setting));
 		if (((test_data_bit_enable) & read_value) != ((test_data_bit_enable) & pattern_value)) {
 			printf("error data  enable %08x read_value %08x  pattern_value %08x", test_data_bit_enable, read_value, pattern_value);
 			ddr_test_error++;
@@ -6011,7 +6026,7 @@ int do_cpu_ddr_test(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	unsigned int test_loops = 0;
 	unsigned int test_loop = 0;
 	unsigned int test_errors = 0;
-	unsigned int parttern_frequency_setting = 1;
+	unsigned int pattern_frequency_setting = 1;
 	char *endp;
 	if (argc == 1) {
 		printf("\nplease read help\n");
@@ -6031,17 +6046,19 @@ int do_cpu_ddr_test(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 				test_loops = 1;
 		}
 		if (argc >= 7) {
-			parttern_frequency_setting = simple_strtoull_ddr(argv[6], &endp, 0);
-			if (parttern_frequency_setting == 0)
-				parttern_frequency_setting = 1;
+			pattern_frequency_setting = simple_strtoull_ddr(argv[6], &endp, 0);
+			if (pattern_frequency_setting == 0)
+				pattern_frequency_setting = 1;
 		}
 		if (argc >= 8)
 			pre_fetch_enable = simple_strtoull_ddr(argv[7], &endp, 0);
 	}
 	uint32_t ddr_test_start_time_us = get_us_time();  // check cost time
-	cpu_ddr_test_init_pattern_area(init_start_add, test_size, parttern_frequency_setting);
+	cpu_ddr_test_init_pattern_area(init_start_add, test_size, pattern_frequency_setting);
 	for (test_loop = 0; test_loop < test_loops; ) {
-		test_errors = test_errors + cpu_ddr_test(init_start_add, test_add, test_size, test_data_bit_enable, parttern_frequency_setting);
+		test_errors = test_errors +
+		cpu_ddr_test(init_start_add, test_add, test_size,
+			test_data_bit_enable, pattern_frequency_setting);
 		test_loop++;
 		printf("\ncpu_ddr_test_test_times==%d  test_errors==%d", test_loop, test_errors);
 	}
@@ -7213,7 +7230,7 @@ uint32_t ddr_phy_training_reg_read_write(ddr_set_t_c2 *p_ddrs, char index,
 			reg_add_coarse_bit_mask = 0;
 			reg_add_fine_bit_mask = (~(0xff << 0));
 		}
-	} else if (index == DMC_TEST_WINDOW_INDEX_EXTERA_PS) {
+	} else if (index == DMC_TEST_WINDOW_INDEX_EXTRA_PS) {
 		if (sub_index == 1) {           //DDR_X32_F0_AD30	DDR_X32_F0_A930
 		}
 
@@ -7249,7 +7266,9 @@ uint32_t ddr_phy_training_reg_read_write(ddr_set_t_c2 *p_ddrs, char index,
 			wr_reg(reg_add_fine, ((rd_reg(reg_add_fine)) & (reg_add_fine_bit_mask))
 			       | ((delay_new_value & 0xffff) << (ddr_mask_convert_offset(reg_add_fine_bit_mask))));
 		ddr_udelay_dummy(1);
-		//wr_reg(p_ddr_base->ddr_phy_base_address + 0x2440, 1); //no need force release ,because maybe have glitch when ddr read/write ,must upadate on the rfc stage
+		//no need force release ,because maybe have glitch when ddr read/write
+		//,must update on the rfc stage
+		//wr_reg(p_ddr_base->ddr_phy_base_address + 0x2440, 1);
 		//wr_reg(p_ddr_base->ddr_phy_base_address + 0x2440, 2);
 		//ddr_udelay_dummy(1);
 		//wr_reg(p_ddr_base->ddr_phy_base_address + 0x2440, 0);
@@ -7257,7 +7276,9 @@ uint32_t ddr_phy_training_reg_read_write(ddr_set_t_c2 *p_ddrs, char index,
 		wr_reg((p_ddr_base->ddr_dmc_refresh_ctrl_address), (temp_save & (~((1 << 22) | (1 << 4)))));
 		ddr_udelay_dummy(1);
 		wr_reg((p_ddr_base->ddr_dmc_refresh_ctrl_address), (temp_save & (~((1 << 22)))) | (1 << 4));
-		ddr_udelay_dummy(40);        //since we are use 3 refresh time ,so shuld  over 4*7.8us make sure a update command send out ,then maybe fail
+		//since we are use 3 refresh time ,
+		//so should over 4*7.8us make sure a update command send out ,then maybe fail
+		ddr_udelay_dummy(40);
 		wr_reg((p_ddr_base->ddr_dmc_refresh_ctrl_address), (temp_save & (~((1 << 22)))) | (1 << 4));
 		ddr_udelay_dummy(1);
 		wr_reg((p_ddr_base->ddr_dmc_refresh_ctrl_address), (temp_save));
@@ -7311,7 +7332,7 @@ void ddr_read_write_training_value(ddr_set_t_c2 *p_ddrs, char over_ride_index,
 				   (over_ride_index == DMC_TEST_WINDOW_INDEX_SOC_VREF_DAC1)) {
 				p_size = 1;
 				count_max = 44;
-			} //else if (over_ride_index == DMC_TEST_WINDOW_INDEX_EXTERA_PS) {
+			} //else if (over_ride_index == DMC_TEST_WINDOW_INDEX_EXTRA_PS) {
 			  //	p_size = 2;
 			  //	count_max = 8;
 			  //}
@@ -7378,7 +7399,7 @@ void ddr_read_write_training_all_delay_value(ddr_set_t_c2 *p_ddrs, char read_wri
 					      read_write, ps, &(p_ddrs->cfg_ddr_training_delay_ps[ps].soc_bit_vref), print);
 		ddr_read_write_training_value(p_ddrs, DMC_TEST_WINDOW_INDEX_SOC_VREF_DAC1,
 					      read_write, ps, &(p_ddrs->cfg_ddr_training_delay_ps[ps].soc_bit_vref_dac1), print);
-		ddr_read_write_training_value(p_ddrs, DMC_TEST_WINDOW_INDEX_EXTERA_PS,
+		ddr_read_write_training_value(p_ddrs, DMC_TEST_WINDOW_INDEX_EXTRA_PS,
 					      read_write, ps, 0, print);
 		p_ddrs->cfg_ddr_training_delay_ps[ps].dram_bit_vref[0] = ((rd_reg(p_ddr_base->ddr_phy_base_address + 0x3930)) & 0x3f);
 
@@ -7449,7 +7470,7 @@ uint32_t ddr_get_c2_bdlr_100step_cur(void)
 	dll_counter = rd_reg(p_ddr_base->ddr_phy_base_address + 0x3100);
 	dll_counter = (((dll_counter >> 1) & 0xff));
 	bdlr_100step = (100000000 / (2 * DRAMFreq)) / (dll_counter + 1);
-	//	printf("\nrdll_counter=%08x ", rd_reg(p_ddr_base->ddr_phy_base_address + 0x3100));
+	//	printf("\ndll_counter=%08x ", rd_reg(p_ddr_base->ddr_phy_base_address + 0x3100));
 	return bdlr_100step;
 }
 

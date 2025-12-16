@@ -73,6 +73,9 @@ ifndef_any_of = $(filter undefined,$(foreach v,$(1),$(origin $(v))))
 ifdef CONFIG_NASC_NAGRA_TIER_1
 else
 
+ifdef CONFIG_MESON_A1
+obj-y += cmd_ddr_test_g12_A1.o
+else
 ifdef CONFIG_MESON_P1
 obj-y += cmd_ddr_test_p1.o
 else
@@ -104,6 +107,7 @@ endif
 endif
 endif
 
+endif
 endif
 
 obj-$(CONFIG_CMD_OS_IDENT) += os_ident.o
