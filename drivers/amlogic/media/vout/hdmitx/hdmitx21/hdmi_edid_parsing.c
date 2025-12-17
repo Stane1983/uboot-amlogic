@@ -1039,7 +1039,7 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap,
 	 */
 	end = (blockbuf[2] > 0x7f) ? 0x7f : (blockbuf[2] & 0x7f);
 	prxcap->native_Mode = blockbuf[1] >= 2 ? blockbuf[3] : 0;
-	prxcap->number_of_dtd += blockbuf[1] >= 2 ? (blockbuf[3] & 0xf) : 0;
+	prxcap->number_of_dtd += blockbuf[1] >= 2 ? (blockbuf[3] & CAP_LOWER_4BITS_DTD_MASK) : 0;
 	/*
 	 * bit 5 (YCBCR 4:4:4) = 1 if sink device supports YCBCR 4:4:4
 	 * in addition to RGB;
@@ -1223,7 +1223,7 @@ bool is_support_y422(struct rx_cap *prxcap)
 	if (!prxcap)
 		return false;
 
-	if (prxcap->native_Mode & (1 << 4))
+	if (prxcap->native_Mode & CAP_BIT4_YCBCR_422_MASK)
 		return true;
 
 	return false;
@@ -1965,7 +1965,7 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 
 	if (para->cs == HDMI_COLORSPACE_YUV444) {
 		/* Rx may not support Y444 */
-		if (!(prxcap->native_Mode & (1 << 5)))
+		if (!(prxcap->native_Mode & CAP_BIT5_YCBCR_444_MASK))
 			return 0;
 		if ((prxcap->dc_y444 && prxcap->dc_30bit) ||
 		    dv->sup_10b_12b_444 == 0x1)
@@ -1981,7 +1981,10 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 	}
 	if (para->cs == HDMI_COLORSPACE_YUV422) {
 		/* Rx may not support Y422 */
-		if (!(prxcap->native_Mode & (1 << 4)))
+		if (!(prxcap->native_Mode & CAP_BIT4_YCBCR_422_MASK))
+			return 0;
+		/* after kernel 5.15, Y422 not support 8-bit and 10-bit */
+		if (para->cd != COLORDEPTH_36B)
 			return 0;
 		return 1;
 	}

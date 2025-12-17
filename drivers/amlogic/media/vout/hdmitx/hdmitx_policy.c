@@ -1723,7 +1723,7 @@ void hdr_scene_process(struct input_hdmi_data *hdmi_data,
 			} else {
 				char color_attribute[MODE_LEN] = {0};
 
-				get_best_color_attr(hdmi_data, output_info->final_deepcolor,
+				get_best_color_attr(hdmi_data, output_info->final_displaymode,
 					color_attribute);
 				strlcpy(output_info->final_deepcolor, color_attribute,
 					sizeof(output_info->final_deepcolor));
