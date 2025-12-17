@@ -2036,8 +2036,8 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap, u8 *block_buf)
 	 */
 	end = (block_buf[2] > 0x7f) ? 0x7f : (block_buf[2] & 0x7f);
 	prxcap->native_Mode = block_buf[1] >= 2 ? block_buf[3] : 0;
-	prxcap->underscan = (prxcap->native_Mode & 0x80) >> 7;
-	prxcap->number_of_dtd += block_buf[1] >= 2 ? (block_buf[3] & 0xf) : 0;
+	prxcap->underscan = (prxcap->native_Mode & CAP_BIT7_UNDERSCAN_MASK) >> 7;
+	prxcap->number_of_dtd += block_buf[1] >= 2 ? (block_buf[3] & CAP_LOWER_4BITS_DTD_MASK) : 0;
 	/* Initialize SVD_VIC used for SVD storage in the video data block */
 	prxcap->SVD_VIC_count = 0;
 	memset(prxcap->SVD_VIC, 0, sizeof(prxcap->SVD_VIC));
@@ -2488,7 +2488,7 @@ bool is_support_y422(struct rx_cap *prxcap)
 	if (!prxcap)
 		return false;
 
-	if (prxcap->native_Mode & (1 << 4))
+	if (prxcap->native_Mode & CAP_BIT4_YCBCR_422_MASK)
 		return true;
 
 	return false;

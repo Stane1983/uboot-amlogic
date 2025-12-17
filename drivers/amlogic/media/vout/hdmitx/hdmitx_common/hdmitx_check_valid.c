@@ -429,7 +429,7 @@ static int hdmitx_edid_validate_format_para(struct tx_cap *hdmi_tx_cap,
 	if (para->cs == HDMI_COLORSPACE_YUV444) {
 		enum hdmi_color_depth rx_y444_max_dc = COLORDEPTH_24B;
 		/* Rx may not support Y444 */
-		if (!(prxcap->native_Mode & (1 << 5)))
+		if (!(prxcap->native_Mode & CAP_BIT5_YCBCR_444_MASK))
 			return -EACCES;
 		if (prxcap->dc_y444 && (prxcap->dc_30bit ||
 					dv->sup_10b_12b_444 == 0x1))
@@ -448,10 +448,15 @@ static int hdmitx_edid_validate_format_para(struct tx_cap *hdmi_tx_cap,
 
 	if (para->cs == HDMI_COLORSPACE_YUV422) {
 		/* Rx may not support Y422 */
-		if (prxcap->native_Mode & (1 << 4))
-			ret = 0;
-		else
+		if (prxcap->native_Mode & CAP_BIT4_YCBCR_422_MASK) {
+			/* after kernel 5.15, Y422 not support 8-bit and 10-bit */
+			if (para->cd != COLORDEPTH_36B)
+				ret = -EACCES;
+			else
+				ret = 0;
+		} else {
 			ret = -EACCES;
+		}
 
 		return ret;
 	}

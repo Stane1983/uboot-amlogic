@@ -452,7 +452,21 @@ struct dv_vsif_para {
 #define Y420CMDB_MAX 32
 #define VIC_MAX_NUM  256
 #define SVD_VIC_MAX_NUM 128
+#define CAP_BIT7_UNDERSCAN_MASK    0x80    // Bit 7 (MSB): Underscan flag
+#define CAP_BIT6_AUDIO_MASK        0x40    // Bit 6: Basic Audio support flag
+#define CAP_BIT5_YCBCR_444_MASK    0x20    // Bit 5: YCbCr 4:4:4 format support flag
+#define CAP_BIT4_YCBCR_422_MASK    0x10    // Bit 4: YCbCr 4:2:2 format support flag
+#define CAP_LOWER_4BITS_DTD_MASK   0x0F    // Lower 4 bits (Bits 3~0): Native DTD count
 struct rx_cap {
+	/*
+	 * Native video mode and capability indicator of HDMI receiver (parsed from EDID block)
+	 * Each bit of this variable has a specific definition as follows:
+	 * Bit 7: Underscan flag (1 = Rx underscans ITU video formats by default)
+	 * Bit 6: Basic Audio support flag (1 = Rx supports Basic Audio)
+	 * Bit 5: YCbCr 4:4:4 support flag (1 = Rx supports YCbCr 4:4:4 in addition to RGB)
+	 * Bit 4: YCbCr 4:2:2 support flag (1 = Rx supports YCbCr 4:2:2 in addition to RGB)
+	 * Bits 3~0: Total number of native DTDs (Detailed Timing Descriptors, native video formats)
+	 */
 	unsigned int native_Mode;
 	/*video*/
 	unsigned int VIC[VIC_MAX_NUM];

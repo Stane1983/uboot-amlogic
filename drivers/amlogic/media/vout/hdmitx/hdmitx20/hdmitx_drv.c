@@ -3175,7 +3175,7 @@ void hdmitx_set_drm_pkt(struct master_display_info_s *data)
 		if ((hdev->para->cs == HDMI_COLOR_FORMAT_444 ||
 		     hdev->para->cs == HDMI_COLOR_FORMAT_RGB) &&
 		     hdev->para->cd == HDMI_COLOR_DEPTH_24B &&
-		     (hdev->RXCap.native_Mode & (1 << 4))) {
+		     (hdev->RXCap.native_Mode & CAP_BIT4_YCBCR_422_MASK)) {
 			/* hdmitx_cntl_config(hdev,CONF_AVI_RGBYCC_INDIC, */
 					/* HDMI_COLOR_FORMAT_422); */
 			hdmitx_cntl_config(hdev, CONFIG_CSC,

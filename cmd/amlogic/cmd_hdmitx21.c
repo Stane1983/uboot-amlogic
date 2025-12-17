@@ -829,7 +829,7 @@ static void dc_cap_show(struct hdmitx_dev *hdev)
 		}
 	}
 
-	if (prxcap->native_Mode & (1 << 5)) {
+	if (prxcap->native_Mode & CAP_BIT5_YCBCR_444_MASK) {
 		if (prxcap->dc_y444) {
 			if (prxcap->dc_36bit || dv->sup_10b_12b_444 == 0x2 ||
 			    dv2->sup_10b_12b_444 == 0x2)
@@ -842,7 +842,7 @@ static void dc_cap_show(struct hdmitx_dev *hdev)
 		printf("444,8bit\n");
 	}
 	/* y422, not check dc */
-	if (prxcap->native_Mode & (1 << 4))
+	if (prxcap->native_Mode & CAP_BIT4_YCBCR_422_MASK)
 		printf("422,12bit\n");
 
 	if (prxcap->dc_36bit || dv->sup_10b_12b_444 == 0x2 ||
