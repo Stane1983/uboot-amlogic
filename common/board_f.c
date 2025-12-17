@@ -503,12 +503,12 @@ __weak int reserve_mmu(void)
 #if !(defined(CONFIG_SYS_ICACHE_OFF) && defined(CONFIG_SYS_DCACHE_OFF))
 	/* reserve TLB table */
 	gd->arch.tlb_size = PGTABLE_SIZE;
-	gd->relocaddr -= gd->arch.tlb_size;
+	gd->start_addr_sp -= gd->arch.tlb_size;
 
 	/* round down to next 64 kB limit */
-	gd->relocaddr &= ~(0x10000 - 1);
+	gd->start_addr_sp &= ~(0x10000 - 1);
 
-	gd->arch.tlb_addr = gd->relocaddr;
+	gd->arch.tlb_addr = gd->start_addr_sp;
 	debug("TLB table from %08lx to %08lx\n", gd->arch.tlb_addr,
 	      gd->arch.tlb_addr + gd->arch.tlb_size);
 
@@ -523,9 +523,9 @@ __weak int reserve_mmu(void)
 #ifdef CONFIG_AML_UASAN
 	/* insert red zone */
 	printf("\n[UASAN] reserve [%08lx - %08lx] for mmu\n",
-	       gd->relocaddr, gd->relocaddr + gd->arch.tlb_size);
-	gd->relocaddr -= MEM_SECTION_RED_ZONE_SIZE;
-	record_section_red_zone(gd->relocaddr);
+	       gd->start_addr_sp, gd->start_addr_sp + gd->arch.tlb_size);
+	gd->start_addr_sp -= MEM_SECTION_RED_ZONE_SIZE;
+	record_section_red_zone(gd->start_addr_sp);
 #endif
 
 	return 0;
@@ -1122,13 +1122,13 @@ static const init_fnc_t init_sequence_f[] = {
 	reserve_pram,
 #endif
 	reserve_round_4k,
-#ifdef CONFIG_ARM
-	reserve_mmu,
-#endif
 	reserve_video,
 	reserve_trace,
 	reserve_uboot,
 	reserve_malloc,
+#ifdef CONFIG_ARM
+	reserve_mmu,
+#endif
 	reserve_board,
 	setup_machine,
 	reserve_global_data,

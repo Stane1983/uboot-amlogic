@@ -331,7 +331,11 @@ int	dcache_status (void);
 void	dcache_enable (void);
 void	dcache_disable(void);
 void	mmu_disable(void);
-void mmu_update_text_attr(void);
+#if defined(CONFIG_ARM) && !defined(CONFIG_SKIP_UPDATE_MMUMAP) &&\
+	(!defined(PSRAM_START) || !defined(PSRAM_SIZE)) &&\
+	!defined(CONFIG_USEMMU_BOARDF)
+void mmu_update_attr(void);
+#endif
 #if defined(CONFIG_ARM)
 void	relocate_code(ulong);
 #else

@@ -118,11 +118,17 @@ static int initr_caches(void)
 	return 0;
 }
 
-static int initr_mmu_update_text_attr(void)
+#if defined(CONFIG_ARM) && !defined(CONFIG_SKIP_UPDATE_MMUMAP) &&\
+	 (!defined(PSRAM_START) || !defined(PSRAM_SIZE)) &&\
+	!defined(CONFIG_USEMMU_BOARDF)
+static int initr_mmu_update_sections_attr(void)
 {
-	mmu_update_text_attr();
+	dcache_disable();
+	mmu_update_attr();
+	dcache_enable();
 	return 0;
 }
+#endif
 #endif
 
 __weak int fixup_cpu(void)
@@ -716,6 +722,7 @@ static init_fnc_t init_sequence_r[] = {
 	initr_trace,
 	initr_reloc,
 	/* TODO: could x86/PPC have this also perhaps? */
+	initr_reloc_global_data,
 #ifdef CONFIG_ARM
 	initr_caches,
 	/* Note: For Freescale LS2 SoCs, new MMU table is created in DDR.
@@ -724,10 +731,6 @@ static init_fnc_t init_sequence_r[] = {
 	 *	 until board_init() is called below to remap IFC to high
 	 *	 region.
 	 */
-#endif
-	initr_reloc_global_data,
-#ifdef CONFIG_ARM
-	initr_mmu_update_text_attr,
 #endif
 #if defined(CONFIG_SYS_INIT_RAM_LOCK) && defined(CONFIG_E500)
 	initr_unlock_ram_in_cache,
@@ -912,6 +915,12 @@ static init_fnc_t init_sequence_r[] = {
 #if defined(CONFIG_PRAM)
 	initr_mem,
 #endif
+#if defined(CONFIG_ARM) && !defined(CONFIG_SKIP_UPDATE_MMUMAP) &&\
+	(!defined(PSRAM_START) || !defined(PSRAM_SIZE)) &&\
+	!defined(CONFIG_USEMMU_BOARDF)
+	initr_mmu_update_sections_attr,
+#endif
+
 	run_main_loop,
 };
 
