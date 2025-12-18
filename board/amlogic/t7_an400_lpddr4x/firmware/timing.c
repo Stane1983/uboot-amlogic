@@ -692,10 +692,31 @@ ddr_set_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 #define SAR_ADC_DDR_ID_STEP   80
 #define DDR_TIMMING_OFFSET(X) (unsigned int)(unsigned long)(&(((ddr_set_t *)(0))->X))
 #define DDR_TIMMING_OFFSET_SIZE(X) sizeof(((ddr_set_t *)(0))->X)
-#define DDR_TIMMING_TUNE_TIMMING0(DDR_ID, PARA, VALUE) {DDR_ID, DDR_TIMMING_OFFSET(PARA), VALUE, DDR_TIMMING_OFFSET_SIZE(PARA), 0, DDR_RESV_CHECK_ID_ENABLE}
-#define DDR_TIMMING_TUNE_TIMMING1(DDR_ID, PARA, VALUE) {DDR_ID, sizeof(ddr_set_t) + DDR_TIMMING_OFFSET(PARA), VALUE, DDR_TIMMING_OFFSET_SIZE(PARA), 0, DDR_RESV_CHECK_ID_ENABLE}
+
+#define DDR_TIMMING_TUNE_TIMMING0(DDR_ID, PARA, VALUE) \
+	{DDR_ID, DDR_TIMMING_OFFSET(PARA), (VALUE), \
+	DDR_TIMMING_OFFSET_SIZE(PARA), 0, DDR_RESV_CHECK_ID_ENABLE}
+
+#define DDR_TIMMING_TUNE_TIMMING1(DDR_ID, PARA, VALUE) \
+	{DDR_ID, sizeof(ddr_set_t) + DDR_TIMMING_OFFSET(PARA), (VALUE), \
+	DDR_TIMMING_OFFSET_SIZE(PARA), 0, DDR_RESV_CHECK_ID_ENABLE}
+
+#define DDR_TIMMING_TUNE_TIMMING0_32BIT_L16(DDR_ID, PARA, VALUE) \
+{(DDR_ID), DDR_TIMMING_OFFSET(PARA), (VALUE) & 0xffff, \
+2, 0, DDR_RESV_CHECK_ID_ENABLE}
+#define DDR_TIMMING_TUNE_TIMMING0_32BIT_H16(DDR_ID, PARA, VALUE) \
+{DDR_ID, DDR_TIMMING_OFFSET(PARA) + 2, ((VALUE) >> 16) & 0xffff, \
+2, 0, DDR_RESV_CHECK_ID_ENABLE}
+
+#define DDR_TIMMING_TUNE_TIMMING1_32BIT_L16(DDR_ID, PARA, VALUE) \
+{DDR_ID, sizeof(ddr_set_t) + DDR_TIMMING_OFFSET(PARA), (VALUE) & 0xffff, \
+2, 0, DDR_RESV_CHECK_ID_ENABLE}
+#define DDR_TIMMING_TUNE_TIMMING1_32BIT_H16(DDR_ID, PARA, VALUE) \
+{DDR_ID, sizeof(ddr_set_t) + DDR_TIMMING_OFFSET(PARA) + 2, ((VALUE) >> 16) & 0xffff, \
+2, 0, DDR_RESV_CHECK_ID_ENABLE}
+
 bl2_reg_t __bl2_reg[] __attribute__ ((section(".generic_param"))) = {
-		{ 0, 0, 0xffffffff, 0, 0, 0 },
+//		{ 0, 0, 0xffffffff, 0, 0, 0 },
 
 		DDR_TIMMING_TUNE_TIMMING0
 			(DDR0_2G_DDR1_1G_DDR_ID,
@@ -713,7 +734,7 @@ bl2_reg_t __bl2_reg[] __attribute__ ((section(".generic_param"))) = {
 				(DRAM_SIZE_ID_256MBX0 << CONFIG_CS1_BYTE_01_SIZE_256_ID_OFFSET) +
 				(DRAM_SIZE_ID_256MBX0 << CONFIG_CS1_BYTE_23_SIZE_256_ID_OFFSET)),
 
-		DDR_TIMMING_TUNE_TIMMING0
+		DDR_TIMMING_TUNE_TIMMING0_32BIT_L16
 			(DDR0_2G_DDR1_1G_DDR_ID,
 			ddr_func,
 			DDR_FUNC | DDR_FUNC_CONFIG_DFE_FUNCTION | DDR_FUNC_CONFIG_AXI_NOC_MODE_6),
@@ -1206,7 +1227,18 @@ bl2_reg_t __bl2_reg[] __attribute__ ((section(".generic_param"))) = {
 		DDR_TIMMING_TUNE_TIMMING1
 				(DDR0_8G_DDR1_8G_RANK01_DDR_ID,
 				dfi_pinmux[1],
-				(0 << 7) | (2 << 0))
+				(0 << 7) | (2 << 0)),
+
+//.pll_ssc_mode	= (1<<20) | (1<<8) | (2<<4) | 0,//center_ssc_1000ppm
+//	DDR_TIMMING_TUNE_TIMMING0_32BIT_L16(DDR0_2G_DDR1_2G_DDR_ID,	pll_ssc_mode,
+//		((1 << 20) | (1 << 8) | (2 << 4) | 0)),
+//	DDR_TIMMING_TUNE_TIMMING0_32BIT_H16(DDR0_2G_DDR1_2G_DDR_ID,	pll_ssc_mode,
+//		((1 << 20) | (1 << 8) | (2 << 4) | 0)),
+//	DDR_TIMMING_TUNE_TIMMING1_32BIT_L16(DDR0_2G_DDR1_2G_DDR_ID,	pll_ssc_mode,
+//		((1 << 20) | (1 << 8) | (2 << 4) | 0)),
+//	DDR_TIMMING_TUNE_TIMMING1_32BIT_H16(DDR0_2G_DDR1_2G_DDR_ID,	pll_ssc_mode,
+//		((1 << 20) | (1 << 8) | (2 << 4) | 0)),
+	{ 0, 0, 0, 0, 0, 0 },
 };
 
 board_clk_set_t __board_clk_setting
