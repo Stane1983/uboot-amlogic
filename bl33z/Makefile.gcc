@@ -98,6 +98,7 @@ BL_COMMON_SOURCES	:=	\
 				lib/stdlib/mem.c					\
 				lib/ram_compress/lz4_compress.c		\
 				lib/ram_compress/ram_compress.c		\
+				lib/md5/md5.c			\
 				drivers/serial.c		\
 				drivers/timer.c			\
 				drivers/watchdog.c
@@ -220,7 +221,7 @@ ASFLAGS_aarch64			+= 	-nostdinc -ffreestanding -Wa,--fatal-warnings	\
 				${DEFINES} ${INCLUDES}
 
 CFLAGS_aarch64			+= 	-nostdinc -pedantic -ffreestanding -Wall	\
-				-Werror -mgeneral-regs-only -std=c99 -c -Os	\
+				-Werror -mgeneral-regs-only -std=gnu99 -Wno-pedantic -c -Os	\
 				${DEFINES} ${INCLUDES}
 CFLAGS_aarch64			+=	-ffunction-sections -fdata-sections
 CFLAGS_aarch64			+=	${FIRMWARE_CPPFLAGS}
@@ -238,7 +239,7 @@ ASFLAGS_aarch32			+= 	-nostdinc -ffreestanding -Wa,--fatal-warnings	-mcpu=cortex
 CFLAGS_aarch32 		+= -g -Os -fno-builtin -ffreestanding -nostdinc
 CFLAGS_aarch32 		+= -pipe -DCONFIG_ARM -D__ARM__ -mthumb -mabi=aapcs-linux -mthumb-interwork -mcpu=cortex-a9
 CFLAGS_aarch32 		+= -mfpu=neon  -mno-long-calls -fno-stack-protector -MD -Wno-unused-function -mno-long-calls
-CFLAGS_aarch32 		+= -Wall -Werror -std=c99 -c -Os
+CFLAGS_aarch32 		+= -Wall -Werror -std=gnu99 -Wno-pedantic -c -Os
 CFLAGS_aarch32			+= 	${DEFINES} ${INCLUDES}
 CFLAGS_aarch32			+= 	${FIRMWARE_CPPFLAGS}
 

@@ -210,6 +210,7 @@
 #define MD5_BL33Z_2_BASE_ADDR       (0x00B30000)
 #define MD5_BL33X_1_BASE_ADDR       (0x00B40000)
 #define MD5_BL33X_2_BASE_ADDR       (0x00B50000)
+#define MD5_BL33Z_RAMDUMP_STR       (0x00B60000)
 #define MD5_MAGIC                   "RAMDUMPMD5"
 
 #endif /* __PLATFORM_DEF_H__ */
