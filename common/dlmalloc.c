@@ -1622,8 +1622,12 @@ void fREe(mem) Void_t* mem;
 		return;
 #endif
 
-  if (mem == NULL)                              /* free(0) has no effect */
-    return;
+	if (mem == NULL) {                             /* free(0) has no effect */
+		return;
+	}
+#ifdef CONFIG_ARMV8_MULTIENTRY
+	spin_lock(&malloc_lock);
+#endif
 
   p = mem2chunk(mem);
   hd = p->size;
@@ -1636,9 +1640,6 @@ void fREe(mem) Void_t* mem;
   }
 #endif
 
-#ifdef CONFIG_ARMV8_MULTIENTRY
-  spin_lock(&malloc_lock);
-#endif
   check_inuse_chunk(p);
 
   sz = hd & ~PREV_INUSE;
