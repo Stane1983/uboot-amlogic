@@ -532,7 +532,7 @@ struct rx_cap {
 	/*blk0 check sum*/
 	unsigned char chksum;
 	/*blk0-3 check sum*/
-	char checksum[10];
+	char checksum[11];
 	unsigned char edid_changed;
 	/* for total = 32*8 = 256 VICs */
 	/* for Y420CMDB bitmap */
