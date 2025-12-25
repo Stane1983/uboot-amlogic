@@ -194,7 +194,8 @@ void lcd_detail_timing_print(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timin
 
 void lcd_phy_cfg_print(struct phy_config_s *cfg)
 {
-	int m, n, i;
+	// int m, n, i;
+	uint8_t i;
 
 	printf("flag: 0x%x, lane_num: %d, nphys: %d\n"
 	       "swap0: 0x%08x, swap1: 0x%08x, lane ofst: %d, mask: 0x%x, valid: 0x%x\n"
@@ -204,6 +205,7 @@ void lcd_phy_cfg_print(struct phy_config_s *cfg)
 	       cfg->lane_offset, cfg->lane_mask, cfg->lane_valid,
 	       cfg->ckdi, cfg->weakly_pull_down, cfg->low_common_mode);
 
+	/*
 	m = (cfg->lane_num + 1) / 2;
 	n = m;
 	printf("lane  sel   phase_sel    lane  sel   phase_sel\n");
@@ -211,6 +213,14 @@ void lcd_phy_cfg_print(struct phy_config_s *cfg)
 		printf("[%2d]  0x%02x  0x%02x         [%02d]  0x%02x  0x%02x\n",
 		       i, cfg->ch_ctrl[i].sel, cfg->ch_ctrl[i].phase_sel,
 		       n, cfg->ch_ctrl[n].sel, cfg->ch_ctrl[n].phase_sel);
+	}
+	*/
+	printf("lane: P/N-swap  CH-sel  Phase\n");
+	for (i = 0; i < cfg->lane_num; i++) {
+		if (!cfg->ch_ctrl[i].en)
+			continue;
+		printf("[%2d]:     %d     0x%02x    0x%02x\n", i, cfg->ch_ctrl[i].pn_swap,
+			cfg->ch_ctrl[i].sel, cfg->ch_ctrl[i].phase_sel);
 	}
 	printf("\n");
 }

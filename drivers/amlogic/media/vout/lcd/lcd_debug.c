@@ -403,6 +403,7 @@ static void lcd_phy_print(struct aml_lcd_drv_s *pdrv)
 	case LCD_LVDS:
 	case LCD_VBYONE:
 	case LCD_MLVDS:
+	case LCD_MIPI:
 	case LCD_P2P:
 	case LCD_EDP:
 		printf("support phy group:\n");
@@ -497,7 +498,7 @@ struct reg_name_set_s reg_table[] = {
 #ifdef CONFIG_AML_LCD_MIPI_DSI
 static void lcd_reg_print_mipi(struct aml_lcd_drv_s *pdrv)
 {
-	struct reg_name_set_s reg_table[] = {
+	struct reg_name_set_s host_reg_table[] = {
 		{MIPI_DSI_TOP_CNTL,            "TOP_CNTL"},
 		{MIPI_DSI_TOP_CLK_CNTL,        "TOP_CLK_CNTL"},
 		{MIPI_DSI_TOP_MEAS_CNTL,       "TOP_MEAS_CNTL"},
@@ -517,11 +518,11 @@ static void lcd_reg_print_mipi(struct aml_lcd_drv_s *pdrv)
 		{MIPI_DSI_DWC_VID_HSA_TIME_OS,      "VID_HSA_TIME"},
 		{MIPI_DSI_DWC_VID_HBP_TIME_OS,      "VID_HBP_TIME"},
 		{MIPI_DSI_DWC_VID_HLINE_TIME_OS,    "VID_HLINE_TIME"},
-		// {MIPI_DSI_DWC_VID_VSA_LINES_OS,     "VID_VSA_LINES"},
-		// {MIPI_DSI_DWC_VID_VBP_LINES_OS,     "VID_VBP_LINES"},
-		// {MIPI_DSI_DWC_VID_VFP_LINES_OS,     "VID_VFP_LINES"},
-		// {MIPI_DSI_DWC_VID_VACTIVE_LINES_OS, "VID_VACTIVE_LINES"},
-		// {MIPI_DSI_DWC_EDPI_CMD_SIZE_OS,     "EDPI_CMD_SIZE"},
+		{MIPI_DSI_DWC_VID_VSA_LINES_OS,     "VID_VSA_LINES"},
+		{MIPI_DSI_DWC_VID_VBP_LINES_OS,     "VID_VBP_LINES"},
+		{MIPI_DSI_DWC_VID_VFP_LINES_OS,     "VID_VFP_LINES"},
+		{MIPI_DSI_DWC_VID_VACTIVE_LINES_OS, "VID_VACTIVE_LINES"},
+		{MIPI_DSI_DWC_EDPI_CMD_SIZE_OS,     "EDPI_CMD_SIZE"},
 		{MIPI_DSI_DWC_CMD_MODE_CFG_OS,      "CMD_MODE_CFG"},
 		{MIPI_DSI_DWC_PHY_TMR_LPCLK_CFG_OS, "PHY_TMR_LPCLK_CFG"},
 		{MIPI_DSI_DWC_PHY_TMR_CFG_OS,       "PHY_TMR_CFG"},
@@ -529,9 +530,30 @@ static void lcd_reg_print_mipi(struct aml_lcd_drv_s *pdrv)
 		{MIPI_DSI_DWC_INT_ST0_OS,           "INT_ST0"},
 		{MIPI_DSI_DWC_INT_ST1_OS,           "INT_ST1"},
 	};
+	struct reg_name_set_s dsi_dphy_reg_table[] = {
+		{MIPI_DSI_PHY_CTRL,     "PHY_CTRL"},
+		{MIPI_DSI_CHAN_CTRL,    "CHAN_CTRL"},
+		{MIPI_DSI_CHAN_STS,     "CHAN_STS"},
+		{MIPI_DSI_CLK_TIM,      "CLK_TIM"},
+		{MIPI_DSI_HS_TIM,       "HS_TIM"},
+		{MIPI_DSI_LP_TIM,       "LP_TIM"},
+		{MIPI_DSI_INIT_TIM,     "INIT_TIM"},
+		{MIPI_DSI_WAKEUP_TIM,   "WAKEUP_TIM"},
+		{MIPI_DSI_LPOK_TIM,     "LPOK_TIM"},
+		{MIPI_DSI_LP_WCHDOG,    "LP_WCHDOG"},
+		{MIPI_DSI_ANA_CTRL,     "ANA_CTRL"},
+		{MIPI_DSI_CLK_TIM1,     "CLK_TIM1"},
+		{MIPI_DSI_TURN_WCHDOG,  "TURN_WCHDOG"},
+		{MIPI_DSI_ULPS_CHECK,   "ULPS_CHECK"},
+		{MIPI_DSI_TEST_CTRL0,   "TEST_CTRL0"},
+		{MIPI_DSI_TEST_CTRL1,   "TEST_CTRL1"},
+	};
 
 	printf("\nmipi_dsi registers:\n");
-	str_add_reg_sets(pdrv, LCD_REG_DBG_MIPIHOST_BUS, 0, reg_table, ARRAY_SIZE(reg_table));
+	str_add_reg_sets(pdrv, LCD_REG_DBG_MIPIHOST_BUS, 0,
+			host_reg_table, ARRAY_SIZE(host_reg_table));
+	str_add_reg_sets(pdrv, LCD_REG_DBG_MIPIPHY_BUS, 0,
+			dsi_dphy_reg_table, ARRAY_SIZE(dsi_dphy_reg_table));
 }
 #endif
 

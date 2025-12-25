@@ -47,7 +47,7 @@ void dsi_tx_close(struct aml_lcd_drv_s *pdrv)
 	dsi_ctrl_op->tx_close(pdrv);
 }
 
-void dsi_fr_change_pre(struct aml_lcd_drv_s *pdrv, u16 fr100)
+void dsi_fr_change_pre(struct aml_lcd_drv_s *pdrv, uint16_t fr100)
 {
 	if (!dsi_ctrl_op || !dsi_ctrl_op->fr_change_pre)
 		return;
@@ -63,7 +63,7 @@ void dsi_fr_change_post(struct aml_lcd_drv_s *pdrv)
 	dsi_ctrl_op->fr_change_post(pdrv);
 }
 
-int dsi_DT_generic_short_write(struct aml_lcd_drv_s *pdrv, u8 port, struct dsi_cmd_req_s *req)
+int dsi_DT_generic_short_write(struct aml_lcd_drv_s *pdrv, uint8_t port, struct dsi_cmd_req_s *req)
 {
 	if (!dsi_ctrl_op || !dsi_ctrl_op->DT_generic_short_write)
 		return -1;
@@ -71,7 +71,7 @@ int dsi_DT_generic_short_write(struct aml_lcd_drv_s *pdrv, u8 port, struct dsi_c
 	return dsi_ctrl_op->DT_generic_short_write(pdrv, port, req);
 }
 
-int dsi_DT_generic_read(struct aml_lcd_drv_s *pdrv, u8 port, struct dsi_cmd_req_s *req)
+int dsi_DT_generic_read(struct aml_lcd_drv_s *pdrv, uint8_t port, struct dsi_cmd_req_s *req)
 {
 	if (!dsi_ctrl_op || !dsi_ctrl_op->DT_generic_read)
 		return -1;
@@ -79,7 +79,7 @@ int dsi_DT_generic_read(struct aml_lcd_drv_s *pdrv, u8 port, struct dsi_cmd_req_
 	return dsi_ctrl_op->DT_generic_read(pdrv, port, req);
 }
 
-int dsi_DT_DCS_short_write(struct aml_lcd_drv_s *pdrv, u8 port, struct dsi_cmd_req_s *req)
+int dsi_DT_DCS_short_write(struct aml_lcd_drv_s *pdrv, uint8_t port, struct dsi_cmd_req_s *req)
 {
 	if (!dsi_ctrl_op || !dsi_ctrl_op->DT_DCS_short_write)
 		return -1;
@@ -87,7 +87,7 @@ int dsi_DT_DCS_short_write(struct aml_lcd_drv_s *pdrv, u8 port, struct dsi_cmd_r
 	return dsi_ctrl_op->DT_DCS_short_write(pdrv, port, req);
 }
 
-int dsi_DT_DCS_read(struct aml_lcd_drv_s *pdrv, u8 port, struct dsi_cmd_req_s *req)
+int dsi_DT_DCS_read(struct aml_lcd_drv_s *pdrv, uint8_t port, struct dsi_cmd_req_s *req)
 {
 	if (!dsi_ctrl_op || !dsi_ctrl_op->DT_DCS_read)
 		return -1;
@@ -95,7 +95,8 @@ int dsi_DT_DCS_read(struct aml_lcd_drv_s *pdrv, u8 port, struct dsi_cmd_req_s *r
 	return dsi_ctrl_op->DT_DCS_read(pdrv, port, req);
 }
 
-int dsi_DT_set_max_return_pkt_size(struct aml_lcd_drv_s *pdrv, u8 port, struct dsi_cmd_req_s *req)
+int dsi_DT_set_max_return_pkt_size(struct aml_lcd_drv_s *pdrv, uint8_t port,
+					struct dsi_cmd_req_s *req)
 {
 	if (!dsi_ctrl_op || !dsi_ctrl_op->DT_set_max_return_pkt_size)
 		return -1;
@@ -103,7 +104,7 @@ int dsi_DT_set_max_return_pkt_size(struct aml_lcd_drv_s *pdrv, u8 port, struct d
 	return dsi_ctrl_op->DT_set_max_return_pkt_size(pdrv, port, req);
 }
 
-int dsi_DT_generic_long_write(struct aml_lcd_drv_s *pdrv, u8 port, struct dsi_cmd_req_s *req)
+int dsi_DT_generic_long_write(struct aml_lcd_drv_s *pdrv, uint8_t port, struct dsi_cmd_req_s *req)
 {
 	if (!dsi_ctrl_op || !dsi_ctrl_op->DT_generic_long_write)
 		return -1;
@@ -111,7 +112,7 @@ int dsi_DT_generic_long_write(struct aml_lcd_drv_s *pdrv, u8 port, struct dsi_cm
 	return dsi_ctrl_op->DT_generic_long_write(pdrv, port, req);
 }
 
-int dsi_DT_DCS_long_write(struct aml_lcd_drv_s *pdrv, u8 port, struct dsi_cmd_req_s *req)
+int dsi_DT_DCS_long_write(struct aml_lcd_drv_s *pdrv, uint8_t port, struct dsi_cmd_req_s *req)
 {
 	if (!dsi_ctrl_op || !dsi_ctrl_op->DT_DCS_long_write)
 		return -1;
@@ -119,7 +120,7 @@ int dsi_DT_DCS_long_write(struct aml_lcd_drv_s *pdrv, u8 port, struct dsi_cmd_re
 	return dsi_ctrl_op->DT_DCS_long_write(pdrv, port, req);
 }
 
-void dsi_DT_sink_shut_down(struct aml_lcd_drv_s *pdrv, u8 port)
+void dsi_DT_sink_shut_down(struct aml_lcd_drv_s *pdrv, uint8_t port)
 {
 	if (!dsi_ctrl_op || !dsi_ctrl_op->DT_sink_shut_down)
 		return;
@@ -127,7 +128,7 @@ void dsi_DT_sink_shut_down(struct aml_lcd_drv_s *pdrv, u8 port)
 	dsi_ctrl_op->DT_sink_shut_down(pdrv, port);
 }
 
-void dsi_DT_sink_turn_on(struct aml_lcd_drv_s *pdrv, u8 port)
+void dsi_DT_sink_turn_on(struct aml_lcd_drv_s *pdrv, uint8_t port)
 {
 	if (!dsi_ctrl_op || !dsi_ctrl_op->DT_sink_turn_on)
 		return;
@@ -135,7 +136,7 @@ void dsi_DT_sink_turn_on(struct aml_lcd_drv_s *pdrv, u8 port)
 	dsi_ctrl_op->DT_sink_turn_on(pdrv, port);
 }
 
-void dsi_op_mode_switch(struct aml_lcd_drv_s *pdrv, u8 port, u8 op_mode)
+void dsi_op_mode_switch(struct aml_lcd_drv_s *pdrv, uint8_t port, uint8_t op_mode)
 {
 	if (!dsi_ctrl_op || !dsi_ctrl_op->op_mode_switch)
 		return;
@@ -143,7 +144,7 @@ void dsi_op_mode_switch(struct aml_lcd_drv_s *pdrv, u8 port, u8 op_mode)
 	dsi_ctrl_op->op_mode_switch(pdrv, port, op_mode);
 }
 
-void dsi_dphy_reset(struct aml_lcd_drv_s *pdrv, u8 port)
+void dsi_dphy_reset(struct aml_lcd_drv_s *pdrv, uint8_t port)
 {
 	if (!dsi_ctrl_op || !dsi_ctrl_op->dphy_reset)
 		return;
@@ -151,12 +152,40 @@ void dsi_dphy_reset(struct aml_lcd_drv_s *pdrv, u8 port)
 	dsi_ctrl_op->dphy_reset(pdrv, port);
 }
 
-void dsi_host_reset(struct aml_lcd_drv_s *pdrv, u8 port)
+void dsi_host_reset(struct aml_lcd_drv_s *pdrv, uint8_t port)
 {
 	if (!dsi_ctrl_op || !dsi_ctrl_op->host_reset)
 		return;
 
 	dsi_ctrl_op->host_reset(pdrv, port);
+}
+
+void dsi_top_set_irq_meas(struct aml_lcd_drv_s *pdrv, uint8_t port,
+			uint8_t vsync_meas_en, uint8_t edpite_meas_en, uint16_t intr_mask_setting)
+{
+	if (!dsi_ctrl_op || !dsi_ctrl_op->set_dsi_irq_meas)
+		return;
+
+	dsi_ctrl_op->set_dsi_irq_meas(pdrv, port,
+			vsync_meas_en, edpite_meas_en, intr_mask_setting);
+}
+
+void dsi_top_read_intr_sta(struct aml_lcd_drv_s *pdrv, uint8_t port,
+			struct dsi_intr_meas_sta_s *intr_data)
+{
+	if (!dsi_ctrl_op || !dsi_ctrl_op->dsi_irq_intr_process)
+		return;
+
+	dsi_ctrl_op->dsi_irq_intr_process(pdrv, port, intr_data);
+}
+
+void dsi_top_read_meas_sta(struct aml_lcd_drv_s *pdrv, uint8_t port,
+			struct dsi_intr_meas_sta_s *intr_data)
+{
+	if (!dsi_ctrl_op || !dsi_ctrl_op->dsi_irq_meas_process)
+		return;
+
+	dsi_ctrl_op->dsi_irq_meas_process(pdrv, port, intr_data);
 }
 
 void lcd_dsi_if_bind(struct aml_lcd_drv_s *pdrv)

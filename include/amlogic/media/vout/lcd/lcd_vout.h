@@ -328,6 +328,7 @@ struct dsi_config_s {
 	unsigned int factor_numerator;
 	unsigned int factor_denominator;
 	unsigned int lane_byte_clk;
+	unsigned int tear_en_ctrl; // 0=dis, 1=dcs, 2=gpio
 
 	/* non_burst vid packet */
 	unsigned int user_pkt_size;

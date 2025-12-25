@@ -45,19 +45,30 @@ int lcd_phy_param_preset(struct aml_lcd_drv_s *pdrv)
 	if (lcd_phy_ctrl->phy_amp_dft_val)
 		amp = lcd_phy_ctrl->phy_amp_dft_val(pdrv);
 
-	for (i = 0; i < phy_cfg->lane_num; i++) {
-		phy->lane[i].amp = amp;
-		phy->lane[i].preem = preem;
-		phy_cfg->ch_ctrl[i].sel = i;
-		if (lcd_phy_ctrl->phy_lane_phase_sel_def) {
-			phy_cfg->ch_ctrl[i].phase_sel =
-				lcd_phy_ctrl->phy_lane_phase_sel_def(pdrv, i);
+	for (i = 0; i < CH_LANE_MAX; i++) {
+		if (i < phy_cfg->lane_num) {
+			phy->lane[i].amp = amp;
+			phy->lane[i].preem = preem;
+			phy_cfg->ch_ctrl[i].en = 1;
+			phy_cfg->ch_ctrl[i].sel = i;
+
+			if (lcd_phy_ctrl->phy_lane_pn_swap_dft) {
+				phy_cfg->ch_ctrl[i].pn_swap =
+					lcd_phy_ctrl->phy_lane_pn_swap_dft(pdrv, i);
+			} else {
+				phy_cfg->ch_ctrl[i].pn_swap = 0xff;
+			}
+			if (lcd_phy_ctrl->phy_lane_phase_sel_def) {
+				phy_cfg->ch_ctrl[i].phase_sel =
+					lcd_phy_ctrl->phy_lane_phase_sel_def(pdrv, i);
+			} else {
+				phy_cfg->ch_ctrl[i].phase_sel = 0xff;
+			}
 		} else {
-			phy_cfg->ch_ctrl[i].phase_sel = 0xff;
+			phy_cfg->ch_ctrl[i].en = 0;
+			phy_cfg->ch_ctrl[i].sel = 0xff;
 		}
 	}
-	for (; i < CH_LANE_MAX; i++)
-		phy_cfg->ch_ctrl[i].sel = 0xff;
 
 #if defined(CONFIG_AML_LCD_TCON)
 	if (pdrv->config.basic.lcd_type == LCD_MLVDS) {
@@ -101,8 +112,10 @@ void lcd_phy_param_print(struct aml_lcd_drv_s *pdrv)
 	if (!pdrv)
 		return;
 	ret = lcd_phy_param_get(pdrv, &local_phy_cfg, &local_phy);
-	if (ret)
-		return;
+	if (ret) {
+		memset(&local_phy_cfg, 0, sizeof(struct phy_config_s));
+		memset(&local_phy,     0, sizeof(struct phy_attr_s));
+	}
 
 	phy_cfg = &pdrv->config.phy_cfg;
 	phy = pdrv->config.phy_cfg.act_phy;

@@ -1457,6 +1457,25 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 	phy->ss.level = 255;
 	phy->ss.mode = 255;
 
+	propdata = (char *)fdt_getprop(dt_addr, child_offset, "phy-pn-swap", &len);
+	if (len > 0 && propdata) {
+		len = (phy_cfg->lane_num > (len / 4)) ? (len / 4) : phy_cfg->lane_num;
+		for (i = 0; i < len; i++)
+			phy_cfg->ch_ctrl[i].pn_swap = be32_to_cpup(((u32 *)propdata) + i) ? 1 : 0;
+	}
+	propdata = (char *)fdt_getprop(dt_addr, child_offset, "phy-phase-sel", &len);
+	if (len > 0 && propdata) {
+		len = (phy_cfg->lane_num > (len / 4)) ? (len / 4) : phy_cfg->lane_num;
+		for (i = 0; i < len; i++)
+			phy_cfg->ch_ctrl[i].phase_sel = be32_to_cpup(((u32 *)propdata) + i);
+	}
+	propdata = (char *)fdt_getprop(dt_addr, child_offset, "phy-ch-sel", &len);
+	if (len > 0 && propdata) {
+		len = (phy_cfg->lane_num > (len / 4)) ? (len / 4) : phy_cfg->lane_num;
+		for (i = 0; i < len; i++)
+			phy_cfg->ch_ctrl[i].sel = be32_to_cpup(((u32 *)propdata) + i);
+	}
+
 	propdata = (char *)fdt_getprop(dt_addr, child_offset, "phy_adv_attr", NULL);
 	if (propdata && phy_cfg->phys[0]) {
 		phy_cfg->flag     = be32_to_cpup(((u32 *)propdata) + 0);
