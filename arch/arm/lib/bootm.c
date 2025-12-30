@@ -386,7 +386,12 @@ static void add_kernel_bootargs(bootm_headers_t *images)
 		for (j = i + 1; j < count; j++) {
 			if (params[j] == NULL)
 				continue;
+#ifdef CONFIG_BUILD_DEBIAN_SYSTEM
+			if (!strcmp(params[i], params[j]) &&
+				!strcmp(vals[i], vals[j])) {
+#else
 			if (!strcmp(params[i], params[j])) {
+#endif
 				params[i] = NULL;
 				break;
 			}
