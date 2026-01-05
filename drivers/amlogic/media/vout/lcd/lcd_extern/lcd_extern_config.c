@@ -1334,11 +1334,11 @@ static int lcd_extern_get_config_ini(struct lcd_extern_driver_s *edrv,
 
 	for (i = 0; i < 4; i++) {
 		snprintf(tag_name, 64, "TCON_EXT_B%d_BIN_PATH", i);
-		str = lcd_ini_get_str(inip, sec_pmu, str, NULL);
+		str = lcd_ini_get_str(inip, sec_pmu, tag_name, NULL);
 		if (!str) { //multi_bin
 			for (j = 0; j < 10; j++) {
 				snprintf(tag_name, 64, "TCON_EXT_B%d_%d_BIN_PATH", i, j);
-				str = lcd_ini_get_str(inip, sec_pmu, str, NULL);
+				str = lcd_ini_get_str(inip, sec_pmu, tag_name, NULL);
 				if (!str)
 					break;
 				bin_cnt++;
@@ -1347,11 +1347,11 @@ static int lcd_extern_get_config_ini(struct lcd_extern_driver_s *edrv,
 			bin_cnt++;
 		}
 		snprintf(tag_name, 64, "TCON_EXT_B%d_SPI_BIN_PATH", i);
-		str = lcd_ini_get_str(inip, sec_pmu, str, NULL);
+		str = lcd_ini_get_str(inip, sec_pmu, tag_name, NULL);
 		if (!str) { //multi_bin
 			for (j = 0; j < 10; j++) {
 				snprintf(tag_name, 64, "TCON_EXT_B%d_%d_SPI_BIN_PATH", i, j);
-				str = lcd_ini_get_str(inip, sec_pmu, str, NULL);
+				str = lcd_ini_get_str(inip, sec_pmu, tag_name, NULL);
 				if (!str)
 					break;
 				bin_cnt++;
@@ -1370,12 +1370,12 @@ static int lcd_extern_get_config_ini(struct lcd_extern_driver_s *edrv,
 	p_name = ext_pmu_bins.name;
 	p_path = ext_pmu_bins.path;
 	for (i = 0; i < 4; i++) {
-		snprintf(tag_name, 64, "TCON_EXT_B%d_BIN_PATH", i);
-		str = lcd_ini_get_str(inip, sec_pmu, str, NULL);
+		snprintf(tag_name, 64, "TCON_EXT_B%d_SPI_BIN_PATH", i);
+		str = lcd_ini_get_str(inip, sec_pmu, tag_name, NULL);
 		if (!str) { //multi_bin
 			for (j = 0; j < 10; j++) {
-				snprintf(tag_name, 64, "TCON_EXT_B%d_%d_BIN_PATH", i, j);
-				str = lcd_ini_get_str(inip, sec_pmu, str, NULL);
+				snprintf(tag_name, 64, "TCON_EXT_B%d_%d_SPI_BIN_PATH", i, j);
+				str = lcd_ini_get_str(inip, sec_pmu, tag_name, NULL);
 				if (!str)
 					break;
 				strlcpy(p_name, tag_name, 64);
@@ -1389,12 +1389,12 @@ static int lcd_extern_get_config_ini(struct lcd_extern_driver_s *edrv,
 			p_name += ext_pmu_bins.name_len;
 			p_path += ext_pmu_bins.path_len;
 		}
-		snprintf(tag_name, 64, "TCON_EXT_B%d_SPI_BIN_PATH", i);
-		str = lcd_ini_get_str(inip, sec_pmu, str, NULL);
+		snprintf(tag_name, 64, "TCON_EXT_B%d_BIN_PATH", i);
+		str = lcd_ini_get_str(inip, sec_pmu, tag_name, NULL);
 		if (!str) { //multi_bin
 			for (j = 0; j < 10; j++) {
-				snprintf(tag_name, 64, "TCON_EXT_B%d_%d_SPI_BIN_PATH", i, j);
-				str = lcd_ini_get_str(inip, sec_pmu, str, NULL);
+				snprintf(tag_name, 64, "TCON_EXT_B%d_%d_BIN_PATH", i, j);
+				str = lcd_ini_get_str(inip, sec_pmu, tag_name, NULL);
 				if (!str)
 					break;
 				strlcpy(p_name, tag_name, 64);
