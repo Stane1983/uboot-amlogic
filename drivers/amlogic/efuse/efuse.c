@@ -52,7 +52,7 @@ ssize_t efuse_read_cali(char *buf, size_t count, uint32_t offset)
 #ifdef EFUSE_HAL_API_READ_CALI
 	char data[EFUSE_BYTES];
 	struct efuse_hal_api_arg arg;
-	unsigned int retcnt;
+	unsigned long retcnt;
 	int ret;
 	memset(data, 0, count);
 	arg.cmd = EFUSE_HAL_API_READ_CALI;
@@ -63,7 +63,7 @@ ssize_t efuse_read_cali(char *buf, size_t count, uint32_t offset)
 	ret = meson_trustzone_efuse(&arg);
 	if (ret == 0) {
 		memcpy(buf, data, count);
-		printf("retcnt=%d\n",retcnt);
+		printf("retcnt=%ld\n", retcnt);
 		return retcnt;
 	} else{
 		return ret;
