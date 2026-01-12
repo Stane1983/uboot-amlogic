@@ -677,8 +677,11 @@ static void construct_avi_packet(struct hdmitx_dev *hdev)
 
 	info->version = 2;
 	info->colorspace = para->cs;
-	/* underscan */
-	info->scan_mode = HDMI_SCAN_MODE_UNDERSCAN;
+	/* NO_DATA for special TV set, and underscan for other TV sets */
+	if (hdmitx21_find_vendor_scan_non_std(hdev->rawedid))
+		info->scan_mode = HDMI_SCAN_MODE_NONE;
+	else
+		info->scan_mode = HDMI_SCAN_MODE_UNDERSCAN;
 	if (para->timing.v_active <= 576)
 		info->colorimetry = HDMI_COLORIMETRY_ITU_601;
 	else

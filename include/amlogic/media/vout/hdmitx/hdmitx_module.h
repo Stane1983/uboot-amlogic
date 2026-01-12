@@ -114,6 +114,7 @@ void hdmitx_set_drm_pkt(struct master_display_info_s *data);
 bool hdmitx_find_vendor(struct hdmitx_dev *hdev);
 bool hdmitx_find_vendor_null_pkt(struct hdmitx_dev *hdev);
 bool hdmitx_find_vendor_shield_hdr(struct hdmitx_dev *hdev);
+bool hdmitx_find_vendor_scan_non_std(struct hdmitx_dev *hdev);
 void hdmitx_set_vsif_pkt(enum eotf_type type, enum mode_type tunnel_mode,
 	struct dv_vsif_para *data);
 void hdmitx_set_hdr10plus_pkt(unsigned int flag,
