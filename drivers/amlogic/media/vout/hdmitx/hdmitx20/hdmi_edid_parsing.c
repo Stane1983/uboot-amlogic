@@ -1097,6 +1097,8 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap,
 						blockbuf, count);
 					break;
 				default:
+					printf("warn: Unknown extended tag: %d, offset: %d\n",
+						ext_tag, offset);
 					break;
 				}
 			}
@@ -1104,16 +1106,10 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap,
 			break;
 
 		case HDMI_EDID_BLOCK_TYPE_RESERVED:
-			offset++;
-			offset += count;
-			break;
-
 		case HDMI_EDID_BLOCK_TYPE_RESERVED2:
-			offset++;
-			offset += count;
-			break;
-
 		default:
+			printf("warn: Unknown EDID block type. tag: %d, offset: %d\n",
+				tag, offset);
 			offset++;
 			offset += count;
 			break;
