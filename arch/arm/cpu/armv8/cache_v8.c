@@ -409,7 +409,7 @@ int mmu_map_update(void)
 
 #if (!defined(PSRAM_START) || !defined(PSRAM_SIZE)) &&\
 	!defined(CONFIG_USEMMU_BOARDF)
-	unsigned long text_base = gd->relocaddr;
+	unsigned long text_base = gd->relocaddr - CONFIG_SYS_TEXT_BASE;
 	unsigned long efi_text_start = _efi_text_start + text_base;
 	unsigned long efi_ro_start = _efi_ro_start + text_base;
 	unsigned long efi_data_start = _efi_data_start + text_base;
