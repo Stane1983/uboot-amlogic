@@ -387,8 +387,13 @@ int do_bootm(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 				boot_params.verified_boot_state = 0;
 			}
 
-			memcpy(boot_params.verified_boot_key, boot_key_hash,
-					sizeof(boot_params.verified_boot_key));
+			if (!is_dev_unlocked) {
+				memcpy(boot_params.verified_boot_key, boot_key_hash,
+				       sizeof(boot_params.verified_boot_key));
+			} else {
+				memset(boot_params.verified_boot_key, 0,
+				       sizeof(boot_params.verified_boot_key));
+			}
 
 			avb_slot_verify_data_calculate_vbmeta_digest(
 				out_data, AVB_DIGEST_TYPE_SHA256, vbmeta_digest);
