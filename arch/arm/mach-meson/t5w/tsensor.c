@@ -14,6 +14,7 @@
 #include <asm/arch/pwr_ctrl.h>
 
 #define READ_NUM 2
+#define SENSOR_NUM 1
 
 int r1p1_codetotemp(unsigned long value, unsigned int u_efuse,
 			int ts_b, int ts_a, int ts_m, int ts_n)
@@ -31,7 +32,7 @@ int r1p1_codetotemp(unsigned long value, unsigned int u_efuse,
 	return temp;
 }
 
-int temp_read_entry(void)
+int r1p1_temp_read(int type)
 {
 	unsigned int ret, ver, u_efuse, regdata;
 	unsigned int value_ts, value_all_ts;
@@ -89,7 +90,32 @@ int temp_read_entry(void)
 	tmp = r1p1_codetotemp(value_ts, u_efuse, ts_b, ts_a, ts_m, ts_n);
 	printf("temp1: %d\n", tmp);
 
+	return tmp;
+}
+
+int temp_read_entry(void)
+{
+	int tmp = -1;
+
+	tmp = r1p1_temp_read(1);
+	printf("temp: %d\n", tmp);
+
 	return 0;
+}
+
+/*sensor_id = [1] represents [PLL]*/
+int read_temperature_by_id(int sensor_id, int *temperature)
+{
+	uint32_t uefuse = 0;
+
+	if (sensor_id > SENSOR_NUM || sensor_id < 1)
+		return -1;
+	uefuse = readl(AO_SEC_GP_CFG10);
+	if (uefuse & 0x80000000) {
+		*temperature = r1p1_temp_read(sensor_id);
+		return 0;
+	}
+	return -1;
 }
 
 int temp_cooling_entry(void)

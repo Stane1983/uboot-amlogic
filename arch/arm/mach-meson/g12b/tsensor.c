@@ -10,6 +10,8 @@
 #include <asm/arch/mailbox.h>
 #include <asm/arch/tsensor.h>
 
+#define SENSOR_NUM 2
+
 int r1p1_codetotemp(unsigned long value, unsigned int u_efuse)
 {
 	int64_t temp;
@@ -258,6 +260,21 @@ int temp_read_entry(void)
 		break;
 		}
 	return 0;
+}
+
+/*sensor_id = [1, 2] represents [PLL, DDR]*/
+int read_temperature_by_id(int sensor_id, int *temperature)
+{
+	uint32_t uefuse = 0;
+
+	if (sensor_id > SENSOR_NUM || sensor_id < 1)
+		return -1;
+	uefuse = readl(AO_SEC_GP_CFG10);
+	if (uefuse & 0x80000000) {
+		*temperature = r1p1_temp_read(sensor_id);
+		return 0;
+	}
+	return -1;
 }
 
 int temp_trim_entry(int tempbase, int tempver)

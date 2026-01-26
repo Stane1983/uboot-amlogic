@@ -31,6 +31,13 @@
 #define BITS_MASK(x)	((1 << (x)) - 1)
 #define SENSOR_VERSION_TYPE	0xf
 
+#define SENSOR_NUM 5
+struct sensor_info sinfo[SENSOR_NUM] = {{.cfg_reg = TS_A55_CFG_REG1, .state_reg = TS_A55_STAT0},
+					{.cfg_reg = TS_GPU_CFG_REG1, .state_reg = TS_GPU_STAT0},
+					{.cfg_reg = TS_VPU_CFG_REG1, .state_reg = TS_VPU_STAT0},
+					{.cfg_reg = TS_DOS_CFG_REG1, .state_reg = TS_DOS_STAT0},
+					{.cfg_reg = TS_NNA_CFG_REG1, .state_reg = TS_NNA_STAT0}};
+
 int tsensor_tz_calibration(unsigned int type, unsigned int data)
 {
 	struct arm_smccc_res res;
@@ -227,6 +234,22 @@ int temp_read_entry(void)
 		break;
 		}
 	return 0;
+}
+
+/*sensor_id = [1, 2, 3, 4, 5] represents [A55, GPU, VPU, DOS, NNA]*/
+int read_temperature_by_id(int sensor_id, int *temperature)
+{
+	uint32_t uefuse = 0;
+
+	if (sensor_id > SENSOR_NUM || sensor_id < 1)
+		return -1;
+	thermal_cali_data_read(sensor_id, &uefuse, 4);
+	if (uefuse & 0x80000000) {
+		*temperature = read_temperature(sensor_id, sinfo[sensor_id - 1].cfg_reg,
+			sinfo[sensor_id - 1].state_reg);
+		return 0;
+	}
+	return -1;
 }
 
 int temp_trim_entry(int tempbase, int tempver)

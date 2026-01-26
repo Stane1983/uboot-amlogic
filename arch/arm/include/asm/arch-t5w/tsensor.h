@@ -29,6 +29,7 @@ struct tsensor_cali_data {
 int temp_read_entry(void);
 int temp_trim_entry(int tempbase, int tempver);
 int temp_cooling_entry(void);
+int read_temperature_by_id(int sensor_id, int *temperature);
 #else
 int temp_read_entry(void)
 {
@@ -43,6 +44,11 @@ int temp_trim_entry(int tempbase, int tempver)
 int temp_cooling_entry(void)
 {
 	return 0;
+}
+
+int read_temperature_by_id(int sensor_id, int *temperature)
+{
+	return -1;
 }
 #endif
 #endif
