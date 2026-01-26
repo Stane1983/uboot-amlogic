@@ -197,6 +197,13 @@ __attribute__ ((section(".misc_param"))) = {
 #endif
 	/* GPIOH_3 has an external pull-up, so disable the default internal pull-up */
 	{ PADCTRL_GPIOH_PULL_EN,   (0x0 << 3),	  (0x1 << 3), 0, 0, 0 },
+	/* for wifi: pull up wifi-en bt-en chip-en in u-boot */
+	/* GPIOX bank pull-up */
+	{ PADCTRL_GPIOX_PULL_UP, 0xffffffff, 0xffffffff, 0, 0, 0 },
+	{ PADCTRL_GPIOX_PULL_EN, 0xffffffff, 0xffffffff, 0, 0, 0 },
+	/* GPIOX_6/GPIOX_17/GPIOX_19 output high */
+	{ PADCTRL_GPIOX_O,   1 << 19 | 1 << 17 | 1 << 6, 1 << 19 | 1 << 17 | 1 << 6, 0, 0, 0 },
+	{ PADCTRL_GPIOX_OEN, 0,  1 << 19 | 1 << 17 | 1 << 6, 0, 0, 0 },
 };
 
 #define __section(x)    __attribute__((__section__(x)))

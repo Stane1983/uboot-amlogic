@@ -181,6 +181,13 @@ __attribute__ ((section(".misc_param"))) = {
 	/* set VDDCPU_EN to high */
 	{ PADCTRL_TESTN_O,         (0x1 << 0),	  (0x1 << 0), 0, 0, 0 },
 	{ PADCTRL_TESTN_OEN,       (0x0 << 0),	  (0x1 << 0), 0, 0, 0 },
+	/* for wifi: pull up wifi-en bt-en chip-en in u-boot */
+	/* GPIOX bank pull-up */
+	{ PADCTRL_GPIOX_PULL_UP, 0xffffffff, 0xffffffff, 0, 0, 0 },
+	{ PADCTRL_GPIOX_PULL_EN, 0xffffffff, 0xffffffff, 0, 0, 0 },
+	/* GPIOX_6/GPIOX_17/GPIOX_19 output high */
+	{ PADCTRL_GPIOX_O,   1 << 19 | 1 << 17 | 1 << 6, 1 << 19 | 1 << 17 | 1 << 6, 0, 0, 0 },
+	{ PADCTRL_GPIOX_OEN, 0,  1 << 19 | 1 << 17 | 1 << 6, 0, 0, 0 },
 };
 
 #define DEV_FIP_SIZE 0x300000
