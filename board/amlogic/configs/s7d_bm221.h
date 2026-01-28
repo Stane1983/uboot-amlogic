@@ -108,7 +108,7 @@
 		"run upgrade_key_base;"\
 		"echo usr key;"\
 		"\0"\
-	"board=ross\0"\
+	"board=bm221\0"\
 
 #ifndef CONFIG_PXP_DDR
 #define CONFIG_PREBOOT  \

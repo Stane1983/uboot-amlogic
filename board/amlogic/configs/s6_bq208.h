@@ -117,7 +117,7 @@
 	"dv_fw_dir=/oem/firmware/dovi_fw.bin\0"\
 	"hdr_policy=0\0"\
 	"frac_rate_policy=1\0"\
-	"board=s6_bq208\0"\
+	"board=raman\0"\
 		"\0"
 
 #ifndef CONFIG_PXP_EMULATOR
