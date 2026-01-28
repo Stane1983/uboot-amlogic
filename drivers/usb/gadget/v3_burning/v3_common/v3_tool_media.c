@@ -847,6 +847,7 @@ int v3tool_storage_init(const int eraseFlash, unsigned int dtbImgSz, unsigned in
 	if (initFlag > 1) {
 		FB_MSG("defenv in usb burning mode\n");
 		run_command("env default -a; env set upgrade_step 3; saveenv", 0);
+		run_command("echo store rsv erase ddr-parameter;store rsv erase ddr-parameter", 0);
 	}
 
 	if (dtbImgSz) {//for key init, or fail when get /unifykey

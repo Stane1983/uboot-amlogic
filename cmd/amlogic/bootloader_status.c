@@ -1030,6 +1030,11 @@ int ab_update_rollback(char *rebootmode, int gpt_flag)
 #else
 			run_command("saveenv", 0);
 #endif
+
+			if (CONFIG_IS_ENABLED(AML_OTA_ERASE_DDR_PARAMETER)) {
+				run_command("echo erase ddr-parameter for OTA", 0);
+				run_command("store rsv erase ddr-parameter;reboot", 0);
+			}
 		}
 	}
 

@@ -322,4 +322,8 @@ config CMD_MUITI_REMOTE_KEYPAD
 
 #prduct mode end<----
 
+config AML_OTA_ERASE_DDR_PARAMETER
+	bool "erase ddr parameter to update ddr freq when ota"
+	default n
+
 endmenu
