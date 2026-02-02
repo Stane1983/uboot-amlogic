@@ -652,7 +652,7 @@ int board_late_init(void)
 	vpp_init();
 #endif
 #ifdef CONFIG_RX_RTERM
-	rx_pre_init();
+	rx_set_phy_rterm();
 #endif
 #ifdef CONFIG_AML_VOUT
 	vout_probe();
@@ -660,6 +660,8 @@ int board_late_init(void)
 #ifdef CONFIG_AML_LCD
 	lcd_probe();
 #endif
+	run_command("run init_display", 0);
+
 	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_e);
 
 	/* The board id is used to determine if the NN needs to adjust voltage */

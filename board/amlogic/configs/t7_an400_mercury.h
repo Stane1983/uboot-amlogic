@@ -63,272 +63,304 @@
 //#define CONFIG_BOOTLOADER_CONTROL_BLOCK
 
 /* args/envs */
+
 #define CONFIG_SYS_MAXARGS  64
+
+#ifdef CONFIG_ENABLE_HIBERNATION
+#define HIBERNATION_COMMANDS \
+	"resumewait " \
+	"resume=/dev/mmcblk0p35 "
+#else
+#define HIBERNATION_COMMANDS ""
+#endif
+
+/* define for linux/android system */
+#define SYSTEM_PRI_ENV_SETTINGS \
+	"loadaddr_kernel=0x01080000\0"\
+	"silent=1\0"\
+	"display_bpp=16\0" \
+	"display_color_index=16\0" \
+	"initargs="\
+		 "init=/init" CONFIG_KNL_LOG_LEVEL "console=ttyS0,921600 no_console_suspend "\
+		 "earlycon=aml-uart,0xfe078000 ramoops.pstore_en=1 ramoops.record_size=0x8000 "\
+		 HIBERNATION_COMMANDS \
+		 "ramoops.console_size=0x4000 loop.max_part=4 scsi_mod.scan=async "\
+		 "xhci_hcd.quirks=0x800000 scramble_reg=0xfe02e030 "\
+		 "loglevel=4 clk_ignore_unused meson_clk.ignore_pll_init=1 "\
+		 "amlogic-clk-soc-t7.ignore_pll_init=1 "\
+		 "\0"
+
+#define SYSTEM_PRI_COMMANDS \
+	 "storeargs="\
+		"get_bootloaderversion;" \
+		"run storeargs_base;"\
+		"setenv bootargs ${bootargs} kvm-arm.mode=nvhe init_on_alloc=0 "\
+		"connector0_type=${connector0_type} connector1_type=${connector1_type} "\
+		"connector2_type=${connector2_type} "\
+		"nn_adj_vol=${nn_adj_vol};"\
+		"run storeargs_display;"\
+		"run cmdline_keys;"\
+		"\0"\
+	 "load_bmp_logo=" \
+		 "run load_bmp_logo_base;" \
+		 "\0"
+
+/* define for debian system */
+#ifdef CONFIG_BUILD_DEBIAN_SYSTEM
+#include "t7_an400_lpddr4x_debian.h"
+#endif
+
+#define VOUT_HDMITX_HPD_CHECK_CMD "hdmitx hpd; hdmitx get_parse_edid; dovi process;"
+#define VOUT_OSD_LOGO_CMD         "osd open; osd clear; run load_bmp_logo; bmp scale;"
+#define VOUT_HDMITX_HDMI_CMD2     "dovi set; dovi pkg; vpp hdrpkt;"
+
 #ifdef CONFIG_HDMITX_ONLY
 #define CONFIG_EXTRA_HDMI_ENV_SETTINGS \
-	"panel_type=edp_0\0" \
-	"outputmode=1080p60hz\0" \
-	"storeargs_display="\
-		"setenv bootargs ${bootargs} powermode=${powermode} "\
-		"lcd0=${lcd0_attr} lcd_debug=${lcd_debug} "\
-		"eDPTX=${eDP_ctrl} "\
-		"outputmode=${outputmode} hdmitx=${colorattribute},scan_info:${scan_info};"\
-		"\0"\
-	"init_display="\
-		"hdmitx hpd;hdmitx get_parse_edid;dovi process;"\
-		"osd open;osd clear;run load_bmp_logo;bmp scale;vout output ${outputmode};"\
-		"dovi set;dovi pkg;vpp hdrpkt;"\
-		"\0"
+	 "panel_type=edp_0\0" \
+	 "outputmode=1080p60hz\0" \
+	 "storeargs_display="\
+		 "setenv bootargs ${bootargs} powermode=${powermode} "\
+		 "lcd0=${lcd0_attr} lcd_debug=${lcd_debug} "\
+		 "eDPTX=${eDP_ctrl} "\
+		 "outputmode=${outputmode} hdmitx=${cecconfig},${colorattribute};"\
+		 "\0"\
+	 "init_display="\
+		 "hdmitx hpd;hdmitx get_parse_edid;dovi process;"\
+		 "osd open;osd clear;run load_bmp_logo;bmp scale;vout output ${outputmode};"\
+		 "dovi set;dovi pkg;vpp hdrpkt;"\
+		 "\0"
 #else
 #define CONFIG_EXTRA_HDMI_ENV_SETTINGS \
 	"panel_type=mipi_2\0" \
-	"panel1_type=lvds_3\0" \
-	"panel2_type=lvds_1\0" \
-	"outputmode=800x1280p53hz\0" \
-	"outputmode2=1280x800p60hz\0" \
-	"outputmode3=1080p60hz\0" \
+	"panel1_type=vbyone_0\0" \
+	"outputmode=1280x800p60hz\0" \
+	"outputmode2=1080p60hz\0" \
 	"connector0_type=MIPI-A\0" \
-	"connector1_type=LVDS-B\0" \
-	"connector2_type=HDMI-A-C\0" \
-	"hdmitx_hpd_wait_cnt=0\0" \
-	"viu2_hold_line=4\0" \
-	"cvbsmode=576cvbs\0" \
-	"storeargs_display="\
-		"setenv bootargs ${bootargs} powermode=${powermode} "\
-		"lcd=${lcd0_attr} lcd_debug=${lcd_debug} "\
-		"outputmode=${outputmode} hdmitx=${colorattribute},scan_info:${scan_info} "\
-		"vout2=${outputmode2},enable "\
-		"vout3=${outputmode3},enable " \
-		"lcd1=${lcd1_attr} lcd2=${lcd2_attr} "\
-		"eDPTX=${eDP_ctrl} "\
-		"hdr_policy=${hdr_policy} hdr_priority=${hdr_priority};"\
-		"\0"\
+	"connector1_type=HDMI-A-A\0" \
+	"lcd0_attr=0x00000000,lvds_1\0" \
+	"lcd1_attr=0x00000000,lvds_1\0" \
+	 "hdmitx_hpd_wait_cnt=0\0" \
+	 "viu2_hold_line=4\0" \
+	 "cvbsmode=576cvbs\0" \
+	 "storeargs_display="\
+		 "setenv bootargs ${bootargs} powermode=${powermode} "\
+		 "lcd0=${lcd0_attr} lcd_debug=${lcd_debug} "\
+		 "lcd1=${lcd1_attr} lcd2=${lcd2_attr} "\
+		 "vout2=${outputmode2},enable "\
+		 "outputmode=${outputmode} hdmitx=${cecconfig},${colorattribute} "\
+		 "eDPTX=${eDP_ctrl} "\
+		 "hdr_policy=${hdr_policy} hdr_priority=${hdr_priority};"\
+		 "\0"\
 	"init_display="\
-		"vout boot_display;" \
-		"\0"
+		"if test ${bootup_display} = on; then "\
+			"vout boot_display;"\
+		"fi; " \
+		"osd dual_logo;"\
+		 "\0"
 #endif
+
 #define CONFIG_EXTRA_ENV_SETTINGS \
-	CONFIG_EXTRA_ENV_SETTINGS_BASE \
-		"silent=1\0"\
-		"loadaddr_kernel=0x01080000\0"\
-		"car_mem_addr=0x80001100\0" \
-		"dv_fw_addr=0xa00000\0"\
-		"otg_device=1\0" \
-		"lcd_debug=0x00000000\0" \
-		"hdmimode=1080p60hz\0" \
-		"cvbsmode=dummy_l\0" \
-		"colorattribute=444,8bit\0"\
-		"vout_init=disable\0" \
-		"display_width=1280\0" \
-		"display_height=800\0" \
-		"hdmichecksum=0x00000000\0" \
-		"display_bpp=16\0" \
-		"display_color_index=16\0" \
-		"display_layer=osd0\0" \
-		"display_color_fg=0xffff\0" \
-		"display_color_bg=0\0" \
-		"set_logo_on=123\0" \
-		"dtb_mem_addr=0x01000000\0" \
-		"fb_addr=0x00300000\0" \
-		"fb_width=1280\0" \
-		"fb_height=800\0" \
-		"frac_rate_policy=1\0" \
-		"scan_info=3\0"\
-		"hdr_policy=0\0" \
-		"usb_burning=" CONFIG_USB_TOOL_ENTRY "\0" \
-		"fdt_high=0x20000000\0"\
-		"sdcburncfg=aml_sdc_burn.ini\0"\
-		"EnableSelinux=enforcing\0" \
-		"recovery_part=recovery\0"\
-		"lock=10101000\0"\
-	"board=mercury\0"\
-		"upgrade_key_flag=2\0"\
-		"cvbs_drv=0\0"\
-		"osd_reverse=0\0"\
-		"video_reverse=0\0"\
-		"suspend=off\0"\
-		"powermode=on\0"\
-		"ffv_wake=off\0"\
-		"ffv_freeze=off\0"\
-		"edid_14_dir=/odm/etc/tvconfig/hdmi/port1_14.bin\0" \
-		"edid_20_dir=/odm/etc/tvconfig/hdmi/port1_20.bin\0" \
-		"edid_select=0\0" \
-		"port_map=0x4321\0" \
-		"cec_fun=0x2F\0" \
-		"logic_addr=0x0\0" \
-		"cec_ac_wakeup=1;\0" \
-	CONFIG_EXTRA_HDMI_ENV_SETTINGS \
-        "initargs="\
-		"init=/init" CONFIG_KNL_LOG_LEVEL "console=ttyS0,921600 no_console_suspend "\
-		"earlycon=aml-uart,0xfe078000 ramoops.pstore_en=1 ramoops.record_size=0x8000 "\
-		"resumewait "\
-		"resume=/dev/mmcblk0p35 "\
-		"ramoops.console_size=0x4000 loop.max_part=4 scsi_mod.scan=async "\
-		"xhci_hcd.quirks=0x800000 loglevel=4 scramble_reg=0xfe02e030 "\
-		"clk_ignore_unused meson_clk.ignore_pll_init=1 "\
-		"amlogic-clk-soc-t7.ignore_pll_init=1 "\
-            "\0"\
-        "upgrade_check="\
-			"run upgrade_check_base;"\
-			"\0"\
-		"storeargs="\
-			"get_bootloaderversion;" \
-			"run storeargs_base;"\
-			"setenv bootargs ${bootargs} kvm-arm.mode=none init_on_alloc=0 "\
-			"connector0_type=${connector0_type} connector1_type=${connector1_type} connector2_type=${connector2_type} "\
-			"nn_adj_vol=${nn_adj_vol};"\
-			"run storeargs_hdmitx;"\
-            "run cmdline_keys;"\
-            "\0"\
-	"cec_init="\
-		"echo cec_ac_wakeup=${cec_ac_wakeup}; "\
-		"if test ${cec_ac_wakeup} = 1; then "\
-			"cec ${logic_addr} ${cec_fun}; "\
-			"if test ${edid_select} = 1111; then "\
-				"hdmirx init ${port_map} ${edid_20_dir}; "\
-			"else "\
-				"hdmirx init ${port_map} ${edid_14_dir}; "\
-			"fi;"\
-		"fi;"\
-			"\0"\
-		"ffv_freeze_action="\
-			"run cec_init;"\
-			"setenv ffv_freeze on;"\
-			"setenv bootargs ${bootargs} ffv_freeze=on"\
-			"\0"\
-		"cold_boot_normal_check="\
-			"setenv bootargs ${bootargs} ffv_freeze=off; "\
-			/*"run try_auto_burn;uboot wake up "*/\
-			"if test ${powermode} = on; then "\
-				/*"run try_auto_burn; "*/\
-			"else if test ${powermode} = standby; then "\
-				"run cec_init;"\
-				"systemoff; "\
-			"else if test ${powermode} = last; then "\
-				"echo suspend=${suspend}; "\
-				"if test ${suspend} = off; then "\
-					/*"run try_auto_burn; "*/\
-				"else if test ${suspend} = on; then "\
-					"run cec_init;"\
-					"systemoff; "\
-				"else if test ${suspend} = shutdown; then "\
-					"run cec_init;"\
-					"systemoff; "\
-				"fi; fi; fi; "\
-			"fi; fi; fi; "\
-			"\0"\
-		"switch_bootmode="\
-			"get_rebootmode;"\
-			"setenv ffv_freeze off;"\
-			"echo reboot_mode : ${reboot_mode};"\
-			"if test ${reboot_mode} = factory_reset; then "\
-				"run recovery_from_flash;"\
-			"else if test ${reboot_mode} = update; then "\
-				"run update;"\
-			"else if test ${reboot_mode} = quiescent; then "\
-				"setenv bootconfig ${bootconfig} androidboot.quiescent=1;"\
-				"setenv vout_init enable;"\
-			"else if test ${reboot_mode} = recovery_quiescent; then "\
-				"setenv bootconfig ${bootconfig} androidboot.quiescent=1;"\
-				"setenv vout_init enable;"\
-				"run recovery_from_flash;"\
-			"else if test ${reboot_mode} = cold_boot; then "\
-				"echo cold boot: ffv_wake=${ffv_wake} "\
-				"powermode=${powermode} suspend=${suspend};"\
-				"if test ${ffv_wake} = on; then "\
-					"if test ${powermode} = on; then "\
-					"setenv bootargs ${bootargs} ffv_freeze=off; "\
-					"else if test ${powermode} = standby; then "\
-					"run ffv_freeze_action; "\
-					"else if test ${powermode} = last; then "\
-					"if test ${suspend} = off; then "\
-					"setenv bootargs ${bootargs} ffv_freeze=off; "\
-					"else if test ${suspend} = on; then "\
-					"run ffv_freeze_action; "\
-					"else if test ${suspend} = shutdown; then "\
-					"run ffv_freeze_action; "\
-					"fi; fi; fi; "\
-					"fi; fi; fi; "\
-				"else "\
-					"run cold_boot_normal_check;"\
-				"fi; "\
-			"else if test ${reboot_mode} = ffv_reboot; then "\
-				"if test ${ffv_wake} = on; then "\
-					"run ffv_freeze_action; "\
-				"fi; "\
-			"else if test ${reboot_mode} = fastboot; then "\
-				"fastboot 1;"\
-			"fi;fi;fi;fi;fi;fi;fi;"\
-			"\0" \
-		"reset_suspend="\
-			"if test ${ffv_freeze} != on; then "\
-			"if test ${suspend} = on || test ${suspend} = shutdown; then "\
-				"setenv suspend off;"\
-				"saveenv;"\
-			"fi;"\
-			"fi;"\
-			"\0" \
-		"storeboot="\
-			"run storeboot_base;"\
-			"\0"\
-		"update="\
-			"run update_base;"\
-			"\0"\
-		"enter_fastboot="\
-			"fastboot 1;"\
-			"\0"\
-		"recovery_from_fat_dev="\
-			"run recovery_from_fat_dev_base;"\
-			"\0"\
-		"recovery_from_udisk="\
-			"run recovery_from_udisk_base;"\
-			"\0"\
-		"recovery_from_sdcard="\
-			"run recovery_from_sdcard_base;"\
-			"\0"\
-		"recovery_from_flash="\
-			"run recovery_from_flash_base;"\
-			"\0"\
-		"bcb_cmd="\
-			"run bcb_cmd_base;"\
-			"\0"\
-		"load_bmp_logo="\
-			"run load_bmp_logo_base;"\
-			"\0"\
-		"check_display="\
-			"if test ${reboot_mode} = cold_boot; then "\
-				"if test ${powermode} = standby; then "\
-					"echo not init_display; "\
-				"else if test ${powermode} = last; then "\
-					"echo suspend=${suspend}; "\
-					"if test ${suspend} = off; then "\
-						"run init_display; "\
-					"else if test ${suspend} = on; then "\
-						"echo not init_display; "\
-					"else if test ${suspend} = shutdown; then "\
-						"echo not init_display; "\
-					"fi; fi; fi; "\
-				"else "\
-					"run init_display; "\
-				"fi; fi; "\
-			"else if test ${reboot_mode} = ffv_reboot; then "\
-				"if test ${ffv_wake} = on; then "\
-					"echo ffv reboot no display; "\
-				"else "\
-					"run init_display; "\
-				"fi; "\
-			"else "\
-				"run init_display; "\
-			"fi;fi; "\
-			"\0"\
-		"cmdline_keys="\
-			"setenv usid mercury${cpu_id};"\
-			"run cmdline_keys_base;"\
-			"\0"\
-	"upgrade_key="\
-		"run upgrade_key_base;"\
-		"echo usr key;"\
-		"\0"\
+	 CONFIG_EXTRA_ENV_SETTINGS_BASE \
+	 "dv_fw_addr=0xa00000\0"\
+	 "otg_device=1\0" \
+	 "lcd_debug=0x00000000\0" \
+	 "hdmimode=none\0" \
+	 "cvbsmode=dummy_l\0" \
+	 "colorattribute=444,8bit\0"\
+	 "vout_init=disable\0" \
+	 "display_width=1280\0" \
+	 "display_height=800\0" \
+	 "hdmichecksum=0x00000000\0" \
+	 "display_layer=osd0\0" \
+	 "display_color_fg=0xffff\0" \
+	 "display_color_bg=0\0" \
+	 "display_on_smp=1\0" \
+	 "set_logo_on=123\0" \
+	 "dtb_mem_addr=0x01000000\0" \
+	 "fb_addr=0x00300000\0" \
+	 "fb_width=800\0" \
+	 "fb_height=1280\0" \
+	 "frac_rate_policy=1\0" \
+	 "hdr_policy=0\0" \
+	 "usb_burning=" CONFIG_USB_TOOL_ENTRY "\0" \
+	 "fdt_high=0x20000000\0"\
+	 "sdcburncfg=aml_sdc_burn.ini\0"\
+	 "EnableSelinux=enforcing\0" \
+	 "recovery_part=recovery\0"\
+	 "lock=10101000\0"\
+	 "board=mercury\0"\
+	 "upgrade_key_flag=2\0"\
+	 "cvbs_drv=0\0"\
+	 "osd_reverse=0\0"\
+	 "video_reverse=0\0"\
+	 "suspend=off\0"\
+	 "powermode=on\0"\
+	 "powermode_ini=0\0"\
+	 "ffv_wake=off\0"\
+	 "ffv_freeze=off\0"\
+	 "edid_14_dir=/odm/etc/tvconfig/hdmi/port1_14.bin\0" \
+	 "edid_20_dir=/odm/etc/tvconfig/hdmi/port1_20.bin\0" \
+	 "edid_select=0\0" \
+	 "port_map=0x4321\0" \
+	 "cec_fun=0x2F\0" \
+	 "logic_addr=0x0\0" \
+	 "car_mem_addr=0x80001100\0" \
+	 SYSTEM_PRI_ENV_SETTINGS \
+	 "cec_ac_wakeup=1\0" \
+	 CONFIG_EXTRA_HDMI_ENV_SETTINGS \
+	 SYSTEM_PRI_COMMANDS \
+	 "upgrade_check="\
+		 "run upgrade_check_base;"\
+		 "\0"\
+	 "cec_init="\
+		 "echo cec_ac_wakeup=${cec_ac_wakeup}; "\
+		 "if test ${cec_ac_wakeup} = 1; then "\
+			 "cec ${logic_addr} ${cec_fun}; "\
+			 "if test ${edid_select} = 1111; then "\
+				 "hdmirx init ${port_map} ${edid_20_dir}; "\
+			 "else "\
+				 "hdmirx init ${port_map} ${edid_14_dir}; "\
+			 "fi;"\
+		 "fi;"\
+	 "\0"\
+	 "ffv_freeze_action="\
+		 "run cec_init;"\
+		 "setenv ffv_freeze on;"\
+		 "setenv bootargs ${bootargs} ffv_freeze=on"\
+		 "\0"\
+	 "cold_boot_normal_check="\
+		 "setenv bootargs ${bootargs} ffv_freeze=off; "\
+		 /*"run try_auto_burn;uboot wake up "*/\
+		 "if test ${powermode} = on; then "\
+			 /*"run try_auto_burn; "*/\
+		 "else if test ${powermode} = standby; then "\
+			 "run cec_init;"\
+			 "systemoff; "\
+		 "else if test ${powermode} = last; then "\
+			 "echo suspend=${suspend}; "\
+			 "if test ${suspend} = off; then "\
+				 /*"run try_auto_burn; "*/\
+			 "else if test ${suspend} = on; then "\
+				 "run cec_init;"\
+				 "systemoff; "\
+			 "else if test ${suspend} = shutdown; then "\
+				 "run cec_init;"\
+				 "systemoff; "\
+			 "fi; fi; fi; "\
+		 "fi; fi; fi; "\
+		 "\0"\
+	 "switch_bootmode="\
+		 "get_rebootmode;"\
+		 "setenv ffv_freeze off;"\
+		 "echo reboot_mode : ${reboot_mode};"\
+		 "if test ${reboot_mode} = factory_reset; then "\
+				 "run recovery_from_flash;"\
+		 "else if test ${reboot_mode} = update; then "\
+				 "run update;"\
+		 "else if test ${reboot_mode} = quiescent; then "\
+			 "setenv bootconfig ${bootconfig} androidboot.quiescent=1;"\
+			 "setenv vout_init enable;"\
+		 "else if test ${reboot_mode} = recovery_quiescent; then "\
+			 "setenv bootconfig ${bootconfig} androidboot.quiescent=1;"\
+			 "setenv vout_init enable;"\
+				 "run recovery_from_flash;"\
+		 "else if test ${reboot_mode} = cold_boot; then "\
+			 "echo cold boot: ffv_wake=${ffv_wake} "\
+			 "powermode=${powermode} suspend=${suspend};"\
+			 "if test ${ffv_wake} = on; then "\
+				 "if test ${powermode} = on; then "\
+					 "setenv bootargs ${bootargs} ffv_freeze=off; "\
+				 "else if test ${powermode} = standby; then "\
+					 "run ffv_freeze_action; "\
+				 "else if test ${powermode} = last; then "\
+					 "if test ${suspend} = off; then "\
+						 "setenv bootargs ${bootargs} ffv_freeze=off; "\
+					 "else if test ${suspend} = on; then "\
+						 "run ffv_freeze_action; "\
+					 "else if test ${suspend} = shutdown; then "\
+						 "run ffv_freeze_action; "\
+					 "fi; fi; fi; "\
+				 "fi; fi; fi; "\
+			 "else "\
+				 "run cold_boot_normal_check;"\
+			 "fi; "\
+		 "else if test ${reboot_mode} = ffv_reboot; then "\
+			 "if test ${ffv_wake} = on; then "\
+				 "run ffv_freeze_action; "\
+			 "fi; "\
+		 "else if test ${reboot_mode} = fastboot; then "\
+			 "fastboot 1;"\
+		 "fi;fi;fi;fi;fi;fi;fi;"\
+		 "\0" \
+	 "reset_suspend="\
+		 "if test ${ffv_freeze} != on; then "\
+			 "if test ${suspend} = on || test ${suspend} = shutdown; then "\
+				 "setenv suspend off;"\
+				 "saveenv;"\
+			 "fi;"\
+		 "fi;"\
+		 "\0" \
+	 "storeboot="\
+		 "run storeboot_base;"\
+		 "\0"\
+	 "update="\
+		 "run update_base;"\
+		 "\0"\
+	 "enter_fastboot="\
+		 "fastboot 1;"\
+		 "\0"\
+	 "recovery_from_fat_dev="\
+		 "run recovery_from_fat_dev_base;"\
+		 "\0"\
+	 "recovery_from_udisk="\
+		 "run recovery_from_udisk_base;"\
+		 "\0"\
+	 "recovery_from_sdcard="\
+		 "run recovery_from_sdcard_base;"\
+		 "\0"\
+	 "recovery_from_flash="\
+		 "run recovery_from_flash_base;"\
+		 "\0"\
+	 "bcb_cmd="\
+		 "run bcb_cmd_base;"\
+		 "\0"\
+	 "check_display="\
+		 "setenv bootup_display on; "\
+		 "if test ${reboot_mode} = cold_boot; then "\
+			 "if test ${powermode} = standby; then "\
+				 "echo not init_display; "\
+				 "setenv bootup_display off; "\
+			 "else if test ${powermode} = last; then "\
+				 "echo suspend=${suspend}; "\
+				 "if test ${suspend} = on; then "\
+					 "echo not init_display; "\
+					 "setenv bootup_display off; "\
+				 "else if test ${suspend} = shutdown; then "\
+					 "echo not init_display; "\
+					 "setenv bootup_display off; "\
+				 "fi; fi; "\
+			 "fi; fi; "\
+		 "else if test ${reboot_mode} = ffv_reboot; then "\
+			 "if test ${ffv_wake} = on; then "\
+				 "echo ffv reboot no display; "\
+				 "setenv bootup_display off; "\
+			 "fi; "\
+		 "else if test ${reboot_mode} = quiescent; then "\
+			 "echo ffv reboot no display; "\
+			 "setenv bootup_display off; "\
+		 "else if test ${reboot_mode} = recovery_quiescent; then "\
+			 "echo ffv reboot no display; "\
+			 "setenv bootup_display off; "\
+		 "fi;fi;fi;fi; "\
+		 "\0"\
+	 "cmdline_keys="\
+		 "setenv usid mercury${cpu_id};"\
+		 "run cmdline_keys_base;"\
+		 "\0"\
+	 "upgrade_key="\
+		 "run upgrade_key_base;"\
+		 "echo usr key;"\
+		 "\0"\
 
 #define CONFIG_PREBOOT  \
 			"run upgrade_check;"\
@@ -382,6 +414,7 @@
 #define CONFIG_SINGLE_LOGO CONFIG_DUAL_LOGO
 
 #endif
+
 /* #define CONFIG_ENV_IS_NOWHERE  1 */
 #define CONFIG_ENV_SIZE   (64 * 1024)
 #define CONFIG_FIT 1
