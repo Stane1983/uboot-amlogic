@@ -1060,9 +1060,6 @@ int aml_board_late_init_tail(void *arg)
 #ifdef CONFIG_DEBUG_UART_BOARD_INIT
 void board_debug_uart_init(void)
 {
-#ifdef CONFIG_SAVE_UBOOT_LOG
-	blx_init_uboot_log();
-#endif
 }
 #endif
 

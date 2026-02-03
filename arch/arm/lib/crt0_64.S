@@ -109,7 +109,9 @@ ENTRY(_main)
 #if defined(CONFIG_DEBUG_UART) && CONFIG_IS_ENABLED(SERIAL)
 	bl	debug_uart_init
 #endif
-
+#if defined(CONFIG_SAVE_UBOOT_LOG)
+	bl blx_init_uboot_log
+#endif
 	mov	x0, #0
 	bl	board_init_f
 
