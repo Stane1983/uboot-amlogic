@@ -127,7 +127,7 @@
 		"setenv bootargs ${initargs} otg_device=${otg_device} "\
 		"logo=${display_layer},loaded,${fb_addr} display_bpp=${display_bpp} "\
 		"vout=${outputmode},${vout_init} page_trace=${page_trace} "\
-		"hdmitx=${cecconfig},${colorattribute} "\
+		"hdmitx=${colorattribute},scan_info:${scan_info} "\
 		"dolby_vision_on=${dolby_vision_on} "\
 		"hdr_policy=${hdr_policy} hdr_priority=${hdr_priority} "\
 		"dolby_status=${dolby_status} "\

@@ -284,6 +284,26 @@ enum TARGET_FRAME_RATE {
 	TFR_MAX,
 };
 
+/* From CTA-861-I Table 60 */
+enum video_capability {
+	CE_VIDEO_FORMAT_NOT_SUPPORT = 0x0,
+	CE_VIDEO_FORMAT_ALWAYS_OVERSCAN = 0x1,
+	CE_VIDEO_FORMAT_ALWAYS_UNDERSCANSCAN = 0x2,
+	CE_VIDEO_FORMAT_BOTH_OVER_UNDERSCAN = 0x3,
+	IT_VIDEO_FORMAT_NOT_SUPPORT = 0x0,
+	IT_VIDEO_FORMAT_ALWAYS_OVERSCAN = 0x4,
+	IT_VIDEO_FORMAT_ALWAYS_UNDERSCANSCAN = 0x8,
+	IT_VIDEO_FORMAT_BOTH_OVER_UNDERSCAN = 0xC,
+	PT_VIDEO_FORMAT_NO_DATA = 0x0,
+	PT_VIDEO_FORMAT_ALWAYS_OVERSCAN = 0x10,
+	PT_VIDEO_FORMAT_ALWAYS_UNDERSCANSCAN = 0x20,
+	PT_VIDEO_FORMAT_BOTH_OVER_UNDERSCAN = 0x30,
+	QS_NO_DATA = 0x0,
+	QS_SELECTABLE = 0x40,
+	QY_NO_DATA = 0x0,
+	QY_SELECTABLE = 0x80,
+};
+
 struct emp_packet_header {
 	u8 header; /* hb0, fixed value 0x7f */
 	u8 last:1; /* hb1 */
@@ -618,6 +638,14 @@ struct dv_vsif_para {
 #define CAP_BIT4_YCBCR_422_MASK    0x10    // Bit 4: YCbCr 4:2:2 format support flag
 #define CAP_LOWER_4BITS_DTD_MASK   0x0F    // Lower 4 bits (Bits 3~0): Native DTD count
 struct rx_cap {
+	/*
+	 * If the display does not provide a VCDB then the Source should assume that
+	 * CE Video Formats are overscanned by the display and that IT Video Format
+	 * behavior is indicated by CEA Extension byte 3 bit 7 (underscan).
+	 * If underscan=1 then the Source should assume that IT Video Formats are
+	 * underscanned and if underscan=0, that IT Video Formats are overscanned
+	 */
+	u8 underscan;
 	/*
 	 * Native video mode and capability indicator of HDMI receiver (parsed from EDID block)
 	 * Each bit of this variable has a specific definition as follows:

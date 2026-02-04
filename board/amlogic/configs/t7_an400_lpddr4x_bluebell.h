@@ -71,7 +71,7 @@
 		"setenv bootargs ${bootargs} powermode=${powermode} "\
 		"lcd0=${lcd0_attr} lcd_debug=${lcd_debug} "\
 		"eDPTX=${eDP_ctrl} "\
-		"outputmode=${outputmode} hdmitx=${cecconfig},${colorattribute};"\
+		"outputmode=${outputmode} hdmitx=${colorattribute},scan_info:${scan_info};"\
 		"\0"\
 	"init_display_hdmitx="\
 		"hdmitx hpd;hdmitx get_parse_edid;dovi process;"\
@@ -106,6 +106,7 @@
         "frac_rate_policy=1\0" \
         "hdr_policy=0\0" \
 	"config_csc_en=1\0" \
+	"scan_info=3\0"\
         "usb_burning=" CONFIG_USB_TOOL_ENTRY "\0" \
         "fdt_high=0x20000000\0"\
         "sdcburncfg=aml_sdc_burn.ini\0"\

@@ -72,7 +72,7 @@
 		"setenv bootargs ${bootargs} powermode=${powermode} "\
 		"lcd0=${lcd0_attr} lcd_debug=${lcd_debug} "\
 		"eDPTX=${eDP_ctrl} "\
-		"outputmode=${outputmode} hdmitx=${cecconfig},${colorattribute};"\
+		"outputmode=${outputmode} hdmitx=${colorattribute},scan_info:${scan_info};"\
 		"\0"\
 	"init_display="\
 		"hdmitx hpd;hdmitx get_parse_edid;dovi process;"\
@@ -96,7 +96,7 @@
 	"storeargs_display="\
 		"setenv bootargs ${bootargs} powermode=${powermode} "\
 		"lcd=${lcd0_attr} lcd_debug=${lcd_debug} "\
-		"outputmode=${outputmode} hdmitx=${cecconfig},${colorattribute} "\
+		"outputmode=${outputmode} hdmitx=${colorattribute},scan_info:${scan_info} "\
 		"vout2=${outputmode2},enable "\
 		"vout3=${outputmode3},enable " \
 		"lcd1=${lcd1_attr} lcd2=${lcd2_attr} "\
@@ -133,6 +133,7 @@
 		"fb_width=1280\0" \
 		"fb_height=800\0" \
 		"frac_rate_policy=1\0" \
+		"scan_info=3\0"\
 		"hdr_policy=0\0" \
 		"usb_burning=" CONFIG_USB_TOOL_ENTRY "\0" \
 		"fdt_high=0x20000000\0"\

@@ -110,6 +110,7 @@
         "dv_fw_dir_vendor=/vendor/firmware/dovi_fw.bin\0" \
         "dv_fw_dir=/oem/firmware/dovi_fw.bin\0" \
         "frac_rate_policy=1\0" \
+	"scan_info=3\0"\
         "hdr_policy=0\0" \
         "hdmi_read_edid=1\0" \
         "usb_burning=" CONFIG_USB_TOOL_ENTRY "\0" \
@@ -152,7 +153,7 @@
             "get_bootloaderversion;" \
             "setenv bootargs ${initargs} otg_device=${otg_device} "\
                 "logo=${display_layer},loaded,${fb_addr} vout=${outputmode},${vout_init} "\
-                "hdmitx=${cecconfig},${colorattribute} "\
+                "hdmitx=${colorattribute},scan_info:${scan_info} "\
                 "dolby_vision_on=${dolby_vision_on} " \
                 "hdr_policy=${hdr_policy} hdr_priority=${hdr_priority} "\
                 "frac_rate_policy=${frac_rate_policy} "\

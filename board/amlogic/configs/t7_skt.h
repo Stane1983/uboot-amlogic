@@ -89,6 +89,7 @@
         "fb_width=1920\0" \
         "fb_height=1080\0" \
         "frac_rate_policy=1\0" \
+	"scan_info=3\0"\
         "usb_burning=" CONFIG_USB_TOOL_ENTRY "\0" \
         "fdt_high=0x20000000\0"\
         "sdcburncfg=aml_sdc_burn.ini\0"\
@@ -136,7 +137,7 @@
                 "logo=${display_layer},loaded,${fb_addr} vout=${outputmode},enable "\
                 "lcd0=${lcd0_attr} lcd_debug=${lcd_debug} "\
                 "lcd1=${lcd2_attr} lcd2=${lcd2_attr} "\
-                "hdmitx=${cecconfig},${colorattribute} "\
+                "hdmitx=${colorattribute},scan_info:${scan_info} "\
                 "frac_rate_policy=${frac_rate_policy} "\
                 "osd_reverse=${osd_reverse} video_reverse=${video_reverse} irq_check_en=${Irq_check_en}  "\
                 "androidboot.selinux=${EnableSelinux} androidboot.firstboot=${firstboot} jtag=${jtag}; "\

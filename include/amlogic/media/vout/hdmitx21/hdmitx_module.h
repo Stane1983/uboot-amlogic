@@ -201,6 +201,8 @@ void hdmitx_dsc_cvtem_pkt_disable(void);
 enum hdmi_vic hdmitx21_get_prefer_vic(struct hdmitx_dev *hdev, enum hdmi_vic vic);
 
 enum hdmi_picture_aspect hdmitx_mode_get_vic_aspect_ratio(enum hdmi_vic vic);
+enum hdmi_scan_mode hdmitx_check_scan_info(struct rx_cap *prxcap,
+		enum hdmi_scan_mode val, enum hdmi_vic vic);
 
 #undef printk
 #define printk printf
