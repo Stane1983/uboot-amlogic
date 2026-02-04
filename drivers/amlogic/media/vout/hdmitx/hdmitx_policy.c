@@ -1474,8 +1474,8 @@ static bool is_support_4k60hdr(struct input_hdmi_data *hdmi_data,
 		resolutionList_length = ARRAY_SIZE(MODE_4K_LIST);
 	}
 
-	for (i = 0; i < colorList_length; i++) {
-		for (j = 0; j < resolutionList_length; j++) {
+	for (j = 0; j < resolutionList_length; j++) {
+		for (i = 0; i < colorList_length; i++) {
 			if (mode_support_check(resolution_list[j], HDR_4K_COLOR_ATTRIBUTE_LIST[i],
 				hdmi_data)) {
 				printf("%s mode:[%s], deep color:[%s]\n",
@@ -1517,8 +1517,8 @@ static bool is_support_non4k_hdr(struct input_hdmi_data *hdmi_data,
 		resolutionList_length = ARRAY_SIZE(MODE_NON4K_LIST);
 	}
 
-	for (i = 0; i < colorList_length; i++) {
-		for (j = 0; j < resolutionList_length; j++) {
+	for (j = 0; j < resolutionList_length; j++) {
+		for (i = 0; i < colorList_length; i++) {
 			if (mode_support_check(resolution_list[j],
 				HDR_NON4K_COLOR_ATTRIBUTE_LIST[i],
 				hdmi_data)) {
