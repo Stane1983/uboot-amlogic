@@ -893,4 +893,10 @@ config VERSION_VARIABLE
 	  Any change to this variable will be reverted at the
 	  next reset.
 
+config AMLOGIC_ENV_ENCRYPT
+	bool "encrypt env"
+	default n
+	help
+	  env encrypt/decrypt by smc function call
+
 endmenu

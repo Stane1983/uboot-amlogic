@@ -40,7 +40,9 @@
 #include <linux/stddef.h>
 #include <asm/byteorder.h>
 #include <asm/io.h>
-
+#ifdef CONFIG_AMLOGIC_ENV_ENCRYPT
+#include <amlogic/env_encrypt.h>
+#endif
 #ifdef CONFIG_ARMV8_MULTIENTRY
 #include <spinlock.h>
 spin_lock_t env_lock = {.lock = UNLOCK};
@@ -886,14 +888,18 @@ NXTARG:		;
 
 	envp = (env_t *)ptr;
 
-	if (chk)		/* export as checksum protected block */
+	if (chk) {		/* export as checksum protected block */
 		res = (char *)envp->data;
-	else			/* export as raw binary data */
+		len = hexport_r(&env_htab, '\0',
+			H_MATCH_KEY | H_MATCH_IDENT,
+			&res, sizeof(envp->data), argc, argv);
+	} else	{		/* export as raw binary data */
 		res = ptr;
-
-	len = hexport_r(&env_htab, '\0',
+		len = hexport_r(&env_htab, '\0',
 			H_MATCH_KEY | H_MATCH_IDENT,
 			&res, ENV_SIZE, argc, argv);
+	}
+
 	if (len < 0) {
 		pr_err("## Error: Cannot export environment: errno = %d\n",
 		       errno);
@@ -901,8 +907,14 @@ NXTARG:		;
 	}
 
 	if (chk) {
+	#ifdef CONFIG_AMLOGIC_ENV_ENCRYPT
+		envp->crc = crc32(0, envp->iv,
+			size ? size - offsetof(env_t, iv) : ENV_SIZE);
+	#else
 		envp->crc = crc32(0, envp->data,
-				size ? size - offsetof(env_t, data) : ENV_SIZE);
+			size ? size - offsetof(env_t, data) : ENV_SIZE);
+	#endif
+
 #ifdef CONFIG_ENV_ADDR_REDUND
 		envp->flags = ENV_REDUND_ACTIVE;
 #endif
@@ -1032,7 +1044,20 @@ static int do_env_import(struct cmd_tbl *cmdtp, int flag,
 	if (chk) {
 		uint32_t crc;
 		env_t *ep = (env_t *)ptr;
+	#ifdef CONFIG_AMLOGIC_ENV_ENCRYPT
+		if (size <= offsetof(env_t, iv)) {
+			printf("## Error: Invalid size 0x%zX\n", size);
+			return 1;
+		}
 
+		memcpy(&crc, &ep->crc, sizeof(crc));
+
+		if (crc32(0, ep->iv, size - offsetof(env_t, iv)) != crc) {
+			puts("## Error: bad CRC, import failed\n");
+			return 1;
+		}
+		size -= offsetof(env_t, data);
+	#else
 		if (size <= offsetof(env_t, data)) {
 			printf("## Error: Invalid size 0x%zX\n", size);
 			return 1;
@@ -1045,6 +1070,8 @@ static int do_env_import(struct cmd_tbl *cmdtp, int flag,
 			puts("## Error: bad CRC, import failed\n");
 			return 1;
 		}
+	#endif
+
 		ptr = (char *)ep->data;
 	}
 

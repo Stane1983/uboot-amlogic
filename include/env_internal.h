@@ -103,7 +103,17 @@ typedef struct environment_s {
 #ifdef CONFIG_SYS_REDUNDAND_ENVIRONMENT
 	unsigned char	flags;		/* active/obsolete flags ENVF_REDUND_ */
 #endif
+#ifdef CONFIG_AMLOGIC_ENV_ENCRYPT
+	struct {
+		unsigned char iv[12];
+		unsigned char data[ENV_SIZE - 36]; /* Environment data		*/
+		unsigned int text_crc;
+		unsigned char tag[16];
+		unsigned int magic;		/* magic to identify if it is encrypted */
+	};
+#else
 	unsigned char	data[ENV_SIZE]; /* Environment data		*/
+#endif
 } env_t;
 
 #ifdef ENV_IS_EMBEDDED

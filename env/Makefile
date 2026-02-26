@@ -7,6 +7,7 @@ obj-$(CONFIG_$(SPL_TPL_)ENV_SUPPORT) += common.o
 obj-$(CONFIG_$(SPL_TPL_)ENV_SUPPORT) += env.o
 obj-$(CONFIG_$(SPL_TPL_)ENV_SUPPORT) += attr.o
 obj-$(CONFIG_$(SPL_TPL_)ENV_SUPPORT) += flags.o
+obj-$(CONFIG_AMLOGIC_ENV_ENCRYPT) += aml_env_encrypt.o
 
 ifndef CONFIG_SPL_BUILD
 obj-y += callback.o

@@ -15,6 +15,9 @@
 #include <u-boot/crc.h>
 #include <asm/byteorder.h>
 #include <amlogic/store_wrapper.h>
+#ifdef CONFIG_AMLOGIC_ENV_ENCRYPT
+#include <amlogic/env_encrypt.h>
+#endif
 
 static const char*  const temp_for_compile[] = {"__test1","__test2","__test3",NULL};
 extern const char * const _env_args_reserve_[0] __attribute__((weak, alias("temp_for_compile")));
@@ -340,11 +343,25 @@ static int do_update_env_part(cmd_tbl_t *cmdtp, int flag, int argc, char * const
 		ep = (env_t *)env_part_buf;
 		pdata = ep->data;
 		memcpy(&crc, &ep->crc, sizeof(crc));
-		if (crc32(0, pdata, ENV_SIZE) != crc) {
+
+	#ifdef CONFIG_AMLOGIC_ENV_ENCRYPT
+		if (crc32(0, ep->iv, ENV_SIZE) != crc) {
+	#else
+		if (crc32(0, ep->data, ENV_SIZE) != crc) {
+	#endif
 			errorP("bad CRC in storage, so directly save all env to storage\n");
 			ret = env_save();
 			goto _update_env_part_err;
 		}
+	#ifdef CONFIG_AMLOGIC_ENV_ENCRYPT
+		/* Decrypt the env*/
+		ret = aml_env_aes_crypt(ep, 0);
+		if (ret) {
+			errorP("Failed to decrypt env, so directly save all env to storage\n");
+			ret = env_save();
+			goto _update_env_part_err;
+		}
+	#endif
 	}
 
 	//#3> parse storage env and check if need update, most cases true
@@ -360,15 +377,15 @@ static int do_update_env_part(cmd_tbl_t *cmdtp, int flag, int argc, char * const
 		const char *kvsep = "=";
 
 		//3.1>get the true end postion
-		for (env_end = (char *)pdata; env_end < (char *)pdata + ENV_SIZE;) {
+		for (env_end = (char *)pdata; env_end < (char *)pdata + sizeof(ep->data);) {
 			const char *p =
-				env_end + strnlen(env_end, (char *)pdata + ENV_SIZE - env_end);
+				env_end + strnlen(env_end, (char *)pdata + sizeof(ep->data) - env_end);
 
 			if (*p != '\0') {
 				errorP("env need end with 0 but %c\n", *p);
 				ret = CMD_RET_FAILURE; goto _update_env_part_err;
 			}
-			if (++p - (char *)pdata >= ENV_SIZE) {
+			if (++p - (char *)pdata >= sizeof(ep->data)) {
 				env_end = --p;
 				break;
 			}
@@ -583,11 +600,21 @@ static int do_update_env_part(cmd_tbl_t *cmdtp, int flag, int argc, char * const
 
 _update_env_save_:
 	ep = (env_t *)(env_part_buf + save_buf * CONFIG_ENV_SIZE);
-	pdata = ep->data;
+#ifdef CONFIG_AMLOGIC_ENV_ENCRYPT
+	/* Encrypt the env*/
+	ret = aml_env_aes_crypt(ep, 1);
+	if (ret) {
+		errorP("Fail to encrypt env\n");
+		ret = CMD_RET_FAILURE; goto _update_env_part_err;
+	}
+#endif
 	debugP("crc before update 0x%x\n", ep->crc);
-
 	//ep->crc = crc32(0, pdata, ENV_SIZE);//not work...
-	crc = crc32(0, pdata, ENV_SIZE);
+#ifdef CONFIG_AMLOGIC_ENV_ENCRYPT
+	crc = crc32(0, ep->iv, ENV_SIZE);
+#else
+	crc = crc32(0, ep->data, ENV_SIZE);
+#endif
 	memcpy(&ep->crc, &crc, sizeof(crc));
 	if (!silent)
 		MsgP("new env part crc 0x%x\n", ep->crc);
