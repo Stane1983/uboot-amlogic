@@ -9,6 +9,8 @@
 #include <config.h>
 #include <common.h>
 
+#define CONFIG_EFUSE_AUDIO_ID_CHECKNUM
+
 /* efuse HAL_API arg */
 struct efuse_hal_api_arg {
 	unsigned int cmd;		/* R/W */
@@ -41,6 +43,9 @@ ssize_t efuse_write(const char *buf, size_t count, loff_t *ppos);
 
 int32_t meson_trustzone_efuse(struct efuse_hal_api_arg *arg);
 int32_t meson_trustzone_efuse_get_max(struct efuse_hal_api_arg *arg);
-
+#ifdef CONFIG_EFUSE_AUDIO_ID_CHECKNUM
+int efuse_audio_id_get_checknum(void *out, int len);
+int meson_efuse_audio_id_get_checknum(void *out, int len);
+#endif
 #endif
 

@@ -493,3 +493,32 @@ U_BOOT_CMD(efuse_mrk_long,	2,	0,	do_efuse_mrk_long,
 	"eFUSE mrk long checknum", efuse_mrk_help_text
 );
 #endif /* CONFIG_EFUSE_MRK_GET_CHECKNUM */
+
+#ifdef CONFIG_EFUSE_AUDIO_ID_CHECKNUM
+int do_efuse_audio_id_check(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int rc, i;
+	char buff[512] = {0};
+
+	rc = efuse_audio_id_get_checknum(buff, sizeof(buff));
+	if (rc < 0) {
+		printf("get audio id checknum failed:%d\n", rc);
+		return rc;
+	}
+	for (i = 0; i < sizeof(buff); i++) {
+		printf("%02x", buff[i]);
+	}
+	printf("\n");
+
+	return rc;
+}
+
+static char efuse_audio_id_check_help_text[] =
+	"<efuse_audio_id_check>\n"
+	"  printf checksum for efuse audio id, which can help to check if audio id is burned correctly\n";
+
+U_BOOT_CMD(efuse_audio_id_check, 2, 0, do_efuse_audio_id_check,
+	"eFUSE audio id checknum", efuse_audio_id_check_help_text
+);
+#endif /* CONFIG_EFUSE_MRK_GET_CHECKNUM */
+

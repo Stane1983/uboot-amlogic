@@ -62,6 +62,26 @@ int32_t set_boot_params(const keymaster_boot_params *boot_params)
 }
 
 #ifdef CONFIG_EFUSE
+#ifdef CONFIG_EFUSE_AUDIO_ID_CHECKNUM
+int meson_efuse_audio_id_get_checknum(void *out, int len)
+{
+	int ret = -1;
+	struct arm_smccc_res res;
+
+	if (!sharemem_output_base)
+		sharemem_output_base =
+			get_sharemem_info(GET_SHARE_MEM_OUTPUT_BASE);
+
+	arm_smccc_smc(DOLBY_FW_AUDIO_ID_CHECK, sharemem_output_base, len, 0, 0, 0, 0, 0, &res);
+
+	ret = res.a0;
+	if (ret == 0)
+		memcpy((void *)out, (void *)sharemem_output_base, len);
+
+	return ret;
+}
+#endif
+
 int32_t meson_trustzone_efuse(struct efuse_hal_api_arg *arg)
 {
 	int ret;

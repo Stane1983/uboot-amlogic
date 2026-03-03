@@ -28,6 +28,7 @@ struct efuse_hal_api_arg {
 #define EFUSE_HAL_API_CHECKPATTERN_ITEM  6
 #define CONFIG_EFUSE_OBJ_API 1
 #define CONFIG_EFUSE_MRK_GET_CHECKNUM
+#define CONFIG_EFUSE_AUDIO_ID_CHECKNUM
 
 #define EFUSE_USER_MASK            (0x1 << 16)
 #define EFUSE_THERMAL_MASK         (0x1 << 17)
@@ -109,6 +110,10 @@ extern efuse_obj_field_t efuse_field;
 #ifdef CONFIG_EFUSE_MRK_GET_CHECKNUM
 uint32_t efuse_mrk_get_checknum(char *name, uint32_t longmrk, uint32_t *checksum);
 uint32_t meson_efuse_mrk_get_checknum(char *name, uint32_t longmrk, uint32_t *checksum);
+#endif
+#ifdef CONFIG_EFUSE_AUDIO_ID_CHECKNUM
+int efuse_audio_id_get_checknum(void *out, int len);
+int meson_efuse_audio_id_get_checknum(void *out, int len);
 #endif
 #endif
 
