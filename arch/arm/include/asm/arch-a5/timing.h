@@ -269,7 +269,7 @@ typedef struct board_clk_set {
 	unsigned short pxp;
 	unsigned char axi_clk_div;
 	unsigned char low_console_baud;
-	unsigned char szPad[1];
+	unsigned char split_boot;
 } __attribute__((packed)) board_clk_set_t;
 
 typedef struct pll_ctrl {

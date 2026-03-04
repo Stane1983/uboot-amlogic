@@ -667,6 +667,11 @@ __attribute__ ((section(".clk_param"))) = {
 	.pxp					= 0,
 #endif
 	.high_console_baud = CONFIG_HIGH_CONSOLE_BAUD,
+#ifdef CONFIG_SPLIT_BOOT
+	.split_boot = 1,
+#else
+	.split_boot = 0,
+#endif
 };
 
 
