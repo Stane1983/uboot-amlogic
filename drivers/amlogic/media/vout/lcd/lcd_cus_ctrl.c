@@ -760,12 +760,8 @@ static int lcd_cus_ctrl_attr_parse_ufr_ini(struct aml_lcd_drv_s *pdrv,
 	if (temp)
 		ptiming->v_period_max = temp;
 
-	temp = lcd_ini_get_val(inip, psec, "ufr_frame_rate_min", 0);
-	if (temp)
-		ptiming->frame_rate_min = temp;
-	temp = lcd_ini_get_val(inip, psec, "ufr_frame_rate_max", 0);
-	if (temp)
-		ptiming->frame_rate_max = temp;
+	ptiming->frame_rate_min = lcd_ini_get_val(inip, psec, "ufr_frame_rate_min", 0);
+	ptiming->frame_rate_max = lcd_ini_get_val(inip, psec, "ufr_frame_rate_max", 0);
 
 	temp = lcd_ini_get_val(inip, psec, "ufr_vpw", 0);
 	if (temp)
