@@ -302,6 +302,7 @@ static void getvar_is_logical(char *var_parameter, char *response)
 			(strcmp(var_parameter, "recovery") == 0) ||
 			(strcmp(var_parameter, "oem") == 0) ||
 			(strcmp(var_parameter, "vbmeta_system") == 0) ||
+			(strcmp(var_parameter, "vbmeta_vendor") == 0) ||
 			(strcmp(var_parameter, "freertos") == 0) ||
 			(strcmp(var_parameter, "init_boot") == 0) ||
 			(strcmp(var_parameter, "vendor_boot") == 0) ||
@@ -506,6 +507,7 @@ static void getvar_has_slot(char *part_name, char *response)
 			(strcmp(part_name, "bist") == 0) ||
 			(strcmp(part_name, "vbmeta") == 0) ||
 			(strcmp(part_name, "vbmeta_system") == 0) ||
+			(strcmp(part_name, "vbmeta_vendor") == 0) ||
 			(strcmp(part_name, "freertos") == 0) ||
 			(strcmp(part_name, "init_boot") == 0) ||
 			(strcmp(part_name, "odm_ext") == 0) || (strcmp(part_name, "oem") == 0)) {
@@ -580,6 +582,7 @@ static void getvar_partition_type(char *part_name, char *response)
 			(strcmp_l1(part_name, "dtbo") == 0) ||
 			(strcmp_l1(part_name, "vbmeta") == 0) ||
 			(strcmp_l1(part_name, "vbmeta_system") == 0) ||
+			(strcmp_l1(part_name, "vbmeta_vendor") == 0) ||
 			(strcmp_l1(part_name, "super") == 0) ||
 			(strcmp_l1(part_name, "car_param") == 0) ||
 			(strcmp_l1(part_name, "odm_ext") == 0) ||
