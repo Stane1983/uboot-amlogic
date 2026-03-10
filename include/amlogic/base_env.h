@@ -124,6 +124,7 @@
 			"run init_display;run storeargs; run update; fi;"\
 		"\0"\
 	"storeargs_base="\
+		"run init_bootreason_base;"\
 		"setenv bootargs ${initargs} otg_device=${otg_device} "\
 		"logo=${display_layer},loaded,${fb_addr} display_bpp=${display_bpp} "\
 		"vout=${outputmode},${vout_init} page_trace=${page_trace} "\
@@ -270,29 +271,37 @@
 		"else if imgread pic logo bootup $loadaddr; then "\
 			"bmp display $bootup_offset; fi; fi;" \
 		"\0"\
-	"init_display_base="\
+	"init_bootreason_base="\
 		"get_rebootmode;"\
 		"echo reboot_mode:::: ${reboot_mode};"\
-		"setenv bootargs ${bootargs} connector0_type=${connector0_type}; "\
 		"if test ${reboot_mode} = quiescent; then "\
-			"setenv reboot_mode_android ""quiescent"";"\
-			"setenv dolby_status 0;"\
-			"setenv dolby_vision_on 0;"\
+			"setenv reboot_mode_android quiescent;"\
 			"setenv initconfig androidboot.quiescent=1 "\
 			"androidboot.bootreason=${reboot_mode};"\
+		"else if test ${reboot_mode} = recovery_quiescent; then "\
+			"setenv reboot_mode_android quiescent;"\
+			"setenv initconfig androidboot.quiescent=1 "\
+			"androidboot.bootreason=recovery,quiescent;"\
+		"else "\
+			"setenv reboot_mode_android normal;"\
+			"setenv initconfig "\
+			"androidboot.bootreason=${reboot_mode};"\
+		"fi;fi;"\
+		"\0"\
+	"init_display_base="\
+		"setenv bootargs ${bootargs} connector0_type=${connector0_type}; "\
+		"if test ${reboot_mode} = quiescent; then "\
+			"setenv dolby_status 0;"\
+			"setenv dolby_vision_on 0;"\
 			"osd open;osd clear;bmp scale;"\
 			"setenv vout_init enable;"\
 		"else if test ${reboot_mode} = recovery_quiescent; then "\
-			"setenv reboot_mode_android ""quiescent"";"\
 			"setenv dolby_status 0;"\
 			"setenv dolby_vision_on 0;"\
-			"setenv initconfig androidboot.quiescent=1 "\
-			"androidboot.bootreason=recovery,quiescent;"\
 			"osd open;osd clear;bmp scale;"\
 			"setenv vout_init enable;"\
 		"else "\
 			"setenv reboot_mode_android ""normal"";"\
-			"setenv initconfig androidboot.bootreason=${reboot_mode};"\
 			"hdmitx hpd;hdmitx get_parse_edid;"\
 			"dovi process;watermark_init;osd open;osd clear;run load_bmp_logo;"\
 			"bmp scale;vout output ${outputmode};dovi set;dovi pkg;vpp hdrpkt;"\
