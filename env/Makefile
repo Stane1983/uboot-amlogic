@@ -4,6 +4,7 @@
 # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
 
 obj-y += common.o env.o
+obj-$(CONFIG_AMLOGIC_ENV_ENCRYPT) += aml_env_encrypt.o
 
 ifndef CONFIG_SPL_BUILD
 obj-y += attr.o

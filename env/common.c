@@ -14,6 +14,9 @@
 #include <search.h>
 #include <errno.h>
 #include <malloc.h>
+#ifdef CONFIG_AMLOGIC_ENV_ENCRYPT
+#include <amlogic/env_encrypt.h>
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -107,6 +110,9 @@ int set_default_vars(int nvars, char * const vars[], int flags)
 int env_import(const char *buf, int check)
 {
 	int flags = 0;
+#ifdef CONFIG_AMLOGIC_ENV_ENCRYPT
+	int ret;
+#endif
 
 	env_t *ep = (env_t *)buf;
 
@@ -114,8 +120,11 @@ int env_import(const char *buf, int check)
 		uint32_t crc;
 
 		memcpy(&crc, &ep->crc, sizeof(crc));
-
+	#ifdef CONFIG_AMLOGIC_ENV_ENCRYPT
+		if (crc32(0, ep->iv, ENV_SIZE) != crc) {
+	#else
 		if (crc32(0, ep->data, ENV_SIZE) != crc) {
+	#endif
 			set_default_env("bad CRC", 0);
 			return -EIO;
 		}
@@ -127,11 +136,35 @@ int env_import(const char *buf, int check)
 	flags = H_NOCLEAR;
 #endif
 
+#ifdef CONFIG_AMLOGIC_ENV_ENCRYPT
+	/* Decrypt the env*/
+	ret = aml_env_aes_crypt(ep, 0);
+	if (ret) {
+		pr_err("Failed to decrypt env!\n");
+		set_default_env("!import failed", 0);
+		return ret;
+	}
+
+	if (env_needsave) {	/* convert from unencryted to encrypted */
+		if (himport_r(&env_htab, (char *)ep->iv, ENV_SIZE, '\0', flags, 0,
+			      0, NULL)) {
+			gd->flags |= GD_FLG_ENV_READY;
+			return 0;
+		}
+	} else {
+		if (himport_r(&env_htab, (char *)ep->data, sizeof(ep->data), '\0', flags, 0,
+			      0, NULL)) {
+			gd->flags |= GD_FLG_ENV_READY;
+			return 0;
+		}
+	}
+#else
 	if (himport_r(&env_htab, (char *)ep->data, ENV_SIZE, '\0', flags, 0,
 			0, NULL)) {
 		gd->flags |= GD_FLG_ENV_READY;
 		return 0;
 	}
+#endif
 
 	pr_err("Cannot import environment: errno = %d\n", errno);
 
@@ -170,10 +203,17 @@ int env_import_redund(const char *buf1, int buf1_read_fail,
 		return env_import((char *)tmp_env2, 1);
 	}
 
+#ifdef CONFIG_AMLOGIC_ENV_ENCRYPT
+	crc1_ok = crc32(0, tmp_env1->iv, ENV_SIZE) ==
+			tmp_env1->crc;
+	crc2_ok = crc32(0, tmp_env2->iv, ENV_SIZE) ==
+			tmp_env2->crc;
+#else
 	crc1_ok = crc32(0, tmp_env1->data, ENV_SIZE) ==
 			tmp_env1->crc;
 	crc2_ok = crc32(0, tmp_env2->data, ENV_SIZE) ==
 			tmp_env2->crc;
+#endif
 
 	if (!crc1_ok && !crc2_ok) {
 		set_default_env("bad CRC", 0);
@@ -211,15 +251,31 @@ int env_export(env_t *env_out)
 {
 	char *res;
 	ssize_t	len;
+#ifdef CONFIG_AMLOGIC_ENV_ENCRYPT
+	int ret;
+#endif
 
 	res = (char *)env_out->data;
+#ifdef CONFIG_AMLOGIC_ENV_ENCRYPT
+	len = hexport_r(&env_htab, '\0', 0, &res, sizeof(env_out->data), 0, NULL);
+#else
 	len = hexport_r(&env_htab, '\0', 0, &res, ENV_SIZE, 0, NULL);
+#endif
 	if (len < 0) {
 		pr_err("Cannot export environment: errno = %d\n", errno);
 		return 1;
 	}
 
+#ifdef CONFIG_AMLOGIC_ENV_ENCRYPT
+	/* Encrypt the env*/
+	ret = aml_env_aes_crypt(env_out, 1);
+	if (ret) {
+		return ret;
+	}
+	env_out->crc = crc32(0, env_out->iv, ENV_SIZE);
+#else
 	env_out->crc = crc32(0, env_out->data, ENV_SIZE);
+#endif
 
 #ifdef CONFIG_SYS_REDUNDAND_ENVIRONMENT
 	env_out->flags = ++env_flags; /* increase the serial */

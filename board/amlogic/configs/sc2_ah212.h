@@ -200,6 +200,8 @@
 #endif
 /* #define CONFIG_ENV_IS_NOWHERE  1 */
 #define CONFIG_ENV_SIZE   (64*1024)
+/* open it by project */
+//#define CONFIG_AMLOGIC_ENV_ENCRYPT	1
 #define CONFIG_FIT 1
 #define CONFIG_OF_LIBFDT 1
 #define CONFIG_ANDROID_BOOT_IMAGE 1

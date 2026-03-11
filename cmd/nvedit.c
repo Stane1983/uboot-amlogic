@@ -36,6 +36,9 @@
 #include <linux/stddef.h>
 #include <asm/byteorder.h>
 #include <asm/io.h>
+#ifdef CONFIG_AMLOGIC_ENV_ENCRYPT
+#include <amlogic/env_encrypt.h>
+#endif
 
 #ifdef CONFIG_ARMV8_MULTIENTRY
 #include <spinlock.h>
@@ -1028,7 +1031,7 @@ NXTARG:		;
 
 	len = hexport_r(&env_htab, '\0',
 			H_MATCH_KEY | H_MATCH_IDENT,
-			&res, ENV_SIZE, argc, argv);
+			&res, sizeof(envp->data), argc, argv);
 	if (len < 0) {
 		pr_err("## Error: Cannot export environment: errno = %d\n",
 		       errno);
@@ -1036,8 +1039,13 @@ NXTARG:		;
 	}
 
 	if (chk) {
+	#ifdef CONFIG_AMLOGIC_ENV_ENCRYPT
+		envp->crc = crc32(0, envp->iv,
+				size ? size - offsetof(env_t, iv) : ENV_SIZE);
+	#else
 		envp->crc = crc32(0, envp->data,
 				size ? size - offsetof(env_t, data) : ENV_SIZE);
+	#endif
 #ifdef CONFIG_ENV_ADDR_REDUND
 		envp->flags = ACTIVE_FLAG;
 #endif
@@ -1168,6 +1176,15 @@ static int do_env_import(cmd_tbl_t *cmdtp, int flag,
 		uint32_t crc;
 		env_t *ep = (env_t *)ptr;
 
+	#ifdef CONFIG_AMLOGIC_ENV_ENCRYPT
+		memcpy(&crc, &ep->crc, sizeof(crc));
+
+		if (crc32(0, ep->iv, size - offsetof(env_t, iv)) != crc) {
+			puts("## Error: bad CRC, import failed\n");
+			return 1;
+		}
+		size -= offsetof(env_t, data);
+	#else
 		size -= offsetof(env_t, data);
 		memcpy(&crc, &ep->crc, sizeof(crc));
 
@@ -1175,6 +1192,7 @@ static int do_env_import(cmd_tbl_t *cmdtp, int flag,
 			puts("## Error: bad CRC, import failed\n");
 			return 1;
 		}
+	#endif
 		ptr = (char *)ep->data;
 	}
 

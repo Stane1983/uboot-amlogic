@@ -633,4 +633,10 @@ config TPL_ENV_IS_IN_FLASH
 
 endif
 
+config AMLOGIC_ENV_ENCRYPT
+	bool "encrypt env"
+	default n
+	help
+	  env encrypt/decrypt by smc function call
+
 endmenu

@@ -53,6 +53,9 @@
 #ifdef CONFIG_ARMV8_MULTIENTRY
 #include <asm/arch-meson/smp.h>
 #endif
+#ifdef CONFIG_AMLOGIC_ENV_ENCRYPT
+#include <amlogic/env_encrypt.h>
+#endif
 #include <amlogic/aml_profile.h>
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -505,6 +508,9 @@ static int initr_env(void)
 			printf("enable time profile print\n");
 		}
 	}
+#endif
+#ifdef CONFIG_AMLOGIC_ENV_ENCRYPT
+	check_envsave();
 #endif
 	PUSH_TIME_TE(__func__, BL33_ENV_e);
 
