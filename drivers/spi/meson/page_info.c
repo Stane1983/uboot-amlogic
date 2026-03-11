@@ -179,6 +179,7 @@ int page_info_version_init(unsigned char boot_layout)
 		page_info->version = PAGE_INFO_V2;
 		break;
 	case MESON_CPU_MAJOR_ID_A1:
+	case MESON_CPU_MAJOR_ID_A5:
 	case MESON_CPU_MAJOR_ID_C1:
 	case MESON_CPU_MAJOR_ID_C2:
 	case MESON_CPU_MAJOR_ID_S4:

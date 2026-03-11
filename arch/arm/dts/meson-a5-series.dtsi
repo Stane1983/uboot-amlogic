@@ -307,8 +307,8 @@
 			compatible = "amlogic,spifc";
 			status = "disabled";
 			reg = <0x0 0xfe056000 0x0 0x80>;
-			/* clocks = <&clkc CLKID_CLK81>; */
-			/* clock-names = "core"; */
+			clocks = <&clkc CLKID_SYS_CLK>;
+			clock-names = "core";
 			pinctrl-names = "default";
 			pinctrl-0 = <&spifc_pins>;
 			#address-cells = <1>;
