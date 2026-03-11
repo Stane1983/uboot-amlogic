@@ -1246,25 +1246,11 @@ static void get_highest_hdmimode(struct input_hdmi_data *hdmi_data, char *mode)
 	printf("set HDMI to highest edid mode: %s\n", mode);
 }
 
-/* check if the edid support current hdmi mode */
-static void filter_hdmimode(struct input_hdmi_data *hdmi_data, char *mode)
-{
-	if (!hdmi_data || !mode)
-		return;
-
-	if (hdmi_sink_disp_mode_sup(hdmi_data, hdmi_data->ubootenv_hdmimode)) {
-		strcpy(mode, hdmi_data->ubootenv_hdmimode);
-	} else {
-		/* old mode is not support in this TV,
-		 * so switch to best mode.
-		 */
-		get_highest_hdmimode(hdmi_data, mode);
-	}
-}
-
 static void get_hdmi_outputmode(struct input_hdmi_data *hdmi_data, char *mode)
 {
 	struct hdmitx_dev *hdev = NULL;
+	bool preferred_frac = false;
+	bool need_frac_check = true;
 
 	if (!hdmi_data || !mode)
 		return;
@@ -1272,20 +1258,34 @@ static void get_hdmi_outputmode(struct input_hdmi_data *hdmi_data, char *mode)
 	hdev = container_of(hdmi_data->prxcap,
 			struct hdmitx_dev, RXCap);
 
-    /* Fall back to 480p if EDID can't be parsed */
-    /* actually won't go into this edid parsing decision
-     * as it will be decided outside
-     */
+	preferred_frac = hdmi_data->is_preferred_frac_mode;
+	/*
+	 * Fall back to 480p if EDID can't be parsed
+	 * actually won't go into this edid parsing decision
+	 * as it will be decided outside
+	 */
 	if (!edid_parsing_ok(hdev)) {
 		strcpy(mode, DEFAULT_HDMI_MODE);
 		printf("EDID parsing error detected\n");
 		return;
 	}
 
-	if (is_best_outputmode())
+	if (is_best_outputmode()) {
 		get_highest_hdmimode(hdmi_data, mode);
-	else
-		filter_hdmimode(hdmi_data, mode);
+		/* check if the edid support current hdmi mode */
+	} else if (hdmi_sink_disp_mode_sup(hdmi_data, hdmi_data->ubootenv_hdmimode)) {
+		strcpy(mode, hdmi_data->ubootenv_hdmimode);
+		need_frac_check = false;
+	} else {
+		/* old mode is not support in this TV, so switch to best mode */
+		get_highest_hdmimode(hdmi_data, mode);
+	}
+
+	if (need_frac_check) {
+		const char *mode_result =
+				find_frac_preferred_mode(preferred_frac, mode);
+		strcpy(mode, mode_result);
+	}
 }
 
 static bool is_support_420_mode(const char *mode)
