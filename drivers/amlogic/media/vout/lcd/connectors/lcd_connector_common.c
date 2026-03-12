@@ -100,7 +100,7 @@ void lcd_connector_driver_init(struct aml_lcd_drv_s *pdrv)
 #ifdef CONFIG_AML_LCD_TCON
 	case LCD_MLVDS:
 		lcd_tcon_top_init(pdrv);
-		lcd_mlvds_pinmux_set(pdrv, 1);
+		lcd_pinmux_set(pdrv, 1);
 		lcd_mlvds_dphy_set(pdrv, 0);
 		lcd_phy_set(pdrv, LCD_PHY_PWR_UP);
 		lcd_mlvds_dphy_set(pdrv, 1);
@@ -109,7 +109,7 @@ void lcd_connector_driver_init(struct aml_lcd_drv_s *pdrv)
 		break;
 	case LCD_P2P:
 		lcd_tcon_top_init(pdrv);
-		lcd_p2p_pinmux_set(pdrv, 1);
+		lcd_pinmux_set(pdrv, 1);
 		lcd_p2p_dphy_set(pdrv, 0);
 		lcd_phy_set(pdrv, LCD_PHY_PWR_UP);
 		lcd_p2p_dphy_set(pdrv, 1);
@@ -168,7 +168,7 @@ void lcd_connector_driver_disable(struct aml_lcd_drv_s *pdrv)
 		lcd_phy_set(pdrv, LCD_PHY_OFF);
 		lcd_vbyone_dphy_set(pdrv, 0);
 		lcd_phy_set(pdrv, LCD_PHY_PWR_DOWN);
-		lcd_vbyone_pinmux_set(pdrv, 0);
+		lcd_pinmux_set(pdrv, 0);
 		lcd_vbyone_disable(pdrv);
 		break;
 #endif
@@ -185,14 +185,14 @@ void lcd_connector_driver_disable(struct aml_lcd_drv_s *pdrv)
 		lcd_phy_set(pdrv, LCD_PHY_OFF);
 		lcd_mlvds_dphy_set(pdrv, 0);
 		lcd_phy_set(pdrv, LCD_PHY_PWR_DOWN);
-		lcd_mlvds_pinmux_set(pdrv, 0);
+		lcd_pinmux_set(pdrv, 0);
 		break;
 	case LCD_P2P:
 		lcd_tcon_disable(pdrv);
 		lcd_phy_set(pdrv, LCD_PHY_OFF);
 		lcd_p2p_dphy_set(pdrv, 0);
 		lcd_phy_set(pdrv, LCD_PHY_PWR_DOWN);
-		lcd_p2p_pinmux_set(pdrv, 0);
+		lcd_pinmux_set(pdrv, 0);
 		break;
 #endif
 	default:
