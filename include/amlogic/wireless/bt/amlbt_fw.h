@@ -71,6 +71,8 @@
 #define W2L_U_ICCM_BASE 384
 #define W2L_U_ICCM_SIZE   0x38000
 
+#define HCI_VSC_WAKE_WRITE_DATA     0xFC22
+
 void amlbt_start(void);
 int amlbt_should_start(void);
 
