@@ -1198,20 +1198,3 @@ source "board/amlogic/s6_bl215/Kconfig"
 source "board/amlogic/s6_bq220/Kconfig"
 
 source "board/amlogic/s6_bq230/Kconfig"
-
-source "board/amlogic/t6w_skt/Kconfig"
-
-source "board/amlogic/t6w_bs301/Kconfig"
-
-source "board/amlogic/t6w_bs309/Kconfig"
-
-source "board/amlogic/t6w_bs311/Kconfig"
-
-source "board/amlogic/t6w_bs319/Kconfig"
-
-source "board/amlogic/t6x_skt/Kconfig"
-
-source "board/amlogic/t6x_bu301/Kconfig"
-
-source "board/amlogic/t6x_bu309/Kconfig"
-
