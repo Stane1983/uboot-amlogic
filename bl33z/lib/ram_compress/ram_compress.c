@@ -599,7 +599,10 @@ static void fix_up_ddr_size(struct ram_compress_full *rcf,
 		rcf->full_memsize   = size;
 		rcf->sections[0].phy_addr = (void *)CONFIG_128MB_COMPRESS_ADDR;
 		rcf->sections[0].section_size = size - CONFIG_128MB_COMPRESS_ADDR;
+		rcf->sections[3].phy_addr = (void *)0x2000000;
 		rcf->sections[3].section_size = 0x200000;
+		rcf->sections[2].section_size = (unsigned long)rcf->sections[3].phy_addr -
+						(unsigned long)rcf->sections[2].phy_addr;
 		rcf->sections[4].phy_addr = (void *)((unsigned long)rcf->sections[3].phy_addr + 0x200000);
 		rcf->sections[4].section_size = CONFIG_128MB_COMPRESS_ADDR - (unsigned long)rcf->sections[4].phy_addr;
 		rcf->sections[5].section_size = 0;
@@ -679,6 +682,7 @@ static int fix_up_bl32_size(struct ram_compress_full *rcf)
 	unsigned int bl31_rsvmem_start = 0;
 	unsigned int bl32_rsvmem_start = 0;
 
+	serial_puts("fix up bl31/bl32 size by read REG_RSVMEM_SIZE.");
 	data = readl(REG_MDUMP_RSVMEM_SIZE);
 	/* workaround for bl3x size */
 	if ((data >> 16) & 0xff) {
@@ -729,16 +733,15 @@ static int fix_up_bl32_size(struct ram_compress_full *rcf)
 
 	if (debug_enable) {
 		serial_puts("Fix up sections[3].phy_addr:0x");
-		serial_put_hex(bl31_rsvmem_start, 32);
-		serial_puts(", sections[4].phy_addr:0x:");
-		serial_put_hex(bl32_rsvmem_start + bl32_rsvmem_size + 0x100000, 32);
-		serial_puts(", sections[4].section_size:0x:");
-		serial_put_hex((unsigned int)rcf->sections[4].section_size, 32);
-		serial_puts("\n");
+		serial_put_hex((unsigned long)(rcf->sections[3].phy_addr), 32);
+		serial_puts(", size:0x:");
+		serial_put_hex(rcf->sections[3].section_size, 32);
+		serial_puts("; sections[4].phy_addr:0x:");
+		serial_put_hex((unsigned long)rcf->sections[4].phy_addr, 32);
+		serial_puts(", size:0x:");
+		serial_put_hex(rcf->sections[4].section_size, 32);
+		serial_puts(".\n");
 	}
-#else
-	serial_puts("REG_RSVMEM_SIZE is not defined. skip.\n");
-#endif
 	return 0;
 }
 
