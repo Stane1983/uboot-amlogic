@@ -14,6 +14,7 @@
 #include <amlogic/storage.h>
 #include <stdlib.h>
 #include <amlogic/store_wrapper.h>
+#include <libavb.h>
 
 #ifdef CONFIG_BOOTLOADER_CONTROL_BLOCK
 
@@ -165,6 +166,11 @@ int show_errcode(const char *err_str)
 	int offset_n = 0;
 	static int show_init;
 	char buf[128] = {0};
+	bool unlocked;
+
+	unlocked = is_device_unlocked();
+	if (unlocked)
+		return 0;
 
 	if (show_init == 1)
 		return 0;
