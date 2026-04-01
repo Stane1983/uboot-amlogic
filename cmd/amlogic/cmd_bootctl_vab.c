@@ -45,6 +45,8 @@ extern efuse_obj_field_t efuse_field;
 #define GPT_OFFSET              0x3DFE00
 #define DTS_GPT_OFFSET          0x3E0000
 
+#define BOOTLOADER_CHECK_SIZE  2048
+
 #ifdef CONFIG_BOOTLOADER_CONTROL_BLOCK
 
 // Spaces used by misc partition are as below:
@@ -672,6 +674,17 @@ static int is_BootSame(int srcindex, int dstindex)
 
 	buffer_dest = buffer_src;
 	memset(buffer_dest, 0, capacity_boot);
+
+	for (i = 0; i < BOOTLOADER_CHECK_SIZE; i++) {
+		if (buffer_src[i] != 0x00)
+			break;
+	}
+
+	if (i == BOOTLOADER_CHECK_SIZE) {
+		printf("%s header 2048 is all zero, skip\n", back_partname);
+		goto exit;
+	}
+
 	iRet = store_boot_read("bootloader", dstindex, 0, buffer_dest);
 	if (iRet) {
 		printf("Fail read bootloader %d\n", dstindex);
@@ -1077,6 +1090,13 @@ static int do_CheckUbootState
 	} else if (strcmp(argv[1], "0") == 0) {
 		check_bootloader(0);
 	} else if (strcmp(argv[1], "boot1") == 0) {
+		char *bootloaderindex = NULL;
+
+		bootloaderindex = env_get("forUpgrade_bootloaderIndex");
+		/*if boot from boot1, means boot0 is bab, don't need to check uboot state*/
+		if (bootloaderindex && (strcmp(bootloaderindex, "2") == 0))
+			return 0;
+
 		active_slot = get_active_slot(info);
 		if (active_slot == 1)
 			backup_slot = 0;
