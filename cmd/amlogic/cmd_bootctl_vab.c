@@ -510,13 +510,14 @@ static int check_bootloader(int slot)
 	int iRet = 0;
 	int ret = 0;
 	unsigned char *buffer_src = NULL;
-	unsigned char *buffer_dest = NULL;
 	int capacity_boot = 0;
 	char back_partname[32] = {0};
 	struct blk_desc *dev_desc;
 	gpt_header *gpt_h1;
 	gpt_header *gpt_h2;
-	int i = 0;
+	const int SHA1SUMLEN = 20;
+	u8 gensum0[SHA1SUMLEN * 2];
+	u8 *gensum1 = gensum0 + SHA1SUMLEN;
 
 #ifdef CONFIG_MMC_MESON_GX
 	struct mmc *mmc = NULL;
@@ -549,20 +550,19 @@ static int check_bootloader(int slot)
 		printf("Fail read boot1\n");
 		goto exit;
 	}
-	buffer_dest = buffer_src;
-	memset(buffer_dest, 0, capacity_boot);
+	sha1_csum(buffer_src + 512, capacity_boot - 512, gensum0);
+
+	memset(buffer_src, 0, capacity_boot);
 
 	iRet = store_logic_read(back_partname, 0,
-		BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET, buffer_dest);
+		BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET, buffer_src);
 	if (iRet) {
 		printf("Fail read %s\n", back_partname);
 		goto exit;
 	}
+	sha1_csum(buffer_src + 512, capacity_boot - 512, gensum1);
 
-	for (i = 512; i < capacity_boot; i++) {
-		if (buffer_dest[i] != buffer_src[i])
-			ret = 1;
-	}
+	ret = memcmp(gensum0, gensum1, SHA1SUMLEN);
 
 	printf("boot1 & %s %s same\n", back_partname, ret ? "NOT" : "DO");
 
@@ -571,11 +571,11 @@ static int check_bootloader(int slot)
 	if (dev_desc && dev_desc->type != DEV_TYPE_UNKNOWN) {
 		printf("valid mmc device, check gpt\n");
 
-		gpt_h1 = (void *)buffer_dest + GPT_OFFSET +
+		gpt_h1 = (void *)buffer_src + GPT_OFFSET +
 			(GPT_PRIMARY_PARTITION_TABLE_LBA *
 			dev_desc->blksz);
 
-		gpt_h2 = (void *)buffer_dest + DTS_GPT_OFFSET +
+		gpt_h2 = (void *)buffer_src + DTS_GPT_OFFSET +
 			(GPT_PRIMARY_PARTITION_TABLE_LBA *
 			dev_desc->blksz);
 
@@ -594,17 +594,18 @@ static int check_bootloader(int slot)
 #else
 			run_command("defenv_reserve;setenv dts_to_gpt 0;saveenv;", 0);
 #endif
-			if (ret) {
-				printf("boot1 doesn't = %s, rewrite it\n", back_partname);
-				iRet = store_boot_write("bootloader", 2,
-					BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET, buffer_dest);
-				if (iRet) {
-					printf("Failed to write bootloader\n");
-					goto exit;
-				} else {
-					printf("write %s to boot1 ok\n", back_partname);
-					ret = 0;
-				}
+		}
+
+		if (ret) {
+			printf("boot1 doesn't = %s, rewrite it\n", back_partname);
+			iRet = store_boot_write("bootloader", 2,
+				BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET, buffer_src);
+			if (iRet) {
+				printf("Failed to write bootloader\n");
+				goto exit;
+			} else {
+				printf("write %s to boot1 ok\n", back_partname);
+				ret = 0;
 			}
 		}
 	}
