@@ -46,6 +46,9 @@ extern const int avb2_kpub_default_len;
 extern const char avb2_kpub_production[];
 extern const int avb2_kpub_production_len;
 
+extern const char amlogic_avb_pub_key[];
+extern const int amlogic_avb_pub_key_len;
+
 #ifndef CONFIG_AVB2_KPUB_FROM_FIP
 #define CONFIG_AVB2_KPUB_FROM_FIP (0)
 #endif
@@ -578,13 +581,24 @@ static AvbIOResult validate_vbmeta_public_key(AvbOps *ops, const uint8_t *public
 			 * it will boot images signed with both the built-in key
 			 * as well as the custom key
 			 */
-			printf("AVB2 verify with default kpub:%d, vbmeta kpub:%ld\n",
-					avb2_kpub_default_len, public_key_length);
-			if (avb2_kpub_default_len == public_key_length &&
+			printf("AVB2 verify with amlogic kpub:%d, vbmeta kpub:%ld\n",
+					amlogic_avb_pub_key_len, public_key_length);
+			if (amlogic_avb_pub_key_len == public_key_length &&
 					!avb_safe_memcmp(public_key_data,
-						avb2_kpub_default, public_key_length)) {
+						amlogic_avb_pub_key, public_key_length)) {
 				*out_is_trusted = true;
 				ret = AVB_IO_RESULT_OK;
+			}
+
+			if (ret != AVB_IO_RESULT_OK) {
+				printf("AVB2 re-verify with test kpub:%d, vbmeta kpub:%ld\n",
+					avb2_kpub_default_len, public_key_length);
+				if (avb2_kpub_default_len == public_key_length &&
+						!avb_safe_memcmp(public_key_data,
+						avb2_kpub_default, public_key_length)) {
+					*out_is_trusted = true;
+					ret = AVB_IO_RESULT_OK;
+				}
 			}
 		}
 	} else {

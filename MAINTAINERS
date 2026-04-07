@@ -1613,3 +1613,8 @@ UDISK_BURN:
 M:	Xindong Xu <xindong.xu@amlogic.com>
 S:	Maintained
 F:	cmd/amlogic/cmd_udisk_burn.c
+
+AVB:
+M:	Xindong Xu <xindong.xu@amlogic.com>
+S:	Maintained
+F:	lib/libavb/amlogic_avbkey.c
