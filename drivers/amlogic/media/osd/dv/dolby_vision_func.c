@@ -17,6 +17,8 @@
 
 #include <amlogic/media/dv/dolby_vision_func.h>
 
+#include <linux/sizes.h>
+
 #define DV_FIRMWARE_ADDR 0x30000000
 #define DV_FW_ADDR 0xa00000
 #define DV_FW_MAX_SIZE 0x80000 /*500k*/
@@ -284,6 +286,8 @@ int load_dv_fw(char *fw_dir, void *cp_info)
 	int rd_cnt = 0, tmp_size = 0;
 	char *fw_addr = NULL;
 	unsigned char *tmp_buf = NULL;
+	uint64_t exec_size = 0;
+	uint64_t addr_align = addr;
 
 	printf("%s: load %s\n", __func__, fw_dir);
 
@@ -327,6 +331,16 @@ int load_dv_fw(char *fw_dir, void *cp_info)
 		p[0] = (char*)(cp_info);
 
 		printf("dv fw addr %p, cp_info %p\n", (void *)addr, cp_info);
+
+		exec_size = ALIGN(DV_FW_MAX_SIZE, SZ_2M);
+		if (addr &  ~SZ_2M) {
+			addr_align = (ALIGN(addr, SZ_2M) - SZ_2M);
+			exec_size += SZ_2M;
+		}
+
+		extern void mmu_set_efi_attr(uint64_t addr, uint64_t size);
+		mmu_set_efi_attr((uint64_t)addr_align, exec_size);
+
 		do_go_exec_dv((void*)addr, 1, (char *const)p);
 		free(tmp_buf);
 		return 0;
