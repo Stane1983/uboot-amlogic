@@ -479,6 +479,21 @@ int mmu_map_update(void)
 }
 #endif
 
+void mmu_set_efi_attr(uint64_t addr, uint64_t size)
+{
+	struct mm_region efi_mem_map = {
+		.virt = addr,
+		.phys = addr,
+		.size = size,
+		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
+			PTE_BLOCK_INNER_SHARE
+	};
+
+	dcache_disable();
+	add_map(&efi_mem_map);
+	dcache_enable();
+}
+
 /* Returns the estimated required size of all page tables */
 __weak u64 get_page_table_size(void)
 {
