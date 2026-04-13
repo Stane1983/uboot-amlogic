@@ -46,19 +46,6 @@ static int do_lcd_disable(cmd_tbl_t *cmdtp, int flag, int argc, char * const arg
 	return 0;
 }
 
-static int do_lcd_power(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
-{
-	unsigned int val = 0;
-
-	if (argc == 1)
-		return -1;
-	val = (unsigned int)simple_strtoul(argv[1], NULL, 10);
-
-	aml_lcd_driver_power_ctrl(0, val);
-
-	return 0;
-}
-
 static int do_lcd_ss(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	int value, temp;
@@ -568,19 +555,6 @@ static int do_lcd1_disable(cmd_tbl_t *cmdtp, int flag, int argc, char * const ar
 	return 0;
 }
 
-static int do_lcd1_power(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
-{
-	unsigned int val = 0;
-
-	if (argc == 1)
-		return -1;
-	val = (unsigned int)simple_strtoul(argv[1], NULL, 10);
-
-	aml_lcd_driver_power_ctrl(1, val);
-
-	return 0;
-}
-
 static int do_lcd1_ss(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	int value, temp;
@@ -831,19 +805,6 @@ static int do_lcd2_enable(cmd_tbl_t *cmdtp, int flag, int argc, char * const arg
 static int do_lcd2_disable(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	aml_lcd_driver_disable(2);
-	return 0;
-}
-
-static int do_lcd2_power(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
-{
-	unsigned int val = 0;
-
-	if (argc == 1)
-		return -1;
-	val = (unsigned int)simple_strtoul(argv[1], NULL, 10);
-
-	aml_lcd_driver_power_ctrl(2, val);
-
 	return 0;
 }
 
@@ -1164,7 +1125,6 @@ static cmd_tbl_t cmd_lcd_sub[] = {
 	U_BOOT_CMD_MKENT(probe,   2, 0, do_lcd_probe,    "", ""),
 	U_BOOT_CMD_MKENT(enable,  2, 0, do_lcd_enable,   "", ""),
 	U_BOOT_CMD_MKENT(disable, 2, 0, do_lcd_disable,  "", ""),
-	U_BOOT_CMD_MKENT(power,   3, 0, do_lcd_power,    "", ""),
 	U_BOOT_CMD_MKENT(ss,      4, 0, do_lcd_ss,       "", ""),
 	U_BOOT_CMD_MKENT(clk,     2, 0, do_lcd_clk,      "", ""),
 	U_BOOT_CMD_MKENT(print,   3, 0, do_lcd_print,    "", ""),
@@ -1195,7 +1155,6 @@ static cmd_tbl_t cmd_lcd1_sub[] = {
 	U_BOOT_CMD_MKENT(probe,   2, 0, do_lcd1_probe,   "", ""),
 	U_BOOT_CMD_MKENT(enable,  2, 0, do_lcd1_enable,  "", ""),
 	U_BOOT_CMD_MKENT(disable, 2, 0, do_lcd1_disable, "", ""),
-	U_BOOT_CMD_MKENT(power,   3, 0, do_lcd1_power,   "", ""),
 	U_BOOT_CMD_MKENT(ss,      4, 0, do_lcd1_ss,      "", ""),
 	U_BOOT_CMD_MKENT(clk,     2, 0, do_lcd1_clk,     "", ""),
 	U_BOOT_CMD_MKENT(print,   3, 0, do_lcd1_print,   "", ""),
@@ -1221,7 +1180,6 @@ static cmd_tbl_t cmd_lcd2_sub[] = {
 	U_BOOT_CMD_MKENT(probe,   2, 0, do_lcd2_probe,   "", ""),
 	U_BOOT_CMD_MKENT(enable,  2, 0, do_lcd2_enable,  "", ""),
 	U_BOOT_CMD_MKENT(disable, 2, 0, do_lcd2_disable, "", ""),
-	U_BOOT_CMD_MKENT(power,   3, 0, do_lcd2_power,   "", ""),
 	U_BOOT_CMD_MKENT(ss,      4, 0, do_lcd2_ss,      "", ""),
 	U_BOOT_CMD_MKENT(clk,     2, 0, do_lcd2_clk,     "", ""),
 	U_BOOT_CMD_MKENT(print,   3, 0, do_lcd2_print,   "", ""),
