@@ -436,11 +436,12 @@ static void set_hdmitx_s7d_htx_pll(struct hdmitx_dev *hdev)
 			break;
 		}
 	}
+	/* Firstly multiplied by 10 times of pixel clock, then down shift 1.001 more precisely */
+	base_pixel_clk = base_pixel_clk * 10; /* for tmds modes, here should multi 10 */
 	if (check_clock_shift(vic, frac_rate) == 1)
 		base_pixel_clk = base_pixel_clk - base_pixel_clk / 1001;
 	if (check_clock_shift(vic, frac_rate) == 2)
 		base_pixel_clk = base_pixel_clk + base_pixel_clk / 1000;
-	base_pixel_clk = base_pixel_clk * 10; /* for tmds modes, here should multi 10 */
 	if (cs == HDMI_COLORSPACE_YUV420)
 		base_pixel_clk /= 2;
 	pr_info("%s[%d] calculate pixel_clk to %d\n", __func__, __LINE__, base_pixel_clk);
