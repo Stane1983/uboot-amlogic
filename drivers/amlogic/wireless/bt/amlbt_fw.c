@@ -74,6 +74,7 @@ static gdsl_fifo_t *g_event_fifo;
 static gdsl_fifo_t *g_hci_type_fifo;
 static unsigned char usb_buf[4096];
 static rc_list_t rc_list[MAX_MAC_LIST] = {0};
+static unsigned char evt_buf[1024];
 
 static int auc_write_reg_by_ep(struct usb_device *udev, unsigned int addr, unsigned int value,
 	unsigned int len, unsigned int ep)
@@ -581,6 +582,191 @@ static void amlbt_usb_hci_type_fifo_init(struct usb_device *udev)
 	}
 }
 
+static unsigned int gdsl_fifo_get_data(gdsl_fifo_t *p_fifo, unsigned char *buff,
+	unsigned int len)
+{
+	unsigned int used = gdsl_fifo_used(p_fifo);
+	unsigned int i = 0;
+	unsigned int get_len = (len >= used ? used : len);
+
+	if (used == 0) {
+		printf("gdsl fifo used == 0\n");
+		return 0;
+	}
+
+	while (i < get_len) {
+		buff[i] = *(unsigned char *)((unsigned long)p_fifo->r + (unsigned long)p_fifo->base_addr);
+		p_fifo->r = (unsigned char *)(((unsigned long)p_fifo->r + 1) % p_fifo->size);
+		i++;
+	}
+
+	return i;
+}
+
+static void amlbt_usb_send_hci_cmd(const aml_chip_type *chip_type, struct usb_device *udev, unsigned char *data, unsigned int len)
+{
+	enum usb_endpoint_num current_endpoint;
+	unsigned int hci_cmd_queue_r;
+	unsigned int hci_cmd_queue_w;
+
+	if (g_cmd_fifo == NULL) {
+		printf("bt_usb_hci_cmd_fifo NULL!!!!\n");
+		return ;
+	}
+
+	current_endpoint = USB_EP2;
+	hci_cmd_queue_r = W2_HCI_CMD_QUEUE_R;
+	hci_cmd_queue_w = W2_HCI_CMD_QUEUE_W;
+
+	printf("hci cmd, len %d, payload:[%#x,%#x,%#x,%#x,%#x,%#x,%#x,%#x]\n", len,
+			data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+	len = ((len + 3) & 0xFFFFFFFC);//Keep 4 bytes aligned
+	BT_DEBUG("Actual length %d \n", len);
+
+	//step 1: Update the command FIFO read pointer
+	g_cmd_fifo->r = (unsigned char *)(unsigned long)auc_read_word_by_ep_for_bt(udev, hci_cmd_queue_r, current_endpoint);
+	BT_DEBUG("cmd r %#lx\n", (unsigned long)g_cmd_fifo->r);
+
+	//step 2: Write HCI commands to WiFi SRAM
+	gdsl_write_data_by_ep(udev, g_cmd_fifo, data, len, current_endpoint);
+
+	//step 3: Update the write pointer and write to WiFi SRAM
+	BT_DEBUG("before write:r:%#lx, w:%#lx\n", (unsigned long)g_cmd_fifo->r, (unsigned long)g_cmd_fifo->w);
+	auc_write_word_by_ep_for_bt(udev, hci_cmd_queue_w, (unsigned long)g_cmd_fifo->w & 0xfff, current_endpoint);
+
+	BT_DEBUG("hci cmd finished, len %#x:w %#lx, r %#lx\n", len, (unsigned long)g_cmd_fifo->w,
+		(unsigned long)g_cmd_fifo->r);
+}
+
+static int amlbt_usb_recv_event(const aml_chip_type *chip_type, struct usb_device *udev,
+	unsigned char *evt, unsigned int *len, unsigned int *cnt)
+{
+	gdsl_fifo_t read_fifo = {0};
+	unsigned int type_size = 0;
+	unsigned int evt_size = 0;
+	unsigned int i = 0;
+	unsigned int reg = 0;
+	unsigned int retry_cnt = 0;
+	unsigned int read_len = 0;
+	unsigned int evt_len = 0;
+	unsigned char type_buff[W2_HCI_TYPE_QUEUE_SIZE] = {0};
+	unsigned char read_reg[16] = {0};
+	enum usb_endpoint_num current_endpoint;
+	unsigned int hci_type_queue_r;
+	unsigned long hci_type_queue_addr;
+	unsigned long hci_evt_queue_addr;
+	BT_DEBUG("hci evt recv\n");
+
+	current_endpoint = USB_EP2;
+	hci_type_queue_r = W2_HCI_TYPE_QUEUE_R;
+	hci_type_queue_addr = W2_HCI_TYPE_QUEUE_ADDR;
+	hci_evt_queue_addr = W2_HCI_EVT_QUEUE_ADDR;
+
+	read_len = USB_POLL_TOTAL_LEN;
+	evt_len = W2_HCI_EVT_QUEUE_SIZE;
+
+	auc_read_sram_by_ep_for_bt(udev, usb_buf, (unsigned char *)(unsigned long)hci_type_queue_r,
+		read_len, current_endpoint);
+
+	g_hci_type_fifo->w = (unsigned char *)(unsigned long)((usb_buf[35]<<24)|(usb_buf[34]<<16)|
+		(usb_buf[33]<<8)|usb_buf[32]);
+	g_event_fifo->w = (unsigned char *)(unsigned long)((usb_buf[39]<<24)|(usb_buf[38]<<16)|
+		(usb_buf[37]<<8)|usb_buf[36]);
+
+	while ((g_event_fifo->w == g_event_fifo->r) || (g_hci_type_fifo->w == g_hci_type_fifo->r)) {
+		udelay(50000);
+		auc_read_sram_by_ep_for_bt(udev, usb_buf, (unsigned char *)(unsigned long)hci_type_queue_r,
+			read_len, current_endpoint);
+		g_hci_type_fifo->w = (unsigned char *)(unsigned long)((usb_buf[35]<<24)|(usb_buf[34]<<16)|
+			(usb_buf[33]<<8)|usb_buf[32]);
+		g_event_fifo->w = (unsigned char *)(unsigned long)((usb_buf[39]<<24)|(usb_buf[38]<<16)|
+			(usb_buf[37]<<8)|usb_buf[36]);
+		printf("recv retry %d: w:%#lx, r:%#lx\n", retry_cnt, (unsigned long)g_hci_type_fifo->w,
+			(unsigned long)g_hci_type_fifo->r);
+		retry_cnt++;
+
+		if (retry_cnt > 10) {
+			printf("read event or data timeout!\n");
+			return -1;
+		}
+	}
+
+	//get hci type
+	read_fifo.base_addr = &usb_buf[hci_type_queue_addr - hci_type_queue_r];
+	read_fifo.r = g_hci_type_fifo->r;
+	read_fifo.w = g_hci_type_fifo->w;
+	read_fifo.size = W2_HCI_TYPE_QUEUE_SIZE;
+
+	type_size = gdsl_fifo_get_data(&read_fifo, type_buff, sizeof(type_buff));
+	if (!type_size) {
+		printf("type queue fatal err\n");
+		*len = 0;
+		return -1;
+	}
+	BT_DEBUG("hci type size %d\n", type_size);
+
+	//check hci type
+	while (i < type_size) {
+		if (type_buff[i] != 0x4) {
+			printf("hci type err, i:%u, type:%#x\n", i, type_buff[i]);
+			*len = 0;
+			return -1;
+		}
+		i += 4;
+	}
+	*cnt = type_size/4;
+	g_hci_type_fifo->r = read_fifo.r;
+	reg = (((unsigned int)(unsigned long)read_fifo.r) & 0xff);
+	read_reg[0] = (reg & 0xff);
+	read_reg[1] = ((reg >> 8) & 0xff);
+	read_reg[2] = ((reg >> 16) & 0xff);
+	read_reg[3] = ((reg >> 24) & 0xff);
+
+	//get event
+	read_fifo.base_addr = &usb_buf[hci_evt_queue_addr - hci_type_queue_r];
+	read_fifo.r = g_event_fifo->r;
+	read_fifo.w = g_event_fifo->w;
+	read_fifo.size = evt_len;
+	evt_size = gdsl_fifo_get_data(&read_fifo, evt, evt_len);
+	if (!evt_size) {
+		printf("event queue fatal err!!!!\n");
+		*len = 0;
+		*cnt = 0;
+		return -1;
+	}
+	BT_DEBUG("event cnt %d, size %d\n", *cnt, evt_size);
+	g_event_fifo->r = read_fifo.r;
+	reg = (((unsigned int)(unsigned long)read_fifo.r) & 0x1fff);
+	read_reg[4] = (reg & 0xff);
+	read_reg[5] = ((reg >> 8) & 0xff);
+	read_reg[6] = ((reg >> 16) & 0xff);
+	read_reg[7] = ((reg >> 24) & 0xff);
+	auc_write_sram_by_ep_for_bt(udev, &read_reg[0],
+		(unsigned char *)(unsigned long)(hci_type_queue_r), 16, current_endpoint);
+	*len = evt_size;
+
+	return 0;
+}
+
+
+static void aml_hci_cmd_process(const aml_chip_type *chip_type, struct usb_device *udev,
+	unsigned char *cmd, unsigned int len)
+{
+	unsigned int evt_len = 0;
+	unsigned int evt_cnt = 0;
+	int ret;
+
+	memset(evt_buf, 0, sizeof(evt_buf));
+
+	amlbt_usb_send_hci_cmd(chip_type, udev, cmd, len);
+
+	ret = amlbt_usb_recv_event(chip_type, udev, evt_buf, &evt_len, &evt_cnt);
+	if (ret != 0) {
+		printf("amlbt_usb_recv_event error!");
+		return ;
+	}
+}
+
 void amlbt_firmware_init(struct usb_device *udev)
 {
 	unsigned int st_reg = 0;
@@ -649,25 +835,14 @@ static int amlbt_read_conf_data(const aml_chip_type *chip_type, manf_data *manf)
 		return -1;
 	}
 
-	if (chip_type->family_id == AML_W2) {
-		/* W2_USB wakeup config */
-		manf_data_start = strstr((char *)file_buf, "W1UManfData=");
-		if (manf_data_start == NULL) {
-			printf("%s: 'W2UManfData=' not found in %s\n", __func__, file_path);
-			free(file_buf);
-			return -1;
-		}
-		manf_data_start += strlen("W1UManfData=");
-	} else if (chip_type->family_id == AML_W2L) {
-		/* W2L_USB wakeup config */
-		manf_data_start = strstr((char *)file_buf, "ManfData=");
-		if (manf_data_start == NULL) {
-			printf("%s: 'ManfData=' not found in %s\n", __func__, file_path);
-			free(file_buf);
-			return -1;
-		}
-		manf_data_start += strlen("ManfData=");
+	/* AML_BT_USB wakeup config */
+	manf_data_start = strstr((char *)file_buf, "W1UManfData=");
+	if (manf_data_start == NULL) {
+		printf("%s: 'W2UManfData=' not found in %s\n", __func__, file_path);
+		free(file_buf);
+		return -1;
 	}
+	manf_data_start += strlen("W1UManfData=");
 
 	line_end = manf_data_start;
 	while (*line_end != '\0' && *line_end != '\n' && *line_end != '\r')
@@ -719,7 +894,7 @@ static int amlbt_read_conf_data(const aml_chip_type *chip_type, manf_data *manf)
 	return 0;
 }
 
-static void amlbt_write_manfdata_to_firmware(const aml_chip_type *chip_type, struct usb_device *udev)
+static void amlbt_write_manfdata_to_firmware_for_sram(const aml_chip_type *chip_type, struct usb_device *udev)
 {
 	manf_data local_manf_data;
 	unsigned char manf_buf[256];
@@ -742,6 +917,33 @@ static void amlbt_write_manfdata_to_firmware(const aml_chip_type *chip_type, str
 	printf("]\n");
 	auc_write_sram_by_ep_for_bt(udev, local_manf_data.rc_manfdata,
 		(unsigned char *)FW_MANFDATA_ADDR, MANFDATA_LEN, USB_EP2);
+}
+
+static void amlbt_write_manfdata_to_firmware_for_cmd(const aml_chip_type *chip_type, struct usb_device *udev)
+{
+	manf_data local_manf_data;
+	int i = 0;
+	unsigned int manf_buf_len = 3;  // (2 bytes opcode)+(1 bytes len)
+	uint8_t manf_buf[256] = {HCI_VSC_WAKE_WRITE_DATA & 0xff, (HCI_VSC_WAKE_WRITE_DATA >> 8) & 0xff};
+
+	if (amlbt_read_conf_data(chip_type, &local_manf_data) != 0) {
+		printf("Failed to read manf data, aborting write\n");
+		return;
+	}
+
+	printf("ManfData len: %d\n", local_manf_data.manfdata_len);
+	printf("ManfData:[ ");
+	for (i = 0; i < 40; i++) {
+		printf("0x%02x ", local_manf_data.rc_manfdata[i]);
+	}
+	printf("]\n");
+
+	manf_buf[2] = 0x29;    // (4*10 bytes W1UManfData)+(1 bytes cnt)
+	manf_buf[3] = 0x04;    // support B12 and G20 cnt=4
+	memcpy(manf_buf + 4, local_manf_data.rc_manfdata, 40);
+	manf_buf_len += 0x29;
+
+	aml_hci_cmd_process(chip_type, udev, manf_buf, manf_buf_len);
 }
 
 static int amlbt_add_rc_list(char *mac)
@@ -885,16 +1087,29 @@ static void aml_hci_set_shutdown_reg(const aml_chip_type *chip_type, struct usb_
 
 void amlbt_wakeup_set(const aml_chip_type *chip_type, struct usb_device *udev)
 {
+	enum usb_endpoint_num current_endpoint;
+
 	BT_DEBUG("%s: start %u\n", __func__, get_time());
-	// write rclist for manfdata
-	amlbt_write_rclist_to_firmware(udev);
 
-	// write wakeup parameters for manfdata
-	amlbt_write_manfdata_to_firmware(chip_type, udev);
-
-	//start BT CPU
-	auc_write_word_by_ep_for_bt(udev, REG_DEV_RESET,
-		(unsigned int)((BIT_CPU | BIT_MAC | BIT_PHY) << DEV_RESET_SW), USB_EP2);
+	if (chip_type->family_id == AML_W2L) {
+		current_endpoint = USB_EP2;
+		//start BT CPU
+		auc_write_word_by_ep_for_bt(udev, REG_DEV_RESET,
+			(unsigned int)((BIT_CPU | BIT_MAC | BIT_PHY) << DEV_RESET_SW), current_endpoint);
+		// write rclist for manfdata
+		amlbt_write_rclist_to_firmware(udev);
+		// write wakeup parameters for manfdata
+		amlbt_write_manfdata_to_firmware_for_cmd(chip_type, udev);
+	} else if (chip_type->family_id == AML_W2) {
+		current_endpoint = USB_EP2;
+		// write rclist for manfdata
+		amlbt_write_rclist_to_firmware(udev);
+		// write wakeup parameters for manfdata
+		amlbt_write_manfdata_to_firmware_for_sram(chip_type, udev);
+		//start BT CPU
+		auc_write_word_by_ep_for_bt(udev, REG_DEV_RESET,
+			(unsigned int)((BIT_CPU | BIT_MAC | BIT_PHY) << DEV_RESET_SW), current_endpoint);
+	}
 
 	//set shutdown bit
 	aml_hci_set_shutdown_reg(chip_type, udev);
