@@ -55,6 +55,9 @@
 #include <asm/amlogic/arch/efuse.h>
 #include <amlogic/emmc_partitions.h>
 #include <amlogic/keyunify.h>
+#include <amlogic/store_wrapper.h>
+#include <u-boot/sha1.h>
+#include <asm/amlogic/arch/bl31_apis.h>
 #ifdef CONFIG_BURN_KEY
 extern efuse_obj_field_t efuse_field;
 #include <hexdump.h>
@@ -848,6 +851,11 @@ int aml_board_late_init_tail(void *arg)
 	PUSH_TIME_TE("tail init", BL33_TAIL_INIT_s);
 	UNUSED(arg);
 	printf("init tail\n");
+
+#ifdef CONFIG_REPLACE_TV_MODE
+	run_command("udisk_burn", 0);
+#endif
+
 	run_command("amlsecurecheck", 0);
 
 #ifdef CONFIG_FACTORY_BURN_MODE
@@ -1065,6 +1073,11 @@ void aml_board_display_env_handler(void)
 
 	run_command("get_rebootmode", 0);
 	printf("reboot_mode: %s\n", env_get("reboot_mode"));
+
+#ifdef CONFIG_REPLACE_TV_MODE
+	run_command("udisk_check", 0);
+#endif
+
 	run_command("run check_display", 0);
 	bootup_display = env_get("bootup_display");
 	if (!bootup_display)

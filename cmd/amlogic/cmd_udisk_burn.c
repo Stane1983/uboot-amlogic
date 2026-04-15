@@ -19,6 +19,14 @@
 #include <u-boot/sha256.h>
 #include <fs.h>
 
+#ifdef CONFIG_DDR_FASTBOOT
+#include <amlogic/aml_mmc.h>
+#endif
+#include <part.h>
+#if defined(CONFIG_AML_ANTIROLLBACK) || defined(CONFIG_AML_AVB2_ANTIROLLBACK)
+#include <amlogic/anti-rollback.h>
+#endif
+
 #define PARTNAME_MAX_LEN 128
 
 /* UDISK package format for xxx_udisk.img */
@@ -29,6 +37,9 @@
 #define MAX_IMAGE_NAMES 16
 #define MAX_IMAGE_NAME_LEN 64
 #define INI_BUFFER_SIZE 1024
+
+#define BOOTLOADER_OFFSET		512
+#define BOOTLOADER_MAX_SIZE		(4 * 1024 * 1024)
 
 /* HMAC-SHA256 security */
 #define HMAC_SHA256_SIZE 32
@@ -149,6 +160,8 @@ static const char *const small_pkg_files[] = {
 	"oem_udisk.img",
 	"tvconfig_udisk.img",
 	"skw_udisk.img",
+	"bootloader_udisk.img",
+	"vbmeta_udisk.img",
 	NULL
 };
 
@@ -318,6 +331,86 @@ static int generate_ini_file(const char *pkg_name)
 	return 0;
 }
 
+int aml_udisk_lock(int state)
+{
+	char *rpmb_flag = env_get("rpmb_state");
+
+	if (rpmb_flag && strcmp(rpmb_flag, "0")) {
+		char *lock_s = env_get("lock");
+		LockData_t info = { 0 };
+		int erase_flag = 0;
+		char lock_d[LOCK_DATA_SIZE];
+
+		memset(&info, 0, sizeof(struct LockData));
+		info.version_major = (int)(lock_s[0] - '0');
+		info.version_minor = (int)(lock_s[1] - '0');
+		info.unlock_ability = (int)(lock_s[2] - '0');
+		info.lock_state = (int)(lock_s[4] - '0');
+		info.lock_critical_state = (int)(lock_s[5] - '0');
+		info.lock_bootloader = (int)(lock_s[6] - '0');
+
+#if defined(CONFIG_AML_ANTIROLLBACK) || defined(CONFIG_AML_AVB2_ANTIROLLBACK)
+		uint32_t lock_state = 0;
+
+		printf("avb arb mode\n");
+		if (is_avb_arb_available()) {
+			if (get_avb_lock_state(&lock_state)) {
+				if (state == 0 &&
+					(info.lock_state == 1 || lock_state == 1)) {
+					printf("device is locked, need unlock\n");
+					if (avb_unlock())
+						erase_flag = 1;
+				} else if (state == 1 &&
+					(info.lock_state == 0 || lock_state == 0)) {
+					printf("device is unlocked, need lock\n");
+					if (avb_lock())
+						erase_flag = 1;
+				}
+			}
+		}
+#endif
+
+		if (state == 0 && info.lock_state == 1) {
+			printf("device is locked, need unlock\n");
+			info.lock_state = 0;
+			info.lock_critical_state = 0;
+			erase_flag = 1;
+			env_set("lock_state", "green");
+			sprintf(lock_d, "%d%d%d0%d%d%d0", info.version_major, info.version_minor,
+				info.unlock_ability, info.lock_state, info.lock_critical_state,
+				info.lock_bootloader);
+			printf("lock_d state: %s\n", lock_d);
+			env_set("lock", lock_d);
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+			run_command("update_env_part -p lock;", 0);
+#else
+			run_command("defenv_reserv; saveenv;", 0);
+#endif
+		} else if (state == 1 && info.lock_state == 0) {
+			printf("device is unlocked, need lock\n");
+			info.lock_state = 1;
+			erase_flag = 1;
+			env_set("lock_state", "orange");
+			sprintf(lock_d, "%d%d%d0%d%d%d0", info.version_major, info.version_minor,
+				info.unlock_ability, info.lock_state, info.lock_critical_state,
+				info.lock_bootloader);
+			printf("lock_d state: %s\n", lock_d);
+			env_set("lock", lock_d);
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+			run_command("update_env_part -p lock;", 0);
+#else
+			run_command("defenv_reserv; saveenv;", 0);
+#endif
+		}
+
+		if (erase_flag == 1)
+			run_command("store erase metadata 0 0", 0);
+	}
+	return 0;
+}
+
+int check_pid_update_udisk(const char *file_name, int show_flag);
+
 int check_udisk_burn_fw(usb_upgrade_files_t *files)
 {
 	int ret = 0;
@@ -383,6 +476,15 @@ int check_udisk_burn_fw(usb_upgrade_files_t *files)
 		printf("erase all unifykey\n");
 		run_command("mmc dev 1", 0);
 		run_command("emmc erase key", 0);
+		if (files->pid_count > 0 && files->pid_name[0] != '\0') {
+			printf("found valid pid file %s, trying to update pid via udisk package\n", files->pid_name);
+			int pid_ret = check_pid_update_udisk(files->pid_name, 0);
+			if (pid_ret == 0) {
+				printf("write pid from %s ok\n", files->pid_name);
+			} else {
+				printf("write pid from %s failed\n", files->pid_name);
+			}
+		}
 	}
 	if (erase_pid_flag == 1) {
 		printf("erase pid\n");
@@ -401,6 +503,16 @@ int check_udisk_burn_fw(usb_upgrade_files_t *files)
 			}
 		} else {
 			printf("key_unify_read pid error, skip\n");
+		}
+
+		if (files->pid_count > 0 && files->pid_name[0] != '\0') {
+			printf("found valid pid file %s, trying to update pid via udisk package\n", files->pid_name);
+			int pid_ret = check_pid_update_udisk(files->pid_name, 0);
+			if (pid_ret == 0) {
+				printf("write pid from %s ok\n", files->pid_name);
+			} else {
+				printf("write pid from %s failed\n", files->pid_name);
+			}
 		}
 	}
 	if (erase_key_flag == 1) {
@@ -430,6 +542,10 @@ int check_udisk_burn_fw(usb_upgrade_files_t *files)
 			printf("key_unify_read usid error, skip\n");
 		}
 	}
+
+	//erase rollback index
+	aml_udisk_lock(0);
+	aml_udisk_lock(1);
 
 	env_set("usb_burn_state", "1");
 #if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
@@ -857,12 +973,19 @@ int check_partition_update(const char *partition_name)
 		logo_flag = -1;
 		goto _update;
 	}
-	optimus_progress_ui_direct_update_progress(hUiProgress,
-		UPGRADE_STEPS_AFTER_DISK_INIT_OK);
-	rcode = optimus_progress_ui_set_smart_mode(hUiProgress,
-			img_size,
-			UPGRADE_STEPS_AFTER_BURN_BOOTLOADER_OK -
-			UPGRADE_STEPS_AFTER_DISK_INIT_OK);
+
+	optimus_progress_ui_direct_update_progress(hUiProgress, UPGRADE_STEPS_AFTER_DISK_INIT_OK);
+	if (strncmp(partname, "bootloader", 10) == 0) {
+		rcode = optimus_progress_ui_set_smart_mode(hUiProgress, 200,
+			UPGRADE_STEPS_AFTER_BURN_BOOTLOADER_OK - UPGRADE_STEPS_AFTER_DISK_INIT_OK);
+		run_command("sleep 6", 0);
+		if (rcode)
+			optimus_progress_ui_update_by_bytes(hUiProgress, 200);
+	} else {
+		rcode = optimus_progress_ui_set_smart_mode(hUiProgress, img_size,
+			UPGRADE_STEPS_AFTER_BURN_BOOTLOADER_OK - UPGRADE_STEPS_AFTER_DISK_INIT_OK);
+	}
+
 	if (rcode) {
 		printf("Fail to set smart mode\n");
 		logo_flag = -1;
@@ -872,45 +995,78 @@ int check_partition_update(const char *partition_name)
 
 _update:
 	/* Read and write in 64KB chunks */
-	while (bytes_remaining > 0) {
-		ulong read_size = (bytes_remaining >=
-			chunk_size) ? chunk_size : bytes_remaining;
-
-		/* Load 64KB (or remaining) chunk from USB */
+	if (strncmp(partname, "bootloader", 10) == 0) {
+		printf("write bootloader\n");
 		sprintf(cmd, "fatload usb 0 %lx %s %lx %lx", loadaddr, imgname,
-			read_size, current_offset);
+				img_size, img_offset);
 		ret = run_command(cmd, 0);
 		if (ret != 0) {
-			printf("Failed to load chunk at offset 0x%lx\n", current_offset);
+			printf("Failed to load chunk at offset 0x%lx\n", img_offset);
 			return -1;
 		}
 
-		/* Write chunk to storage using store_logic_write */
-		ret = store_logic_write(partname, bytes_written, read_size,
+		ret = store_boot_write("bootloader", 1, BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET,
 			(void *)loadaddr);
 		if (ret != 0) {
-			printf("Failed to write chunk at offset 0x%lx\n", bytes_written);
+			printf("Failed to write boot0\n");
 			return -1;
 		}
-
-		if (logo_flag == 0)
-			optimus_progress_ui_update_by_bytes(hUiProgress, read_size);
-
-		bytes_written += read_size;
-		bytes_remaining -= read_size;
-		current_offset += read_size;
-
-		/* Print progress every 1MB */
-		if ((bytes_written % (1 << 20)) == 0 || bytes_remaining == 0) {
-			printf("Progress: %lu / %lu bytes (%lu%%)\n", bytes_written, img_size,
-				(bytes_written * 100) / img_size);
+		printf("write boot0 ok\n");
+		ret = store_boot_write("bootloader", 2, BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET,
+			(void *)loadaddr);
+		if (ret != 0) {
+			printf("Failed to write boot0\n");
+			return -1;
 		}
-	}
+		printf("write boot1 ok\n");
+		run_command("mmc dev 1 0;", 0);
 
-	if (hUiProgress)
-		optimus_progress_ui_report_upgrade_stat(hUiProgress, !rcode);
-	if (hUiProgress)
-		optimus_progress_ui_release(hUiProgress);
+		if (hUiProgress)
+			optimus_progress_ui_report_upgrade_stat(hUiProgress, !rcode);
+		if (hUiProgress)
+			optimus_progress_ui_release(hUiProgress);
+		run_command("sleep 2", 0);
+	} else {
+		printf("write other part: %s\n", partname);
+		while (bytes_remaining > 0) {
+			ulong read_size = (bytes_remaining >=
+				chunk_size) ? chunk_size : bytes_remaining;
+
+			/* Load 64KB (or remaining) chunk from USB */
+			sprintf(cmd, "fatload usb 0 %lx %s %lx %lx", loadaddr, imgname,
+				read_size, current_offset);
+			ret = run_command(cmd, 0);
+			if (ret != 0) {
+				printf("Failed to load chunk at offset 0x%lx\n", current_offset);
+				return -1;
+			}
+
+			/* Write chunk to storage using store_logic_write */
+			ret = store_logic_write(partname, bytes_written, read_size,
+				(void *)loadaddr);
+			if (ret != 0) {
+				printf("Failed to write chunk at offset 0x%lx\n", bytes_written);
+				return -1;
+			}
+
+			if (logo_flag == 0)
+				optimus_progress_ui_update_by_bytes(hUiProgress, read_size);
+
+			bytes_written += read_size;
+			bytes_remaining -= read_size;
+			current_offset += read_size;
+
+			/* Print progress every 1MB */
+			if ((bytes_written % (1 << 20)) == 0 || bytes_remaining == 0) {
+				printf("Progress: %lu / %lu bytes (%lu%%)\n", bytes_written, img_size,
+					(bytes_written * 100) / img_size);
+			}
+		}
+		if (hUiProgress)
+			optimus_progress_ui_report_upgrade_stat(hUiProgress, !rcode);
+		if (hUiProgress)
+			optimus_progress_ui_release(hUiProgress);
+	}
 
 	printf("Successfully wrote %lu bytes to %s\n", bytes_written, partname);
 	ret = 0;
@@ -927,7 +1083,7 @@ _update:
  *
  * Return: 0 on success, -1 on failure
  */
-int check_pid_update_udisk(const char *file_name)
+int check_pid_update_udisk(const char *file_name, int show_flag)
 {
 	ulong loadaddr;
 	ulong pkg_addr;
@@ -1081,6 +1237,37 @@ int check_pid_update_udisk(const char *file_name)
 		printf("write pid failed, actual pid: [%s]\n", pid);
 	}
 
+	__hdle hUiProgress = NULL;
+	int rcode = 0;
+
+	if (video_res_prepare_for_upgrade(NULL)) {
+		printf("Fail when prepare bm res or init video for upgrade\n");
+		goto _update;
+	}
+	show_logo_to_report_burning();
+
+	hUiProgress = optimus_progress_ui_request_for_sdc_burn();
+	if (!hUiProgress) {
+		printf("request progress handle failed!\n");
+		goto _update;
+	}
+	optimus_progress_ui_direct_update_progress(hUiProgress, UPGRADE_STEPS_AFTER_DISK_INIT_OK);
+	rcode = optimus_progress_ui_set_smart_mode(hUiProgress, 200,
+			UPGRADE_STEPS_AFTER_BURN_BOOTLOADER_OK - UPGRADE_STEPS_AFTER_DISK_INIT_OK);
+	if (rcode) {
+		printf("Fail to set smart mode\n");
+		goto _update;
+	}
+	if (show_flag == 1)
+		run_command("sleep 6", 0);
+	optimus_progress_ui_update_by_bytes(hUiProgress, 200);
+
+_update:
+	if (hUiProgress)
+		optimus_progress_ui_report_upgrade_stat(hUiProgress, !rcode);
+	if (hUiProgress)
+		optimus_progress_ui_release(hUiProgress);
+
 	return ret;
 }
 
@@ -1099,7 +1286,7 @@ int check_pid_update_udisk(const char *file_name)
  *
  * Return: Number of partitions successfully updated, or -1 on error
  */
-int parse_image_names_and_update(int *odm_ext_flag, int *logo_update_flag)
+int parse_image_names_and_update(int *odm_ext_flag, int *logo_update_flag, int *oem_flag)
 {
 	const char *ini_file = "aml_sdc_burn.ini";
 	char cmd[256] = {0};
@@ -1117,6 +1304,8 @@ int parse_image_names_and_update(int *odm_ext_flag, int *logo_update_flag)
 		*odm_ext_flag = -1;
 	if (logo_update_flag)
 		*logo_update_flag = -1;
+	if (oem_flag)
+		*oem_flag = -1;
 
 	loadaddr = (ulong)env_get_hex("loadaddr", 0x4000);
 
@@ -1273,10 +1462,15 @@ int parse_image_names_and_update(int *odm_ext_flag, int *logo_update_flag)
 					*odm_ext_flag = 0;
 			} else if (strncmp(partition_names[i], "oem", 3) == 0 ||
 					strncmp(partition_names[i], "production_ext", 14) == 0 ||
+					strncmp(partition_names[i], "bootloader_udisk", 16) == 0 ||
 					strncmp(partition_names[i], "skw_udisk", 9) == 0) {
 				if (logo_update_flag)
 					*logo_update_flag = 0;
 			}
+
+			if (strncmp(partition_names[i], "oem", 3) == 0)
+				if (oem_flag)
+					*oem_flag = 0;
 		} else {
 			printf("Partition %s update skipped or failed\n", partition_names[i]);
 		}
@@ -1322,28 +1516,32 @@ int prepare_display(void)
 		strcpy((char *)partname, "oem");
 	partname[PARTNAME_MAX_LEN - 1] = '\0';
 
-	slot_name = env_get("slot-suffixes");
-	if (slot_name && (strcmp(slot_name, "0") == 0))
-		suffix = "_a";
-	else if (slot_name && (strcmp(slot_name, "1") == 0))
-		suffix = "_b";
+	run_command("printenv bootLogoPart;", 0);
 
-	if (suffix != NULL) {
-		size_t remaining = PARTNAME_MAX_LEN - strlen(partname) - 1;
+	partIndex = get_partition_num_by_name(env_get("bootLogoPart"));
+	printf("partIndex = %d\n", partIndex);
+	if (partIndex <= 0) {
+		printf("fail find part index for name(%s), try ab\n", env_get("bootLogoPart"));
+		slot_name = env_get("slot-suffixes");
+		if (slot_name && (strcmp(slot_name, "0") == 0))
+			suffix = "_a";
+		else if (slot_name && (strcmp(slot_name, "1") == 0))
+			suffix = "_b";
 
-		if (remaining > 0)
-			strncat(partname, suffix, remaining);
-		else
+		if (suffix != NULL) {
+			size_t remaining = PARTNAME_MAX_LEN - strlen(partname) - 1;
+
+			if (remaining > 0)
+				strncat(partname, suffix, remaining);
+			else
+				return -1;
+		}
+		partIndex = get_partition_num_by_name(partname);
+		if (partIndex < 0) {
+			printf("Error: get partition index failed\n");
 			return -1;
+		}
 	}
-
-	printf("partname is %s\n", partname);
-	partIndex = get_partition_num_by_name(partname);
-	if (partIndex < 0) {
-		printf("Error: get partition index failed\n");
-		return -1;
-	}
-	debug("partIndex = %d\n", partIndex);
 
 	for (i = 0; i < BMP_FILES_CNT; i++) {
 		const BmpFileInfo *bmp_info = &bmp_files_list[i];
@@ -1419,19 +1617,88 @@ static int is_target_rebootmode(const char *rebootmode)
 	return 0;
 }
 
-static int do_check_udisk_burn(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int validate_udisk_files(usb_upgrade_files_t *files,
+		int *has_autoupgrade, int *has_update)
 {
 	int ret = 0;
-	int odm_ext_flag = -1;
-	int pid_flag = -1;
-	int logo_update_flag = -1;
+	char cmd[256];
+	ulong loadaddr = (ulong)env_get_hex("loadaddr", 0x4000);
+	ulong tmp_addr = loadaddr - 0x1000;
+
+	/* Check aml_autoupgrade */
+	sprintf(cmd, "fatload usb 0 %lx aml_autoupgrade 1", tmp_addr);
+	if (run_command(cmd, 0) == 0)
+		*has_autoupgrade = 1;
+	else
+		*has_autoupgrade = 0;
+
+	/* Check aml_sdc_burn.ini */
+	sprintf(cmd, "fatload usb 0 %lx aml_update 1", tmp_addr);
+	if (run_command(cmd, 0) == 0)
+		*has_update = 1;
+	else
+		*has_update = 0;
+
+	printf("aml_autoupgrade=%d, aml_update=%d\n",
+		*has_autoupgrade, *has_update);
+
+	if ((!*has_autoupgrade && !*has_update) ||
+		(*has_autoupgrade && *has_update)) {
+		printf("Invalid, skip USB upgrade\n");
+		return -1;
+	}
+
+	/* Scan USB for upgrade files */
+	ret = scan_usb_upgrade_files(files);
+	if (ret != 0) {
+		printf("Failed to scan USB files\n");
+		return -1;
+	}
+
+	if (*has_autoupgrade) {
+		if (files->big_pkg_count > 1) {
+			printf("ERROR: Multiple big packages found (%d)\n", files->big_pkg_count);
+			return -1;
+		}
+		if (files->pid_count > 1) {
+			printf("ERROR: Multiple PID files found (%d)\n", files->pid_count);
+			return -1;
+		}
+		if (files->big_pkg_count == 0 && files->small_pkg_count == 0 &&
+			files->pid_count == 0) {
+			printf("No upgrade files found\n");
+			return -1;
+		}
+	} else if (*has_update) {
+		int total_files = files->big_pkg_count +
+			files->small_pkg_count + files->pid_count;
+		printf("=== Single-file upgrade mode (aml_update) ===\n");
+		printf("Total upgrade files found: %d\n", total_files);
+
+		if (total_files != 1) {
+			printf("ERROR: Single-file mode requires exactly 1 file, found %d\n",
+				total_files);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+static int do_udisk_check(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int ret = 0;
+#ifdef CONFIG_REPLACE_TV_MODE
+	usb_upgrade_files_t files;
+	int has_autoupgrade = 0;
+	int has_update = 0;
+	char *rebootmode = env_get("reboot_mode");
+	char *usb_burn_state = env_get("usb_burn_state");
+
+	env_set("udisk_check", "0");
 
 	if (argc > 1)
 		return CMD_RET_USAGE;
-
-#ifdef CONFIG_REPLACE_TV_MODE
-	char *rebootmode = env_get("reboot_mode");
-	char *usb_burn_state = env_get("usb_burn_state");
 
 	printf("rebootmode is %s\n", rebootmode ? rebootmode : "NULL");
 	printf("usb_burn_state is %s\n", usb_burn_state ? usb_burn_state : "NULL");
@@ -1440,8 +1707,50 @@ static int do_check_udisk_burn(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 	int is_after_big_pkg = (usb_burn_state && !strcmp(usb_burn_state, "2"));
 
 	if (is_cold_boot || is_after_big_pkg) {
-		ulong loadaddr, tmp_addr;
-		char cmd[256];
+		ret = run_command("usb start 0", 0);
+		if (ret != 0) {
+			printf("USB start failed\n");
+			return CMD_RET_FAILURE;
+		}
+
+		ret = validate_udisk_files(&files, &has_autoupgrade, &has_update);
+		if (ret != 0)
+			return CMD_RET_FAILURE;
+
+		printf("U-disk check passed: Valid upgrade files found.\n");
+		env_set("jpg_logo", "false");
+		env_set("udisk_check", "true");
+	}
+#endif
+
+	return CMD_RET_SUCCESS;
+}
+
+static int do_udisk_burn(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int ret = 0;
+	int odm_ext_flag = -1;
+	int pid_flag = -1;
+	int logo_update_flag = -1;
+	int oem_flag = -1;
+
+	if (argc > 1)
+		return CMD_RET_USAGE;
+
+#ifdef CONFIG_REPLACE_TV_MODE
+	char *rebootmode = env_get("reboot_mode");
+	char *usb_burn_state = env_get("usb_burn_state");
+	char *udiskcheck = env_get("udisk_check");
+
+	printf("rebootmode is %s\n", rebootmode ? rebootmode : "NULL");
+	printf("usb_burn_state is %s\n", usb_burn_state ? usb_burn_state : "NULL");
+	printf("udiskcheck is %s\n", udiskcheck ? udiskcheck : "NULL");
+
+	int is_cold_boot = is_target_rebootmode(rebootmode);
+	int is_after_big_pkg = (usb_burn_state && !strcmp(usb_burn_state, "2"));
+
+	if ((is_cold_boot || is_after_big_pkg) && udiskcheck &&
+		!strcmp(udiskcheck, "true")) {
 		int has_autoupgrade = 0;
 		int has_update = 0;
 		usb_upgrade_files_t files;
@@ -1460,35 +1769,14 @@ static int do_check_udisk_burn(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 			return ret;
 		}
 
-		/* Check if required config files exist (at least one must be present) */
-		loadaddr = (ulong)env_get_hex("loadaddr", 0x4000);
-		tmp_addr = loadaddr - 0x1000;
-
-		/* Check aml_autoupgrade */
-		sprintf(cmd, "fatload usb 0 %lx aml_autoupgrade 1", tmp_addr);
-		if (run_command(cmd, 0) == 0)
-			has_autoupgrade = 1;
-
-		/* Check aml_sdc_burn.ini */
-		sprintf(cmd, "fatload usb 0 %lx aml_update 1", tmp_addr);
-		if (run_command(cmd, 0) == 0)
-			has_update = 1;
-
-		printf("Trigger files: aml_autoupgrade=%d, aml_update=%d\n",
-			has_autoupgrade, has_update);
-
-		if ((!has_autoupgrade && !has_update) || (has_autoupgrade && has_update)) {
-			printf("Invalid trigger files (need exactly one), skip USB upgrade\n");
-			return 0;
-		}
-
-		/* Scan USB for upgrade files */
-		ret = scan_usb_upgrade_files(&files);
+		/* Re-validate files before burning */
+		ret = validate_udisk_files(&files, &has_autoupgrade, &has_update);
 		if (ret != 0) {
-			printf("Failed to scan USB files\n");
+			printf("Validation failed during burn phase\n");
 			return ret;
 		}
 
+		env_set("jpg_logo", "false");
 		prepare_display();
 
 		if (has_autoupgrade) {
@@ -1499,24 +1787,6 @@ static int do_check_udisk_burn(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 			 * Case 3: big_pkg 0-1, pid 0-1, small_pkg 1-3 -> upgrade
 			 */
 			printf("=== Multi-file upgrade mode (aml_autoupgrade) ===\n");
-
-			if (files.big_pkg_count > 1) {
-				printf("ERROR: Multiple big packages found (%d), abort upgrade\n",
-					files.big_pkg_count);
-				return -1;
-			}
-
-			if (files.pid_count > 1) {
-				printf("ERROR: Multiple PID files found (%d), abort upgrade\n",
-					files.pid_count);
-				return -1;
-			}
-
-			if (files.big_pkg_count == 0 && files.small_pkg_count == 0 &&
-				files.pid_count == 0) {
-				printf("No upgrade files found, skip upgrade\n");
-				return 0;
-			}
 
 			/* Step 1: Upgrade big package (if exists) */
 			if (files.big_pkg_count == 1 && !is_after_big_pkg) {
@@ -1542,15 +1812,23 @@ static int do_check_udisk_burn(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 					if (strncmp(part_name, "tvconfig_udisk", 14) == 0)
 						odm_ext_flag = 0;
 					else if (strncmp(part_name, "oem_udisk", 9) == 0 ||
-						strncmp(part_name, "skw_udisk", 9) == 0)
+						strncmp(part_name, "skw_udisk", 9) == 0 ||
+						strncmp(part_name, "vbmeta_udisk", 12) == 0 ||
+						strncmp(part_name, "bootloader_udisk", 16) == 0)
 						logo_update_flag = 0;
+
+					if (strncmp(part_name, "oem_udisk", 9) == 0 &&
+						files.big_pkg_count == 0)
+						oem_flag = 0;
 				}
+				run_command("sleep 3", 0);
 			}
 
 			/* Step 3: Upgrade PID (if exists) */
 			if (files.pid_count == 1) {
 				printf("Upgrading PID: %s\n", files.pid_name);
-				pid_flag = check_pid_update_udisk(files.pid_name);
+				pid_flag = check_pid_update_udisk(files.pid_name, 1);
+				run_command("sleep 3", 0);
 			}
 
 		} else if (has_update) {
@@ -1558,17 +1836,8 @@ static int do_check_udisk_burn(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 			 * Single-file upgrade mode (aml_update)
 			 * Only upgrade if exactly ONE file from the 10 known files exists
 			 */
-			int total_files = files.big_pkg_count +
-				files.small_pkg_count + files.pid_count;
 
 			printf("=== Single-file upgrade mode (aml_update) ===\n");
-			printf("Total upgrade files found: %d\n", total_files);
-
-			if (total_files != 1) {
-				printf("ERROR: Single-file mode requires exactly 1 file, found %d\n",
-					total_files);
-				return -1;
-			}
 
 			if (files.big_pkg_count == 1 && !is_after_big_pkg) {
 				printf("Upgrading single big package: %s\n", files.big_pkg_name);
@@ -1588,12 +1857,18 @@ static int do_check_udisk_burn(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 					if (strncmp(part_name, "tvconfig_udisk", 14) == 0)
 						odm_ext_flag = 0;
 					else if (strncmp(part_name, "oem_udisk", 9) == 0 ||
-						strncmp(part_name, "skw_udisk", 9) == 0)
+						strncmp(part_name, "skw_udisk", 9) == 0 ||
+						strncmp(part_name, "vbmeta_udisk", 12) == 0 ||
+						strncmp(part_name, "bootloader_udisk", 16) == 0)
 						logo_update_flag = 0;
+
+					if (strncmp(part_name, "oem_udisk", 14) == 0)
+						oem_flag = 0;
 				}
 			} else if (files.pid_count == 1) {
 				printf("Upgrading single PID: %s\n", files.pid_name);
-				pid_flag = check_pid_update_udisk(files.pid_name);
+				pid_flag = check_pid_update_udisk(files.pid_name, 1);
+				run_command("sleep 3", 0);
 			}
 		}
 
@@ -1601,6 +1876,16 @@ static int do_check_udisk_burn(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 		printf(
 			"Upgrade results: odm_ext_flag=%d, pid_flag=%d, logo_update_flag=%d\n",
 			odm_ext_flag, pid_flag, logo_update_flag);
+
+		if (oem_flag == 0) {
+			printf("update oem, set env\n");
+			env_set("oem_update_flag", "1");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+			run_command("update_env_part -p oem_update_flag;", 0);
+#else
+			run_command("defenv_reserv; saveenv;", 0);
+#endif
+		}
 
 		if (odm_ext_flag == 0 || pid_flag == 0) {
 			printf("update odm_ext or pid, erase param\n");
@@ -1619,21 +1904,25 @@ static int do_check_udisk_burn(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 #else
 			run_command("defenv_reserv; saveenv;", 0);
 #endif
-
-			run_command("reboot", 0);
 		} else if (logo_update_flag == 0) {
 			printf("update logo\n");
 			run_command("sleep 2", 0);
-			run_command("run init_display", 0);
 		}
+		run_command("reboot", 0);
 	}
 #endif
 	return ret;
 }
 
 U_BOOT_CMD
-(check_udisk_burn, 4, 0, do_check_udisk_burn,
-	"handle multi keypad",
+(udisk_check, 2, 0, do_udisk_check,
+	"check valid update files on udisk",
+	" "
+);
+
+U_BOOT_CMD
+(udisk_burn, 2, 0, do_udisk_burn,
+	"perform udisk upgrade",
 	" "
 );
 
