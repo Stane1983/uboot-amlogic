@@ -41,6 +41,8 @@ extern efuse_obj_field_t efuse_field;
 #define GPT_OFFSET              0x3DFE00
 #define DTS_GPT_OFFSET          0x3E0000
 
+#define BOOTLOADER_CHECK_SIZE  2048
+
 extern int nand_store_write(const char *name, loff_t off, size_t size, void *buf);
 
 #ifdef CONFIG_BOOTLOADER_CONTROL_BLOCK
@@ -557,6 +559,7 @@ static bool boot_info_save(bootloader_control *info, char *miscbuf)
 
 static int check_bootloader(int slot)
 {
+	int i = 0;
 	int iRet = 0;
 	int ret = -1;
 	unsigned char *buffer_src = NULL;
@@ -597,6 +600,16 @@ static int check_bootloader(int slot)
 	iRet = store_boot_read("bootloader", 2, 0, buffer_src);
 	if (iRet) {
 		printf("Fail read boot1\n");
+		goto exit;
+	}
+
+	for (i = 0; i < BOOTLOADER_CHECK_SIZE; i++) {
+		if (buffer_dest[i] != 0x00)
+			break;
+	}
+
+	if (i == BOOTLOADER_CHECK_SIZE) {
+		printf("%s header 2048 is all zero, skip\n", back_partname);
 		goto exit;
 	}
 	sha1_csum(buffer_src, capacity_boot, gensum0);
