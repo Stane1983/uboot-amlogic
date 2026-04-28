@@ -401,7 +401,11 @@ int checkhw(char *name)
 
 	switch (ddr_size) {
 		case 0x100000000UL:
-			strcpy(dtb_name, "s6_s905d5_bq201-4g\0");
+			if (board_id == 12) {
+				strcpy(dtb_name, "s6_s905d5_bq201sdio-4g\0");
+			} else {
+				strcpy(dtb_name, "s6_s905d5_bq201-4g\0");
+			}
 			break;
 		case 0x200000000UL:
 			if (board_id == 12) {
