@@ -96,7 +96,8 @@ typedef enum meson_connector_type {
     MESON_MODE_PANEL = 1,
     MESON_MODE_LVDS = 2,
     MESON_MODE_TV = 3,
-    MESON_MODE_CON_MAX = 4,
+    MESON_MODE_DP = 4,
+    MESON_MODE_CON_MAX = 5,
 } meson_connector_type_e;
 
 typedef struct meson_mode_info {

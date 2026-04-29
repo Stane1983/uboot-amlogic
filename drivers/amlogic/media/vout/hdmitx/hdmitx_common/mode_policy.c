@@ -290,10 +290,7 @@ static bool is_dv_support_mode(struct meson_policy_in *input, const char *mode) 
     /*
      * need to check the flag of Parity for high frame rate
      */
-    if (!strcmp(mode, MODE_4K2K100HZ) ||
-        !strcmp(mode, MODE_4K2K119HZ) ||
-        !strcmp(mode, MODE_4K2K120HZ) ||
-        !strcmp(mode, MODE_1080P100HZ) ||
+    if (!strcmp(mode, MODE_1080P100HZ) ||
         !strcmp(mode, MODE_1080P119HZ) ||
         !strcmp(mode, MODE_1080P120HZ) ||
         !strcmp(mode, MODE_720P100HZ) ||
@@ -308,6 +305,7 @@ static bool is_dv_support_mode(struct meson_policy_in *input, const char *mode) 
          */
         if (find_resolution_index(mode, MESON_POLICY_RESOLUTION) <
             find_resolution_index(input->hdr_info.dv_max_mode, MESON_POLICY_RESOLUTION)) {
+            SYS_LOGI("%s mode:%s not support dv\n", __func__, mode);
             validMode = false;
         } else {
             validMode = true;
