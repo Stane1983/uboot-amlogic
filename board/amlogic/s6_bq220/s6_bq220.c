@@ -405,7 +405,7 @@ int checkhw(char *name)
 			break;
 		case 0x200000000UL:
 			if (board_id == 12) {
-				strcpy(dtb_name, "s6_a311y2s_bq220_sdio-8g\0");
+				strcpy(dtb_name, "s6_a311y2s_bq220sdio-8g\0");
 			} else {
 				strcpy(dtb_name, "s6_a311y2s_bq220-8g\0");
 			}
