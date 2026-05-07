@@ -11,6 +11,7 @@
 #include <common.h>
 #include <log.h>
 #include <asm/global_data.h>
+#include <asm/cache.h>
 
 #if CONFIG_IS_ENABLED(UNIT_TEST)
 #define DEBUG
@@ -375,9 +376,9 @@ nextchunk-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 /*  sizes, alignments */
 
 #define SIZE_SZ                (sizeof(INTERNAL_SIZE_T))
-#define MALLOC_ALIGNMENT       (SIZE_SZ + SIZE_SZ)
+#define MALLOC_ALIGNMENT       (ARCH_DMA_MINALIGN)//(SIZE_SZ + SIZE_SZ)
 #define MALLOC_ALIGN_MASK      (MALLOC_ALIGNMENT - 1)
-#define MINSIZE                (sizeof(struct malloc_chunk))
+#define MINSIZE                (ARCH_DMA_MINALIGN)//(sizeof(struct malloc_chunk))
 
 /* conversion from malloc headers to user pointers, and back */
 
