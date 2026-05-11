@@ -394,6 +394,30 @@ static int get_active_slot(bootloader_control *info)
 	}
 }
 
+char *get_vbmeta_slot(void)
+{
+	char *partition = "misc";
+	struct bootloader_control boot_ctrl;
+	char vab_buf[64] = {0};
+
+	if (store_read((const char *)partition, 2048, 32, (unsigned char *)vab_buf) < 0) {
+		printf("failed to store read %s.\n", partition);
+		return "_a";
+	}
+
+	memcpy(&boot_ctrl, vab_buf, sizeof(struct bootloader_control));
+
+	if (boot_ctrl.magic != BOOT_CTRL_MAGIC) {
+		//first bootup default slot a
+		return "_a";
+	}
+
+	if (boot_ctrl.slot_info[0].priority > boot_ctrl.slot_info[1].priority)
+		return "_a";
+	else
+		return "_b";
+}
+
 static bool slot_is_bootable_normalAB(AvbABSlotData* slot) {
   return slot->priority > 0 &&
 		 (slot->successful_boot || (slot->tries_remaining > 0));

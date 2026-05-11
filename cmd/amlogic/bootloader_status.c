@@ -35,6 +35,7 @@ typedef boot_img_hdr_t boot_img_hdr;
 #define MIB_SIZE                (1024 * 1024)
 #define GPT_OFFSET              0x3DFE00
 #define DTS_GPT_OFFSET          0x3E0000
+#define MAX_VBMETA_SIZE         (8 * 1024)
 
 
 //check SWPL-31296 for details
@@ -801,6 +802,49 @@ int recovery_update(void)
 	return 0;
 }
 
+static int build_userdebug(void)
+{
+#ifdef CONFIG_AVB2
+	int i = 0;
+	int ret = 0;
+	char *vbmeta_slot = NULL;
+	int userdebug = 0;
+	char vbmeta_name[16] = {0};
+	char vbuf[MAX_VBMETA_SIZE] = {0};
+	//"userdebug" 0x75 0x73 0x65 0x72 0x64 0x65 0x62 0x75 0x67
+	const unsigned char buildtype[] = { 0x75, 0x73, 0x65, 0x72, 0x64, 0x65, 0x62, 0x75, 0x67 };
+
+	printf("avb2 enable, get user/userdebug from vbmeta partition.\n");
+	char *get_vbmeta_slot(void);
+	vbmeta_slot = get_vbmeta_slot();
+	if (has_boot_slot == 0)
+		strcpy(vbmeta_name, "vbmeta");
+	else
+		sprintf(vbmeta_name, "vbmeta%s", vbmeta_slot);
+
+	ret = store_read(vbmeta_name, 0, MAX_VBMETA_SIZE, vbuf);
+	if (ret) {
+		printf("store read %s failed, skip!\n", vbmeta_name);
+		return -1;
+	}
+
+	for (i = 0; i < MAX_VBMETA_SIZE - 10; i++) {
+		if (vbuf[i] == 0x75) {
+			if (!memcmp(vbuf + i, buildtype, 9)) {
+				printf("find userdebug flag\n");
+				userdebug = 1;
+				break;
+			}
+		}
+	}
+	return userdebug;
+
+#else
+	printf("avb2 disable, skip.\n");
+	return -1;
+#endif
+}
+
 static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]) {
 	int match_flag = 0;
 	char *rebootstatus = NULL;
@@ -823,6 +867,8 @@ static int do_secureboot_check(cmd_tbl_t *cmdtp, int flag, int argc, char * cons
 	recovery_update();
 
 	bootloader_wp();
+
+	build_userdebug();
 
 	//set default env before check
 	env_set("recovery_mode", "false");
