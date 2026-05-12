@@ -22,7 +22,9 @@
 #include <linux/arm-smccc.h>
 #include <asm/amlogic/arch/reboot.h>
 #include <asm/amlogic/arch/bl31_apis.h>
-
+#if defined(CONFIG_CHIP_NOCS) && defined(CONFIG_MESON_S6)
+#include <u-boot/sha256.h>
+#endif//if defined(CONFIG_CHIP_NOCS) && defined(CONFIG_MESON_S6)
 
 #if defined(CONFIG_EFUSE_OBJ_API) && defined(CONFIG_CMD_EFUSE)
 extern efuse_obj_field_t efuse_field;
@@ -345,6 +347,94 @@ void update_rollback(void)
 	env_set("reboot_status", "reboot_next");
 }
 
+#if defined(CONFIG_CHIP_NOCS) && defined(CONFIG_MESON_S6)
+#define S6_FPK_OFFSET 0x7320
+#define S6_STORAGE_BOOT_BLOB_HEADER_SIZE 4096
+#define S6_BB1ST_SIZE 251360
+
+static int nocs_read_fpk(unsigned char *fpke, unsigned int fpk_offset)
+{
+	unsigned char *buffer = NULL;
+	int capacity_boot = 0x2000 * 512;
+	int iret = 0;
+
+#ifdef CONFIG_MMC_MESON_GX
+	struct mmc *mmc = NULL;
+
+	if (store_get_type() == BOOT_EMMC)
+		mmc = find_mmc_device(1);
+
+	if (mmc)
+		capacity_boot = mmc->capacity_boot;
+#endif
+
+	printf("nocs_read_fpk capacity_boot: 0x%x\n", capacity_boot);
+	buffer = (unsigned char *)malloc(capacity_boot);
+	if (!buffer) {
+		printf("ERROR! fail to allocate memory ...\n");
+		return -1;
+	}
+	memset(buffer, 0, capacity_boot);
+
+	iret = store_boot_read("bootloader", 1, 0, buffer);
+	if (iret) {
+		printf("Failed to read boot0\n");
+		free(buffer);
+		buffer = NULL;
+		return -1;
+	}
+
+	memcpy(fpke, &buffer[fpk_offset], 16);
+
+	printf("FPKE from boot0: ");
+	for (int i = 0; i < 16; i++) {
+		printf(" %02x", fpke[i]);
+	}
+	printf("\n");
+
+	free(buffer);
+	buffer = NULL;
+	return 0;
+}
+
+static void update_fpk_for_nocs(unsigned char *buffer,
+	unsigned int fpk_offset, unsigned int bb1st_size, unsigned int storage_boot_blob_size)
+{
+	unsigned char sha256_data[32];
+	unsigned char fpke[16] = {0};
+
+	if ((fpk_offset + 16) > BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET) {
+		printf("fpk_offset is invalid 0x%x \n", fpk_offset);
+		return;
+	}
+
+	if ((bb1st_size + storage_boot_blob_size) > BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET) {
+		printf("bb1st_size 0x%x and storage_boot_blob_size  0x%x are invalid \n", bb1st_size, storage_boot_blob_size);
+		return ;
+	}
+
+	if (nocs_read_fpk(fpke, fpk_offset) != 0) {
+		printf("ERROR! nocs_read_fpk failed...\n");
+		return;
+	}
+
+	memcpy(&buffer[fpk_offset], fpke, 16);
+
+	/* update the 1st blob's hash */
+	sha256_csum_wd(&buffer[storage_boot_blob_size], bb1st_size - 32, sha256_data, CHUNKSZ_SHA256);
+
+	printf("new hash for boot0: ");
+	for (int i = 0; i < 32; i++) {
+		printf(" %02x", sha256_data[i]);
+	}
+	printf("\n");
+
+	memcpy(&buffer[bb1st_size + storage_boot_blob_size - 32], sha256_data, 32);
+
+	return;
+}
+#endif//#if defined(CONFIG_CHIP_NOCS) && defined(CONFIG_MESON_S6)
+
 static int write_bootloader(int i)
 {
 	unsigned char *buffer = NULL;
@@ -394,6 +484,10 @@ static int write_bootloader(int i)
 		return -1;
 	}
 #endif//#ifdef CONFIG_MESON_S7D
+
+#if defined(CONFIG_CHIP_NOCS) && defined(CONFIG_MESON_S6)
+	update_fpk_for_nocs(buffer, S6_FPK_OFFSET, S6_BB1ST_SIZE, S6_STORAGE_BOOT_BLOB_HEADER_SIZE);
+#endif//#if defined(CONFIG_CHIP_NOCS) && defined(CONFIG_MESON_S6)
 
 	iret = store_boot_write("bootloader", i, BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET, buffer);
 	if (iret) {
