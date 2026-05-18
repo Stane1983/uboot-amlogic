@@ -289,9 +289,11 @@ static int do_image_read_dtb_from_knl(const char *partname,
 
 	if (genimg_get_format(hdr_addr) != IMAGE_FORMAT_ANDROID) {
 		errorP("Fmt unsupported! only support 0x%x\n", IMAGE_FORMAT_ANDROID);
-		ret = __LINE__;
-		goto exit;
+		android_img = false;
+		return __LINE__;
 	}
+
+	android_img = true;
 
 	if (is_android_v3_header_image((void *)hdr_addr)) {
 		char *slot_name;
