@@ -1040,8 +1040,41 @@ static int hdmitx_set_hdr_priority(struct rx_cap *prxcap, u32 hdr_priority)
 	return 0;
 }
 
+static void hdmitx_update_dv_strategy_info(struct dv_info *dv)
+{
+	if (dv->ver == 0) {
+		if (dv->length == 0x19)
+			dv->support_DV_RGB_444_8BIT = 1;
+	}
+
+	if (dv->ver == 1) {
+		if (dv->length == 0x0B) {
+			dv->support_DV_RGB_444_8BIT = 1;
+			if (dv->low_latency == 0x01)
+				dv->support_LL_YCbCr_422_12BIT = 1;
+		} else if (dv->length == 0x0E) {
+			dv->support_DV_RGB_444_8BIT = 1;
+		}
+	}
+
+	if (dv->ver == 2) {
+		if (dv->length >= 0x0B) {
+			if (dv->Interface != 0x00 && dv->Interface != 0x01)
+				dv->support_DV_RGB_444_8BIT = 1;
+			dv->support_LL_YCbCr_422_12BIT = 1;
+			if (dv->Interface == 0x01 || dv->Interface == 0x03) {
+				if (dv->sup_10b_12b_444 == 0x1)
+					dv->support_LL_RGB_444_10BIT = 1;
+				if (dv->sup_10b_12b_444 == 0x2)
+					dv->support_LL_RGB_444_12BIT = 1;
+			}
+		}
+	}
+}
+
 static void get_parse_edid_data(struct hdmitx_dev *hdev)
 {
+	/* update the hdr/hdr10+/dv capabilities in the end of scene_process */
 	int hdr_priority = get_hdr_strategy_priority();
 
 	hdmitx_config_i2c_rate(DDC_I2C_50K);
@@ -1073,9 +1106,14 @@ static void get_parse_edid_data(struct hdmitx_dev *hdev)
 	/* parse edid data */
 	hdmi_edid_parsing(hdev->rawedid, &hdev->RXCap);
 
-	if (hdr_priority == -1)
-		return;
-	hdmitx_set_hdr_priority(&hdev->RXCap, hdr_priority);
+	/* Update the member variables used by the dv running strategy */
+	hdmitx_update_dv_strategy_info(&hdev->RXCap.dv_info);
+	hdmitx_update_dv_strategy_info(&hdev->RXCap.dv_info2);
+
+	if (hdr_priority != -1)
+		hdmitx_set_hdr_priority(&hdev->RXCap, hdr_priority);
+	else if (get_kernel_dtb_info())
+		hdmitx_set_hdr_priority(&hdev->RXCap, 268435456);
 }
 
 /* policy process: to find the output mode/attr/dv_type */
@@ -1212,14 +1250,14 @@ static int _do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const 
 		int tmp = edid_check[0] - '0';
 
 		if (tmp >= 0 && tmp <= 3)
-			hdev->edid_check = tmp;
+			hdev->RXCap.edid_check = tmp;
 		else
-			hdev->edid_check = 0;
+			hdev->RXCap.edid_check = 0;
 	} else {
-		hdev->edid_check = 0;
+		hdev->RXCap.edid_check = 0;
 	}
 	printf("[%s][%d] dongle_mode=[%d], dsc_policy=[%d], edid_check=[%d]\n", __func__, __LINE__,
-	hdev->dongle_mode, hdev->dsc_policy, hdev->edid_check);
+	hdev->dongle_mode, hdev->dsc_policy, hdev->RXCap.edid_check);
 
 	get_parse_edid_data(hdev);
 
@@ -1282,7 +1320,7 @@ static int _do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const 
 		if (is_mode_name_frac(hdmimode))
 			convert_name_frac2int(hdmimode, tmp_sel_hdmimode);
 		else
-			memcpy(tmp_sel_hdmimode, hdmimode, sizeof(tmp_sel_hdmimode));
+			strncpy(tmp_sel_hdmimode, hdmimode, MODE_LEN - 1);
 		para = hdmitx21_get_fmtpara(tmp_sel_hdmimode, colorattribute);
 		if (hdmitx_edid_check_valid_mode(hdev, para)) {
 			mode_support = true;
@@ -1435,7 +1473,7 @@ static int _do_get_parse_edid(cmd_tbl_t *cmdtp, int flag, int argc, char *const 
 	if (is_mode_name_frac(sel_hdmimode))
 		convert_name_frac2int(sel_hdmimode, tmp_sel_hdmimode);
 	else
-		memcpy(tmp_sel_hdmimode, sel_hdmimode, sizeof(tmp_sel_hdmimode));
+		strncpy(tmp_sel_hdmimode, sel_hdmimode, MODE_LEN - 1);
 	hdev->para = hdmitx21_get_fmtpara(tmp_sel_hdmimode, env_get("colorattribute"));
 	hdev->vic = hdev->para->timing.vic;
 	/*

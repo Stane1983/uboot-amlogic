@@ -33,6 +33,8 @@
 /* refer to hdmi2.1 table 7-36, 32 VIC support y420 */
 #define Y420_VIC_MAX_NUM 32
 
+#define MAX_DTD_COUNT	16
+
 /* hdmitx soft reset */
 #define RESET_18OR10TO20		0x01
 #define RESET_SOFTWARE_LOGIC	0x02
@@ -228,8 +230,75 @@ enum hdmi_vic {
 	HDMI_217_10240x4320p120_64x27	= 217,
 	HDMI_218_4096x2160p100_256x135	= 218,
 	HDMI_219_4096x2160p120_256x135	= 219,
-	HDMI_VIC_END,
+	HDMI_CEA_VIC_END,
+
+	/*Vesa mode which don't have vic, we specify value for them also*/
+	HDMIV_0_640x480p60hz = HDMITX_VESA_OFFSET,
+	HDMIV_1_800x480p60hz,
+	HDMIV_2_800x600p60hz,
+	HDMIV_3_852x480p60hz,
+	HDMIV_4_854x480p60hz,
+	HDMIV_5_1024x600p60hz,
+	HDMIV_6_1024x768p60hz,
+	HDMIV_7_1152x864p75hz,
+	HDMIV_8_1280x768p60hz,
+	HDMIV_9_1280x800p60hz,
+	HDMIV_10_1280x960p60hz,
+	HDMIV_11_1280x1024p60hz,
+	HDMIV_12_1360x768p60hz,
+	HDMIV_13_1366x768p60hz,
+	HDMIV_14_1400x1050p60hz,
+	HDMIV_15_1440x900p60hz,
+	HDMIV_16_1440x2560p60hz,
+	HDMIV_17_1600x900p60hz,
+	HDMIV_18_1600x1200p60hz,
+	HDMIV_19_1680x1050p60hz,
+	HDMIV_20_1920x1200p60hz,
+	HDMIV_21_2048x1080p24hz,
+	HDMIV_22_2160x1200p90hz,
+	HDMIV_23_2560x1600p60hz,
+	HDMIV_24_3440x1440p60hz,
+	HDMIV_25_2400x1200p90hz,
+	HDMIV_26_3840x1080p60hz,
+	/*not supported in timing*/
+	HDMIV_2560x1080p60hz,
+	HDMIV_2560x1440p60hz,
+	HDMIV_1280x600p60hz,
+	HDMIV_2560x1600p60hz,
+	HDMIV_3440x1440p60hz,
+	HDMIV_2400x1200p90hz,
+
+	HDMI_VIC_END = 0xFFFF,
 };
+
+/* Compliance with old definitions */
+#define HDMIV_640x480p60hz		HDMIV_0_640x480p60hz
+#define HDMIV_800x480p60hz		HDMIV_1_800x480p60hz
+#define HDMIV_800x600p60hz		HDMIV_2_800x600p60hz
+#define HDMIV_852x480p60hz		HDMIV_3_852x480p60hz
+#define HDMIV_854x480p60hz		HDMIV_4_854x480p60hz
+#define HDMIV_1024x600p60hz		HDMIV_5_1024x600p60hz
+#define HDMIV_1024x768p60hz		HDMIV_6_1024x768p60hz
+#define HDMIV_1152x864p75hz		HDMIV_7_1152x864p75hz
+#define HDMIV_1280x768p60hz		HDMIV_8_1280x768p60hz
+#define HDMIV_1280x800p60hz		HDMIV_9_1280x800p60hz
+#define HDMIV_1280x960p60hz		HDMIV_10_1280x960p60hz
+#define HDMIV_1280x1024p60hz	HDMIV_11_1280x1024p60hz
+#define HDMIV_1360x768p60hz		HDMIV_12_1360x768p60hz
+#define HDMIV_1366x768p60hz		HDMIV_13_1366x768p60hz
+#define HDMIV_1400x1050p60hz	HDMIV_14_1400x1050p60hz
+#define HDMIV_1440x900p60hz		HDMIV_15_1440x900p60hz
+#define HDMIV_1440x2560p60hz	HDMIV_16_1440x2560p60hz
+#define HDMIV_1600x900p60hz		HDMIV_17_1600x900p60hz
+#define HDMIV_1600x1200p60hz	HDMIV_18_1600x1200p60hz
+#define HDMIV_1680x1050p60hz	HDMIV_19_1680x1050p60hz
+#define HDMIV_1920x1200p60hz	HDMIV_20_1920x1200p60hz
+#define HDMIV_2048x1080p24hz	HDMIV_21_2048x1080p24hz
+#define HDMIV_2160x1200p90hz	HDMIV_22_2160x1200p90hz
+#define HDMIV_2560x1600p60hz	HDMIV_23_2560x1600p60hz
+#define HDMIV_3440x1440p60hz	HDMIV_24_3440x1440p60hz
+#define HDMIV_2400x1200p90hz	HDMIV_25_2400x1200p90hz
+#define HDMIV_3840x1080p60hz	HDMIV_26_3840x1080p60hz
 
 #define HDMI_0_UNKNOWN HDMI_UNKNOWN
 
@@ -460,6 +529,16 @@ struct dtd {
 	enum hdmi_vic vic;
 };
 
+struct vesa_standard_timing {
+	unsigned short hactive;
+	unsigned short vactive;
+	unsigned short hblank;
+	unsigned short vblank;
+	unsigned short vsync;
+	unsigned short tmds_clk; /* Value = Pixel clock ?? 10,000 */
+	enum hdmi_vic vesa_timing;
+};
+
 /* Dolby Version support information from EDID*/
 /* Refer to DV Spec version2.9 page26 to page39*/
 enum block_type {
@@ -664,6 +743,11 @@ struct rx_cap {
 	unsigned int VIC_count;
 	unsigned int SVD_VIC_count;
 	unsigned int native_VIC;
+
+	/*hdmi_vic have different define for tx20&tx21,use u32 instead here.*/
+	/* Max 64 */
+	u32 vesa_timing[VESA_MAX_TIMING];
+
 	/*vendor*/
 	unsigned int IEEEOUI;
 	/* HDMI1.4b TMDS_CLK */
@@ -725,13 +809,19 @@ struct rx_cap {
 	unsigned int threeD_Multi_present;
 	unsigned int hdmi_vic_LEN;
 	enum hdmi_vic preferred_mode;
-	struct dtd dtd[16];
+	struct dtd dtd[MAX_DTD_COUNT];
 	unsigned char dtd_idx;
 	unsigned char flag_vfpdb;
 	unsigned char number_of_dtd;
 	unsigned char pref_colorspace;
 	struct hdr_info hdr_info;
 	struct dv_info dv_info;
+	/* When hdr_priority is 1, then dv_info will be all 0;
+	 * when hdr_priority is 2, then dv_info/hdr_info will be all 0
+	 * App won't get real dv_cap/hdr_cap, but can get real dv_cap2/hdr_cap2
+	 */
+	struct hdr_info hdr_info2;
+	struct dv_info dv_info2;
 	struct hdr10_plus_info hdr10plus_info;
 	/*blk0 check sum*/
 	unsigned char chksum;
@@ -748,6 +838,13 @@ struct rx_cap {
 	bool ifdb_present;
 	/* IFDB, currently only use below node */
 	u8 additional_vsif_num;
+
+	/* edid_check = 0 is default check
+	 * Bit 0     (0x01)  don't check block header
+	 * Bit 1     (0x02)  don't check edid checksum
+	 * Bit 0+1   (0x03)  don't check both block header and checksum
+	 */
+	unsigned int edid_check;
 };
 
 #define DRM_DISPLAY_MODE_LEN     32

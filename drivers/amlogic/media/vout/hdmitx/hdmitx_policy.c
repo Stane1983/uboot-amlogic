@@ -18,15 +18,36 @@
 #include <amlogic/cpu_id.h>
 #include <amlogic/media/vout/hdmitx_common.h>
 
-#define MODE_640x480p                   "640x480p60hz"
+/*
+ * default value
+ */
+#define MESON_DEFAULT_COLOR_FORMAT_4K       "420,8bit"
+#define MESON_DEFAULT_COLOR_FORMAT          "rgb,8bit"
+#define MESON_DEFAULT_HDMI_MODE             "720p60hz"
+
+/*
+ * check high frame rate support dv or not
+ */
+#define DV_VSVDB_PARITY                 "Parity: 1"
+
+/*
+ * default dv mode value
+ */
+#define DOLBY_VISION_LL_RGB             3
+#define DOLBY_VISION_LL_YUV             2
+#define DOLBY_VISION_STD_ENABLE         1
+#define DOLBY_VISION_DISABLE            0
+
+/*
+ * define mode name
+ */
 #define MODE_480I                       "480i60hz"
 #define MODE_480I59HZ                   "480i59hz"
 #define MODE_480P                       "480p60hz"
 #define MODE_480P59HZ                   "480p59hz"
-#define MODE_480CVBS                    "480cvbs"
+#define MODE_640x480P                   "640x480p60hz"
 #define MODE_576I                       "576i50hz"
 #define MODE_576P                       "576p50hz"
-#define MODE_576CVBS                    "576cvbs"
 #define MODE_720P23HZ                   "720p23hz"
 #define MODE_720P24HZ                   "720p24hz"
 #define MODE_720P25HZ                   "720p25hz"
@@ -40,7 +61,6 @@
 #define MODE_720P100HZ                  "1280x720p100hz"
 #define MODE_720P119HZ                  "1280x720p119hz"
 #define MODE_720P120HZ                  "1280x720p120hz"
-#define MODE_768P                       "768p60hz"
 #define MODE_1080P23HZ                  "1080p23hz"
 #define MODE_1080P24HZ                  "1080p24hz"
 #define MODE_1080P25HZ                  "1080p25hz"
@@ -100,11 +120,24 @@
 #define MODE_8K4K60HZ                   "7680x4320p60hz"
 #define MODE_8K4K                       "7680x4320p"
 
+/*
+ * lcd mode
+ */
 #define MODE_PANEL                      "panel"
+#define MODE_768P                       "768p60hz"
+
+/*
+ * cvbs mode
+ */
+#define MODE_480CVBS                    "480cvbs"
+#define MODE_576CVBS                    "576cvbs"
 #define MODE_PAL_M                      "pal_m"
 #define MODE_PAL_N                      "pal_n"
 #define MODE_NTSC_M                     "ntsc_m"
 
+/*
+ * define color format name
+ */
 #define COLOR_YCBCR444_12BIT             "444,12bit"
 #define COLOR_YCBCR444_10BIT             "444,10bit"
 #define COLOR_YCBCR444_8BIT              "444,8bit"
@@ -118,6 +151,10 @@
 #define COLOR_RGB_10BIT                  "rgb,10bit"
 #define COLOR_RGB_8BIT                   "rgb,8bit"
 
+/*
+ * define mode list
+ * must sort by resolution
+ */
 static const char *DISPLAY_MODE_LIST[] = {
 	MODE_8K4K60HZ,
 	MODE_8K4K59HZ,
@@ -190,18 +227,20 @@ static const char *DISPLAY_MODE_LIST[] = {
 	MODE_576P,
 	MODE_480P,
 	MODE_480P59HZ,
-	MODE_640x480p,
+	MODE_640x480P,
 	MODE_576I,
 	MODE_480I,
 	MODE_480I59HZ,
 	/*
 	 * non hdmi solution
 	 */
-	/* MODE_768P,  */
-	/* MODE_PANEL, */
-	/* MODE_PAL_M, */
-	/* MODE_PAL_N, */
-	/* MODE_NTSC_M, */
+	MODE_768P,
+	MODE_PANEL,
+	MODE_480CVBS,
+	MODE_576CVBS,
+	MODE_PAL_M,
+	MODE_PAL_N,
+	MODE_NTSC_M,
 };
 
 static const char *MODE_FRAMERATE_FIRST_50HZ[] = {
@@ -209,9 +248,16 @@ static const char *MODE_FRAMERATE_FIRST_50HZ[] = {
 	MODE_576I,
 	MODE_1080I,
 	MODE_1080I50HZ,
-	MODE_640x480p,
+	MODE_640x480P,
 	MODE_480P,
 	MODE_576P,
+	/*
+	 * for hdmi1.4 certification 7-16/7-17/7-18
+	 * edid only support 1080p30hz/25hz/24hz
+	 */
+	MODE_1080P24HZ,
+	MODE_1080P25HZ,
+	MODE_1080P30HZ,
 	MODE_720P,
 	MODE_720P50HZ,
 	MODE_4K2K24HZ,
@@ -224,19 +270,19 @@ static const char *MODE_FRAMERATE_FIRST_50HZ[] = {
 	/*
 	 * for hdmi compatibility not choose 8k as preferred mode
 	 */
-	/*
-	MODE_4K2K100HZ,
-	MODE_4K2K120HZ,
-	MODE_8K4K24HZ,
-	MODE_8K4K25HZ,
-	MODE_8K4K30HZ,
-	MODE_8K4K48HZ,
-	MODE_8K4K60HZ,
-	MODE_8K4K50HZ,
-	*/
+	// MODE_4K2K100HZ,
+	// MODE_4K2K120HZ,
+	// MODE_8K4K24HZ,
+	// MODE_8K4K25HZ,
+	// MODE_8K4K30HZ,
+	// MODE_8K4K48HZ,
+	// MODE_8K4K60HZ,
+	// MODE_8K4K50HZ,
 };
 
-/* for check hdr 4k support or not */
+/*
+ * hdr 4k support or not
+ */
 static const char *MODE_4K_LIST[] = {
 	MODE_4K2K60HZ,
 	MODE_4K2K50HZ,
@@ -284,9 +330,16 @@ static const char *MODE_RESOLUTION_FIRST[] = {
 	MODE_576I,
 	MODE_1080I50HZ,
 	MODE_1080I,
-	MODE_640x480p,
+	MODE_640x480P,
 	MODE_480P,
 	MODE_576P,
+	/*
+	 * for hdmi1.4 certification 7-16/7-17/7-18
+	 * edid only support 1080p30hz/25hz/24hz
+	 */
+	MODE_1080P24HZ,
+	MODE_1080P25HZ,
+	MODE_1080P30HZ,
 	MODE_720P50HZ,
 	MODE_720P,
 	MODE_1080P50HZ,
@@ -299,14 +352,14 @@ static const char *MODE_RESOLUTION_FIRST[] = {
 	/*
 	 * for hdmi compatibility not choose 8k as preferred mode
 	 */
-	/* MODE_4K2K100HZ, */
-	/* MODE_4K2K120HZ, */
-	/* MODE_8K4K24HZ, */
-	/* MODE_8K4K25HZ, */
-	/* MODE_8K4K30HZ, */
-	/* MODE_8K4K48HZ, */
-	/* MODE_8K4K50HZ, */
-	/* MODE_8K4K60HZ, */
+	// MODE_4K2K100HZ,
+	// MODE_4K2K120HZ,
+	// MODE_8K4K24HZ,
+	// MODE_8K4K25HZ,
+	// MODE_8K4K30HZ,
+	// MODE_8K4K48HZ,
+	// MODE_8K4K50HZ,
+	// MODE_8K4K60HZ,
 };
 
 static const char *MODE_RESOLUTION_FIRST_50HZ[] = {
@@ -314,9 +367,16 @@ static const char *MODE_RESOLUTION_FIRST_50HZ[] = {
 	MODE_576I,
 	MODE_1080I,
 	MODE_1080I50HZ,
-	MODE_640x480p,
+	MODE_640x480P,
 	MODE_480P,
 	MODE_576P,
+	/*
+	 * for hdmi1.4 certification 7-16/7-17/7-18
+	 * edid only support 1080p30hz/25hz/24hz
+	 */
+	MODE_1080P24HZ,
+	MODE_1080P25HZ,
+	MODE_1080P30HZ,
 	MODE_720P,
 	MODE_720P50HZ,
 	MODE_1080P,
@@ -329,27 +389,35 @@ static const char *MODE_RESOLUTION_FIRST_50HZ[] = {
 	/*
 	 * for hdmi compatibility not choose 8k as preferred mode
 	 */
-	/*
-	MODE_4K2K100HZ,
-	MODE_4K2K120HZ,
-	MODE_8K4K24HZ,
-	MODE_8K4K25HZ,
-	MODE_8K4K30HZ,
-	MODE_8K4K48HZ,
-	MODE_8K4K60HZ,
-	MODE_8K4K50HZ,
-	*/
+	// MODE_4K2K100HZ,
+	// MODE_4K2K120HZ,
+	// MODE_8K4K24HZ,
+	// MODE_8K4K25HZ,
+	// MODE_8K4K30HZ,
+	// MODE_8K4K48HZ,
+	// MODE_8K4K60HZ,
+	// MODE_8K4K50HZ,
 };
 
-/* ascending order for HDR/SDR policy */
+/*
+ * mode for frame rate priority
+ * for HDR/SDR policy
+ */
 static const char *MODE_FRAMERATE_FIRST[] = {
 	MODE_480I,
 	MODE_576I,
 	MODE_1080I50HZ,
 	MODE_1080I,
-	MODE_640x480p,
+	MODE_640x480P,
 	MODE_480P,
 	MODE_576P,
+	/*
+	 * for hdmi1.4 certification 7-16/7-17/7-18
+	 * edid only support 1080p30hz/25hz/24hz
+	 */
+	MODE_1080P24HZ,
+	MODE_1080P25HZ,
+	MODE_1080P30HZ,
 	MODE_720P50HZ,
 	MODE_720P,
 	MODE_4K2K24HZ,
@@ -362,54 +430,41 @@ static const char *MODE_FRAMERATE_FIRST[] = {
 	/*
 	 * for hdmi compatibility not choose 8k as preferred mode
 	 */
-	/* MODE_4K2K100HZ, */
-	/* MODE_4K2K120HZ, */
-	/* MODE_8K4K24HZ, */
-	/* MODE_8K4K25HZ, */
-	/* MODE_8K4K30HZ, */
-	/* MODE_8K4K48HZ, */
-	/* MODE_8K4K50HZ, */
-	/* MODE_8K4K60HZ, */
+	// MODE_4K2K100HZ,
+	// MODE_4K2K120HZ,
+	// MODE_8K4K24HZ,
+	// MODE_8K4K25HZ,
+	// MODE_8K4K30HZ,
+	// MODE_8K4K48HZ,
+	// MODE_8K4K50HZ,
+	// MODE_8K4K60HZ,
 };
 
-/* this is prior selected list for sdr of
- * 4k2k50hz, 4k2k60hz smpte50hz, smpte60hz
- * for user change resolution case in sysctl.
- * descending order
+/*
+ * this is prior selected list for sdr of 4k2k50hz, 4k2k60hz smpte50hz, smpte60hz
+ * for user change resolution case
  */
 static const char *COLOR_ATTRIBUTE_LIST1[] = {
 	COLOR_YCBCR420_10BIT,
 	COLOR_YCBCR422_12BIT,
 	COLOR_YCBCR420_8BIT,
 	COLOR_YCBCR444_8BIT,
-	COLOR_RGB_8BIT
+	COLOR_RGB_8BIT,
 };
 
-/* this is prior selected list for hdr and sdr of
- * non 4k50/60hz display mode.
- * under HDR priority && auto best is off, it may
- * change from TV_A (1080p60hz 444,10bit HDR) to
- * TV_B witch support 1080p60hz 444,8bit maximum.
- * should keep mode(1080p60hz) witch user selected,
- * and 8bit depth(sdr) is kept in select list for
- * safety of corner case.
- * i.e. if HDR cs/cd is not supported, may select
- * 8bit mode.
- * also for user change resolution case in sysctl.
- * descending order
+/*
+ * this is prior selected list for hdr and sdr  of non 4k display mode
+ * for user change resolution case
  */
 static const char *COLOR_ATTRIBUTE_LIST2[] = {
 	COLOR_YCBCR422_12BIT,
 	COLOR_YCBCR444_10BIT,
 	COLOR_RGB_10BIT,
 	COLOR_YCBCR444_8BIT,
-	COLOR_RGB_8BIT
+	COLOR_RGB_8BIT,
 };
 
-/* this is prior selected list for sdr of
- * non 4k50/60hz display mode
- * descending order
- */
+//this is prior selected list for sdr  of non 4k display mode
 static const char *SDR_NON4K_COLOR_ATTRIBUTE_LIST[] = {
 	COLOR_YCBCR444_8BIT,
 	COLOR_RGB_8BIT,
@@ -418,8 +473,8 @@ static const char *SDR_NON4K_COLOR_ATTRIBUTE_LIST[] = {
 	COLOR_RGB_10BIT,
 };
 
-/* this is prior selected list of Low Power Mode
- * 4k2k50hz, 4k2k60hz smpte50hz, smpte60hz
+/*
+ * this is prior selected list  of Low Power Mode 4k2k50hz, 4k2k60hz smpte50hz, smpte60hz
  */
 static const char *COLOR_ATTRIBUTE_LIST3[] = {
 	COLOR_YCBCR420_8BIT,
@@ -429,11 +484,11 @@ static const char *COLOR_ATTRIBUTE_LIST3[] = {
 	COLOR_YCBCR444_8BIT,
 	COLOR_RGB_8BIT,
 	COLOR_YCBCR420_12BIT,
-	COLOR_YCBCR422_12BIT
+	COLOR_YCBCR422_12BIT,
 };
 
-/* this is prior selected list of
- * Low Power Mode other display mode
+/*
+ * this is prior selected list of Low Power Mode other display mode
  */
 static const char *COLOR_ATTRIBUTE_LIST4[] = {
 	COLOR_YCBCR444_8BIT,
@@ -444,11 +499,11 @@ static const char *COLOR_ATTRIBUTE_LIST4[] = {
 	COLOR_RGB_10BIT,
 	COLOR_YCBCR444_12BIT,
 	COLOR_YCBCR422_12BIT,
-	COLOR_RGB_12BIT
+	COLOR_RGB_12BIT,
 };
 
-/* this is prior selected list of HDR non 4k50/60 colorspace
- * descending order
+/*
+ * this is prior selected list of HDR non 4k colorspace
  */
 static const char *HDR_NON4K_COLOR_ATTRIBUTE_LIST[] = {
 	COLOR_YCBCR422_12BIT,
@@ -458,8 +513,8 @@ static const char *HDR_NON4K_COLOR_ATTRIBUTE_LIST[] = {
 	COLOR_RGB_12BIT,
 };
 
-/* this is prior selected list of HDR 4k colorspace(2160p60hz/2160p50hz)
- * descending order
+/*
+ * this is prior selected list of HDR 4k colorspace(2160p60hz/2160p50hz)
  */
 static const char *HDR_4K_COLOR_ATTRIBUTE_LIST[] = {
 	COLOR_YCBCR420_10BIT,
@@ -471,7 +526,7 @@ struct frac_mode_list_map {
 	const char *non_frac_mode;
 };
 
-struct frac_mode_list_map FRAC_MODE_LIST_MAP[] = {
+static const struct frac_mode_list_map FRAC_MODE_LIST_MAP[] = {
 	{MODE_480I59HZ, MODE_480I},
 	{MODE_480P59HZ, MODE_480P},
 	{MODE_720P23HZ, MODE_720P24HZ},
@@ -1177,7 +1232,7 @@ static bool hdmi_sink_disp_mode_sup(struct input_hdmi_data *hdmi_data, const cha
 	if (is_mode_name_frac(disp_mode))
 		convert_name_frac2int(disp_mode, tmp_mode);
 	else
-		memcpy(tmp_mode, disp_mode, sizeof(disp_mode));
+		strncpy(tmp_mode, disp_mode, MODE_LEN - 1);
 
 	vic = hdmitx_edid_vic_tab_map_vic(tmp_mode);
 
@@ -1204,45 +1259,44 @@ static bool hdmi_sink_disp_mode_sup(struct input_hdmi_data *hdmi_data, const cha
 /* get the highest hdmi mode by edid */
 static void get_highest_hdmimode(struct input_hdmi_data *hdmi_data, char *mode)
 {
-	char value[MODE_LEN] = {0};
-	char mode_tmp[MODE_LEN];
-	const char **resolution_list = NULL;
-	int resolution_list_length = 0;
-	int i;
+	const char **reslist = NULL;
+	int reslist_len = 0;
+
+	const char **framerate = MODE_FRAMERATE_FIRST;
+	int framerate_len = ARRAY_SIZE(MODE_FRAMERATE_FIRST);
+
+	const char **resolution = MODE_RESOLUTION_FIRST;
+	int resolution_len = ARRAY_SIZE(MODE_RESOLUTION_FIRST);
 
 	if (!hdmi_data || !mode)
 		return;
 
+	if (hdmi_data->is_preferred_50hz) {
+		framerate = MODE_FRAMERATE_FIRST_50HZ;
+		framerate_len = ARRAY_SIZE(MODE_FRAMERATE_FIRST_50HZ);
+		resolution = MODE_RESOLUTION_FIRST_50HZ;
+		resolution_len = ARRAY_SIZE(MODE_RESOLUTION_FIRST_50HZ);
+	}
+
 	//choose base table
 	if (is_framerate_priority()) {
-		if (hdmi_data->is_preferred_50hz) {
-			resolution_list = MODE_FRAMERATE_FIRST_50HZ;
-			resolution_list_length = ARRAY_SIZE(MODE_FRAMERATE_FIRST_50HZ);
-		} else {
-			resolution_list = MODE_FRAMERATE_FIRST;
-			resolution_list_length = ARRAY_SIZE(MODE_FRAMERATE_FIRST);
-		}
+		reslist = framerate;
+		reslist_len = framerate_len;
 	} else {
-		if (hdmi_data->is_preferred_50hz) {
-			resolution_list = MODE_RESOLUTION_FIRST_50HZ;
-			resolution_list_length = ARRAY_SIZE(MODE_RESOLUTION_FIRST_50HZ);
-		} else {
-			resolution_list = MODE_RESOLUTION_FIRST;
-			resolution_list_length = ARRAY_SIZE(MODE_RESOLUTION_FIRST);
-		}
+		reslist = resolution;
+		reslist_len = resolution_len;
 	}
 
 	//find preferred mode
-	for (i = resolution_list_length - 1; i >= 0 ; i--) {
-		memset(mode_tmp, 0, sizeof(mode_tmp));
-		strncpy(mode_tmp, resolution_list[i], MODE_LEN - 1);
-		if (hdmi_sink_disp_mode_sup(hdmi_data, mode_tmp)) {
-			strcpy(value, mode_tmp);
+	for (int i = reslist_len - 1; i >= 0 ; i--) {
+		const char *tmp_mode = find_non_frac_preferred_mode(reslist[i]);
+
+		if (hdmi_sink_disp_mode_sup(hdmi_data, tmp_mode)) {
+			strcpy(mode, reslist[i]);
 			break;
 		}
 	}
 
-	strcpy(mode, value);
 	printf("set HDMI to highest edid mode: %s\n", mode);
 }
 
@@ -1640,8 +1694,6 @@ void hdr_scene_process(struct input_hdmi_data *hdmi_data,
 {
 	bool find = false;
 	char colorattribute[MODE_LEN] = {0};
-	const char **resolutionList = NULL;
-	int resolutionList_length = 0;
 	const char **colorList = NULL;
 	int colorList_length = 0;
 	int j = 0;
@@ -1677,31 +1729,36 @@ void hdr_scene_process(struct input_hdmi_data *hdmi_data,
 			printf("%s not find hdr support mode\n", __func__);
 	} else if (need_best_mode_policy) {
 		/* case2: best_color_space is disabled, use user selected color */
+		const char **reslist = NULL;
+		int reslist_len = 0;
 
+		const char **framerate = MODE_FRAMERATE_FIRST;
+		int framerate_len = ARRAY_SIZE(MODE_FRAMERATE_FIRST);
+
+		const char **resolution = MODE_RESOLUTION_FIRST;
+		int resolution_len = ARRAY_SIZE(MODE_RESOLUTION_FIRST);
+
+		if (hdmi_data->is_preferred_50hz) {
+			framerate = MODE_FRAMERATE_FIRST_50HZ;
+			framerate_len = ARRAY_SIZE(MODE_FRAMERATE_FIRST_50HZ);
+			resolution = MODE_RESOLUTION_FIRST_50HZ;
+			resolution_len = ARRAY_SIZE(MODE_RESOLUTION_FIRST_50HZ);
+		}
+
+		//choose base table
 		if (is_framerate_priority()) {
-			if (hdmi_data->is_preferred_50hz) {
-				resolutionList = MODE_FRAMERATE_FIRST_50HZ;
-				resolutionList_length = ARRAY_SIZE(MODE_FRAMERATE_FIRST_50HZ);
-			} else {
-				resolutionList = MODE_FRAMERATE_FIRST;
-				resolutionList_length = ARRAY_SIZE(MODE_FRAMERATE_FIRST);
-			}
+			reslist = framerate;
+			reslist_len = framerate_len;
 		} else {
-			if (hdmi_data->is_preferred_50hz) {
-				resolutionList = MODE_RESOLUTION_FIRST_50HZ;
-				resolutionList_length = ARRAY_SIZE(MODE_RESOLUTION_FIRST_50HZ);
-			} else {
-				resolutionList = MODE_RESOLUTION_FIRST;
-				resolutionList_length = ARRAY_SIZE(MODE_RESOLUTION_FIRST);
-			}
+			reslist = resolution;
+			reslist_len = resolution_len;
 		}
 
 		/* choose prefer resolution for hdr */
-		for (j = resolutionList_length - 1; j >= 0; j--) {
-			if (meson_mode_support_mode(hdmi_data, HDR10_PRIORITY,
-				resolutionList[j]) == 0) {
-				printf("%s mode:[%s] support hdr\n", __func__, resolutionList[j]);
-				strlcpy(output_info->final_displaymode, resolutionList[j],
+		for (j = reslist_len - 1; j >= 0; j--) {
+			if (meson_mode_support_mode(hdmi_data, HDR10_PRIORITY, reslist[j]) == 0) {
+				printf("%s mode:[%s] support hdr\n", __func__, reslist[j]);
+				strlcpy(output_info->final_displaymode, reslist[j],
 					sizeof(output_info->final_displaymode));
 				find = true;
 				break;
@@ -1893,7 +1950,8 @@ void get_hdmi_data(struct hdmitx_dev *hdev, struct input_hdmi_data *data)
 	       is_best_color_space(),
 	       is_framerate_priority(),
 	       data->hdr_force_mode);
-	printf("ubootenv preferred_frac_mode: %d, preferred_50hz:%d\n",
+	printf("ubootenv preferred_frac_mode: %d, preferred_50hz:%d, hdmimode:%s\n",
 			data->is_preferred_frac_mode,
-			data->is_preferred_50hz);
+			data->is_preferred_50hz,
+			data->ubootenv_hdmimode);
 }

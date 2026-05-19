@@ -3,6 +3,7 @@
  * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
  */
 
+#include <linux/math64.h>
 #include <common.h>
 #include <amlogic/media/vout/hdmitx21/hdmitx_module.h>
 #include "hdmi_param.h"
@@ -35,6 +36,26 @@ static struct parse_cr parse_cr_[] = {
 	{COLORRANGE_LIM, "limit",},
 	{COLORRANGE_FUL, "full",},
 };
+
+/**
+ * sync function drm_mode_vrefresh()
+ */
+static int hdmi_timing_vrefresh(const struct hdmi_timing *t)
+{
+	unsigned int num, den;
+
+	if (t->h_total == 0 || t->v_total == 0)
+		return 0;
+
+	num = t->pixel_freq;
+	den = t->h_total * t->v_total;
+
+	/*interlace mode*/
+	if (t->pi_mode == 0)
+		num *= 2;
+
+	return DIV_ROUND_CLOSEST_ULL(mul_u32_u32(num, 1000), den);
+}
 
 /* parse the name string to cs/cd/cr */
 static void _parse_hdmi_attr(char const *name,
@@ -130,7 +151,7 @@ static bool _tst_fmt_name(struct hdmi_format_para *para,
 	if (is_mode_name_frac(name))
 		convert_name_frac2int(name, tmp_mode);
 	else
-		memcpy(tmp_mode, name, sizeof(tmp_mode));
+		strncpy(tmp_mode, name, MODE_LEN - 1);
 
 	/* check sname first */
 	for (i = 0; i < hdmitx21_timing_size(); i++) {
@@ -172,7 +193,7 @@ const struct hdmi_timing *hdmitx21_match_dtd_timing(struct dtd *t)
 	const struct hdmi_timing *timing = hdmitx21_get_timing_para0();
 
 	if (!t)
-		return NULL;
+		return INVALID_HDMI_TIMING;
 
 	/* interlace mode, all vertical timing parameters
 	 * are halved, while vactive/vtotal is doubled
@@ -194,7 +215,7 @@ const struct hdmi_timing *hdmitx21_match_dtd_timing(struct dtd *t)
 			return timing;
 		timing++;
 	}
-	return NULL;
+	return INVALID_HDMI_TIMING;
 }
 
 struct hdmi_format_para *hdmitx21_tst_fmt_name(const char *name,
@@ -213,6 +234,38 @@ struct hdmi_format_para *hdmitx21_tst_fmt_name(const char *name,
 		return &para;
 	else
 		return NULL;
+}
+
+const struct hdmi_timing *hdmitx_mode_match_vesa_timing(struct vesa_standard_timing *t)
+{
+	int i;
+	const struct hdmi_timing *timing;
+
+	if (!t)
+		return INVALID_HDMI_TIMING;
+
+	for (i = 0; i < ARRAY_SIZE(vesa_modes); i++) {
+		timing = &vesa_modes[i];
+
+		if (t->hactive == timing->h_active &&
+		    t->vactive == timing->v_active) {
+			if (t->vsync) {
+				unsigned int vsync = hdmi_timing_vrefresh(timing);
+
+				if (t->vsync == vsync)
+					return timing;
+			}
+			if (t->hblank &&
+			    t->hblank == timing->h_blank &&
+			    t->vblank &&
+			    t->vblank == timing->v_blank &&
+			    t->tmds_clk &&
+			    t->tmds_clk == timing->pixel_freq / 10)
+				return timing;
+		}
+	}
+
+	return INVALID_HDMI_TIMING;
 }
 
 const struct hdmi_timing *hdmitx21_gettiming_from_vic(enum hdmi_vic vic)

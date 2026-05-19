@@ -63,12 +63,6 @@ struct hdmitx_dev {
 	enum mode_type hdmi_current_tunnel_mode;
 	/* Add dongle_mode, clock, phy may be different from mbox */
 	unsigned int dongle_mode;
-	/* edid_check = 0 is default check
-	 * Bit 0     (0x01)  don't check block header
-	 * Bit 1     (0x02)  don't check edid checksum
-	 * Bit 0+1   (0x03)  don't check both block header and checksum
-	 */
-	unsigned int edid_check;
 	unsigned char limit_res_1080p;
 	unsigned char enc_idx;
 	char *vend_name;
@@ -112,6 +106,8 @@ u32 hdmitx21_check_frac_rate(struct hdmitx_dev *hdev);
 void hdmitx21_set_clk(struct hdmitx_dev *hdev);
 void hdmitx_set_clkdiv(struct hdmitx_dev *hdev);
 const struct hdmi_timing *hdmitx21_gettiming_from_vic(enum hdmi_vic vic);
+const struct hdmi_timing *hdmitx_mode_match_vesa_timing(struct vesa_standard_timing *t);
+
 struct hdmi_format_para *hdmitx21_get_fmtpara(const char *mode,
 	const char *attr);
 struct hdmi_format_para *hdmitx21_get_fmt_name(char const *name, char const *attr);

@@ -2423,7 +2423,7 @@ struct hdmi_format_para *hdmi_tst_fmt_name(char const *name, char const *attr)
 	if (is_mode_name_frac(name))
 		convert_name_frac2int(name, tmp_name);
 	else
-		memcpy(tmp_name, name, sizeof(tmp_name));
+		strncpy(tmp_name, name, MODE_LEN - 1);
 
 	for (i = 0; all_fmt_paras[i]; i++) {
 		lname = all_fmt_paras[i]->name;
