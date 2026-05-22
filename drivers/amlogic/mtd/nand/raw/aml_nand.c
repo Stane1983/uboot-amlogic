@@ -1530,6 +1530,7 @@ int aml_nand_scan_shipped_bbt(struct mtd_info *mtd)
 				if ((aml_chip->mfr_type == NAND_MFR_SANDISK) ||
 					(aml_chip->mfr_type == NAND_ID_ESMT) ||
 					(aml_chip->mfr_type == NAND_MFR_MACRONIX) ||
+					(aml_chip->mfr_type == NAND_MFR_DOSILICON) ||
 					aml_get_samsung_fbbt_flag()) {
 					addr = offset + read_cnt*mtd->writesize;
 				} else

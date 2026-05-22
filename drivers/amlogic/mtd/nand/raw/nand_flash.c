@@ -894,6 +894,18 @@ struct aml_nand_flash_dev aml_nand_flash_ids[] = {
 		(NAND_TIMING_MODE5 | NAND_ECC_BCH16_MODE
 		| NAND_TWO_PLANE_MODE | NAND_INTERLEAVING_MODE)},
 
+	{"Dosilicon NAND FMND4GXXX3C 3.3V 4Gb",
+		{NAND_MFR_DOSILICON, 0xdc, 0x90, 0x95, 0x46},
+		2048,
+		512,
+		0x20000,
+		128,
+		1,
+		20,
+		15,
+		0,
+		(NAND_TIMING_MODE5 | NAND_ECC_BCH8_MODE)},
+
 	{NULL,}
 };
 
