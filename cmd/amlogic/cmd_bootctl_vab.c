@@ -602,16 +602,6 @@ static int check_bootloader(int slot)
 		printf("Fail read boot1\n");
 		goto exit;
 	}
-
-	for (i = 0; i < BOOTLOADER_CHECK_SIZE; i++) {
-		if (buffer_dest[i] != 0x00)
-			break;
-	}
-
-	if (i == BOOTLOADER_CHECK_SIZE) {
-		printf("%s header 2048 is all zero, skip\n", back_partname);
-		goto exit;
-	}
 	sha1_csum(buffer_src, capacity_boot, gensum0);
 
 	buffer_dest = buffer_src;
@@ -623,6 +613,17 @@ static int check_bootloader(int slot)
 		printf("Fail read %s\n", back_partname);
 		goto exit;
 	}
+
+	for (i = 0; i < BOOTLOADER_CHECK_SIZE; i++) {
+		if (buffer_dest[i] != 0x00)
+			break;
+	}
+
+	if (i == BOOTLOADER_CHECK_SIZE) {
+		printf("%s header 2048 is all zero, skip\n", back_partname);
+		goto exit;
+	}
+
 	sha1_csum(buffer_dest, capacity_boot, gensum1);
 
 	ret = memcmp(gensum0, gensum1, SHA1SUMLEN);
