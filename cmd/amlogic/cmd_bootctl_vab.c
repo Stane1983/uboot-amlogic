@@ -675,6 +675,13 @@ static int is_BootSame(int srcindex, int dstindex)
 	buffer_dest = buffer_src;
 	memset(buffer_dest, 0, capacity_boot);
 
+	iRet = store_logic_read(back_partname, 0,
+		BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET, buffer_src);
+	if (iRet) {
+		printf("Fail read %s\n", back_partname);
+		goto exit;
+	}
+
 	for (i = 0; i < BOOTLOADER_CHECK_SIZE; i++) {
 		if (buffer_src[i] != 0x00)
 			break;
@@ -685,11 +692,6 @@ static int is_BootSame(int srcindex, int dstindex)
 		goto exit;
 	}
 
-	iRet = store_boot_read("bootloader", dstindex, 0, buffer_dest);
-	if (iRet) {
-		printf("Fail read bootloader %d\n", dstindex);
-		goto exit;
-	}
 	sha1_csum(buffer_dest, capacity_boot, gensum1);
 
 	ret = memcmp(gensum0, gensum1, SHA1SUMLEN);
