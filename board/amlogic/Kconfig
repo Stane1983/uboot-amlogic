@@ -781,6 +781,12 @@ config S7D_BM219
 	help
 		Select S7D BM219 config
 
+config S7D_X96M200
+	bool "S7D_X96M200"
+	select TARGET_S7D_X96M200
+	help
+		Select S7D X96 m200 config
+
 endchoice
 
 config TARGET_S7D_SKT
@@ -811,6 +817,10 @@ config TARGET_S7D_T232
 config TARGET_S7D_BM219
 	bool "S7D BM219 board"
 	depends on S7D_BM219
+
+config TARGET_S7D_X96M200
+	bool "S7D X96 m200 board"
+	depends on S7D_X96M200
 
 endif
 
@@ -1121,6 +1131,8 @@ source "board/amlogic/s7d_bm209/Kconfig"
 source "board/amlogic/s7d_t232/Kconfig"
 
 source "board/amlogic/s7d_bm219/Kconfig"
+
+source "board/amlogic/s7d_x96m200/Kconfig"
 
 source "board/amlogic/s6_skt/Kconfig"
 
