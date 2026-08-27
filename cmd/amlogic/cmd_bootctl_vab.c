@@ -531,6 +531,7 @@ static int check_bootloader(int slot)
 	struct blk_desc *dev_desc;
 	gpt_header *gpt_h1;
 	gpt_header *gpt_h2;
+    int i = 0;
 	const int SHA1SUMLEN = 20;
 	u8 gensum0[SHA1SUMLEN * 2];
 	u8 *gensum1 = gensum0 + SHA1SUMLEN;
@@ -576,6 +577,17 @@ static int check_bootloader(int slot)
 		printf("Fail read %s\n", back_partname);
 		goto exit;
 	}
+
+	for (i = 0; i < BOOTLOADER_CHECK_SIZE; i++) {
+		if (buffer_src[i] != 0x00)
+			break;
+	}
+
+	if (i == BOOTLOADER_CHECK_SIZE) {
+		printf("%s header 2048 is all zero, skip\n", back_partname);
+		goto exit;
+	}
+
 	sha1_csum(buffer_src + 512, capacity_boot - 512, gensum1);
 
 	ret = memcmp(gensum0, gensum1, SHA1SUMLEN);
@@ -674,24 +686,11 @@ static int is_BootSame(int srcindex, int dstindex)
 
 	buffer_dest = buffer_src;
 	memset(buffer_dest, 0, capacity_boot);
-
-	iRet = store_logic_read(back_partname, 0,
-		BOOTLOADER_MAX_SIZE - BOOTLOADER_OFFSET, buffer_src);
+	iRet = store_boot_read("bootloader", dstindex, 0, buffer_dest);
 	if (iRet) {
-		printf("Fail read %s\n", back_partname);
+		printf("Fail read bootloader %d\n", dstindex);
 		goto exit;
 	}
-
-	for (i = 0; i < BOOTLOADER_CHECK_SIZE; i++) {
-		if (buffer_src[i] != 0x00)
-			break;
-	}
-
-	if (i == BOOTLOADER_CHECK_SIZE) {
-		printf("%s header 2048 is all zero, skip\n", back_partname);
-		goto exit;
-	}
-
 	sha1_csum(buffer_dest, capacity_boot, gensum1);
 
 	ret = memcmp(gensum0, gensum1, SHA1SUMLEN);

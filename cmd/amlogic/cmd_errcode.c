@@ -14,7 +14,6 @@
 #include <stdlib.h>
 #include <amlogic/store_wrapper.h>
 #include <linux/libfdt_env.h>
-#include <amlogic/libavb/libavb.h>
 
 #define MISCBUF_SIZE  1088
 #define ERRCODE_OFFSET 896
@@ -165,11 +164,6 @@ int show_errcode(const char *err_str)
 	int offset_n = 0;
 	static int show_init;
 	char buf[128] = {0};
-	bool unlocked;
-
-	unlocked = is_device_unlocked();
-	if (unlocked)
-		return 0;
 
 	if (show_init == 1)
 		return 0;
