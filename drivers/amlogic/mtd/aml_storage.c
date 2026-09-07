@@ -1546,57 +1546,6 @@ static int mtd_store_param_rsv_partition(void)
 	return 0;
 }
 
-static int mtd_store_param_bl2_partition(void)
-{
-	char buf[128];
-	char *fdtaddr = NULL;
-	u32 mem_dtb;
-	enum boot_type_e medium_type = store_get_type();
-	int node_offset, err = 0;
-	int count = mtd_store_count();
-	struct part_info *bl2 = NULL;
-
-	if (!working_fdt) {
-		pr_err("%s: working_fdt is set, fdt add to set working_fdt\n",
-		       __FILE__);
-		fdtaddr = env_get("dtb_mem_addr");
-		if (!fdtaddr) {
-			pr_err("get dtb_mem_addr NULL\n");
-			return -EBADMSG;
-		}
-		mem_dtb = simple_strtoul(fdtaddr, NULL, 16);
-		sprintf(buf, "fdt addr 0x%x", mem_dtb);
-		pr_err("fdt addr 0x%x\n", mem_dtb);
-		if (run_command(buf, 0)) {
-			pr_err("fdt addr 0x%x error.\n", mem_dtb);
-			return -EBADMSG;
-		}
-	}
-
-	if (working_fdt && medium_type == BOOT_NAND_MTD) {
-		node_offset = fdt_path_offset(working_fdt,
-						 "/soc/nfc/nand@bootloader/partition@0");
-
-		if (count > 0) {
-			bl2 = get_aml_mtdpart_by_index(NULL, 0);
-			if (!bl2)
-				return -EINVAL;
-
-			memset(buf, 0, sizeof(buf));
-			*(fdt32_t *)&buf[0] = cpu_to_fdt32(bl2->offset);
-			*(fdt32_t *)&buf[4] = cpu_to_fdt32(bl2->size);
-			err = fdt_setprop(working_fdt, node_offset, "reg", buf, 8);
-			if (err < 0)
-				printf("WARNING: could not set bootloader property: %s\n",
-				       fdt_strerror(err));
-		}
-
-		return err;
-	}
-
-	return 0;
-}
-
 static int mtd_store_param_boot_layout(void)
 {
 	struct mtd_info *mtd = mtd_store_get(0);
@@ -1667,14 +1616,8 @@ int mtd_store_param_partition(void)
 	int lenvir, i, re, count;
 	char buf[512], size[32], offset[32];
 	char *p = buf;
-	enum boot_type_e medium_type = store_get_type();
 
 	i = 0;
-	/* slcnand bl2 pass to kernel still by dtb, other partitions by cmdline */
-	if (medium_type == BOOT_NAND_MTD) {
-		mtd_store_param_bl2_partition();
-		i = 1;
-	}
 
 	if (strstr(env_get("bootargs"), "mtdparts")) {
 		pr_info("mtdparts already exit in bootargs!\n");
