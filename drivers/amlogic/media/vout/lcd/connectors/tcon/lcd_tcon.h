@@ -241,6 +241,7 @@ void tcon_lut_dma_init_t3x(struct aml_lcd_drv_s *pdrv, struct lcd_tcon_dma_ops_s
 void tcon_lut_dma_init_t6w(struct aml_lcd_drv_s *pdrv, struct lcd_tcon_dma_ops_s *ops);
 void tcon_lut_dma_deinit(struct aml_lcd_drv_s *pdrv, struct lcd_tcon_dma_ops_s *ops);
 void lcd_tcon_dma_data_init_trans(struct aml_lcd_drv_s *pdrv, struct lcd_tcon_dma_ops_s *ops);
+void lcd_tcon_dma_data_init_trans_t6x(struct aml_lcd_drv_s *pdrv, struct lcd_tcon_dma_ops_s *ops);
 
 void lcd_tcon_init_data_version_update(struct tcon_core_reg_info_s *core_info,
 		char *data_buf);
