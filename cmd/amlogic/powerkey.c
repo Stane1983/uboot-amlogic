@@ -842,7 +842,7 @@ int powerkey_mem_parse(const char *buf,
 
 		if (model_flag) {
 			if (StrEmpty(line))
-				break;
+				continue;
 		} else {
 			if ((strcasecmp(line, model_name)) == 0)
 				model_flag = 1;
