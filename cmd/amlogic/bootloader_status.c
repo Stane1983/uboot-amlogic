@@ -19,6 +19,9 @@
 #include <cli.h>
 #include <amlogic/store_wrapper.h>
 #include <android_bootloader_message.h>
+#include <linux/arm-smccc.h>
+#include <asm/amlogic/arch/reboot.h>
+#include <asm/amlogic/arch/bl31_apis.h>
 
 
 #if defined(CONFIG_EFUSE_OBJ_API) && defined(CONFIG_CMD_EFUSE)
@@ -39,6 +42,19 @@ int __attribute__((weak)) store_logic_read(const char *name, loff_t off, size_t 
 #define MAX_VBMETA_SIZE         (8 * 1024)
 
 #define BOOT_CTRL_MAGIC   0x42414342 /* Bootloader Control AB */
+
+static void reboot_by_reason(unsigned int r)
+{
+	struct arm_smccc_res res;
+
+	arm_smccc_smc(SET_REBOOT_REASON, r, 0, 0, 0, 0, 0, 0, &res);
+
+	if (res.a0)
+		printf("failed to set reboot reason\n");
+
+	run_command("wdt dev watchdog", 0);
+	run_command("wdt expire", 0);
+}
 
 //check SWPL-31296 for details
 static int do_get_bootloader_status(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
@@ -882,9 +898,9 @@ int ab_update_rollback(char *rebootmode, int gpt_flag)
 		env_set("update_env", "1");
 		run_command("saveenv", 0);
 		if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
-			run_command("reboot quiescent", 0);
+			reboot_by_reason(AMLOGIC_QUIESCENT_REBOOT);
 		else
-			run_command("reboot", 0);
+			reboot_by_reason(AMLOGIC_NORMAL_BOOT);
 	}
 
 	//check rescueparty and rollback
@@ -940,9 +956,9 @@ int ab_update_rollback(char *rebootmode, int gpt_flag)
 		env_set("reboot_status", "reboot_next");
 		run_command("saveenv", 0);
 		if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
-			run_command("reboot quiescent", 0);
+			reboot_by_reason(AMLOGIC_QUIESCENT_REBOOT);
 		else
-			run_command("reboot", 0);
+			reboot_by_reason(AMLOGIC_NORMAL_BOOT);
 	}
 
 	//get bootloader index
@@ -1018,9 +1034,9 @@ int ab_update_rollback(char *rebootmode, int gpt_flag)
 			env_set("reboot_status", "reboot_next");
 			run_command("saveenv", 0);
 			if (rebootmode && (strcmp(rebootmode, "quiescent") == 0))
-				run_command("reboot quiescent", 0);
+				reboot_by_reason(AMLOGIC_QUIESCENT_REBOOT);
 			else
-				run_command("reboot", 0);
+				reboot_by_reason(AMLOGIC_NORMAL_BOOT);
 			return 0;
 		}else {
 			wrnP("current index is expect, no need reboot next, set reboot_status reboot_init\n");
