@@ -51,6 +51,8 @@
 #define AML_ADC_POWER_KEY_CHAN   2  /*channel range: 0-7*/
 #define AML_ADC_POWER_KEY_VAL    0  /*sample value range: 0-1023*/
 
+#define CONFIG_CMD_CEC         1
+
 /* AVB */
 #define CONFIG_AML_AVB2_ANTIROLLBACK 1
 #define CONFIG_AVB_VERIFY 1

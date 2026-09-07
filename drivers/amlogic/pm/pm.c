@@ -30,6 +30,7 @@
 #include <linux/kernel.h>
 #include <amlogic/pm.h>
 #include <amlogic/aml_ir.h>
+#include <amlogic/aml_cec.h>
 //#include <asm/arch/bl31_apis.h>
 #include <stdio.h>
 #include <malloc.h>
@@ -105,6 +106,10 @@ void pm_initialize(void)
 	dev_register_pm("meson_ir_pm", meson_ir_suspend, meson_ir_resume,
 			meson_ir_poweroff, 2);
 #endif
+	if (IS_ENABLED(CONFIG_CMD_CEC)) {
+		dev_register_pm("meson_cec_pm", meson_cec_suspend, meson_cec_resume,
+				meson_cec_poweroff, 2);
+	}
 }
 
 extern int cpu_suspend(unsigned long arg);
