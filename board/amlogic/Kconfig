@@ -919,6 +919,17 @@ config S6_BL215
 	help
 		Select S6 BL215 config
 
+config S6_BQ220
+	bool "S6_BQ220"
+	select TARGET_S6_BQ220
+	help
+		Select S6 BQ220 config
+
+config S6_BQ230
+	bool "S6_BQ230"
+	select TARGET_S6_BQ230
+	help
+		Select S6 BQ230 config
 endchoice
 
 config TARGET_S6_SKT
@@ -968,6 +979,14 @@ config TARGET_S6_BN201
 config TARGET_S6_BL215
 	bool "S6 BL215 board"
 	depends on S6_BL215
+
+config TARGET_S6_BQ220
+	bool "S6 BQ220 board"
+	depends on S6_BQ220
+
+config TARGET_S6_BQ230
+	bool "S6 BQ230 board"
+	depends on S6_BQ230
 endif
 
 if MESON_T6W
@@ -1167,3 +1186,24 @@ source "board/amlogic/s6_bq209/Kconfig"
 source "board/amlogic/s6_bn201/Kconfig"
 
 source "board/amlogic/s6_bl215/Kconfig"
+
+source "board/amlogic/s6_bq220/Kconfig"
+
+source "board/amlogic/s6_bq230/Kconfig"
+
+source "board/amlogic/t6w_skt/Kconfig"
+
+source "board/amlogic/t6w_bs301/Kconfig"
+
+source "board/amlogic/t6w_bs309/Kconfig"
+
+source "board/amlogic/t6w_bs311/Kconfig"
+
+source "board/amlogic/t6w_bs319/Kconfig"
+
+source "board/amlogic/t6x_skt/Kconfig"
+
+source "board/amlogic/t6x_bu301/Kconfig"
+
+source "board/amlogic/t6x_bu309/Kconfig"
+
