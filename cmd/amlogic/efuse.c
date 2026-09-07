@@ -437,3 +437,282 @@ U_BOOT_CMD(efuse_mrk_long,	2,	0,	do_efuse_mrk_long,
 	"eFUSE mrk long checknum", efuse_mrk_help_text
 );
 #endif /* CONFIG_EFUSE_MRK_GET_CHECKNUM */
+
+#ifdef CONFIG_EFUSE_OBJ_API
+/*
+ * Command to burn efuse_obj set/set_enc list from a file or memory
+ * 1> load to mem if dev not mem
+ */
+#define debugP(fmt...) //printf("[DbgObj]L%d:", __LINE__),printf(fmt)
+#define errorP(fmt...) do {pr_err("ERR[obj]L%d:", __LINE__); pr_err(fmt); } while (0)
+#define wrnP(fmt...)   pr_warn("WRN[obj]" fmt)
+#define MsgP(fmt...)   pr_info("INF[obj]" fmt)
+extern efuse_obj_field_t efuse_field;
+
+/*
+ * detect if pattern contains more than one space, empty line or win new line
+ */
+static bool has_format_issues(const char *str, const int nsz, int *needLock, int *locked)
+{
+	bool last_was_space = false;
+	bool last_was_newline = false;
+	bool only_spaces_in_line = true;
+	const char *p = str;
+	const char *line_head = "efuse_obj ";
+	const char *line_lock = "efuse_obj lock ";
+	const int head_sz = 10;
+	const int lock_sz = 15;
+	int i = 0;
+	int fields_need_lock = 0;
+	int fields_is_locked = 0;
+
+	if (str[nsz - 1] != '\n') {
+		errorP("need ends with newline\n");
+		return true;
+	}
+	if (str[nsz - 2] == '\r') {
+		errorP("windows new line!!\n");
+		return true;
+	}
+	if (memcmp(str, line_head, head_sz)) {
+		errorP("Err pattern header\n");
+		return true;
+	}
+
+	for (; *p && i < nsz; ++p, ++i) {
+		// Detect Windows newline \r\n
+		if (*p == '\r' && *(p + 1) == '\n') {
+			errorP("windows new line!!\n");
+			return true;
+		}
+
+		// Detect multiple spaces
+		if (*p == ' ') {
+			if (last_was_space) {
+				errorP("has dup space\n");
+				return true;
+			}
+			last_was_space = true;
+		} else {
+			last_was_space = false;
+		}
+
+		// Detect multiple newlines
+		if (*p == '\n') {
+			if (last_was_newline) {
+				errorP("has empty line\n");
+				return true;
+			}
+			last_was_newline = true;
+			if (i + head_sz < nsz) {
+				if (memcmp(p + 1, line_head, head_sz)) {
+					errorP("Err line head\n");
+					return true;
+				}
+				if (!memcmp(p + 1, line_lock, lock_sz)) {
+					char tmpWord[32];
+					const char *ps = p + 1 + lock_sz;
+					char *pt = tmpWord;
+
+					for (; *ps != '\n'; ++pt, ++ps)
+						*pt = *ps;
+					*pt = '\0';
+					env_set("_objx_n", tmpWord);
+					if (run_command("efuse_obj get_lock ${_objx_n}", 0)) {
+						errorP("Fail in get state of %s\n", tmpWord);
+						return CMD_RET_FAILURE;
+					}
+					fields_is_locked += efuse_field.data[0];
+					MsgP("%s get_lock %02x\n", tmpWord, efuse_field.data[0]);
+					fields_need_lock += 1;
+				}
+			}
+
+			if (only_spaces_in_line) {
+				errorP("space only line\n");
+				return true; // Line contains only spaces
+			}
+
+			only_spaces_in_line = true; // Reset for next line
+		} else {
+			last_was_newline = false;
+			if (*p != ' ')
+				only_spaces_in_line = false;
+		}
+	}
+
+	MsgP("Lock need %d, locked %d\n", fields_need_lock, fields_is_locked);
+	//TODO, when partial maybe need allow only 2 HASH locked
+	if ((fields_need_lock && fields_is_locked) && fields_need_lock != fields_is_locked) {
+		errorP("Some fields locked but not all, not allowed\n");
+		return true;
+	}
+
+	*needLock = fields_need_lock;
+	*locked   = fields_is_locked;
+	return false;
+}
+
+/*
+ * 1> load to mem if interface not 'mem'
+ * 2> detect pattern valid
+ * 3> assert all 'efuse_obj lock ' are all 01 or all 00
+ * 4> burn 2 HASH first if has set_enc
+ * 5> run each line except HASH
+ */
+static int do_efuse_obj_file_burn(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	const char *inf = argv[1];
+	unsigned long mem_addr = env_get_hex("loadaddr", 0x1080000);
+	unsigned int memsz = 0;
+	int inf_len = 0;
+	int has_enc = 0;
+	const char *str_pattern = NULL;
+	const char *ampkHash2[] = {"HASH_NORMAL_DEVICE_ROOTCERT", "HASH_DFU_DEVICE_ROOTCERT"};
+	int ampk2hashlocks = 0;
+	int i = 0, ret = 0;
+	int _need_lock = 0, _is_locked = 0;
+
+	if (argc < 3) {
+		errorP("too few args\n");
+		return CMD_RET_USAGE;
+	}
+	inf_len = strnlen(inf, 8);
+	if (!memcmp(inf, "mem", inf_len + 1)) {
+		mem_addr = hextoul(argv[2], NULL);
+		if (argc < 4) {
+			errorP("Need specify mem size\n");
+			return CMD_RET_USAGE;
+		}
+		memsz = simple_strtoul(argv[3], NULL, 0);
+
+	} else if (!memcmp(inf, "usb", inf_len + 1)) {
+		run_command("usb start", 0);
+		env_set("_objinf", "usb");
+	} else if (!memcmp(inf, "sdc", inf_len + 1)) {
+		run_command("mmcinfo", 0);
+		env_set("_objinf", "mmc");
+	} else {
+		errorP("Error interface %s\n", inf);
+		return CMD_RET_USAGE;
+	}
+
+	if (memcmp(inf, "mem", inf_len + 1)) {
+		env_set_hex("_objLoadAddr", mem_addr);
+		env_set("_objPath", argv[2]);
+		run_command("echo fatload ${_objinf} 0 ${_objLoadAddr} ${_objPath}", 0);
+		ret = run_command("fatload ${_objinf} 0 ${_objLoadAddr} ${_objPath}", 0);
+		if (ret) {
+			errorP("Fail load object file from fat32 disk\n");
+			return CMD_RET_FAILURE;
+		}
+		memsz = env_get_hex("filesize", 0);
+	}
+
+	str_pattern = (const char *)mem_addr;
+	if (has_format_issues(str_pattern, memsz, &_need_lock, &_is_locked)) {
+		errorP("pattern has format issue\n");
+		return CMD_RET_FAILURE;
+	}
+	if (_need_lock && (_need_lock == _is_locked)) {
+		MsgP("All fields locked,just skip\n");
+		return CMD_RET_SUCCESS;
+	}
+
+	has_enc = (strstr(str_pattern, " set_enc ") != NULL);
+	if (has_enc) {//check 'HASH_NORMAL_DEVICE_ROOTCERT', 'HASH_DFU_DEVICE_ROOTCERT'
+		MsgP("check hash same states\n");//2 01 or 2 00
+		for (i = 0; i < 2; ++i) {
+			env_set("_objx_n", ampkHash2[i]);
+			if (run_command("efuse_obj get_lock ${_objx_n}", 0)) {
+				errorP("Fail in get state of %s\n", ampkHash2[i]);
+				return CMD_RET_FAILURE;
+			}
+			ampk2hashlocks += efuse_field.data[0];
+			MsgP("%s get_lock %02x\n", ampkHash2[i], efuse_field.data[0]);
+		}
+		if (ampk2hashlocks && ampk2hashlocks != 2) {
+			errorP("hash partital lock!\n");
+			return CMD_RET_FAILURE;
+		}
+
+		if (!ampk2hashlocks) {
+			for (i = 0; i < 2; ++i) {
+				char *curHash = strstr(str_pattern, ampkHash2[i]);
+				int hashLen = 0;
+				char *pNewLine = NULL;
+				const int max_l = 96;
+				char tmpWord[max_l];
+
+				if (!curHash) {
+					errorP("Has set_enc but no %s\n", ampkHash2[i]);
+					return CMD_RET_FAILURE;
+				}
+				pNewLine = strstr(curHash, "\n");
+				if (!pNewLine) {
+					errorP("fail find new line after %s\n", ampkHash2[i]);
+					return CMD_RET_FAILURE;
+				}
+				hashLen = pNewLine - curHash;
+				if (hashLen + 1 > max_l) {
+					errorP("err hash val\n");
+					return CMD_RET_FAILURE;
+				}
+				memcpy(tmpWord, curHash, hashLen);
+				tmpWord[hashLen] = '\0';
+				env_set("_objx_n", tmpWord);
+				run_command("echo efuse_obj set ${_objx_n}", 0);
+				run_command("efuse_obj set ${_objx_n}", 0);
+			}
+			ret = run_command("ampk regen_enc_key", 0);
+			if (ret != 1) {
+				errorP("Fail in regen ampk enc key\n");
+				return CMD_RET_FAILURE;
+			}
+		}
+	}
+
+	//5
+	if (1) {
+		const char *line = NULL;
+		char *reset = (char *)str_pattern;
+		const char *hashLine = "HASH_";
+
+		while ((line = strsep(&reset, "\n")) != NULL) {
+			env_set("_setcmd", line);
+			run_command("echo ${_setcmd}", 0);
+			if (has_enc) {
+				if (strstr(line, hashLine)) {
+					MsgP("skip set HASH\n");
+					continue;
+				}
+			}
+			ret = run_command("${_setcmd}", 0);
+			if (ret != CMD_RET_SUCCESS) {
+				errorP("Fail in obj cmd\n");
+				return CMD_RET_FAILURE;
+			}
+		}
+		printf("efuse obj file burn OKAY\n");
+	}
+
+	return CMD_RET_SUCCESS;
+}
+
+U_BOOT_CMD_COMPLETE(obj_file_burn,       //command name
+	4,  //maxargs
+	0,                   //repeatable
+	do_efuse_obj_file_burn,    //command function
+	"cmd for burn efuse object file",           //usage
+	"    argv: obj_file_burn <interface> <file/addr> [<size>]\n"
+	"    usb/sdc is FAT32 usb/sdc disk\n"
+	"	<interface> mem/usb/sdc\n"
+	"	<file/addr> must addr if interface mem, other file path\n"
+	"	<size> only need sz when mem\n"
+	"    - e.g.\n"
+	"        obj_file_burn sdc pattern.obj.t950d5\n",
+	var_complete
+);
+
+#endif//#ifdef CONFIG_EFUSE_OBJ_API
+

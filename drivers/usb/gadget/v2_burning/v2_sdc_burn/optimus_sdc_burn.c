@@ -664,6 +664,9 @@ int sdc_burn_aml_keys(HIMAGE hImg, const int keyOverWrite, int licenseKey, int i
 		return __LINE__;
 	}
 
+	env_set("_keyinf", "sdc");
+	if (env_get_ulong("usb_update", 0, 0))
+		env_set("_keyinf", "usb");
 	pCurKeysName = keysName;
 	for (index = 0; index < keysNum + num_img_keys; ++index) {
 		const char  *const keyName = *pCurKeysName++;
@@ -672,6 +675,16 @@ int sdc_burn_aml_keys(HIMAGE hImg, const int keyOverWrite, int licenseKey, int i
 			continue;
 		DWN_MSG("\n");
 		DWN_MSG("Now to burn key <---- [%s] ----> %d\n", keyName, index);
+		if (!strcmp(keyName, "secure_boot_objects")) {
+			run_command("echo obj_file_burn ${_keyinf} license/secure_boot_objects", 0);
+			rc = run_command("obj_file_burn ${_keyinf} license/secure_boot_objects", 0);
+			if (!rc) {
+				DWN_MSG("Okay burn efuse obj file\n");
+				continue;
+			}
+			DWN_ERR("Fail in burn efuse obj\n");
+			return __LINE__;
+		}
 		rc = sdc_check_key_need_to_burn(keyName, keyOverWrite);
 		if (rc < 0) {
 			DWN_ERR("Fail when check stauts for key(%s)\n", keyName);
@@ -835,8 +848,11 @@ int optimus_burn_with_cfg_file(const char *cfgFile)
 		DWN_ERR("Fail in check soc type\n");
 		ret = __LINE__; goto _finish;
 	} else {
+		int need_chk = !CONFIG_IS_ENABLED(SUPPORT_SDC_KEYBURN) && erase_bootloader;
+
 		DWN_MSG("okay check soc type\n");
 		is_img_secure = optimus_img_secureboot_signed(hImg);
+		if (need_chk)
 		if (is_img_secure ^ is_soc_secure) {
 			DWN_ERR("img stat %d not match soc stat %d\n",
 				is_img_secure, is_soc_secure);
