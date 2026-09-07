@@ -198,7 +198,7 @@ void tcon_sw_dma_trig(struct aml_lcd_drv_s *pdrv)
 	lcd_tcon_setb(0x5dd, 0, 31, 1); //reg_lut_dma_sw_start
 }
 
-inline static int tcon_sw_dma_done(struct aml_lcd_drv_s *pdrv)
+int tcon_sw_dma_done(struct aml_lcd_drv_s *pdrv)
 {
 	return !!lcd_tcon_getb(0x5d3, 7, 1);
 }
@@ -216,12 +216,31 @@ int wait_tcon_sw_dma_done(struct aml_lcd_drv_s *pdrv, unsigned int timeout_us)
 	return 0;
 }
 
-inline static int tcon_aptu_dma_done(struct aml_lcd_drv_s *pdrv)
+static int tcon_sw_dma_valid(struct lcd_tcon_dma_ops_s *dma_ops)
+{
+	return (dma_ops->sw_clr_done && dma_ops->sw_is_done && dma_ops->sw_mif_set &&
+		dma_ops->sw_trigger && dma_ops->sw_wait_done);
+}
+
+int tcon_aptu_dma_done(struct aml_lcd_drv_s *pdrv)
 {
 	return !!lcd_tcon_getb(0x5d3, 6, 1);
 }
 
-inline static void tcon_clr_dma_done(struct aml_lcd_drv_s *pdrv)
+int wait_tcon_aptu_dma_done(struct aml_lcd_drv_s *pdrv, unsigned int timeout_us)
+{
+	unsigned int to = timeout_us >> 1;
+
+	while (to-- > 0) {
+		udelay(2);
+		if (tcon_aptu_dma_done(pdrv))
+			return 1;
+	}
+
+	return 0;
+}
+
+void tcon_clr_dma_done(struct aml_lcd_drv_s *pdrv)
 {
 	lcd_tcon_setb(0x5d3, 1, 31, 1);
 	lcd_tcon_setb(0x5d3, 0, 31, 1);
@@ -281,6 +300,7 @@ void lcd_tcon_dma_data_init_trans_t6x(struct aml_lcd_drv_s *pdrv, struct lcd_tco
 			ops->addr_list = NULL;
 		}
 		free(dma_info);
+		lcd_wait_vsync(pdrv);
 	}
 }
 
@@ -938,6 +958,9 @@ static int lcd_tcon_data_common_parse_set(struct aml_lcd_drv_s *pdrv, unsigned c
 					__func__, paddr, offset, data_part.dma->dma_data_size);
 				break;
 			}
+			dma_ops = tcon_conf->lut_dma_ops;
+			if (!dma_ops)
+				break;
 			if (vrr_data_valid) {
 				vrr_data = &tcon_local->vrr_data;
 				if (!vrr_data->support || !vrr_data->part)
@@ -968,14 +991,16 @@ static int lcd_tcon_data_common_parse_set(struct aml_lcd_drv_s *pdrv, unsigned c
 				tcon_vrr_dma_mif_set(pdrv, vrr_data->paddr, vrr_data->part_size);
 				/* fr_det will not work at power on, need use sw_dma trig manually*/
 				ret = lcd_tcon_vrr_fr_sw_match(pdrv, vrr_data);
-				tcon_sw_dma_mif_set(pdrv,
-						vrr_data->paddr + ret * vrr_data->part_size,
-						vrr_data->part_size);
 				tcon_lut_dma_clk_en(pdrv);
-				tcon_clr_dma_done(pdrv);
-				tcon_sw_dma_trig(pdrv);
-				ret = wait_tcon_sw_dma_done(pdrv, 3000);
-				tcon_clr_dma_done(pdrv);
+				if (tcon_sw_dma_valid(dma_ops)) {
+					dma_ops->sw_mif_set(pdrv,
+							vrr_data->paddr + ret * vrr_data->part_size,
+							vrr_data->part_size);
+					dma_ops->sw_clr_done(pdrv);
+					dma_ops->sw_trigger(pdrv);
+					ret = dma_ops->sw_wait_done(pdrv, 3000);
+					dma_ops->sw_clr_done(pdrv);
+				}
 				tcon_fr_detect_enable(pdrv, 1);
 
 				if ((lcd_debug_print_flag & LCD_DBG_PR_ADV))
@@ -985,9 +1010,20 @@ static int lcd_tcon_data_common_parse_set(struct aml_lcd_drv_s *pdrv, unsigned c
 				break;
 			}
 
-			dma_ops = tcon_conf->lut_dma_ops;
-			if (!dma_ops)
+			if (tcon_sw_dma_valid(dma_ops)) {
+				dma_ops->sw_mif_set(pdrv, paddr, data_part.dma->dma_data_size);
+				tcon_lut_dma_clk_en(pdrv);
+				dma_ops->sw_clr_done(pdrv);
+				dma_ops->sw_trigger(pdrv);
+				ret = dma_ops->sw_wait_done(pdrv, 17000);//60hz 1frame
+				dma_ops->sw_clr_done(pdrv);
+				if (!ret) {
+					LCDPR("%s: sw_dma: paddr:0x%llx, size:0x%x %s\n",
+					      __func__, (unsigned long long)paddr,
+					      data_part.dma->dma_data_size, ret ? "ok" : "fail");
+				}
 				break;
+			}
 			lcd_tcon_dma_addr_add(dma_ops, paddr, data_part.dma->dma_data_size);
 			LCDPR("%s dma_trans, pa:0x%llx, size:0x%x\n", __func__,
 			      paddr, data_part.dma->dma_data_size);

@@ -2081,6 +2081,14 @@ static struct lcd_tcon_dma_ops_s lcd_tcon_dma_ops_t5m = {
 	.init = tcon_lut_dma_init_t5m,
 	.deinit = tcon_lut_dma_deinit,
 	.init_trans = lcd_tcon_dma_data_init_trans,
+	.is_done = NULL,
+	.clr_done = NULL,
+	.wait_done = NULL,
+	.sw_mif_set = NULL,
+	.sw_trigger = NULL,
+	.sw_is_done = NULL,
+	.sw_wait_done = NULL,
+	.sw_clr_done = NULL,
 };
 
 static struct lcd_tcon_dma_ops_s lcd_tcon_dma_ops_t3x = {
@@ -2093,6 +2101,14 @@ static struct lcd_tcon_dma_ops_s lcd_tcon_dma_ops_t3x = {
 	.init = tcon_lut_dma_init_t3x,
 	.deinit = tcon_lut_dma_deinit,
 	.init_trans = lcd_tcon_dma_data_init_trans,
+	.is_done = NULL,
+	.clr_done = NULL,
+	.wait_done = NULL,
+	.sw_mif_set = NULL,
+	.sw_trigger = NULL,
+	.sw_is_done = NULL,
+	.sw_wait_done = NULL,
+	.sw_clr_done = NULL,
 };
 
 static struct lcd_tcon_dma_ops_s lcd_tcon_dma_ops_t6d = {
@@ -2105,6 +2121,14 @@ static struct lcd_tcon_dma_ops_s lcd_tcon_dma_ops_t6d = {
 	.init = tcon_lut_dma_init_t5m,
 	.deinit = tcon_lut_dma_deinit,
 	.init_trans = lcd_tcon_dma_data_init_trans,
+	.is_done = NULL,
+	.clr_done = NULL,
+	.wait_done = NULL,
+	.sw_mif_set = NULL,
+	.sw_trigger = NULL,
+	.sw_is_done = NULL,
+	.sw_wait_done = NULL,
+	.sw_clr_done = NULL,
 };
 
 static struct lcd_tcon_dma_ops_s lcd_tcon_dma_ops_t6w = {
@@ -2117,6 +2141,14 @@ static struct lcd_tcon_dma_ops_s lcd_tcon_dma_ops_t6w = {
 	.init = tcon_lut_dma_init_t6w,
 	.deinit = tcon_lut_dma_deinit,
 	.init_trans = lcd_tcon_dma_data_init_trans,
+	.is_done = NULL,
+	.clr_done = NULL,
+	.wait_done = NULL,
+	.sw_mif_set = NULL,
+	.sw_trigger = NULL,
+	.sw_is_done = NULL,
+	.sw_wait_done = NULL,
+	.sw_clr_done = NULL,
 };
 
 static struct lcd_tcon_dma_ops_s lcd_tcon_dma_ops_t6x = {
@@ -2129,6 +2161,15 @@ static struct lcd_tcon_dma_ops_s lcd_tcon_dma_ops_t6x = {
 	.init = tcon_lut_dma_init_t6w,
 	.deinit = tcon_lut_dma_deinit,
 	.init_trans = lcd_tcon_dma_data_init_trans_t6x,
+	.is_done = tcon_aptu_dma_done,
+	.clr_done = tcon_clr_dma_done,
+	.wait_done = wait_tcon_aptu_dma_done,
+
+	.sw_mif_set = tcon_sw_dma_mif_set,
+	.sw_trigger = tcon_sw_dma_trig,
+	.sw_is_done = tcon_sw_dma_done,
+	.sw_clr_done = tcon_clr_dma_done,
+	.sw_wait_done = wait_tcon_sw_dma_done,
 };
 
 static struct lcd_tcon_config_s tcon_data_t5m = {
