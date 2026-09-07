@@ -104,6 +104,7 @@ struct bl_pwm_config_s {
 struct bl_config_s {
 	unsigned int index;
 	char name[BL_NAME_MAX];
+	char pinmux_name[BL_NAME_MAX];
 	int level_default;
 	int level_min;
 	int level_max;

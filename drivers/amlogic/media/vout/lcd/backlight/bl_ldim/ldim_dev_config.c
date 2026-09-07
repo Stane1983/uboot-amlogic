@@ -335,7 +335,10 @@ static int ldim_dev_get_config_from_dts(struct ldim_dev_driver_s *dev_drv,
 	if (propdata) {
 		LDIMPR("find custom ldim_pwm_pinmux_sel: %s\n", propdata);
 		strlcpy(dev_drv->pinmux_name, propdata, LDIM_DEV_NAME_MAX);
+	} else {
+		strlcpy(dev_drv->pinmux_name, "invalid", LDIM_DEV_NAME_MAX);
 	}
+
 
 	propdata = (char *)fdt_getprop(dt_addr, child_offset, "en_gpio_on_off", NULL);
 	if (!propdata) {
@@ -972,8 +975,7 @@ int ldim_dev_get_config_from_json(struct ldim_dev_driver_s *dev_drv)
 	child = json_get_object_child(jsp, parent, "ctrl");
 	if (child) {
 		str = json_get_obj_str(jsp, child, "pinmux_name", NULL);
-		strncpy(dev_drv->pinmux_name, str ? str : "invalid", (LDIM_DEV_NAME_MAX - 1));
-
+		strlcpy(dev_drv->pinmux_name, str ? str : "invalid", LDIM_DEV_NAME_MAX);
 		str = json_get_obj_str(jsp, child, "err_gpio", NULL);
 		dev_drv->lamp_err_gpio = ldim_gpio_name_to_index(dev_drv, (char *)str);
 		str = json_get_obj_str(jsp, child, "en_gpio", NULL);

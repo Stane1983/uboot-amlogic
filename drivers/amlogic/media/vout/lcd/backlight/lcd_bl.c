@@ -126,6 +126,48 @@ static struct bl_config_s *bl_check_valid(struct aml_bl_drv_s *bdrv)
 	return bconf;
 }
 
+static void bl_pwm_custom_pinmux_ctrl(struct aml_bl_drv_s *bdrv, int status)
+{
+	struct bl_config_s *bconf = &bdrv->config;
+	int index = 0xff;
+	char pinmux_str[BL_NAME_MAX + 5];
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
+		BLPR("[%d]: %s\n", bdrv->index, __func__);
+
+	if (status) {
+		index = 0;
+		sprintf(pinmux_str, "%s", bconf->pinmux_name);
+	} else {
+		index = 1;
+		sprintf(pinmux_str, "%s_off", bconf->pinmux_name);
+	}
+
+	if (index >= BL_PINMUX_MAX) {
+		BLERR("[%d]: %s: pinmux index %d is invalid\n",
+		      bdrv->index, __func__, index);
+		return;
+	}
+
+	if (bdrv->pinmux_flag == index) {
+		BLPR("[%d]: pinmux %s is already selected\n",
+		     bdrv->index, pinmux_str);
+		return;
+	}
+
+	/* request pwm pinmux */
+	if (pinctrl_select_state(bdrv->udev, pinmux_str)) {
+		BLERR("[%d]: set pinmux %s error\n",
+		      bdrv->index, pinmux_str);
+	} else {
+		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
+			BLPR("[%d]: set pinmux %s\n",
+			     bdrv->index, pinmux_str);
+		}
+	}
+	bdrv->pinmux_flag = index;
+}
+
 static char *bl_pinmux_str[BL_PINMUX_MAX] = {
 	"pwm_on",               /* 0 */
 	"pwm_vs_on",            /* 1 */
@@ -144,6 +186,11 @@ static void bl_pwm_pinmux_ctrl(struct aml_bl_drv_s *bdrv, int status)
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
 		BLPR("[%d]: %s\n", bdrv->index, __func__);
+
+	if (strcmp(bconf->pinmux_name, "invalid")) {
+		bl_pwm_custom_pinmux_ctrl(bdrv, status);
+		return;
+	}
 
 	switch (bconf->method) {
 	case BL_CTRL_PWM:
@@ -882,6 +929,7 @@ static struct aml_bl_drv_s *bl_driver_add_single(unsigned char index)
 	bdrv->config.en_gpio = 0xff;
 	bdrv->config.extern_index = 0xff;
 	bdrv->factory_bl_on_delay = -1;
+	bdrv->pinmux_flag = 0xff;
 
 	return bdrv;
 }

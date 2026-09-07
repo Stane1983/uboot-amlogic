@@ -85,6 +85,7 @@ void bl_config_print(struct aml_bl_drv_s *bdrv)
 	     bconf->en_gpio);
 	BLPR("en_gpio_on        = %d\n", bconf->en_gpio_on);
 	BLPR("en_gpio_off       = %d\n", bconf->en_gpio_off);
+	BLPR("bl_pinmux_sel     = %s\n", bconf->pinmux_name);
 	/* check if factory test */
 	if (bdrv->factory_bl_on_delay >= 0)
 		BLPR("factory test pwr_on_dly = %d\n", bdrv->factory_bl_on_delay);
@@ -302,6 +303,14 @@ static int bl_config_load_from_dts(char *dt_addr, struct aml_bl_drv_s *bdrv)
 		sprintf(bconf->name, "backlight_%d", bconf->index);
 	} else {
 		strlcpy(bconf->name, propdata, BL_NAME_MAX);
+	}
+
+	propdata = (char *)fdt_getprop(dt_addr, child_offset, "bl_pinmux_sel", NULL);
+	if (propdata) {
+		BLPR("find custom bl_pinmux_sel: %s\n", propdata);
+		strlcpy(bconf->pinmux_name, propdata, BL_NAME_MAX);
+	} else {
+		strlcpy(bconf->pinmux_name, "invalid", BL_NAME_MAX);
 	}
 
 	propdata = (char *)fdt_getprop(dt_addr, child_offset,
@@ -968,7 +977,7 @@ static int bl_config_load_from_json(char *dt_addr, struct aml_bl_drv_s *bdrv)
 
 	str = json_get_obj_str(jsp, child, "name", NULL);
 	if (str)
-		strncpy(bconf->name, str, BL_NAME_MAX - 1);
+		strlcpy(bconf->name, str, BL_NAME_MAX);
 
 //level setup
 	child = json_get_object_child(jsp, parent, "level_setup");
@@ -1000,6 +1009,9 @@ static int bl_config_load_from_json(char *dt_addr, struct aml_bl_drv_s *bdrv)
 	bconf->pwm_off_delay       = json_get_obj_u32(jsp, child, "pwm_off_delay_ms", 0);
 	bconf->bl_hold_on          = json_get_obj_u32(jsp, child, "bl_hold_on", 0);
 	bconf->en_sequence_reverse = json_get_obj_u32(jsp, child, "en_sequence_reverse", 0);
+	str = json_get_obj_str(jsp, child, "bl_pinmux_sel", "invalid");
+	if (str)
+		strlcpy(bconf->pinmux_name, str, BL_NAME_MAX);
 
 	if (bconf->method == BL_CTRL_LOCAL_DIMMING) {
 #ifdef CONFIG_AML_LCD_BL_LDIM
@@ -1142,6 +1154,9 @@ static int bl_config_load_from_ini(char *dt_addr, struct aml_bl_drv_s *bdrv)
 
 	str = lcd_ini_get_str(inip, psec, "bl_name", "null");
 	strlcpy(bconf->name, str, sizeof(bconf->name));
+
+	str = lcd_ini_get_str(inip, psec, "bl_pinmux_sel", "invalid");
+	strlcpy(bconf->pinmux_name, str, BL_NAME_MAX);
 
 	bconf->level_default = lcd_ini_get_val(inip, psec, "bl_level_uboot", 0);
 	bconf->level_max = lcd_ini_get_val(inip, psec, "bl_level_max", 0);
