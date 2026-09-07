@@ -11,6 +11,7 @@
 #include <misc.h>
 #include <asm/amlogic/arch/mailbox.h>
 #include <linux/libfdt.h>
+#include <amlogic/aml_ir.h>
 
 #define KEY_PARAMS_NUM  10
 #define OTHER_PARAMS_NUM 1
@@ -26,6 +27,27 @@ enum IrMboxCmdType {
 };
 
 extern u32 get_time(void);
+
+int meson_ir_suspend(void *dev_info)
+{
+	char *str;
+
+	str = env_get("reboot_mode");
+	if (str && !strcmp(str, "aocpu_watchdog"))
+		update_for_dtb_wakeup_key();
+
+	return 0;
+}
+
+int meson_ir_resume(void *dev_info)
+{
+	return 0;
+}
+
+int meson_ir_poweroff(void *dev_info)
+{
+	return 0;
+}
 
 int update_for_dtb_wakeup_key(void)
 {

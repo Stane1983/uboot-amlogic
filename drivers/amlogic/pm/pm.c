@@ -29,6 +29,7 @@
 #include <linux/list.h>
 #include <linux/kernel.h>
 #include <amlogic/pm.h>
+#include <amlogic/aml_ir.h>
 //#include <asm/arch/bl31_apis.h>
 #include <stdio.h>
 #include <malloc.h>
@@ -99,6 +100,10 @@ void pm_initialize(void)
 	dev_register_pm("vpp_pm", vpp_suspend, vpp_resume, vpp_poweroff, 2);
 #ifdef PM_DEBUG
 	dev_register_pm(name, test_pm_suspend, test_pm_resume, test_pm_poweroff, 0);
+#endif
+#if IS_ENABLED(CONFIG_CMD_IR)
+	dev_register_pm("meson_ir_pm", meson_ir_suspend, meson_ir_resume,
+			meson_ir_poweroff, 2);
 #endif
 }
 
