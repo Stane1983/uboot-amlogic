@@ -35,6 +35,7 @@
 #define DEFAULT_MODEL2_SUM_PATH2 "/odm_ext/etc/tvconfig/model/model2_sum.ini"
 #define AML_START		"amlogic_start"
 #define AML_END			"amlogic_end"
+#define DEFAULT_MODEL_NAME "DEFAULT"
 #define DEFAULT_SECTION "GENERAL_CONFIG_FROM_MODEL_SUM"
 
 int model_debug_flag;
@@ -67,6 +68,28 @@ static unsigned int g_lcd_if, g_lcd_tcon_valid;
 unsigned int g_clk_mode;
 static struct dccd_info_s dccd_info;
 #endif
+
+/*********************************  common api  *************************************/
+static const char *get_model_path(int index)
+{
+	char *model_path, str[15];
+
+	if (index == 0)
+		sprintf(str, "model_path");
+	else
+		sprintf(str, "model%d_path", index);
+
+	model_path = env_get(str);
+	if (!model_path) {
+		if (dynamic_partition)
+			return DEFAULT_MODEL_PATH2;
+		else
+			return DEFAULT_MODEL_PATH1;
+	}
+
+	printf("%s: %s\n", __func__, model_path);
+	return model_path;
+}
 
 int trans_buffer_data(const char *data_str, unsigned int data_buf[])
 {
@@ -3578,27 +3601,6 @@ int handle_model_list_panel_key(int index)
 	return 0;
 }
 
-static const char *get_model_path(int index)
-{
-	char *model_path, str[15];
-
-	if (index == 0)
-		sprintf(str, "model_path");
-	else
-		sprintf(str, "model%d_path", index);
-
-	model_path = env_get(str);
-	if (!model_path) {
-		if (dynamic_partition)
-			return DEFAULT_MODEL_PATH2;
-		else
-			return DEFAULT_MODEL_PATH1;
-	}
-
-	printf("%s: %s\n", __func__, model_path);
-	return model_path;
-}
-
 int handle_model_list(void)
 {
 	char *model, str[15], model_val[50];
@@ -3868,5 +3870,80 @@ int handle_model_sum(void)
 	}
 
 	return 0;
+}
+
+int parse_model_powermode(int index, const char *file_name, char *model_name)
+{
+	const char *powermode_value = NULL;
+	int ret = -1;
+
+	ini_parser_init();
+
+	if (ini_parse_file(file_name) < 0) {
+		ALOGE("%s: error: %s\n", __func__, file_name);
+		ini_parser_uninit();
+		return ret;
+	}
+
+	powermode_value = ini_get_string(model_name, "POWER_ON_MODE", "null");
+	if (strcmp(powermode_value, "null") != 0) {
+		ALOGI("powermode_value is %s\n", powermode_value);
+		if (!strcmp(powermode_value, "on") || !strcmp(powermode_value, "standby") ||
+		    !strcmp(powermode_value, "last")) {
+			env_set("powermode", powermode_value);
+			env_set("powermode_ini", "1");
+			env_save();
+		}
+		ret = 0;
+	} else {
+		env_set("powermode_ini", "2");
+		env_save();
+		ALOGD("not find POWER_ON_MODE in ini files !!!\n");
+	}
+
+	ini_parser_uninit();
+
+	return ret;
+}
+
+int handle_model_powermode(void)
+{
+	char *model, str[15], model_val[50];
+	int i;
+	int ret = -1;
+	char model_path[128];
+
+	for (i = 0; i < 3; i++) {
+		memset(model_val, 0, sizeof(model_val));
+		if (i == 0)
+			sprintf(str, "model_name");
+		else
+			sprintf(str, "model%d_name", i);
+
+		if (read_model_name_param(i, model_val, sizeof(model_val)) <= 0) {
+			model = env_get(str);
+			if (!model) {
+				if (model_debug_flag & DEBUG_NORMAL)
+					ALOGD("%s, no %s\n", __func__, str);
+				continue;
+			}
+		} else {
+			model = model_val;
+		}
+		ALOGD("current %s: %s\n", str, model);
+
+		ret = parse_model_powermode(i, get_model_sum_path(i), DEFAULT_MODEL_NAME);
+		if (ret != 0) {
+			snprintf(model_path, 127, "%s/Project_index_%s.ini",
+			        get_model_path(i), model);
+			ALOGD("try to read from model_path: %s\n", model_path);
+			ret = parse_model_powermode(i, model_path, DEFAULT_SECTION);
+		}
+
+		if (ret != 0)
+			continue;
+	}
+
+	return ret;
 }
 

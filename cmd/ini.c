@@ -313,3 +313,31 @@ U_BOOT_CMD(
 	"parse ini file by env model_name",
 	" "
 );
+
+static int do_ini_powermode(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+{
+	int ret;
+
+	if (argc > 1)
+		return CMD_RET_USAGE;
+
+	char str[] = "powermode_ini";
+	char *val = NULL;
+
+	val = env_get(str);
+	if (!val) {
+		printf("powermode_ini is not set");
+	} else if (strcmp(val, "0") == 0 || strcmp(val, "2") == 0) {
+		printf("powermode_ini is %s,not read from ini file\n", val);
+		return 0;
+	}
+
+	ret = handle_model_powermode();
+	return ret;
+}
+
+U_BOOT_CMD(ini_powermode, 4, 0, do_ini_powermode,
+	"parse ini file to get powermode",
+	" "
+);
+

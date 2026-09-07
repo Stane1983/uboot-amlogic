@@ -32,6 +32,7 @@
 #define DEFAULT_MODEL_SUM_PATH2 "/odm_ext/etc/tvconfig/model/model_sum.ini"
 #define DEFAULT_MODEL1_SUM_PATH2 "/odm_ext/etc/tvconfig/model/model1_sum.ini"
 #define DEFAULT_MODEL2_SUM_PATH2 "/odm_ext/etc/tvconfig/model/model2_sum.ini"
+#define DEFAULT_MODEL_NAME "DEFAULT"
 #define DEFAULT_SECTION "GENERAL_CONFIG_FROM_MODEL_SUM"
 
 /*********************************  common api  *************************************/
@@ -188,6 +189,27 @@ model_set_panel_misc_next3:
 	run_command(buf, 0);
 
 	return 0;
+}
+
+static const char *get_model_path(int index)
+{
+	char *model_path, str[15];
+
+	if (index == 0)
+		sprintf(str, "model_path");
+	else
+		sprintf(str, "model%d_path", index);
+
+	model_path = env_get(str);
+	if (!model_path) {
+		if (dynamic_partition)
+			return DEFAULT_MODEL_PATH2;
+		else
+			return DEFAULT_MODEL_PATH1;
+	}
+
+	printf("%s: %s\n", __func__, model_path);
+	return model_path;
 }
 
 /*********************************  cmd api *************************************/
@@ -444,27 +466,6 @@ static char *model_list_panel_path(int index)
 		printf("current %s: %s\n", str, path_str);
 
 	return path_str;
-}
-
-static const char *get_model_path(int index)
-{
-	char *model_path, str[15];
-
-	if (index == 0)
-		sprintf(str, "model_path");
-	else
-		sprintf(str, "model%d_path", index);
-
-	model_path = env_get(str);
-	if (!model_path) {
-		if (dynamic_partition)
-			return DEFAULT_MODEL_PATH2;
-		else
-			return DEFAULT_MODEL_PATH1;
-	}
-
-	printf("%s: %s\n", __func__, model_path);
-	return model_path;
 }
 #endif
 
@@ -861,3 +862,112 @@ U_BOOT_CMD(ini_model, 4, 0, do_ini_model,
 	"parse ini file by env model_name",
 	" "
 );
+
+int parse_model_powermode(int index, const char *file_name, char *model_name)
+{
+	void *local_ini_mem, *psec;
+	const char *powermode_value = NULL;
+	int ret = -1;
+
+	local_ini_mem = handle_ini_file_parse(file_name, 0);
+	if (!local_ini_mem) {
+		ALOGE("%s: error: %s\n", __func__, file_name);
+		return ret;
+	}
+
+	psec = handle_ini_get_section(local_ini_mem, model_name);
+	if (!psec) {
+		ALOGE("%s: section %s: error: %s\n", __func__, model_name, file_name);
+		return ret;
+	}
+
+	powermode_value = handle_ini_get_str(local_ini_mem, psec, "POWER_ON_MODE", "null");
+	if (strcmp(powermode_value, "null") != 0) {
+		ALOGI("powermode_value is %s\n", powermode_value);
+		if (!strcmp(powermode_value, "on") || !strcmp(powermode_value, "standby") ||
+		    !strcmp(powermode_value, "last")) {
+			env_set("powermode", powermode_value);
+			env_set("powermode_ini", "1");
+			env_save();
+		}
+		ret = 0;
+	} else {
+		env_set("powermode_ini", "2");
+		env_save();
+		ALOGD("not find POWER_ON_MODE in ini files !!!\n");
+	}
+
+	handle_ini_parser_uninit(local_ini_mem);
+
+	return ret;
+}
+
+int handle_model_powermode(void)
+{
+	char *model, str[15];
+	unsigned int print_flag;
+	int i;
+	int ret = -1;
+	char model_path[128];
+
+	print_flag = env_get_ulong("model_debug_print", 10, 0xffff);
+	if (print_flag != 0xffff) {
+		model_set_log_level(print_flag);
+		ALOGI("model_debug_flag: %d\n", print_flag);
+	}
+
+	for (i = 0; i < 3; i++) {
+		if (i == 0)
+			sprintf(str, "model_name");
+		else
+			sprintf(str, "model%d_name", i);
+
+		model = env_get(str);
+		if (!model) {
+			ALOGD("%s: no %s\n", __func__, str);
+			continue;
+		}
+		ALOGI("%s: %s: %s\n", __func__, str, model);
+
+		ret = parse_model_powermode(i, get_model_sum_path(i), DEFAULT_MODEL_NAME);
+		if (ret != 0) {
+			snprintf(model_path, 127, "%s/Project_index_%s.ini",
+			        get_model_path(i), model);
+			ALOGD("try to read from model_path: %s\n", model_path);
+			ret = parse_model_powermode(i, model_path, DEFAULT_SECTION);
+		}
+
+		if (ret != 0)
+			continue;
+	}
+
+	return ret;
+}
+
+static int do_ini_powermode(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+{
+	int ret = -1;
+
+	if (argc > 1)
+		return CMD_RET_USAGE;
+
+	char str[] = "powermode_ini";
+	char *val = NULL;
+
+	val = env_get(str);
+	if (!val) {
+		ALOGI("powermode_ini is not set");
+	} else if (strcmp(val, "0") == 0 || strcmp(val, "2") == 0) {
+		ALOGI("powermode_ini is %s,not read from ini file\n", val);
+		return 0;
+	}
+
+	ret = handle_model_powermode();
+	return ret;
+}
+
+U_BOOT_CMD(ini_powermode, 4, 0, do_ini_powermode,
+		"parse ini file to get powermode",
+		" "
+);
+

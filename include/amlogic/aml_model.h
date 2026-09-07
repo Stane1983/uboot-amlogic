@@ -134,6 +134,7 @@ int handle_model_list(void);
 int handle_model_sum(void);
 int handle_model_logofile(void);
 int handle_model_oemkey(void);
+int handle_model_powermode(void);
 #endif
 
 #if defined(CONFIG_CMD_AML_MODEL)
@@ -151,6 +152,7 @@ int handle_ini_set_exist_keys(void *inip, void *psec,
 			      const char *new_line, const char *new_value, int line_cnt);
 void handle_ini_list_key_value(void *inip);
 void handle_ini_list_section(void *inip);
+int handle_model_powermode(void);
 #endif
 
 #ifdef CONFIG_AML_LCD
