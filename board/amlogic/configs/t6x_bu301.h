@@ -35,7 +35,7 @@
 		"osd open; osd clear;"\
 		"if test ${jpg_logo} = true; then "\
 			"setenv dislay_bpp 32; setenv display_color_index 32; run load_jpg_logo;"\
-		"else"\
+		"else "\
 			"run load_bmp_logo;"\
 		"fi;"\
 		"bmp scale;\0"\
