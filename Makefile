@@ -1028,7 +1028,7 @@ cmd_static_rela =
 endif
 
 # Always append INPUTS so that arch config.mk's can add custom ones
-INPUTS-y += u-boot.srec u-boot.bin u-boot.sym System.map binary_size_check
+INPUTS-y += u-boot.srec u-boot.bin u-boot.sym System.map binary_size_check u-boot.dis
 INPUTS-y += acs.bin
 
 INPUTS-$(CONFIG_ONENAND_U_BOOT) += u-boot-onenand.bin
