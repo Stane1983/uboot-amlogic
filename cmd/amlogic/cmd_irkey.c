@@ -30,11 +30,7 @@ extern u32 get_time(void);
 
 int meson_ir_suspend(void *dev_info)
 {
-	char *str;
-
-	str = env_get("reboot_mode");
-	if (str && !strcmp(str, "aocpu_watchdog"))
-		update_for_dtb_wakeup_key();
+	update_for_dtb_wakeup_key();
 
 	return 0;
 }
@@ -46,6 +42,7 @@ int meson_ir_resume(void *dev_info)
 
 int meson_ir_poweroff(void *dev_info)
 {
+	update_for_dtb_wakeup_key();
 	return 0;
 }
 
