@@ -26,6 +26,7 @@ static int split_file_path(const char *file_path)
 	char *tmp_end_ptr = NULL;
 	char *slot_name;
 	int i = 0;
+	char tmp[MODEL_FILE_PATH_LEN_MAX];
 
 	if (!file_path) {
 		ALOGE("%s: file_path is NULL!\n", __func__);
@@ -56,10 +57,15 @@ static int split_file_path(const char *file_path)
 			run_command("get_valid_slot", 0);
 			slot_name = env_get("slot-suffixes");
 		}
+		strlcpy(tmp, local_part_name, MODEL_FILE_PATH_LEN_MAX);
 		if (strcmp(slot_name, "0") == 0)
 			strcat(local_part_name, "_a");
 		else if (strcmp(slot_name, "1") == 0)
 			strcat(local_part_name, "_b");
+		if (get_partition_num_by_name(local_part_name) <= 0) {
+			ALOGE("local_part_name %s not exist, replace to %s\n", local_part_name, tmp);
+			strlcpy(local_part_name, tmp, MODEL_FILE_PATH_LEN_MAX);
+		}
 	}
 
 	tmp_start_ptr = tmp_end_ptr;
