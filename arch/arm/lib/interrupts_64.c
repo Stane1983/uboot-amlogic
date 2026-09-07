@@ -46,10 +46,10 @@ static void dump_instr(struct pt_regs *regs)
 	u32 *addr = (u32 *)(regs->elr & ~3UL);
 	int i;
 
-	printf("Code: ");
+	pr_printf("Code: ");
 	for (i = -4; i < 1; i++)
-		printf(i == 0 ? "(%08x) " : "%08x ", addr[i]);
-	printf("\n");
+		pr_printf(i == 0 ? "(%08x) " : "%08x ", addr[i]);
+	pr_printf("\n");
 }
 
 void show_regs(struct pt_regs *regs)
@@ -58,20 +58,20 @@ void show_regs(struct pt_regs *regs)
 	gd->flags &= ~GD_FLG_SILENT;
 
 	if (gd->flags & GD_FLG_RELOC)
-		printf("elr: %016lx lr : %016lx (reloc)\n",
+		pr_printf("elr: %016lx lr : %016lx (reloc)\n",
 		       regs->elr - gd->reloc_off,
 		       regs->regs[30] - gd->reloc_off);
-	printf("elr: %016lx lr : %016lx\n", regs->elr, regs->regs[30]);
+	pr_printf("elr: %016lx lr : %016lx\n", regs->elr, regs->regs[30]);
 
 	for (i = 0; i < 29; i += 2)
-		printf("x%-2d: %016lx x%-2d: %016lx\n",
+		pr_printf("x%-2d: %016lx x%-2d: %016lx\n",
 		       i, regs->regs[i], i+1, regs->regs[i+1]);
 #if (IS_ENABLED(CONFIG_KALLSYMS))
 	dump_backtrace(regs);
 #else
-	printf("\n\n !!! enable CONFIG_KALLSYMS to show call trace !!!\n");
+	pr_printf("\n\n !!! enable CONFIG_KALLSYMS to show call trace !!!\n");
 #endif
-	printf("\n");
+	pr_printf("\n");
 	dump_instr(regs);
 }
 
@@ -123,7 +123,7 @@ static bool smh_emulate_trap(struct pt_regs *regs)
 void do_bad_sync(struct pt_regs *pt_regs)
 {
 	efi_restore_gd();
-	printf("Bad mode in \"Synchronous Abort\" handler, esr 0x%08lx\n",
+	pr_printf("Bad mode in \"Synchronous Abort\" handler, esr 0x%08lx\n",
 	       pt_regs->esr);
 	show_regs(pt_regs);
 	show_efi_loaded_images(pt_regs);
@@ -136,7 +136,7 @@ void do_bad_sync(struct pt_regs *pt_regs)
 void do_bad_irq(struct pt_regs *pt_regs)
 {
 	efi_restore_gd();
-	printf("Bad mode in \"Irq\" handler, esr 0x%08lx\n", pt_regs->esr);
+	pr_printf("Bad mode in \"Irq\" handler, esr 0x%08lx\n", pt_regs->esr);
 	show_regs(pt_regs);
 	show_efi_loaded_images(pt_regs);
 	panic("Resetting CPU ...\n");
@@ -148,7 +148,7 @@ void do_bad_irq(struct pt_regs *pt_regs)
 void do_bad_fiq(struct pt_regs *pt_regs)
 {
 	efi_restore_gd();
-	printf("Bad mode in \"Fiq\" handler, esr 0x%08lx\n", pt_regs->esr);
+	pr_printf("Bad mode in \"Fiq\" handler, esr 0x%08lx\n", pt_regs->esr);
 	show_regs(pt_regs);
 	show_efi_loaded_images(pt_regs);
 	panic("Resetting CPU ...\n");
@@ -160,7 +160,7 @@ void do_bad_fiq(struct pt_regs *pt_regs)
 void do_bad_error(struct pt_regs *pt_regs)
 {
 	efi_restore_gd();
-	printf("Bad mode in \"Error\" handler, esr 0x%08lx\n", pt_regs->esr);
+	pr_printf("Bad mode in \"Error\" handler, esr 0x%08lx\n", pt_regs->esr);
 	show_regs(pt_regs);
 	show_efi_loaded_images(pt_regs);
 	panic("Resetting CPU ...\n");
@@ -175,10 +175,10 @@ void do_sync(struct pt_regs *pt_regs)
 	    smh_emulate_trap(pt_regs))
 		return;
 	efi_restore_gd();
-	printf("\"Synchronous Abort\" handler, esr 0x%08lx\n", pt_regs->esr);
+	pr_printf("\"Synchronous Abort\" handler, esr 0x%08lx\n", pt_regs->esr);
 #if (IS_ENABLED(CONFIG_KALLSYMS))
 	extern unsigned long get_far(void);
-	printf("Fault address:0x%lx\n", get_far());
+	pr_printf("Fault address:0x%lx\n", get_far());
 #endif
 	show_regs(pt_regs);
 	show_efi_loaded_images(pt_regs);
@@ -191,7 +191,7 @@ void do_sync(struct pt_regs *pt_regs)
 void do_irq(struct pt_regs *pt_regs)
 {
 	efi_restore_gd();
-	printf("\"Irq\" handler, esr 0x%08lx\n", pt_regs->esr);
+	pr_printf("\"Irq\" handler, esr 0x%08lx\n", pt_regs->esr);
 	show_regs(pt_regs);
 	show_efi_loaded_images(pt_regs);
 	panic("Resetting CPU ...\n");
@@ -203,7 +203,7 @@ void do_irq(struct pt_regs *pt_regs)
 void do_fiq(struct pt_regs *pt_regs)
 {
 	efi_restore_gd();
-	printf("\"Fiq\" handler, esr 0x%08lx\n", pt_regs->esr);
+	pr_printf("\"Fiq\" handler, esr 0x%08lx\n", pt_regs->esr);
 	show_regs(pt_regs);
 	show_efi_loaded_images(pt_regs);
 	panic("Resetting CPU ...\n");
@@ -218,7 +218,7 @@ void do_fiq(struct pt_regs *pt_regs)
 void __weak do_error(struct pt_regs *pt_regs)
 {
 	efi_restore_gd();
-	printf("\"Error\" handler, esr 0x%08lx\n", pt_regs->esr);
+	pr_printf("\"Error\" handler, esr 0x%08lx\n", pt_regs->esr);
 	show_regs(pt_regs);
 	show_efi_loaded_images(pt_regs);
 	panic("Resetting CPU ...\n");

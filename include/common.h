@@ -35,6 +35,7 @@
 void srand(unsigned int seed);
 unsigned int rand(void);
 unsigned int rand_r(unsigned int *seedp);
+int pr_printf(const char *fmt, ...);
 #endif
 
 /* Pull in stuff for the build system */

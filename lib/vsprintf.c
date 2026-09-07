@@ -835,6 +835,40 @@ int vprintf(const char *fmt, va_list args)
 }
 #endif
 
+#ifdef CONFIG_AMLOGIC_MODIFY
+static int pr_vprintf(const char *fmt, va_list args)
+{
+	uint i;
+	char printbuffer[CONFIG_SYS_PBSIZE];
+
+	/*
+	 * For this to work, printbuffer must be larger than
+	 * anything we ever want to print.
+	 */
+	i = vscnprintf(printbuffer, sizeof(printbuffer), fmt, args);
+
+	/* Handle error */
+	if (i <= 0)
+		return i;
+
+	/* Print the string */
+	pr_puts(printbuffer);
+	return i;
+}
+
+int pr_printf(const char *fmt, ...)
+{
+	va_list args;
+	uint i;
+
+	va_start(args, fmt);
+	i = pr_vprintf(fmt, args);
+	va_end(args);
+
+	return i;
+}
+#endif
+
 static char local_toa[22];
 
 char *simple_itoa(ulong i)

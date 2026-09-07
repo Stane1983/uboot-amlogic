@@ -15,6 +15,9 @@ int tstc(void);
 		defined(CONFIG_SPL_SERIAL))
 void putc(const char c);
 void puts(const char *s);
+#ifdef CONFIG_AMLOGIC_MODIFY
+void pr_puts(const char *s);
+#endif
 #ifdef CONFIG_CONSOLE_FLUSH_SUPPORT
 void flush(void);
 #else

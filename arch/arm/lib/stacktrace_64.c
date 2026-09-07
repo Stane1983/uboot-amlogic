@@ -18,10 +18,10 @@ void print_symbol(unsigned long addr, unsigned long offset)
 	sym = symbol_lookup(faddr, &base, &end);
 	if (sym) {
 		size = end - base;
-		printf("[<%016lx>] %s+0x%lx/0x%lx\n", addr, sym,
+		pr_printf("[<%016lx>] %s+0x%lx/0x%lx\n", addr, sym,
 			addr - (base + offset), size);
 	} else {
-		printf("[<%016lx>] %s\n", addr, "N/A");
+		pr_printf("[<%016lx>] %s\n", addr, "N/A");
 	}
 }
 
@@ -82,7 +82,7 @@ int dump_backtrace(struct pt_regs *regs)
 		frame.sp = current_sp + 0x10;
 		frame.pc = (unsigned long)dump_backtrace;
 	}
-	printf("\nCall trace: \n");
+	pr_printf("\n Call trace: \n");
 	while (1) {
 		unsigned long where = frame.pc;
 

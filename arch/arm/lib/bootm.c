@@ -32,6 +32,7 @@
 #include <bootm.h>
 #include <vxworks.h>
 #include <asm/cache.h>
+#include <serial.h>
 
 #ifdef CONFIG_ARMV7_NONSEC
 #include <asm/armv7.h>
@@ -96,7 +97,7 @@ static void announce_and_cleanup(int fake)
 	run_command("dmc_vio_check", 0);
 #endif
 
-	printf("\nStarting kernel ...%s\n\n", fake ?
+	pr_printf("\nStarting kernel ...%s\n\n", fake ?
 		"(fake run for tracing)" : "");
 #ifdef CONFIG_AMLOGIC_MODIFY
 	#ifdef CONFIG_AMLOGIC_TIME_PROFILE
@@ -723,11 +724,11 @@ static void boot_jump_linux(struct bootm_headers *images, int flag)
 		dcache_disable();
 #endif
 		if (images->os.arch == IH_ARCH_ARM) {
-			printf("boot 32bit kernel\n");
+			pr_printf("boot 32bit kernel\n");
 			jump_to_a32_kernel(images->ep, machid, (unsigned long)images->ft_addr);
 		}
 		else {
-			printf("boot 64bit kernel\n");
+			pr_printf("boot 64bit kernel\n");
 			kernel_entry(images->ft_addr, NULL, NULL, NULL);
 		}
 #endif
