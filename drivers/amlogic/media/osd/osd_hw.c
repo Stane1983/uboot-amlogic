@@ -1762,33 +1762,15 @@ static void osd_update_mif_linear_addr(u32 index)
 	u32 fmt_mode = 0;
 	u32 osd_blk1_cfg_w4, osd_blk2_cfg_w4, osd_ctrl_stat;
 
-	switch (index) {
-	case 0:
-		osd_blk1_cfg_w4 = hw_osd_reg_array[0].osd_blk1_cfg_w4;
-		osd_blk2_cfg_w4 = hw_osd_reg_array[0].osd_blk2_cfg_w4;
-		osd_ctrl_stat = hw_osd_reg_array[0].osd_ctrl_stat;
-		break;
-	case 1:
-		osd_blk1_cfg_w4 = hw_osd_reg_array[1].osd_blk1_cfg_w4;
-		osd_blk2_cfg_w4 = hw_osd_reg_array[1].osd_blk2_cfg_w4;
-		osd_ctrl_stat = hw_osd_reg_array[1].osd_ctrl_stat;
-		break;
-	case 2:
-		osd_blk1_cfg_w4 = hw_osd_reg_array[2].osd_blk1_cfg_w4;
-		osd_blk2_cfg_w4 = hw_osd_reg_array[2].osd_blk2_cfg_w4;
-		osd_ctrl_stat = hw_osd_reg_array[2].osd_ctrl_stat;
-		break;
-	case 3:
-		osd_blk1_cfg_w4 = hw_osd_reg_array[3].osd_blk1_cfg_w4;
-		osd_blk2_cfg_w4 = hw_osd_reg_array[3].osd_blk2_cfg_w4;
-		osd_ctrl_stat = hw_osd_reg_array[3].osd_ctrl_stat;
-		break;
-	default:
-		osd_blk1_cfg_w4 = hw_osd_reg_array[0].osd_blk1_cfg_w4;
-		osd_blk2_cfg_w4 = hw_osd_reg_array[0].osd_blk2_cfg_w4;
-		osd_ctrl_stat = hw_osd_reg_array[0].osd_ctrl_stat;
-		break;
+	if (index >= OSD_MAX) {
+		osd_loge("%s: invalid index=%u\n", __func__, index);
+		return;
 	}
+
+	osd_blk1_cfg_w4 = hw_osd_reg_array[index].osd_blk1_cfg_w4;
+	osd_blk2_cfg_w4 = hw_osd_reg_array[index].osd_blk2_cfg_w4;
+	osd_ctrl_stat = hw_osd_reg_array[index].osd_ctrl_stat;
+
 	if (osd_hw.color_info[index])
 		fmt_mode =
 			osd_hw.color_info[index]->color_index;
