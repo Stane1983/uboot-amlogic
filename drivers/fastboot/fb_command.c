@@ -1385,6 +1385,8 @@ static void flashing(char *cmd_parameter, char *response)
 		if (!pbuffpreload_r) {
 			printf("Fail to allocate memory for %s!\n",
 				partname_r);
+			free(pbuffpreload);
+			pbuffpreload = 0;
 			goto next;
 		}
 
@@ -1396,6 +1398,8 @@ static void flashing(char *cmd_parameter, char *response)
 				preloadsz_r, partname_r);
 			free(pbuffpreload_r);
 			pbuffpreload_r = 0;
+			free(pbuffpreload);
+			pbuffpreload = 0;
 			goto next;
 		}
 
@@ -1499,7 +1503,7 @@ next:
 		fastboot_response("FAIL", response, "%s", "Variable not implemented");
 	}
 
-	sprintf(lock_d, "%d%d%d0%d%d%d0", info.version_major, info.version_minor,
+	snprintf(lock_d, sizeof(lock_d), "%d%d%d0%d%d%d0", info.version_major, info.version_minor,
 		info.unlock_ability, info.lock_state, info.lock_critical_state,
 		info.lock_bootloader);
 	printf("lock_d state: %s\n", lock_d);
