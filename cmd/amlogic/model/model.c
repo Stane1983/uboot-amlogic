@@ -484,8 +484,9 @@ static int read_model_name_param(int index, unsigned char *data_buf, int data_si
 		item_name = CS_MODEL2_NAME_ITEM_NAME;
 
 	read_buf = model_read_ukey_data(item_name, &rd_size);
-	if (!read_buf)
+	if (!read_buf || rd_size <= 0)
 		return -1;
+	rd_size += 1; //add \0 for string
 	if (data_size < rd_size) {
 		ALOGE("%s: size error: %s\n", __func__, item_name);
 		memset(read_buf, 0, rd_size);
