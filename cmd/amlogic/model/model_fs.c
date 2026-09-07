@@ -66,7 +66,7 @@ static int split_file_path(const char *file_path)
 
 	i = 0;
 	while (*tmp_end_ptr) {
-		if (i >= MODEL_FILE_PATH_LEN_MAX) {
+		if (i >= MODEL_FILE_PATH_LEN_MAX - 1) {
 			ALOGE("%s: file_path is too long (%d): %s\n", __func__, i, file_path);
 			goto split_file_path_err;
 		}
@@ -77,7 +77,7 @@ static int split_file_path(const char *file_path)
 	strncpy(local_file_name, tmp_start_ptr, i);
 	local_file_name[i] = '\0';
 
-	strcpy(local_file_path, file_path);
+	strlcpy(local_file_path, file_path, MODEL_FILE_PATH_LEN_MAX);
 
 	ALOGD("%s: partition name: %s, file_name: %s\n",
 		__func__, local_part_name, local_file_name);

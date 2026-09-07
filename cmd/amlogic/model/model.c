@@ -722,8 +722,9 @@ int handle_model_sum(void)
 		if (ret < 0) {
 			snprintf(model_path, 127, "%s/Project_index_%s.ini",
 				get_model_path(i), model_val);
-			debug("model_sum try to read from model_path: %s\n", model_path);
 			ret = parse_model_sum(i, model_path, DEFAULT_SECTION);
+			debug("model_sum try to read from model_path: %s %s\n",
+			      model_path, ret ? "fail" : "ok");
 		}
 	}
 

@@ -283,7 +283,7 @@ static unsigned int lcd_venc_get_encl_line_cnt(struct aml_lcd_drv_s *pdrv)
 static void lcd_venc_reg_dump(struct aml_lcd_drv_s *pdrv)
 {
 	int i;
-	unsigned int *reg_table = NULL, *reg_ctrl = NULL, size_encl = 0, size_ctrl = 0;
+	unsigned int *reg_table = NULL, size_encl = 0;
 	unsigned int encl_reg_dft[] = {
 		VPU_VIU_VENC_MUX_CTRL,
 		ENCL_VIDEO_EN,
@@ -313,6 +313,7 @@ static void lcd_venc_reg_dump(struct aml_lcd_drv_s *pdrv)
 		L_DITH_CNTL_ADDR
 	};
 #ifdef CONFIG_MESON_TXHD2
+	unsigned int *reg_ctrl = NULL, size_ctrl = 0;
 	static unsigned int ctrl_reg_table[] = {
 		ENCL_INBUF_CNTL0,
 		ENCL_INBUF_CNTL1,
@@ -334,17 +335,16 @@ static void lcd_venc_reg_dump(struct aml_lcd_drv_s *pdrv)
 		break;
 	}
 
-	if (!reg_table)
-		return;
-
 	for (i = 0; i < size_encl; i++)
 		printf("vcbus [0x%04x] = 0x%08x\n", reg_table[i], lcd_vcbus_read(reg_table[i]));
+#ifdef CONFIG_MESON_TXHD2
 	if (reg_ctrl) {
 		for (i = 0; i < size_ctrl; i++) {
 			printf("vcbus [0x%04x] = 0x%08x\n",
 			       reg_ctrl[i], lcd_vcbus_read(reg_ctrl[i]));
 		}
 	}
+#endif
 }
 
 static void lcd_venc_save_bootctrl_to_reg(struct aml_lcd_drv_s *pdrv)

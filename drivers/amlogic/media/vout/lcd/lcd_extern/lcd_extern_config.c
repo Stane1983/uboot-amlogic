@@ -378,7 +378,7 @@ static int lcd_extern_init_table_handle_dts(struct lcd_extern_driver_s *edrv,
 		return -1;
 	}
 	init_off = (char *)fdt_getprop(dtaddr, nodeoffset, "init_off", &len_off);
-	if (!init_on) {
+	if (!init_off) {
 		EXTERR("%s: get init_off failed\n", extconf->name);
 		return -1;
 	}

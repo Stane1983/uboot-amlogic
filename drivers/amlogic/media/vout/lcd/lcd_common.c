@@ -467,7 +467,7 @@ void lcd_lvds_bit_rate_config(struct aml_lcd_drv_s *pdrv)
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("[%d]: %s\n", pdrv->index, __func__);
 
-	band_width = pconf->timing.act_timing.pixel_clk * 7;
+	band_width = (unsigned long long)pconf->timing.act_timing.pixel_clk * 7;
 	port_div = pconf->control.lvds_cfg.dual_port ? 2 : 1;
 	bit_rate = lcd_do_div(band_width, port_div);
 	pconf->timing.bit_rate = bit_rate;

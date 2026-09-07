@@ -78,7 +78,8 @@ static int read_string_data(const char *item_name, int mode, char data_buf[], in
 	else
 		skip_len = 0;
 
-	strncpy(data_buf, (char *)tmp_buf + skip_len, rd_size - skip_len);
+	if (rd_size > skip_len)
+		strncpy(data_buf, (char *)tmp_buf + skip_len, rd_size - skip_len);
 
 	free(tmp_buf);
 	tmp_buf = NULL;

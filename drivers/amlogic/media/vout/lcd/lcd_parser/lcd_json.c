@@ -129,8 +129,18 @@ panel_json_parse_err2:
 	memset((void *)tmp_buf, 0, file_size);
 	free(tmp_buf);
 panel_json_parse_err:
-	memset(jsp, 0, sizeof(struct json_parse_s));
-	free(jsp);
+	if (jsp->js) {
+		memset(jsp->js, 0, jsp->js_max);
+		free(jsp->js);
+	}
+	if (jsp->root) {
+		memset(jsp->root, 0, jsp->json_max * sizeof(*jsp->root));
+		free(jsp->root);
+	}
+	if (jsp) {
+		memset(jsp, 0, sizeof(struct json_parse_s));
+		free(jsp);
+	}
 	return NULL;
 }
 
@@ -156,6 +166,7 @@ int panel_json_mem_save(void *parse_mem, int index)
 	sprintf(name, "panel%d_jsp", index);
 
 	//|size(4)|json_cnt(4)|js_len(4)|json_start(4)|(js_start)
+	memset(&head, 0, sizeof(head));
 	head.json_cnt = jsp->json_cnt;
 	head.js_len = jsp->js_len;
 	head.json_start = JSON_PANEL_HANDLE_HEAD_SIZE;

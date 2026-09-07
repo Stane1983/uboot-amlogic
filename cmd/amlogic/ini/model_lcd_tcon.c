@@ -322,7 +322,6 @@ handle_tcon_spi_v0_next:
 
 	/* block cnt */
 	header->block_cnt = block_cnt;
-	header->block_cnt = g_lcd_tcon_spi_cnt;
 	/* crc */
 	header->crc32 = cal_CRC32(0, (buff + 4), g_lcd_tcon_spi_cnt - 4);
 

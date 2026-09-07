@@ -660,7 +660,7 @@ static int handle_lcd_phy(unsigned char *p_attr)
 	struct lcd_phy_s *phy;
 	const char *ini_value = NULL;
 	unsigned int temp_buf[72];
-	unsigned int offset, lane_cnt = 0;
+	int offset, lane_cnt = 0;
 	int i, j, n;
 
 	offset = sizeof(struct lcd_header_s);
@@ -736,6 +736,7 @@ static int handle_lcd_phy(unsigned char *p_attr)
 		ALOGD("%s, phy_lane_pn_swap is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "null")) {
 		lane_cnt = trans_buffer_data(ini_value, temp_buf);
+		lane_cnt = lane_cnt <= 0 ? 0 : lane_cnt > 8 ? 8 : lane_cnt; //"model.h"
 		for (i = 0; i < lane_cnt; i++) {
 			j = i / 8;
 			n = i % 8;
@@ -748,6 +749,7 @@ static int handle_lcd_phy(unsigned char *p_attr)
 		ALOGD("%s, phy_lane_ctrl is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "null")) {
 		lane_cnt = trans_buffer_data(ini_value, temp_buf);
+		lane_cnt = lane_cnt <= 0 ? 0 : lane_cnt > 64 ? 64 : lane_cnt; //"model.h"
 		for (i = 0; i < lane_cnt; i++) {
 			phy->phy_lane_ctrl[i] = temp_buf[i];
 			if (model_debug_flag & DEBUG_LCD) {
@@ -762,6 +764,7 @@ static int handle_lcd_phy(unsigned char *p_attr)
 		ALOGD("%s, phy_lane_sel is (%s)\n", __func__, ini_value);
 	if (strcmp(ini_value, "null")) {
 		lane_cnt = trans_buffer_data(ini_value, temp_buf);
+		lane_cnt = lane_cnt <= 0 ? 0 : lane_cnt > 64 ? 64 : lane_cnt; //"model.h"
 		for (i = 0; i < lane_cnt; i++)
 			phy->phy_lane_sel[i] = temp_buf[i];
 	}
@@ -1206,7 +1209,7 @@ static int handle_lcd_ext_cmd_data(struct lcd_ext_attr_s *p_attr)
 {
 	int i = 0, j = 0, k, tmp_cnt = 0, tmp_off = 0;
 	const char *ini_value = NULL;
-	unsigned int tmp_buf[2048];
+	unsigned int *tmp_buf;
 	unsigned char type, raw_size, data_size;
 	unsigned char *data_buf = NULL, data_len;
 #ifdef CONFIG_AML_LCD_TCON
@@ -1218,11 +1221,20 @@ static int handle_lcd_ext_cmd_data(struct lcd_ext_attr_s *p_attr)
 	ini_value = ini_get_string("lcd_ext_Attr", "init_on", "null");
 	if (model_debug_flag & DEBUG_LCD_EXTERN)
 		ALOGD("%s, init_on is (%s)\n", __func__, ini_value);
+
+	tmp_buf = (unsigned int *)malloc(LCD_EXTERN_INIT_ON_MAX);
+	if (!tmp_buf) {
+		ALOGE("%s, malloc tmp buffer memory error!!!\n", __func__);
+		return -1;
+	}
+	memset(tmp_buf, 0, LCD_EXTERN_INIT_ON_MAX);
+
 	tmp_cnt = trans_buffer_data(ini_value, tmp_buf);
 
 	data_buf = (unsigned char *)malloc(LCD_EXTERN_INIT_ON_MAX);
 	if (!data_buf) {
 		ALOGE("%s, malloc buffer memory error!!!\n", __func__);
+		free(tmp_buf);
 		return -1;
 	}
 	memset(data_buf, 0, LCD_EXTERN_INIT_ON_MAX);
@@ -1334,6 +1346,9 @@ handle_lcd_ext_cmd_data_init_off:
 	memset(data_buf, 0, LCD_EXTERN_INIT_ON_MAX);
 	free(data_buf);
 	data_buf = NULL;
+	memset(tmp_buf, 0, LCD_EXTERN_INIT_ON_MAX);
+	free(tmp_buf);
+	tmp_buf = NULL;
 
 	return 0;
 }
@@ -2287,7 +2302,7 @@ static int handle_ldim_dev_custom(struct ldim_dev_attr_s *p_attr)
 		if (model_debug_flag & DEBUG_BACKLIGHT)
 			ALOGD("%s, param_data is (%d)\n", __func__, tmp_cnt);
 		/* data check and copy */
-		if (tmp_cnt > LDIM_PARAM_MAX) {
+		if (tmp_cnt > LDIM_PARAM_MAX || tmp_cnt <= 0) {
 			printf("%s: invalid param data\n", __func__);
 		} else {
 			p_attr->custome.custome_param_size = tmp_cnt;

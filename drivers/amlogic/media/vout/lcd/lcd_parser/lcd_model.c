@@ -254,7 +254,7 @@ int panel_param_mem_put(unsigned char *mem, const char *name, u32 len)
 		printf("%s, memory not enough\n", __func__);
 		return -1;
 	}
-	strncpy(key->name, name, sizeof(key->name));
+	strlcpy(key->name, name, sizeof(key->name));
 	memcpy(panel_param_mem.key_mem + key->mem_pos, mem, len);
 	panel_param_mem.key_mem_pos += len;
 	panel_param_mem.key_mem_pos = ALIGN(panel_param_mem.key_mem_pos, 16);

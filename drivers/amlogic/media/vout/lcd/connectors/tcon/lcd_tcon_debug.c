@@ -198,7 +198,9 @@ static unsigned int lcd_tcon_table_read(unsigned int addr)
 
 	if (core_reg_info->header->ext_header_size &&
 			core_reg_info->ext_header.reg_blk_num) {
-		lcd_tcon_get_table32_reg(core_reg_info, addr, &val);
+		ret = lcd_tcon_get_table32_reg(core_reg_info, addr, &val);
+		if (!ret)
+			return 0;
 	} else {
 		if (tcon_conf->core_reg_width == 8)
 			size = core_reg_info->table_size;

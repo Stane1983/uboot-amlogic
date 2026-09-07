@@ -1039,7 +1039,8 @@ int ini_parse_mem(struct ini_s *ini_buf, const char *tmp_buf)
 
 	memset(line, 0, INI_LINE_LEN_MAX);
 	free(line);
-
+	memset(multi_line.buf, 0, multi_line.max_len);
+	free(multi_line.buf);
 	ini_alloc_parse_mem_print();
 
 	return error;

@@ -494,6 +494,8 @@ static void lcd_tcon_data_init_set(struct aml_lcd_drv_s *pdrv, unsigned char *da
 		lcd_tcon_ext_header_check(&init_ext_header);
 		ext_core_tbl_len = lcd_tcon_get_core_size(tcon_conf,
 			init_header, &init_ext_header);
+		if (ext_core_tbl_len == 0)
+			return;
 	}
 	len = ext_core_tbl_len + init_header->header_size
 		+ init_header->ext_header_size;

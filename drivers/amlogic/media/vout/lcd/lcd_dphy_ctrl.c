@@ -1290,8 +1290,11 @@ void lcd_dphy_set_data(struct aml_lcd_drv_s *pdrv, int data)
 
 void lcd_dphy_reg_print(struct aml_lcd_drv_s *pdrv)
 {
-	struct reg_name_set_s *reg_dphy_table = NULL, *reg_ctrl_table = NULL, *reg_ch_swap = NULL;
-	unsigned int size_dphy = 0, size_ctrl = 0, size_ch_swap = 0, reg_bus, reg_offset;
+#ifdef CONFIG_AML_LCD_PXP
+	return;
+#else
+	struct reg_name_set_s *reg_dphy_table = NULL, *reg_ch_swap = NULL;
+	unsigned int size_dphy = 0, size_ch_swap = 0, reg_bus, reg_offset;
 
 #if defined(CONFIG_MESON_T5M) || defined(CONFIG_MESON_T6D) || defined(CONFIG_MESON_T6W) || \
 		defined(CONFIG_MESON_T3X) || defined(CONFIG_MESON_TXHD2) || \
@@ -1302,6 +1305,8 @@ void lcd_dphy_reg_print(struct aml_lcd_drv_s *pdrv)
 	};
 #endif
 #if defined(CONFIG_MESON_T3X)
+	struct reg_name_set_s *reg_ctrl_table = NULL;
+	unsigned int size_ctrl = 0;
 	struct reg_name_set_s dphy_ctrl_reg_t3x[] = {
 		{COMBO_DPHY_CNTL0, "COMBO_DPHY_CNTL0"},
 		{COMBO_DPHY_CNTL1, "COMBO_DPHY_CNTL1"}
@@ -1381,7 +1386,9 @@ void lcd_dphy_reg_print(struct aml_lcd_drv_s *pdrv)
 		reg_offset = pdrv->data->offset_venc_if[pdrv->index];
 		str_add_reg_sets(pdrv, LCD_REG_DBG_VC_BUS, reg_offset, reg_ch_swap, size_ch_swap);
 	}
+#if defined(CONFIG_MESON_T3X)
 	if (reg_ctrl_table)
 		str_add_reg_sets(pdrv, reg_bus, 0, reg_ctrl_table, size_ctrl);
+#endif
 	str_add_reg_sets(pdrv, reg_bus, 0, reg_dphy_table, size_dphy);
 }

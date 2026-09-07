@@ -15,6 +15,7 @@
 #include <command.h>
 
 static struct num_str_s lcd_type_match_table[] = {
+	{LCD_TYPE_MAX, "invalid"},
 #ifdef CONFIG_AML_LCD_DPI
 	{LCD_RGB,      "rgb"},      {LCD_RGB,      "LCD_RGB"},
 	{LCD_BT656,    "bt656"},    {LCD_BT656,    "LCD_BT656"},
@@ -33,7 +34,6 @@ static struct num_str_s lcd_type_match_table[] = {
 	{LCD_MLVDS,    "minilvds"}, {LCD_MLVDS,    "LCD_MLVDS"},
 	{LCD_P2P,      "p2p"},      {LCD_P2P,      "LCD_P2P"},
 #endif
-	{LCD_TYPE_MAX, "invalid"},
 };
 
 int lcd_type_str_to_type(const char *str)
@@ -52,7 +52,7 @@ int lcd_type_str_to_type(const char *str)
 
 char *lcd_type_type_to_str(int type)
 {
-	char *name = lcd_type_match_table[LCD_TYPE_MAX].str;
+	char *name = lcd_type_match_table[0].str;
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(lcd_type_match_table); i++) {
@@ -1284,7 +1284,7 @@ static int lcd_power_load_from_unifykey(struct aml_lcd_drv_s *pdrv,
 	}
 	power_step->power_off_step_max = i;
 
-	if (append_more && i + 2 < LCD_POWER_TYPE_MAX) {
+	if (append_more && i + 2 < LCD_PWR_STEP_MAX - 1) {
 		i--;
 		for (j = i + 2; j >= 2; j--)
 			memcpy(&pstep[j], &pstep[j - 2], sizeof(struct lcd_power_step_s));
@@ -2052,8 +2052,20 @@ static int lcd_panel_parse_phy(struct json_parse_s *jsp, struct aml_lcd_drv_s *p
 		}
 
 		str = json_get_obj_str(jsp, child, "mode", NULL);
-		phy->cv_mode   = (str && (strcmp(str, "voltage") == 0)) ? PHY_VMODE : PHY_CMODE;
-		phy->phy_clk   = json_get_obj_u32(jsp, child, "phy_clk", 0);
+		phy->cv_mode = (str && (strcmp(str, "voltage") == 0)) ? PHY_VMODE : PHY_CMODE;
+		phy->phy_clk_min = json_get_obj_u32(jsp, child, "phy_clk_min", 0);
+		phy->phy_clk_max = json_get_obj_u32(jsp, child, "phy_clk_max", 0);
+		if ((!phy->phy_clk_min && !phy->phy_clk_max) ||
+		    phy->phy_clk_min > phy->phy_clk_max) {
+			phy->phy_clk = json_get_obj_u32(jsp, child, "phy_clk", 0);
+			if (phy->phy_clk) {
+				phy->phy_clk_min = phy->phy_clk - 20;
+				phy->phy_clk_max = phy->phy_clk + 20;
+			} else {
+				phy->phy_clk_min = 0;
+				phy->phy_clk_max = 0;
+			}
+		}
 		phy->vcm       = json_get_obj_u32(jsp, child, "vcm", phy->vcm);
 		phy->odt       = json_get_obj_u32(jsp, child, "odt", phy->odt);
 		phy->ref_bias  = json_get_obj_u32(jsp, child, "bias", phy->ref_bias);

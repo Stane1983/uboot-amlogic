@@ -513,8 +513,6 @@ int lcd_tcon_data_multi_init_check(struct aml_lcd_drv_s *pdrv,
 					__func__, hsize, vsize, min);
 			break;
 		}
-		if (data_cnt < 4)
-			goto lcd_tcon_data_multi_init_check_exit;
 
 		k += data_byte;
 		for (j = 0; j < data_byte; j++)
@@ -1633,7 +1631,7 @@ int lcd_tcon_get_core_size(struct lcd_tcon_config_s *tcon_conf,
 	int table_size = 0, i;
 
 	if (!tcon_conf || !header)
-		return -1;
+		return 0;
 
 	table_size = tcon_conf->reg_table_len;
 	if (ext_header && ext_header->reg_blk_num) {
@@ -1743,6 +1741,8 @@ static int lcd_tcon_core_reg_check_load(struct aml_lcd_drv_s *pdrv, unsigned cha
 			LCDPR("%s: update core reg table size=%d (%#x)\n", __func__,
 				core_reg_info->table_size, core_reg_info->table_size);
 		}
+		if (core_reg_info->table_size == 0)
+			goto lcd_tcon_core_reg_check_load_err;
 	}
 
 	data_len = core_reg_info->table_size +
@@ -1966,6 +1966,10 @@ static void lcd_tcon_update_dccd_flow(void)
 	has_tcon_file = lcd_tcon_dccd_has_tcon_file();
 	crc = lcd_tcon_dccd_get_crc();
 #endif
+	if (!tcon_local || !mm_table || !tcon_local->def_core_info.header ||
+	    mm_table->version == 0)
+		return;
+
 	if (!support_dccd)
 		goto __is_dccd_flow_exit;
 
@@ -1973,10 +1977,6 @@ static void lcd_tcon_update_dccd_flow(void)
 		is_dccd_flow = 1;
 		goto __is_dccd_flow_exit;
 	}
-
-	if (!tcon_local || !mm_table || !tcon_local->def_core_info.header ||
-			mm_table->version == 0)
-		goto __is_dccd_flow_exit;
 
 	//check tcon bin
 	if (!tcon_local->def_core_info.header->dccd_flag ||

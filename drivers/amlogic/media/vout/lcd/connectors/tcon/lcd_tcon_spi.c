@@ -180,8 +180,8 @@ static int lcd_tcon_spi_ext_update_ini_param(struct aml_lcd_drv_s *pdrv,
 }
 
 /* for ext_data, need update cmd table when compare */
-static int lcd_tcon_spi_ext_cmp(struct aml_lcd_drv_s *pdrv, unsigned char index,
-		struct lcd_tcon_spi_block_s *spi_block)
+static int lcd_tcon_spi_ext_cmp(struct aml_lcd_drv_s *pdrv, unsigned int index,
+				struct lcd_tcon_spi_block_s *spi_block)
 {
 	struct lcd_extern_driver_s *edrv;
 	struct lcd_extern_dev_s *edev;
@@ -217,11 +217,9 @@ static int lcd_tcon_spi_ext_cmp(struct aml_lcd_drv_s *pdrv, unsigned char index,
 	while ((i + 1) < ori_table_size) {
 		type = ori_table[i];
 		size = ori_table[i + 1];
-		if (type == 0xff)
+		if (type == LCD_EXT_CMD_TYPE_END)
 			break;
 		if ((i + 2 + size) > ori_table_size)
-			break;
-		if (type == LCD_EXT_CMD_TYPE_END)
 			break;
 
 		switch (type) {
@@ -250,11 +248,11 @@ static int lcd_tcon_spi_ext_cmp(struct aml_lcd_drv_s *pdrv, unsigned char index,
 				// id
 				init_data[n + m + 2] = ori_table[i + k + 2];
 				// fr min
-				init_data[n + m + 3] = (ori_table[i + k + 3] >> 0) & 0xff;
-				init_data[n + m + 4] = (ori_table[i + k + 3] >> 8) & 0xff;
+				init_data[n + m + 3] = ori_table[i + k + 3];
+				init_data[n + m + 4] = ori_table[i + k + 4];
 				//fr max
-				init_data[n + m + 5] = (ori_table[i + k + 4] >> 0) & 0xff;
-				init_data[n + m + 6] = (ori_table[i + k + 4] >> 8) & 0xff;
+				init_data[n + m + 5] = ori_table[i + k + 5];
+				init_data[n + m + 6] = ori_table[i + k + 6];
 				m += 5;
 			}
 			init_data[n + 1] = m;//new size
@@ -266,9 +264,9 @@ static int lcd_tcon_spi_ext_cmp(struct aml_lcd_drv_s *pdrv, unsigned char index,
 				// id
 				init_data[n + m + 2] = ori_table[i + k + 2];
 				// fr min
-				init_data[n + m + 3] = ori_table[i + k + 3] & 0xff;
+				init_data[n + m + 3] = ori_table[i + k + 3];
 				//fr max
-				init_data[n + m + 4] = ori_table[i + k + 4] & 0xff;
+				init_data[n + m + 4] = ori_table[i + k + 4];
 				m += 3;
 			}
 			init_data[n + 1] = m;//new size
@@ -291,8 +289,8 @@ static int lcd_tcon_spi_ext_cmp(struct aml_lcd_drv_s *pdrv, unsigned char index,
 			init_data[n + 0] = ori_table[i + 0];//type
 			init_data[n + 2] = ori_table[i + 2];//gpio id
 			init_data[n + 3] = ori_table[i + 3];//gpio val
-			init_data[n + 4] = (ori_table[i + 4] >> 0) & 0xff;//dly
-			init_data[n + 5] = (ori_table[i + 4] >> 8) & 0xff;//dly
+			init_data[n + 4] = ori_table[i + 4];//dly
+			init_data[n + 5] = ori_table[i + 5];//dly
 			init_data[n + 1] = 4;
 			goto ext_bin_to_data_ok;
 		default:
@@ -523,7 +521,7 @@ static int lcd_tcon_spi_data_load(struct aml_lcd_drv_s *pdrv)
 			break;
 		case LCD_TCON_DATA_BLOCK_TYPE_EXT: /* pmu */
 #ifdef CONFIG_AML_LCD_EXTERN
-			j = tcon_spi.spi_block[i]->data_index & 0xff;
+			j = tcon_spi.spi_block[i]->data_index;
 			ret = tcon_spi.data_read(tcon_spi.spi_block[i]);
 			if (ret)
 				continue;
@@ -613,7 +611,8 @@ static int lcd_tcon_spi_data_load_json(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_tcon_spi_header_s *header;
 	unsigned char *tcon_spi, *p;
-	unsigned int val, data_size, block_cnt, param_cnt;
+	unsigned int val, data_size;
+	int block_cnt, param_cnt;
 	__maybe_unused struct json_s *parent, *child, *child2 = NULL;
 	struct json_parse_s *jsp;
 	unsigned int i, j, k, n;
@@ -642,8 +641,11 @@ static int lcd_tcon_spi_data_load_json(struct aml_lcd_drv_s *pdrv)
 	header->version = json_get_obj_u32(jsp, parent, "version", 1);
 
 	parent = json_get_object_child(jsp, parent, "block");
-	if (!parent)
+	if (!parent) {
+		memset(tcon_spi, 0, LCD_TCON_SPI_SIZE);
+		free(tcon_spi);
 		return 0;
+	}
 	block_cnt = json_get_array_size(jsp, parent);
 	if (block_cnt <= 0) {
 		memset(tcon_spi, 0, LCD_TCON_SPI_SIZE);
@@ -695,6 +697,8 @@ static int lcd_tcon_spi_data_load_json(struct aml_lcd_drv_s *pdrv)
 		child2 = json_get_object_child(jsp, child, "param");
 		if (child2)
 			param_cnt = json_get_array_size(jsp, child2);
+		if (param_cnt <= 0)
+			param_cnt = 0;
 		p[n + 16] = param_cnt & 0xff;
 		p[n + 17] = (param_cnt >> 8) & 0xff;
 		p[n + 18] = (param_cnt >> 16) & 0xff;

@@ -779,6 +779,8 @@ static void mipi_dsi_phy_config(struct aml_lcd_drv_s *pdrv, uint32_t dsi_bitrate
 
 	// t_ui = div_around(dsi_bitrate, 1000);
 	t_ui = div_around(1000000 * 100, dsi_bitrate / 1000); /*100*ns */
+	if (t_ui == 0 || t_ui > 12500)
+		return;
 	dphy->t_ui = t_ui;
 	temp = t_ui * 8; /* lane_byte cycle time */
 
