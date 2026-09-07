@@ -30,6 +30,12 @@ static struct edid_venddat_t vendor_shield_hdr[] = {
 	/* Add new vendor data here */
 };
 
+static struct edid_venddat_t vendor_scan_non_std[] = {
+	/* LG OLED55BXPCA */
+	{ {0x1e, 0x6d, 0xc0, 0xc0, 0x01, 0x01, 0x01, 0x01, 0x01, 0x1e} }
+	/* Add new vendor data here */
+};
+
 /* On Huawei TVs, HDR will cause a flickering screen,
  * and HDR PKT needs to be moved behind VSYNC on S7 or later SOCs
  */
@@ -81,5 +87,23 @@ bool hdmitx_find_vendor_shield_hdr(unsigned char *edid_buf)
 			return true;
 	}
 
+	return false;
+}
+
+/* scan non-standard TV, it doesn't display full screen when detect avi scan_info =
+ * under_scan, instead it displays with black board around. and need to set
+ * avi scan_info = NO_DATA to recover normally.
+ */
+bool hdmitx_find_vendor_scan_non_std(unsigned char *edid_buf)
+{
+	int i;
+
+	if (!edid_buf)
+		return false;
+	for (i = 0; i < ARRAY_SIZE(vendor_scan_non_std); i++) {
+		if (memcmp(&edid_buf[8], vendor_scan_non_std[i].data,
+			sizeof(vendor_scan_non_std[i].data)) == 0)
+			return true;
+	}
 	return false;
 }

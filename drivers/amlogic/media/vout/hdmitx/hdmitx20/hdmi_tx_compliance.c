@@ -23,6 +23,12 @@ static struct edid_venddat_t vendor_null_pkt[] = {
 	/* Add new vendor data here */
 };
 
+static struct edid_venddat_t vendor_scan_non_std[] = {
+	/* LG OLED55BXPCA */
+	{ {0x1e, 0x6d, 0xc0, 0xc0, 0x01, 0x01, 0x01, 0x01, 0x01, 0x1e} }
+	/* Add new vendor data here */
+};
+
 bool hdmitx_find_vendor(struct hdmitx_dev *hdev)
 {
 	int i;
@@ -50,3 +56,20 @@ bool hdmitx_find_vendor_null_pkt(struct hdmitx_dev *hdev)
 	return false;
 }
 
+/* scan non-standard TV, it doesn't display full screen when detect avi scan_info =
+ * under_scan, instead it displays with black board around. and need to set
+ * avi scan_info = NO_DATA to recover normally.
+ */
+bool hdmitx_find_vendor_scan_non_std(struct hdmitx_dev *hdev)
+{
+	int i;
+
+	if (!hdev)
+		return false;
+	for (i = 0; i < ARRAY_SIZE(vendor_scan_non_std); i++) {
+		if (memcmp(&hdev->rawedid[8], vendor_scan_non_std[i].data,
+			sizeof(vendor_scan_non_std[i].data)) == 0)
+			return true;
+	}
+	return false;
+}
