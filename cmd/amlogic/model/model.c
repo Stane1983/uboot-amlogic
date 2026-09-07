@@ -1101,14 +1101,13 @@ int parse_model_powermode(int index, const char *file_name, char *model_name)
 		if (!strcmp(powermode_value, "on") || !strcmp(powermode_value, "standby") ||
 		    !strcmp(powermode_value, "last")) {
 			env_set("powermode", powermode_value);
-			env_set("powermode_ini", "1");
 			env_save();
 		}
 		ret = 0;
 	} else {
-		env_set("powermode_ini", "2");
-		env_save();
-		ALOGD("not find POWER_ON_MODE in ini files !!!\n");
+		ALOGD("not find POWER_ON_MODE in ini files: %s,%s !!!\n", file_name, model_name);
+//		env_set("powermode_ini", "2");
+//		env_save();
 	}
 
 	handle_ini_parser_uninit(local_ini_mem);
@@ -1171,8 +1170,8 @@ static int do_ini_powermode(cmd_tbl_t *cmdtp, int flag, int argc, char *const ar
 
 	val = env_get(str);
 	if (!val) {
-		ALOGI("powermode_ini is not set");
-	} else if (strcmp(val, "0") == 0 || strcmp(val, "2") == 0) {
+		ALOGI("powermode_ini is not set\n");
+	} else if (strcmp(val, "0") == 0) {
 		ALOGI("powermode_ini is %s,not read from ini file\n", val);
 		return 0;
 	}

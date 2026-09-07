@@ -326,8 +326,8 @@ static int do_ini_powermode(cmd_tbl_t *cmdtp, int flag, int argc, char *const ar
 
 	val = env_get(str);
 	if (!val) {
-		printf("powermode_ini is not set");
-	} else if (strcmp(val, "0") == 0 || strcmp(val, "2") == 0) {
+		printf("powermode_ini is not set.\n");
+	} else if (strcmp(val, "0") == 0) {
 		printf("powermode_ini is %s,not read from ini file\n", val);
 		return 0;
 	}
