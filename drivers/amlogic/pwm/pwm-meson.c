@@ -220,9 +220,8 @@ static int meson_pwm_cacl(struct udevice *dev, uint channel, uint period,
 
 		if (duty_cnt == 0)
 			duty_cnt = 1;
-
-		if (cnt == duty_cnt)
-			duty_cnt -= 1;
+		if (cnt <= duty_cnt)
+			cnt = duty_cnt + 1;
 
 		pwm_state[channel].pre_div = pre_div;
 		pwm_state[channel].hi = duty_cnt - 1;
