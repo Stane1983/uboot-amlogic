@@ -1767,6 +1767,7 @@ static int do_load_logo_from_ext4(cmd_tbl_t *cmdtp, int flag, int argc, char * c
 		return CMD_RET_USAGE;
 	}
 	int iRet = 0;
+	int partIndex;
 	const char *ext4Part = argv[1];
 	void *loadaddr = (void *)simple_strtoul(argv[2], NULL, 16);
 	int autoSelectSlot = 1;//auto detect if need add _a/_b
@@ -1808,13 +1809,19 @@ static int do_load_logo_from_ext4(cmd_tbl_t *cmdtp, int flag, int argc, char * c
 	}
 
 	env_set("bootLogoPart", ext4Part);
-	if (autoSelectSlot)
-		run_command("if test ${active_slot} != normal; then setenv bootLogoPart ${bootLogoPart}${active_slot}; printenv bootLogoPart; fi", 0);
-	const int partIndex = get_partition_num_by_name(env_get("bootLogoPart"));
-
-	if (partIndex < 0) {
-		errorP("fail find part index for name(%s)\n", env_get("bootLogoPart"));
-		return CMD_RET_FAILURE;
+	run_command("printenv bootLogoPart;", 0);
+	partIndex = get_partition_num_by_name(env_get("bootLogoPart"));
+	debug("partIndex = %d\n", partIndex);
+	if (partIndex <= 0) {
+		debug("fail find part index for name(%s), try ab\n", env_get("bootLogoPart"));
+		if (autoSelectSlot)
+			run_command("if test ${active_slot} != normal; then setenv bootLogoPart ${bootLogoPart}${active_slot}; printenv bootLogoPart; fi", 0);
+		partIndex = get_partition_num_by_name(env_get("bootLogoPart"));
+		if (partIndex <= 0) {
+			errorP("fail find part index for name(%s), exit\n",
+				env_get("bootLogoPart"));
+			return CMD_RET_FAILURE;
+		}
 	}
 #if IS_ENABLED(CONFIG_AMLOGIC_AMFC)
 	if (is_jpg_file(env_get("ext4LogoPath"))) {

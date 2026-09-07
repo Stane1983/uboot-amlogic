@@ -401,11 +401,76 @@ int parse_model_oemkey(int index, const char *file_name, char *model_name)
 	return ret;
 }
 
+int split_file_path(const char *file_path, char part_name[], char file_name[], const char *ext_name)
+{
+	int i = 0;
+	char *tmp_start_ptr = NULL;
+	char *tmp_end_ptr = NULL;
+
+	if (!file_path) {
+		debug("%s, file_path is NULL!!!\n", __func__);
+		return -1;
+	}
+
+	tmp_start_ptr = strchr((char *)file_path, '/');
+	if (tmp_start_ptr != file_path) {
+		debug("%s, we need one abstract file path!!!  %s.\n", __func__, file_path);
+		return -1;
+	}
+
+	tmp_end_ptr = strchr(tmp_start_ptr + 1, '/');
+	if (!tmp_end_ptr) {
+		debug("%s, there is only partition name in the path!!!\n", __func__);
+		return -1;
+	}
+
+	strncpy(part_name, tmp_start_ptr + 1, tmp_end_ptr - tmp_start_ptr - 1);
+	part_name[tmp_end_ptr - tmp_start_ptr - 1] = '\0';
+
+	tmp_start_ptr = tmp_end_ptr;
+
+	i = 0;
+	while (*tmp_end_ptr && i < 256) {
+		tmp_end_ptr++;
+		i++;
+	}
+	if (i >= 256) {
+		debug("%s, file path is too long (%d)!!!\n", __func__, i);
+		return -1;
+	}
+
+	strncpy(file_name, tmp_start_ptr, i);
+	file_name[i] = '\0';
+
+	if (ext_name) {
+		if (strlen(ext_name) > 0) {
+			while (tmp_end_ptr != tmp_start_ptr && *tmp_end_ptr != '.')
+				tmp_end_ptr--;
+
+			if (*tmp_end_ptr != '.') {
+				debug("%s, the file path \"%s\" doesn't have ext name!!!\n",
+					__func__, file_path);
+				return -1;
+			}
+			if (strcmp(tmp_end_ptr + 1, ext_name)) {
+				debug("%s, file path \"%s\" != ext name \"%s\"!!!\n",
+					__func__, file_path, ext_name);
+				return -1;
+			}
+		}
+	}
+
+	return 0;
+}
+
 int parse_model_logofile(int index, const char *file_name, char *model_name)
 {
 	void *local_ini_mem, *psec;
 	const char *logo_value = NULL;
 	char *str = NULL;
+	char temp_file_path[256] = {0};
+	char partition[128] = {0};
+	char filename[256] = {0};
 	int ret = 1;
 
 	local_ini_mem = handle_ini_file_parse(file_name, 0);
@@ -425,7 +490,23 @@ int parse_model_logofile(int index, const char *file_name, char *model_name)
 	if (strcmp(logo_value, "null") != 0) {
 		env_set("logo_path", "exist");
 		printf("logo_file_name is %s\n", logo_value);
-		env_set("logo_file_name", logo_value);
+
+		memset(temp_file_path, 0, sizeof(temp_file_path));
+		if (!strncmp("/mnt/vendor", logo_value, 11)) {
+			strlcpy(temp_file_path, logo_value + 11, (strlen(logo_value) - 10));
+
+			if (split_file_path(temp_file_path, partition, filename, NULL) < 0)
+				return 1;
+
+			debug("filename is %s\n", filename);
+			debug("partition is %s\n", partition);
+			env_set("board_logo_part", partition);
+		} else {
+			strlcpy(filename, logo_value, (strlen(logo_value) + 1));
+			printf("filename is %s\n", filename);
+		}
+
+		env_set("logo_file_name", filename);
 	} else {
 		printf("invalid LOGO_FILE_PATH\n");
 	}
