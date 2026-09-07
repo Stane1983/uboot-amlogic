@@ -10,6 +10,7 @@
 #include "vpu_reg.h"
 #include "vpu.h"
 #include "vpu_ctrl.h"
+#include "amlogic/aml_efuse.h"
 #include <amlogic/pm.h>
 #include <dm.h>
 #include <clk.h>
@@ -936,6 +937,23 @@ static struct vpu_data_s vpu_data_t6x = {
 	.change_clk = change_vpu_clk,
 };
 
+static void vpu_support_overclock(void)
+{
+	unsigned int cpu_type;
+
+	cpu_type = get_cpu_id().family_id;
+	if (cpu_type == MESON_CPU_MAJOR_ID_T6X) {
+		/*
+		 * t6x 144hz chip set vpu clk 800M
+		 * t6x 170/180hz chip set vpu clk 840M
+		 */
+		if (IS_FEAT_EN_VPU_OVER_SPEED()) {
+			VPUPR("vpu support overclock\n");
+			vpu_conf.vpu_overclock = 1;
+		}
+	}
+}
+
 static void vpu_chip_detect(void)
 {
 	unsigned int cpu_type;
@@ -1130,7 +1148,10 @@ static int get_vpu_config(void)
 		VPUERR("don't find clk_level in dts, set to default\n");
 		goto get_vpu_config_dft;
 	}
-	vpu_conf.clk_level = be32_to_cpup((u32 *)propdata);
+	if (vpu_conf.data->chip_type == VPU_CHIP_T6X && vpu_conf.vpu_overclock)
+		vpu_conf.clk_level = 10;
+	else
+		vpu_conf.clk_level = be32_to_cpup((u32 *)propdata);
 	if (vpu_conf.clk_level >= vpu_conf.data->clk_level_max) {
 		if (cpu_type != MESON_CPU_MAJOR_ID_S7D &&
 		    chip_rev != MESON_CPU_CHIP_REVISION_B)
@@ -1194,6 +1215,7 @@ int vpu_probe(void)
 	if (vpu_check())
 		return -1;
 
+	vpu_support_overclock();
 	ret = get_vpu_config();
 	if (vpu_conf.data->power_on)
 		vpu_conf.data->power_on();

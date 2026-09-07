@@ -177,6 +177,7 @@ struct vpu_conf_s {
 
 	unsigned int clk_level;
 	unsigned int fclk_freq; /* unit: MHz */
+	unsigned int vpu_overclock;
 };
 
 extern struct vpu_conf_s vpu_conf;
