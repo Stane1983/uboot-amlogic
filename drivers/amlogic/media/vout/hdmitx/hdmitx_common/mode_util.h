@@ -105,7 +105,7 @@ int meson_mode_ioctl(enum IOCTL_TYPE type, int request, ...);
 
 int32_t meson_mode_write_sys(const char *path, const char *val);
 int32_t meson_mode_read_sys(const char *path, char *val, bool original, int valSize);
-bool meson_valid_mode_by_drm(int *valid, const char *outputmode, [[maybe_unused]] const uint32_t conn_id);
+bool meson_valid_mode_by_drm(int *valid, const char *outputmode, const char *attr, [[maybe_unused]] const uint32_t conn_id);
 
 #ifdef __cplusplus
 }

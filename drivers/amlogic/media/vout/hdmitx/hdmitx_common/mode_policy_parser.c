@@ -245,13 +245,11 @@ bool mode_support_check(const char *mode, const char * color, struct meson_polic
         }
     }
 
-    strlcat(outputmode, color, sizeof(outputmode));
-
     /*
      * check mode and color format support or not
      */
     int valid = 0;
-    meson_valid_mode_by_drm(&valid, outputmode, input->con_info.conn_id);
+    meson_valid_mode_by_drm(&valid, outputmode, color, input->con_info.conn_id);
     if (valid == 1)
         validmode = true;
 
