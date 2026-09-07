@@ -616,7 +616,7 @@ handle_tcon_path_pmu_spi_bin_multi:
 		panel_param_mem_put((u8 *)tcon_spi, "lcd_tcon_spi", g_lcd_tcon_spi_cnt);
 
 		memset((void *)tmp_buf, 0, tmp_buf_size);
-		tmp_len = read_tcon_spi_param(tmp_buf);
+		tmp_len = read_tcon_spi_param(tmp_buf, tmp_buf_size);
 		//ALOGD("%s, start check lcd_tcon_spi param data (0x%x).\n", __func__, tmp_len);
 		if (check_param_valid(0, g_lcd_tcon_spi_cnt, tcon_spi, tmp_len, tmp_buf) ==
 		    CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM) {
@@ -728,7 +728,7 @@ int handle_tcon_bin(void)
 	panel_param_mem_put((u8 *)tcon_buf, "lcd_tcon", tcon_bin_size);
 
 	memset((void *)tmp_buf, 0, tmp_buf_size);
-	tmp_len = read_tcon_bin_param(tmp_buf);
+	tmp_len = read_tcon_bin_param(tmp_buf, tmp_buf_size);
 	//ALOGD("%s, start check lcd_tcon param data (0x%x).\n", __func__, tmp_len);
 	if (check_param_valid(1, tcon_bin_size, tcon_buf, tmp_len, tmp_buf) ==
 		CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM) {

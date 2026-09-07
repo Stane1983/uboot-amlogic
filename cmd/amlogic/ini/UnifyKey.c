@@ -301,7 +301,8 @@ static int check_UnifyKey(const char *key_name)
 	return key_len;
 }
 
-int read_ukey_data_no_header(const char *key_name, unsigned char data_buf[], int rd_size)
+int read_ukey_data_no_header(const char *key_name,
+		unsigned char data_buf[], int buf_size, int rd_size)
 {
 	int ret = 0, key_len = 0;
 
@@ -311,8 +312,8 @@ int read_ukey_data_no_header(const char *key_name, unsigned char data_buf[], int
 	} else if (key_len == 0) {
 		ALOGE("%s, %s size is zero\n", __func__, key_name);
 		return -1;
-	} else if (key_len > rd_size) {
-		ALOGE("%s, %s key len is larger than rd size.\n", __func__, key_name);
+	} else if (key_len > rd_size || key_len > buf_size) {
+		ALOGE("%s, %s key len is larger than rd or buffer size.\n", __func__, key_name);
 		return -1;
 	}
 
@@ -325,7 +326,7 @@ int read_ukey_data_no_header(const char *key_name, unsigned char data_buf[], int
 	return key_len;
 }
 
-int read_ukey_data(const char *key_name, unsigned char data_buf[], int rd_size)
+int read_ukey_data(const char *key_name, unsigned char data_buf[], int buf_size, int rd_size)
 {
 	int i = 0, ret = 0, key_len = 0, retry_cnt = 0, tmp_content_type = 0;
 	unsigned int key_crc = 0, key_crc32 = 0, tmp_len = 0, tmp_crc = 0;
@@ -337,8 +338,8 @@ int read_ukey_data(const char *key_name, unsigned char data_buf[], int rd_size)
 	} else if (key_len == 0) {
 		ALOGE("%s, %s size is zero\n", __func__, key_name);
 		return -1;
-	} else if (key_len > rd_size) {
-		ALOGE("%s, %s key len is larger than rd size.\n", __func__, key_name);
+	} else if (key_len > rd_size || key_len > buf_size) {
+		ALOGE("%s, %s key len is larger than rd or buffer size.\n", __func__, key_name);
 		return -1;
 	}
 

@@ -40,29 +40,29 @@
 extern "C" {
 #endif
 
-int read_lcd_param(int index, unsigned char data_buf[]);
+int read_lcd_param(int index, unsigned char data_buf[], int buf_size);
 int save_lcd_param(int index, int wr_size, unsigned char data_buf[]);
-int read_lcd_extern_param(int index, unsigned char data_buf[]);
+int read_lcd_extern_param(int index, unsigned char data_buf[], int buf_size);
 int save_lcd_extern_param(int index, int wr_size, unsigned char data_buf[]);
-int read_backlight_param(int index, unsigned char data_buf[]);
+int read_backlight_param(int index, unsigned char data_buf[], int buf_size);
 int save_backlight_param(int index, int wr_size, unsigned char data_buf[]);
-int read_ldim_dev_param(unsigned char data_buf[]);
+int read_ldim_dev_param(unsigned char data_buf[], int buf_size);
 int save_ldim_dev_param(int wr_size, unsigned char data_buf[]);
-int read_model_name_param(int index, unsigned char data_buf[]);
+int read_model_name_param(int index, unsigned char data_buf[], int buf_size);
 int save_model_name_param(int index, int wr_size, unsigned char data_buf[]);
-int read_tcon_spi_param(unsigned char data_buf[]);
+int read_tcon_spi_param(unsigned char data_buf[], int buf_size);
 int save_tcon_spi_param(int wr_size, unsigned char data_buf[]);
-int read_lcd_optical_param(int index, unsigned char data_buf[]);
+int read_lcd_optical_param(int index, unsigned char data_buf[], int buf_size);
 int save_lcd_optical_param(int index, int wr_size, unsigned char data_buf[]);
-int read_tcon_bin_param(unsigned char data_buf[]);
+int read_tcon_bin_param(unsigned char data_buf[], int buf_size);
 int save_tcon_bin_param(int wr_size, unsigned char data_buf[]);
-int read_panel_ini_name(char data_buf[]);
+int read_panel_ini_name(char data_buf[], int buf_size);
 int save_panel_ini_name(char data_buf[]);
-int read_panel_PQ_path(char data_buf[]);
+int read_panel_PQ_path(char data_buf[], int buf_size);
 int save_panel_PQ_path(char data_buf[]);
-int read_panel_all_info_data(unsigned char data_buf[]);
+int read_panel_all_info_data(unsigned char data_buf[], int buf_size);
 int save_panel_all_info_data(int wr_size, unsigned char data_buf[]);
-int read_panel_all_data(int sec_no, unsigned char data_buf[]);
+int read_panel_all_data(int sec_no, unsigned char data_buf[], int buf_size);
 int save_panel_all_data(int sec_no, int wr_size, unsigned char data_buf[]);
 
 int check_hex_data_no_header_valid(unsigned int* tmp_crc32, int max_len, int buf_len, unsigned char data_buf[]);

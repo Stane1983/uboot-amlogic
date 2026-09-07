@@ -9,7 +9,7 @@
 int handle_model_list_panel_key(void);
 int handle_model_list(void);
 int handle_model_sum(void);
-int handle_model_get(const char *model, char buf[]);
+int handle_model_get(const char *model, char buf[], int buf_size);
 int handle_model_set(const char *model, const char *val);
 int handle_multi_remote(void);
 int handle_multi_keypad(void);

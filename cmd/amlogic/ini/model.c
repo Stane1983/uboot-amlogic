@@ -3195,7 +3195,7 @@ int handle_panel_ini(int index)
 		panel_param_mem_set_ukey_flag();
 
 	memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
-	tmp_len = read_lcd_param(index, tmp_buf);
+	tmp_len = read_lcd_param(index, tmp_buf, CC_MAX_DATA_SIZE);
 	if (check_param_valid(0, glcd_dcnt, lcd_buf, tmp_len, tmp_buf) ==
 	    CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM) {
 		ALOGD("%s, check lcd param data diff (0x%x), save new param.\n",
@@ -3212,7 +3212,7 @@ int handle_panel_ini(int index)
 	panel_param_mem_put((u8 *)lcd_ext_attr, key_name, glcd_ext_dcnt);
 
 	memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
-	tmp_len = read_lcd_extern_param(index, tmp_buf);
+	tmp_len = read_lcd_extern_param(index, tmp_buf, CC_MAX_DATA_SIZE);
 	//ALOGD("%s, start check lcd extern param data (0x%x).\n", __func__, tmp_len);
 	if (check_param_valid(0, glcd_ext_dcnt, (unsigned char *)lcd_ext_attr, tmp_len, tmp_buf) ==
 	    CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM) {
@@ -3229,7 +3229,7 @@ int handle_panel_ini(int index)
 	panel_param_mem_put((u8 *)bl_attr, key_name, gbl_dcnt);
 
 	memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
-	tmp_len = read_backlight_param(index, tmp_buf);
+	tmp_len = read_backlight_param(index, tmp_buf, CC_MAX_DATA_SIZE);
 	if (check_param_valid(0, gbl_dcnt, (unsigned char *)bl_attr, tmp_len, tmp_buf) ==
 	    CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM) {
 		ALOGD("%s, check backlight param data diff (0x%x), save new param.\n",
@@ -3244,7 +3244,7 @@ int handle_panel_ini(int index)
 		panel_param_mem_put((u8 *)ldim_dev_attr, key_name, gldim_dev_dcnt);
 
 		memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
-		tmp_len = read_ldim_dev_param(tmp_buf);
+		tmp_len = read_ldim_dev_param(tmp_buf, CC_MAX_DATA_SIZE);
 		//ALOGD("%s, start check ldim_dev param data (0x%x).\n", __func__, tmp_len);
 		if (check_param_valid(0, gldim_dev_dcnt, (unsigned char *)ldim_dev_attr,
 			tmp_len, tmp_buf) == CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM) {
@@ -3265,7 +3265,7 @@ int handle_panel_ini(int index)
 		panel_param_mem_put((u8 *)optical_attr, key_name, glcd_optical_dcnt);
 
 		memset((void *)tmp_buf, 0, CC_MAX_DATA_SIZE);
-		tmp_len = read_lcd_optical_param(index, tmp_buf);
+		tmp_len = read_lcd_optical_param(index, tmp_buf, CC_MAX_DATA_SIZE);
 		//ALOGD("%s, start check lcd_tcon_spi param data (0x%x).\n", __func__, tmp_len);
 		if (check_param_valid(0, glcd_optical_dcnt, (unsigned char *)optical_attr,
 			tmp_len, tmp_buf) == CC_PARAM_CHECK_ERROR_NEED_UPDATE_PARAM) {
@@ -3611,7 +3611,7 @@ int handle_model_list(void)
 		else
 			sprintf(str, "model%d_name", i);
 
-		if (read_model_name_param(i, model_val) <= 0) {
+		if (read_model_name_param(i, model_val, sizeof(model_val)) <= 0) {
 			model = env_get(str);
 			if (!model) {
 				if (model_debug_flag & DEBUG_NORMAL)
@@ -3667,7 +3667,7 @@ int handle_model_get(const char *model, char *buf, int buf_size)
 		model_name = "model2_name";
 	}
 
-	ret = read_model_name_param(index, buf);
+	ret = read_model_name_param(index, buf, buf_size);
 	if (ret <= 0) {
 		str = env_get(model_name);
 		if (!str) {
@@ -3739,7 +3739,7 @@ int handle_model_oemkey(void)
 		else
 			sprintf(str, "model%d_name", i);
 
-		if (read_model_name_param(i, model_val) <= 0) {
+		if (read_model_name_param(i, model_val, sizeof(model_val)) <= 0) {
 			model = env_get(str);
 			if (!model) {
 				if (model_debug_flag & DEBUG_NORMAL)
@@ -3773,7 +3773,7 @@ int handle_model_logofile(void)
 		else
 			sprintf(str, "model%d_name", i);
 
-		if (read_model_name_param(i, model_val) <= 0) {
+		if (read_model_name_param(i, model_val, sizeof(model_val)) <= 0) {
 			model = env_get(str);
 			if (!model) {
 				if (model_debug_flag & DEBUG_NORMAL)
@@ -3821,7 +3821,7 @@ int handle_model_sum(void)
 		else
 			sprintf(str, "model%d_name", i);
 
-		if (read_model_name_param(i, model_val) <= 0) {
+		if (read_model_name_param(i, model_val, sizeof(model_val)) <= 0) {
 			model = env_get(str);
 			if (!model) {
 				if (model_debug_flag & DEBUG_NORMAL)
