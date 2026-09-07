@@ -277,7 +277,7 @@ static int do_image_read_dtb_from_knl(const char *partname,
 		unsigned long ramdisk_size_v3, dtb_size_v3;
 		unsigned long ramdisk_table_size;
 		unsigned long totalsize;
-		u64 vendorboot_part_sz = store_part_size(partname);
+		u64 vendorboot_part_sz;
 
 		dtb_in_vendor_boot = true;
 		slot_name = env_get("slot-suffixes");
@@ -287,6 +287,8 @@ static int do_image_read_dtb_from_knl(const char *partname,
 			strcpy((char *)partname, "vendor_boot_b");
 		else
 			strcpy((char *)partname, "vendor_boot");
+
+		vendorboot_part_sz = store_part_size(partname);
 
 #ifdef CONFIG_DIAG_MODE
 		char diag_state_buf[200] = {0x0};
