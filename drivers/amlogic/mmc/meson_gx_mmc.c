@@ -25,12 +25,6 @@
 #include <amlogic/cpu_id.h>
 #include "../drivers/mmc/mmc_private.h"
 
-struct aml_pattern aml_pattern_table[] = {
-	AML_PATTERN_ELEMENT(MMC_PATTERN_NAME, CALI_PATTERN),
-	AML_PATTERN_ELEMENT(MMC_MAGIC_NAME, MAGIC_PATTERN),
-	AML_PATTERN_ELEMENT(MMC_RANDOM_NAME, RANDOM_PATTERN),
-};
-
 bool meson_gx_mmc_is_compatible(struct udevice *dev,
 				enum meson_gx_mmc_compatible family)
 {
@@ -78,6 +72,13 @@ static void meson_mmc_config_clock(struct meson_host *host)
 
 	if (!mmc->clock)
 		return;
+
+	if (host->jump_bl33 == 1 && host->hs200_complete == 0) {
+		meson_mmc_clk = meson_read(mmc, MESON_SD_EMMC_CLOCK);
+		meson_mmc_clk &= 0x7fffffff;
+		meson_write(mmc, meson_mmc_clk, MESON_SD_EMMC_CLOCK);
+		return;
+	}
 
 	/* TOFIX This should use the proper clock taken from DT */
 
@@ -241,7 +242,9 @@ static int meson_dm_mmc_set_ios(struct udevice *dev)
 	struct mmc *mmc = mmc_get_mmc_dev(dev);
 	u32 meson_mmc_cfg;
 
-	if (!mmc->clock) {
+	if (host->jump_bl33 == 1 && host->hs200_complete == 1) {
+		;
+	} else if (!mmc->clock) {
 		meson_write(mmc, 0, MESON_SD_EMMC_DELAY1);
 		meson_write(mmc, 0, MESON_SD_EMMC_DELAY2);
 		meson_write(mmc, 0, MESON_SD_EMMC_ADJUST);
@@ -712,8 +715,8 @@ static int meson_send_cali_blks(struct udevice *dev, u32 opcode, char *buffer,
 	struct mmc *mmc = &pdata->mmc;
 	int err = 0, ret = 0;
 	struct mmc_cmd cmd = {0};
-	struct mmc_cmd stop = {0};
 	struct mmc_data data = {{0}, 0};
+	struct mmc_cmd stop = {0};
 
 	cmd.cmdidx = opcode;
 	if (!strcmp(pattern, MMC_PATTERN_NAME))
@@ -752,6 +755,7 @@ static int meson_send_cali_blks(struct udevice *dev, u32 opcode, char *buffer,
 			pr_debug("%s: send calibration stop blocks error %d\n",
 				 mmc->cfg->name, ret);
 	}
+
 	return (ret || err) ? -1 : 0;
 }
 
@@ -1037,6 +1041,11 @@ int meson_execute_tuning(struct udevice *dev, uint opcode)
 	if (!host->blk_test)
 		return -EINVAL;
 
+	if (host->jump_bl33 == 1) {
+		host->hs200_complete = 1;
+		goto read_para;
+	}
+
 	printf("%s: tuning start:\n", mmc->cfg->name);
 	meson_write(mmc, 0, MESON_SD_EMMC_ADJUST);
 	old_dly = meson_read(mmc, MESON_SD_EMMC_DELAY1);
@@ -1209,18 +1218,14 @@ tuning:
 #endif
 	host->is_tuning = 0;
 
-	if (aml_card_type_mmc(host)) {
-		if (!mmc_partition_init()) {
-			printf("eMMC/TSD partition table have been checked OK!\n");
-
-			for (int i = 0; i < ARRAY_SIZE(aml_pattern_table); i++)
-				mmc_pattern_check(mmc, &aml_pattern_table[i]);
+read_para:
+	ret = mmc_switch_part(mmc, 0);
 #if CONFIG_IS_ENABLED(MMC_HS400_SUPPORT)
-			if (host->save_para)
-				aml_read_tuning_para(mmc, host->save_para);
-#endif
-		}
+	if (aml_card_type_mmc(host)) {
+		if (host->save_para)
+			ret |= aml_read_tuning_para(mmc, host->save_para);
 	}
+#endif
 
 	return ret;
 }
@@ -1272,6 +1277,7 @@ static int emmc_ds_manual_sht(struct udevice *dev)
 	intf3 &= ~DS_SHT_M_MASK;
 	meson_write(mmc, intf3, MESON_SD_EMMC_INTF3);
 	memset(match, -1, sizeof(match));
+
 	for (i = 0; i < 64; i++) {
 		err = emmc_test_bus(dev);
 		debug("intf3: 0x%x, err[%d]: %d\n", meson_read(mmc, MESON_SD_EMMC_INTF3), i, err);
@@ -1731,6 +1737,8 @@ static int meson_mmc_of_to_plat(struct udevice *dev)
 	fdt_addr_t addr;
 	int ret = 0;
 
+	host->jump_bl33 = 0;
+	host->hs200_complete = 0;
 	addr = dev_read_addr(dev);
 	if (addr == FDT_ADDR_T_NONE)
 		return -EINVAL;

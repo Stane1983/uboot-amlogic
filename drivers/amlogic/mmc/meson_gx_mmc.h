@@ -31,6 +31,8 @@ struct meson_host {
 	uint src_clk;
 	uint nwr_cnt;
 	uint save_para;
+	uint jump_bl33;
+	uint hs200_complete;
 	struct clk core;
 	struct clk xtal;
 	struct clk div2;

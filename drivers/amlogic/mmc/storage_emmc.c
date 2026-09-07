@@ -36,6 +36,12 @@ extern efuse_obj_field_t efuse_field;
 #define UBOOT_SIZE  (0x1000)
 #define BLOCK_SIZE 512
 
+struct aml_pattern aml_pattern_table[] = {
+	AML_PATTERN_ELEMENT(MMC_PATTERN_NAME, CALI_PATTERN),
+	AML_PATTERN_ELEMENT(MMC_MAGIC_NAME, MAGIC_PATTERN),
+	AML_PATTERN_ELEMENT(MMC_RANDOM_NAME, RANDOM_PATTERN),
+};
+
 extern int find_dev_num_by_partition_name (char const *name);
 extern struct partitions *get_partition_info_by_num(const int num);
 extern bool emmckey_is_protected(struct mmc *mmc);
@@ -1335,11 +1341,26 @@ int emmc_probe(uint32_t init_flag)
 	}
 
 	ret = mmc_storage_init(mmc, init_flag); /*flag 0*/
-	if (ret)
+	if (ret) {
 		printf("mmc init failed ret:%x\n", ret);
-	else
-		printf("emmc probe success\n");
+		goto exit_error;
+	}
+	printf("emmc probe success\n");
 
+	host = dev_get_priv(mmc->dev);
+
+	if (host->jump_bl33 == 1)
+		host->jump_bl33 = 0;
+
+	ret = mmc_partition_init();
+	if (ret)
+		goto exit_error;
+	printf("eMMC/TSD partition table have been checked OK!\n");
+
+	for (int i = 0; i < ARRAY_SIZE(aml_pattern_table); i++)
+		mmc_pattern_check(mmc, &aml_pattern_table[i]);
+
+exit_error:
 	return ret;
 }
 
