@@ -247,12 +247,6 @@ static void add_map(struct mm_region *map)
 	int level;
 	u64 *new_table;
 
-	if ((virt == 0) && (phys == 0)) {
-		virt += DDR_SKIP_ZERO_ADDR_START_64KB_MAP;
-		phys += DDR_SKIP_ZERO_ADDR_START_64KB_MAP;
-		size -= DDR_SKIP_ZERO_ADDR_START_64KB_MAP;
-	}
-
 	while (size) {
 		pte = find_pte(virt, 0);
 		if (pte && (pte_type(pte) == PTE_TYPE_FAULT)) {
@@ -430,7 +424,9 @@ int mmu_map_update(void)
 	rsv_addr += (SZ_1M);
 	rsv_size -= (SZ_1M);
 
-	bd_mem_map[0].size = rsv_addr;
+	bd_mem_map[0].virt = DDR_SKIP_ZERO_ADDR_START_64KB_MAP;
+	bd_mem_map[0].phys = DDR_SKIP_ZERO_ADDR_START_64KB_MAP;
+	bd_mem_map[0].size = rsv_addr - DDR_SKIP_ZERO_ADDR_START_64KB_MAP;
 
 	bd_mem_map[1].virt = rsv_addr + rsv_size;
 	bd_mem_map[1].phys = rsv_addr + rsv_size;
