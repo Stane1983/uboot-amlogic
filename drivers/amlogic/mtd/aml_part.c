@@ -70,7 +70,7 @@ int mtd_register_partitions(struct mtd_info *mtd,
 
 	/* Maybe need extra two more parts <bl2 and tpl> */
 	new_part = kcalloc(n + 2, sizeof(*new_part), GFP_KERNEL);
-	if (IS_ERR_OR_NULL(new_part))
+	if (!new_part)
 		return -ENOMEM;
 
 	p = new_part;
