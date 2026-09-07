@@ -65,9 +65,14 @@ struct lcd_clk_config_s *lcd_clk_config_chip_init_txhd2(struct aml_lcd_drv_s *pd
 #ifdef CONFIG_MESON_S6
 struct lcd_clk_config_s *lcd_clk_config_chip_init_s6(struct aml_lcd_drv_s *pdrv);
 #endif
-#if defined(CONFIG_MESON_T6D) || defined(CONFIG_MESON_T6W)
+#if defined(CONFIG_MESON_T6D)
 struct lcd_clk_config_s *lcd_clk_config_chip_init_t6d(struct aml_lcd_drv_s *pdrv);
+#endif
+#if defined(CONFIG_MESON_T6W)
 struct lcd_clk_config_s *lcd_clk_config_chip_init_t6w(struct aml_lcd_drv_s *pdrv);
+#endif
+#if defined(CONFIG_MESON_T6X)
+struct lcd_clk_config_s *lcd_clk_config_chip_init_t6x(struct aml_lcd_drv_s *pdrv);
 #endif
 
 unsigned long long lcd_abs(unsigned long long a, unsigned long long b);

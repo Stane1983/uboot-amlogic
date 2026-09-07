@@ -104,6 +104,7 @@ enum lcd_chip_e {
 	LCD_CHIP_S6,
 	LCD_CHIP_T6D,
 	LCD_CHIP_T6W,
+	LCD_CHIP_T6X,
 	LCD_CHIP_MAX,
 };
 
@@ -120,7 +121,7 @@ enum lcd_type_e {
 	LCD_TYPE_MAX,
 };
 
-#define MOD_LEN_MAX        30
+#define MOD_LEN_MAX        48
 struct lcd_basic_s {
 	char model_name[MOD_LEN_MAX];
 	enum lcd_type_e lcd_type;
@@ -322,6 +323,9 @@ struct dsi_panel_det_attr_s {
 struct dsi_config_s {
 	/* user config */
 	unsigned char lane_num;
+	unsigned char deskew_en;
+	unsigned short deskew_initial_time;
+	unsigned short deskew_periodic_time;
 	unsigned int bit_rate_target; /* MHz */
 	unsigned char multi_port_cfg; /* bit[0:3]*/
 	unsigned char operation_mode_init; /* 0=video mode, 1=command mode */
@@ -332,6 +336,7 @@ struct dsi_config_s {
 	unsigned int factor_numerator;
 	unsigned int factor_denominator;
 	unsigned int lane_byte_clk;
+	unsigned int tear_en_ctrl; // 0=dis, 1=dcs, 2=gpio
 
 	/* non_burst vid packet */
 	unsigned int user_pkt_size;
@@ -389,6 +394,7 @@ enum p2p_type_e {
 	P2P_CHPI = 0x10, /* low common mode */
 	P2P_CSPI,
 	P2P_USIT,
+	P2P_CSPI_NEW,  /* CSPI New Coding */
 	P2P_MAX,
 };
 
@@ -401,6 +407,9 @@ struct p2p_config_s {
 	unsigned int bit_swap; /* MSB/LSB reverse */
 	unsigned int phy_vswing;
 	unsigned int phy_preem;
+
+	// cspi new coding: adjust phy bitrate using alpha value
+	unsigned int cspi_alpha;
 };
 
 #define PHY_BIT_VSWING      BIT(0)
@@ -440,6 +449,8 @@ struct phy_attr_s {
 	unsigned int odt;        //flag bit[3]
 	unsigned int cv_mode;    //flag bit[4] //val:0=cm,1=vm
 	unsigned short phy_clk;
+	unsigned short phy_clk_min;
+	unsigned short phy_clk_max;
 	unsigned short clk_phase;
 	struct phy_lane_s lane[CH_LANE_MAX];
 	struct ss_config_s ss;
@@ -459,8 +470,10 @@ struct phy_config_s {
 	unsigned int vswing_level;
 	unsigned int ext_pullup;
 	unsigned int preem_level;
-	unsigned int weakly_pull_down;
-	unsigned int low_common_mode;
+	unsigned char weakly_pull_down;
+	unsigned char low_common_mode;
+	unsigned char ch_phase_en; //for minilvds
+	unsigned char ch_clk_inv; //for lvds
 
 	unsigned int bypass_resample;
 	unsigned int state;
@@ -475,6 +488,15 @@ struct phy_config_s {
 	struct phy_ch_ctrl_s ch_ctrl[CH_LANE_MAX];
 	struct phy_attr_s *act_phy;
 	struct phy_attr_s *phys[MAX_NUM_PHY_CFGS];
+};
+
+enum lcd_phy_set_status {
+	LCD_PHY_OFF = 0,
+	LCD_PHY_ON,
+	LCD_PHY_PWR_UP,
+	LCD_PHY_PWR_DOWN,
+	LCD_PHY_UPDATE,
+	LCD_PHY_LOCK_LANE,
 };
 
 union lcd_ctrl_config_u {
@@ -563,15 +585,14 @@ struct cus_ctrl_config_s {
 };
 
 #define LCD_ENABLE_RETRY_MAX    3
-#define CUSTOM_PINMUX_NAME_MAX	30
-#define CUSTOM_PINMUX_MODE_MODEL_NAME 1
-#define CUSTOM_PINMUX_MODE_CUSTOM_NAME 2
+#define CUS_PINMUX_NAME_MAX	44
+#define CUS_PINMUX_MODE_MODEL_NAME   1
+#define CUS_PINMUX_MODE_CUSTOM_NAME  2
 
 struct lcd_config_s {
 	unsigned char retry_enable_flag;
 	unsigned char retry_enable_cnt;
-	unsigned char custom_pinmux;
-	char custom_pinmux_name[CUSTOM_PINMUX_NAME_MAX];
+	char cus_pinmux_name[CUS_PINMUX_NAME_MAX];
 	unsigned char fr_auto_cus;  //0=follow global setting, 0xff=disable
 	unsigned char fr_auto_flag; //final fr_auto policy
 	unsigned int backlight_index;
@@ -627,12 +648,12 @@ struct lcd_vmode_mgr_s {
 #define LCD_VENC_4PPC                 2
 
 /*
- * bit[31:24] : base_frame_rate
+ * bit[31:24] : frame_rate bit[7:0]
  * bit[23:22] : clk_mode
  * bit[21:20] : ppc
  * bit[19:18] : lcd_init_level
  * bit[17] : dccd flag
- * bit[16] : custom pinmux flag
+ * bit[16] : frame_rate bit[8]
  * bit[15:8] : advanced flag(p2p_type when lcd_type=p2p)
  * bit[7:4] : lcd bits
  * bit[3:0] : lcd_type
@@ -644,7 +665,7 @@ struct lcd_boot_ctrl_s {
 	unsigned char mute_flag;
 	unsigned char ppc;
 	unsigned char clk_mode;
-	unsigned char custom_pinmux;
+	unsigned char reserved;
 	unsigned char init_level;
 	unsigned short advanced_flag;
 	unsigned short frame_rate;
@@ -788,6 +809,7 @@ unsigned int aml_lcd_driver_outputmode_check(unsigned char lcd_idx, char *mode);
 void aml_lcd_driver_prepare(int index, char *mode);
 void aml_lcd_driver_enable(int index, char *mode);
 void aml_lcd_driver_disable(int index);
+void aml_lcd_driver_power_ctrl(int index, int status);
 void aml_lcd_driver_set_ss(int index, unsigned int level, unsigned int freq, unsigned int mode);
 void aml_lcd_driver_get_ss(int index);
 void aml_lcd_driver_clk_info(int index);

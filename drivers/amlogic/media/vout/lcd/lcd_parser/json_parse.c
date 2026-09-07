@@ -214,6 +214,11 @@ static s32 json_parse_number_as_string(struct json_parse_s *jsp, char *input, s3
 			}
 		}
 	} else {
+		if (s[p] == '-'  && p + 1 < limit && isdigit(s[p + 1])) {
+			jsp->js[jsp->js_len++] = '-';
+			p++;
+		}
+
 		while (p < limit && s[p] != '\0' && jsp->js_len < jsp->js_max) {
 			if (isdigit(s[p])) {
 				jsp->js[jsp->js_len++] = s[p];
@@ -247,14 +252,20 @@ s32 json_parse_value(struct json_parse_s *jsp, struct json_s *json, char *input,
 		json->value = json_parse_object(jsp, input, limit, &child_size);
 		if (json->value < 0)
 			return -1;
-		json->type = JSON_OBJECT;
+		else if (json->value == 0)
+			json->type = JSON_INVALID;
+		else
+			json->type = JSON_OBJECT;
 
 		break;
 	case '[':
 		json->value = json_parse_array(jsp, input, limit, &child_size);
 		if (json->value < 0)
 			return -1;
-		json->type = JSON_ARRAY;
+		else if (json->value == 0)
+			json->type = JSON_INVALID;
+		else
+			json->type = JSON_ARRAY;
 
 		break;
 	default: // dec & hex number, true/false
@@ -336,6 +347,11 @@ s32 json_parse_array(struct json_parse_s *jsp, char *input, s32 limit, s32 *chil
 	if (offset < 0)
 		return -1;
 	jsp->pos += offset;
+	if (jsp->pos < limit && s[jsp->pos] == ']') {
+		jsp->pos++;
+		*child_size = 0;
+		return 0;
+	}
 
 	while (jsp->pos < limit && s[jsp->pos] != '\0') {
 		json = jsp->alloc(jsp);
@@ -388,6 +404,11 @@ s32 json_parse_object(struct json_parse_s *jsp, char *input, s32 limit, s32 *chi
 		return -1;
 	jsp->pos += offset;
 
+	if (jsp->pos < limit && s[jsp->pos] == '}') {
+		jsp->pos++;
+		*child_size = 0;
+		return 0;
+	}
 	if (jsp->pos >= limit || s[jsp->pos] != '\"') {
 		json_err_trace(input, jsp->pos, "log_here \"");
 		return -1;
@@ -458,16 +479,7 @@ struct json_s *json_parse(struct json_parse_s *jsp, char *input, s32 limit)
 	struct json_s *root;
 	s32 offset = 0, child_size = 0;
 
-	root = jsp->alloc(jsp);
-	jsp->js[0] = '/';
-	jsp->js[1] = '\0';
-	jsp->js_len = 2;
-
-	root->key = 0;
-	root->next = -1;
-	root->type = JSON_OBJECT;
-	root->value = -1;
-
+	root = jsp->root;
 	offset = buffer_skip_invalid(input, jsp->pos, limit);
 	if (offset < 0)
 		return NULL;
@@ -483,6 +495,8 @@ struct json_s *json_parse(struct json_parse_s *jsp, char *input, s32 limit)
 
 s32 json_init(struct json_parse_s *jsp, s32 js_max, s32 json_max)
 {
+	struct json_s *root = NULL;
+
 	if (!jsp || js_max <= 0 || json_max <= 0)
 		return -1;
 	json_max = json_max >= JSON_NODE_MAX ? JSON_NODE_MAX : json_max;
@@ -501,6 +515,19 @@ s32 json_init(struct json_parse_s *jsp, s32 js_max, s32 json_max)
 
 	memset(jsp->js, 0, js_max);
 	memset(jsp->root, 0, json_max * sizeof(*jsp->root));
+
+	root = jsp->alloc(jsp);
+	if (!root)
+		return -1;
+
+	jsp->js[0] = '/';
+	jsp->js[1] = '\0';
+	jsp->js_len = 2;
+
+	root->key = 0;
+	root->next = -1;
+	root->type = JSON_OBJECT;
+	root->value = -1;
 
 	return 0;
 }
@@ -597,7 +624,7 @@ struct json_s *json_get_nd_array_child(struct json_parse_s *jsp, struct json_s *
 	return child;
 }
 
-static s32 json_get_child_count(struct json_parse_s *jsp, struct json_s *parent, json_size_t type)
+s32 json_get_child_count(struct json_parse_s *jsp, struct json_s *parent, json_size_t type)
 {
 	s32 i = 0;
 	struct json_s *child;
@@ -669,7 +696,7 @@ s32 json_get_s32(struct json_parse_s *jsp, struct json_s *json, s32 *num)
 /* not safe, must check jsp and json valid*/
 const char *json_get_str(struct json_parse_s *jsp, struct json_s *json)
 {
-	if (!__json_is_string(json))
+	if (!__json_is_string_or_number(json))
 		return NULL;
 
 	return (const char *)(jsp->js + json->value);
@@ -683,3 +710,143 @@ const char *json_get_key(struct json_parse_s *jsp, struct json_s *json)
 	return (const char *)(jsp->js + json->key);
 }
 
+int json_add_js(struct json_parse_s *jsp, char *str)
+{
+	int len;
+
+	if (!jsp || !str)
+		return -1;
+
+	len = strlen(str);
+
+	if (jsp->js_len + len + 1 >= jsp->js_max) {
+		printf("js: %s add failed\n", str);
+		return -1;
+	}
+
+	strncpy(jsp->js + jsp->js_len, str, len);
+	jsp->js[jsp->js_len + len] = '\0';
+	jsp->js_len += len + 1;
+
+	return 0;
+}
+
+int json_set_str(struct json_parse_s *jsp, struct json_s *json, char *str)
+{
+	if (!jsp || !str || !__json_is_string_or_number(json))
+		return -1;
+
+	json->value = jsp->js_len;
+	return json_add_js(jsp, str);
+}
+
+int json_set_u32(struct json_parse_s *jsp, struct json_s *json, u32 val)
+{
+	char str[32];
+
+	snprintf(str, 31, "%u", val);
+	return json_set_str(jsp, json, str);
+}
+
+int json_set_s32(struct json_parse_s *jsp, struct json_s *json, s32 val)
+{
+	char str[32];
+
+	snprintf(str, 31, "%d", val);
+	return json_set_str(jsp, json, str);
+}
+
+void json_remove_node(struct json_parse_s *jsp, struct json_s *json)
+{
+	if (jsp && json) {
+		json->key = -1;
+		json->type = JSON_INVALID;
+		json->value = -1;
+	}
+}
+
+/* create a new child for parent (if parent has a child key named key, return it)
+ * @parent: parent json node (must be JSON_OBJECT type)
+ * @key: child key
+ * @type: child type
+ * @return child node
+ */
+struct json_s *json_create_object_child(struct json_parse_s *jsp, struct json_s *parent,
+					char *key, int type)
+{
+	struct json_s *child = NULL, *new;
+
+	if (!jsp || !parent || !key || parent->type != JSON_OBJECT)
+		return NULL;
+
+	if (parent->value > 0) {
+		child = &jsp->root[parent->value];
+		while (1) {
+			if (strcmp(json_get_key(jsp, child), key) == 0)
+				return child;
+			if (child->next == -1)
+				break;
+			child = &jsp->root[child->next];
+		}
+	}
+
+	new = json_alloc(jsp);
+	if (!new) {
+		printf("%s json alloc error\n", __func__);
+		return NULL;
+	}
+
+	new->type = type;
+	new->key = jsp->js_len;
+	new->next = -1;
+	new->value = -1;
+	json_add_js(jsp, key);
+	if (child) // "child" was the last element, now is "new"
+		child->next = jsp->json_cnt - 1;
+	else // "parent" was empty, now add new element "new"
+		parent->value = jsp->json_cnt - 1;
+
+	return new;
+}
+
+/* create a new child for parent (if parent has a child key named key, return it)
+ * @parent: parent json node (must be JSON_ARRAY type)
+ * @key: child key
+ * @type: child type
+ * @return child node
+ */
+struct json_s *json_create_array_child(struct json_parse_s *jsp, struct json_s *parent, int type)
+{
+	struct json_s *child = NULL, *new;
+	int id = -1;
+
+	if (!jsp || !parent || parent->type != JSON_ARRAY)
+		return NULL;
+
+	if (parent->value > 0) {
+		child = &jsp->root[parent->value];
+		while (1) {
+			id--;
+			if (child->next == -1)
+				break;
+			child = &jsp->root[child->next];
+		}
+	}
+
+	new = json_alloc(jsp);
+	if (!new) {
+		printf("%s json alloc error\n", __func__);
+		return NULL;
+	}
+
+	new->type = type;
+	new->key = id;
+	new->next = -1;
+	new->value = -1;
+	if (child) // "child" was the last element, now is "new"
+		child->next = jsp->json_cnt - 1;
+	else // parent was empty, now add new element
+		parent->value = jsp->json_cnt - 1;
+
+	return new;
+}

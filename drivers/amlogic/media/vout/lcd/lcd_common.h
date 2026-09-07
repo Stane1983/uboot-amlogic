@@ -38,7 +38,8 @@
 /* 20250917: tcon support discontinued bin */
 /* 20251028: support vrr vdf */
 /* 20251113: support ip27 */
-#define LCD_DRV_VERSION    "20251113"
+/* 20260203: optimize t6 phy & dphy init flow */
+#define LCD_DRV_VERSION    "20260203"
 
 #define CTYPE_MASK           0xf0
 #define CTYPE_RGB            0x00
@@ -131,6 +132,7 @@ void lcd_display_init_reg_dump(struct aml_lcd_drv_s *pdrv);
 #define LCD_CMA_PAGE_SIZE_8K (8 * 1024)
 
 /* lcd common */
+void lcd_reg_dump(struct reg_name_set_s *tbl, int cnt, unsigned int base_addr);
 int strnum_get_num(const char *str, struct num_str_s *arr, int size_arr, int dft);
 char *strnum_get_str(int num, struct num_str_s *arr, int size_arr, char *dft);
 unsigned char *lcd_init_table_load_array(char *name, unsigned char cmd_size,
@@ -138,7 +140,7 @@ unsigned char *lcd_init_table_load_array(char *name, unsigned char cmd_size,
 					 int tbl_max, int *tbl_cnt);
 
 int lcd_base_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv);
-void lcd_panel_config_load_to_drv(struct aml_lcd_drv_s *pdrv);
+void lcd_init_config_to_drv(struct aml_lcd_drv_s *pdrv);
 int lcd_check_config_load(struct aml_lcd_drv_s *pdrv);
 int lcd_get_panel_config(char *dt_addr, int load_id, struct aml_lcd_drv_s *pdrv);
 
@@ -171,15 +173,8 @@ void lcd_enc_timing_init_config(struct aml_lcd_drv_s *pdrv);
 int lcd_fr_is_frac(struct aml_lcd_drv_s *pdrv, unsigned int frame_rate);
 int lcd_vmode_frac_is_support(struct aml_lcd_drv_s *pdrv, unsigned int frame_rate);
 int lcd_frame_rate_change(struct aml_lcd_drv_s *pdrv);
-void lcd_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
 void lcd_lvds_bit_rate_config(struct aml_lcd_drv_s *pdrv);
 
-void lcd_rgb_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
-void lcd_bt_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
-void lcd_vbyone_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
-void lcd_mlvds_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
-void lcd_p2p_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
-void lcd_mipi_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
 #ifdef CONFIG_AML_LCD_VBYONE
 void lcd_vbyone_bit_rate_config(struct aml_lcd_drv_s *pdrv);
 #endif
@@ -271,7 +266,6 @@ int lcd_phy_param_get(struct aml_lcd_drv_s *pdrv, struct phy_config_s *phy_cfg,
 void lcd_phy_param_print(struct aml_lcd_drv_s *pdrv);
 void lcd_phy_analog_reg_print(struct aml_lcd_drv_s *pdrv);
 void lcd_phy_reset(struct aml_lcd_drv_s *pdrv);
-void lcd_phy_default_off(struct aml_lcd_drv_s *pdrv);
 void lcd_phy_set(struct aml_lcd_drv_s *pdrv, int status);
 int lcd_phy_probe(struct aml_lcd_drv_s *pdrv);
 int lcd_phy_config_init(struct aml_lcd_data_s *pdata);
@@ -300,10 +294,11 @@ void lcd_connector_driver_init_pre(struct aml_lcd_drv_s *pdrv);
 void lcd_connector_driver_init(struct aml_lcd_drv_s *pdrv);
 void lcd_connector_driver_disable(struct aml_lcd_drv_s *pdrv);
 
-/* lcd gpio */
+/* lcd pinctrl */
 int lcd_gpio_name_map_num(const char *name);
 int lcd_gpio_set(int gpio, int value);
 unsigned int lcd_gpio_input_get(int gpio);
+void lcd_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
 
 /* lcd debug */
 int lcd_debug_info_len(int num);

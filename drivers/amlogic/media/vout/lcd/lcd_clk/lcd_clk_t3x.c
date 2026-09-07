@@ -78,20 +78,20 @@ static void lcd_set_pll_ss(struct aml_lcd_drv_s *pdrv, unsigned int ss_flag)
 			}
 		} else {
 			cconf->ss_en = 0;
-			len += sprintf(prt_str + len, "disable\n");
+			len += sprintf(prt_str + len, "disable");
 		}
 	}
 
 	if (ss_flag & LCD_SSC_FREQ) {
 		pll_ctrl2 &= ~(0x7 << 24); /* ss_freq */
 		pll_ctrl2 |= (cconf->ss_freq << 24);
-		len += sprintf(prt_str + len, "%sfreq=%d\n", len ? ", " : "", cconf->ss_freq);
+		len += sprintf(prt_str + len, "%sfreq=%d", len ? ", " : "", cconf->ss_freq);
 	}
 
 	if (ss_flag & LCD_SSC_MODE) {
 		pll_ctrl2 &= ~(0x3 << 22); /* ss_mode */
 		pll_ctrl2 |= (cconf->ss_mode << 22);
-		len += sprintf(prt_str + len, "%smode=%d\n", len ? ", " : "", cconf->ss_mode);
+		len += sprintf(prt_str + len, "%smode=%d", len ? ", " : "", cconf->ss_mode);
 	}
 
 	lcd_ana_write(ANACTRL_TCON_PLL0_CNTL2 + offset, pll_ctrl2);
@@ -410,9 +410,8 @@ static void lcd_set_vclk_crt(struct aml_lcd_drv_s *pdrv)
 	lcd_clk_write(reg_vid2_clk_div, 0);
 	udelay(5);
 
-	if (lcd_debug_print_flag & LCD_DBG_PR_ADV2) {
+	if (lcd_debug_print_flag & LCD_DBG_PR_ADV2)
 		LCDPR("[%d]: vclk_sel=%d, xd=%d\n", pdrv->index, cconf->data->vclk_sel, cconf->xd);
-	}
 	if (venc_clk_sel_bit < 0xff)
 		lcd_clk_setb(CLKCTRL_HDMI_VID_PLL_CLK_DIV, 0, venc_clk_sel_bit, 1);
 
@@ -820,6 +819,7 @@ static void lcd_clk_generate_t3x(struct aml_lcd_drv_s *pdrv)
 
 static struct lcd_pll_data_s lcd_pll_data_t3x = {
 	.pll_od_fb = 0,
+	.pll_0_5_div_en = 0,
 	.pll_m_max = 511,
 	.pll_m_min = 2,
 	.pll_n_max = 1,
@@ -842,6 +842,7 @@ static struct lcd_pll_data_s lcd_pll_data_t3x = {
 
 static struct lcd_pll_data_s lcd_pll_data_t3x_1 = {
 	.pll_od_fb = 0,
+	.pll_0_5_div_en = 0,
 	.pll_m_max = 511,
 	.pll_m_min = 2,
 	.pll_n_max = 1,
@@ -973,7 +974,6 @@ struct lcd_clk_config_s *lcd_clk_config_chip_init_t3x(struct aml_lcd_drv_s *pdrv
 	switch (pdrv->index) {
 	case 1:
 		cconf->data = &lcd_clk_data_t3x_1;
-		cconf->pll_config[0].pll_od_fb = lcd_pll_data_t3x_1.pll_od_fb;
 		cconf->pll_config[0].pll_id = 1;
 		cconf->pll_config[0].pll_offset = (0x5 << 2);
 		break;
@@ -981,13 +981,11 @@ struct lcd_clk_config_s *lcd_clk_config_chip_init_t3x(struct aml_lcd_drv_s *pdrv
 	default:
 		cconf->data = &lcd_clk_data_t3x;
 		cconf->pll_config[0].pll_id = 0;
-		cconf->pll_config[0].pll_od_fb = lcd_pll_data_t3x.pll_od_fb;
 		if (cconf->pll_conf_num > 1) {
 			// pll1 as pixel clock, mux to venc0_clk
 			cconf->pll_config[1].pll_id = 1;
 			cconf->data->vclk_sel = 4;
 			cconf->pll_config[1].pll_offset = (0x5 << 2);
-			cconf->pll_config[1].pll_od_fb = lcd_pll_data_t3x_1.pll_od_fb;
 			cconf->pll_mode |= LCD_PLL_MODE_DUAL_PLL;
 		}
 		break;

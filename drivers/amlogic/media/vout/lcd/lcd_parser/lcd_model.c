@@ -23,6 +23,12 @@ static struct panel_parse_mem_s glcd_file_parse_mem[LCD_MAX_DRV] = {
 	{PANEL_FILE_INVILD, 0, {0}, NULL}
 };
 
+static struct panel_parse_mem_s gbl_file_parse_mem[LCD_MAX_DRV] = {
+	{PANEL_FILE_INVILD, 0, {0}, NULL},
+	{PANEL_FILE_INVILD, 0, {0}, NULL},
+	{PANEL_FILE_INVILD, 0, {0}, NULL}
+};
+
 #define PANEL_PARAM_MEM_RSVD_SIZE    (0x80000)
 #define PANEL_PARAM_KEY_NUM_MAX      (64 - 1)
 #define PANEL_PARAM_KEY_SIZE         (64)
@@ -426,6 +432,48 @@ int path_name_compose(const char *path, const char *name, char *path_name)
 		}
 	}
 	return -1;
+}
+
+unsigned char get_bl_panel_file_type(int index)
+{
+	return index < LCD_MAX_DRV ? gbl_file_parse_mem[index].type : PANEL_FILE_INVILD;
+}
+
+void set_bl_panel_file_type(int index, unsigned char type)
+{
+	if (index >= LCD_MAX_DRV) {
+		LCDERR("%s: invalid index %d\n", __func__, index);
+		return;
+	}
+
+	gbl_file_parse_mem[index].type = type;
+}
+
+int set_bl_file_path(int index, const char *str)
+{
+	if (!str)
+		return -1;
+	if (index >= LCD_MAX_DRV)
+		return -1;
+
+	strlcpy(gbl_file_parse_mem[index].file_path, str, 256);
+	return 0;
+}
+
+const char *get_bl_file_path(int index)
+{
+	if (index >= LCD_MAX_DRV)
+		return NULL;
+
+	return gbl_file_parse_mem[index].file_path;
+}
+
+void rm_bl_file_path(int index)
+{
+	if (index >= LCD_MAX_DRV)
+		return;
+
+	*gbl_file_parse_mem[index].file_path = '\0';
 }
 
 unsigned char get_lcd_panel_file_type(int index)

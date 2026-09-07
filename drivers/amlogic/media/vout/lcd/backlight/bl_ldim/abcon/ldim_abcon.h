@@ -21,6 +21,10 @@
 #include "../ldim_dev_drv.h"
 #include "env.h"
 
+#define ABCON_CHIP_DEF 0
+#define ABCON_CHIP_T6W 1
+#define ABCON_CHIP_T6X 2
+
 #define ABCON_CORE_NUM 4
 
 /*#define LDIM_DEBUG_INFO*/

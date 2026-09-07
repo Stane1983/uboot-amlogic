@@ -153,8 +153,8 @@ static void lcd_config_load_print(struct aml_lcd_drv_s *pdrv)
 			i += snprintf(pr_buf + i, 128 - i, "pre_de:%d,%d, ",
 					pconf->timing.pre_de_h, pconf->timing.pre_de_v);
 		}
-		snprintf(pr_buf + i, 128 - i, "cfg_chk:0x%x, cus_pinmux:%d",
-			pconf->basic.config_check, pconf->custom_pinmux);
+		snprintf(pr_buf + i, 128 - i, "cfg_chk:0x%x, cus_pinmux:%s",
+			 pconf->basic.config_check, pconf->cus_pinmux_name);
 
 		LCDPR("[%d]: load %s config: %s, %s, %dbit, %dx%d, %s\n",
 			pdrv->index, get_lcd_config_load(pdrv->config_load),
@@ -180,10 +180,7 @@ static void lcd_config_load_print(struct aml_lcd_drv_s *pdrv)
 	LCDPR("asf_mode = %d\n", ptiming->asf_mode);
 	LCDPR("ufr_mode = %d\n", ptiming->ufr_mode);
 	LCDPR("pixel_clk = %d\n", ptiming->pixel_clk);
-	LCDPR("custom_pinmux = %d\n", pconf->custom_pinmux);
-	if (pconf->custom_pinmux == CUSTOM_PINMUX_MODE_CUSTOM_NAME)
-		LCDPR("custom_pinmux_name = %s\n", pconf->custom_pinmux_name);
-
+	LCDPR("custom_pinmux = %s\n", pconf->cus_pinmux_name);
 
 	printf("\nphy_config:\n");
 	lcd_phy_cfg_print(phy_cfg);
@@ -1030,6 +1027,17 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 		pctrl->mipi_cfg.clk_always_hs = be32_to_cpup((((u32 *)propdata) + 6));
 		pctrl->mipi_cfg.user_pkt_size = be32_to_cpup((((u32 *)propdata) + 7));
 
+		propdata = (char *)fdt_getprop(dt_addr, child_offset, "deskew-en", NULL);
+		pctrl->mipi_cfg.deskew_en = propdata ? be32_to_cpup((u32 *)propdata) : 0;
+
+		propdata = (char *)fdt_getprop(dt_addr, child_offset, "deskew-initial", NULL);
+		pctrl->mipi_cfg.deskew_initial_time =
+			propdata ? be32_to_cpup((u32 *)propdata) : 0x1000;
+
+		propdata = (char *)fdt_getprop(dt_addr, child_offset, "deskew-periodic", NULL);
+		pctrl->mipi_cfg.deskew_periodic_time =
+			propdata ? be32_to_cpup((u32 *)propdata) : 0x1000;
+
 		pctrl->mipi_cfg.check_en = 0;
 		pctrl->mipi_cfg.check_reg = 0xff;
 		pctrl->mipi_cfg.check_cnt = 0;
@@ -1078,6 +1086,25 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 	phy->ss.freq = 255;
 	phy->ss.level = 255;
 	phy->ss.mode = 255;
+
+	propdata = (char *)fdt_getprop(dt_addr, child_offset, "phy-pn-swap", &len);
+	if (len > 0 && propdata) {
+		len = (phy_cfg->lane_num > (len / 4)) ? (len / 4) : phy_cfg->lane_num;
+		for (i = 0; i < len; i++)
+			phy_cfg->ch_ctrl[i].pn_swap = be32_to_cpup(((u32 *)propdata) + i) ? 1 : 0;
+	}
+	propdata = (char *)fdt_getprop(dt_addr, child_offset, "phy-phase-sel", &len);
+	if (len > 0 && propdata) {
+		len = (phy_cfg->lane_num > (len / 4)) ? (len / 4) : phy_cfg->lane_num;
+		for (i = 0; i < len; i++)
+			phy_cfg->ch_ctrl[i].phase_sel = be32_to_cpup(((u32 *)propdata) + i);
+	}
+	propdata = (char *)fdt_getprop(dt_addr, child_offset, "phy-ch-sel", &len);
+	if (len > 0 && propdata) {
+		len = (phy_cfg->lane_num > (len / 4)) ? (len / 4) : phy_cfg->lane_num;
+		for (i = 0; i < len; i++)
+			phy_cfg->ch_ctrl[i].sel = be32_to_cpup(((u32 *)propdata) + i);
+	}
 
 	propdata = (char *)fdt_getprop(dt_addr, child_offset, "phy_adv_attr", NULL);
 	if (propdata && phy_cfg->phys[0]) {
@@ -1457,7 +1484,7 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv)
 	unsigned char *para;
 	char key_str[8];
 	int key_len, len;
-	unsigned char *p, val;
+	unsigned char *p, val, custom_pinmux;
 	const char *str;
 	unsigned int temp, lcd_bits = 24;
 	int ret = 0;
@@ -1574,7 +1601,9 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv)
 
 	val = *(p + LCD_UKEY_CUST_VAL1);
 	pconf->timing.ppc = (val >> 4) & 0xf;
-	pconf->custom_pinmux = val & 0xf;
+	custom_pinmux = val & 0xf;
+	if (custom_pinmux == CUS_PINMUX_MODE_MODEL_NAME)  //don't support custom_name
+		strlcpy(pconf->cus_pinmux_name, pconf->basic.model_name, CUS_PINMUX_NAME_MAX);
 
 	pconf->fr_auto_cus = *(p + LCD_UKEY_FR_AUTO_CUS);
 	ptiming->switch_type = LCD_VMODE_SWITCH_NONE;
@@ -1807,6 +1836,7 @@ static struct num_str_s p2p_type_name[] = {
 	{P2P_CHPI, "CHPI"},
 	{P2P_CSPI, "CSPI"},
 	{P2P_USIT, "USIT"},
+	{P2P_CSPI_NEW, "CSPI_NEW"},
 	{P2P_MAX,  "Invalid"}
 };
 
@@ -1822,6 +1852,7 @@ static int lcd_panel_parse_basic(struct json_parse_s *jsp, struct aml_lcd_drv_s 
 	struct json_s *json, *child;
 	const char *str = NULL;
 	struct lcd_basic_s *cfg = &pdrv->config.basic;
+	unsigned char custom_pinmux;
 
 	json = json_path_to_node(jsp, jsp->root, "/basic");
 	if (!json) {
@@ -1837,9 +1868,16 @@ static int lcd_panel_parse_basic(struct json_parse_s *jsp, struct aml_lcd_drv_s 
 
 	cfg->config_check = json_get_obj_u32(jsp, json, "config_check", 0xff);
 	cfg->config_check = cfg->config_check == 0xff ? 0x0 : cfg->config_check ? 0x3 : 0x2;
-	pdrv->config.custom_pinmux = json_get_obj_u32(jsp, json, "custom_pinmux", 0);
-	str = json_get_obj_str(jsp, json, "custom_pinmux_name", "invalid");
-	sprintf(pdrv->config.custom_pinmux_name, "%s", str ? str : "invalid");
+	custom_pinmux = json_get_obj_u32(jsp, json, "custom_pinmux", 0);
+	if (custom_pinmux) {
+		if (custom_pinmux == CUS_PINMUX_MODE_MODEL_NAME) {
+			strlcpy(pdrv->config.cus_pinmux_name, cfg->model_name, CUS_PINMUX_NAME_MAX);
+		} else {
+			str = json_get_obj_str(jsp, json, "custom_pinmux_name", NULL);
+			if (str)
+				strlcpy(pdrv->config.cus_pinmux_name, str, CUS_PINMUX_NAME_MAX);
+		}
+	}
 
 	child = json_get_object_child(jsp, json, "screen_size");
 	cfg->screen_width = json_get_arr_u32(jsp, child, 0, 16);
@@ -2035,7 +2073,6 @@ static int lcd_panel_parse_phy(struct json_parse_s *jsp, struct aml_lcd_drv_s *p
 		LCDPR("not find phy attr, use dft\n");
 		return 0;
 	}
-
 	for (i = 0; i < cnt; i++) {
 		child = json_get_array_child(jsp, parent, i);
 		if (!child) {
@@ -2153,6 +2190,7 @@ static int lcd_panel_parse_interface(struct json_parse_s *jsp, struct aml_lcd_dr
 		//vx1->vx1_isr     = json_get_obj_u32(jsp, parent, "vx1_isr", 1);
 		vx1->hw_filter_time = json_get_obj_u32(jsp, parent, "filter_time", 0);
 		vx1->hw_filter_cnt  = json_get_obj_u32(jsp, parent, "filter_cnt", 0);
+		vx1->slice = pdrv->config.timing.ppc ? pdrv->config.timing.ppc : 1;
 		break;
 	case LCD_P2P:
 		p2p = &cfg->p2p_cfg;
@@ -2160,6 +2198,7 @@ static int lcd_panel_parse_interface(struct json_parse_s *jsp, struct aml_lcd_dr
 		str = json_get_obj_str(jsp, parent, "protocol", "Invalid");
 		p2p->p2p_type = strnum_get_num(str, p2p_type_name, ARRAY_SIZE(p2p_type_name),
 					       P2P_MAX);
+		p2p->cspi_alpha = json_get_obj_u32(jsp, parent, "cspi_alpha", 80);
 		break;
 	case LCD_MLVDS:
 		mlvds = &cfg->mlvds_cfg;
@@ -2727,7 +2766,7 @@ static int lcd_config_load_from_ini(struct aml_lcd_drv_s *pdrv)
 	struct phy_config_s *phy_cfg = &pdrv->config.phy_cfg;
 	struct phy_attr_s *phy = NULL;
 	void *inip, *psec;
-	unsigned char version;
+	unsigned char version, custom_pinmux;
 	const char *str;
 	unsigned int lcd_bits, temp;
 	int ret;
@@ -2799,9 +2838,17 @@ static int lcd_config_load_from_ini(struct aml_lcd_drv_s *pdrv)
 	ptiming->frame_rate_max = lcd_ini_get_val(inip, psec, "frame_rate_max", 0);
 
 	pconf->timing.ppc = lcd_ini_get_val(inip, psec, "ppc_mode", 1);
-	pconf->custom_pinmux = lcd_ini_get_val(inip, psec, "custom_pinmux", 0);
-	str = lcd_ini_get_str(inip, psec, "custom_pinmux_name", "invalid");
-	strlcpy(pconf->custom_pinmux_name, str, CUSTOM_PINMUX_NAME_MAX);
+	custom_pinmux = lcd_ini_get_val(inip, psec, "custom_pinmux", 0);
+	if (custom_pinmux) {
+		if (custom_pinmux == CUS_PINMUX_MODE_MODEL_NAME) {
+			strlcpy(pconf->cus_pinmux_name, pconf->basic.model_name,
+				CUS_PINMUX_NAME_MAX);
+		} else {
+			str = lcd_ini_get_str(inip, psec, "custom_pinmux_name", NULL);
+			if (str)
+				strlcpy(pconf->cus_pinmux_name, str, CUS_PINMUX_NAME_MAX);
+		}
+	}
 
 	pconf->fr_auto_cus = lcd_ini_get_val(inip, psec, "fr_auto_custom", 0);
 	ptiming->switch_type = LCD_VMODE_SWITCH_NONE;
@@ -2901,6 +2948,7 @@ static int lcd_config_load_from_ini(struct aml_lcd_drv_s *pdrv)
 		pctrl->p2p_cfg.bit_swap = lcd_ini_get_val(inip, psec, "if_attr_7", 0);
 		pctrl->p2p_cfg.phy_vswing = lcd_ini_get_val(inip, psec, "if_attr_8", 0);
 		pctrl->p2p_cfg.phy_preem = lcd_ini_get_val(inip, psec, "if_attr_9", 0);
+		pctrl->p2p_cfg.cspi_alpha = lcd_ini_get_val(inip, psec, "cspi_alpha", 80);
 
 		phy_cfg->vswing_level = pctrl->p2p_cfg.phy_vswing & 0xf;
 		phy_cfg->ext_pullup = (pctrl->p2p_cfg.phy_vswing >> 4) & 0x3;
@@ -3125,14 +3173,16 @@ int lcd_get_panel_config(char *dt_addr, int load_id, struct aml_lcd_drv_s *pdrv)
 		ret = -1;
 		break;
 	}
-
 	if (ret)
 		return -1;
 
-	lcd_phy_default_off(pdrv);
-	lcd_lane_map_update(pdrv);
-
 	lcd_config_load_init(pdrv);
+
+	lcd_phy_probe(pdrv);
+	lcd_lane_map_update(pdrv);
+	lcd_clk_config_probe(pdrv);
+	lcd_debug_probe(pdrv);
+
 	lcd_config_load_print(pdrv);
 
 #ifdef CONFIG_AML_LCD_TCON

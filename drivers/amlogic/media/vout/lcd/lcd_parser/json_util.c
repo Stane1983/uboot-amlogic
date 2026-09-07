@@ -348,3 +348,226 @@ u32 json_get_arr_u32(struct json_parse_s *jsp, struct json_s *json, s32 id, u32 
 
 	return num;
 }
+
+// set function, if no node then create a new
+s32 json_set_obj_u32(struct json_parse_s *jsp, struct json_s *json, char *name, u32 val)
+{
+	struct json_s *child = json_get_object_child(jsp, json, name);
+
+	if (!child)
+		child = json_create_object_child(jsp, json, name, JSON_NUMBER);
+
+	return json_set_u32(jsp, child, val); // null pointer protect inside
+}
+
+s32 json_set_obj_s32(struct json_parse_s *jsp, struct json_s *json, char *name, s32 val)
+{
+	struct json_s *child = json_get_object_child(jsp, json, name);
+
+	if (!child)
+		child = json_create_object_child(jsp, json, name, JSON_NUMBER);
+
+	return json_set_s32(jsp, child, val); // null pointer protect inside
+}
+
+s32 json_set_obj_str(struct json_parse_s *jsp, struct json_s *json, char *name, char *str)
+{
+	struct json_s *child = json_get_object_child(jsp, json, name);
+
+	if (!child)
+		child = json_create_object_child(jsp, json, name, JSON_STRING);
+
+	return json_set_str(jsp, child, str); // null pointer protect inside
+}
+
+s32 json_set_arr_u32(struct json_parse_s *jsp, struct json_s *json, s32 id, u32 val)
+{
+	struct json_s *child = json_get_array_child(jsp, json, id);
+
+	return json_set_u32(jsp, child, val);
+}
+
+s32 json_set_arr_s32(struct json_parse_s *jsp, struct json_s *json, int id, s32 val)
+{
+	struct json_s *child = json_get_array_child(jsp, json, id);
+
+	return json_set_s32(jsp, child, val);
+}
+
+s32 json_set_arr_str(struct json_parse_s *jsp, struct json_s *json, int id, char *str)
+{
+	struct json_s *child = json_get_array_child(jsp, json, id);
+
+	return json_set_str(jsp, child, str);
+}
+
+s32 json_add_arr_u32(struct json_parse_s *jsp, struct json_s *json, u32 val)
+{
+	struct json_s *child = json_create_array_child(jsp, json,  JSON_NUMBER);
+
+	return json_set_u32(jsp, child, val);
+}
+
+s32 json_add_arr_s32(struct json_parse_s *jsp, struct json_s *json, s32 val)
+{
+	struct json_s *child = json_create_array_child(jsp, json,  JSON_NUMBER);
+
+	return json_set_s32(jsp, child, val);
+}
+
+s32 json_add_arr_str(struct json_parse_s *jsp, struct json_s *json, char *str)
+{
+	struct json_s *child = json_create_array_child(jsp, json,  JSON_STRING);
+
+	return json_set_str(jsp, child, str);
+}
+
+s32 json_add_arr_u32s(struct json_parse_s *jsp, struct json_s *json, u32 val[], s32 cnt)
+{
+	s32 i = 0;
+
+	for (i = 0; i < cnt; i++) {
+		if (json_add_arr_u32(jsp, json, val[i]))
+			break;
+	}
+	return i;
+}
+
+s32 json_add_arr_s32s(struct json_parse_s *jsp, struct json_s *json, s32 val[], s32 cnt)
+{
+	s32 i = 0;
+
+	for (i = 0; i < cnt; i++) {
+		if (json_add_arr_s32(jsp, json, val[i]))
+			break;
+	}
+	return i;
+}
+
+s32 json_add_arr_strs(struct json_parse_s *jsp, struct json_s *json, char *str[], s32 cnt)
+{
+	s32 i = 0;
+
+	for (i = 0; i < cnt; i++) {
+		if (json_add_arr_str(jsp, json, str[i]))
+			break;
+	}
+	return i;
+}
+
+/* merge src_node to dst_node
+ * "node" exist in dst_node and src_node will be replaced in dst_node
+ * "node" exist in dst_node but not in src_node will never changed in dst_node
+ * "node" exist not in dst_node but in src_node will be add to dst_node
+ * The above rules are recursive
+ */
+int json_merge(struct json_parse_s *dst_jsp, struct json_s *dst_node,
+	       struct json_parse_s *src_jsp, struct json_s *src_node)
+{
+	int src_size = 0;
+	int i = 0, ret = 0;
+	struct json_s *dst_new, *src;
+
+	if (!dst_jsp || !dst_node || !src_jsp || !src_node || dst_node->type != src_node->type)
+		return -1;
+
+	if (__json_is_string_or_number(src_node))
+		return json_set_str(dst_jsp, dst_node, (char *)json_get_str(src_jsp, src_node));
+
+	if (!__json_is_array_or_object(src_node))
+		return -1;
+
+	src_size = json_get_child_count(src_jsp, src_node, src_node->type);
+	if (src_size <= 0)
+		return -1;
+	for (i = 0; i < src_size; i++) {
+		if (src_node->type == JSON_ARRAY) {
+			src = json_get_array_child(src_jsp, src_node, i);
+			if (!src)
+				return -1;
+			dst_new = json_get_array_child(dst_jsp, dst_node, i);
+			if (!dst_new)
+				dst_new = json_create_array_child(dst_jsp, dst_node, src->type);
+		} else {
+			src = json_get_object_child_by_id(src_jsp, src_node, i);
+			if (!src)
+				return -1;
+			dst_new = json_create_object_child(dst_jsp, dst_node,
+				(char *)json_get_key(src_jsp, src), src->type);
+		}
+		if (!dst_new)
+			return -1;
+
+		switch (src->type) {
+		case JSON_NUMBER:
+		case JSON_STRING:
+			ret = json_set_str(dst_jsp, dst_new, (char *)json_get_str(src_jsp, src));
+			break;
+		case JSON_OBJECT:
+		case JSON_ARRAY:
+			ret = json_merge(dst_jsp, dst_new, src_jsp, src);
+			break;
+		default:
+			break;
+		}
+	}
+
+	return ret;
+}
+
+//copy src_node data to dst_node, dst_node old data will be deleted
+int json_copy(struct json_parse_s *dst_jsp, struct json_s *dst_node,
+	       struct json_parse_s *src_jsp, struct json_s *src_node)
+{
+	int src_size = 0;
+	int i = 0, ret = 0;
+	struct json_s *dst_new, *src;
+	//u32 num;
+
+	if (!dst_jsp || !dst_node || !src_jsp || !src_node || dst_node->type != src_node->type)
+		return -1;
+
+	dst_node->value = -1;
+
+	if (__json_is_string_or_number(src_node))
+		return json_set_str(dst_jsp, dst_node, (char *)json_get_str(src_jsp, src_node));
+
+	if (!__json_is_array_or_object(src_node))
+		return -1;
+
+	src_size = json_get_child_count(src_jsp, src_node, src_node->type);
+	for (i = 0; i < src_size; i++) {
+		if (src_node->type == JSON_ARRAY) {
+			src = json_get_array_child(src_jsp, src_node, i);
+			if (!src)
+				return -1;
+			dst_new = json_get_array_child(dst_jsp, dst_node, i);
+			if (!dst_new)
+				dst_new = json_create_array_child(dst_jsp, dst_node, src->type);
+		} else {
+			src = json_get_object_child_by_id(src_jsp, src_node, i);
+			if (!src)
+				return -1;
+			dst_new = json_create_object_child(dst_jsp, dst_node,
+				(char *)json_get_key(src_jsp, src), src->type);
+		}
+		if (!dst_new)
+			return -1;
+
+		switch (src->type) {
+		case JSON_NUMBER:
+		case JSON_STRING:
+			ret = json_set_str(dst_jsp, dst_new, (char *)json_get_str(src_jsp, src));
+			break;
+		case JSON_OBJECT:
+		case JSON_ARRAY:
+			ret = json_copy(dst_jsp, dst_new, src_jsp, src);
+			break;
+		default:
+			break;
+		}
+	}
+
+	return ret;
+}
+

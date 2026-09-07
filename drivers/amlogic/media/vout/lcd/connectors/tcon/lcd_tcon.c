@@ -2081,6 +2081,11 @@ static struct lcd_tcon_reg_skip_s tcon_skip_reg_tbl_t6w[] = {
 	{ 0x1200, 0x12ff },
 };
 
+static struct lcd_tcon_reg_skip_s tcon_skip_reg_tbl_t6x[] = {
+	{ 0x0040, 0x006f },
+	{ 0x1200, 0x12ff },
+};
+
 static struct lcd_tcon_dma_ops_s lcd_tcon_dma_ops_t5m = {
 	.status = 0,
 	.addr_list = NULL,
@@ -2417,6 +2422,9 @@ int lcd_tcon_probe(char *dt_addr, struct aml_lcd_drv_s *pdrv, int load_id)
 		break;
 	case LCD_CHIP_T6W:
 		lcd_tcon_conf = &tcon_data_t6w;
+		break;
+	case LCD_CHIP_T6X:
+		lcd_tcon_conf = &tcon_data_t6x;
 		break;
 	default:
 		break;

@@ -537,8 +537,10 @@ static void lcd_module_disable(struct aml_lcd_drv_s *pdrv)
 {
 	LCDPR("[%d]: disable: %s\n", pdrv->index, pdrv->config.basic.model_name);
 
-	if (pdrv->status & LCD_STATUS_IF_ON)
+	if (pdrv->status & LCD_STATUS_IF_ON) {
 		lcd_power_ctrl(pdrv, 0);
+		pdrv->status &= ~LCD_STATUS_IF_ON;
+	}
 
 	lcd_venc_enable(pdrv, 0);
 	lcd_disable_clk(pdrv);
@@ -661,7 +663,7 @@ static struct aml_lcd_drv_s *lcd_driver_add(struct udevice *dev, int index)
 	pdrv->config.basic.lcd_type = LCD_TYPE_MAX;
 	pdrv->config.power.power_on_step[0].type = LCD_POWER_TYPE_MAX;
 	pdrv->config.power.power_off_step[0].type = LCD_POWER_TYPE_MAX;
-	pdrv->config.pinmux_flag = 0xff;
+	strlcpy(pdrv->config.cus_pinmux_name, "null", CUS_PINMUX_NAME_MAX);
 	pdrv->config.backlight_index = 0xff;
 
 	/* default setting */
@@ -716,14 +718,12 @@ void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 	switch (pdrv->config.basic.lcd_type) {
 #if defined(CONFIG_AML_LCD_TCON)
 	case LCD_P2P:
-		pdrv->boot_ctrl.advanced_flag =
-			pdrv->config.control.p2p_cfg.p2p_type;
+		pdrv->boot_ctrl.advanced_flag = pdrv->config.control.p2p_cfg.p2p_type;
 		break;
 #endif
 	default:
 		break;
 	}
-	pdrv->boot_ctrl.custom_pinmux = pdrv->config.custom_pinmux ? 1 : 0;
 	if (env_get("lcd_debug_init"))
 		pdrv->boot_ctrl.init_level = env_get_ulong("lcd_debug_init", 10, 0);
 	else
@@ -731,12 +731,12 @@ void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 	pdrv->boot_ctrl.dccd_flag = is_dccd_flow(pdrv);
 
 	/*
-	 *bit[31:23]: base frame rate
+	 *bit[31:23]: frame rate bit[7:0]
 	 *bit[23:22]: clk_mode
 	 *bit[21:20]: ppc
 	 *bit[19:18]: lcd_init_level
 	 *bit[17]: dccd flag
-	 *bit[16]: custom pinmux flag
+	 *bit[16]: frame_rate bit[8]
 	 *bit[15:8]: advanced flag(p2p_type when lcd_type=p2p)
 	 *bit[7:4]: lcd bits
 	 *bit[3:0]: lcd_type
@@ -744,12 +744,12 @@ void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 	val |= (pdrv->boot_ctrl.lcd_type & 0xf);
 	val |= (pdrv->boot_ctrl.lcd_bits & 0xf) << 4;
 	val |= (pdrv->boot_ctrl.advanced_flag & 0xff) << 8;
-	val |= (pdrv->boot_ctrl.custom_pinmux & 0x1) << 16;
 	val |= (pdrv->boot_ctrl.dccd_flag & 0x1) << 17;
 	val |= (pdrv->boot_ctrl.init_level & 0x3) << 18;
 	val |= (pdrv->boot_ctrl.ppc & 0x3) << 20;
 	val |= (pdrv->boot_ctrl.clk_mode & 0x3) << 22;
 	val |= (pdrv->boot_ctrl.frame_rate & 0xff) << 24;
+	val |= ((pdrv->boot_ctrl.frame_rate >> 8)& 0x1) << 16;
 	lcd_venc_save_bootctrl_to_regs(pdrv);
 
 	if (pdrv->index == 0)
@@ -760,7 +760,7 @@ void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 
 	snprintf(env_str, 16, "lcd%d_attr", pdrv->index);
 	snprintf(ctrl_str, 48, "0x%08x,%s,%s", val,
-		 pdrv->boot_ctrl.custom_pinmux ? pdrv->config.basic.model_name : "",
+		 strcmp(pdrv->config.cus_pinmux_name, "null") ? pdrv->config.cus_pinmux_name : "",
 		 pdrv->key_valid ? "" : (type_str ? type_str : ""));
 	env_set(env_str, ctrl_str);
 
@@ -792,10 +792,10 @@ static void lcd_init_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 		return;
 
 	//for lcd reserved memory transmit parameters
-	if (pdrv->config.custom_pinmux) {
-		size = strlen(pdrv->config.basic.model_name) + 1; //include '\0' for string
+	if (strcmp(pdrv->config.cus_pinmux_name, "null")) {
 		sprintf(arg_name, "panel%d_name", pdrv->index);
-		lrm_bootargs_put_data((unsigned char *)pdrv->config.basic.model_name,
+		size = strlen(pdrv->config.cus_pinmux_name) + 1; //include '\0' for string
+		lrm_bootargs_put_data((unsigned char *)pdrv->config.cus_pinmux_name,
 				      arg_name, size);
 	}
 
@@ -839,11 +839,8 @@ static void lcd_init_debug_bootargs(void)
 	lrm_bootargs_put_data((unsigned char *)&debug_ctrl, "lcd_debug", size);
 }
 
-void lcd_panel_config_load_to_drv(struct aml_lcd_drv_s *pdrv)
+void lcd_init_config_to_drv(struct aml_lcd_drv_s *pdrv)
 {
-	lcd_clk_config_probe(pdrv);
-	lcd_phy_probe(pdrv);
-	lcd_debug_probe(pdrv);
 	lcd_mode_init(pdrv);
 	lcd_init_ctrl_bootargs(pdrv);
 }
@@ -878,7 +875,7 @@ static int lcd_config_probe(struct udevice *dev, unsigned int index)
 	g_dt_addr = (char *)CONFIG_DTB_MEM_ADDR;
 #endif
 #ifdef CONFIG_AML_LCD_PXP
-	g_dt_addr = (char *)0x06000000;
+	g_dt_addr = (char *)0x09000000;
 #endif
 
 	lcd_reserved_memory_init(g_dt_addr);
@@ -907,7 +904,7 @@ static int lcd_config_probe(struct udevice *dev, unsigned int index)
 		lcd_driver_remove(pdrv->index);
 		return -1;
 	}
-	lcd_panel_config_load_to_drv(pdrv);
+	lcd_init_config_to_drv(pdrv);
 
 #ifdef CONFIG_AML_LCD_EXTERN
 	if (index == 0)
@@ -1068,9 +1065,9 @@ int aml_lcd_driver_probe(int index)
 		device_remove(backlight_dev, DM_REMOVE_NORMAL);
 #endif
 	if (index == 0)
-		snprintf(node_lcd, 11, "lcd");
+		snprintf(node_lcd, 3, "lcd");
 	else
-		snprintf(node_lcd, 12, "lcd%d", index);
+		snprintf(node_lcd, 4, "lcd%d", index);
 	ret = uclass_get_device_by_name(UCLASS_MISC, node_lcd, &lcd_dev);
 	if (!ret) {
 		device_remove(lcd_dev, DM_REMOVE_NORMAL);
@@ -1186,6 +1183,33 @@ void aml_lcd_driver_disable(int index)
 	}
 
 	lcd_module_disable(pdrv);
+}
+
+void aml_lcd_driver_power_ctrl(int index, int status)
+{
+	struct aml_lcd_drv_s *pdrv;
+
+	pdrv = lcd_driver_check_valid(index);
+	if (!pdrv)
+		return;
+
+	if (status) {
+		if (pdrv->status & LCD_STATUS_IF_ON) {
+			LCDPR("[%d]: already power on\n", pdrv->index);
+			return;
+		}
+		lcd_interface_on(pdrv);
+		pdrv->status |= LCD_STATUS_IF_ON;
+	} else {
+		if ((pdrv->status & LCD_STATUS_IF_ON) == 0) {
+			LCDPR("[%d]: already power off\n", pdrv->index);
+			return;
+		}
+		pdrv->status &= ~LCD_STATUS_IF_ON;
+		lcd_power_ctrl(pdrv, 0);
+	}
+
+	lcd_update_ctrl_bootargs(pdrv);
 }
 
 void aml_lcd_driver_set_ss(int index, unsigned int level, unsigned int freq,

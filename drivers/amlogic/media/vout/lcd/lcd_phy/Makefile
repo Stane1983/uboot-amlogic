@@ -6,3 +6,4 @@ obj-$(CONFIG_AML_LCD) += lcd_phy_t3x.o
 obj-$(CONFIG_AML_LCD) += lcd_phy_txhd2.o
 obj-$(CONFIG_AML_LCD) += lcd_phy_t6d.o
 obj-$(CONFIG_AML_LCD) += lcd_phy_t6w.o
+obj-$(CONFIG_AML_LCD) += lcd_phy_t6x.o

@@ -29,9 +29,9 @@ static void dsi_base_cfg_print(struct lcd_config_s *pconf)
 		dconf->check_reg, dconf->check_cnt, dconf->check_state);
 }
 
-void dsi_table_print(u8 *dsi_table, u16 n_max)
+void dsi_table_print(uint8_t *dsi_table, uint16_t n_max)
 {
-	u16 i = 0, n = 0, j;
+	uint16_t i = 0, n = 0, j;
 	if (!dsi_table)
 		return;
 
@@ -94,23 +94,24 @@ void lcd_dsi_info_print(struct lcd_config_s *pconf)
 #endif
 }
 
-void lcd_dsi_set_operation_mode(struct aml_lcd_drv_s *pdrv, u8 op_mode)
+void lcd_dsi_set_operation_mode(struct aml_lcd_drv_s *pdrv, uint8_t op_mode)
 {
 	dsi_op_mode_switch(pdrv, 0, op_mode);
 	LCDPR("[%d]: %s: %s(%d)\n", pdrv->index, __func__, dsi_op_mode_table[op_mode], op_mode);
 }
 
-void lcd_dsi_write_cmd(struct aml_lcd_drv_s *pdrv, u8 *payload)
+void lcd_dsi_write_cmd(struct aml_lcd_drv_s *pdrv, uint8_t *payload)
 {
 	dsi_run_oneline_cmd(pdrv, 0, payload, NULL, 0);
 }
 
-u8 lcd_dsi_read(struct aml_lcd_drv_s *pdrv, u8 *payload, u8 *rd_data, u8 rd_byte_len)
+uint8_t lcd_dsi_read(struct aml_lcd_drv_s *pdrv, uint8_t *payload,
+			uint8_t *rd_data, uint8_t rd_byte_len)
 {
 	int dsi_back_len;
 	char *string;
-	u32 line_start = 0, line_end = 0;
-	u8 n, k, is_DCS = payload[0] == DT_DCS_RD_0;
+	uint32_t line_start = 0, line_end = 0;
+	uint8_t n, k, is_DCS = payload[0] == DT_DCS_RD_0;
 
 	string = (char *)malloc(256 * sizeof(char));
 	if (!string)

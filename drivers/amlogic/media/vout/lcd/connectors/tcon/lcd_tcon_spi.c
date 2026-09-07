@@ -756,6 +756,7 @@ static int handle_tcon_spi_ini_v0(void *inip, void *psec, unsigned char *buff)
 	val = lcd_ini_get_val(inip, psec, "demura_lut_offset", 0);
 	if (val == 0) {
 		null_cnt++;
+		n = 48; // 16 + 32
 		goto handle_tcon_spi_v0_block_1;
 	}
 	for (i = 0; i < 4; i++)
@@ -765,6 +766,7 @@ static int handle_tcon_spi_ini_v0(void *inip, void *psec, unsigned char *buff)
 	val = lcd_ini_get_val(inip, psec, "demura_lut_size", 0);
 	if (val == 0) {
 		null_cnt++;
+		n = 48; // 16 + 32
 		goto handle_tcon_spi_v0_block_1;
 	}
 	for (i = 0; i < 4; i++)
@@ -784,6 +786,7 @@ handle_tcon_spi_v0_block_1:
 	val = lcd_ini_get_val(inip, psec, "p_gamma_offset", 0);
 	if (val == 0) {
 		null_cnt++;
+		n = 80; // 16 + 32 + 32
 		goto handle_tcon_spi_v0_block_2;
 	}
 	for (i = 0; i < 4; i++)
@@ -793,6 +796,7 @@ handle_tcon_spi_v0_block_1:
 	val = lcd_ini_get_val(inip, psec, "p_gamma_size", 0);
 	if (val == 0) {
 		null_cnt++;
+		n = 80; // 16 + 32 + 32
 		goto handle_tcon_spi_v0_block_2;
 	}
 	for (i = 0; i < 4; i++)
@@ -812,6 +816,7 @@ handle_tcon_spi_v0_block_2:
 	val = lcd_ini_get_val(inip, psec, "acc_lut_offset", 0);
 	if (val == 0) {
 		null_cnt++;
+		n = 112; // 16 + 32 + 32 + 32
 		goto handle_tcon_spi_v0_block_3;
 	}
 	for (i = 0; i < 4; i++)
@@ -821,6 +826,7 @@ handle_tcon_spi_v0_block_2:
 	val = lcd_ini_get_val(inip, psec, "acc_lut_size", 0);
 	if (val == 0) {
 		null_cnt++;
+		n = 112; // 16 + 32 + 32 + 32
 		goto handle_tcon_spi_v0_block_3;
 	}
 	for (i = 0; i < 4; i++)
@@ -840,6 +846,7 @@ handle_tcon_spi_v0_block_3:
 	val = lcd_ini_get_val(inip, psec, "auto_flicker_offset", 0);
 	if (val == 0) {
 		null_cnt++;
+		n = 144; // 16 + 32 + 32 + 32 + 32
 		goto handle_tcon_spi_v0_next;
 	}
 	for (i = 0; i < 4; i++)
@@ -849,6 +856,7 @@ handle_tcon_spi_v0_block_3:
 	val = lcd_ini_get_val(inip, psec, "auto_flicker_size", 0);
 	if (val == 0) {
 		null_cnt++;
+		n = 144; // 16 + 32 + 32 + 32 + 32
 		goto handle_tcon_spi_v0_next;
 	}
 	for (i = 0; i < 4; i++)

@@ -112,8 +112,11 @@ void ldim_abcon_xwire_write_packet(void)
 
 	if (bl_xwire->sop_type == sop_dimming) {
 		buf = abcon_mem.ldc_seg;
-	else
+		invalidate_dcache_range((unsigned long)buf, (unsigned long)(buf + ldc_seg_size));
+	} else {
 		buf = abcon_mem.wseg;
+		invalidate_dcache_range((unsigned long)buf, (unsigned long)(buf + wseg_size));
+	}
 
 	if (!buf)
 		return;

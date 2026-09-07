@@ -233,8 +233,9 @@ int lcd_venc_probe(struct aml_lcd_data_s *pdata)
 		ret = lcd_venc_op_init_c3(&lcd_venc_op);
 		break;
 #endif
-#ifdef CONFIG_MESON_T3X
+#if defined(CONFIG_MESON_T3X) || defined(CONFIG_MESON_T6X)
 	case LCD_CHIP_T3X:
+	case LCD_CHIP_T6X:
 		ret = lcd_venc_op_init_t3x(&lcd_venc_op);
 		break;
 #endif

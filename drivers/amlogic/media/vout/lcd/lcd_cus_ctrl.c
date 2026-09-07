@@ -532,7 +532,20 @@ static int lcd_cus_ctrl_attr_parse_tuning_attr_ukey(struct aml_lcd_drv_s *pdrv,
 
 		phy->phy_clk = *(unsigned short *)(p + offset);
 		offset += 2;
-		offset += 4; //phy_clk_min_max reserved
+		phy->phy_clk_min = *(unsigned short *)(p + offset);
+		offset += 2;
+		phy->phy_clk_max = *(unsigned short *)(p + offset);
+		offset += 2;
+		if ((!phy->phy_clk_min && !phy->phy_clk_max) ||
+			phy->phy_clk_min > phy->phy_clk_max) {
+			if (phy->phy_clk) {
+				phy->phy_clk_min = phy->phy_clk - 20;
+				phy->phy_clk_max = phy->phy_clk + 20;
+			} else {
+				phy->phy_clk_min = 0;
+				phy->phy_clk_max = 0;
+			}
+		}
 		phy->ss.level = *(unsigned short *)(p + offset);
 		offset += 2;
 		phy->ss.freq = *(unsigned short *)(p + offset);
@@ -749,12 +762,8 @@ static int lcd_cus_ctrl_attr_parse_ufr_ini(struct aml_lcd_drv_s *pdrv,
 	if (temp)
 		ptiming->v_period_max = temp;
 
-	temp = lcd_ini_get_val(inip, psec, "ufr_frame_rate_min", 0);
-	if (temp)
-		ptiming->frame_rate_min = temp;
-	temp = lcd_ini_get_val(inip, psec, "ufr_frame_rate_max", 0);
-	if (temp)
-		ptiming->frame_rate_max = temp;
+	ptiming->frame_rate_min = lcd_ini_get_val(inip, psec, "ufr_frame_rate_min", 0);
+	ptiming->frame_rate_max = lcd_ini_get_val(inip, psec, "ufr_frame_rate_max", 0);
 
 	temp = lcd_ini_get_val(inip, psec, "ufr_vpw", 0);
 	if (temp)
@@ -1061,7 +1070,9 @@ static int lcd_cus_ctrl_attr_parse_tuning_attr_ini(struct aml_lcd_drv_s *pdrv,
 		sprintf(key_str, "ch%u_phase", i);
 		phy_cfg->ch_ctrl[i].phase_sel = lcd_ini_get_val(inip, tuning_sec, key_str, 0xff);
 
-		phy_cfg->ch_ctrl[i].pn_swap = 0; //reversed
+		sprintf(key_str, "ch%u_pn_swap", i);
+		phy_cfg->ch_ctrl[i].pn_swap =
+			lcd_ini_get_val(inip, tuning_sec, key_str, phy_cfg->ch_ctrl[i].pn_swap);
 
 		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 			LCDPR("%s: lane[%d]: sel=0x%x, pn_swap=%d, phase_sel=0x%x\n",
@@ -1086,7 +1097,26 @@ static int lcd_cus_ctrl_attr_parse_tuning_attr_ini(struct aml_lcd_drv_s *pdrv,
 			break;
 		}
 
-		tmp_phy.phy_clk = lcd_ini_get_val(inip, tuning_sec, "phy_clk", 0);
+		// phy_clk_min and phy_clk_max
+		tmp_phy.phy_clk_min = lcd_ini_get_val(inip, tuning_sec, "phy_clk_min", 0);
+		tmp_phy.phy_clk_max = lcd_ini_get_val(inip, tuning_sec, "phy_clk_max", 0);
+		// phy_clk_min and phy_clk_max
+
+		// phy_clk_min and phy_clk_max error, should read phy_clk:
+		// 1.phy_clk_min or phy_clk_max equal to 0
+		// 2.phy_clk_min > phy_clk_max
+		if ((!tmp_phy.phy_clk_min && !tmp_phy.phy_clk_max) ||
+			tmp_phy.phy_clk_min > tmp_phy.phy_clk_max) {
+			tmp_phy.phy_clk = lcd_ini_get_val(inip, tuning_sec, "phy_clk", 0);
+			if (tmp_phy.phy_clk) {
+				tmp_phy.phy_clk_min = tmp_phy.phy_clk - 20;
+				tmp_phy.phy_clk_max = tmp_phy.phy_clk + 20;
+			} else {
+				tmp_phy.phy_clk_min = 0;
+				tmp_phy.phy_clk_max = 0;
+			}
+		}
+
 		//tmp_phy.phy_clk_min  //reversed
 		//tmp_phy.phy_clk_max  //reversed
 
@@ -1138,6 +1168,10 @@ static int lcd_cus_ctrl_attr_parse_tuning_attr_ini(struct aml_lcd_drv_s *pdrv,
 			LCDPR("%s: tuning_param[%d]: phy_clk:%d, lane_cnt:%d\n",
 				TUNING_ATTR_PARSE, i,
 				tmp_phy.phy_clk, lane_cnt);
+			if (tmp_phy.phy_clk_min && tmp_phy.phy_clk_min)
+				LCDPR("%s: tuning_param[%d]: phy_clk_min:%d, phy_clk_max:%d\n",
+					TUNING_ATTR_PARSE, i,
+					tmp_phy.phy_clk_min, tmp_phy.phy_clk_max);
 		}
 	}
 

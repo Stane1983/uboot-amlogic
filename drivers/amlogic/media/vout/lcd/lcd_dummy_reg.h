@@ -1550,6 +1550,9 @@
 #ifndef VBO_INTR_UNMASK
 #define VBO_INTR_UNMASK                            ((0x197d  << 2) + 0xff000000)
 #endif
+#ifndef VBO_TMCHK_THRD
+#define VBO_TMCHK_THRD                             ((0x1974  << 2) + 0xff800000)
+#endif
 #ifndef VBO_TMCHK_HSYNC_STATE_L
 #define VBO_TMCHK_HSYNC_STATE_L                    ((0x197e  << 2) + 0xff000000)
 #endif

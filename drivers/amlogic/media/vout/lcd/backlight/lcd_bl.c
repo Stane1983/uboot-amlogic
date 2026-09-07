@@ -132,60 +132,45 @@ static void bl_pwm_custom_pinmux_ctrl(struct aml_bl_drv_s *bdrv, int status)
 	int index = 0xff;
 	char pinmux_str[BL_NAME_MAX + 5];
 
-	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
-		BLPR("[%d]: %s\n", bdrv->index, __func__);
-
 	if (status) {
-		index = 0;
+		index = 1;
 		sprintf(pinmux_str, "%s", bconf->pinmux_name);
 	} else {
-		index = 1;
+		index = 2;
 		sprintf(pinmux_str, "%s_off", bconf->pinmux_name);
 	}
 
-	if (index >= BL_PINMUX_MAX) {
-		BLERR("[%d]: %s: pinmux index %d is invalid\n",
-		      bdrv->index, __func__, index);
-		return;
-	}
-
 	if (bdrv->pinmux_flag == index) {
-		BLPR("[%d]: pinmux %s is already selected\n",
-		     bdrv->index, pinmux_str);
+		BLPR("[%d]: custom_pinmux: %s is already selected\n", bdrv->index, pinmux_str);
 		return;
 	}
 
 	/* request pwm pinmux */
 	if (pinctrl_select_state(bdrv->udev, pinmux_str)) {
-		BLERR("[%d]: set pinmux %s error\n",
-		      bdrv->index, pinmux_str);
-	} else {
-		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-			BLPR("[%d]: set pinmux %s\n",
-			     bdrv->index, pinmux_str);
-		}
+		BLERR("[%d]: custom_pinmux: %s(%d) error\n", bdrv->index, pinmux_str, index);
+		return;
 	}
+
 	bdrv->pinmux_flag = index;
+	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
+		BLPR("[%d]: custom_pinmux: %s(%d)\n", bdrv->index, pinmux_str, index);
 }
 
-static char *bl_pinmux_str[BL_PINMUX_MAX] = {
-	"pwm_on",               /* 0 */
-	"pwm_vs_on",            /* 1 */
-	"pwm_combo_0_1_on",     /* 2 */
-	"pwm_combo_0_vs_1_on",  /* 3 */
-	"pwm_combo_0_1_vs_on",  /* 4 */
-	"pwm_off",              /* 5 */
-	"pwm_combo_off",        /* 6 */
-	"none",
+static char *bl_pinmux_str[] = {
+	"none",                 /* 0 */
+	"pwm_on",               /* 1 */
+	"pwm_vs_on",            /* 2 */
+	"pwm_combo_0_1_on",     /* 3 */
+	"pwm_combo_0_vs_1_on",  /* 4 */
+	"pwm_combo_0_1_vs_on",  /* 5 */
+	"pwm_off",              /* 6 */
+	"pwm_combo_off"         /* 7 */
 };
 
 static void bl_pwm_pinmux_ctrl(struct aml_bl_drv_s *bdrv, int status)
 {
 	struct bl_config_s *bconf = &bdrv->config;
 	int index = 0xff;
-
-	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
-		BLPR("[%d]: %s\n", bdrv->index, __func__);
 
 	if (strcmp(bconf->pinmux_name, "invalid")) {
 		bl_pwm_custom_pinmux_ctrl(bdrv, status);
@@ -196,56 +181,55 @@ static void bl_pwm_pinmux_ctrl(struct aml_bl_drv_s *bdrv, int status)
 	case BL_CTRL_PWM:
 		if (status) {
 			if (bconf->bl_pwm->pwm_port == BL_PWM_VS)
-				index = 1;
+				index = 2;
 			else
-				index = 0;
+				index = 1;
 		} else {
-			index = 5;
+			index = 6;
 		}
 		break;
 	case BL_CTRL_PWM_COMBO:
 		if (status) {
 			if (bconf->bl_pwm_combo0->pwm_port == BL_PWM_VS) {
-				index = 3;
+				index = 4;
 			} else {
 				if (bconf->bl_pwm_combo1->pwm_port == BL_PWM_VS)
-					index = 4;
+					index = 5;
 				else
-					index = 2;
+					index = 3;
 			}
 		} else {
-			index = 6;
+			index = 7;
 		}
 		break;
 	default:
-		BLERR("[%d]: %s: wrong ctrl_mothod=%d\n",
-		      bdrv->index, __func__, bconf->method);
+		BLERR("[%d]: pinmux_ctrl: wrong ctrl_mothod=%d\n", bdrv->index, bconf->method);
 		break;
 	}
 
-	if (index >= BL_PINMUX_MAX) {
-		BLERR("[%d]: %s: pinmux index %d is invalid\n",
-		      bdrv->index, __func__, index);
+	if (index == 0) {
+		BLERR("[%d]: pinmux_ctrl: index %d is invalid\n", bdrv->index, index);
 		return;
 	}
 
 	if (bdrv->pinmux_flag == index) {
-		BLPR("[%d]: pinmux %s is already selected\n",
+		BLPR("[%d]: pinmux_ctrl: %s is already selected\n",
 		     bdrv->index, bl_pinmux_str[index]);
 		return;
 	}
 
 	/* request pwm pinmux */
 	if (pinctrl_select_state(bdrv->udev, bl_pinmux_str[index])) {
-		BLERR("[%d]: set pinmux %s error\n",
-		      bdrv->index, bl_pinmux_str[index]);
-	} else {
-		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-			BLPR("[%d]: set pinmux %s\n",
-			     bdrv->index, bl_pinmux_str[index]);
-		}
+		BLERR("[%d]: pinmux_ctrl: %s(%d) error\n",
+		      bdrv->index, bl_pinmux_str[index], index);
+		return;
 	}
+
 	bdrv->pinmux_flag = index;
+	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
+		BLPR("[%d]: pinmux_ctrl: %s(%d)\n",
+		     bdrv->index, bl_pinmux_str[index], index);
+	}
 }
 
 static void bl_pwm_pinmux_gpio_set(struct aml_bl_drv_s *bdrv, int pwm_index, int gpio_level)

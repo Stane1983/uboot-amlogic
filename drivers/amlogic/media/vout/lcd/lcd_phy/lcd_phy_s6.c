@@ -99,6 +99,11 @@ static void lcd_mipi_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 	lcd_ana_write(ANACTRL_MIPIDSI_CTRL0, mipi_dsi_ctl1 << 16 | mipi_dsi_ctl0);
 }
 
+static unsigned char lcd_phy_lane_pn_swap_def(struct aml_lcd_drv_s *pdrv, unsigned int lane)
+{
+	return 0;
+}
+
 static struct lcd_phy_ctrl_s lcd_phy_ctrl_s6 = {
 	.lane_num = 5,
 
@@ -106,6 +111,7 @@ static struct lcd_phy_ctrl_s lcd_phy_ctrl_s6 = {
 	.phy_preem_level_to_val = NULL,
 	.phy_amp_dft_val = NULL,
 	.phy_lane_phase_sel_def = NULL,
+	.phy_lane_pn_swap_dft = lcd_phy_lane_pn_swap_def,
 	.phy_glb_param_dft_val = NULL,
 	.phy_param_get = NULL,
 	.phy_reg_dump = lcd_phy_reg_dump,

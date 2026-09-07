@@ -172,7 +172,7 @@ struct json_s *json_get_object_child_by_id(struct json_parse_s *jsp, struct json
 struct json_s *json_get_array_child(struct json_parse_s *jsp, struct json_s *parent, s32 id);
 struct json_s *json_get_nd_array_child(struct json_parse_s *jsp, struct json_s *json,
 	s32 nid, s32 ids[]);
-
+s32 json_get_child_count(struct json_parse_s *jsp, struct json_s *parent, json_size_t type);
 /* get child node count of a JSON_OBJECT type node
  * return >= 0 for success, < 0 for fail
  */
@@ -187,6 +187,10 @@ const char *json_get_key(struct json_parse_s *jsp, struct json_s *json);
 const char *json_get_str(struct json_parse_s *jsp, struct json_s *json);
 s32 json_get_s32(struct json_parse_s *jsp, struct json_s *json, s32 *num);
 s32 json_get_u32(struct json_parse_s *jsp, struct json_s *json, u32 *num);
+
+s32 json_set_str(struct json_parse_s *jsp, struct json_s *json, char *str);
+s32 json_set_u32(struct json_parse_s *jsp, struct json_s *json, u32 val);
+s32 json_set_s32(struct json_parse_s *jsp, struct json_s *json, s32 val);
 
 /*=json util=====================================================================================*/
 static inline int __json_is_string(struct json_s *json)
@@ -212,6 +216,11 @@ static inline int __json_is_object(struct json_s *json)
 static inline int __json_is_array(struct json_s *json)
 {
 	return (json && json->type == JSON_ARRAY);
+}
+
+static inline int __json_is_array_or_object(struct json_s *json)
+{
+	return (json && (json->type == JSON_OBJECT || json->type == JSON_ARRAY));
 }
 
 void json_obj_dump(char *js, struct json_s *json_array, struct json_s *json, s32 indent);
@@ -261,6 +270,77 @@ s32 json_get_arr_s32(struct json_parse_s *jsp, struct json_s *json, s32 id, s32 
 u32 json_get_key_u32(struct json_parse_s *jsp, struct json_s *start, const char *key, u32 dft);
 u32 json_get_obj_u32(struct json_parse_s *jsp, struct json_s *json, const char *name, u32 dft);
 u32 json_get_arr_u32(struct json_parse_s *jsp, struct json_s *json, s32 id, u32 dft);
+
+/* remove a json */
+void json_remove_node(struct json_parse_s *jsp, struct json_s *json);
+
+/* create a new child for parent (if parent has a child key named key, return it)
+ * @parent: parent json node (must be JSON_OBJECT type)
+ * @key: child key
+ * @type: child type
+ * @return child node
+ */
+struct json_s *json_create_object_child(struct json_parse_s *jsp, struct json_s *parent,
+					char *key, int type);
+
+/* create a new child for parent (if parent has a child key named key, return it)
+ * @parent: parent json node (must be JSON_ARRAY type)
+ * @key: child key
+ * @type: child type
+ * @return child node
+ */
+struct json_s *json_create_array_child(struct json_parse_s *jsp, struct json_s *parent, int type);
+
+/* json_set_obj_xxx
+ * set(or change if child exist) value
+ * @json:parent node (must be JSON_OBJECT type)
+ * @name: child node key(name)
+ * return 0-for success -1-for failed
+ */
+s32 json_set_obj_u32(struct json_parse_s *jsp, struct json_s *json, char *name, u32 val);
+s32 json_set_obj_s32(struct json_parse_s *jsp, struct json_s *json, char *name, s32 val);
+s32 json_set_obj_str(struct json_parse_s *jsp, struct json_s *json, char *name, char *str);
+
+/* json_set_arr_xxx
+ * set(or change if child exist) value
+ * @json:parent node (must be JSON_ARRAY type)
+ * @id: child node id
+ * return 0-for success -1-for failed
+ */
+s32 json_set_arr_u32(struct json_parse_s *jsp, struct json_s *json, s32 id, u32 val);
+s32 json_set_arr_s32(struct json_parse_s *jsp, struct json_s *json, int id, s32 val);
+s32 json_set_arr_str(struct json_parse_s *jsp, struct json_s *json, int id, char *str);
+
+/* json_add_arr_xxx
+ * add a child for a JSON_ARRAY parent at the last
+ * @json:parent node (must be JSON_ARRAY type)
+ * return 0-for success -1-for failed
+ */
+s32 json_add_arr_u32(struct json_parse_s *jsp, struct json_s *json, u32 val);
+s32 json_add_arr_s32(struct json_parse_s *jsp, struct json_s *json, s32 val);
+s32 json_add_arr_str(struct json_parse_s *jsp, struct json_s *json, char *str);
+
+/* json_add_arr_xxxs
+ * add more children for a JSON_ARRAY parent at the last
+ * @json:parent node (must be JSON_ARRAY type)
+ * return 0-for success -1-for failed
+ */
+s32 json_add_arr_u32s(struct json_parse_s *jsp, struct json_s *json, u32 val[], s32 cnt);
+s32 json_add_arr_s32s(struct json_parse_s *jsp, struct json_s *json, s32 val[], s32 cnt);
+s32 json_add_arr_strs(struct json_parse_s *jsp, struct json_s *json, char *str[], s32 cnt);
+
+/* merge src_node to dst_node
+ * "node" exist in dst_node and src_node will be replaced in dst_node
+ * "node" exist in dst_node but not in src_node will never changed in dst_node
+ * "node" exist not in dst_node but in src_node will be add to dst_node
+ * The above rules are recursive
+ */
+int json_merge(struct json_parse_s *dst_jsp, struct json_s *dst_node,
+	       struct json_parse_s *src_jsp, struct json_s *src_node);
+
+//copy src_node data to dst_node, dst_node old data will be deleted
+int json_copy(struct json_parse_s *dst_jsp, struct json_s *dst_node,
+	      struct json_parse_s *src_jsp, struct json_s *src_node);
 
 #ifdef __cplusplus
 }

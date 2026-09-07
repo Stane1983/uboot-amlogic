@@ -122,6 +122,7 @@ static void lcd_clk_reg_dump(struct aml_lcd_drv_s *pdrv)
 
 static struct lcd_pll_data_s lcd_pll_data_a4 = {
 	.pll_od_fb = 0,
+	.pll_0_5_div_en = 0,
 	.pll_m_max = 511,
 	.pll_m_min = 2,
 	.pll_n_max = 1,

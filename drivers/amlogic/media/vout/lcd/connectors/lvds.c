@@ -44,11 +44,13 @@ void lcd_lvds_enable(struct aml_lcd_drv_s *pdrv)
 	    pdrv->data->chip_type == LCD_CHIP_T3 ||
 	    pdrv->data->chip_type == LCD_CHIP_T3X ||
 	    pdrv->data->chip_type == LCD_CHIP_T5M ||
-		pdrv->data->chip_type == LCD_CHIP_T6W)
+	    pdrv->data->chip_type == LCD_CHIP_T6W ||
+		pdrv->data->chip_type == LCD_CHIP_T6X)
 		lcd_vcbus_write(LVDS_SER_EN + offset, 0xfff);
 
 	if (pdrv->data->chip_type == LCD_CHIP_T6D ||
-		pdrv->data->chip_type == LCD_CHIP_T6W)
+		pdrv->data->chip_type == LCD_CHIP_T6W ||
+		pdrv->data->chip_type == LCD_CHIP_T6X)
 		lsb_first = 1;
 
 	lcd_vcbus_write(LVDS_PACK_CNTL_ADDR + offset,

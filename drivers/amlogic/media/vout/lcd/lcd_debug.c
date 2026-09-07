@@ -324,6 +324,7 @@ static void lcd_phy_print(struct aml_lcd_drv_s *pdrv)
 	switch (pdrv->config.basic.lcd_type) {
 	case LCD_LVDS:
 	case LCD_VBYONE:
+	case LCD_MIPI:
 	case LCD_MLVDS:
 	case LCD_P2P:
 		printf("support phy group:\n");
@@ -364,28 +365,80 @@ static void lcd_reg_print_lvds(struct aml_lcd_drv_s *pdrv)
 #endif
 
 #ifdef CONFIG_AML_LCD_VBYONE
+struct reg_name_set_s vx1_table_t3x_t6x[] = {
+	{VBO_CTRL             , "VBO_CTRL           "},
+	{VBO_SOFT_RST         , "VBO_SOFT_RST       "},
+	{VBO_LANES            , "VBO_LANES          "},
+	{VBO_VIN_CTRL         , "VBO_VIN_CTRL       "},
+	{VBO_ACT_VSIZE        , "VBO_ACT_VSIZE      "},
+	{VBO_LANE_SKEW_L      , "VBO_LANE_SKEW_L    "},
+	{VBO_LANE_SKEW_H      , "VBO_LANE_SKEW_H    "},
+	{VBO_STATUS_L         , "VBO_STATUS_L       "},
+	{VBO_STATUS_H         , "VBO_STATUS_H       "},
+	{VBO_LANE_OUTPUT      , "VBO_LANE_OUTPUT    "},
+	{LCD_PORT_SWAP        , "LCD_PORT_SWAP      "},
+	{VBO_TMCHK_THRD       , "VBO_TMCHK_THRD     "},
+	{VBO_FSM_HOLDER       , "VBO_FSM_HOLDER     "},
+	{VBO_INTR_STATE_CTRL  , "VBO_INTR_STATE_CTRL"},
+	{VBO_INTR_UNMASK      , "VBO_INTR_UNMASK    "},
+	{VBO_INTR_STATE       , "VBO_INTR_STATE     "},
+	{VBO_INFILTER_CTRL    , "VBO_INFILTER_CTRL  "},
+	{VBO_INSGN_CTRL       , "VBO_INSGN_CTRL     "},
+	{VBO_INFILTER_CTRL_H  , "VBO_INFILTER_CTRL_H"},
+	{VBO_SLICE_CTRL       , "VBO_SLICE_CTRL     "},
+	{VBO_RGN_CTRL         , "VBO_RGN_CTRL       "},
+	{VBO_RGN_HSIZE        , "VBO_RGN_HSIZE      "}
+};
+
+struct reg_name_set_s vx1_table[] = {
+	{VBO_STATUS_L       , "BO_STATUS_L       "},
+	{VBO_LANE_OUTPUT    , "VBO_LANE_OUTPUT   "},
+	{LCD_PORT_SWAP      , "LCD_PORT_SWAP     "},
+	{VBO_CTRL_L         , "BO_CTRL_L         "},
+	{VBO_LANES          , "BO_LANES          "},
+	{VBO_VIN_CTRL       , "BO_VIN_CTRL       "},
+	{VBO_ACT_VSIZE      , "BO_ACT_VSIZE      "},
+	{VBO_GCLK_MAIN      , "BO_GCLK_MAIN      "},
+	{VBO_FSM_HOLDER_L   , "BO_FSM_HOLDER_L   "},
+	{VBO_FSM_HOLDER_H   , "BO_FSM_HOLDER_H   "},
+	{VBO_INTR_STATE_CTRL, "BO_INTR_STATE_CTRL"},
+	{VBO_INTR_UNMASK    , "BO_INTR_UNMASK    "},
+	{VBO_INTR_STATE     , "BO_INTR_STATE     "},
+	{VBO_INFILTER_CTRL  , "BO_INFILTER_CTRL  "},
+	{VBO_INSGN_CTRL     , "BO_INSGN_CTRL     "},
+	{VBO_INFILTER_CTRL_H, "BO_INFILTER_CTRL_H"}
+};
+
 static void lcd_reg_print_vbyone(struct aml_lcd_drv_s *pdrv)
 {
-	unsigned int offset;
+	unsigned int offset, reg_cnt, i, base_addr = 0;
+	struct reg_name_set_s *regtbl;
 
 	offset = pdrv->data->offset_venc_if[pdrv->index];
-
-	struct reg_name_set_s reg_table[] = {
-		{offset + VBO_STATUS_L,        "VX1_STATUS"},
-		{offset + VBO_CTRL_L,          "VBO_CTRL_L"},
-		{offset + VBO_GCLK_MAIN,       "VBO_GCLK_MAIN"},
-		{offset + VBO_FSM_HOLDER_L,    "VBO_FSM_HOLDER_L"},
-		{offset + VBO_FSM_HOLDER_H,    "VX1_FSM_HOLDER_H"},
-		{offset + VBO_INTR_STATE_CTRL, "VX1_INTR_STATE_CTRL"},
-		{offset + VBO_INTR_UNMASK,     "VX1_INTR_UNMASK"},
-		{offset + VBO_INTR_STATE,      "VX1_INTR_STATE"},
-		{offset + VBO_INSGN_CTRL,      "VBO_INSGN_CTRL"},
-		{offset + LCD_PORT_SWAP,       "LCD_PORT_SWAP"},
-	};
+	switch (pdrv->data->chip_type) {
+	case LCD_CHIP_T3X:
+	case LCD_CHIP_T6X:
+		regtbl = vx1_table_t3x_t6x;
+		reg_cnt = ARRAY_SIZE(vx1_table_t3x_t6x);
+		base_addr = 0xff800000;
+		break;
+	default:
+		regtbl = vx1_table;
+		reg_cnt = ARRAY_SIZE(vx1_table);
+		base_addr = 0;
+	}
 
 	printf("\nvbyone registers:\n");
-	str_add_reg_sets(pdrv, LCD_REG_DBG_VC_BUS, 0, reg_table, ARRAY_SIZE(reg_table));
+	if (base_addr)
+		for (i = 0; i < reg_cnt; i++)
+			printf("%s-[0x%08x][0x%04x] = 0x%08x\n", regtbl[i].name, regtbl[i].reg,
+				(regtbl[i].reg - base_addr) >> 2, lcd_vcbus_read(regtbl[i].reg));
+	else
+		for (i = 0; i < reg_cnt; i++)
+			printf("%s-[0x%08x] = 0x%08x\n", regtbl[i].name, regtbl[i].reg,
+				lcd_vcbus_read(regtbl[i].reg));
 }
+
 #endif
 
 #ifdef CONFIG_AML_LCD_TCON
@@ -417,7 +470,7 @@ static void lcd_reg_print_tcon(struct aml_lcd_drv_s *pdrv)
 #ifdef CONFIG_AML_LCD_MIPI_DSI
 static void lcd_reg_print_mipi(struct aml_lcd_drv_s *pdrv)
 {
-	struct reg_name_set_s reg_table[] = {
+	struct reg_name_set_s host_reg_table[] = {
 		{MIPI_DSI_TOP_CNTL,            "TOP_CNTL"},
 		{MIPI_DSI_TOP_CLK_CNTL,        "TOP_CLK_CNTL"},
 		{MIPI_DSI_TOP_MEAS_CNTL,       "TOP_MEAS_CNTL"},
@@ -437,11 +490,11 @@ static void lcd_reg_print_mipi(struct aml_lcd_drv_s *pdrv)
 		{MIPI_DSI_DWC_VID_HSA_TIME_OS,      "VID_HSA_TIME"},
 		{MIPI_DSI_DWC_VID_HBP_TIME_OS,      "VID_HBP_TIME"},
 		{MIPI_DSI_DWC_VID_HLINE_TIME_OS,    "VID_HLINE_TIME"},
-		// {MIPI_DSI_DWC_VID_VSA_LINES_OS,     "VID_VSA_LINES"},
-		// {MIPI_DSI_DWC_VID_VBP_LINES_OS,     "VID_VBP_LINES"},
-		// {MIPI_DSI_DWC_VID_VFP_LINES_OS,     "VID_VFP_LINES"},
-		// {MIPI_DSI_DWC_VID_VACTIVE_LINES_OS, "VID_VACTIVE_LINES"},
-		// {MIPI_DSI_DWC_EDPI_CMD_SIZE_OS,     "EDPI_CMD_SIZE"},
+		{MIPI_DSI_DWC_VID_VSA_LINES_OS,     "VID_VSA_LINES"},
+		{MIPI_DSI_DWC_VID_VBP_LINES_OS,     "VID_VBP_LINES"},
+		{MIPI_DSI_DWC_VID_VFP_LINES_OS,     "VID_VFP_LINES"},
+		{MIPI_DSI_DWC_VID_VACTIVE_LINES_OS, "VID_VACTIVE_LINES"},
+		{MIPI_DSI_DWC_EDPI_CMD_SIZE_OS,     "EDPI_CMD_SIZE"},
 		{MIPI_DSI_DWC_CMD_MODE_CFG_OS,      "CMD_MODE_CFG"},
 		{MIPI_DSI_DWC_PHY_TMR_LPCLK_CFG_OS, "PHY_TMR_LPCLK_CFG"},
 		{MIPI_DSI_DWC_PHY_TMR_CFG_OS,       "PHY_TMR_CFG"},
@@ -449,9 +502,30 @@ static void lcd_reg_print_mipi(struct aml_lcd_drv_s *pdrv)
 		{MIPI_DSI_DWC_INT_ST0_OS,           "INT_ST0"},
 		{MIPI_DSI_DWC_INT_ST1_OS,           "INT_ST1"},
 	};
+	struct reg_name_set_s dsi_dphy_reg_table[] = {
+		{MIPI_DSI_PHY_CTRL,     "PHY_CTRL"},
+		{MIPI_DSI_CHAN_CTRL,    "CHAN_CTRL"},
+		{MIPI_DSI_CHAN_STS,     "CHAN_STS"},
+		{MIPI_DSI_CLK_TIM,      "CLK_TIM"},
+		{MIPI_DSI_HS_TIM,       "HS_TIM"},
+		{MIPI_DSI_LP_TIM,       "LP_TIM"},
+		{MIPI_DSI_INIT_TIM,     "INIT_TIM"},
+		{MIPI_DSI_WAKEUP_TIM,   "WAKEUP_TIM"},
+		{MIPI_DSI_LPOK_TIM,     "LPOK_TIM"},
+		{MIPI_DSI_LP_WCHDOG,    "LP_WCHDOG"},
+		{MIPI_DSI_ANA_CTRL,     "ANA_CTRL"},
+		{MIPI_DSI_CLK_TIM1,     "CLK_TIM1"},
+		{MIPI_DSI_TURN_WCHDOG,  "TURN_WCHDOG"},
+		{MIPI_DSI_ULPS_CHECK,   "ULPS_CHECK"},
+		{MIPI_DSI_TEST_CTRL0,   "TEST_CTRL0"},
+		{MIPI_DSI_TEST_CTRL1,   "TEST_CTRL1"},
+	};
 
 	printf("\nmipi_dsi registers:\n");
-	str_add_reg_sets(pdrv, LCD_REG_DBG_MIPIHOST_BUS, 0, reg_table, ARRAY_SIZE(reg_table));
+	str_add_reg_sets(pdrv, LCD_REG_DBG_MIPIHOST_BUS, 0,
+		host_reg_table, ARRAY_SIZE(host_reg_table));
+	str_add_reg_sets(pdrv, LCD_REG_DBG_MIPIHOST_BUS, 0,
+		dsi_dphy_reg_table, ARRAY_SIZE(dsi_dphy_reg_table));
 }
 #endif
 
@@ -466,7 +540,7 @@ void lcd_info_print(struct aml_lcd_drv_s *pdrv)
 	LCDPR("config_check_glb: %d, config_check_para: 0x%x, config_check_en: %d\n",
 		pdrv->config_check_glb, pconf->basic.config_check, pdrv->config_check_en);
 	LCDPR("key_valid: %d\n", pdrv->key_valid);
-	LCDPR("custom_pinmux: %d\n", pconf->custom_pinmux);
+	LCDPR("custom_pinmux: %s\n", pconf->cus_pinmux_name);
 	LCDPR("mode: %s, status: %d\n",
 	      lcd_mode_mode_to_str(pdrv->mode), pdrv->status);
 

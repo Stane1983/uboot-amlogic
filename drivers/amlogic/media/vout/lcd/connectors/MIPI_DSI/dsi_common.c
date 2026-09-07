@@ -46,10 +46,10 @@ char *dsi_video_data_type_table[] = {
 	"unsupport type",
 };
 
-void dsi_config_print_helper(struct lcd_config_s *pconf, u8 pr_flag)
+void dsi_config_print_helper(struct lcd_config_s *pconf, uint8_t pr_flag)
 {
 	struct dsi_config_s *dconf = &pconf->control.mipi_cfg;
-	u32 esc_clk;
+	uint32_t esc_clk;
 
 	if (pr_flag & DSI_HOST_CFG_PR_BASIC) {
 		printf("MIPI DSI Config:\n"
@@ -160,12 +160,12 @@ void dsi_config_print_helper(struct lcd_config_s *pconf, u8 pr_flag)
 	}
 }
 
-void dsi_table_load_dts(char *propdata, u8 *table, u16 max_len)
+void dsi_table_load_dts(char *propdata, uint8_t *table, uint16_t max_len)
 {
-	u16 i;
+	uint16_t i;
 
 	for (i = 0; i < max_len; i++)
-		table[i] = (u8)(be32_to_cpup((((u32 *)propdata) + i)));
+		table[i] = (uint8_t)(be32_to_cpup((((uint32_t *)propdata) + i)));
 }
 
 void lcd_dsi_init_table_load_dts(char *dtaddr, int nodeoffset, struct dsi_config_s *dconf)
@@ -200,7 +200,7 @@ void lcd_dsi_init_table_load_dts(char *dtaddr, int nodeoffset, struct dsi_config
 			continue;
 		}
 
-		*dsi_table[i].table_addr_addr = (u8 *)malloc(sizeof(u8) * node_len + 2);
+		*dsi_table[i].table_addr_addr = (uint8_t *)malloc(sizeof(uint8_t) * node_len + 2);
 		if (!(*dsi_table[i].table_addr_addr)) {
 			LCDERR("[*]: %s: %s table[%d] malloc failed\n", __func__,
 				dsi_table[i].name, node_len);
@@ -222,23 +222,23 @@ void lcd_dsi_init_table_load_dts(char *dtaddr, int nodeoffset, struct dsi_config
 static void dsi_req_print(int ret, struct dsi_cmd_req_s *req)
 {
 	char *_str;
-	u32 n, k;
+	uint32_t n, k;
 
-	u8 is_DCS =
+	uint8_t is_DCS =
 		req->data_type == DT_DCS_LONG_WR ||
 		req->data_type == DT_DCS_SHORT_WR_0 ||
 		req->data_type == DT_DCS_SHORT_WR_1 ||
 		req->data_type == DT_DCS_RD_0;
-	u8 is_read =
+	uint8_t is_read =
 		req->data_type == DT_GEN_RD_0 ||
 		req->data_type == DT_GEN_RD_1 ||
 		req->data_type == DT_GEN_RD_2 ||
 		req->data_type == DT_DCS_RD_0;
-	u8 is_long =
+	uint8_t is_long =
 		req->data_type == DT_DCS_LONG_WR ||
 		req->data_type == DT_GEN_LONG_WR;
 	//DCS_LONG_WR:0x29, GEN_LONG_WR:0x39
-	u8 num = (req->data_type & 0xf) == 0x9 ? 3 : (req->data_type >> 4) & 0xf;
+	uint8_t num = (req->data_type & 0xf) == 0x9 ? 3 : (req->data_type >> 4) & 0xf;
 
 	_str = malloc(PR_BUF_MAX * sizeof(char));
 	if (!_str) {
@@ -271,9 +271,9 @@ static void dsi_req_print(int ret, struct dsi_cmd_req_s *req)
 }
 
 /* helper func to check req->pld_count satisfied req->data_type and return req->payload[pld_idx] */
-static u32 cmd_pld_cnt_check(struct aml_lcd_drv_s *pdrv, struct dsi_cmd_req_s *req)
+static uint32_t cmd_pld_cnt_check(struct aml_lcd_drv_s *pdrv, struct dsi_cmd_req_s *req)
 {
-	u8 pld_req = 0;
+	uint8_t pld_req = 0;
 
 	switch (req->data_type) {
 	case DT_GEN_SHORT_WR_2:
@@ -323,8 +323,8 @@ int dsi_run_oneline_cmd(struct aml_lcd_drv_s *pdrv, uint8_t port,
 			uint8_t *payload, uint8_t *rd_back, uint32_t rd_back_len)
 {
 	struct dsi_cmd_req_s dsi_cmd_req;
-	u8 is_rd = 0;
-	u16 dsi_rd_len = 0;
+	uint8_t is_rd = 0;
+	uint16_t dsi_rd_len = 0;
 	int ret = 0;
 
 	/* @payload:
@@ -371,7 +371,7 @@ int dsi_run_oneline_cmd(struct aml_lcd_drv_s *pdrv, uint8_t port,
 	case DT_SET_MAX_RET_PKT_SIZE:
 		dsi_cmd_req.req_ack = ACK_CTRL_SET_MAX_RET_PKT_SIZE;
 		dsi_rd_len  = dsi_cmd_req.payload[0];
-		dsi_rd_len |= (u16)dsi_cmd_req.payload[1] << 8;
+		dsi_rd_len |= (uint16_t)dsi_cmd_req.payload[1] << 8;
 		pdrv->config.control.mipi_cfg.dsi_rd_n = dsi_rd_len;
 		// DSI_RD_MAX default size is 4, if any read will return size over 4,
 		// enlarge DSI_RD_MAX, each req will malloc such mem.
@@ -413,13 +413,13 @@ int dsi_run_oneline_cmd(struct aml_lcd_drv_s *pdrv, uint8_t port,
 }
 
 int dsi_exec_init_table(struct aml_lcd_drv_s *pdrv,
-			u8 *payload, u32 pld_limit, u8 *rd_back, u32 rd_back_max)
+		uint8_t *payload, uint32_t pld_limit, uint8_t *rd_back, uint32_t rd_back_max)
 {
-	u16 i = 0, j = 0, step = 0;
-	u8 cmd_size, k;
+	uint16_t i = 0, j = 0, step = 0;
+	uint8_t cmd_size, k;
 	char *str;
-	u32 gpio, delay_ms;
-	u8 rd_cnt = 0, ret, curr_port = 0x01;
+	uint32_t gpio, delay_ms;
+	uint8_t rd_cnt = 0, ret, curr_port = 0x01;
 
 	/* mipi command(payload)
 	 * format:  data_type, cmd_size, data....
@@ -533,10 +533,10 @@ int dsi_exec_init_table(struct aml_lcd_drv_s *pdrv,
  * DT_DCS_RD_0, DT_GEN_RD_0, DT_GEN_RD_1, DT_GEN_RD_2,
  * Return: data count, -1 for error
  */
-int dsi_read(struct aml_lcd_drv_s *pdrv, u8 *payload, u8 *rd_data, u8 len)
+int dsi_read(struct aml_lcd_drv_s *pdrv, uint8_t *payload, uint8_t *rd_data, uint8_t len)
 {
 	int ret = -1;
-	u8 rd_out;
+	uint8_t rd_out;
 	struct dsi_cmd_req_s dsi_cmd_req;
 
 	dsi_cmd_req.data_type = payload[0];
@@ -633,7 +633,7 @@ static void dsi_panel_deinit(struct aml_lcd_drv_s *pdrv)
 #endif
 }
 
-void lcd_dsi_tx_ctrl(struct aml_lcd_drv_s *pdrv, u8 en)
+void lcd_dsi_tx_ctrl(struct aml_lcd_drv_s *pdrv, uint8_t en)
 {
 	if (en) {
 		lcd_dsi_if_bind(pdrv);
@@ -656,7 +656,7 @@ u64 lcd_dsi_get_min_bitrate(struct aml_lcd_drv_s *pdrv)
 {
 	struct dsi_config_s *dconf = &pdrv->config.control.mipi_cfg;
 	u64 bit_rate_min, band_width;
-	u8 port_cnt = dconf->multi_port_cfg & BIT(0) ? 2 : 1;
+	uint8_t port_cnt = dconf->multi_port_cfg & BIT(0) ? 2 : 1;
 
 	/* unit in kHz for calculation */
 	band_width = pdrv->config.timing.dft_timing->pixel_clk;

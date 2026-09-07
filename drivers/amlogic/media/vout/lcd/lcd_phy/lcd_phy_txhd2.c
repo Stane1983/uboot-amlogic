@@ -222,6 +222,11 @@ static void lcd_phy_glb_param_dft_txhd2(struct aml_lcd_drv_s *pdrv)
 	phy->odt = 0x0;
 }
 
+static unsigned char lcd_phy_lane_pn_swap_def(struct aml_lcd_drv_s *pdrv, unsigned int lane)
+{
+	return 0;
+}
+
 static struct lcd_phy_ctrl_s lcd_phy_ctrl_txhd2 = {
 	.lane_num = 10,
 
@@ -229,6 +234,7 @@ static struct lcd_phy_ctrl_s lcd_phy_ctrl_txhd2 = {
 	.phy_preem_level_to_val = lcd_phy_preem_level_to_val_txhd2,
 	.phy_amp_dft_val = lcd_phy_amp_dft_txhd2,
 	.phy_lane_phase_sel_def = NULL,
+	.phy_lane_pn_swap_dft = lcd_phy_lane_pn_swap_def,
 	.phy_glb_param_dft_val = lcd_phy_glb_param_dft_txhd2,
 	.phy_param_get = lcd_phy_param_get_from_reg,
 	.phy_reg_dump = lcd_phy_reg_dump,

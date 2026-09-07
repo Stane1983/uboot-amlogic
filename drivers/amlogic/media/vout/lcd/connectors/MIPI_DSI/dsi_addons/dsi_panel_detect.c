@@ -46,8 +46,8 @@ static void dsi_panel_detect_envset(struct aml_lcd_drv_s *pdrv)
 static void dsi_panel_try_match_dts(struct aml_lcd_drv_s *pdrv)
 {
 	int offset, rd_len = 0;
-	u8 t, k, match_len = 0;
-	u8 *_init_table = NULL, *_match_seq = NULL, *_rd_seq = NULL;
+	uint8_t t, k, match_len = 0;
+	uint8_t *_init_table = NULL, *_match_seq = NULL, *_rd_seq = NULL;
 	struct dsi_config_s *dconf = &pdrv->config.control.mipi_cfg;
 	int len_p;
 	char *dt_addr;
@@ -68,9 +68,9 @@ static void dsi_panel_try_match_dts(struct aml_lcd_drv_s *pdrv)
 	if (offset < 0)
 		return;
 
-	_init_table = (u8 *)malloc(sizeof(u8) * DSI_DET_TABLE_MAX);
-	_rd_seq     = (u8 *)malloc(sizeof(u8) * DSI_DET_SEQ_MAX);
-	_match_seq  = (u8 *)malloc(sizeof(u8) * DSI_DET_SEQ_MAX);
+	_init_table = (uint8_t *)malloc(sizeof(uint8_t) * DSI_DET_TABLE_MAX);
+	_rd_seq     = (uint8_t *)malloc(sizeof(uint8_t) * DSI_DET_SEQ_MAX);
+	_match_seq  = (uint8_t *)malloc(sizeof(uint8_t) * DSI_DET_SEQ_MAX);
 	if (!_init_table || !_rd_seq || !_init_table) {
 		free(_init_table);
 		free(_rd_seq);
@@ -105,15 +105,15 @@ static void dsi_panel_try_match_dts(struct aml_lcd_drv_s *pdrv)
 		// copy out target panel and seq
 		memset(dconf->matched_panel, 0, sizeof(unsigned char) * MOD_LEN_MAX);
 		strncpy(dconf->matched_panel, type_propdata, MOD_LEN_MAX - 1);
-		memset(_match_seq, 0, sizeof(u8) * DSI_DET_SEQ_MAX);
-		match_len = (u8)(be32_to_cpup((u32 *)seq_propdata));
+		memset(_match_seq, 0, sizeof(uint8_t) * DSI_DET_SEQ_MAX);
+		match_len = (uint8_t)(be32_to_cpup((uint32_t *)seq_propdata));
 		match_len = (match_len > DSI_DET_SEQ_MAX) ? DSI_DET_SEQ_MAX : match_len;
 		for (k = 0; k <= match_len; k++)
-			_match_seq[k] = (u8)(be32_to_cpup((u32 *)seq_propdata + k + 1));
+			_match_seq[k] = (uint8_t)(be32_to_cpup((uint32_t *)seq_propdata + k + 1));
 
 		if (table_propdata) { // if no table, keep last read result, only update _rd_seq
-			memset(_init_table, 0, sizeof(u8) * DSI_DET_TABLE_MAX);
-			memset(_rd_seq,     0, sizeof(u8) * DSI_DET_SEQ_MAX);
+			memset(_init_table, 0, sizeof(uint8_t) * DSI_DET_TABLE_MAX);
+			memset(_rd_seq,     0, sizeof(uint8_t) * DSI_DET_SEQ_MAX);
 
 			dsi_table_load_dts(table_propdata, _init_table, len_p / 4);
 			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
@@ -170,7 +170,7 @@ static void dsi_panel_try_match_dts(struct aml_lcd_drv_s *pdrv)
 static void dsi_panel_detect_drv_config_reload(struct aml_lcd_drv_s *pdrv)
 {
 	char fake_mode[7];
-	u8 load_id_temp;
+	uint8_t load_id_temp;
 	unsigned char *dt_addr_temp;
 
 	sprintf(fake_mode, "panel");
@@ -189,7 +189,7 @@ static void dsi_panel_detect_drv_config_reload(struct aml_lcd_drv_s *pdrv)
 		LCDERR("[%d]: %s: load panel failed\n", pdrv->index, __func__);
 		return;
 	}
-	lcd_panel_config_load_to_drv(pdrv);
+	lcd_init_config_to_drv(pdrv);
 
 #ifdef CONFIG_AML_LCD_BACKLIGHT
 	aml_bl_reprobe_single(pdrv->index, dt_addr_temp, load_id_temp);

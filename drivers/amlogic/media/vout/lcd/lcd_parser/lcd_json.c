@@ -81,9 +81,10 @@ handle_panel_misc_next:
 
 struct json_parse_s *panel_json_parse(int index)
 {
-	struct json_parse_s *jsp;
-	const char *file_name;
-	int file_size = 0;
+	struct json_parse_s *jsp, *jsp_bl;
+	struct json_s *dst_bl, *src_bl;
+	const char *file_name, *bl_name;
+	int file_size = 0, bl_size, ret;
 	unsigned char *tmp_buf;
 
 	file_name = get_panel_file_path(index);
@@ -106,7 +107,6 @@ struct json_parse_s *panel_json_parse(int index)
 	tmp_buf = model_read_file_to_buffer(file_name, &file_size);
 	if (!tmp_buf)
 		goto panel_json_parse_err;
-
 	if (!json_parse(jsp, (char *)tmp_buf, file_size)) {
 		json_deinit(jsp);
 		jsp->status = JSON_STATUS_ERROR;
@@ -116,7 +116,45 @@ struct json_parse_s *panel_json_parse(int index)
 
 	memset((void *)tmp_buf, 0, file_size);
 	free(tmp_buf);
+	tmp_buf = NULL;
 
+	bl_name = get_bl_file_path(index);
+	if (bl_name && get_bl_panel_file_type(index) == PANEL_FILE_JSON) {
+		tmp_buf = model_read_file_to_buffer(bl_name, &bl_size);
+		LCDPR("bl_file:%s load %s\n", bl_name, tmp_buf ? "succeed" : "fail");
+		if (tmp_buf) {
+			jsp_bl = (struct json_parse_s *)malloc(sizeof(struct json_parse_s));
+			if (!jsp_bl) {
+				LCDERR("%s: malloc jsp_bl failed\n", __func__);
+				goto panel_json_panel_done;
+			}
+			if (json_init(jsp_bl, JSON_STR_MAX, JSON_NODE_MAX) < 0) {
+				json_deinit(jsp_bl);
+				jsp_bl->status = JSON_STATUS_ERROR;
+				LCDERR("%s jsp_bl init failed\n", __func__);
+				goto panel_json_panel_done;
+			}
+			if (!json_parse(jsp_bl, (char *)tmp_buf, bl_size)) {
+				jsp_bl->status = JSON_STATUS_ERROR;
+				LCDERR("%s jsp_bl parse failed\n", __func__);
+			} else {
+				ret = -1;
+				src_bl = json_get_object_child(jsp_bl, jsp_bl->root, "backlight");
+				if (src_bl) {
+					dst_bl = json_create_object_child(jsp, jsp->root,
+						"backlight", src_bl->type);
+					ret = json_copy(jsp, dst_bl, jsp_bl, src_bl);
+				}
+				LCDPR("copy backlight to panel %s\n", ret ? "fail" : "ok");
+			}
+			json_deinit(jsp_bl);
+		}
+	}
+panel_json_panel_done:
+	if (tmp_buf) {
+		memset((void *)tmp_buf, 0, bl_size);
+		free(tmp_buf);
+	}
 	jsp->status = JSON_STATUS_OK;
 	set_panel_jsp(index, jsp);
 

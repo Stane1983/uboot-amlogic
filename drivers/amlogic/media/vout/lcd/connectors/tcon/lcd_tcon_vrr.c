@@ -36,6 +36,8 @@ void tcon_fr_detect_config(struct aml_lcd_drv_s *pdrv, unsigned int mode,
 	for (i = 0; i < num_level; i++) {
 		vt = pclk / ht / fr_levels[i];
 		levels[i] = vt - nvfp - 1; //vfp
+		if (levels[i] > 0x1fff) // 13bit limited
+			levels[i] = 0x1fff;
 	}
 
 	lcd_tcon_setb(0x232, mode, 14, 1);//0=normal mode, calculate frame rate and trig intr

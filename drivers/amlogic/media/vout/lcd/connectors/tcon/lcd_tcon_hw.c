@@ -90,6 +90,7 @@ void tcon_lut_dma_deinit(struct aml_lcd_drv_s *pdrv, struct lcd_tcon_dma_ops_s *
 	case LCD_CHIP_T5M:
 	case LCD_CHIP_T3X:
 	case LCD_CHIP_T6W:
+	case LCD_CHIP_T6X:
 		lcd_tcon_setb(0x367, 0, 16, 1); // disable tcon intr
 		lcd_tcon_setb(0x207, 0, 31, 1); // disable dma clk
 		break;
@@ -376,7 +377,7 @@ static void lcd_tcon_core_reg_set(struct aml_lcd_drv_s *pdrv,
 	struct lcd_tcon_reg_block_info_s *reg_info = NULL;
 	unsigned char *table8;
 	unsigned int *table32;
-	unsigned int len, offset;
+	unsigned int len, offset, p2p_type, cspi_alpha;
 	int i, j, ret;
 
 	if (!tcon_conf || !mm_table || !core_reg_info) {

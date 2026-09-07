@@ -161,14 +161,14 @@ enum dsi_vid_type_e {
 /* 5*lpx */
 #define DPHY_TIME_LP_TA_GETX(ui)  (5 * DPHY_TIME_LP_LPX(ui))
 /* >100ns */
-#define DPHY_TIME_HS_EXIT(ui)     (120 * 100)
+#define DPHY_TIME_HS_EXIT(ui)     (150 * 100)
 /* > max(8*ui, 60+4*ui) */
 /* T-EOT < (105 + 12*UI) */
-#define DPHY_TIME_HS_TRAIL(ui)    (80 * 100 + 8 * (ui))
+#define DPHY_TIME_HS_TRAIL(ui)    (80 * 100 + 10 * (ui))
 /* (40+4*ui, 85+6*ui) */
 #define DPHY_TIME_HS_PREPARE(ui)  (65 * 100 + 5 * (ui))
 /* hs_prepare+hs_zero >145+10*ui */
-#define DPHY_TIME_HS_ZERO(ui)     (120 * 100 + 5 * (ui))
+#define DPHY_TIME_HS_ZERO(ui)     (120 * 100 + 8 * (ui))
 /* >60ns */
 /* T-EOT < (105 + 12*UI) */
 #define DPHY_TIME_CLK_TRAIL(ui)   (80 * 100)
@@ -177,7 +177,7 @@ enum dsi_vid_type_e {
 /* (38, 95) */
 #define DPHY_TIME_CLK_PREPARE(ui) (60 * 100)
 /* clk_prepare+clk_zero > 300 */
-#define DPHY_TIME_CLK_ZERO(ui)    (300 * 100)
+#define DPHY_TIME_CLK_ZERO(ui)    (320 * 100)
 /* >8*ui */
 #define DPHY_TIME_CLK_PRE(ui)     (12 * (ui))
 /* >100us */
@@ -192,14 +192,14 @@ enum dsi_vid_type_e {
 #define DSI_HOST_CFG_PR_DPHY_TIM   BIT(4)
 void dsi_config_print_helper(struct lcd_config_s *pconf, uint8_t pr_flag);
 
-void dsi_table_print(uint8_t *dsi_table, u16 n_max);
+void dsi_table_print(uint8_t *dsi_table, uint16_t n_max);
 void dsi_init_table_print(struct dsi_config_s *dconf);
 int dsi_run_oneline_cmd(struct aml_lcd_drv_s *pdrv, uint8_t port, uint8_t *payload,
 			uint8_t *rd_back, uint32_t rd_back_len);
-void dsi_table_load_dts(char *propdata, uint8_t *table, u16 max_len);
+void dsi_table_load_dts(char *propdata, uint8_t *table, uint16_t max_len);
 int dsi_read(struct aml_lcd_drv_s *pdrv, uint8_t *payload, uint8_t *rd_data, uint8_t rd_byte_len);
 int dsi_exec_init_table(struct aml_lcd_drv_s *pdrv,
-			uint8_t *payload, u32 pld_limit, uint8_t *rd_back, u32 rd_back_max);
+		uint8_t *payload, uint32_t pld_limit, uint8_t *rd_back, uint32_t rd_back_max);
 void dsi_panel_detect(struct aml_lcd_drv_s *pdrv);
 
 /* DSI setting */

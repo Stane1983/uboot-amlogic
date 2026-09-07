@@ -9,6 +9,7 @@
 #include <asm/amlogic/arch/gpio.h>
 #include <fdtdec.h>
 #include <linux/dma-mapping.h>
+#include <amlogic/media/vout/lcd/lcd_vout.h>
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include <amlogic/media/vout/lcd/lcd_memory.h>
 #include <amlogic/media/vout/lcd/aml_bl.h>
@@ -45,19 +46,13 @@ void ldim_abcon_hw_reset(void)
 //todo: consider boost mode, glb cur or local cur
 void ldim_abcon_swduty_set(struct aml_ldim_driver_s *ldim_drv)
 {
-	struct ldim_dev_driver_s *dev_drv = ldim_drv->dev_drv;
 	unsigned short *bl_matrix = ldim_drv->bl_matrix;
 	unsigned char *buf, *p;
 	unsigned int fid;
 	unsigned int row, col, n, zone_num, index;
 	unsigned int temp = 0;
 	int i, j, k, m, ext;
-	unsigned int rowbuf;
-
-	if (!dev_drv) {
-		ABCONERR("%s: dev_drv buf is null\n", __func__);
-		return;
-	}
+	unsigned int rowbuf, duty_size;
 
 	if (!bl_matrix) {
 		ABCONERR("%s: bl_matrix buf is null\n", __func__);
@@ -68,14 +63,22 @@ void ldim_abcon_swduty_set(struct aml_ldim_driver_s *ldim_drv)
 		return;
 	}
 
+	if (abcon->chip_type == ABCON_CHIP_T6W) {
+		rowbuf = 0x100; //256 Bytes(16*128bit) per row as t3x
+		duty_size = LDC_DUTY_SIZE_T6W;
+	} else {
+		rowbuf = 0x100; //256 Bytes(16*128bit) per row as t3x
+		duty_size = LDC_DUTY_SIZE_T6X;
+	}
+
 	abcon_mem.swduty_fid = 0;//always set 0 for test
 	fid = abcon_mem.swduty_fid;
-	buf = (unsigned char *)(abcon_mem.swduty + (LDC_DUTY_SIZE * fid >> 2));
+	buf = (unsigned char *)(abcon_mem.swduty + (duty_size * fid >> 2));
+	invalidate_dcache_range((unsigned long)buf, (unsigned long)(buf + duty_size));
 
-	row = dev_drv->bl_row;
-	col = dev_drv->bl_col;
+	row = abcon->seg_row;
+	col = abcon->seg_col;
 	zone_num = row * col;
-	rowbuf = 0x100; //256 Bytes(16*128bit) per row as t3x
 
 	n = 3; /* 3bytes 2 seg */
 	for (i = 0; i < row; i++) {
@@ -96,11 +99,16 @@ void ldim_abcon_swduty_set(struct aml_ldim_driver_s *ldim_drv)
 
 	//reg_abcon_ldc_gen_duty_zone
 	abcon_wr_reg_bits(0x2c, fid, 30, 2);
-	//invalidate_dcache_range((unsigned long)buf,
-	//	(unsigned long)(buf + LDC_DUTY_SIZE));
-	//flush_cache((unsigned long)abcon_mem.swduty, LDC_DUTY_SIZE);
-	flush_dcache_range((unsigned long)abcon_mem.swduty,
-		(unsigned long)(abcon_mem.swduty + LDC_DUTY_SIZE));
+	flush_cache((unsigned long)abcon_mem.swduty, duty_size);
+
+	if (abcon->chip_type == ABCON_CHIP_DEF) {
+		udelay(100);
+		//reg_abcon_load_ldc_duty_start
+		abcon_wr_reg_bits(0x00, 1, 2, 1);
+		udelay(1);
+		abcon_wr_reg_bits(0x00, 0, 2, 1);
+		udelay(100);
+	}
 
 	temp = abcon->conf.init_dc & 0x3ff;
 	//reg_abcon_dc_ldc_glb_apl
@@ -109,9 +117,26 @@ void ldim_abcon_swduty_set(struct aml_ldim_driver_s *ldim_drv)
 
 int ldim_abcon_mem_init(void)
 {
-	unsigned int size = ABCON_OFFSET_END;
-	unsigned int *vaddr;
 	phys_addr_t paddr;
+	unsigned int *vaddr;
+	unsigned int size;
+	unsigned int ch_offset, ldc_seg_offset, sw_duty_offset, wseg_offset, rseg_offset;
+
+	if (abcon->chip_type == ABCON_CHIP_T6W) {
+		size = ABCON_OFFSET_END_T6W;
+		ch_offset = CH_MAPPING_OFFSET_T6W;
+		ldc_seg_offset = LDC_SEG_OFFSET_T6W;
+		sw_duty_offset = SW_DUTY_OFFSET_T6W;
+		wseg_offset = WSEG_OFFSET_T6W;
+		rseg_offset = RSEG_OFFSET_T6W;
+	} else {
+		size = ABCON_OFFSET_END_T6X;
+		ch_offset = CH_MAPPING_OFFSET_T6X;
+		ldc_seg_offset = LDC_SEG_OFFSET_T6X;
+		sw_duty_offset = SW_DUTY_OFFSET_T6X;
+		wseg_offset = WSEG_OFFSET_T6X;
+		rseg_offset = RSEG_OFFSET_T6X;
+	}
 
 	//vaddr = dma_alloc_coherent(size, (unsigned long *)&paddr);
 	vaddr = (unsigned int *)malloc(size);
@@ -126,17 +151,17 @@ int ldim_abcon_mem_init(void)
 	abcon_mem.base_paddr = paddr;
 	abcon_mem.base_vaddr = vaddr;
 
-	abcon_mem.ch_mapping_paddr = abcon_mem.base_paddr + CH_MAPPING_OFFSET;
-	abcon_mem.ldc_seg_paddr = abcon_mem.base_paddr + LDC_SEG_OFFSET;
-	abcon_mem.swduty_paddr = abcon_mem.base_paddr + SW_DUTY_OFFSET;
-	abcon_mem.wseg_paddr = abcon_mem.base_paddr + WSEG_OFFSET;
-	abcon_mem.rseg_paddr = abcon_mem.base_paddr + RSEG_OFFSET;
+	abcon_mem.ch_mapping_paddr = abcon_mem.base_paddr + ch_offset;
+	abcon_mem.ldc_seg_paddr = abcon_mem.base_paddr + ldc_seg_offset;
+	abcon_mem.swduty_paddr = abcon_mem.base_paddr + sw_duty_offset;
+	abcon_mem.wseg_paddr = abcon_mem.base_paddr + wseg_offset;
+	abcon_mem.rseg_paddr = abcon_mem.base_paddr + rseg_offset;
 
 	abcon_mem.ch_mapping = abcon_mem.base_vaddr;
-	abcon_mem.ldc_seg = abcon_mem.base_vaddr + LDC_SEG_OFFSET / 4;
-	abcon_mem.swduty = abcon_mem.base_vaddr + SW_DUTY_OFFSET / 4;
-	abcon_mem.wseg = abcon_mem.base_vaddr + WSEG_OFFSET / 4;
-	abcon_mem.rseg = abcon_mem.base_vaddr + RSEG_OFFSET / 4;
+	abcon_mem.ldc_seg = abcon_mem.base_vaddr + ldc_seg_offset / 4;
+	abcon_mem.swduty = abcon_mem.base_vaddr + sw_duty_offset / 4;
+	abcon_mem.wseg = abcon_mem.base_vaddr + wseg_offset / 4;
+	abcon_mem.rseg = abcon_mem.base_vaddr + rseg_offset / 4;
 	abcon_mem.swduty_fid = 0;
 
 	ABCONPR("abcon_base paddr=0x%x, total size=0x%x\n"
@@ -238,7 +263,7 @@ void ldim_abcon_set_gpio(struct abcon_s *abcon)
 void ldim_abcon_set_channel(struct abcon_s *abcon)
 {
 	unsigned char temp = 0;
-	
+
 	if (abcon->chip_type == ABCON_CHIP_T6W) {
 		//reg_abcon_abcon_total_chnl_num
 		abcon_wr_reg_bits(0x05, abcon->tot_ch_num, 0, 13);
@@ -309,6 +334,14 @@ void ldim_abcon_init_common_registers(struct abcon_s *abcon)
 	//rdmif little endian
 	abcon_wr_reg(0x20, 0x00000040);
 
+	if (abcon->chip_type == ABCON_CHIP_DEF) {
+		//reg_abcon_duty_row_num
+		abcon_wr_reg_bits(0x36, abcon->seg_row, 0, 7);
+		//reg_abcon_duty_col_num
+		abcon_wr_reg_bits(0x36, abcon->seg_col, 7, 7);
+		//reg_abcon_bypass_dimming_format
+		abcon_wr_reg_bits(0x29, 1, 14, 1);
+	}
 	//reg_abcon_manu_num
 	abcon_wr_reg_bits(0x03, abcon->conf.dev_type, 14, 4);
 
@@ -371,9 +404,11 @@ void ldim_abcon_load_ch_mapping(struct ldim_dev_driver_s *dev_drv, unsigned int 
 
 		udelay(1);
 
-		//reg_abcon_load_mapping_start
-		abcon_wr_reg_bits(0x00, 1, 2, 1);
-		abcon_wr_reg_bits(0x00, 0, 2, 1);
+		if (abcon->chip_type == ABCON_CHIP_T6W) {
+			//reg_abcon_load_mapping_start
+			abcon_wr_reg_bits(0x00, 1, 2, 1);
+			abcon_wr_reg_bits(0x00, 0, 2, 1);
+		}
 		ABCONPR("abcon load ch mapping done, total size=0x%x\n", len);
 	}
 }
@@ -383,12 +418,23 @@ int ldim_abcon_dev_probe(struct ldim_dev_driver_s *dev_drv)
 	int ret = 0;
 	unsigned int temp = 0;
 	unsigned int i = 0;
+	struct aml_lcd_data_s *lcd_data = aml_lcd_get_data();
 
 	abcon = malloc(sizeof(struct abcon_s));
 	if (!abcon) {
 		LDIMERR("%s: abcon malloc failed\n", __func__);
 		return -1;
 	}
+
+	if (lcd_data->chip_type == LCD_CHIP_T6W)
+		abcon->chip_type = ABCON_CHIP_T6W;
+	else
+		abcon->chip_type = ABCON_CHIP_DEF;
+
+	abcon->seg_row = dev_drv->bl_row;
+	abcon->seg_col = dev_drv->bl_col;
+	ABCONPR("seg_row:col=%d:%d, chip_type=%d\n",
+		abcon->seg_row, abcon->seg_col, abcon->chip_type);
 
 	memcpy(&abcon->conf, &dev_drv->abcon_conf, sizeof(struct abcon_conf_s));
 	abcon->tot_ch_num = 0;

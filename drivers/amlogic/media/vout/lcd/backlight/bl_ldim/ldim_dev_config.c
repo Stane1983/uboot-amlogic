@@ -798,7 +798,7 @@ int ldim_dev_get_config_from_json(struct ldim_dev_driver_s *dev_drv)
 {
 	struct json_parse_s *jsp = get_panel_jsp(0);
 	struct json_s *parent, *child, *child2, *child3;
-	int i = 0, cnt, cnt_max, nums_size, data_cnt;
+	int i = 0, j = 0, cnt, cnt_max, nums_size, data_cnt;
 	const char *str = NULL;
 	struct ldim_spi_dev_info_s *spi_info;
 	struct abcon_conf_s *abcon_conf;
@@ -879,18 +879,18 @@ int ldim_dev_get_config_from_json(struct ldim_dev_driver_s *dev_drv)
 		abcon_conf->rx_clk = json_get_obj_u32(jsp, child, "rx_clk", 1000);
 		child2 = json_get_object_child(jsp, child, "gpio_o");
 		if (child2) {
-			for (i = 0; i < 2; i++)
+			for (i = 0; i < 3; i++)
 				abcon_conf->gpio_o[i] = json_get_arr_u32(jsp, child2, i, 0);
 		}
 		child2 = json_get_object_child(jsp, child, "gpio_i");
 		if (child2) {
-			for (i = 0; i < 2; i++)
+			for (i = 0; i < 3; i++)
 				abcon_conf->gpio_i[i] = json_get_arr_u32(jsp, child2, i, 0);
 		}
 		abcon_conf->dev_type = json_get_obj_u32(jsp, child, "dev_type", 0);
 		child2 = json_get_object_child(jsp, child, "chip_num");
 		if (child2) {
-			for (i = 0; i < 4; i++)
+			for (i = 0; i < 12; i++)
 				abcon_conf->chip_num[i] = json_get_arr_u32(jsp, child2, i, 0);
 		}
 		abcon_conf->idle_level = json_get_obj_u32(jsp, child, "idle_level", 0);
@@ -1007,12 +1007,36 @@ int ldim_dev_get_config_from_json(struct ldim_dev_driver_s *dev_drv)
 		LDIMPR("find custom ldim_zone_mapping_path:%s\n", str);
 		ret = ldim_dev_zone_mapping_load(dev_drv, str);
 		if (ret) {
+			if (dev_drv->type == LDIM_DEV_TYPE_ABCON) {
+				for (i = 0; i < dev_drv->zone_num; i = i + 4) {
+					dev_drv->bl_mapping[j] = (i & 0xfff) |
+					(((i + 1) & 0xf) << 12);
+					dev_drv->bl_mapping[j + 1] =
+					(((i + 1) >> 4) & 0xff) | (((i + 2) & 0xff) << 8);
+					dev_drv->bl_mapping[j + 2] =
+					(((i + 2) >> 8) & 0xf) | (((i + 3) & 0xfff) << 4);
+					j = j + 3;
+				}
+			} else {
+				for (i = 0; i < dev_drv->zone_num; i++)
+					dev_drv->bl_mapping[i] = (unsigned short)i;
+			}
+		}
+	} else {
+		if (dev_drv->type == LDIM_DEV_TYPE_ABCON) {
+			for (i = 0; i < dev_drv->zone_num; i = i + 4) {
+				dev_drv->bl_mapping[j] = (i & 0xfff) |
+				(((i + 1) & 0xf) << 12);
+				dev_drv->bl_mapping[j + 1] =
+				(((i + 1) >> 4) & 0xff) | (((i + 2) & 0xff) << 8);
+				dev_drv->bl_mapping[j + 2] =
+				(((i + 2) >> 8) & 0xf) | (((i + 3) & 0xfff) << 4);
+				j = j + 3;
+			}
+		} else {
 			for (i = 0; i < dev_drv->zone_num; i++)
 				dev_drv->bl_mapping[i] = (unsigned short)i;
 		}
-	} else {
-		for (i = 0; i < dev_drv->zone_num; i++)
-			dev_drv->bl_mapping[i] = (unsigned short)i;
 	}
 
 //custom_params

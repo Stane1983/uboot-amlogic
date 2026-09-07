@@ -106,13 +106,18 @@ static void lcd_bit_rate_match_phy(struct aml_lcd_drv_s *pdrv)
 
 	phy_cfg->act_phy = phy_cfg->phys[0];// if not matched, use default
 	bit_rate = lcd_do_div(pdrv->config.timing.bit_rate, 1000000);
-	for (i = 0; i < phy_cfg->group_num; i++) {
+	if (phy_cfg->phys[0]->phy_clk)
+		i = 0;
+	else
+		i = 1;
+	for (; i < phy_cfg->group_num; i++) {
 		phy = phy_cfg->phys[i];
-		if (phy->phy_clk < bit_rate - 20 || phy->phy_clk > bit_rate + 20)
+		if ((phy->phy_clk_min || phy->phy_clk_max) &&
+			(phy->phy_clk_min > bit_rate || phy->phy_clk_max < bit_rate))
 			continue;
-
 		phy_cfg->act_phy = phy_cfg->phys[i];
-		LCDPR("bit_rate=%d, match phy[%d]=%d\n", bit_rate, i, phy->phy_clk);
+		LCDPR("bit_rate=%d, match phy[%d]=%d phy_clk_range:%d~%d\n",
+			bit_rate, i, phy->phy_clk, phy->phy_clk_min, phy->phy_clk_max);
 		return;
 	}
 	if (phy_cfg->phys[0]->phy_clk) {
@@ -425,6 +430,11 @@ void lcd_clk_config_probe(struct aml_lcd_drv_s *pdrv)
 #if (IS_ENABLED(CONFIG_MESON_T6W))
 	case LCD_CHIP_T6W:
 		cconf = lcd_clk_config_chip_init_t6w(pdrv);
+		break;
+#endif
+#if (IS_ENABLED(CONFIG_MESON_T6X))
+	case LCD_CHIP_T6X:
+		cconf = lcd_clk_config_chip_init_t6x(pdrv);
 		break;
 #endif
 	default:

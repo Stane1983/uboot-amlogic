@@ -13,13 +13,13 @@
 
 #include "env.h"
 
-int mipi_dsi_check_state(struct aml_lcd_drv_s *pdrv, u8 reg, u8 cnt)
+int mipi_dsi_check_state(struct aml_lcd_drv_s *pdrv, uint8_t reg, uint8_t cnt)
 {
 	int ret = 0, i;
-	u8 *rd_data;
-	u8 payload[3] = {DT_GEN_RD_1, 1, 0x04};
+	uint8_t *rd_data;
+	uint8_t payload[3] = {DT_GEN_RD_1, 1, 0x04};
 	struct dsi_config_s *dconf;
-	u32 offset;
+	uint32_t offset;
 
 	dconf = &pdrv->config.control.mipi_cfg;
 	if (dconf->check_en == 0)
@@ -27,7 +27,7 @@ int mipi_dsi_check_state(struct aml_lcd_drv_s *pdrv, u8 reg, u8 cnt)
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("[%d]: %s\n", pdrv->index, __func__);
 
-	rd_data = (u8 *)malloc(sizeof(u8) * cnt);
+	rd_data = (uint8_t *)malloc(sizeof(uint8_t) * cnt);
 	if (!rd_data) {
 		LCDERR("[%d]: %s: rd_data malloc error\n", pdrv->index, __func__);
 		return 0;
@@ -68,7 +68,7 @@ mipi_dsi_check_state_err:
 void mipi_dsi_check_init(struct aml_lcd_drv_s *pdrv)
 {
 	struct dsi_config_s *dconf = &pdrv->config.control.mipi_cfg;
-	u32 status;
+	uint32_t status;
 
 	/* check_state */
 	if (dconf->check_en) {
