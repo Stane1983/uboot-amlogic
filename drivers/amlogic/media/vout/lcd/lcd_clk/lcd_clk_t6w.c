@@ -13,7 +13,11 @@
 #include "lcd_clk_ctrl.h"
 #include "lcd_clk_utils.h"
 
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 #if defined(CONFIG_MESON_T6W)
+========
+#if defined(CONFIG_MESON_T6D)
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 
 static unsigned int tcon_div[][3] = {
 	/* vx1pll_div214h, vx1pll_phase_div_en, vx1pll_clk1x_selh */
@@ -24,6 +28,7 @@ static unsigned int tcon_div[][3] = {
 	{1, 1, 0},  /* div16 */
 };
 
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 static unsigned char lcd_ss_freq_dep_opt_t6w[] = {
 /*             freq, cnt, dep values       */
 /* 0-29.5k */	0,    3,   4, 7, 10,
@@ -37,6 +42,9 @@ static unsigned char lcd_ss_freq_dep_opt_t6w[] = {
 };
 
 static void lcd_pll_frac_set_t6w(struct aml_lcd_drv_s *pdrv, unsigned int frac)
+========
+static void lcd_pll_frac_set_t6d(struct aml_lcd_drv_s *pdrv, unsigned int frac)
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 {
 	struct lcd_clk_config_s *cconf;
 	unsigned int reg, val;
@@ -57,6 +65,7 @@ static void lcd_pll_frac_set_t6w(struct aml_lcd_drv_s *pdrv, unsigned int frac)
 	udelay(10);
 	lcd_ana_setb(ANACTRL_TCON_PLL_VLOCK, 0, 4, 1);
 	LCDPR("[%d]: %s: pll_frac=0x%x\n", pdrv->index, __func__, frac);
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 
 	if (cconf->pll_mode & LCD_PLL_MODE_DUAL_PLL) {
 		reg = ANACTRL_GP2PLL_CTRL2;
@@ -72,6 +81,11 @@ static void lcd_pll_frac_set_t6w(struct aml_lcd_drv_s *pdrv, unsigned int frac)
 }
 
 static void lcd_set_pll_ss_t6w(struct aml_lcd_drv_s *pdrv, unsigned int ss_flag)
+========
+}
+
+static void lcd_set_pll_ss_t6d(struct aml_lcd_drv_s *pdrv, unsigned int ss_flag)
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 {
 	struct lcd_clk_config_s *cconf;
 	unsigned int pll_ctrl0, pll_ctrl2;
@@ -106,10 +120,14 @@ static void lcd_set_pll_ss_t6w(struct aml_lcd_drv_s *pdrv, unsigned int ss_flag)
 
 	if (ss_flag & LCD_SSC_FREQ) {
 		pll_ctrl2 &= ~(0x7 << 8); /* ss_freq */
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 		if (cconf->ss_freq)
 			pll_ctrl2 |= (cconf->ss_freq << 8);
 		else
 			pll_ctrl2 |= (0x3 << 8);
+========
+		pll_ctrl2 |= (cconf->ss_freq << 8);
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 		len += sprintf(prt_str + len, "%sfreq=%d", len ? ", " : "", cconf->ss_freq);
 	}
 
@@ -125,7 +143,11 @@ static void lcd_set_pll_ss_t6w(struct aml_lcd_drv_s *pdrv, unsigned int ss_flag)
 	LCDPR("[%d]: pll set ssc: %s\n", pdrv->index, len ? prt_str : "none");
 }
 
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 static void lcd_pll_ss_enable_t6w(struct aml_lcd_drv_s *pdrv, int status)
+========
+static void lcd_pll_ss_enable_t6d(struct aml_lcd_drv_s *pdrv, int status)
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 {
 	struct lcd_clk_config_s *cconf;
 	unsigned int pll_ctrl0, pll_ctrl2;
@@ -164,11 +186,18 @@ static void lcd_pll_ss_enable_t6w(struct aml_lcd_drv_s *pdrv, int status)
 	lcd_ana_write(ANACTRL_TCON_PLL0_CNTL0, pll_ctrl0);
 }
 
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 static void lcd_set_pll_t6w(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_clk_config_s *cconf;
 	unsigned int pll_ctrl0, pll_ctrl1, pll_ctrl3, pll_ctrl4;
 	unsigned int pll_ctrl2;
+========
+static void lcd_set_pll_t6d(struct aml_lcd_drv_s *pdrv)
+{
+	struct lcd_clk_config_s *cconf;
+	unsigned int pll_ctrl0, pll_ctrl3, pll_ctrl4;
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 	unsigned int tcon_div_sel;
 	int ret, cnt = 0;
 	struct lcd_config_s *pconf = &pdrv->config;
@@ -182,6 +211,7 @@ static void lcd_set_pll_t6w(struct aml_lcd_drv_s *pdrv)
 
 	tcon_div_sel = cconf->pll_tcon_div_sel;
 	pll_ctrl0 = 0x22000 | (cconf->pll_config[0].pll_m << 0);
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 	if (cconf->pll_config[0].pll_fvco <= 4750000000ULL &&
 			cconf->pll_config[0].pll_fvco >= 3750000000ULL)
 		pll_ctrl1 = 0x12301535;
@@ -190,6 +220,8 @@ static void lcd_set_pll_t6w(struct aml_lcd_drv_s *pdrv)
 	else
 		pll_ctrl1 = 0x12301435;
 	pll_ctrl2 = 0x02000000;
+========
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 	pll_ctrl3 = 0x180 |
 		(cconf->pll_config[0].pll_od1_sel << 10) |
 		(cconf->pll_config[0].pll_od2_sel << 14) |
@@ -241,6 +273,7 @@ static void lcd_set_pll_t6w(struct aml_lcd_drv_s *pdrv)
 	/* enable load en*/
 	lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL0, 1, 14, 1);
 
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 	if (cconf->pll_mode & LCD_PLL_MODE_DUAL_PLL) {
 		cnt = 0;
 		ret = 0;
@@ -291,12 +324,19 @@ static void lcd_disable_pll_t6w(struct aml_lcd_drv_s *pdrv)
 }
 
 static void lcd_set_vid_pll_div_t6w(struct aml_lcd_drv_s *pdrv)
+========
+	if (cconf->ss_level > 0)
+		lcd_set_pll_ss_t6d(pdrv, (LCD_SSC_LEVEL | LCD_SSC_FREQ | LCD_SSC_MODE));
+}
+
+static void lcd_set_vid_pll_div_t6d(struct aml_lcd_drv_s *pdrv)
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 {
 	struct lcd_clk_config_s *cconf;
 	unsigned int shift_val, shift_sel;
 
 	cconf = get_lcd_clk_config(pdrv);
-	if (!cconf || cconf->pll_mode & LCD_PLL_MODE_DUAL_PLL)
+	if (!cconf)
 		return;
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_ADV2)
@@ -308,12 +348,6 @@ static void lcd_set_vid_pll_div_t6w(struct aml_lcd_drv_s *pdrv)
 	/* Disable the div output clock */
 	lcd_ana_setb(ANACTRL_VID_PLL_CLK_DIV, 0, 19, 1);
 	lcd_ana_setb(ANACTRL_VID_PLL_CLK_DIV, 0, 15, 1);
-
-	if (cconf->pll_mode & LCD_PLL_MODE_DUAL_PLL) {
-		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-			LCDPR("no need to set clk divider for gp2\n\n");
-		return;
-	}
 
 	if (cconf->data->pll_data[0]->div_sel_max == CLK_DIV_SEL_1 ||
 	    cconf->pll_config[0].div_sel > cconf->data->pll_data[0]->div_sel_max ||
@@ -334,21 +368,26 @@ static void lcd_set_vid_pll_div_t6w(struct aml_lcd_drv_s *pdrv)
 		lcd_ana_setb(ANACTRL_VID_PLL_CLK_DIV, 0, 15, 1);
 		lcd_ana_setb(ANACTRL_VID_PLL_CLK_DIV, 0, 0, 15);
 
-		lcd_ana_setb(ANACTRL_VID_PLL_CLK_DIV, (shift_sel >> 2), 20, 1);
 		lcd_ana_setb(ANACTRL_VID_PLL_CLK_DIV, shift_sel, 16, 2);
 		lcd_ana_setb(ANACTRL_VID_PLL_CLK_DIV, 1, 15, 1);
-		lcd_ana_setb(ANACTRL_VID_PLL_CLK_DIV, (shift_val & 0x7fff), 0, 15);
-		lcd_ana_setb(ANACTRL_VID_PLL_CLK_DIV, (shift_val >> 15), 21, 11);
+		lcd_ana_setb(ANACTRL_VID_PLL_CLK_DIV, shift_val, 0, 15);
 		lcd_ana_setb(ANACTRL_VID_PLL_CLK_DIV, 0, 15, 1);
 	}
 	/* Enable the final output clock */
 	lcd_ana_setb(ANACTRL_VID_PLL_CLK_DIV, 1, 19, 1);
 }
 
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 static void lcd_clk_set_t6w(struct aml_lcd_drv_s *pdrv)
 {
 	lcd_set_pll_t6w(pdrv);
 	lcd_set_vid_pll_div_t6w(pdrv);
+========
+static void lcd_clk_set_t6d(struct aml_lcd_drv_s *pdrv)
+{
+	lcd_set_pll_t6d(pdrv);
+	lcd_set_vid_pll_div_t6d(pdrv);
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 }
 
 #if (IS_ENABLED(CONFIG_AML_LCD_PXP))
@@ -366,7 +405,11 @@ static void pxp_clk_div_gen(unsigned int pclk, unsigned int *xd, unsigned int *c
 	unsigned int clk_in;
 	unsigned int prox_xd = 0, prox_id = 0, prox_diff = 0xffffffff, diff;
 
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 	for (j = 0; j < (sizeof(pxp_fclk_div_clk)/sizeof(unsigned int) >> 1); j++) {
+========
+	for (j = 0; j < (sizeof(pxp_fclk_div_clk) / sizeof(unsigned int) >> 1); j++) {
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 		clk_in = pxp_fclk_div_clk[(j << 1) | 1];
 		for (i = 1; i < 9; i++) {
 			diff = pxp_abs_diff(clk_in / i, pclk);
@@ -377,6 +420,7 @@ static void pxp_clk_div_gen(unsigned int pclk, unsigned int *xd, unsigned int *c
 			}
 		}
 	}
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 	*clk_sel = pxp_fclk_div_clk[(prox_id << 1 ) | 0];
 	*xd = prox_xd;
 
@@ -387,6 +431,18 @@ static void pxp_clk_div_gen(unsigned int pclk, unsigned int *xd, unsigned int *c
 #endif
 
 static void lcd_set_vclk_crt_t6w(struct aml_lcd_drv_s *pdrv)
+========
+	*clk_sel = pxp_fclk_div_clk[(prox_id << 1) | 0];
+	*xd = prox_xd;
+
+	LCDPR("pxp: pclk:%d, xd:%d, clk_sel:%d, src_clk:%d real_clk:%d\n",
+		pclk, *xd, *clk_sel, pxp_fclk_div_clk[(prox_id << 1) | 1],
+		pxp_fclk_div_clk[(prox_id << 1) | 1] / *xd);
+}
+#endif
+
+static void lcd_set_vclk_crt_t6d(struct aml_lcd_drv_s *pdrv)
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 {
 	struct lcd_clk_config_s *cconf;
 	unsigned int encl_clk_sel = 8;
@@ -417,7 +473,10 @@ static void lcd_set_vclk_crt_t6w(struct aml_lcd_drv_s *pdrv)
 	udelay(5);
 	/* select vid_pll_clk */
 	lcd_clk_setb(CLKCTRL_VIID_CLK0_CTRL, clk_sel, VCLK2_CLK_IN_SEL, 3); //fclk_div3=666
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 	lcd_clk_setb(CLKCTRL_VIID_CLK0_CTRL, 1, VCLK2_DIV2_EN, 1); // t6x 2ppc require
+========
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 	encl_clk_sel = 9;// t6x 2ppc require div2
 #else
 	/* setup the XD divider value */
@@ -447,7 +506,11 @@ static void lcd_set_vclk_crt_t6w(struct aml_lcd_drv_s *pdrv)
 }
 
 #if (IS_ENABLED(CONFIG_AML_LCD_TCON))
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 static int lcd_set_mlvds_clk_phase_t6w(struct aml_lcd_drv_s *pdrv)
+========
+static int lcd_set_mlvds_clk_phase_t6d(struct aml_lcd_drv_s *pdrv)
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 {
 	struct lcd_config_s *pconf = &pdrv->config;
 	unsigned int val, p0, pa, pb;
@@ -470,7 +533,12 @@ static int lcd_set_mlvds_clk_phase_t6w(struct aml_lcd_drv_s *pdrv)
 }
 #endif
 
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 static void lcd_set_tcon_clk_t6w(struct aml_lcd_drv_s *pdrv)
+========
+/* tcon run base clk, include register access */
+static void lcd_set_tcon_clk_t6d(struct aml_lcd_drv_s *pdrv)
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 {
 #if (IS_ENABLED(CONFIG_AML_LCD_TCON))
 	if (pdrv->config.basic.lcd_type != LCD_MLVDS &&
@@ -479,6 +547,7 @@ static void lcd_set_tcon_clk_t6w(struct aml_lcd_drv_s *pdrv)
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("[%d]: %s\n", pdrv->index, __func__);
 
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 	switch (pdrv->config.basic.lcd_type) {
 	case LCD_MLVDS:
 		lcd_set_mlvds_clk_phase_t6w(pdrv);
@@ -503,6 +572,31 @@ static void lcd_set_tcon_clk_t6w(struct aml_lcd_drv_s *pdrv)
 }
 
 static void lcd_clk_disable_t6w(struct aml_lcd_drv_s *pdrv)
+========
+	lcd_set_mlvds_clk_phase_t6d(pdrv);
+
+	/* tcon_clk */
+	if (pconf->timing.enc_clk >= 100000000) /* 25M */
+		lcd_clk_write(CLKCTRL_TCON_CLK_CNTL, (1 << 7) | (1 << 6) | (0xf << 0));
+	else /* 12.5M */
+		lcd_clk_write(CLKCTRL_TCON_CLK_CNTL, (1 << 7) | (1 << 6) | (0x1f << 0));
+
+	/* global reset tcon */
+	lcd_tcon_global_reset(pdrv);
+}
+#endif
+
+static void lcd_clktree_set_t6d(struct aml_lcd_drv_s *pdrv)
+{
+#if (IS_ENABLED(CONFIG_AML_LCD_TCON))
+	if (pdrv->config.basic.lcd_type == LCD_MLVDS)
+		lcd_set_tcon_clk_t6d(pdrv);
+#endif
+}
+
+static void lcd_prbs_config_clk_t6d(struct aml_lcd_drv_s *pdrv, unsigned int lcd_prbs_mode,
+				    unsigned int *encl_clk, unsigned int *fifo_clk)
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 {
 	lcd_clk_setb(CLKCTRL_VID_CLK0_CTRL2, 0, ENCL_GATE_VCLK, 1);
 
@@ -510,6 +604,7 @@ static void lcd_clk_disable_t6w(struct aml_lcd_drv_s *pdrv)
 	lcd_clk_setb(CLKCTRL_VIID_CLK0_CTRL, 0, 0, 5);
 	lcd_clk_setb(CLKCTRL_VIID_CLK0_CTRL, 0, VCLK2_EN, 1);
 
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 	lcd_disable_pll_t6w(pdrv);
 }
 
@@ -534,18 +629,35 @@ static void lcd_prbs_config_clk_t6w(struct aml_lcd_drv_s *pdrv, unsigned int lcd
 		bit_rate = lcd_prbs_freq * 1000000ULL;
 		*encl_clk = lcd_do_div(bit_rate, 5);
 		*fifo_clk = lcd_do_div(bit_rate, 10);
+========
+	if (lcd_prbs_mode == LCD_PRBS_MODE_LVDS) {
+		bit_rate = 550000000ULL;
+	} else if (lcd_prbs_mode == LCD_PRBS_MODE_FREQ) {
+		bit_rate = lcd_prbs_freq * 1000000ULL;
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 	} else {
 		LCDERR("[%d]: %s: unsupport lcd_prbs_mode %d\n",
 		       pdrv->index, __func__, lcd_prbs_mode);
 		return;
 	}
 
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 	lcd_clk_generate_prbs_clk(pdrv, *encl_clk, bit_rate);
 	if (cconf->pll_config[0].done == 0)
 		return;
 	cconf->data->vclk_sel = 0;
 	lcd_clk_set_t6w(pdrv);
 	lcd_set_vclk_crt_t6w(pdrv);
+========
+	*encl_clk = lcd_do_div(bit_rate, 5);
+	*fifo_clk = lcd_do_div(bit_rate, 7);
+	lcd_clk_generate_prbs_clk(pdrv, *encl_clk, bit_rate);
+	if (cconf->pll_config[0].done == 0)
+		return;
+
+	lcd_clk_set_t6d(pdrv);
+	lcd_set_vclk_crt_t6d(pdrv);
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		LCDPR("[%d]: %s ok\n", pdrv->index, __func__);
@@ -597,7 +709,11 @@ static int lcd_clk_prbs_test_t6w(struct aml_lcd_drv_s *pdrv,
 		clk_err_cnt = 0;
 		lcd_prbs_mode = (1 << i);
 		LCDPR("[%d]: lcd_prbs_mode: 0x%x\n", pdrv->index, lcd_prbs_mode);
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 		lcd_prbs_config_clk_t6w(pdrv, lcd_prbs_mode, &lcd_encl_clk_check_std,
+========
+		lcd_prbs_config_clk_t6d(pdrv, lcd_prbs_mode, &lcd_encl_clk_check_std,
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 					&lcd_fifo_clk_check_std);
 		udelay(500);
 
@@ -672,19 +788,51 @@ lcd_prbs_test_err_t3:
 	lcd_ana_setb(ANACTRL_DIF_PHY_CNTL14, 0, 19, 1);
 	lcd_ana_write(reg_phy_tx_ctrl1, 0);
 	lcd_clk_generate_parameter(pdrv);
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 	lcd_clk_set_t6w(pdrv);
 	lcd_set_vclk_crt_t6w(pdrv);
 	lcd_ana_write(reg_phy_tx_ctrl1, 0x03000000);
+========
+	lcd_clk_set_t6d(pdrv);
+	lcd_set_vclk_crt_t6d(pdrv);
+	lcd_ana_write(reg_phy_tx_ctrl1, 0xc3000000);
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 	lcd_ana_setb(ANACTRL_DIF_PHY_CNTL14, 1, 19, 1);
 
 	return 0;
 }
 
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
+========
+static void lcd_clk_disable_t6d(struct aml_lcd_drv_s *pdrv)
+{
+	struct lcd_clk_config_s *cconf;
+
+	cconf = get_lcd_clk_config(pdrv);
+	if (!cconf)
+		return;
+
+	lcd_clk_setb(CLKCTRL_VID_CLK0_CTRL2, 0, ENCL_GATE_VCLK, 1);
+
+	/* close vclk2_div gate: [4:0] */
+	lcd_clk_setb(CLKCTRL_VIID_CLK0_CTRL, 0, 0, 5);
+	lcd_clk_setb(CLKCTRL_VIID_CLK0_CTRL, 0, VCLK2_EN, 1);
+
+#ifndef CONFIG_AML_LCD_PXP
+	lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL0, 0, 28, 1);  //disable
+	lcd_ana_setb(ANACTRL_TCON_PLL0_CNTL0, 1, 30, 1);  //resetn
+#endif
+}
+
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 static void lcd_clk_reg_dump(struct aml_lcd_drv_s *pdrv)
 {
 	int i;
 	unsigned int *table = NULL, size = 0;
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 	struct lcd_clk_config_s *cconf = get_lcd_clk_config(pdrv);
+========
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 	unsigned int pll_reg_table[] = {
 		ANACTRL_TCON_PLL0_CNTL0,
 		ANACTRL_TCON_PLL0_CNTL1,
@@ -694,12 +842,15 @@ static void lcd_clk_reg_dump(struct aml_lcd_drv_s *pdrv)
 		ANACTRL_TCON_PLL0_STS,
 		ANACTRL_VID_PLL_CLK_DIV
 	};
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 	unsigned int gp2_pll_reg_table[] = {
 		ANACTRL_GP2PLL_CTRL0,
 		ANACTRL_GP2PLL_CTRL1,
 		ANACTRL_GP2PLL_CTRL2,
 		ANACTRL_GP2PLL_CTRL3,
 	};
+========
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 	unsigned int clk_reg_table[] = {
 		CLKCTRL_VIID_CLK0_DIV,
 		CLKCTRL_VIID_CLK0_CTRL,
@@ -708,25 +859,26 @@ static void lcd_clk_reg_dump(struct aml_lcd_drv_s *pdrv)
 		CLKCTRL_TCON_CLK_CNTL
 	};
 
-	if (!pdrv)
-		return;
-
 	table = pll_reg_table;
 	size = ARRAY_SIZE(pll_reg_table);
 	for (i = 0; i < size; i++)
 		printf("pll [0x%08x] = 0x%08x\n", table[i], lcd_ana_read(table[i]));
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 	if (cconf && (cconf->pll_mode & LCD_PLL_MODE_DUAL_PLL)) {
 		table = gp2_pll_reg_table;
 		size = ARRAY_SIZE(gp2_pll_reg_table);
 		for (i = 0; i < size; i++)
 			printf("pll [0x%08x] = 0x%08x\n", table[i], lcd_ana_read(table[i]));
 	}
+========
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 	table = clk_reg_table;
 	size = ARRAY_SIZE(clk_reg_table);
 	for (i = 0; i < size; i++)
 		printf("clk [0x%08x] = 0x%08x\n", table[i], lcd_clk_read(table[i]));
 }
 
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 static void lcd_clk_generate_t6w(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_clk_config_s *cconf;
@@ -753,6 +905,9 @@ static void lcd_clk_generate_t6w(struct aml_lcd_drv_s *pdrv)
 }
 
 static struct lcd_pll_data_s lcd_tcon_pll_data_t6w = {
+========
+static struct lcd_pll_data_s lcd_pll_data_t6d = {
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 	.pll_od_fb = 0,
 	.pll_0_5_div_en = 0,
 	.pll_m_max = 511,
@@ -766,6 +921,7 @@ static struct lcd_pll_data_s lcd_tcon_pll_data_t6w = {
 	.pll_ref_fmin = 5000000,
 	.pll_vco_fmax = 6000000000ULL,
 	.pll_vco_fmin = 3000000000ULL,
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 	.pll_out_fmax = 4250000000ULL,
 	.pll_out_fmin = 5859375,
 	.od_cnt = 3,
@@ -804,14 +960,35 @@ static struct lcd_clk_data_s lcd_clk_data_t6w = {
 
 	.xd_out_fmax = 820000000,
 	.phy_clk_location = 0,
+========
+	.pll_out_fmax = 3100000000ULL,
+	.pll_out_fmin = 187500000,
+	.od_cnt = 3,
+	.have_tcon_div = 1,
+	.div_in_fmax = 3100000000ULL,
+	.div_out_fmax = 750000000,
+	.div_sel_max = CLK_DIV_SEL_2p33,
+};
+
+static struct lcd_clk_data_s lcd_clk_data_t6d = {
+	.pll_data[0] = &lcd_pll_data_t6d,
+	.pll_data[1] = NULL,
+	.xd_out_fmax = 200000000,
+	.phy_clk_location = 0,
+	.xd_max = 256,
+	.phy_div_max = 256,
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 
 	.vclk_sel = 0,
 	.enc_clk_msr_id = 222,
 	.fifo_clk_msr_id = 86,
 
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 	.xd_max = 256,
 	.phy_div_max = 256,
 
+========
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 	.ss_support = 1,
 	.ss_level_max = 60,
 	.ss_freq_max = 6,
@@ -819,6 +996,7 @@ static struct lcd_clk_data_s lcd_clk_data_t6w = {
 	.ss_dep_base = 500, //ppm
 	.ss_dep_sel_max = 12,
 	.ss_str_m_max = 10,
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 	.ss_freq_dep_opt = lcd_ss_freq_dep_opt_t6w,
 
 	.clk_parameter_init = NULL,
@@ -842,12 +1020,38 @@ struct lcd_clk_config_s *lcd_clk_config_chip_init_t6w(struct aml_lcd_drv_s *pdrv
 	struct lcd_clk_config_s *cconf = NULL;
 	unsigned int size;
 	struct lcd_config_s *pconf;
+========
+
+	.clk_parameter_init = NULL,
+	.clk_generate_parameter = lcd_clk_generate_dft,
+	.pll_frac_generate = lcd_pll_frac_generate_dft,
+	.set_ss = lcd_set_pll_ss_t6d,
+	.clk_ss_enable = lcd_pll_ss_enable_t6d,
+	.pll_frac_set = lcd_pll_frac_set_t6d,
+	.clk_set = lcd_clk_set_t6d,
+	.vclk_crt_set = lcd_set_vclk_crt_t6d,
+	.clk_disable = lcd_clk_disable_t6d,
+	.clktree_set = lcd_clktree_set_t6d,
+	.clk_config_init_print = lcd_clk_config_init_print_dft,
+	.clk_config_print = lcd_clk_config_print_dft,
+	.clk_reg_print = lcd_clk_reg_dump,
+	.prbs_test = lcd_clk_prbs_test_t6d,
+};
+
+struct lcd_clk_config_s *lcd_clk_config_chip_init_t6d(struct aml_lcd_drv_s *pdrv)
+{
+	struct lcd_clk_config_s *cconf = NULL;
+	unsigned int size;
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 
 	if (!pdrv)
 		return NULL;
 
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 	pconf = &pdrv->config;
 
+========
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 	if (!pdrv->clk_conf) {
 		cconf = (struct lcd_clk_config_s *)malloc(sizeof(struct lcd_clk_config_s));
 		if (!cconf) {
@@ -859,10 +1063,14 @@ struct lcd_clk_config_s *lcd_clk_config_chip_init_t6w(struct aml_lcd_drv_s *pdrv
 	}
 	memset(cconf, 0, sizeof(struct lcd_clk_config_s));
 
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 	if (pconf->basic.lcd_type == LCD_P2P)
 		cconf->pll_conf_num = 2;
 	else
 		cconf->pll_conf_num = 1;
+========
+	cconf->pll_conf_num = 1;
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 	size = cconf->pll_conf_num * sizeof(struct lcd_pll_config_s);
 	cconf->pll_config = (struct lcd_pll_config_s *)malloc(size);
 	if (!cconf->pll_config) {
@@ -872,10 +1080,16 @@ struct lcd_clk_config_s *lcd_clk_config_chip_init_t6w(struct aml_lcd_drv_s *pdrv
 	}
 	memset(cconf->pll_config, 0, size);
 
+<<<<<<<< HEAD:drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6w.c
 	cconf->data = &lcd_clk_data_t6w;
 	cconf->pll_config[0].pll_id = 0;
 	if (cconf->pll_conf_num > 1)
 		cconf->pll_config[1].pll_id = 1;
+========
+	cconf->data = &lcd_clk_data_t6d;
+	cconf->pll_config[0].pll_id = 0;
+
+>>>>>>>> de100eab9965 (lcd: optimize t6 phy & dphy init flow [1/2]):drivers/amlogic/media/vout/lcd/lcd_clk/lcd_clk_t6d.c
 	return cconf;
 }
 
