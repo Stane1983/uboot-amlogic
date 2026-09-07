@@ -108,7 +108,8 @@
 		"run upgrade_key_base;"\
 		"echo usr key;"\
 		"\0"\
-	"board=bm221\0"\
+	"board=x96m200\0"\
+	"adb_port=/soc/usbphy0@fe358000/u2p@0\0"
 
 #ifndef CONFIG_PXP_DDR
 #define CONFIG_PREBOOT  \
@@ -372,4 +373,3 @@ defined(CONFIG_STORE_COMPATIBLE)
 #define CONFIG_AML_KASLR_SEED
 
 #endif
-
