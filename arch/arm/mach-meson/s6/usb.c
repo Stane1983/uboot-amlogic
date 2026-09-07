@@ -283,6 +283,24 @@ int usb2_phy_init(struct phy *phy)
 		debug("------set usb pll\n");
 		set_usb_pll(priv->usb_phy2_pll_base_addr[i]);
 	}
+
+	if (IS_ENABLED(CONFIG_DM_GPIO)) {
+		int ret;
+		struct gpio_desc gd;
+
+		ret = gpio_request_by_name(phy->dev, "vbus-gpio", 0, &gd, GPIOD_IS_OUT);
+		if (ret) {
+			printf("vbus-gpio not found\n");
+		} else {
+			if (dm_gpio_is_valid(&gd)) {
+				ret = dm_gpio_set_value(&gd, 1);
+				if (ret)
+					pr_err("vbus-gpio failed to set value\n");
+			}
+			dm_gpio_free(phy->dev, &gd);
+		}
+	}
+
 	return 0;
 }
 
@@ -308,6 +326,70 @@ void set_usb_power_on(void)
 {
 	printf("set s6 usb phy on.\n");
 	writel(usb_powerctrl_reg, RESETCTRL_RESET0_LEVEL);
+}
+
+static int __maybe_unused set_usbphy_vbus_off(void)
+{
+	struct udevice *bus;
+	struct uclass *uc;
+	int ret, i;
+	int count;
+	struct phy usb_phy;
+
+	ret = uclass_get(UCLASS_USB, &uc);
+	if (ret)
+		return ret;
+
+	uclass_foreach_dev(bus, uc) {
+		debug("bus->name=%s, bus->driver->name =%s\n", bus->name, bus->driver->name);
+		count = dev_count_phandle_with_args(bus, "phys", "#phy-cells", 1);
+		debug("usb phy count=%u\n", count);
+		if (count <= 0) {
+			pr_err("Error %s no USB PHY.\n", bus->name);
+			return count;
+		}
+
+		for (i = 0; i < count; i++) {
+			ret = generic_phy_get_by_index(bus, i, &usb_phy);
+			if (ret && ret != -ENOENT) {
+				pr_err("Failed to get USB PHY%d for %s\n",
+				       i, bus->name);
+				return ret;
+			}
+
+			if (IS_ENABLED(CONFIG_DM_GPIO)) {
+				int ret;
+				struct gpio_desc gd;
+
+				debug("turing off %s usb vbus-gpio\n",
+					ofnode_get_name(dev_ofnode(usb_phy.dev)));
+
+				ret = gpio_request_by_name(usb_phy.dev,
+						"vbus-gpio", 0, &gd, GPIOD_IS_OUT);
+				if (ret) {
+					debug("vbus-gpio not found\n");
+					continue;
+				}
+				if (dm_gpio_is_valid(&gd)) {
+					if (dm_gpio_set_value(&gd, 0))
+						pr_err("vbus-gpio failed to set value 0\n");
+				}
+				dm_gpio_free(usb_phy.dev, &gd);
+			}
+		}
+	}
+	return 0;
+}
+
+void usb_hw_cleanup(void)
+{
+	unsigned int val;
+
+	val = readl(RESETCTRL_RESET0_LEVEL);
+	val &= ~(BIT(U3DRD_USB3PHY_APB) | BIT(USB3_PHY3_BIT));
+	writel(val, RESETCTRL_RESET0_LEVEL);
+	set_usbphy_vbus_off();
+	printf("%s done.\n", __func__);
 }
 
 /**************************************************************/

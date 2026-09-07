@@ -16,6 +16,11 @@ __weak void set_usb_power_on(void)
 	printf("[%s]: weak func...\n", __func__);
 }
 
+__weak void usb_hw_cleanup(void)
+{
+	printf("%s not supported\n", __func__);
+}
+
 int aml_usb_suspend(void *pm_ops)
 {
 	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
@@ -50,4 +55,5 @@ void usb_power_init(void)
 	struct dev_pm_ops *pm_ops = NULL;
 
 	pm_ops = dev_register_pm("usb_ops", &aml_usb_suspend, &aml_usb_resume, &aml_usb_poweroff, 0);
+	usb_hw_cleanup();
 }

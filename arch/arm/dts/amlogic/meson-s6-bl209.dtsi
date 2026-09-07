@@ -236,6 +236,7 @@
 &crg20u2_phy {
 	status = "okay";
 	portnum = <1>;
+	vbus-gpio = <&gpio GPIOH_8 (GPIO_ACTIVE_HIGH|GPIO_OPEN_DRAIN)>;
 };
 
 &crg20u3_phy {
