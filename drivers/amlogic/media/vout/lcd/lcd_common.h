@@ -183,6 +183,9 @@ void lcd_phy_free_last(struct aml_lcd_drv_s *pdrv);
 void lcd_detail_timing_print(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timing_s *dt);
 void lcd_phy_cfg_print(struct phy_config_s *cfg);
 void lcd_phy_attr_print(struct phy_attr_s *phy, u32 lane_num);
+#ifdef CONFIG_AML_LCD_TCON
+void lcd_tcon_global_reset(struct aml_lcd_drv_s *pdrv);
+#endif
 
 /* lcd cus_ctrl */
 int lcd_cus_ctrl_load_from_dts(struct aml_lcd_drv_s *pdrv);

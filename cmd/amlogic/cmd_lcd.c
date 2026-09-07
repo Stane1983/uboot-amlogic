@@ -258,6 +258,11 @@ static int do_lcd_tcon(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 			pdrv->tcon_forbidden_check();
 		else
 			printf("no lcd tcon_forbidden_check\n");
+	} else if (strcmp(argv[1], "reset") == 0) {
+		if (pdrv->tcon_global_reset)
+			pdrv->tcon_global_reset(pdrv);
+		else
+			printf("no lcd tcon_global_reset\n");
 	} else {
 		ret = -1;
 	}

@@ -9,7 +9,6 @@
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include "../../lcd_reg.h"
 #include "../../lcd_common.h"
-#include "../lcd_connector.h"
 #include "lcd_tcon.h"
 #include "env.h"
 
@@ -548,4 +547,5 @@ void lcd_tcon_debug_probe(struct aml_lcd_drv_s *pdrv)
 	pdrv->tcon_reg_write = lcd_tcon_reg_write;
 	pdrv->tcon_table_read = lcd_tcon_table_read;
 	pdrv->tcon_table_write = lcd_tcon_table_write;
+	pdrv->tcon_global_reset = lcd_tcon_global_reset;
 }

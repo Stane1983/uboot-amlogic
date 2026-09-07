@@ -809,6 +809,7 @@ struct aml_lcd_drv_s {
 	unsigned int (*tcon_table_write)(unsigned int addr, unsigned int val);
 	int (*tcon_mem_tee_protect)(int protect_en);
 	int (*tcon_forbidden_check)(void);
+	void (*tcon_global_reset)(struct aml_lcd_drv_s *pdrv);
 #endif
 	void *debug_info;
 	void (*phy_set)(struct aml_lcd_drv_s *pdrv, int status);
