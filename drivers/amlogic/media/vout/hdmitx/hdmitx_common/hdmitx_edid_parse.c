@@ -1840,7 +1840,7 @@ static void _edid_parse_sbtmdb(struct sbtm_info *info, u8 *blockbuf, u8 len)
 	info->max_sbtm_ver = GET_BITS_FILED(blockbuf[0], 0, 4);
 	info->grdm_support = GET_BITS_FILED(blockbuf[0], 5, 2);
 	info->drdm_ind = GET_BITS_FILED(blockbuf[0], 7, 1);
-	if (info->drdm_ind == 0)
+	if (info->drdm_ind == 0 || len < 2)
 		return;
 	info->hgig_cat_drdm_sel = GET_BITS_FILED(blockbuf[1], 0, 3);
 	info->use_hgig_drdm = GET_BITS_FILED(blockbuf[1], 4, 1);
