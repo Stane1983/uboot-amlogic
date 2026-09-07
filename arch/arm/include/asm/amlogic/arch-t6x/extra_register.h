@@ -19,13 +19,13 @@
 
 #define REG_BASE_VCBUS                             (0xff800000L)
 
-#define DMC_SEC_STATUS                             ((0x051a  << 2) + 0xfe036000)
+#define DMC_SEC_STATUS                             ((0x061a  << 2) + 0xfe300000)
 
-#define DMC_VIO_ADDR0                              ((0x051b  << 2) + 0xfe036000)
+#define DMC_VIO_ADDR0                              ((0x061b  << 2) + 0xfe300000)
 
-#define DMC_VIO_ADDR1                              ((0x051c  << 2) + 0xfe036000)
-#define DMC_VIO_ADDR2                              ((0x051d  << 2) + 0xfe036000)
-#define DMC_VIO_ADDR3                              ((0x051e  << 2) + 0xfe036000)
-#define DMC_AXI2DDR0                               ((0x0520  << 2) + 0xfe036000)
+#define DMC_VIO_ADDR1                              ((0x061c  << 2) + 0xfe300000)
+#define DMC_VIO_ADDR2                              ((0x061d  << 2) + 0xfe300000)
+#define DMC_VIO_ADDR3                              ((0x061e  << 2) + 0xfe300000)
+#define DMC_AXI2DDR0                               ((0x0620  << 2) + 0xfe300000)
 
 #endif

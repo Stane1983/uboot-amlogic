@@ -56,7 +56,8 @@ static int dmc_sec_check(unsigned int dmc_number)
 	cpu_id_t cpu_id = get_cpu_id();
 	unsigned int offset = 0;
 
-	if (cpu_id.family_id == MESON_CPU_MAJOR_ID_T3X)
+	if (cpu_id.family_id == MESON_CPU_MAJOR_ID_T3X ||
+	    cpu_id.family_id == MESON_CPU_MAJOR_ID_T6X)
 		offset = 0x4000 * dmc_number;
 	else
 		offset = 0x2000 * dmc_number;
@@ -126,6 +127,7 @@ int do_dmc_sec_vio_check(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv
 	if (cpu_id.family_id == MESON_CPU_MAJOR_ID_T3 ||
 	    cpu_id.family_id == MESON_CPU_MAJOR_ID_T7 ||
 	    cpu_id.family_id == MESON_CPU_MAJOR_ID_T5M ||
+	    cpu_id.family_id == MESON_CPU_MAJOR_ID_T6X ||
 	    cpu_id.family_id == MESON_CPU_MAJOR_ID_T3X) {
 		dmc_number = 2;
 	} else if (cpu_id.family_id == MESON_CPU_MAJOR_ID_P1 ||
