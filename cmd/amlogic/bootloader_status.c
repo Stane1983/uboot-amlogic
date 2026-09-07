@@ -746,6 +746,8 @@ int non_ab_update(char *rebootmode)
 
 	char *write_boot = env_get("write_boot");
 
+	recovery_update();
+
 	if (write_boot && (!strcmp(write_boot, "1"))) {
 		printf("non ab for kernel 5.15 update bootloader\n");
 		write_bootloader(1);
@@ -758,8 +760,6 @@ int non_ab_update(char *rebootmode)
 		else
 			run_command("reboot", 0);
 	}
-
-	recovery_update();
 
 	//check_result init
 	checkresult = env_get("check_result");
