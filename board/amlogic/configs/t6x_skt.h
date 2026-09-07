@@ -31,7 +31,14 @@
 #undef CONFIG_SILENT_CONSOLE_UPDATE_ON_RELOC
 #endif
 
-#define VOUT_OSD_LOGO_CMD  "osd open; osd clear; run load_bmp_logo; bmp scale;"
+#define VOUT_OSD_LOGO_CMD \
+		"osd open; osd clear;"\
+		"if test ${jpg_logo} = true; then "\
+			"setenv dislay_bpp 32; setenv display_color_index 32; run load_jpg_logo;"\
+		"else"\
+			"run load_bmp_logo;"\
+		"fi;"\
+		"bmp scale;\0"\
 
 #define VOUT_DISPLAY_CMD   "vout boot_display; "
 
@@ -71,8 +78,6 @@
 #define CONFIG_KERNEL_LOGLEVEL "loglevel=7"
 #endif
 
-#define VOUT_OSD_LOGO_CMD  "osd open; osd clear; run load_bmp_logo; bmp scale;"
-
 #define VOUT_DISPLAY_CMD   "vout boot_display; "
 
 #define CONFIG_SUPPORT_PREBOOT
@@ -94,6 +99,7 @@
 	"cvbsmode=576cvbs\0"\
 	"vout_projector_mux=disable\0" \
 	"cvbs_drv=0\0"\
+	"jpg_logo=false\0"\
 	"display_width=1920\0"\
 	"display_height=1080\0"\
 	"display_bpp=16\0"\

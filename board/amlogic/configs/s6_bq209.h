@@ -76,7 +76,15 @@
 #define CONFIG_HDMITX_ONLY
 
 #define VOUT_HDMITX_HPD_CHECK_CMD "hdmitx hpd; hdmitx get_parse_edid; dovi process;"
-#define VOUT_OSD_LOGO_CMD         "osd open; osd clear; run load_bmp_logo; bmp scale;"
+#define VOUT_OSD_LOGO_CMD \
+		"osd open; osd clear;"\
+		"if test ${jpg_logo} = true; then "\
+			"setenv dislay_bpp 32; setenv display_color_index 32; run load_jpg_logo;"\
+		"else"\
+			"run load_bmp_logo;"\
+		"fi;"\
+		"bmp scale;\0"\
+
 #define VOUT_HDMITX_HDMI_CMD2     "dovi set; dovi pkg; vpp hdrpkt;"
 
 #define VOUT_DISPLAY_CMD          "vout boot_display; "
@@ -96,6 +104,7 @@
 	"colorattribute=444,8bit\0"\
 	"cvbsmode=576cvbs\0"\
 	"cvbs_drv=0\0"\
+	"jpg_logo=false\0"\
 	"display_width=1920\0"\
 	"display_height=1080\0"\
 	"display_bpp=16\0"\
