@@ -100,7 +100,7 @@
 	"outputmode2=1200x1920p60hz\0"\
 	"hdmimode=none\0"\
 	"display_on_smp=1\0"\
-	"qms_en=1\0"\
+	"qms_en=0\0"\
 	"colorattribute=444,8bit\0"\
 	"cvbsmode=576cvbs\0"\
 	"cvbs_drv=0\0"\
