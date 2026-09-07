@@ -92,8 +92,6 @@ extern "C" {
 #define __unused __attribute__((__unused__))
 #endif
 
-#include <linux/amlogic/drm/meson_drm.h>
-
 enum IOCTL_TYPE {
   IOCTL_INVALID = -1,
   IOCTL_AMVIDEO,

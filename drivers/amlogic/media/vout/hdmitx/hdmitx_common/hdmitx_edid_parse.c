@@ -1954,7 +1954,6 @@ static int hdmitx_edid_audio_block_parse(struct rx_cap *prxcap, u8 *block_buf)
 	 * the CTA block needs to parse 127 bytes of valid data
 	 */
 	end = (block_buf[2] > 0x7f) ? 0x7f : (block_buf[2] & 0x7f);
-
 	/* this loop should be parsing when revision number is larger than 2 */
 	for (offset = 4 ; offset < end ; ) {
 		tag = block_buf[offset] >> 5;
