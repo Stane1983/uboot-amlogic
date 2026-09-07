@@ -2065,6 +2065,12 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap, u8 *block_buf)
 			break;
 
 		switch (tag) {
+		case HDMI_EDID_BLOCK_TYPE_AUDIO:
+			/* The audio data block is parsed outside here */
+			offset++;
+			offset += count;
+			break;
+
 		case HDMI_EDID_BLOCK_TYPE_VIDEO:
 			offset++;
 			for (i = 0; i < count ; i++) {
@@ -2167,6 +2173,8 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap, u8 *block_buf)
 					hdmitx_edid_parse_ifdb(prxcap, &block_buf[offset]);
 					break;
 				default:
+					HDMITX_INFO("warn: Unknown extended tag: %d, offset: %d\n",
+						ext_tag, offset);
 					break;
 				}
 			}
@@ -2174,16 +2182,10 @@ static int hdmitx_edid_cta_block_parse(struct rx_cap *prxcap, u8 *block_buf)
 			break;
 
 		case HDMI_EDID_BLOCK_TYPE_RESERVED:
-			offset++;
-			offset += count;
-			break;
-
 		case HDMI_EDID_BLOCK_TYPE_RESERVED2:
-			offset++;
-			offset += count;
-			break;
-
 		default:
+			HDMITX_INFO("warn: Unknown EDID block type. tag: %d, offset: %d\n",
+				tag, offset);
 			offset++;
 			offset += count;
 			break;
