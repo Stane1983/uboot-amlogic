@@ -394,13 +394,17 @@ static int get_fdto_totalsize(u32 *tz)
 
 static int do_fdt_overlay(void)
 {
+#define MAX_UBOOT_CMD_LEN 128
+#define MAX_DTBO_IDX_LEN 128
 	unsigned long long dtbo_mem_addr = 0x0;
 	int dtbo_num = 0;
-	int i;
-	char cmd[128];
+	char cmd[MAX_UBOOT_CMD_LEN];
 	unsigned long long dtbo_start;
+	char *dtbo_start_str = NULL;
 	char *dtbo_idx = NULL;
-	char idx[32];
+	int dtbo_idx_int = 0;
+	char dtbo_idx_str[MAX_DTBO_IDX_LEN] = { '\0' };
+	char *dtbo_idx_p = NULL;
 
 	if (!env_get("dtbo_mem_addr")) {
 		pr_err("No valid dtbo image found\n");
@@ -408,6 +412,7 @@ static int do_fdt_overlay(void)
 	}
 
 	dtbo_mem_addr = simple_strtoul(env_get("dtbo_mem_addr"), NULL, 16);
+
 #ifdef CONFIG_CMD_ADTIMG
 	if (!android_dt_check_header(dtbo_mem_addr)) {
 		pr_err("Error: DTBO image header is incorrect\n");
@@ -433,20 +438,23 @@ static int do_fdt_overlay(void)
 	return -1;
 	#endif
 
-	for (i = 0; i < dtbo_num; i++) {
-		memset(idx, 0x00, sizeof(idx));
-		sprintf(idx, "%d", i);
-		if (strstr(dtbo_idx, idx)) {
-			printf("Apply dtbo %d\n", i);
-			sprintf(cmd, "adtimg addr 0x%llx;adtimg get dt --index=%d  dtbo_start 0x%llx",
-				dtbo_mem_addr, i, dtbo_mem_addr);
+	snprintf(dtbo_idx_str, MAX_DTBO_IDX_LEN, "%s", dtbo_idx);
+	dtbo_idx_p = strtok(dtbo_idx_str, ",");
+	while (dtbo_idx_p) {
+		dtbo_idx_int = simple_strtoul(dtbo_idx_p, NULL, 10);
+		if (dtbo_idx_int < dtbo_num && dtbo_idx_int >= 0) {
+			printf("Apply dtbo %d\n", dtbo_idx_int);
+			snprintf(cmd, MAX_UBOOT_CMD_LEN, "adtimg addr 0x%llx;adtimg get dt --index=%d  dtbo_start",
+										dtbo_mem_addr, dtbo_idx_int);
 			run_command(cmd, 0);
-			dtbo_start = simple_strtoul(
-					env_get("dtbo_start"), NULL, 16);
-
-			sprintf(cmd, "fdt apply 0x%llx", dtbo_start);
-			run_command(cmd, 0);
+			dtbo_start_str = env_get("dtbo_start");
+			if (dtbo_start_str) {
+				dtbo_start = simple_strtoul(dtbo_start_str, NULL, 16);
+				snprintf(cmd, MAX_UBOOT_CMD_LEN, "fdt apply 0x%llx", dtbo_start);
+				run_command(cmd, 0);
+			}
 		}
+		dtbo_idx_p = strtok(NULL, ",");
 	}
 
 	free((void *)dtbo_mem_addr);
