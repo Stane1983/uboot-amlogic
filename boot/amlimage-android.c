@@ -1030,7 +1030,9 @@ int load_dvb_bootconfig(char *dvb_bootconfig, int dvb_bootconfig_size,
 static bool _read_in_bootconfig(struct vendor_boot_img_hdr *boot_info, uint32_t ramdisk_size)
 {
 #ifdef CONFIG_XBC
+	char *bootconfig;
 	char *avb_bootargs = env_get("avb_bootargs");
+	char *dtbo_idx_env = env_get("androidboot.dtbo_idx");
 
 	char partname[32] = {0};
 	char *slot_name;
@@ -1067,7 +1069,6 @@ static bool _read_in_bootconfig(struct vendor_boot_img_hdr *boot_info, uint32_t 
 	}
 #endif
 
-	char *bootconfig = env_get("bootconfig");
 	unsigned char *pRAMdisk = (unsigned char *)(unsigned long)boot_info->ramdisk_addr;
 
 	debug("bootconfig_size: 0x%x\n", boot_info->vendor_bootconfig_size);
@@ -1095,11 +1096,53 @@ static bool _read_in_bootconfig(struct vendor_boot_img_hdr *boot_info, uint32_t 
 		}
 
 		bootconfig_size += boot_info->vendor_bootconfig_size;
+
+		if (dtbo_idx_env) {
+			char *bootconfig_mem = (char *)(pRAMdisk + ramdisk_size);
+			char *dtbo_line = NULL;
+			int i;
+
+			printf("dtbo_idx_env: %s\n", dtbo_idx_env);
+
+			for (i = 0; i < bootconfig_size; i++) {
+				if (strncmp(&bootconfig_mem[i], "androidboot.dtbo_idx=", 21) == 0) {
+					dtbo_line = &bootconfig_mem[i];
+					break;
+				}
+			}
+
+			if (dtbo_line) {
+				char *line_end = strchr(dtbo_line, '\n');
+				int line_len;
+
+				if (line_end)
+					line_len = line_end - dtbo_line + 1;
+				else
+					line_len = strlen(dtbo_line);
+
+				printf("Found old androidboot.dtbo_idx in vendor_boot, removing\n");
+
+				int remaining = bootconfig_size -
+					(dtbo_line - bootconfig_mem) - line_len;
+
+				if (remaining > 0)
+					memmove(dtbo_line, dtbo_line + line_len, remaining);
+
+				memset(bootconfig_mem + bootconfig_size - line_len, 0, line_len);
+
+				bootconfig_size -= line_len;
+				debug("New bootconfig_size after removal: 0x%x\n",
+				bootconfig_size);
+			}
+			run_command("setenv bootconfig ${bootconfig} androidboot.dtbo_idx=${androidboot.dtbo_idx}", 0);
+		}
 	} else {
 		// there is no bootconfig
 		printf("copy bootconfig to bootargs\n");
 		copy_bootconfig_to_cmdline();
 	}
+
+	bootconfig = env_get("bootconfig");
 
 	if (bootconfig) {
 		int nlen = 0;
