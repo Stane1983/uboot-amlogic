@@ -449,6 +449,28 @@ void sprintf_lcd_connector(char *buf, unsigned char lcd_idx, unsigned char lcd_t
 	sprintf(buf, "%s-%c", connector_name_list[name_idx], 'A' + lcd_idx);
 }
 
+#ifdef CONFIG_AML_LCD_LVDS
+void lcd_lvds_bit_rate_config(struct aml_lcd_drv_s *pdrv)
+{
+	struct lcd_config_s *pconf = &pdrv->config;
+	unsigned long long bit_rate, band_width;
+	unsigned int port_div;
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("[%d]: %s\n", pdrv->index, __func__);
+
+	band_width = pconf->timing.act_timing.pixel_clk * 7;
+	port_div = pconf->control.lvds_cfg.dual_port ? 2 : 1;
+	bit_rate = lcd_do_div(band_width, port_div);
+	pconf->timing.bit_rate = bit_rate;
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+		LCDPR("[%d]: port_div:%d bit_rate=%lluHz, pclk=%uhz\n",
+		      pdrv->index, port_div, bit_rate, pconf->timing.act_timing.pixel_clk);
+	}
+}
+#endif
+
 #if defined(CONFIG_AML_LCD_VBYONE)
 static unsigned int vbyone_lane_num[] = {
 	1,

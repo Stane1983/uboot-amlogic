@@ -173,6 +173,8 @@ int lcd_fr_is_frac(struct aml_lcd_drv_s *pdrv, unsigned int frame_rate);
 int lcd_vmode_frac_is_support(struct aml_lcd_drv_s *pdrv, unsigned int frame_rate);
 int lcd_frame_rate_change(struct aml_lcd_drv_s *pdrv);
 void lcd_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
+void lcd_lvds_bit_rate_config(struct aml_lcd_drv_s *pdrv);
+
 #ifdef CONFIG_AML_LCD_VBYONE
 void lcd_vbyone_bit_rate_config(struct aml_lcd_drv_s *pdrv);
 #endif

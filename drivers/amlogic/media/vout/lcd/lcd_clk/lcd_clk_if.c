@@ -85,6 +85,11 @@ void lcd_clk_frac_generate(struct aml_lcd_drv_s *pdrv)
 		lcd_mipi_dsi_bit_rate_config(pdrv);
 		break;
 #endif
+#ifdef CONFIG_AML_LCD_LVDS
+	case LCD_LVDS:
+		lcd_lvds_bit_rate_config(pdrv);
+		break;
+#endif
 	default:
 		break;
 	}
@@ -179,6 +184,11 @@ void lcd_clk_generate_parameter(struct aml_lcd_drv_s *pdrv)
 #if defined(CONFIG_AML_LCD_MIPI_DSI)
 	case LCD_MIPI:
 		lcd_mipi_dsi_bit_rate_config(pdrv);
+		break;
+#endif
+#ifdef CONFIG_AML_LCD_LVDS
+	case LCD_LVDS:
+		lcd_lvds_bit_rate_config(pdrv);
 		break;
 #endif
 	default:
