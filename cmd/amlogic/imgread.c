@@ -352,6 +352,9 @@ static int do_image_read_dtb_from_knl(const char *partname,
 					ALIGN(pvendorimghdr->vendor_ramdisk_table_size,
 					pagesz);
 				totalsize += ramdisk_table_size;
+				totalsize +=
+					ALIGN(pvendorimghdr->vendor_bootconfig_size,
+					pagesz);
 				MsgP("ramdisk table offset 0x%x, totalsize 0x%lx\n",
 				nflashloadlen + lflashreadoff, totalsize);
 			}
