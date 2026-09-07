@@ -138,7 +138,8 @@
 		"bcb uboot-command;"\
 		"run switch_bootmode;"\
 		"run switch_usbmode;"\
-		"run reset_suspend;"
+		"run reset_suspend;"\
+		"run check_aocpu;"
 
 #else
 #define CONFIG_PREBOOT  "echo preboot"

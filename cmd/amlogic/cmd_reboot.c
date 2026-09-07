@@ -159,11 +159,8 @@ int do_get_rebootmode (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 #endif
 		case AMLOIGC_AOCPU_WATCHDOG_REBOOT:
 		{
-			if ((readl(SYSCTRL_STICKY_REG7) & AO_WDT_FLAG)) {
-				printf("aocpu trigger wdt, continue standby\n");
-				env_set("reboot_mode", "aocpu_watchdog");
-				pm_suspend();
-			}
+			printf("aocpu trigger wdt\n");
+			env_set("reboot_mode", "aocpu_watchdog");
 			break;
 		}
 		default:

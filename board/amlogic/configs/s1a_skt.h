@@ -108,7 +108,8 @@
 	"run init_display;"\
 	"run upgrade_key;" \
 	"bcb uboot-command;"\
-	"run switch_bootmode;"
+	"run switch_bootmode;"\
+	"run check_aocpu;"
 #else
 #define CONFIG_ENV_IS_NOWHERE  1
 #define CONFIG_PREBOOT  "echo preboot"

@@ -121,7 +121,8 @@
 	"run upgrade_key;" \
 	"bcb uboot-command;" \
 	"run switch_bootmode;" \
-	"run reset_suspend;"
+	"run reset_suspend;"\
+	"run check_aocpu;"
 
 #define CONFIG_FIT 1
 #define CONFIG_OF_LIBFDT 1
