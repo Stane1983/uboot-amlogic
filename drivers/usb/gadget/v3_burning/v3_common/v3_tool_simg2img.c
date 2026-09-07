@@ -326,7 +326,8 @@ int v3tool_simg2img_write_img(const UsbDownInf *downInf, const ImgDownloadPara *
 			hasNextChunkInfo = false;
 			//spmsg("big chunk left 0x%llx\n", _spPacketStates.leftTransLen);
 		} else {
-			_spPacketStates.leftChunkNum -= 1;
+			if (_spPacketStates.leftChunkNum)
+				_spPacketStates.leftChunkNum -= 1;
 		}
 	}
 

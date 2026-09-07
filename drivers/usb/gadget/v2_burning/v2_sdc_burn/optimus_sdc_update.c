@@ -134,7 +134,7 @@ int sdc_burn_buf_manager_init(const char *partName, s64 imgItemSz, const char *f
 int sdc_burn_verify(const char *verifyFile)
 {
 	int rcode = 0;
-	char *argv[8];
+	char *argv[CONFIG_SYS_MAXARGS + 1];
 	char  verifyCmd[64] = "";
 	char cmdBuf[64];
 	char *usb_update = getenv("usb_update");

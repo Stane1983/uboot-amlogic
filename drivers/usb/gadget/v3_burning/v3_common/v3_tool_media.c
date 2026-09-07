@@ -450,6 +450,8 @@ static int _bootloader_read(u8 *pBuf, unsigned off, unsigned binsz, const char *
 	for (iCopy = 0; iCopy < bootCpyNum; ++iCopy) {
 		void *dataBuf = iCopy ? pBuf + binsz : pBuf;
 
+		if (!actVldCpyNum)
+			dataBuf = pBuf;
 		if (medium_type == BOOT_EMMC)
 			if (!store_boot_copy_enable(iCopy)) {
 				FB_MSG("skip not EN cpy%d\n", iCopy);
@@ -461,14 +463,14 @@ static int _bootloader_read(u8 *pBuf, unsigned off, unsigned binsz, const char *
 			FB_ERR("Fail to read boot[%s] at copy[%d]\n", bootName, iCopy);
 			continue;
 		}
-		if (iCopy) {
-			if (!actVldCpyNum) {//NO valid cpy yet, so copy0 NOT valid also
-				memcpy(pBuf, dataBuf, binsz);
-			}
+		if (iCopy && actVldCpyNum) {
+			//if (!actVldCpyNum) {//NO valid cpy yet, so copy0 NOT valid also
+			//	memcpy(pBuf, dataBuf, binsz);
+			//}
 			if (memcmp(pBuf, dataBuf, binsz)) {
 				FBS_ERR(_ACK, "[%s] copy[%d] content NOT the same as copy[0]\n",
 						bootName, iCopy);//maybe ddr err as nand not err
-				memset(pBuf, 0, binsz);
+				//memset(pBuf, 0, binsz);
 				return -__LINE__;
 			}
 		}
@@ -477,7 +479,7 @@ static int _bootloader_read(u8 *pBuf, unsigned off, unsigned binsz, const char *
 	if (actVldCpyNum < validCpyNum) {
 		FBS_ERR(_ACK, "[%s]actual valid copy num %d < configured num %d\n",
 				bootName, actVldCpyNum, validCpyNum);
-		memset(pBuf, 0, binsz);
+		//memset(pBuf, 0, binsz);
 		return -__LINE__;
 	}
 

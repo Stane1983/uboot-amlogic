@@ -74,7 +74,7 @@ int optimus_verify_partition(const char *partName, HIMAGE hImg, char *_errInfo)
 {
 #define MaxSz (64 - 7) //verify file to at most 64B to corresponding to USB burn, strlen("verify ") == 7
 
-	char *argv[4];
+	char *argv[CONFIG_SYS_MAXARGS + 1];
 	int ret = 0;
 	HIMAGEITEM hImgItem = NULL;
 	int imgItemSz = 0;

@@ -480,7 +480,7 @@ int v3tool_buffman_next_upload_info(UsbUpInf **uploadInfo)
 	_usbUpInf.dataSize   = _mymin(leftLen, _RAW_IMG_TRANSFER_LEN);
 	_usbUpInf.dataBuf    = (char *)V3_DOWNLOAD_MEM_BASE;
 	u8 *dataBuf = (u8 *)_usbUpInf.dataBuf;
-	unsigned int dataSize = _usbUpInf.dataSize;
+	int dataSize = _usbUpInf.dataSize;
 	loff_t partOffset = _rawImgFileOffset + cmnInf->partStartOff;
 
 	switch (cmnInf->mediaType) {

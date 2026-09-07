@@ -381,7 +381,7 @@ static int _get_contents(int fd, loff_t pos,
 	do {
 		/* search for consecutive clusters */ while (actsize < maxsize) {
 			newclust = get_fatent(mydata, endclust);
-			if ((newclust - 1) != endclust)
+			if (newclust && (newclust - 1) != endclust)
 				goto getit;
 			if (CHECK_CLUST(newclust, mydata->fatsize)) {
 				DWN_MSG("curclust: 0x%x\n", newclust);
