@@ -101,3 +101,9 @@ int  __attribute__((weak)) IS_FEAT_DIS_NBL2_NAND(void)
 {
 	return 1;
 }
+
+int __attribute__((weak)) IS_FEAT_EN_AMFC_DOS_HIGHER_SPEED(void)
+{
+	return 0;
+}
+
