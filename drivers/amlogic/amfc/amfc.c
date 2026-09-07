@@ -98,14 +98,14 @@ static int log_en = 0;
 
 static void dump_addr(void *buf, unsigned int size)
 {
-        int i;
-        unsigned int *p = (unsigned int *)buf;
+	int i;
+	unsigned int *p = (unsigned int *)buf;
 
-        printf("%s addr:%px, size:%d\n", __func__, buf, size);
-        for (i = 0; i < size / 4; i += 4) {
-                printf("%px: %08x %08x %08x %08x\n",
-                        p + i, p[i], p[i + 1], p[i + 2], p[i + 3]);
-        }
+	printf("%s addr:%px, size:%d\n", __func__, buf, size);
+	for (i = 0; i < size / 4; i += 4) {
+		printf("%px: %08x %08x %08x %08x\n",
+			p + i, p[i], p[i + 1], p[i + 2], p[i + 3]);
+	}
 }
 
 static int build_tables(unsigned int *table, unsigned long base, ssize_t size, int type)
@@ -194,12 +194,11 @@ int amfc_decompress(void *src, void *dst, ssize_t src_size, ssize_t dst_size, in
 	unsigned int *src_table = NULL, *dst_table = NULL, *tmp;
 	int table_size;
 	unsigned int status, off;
-	int cmd_time;
-	int timeout = ((src_size + PAGE_SIZE) / PAGE_SIZE) * 100 + 5000;
-	unsigned long inv_end = (unsigned long)dst + dst_size;
-	unsigned long secmon_start = readl(SYSCTRL_SEC_STATUS_REG17) + (1 << 20);
+	int cmd_time, te;
+	int timeout = ((dst_size + PAGE_SIZE) / PAGE_SIZE) * 100 + 50000;
 	int ret;
 
+	te = get_time();
 	if (!src || !dst || src_size < 0 || dst_size < 0)
 		return -1;
 
@@ -260,13 +259,7 @@ int amfc_decompress(void *src, void *dst, ssize_t src_size, ssize_t dst_size, in
 	acl.owner     = 1;
 	acl.status    = 0xffffffff;
 
-	flush_dcache_range((unsigned long)src, (unsigned long)src + src_size);
-	flush_dcache_range((unsigned long)&acl, (unsigned long)&acl + sizeof(acl));
-
-	if (inv_end > secmon_start && (unsigned long)dst < secmon_start)
-		inv_end = secmon_start;
-
-	invalidate_dcache_range((unsigned long)dst, inv_end);
+	flush_dcache_all();
 
 	/* sw reset */
 	writel(0x80000000, AMFC_GL_CMD1_CONTROL);
@@ -288,8 +281,7 @@ int amfc_decompress(void *src, void *dst, ssize_t src_size, ssize_t dst_size, in
 	}
 	cmd_time = get_time() - cmd_time;
 
-	invalidate_dcache_range((unsigned long)dst, inv_end);
-	invalidate_dcache_range((unsigned long)&acl, (unsigned long)&acl + sizeof(acl));
+	invalidate_dcache_all();
 
 	status = readl(AMFC_GL_CMD1_STATUS);
 	if (!(status & AMFC_ERROR_MASK)) {
@@ -301,9 +293,9 @@ int amfc_decompress(void *src, void *dst, ssize_t src_size, ssize_t dst_size, in
 	#endif
 		writel(0x01, AMFC_GL_CMD1_IRQCLR);
 		if (log_en)
-			printf("decompress done:%x %x, size:%d, cycles:%d, time:%d us\n",
+			printf("decompress done:%x %x, size:%d, cycles:%d, hw time:%d us, total time:%d us\n",
 				acl.status, status, acl.result_size,
-				readl(AMFC_CMD1_TIME_MEASURE), cmd_time);
+				readl(AMFC_CMD1_TIME_MEASURE), cmd_time, get_time() - te);
 		if (stream)
 			ret = acl.result_size & ~(0x80000000);
 		else
@@ -343,7 +335,7 @@ int amfc_compress(void *src, void *dst, ssize_t src_size, ssize_t dst_size)
 	int table_size;
 	unsigned int status, off;
 	int cmd_time;
-	int timeout = ((src_size + PAGE_SIZE) / PAGE_SIZE) * 20 + 5000;
+	int timeout = ((src_size + PAGE_SIZE) / PAGE_SIZE) * 200 + 50000;
 	int ret;
 
 	if (log_en)
@@ -406,9 +398,7 @@ int amfc_compress(void *src, void *dst, ssize_t src_size, ssize_t dst_size)
 	acl.owner     = 1;
 	acl.status    = 0xffffffff;
 
-	flush_dcache_range((unsigned long)src, (unsigned long)src + src_size);
-	flush_dcache_range((unsigned long)&acl, (unsigned long)&acl + sizeof(acl));
-	invalidate_dcache_range((unsigned long)dst, (unsigned long)dst + dst_size);
+	flush_dcache_all();
 
 	/* SW reset */
 	writel(0x80000000, AMFC_GL_CMD0_CONTROL);
@@ -430,8 +420,7 @@ int amfc_compress(void *src, void *dst, ssize_t src_size, ssize_t dst_size)
 	}
 	cmd_time = get_time() - cmd_time;
 
-	invalidate_dcache_range((unsigned long)dst, (unsigned long)dst + dst_size);
-	invalidate_dcache_range((unsigned long)&acl, (unsigned long)&acl + sizeof(acl));
+	invalidate_dcache_all();
 
 	status = readl(AMFC_GL_CMD0_STATUS);
 	if (!(status & AMFC_ERROR_MASK)) {
