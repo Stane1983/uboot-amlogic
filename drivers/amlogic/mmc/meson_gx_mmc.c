@@ -1714,6 +1714,7 @@ static int meson_mmc_resume(void *pm_ops)
 {
 	struct dev_pm_ops *pm = (struct dev_pm_ops *)pm_ops;
 	struct meson_host *host = pm->private_data;
+	int err = 0;
 
 	printf("mmc resume: %s\n", pm->name);
 	if (strcmp(pm->name, "meson_mmc_pm")) {
@@ -1728,7 +1729,11 @@ static int meson_mmc_resume(void *pm_ops)
 	clk_enable(&host->div2);
 	clk_enable(&host->gate);
 
-	return 0;
+	err = run_command("mmc dev 1", 0);
+	if (err)
+		printf("%s: mmc_init() failed (err=%d)\n", pm->name, err);
+
+	return err;
 }
 
 static int meson_mmc_of_to_plat(struct udevice *dev)
