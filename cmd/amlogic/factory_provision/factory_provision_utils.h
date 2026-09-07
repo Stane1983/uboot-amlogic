@@ -64,7 +64,7 @@
 #define PART_NAME_FTY           "factory"
 #define NAND_FTY_MOUNT_PT       "mnt"
 
-#define FACTORY_PROVISION_VERSION                      "1.1"
+#define FACTORY_PROVISION_VERSION                      "1.2"
 
 #define TEE_PARAM_NUM                                  (4)
 
@@ -73,6 +73,9 @@
 		{ 0x95, 0xed, 0x19, 0x3c, 0xe1, 0xed, 0xa7, 0x15 } }
 
 #define PROVISION_PTA_CMD_EPEK_ENCRYPT                 (0)
+#define PROVISION_PTA_CMD_DERIVE_KEY                   (4)
+#define PROVISION_DERIVE_PCPK                          (0)
+#define PROVISION_DERIVE_PFPK                          (1)
 
 #define CMD_RET_SUCCESS                                0x00000000
 #define CMD_RET_KEYBOX_NOT_EXIST                       0x00000001
