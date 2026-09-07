@@ -602,6 +602,7 @@ int handle_model_oemkey(void)
 	unsigned int print_flag;
 	int i;
 	int ret = 1;
+	char model_path[128];
 
 	print_flag = env_get_ulong("model_debug_print", 10, 0xffff);
 	if (print_flag != 0xffff) {
@@ -626,8 +627,14 @@ int handle_model_oemkey(void)
 		}
 		ALOGI("%s: %s: %s\n", __func__, str, model);
 		ret = parse_model_oemkey(i, get_model_sum_path(i), model);
-		if (ret != 0)
-			continue;
+		if (ret != 0) {
+			snprintf(model_path, 127, "%s/Project_index_%s.ini",
+					get_model_path(i), model);
+			printf("oemkey try to read from model_path: %s\n", model_path);
+			ret = parse_model_oemkey(i, model_path, DEFAULT_SECTION);
+		}
+		if (ret == 0)
+			break;
 	}
 
 	return ret;

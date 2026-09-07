@@ -3733,6 +3733,7 @@ int handle_model_oemkey(void)
 	char *model, str[15], model_val[50];
 	int i;
 	int ret = 1;
+	char model_path[128];
 
 	for (i = 0; i < 3; i++) {
 		memset(model_val, 0, sizeof(model_val));
@@ -3754,8 +3755,14 @@ int handle_model_oemkey(void)
 		printf("current %s: %s\n", str, model);
 
 		ret = parse_model_oemkey(i, get_model_sum_path(i), model);
-		if (ret != 0)
-			continue;
+		if (ret != 0) {
+			snprintf(model_path, 127, "%s/Project_index_%s.ini",
+					get_model_path(i), model);
+			printf("oemkey try to read from model_path: %s\n", model_path);
+			ret = parse_model_oemkey(i, model_path, DEFAULT_SECTION);
+		}
+		if (ret == 0)
+			break;
 	}
 
 	return ret;
