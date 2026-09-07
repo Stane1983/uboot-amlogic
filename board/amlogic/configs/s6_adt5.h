@@ -106,6 +106,7 @@
 	"dv_fw_dir=/oem/firmware/dovi_fw.bin\0"\
 	"hdr_policy=0\0"\
 	"config_csc_en=1\0"\
+	"scan_info=3\0"\
 	"frac_rate_policy=1\0"\
 	"board=adt5\0"\
 	"upgrade_key="\

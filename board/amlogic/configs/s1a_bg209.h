@@ -84,6 +84,7 @@
 		"fb_width=1280\0" \
 		"fb_height=720\0" \
 		"hdmichecksum=0x00000000\0" \
+		"scan_info=3\0"\
 		"frac_rate_policy=1\0" \
 		"hdr_policy=0\0" \
 		"cvbs_drv=0\0"\

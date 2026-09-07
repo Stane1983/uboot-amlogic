@@ -104,6 +104,7 @@
 	"dv_fw_dir_odm_ext=/odm_ext/firmware/dovi_fw.bin\0"\
 	"dv_fw_dir=/oem/firmware/dovi_fw.bin\0"\
 	"hdr_policy=0\0"\
+	"scan_info=3\0"\
 	"frac_rate_policy=1\0"\
 	"upgrade_key="\
 		"run upgrade_key_base;"\

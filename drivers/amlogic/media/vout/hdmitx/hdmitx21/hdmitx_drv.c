@@ -831,7 +831,10 @@ static void construct_avi_packet(struct hdmitx_dev *hdev)
 {
 	struct hdmi_avi_infoframe *info = &hdev->infoframes.avi.avi;
 	struct hdmi_format_para *para = hdev->para;
+	char *scan_info = env_get("scan_info");
+	bool kernel_6_12 = get_kernel_dtb_info();
 	struct rx_cap *prxcap = &hdev->RXCap;
+	/* underscan is the default value */
 	enum hdmi_scan_mode scan_mode = HDMI_SCAN_MODE_UNDERSCAN;
 	enum hdmi_picture_aspect pic_ar = hdmitx_mode_get_vic_aspect_ratio(para->timing.vic);
 
@@ -878,10 +881,28 @@ static void construct_avi_packet(struct hdmitx_dev *hdev)
 	info->bottom_bar = 0;
 	info->left_bar = 0;
 	info->right_bar = 0;
-	info->scan_mode = hdmitx_check_scan_info(prxcap, scan_mode, para->timing.vic);
+
 	/* NO_DATA for special TV set, and underscan for other TV sets */
-	if (hdmitx_find_vendor_scan_non_std(hdev->rawedid))
+	if (hdmitx_find_vendor_scan_non_std(hdev->rawedid)) {
 		info->scan_mode = HDMI_SCAN_MODE_NONE;
+	} else if (scan_info && kernel_6_12) {
+		/* Add scan info policy only to kernel 6.12 */
+		if (scan_info[0] == '0')
+			info->scan_mode = HDMI_SCAN_MODE_NONE;
+		else if (scan_info[0] == '1')
+			info->scan_mode = HDMI_SCAN_MODE_OVERSCAN;
+		else if (scan_info[0] == '2')
+			info->scan_mode = HDMI_SCAN_MODE_UNDERSCAN;
+		else if (scan_info[0] == '3')
+			info->scan_mode =
+				hdmitx_check_scan_info(prxcap, scan_mode, para->timing.vic);
+	} else {
+		/*
+		 * If uboot does not configure the scan_info environment,
+		 * the kernel default configuration is underscan
+		 */
+		info->scan_mode = HDMI_SCAN_MODE_UNDERSCAN;
+	}
 
 	hdmi_avi_infoframe_set(info);
 }
