@@ -328,6 +328,9 @@ int aml_phy_resume(void *pm_ops)
 	writel(0x508200a0, p_aml_phy_dev->phy_cfg + 0x44);
 	writel(0x00000110, p_aml_phy_dev->phy_cfg + 0x4c);
 
+	/* phy swr reset release */
+	writel(0x0, p_aml_phy_dev->phy_cfg + 0x4);
+
 	phy_setting = phy_read(p_phydev, MDIO_DEVAD_NONE, 0);
 	phy_write(p_phydev, MDIO_DEVAD_NONE, 0, phy_setting & ~(0x800));
 

@@ -260,6 +260,8 @@ int aml_phy_resume(void *pm_ops)
 	writel(0x00118630, p_aml_phy_dev->phy_cfg + 0x44);
 	udelay(1000);
 	writel(0x12804008, p_aml_phy_dev->phy_cfg + 0x8);
+	/* phy swr reset release */
+	writel(0x0, p_aml_phy_dev->phy_cfg + 0x4);
 
 	phy_setting = phy_read(p_phydev, MDIO_DEVAD_NONE, 0);
 	phy_write(p_phydev, MDIO_DEVAD_NONE, 0, phy_setting & ~(0x800));
