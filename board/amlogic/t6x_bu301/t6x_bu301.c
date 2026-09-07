@@ -129,11 +129,12 @@ void board_init_mem(void)
 }
 
 extern void usb_power_init(void);
+extern void update_for_dtb_wakeup_key(void);
 
 int board_init(void)
 {
 	printf("board init\n");
-
+	clrsetbits_le32(PADCTRL_PIN_MUX_REGB, 0xf << 20, 0x1 << 20);//set GPIOD_5 pinmux as IR_IN
 	pinctrl_devices_active(PIN_CONTROLLER_NUM);
 
 #ifdef CONFIG_PXP_EMULATOR
@@ -238,6 +239,7 @@ int board_late_init(void)
 
 	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_e);
 	aml_board_late_init_tail(NULL);
+	update_for_dtb_wakeup_key();  //set bl30 preboot key list
 //	emmc_quirks();
 
 	run_command("check_dtbo", 0);
