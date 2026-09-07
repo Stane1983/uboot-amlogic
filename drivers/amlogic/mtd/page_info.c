@@ -236,7 +236,9 @@ void page_info_init_from_mtd_and_dts(struct mtd_info *mtd,
 		#endif
 		plat = dev_get_parent_plat(udev);
 		page_info->dev_cfg0.bus_width &= ~0x03;
-		if (plat->mode & SPI_RX_QUAD)
+		if (plat->mode & SPI_RX_OCTAL)
+			page_info->dev_cfg0.bus_width |= 3;
+		else if (plat->mode & SPI_RX_QUAD)
 			page_info->dev_cfg0.bus_width |= 2;
 		else if (plat->mode & SPI_RX_DUAL)
 			page_info->dev_cfg0.bus_width |= 1;

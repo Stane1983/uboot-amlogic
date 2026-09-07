@@ -154,6 +154,13 @@
 #define SPINOR_REG_MT_CFR1V	0x01	/* For setting dummy cycles */
 #define SPINOR_MT_OCT_DTR	0xe7	/* Enable Octal DTR with DQS. */
 
+/* For Gigadevice flashes only */
+#define SPINOR_OP_RD_NV_CFG_REG	0xb5	/* Read non-volatile register */
+#define SPINOR_OP_WR_NV_CFG_REG	0xb1	/* Write non-volatile register */
+#define SPINOR_OP_RD_CFG_REG	0x85	/* Read volatile register */
+#define SPINOR_OP_WR_CFG_REG	0x81	/* Write volatile register */
+#define SPINOR_MODE_WO_DQS		0xdf	/* SPI WO DQS Mode */
+
 /* Status Register bits. */
 #define SR_WIP			BIT(0)	/* Write in progress */
 #define SR_WEL			BIT(1)	/* Write enable latch */

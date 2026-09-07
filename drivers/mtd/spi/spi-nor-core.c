@@ -671,6 +671,7 @@ static int set_4byte(struct spi_nor *nor, const struct flash_info *info,
 		need_wren = true;
 	case SNOR_MFR_ISSI:
 	case SNOR_MFR_MACRONIX:
+	case SNOR_MFR_GIGADEVICE:
 	case SNOR_MFR_WINBOND:
 		if (need_wren)
 			write_enable(nor);
@@ -828,6 +829,65 @@ static int spi_nor_wait_till_ready(struct spi_nor *nor)
 {
 	return spi_nor_wait_till_ready_with_timeout(nor,
 						    DEFAULT_READY_WAIT_JIFFIES);
+}
+
+int spi_nor_giga_spi_cfg(struct spi_nor *nor, u8 cfg_addr, u8 cfg_value)
+{
+	struct spi_mem_op op;
+	int ret;
+	u8 buf;
+	u8 addr_width = nor->addr_width;
+
+	buf = 0;
+	op = (struct spi_mem_op)SPI_MEM_OP(SPI_MEM_OP_CMD(SPINOR_OP_RD_CFG_REG, 1),
+					  SPI_MEM_OP_ADDR(addr_width, cfg_addr, 1),
+					  SPI_MEM_OP_DUMMY(1, 1),
+					  SPI_MEM_OP_DATA_IN(1, &buf, 1));
+	ret = spi_mem_exec_op(nor->spi, &op);
+	if (ret)
+		return ret;
+
+	ret = spi_nor_wait_till_ready(nor);
+	if (ret)
+		return ret;
+
+	if (buf == cfg_value)
+		return 0;
+
+	ret = write_enable(nor);
+	if (ret)
+		return ret;
+
+	buf = cfg_value;
+	op = (struct spi_mem_op)SPI_MEM_OP(SPI_MEM_OP_CMD(SPINOR_OP_WR_CFG_REG, 1),
+					  SPI_MEM_OP_ADDR(addr_width, cfg_addr, 1),
+					  SPI_MEM_OP_NO_DUMMY,
+					  SPI_MEM_OP_DATA_OUT(1, &buf, 1));
+	ret = spi_mem_exec_op(nor->spi, &op);
+	if (ret)
+		return ret;
+
+	ret = spi_nor_wait_till_ready(nor);
+	if (ret)
+		return ret;
+
+	buf = 0;
+	op = (struct spi_mem_op)SPI_MEM_OP(SPI_MEM_OP_CMD(SPINOR_OP_RD_CFG_REG, 1),
+					  SPI_MEM_OP_ADDR(addr_width, cfg_addr, 1),
+					  SPI_MEM_OP_DUMMY(1, 1),
+					  SPI_MEM_OP_DATA_IN(1, &buf, 1));
+	ret = spi_mem_exec_op(nor->spi, &op);
+	if (ret)
+		return ret;
+
+	ret = spi_nor_wait_till_ready(nor);
+	if (ret)
+		return ret;
+
+	pr_debug("%s-%d CFG_ADDR:0x%x CFG_VALUE:0x%x\n",
+			__func__, __LINE__, cfg_addr, buf);
+
+	return 0;
 }
 
 #ifdef CONFIG_SPI_FLASH_BAR
@@ -2775,6 +2835,12 @@ static int spi_nor_init_params(struct spi_nor *nor,
 					SPINOR_OP_PP_1_1_4, SNOR_PROTO_1_1_4);
 	}
 
+	if (info->flags & SPI_NOR_OCTAL_READ) {
+		params->hwcaps.mask |= SNOR_HWCAPS_PP_1_1_8;
+		spi_nor_set_pp_settings(&params->page_programs[SNOR_CMD_PP_1_1_8],
+					SPINOR_OP_PP_1_1_8, SNOR_PROTO_1_1_8);
+	}
+
 	/* Select the procedure to set the Quad Enable bit. */
 	if (params->hwcaps.mask & (SNOR_HWCAPS_READ_QUAD |
 				   SNOR_HWCAPS_PP_QUAD)) {
@@ -3772,6 +3838,15 @@ static int spi_nor_init(struct spi_nor *nor)
 		if (nor->flags & SNOR_F_BROKEN_RESET)
 			debug("enabling reset hack; may not recover from unexpected reboots\n");
 		set_4byte(nor, nor->info, 1);
+	} else if (nor->addr_width == 4 &&
+		(nor->info->flags & SPI_NOR_4B_OPCODES) &&
+		JEDEC_MFR(nor->info) == SNOR_MFR_GIGADEVICE) {
+		set_4byte(nor, nor->info, 1);
+	}
+
+	if (JEDEC_MFR(nor->info) == SNOR_MFR_GIGADEVICE &&
+		(nor->info->flags & SPI_WO_DQS)) {
+		spi_nor_giga_spi_cfg(nor, 0, SPINOR_MODE_WO_DQS);
 	}
 
 	return 0;

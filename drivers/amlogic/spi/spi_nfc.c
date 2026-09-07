@@ -34,7 +34,7 @@ unsigned char infopage_force_hostecc = 0;
 
 struct spi_nfc_priv {
 	unsigned char save_cmd;
-	u32 save_addr;
+	u64 save_addr;
 	u32 save_addr_len;
 
 	u8 *data_buf;
@@ -292,7 +292,7 @@ static int spi_nfc_dma_xfer(struct spi_nfc_priv *priv,
 		}
 	}
 
-	SPI_NFC_DEBUG("n2m_cmd = %x ecc_steps = %x save_addr = %x addr_len = %x\n",
+	SPI_NFC_DEBUG("n2m_cmd = %x ecc_steps = %x save_addr = %llx addr_len = %x\n",
 		      n2m_cmd, ecc_steps, priv->save_addr, priv->save_addr_len);
 
 	if (!disable_host_ecc)
@@ -409,7 +409,9 @@ static int spi_nfc_set_speed(struct udevice *bus, uint hz)
 
 static int spi_nfc_set_mode(struct udevice *bus, uint mode)
 {
-	if (mode & SPI_RX_QUAD)
+	if (mode & SPI_RX_OCTAL)
+		page_info->dev_cfg0.bus_width |= 3;
+	else if (mode & SPI_RX_QUAD)
 		page_info->dev_cfg0.bus_width |= 2;
 	else if (mode & SPI_RX_DUAL)
 		page_info->dev_cfg0.bus_width |= 1;

@@ -72,6 +72,7 @@ struct flash_info {
 #ifdef CONFIG_AMLOGIC_MODIFY
 #define RD_OCTAL		BIT(18)	/* use Quad Read */
 #define WR_OPP			BIT(19)	/* use Quad Page Program */
+#define SPI_WO_DQS		BIT(20)	/* Use dedicated SPI W/O DQS OP mode*/
 #endif
 };
 
