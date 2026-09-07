@@ -101,6 +101,7 @@ int optimus_buf_manager_tplcmd_init(const char *mediaType,  const char *partName
 		writeBackUnitSz = OPTIMUS_SIMG_WRITE_BACK_SZ;
 
 	if (!strcmp("bootloader", partName) || !strcmp("_aml_dtb", partName) ||
+		!strncmp(partName, "bootloader-boot", strlen("bootloader-boot")) ||
 #if defined(CONFIG_AML_MTD) && defined(CONFIG_TPL_PART_NAME)
 	    !strcmp("gpt", partName) || !strcmp(CONFIG_TPL_PART_NAME, partName)) {
 #else

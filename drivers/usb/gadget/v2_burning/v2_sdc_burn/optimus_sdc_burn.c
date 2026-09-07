@@ -917,7 +917,7 @@ int optimus_burn_with_cfg_file(const char *cfgFile)
 		ret = __LINE__; goto _finish;
 	}
 
-	if (sheader_need()) {
+	if (sheader_need() && 0) {
 		ret = optimus_sdc_burn_sheader_load(hImg, -1);
 		if (ret) {
 			DWN_ERR("Fail in load sheader for sdc_burn\n");

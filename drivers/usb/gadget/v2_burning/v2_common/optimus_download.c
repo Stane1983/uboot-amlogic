@@ -281,6 +281,9 @@ static u32 optimus_download_normal_image(struct ImgBurnInfo *pDownInfo, u32 data
 
 	DWN_DBG("addrOffset=0x%llx, dataSz=0x%x, data = 0x%p\n", addrOrOffsetInBy, dataSz, data);
 
+	if (!strncmp(pDownInfo->partName, "bootloader-boot", strlen("bootloader-boot"))) {
+		ret = store_bootloader_ops(_STORE_BOOT_OP_WRITE, pDownInfo->partName, (void *)data, dataSz);
+	} else
 	ret = store_logic_write(pDownInfo->partName, addrOrOffsetInBy, dataSz, (void *)data);
 	if (ret) {
 		DWN_ERR("Fail to write to media\n");
@@ -462,6 +465,9 @@ static int optimus_storage_read(struct ImgBurnInfo *pDownInfo, u64 addrOrOffsetI
 			ret = bootloader_read(buff, 0, readSzInBy);
 		} else if (IMG_TYPE_DTB == pDownInfo->imgType) {
 			ret = store_rsv_read("dtb", readSzInBy, buff);
+		} else if (!strncmp("bootloader-", partName, strlen("bootloader-"))) {
+			DWN_MSG("read %s \n", partName);
+			ret = store_bootloader_ops(_STORE_BOOT_OP_READ, partName, buff, readSzInBy);
 		} else {
 			ret = store_logic_read(partName, addrOrOffsetInBy, readSzInBy, buff);
 			platform_busy_increase_un_reported_size(readSzInBy);
@@ -591,6 +597,7 @@ static int _parse_img_download_info(struct ImgBurnInfo *pDownInfo, const char *p
 
 	if (OPTIMUS_MEDIA_TYPE_MEM > pDownInfo->storageMediaType) {//if command for burning partition
 		if (strcmp("bootloader", partName) &&
+		    strncmp(partName, "bootloader-boot", strlen("bootloader-boot")) &&
 		    strcmp("_aml_dtb", partName) &&
 		    strcmp("gpt", partName)) {//get size if not bootloader
 			u64 partCap = store_part_size(partName);

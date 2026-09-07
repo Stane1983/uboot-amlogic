@@ -79,6 +79,16 @@ s64 storage_get_partition_size_in_byte(const char *partName)
 		return 128  *1024;//max gpt sz
 	}
 
+	if (!strncmp(partName, "bootloader-boot", strlen("bootloader-boot"))) {
+		size = store_boot_copy_size("bootloader");
+		if (!size) {
+			SDC_ERR("Fail get sz for boot0\n");
+			return 0;
+		}
+		SDC_MSG("bootsz 0x%llx\n", size);
+		return size;
+	}
+
 	size = store_part_size(partName);
 	if (!size) {
 		SDC_ERR("Fail to get size for part %s\n", partName);
