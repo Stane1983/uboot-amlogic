@@ -170,7 +170,7 @@ static u32 Tlv_WriteBuf(u8 *output, s32 len,
 	return tmplen + 8;
 }
 
-static u32 Tlv_ReadTl(u8 *input, int32_t len,
+static u32 Tlv_ReadTl(u8 *input, uint32_t len,
 		      u32 *tag, u32 *length,
 		      u32 *idx)
 {
@@ -180,14 +180,14 @@ static u32 Tlv_ReadTl(u8 *input, int32_t len,
 	*tag = *((u32 *)input);
 	*length =  *((u32 *)(input + 4));
 
-	if ((8 + *length) > len)
+	if (*length > len - 8)
 		return 0;
 	*idx += 8;
 
 	return 8;
 }
 
-static u32 Tlv_ReadHead(u8 *input, int32_t len,
+static u32 Tlv_ReadHead(u8 *input, uint32_t len,
 			struct storage_block_enc_head *pblockhead)
 {
 	u32 tag;
@@ -226,7 +226,7 @@ static u32 Tlv_ReadHead(u8 *input, int32_t len,
 	return sum;
 }
 
-static u32 Tlv_ReadObject(u8 *input, int32_t len,
+static u32 Tlv_ReadObject(u8 *input, uint32_t len,
 			  struct storage_object *pcontent)
 {
 	u32 tag;
@@ -234,6 +234,7 @@ static u32 Tlv_ReadObject(u8 *input, int32_t len,
 	u32 sum;
 	u32 idx = 0;
 	u32 ret;
+	u32 data_buf_flag = 0;
 
 	memset(pcontent, 0, sizeof(*pcontent));
 	ret = Tlv_ReadTl(input, len,
@@ -256,6 +257,8 @@ static u32 Tlv_ReadObject(u8 *input, int32_t len,
 			pcontent->namesize = *((u32 *)(input + idx));
 			break;
 		case EMTLVOBJNAME:
+			if (pcontent->namesize > MAX_OBJ_NAME_LEN)
+				goto tlv_readkeycontent_err;
 			memset(pcontent->name, 0, MAX_OBJ_NAME_LEN);
 			memcpy(pcontent->name, input + idx, pcontent->namesize);
 			break;
@@ -274,11 +277,19 @@ static u32 Tlv_ReadObject(u8 *input, int32_t len,
 			memcpy(pcontent->hashptr, input + idx, length);
 			break;
 		case EMTLVOBJDATABUF:
-			pcontent->dataptr = malloc(pcontent->datasize);
-			if (!pcontent->dataptr)
+			if (pcontent->datasize > len)
 				goto tlv_readkeycontent_err;
-			memcpy(pcontent->dataptr,
-			       input + idx, pcontent->datasize);
+			if (!data_buf_flag) {
+				pcontent->dataptr = malloc(pcontent->datasize);
+				if (!pcontent->dataptr)
+					goto tlv_readkeycontent_err;
+				memcpy(pcontent->dataptr,
+					input + idx, pcontent->datasize);
+				data_buf_flag = 1;
+			} else if (data_buf_flag) {
+				pr_err("Multiple occurrences of dataptr malloc!\n");
+				goto tlv_readkeycontent_err;
+			}
 			break;
 		default:
 			break;
