@@ -25,4 +25,8 @@ config SD_BURNING_SUPPORT_UI
 	---help---
 	  Say Y here if you want to support sdcard and usb disk with UI progress info
 
+config USB_UPDATE_UI_SZ
+	int "show UI if larger than this size"
+	default 200
+
 endif # AML_V2_FACTORY_BURN

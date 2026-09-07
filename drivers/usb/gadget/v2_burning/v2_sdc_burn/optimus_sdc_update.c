@@ -179,6 +179,7 @@ int optimus_burn_partition_image(const char *partName, const char *imgItemPath,
 	char *downTransBuf  = NULL;//get buffer from optimus_buffer_manager
 	const unsigned int ItemReadBufSz = OPTIMUS_DOWNLOAD_SLOT_SZ;//read this size from image item each time
 	unsigned int sequenceNo = 0;
+	__hdle hUiProgress = NULL;
 
 	imgItemSz = leftItemSz = do_fat_get_fileSz(imgItemPath);
 	if (!imgItemSz) {
@@ -199,6 +200,26 @@ int optimus_burn_partition_image(const char *partName, const char *imgItemPath,
 	}
 
 	/*optimus_progress_init((u32)(imgItemSz>>32), (u32)imgItemSz, 0, 100);*/
+	if ((imgItemSz>>20) > CONFIG_USB_UPDATE_UI_SZ) {
+		if (video_res_prepare_for_upgrade(NULL)) {
+			DWN_ERR("Fail when prepare bm res or init video for upgrade\n");
+			rcode = __LINE__; goto _finish;
+		}
+		show_logo_to_report_burning();
+
+		hUiProgress = optimus_progress_ui_request_for_sdc_burn();
+		if (!hUiProgress) {
+			DWN_ERR("request progress handle failed!\n");
+			rcode = __LINE__; goto _finish;
+		}
+		optimus_progress_ui_direct_update_progress(hUiProgress, UPGRADE_STEPS_AFTER_DISK_INIT_OK);
+		rcode = optimus_progress_ui_set_smart_mode(hUiProgress, imgItemSz,
+				UPGRADE_STEPS_AFTER_BURN_BOOTLOADER_OK - UPGRADE_STEPS_AFTER_DISK_INIT_OK);
+		if (rcode) {
+			DWN_ERR("Fail to set smart mode\n");
+			rcode = __LINE__; goto _finish;
+		}
+	}
 
 	//for each loop:
 	//1, get buffer from buffer_manager,
@@ -226,6 +247,8 @@ int optimus_burn_partition_image(const char *partName, const char *imgItemPath,
 			goto _finish;
 		}
 		/*optimus_update_progress(thisReadLen);//report burning steps*/
+		if (hUiProgress)
+			optimus_progress_ui_update_by_bytes(hUiProgress, thisReadLen) ;
 	}
 
 	if (leftItemSz <= 0)
@@ -235,6 +258,10 @@ _finish:
 	opt_file_close(hImgItem);
 	if (!rcode && verifyFile)
 		rcode = sdc_burn_verify(verifyFile);
+	if (hUiProgress)
+		optimus_progress_ui_report_upgrade_stat(hUiProgress, !rcode);
+	if (hUiProgress)
+		optimus_progress_ui_release(hUiProgress);
 	printf("=====>Burn part %s in fmt %s %s<======\n\n",
 	       partName, fileFmt, rcode ? "FAILED!!" : "OK");
 	return rcode;
