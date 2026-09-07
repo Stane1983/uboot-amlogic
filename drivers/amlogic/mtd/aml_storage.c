@@ -830,6 +830,7 @@ static int mtd_store_spinand_bl2_read(loff_t offset, size_t size,
 		offset_pos = offset + i * mtd->writesize;
 		if (!page_info_is_page(mtd, offset_pos / mtd->writesize) &&
 		    read_size < data_len) {
+			page_size = min_t(size_t, data_len - read_size, page_size);
 			ret = mtd_read(mtd, offset_pos, page_size, &retlen, source + read_size);
 			if (ret) {
 				printf("read 0x%llx bl2 data failed\n", offset_pos);
