@@ -672,8 +672,11 @@ static int spicc_xfer(struct udevice *dev, unsigned int bitlen,
 
 #ifndef CONFIG_SPICC_DMA_SRAM
 	if (spicc->using_dma) {
-		dma_addr_dout = dma_map_single((void *)dout, bitlen >> 3, DMA_TO_DEVICE);
-		dma_addr_din = dma_map_single(din, bitlen >> 3, DMA_FROM_DEVICE);
+		if (dout)
+			dma_addr_dout = dma_map_single((void *)dout, bitlen >> 3, DMA_TO_DEVICE);
+
+		if (din)
+			dma_addr_din = dma_map_single(din, bitlen >> 3, DMA_FROM_DEVICE);
 	}
 #endif
 
@@ -704,8 +707,11 @@ static int spicc_xfer(struct udevice *dev, unsigned int bitlen,
 
 #ifndef CONFIG_SPICC_DMA_SRAM
 	if (spicc->using_dma) {
-		dma_unmap_single(dma_addr_dout, bitlen >> 3, DMA_TO_DEVICE);
-		dma_unmap_single(dma_addr_din, bitlen >> 3, DMA_FROM_DEVICE);
+		if (dout)
+			dma_unmap_single(dma_addr_dout, bitlen >> 3, DMA_TO_DEVICE);
+
+		if (din)
+			dma_unmap_single(dma_addr_din, bitlen >> 3, DMA_FROM_DEVICE);
 	}
 #endif
 
