@@ -163,6 +163,13 @@ int do_get_rebootmode (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]
 			env_set("reboot_mode", "aocpu_watchdog");
 			break;
 		}
+#ifdef AMLOIGC_RTC_QUIESCENT_REBOOT
+		case AMLOIGC_RTC_QUIESCENT_REBOOT:
+		{
+			env_set("reboot_mode", "rtc_quiescent");
+			break;
+		}
+#endif
 		default:
 		{
 			env_set("reboot_mode","charging");
