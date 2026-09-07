@@ -176,7 +176,8 @@
 #define RX_CLK_CTRL3		(0x4D << 2)
 #define CLKCTRL_SYS_CLK_EN0_REG2	(0x13 << 2)
 
-#define TOP_BASE_OFFSET				0xfe398000
+#define TOP_BASE_EDID_OFFSET				0xfe398000
+#define TOP_BASE_OFFSET				0xfe399800
 
 #define TOP_DONT_TOUCH0                  0x0fe
 #define TOP_DONT_TOUCH1                  0x0ff
