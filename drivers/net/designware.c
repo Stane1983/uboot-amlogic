@@ -1416,7 +1416,7 @@ static int eqos_start(struct udevice *dev)
 		struct eqos_desc *rx_desc = &(eqos->rx_descs[i]);
 		rx_desc->des0 = (u32)(ulong)(eqos->rx_dma_buf +
 					     (i * EQOS_MAX_PACKET_SIZE));
-		rx_desc->des3 |= EQOS_DESC3_OWN | EQOS_DESC3_BUF1V;
+		rx_desc->des3 = EQOS_DESC3_OWN | EQOS_DESC3_BUF1V;
 	}
 
 	flush_dcache_range((phys_addr_t)eqos->descs, (phys_addr_t)((unsigned char *)eqos->descs + EQOS_DESCRIPTORS_SIZE));
@@ -1549,6 +1549,9 @@ int eqos_free_pkt(struct udevice *dev, uchar *packet, int length)
 		return -EINVAL;
 	}
 
+	/* Invalidate RX packet DMA buffer */
+	eqos_inval_buffer(packet, length);
+
 	rx_desc = &(eqos->rx_descs[eqos->rx_desc_idx]);
 	rx_desc->des0 = (u32)(ulong)packet;
 	rx_desc->des1 = 0;
@@ -1558,7 +1561,7 @@ int eqos_free_pkt(struct udevice *dev, uchar *packet, int length)
 	 * writes to the rest of the descriptor too.
 	 */
 	mb();
-	rx_desc->des3 |= EQOS_DESC3_OWN | EQOS_DESC3_BUF1V;
+	rx_desc->des3 = EQOS_DESC3_OWN | EQOS_DESC3_BUF1V;
 	eqos_flush_desc(rx_desc);
 
 	writel((ulong)rx_desc, &eqos->dma_regs_p->ch0_rxdesc_tail_pointer);
@@ -1611,6 +1614,9 @@ static int eqos_probe_resources_core(struct udevice * dev)
 		goto err_free_rx_dma_buf;
 	}
 	debug("%s: rx_pkt=%p\n", __func__, eqos->rx_pkt);
+
+	eqos_inval_buffer(eqos->rx_dma_buf,
+			EQOS_MAX_PACKET_SIZE * EQOS_DESCRIPTORS_RX);
 
 	debug("%s: OK\n", __func__);
 	return 0;
