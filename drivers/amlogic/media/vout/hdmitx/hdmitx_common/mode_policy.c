@@ -20,14 +20,6 @@ static struct meson_policy g_in[MESON_MODE_CON_MAX];
     mp = &g_in[connector];
 
 static bool is_support_420_mode(const char *mode) {
-    /*
-     * check input param
-     */
-    if (!mode) {
-        SYS_LOGI("%s mode is null\n", __FUNCTION__);
-        return false;
-    }
-
     if (!strcmp(mode, MODE_4K2K60HZ) ||
         !strcmp(mode, MODE_4K2K59HZ) ||
         !strcmp(mode, MODE_4K2K50HZ) ||
@@ -127,13 +119,6 @@ static int32_t update_dv_type(struct meson_hdr_info *info) {
     char type[MESON_MODE_LEN];
     /*
      * check input param
-     */
-    if (!info) {
-        SYS_LOGE("%s info is null\n", __FUNCTION__);
-        return false;
-    }
-
-    /*
      * 1. update input amdolby vision info
      * 1.1 update current amdolby vision mode
      */
@@ -177,14 +162,6 @@ static int32_t update_dv_type(struct meson_hdr_info *info) {
  * transfer amdolby vision mode to color format
  */
 static void update_dv_attr(struct meson_hdr_info *info, int amdv_type, char *amdv_attr) {
-    /*
-     * check input param
-     */
-    if (!info || !amdv_attr) {
-        SYS_LOGE("%s info or amdv_attr is null\n", __FUNCTION__);
-        return;
-    }
-
     switch (amdv_type) {
         case DOLBY_VISION_STD_ENABLE:
             strcpy(amdv_attr, "444,8bit");
@@ -216,14 +193,6 @@ static int32_t find_resolution_index(const char *mode, int flag) {
      * check mode is or not valid mode
      */
     int32_t validMode = 0;
-    /*
-     * check input param
-     */
-    if (!mode) {
-        SYS_LOGE("%s mode is null\n", __FUNCTION__);
-        return -1;
-    }
-
     if (strlen(mode) > 0) {
         for (int i = 0; i < ARRAY_SIZE(DISPLAY_MODE_LIST); i++) {
             if (strcmp(mode, DISPLAY_MODE_LIST[i]) == 0) {
@@ -276,6 +245,7 @@ static const char* find_frac_preferred_mode(bool preferred_frac, char *mode) {
     return mode;
 }
 
+#ifdef __UBOOT__
 const char* find_non_frac_preferred_mode(const char *mode) {
     for (int i = 0; i < ARRAY_SIZE(FRAC_MODE_LIST_MAP); i++) {
         if (!strcmp(FRAC_MODE_LIST_MAP[i].frac_mode, mode)) {
@@ -284,6 +254,7 @@ const char* find_non_frac_preferred_mode(const char *mode) {
     }
     return mode;
 }
+#endif
 
 static bool is_dv_support_mode(struct meson_policy_in *input, const char *mode) {
     bool validMode = false;
@@ -354,14 +325,6 @@ static int32_t amdv_update_mode(struct meson_policy_in *input,
     char dv_displaymode[MESON_MODE_LEN] = {0};
     int32_t ret = 0;
     bool is_preferred_50hz = false;
-
-    /*
-     * check input param
-     */
-    if (!input || !cur_outputmode || !final_displaymode) {
-        SYS_LOGE("%s input or cur_outputmode or final_displaymode is null\n", __FUNCTION__);
-        return ret;
-    }
 
     is_preferred_50hz = input->con_info.is_preferred_50hz;
 
@@ -519,14 +482,6 @@ static bool is_support_4kHDR(struct meson_policy_in *input,
     int color_list_length   = 0;
 
     /*
-     * check input param
-     */
-    if (!input || !output) {
-        SYS_LOGE("%s input or output is null\n", __FUNCTION__);
-        return false;
-    }
-
-    /*
      * use 4k hdr color format table
      */
     color_list      = HDR_4K_COLOR_ATTRIBUTE_LIST;
@@ -635,14 +590,6 @@ static bool find_hdr_prefer_mode(struct meson_policy_in *input,
     bool find = false;
 
     /*
-     * check input param
-     */
-    if (!input || !output) {
-        SYS_LOGE("%s input or output is null\n", __FUNCTION__);
-        return find;
-    }
-
-    /*
      * box can support 4k case
      * find prefer 4k hdr resolution and color format base driver edid
      */
@@ -664,14 +611,6 @@ static void get_best_color_attr(struct meson_policy_in *input,
                                const char *outputmode, char* colorattribute) {
     int length = 0;
     const char **color_list = NULL;
-
-    /*
-     * check input param
-     */
-    if (!input || !outputmode || !colorattribute) {
-        SYS_LOGE("%s input or outputmode or colorattribute is null\n", __FUNCTION__);
-        return;
-    }
 
     /*
      * if read /sys/class/amhdmitx/amhdmitx0/dc_cap is NULL
@@ -792,8 +731,8 @@ static bool hdr_scene_process(struct meson_policy_in *input,
 
     bool preferred_frac = input->con_info.is_preferred_frac_mode;
     bool need_frac_check = true;
-    SYS_LOGI("policy:%d is_bestcolorspace:%d state:%d preferred_frac:%d\n",
-            policy, input->con_info.is_bestcolorspace, input->state, preferred_frac);
+    SYS_LOGI("policy:%d is_bestcolorspace:%d state:%d preferred_frac:%d isframeratepriority %d \n",
+            policy, input->con_info.is_bestcolorspace, input->state, preferred_frac, input->con_info.isframeratepriority);
 
     /*
      * boot/hdmiplug/suspend/resume case
@@ -1042,14 +981,6 @@ static void get_highest_mode_by_policy(struct meson_policy_in *input,
     int tmp_resolution_list_length   = ARRAY_SIZE(MODE_RESOLUTION_FIRST);
 
     /*
-     * check input param
-     */
-    if (!input || !mode) {
-        SYS_LOGE("%s input or mode is null\n", __FUNCTION__);
-        return;
-    }
-
-    /*
      * check prefer 50hz
      */
     if (input->con_info.is_preferred_50hz) {
@@ -1144,14 +1075,6 @@ static void get_hdmi_color_attr(struct meson_policy_in *input,
     char colorTemp[MESON_MODE_LEN] = {0};
 
     /*
-     * check input param
-     */
-    if (!input || !outputmode || !color_attr) {
-        SYS_LOGE("%s input or mode or color_attr is null\n", __FUNCTION__);
-        return;
-    }
-
-    /*
      * if read /sys/class/amhdmitx/amhdmitx0/dc_cap is NULL.
      * use default color format
      */
@@ -1204,14 +1127,6 @@ static void get_hdmi_color_attr(struct meson_policy_in *input,
 static void update_deepcolor(struct meson_policy_in *input,
                              const char* outputmode,
                              char* colorattribute) {
-    /*
-     * check input param
-     */
-    if (!input || !outputmode || !colorattribute) {
-        SYS_LOGE("%s input or mode or colorattribute is null\n", __FUNCTION__);
-        return;
-    }
-
     if (input->con_info.is_deepcolor) {
         /*
          * deep color(10/12bit) enable case
