@@ -363,6 +363,39 @@ static int do_RunBcbCommand(
 			}
 		}
 
+		// Check if recovery is in fastboot mode
+		if (strstr(recovery, "--fastboot")) {
+			char *bootargs = env_get("bootargs");
+
+			if (bootargs) {
+				const char *otg_old = "otg_device=0";
+				const char *otg_new = "otg_device=1";
+				char *otg_pos = strstr(bootargs, otg_old);
+
+				if (otg_pos) {
+					// Replace otg_device=0 with otg_device=1
+					size_t prefix_len = otg_pos - bootargs;
+					size_t suffix_len = strlen(otg_pos + strlen(otg_old));
+					size_t new_bootargs_len = prefix_len +
+						strlen(otg_new) + suffix_len + 1;
+					char *new_bootargs = malloc(new_bootargs_len);
+
+					if (new_bootargs) {
+						printf("replace %s to %s\n", otg_old, otg_new);
+						strlcpy(new_bootargs, bootargs, prefix_len + 1);
+						strlcat(new_bootargs, otg_new, new_bootargs_len);
+						strlcat(new_bootargs, otg_pos + strlen(otg_old),
+							new_bootargs_len);
+						new_bootargs[new_bootargs_len - 1] = '\0';
+						env_set("bootargs", new_bootargs);
+
+						debug("New bootargs: %s\n", new_bootargs);
+						free(new_bootargs);
+					}
+				}
+			}
+		}
+
 		if (run_command("run recovery_from_flash", 0) < 0) {
 			printf("run_command for cmd:run recovery_from_flash failed.\n");
 			return -1;
