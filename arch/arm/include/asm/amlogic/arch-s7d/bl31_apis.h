@@ -95,6 +95,7 @@
 
 /*oscring efuse value get */
 #define OSCRING_EFUSE_GET       0x8200004D
+#define DOLBY_FW_AUDIO_ID_CHECK		0x8200005B
 /* Security Key*/
 #define SECURITY_KEY_QUERY	0x82000060
 #define SECURITY_KEY_READ	0x82000061

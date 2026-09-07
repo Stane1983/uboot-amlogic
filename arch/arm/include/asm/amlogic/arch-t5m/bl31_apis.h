@@ -114,6 +114,7 @@
 
 /*oscring efuse value get */
 #define OSCRING_EFUSE_GET       0x8200004D
+#define DOLBY_FW_AUDIO_ID_CHECK		0x8200005B
 
 #ifndef ABANDON_SECURE_UNIFY_KEY
 /* Security Key*/

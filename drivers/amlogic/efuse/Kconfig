@@ -4,3 +4,9 @@ config EFUSE_MRK_GET_CHECKNUM
 	default y
 	help
 	  Enable command for get MRK checksum
+
+config EFUSE_AUDIO_ID_CHECKNUM
+	bool "efuse get customer audio id checksum support"
+	default y
+	help
+	  Enable command for get customer audio id checksum

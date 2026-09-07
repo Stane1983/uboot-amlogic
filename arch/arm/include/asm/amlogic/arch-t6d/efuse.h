@@ -118,5 +118,9 @@ typedef enum efuse_mrk_checknum_status_s {
 uint32_t efuse_mrk_get_checknum(char *name, uint32_t longmrk, uint32_t *checknum);
 uint32_t meson_efuse_mrk_get_checknum(char *name, uint32_t longmrk, uint32_t *checknum);
 #endif
+#ifdef CONFIG_EFUSE_AUDIO_ID_CHECKNUM
+int efuse_audio_id_get_checknum(void *out, int len);
+int meson_efuse_audio_id_get_checknum(void *out, int len);
+#endif
 #endif
 

@@ -464,3 +464,13 @@ uint32_t efuse_mrk_get_checknum(char *name, uint32_t longmrk, uint32_t *checknum
 	return ret;
 }
 #endif
+
+#ifdef CONFIG_EFUSE_AUDIO_ID_CHECKNUM
+int efuse_audio_id_get_checknum(void *out, int len)
+{
+	uint32_t ret;
+
+	ret = meson_efuse_audio_id_get_checknum(out, len);
+	return ret;
+}
+#endif
