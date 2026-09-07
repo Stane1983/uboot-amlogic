@@ -95,7 +95,7 @@ static void lcd_set_pll_ss(struct aml_lcd_drv_s *pdrv, unsigned int ss_flag)
 	}
 
 	lcd_ana_write(ANACTRL_TCON_PLL0_CNTL2 + offset, pll_ctrl2);
-	LCDPR("[%d]: set ssc: %s\n", pdrv->index, prt_str);
+	LCDPR("[%d]: set ssc: %s\n", pdrv->index, len ? prt_str : "none");
 }
 
 static void lcd_pll_frac_set(struct aml_lcd_drv_s *pdrv, unsigned int frac)

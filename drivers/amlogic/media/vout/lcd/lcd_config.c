@@ -271,16 +271,16 @@ int lcd_base_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 #ifdef CONFIG_OF_LIBFDT
 	struct lcd_config_s *pconf = &pdrv->config;
 	int parent_offset;
-	char *propdata, *p, snode[10];
+	char *propdata, *p, snode[8];
 	const char *str;
 	unsigned int temp;
 	char str_info[128];
 	int str_info_len = 0, i;
 
 	if (pdrv->index == 0)
-		sprintf(snode, "/lcd");
+		snprintf(snode, 8, "/lcd");
 	else
-		sprintf(snode, "/lcd%d", pdrv->index);
+		snprintf(snode, 8, "/lcd%d", pdrv->index);
 	parent_offset = fdt_path_offset(dt_addr, snode);
 	if (parent_offset < 0) {
 		LCDERR("[%d]: not find %s node: %s\n",
@@ -747,15 +747,18 @@ int lcd_get_dts_panel_node_ofst(unsigned char drv_idx)
 {
 	int node_ofst;
 	char *dt_addr = lcd_get_dt_addr();
-	char parent_str[6], type_str[12], propname[30];
+	char parent_str[8], type_str[16], propname[30];
 	char *panel_type;
 
+	if (drv_idx >= LCD_MAX_DRV)
+		return -1;
+
 	if (drv_idx == 0) {
-		sprintf(parent_str, "/lcd");
-		sprintf(type_str, "panel_type");
+		snprintf(parent_str, 8, "/lcd");
+		snprintf(type_str, 16, "panel_type");
 	} else {
-		sprintf(parent_str, "/lcd%d", drv_idx);
-		sprintf(type_str, "panel%d_type", drv_idx);
+		snprintf(parent_str, 8, "/lcd%d", drv_idx);
+		snprintf(type_str, 16, "panel%d_type", drv_idx);
 	}
 	panel_type = env_get(type_str);
 	if (!panel_type) {
@@ -930,9 +933,9 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 	unsigned int temp, lcd_bits = 24;
 
 	if (pdrv->index == 0)
-		sprintf(type_str, "panel_type");
+		snprintf(type_str, 20, "panel_type");
 	else
-		sprintf(type_str, "panel%d_type", pdrv->index);
+		snprintf(type_str, 20, "panel%d_type", pdrv->index);
 
 	char *panel_type = env_get(type_str);
 
@@ -1784,7 +1787,7 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv)
 	struct phy_attr_s *phy = NULL;
 	struct lcd_unifykey_header_s *lcd_header;
 	unsigned char *para;
-	char key_str[10];
+	char key_str[8];
 	int key_len, len;
 	unsigned char *p, val;
 	const char *str;
@@ -1792,9 +1795,9 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv)
 	int ret = 0;
 
 	if (pdrv->index == 0)
-		sprintf(key_str, "lcd");
+		snprintf(key_str, 8, "lcd");
 	else
-		sprintf(key_str, "lcd%d", pdrv->index);
+		snprintf(key_str, 8, "lcd%d", pdrv->index);
 
 	ret = lcd_unifykey_get_size(key_str, &key_len);
 	if (ret)

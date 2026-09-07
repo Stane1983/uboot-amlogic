@@ -125,7 +125,7 @@ static void lcd_set_pll_ss_t6d_t6w(struct aml_lcd_drv_s *pdrv, unsigned int ss_f
 	lcd_ana_write(ANACTRL_TCON_PLL0_CNTL2, pll_ctrl2);
 	lcd_ana_write(ANACTRL_TCON_PLL0_CNTL0, pll_ctrl0);
 
-	LCDPR("[%d]: pll set ssc: %s\n", pdrv->index, prt_str);
+	LCDPR("[%d]: pll set ssc: %s\n", pdrv->index, len ? prt_str : "none");
 }
 
 static void lcd_pll_ss_enable_t6d_t6w(struct aml_lcd_drv_s *pdrv, int status)

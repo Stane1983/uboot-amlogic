@@ -601,14 +601,14 @@ static unsigned int lcd_get_drv_cnt_flag_from_dts(char *dt_addr)
 {
 #ifdef CONFIG_OF_LIBFDT
 	int parent_offset;
-	char str[10];
+	char str[8];
 	unsigned int i, flag = 0;
 
 	for (i = 0; i < lcd_data->drv_max; i++) {
 		if (i == 0)
-			sprintf(str, "/lcd");
+			snprintf(str, 8, "/lcd");
 		else
-			sprintf(str, "/lcd%d", i);
+			snprintf(str, 8, "/lcd%d", i);
 
 		parent_offset = fdt_path_offset(dt_addr, str);
 		if (parent_offset < 0) {
@@ -782,15 +782,15 @@ void lcd_update_ctrl_bootargs(struct aml_lcd_drv_s *pdrv)
 	lcd_venc_save_bootctrl_to_regs(pdrv);
 
 	if (pdrv->index == 0)
-		sprintf(env_str, "panel_type");
+		snprintf(env_str, 16, "panel_type");
 	else
-		sprintf(env_str, "panel%d_type", pdrv->index);
+		snprintf(env_str, 16, "panel%d_type", pdrv->index);
 	type_str = env_get(env_str);
 
-	sprintf(env_str, "lcd%d_attr", pdrv->index);
-	sprintf(ctrl_str, "0x%08x,%s,%s", val,
-		pdrv->boot_ctrl.custom_pinmux ? pdrv->config.basic.model_name : "",
-		pdrv->key_valid ? "" : (type_str ? type_str : ""));
+	snprintf(env_str, 16, "lcd%d_attr", pdrv->index);
+	snprintf(ctrl_str, 48, "0x%08x,%s,%s", val,
+		 pdrv->boot_ctrl.custom_pinmux ? pdrv->config.basic.model_name : "",
+		 pdrv->key_valid ? "" : (type_str ? type_str : ""));
 	env_set(env_str, ctrl_str);
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {

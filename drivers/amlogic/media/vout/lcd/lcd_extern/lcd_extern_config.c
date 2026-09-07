@@ -60,13 +60,13 @@ static int lcd_extern_get_init_dts(char *dtaddr, struct lcd_extern_driver_s *edr
 	int parent_offset;
 	char *propdata, *p;
 	const char *str;
-	char snode[15];
+	char snode[16];
 	int i;
 
 	if (edrv->index == 0)
-		sprintf(snode, "/lcd_extern");
+		snprintf(snode, 16, "/lcd_extern");
 	else
-		sprintf(snode, "/lcd%d_extern", edrv->index);
+		snprintf(snode, 16, "/lcd%d_extern", edrv->index);
 
 	parent_offset = fdt_path_offset(dtaddr, snode);
 	if (parent_offset < 0) {
@@ -515,6 +515,7 @@ static int lcd_extern_init_table_handle_dts(struct lcd_extern_driver_s *edrv,
 		EXTERR("%s: alloc memory error\n", __func__);
 		return -1;
 	}
+	memset(init_buf, 0, init_buf_size);
 
 	//init_on
 	for (i = 0; i < len_on; i++)
@@ -1466,10 +1467,13 @@ static int lcd_extern_dt_valid(char *dt_addr, int index)
 	char str[16];
 	char *propdata;
 
+	if (index >= LCD_MAX_DRV)
+		return 0;
+
 	if (index == 0)
-		sprintf(str, "/lcd_extern");
+		snprintf(str, 16, "/lcd_extern");
 	else
-		sprintf(str, "/lcd_extern%d", index);
+		snprintf(str, 16, "/lcd_extern%d", index);
 
 	parent_offset = fdt_path_offset(dt_addr, str);
 	if (!parent_offset)
@@ -1501,7 +1505,7 @@ static int lcd_extern_dev_probe(struct lcd_extern_driver_s *edrv, int n, int dev
 {
 	struct lcd_extern_dev_s *edev;
 	unsigned char file_type = PANEL_FILE_INVILD;
-	char skey[15], snode[15];
+	char skey[16], snode[16];
 	int ret = 0;
 
 	if (!edrv->dev[n]) {
@@ -1516,11 +1520,11 @@ static int lcd_extern_dev_probe(struct lcd_extern_driver_s *edrv, int n, int dev
 	edev->dev_index = dev_index;
 
 	if (edrv->index == 0) {
-		sprintf(snode, "/lcd_extern");
-		sprintf(skey, "lcd_extern");
+		snprintf(snode, 16, "/lcd_extern");
+		snprintf(skey, 16, "lcd_extern");
 	} else {
-		sprintf(snode, "/lcd%d_extern", edrv->index);
-		sprintf(skey, "lcd%d_extern", edrv->index);
+		snprintf(snode, 16, "/lcd%d_extern", edrv->index);
+		snprintf(skey, 16, "lcd%d_extern", edrv->index);
 	}
 
 	switch (edrv->config_load) {

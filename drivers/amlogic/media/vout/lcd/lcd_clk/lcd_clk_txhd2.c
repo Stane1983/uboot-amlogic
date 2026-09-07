@@ -116,7 +116,7 @@ static void lcd_set_pll_ss_txhd2(struct aml_lcd_drv_s *pdrv, unsigned int ss_fla
 	}
 
 	lcd_ana_write(HHI_TCON_PLL_CNTL2, pll_ctrl2);
-	LCDPR("[%d]: set ssc: %s\n", pdrv->index, prt_str);
+	LCDPR("[%d]: set ssc: %s\n", pdrv->index, len ? prt_str : "none");
 }
 
 static void lcd_set_pll_txhd2(struct aml_lcd_drv_s *pdrv)

@@ -486,9 +486,9 @@ static int bl_config_load_from_dts(char *dt_addr, struct aml_bl_drv_s *bdrv)
 	unsigned int temp;
 
 	if (bdrv->index == 0)
-		sprintf(sname, "/backlight");
+		snprintf(sname, 20, "/backlight");
 	else
-		sprintf(sname, "/backlight%d", bdrv->index);
+		snprintf(sname, 20, "/backlight%d", bdrv->index);
 
 	bconf->method = BL_CTRL_MAX; /* default */
 	parent_offset = fdt_path_offset(dt_addr, sname);
@@ -1126,9 +1126,9 @@ static int bl_config_load_from_bsp(struct aml_bl_drv_s *bdrv)
 		return -1;
 
 	if (bdrv->index == 0)
-		sprintf(sname, "panel_type");
+		snprintf(sname, 20, "panel_type");
 	else
-		sprintf(sname, "panel%d_type", bdrv->index);
+		snprintf(sname, 20, "panel%d_type", bdrv->index);
 	panel_type = env_get(sname);
 	if (!panel_type) {
 		BLERR("no %s\n", sname);
@@ -1769,10 +1769,13 @@ static unsigned int lcd_bl_dt_valid(char *dt_addr, int index)
 	char str[16];
 	char *propdata;
 
+	if (index >= LCD_MAX_DRV)
+		return 0;
+
 	if (index == 0)
-		sprintf(str, "/backlight");
+		snprintf(str, 16, "/backlight");
 	else
-		sprintf(str, "/backlight%d", index);
+		snprintf(str, 16, "/backlight%d", index);
 
 	parent_offset = fdt_path_offset(dt_addr, str);
 	if (!parent_offset)
@@ -1891,15 +1894,15 @@ static int lcd_bl_init_load_from_dts(char *dtaddr, struct aml_bl_drv_s *bdrv)
 {
 #ifdef CONFIG_OF_LIBFDT
 	int parent_offset;
-	char *propdata, *p, snode[15];
+	char *propdata, *p, snode[16];
 	const char *str;
 	int i, j;
 	int ret = 0;
 
 	if (bdrv->index == 0)
-		sprintf(snode, "/backlight");
+		snprintf(snode, 16, "/backlight");
 	else
-		sprintf(snode, "/backlight%d", bdrv->index);
+		snprintf(snode, 16, "/backlight%d", bdrv->index);
 
 	/* check key_valid */
 	parent_offset = fdt_path_offset(dtaddr, snode);

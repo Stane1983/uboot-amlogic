@@ -87,7 +87,7 @@ int aml_lcd_i2c_write(unsigned char i2c_bus, unsigned int i2c_addr,
 	struct udevice *bus;
 	struct udevice *i2c_dev;
 	int i, ret = 0;
-	unsigned char data = 0;
+	unsigned char data[64] = {0};
 
 	aml_i2c_bus = i2c_bus;
 	ret = uclass_get_device_by_seq(UCLASS_I2C, aml_i2c_bus, &bus);
@@ -113,7 +113,7 @@ int aml_lcd_i2c_write(unsigned char i2c_bus, unsigned int i2c_addr,
 		return -1;
 	}
 	if (len == 1)
-		ret = dm_i2c_write(i2c_dev, buff[0], &data, len);
+		ret = dm_i2c_write(i2c_dev, buff[0], data, 1);
 	else if (len > 1)
 		ret = dm_i2c_write(i2c_dev, buff[0], &buff[1], len - 1);
 

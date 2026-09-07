@@ -461,11 +461,14 @@ void lcd_unifykey_dump(int index, unsigned int flag)
 		return;
 #endif
 
+	if (index >= LCD_MAX_DRV)
+		return;
+
 	/* dump unifykey: lcd */
 	if (index > 0)
-		sprintf(str, "lcd%d", index);
+		snprintf(str, 20, "lcd%d", index);
 	else
-		sprintf(str, "lcd");
+		snprintf(str, 20, "lcd");
 	ret = lcd_unifykey_get_size(str, &key_len);
 	if (ret)
 		goto lcd_unifykey_dump_next1;

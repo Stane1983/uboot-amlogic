@@ -182,12 +182,12 @@ void mem_dump(unsigned char *addr, int size)
 	for (j = 0; j < (size >> 4); j++) {
 		for (i = 0, len = 0; i < 16; i++)
 			len += sprintf(buf + len, "%02x ", (unsigned int)addr[j * 16 + i]);
-		printf("0x%04x: %s\n", j * 16,  buf);
+		printf("0x%04x: %s\n", j * 16,  len ? buf : " ");
 	}
 	if (size & 0xf) {
 		for (i = 0, len = 0; i < (size & 0xf); i++)
 			len += sprintf(buf + len, "%02x ", (unsigned int)addr[j * 16 + i]);
-		printf("0x%04x: %s\n", j * 16,  buf);
+		printf("0x%04x: %s\n", j * 16,  len ? buf : " ");
 	}
 }
 
