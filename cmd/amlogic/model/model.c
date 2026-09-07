@@ -501,9 +501,19 @@ int parse_model_logofile(int index, const char *file_name, char *model_name)
 			debug("filename is %s\n", filename);
 			debug("partition is %s\n", partition);
 			env_set("board_logo_part", partition);
-		} else {
+		} else if (!strncmp("/logo_files", logo_value, 11)) {
 			strlcpy(filename, logo_value, (strlen(logo_value) + 1));
 			printf("filename is %s\n", filename);
+		} else {
+			strlcpy(temp_file_path, logo_value, (strlen(logo_value) + 1));
+			printf("temp_file_path is %s\n", temp_file_path);
+
+			if (split_file_path(temp_file_path, partition, filename, NULL) < 0)
+				return 1;
+
+			printf("filename is %s\n", filename);
+			printf("partition is %s\n", partition);
+			env_set("board_logo_part", partition);
 		}
 
 		env_set("logo_file_name", filename);
