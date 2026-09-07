@@ -124,6 +124,14 @@ config KALLSYMS
 		This config can help to print call stack like linux kernel panic
 		when crash. It's very useful for debug crash issues.
 
+config SPLIT_BOOT
+	bool "Suppot split uboot boot"
+	default n
+	help
+		Adapt small volume emmc boot
+		Load bl40/bl31/bl32 from spl, load bl30/bl33 from tpl
+
+
 config AML_BL33_COMPRESS_ENABLE
 	bool "Amlogic U-boot compress"
 	help

@@ -31,6 +31,11 @@ __attribute__ ((section(".clk_param"))) = {
 	.pxp = 0,
 #endif
 	.low_console_baud = CONFIG_LOW_CONSOLE_BAUD,
+#ifdef CONFIG_SPLIT_BOOT
+	.split_boot = 1,
+#else
+	.split_boot = 0,
+#endif
 };
 
 #define VCCK_VAL                                AML_VCCK_INIT_VOLTAGE

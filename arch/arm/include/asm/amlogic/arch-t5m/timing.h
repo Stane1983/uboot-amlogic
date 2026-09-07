@@ -190,7 +190,7 @@ typedef struct board_clk_set{
 	unsigned	short	vcck;
 	unsigned	short	pxp;
 	unsigned	char    low_console_baud;
-	unsigned	char	szPad[1];
+	unsigned	char	split_boot;
 }__attribute__ ((packed)) board_clk_set_t;
 
 typedef struct board_common_setting {
