@@ -314,6 +314,7 @@ static int do_update_env_part(cmd_tbl_t *cmdtp, int flag, int argc, char * const
 		errorP("Fail malloc buf sz 0x%x\n", BUF_SZ);
 		return CMD_RET_FAILURE;
 	}
+	memset(env_part_buf, 0, BUF_SZ);
 	new_env_buf = env_part_buf + CONFIG_ENV_SIZE;
 
 	//#1> record env list need to update
