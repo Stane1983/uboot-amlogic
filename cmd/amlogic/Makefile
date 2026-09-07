@@ -92,6 +92,8 @@ obj-$(CONFIG_CMD_MUITI_REMOTE_KEYPAD) += powerkey.o
 obj-$(CONFIG_CMD_MUITI_REMOTE_KEYPAD) += cmd_multi_keypad.o
 obj-$(CONFIG_CMD_MUITI_REMOTE_KEYPAD) += cmd_multi_remote.o
 
+obj-$(CONFIG_REPLACE_TV_MODE) += cmd_udisk_burn.o
+
 ifdef CONFIG_NASC_NAGRA_TIER_1
 else
 

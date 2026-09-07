@@ -388,6 +388,12 @@ int optimus_report_burn_complete_sta(int isFailed, int rebootAfterBurn)
 
 	DWN_MSG("======sdc burn SUCCESS.\n");
 	optimus_led_show_burning_success();
+	env_set("usb_burn_state", "2");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+	run_command("update_env_part -p usb_burn_state;", 0);
+#else
+	run_command("defenv_reserv; saveenv;", 0);
+#endif
 	optimus_burn_complete(rebootAfterBurn ? rebootAfterBurn : OPTIMUS_BURN_COMPLETE__POWEROFF_AFTER_POWERKEY);//set complete flag and poweroff if burn successful
 	return 0;
 }

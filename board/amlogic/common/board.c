@@ -954,47 +954,6 @@ int aml_board_late_init_tail(void *arg)
 
 	run_command("update_tries", 0);
 
-#ifdef CONFIG_REPLACE_TV_MODE
-	char *keymatch = env_get("keymatch");
-	char partnam[32] = {0};
-	char *slot_name;
-	int ret = 0;
-
-	slot_name = env_get("slot-suffixes");
-	if (slot_name && (strcmp(slot_name, "0") == 0))
-		strcpy((char *)partnam, "odm_ext_a");
-	else if (slot_name && (strcmp(slot_name, "1") == 0))
-		strcpy((char *)partnam, "odm_ext_b");
-	else
-		strcpy((char *)partnam, "odm_ext");
-
-	if (IS_FEAT_BOOT_VERIFY()) {
-		printf("secureboot, check key match\n");
-		run_command("check_avb_key", 0);
-	}
-
-	keymatch = env_get("keymatch");
-	printf("keymatch is %s\n", keymatch);
-
-	if (!IS_FEAT_BOOT_VERIFY() ||
-		(keymatch && (strcmp(keymatch, "true") == 0))) {
-		printf("non secureboot or key matched\n");
-		ret = run_command("usb start 0", 0);
-		printf("ret = %d\n", ret);
-
-		if (ret == 0) {
-			env_set("odmextPart", partnam);
-			env_set("udiskodmextBurn",
-					"usb_update ${odmextPart} odm_ext.img");
-			ret = run_command("run udiskodmextBurn", 0);
-
-			env_set("udiskproductionextBurn",
-					"usb_update production_ext production_ext.img");
-			ret = run_command("run udiskproductionextBurn", 0);
-		}
-	}
-#endif
-
 	//Need save outputmode/connector_type to flash if changed after display drv init
 	if (env_get("outputmode"))
 		con_len = sprintf(con_str, "outputmode");
@@ -1187,6 +1146,9 @@ const char * const _aml_env_reserv_array[] = {
 	"expect_index",
 	"recovery_check_part",
 	"factorytest",
+	"need_erase_key",
+	"total_boot_time",
+	"usb_burn_state",
 	"defenv_para",	//set in board_late_init
 	"rollback_reason",
 #ifndef CONFIG_CMD_CAR_PARAMS

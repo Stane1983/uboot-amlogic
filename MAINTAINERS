@@ -1608,3 +1608,8 @@ FACTORY:
 M:	Xindong Xu <xindong.xu@amlogic.com>
 S:	Maintained
 F:	board/amlogic/t6d_t335/firmware/vendor_pub.pem
+
+UDISK_BURN:
+M:	Xindong Xu <xindong.xu@amlogic.com>
+S:	Maintained
+F:	cmd/amlogic/cmd_udisk_burn.c
