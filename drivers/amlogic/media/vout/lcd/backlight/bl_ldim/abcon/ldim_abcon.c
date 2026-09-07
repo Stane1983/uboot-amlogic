@@ -190,6 +190,9 @@ void ldim_abcon_set_txrx_clk(unsigned int txclk, unsigned int rxclk)
 
 	abcon_wr_reg_bits(0x16, enc_bit_num, 13, 3);//reg_abcon_enc_bit_num
 
+	//reg_abcon_tx_sck_set
+	abcon_wr_reg_bits(0x02, ((txscale / 2) - 1), 0, 8);
+
 	abcon_wr_reg_bits(0x01, txscale, 0, 10);//reg_abcon_tx_scale
 	abcon_wr_reg_bits(0x01, txscale, 20, 10);//reg_abcon_tx_scale0
 	abcon_wr_reg_bits(0x17, txscale, 0, 10);//reg_abcon_tx_scale1

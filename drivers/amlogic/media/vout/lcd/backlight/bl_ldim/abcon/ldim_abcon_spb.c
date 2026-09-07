@@ -25,6 +25,7 @@ enum sop_type_e {
 	sop_broadcast,
 	sop_readback,
 	sop_dimming,
+	sop_config,
 	sop_feedback,
 	sop_max,
 };
@@ -37,9 +38,11 @@ struct abcon_spb_s {
 	unsigned char act_lane_num;
 	unsigned char dual_wire;
 	unsigned char default_value;
+	unsigned char dis_dip_combined;
 	unsigned int fb_cnt;
 	unsigned int fb_high_cnt_th;
 	unsigned char sop_type;
+	unsigned char dip_mode;
 };
 
 struct abcon_spb_s *bl_spb;
@@ -65,6 +68,9 @@ struct spb_packet_s {
 
 	unsigned int eop_header;
 	unsigned int eop_data;
+
+	unsigned int pad_header;
+	unsigned int pad_data;
 };
 
 struct spb_packet_s spb_packet;
@@ -84,12 +90,17 @@ void ldim_abcon_spb_write_packet(void)
 	if (!buf)
 		return;
 
-	for (i = 0; i < act_lane_num; i++)
-		buf[len++] = spb_packet.preamble_header;
+	if (((bl_spb->sop_type == sop_address || bl_spb->sop_type == sop_readback) &&
+		(bl_spb->dual_wire == 1)) ||
+		bl_spb->dual_wire == 0 ||
+		bl_spb->dip_mode == 0) {
+		for (i = 0; i < act_lane_num; i++)
+			buf[len++] = spb_packet.preamble_header;
 
-	for (i = 0; i < act_lane_num; i++) {
-		buf[len++] = spb_packet.preamble_data[0];
-		buf[len++] = spb_packet.preamble_data[1];
+		for (i = 0; i < act_lane_num; i++) {
+			buf[len++] = spb_packet.preamble_data[0];
+			buf[len++] = spb_packet.preamble_data[1];
+		}
 	}
 
 	for (i = 0; i < act_lane_num; i++)
@@ -123,6 +134,18 @@ void ldim_abcon_spb_write_packet(void)
 
 	for (i = 0; i < act_lane_num; i++)
 		buf[len++] = spb_packet.eop_data;
+
+	if ((bl_spb->sop_type == sop_broadcast ||
+		bl_spb->sop_type == sop_config ||
+		bl_spb->sop_type == sop_dimming) &&
+		(bl_spb->dual_wire == 1) &&
+		(bl_spb->dip_mode == 1)) {
+		for (i = 0; i < act_lane_num; i++)
+			buf[len++] = spb_packet.pad_header;
+
+		for (i = 0; i < act_lane_num; i++)
+			buf[len++] = spb_packet.pad_data;
+	}
 
 	flush_dcache_range((unsigned long)buf,
 		(unsigned long)(buf + len));
@@ -181,16 +204,25 @@ void ldim_abcon_spb_broadcast(unsigned int regaddr, unsigned int value)
 {
 	bl_spb->sop_type = sop_broadcast;
 
-	//sw reset
-	//abcon_wr_reg_bits(0x00, 1, 5, 1);
-	//abcon_wr_reg_bits(0x00, 0, 5, 1);
+	//ABCONPR("broadcast: regaddr:0x%2x, value:0x%x, dip_mode=%d, dual_mode=%d\n",
+	//	regaddr, value, bl_spb->dip_mode, bl_spb->dual_wire);
 
-	//clr done flag
-	abcon_wr_reg_bits(0x00, 1, 4, 1);
-	abcon_wr_reg_bits(0x00, 0, 4, 1);
+	//sw reset
+	ldim_abcon_swrst();
+
+	//reg_abcon_dual_line_mode
+	if (bl_spb->dip_mode) {
+		abcon_wr_reg_bits(0x03, 1, 4, 1);//dual wire
+	} else {
+		abcon_wr_reg_bits(0x03, 0, 4, 1);//single wire
+	}
 
 	//reg_abcon_dix_mode
-	abcon_wr_reg_bits(0x03, 1, 5, 1);/*0:dis, 1:dip*/
+	if (bl_spb->dis_dip_combined && bl_spb->dual_wire == 0)
+		abcon_wr_reg_bits(0x03, 0, 5, 1);/*0:dis*/
+	else
+		abcon_wr_reg_bits(0x03, 1, 5, 1);/*1:dip*/
+
 	//reg_abcon_act_lane_num
 	abcon_wr_reg_bits(0x03, abcon->act_lane_num, 10, 4);
 
@@ -202,24 +234,128 @@ void ldim_abcon_spb_broadcast(unsigned int regaddr, unsigned int value)
 	//reg_abcon_crc_value
 	abcon_wr_reg_bits(0x10, 0x9a9a, 16, 16);
 
-	spb_packet.preamble_header = 0x70006082;
-	spb_packet.preamble_data[0] = 0x55555555;
-	spb_packet.preamble_data[1] = 0x05555555;
+	if (bl_spb->dual_wire && bl_spb->dip_mode) {
+		//spb_packet.preamble_header = 0x70006082;
+		//spb_packet.preamble_data[0] = 0x55555555;
+		//spb_packet.preamble_data[1] = 0x05555555;
 
-	spb_packet.sop_header = 0x500020b0;
-	spb_packet.sop_data = 0x000c1f07;
+		spb_packet.sop_header = 0x50002030;
+		spb_packet.sop_data = 0x000c1f07;
 
-	spb_packet.addr_header = 0x400020e0;
-	spb_packet.addr_data = (regaddr & 0x7f) << 8;
+		spb_packet.addr_header = 0x40002060;
+		spb_packet.addr_data = (regaddr & 0x7f) << 8;
 
-	spb_packet.data_header = 0x400020e0;
-	spb_packet.data_data = value;
+		spb_packet.data_header = 0x40002060;
+		spb_packet.data_data = value;
 
-	spb_packet.crc_header = 0x400020c4;//hw_crc_en, without crc_data
-	//spb_packet.crc_data = 0x400020c4;
+		spb_packet.crc_header = 0x40002044;//hw_crc_en, without crc_data
+		//spb_packet.crc_data = 0x400020c4;
 
-	spb_packet.eop_header = 0x14002088;
-	spb_packet.eop_data = 0x0000000d;
+		spb_packet.eop_header = 0x14002000;
+		spb_packet.eop_data = 0x0000000d;
+
+		spb_packet.pad_header = 0x3c002008;
+		spb_packet.pad_data = 0x00000000;
+	} else {
+		spb_packet.preamble_header = 0x70006082;
+		spb_packet.preamble_data[0] = 0x55555555;
+		spb_packet.preamble_data[1] = 0x05555555;
+
+		spb_packet.sop_header = 0x500020b0;
+		spb_packet.sop_data = 0x000c1f07;
+
+		spb_packet.addr_header = 0x400020e0;
+		spb_packet.addr_data = (regaddr & 0x7f) << 8;
+
+		spb_packet.data_header = 0x400020e0;
+		spb_packet.data_data = value;
+
+		spb_packet.crc_header = 0x400020c4;//hw_crc_en, without crc_data
+		//spb_packet.crc_data = 0x400020c4;
+
+		spb_packet.eop_header = 0x14002088;
+		spb_packet.eop_data = 0x0000000d;
+	}
+
+	ldim_abcon_spb_write_packet();
+	udelay(1500);
+}
+
+
+void ldim_abcon_spb_config(unsigned int lane, unsigned int dim,
+	unsigned int regaddr, unsigned int value)
+{
+	bl_spb->sop_type = sop_config;
+
+	//sw reset
+	ldim_abcon_swrst();
+
+	//reg_abcon_dual_line_mode
+	if (bl_spb->dip_mode) {
+		abcon_wr_reg_bits(0x03, 1, 4, 1);//dual wire
+	} else {
+		abcon_wr_reg_bits(0x03, 0, 4, 1);//single wire
+	}
+
+	//reg_abcon_dix_mode
+	if (bl_spb->dis_dip_combined && bl_spb->dual_wire == 0)
+		abcon_wr_reg_bits(0x03, 0, 5, 1);/*0:dis*/
+	else
+		abcon_wr_reg_bits(0x03, 1, 5, 1);/*1:dip*/
+
+	//reg_abcon_act_lane_num
+	abcon_wr_reg_bits(0x03, 1, 10, 4);//config write 1 lane each
+
+	//reg_abcon_act_lane
+	if (abcon->chip_type == ABCON_CHIP_T6W)
+		abcon_wr_reg_bits(0x2a, 1 << lane, 22, 4);
+	else
+		abcon_wr_reg_bits(0x29, 1 << lane, 0, 12);
+	//reg_abcon_crc_value
+	abcon_wr_reg_bits(0x10, 0x955a, 16, 16);
+
+	if (bl_spb->dual_wire && bl_spb->dip_mode) {
+		//spb_packet.preamble_header = 0x70006082;
+		//spb_packet.preamble_data[0] = 0x55555555;
+		//spb_packet.preamble_data[1] = 0x05555555;
+
+		spb_packet.sop_header = 0x50002030;
+		spb_packet.sop_data = 0x000c6727;
+
+		spb_packet.addr_header = 0x40002060;
+		spb_packet.addr_data = ((regaddr & 0x7f) << 8) | (dim & 0xff);
+
+		spb_packet.data_header = 0x40002060;
+		spb_packet.data_data = value;
+
+		spb_packet.crc_header = 0x40002044;//hw_crc_en, without crc_data
+		//spb_packet.crc_data = 0x400020c4;
+
+		spb_packet.eop_header = 0x14002000;
+		spb_packet.eop_data = 0x0000000d;
+
+		spb_packet.pad_header = 0x3c002008;
+		spb_packet.pad_data = 0x00000000;
+	} else {
+		spb_packet.preamble_header = 0x70006082;
+		spb_packet.preamble_data[0] = 0x55555555;
+		spb_packet.preamble_data[1] = 0x05555555;
+
+		spb_packet.sop_header = 0x500020b0;
+		spb_packet.sop_data = 0x000c6727;
+
+		spb_packet.addr_header = 0x400020e0;
+		spb_packet.addr_data = ((regaddr & 0x7f) << 8) | (dim & 0xff);
+
+		spb_packet.data_header = 0x400020e0;
+		spb_packet.data_data = value;
+
+		spb_packet.crc_header = 0x400020c4;//hw_crc_en, without crc_data
+		//spb_packet.crc_data = 0x400020c4;
+
+		spb_packet.eop_header = 0x14002088;
+		spb_packet.eop_data = 0x0000000d;
+	}
 
 	ldim_abcon_spb_write_packet();
 	udelay(1500);
@@ -230,14 +366,17 @@ void ldim_abcon_spb_address(void)
 	bl_spb->sop_type = sop_address;
 
 	//sw reset
-	//abcon_wr_reg_bits(0x00, 1, 5, 1);
-	//abcon_wr_reg_bits(0x00, 0, 5, 1);
-	//clr done flag
-	abcon_wr_reg_bits(0x00, 1, 4, 1);
-	abcon_wr_reg_bits(0x00, 0, 4, 1);
+	ldim_abcon_swrst();
+
+	//reg_abcon_dual_line_mode
+	abcon_wr_reg_bits(0x03, 0, 4, 1);//force singal wire mode
 
 	//reg_abcon_dix_mode
-	abcon_wr_reg_bits(0x03, 0, 5, 1);/*0:dis, 1:dip*/
+	if (bl_spb->dis_dip_combined && bl_spb->dual_wire == 1)
+		abcon_wr_reg_bits(0x03, 1, 5, 1);/*1:dip*/
+	else
+		abcon_wr_reg_bits(0x03, 0, 5, 1);/*0:dis*/
+
 	//reg_abcon_act_lane_num
 	abcon_wr_reg_bits(0x03, abcon->act_lane_num, 10, 4);
 
@@ -256,8 +395,10 @@ void ldim_abcon_spb_address(void)
 	spb_packet.sop_header = 0x500020b0;
 	spb_packet.sop_data = 0x000c6711;
 
+	if (bl_spb->dual_wire)
+		bl_spb->dip_mode = 1;
 	spb_packet.addr_header = 0x400020e0;
-	spb_packet.addr_data = 0x00000001;
+	spb_packet.addr_data = 0x00000001 | (bl_spb->dip_mode << 14);
 
 	spb_packet.data_header = 0x400020e0;
 	spb_packet.data_data = 0;
@@ -275,8 +416,20 @@ void ldim_abcon_spb_address(void)
 void ldim_abcon_spb_dimming(void)
 {
 	bl_spb->sop_type = sop_dimming;
+
+	//reg_abcon_dual_line_mode
+	if (bl_spb->dip_mode) {
+		abcon_wr_reg_bits(0x03, 1, 4, 1);//dual wire
+	} else {
+		abcon_wr_reg_bits(0x03, 0, 4, 1);//single wire
+	}
+
 	//reg_abcon_dix_mode
-	abcon_wr_reg_bits(0x03, 1, 5, 1);/*0:dis, 1:dip*/
+	if (bl_spb->dis_dip_combined && bl_spb->dual_wire == 0)
+		abcon_wr_reg_bits(0x03, 0, 5, 1);/*0:dis*/
+	else
+		abcon_wr_reg_bits(0x03, 1, 5, 1);/*1:dip*/
+
 	//reg_abcon_act_lane_num
 	abcon_wr_reg_bits(0x03, abcon->act_lane_num, 10, 4);
 
@@ -288,24 +441,48 @@ void ldim_abcon_spb_dimming(void)
 	//reg_abcon_crc_value
 	abcon_wr_reg_bits(0x10, 0x999f, 16, 16);
 
-	spb_packet.preamble_header = 0x70006082;
-	spb_packet.preamble_data[0] = 0x55555555;
-	spb_packet.preamble_data[1] = 0x05555555;
+	if (bl_spb->dual_wire && bl_spb->dip_mode) {
+		//spb_packet.preamble_header = 0x70006082;
+		//spb_packet.preamble_data[0] = 0x55555555;
+		//spb_packet.preamble_data[1] = 0x05555555;
 
-	spb_packet.sop_header = 0x500020b0;
-	spb_packet.sop_data = 0x000c6311;
+		spb_packet.sop_header = 0x50002030;
+		spb_packet.sop_data = 0x000c6311;
 
-	spb_packet.addr_header = 0x400020e0;
-	spb_packet.addr_data = 0x00002001;
+		spb_packet.addr_header = 0x40002060;
+		spb_packet.addr_data = 0x00002001;
 
-	spb_packet.data_header = 0x10e1 | ((abcon->max_lane_ch & 0xfff) << 14);
-	//spb_packet.data_data = value;
+		spb_packet.data_header = 0x00001061 | ((abcon->max_lane_ch & 0xfff) << 14);
+		//spb_packet.data_data = value;
 
-	spb_packet.crc_header = 0x400020c4;//hw_crc_en, without crc_data
-	//spb_packet.crc_data = 0x400020c4;
+		spb_packet.crc_header = 0x40002044;//hw_crc_en, without crc_data
+		//spb_packet.crc_data = 0x400020c4;
 
-	spb_packet.eop_header = 0x14002088;
-	spb_packet.eop_data = 0x0000000d;
+		spb_packet.eop_header = 0x14002000;
+		spb_packet.eop_data = 0x0000000d;
+
+		spb_packet.pad_header = 0x3c002008;
+		spb_packet.pad_data = 0x00000000;
+	} else {
+		spb_packet.preamble_header = 0x70006082;
+		spb_packet.preamble_data[0] = 0x55555555;
+		spb_packet.preamble_data[1] = 0x05555555;
+
+		spb_packet.sop_header = 0x500020b0;
+		spb_packet.sop_data = 0x000c6311;
+
+		spb_packet.addr_header = 0x400020e0;
+		spb_packet.addr_data = 0x00002001;
+
+		spb_packet.data_header = 0x10e1 | ((abcon->max_lane_ch & 0xfff) << 14);
+		//spb_packet.data_data = value;
+
+		spb_packet.crc_header = 0x400020c4;//hw_crc_en, without crc_data
+		//spb_packet.crc_data = 0x400020c4;
+
+		spb_packet.eop_header = 0x14002088;
+		spb_packet.eop_data = 0x0000000d;
+	}
 
 	ldim_abcon_spb_write_packet();
 }
@@ -318,6 +495,23 @@ unsigned int ldim_abcon_spb_readback(unsigned char reg, unsigned char chip)
 
 	//reg_abcon_crc_value
 	abcon_wr_reg_bits(0x10, 0x5559, 16, 16);
+
+	//reg_abcon_dual_line_mode
+	abcon_wr_reg_bits(0x03, 0, 4, 1);//force singal wire mode
+
+	//reg_abcon_dix_mode
+	if (bl_spb->dis_dip_combined && bl_spb->dual_wire == 1)
+		abcon_wr_reg_bits(0x03, 1, 5, 1);/*1:dip*/
+	else
+		abcon_wr_reg_bits(0x03, 0, 5, 1);/*0:dis*/
+
+	//reg_abcon_act_lane_num
+	abcon_wr_reg_bits(0x03, 1, 10, 4);// fix 1 lane
+	//reg_abcon_act_lane
+	if (abcon->chip_type == ABCON_CHIP_T6W)
+		abcon_wr_reg_bits(0x2a, 1, 22, 4);//fix use lane 0
+	else
+		abcon_wr_reg_bits(0x29, 1, 0, 12);
 
 	//prepare read packet first
 	spb_packet.preamble_header = 0xe000c105;
@@ -390,6 +584,19 @@ void ldim_abcon_init_registers(void)
 	abcon_wr_reg_bits(0x00, 1, 4, 1);
 	abcon_wr_reg_bits(0x00, 0, 4, 1);
 
+	//reg_abcon_wire_mode
+	if (bl_spb->dual_wire) {
+		if (bl_spb->dis_dip_combined)
+			abcon_wr_reg_bits(0x22, 1, 30, 2);
+		else
+			abcon_wr_reg_bits(0x22, 2, 30, 2);
+	} else {
+		if (bl_spb->dis_dip_combined)
+			abcon_wr_reg_bits(0x22, 0, 30, 2);
+		else
+			abcon_wr_reg_bits(0x22, 2, 30, 2);
+	}
+
 	//reg_frc_crc_val_en
 	abcon_wr_reg_bits(0x03, 1, 0, 1);
 	//reg_abcon_rx_scale_sel
@@ -399,7 +606,7 @@ void ldim_abcon_init_registers(void)
 	//reg_abcon_dual_line_mode
 	abcon_wr_reg_bits(0x03, bl_spb->dual_wire, 4, 1);
 	//reg_abcon_dix_mode
-	abcon_wr_reg_bits(0x03, 1, 5, 1);/*0:dis, 1:dip*/
+	abcon_wr_reg_bits(0x03, 0, 5, 1);/*0:dis, 1:dip*/
 	//reg_abcon_default_value
 	abcon_wr_reg_bits(0x03, bl_spb->default_value, 8, 1);
 	//reg_abcon_rx_preamble_num
@@ -435,6 +642,11 @@ void ldim_abcon_init_spb(void)
 		ldim_abcon_spb_broadcast(0x7c, 0xa5c9);
 	}
 
+	//dos clk
+	ldim_abcon_spb_broadcast(0x5b, 0x0021);
+	if (bl_spb->dis_dip_combined)
+		ldim_abcon_spb_config(0, 1, 0x5b, 0x0121);
+
 	//set iset range
 	ldim_abcon_spb_broadcast(0x48, 0x6037);
 
@@ -449,9 +661,6 @@ void ldim_abcon_init_spb(void)
 
 	//headroom
 	ldim_abcon_spb_broadcast(0x5a, 0x0001);
-
-	//dos clk
-	ldim_abcon_spb_broadcast(0x5b, 0x0021);
 
 	//ch enable
 	ldim_abcon_spb_broadcast(0x40, 0x000f);
@@ -506,6 +715,7 @@ static int abcon_spb_hw_init_off(struct ldim_dev_driver_s *dev_drv)
 	ldim_abcon_swduty_set(ldim_drv);
 	abcon_wr_reg_bits(0x2c, 0, 29, 1);//sw control id
 	ldim_abcon_spb_dimming();
+	bl_spb->dip_mode = 0;
 
 	//sw reset
 	ldim_abcon_swrst();
@@ -607,11 +817,13 @@ int ldim_dev_abcon_spb_probe(struct aml_ldim_driver_s *ldim_drv)
 
 	bl_spb->fb_cnt = 10;
 	bl_spb->fb_high_cnt_th = 8;
+	bl_spb->dip_mode = 0;
 
 	bl_spb->dual_wire = abcon->conf.ctrl & 0x1;
 	bl_spb->default_value = (abcon->conf.ctrl >> 1) & 0x1;
-	ABCONPR("ctrl=0x%x, dual_wire=%d, default_value=%d\n",
-	abcon->conf.ctrl, bl_spb->dual_wire, bl_spb->default_value);
+	bl_spb->dis_dip_combined = (abcon->conf.ctrl >> 2) & 0x1;
+	ABCONPR("ctrl=0x%x, dual_wire=%d, default_value=%d dis_dip_combined=%d\n",
+	abcon->conf.ctrl, bl_spb->dual_wire, bl_spb->default_value, bl_spb->dis_dip_combined);
 
 	//init abcon register for spb
 	ldim_abcon_init_registers();

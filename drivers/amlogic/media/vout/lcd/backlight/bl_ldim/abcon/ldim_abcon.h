@@ -30,20 +30,36 @@
 
 /* abcon memory map*/
 //#define ABCON_MEM_TOTAL 0xa000
-#define CH_MAPPING_SIZE 0x800   //1024 * 2bytes
-#define SW_DUTY_SIZE 0x2000 //0X800 * 4, as ldc hw duty
-#define WSEG_SIZE 0x400
-#define RSEG_SIZE 0x400
-#define LDC_SEG_SIZE 0x100	// for reg_abcon_ldc_seg_baddr
+#define CH_MAPPING_SIZE_T6W 0x800   //1024 * 2bytes
+#define SW_DUTY_SIZE_T6W 0x8000 //0X2000 * 4, as ldc hw duty
+#define WSEG_SIZE_T6W 0x400
+#define RSEG_SIZE_T6W 0x400
+#define LDC_SEG_SIZE_T6W 0x400  // for reg_abcon_ldc_seg_baddr
 
-#define CH_MAPPING_OFFSET 0
-#define LDC_SEG_OFFSET 0x800	//CH_MAPPING_OFFSET + CH_MAPPING_SIZE
-#define SW_DUTY_OFFSET 0x900    //LDC_SEG_OFFSET  + LDC_SEG_SIZE
-#define WSEG_OFFSET 0x2900   //SW_DUTY_OFFSET + SW_DUTY_SIZE
-#define RSEG_OFFSET 0x2D00  //WSEG_OFFSET + WSEG_SIZE
-#define ABCON_OFFSET_END 0x3100	//RSEG_OFFSET + RSEG_SIZE
+#define CH_MAPPING_OFFSET_T6W 0
+#define LDC_SEG_OFFSET_T6W 0x800    //CH_MAPPING_OFFSET + CH_MAPPING_SIZE
+#define SW_DUTY_OFFSET_T6W 0xc00    //LDC_SEG_OFFSET  + LDC_SEG_SIZE
+#define WSEG_OFFSET_T6W 0x8c00      //SW_DUTY_OFFSET + SW_DUTY_SIZE
+#define RSEG_OFFSET_T6W 0x9000      //WSEG_OFFSET + WSEG_SIZE
+#define ABCON_OFFSET_END_T6W 0x9400 //RSEG_OFFSET + RSEG_SIZE
 
-#define LDC_DUTY_SIZE 0x800 //t6w 2k
+#define LDC_DUTY_SIZE_T6W 0x2000 //t6w 8k
+
+//for t6x
+#define CH_MAPPING_SIZE_T6X 0x1800   //4096 * 12 / 8 bytes
+#define SW_DUTY_SIZE_T6X 0x10000 //0X4000 * 4, as ldc hw duty
+#define WSEG_SIZE_T6X 0x800
+#define RSEG_SIZE_T6X 0x800
+#define LDC_SEG_SIZE_T6X 0x200	// for reg_abcon_ldc_seg_baddr
+
+#define CH_MAPPING_OFFSET_T6X 0
+#define LDC_SEG_OFFSET_T6X 0x1800	//CH_MAPPING_OFFSET + CH_MAPPING_SIZE
+#define SW_DUTY_OFFSET_T6X 0x1A00    //LDC_SEG_OFFSET  + LDC_SEG_SIZE
+#define WSEG_OFFSET_T6X 0x11A00   //SW_DUTY_OFFSET + SW_DUTY_SIZE
+#define RSEG_OFFSET_T6X 0x12200  //WSEG_OFFSET + WSEG_SIZE
+#define ABCON_OFFSET_END_T6X 0x12A00	//RSEG_OFFSET + RSEG_SIZE
+
+#define LDC_DUTY_SIZE_T6X 0x4000 //t6x 16k
 
 struct abcon_mem_s {
 	unsigned int *base_vaddr;
