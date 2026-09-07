@@ -36,6 +36,16 @@
 #define DEFAULT_SECTION "GENERAL_CONFIG_FROM_MODEL_SUM"
 
 /*********************************  common api  *************************************/
+static int get_model_multi_max_cnt(void)
+{
+	int cnt_max = 1;
+
+#ifdef CONFIG_VOUT_MULTI
+	cnt_max = CONFIG_VOUT_MULTI;
+#endif
+	return cnt_max;
+}
+
 int model_set_panel_misc(struct panel_misc_s *misc_attr)
 {
 	int tmp_val = 0;
@@ -469,7 +479,7 @@ static char *model_list_panel_path(int index)
 }
 #endif
 
-static int read_model_name_param(int index, unsigned char *data_buf, int data_size)
+static int read_model_name_param_from_ukey(int index, unsigned char *data_buf, int data_size)
 {
 	int rd_size = 0;
 	const char *item_name = CS_MODEL_NAME_ITEM_NAME;
@@ -483,7 +493,7 @@ static int read_model_name_param(int index, unsigned char *data_buf, int data_si
 	else if (index == 2)
 		item_name = CS_MODEL2_NAME_ITEM_NAME;
 
-	read_buf = model_read_ukey_data(item_name, &rd_size);
+	read_buf = model_detect_ukey_data(item_name, &rd_size);
 	if (!read_buf || rd_size <= 0)
 		return -1;
 	rd_size += 1; //add \0 for string
@@ -542,7 +552,7 @@ static int get_panel_model_name_param(int index, char *model_buf, int buf_size,
 		snprintf(key_buf, key_size, "model_name");
 	else
 		snprintf(key_buf, key_size, "model%d_name", index);
-	if (read_model_name_param(index, model_buf, buf_size) > 0) {
+	if (read_model_name_param_from_ukey(index, model_buf, buf_size) > 0) {
 		//find unifykey model_name
 		dbg_env_flag = env_get_ulong("model_env_flag", 16, 0x1);
 		if (dbg_env_flag) {
@@ -569,9 +579,10 @@ static int handle_model_list(void)
 	void *local_ini_mem;
 	const char *model_path;
 	char str[32], model_val[64];
-	int i, ret;
+	int i, cnt_max, ret;
 
-	for (i = 0; i < 3; i++) {
+	cnt_max = get_model_multi_max_cnt();
+	for (i = 0; i < cnt_max; i++) {
 		ret = get_panel_model_name_param(i, model_val, 64, str, 32);
 		if (ret)
 			continue;
@@ -601,7 +612,7 @@ int handle_model_oemkey(void)
 {
 	char *model, str[32], model_val[64];
 	unsigned int print_flag;
-	int i;
+	int i, cnt_max;
 	int ret = 1;
 	char model_path[128];
 
@@ -611,13 +622,14 @@ int handle_model_oemkey(void)
 		printf("model_debug_flag: %d\n", print_flag);
 	}
 
-	for (i = 0; i < 3; i++) {
+	cnt_max = get_model_multi_max_cnt();
+	for (i = 0; i < cnt_max; i++) {
 		if (i == 0)
 			sprintf(str, "model_name");
 		else
 			sprintf(str, "model%d_name", i);
 
-		if (read_model_name_param(i, model_val, 64) <= 0) {
+		if (read_model_name_param_from_ukey(i, model_val, 64) <= 0) {
 			model = env_get(str);
 			if (!model) {
 				ALOGD("%s: no %s\n", __func__, str);
@@ -645,7 +657,7 @@ int handle_model_logofile(void)
 {
 	char *model, str[32], model_val[64];
 	unsigned int print_flag;
-	int i;
+	int i, cnt_max;
 	int ret = 1;
 	char model_path[128];
 
@@ -655,13 +667,14 @@ int handle_model_logofile(void)
 		printf("model_debug_flag: %d\n", print_flag);
 	}
 
-	for (i = 0; i < 3; i++) {
+	cnt_max = get_model_multi_max_cnt();
+	for (i = 0; i < cnt_max; i++) {
 		if (i == 0)
 			sprintf(str, "model_name");
 		else
 			sprintf(str, "model%d_name", i);
 
-		if (read_model_name_param(i, model_val, 64) <= 0) {
+		if (read_model_name_param_from_ukey(i, model_val, 64) <= 0) {
 			model = env_get(str);
 			if (!model) {
 				ALOGD("%s: no %s\n", __func__, str);
@@ -690,7 +703,7 @@ int handle_model_sum(void)
 	char str[32], model_val[64];
 	unsigned int print_flag;
 	char model_path[128];
-	int i, ret = 0;
+	int i, cnt_max, ret = 0;
 
 	print_flag = env_get_ulong("model_debug_print", 10, 0xffff);
 	if (print_flag != 0xffff) {
@@ -698,7 +711,8 @@ int handle_model_sum(void)
 		printf("model_debug_flag: %d\n", print_flag);
 	}
 
-	for (i = 0; i < 3; i++) {
+	cnt_max = get_model_multi_max_cnt();
+	for (i = 0; i < cnt_max; i++) {
 		ret = get_panel_model_name_param(i, model_val, 64, str, 32);
 		if (ret)
 			continue;
@@ -739,7 +753,7 @@ int handle_model_get(const char *model, char *buf, int buf_size)
 		model_name = "model2_name";
 	}
 
-	ret = read_model_name_param(index, buf, buf_size);
+	ret = read_model_name_param_from_ukey(index, buf, buf_size);
 	if (ret <= 0) {
 		str = env_get(model_name);
 		if (!str) {
@@ -914,7 +928,7 @@ int handle_model_powermode(void)
 {
 	char *model, str[15];
 	unsigned int print_flag;
-	int i;
+	int i, cnt_max;
 	int ret = -1;
 	char model_path[128];
 
@@ -924,7 +938,8 @@ int handle_model_powermode(void)
 		ALOGI("model_debug_flag: %d\n", print_flag);
 	}
 
-	for (i = 0; i < 3; i++) {
+	cnt_max = get_model_multi_max_cnt();
+	for (i = 0; i < cnt_max; i++) {
 		if (i == 0)
 			sprintf(str, "model_name");
 		else

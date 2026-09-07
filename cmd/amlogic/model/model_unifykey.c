@@ -61,6 +61,42 @@ int model_check_ukey_size(const char *key_name)
 	return key_len;
 }
 
+//silent operation without error print
+unsigned char *model_detect_ukey_data(const char *key_name, int *data_size)
+{
+	unsigned char *data_buf;
+	int key_len = 0, ret = 0;
+
+	if (!key_name) {
+		ALOGD("%s: key_name is NULL\n", __func__);
+		return NULL;
+	}
+
+	key_len = model_check_ukey_size(key_name);
+	if (key_len <= 0) {
+		ALOGD("%s: %s size %d error\n", __func__, key_name, key_len);
+		return NULL;
+	}
+
+	data_buf = (unsigned char *)malloc(key_len);
+	if (!data_buf) {
+		ALOGD("%s: malloc buf failed\n", __func__);
+		return NULL;
+	}
+	memset(data_buf, 0, key_len);
+
+	ret = key_unify_read(key_name, data_buf, key_len);
+	if (ret) {
+		ALOGD("%s: %s unify read error\n", __func__, key_name);
+		memset(data_buf, 0, key_len);
+		free(data_buf);
+		return NULL;
+	}
+
+	*data_size = key_len;
+	return data_buf;
+}
+
 unsigned char *model_read_ukey_data(const char *key_name, int *data_size)
 {
 	unsigned char *data_buf;
@@ -107,6 +143,11 @@ int model_write_ukey_data(const char *key_name, unsigned char *data_buf, int buf
 int model_check_ukey_size(const char *key_name)
 {
 	return -1;
+}
+
+unsigned char *model_detect_ukey_data(const char *key_name, int *data_size)
+{
+	return NULL;
 }
 
 unsigned char *model_read_ukey_data(const char *key_name, int *data_size)

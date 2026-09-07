@@ -70,6 +70,16 @@ static struct dccd_info_s dccd_info;
 #endif
 
 /*********************************  common api  *************************************/
+static int get_model_multi_max_cnt(void)
+{
+	int cnt_max = 1;
+
+#ifdef CONFIG_VOUT_MULTI
+	cnt_max = CONFIG_VOUT_MULTI;
+#endif
+	return cnt_max;
+}
+
 static const char *get_model_path(int index)
 {
 	char *model_path, str[15];
@@ -3604,9 +3614,10 @@ int handle_model_list_panel_key(int index)
 int handle_model_list(void)
 {
 	char *model, str[15], model_val[50];
-	int i;
+	int i, cnt_max;
 
-	for (i = 0; i < 3; i++) {
+	cnt_max = get_model_multi_max_cnt();
+	for (i = 0; i < cnt_max; i++) {
 		memset(model_val, 0, sizeof(model_val));
 		if (i == 0)
 			sprintf(str, "model_name");
@@ -3731,11 +3742,12 @@ int handle_model_set(const char *model, const char *val)
 int handle_model_oemkey(void)
 {
 	char *model, str[15], model_val[50];
-	int i;
+	int i, cnt_max;
 	int ret = 1;
 	char model_path[128];
 
-	for (i = 0; i < 3; i++) {
+	cnt_max = get_model_multi_max_cnt();
+	for (i = 0; i < cnt_max; i++) {
 		memset(model_val, 0, sizeof(model_val));
 		if (i == 0)
 			sprintf(str, "model_name");
@@ -3771,11 +3783,12 @@ int handle_model_oemkey(void)
 int handle_model_logofile(void)
 {
 	char *model, str[15], model_val[50];
-	int i;
+	int i, cnt_max;
 	int ret = 1;
 	char model_path[128];
 
-	for (i = 0; i < 3; i++) {
+	cnt_max = get_model_multi_max_cnt();
+	for (i = 0; i < cnt_max; i++) {
 		memset(model_val, 0, sizeof(model_val));
 		if (i == 0)
 			sprintf(str, "model_name");
@@ -3815,7 +3828,7 @@ int handle_model_sum(void)
 #ifdef CONFIG_AML_LCD
 	char *file_name, *p;
 #endif
-	int i, ret, dbg_env_flag = 1, print_flag;
+	int i, ret, cnt_max, dbg_env_flag = 1, print_flag;
 
 	print_flag = env_get_ulong("model_debug_print", 16, 0xffff);
 	if (print_flag != 0xffff) {
@@ -3823,7 +3836,8 @@ int handle_model_sum(void)
 		ALOGD("model_debug_flag: 0x%x\n", model_debug_flag);
 	}
 
-	for (i = 0; i < 3; i++) {
+	cnt_max = get_model_multi_max_cnt();
+	for (i = 0; i < cnt_max; i++) {
 		memset(model_val, 0, sizeof(model_val));
 		if (i == 0)
 			sprintf(str, "model_name");
@@ -3916,11 +3930,12 @@ int parse_model_powermode(int index, const char *file_name, char *model_name)
 int handle_model_powermode(void)
 {
 	char *model, str[15], model_val[50];
-	int i;
+	int i, cnt_max;
 	int ret = -1;
 	char model_path[128];
 
-	for (i = 0; i < 3; i++) {
+	cnt_max = get_model_multi_max_cnt();
+	for (i = 0; i < cnt_max; i++) {
 		memset(model_val, 0, sizeof(model_val));
 		if (i == 0)
 			sprintf(str, "model_name");
