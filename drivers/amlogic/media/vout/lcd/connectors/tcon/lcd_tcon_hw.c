@@ -1133,6 +1133,8 @@ int lcd_tcon_enable_t5m(struct aml_lcd_drv_s *pdrv)
 	if (tcon_conf->lut_dma_ops && tcon_conf->lut_dma_ops->init_trans)
 		tcon_conf->lut_dma_ops->init_trans(pdrv, tcon_conf->lut_dma_ops);
 
+	tcon_ip27_setup(pdrv);
+
 	return 0;
 }
 
@@ -1186,6 +1188,8 @@ int lcd_tcon_disable_t5m(struct aml_lcd_drv_s *pdrv)
 
 	if (tcon_conf && tcon_conf->lut_dma_ops && tcon_conf->lut_dma_ops->deinit)
 		tcon_conf->lut_dma_ops->deinit(pdrv, tcon_conf->lut_dma_ops);
+
+	tcon_ip27_release(pdrv);
 
 	/* demo od */
 	lcd_tcon_setb(0x240, 1, 1, 1);

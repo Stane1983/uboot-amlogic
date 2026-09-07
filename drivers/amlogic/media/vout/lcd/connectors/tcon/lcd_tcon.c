@@ -863,6 +863,8 @@ static int lcd_panel_parse_tcon_from_json(struct aml_lcd_drv_s *pdrv)
 	int tcon_bin_cnt = 0, tcon_bin_cnt_rsvd = 0;
 	__maybe_unused struct json_s *parent, *child;
 	struct json_parse_s *jsp;
+	struct lcd_tcon_local_cfg_s *local_cfg = get_lcd_tcon_local_cfg();
+	struct lcd_tcon_ip27_s *ip27;
 
 	index = pdrv->index;
 	jsp = get_panel_jsp(index);
@@ -877,6 +879,24 @@ static int lcd_panel_parse_tcon_from_json(struct aml_lcd_drv_s *pdrv)
 	if (!parent) {
 		LCDPR("can't find /tcon\n");
 		return 0;
+	}
+
+	/*ip27*/
+	child = json_get_object_child(jsp, parent, "csot_ip27");
+	if (child) {
+		ip27 = &local_cfg->ip27;
+		ip27->cfg_valid = json_get_obj_u32(jsp, child, "valid", 0);
+		ip27->trig_mode = json_get_obj_u32(jsp, child, "trig_mode", 0);
+		ip27->trig_line = json_get_obj_u32(jsp, child, "trig_line", 0);
+		ip27->i2c_addr  = json_get_obj_u32(jsp, child, "i2c_addr", 0x33);
+		ip27->i2c_speed = json_get_obj_u32(jsp, child, "i2c_speed", 400000);//400k
+		//ip27->i2c_bytes = json_get_obj_u32(jsp, child, "i2c_byte", 4);//3byte mode
+		ip27->debug     = json_get_obj_u32(jsp, child, "debug", 0);//
+		ip27->data_mode = json_get_obj_u32(jsp, child, "data_mode", 0);//
+		ip27->vcom_order = json_get_obj_u32(jsp, child, "vcom_order", 0);//
+		ip27->i2c_reg_offset = json_get_obj_u32(jsp, child, "i2c_reg_offset", 0x25);//
+		ip27->trig_line_dbg = ip27->trig_line;
+		ip27->i2c_bytes = ip27->data_mode == 0 ? 24 + 1 : 3 + 1;
 	}
 	dir_uboot = json_get_obj_str(jsp, parent, "panel_dir_uboot", NULL);
 	if (!dir_uboot) {
@@ -2284,7 +2304,7 @@ static struct lcd_tcon_config_s tcon_data_t6x = {
 	.bin_path_size   = 0x00002800, /* 10K */
 	.secure_cfg_size = 0x00000040, /* 64byte */
 
-	.init_pre_setting = lcd_tcon_init_pre_setting_t6w,
+	.init_pre_setting = lcd_tcon_init_pre_setting_t6x,
 	.init_post_setting = lcd_tcon_init_post_setting,
 	.axi_tbl_len = ARRAY_SIZE(axi_mem_cfg_tbl_t3x),
 	.axi_mem_cfg_tbl = (axi_mem_cfg_tbl_t3x),

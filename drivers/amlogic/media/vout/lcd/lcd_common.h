@@ -37,7 +37,8 @@
 /* 20250828: update preboot support */
 /* 20250917: tcon support discontinued bin */
 /* 20251028: support vrr vdf */
-#define LCD_DRV_VERSION    "20251028"
+/* 20251113: support ip27 */
+#define LCD_DRV_VERSION    "20251113"
 
 #define CFMT_RGB565          0x05
 #define CFMT_RGB_6bit        0x06
