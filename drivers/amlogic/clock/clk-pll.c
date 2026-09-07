@@ -211,7 +211,7 @@ static unsigned long __pll_params_to_rate(unsigned long parent_rate,
 		if (pll->flags & CLK_AML_PLL_FIXED_FRAC_WEIGHT_PRECISION)
 			frac_base = 100000;
 		else
-			frac_base = ((uint32_t)1 << pll->frac.width);
+			frac_base = (uint32_t)BIT(pll->frac.width);
 
 		rate += DIV_ROUND_UP_ULL(frac_rate, frac_base);
 	}
