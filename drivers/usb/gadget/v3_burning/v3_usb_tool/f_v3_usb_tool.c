@@ -986,15 +986,62 @@ static void cb_oem_cmd(struct usb_ep *ep, struct usb_request *req)
 		ret = efuse_obj_status(_cmd, ack, RESPONSE_LEN - 4);
 #endif//#ifdef CONFIG_EFUSE_OBJ_API
 	} else if (!strcmp("env_get", argv[0])) {
+		const char *_val = NULL;
+		ulong _lenv = 0;
+
 		ret = __LINE__;
-		if (argc != 2) {
-			FBS_ERR(ack, "env_get only support one para now\n");
-		} else if (env_get(argv[1])) {
-			strlcpy(ack, env_get(argv[1]), RESPONSE_LEN - 4);
-			ret = 0;
+		if (argc < 2 || argc > 3) {
+			FBS_ERR(ack, "env_get need 1 or 2 para\n");
 		} else {
-			FBS_ERR(ack, "env %s not exist", argv[1]);
+			_val = env_get(argv[1]);
+			if (_val) {
+				strncpy(ack, _val, RESPONSE_LEN - 4);
+				_lenv = strnlen(_val, 8 << 10);
+				if (strncmp(argv[1], "_env_var_", 9)) {
+					env_set_hex("_env_var_len", _lenv);
+					env_set_hex("_env_var_addr", (ulong)_val);
+				}
+				if (argc > 2) {
+					env_set("_tgt_", argv[2]);
+					run_command("echo cp.b ${_env_var_addr} ${_tgt_} ${_env_var_len}", 0);
+					run_command("cp.b ${_env_var_addr} ${_tgt_} ${_env_var_len}", 0);
+				}
+				ret = 0;
+			} else {
+				FBS_ERR(ack, "env %s not exist", argv[1]);
+			}
 		}
+	} else if (!strcmp("env_set", argv[0])) {
+		const char *k_env = argv[1];
+		char *v_env = argv[2];
+		const char *l_env = argv[3];
+		ulong pv_env = 0;
+		int env_len = 0;
+
+		do {
+			if (argc < 2 || argc > 4) {
+				FBS_ERR(ack, "invalid argc %d", argc);
+				ret = __LINE__; break;
+			}
+			if (argc > 3) {
+				FB_MSG("setenv from mem\n");
+				if (v_env[0] == '$') {
+					pv_env = env_get_hex(&v_env[1], 0);
+					if (!pv_env) {
+						FBS_ERR(ack, "invalid addr env %s", &v_env[1]);
+						ret = __LINE__; break;
+					}
+				} else if (v_env[0] == '0' && v_env[1] == 'x') {
+					pv_env = simple_strtoul(v_env, NULL, 16);
+				}
+				FB_MSG("env var addr 0x%lx\n", pv_env);
+				v_env = (char *)pv_env;
+				env_len = simple_strtoul(l_env, NULL, 0);
+				FB_MSG("env len 0x%x\n", env_len);
+				v_env[env_len] = 0;
+			}
+			env_set(k_env, v_env);
+		} while (0);
 	} else {
 		char *p = NULL;
 		int white_list_cmd = 1;
