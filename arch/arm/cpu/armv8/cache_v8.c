@@ -29,7 +29,6 @@
 #endif
 
 DECLARE_GLOBAL_DATA_PTR;
-
 #if !CONFIG_IS_ENABLED(SYS_DCACHE_OFF)
 
 #define DDR_SKIP_ZERO_ADDR_START_64KB_MAP	0x10000
@@ -297,25 +296,6 @@ static void add_map(struct mm_region *map)
 	}
 }
 
-extern unsigned long __RO_END__;
-extern unsigned long __RO_START__;
-#define _text_end (unsigned long)(&__RO_END__)
-#define _text_start (unsigned long)(&__RO_START__)
-void mmu_update_text_attr(void)
-{
-	struct mm_region mem_map;
-
-	dcache_disable();
-	mem_map.virt = _text_start;
-	mem_map.phys = _text_start;
-	mem_map.size = _text_end -  _text_start;
-	mem_map.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
-			 PTE_BLOCK_INNER_SHARE | PTE_BLOCK_RO;
-
-	add_map(&mem_map);
-	dcache_enable();
-}
-
 enum pte_type {
 	PTE_INVAL,
 	PTE_BLOCK,
@@ -395,6 +375,24 @@ static int count_required_pts(u64 addr, int level, u64 maxaddr)
 }
 
 #ifdef CONFIG_AMLOGIC_MODIFY
+extern unsigned long __EFI_TEXT_START__;
+extern unsigned long __EFI_RO_START__;
+extern unsigned long __EFI_DATA_START__;
+extern unsigned long __EFI_END__;
+extern unsigned long __TEXT_REAL_START__;
+extern unsigned long __TEXT_END__;
+extern unsigned long __RO_START__;
+extern unsigned long __RO_END__;
+#define _efi_text_start (unsigned long)(&__EFI_TEXT_START__)
+#define _efi_ro_start (unsigned long)(&__EFI_RO_START__)
+#define _efi_data_start (unsigned long)(&__EFI_DATA_START__)
+#define _efi_end (unsigned long)(&__EFI_END__)
+#define _text_real_start (unsigned long)(&__TEXT_REAL_START__)
+#define _text_end (unsigned long)(&__TEXT_END__)
+#define _ro_start (unsigned long)(&__RO_START__)
+#define _ro_end (unsigned long)(&__RO_END__)
+
+
 /* update mmu map from bl2 ddr auto detect size */
 int mmu_map_update(void)
 {
@@ -407,6 +405,16 @@ int mmu_map_update(void)
 	u32 rsv_addr;
 	u32 reg_size;
 	u32 rsv_size;
+	unsigned long text_base = gd->relocaddr;
+	unsigned long efi_text_start = _efi_text_start + text_base;
+	unsigned long efi_ro_start = _efi_ro_start + text_base;
+	unsigned long efi_data_start = _efi_data_start + text_base;
+	unsigned long efi_end = _efi_end + text_base;
+	unsigned long text_real_start = _text_real_start + text_base;
+	unsigned long text_end = _text_end + text_base;
+	unsigned long ro_start = _ro_start + text_base;
+	unsigned long ro_end = _ro_end + text_base;
+
 #if defined(P_AO_SEC_GP_CFG3)
 	rsv_addr = readl(P_AO_SEC_GP_CFG5);
 	reg_size = readl(P_AO_SEC_GP_CFG3);
@@ -426,15 +434,46 @@ int mmu_map_update(void)
 
 	bd_mem_map[1].virt = rsv_addr + rsv_size;
 	bd_mem_map[1].phys = rsv_addr + rsv_size;
-	bd_mem_map[1].size = ddr_size - bd_mem_map[1].phys;
+	bd_mem_map[1].size = efi_text_start - bd_mem_map[1].phys;
+
+	bd_mem_map[2].virt = efi_text_start ;
+	bd_mem_map[2].phys = efi_text_start ;
+	bd_mem_map[2].size = efi_ro_start - efi_text_start;
+
+	bd_mem_map[3].virt = efi_ro_start ;
+	bd_mem_map[3].phys = efi_ro_start ;
+	bd_mem_map[3].size = efi_data_start - efi_ro_start;
+
+	bd_mem_map[4].virt = efi_data_start;
+	bd_mem_map[4].phys = efi_data_start;
+	bd_mem_map[4].size = efi_end - efi_data_start;
+
+	bd_mem_map[5].virt = text_real_start;
+	bd_mem_map[5].phys = text_real_start;
+	bd_mem_map[5].size = text_end - text_real_start;
+
+	bd_mem_map[6].virt = ro_start;
+	bd_mem_map[6].phys = ro_start;
+	bd_mem_map[6].size = ro_end - ro_start;
+
+	bd_mem_map[7].virt = ro_end;
+	bd_mem_map[7].phys = ro_end;
+	bd_mem_map[7].size = ddr_size - ro_end;
 
 	if (ddr_size == 0xf0000000) {
-		bd_mem_map[2].virt = ddr_size;
-		bd_mem_map[2].phys = ddr_size;
-		bd_mem_map[2].size = SZ_4G - ddr_size;
+		bd_mem_map[8].virt = ddr_size;
+		bd_mem_map[8].phys = ddr_size;
+		bd_mem_map[8].size = SZ_4G - ddr_size;
 	}
 
 	return 0;
+}
+
+void mmu_update_attr(void)
+{
+	bd_mem_map[0].attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
+		PTE_BLOCK_INNER_SHARE | PTE_BLOCK_PXN | PTE_BLOCK_UXN;
+	add_map(&bd_mem_map[0]);
 }
 #endif
 
@@ -516,7 +555,6 @@ static void setup_all_pgtables(void)
 __weak void mmu_setup(void)
 {
 	int el;
-
 	/* Set up page tables only once */
 	if (!gd->arch.tlb_fillptr)
 		setup_all_pgtables();
@@ -524,7 +562,6 @@ __weak void mmu_setup(void)
 	el = current_el();
 	set_ttbr_tcr_mair(el, gd->arch.tlb_addr, get_tcr(NULL, NULL),
 			  MEMORY_ATTRIBUTES);
-
 	/* enable the mmu */
 	set_sctlr(get_sctlr() | CR_M);
 }
@@ -593,9 +630,7 @@ void dcache_enable(void)
 	/* Set up page tables only once (it is done also by mmu_setup()) */
 	if (!gd->arch.tlb_fillptr)
 		setup_all_pgtables();
-
 	set_sctlr(get_sctlr() | CR_C);
-
 #ifdef CONFIG_AMLOGIC_MODIFY
 	gd->flags |= GD_FLG_CACHE_EN;
 #endif

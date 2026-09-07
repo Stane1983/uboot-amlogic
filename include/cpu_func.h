@@ -60,8 +60,9 @@ void dcache_enable(void);
 void dcache_disable(void);
 void mmu_disable(void);
 int mmu_status(void);
-void mmu_update_text_attr(void);
-
+ #ifdef CONFIG_AMLOGIC_MODIFY
+void mmu_update_attr(void);
+#endif
 /* arch/$(ARCH)/lib/cache.c */
 void enable_caches(void);
 void flush_cache(unsigned long addr, unsigned long size);

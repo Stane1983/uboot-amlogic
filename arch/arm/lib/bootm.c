@@ -719,7 +719,9 @@ static void boot_jump_linux(struct bootm_headers *images, int flag)
 #endif
 
 		DUMP_TE();
-
+#ifdef CONFIG_AMLOGIC_MODIFY
+		dcache_disable();
+#endif
 		if (images->os.arch == IH_ARCH_ARM) {
 			printf("boot 32bit kernel\n");
 			jump_to_a32_kernel(images->ep, machid, (unsigned long)images->ft_addr);

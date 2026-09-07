@@ -119,6 +119,7 @@ static int initr_reloc(void)
  * Some of these functions are needed purely because the functions they
  * call return void. If we change them to return 0, these stubs can go away.
  */
+
 static int initr_caches(void)
 {
 	dcache_disable();
@@ -127,12 +128,15 @@ static int initr_caches(void)
 	enable_caches();
 	return 0;
 }
-
-static int initr_mmu_update_text_attr(void)
+#if CONFIG_AMLOGIC_MODIFY
+static int initr_mmu_update_attr(void)
 {
-	mmu_update_text_attr();
+	dcache_disable();
+	mmu_update_attr();
+	dcache_enable();
 	return 0;
 }
+#endif
 #endif
 
 __weak int fixup_cpu(void)
@@ -689,6 +693,7 @@ static init_fnc_t init_sequence_r[] = {
 	initr_reloc,
 	event_init,
 	/* TODO: could x86/PPC have this also perhaps? */
+	initr_reloc_global_data,
 #if defined(CONFIG_ARM) || defined(CONFIG_RISCV)
 	initr_caches,
 	/* Note: For Freescale LS2 SoCs, new MMU table is created in DDR.
@@ -698,7 +703,6 @@ static init_fnc_t init_sequence_r[] = {
 	 *	 region.
 	 */
 #endif
-	initr_reloc_global_data,
 #if CONFIG_IS_ENABLED(NEEDS_MANUAL_RELOC) && CONFIG_IS_ENABLED(EVENT)
 	event_manual_reloc,
 #endif
@@ -731,6 +735,7 @@ static init_fnc_t init_sequence_r[] = {
 #ifdef CONFIG_ADDR_MAP
 	init_addr_map,
 #endif
+
 #if defined(CONFIG_ARM) || defined(CONFIG_RISCV) || defined(CONFIG_SANDBOX)
 	board_init,	/* Setup chipselects */
 #endif
@@ -795,9 +800,6 @@ static init_fnc_t init_sequence_r[] = {
 #endif
 #ifdef CONFIG_EFI_LOADER
 	efi_init_early,
-#endif
-#ifdef CONFIG_ARM
-	initr_mmu_update_text_attr,
 #endif
 #ifdef CONFIG_AML_STORAGE
 	initr_storage,
@@ -902,6 +904,9 @@ static init_fnc_t init_sequence_r[] = {
 #endif
 #if defined(CONFIG_PRAM)
 	initr_mem,
+#endif
+#if CONFIG_AMLOGIC_MODIFY
+ initr_mmu_update_attr,
 #endif
 	run_main_loop,
 };

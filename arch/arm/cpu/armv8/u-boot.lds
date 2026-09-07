@@ -24,7 +24,6 @@ SECTIONS
 	. = ALIGN(8);
 	.text :
 	{
-		__RO_START__ = .;
 		*(.__image_copy_start)
 		CPUDIR/start.o (.text*)
 	}
@@ -32,17 +31,29 @@ SECTIONS
 	/* This needs to come before *(.text*) */
 	.efi_runtime : {
                 __efi_runtime_start = .;
+		. = ALIGN(4096);
+		__EFI_TEXT_START__ = .;
 		*(.text.efi_runtime*)
+		. = ALIGN(4096);
+		__EFI_RO_START__ = .;
 		*(.rodata.efi_runtime*)
+		. = ALIGN(4096);
+		__EFI_DATA_START__ = .;
 		*(.data.efi_runtime*)
-                __efi_runtime_stop = .;
+		. = ALIGN(4096);
+		__EFI_END__ = .;
+				__efi_runtime_stop = .;
 	}
 
+	. = ALIGN(4096);
+	 __TEXT_REAL_START__ = .;
 	.text_rest :
 	{
 		*(.text*)
 	}
 
+	. = ALIGN(4096);
+	__TEXT_END__ = .;
 #ifdef CONFIG_ARMV8_PSCI
 	.__secure_start :
 #ifndef CONFIG_ARMV8_SECURE_BASE
@@ -98,7 +109,8 @@ SECTIONS
 	}
 #endif
 
-	. = ALIGN(8);
+	. = ALIGN(4096);
+	__RO_START__ = .;
 #ifdef CONFIG_KALLSYMS
 	.__rodata_start :
 	{
@@ -118,13 +130,14 @@ SECTIONS
 	}
 #endif
 
-	. = ALIGN(8);
+	. = ALIGN(4096);
+	__DATA_START__ = .;
 	.data : {
 		*(.data*)
 	}
 
-	. = ALIGN(8);
-
+	. = ALIGN(4096);
+	__DATA_END__ = .;
 	. = .;
 
 	. = ALIGN(8);
@@ -169,8 +182,8 @@ SECTIONS
 #endif
 	_end = .;
 
-	. = ALIGN(8);
-
+	. = ALIGN(4096);
+	__BSS_START__ = .;
 	.bss_start : {
 		KEEP(*(.__bss_start));
 	}
@@ -183,6 +196,9 @@ SECTIONS
 	.bss_end : {
 		KEEP(*(.__bss_end));
 	}
+
+	. = ALIGN(4096);
+	__BSS_END__ = .;
 
 	/DISCARD/ : { *(.dynsym) }
 	/DISCARD/ : { *(.dynstr*) }

@@ -1074,11 +1074,11 @@ static const init_fnc_t init_sequence_f[] = {
 	reserve_pram,
 #endif
 	reserve_round_4k,
-	arch_reserve_mmu,
 	reserve_video,
 	reserve_trace,
 	reserve_uboot,
 	reserve_malloc,
+	arch_reserve_mmu,
 	reserve_board,
 	reserve_global_data,
 	reserve_fdt,
