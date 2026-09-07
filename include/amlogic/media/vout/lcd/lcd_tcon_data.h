@@ -23,6 +23,7 @@
 #define LCD_TCON_DATA_BLOCK_TYPE_DITHER_LUT     0x04
 #define LCD_TCON_DATA_BLOCK_TYPE_OD_LUT         0x05
 #define LCD_TCON_DATA_BLOCK_TYPE_LOD_LUT        0x06
+#define LCD_TCON_DATA_BLOCK_TYPE_VRR_LUT        0x07
 #define LCD_TCON_DATA_BLOCK_TYPE_VAC            0x11
 #define LCD_TCON_DATA_BLOCK_TYPE_PDF            0x20
 #define LCD_TCON_DATA_BLOCK_TYPE_EXT            0xe0 /* pmu */

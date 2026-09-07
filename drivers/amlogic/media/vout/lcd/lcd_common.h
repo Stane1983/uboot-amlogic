@@ -36,7 +36,8 @@
 /* 20250422: t6x pxp bringup */
 /* 20250828: update preboot support */
 /* 20250917: tcon support discontinued bin */
-#define LCD_DRV_VERSION    "20250917"
+/* 20251028: support vrr vdf */
+#define LCD_DRV_VERSION    "20251028"
 
 #define CFMT_RGB565          0x05
 #define CFMT_RGB_6bit        0x06

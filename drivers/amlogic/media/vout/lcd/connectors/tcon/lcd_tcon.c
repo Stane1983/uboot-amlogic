@@ -459,7 +459,7 @@ int lcd_tcon_data_multi_init_check(struct aml_lcd_drv_s *pdrv,
 	unsigned int data = 0;
 #endif
 	unsigned int data_byte, data_cnt, min = 0, max = 0, hsize = 0, vsize = 0;
-	unsigned int temp, j, k = 0;
+	unsigned int temp, j, k = 0, frame_rate;
 
 	if (!ctrl_part)
 		return -1;
@@ -484,7 +484,7 @@ int lcd_tcon_data_multi_init_check(struct aml_lcd_drv_s *pdrv,
 			LCDPR("%s: vfreq %d-%d hit: %d\n", __func__, min, max, temp);
 		break;
 	case LCD_TCON_DATA_CTRL_MULTI_RESOLUTION:
-		if (data_cnt != 2)
+		if (data_cnt < 2)
 			goto lcd_tcon_data_multi_init_check_err_data_cnt;
 
 		for (j = 0; j < data_byte; j++)
@@ -493,11 +493,40 @@ int lcd_tcon_data_multi_init_check(struct aml_lcd_drv_s *pdrv,
 		for (j = 0; j < data_byte; j++)
 			vsize |= (p[k + j] << (j * 8));
 
-		if (pdrv->config.timing.act_timing.h_active != hsize ||
-		    pdrv->config.timing.act_timing.v_active != vsize)
+		if (pdrv->config.timing.base_timing->h_active != hsize ||
+		    pdrv->config.timing.base_timing->v_active != vsize)
+			goto lcd_tcon_data_multi_init_check_exit;
+
+		if (data_cnt == 2) {
+			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+				LCDPR("%s: resolution %dx%d hit\n", __func__, hsize, vsize);
+			break;
+		}
+		k += data_byte;
+		for (j = 0; j < data_byte; j++)
+			min |= (p[k + j] << (j * 8));
+		if (data_cnt == 3) { //display mode (base bas_timing) eg:3840x2160p120hz
+			if (min != pdrv->config.timing.base_timing->frame_rate)
+				goto lcd_tcon_data_multi_init_check_exit;
+			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+				LCDPR("%s: disp_mode %dx%dp%dhz hit\n",
+					__func__, hsize, vsize, min);
+			break;
+		}
+		if (data_cnt < 4)
+			goto lcd_tcon_data_multi_init_check_exit;
+
+		k += data_byte;
+		for (j = 0; j < data_byte; j++)
+			max |= (p[k + j] << (j * 8));
+
+		frame_rate = pdrv->config.timing.base_timing->frame_rate;
+		if (frame_rate < min || frame_rate > max)
 			goto lcd_tcon_data_multi_init_check_exit;
 		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-			LCDPR("%s: resolution %dx%d hit\n", __func__, hsize, vsize);
+			LCDPR("%s: disp_mode %dx%dp[%d~%d]hz hit\n",
+					__func__, hsize, vsize, min, max);
+
 		break;
 	case LCD_TCON_DATA_CTRL_MULTI_BL_LEVEL:
 #ifdef CONFIG_AML_LCD_BACKLIGHT
