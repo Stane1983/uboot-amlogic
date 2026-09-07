@@ -9,6 +9,9 @@
 #include <mmc.h>
 #include <linux/bitops.h>
 #include <linux/dma-mapping.h>
+#include <amlogic/aml_mmc.h>
+#include <clk.h>
+#include <asm-generic/gpio.h>
 
 enum meson_gx_mmc_compatible {
 	MMC_COMPATIBLE_GX,
@@ -73,6 +76,20 @@ struct sd_emmc_desc_info {
 #define aml_card_type_sd(c)      ((c)->card_type == CARD_TYPE_SD)
 #define aml_card_type_sdio(c)      ((c)->card_type == CARD_TYPE_SDIO)
 #define aml_card_type_non_sdio(c)   ((c)->card_type == CARD_TYPE_NON_SDIO)
+
+union sd_emmc_setup {
+	u32 d32;
+	struct {
+		unsigned bw:3;
+		unsigned fast:1;
+		unsigned par:3;
+		unsigned hcs:1;
+		unsigned sd:1;
+		unsigned sdhc:1;
+		unsigned type:6;
+		unsigned rca:16;
+	} b;
+};
 
 struct meson_mmc_plat {
 	struct mmc_config cfg;

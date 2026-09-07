@@ -17,6 +17,7 @@
 #include <amlogic/blxx2bl33_param.h>
 #include <amlogic/aml_mtd.h>
 #include <mmc.h>
+#include <version.h>
 
 #include <display_options.h>
 
@@ -67,7 +68,6 @@ static struct device_node_t device_list[] = {
 #ifdef CONFIG_MMC_MESON_GX
 	{BOOT_EMMC, "emmc", emmc_pre, emmc_probe},
 #endif
-
 };
 
 int store_register(struct storage_t *store_dev)

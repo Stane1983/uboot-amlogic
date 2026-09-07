@@ -45,6 +45,13 @@
 #define aml_card_type_sdio(c)      ((c)->card_type == CARD_TYPE_SDIO)
 #define aml_card_type_non_sdio(c)   ((c)->card_type == CARD_TYPE_NON_SDIO)
 
+struct meson_mmc_platdata {
+	struct mmc_config cfg;
+	struct mmc mmc;
+	void *regbase;
+	void *w_buf;
+};
+
 extern int mmc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd,
 			struct mmc_data *data);
 extern int mmc_set_blocklen(struct mmc *mmc, int len);

@@ -15,6 +15,7 @@
 #include <linux/compiler.h>
 #include <linux/dma-direction.h>
 #include <part.h>
+#include <version.h>
 
 struct bd_info;
 
@@ -23,6 +24,9 @@ struct bd_info;
 #endif
 #if CONFIG_IS_ENABLED(MMC_UHS_SUPPORT)
 #define MMC_SUPPORTS_TUNING
+#endif
+#if CONFIG_IS_ENABLED(AML_JUMP_BL33)
+#undef CONFIG_MESON_NFC
 #endif
 
 /* SD/MMC version bits; 8 flags, 8 major, 8 minor, 8 change */

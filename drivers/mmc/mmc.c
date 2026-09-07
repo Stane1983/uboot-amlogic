@@ -28,6 +28,7 @@
 #ifdef CONFIG_AMLOGIC_MODIFY
 #include <amlogic/emmc_partitions.h>
 #include <amlogic/partition_table.h>
+#include "../amlogic/mmc/meson_gx_mmc.h"
 #endif
 
 #define DEFAULT_CMD6_TIMEOUT_MS  500
@@ -197,7 +198,7 @@ static int mmc_select_mode(struct mmc *mmc, enum bus_mode mode)
 	mmc->tran_speed = mmc_mode2freq(mmc, mode);
 	mmc->ddr_mode = mmc_is_mode_ddr(mode);
 	pr_debug("selecting mode %s (freq : %d MHz)\n", mmc_mode_name(mode),
-		 mmc->tran_speed / 1000000);
+			mmc->tran_speed / 1000000);
 	return 0;
 }
 
@@ -402,8 +403,7 @@ int mmc_send_tuning(struct mmc *mmc, u32 opcode, int *cmd_error)
 }
 #endif
 
-static int mmc_read_blocks(struct mmc *mmc, void *dst, lbaint_t start,
-			   lbaint_t blkcnt)
+int mmc_read_blocks(struct mmc *mmc, void *dst, lbaint_t start, lbaint_t blkcnt)
 {
 	struct mmc_cmd cmd;
 	struct mmc_data data;
@@ -729,22 +729,28 @@ static int mmc_complete_op_cond(struct mmc *mmc)
 	int timeout = 1000;
 	ulong start;
 	int err;
+	struct meson_host *host = dev_get_priv(mmc->dev);
 
 	mmc->op_cond_pending = 0;
-	if (!(mmc->ocr & OCR_BUSY)) {
-		/* Some cards seem to need this */
-		mmc_go_idle(mmc);
 
-		start = get_timer(0);
-		while (1) {
-			err = mmc_send_op_cond_iter(mmc, 1);
-			if (err)
-				return err;
-			if (mmc->ocr & OCR_BUSY)
-				break;
-			if (get_timer(start) > timeout)
-				return -EOPNOTSUPP;
-			udelay(100);
+	if (IS_ENABLED(CONFIG_AMLOGIC_MODIFY)) {
+		if (strcmp(mmc->cfg->name, "emmc") && host->jump_bl33) {
+			;
+		} else if (!(mmc->ocr & OCR_BUSY)) {
+			/* Some cards seem to need this */
+			mmc_go_idle(mmc);
+
+			start = get_timer(0);
+			while (1) {
+				err = mmc_send_op_cond_iter(mmc, 1);
+				if (err)
+					return err;
+				if (mmc->ocr & OCR_BUSY)
+					break;
+				if (get_timer(start) > timeout)
+					return -EOPNOTSUPP;
+				udelay(100);
+			}
 		}
 	}
 
@@ -763,7 +769,13 @@ static int mmc_complete_op_cond(struct mmc *mmc)
 
 	mmc->version = MMC_VERSION_UNKNOWN;
 
-	mmc->high_capacity = ((mmc->ocr & OCR_HCS) == OCR_HCS);
+	if (IS_ENABLED(CONFIG_AMLOGIC_MODIFY)) {
+		if (strcmp(mmc->cfg->name, "emmc") && host->jump_bl33)
+			;
+		else
+			mmc->high_capacity = ((mmc->ocr & OCR_HCS) == OCR_HCS);
+	}
+
 	mmc->rca = 1;
 
 	return 0;
@@ -2491,6 +2503,24 @@ error:
 	return err;
 }
 
+static int emmc_send_deselect(struct mmc *mmc)
+{
+	struct mmc_cmd cmd = {0};
+	u32 err = 0;
+
+	cmd.cmdidx = MMC_CMD_SELECT_CARD;
+	cmd.cmdarg = 0;
+	cmd.resp_type = MMC_RSP_NONE;
+
+	err = mmc_send_cmd(mmc, &cmd, NULL);
+	if (err) {
+		printf("cmd:0x%x send error\n", cmd.cmdidx);
+		return err;
+	}
+
+	return err;
+}
+
 static int mmc_startup(struct mmc *mmc)
 {
 	int err, i;
@@ -2563,18 +2593,22 @@ static int mmc_startup(struct mmc *mmc)
 	 * For SD cards, get the Relatvie Address.
 	 * This also puts the cards into Standby State
 	 */
-	if (!mmc_host_is_spi(mmc)) { /* cmd not supported in spi */
-		cmd.cmdidx = SD_CMD_SEND_RELATIVE_ADDR;
-		cmd.cmdarg = mmc->rca << 16;
-		cmd.resp_type = MMC_RSP_R6;
+	if (IS_ENABLED(CONFIG_AMLOGIC_MODIFY)) {
+		if (!strcmp(mmc->cfg->name, "emmc") && host->jump_bl33 == 1) {
+			;
+		} else if (!mmc_host_is_spi(mmc)) { /* cmd not supported in spi */
+			cmd.cmdidx = SD_CMD_SEND_RELATIVE_ADDR;
+			cmd.cmdarg = mmc->rca << 16;
+			cmd.resp_type = MMC_RSP_R6;
 
-		err = mmc_send_cmd(mmc, &cmd, NULL);
+			err = mmc_send_cmd(mmc, &cmd, NULL);
 
-		if (err)
-			return err;
+			if (err)
+				return err;
 
-		if (IS_SD(mmc))
-			mmc->rca = (cmd.response[0] >> 16) & 0xffff;
+			if (IS_SD(mmc))
+				mmc->rca = (cmd.response[0] >> 16) & 0xffff;
+		}
 	}
 
 	/* Get the Card-Specific Data */
@@ -3020,10 +3054,17 @@ int mmc_start_init(struct mmc *mmc)
 		return -ENOMEDIUM;
 	}
 
-	err = mmc_get_op_cond(mmc, false);
+	if (IS_ENABLED(CONFIG_AMLOGIC_MODIFY)) {
+		struct meson_host *host = dev_get_priv(mmc->dev);
 
-	if (!err)
-		mmc->init_in_progress = 1;
+		if (!strcmp(mmc->cfg->name, "emmc") && host->jump_bl33 == 1) {
+			;
+		} else {
+			err = mmc_get_op_cond(mmc, false);
+			if (!err)
+				mmc->init_in_progress = 1;
+		}
+	}
 
 	return err;
 }

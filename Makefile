@@ -2114,6 +2114,10 @@ endif
 ifeq ("$(CONFIG_SUPPORT_BL33Z)", "1")
 	echo "#define CONFIG_SUPPORT_BL33Z" $(CONFIG_SUPPORT_BL33Z) >> $(version_h)
 endif
+ifeq ("$(JUMPBL33)", "1")
+	echo "#define CONFIG_AML_JUMP_BL33" $(JUMPBL33) >> $(version_h)
+endif
+
 
 $(timestamp_h): $(srctree)/Makefile FORCE
 	$(call filechk,timestamp.h)
