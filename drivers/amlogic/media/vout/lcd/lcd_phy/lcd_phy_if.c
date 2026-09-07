@@ -114,9 +114,11 @@ void lcd_phy_param_print(struct aml_lcd_drv_s *pdrv)
 #endif
 	if (!pdrv)
 		return;
-	memset(&local_phy_cfg, 0, sizeof(struct phy_config_s));
-	memset(&local_phy, 0, sizeof(struct phy_attr_s));
-	lcd_phy_param_get(pdrv, &local_phy_cfg, &local_phy);
+	ret = lcd_phy_param_get(pdrv, &local_phy_cfg, &local_phy);
+	if (ret) {
+		memset(&local_phy_cfg, 0, sizeof(struct phy_config_s));
+		memset(&local_phy,     0, sizeof(struct phy_attr_s));
+	}
 
 	phy_cfg = &pdrv->config.phy_cfg;
 	phy = pdrv->config.phy_cfg.act_phy;
