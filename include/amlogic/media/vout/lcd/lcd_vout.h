@@ -547,13 +547,8 @@ struct lcd_power_ctrl_s {
 
 #define LCD_PINMX_MAX              10
 #define LCD_PINMUX_MAX             LCD_PINMX_MAX
-#define BL_PINMUX_MAX              20
+#define BL_PINMUX_MAX              8
 #define LCD_PINMUX_NAME_LEN_MAX    30
-struct lcd_pinmux_ctrl_s {
-	char *name;
-	unsigned int pinmux_set[LCD_PINMUX_NUM][2];
-	unsigned int pinmux_clr[LCD_PINMUX_NUM][2];
-};
 
 struct cus_ctrl_config_s {
 	unsigned int ctrl_en;
@@ -568,10 +563,15 @@ struct cus_ctrl_config_s {
 };
 
 #define LCD_ENABLE_RETRY_MAX    3
+#define CUSTOM_PINMUX_NAME_MAX	30
+#define CUSTOM_PINMUX_MODE_MODEL_NAME 1
+#define CUSTOM_PINMUX_MODE_CUSTOM_NAME 2
+
 struct lcd_config_s {
 	unsigned char retry_enable_flag;
 	unsigned char retry_enable_cnt;
 	unsigned char custom_pinmux;
+	char custom_pinmux_name[CUSTOM_PINMUX_NAME_MAX];
 	unsigned char fr_auto_cus;  //0=follow global setting, 0xff=disable
 	unsigned char fr_auto_flag; //final fr_auto policy
 	unsigned int backlight_index;
@@ -582,9 +582,7 @@ struct lcd_config_s {
 	struct phy_config_s phy_cfg;
 	struct cus_ctrl_config_s cus_ctrl;
 	struct lcd_power_ctrl_s power;
-	struct lcd_pinmux_ctrl_s *pinmux;
-	unsigned int pinmux_set[LCD_PINMUX_NUM][2];
-	unsigned int pinmux_clr[LCD_PINMUX_NUM][2];
+	unsigned int pinmux_flag;
 };
 
 #define LCD_DURATION_MAX    8
@@ -676,7 +674,6 @@ struct lcd_dft_config_s {
 	unsigned char clk_path; /* 0=default, 1=gp0_pll */
 	unsigned int mode;
 	struct ext_lcd_config_s *ext_lcd;
-	struct lcd_pinmux_ctrl_s *lcd_pinmux;
 
 #ifdef CONFIG_AML_LCD_EXTERN
 	struct lcd_extern_common_s *ext_common;
@@ -684,10 +681,8 @@ struct lcd_dft_config_s {
 #endif
 
 	char (*bl_gpio)[LCD_CPU_GPIO_NAME_MAX];
-	struct lcd_pinmux_ctrl_s *bl_pinmux;
 #ifdef CONFIG_AML_LCD_BL_LDIM
 	char (*ldim_gpio)[LCD_CPU_GPIO_NAME_MAX];
-	struct lcd_pinmux_ctrl_s *ldim_pinmux;
 #endif
 };
 
@@ -773,6 +768,7 @@ struct aml_lcd_drv_s {
 	void *debug_info;
 	void (*phy_set)(struct aml_lcd_drv_s *pdrv, int status);
 	struct dev_pm_ops *dev_pm_ops;
+	struct udevice *dev;
 	/* for factory test */
 	struct lcd_power_step_s *factory_lcd_power_on_step;
 };
@@ -783,7 +779,7 @@ struct aml_lcd_data_s *aml_lcd_get_data(void);
 struct aml_lcd_drv_s *aml_lcd_get_driver(int index);
 
 char *lcd_get_dt_addr(void);
-int lcd_probe(void);
+void lcd_set_dt_addr(char *dt_addr);
 
 /* global api for cmd */
 int aml_lcd_driver_probe(int index);

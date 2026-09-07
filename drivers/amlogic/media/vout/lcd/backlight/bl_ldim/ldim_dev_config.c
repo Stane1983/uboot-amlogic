@@ -18,126 +18,6 @@
 #include "ldim_dev_drv.h"
 #include "env.h"
 
-static int ldim_pinmux_load_from_bsp(struct aml_ldim_driver_s *ldim_drv, const char *str,
-				     struct bl_pwm_config_s *bl_pwm)
-{
-	unsigned int i, j;
-	int set_cnt = 0, clr_cnt = 0;
-	struct lcd_pinmux_ctrl_s *pinmux;
-
-	pinmux = ldim_drv->data->dft_conf[0]->ldim_pinmux;
-	if (!pinmux) {
-		LDIMERR("%s: ldim_pinmux is null\n", __func__);
-		return -1;
-	}
-	for (i = 0; i < LCD_PINMX_MAX; i++) {
-		if (strncmp(pinmux->name, "invalid", 7) == 0)
-			break;
-		if (strncmp(pinmux->name, str, strlen(str)) == 0) {
-			for (j = 0; j < LCD_PINMUX_NUM; j++) {
-				if (pinmux->pinmux_set[j][0] == LCD_PINMUX_END)
-					break;
-				bl_pwm->pinmux_set[j][0] = pinmux->pinmux_set[j][0];
-				bl_pwm->pinmux_set[j][1] = pinmux->pinmux_set[j][1];
-				set_cnt++;
-			}
-			for (j = 0; j < LCD_PINMUX_NUM; j++) {
-				if (pinmux->pinmux_clr[j][0] == LCD_PINMUX_END)
-					break;
-				bl_pwm->pinmux_clr[j][0] = pinmux->pinmux_clr[j][0];
-				bl_pwm->pinmux_clr[j][1] = pinmux->pinmux_clr[j][1];
-				clr_cnt++;
-			}
-			break;
-		}
-		pinmux++;
-	}
-	if (set_cnt < LCD_PINMUX_NUM) {
-		bl_pwm->pinmux_set[set_cnt][0] = LCD_PINMUX_END;
-		bl_pwm->pinmux_set[set_cnt][1] = 0x0;
-	}
-	if (clr_cnt < LCD_PINMUX_NUM) {
-		bl_pwm->pinmux_clr[clr_cnt][0] = LCD_PINMUX_END;
-		bl_pwm->pinmux_clr[clr_cnt][1] = 0x0;
-	}
-
-	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-		i = 0;
-		while (i < LCD_PINMUX_NUM) {
-			if (bl_pwm->pinmux_set[i][0] == LCD_PINMUX_END)
-				break;
-			LDIMPR("%s set: %d, 0x%08x\n",
-			       str,
-			       bl_pwm->pinmux_set[i][0],
-			       bl_pwm->pinmux_set[i][1]);
-			i++;
-		}
-		i = 0;
-		while (i < LCD_PINMUX_NUM) {
-			if (bl_pwm->pinmux_clr[i][0] == LCD_PINMUX_END)
-				break;
-			LDIMPR("%s clr: %d, 0x%08x\n",
-			       str,
-			       bl_pwm->pinmux_clr[i][0],
-			       bl_pwm->pinmux_clr[i][1]);
-			i++;
-		}
-	}
-
-	return 0;
-}
-
-static char *ldim_pinmux_str[] = {
-	"ldim_pwm_pin",        /* 0 */
-	"ldim_pwm_vs_pin",     /* 1 */
-	"analog_pwm_pin",      /* 2 */
-	"ldim_bcon_up_pin",        /* 3 */
-	"ldim_bcon_dn_pin",        /* 4 */
-	"none",
-};
-
-static int ldim_pinmux_load(char *dt_addr, struct aml_ldim_driver_s *ldim_drv)
-{
-	struct bl_pwm_config_s *bl_pwm;
-	char *str;
-	int ret = 0;
-
-	if (!ldim_drv->dev_drv)
-		return -1;
-
-	if (ldim_drv->dev_drv->type == LDIM_DEV_TYPE_ABCON) {
-		bl_pwm = &ldim_drv->dev_drv->ldim_pwm_config;
-		if (ldim_drv->dev_drv->abcon_conf.idle_level)
-			str = ldim_pinmux_str[3];
-		else
-			str = ldim_pinmux_str[4];
-		ret = ldim_pinmux_load_from_bsp(ldim_drv, str, bl_pwm);
-		if (ret)
-			return ret;
-	} else {
-		/* ldim_pwm */
-		bl_pwm = &ldim_drv->dev_drv->ldim_pwm_config;
-		if (bl_pwm->pwm_port < BL_PWM_MAX) {
-			if (bl_pwm->pwm_port == BL_PWM_VS)
-				str = ldim_pinmux_str[1];
-			else
-				str = ldim_pinmux_str[0];
-			ret = ldim_pinmux_load_from_bsp(ldim_drv, str, bl_pwm);
-			if (ret)
-				return ret;
-		}
-
-		/* analog_pwm */
-		bl_pwm = &ldim_drv->dev_drv->analog_pwm_config;
-		if (bl_pwm->pwm_port < BL_PWM_VS) {
-			str = ldim_pinmux_str[2];
-			ret = ldim_pinmux_load_from_bsp(ldim_drv, str, bl_pwm);
-		}
-	}
-
-	return ret;
-}
-
 static int ldim_dev_zone_mapping_load(struct ldim_dev_driver_s *dev_drv, const char *path)
 {
 	int bin_size = 0, map_size;
@@ -1592,6 +1472,7 @@ int ldim_dev_get_config(char *dt_addr, struct aml_ldim_driver_s *ldim_drv)
 		ret = ldim_dev_get_config_from_ukey(dev_drv);
 		break;
 	case LCD_CONFIG_DTS:
+	case LCD_CONFIG_BSP:
 		ret = ldim_dev_get_config_from_dts(dev_drv, dt_addr, dev_drv->index);
 		break;
 
@@ -1600,7 +1481,6 @@ int ldim_dev_get_config(char *dt_addr, struct aml_ldim_driver_s *ldim_drv)
 		break;
 	}
 
-	ret = ldim_pinmux_load(dt_addr, ldim_drv);
 
 	return ret;
 }

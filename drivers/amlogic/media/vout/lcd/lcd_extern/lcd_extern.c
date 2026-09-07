@@ -286,24 +286,6 @@ static void lcd_extern_info_print(struct lcd_extern_driver_s *edrv)
 			"i2c_sda_gpio_off: %d\n",
 			edrv->i2c_sda_gpio, edrv->i2c_sda_gpio_off);
 	}
-	if (edrv->pinmux_valid) {
-		i = 0;
-		while (i < LCD_PINMUX_NUM) {
-			if (edrv->pinmux_set[i][0] == LCD_PINMUX_END)
-				break;
-			printf("pinmux_set: %d, 0x%08x\n",
-			       edrv->pinmux_set[i][0], edrv->pinmux_set[i][1]);
-			i++;
-		}
-		i = 0;
-		while (i < LCD_PINMUX_NUM) {
-			if (edrv->pinmux_clr[i][0] == LCD_PINMUX_END)
-				break;
-			printf("pinmux_clr: %d, 0x%08x\n",
-			       edrv->pinmux_clr[i][0], edrv->pinmux_clr[i][1]);
-			i++;
-		}
-	}
 	i = 0;
 	while (i < LCD_EXTERN_GPIO_NUM_MAX) {
 		if (strcmp(edrv->gpio_name[i], "invalid") == 0)
@@ -496,105 +478,55 @@ static int lcd_extern_add_dev(struct lcd_extern_driver_s *edrv, struct lcd_exter
 	return ret;
 }
 
-static unsigned int lcd_extern_get_drv_cnt_flag_from_dts(struct aml_lcd_data_s *pdata,
-							 char *dt_addr)
-{
-#ifdef CONFIG_OF_LIBFDT
-	int parent_offset;
-	char str[20];
-	unsigned int i, flag = 0;
-
-	for (i = 0; i < pdata->drv_max; i++) {
-		if (i == 0)
-			sprintf(str, "/lcd_extern");
-		else
-			sprintf(str, "/lcd%d_extern", i);
-
-		parent_offset = fdt_path_offset(dt_addr, str);
-		if (parent_offset < 0) {
-			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-				EXTPR("not find %s node\n", str);
-		} else {
-			flag |= (1 << i);
-		}
-	}
-
-	return flag;
-#else
-	return 0;
-#endif
-}
-
-static unsigned int lcd_extern_get_drv_cnt_flag_from_bsp(struct aml_lcd_data_s *pdata)
-{
-	unsigned int i, flag = 0;
-
-	for (i = 0; i < pdata->drv_max; i++) {
-		if (!pdata->dft_conf[i])
-			continue;
-		if (pdata->dft_conf[i]->ext_common) {
-			flag |= (1 << i);
-		} else {
-			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-				EXTPR("not find ext_common[%d]\n", i);
-		}
-	}
-
-	return flag;
-}
-
-int lcd_extern_probe(char *dtaddr, int load_id)
+int lcd_extern_probe(struct udevice *dev)
 {
 	struct aml_lcd_data_s *pdata = aml_lcd_get_data();
 	struct lcd_extern_driver_s *edrv;
 	struct lcd_extern_dev_s *edev;
-	unsigned int drv_cnt_flag;
-	int ret = 0, i;
+	int ret = 0;
+	unsigned int index;
 
-	if (load_id != LCD_CONFIG_BSP)
-		drv_cnt_flag = lcd_extern_get_drv_cnt_flag_from_dts(pdata, dtaddr);
-	else
-		drv_cnt_flag = lcd_extern_get_drv_cnt_flag_from_bsp(pdata);
-
-	for (i = 0; i < LCD_MAX_DRV; i++) {
-		if ((drv_cnt_flag & (1 << i)) == 0)
-			continue;
-
-		if (!ext_driver[i]) {
-			ext_driver[i] = (struct lcd_extern_driver_s *)
-				malloc(sizeof(struct lcd_extern_driver_s));
-			if (!ext_driver[i]) {
-				EXTERR("[%d]: %s: Not enough memory\n", i, __func__);
-				return -1;
-			}
-		}
-
-		edrv = ext_driver[i];
-		memset(edrv, 0, sizeof(struct lcd_extern_driver_s));
-		edrv->data = pdata;
-		edrv->index = i;
-		edrv->dev_cnt = lcd_ext_dev_cnt[i];
-		edrv->info_print = lcd_extern_info_print;
-		edrv->power_ctrl = lcd_extern_power_ctrl;
-
-		ret = lcd_extern_load_config(edrv, dtaddr, load_id, lcd_ext_index_lut[edrv->index]);
-		if (ret)
+	ret = dev_read_u32(dev, "index", &index);
+	if (ret) {
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			EXTPR("%s: no index exist, default to 0\n", __func__);
+		index = 0;
+	}
+	if (!ext_driver[index]) {
+		ext_driver[index] = (struct lcd_extern_driver_s *)
+			malloc(sizeof(struct lcd_extern_driver_s));
+		if (!ext_driver[index]) {
+			EXTERR("[%d]: %s: Not enough memory\n", index, __func__);
 			return -1;
+		}
+	}
 
-		for (i = 0; i < edrv->dev_cnt; i++) {
-			edev = edrv->dev[i];
-			if (!edev)
-				continue;
-			lcd_extern_config_update(edev);
-			ret = lcd_extern_add_dev(edrv, edev);
-			if (ret) {
-				EXTERR("[%d]: %s: %d failed\n",
-				       edrv->index, __func__, edev->dev_index);
-				lcd_extern_multi_list_remove(edev);
-				free(edev);
-				edrv->dev[i] = NULL;
-				return -1;
-			}
+	edrv = ext_driver[index];
+	memset(edrv, 0, sizeof(struct lcd_extern_driver_s));
+	edrv->data = pdata;
+	edrv->index = index;
+	edrv->dev_cnt = lcd_ext_dev_cnt[index];
+	edrv->udev = dev;
+	edrv->info_print = lcd_extern_info_print;
+	edrv->power_ctrl = lcd_extern_power_ctrl;
+
+	ret = lcd_extern_load_config(edrv, lcd_get_dt_addr(), lcd_ext_index_lut[edrv->index]);
+	if (ret)
+		return -1;
+
+	for (index = 0; index < edrv->dev_cnt; index++) {
+		edev = edrv->dev[index];
+		if (!edev)
+			continue;
+		lcd_extern_config_update(edev);
+		ret = lcd_extern_add_dev(edrv, edev);
+		if (ret) {
+			EXTERR("[%d]: %s: %d failed\n",
+			       edrv->index, __func__, edev->dev_index);
+			lcd_extern_multi_list_remove(edev);
+			free(edev);
+			edrv->dev[index] = NULL;
+			return -1;
 		}
 	}
 
@@ -691,18 +623,30 @@ int lcd_extern_dev_index_remove(int drv_index, int dev_index)
 	return 0;
 }
 
-int lcd_extern_init(void)
+int lcd_extern_init(unsigned int index)
 {
-	int i, j;
+	int i;
 
-	for (i = 0; i < LCD_MAX_DRV; i++) {
-		for (j = 0; j < LCD_EXTERN_DEV_MAX; j++)
-			lcd_ext_index_lut[i][j] = LCD_EXTERN_INDEX_INVALID;
-		if (ext_driver[i])
-			free(ext_driver[i]);
-		ext_driver[i] = NULL;
-		lcd_ext_dev_cnt[i] = 0;
-	}
+	for (i = 0; i < LCD_EXTERN_DEV_MAX; i++)
+		lcd_ext_index_lut[index][i] = LCD_EXTERN_INDEX_INVALID;
+	if (ext_driver[index])
+		free(ext_driver[index]);
+	ext_driver[index] = NULL;
+	lcd_ext_dev_cnt[index] = 0;
 
 	return 0;
 }
+
+static const struct udevice_id lcd_extern_match_table[] = {
+	{
+		.compatible = "amlogic, lcd_extern",
+	},
+	{}
+};
+
+U_BOOT_DRIVER(lcd_extern) = {
+	.name = "lcd_extern",
+	.id = UCLASS_MISC,
+	.of_match = of_match_ptr(lcd_extern_match_table),
+	.probe = lcd_extern_probe,
+};

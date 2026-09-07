@@ -87,11 +87,52 @@
 };
 
 &pinctrl_periphs {
+	/*backlight*/
+	bl_pwm_vs_on_pins:bl_pwm_vs_on_pin {
+		mux {
+			groups = "pwm_vs_h12";
+			function = "pwm_vs";
+		};
+	};
 	bl_pwm_off_pins:bl_pwm_off_pin {
 		mux {
-			groups = "GPIOH_5";
+			groups = "GPIOH_12";
 			function = "gpio_periphs";
-			output-high;
+			output-low;
+		};
+	};
+	ST6451D06_3_pins: ST6451D06_3_pin {
+		mux {
+			groups = "tcon_1","tcon_2","tcon_3",
+				"tcon_4","tcon_5","tcon_6",
+				"tcon_8","tcon_lock";
+			function = "tcon";
+		};
+	};
+	ST6451D06_3_off_pins: ST6451D06_3_off_pin {
+		mux {
+			groups = "GPIOH_1","GPIOH_2","GPIOH_3",
+				"GPIOH_4","GPIOH_5","GPIOH_6",
+				"GPIOH_8", "GPIOH_0";
+				function = "gpio_periphs";
+			input-enable;
+		};
+	};
+	ST5461D18_2_pins: ST5461D18_2_pin {
+		mux {
+			groups = "tcon_1","tcon_2","tcon_3",
+				"tcon_4","tcon_5","tcon_6",
+				"tcon_8","tcon_lock";
+			function = "tcon";
+		};
+	};
+	ST5461D18_2_off_pins: ST5461D18_2_off_pin {
+		mux {
+			groups = "GPIOH_1","GPIOH_2","GPIOH_3",
+				"GPIOH_4","GPIOH_5","GPIOH_6",
+				"GPIOH_8","GPIOH_0";
+				function = "gpio_periphs";
+			input-enable;
 		};
 	};
 }; /* end of pinctrl_periphs */

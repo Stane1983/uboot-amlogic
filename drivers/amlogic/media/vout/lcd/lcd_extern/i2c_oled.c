@@ -59,10 +59,10 @@ static int lcd_extern_power_cmd_dynamic_size(struct lcd_extern_driver_s *edrv,
 			if (delay_ms > 0)
 				mdelay(delay_ms);
 		} else if (type == LCD_EXT_CMD_TYPE_CMD) {
-			ret = aml_lcd_i2c_write(edrv->i2c_bus,
+			ret = aml_lcd_i2c_write(edrv->udev,
 				edev->config.i2c_addr, &table[i + 2], cmd_size);
 		} else if (type == LCD_EXT_CMD_TYPE_CMD2) {
-			ret = aml_lcd_i2c_write(edrv->i2c_bus,
+			ret = aml_lcd_i2c_write(edrv->udev,
 				edev->config.i2c_addr2, &table[i + 2], cmd_size);
 		} else {
 			EXTERR("%s(%d: %s): type 0x%02x invalid\n",

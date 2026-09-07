@@ -77,6 +77,7 @@ struct ldim_dev_driver_s {
 	unsigned char config_load;
 	unsigned char type;
 	unsigned char probe_flag;
+	struct udevice *udev;
 
 	int use_ctrl_cs;/*1:ctrl-cs, 0:gpio-cs*/
 	int cs_hold_delay;

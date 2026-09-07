@@ -21,7 +21,6 @@ enum bl_pwm_port_e bl_pwm_str_to_pwm(const char *str);
 #endif
 
 /* ldim device probe function */
-int aml_ldim_device_probe(char *dt_addr, struct aml_ldim_driver_s *ldim_drv);
 int aml_ldim_device_remove(struct aml_ldim_driver_s *ldim_drv);
 
 #endif

@@ -106,7 +106,7 @@ static int lcd_extern_power_cmd_dynamic_size(struct lcd_extern_driver_s *edrv,
 				EXTPR("%s: step %d: type=0x%02x, cmd_size=%d\n",
 					__func__, step, type, table[i+1]);
 			}
-			ret = aml_lcd_i2c_write(i2c_bus, i2c_addr,
+			ret = aml_lcd_i2c_write(edrv->udev, i2c_addr,
 				&table[i+2], cmd_size);
 			delay_bypass = 0;
 		} else if (type == LCD_EXT_CMD_TYPE_DELAY) {
@@ -178,7 +178,7 @@ static int lcd_extern_power_cmd_fixed_size(struct lcd_extern_driver_s *edrv,
 				EXTPR("%s: step %d: type=0x%02x, cmd_size=%d\n",
 					__func__, step, type, cmd_size);
 			}
-			ret = aml_lcd_i2c_write(i2c_bus, i2c_addr,
+			ret = aml_lcd_i2c_write(edrv->udev, i2c_addr,
 				&table[i+1], (cmd_size-1));
 			delay_bypass = 0;
 		} else if (type == LCD_EXT_CMD_TYPE_DELAY) {
@@ -347,7 +347,7 @@ static int lcd_extern_init_check(struct lcd_extern_driver_s *edrv,
 	}
 	memset(chk_table, 0, cnt);
 
-	ret = aml_lcd_i2c_read(i2c_bus, i2c_addr, chk_table, cnt);
+	ret = aml_lcd_i2c_read(edrv->udev, i2c_addr, chk_table, cnt);
 	if (ret) {
 		EXTERR("%s: i2c read error\n", __func__);
 		return -1;
@@ -376,8 +376,7 @@ static int lcd_extern_power_on(struct lcd_extern_driver_s *edrv,
 		/* init voltage */
 		lcd_extern_power_cmd(edrv, edev, 0);
 		/* NVM write */
-		aml_lcd_i2c_write(edrv->i2c_bus, edev->config.i2c_addr,
-			ANX6862_NVM_wr, 2);
+		aml_lcd_i2c_write(edrv->udev, edev->config.i2c_addr, ANX6862_NVM_wr, 2);
 	}
 
 	/* step2: ANX7911 */
@@ -387,8 +386,7 @@ static int lcd_extern_power_on(struct lcd_extern_driver_s *edrv,
 		/* init voltage */
 		lcd_extern_power_cmd(edrv, edev, 1);
 		/* NVM write */
-		aml_lcd_i2c_write(edrv->i2c_bus, edev->config.i2c_addr2,
-			ANX7911_NVM_wr, 2);
+		aml_lcd_i2c_write(edrv->udev, edev->config.i2c_addr2, ANX7911_NVM_wr, 2);
 	}
 
 	EXTPR("%s\n", __func__);

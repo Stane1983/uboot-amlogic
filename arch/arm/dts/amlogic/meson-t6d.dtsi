@@ -715,4 +715,32 @@
 			drive-strength = <3>;
 		};
 	};
+	lcd_tcon_mlvds_pins: lcd_tcon_mlvds_pin {
+		mux {
+			groups = "tcon_0","tcon_1","tcon_2","tcon_3",
+				"tcon_4","tcon_5","tcon_6";
+			function = "tcon";
+		};
+	};
+
+	lcd_tcon_mlvds_off_pins: lcd_tcon_mlvds_off_pin {
+		mux {
+			groups = "GPIOH_0","GPIOH_1","GPIOH_2","GPIOH_3",
+				"GPIOH_4","GPIOH_5","GPIOH_6";
+			function = "gpio_periphs";
+			input-enable;
+		};
+	};
+	pwm_d_pins6: pwm_d_pins6 {
+		mux {
+			groups = "pwm_d_h12";
+			function = "pwm_d";
+		};
+	};
+	bl_pwm_vs_on_pins:bl_pwm_vs_on_pin {
+		mux {
+			groups = "pwm_vs_h12";
+			function = "pwm_vs";
+		};
+	};
 };

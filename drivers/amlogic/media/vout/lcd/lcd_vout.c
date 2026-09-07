@@ -31,7 +31,8 @@
 #include <amlogic/ramdump.h>
 #endif
 #include <amlogic/media/vpp/vpp.h>
-
+#include <dm.h>
+#include <dm/device-internal.h>
 //DECLARE_GLOBAL_DATA_PTR;
 
 unsigned int lcd_debug_print_flag;
@@ -597,66 +598,38 @@ static int lcd_mode_init(struct aml_lcd_drv_s *pdrv)
 	return 0;
 }
 
-static unsigned int lcd_get_drv_cnt_flag_from_dts(char *dt_addr)
+static unsigned int lcd_kernel_dts_exist(char *dt_addr, unsigned int index)
 {
 #ifdef CONFIG_OF_LIBFDT
 	int parent_offset;
 	char str[8];
-	unsigned int i, flag = 0;
+	int ret = 0;
 
-	for (i = 0; i < lcd_data->drv_max; i++) {
-		if (i == 0)
-			snprintf(str, 8, "/lcd");
-		else
-			snprintf(str, 8, "/lcd%d", i);
+	if (index == 0)
+		snprintf(str, 8, "/lcd");
+	else
+		snprintf(str, 8, "/lcd%d", index);
 
-		parent_offset = fdt_path_offset(dt_addr, str);
-		if (parent_offset < 0) {
-			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-				LCDPR("not find %s node\n", str);
-		} else {
-			flag |= (1 << i);
-		}
+	parent_offset = fdt_path_offset(dt_addr, str);
+	if (parent_offset < 0) {
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDPR("not find %s node\n", str);
+	} else {
+		ret = 1;
 	}
 
-	return flag;
+	return ret;
 #else
 	return 0;
 #endif
 }
 
-static unsigned int lcd_get_drv_cnt_flag_from_bsp(void)
-{
-	unsigned int i, flag = 0;
-
-	for (i = 0; i < lcd_data->drv_max; i++) {
-		if (!lcd_data->dft_conf[i])
-			continue;
-		if (lcd_data->dft_conf[i]->ext_lcd) {
-			flag |= (1 << i);
-		} else {
-			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-				LCDPR("not find ext_lcd[%d]\n", i);
-		}
-	}
-
-	return flag;
-}
-
-static struct aml_lcd_drv_s *lcd_driver_add(int index)
+static struct aml_lcd_drv_s *lcd_driver_add(struct udevice *dev, int index)
 {
 	struct aml_lcd_drv_s *pdrv;
 	struct dev_pm_ops *pm_ops = NULL;
 	char *ddr_resume = NULL;
 
-	if (index >= lcd_data->drv_max) {
-		LCDERR("%s: invalid index: %d\n", __func__, index);
-		return NULL;
-	}
-	if (!lcd_data->dft_conf[index]) {
-		LCDERR("%s: no lcd%d dft_conf\n", __func__, index);
-		return NULL;
-	}
 	if (!lcd_driver[index]) {
 		lcd_driver[index] = (struct aml_lcd_drv_s *)
 			malloc(sizeof(struct aml_lcd_drv_s));
@@ -684,13 +657,11 @@ static struct aml_lcd_drv_s *lcd_driver_add(int index)
 
 	/* default config */
 	pdrv->data = lcd_data;
+	pdrv->dev = dev;
 	pdrv->config.basic.lcd_type = LCD_TYPE_MAX;
 	pdrv->config.power.power_on_step[0].type = LCD_POWER_TYPE_MAX;
 	pdrv->config.power.power_off_step[0].type = LCD_POWER_TYPE_MAX;
-	pdrv->config.pinmux_set[0][0] = LCD_PINMUX_END;
-	pdrv->config.pinmux_set[0][1] = 0x0;
-	pdrv->config.pinmux_clr[0][0] = LCD_PINMUX_END;
-	pdrv->config.pinmux_clr[0][1] = 0x0;
+	pdrv->config.pinmux_flag = 0xff;
 	pdrv->config.backlight_index = 0xff;
 
 	/* default setting */
@@ -882,17 +853,26 @@ char *lcd_get_dt_addr(void)
 	return g_dt_addr;
 }
 
+void lcd_set_dt_addr(char *dt_addr)
+{
+	g_dt_addr = dt_addr;
+}
+
 unsigned char lcd_get_dbg_source(void)
 {
 	return debug_ctrl.debug_para_source;
 }
 
-static int lcd_config_probe(void)
+static int lcd_config_probe(struct udevice *dev, unsigned int index)
 {
 	struct aml_lcd_drv_s *pdrv;
-	unsigned int drv_cnt_flag;
-	int i, ret;
+	unsigned int kernel_dts_exist;
+	int ret;
 	int init_load_id = LCD_CONFIG_DTS;
+#ifdef CONFIG_AML_LCD_EXTERN
+	struct udevice *extern_dev;
+	char node_extern[12];
+#endif
 
 #ifdef CONFIG_DTB_MEM_ADDR
 	g_dt_addr = (char *)CONFIG_DTB_MEM_ADDR;
@@ -903,47 +883,41 @@ static int lcd_config_probe(void)
 
 	lcd_reserved_memory_init(g_dt_addr);
 
-	drv_cnt_flag = lcd_get_drv_cnt_flag_from_dts(g_dt_addr);
-	if (drv_cnt_flag == 0) {
+	kernel_dts_exist = lcd_kernel_dts_exist(g_dt_addr, index);
+	if (!kernel_dts_exist) {
 		LCDPR("not find /lcd node\n");
-		drv_cnt_flag = lcd_get_drv_cnt_flag_from_bsp();
 		init_load_id = LCD_CONFIG_BSP;
+		g_dt_addr = (char *)gd->fdt_blob;
 	} else {
 		init_load_id = LCD_CONFIG_DTS;
 	}
-	if (drv_cnt_flag == 0)
+
+	pdrv = lcd_driver_add(dev, index);
+	if (!pdrv)
 		return -1;
 
-	for (i = 0; i < lcd_data->drv_max; i++) {
-		if ((drv_cnt_flag & (1 << i)) == 0)
-			continue;
-		pdrv = lcd_driver_add(i);
-		if (!pdrv)
-			continue;
+	ret = lcd_base_config_load_from_dts(g_dt_addr, pdrv);
 
-		if (init_load_id == LCD_CONFIG_DTS)
-			ret = lcd_base_config_load_from_dts(g_dt_addr, pdrv);
-		else
-			ret = lcd_base_config_load_from_bsp(pdrv);
-
-		if (ret) {
-			lcd_driver_remove(i);
-			continue;
-		}
-
-		if (lcd_get_panel_config(g_dt_addr, pdrv->config_load, pdrv)) {
-			lcd_driver_remove(pdrv->index);
-			continue;
-		}
-		lcd_panel_config_load_to_drv(pdrv);
-#ifdef CONFIG_AML_LCD_BACKLIGHT
-		aml_bl_probe_single(i, init_load_id);
-#endif
+	if (ret) {
+		lcd_driver_remove(index);
+		return -1;
 	}
-#ifdef CONFIG_AML_LCD_EXTERN
-	lcd_extern_probe(g_dt_addr, init_load_id);
-#endif
 
+	if (lcd_get_panel_config(g_dt_addr, pdrv->config_load, pdrv)) {
+		lcd_driver_remove(pdrv->index);
+		return -1;
+	}
+	lcd_panel_config_load_to_drv(pdrv);
+
+#ifdef CONFIG_AML_LCD_EXTERN
+	if (index == 0)
+		snprintf(node_extern, 11, "lcd_extern");
+	else
+		snprintf(node_extern, 12, "lcd%d_extern", index);
+	ret = uclass_get_device_by_name(UCLASS_MISC, node_extern, &extern_dev);
+	if (ret)
+		LCDPR("node %s not found\n", node_extern);
+#endif
 	return 0;
 }
 
@@ -965,9 +939,10 @@ void lcd_power_domain_off(struct aml_lcd_data_s *lcd_data_p)
 #endif
 }
 
-int lcd_probe(void)
+int lcd_probe(struct udevice *dev)
 {
 	int ret = 0;
+	unsigned int index = 0;
 
 #if defined(CONFIG_MDUMP_COMPRESS) || \
 	((defined CONFIG_SUPPORT_BL33Z) && \
@@ -995,18 +970,23 @@ int lcd_probe(void)
 		return -1;
 	}
 
+	ret = dev_read_u32(dev, "index", &index);
+	if (ret) {
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			LCDPR("%s: no index exist, default to 0\n", __func__);
+		index = 0;
+	}
+
 #ifdef CONFIG_AML_LCD_EXTERN
-	lcd_extern_init();
+	lcd_extern_init(index);
 #endif
 #ifdef CONFIG_AML_LCD_BACKLIGHT
-	aml_bl_init();
+	aml_bl_init(index);
 #endif
-
-	lcd_config_bsp_init();
 
 	lcd_phy_config_init(lcd_data);
 	lcd_venc_probe(lcd_data);
-	ret = lcd_config_probe();
+	ret = lcd_config_probe(dev, index);
 	if (ret)
 		return -1;
 
@@ -1049,7 +1029,57 @@ int lcd_remove(void)
  * ********************************************** */
 int aml_lcd_driver_probe(int index)
 {
-	return lcd_probe();
+	int ret;
+	struct udevice *lcd_dev;
+	char node_lcd[5];
+#ifdef CONFIG_AML_LCD_BACKLIGHT
+	struct udevice *backlight_dev;
+	char node_bl[11];
+#ifdef CONFIG_AML_LCD_BL_LDIM
+	struct udevice *ldim_dev;
+#endif
+#endif
+#ifdef CONFIG_AML_LCD_EXTERN
+	struct udevice *lcd_extern_dev;
+	char node_extern[12];
+#endif
+
+#ifdef CONFIG_AML_LCD_EXTERN
+	if (index == 0)
+		snprintf(node_extern, 11, "lcd_extern");
+	else
+		snprintf(node_extern, 12, "lcd%d_extern", index);
+	ret = uclass_get_device_by_name(UCLASS_MISC, node_extern, &lcd_extern_dev);
+	if (!ret)
+		device_remove(lcd_extern_dev, DM_REMOVE_NORMAL);
+#endif
+#ifdef CONFIG_AML_LCD_BACKLIGHT
+#ifdef CONFIG_AML_LCD_BL_LDIM
+	ret = uclass_get_device_by_name(UCLASS_MISC, "local_dimming_device", &ldim_dev);
+	if (!ret)
+		device_remove(ldim_dev, DM_REMOVE_NORMAL);
+#endif
+	if (index == 0)
+		snprintf(node_bl, 10, "backlight");
+	else
+		snprintf(node_bl, 11, "backlight%d", index);
+	ret = uclass_get_device_by_name(UCLASS_MISC, node_bl, &backlight_dev);
+	if (!ret)
+		device_remove(backlight_dev, DM_REMOVE_NORMAL);
+#endif
+	if (index == 0)
+		snprintf(node_lcd, 11, "lcd");
+	else
+		snprintf(node_lcd, 12, "lcd%d", index);
+	ret = uclass_get_device_by_name(UCLASS_MISC, node_lcd, &lcd_dev);
+	if (!ret) {
+		device_remove(lcd_dev, DM_REMOVE_NORMAL);
+		device_probe(lcd_dev);
+#ifdef CONFIG_AML_LCD_BACKLIGHT
+		device_probe(backlight_dev);
+#endif
+	}
+	return ret;
 }
 
 /***********************************************
@@ -1612,4 +1642,70 @@ void aml_lcd_driver_mute(int index, unsigned char flag)
 
 	lcd_mute_set(pdrv, flag);
 }
+
+static const struct udevice_id lcd_match_table[] = {
+#if defined(CONFIG_MESON_C3)
+	{
+		.compatible = "amlogic, lcd-c3",
+		.data = (long)&lcd_data_c3,
+	},
+#endif
+#if defined(CONFIG_MESON_T5M)
+	{
+		.compatible = "amlogic, lcd-t5m",
+		.data = (long)&lcd_data_t5m,
+	},
+#endif
+#if defined(CONFIG_MESON_T3X)
+	{
+		.compatible = "amlogic, lcd-t3x",
+		.data = (long)&lcd_data_t3x,
+	},
+#endif
+#if defined(CONFIG_MESON_A4)
+	{
+		.compatible = "amlogic, lcd-a4",
+		.data = (long)&lcd_data_a4,
+	},
+#endif
+#if defined(CONFIG_MESON_TXHD2)
+	{
+		.compatible = "amlogic, lcd-txhd2",
+		.data = (long)&lcd_data_txhd2,
+	},
+#endif
+#if defined(CONFIG_MESON_S6)
+	{
+		.compatible = "amlogic, lcd-s6",
+		.data = (long)&lcd_data_s6,
+	},
+#endif
+#if defined(CONFIG_MESON_T6D)
+	{
+		.compatible = "amlogic, lcd-t6d",
+		.data = (long)&lcd_data_t6d,
+	},
+#endif
+#if defined(CONFIG_MESON_T6W)
+	{
+		.compatible = "amlogic, lcd-t6w",
+		.data = (long)&lcd_data_t6w,
+	},
+#endif
+#if defined(CONFIG_MESON_T6X)
+	{
+		.compatible = "amlogic, lcd-t6x",
+		.data = (long)&lcd_data_t6x,
+	},
+#endif
+	{}
+};
+
+U_BOOT_DRIVER(lcd) = {
+	.name = "lcd",
+	.id = UCLASS_MISC,
+	.of_match = of_match_ptr(lcd_match_table),
+	.probe = lcd_probe,
+	.priv_auto = sizeof(struct aml_lcd_data_s),
+};
 

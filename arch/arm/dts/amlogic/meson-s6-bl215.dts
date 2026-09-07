@@ -6,7 +6,7 @@
 /dts-v1/;
 
 #include "amlogic/meson-s6-bl215.dtsi"
-#include "amlogic/meson-s6_skt-panel.dtsi"
+#include "amlogic/meson-s6-panel.dtsi"
 
 / {
 	compatible =  "amlogic,s6-txxx", "amlogic,meson-s6";

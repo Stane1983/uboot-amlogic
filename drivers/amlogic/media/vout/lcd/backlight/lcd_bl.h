@@ -8,7 +8,8 @@
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 
 void bl_config_print(struct aml_bl_drv_s *bdrv);
-int aml_bl_load_config(struct aml_bl_drv_s *bdrv, char *dt_addr, int load_id);
+int aml_bl_load_config(struct aml_bl_drv_s *bdrv, char *dt_addr);
+int aml_bl_reload_config(struct aml_bl_drv_s *bdrv, char *dt_addr, unsigned int load_id);
 
 void bl_set_pwm_gpio_check(struct aml_bl_drv_s *bdrv, struct bl_pwm_config_s *bl_pwm);
 

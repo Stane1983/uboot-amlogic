@@ -46,7 +46,6 @@ int lcd_tcon_is_dccd_flow(void);
 #ifdef CONFIG_AML_LCD_MIPI_DSI
 /* @dsi_common.c */
 void lcd_dsi_init_table_load_dts(char *dtaddr, int offset, struct dsi_config_s *dconf);
-void lcd_dsi_init_table_load_bsp(struct dsi_config_s *dconf);
 void lcd_dsi_tx_ctrl(struct aml_lcd_drv_s *pdrv, unsigned char en);
 unsigned long long lcd_dsi_get_min_bitrate(struct aml_lcd_drv_s *pdrv);
 /* @dsi_debug.c */

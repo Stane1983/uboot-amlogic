@@ -1,0 +1,186 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ */
+
+/ {
+	lcd:lcd {
+		compatible = "amlogic, lcd-t6d";
+		status = "okay";
+		index = <0>;
+		mode = "tv";
+		fr_auto_policy = <1>; /* 0=disable, 1=enable */
+		key_valid = <1>;
+		reg = <0x0 0xfe3b0000 0x0 0xd000   /* tcon */
+			0x0 0xfe004000 0x0 0x70        /* periphs */
+			0x0 0xfe002000 0x0 0xa0>;      /* reset */
+		interrupts = <0 197 1>;
+		interrupt-names = "vsync";
+		pinctrl-names = "tcon_mlvds","tcon_mlvds_off";
+		pinctrl-0 = <&lcd_tcon_mlvds_pins>;
+		pinctrl-1 = <&lcd_tcon_mlvds_off_pins>;
+
+		/* power type:(0=cpu_gpio, 2=signal, 3=extern, 0xff=ending) */
+		/* power index:(gpios_index, or extern_index, 0xff=invalid) */
+		/* power value:(0=output low, 1=output high, 2=input) */
+		/* power delay:(unit in ms) */
+		/*
+		 *	lcd_cpu-gpios = <&gpio GPIOY_0 GPIO_ACTIVE_HIGH
+		 *	&gpio GPIOY_4 GPIO_ACTIVE_HIGH
+		 *	&gpio GPIOY_6 GPIO_ACTIVE_HIGH>;
+		 *	lcd_cpu_gpio_names = "GPIOY_0","GPIOY_4","GPIOY_6";
+		 */
+		lcd_cpu-gpios = <&gpio GPIOH_7 GPIO_ACTIVE_HIGH>;
+		lcd_cpu_gpio_names = "GPIOH_7";
+
+		config_check_glb = <1>;
+		display_timing_req_min = <1  /*alert_level: 0:disable, 1:warning, 2:fatal error*/
+			45   /*hsw+hbp*/
+			0    /*hfp, 0 for no need*/
+			20   /*vsw+vbp*/
+			15>; /*vfp*/
+
+		lvds_0{
+			model_name = "1080p-vfreq";
+			interface = "lvds"; /*lcd_interface(lvds, vbyone)*/
+			basic_setting = <
+				1920 1080 /*h_active, v_active*/
+				2200 1125 /*h_period, v_period*/
+				8      /*lcd_bits */
+				16 9>; /*screen_widht, screen_height*/
+			range_setting = <
+				2132 2650  /*h_period_min,max*/
+				1120 1480  /*v_period_min,max*/
+				120000000 160000000>; /*pclk_min,max*/
+			lcd_timing = <
+				44 148 0  /*hs_width, hs_bp, hs_pol*/
+				5  20 0>; /*vs_width, vs_bp, vs_pol*/
+			clk_attr = <
+				2 /*fr_adj_type: 0=clk, 1=htotal, 2=vtotal, 3=auto, 4=hdmi */
+				0 /*clk_ss: [0:7]:level, [8:11]:freq, [12:15]: mode*/
+				1 /*clk_auto_generate*/
+				0>; /*pixel_clk(unit in Hz)*/
+			lvds_attr = <
+				1  /*lvds_repack*/
+				1  /*dual_port*/
+				0  /*pn_swap*/
+				0  /*port_swap*/
+				0>; /*lane_reverse*/
+			phy_attr=<0x3 0>; /*vswing_level, preem_level*/
+			hw_filter=<0 0>;  /* filter_time, filter_cnt*/
+
+			/* power step: type, index, value, delay(ms) */
+			power_on_step = <
+				0 0 1 50   /*panel power*/
+				2 0 0 0   /*signal enable*/
+				0xff 0 0 0>; /*ending*/
+			power_off_step = <
+				2 0 0 10  /*signal disable*/
+				0 0 0 500   /*panel power*/
+				0xff 0 0 0>; /*ending*/
+			backlight_index = <0>;
+		};
+	};
+
+	lcd_extern {
+		compatible = "amlogic, lcd_extern";
+		status = "okay";
+		index = <0>;
+		key_valid = <1>;
+		i2c-bus = <&i2c2>;
+
+		extern_0 {
+			index = <0>;
+			extern_name = "ext_default";
+			status = "okay";
+			type = <0>; /*0=i2c, 1=spi, 2=mipi*/
+			i2c_address = <0x33>; /*7bit i2c_addr*/
+			i2c_address2 = <0xff>;
+			cmd_size = <0xff>; /*dynamic cmd_size*/
+
+			/* init on/off:
+			 *  fixed cmd_size: (type, value...);
+			 *                  cmd_size include all data.
+			 *  dynamic cmd_size: (type, cmd_size, value...);
+			 *                    cmd_size include value.
+			 */
+			/* type: 0x00=cmd with delay(bit[3:0]=1 for address2),
+			 *       0xc0=cmd(bit[3:0]=1 for address2),
+			 *       0xf0=gpio,
+			 *       0xfd=delay,
+			 *       0xff=ending
+			 */
+			/* value: i2c or spi cmd, or gpio index & level */
+			/* delay: unit ms */
+			init_on = <
+				0xc0 43 0x00
+					0x48 0x19 0xa4 0x00 0x00 0x23 0xfc 0x66 0xfb 0x2b 0x28 0x00
+					0x10 0x10 0x07 0x07 0x3e 0xc3 0xd3 0x33 0xa2 0xde 0x2b 0x02
+					0x3d 0x21 0xa1 0xbf 0x1a 0x71 0x33 0x0f 0xd0 0xa1 0x01 0x70
+					0x0e 0x1a 0x11 0xb5 0xcd 0xf9
+				0xff 0>; /*ending*/
+			init_off = <0xff 0>; /*ending*/
+		};
+	};
+
+	backlight{
+		compatible = "amlogic, backlight-t6d";
+		status = "okay";
+		index = <0>;
+		key_valid = <1>;
+		pinctrl-names = "pwm_on","pwm_vs_on",
+				"pwm_off";
+		pinctrl-0 = <&pwm_d_pins6>;
+		pinctrl-1 = <&bl_pwm_vs_on_pins>;
+		pinctrl-2 = <&bl_pwm_off_pins>;
+		pinctrl_version = <2>; /* for uboot */
+		//memory-region = <&ldc_mem_reserved>;
+
+		/* pwm port: PWM_A, PWM_B, PWM_C, PWM_D, PWM_E, PWM_F, PWM_VS*/
+		/* power index:(point gpios_index, 0xff=invalid) */
+		/* power value:(0=output low, 1=output high, 2=input) */
+		/* power delay:(unit in ms) */
+		bl-gpios = <&gpio GPIOH_13 GPIO_ACTIVE_HIGH
+			&gpio GPIOH_12 GPIO_ACTIVE_HIGH>;
+		bl_gpio_names = "GPIOH_13","GPIOH_12";
+
+		backlight_0{
+			index = <0>;
+			bl_name = "backlight_pwm";
+			bl_level_default_uboot_kernel = <100 100>;
+			bl_level_attr = <255 10 /*max, min*/
+				128 128>; /*mid, mid_mapping*/
+			bl_ctrl_method = <1>; /*1=pwm,2=pwm_combo,3=ldim*/
+			bl_power_attr = <0 /*en_gpio_index*/
+				1 0 /*on_value, off_value*/
+				200 200>; /*on_delay(ms), off_delay(ms)*/
+			bl_pwm_port = "PWM_D";
+			bl_pwm_attr = <1 /*pwm_method(0=negative, 1=positive)*/
+				180 /*pwm_freq(pwm:Hz, pwm_vs:multiple of vs)*/
+				100 25>; /*duty_max(%), duty_min(%)*/
+			bl_pwm_power = <1 0 /*pwm_gpio_index, pwm_gpio_off*/
+				10 10>; /*pwm_on_delay(ms), pwm_off_delay(ms)*/
+			en_sequence_reverse = <0>; /* 1 for reverse */
+		};
+		backlight_1{
+			index = <1>;
+			bl_name = "backlight_pwm_vs";
+			bl_level_default_uboot_kernel = <100 100>;
+			bl_level_attr = <255 10 /*max, min*/
+				128 128>; /*mid, mid_mapping*/
+			bl_ctrl_method = <1>; /*1=pwm,2=pwm_combo,3=ldim*/
+			bl_power_attr = <0  /*en_gpio_index*/
+				1 0 /*on_value, off_value*/
+				200 200>; /* on_delay(ms), off_delay(ms)*/
+			bl_pwm_port = "PWM_VS";
+			bl_pwm_attr = <1 /*pwm_method(0=negative, 1=positive)*/
+				2 /*pwm_freq(pwm:Hz, pwm_vs:multiple of vs)*/
+				100 25>; /*duty_max(%), duty_min(%)*/
+			bl_pwm_power = <1 0 /*pwm_gpio_index, pwm_gpio_off*/
+				10 10>; /*pwm_on_delay(ms), pwm_off_delay(ms)*/
+			en_sequence_reverse = <0>; /* 1 for reverse */
+		};
+
+	};
+};/* end of panel */
+

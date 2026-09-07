@@ -166,6 +166,14 @@ int board_init(void)
 
 int board_late_init(void)
 {
+	int ret;
+#ifdef CONFIG_AML_LCD
+	struct udevice *lcd_dev;
+#ifdef CONFIG_AML_LCD_BACKLIGHT
+	struct udevice *backlight_dev;
+#endif
+#endif
+
 	printf("board late init\n");
 	env_set("defenv_para", "-c -b0");
 	aml_board_late_init_front(NULL);
@@ -191,7 +199,14 @@ int board_late_init(void)
 	run_command("ini_model", 0);
 	aml_board_display_env_handler();
 #ifdef CONFIG_AML_LCD
-	lcd_probe();
+	ret = uclass_get_device_by_name(UCLASS_MISC, "lcd", &lcd_dev);
+	if (ret)
+		printf("device lcd not found\n");
+#ifdef CONFIG_AML_LCD_BACKLIGHT
+	ret = uclass_get_device_by_name(UCLASS_MISC, "backlight", &backlight_dev);
+	if (ret)
+		printf("device backlight not found\n");
+#endif
 #endif
 	run_command("run init_display", 0);
 

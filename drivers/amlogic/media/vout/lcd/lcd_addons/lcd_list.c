@@ -352,11 +352,12 @@ void aml_lcd_list(void)
 			// TODO json
 			break;
 		case LCD_CONFIG_DTS:
+		case LCD_CONFIG_BSP:
+			dt_addr = lcd_get_dt_addr();
 			sprintf(snode, "/lcd%c", i == 0 ? '\0' : '0' + i);
 			parent_ofst = fdt_path_offset(dt_addr, snode);
 			lcd_list_dts(i, parent_ofst);
 			break;
-		case LCD_CONFIG_BSP:
 		case LCD_CONFIG_UKEY:
 		default:
 			break;

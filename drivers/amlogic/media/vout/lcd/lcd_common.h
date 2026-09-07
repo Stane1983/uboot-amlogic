@@ -138,7 +138,6 @@ unsigned char *lcd_init_table_load_array(char *name, unsigned char cmd_size,
 					 int tbl_max, int *tbl_cnt);
 
 int lcd_base_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv);
-int lcd_base_config_load_from_bsp(struct aml_lcd_drv_s *pdrv);
 void lcd_panel_config_load_to_drv(struct aml_lcd_drv_s *pdrv);
 int lcd_check_config_load(struct aml_lcd_drv_s *pdrv);
 int lcd_get_panel_config(char *dt_addr, int load_id, struct aml_lcd_drv_s *pdrv);
@@ -175,6 +174,12 @@ int lcd_frame_rate_change(struct aml_lcd_drv_s *pdrv);
 void lcd_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
 void lcd_lvds_bit_rate_config(struct aml_lcd_drv_s *pdrv);
 
+void lcd_rgb_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
+void lcd_bt_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
+void lcd_vbyone_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
+void lcd_mlvds_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
+void lcd_p2p_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
+void lcd_mipi_pinmux_set(struct aml_lcd_drv_s *pdrv, int status);
 #ifdef CONFIG_AML_LCD_VBYONE
 void lcd_vbyone_bit_rate_config(struct aml_lcd_drv_s *pdrv);
 #endif
@@ -321,11 +326,11 @@ unsigned int get_dccd_crc(void);
 #endif
 
 /* aml_bl driver */
-void aml_bl_probe_single(unsigned char index, int load_id);
+int aml_bl_reprobe_single(unsigned int index, char *dt_addr, unsigned char load_id);
 void aml_bl_remove_all(void);
 int aml_bl_index_add(int drv_index, int conf_index);
 int aml_bl_index_remove(int drv_index);
-int aml_bl_init(void);
+int aml_bl_init(int index);
 int aml_bl_get_state(int index);
 void aml_bl_driver_enable(int index);
 void aml_bl_driver_disable(int index);

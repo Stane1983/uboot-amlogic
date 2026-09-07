@@ -6,6 +6,7 @@
 #include <common.h>
 #include <malloc.h>
 #include <dm.h>
+#include <dm/pinctrl.h>
 #include <asm/gpio.h>
 #include <fdtdec.h>
 #include <amlogic/media/vout/lcd/aml_lcd.h>
@@ -125,13 +126,87 @@ static struct bl_config_s *bl_check_valid(struct aml_bl_drv_s *bdrv)
 	return bconf;
 }
 
+static char *bl_pinmux_str[BL_PINMUX_MAX] = {
+	"pwm_on",               /* 0 */
+	"pwm_vs_on",            /* 1 */
+	"pwm_combo_0_1_on",     /* 2 */
+	"pwm_combo_0_vs_1_on",  /* 3 */
+	"pwm_combo_0_1_vs_on",  /* 4 */
+	"pwm_off",              /* 5 */
+	"pwm_combo_off",        /* 6 */
+	"none",
+};
+
+static void bl_pwm_pinmux_ctrl(struct aml_bl_drv_s *bdrv, int status)
+{
+	struct bl_config_s *bconf = &bdrv->config;
+	int index = 0xff;
+
+	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
+		BLPR("[%d]: %s\n", bdrv->index, __func__);
+
+	switch (bconf->method) {
+	case BL_CTRL_PWM:
+		if (status) {
+			if (bconf->bl_pwm->pwm_port == BL_PWM_VS)
+				index = 1;
+			else
+				index = 0;
+		} else {
+			index = 5;
+		}
+		break;
+	case BL_CTRL_PWM_COMBO:
+		if (status) {
+			if (bconf->bl_pwm_combo0->pwm_port == BL_PWM_VS) {
+				index = 3;
+			} else {
+				if (bconf->bl_pwm_combo1->pwm_port == BL_PWM_VS)
+					index = 4;
+				else
+					index = 2;
+			}
+		} else {
+			index = 6;
+		}
+		break;
+	default:
+		BLERR("[%d]: %s: wrong ctrl_mothod=%d\n",
+		      bdrv->index, __func__, bconf->method);
+		break;
+	}
+
+	if (index >= BL_PINMUX_MAX) {
+		BLERR("[%d]: %s: pinmux index %d is invalid\n",
+		      bdrv->index, __func__, index);
+		return;
+	}
+
+	if (bdrv->pinmux_flag == index) {
+		BLPR("[%d]: pinmux %s is already selected\n",
+		     bdrv->index, bl_pinmux_str[index]);
+		return;
+	}
+
+	/* request pwm pinmux */
+	if (pinctrl_select_state(bdrv->udev, bl_pinmux_str[index])) {
+		BLERR("[%d]: set pinmux %s error\n",
+		      bdrv->index, bl_pinmux_str[index]);
+	} else {
+		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
+			BLPR("[%d]: set pinmux %s\n",
+			     bdrv->index, bl_pinmux_str[index]);
+		}
+	}
+	bdrv->pinmux_flag = index;
+}
+
 static void bl_pwm_pinmux_gpio_set(struct aml_bl_drv_s *bdrv, int pwm_index, int gpio_level)
 {
 	struct bl_config_s *bconf;
 	struct bl_pwm_config_s *bl_pwm = NULL;
 	int gpio;
 	char *str;
-	int i;
 
 	bconf = bl_check_valid(bdrv);
 	if (!bconf)
@@ -162,21 +237,8 @@ static void bl_pwm_pinmux_gpio_set(struct aml_bl_drv_s *bdrv, int pwm_index, int
 		BLPR("%s: pwm_port=0x%x, pinmux_flag=%d\n",
 			__func__, bl_pwm->pwm_port, bl_pwm->pinmux_flag);
 	}
-	if (bl_pwm->pinmux_flag > 0) {
-		i = 0;
-		while (i < LCD_PINMUX_NUM) {
-			if (bl_pwm->pinmux_clr[i][0] == LCD_PINMUX_END)
-				break;
-			lcd_pinmux_clr_mask(bl_pwm->pinmux_clr[i][0], bl_pwm->pinmux_clr[i][1]);
-			if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-				BLPR("%s: port=0x%x, pinmux_clr=0x%x,0x%08x\n",
-				     __func__, bl_pwm->pwm_port,
-				     bl_pwm->pinmux_clr[i][0], bl_pwm->pinmux_clr[i][1]);
-			}
-			i++;
-		}
-		bl_pwm->pinmux_flag = 0;
-	}
+	if (bl_pwm->pinmux_flag > 0)
+		bl_pwm_pinmux_ctrl(bdrv, 0);
 	/* set gpio */
 	if (bl_pwm->pwm_gpio >= BL_GPIO_NUM_MAX) {
 		gpio = LCD_GPIO_MAX;
@@ -192,7 +254,6 @@ static void bl_pwm_pinmux_gpio_clr(struct aml_bl_drv_s *bdrv, unsigned int pwm_i
 {
 	struct bl_config_s *bconf;
 	struct bl_pwm_config_s *bl_pwm = NULL;
-	int i;
 
 	bconf = bl_check_valid(bdrv);
 	if (!bconf)
@@ -227,30 +288,7 @@ static void bl_pwm_pinmux_gpio_clr(struct aml_bl_drv_s *bdrv, unsigned int pwm_i
 		return;
 
 	/* set pinmux */
-	i = 0;
-	while (i < LCD_PINMUX_NUM) {
-		if (bl_pwm->pinmux_clr[i][0] == LCD_PINMUX_END)
-			break;
-		lcd_pinmux_clr_mask(bl_pwm->pinmux_clr[i][0], bl_pwm->pinmux_clr[i][1]);
-		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-			BLPR("%s: port=0x%x, pinmux_clr=0x%x,0x%08x\n",
-			     __func__, bl_pwm->pwm_port,
-			     bl_pwm->pinmux_clr[i][0], bl_pwm->pinmux_clr[i][1]);
-		}
-		i++;
-	}
-	i = 0;
-	while (i < LCD_PINMUX_NUM) {
-		if (bl_pwm->pinmux_set[i][0] == LCD_PINMUX_END)
-			break;
-		lcd_pinmux_set_mask(bl_pwm->pinmux_set[i][0], bl_pwm->pinmux_set[i][1]);
-		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-			BLPR("%s: port=0x%x, pinmux_set=0x%x,0x%08x\n",
-			     __func__, bl_pwm->pwm_port,
-			     bl_pwm->pinmux_set[i][0], bl_pwm->pinmux_set[i][1]);
-		}
-		i++;
-	}
+	bl_pwm_pinmux_ctrl(bdrv, 0);
 	bl_pwm->pinmux_flag = 1;
 }
 
@@ -294,84 +332,6 @@ void bl_set_pwm_gpio_check(struct aml_bl_drv_s *bdrv, struct bl_pwm_config_s *bl
 				__func__, bl_pwm->pwm_port);
 		}
 		bl_pwm_pinmux_gpio_clr(bdrv, pwm_index);
-	}
-}
-
-static void bl_pwm_clr_pinmux(struct bl_pwm_config_s *pwm,
-			char gpio_names[][LCD_CPU_GPIO_NAME_MAX])
-{
-	int i, gpio;
-	char *str;
-
-	for (i = 0; i < LCD_PINMUX_NUM; i++) {
-		if (pwm->pinmux_clr[i][0] == LCD_PINMUX_END)
-			break;
-
-		lcd_pinmux_clr_mask(pwm->pinmux_clr[i][0], pwm->pinmux_clr[i][1]);
-
-		if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL) {
-			BLPR("%s: port=0x%x, pinmux_clr=0x%x, 0x%08x\n",
-				__func__, pwm->pwm_port,
-				pwm->pinmux_clr[i][0], pwm->pinmux_clr[i][1]);
-		}
-	}
-	pwm->pinmux_flag = 0;
-
-	if (pwm->pwm_gpio >= BL_GPIO_NUM_MAX) {
-		gpio = LCD_GPIO_MAX;
-	} else {
-		str = gpio_names[pwm->pwm_gpio];
-		gpio = lcd_gpio_name_map_num(str);
-	}
-
-	if (gpio < LCD_GPIO_MAX)
-		lcd_gpio_set(gpio, pwm->pwm_gpio_off);
-}
-
-static void bl_pwm_pinmux_ctrl(struct aml_bl_drv_s *bdrv, int status)
-{
-	struct bl_config_s *bconf = &bdrv->config;
-	int i;
-
-	if (lcd_debug_print_flag & LCD_DBG_PR_BL_NORMAL)
-		BLPR("%s: %d\n", __func__, status);
-
-	if (status) {
-		switch (bconf->method) {
-		case BL_CTRL_PWM:
-			bl_set_pwm_gpio_check(bdrv, bconf->bl_pwm);
-			break;
-		case BL_CTRL_PWM_COMBO:
-			bl_set_pwm_gpio_check(bdrv, bconf->bl_pwm_combo0);
-			bl_set_pwm_gpio_check(bdrv, bconf->bl_pwm_combo1);
-			break;
-		case BL_CTRL_PWM_ARRAY:
-			for (i = 0; i < 4; i++) {
-				if (bconf->bl_pwm_array[i])
-					bl_set_pwm_gpio_check(bdrv, bconf->bl_pwm_array[i]);
-			}
-			break;
-		default:
-			break;
-		}
-	} else {
-		switch (bconf->method) {
-		case BL_CTRL_PWM:
-			bl_pwm_clr_pinmux(bconf->bl_pwm, bconf->gpio_name);
-			break;
-		case BL_CTRL_PWM_COMBO:
-			bl_pwm_clr_pinmux(bconf->bl_pwm_combo0, bconf->gpio_name);
-			bl_pwm_clr_pinmux(bconf->bl_pwm_combo1, bconf->gpio_name);
-			break;
-		case BL_CTRL_PWM_ARRAY:
-			for (i = 0; i < 4; i++) {
-				if (bconf->bl_pwm_array[i])
-					bl_pwm_clr_pinmux(bconf->bl_pwm_array[i], bconf->gpio_name);
-			}
-			break;
-		default:
-			break;
-		}
 	}
 }
 
@@ -932,20 +892,54 @@ static void bl_driver_remove_single(unsigned char index)
 	bl_driver[index] = NULL;
 }
 
-void aml_bl_probe_single(unsigned char index, int load_id)
+int aml_bl_probe_single(struct udevice *dev)
 {
-	struct aml_bl_drv_s *bdrv = bl_driver_add_single(index);
+	struct aml_bl_drv_s *bdrv;
+	unsigned int index;
 	int ret;
 
+	ret = dev_read_u32(dev, "index", &index);
+	if (ret) {
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			BLPR("%s: no index exist, default to 0\n", __func__);
+		index = 0;
+	}
+	bdrv = bl_driver_add_single(index);
 	if (!bdrv)
-		return;
+		return -1;
+	bdrv->udev = dev;
 
-	ret = aml_bl_load_config(bdrv, lcd_get_dt_addr(), load_id);
+	ret = aml_bl_load_config(bdrv, lcd_get_dt_addr());
 	if (ret) {
 		bl_driver_remove_single(index);
-		return;
+		return -1;
 	}
 	bl_power_init_off(bdrv);
+	return 0;
+}
+
+int aml_bl_reprobe_single(unsigned int index, char *dt_addr, unsigned char load_id)
+{
+	int ret;
+	struct aml_bl_drv_s *bdrv = bl_driver[index];
+	struct udevice *dev;
+
+	if (!bdrv)
+		return -1;
+	dev = bdrv->udev;
+	bl_driver_remove_single(index);
+	bdrv = bl_driver_add_single(index);
+	if (!bdrv)
+		return -1;
+	bdrv->udev = dev;
+
+	ret = aml_bl_reload_config(bdrv, dt_addr, load_id);
+	if (ret) {
+		bl_driver_remove_single(index);
+		return -1;
+	}
+	bl_power_init_off(bdrv);
+	return 0;
 }
 
 void aml_bl_remove_all(void)
@@ -985,17 +979,14 @@ int aml_bl_index_remove(int drv_index)
 	return 0;
 }
 
-int aml_bl_init(void)
+int aml_bl_init(int index)
 {
-	int i;
 	struct aml_lcd_data_s *lcd_data = aml_lcd_get_data();
 
 	aml_bl_pwm_reg_config_init(lcd_data);
 
-	for (i = 0; i < LCD_MAX_DRV; i++) {
-		bl_driver_remove_single(i);
-		bl_index_lut[i] = BL_INDEX_INVALID;
-	}
+	bl_driver_remove_single(index);
+	bl_index_lut[index] = BL_INDEX_INVALID;
 
 	return 0;
 }
@@ -1104,3 +1095,61 @@ void aml_bl_config_print(int index)
 
 	bl_config_print(bdrv);
 }
+
+static const struct udevice_id backlight_match_table[] = {
+#if defined(CONFIG_MESON_C3)
+	{
+		.compatible = "amlogic, backlight-c3",
+	},
+#endif
+#if defined(CONFIG_MESON_T5M)
+
+	{
+		.compatible = "amlogic, backlight-t5m",
+	},
+#endif
+#if defined(CONFIG_MESON_T3X)
+	{
+		.compatible = "amlogic, backlight-t3x",
+	},
+#endif
+#if defined(CONFIG_MESON_A4)
+	{
+		.compatible = "amlogic, backlight-a4",
+	},
+#endif
+#if defined(CONFIG_MESON_TXHD2)
+	{
+		.compatible = "amlogic, backlight-txhd2",
+	},
+#endif
+#if defined(CONFIG_MESON_S6)
+	{
+		.compatible = "amlogic, backlight-s6",
+	},
+#endif
+#if defined(CONFIG_MESON_T6D)
+	{
+		.compatible = "amlogic, backlight-t6d",
+	},
+#endif
+#if defined(CONFIG_MESON_T6W)
+	{
+		.compatible = "amlogic, backlight-t6w",
+	},
+#endif
+#if defined(CONFIG_MESON_T6X)
+	{
+		.compatible = "amlogic, backlight-t6x",
+	},
+#endif
+	{}
+};
+
+U_BOOT_DRIVER(backlight) = {
+	.name = "backlight",
+	.id = UCLASS_MISC,
+	.of_match = of_match_ptr(backlight_match_table),
+	.probe = aml_bl_probe_single,
+};
+

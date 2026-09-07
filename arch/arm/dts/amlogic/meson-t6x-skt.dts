@@ -6,7 +6,7 @@
 /dts-v1/;
 
 #include "amlogic/meson-t6x-skt.dtsi"
-#include "amlogic/meson-t6x_skt-panel.dtsi"
+#include "amlogic/meson-t6x-panel.dtsi"
 
 / {
 	compatible =  "amlogic,t6x-txxx", "amlogic,meson-t6x";
@@ -65,11 +65,66 @@
 };
 
 &pinctrl_periphs {
+	/*backlight*/
+	bl_pwm_vs_on_pins:bl_pwm_vs_on_pin {
+		mux {
+			groups = "pwm_vs_h";
+			function = "pwm_vs";
+		};
+	};
 	bl_pwm_off_pins:bl_pwm_off_pin {
 		mux {
-			groups = "GPIOH_5";
+			groups = "GPIOH_12";
 			function = "gpio_periphs";
-			output-high;
+			output-low;
+		};
+	};
+	bcon_up_pins:bcon_up_pin {
+		mux {
+			groups = "bcon_0",
+				"bcon_1",
+				"bcon_2",
+				"bcon_3",
+				"bcon_4",
+				"bcon_5",
+				"bcon_6",
+				"bcon_7",
+				"bcon_8_p",
+				"bcon_9",
+				"bcon_10",
+				"bcon_11",
+				"bcon_12",
+				"bcon_13",
+				"bcon_14",
+				"bcon_15",
+				"bcon_16",
+				"bcon_17";
+			function = "bcon";
+			bias-pull-up;
+		};
+	};
+	bcon_dn_pins:bcon_dn_pin {
+		mux {
+			groups = "bcon_0",
+				"bcon_1",
+				"bcon_2",
+				"bcon_3",
+				"bcon_4",
+				"bcon_5",
+				"bcon_6",
+				"bcon_7",
+				"bcon_8_p",
+				"bcon_9",
+				"bcon_10",
+				"bcon_11",
+				"bcon_12",
+				"bcon_13",
+				"bcon_14",
+				"bcon_15",
+				"bcon_16",
+				"bcon_17";
+			function = "bcon";
+			bias-pull-down;
 		};
 	};
 }; /* end of pinctrl_periphs */

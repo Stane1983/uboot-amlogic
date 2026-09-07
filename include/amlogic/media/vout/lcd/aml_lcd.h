@@ -77,99 +77,12 @@
 #define LCD_EXT_CMD_SIZE_DYNAMIC       0xff
 #define LCD_EXT_DYNAMIC_SIZE_INDEX     1
 
-
 #define Rsv_val 0xffffffff
-struct ext_lcd_config_s {
-	const char panel_type[15];
-	unsigned int lcd_type; // LCD_TTL /LCD_LVDS/LCD_VBYONE
-	unsigned char lcd_bits;
-
-	unsigned short h_active;
-	unsigned short v_active;
-	unsigned short h_period;
-	unsigned short v_period;
-	unsigned short hsync_width;
-	unsigned short hsync_bp;
-	unsigned short hsync_pol;
-	unsigned short vsync_width;
-	unsigned short vsync_bp;
-	unsigned short vsync_pol;
-
-	unsigned int customer_val_0; //fr_adjust_type
-	unsigned int customer_val_1; //ss_level
-	unsigned int customer_val_2; //clk_auto_generate
-	unsigned int customer_val_3; //pixel clock(unit in Hz)
-	unsigned int customer_val_4; //ppc mode
-	unsigned int customer_val_5; //asf & ufr mode
-	unsigned int customer_val_6;
-	unsigned int customer_val_7;
-	unsigned int customer_val_8;
-	unsigned int customer_val_9;
-
-	unsigned int lcd_spc_val0;
-	unsigned int lcd_spc_val1;
-	unsigned int lcd_spc_val2;
-	unsigned int lcd_spc_val3;
-	unsigned int lcd_spc_val4;
-	unsigned int lcd_spc_val5;
-	unsigned int lcd_spc_val6;
-	unsigned int lcd_spc_val7;
-	unsigned int lcd_spc_val8;
-	unsigned int lcd_spc_val9;
-
-	unsigned char *init_on;
-	unsigned char *init_off;
-	struct lcd_power_step_s *power_on_step;
-	struct lcd_power_step_s *power_off_step;
-
-	/* backlight */
-	unsigned int level_default;
-	unsigned int level_max;
-	unsigned int level_min;
-	unsigned int level_mid;
-	unsigned int level_mid_mapping;
-
-	unsigned int bl_method;
-	unsigned int bl_en_gpio;
-	unsigned short bl_en_gpio_on;
-	unsigned short bl_en_gpio_off;
-	unsigned short bl_power_on_delay;
-	unsigned short bl_power_off_delay;
-
-	unsigned int pwm_method;
-	unsigned int pwm_port;
-	unsigned int pwm_freq;
-	unsigned int pwm_duty_max;
-	unsigned int pwm_duty_min;
-	unsigned int pwm_gpio;
-	unsigned int pwm_gpio_off;
-
-	unsigned int pwm2_method;
-	unsigned int pwm2_port;
-	unsigned int pwm2_freq;
-	unsigned int pwm2_duty_max;
-	unsigned int pwm2_duty_min;
-	unsigned int pwm2_gpio;
-	unsigned int pwm2_gpio_off;
-
-	unsigned int pwm_level_max;
-	unsigned int pwm_level_min;
-	unsigned int pwm2_level_max;
-	unsigned int pwm2_level_min;
-
-	unsigned int pwm_on_delay;
-	unsigned int pwm_off_delay;
-
-	/* backlight extern */
-	unsigned int bl_ext_index;
-};
 
 #define LCD_NUM_MAX         20
 #define LCD_PRBS_MODE_LVDS    BIT(0)
 #define LCD_PRBS_MODE_VX1     BIT(1)
 #define LCD_PRBS_MODE_FREQ    BIT(2)
 #define LCD_PRBS_MODE_MAX     3
-
-extern struct ext_lcd_config_s ext_lcd_config[LCD_NUM_MAX];
 
 #endif /* INC_AML_LCD_H */

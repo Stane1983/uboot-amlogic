@@ -504,24 +504,6 @@ static int bl_extern_config_from_dts(char *dtaddr, int index)
 			bl_extern->config->i2c_addr =
 			(unsigned char)(be32_to_cpup((u32 *)propdata));
 		}
-		/* compatible for kernel3.14 */
-		if (bl_ext_i2c_bus == BL_EXTERN_I2C_BUS_MAX) {
-			propdata = (char *)fdt_getprop(dtaddr, child_offset,
-						       "i2c_bus", NULL);
-			if (propdata == NULL) {
-				BLEXERR("get %s i2c_bus failed, exit\n",
-					bl_extern->config->name);
-				bl_extern->config->i2c_bus = BL_EXTERN_I2C_BUS_MAX;
-				return -1;
-			} else {
-				bl_extern->config->i2c_bus =
-					bl_extern_get_i2c_bus_str(propdata);
-			}
-		} else {
-			bl_extern->config->i2c_bus = bl_ext_i2c_bus;
-		}
-		if (lcd_debug_print_flag)
-			aml_lcd_i2c_bus_print(bl_extern->config->i2c_bus);
 
 		propdata = (char *)fdt_getprop(dtaddr, child_offset,
 					       "cmd_size", NULL);

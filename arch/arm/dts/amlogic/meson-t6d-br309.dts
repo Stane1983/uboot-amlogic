@@ -6,7 +6,7 @@
 /dts-v1/;
 
 #include "amlogic/meson-t6d-br309.dtsi"
-#include "amlogic/meson-t6d_br309-panel.dtsi"
+#include "amlogic/meson-t6d-panel.dtsi"
 
 / {
 	compatible =  "amlogic,t6d-txxx", "amlogic,meson-t6d";

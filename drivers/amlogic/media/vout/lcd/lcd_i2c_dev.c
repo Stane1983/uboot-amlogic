@@ -21,83 +21,23 @@ struct lcd_i2c_match_s {
 	char *bus_str;
 };
 
-static struct lcd_i2c_match_s lcd_i2c_match_table[] = {
-	{LCD_EXT_I2C_BUS_0,   "i2c_0"},
-	{LCD_EXT_I2C_BUS_1,   "i2c_1"},
-	{LCD_EXT_I2C_BUS_2,   "i2c_2"},
-	{LCD_EXT_I2C_BUS_3,   "i2c_3"},
-	{LCD_EXT_I2C_BUS_4,   "i2c_4"},
-	{LCD_EXT_I2C_BUS_5,   "i2c_5"},
-	{LCD_EXT_I2C_BUS_0,   "i2c_a"},
-	{LCD_EXT_I2C_BUS_1,   "i2c_b"},
-	{LCD_EXT_I2C_BUS_2,   "i2c_c"},
-	{LCD_EXT_I2C_BUS_3,   "i2c_d"},
-	{LCD_EXT_I2C_BUS_4,   "i2c_ao"},
-	{LCD_EXT_I2C_BUS_0,   "i2c_bus_0"},
-	{LCD_EXT_I2C_BUS_1,   "i2c_bus_1"},
-	{LCD_EXT_I2C_BUS_2,   "i2c_bus_2"},
-	{LCD_EXT_I2C_BUS_3,   "i2c_bus_3"},
-	{LCD_EXT_I2C_BUS_4,   "i2c_bus_4"},
-	{LCD_EXT_I2C_BUS_0,   "i2c_bus_a"},
-	{LCD_EXT_I2C_BUS_1,   "i2c_bus_b"},
-	{LCD_EXT_I2C_BUS_2,   "i2c_bus_c"},
-	{LCD_EXT_I2C_BUS_3,   "i2c_bus_d"},
-	{LCD_EXT_I2C_BUS_4,   "i2c_bus_ao"},
-	{LCD_EXT_I2C_BUS_MAX, "invalid"}
-};
-
-unsigned char aml_lcd_i2c_bus_get_str(const char *str)
-{
-	unsigned char i2c_bus = LCD_EXT_I2C_BUS_MAX;
-	int i;
-
-	for (i = 0; i < ARRAY_SIZE(lcd_i2c_match_table); i++) {
-		if (strcmp(lcd_i2c_match_table[i].bus_str, str) == 0) {
-			i2c_bus = lcd_i2c_match_table[i].bus_id;
-			break;
-		}
-	}
-
-	if (i2c_bus == LCD_EXT_I2C_BUS_MAX)
-		LCDI2C_ERR("%s: invalid i2c_bus: %s\n", __func__, str);
-
-	return i2c_bus;
-}
-
-void aml_lcd_i2c_bus_print(unsigned char i2c_bus)
-{
-	char *str = NULL;
-	int i;
-
-	for (i = 0; i < ARRAY_SIZE(lcd_i2c_match_table); i++) {
-		if (lcd_i2c_match_table[i].bus_id == i2c_bus) {
-			str = lcd_i2c_match_table[i].bus_str;
-			break;
-		}
-	}
-
-	LCDI2C_PR("i2c_bus = %s(%d)\n", str, i2c_bus);
-}
-
 #ifdef CONFIG_DM_I2C
-int aml_lcd_i2c_write(unsigned char i2c_bus, unsigned int i2c_addr,
+int aml_lcd_i2c_write(struct udevice *dev, unsigned int i2c_addr,
 			 unsigned char *buff, unsigned int len)
 {
-	unsigned char aml_i2c_bus;
 	struct udevice *bus;
 	struct udevice *i2c_dev;
 	int i, ret = 0;
 	unsigned char data[64] = {0};
 
-	aml_i2c_bus = i2c_bus;
-	ret = uclass_get_device_by_seq(UCLASS_I2C, aml_i2c_bus, &bus);
+	ret = uclass_get_device_by_phandle(UCLASS_I2C, dev, "i2c-bus", &bus);
 	if (ret) {
-		LCDI2C_ERR("no sys aml_i2c_bus %d find\n", aml_i2c_bus);
+		LCDI2C_ERR("no sys aml_i2c_bus find\n");
 		return ret;
 	}
 	ret = i2c_get_chip(bus, i2c_addr, 1, &i2c_dev);
 	if (ret) {
-		LCDI2C_ERR("no sys aml_i2c_bus %d find\n", aml_i2c_bus);
+		LCDI2C_ERR("no i2c device addr %d find\n", i2c_addr);
 		return ret;
 	}
 
@@ -125,23 +65,21 @@ int aml_lcd_i2c_write(unsigned char i2c_bus, unsigned int i2c_addr,
 	return 0;
 }
 
-int aml_lcd_i2c_read(unsigned char i2c_bus, unsigned int i2c_addr,
+int aml_lcd_i2c_read(struct udevice *dev, unsigned int i2c_addr,
 			unsigned char *buff, unsigned int len)
 {
-	unsigned char aml_i2c_bus;
 	struct udevice *bus;
 	struct udevice *i2c_dev;
 	int ret = 0, i;
 
-	aml_i2c_bus = i2c_bus;
-	ret = uclass_get_device_by_seq(UCLASS_I2C, aml_i2c_bus, &bus);
+	ret = uclass_get_device_by_phandle(UCLASS_I2C, dev, "i2c-bus", &bus);
 	if (ret) {
-		LCDI2C_ERR("no sys aml_i2c_bus %d find\n", aml_i2c_bus);
+		LCDI2C_ERR("no sys aml_i2c_bus find\n");
 		return ret;
 	}
 	ret = i2c_get_chip(bus, i2c_addr, 1, &i2c_dev);
 	if (ret) {
-		LCDI2C_ERR("no sys aml_i2c_bus %d find\n", aml_i2c_bus);
+		LCDI2C_ERR("no i2c device addr %d find\n", i2c_addr);
 		return ret;
 	}
 
@@ -173,14 +111,14 @@ int aml_lcd_i2c_read(unsigned char i2c_bus, unsigned int i2c_addr,
 }
 
 #else
-int aml_lcd_i2c_write(unsigned char i2c_bus, unsigned int i2c_addr,
+int aml_lcd_i2c_write(struct udevice *dev, unsigned int i2c_addr,
 			 unsigned char *buff, unsigned int len)
 {
 	LCDI2C_ERR("no CONFIG_DM_I2C\n");
 	return -1;
 }
 
-int aml_lcd_i2c_read(unsigned char i2c_bus, unsigned int i2c_addr,
+int aml_lcd_i2c_read(struct udevice *dev, unsigned int i2c_addr,
 			unsigned char *buff, unsigned int len)
 {
 	LCDI2C_ERR("no CONFIG_DM_I2C\n");

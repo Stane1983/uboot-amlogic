@@ -6,7 +6,7 @@
 /dts-v1/;
 
 #include "amlogic/meson-t6d-br301.dtsi"
-#include "amlogic/meson-t6d_br301-panel.dtsi"
+#include "amlogic/meson-t6d-panel.dtsi"
 
 / {
 	compatible =  "amlogic,t6d-txxx", "amlogic,meson-t6d";
@@ -65,11 +65,18 @@
 };
 
 &pinctrl_periphs {
+	/*backlight*/
+	bl_pwm_vs_on_pins:bl_pwm_vs_on_pin {
+		mux {
+			groups = "pwm_vs_h12";
+			function = "pwm_vs";
+		};
+	};
 	bl_pwm_off_pins:bl_pwm_off_pin {
 		mux {
-			groups = "GPIOH_5";
+			groups = "GPIOH_12";
 			function = "gpio_periphs";
-			output-high;
+			output-low;
 		};
 	};
 }; /* end of pinctrl_periphs */

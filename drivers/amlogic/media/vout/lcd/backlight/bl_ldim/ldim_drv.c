@@ -7,6 +7,8 @@
 #include <malloc.h>
 #include <asm/amlogic/arch/gpio.h>
 #include <fdtdec.h>
+#include <dm.h>
+#include <dm/device-internal.h>
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include <amlogic/media/vout/lcd/lcd_memory.h>
 #include <amlogic/media/vout/lcd/bl_ldim.h>
@@ -252,6 +254,7 @@ int aml_ldim_probe(struct aml_bl_drv_s *bdrv, char *dt_addr, int child_offset,
 	struct aml_lcd_data_s *pdata = aml_lcd_get_data();
 	unsigned int size;
 	int ret = -1;
+	struct udevice *ldim_dev;
 
 	if (!bdrv)
 		return -1;
@@ -294,9 +297,9 @@ int aml_ldim_probe(struct aml_bl_drv_s *bdrv, char *dt_addr, int child_offset,
 	LDIMPR("get bl_zone row = %d, col = %d, dev_index = %d\n",
 	       ldim_driver->config.row, ldim_driver->config.col, ldim_driver->config.dev_index);
 
-	ret = aml_ldim_device_probe(dt_addr, ldim_driver);
+	ret = uclass_get_device_by_name(UCLASS_MISC, "local_dimming_device", &ldim_dev);
 	if (ret)
-		return -1;
+		LDIMERR("get ldim_dev device failed\n");
 
 	size = ldim_driver->config.row * ldim_driver->config.col;
 	ldim_driver->bl_matrix = (unsigned short *)malloc(sizeof(unsigned short) * size);

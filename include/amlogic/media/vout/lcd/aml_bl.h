@@ -97,8 +97,6 @@ struct bl_pwm_config_s {
 	unsigned int pwm_gpio;
 	unsigned int pwm_gpio_off;
 	unsigned int pinmux_flag;
-	unsigned int pinmux_set[LCD_PINMUX_NUM][2];
-	unsigned int pinmux_clr[LCD_PINMUX_NUM][2];
 	unsigned int pwm_phase;
 };
 
@@ -131,9 +129,6 @@ struct bl_config_s {
 	unsigned int bl_hold_on;
 
 	char gpio_name[BL_GPIO_NUM_MAX][LCD_CPU_GPIO_NAME_MAX];
-	struct lcd_pinmux_ctrl_s *bl_pinmux;
-	unsigned int pinmux_set[10][2];
-	unsigned int pinmux_clr[10][2];
 	int extern_index;
 };
 
@@ -148,6 +143,8 @@ struct aml_bl_drv_s {
 
 	struct bl_config_s config;
 	struct aml_lcd_data_s *data;
+	struct udevice *udev;
+	unsigned int pinmux_flag;
 };
 
 struct aml_bl_drv_s *aml_bl_get_driver(int index);

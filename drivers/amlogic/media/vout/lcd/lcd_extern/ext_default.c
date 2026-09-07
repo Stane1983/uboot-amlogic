@@ -28,7 +28,7 @@ static int lcd_extern_reg_read(struct lcd_extern_driver_s *edrv, struct lcd_exte
 	switch (edev->config.type) {
 	case LCD_EXTERN_I2C:
 		buf[0] = reg;
-		ret = aml_lcd_i2c_read(edrv->i2c_bus, edev->i2c_addr[0], buf, 1);
+		ret = aml_lcd_i2c_read(edrv->udev, edev->i2c_addr[0], buf, 1);
 		break;
 	case LCD_EXTERN_SPI:
 		ret = lcd_extern_spi_read(edrv, edev, reg, buf);
@@ -63,7 +63,7 @@ static int lcd_extern_reg_write(struct lcd_extern_driver_s *edrv, struct lcd_ext
 
 	switch (edev->config.type) {
 	case LCD_EXTERN_I2C:
-		ret = aml_lcd_i2c_write(edrv->i2c_bus, edev->i2c_addr[0], buf, len);
+		ret = aml_lcd_i2c_write(edrv->udev, edev->i2c_addr[0], buf, len);
 		break;
 	case LCD_EXTERN_SPI:
 		ret = lcd_extern_spi_write(edrv, edev, buf, len);

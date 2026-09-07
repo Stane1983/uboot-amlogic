@@ -149,6 +149,14 @@ int board_init(void)
 
 int board_late_init(void)
 {
+	int ret;
+#ifdef CONFIG_AML_LCD
+	struct udevice *lcd_dev;
+#ifdef CONFIG_AML_LCD_BACKLIGHT
+	struct udevice *backlight_dev;
+#endif
+#endif
+
 	printf("board late init\n");
 #ifdef CONFIG_PXP_EMULATOR
 	return 0;
@@ -200,7 +208,14 @@ int board_late_init(void)
 	cvbs_init();
 #endif
 #ifdef CONFIG_AML_LCD
-	lcd_probe();
+	ret = uclass_get_device_by_name(UCLASS_MISC, "lcd", &lcd_dev);
+	if (ret)
+		printf("device lcd not found\n");
+#ifdef CONFIG_AML_LCD_BACKLIGHT
+	ret = uclass_get_device_by_name(UCLASS_MISC, "backlight", &backlight_dev);
+	if (ret)
+		printf("device backlight not found\n");
+#endif
 #endif
 	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_e);
 	run_command("amlsecurecheck", 0);

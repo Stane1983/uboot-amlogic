@@ -37,7 +37,6 @@ struct lcd_extern_common_s {
 	unsigned char i2c_sck_gpio_off;
 	unsigned char i2c_sda_gpio;
 	unsigned char i2c_sda_gpio_off;
-	struct lcd_pinmux_ctrl_s *ext_pinmux;
 };
 
 struct lcd_extern_config_s {
@@ -115,6 +114,7 @@ struct lcd_extern_driver_s {
 	char gpio_name[LCD_EXTERN_GPIO_NUM_MAX][LCD_CPU_GPIO_NAME_MAX];
 	unsigned int dev_cnt;
 	struct lcd_extern_dev_s *dev[LCD_EXTERN_DEV_MAX];
+	struct udevice *udev;
 	struct aml_lcd_data_s *data;
 
 	unsigned char i2c_bus;
@@ -123,8 +123,7 @@ struct lcd_extern_driver_s {
 	unsigned char i2c_sda_gpio;
 	unsigned char i2c_sda_gpio_off;
 	unsigned char pinmux_valid;
-	unsigned int pinmux_set[LCD_PINMUX_NUM][2];
-	unsigned int pinmux_clr[LCD_PINMUX_NUM][2];
+	unsigned int pinmux_flag;
 
 	void (*info_print)(struct lcd_extern_driver_s *ext_drv);
 	/* only for debug */
@@ -133,11 +132,10 @@ struct lcd_extern_driver_s {
 
 struct lcd_extern_driver_s *lcd_extern_get_driver(int drv_index);
 struct lcd_extern_dev_s *lcd_extern_get_dev(struct lcd_extern_driver_s *edrv, int dev_index);
-int lcd_extern_probe(char *dtaddr, int load_id);
 int lcd_extern_remove(void);
 int lcd_extern_dev_index_add(int drv_index, int dev_index);
 int lcd_extern_dev_index_remove(int drv_index, int dev_index);
-int lcd_extern_init(void);
+int lcd_extern_init(unsigned int index);
 
 #endif
 

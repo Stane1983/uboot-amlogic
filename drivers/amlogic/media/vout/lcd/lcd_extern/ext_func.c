@@ -9,6 +9,7 @@
 #include <fdtdec.h>
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include <amlogic/media/vout/lcd/lcd_extern.h>
+#include <dm/pinctrl.h>
 #include "lcd_extern.h"
 #include "../lcd_common.h"
 #include "../lcd_reg.h"
@@ -50,52 +51,45 @@ int lcd_extern_gpio_set(struct lcd_extern_driver_s *edrv, unsigned char index, i
 	return ret;
 }
 
+#define LCD_EXTERN_PINMUX_MAX    3
+static char *lcd_extern_pinmux_str[LCD_EXTERN_PINMUX_MAX] = {
+	"extern_on",   /* 0 */
+	"extern_off",  /* 1 */
+	"none",
+};
+
 void lcd_extern_pinmux_set(struct lcd_extern_driver_s *edrv, int status)
 {
-	int i;
+	int index = 0xff;
 
-	if (edrv->pinmux_valid == 0)
+	if (edrv->pinmux_valid == 0) {
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+			EXTPR("[%d]: %s: pinmux invalid, bypass\n",
+			      edrv->index, __func__);
 		return;
+	}
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		EXTPR("[%d]: %s: %d\n", edrv->index, __func__, status);
 
-	if (status) {
-		i = 0;
-		while (i < LCD_PINMUX_NUM) {
-			if (edrv->pinmux_clr[i][0] == LCD_PINMUX_END)
-				break;
-			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-				EXTPR("pinmux_clr: %d, 0x%08x\n",
-				      edrv->pinmux_clr[i][0], edrv->pinmux_clr[i][1]);
-			}
-			lcd_pinmux_clr_mask(edrv->pinmux_clr[i][0], edrv->pinmux_clr[i][1]);
-			i++;
-		}
-		i = 0;
-		while (i < LCD_PINMUX_NUM) {
-			if (edrv->pinmux_set[i][0] == LCD_PINMUX_END)
-				break;
-			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-				EXTPR("pinmux_set: %d, 0x%08x\n",
-				      edrv->pinmux_set[i][0], edrv->pinmux_set[i][1]);
-			}
-			lcd_pinmux_set_mask(edrv->pinmux_set[i][0], edrv->pinmux_set[i][1]);
-			i++;
-		}
+	index = (status) ? 0 : 1;
+	if (edrv->pinmux_flag == index) {
+		EXTPR("[%d]: %s: pinmux %s is already selected\n",
+		      edrv->index, __func__, lcd_extern_pinmux_str[index]);
+		return;
+	}
+
+	if (pinctrl_select_state(edrv->udev, lcd_extern_pinmux_str[index])) {
+	/* request pinmux */
+		EXTERR("[%d]: %s: set pinmux %s error\n",
+		       edrv->index, __func__, lcd_extern_pinmux_str[index]);
 	} else {
-		i = 0;
-		while (i < LCD_PINMUX_NUM) {
-			if (edrv->pinmux_set[i][0] == LCD_PINMUX_END)
-				break;
-			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-				EXTPR("pinmux_clr: %d, 0x%08x\n",
-				      edrv->pinmux_set[i][0], edrv->pinmux_set[i][1]);
-			}
-			lcd_pinmux_clr_mask(edrv->pinmux_set[i][0], edrv->pinmux_set[i][1]);
-			i++;
+		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
+			EXTPR("[%d]: %s: set pinmux %s ok\n",
+			      edrv->index, __func__, lcd_extern_pinmux_str[index]);
 		}
 	}
+	edrv->pinmux_flag = index;
 }
 
 void lcd_extern_check_add(struct lcd_extern_driver_s *edrv, struct lcd_extern_dev_s *edev,
@@ -222,7 +216,7 @@ void lcd_extern_check_handler(struct lcd_extern_driver_s *edrv, struct lcd_exter
 
 lcd_extern_check_handler_retry:
 	read_buf[0] = read_start;
-	ret = aml_lcd_i2c_read(i2c_bus, i2c_addr, read_buf, read_len);
+	ret = aml_lcd_i2c_read(edrv->udev, i2c_addr, read_buf, read_len);
 	if (ret < 0) {
 		edev->check_state = 1;
 		goto lcd_extern_check_handler_end;
@@ -471,7 +465,7 @@ int lcd_extern_cmd_i2c(struct lcd_extern_driver_s *edrv, struct lcd_extern_dev_s
 			return 0;
 	}
 
-	return aml_lcd_i2c_write(edrv->i2c_bus, i2c_addr, data_buf, data_len);
+	return aml_lcd_i2c_write(edrv->udev, i2c_addr, data_buf, data_len);
 }
 
 static int lcd_extern_power_cmd_dynamic_size_i2c(struct lcd_extern_driver_s *edrv,

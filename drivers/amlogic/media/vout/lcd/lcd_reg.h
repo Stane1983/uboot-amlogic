@@ -498,17 +498,6 @@ static inline void lcd_pinmux_set_mask(unsigned int n, unsigned int _mask)
 	lcd_periphs_write(reg, (lcd_periphs_read(reg) | (_mask)));
 }
 
-static inline void lcd_pinmux_clr_mask(unsigned int n, unsigned int _mask)
-{
-	unsigned int reg = PERIPHS_PIN_MUX_0;
-
-	if (n > 0xff)
-		reg = n;
-	else
-		reg += (n << 2);
-	lcd_periphs_write(reg, (lcd_periphs_read(reg) & (~(_mask))));
-}
-
 static inline unsigned int dsi_host_read(struct aml_lcd_drv_s *pdrv, u8 port, unsigned int reg)
 {
 	unsigned long paddr;

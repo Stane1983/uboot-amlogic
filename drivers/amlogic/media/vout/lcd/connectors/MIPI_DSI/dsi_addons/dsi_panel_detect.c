@@ -50,6 +50,7 @@ static void dsi_panel_try_match_dts(struct aml_lcd_drv_s *pdrv)
 	u8 *_init_table = NULL, *_match_seq = NULL, *_rd_seq = NULL;
 	struct dsi_config_s *dconf = &pdrv->config.control.mipi_cfg;
 	int len_p;
+	char *dt_addr;
 
 	char table_name[18];
 	char *table_propdata;
@@ -58,6 +59,10 @@ static void dsi_panel_try_match_dts(struct aml_lcd_drv_s *pdrv)
 	char type_name[10];
 	char *type_propdata;
 
+	if (pdrv->config.control.mipi_cfg.panel_det_attr & 0x4)
+		dt_addr = lcd_get_dt_addr();
+	else
+		dt_addr = (char *)gd->fdt_blob;
 	offset = lcd_get_dts_panel_node_ofst(pdrv->index);
 
 	if (offset < 0)
@@ -78,9 +83,9 @@ static void dsi_panel_try_match_dts(struct aml_lcd_drv_s *pdrv)
 		snprintf(seq_name,   15, "det%u_match_seq", t);
 		snprintf(type_name,  10, "det%u_type", t);
 
-		table_propdata = (char *)fdt_getprop(dconf->dt_addr, offset, table_name, &len_p);
-		seq_propdata   = (char *)fdt_getprop(dconf->dt_addr, offset, seq_name, NULL);
-		type_propdata  = (char *)fdt_getprop(dconf->dt_addr, offset, type_name, NULL);
+		table_propdata = (char *)fdt_getprop(dt_addr, offset, table_name, &len_p);
+		seq_propdata   = (char *)fdt_getprop(dt_addr, offset, seq_name, NULL);
+		type_propdata  = (char *)fdt_getprop(dt_addr, offset, type_name, NULL);
 
 		// no match_seq & type at same time, consider as end
 		if (!seq_propdata && !type_propdata) {
@@ -148,12 +153,12 @@ static void dsi_panel_try_match_dts(struct aml_lcd_drv_s *pdrv)
 	}
 
 	if (!(dconf->panel_det_attr & 0x8)) {
-		type_propdata = (char *)fdt_getprop(dconf->dt_addr, offset, "fallback_type", NULL);
+		type_propdata = (char *)fdt_getprop(dt_addr, offset, "fallback_type", NULL);
 		if (type_propdata) {
-			strncpy(dconf->matched_panel, type_propdata, 19);
+			strlcpy(dconf->matched_panel, type_propdata, 19);
 		} else {
 			LCDERR("[%d]: failed to get fallback_type\n", pdrv->index);
-			strncpy(dconf->matched_panel, "NULL", 5);
+			strlcpy(dconf->matched_panel, "NULL", 5);
 		}
 	}
 
@@ -162,114 +167,32 @@ static void dsi_panel_try_match_dts(struct aml_lcd_drv_s *pdrv)
 	free(_rd_seq);
 }
 
-static void dsi_panel_try_match_bsp(struct aml_lcd_drv_s *pdrv)
-{
-	int rd_len = 0;
-	u8 t, k, match_len = 0;
-	u8 *_rd_seq = NULL;
-	struct dsi_config_s *dconf = &pdrv->config.control.mipi_cfg;
-	struct dsi_panel_det_attr_s *det_attr = (struct dsi_panel_det_attr_s *)dconf->dt_addr;
-
-	_rd_seq = (u8 *)malloc(sizeof(u8) * DSI_DET_SEQ_MAX);
-	if (!_rd_seq) {
-		free(_rd_seq);
-		return;
-	}
-
-	for (t = 0; t < DSI_PANEL_DET_CNT_MAX; t++) {
-		//no match_seq & type at same time, consider as end
-		if (!det_attr->det_match_seq[t] && !det_attr->det_type[t]) {
-			if (!t) // print error when t=0 (no det executed)
-				LCDERR("%d: %s no det sequence or type\n", pdrv->index, __func__);
-			break;
-		}
-		//match_seq & type & table0 always needed, if table1+ non-exist, use previous match
-		if (!det_attr->det_match_seq[t] || !det_attr->det_type[t] ||
-		    !(det_attr->det_init_table[t] || t)) {
-			LCDERR("[%d]: %s %hhu lack %s %s %s\n", pdrv->index, __func__, t,
-			!det_attr->det_match_seq[t] ? "" : "seq",
-			!det_attr->det_type[t] ? "" : "type",
-			!(det_attr->det_init_table[t] || t) ? "" : "table");
-			break;
-		}
-
-		match_len = det_attr->det_match_seq[t][0];
-		match_len = (match_len > DSI_DET_SEQ_MAX) ? DSI_DET_SEQ_MAX : match_len;
-
-		if (det_attr->det_init_table[t]) { //if no table, keep last read result
-			memset(_rd_seq, 0, sizeof(u8) * DSI_DET_SEQ_MAX);
-
-			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-				LCDPR("[%d]: %s match[%u]_table:\n", pdrv->index, __func__, t);
-				dsi_table_print(det_attr->det_init_table[t], DSI_DET_TABLE_MAX);
-			}
-
-			rd_len = dsi_exec_init_table(pdrv, det_attr->det_init_table[t],
-					DSI_DET_TABLE_MAX, _rd_seq, DSI_DET_SEQ_MAX);
-			printf("read seq[%d]: (%d): ", t, rd_len);
-			for (k = 0; k < rd_len; k++)
-				printf("0x%02x ", _rd_seq[k]);
-			printf("\n");
-		}
-
-		if (rd_len != match_len) { // compare req and read out length
-			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-				printf("  match[%u] seq[%u], read[%u]\n", t, match_len, rd_len);
-			continue;
-		}
-
-		for (k = 0; k < match_len; k++) { // compare each character
-			if (det_attr->det_match_seq[t][k + 1] != _rd_seq[k]) {
-				if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-					printf("  match[%d] seq=0x%02x rd=0x%02x\n",
-						t, det_attr->det_match_seq[t][k + 1], _rd_seq[k]);
-				}
-				continue;
-			}
-		}
-
-		if (k == match_len) { // finish compare, all chars are same
-			LCDPR("[%d]: det [%u] -> %s\n", pdrv->index, t, dconf->matched_panel);
-			dconf->panel_det_attr |= 0x8;
-			break;
-		}
-	}
-
-	if (dconf->panel_det_attr & 0x8 && t < DSI_PANEL_DET_CNT_MAX) {
-		strncpy(dconf->matched_panel, det_attr->det_type[t], 19);
-	} else {
-		if (det_attr->fallback_type) {
-			strncpy(dconf->matched_panel, det_attr->fallback_type, 19);
-		} else {
-			LCDERR("[%d]: failed to get fallback_type\n", pdrv->index);
-			strncpy(dconf->matched_panel, "NULL", 5);
-		}
-	}
-
-	free(_rd_seq);
-}
-
 static void dsi_panel_detect_drv_config_reload(struct aml_lcd_drv_s *pdrv)
 {
 	char fake_mode[7];
 	u8 load_id_temp;
+	unsigned char *dt_addr_temp;
 
 	sprintf(fake_mode, "panel");
 	if (pdrv->index)
 		sprintf(fake_mode + 5, "%hhu", pdrv->index);
 
-	load_id_temp = pdrv->config.control.mipi_cfg.panel_det_attr & 0x4 ?  0x1 : 0;
+	if (pdrv->config.control.mipi_cfg.panel_det_attr & 0x4)
+		dt_addr_temp = lcd_get_dt_addr();
+	else
+		dt_addr_temp = (unsigned char *)gd->fdt_blob;
+	load_id_temp = pdrv->config.control.mipi_cfg.panel_det_attr & 0x4 ?  0x1 : 0x4;
 	LCDPR("[%d]: rerun panel=%s\n", pdrv->index, pdrv->config.control.mipi_cfg.matched_panel);
 	pdrv->config.control.mipi_cfg.panel_det_attr = 0;
 
-	if (lcd_get_panel_config(lcd_get_dt_addr(), load_id_temp, pdrv)) {
+	if (lcd_get_panel_config(dt_addr_temp, load_id_temp, pdrv)) {
 		LCDERR("[%d]: %s: load panel failed\n", pdrv->index, __func__);
 		return;
 	}
 	lcd_panel_config_load_to_drv(pdrv);
 
 #ifdef CONFIG_AML_LCD_BACKLIGHT
-	aml_bl_probe_single(pdrv->index, load_id_temp);
+	aml_bl_reprobe_single(pdrv->index, dt_addr_temp, load_id_temp);
 #endif
 	lcd_encl_on(pdrv);
 	if ((pdrv->status & LCD_STATUS_ENCL_ON) == 0)
@@ -278,10 +201,7 @@ static void dsi_panel_detect_drv_config_reload(struct aml_lcd_drv_s *pdrv)
 
 void dsi_panel_detect(struct aml_lcd_drv_s *pdrv)
 {
-	if (pdrv->config.control.mipi_cfg.panel_det_attr & 0x04)
-		dsi_panel_try_match_dts(pdrv);
-	else
-		dsi_panel_try_match_bsp(pdrv);
+	dsi_panel_try_match_dts(pdrv);
 
 	dsi_panel_detect_envset(pdrv);
 

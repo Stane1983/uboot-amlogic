@@ -198,34 +198,6 @@ static void lcd_power_info_print(struct aml_lcd_drv_s *pdrv, int status)
 	}
 }
 
-#if defined(CONFIG_AML_LCD_TCON) || defined(CONFIG_AML_LCD_VBYONE)
-static void lcd_pinmux_info_print(struct lcd_config_s *pconf)
-{
-	int i;
-
-	printf("pinmux:\n");
-
-	i = 0;
-	while (i < LCD_PINMUX_NUM) {
-		if (pconf->pinmux_set[i][0] == LCD_PINMUX_END)
-			break;
-		printf("pinmux_set: %d, 0x%08x\n",
-			pconf->pinmux_set[i][0], pconf->pinmux_set[i][1]);
-		i++;
-	}
-	i = 0;
-	while (i < LCD_PINMUX_NUM) {
-		if (pconf->pinmux_clr[i][0] == LCD_PINMUX_END)
-			break;
-		printf("pinmux_clr: %d, 0x%08x\n",
-			pconf->pinmux_clr[i][0], pconf->pinmux_clr[i][1]);
-		i++;
-	}
-
-	printf("\n");
-}
-#endif
-
 #ifdef CONFIG_AML_LCD_LVDS
 static void lcd_info_print_lvds(struct aml_lcd_drv_s *pdrv)
 {
@@ -285,7 +257,6 @@ static void lcd_info_print_vbyone(struct aml_lcd_drv_s *pdrv)
 			((pdrv->config.control.vbyone_cfg.ctrl_flag >> 2) & 0x1),
 			pdrv->config.control.vbyone_cfg.cdr_training_hold);
 	}
-	lcd_pinmux_info_print(&pdrv->config);
 }
 #endif
 
@@ -318,7 +289,6 @@ static void lcd_info_print_mlvds(struct aml_lcd_drv_s *pdrv)
 		pdrv->config.control.mlvds_cfg.phy_preem,
 		pdrv->config.timing.bit_rate);
 	lcd_tcon_info_print(pdrv);
-	lcd_pinmux_info_print(&pdrv->config);
 }
 
 static void lcd_info_print_p2p(struct aml_lcd_drv_s *pdrv)
@@ -342,7 +312,6 @@ static void lcd_info_print_p2p(struct aml_lcd_drv_s *pdrv)
 		pdrv->config.control.p2p_cfg.phy_vswing,
 		pdrv->config.control.p2p_cfg.phy_preem);
 	lcd_tcon_info_print(pdrv);
-	lcd_pinmux_info_print(&pdrv->config);
 }
 #endif
 

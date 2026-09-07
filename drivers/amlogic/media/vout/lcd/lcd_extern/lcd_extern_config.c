@@ -86,12 +86,6 @@ static int lcd_extern_get_init_dts(char *dtaddr, struct lcd_extern_driver_s *edr
 		edrv->key_valid = (unsigned char)(be32_to_cpup((u32 *)propdata));
 	}
 
-	propdata = (char *)fdt_getprop(dtaddr, parent_offset, "i2c_bus", NULL);
-	if (!propdata)
-		edrv->i2c_bus = LCD_EXT_I2C_BUS_MAX;
-	else
-		edrv->i2c_bus = aml_lcd_i2c_bus_get_str(propdata);
-
 	i = 0;
 	propdata = (char *)fdt_getprop(dtaddr, parent_offset, "extern_gpio_names", NULL);
 	if (propdata) {
@@ -130,121 +124,6 @@ static int lcd_extern_get_init_dts(char *dtaddr, struct lcd_extern_driver_s *edr
 	return 0;
 }
 #endif
-
-static int lcd_extern_get_init_bsp(struct lcd_extern_driver_s *edrv)
-{
-	struct lcd_extern_common_s *ext_common;
-	char (*ext_gpio)[LCD_CPU_GPIO_NAME_MAX];
-	int i, j;
-
-	ext_common = edrv->data->dft_conf[edrv->index]->ext_common;
-	edrv->key_valid = ext_common->key_valid;
-	edrv->i2c_bus = ext_common->i2c_bus;
-
-	i = 0;
-	ext_gpio = edrv->data->dft_conf[edrv->index]->ext_common->ext_gpio;
-	if (!ext_gpio) {
-		EXTERR("[%d]: %s: ext_gpio is null\n", edrv->index, __func__);
-		return -1;
-	}
-	while (i < LCD_EXTERN_GPIO_NUM_MAX) {
-		if (strcmp(ext_gpio[i], "invalid") == 0)
-			break;
-		strlcpy(edrv->gpio_name[i], ext_gpio[i], LCD_CPU_GPIO_NAME_MAX);
-		i++;
-	}
-	for (j = i; j < LCD_EXTERN_GPIO_NUM_MAX; j++)
-		strcpy(edrv->gpio_name[j], "invalid");
-
-	edrv->i2c_sck_gpio = ext_common->i2c_sck_gpio;
-	edrv->i2c_sck_gpio_off = ext_common->i2c_sck_gpio_off;
-	edrv->i2c_sda_gpio = ext_common->i2c_sda_gpio;
-	edrv->i2c_sda_gpio_off = ext_common->i2c_sda_gpio_off;
-
-	return 0;
-}
-
-static int lcd_extern_pinmux_load_from_bsp(struct lcd_extern_driver_s *edrv)
-{
-	struct lcd_dft_config_s *ext_dft_conf;
-	struct lcd_pinmux_ctrl_s *pinmux;
-	char propname[20];
-	unsigned int i, j;
-	int set_cnt = 0, clr_cnt = 0;
-
-	if (!edrv->data)
-		return -1;
-	if (!edrv->data->dft_conf[edrv->index]) {
-		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-			EXTPR("[%d]: %s: dft_conf is NULL\n", edrv->index, __func__);
-		return 0;
-	}
-	ext_dft_conf = edrv->data->dft_conf[edrv->index];
-	if (!ext_dft_conf->ext_common || !ext_dft_conf->ext_common->ext_pinmux) {
-		if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-			EXTPR("[%d]: %s: ext_pinmux is NULL\n", edrv->index, __func__);
-		return 0;
-	}
-	pinmux = ext_dft_conf->ext_common->ext_pinmux;
-
-	sprintf(propname, "extern_on");
-	for (i = 0; i < LCD_PINMX_MAX; i++) {
-		if (!pinmux->name)
-			break;
-		if (strcmp(pinmux->name, "invalid") == 0)
-			break;
-		if (strcmp(pinmux->name, propname)) {
-			for (j = 0; j < LCD_PINMUX_NUM; j++) {
-				if (pinmux->pinmux_set[j][0] == LCD_PINMUX_END)
-					break;
-				edrv->pinmux_set[j][0] = pinmux->pinmux_set[j][0];
-				edrv->pinmux_set[j][1] = pinmux->pinmux_set[j][1];
-				set_cnt++;
-			}
-			for (j = 0; j < LCD_PINMUX_NUM; j++) {
-				if (pinmux->pinmux_clr[j][0] == LCD_PINMUX_END)
-					break;
-				edrv->pinmux_clr[j][0] = pinmux->pinmux_clr[j][0];
-				edrv->pinmux_clr[j][1] = pinmux->pinmux_clr[j][1];
-				clr_cnt++;
-			}
-			break;
-		}
-		pinmux++;
-	}
-	if (set_cnt < LCD_PINMUX_NUM) {
-		edrv->pinmux_set[set_cnt][0] = LCD_PINMUX_END;
-		edrv->pinmux_set[set_cnt][1] = 0x0;
-	}
-	if (clr_cnt < LCD_PINMUX_NUM) {
-		edrv->pinmux_clr[clr_cnt][0] = LCD_PINMUX_END;
-		edrv->pinmux_clr[clr_cnt][1] = 0x0;
-	}
-	edrv->pinmux_valid = 1;
-
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-		i = 0;
-		while (i < LCD_PINMUX_NUM) {
-			if (edrv->pinmux_set[i][0] == LCD_PINMUX_END)
-				break;
-			EXTPR("pinmux set: %d, 0x%08x\n",
-			      edrv->pinmux_set[i][0],
-			      edrv->pinmux_set[i][1]);
-			i++;
-		}
-		i = 0;
-		while (i < LCD_PINMUX_NUM) {
-			if (edrv->pinmux_clr[i][0] == LCD_PINMUX_END)
-				break;
-			EXTPR("pinmux clr: %d, 0x%08x\n",
-			      edrv->pinmux_clr[i][0],
-			      edrv->pinmux_clr[i][1]);
-			i++;
-		}
-	}
-
-	return 0;
-}
 
 #if defined(CONFIG_AML_LCD_JSON) || defined(CONFIG_CMD_AML_MODEL)
 static unsigned char *lcd_ext_pmu_bin_get(int index, int multi_flag, int multi_id, int *size)
@@ -1166,6 +1045,7 @@ parse_init_next:
 		p += cfg->table_init_on_cnt;
 		memcpy(p, cfg->table_init_off, cfg->table_init_off_cnt);
 		panel_param_mem_put(vaddr, tag_name, size);
+		update_panel_param_to_kernel();
 		memset(vaddr, 0, size);
 		free(vaddr);
 		vaddr = NULL;
@@ -1556,23 +1436,17 @@ static int lcd_extern_dev_probe(struct lcd_extern_driver_s *edrv, int n, int dev
 	return ret;
 }
 
-int lcd_extern_load_config(struct lcd_extern_driver_s *edrv, char *dtaddr, int load_id,
-			   int *ext_index_lut)
+int lcd_extern_load_config(struct lcd_extern_driver_s *edrv, char *dtaddr, int *ext_index_lut)
 {
 	int dev_index;
 	int ret = 0, i;
 
-	if (load_id != LCD_CONFIG_BSP)
-		ret = lcd_extern_get_init_dts(dtaddr, edrv);
-	else
-		ret = lcd_extern_get_init_bsp(edrv);
+	ret = lcd_extern_get_init_dts(dtaddr, edrv);
 	if (ret)
 		return -1;
 
 	if (lcd_ext_check_config_load(edrv))
 		return -1;
-
-	lcd_extern_pinmux_load_from_bsp(edrv);
 
 	for (i = 0; i < edrv->dev_cnt; i++) {
 		dev_index = ext_index_lut[i];

@@ -168,34 +168,6 @@ void dsi_table_load_dts(char *propdata, u8 *table, u16 max_len)
 		table[i] = (u8)(be32_to_cpup((((u32 *)propdata) + i)));
 }
 
-static u16 dsi_table_load_bsp(u8 *table, u16 max_len)
-{
-	u8 cmd_size, type;
-	u16 i = 0;
-
-	while ((i + 1) < max_len) {
-		type = table[i];
-		cmd_size = table[i + 1];
-		if (type == LCD_EXT_CMD_TYPE_END) {
-			if (cmd_size == 0xff || cmd_size == 0)
-				break;
-			cmd_size = 0;
-		}
-		if (cmd_size == 0) {
-			i += 2;
-			continue;
-		}
-		if ((i + 2 + cmd_size) > max_len) {
-			LCDERR("cmd_size out of support\n");
-			table[i] = LCD_EXT_CMD_TYPE_END;
-			table[i + 1] = 0;
-			break;
-		}
-		i += (cmd_size + 2);
-	}
-	return i;
-}
-
 void lcd_dsi_init_table_load_dts(char *dtaddr, int nodeoffset, struct dsi_config_s *dconf)
 {
 	char *propdata;
@@ -242,20 +214,6 @@ void lcd_dsi_init_table_load_dts(char *dtaddr, int nodeoffset, struct dsi_config
 		(*dsi_table[i].table_addr_addr)[node_len]     = 0xff;
 		(*dsi_table[i].table_addr_addr)[node_len + 1] = 0xff;
 	}
-
-	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-		dsi_init_table_print(dconf);
-}
-
-void lcd_dsi_init_table_load_bsp(struct dsi_config_s *dconf)
-{
-	if (!dconf->dsi_init_on || !dconf->dsi_init_off) {
-		LCDERR("%s: init table is not exist\n", __func__);
-		return;
-	}
-
-	dsi_table_load_bsp(dconf->dsi_init_on,  DSI_INIT_ON_MAX);
-	dsi_table_load_bsp(dconf->dsi_init_off, DSI_INIT_OFF_MAX);
 
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
 		dsi_init_table_print(dconf);
