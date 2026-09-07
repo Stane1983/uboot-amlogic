@@ -372,15 +372,21 @@ static void lcd_vbyone_cdr_training_hold(struct aml_lcd_drv_s *pdrv, int flag)
 #define VX1_HPD_WAIT_TIMEOUT    10000 /* 500ms */
 void lcd_vbyone_wait_hpd(struct aml_lcd_drv_s *pdrv)
 {
-	unsigned int reg, offset, val;
+	unsigned int reg, offset, bit, val;
 	int i = 0;
 
 	offset = pdrv->data->offset_venc_if[pdrv->index];
 	reg = VBO_STATUS_L + offset;
 
+	if (pdrv->data->chip_type == LCD_CHIP_T3X ||
+		pdrv->data->chip_type == LCD_CHIP_T6X)
+		bit = 16;
+	else
+		bit = 6;
+
 	LCDPR("[%d]: %s ...", pdrv->index, __func__);
 	while (i++ < VX1_HPD_WAIT_TIMEOUT) {
-		if (lcd_vcbus_getb(reg, 6, 1) == 0)
+		if (lcd_vcbus_getb(reg, bit, 1) == 0)
 			break;
 		udelay(100);
 	}
@@ -389,7 +395,7 @@ void lcd_vbyone_wait_hpd(struct aml_lcd_drv_s *pdrv)
 	env_set_ulong("vbyone_wait_hpd", 100 * (i - 1));
 #endif
 
-	val = lcd_vcbus_getb(reg, 6, 1);
+	val = lcd_vcbus_getb(reg, bit, 1);
 	if (val) {
 		printf("hpd=%d\n", val);
 	} else {
