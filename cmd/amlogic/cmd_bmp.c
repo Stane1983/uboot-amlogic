@@ -262,6 +262,15 @@ static int bmp_info(ulong addr)
 	printf("Bits per pixel: %d\n", le16_to_cpu(bmp->header.bit_count));
 	printf("Compression   : %d\n", le32_to_cpu(bmp->header.compression));
 
+	//env_set("fb_width",
+	//	simple_itoa(le32_to_cpu(bmp->header.width)));
+	//env_set("fb_height",
+	//	simple_itoa(le32_to_cpu(bmp->header.height)));
+	env_set("display_bpp",
+		simple_itoa(le16_to_cpu(bmp->header.bit_count)));
+	env_set("display_color_index",
+		simple_itoa(le16_to_cpu(bmp->header.bit_count)));
+
 	if (bmp_alloc_addr)
 		free(bmp_alloc_addr);
 

@@ -171,8 +171,46 @@ static int jpeg_display(cmd_tbl_t *cmdtp, int flag, int argc,
 	return 0;
 }
 
+static int jpeg_info(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+{
+	int ret;
+	jpeg_splash_t splash;
+	char buf[16];
+
+	if (argc < 2) {
+		printf("Usage: jpeg info <addr>\n");
+		return CMD_RET_USAGE;
+	}
+
+	splash.addr = simple_strtoul(argv[1], NULL, 16);
+	splash.length = 0x1000;
+
+	splash_rd_offset = 0;
+
+	ret = pjpeg_decode_init(&pjpeg, pjpeg_need_bytes_callback, (void *)&splash);
+
+	if (ret) {
+		printf("Error: Failed to parse JPEG header (status %d)\n", ret);
+		return CMD_RET_FAILURE;
+	}
+
+	printf("jpeg image size :%d x %d\n", pjpeg.m_width, pjpeg.m_height);
+
+	//sprintf(buf, "%d", pjpeg.m_width);
+	//env_set("fb_width", buf);
+
+	//sprintf(buf, "%d", pjpeg.m_height);
+	//env_set("fb_height", buf);
+
+	sprintf(buf, "%d", pjpeg.m_comps == 1 ? 8 : 32);
+	env_set("display_bpp", buf);
+	env_set("display_color_index", buf);
+	return 0;
+}
+
 static cmd_tbl_t cmd_jpeg_sub[] = {
 	U_BOOT_CMD_MKENT(display, 3, 0, jpeg_display, "", ""),
+	U_BOOT_CMD_MKENT(info, 2, 0, jpeg_info, "", ""),
 };
 
 static int do_jpeg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
@@ -193,5 +231,6 @@ U_BOOT_CMD(
 	jpeg,	5,	0,	do_jpeg,
 	"jpeg sub-system",
 	"jpeg display           - jpeg decode\n"
+	"jpeg info <addr>       - get jpeg width and height\n"
 );
 

@@ -30,6 +30,9 @@
 #endif
 #include <amlogic/aml_profile.h>
 #include <amlogic/keyunify.h>
+#if IS_ENABLED(CONFIG_AMLOGIC_AMFC)
+#include <amlogic/amfc.h>
+#endif
 
 #ifndef IS_FEAT_BOOT_VERIFY
 //#define IS_FEAT_BOOT_VERIFY() 0 //always undefined as IS_FEAT_BOOT_VERIFY is function not marco
@@ -1379,8 +1382,11 @@ typedef struct pack_header{
 }AmlResItemHead_t;
 #pragma pack(pop)
 
-#define CONFIG_MAX_PIC_LEN (12 << 20)
+#define CONFIG_MAX_PIC_LEN (32 << 20)
 static const unsigned char gzip_magic[] = { 0x1f, 0x8b };
+#if IS_ENABLED(CONFIG_AMLOGIC_AMFC)
+static const unsigned char zstd_magic[] = { 0x28, 0xb5, 0x2f, 0xfd };
+#endif
 
 //uncompress known format for 'imgread pic'
 static int imgread_uncomp_pic(unsigned char* srcAddr, const unsigned srcSz,
@@ -1391,7 +1397,18 @@ static int imgread_uncomp_pic(unsigned char* srcAddr, const unsigned srcSz,
 		*dstDatSz = srcSz;
 		return gunzip(dstAddr, dstBufSz, srcAddr, dstDatSz);
 	}
+#if IS_ENABLED(CONFIG_AMLOGIC_AMFC)
+	else if (!memcmp(srcAddr, zstd_magic, sizeof(zstd_magic))) {
+		int decomp_res = amfc_decompress(srcAddr, dstAddr, srcSz, dstBufSz, 0);
 
+		if (decomp_res < 0) {
+			errorP("amfc_decompress failed, res=%d\n", decomp_res);
+			return __LINE__;
+		}
+		*dstDatSz = (unsigned long)decomp_res;
+		return 0;
+	}
+#endif
 	return 0;
 }
 
@@ -1677,6 +1694,70 @@ U_BOOT_CMD_COMPLETE(
 );
 #endif//#if defined(CONFIG_CMD_AUTOSCR)
 
+char *get_suffix(const char *filename)
+{
+	if (!filename)
+		return "";
+	char *dot = strrchr(filename, '.');
+
+	if (!dot || dot == filename)
+		return "";
+	return dot + 1;
+}
+
+bool is_jpg_file(const char *path)
+{
+	if (!path || strlen(path) < 4)
+		return false;
+	char *suffix = get_suffix(path);
+
+	if (!suffix)
+		return false;
+	else
+		return !strcmp(suffix, "jpg");
+}
+
+#if IS_ENABLED(CONFIG_AMLOGIC_AMFC)
+bool is_zstd_file(const char *path)
+{
+	if (strlen(path) < 5)
+		return false;
+	char *suffix = get_suffix(path);
+
+	if (!suffix)
+		return false;
+	else
+		return !strcmp(suffix, "zstd");
+}
+
+void convert_extension_if_jpg(char *logo_value, size_t max_len)
+{
+	const char *old_ext = ".jpg";
+	const char *new_ext = ".bmp.zstd";
+
+	if (!logo_value)
+		return;
+	if (!is_jpg_file(logo_value))
+		return;
+
+	size_t len = strlen(logo_value);
+	size_t old_ext_len = strlen(old_ext);
+	size_t new_ext_len = strlen(new_ext);
+
+	if (len < old_ext_len)
+		return;
+
+	char *suffix_ptr = logo_value + len - old_ext_len;
+
+	size_t needed_size = len - old_ext_len + new_ext_len + 1;
+
+	if (needed_size <= max_len)
+		strcpy(suffix_ptr, new_ext);
+	else
+		printf("[Error] Buffer size too small to expand extension!\n");
+}
+#endif
+
 #if defined(CONFIG_CMD_EXT4) && defined(CONFIG_MMC_MESON_GX)
 /*"if ext4load mmc 1:x ${dtb_mem_addr} /recovery/dtb.img; then echo cache dtb.img loaded; fi;"\*/
 static int do_load_logo_from_ext4(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
@@ -1689,7 +1770,6 @@ static int do_load_logo_from_ext4(cmd_tbl_t *cmdtp, int flag, int argc, char * c
 	const char *ext4Part = argv[1];
 	void *loadaddr = (void *)simple_strtoul(argv[2], NULL, 16);
 	int autoSelectSlot = 1;//auto detect if need add _a/_b
-
 	if (argc > 3) {
 		env_set("ext4LogoPath", argv[3]);
 	} else {
@@ -1736,6 +1816,23 @@ static int do_load_logo_from_ext4(cmd_tbl_t *cmdtp, int flag, int argc, char * c
 		errorP("fail find part index for name(%s)\n", env_get("bootLogoPart"));
 		return CMD_RET_FAILURE;
 	}
+#if IS_ENABLED(CONFIG_AMLOGIC_AMFC)
+	if (is_jpg_file(env_get("ext4LogoPath"))) {
+		char logo_value_buf[128];
+		char check_cmd[300];
+
+		strlcpy(logo_value_buf, env_get("ext4LogoPath"), sizeof(logo_value_buf));
+		convert_extension_if_jpg(logo_value_buf, 128);
+
+		snprintf(check_cmd, sizeof(check_cmd),
+				"ext4size mmc 1:%x %s", partIndex, logo_value_buf);
+		if (!run_command(check_cmd, 0)) {
+			env_set("logo_file_name", logo_value_buf);
+			env_set("ext4LogoPath", logo_value_buf);
+			env_set("jpg_logo", "false");
+		}
+	}
+#endif
 	env_set_hex("logoPart", partIndex);
 	env_set_hex("logoLoadAddr", (ulong)loadaddr);
 	env_set("ext4logoLoadCmd", "ext4load mmc 1:${logoPart} ${logoLoadAddr} ${ext4LogoPath}");
@@ -1753,17 +1850,31 @@ static int do_load_logo_from_ext4(cmd_tbl_t *cmdtp, int flag, int argc, char * c
 		return CMD_RET_FAILURE;
 	}
 
-#if defined(CONFIG_GZIP)
-	if (memcmp(loadaddr, gzip_magic, sizeof(gzip_magic)))
+#if IS_ENABLED(CONFIG_GZIP) || IS_ENABLED(CONFIG_AMLOGIC_AMFC)
+	int is_compressed = 0;
+
+#if IS_ENABLED(CONFIG_GZIP)
+	if (!memcmp(loadaddr, gzip_magic, sizeof(gzip_magic)))
+		is_compressed = 1;
+#endif
+
+#if IS_ENABLED(CONFIG_AMLOGIC_AMFC)
+	if (!memcmp(loadaddr, zstd_magic, sizeof(zstd_magic)))
+		is_compressed = 1;
+#endif
+
+	if (!is_compressed)
 		return CMD_RET_SUCCESS;
 
-	MsgP("gunzip bmp logo\n");
+	MsgP("decompress bmp logo\n");
+
 	void *uncompress = (char *)loadaddr + (((bmpSz + 0xf) >> 4) << 4);
 	unsigned long uncompSz = 0;
 
 	iRet = imgread_uncomp_pic((unsigned char *)loadaddr, bmpSz,
 			(unsigned char *)uncompress,
 			CONFIG_MAX_PIC_LEN, (unsigned long *)&uncompSz);
+
 	if (iRet) {
 		errorP("Fail in uncomp pic,rc[%d]\n", iRet);
 		return __LINE__;
@@ -1772,9 +1883,10 @@ static int do_load_logo_from_ext4(cmd_tbl_t *cmdtp, int flag, int argc, char * c
 		errorP("Fail uncompress logo bmp\n");
 		return CMD_RET_FAILURE;
 	}
+
 	memmove(loadaddr, uncompress, uncompSz);
 	env_set_hex("ext4LogoSz", uncompSz);
-#endif//#if defined(CONFIG_GZIP)
+#endif
 
 	return CMD_RET_SUCCESS;
 }

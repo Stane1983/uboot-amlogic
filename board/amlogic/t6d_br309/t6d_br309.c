@@ -219,7 +219,6 @@ int board_late_init(void)
 		printf("device backlight not found\n");
 #endif
 #endif
-	run_command("logo_display", 0);
 	run_command("run init_display", 0);
 
 	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_e);

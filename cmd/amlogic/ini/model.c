@@ -3428,11 +3428,6 @@ static int parse_model_sum(int index, const char *file_name, char *model_name)
 	return 0;
 }
 
-bool is_jpg_file(const char *path) {
-	size_t len = strlen(path);
-	return len > 4 && strcmp(path + len - 4, ".jpg") == 0;
-}
-
 bool validate_oemkey(const char *value)
 {
 	// Length check (11~32)
@@ -3536,6 +3531,7 @@ int parse_model_logofile(int index, const char *file_name, char *model_name)
 {
 	const char *logo_value = NULL;
 	int ret = 1;
+	char *str = NULL;
 
 	ini_parser_init();
 
@@ -3546,20 +3542,21 @@ int parse_model_logofile(int index, const char *file_name, char *model_name)
 	}
 
 	logo_value = ini_get_string(model_name, "LOGO_FILE_NAME", "null");
+	//logo_value = "/logo_files/test_logo.jpg";  //for test
 	if (strcmp(logo_value, "null") != 0) {
 		env_set("logo_path", "exist");
 		printf("logo_file_name is %s\n", logo_value);
 		env_set("logo_file_name", logo_value);
-		if (is_jpg_file(logo_value))
-			env_set("jpg_logo", "true");
-		else
-			env_set("jpg_logo", "false");
-		ret = 0;
 	} else {
-		env_set("logo_path", "invalid");
-		env_set("jpg_logo", "false");
 		printf("invalid LOGO_FILE_PATH\n");
 	}
+
+	str = env_get("fb_width");
+	if (str && simple_strtoul(str, NULL, 10) == 3840)
+		env_set("fb_for_4k2k", "1");
+	else
+		env_set("fb_for_4k2k", "0");
+	ret = 0;
 
 	ini_parser_uninit();
 
