@@ -131,6 +131,7 @@ unsigned char *lcd_init_table_load_array(char *name, unsigned char cmd_size,
 int lcd_base_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv);
 int lcd_base_config_load_from_bsp(struct aml_lcd_drv_s *pdrv);
 void lcd_panel_config_load_to_drv(struct aml_lcd_drv_s *pdrv);
+int lcd_check_config_load(struct aml_lcd_drv_s *pdrv);
 int lcd_get_panel_config(char *dt_addr, int load_id, struct aml_lcd_drv_s *pdrv);
 
 unsigned int str_add_vmode(char *buf, struct lcd_vmode_info_s *vm_info, unsigned short framerate);

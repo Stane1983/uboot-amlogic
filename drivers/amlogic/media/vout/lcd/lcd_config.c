@@ -3683,7 +3683,7 @@ lcd_panel_config_load_detect_done:
 	return load;
 }
 
-static int lcd_check_config_load(struct aml_lcd_drv_s *pdrv)
+int lcd_check_config_load(struct aml_lcd_drv_s *pdrv)
 {
 	int ret = 0, dt_sta;
 

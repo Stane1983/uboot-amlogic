@@ -114,12 +114,12 @@ static unsigned char interface_info_add(char *str, int node_ofst, unsigned char 
 		c_pos += snprintf(str + c_pos, IF_LEN, "%1u lane", tmp);
 
 		tmp = (unsigned int)be32_to_cpup(((u32 *)propdata) + 1);
-		c_pos += snprintf(str + c_pos, IF_LEN, ", bitrate:%3uMHz", tmp);
+		c_pos += snprintf(str + c_pos, IF_LEN, ", %3uMHz", tmp);
 
 		tmp = (unsigned char)be32_to_cpup(((u32 *)propdata) + 5);
 		c_pos += snprintf(str + c_pos, IF_LEN, ", %sburst", tmp == 2 ? "" : "non-");
 		if (tmp != 2) {
-			c_pos += snprintf(str + c_pos, IF_LEN, "(sync %s)",
+			c_pos += snprintf(str + c_pos, IF_LEN, "(%s)",
 				tmp == 1 ? "event" : "pulse");
 		}
 		tmp = (unsigned char)be32_to_cpup(((u32 *)propdata) + 6);
@@ -336,29 +336,30 @@ void aml_lcd_list(void)
 	printf("LIBFDT not available\n");
 #else
 	int parent_ofst;
-	char *propdata, snode[20];
-	unsigned char i, key_valid;
+	char snode[16];
+	unsigned char i;
+	struct aml_lcd_drv_s *pdrv;
 
-	for (i = 0; i < 3; i++) {
-		if (i == 0)
-			sprintf(snode, "/lcd");
-		else
-			sprintf(snode, "/lcd%d", i);
-		parent_ofst = fdt_path_offset(dt_addr, snode);
-		propdata = (char *)fdt_getprop(dt_addr, parent_ofst, "key_valid", NULL);
-		if (!propdata)
+	for (i = 0; i < LCD_MAX_DRV; i++) {
+		pdrv = aml_lcd_get_driver(i);
+		if (!pdrv)
 			continue;
 
-		key_valid = be32_to_cpup((u32 *)propdata);
+		lcd_check_config_load(pdrv);
 
-		if (key_valid) {
-			if (i == 0)
-				sprintf(snode, "model_list");
-			else
-				sprintf(snode, "model%u_list", i);
-			run_command(snode, 0);
-		} else {
+		switch (pdrv->config_load) {
+		case LCD_CONFIG_FILE:
+			// TODO json
+			break;
+		case LCD_CONFIG_DTS:
+			sprintf(snode, "/lcd%c", i == 0 ? '\0' : '0' + i);
+			parent_ofst = fdt_path_offset(dt_addr, snode);
 			lcd_list_dts(i, parent_ofst);
+			break;
+		case LCD_CONFIG_BSP:
+		case LCD_CONFIG_UKEY:
+		default:
+			break;
 		}
 	}
 #endif
