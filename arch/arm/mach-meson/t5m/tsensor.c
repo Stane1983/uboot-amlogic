@@ -31,6 +31,9 @@
 
 #define BITS_MASK(x)	((1 << (x)) - 1)
 #define SENSOR_VERSION_TYPE	0xf
+#define SENSOR_NUM 2
+struct sensor_info sinfo[SENSOR_NUM] = {{.cfg_reg = TS_CPU_CFG_REG1, .state_reg = TS_CPU_STAT0},
+					{.cfg_reg = TS_TOP_CFG_REG1, .state_reg = TS_TOP_STAT0}};
 
 int tsensor_tz_calibration(unsigned int type, unsigned int data)
 {
@@ -223,6 +226,22 @@ int temp_read_entry(void)
 		break;
 		}
 	return 0;
+}
+
+/*sensor_id = [1, 2] represents [CPU, TOP]*/
+int read_temperature_by_id(int sensor_id, int *temperature)
+{
+	u32 uefuse = 0;
+
+	if (sensor_id > SENSOR_NUM || sensor_id < 1)
+		return -1;
+	thermal_cali_data_read(sensor_id, &uefuse, 4);
+	if (uefuse & 0x80000000) {
+		*temperature = read_temperature(sensor_id, sinfo[sensor_id - 1].cfg_reg,
+						sinfo[sensor_id - 1].state_reg);
+		return 0;
+	}
+	return -1;
 }
 
 int temp_trim_entry(int tempbase, int tempver)

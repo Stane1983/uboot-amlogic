@@ -13,6 +13,8 @@
 #include <linux/arm-smccc.h>
 #include <linux/delay.h>
 
+#define SENSOR_NUM 1
+
 int tsensor_tz_calibration(unsigned int type, unsigned int data)
 {
 	struct arm_smccc_res res;
@@ -207,6 +209,21 @@ int temp_read_entry(void)
 		//break;
 	}
 	return 0;
+}
+
+/*sensor_id = [1] represents [PLL]*/
+int read_temperature_by_id(int sensor_id, int *temperature)
+{
+	u32 uefuse = 0;
+
+	if (sensor_id > SENSOR_NUM || sensor_id < 1)
+		return -1;
+	thermal_cali_data_read(sensor_id, &uefuse, 4);
+	if (uefuse & 0x80000000) {
+		*temperature = r1p1_temp_read(sensor_id);
+		return 0;
+	}
+	return -1;
 }
 
 int temp_trim_entry(int tempbase, int tempver)

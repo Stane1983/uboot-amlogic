@@ -13,9 +13,10 @@
 #include <linux/delay.h>
 #include <linux/arm-smccc.h>
 
-unsigned int ts_cfg_reg1[2] = {TS_PLL_CFG_REG1, TS_CORE_CFG_REG1};
-unsigned int ts_state0_reg[2] = {TS_PLL_STAT0, TS_CORE_STAT0};
-char *sensor_name[2] = {"pll", "core"};
+#define SENSOR_NUM 2
+unsigned int ts_cfg_reg1[SENSOR_NUM] = {TS_PLL_CFG_REG1, TS_CORE_CFG_REG1};
+unsigned int ts_state0_reg[SENSOR_NUM] = {TS_PLL_STAT0, TS_CORE_STAT0};
+char *sensor_name[SENSOR_NUM] = {"pll", "core"};
 
 int tsensor_tz_calibration(unsigned int type, unsigned int data)
 {
@@ -204,6 +205,21 @@ int temp_read_entry(void)
 		break;
 	}
 	return 0;
+}
+
+/*sensor_id = [1, 2] represents [PLL, CORE]*/
+int read_temperature_by_id(int sensor_id, int *temperature)
+{
+	u32 uefuse = 0;
+
+	if (sensor_id > SENSOR_NUM || sensor_id < 1)
+		return -1;
+	thermal_cali_data_read(sensor_id, &uefuse, 4);
+	if (uefuse & 0x80000000) {
+		*temperature = r1p1_temp_read(sensor_id);
+		return 0;
+	}
+	return -1;
 }
 
 int temp_trim_entry(int tempbase, int tempver)
