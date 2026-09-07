@@ -1573,6 +1573,25 @@ uint32_t avb_get_boot_patchlevel_from_vbmeta(AvbSlotVerifyData *data)
 //				else
 //					printf("not found com.android.build.boot.
 //					security_patch,len = %d\n", (int)len);
+			} else if (strcmp(p->partition_name, "boot") == 0) {
+				if (p->verify_result != AVB_VBMETA_VERIFY_RESULT_OK) {
+					// not verified
+					printf("boot verify_result %d\n", p->verify_result);
+
+					/*device lock, treat as error*/
+					if (!is_device_unlocked()) {
+						printf("device lock, but boot verify fail\n");
+						return 0;
+					}
+				}
+
+				ret = avb_property_lookup(p->vbmeta_data,
+				p->vbmeta_size,
+				"com.android.build.boot.security_patch",
+				0,
+				&len);
+				if (ret)
+					break;
 			}
 		}
 
