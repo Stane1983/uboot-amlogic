@@ -41,7 +41,7 @@ void meson_mode_set_test_mode_enable(const bool enable);
 /*
  * only uboot need api
  */
-const char *find_non_frac_preferred_mode(const char *mode);
+const char* find_non_frac_preferred_mode(const char *mode);
 #endif
 
 #ifdef __cplusplus
