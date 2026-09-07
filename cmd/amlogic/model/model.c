@@ -228,7 +228,7 @@ static int parse_model_sum(int index, const char *file_name, char *model_name)
 	void *local_ini_mem, *psec;
 	const char *str = NULL;
 #ifdef CONFIG_AML_LCD
-	char model_panel[16], *p;
+	char model_panel[20], *p;
 #endif
 
 	local_ini_mem = handle_ini_file_parse(file_name, 0);
@@ -259,6 +259,22 @@ static int parse_model_sum(int index, const char *file_name, char *model_name)
 		set_lcd_panel_file_type(index, PANEL_FILE_INI);
 	else //regard as json file, will be parse later
 		set_lcd_panel_file_type(index, PANEL_FILE_JSON);
+
+	str = handle_ini_get_str(local_ini_mem, psec, "BACKLIGHT_PATH", NULL);
+	if (str) {
+		if (index == 0)
+			snprintf(model_panel, 19, "model_backlight");
+		else
+			snprintf(model_panel, 19, "model%d_backlight", index);
+		env_set(model_panel, str);
+		set_bl_file_path(index, str);
+
+		p = strrchr(str, '.');
+		if (p && (!strncmp(p + 1, "ini", 3) || !strncmp(p + 1, "INI", 3)))
+			set_bl_panel_file_type(index, PANEL_FILE_INI);
+		else //regard as json file, will be parse later
+			set_bl_panel_file_type(index, PANEL_FILE_JSON);
+	}
 #endif
 
 	str = handle_ini_get_str(local_ini_mem, psec, "EDID_14_FILE_PATH", "null");

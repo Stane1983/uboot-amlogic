@@ -167,6 +167,12 @@ void rm_panel_file_path(int index);
 void set_lcd_panel_file_type(int index, unsigned char type);
 unsigned char get_lcd_panel_file_type(int index);
 
+unsigned char get_bl_panel_file_type(int index);
+void set_bl_panel_file_type(int index, unsigned char type);
+int set_bl_file_path(int index, const char *str);
+const char *get_bl_file_path(int index);
+void rm_bl_file_path(int index);
+
 void aml_lcd_panel_dump(int index, const char *path);
 
 #ifdef CONFIG_AML_LCD_TCON
