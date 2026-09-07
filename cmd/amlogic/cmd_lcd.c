@@ -116,6 +116,13 @@ static int do_lcd_print(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[
 	return 0;
 }
 
+static int do_lcd_dump(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	aml_lcd_driver_info(0);
+	aml_lcd_driver_reg_info(0);
+	return 0;
+}
+
 static int do_lcd_info(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	aml_lcd_driver_info(0);
@@ -618,6 +625,13 @@ static int do_lcd1_print(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv
 	return 0;
 }
 
+static int do_lcd1_dump(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	aml_lcd_driver_info(1);
+	aml_lcd_driver_reg_info(1);
+	return 0;
+}
+
 static int do_lcd1_info(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	aml_lcd_driver_info(1);
@@ -864,6 +878,13 @@ static int do_lcd2_print(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv
 	return 0;
 }
 
+static int do_lcd2_dump(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	aml_lcd_driver_info(2);
+	aml_lcd_driver_reg_info(2);
+	return 0;
+}
+
 static int do_lcd2_info(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	aml_lcd_driver_info(2);
@@ -1107,6 +1128,7 @@ static cmd_tbl_t cmd_lcd_sub[] = {
 	U_BOOT_CMD_MKENT(ss,      4, 0, do_lcd_ss,       "", ""),
 	U_BOOT_CMD_MKENT(clk,     2, 0, do_lcd_clk,      "", ""),
 	U_BOOT_CMD_MKENT(print,   3, 0, do_lcd_print,    "", ""),
+	U_BOOT_CMD_MKENT(dump,    2, 0, do_lcd_dump,     "", ""),
 	U_BOOT_CMD_MKENT(info,    2, 0, do_lcd_info,     "", ""),
 #ifdef CONFIG_AML_LCD_TCON
 	U_BOOT_CMD_MKENT(tcon,    3, 0, do_lcd_tcon,     "", ""),
@@ -1136,6 +1158,7 @@ static cmd_tbl_t cmd_lcd1_sub[] = {
 	U_BOOT_CMD_MKENT(ss,      4, 0, do_lcd1_ss,      "", ""),
 	U_BOOT_CMD_MKENT(clk,     2, 0, do_lcd1_clk,     "", ""),
 	U_BOOT_CMD_MKENT(print,   3, 0, do_lcd1_print,   "", ""),
+	U_BOOT_CMD_MKENT(dump,    2, 0, do_lcd1_dump,    "", ""),
 	U_BOOT_CMD_MKENT(info,    2, 0, do_lcd1_info,    "", ""),
 	U_BOOT_CMD_MKENT(vbyone,  3, 0, do_lcd1_vbyone,  "", ""),
 	// U_BOOT_CMD_MKENT(edp,     3, 0, do_lcd1_edp,     "", ""),
@@ -1160,6 +1183,7 @@ static cmd_tbl_t cmd_lcd2_sub[] = {
 	U_BOOT_CMD_MKENT(ss,      4, 0, do_lcd2_ss,      "", ""),
 	U_BOOT_CMD_MKENT(clk,     2, 0, do_lcd2_clk,     "", ""),
 	U_BOOT_CMD_MKENT(print,   3, 0, do_lcd2_print,   "", ""),
+	U_BOOT_CMD_MKENT(dump,    2, 0, do_lcd2_dump,    "", ""),
 	U_BOOT_CMD_MKENT(info,    2, 0, do_lcd2_info,    "", ""),
 	U_BOOT_CMD_MKENT(reg,     2, 0, do_lcd2_reg,     "", ""),
 	U_BOOT_CMD_MKENT(test,    3, 0, do_lcd2_test,    "", ""),
@@ -1197,6 +1221,7 @@ U_BOOT_CMD(
 	"lcd ss           - lcd pll spread spectrum operation\n"
 	"lcd bl           - lcd backlight operation\n"
 	"lcd clk          - show lcd pll & clk parameters\n"
+	"lcd dump         - show lcd parameters and registers\n"
 	"lcd info         - show lcd parameters\n"
 #ifdef CONFIG_AML_LCD_TCON
 	"lcd tcon         - show lcd tcon debug\n"
@@ -1237,6 +1262,7 @@ U_BOOT_CMD(
 	"lcd1 ss           - lcd pll spread spectrum operation\n"
 	"lcd1 bl           - lcd backlight operation\n"
 	"lcd1 clk          - show lcd pll & clk parameters\n"
+	"lcd1 dump         - show lcd parameters and registers\n"
 	"lcd1 info         - show lcd parameters\n"
 #ifdef CONFIG_AML_LCD_TCON
 	"lcd1 tcon         - show lcd tcon debug\n"
@@ -1275,6 +1301,7 @@ U_BOOT_CMD(
 	"lcd2 ss           - lcd pll spread spectrum operation\n"
 	"lcd2 bl           - lcd backlight operation\n"
 	"lcd2 clk          - show lcd pll & clk parameters\n"
+	"lcd2 dump         - show lcd parameters and registers\n"
 	"lcd2 info         - show lcd parameters\n"
 	"lcd2 reg          - dump lcd registers\n"
 	"lcd2 test         - show lcd bist pattern\n"

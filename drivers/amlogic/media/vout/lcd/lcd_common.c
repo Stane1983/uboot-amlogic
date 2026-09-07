@@ -174,21 +174,21 @@ void lcd_detail_timing_print(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timin
 	ck_vbp = (verr & 0x4) ? ck[0] : (verr & 0x8) ? ck[1] : ck[2];
 	ck_vfp = (verr & 0x1) ? ck[0] : (verr & 0x2) ? ck[1] : ck[2];
 
-	printf("ht:%4d(%4d ~ %4d), hact:%4d hbp:%d%s, hsw:%2d, hfp:%3d%s, hpol:%d\n"
-	       "vt:%4d(%4d ~ %4d), vact:%4d vbp:%d%s, vsw:%2d, vfp:%3d%s, vpol:%d\n"
-	       "lcd_bits:%d, cfmt:%d, fr_adj_type:%d, switch_type:0x%x\n"
-	       "ss_level:%d, ss_mode:%d, ss_freq:%d, ss_force:%d\n"
-	       "pclk:%d(%d ~ %d), clk_mode:%d, asf_mode=%d, ufr_mode:%d\n"
-	       "frame_rate:%d (%d ~ %d)\n"
-	       "vrr_range:[%d ~ %d]\n\n",
+	printf("ht:%4d [%4d, %4d], hact:%4d, hsw:%2d, hbp:%3d%s, hfp:%3d%s, hpol:%d\n"
+	       "vt:%4d [%4d, %4d], vact:%4d, vsw:%2d, vbp:%3d%s, vfp:%3d%s, vpol:%d\n"
+	       "bits:%d, cfmt:0x%x, fr_adj:%d, switch_type:0x%x, clk_mode:%d, asf:%d, ufr:%d\n"
+	       "ssc: level:%d, mode:%d, freq:%d, force:%d\n"
+	       "pclk:%d [%d, %d]\n"
+	       "frame_rate:%d [%d, %d]\n"
+	       "vrr_range: [%d, %d]\n\n",
 	       dt->h_period, dt->h_period_min, dt->h_period_max, dt->h_active,
-	       dt->hsync_bp, ck_hbp, dt->hsync_width, dt->hsync_fp, ck_hfp, dt->hsync_pol,
+	       dt->hsync_width, dt->hsync_bp, ck_hbp, dt->hsync_fp, ck_hfp, dt->hsync_pol,
 	       dt->v_period, dt->v_period_min, dt->v_period_max, dt->v_active,
-	       dt->vsync_bp, ck_vbp, dt->vsync_width, dt->vsync_fp, ck_vfp, dt->vsync_pol,
+	       dt->vsync_width, dt->vsync_bp, ck_vbp, dt->vsync_fp, ck_vfp, dt->vsync_pol,
 	       dt->lcd_bits, dt->cfmt, dt->fr_adjust_type, dt->switch_type,
+	       dt->clk_mode, dt->asf_mode, dt->ufr_mode,
 	       dt->ss_level, dt->ss_mode, dt->ss_freq, dt->ss_force,
-	       dt->pixel_clk, dt->pclk_min, dt->pclk_max, dt->clk_mode,
-	       dt->asf_mode, dt->ufr_mode,
+	       dt->pixel_clk, dt->pclk_min, dt->pclk_max,
 	       dt->frame_rate, dt->frame_rate_min, dt->frame_rate_max,
 	       dt->vfreq_vrr_min, dt->vfreq_vrr_max);
 }

@@ -121,12 +121,13 @@ static void lcd_timing_info_print(struct aml_lcd_drv_s *pdrv)
 		dt = pconf->timing.timings[i];
 		if (base == dt)
 			base_id = i;
-		printf("dt[%d]:%s%s\n", i, base == dt ? "(base)" : "", dft == dt ? "(dft)" : "");
+		printf("timing[%d]:%s%s\n",
+		       i, base == dt ? "(base)" : "", dft == dt ? "(dft)" : "");
 		lcd_detail_timing_print(pdrv, dt);
 	}
 
 	dt = &pconf->timing.act_timing;
-	printf("active timing: based dt[%d]:\n", base_id);
+	printf("active timing: based timing[%d]:\n", base_id);
 	lcd_detail_timing_print(pdrv, dt);
 
 	printf("pre_de_h:%d, pre_de_v:%d\n"

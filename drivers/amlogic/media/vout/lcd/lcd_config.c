@@ -86,6 +86,56 @@ char *lcd_mode_mode_to_str(int mode)
 	return lcd_mode_table[mode];
 }
 
+struct color_fmt_info_s color_fmt_info[] = {
+	{CFMT_RGB565,         16, "RGB565"},
+	{CFMT_RGB_6bit,       18, "RGB_6bit"},
+	{CFMT_RGB_8bit,       24, "RGB_8bit"},
+	{CFMT_RGB_10bit,      30, "RGB_10bit"},
+	{CFMT_RGB_12bit,      36, "RGB_12bit"},
+	{CFMT_YCbCr422_8bit,  16, "YCbCr422_8bit"},
+	{CFMT_YCbCr422_10bit, 20, "YCbCr422_10bit"},
+	{CFMT_YCbCr422_12bit, 24, "YCbCr422_12bit"},
+	{CFMT_YCbCr444_8bit,  24, "YCbCr444_8bit"},
+	{CFMT_YCbCr444_10bit, 30, "YCbCr444_10bit"},
+	{CFMT_YCbCr444_12bit, 36, "YCbCr444_12bit"},
+	{CFMT_YCbCr420_8bit,  12, "YCbCr420_8bit"},
+	{CFMT_YCbCr420_10bit, 15, "YCbCr420_10bit"},
+	{CFMT_YCbCr420_12bit, 18, "YCbCr420_12bit"},
+};
+
+#ifdef CONFIG_AML_LCD_JSON
+static int panel_str2fmt(const char *str, unsigned char *cfmt, unsigned char *bits)
+{
+	unsigned int i = 0;
+
+	if (!str)
+		return -1;
+	for (i = 0; i < ARRAY_SIZE(color_fmt_info); i++) {
+		if (strcmp(str, color_fmt_info[i].name) == 0) {
+			*cfmt = color_fmt_info[i].cfmt;
+			*bits = color_fmt_info[i].bits;
+			return 0;
+		}
+	}
+
+	return -1;
+}
+#endif
+
+static int panel_bit2fmt(unsigned int bits, unsigned char ctype)
+{
+	unsigned int i = 0;
+
+	for (i = 0; i < ARRAY_SIZE(color_fmt_info); i++) {
+		if (bits == color_fmt_info[i].bits) {
+			if (ctype == (color_fmt_info[i].cfmt & CTYPE_MASK))
+				return color_fmt_info[i].cfmt;
+		}
+	}
+
+	return CFMT_INVALID;
+}
+
 static void lcd_config_load_print(struct aml_lcd_drv_s *pdrv)
 {
 	struct lcd_detail_timing_s *ptiming = pdrv->config.timing.dft_timing;
@@ -1046,6 +1096,7 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 	}
 
 	ptiming->lcd_bits = lcd_bits;
+	ptiming->cfmt = panel_bit2fmt(ptiming->lcd_bits, CTYPE_RGB);
 	ptiming->switch_type = LCD_VMODE_SWITCH_NONE;
 	ptiming->ss_force = 0;
 	ptiming->ss_freq = pconf->timing.ss_freq;
@@ -1852,6 +1903,7 @@ static int lcd_config_load_from_unifykey(struct aml_lcd_drv_s *pdrv)
 	pconf->fr_auto_cus = *(p + LCD_UKEY_FR_AUTO_CUS);
 	ptiming->switch_type = LCD_VMODE_SWITCH_NONE;
 	ptiming->lcd_bits = lcd_bits;
+	ptiming->cfmt = panel_bit2fmt(ptiming->lcd_bits, CTYPE_RGB);
 	ptiming->ss_force = 0;
 	ptiming->ss_freq = 255;
 	ptiming->ss_level = pconf->timing.ss_level;
@@ -2136,6 +2188,7 @@ static int lcd_config_load_from_bsp(struct aml_lcd_drv_s *pdrv)
 	memset(ptiming, 0, sizeof(*ptiming));
 
 	ptiming->lcd_bits = ext_lcd->lcd_bits * 3;
+	ptiming->cfmt = panel_bit2fmt(ptiming->lcd_bits, CTYPE_RGB);
 	ptiming->h_active = ext_lcd->h_active;
 	ptiming->v_active = ext_lcd->v_active;
 	ptiming->h_period = ext_lcd->h_period;
@@ -2424,40 +2477,6 @@ static struct num_str_s vmode_switch_name[] = {
 	{LCD_VMODE_SWITCH_LIMIT, "LIMIT"},
 	{LCD_VMODE_SWITCH_MIN,   "MIN"},
 };
-
-struct color_fmt_info_s color_fmt_info[] = {
-	{CFMT_RGB565,         16, "RGB565"},
-	{CFMT_RGB_6bit,       18, "RGB_6bit"},
-	{CFMT_RGB_8bit,       24, "RGB_8bit"},
-	{CFMT_RGB_10bit,      30, "RGB_10bit"},
-	{CFMT_RGB_12bit,      36, "RGB_12bit"},
-	{CFMT_YCbCr422_8bit,  16, "YCbCr422_8bit"},
-	{CFMT_YCbCr422_10bit, 20, "YCbCr422_10bit"},
-	{CFMT_YCbCr422_12bit, 24, "YCbCr422_12bit"},
-	{CFMT_YCbCr444_8bit,  24, "YCbCr444_8bit"},
-	{CFMT_YCbCr444_10bit, 30, "YCbCr444_10bit"},
-	{CFMT_YCbCr444_12bit, 36, "YCbCr444_12bit"},
-	{CFMT_YCbCr420_8bit,  12, "YCbCr420_8bit"},
-	{CFMT_YCbCr420_10bit, 15, "YCbCr420_10bit"},
-	{CFMT_YCbCr420_12bit, 18, "YCbCr420_12bit"},
-};
-
-static int panel_str2fmt(const char *str, unsigned char *cfmt, unsigned char *bits)
-{
-	unsigned int i = 0;
-
-	if (!str)
-		return -1;
-	for (i = 0; i < ARRAY_SIZE(color_fmt_info); i++) {
-		if (strcmp(str, color_fmt_info[i].name) == 0) {
-			*cfmt = color_fmt_info[i].cfmt;
-			*bits = color_fmt_info[i].bits;
-			return 0;
-		}
-	}
-
-	return -1;
-}
 
 static int lcd_panel_parse_basic(struct json_parse_s *jsp, struct aml_lcd_drv_s *pdrv)
 {
@@ -3432,6 +3451,7 @@ static int lcd_config_load_from_ini(struct aml_lcd_drv_s *pdrv)
 	pconf->fr_auto_cus = lcd_ini_get_val(inip, psec, "fr_auto_custom", 0);
 	ptiming->switch_type = LCD_VMODE_SWITCH_NONE;
 	ptiming->lcd_bits = lcd_bits * 3;
+	ptiming->cfmt = panel_bit2fmt(ptiming->lcd_bits, CTYPE_RGB);
 	ptiming->ss_force = 0;
 	ptiming->ss_freq = 255;
 	ptiming->ss_level = pconf->timing.ss_level;

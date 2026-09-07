@@ -40,6 +40,12 @@
 /* 20251113: support ip27 */
 #define LCD_DRV_VERSION    "20251113"
 
+#define CTYPE_MASK           0xf0
+#define CTYPE_RGB            0x00
+#define CTYPE_YUV422         0x10
+#define CTYPE_YUV444         0x20
+#define CTYPE_YUV420         0x30
+
 #define CFMT_RGB565          0x05
 #define CFMT_RGB_6bit        0x06
 #define CFMT_RGB_8bit        0x08
@@ -54,6 +60,7 @@
 #define CFMT_YCbCr420_8bit   0x38
 #define CFMT_YCbCr420_10bit  0x3a
 #define CFMT_YCbCr420_12bit  0x3c
+#define CFMT_INVALID         0xff
 
 struct color_fmt_info_s {
 	unsigned int cfmt;
