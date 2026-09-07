@@ -712,7 +712,7 @@ int aml_factory_burn(void)
 	char *factorytest = env_get("factorytest");
 	const int bootCpyIndex = store_bootup_bootidx("bootloader");
 	char *rebootmode = env_get("reboot_mode");
-	char *rpmb_flag = env_get("rpmb_state");
+	//char *rpmb_flag = env_get("rpmb_state");
 
 	debug("bootCpyIndex is %d\n", bootCpyIndex);
 	if (bootCpyIndex == 2 &&
