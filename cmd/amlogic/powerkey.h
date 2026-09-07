@@ -10,7 +10,7 @@
 extern "C" {
 #endif
 
-#define MAX_KEY_SUPPORT 8
+#define MAX_KEY_SUPPORT 128
 
 #define PARSE_TAB_TYPE_REMOTE             0x01
 #define PARSE_TAB_TYPE_KEYPAD             0x02
