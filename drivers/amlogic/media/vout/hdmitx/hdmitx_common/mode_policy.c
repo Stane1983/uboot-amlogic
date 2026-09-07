@@ -506,10 +506,10 @@ static bool is_support_4kHDR(struct meson_policy_in *input,
      * modes_ptr:the list of TV support resolution from connector
      * dc_cap:the list of TV support color format from driver parse edid
      */
-    for (int i = 0; i < color_list_length; i++) {
-        if (is_support_color_format(input, color_list[i])) {
-            for (int j = 0; j < resolution_list_length; j++) {
-                if (is_support_hdmimode(input, resolution_list[j])) {
+    for (int j = 0; j < resolution_list_length; j++) {
+        if (is_support_hdmimode(input, resolution_list[j])) {
+            for (int i = 0; i < color_list_length; i++) {
+                if (is_support_color_format(input, color_list[i])) {
                     if (mode_support_check(resolution_list[j], color_list[i], input)) {
                        strlcpy(output->deepcolor, color_list[i], sizeof(output->deepcolor));
                        strlcpy(output->displaymode, resolution_list[j], sizeof(output->displaymode));
@@ -566,10 +566,10 @@ static bool is_support_non4kHDR(struct meson_policy_in *input,
      * modes_ptr:the list of TV support resolution from connector
      * dc_cap:the list of TV support color format from driver parse edid
      */
-    for (int i = 0; i < color_list_length; i++) {
-        if (is_support_color_format(input, color_list[i])) {
-            for (int j = 0; j < resolution_list_length; j++) {
-                if (is_support_hdmimode(input, resolution_list[j])) {
+    for (int j = 0; j < resolution_list_length; j++) {
+        if (is_support_hdmimode(input, resolution_list[j])) {
+            for (int i = 0; i < color_list_length; i++) {
+                if (is_support_color_format(input, color_list[i])) {
                     if (mode_support_check(resolution_list[j], color_list[i], input)) {
                        strlcpy(output->deepcolor, color_list[i], sizeof(output->deepcolor));
                        strlcpy(output->displaymode, resolution_list[j], sizeof(output->displaymode));
