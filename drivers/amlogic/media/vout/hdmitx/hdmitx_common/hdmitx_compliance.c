@@ -24,6 +24,12 @@ static struct edid_venddat_t ake_init_id[] = {
 	/* Add new vendor data here */
 };
 
+static struct edid_venddat_t vendor_shield_hdr[] = {
+	/* BLACKLINK */
+	{ {0x63, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x21} }
+	/* Add new vendor data here */
+};
+
 /* On Huawei TVs, HDR will cause a flickering screen,
  * and HDR PKT needs to be moved behind VSYNC on S7 or later SOCs
  */
@@ -56,5 +62,24 @@ bool hdmitx_find_send_ake_init(unsigned char *edid_buf)
 		if (memcmp(&edid_buf[8], ake_init_id[i].data, sizeof(ake_init_id[i].data)) == 0)
 			return true;
 	}
+	return false;
+}
+
+/*
+ * special TV to mask the HDR capabilities at 422,12bit.
+ */
+bool hdmitx_find_vendor_shield_hdr(unsigned char *edid_buf)
+{
+	int i;
+
+	if (!edid_buf)
+		return false;
+
+	for (i = 0; i < ARRAY_SIZE(vendor_shield_hdr); i++) {
+		if (memcmp(&edid_buf[8], vendor_shield_hdr[i].data,
+			sizeof(vendor_shield_hdr[i].data)) == 0)
+			return true;
+	}
+
 	return false;
 }

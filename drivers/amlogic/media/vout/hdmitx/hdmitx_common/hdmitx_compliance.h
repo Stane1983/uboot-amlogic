@@ -8,6 +8,7 @@
 
 bool hdmitx_find_hdr_pkt_delay_to_vsync(unsigned char *edid_buf);
 bool hdmitx_find_send_ake_init(unsigned char *edid_buf);
+bool hdmitx_find_vendor_shield_hdr(unsigned char *edid_buf);
 
 #endif
 
