@@ -416,36 +416,15 @@ void aml_lcd_set(uint8_t drv_idx, char *lcd_type_name)
 #ifndef CONFIG_OF_LIBFDT
 	printf("LIBFDT not available\n");
 #else
-	int parent_ofst;
-	char *propdata, cmd[64], snode[16] = "/lcd\0\0";
-	unsigned char key_valid;
+	char cmd[64], snode[16];
 
-	if (drv_idx)
-		snode[4] = '0' + drv_idx;
-
-	parent_ofst = fdt_path_offset(dt_addr, snode);
-	propdata = (char *)fdt_getprop(dt_addr, parent_ofst, "key_valid", NULL);
-	if (!propdata) {
-		printf("lcd[%u] <key_valid> not found in dts node %s\n", drv_idx, snode);
+	if (lcd_set_dts(drv_idx, lcd_type_name))
 		return;
-	}
 
-	key_valid = be32_to_cpup((u32 *)propdata);
-
-	if (key_valid) {
-		if (drv_idx == 0)
-			sprintf(snode, "model_name");
-		else
-			sprintf(snode, "model%u_name", drv_idx);
-	} else {
-		if (lcd_set_dts(drv_idx, lcd_type_name))
-			return;
-
-		if (drv_idx == 0)
-			sprintf(snode, "panel_type");
-		else
-			sprintf(snode, "panel%d_type", drv_idx);
-	}
+	if (drv_idx == 0)
+		sprintf(snode, "panel_type");
+	else
+		sprintf(snode, "panel%d_type", drv_idx);
 	sprintf(cmd, "setenv %s %s", snode, lcd_type_name);
 	run_command(cmd, 0);
 	sprintf(cmd, "update_env_part -p -f %s", snode);

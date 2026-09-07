@@ -22,7 +22,7 @@ static void dsi_base_cfg_print(struct lcd_config_s *pconf)
 
 	if (!dconf->check_en)
 		return;
-	pr_info("MIPI DSI check state:\n"
+	printf("MIPI DSI check state:\n"
 		"  check_reg:             0x%02x\n"
 		"  check_cnt:             %d\n"
 		"  check_state            %d\n\n",
@@ -32,47 +32,54 @@ static void dsi_base_cfg_print(struct lcd_config_s *pconf)
 void dsi_table_print(u8 *dsi_table, u16 n_max)
 {
 	u16 i = 0, n = 0, j;
+	if (!dsi_table)
+		return;
 
 	while ((i + 1) < n_max) {
 		n = dsi_table[i + 1];
 		if (dsi_table[i] == LCD_EXT_CMD_TYPE_END) {
-			pr_info("  0x%02x, %d\n", dsi_table[i], dsi_table[i + 1]);
+			printf("  0x%02x, %d\n", dsi_table[i], dsi_table[i + 1]);
 			break;
 		} else if ((dsi_table[i] == LCD_EXT_CMD_TYPE_GPIO) ||
 			   (dsi_table[i] == LCD_EXT_CMD_TYPE_DELAY)) {
-			pr_info("  0x%02x, %d,", dsi_table[i], n);
+			printf("  0x%02x, %d,", dsi_table[i], n);
 			for (j = 0; j < n; j++)
-				pr_info(" %d,", dsi_table[i + 2 + j]);
-			pr_info("\n");
+				printf(" %d,", dsi_table[i + 2 + j]);
+			printf("\n");
 		} else if ((dsi_table[i] & 0xf) == 0x0) {
-			pr_info("wrong data_type: 0x%02x\n", dsi_table[i]);
+			printf("wrong data_type: 0x%02x\n", dsi_table[i]);
 			break;
 		}
-		pr_info("  0x%02x, %d,", dsi_table[i], n);
+		printf("  0x%02x, %d,", dsi_table[i], n);
 		for (j = 0; j < n; j++)
-			pr_info(" 0x%02x,", dsi_table[i + 2 + j]);
-		pr_info("\n");
+			printf(" 0x%02x,", dsi_table[i + 2 + j]);
+		printf("\n");
 		i += (n + 2);
 	}
 }
 
 void dsi_init_table_print(struct dsi_config_s *dconf)
 {
-	if (dconf->dsi_init_on) {
-		LCDPR("MIPI DSI init on:\n");
-		dsi_table_print(dconf->dsi_init_on, DSI_INIT_ON_MAX);
-	}
-	if (dconf->dsi_init_off) {
-		LCDPR("MIPI DSI init off:\n");
-		dsi_table_print(dconf->dsi_init_off, DSI_INIT_OFF_MAX);
-	}
+	LCDPR("MIPI DSI init-on: %s\n", dconf->dsi_init_on == NULL ? "NULL" : "");
+	dsi_table_print(dconf->dsi_init_on, DSI_INIT_ON_MAX);
+
+	LCDPR("MIPI DSI suspend: %s\n", dconf->dsi_suspend == NULL ? "NULL" : "");
+	dsi_table_print(dconf->dsi_suspend, DSI_SUSPEND_MAX);
+
+	LCDPR("MIPI DSI resume: %s\n", dconf->dsi_resume == NULL ? "NULL" : "");
+	dsi_table_print(dconf->dsi_resume, DSI_RESUME_MAX);
+
+	LCDPR("MIPI DSI init-off: %s\n", dconf->dsi_init_off == NULL ? "NULL" : "");
+	dsi_table_print(dconf->dsi_init_off, DSI_INIT_OFF_MAX);
 }
 
+#ifdef TRY_TO_REMOVE_DSI_EXTERN
 static void dsi_extern_init_table_print(struct dsi_config_s *dconf, int on_off)
 {
 	if (dconf->extern_init != 0xff)
-		pr_info("extern init:        %d\n\n", dconf->extern_init);
+		printf("extern init:        %d\n\n", dconf->extern_init);
 }
+#endif
 
 void lcd_dsi_info_print(struct lcd_config_s *pconf)
 {
@@ -81,7 +88,10 @@ void lcd_dsi_info_print(struct lcd_config_s *pconf)
 	dsi_base_cfg_print(pconf);
 
 	dsi_init_table_print(&pconf->control.mipi_cfg);
+
+#ifdef TRY_TO_REMOVE_DSI_EXTERN
 	dsi_extern_init_table_print(&pconf->control.mipi_cfg, 1);
+#endif
 }
 
 void lcd_dsi_set_operation_mode(struct aml_lcd_drv_s *pdrv, u8 op_mode)
@@ -125,7 +135,7 @@ u8 lcd_dsi_read(struct aml_lcd_drv_s *pdrv, u8 *payload, u8 *rd_data, u8 rd_byte
 		for (k = 0; k < dsi_back_len; k++)
 			n += snprintf(string + n, 255 - n, "0x%02x ", rd_data[k]);
 	}
-	pr_info("%s\n", string);
+	printf("%s\n", string);
 	free(string);
 	return dsi_back_len;
 }

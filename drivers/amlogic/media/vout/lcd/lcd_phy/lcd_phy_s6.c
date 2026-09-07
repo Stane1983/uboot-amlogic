@@ -47,7 +47,7 @@ static void lcd_mipi_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 	// 1.5G: PHY_CNTL0[0xfe0083d4] = 0x393b8055; PHY_CNTL1[0xfe0083d8] = 0xe134031f;
 	// 2.5G: PHY_CNTL0[0xfe0083d4] = 0x393b8055; PHY_CNTL1[0xfe0083d8] = 0xe134061f;
 
-	CHCK_HS_driver_ability = pdrv->config.control.mipi_cfg.bit_rate_max > 1500 ? 0x6 : 0x3;
+	CHCK_HS_driver_ability = pdrv->config.control.mipi_cfg.bit_rate_target > 1500 ? 0x6 : 0x3;
 	HSTX_50R_calid_val = efuse_get_cali_item("dsi");
 	if (HSTX_50R_calid_val < 0) {
 		LCDERR("[%u]: DSI HSTX 50Ω resistance uncalibrated\n", pdrv->index);

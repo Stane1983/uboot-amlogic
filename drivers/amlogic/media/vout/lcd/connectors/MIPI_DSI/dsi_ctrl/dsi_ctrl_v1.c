@@ -7,9 +7,6 @@
 #include <malloc.h>
 #include <asm/amlogic/arch/gpio.h>
 #include <fdtdec.h>
-#ifdef CONFIG_SECURE_POWER_CONTROL
-#include <asm/amlogic/arch/pwr_ctrl.h>
-#endif
 #include <amlogic/media/vout/lcd/aml_lcd.h>
 #include "../../../lcd_reg.h"
 #include "../../../lcd_common.h"

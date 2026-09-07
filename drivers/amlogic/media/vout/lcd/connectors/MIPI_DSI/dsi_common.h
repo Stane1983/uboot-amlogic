@@ -196,7 +196,7 @@ void dsi_table_print(uint8_t *dsi_table, u16 n_max);
 void dsi_init_table_print(struct dsi_config_s *dconf);
 int dsi_run_oneline_cmd(struct aml_lcd_drv_s *pdrv, uint8_t port, uint8_t *payload,
 			uint8_t *rd_back, uint32_t rd_back_len);
-u16 dsi_table_load_dts(char *propdata, uint8_t *table, u16 max_len);
+void dsi_table_load_dts(char *propdata, uint8_t *table, u16 max_len);
 int dsi_read(struct aml_lcd_drv_s *pdrv, uint8_t *payload, uint8_t *rd_data, uint8_t rd_byte_len);
 int dsi_exec_init_table(struct aml_lcd_drv_s *pdrv,
 			uint8_t *payload, u32 pld_limit, uint8_t *rd_back, u32 rd_back_max);

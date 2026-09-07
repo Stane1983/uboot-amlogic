@@ -31,20 +31,16 @@ static int lcd_type_supported(struct aml_lcd_drv_s *pdrv)
 #ifdef CONFIG_AML_LCD_TCON
 	case LCD_MLVDS:
 	case LCD_P2P:
-		if (pdrv->mode == LCD_MODE_TV)
-			return 0;
-		break;
+		return 0;
 #endif
 #ifdef CONFIG_AML_LCD_MIPI_DSI
 	case LCD_MIPI:
-		if (pdrv->mode == LCD_MODE_TABLET)
-			return 0;
-		break;
+		return 0;
 #endif
 	default:
 		break;
 	}
-	LCDERR("[%d]: invalid lcd mode(%u) type: %s(%d)\n", pdrv->index, pdrv->mode,
+	LCDERR("[%d]: invalid lcd type: %s(%d)", pdrv->index,
 		lcd_type_type_to_str(pdrv->config.basic.lcd_type), pdrv->config.basic.lcd_type);
 	return 1;
 }

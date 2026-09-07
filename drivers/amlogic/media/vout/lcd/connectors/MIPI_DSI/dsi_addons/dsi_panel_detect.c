@@ -49,6 +49,7 @@ static void dsi_panel_try_match_dts(struct aml_lcd_drv_s *pdrv)
 	u8 t, k, match_len = 0;
 	u8 *_init_table = NULL, *_match_seq = NULL, *_rd_seq = NULL;
 	struct dsi_config_s *dconf = &pdrv->config.control.mipi_cfg;
+	int len_p;
 
 	char table_name[18];
 	char *table_propdata;
@@ -77,7 +78,7 @@ static void dsi_panel_try_match_dts(struct aml_lcd_drv_s *pdrv)
 		snprintf(seq_name,   15, "det%u_match_seq", t);
 		snprintf(type_name,  10, "det%u_type", t);
 
-		table_propdata = (char *)fdt_getprop(dconf->dt_addr, offset, table_name, NULL);
+		table_propdata = (char *)fdt_getprop(dconf->dt_addr, offset, table_name, &len_p);
 		seq_propdata   = (char *)fdt_getprop(dconf->dt_addr, offset, seq_name, NULL);
 		type_propdata  = (char *)fdt_getprop(dconf->dt_addr, offset, type_name, NULL);
 
@@ -109,30 +110,30 @@ static void dsi_panel_try_match_dts(struct aml_lcd_drv_s *pdrv)
 			memset(_init_table, 0, sizeof(u8) * DSI_DET_TABLE_MAX);
 			memset(_rd_seq,     0, sizeof(u8) * DSI_DET_SEQ_MAX);
 
-			dsi_table_load_dts(table_propdata, _init_table, DSI_DET_TABLE_MAX);
+			dsi_table_load_dts(table_propdata, _init_table, len_p / 4);
 			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-				LCDPR("[%d]: %s match[%u]_table:\n", pdrv->index, __func__, t);
+				LCDPR("[%d]: %s match[%u]_table:", pdrv->index, __func__, t);
 				dsi_table_print(_init_table, DSI_DET_TABLE_MAX);
 			}
 
 			rd_len = dsi_exec_init_table(pdrv,
 				_init_table, DSI_DET_TABLE_MAX, _rd_seq, DSI_DET_SEQ_MAX);
-			pr_info("read seq[%d]: (%d): ", t, rd_len);
+			printf("read seq[%d]: (%d): ", t, rd_len);
 			for (k = 0; k < rd_len; k++)
-				pr_info("0x%02x ", _rd_seq[k]);
-			pr_info("\n");
+				printf("0x%02x ", _rd_seq[k]);
+			printf("\n");
 		}
 
 		if (rd_len != match_len) { // compare req and read out length
 			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-				pr_info("  match[%u] seq[%u], read[%u]\n", t, match_len, rd_len);
+				printf("  match[%u] seq[%u], read[%u]\n", t, match_len, rd_len);
 			continue;
 		}
 
 		for (k = 0; k < match_len; k++) { // compare each character
 			if (_match_seq[k] != _rd_seq[k]) {
 				if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-					pr_info("  match[%d] seq=0x%02x rd=0x%02x\n",
+					printf("  match[%d] seq=0x%02x rd=0x%02x\n",
 						t, _match_seq[k], _rd_seq[k]);
 				}
 				break;
@@ -205,22 +206,22 @@ static void dsi_panel_try_match_bsp(struct aml_lcd_drv_s *pdrv)
 
 			rd_len = dsi_exec_init_table(pdrv, det_attr->det_init_table[t],
 					DSI_DET_TABLE_MAX, _rd_seq, DSI_DET_SEQ_MAX);
-			pr_info("read seq[%d]: (%d): ", t, rd_len);
+			printf("read seq[%d]: (%d): ", t, rd_len);
 			for (k = 0; k < rd_len; k++)
-				pr_info("0x%02x ", _rd_seq[k]);
-			pr_info("\n");
+				printf("0x%02x ", _rd_seq[k]);
+			printf("\n");
 		}
 
 		if (rd_len != match_len) { // compare req and read out length
 			if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
-				pr_info("  match[%u] seq[%u], read[%u]\n", t, match_len, rd_len);
+				printf("  match[%u] seq[%u], read[%u]\n", t, match_len, rd_len);
 			continue;
 		}
 
 		for (k = 0; k < match_len; k++) { // compare each character
 			if (det_attr->det_match_seq[t][k + 1] != _rd_seq[k]) {
 				if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
-					pr_info("  match[%d] seq=0x%02x rd=0x%02x\n",
+					printf("  match[%d] seq=0x%02x rd=0x%02x\n",
 						t, det_attr->det_match_seq[t][k + 1], _rd_seq[k]);
 				}
 				continue;

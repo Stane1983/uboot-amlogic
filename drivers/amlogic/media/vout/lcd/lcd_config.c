@@ -250,12 +250,15 @@ static void lcd_config_load_print(struct aml_lcd_drv_s *pdrv)
 			LCDPR("check_cnt = %d\n", pctrl->mipi_cfg.check_cnt);
 		}
 		LCDPR("lane_num = %d\n", pctrl->mipi_cfg.lane_num);
-		LCDPR("bit_rate_max = %d\n", pctrl->mipi_cfg.bit_rate_max);
-		LCDPR("operation_mode_init = %d\n", pctrl->mipi_cfg.operation_mode_init);
-		LCDPR("operation_mode_disp = %d\n", pctrl->mipi_cfg.operation_mode_display);
+		LCDPR("bit_rate_target = %d\n", pctrl->mipi_cfg.bit_rate_target);
+		LCDPR("operation_mode: init=%d, disp=%d\n",
+			pctrl->mipi_cfg.operation_mode_init,
+			pctrl->mipi_cfg.operation_mode_display);
 		LCDPR("video_mode_type = %d\n", pctrl->mipi_cfg.video_mode_type);
 		LCDPR("clk_always_hs = %d\n", pctrl->mipi_cfg.clk_always_hs);
+#ifdef TRY_TO_REMOVE_DSI_EXTERN
 		LCDPR("extern_init = %d\n", pctrl->mipi_cfg.extern_init);
+#endif
 		break;
 #endif
 	default:
@@ -1348,7 +1351,7 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 			return -1;
 		}
 		pctrl->mipi_cfg.lane_num = be32_to_cpup((u32 *)propdata);
-		pctrl->mipi_cfg.bit_rate_max = be32_to_cpup((((u32 *)propdata) + 1));
+		pctrl->mipi_cfg.bit_rate_target = be32_to_cpup((((u32 *)propdata) + 1));
 		pctrl->mipi_cfg.operation_mode_init = be32_to_cpup((((u32 *)propdata) + 3));
 		pctrl->mipi_cfg.multi_port_cfg = be32_to_cpup((((u32 *)propdata) + 2));
 		pctrl->mipi_cfg.operation_mode_display = be32_to_cpup((((u32 *)propdata) + 4));
@@ -1361,6 +1364,7 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 		pctrl->mipi_cfg.check_cnt = 0;
 		lcd_dsi_init_table_load_dts(dt_addr, child_offset, &pctrl->mipi_cfg);
 
+#ifdef TRY_TO_REMOVE_DSI_EXTERN
 		propdata = (char *)fdt_getprop(dt_addr, child_offset, "extern_init", NULL);
 		if (propdata) {
 			pctrl->mipi_cfg.extern_init = be32_to_cpup((u32 *)propdata);
@@ -1380,6 +1384,7 @@ static int lcd_config_load_from_dts(char *dt_addr, struct aml_lcd_drv_s *pdrv)
 				(be32_to_cpup(((u32 *)propdata) + 1) && 1) << 1; // store2env
 			pctrl->mipi_cfg.dt_addr = dt_addr;
 		}
+#endif
 
 		phy_cfg->vswing_level = 0;
 		phy_cfg->preem_level = 0;
@@ -2360,7 +2365,7 @@ static int lcd_config_load_from_bsp(struct aml_lcd_drv_s *pdrv)
 #ifdef CONFIG_AML_LCD_MIPI_DSI
 	case LCD_MIPI:
 		pctrl->mipi_cfg.lane_num = ext_lcd->lcd_spc_val0;
-		pctrl->mipi_cfg.bit_rate_max   = ext_lcd->lcd_spc_val1;
+		pctrl->mipi_cfg.bit_rate_target   = ext_lcd->lcd_spc_val1;
 		pctrl->mipi_cfg.operation_mode_init = ext_lcd->lcd_spc_val3;
 		pctrl->mipi_cfg.operation_mode_display = ext_lcd->lcd_spc_val4;
 		pctrl->mipi_cfg.video_mode_type = ext_lcd->lcd_spc_val5;
@@ -2377,6 +2382,7 @@ static int lcd_config_load_from_bsp(struct aml_lcd_drv_s *pdrv)
 		pctrl->mipi_cfg.dsi_init_off = ext_lcd->init_off;
 		lcd_dsi_init_table_load_bsp(&pctrl->mipi_cfg);
 
+#ifdef TRY_TO_REMOVE_DSI_EXTERN
 		if (ext_lcd->lcd_spc_val9 == Rsv_val) {
 			pctrl->mipi_cfg.extern_init = 0xff;
 		} else {
@@ -2386,6 +2392,7 @@ static int lcd_config_load_from_bsp(struct aml_lcd_drv_s *pdrv)
 			lcd_extern_dev_index_add(pdrv->index, pctrl->mipi_cfg.extern_init);
 #endif
 		}
+#endif
 
 		phy_cfg->vswing_level = 0;
 		phy_cfg->preem_level = 0;
@@ -2815,7 +2822,7 @@ static int lcd_panel_parse_interface(struct json_parse_s *jsp, struct aml_lcd_dr
 	case LCD_MIPI:
 		mipi = &cfg->mipi_cfg;
 		mipi->lane_num = json_get_obj_u32(jsp, parent, "data_lane", 0);
-		mipi->bit_rate_max = json_get_obj_u32(jsp, parent, "bit_rate_max", 0);
+		mipi->bit_rate_target = json_get_obj_u32(jsp, parent, "bit_rate_target", 0);
 		mipi->operation_mode_init =
 				json_get_obj_u32(jsp, parent, "operation_mode_init", 0);
 		mipi->operation_mode_display =

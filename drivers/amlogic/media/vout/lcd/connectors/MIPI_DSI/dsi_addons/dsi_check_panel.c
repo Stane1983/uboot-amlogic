@@ -44,10 +44,10 @@ int mipi_dsi_check_state(struct aml_lcd_drv_s *pdrv, u8 reg, u8 cnt)
 		goto mipi_dsi_check_state_err;
 	}
 
-	pr_info("read reg 0x%02x:", reg);
+	printf("read reg 0x%02x:", reg);
 	for (i = 0; i < ret; i++)
-		pr_info(" 0x%02x", rd_data[i]);
-	pr_info("\n");
+		printf(" 0x%02x", rd_data[i]);
+	printf("\n");
 
 	dconf->check_state = 1;
 	lcd_vcbus_setb(L_VCOM_VS_ADDR + offset, 1, 12, 1);

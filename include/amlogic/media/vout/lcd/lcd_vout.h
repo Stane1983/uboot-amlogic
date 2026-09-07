@@ -281,8 +281,10 @@ struct vbyone_config_s {
 #define DSI_CMD_SIZE_INDEX       1  /* byte[1] */
 #define DSI_GPIO_INDEX           2  /* byte[2] */
 
-#define DSI_INIT_ON_MAX          2800
-#define DSI_INIT_OFF_MAX         30
+#define DSI_INIT_ON_MAX          3600
+#define DSI_INIT_OFF_MAX         400
+#define DSI_SUSPEND_MAX          400
+#define DSI_RESUME_MAX           400
 struct dsi_dphy_s {
 	unsigned int t_ui;
 
@@ -320,7 +322,7 @@ struct dsi_panel_det_attr_s {
 struct dsi_config_s {
 	/* user config */
 	unsigned char lane_num;
-	unsigned int bit_rate_max; /* MHz */
+	unsigned int bit_rate_target; /* MHz */
 	unsigned char multi_port_cfg; /* bit[0:3]*/
 	unsigned char operation_mode_init; /* 0=video mode, 1=command mode */
 	unsigned char operation_mode_display; /* 0=video mode, 1=command mode */
@@ -347,6 +349,8 @@ struct dsi_config_s {
 
 	unsigned char *dsi_init_on;
 	unsigned char *dsi_init_off;
+	unsigned char *dsi_suspend;
+	unsigned char *dsi_resume;
 	unsigned char extern_init;
 
 	unsigned char dsi_rd_n;
@@ -361,50 +365,6 @@ struct dsi_config_s {
 	char matched_panel[20];
 	char *dt_addr;
 	unsigned char panel_det_attr; //[0]:det_en, [1]:store2env, [2]:0=bsp/1=dts [3]:on_matched
-};
-
-#define EDP_EDID_RETRY_MAX      3
-struct edp_config_s {
-	unsigned char HPD_level;
-	unsigned char irq_sta;
-	/* DP: both sink & source can support max */
-	/* eDP: preset in dts */
-	unsigned char max_lane_count;
-	unsigned char max_link_rate;
-	/* current actually use */
-	unsigned char lane_count;
-	unsigned char link_rate;
-
-	unsigned char sync_clk_mode;
-
-	/* internal used */
-	unsigned char enhanced_framing_en;
-	unsigned char train_aux_rd_interval;
-	unsigned char down_ss;
-	unsigned char TPS_support;
-	unsigned char coding_support;
-	unsigned char DACP_support;
-
-	unsigned char link_rate_update;
-	unsigned char phy_update;
-	unsigned char training_mode;
-	/* last known-good (DP), in range: 0~3 */
-	unsigned char last_good_vswing[4];
-	unsigned char last_good_preem[4];
-	/* phy preset (edp) in dts, in range: 0~0xf*/
-	unsigned char phy_vswing_preset;
-	unsigned char phy_preem_preset;
-
-	/* current setting, in range: 0~3 */
-	unsigned char curr_preem[4];
-	unsigned char curr_vswing[4];
-	/* adjust request from DPCD, in range: 0~3 */
-	unsigned char adj_req_preem[4];
-	unsigned char adj_req_vswing[4];
-
-	/* edid */
-	unsigned char edid_en;
-	unsigned char timing_idx;
 };
 
 struct mlvds_config_s {
@@ -523,7 +483,6 @@ union lcd_ctrl_config_u {
 	struct lvds_config_s lvds_cfg;
 	struct vbyone_config_s vbyone_cfg;
 	struct dsi_config_s mipi_cfg;
-	struct edp_config_s edp_cfg;
 	struct mlvds_config_s mlvds_cfg;
 	struct p2p_config_s p2p_cfg;
 };
