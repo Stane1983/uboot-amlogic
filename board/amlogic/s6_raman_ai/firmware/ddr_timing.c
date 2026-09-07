@@ -7,6 +7,7 @@
 #include <asm/amlogic/arch/timing.h>
 #include <asm/amlogic/arch/ddr_define.h>
 
+#define DDR_FUNC_CONFIG_ENABLE_RX_SOC_VREF_AVERAGE                  (0 + (1 << 14))
 #define DDR_FUNC_CONFIG_RX_REPLICA_VT_ENABLE                   (0 + (1 << 17))
 #define DDR_FUNC_CONFIG_ENABLE_PZQ_DET_DRAM_TYPE_RETURN                   (0 + (1 << 20))
 #define DDR_FUNC_CONFIG_AUTO_DET_DQ_PINMUX_FUNCTION                   (0 + (1 << 21))
@@ -276,7 +277,8 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		},
 #endif
 		.cfg_board_common_setting.ddr_func = DDR_FUNC_CONFIG_DFE_FUNCTION |
-		DDR_FUNC_CONFIG_RD_ECC_FUNCTION,
+		DDR_FUNC_CONFIG_RD_ECC_FUNCTION |
+		DDR_FUNC_CONFIG_ENABLE_RX_SOC_VREF_AVERAGE,
 		.cfg_board_common_setting.board_id = CONFIG_BOARD_ID_MASK,
 		.cfg_board_common_setting.DramType = CONFIG_DDR_TYPE_LPDDR5,
 		.cfg_board_common_setting.enable_lpddr4x_mode = 0,
@@ -328,8 +330,8 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		.cfg_board_SI_setting_ps.soc_data_odt_ohm_p = 0,
 		.cfg_board_SI_setting_ps.soc_data_odt_ohm_n = 40, //60,
 		.cfg_board_SI_setting_ps.dram_data_drv_ohm = 40,
-		.cfg_board_SI_setting_ps.dram_data_odt_ohm = 60,
-		.cfg_board_SI_setting_ps.dram_data_wr_odt_ohm = 0,
+		.cfg_board_SI_setting_ps.dram_data_odt_ohm = 0,
+		.cfg_board_SI_setting_ps.dram_data_wr_odt_ohm = 60,
 		.cfg_board_SI_setting_ps.dram_ac_odt_ohm = 240,//must 240 ohm for 8die 16GB LP5
 		.cfg_board_SI_setting_ps.dram_drv_pull_up_cal_ohm =
 			DDR_DRAM_LPDDR4_ODT_40_OHM,

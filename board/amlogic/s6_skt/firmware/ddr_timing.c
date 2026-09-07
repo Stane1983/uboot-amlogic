@@ -7,6 +7,7 @@
 #include <asm/amlogic/arch/timing.h>
 #include <asm/amlogic/arch/ddr_define.h>
 
+#define DDR_FUNC_CONFIG_ENABLE_RX_SOC_VREF_AVERAGE                  (0 + (1 << 14))
 #define DDR_FUNC_CONFIG_RX_REPLICA_VT_ENABLE                   (0 + (1 << 17))
 #define DDR_FUNC_CONFIG_ENABLE_PZQ_DET_DRAM_TYPE_RETURN                   (0 + (1 << 20))
 #define DDR_FUNC_CONFIG_AUTO_DET_DQ_PINMUX_FUNCTION                   (0 + (1 << 21))
@@ -114,7 +115,14 @@ DDR_RESV_CHECK_ID_ENABLE)
 #define SPEED_LP4_3733_X5L  84 //(4032 / 48)
 #define SPEED_LP4_4032_X5L  88 //(4266 / 48)
 
+#define SPEED_LP5_3733_X5  77 //(3733 / 48)
+#define SPEED_LP5_4032_X5  84 //(4032 / 48)
+#define SPEED_LP5_4266_X5  88 //(4266 / 48)
+
+#define SPEED_LP5_3733_X5L  84 //(4032 / 48)
+#define SPEED_LP5_4032_X5L  88 //(4266 / 48)
 #define SPEED_LP4_3733  77 //(3733 / 48)
+#define SPEED_LP5_4032  84 //(4032 / 48)
 #define SPEED_LP5_4266  88 //(4266 / 48)
 #define SPEED_LP5_4800 100 //(4800 / 48)
 
@@ -266,7 +274,8 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		},
 #endif
 		.cfg_board_common_setting.ddr_func = DDR_FUNC_CONFIG_DFE_FUNCTION |
-		DDR_FUNC_CONFIG_RD_ECC_FUNCTION,
+		DDR_FUNC_CONFIG_RD_ECC_FUNCTION |
+		DDR_FUNC_CONFIG_ENABLE_RX_SOC_VREF_AVERAGE,
 		.cfg_board_common_setting.board_id = CONFIG_BOARD_ID_MASK,
 		.cfg_board_common_setting.DramType = CONFIG_DDR_TYPE_LPDDR5,
 		.cfg_board_common_setting.enable_lpddr4x_mode = 0,
@@ -379,28 +388,28 @@ ddr_set_ps0_only_t __ddr_setting[] __attribute__ ((section(".ddr_param"))) = {
 		.cfg_ddr_training_delay_ps.reserve_para[8 + 5] = (1 << 7) | 0x2,//read dqs
 		.cfg_ddr_training_delay_ps.reserve_para[8 + 6] = (1 << 7) | 0x2,//read dqs
 		.cfg_ddr_training_delay_ps.reserve_para[8 + 7] = (1 << 7) | 0x2,//read dqs
-		.cfg_ddr_training_delay_ps.ac_trace_delay[0] = 128 - 20, //0-11 cha,12-23 chb
-		.cfg_ddr_training_delay_ps.ac_trace_delay[1] = 128 - 20,//max511 1trip = 2wckUI =1Twck
-		.cfg_ddr_training_delay_ps.ac_trace_delay[2] = 128 - 20,
-		.cfg_ddr_training_delay_ps.ac_trace_delay[3] = 128 - 20,
-		.cfg_ddr_training_delay_ps.ac_trace_delay[4] = 128 - 20,
-		.cfg_ddr_training_delay_ps.ac_trace_delay[5] = 128 - 20,
-		.cfg_ddr_training_delay_ps.ac_trace_delay[6] = 128 - 20,
-		.cfg_ddr_training_delay_ps.ac_trace_delay[7] = 128 - 20,
-		.cfg_ddr_training_delay_ps.ac_trace_delay[8] = 128 - 20,
-		.cfg_ddr_training_delay_ps.ac_trace_delay[9] = 128 - 20,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[0] = 128 - 0, //0-11 cha,12-23 chb
+		.cfg_ddr_training_delay_ps.ac_trace_delay[1] = 128 - 0,//max511 1trip=2wckUI =1Twck
+		.cfg_ddr_training_delay_ps.ac_trace_delay[2] = 128 - 0,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[3] = 128 - 0,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[4] = 128 - 0,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[5] = 128 - 0,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[6] = 128 - 0,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[7] = 128 - 0,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[8] = 128 - 0,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[9] = 128 - 0,
 		.cfg_ddr_training_delay_ps.ac_trace_delay[10] = 128,
 		.cfg_ddr_training_delay_ps.ac_trace_delay[11] = 128,
-		.cfg_ddr_training_delay_ps.ac_trace_delay[12] = 128 - 20,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[12] = 128 - 0,
 		.cfg_ddr_training_delay_ps.ac_trace_delay[13] = 128 - 0,
-		.cfg_ddr_training_delay_ps.ac_trace_delay[14] = 128 + 20,
-		.cfg_ddr_training_delay_ps.ac_trace_delay[15] = 128 - 20,
-		.cfg_ddr_training_delay_ps.ac_trace_delay[16] = 128 - 20,
-		.cfg_ddr_training_delay_ps.ac_trace_delay[17] = 128 - 30,
-		.cfg_ddr_training_delay_ps.ac_trace_delay[18] = 128 - 20,
-		.cfg_ddr_training_delay_ps.ac_trace_delay[19] = 128 - 20,
-		.cfg_ddr_training_delay_ps.ac_trace_delay[20] = 128 - 20,
-		.cfg_ddr_training_delay_ps.ac_trace_delay[21] = 128 - 20,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[14] = 128 + 0,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[15] = 128 - 0,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[16] = 128 - 0,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[17] = 128 - 0,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[18] = 128 - 0,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[19] = 128 - 0,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[20] = 128 - 0,
+		.cfg_ddr_training_delay_ps.ac_trace_delay[21] = 128 - 0,
 		.cfg_ddr_training_delay_ps.ac_trace_delay[22] = 128,
 		.cfg_ddr_training_delay_ps.ac_trace_delay[23] = 128,
 		//.cfg_ddr_training_delay_ps.ac_trace_delay[24] = 256,

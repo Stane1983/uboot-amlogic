@@ -10559,6 +10559,8 @@ int do_ddr_asr_test(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	unsigned int ddr_asr_test_times = 0;
 	unsigned int init_enable = 0;
 	unsigned int asr_override_value = 0;
+	unsigned int asr_random_test_enable1 = 0;
+	unsigned int asr_random_test_enable2 = 0;
 
 	printf("\nargc== 0x%8x\n", argc);
 	for (i = 0; i < argc; i++)
@@ -10584,6 +10586,18 @@ int do_ddr_asr_test(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 		if (*argv[count + 1] == 0 || *endp != 0)
 			asr_override_value = 0;
 	}
+	if (argc > 4) {
+		count = 3;
+		asr_random_test_enable1	= simple_strtoull_ddr(argv[count + 1], &endp, 0);
+		if (*argv[count + 1] == 0 || *endp != 0)
+			asr_random_test_enable1 = 0;
+	}
+	if (argc > 5) {
+		count = 4;
+		asr_random_test_enable2 = simple_strtoull_ddr(argv[count + 1], &endp, 0);
+		if (*argv[count + 1] == 0 || *endp != 0)
+			asr_random_test_enable2 = 0;
+	}
 	unsigned int asr_address = DMC_DRAM_ASR_CTRL;
 	unsigned int asr_address1 = DMC_DRAM1_ASR_CTRL;
 	unsigned int asr_enable_value = 0xc0fd1000;//not too quickly
@@ -10595,6 +10609,7 @@ int do_ddr_asr_test(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	unsigned int asr_new_value = 0;
 	unsigned int error_cur = 0;
 	unsigned int error_total = 0;
+	unsigned int val = 0;
 	int argc2 = 0;
 	char *argv2[30];
 
@@ -10638,8 +10653,17 @@ int do_ddr_asr_test(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 			asr_new_value = asr_enable_value;
 		else //if (asr_cur_fre_sel == 1)
 			asr_new_value = 0;
+		if (asr_random_test_enable1) {
+			//ddr_udelay(10);
+			val = (rand() % 1500000000) + 1;
+			ddr_udelay(val);
+		}
 		wr_reg(asr_address, asr_new_value);
 		wr_reg(asr_address1, asr_new_value);
+		if (asr_random_test_enable2) {
+			val = (rand() % 1500000000) + 1;
+			ddr_udelay(val);
+		}
 		//run_command("ddrtest 3", 0);
 		argc2 = argc - 1;
 		error_cur = do_ddr_test((cmd_tbl_t *)cmdtp, 1, (int)argc2, (argv));
