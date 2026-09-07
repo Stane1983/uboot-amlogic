@@ -541,7 +541,7 @@ static void compl_do_reset(struct usb_ep *ep, struct usb_request *req)
 #endif
 #endif
 
-	do_reset(NULL, 0, 0, NULL);
+	run_command("reboot", 0);
 }
 
 #ifdef CONFIG_AMLOGIC_MODIFY
