@@ -126,6 +126,8 @@ void secondary_off(void)
 	if (mpidr)              /* cluster 1 */
 		cpu = cpu + 4;     /* meson soc cluster 0 has 4 cores*/
 
+	if (cpu >= NR_CPUS)
+		return;
 	set_cpu_online(cpu, 0);
 	dcache_disable();
 	cpu_off();
@@ -143,6 +145,8 @@ void secondary_start(void)
 	mpidr = (mpidr >> 8) & 0xff;
 	if (mpidr)              /* cluster 1 */
 		cpu = cpu + 4;     /* meson soc cluster 0 has 4 cores*/
+	if (cpu >= NR_CPUS)
+		return;
 	set_cpu_online(cpu, true);
 
 	if (smp_boot[cpu].bootup)
@@ -168,8 +172,10 @@ int run_smp_function(unsigned int cpu, void (*func)(unsigned long arg),  unsigne
 {
 	int ret;
 
-	if (cpu > (NR_CPUS - 1))
+	if (cpu >= NR_CPUS) {
 		printf("CPU%u larger than max cpuidx %d\n", cpu, NR_CPUS - 1);
+		return -1;
+	}
 	smp_boot[cpu].bootup = func;
 	smp_boot[cpu].param = arg;
 	ret = secondary_boot(cpu, (unsigned int)gd->relocaddr);
