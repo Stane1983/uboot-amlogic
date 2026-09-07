@@ -12,6 +12,7 @@
 #include "lcd_reg.h"
 #include "lcd_common.h"
 #include "env.h"
+#include "connectors/lcd_connector.h"
 #include <command.h>
 
 int strnum_get_num(const char *str, struct num_str_s *arr, int size_arr, int dft)
@@ -258,7 +259,7 @@ unsigned int lcd_config_timing_check(struct aml_lcd_drv_s *pdrv,
 	short vpw = ptiming->vsync_width;
 	short vbp = ptiming->vsync_bp;
 	short vfp = ptiming->vsync_fp;
-	short hfp_min, vfp_min, vfp_cmpr_tail = 0, temp;
+	short hfp_min, vfp_min, vfp_tail = 0, temp;
 	char *ferr_str = NULL, *warn_str = NULL;
 	int ferr_len = 0, warn_len = 0, ferr_left, warn_left;
 	unsigned int ret = 0;
@@ -279,7 +280,11 @@ unsigned int lcd_config_timing_check(struct aml_lcd_drv_s *pdrv,
 
 	if (pdrv->config.basic.lcd_type == LCD_MLVDS ||
 	    pdrv->config.basic.lcd_type == LCD_P2P) {
-		vfp_cmpr_tail = 3;
+#ifdef CONFIG_AML_LCD_TCON
+		vfp_tail = lcd_tcon_get_vfp_tail(pdrv);
+#else
+		vfp_tail = 3;
+#endif
 	}
 
 	if (hfp <= 0) {
@@ -299,19 +304,19 @@ unsigned int lcd_config_timing_check(struct aml_lcd_drv_s *pdrv,
 		}
 	}
 
-	if (vfp <= vfp_cmpr_tail) {
+	if (vfp <= vfp_tail) {
 		ferr_left = lcd_debug_info_len(ferr_len);
 		ferr_len += snprintf(ferr_str + ferr_len, ferr_left,
-			"  vfp: %d, for panel, req: >%d!!!\n", vfp, vfp_cmpr_tail);
+			"  vfp: %d, for panel, req: >%d!!!\n", vfp, vfp_tail);
 		ret |= (1 << 4);
 	}
 	if (ptiming->v_period_min) {
 		vfp_min = ptiming->v_period_min - ptiming->v_active - vpw - vbp;
-		if (vfp_min <= vfp_cmpr_tail) {
+		if (vfp_min <= vfp_tail) {
 			ferr_left = lcd_debug_info_len(ferr_len);
 			ferr_len += snprintf(ferr_str + ferr_len, ferr_left,
 				"  vfp with v_period_min: %d, for panel, req: >%d!!!\n",
-				vfp_min, vfp_cmpr_tail);
+				vfp_min, vfp_tail);
 			ret |= (1 << 4);
 		}
 	}
@@ -382,7 +387,7 @@ lcd_config_timing_check_vid_vfp:
 	//vfp
 	if (pdrv->disp_req.vfp_vid == 0)
 		goto lcd_config_timing_check_end;
-	temp = pdrv->disp_req.vfp_vid + vfp_cmpr_tail;
+	temp = pdrv->disp_req.vfp_vid + vfp_tail;
 	if (vfp < temp) {
 		if (pdrv->disp_req.alert_level == 1) {
 			warn_left = lcd_debug_info_len(warn_len);
@@ -403,12 +408,14 @@ lcd_config_timing_check_end:
 	if (ret) {
 		printf("**************** lcd config timing check ****************\n");
 		if (ret & 0x55) {
-			printf("lcd: FATAL ERROR:\n"
-				"%s\n", ferr_str);
+			printf("lcd: timing %dx%d@%dhz FATAL ERROR:\n"
+				"%s\n", ptiming->h_active, ptiming->v_active,
+				ptiming->frame_rate, ferr_str);
 		}
 		if (ret & 0xaa) {
-			printf("lcd: WARNING:\n"
-				"%s\n", warn_str);
+			printf("lcd: timing %dx%d@%dhz WARNING:\n"
+				"%s\n", ptiming->h_active, ptiming->v_active,
+				ptiming->frame_rate, warn_str);
 		}
 		printf("************** lcd config timing check end ****************\n");
 	}

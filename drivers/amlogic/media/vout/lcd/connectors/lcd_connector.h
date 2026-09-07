@@ -40,6 +40,7 @@ void lcd_tcon_disable(struct aml_lcd_drv_s *pdrv);
 void lcd_tcon_dbg_check(struct aml_lcd_drv_s *pdrv, struct lcd_detail_timing_s *ptiming);
 int lcd_tcon_probe(char *dt_addr, struct aml_lcd_drv_s *pdrv, int load_id);
 int lcd_tcon_is_dccd_flow(void);
+unsigned int lcd_tcon_get_vfp_tail(struct aml_lcd_drv_s *pdrv);
 #endif
 
 /* MIPI_DSI */
