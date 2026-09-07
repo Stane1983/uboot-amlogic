@@ -379,14 +379,21 @@ const struct mtd_partition *get_spinand_partition_table(int *partitions)
 int checkhw(char *name)
 {
 	char dtb_name[64] = { 0 };
+	ulong board_id = 0;
 	ulong ddr_size = (readl(SYSCTRL_SEC_STATUS_REG4) & ~0xfffffUL) << 4;
+	board_id = ((readl(SYSCTRL_SEC_STATUS_REG4) & 0xff00) >> 8);
+	printf("board_id = %lu\n", board_id);
 
 	switch (ddr_size) {
 		case 0x100000000UL:
 			strcpy(dtb_name, "s6_s905d5_bq201-4g\0");
 			break;
 		case 0x200000000UL:
-			strcpy(dtb_name, "s6_s905d5_bq201-8g\0");
+			if (board_id == 12) {
+				strcpy(dtb_name, "s6_s905d5_bq201_sdio-8g\0");
+			} else {
+				strcpy(dtb_name, "s6_s905d5_bq201-8g\0");
+			}
 			break;
 		case 0x400000000UL:
 			strcpy(dtb_name, "s6_s905d5_bq201-16g\0");
