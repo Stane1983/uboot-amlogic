@@ -3914,6 +3914,88 @@ int handle_model_logofile(void)
 	return ret;
 }
 
+int parse_model_dtbo(int index, const char *file_name, char *model_name)
+{
+	const char *dtbo_value = NULL;
+	int ret = 1;
+
+	ini_parser_init();
+
+	if (ini_parse_file(file_name) < 0) {
+		printf("parse mode dtbo %s error\n", file_name);
+		ini_parser_uninit();
+		return 1;
+	}
+
+	dtbo_value = ini_get_string(model_name, "DTBO_INDEX", "null");
+	if (strcmp(dtbo_value, "null") != 0) {
+		debug("dtbo_value is : %s\n", dtbo_value);
+		env_set("androidboot.dtbo_idx", dtbo_value);
+		ret = 0;
+	}
+
+	ini_parser_uninit();
+
+	return ret;
+}
+
+int handle_check_dtbo(void)
+{
+	char *model, str[48], model_val[1024];
+	int i;
+	int ret = 1;
+	char model_path[128];
+
+	for (i = 0; i < 3; i++) {
+		memset(model_val, 0, sizeof(model_val));
+		if (i == 0)
+			sprintf(str, "model_name");
+		else
+			sprintf(str, "model%d_name", i);
+
+		if (read_model_name_param(i, model_val, sizeof(model_val)) <= 0) {
+			model = env_get(str);
+			if (!model) {
+				if (model_debug_flag & DEBUG_NORMAL)
+					ALOGD("%s, no %s\n", __func__, str);
+				continue;
+			}
+		} else {
+			model = model_val;
+		}
+		printf("current in check_dtbo %s: %s\n", str, model);
+
+		ret = parse_model_dtbo(i, get_model_sum_path(i), model);
+		if (ret != 0) {
+			snprintf(model_path, 127, "%s/Project_index_%s.ini",
+				get_model_path(i), model);
+			debug("try to read dtbo_index from model_path: %s\n", model_path);
+			ret = parse_model_dtbo(i, model_path, "DTBO");
+		}
+		if (ret == 0)
+			break;
+	}
+
+	return ret;
+}
+
+static int do_check_dtbo(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int ret;
+
+	if (argc > 1)
+		return CMD_RET_USAGE;
+
+	ret = handle_check_dtbo();
+	return ret;
+}
+
+U_BOOT_CMD
+(check_dtbo, 4, 0, do_check_dtbo,
+	"check dtbo index",
+	" "
+);
+
 int handle_model_sum(void)
 {
 	char *model, str[15], model_val[50], env_str[64];

@@ -947,6 +947,93 @@ U_BOOT_CMD
 	" "
 );
 
+int parse_model_dtbo(int index, const char *file_name, char *model_name)
+{
+	void *local_ini_mem, *psec;
+	const char *dtbo_value = NULL;
+	int ret = 1;
+
+	local_ini_mem = handle_ini_file_parse(file_name, 0);
+	if (!local_ini_mem) {
+		printf("%s: error: %s\n", __func__, file_name);
+		return -1;
+	}
+
+	psec = handle_ini_get_section(local_ini_mem, model_name);
+	if (!psec) {
+		printf("%s: section %s: error: %s\n", __func__, model_name, file_name);
+		return -1;
+	}
+
+	dtbo_value = handle_ini_get_str(local_ini_mem, psec, "DTBO_INDEX", "null");
+	if (strcmp(dtbo_value, "null") != 0) {
+		debug("dtbo_value is : %s\n", dtbo_value);
+		env_set("androidboot.dtbo_idx", dtbo_value);
+		ret = 0;
+	}
+
+	handle_ini_parser_uninit(local_ini_mem);
+
+	return ret;
+}
+
+int handle_check_dtbo(void)
+{
+	char *model, str[15];
+	unsigned int print_flag;
+	int i;
+	int ret = 1;
+	char model_path[128];
+
+	print_flag = env_get_ulong("model_debug_print", 10, 0xffff);
+	if (print_flag != 0xffff) {
+		model_set_log_level(print_flag);
+		printf("model_debug_flag: %d\n", print_flag);
+	}
+
+	for (i = 0; i < 3; i++) {
+		if (i == 0)
+			sprintf(str, "model_name");
+		else
+			sprintf(str, "model%d_name", i);
+
+		model = env_get(str);
+		if (!model) {
+			debug("%s: no %s\n", __func__, str);
+			continue;
+		}
+		debug("%s: %s: %s\n", __func__, str, model);
+		ret = parse_model_dtbo(i, get_model_sum_path(i), model);
+		if (ret != 0) {
+			snprintf(model_path, 127, "%s/Project_index_%s.ini",
+				get_model_path(i), model);
+			debug("try to read dtbo index from model_path: %s\n", model_path);
+			ret = parse_model_dtbo(i, model_path, "DTBO");
+		}
+		if (ret == 0)
+			break;
+	}
+
+	return ret;
+}
+
+static int do_check_dtbo(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	int ret;
+
+	if (argc > 1)
+		return CMD_RET_USAGE;
+
+	ret = handle_check_dtbo();
+	return ret;
+}
+
+U_BOOT_CMD
+(check_dtbo, 4, 0, do_check_dtbo,
+	"check dtbo index",
+	" "
+);
+
 static int do_logo_display(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	int ret;

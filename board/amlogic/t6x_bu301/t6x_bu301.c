@@ -239,6 +239,8 @@ int board_late_init(void)
 	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_e);
 	aml_board_late_init_tail(NULL);
 //	emmc_quirks();
+
+	run_command("check_dtbo", 0);
 	return 0;
 }
 

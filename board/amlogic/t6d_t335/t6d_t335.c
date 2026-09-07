@@ -231,6 +231,7 @@ int board_late_init(void)
 	run_command("multi_remote", 0);
 	run_command("multi_keypad", 0);
 	update_for_dtb_wakeup_key();  //set bl30 preboot key list
+	run_command("check_dtbo", 0);
 	return 0;
 }
 
