@@ -386,7 +386,14 @@ int android_image_get_ramdisk_v3(const boot_img_hdr_v3_t *hdr,
 	       vb_hdr->ramdisk_addr, DIV_ROUND_UP(hdr->ramdisk_size, 1024));
 
 	/*ramdisk offset of android R boot image*/
-	int nOffset = (DIV_ROUND_UP(hdr->kernel_size,4096)+1)*4096;
+	extern u32 ramdisk_off;
+
+	int nOffset = 0;
+
+	if (ramdisk_off)
+		nOffset = ramdisk_off;
+	else
+		nOffset = (DIV_ROUND_UP(hdr->kernel_size, 4096) + 1) * 4096;
 
 	unsigned char *pRAMdisk = (unsigned char *)(unsigned long)vb_hdr->ramdisk_addr;
 
@@ -1038,41 +1045,9 @@ static bool _read_in_bootconfig(struct vendor_boot_img_hdr *boot_info, uint32_t 
 	char *bootconfig;
 	char *avb_bootargs = env_get("avb_bootargs");
 	char *dtbo_idx_env = env_get("androidboot.dtbo_idx");
-
-	char partname[32] = {0};
-	char *slot_name;
 	unsigned int offset = 0;
 	int bootconfig_size = 0;
 	int ret = 0;
-#ifdef CONFIG_DIAG_MODE
-	char diag_state_buf[200] = {0x0};
-	u64 rc_diag = -1;
-	int diag_flag = 0;
-
-	ret = key_unify_read("diag_state", diag_state_buf, sizeof(diag_state_buf));
-#endif
-
-	slot_name = env_get("slot-suffixes");
-	if (slot_name && (strcmp(slot_name, "0") == 0))
-		strcpy((char *)partname, "vendor_boot_a");
-	else if (slot_name && (strcmp(slot_name, "1") == 0))
-		strcpy((char *)partname, "vendor_boot_b");
-	else
-		strcpy((char *)partname, "vendor_boot");
-
-#ifdef CONFIG_DIAG_MODE
-	rc_diag = store_part_size("diag_vendor_boot");
-	if (ret == 0 &&
-		(strcmp(diag_state_buf, "Test") == 0) &&
-		(rc_diag != -1)) {
-		printf("diag mode, read from diag_vendor_boot\n");
-		diag_flag = 1;
-		strcpy((char *)partname, "diag_vendor_boot");
-		run_command(
-			"setenv bootconfig ${bootconfig} androidboot.force_super_partition=diag_super;",
-			0);
-	}
-#endif
 
 	unsigned char *pRAMdisk = (unsigned char *)(unsigned long)boot_info->ramdisk_addr;
 
@@ -1086,19 +1061,15 @@ static bool _read_in_bootconfig(struct vendor_boot_img_hdr *boot_info, uint32_t 
 		u32 vramdisk_table_size_page_aligned =
 			ALIGN(boot_info->vendor_ramdisk_table_size, boot_info->page_size);
 
-		offset = 0x1000 + vramdisk_size_page_aligned
+		offset = vramdisk_size_page_aligned
 				+ vdtb_size_page_aligned
 				+ vramdisk_table_size_page_aligned;
 
 		debug("bootconfig offset 0x%x\n", offset);
 
-		ret = store_logic_read(partname, offset, boot_info->vendor_bootconfig_size,
-			(void *)(pRAMdisk + ramdisk_size));
-		if (ret) {
-			printf("Fail to read 0x%xB from part[%s] at offset 0x%x\n",
-				boot_info->vendor_bootconfig_size, partname, offset);
-			return false;
-		}
+		memmove(pRAMdisk + ramdisk_size,
+			p_vender_boot_img->szData + offset,
+			boot_info->vendor_bootconfig_size);
 
 		bootconfig_size += boot_info->vendor_bootconfig_size;
 

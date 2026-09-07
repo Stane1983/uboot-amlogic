@@ -34,6 +34,8 @@
 #include <amlogic/amfc.h>
 #endif
 
+u32 ramdisk_off = 0;
+
 #ifndef IS_FEAT_BOOT_VERIFY
 //#define IS_FEAT_BOOT_VERIFY() 0 //always undefined as IS_FEAT_BOOT_VERIFY is function not marco
 #endif// #ifndef IS_FEAT_BOOT_VERIFY
@@ -1196,11 +1198,15 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 							return __LINE__;
 						}
 
+						if (securekernelimgsz && init_boot_ramdisk_size)
+							ramdisk_off = securekernelimgsz;
+						else
+							ramdisk_off = kernel_size + BOOT_IMG_V3_HDR_SIZE;
+
 						rc = store_logic_read(partname_init,
 							BOOT_IMG_V3_HDR_SIZE,
-							ramdisk_size,
-							loadaddr + kernel_size
-							+ BOOT_IMG_V3_HDR_SIZE);
+							ramdisk_size, loadaddr + ramdisk_off);
+
 						if (rc) {
 							errorP("Fail to read 0x%xB from part[%s]\n",
 								ramdisk_size, partname_init);
@@ -1213,9 +1219,9 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 							return __LINE__;
 						}
 #if CONFIG_PARTITION_ENCRYPTION_LOCAL
-						part_dec(partname_init, (u8*)(loadaddr + kernel_size + BOOT_IMG_V3_HDR_SIZE),
+						part_dec(partname_init, (u8*)(loadaddr + ramdisk_off),
 							ramdisk_size,
-							(u8*)(loadaddr + kernel_size + BOOT_IMG_V3_HDR_SIZE),
+							(u8*)(loadaddr + ramdisk_off),
 							ramdisk_size,
 							BOOT_IMG_V3_HDR_SIZE);
 #endif
@@ -1223,8 +1229,7 @@ static int do_image_read_kernel(cmd_tbl_t *cmdtp, int flag, int argc, char * con
 #ifdef CONFIG_AVB2
 					if (init_boot_preload)
 						memcpy(init_boot_buf + BOOT_IMG_V3_HDR_SIZE,
-						       loadaddr + kernel_size +
-						       BOOT_IMG_V3_HDR_SIZE,
+						       loadaddr + ramdisk_off,
 						       ramdisk_size);
 #endif
 					}
