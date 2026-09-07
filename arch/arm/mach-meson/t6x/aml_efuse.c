@@ -31,6 +31,7 @@
 #define OTP_BIT_CHECK(feat) (OTP_BIT_LOAD((feat)) ? 1 : 0)
 
 /* OTP_LIC block#3 ...*/
+#define FEAT_ENABLE_VPU_OVER_SPEED               (95)
 #define FEAT_DISABLE_NBL2_SNOR                   (384 + 44)
 #define FEAT_DISABLE_NBL2_SNAND                  (384 + 45)
 #define FEAT_ENABLE_4BL2_SNOR                    (384 + 46)
@@ -95,4 +96,9 @@ int IS_FEAT_DIS_8BL2_NAND(void)
 int IS_FEAT_DIS_NBL2_NAND(void)
 {
 	return OTP_BIT_CHECK(FEAT_DISABLE_NBL2_NAND);
+}
+
+int IS_FEAT_EN_VPU_OVER_SPEED(void)
+{
+	return OTP_BIT_CHECK(FEAT_ENABLE_VPU_OVER_SPEED);
 }
