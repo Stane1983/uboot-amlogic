@@ -895,7 +895,7 @@ static int ramdump_save_ddr_md5_info(unsigned long ddr_size,
 	serial_puts("\n");
 
 	md5_info = (struct rammd5_info_t *)store_addr;
-	memcpy(md5_info->magic, MD5_MAGIC, sizeof(md5_info->magic));
+	memcpy(md5_info->magic, MD5_MAGIC, sizeof(MD5_MAGIC));
 	memcpy(md5_info->stage, stage_info, sizeof(md5_info->stage));
 	md5_info->block_size = block_size;
 	md5_info->ddr_size = ddr_size;
