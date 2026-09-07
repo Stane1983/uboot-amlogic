@@ -866,6 +866,12 @@ config S6_RAMAN_AI
 	help
 		Select S6 RAMAN_AI config
 
+config S6_ADT5
+	bool "S6_ADT5"
+	select TARGET_S6_ADT5
+	help
+		Select S6 ADT5 config
+
 config S6_BL204
 	bool "S6_BL204"
 	select TARGET_S6_BL204
@@ -926,6 +932,10 @@ config TARGET_S6_BL201
 config TARGET_S6_RAMAN_AI
 	bool "S6 RAMAN_AI board"
 	depends on S6_RAMAN_AI
+
+config TARGET_S6_ADT5
+	bool "S6 ADT5 board"
+	depends on S6_ADT5
 
 config TARGET_S6_BL204
 	bool "S6 BL204 board"
@@ -1139,6 +1149,8 @@ source "board/amlogic/s6_skt/Kconfig"
 source "board/amlogic/s6_bl201/Kconfig"
 
 source "board/amlogic/s6_raman_ai/Kconfig"
+
+source "board/amlogic/s6_adt5/Kconfig"
 
 source "board/amlogic/s6_bl204/Kconfig"
 

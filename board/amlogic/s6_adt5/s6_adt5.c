@@ -1,0 +1,497 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2019 Amlogic, Inc. All rights reserved.
+ */
+
+#include <common.h>
+#include <asm/io.h>
+#include <malloc.h>
+#include <errno.h>
+#include <env.h>
+#include <fdt_support.h>
+#include <linux/libfdt.h>
+#include <amlogic/cpu_id.h>
+#include <asm/amlogic/arch/secure_apb.h>
+#include <asm/amlogic/arch/pinctrl_init.h>
+#include <linux/sizes.h>
+#include <asm-generic/gpio.h>
+#include <dm.h>
+#include <amlogic/aml_v3_burning.h>
+#include <amlogic/aml_v2_burning.h>
+#include <linux/mtd/partitions.h>
+#include <asm/amlogic/arch/bl31_apis.h>
+#include <asm/amlogic/arch/ddr_define.h>
+#include <amlogic/aml_mtd.h>
+#include <asm/amlogic/arch/stick_mem.h>
+#include <amlogic/board.h>
+#include <asm-generic/u-boot.h>
+#include <command.h>
+
+#ifdef CONFIG_AML_VPU
+#include <amlogic/media/vpu/vpu.h>
+#endif
+#ifdef CONFIG_AML_VPP
+#include <amlogic/media/vpp/vpp.h>
+#endif
+#ifdef CONFIG_AML_HDMITX21
+#include <amlogic/media/vout/hdmitx21/hdmitx_module.h>
+#endif
+#ifdef CONFIG_AML_CVBS
+#include <amlogic/media/vout/aml_cvbs.h>
+#endif
+#ifdef CONFIG_AMLOGIC_AMFC
+#include <amlogic/amfc.h>
+#endif
+#include <amlogic/aml_profile.h>
+
+DECLARE_GLOBAL_DATA_PTR;
+void init_lcd_pwm(void)
+{
+	writel((0x1 << 0) | (0x1 << 28), PWM_MISC_REG_C);
+	writel(0xff0000, PWM_PWM_C);
+}
+
+#ifdef CONFIG_SPI_LCD
+#include <spi.h>
+int spi_lcd_init(void)
+{
+	init_lcd_pwm();
+#if CONFIG_IS_ENABLED(DM_SPI)
+	int ret = 0;
+	char name[30], *str;
+	// struct udevice *dev;
+	// unsigned int	spi_mode = 0;
+
+	struct spi_slave *slave;
+	unsigned int	bus = 1;
+	unsigned int	cs = 0;
+
+	struct udevice *bus1;
+
+	printf("spi_lcd_init\n");
+	snprintf(name, sizeof(name), "spi_lcd_%d:%d", bus, cs);
+	str = strdup(name);
+	if (!str)
+		return -1;
+	// ret = _spi_get_bus_and_cs(bus, cs, spi_freq, spi_mode, "st7789v3",
+				//   str, &dev, &slave);
+
+	ret = spi_get_bus_and_cs(bus, cs, &bus1, &slave);
+	if (ret)
+		return ret;
+
+	return ret;
+#endif
+}
+
+static int initr_spi_lcd(void)
+{
+	spi_lcd_init();
+	return 0;
+}
+#endif
+
+void sys_led_init(void)
+{
+}
+
+int serial_set_pin_port(unsigned long port_base)
+{
+	return 0;
+}
+
+int dram_init(void)
+{
+	gd->ram_size = (readl(SYSCTRL_SEC_STATUS_REG4) & ~0xfffffUL) << 4;
+	return 0;
+}
+
+/* secondary_boot_func
+ * this function should be write with asm, here, is only for compiling pass
+ */
+void secondary_boot_func(void)
+{
+}
+
+int board_eth_init(bd_t *bis)
+{
+	return 0;
+}
+
+int active_clk(void)
+{
+	struct udevice *clk = NULL;
+	int err;
+
+	err = uclass_get_device_by_name(UCLASS_CLK, "xtal-clk", &clk);
+	if (err) {
+		pr_err("Can't find xtal-clk clock (%d)\n", err);
+		return err;
+	}
+	err = uclass_get_device_by_name(UCLASS_CLK, "clock-controller@0", &clk);
+	if (err) {
+		pr_err("Can't find clock-controller@0 clock (%d)\n", err);
+		return err;
+	}
+
+	return 0;
+}
+
+#ifdef CONFIG_AML_HDMITX20
+static void hdmitx_set_hdmi_5v(void)
+{
+	/*Power on VCC_5V for HDMI_5V */
+}
+#endif
+void board_init_mem(void)
+{
+	/* config bootm low size, make sure whole dram/psram space can be used */
+	phys_size_t ram_size;
+	char *env_tmp;
+
+	env_tmp = env_get("bootm_size");
+	if (!env_tmp) {
+		ram_size =
+		    ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xfffffUL) << 4) >
+		    0xe0000000 ? 0xe0000000 : ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xfffffUL) << 4);
+		env_set_hex("bootm_low", 0);
+		env_set_hex("bootm_size", ram_size);
+	}
+}
+
+extern void usb_power_init(void);
+extern void pci_power_init(void);
+
+int board_init(void)
+{
+	printf("board init\n");
+	//set for mg24
+	run_command("gpio set GPIOH_4", 1);//reset
+	run_command("gpio set GPIOB_13", 1);//ota
+#ifdef CONFIG_AML_HDMITX21
+	/*Power on VCC_5V for HDMI_5V */
+	/* GPIOH_5: H enable; L disable */
+	run_command("gpio set GPIOH_5", 0);
+	hdmitx21_chip_type_init(MESON_CPU_ID_S6);
+	hdmitx21_init();
+#endif
+
+#if 0
+	run_command("startdsp 0 0x300a0000 0", 0);
+	printf("dsp start!\n");
+	while (1)
+		;
+#endif
+
+#if !defined(CONFIG_PXP_DDR)	//bypass below operations for pxp
+	aml_set_bootsequence(0);
+	//Please keep try usb boot first in board_init,
+	//as other init before usb may cause burning failure
+#if defined(CONFIG_AML_V3_FACTORY_BURN) && defined(CONFIG_AML_V3_USB_TOOl)
+	if ((readl(SYSCTRL_SEC_STICKY_REG2) != 0x1b8ec003) &&
+	    (readl(SYSCTRL_SEC_STICKY_REG2) != 0x1b8ec004)) {
+		aml_v3_factory_usb_burning(0, gd->bd);
+		//
+	}
+#endif //#if defined(CONFIG_AML_V3_FACTORY_BURN) && defined(CONFIG_AML_V3_USB_TOOl)
+
+#if 0
+	active_clk();
+#endif
+	run_command("gpio set GPIOH_7", 0);
+#endif // #if !defined(CONFIG_PXP_DDR) //bypass below operations for pxp
+	pinctrl_devices_active(PIN_CONTROLLER_NUM);
+#ifdef CONFIG_AMLOGIC_AMFC
+	amfc_init();
+#endif
+	usb_power_init();
+	pci_power_init();
+	return 0;
+}
+
+int board_late_init(void)
+{
+	printf("board late init\n");
+	env_set("defenv_para", "-c");
+	if (env_get_ulong("default_env", 10, 0))
+		env_set("defenv_para", "-c0"); //andr factory reset or factory burn
+	aml_board_late_init_front(NULL);
+#ifdef CONFIG_PXP_EMULATOR
+	return 0;
+#endif
+
+	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_s);
+#ifdef CONFIG_AML_VPU
+	vpu_probe();
+#endif
+#ifdef CONFIG_AML_VPP
+	vpp_init();
+#endif
+#ifdef CONFIG_AML_CVBS
+	cvbs_init();
+#endif
+	PUSH_TIME_TE("vpu vpp init", BL33_VPUVPP_INIT_e);
+#ifdef CONFIG_SPI_LCD
+	initr_spi_lcd();
+#endif
+	aml_board_late_init_tail(NULL);
+	return 0;
+}
+
+phys_size_t get_effective_memsize(void)
+{
+	// >>16 -> MB, <<20 -> real size, so >>16<<20 = <<4
+#if defined(CONFIG_SYS_MEM_TOP_HIDE)
+	return ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xfffffUL) << 4) > 0xe0000000 ? 0xe0000000 :
+	    ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xfffffUL) << 4) - CONFIG_SYS_MEM_TOP_HIDE;
+#else
+	return ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xfffffUL) << 4) > 0xe0000000 ? 0xe0000000 :
+	    ((readl(SYSCTRL_SEC_STATUS_REG4) & ~0xfffffUL) << 4);
+#endif /* CONFIG_SYS_MEM_TOP_HIDE */
+}
+
+int mach_cpu_init(void)
+{
+	return 0;
+}
+
+int ft_board_setup(void *blob, bd_t *bd)
+{
+	/* eg: bl31/32 rsv */
+	return 0;
+}
+
+/* partition table for spinor flash */
+#ifdef CONFIG_SPI_FLASH
+static const struct mtd_partition spiflash_partitions[] = {
+	{
+	 .name = "env",
+	 .offset = 0,
+	 .size = 1 * SZ_256K,
+	  },
+	{
+	 .name = "dtb",
+	 .offset = 0,
+	 .size = 1 * SZ_256K,
+	  },
+	{
+	 .name = "boot",
+	 .offset = 0,
+	 .size = 2 * SZ_1M,
+	  },
+	/* last partition get the rest capacity */
+	{
+	 .name = "user",
+	 .offset = MTDPART_OFS_APPEND,
+	 .size = MTDPART_SIZ_FULL,
+	}
+};
+
+const struct mtd_partition *get_spiflash_partition_table(int *partitions)
+{
+	*partitions = ARRAY_SIZE(spiflash_partitions);
+	return spiflash_partitions;
+}
+#endif /* CONFIG_SPI_FLASH */
+
+struct rsv_part rsv_partitions[] = {
+#ifndef CONFIG_ENV_IS_IN_NAND
+	{ ENV_NAND_MAGIC, 0, MTD_RSV_ENV_BLOCK_CNT, CONFIG_ENV_SIZE },
+#endif
+	{ KEY_NAND_MAGIC, 0, MTD_RSV_KEY_BLOCK_CNT, MTD_RSV_KEY_SIZE },
+#ifndef CONFIG_DTB_BIND_KERNEL
+	{ DTB_NAND_MAGIC, 0, MTD_RSV_DTB_BLOCK_CNT, MTD_RSV_DTB_SIZE },
+#endif
+};
+
+struct rsv_part *get_mtd_rsv_partition(void)
+{
+	return rsv_partitions;
+}
+
+int get_mtd_rsv_partition_count(void)
+{
+	/* bbt is mandatory, so add one  */
+	return ARRAY_SIZE(rsv_partitions) + 1;
+}
+#ifdef CONFIG_MESON_NFC
+static struct mtd_partition normal_partition_info[] = {
+	{
+	 .name = BOOT_BL2E,
+	 .offset = 0,
+	 .size = 0,
+	  },
+	{
+	 .name = BOOT_BL2X,
+	 .offset = 0,
+	 .size = 0,
+	  },
+	{
+	 .name = BOOT_DDRFIP,
+	 .offset = 0,
+	 .size = 0,
+	  },
+	{
+	 .name = BOOT_DEVFIP,
+	 .offset = 0,
+	 .size = 0,
+	  },
+	{
+	 .name = "logo",
+	 .offset = 0,
+	 .size = 2 * SZ_1M,
+	  },
+	{
+	 .name = "recovery",
+	 .offset = 0,
+	 .size = 16 * SZ_1M,
+	  },
+	{
+	 .name = "boot",
+	 .offset = 0,
+	 .size = 16 * SZ_1M,
+	  },
+	{
+	 .name = "system",
+	 .offset = 0,
+	 .size = 64 * SZ_1M,
+	  },
+/* last partition get the rest capacity */
+	{
+	 .name = "data",
+	 .offset = MTDPART_OFS_APPEND,
+	 .size = MTDPART_SIZ_FULL,
+	  },
+};
+
+struct mtd_partition *get_aml_mtd_partition(void)
+{
+	return normal_partition_info;
+}
+
+int get_aml_partition_count(void)
+{
+	return ARRAY_SIZE(normal_partition_info);
+}
+
+#endif
+
+/* partition table */
+/* partition table for spinand flash */
+#if (defined(CONFIG_SPI_NAND) || defined(CONFIG_MTD_SPI_NAND))
+static const struct mtd_partition spinand_partitions[] = {
+	{
+	 .name = "logo",
+	 .offset = 0,
+	 .size = 2 * SZ_1M,
+	  },
+	{
+	 .name = "recovery",
+	 .offset = 0,
+	 .size = 16 * SZ_1M,
+	  },
+	{
+	 .name = "boot",
+	 .offset = 0,
+	 .size = 16 * SZ_1M,
+	  },
+	{
+	 .name = "system",
+	 .offset = 0,
+	 .size = 64 * SZ_1M,
+	  },
+	/* last partition get the rest capacity */
+	{
+	 .name = "data",
+	 .offset = MTDPART_OFS_APPEND,
+	 .size = MTDPART_SIZ_FULL,
+	}
+};
+
+const struct mtd_partition *get_spinand_partition_table(int *partitions)
+{
+	*partitions = ARRAY_SIZE(spinand_partitions);
+	return spinand_partitions;
+}
+#endif /* CONFIG_SPI_NAND */
+
+#ifdef CONFIG_MULTI_DTB
+int checkhw(char *name)
+{
+	char dtb_name[64] = { 0 };
+	// ulong board_id = ((readl(SYSCTRL_SEC_STATUS_REG4) >> 8) & 0xffUL);
+	// ulong ddr_type = (((readl(SYSCTRL_SEC_STATUS_REG4)) & 0x00070000) >> 16);
+	char *android_ddr_type_str  = env_get("ddr_type");
+	int android_ddr_type = 0;
+
+	if (android_ddr_type_str) {
+		android_ddr_type = simple_strtoul(android_ddr_type_str, NULL, 10);
+	}
+
+	// printf("board_id: %0lx  %0lx", board_id, ddr_type);
+	// switch (board_id) {
+	// 	case 0x1UL:
+	// 		strcpy(dtb_name, "s6_s905x5_adt5-p0\0");
+	// 		break;
+	// 	case 0x2UL:
+	// 		// revB old hw board use different ddr type
+	// 		if (ddr_type == CONFIG_DDR_TYPE_LPDDR5)
+	// 			strcpy(dtb_name, "s6_s905x5_adt5-p0\0");
+	// 		else
+	// 			strcpy(dtb_name, "s6_s905x5_adt5_4g\0");
+	// 		break;
+	// 	default:
+	// 		strcpy(dtb_name, "s6_s905x5_adt5_4g\0");
+	// 		break;
+	// }
+
+	printf("android_ddr_type is %d\n", android_ddr_type);
+	switch (android_ddr_type) {
+		case 0:
+			strcpy(dtb_name, "s6_s905x5_adt5-4g\0");
+			break;
+		case 1:
+			strcpy(dtb_name, "s6_s905x5_adt5-2g\0");
+			break;
+		default:
+			strcpy(dtb_name, "s6_s905x5_adt5-4g\0");
+			break;
+	}
+
+	strcpy(name, dtb_name);
+	env_set("aml_dt", dtb_name);
+	return 0;
+}
+#endif
+
+const char *const _env_args_reserve_[] = {
+	"lock",
+	"upgrade_step",
+	"bootloader_version",
+
+	NULL			//Keep NULL be last to tell END
+};
+
+int __attribute__((weak)) mmc_initialize(bd_t *bis)
+{
+	return 0;
+}
+
+//int __attribute__((weak)) do_bootm(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+//{
+//	return 0;
+//}
+
+void __attribute__((weak)) set_working_fdt_addr(ulong addr)
+{
+}
+
+//int __attribute__((weak)) ofnode_read_u32_default(ofnode node, const char *propname, u32 def)
+//{
+//	return 0;
+//}
+
+void __attribute__((weak)) md5_wd(unsigned char *input, int len, unsigned char output[16],
+				  unsigned int chunk_sz)
+{
+}
