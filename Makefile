@@ -464,6 +464,13 @@ KBUILD_CFLAGS	+= -fshort-wchar -fno-strict-aliasing
 KBUILD_AFLAGS   := -D__ASSEMBLY__
 KBUILD_LDFLAGS  :=
 
+ifdef UBOOT_EXTRA_BUILD_CONFIGS
+# get extra configs from env, define them like this:
+# export UBOOT_EXTRA_BUILD_CONFIGS="-DCONFIG_CMD_MISC -DCONFIG_CMD_PINMUX"
+# ./mk s4_ap222
+KBUILD_CFLAGS += $(UBOOT_EXTRA_BUILD_CONFIGS)
+endif
+
 ifeq ("$(CONFIG_AML_UASAN)", "1")
 KBUILD_CFLAGS += -DCONFIG_AML_UASAN
 KBUILD_AFLAGS += -DCONFIG_AML_UASAN
