@@ -277,9 +277,8 @@ void ramdump_clean_ddr(void)
 	const ulong skip_start = RAMDUMP_SKIP_BL31_START;
 	const ulong skip_end = RAMDUMP_SKIP_BL32_END;
 	ulong start = RAMDUMP_COMPRESS_START;
-	ulong end, addr, uboot_start;
+	ulong end, uboot_start;
 	ulong uboot_stack_size = CONFIG_STACK_SIZE;
-	void __iomem *p;
 	char *env;
 	ulong tick;
 
@@ -317,17 +316,59 @@ void ramdump_clean_ddr(void)
 	printf("ramdump cleaning DDR region: 0x%08lx ~ 0x%08lx\n", start, end);
 
 	tick = get_time();
-	/* Loop through the cleaning range, skipping the specified region */
-	for (addr = start; addr < end; addr += 4) {
-		if (addr >= skip_start && addr < skip_end)
-			continue;
-
-		p = (void __iomem *)addr;
-		writel(0, p);
-	}
-
+	/* clean full ddr, skipping the specified region (bl31/bl32) */
+	memset((void *)start, 0, skip_start - start);
+	memset((void *)skip_end, 0, end - skip_end);
 	tick = get_time() - tick;
 	printf("ramdump cleaning DDR done. took %lu ms.\n", tick / 1000);
+}
+
+void update_ramdump_base_addr(void)
+{
+	ulong store_addr = 0;
+	const char *env;
+
+	/* 1. Runtime configuration has the highest priority */
+	env = env_get("ramdump_store_addr");
+	if (env) {
+		store_addr = simple_strtoul(env, NULL, 16);
+		printf("%s: use env store_addr=0x%lx\n",
+		       __func__, store_addr);
+	}
+
+	/* 2. Fallback to build-time default address */
+#if defined(CONFIG_COMPRESSED_ADDR)
+	if (!store_addr) {
+		store_addr = CONFIG_COMPRESSED_ADDR;
+		printf("%s: use CONFIG_COMPRESSED_ADDR=0x%lx\n",
+		       __func__, store_addr);
+	}
+#endif
+
+	/* 3. No relocation requested */
+	if (!store_addr)
+		return;
+
+	printf("%s: original ramdump_base=0x%lx size=0x%lx\n",
+	       __func__, ramdump_base, ramdump_size);
+
+	/* 4. Relocate ramdump data if compression is disabled */
+#ifndef CONFIG_MDUMP_COMPRESS
+	if (ramdump_base != store_addr && ramdump_size) {
+		printf("%s: moving ramdump 0x%lx -> 0x%lx (size=0x%lx)\n",
+		       __func__, ramdump_base,
+		       store_addr, ramdump_size);
+
+		memmove((void *)store_addr,
+			(void *)ramdump_base,
+			ramdump_size);
+	}
+#endif
+
+	/* 5. Update ramdump base address */
+	ramdump_base = store_addr;
+	printf("%s: ramdump_base updated to 0x%lx\n",
+	       __func__, ramdump_base);
 }
 
 void ramdump_init(void)
@@ -339,23 +380,12 @@ void ramdump_init(void)
 				REG_MDUMP_COMPRESS_BASE, REG_MDUMP_COMPRESS_SIZE);
 	ramdump_base = readl(REG_MDUMP_COMPRESS_BASE);
 	ramdump_size = readl(REG_MDUMP_COMPRESS_SIZE);
-	if (ramdump_base && ramdump_size) {
+	if (ramdump_base && ramdump_size && !(ramdump_base & 0x80)) {
 		if (ramdump_check_ddr_md5_info() < 0)
 			printf("%s, The core-dump is polluted !!!\n\n", __func__);
 	}
 
-#if defined(CONFIG_COMPRESSED_ADDR)
-	printf("%s: Original ramdump_base=0x%08lx\n", __func__, ramdump_base);
-
-#if !defined(CONFIG_MDUMP_COMPRESS)
-		printf("%s: Moving ramdump from 0x%08lx to 0x%08x, size=0x%lx\n",
-			__func__, ramdump_base, CONFIG_COMPRESSED_ADDR, ramdump_size);
-		memmove((void *)CONFIG_COMPRESSED_ADDR, (void *)ramdump_base, ramdump_size);
-#endif
-
-	ramdump_base = (unsigned long)CONFIG_COMPRESSED_ADDR;
-	printf("%s: ramdump_base update to 0x%08x\n", __func__, CONFIG_COMPRESSED_ADDR);
-#endif
+	update_ramdump_base_addr();
 
 	if (ramdump_base & 0x80) {
 		/* 0x80: The flag indicates that the addr exceeds 4G. */
@@ -487,10 +517,15 @@ __weak int ramdump_save_compress_data(void)
 		return 0;
 
 	/* calculate ramdump md5sum */
-	md5((unsigned char *)ramdump_base, ramdump_size, md5_hex);
-	md5_hex[MD5_DIGEST_LENGTH] = '\0';
-	md5sum_hex2str(md5_hex, md5_str1);
-	printf("ramdump: get md5sum: %s\n", md5_str1);
+	if (ramdump_base < (1UL << 32)) {
+		md5((unsigned char *)ramdump_base, ramdump_size, md5_hex);
+		md5_hex[MD5_DIGEST_LENGTH] = '\0';
+		md5sum_hex2str(md5_hex, md5_str1);
+		printf("ramdump: get md5sum: %s\n", md5_str1);
+	} else {
+		memcpy(md5_str1, (void *)MD5_BL33Z_RAMDUMP_STR, MD5_DIGEST_LENGTH * 2 + 1);
+		printf("ramdump: addr 0x%lx, use bl33z_2 md5sum: %s\n", ramdump_base, md5_str1);
+	}
 
 	printf("ramdump_location:%s\n", env);
 	if (!strncmp(env, "data", 4)) {
@@ -792,6 +827,8 @@ static int overwrite_bl33z_rsvmem_info(unsigned long addr, unsigned long size)
 	int address_cells = 0;
 	unsigned long align_size = PAGE_ALIGN(size);
 	char cmd[0x80];
+	u32 addr_hi, addr_lo;
+	u32 size_hi, size_lo;
 
 	address_cells = fdt_address_cells(images.ft_addr, 0);
 	if (address_cells < 1) {
@@ -800,13 +837,18 @@ static int overwrite_bl33z_rsvmem_info(unsigned long addr, unsigned long size)
 	}
 	printf("%s, get fdt #address-cells = %d\n", __func__, address_cells);
 
+	addr_hi = upper_32_bits(addr);
+	addr_lo = lower_32_bits(addr);
+	size_hi = upper_32_bits(align_size);
+	size_lo = lower_32_bits(align_size);
+
 	memset(cmd, 0, sizeof(cmd));
 	if (address_cells == 2) {
 		printf("fdt set /reserved-memory/ramdump_bl33z status okay\n");
 		run_command("fdt set /reserved-memory/ramdump_bl33z status okay", 0);
 		snprintf(cmd, sizeof(cmd),
-			"fdt set /reserved-memory/ramdump_bl33z reg '<0x0 0x%08lx 0x0 0x%08lx>'",
-			addr, align_size);
+			"fdt set /reserved-memory/ramdump_bl33z reg '<0x%08x 0x%08x 0x%08x 0x%08x>'",
+			addr_hi, addr_lo, size_hi, size_lo);
 	} else {
 		printf("fdt set /reserved-memory/ramdump_data status okay\n");
 		run_command("fdt set /reserved-memory/ramdump_data status okay", 0);
@@ -823,61 +865,66 @@ static int overwrite_bl33z_rsvmem_info(unsigned long addr, unsigned long size)
 
 void check_ramdump(void)
 {
-	unsigned long size = 0;
 	unsigned long addr = 0;
+	unsigned long size = 0;
 	char *env;
 	int reboot_mode;
 
 	env = env_get("ramdump_enable");
 	printf("%s, ramdump_enable = %s\n", __func__, env);
-	if (env) {
-		if (!strcmp(env, "1")) {
-			reboot_mode = get_reboot_mode();
-			if ((reboot_mode == AMLOGIC_WATCHDOG_REBOOT ||
-			     reboot_mode == AMLOGIC_KERNEL_PANIC)) {
-				addr = ramdump_base;
-				size = ramdump_size;
-				printf("%s, addr:%lx, size:%lx\n",
-					__func__, addr, size);
-				if (addr && size) {
-					/* calculate ramdump md5sum */
-					md5((unsigned char *)ramdump_base, ramdump_size, md5_hex);
-					md5_hex[MD5_DIGEST_LENGTH] = '\0';
-					md5sum_hex2str(md5_hex, md5_str2);
-					printf("ramdump: get md5sum again: %s\n", md5_str2);
-					if (strcmp(md5_str1, md5_str2)) {
-						printf("=====================================\n");
-						printf("ramdump md5sum check err! Rebooting ...\n");
-						printf("=====================================\n\n");
-						mdelay(5000);
-						run_command("reboot", 1);
-					} else {
-						printf("ramdump md5sum check OK. init vs bootm.\n");
-					}
+	if (!env || strcmp(env, "1"))
+		return;
 
-					ramdump_env_setup(addr, size);
-#ifdef CONFIG_DUMP_COMPRESS_HEAD
-					dump_info((unsigned int)ramdump_base, 0x80, "bl33 check COMPRESS DATA 2");
-#endif
-					env = env_get("ramdump_location");
-					if (!strncmp(env, "data", 4)) {
-						printf("Crash file will save to Android /data.\n");
-						ramdump_check_kernel_dts_rsvmem(addr, size);
-						overwrite_bl33z_rsvmem_info(addr, size);
-						env_set("initrd_high", "0x0BB00000");
-						env_set("fdt_high",    "0x0BE00000");
-					}
-				} else {
-					ramdump_env_setup(0, 0);
-				}
-			} else {
-				ramdump_env_setup(0, 0);
-#ifndef	CONFIG_MDUMP_COMPRESS
-				//ramdump bl33z
-				printf("%s, fdt: rsvmem ramdump_bl33z enable.\n", __func__);
-				run_command("fdt set /reserved-memory/ramdump_bl33z status okay", 0);
-#endif
-			}
+	reboot_mode = get_reboot_mode();
+	if (reboot_mode != AMLOGIC_WATCHDOG_REBOOT &&
+	    reboot_mode != AMLOGIC_KERNEL_PANIC) {
+		ramdump_env_setup(0, 0);
+		if (!IS_ENABLED(CONFIG_MDUMP_COMPRESS)) {
+			printf("%s, fdt: rsvmem ramdump_bl33z enable.\n", __func__);
+			run_command("fdt set /reserved-memory/ramdump_bl33z status okay", 0);
 		}
+		return;
+	}
+
+	addr = ramdump_base;
+	size = ramdump_size;
+	printf("%s, addr: 0x%lx, size: 0x%lx\n", __func__, addr, size);
+	if (!addr || !size) {
+		ramdump_env_setup(0, 0);
+		return;
+	}
+
+	/* calculate ramdump md5sum */
+	if (addr < (1UL << 32)) {
+		md5((unsigned char *)addr, size, md5_hex);
+		md5_hex[MD5_DIGEST_LENGTH] = '\0';
+		md5sum_hex2str(md5_hex, md5_str2);
+		printf("ramdump: get md5sum: %s\n", md5_str2);
+	} else {
+		memcpy(md5_str2, (void *)MD5_BL33Z_RAMDUMP_STR,
+		       MD5_DIGEST_LENGTH * 2 + 1);
+		printf("ramdump: addr 0x%lx exceed 4G, use bl33z_2 md5sum: %s\n",
+		       addr, md5_str2);
+	}
+
+	if (strcmp(md5_str1, md5_str2)) {
+		printf("=====================================\n");
+		printf("ramdump md5sum check err! Rebooting ...\n");
+		printf("=====================================\n\n");
+		mdelay(5000);
+		run_command("reboot", 1);
+		return;
+	}
+
+	printf("ramdump md5sum check OK. init vs bootm.\n");
+	ramdump_env_setup(addr, size);
+
+	env = env_get("ramdump_location");
+	if (env && !strncmp(env, "data", 4)) {
+		printf("Crash file will save to Android /data.\n");
+		ramdump_check_kernel_dts_rsvmem(addr, size);
+		overwrite_bl33z_rsvmem_info(addr, size);
+		env_set("initrd_high", "0x0BB00000");
+		env_set("fdt_high",    "0x0BE00000");
 	}
 }

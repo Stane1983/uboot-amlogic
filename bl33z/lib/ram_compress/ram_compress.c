@@ -15,11 +15,16 @@
 #include <string.h>
 #include <io.h>
 #include <cache_v8.h>
+#include <md5.h>
 
 /* a must be order of 2 */
 #define __ALIGN(x, mask)		(((x) + (mask)) & ~(mask))
 #define ALIGN(x, a)			__ALIGN(x, a - 1)
 typedef void (*cb)(unsigned long processed, unsigned long total);
+
+#define MD5_DIGEST_LENGTH 16
+static unsigned char md5_hex[MD5_DIGEST_LENGTH + 1] = {0};
+static char md5_str[MD5_DIGEST_LENGTH * 2 + 1] = {0};
 
 extern unsigned char debug_enable;
 typedef unsigned int  u32;
@@ -151,11 +156,11 @@ static int zip_one_section(struct ram_compress_info *rci,
 
 		if (debug_enable) {
 			serial_puts("compressing address:0x");
-			serial_put_hex((unsigned long)srcaddr, 64);
+			serial_put_hex((unsigned long)srcaddr, 48);
 			serial_puts(", free space:0x");
 			serial_put_hex(mem_avail, 32);
 			serial_puts(", out_buf:0x");
-			serial_put_hex((unsigned long)out_buf, 64);
+			serial_put_hex((unsigned long)out_buf, 48);
 			serial_puts(" ,stride:0x");
 			serial_put_hex(stride, 32);
 		}
@@ -502,16 +507,53 @@ int check_reboot_reason(unsigned long *mem_size)
 	return reboot_reason;
 }
 
-void save_ramp_dump(unsigned long addr, long size)
+void calculate_ramdump_md5(u64 ramdump_base, u64 ramdump_size)
+{
+	static const char hex_table[] = "0123456789abcdef";
+	int i;
+
+	serial_puts("\n[debug] get RAMDUMP md5sum: ");
+
+	/* calculate raw md5 */
+	md5((unsigned char *)ramdump_base, ramdump_size, md5_hex);
+
+	/* convert md5 to hex string (no sprintf) */
+	for (i = 0; i < MD5_DIGEST_LENGTH; i++) {
+		md5_str[i * 2]     = hex_table[(md5_hex[i] >> 4) & 0xF];
+		md5_str[i * 2 + 1] = hex_table[md5_hex[i] & 0xF];
+	}
+	md5_str[MD5_DIGEST_LENGTH * 2] = '\0';
+
+	serial_puts(md5_str);
+	serial_puts("\n");
+
+	/* save to BL33Z area */
+	memcpy((void *)MD5_BL33Z_RAMDUMP_STR,
+	       md5_str,
+	       MD5_DIGEST_LENGTH * 2 + 1);
+}
+
+void fix_up_big_store_addr(unsigned long addr, long size)
 {
 	unsigned long addr_tmp, size_tmp;
 
 	if (size > 0) {
+		/* Calculate md5sum of crash file before updating ramdump_base register */
+		calculate_ramdump_md5(addr, size);
+		/*
+		 * ramdump_base(store_addr) register can only hold a 32-bit value.
+		 * Update the handling to support physical addresses above 4GB.
+		 */
 		if (addr >= REG_SPACE_END_ADDR) {
 			/* real size = size[31:0] + addr[6:0]<<32, size should be less than 128G. */
 			size_tmp = size & 0xffffffff;
 			/* real addr = addr[31:8]<<8, addr should be aligned with 256B at least. */
 			addr_tmp = ((addr >> 8) & 0xffffff00) | REG_BIG_ADDR_FLAG | (size >> 32);
+			serial_puts("\n[debug] addr_tmp:0x");
+			serial_put_hex(addr_tmp, 40);
+			serial_puts(", size_tmp:0x");
+			serial_put_hex(size_tmp, 40);
+			serial_puts("\n");
 		} else {
 			/* if addr < 4G, then size < 4G */
 			addr_tmp = addr;
@@ -548,6 +590,8 @@ static struct ram_compress_work_info rcwi = {
 static void fix_up_ddr_size(struct ram_compress_full *rcf,
 			    unsigned long size)
 {
+	unsigned int ddr_hole_count = 1;
+
 	if (size <= CONFIG_DDR_SIZE_128MB) {
 		/* 0 ~ 128MB, use 5 sections */
 		serial_puts("ddr size range 0: 0 ~ 128MB\n");
@@ -592,13 +636,32 @@ static void fix_up_ddr_size(struct ram_compress_full *rcf,
 		rcf->sections[5].section_size = REG_SPACE_RANGE_SIZE;
 		rcf->sections[6].section_size = rcf->full_memsize - CONFIG_BIG_COMPRESS_ADDR;
 	} else {
-		/* > 7.0G ~, use 7 sections. 8G DDR: 3.5G + 0.5G + 3.5G + 0.5G + 1G */
-		serial_puts("ddr size range 3: 7.0G ~\n");
+		/* > 7.0G ~, use 7 sections */
+		serial_puts("ddr size range 3: > 7.0G\n");
+#ifdef SYSCTRL_CHIP_ID
+		if ((readl((void __iomem *)SYSCTRL_CHIP_ID) & 0xFF) == 0x36) {
+			ddr_hole_count = 2;
+			serial_puts("Info: T7c have 2 ddr holes.\n");
+		}
+#endif
+		/* 8GB DDR layout:
+		 * 1 holes: 3.5G + 0.5G + 4.5G = 8.5GB
+		 * 2 holes: 3.5G + 0.5G + 3.5G + 0.5G + 1G = 9GB (only for T7C)
+		 */
+		rcf->full_memsize   = size + REG_SPACE_RANGE_SIZE * ddr_hole_count;
 		rcf->store_phy_addr = (void *)CONFIG_BIG_COMPRESS_ADDR;
-		rcf->full_memsize   = size + REG_SPACE_RANGE_SIZE * 2;
-		rcf->sections[0].section_size = REG_SPACE_START_ADDR - CONFIG_SMALL_COMPRESS_ADDR;
-		rcf->sections[5].section_size = REG_SPACE_RANGE_SIZE;
-		rcf->sections[6].section_size = rcf->full_memsize - CONFIG_BIG_COMPRESS_ADDR;
+		// overwrite rcf->sections[0] to index 7
+		rcf->sections[0].phy_addr       = (void *)CONFIG_SECTION7_ADDR;
+		rcf->sections[0].section_size   = rcf->full_memsize - CONFIG_BIG_COMPRESS_ADDR;
+		rcf->sections[0].section_index  = 7;
+		rcf->sections[0].compress_type  = RAM_COMPRESS_NORMAL;
+		rcf->sections[0].copy_dest_addr = (void *)0;
+		// overwrite rcf->sections[6] to index 5
+		rcf->sections[6].phy_addr       = (void *)CONFIG_SECTION5_ADDR;
+		rcf->sections[6].section_size   = CONFIG_SECTION5_SIZE;
+		rcf->sections[6].section_index  = 5;
+		rcf->sections[6].compress_type  = RAM_COMPRESS_NORMAL;
+		rcf->sections[6].copy_dest_addr = (void *)0;
 	}
 
 	if (debug_enable) {
@@ -652,15 +715,22 @@ static int fix_up_bl32_size(struct ram_compress_full *rcf)
 	}
 	rcf->sections[3].section_size = (unsigned long)(rcf->sections[4].phy_addr)
 				- (unsigned long)(rcf->sections[3].phy_addr);
-	rcf->sections[4].section_size = (unsigned long)(rcf->sections[0].phy_addr)
-				- (unsigned long)(rcf->sections[4].phy_addr);
 #else
 	serial_puts("REG_RSVMEM_SIZE is not defined. set bl31 bl32 size = 0.\n");
 	rcf->sections[3].section_size = 0;
 	rcf->sections[4].phy_addr = rcf->sections[3].phy_addr;
-	rcf->sections[4].section_size = (unsigned long)(rcf->sections[0].phy_addr)
-				- (unsigned long)(rcf->sections[4].phy_addr);
 #endif
+	if ((unsigned long)rcf->store_phy_addr < CONFIG_BIG_COMPRESS_ADDR) {
+		rcf->sections[4].section_size =
+				(unsigned long)(rcf->sections[0].phy_addr) -
+				(unsigned long)(rcf->sections[4].phy_addr);
+	} else {
+		serial_puts("Big DDR: section[0] moved to section[6]\n");
+		rcf->sections[4].section_size =
+				(unsigned long)(rcf->sections[6].phy_addr) -
+				(unsigned long)(rcf->sections[4].phy_addr);
+	}
+
 	if (debug_enable) {
 		serial_puts("Fix up sections[3].phy_addr:0x");
 		serial_put_hex((unsigned long)(rcf->sections[3].phy_addr), 32);
@@ -970,7 +1040,7 @@ void aml_ramdump_compress(struct ram_compress_full *rcf,
 		}
 
 		ret = ramdump_compress_all(rcf, arg, flag, ctrl, size);
-		save_ramp_dump((unsigned long)rcf->store_phy_addr, ret);
+		fix_up_big_store_addr((unsigned long)rcf->store_phy_addr, ret);
 
 		ramdump_save_ddr_md5_info(size, MD5_BLOCK_SIZE,
 					(unsigned int *)MD5_BL33Z_2_BASE_ADDR, "BL33Z-2");
