@@ -10595,8 +10595,13 @@ int do_ddr_asr_test(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	unsigned int asr_new_value = 0;
 	unsigned int error_cur = 0;
 	unsigned int error_total = 0;
-	//int argc2 = 0;
-	//char *argv2[30];
+	int argc2 = 0;
+	char *argv2[30];
+
+	argc2 = argc - 1;
+	for (i = 1; i < (argc); i++)
+		argv2[i - 1] = argv[i];
+	argv2[0] = "ddrtest";
 
 	if (asr_override_value)
 		asr_enable_value = asr_override_value;
@@ -10636,7 +10641,8 @@ int do_ddr_asr_test(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 		wr_reg(asr_address, asr_new_value);
 		wr_reg(asr_address1, asr_new_value);
 		//run_command("ddrtest 3", 0);
-		error_cur = do_ddr_test((cmd_tbl_t *)cmdtp, 1, (int)argc, (argv));
+		argc2 = argc - 1;
+		error_cur = do_ddr_test((cmd_tbl_t *)cmdtp, 1, (int)argc2, (argv));
 		error_total = error_total + error_cur;
 		printf("\nddr asr %d to %d,times %d,reg_value %x  %x,err_cur %d total %d\n",
 		asr_cur_fre_sel, (~asr_cur_fre_sel) & 1,
