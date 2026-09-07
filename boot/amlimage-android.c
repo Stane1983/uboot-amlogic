@@ -562,10 +562,19 @@ int android_image_get_ramdisk_v3(const boot_img_hdr_v3_t *hdr,
 				unsigned char *pbuffpreload_bist = 0;
 				int rc_b = 0;
 
+				env_set("bist_mode", "0");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+				run_command("update_env_part -p bist_mode;", 0);
+#else
+				run_command("saveenv;", 0);
+#endif
+
 				pbuffpreload_bist = malloc(bist_ramdisk_size);
 				if (!pbuffpreload_bist) {
 					free(pbuffpreload);
 					printf("Fail to allocate memory for %s\n", partname_bist);
+					run_command("if test ${reboot_mode} = bist_reboot; then "\
+						"reboot; fi;", 0);
 					return __LINE__;
 				}
 				memset((void *)pbuffpreload_bist, 0, bist_ramdisk_size);
@@ -578,18 +587,14 @@ int android_image_get_ramdisk_v3(const boot_img_hdr_v3_t *hdr,
 					free(pbuffpreload_bist);
 					pbuffpreload_bist = 0;
 					free(pbuffpreload);
+					run_command("if test ${reboot_mode} = bist_reboot; then "\
+						"reboot; fi;", 0);
 					return __LINE__;
 				}
 
 				debug("Factory RAM disk size 0x%x\n", bist_ramdisk_size);
 				debug("vendor_ramdisk_size: 0x%x\n", normal_ramdisk_size);
 
-				env_set("bist_mode", "0");
-#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
-				run_command("update_env_part -p bist_mode;", 0);
-#else
-				run_command("saveenv;", 0);
-#endif
 				normal_recovery = 0;
 
 				memmove(pRAMdisk,

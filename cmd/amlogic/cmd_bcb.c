@@ -149,6 +149,7 @@ static int do_RunBcbCommand(
 	char *RebootMode;
 	char *powermode;
 	int remain_time = 0;
+	int ret = -1;
 
 	if (argc != 2)
 		return cmd_usage(cmdtp);
@@ -398,10 +399,20 @@ static int do_RunBcbCommand(
 
 		if (run_command("run recovery_from_flash", 0) < 0) {
 			printf("run_command for cmd:run recovery_from_flash failed.\n");
-			return -1;
+			ret = -1;
+		} else {
+			printf("run command:run recovery_from_flash successful.\n");
+			ret = 0;
 		}
-		printf("run command:run recovery_from_flash successful.\n");
-		return 0;
+		env_set("bist_mode", "0");
+#if CONFIG_IS_ENABLED(AML_UPDATE_ENV)
+		run_command("update_env_part -p bist_mode;", 0);
+#else
+		run_command("saveenv;", 0);
+#endif
+		run_command("if test ${reboot_mode} = bist_reboot; then "\
+			"reboot; fi;", 0);
+		return ret;
 	}
 
 #if (IS_ENABLED(CONFIG_CMD_BCB))
