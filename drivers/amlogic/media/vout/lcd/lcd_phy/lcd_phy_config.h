@@ -20,6 +20,8 @@ struct lcd_phy_ctrl_s {
 	int (*phy_param_get)(struct aml_lcd_drv_s *pdrv,
 			     struct phy_config_s *phy_cfg, struct phy_attr_s *phy);
 	void (*phy_reg_dump)(struct aml_lcd_drv_s *pdrv);
+	void (*phy_reset)(struct aml_lcd_drv_s *pdrv);
+	void (*phy_default_off)(struct aml_lcd_drv_s *pdrv);
 
 	void (*phy_set_lvds)(struct aml_lcd_drv_s *pdrv, int status);
 	void (*phy_set_vx1)(struct aml_lcd_drv_s *pdrv, int status);

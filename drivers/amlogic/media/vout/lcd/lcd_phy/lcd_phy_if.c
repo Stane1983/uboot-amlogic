@@ -204,6 +204,28 @@ void lcd_phy_set(struct aml_lcd_drv_s *pdrv, int status)
 	pdrv->phy_set(pdrv, status);
 }
 
+void lcd_phy_reset(struct aml_lcd_drv_s *pdrv)
+{
+#ifdef CONFIG_AML_LCD_PXP
+	return;
+#endif
+	if (!lcd_phy_ctrl || !lcd_phy_ctrl->phy_reset)
+		return;
+
+	lcd_phy_ctrl->phy_reset(pdrv);
+}
+
+void lcd_phy_default_off(struct aml_lcd_drv_s *pdrv)
+{
+#ifdef CONFIG_AML_LCD_PXP
+	return;
+#endif
+	if (!lcd_phy_ctrl || !lcd_phy_ctrl->phy_default_off)
+		return;
+
+	lcd_phy_ctrl->phy_default_off(pdrv);
+}
+
 int lcd_phy_probe(struct aml_lcd_drv_s *pdrv)
 {
 #ifdef CONFIG_AML_LCD_PXP

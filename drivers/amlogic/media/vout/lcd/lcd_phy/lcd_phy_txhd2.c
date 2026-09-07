@@ -232,6 +232,8 @@ static struct lcd_phy_ctrl_s lcd_phy_ctrl_txhd2 = {
 	.phy_glb_param_dft_val = lcd_phy_glb_param_dft_txhd2,
 	.phy_param_get = lcd_phy_param_get_from_reg,
 	.phy_reg_dump = lcd_phy_reg_dump,
+	.phy_reset = NULL,
+	.phy_default_off = NULL,
 
 	.phy_set_lvds = lcd_lvds_phy_set,
 	.phy_set_vx1 = NULL,

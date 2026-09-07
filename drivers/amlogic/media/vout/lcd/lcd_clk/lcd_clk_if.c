@@ -329,6 +329,7 @@ lcd_set_clk_retry:
 		cconf->data->clktree_set(pdrv);
 
 	pdrv->config.timing.clk_change = 0; /* clear clk_change flag */
+	lcd_phy_reset(pdrv);
 	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL) {
 		LCDPR("[%d]: %s: clk_change=0x%x\n",
 			pdrv->index, __func__, pdrv->config.timing.clk_change);

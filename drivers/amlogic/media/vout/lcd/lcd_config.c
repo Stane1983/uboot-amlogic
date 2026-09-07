@@ -3779,6 +3779,7 @@ int lcd_get_panel_config(char *dt_addr, int load_id, struct aml_lcd_drv_s *pdrv)
 	if (ret)
 		return -1;
 
+	lcd_phy_default_off(pdrv);
 	lcd_lane_map_update(pdrv);
 
 	lcd_config_load_init(pdrv);

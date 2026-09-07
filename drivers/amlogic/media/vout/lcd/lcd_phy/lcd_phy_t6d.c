@@ -193,6 +193,17 @@ static void lcd_phy_common_update(struct aml_lcd_drv_s *pdrv, unsigned int cntl1
 	lcd_ana_write(ANACTRL_DIF_PHY_CNTL15, cntl15);
 }
 
+static void lcd_phy_reset_t6d(struct aml_lcd_drv_s *pdrv)
+{
+	if (lcd_debug_print_flag & LCD_DBG_PR_NORMAL)
+		LCDPR("[%d]: %s\n", pdrv->index, __func__);
+	lcd_ana_setb(ANACTRL_DIF_PHY_CNTL14, 0, 19, 2);  //en=0 & reset
+	udelay(50);
+	lcd_ana_setb(ANACTRL_DIF_PHY_CNTL14, 1, 20, 1);  //en=1
+	udelay(50);
+	lcd_ana_setb(ANACTRL_DIF_PHY_CNTL14, 1, 19, 1);  //work
+}
+
 /*
  *    chreg: channel ctrl
  *    ckdi: clk phase for minilvds
@@ -363,6 +374,9 @@ static struct lcd_phy_ctrl_s lcd_phy_ctrl_t6d = {
 	.phy_glb_param_dft_val = phy_glb_param_dft_t6d,
 	.phy_param_get = lcd_phy_param_get_from_reg,
 	.phy_reg_dump = lcd_phy_reg_dump,
+
+	.phy_reset = lcd_phy_reset_t6d,
+	.phy_default_off = NULL,
 
 	.phy_set_lvds = lcd_lvds_phy_set,
 	.phy_set_vx1 = NULL,
