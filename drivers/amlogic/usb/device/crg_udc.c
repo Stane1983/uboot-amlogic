@@ -2521,7 +2521,7 @@ void getstatusrequest(struct crg_gadget_dev *crg_udc,
 		      u8 RequestType, u16 value, u16 index, u16 length)
 {
 	u32 status_val = 0;
-	u32 status = -EINPROGRESS;
+	int status = -EINPROGRESS;
 	struct crg_udc_request *udc_req_ptr = crg_udc->status_req;
 	struct crg_udc_ep *udc_ep_ptr;
 
@@ -2620,12 +2620,12 @@ get_status_error:
 				       DMA_FROM_DEVICE);
 		udc_req_ptr->mapped = 1;
 	}
-		debug("status_val = 0x%x, cpu_to_le16(status_val) = 0x%x\n",
-		      status_val, cpu_to_le16(status_val));
-		debug("udc_req_ptr->usb_req.buf = 0x%p, value = 0x%x\n",
-		      udc_req_ptr->usb_req.buf, *(u16 *)(udc_req_ptr->usb_req.buf));
-		debug("udc_req_ptr->usb_req.dma = 0x%llx\n",
-		      udc_req_ptr->usb_req.dma);
+	debug("status_val = 0x%x, cpu_to_le16(status_val) = 0x%x\n",
+	      status_val, cpu_to_le16(status_val));
+	debug("udc_req_ptr->usb_req.buf = 0x%p, value = 0x%x\n",
+	      udc_req_ptr->usb_req.buf, *(u16 *)(udc_req_ptr->usb_req.buf));
+	debug("udc_req_ptr->usb_req.dma = 0x%llx\n",
+	      udc_req_ptr->usb_req.dma);
 
 	udc_ep_ptr = &crg_udc->udc_ep[0];
 

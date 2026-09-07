@@ -315,6 +315,9 @@ static unsigned int xhci_microframes_to_exponent(unsigned int desc_interval,
 {
 	unsigned int interval;
 
+	if (!desc_interval)
+		return 0;
+
 	interval = fls(desc_interval) - 1;
 	interval = clamp_val(interval, min_exponent, max_exponent);
 	if ((1 << interval) != desc_interval)

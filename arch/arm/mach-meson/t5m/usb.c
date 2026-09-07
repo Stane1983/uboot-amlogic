@@ -212,7 +212,7 @@ static void usb_enable_phy_pll (u32 base_addr)
 
 void set_usb_pll(uint32_t phy2_pll_base)
 {
-	int val;
+	u32 val;
 
 	val = USB2_PHY_PLL_OFFSET_40 | USB_PHY2_RESET | USB_PHY2_ENABLE;
 	writel(val, phy2_pll_base + 0x40);
