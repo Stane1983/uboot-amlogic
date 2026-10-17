@@ -17,3 +17,4 @@ obj-$(CONFIG_AML_HDMITX20) += hdmitx_hw.o hdmitx_clk.o
 obj-y += aml_efuse.o
 obj-y += avb2_fip_key.o
 obj-$(CONFIG_SECURE_POWER_CONTROL) += pwrc.o
+obj-y += eth_phy_detect.o
