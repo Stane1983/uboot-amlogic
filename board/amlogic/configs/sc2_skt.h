@@ -7,6 +7,7 @@
 #define __BOARD_CFG_H__
 
 #include <asm/arch/cpu.h>
+#include <linux/stringify.h>
 
 /*
  * platform power init config
@@ -94,6 +95,7 @@
         "video_reverse=0\0"\
         "boot_part=boot\0"\
 		"rollback_flag=0\0"\
+	"loglevel=" __stringify(CONFIG_KNL_LOG_LEVEL) "\0" \
 	"boot_flag=0\0"\
         "Irq_check_en=0\0"\
         "common_dtb_load=" CONFIG_DTB_LOAD "\0"\
@@ -105,7 +107,7 @@
 		"ramoops.pstore_en=1 ramoops.record_size=0x8000 ramoops.console_size=0x4000 "\
 		"loop.max_part=4 scramble_reg=0xfe02e030 "\
 		"scsi_mod.scan=async xhci_hcd.quirks=0x800000 check_tty_en=1 "\
-		"loglevel=1 "\
+		"loglevel=${loglevel} " \
             "\0"\
         "upgrade_check="\
             "echo recovery_status=${recovery_status};"\
@@ -436,4 +438,3 @@
 #define CONFIG_AML_KASLR_SEED
 
 #endif
-

@@ -78,12 +78,13 @@
 	"silent=0\0"\
 	"display_bpp=16\0" \
 	"display_color_index=16\0" \
+	"loglevel=" __stringify(CONFIG_KNL_LOG_LEVEL) "\0" \
 	"initargs="\
-		"init=/init " CONFIG_KNL_LOG_LEVEL "console=ttyS0,921600 no_console_suspend "\
+		"init=/init console=ttyS0,921600 no_console_suspend "\
 		"earlycon=aml-uart,0xfe07a000 ramoops.pstore_en=1 ramoops.record_size=0x8000 "\
 		"ramoops.console_size=0x4000 loop.max_part=4 scramble_reg=0xfe02e030 "\
 		"cma_first_wm_low=on "\
-		"loglevel=1 "\
+		"loglevel=${loglevel} " \
 		"\0"
 
 #define SYSTEM_PRI_COMMANDS \
@@ -104,6 +105,7 @@
 /* define for debian system */
 #ifdef CONFIG_BUILD_DEBIAN_SYSTEM
 #include "s4_ap222_debian.h"
+#include <linux/stringify.h>
 #endif
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -430,4 +432,3 @@
 #define BL32_SHARE_MEM_SIZE  0x800000
 #define CONFIG_AML_KASLR_SEED
 #endif
-

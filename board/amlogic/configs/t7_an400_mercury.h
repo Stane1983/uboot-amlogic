@@ -80,14 +80,16 @@
 	"silent=1\0"\
 	"display_bpp=16\0" \
 	"display_color_index=16\0" \
+	"loglevel=" __stringify(CONFIG_KNL_LOG_LEVEL) "\0" \
 	"initargs="\
-		 "init=/init" CONFIG_KNL_LOG_LEVEL "console=ttyS0,921600 no_console_suspend "\
+		 "init=/init console=ttyS0,921600 no_console_suspend "\
 		 "earlycon=aml-uart,0xfe078000 ramoops.pstore_en=1 ramoops.record_size=0x8000 "\
 		 HIBERNATION_COMMANDS \
 		 "ramoops.console_size=0x4000 loop.max_part=4 scsi_mod.scan=async "\
 		 "xhci_hcd.quirks=0x800000 scramble_reg=0xfe02e030 "\
 		 "loglevel=4 clk_ignore_unused meson_clk.ignore_pll_init=1 "\
 		 "amlogic-clk-soc-t7.ignore_pll_init=1 "\
+		"loglevel=${loglevel} " \
 		 "\0"
 
 #define SYSTEM_PRI_COMMANDS \
@@ -108,6 +110,7 @@
 /* define for debian system */
 #ifdef CONFIG_BUILD_DEBIAN_SYSTEM
 #include "t7_an400_lpddr4x_debian.h"
+#include <linux/stringify.h>
 #endif
 
 #define VOUT_HDMITX_HPD_CHECK_CMD "hdmitx hpd; hdmitx get_parse_edid; dovi process;"

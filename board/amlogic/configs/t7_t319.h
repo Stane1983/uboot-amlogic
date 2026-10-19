@@ -8,6 +8,7 @@
 
 #include <asm/arch/cpu.h>
 #include <amlogic/base_env.h>
+#include <linux/stringify.h>
 
 /*
  * platform power init config
@@ -100,11 +101,13 @@
 		"cec_fun=0x2F\0" \
 		"logic_addr=0x0\0" \
 		"cec_ac_wakeup=1\0" \
+		"loglevel=" __stringify(CONFIG_KNL_LOG_LEVEL) "\0" \
         "initargs="\
-		"init=/init" CONFIG_KNL_LOG_LEVEL "console=ttyS0,921600 no_console_suspend "\
+		"init=/init console=ttyS0,921600 no_console_suspend "\
 		"earlycon=aml-uart,0xfe078000 ramoops.pstore_en=1 ramoops.record_size=0x8000 "\
 		"ramoops.console_size=0x4000 loop.max_part=4 "\
 		"scsi_mod.scan=async xhci_hcd.quirks=0x800000 scramble_reg=0xfe02e030 "\
+		"loglevel=${loglevel} " \
             "\0"\
         "upgrade_check="\
 			"run upgrade_check_base;"\
@@ -427,4 +430,3 @@
 #define CONFIG_AML_KASLR_SEED
 
 #endif
-

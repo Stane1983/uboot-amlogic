@@ -7,6 +7,7 @@
 #define __G12B_W400_V1_H__
 
 #include <asm/arch/cpu.h>
+#include <linux/stringify.h>
 
 /* #define CONFIG_SYS_GENERIC_BOARD  1 */
 /*
@@ -125,8 +126,9 @@
         "reboot_mode_android=""normal""\0"\
         "Irq_check_en=0\0"\
         "fs_type=""rootfstype=ramfs""\0"\
+        "loglevel=" __stringify(CONFIG_KNL_LOG_LEVEL) "\0" \
         "initargs="\
-            "init=/init console=ttyS0,115200 no_console_suspend earlycon=aml-uart,0xff803000 ramoops.pstore_en=1 ramoops.record_size=0x8000 ramoops.console_size=0x4000 "\
+            "init=/init console=ttyS0,115200 no_console_suspend earlycon=aml-uart,0xff803000 ramoops.pstore_en=1 ramoops.record_size=0x8000 ramoops.console_size=0x4000 loglevel=${loglevel}"\
             "\0"\
         "upgrade_check="\
             "echo upgrade_step=${upgrade_step}; "\
@@ -659,4 +661,3 @@
 
 #define CONFIG_AML_KASLR_SEED
 #endif
-

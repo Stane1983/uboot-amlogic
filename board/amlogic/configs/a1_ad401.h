@@ -7,6 +7,7 @@
 #define __BOARD_CFG_H__
 
 #include <asm/arch/cpu.h>
+#include <linux/stringify.h>
 
 /*
  * platform power init config
@@ -92,9 +93,11 @@
         "get_os_type=if store read ${os_ident_addr} ${boot_part} 0 0x1000; then os_ident ${os_ident_addr}; fi\0"\
         "fatload_dev=usb\0"\
         "fs_type=""rootfstype=ramfs""\0"\
+        "loglevel=" __stringify(CONFIG_KNL_LOG_LEVEL) "\0" \
         "initargs="\
             "init=/init console=ttyS0,115200 no_console_suspend earlycon=aml_uart,0xfe002000 "\
             "ramoops.pstore_en=1 ramoops.record_size=0x8000 ramoops.console_size=0x4000 "\
+			"loglevel=${loglevel} " \
             "\0"\
         "upgrade_check="\
             "echo recovery_status=${recovery_status};"\

@@ -22,6 +22,7 @@
 
 #include <asm/arch/cpu.h>
 #include <amlogic/base_env.h>
+#include <linux/stringify.h>
 #define CONFIG_SYS_GENERIC_BOARD  1
 
 /*
@@ -145,10 +146,12 @@
         "Irq_check_en=0\0"\
         "fs_type=""rootfstype=ramfs""\0"\
 	"disable_ir=0;\0"\
+	    "loglevel=" __stringify(CONFIG_KNL_LOG_LEVEL) "\0" \
         "initargs="\
-			"init=/init console=ttyS0,115200 no_console_suspend earlycon=aml_uart,0xff803000 loglevel=4 "\
+			"init=/init console=ttyS0,115200 no_console_suspend earlycon=aml_uart,0xff803000 "\
 			"printk.devkmsg=on ramoops.pstore_en=1 ramoops.record_size=0x8000 "\
 			"ramoops.console_size=0x4000 loop.max_part=4 scramble_reg=0xff6345c4 "\
+			"loglevel=${loglevel} " \
             "\0"\
         "upgrade_check="\
 			"run upgrade_check_base;"\
